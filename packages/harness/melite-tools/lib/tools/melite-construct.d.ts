@@ -1,4 +1,4 @@
-import type { EstateRequest } from '../estate.js';
+import type { Estate } from '../estate.js';
 import type { ToolDefinition } from '../types.js';
 /** The default bench — the unattributed seat (headless runs,
  *  legacy callers). */
@@ -15,7 +15,7 @@ export declare function benchKeyOfExec(exec: {
  *  stripping it manufactured phantom "wired but untyped" refusals
  *  on correctly-wired card stages; engine defaults comfyui). */
 export declare function projectStages(stages: unknown): Record<string, unknown>[];
-export declare function meliteConstruct(request: EstateRequest, opts?: {
+export declare function meliteConstruct(estate: Estate, opts?: {
     headless?: boolean;
 }): ToolDefinition;
 //# sourceMappingURL=melite-construct.d.ts.map

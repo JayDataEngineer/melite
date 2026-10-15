@@ -1,34 +1,45 @@
 // ledger_tail walls (vitest, estate mocked — no gateway): the tail
-// builds its query honestly (floored positive numbers ride, the rest
-// fall away; the event prefix rides verbatim), rows default past
-// misshapen members, and the render counts shown-of-matched (0s on
-// sparse values). Non-number limits / non-string events never reach
-// the body — they throw at the wrapper gate (presence contract).
+// passes its lane args honestly (floored positive numbers ride, the
+// rest fall to the seat's '50' default; the event prefix rides
+// verbatim), rows default past misshapen members, and the render
+// counts shown-of-matched (0s on sparse values). Non-number limits /
+// non-string events never reach the body — they throw at the wrapper
+// gate (presence contract).
+//
+// F-1 seam (2026-11-05): the tool plane speaks the typed lanes; the
+// URL grammar is the browser face's. The query-spelling arms re-rolled
+// to the typed lane + args via `seen`; every other arm is a seam swap.
 
 import { describe, test } from 'vitest'
 import assert from 'node:assert/strict'
 import { ToolArgsError } from '@deepseek-ai/dsh-tools'
 import type { GenericCallView } from '@deepseek-ai/dsh-tools'
 import { ledgerTail } from '../src/tools/ledger-tail.ts'
-import type { EstateRequest } from '../src/estate.ts'
+import type { Estate } from '../src/estate.ts'
+import { fakeEstate } from './fake-estate.ts'
 import { fakeExec } from './fake-exec.ts'
 
-function mockRequest(
-  handler: (method: string, path: string, body: unknown) => unknown,
-): { calls: Array<{ method: string; path: string }>; request: EstateRequest } {
-  const calls: Array<{ method: string; path: string }> = []
-  const request = (async (method: string, path: string): Promise<unknown> => {
-    calls.push({ method, path })
-    return handler(method, path, undefined)
-  }) as EstateRequest
-  return { calls, request }
+/** The typed-lane mock (F-1, 2026-11-05): the tool plane's tests
+ *  stub the ESTATE seam, never a URL transport. `seen` records the
+ *  lane a tool rode; ledgerTail is this spec's one lane. */
+function mockEstate(handler: () => unknown): {
+  seen: Array<{ lane: string; args: unknown[] }>;
+  estate: Estate;
+} {
+  return fakeEstate({
+    ledgerTail: (_limit: string, _event: string, _signal: AbortSignal, _timeoutMs?: number) => handler(),
+  })
+}
+
+function stubEstate(): Estate {
+  return fakeEstate({ ledgerTail: () => ({}) }).estate
 }
 
 const exec = fakeExec(AbortSignal.timeout(2000))
 
 describe('ledger_tail presentCall — the streaming tile', () => {
   test('echoes the filters; junk renders generic (the re-attached presenter)', () => {
-    const tool = ledgerTail((async () => ({})) as EstateRequest)
+    const tool = ledgerTail(stubEstate())
     // The tile always answers the generic card (pinned below) — narrow
     // the ToolCallView union to read its rawInput.
     assert.deepEqual(
@@ -44,107 +55,112 @@ describe('ledger_tail presentCall — the streaming tile', () => {
 
 describe('ledger_tail execute — the tail', () => {
   test('non-object args throw at the wrapper gate', async () => {
-    const { request } = mockRequest(() => ({}))
-    const tool = ledgerTail(request)
+    const { estate } = mockEstate(() => ({}))
+    const tool = ledgerTail(estate)
     await assert.rejects(tool.execute(undefined as never, exec), ToolArgsError)
   })
 
   test('a string limit throws at the wrapper gate (the gate owns the type)', async () => {
-    const seen = mockRequest(() => ({}))
-    const tool = ledgerTail(seen.request)
+    const { seen, estate } = mockEstate(() => ({}))
+    const tool = ledgerTail(estate)
     await assert.rejects(tool.execute({ limit: '10' } as never, exec), ToolArgsError)
-    assert.equal(seen.calls.length, 0)
+    assert.equal(seen.length, 0)
   })
 
   test('a non-string event throws at the wrapper gate', async () => {
-    const seen = mockRequest(() => ({}))
-    const tool = ledgerTail(seen.request)
+    const { seen, estate } = mockEstate(() => ({}))
+    const tool = ledgerTail(estate)
     await assert.rejects(tool.execute({ event: 5 } as never, exec), ToolArgsError)
-    assert.equal(seen.calls.length, 0)
+    assert.equal(seen.length, 0)
   })
 
-  test('bare args tail the door with no query; rows ride verbatim', async () => {
+  test('bare args ride the seat defaults; rows ride verbatim', async () => {
     const entries = [{ ts: 't1', event: 'run.registered', data: {} }]
-    const seen = mockRequest((_m, path) => {
-      assert.equal(path, '/v1/ledger')
-      return { shown: 1, matched: 9, entries }
-    })
-    const tool = ledgerTail(seen.request)
+    const { seen, estate } = mockEstate(() => ({ shown: 1, matched: 9, entries }))
+    const tool = ledgerTail(estate)
     const out = await tool.execute({}, exec) as Record<string, unknown>
     assert.deepEqual(out, { shown: 1, matched: 9, entries })
+    // THE TYPED LANE (F-1, 2026-11-05): the tool plane speaks the typed
+    // lanes; the URL grammar is the browser face's. The old arm spelled
+    // the bare /v1/ledger — the seat defaults ('50' / '') ride the lane.
+    assert.deepEqual(seen[0], { lane: 'ledgerTail', args: ['50', '', exec.signal, 15_000] })
   })
 
-  test('a fractional limit floors onto the query', async () => {
-    const seen = mockRequest((_m, path) => {
-      assert.equal(path, '/v1/ledger?limit=2')
-      return { entries: [] }
-    })
-    const tool = ledgerTail(seen.request)
+  test('a fractional limit floors onto the lane args', async () => {
+    const { seen, estate } = mockEstate(() => ({ entries: [] }))
+    const tool = ledgerTail(estate)
     await tool.execute({ limit: 2.7 }, exec)
+    // THE TYPED LANE (F-1, 2026-11-05): the tool plane speaks the typed
+    // lanes; the URL grammar is the browser face's — ?limit=2 was its
+    // old spelling.
+    assert.deepEqual(seen[0], { lane: 'ledgerTail', args: ['2', '', exec.signal, 15_000] })
   })
 
-  test('non-positive limits fall away (bare path)', async () => {
+  test('non-positive limits fall away (the seat default rides)', async () => {
     for (const limit of [0, -3]) {
-      const seen = mockRequest((_m, path) => {
-        assert.equal(path, '/v1/ledger')
-        return { entries: [] }
-      })
-      const tool = ledgerTail(seen.request)
+      const { seen, estate } = mockEstate(() => ({ entries: [] }))
+      const tool = ledgerTail(estate)
       await tool.execute({ limit }, exec)
+      // THE TYPED LANE (F-1, 2026-11-05): the tool plane speaks the
+      // typed lanes; the URL grammar is the browser face's — the bare
+      // /v1/ledger was its old spelling.
+      assert.deepEqual(seen[0], { lane: 'ledgerTail', args: ['50', '', exec.signal, 15_000] })
     }
   })
 
   test('non-finite limits throw at the wrapper gate (finite-JSON rule)', async () => {
-    const seen = mockRequest(() => ({}))
-    const tool = ledgerTail(seen.request)
+    const { seen, estate } = mockEstate(() => ({}))
+    const tool = ledgerTail(estate)
     await assert.rejects(tool.execute({ limit: Number.NaN } as never, exec), ToolArgsError)
     await assert.rejects(tool.execute({ limit: Number.POSITIVE_INFINITY } as never, exec), ToolArgsError)
-    assert.equal(seen.calls.length, 0)
+    assert.equal(seen.length, 0)
   })
 
-  test('the event prefix rides verbatim; combined filters join in order', async () => {
-    const seen = mockRequest((_m, path) => {
-      assert.equal(path, '/v1/ledger?limit=5&event=prov')
-      return { entries: [] }
-    })
-    const tool = ledgerTail(seen.request)
+  test('the event prefix rides verbatim; combined filters ride the lane args', async () => {
+    const { seen, estate } = mockEstate(() => ({ entries: [] }))
+    const tool = ledgerTail(estate)
     await tool.execute({ limit: 5, event: 'prov' }, exec)
+    // THE TYPED LANE (F-1, 2026-11-05): the tool plane speaks the typed
+    // lanes; the URL grammar is the browser face's — ?limit=5&event=prov
+    // was its old spelling.
+    assert.deepEqual(seen[0], { lane: 'ledgerTail', args: ['5', 'prov', exec.signal, 15_000] })
   })
 
-  test('an empty event falls away (bare path)', async () => {
-    const seen = mockRequest((_m, path) => {
-      assert.equal(path, '/v1/ledger')
-      return { entries: [] }
-    })
-    const tool = ledgerTail(seen.request)
+  test('an empty event falls away (the seat default rides)', async () => {
+    const { seen, estate } = mockEstate(() => ({ entries: [] }))
+    const tool = ledgerTail(estate)
     await tool.execute({ event: '' }, exec)
+    // THE TYPED LANE (F-1, 2026-11-05): the tool plane speaks the typed
+    // lanes; the URL grammar is the browser face's — the bare /v1/ledger
+    // was its old spelling.
+    assert.deepEqual(seen[0], { lane: 'ledgerTail', args: ['50', '', exec.signal, 15_000] })
   })
 
   test('misshapen members default past the rows (counts follow entries)', async () => {
     const entries = [{ ts: 't', event: 'e', data: {} }, { ts: 't', event: 'e', data: {} }]
-    const { request } = mockRequest(() => ({ entries }))
-    const tool = ledgerTail(request)
+    const { estate } = mockEstate(() => ({ entries }))
+    const tool = ledgerTail(estate)
     const out = await tool.execute({}, exec) as Record<string, unknown>
     assert.deepEqual(out, { shown: 2, matched: 2, entries })
   })
 
   test('a missing rows member tails empty', async () => {
-    const { request } = mockRequest(() => ({}))
-    const tool = ledgerTail(request)
+    const { estate } = mockEstate(() => ({}))
+    const tool = ledgerTail(estate)
     const out = await tool.execute({}, exec) as Record<string, unknown>
     assert.deepEqual(out, { shown: 0, matched: 0, entries: [] })
   })
 
   test('a searched roots list rides the legacy result', async () => {
-    const { request } = mockRequest(() => ({ entries: [], searched: ['/state-a', '/state-b'] }))
-    const tool = ledgerTail(request)
+    const { estate } = mockEstate(() => ({ entries: [], searched: ['/state-a', '/state-b'] }))
+    const tool = ledgerTail(estate)
     const out = await tool.execute({}, exec) as Record<string, unknown>
     assert.deepEqual(out.searched, ['/state-a', '/state-b'])
   })
 })
 
 describe('ledger_tail render — the human line', () => {
-  const tool = ledgerTail((async () => ({})) as EstateRequest)
+  const tool = ledgerTail(stubEstate())
   const text = (v: unknown) => (tool.output.render({} as never, v as never) as Array<{ text?: string }>)[0].text ?? ''
 
   test('shown-of-matched rides the line (0s on sparse values)', () => {

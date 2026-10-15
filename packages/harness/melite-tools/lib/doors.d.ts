@@ -31,6 +31,11 @@ export declare function seatedMcpServers(c: CtxView): string[];
 export declare function mcpToolsOf(c: CtxView, server: string): McpToolRows;
 /** Minimal structural view of the services the doors touch. */
 interface CtxView {
+    /** The documented optional-service probe (cordis-tutorial/
+     *  03-services.md: skip inject, probe at the use site) — the typed
+     *  replacement for the retired `as unknown as { get }` casts
+     *  (F-2/F-4, 2026-11-05). */
+    get(name: string): unknown;
     effect(effect: () => void, label?: string): unknown;
     llm: LlmStreamSeam;
     registry: {

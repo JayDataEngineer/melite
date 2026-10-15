@@ -29,6 +29,7 @@ const gates = req('../../../../tools/release-artifacts.mjs') as {
   publishableTarballs: (files: string[]) => string[]
   overlayNameOffender: (packageName: string, overlay: string, packed: Map<string, Set<string>>) => string | null
   versionCoherenceOffender: (innerFiles: Map<string, { inner: { name: string, version: string } }>, tag: string) => string | null
+  publintOffender: (tarName: string, f: string) => Promise<void>
 }
 const ROOT = join(__dirname, '..', '..', '..', '..')
 
@@ -104,6 +105,39 @@ describe('G2/G3 — fixture-backed plane rejection (audit case 1)', () => {
     try {
       expect(() => gates.exportsRows(fx.inner, fx.listing, 'fx.tgz'))
         .toThrow('entry gate: fx.tgz exports "./lib/gone.js" but the tarball does not contain it')
+    } finally { rmSync(fx.dir, { recursive: true, force: true }) }
+  })
+})
+
+describe('G9 — publint over the publication view (F-8, harness-seam audit)', () => {
+  it('accepts a well-formed lib-only tarball (the gate is not always-false)', async () => {
+    const fx = fixture({
+      'package.json': okManifest(),
+      'lib/index.js': 'export const x = 1\n',
+      'lib/index.d.ts': 'export declare const x: number\n',
+    })
+    try {
+      await expect(gates.publintOffender('fx.tgz', fx.f)).resolves.toBeUndefined()
+    } finally { rmSync(fx.dir, { recursive: true, force: true }) }
+  })
+
+  it('refuses a publication the manifest rows cannot satisfy (main names no shipped byte)', async () => {
+    // A class the G2/G3/G4/G8 arms deliberately do not cover: the "."
+    // exports row is declared subpath-only, so G4 passes; the manifest's
+    // `main` names a byte the tarball does not carry — publint's
+    // FILE_DOES_NOT_EXIST error, invisible to the exports-target checks.
+    const fx = fixture({
+      'package.json': JSON.stringify({
+        name: 'fx-dangling-main', version: '0.0.0', type: 'module', license: 'SSPL-1.0',
+        main: './lib/nope.js',
+        exports: { './sub': './lib/sub.js' },
+        melite: { publish: { subpathOnly: true } },
+      }, null, 2),
+      'lib/sub.js': 'export const s = 1\n',
+    })
+    try {
+      await expect(gates.publintOffender('fx.tgz', fx.f))
+        .rejects.toThrow(/publint gate: fx\.tgz — \d+ error\(s\):/)
     } finally { rmSync(fx.dir, { recursive: true, force: true }) }
   })
 })

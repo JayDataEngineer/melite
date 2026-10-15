@@ -1,45 +1,41 @@
 /**
- * useTimelineAuthoring — the timeline authoring verbs moved verbatim from
- * `component.tsx` (MotionCardEditor lines ~1381–1457).
+ * useTimelineAuthoring — the timeline authoring verbs, re-homed onto the
+ * one-truth commit doors (2026-11-05, nativity audit F7). Every verb is
+ * ONE statement through commitConstraints / commitPrompts — there are no
+ * mirror setters and no authoring guard: the doc hook owns hydration,
+ * persistence, and the shown overlay, so a verb's only job is to compute
+ * the next shape. The rescale-guard law ("a late envelope settle never
+ * erases an authored drag") holds by construction — there is no effect
+ * left that writes the doc channel.
  *
- * Returns the bar's verbs. THE AUTHORING GUARD is preserved EXACTLY:
- * every verb that set `promptsAuthoredRef` inline still sets it here, and
- * the verbs that never set it (keyframe add/move/delete, prompt resize)
- * still don't — the rescale-guard regression test pins the authored-drag
- * law ("a late envelope settle never erases an authored drag").
- *
- * Free-variable reads became explicit hook args. Behavior is IDENTICAL.
+ * Free-variable reads became explicit hook args. Gesture/undo cadence is
+ * IDENTICAL (pushUndo on the same verbs, maybePushDragUndo on drags).
  */
 import { useCallback } from "react"
 import type * as React from "react"
 import type { MotionNpz } from "@melite/formats"
 import {
   makeTimelineId,
-  type TimelineKeyframe, type TimelinePrompt,
 } from "@melite-plugin/timeline/ui/timeline"
 import {
   carveNewPromptCard, snapshotConstraint,
-  type MotionConstraint,
 } from "@melite/formats/motionConstraints"
 import type { ToastFn } from "./useMotionStage.ts"
+import type { MotionDocHooks } from "./useMotionDoc.ts"
 
-export interface TimelineAuthoringArgs {
+export type TimelineAuthoringArgs = {
   effectiveNpz: MotionNpz | null
   toast: ToastFn
   pushUndo: () => void
   maybePushDragUndo: (key: string) => void
-  promptsAuthoredRef: React.MutableRefObject<boolean>
   targetT: number
   setFrameIdx: React.Dispatch<React.SetStateAction<number>>
   setPlaying: React.Dispatch<React.SetStateAction<boolean>>
-  setConstraintPayloads: React.Dispatch<React.SetStateAction<Record<string, MotionConstraint>>>
-  setTlKeyframes: React.Dispatch<React.SetStateAction<TimelineKeyframe[]>>
-  setTlPrompts: React.Dispatch<React.SetStateAction<TimelinePrompt[]>>
-}
+} & Pick<MotionDocHooks, "commitConstraints" | "commitPrompts">
 
 export function useTimelineAuthoring({
-  effectiveNpz, toast, pushUndo, maybePushDragUndo, promptsAuthoredRef, targetT,
-  setFrameIdx, setPlaying, setConstraintPayloads, setTlKeyframes, setTlPrompts,
+  effectiveNpz, toast, pushUndo, maybePushDragUndo, targetT,
+  setFrameIdx, setPlaying, commitConstraints, commitPrompts,
 }: TimelineAuthoringArgs) {
   // Scrubbing the bar seeks the viewer + pauses (matching the range slider).
   const handleTimelineFrameChange = useCallback((f: number) => {
@@ -49,11 +45,11 @@ export function useTimelineAuthoring({
 
   // ── Constraint CRUD — every keyframe carries a REAL pose snapshot ────────
   // onKeyframeAdd: double-click a lane → snapshot the motion's current pose
-  // at that frame (SOMA-77, meters) into constraintPayloads[uuid], then add
-  // the lane diamond. This is the functional core: the dot IS a pose constraint,
-  // not a null shell. onKeyframeMove updates the frame the constraint applies
-  // at (the pose travels with it — matching the demo's drag). Delete
-  // evicts both the dot and the payload.
+  // at that frame (SOMA-77, meters) into payloads[uuid], then add the lane
+  // diamond — one commitConstraints statement (the dot and its payload are
+  // one fact). onKeyframeMove updates the frame the constraint applies at
+  // (the pose travels with it — matching the demo's drag). Delete evicts
+  // both the dot and the payload.
   const onKeyframeAdd = useCallback((trackId: string, frame: number): string => {
     const uuid = makeTimelineId()
     const src = effectiveNpz
@@ -68,60 +64,72 @@ export function useTimelineAuthoring({
       toast("error", `Unknown constraint lane "${trackId}"`)
       return uuid
     }
-    setConstraintPayloads((prev) => ({ ...prev, [uuid]: payload }))
-    setTlKeyframes((prev) => [...prev, { uuid, track_id: trackId, frame: payload.frame, value: null, opacity: 1, locked: false }])
+    // THE SEAT LAW (the wire's own identity): a keyframe is identified by
+    // (track_id, frame) — re-hydration collapses a same-seat pair to one
+    // dot. Adding onto an occupied seat UPDATES the seated dot's payload
+    // (the stamp path's law), it never emits a dot the wire would drop.
+    commitConstraints((prev) => {
+      const seated = prev.keyframes.find((k) => k.track_id === trackId && k.frame === payload.frame)
+      if (seated) {
+        return { ...prev, payloads: { ...prev.payloads, [seated.uuid]: payload } }
+      }
+      return {
+        ...prev,
+        keyframes: [...prev.keyframes, { uuid, track_id: trackId, frame: payload.frame, value: null, opacity: 1, locked: false }],
+        payloads: { ...prev.payloads, [uuid]: payload },
+      }
+    })
     return uuid
-  }, [effectiveNpz, toast, pushUndo, setConstraintPayloads, setTlKeyframes])
+  }, [effectiveNpz, toast, pushUndo, commitConstraints])
   const onKeyframeMove = useCallback((id: string, frame: number) => {
     const f = Math.max(0, Math.floor(frame))
     maybePushDragUndo(`kf:${id}`)
-    setTlKeyframes((prev) => prev.map((k) => (k.uuid === id ? { ...k, frame: f } : k)))
-    setConstraintPayloads((prev) => {
-      const p = prev[id]
+    commitConstraints((prev) => {
+      const p = prev.payloads[id]
       /* v8 ignore next 1 -- keyframes and payloads are written paired; hydrate drops orphans (probe 2026-09-19) */
-      if (!p) return prev
-      return { ...prev, [id]: { ...p, frame: f } }
+      if (!p) return { ...prev, keyframes: prev.keyframes.map((k) => (k.uuid === id ? { ...k, frame: f } : k)) }
+      return {
+        ...prev,
+        keyframes: prev.keyframes.map((k) => (k.uuid === id ? { ...k, frame: f } : k)),
+        payloads: { ...prev.payloads, [id]: { ...p, frame: f } },
+      }
     })
-  }, [maybePushDragUndo, setTlKeyframes, setConstraintPayloads])
+  }, [maybePushDragUndo, commitConstraints])
   const onKeyframeDelete = useCallback((id: string) => {
     pushUndo()
-    setTlKeyframes((prev) => prev.filter((k) => k.uuid !== id))
-    setConstraintPayloads((prev) => {
-      /* v8 ignore next 1 -- keyframes and payloads are written paired; hydrate drops orphans (probe 2026-09-19) */
-      if (!(id in prev)) return prev
-      const next = { ...prev }
-      delete next[id]
-      return next
+    commitConstraints((prev) => {
+      if (!(id in prev.payloads)) {
+        return { ...prev, keyframes: prev.keyframes.filter((k) => k.uuid !== id) }
+      }
+      const payloads = { ...prev.payloads }
+      delete payloads[id]
+      return { ...prev, keyframes: prev.keyframes.filter((k) => k.uuid !== id), payloads }
     })
-  }, [pushUndo, setTlKeyframes, setConstraintPayloads])
+  }, [pushUndo, commitConstraints])
   const onPromptUpdate = useCallback((id: string, text: string) => {
-    promptsAuthoredRef.current = true
     pushUndo()
-    setTlPrompts((prev) => prev.map((p) => (p.uuid === id ? { ...p, text } : p)))
-  }, [promptsAuthoredRef, pushUndo, setTlPrompts])
+    commitPrompts((prev) => prev.map((p) => (p.uuid === id ? { ...p, text } : p)))
+  }, [pushUndo, commitPrompts])
   const onPromptResize = useCallback((id: string, startFrame: number, endFrame: number) => {
     maybePushDragUndo(`pr:${id}`)
-    setTlPrompts((prev) => prev.map((p) => (p.uuid === id ? { ...p, start_frame: startFrame, end_frame: endFrame } : p)))
-  }, [maybePushDragUndo, setTlPrompts])
+    commitPrompts((prev) => prev.map((p) => (p.uuid === id ? { ...p, start_frame: startFrame, end_frame: endFrame } : p)))
+  }, [maybePushDragUndo, commitPrompts])
   const onPromptMove = useCallback((id: string, startFrame: number, endFrame: number) => {
-    promptsAuthoredRef.current = true
     maybePushDragUndo(`pm:${id}`)
-    setTlPrompts((prev) => prev.map((p) => (p.uuid === id ? { ...p, start_frame: startFrame, end_frame: endFrame } : p)))
-  }, [promptsAuthoredRef, maybePushDragUndo, setTlPrompts])
+    commitPrompts((prev) => prev.map((p) => (p.uuid === id ? { ...p, start_frame: startFrame, end_frame: endFrame } : p)))
+  }, [maybePushDragUndo, commitPrompts])
   const onPromptDelete = useCallback((id: string) => {
-    promptsAuthoredRef.current = true
     pushUndo()
-    setTlPrompts((prev) => prev.filter((p) => p.uuid !== id))
-  }, [promptsAuthoredRef, pushUndo, setTlPrompts])
+    commitPrompts((prev) => prev.filter((p) => p.uuid !== id))
+  }, [pushUndo, commitPrompts])
   // Add a NEW prompt card to the lane. This is the explicit, discoverable
   // affordance (the seeded prompt fills [0, T-1], so there is no empty
   // tail to click into). carveNewPromptCard splits the last prompt at its
   // midpoint so the new card is contiguous + immediately editable.
   const addPromptCard = useCallback(() => {
-    promptsAuthoredRef.current = true
     pushUndo()
-    setTlPrompts((prev) => carveNewPromptCard(prev, targetT))
-  }, [targetT, promptsAuthoredRef, pushUndo, setTlPrompts])
+    commitPrompts((prev) => carveNewPromptCard(prev, targetT))
+  }, [targetT, pushUndo, commitPrompts])
 
   return {
     handleTimelineFrameChange,

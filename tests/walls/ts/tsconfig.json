@@ -9,14 +9,12 @@
     "noEmit": true,
     "skipLibCheck": true,
     "types": ["node"],
-    // pnpm does not hoist @types/node to the repo root, and the wall
-    // plane owns no package.json (no new deps) — borrow the pnpm
-    // store's copy directly (the gateway-doors leaf borrow died with
-    // a store reshuffle; the store path is the stable floor).
+    // @types/node is a root devDependency (F-5 cure, 2026-11-05): the
+    // default typeRoots walk reaches the repo root's node_modules/@types,
+    // so the face carries no pnpm-store path.
     "isolatedModules": true,
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
-    "typeRoots": ["../../../node_modules/.pnpm/@types+node@24.13.3/node_modules/@types"],
     // L12's second find (li-aq.3): pnpm strictness means the wall
     // plane has NO bare-specifier links of its own — every suite
     // import resolved only at vitest time. The drafts leaf carries
@@ -26,7 +24,7 @@
     // below mirrors vitest.shared.ts's resolutionFacade (the alias
     // table vitest resolves at runtime): the timer rides the
     // estate-queue-anchored copy, the Typert protocol the
-    // drafts-anchored copy, the workspace remotes + gallery their
+    // drafts-anchored copy, the workspace remotes their
     // src planes. TYPECHECK-ONLY (noEmit; vitest never reads
     // tsconfig paths — it spreads the facade), so extending this
     // table changes no runtime.
@@ -40,8 +38,7 @@
       "@deepseek-ai/dsh-typert-protocol": ["../../../packages/estate/drafts/node_modules/@deepseek-ai/dsh-typert-protocol"],
       "@melite/estate-drafts": ["../../../packages/estate/drafts/src/index.ts"],
       "@melite/estate-manage": ["../../../packages/estate/manage/src/index.ts"],
-      "@melite/estate-runs": ["../../../packages/estate/runs/src/index.ts"],
-      "@infer-media/dsh-gallery": ["../../../packages/web/infer-gallery/src/index.ts"]
+      "@melite/estate-runs": ["../../../packages/estate/runs/src/index.ts"]
     }
   },
   // L12 (li-aq.3): the include named *.test.ts while every suite

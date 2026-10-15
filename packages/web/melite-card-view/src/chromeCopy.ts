@@ -37,6 +37,13 @@ export const chromeCopy = {
   retrySuffix: ' · retry',
   /** Header door to the shell's Media page (the card runs' archive). */
   openMedia: 'open media',
+  /** The sidebar tab's chip + guide title — the bench page is titled this
+   *  no matter which address form reached it (the address law, 2026-09-11). */
+  cardsTabTitle: 'Media Flow',
+  /** The cards tab guide row's description under the tab title. */
+  cardsTabGuide: 'The media flow — the shared bench and its runs.',
+  /** A chat file mention's tooltip title, naming the live kind + value. */
+  mentionTitle: (p: { kind: string; value: string }): string => `melite ${p.kind} ${p.value} — opens the Media page`,
   /** Loading face while the draft doc hydrates. */
   cardsLoading: 'cards…',
   /** Drill title: the host's "Card " prefix over the row's own (data) title. */

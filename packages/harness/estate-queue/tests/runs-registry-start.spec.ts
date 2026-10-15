@@ -16,6 +16,7 @@ import { DECL as FIT_DECL } from "../../../models/fit/src/index.ts";
 import { DECL as SKIN_DECL } from "../../../models/skin/src/index.ts";
 import { RunsRuntimeService } from "../src/runsRegistry.ts";
 import { EnginesService } from "@melite/engine-contract";
+import type { EngineRef } from "@melite/engine-contract";
 import { QueueCore } from "../src/queue.ts";
 import { CardArmError } from "../src/cardsRegistry.ts";
 import type { RunRecord } from "../src/runsTypes.ts";
@@ -274,7 +275,7 @@ describe("start inline arm", () => {
             stages: [
               { stageId: "s", outputs: { default: "img.png" }, artifacts: ["img.png"] },
             ],
-            engineRef: "seat-prompt-1",
+            engineRef: "seat-prompt-1" as EngineRef,
           };
         },
       },

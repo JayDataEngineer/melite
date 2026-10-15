@@ -121,6 +121,11 @@ export function mcpToolsOf(c: CtxView, server: string): McpToolRows {
 
 /** Minimal structural view of the services the doors touch. */
 interface CtxView {
+  /** The documented optional-service probe (cordis-tutorial/
+   *  03-services.md: skip inject, probe at the use site) — the typed
+   *  replacement for the retired `as unknown as { get }` casts
+   *  (F-2/F-4, 2026-11-05). */
+  get(name: string): unknown
   effect(effect: () => void, label?: string): unknown
   llm: LlmStreamSeam
   registry: {
@@ -281,7 +286,7 @@ export function apply(c: CtxView, config: Config = {}): void {
   // (no llm named, no default) instead of walking. Never throws.
   const readDefaultLlm = (): string | undefined => {
     try {
-      const svc = (c as unknown as { get(name: string): unknown }).get('agentDefaultModel') as
+      const svc = c.get('agentDefaultModel') as
         | { currentSelection?: () => { provider?: unknown; model?: unknown } }
         | null
         | undefined
@@ -683,9 +688,7 @@ export function apply(c: CtxView, config: Config = {}): void {
       // and a lane that HAS one fences it with that lane's own
       // config. No melite-owned token scheme: DSH's note records the
       // decision that API tokens are not accepted on API paths.
-      const connection = (c as unknown as {
-        get?: (name: string) => unknown
-      }).get?.('connection') as {
+      const connection = c.get('connection') as {
         requestRejection?: (request: { headers: unknown }) => number | undefined
       } | undefined
       // THE SEAM TAKES THE REQUEST, NOT ITS HEADERS (the 2026-10-04

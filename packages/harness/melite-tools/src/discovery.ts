@@ -131,6 +131,7 @@ export function resolveSpecKey(
     try {
       fdecl = getModel(fam)
     } catch {
+      /* an unbootable family DECL — it can never serve this key; the walk continues to the next candidate */
       continue
     }
     if (declRoutes(fdecl).has(key)) return { card, service: fam, model: key }
@@ -171,6 +172,7 @@ function isFamilyKey(key: string): boolean {  try {
     getModel(key)
     return true
   } catch {
+    /* an unbootable id is the negative answer — the probe IS the predicate */
     return false
   }
 }

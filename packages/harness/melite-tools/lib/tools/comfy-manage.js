@@ -276,7 +276,7 @@ function renderManage(_args, value) {
         lines.push('next_action: ' + next);
     return [{ type: 'text', text: lines.join('\n') }];
 }
-export function comfyManage(request) {
+export function comfyManage(estate) {
     // PRESENTATION ADAPTATION (tool-presentation wall + conversion
     // invariance — presentCall output must not change): defineTool
     // soft-gates presentCall behind arg validation (invalid → undefined),
@@ -441,7 +441,7 @@ export function comfyManage(request) {
                 });
             }
             try {
-                res = await request('POST', '/v1/manage', body, exec.signal, MANAGE_TIMEOUT_MS);
+                res = await estate.manageAct(body, exec.signal, MANAGE_TIMEOUT_MS);
             }
             catch (e) {
                 // A refusal IS the answer, not a crash: the manage seat

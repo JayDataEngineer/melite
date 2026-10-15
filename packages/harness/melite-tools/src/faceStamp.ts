@@ -40,6 +40,7 @@ export function readStamp(run: GitRun, root: string): string {
     const dirty = run(['status', '--porcelain'], root).trim() !== ''
     return formatStamp(hash, dirty)
   } catch {
+    /* any git failure (not a checkout, git absent, status unreadable) — the stamp degrades to 'unknown', never a boot failure */
     return 'unknown'
   }
 }

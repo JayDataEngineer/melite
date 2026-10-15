@@ -486,7 +486,21 @@ describe("THE COMMITTED LIB (an emitted import Node can actually resolve)", () =
   // and timeline timelineCopy.js. Verified by the added-file
   // diff-filter: exactly three new tracked lib .js, all dictionaries,
   // zero orphans.)
-  const LIB_CENSUS_PIN = 581;
+  // 581 → 580 (repinned 2026-11-05, the nativity-audit cures, lane
+  // cordis @ eef848178: F1 demotes the timeline kit's unloaded client
+  // face — lib/client.js + lib/client/index.js deleted (−2); F7's
+  // motion one-truth rework adds lib/ui/studio/motionDoc.js +
+  // useMotionDoc.js (+2); F2's re-home swaps the vendored
+  // viser-timeline/motionTimelineState.js for timeline/motionTimelineState.js
+  // + timeline/TimelineScrollbar.js (net +1); F6 deletes nothing
+  // tracked (dist/ was tracked but not lib/.js). Verified by the
+  // added-file diff-filter: +3 motion/timeline lib .js, −3 removed,
+  // zero orphans.)
+  // 2026-11-05 merge repin 580 → 579: lane 2's applyGuard deletion
+  // (its consumers died with lane 1's guard removals) stages one
+  // more tracked lib .js out — deliberate, same-change as the F-1
+  // seam close (cures-2026-11-05-harness-seam.md).
+  const LIB_CENSUS_PIN = 579;
   const specRe = /(?:from\s*|import\(\s*)(["'])(\.[^"']*)\1/g;
 
   it("the census is exact (a deletion OR a lowered floor reds — the count is pinned, not floored)", () => {
@@ -622,9 +636,10 @@ describe("THE SHIP'S OWN HOLES (the lane audit's findings, 2026-10-10)", () => {
         ["packages/3d/img-to-mesh", "./lib/client.js", true],
         ["packages/motion/motion", "./lib/client.js", true],
         ["packages/video/h3-timeline", "./lib/client.js", true],
-        // the timeline UI kit re-exports the door's Tip/icon set on
-        // its own client face (the phantom-require cure, 2026-10-13)
-        ["packages/web-kit/timeline", "./lib/client.js", true],
+        // (2026-11-05, lane 4's F1 demotion: web-kit/timeline's
+        // client face is GONE — the kit is a build-time library now;
+        // the viser zoom cluster lives in TimelineScrollbar.tsx and
+        // the census row died with lib/client.js. 9 rows.)
         // THE ONE-ROW LAW: card-base's own graph row — the studio
         // atoms compile once here, every card client requires it.
         ["packages/web/card-base", "./lib/client.js", true],
@@ -657,7 +672,7 @@ describe("THE SHIP'S OWN HOLES (the lane audit's findings, 2026-10-10)", () => {
     // externals resolve through the injected require), and this arm
     // refuses any regression to module-format bytes on the wire.
     const built = discoveredRows();
-    expect(built.length, "the discovered set carries the ten bundles").toBe(10);
+    expect(built.length, "the discovered set carries the nine bundles (timeline demoted 2026-11-05, F1)").toBe(9);
     for (const row of built) {
       const file = join(row.pkg, "lib", "client.js");
       expect(existsSync(file), `${file} exists (build it: pnpm exec tsdown in the package)`).toBe(true);

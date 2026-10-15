@@ -14,6 +14,9 @@ export * from "./MotionTimelineBar.js";
 export * from "./FilmPlayer.js";
 export * from "./TimelineScrubBar.js";
 export * from "./viser-timeline/index.js";
+export { buildMotionTimelineState, makeTimelineId, MOTION_TIMELINE_TRACKS } from "./motionTimelineState.js";
+export { TimelineScrollbar } from "./TimelineScrollbar.js";
+export type { TimelineScrollbarProps } from "./TimelineScrollbar.js";
 export { PROMPT_COLORS } from "./viser-timeline/styles.js";
 export type { TimelineTheme } from "./viser-timeline/styles.js";
 //# sourceMappingURL=index.d.ts.map

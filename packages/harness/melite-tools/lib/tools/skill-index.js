@@ -16,7 +16,7 @@
 import { defineTool } from '@deepseek-ai/dsh-tools';
 import { jsonClean } from "../json-clean.js";
 const INDEX_TIMEOUT_MS = 15_000;
-export function skillIndex(request) {
+export function skillIndex(estate) {
     // PRESENTATION ADAPTATION (tool-presentation wall + conversion
     // invariance — presentCall output must not change): defineTool
     // soft-gates presentCall behind arg validation (invalid → undefined),
@@ -107,7 +107,7 @@ export function skillIndex(request) {
             },
         },
         async execute(_args, exec) {
-            const res = await request('GET', '/v1/skills', undefined, exec.signal, INDEX_TIMEOUT_MS);
+            const res = await estate.skillsIndex(exec.signal, INDEX_TIMEOUT_MS);
             // A seat serving the LEGACY flat shape (a `skills` rows array)
             // contributes nothing — families/cards default empty and the
             // rows never ride (the wall pins the leak dead).

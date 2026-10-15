@@ -5,9 +5,11 @@
  * element used twice lives here once.
  *
  * PRIMITIVE LAW (2026-09-09, restored with the full port): anything
- * DSH ships rides DSH — Input, Button, Pill, Modal, Tooltip come
+ * DSH ships rides DSH — Input, Button, Pill, Modal come
  * from `@deepseek-ai/dsh-client-ui-primitives` (a platform module —
  * the frozen module table answers it, the bundle never inlines it).
+ * The Tooltip atom rides card-base's Tip instead (the D9 cure,
+ * 2026-11-05: the bubble over the layout grammar's real anchor).
  * The panels run inside the DSH host where the --dsw-* tokens live.
  * What remains handrolled below has NO DSH counterpart
  * (shell/stat/empty/error text chrome) — if DSH ships it later, the

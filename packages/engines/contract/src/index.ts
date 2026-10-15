@@ -8,6 +8,7 @@ export type {
   EngineRunOptions,
   EngineExecutor,
   EngineRecord,
+  EngineRef,
 } from "./types.ts";
 export type { PortSpec, ParamSpec, ActionSpec } from "./vocabulary.ts";
 export {

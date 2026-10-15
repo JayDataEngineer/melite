@@ -39,18 +39,17 @@ verified in the manifests).
 
 `vendor/cordis_plugins/*` are pnpm WORKSPACE MEMBERS
 (`pnpm-workspace.yaml` — mirrors the harness listing `vendor/*` as
-workspace members) and `plugins/gateway` consumes them via
-`"workspace:*"` (`plugins/gateway/package.json` — mirrors the
-harness consumers' workspace protocol). pnpm materializes every link
-on each root install (the lockfile's gateway importer resolves all
-three names to `link:../../vendor/cordis_plugins/*`); no hand-rolled
-`node_modules` links exist anywhere (workspace law), and resolution
-can never reach the registry — the no-registry hygiene holds BY
-CONSTRUCTION. `scripts/link-vendored-platform.sh` owns only what
-pnpm cannot (the `lib/` build, below) plus the `--check` hygiene
-gate (mirrors harness `verify-vendored-links`, scoped to the
-gateway: vendor-prefix resolution, cordis version parity, lockfile
-`link:`, `lib/` presence).
+workspace members) and the LIVE consumers take them via the workspace
+protocol — since 2026-11-05 (harness-seam audit F-15):
+`packages/harness/estate-queue` and `packages/estate/manage` consume
+the timer via `"workspace:~"` (their `package.json`). The former
+consumer, `plugins/gateway`, died with the gateway kill
+(2026-09-11) and took its `link-vendored-platform.sh` hygiene gate
+with it; pnpm's workspace materialization (the lockfile's importer
+rows resolve the vendored names to `link:…`) carries the no-registry
+law BY CONSTRUCTION now — the lockfile can never spell a registry
+tarball for a vendored name, and no hand-rolled `node_modules` links
+exist anywhere (workspace law).
 
 ## Manifest deltas vs the harness (the ONLY divergences)
 
@@ -80,10 +79,25 @@ gateway: vendor-prefix resolution, cordis version parity, lockfile
 
 ## The lib/ build (load-bearing, gitignored)
 
-Fresh clone order: root `pnpm install` (links) →
-`plugins/gateway/scripts/link-vendored-platform.sh` (emits `lib/`
-with the repo tsc) → gateway `tsc` / walls. Without `lib/`, the
+Fresh clone order: root `pnpm install` (links) → emit each vendored
+package's `lib/` with its own boundary tsc
+(`vendor/cordis_plugins/<pkg>/tsconfig.json`, the O3 config —
+`lib/` is per-host build output, gitignored). Without `lib/`, the
 manifest entry points dangle and the boot refuses.
+
+## Consumer census (2026-11-05, F-15)
+
+Live: `timer` ← `packages/harness/estate-queue` +
+`packages/estate/manage` (`workspace:~`). Consumer-less at this
+census: `loader`, `logger-console` (their only consumer was the
+gateway), and the `group/` + `include/` dirs the provenance section
+lists as excluded (present on disk, unmounted). Retirement or
+re-mount of those is OWED work, not this cure — see the audit
+record (dev_docs/audits/contracts/nativity-2026-11-05-harness-seam.md,
+F-15) and the roadmap row. The vendored host-webserver described
+below is SUPERSEDED: its consumers take the registry
+`@deepseek-ai/dsh-host-webserver` package today; the vendored dir
+no longer exists.
 
 ## DIVERGENCE D1 — two cordis@4.0.2 store paths (proven inert)
 
@@ -138,6 +152,10 @@ separately).
 ## Local-modification log
 
 - 2026-09-08 (landed): initial vendor @ harness `141eb6f` + O1/O2/O3 as above. No `src/` patch.
+- 2026-11-05 (F-15, harness-seam audit): timer consumers flipped
+  from registry pins (1.1.6) to `workspace:~` — estate-queue +
+  estate/manage; consumer census added (this file); the gateway
+  script/hygiene rows retired with their dead consumer.
 
 ## host-webserver (added 2026-09-08, webserver stroke)
 
@@ -165,7 +183,8 @@ DIVERGENCES (each with cause, all recorded in-source too):
    no normalization added: handlers own pathname semantics, exactly
    like upstream.
 
-Rebuild: `packages/gateway/scripts/link-vendored-platform.sh` (lib/
+Rebuild: emit `lib/` per package with its own boundary tsc (the
+gateway script that owned this died with the gateway; `lib/`
 is per-host build output, never committed).
 
 ## dsh-tools (evaluated 2026-09-08, NOT vendored — verdict with receipts)

@@ -16,7 +16,8 @@ import assert from 'node:assert/strict'
 import { RemoteError } from '@deepseek-ai/dsh-typert-protocol'
 import { ToolArgsError } from '@deepseek-ai/dsh-tools'
 import { foldConnects, meliteFlow, observeAndAttribute } from '../src/tools/melite-flow.ts'
-import type { EstateRequest } from '../src/estate.ts'
+import type { Estate } from '../src/estate.ts'
+import { fakeEstate, fakeEstateStatus } from './fake-estate.ts'
 import type { ContentBlock } from '@deepseek-ai/dsh-llm'
 import type { JsonValue, TextBlock } from '../src/types.ts'
 import { fakeExec } from './fake-exec.ts'
@@ -31,45 +32,19 @@ const asText = (block: ContentBlock | undefined): string => ((block!) as TextBlo
 // transport contract): no global fetch, no HTTP, no port — the same
 // seam makeEstateRequest builds in production.
 interface Seen {
-  calls: Array<{ url: string; init: { body?: unknown } | undefined }>
-  request: EstateRequest
+  /** The typed-lane call log: { lane, args } per call (fakeEstateStatus). */
+  calls: Array<{ lane: string; args: unknown[] }>
+  request: Estate
 }
 
-function mockFetch(handlers: Array<(url: string, body: unknown) => { status: number; body: unknown } | undefined>): Seen {
-  const seen: Seen = {
-    calls: [],
-    request: undefined as never,
-  }
-  seen.request = (async (_method: 'POST', path: string, body: unknown): Promise<unknown> => {
-    const u = path
-    seen.calls.push({ url: u, init: { body } })
-    for (const h of handlers) {
-      const r = h(u, body)
-      if (r !== undefined) {
-        if (r.status < 200 || r.status >= 300) {
-          // Bench lanes speak the remote voice: the missing bench is
-          // the classified bench/not-found RemoteError (the seats'
-          // law; the HTTP 404 died with the door).
-          if (/\/v1\/bench(\/|$)/.test(u) && r.status === 404) {
-            const msg = typeof r.body === 'object' && r.body !== null && 'error' in r.body
-              ? String((r.body as { error: unknown }).error)
-              : 'no such bench'
-            throw new RemoteError('bench/not-found', msg, { session: 'main' })
-          }
-          // The seats' voice: a 4xx is a named RemoteError (the
-          // body's error text rides the message — what the seats
-          // deliver for compile/start refusals).
-          const msg = typeof r.body === 'object' && r.body !== null && 'error' in r.body
-            ? String((r.body as { error: unknown }).error)
-            : 'mock refusal'
-          throw new RemoteError('runs/flow-compile', msg, { loc: 'flow' })
-        }
-        return r.body
-      }
-    }
-    throw new RemoteError('runs/unknown-run', 'unmocked lane ' + u, { runId: '' })
-  }) as EstateRequest
-  return seen
+/** The typed-lane status mock (F-1, 2026-11-05): fixtures answer in
+ * the door's {status, body} contract but dispatch on the LANE — the
+ * URL grammar is the browser face's seam, never the tool tests'.
+ * fakeEstateStatus carries the refusal voices (bench* 404 →
+ * bench/not-found; other 4xx → runs/flow-compile). */
+function mockEstate(handlers: Array<(lane: string, args: unknown[]) => { status: number; body: unknown } | undefined>): Seen {
+  const fake = fakeEstateStatus(handlers)
+  return { calls: fake.calls, request: fake.estate }
 }
 
 const FLOW = {
@@ -90,12 +65,12 @@ const FLOW = {
  *  read-modify-write (REBUILD-12): the client GETs the bench row
  *  first (a live rev rides as expect_rev; not-found births) — the
  *  fixtures answer the GET with a live bench row. */
-function okBenchWith(id: string): (url: string) => { status: number; body: unknown } | undefined {
-  return (url: string) => {
-    if (url.endsWith('/v1/bench/ensure')) {
+function okBenchWith(id: string): (lane: string, _args: unknown[]) => { status: number; body: unknown } | undefined {
+  return (lane: string) => {
+    if (lane === 'benchEnsure') {
       return { status: 200, body: { bench: 'the-shared-bench', draft_id: id, ok: true } }
     }
-    if (/\/v1\/bench\/[^/?]+$/.test(url)) {
+    if (lane === 'benchGet') {
       return { status: 200, body: { session: 'main', rev: 0, stages: [], log: [] } }
     }
     return undefined
@@ -103,33 +78,35 @@ function okBenchWith(id: string): (url: string) => { status: number; body: unkno
 }
 const okBench = okBenchWith('d_bench')
 
-function okValidate(url: string, body: unknown) {
-  if (url.endsWith('/v1/flows/validate')) {
-    return { status: 200, body: { ok: true, flow: (body as { id: string }).id, stages: [] } }
+function okValidate(lane: string, args: unknown[]) {
+  if (lane === 'runsValidate') {
+    return { status: 200, body: { ok: true, flow: (args[0] as { id: string }).id, stages: [] } }
   }
   return undefined
 }
 
 function okDraftThenStart(draftId: string, runId: string) {
-  return (_u: string, body: unknown) => {
-    if (String(_u).endsWith('/v1/bench/ensure')) {
-      return { status: 200, body: { draftId, stages: (body as { stages: unknown[] }).stages } }
+  return (lane: string, args: unknown[]) => {
+    if (lane === 'benchEnsure') {
+      return { status: 200, body: { draftId, stages: (args[0] as { stages: unknown[] }).stages } }
     }
-    if (String(_u).endsWith('/v1/flows/start')) {
+    if (lane === 'runsStart') {
       return { status: 202, body: { run_id: runId, status: 'queued' } }
     }
     return undefined
   }
 }
 
-function decodeJsonBody(init: { body?: unknown } | undefined): Record<string, unknown> {
-  if (!init || init.body === undefined) throw new Error('no body captured')
-  return init.body as Record<string, unknown>
+/** Typed lanes pass the doc object itself — the decode step died
+ * with the URL transport; the name stays for the assertion sites. */
+function decodeJsonBody(args: unknown[] | undefined): Record<string, unknown> {
+  if (!args || args[0] === undefined) throw new Error('no body captured')
+  return args[0] as Record<string, unknown>
 }
 
 describe('melite_flow adhoc — the AI feedback loop', () => {
   test('validate runs FIRST; draft + start follow; result carries no flow body', async () => {
-    const seen = mockFetch([okBenchWith('d1'), okValidate, okDraftThenStart('d1', 'r1')])
+    const seen = mockEstate([okBenchWith('d1'), okValidate, okDraftThenStart('d1', 'r1')])
     const tool = meliteFlow(seen.request)
     const out = await tool.execute({ ...FLOW }, fakeExec(AbortSignal.timeout(2000))) as Record<string, unknown>
     assert.equal(out.error, undefined)
@@ -142,16 +119,16 @@ describe('melite_flow adhoc — the AI feedback loop', () => {
     // truth to drift.
     assert.equal(out.flow_inline, undefined)
     assert.equal(out.flow, undefined)
-    const paths = seen.calls.map((c) => c.url)
+    const paths = seen.calls.map((c) => c.lane)
     // the CURRENT law (REBUILD-12): validate FIRST (no GPU on a bad
     // wire), then the CAS read (GET the bench row — a live rev rides
     // as expect_rev), then the bench ensure (the doc-backed draft),
     // then start. No drafts door.
-    assert.ok(paths[0].includes('/v1/flows/validate'), paths[0] + ' lacks ' + '/v1/flows/validate')
-    assert.ok(/^\/v1\/bench\/[^/?]+$/.test(paths[1]), paths[1] + ' lacks the CAS bench read')
-    assert.ok(paths[2].includes('/v1/bench/ensure'), paths[2] + ' lacks ' + '/v1/bench/ensure')
-    assert.ok(paths[3].includes('/v1/flows/start'), paths[3] + ' lacks ' + '/v1/flows/start')
-    const draftBody = decodeJsonBody(seen.calls[2].init)
+    assert.equal(paths[0], 'runsValidate')
+    assert.equal(paths[1], 'benchGet', 'the CAS bench read')
+    assert.equal(paths[2], 'benchEnsure')
+    assert.equal(paths[3], 'runsStart')
+    const draftBody = decodeJsonBody(seen.calls[2]!.args)
     // the folded body: connect inference + explicit kind
     const move = (draftBody.stages as Array<{ inputs: unknown; expected: unknown }>)[1]
     assert.deepEqual(move.inputs, {
@@ -167,7 +144,7 @@ describe('melite_flow adhoc — the AI feedback loop', () => {
     assert.deepEqual(tiles.map((s) => s.id), ['still', 'move'])
     assert.equal(tiles[0].engine, 'comfyui')
     // the start rides the COMPILED body + the bench's doc-backed draft
-    const startBody = decodeJsonBody(seen.calls[3].init)
+    const startBody = decodeJsonBody(seen.calls[3]!.args)
     assert.equal((startBody.flow_inline as { id: string }).id, 'still-to-motion')
     assert.equal(startBody.draft_id, 'd1')
     assert.equal(startBody.test, false)
@@ -176,17 +153,17 @@ describe('melite_flow adhoc — the AI feedback loop', () => {
   test('a compile refusal rides the VALUE verbatim and no draft is posted', async () => {
     const refusal = "flow 'x' stage 'move' input 'frame': expected text, got image "
       + "from stage 'still' output 'default' — must be text"
-    const seen = mockFetch([okBench, 
+    const seen = mockEstate([okBench, 
       () => ({ status: 400, body: { error: refusal } }),
     ])
     const tool = meliteFlow(seen.request)
     const out = await tool.execute({ ...FLOW }, fakeExec(AbortSignal.timeout(2000))) as Record<string, unknown>
     assert.ok(String(out.error).includes(refusal), String(out.error) + ' lacks ' + refusal)   // verbatim compile text, valued
-    assert.equal(seen.calls.some((c) => c.url.includes('/v1/flows/drafts')), false)
+    assert.equal(seen.calls.some((c) => c.lane === 'cardCompose'), false)
   })
 
   test('initial wires without a kind refuse pre-HTTP (nothing to infer)', async () => {
-    const seen = mockFetch([okBench, okValidate])
+    const seen = mockEstate([okBench, okValidate])
     const tool = meliteFlow(seen.request)
     const out = await tool.execute({
       stages: [{ id: 'a', engine: 'comfyui' }],
@@ -197,7 +174,7 @@ describe('melite_flow adhoc — the AI feedback loop', () => {
   })
 
   test('connects naming unknown stages refuse with the known list', async () => {
-    const quiet = mockFetch([okBench, ])
+    const quiet = mockEstate([okBench, ])
     const tool = meliteFlow(quiet.request)
     const out = await tool.execute({
       stages: [{ id: 'a', engine: 'comfyui' }],
@@ -214,14 +191,8 @@ describe('melite_flow card — the live allowlist', () => {
     { model: 'new-model-1', stage_title: 'New', params_schema: null },
     { model: 'music3', stage_title: 'Music', params_schema: null },
   ]
-  const cardMocks = () => mockFetch([okBenchWith('d9'), 
-    (u) => (u.endsWith('/v1/card-tools')
-      ? { status: 200, body: TOOLS } : undefined),
-    (u) => (u.endsWith('/v1/model-catalog')
-      ? { status: 200, body: CATALOG } : undefined),
-    (u) => (u.includes('validate?model=')
-      ? { status: 200, body: { runnable: true } } : undefined),
-    okDraftThenStart('d9', 'r9'),
+  const cardMocks = () => mockEstate([okBenchWith('d9'), 
+        okDraftThenStart('d9', 'r9'),
   ])
 
   test('a model in the LIVE card-tools list registers (no hardcoded six)', async () => {
@@ -235,11 +206,11 @@ describe('melite_flow card — the live allowlist', () => {
     assert.equal(out.mode, 'card')
     assert.equal(out.target, 'image-gen')
     assert.equal(out.run_id, 'r9')
-    const draftBody = decodeJsonBody(seen.calls.find((c) => c.url.endsWith('/v1/bench/ensure'))!.init)
+    const draftBody = decodeJsonBody(seen.calls.find((c) => c.lane === 'benchEnsure')!.args)
     const tiles = draftBody.stages as Array<{ card?: string; params: Record<string, unknown> }>
     assert.equal(tiles[0].card, 'image-gen')
     assert.equal(tiles[0].params.prompt, 'hi')
-    const startBody = decodeJsonBody(seen.calls.find((c) => c.url.endsWith('/v1/flows/start'))!.init)
+    const startBody = decodeJsonBody(seen.calls.find((c) => c.lane === 'runsStart')!.args)
     assert.equal(startBody.model, 'new-model-1')
     assert.equal(startBody.prompt, 'hi')
     assert.equal(startBody.draft_id, 'd9')
@@ -259,7 +230,7 @@ describe('melite_flow card — the live allowlist', () => {
     assert.match(String(out.error), /nothing was written to the bench/)
     assert.equal(out.mode, 'card')
     assert.equal(
-      seen.calls.some((c) => c.url.endsWith('/v1/bench/ensure')),
+      seen.calls.some((c) => c.lane === 'benchEnsure'),
       false,
       'no bench/ensure call — the refusal precedes every write',
     )
@@ -284,11 +255,11 @@ describe('melite_flow card — the live allowlist', () => {
     }
     // the wired GET handler FIRST (okBenchWith would answer the
     // bench read with empty stages from further down the chain)
-    const seen = mockFetch([
+    const seen = mockEstate([
       // the post-ensure read (the one-bench law: no agent id →
       // the main bench): the bench carries wiring
-      (u: string) => {
-        if (String(u).endsWith('/v1/bench/main')) {
+      (lane: string, args: unknown[]) => {
+        if (lane === 'benchGet') {
           return { status: 200, body: wiredBench }
         }
         return undefined
@@ -296,15 +267,15 @@ describe('melite_flow card — the live allowlist', () => {
       okBenchWith('d-w'),
       // the ensure answers with the wired doc (the door's answer
       // carries the bench's stages)
-      (_u: string, _body: unknown) => {
-        if (String(_u).endsWith('/v1/bench/ensure')) {
+      (lane: string, _args: unknown[]) => {
+        if (lane === 'benchEnsure') {
           return { status: 200, body: { draftId: 'd-w', stages: wiredBench.stages } }
         }
         return undefined
       },
       // the start: the flow arm's answer
-      (_u: string) => {
-        if (String(_u).endsWith('/v1/flows/start')) {
+      (lane: string) => {
+        if (lane === 'runsStart') {
           return { status: 202, body: { run_id: 'r-w', status: 'queued' } }
         }
         return undefined
@@ -320,7 +291,7 @@ describe('melite_flow card — the live allowlist', () => {
     // THE CONTRACT: the start body carries NO model, NO params — a
     // single-card composition can never reach the door against a
     // wired bench
-    const startBody = decodeJsonBody(seen.calls.find((c) => c.url.endsWith('/v1/flows/start'))!.init)
+    const startBody = decodeJsonBody(seen.calls.find((c) => c.lane === 'runsStart')!.args)
     assert.equal(startBody.model, undefined)
     assert.equal(startBody.prompt, undefined)
     assert.equal(startBody.draft_id, 'd-w')
@@ -340,13 +311,13 @@ describe('melite_flow card — the live allowlist', () => {
           inputs: { input_images: { stage: 's_0', output: 'default' } } },
       ],
     }
-    const seen = mockFetch([
-      (u: string) => {
-        if (String(u).endsWith('/v1/bench/main')) return { status: 200, body: wiredBench }
-        if (String(u).endsWith('/v1/bench/ensure')) {
+    const seen = mockEstate([
+      (lane: string, args: unknown[]) => {
+        if (lane === 'benchGet') return { status: 200, body: wiredBench }
+        if (lane === 'benchEnsure') {
           return { status: 200, body: { bench: 'main', draft_id: 'd-w', stages: wiredBench.stages } }
         }
-        if (String(u).endsWith('/v1/flows/start')) {
+        if (lane === 'runsStart') {
           return { status: 409, body: { error: 'runs/active-run: a run is already pressing' } }
         }
         return undefined
@@ -360,7 +331,7 @@ describe('melite_flow card — the live allowlist', () => {
     assert.match(String(out.rode), /flow-arm/)
     assert.match(String(out.error), /active-run/)
     // and exactly ONE start press: the refusal never re-pressed
-    const starts = seen.calls.filter((c) => c.url.endsWith('/v1/flows/start'))
+    const starts = seen.calls.filter((c) => c.lane === 'runsStart')
     assert.equal(starts.length, 1, 'the refusal retried the start')
   })
 
@@ -378,13 +349,13 @@ describe('melite_flow card — the live allowlist', () => {
           inputs: { input_images: { stage: 's_0', output: 'default' } } },
       ],
     }
-    const seen = mockFetch([
-      (u: string) => {
-        if (String(u).endsWith('/v1/bench/main')) return { status: 200, body: wiredBench }
-        if (String(u).endsWith('/v1/bench/ensure')) {
+    const seen = mockEstate([
+      (lane: string, args: unknown[]) => {
+        if (lane === 'benchGet') return { status: 200, body: wiredBench }
+        if (lane === 'benchEnsure') {
           return { status: 200, body: { bench: 'main', draft_id: 'd-w', stages: wiredBench.stages } }
         }
-        if (String(u).endsWith('/v1/flows/start')) {
+        if (lane === 'runsStart') {
           return { status: 202, body: { error: '', run_id: '' } }
         }
         return undefined
@@ -402,7 +373,7 @@ describe('melite_flow card — the live allowlist', () => {
     // forget a beat, then prove the poll never went out
     await new Promise((r): void => { setTimeout(r, 100) })
     assert.equal(
-      seen.calls.some((c) => String(c.url).includes('/v1/flows/status/')),
+      seen.calls.some((c) => c.lane === 'runsStatus'),
       false,
       'an empty run_id must never start an observation',
     )
@@ -413,17 +384,17 @@ describe('melite_flow card — the live allowlist', () => {
     // stages array (the shape drift the door could answer mid-roll)
     // is not wiring evidence — the start rides the single-card body
     // as if the bench were empty, and the receipt carries the model.
-    const seen = mockFetch([
-      (u: string) => {
+    const seen = mockEstate([
+      (lane: string, args: unknown[]) => {
         // ensure FIRST: the bench-read regex below would swallow the
         // ensure POST (the door's paths share the prefix)
-        if (String(u).endsWith('/v1/bench/ensure')) {
+        if (lane === 'benchEnsure') {
           return { status: 200, body: { bench: 'main', draft_id: 'd-flat', stages: [] } }
         }
-        if (/\/v1\/bench\/[^/?]+$/.test(u)) {
+        if (lane === 'benchGet') {
           return { status: 200, body: { session: 'main', rev: 7, stages: 'drifting' } }
         }
-        if (String(u).endsWith('/v1/flows/start')) {
+        if (lane === 'runsStart') {
           return { status: 202, body: { run_id: 'r-flat', status: 'queued' } }
         }
         return undefined
@@ -438,12 +409,12 @@ describe('melite_flow card — the live allowlist', () => {
     assert.equal(out.run_id, 'r-flat')
     assert.equal(out.model, 'new-model-1', 'the single-card body carried the model')
     assert.doesNotMatch(String(out.rode ?? ''), /bench carries wiring/)
-    const startBody = decodeJsonBody(seen.calls.find((c) => c.url.endsWith('/v1/flows/start'))!.init)
+    const startBody = decodeJsonBody(seen.calls.find((c) => c.lane === 'runsStart')!.args)
     assert.equal(startBody.model, 'new-model-1', 'the start rode the single-card body')
   })
 
   test('normalizes card JSON arrays before the bench and start doors', async () => {
-    const seen = mockFetch([okBenchWith('d-json'), okDraftThenStart('d-json', 'r-json')])
+    const seen = mockEstate([okBenchWith('d-json'), okDraftThenStart('d-json', 'r-json')])
     const tool = meliteFlow(seen.request)
     const calls = [{ text: 'wide lighthouse dawn', start_frame: 0, end_frame: 124 }]
     const clips = [{ src: '/v1/assets/runs/r1/line.flac', start_frame: 124, dur_frames: 48, text: 'the line' }]
@@ -453,12 +424,12 @@ describe('melite_flow card — the live allowlist', () => {
       params: { calls: JSON.stringify(calls), audio_clips: JSON.stringify(clips), unlisted: '[1]' },
     }, fakeExec(AbortSignal.timeout(2000))) as Record<string, unknown>
     assert.equal(out.run_id, 'r-json')
-    const ensure = decodeJsonBody(seen.calls.find((c) => c.url.endsWith('/v1/bench/ensure'))!.init)
+    const ensure = decodeJsonBody(seen.calls.find((c) => c.lane === 'benchEnsure')!.args)
     const stage = (ensure.stages as Array<{ params: Record<string, unknown> }>)[0]!
     assert.deepEqual(stage.params.calls, calls)
     assert.deepEqual(stage.params.audio_clips, clips)
     assert.equal(stage.params.unlisted, '[1]')
-    const start = decodeJsonBody(seen.calls.find((c) => c.url.endsWith('/v1/flows/start'))!.init)
+    const start = decodeJsonBody(seen.calls.find((c) => c.lane === 'runsStart')!.args)
     assert.deepEqual(start.calls, calls)
     assert.deepEqual(start.audio_clips, clips)
     assert.equal(start.unlisted, '[1]')
@@ -476,10 +447,10 @@ describe('melite_flow card — the live allowlist', () => {
       // isDSHRemoteError + code — never instanceof, cross-copy law)
       { name: 'RemoteError', isDSHRemoteError: true, code: 'runs/model-unresolvable' },
     )
-    const { request } = mockFetch([
+    const { request } = mockEstate([
       okBenchWith('d9'),
-      (u) => {
-        if (u.endsWith('/v1/flows/start')) throw refusal
+      (lane) => {
+        if (lane === 'runsStart') throw refusal
         return undefined
       },
     ])
@@ -496,11 +467,11 @@ describe('melite_flow card — the live allowlist', () => {
     let patchBody: Record<string, unknown> | undefined
     let resolvePatch!: () => void
     const patched = new Promise<void>((resolve) => { resolvePatch = resolve })
-    const seen = mockFetch([
+    const seen = mockEstate([
       okBenchWith('d-headless'),
       okDraftThenStart('d-headless', 'r-headless'),
-      (u: string, body: unknown) => {
-        if (u.startsWith('/v1/flows/status/')) {
+      (lane: string, args: unknown[]) => {
+        if (lane === 'runsStatus') {
           return { status: 200, body: {
             status: 'completed',
             stages: [{
@@ -513,8 +484,8 @@ describe('melite_flow card — the live allowlist', () => {
             }],
           } }
         }
-        if (u.includes('/stages/s_0')) {
-          patchBody = body as Record<string, unknown>
+        if (lane === 'draftsStagePatch' && args[1] === 's_0') {
+          patchBody = args[2] as Record<string, unknown>
           resolvePatch()
           return { status: 200, body: { delivered: true } }
         }
@@ -555,14 +526,8 @@ describe('melite_flow bench — THE ONE-BENCH LAW (§22)', () => {
     { model: 'music3', stage_title: 'Music', params_schema: null },
   ]
   const CATALOG = { models: { 'new-model-1': { family: 'krea' } }, families: { krea: { label: 'Krea 2' } } }
-  const cardMocks = () => mockFetch([okBenchWith('d9'),
-    (u) => (u.endsWith('/v1/card-tools')
-      ? { status: 200, body: TOOLS } : undefined),
-    (u) => (u.endsWith('/v1/model-catalog')
-      ? { status: 200, body: CATALOG } : undefined),
-    (u) => (u.includes('validate?model=')
-      ? { status: 200, body: { runnable: true } } : undefined),
-    okDraftThenStart('d9', 'r9'),
+  const cardMocks = () => mockEstate([okBenchWith('d9'),
+        okDraftThenStart('d9', 'r9'),
   ])
   test('card mode lands on the caller conversation bench, never hardcoded main', async () => {
     const seen = cardMocks()
@@ -576,9 +541,9 @@ describe('melite_flow bench — THE ONE-BENCH LAW (§22)', () => {
     // the same key melite_construct binds for this agent (construct's
     // benchKeyOfExec parity: the composed tiles and the executed
     // pipeline are one bench)
-    const get = seen.calls.find((c) => /^\/v1\/bench\/[^/?]+$/.test(c.url))
-    assert.equal(get!.url, '/v1/bench/sess-1')
-    const ensure = decodeJsonBody(seen.calls.find((c) => c.url.endsWith('/v1/bench/ensure'))!.init)
+    const get = seen.calls.find((c) => c.lane === 'benchGet')
+    assert.equal(get!.args[0], 'sess-1')
+    const ensure = decodeJsonBody(seen.calls.find((c) => c.lane === 'benchEnsure')!.args)
     assert.equal(ensure.session, 'sess-1')
   })
 
@@ -590,12 +555,12 @@ describe('melite_flow bench — THE ONE-BENCH LAW (§22)', () => {
       fakeExec(AbortSignal.timeout(2000)),
     ) as Record<string, unknown>
     assert.equal(out.error, undefined)
-    const get = seen.calls.find((c) => /^\/v1\/bench\/[^/?]+$/.test(c.url))
-    assert.equal(get!.url, '/v1/bench/main')
+    const get = seen.calls.find((c) => c.lane === 'benchGet')
+    assert.equal(get!.args[0], 'main')
   })
 
   test('bench mode reads the caller conversation bench (run owed to the same tiles)', async () => {
-    const seen = mockFetch([okBenchWith('d_bench')])
+    const seen = mockEstate([okBenchWith('d_bench')])
     const tool = meliteFlow(seen.request)
     const out = await tool.execute(
       { bench: true },
@@ -604,14 +569,15 @@ describe('melite_flow bench — THE ONE-BENCH LAW (§22)', () => {
     // the fixture bench is empty — the refusal still proves WHICH
     // bench was read (the conversation's, not main's)
     assert.ok(typeof out.error === 'string' && out.error.includes('empty'))
-    assert.equal(seen.calls[0].url, '/v1/bench/sess-1')
+    assert.equal(seen.calls[0]!.lane, 'benchGet')
+    assert.equal(seen.calls[0]!.args[0], 'sess-1')
     assert.equal(out.target, 'bench-sess-1')
   })
 })
 
 describe('melite_flow L4 — the test flag rides every mode', () => {
   test('template: test:false default, flow explicitly named, draft minted', async () => {
-    const seen = mockFetch([okBenchWith('draft-headless-1'), okDraftThenStart('draft-headless-1', 'r0')])
+    const seen = mockEstate([okBenchWith('draft-headless-1'), okDraftThenStart('draft-headless-1', 'r0')])
     const tool = meliteFlow(seen.request)
     const out = await tool.execute({ flow: 'foo' }, fakeExec(AbortSignal.timeout(2000))) as Record<string, unknown>
     assert.equal(out.error, undefined)
@@ -620,11 +586,11 @@ describe('melite_flow L4 — the test flag rides every mode', () => {
     // CARD BIRTH LAW (bench form): the bench ensure carries the
     // template reference; the start rides its doc-backed draft
     assert.equal(seen.calls.length, 3)
-    assert.ok(/^\/v1\/bench\/[^/?]+$/.test(seen.calls[0].url), 'CAS read first')
-    assert.equal(seen.calls[1].url, '/v1/bench/ensure')
-    const composed = decodeJsonBody(seen.calls[1].init)
+    assert.equal(seen.calls[0]!.lane, 'benchGet', 'CAS read first')
+    assert.equal(seen.calls[1]!.lane, 'benchEnsure')
+    const composed = decodeJsonBody(seen.calls[1]!.args)
     assert.equal(composed.intent, 'foo')
-    const body = decodeJsonBody(seen.calls[2].init)
+    const body = decodeJsonBody(seen.calls[2]!.args)
     assert.equal(body.test, false)
     assert.equal(body.flow, 'foo')
     // the dead {yaml:} key must not ride along (retired 2026-09-04
@@ -634,15 +600,15 @@ describe('melite_flow L4 — the test flag rides every mode', () => {
   })
 
   test('template: test:true + params ride the start', async () => {
-    const seen = mockFetch([okBenchWith('draft-headless-1'), okDraftThenStart('draft-headless-1', 'r0')])
+    const seen = mockEstate([okBenchWith('draft-headless-1'), okDraftThenStart('draft-headless-1', 'r0')])
     const tool = meliteFlow(seen.request)
     await tool.execute(
       { flow: 'bar', params: { seed: 42, steps: 8 }, test: true },
       fakeExec(AbortSignal.timeout(2000)),
     )
-    const posts = seen.calls.filter((s) => s.url.endsWith('/v1/flows/start'))
+    const posts = seen.calls.filter((s) => s.lane === 'runsStart')
     assert.equal(posts.length, 1)
-    const body = decodeJsonBody(posts[0].init)
+    const body = decodeJsonBody(posts[0]!.args)
     assert.equal(body.test, true)
     assert.equal(body.seed, 42)
     assert.equal(body.steps, 8)
@@ -655,7 +621,7 @@ describe('melite_flow L4 — the test flag rides every mode', () => {
     // compose succeeds, start refuses: the value names the refusal and
     // omits the handle — a tile never mounts for a run that never
     // registered (the estate card-tool law, now uniform).
-    const seen = mockFetch([okBench, 
+    const seen = mockEstate([okBench, 
       () => ({ status: 400, body: { error: 'queue full' } }),
     ])
     const tool = meliteFlow(seen.request)
@@ -668,7 +634,7 @@ describe('melite_flow L4 — the test flag rides every mode', () => {
   })
 
   test('template: a refused compose never reaches the start door', async () => {
-    const seen = mockFetch([
+    const seen = mockEstate([
       () => ({ status: 400, body: { error: 'unknown flow' } }),
     ])
     const tool = meliteFlow(seen.request)
@@ -680,12 +646,12 @@ describe('melite_flow L4 — the test flag rides every mode', () => {
   })
 
   test('adhoc: test:true rides the flow_inline start', async () => {
-    const seen = mockFetch([okBenchWith('d2'), okValidate, okDraftThenStart('d2', 'r2')])
+    const seen = mockEstate([okBenchWith('d2'), okValidate, okDraftThenStart('d2', 'r2')])
     const tool = meliteFlow(seen.request)
     await tool.execute({ ...FLOW, test: true }, fakeExec(AbortSignal.timeout(2000)))
-    const posts = seen.calls.filter((s) => s.url.endsWith('/v1/flows/start'))
+    const posts = seen.calls.filter((s) => s.lane === 'runsStart')
     assert.equal(posts.length, 1)
-    const body = decodeJsonBody(posts[0].init)
+    const body = decodeJsonBody(posts[0]!.args)
     assert.equal(body.test, true)
     assert.equal((body.flow_inline as { id: string }).id, 'still-to-motion')
     assert.equal(body.draft_id, 'd2')
@@ -709,7 +675,7 @@ describe('melite_flow tile contract — the chat hydrates from the render', () =
   }
 
   test('template success: value carries draft_id; render token parses to it', async () => {
-    const seen = mockFetch([okBenchWith('draft-tile-1'), okDraftThenStart('draft-tile-1', 'r7')])
+    const seen = mockEstate([okBenchWith('draft-tile-1'), okDraftThenStart('draft-tile-1', 'r7')])
     const tool = meliteFlow(seen.request)
     const out = await tool.execute({ flow: 'foo' }, fakeExec(AbortSignal.timeout(2000))) as Record<string, unknown>
     assert.equal(out.draft_id, 'draft-tile-1')
@@ -719,7 +685,7 @@ describe('melite_flow tile contract — the chat hydrates from the render', () =
   })
 
   test('adhoc success: render token parses to the minted draft', async () => {
-    const seen = mockFetch([okBenchWith('draft-tile-2'), okValidate, okDraftThenStart('draft-tile-2', 'r8')])
+    const seen = mockEstate([okBenchWith('draft-tile-2'), okValidate, okDraftThenStart('draft-tile-2', 'r8')])
     const tool = meliteFlow(seen.request)
     const out = await tool.execute({ ...FLOW }, fakeExec(AbortSignal.timeout(2000))) as Record<string, unknown>
     assert.equal(out.draft_id, 'draft-tile-2')
@@ -733,23 +699,23 @@ describe('melite_flow tile contract — the chat hydrates from the render', () =
     // and both commissions burned ledger_tail detours to learn ids
     // the tool already held (the transcript-016 law's success half).
     let n = 0
-    const seen = mockFetch([
-      (u: string) => {
-        if (u === '/v1/bench/main') {
+    const seen = mockEstate([
+      (lane: string, args: unknown[]) => {
+        if (lane === 'benchGet') {
           return { status: 200, body: { draft_id: 'd_rid', rev: 2, stages: [
             { id: 's_0', card: 'tts', params: {} },
             { id: 's_1', card: 'sfx', params: {} },
           ] } }
         }
-        if (u.endsWith('/v1/flows/start')) {
+        if (lane === 'runsStart') {
           return { status: 202, body: { run_id: `r_bench_${n++}`, status: 'queued' } }
         }
-        if (u.startsWith('/v1/flows/status/')) {
+        if (lane === 'runsStatus') {
           return { status: 200, body: { status: 'completed', stages: [
             { id: 's_0', url: '/runs/a.flac' }, { id: 's_1', url: '/runs/b.flac' },
           ] } }
         }
-        if (u === '/v1/bench/main/patch') return { status: 200, body: { rev: 3, patched: ['runStatus'] } }
+        if (lane === 'benchVerb' && args[1] === 'patch') return { status: 200, body: { rev: 3, patched: ['runStatus'] } }
         return undefined
       },
     ])
@@ -769,9 +735,9 @@ describe('melite_flow tile contract — the chat hydrates from the render', () =
     // top-level run_id is the EMPTY string (the lastRun loop's
     // fallthrough — no pass entry carries an id). A maker reading
     // this return must NOT poll: there is nothing to poll.
-    const seen = mockFetch([
-      (u: string) => {
-        if (u === '/v1/bench/main') {
+    const seen = mockEstate([
+      (lane: string, args: unknown[]) => {
+        if (lane === 'benchGet') {
           return { status: 200, body: { draft_id: 'd_skip', rev: 5, stages: [
             { id: 's_0', card: 'tts', runStatus: 'done', params: {} },
             { id: 's_1', card: 'sfx', runStatus: 'done', params: {} },
@@ -788,7 +754,7 @@ describe('melite_flow tile contract — the chat hydrates from the render', () =
       { stage: 's_0', card: 'tts', skipped: 'done' },
       { stage: 's_1', card: 'sfx', skipped: 'done' },
     ])
-    assert.equal(seen.calls.filter((c) => c.url.endsWith('/v1/flows/start')).length, 0)
+    assert.equal(seen.calls.filter((c) => c.lane === 'runsStart').length, 0)
     const text = (tool.output.render({ bench: true }, out as never) as Array<{ text?: string }>)
       .map((p) => p?.text ?? '').join('\n')
     assert.ok(text.includes('s_0 tts [done]'), 'a skipped row prints stage, card, and its skipped mark')
@@ -803,9 +769,9 @@ describe('melite_flow tile contract — the chat hydrates from the render', () =
     // proceeds (here it stops at the no-card gate — this row never
     // carried one); the classifier's refusal must never kill the tool
     // call.
-    const seen = mockFetch([
-      (u: string) => {
-        if (u === '/v1/bench/main') {
+    const seen = mockEstate([
+      (lane: string, args: unknown[]) => {
+        if (lane === 'benchGet') {
           return { status: 200, body: { draft_id: 'd_unread', rev: 2, stages: [
             { id: 's_0', card: '', runStatus: 'unreachable', params: {} },
           ] } }
@@ -824,7 +790,7 @@ describe('melite_flow tile contract — the chat hydrates from the render', () =
     // missing every key (a persisted shape from before the pass
     // list, a hand-built replay) prints its ? marks; the receipt
     // degrades, never throws.
-    const seen = mockFetch([okBenchWith('draft-render-1')])
+    const seen = mockEstate([okBenchWith('draft-render-1')])
     const tool = meliteFlow(seen.request)
     const text = (v: unknown): string =>
       (tool.output.render({ bench: true }, v as never) as Array<{ text?: string }>)
@@ -840,7 +806,7 @@ describe('melite_flow tile contract — the chat hydrates from the render', () =
   })
 
   test('presentationMeta carries the handle — the native channel, pure', async () => {
-    const seen = mockFetch([okBenchWith('draft-meta-7'), okDraftThenStart('draft-meta-7', 'r9')])
+    const seen = mockEstate([okBenchWith('draft-meta-7'), okDraftThenStart('draft-meta-7', 'r9')])
     const tool = meliteFlow(seen.request)
     const out = await tool.execute({ flow: 'foo' }, fakeExec(AbortSignal.timeout(2000))) as Record<string, unknown>
     // the projector is the persisted payload (ToolResultNode.meta): the
@@ -863,7 +829,7 @@ describe('melite_flow tile contract — the chat hydrates from the render', () =
   })
 
   test('refusals carry no token (nothing to hydrate — the legacy branch stays dark)', async () => {
-    const { request } = mockFetch([])
+    const { request } = mockEstate([])
     const tool = meliteFlow(request)
     const out = await tool.execute({}, fakeExec(AbortSignal.timeout(2000))) as Record<string, unknown>
     assert.equal(typeof out.error, 'string')
@@ -878,9 +844,9 @@ describe('melite_flow bench — the remote refusal voice', () => {
   test('an empty bench refuses with the construct pointer (bench/not-found, not HTTP 404)', async () => {
     // The bench remote classifies the missing bench; the tool turns
     // it into the construct pointer — never a crash, never HTTP.
-    const seen = mockFetch([
-      (u) => {
-        if (/\/v1\/bench(\/|$)/.test(u)) return { status: 404, body: { error: 'no such bench' } }
+    const seen = mockEstate([
+      (lane) => {
+        if (lane === 'benchGet' || lane === 'benchVerb') return { status: 404, body: { error: 'no such bench' } }
         return undefined
       },
     ])
@@ -891,12 +857,12 @@ describe('melite_flow bench — the remote refusal voice', () => {
   })
 
   test('a CAS-moved bench refuses with the remote message (no silent merge)', async () => {
-    const seen = mockFetch([
-      (u) => {
-        if (/\/v1\/bench(\/|$)/.test(u) && !u.endsWith('/v1/bench/ensure')) {
+    const seen = mockEstate([
+      (lane) => {
+        if (lane === 'benchGet' || lane === 'benchVerb') {
           return { status: 200, body: { bench: 'main', draft_id: 'd_bench', rev: 2, stages: [{ id: 's_0' }] } }
         }
-        if (u.endsWith('/v1/bench/ensure')) {
+        if (lane === 'benchEnsure') {
           throw new RemoteError('bench/cas-conflict', 'bench moved: rev is 2, caller held 1', { current_rev: 2, expect_rev: 1 })
         }
         return undefined
@@ -915,15 +881,15 @@ describe('melite_flow bench — the remote refusal voice', () => {
 // scripted estate. All remotes scripted: no gateway, no GPU.
 
 function ensureOk(draftId: string) {
-  return (u: string) => {
-    if (u.endsWith('/v1/bench/ensure')) return { status: 200, body: { draft_id: draftId } }
+  return (lane: string, args: unknown[]) => {
+    if (lane === 'benchEnsure') return { status: 200, body: { draft_id: draftId } }
     return undefined
   }
 }
 
 function benchRow(body: unknown) {
-  return (u: string) => {
-    if (/\/v1\/bench\/[^/?]+$/.test(u)) return { status: 200, body }
+  return (lane: string, args: unknown[]) => {
+    if (lane === 'benchGet') return { status: 200, body }
     return undefined
   }
 }
@@ -931,15 +897,15 @@ function benchRow(body: unknown) {
 const benchAlive = benchRow({ session: 'main', rev: 0, stages: [], log: [] })
 
 function startOk(runId: string, status = 'queued') {
-  return (u: string) => {
-    if (u.endsWith('/v1/flows/start')) return { status: 202, body: { run_id: runId, status } }
+  return (lane: string, args: unknown[]) => {
+    if (lane === 'runsStart') return { status: 202, body: { run_id: runId, status } }
     return undefined
   }
 }
 
 function benchNotFound() {
-  return (u: string) => {
-    if (/\/v1\/bench\/[^/?]+$/.test(u)) {
+  return (lane: string, args: unknown[]) => {
+    if (lane === 'benchGet') {
       throw new RemoteError('bench/not-found', 'no such bench', { session: 'main' })
     }
     return undefined
@@ -948,7 +914,7 @@ function benchNotFound() {
 
 describe('melite_flow guards — the exactly-one law + the wrapper gate', () => {
   test('two compositions refuse without touching the estate', async () => {
-    const seen = mockFetch([okBench, okValidate])
+    const seen = mockEstate([okBench, okValidate])
     const tool = meliteFlow(seen.request)
     const out = await tool.execute({ bench: true, flow: 'x' }, fakeExec(AbortSignal.timeout(2000))) as Record<string, unknown>
     assert.ok(String(out.error).includes('exactly one composition'), String(out.error))
@@ -963,7 +929,7 @@ describe('melite_flow guards — the exactly-one law + the wrapper gate', () => 
   // refusal carries the schema's required keys; the error text is
   // the agent-visible voice.
   test('every composition guard refusal carries mode+target (the voice survives the schema)', async () => {
-    const seen = mockFetch([okBench, okValidate])
+    const seen = mockEstate([okBench, okValidate])
     const tool = meliteFlow(seen.request)
     for (const args of [
       {},
@@ -985,7 +951,7 @@ describe('melite_flow guards — the exactly-one law + the wrapper gate', () => 
   // named, before any estate call; the description teaches the
   // spelling beforehand.
   test('a string "true" on bench refuses at the gate, named (never a post-log rewrite)', async () => {
-    const seen = mockFetch([okBench, okValidate])
+    const seen = mockEstate([okBench, okValidate])
     const tool = meliteFlow(seen.request)
     await assert.rejects(
       tool.execute({ bench: 'true' } as never, fakeExec(AbortSignal.timeout(2000))),
@@ -999,7 +965,7 @@ describe('melite_flow guards — the exactly-one law + the wrapper gate', () => 
   })
 
   test('schema violations throw at the wrapper gate (presence contract)', async () => {
-    const seen = mockFetch([okBench, okValidate])
+    const seen = mockEstate([okBench, okValidate])
     const tool = meliteFlow(seen.request)
     await assert.rejects(tool.execute(undefined as never, fakeExec(AbortSignal.timeout(2000))), ToolArgsError)
     await assert.rejects(tool.execute({ stages: 'x' } as never, fakeExec(AbortSignal.timeout(2000))), ToolArgsError)
@@ -1016,7 +982,7 @@ describe('melite_flow guards — the exactly-one law + the wrapper gate', () => 
   // root grammar carries per-property annotations only (no root
   // oneOf); the two-compositions test above pins that refusal.
   test('stage rows refuse undeclared keys, missing id/engine at the wrapper gate', async () => {
-    const seen = mockFetch([okBench, okValidate])
+    const seen = mockEstate([okBench, okValidate])
     const tool = meliteFlow(seen.request)
     await assert.rejects(
       tool.execute({ stages: [{ id: 's1', engine: 'comfyui', boardd: 1 }] } as never, fakeExec(AbortSignal.timeout(2000))),
@@ -1046,7 +1012,7 @@ describe('melite_flow guards — the exactly-one law + the wrapper gate', () => 
   })
 
   test('connect rows refuse missing from/to and undeclared keys at the wrapper gate', async () => {
-    const seen = mockFetch([okBench, okValidate])
+    const seen = mockEstate([okBench, okValidate])
     const tool = meliteFlow(seen.request)
     await assert.rejects(
       tool.execute({ stages: [{ id: 's1', engine: 'comfyui' }], connects: [{ to: 's1.image' }] } as never, fakeExec(AbortSignal.timeout(2000))),
@@ -1068,7 +1034,7 @@ describe('melite_flow guards — the exactly-one law + the wrapper gate', () => 
   })
 
   test('empty stages refuse (non-empty rows only)', async () => {
-    const seen = mockFetch([okBench, okValidate])
+    const seen = mockEstate([okBench, okValidate])
     const tool = meliteFlow(seen.request)
     const out = await tool.execute({ stages: [] }, fakeExec(AbortSignal.timeout(2000))) as Record<string, unknown>
     assert.equal(out.mode, 'adhoc')
@@ -1080,7 +1046,7 @@ describe('melite_flow guards — the exactly-one law + the wrapper gate', () => 
     // 027's maker reached for top-level prompt in card mode (the
     // schema advertised it generically) and paid a refusal turn —
     // the card admission rejects it (tts wants `text` in params).
-    const tool = meliteFlow(mockFetch([]).request) as unknown as { parameters: { properties: Record<string, { description?: string }> } }
+    const tool = meliteFlow(mockEstate([]).request) as unknown as { parameters: { properties: Record<string, { description?: string }> } }
     const desc = tool.parameters.properties.prompt.description ?? ''
     assert.ok(desc.includes('SINGLE mode ONLY'), 'card mode is excluded by name')
     assert.ok(desc.includes('INSIDE params'), 'the card seat is stated')
@@ -1090,7 +1056,7 @@ describe('melite_flow guards — the exactly-one law + the wrapper gate', () => 
     // 029's maker passed qvoice_save beside card (not inside
     // params); the bag spread dropped it and the maker paid a
     // generic missing-params refusal instead of the pointed one.
-    const seen = mockFetch([okBench, okValidate])
+    const seen = mockEstate([okBench, okValidate])
     const tool = meliteFlow(seen.request)
     const out = await tool.execute({ card: 'tts', model: 'm', qvoice_save: [{ voice_name: 'x' }] } as never, fakeExec(AbortSignal.timeout(2000))) as Record<string, unknown>
     assert.ok(String(out.error).includes('qvoice_save'), 'the stray key is named')
@@ -1101,7 +1067,7 @@ describe('melite_flow guards — the exactly-one law + the wrapper gate', () => 
 
 describe('melite_flow presentCall/render/meta — the faces', () => {
   test('presentCall names card | flow | adhoc | ? (junk renders generic)', () => {
-    const tool = meliteFlow((async () => ({})) as EstateRequest)
+    const tool = meliteFlow(fakeEstate({}).estate)
     const pc = (a: unknown) => tool.presentCall!(a as never)! // the faces never return undefined for these args
     assert.equal(pc({ card: 'image-gen' }).title, 'Run image-gen')
     assert.equal(pc({ card: '', flow: 'foo' }).title, 'Run foo')
@@ -1117,7 +1083,7 @@ describe('melite_flow presentCall/render/meta — the faces', () => {
   })
 
   test('render tolerates sparse values (the legacy replay path)', () => {
-    const tool = meliteFlow((async () => ({})) as EstateRequest)
+    const tool = meliteFlow(fakeEstate({}).estate)
     const parts = tool.output.render({} as never, {} as never) as Array<{ text?: string }>
     const text = parts.map((p) => p?.text ?? '').join('\n')
     assert.ok(text.includes('card ?'), text)
@@ -1125,11 +1091,11 @@ describe('melite_flow presentCall/render/meta — the faces', () => {
   })
 
   test('presentationMeta carries the card model; sparse values stay minimal', async () => {
-    const seen = mockFetch([
-      (u: string) => {
-        if (u.endsWith('/v1/bench/ensure')) return { status: 200, body: { draft_id: 'd9' } }
-        if (/\/v1\/bench\/[^/?]+$/.test(u)) return { status: 200, body: { session: 'main', rev: 0, stages: [], log: [] } }
-        if (u.endsWith('/v1/flows/start')) return { status: 202, body: { run_id: 'r9', status: 'queued' } }
+    const seen = mockEstate([
+      (lane: string, args: unknown[]) => {
+        if (lane === 'benchEnsure') return { status: 200, body: { draft_id: 'd9' } }
+        if (lane === 'benchGet') return { status: 200, body: { session: 'main', rev: 0, stages: [], log: [] } }
+        if (lane === 'runsStart') return { status: 202, body: { run_id: 'r9', status: 'queued' } }
         return undefined
       },
     ])
@@ -1159,22 +1125,22 @@ describe('melite_flow bench — the agent drives THE shared bench', () => {
     // with the stage's run-relative url (the ONE media-route rewrite).
     let polls = 0
     const patches: Array<Record<string, unknown>> = []
-    const seen = mockFetch([
-      (u: string) => {
-        if (u === '/v1/bench/main') {
+    const seen = mockEstate([
+      (lane: string, args: unknown[]) => {
+        if (lane === 'benchGet') {
           return { status: 200, body: { draft_id: 'd_bench', rev: 3, stages: [
             { id: 's_0', card: 'img-to-mesh', runStatus: 'done', params: {} },
             { id: 's_1', card: 'image-gen', params: { prompt: 'hi' } },
           ] } }
         }
-        if (u.endsWith('/v1/flows/start')) return { status: 202, body: { run_id: 'rb1', status: 'queued' } }
-        if (u.startsWith('/v1/flows/status/')) {
+        if (lane === 'runsStart') return { status: 202, body: { run_id: 'rb1', status: 'queued' } }
+        if (lane === 'runsStatus') {
           polls += 1
           if (polls === 1) return { status: 200, body: { status: 'running', stages: [] } }
           return { status: 200, body: { status: 'completed', stages: [{ id: 's_1', url: 'img/SaveImage_00001_.png' }] } }
         }
-        if (u === '/v1/flows/drafts/d_bench/stages/s_1') {
-          patches.push(decodeJsonBody(seen.calls[seen.calls.length - 1]!.init))
+        if (lane === 'draftsStagePatch' && args[0] === 'd_bench' && args[1] === 's_1') {
+          patches.push(seen.calls[seen.calls.length - 1]!.args[2] as Record<string, unknown>)
           return { status: 200, body: { rev: 4, stage: 's_1', patched: ['runStatus', 'result'] } }
         }
         return undefined
@@ -1191,9 +1157,9 @@ describe('melite_flow bench — the agent drives THE shared bench', () => {
       { stage: 's_1', card: 'image-gen', run_id: 'rb1', status: 'done', url: '/melite-media/runs/rb1/img/SaveImage_00001_.png' },
     ])
     // ONE start — the DONE row never starts (skip-done law)
-    const starts = seen.calls.filter((c) => c.url.endsWith('/v1/flows/start'))
+    const starts = seen.calls.filter((c) => c.lane === 'runsStart')
     assert.equal(starts.length, 1)
-    const startBody = decodeJsonBody(starts[0]!.init)
+    const startBody = decodeJsonBody(starts[0]!.args)
     // model resolution: the card-id alias resolves through form-spec's
     // law (boarded[0] — image-gen boards krea-2; ONE truth with
     // defaultFamilyForCard, never re-derived)
@@ -1228,9 +1194,9 @@ describe('melite_flow bench — the agent drives THE shared bench', () => {
   test('the observation budget expires loud: still-live run → the waiting face, and the re-arm link lands the terminal stamp', async () => {
     let polls = 0
     const patches: Array<Record<string, unknown>> = []
-    const seen = mockFetch([
-      (u: string) => {
-        if (u.startsWith('/v1/flows/status/')) {
+    const seen = mockEstate([
+      (lane: string, args: unknown[]) => {
+        if (lane === 'runsStatus') {
           polls += 1
           // live for the first link's polls, terminal once the
           // re-arm link takes over
@@ -1238,8 +1204,8 @@ describe('melite_flow bench — the agent drives THE shared bench', () => {
             ? { status: 'running', stages: [] }
             : { status: 'completed', stages: [{ id: 's_0' }] } }
         }
-        if (u === '/v1/flows/drafts/d_b/stages/s_0') {
-          patches.push(decodeJsonBody(seen.calls[seen.calls.length - 1]!.init))
+        if (lane === 'draftsStagePatch' && args[0] === 'd_b' && args[1] === 's_0') {
+          patches.push(seen.calls[seen.calls.length - 1]!.args[2] as Record<string, unknown>)
           return { status: 200, body: {} }
         }
         return undefined
@@ -1267,9 +1233,9 @@ describe('melite_flow bench — the agent drives THE shared bench', () => {
     // successor link exists to stamp (the contrast with the re-arm
     // spec above: there the successor landed the terminal stamp).
     let polls = 0
-    const seen = mockFetch([
-      (u: string) => {
-        if (u.startsWith('/v1/flows/status/')) {
+    const seen = mockEstate([
+      (lane: string, args: unknown[]) => {
+        if (lane === 'runsStatus') {
           polls += 1
           return { status: 200, body: { status: 'running', stages: [] } }
         }
@@ -1293,19 +1259,19 @@ describe('melite_flow bench — the agent drives THE shared bench', () => {
     vi.useFakeTimers()
     try {
       const patches: Array<Record<string, unknown>> = []
-      const seen = mockFetch([
-        (u: string) => {
-          if (u === '/v1/bench/main') {
+      const seen = mockEstate([
+        (lane: string, args: unknown[]) => {
+          if (lane === 'benchGet') {
             return { status: 200, body: { draft_id: 'd_bench', rev: 3, stages: [
               { id: 's_0', card: 'image-gen', params: { prompt: 'hi' } },
             ] } }
           }
-          if (u.endsWith('/v1/flows/start')) return { status: 202, body: { run_id: 'rb1', status: 'queued' } }
-          if (u.startsWith('/v1/flows/status/')) {
+          if (lane === 'runsStart') return { status: 202, body: { run_id: 'rb1', status: 'queued' } }
+          if (lane === 'runsStatus') {
             return { status: 200, body: { status: 'running', stages: [] } }
           }
-          if (u === '/v1/flows/drafts/d_bench/stages/s_0') {
-            patches.push(decodeJsonBody(seen.calls[seen.calls.length - 1]!.init))
+          if (lane === 'draftsStagePatch' && args[0] === 'd_bench' && args[1] === 's_0') {
+            patches.push(seen.calls[seen.calls.length - 1]!.args[2] as Record<string, unknown>)
             return { status: 200, body: {} }
           }
           return undefined
@@ -1341,20 +1307,20 @@ describe('melite_flow bench — the agent drives THE shared bench', () => {
 
   test('a failed terminal STOPS the pass — later rows never run', async () => {
     let polls = 0
-    const seen = mockFetch([
-      (u: string) => {
-        if (u === '/v1/bench/main') {
+    const seen = mockEstate([
+      (lane: string, args: unknown[]) => {
+        if (lane === 'benchGet') {
           return { status: 200, body: { draft_id: 'd_bench', rev: 3, stages: [
             { id: 's_0', card: 'image-gen', params: {} },
             { id: 's_1', card: 'upscale-tools', params: {} },
           ] } }
         }
-        if (u.endsWith('/v1/flows/start')) return { status: 202, body: { run_id: 'rb9', status: 'queued' } }
-        if (u.startsWith('/v1/flows/status/')) {
+        if (lane === 'runsStart') return { status: 202, body: { run_id: 'rb9', status: 'queued' } }
+        if (lane === 'runsStatus') {
           polls += 1
           return { status: 200, body: polls === 1 ? { status: 'running', stages: [] } : { status: 'failed', stages: [] } }
         }
-        if (u === '/v1/bench/main/patch') return { status: 200, body: { rev: 4, stage: 's_0', patched: ['runStatus'] } }
+        if (lane === 'benchVerb' && args[1] === 'patch') return { status: 200, body: { rev: 4, stage: 's_0', patched: ['runStatus'] } }
         return undefined
       },
     ])
@@ -1376,20 +1342,20 @@ describe('melite_flow bench — the agent drives THE shared bench', () => {
     const preRun = tool.output!.render!({ bench: true } as never, { mode: 'bench', target: 'x', status: 'stopped', error: 'stage s_0 names no card' })
     assert.equal(asText(preRun[0]), 'melite_flow REFUSED: stage s_0 names no card')
     // ONE start total — s_1 never reached the queue
-    assert.equal(seen.calls.filter((c) => c.url.endsWith('/v1/flows/start')).length, 1)
+    assert.equal(seen.calls.filter((c) => c.lane === 'runsStart').length, 1)
   })
 
   test('a bench without draft_id/rev falls back honestly', async () => {
     let polls = 0
-    const seen = mockFetch([
-      (u: string) => {
-        if (u === '/v1/bench/main') return { status: 200, body: { stages: [{ id: 's_0', card: 'image-gen', params: {} }] } }
-        if (u.endsWith('/v1/flows/start')) return { status: 202, body: { run_id: 'rb2', status: 'queued' } }
-        if (u.startsWith('/v1/flows/status/')) {
+    const seen = mockEstate([
+      (lane: string, args: unknown[]) => {
+        if (lane === 'benchGet') return { status: 200, body: { stages: [{ id: 's_0', card: 'image-gen', params: {} }] } }
+        if (lane === 'runsStart') return { status: 202, body: { run_id: 'rb2', status: 'queued' } }
+        if (lane === 'runsStatus') {
           polls += 1
           return { status: 200, body: polls === 1 ? { status: 'queued', stages: [] } : { status: 'completed', stages: [{ id: 's_0', url: 'x.png' }] } }
         }
-        if (u === '/v1/bench/main/patch') return { status: 200, body: { rev: 1, stage: 's_0', patched: ['runStatus'] } }
+        if (lane === 'benchVerb' && args[1] === 'patch') return { status: 200, body: { rev: 1, stage: 's_0', patched: ['runStatus'] } }
         return undefined
       },
     ])
@@ -1402,9 +1368,9 @@ describe('melite_flow bench — the agent drives THE shared bench', () => {
   })
 
   test('projected-empty stages refuse with the construct pointer', async () => {
-    const seen = mockFetch([
-      (u: string) => {
-        if (u === '/v1/bench/main') return { status: 200, body: { draft_id: 'd', rev: 1, stages: [] } }
+    const seen = mockEstate([
+      (lane: string, args: unknown[]) => {
+        if (lane === 'benchGet') return { status: 200, body: { draft_id: 'd', rev: 1, stages: [] } }
         return undefined
       },
     ])
@@ -1415,10 +1381,10 @@ describe('melite_flow bench — the agent drives THE shared bench', () => {
   })
 
   test('a refused bench start carries the error with the draft', async () => {
-    const seen = mockFetch([
-      (u: string) => {
-        if (u === '/v1/bench/main') return { status: 200, body: { draft_id: 'd_bench', rev: 3, stages: [{ id: 's_0', card: 'image-gen', params: {} }] } }
-        if (u.endsWith('/v1/flows/start')) return { status: 400, body: { error: 'queue full' } }
+    const seen = mockEstate([
+      (lane: string, args: unknown[]) => {
+        if (lane === 'benchGet') return { status: 200, body: { draft_id: 'd_bench', rev: 3, stages: [{ id: 's_0', card: 'image-gen', params: {} }] } }
+        if (lane === 'runsStart') return { status: 400, body: { error: 'queue full' } }
         return undefined
       },
     ])
@@ -1432,9 +1398,9 @@ describe('melite_flow bench — the agent drives THE shared bench', () => {
   })
 
   test('a card-less row stops the pass with the construct pointer', async () => {
-    const seen = mockFetch([
-      (u: string) => {
-        if (u === '/v1/bench/main') return { status: 200, body: { draft_id: 'd_bench', rev: 3, stages: [{ id: 's_0', params: {} }] } }
+    const seen = mockEstate([
+      (lane: string, args: unknown[]) => {
+        if (lane === 'benchGet') return { status: 200, body: { draft_id: 'd_bench', rev: 3, stages: [{ id: 's_0', params: {} }] } }
         return undefined
       },
     ])
@@ -1446,9 +1412,9 @@ describe('melite_flow bench — the agent drives THE shared bench', () => {
   })
 
   test('a remote bench failure refuses as bench (the execute-catch mapping)', async () => {
-    const seen = mockFetch([
-      (u: string) => {
-        if (u === '/v1/bench/main') throw new RemoteError('runs/unknown-run', 'lane down', { runId: '' })
+    const seen = mockEstate([
+      (lane: string, args: unknown[]) => {
+        if (lane === 'benchGet') throw new RemoteError('runs/unknown-run', 'lane down', { runId: '' })
         return undefined
       },
     ])
@@ -1458,9 +1424,9 @@ describe('melite_flow bench — the agent drives THE shared bench', () => {
   })
 
   test('a messageless remote bench failure refuses as remote-refused', async () => {
-    const seen = mockFetch([
-      (u: string) => {
-        if (u === '/v1/bench/main') throw new RemoteError('runs/unknown-run', '', { runId: '' })
+    const seen = mockEstate([
+      (lane: string, args: unknown[]) => {
+        if (lane === 'benchGet') throw new RemoteError('runs/unknown-run', '', { runId: '' })
         return undefined
       },
     ])
@@ -1471,9 +1437,9 @@ describe('melite_flow bench — the agent drives THE shared bench', () => {
   })
 
   test('a transport bench failure propagates (never valued)', async () => {
-    const seen = mockFetch([
-      (u: string) => {
-        if (u === '/v1/bench/main') throw new Error('gate down')
+    const seen = mockEstate([
+      (lane: string, args: unknown[]) => {
+        if (lane === 'benchGet') throw new Error('gate down')
         return undefined
       },
     ])
@@ -1484,7 +1450,7 @@ describe('melite_flow bench — the agent drives THE shared bench', () => {
 
 describe('melite_flow card — compose inside', () => {
   test('a missing model refuses before any HTTP', async () => {
-    const seen = mockFetch([okBench, okValidate])
+    const seen = mockEstate([okBench, okValidate])
     const tool = meliteFlow(seen.request)
     const out = await tool.execute({ card: 'image-gen' }, fakeExec(AbortSignal.timeout(2000))) as Record<string, unknown>
     assert.equal(out.mode, 'card')
@@ -1494,13 +1460,13 @@ describe('melite_flow card — compose inside', () => {
   })
 
   test('no prompt anywhere: the intent falls back to the card', async () => {
-    const seen = mockFetch([ensureOk('d3'), benchAlive, startOk('r3')])
+    const seen = mockEstate([ensureOk('d3'), benchAlive, startOk('r3')])
     const tool = meliteFlow(seen.request)
     const out = await tool.execute({ card: 'image-gen', model: 'm' }, fakeExec(AbortSignal.timeout(2000))) as Record<string, unknown>
     assert.equal(out.run_id, 'r3')
-    const ensureBody = decodeJsonBody(seen.calls.find((c) => c.url.endsWith('/v1/bench/ensure'))!.init)
+    const ensureBody = decodeJsonBody(seen.calls.find((c) => c.lane === 'benchEnsure')!.args)
     assert.equal(ensureBody.intent, 'image-gen')
-    const startBody = decodeJsonBody(seen.calls.find((c) => c.url.endsWith('/v1/flows/start'))!.init)
+    const startBody = decodeJsonBody(seen.calls.find((c) => c.lane === 'runsStart')!.args)
     assert.equal(startBody.model, 'm')
     assert.equal('prompt' in startBody, false)
   })
@@ -1510,7 +1476,7 @@ describe('melite_flow card — compose inside', () => {
     // the studio consult (the bench normalization strips stage.card;
     // identity survives on the intent alone) and every prompt-carrying
     // chat birth rendered the GENERIC FORM. The law: intent = card id.
-    const seen = mockFetch([ensureOk('d4'), benchAlive, startOk('r4')])
+    const seen = mockEstate([ensureOk('d4'), benchAlive, startOk('r4')])
     const tool = meliteFlow(seen.request)
     const long = 'p'.repeat(100)
     const out = await tool.execute(
@@ -1518,28 +1484,28 @@ describe('melite_flow card — compose inside', () => {
       fakeExec(AbortSignal.timeout(2000)),
     ) as Record<string, unknown>
     assert.equal(out.run_id, 'r4')
-    const ensureBody = decodeJsonBody(seen.calls.find((c) => c.url.endsWith('/v1/bench/ensure'))!.init) as { intent: string }
+    const ensureBody = decodeJsonBody(seen.calls.find((c) => c.lane === 'benchEnsure')!.args) as { intent: string }
     assert.equal(ensureBody.intent, 'image-gen')
-    const startBody = decodeJsonBody(seen.calls.find((c) => c.url.endsWith('/v1/flows/start'))!.init)
+    const startBody = decodeJsonBody(seen.calls.find((c) => c.lane === 'runsStart')!.args)
     assert.equal(startBody.prompt, long)
     assert.equal(startBody.seed, 1)
   })
 
   test('params.prompt composes when no top-level prompt rides; empty prompt never clobbers', async () => {
-    const seen = mockFetch([ensureOk('d5'), benchAlive, startOk('r5')])
+    const seen = mockEstate([ensureOk('d5'), benchAlive, startOk('r5')])
     const tool = meliteFlow(seen.request)
     await tool.execute(
       { card: 'image-gen', model: 'm', prompt: '', params: { prompt: 'p2' } },
       fakeExec(AbortSignal.timeout(2000)),
     )
-    const startBody = decodeJsonBody(seen.calls.find((c) => c.url.endsWith('/v1/flows/start'))!.init)
+    const startBody = decodeJsonBody(seen.calls.find((c) => c.lane === 'runsStart')!.args)
     assert.equal(startBody.prompt, 'p2')
   })
 
   test('a refused bench ensure values the card error (no start, no draft)', async () => {
-    const seen = mockFetch([
-      (u: string) => {
-        if (u.endsWith('/v1/bench/ensure')) return { status: 200, body: { error: 'bench moved: rev is 2, caller held 1' } }
+    const seen = mockEstate([
+      (lane: string, args: unknown[]) => {
+        if (lane === 'benchEnsure') return { status: 200, body: { error: 'bench moved: rev is 2, caller held 1' } }
         return undefined
       },
       benchAlive,
@@ -1550,13 +1516,13 @@ describe('melite_flow card — compose inside', () => {
     assert.equal(out.target, 'image-gen')
     assert.ok(String(out.error).includes('bench moved'), String(out.error))
     assert.equal(out.draft_id, undefined)
-    assert.equal(seen.calls.some((c) => c.url.endsWith('/v1/flows/start')), false)
+    assert.equal(seen.calls.some((c) => c.lane === 'runsStart'), false)
   })
 
   test('a non-Error bench failure values its string form', async () => {
-    const seen = mockFetch([
-      (u: string) => {
-        if (/\/v1\/bench\/[^/?]+$/.test(u) && !u.endsWith('/v1/bench/ensure')) throw 'wire-down'
+    const seen = mockEstate([
+      (lane: string, args: unknown[]) => {
+        if (lane === 'benchGet' || lane === 'benchVerb') throw 'wire-down'
         return undefined
       },
       ensureOk('d6'),
@@ -1567,10 +1533,10 @@ describe('melite_flow card — compose inside', () => {
   })
 
   test('a transport start failure propagates (never valued)', async () => {
-    const seen = mockFetch([
+    const seen = mockEstate([
       ensureOk('d7'), benchAlive,
-      (u: string) => {
-        if (u.endsWith('/v1/flows/start')) throw new Error('socket hangup')
+      (lane: string, args: unknown[]) => {
+        if (lane === 'runsStart') throw new Error('socket hangup')
         return undefined
       },
     ])
@@ -1579,10 +1545,10 @@ describe('melite_flow card — compose inside', () => {
   })
 
   test('a messageless remote start refusal values the queue default', async () => {
-    const seen = mockFetch([
+    const seen = mockEstate([
       ensureOk('d8'), benchAlive,
-      (u: string) => {
-        if (u.endsWith('/v1/flows/start')) throw new RemoteError('runs/flow-compile', '', { loc: 'flow' })
+      (lane: string, args: unknown[]) => {
+        if (lane === 'runsStart') throw new RemoteError('runs/flow-compile', '', { loc: 'flow' })
         return undefined
       },
     ])
@@ -1593,10 +1559,10 @@ describe('melite_flow card — compose inside', () => {
   })
 
   test('a bare start answer defaults run_id/status honestly', async () => {
-    const seen = mockFetch([
+    const seen = mockEstate([
       ensureOk('d9'), benchAlive,
-      (u: string) => {
-        if (u.endsWith('/v1/flows/start')) return { status: 202, body: {} }
+      (lane: string, args: unknown[]) => {
+        if (lane === 'runsStart') return { status: 202, body: {} }
         return undefined
       },
     ])
@@ -1611,12 +1577,12 @@ describe('melite_flow card — compose inside', () => {
     let patch: Record<string, unknown> | undefined
     let resolvePatch: (() => void) | undefined
     const done = new Promise<void>((resolve) => { resolvePatch = resolve })
-    const seen = mockFetch([
+    const seen = mockEstate([
       ensureOk('d-observe'),
       benchAlive,
       startOk('rb-observe'),
-      (u: string) => {
-        if (u.startsWith('/v1/flows/status/')) return {
+      (lane: string, args: unknown[]) => {
+        if (lane === 'runsStatus') return {
           status: 200,
           body: {
             status: 'completed',
@@ -1643,8 +1609,8 @@ describe('melite_flow card — compose inside', () => {
             ],
           },
         }
-        if (u === '/v1/flows/drafts/d-observe/stages/s_0') {
-          patch = decodeJsonBody(seen.calls[seen.calls.length - 1]!.init)
+        if (lane === 'draftsStagePatch' && args[0] === 'd-observe' && args[1] === 's_0') {
+          patch = seen.calls[seen.calls.length - 1]!.args[2] as Record<string, unknown>
           resolvePatch?.()
           return { status: 200, body: { rev: 2 } }
         }
@@ -1682,13 +1648,13 @@ describe('melite_flow card — compose inside', () => {
     // so the truncation no longer has a live producer — registry ids
     // are short. The defensive slice stays in the source for the day
     // a real id runs long; the LAW here is the refusal.)
-    const seen = mockFetch([ensureOk('d_long'), benchAlive, startOk('r_long')])
+    const seen = mockEstate([ensureOk('d_long'), benchAlive, startOk('r_long')])
     const tool = meliteFlow(seen.request)
     const card = 'c'.repeat(81)
     const out = await tool.execute({ card, model: 'm' }, fakeExec(AbortSignal.timeout(2000))) as Record<string, unknown>
     assert.match(String(out.error), /unknown card/)
     assert.equal(
-      seen.calls.some((c) => c.url.endsWith('/v1/bench/ensure')),
+      seen.calls.some((c) => c.lane === 'benchEnsure'),
       false,
       'the long unknown id refuses before the bench write',
     )
@@ -1697,29 +1663,29 @@ describe('melite_flow card — compose inside', () => {
 
 describe('melite_flow template — the birth arm + compose refusals', () => {
   test('a missing bench births (no expect_rev on the ensure)', async () => {
-    const seen = mockFetch([ensureOk('d_birth'), benchNotFound(), startOk('r_birth')])
+    const seen = mockEstate([ensureOk('d_birth'), benchNotFound(), startOk('r_birth')])
     const tool = meliteFlow(seen.request)
     const out = await tool.execute({ flow: 'foo' }, fakeExec(AbortSignal.timeout(2000))) as Record<string, unknown>
     assert.equal(out.run_id, 'r_birth')
     assert.equal(out.draft_id, 'd_birth')
     assert.equal(seen.calls.length, 3)
-    const ensureBody = decodeJsonBody(seen.calls.find((c) => c.url.endsWith('/v1/bench/ensure'))!.init)
+    const ensureBody = decodeJsonBody(seen.calls.find((c) => c.lane === 'benchEnsure')!.args)
     assert.equal('expect_rev' in ensureBody, false)
   })
 
   test('a rev-less bench row births (no expect_rev on the ensure)', async () => {
-    const seen = mockFetch([ensureOk('d_rev'), benchRow({ session: 'main', stages: [] }), startOk('r_rev')])
+    const seen = mockEstate([ensureOk('d_rev'), benchRow({ session: 'main', stages: [] }), startOk('r_rev')])
     const tool = meliteFlow(seen.request)
     const out = await tool.execute({ flow: 'foo' }, fakeExec(AbortSignal.timeout(2000))) as Record<string, unknown>
     assert.equal(out.draft_id, 'd_rev')
-    const ensureBody = decodeJsonBody(seen.calls.find((c) => c.url.endsWith('/v1/bench/ensure'))!.init)
+    const ensureBody = decodeJsonBody(seen.calls.find((c) => c.lane === 'benchEnsure')!.args)
     assert.equal('expect_rev' in ensureBody, false)
   })
 
   test('a transport bench failure values its message', async () => {
-    const seen = mockFetch([
-      (u: string) => {
-        if (/\/v1\/bench\/[^/?]+$/.test(u) && !u.endsWith('/v1/bench/ensure')) throw new Error('gate down')
+    const seen = mockEstate([
+      (lane: string, args: unknown[]) => {
+        if (lane === 'benchGet' || lane === 'benchVerb') throw new Error('gate down')
         return undefined
       },
       ensureOk('d10'),
@@ -1731,9 +1697,9 @@ describe('melite_flow template — the birth arm + compose refusals', () => {
   })
 
   test('a non-Error bench failure values its string form', async () => {
-    const seen = mockFetch([
-      (u: string) => {
-        if (/\/v1\/bench\/[^/?]+$/.test(u) && !u.endsWith('/v1/bench/ensure')) throw 42
+    const seen = mockEstate([
+      (lane: string, args: unknown[]) => {
+        if (lane === 'benchGet' || lane === 'benchVerb') throw 42
         return undefined
       },
       ensureOk('d11'),
@@ -1744,9 +1710,9 @@ describe('melite_flow template — the birth arm + compose refusals', () => {
   })
 
   test('an ensure without a draft_id values the birth failure', async () => {
-    const seen = mockFetch([
-      (u: string) => {
-        if (u.endsWith('/v1/bench/ensure')) return { status: 200, body: {} }
+    const seen = mockEstate([
+      (lane: string, args: unknown[]) => {
+        if (lane === 'benchEnsure') return { status: 200, body: {} }
         return undefined
       },
       benchAlive,
@@ -1760,14 +1726,14 @@ describe('melite_flow template — the birth arm + compose refusals', () => {
 
 describe('melite_flow adhoc — validate + compose refusals', () => {
   test('a transport validate failure propagates (never valued)', async () => {
-    const seen = mockFetch([() => { throw new Error('validate down') }])
+    const seen = mockEstate([() => { throw new Error('validate down') }])
     const tool = meliteFlow(seen.request)
     await assert.rejects(tool.execute({ ...FLOW }, fakeExec(AbortSignal.timeout(2000))), /validate down/)
     assert.equal(seen.calls.length, 1)
   })
 
   test('a messageless validate refusal values the compile default', async () => {
-    const seen = mockFetch([() => { throw new RemoteError('runs/flow-compile', '', { loc: 'flow' }) }])
+    const seen = mockEstate([() => { throw new RemoteError('runs/flow-compile', '', { loc: 'flow' }) }])
     const tool = meliteFlow(seen.request)
     const out = await tool.execute({ ...FLOW }, fakeExec(AbortSignal.timeout(2000))) as Record<string, unknown>
     assert.equal(out.error, 'flow does not compile')
@@ -1775,10 +1741,10 @@ describe('melite_flow adhoc — validate + compose refusals', () => {
   })
 
   test('a refused bench ensure values the adhoc error (no start)', async () => {
-    const seen = mockFetch([
+    const seen = mockEstate([
       okValidate,
-      (u: string) => {
-        if (u.endsWith('/v1/bench/ensure')) return { status: 200, body: { error: 'bench moved: rev is 2, caller held 1' } }
+      (lane: string, args: unknown[]) => {
+        if (lane === 'benchEnsure') return { status: 200, body: { error: 'bench moved: rev is 2, caller held 1' } }
         return undefined
       },
       benchAlive,
@@ -1787,14 +1753,14 @@ describe('melite_flow adhoc — validate + compose refusals', () => {
     const out = await tool.execute({ ...FLOW }, fakeExec(AbortSignal.timeout(2000))) as Record<string, unknown>
     assert.equal(out.mode, 'adhoc')
     assert.ok(String(out.error).includes('bench moved'), String(out.error))
-    assert.equal(seen.calls.some((c) => c.url.endsWith('/v1/flows/start')), false)
+    assert.equal(seen.calls.some((c) => c.lane === 'runsStart'), false)
   })
 
   test('a refused adhoc start carries the error and NO draft_id', async () => {
     // 200-with-{error}: the start door answered (not refused) with a
     // value-carried error — startRun's res.error arm (the 400 arm rides
     // the bench refusal test above).
-    const seen = mockFetch([okBench, okValidate, () => ({ status: 200, body: { error: 'queue full' } })])
+    const seen = mockEstate([okBench, okValidate, () => ({ status: 200, body: { error: 'queue full' } })])
     const tool = meliteFlow(seen.request)
     const out = await tool.execute({ ...FLOW }, fakeExec(AbortSignal.timeout(2000))) as Record<string, unknown>
     assert.equal(out.mode, 'adhoc')
@@ -1804,10 +1770,10 @@ describe('melite_flow adhoc — validate + compose refusals', () => {
   })
 
   test('a non-Error bench failure values its string form', async () => {
-    const seen = mockFetch([
+    const seen = mockEstate([
       okValidate,
-      (u: string) => {
-        if (/\/v1\/bench\/[^/?]+$/.test(u) && !u.endsWith('/v1/bench/ensure')) throw 'wire-down'
+      (lane: string, args: unknown[]) => {
+        if (lane === 'benchGet' || lane === 'benchVerb') throw 'wire-down'
         return undefined
       },
       ensureOk('d_adhoc'),
@@ -1819,7 +1785,7 @@ describe('melite_flow adhoc — validate + compose refusals', () => {
   })
 
   test('connect-less stages compile bare (adhoc id + empty description)', async () => {
-    const seen = mockFetch([ensureOk('d_nc'), benchAlive, okValidate, startOk('r_nc')])
+    const seen = mockEstate([ensureOk('d_nc'), benchAlive, okValidate, startOk('r_nc')])
     const tool = meliteFlow(seen.request)
     const out = await tool.execute(
       { stages: [{ id: 'a', engine: 'comfyui' }] },
@@ -1828,7 +1794,7 @@ describe('melite_flow adhoc — validate + compose refusals', () => {
     assert.equal(out.mode, 'adhoc')
     assert.equal(out.target, 'adhoc')
     assert.equal(out.run_id, 'r_nc')
-    const startBody = decodeJsonBody(seen.calls.find((c) => c.url.endsWith('/v1/flows/start'))!.init)
+    const startBody = decodeJsonBody(seen.calls.find((c) => c.lane === 'runsStart')!.args)
     assert.deepEqual((startBody.flow_inline as { stages: unknown }).stages, [
       { id: 'a', engine: 'comfyui', description: '', params: {} },
     ])
@@ -1923,52 +1889,52 @@ describe('foldConnects — the typed fold (pure)', () => {
 describe('melite_flow bench — the queue lane law arms', () => {
   test('an explicit params.model short-circuits (never re-derived from the card id)', async () => {
     let polls = 0
-    const seen = mockFetch([
-      (u: string) => {
-        if (u === '/v1/bench/main') {
+    const seen = mockEstate([
+      (lane: string, args: unknown[]) => {
+        if (lane === 'benchGet') {
           return { status: 200, body: { draft_id: 'd_bench', rev: 7, stages: [
             { id: 's_0', card: 'image-gen', params: { prompt: 'hi', model: 'flux-pro' } },
           ] } }
         }
-        if (u.endsWith('/v1/flows/start')) return { status: 202, body: { run_id: 'rbm', status: 'queued' } }
-        if (u.startsWith('/v1/flows/status/')) {
+        if (lane === 'runsStart') return { status: 202, body: { run_id: 'rbm', status: 'queued' } }
+        if (lane === 'runsStatus') {
           polls += 1
           return { status: 200, body: polls === 1 ? { status: 'running', stages: [] } : { status: 'completed', stages: [{ id: 's_0', url: 'img/SaveImage_00001_.png' }] } }
         }
-        if (u === '/v1/bench/main/patch') return { status: 200, body: { rev: 8, stage: 's_0', patched: ['runStatus'] } }
+        if (lane === 'benchVerb' && args[1] === 'patch') return { status: 200, body: { rev: 8, stage: 's_0', patched: ['runStatus'] } }
         return undefined
       },
     ])
     const tool = meliteFlow(seen.request)
     const out = await tool.execute({ bench: true }, fakeExec(AbortSignal.timeout(6000))) as Record<string, unknown>
     assert.equal(out.status, 'done')
-    const startBody = decodeJsonBody(seen.calls.find((c) => c.url.endsWith('/v1/flows/start'))!.init)
+    const startBody = decodeJsonBody(seen.calls.find((c) => c.lane === 'runsStart')!.args)
     // THE ROW'S OWN MODEL WINS — the params name it, the start rides it verbatim
     assert.equal(startBody.model, 'flux-pro')
   })
 
   test('a familyless card rides the DRAFT ARM — no model key (the rig hop, af-move 2026-10-09)', async () => {
     let polls = 0
-    const seen = mockFetch([
-      (u: string) => {
-        if (u === '/v1/bench/main') {
+    const seen = mockEstate([
+      (lane: string, args: unknown[]) => {
+        if (lane === 'benchGet') {
           return { status: 200, body: { draft_id: 'd_bench', rev: 9, stages: [
             { id: 's_0', card: 'rig', params: { mode: 'auto' } },
           ] } }
         }
-        if (u.endsWith('/v1/flows/start')) return { status: 202, body: { run_id: 'rbx', status: 'queued' } }
-        if (u.startsWith('/v1/flows/status/')) {
+        if (lane === 'runsStart') return { status: 202, body: { run_id: 'rbx', status: 'queued' } }
+        if (lane === 'runsStatus') {
           polls += 1
           return { status: 200, body: polls === 1 ? { status: 'running', stages: [] } : { status: 'completed', stages: [{ id: 's_0', url: 'x.glb' }] } }
         }
-        if (u === '/v1/bench/main/patch') return { status: 200, body: { rev: 10, stage: 's_0', patched: ['runStatus'] } }
+        if (lane === 'benchVerb' && args[1] === 'patch') return { status: 200, body: { rev: 10, stage: 's_0', patched: ['runStatus'] } }
         return undefined
       },
     ])
     const tool = meliteFlow(seen.request)
     const out = await tool.execute({ bench: true }, fakeExec(AbortSignal.timeout(6000))) as Record<string, unknown>
     assert.equal(out.status, 'done')
-    const startBody = decodeJsonBody(seen.calls.find((c) => c.url.endsWith('/v1/flows/start'))!.init)
+    const startBody = decodeJsonBody(seen.calls.find((c) => c.lane === 'runsStart')!.args)
     // THE FAMILYLESS MARKER (stroke 3): the press carries NO model key —
     // the draft arm composes the bench's stages, the familyless one by
     // its OWN card id. The old press injected the card id as the model
@@ -1980,9 +1946,9 @@ describe('melite_flow bench — the queue lane law arms', () => {
   })
 
   test('a row naming no card stops the pass with the construct-patch voice', async () => {
-    const seen = mockFetch([
-      (u: string) => {
-        if (u === '/v1/bench/main') {
+    const seen = mockEstate([
+      (lane: string, args: unknown[]) => {
+        if (lane === 'benchGet') {
           return { status: 200, body: { draft_id: 'd_bench', rev: 11, stages: [
             { id: 's_2', params: { prompt: 'orphan' } },
           ] } }
@@ -1996,15 +1962,15 @@ describe('melite_flow bench — the queue lane law arms', () => {
     assert.equal(out.stoppedAt, 's_2')
     assert.equal(out.error, 'stage s_2 names no card — nothing to compose (melite_construct patch)')
     // nothing ever started
-    assert.equal(seen.calls.filter((c) => c.url.endsWith('/v1/flows/start')).length, 0)
+    assert.equal(seen.calls.filter((c) => c.lane === 'runsStart').length, 0)
   })
 })
 
 describe('melite_flow bench — the degenerate-shape arms', () => {
   test('a bench whose stages is not an array is the empty refusal (never a crash)', async () => {
-    const seen = mockFetch([
-      (u: string) => {
-        if (u === '/v1/bench/main') return { status: 200, body: { draft_id: 'd', rev: 2, stages: 'junk-not-array' } }
+    const seen = mockEstate([
+      (lane: string, args: unknown[]) => {
+        if (lane === 'benchGet') return { status: 200, body: { draft_id: 'd', rev: 2, stages: 'junk-not-array' } }
         return undefined
       },
     ])
@@ -2015,46 +1981,46 @@ describe('melite_flow bench — the degenerate-shape arms', () => {
 
   test('a row with null params rides the empty object (the start still carries the model)', async () => {
     let polls = 0
-    const seen = mockFetch([
-      (u: string) => {
-        if (u === '/v1/bench/main') {
+    const seen = mockEstate([
+      (lane: string, args: unknown[]) => {
+        if (lane === 'benchGet') {
           return { status: 200, body: { draft_id: 'd_bench', rev: 3, stages: [
             { id: 's_0', card: 'image-gen', params: null },
           ] } }
         }
-        if (u.endsWith('/v1/flows/start')) return { status: 202, body: { run_id: 'rbn', status: 'queued' } }
-        if (u.startsWith('/v1/flows/status/')) {
+        if (lane === 'runsStart') return { status: 202, body: { run_id: 'rbn', status: 'queued' } }
+        if (lane === 'runsStatus') {
           polls += 1
           return { status: 200, body: polls === 1 ? { status: 'running', stages: [] } : { status: 'completed', stages: [{ id: 's_0', url: 'img/SaveImage_00001_.png' }] } }
         }
-        if (u === '/v1/bench/main/patch') return { status: 200, body: { rev: 4, stage: 's_0', patched: ['runStatus'] } }
+        if (lane === 'benchVerb' && args[1] === 'patch') return { status: 200, body: { rev: 4, stage: 's_0', patched: ['runStatus'] } }
         return undefined
       },
     ])
     const tool = meliteFlow(seen.request)
     const out = await tool.execute({ bench: true }, fakeExec(AbortSignal.timeout(8000))) as Record<string, unknown>
     assert.equal(out.status, 'done')
-    const startBody = decodeJsonBody(seen.calls.find((c) => c.url.endsWith('/v1/flows/start'))!.init)
+    const startBody = decodeJsonBody(seen.calls.find((c) => c.lane === 'runsStart')!.args)
     assert.equal(startBody.model, 'krea-2')
     assert.equal('prompt' in startBody, false)
   })
 
   test('a transport hiccup mid-poll retries on cadence (unclassified error, never terminal)', async () => {
     let polls = 0
-    const seen = mockFetch([
-      (u: string) => {
-        if (u === '/v1/bench/main') {
+    const seen = mockEstate([
+      (lane: string, args: unknown[]) => {
+        if (lane === 'benchGet') {
           return { status: 200, body: { draft_id: 'd_bench', rev: 5, stages: [
             { id: 's_0', card: 'image-gen', params: {} },
           ] } }
         }
-        if (u.endsWith('/v1/flows/start')) return { status: 202, body: { run_id: 'rbh', status: 'queued' } }
-        if (u.startsWith('/v1/flows/status/')) {
+        if (lane === 'runsStart') return { status: 202, body: { run_id: 'rbh', status: 'queued' } }
+        if (lane === 'runsStatus') {
           polls += 1
           if (polls === 1) throw new Error('socket hiccup — unclassified')
           return { status: 200, body: { status: 'completed', stages: [{ id: 's_0', url: 'img/SaveImage_00001_.png' }] } }
         }
-        if (u === '/v1/bench/main/patch') return { status: 200, body: { rev: 6, stage: 's_0', patched: ['runStatus'] } }
+        if (lane === 'benchVerb' && args[1] === 'patch') return { status: 200, body: { rev: 6, stage: 's_0', patched: ['runStatus'] } }
         return undefined
       },
     ])
@@ -2066,18 +2032,18 @@ describe('melite_flow bench — the degenerate-shape arms', () => {
   })
 
   test('a classified runs/unknown-run mid-poll is terminal (the poll stop set matches the stream law)', async () => {
-    const seen = mockFetch([
-      (u: string) => {
-        if (u === '/v1/bench/main') {
+    const seen = mockEstate([
+      (lane: string, args: unknown[]) => {
+        if (lane === 'benchGet') {
           return { status: 200, body: { draft_id: 'd_bench', rev: 7, stages: [
             { id: 's_0', card: 'image-gen', params: {} },
           ] } }
         }
-        if (u.endsWith('/v1/flows/start')) return { status: 202, body: { run_id: 'rbu', status: 'queued' } }
-        if (u.startsWith('/v1/flows/status/')) {
+        if (lane === 'runsStart') return { status: 202, body: { run_id: 'rbu', status: 'queued' } }
+        if (lane === 'runsStatus') {
           throw new RemoteError('runs/unknown-run', 'the run vanished', { runId: 'rbu' })
         }
-        if (u === '/v1/bench/main/patch') return { status: 200, body: { rev: 8, stage: 's_0', patched: ['runStatus'] } }
+        if (lane === 'benchVerb' && args[1] === 'patch') return { status: 200, body: { rev: 8, stage: 's_0', patched: ['runStatus'] } }
         return undefined
       },
     ])
@@ -2091,12 +2057,12 @@ describe('melite_flow bench — the degenerate-shape arms', () => {
 
 describe('melite_flow adhoc — the card fold + compile-first gate (035 dead-route receipt)', () => {
   test('foldConnects keeps the card on the wire body (035 dead-route receipt: the drop hid the card from every gate)', async () => {
-    const seen = mockFetch([
-      (u: string) => {
-        if (u === '/v1/flows/validate') return { status: 200, body: { ok: true } }
-        if (u === '/v1/bench/main') return { status: 200, body: { draft_id: 'd1', rev: 1, stages: [] } }
-        if (u === '/v1/bench/ensure') return { status: 200, body: { draft_id: 'd1', rev: 2 } }
-        if (u.endsWith('/v1/flows/start')) return { status: 400, body: { error: 'flow_inline stage "s0": card= stages are unported on this gateway' } }
+    const seen = mockEstate([
+      (lane: string, args: unknown[]) => {
+        if (lane === 'runsValidate') return { status: 200, body: { ok: true } }
+        if (lane === 'benchGet') return { status: 200, body: { draft_id: 'd1', rev: 1, stages: [] } }
+        if (lane === 'benchEnsure') return { status: 200, body: { draft_id: 'd1', rev: 2 } }
+        if (lane === 'runsStart') return { status: 400, body: { error: 'flow_inline stage "s0": card= stages are unported on this gateway' } }
         return undefined
       },
     ])
@@ -2105,8 +2071,8 @@ describe('melite_flow adhoc — the card fold + compile-first gate (035 dead-rou
     // the START door's own honest voice — never the engine's
     // `node carries no inline workflow`
     assert.match(String(out['error']), /card= stages are unported/)
-    const v = seen.calls.find((c) => c.url === '/v1/flows/validate')
-    const row = ((v!.init!.body as { stages: Array<Record<string, unknown>> }).stages)[0]!
+    const v = seen.calls.find((c) => c.lane === 'runsValidate')
+    const row = ((v!.args[0] as { stages: Array<Record<string, unknown>> }).stages)[0]!
     assert.equal(row['card'], 'image-gen')
   })
 
@@ -2119,15 +2085,15 @@ describe('melite_flow adhoc — the card fold + compile-first gate (035 dead-rou
 
 describe('melite_flow bench — the status distill arms', () => {
   test('a multi-stage status body with no matching stage row yields no url (st undefined)', async () => {
-    const seen = mockFetch([
-      (u: string) => {
-        if (u === '/v1/bench/main') {
+    const seen = mockEstate([
+      (lane: string, args: unknown[]) => {
+        if (lane === 'benchGet') {
           return { status: 200, body: { draft_id: 'd_bench', rev: 3, stages: [
             { id: 's_0', card: 'image-gen', params: {} },
           ] } }
         }
-        if (u.endsWith('/v1/flows/start')) return { status: 202, body: { run_id: 'rbs', status: 'queued' } }
-        if (u.startsWith('/v1/flows/status/')) {
+        if (lane === 'runsStart') return { status: 202, body: { run_id: 'rbs', status: 'queued' } }
+        if (lane === 'runsStatus') {
           // two OTHER stages — no single-stage fallback, no match;
           // junk entries (a string row, a null row) exercise the
           // filter's both drop arms — they never reach the find
@@ -2135,7 +2101,7 @@ describe('melite_flow bench — the status distill arms', () => {
             'junk-row', null, { id: 'other-a', url: 'a.png' }, { id: 'other-b', url: 'b.png' },
           ] } }
         }
-        if (u === '/v1/bench/main/patch') return { status: 200, body: { rev: 4, stage: 's_0', patched: ['runStatus'] } }
+        if (lane === 'benchVerb' && args[1] === 'patch') return { status: 200, body: { rev: 4, stage: 's_0', patched: ['runStatus'] } }
         return undefined
       },
     ])
@@ -2149,15 +2115,15 @@ describe('melite_flow bench — the status distill arms', () => {
   })
 
   test('the terminal artifacts ride the pass row inline (the gap-5 receipt, 032/033 both re-polled run_status for this)', async () => {
-    const seen = mockFetch([
-      (u: string) => {
-        if (u === '/v1/bench/main') {
+    const seen = mockEstate([
+      (lane: string, args: unknown[]) => {
+        if (lane === 'benchGet') {
           return { status: 200, body: { draft_id: 'd_bench', rev: 3, stages: [
             { id: 's_0', card: 'image-gen', params: {} },
           ] } }
         }
-        if (u.endsWith('/v1/flows/start')) return { status: 202, body: { run_id: 'rart', status: 'queued' } }
-        if (u.startsWith('/v1/flows/status/')) {
+        if (lane === 'runsStart') return { status: 202, body: { run_id: 'rart', status: 'queued' } }
+        if (lane === 'runsStatus') {
           return { status: 200, body: { status: 'completed', stages: [
             { id: 's_0', url: '/melite-media/runs/rart/clip.mp4' },
           ], artifacts: [
@@ -2166,7 +2132,7 @@ describe('melite_flow bench — the status distill arms', () => {
             { junk: true }, 42, // non-path rows drop, never throw
           ] } }
         }
-        if (u === '/v1/bench/main/patch') return { status: 200, body: { rev: 4, stage: 's_0', patched: ['runStatus'] } }
+        if (lane === 'benchVerb' && args[1] === 'patch') return { status: 200, body: { rev: 4, stage: 's_0', patched: ['runStatus'] } }
         return undefined
       },
     ])
@@ -2180,20 +2146,20 @@ describe('melite_flow bench — the status distill arms', () => {
   })
 
   test('an absolute stage url rides verbatim (no media-route rewrite)', async () => {
-    const seen = mockFetch([
-      (u: string) => {
-        if (u === '/v1/bench/main') {
+    const seen = mockEstate([
+      (lane: string, args: unknown[]) => {
+        if (lane === 'benchGet') {
           return { status: 200, body: { draft_id: 'd_bench', rev: 3, stages: [
             { id: 's_0', card: 'image-gen', params: {} },
           ] } }
         }
-        if (u.endsWith('/v1/flows/start')) return { status: 202, body: { run_id: 'rbv', status: 'queued' } }
-        if (u.startsWith('/v1/flows/status/')) {
+        if (lane === 'runsStart') return { status: 202, body: { run_id: 'rbv', status: 'queued' } }
+        if (lane === 'runsStatus') {
           return { status: 200, body: { status: 'completed', stages: [
             { id: 's_0', url: 'https://cdn.example/abs/clip.mp4' },
           ] } }
         }
-        if (u === '/v1/bench/main/patch') return { status: 200, body: { rev: 4, stage: 's_0', patched: ['runStatus'] } }
+        if (lane === 'benchVerb' && args[1] === 'patch') return { status: 200, body: { rev: 4, stage: 's_0', patched: ['runStatus'] } }
         return undefined
       },
     ])
@@ -2204,21 +2170,21 @@ describe('melite_flow bench — the status distill arms', () => {
   })
 
   test('a non-string status field folds to stopped — terminal, the pass stops', async () => {
-    const seen = mockFetch([
-      (u: string) => {
-        if (u === '/v1/bench/main') {
+    const seen = mockEstate([
+      (lane: string, args: unknown[]) => {
+        if (lane === 'benchGet') {
           return { status: 200, body: { draft_id: 'd_bench', rev: 3, stages: [
             { id: 's_0', card: 'image-gen', params: {} },
           ] } }
         }
-        if (u.endsWith('/v1/flows/start')) return { status: 202, body: { run_id: 'rbq', status: 'queued' } }
-        if (u.startsWith('/v1/flows/status/')) {
+        if (lane === 'runsStart') return { status: 202, body: { run_id: 'rbq', status: 'queued' } }
+        if (lane === 'runsStatus') {
           // junk status AND junk stages shape — the distill's honest
           // defaults (unknown status; the non-array arm drops to []),
           // then the fold: unknown-outcome is the 'stopped' CardStatus
           return { status: 200, body: { status: 42, stages: 'not-an-array' } }
         }
-        if (u === '/v1/bench/main/patch') return { status: 200, body: { rev: 4, stage: 's_0', patched: ['runStatus'] } }
+        if (lane === 'benchVerb' && args[1] === 'patch') return { status: 200, body: { rev: 4, stage: 's_0', patched: ['runStatus'] } }
         return undefined
       },
     ])
@@ -2231,20 +2197,20 @@ describe('melite_flow bench — the status distill arms', () => {
 
 describe('melite_flow bench — the single-stage fallback arm', () => {
   test('a lone foreign stage row is the asked stage (the fallback), url-less when it carries none', async () => {
-    const seen = mockFetch([
-      (u: string) => {
-        if (u === '/v1/bench/main') {
+    const seen = mockEstate([
+      (lane: string, args: unknown[]) => {
+        if (lane === 'benchGet') {
           return { status: 200, body: { draft_id: 'd_bench', rev: 3, stages: [
             { id: 's_0', card: 'image-gen', params: {} },
           ] } }
         }
-        if (u.endsWith('/v1/flows/start')) return { status: 202, body: { run_id: 'rbl', status: 'queued' } }
-        if (u.startsWith('/v1/flows/status/')) {
+        if (lane === 'runsStart') return { status: 202, body: { run_id: 'rbl', status: 'queued' } }
+        if (lane === 'runsStatus') {
           // ONE stage, foreign id, NO url — the fallback adopts it,
           // and the empty-url gate keeps the pass row url-less
           return { status: 200, body: { status: 'completed', stages: [{ id: 'the-only-stage' }] } }
         }
-        if (u === '/v1/bench/main/patch') return { status: 200, body: { rev: 4, stage: 's_0', patched: ['runStatus'] } }
+        if (lane === 'benchVerb' && args[1] === 'patch') return { status: 200, body: { rev: 4, stage: 's_0', patched: ['runStatus'] } }
         return undefined
       },
     ])

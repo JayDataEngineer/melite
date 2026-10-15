@@ -5,7 +5,8 @@
  *
  * Owns no primitive state (the remnant orchestrates all useState/useRef);
  * it owns the memos, verbs, and the client-side re-skin effect.
- * Free-variable reads became explicit hook args. Behavior is IDENTICAL.
+ * Free-variable reads became explicit hook args. The live-bind joint edit
+ * rides the constraints commit door (one-truth rework, 2026-11-05).
  */
 import { useCallback, useEffect, useMemo } from "react"
 import type * as React from "react"
@@ -20,6 +21,7 @@ import {
   decodeF32, stampEditedPose, type MotionConstraint,
 } from "@melite/formats/motionConstraints"
 import type { ToastFn } from "./useMotionStage.ts"
+import type { MotionDocHooks } from "./useMotionDoc.ts"
 
 export interface PoseEditingArgs {
   effectiveNpz: MotionNpz | null
@@ -44,7 +46,9 @@ export interface PoseEditingArgs {
   setReposing: React.Dispatch<React.SetStateAction<boolean>>
   setKeptEdit: React.Dispatch<React.SetStateAction<{ joints: Float32Array; frame: number } | null>>
   setPlaying: React.Dispatch<React.SetStateAction<boolean>>
-  setConstraintPayloads: React.Dispatch<React.SetStateAction<Record<string, MotionConstraint>>>
+  /** The constraints write door (one-truth: the live-bind edit states the
+   *  payload through the doc commit, never a mirror setter). */
+  commitConstraints: MotionDocHooks["commitConstraints"]
 }
 
 export function usePoseEditing({
@@ -53,7 +57,7 @@ export function usePoseEditing({
   pushUndo, toast, skin, onSave,
   editMode, setEditMode, editableJoints, setEditableJoints, editableJointsRef,
   setSelectedJoint, setEditedDeformedB64, reposing: _reposing, setReposing,
-  setKeptEdit, setPlaying, setConstraintPayloads,
+  setKeptEdit, setPlaying, commitConstraints,
 }: PoseEditingArgs) {
   void _tlKeyframes
   void _reposing
@@ -118,8 +122,8 @@ export function usePoseEditing({
       frameIdx,
       src.T,
     )
-    setConstraintPayloads((p) => ({ ...p, [kf.uuid]: payload }))
-  }, [effectiveNpz, fullbodyKfAtFrame, frameIdx, editableJointsRef, setEditableJoints, setConstraintPayloads])
+    commitConstraints((doc) => ({ ...doc, payloads: { ...doc.payloads, [kf.uuid]: payload } }))
+  }, [effectiveNpz, fullbodyKfAtFrame, frameIdx, editableJointsRef, setEditableJoints, commitConstraints])
 
   // Client-side re-skin: edited joints (cm → m) + RECONSTRUCTED rotations.
   // The rotation reconstruction is mandatory — LBS with the ORIGINAL

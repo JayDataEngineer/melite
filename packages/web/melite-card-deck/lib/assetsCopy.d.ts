@@ -156,6 +156,8 @@ export declare const assetsCopy: {
     }) => string;
     /** Panel title of the manager tab. */
     readonly panelTitle: "ComfyUI Manager";
+    /** The sidebar guide row's description under the panel title (the tab type's guide entry). */
+    readonly comfyGuide: "The estate's ComfyUI manager — packs, snapshots, status.";
     /** Health section title. */
     readonly healthTitle: "Health";
     /** Health refresh button. */

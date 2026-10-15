@@ -531,6 +531,15 @@ async function mint (opts) {
       await probeExecutability(innerFiles)
     } catch (e) { fail(e.message) }
 
+    // G9 — PACKAGE LINT (F-8): the maintained publication linter over
+    // every packed publication view. Rides after the strip so it sees
+    // the shipped manifest bytes.
+    console.log('G9: publint over the packed publication views …')
+    for (const [tarName, { f }] of innerFiles) {
+      try { await publintOffender(tarName, f) } catch (e) { fail(e.message) }
+    }
+    console.log(`publint gate: ${innerFiles.size} publication views lint clean`)
+
     // The publish order: dependencies before consumers (depth-first
     // postorder over in-set dependencies + peerDependencies), one
     // tarball name per line. tools/publish-npm.mjs consumes it so the
@@ -664,6 +673,27 @@ export async function probeExecutability (innerFiles) {
       console.log(`  probe: ${tarName} — ${literals.length} rows import under plain node`)
     }
   } finally { rmSync(probeDir, { recursive: true, force: true }) }
+}
+
+/** G9 (F-8, harness-seam audit 2026-11-05): publint over one packed
+ *  tarball — the packed bytes are the whole world, so the gate extracts
+ *  the publication view (built lib/, the G1.5-stripped manifest) and
+ *  lints THAT, never the workspace face. Errors refuse the mint;
+ *  warnings and suggestions stay the other gates' jurisdiction (G3/G4/G8
+ *  own the exports/entry rows on their own arms). Exported for the wall
+ *  suite's fixture proofs. */
+export async function publintOffender (tarName, f) {
+  const { publint } = await import('publint')
+  const dir = mkdtempSync(join(tmpdir(), 'melite-publint-'))
+  try {
+    run('mkdir', ['-p', dir])
+    run('tar', ['-xzf', f, '-C', dir])
+    const { messages } = await publint({ pkgDir: join(dir, 'package'), level: 'error' })
+    if (messages.length > 0) {
+      throw new Error(`publint gate: ${tarName} — ${messages.length} error(s):\n` +
+        messages.map((m) => `  [${m.code}] ${m.message}`).join('\n'))
+    }
+  } finally { rmSync(dir, { recursive: true, force: true }) }
 }
 
 function verify (opts) {

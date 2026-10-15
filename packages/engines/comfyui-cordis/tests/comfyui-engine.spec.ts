@@ -5,7 +5,11 @@
 // splice inside the adapter, outputNodes derived from params, the
 // activity stamp on the tap, the outcome mapping, and the
 // registration's effect-owned lifetime.
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi, onTestFinished } from "vitest";
+import { spawnSync } from "node:child_process";
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { Context } from "@deepseek-ai/cordis";
 import { enginesContract } from "@melite/engine-contract";
 import type {
@@ -363,5 +367,69 @@ describe("the adapter's post-splice wiring walk (production's submit path)", () 
       ),
     ).rejects.toThrow(/card 's0' wired node class 'EmptyLatentImage'/);
     expect(flow).not.toHaveBeenCalled();
+  });
+});
+
+// ── THE ENGINEREF BRAND (F3, nativity audit 2026-11-05) ───────────
+// The executor seam's opaque cross-boundary id (ComfyUI's promptId)
+// rode a bare `string` in the contract — the dsh-brand law's exact
+// crime class ("opaque cross-boundary ids are branded, never bare
+// string"; RunId is the estate's own mirror). Three arms, one per
+// invariant: the CONTRACT states the brand, the ADAPTER mints
+// through it, and the type system REFUSES a bare string (the
+// negative-compile probe — the arm that fires if the brand is ever
+// toggled back out, because the probe then COMPILES).
+describe("the EngineRef brand (the executor seam's opaque id)", () => {
+  const read = (p: string): string => readFileSync(join(import.meta.dirname, p), "utf8");
+
+  it("the contract declares engineRef as the branded EngineRef, not a bare string", () => {
+    const types = read("../../../engines/contract/src/types.ts");
+    // the branded carrier (the RunId mirror); the brand rides a
+    // unique symbol — a plain string intersection is not a brand
+    expect(types).toMatch(/export type EngineRef = Branded<"EngineRef">/u);
+    expect(types).toMatch(/unique symbol/u);
+    // EngineRunOutcome.engineRef carries the brand, never `string`
+    expect(types).toMatch(/readonly engineRef\?: EngineRef;/u);
+    // and the barrel exports it (the consumers mint by name)
+    const index = read("../../../engines/contract/src/index.ts");
+    expect(index).toMatch(/EngineRef,/u);
+  });
+
+  it("the adapter is the mint — the wire prompt_id becomes EngineRef at the seam, once", () => {
+    const adapter = read("../src/entries/comfyui-engine.ts");
+    // the outcome's engineRef mints through the brand at the
+    // boundary's producer
+    expect(adapter).toMatch(/engineRef: result\.promptId as EngineRef/u);
+    // the transport's internal promptId stays raw (pre-boundary);
+    // the mint must live HERE, not spread through the transport
+    const execute = read("../src/comfyui-execute.ts");
+    // one mint, at the seam — the transport keeps the raw wire id
+    expect(execute).not.toMatch(/as EngineRef/u);
+  });
+
+  it("a bare string does not typecheck as engineRef (the negative-compile probe)", { timeout: 60_000 }, () => {
+    // The firing proof: toggle the brand out (engineRef?: string)
+    // and this probe COMPILES — the wall reds. The probe compiles a
+    // one-liner against the contract's REAL src through the same
+    // settings the package tsconfig uses (minus the node types —
+    // the probe imports nothing from node).
+    const tsconfig = read("../../../engines/contract/tsconfig.json");
+    const probeDir = mkdtempSync(join(tmpdir(), "engineref-probe-"));
+    onTestFinished(() => rmSync(probeDir, { recursive: true, force: true }));
+    const probeTsconfig = JSON.parse(tsconfig);
+    delete probeTsconfig.compilerOptions.types;
+    probeTsconfig.include = [
+      join(import.meta.dirname, "../../../engines/contract/src/types.ts"),
+      "./probe.ts",
+    ];
+    writeFileSync(join(probeDir, "tsconfig.json"), JSON.stringify(probeTsconfig));
+    writeFileSync(join(probeDir, "probe.ts"), [
+      `import type { EngineRunOutcome } from ${JSON.stringify(join(import.meta.dirname, "../../../engines/contract/src/types.ts"))};`,
+      `const bad: EngineRunOutcome = { stages: [], engineRef: "bare" };`,
+    ].join("\n"));
+    const tsc = join(import.meta.dirname, "../../../engines/contract/node_modules/typescript/bin/tsc");
+    const res = spawnSync(process.execPath, [tsc, "-p", join(probeDir, "tsconfig.json")], { encoding: "utf8" });
+    expect(res.status, `the bare string must be refused by the compiler (got: ${res.stdout} ${res.stderr})`).toBe(2);
+    expect(res.stdout + res.stderr).toMatch(/Type '"bare"' is not assignable to type 'EngineRef'|Type 'string' is not assignable to type/u);
   });
 });

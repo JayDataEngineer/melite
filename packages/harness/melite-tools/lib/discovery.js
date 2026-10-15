@@ -84,6 +84,7 @@ export function resolveSpecKey(key, defs, boarded) {
             fdecl = getModel(fam);
         }
         catch {
+            /* an unbootable family DECL — it can never serve this key; the walk continues to the next candidate */
             continue;
         }
         if (declRoutes(fdecl).has(key))
@@ -123,6 +124,7 @@ function isFamilyKey(key) {
         return true;
     }
     catch {
+        /* an unbootable id is the negative answer — the probe IS the predicate */
         return false;
     }
 }

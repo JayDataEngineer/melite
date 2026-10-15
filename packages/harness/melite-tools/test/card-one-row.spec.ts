@@ -218,7 +218,16 @@ describe('card-one-row walls (always pinned, pure fs over the committed tree)', 
           // This src file requires the row — the package must ship
           // the browser face the loader serves (exports['./client'] →
           // a lib/client bundle), or the browser require has no target.
-          if (clientTarget(manifest) === null) {
+          // THE LIBRARY EXEMPTION (2026-11-05, timeline's F1 demotion):
+          // the obligation binds only loader-reachable packages — a
+          // package whose manifest declares no dsh.client block is
+          // never browser-loaded, so no browser require can target it;
+          // its src's door imports execute only inside a consumer's
+          // client bundle (inlined by the consumer's tsdown noExternal,
+          // judged by client-bundle-sync's consumer rows). Exempting
+          // it here is the same discriminator the loader itself uses,
+          // not a vacuous pass.
+          if (clientTarget(manifest) === null && manifest['dsh.client'] !== undefined) {
             problems.push(`${relative(REPO, pdir)}: src imports ${ROW_DOOR} but the package ships no built client face — add exports['./client'] (tsdown.client preset) or import the node-plane face`)
           }
           return

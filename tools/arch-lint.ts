@@ -4,8 +4,14 @@
 // 2026-09-08).
 //
 // The four contracts (each maps to an operator law):
-//   1. core_is_generic         packages/gateway/core must not import into any vertical (packages/<vertical>/)
-//   2. plugins_are_independent  the three plugin groups (engines, harness, web) do not import each other
+//   1. core_is_generic         packages/web-kit/contracts (@melite/contracts,
+//                              the zero-dep floor) names no vertical — no
+//                              import from the core lands in any vertical
+//                              package, relative or bare @melite/*
+//   2. plugins_are_independent  the ten verticals (engines, models, web,
+//                              web-kit, harness, 3d, audio, image, motion,
+//                              video) do not import each other by relative
+//                              crossing (bare @melite/* is the legal crossing)
 //   3. vendor_packs_isolated   each vendor/comfyui_extensions/<pack> is its own repo
 //   4. references_is_study_only references/ is read-only -- no one imports it
 //
@@ -19,6 +25,16 @@
 // both directions proven by synthetic-crossing probes (web ->
 // engines fires plugins_are_independent, gateway/core -> web fires
 // core_is_generic), and the clean tree reads all four OK.
+//
+// Re-truthed 2026-11-05 (harness-seam audit F-3): contract 1 still
+// guarded packages/gateway/core — DELETED 2026-10-01, so the matcher
+// could never fire again (an always-green judge on the executed
+// pre-commit path). The LIVE generic core is packages/web-kit/contracts
+// (@melite/contracts, the zero-dep floor every other package stands
+// on); the guard now also reads bare @melite/* specifiers through a
+// manifest-derived name→package map (the estate's cross-package
+// grammar — a floor that imports a vertical by name is the same
+// crime). Contract 2 judged 3 of the 10 verticals; it judges all ten.
 //
 // Python imports are collected by line regex (import x / from x
 // import — the old tool used ast; the shapes below cover the
@@ -59,7 +75,7 @@ function* iterSourceFiles(root: string): Generator<[string, string]> {
     try {
       ents = readdirSync(dir, { withFileTypes: true })
         .map((e) => ({ n: e.name, d: e.isDirectory() }));
-    } catch { continue; }
+    } catch { /* unreadable directory (permissions, mid-sweep removal) — skipped; its files contribute no imports */ continue; }
     for (const e of ents) {
       if (e.d) {
         if (!SKIP_DIRS.has(e.n)) stack.push(join(dir, e.n));
@@ -77,6 +93,7 @@ function real(p: string): string {
   try {
     return realpathSync(p);
   } catch {
+    /* broken symlink or vanished target — grouping is best-effort; the raw path still names its tree */
     return p;
   }
 }
@@ -86,7 +103,7 @@ function* collectImports(path: string,
   let text: string;
   try {
     text = readFileSync(path, "utf8");
-  } catch { return; }
+  } catch { /* unreadable file — no text, no imports to collect; the linter reads, never executes */ return; }
   if (language === "py") {
     const lines = text.split("\n");
     for (let i = 0; i < lines.length; i++) {
@@ -153,21 +170,82 @@ function vendorPack(abs: string): string | null {
 }
 
 // Re-truthed 2026-09-10 (ledger row 37): the py tree is deleted — the
-// contract was permanently vacuous (topGroup "py" never matched). The
-// LIVE generic-core surface is packages/gateway/core: the verticals
-// (engines, models, web, web-kit, harness, genre dirs) may depend on
-// core, never the reverse.
+// contract was permanently vacuous (topGroup "py" never matched).
+// Re-pointed 2026-11-05 (harness-seam audit F-3): packages/gateway/core
+// is DELETED — the contract guarded a ghost. The LIVE generic core is
+// packages/web-kit/contracts: the zero-dep floor (types + frozen
+// vocabularies, judged by the src-orphan wall). The verticals (engines,
+// models, web, web-kit, harness, 3d, audio, image, motion, video) may
+// depend on the core, never the reverse — by relative crossing OR by
+// bare @melite/* specifier.
 const VERTICAL_GROUPS: readonly string[] = ["engines", "models", "web",
   "web-kit", "harness", "3d", "audio", "image", "motion", "video"];
 
-/** The plugin groups contract 2 judges (header law: engines,
- *  harness, web do not import each other by relative crossing). */
-const PLUGIN_GROUPS: ReadonlySet<string> = new Set(["engines",
-  "harness", "web"]);
+/** The generic core the estate actually has (F-3, 2026-11-05):
+ *  @melite/contracts — the floor imports no vertical, ever. */
+const GENERIC_CORE = join(REPO, "packages", "web-kit", "contracts");
 
-function underGatewayCore(abs: string): boolean {
-  const rel = relative(join(REPO, "packages", "gateway", "core"), abs);
+/** Contract 2 judges all ten verticals pairwise (F-3): a relative
+ *  crossing between ANY two verticals is the crime; bare @melite/*
+ *  specifiers remain the legal crossing. */
+const PLUGIN_GROUPS: ReadonlySet<string> = new Set(VERTICAL_GROUPS);
+
+/** Workspace package name → package directory, derived from the
+ *  manifests (DEPTH law: the roster is read, never hand-maintained).
+ *  Two manifest tiers: packages/<vertical>/<pkg>/ and the nested
+ *  plugin faces. Bare @melite/* and @melite-plugin/* specifiers
+ *  resolve through this map for contract 1. */
+function workspacePackageNameMap(): Map<string, string> {
+  const map = new Map<string, string>();
+  const stack: string[] = [join(REPO, "packages")];
+  while (stack.length > 0) {
+    const dir = stack.pop() as string;
+    let ents: Array<{ n: string; d: boolean }>;
+    try {
+      ents = readdirSync(dir, { withFileTypes: true })
+        .map((e) => ({ n: e.name, d: e.isDirectory() }));
+    } catch { /* unreadable directory — its manifests cannot name packages */ continue; }
+    for (const e of ents) {
+      if (!e.d) continue;
+      if (e.n === "node_modules" || e.n === "lib" || e.n === "dist") continue;
+      const manifest = join(dir, e.n, "package.json");
+      let name: unknown;
+      try {
+        name = JSON.parse(readFileSync(manifest, "utf8")).name;
+      } catch { /* a directory without a readable manifest is not a package — keep walking */ name = undefined; }
+      if (typeof name === "string" && name.startsWith("@melite")) {
+        map.set(name, join(dir, e.n));
+      }
+      stack.push(join(dir, e.n));
+    }
+  }
+  return map;
+}
+
+const MELITE_PACKAGES: Map<string, string> = workspacePackageNameMap();
+
+function underGenericCore(abs: string): boolean {
+  const rel = relative(GENERIC_CORE, abs);
   return rel !== "" && !rel.startsWith("..");
+}
+
+/** Any estate package directory (packages/<...>), the core included. */
+function underPackages(abs: string): boolean {
+  const rel = relative(join(REPO, "packages"), abs);
+  return rel !== "" && !rel.startsWith("..");
+}
+
+/** The estate's documented test/build-config idiom: package-local
+ *  specs import sibling src planes relatively (the walls tier and
+ *  every card.spec.ts — the tsconfig-paths facade resolves them),
+ *  and tsdown configs import the shared client-bundle preset fork
+ *  (packages/web/shared/tsdown.client.ts). Contract 2 polices the
+ *  PACKAGE SOURCE plane — the runtime dependency graph between
+ *  verticals — not the test/build tooling planes. */
+function isTestOrBuildConfigPlane(path: string): boolean {
+  const segs = path.split(sep);
+  if (segs.includes("tests") || segs.includes("test")) return true;
+  return /\.(spec|test|config)\.[tj]sx?$/.test(segs[segs.length - 1] ?? "");
 }
 
 // The vertical a repo path sits under (packages/<vertical>/...), or
@@ -187,12 +265,25 @@ function verticalOf(abs: string): string | null {
 function contractCoreIsGeneric(rows: ImportRow[]): ImportRow[] {
   const out: ImportRow[] = [];
   for (const r of rows) {
-    if (!underGatewayCore(resolve(r.path))) continue;
-    if (r.resolved === undefined) continue;
-    const v = verticalOf(r.resolved);
-    if (v !== null) {
+    if (!underGenericCore(resolve(r.path))) continue;
+    if (r.resolved !== undefined) {
+      // relative crossing: the target must stay inside the core —
+      // any other packages/ target (ANY vertical) is the crime
+      const target = resolve(r.resolved);
+      if (underGenericCore(target)) continue;
+      if (underPackages(target)) {
+        out.push({ path: r.path, line: r.line,
+          mod: "core is generic: relative import lands in " + relative(REPO, target) });
+      }
+      continue;
+    }
+    // bare crossing: a @melite* specifier's package is resolved through
+    // the manifest-derived map (the estate's cross-package grammar)
+    const dir = MELITE_PACKAGES.get(r.mod);
+    if (dir !== undefined && !underGenericCore(dir)) {
       out.push({ path: r.path, line: r.line,
-        mod: "core is generic: relative import lands in packages/" + v });
+        mod: "core is generic: bare import of " + JSON.stringify(r.mod) +
+          " lands in " + relative(REPO, dir) });
     }
   }
   return out;
@@ -203,9 +294,14 @@ function contractPluginsAreIndependent(rows: ImportRow[]): ImportRow[] {
   // The law is unchanged: a package under packages/<group>/ imports
   // another group by its public @melite/* name, never by relative
   // crossing (bare specifiers are the legal crossing — skipped).
+  // Judged on the PACKAGE SOURCE plane (F-3, 2026-11-05): the test
+  // tier and the bundler configs are the documented idiom that
+  // imports sibling src planes relatively — the runtime dependency
+  // graph between verticals is what the contract polices.
   for (const r of rows) {
     const mine = pluginGroup(resolve(r.path));
     if (mine === null || !PLUGIN_GROUPS.has(mine)) continue;
+    if (isTestOrBuildConfigPlane(resolve(r.path))) continue;
     if (r.resolved === undefined) continue;
     const other = verticalOf(r.resolved);
     if (other === null || !PLUGIN_GROUPS.has(other) || other === mine) {
@@ -266,10 +362,10 @@ function contractReferencesIsStudyOnly(rows: ImportRow[]): ImportRow[] {
 const CONTRACTS: ReadonlyArray<readonly [string, string,
   (rows: ImportRow[]) => ImportRow[]]> = [
   ["core_is_generic",
-    "packages/gateway/core is generic -- it names no vertical",
+    "packages/web-kit/contracts (@melite/contracts, the generic core) names no vertical",
     contractCoreIsGeneric],
   ["plugins_are_independent",
-    "the three plugin groups (engines, harness, web) do not import each other",
+    "the ten verticals (engines, models, web, web-kit, harness, 3d, audio, image, motion, video) do not import each other by relative crossing",
     contractPluginsAreIndependent],
   ["vendor_packs_isolated",
     "each vendor/comfyui_extensions/<pack> is its own repo",

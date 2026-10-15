@@ -2,31 +2,41 @@
 // network). Pins the thin load face over the load seat:
 //   1. ARGS: name is required (empty refuses as a VALUE); the
 //      inference_type gate admits exactly card|flow, nothing else.
-//   2. WIRE: one GET at /v1/load?name=…&inference_type=… on the
-//      20s budget; the gateway bundle rides the value verbatim.
+//   2. WIRE: one loadCard lane call (inference_type, name, signal,
+//      20s budget); the seat bundle rides the value verbatim.
 //   3. REFUSALS ride the value (body text > message > 'load
 //      failed'), echoing the requested name/inference_type.
 //   4. PRESENTATION: Load <name> card; render names the loaded
 //      bundle (REFUSED on refusal) and never throws on junk.
+//
+// MIGRATION LAW (F-1, 2026-11-05): the tool surface's OBSERVABLE
+// behavior is byte-stable — every assertion about result text/schema/
+// shape stays exactly as written; arms that asserted a URL SPELLING
+// re-rolled to assert the TYPED LANE the tool rode
+// (seen = { lane: 'loadCard', args: [inferenceType, name, signal, timeoutMs] }).
 
 import { describe, test } from 'vitest'
 import assert from 'node:assert/strict'
 import { meliteLoad } from '../src/tools/melite-load.ts'
-import type { EstateRequest } from '../src/estate.ts'
+import type { Estate } from '../src/estate.ts'
+import { fakeEstate } from './fake-estate.ts'
 import { fakeExec } from './fake-exec.ts'
 
-function mockRequest(handler: (method: string, path: string, body: unknown) => unknown): {
-  seen: Array<{ method: string; path: string; body: unknown; timeoutMs?: number }>;
-  request: EstateRequest;
+// The typed-lane mock (F-1, 2026-11-05): the tool plane's tests stub
+// the ESTATE seam, never a URL transport. `seen` records the lane a
+// tool rode; loadCard is this spec's one lane.
+function mockEstate(handler: (inferenceType: string, name: string) => unknown): {
+  seen: Array<{ lane: string; args: unknown[] }>;
+  estate: Estate;
 } {
-  const seen: Array<{ method: string; path: string; body: unknown; timeoutMs?: number }> = []
-  // Contextually typed by the EstateRequest seam — params inherit the
-  // transport signature, so no implicit-any and no casts ride.
-  const request: EstateRequest = async (method, path, body, _signal, timeoutMs) => {
-    seen.push({ method, path, body, timeoutMs })
-    return handler(method, path, body)
-  }
-  return { seen, request }
+  const { estate, seen } = fakeEstate({
+    loadCard: (inferenceType: string, name: string) => handler(inferenceType, name),
+  })
+  return { seen, estate }
+}
+
+function stubEstate(): Estate {
+  return fakeEstate({ loadCard: () => ({}) }).estate
 }
 
 function exec() {
@@ -35,7 +45,7 @@ function exec() {
 
 describe('melite_load presentCall — the Load card', () => {
   test('names the requested bundle', () => {
-    const tool = meliteLoad((async () => ({})) as unknown as EstateRequest)
+    const tool = meliteLoad(stubEstate())
     const view = tool.presentCall!({ name: 'upscale-tools', inference_type: 'card' })
     assert.equal(view?.card, 'generic')
     assert.equal(view?.title, 'Load upscale-tools')
@@ -43,7 +53,7 @@ describe('melite_load presentCall — the Load card', () => {
   })
 
   test('junk names fall back to ?', () => {
-    const tool = meliteLoad((async () => ({})) as unknown as EstateRequest)
+    const tool = meliteLoad(stubEstate())
     assert.equal(tool.presentCall!({})?.title, 'Load ?')
     assert.equal(tool.presentCall!({ name: '' })?.title, 'Load ?')
     assert.equal(tool.presentCall!(null)?.title, 'Load ?')
@@ -52,8 +62,8 @@ describe('melite_load presentCall — the Load card', () => {
 
 describe('melite_load execute — the arg gates', () => {
   test('an empty name refuses as a value (discover it first)', async () => {
-    const { seen, request } = mockRequest(() => ({ bundle: {} }))
-    const tool = meliteLoad(request)
+    const { seen, estate } = mockEstate(() => ({ bundle: {} }))
+    const tool = meliteLoad(estate)
     const out = await tool.execute({ name: '', inference_type: 'card' }, exec()) as Record<string, unknown>
     assert.equal(out.error, 'name is required (discover it first)')
     assert.equal(out.name, '')
@@ -62,8 +72,8 @@ describe('melite_load execute — the arg gates', () => {
   })
 
   test('anything but card|flow refuses as a value', async () => {
-    const { seen, request } = mockRequest(() => ({ bundle: {} }))
-    const tool = meliteLoad(request)
+    const { seen, estate } = mockEstate(() => ({ bundle: {} }))
+    const tool = meliteLoad(estate)
     const out = await tool.execute({ name: 'c', inference_type: 'bogus' }, exec()) as Record<string, unknown>
     assert.ok(String(out.error).includes('inference_type must be card|flow'))
     assert.equal(out.name, 'c')
@@ -73,32 +83,37 @@ describe('melite_load execute — the arg gates', () => {
 })
 
 describe('melite_load execute — the load lane', () => {
-  test('a card load GETs /v1/load on the 20s budget and returns the bundle', async () => {
+  test('a card load rides the loadCard lane on the 20s budget and returns the bundle', async () => {
     const bundle = { kind: 'card', name: 'my card', skills: [{ id: 's1' }] }
-    const { seen, request } = mockRequest(() => ({ name: 'my card', inference_type: 'card', bundle }))
-    const tool = meliteLoad(request)
-    const out = await tool.execute({ name: 'my card', inference_type: 'card' }, exec()) as Record<string, unknown>
+    const { seen, estate } = mockEstate(() => ({ name: 'my card', inference_type: 'card', bundle }))
+    const tool = meliteLoad(estate)
+    const e = exec()
+    const out = await tool.execute({ name: 'my card', inference_type: 'card' }, e) as Record<string, unknown>
     assert.deepEqual(out.bundle, bundle)
     assert.equal(out.name, 'my card')
     assert.equal(out.inference_type, 'card')
+    // the tool plane speaks the typed lanes; the URL grammar is the
+    // browser face's.
     assert.equal(seen.length, 1)
-    assert.equal(seen[0]!.method, 'GET')
-    assert.equal(seen[0]!.path, '/v1/load?name=my+card&inference_type=card')
-    assert.equal(seen[0]!.body, undefined)
-    assert.equal(seen[0]!.timeoutMs, 20_000)
+    assert.equal(seen[0]!.lane, 'loadCard')
+    assert.deepEqual(seen[0]!.args.slice(0, 2), ['card', 'my card'])
+    assert.equal(seen[0]!.args[2], e.signal)
+    assert.equal(seen[0]!.args[3], 20_000)
   })
 
   test('a flow load rides inference_type=flow', async () => {
-    const { seen, request } = mockRequest(() => ({ name: 'f', inference_type: 'flow', bundle: { kind: 'flow' } }))
-    const tool = meliteLoad(request)
+    const { seen, estate } = mockEstate(() => ({ name: 'f', inference_type: 'flow', bundle: { kind: 'flow' } }))
+    const tool = meliteLoad(estate)
     const out = await tool.execute({ name: 'f', inference_type: 'flow' }, exec()) as Record<string, unknown>
     assert.equal((out.bundle as { kind: string }).kind, 'flow')
-    assert.equal(seen[0]!.path, '/v1/load?name=f&inference_type=flow')
+    // the tool plane speaks the typed lanes; the URL grammar is the
+    // browser face's — same intent: inference_type + name ride in order.
+    assert.deepEqual(seen[0]!.args.slice(0, 2), ['flow', 'f'])
   })
 
   test('a nullish seat answer echoes the args (never a crash)', async () => {
-    const { seen, request } = mockRequest(() => null)
-    const tool = meliteLoad(request)
+    const { seen, estate } = mockEstate(() => null)
+    const tool = meliteLoad(estate)
     const out = await tool.execute({ name: 'c', inference_type: 'card' }, exec()) as Record<string, unknown>
     assert.equal(out.name, 'c')
     assert.equal(out.inference_type, 'card')
@@ -109,8 +124,8 @@ describe('melite_load execute — the load lane', () => {
 
 describe('melite_load execute — refusals ride the value', () => {
   test('a body-carried refusal wins', async () => {
-    const { request } = mockRequest(() => { throw { body: 'seat says no', message: 'wrapped' } })
-    const tool = meliteLoad(request)
+    const { estate } = mockEstate(() => { throw { body: 'seat says no', message: 'wrapped' } })
+    const tool = meliteLoad(estate)
     const out = await tool.execute({ name: 'c', inference_type: 'card' }, exec()) as Record<string, unknown>
     assert.equal(out.error, 'seat says no')
     assert.equal(out.name, 'c')
@@ -118,22 +133,22 @@ describe('melite_load execute — refusals ride the value', () => {
   })
 
   test('an empty body falls back to the message', async () => {
-    const { request } = mockRequest(() => { throw { body: '', message: 'door message' } })
-    const tool = meliteLoad(request)
+    const { estate } = mockEstate(() => { throw { body: '', message: 'door message' } })
+    const tool = meliteLoad(estate)
     const out = await tool.execute({ name: 'c', inference_type: 'card' }, exec()) as Record<string, unknown>
     assert.equal(out.error, 'door message')
   })
 
   test('a plain Error rides its message', async () => {
-    const { request } = mockRequest(() => { throw new Error('boom') })
-    const tool = meliteLoad(request)
+    const { estate } = mockEstate(() => { throw new Error('boom') })
+    const tool = meliteLoad(estate)
     const out = await tool.execute({ name: 'c', inference_type: 'flow' }, exec()) as Record<string, unknown>
     assert.equal(out.error, 'boom')
   })
 
   test('a bare throw rides the default text', async () => {
-    const { request } = mockRequest(() => { throw 'bare failure' })
-    const tool = meliteLoad(request)
+    const { estate } = mockEstate(() => { throw 'bare failure' })
+    const tool = meliteLoad(estate)
     const out = await tool.execute({ name: 'c', inference_type: 'card' }, exec()) as Record<string, unknown>
     assert.equal(out.error, 'load failed')
   })
@@ -141,7 +156,7 @@ describe('melite_load execute — refusals ride the value', () => {
 
 describe('melite_load render — the loaded line', () => {
   test('a refusal renders REFUSED', () => {
-    const tool = meliteLoad((async () => ({})) as unknown as EstateRequest)
+    const tool = meliteLoad(stubEstate())
     const parts = tool.output.render(
       { name: 'c', inference_type: 'card' },
       { name: 'c', inference_type: 'card', error: 'nope' } as never,
@@ -150,7 +165,7 @@ describe('melite_load render — the loaded line', () => {
   })
 
   test('THE BUNDLE RIDES (params, models, skills, digest, agents — the follow-up call needs them)', () => {
-    const tool = meliteLoad((async () => ({})) as unknown as EstateRequest)
+    const tool = meliteLoad(stubEstate())
     const parts = tool.output.render(
       { name: 'c', inference_type: 'card' },
       {
@@ -186,7 +201,7 @@ describe('melite_load render — the loaded line', () => {
     // model's prompting style or that the style changes per model. Two
     // renders pin the cure: the description rides each entry, and the
     // presence of a prompt-enhance skill states the duty.
-    const tool = meliteLoad((async () => ({})) as unknown as EstateRequest)
+    const tool = meliteLoad(stubEstate())
     const parts = tool.output.render(
       { name: 'c', inference_type: 'card' },
       {
@@ -208,7 +223,7 @@ describe('melite_load render — the loaded line', () => {
   })
 
   test('a bundle with NO prompt-enhance skill states no prompting law (the line never invents one)', () => {
-    const tool = meliteLoad((async () => ({})) as unknown as EstateRequest)
+    const tool = meliteLoad(stubEstate())
     const parts = tool.output.render(
       { name: 'c', inference_type: 'card' },
       {
@@ -235,7 +250,7 @@ describe('melite_load render — the loaded line', () => {
     // the whole contract: the words in the row's true shape, the
     // any_of one-of anchor named as one-of, and the variant's own
     // laws in brackets on the variant itself.
-    const tool = meliteLoad((async () => ({})) as unknown as EstateRequest)
+    const tool = meliteLoad(stubEstate())
     const parts = tool.output.render(
       { name: 'tts', inference_type: 'card' },
       {
@@ -291,7 +306,7 @@ describe('melite_load render — the loaded line', () => {
     // a lane that declared them still told the agent nothing. These
     // two arms are the whole difference between a contract the agent
     // can read and one it learns by refusal.
-    const tool = meliteLoad((async () => ({})) as unknown as EstateRequest)
+    const tool = meliteLoad(stubEstate())
     const parts = tool.output.render(
       { name: 'image-gen', inference_type: 'card' },
       {
@@ -329,7 +344,7 @@ describe('melite_load render — the loaded line', () => {
   })
 
   test('THE EDGE CELLS RIDE (label-less hints, junk required rows, ref-fallback skills, the 9-row clamp, stages, signature model)', () => {
-    const tool = meliteLoad((async () => ({})) as unknown as EstateRequest)
+    const tool = meliteLoad(stubEstate())
     const skills = [{ id: 'a' }, { ref: 'r-only' }, { id: 'b' }, { id: 'c' }, { id: 'd' }, { id: 'e' }, { id: 'f' }, { id: 'g' }, { id: 'h' }]
     const parts = tool.output.render(
       { name: 'c', inference_type: 'card' },
@@ -364,7 +379,7 @@ describe('melite_load render — the loaded line', () => {
   })
 
   test('a null-properties signature renders no params and no model line', () => {
-    const tool = meliteLoad((async () => ({})) as unknown as EstateRequest)
+    const tool = meliteLoad(stubEstate())
     const parts = tool.output.render(
       { name: 'c', inference_type: 'card' },
       {
@@ -376,7 +391,7 @@ describe('melite_load render — the loaded line', () => {
   })
 
   test('a bundless value renders the header alone', () => {
-    const tool = meliteLoad((async () => ({})) as unknown as EstateRequest)
+    const tool = meliteLoad(stubEstate())
     const parts = tool.output.render(
       { name: 'c', inference_type: 'card' },
       { name: 'c', inference_type: 'card' } as never,
@@ -385,7 +400,7 @@ describe('melite_load render — the loaded line', () => {
   })
 
   test('a nullish value still renders the header line', () => {
-    const tool = meliteLoad((async () => ({})) as unknown as EstateRequest)
+    const tool = meliteLoad(stubEstate())
     const parts = tool.output.render({ name: 'c', inference_type: 'card' }, null as never) as Array<{ text?: string }>
     assert.equal(parts.map((p) => p?.text ?? '').join('\n'), 'loaded ? ? — compose it with melite_construct (add_stage) — the bench state is live in the user\'s cards tab; keep editing it there; runs start at the user\'s Run press')
   })
@@ -399,7 +414,7 @@ describe('melite_load render — THE INTERFACE LAW (the agent-mode breakdown, 20
   // no run verb anywhere → flailing into comfy_manage). The hint
   // names the door THIS agent actually has.
   test('the browser face (default) never names melite_flow', () => {
-    const tool = meliteLoad((async () => ({})) as unknown as EstateRequest)
+    const tool = meliteLoad(stubEstate())
     const parts = tool.output.render(
       { name: 'c', inference_type: 'card' },
       { name: 'c', inference_type: 'card', bundle: { kind: 'card', name: 'c' } } as never,
@@ -410,7 +425,7 @@ describe('melite_load render — THE INTERFACE LAW (the agent-mode breakdown, 20
   })
 
   test('the headless face keeps the execution verb', () => {
-    const tool = meliteLoad((async () => ({})) as unknown as EstateRequest, { headless: true })
+    const tool = meliteLoad(stubEstate(), { headless: true })
     const parts = tool.output.render(
       { name: 'c', inference_type: 'card' },
       { name: 'c', inference_type: 'card', bundle: { kind: 'card', name: 'c' } } as never,
@@ -425,7 +440,7 @@ describe('melite_load render — THE INTERFACE LAW (the agent-mode breakdown, 20
   // benchable. The empty lane and the bare signature model ride the
   // same render block.
   test('a flow load speaks the run-door split; an empty lane speaks its refusal law; a bare model speaks', () => {
-    const tool = meliteLoad((async () => ({})) as unknown as EstateRequest)
+    const tool = meliteLoad(stubEstate())
     const render = (bundle: unknown): string =>
       (tool.output.render({ name: 'x', inference_type: 'flow' }, { name: 'x', inference_type: 'flow', bundle } as never) as Array<{ text?: string }>)
         .map((p) => p?.text ?? '').join('\n')
@@ -445,7 +460,7 @@ describe('melite_load render — THE INTERFACE LAW (the agent-mode breakdown, 20
 })
 
 test('THE MODS LINE RIDES (stroke 79 — the agent sees the kinds beside params)', () => {
-  const tool = meliteLoad((async () => ({})) as unknown as EstateRequest)
+  const tool = meliteLoad(stubEstate())
   const parts = tool.output.render(
     { name: 'mask', inference_type: 'card' },
     {
@@ -525,7 +540,7 @@ describe('melite_load render — the lane line', () => {
     },
   }
   const text = (bundle: unknown): string => {
-    const tool = meliteLoad((async () => ({})) as unknown as EstateRequest)
+    const tool = meliteLoad(stubEstate())
     const parts = tool.output.render(
       { name: 'tts', inference_type: 'card' },
       { name: 'tts', inference_type: 'card', bundle } as never,

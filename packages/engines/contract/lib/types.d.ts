@@ -30,12 +30,25 @@ export interface EngineStageOutcome {
     readonly outputs: Readonly<Record<string, EngineParamValue>>;
     readonly artifacts: readonly string[];
 }
+declare const BRAND: unique symbol;
+/** A string carrying a compile-time-only brand B (the
+ *  @deepseek-ai/dsh-brand mechanics, declared local — see the block
+ *  comment above). */
+type Branded<B extends string> = string & {
+    readonly [BRAND]: B;
+};
+/** The engine's own handle for one submitted run (ComfyUI's
+ *  promptId). Minted ONCE at the transport that pulled it off the
+ *  wire (comfyui-cordis's /prompt POST), de-branded by nothing —
+ *  the ledger stores the string it already is. */
+export type EngineRef = Branded<"EngineRef">;
 /** A whole submit's outcome. `engineRef` is the engine's own
  * handle for the submitted work (ComfyUI's promptId) — opaque to
- * the consumer, carried for the ledger. */
+ * the consumer, carried for the ledger; branded at its producer
+ * (the dsh-brand convention), never a bare string. */
 export interface EngineRunOutcome {
     readonly stages: readonly EngineStageOutcome[];
-    readonly engineRef?: string;
+    readonly engineRef?: EngineRef;
     /** THE REPLAY VERDICT (D11): true when the executor's seated tap
      *  folded zero engine events before settlement — the engine served
      *  memo'd outputs without executing. Optional so existing
@@ -80,4 +93,5 @@ export interface EngineRecord {
     readonly executor: EngineExecutor;
     readonly probe?: () => Promise<void>;
 }
+export {};
 //# sourceMappingURL=types.d.ts.map

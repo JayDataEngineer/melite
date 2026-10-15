@@ -19,7 +19,8 @@ import assert from 'node:assert/strict'
 import { RemoteError } from '@deepseek-ai/dsh-typert-protocol'
 import { ToolArgsError } from '@deepseek-ai/dsh-tools'
 import { meliteConstruct, projectStages } from '../src/tools/melite-construct.ts'
-import type { EstateRequest } from '../src/estate.ts'
+import type { Estate } from '../src/estate.ts'
+import { fakeEstate, fakeEstateRecorded } from './fake-estate.ts'
 import { fakeExec } from './fake-exec.ts'
 
 // The foreign seat's undeclared failure code this wall simulates —
@@ -34,33 +35,33 @@ declare module '@deepseek-ai/dsh-typert-protocol' {
   }
 }
 
-function mockRequest(handler: (method: string, path: string, body: unknown) => unknown): {
-  seen: Array<{ method: string; path: string; body: unknown; timeoutMs?: number }>;
-  request: EstateRequest;
+/** The typed-lane mock (F-1, 2026-11-05): handlers dispatch on
+ * (lane, args) — the URL grammar is the browser face's own seam,
+ * never the tool tests'. Lanes used here: benchGet(args[0]=session),
+ * benchEnsure(args[0]=doc), benchVerb(args[0]=session, args[1]=verb,
+ * args[2]=doc), runsValidate(args[0]=doc), runsList(args[0]=limit). */
+function mockEstate(handler: (lane: string, args: unknown[]) => unknown): {
+  seen: Array<{ lane: string; args: unknown[]; timeoutMs?: number }>;
+  estate: Estate;
 } {
-  const seen: Array<{ method: string; path: string; body: unknown; timeoutMs?: number }> = []
-  // Contextually typed by the EstateRequest seam — params inherit the
-  // transport signature, so no implicit-any and no casts ride.
-  const request: EstateRequest = async (method, path, body, _signal, timeoutMs) => {
-    seen.push({ method, path, body, timeoutMs })
-    return handler(method, path, body)
-  }
-  return { seen, request }
+  const seen: Array<{ lane: string; args: unknown[]; timeoutMs?: number }> = []
+  const { estate } = fakeEstateRecorded(seen, handler)
+  return { seen, estate }
 }
 
 function exec() {
   return fakeExec(AbortSignal.timeout(5000))
 }
 
-function stubRequest(): EstateRequest {
-  return (async () => ({})) as unknown as EstateRequest
+function stubEstate(): Estate {
+  return fakeEstate({}).estate
 }
 
 const ROW = { session: 'main', rev: 4, intent: 'make art', stages: [{ id: 's0' }], log: [{ rev: 4 }] }
 
 describe('melite_construct presentCall — the Bench card', () => {
   test('verb + stage ride the title', () => {
-    const tool = meliteConstruct(stubRequest())
+    const tool = meliteConstruct(stubEstate())
     const view = tool.presentCall!({ verb: 'patch', stage: 's1' })
     assert.equal(view?.card, 'generic')
     assert.equal(view?.title, 'Bench patch · s1')
@@ -68,17 +69,17 @@ describe('melite_construct presentCall — the Bench card', () => {
   })
 
   test('the card falls back when no stage rides', () => {
-    const tool = meliteConstruct(stubRequest())
+    const tool = meliteConstruct(stubEstate())
     assert.equal(tool.presentCall!({ verb: 'add_stage', card: 'image-gen' })?.title, 'Bench add_stage · image-gen')
   })
 
   test('a bare verb renders alone', () => {
-    const tool = meliteConstruct(stubRequest())
+    const tool = meliteConstruct(stubEstate())
     assert.equal(tool.presentCall!({ verb: 'read' })?.title, 'Bench read')
   })
 
   test('junk verbs/stages fall back', () => {
-    const tool = meliteConstruct(stubRequest())
+    const tool = meliteConstruct(stubEstate())
     assert.equal(tool.presentCall!({})?.title, 'Bench ?')
     assert.equal(tool.presentCall!(null)?.title, 'Bench ?')
     assert.equal(tool.presentCall!({ verb: 7, stage: '', card: '' })?.title, 'Bench ?')
@@ -87,62 +88,62 @@ describe('melite_construct presentCall — the Bench card', () => {
 
 describe('melite_construct — THE PER-CONVERSATION BENCH (stroke 44: the flow belongs to the conversation)', () => {
   test("the agent's own session IS the bench key — ToolExecution.agent.id binds it", async () => {
-    const { seen, request } = mockRequest((method, path) => {
-      if (method === 'GET' && path === '/v1/bench/s_chat7') return { ...ROW, session: 's_chat7' }
-      throw new Error('unmocked ' + method + ' ' + path)
+    const { seen, estate } = mockEstate((lane, args) => {
+      if (lane === 'benchGet' && args[0] === 's_chat7') return { ...ROW, session: 's_chat7' }
+      throw new Error('unmocked lane ' + lane)
     })
-    const tool = meliteConstruct(request)
+    const tool = meliteConstruct(estate)
     const out = await tool.execute({ verb: 'read' }, fakeExec(AbortSignal.timeout(5000), { agent: { id: 's_chat7' } })) as Record<string, unknown>
     assert.equal(out.bench, 's_chat7')
     assert.equal(out.ok, true)
-    assert.ok(seen.some((r) => r.path === '/v1/bench/s_chat7'))
+    assert.ok(seen.some((r) => r.lane === 'benchGet' && r.args[0] === 's_chat7'))
   })
 
   test('the conversation WINS over an explicit bench key — cross-conversation state is unreachable, not merely discouraged', async () => {
-    const { request } = mockRequest((method, path) => {
-      if (method === 'GET' && path === '/v1/bench/s_chat7') return { ...ROW, session: 's_chat7' }
-      throw new Error('unmocked ' + method + ' ' + path)
+    const { estate } = mockEstate((lane, args) => {
+      if (lane === 'benchGet' && args[0] === 's_chat7') return { ...ROW, session: 's_chat7' }
+      throw new Error('unmocked lane ' + lane)
     })
-    const tool = meliteConstruct(request)
+    const tool = meliteConstruct(estate)
     const out = await tool.execute({ verb: 'read', bench: 'main' }, fakeExec(AbortSignal.timeout(5000), { agent: { id: 's_chat7' } })) as Record<string, unknown>
     assert.equal(out.bench, 's_chat7')
   })
 
   test('no agent (headless/script seats) — the explicit key applies, else main', async () => {
-    const a = mockRequest((method, path) => {
-      if (method === 'GET' && path === '/v1/bench/probe') return ROW
-      throw new Error('unmocked ' + method + ' ' + path)
+    const a = mockEstate((lane, args) => {
+      if (lane === 'benchGet' && args[0] === 'probe') return ROW
+      throw new Error('unmocked lane ' + lane)
     })
-    const outA = await meliteConstruct(a.request).execute({ verb: 'read', bench: 'probe' }, exec()) as Record<string, unknown>
+    const outA = await meliteConstruct(a.estate).execute({ verb: 'read', bench: 'probe' }, exec()) as Record<string, unknown>
     assert.equal(outA.bench, 'probe')
 
-    const b = mockRequest((method, path) => {
-      if (method === 'GET' && path === '/v1/bench/main') return ROW
-      throw new Error('unmocked ' + method + ' ' + path)
+    const b = mockEstate((lane, args) => {
+      if (lane === 'benchGet' && args[0] === 'main') return ROW
+      throw new Error('unmocked lane ' + lane)
     })
-    const outB = await meliteConstruct(b.request).execute({ verb: 'read' }, exec()) as Record<string, unknown>
+    const outB = await meliteConstruct(b.estate).execute({ verb: 'read' }, exec()) as Record<string, unknown>
     assert.equal(outB.bench, 'main')
   })
 
   test('a junk agent id refuses to leak — sanitized to main', async () => {
-    const { seen, request } = mockRequest((method, path) => {
-      if (method === 'GET' && path === '/v1/bench/main') return ROW
-      throw new Error('unmocked ' + method + ' ' + path)
+    const { seen, estate } = mockEstate((lane, args) => {
+      if (lane === 'benchGet' && args[0] === 'main') return ROW
+      throw new Error('unmocked lane ' + lane)
     })
-    const tool = meliteConstruct(request)
+    const tool = meliteConstruct(estate)
     const out = await tool.execute({ verb: 'read' }, fakeExec(AbortSignal.timeout(5000), { agent: { id: 'not a key/..' } })) as Record<string, unknown>
     assert.equal(out.bench, 'main')
-    assert.ok(seen.some((r) => r.path === '/v1/bench/main'))
+    assert.ok(seen.some((r) => r.lane === 'benchGet' && r.args[0] === 'main'))
   })
 })
 
 describe('melite_construct read — freshness first', () => {
   test('read GETs the bench row', async () => {
-    const { seen, request } = mockRequest((method, path) => {
-      if (method === 'GET' && path === '/v1/bench/main') return ROW
-      throw new Error('unmocked ' + method + ' ' + path)
+    const { seen, estate } = mockEstate((lane, args) => {
+      if (lane === 'benchGet' && args[0] === 'main') return ROW
+      throw new Error('unmocked lane ' + lane)
     })
-    const tool = meliteConstruct(request)
+    const tool = meliteConstruct(estate)
     const out = await tool.execute({ verb: 'read' }, exec()) as Record<string, unknown>
     assert.equal(out.verb, 'read')
     assert.equal(out.bench, 'main')
@@ -156,11 +157,11 @@ describe('melite_construct read — freshness first', () => {
   })
 
   test('a missing verb reads (the default verb IS read)', async () => {
-    const { request } = mockRequest((method, path) => {
-      if (method === 'GET' && path === '/v1/bench/main') return ROW
-      throw new Error('unmocked ' + method + ' ' + path)
+    const { estate } = mockEstate((lane, args) => {
+      if (lane === 'benchGet' && args[0] === 'main') return ROW
+      throw new Error('unmocked lane ' + lane)
     })
-    const tool = meliteConstruct(request)
+    const tool = meliteConstruct(estate)
     const out = await tool.execute({}, exec()) as Record<string, unknown>
     // The echo carries the documented default by name (T11's residual
     // cured, 2026-10-12): the description says "read (default when
@@ -170,66 +171,66 @@ describe('melite_construct read — freshness first', () => {
   })
 
   test('a named side-bench rides the path', async () => {
-    const { seen, request } = mockRequest((method, path) => {
-      if (method === 'GET' && path === '/v1/bench/side_1') return { ...ROW, session: 'side_1' }
-      throw new Error('unmocked ' + method + ' ' + path)
+    const { seen, estate } = mockEstate((lane, args) => {
+      if (lane === 'benchGet' && args[0] === 'side_1') return { ...ROW, session: 'side_1' }
+      throw new Error('unmocked lane ' + lane)
     })
-    const tool = meliteConstruct(request)
+    const tool = meliteConstruct(estate)
     const out = await tool.execute({ verb: 'read', bench: 'side_1' }, exec()) as Record<string, unknown>
     assert.equal(out.bench, 'side_1')
-    assert.equal(seen[0]!.path, '/v1/bench/side_1')
+    assert.equal(seen[0]!.lane, 'benchGet')
   })
 
   test('an invalid bench falls back to the shared bench', async () => {
-    const { seen, request } = mockRequest((method, path) => {
-      if (method === 'GET' && path === '/v1/bench/main') return ROW
-      throw new Error('unmocked ' + method + ' ' + path)
+    const { seen, estate } = mockEstate((lane, args) => {
+      if (lane === 'benchGet' && args[0] === 'main') return ROW
+      throw new Error('unmocked lane ' + lane)
     })
-    const tool = meliteConstruct(request)
+    const tool = meliteConstruct(estate)
     const out = await tool.execute({ verb: 'read', bench: 'bad bench!' }, exec()) as Record<string, unknown>
     assert.equal(out.bench, 'main')
-    assert.equal(seen[0]!.path, '/v1/bench/main')
+    assert.equal(seen[0]!.lane, 'benchGet')
   })
 
   test('a missing bench births via ensure, then reads', async () => {
-    const { seen, request } = mockRequest((method, path) => {
-      if (method === 'GET' && path === '/v1/bench/main') {
-        if (seen.filter((c) => c.method === 'GET').length === 1) {
+    const { seen, estate } = mockEstate((lane, args) => {
+      if (lane === 'benchGet' && args[0] === 'main') {
+        if (seen.filter((c) => c.lane === 'benchGet').length === 1) {
           throw new RemoteError('bench/not-found', 'no such bench', { session: 'main' })
         }
         return ROW
       }
-      if (method === 'POST' && path === '/v1/bench/ensure') return { rev: 0 }
-      throw new Error('unmocked ' + method + ' ' + path)
+      if (lane === 'benchEnsure') return { rev: 0 }
+      throw new Error('unmocked lane ' + lane)
     })
-    const tool = meliteConstruct(request)
+    const tool = meliteConstruct(estate)
     const out = await tool.execute({ verb: 'read' }, exec()) as Record<string, unknown>
     assert.equal(out.rev, 4)
     assert.deepEqual(
-      seen.map((c) => c.method + ' ' + c.path),
-      ['GET /v1/bench/main', 'POST /v1/bench/ensure', 'GET /v1/bench/main'],
+      seen.map((c) => c.lane),
+      ['benchGet', 'benchEnsure', 'benchGet'],
     )
-    assert.deepEqual(seen[1]!.body, { session: 'main' })
+    assert.deepEqual(seen[1]!.args[0], { session: 'main' })
   })
 
   test('a foreign remote on the read refuses, never births', async () => {
-    const { seen, request } = mockRequest((method, path) => {
-      if (method === 'GET' && path === '/v1/bench/main') {
+    const { seen, estate } = mockEstate((lane, args) => {
+      if (lane === 'benchGet' && args[0] === 'main') {
         throw new RemoteError('bench/broken', 'seat blew up', { session: 'main' })
       }
-      throw new Error('unmocked ' + method + ' ' + path)
+      throw new Error('unmocked lane ' + lane)
     })
-    const tool = meliteConstruct(request)
+    const tool = meliteConstruct(estate)
     const out = await tool.execute({ verb: 'read' }, exec()) as Record<string, unknown>
     assert.equal(out.ok, false)
     assert.equal(out.error, 'seat blew up')
     assert.equal(out.error_kind, 'bench/broken')
-    assert.equal(seen.some((c) => c.path === '/v1/bench/ensure'), false)
+    assert.equal(seen.some((c) => c.lane === 'benchEnsure'), false)
   })
 
   test('a plain failure on the read refuses as a value', async () => {
-    const { request } = mockRequest(() => { throw new Error('down') })
-    const tool = meliteConstruct(request)
+    const { estate } = mockEstate(() => { throw new Error('down') })
+    const tool = meliteConstruct(estate)
     const out = await tool.execute({ verb: 'read' }, exec()) as Record<string, unknown>
     assert.equal(out.verb, 'read')
     assert.equal(out.bench, 'main')
@@ -241,35 +242,35 @@ describe('melite_construct read — freshness first', () => {
 
 describe('melite_construct validate — compile, no GPU', () => {
   test('an empty bench refuses without touching the door', async () => {
-    const { seen, request } = mockRequest((method, path) => {
-      if (method === 'GET') return { ...ROW, stages: [] }
-      throw new Error('unmocked ' + method + ' ' + path)
+    const { seen, estate } = mockEstate((lane, args) => {
+      if (lane === 'benchGet') return { ...ROW, stages: [] }
+      throw new Error('unmocked lane ' + lane)
     })
-    const tool = meliteConstruct(request)
+    const tool = meliteConstruct(estate)
     const out = await tool.execute({ verb: 'validate' }, exec()) as Record<string, unknown>
     assert.equal(out.ok, true)
     assert.equal(out.rev, 4)
     assert.equal(out.compiles, false)
     assert.equal(out.note, 'bench is empty')
-    assert.equal(seen.some((c) => c.path === '/v1/flows/validate'), false)
+    assert.equal(seen.some((c) => c.lane === 'runsValidate'), false)
   })
 
   test('stages project onto the wire contract and compile', async () => {
-    const { seen, request } = mockRequest((method, path) => {
-      if (method === 'GET') {
+    const { seen, estate } = mockEstate((lane, args) => {
+      if (lane === 'benchGet') {
         return {
           ...ROW,
           stages: [{ id: 'a', engine: '', params: { p: 1 }, card: 'c', title: 't', result: 1 }],
         }
       }
-      if (method === 'POST' && path === '/v1/flows/validate') return { ok: true }
-      throw new Error('unmocked ' + method + ' ' + path)
+      if (lane === 'runsValidate') return { ok: true }
+      throw new Error('unmocked lane ' + lane)
     })
-    const tool = meliteConstruct(request)
+    const tool = meliteConstruct(estate)
     const out = await tool.execute({ verb: 'validate' }, exec()) as Record<string, unknown>
     assert.equal(out.compiles, true)
     assert.deepEqual(out.report, { ok: true })
-    const validate = seen.find((c) => c.path === '/v1/flows/validate')!
+    const validate = seen.find((c) => c.lane === 'runsValidate')!
     assert.equal(validate.timeoutMs, 20_000)
     // 2026-09-21: the tool supplies the flow id itself (the bench's
     // intent when legal, else 'bench') — the caller never spells one.
@@ -279,7 +280,7 @@ describe('melite_construct validate — compile, no GPU', () => {
     // THE CARD-PORTS LAW (2026-09-26): outputs stay {} on a card
     // stage (channels derive from the card's own ports at compile —
     // the fabricated image default mis-kinded video/tts cards).
-    assert.deepEqual(validate.body, {
+    assert.deepEqual(validate.args[0], {
       flow_inline: {
         id: 'bench',
         stages: [{ id: 'a', engine: 'comfyui', params: { p: 1 }, inputs: {}, outputs: {}, card: 'c' }],
@@ -288,23 +289,23 @@ describe('melite_construct validate — compile, no GPU', () => {
   })
 
   test('the valid flag compiles too', async () => {
-    const { request } = mockRequest((method, path) => {
-      if (method === 'GET') return { ...ROW, stages: [{ id: 'a' }] }
-      if (method === 'POST' && path === '/v1/flows/validate') return { ok: false, valid: true }
-      throw new Error('unmocked ' + method + ' ' + path)
+    const { estate } = mockEstate((lane, args) => {
+      if (lane === 'benchGet') return { ...ROW, stages: [{ id: 'a' }] }
+      if (lane === 'runsValidate') return { ok: false, valid: true }
+      throw new Error('unmocked lane ' + lane)
     })
-    const tool = meliteConstruct(request)
+    const tool = meliteConstruct(estate)
     const out = await tool.execute({ verb: 'validate' }, exec()) as Record<string, unknown>
     assert.equal(out.compiles, true)
   })
 
   test('a refused compile rides compiles:false', async () => {
-    const { request } = mockRequest((method, path) => {
-      if (method === 'GET') return { ...ROW, stages: [{ id: 'a' }] }
-      if (method === 'POST' && path === '/v1/flows/validate') return { ok: false, valid: false }
-      throw new Error('unmocked ' + method + ' ' + path)
+    const { estate } = mockEstate((lane, args) => {
+      if (lane === 'benchGet') return { ...ROW, stages: [{ id: 'a' }] }
+      if (lane === 'runsValidate') return { ok: false, valid: false }
+      throw new Error('unmocked lane ' + lane)
     })
-    const tool = meliteConstruct(request)
+    const tool = meliteConstruct(estate)
     const out = await tool.execute({ verb: 'validate' }, exec()) as Record<string, unknown>
     assert.equal(out.compiles, false)
   })
@@ -313,168 +314,168 @@ describe('melite_construct validate — compile, no GPU', () => {
 describe('melite_construct mutations — every verb', () => {
   test('load replaces stages wholesale', async () => {
     const stages = [{ id: 's1', engine: 'comfyui' }]
-    const { seen, request } = mockRequest((method, path) => {
-      if (method === 'POST' && path === '/v1/bench/ensure') return { rev: 5, stages }
-      throw new Error('unmocked ' + method + ' ' + path)
+    const { seen, estate } = mockEstate((lane, args) => {
+      if (lane === 'benchEnsure') return { rev: 5, stages }
+      throw new Error('unmocked lane ' + lane)
     })
-    const tool = meliteConstruct(request)
+    const tool = meliteConstruct(estate)
     const out = await tool.execute(
       { verb: 'load', stages, intent: 'make art', expect_rev: 4 },
       exec(),
     ) as Record<string, unknown>
     assert.equal(out.rev, 5)
     assert.deepEqual(out.stages, stages)
-    assert.deepEqual(seen[0]!.body, { session: 'main', stages, intent: 'make art', expect_rev: 4 })
+    assert.deepEqual(seen[0]!.args[0], { session: 'main', stages, intent: 'make art', expect_rev: 4 })
   })
 
   test('load defaults to empty stages and drops a blank intent', async () => {
-    const { seen, request } = mockRequest((method, path) => {
-      if (method === 'POST' && path === '/v1/bench/ensure') return { rev: 1, stages: [] }
-      throw new Error('unmocked ' + method + ' ' + path)
+    const { seen, estate } = mockEstate((lane, args) => {
+      if (lane === 'benchEnsure') return { rev: 1, stages: [] }
+      throw new Error('unmocked lane ' + lane)
     })
-    const tool = meliteConstruct(request)
+    const tool = meliteConstruct(estate)
     await tool.execute({ verb: 'load', intent: '', expect_rev: 0 }, exec())
-    assert.deepEqual(seen[0]!.body, { session: 'main', stages: [], expect_rev: 0 })
+    assert.deepEqual(seen[0]!.args[0], { session: 'main', stages: [], expect_rev: 0 })
   })
 
   test('load with overwrite:true confirms wholesale replacement (the overwrite law)', async () => {
     const stages = [{ id: 's1', engine: 'comfyui' }]
-    const { seen, request } = mockRequest((method, path) => {
-      if (method === 'POST' && path === '/v1/bench/ensure') return { rev: 6, stages }
-      throw new Error('unmocked ' + method + ' ' + path)
+    const { seen, estate } = mockEstate((lane, args) => {
+      if (lane === 'benchEnsure') return { rev: 6, stages }
+      throw new Error('unmocked lane ' + lane)
     })
-    const tool = meliteConstruct(request)
+    const tool = meliteConstruct(estate)
     const out = await tool.execute(
       { verb: 'load', stages, intent: 'make art', overwrite: true, expect_rev: 4 },
       exec(),
     ) as Record<string, unknown>
     assert.equal(out.rev, 6)
     assert.deepEqual(out.stages, stages)
-    assert.deepEqual(seen[0]!.body, { session: 'main', stages, intent: 'make art', overwrite: true, expect_rev: 4 })
+    assert.deepEqual(seen[0]!.args[0], { session: 'main', stages, intent: 'make art', overwrite: true, expect_rev: 4 })
   })
 
   test('patch merges params onto one stage', async () => {
-    const { seen, request } = mockRequest((method, path) => {
-      if (method === 'POST' && path === '/v1/bench/main/patch') return { rev: 6, stage: 's1', patched: ['p'] }
-      throw new Error('unmocked ' + method + ' ' + path)
+    const { seen, estate } = mockEstate((lane, args) => {
+      if (lane === 'benchVerb' && args[1] === 'patch') return { rev: 6, stage: 's1', patched: ['p'] }
+      throw new Error('unmocked lane ' + lane)
     })
-    const tool = meliteConstruct(request)
+    const tool = meliteConstruct(estate)
     const out = await tool.execute(
       { verb: 'patch', stage: 's1', params: { p: 1 }, expect_rev: 5 },
       exec(),
     ) as Record<string, unknown>
     assert.equal(out.rev, 6)
     assert.equal(out.stage, 's1')
-    assert.deepEqual(seen[0]!.body, { stage: 's1', params: { p: 1 }, expect_rev: 5 })
+    assert.deepEqual(seen[0]!.args[2], { stage: 's1', params: { p: 1 }, expect_rev: 5 })
   })
 
   test('add_stage carries the optional wiring', async () => {
-    const { seen, request } = mockRequest((method, path) => {
-      if (method === 'POST' && path === '/v1/bench/main/add_stage') return { rev: 7, stage: 's2' }
-      throw new Error('unmocked ' + method + ' ' + path)
+    const { seen, estate } = mockEstate((lane, args) => {
+      if (lane === 'benchVerb' && args[1] === 'add_stage') return { rev: 7, stage: 's2' }
+      throw new Error('unmocked lane ' + lane)
     })
-    const tool = meliteConstruct(request)
+    const tool = meliteConstruct(estate)
     const out = await tool.execute(
       { verb: 'add_stage', card: 'c', engine: 'comfyui', params: { p: 1 }, inputs: { x: 1 }, expect_rev: 6 },
       exec(),
     ) as Record<string, unknown>
     assert.equal(out.stage, 's2')
-    assert.deepEqual(seen[0]!.body, {
+    assert.deepEqual(seen[0]!.args[2], {
       card: 'c', engine: 'comfyui', params: { p: 1 }, inputs: { x: 1 }, expect_rev: 6,
     })
   })
 
   test('add_stage drops absent wiring', async () => {
-    const { seen, request } = mockRequest((method, path) => {
-      if (method === 'POST' && path === '/v1/bench/main/add_stage') return { rev: 7, stage: 's2' }
-      throw new Error('unmocked ' + method + ' ' + path)
+    const { seen, estate } = mockEstate((lane, args) => {
+      if (lane === 'benchVerb' && args[1] === 'add_stage') return { rev: 7, stage: 's2' }
+      throw new Error('unmocked lane ' + lane)
     })
-    const tool = meliteConstruct(request)
+    const tool = meliteConstruct(estate)
     await tool.execute({ verb: 'add_stage', card: 'c', expect_rev: 6 }, exec())
-    assert.deepEqual(seen[0]!.body, { card: 'c', expect_rev: 6 })
+    assert.deepEqual(seen[0]!.args[2], { card: 'c', expect_rev: 6 })
   })
 
   test('remove_stage splices one stage out', async () => {
-    const { seen, request } = mockRequest((method, path) => {
-      if (method === 'POST' && path === '/v1/bench/main/remove_stage') return { rev: 8, stage: 's1' }
-      throw new Error('unmocked ' + method + ' ' + path)
+    const { seen, estate } = mockEstate((lane, args) => {
+      if (lane === 'benchVerb' && args[1] === 'remove_stage') return { rev: 8, stage: 's1' }
+      throw new Error('unmocked lane ' + lane)
     })
-    const tool = meliteConstruct(request)
+    const tool = meliteConstruct(estate)
     const out = await tool.execute({ verb: 'remove_stage', stage: 's1', expect_rev: 7 }, exec()) as Record<string, unknown>
     assert.equal(out.stage, 's1')
-    assert.deepEqual(seen[0]!.body, { stage: 's1', expect_rev: 7 })
+    assert.deepEqual(seen[0]!.args[2], { stage: 's1', expect_rev: 7 })
   })
 
   // THE CLEAR ALL (2026-10-10, the operator: "THERE IS NO CLEAR ALL"
   // — the bench wedge left no way out but the wedge).
   test('clear empties the bench in one verb (the demanded clear all)', async () => {
-    const { seen, request } = mockRequest((method, path) => {
-      if (method === 'POST' && path === '/v1/bench/main/clear') return { rev: 12, cleared: 6 }
-      throw new Error('unmocked ' + method + ' ' + path)
+    const { seen, estate } = mockEstate((lane, args) => {
+      if (lane === 'benchVerb' && args[1] === 'clear') return { rev: 12, cleared: 6 }
+      throw new Error('unmocked lane ' + lane)
     })
-    const tool = meliteConstruct(request)
+    const tool = meliteConstruct(estate)
     const out = await tool.execute({ verb: 'clear', expect_rev: 11 }, exec()) as Record<string, unknown>
     assert.equal(out.cleared, 6)
     assert.equal(out.rev, 12)
     // no stage arg: the verb is the bench itself
-    assert.deepEqual(seen[0]!.body, { expect_rev: 11 })
+    assert.deepEqual(seen[0]!.args[2], { expect_rev: 11 })
   })
 
   test('the verb table ADVERTISES clear (an unlisted door is a door the agent never finds)', () => {
-    const tool = meliteConstruct(stubRequest())
+    const tool = meliteConstruct(stubEstate())
     const schema = JSON.stringify(tool.parameters ?? {})
     assert.match(schema, /clear/)
   })
 
   test('rewire sets a binding', async () => {
-    const { seen, request } = mockRequest((method, path) => {
-      if (method === 'POST' && path === '/v1/bench/main/rewire') return { rev: 9, stage: 's1', input: 'in' }
-      throw new Error('unmocked ' + method + ' ' + path)
+    const { seen, estate } = mockEstate((lane, args) => {
+      if (lane === 'benchVerb' && args[1] === 'rewire') return { rev: 9, stage: 's1', input: 'in' }
+      throw new Error('unmocked lane ' + lane)
     })
-    const tool = meliteConstruct(request)
+    const tool = meliteConstruct(estate)
     const out = await tool.execute(
       { verb: 'rewire', stage: 's1', input: 'in', from: { stage: 's0', output: 'default' }, expect_rev: 8 },
       exec(),
     ) as Record<string, unknown>
     assert.equal(out.input, 'in')
-    assert.deepEqual(seen[0]!.body, {
+    assert.deepEqual(seen[0]!.args[2], {
       stage: 's1', input: 'in', from: { stage: 's0', output: 'default' }, expect_rev: 8,
     })
   })
 
   test('rewire without from clears the binding', async () => {
-    const { seen, request } = mockRequest((method, path) => {
-      if (method === 'POST' && path === '/v1/bench/main/rewire') return { rev: 9, stage: 's1', input: 'in' }
-      throw new Error('unmocked ' + method + ' ' + path)
+    const { seen, estate } = mockEstate((lane, args) => {
+      if (lane === 'benchVerb' && args[1] === 'rewire') return { rev: 9, stage: 's1', input: 'in' }
+      throw new Error('unmocked lane ' + lane)
     })
-    const tool = meliteConstruct(request)
+    const tool = meliteConstruct(estate)
     await tool.execute({ verb: 'rewire', stage: 's1', input: 'in', expect_rev: 8 }, exec())
-    assert.deepEqual(seen[0]!.body, { stage: 's1', input: 'in', expect_rev: 8 })
+    assert.deepEqual(seen[0]!.args[2], { stage: 's1', input: 'in', expect_rev: 8 })
   })
 
   test('undo walks the log', async () => {
-    const { seen, request } = mockRequest((method, path) => {
-      if (method === 'POST' && path === '/v1/bench/main/undo') return { rev: 10, undone: 2, stages: [] }
-      throw new Error('unmocked ' + method + ' ' + path)
+    const { seen, estate } = mockEstate((lane, args) => {
+      if (lane === 'benchVerb' && args[1] === 'undo') return { rev: 10, undone: 2, stages: [] }
+      throw new Error('unmocked lane ' + lane)
     })
-    const tool = meliteConstruct(request)
+    const tool = meliteConstruct(estate)
     const out = await tool.execute(
       { verb: 'undo', n: 2, author: 'user', expect_rev: 11 },
       exec(),
     ) as Record<string, unknown>
     assert.equal(out.rev, 10)
     assert.equal(out.undone, 2)
-    assert.deepEqual(seen[0]!.body, { n: 2, author: 'user', expect_rev: 11 })
+    assert.deepEqual(seen[0]!.args[2], { n: 2, author: 'user', expect_rev: 11 })
   })
 
   test('undo defaults ride omitted', async () => {
-    const { seen, request } = mockRequest((method, path) => {
-      if (method === 'POST' && path === '/v1/bench/main/undo') return { rev: 10, undone: 1, stages: [] }
-      throw new Error('unmocked ' + method + ' ' + path)
+    const { seen, estate } = mockEstate((lane, args) => {
+      if (lane === 'benchVerb' && args[1] === 'undo') return { rev: 10, undone: 1, stages: [] }
+      throw new Error('unmocked lane ' + lane)
     })
-    const tool = meliteConstruct(request)
+    const tool = meliteConstruct(estate)
     await tool.execute({ verb: 'undo', expect_rev: 11 }, exec())
-    assert.deepEqual(seen[0]!.body, { expect_rev: 11 })
+    assert.deepEqual(seen[0]!.args[2], { expect_rev: 11 })
   })
 
   test('an unknown verb refuses with the vocabulary', async () => {
@@ -482,8 +483,8 @@ describe('melite_construct mutations — every verb', () => {
     // audit's fix 8): the verb is a literal enum now, so
     // validateArgs fires BEFORE execute with the same vocabulary —
     // ToolArgsError instead of the execute-side unknown-verb row.
-    const { request } = mockRequest(() => ({ rev: 1 }))
-    const tool = meliteConstruct(request)
+    const { estate } = mockEstate(() => ({ rev: 1 }))
+    const tool = meliteConstruct(estate)
     await assert.rejects(
       tool.execute({ verb: 'bogus' }, exec()),
       (e: unknown) => {
@@ -496,8 +497,8 @@ describe('melite_construct mutations — every verb', () => {
   })
 
   test('rewire from-rows and load stage-rows refuse undeclared keys at the wrapper gate (fix 8)', async () => {
-    const { request } = mockRequest(() => ({ rev: 1 }))
-    const tool = meliteConstruct(request)
+    const { estate } = mockEstate(() => ({ rev: 1 }))
+    const tool = meliteConstruct(estate)
     await assert.rejects(
       tool.execute({ verb: 'rewire', stage: 's', input: 'image', from: { stage: 'a', output: 'image', zeta: 1 } }, exec()),
       (e: unknown) => {
@@ -519,13 +520,13 @@ describe('melite_construct mutations — every verb', () => {
 
 describe('melite_construct refusals — the CAS voice', () => {
   test('a moved bench carries current_rev', async () => {
-    const { request } = mockRequest(() => {
+    const { estate } = mockEstate(() => {
       throw new RemoteError('bench/cas-conflict', 'bench moved: rev is 7, caller held 6', {
         current_rev: 7,
         expect_rev: 6,
       })
     })
-    const tool = meliteConstruct(request)
+    const tool = meliteConstruct(estate)
     const out = await tool.execute(
       { verb: 'patch', stage: 's1', params: {}, expect_rev: 6 },
       exec(),
@@ -538,10 +539,10 @@ describe('melite_construct refusals — the CAS voice', () => {
   })
 
   test('a remote without a rev carries none', async () => {
-    const { request } = mockRequest(() => {
+    const { estate } = mockEstate(() => {
       throw new RemoteError('bench/cas-conflict', 'bench moved', undefined as never) // no details at runtime — the carry-none arm
     })
-    const tool = meliteConstruct(request)
+    const tool = meliteConstruct(estate)
     const out = await tool.execute({ verb: 'patch', stage: 's1', expect_rev: 6 }, exec()) as Record<string, unknown>
     assert.equal(out.error, 'bench moved')
 
@@ -557,9 +558,9 @@ describe('melite_construct refusals — the CAS voice', () => {
   // switch lands instead of stranding on a stale hold.
   test('THE REBASE: a stale expect_rev re-reads the fresh rev and re-applies once — the model switch lands', async () => {
     let posts = 0
-    const { seen, request } = mockRequest((method, path, body) => {
-      const b = body as Record<string, unknown>
-      if (method === 'GET') return { rev: 23, stages: [] }
+    const { seen, estate } = mockEstate((lane, args) => {
+      const b = (lane === 'benchVerb' ? args[2] : args[0]) as Record<string, unknown>
+      if (lane === 'benchGet') return { rev: 23, stages: [] }
       posts += 1
       if (posts === 1) {
         // the door's verdict: the bench moved under the caller's hold
@@ -569,7 +570,7 @@ describe('melite_construct refusals — the CAS voice', () => {
       assert.equal(b['expect_rev'], 23, 'the retry carries the FRESH rev')
       return { rev: 24, stage: b['stage'], patched: true }
     })
-    const tool = meliteConstruct(request)
+    const tool = meliteConstruct(estate)
     const out = await tool.execute(
       { verb: 'patch', stage: 's_0', params: { model: 'qwen-img-edit-2511' }, expect_rev: 21 },
       exec(),
@@ -579,20 +580,20 @@ describe('melite_construct refusals — the CAS voice', () => {
     assert.equal(out.stage, 's_0')
     // the sequence: the refused POST (stale 21), the fresh GET, the
     // landing POST (23) — exactly three calls, one retry, no loops
-    assert.deepEqual(seen.map((s) => s.method + ' ' + s.path), [
-      'POST /v1/bench/main/patch',
-      'GET /v1/bench/main',
-      'POST /v1/bench/main/patch',
+    assert.deepEqual(seen.map((s) => s.lane), [
+      'benchVerb',
+      'benchGet',
+      'benchVerb',
     ])
   })
 
   test('THE REBASE SPENDS ONE retry: a second cas-conflict surfaces (never loops)', async () => {
-    const { seen, request } = mockRequest((method) => {
-      if (method === 'GET') return { rev: 23, stages: [] }
+    const { seen, estate } = mockEstate((lane) => {
+      if (lane === 'benchGet') return { rev: 23, stages: [] }
       throw new RemoteError('bench/cas-conflict',
         'bench main moved: rev is 99, caller held 23', { current_rev: 99, expect_rev: 23 })
     })
-    const tool = meliteConstruct(request)
+    const tool = meliteConstruct(estate)
     const out = await tool.execute(
       { verb: 'patch', stage: 's_0', params: {}, expect_rev: 21 },
       exec(),
@@ -600,7 +601,7 @@ describe('melite_construct refusals — the CAS voice', () => {
     assert.equal(out.ok, false)
     assert.equal(out.error_kind, 'bench/cas-conflict')
     // TWO posts only: the stale attempt + the single re-applied retry
-    assert.equal(seen.filter((s) => s.method === 'POST').length, 2)
+    assert.equal(seen.filter((s) => s.lane === 'benchVerb').length, 2)
   })
 
   // The rebase's two exit hatches (batch-4 closure, 2026-10-14): a
@@ -610,11 +611,11 @@ describe('melite_construct refusals — the CAS voice', () => {
   // explains why.
   test('a NON-cas failure on the verb surfaces as itself — the rebase never fires', async () => {
     let gets = 0
-    const { seen, request } = mockRequest((method) => {
-      if (method === 'GET') { gets += 1; return { rev: 23, stages: [] } }
+    const { seen, estate } = mockEstate((lane) => {
+      if (lane === 'benchGet') { gets += 1; return { rev: 23, stages: [] } }
       throw new RemoteError('bench/no-such-stage', 'stage s_9 is not on the bench', undefined as never)
     })
-    const tool = meliteConstruct(request)
+    const tool = meliteConstruct(estate)
     const out = await tool.execute(
       { verb: 'patch', stage: 's_9', params: {}, expect_rev: 21 },
       exec(),
@@ -623,16 +624,16 @@ describe('melite_construct refusals — the CAS voice', () => {
     assert.equal(out.error_kind, 'bench/no-such-stage')
     // no re-read, no retry: the rebase is for CAS verdicts only
     assert.equal(gets, 0)
-    assert.deepEqual(seen.map((s) => s.method), ['POST'])
+    assert.deepEqual(seen.map((s) => s.lane), ['benchVerb'])
   })
 
   test('a fresh read with NO numeric rev rethrows the CAS verdict — one read, no blind retry', async () => {
-    const { seen, request } = mockRequest((method) => {
-      if (method === 'GET') return { stages: [] } // unreadable bench: no rev field
+    const { seen, estate } = mockEstate((lane) => {
+      if (lane === 'benchGet') return { stages: [] } // unreadable bench: no rev field
       throw new RemoteError('bench/cas-conflict',
         'bench main moved: rev is 23, caller held 21', { current_rev: 23, expect_rev: 21 })
     })
-    const tool = meliteConstruct(request)
+    const tool = meliteConstruct(estate)
     const out = await tool.execute(
       { verb: 'patch', stage: 's_0', params: {}, expect_rev: 21 },
       exec(),
@@ -641,22 +642,22 @@ describe('melite_construct refusals — the CAS voice', () => {
     assert.equal(out.error_kind, 'bench/cas-conflict')
     assert.equal(out.error, 'bench main moved: rev is 23, caller held 21')
     // the stale POST, the revless GET — and no second POST
-    assert.deepEqual(seen.map((s) => s.method), ['POST', 'GET'])
+    assert.deepEqual(seen.map((s) => s.lane), ['benchVerb', 'benchGet'])
   })
 
   test('a non-numeric rev carries none', async () => {
-    const { request } = mockRequest(() => {
+    const { estate } = mockEstate(() => {
       throw new RemoteError('bench/cas-conflict', 'bench moved', { current_rev: 'seven' as unknown as number }) // intentionally mistyped rev: non-numeric carries none (undefined below)
     })
-    const tool = meliteConstruct(request)
+    const tool = meliteConstruct(estate)
     const out = await tool.execute({ verb: 'patch', stage: 's1', expect_rev: 6 }, exec()) as Record<string, unknown>
     assert.equal(out.error, 'bench moved')
     assert.equal(out.current_rev, undefined)
   })
 
   test('a bare throw refuses remote', async () => {
-    const { request } = mockRequest(() => { throw 'bare failure' })
-    const tool = meliteConstruct(request)
+    const { estate } = mockEstate(() => { throw 'bare failure' })
+    const tool = meliteConstruct(estate)
     const out = await tool.execute({ verb: 'read' }, exec()) as Record<string, unknown>
     assert.equal(out.ok, false)
     assert.equal(out.error, 'bare failure')
@@ -666,7 +667,7 @@ describe('melite_construct refusals — the CAS voice', () => {
 
 describe('melite_construct render — refused or revved', () => {
   test('a refusal renders REFUSED', () => {
-    const tool = meliteConstruct(stubRequest())
+    const tool = meliteConstruct(stubEstate())
     const parts = tool.output.render(
       { verb: 'patch' },
       { verb: 'patch', bench: 'main', ok: false, error: 'bench moved' } as never,
@@ -675,7 +676,7 @@ describe('melite_construct render — refused or revved', () => {
   })
 
   test('a success renders verb → rev', () => {
-    const tool = meliteConstruct(stubRequest())
+    const tool = meliteConstruct(stubEstate())
     const parts = tool.output.render(
       { verb: 'read' },
       { verb: 'read', bench: 'main', ok: true, rev: 5 } as never,
@@ -687,7 +688,7 @@ describe('melite_construct render — refused or revved', () => {
   // the render MUST disclose the stages the payload carries — a
   // model that cannot see the bench probes it destructively.
   test('read discloses its stages one line each', () => {
-    const tool = meliteConstruct(stubRequest())
+    const tool = meliteConstruct(stubEstate())
     const parts = tool.output.render(
       { verb: 'read' },
       {
@@ -712,7 +713,7 @@ describe('melite_construct render — refused or revved', () => {
   // exists. String rows print verbatim; object rows print path;
   // ./ prefixes strip; null stays the honest never-ran line.
   test('read voices last_run mint + first artifact in the suffix', () => {
-    const tool = meliteConstruct(stubRequest())
+    const tool = meliteConstruct(stubEstate())
     const parts = tool.output.render(
       { verb: 'read' },
       {
@@ -731,7 +732,7 @@ describe('melite_construct render — refused or revved', () => {
   })
 
   test('an empty bench says so — never silence', () => {
-    const tool = meliteConstruct(stubRequest())
+    const tool = meliteConstruct(stubEstate())
     const parts = tool.output.render(
       { verb: 'load' },
       { verb: 'load', bench: 'main', ok: true, rev: 41, stages: [] } as never,
@@ -743,7 +744,7 @@ describe('melite_construct render — refused or revved', () => {
   })
 
   test('undo/load disclose the restored stages (the probing cure)', () => {
-    const tool = meliteConstruct(stubRequest())
+    const tool = meliteConstruct(stubEstate())
     const parts = tool.output.render(
       { verb: 'undo' },
       { verb: 'undo', bench: 'main', ok: true, rev: 48, stages: [{ id: 's_1', card: 'image-gen', engine: 'comfyui' }] } as never,
@@ -757,7 +758,7 @@ describe('melite_construct render — refused or revved', () => {
   // the placeholder arms: a malformed stage row renders honest '?'
   // cells, never a crash and never silence (the render wall's law)
   test('malformed stage rows render placeholders, never crash', () => {
-    const tool = meliteConstruct(stubRequest())
+    const tool = meliteConstruct(stubEstate())
     const parts = tool.output.render(
       { verb: 'read' },
       {
@@ -775,13 +776,13 @@ describe('melite_construct render — refused or revved', () => {
   })
 
   test('missing verb/rev fall back to ?', () => {
-    const tool = meliteConstruct(stubRequest())
+    const tool = meliteConstruct(stubEstate())
     const parts = tool.output.render({ verb: 'read' }, { bench: 'main', ok: true } as never) as Array<{ text?: string }>
     assert.equal(parts.map((p) => p?.text ?? '').join('\n'), 'bench ? → rev ?')
   })
 
   test('an empty error renders the success line', () => {
-    const tool = meliteConstruct(stubRequest())
+    const tool = meliteConstruct(stubEstate())
     const parts = tool.output.render(
       { verb: 'read' },
       { verb: 'read', bench: 'main', error: '' } as never,
@@ -833,14 +834,14 @@ describe('melite_construct — THE INTERFACE LAW (the agent-mode breakdown, 2026
   // verb in the description sent the caught session hunting a run
   // door it was never given.
   test('the browser face (default) never names melite_flow', async () => {
-    const tool = meliteConstruct((async () => ({})) as unknown as EstateRequest)
+    const tool = meliteConstruct(stubEstate())
     assert.ok(!tool.description.includes('melite_flow'), tool.description)
     assert.ok(tool.description.includes('You compose the flow and edit its state here, live with the user'), tool.description)
     assert.ok(tool.description.includes("runs start at the user's Run press, never yours"), tool.description)
   })
 
   test('the headless face keeps the delegated-operator phrasing', async () => {
-    const tool = meliteConstruct((async () => ({})) as unknown as EstateRequest, { headless: true })
+    const tool = meliteConstruct(stubEstate(), { headless: true })
     assert.ok(tool.description.includes('melite_flow runs what is here'), tool.description)
   })
 })
@@ -864,12 +865,12 @@ describe('melite_construct read — last_run (the lookup the agent cannot do its
   }
 
   test('each stage carries the NEWEST run that names it; foreign drafts never leak', async () => {
-    const { request } = mockRequest((method, path) => {
-      if (method === 'GET' && path === '/v1/bench/main') return BENCH
-      if (method === 'GET' && path === '/v1/flows/runs?limit=100') return RUNS
-      throw new Error('unmocked ' + method + ' ' + path)
+    const { estate } = mockEstate((lane, args) => {
+      if (lane === 'benchGet' && args[0] === 'main') return BENCH
+      if (lane === 'runsList' && args[0] === '100') return RUNS
+      throw new Error('unmocked lane ' + lane)
     })
-    const out = await meliteConstruct(request).execute({ verb: 'read' }, exec()) as Record<string, unknown>
+    const out = await meliteConstruct(estate).execute({ verb: 'read' }, exec()) as Record<string, unknown>
     const stages = out.stages as Array<Record<string, unknown>>
     assert.equal(stages.length, 2)
     for (const s of stages) {
@@ -885,34 +886,34 @@ describe('melite_construct read — last_run (the lookup the agent cannot do its
     // draft, and the shared stamp told a human the TTS stage last
     // produced a PNG. Membership in the run's stage_ids digest is
     // now the only ticket to a stamp.
-    const seen = mockRequest((method, path) => {
-      if (method === 'GET' && path === '/v1/bench/main') return BENCH
-      if (method === 'GET' && path === '/v1/flows/runs?limit=100') return {
+    const seen = mockEstate((lane, args) => {
+      if (lane === 'benchGet' && args[0] === 'main') return BENCH
+      if (lane === 'runsList' && args[0] === '100') return {
         count: 1,
         runs: [
           { run_id: 'run-img-0001', draft_id: 'bench-main', status: 'done', created_at: 200, thumbnail: 't2', artifacts: [{ name: 'b.png' }], stage_ids: ['s_0'] },
         ],
       }
-      throw new Error('unmocked ' + method + ' ' + path)
+      throw new Error('unmocked lane ' + lane)
     })
-    const out = await meliteConstruct(seen.request).execute({ verb: 'read' }, exec()) as Record<string, unknown>
+    const out = await meliteConstruct(seen.estate).execute({ verb: 'read' }, exec()) as Record<string, unknown>
     const stages = out.stages as Array<Record<string, unknown>>
     assert.equal((stages[0].last_run as Record<string, unknown>).run_id, 'run-img-0001')
     assert.equal(stages[1].last_run, null)
   })
 
   test('a run with no stage_ids digest (pre-fix sidecar) stamps nothing — unknown membership is no stamp', async () => {
-    const seen = mockRequest((method, path) => {
-      if (method === 'GET' && path === '/v1/bench/main') return BENCH
-      if (method === 'GET' && path === '/v1/flows/runs?limit=100') return {
+    const seen = mockEstate((lane, args) => {
+      if (lane === 'benchGet' && args[0] === 'main') return BENCH
+      if (lane === 'runsList' && args[0] === '100') return {
         count: 1,
         runs: [
           { run_id: 'run-legacy-0001', draft_id: 'bench-main', status: 'done', created_at: 200, thumbnail: 't2', artifacts: [{ name: 'b.png' }] },
         ],
       }
-      throw new Error('unmocked ' + method + ' ' + path)
+      throw new Error('unmocked lane ' + lane)
     })
-    const out = await meliteConstruct(seen.request).execute({ verb: 'read' }, exec()) as Record<string, unknown>
+    const out = await meliteConstruct(seen.estate).execute({ verb: 'read' }, exec()) as Record<string, unknown>
     for (const s of out.stages as Array<Record<string, unknown>>) {
       assert.equal(s.last_run, null)
     }
@@ -924,55 +925,55 @@ describe('melite_construct read — last_run (the lookup the agent cannot do its
   test('a stage with no id takes no stamp — the join needs a name to match on', async () => {
     // An id-less stage row is an object (past the malformed guard) but
     // names nothing, so even the newest matching run stamps nothing.
-    const { request } = mockRequest((method, path) => {
-      if (method === 'GET' && path === '/v1/bench/main') return { ...BENCH, stages: [{ card: 'image-gen' }] }
-      if (method === 'GET' && path === '/v1/flows/runs?limit=100') return RUNS
-      throw new Error('unmocked ' + method + ' ' + path)
+    const { estate } = mockEstate((lane, args) => {
+      if (lane === 'benchGet' && args[0] === 'main') return { ...BENCH, stages: [{ card: 'image-gen' }] }
+      if (lane === 'runsList' && args[0] === '100') return RUNS
+      throw new Error('unmocked lane ' + lane)
     })
-    const out = await meliteConstruct(request).execute({ verb: 'read' }, exec()) as Record<string, unknown>
+    const out = await meliteConstruct(estate).execute({ verb: 'read' }, exec()) as Record<string, unknown>
     const stages = out.stages as Array<Record<string, unknown>>
     assert.equal(stages.length, 1)
     assert.equal(stages[0].last_run, null)
   })
 
   test('a failed runs call degrades to verbatim stages with NO runs key — lookup-failed stays distinct', async () => {
-    const { request } = mockRequest((method, path) => {
-      if (method === 'GET' && path === '/v1/bench/main') return BENCH
+    const { estate } = mockEstate((lane, args) => {
+      if (lane === 'benchGet' && args[0] === 'main') return BENCH
       throw new Error('runs seat down')
     })
-    const out = await meliteConstruct(request).execute({ verb: 'read' }, exec()) as Record<string, unknown>
+    const out = await meliteConstruct(estate).execute({ verb: 'read' }, exec()) as Record<string, unknown>
     assert.equal(out.ok, true)
     assert.deepEqual(out.stages, BENCH.stages)
     assert.ok(!('runs' in out), 'no runs key when the lookup itself died')
   })
 
   test('no draft match — explicit null + window facts (never-ran vs window-miss reads off the totals)', async () => {
-    const norun = mockRequest((method, path) => {
-      if (method === 'GET' && path === '/v1/bench/main') return BENCH
-      if (method === 'GET' && path === '/v1/flows/runs?limit=100') return { count: 1372, runs: [RUNS.runs[2]] }
-      throw new Error('unmocked ' + method + ' ' + path)
+    const norun = mockEstate((lane, args) => {
+      if (lane === 'benchGet' && args[0] === 'main') return BENCH
+      if (lane === 'runsList' && args[0] === '100') return { count: 1372, runs: [RUNS.runs[2]] }
+      throw new Error('unmocked lane ' + lane)
     })
-    const out = await meliteConstruct(norun.request).execute({ verb: 'read' }, exec()) as Record<string, unknown>
+    const out = await meliteConstruct(norun.estate).execute({ verb: 'read' }, exec()) as Record<string, unknown>
     for (const s of out.stages as Array<Record<string, unknown>>) {
       assert.equal(s.last_run, null)
     }
     // total >> checked: the agent can see the window may have missed.
     assert.deepEqual(out.runs, { checked: 1, total: 1372, matched: 0 })
-    const nodraft = mockRequest((method, path) => {
-      if (method === 'GET' && path === '/v1/bench/main') return ROW
-      throw new Error('unmocked ' + method + ' ' + path)
+    const nodraft = mockEstate((lane, args) => {
+      if (lane === 'benchGet' && args[0] === 'main') return ROW
+      throw new Error('unmocked lane ' + lane)
     })
-    const out2 = await meliteConstruct(nodraft.request).execute({ verb: 'read' }, exec()) as Record<string, unknown>
+    const out2 = await meliteConstruct(nodraft.estate).execute({ verb: 'read' }, exec()) as Record<string, unknown>
     assert.deepEqual(out2.stages, ROW.stages)
   })
 
   test('a hit carries the window facts too', async () => {
-    const { request } = mockRequest((method, path) => {
-      if (method === 'GET' && path === '/v1/bench/main') return BENCH
-      if (method === 'GET' && path === '/v1/flows/runs?limit=100') return { count: 3, runs: RUNS.runs }
-      throw new Error('unmocked ' + method + ' ' + path)
+    const { estate } = mockEstate((lane, args) => {
+      if (lane === 'benchGet' && args[0] === 'main') return BENCH
+      if (lane === 'runsList' && args[0] === '100') return { count: 3, runs: RUNS.runs }
+      throw new Error('unmocked lane ' + lane)
     })
-    const out = await meliteConstruct(request).execute({ verb: 'read' }, exec()) as Record<string, unknown>
+    const out = await meliteConstruct(estate).execute({ verb: 'read' }, exec()) as Record<string, unknown>
     assert.deepEqual(out.runs, { checked: 3, total: 3, matched: 2 })
   })
 })
@@ -998,8 +999,8 @@ describe('melite_construct projectStages — card rides (the phantom-refusal cur
   })
 
   test('validate forwards card in flow_inline — derivation can fire', async () => {
-    const { request, seen } = mockRequest((method, path) => {
-      if (method === 'GET' && path === '/v1/bench/main') {
+    const { estate, seen } = mockEstate((lane, args) => {
+      if (lane === 'benchGet' && args[0] === 'main') {
         return {
           session: 'main', rev: 1, intent: 'bench',
           stages: [{
@@ -1010,13 +1011,13 @@ describe('melite_construct projectStages — card rides (the phantom-refusal cur
           log: [],
         }
       }
-      if (method === 'POST' && path === '/v1/flows/validate') return { ok: true }
-      throw new Error('unmocked ' + method + ' ' + path)
+      if (lane === 'runsValidate') return { ok: true }
+      throw new Error('unmocked lane ' + lane)
     })
-    const out = await meliteConstruct(request).execute({ verb: 'validate' }, exec()) as Record<string, unknown>
+    const out = await meliteConstruct(estate).execute({ verb: 'validate' }, exec()) as Record<string, unknown>
     assert.equal(out.compiles, true)
-    const post = seen.find((r) => r.path === '/v1/flows/validate')
-    const stages = ((post!.body as Record<string, unknown>).flow_inline as Record<string, unknown>).stages as Array<Record<string, unknown>>
+    const post = seen.find((r) => r.lane === 'runsValidate')
+    const stages = ((post!.args[0] as Record<string, unknown>).flow_inline as Record<string, unknown>).stages as Array<Record<string, unknown>>
     assert.equal(stages[0]!.card, 'image-edit')
   })
 })
@@ -1026,11 +1027,11 @@ describe('melite_construct add_stage — expected/outputs ride (the load workaro
   // dropped them — chained benches had to route through load to
   // hand-type kinds. Stated keys forward; absent keys stay absent.
   test('stated expected/outputs forward verbatim', async () => {
-    const { seen, request } = mockRequest((method, path) => {
-      if (method === 'POST' && path === '/v1/bench/main/add_stage') return { rev: 7, stage: 's2' }
-      throw new Error('unmocked ' + method + ' ' + path)
+    const { seen, estate } = mockEstate((lane, args) => {
+      if (lane === 'benchVerb' && args[1] === 'add_stage') return { rev: 7, stage: 's2' }
+      throw new Error('unmocked lane ' + lane)
     })
-    const tool = meliteConstruct(request)
+    const tool = meliteConstruct(estate)
     const out = await tool.execute(
       {
         verb: 'add_stage', card: 'c', expect_rev: 6,
@@ -1040,17 +1041,17 @@ describe('melite_construct add_stage — expected/outputs ride (the load workaro
       exec(),
     ) as Record<string, unknown>
     assert.equal(out.stage, 's2')
-    assert.deepEqual(seen[0]!.body, {
+    assert.deepEqual(seen[0]!.args[2], {
       card: 'c', params: { p: 1 }, inputs: { x: { stage: 's_0', output: 'default' } },
       expected: { x: 'image' }, outputs: { default: 'image' }, expect_rev: 6,
     })
   })
 
   test('stated non-records refuse LOUD at the arg gate — never accept-and-ignore to the bench', async () => {
-    const { request } = mockRequest(() => {
+    const { estate } = mockEstate(() => {
       throw new Error('must not reach the bench')
     })
-    const tool = meliteConstruct(request)
+    const tool = meliteConstruct(estate)
     // type:object in the schema refuses null/[] before execute —
     // junk the bench's isRecord would shed silently never travels.
     await assert.rejects(
@@ -1069,8 +1070,8 @@ describe('melite_construct add_stage — expected/outputs ride (the load workaro
 // unwrap runs BEFORE any request: the bench stores clean.
 describe('melite_construct execute — the array wire guard', () => {
   test('THE RECEIPT: add_stage params carrying {item:[…]} POST unwrapped', async () => {
-    const { seen, request } = mockRequest((_m, _p, _b) => ({}))
-    const tool = meliteConstruct(request)
+    const { seen, estate } = mockEstate(() => ({}))
+    const tool = meliteConstruct(estate)
     const r = (await tool.execute(
       {
         verb: 'add_stage', card: 'h3-timeline', expect_rev: 3,
@@ -1079,19 +1080,19 @@ describe('melite_construct execute — the array wire guard', () => {
       exec(),
     )) as Record<string, unknown>
     assert.equal(r.ok, true)
-    const add = seen.find((s) => s.path.endsWith('/add_stage'))
+    const add = seen.find((s) => s.lane === 'benchVerb' && s.args[1] === 'add_stage')
     assert.ok(add !== undefined, 'the add_stage request fired')
     assert.deepEqual(
-      (add.body as { params: Record<string, unknown> }).params.ref_images,
+      (add.args[2] as { params: Record<string, unknown> }).params.ref_images,
       ['/a.png'],
       'the wrapped array reached the estate UNWRAPPED',
     )
-    assert.equal((add.body as { params: Record<string, unknown> }).params.prompt, 'x')
+    assert.equal((add.args[2] as { params: Record<string, unknown> }).params.prompt, 'x')
   })
 
   test('load stages[].params unwrap at depth; the "" arm stays for the card seat', async () => {
-    const { seen, request } = mockRequest((_m, _p, _b) => ({ rev: 5, stages: [] }))
-    const tool = meliteConstruct(request)
+    const { seen, estate } = mockEstate(() => ({ rev: 5, stages: [] }))
+    const tool = meliteConstruct(estate)
     await tool.execute(
       {
         verb: 'load', expect_rev: 4,
@@ -1099,35 +1100,35 @@ describe('melite_construct execute — the array wire guard', () => {
       },
       exec(),
     )
-    const ensure = seen.find((s) => s.path === '/v1/bench/ensure')
+    const ensure = seen.find((s) => s.lane === 'benchEnsure')
     assert.ok(ensure !== undefined)
-    const row = (ensure.body as { stages: Array<{ params: Record<string, unknown> }> }).stages[0]
+    const row = (ensure.args[0] as { stages: Array<{ params: Record<string, unknown> }> }).stages[0]
     assert.deepEqual(row.params.calls, [{ text: 'hi' }])
   })
 
   test('FROZEN wire args never throw and still unwrap (the 035 freeze receipt: Cannot assign to read only property params)', async () => {
-    const { seen, request } = mockRequest((_m, _p, _b) => ({}))
-    const tool = meliteConstruct(request)
+    const { seen, estate } = mockEstate(() => ({}))
+    const tool = meliteConstruct(estate)
     // the wire may deliver the args object read-only — the rebind
     // law walks a copy and never writes to the caller's object
     const frozen = Object.freeze({ verb: 'add_stage', card: 'c', expect_rev: 1, params: { tags: { item: ['a'] } } })
     let threw: unknown = null
     try { await tool.execute(frozen, exec()) } catch (e) { threw = e }
     assert.equal(threw, null)
-    const add = seen.find((s) => s.path.endsWith('/add_stage'))
-    assert.deepEqual((add!.body as { params: Record<string, unknown> }).params.tags, ['a'])
+    const add = seen.find((s) => s.lane === 'benchVerb' && s.args[1] === 'add_stage')
+    assert.deepEqual((add!.args[2] as { params: Record<string, unknown> }).params.tags, ['a'])
   })
 
   test('a genuine object with an item key never unwraps (two keys = not the wire shape)', async () => {
-    const { seen, request } = mockRequest((_m, _p, _b) => ({}))
-    const tool = meliteConstruct(request)
+    const { seen, estate } = mockEstate(() => ({}))
+    const tool = meliteConstruct(estate)
     await tool.execute(
       { verb: 'add_stage', card: 'c', expect_rev: 1, params: { meta: { item: 'label', x: 1 } } },
       exec(),
     )
-    const add = seen.find((s) => s.path.endsWith('/add_stage'))
+    const add = seen.find((s) => s.lane === 'benchVerb' && s.args[1] === 'add_stage')
     assert.deepEqual(
-      (add!.body as { params: Record<string, unknown> }).params.meta,
+      (add!.args[2] as { params: Record<string, unknown> }).params.meta,
       { item: 'label', x: 1 },
     )
   })
@@ -1135,20 +1136,20 @@ describe('melite_construct execute — the array wire guard', () => {
 
 describe("add_stage — the empty-stage drop (035 attempt-14 Probe-A strand)", () => {
   test("a shared-schema stage:'' rides dropped (never the full refusal)", async () => {
-    const seen = mockRequest((method, path, body) => {
-      if (method === 'GET' && path === '/v1/bench/main') return { rev: 1, stages: [] }
-      if (path.endsWith('/add_stage')) return { rev: 2, stage: 's_0' }
+    const seen = mockEstate((lane, args) => {
+      if (lane === 'benchGet' && args[0] === 'main') return { rev: 1, stages: [] }
+      if (lane === 'benchVerb' && args[1] === 'add_stage') return { rev: 2, stage: 's_0' }
       return undefined
     })
-    const tool = meliteConstruct(seen.request)
+    const tool = meliteConstruct(seen.estate)
     const out = await tool.execute({ verb: 'add_stage', card: 'image-gen', stage: '', params: { prompt: 'x' }, expect_rev: 1 }, exec()) as Record<string, unknown>
     assert.equal(out['stage'], 's_0')
-    const add = seen.seen.find((c) => c.path.endsWith('/add_stage'))
-    assert.equal((add!.body as Record<string, unknown>)['stage'], undefined)
+    const add = seen.seen.find((c) => c.lane === 'benchVerb' && c.args[1] === 'add_stage')
+    assert.equal((add!.args[2] as Record<string, unknown>)['stage'], undefined)
   })
   test("a NON-EMPTY stage on add_stage still refuses loud (addressing intent)", async () => {
-    const seen = mockRequest(() => undefined)
-    const tool = meliteConstruct(seen.request)
+    const seen = mockEstate(() => undefined)
+    const tool = meliteConstruct(seen.estate)
     const out = await tool.execute({ verb: 'add_stage', card: 'image-gen', stage: 's_9', params: { prompt: 'x' } }, exec()) as Record<string, unknown>
     assert.match(String(out['error']), /assigns its own stage id/)
   })
@@ -1156,17 +1157,17 @@ describe("add_stage — the empty-stage drop (035 attempt-14 Probe-A strand)", (
 
 describe("read — the params summary (035 attempt-15 gap #3)", () => {
   test("stage rows carry model + array shapes for probe verification", async () => {
-    const seen = mockRequest((method, path) => {
-      if (method === 'GET' && path === '/v1/bench/main') {
+    const seen = mockEstate((lane, args) => {
+      if (lane === 'benchGet' && args[0] === 'main') {
         return {
           rev: 2, draft_id: 'd1',
           stages: [{ id: 's_0', card: 'h3-timeline', engine: 'comfyui', params: { model: 'h3', ref_images: ['/a.png', '/b.png'], prompt: 'x' } }],
         }
       }
-      if (method === 'GET' && path === '/v1/flows/runs?limit=100') return { runs: [], count: 0 }
+      if (lane === 'runsList' && args[0] === '100') return { runs: [], count: 0 }
       return undefined
     })
-    const tool = meliteConstruct(seen.request)
+    const tool = meliteConstruct(seen.estate)
     const out = await tool.execute({ verb: 'read' }, exec()) as Record<string, unknown>
     const row = (out['stages'] as Array<Record<string, unknown>>)[0]!
     assert.equal(row['model'], 'h3')
@@ -1176,17 +1177,17 @@ describe("read — the params summary (035 attempt-15 gap #3)", () => {
 
 describe("read — the params summary guard paths", () => {
   test("a wrapped {item} array is named 'wrapped{item}' (the Probe-B receipt shape)", async () => {
-    const seen = mockRequest((method, path) => {
-      if (method === 'GET' && path === '/v1/bench/main') {
+    const seen = mockEstate((lane, args) => {
+      if (lane === 'benchGet' && args[0] === 'main') {
         return {
           rev: 2, draft_id: 'd1',
           stages: [{ id: 's_0', card: 'h3', params: { ref_images: { item: ['/a.png'] } } }],
         }
       }
-      if (method === 'GET' && path === '/v1/flows/runs?limit=100') return { runs: [], count: 0 }
+      if (lane === 'runsList' && args[0] === '100') return { runs: [], count: 0 }
       return undefined
     })
-    const tool = meliteConstruct(seen.request)
+    const tool = meliteConstruct(seen.estate)
     const out = await tool.execute({ verb: 'read' }, exec()) as Record<string, unknown>
     const row = (out['stages'] as Array<Record<string, unknown>>)[0]!
     assert.deepEqual(row['arrays'], { ref_images: 'wrapped{item}' })
@@ -1195,33 +1196,33 @@ describe("read — the params summary guard paths", () => {
 
 describe('read enrichment defensive paths', () => {
   test('empty stages and absent draft ids skip the run lookup', async () => {
-    const seen = mockRequest((method, path) => {
-      if (method === 'GET' && path === '/v1/bench/main') return { rev: 1, stages: [] }
-      throw new Error('unexpected ' + method + ' ' + path)
+    const seen = mockEstate((lane, args) => {
+      if (lane === 'benchGet' && args[0] === 'main') return { rev: 1, stages: [] }
+      throw new Error('unexpected lane ' + lane)
     })
-    const out = await meliteConstruct(seen.request).execute({ verb: 'read' }, exec()) as Record<string, unknown>
+    const out = await meliteConstruct(seen.estate).execute({ verb: 'read' }, exec()) as Record<string, unknown>
     assert.deepEqual(out.stages, [])
     assert.equal(seen.seen.length, 1)
-    const second = mockRequest((method, path) => {
-      if (method === 'GET' && path === '/v1/bench/main') return { rev: 1, draft_id: '', stages: [{ id: 's' }] }
-      throw new Error('unexpected ' + method + ' ' + path)
+    const second = mockEstate((lane, args) => {
+      if (lane === 'benchGet' && args[0] === 'main') return { rev: 1, draft_id: '', stages: [{ id: 's' }] }
+      throw new Error('unexpected lane ' + lane)
     })
-    const out2 = await meliteConstruct(second.request).execute({ verb: 'read' }, exec()) as Record<string, unknown>
+    const out2 = await meliteConstruct(second.estate).execute({ verb: 'read' }, exec()) as Record<string, unknown>
     assert.deepEqual(out2.stages, [{ id: 's' }])
     assert.equal(second.seen.length, 1)
   })
 
   test('malformed run rows and stage rows degrade to explicit null receipts', async () => {
-    const seen = mockRequest((method, path) => {
-      if (method === 'GET' && path === '/v1/bench/main') return {
+    const seen = mockEstate((lane, args) => {
+      if (lane === 'benchGet' && args[0] === 'main') return {
         rev: 1, draft_id: 'd1', stages: [null, 'bad', { id: 's', params: { model: 'm', list: [1], wrapped: { item: [] } } }],
       }
-      if (method === 'GET' && path === '/v1/flows/runs?limit=100') return {
+      if (lane === 'runsList' && args[0] === '100') return {
         count: 5, runs: [null, [], { draft_id: 'other' }, { draft_id: 'd1', created_at: 'old' }],
       }
-      throw new Error('unexpected ' + method + ' ' + path)
+      throw new Error('unexpected lane ' + lane)
     })
-    const out = await meliteConstruct(seen.request).execute({ verb: 'read' }, exec()) as Record<string, unknown>
+    const out = await meliteConstruct(seen.estate).execute({ verb: 'read' }, exec()) as Record<string, unknown>
     assert.deepEqual(out.runs, { checked: 4, total: 5, matched: 1 })
     const rows = out.stages as unknown[]
     assert.equal(rows[0], null)
@@ -1231,47 +1232,47 @@ describe('read enrichment defensive paths', () => {
   })
 
   test('non-array run envelopes and nonnumeric totals use the honest fallback', async () => {
-    const badRows = mockRequest((method, path) => {
-      if (method === 'GET' && path === '/v1/bench/main') return { rev: 1, draft_id: 'd1', stages: [{ id: 's' }] }
-      if (method === 'GET' && path === '/v1/flows/runs?limit=100') return { runs: {}, count: 4 }
-      throw new Error('unexpected ' + method + ' ' + path)
+    const badRows = mockEstate((lane, args) => {
+      if (lane === 'benchGet' && args[0] === 'main') return { rev: 1, draft_id: 'd1', stages: [{ id: 's' }] }
+      if (lane === 'runsList' && args[0] === '100') return { runs: {}, count: 4 }
+      throw new Error('unexpected lane ' + lane)
     })
-    const out = await meliteConstruct(badRows.request).execute({ verb: 'read' }, exec()) as Record<string, unknown>
+    const out = await meliteConstruct(badRows.estate).execute({ verb: 'read' }, exec()) as Record<string, unknown>
     assert.deepEqual(out.stages, [{ id: 's' }])
     assert.equal('runs' in out, false)
-    const badTotal = mockRequest((method, path) => {
-      if (method === 'GET' && path === '/v1/bench/main') return { rev: 1, draft_id: 'd1', stages: [{ id: 's' }] }
-      if (method === 'GET' && path === '/v1/flows/runs?limit=100') return { runs: [], count: 'many' }
-      throw new Error('unexpected ' + method + ' ' + path)
+    const badTotal = mockEstate((lane, args) => {
+      if (lane === 'benchGet' && args[0] === 'main') return { rev: 1, draft_id: 'd1', stages: [{ id: 's' }] }
+      if (lane === 'runsList' && args[0] === '100') return { runs: [], count: 'many' }
+      throw new Error('unexpected lane ' + lane)
     })
-    const out2 = await meliteConstruct(badTotal.request).execute({ verb: 'read' }, exec()) as Record<string, unknown>
+    const out2 = await meliteConstruct(badTotal.estate).execute({ verb: 'read' }, exec()) as Record<string, unknown>
     assert.deepEqual(out2.runs, { checked: 0, total: 0, matched: 0 })
   })
 
   test('a no-match read preserves malformed stage rows and exercises no-match summaries', async () => {
-    const seen = mockRequest((method, path) => {
-      if (method === 'GET' && path === '/v1/bench/main') return { rev: 1, draft_id: 'd1', stages: [null, 'bad', { id: 's', params: null }] }
-      if (method === 'GET' && path === '/v1/flows/runs?limit=100') return { runs: [{ draft_id: 'other' }], count: 1 }
-      throw new Error('unexpected ' + method + ' ' + path)
+    const seen = mockEstate((lane, args) => {
+      if (lane === 'benchGet' && args[0] === 'main') return { rev: 1, draft_id: 'd1', stages: [null, 'bad', { id: 's', params: null }] }
+      if (lane === 'runsList' && args[0] === '100') return { runs: [{ draft_id: 'other' }], count: 1 }
+      throw new Error('unexpected lane ' + lane)
     })
-    const out = await meliteConstruct(seen.request).execute({ verb: 'read' }, exec()) as Record<string, unknown>
+    const out = await meliteConstruct(seen.estate).execute({ verb: 'read' }, exec()) as Record<string, unknown>
     assert.deepEqual(out.stages, [null, 'bad', { id: 's', params: null, last_run: null }])
   })
 
   test('the newest matching run carries export fields and skips malformed stages', async () => {
-    const seen = mockRequest((method, path) => {
-      if (method === 'GET' && path === '/v1/bench/main') return {
+    const seen = mockEstate((lane, args) => {
+      if (lane === 'benchGet' && args[0] === 'main') return {
         rev: 1, draft_id: 'd1', stages: [null, { id: 's', params: { model: 'm' } }],
       }
-      if (method === 'GET' && path === '/v1/flows/runs?limit=100') return {
+      if (lane === 'runsList' && args[0] === '100') return {
         count: 2, runs: [
           { draft_id: 'd1', run_id: 'old', created_at: 1, stage_ids: ['s'] },
           { draft_id: 'd1', run_id: 'new', created_at: 2, status: 'done', artifacts: ['a'], export_name: 'voice', export_path: '/voice.qvoice', stage_ids: ['s'] },
         ],
       }
-      throw new Error('unexpected ' + method + ' ' + path)
+      throw new Error('unexpected lane ' + lane)
     })
-    const out = await meliteConstruct(seen.request).execute({ verb: 'read' }, exec()) as Record<string, unknown>
+    const out = await meliteConstruct(seen.estate).execute({ verb: 'read' }, exec()) as Record<string, unknown>
     const rows = out.stages as unknown[]
     assert.equal(rows[0], null)
     assert.deepEqual((rows[1] as Record<string, unknown>).last_run, {
@@ -1282,7 +1283,7 @@ describe('read enrichment defensive paths', () => {
 
 describe('construct render defensive paths', () => {
   test('renders sparse stage receipts and run-window facts', () => {
-    const tool = meliteConstruct(stubRequest())
+    const tool = meliteConstruct(stubEstate())
     const render = (stages: unknown[], runs: unknown): string => (tool.output.render({}, {
       verb: 'read', rev: 2, stages, runs,
     } as never) as Array<{ text?: string }>).map((part) => part.text ?? '').join('\n')
@@ -1302,14 +1303,14 @@ describe('construct render defensive paths', () => {
   })
 
   test('validate accepts a non-string bench intent and supplies the fallback flow id', async () => {
-    const seen = mockRequest((method, path) => {
-      if (method === 'GET' && path === '/v1/bench/main') return { rev: 1, intent: 7, stages: [{ id: 's' }] }
-      if (method === 'POST' && path === '/v1/flows/validate') return { ok: true }
-      throw new Error('unexpected ' + method + ' ' + path)
+    const seen = mockEstate((lane, args) => {
+      if (lane === 'benchGet' && args[0] === 'main') return { rev: 1, intent: 7, stages: [{ id: 's' }] }
+      if (lane === 'runsValidate') return { ok: true }
+      throw new Error('unexpected lane ' + lane)
     })
-    const out = await meliteConstruct(seen.request).execute({ verb: 'validate' }, exec()) as Record<string, unknown>
+    const out = await meliteConstruct(seen.estate).execute({ verb: 'validate' }, exec()) as Record<string, unknown>
     assert.equal(out.compiles, true)
-    const post = seen.seen.find((row) => row.path === '/v1/flows/validate')
-    assert.equal((post!.body as { flow_inline: { id: string } }).flow_inline.id, 'bench')
+    const post = seen.seen.find((row) => row.lane === 'runsValidate')
+    assert.equal((post!.args[0] as { flow_inline: { id: string } }).flow_inline.id, 'bench')
   })
 })

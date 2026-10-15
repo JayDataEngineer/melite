@@ -35,7 +35,11 @@ export interface ManageActionReply {
  * with the refusal's text. */
 export declare function postManageAction(action: string, payload: Record<string, ManageJsonValue>, signal?: AbortSignal): Promise<ManageActionReply>;
 /** /v1/model-catalog → the cards section (the picker's ONE surface —
- *  action cards, one tile per card package; models are NOT entries). */
+ *  action cards, one tile per card package; models are NOT entries).
+ *  THE ONE DOOR LAW (nativity audit 2026-11-05 D6): the GET + cache
+ *  lives in melite-run-wire's fetchCardCatalogRows — this is its
+ *  picker projection (label/description/genre walks, the label sort);
+ *  there is no second read of the door. */
 export declare function fetchCardCatalog(signal?: AbortSignal): Promise<CatalogCard[]>;
 /** The form-spec boundary judgment (one home — audit #48's cure):
  * refuses a doc without a schema envelope and walks every envelope's

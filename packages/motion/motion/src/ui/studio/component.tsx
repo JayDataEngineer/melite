@@ -43,9 +43,18 @@
  * useMotionUndoStack (undo/redo), useMotionMedia (body/skin/load/playback/
  * thumb/background), usePoseEditing (edit mode + reskin + repose),
  * useMotionStage (joints flat + stamp/discard + export framing),
- * useTimelineEnvelope (envelope + seed guard + persists),
+ * useTimelineEnvelope (envelope math + pull-the-tail),
  * useTimelineAuthoring (timeline CRUD verbs), and the MotionRail /
- * MotionStageView / MotionTimelineSection panels. Behavior is IDENTICAL.
+ * MotionStageView / MotionTimelineSection panels.
+ *
+ * ONE TRUTH (2026-11-05, nativity audit F7 — the h3-timeline pattern):
+ * stage.params is the ONLY document state. The tlPrompts/tlKeyframes/
+ * tlIntervals/constraintPayloads mirrors, the once-only hydration, the
+ * echo-guard persist effects, and the derived `prompt` write-back are
+ * gone: useMotionDoc projects the row, overlays the transient op log,
+ * and commits every gesture straight through onSave (fused prompts
+ * statement: motion_prompts + prompt in ONE call). The bar renders the
+ * shown projection; an external bench write re-hydrates naturally.
  */
 import { useEffect, useMemo, useRef, useState } from "react"
 import type { CardStage } from "@melite/contracts"
@@ -55,10 +64,8 @@ import type { MotionAzimuth, MotionNpz } from "@melite/formats"
 import { precomputeDeformedVerts, vertsToB64 } from "@melite/formats"
 import type { SomaSkin } from "@melite/formats"
 import type { CameraFraming } from "@melite-plugin/motion/ui/viewer3d"
-import type {
-  TimelineInterval, TimelineKeyframe, TimelinePrompt,
-} from "@melite-plugin/timeline/ui/timeline"
-import type { MotionConstraint } from "@melite/formats/motionConstraints"
+import { useMotionDoc } from "./useMotionDoc.ts"
+import type { MotionDoc } from "./motionDoc.ts"
 import { StudioShell, defineShellDeclaration } from '@melite/card-base/client'
 import s from "./component.module.css"
 import {
@@ -150,10 +157,6 @@ export function MotionCardEditor({
   const [keptEdit, setKeptEdit] = useState<{ joints: Float32Array; frame: number } | null>(null)
   const [frameIdx, setFrameIdx] = useState(0)
   const [playing, setPlaying] = useState(false)
-  const [tlKeyframes, setTlKeyframes] = useState<TimelineKeyframe[]>([])
-  const [tlIntervals, setTlIntervals] = useState<TimelineInterval[]>([])
-  const [tlPrompts, setTlPrompts] = useState<TimelinePrompt[]>([])
-  const [constraintPayloads, setConstraintPayloads] = useState<Record<string, MotionConstraint>>({})
   const [editMode, setEditMode] = useState(false)
   const [editableJoints, setEditableJoints] = useState<Float32Array | null>(null)
   // Ref mirror of editableJoints so handleJointMove can read the latest value
@@ -172,9 +175,6 @@ export function MotionCardEditor({
   const bgInputRef = useRef<HTMLInputElement | null>(null)
   const [bgImage, setBgImage] = useState<string | null>(null)
   const [bgDragOver, setBgDragOver] = useState(false)
-  // THE AUTHORING GUARD's flag — owned here, shared by the undo restore,
-  // the timeline verbs, and the envelope seed (see useTimelineEnvelope).
-  const promptsAuthoredRef = useRef(false)
 
   // ── Rest pose (upstream behavior) ──────────────────────────────────
   // The skin's neutral joints + rotations — the TS equivalent of
@@ -236,26 +236,28 @@ export function MotionCardEditor({
     return src.posedJoints.slice(i, i + 77 * 3)
   }, [effectiveNpz, frameIdx])
 
+  // ── The doc cluster (one truth) ─────────────────────────────────────────
+  // Envelope math first (the projection seeds prompts over [0, targetT-1]),
+  // then the one-truth hook: shown = projection + live ops.
+  const { targetT, onTimelineExtend } = useTimelineEnvelope({
+    stage, effectiveNpz, onSave, toast,
+  })
+  const { shown, commitPrompts, commitConstraints } = useMotionDoc(
+    stage, onSave, effectiveNpz?.fps ?? 30, targetT,
+  )
+  // The shown document's live ref for the undo snapshot reader (capture
+  // must read THIS tick's shown, not a render-captured copy).
+  const shownRef = useRef<MotionDoc>(shown)
+  shownRef.current = shown
+
   // The fullbody keyframe sitting at the current frame, if any. When present,
   // edit mode is AUTHORING into that keyframe (drag a joint → the keyframe's
   // constraint payload absorbs the new pose). When absent, edit mode is a
   // FREE sculpt for Repose (the chain path).
   const fullbodyKfAtFrame = useMemo(
-    () => tlKeyframes.find((k) => k.track_id === "fullbody" && k.frame === frameIdx) ?? null,
-    [tlKeyframes, frameIdx],
+    () => shown.keyframes.find((k) => k.track_id === "fullbody" && k.frame === frameIdx) ?? null,
+    [shown.keyframes, frameIdx],
   )
-
-  // First non-empty prompt → the card's single `prompt` param mirror (the
-  // backend's single-prompt path reads it when motion_prompts is below the
-  // 2-segment override threshold).
-  const firstNonEmptyCardText = useMemo(
-    () => tlPrompts.find((p) => p.text.trim())?.text ?? "",
-    [tlPrompts],
-  )
-  useEffect(() => {
-    onSave({ prompt: firstNonEmptyCardText })
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [firstNonEmptyCardText])
 
   // ── Seams (verbs + effects; state stays orchestrated above) ─────────────
   const {
@@ -270,21 +272,30 @@ export function MotionCardEditor({
     threeCtxRef, npzUrl, bgImage, setBgImage, setBgDragOver,
   })
 
+  // Undo snapshots the SHOWN doc + viewer UI state; a restore states the
+  // captured channels back through the commit doors (an undo is an edit).
   const { pushUndo, handleUndo, handleRedo, maybePushDragUndo } = useMotionUndoStack({
-    tlPrompts, tlKeyframes, constraintPayloads, tlIntervals,
+    captureDoc: () => ({
+      prompts: shownRef.current.prompts,
+      keyframes: shownRef.current.keyframes,
+      payloads: shownRef.current.payloads,
+    }),
+    restoreDoc: (doc) => {
+      commitPrompts(() => doc.prompts)
+      commitConstraints((prev) => ({ ...prev, keyframes: doc.keyframes, payloads: doc.payloads }))
+    },
     keptEdit, editedDeformedB64,
-    editableJointsRef, promptsAuthoredRef,
-    setTlPrompts, setTlKeyframes, setConstraintPayloads, setTlIntervals,
+    editableJointsRef,
     setEditableJoints, setKeptEdit, setEditedDeformedB64,
   })
 
   const { toggleEdit, handleJointMove, displayJointsM, handleRepose } = usePoseEditing({
-    effectiveNpz, frameIdx, tlKeyframes, constraintPayloads,
+    effectiveNpz, frameIdx, tlKeyframes: shown.keyframes, constraintPayloads: shown.payloads,
     keptEdit, currentJointsM, fullbodyKfAtFrame,
     pushUndo, toast, skin, onSave,
     editMode, setEditMode, editableJoints, setEditableJoints, editableJointsRef,
     setSelectedJoint, setEditedDeformedB64, reposing, setReposing,
-    setKeptEdit, setPlaying, setConstraintPayloads,
+    setKeptEdit, setPlaying, commitConstraints,
   })
 
   const {
@@ -294,14 +305,8 @@ export function MotionCardEditor({
   } = useMotionStage({
     effectiveNpz, keptEdit, editableJoints, frameIdx, fullbodyKfAtFrame,
     toast, pushUndo,
-    setKeptEdit, setEditedDeformedB64, setConstraintPayloads, setTlKeyframes,
+    setKeptEdit, setEditedDeformedB64, commitConstraints,
     exportOpen, stageRect, setStageRect,
-  })
-
-  const { targetT, onTimelineExtend } = useTimelineEnvelope({
-    stage, effectiveNpz, onSave, toast, promptsAuthoredRef,
-    tlPrompts, setTlPrompts, tlKeyframes, setTlKeyframes,
-    constraintPayloads, setConstraintPayloads, setTlIntervals,
   })
 
   const {
@@ -310,8 +315,8 @@ export function MotionCardEditor({
     onPromptUpdate, onPromptResize, onPromptMove, onPromptDelete,
     addPromptCard,
   } = useTimelineAuthoring({
-    effectiveNpz, toast, pushUndo, maybePushDragUndo, promptsAuthoredRef, targetT,
-    setFrameIdx, setPlaying, setConstraintPayloads, setTlKeyframes, setTlPrompts,
+    effectiveNpz, toast, pushUndo, maybePushDragUndo, targetT,
+    setFrameIdx, setPlaying, commitConstraints, commitPrompts,
   })
 
   // ── Scrubber ────────────────────────────────────────────────────────────
@@ -373,8 +378,8 @@ export function MotionCardEditor({
         <MotionTimelineSection
           npz={npz} editMode={editMode} playing={playing} setPlaying={setPlaying}
           fmt={fmt} curSec={curSec} totalSec={totalSec}
-          tlPrompts={tlPrompts} targetT={targetT} addPromptCard={addPromptCard}
-          tlKeyframes={tlKeyframes} frameIdx={frameIdx} effectiveNpz={effectiveNpz}
+          tlPrompts={shown.prompts} targetT={targetT} addPromptCard={addPromptCard}
+          tlKeyframes={shown.keyframes} frameIdx={frameIdx} effectiveNpz={effectiveNpz}
           onTimelineExtend={onTimelineExtend} handleTimelineFrameChange={handleTimelineFrameChange}
           onKeyframeAdd={onKeyframeAdd} onKeyframeMove={onKeyframeMove} onKeyframeDelete={onKeyframeDelete}
           onPromptUpdate={onPromptUpdate} onPromptMove={onPromptMove}

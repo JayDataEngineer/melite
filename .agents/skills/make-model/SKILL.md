@@ -17,9 +17,13 @@ discharge stroke).
 ```
 packages/models/<family>/
   package.json     # name "@melite/models-<family>", private,
-                   # deps: @melite/comfyui-cordis (models-service,
-                   # model-contract subpaths); devDeps: typescript
-                   # ^5.9.3 + @types/node ^22.20.0; scripts own
+                   # deps: @melite/comfyui-card-kit (model-contract,
+                   # service-faces) + @melite/contracts +
+                   # @deepseek-ai/schemastery — NOT comfyui-cordis
+                   # (the family↔engine cycle died with the string
+                   # table; a family that imports the engine re-opens
+                   # it); devDeps: typescript ^5.9.3 + @types/node
+                   # ^22.20.0 + @deepseek-ai/cordis; scripts own
                    # "typecheck": "tsc --noEmit" (the battery gates
                    # the package the day the script exists)
   tsconfig.json    # copy from a sibling (packages/models/krea-2)
@@ -32,7 +36,7 @@ packages/models/<family>/
 
 ```ts
 import type { Plugin } from "@deepseek-ai/cordis";
-import type { ModelDecl } from "@melite/comfyui-cordis/model-contract";
+import type { ModelDecl } from "@melite/comfyui-card-kit/model-contract";
 
 export const DECL: ModelDecl = {
   "id": "<family>",
@@ -119,24 +123,32 @@ fold is OWED — never board a lane flavor as its own model:
   it); a lane a mod fires nothing on refuses LOUD in admission,
   never silently skips (the TTS instruction-control law).
 
-## 2. The two load faces (barrel row + composition row)
+## 2. The two load faces (string-table row + composition row)
 
 A family lands on TWO faces (the Loader-composition stroke,
-2026-10-13) — a new family owes BOTH rows:
+2026-10-13; the string-table cure sealed the family↔engine import
+cycle) — a new family owes BOTH rows:
 
-**Face 1 — the barrel row** (the in-process boot):
+**Face 1 — the string-table row** (the in-process boot):
 `packages/engines/comfyui-cordis/src/models/families/index.ts` — the
-`FAMILY_PLUGINS` table, one import + one array row per family:
+`FAMILY_PKGS` table, ONE BARE-SPECIFIER STRING row per family; the
+engine never statically imports its plugins (a static edge would
+cycle — every family imports the kit's contract types), `loadFamilies()`
+resolves each through dynamic `import()`:
 
 ```ts
-import { family as <alias> } from "@melite/models-<family>";
-// ... then append to FAMILY_PLUGINS
+// append to FAMILY_PKGS (genre-sorted, id-sorted within genre):
+"@melite/models-<family>",
 ```
 
 bootModels loads each through `ctx.plugin` — one fiber per family,
 transactional (the boot REFUSES if familyCount() ≠ the mounted
 family fibers: a family that registered nothing is a failed boot,
-not a warning).
+not a warning). The census wall
+(`tests/walls/ts/suites/artifact-plane-law.spec.ts` W9) pins the
+table to the manifests and the packages/models roster — a renamed
+family cannot rot a stale row silently; a family added to
+packages/models without its table row reds the same wall.
 
 **Face 2 — the composition row** (the Loader boot, the estate's
 truth): `packages/web/melite-estate/cordis.patch.yml` carries one

@@ -17,6 +17,7 @@ import { ComfyUIWiringService } from "../wiringWall.ts";
 import type {
   EngineExecutor,
   EngineParamValue,
+  EngineRef,
   EngineRunOptions,
   EngineRunOutcome,
   EngineStageRow,
@@ -121,7 +122,11 @@ export function comfyuiExecutor(ctx: Context, host: ComfyUIHostService): EngineE
           artifacts: outcome.artifacts,
         }),
       );
-      return { stages, engineRef: result.promptId, replaySuspect: result.replaySuspect };
+      // THE BRAND MINT (F3, 2026-11-05): the one site the raw wire
+      // prompt_id becomes the contract's EngineRef — the producer
+      // brands (the RunId convention), the consumer and the ledger
+      // read the branded id, never a bare string past this seam.
+      return { stages, engineRef: result.promptId as EngineRef, replaySuspect: result.replaySuspect };
     },
   };
 }

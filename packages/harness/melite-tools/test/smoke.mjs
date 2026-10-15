@@ -6,10 +6,12 @@
  * THE GATEWAY KILL (2026-09-10): the smoke's HTTP target died with
  * the gateway — no :33081, no second process. The estate answers
  * IN-PROCESS now: this rig boots the storage stack + the estate row
- * (the same rows the profiles mount), builds the tools' request over
- * makeEstateRequest(ctx), then EXECUTES each tool the way a session
- * would. Any tool that registers-but-fails, or renders a text the
- * chat card parser cannot parse, fails this test BEFORE it ships.
+ * (the same rows the profiles mount), builds the tools' seam over
+ * makeEstate(ctx) — the TYPED lanes (F-1, 2026-11-05: the tool plane
+ * speaks the typed lanes; the URL grammar is the browser face's) —
+ * then EXECUTES each tool the way a session would. Any tool that
+ * registers-but-fails, or renders a text the chat card parser cannot
+ * parse, fails this test BEFORE it ships.
  *
  * Run: npm run test:smoke   (in-process; the engine is live where
  * the host runs it — comfy_manage status answers the live truth)
@@ -25,7 +27,7 @@ const { default: Storage } = await import('../../../../packages/estate/drafts/no
 const { default: estateRow } = await import('../../../web/melite-estate/src/index.ts')
 const json = await import('../../../../packages/estate/drafts/node_modules/@deepseek-ai/dsh-storage-json/lib/index.js')
 const domain = await import('../../../../packages/estate/drafts/node_modules/@deepseek-ai/dsh-storage-domain/lib/index.js')
-const { makeEstateRequest } = await import('../src/estate.ts')
+const { makeEstate } = await import('../src/estate.ts')
 
 // Boot the estate in-process: the storage stack (composition-site
 // law — the consumer row never re-provides it) + the estate row.
@@ -59,7 +61,7 @@ await ctx.plugin(estateRow, { stateRoot })
     await new Promise((r) => setTimeout(r, 250))
   }
 }
-const request = makeEstateRequest(ctx)
+const estate = makeEstate(ctx)
 const exec = { signal: AbortSignal.timeout(60_000) }
 
 // NO STUBS (operator order, 2026-09-01): enhance_prompt's core rides the
@@ -91,31 +93,33 @@ async function runTool(tool, args, label) {
 const main = async () => {
   let skillId = ''
 
-  // --- the melite tools, in registration order (request = the
-  //     estate's own lane grammar over the ctx seats) ---
+  // --- the melite tools, in registration order (estate = the typed
+  //     lanes over the ctx seats) ---
   const tools = [
-    ['melite_discover', lib.meliteDiscover(request), { lookup: 'all', tags: 'image,upscale' }, {}],
-    ['melite_load(card)', lib.meliteLoad(request), { name: 'upscale-tools', inference_type: 'card' }, {}],
-    ['melite_load(flow)', lib.meliteLoad(request), { name: 'image-upscale', inference_type: 'flow' }, {}],
-    ['melite_construct(read: births the bench)', lib.meliteConstruct(request), { verb: 'read' }, {}],
-    ['melite_construct(bad verb refuses)', lib.meliteConstruct(request), { verb: 'explode' }, {}],
+    // meliteDiscover's expansion seat is required (index.ts wires it);
+    // this bare rig seats no doors — a no-op keeps the smoke's scope.
+    ['melite_discover', lib.meliteDiscover(estate, () => {}), { lookup: 'all', tags: 'image,upscale' }, {}],
+    ['melite_load(card)', lib.meliteLoad(estate), { name: 'upscale-tools', inference_type: 'card' }, {}],
+    ['melite_load(flow)', lib.meliteLoad(estate), { name: 'image-upscale', inference_type: 'flow' }, {}],
+    ['melite_construct(read: births the bench)', lib.meliteConstruct(estate), { verb: 'read' }, {}],
+    ['melite_construct(bad verb refuses)', lib.meliteConstruct(estate), { verb: 'explode' }, {}],
     // melite_flow rows are refusal-surface proofs (no GPU burn): the
     // named 4xx / pre-HTTP refusal rides the value — never a throw.
-    ['melite_flow(card loud-fail: no card tool)', lib.meliteFlow(request),
+    ['melite_flow(card loud-fail: no card tool)', lib.meliteFlow(estate),
       { card: 'image-gen', model: '__smoke_no_such__' }, {}],
-    ['melite_flow(flow loud-fail: no such template)', lib.meliteFlow(request),
+    ['melite_flow(flow loud-fail: no such template)', lib.meliteFlow(estate),
       { flow: '__smoke_no_such__' }, {}],
-    ['melite_flow(adhoc loud-fail: bad stage)', lib.meliteFlow(request),
+    ['melite_flow(adhoc loud-fail: bad stage)', lib.meliteFlow(estate),
       { stages: [{ id: 'x' }] }, {}],
-    ['melite_flow(empty: no composition)', lib.meliteFlow(request), {}, {}],
-    ['comfy_manage(status)', lib.comfyManage(request), { action: 'status' }, {}],
-    ['comfy_manage(provision loud-fail)', lib.comfyManage(request), { action: 'provision_model', model: '__smoke_no_such_model__' }, {}],
-    ['melite_skill_index', lib.skillIndex(request), {}, {}],
-    ['melite_skill_read', lib.skillRead(request), null, {}], // id filled from index
-    ['ledger_tail', lib.ledgerTail(request), { limit: 3 }, {}],
+    ['melite_flow(empty: no composition)', lib.meliteFlow(estate), {}, {}],
+    ['comfy_manage(status)', lib.comfyManage(estate), { action: 'status' }, {}],
+    ['comfy_manage(provision loud-fail)', lib.comfyManage(estate), { action: 'provision_model', model: '__smoke_no_such_model__' }, {}],
+    ['melite_skill_index', lib.skillIndex(estate), {}, {}],
+    ['melite_skill_read', lib.skillRead(estate), null, {}], // id filled from index
+    ['ledger_tail', lib.ledgerTail(estate), { limit: 3 }, {}],
     // --- the HEADLESS run doors (MELITE_HEADLESS=1 registration) —
     // run_status refusal proof: unknown run = named 404 riding the value.
-    ['run_status(unknown run)', lib.runStatus(request), { runId: 'run-__smoke_none__' }, {}],
+    ['run_status(unknown run)', lib.runStatus(estate), { runId: 'run-__smoke_none__' }, {}],
   ]
 
   for (const [label, tool, args, _] of tools) {

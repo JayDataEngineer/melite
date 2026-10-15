@@ -11,7 +11,7 @@ import { buildImageEditTool } from '@melite/image-image-edit/tool';
 import { buildImageGenTool } from '@melite/image-image-gen/tool';
 import { buildMotionTool } from '@melite/motion-motion/tool';
 import { buildH3TimelineTool } from '@melite/video-h3-timeline/tool';
-import { makeEstateRequest, asEstateCall } from "./estate.js";
+import { makeEstate, makeEstateRequest, asEstateCall } from "./estate.js";
 import { runStatus } from "./tools/run-status.js";
 import { meliteFlow } from "./tools/melite-flow.js";
 import { comfyManage } from "./tools/comfy-manage.js";
@@ -27,7 +27,7 @@ import { harnessEnhance, resolveHarnessRoutes, matchHarnessRoute, routeName } fr
 // Re-exported for the route-preference unit test (drives the BUILT lib
 // with a fake seam — no host, no key, seconds-cheap).
 export { harnessEnhance, resolveHarnessRoutes, matchHarnessRoute, routeName };
-export { makeEstateRequest } from "./estate.js";
+export { makeEstate, makeEstateRequest } from "./estate.js";
 // Tool factories — re-exported for the smoke harness (test/smoke.mjs)
 // and any embedder that mounts tools without the full plugin apply().
 export { runStatus } from "./tools/run-status.js";
@@ -94,7 +94,12 @@ export const ADHOC_TOOL_NAMES = [];
 export const MELITE_TOOL_NAMES = [
     ...BASE_TOOL_NAMES, ...HEADLESS_TOOL_NAMES, ...ADHOC_TOOL_NAMES,
 ];
-/** Register the Melite tools against the live estate gateway. */
+/** Register the Melite tools against the live estate gateway.
+ *  THE TYPED CONTEXT (F-2/F-4 cure, 2026-11-05): the hand-declared
+ *  CtxView parallel is retired — logger/effect are cordis Context
+ *  members, `tools` is the dsh-tools Context augmentation, and the
+ *  commands seam rides the dynamic child inject below with its
+ *  structural callback parameter. */
 export async function apply(ctx, config = {}) {
     const c = ctx;
     // THE TRANSPORT (R2b, the remotes migration): the tools call the
@@ -102,11 +107,15 @@ export async function apply(ctx, config = {}) {
     // door listeners for the rest. No URL, no port, no env pin: this
     // host either mounts the estate bundle or it does not (an alien
     // lane names its own DSH in its own profile).
-    const request = makeEstateRequest(ctx);
+    // F-1 (2026-11-05): the tool plane rides the TYPED estate lanes —
+    // one named method per lane, the seats called 1:1 beneath (never
+    // URL strings). makeEstateRequest stays the /v1 browser face's own
+    // seam in doors.ts, where the URL grammar is doc-blessed.
+    const estate = makeEstate(ctx);
     // The card tool builders speak the canonical EstateCall (signal
     // optional); the seats demand a signal — the adapter narrows once
     // here instead of at every register site (2026-09-12).
-    const call = asEstateCall(request);
+    const call = asEstateCall(makeEstateRequest(ctx));
     // THE INTERFACE RESOLVE (one explicit step — the profile's
     // cordis.yml row pins every gate; no env seam: V6 cure, 2026-10-18)
     const headless = config.headless === true;
@@ -117,7 +126,7 @@ export async function apply(ctx, config = {}) {
             : []));
     // THE CARD GATE (default closed — the agent law above)
     const cardTools = config.cardTools === true;
-    c.logger.info('melite-tools: %s interface — %d base + %d headless run door(s) + %d ad hoc, gateway %s', headless ? 'HEADLESS' : 'BROWSER', BASE_TOOL_NAMES.length, headless ? HEADLESS_TOOL_NAMES.length : 0, adhoc.length, request);
+    c.logger.info('melite-tools: %s interface — %d base + %d headless run door(s) + %d ad hoc, gateway %s', headless ? 'HEADLESS' : 'BROWSER', BASE_TOOL_NAMES.length, headless ? HEADLESS_TOOL_NAMES.length : 0, adhoc.length, 'typed estate lanes (F-1)');
     // BASE, DEFERRED — THE EXPANSION SEAT (progressive disclosure,
     // operator 2026-10-08 — the Tool Search Tool law over our own
     // toolset). The eager trio's execute arms seat the deferred
@@ -136,10 +145,10 @@ export async function apply(ctx, config = {}) {
         const doors = [
             ['melite_view', () => c.tools.register(meliteView(ctx))],
             ['melite_read', () => c.tools.register(meliteRead(ctx))],
-            ['comfy_manage', () => c.tools.register(comfyManage(request))],
-            ['melite_skill_index', () => c.tools.register(skillIndex(request))],
-            ['melite_skill_read', () => c.tools.register(skillRead(request))],
-            ['ledger_tail', () => c.tools.register(ledgerTail(request))],
+            ['comfy_manage', () => c.tools.register(comfyManage(estate))],
+            ['melite_skill_index', () => c.tools.register(skillIndex(estate))],
+            ['melite_skill_read', () => c.tools.register(skillRead(estate))],
+            ['ledger_tail', () => c.tools.register(ledgerTail(estate))],
         ];
         for (const [name, register] of doors) {
             if (seated.has(name))
@@ -171,12 +180,12 @@ export async function apply(ctx, config = {}) {
     // at melite_flow — never a phantom verb). construct + load are
     // seated through the /melite-runs toggle's reseat (the flag they
     // carry flips with the delegation state); discover carries none.
-    c.tools.register(meliteDiscover(request, expandEstateDoors));
+    c.tools.register(meliteDiscover(estate, expandEstateDoors));
     let composeSeats = [];
     const seatComposeLoop = (delegated) => {
         for (const dispose of composeSeats.splice(0))
             dispose();
-        composeSeats.push(c.tools.register(meliteConstruct(request, { headless: delegated })), c.tools.register(meliteLoad(request, { headless: delegated, expandEstateDoors })));
+        composeSeats.push(c.tools.register(meliteConstruct(estate, { headless: delegated })), c.tools.register(meliteLoad(estate, { headless: delegated, expandEstateDoors })));
     };
     seatComposeLoop(headless);
     // HEADLESS SEATS EAGER (transcript-016 audit, operator 2026-09-24:
@@ -211,7 +220,7 @@ export async function apply(ctx, config = {}) {
     const seatRunDoors = () => {
         if (runDoorSeats.length > 0)
             return;
-        runDoorSeats.push(c.tools.register(meliteFlow(request)), c.tools.register(runStatus(request)));
+        runDoorSeats.push(c.tools.register(meliteFlow(estate)), c.tools.register(runStatus(estate)));
     };
     const unseatRunDoors = () => {
         for (const dispose of runDoorSeats.splice(0))
@@ -229,7 +238,11 @@ export async function apply(ctx, config = {}) {
     // so plainly. Registered only where a commands registry is
     // composed (browser lanes); its absence on headless one-shots is
     // the designed skip, not a degraded mount.
-    c.inject(['commands'], ({ commands }) => {
+    c.inject(['commands'], (child) => {
+        const commands = child.commands;
+        if (commands === undefined) {
+            throw new Error('melite-runs: the commands inject resolved but exposes no registry — refusing to register silently');
+        }
         commands.register({
             name: 'melite-runs',
             description: 'Toggle whether the AI can start runs (melite_flow) or runs wait for the user\u2019s Run press',

@@ -5,10 +5,12 @@
  * segmented Flows/Artifacts toggle): apply() waits on ['slots',
  * 'sidebarRightTabs'], registers the Media (kind 'media', guide 51,
  * icon) tab TYPE on the native registry and the one pane body under
- * the type's id on the keyed `sidebar.right.pane.tab` seat, and the
- * apply guard makes a duplicated injection a no-op. Failures are
- * logged, never thrown (the shell law: a dead lane must not brick
- * boot).
+ * the type's id on the keyed `sidebar.right.pane.tab` seat. A genuine
+ * double apply collides at the shared registries and the per-site
+ * catch logs it while the first registration keeps its seat (the
+ * DOUBLE-APPLY LAW, nativity audit 2026-11-05 D3 — no module-global
+ * claim guard). Failures are logged, never thrown (the shell law: a
+ * dead lane must not brick boot).
  */
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { estateArtifactAddress } from '../src/client/artifact-address.ts'
@@ -33,7 +35,21 @@ interface Registration {
   tabTypes: TabType[]
   bodies: Array<{ name: string; key: string; component: unknown }>
   injectWaits: string[]
-  logs: unknown[]
+}
+
+/** The registries' seat stores — shared across the fake contexts of a
+ *  double-apply arm, the way the real client registries survive across
+ *  plugin constructions. */
+interface GalleryRegistry {
+  tabIds: Set<string>
+  slotKeys: Set<string>
+  tabTypes: TabType[]
+  bodies: Array<{ name: string; key: string; component: unknown }>
+  injectWaits: string[]
+}
+
+function freshRegistry(): GalleryRegistry {
+  return { tabIds: new Set(), slotKeys: new Set(), tabTypes: [], bodies: [], injectWaits: [] }
 }
 
 interface FakeCtx {
@@ -45,19 +61,22 @@ interface FakeCtx {
   }
 }
 
-function fakeCtx(): { ctx: FakeCtx; reg: Registration } {
-  const reg: Registration = { tabTypes: [], bodies: [], injectWaits: [], logs: [] }
+function fakeCtx(registry: GalleryRegistry = freshRegistry()): { ctx: FakeCtx; reg: Registration } {
   const ctx: FakeCtx = {
     effect(fn) { return fn() },
     sidebarRightTabs: {
       register(def) {
-        reg.tabTypes.push(def)
+        // ui-sidebar-right's own law: register() throws on a duplicate
+        // id (the second apply's collision face).
+        if (registry.tabIds.has(def.id)) throw new Error(`slot "${def.id}" has been registered`)
+        registry.tabIds.add(def.id)
+        registry.tabTypes.push(def)
         return () => {}
       },
     },
     slots: {
       inject(name, declare) {
-        reg.injectWaits.push(name)
+        registry.injectWaits.push(name)
         // SlotRegistry.inject semantics: when the declaration already
         // exists the callback runs synchronously (the shipped
         // ui-sidebar-right declares the slot).
@@ -66,19 +85,19 @@ function fakeCtx(): { ctx: FakeCtx; reg: Registration } {
       },
       register(options, component) {
         if (typeof component !== 'function') throw new Error('component missing for ' + options.name)
-        reg.bodies.push({ name: options.name, key: options.key, component })
+        // The keyed seat's own law: a duplicate key throws.
+        if (registry.slotKeys.has(options.key)) throw new Error(`slot "${options.key}" has been registered`)
+        registry.slotKeys.add(options.key)
+        registry.bodies.push({ name: options.name, key: options.key, component })
         return () => {}
       },
     },
   }
-  return { ctx, reg }
+  return { ctx, reg: registry }
 }
 
 afterEach(() => { vi.unstubAllGlobals(); vi.resetModules() })
 
-/** The client module FRESH per test — the apply guard is module state
- *  (one application per page lifetime), so every assertion loads its
- *  own module instance exactly like a fresh page. */
 async function loadClient(): Promise<typeof import('../src/client/index.ts') > {
   return await import('../src/client/index.ts')
 }
@@ -118,13 +137,27 @@ describe('the gallery client registration (the full port)', () => {
     expect(reg.bodies.every((b) => typeof b.component === 'function')).toBe(true)
   })
 
-  it('a duplicated application is a no-op (the apply guard)', async () => {
+  it('a double-apply conflict logs per site (the first registration keeps the seat)', async () => {
     const mod = await loadClient()
-    const { ctx, reg } = fakeCtx()
-    mod.apply(ctx as never)
-    mod.apply(ctx as never)
-    expect(reg.tabTypes).toHaveLength(2)
-    expect(reg.bodies).toHaveLength(2)
+    const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    // ONE shared registry pair — the real client's registries survive
+    // across plugin constructions, so the second application's
+    // registrations collide on the same ids/keys.
+    const shared = freshRegistry()
+    const first = fakeCtx(shared)
+    const second = fakeCtx(shared)
+    expect(() => mod.apply(first.ctx as never)).not.toThrow()
+    expect(() => mod.apply(second.ctx as never)).not.toThrow()
+    // The first application's seats stand; the second's four collision
+    // sites each logged, never threw (the shell law).
+    expect(shared.tabTypes).toHaveLength(2)
+    expect(shared.bodies).toHaveLength(2)
+    const voices = errSpy.mock.calls.map((args) => args.join(' ')).join(' ')
+    expect(voices).toContain('[melite-gallery] media tab type registration failed')
+    expect(voices).toContain('[melite-gallery] media tab body registration failed')
+    expect(voices).toContain('[melite-gallery] estate-artifact tab type registration failed')
+    expect(voices).toContain('[melite-gallery] estate-artifact tab body registration failed')
+    errSpy.mockRestore()
   })
 
   it('a failing registry is logged, never thrown (the shell law)', async () => {

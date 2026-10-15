@@ -1,8 +1,11 @@
-// enhance-agent walls (vitest, fake llm seam + fake EstateRequest —
-// no host, no key, no network). Pins fetchDeclaredFields mapping,
-// enhanceOneField routing, and the in-process sweep (formSpecArm
-// live: unknown keys refuse, recipe-less models sweep ONE generic
-// 'prompt' field).
+// enhance-agent walls (vitest, fake llm seam + the live form-spec
+// SSOT — no host, no key, no network). Pins fetchDeclaredFields
+// mapping, enhanceOneField routing, and the in-process sweep
+// (formSpecArm live: unknown keys refuse, recipe-less models sweep
+// ONE generic 'prompt' field). F-1 2026-11-05: fetchDeclaredFields
+// rides the in-process formSpecArm — the retired URL lane named a
+// path the seat plane never served, so its two URL-spelling arms
+// re-rolled to the SSOT + refusal pair.
 import "../../../../tests/helpers/boot-models.ts";
 import { describe, test } from 'vitest'
 import assert from 'node:assert/strict'
@@ -14,7 +17,6 @@ import {
   GENERIC_ENHANCE_RECIPE,
   type LlmSeam,
 } from '../src/enhance-agent.ts'
-import type { EstateRequest } from '../src/estate.ts'
 
 const JSON_REPLY = '{"positive":"P","negative":"N"}'
 
@@ -38,16 +40,6 @@ function fakeLlm(): LlmSeam & { seen: Array<{ provider: string; model: string }>
       return gen() as AsyncIterable<never>
     },
   } as unknown as LlmSeam & { seen: Array<{ provider: string; model: string }> }
-}
-
-function fakeRequest(spec: unknown): EstateRequest & { seen: string[] } {
-  const seen: string[] = []
-  const req = (async (_method: string, path: string) => {
-    seen.push(path)
-    if (spec instanceof Error) throw spec
-    return spec
-  }) as EstateRequest
-  return Object.assign(req, { seen })
 }
 
 const SIG = AbortSignal.timeout(5000)
@@ -82,16 +74,20 @@ describe('declaredFieldsFromSpec', () => {
 })
 
 describe('fetchDeclaredFields', () => {
-  test('the request path carries the encoded model; mapping is shared', async () => {
-    const req = fakeRequest({ enhance_prompts: { lyrics: 'sing it' } })
-    const out = await fetchDeclaredFields(req, 'music model', SIG)
-    assert.deepEqual(out, { fields: { lyrics: 'sing it' }, names: ['lyrics'] })
-    assert.deepEqual(req.seen, ['/v1/form-spec?model=' + encodeURIComponent('music model')])
+  test('the recipes ride the in-process form-spec SSOT; the mapping is shared', async () => {
+    // F-1: the URL lane named /v1/form-spec — a path the seat plane
+    // never served; the sweep already read formSpecArm, and this does
+    // now too. A recipe-less model maps to NO fields through the ONE
+    // declaredFieldsFromSpec spelling.
+    const out = await fetchDeclaredFields('tts')
+    assert.deepEqual(out, { fields: {}, names: [] })
   })
 
-  test('a transport failure propagates', async () => {
-    const req = fakeRequest(new Error('lane down'))
-    await assert.rejects(() => fetchDeclaredFields(req, 'tts', SIG), /lane down/)
+  test('an unknown model refuses with the sweep\u2019s voice', async () => {
+    await assert.rejects(
+      () => fetchDeclaredFields('no-such-model'),
+      /'no-such-model' does not resolve \(unknown, unoffered, or retired\)/,
+    )
   })
 })
 

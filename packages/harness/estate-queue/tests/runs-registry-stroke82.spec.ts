@@ -13,7 +13,7 @@ import { ComfyUIHostService } from "@melite/comfyui-cordis";
 import type { FlowResult, MergeRow, EngineJson } from "@melite/comfyui-cordis";
 import { RunsRuntimeService } from "../src/runsRegistry.ts";
 import { EnginesService } from "@melite/engine-contract";
-import type { EngineRunOutcome } from "@melite/engine-contract";
+import type { EngineRunOutcome, EngineRef } from "@melite/engine-contract";
 import { QueueCore } from "../src/queue.ts";
 import { CardArmError } from "../src/cardsRegistry.ts";
 import type { RunRecord } from "../src/runsTypes.ts";
@@ -319,7 +319,7 @@ describe("stroke-83 stopping stamp", () => {
         executeStages: async (): Promise<EngineRunOutcome> => {
           entered = true;
           await gate;
-          return { stages: [], engineRef: "p" };
+          return { stages: [], engineRef: "p" as EngineRef };
         },
       },
     });
@@ -472,7 +472,7 @@ describe("stroke-82 ghost-head strand", () => {
     const engines = new EnginesService(ctx);
     engines.register("comfyui", {
       executor: {
-        executeStages: async () => ({ stages: [], engineRef: "p" }),
+        executeStages: async () => ({ stages: [], engineRef: "p" as EngineRef }),
       },
     });
     const ghost = "run-ghost";

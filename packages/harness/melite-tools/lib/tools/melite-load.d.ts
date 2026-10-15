@@ -1,6 +1,6 @@
 import type { ToolDefinition } from '../types.js';
-import type { EstateRequest } from '../estate.js';
-export declare function meliteLoad(request: EstateRequest, opts?: {
+import type { Estate } from '../estate.js';
+export declare function meliteLoad(estate: Estate, opts?: {
     headless?: boolean;
     expandEstateDoors?: () => void;
 }): ToolDefinition;

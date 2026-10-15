@@ -6,7 +6,7 @@
   "type": "module",
   "description": "The serial run queue as a host Cordis service (REBUILD-5 of the gateway kill): lock-first single-writer, sidecar/ledger I/O, reproduce/resume refusal arms, run-status probe slot. No doors, no routes, no port \u2014 the runs remote exposes the lanes over this seat.",
   "dependencies": {
-    "@deepseek-ai/cordis-plugin-timer": "1.1.6",
+    "@deepseek-ai/cordis-plugin-timer": "workspace:~",
     "@deepseek-ai/dsh-atomic-write": "0.2.0-rc.1",
     "@deepseek-ai/dsh-brand": "0.2.0-rc.1",
     "@deepseek-ai/dsh-home-paths": "0.2.0-rc.1",

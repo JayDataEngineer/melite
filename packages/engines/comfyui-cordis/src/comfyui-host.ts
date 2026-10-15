@@ -50,9 +50,13 @@ import type { FlowResult, MergeRow } from "./comfyui-merge.ts";
 //     walls boot COMFYUI_URL=stub_url; the card e2e pins :18466).
 //   - COMFYUI_ENDPOINT_CONFIG env path: stays — the deploy seam
 //     (explicit file pin, read live per resolution).
-//   - data/comfyui_endpoint.json url: stays — estate truth (the
-//     endpoint machine statement; NO default, NO hardcoded
-//     host/port — QUEUE LANE LAW).
+//   - <repoRoot>/data/comfyui_endpoint.json (the F1 state home,
+//     2026-11-05): the endpoint machine statement — untracked, the
+//     endpoint_set write target, overlay-read FIRST; NO default, NO
+//     hardcoded host/port (QUEUE LANE LAW).
+//   - the package's data/comfyui_endpoint.json: the shipped SEED
+//     below the overlay (fresh clone/install default), read-only —
+//     no door writes it (F1: machine state left the tracked tree).
 //   - INFERENCE_TEST_SANDBOX gate: stays — a sandboxed test with
 //     no env path resolves to {}, never the product file.
 //   - MELITE_REPO_ROOT: stays — the wall fixture seam (fixture

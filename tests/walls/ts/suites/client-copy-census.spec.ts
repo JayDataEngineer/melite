@@ -124,6 +124,35 @@ export function findCopyViolations(file: string, sourceText: string): CopyViolat
     file, sourceText, ts.ScriptTarget.Latest, true,
     file.endsWith('.tsx') ? ts.ScriptKind.TSX : ts.ScriptKind.TS,
   )
+  // The same-file copy-named-parameter index (the D2 arm's pre-pass):
+  // function NAME → its copy-named parameter positions (declaration
+  // order). Parameters whose names carry a copy suffix/name are the
+  // positions product copy may sit at; everything else is structure.
+  const copyParamIndices = new Map<string, number[]>()
+  const copyParamNames = new Map<string, string[]>()
+  const indexCopyParams = (node: ts.Node): void => {
+    if (ts.isFunctionDeclaration(node) && node.name !== undefined && ts.isIdentifier(node.name)) {
+      const indices: number[] = []
+      const names: string[] = []
+      node.parameters.forEach((parameter, index) => {
+        if (ts.isIdentifier(parameter.name)) {
+          const parameterName = parameter.name.text
+          if (COPY_NAME.test(parameterName) || COPY_SUFFIX.test(parameterName)) {
+            indices.push(index)
+            // aligned by parameter position (not compacted) — the call
+            // site looks the name up by the argument's own position.
+            names[index] = parameterName
+          }
+        }
+      })
+      if (indices.length > 0) {
+        copyParamIndices.set(node.name.text, indices)
+        copyParamNames.set(node.name.text, names)
+      }
+    }
+    ts.forEachChild(node, indexCopyParams)
+  }
+  indexCopyParams(source)
   const violations = new Map<number, CopyViolation>()
   const report = (node: ts.Node, text: string, reason: string, naturalOnly = false): void => {
     if (!containsProductText(text) || (naturalOnly && !looksLikeNaturalText(text)) || violations.has(node.getStart(source))) return
@@ -145,6 +174,15 @@ export function findCopyViolations(file: string, sourceText: string): CopyViolat
       return
     }
     if (ts.isCallExpression(node)) return
+    // THE COPY-POSITION ARROW (arm E of the D1 re-aim): the sidebar/tab
+    // registries take `title: (): string => …` SEATS — the literal sits
+    // in the arrow's body, one hop past the copy-named property. A copy
+    // position owns its function body's expression; block-bodied seats
+    // are still judged by the return arm through enclosingFunctionName.
+    if (ts.isArrowFunction(node) || ts.isFunctionExpression(node)) {
+      if (ts.isExpression(node.body)) collectExpression(node.body, reason, naturalOnly)
+      return
+    }
     if (ts.isParenthesizedExpression(node) || ts.isAsExpression(node) || ts.isSatisfiesExpression(node) || ts.isNonNullExpression(node)) {
       collectExpression(node.expression, reason, naturalOnly)
       return
@@ -186,7 +224,14 @@ export function findCopyViolations(file: string, sourceText: string): CopyViolat
       }
       if (ts.isArrowFunction(current) || ts.isFunctionExpression(current)) {
         const parent = current.parent
-        return ts.isVariableDeclaration(parent) ? propertyName(parent.name) : undefined
+        // arm F of the D1 re-aim: the function may sit at a PROPERTY
+        // position (`title: (address: string): string => { … }` in an
+        // object literal, or a class property arrow) — the property's
+        // own name names the seat, same as a variable declaration.
+        if (ts.isVariableDeclaration(parent) || ts.isPropertyAssignment(parent) || ts.isPropertyDeclaration(parent) || ts.isMethodDeclaration(parent)) {
+          return propertyName(parent.name)
+        }
+        return undefined
       }
       current = current.parent
     }
@@ -213,7 +258,7 @@ export function findCopyViolations(file: string, sourceText: string): CopyViolat
         }
       }
     }
-    if (ts.isJsxExpression(node) && node.expression !== undefined && (ts.isJsxElement(node.parent) || ts.isJsxFragment(node.parent))) {
+    if (file.endsWith('.tsx') && ts.isJsxExpression(node) && node.expression !== undefined && (ts.isJsxElement(node.parent) || ts.isJsxFragment(node.parent))) {
       collectExpression(node.expression, 'JSX child')
     }
     // h()-child arm (card-base's non-JSX render idiom — the 2026-11-05
@@ -231,7 +276,14 @@ export function findCopyViolations(file: string, sourceText: string): CopyViolat
         }
       }
     }
-    if (file.endsWith('.tsx') && ts.isPropertyAssignment(node)) {
+    // THE .TS-ENTRY ARMS (the nativity audit's D1 re-aim, 2026-11-05):
+    // dictionaries are .ts files, and the seats that read them live in
+    // .ts entries (apply()/register()/title resolvers) — a walker that
+    // only judges .tsx property positions is blind to exactly the file
+    // kind the D1 cure touches. The property arm and the string-return
+    // arm both fire in .ts now; a literal planted in a .ts entry seat
+    // reds this wall (the red-proof receipt lives in the cure report).
+    if (ts.isPropertyAssignment(node)) {
       const name = propertyName(node.name)
       if (name !== undefined && (COPY_NAME.test(name) || COPY_SUFFIX.test(name))) {
         collectExpression(node.initializer, `${name} property`)
@@ -253,8 +305,28 @@ export function findCopyViolations(file: string, sourceText: string): CopyViolat
       const name = enclosingFunctionName(node)
       if (name !== undefined && (COPY_NAME.test(name) || COPY_SUFFIX.test(name))) {
         collectExpression(node.expression, `${name} return value`)
-      } else if (file.endsWith('.tsx') && hasExplicitStringReturn(node)) {
+      } else if (hasExplicitStringReturn(node)) {
         collectExpression(node.expression, 'string return value', true)
+      }
+    }
+    // THE COPY-NAMED-ARGUMENT ARM (D2 of the re-aim): a call to a
+    // function DECLARED IN THE SAME FILE whose parameters carry copy
+    // names (title/description/label…) is a copy POSITION — a literal
+    // passed there is product copy, exactly like the property arm.
+    // This is what catches the deck register()-helper pattern (its
+    // title/guideDescription arguments) without the over-collection
+    // the broader call arms caused (the rejection note above the
+    // pins). Same-file declarations only: an imported callee's
+    // parameter names are not visible here, so dictionary reads and
+    // wire calls never fire this arm.
+    if (ts.isCallExpression(node) && ts.isIdentifier(node.expression)) {
+      const indices = copyParamIndices.get(node.expression.text)
+      if (indices !== undefined) {
+        for (const index of indices) {
+          const arg = node.arguments[index]
+          const param = copyParamNames.get(node.expression.text)![index]
+          if (arg !== undefined && ts.isExpression(arg)) collectExpression(arg, `${node.expression.text}() ${param} argument`)
+        }
       }
     }
     ts.forEachChild(node, visit)
@@ -328,18 +400,63 @@ describe('THE CLIENT-COPY CENSUS WALL (locale-owned copy, TRIAGED-1/2)', () => {
 //     class-4 report's "missed seat"). Every literal remains
 //     one-of-a-kind law-wording at its seat; the dictionary
 //     convergence debt is unchanged, still CONTRACTS §4.
+//
+// THE D1 RE-AIM RE-PIN (nativity audit 2026-11-05, the web-cards cure):
+// the walker gained the .ts-entry arms — property positions in .ts
+// (arm A), string-returning functions in .ts (arm B), copy-position
+// arrow bodies (arm E), property-position enclosing names (arm F), and
+// same-file copy-named call arguments (arm D2). The arms were chosen
+// against two REJECTED broader arms, argued here so nobody re-tries
+// them:
+//   - REJECTED (probe C): descending collectExpression into EVERY call
+//     argument. It over-collects: dictionary READ positions (`t('key')`,
+//     `squareCopy.forceSentence({...})`) become violations and every
+//     wire helper call sprays noise (card-base 42 -> 72, action_cards
+//     0 -> 4 in the probe). Copy positions are structural (property
+//     names, declared parameter names), so only those two faces collect.
+//   - REJECTED (probe D): collecting all arguments at every call whose
+//     NAME merely looks copy-ish. 22-57 per tree, mostly log voices —
+//     the ratchet's signal dies.
+// D2's shape is the narrow survivor: the callee must be a function
+// DECLARED IN THE SAME FILE (its parameter names are visible evidence),
+// and only the copy-named parameters' positions collect.
 const PINS: Record<string, number> = {
   'packages/motion/motion/src/ui': 0,
-  'packages/video/h3-timeline/src/ui': 0,
+  // h3-timeline: 5 under the D1 re-aim (was 0). Seats: CallCard.tsx:565
+  // + :566 countTitle attribute pair, docCalls.ts:271 + docModel.ts:376
+  // text properties (.ts — arm A), docModel.ts:409 string return
+  // (arm B). The tree is mid-cure by its owning lane (the keyframes
+  // slice) — this row re-adjudicates on that landing.
+  'packages/video/h3-timeline/src/ui': 5,
   'packages/image/mask-studio/src/ui': 0,
-  'packages/web/card-base/src': 36,
-  'packages/web/melite-card-view/src': 0,
-  'packages/web/melite-card-deck/src': 0,
+  // card-base: 36 (the S7j/class-4 merge, argued above) + 6 from the
+  // D1 .ts arms — all arm A `message` properties in .ts: the wire
+  // refusal voices wire.ts:84 ×2 and estate-remote.ts:216, and the
+  // spec.ts:1339/1361/1384 compose-refusal triad. The form/preview/
+  // studio .tsx residue is unchanged.
+  'packages/web/card-base/src': 42,
+  // card-view: 13 — the D1 dictionary moves landed (the cards-tab
+  // title/guide trio + the mention title now ride chromeCopy), so the
+  // residue is two DEBT classes, every seat computed law-voiceing:
+  // cards-resource.ts failure() message arguments ×8 (arm D2 — the
+  // resource rows' stream/failure frames) and draft.ts:517-520
+  // unlandedWriteVoice ×5 (arm B string returns — the write-gate's
+  // voice assembly). Dictionary convergence stays CONTRACTS §4.
+  'packages/web/melite-card-view/src': 13,
+  // deck: 2 — the register() title/guideDescription positions now ride
+  // assetsCopy (D2's proof seat: a literal at those arguments fires
+  // this wall). Residue: index.ts:41 + :50 `message` embed notices
+  // (arm A) — the embed's degraded-mode voices; next dictionary pass.
+  'packages/web/melite-card-deck/src': 2,
   'packages/web/melite-run-wire/src': 0,
   // ── the copy-scope extension (2026-11-05) ──
-  // infer-gallery + action_cards converted to 0: every census-seated
-  // face rides the tree dictionary (galleryCopy.ts / actionCopy.ts).
-  'packages/web/infer-gallery/src': 0,
+  // gallery: 23 — the D1 moves landed (mediaTabTitle, mediaTabGuide,
+  // artifactFallbackTitle ride galleryCopy; 27 -> 23). The residue is
+  // ONE class: the media door's served-plane refusal voices (HTTP 404/
+  // 405/422 error strings in index.ts ×18, decode.ts drop counters ×4,
+  // media-kinds.ts fallback word ×1) — wire grammar the fetch caller
+  // reads, never sidebar chrome.
+  'packages/web/infer-gallery/src': 23,
   // action_cards: 0 — the pose stage, motion poster/viewer and poster
   // shell ride actionCopy.ts.
   'packages/engines/comfyui/src/action_cards': 0,
@@ -355,5 +472,18 @@ const PINS: Record<string, number> = {
   // melite-authored timeline file sits at 0 riding timelineCopy.ts; a
   // new literal anywhere in the tree (vendored files included) still
   // fires red against this pin.
-  'packages/web-kit/timeline/src': 7,
+  // timeline re-pinned 7 -> 4 (2026-11-05, F2 of the nativity
+  // audit): the zoom cluster (aria names + "fit") re-homed OUT of
+  // the vendored viser-timeline/ into melite-authored
+  // TimelineScrollbar.tsx riding timelineCopy, returning the
+  // subtree to 1:1 upstream (its barrel's pull-diff-clean promise
+  // made true). Residue: the canvas seconds unit + "(Empty)" in
+  // upstream's own timeline-render-background.ts, plus the two
+  // data sites (styles.ts canvas shadow COLOR constants).
+  // timeline re-pinned 4 -> 5 (2026-11-05, the D1 re-aim, web-cards
+  // cure): arm A now sees .ts property positions, and
+  // store/timelineAudio.ts:41 `label: 'Audio'` is a REAL copy seat the
+  // .tsx-only walk never judged. One new seat, same F2 residue class
+  // otherwise; the owning lane re-adjudicates on its next pass.
+  'packages/web-kit/timeline/src': 5,
 }

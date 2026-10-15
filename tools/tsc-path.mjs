@@ -44,6 +44,7 @@ function workspaceTally() {
   try {
     pkgs = readdirSync(join(REPO, "packages"), { withFileTypes: true });
   } catch {
+    /* packages/ absent (bare checkout) — nothing is installed, the tally stays empty */
     return tally;
   }
   for (const group of pkgs) {
@@ -52,6 +53,7 @@ function workspaceTally() {
     try {
       members = readdirSync(join(REPO, "packages", group.name), { withFileTypes: true });
     } catch {
+      /* unreadable group dir — its members contribute no resolved versions */
       continue;
     }
     for (const member of members) {

@@ -1,5 +1,5 @@
-import type { TimelineMessage, TimelineInterval } from "./messages.js";
-import type { TimelineTrack, TimelineKeyframe, TimelinePrompt } from "./types.js";
+import type { TimelineMessage, TimelineInterval } from "./viser-timeline/messages.js";
+import type { TimelineTrack, TimelineKeyframe, TimelinePrompt } from "./viser-timeline/types.js";
 export declare const MOTION_TIMELINE_TRACKS: TimelineTrack[];
 export interface MotionTimelineInput {
     fps: number;

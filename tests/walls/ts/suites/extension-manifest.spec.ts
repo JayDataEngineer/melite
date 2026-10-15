@@ -256,3 +256,78 @@ describe("THE EXTENSION CENSUS (install side ⇔ check side ⇔ card requires)",
     ).toEqual([]);
   });
 });
+
+// ── THE VENDOR→INSTALL CENSUS (F5, nativity audit 2026-11-05) ─────
+// The three-SSOT census above judges check⇔install⇔card-requires,
+// but nothing judged the plane BELOW it: the vendored submodules
+// themselves. Two packs (FastVAE, timeline-director) sat vendored
+// and publish-disciplined while NO manifest row and NO pip dep
+// installed them — the family-coverage lesson one plane up (the
+// suite green while vendor/ carries dead weight). The census: every
+// vendored extension submodule is either (a) named by an install
+// row (nodes.yaml/extensions.yaml) or a pip-level uv source, or
+// (b) ledgered RETIRED below with its reason. Deletion is the
+// operator's call — this wall only makes the state NAMED.
+describe("THE VENDOR→INSTALL CENSUS (every vendored submodule is installed or ledgered)", () => {
+  /** Vendored extension submodule names from .gitmodules. */
+  function vendoredExtensionNames(): string[] {
+    const text = readFileSync(join(ROOT, ".gitmodules"), "utf8");
+    const out: string[] = [];
+    for (const m of text.matchAll(/\[submodule "([^"]+)"\]\n\tpath = (\S+)\n\turl = (\S+)/gu)) {
+      if (m[2]!.startsWith("vendor/comfyui_extensions/")) out.push(m[2]!.split("/").pop()!);
+    }
+    return out;
+  }
+
+  /** Pip-level install rows: the [tool.uv.sources] git sources' repo
+   *  basenames (the pyproject edge — melite-model-base installs this
+   *  way, not as a manifest row). */
+  function uvSourceNames(): Set<string> {
+    const pyproject = readFileSync(join(ROOT, "infra/comfyui/pyproject.toml"), "utf8");
+    const section = /\[tool\.uv\.sources\]\n([\s\S]*?)(?=\n\[|$)/u.exec(pyproject)?.[1] ?? "";
+    return new Set([...section.matchAll(/^([\w.-]+) = \{ git = "([^"]+)", rev = "[0-9a-f]{40}" \}/gmu)]
+      .map((m) => m[2]!.replace(/\.git$/u, "").split("/").pop()!));
+  }
+
+  /** Vendored but installed by NOTHING — each a DELIBERATE,
+   *  operator-owned open item with its reason (the publish source of
+   *  record stays vendored; deletion is the operator's call, never
+   *  the wall's). */
+  const RETIRED_VENDORED: Readonly<Record<string, string>> = {
+    "ComfyUI-MiniMax-H3-MotionCache-FastVAE":
+      "published to the Comfy registry (registry-door roster melite-minimax-h3-motioncache-fastvae 1.0.0) but never estate-installed: no nodes.yaml row, no uv source — the estate's H3 motion-cache lane rides the in-tree h3 family; the vendored tree is the publish source of record only",
+    "comfyui-minimax-h3-timeline-director":
+      "published to the Comfy registry (roster comfyui-minimax-h3-timeline-director 0.8.0) but never estate-installed: the estate's timeline direction lives in the h3-timeline card/kit; the vendored tree is the publish source of record only",
+  };
+
+  it("the census floor: the walk finds the vendored fleet (the vacuous guard)", () => {
+    // 11 vendored today; a shrink is a deliberate submodule removal
+    // in progress, never a quiet pass.
+    expect(vendoredExtensionNames().length,
+      "the .gitmodules walk found fewer vendored extension packs than the estate vendors — the reader rotted")
+      .toBeGreaterThanOrEqual(10);
+  });
+
+  it("every vendored extension submodule is installed by a row or ledgered below", () => {
+    const installed = new Set([
+      ...manifestRows(PACKAGES).map((r) => r.name),
+      ...uvSourceNames(),
+    ]);
+    const orphans = vendoredExtensionNames()
+      .filter((name) => !installed.has(name) && !(name in RETIRED_VENDORED));
+    expect(orphans,
+      "these vendored packs are installed by NO manifest row and NO uv source, and no retirement names them — dead weight under an all-green suite (the F5 class); ledger them here or install them, never leave them nameless")
+      .toEqual([]);
+  });
+
+  it("every RETIRED_VENDORED entry still has no install row (the ledger does not rot)", () => {
+    const installed = new Set([
+      ...manifestRows(PACKAGES).map((r) => r.name),
+      ...uvSourceNames(),
+    ]);
+    const stale = Object.keys(RETIRED_VENDORED).filter((name) => installed.has(name));
+    expect(stale,
+      "these retired packs now HAVE an install row — move them out of RETIRED_VENDORED; the retirement is a lie while a row installs them")
+      .toEqual([]);
+  });
+});

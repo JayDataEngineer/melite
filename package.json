@@ -11,6 +11,8 @@
     "@melite/estate-media": "workspace:*",
     "@melite/estate-runs": "workspace:*",
     "@shikijs/langs": "4.4.3",
+    "@types/node": "^22.20.0",
+    "publint": "^0.3.25",
     "@vitest/coverage-istanbul": "4.1.11",
     "@vitest/coverage-v8": "^4.1.8",
     "anser": "2.3.5",
@@ -37,6 +39,7 @@
     "yaml": "2.9.0"
   },
   "scripts": {
+    "postinstall": "node tools/install-lefthook.mjs",
     "build": "node tools/build-plane.mjs build",
     "knip": "node tools/knip-budget.mjs",
     "lint": "node tools/arch-lint.ts",

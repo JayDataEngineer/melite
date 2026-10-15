@@ -17,7 +17,8 @@
  */
 import * as React from 'react'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Modal, Pill, Tooltip } from '@deepseek-ai/dsh-client-ui-primitives'
+import { Modal, Pill } from '@deepseek-ai/dsh-client-ui-primitives'
+import { Tip } from '@melite/card-base/client'
 import { MediaDrilldown } from '../drilldown.tsx'
 import { loadDraftOntoBench, loadRunOntoBench } from './bench-load.ts'
 import { artifactNameOf, artifactPathOfUrl, deleteArtifact, deleteArtifacts, renameArtifact } from './artifact-ops.ts'
@@ -885,8 +886,10 @@ export function MediaPanel({ useTabInfo, sessionId }: { useTabInfo?: () => TabIn
                         * tile itself is a <button> and button-in-button
                         * is invalid DOM (the span+role predates this
                         * port for exactly that reason). What DSH owns
-                        * here is the bubble — Tooltip replaces the
-                        * native `title` (same copy), aria-label names
+                        * here is the bubble — the estate Tip (the DSH
+                        * Tooltip atom over a real anchor, card-base's
+                        * layout grammar) replaces the native `title`
+                        * (same copy), aria-label names
                         * the action. The wand restores the run's
                         * workflow onto the bench and opens the cards
                         * tab on it, so it is always live. Every tile
@@ -894,7 +897,7 @@ export function MediaPanel({ useTabInfo, sessionId }: { useTabInfo?: () => TabIn
                         * so the wand rides every tile. Hidden in select
                         * mode: a tile click toggles selection there. */}
                       {!selectMode && (
-                        <Tooltip label={galleryCopy.wandTooltip}>
+                        <Tip tip={galleryCopy.wandTooltip}>
                           <span
                             role="button"
                             tabIndex={0}
@@ -911,7 +914,7 @@ export function MediaPanel({ useTabInfo, sessionId }: { useTabInfo?: () => TabIn
                               }
                             }}
                           ><HistoryIcon /></span>
-                        </Tooltip>
+                        </Tip>
                       )}
                       {it.poster === '' && it.kind !== 'video'
                         ? <span style={{ color: textTertiary1 }}><Glyph kind={it.kind} /></span>

@@ -17,7 +17,7 @@ import type { ToolCallView } from '@deepseek-ai/dsh-tools'
 import type { JsonValue, ToolDefinition } from '../types.ts'
 import { remoteErrorOf } from '@deepseek-ai/dsh-typert-protocol'
 import { statusOrPendingOf } from '@melite/contracts/stageView'
-import type { EstateRequest } from '../estate.ts'
+import type { Estate } from '../estate.ts'
 import { jsonClean } from '../json-clean.ts'
 import { isTerminalStatus } from '@melite/contracts/stageView'
 
@@ -85,7 +85,7 @@ type RunStatusResult = {
   test?: boolean;
 } & Record<string, JsonValue>;
 
-export function runStatus(request: EstateRequest): ToolDefinition {
+export function runStatus(estate: Estate): ToolDefinition {
   // PRESENTATION ADAPTATION (tool-presentation wall + conversion
   // invariance — presentCall output must not change): defineTool
   // soft-gates presentCall behind arg validation (invalid → undefined),
@@ -344,10 +344,7 @@ export function runStatus(request: EstateRequest): ToolDefinition {
       // the poll loop never touches logs.
       for (;;) {
         try {
-          res = await request( 'GET',
-            '/v1/flows/status/' + encodeURIComponent(runId),
-            undefined, exec.signal, TIMEOUT_MS,
-          ) as Record<string, unknown>
+          res = await estate.runsStatus(runId, false, exec.signal, TIMEOUT_MS) as Record<string, unknown>
         } catch (e) {
           // The seats era (REBUILD-15): status refusals arrive as
           // RemoteErrors — the code+message IS the refusal voice.

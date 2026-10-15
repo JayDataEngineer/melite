@@ -1,5 +1,5 @@
 import type { ToolDefinition } from '../types.js';
-import type { EstateRequest } from '../estate.js';
+import type { Estate } from '../estate.js';
 /** The manage seat's refusal code (the envelope rides the details —
  *  the same declaration manageRegistry makes at the seat; repeated
  *  here because this tool compiles without the seat's module graph —
@@ -14,5 +14,5 @@ declare module '@deepseek-ai/dsh-typert-protocol' {
         };
     }
 }
-export declare function comfyManage(request: EstateRequest): ToolDefinition;
+export declare function comfyManage(estate: Estate): ToolDefinition;
 //# sourceMappingURL=comfy-manage.d.ts.map

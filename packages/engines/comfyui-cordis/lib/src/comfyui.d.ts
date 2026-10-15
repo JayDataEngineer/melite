@@ -1,6 +1,6 @@
 export { ComfyError, activeCount } from "./comfyui-types.js";
 export type { ActivePrompt, EngineJson } from "./comfyui-types.js";
-export { NO_ENDPOINT_MESSAGE, endpointConfigPath, loadEndpointConfig, packageRoot, packageRootFrom, resolveEngineBaseUrl, resolveRepoRoot, } from "./comfyui-config.js";
+export { NO_ENDPOINT_MESSAGE, endpointConfigPath, endpointSeedPath, loadEndpointConfig, packageRoot, packageRootFrom, resolveEngineBaseUrl, resolveRepoRoot, } from "./comfyui-config.js";
 export { invalidateObjectInfo, liveObjectInfo, sdkClient } from "./comfyui-transport.js";
 export { DATA_URL_IMAGE_EXT, UPLOAD_EXTS, spliceWorkflow, uploadReferenced, } from "./comfyui-upload.js";
 export { interrupt, stopForRunDir, unloadModels } from "./comfyui-control.js";

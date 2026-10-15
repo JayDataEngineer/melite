@@ -22,8 +22,6 @@ export type FormField = {
     section?: ("input" | "core" | "advanced") | null;
     /** Order */
     order?: number | null;
-} & {
-    [key: string]: unknown;
 };
 /**
  * ModifierField
@@ -37,8 +35,6 @@ export type FormFieldOption = {
     value: string;
     /** Label */
     label: string;
-} & {
-    [key: string]: unknown;
 };
 /**
  * FormField

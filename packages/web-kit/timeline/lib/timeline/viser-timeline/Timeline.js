@@ -12,7 +12,9 @@ import { useTimelineGeometry } from "./timeline-geometry.js";
 import { useTimelineMouseHandlers } from "./timeline-mouse.js";
 import { useTimelineBackground } from "./timeline-render-background.js";
 import { useTimelineForeground } from "./timeline-render-foreground.js";
-import { SCROLLBAR_TOTAL_HEIGHT, TimelineEditingOverlay, TimelineScrollbar } from "./timeline-overlays.js";
+import { SCROLLBAR_TOTAL_HEIGHT, TimelineEditingOverlay } from "./timeline-overlays.js";
+// melite chrome (re-homed 2026-11-05, F2 — the vendored bar composes it):
+import { TimelineScrollbar } from "../TimelineScrollbar.js";
 export { calculateTimelineCoordinates, DEFAULT_KEYFRAME_COLOR, getIntervalSegments, getZoomEnvelopeEndFrame, OUT_OF_RANGE_CONSTRAINT_COLOR, OUT_OF_RANGE_CONSTRAINT_OPACITY, PROMPT_TEXT_Y_OFFSET_PX } from "./timeline-scales.js";
 export { useTimelineInteractionState };
 export { useTimelineViewport };
@@ -22,7 +24,7 @@ export { useTimelineGeometry };
 export { useTimelineMouseHandlers };
 export { useTimelineBackground };
 export { useTimelineForeground };
-export { SCROLLBAR_TOTAL_HEIGHT, TimelineEditingOverlay, TimelineScrollbar };
+export { SCROLLBAR_TOTAL_HEIGHT, TimelineEditingOverlay };
 export { SCROLLBAR_HEIGHT } from "./timeline-overlays.js";
 // Drawing helpers live in timeline/draw.ts
 export function Timeline({ timelineState, onFrameChange, onKeyframeAdd, onKeyframeMove, onKeyframeDelete, onIntervalAdd, onIntervalMove, onIntervalDelete, onPromptUpdate, onPromptResize, onPromptMove, onPromptDelete, onPromptAdd, onPromptSplit, onPromptMerge, getLatestState }) {

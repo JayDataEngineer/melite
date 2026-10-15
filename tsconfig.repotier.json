@@ -4,7 +4,6 @@
     "allowImportingTsExtensions": true, "lib": ["ES2022"], "strict": true,
     "noEmit": true, "skipLibCheck": true, "types": ["node"], "isolatedModules": true,
     "esModuleInterop": true, "forceConsistentCasingInFileNames": true,
-    "typeRoots": ["node_modules/.pnpm/@types+node@24.13.3/node_modules/@types"],
     "baseUrl": ".",
     "paths": {
       "@deepseek-ai/cordis": ["packages/estate/drafts/node_modules/@deepseek-ai/cordis"],
@@ -13,10 +12,17 @@
       "@deepseek-ai/dsh-storage-domain": ["packages/estate/drafts/node_modules/@deepseek-ai/dsh-storage-domain"],
       "@deepseek-ai/dsh-storage-json": ["packages/estate/drafts/node_modules/@deepseek-ai/dsh-storage-json"],
       "@deepseek-ai/dsh-typert-protocol": ["packages/estate/drafts/node_modules/@deepseek-ai/dsh-typert-protocol"],
+      // the e2e tier judges the SOURCE face: comfyui-cordis src
+      // imports @melite/engine-contract, and without this row it resolves
+      // the lib face — the F3 brand is nominal, so lib-EngineRef
+      // and src-EngineRef are distinct types and executor
+      // assignments red (the layout law: tests resolve workspace
+      // imports through tsconfig paths to src).
+      "@melite/engine-contract": ["packages/engines/contract/src/index.ts"],
+      "@melite/engine-contract/*": ["packages/engines/contract/src/*.ts"],
       "@melite/estate-drafts": ["packages/estate/drafts/src/index.ts"],
       "@melite/estate-manage": ["packages/estate/manage/src/index.ts"],
-      "@melite/estate-runs": ["packages/estate/runs/src/index.ts"],
-      "@infer-media/dsh-gallery": ["packages/web/infer-gallery/src/index.ts"]
+      "@melite/estate-runs": ["packages/estate/runs/src/index.ts"]
     }
   },
   "include": ["tools/**/*.ts", "tests/*.ts", "tests/helpers/**/*.ts", "tests/e2e/**/*.ts"]

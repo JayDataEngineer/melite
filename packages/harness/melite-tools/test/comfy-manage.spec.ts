@@ -16,7 +16,8 @@ import assert from 'node:assert/strict'
 import { RemoteError } from '@deepseek-ai/dsh-typert-protocol'
 import type { ToolRunContext } from '@deepseek-ai/dsh-tools'
 import { comfyManage } from '../src/tools/comfy-manage.ts'
-import type { EstateRequest } from '../src/estate.ts'
+import type { Estate } from '../src/estate.ts'
+import { fakeEstate } from './fake-estate.ts'
 import type { JsonValue } from '../src/types.ts'
 import { fakeExec } from './fake-exec.ts'
 
@@ -35,40 +36,43 @@ declare module '@deepseek-ai/dsh-typert-protocol' {
 import { dispatchManage } from '../../estate-queue/src/managePlane.ts'
 import type { ManageCtx } from '../../estate-queue/src/managePlane.ts'
 
-function mockRequest(handler: (method: string, path: string, body: unknown) => unknown): {
-  seen: Array<{ method: string; path: string; body: unknown; timeoutMs?: number }>;
-  request: EstateRequest;
+/** The typed-lane mock (F-1, 2026-11-05): the tool plane's tests
+ * stub the ESTATE seam, never a URL transport. `seen` records the
+ * lane a tool rode; manage is this spec's one lane. */
+function mockEstate(handler: (body: unknown) => unknown): {
+  seen: Array<{ lane: string; body: unknown; timeoutMs?: number }>;
+  estate: Estate;
 } {
-  const seen: Array<{ method: string; path: string; body: unknown; timeoutMs?: number }> = []
-  // Contextually typed by the EstateRequest seam — params inherit the
-  // transport signature, so no implicit-any and no casts ride.
-  const request: EstateRequest = async (method, path, body, _signal, timeoutMs) => {
-    seen.push({ method, path, body, timeoutMs })
-    return handler(method, path, body)
-  }
-  return { seen, request }
+  const seen: Array<{ lane: string; body: unknown; timeoutMs?: number }> = []
+  const { estate } = fakeEstate({
+    manageAct: (body: unknown, _signal: AbortSignal, timeoutMs?: number) => {
+      seen.push({ lane: 'manageAct', body, timeoutMs })
+      return handler(body)
+    },
+  })
+  return { seen, estate }
+}
+
+function stubEstate(): Estate {
+  return fakeEstate({ manageAct: () => ({}) }).estate
 }
 
 function exec() {
   return fakeExec(AbortSignal.timeout(5000))
 }
 
-function stubRequest(): EstateRequest {
-  return (async () => ({})) as unknown as EstateRequest
-}
-
 describe('comfy_manage operator_confirmed rides the wire (verify-batch31 D3)', () => {
   test('a flagged install forwards the flag; an unflagged one never sends false', async () => {
-    const flagged = mockRequest(() => ({ ok: true, action: 'install_extension_url', items: [], state: 'restart_required' }))
-    const tool = comfyManage(flagged.request)
+    const flagged = mockEstate(() => ({ ok: true, action: 'install_extension_url', items: [], state: 'restart_required' }))
+    const tool = comfyManage(flagged.estate)
     const out = await tool.execute({ action: 'install_extension_url', url: 'https://example.invalid/pack', ref: 'pack', operator_confirmed: true }, exec()) as Record<string, unknown>
     assert.equal(out['ok'], true)
     const sent = flagged.seen[0]?.body as Record<string, unknown>
     assert.equal(sent['operator_confirmed'], true)
     assert.equal(sent['url'], 'https://example.invalid/pack')
 
-    const unflagged = mockRequest(() => ({ ok: true, action: 'install_extension_url', items: [], state: 'restart_required' }))
-    const tool2 = comfyManage(unflagged.request)
+    const unflagged = mockEstate(() => ({ ok: true, action: 'install_extension_url', items: [], state: 'restart_required' }))
+    const tool2 = comfyManage(unflagged.estate)
     await tool2.execute({ action: 'install_extension_url', url: 'https://example.invalid/pack' }, exec())
     const sent2 = unflagged.seen[0]?.body as Record<string, unknown>
     assert.equal('operator_confirmed' in sent2, false, 'an unset flag never rides as false')
@@ -77,7 +81,7 @@ describe('comfy_manage operator_confirmed rides the wire (verify-batch31 D3)', (
 
 describe('comfy_manage presentCall — the ComfyUI card', () => {
   test('names the action', () => {
-    const tool = comfyManage(stubRequest())
+    const tool = comfyManage(stubEstate())
     const view = tool.presentCall!({ action: 'status' })
     assert.equal(view?.card, 'generic')
     assert.equal(view?.title, 'ComfyUI status')
@@ -86,7 +90,7 @@ describe('comfy_manage presentCall — the ComfyUI card', () => {
   })
 
   test('junk actions fall back to ?', () => {
-    const tool = comfyManage(stubRequest())
+    const tool = comfyManage(stubEstate())
     assert.equal(tool.presentCall!({})?.title, 'ComfyUI ?')
     assert.equal(tool.presentCall!(null)?.title, 'ComfyUI ?')
     assert.equal(tool.presentCall!('junk')?.title, 'ComfyUI ?')
@@ -95,7 +99,7 @@ describe('comfy_manage presentCall — the ComfyUI card', () => {
 
 describe('comfy_manage render — the action line', () => {
   test('names action + detail', () => {
-    const tool = comfyManage(stubRequest())
+    const tool = comfyManage(stubEstate())
     const parts = tool.output.render(
       { action: 'restart' },
       { ok: true, action: 'restart', detail: 'done' } as never,
@@ -104,13 +108,13 @@ describe('comfy_manage render — the action line', () => {
   })
 
   test('missing fields fall back', () => {
-    const tool = comfyManage(stubRequest())
+    const tool = comfyManage(stubEstate())
     const parts = tool.output.render({ action: 'status' }, {} as never) as Array<{ text?: string }>
      assert.equal(parts.map((p) => p?.text ?? '').join('\n'), 'comfy_manage ?: \nREFUSED: manage/refused')
   })
 
   test('renders nested status, rows, and provisioning actions for the agent', () => {
-    const tool = comfyManage(stubRequest())
+    const tool = comfyManage(stubEstate())
     const text = (value: unknown): string => (tool.output.render({}, asJson(value)) as Array<{ text?: string }>)
       .map((part) => part.text ?? '').join('\n')
     const status = text({
@@ -162,8 +166,8 @@ describe('comfy_manage render — the action line', () => {
 
 describe('comfy_manage execute — the exec-signal miswire', () => {
   test('a missing exec refuses loud as a value', async () => {
-    const { seen, request } = mockRequest(() => ({ ok: true }))
-    const tool = comfyManage(request)
+    const { seen, estate } = mockEstate(() => ({ ok: true }))
+    const tool = comfyManage(estate)
     const out = await tool.execute(
       { action: 'status' },
       undefined as unknown as ToolRunContext,
@@ -178,8 +182,8 @@ describe('comfy_manage execute — the exec-signal miswire', () => {
   })
 
   test('a signalless exec refuses the same way', async () => {
-    const { seen, request } = mockRequest(() => ({ ok: true }))
-    const tool = comfyManage(request)
+    const { seen, estate } = mockEstate(() => ({ ok: true }))
+    const tool = comfyManage(estate)
     const out = await tool.execute(
       { action: 'status' },
       {} as unknown as ToolRunContext,
@@ -209,16 +213,15 @@ describe('comfy_manage execute — the manage lane', () => {
   }
 
   test('declared fields ride the 300s POST; undeclared never do', async () => {
-    const { seen, request } = mockRequest(() => ({ ok: true, action: 'download_model', detail: 'fetched', data: { f: 1 } }))
-    const tool = comfyManage(request)
+    const { seen, estate } = mockEstate(() => ({ ok: true, action: 'download_model', detail: 'fetched', data: { f: 1 } }))
+    const tool = comfyManage(estate)
     const out = await tool.execute({ ...FULL, junk: 'dropped' }, exec()) as Record<string, unknown>
     assert.equal(out.ok, true)
     assert.equal(out.action, 'download_model')
     assert.equal(out.detail, 'fetched')
     assert.deepEqual(out.data, { f: 1 })
     assert.equal(seen.length, 1)
-    assert.equal(seen[0]!.method, 'POST')
-    assert.equal(seen[0]!.path, '/v1/manage')
+    assert.equal(seen[0]!.lane, 'manageAct')
     assert.equal(seen[0]!.timeoutMs, 300_000)
     const body = seen[0]!.body as Record<string, unknown>
     assert.deepEqual(body, FULL)
@@ -230,8 +233,8 @@ describe('comfy_manage execute — the manage lane', () => {
   // estate leg, and a refusal keeps its voice through the tool
   // face — the model reads WHY, never a bare error.
   test('the lora doors ride the enum, forward their fields, and keep the refusal voice', async () => {
-    const { seen, request } = mockRequest(() => ({ ok: true }))
-    const tool = comfyManage(request)
+    const { seen, estate } = mockEstate(() => ({ ok: true }))
+    const tool = comfyManage(estate)
     const params = tool.parameters as { properties?: Record<string, { enum?: string[] }> }
     const actions = params.properties?.['action']?.enum ?? []
     assert.ok(actions.includes('lora_list'), 'lora_list on the enum')
@@ -250,7 +253,7 @@ describe('comfy_manage execute — the manage lane', () => {
     assert.equal(body['path'], undefined, 'the bytes arm rides no path')
     // a refusal IS the answer: the estate's manage/refused carries
     // the plane's own detail through
-    const { request: refused } = mockRequest(() => {
+    const { estate: refused } = mockEstate(() => {
       throw new RemoteError('manage/refused', 'lora_install requires: path', {
         action: 'lora_install',
         status: 422,
@@ -266,7 +269,7 @@ describe('comfy_manage execute — the manage lane', () => {
   })
 
   test('lifts provisioning state fields without hiding the raw data', async () => {
-    const { request } = mockRequest(() => ({
+    const { estate } = mockEstate(() => ({
       ok: true,
       action: 'install_extension',
       detail: 'restart required',
@@ -277,7 +280,7 @@ describe('comfy_manage execute — the manage lane', () => {
         items: [{ key: 'extension:pack', state: 'restart_required' }],
       },
     }))
-    const tool = comfyManage(request)
+    const tool = comfyManage(estate)
     const out = await tool.execute({ action: 'install_extension', nodes: ['pack'] }, exec()) as Record<string, unknown>
     assert.equal(out.ok, false)
     assert.equal(out.state, 'partial')
@@ -309,11 +312,13 @@ describe('comfy_manage execute — the manage lane', () => {
         } as unknown as ManageCtx['provisioning'], // partial mock: this wall drives only reconcile
         timeout: () => () => {},
       }
-      const request: EstateRequest = async (_method, _path, body, signal) => {
-        const [, envelope] = await dispatchManage(body, ctx, signal)
-        return envelope
-      }
-      const tool = comfyManage(request)
+      const { estate } = fakeEstate({
+        manageAct: async (body: unknown, signal: AbortSignal) => {
+          const [, envelope] = await dispatchManage(body, ctx, signal)
+          return envelope
+        },
+      })
+      const tool = comfyManage(estate)
       const out = await tool.execute({ action: 'status' }, exec()) as Record<string, unknown>
       const data = out.data as { manager: { reachable: boolean; security: string }; next_action: string }
       assert.equal(out.ok, true)
@@ -330,15 +335,15 @@ describe('comfy_manage execute — the manage lane', () => {
   })
 
   test('blank and omitted fields stay out of the envelope', async () => {
-    const { seen, request } = mockRequest(() => ({ ok: true, action: 'status', detail: 'fine' }))
-    const tool = comfyManage(request)
+    const { seen, estate } = mockEstate(() => ({ ok: true, action: 'status', detail: 'fine' }))
+    const tool = comfyManage(estate)
     await tool.execute({ action: 'status', url: '', tail: 10 }, exec())
     assert.deepEqual(seen[0]!.body, { action: 'status', tail: 10 })
   })
 
   test('a falsy envelope still maps (ok:false, data:null)', async () => {
-    const { request } = mockRequest(() => ({ ok: false, action: 'status', detail: 'guarded' }))
-    const tool = comfyManage(request)
+    const { estate } = mockEstate(() => ({ ok: false, action: 'status', detail: 'guarded' }))
+    const tool = comfyManage(estate)
     const out = await tool.execute({ action: 'status' }, exec()) as Record<string, unknown>
     assert.equal(out.ok, false)
     assert.equal(out.action, 'status')
@@ -349,14 +354,14 @@ describe('comfy_manage execute — the manage lane', () => {
 
 describe('comfy_manage execute — refusals ARE the answer', () => {
   test('manage/refused carrying the envelope surfaces as the value', async () => {
-    const { seen, request } = mockRequest(() => {
+    const { seen, estate } = mockEstate(() => {
       throw new RemoteError('manage/refused', 'lifecycle refused: 2 runs active', {
         action: 'restart',
         status: 409,
         data: { runs: 2 },
       })
     })
-    const tool = comfyManage(request)
+    const tool = comfyManage(estate)
     const out = await tool.execute({ action: 'restart' }, exec()) as Record<string, unknown>
     assert.equal(out.ok, false)
     assert.equal(out.action, 'restart')
@@ -368,10 +373,10 @@ describe('comfy_manage execute — refusals ARE the answer', () => {
   })
 
   test('a dataless refusal defaults data to null', async () => {
-    const { request } = mockRequest(() => {
+    const { estate } = mockEstate(() => {
       throw new RemoteError('manage/refused', 'catalog miss', { action: 'stop' })
     })
-    const tool = comfyManage(request)
+    const tool = comfyManage(estate)
     const out = await tool.execute({ action: 'stop' }, exec()) as Record<string, unknown>
     assert.equal(out.ok, false)
     assert.equal(out.action, 'stop')
@@ -381,34 +386,34 @@ describe('comfy_manage execute — refusals ARE the answer', () => {
 
   test('manage/refused without a string action rethrows', async () => {
     const refusal = new RemoteError('manage/refused', 'shapeless', { data: 1 })
-    const { request } = mockRequest(() => { throw refusal })
-    const tool = comfyManage(request)
+    const { estate } = mockEstate(() => { throw refusal })
+    const tool = comfyManage(estate)
     await assert.rejects(tool.execute({ action: 'free' }, exec()) as Promise<unknown>, /shapeless/)
   })
 
   test('manage/refused without details rethrows', async () => {
     const refusal = new RemoteError('manage/refused', 'detail-less', undefined as never) // no details at runtime — the rethrow arm
-    const { request } = mockRequest(() => { throw refusal })
-    const tool = comfyManage(request)
+    const { estate } = mockEstate(() => { throw refusal })
+    const tool = comfyManage(estate)
     await assert.rejects(tool.execute({ action: 'free' }, exec()) as Promise<unknown>, /detail-less/)
   })
 
   test('any other remote code rethrows', async () => {
     const refusal = new RemoteError('manage/broken', 'seat blew up', { action: 'free' })
-    const { request } = mockRequest(() => { throw refusal })
-    const tool = comfyManage(request)
+    const { estate } = mockEstate(() => { throw refusal })
+    const tool = comfyManage(estate)
     await assert.rejects(tool.execute({ action: 'free' }, exec()) as Promise<unknown>, /seat blew up/)
   })
 
   test('a plain transport failure rethrows', async () => {
-    const { request } = mockRequest(() => { throw new Error('down') })
-    const tool = comfyManage(request)
+    const { estate } = mockEstate(() => { throw new Error('down') })
+    const tool = comfyManage(estate)
     await assert.rejects(tool.execute({ action: 'logs', tail: 5 }, exec()) as Promise<unknown>, /down/)
   })
 })
 
 describe('comfy_manage contract projection matrix', () => {
-  const text = (value: unknown): string => (comfyManage(stubRequest()).output.render({}, asJson(value)) as Array<{ text?: string }>)
+  const text = (value: unknown): string => (comfyManage(stubEstate()).output.render({}, asJson(value)) as Array<{ text?: string }>)
     .map((part) => part.text ?? '')
     .join('\n')
 
@@ -521,7 +526,7 @@ describe('comfy_manage contract projection matrix', () => {
   })
 
   test('refusals and result envelopes expose every structured field', async () => {
-    const { request, seen } = mockRequest(() => ({
+    const { estate, seen } = mockEstate(() => ({
       ok: true,
       action: 'install_extension',
       detail: 'done',
@@ -534,7 +539,7 @@ describe('comfy_manage contract projection matrix', () => {
       restart_required: true, partial: true, items: [{ name: 'env' }], operations: [{ id: 'env-op' }],
       rows: [{ id: 'env-row' }], requested: ['e'], succeeded: ['f'], missed: ['g'], misses: ['h'],
     }))
-    const out = await comfyManage(request).execute({ action: 'install_extension' }, exec()) as Record<string, unknown>
+    const out = await comfyManage(estate).execute({ action: 'install_extension' }, exec()) as Record<string, unknown>
     assert.equal(out.operation_id, 'env-op')
     assert.equal(out.status, 202)
     assert.equal(out.code, 'env-code')
@@ -548,24 +553,24 @@ describe('comfy_manage contract projection matrix', () => {
     assert.deepEqual(out.misses, ['h'])
     assert.equal(seen[0]?.body && (seen[0].body as Record<string, unknown>).action, 'install_extension')
 
-    const array = mockRequest(() => ({ ok: true, action: 'search_models', data: [{ name: 'array-row' }] }))
-    const arrayOut = await comfyManage(array.request).execute({ action: 'search_models' }, exec()) as Record<string, unknown>
+    const array = mockEstate(() => ({ ok: true, action: 'search_models', data: [{ name: 'array-row' }] }))
+    const arrayOut = await comfyManage(array.estate).execute({ action: 'search_models' }, exec()) as Record<string, unknown>
     assert.deepEqual(arrayOut.rows, [{ name: 'array-row' }])
-    const sparse = mockRequest(() => ({ ok: true, action: 'status', data: null }))
-    const sparseOut = await comfyManage(sparse.request).execute({ action: 'status' }, exec()) as Record<string, unknown>
+    const sparse = mockEstate(() => ({ ok: true, action: 'status', data: null }))
+    const sparseOut = await comfyManage(sparse.estate).execute({ action: 'status' }, exec()) as Record<string, unknown>
     assert.equal(sparseOut.data, null)
   })
 
   test('optional envelope values and refusal details keep their exact voices', async () => {
-    const nulls = mockRequest(() => ({ ok: false, action: 'status', detail: 'refused' }))
-    const out = await comfyManage(nulls.request).execute({ action: 'status', nodes: [], url: '' }, exec()) as Record<string, unknown>
+    const nulls = mockEstate(() => ({ ok: false, action: 'status', detail: 'refused' }))
+    const out = await comfyManage(nulls.estate).execute({ action: 'status', nodes: [], url: '' }, exec()) as Record<string, unknown>
     assert.equal(out.error, 'refused')
     assert.equal(out.ok, false)
 
-    const refusal = mockRequest(() => {
+    const refusal = mockEstate(() => {
       throw new RemoteError('manage/refused', 'named', { action: 'install_extension', data: { state: 'partial' }, status: 'bad' as unknown as number, code: 'custom' }) // intentionally mistyped status: the tool drops non-numbers (undefined below)
     })
-    const value = await comfyManage(refusal.request).execute({ action: 'install_extension' }, exec()) as Record<string, unknown>
+    const value = await comfyManage(refusal.estate).execute({ action: 'install_extension' }, exec()) as Record<string, unknown>
     assert.equal(value.code, 'custom')
     assert.equal(value.status, undefined)
     assert.equal(value.state, 'partial')
@@ -596,25 +601,25 @@ describe('comfy_manage contract projection matrix', () => {
     }
     assert.equal(text({ ok: true, action: 'install_extension', data: { state: 'restart_required' } }).includes('next_action: restart'), true)
 
-    const arrayResponse = mockRequest(() => [])
-    const arrayOut = await comfyManage(arrayResponse.request).execute({ action: 'status' }, exec()) as Record<string, unknown>
+    const arrayResponse = mockEstate(() => [])
+    const arrayOut = await comfyManage(arrayResponse.estate).execute({ action: 'status' }, exec()) as Record<string, unknown>
     assert.equal(arrayOut.action, 'status')
-    const emptyMiss = mockRequest(() => ({ ok: true, action: 'status', data: { missed: [] } }))
-    const emptyOut = await comfyManage(emptyMiss.request).execute({ action: 'status' }, exec()) as Record<string, unknown>
+    const emptyMiss = mockEstate(() => ({ ok: true, action: 'status', data: { missed: [] } }))
+    const emptyOut = await comfyManage(emptyMiss.estate).execute({ action: 'status' }, exec()) as Record<string, unknown>
     assert.equal(emptyOut.ok, true)
   })
 })
 
 describe('comfy_manage acquire_weight — the agent seat on the one acquisition door', () => {
   test('the action rides the enum, forwards model/file/operation_id, and surfaces bytes/total', async () => {
-    const tool = comfyManage(stubRequest())
+    const tool = comfyManage(stubEstate())
     const params = tool.parameters as { properties?: Record<string, { enum?: string[] }> }
     assert.ok(params.properties?.['action']?.enum?.includes('acquire_weight'), 'acquire_weight on the enum')
 
     // THE START (the agent's Download press): model + file ride the
     // SAME /v1/manage door the popup button rides — one door, two
     // callers — and the live bytes/total surface top-level.
-    const start = mockRequest(() => ({
+    const start = mockEstate(() => ({
       ok: true,
       action: 'acquire_weight',
       detail: 'acquiring mask (weight.bin) — 0/8 bytes',
@@ -623,7 +628,7 @@ describe('comfy_manage acquire_weight — the agent seat on the one acquisition 
       state: 'acquiring',
       next_action: 'acquire_weight',
     }))
-    const started = await comfyManage(start.request).execute(
+    const started = await comfyManage(start.estate).execute(
       { action: 'acquire_weight', model: 'mask', file: 'weight.bin' }, exec()) as Record<string, unknown>
     assert.deepEqual(start.seen[0]?.body, { action: 'acquire_weight', model: 'mask', file: 'weight.bin' })
     assert.equal(started.operation_id, 'op-agent-1')
@@ -634,7 +639,7 @@ describe('comfy_manage acquire_weight — the agent seat on the one acquisition 
     // THE POLL (the agent's tracker read): the SAME action with ONLY
     // the operation id — no second fetch — and the terminal ledger
     // lands with bytes == total.
-    const poll = mockRequest(() => ({
+    const poll = mockEstate(() => ({
       ok: true,
       action: 'acquire_weight',
       detail: 'acquire_weight op-agent-1: 8/8 bytes (active)',
@@ -643,7 +648,7 @@ describe('comfy_manage acquire_weight — the agent seat on the one acquisition 
       state: 'active',
       next_action: 'acquire_weight',
     }))
-    const polled = await comfyManage(poll.request).execute(
+    const polled = await comfyManage(poll.estate).execute(
       { action: 'acquire_weight', operation_id: 'op-agent-1' }, exec()) as Record<string, unknown>
     assert.deepEqual(poll.seen[0]?.body, { action: 'acquire_weight', operation_id: 'op-agent-1' })
     assert.equal(polled.bytes, 8)
@@ -652,7 +657,7 @@ describe('comfy_manage acquire_weight — the agent seat on the one acquisition 
   })
 
   test('the render names the live bytes/total line', async () => {
-    const tool = comfyManage(stubRequest())
+    const tool = comfyManage(stubEstate())
     const render = tool.output?.render
     assert.ok(typeof render === 'function')
     const lines = render({}, {
@@ -671,7 +676,7 @@ describe('comfy_manage acquire_weight — the agent seat on the one acquisition 
     // A poll can carry half the fraction (bytes before the total is
     // known, or the total before bytes land) — the line still renders
     // with ? for the unknown half.
-    const tool = comfyManage(stubRequest())
+    const tool = comfyManage(stubEstate())
     const render = tool.output?.render
     assert.ok(typeof render === 'function')
     const bytesOnly = render({}, {

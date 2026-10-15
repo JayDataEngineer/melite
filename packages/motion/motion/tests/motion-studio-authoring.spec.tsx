@@ -86,6 +86,24 @@ describe('timeline (prompts + keyframes)', () => {
     }, { timeout: 10000 })
   })
 
+  test('double-clicking an occupied (lane, frame) seat updates it — never a second dot (the wire seat law)', async () => {
+    const { onSave } = await mountedWithRun()
+    stubScrollerRect()
+    const lane = document.body.querySelector('[data-lane="fullbody"]') as HTMLElement
+    fireEvent.doubleClick(lane, { clientX: 4, button: 0 })
+    await vi.waitFor(() => {
+      if (!document.body.querySelector('[data-kf]')) throw new Error('no diamond yet')
+    }, { timeout: 10000 })
+    fireEvent.doubleClick(lane, { clientX: 4, button: 0 })
+    await new Promise((r) => setTimeout(r, 150))
+    // the wire identifies a keyframe by (track_id, frame): the second add
+    // on the same seat updates the seated payload instead of emitting a
+    // dot re-hydration would collapse — and since the re-snapshot at the
+    // same frame carries the SAME pose, the no-op law states nothing.
+    expect(document.body.querySelectorAll('[data-kf]').length).toBe(1)
+    expect(onSave.mock.calls.filter(([p]) => (p as Record<string, unknown>).motion_constraints)).toHaveLength(1)
+  })
+
   test('keyframe drag moves the diamond', async () => {
     await mountedWithRun()
     stubScrollerRect()

@@ -58,7 +58,7 @@ function sleepAbortable(ms, signal) {
     });
 }
 const TERMINAL = { has: (s) => isTerminalStatus(s) };
-export function runStatus(request) {
+export function runStatus(estate) {
     // PRESENTATION ADAPTATION (tool-presentation wall + conversion
     // invariance — presentCall output must not change): defineTool
     // soft-gates presentCall behind arg validation (invalid → undefined),
@@ -311,7 +311,7 @@ export function runStatus(request) {
             // the poll loop never touches logs.
             for (;;) {
                 try {
-                    res = await request('GET', '/v1/flows/status/' + encodeURIComponent(runId), undefined, exec.signal, TIMEOUT_MS);
+                    res = await estate.runsStatus(runId, false, exec.signal, TIMEOUT_MS);
                 }
                 catch (e) {
                     // The seats era (REBUILD-15): status refusals arrive as

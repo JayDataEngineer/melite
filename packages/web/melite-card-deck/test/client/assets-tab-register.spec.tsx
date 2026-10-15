@@ -70,7 +70,7 @@ afterEach(() => {})
 describe('registerAssetsTab — the native tab contract', () => {
   it('registers the comfy-manager type with its guide row', () => {
     const { ctx, types } = fakeCtx(() => {})
-    registerAssetsTab(ctx)
+    registerAssetsTab(ctx as never)
     expect(types).toHaveLength(1)
     expect(types[0]?.id).toBe('melite-card-deck:comfy')
     expect(types[0]?.kind).toBe('comfy-manager')
@@ -83,7 +83,7 @@ describe('registerAssetsTab — the native tab contract', () => {
 
   it('the guide glyph renders the server-rack svg', () => {
     const { ctx, types } = fakeCtx(() => {})
-    registerAssetsTab(ctx)
+    registerAssetsTab(ctx as never)
     const icon = types[0]?.guide?.[0]?.icon as unknown as (props: { size?: number }) => unknown
     expect(typeof icon).toBe('function')
     const node = icon({ size: 16 }) as { type: string; props: Record<string, unknown> }
@@ -93,7 +93,7 @@ describe('registerAssetsTab — the native tab contract', () => {
 
   it('the body registers under the type id on the keyed seat', () => {
     const { ctx, bodies } = fakeCtx(() => {})
-    registerAssetsTab(ctx)
+    registerAssetsTab(ctx as never)
     expect(bodies).toHaveLength(1)
     expect(bodies[0]?.name).toBe('sidebar.right.pane.tab')
     expect(bodies[0]?.key).toBe('melite-card-deck:comfy')
@@ -113,7 +113,7 @@ describe('registerAssetsTab — the native tab contract', () => {
         },
       },
     }
-    expect(() => registerAssetsTab(instrumented)).not.toThrow()
+    expect(() => registerAssetsTab(instrumented as never)).not.toThrow()
     expect(bodies).toHaveLength(1)
     // the returned noop runs clean (the fiber-unload path).
     expect(() => (disposers[0] as () => void)()).not.toThrow()

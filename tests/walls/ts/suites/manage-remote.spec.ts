@@ -205,12 +205,16 @@ test("endpointConfigPath honors COMFYUI_ENDPOINT_CONFIG (the wall's own override
   try {
     // D-L14 (the wall audit, 2026-09-28): `endsWith` accepted ANY
     // path with that filename — a resolver that had drifted to a
-    // different directory's comfyui_endpoint.json passed. The
-    // default is the PACKAGED path, exactly.
+    // different directory's comfyui_endpoint.json passed. The F1
+    // cure (2026-11-05) moved the default WRITE home: the repo's
+    // untracked state file, exactly (the tracked package SEED at
+    // packages/engines/comfyui-cordis/data/ is the read-only
+    // fallback no door writes — machine state left the tracked
+    // tree).
     assert.equal(
       endpointConfigPath(),
-      join(process.cwd(), "packages", "engines", "comfyui-cordis", "data", "comfyui_endpoint.json"),
-      "without the env var the PACKAGED default resolves — exactly (a same-named file elsewhere is not the default)",
+      join(process.cwd(), "data", "comfyui_endpoint.json"),
+      "without the env var the untracked STATE home resolves — exactly (a same-named file elsewhere is not the default)",
     );
   } finally {
     if (saved === undefined) delete process.env["COMFYUI_ENDPOINT_CONFIG"];

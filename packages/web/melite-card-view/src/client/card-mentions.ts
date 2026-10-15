@@ -17,6 +17,7 @@
 import type { ChatFileMentions } from '@deepseek-ai/dsh-client-ui-chat/client'
 import type { ConversationNodeDefinition, ConversationTurnDataMap } from '@deepseek-ai/dsh-client-ui-conversation/client'
 import { CARD_TOOLS } from './card-tools.ts'
+import { chromeCopy } from '../chromeCopy.ts'
 
 /** One card tool's persisted ids, folded from its tool/result meta. */
 export interface MeliteCardRow {
@@ -126,7 +127,7 @@ export function buildChatFileMentions(openMediaTab: () => void): ChatFileMention
           return {
             open: () => { openMediaTab() },
             label: value,
-            title: `melite ${kind} ${value} — opens the Media page`,
+            title: chromeCopy.mentionTitle({ kind, value }),
           }
         },
       }

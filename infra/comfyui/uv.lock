@@ -1385,7 +1385,7 @@ requires-dist = [
     { name = "einops" },
     { name = "filelock" },
     { name = "kornia", specifier = ">=0.7.1" },
-    { name = "melite-model-base", git = "https://github.com/JayDataEngineer/melite-model-base.git?rev=8444fe5dd9b57e75ec24902158b31858d3fa3b6d" },
+    { name = "melite-model-base", git = "https://github.com/JayDataEngineer/melite-model-base.git?rev=b18214cd772c10d248636f0a4a73eeb7cb53b231" },
     { name = "motion-correction", git = "https://github.com/JayDataEngineer/MotionCorrection.git?rev=7a070f740eea9e1a35c11007cd1230e7a5bdc91c" },
     { name = "numpy", specifier = ">=1.25.0" },
     { name = "pillow" },
@@ -1418,7 +1418,7 @@ requires-dist = [
 [[package]]
 name = "melite-model-base"
 version = "1.0.0"
-source = { git = "https://github.com/JayDataEngineer/melite-model-base.git?rev=8444fe5dd9b57e75ec24902158b31858d3fa3b6d#8444fe5dd9b57e75ec24902158b31858d3fa3b6d" }
+source = { git = "https://github.com/JayDataEngineer/melite-model-base.git?rev=b18214cd772c10d248636f0a4a73eeb7cb53b231#b18214cd772c10d248636f0a4a73eeb7cb53b231" }
 
 [[package]]
 name = "mixpanel"

@@ -1,13 +1,5 @@
-/**
- * The AGENT-side enhance orchestration — shared by the chat tool and the
- * /melite-tools/enhance route's sweep mode. ONE implementation, two doors.
- *
- * The recipes are SSOT in the gateway form-spec (per-model
- * prompt-enhance* SKILL.md files surfaced as enhance_prompt | enhance_prompts).
- * Every field completion rides the harness model via llm-complete.ts —
- * no keystore, no "no model".
- */
-import type { EstateRequest } from './estate.js';
+/** The form-spec envelope the recipes ride (the wire shape, read
+ *  in-process by formSpecArm). */
 interface FormSpecShape {
     enhance_prompt?: unknown;
     enhance_prompts?: unknown;
@@ -20,8 +12,12 @@ export interface DeclaredFields {
 /** Map a form-spec envelope onto its declared recipes (the ONE
  *  spelling — the request lane and the in-process sweep share it). */
 export declare function declaredFieldsFromSpec(spec: FormSpecShape): DeclaredFields;
-/** Read the model's declared recipes straight off the form-spec SSOT. */
-export declare function fetchDeclaredFields(request: EstateRequest, model: string, signal: AbortSignal): Promise<DeclaredFields>;
+/** Read the model's declared recipes straight off the form-spec SSOT —
+ *  the IN-PROCESS arm (F-1, 2026-11-05: the retired URL lane named
+ *  `/v1/form-spec`, a path the seat plane never served; the sweep
+ *  already read formSpecArm, and now this does too). An unknown model
+ *  refuses with the sweep's voice. */
+export declare function fetchDeclaredFields(model: string): Promise<DeclaredFields>;
 export interface FieldResult {
     positive: string;
     negative: string;

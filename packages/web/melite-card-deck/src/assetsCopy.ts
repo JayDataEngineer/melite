@@ -141,6 +141,8 @@ export const assetsCopy = {
   forceSentence: (p: { on: boolean }): string => ' Force override: ' + (p.on ? 'ON.' : 'OFF.'),
   /** Panel title of the manager tab. */
   panelTitle: 'ComfyUI Manager',
+  /** The sidebar guide row's description under the panel title (the tab type's guide entry). */
+  comfyGuide: "The estate's ComfyUI manager — packs, snapshots, status.",
   /** Health section title. */
   healthTitle: 'Health',
   /** Health refresh button. */

@@ -86,7 +86,7 @@ function sourceRoots(dir) {
   // truth, never a filesystem sniff. test/tests never count.
   if (!outOfScope(dir)) {
     let include = null
-    try { include = parseJsonc(readFileSync(join(dir, 'tsconfig.json'), 'utf8'))?.include } catch { include = null }
+    try { include = parseJsonc(readFileSync(join(dir, 'tsconfig.json'), 'utf8'))?.include } catch { /* no readable face — no include rows; the dir is out of the dual-face census */ include = null }
     if (Array.isArray(include)) {
       for (const pat of include) {
         const m = /^([a-zA-Z0-9_-]+)\/\*\*/.exec(pat)
@@ -377,7 +377,7 @@ function emitsLibSingleFace(pkgDir, p) {
   const emitsLib = p.exports !== undefined && Object.values(p.exports).some((v) => String(typeof v === 'string' ? v : v?.default ?? v?.types ?? '').startsWith('./lib/'))
   if (!emitsLib) return false
   let face = null
-  try { face = parseJsonc(readFileSync(join(pkgDir, 'tsconfig.json'), 'utf8')) } catch { return false }
+  try { face = parseJsonc(readFileSync(join(pkgDir, 'tsconfig.json'), 'utf8')) } catch { /* no readable face — not an emitting package, never dual-face */ return false }
   return face?.compilerOptions?.outDir === 'lib' && face?.compilerOptions?.noEmit !== true
 }
 
@@ -552,7 +552,7 @@ export function buildFaces(pkgDir) {
   const emitsLib = p.exports !== undefined && Object.values(p.exports).some((v) => String(typeof v === 'string' ? v : v?.default ?? v?.types ?? '').startsWith('./lib/'))
   if (!emitsLib) return []
   let face = null
-  try { face = parseJsonc(readFileSync(join(pkgDir, 'tsconfig.json'), 'utf8')) } catch { return [] }
+  try { face = parseJsonc(readFileSync(join(pkgDir, 'tsconfig.json'), 'utf8')) } catch { /* no readable face — nothing to re-truth */ return [] }
   return face?.compilerOptions?.outDir === 'lib' && face?.compilerOptions?.noEmit !== true ? ['tsconfig.json'] : []
 }
 
@@ -562,13 +562,13 @@ function ensureFinalNewlines(libDir) {
   let touched = 0
   const walk = (dir) => {
     let entries
-    try { entries = readdirSync(dir, { withFileTypes: true }) } catch { return }
+    try { entries = readdirSync(dir, { withFileTypes: true }) } catch { /* vanished lib dir mid-walk — nothing left to newline */ return }
     for (const e of entries) {
       const full = join(dir, e.name)
       if (e.isDirectory()) { walk(full); continue }
       if (!/\.(js|d\.ts|js\.map|d\.ts\.map)$/.test(e.name)) continue
       let text
-      try { text = readFileSync(full, 'utf8') } catch { continue }
+      try { text = readFileSync(full, 'utf8') } catch { /* unreadable artifact — skipped; the final-newline gate reds it at commit */ continue }
       // a file with NO trailing newline matches /\n+$/ never — add it
       const trued = text.endsWith('\n') ? text.replace(/\n+$/u, '\n') : text + '\n'
       if (trued !== text) { writeFileSync(full, trued); touched++ }
@@ -590,7 +590,7 @@ function copyCssSidecars(pkgDir, libDir) {
   const jsFiles = []
   const collect = (dir) => {
     let entries
-    try { entries = readdirSync(dir, { withFileTypes: true }) } catch { return }
+    try { entries = readdirSync(dir, { withFileTypes: true }) } catch { /* vanished lib dir mid-walk — no sidecars to resolve */ return }
     for (const e of entries) {
       const full = join(dir, e.name)
       if (e.isDirectory()) collect(full)
@@ -627,7 +627,7 @@ function rewriteDeclSpecifiers(libDir) {
   let touched = 0
   const walk = (dir) => {
     let entries
-    try { entries = readdirSync(dir, { withFileTypes: true }) } catch { return }
+    try { entries = readdirSync(dir, { withFileTypes: true }) } catch { /* vanished lib dir mid-walk — no declarations to rewrite */ return }
     for (const e of entries) {
       const full = join(dir, e.name)
       if (e.isDirectory()) { walk(full); continue }

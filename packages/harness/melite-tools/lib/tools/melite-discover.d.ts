@@ -1,5 +1,5 @@
 import type { ToolDefinition } from '../types.js';
-import type { EstateRequest } from '../estate.js';
+import type { Estate } from '../estate.js';
 /** Flow summary line (the discover tier — routes, never bodies). */
 export interface DiscoverFlowLine {
     name: string;
@@ -15,5 +15,5 @@ export interface DiscoverCardLine {
     description: string;
     tags: string[];
 }
-export declare function meliteDiscover(request: EstateRequest, expandEstateDoors: () => void): ToolDefinition;
+export declare function meliteDiscover(estate: Estate, expandEstateDoors: () => void): ToolDefinition;
 //# sourceMappingURL=melite-discover.d.ts.map

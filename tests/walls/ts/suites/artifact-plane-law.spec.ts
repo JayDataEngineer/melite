@@ -20,7 +20,7 @@
 //       some face includes (re-audit R5/R6, buildfaces F2)
 //   W9  the family table is real manifests; vendored twins never
 //       shadow the registry — the webserver fork is gone (M3), the
-//       timer seat rides registry 1.1.6 (M7)
+//       timer seat rides the vendored twin, workspace:~ (M7, F-15)
 import { describe, it, expect } from 'vitest'
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
 import { spawnSync } from 'node:child_process'
@@ -502,19 +502,28 @@ describe('W9 — the family table is a table of real manifests (the cycle cure p
     expect(offenders, offenders.join('\n')).toEqual([])
   })
 
-  it('M7: the timer seat resolves to the registry, never the vendored twin', () => {
-    // The timer seat is host-provided (registry 1.1.6, the copy DSH
-    // composes); estate-queue voices only its types. A vendor-src
-    // row would re-split types (vendored 1.1.3) from runtime
-    // (registry 1.1.6). The pin is threefold: the manifest names
-    // the registry, no face table carries a vendor-timer row, and
-    // the facade carries none (vitest resolves through the facade).
+  it('M7: the timer seat resolves to the VENDORED twin (F-15, 2026-11-05 — the vendor-truth cure)', () => {
+    // The registry-pin era is over: the vendored twin
+    // (vendor/cordis_plugins/timer, 1.1.3) is the one truth the
+    // estate's own consumers resolve and test against — a registry
+    // number would re-split types from runtime (the mirror of the
+    // 2026-10 split this arm was born guarding). The pin is the
+    // workspace link on EVERY timer consumer (estate-queue and
+    // estate/manage), no face table re-homes it, and the facade
+    // carries no timer row (resolution rides the pnpm link).
     const offenders: string[] = []
-    const eq = JSON.parse(readFileSync(join(ROOT, 'packages/harness/estate-queue/package.json'), 'utf8')) as {
-      dependencies?: Record<string, string>
+    for (const consumer of ['packages/harness/estate-queue', 'packages/estate/manage']) {
+      const manifest = JSON.parse(readFileSync(join(ROOT, consumer, 'package.json'), 'utf8')) as {
+        dependencies?: Record<string, string>
+        devDependencies?: Record<string, string>
+      }
+      // either section expresses the workspace link: estate-queue
+      // rides runtime (deps), manage voices types only (devDeps —
+      // the seat's own law from the registry era, kept)
+      const pin = manifest.dependencies?.['@deepseek-ai/cordis-plugin-timer']
+        ?? manifest.devDependencies?.['@deepseek-ai/cordis-plugin-timer']
+      if (pin !== 'workspace:~') offenders.push(`${consumer} timer pin is ${String(pin)} — the seat rides the vendored twin (F-15)`)
     }
-    const pin = eq.dependencies?.['@deepseek-ai/cordis-plugin-timer']
-    if (pin !== '1.1.6') offenders.push(`estate-queue timer pin is ${String(pin)} — the seat rides registry 1.1.6`)
     const faces: string[] = []
     const walkFaces = (d: string): void => {
       for (const e of readdirSync(d, { withFileTypes: true })) {

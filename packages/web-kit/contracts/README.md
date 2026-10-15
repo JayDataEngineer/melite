@@ -11,7 +11,7 @@ kind: package-library
 
 The package root re-exports the leaves; each is also a declared subpath. The manifest also declares the standard `./package.json` re-export.
 
-- Card and bench — `./card` (the card-stage view-model), `./studio` (the tenant props contract), `./stageView` (the bench stage-view currency, including the terminal vocabulary), `./benchStage`, `./benchSnapshot`, `./benchResult` (the bench-stage contract, its snapshot, and its result row), `./FlowTypes` (the flow-document model), `./formSpec` (the served form-spec contract), and `./applyGuard` (the single-mount claim).
+- Card and bench — `./card` (the card-stage view-model), `./studio` (the tenant props contract), `./stageView` (the bench stage-view currency, including the terminal vocabulary), `./benchStage`, `./benchSnapshot`, `./benchResult` (the bench-stage contract, its snapshot, and its result row), `./FlowTypes` (the flow-document model), `./formSpec` (the served form-spec contract).
 - Media and pose — `./mediaTypes`, `./mediaKinds`, `./mediaRange` (the byte-range law), `./loraTypes`, `./character` (the body-param bag), `./timelineTypes`, and `./regions` (the region-slot props).
 - Wire and storage — `./wire`, `./wire-types`, `./rootsManifest` (the cross-roots manifest), `./browserStorage` (localStorage becomes IndexedDB here), `./objectUrlCache`, `./extraKeys` (the extra-bag contract), `./laneRelations` (the relation words), `./modifierSubcards`, `./enhanceTypes`, and `./vocab` (frozen vocabularies).
 

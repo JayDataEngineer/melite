@@ -44,12 +44,36 @@ export interface EngineStageOutcome {
   readonly artifacts: readonly string[];
 }
 
+// ── the EngineRef brand (F3, nativity audit 2026-11-05) ───────────
+// The engine's own run handle is an opaque cross-boundary id —
+// branded like the queue lane's RunId (estate-queue queueCore,
+// `type RunId = Branded<"RunId">` from @deepseek-ai/dsh-brand).
+// The brand mechanics MIRROR that module's Branded declaration for
+// one reason: this source-plane package carries no dsh-brand
+// dependency row (strict pnpm isolation — no node_modules link
+// resolves without an install), and the brand is compile-time-only,
+// erased before any wire, file, or ledger write. A bare string is
+// not assignable; mints go through the transport that owns the id.
+declare const BRAND: unique symbol;
+
+/** A string carrying a compile-time-only brand B (the
+ *  @deepseek-ai/dsh-brand mechanics, declared local — see the block
+ *  comment above). */
+type Branded<B extends string> = string & { readonly [BRAND]: B };
+
+/** The engine's own handle for one submitted run (ComfyUI's
+ *  promptId). Minted ONCE at the transport that pulled it off the
+ *  wire (comfyui-cordis's /prompt POST), de-branded by nothing —
+ *  the ledger stores the string it already is. */
+export type EngineRef = Branded<"EngineRef">;
+
 /** A whole submit's outcome. `engineRef` is the engine's own
  * handle for the submitted work (ComfyUI's promptId) — opaque to
- * the consumer, carried for the ledger. */
+ * the consumer, carried for the ledger; branded at its producer
+ * (the dsh-brand convention), never a bare string. */
 export interface EngineRunOutcome {
   readonly stages: readonly EngineStageOutcome[];
-  readonly engineRef?: string;
+  readonly engineRef?: EngineRef;
   /** THE REPLAY VERDICT (D11): true when the executor's seated tap
    *  folded zero engine events before settlement — the engine served
    *  memo'd outputs without executing. Optional so existing

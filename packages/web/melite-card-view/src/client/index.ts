@@ -44,6 +44,9 @@ import type {} from '@deepseek-ai/dsh-client-resources/client'
 import type {} from '@deepseek-ai/dsh-api-gateway/client'
 import type {} from '@deepseek-ai/dsh-client-ui-chat/client'
 import type {} from '@deepseek-ai/dsh-client-ui-conversation/client'
+// Type-only: the Session Controller adapter's Context merge (ctx.uiSession,
+// declared here) — the bench spotlight's session source (stroke 44).
+import type {} from '@deepseek-ai/dsh-client-ui-session/client'
 // All four estate contributions (bench/drafts from estate-drafts,
 // runs, media) — the one-lane law: every estate verb the tab speaks
 // rides these mounted namespaces.
@@ -56,7 +59,8 @@ import { CARD_TOOLS } from './card-tools.ts'
 import { buildChatFileMentions, meliteCardsTurnDefinition } from './card-mentions.ts'
 import { CardsTab } from './CardsTab.tsx'
 import { CARDS_BENCH_ADDRESS, benchAddressOf, benchSessionKey, bindRunFramesRemote, openCardsResource, shouldSpotlight, watchBenchLands, type BenchNamespace } from './cards-resource.ts'
-import { bindEstateRemoteFromRemote, wireContractToastToRowStore, type EstateNamespaces } from '@melite/card-base/client'
+import { bindEstateRemoteFromRemote, wireContractToastToRowStore, isDuplicateServiceSeat, type EstateNamespaces } from '@melite/card-base/client'
+import { chromeCopy } from '../chromeCopy.ts'
 import { resolveCardsAddress } from './CardsTab.tsx'
 import type { StageViewOwnerProps, ToolCallBlockView, ToolCallOwnerProps } from './types.ts'
 
@@ -96,10 +100,11 @@ const CARDS_TAB_ID = '@melite-plugin/dsh-card-view'
 /** Required services (fiber inject waiting — the registries must be up
  *  first: the native sidebar subsystem + the resource model + the
  *  sidebar's navigation face, which the conversation card's rows ride
- *  to open the Cards tab at a draft stage — the old embed's law — and
- *  the gateway client's remote service, which carries the mounted
- *  estate namespaces the bench tail consumes). */
-export const inject = ['slots', 'sidebarRightTabs', 'resources', 'sidebarRight', 'remote', 'uiConversation']
+ *  to open the Cards tab at a draft stage — the old embed's law — the
+ *  gateway client's remote service, which carries the mounted estate
+ *  namespaces the bench tail consumes, and the Session Controller
+ *  adapter whose selection the bench spotlight follows). */
+export const inject = ['slots', 'sidebarRightTabs', 'resources', 'sidebarRight', 'remote', 'uiConversation', 'uiSession']
 
 /**
  * Register both planes: the toolview keys for every card tool, and the
@@ -268,9 +273,10 @@ export async function apply(ctx: ClientContext): Promise<void> {
     // duplicate-service Error on the second construction. The seat
     // exists at this plugin's own name, first apply won it — that
     // rejection is success, not a failure, and stays off the error
-    // console (the e2e lane pins it clean).
-    const twin = /service "chatFileMentions" has been registered at </.test(String((error as { message?: unknown })?.message))
-    if (twin) console.info('[melite-card-view] chat file mentions: already seated — nothing to do')
+    // console (the e2e lane pins it clean). Discrimination rides the
+    // ONE named predicate home (D7 cure 2026-11-05: the code is the
+    // voice — the seat never spellings cordis's message template).
+    if (isDuplicateServiceSeat(error, 'chatFileMentions')) console.info('[melite-card-view] chat file mentions: already seated — nothing to do')
     else console.error('[melite-card-view] chat file mentions registration failed:', error)
   }
 
@@ -297,14 +303,14 @@ export async function apply(ctx: ClientContext): Promise<void> {
         // operator's clarity order — the tab shows the FLOW, not a
         // deck of cards).
         const resolved = resolveCardsAddress(address)
-        if (resolved.startsWith(CARDS_BENCH_ADDRESS)) return 'Media Flow'
+        if (resolved.startsWith(CARDS_BENCH_ADDRESS)) return chromeCopy.cardsTabTitle
         return resolved.replace(/^dsh-resource:\/\/cards\//, '')
       },
       guide: [{
         id: 'cards-tab-guide',
         order: 50,
-        title: (): string => 'Media Flow',
-        description: (): string => 'The media flow — the shared bench and its runs.',
+        title: (): string => chromeCopy.cardsTabTitle,
+        description: (): string => chromeCopy.cardsTabGuide,
       }],
     }), 'melite-card-view: cards tab type')
   } catch (error) {
@@ -368,23 +374,23 @@ export async function apply(ctx: ClientContext): Promise<void> {
     // conversation switch re-keys the bench stream at switch time —
     // HostObservable.subscribe, no timer).
     const activeBenchSession = (): string => {
+      // THE DEGRADED SEAT (the stroke-44 wall's own arms): a throwing
+      // or mid-hydration snapshot spells the unattributed bench —
+      // never a local literal (the sessionkey law), never a dead
+      // watcher.
       try {
-        const uiSession = (ctx as unknown as { uiSession?: { adapter?: { current?: { getSnapshot?: () => { props?: Record<string, unknown> } } } } }).uiSession
-        const snap = uiSession?.adapter?.current?.getSnapshot?.()
-        const sid = snap?.props?.['sessionId']
+        const sid: unknown = ctx.uiSession.adapter.current.getSnapshot().props['sessionId']
         return benchSessionKey(typeof sid === 'string' ? sid : undefined)
       } catch {
-        // the address-grammar root spells the unattributed bench —
-        // never a local literal (the sessionkey law)
         return benchSessionKey(undefined)
       }
     }
     const subscribeBenchSession = (fn: () => void): (() => void) => {
       try {
-        const uiSession = (ctx as unknown as { uiSession?: { adapter?: { current?: { subscribe?: (listener: () => void) => () => void } } } }).uiSession
-        const off = uiSession?.adapter?.current?.subscribe?.(fn)
-        return typeof off === 'function' ? off : () => {}
+        return ctx.uiSession.adapter.current.subscribe(fn)
       } catch {
+        // a dead observable degrades to the noop disposer, silently —
+        // the stream still runs on the same key
         return () => {}
       }
     }

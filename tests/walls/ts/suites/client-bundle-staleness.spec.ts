@@ -78,12 +78,14 @@ describe("client bundles carry the CURED catalog checker (debt 11a)", () => {
     const bundles = clientBundles()
       .map((p) => ({ p, src: readFileSync(p, "utf8") }))
       .filter((b) => inlinesChecker(b.src));
-    // MUTATION KILL: the derived census must find the known six
+    // MUTATION KILL: the derived census must find the known five
     // (card-base, melite-card-view, infer-gallery, motion/motion,
-    // video/h3-timeline, web-kit/timeline) — an empty census would
-    // pass vacuously; a seventh consumer is auto-covered.
-    assert.ok(bundles.length >= 6,
-      `the bundle census found ${bundles.length} checker-inlining bundles — the six known consumers must be built`);
+    // video/h3-timeline) — an empty census would pass vacuously; a
+    // sixth consumer is auto-covered. (web-kit/timeline demoted
+    // 2026-11-05, F1 of the nativity audit: its dead ./client face
+    // is gone — h3/motion inline the ui/* subpaths directly.)
+    assert.ok(bundles.length >= 5,
+      `the bundle census found ${bundles.length} checker-inlining bundles — the five known consumers must be built`);
     const stale: string[] = [];
     for (const b of bundles) {
       if (OLD_EMPTY_FAMILIES.test(b.src)) {

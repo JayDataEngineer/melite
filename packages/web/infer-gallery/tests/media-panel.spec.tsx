@@ -20,6 +20,9 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import * as React from 'react'
+import { globSync } from 'node:fs'
+import { readFileSync, statSync } from 'node:fs'
+import { resolve } from 'node:path'
 import { callsTextOf, flatten, kindOf, MediaPanel } from '../src/client/MediaPanel.tsx'
 import type { GalleryRunRow } from '../src/client/decode.ts'
 
@@ -768,7 +771,7 @@ describe('MediaPanel — DSH primitive ports (no handrolls)', () => {
     expect(await screen.findByText(/walking robot/)).toBeTruthy()
   })
 
-  it('wand carries the DSH Tooltip bubble on focus (native title gone)', async () => {
+  it('wand carries the estate Tip bubble on focus (native title gone)', async () => {
     feed()
     render(<MediaPanel />)
     const wand = await waitFor(() => {
@@ -1110,5 +1113,31 @@ describe('MediaPanel — selection, mass delete, pagination (2026-10-22 operator
     // opens the drilldown again, it no longer toggles selection
     expect(screen.getByLabelText('Open as cards — this run')).toBeTruthy()
     expect(screen.queryByText(/selected/)).toBeNull()
+  })
+})
+
+// THE ESTATE TIP LAW (nativity audit 2026-11-05 D9): the gallery client
+// never imports the raw DSH Tooltip atom — bubbles ride card-base's
+// Tip (the Tooltip atom over the layout grammar's real anchor span).
+// The subject is the IMPORT plane (what the gallery bundle pulls), so
+// the wall judges the client sources' imports directly; the behavior
+// arm above (bubble on focus, native title gone) judges the rendered
+// face.
+describe('the estate Tip law (D9) — the raw atom stays out of the gallery bundle', () => {
+  it('no gallery client source imports the DSH Tooltip; bubbles ride card-base Tip', () => {
+    const clientDir = resolve(import.meta.dirname, '../src')
+    const files = globSync(`${clientDir}/**/*.{ts,tsx}`).filter((file) => {
+      // nodir rides an explicit isFile (this @types/node's GlobOptions
+      // carries no nodir — the typed-compatible form of the same law)
+      return statSync(file).isFile()
+    })
+    expect(files.length).toBeGreaterThan(0)
+    const offenders = files.filter((file) => {
+      const src = readFileSync(file, 'utf8')
+      return /import\s[^;]*\bTooltip\b[^;]*from\s+'@deepseek-ai\/dsh-client-ui-primitives'/.test(src)
+    })
+    expect(offenders).toEqual([])
+    expect(readFileSync(resolve(clientDir, 'client/MediaPanel.tsx'), 'utf8'))
+      .toContain("import { Tip } from '@melite/card-base/client'")
   })
 })

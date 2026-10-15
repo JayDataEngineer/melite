@@ -19,15 +19,32 @@ export declare function packageRootFrom(startDir: string): string;
  *  finds its own shipped data by construction. */
 export declare function packageRoot(): string;
 /** The endpoint config dict — the single spelling of the law:
- *  COMFYUI_ENDPOINT_CONFIG env path first, else the plugin's
- *  data/comfyui_endpoint.json; INFERENCE_TEST_SANDBOX without the
- *  env path resolves to {} (the test-sandbox leak gate); a
- *  present-but-unparseable file raises LOUD (never silent {}). */
-/** The endpoint config's write target: the first EXISTING candidate,
- *  else the plugin's own data path (a fresh write). The same
- *  resolution loadEndpointConfig reads — one spelling for read and
- *  write (the endpoint_set manage action rewrites only `url`). */
+ *  COMFYUI_ENDPOINT_CONFIG env path first, else the repo's untracked
+ *  state home (overlay — wins over the seed), else the plugin's
+ *  shipped data/comfyui_endpoint.json seed; INFERENCE_TEST_SANDBOX
+ *  without the env path resolves to {} (the test-sandbox leak gate);
+ *  a present-but-unparseable file raises LOUD (never silent {}). */
+/** The endpoint config's WRITE target and overlay read head: the
+ *  COMFYUI_ENDPOINT_CONFIG env path first, else the repo's untracked
+ *  state home `<repoRoot>/data/comfyui_endpoint.json` (F1, nativity
+ *  audit 2026-11-05: the runtime endpoint statement is machine
+ *  state — the repo-root `data/` tree is wholesale gitignored
+ *  "never commit state", the same idiom as the data/inference.local
+ *  overlay — so the endpoint_set manage door's write no longer
+ *  dirties the tracked package tree). The tracked package seed
+ *  (`packageRoot` data) is the shipped DEFAULT below this overlay:
+ *  reads fall to it only when the state home is absent
+ *  ({@link loadEndpointConfig}), and NO door writes it. The same
+ *  resolution loadEndpointConfig reads first — one spelling for the
+ *  write and the overlay read (the endpoint_set manage action
+ *  rewrites only `url`). */
 export declare function endpointConfigPath(): string;
+/** The shipped endpoint SEED — the package-tracked default the
+ *  published files set carries (a fresh clone or install resolves
+ *  its url from here). Read-only by law: the F1 cure moved every
+ *  write to the state home above; this file never carries a live
+ *  machine statement again. */
+export declare function endpointSeedPath(): string;
 export declare function loadEndpointConfig(): Record<string, EngineJson>;
 /** The engine base URL — env seam for the hermetic walls (live env
  *  read, no caching; this function is the only spelling). */

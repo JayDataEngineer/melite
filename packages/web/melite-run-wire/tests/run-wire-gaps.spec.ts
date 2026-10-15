@@ -19,8 +19,8 @@ afterEach(() => {
   resetCardFamiliesCache()
 })
 
-describe('the catalog door (GET /v1/model-catalog)', () => {
-  it('the catalog fetch forwards its signal too', async () => {
+describe('the catalog door (GET /v1/model-catalog — the ONE reader, D6)', () => {
+  it('the catalog fetch rides the read dial — the caller signal is ANDed, its lift still aborts the socket', async () => {
     const seen: Array<RequestInit | undefined> = []
     globalThis.fetch = vi.fn(async (_input: unknown, init?: RequestInit): Promise<Response> => {
       seen.push(init)
@@ -28,7 +28,26 @@ describe('the catalog door (GET /v1/model-catalog)', () => {
     }) as typeof fetch
     const ctrl = new AbortController()
     await fetchCardFamilies(ctrl.signal)
-    expect(seen[0]?.signal).toBe(ctrl.signal)
+    // the X-E1 law (the card-base wire's shape): the socket carries a
+    // composed bound, never the bare caller signal — and the caller's
+    // lift propagates through the composition.
+    expect(seen[0]?.signal).toBeInstanceOf(AbortSignal)
+    expect(seen[0]?.signal).not.toBe(ctrl.signal)
+    ctrl.abort()
+    expect((seen[0]!.signal as AbortSignal).aborted).toBe(true)
+  })
+
+  it('concurrent cold starts share the one in-flight read (one GET total)', async () => {
+    let calls = 0
+    globalThis.fetch = vi.fn(async (): Promise<Response> => {
+      calls += 1
+      await new Promise((resolve) => setTimeout(resolve, 5))
+      return new Response(JSON.stringify({ cards: { bare: { families: ['fam'] } } }), { status: 200 })
+    }) as typeof fetch
+    const [a, b] = await Promise.all([fetchCardFamilies(), fetchCardFamilies()])
+    expect(calls).toBe(1)
+    expect(a).toEqual({ bare: ['fam'] })
+    expect(b).toEqual({ bare: ['fam'] })
   })
 })
 
@@ -66,14 +85,17 @@ describe('the list-row url law (pure)', () => {
   })
 })
 
-describe('the family currency — ragged catalogs', () => {
-  it('a garbage catalog body reads an empty table', async () => {
+describe('the family currency — the ONE door\'s judgments', () => {
+  it('a garbage catalog body refuses LOUD (the served plane misconfigured — never a silent empty table)', async () => {
     globalThis.fetch = vi.fn(async (): Promise<Response> => new Response('garbage{{{', { status: 200 }))
-    await expect(fetchCardFamilies()).resolves.toEqual({})
-    await expect(defaultFamilyForCard('img-to-mesh')).resolves.toBe('img-to-mesh')
+    await expect(fetchCardFamilies()).rejects.toThrow(/\/v1\/model-catalog: unreadable body/)
+    // the refused read left nothing cached — the next caller re-reads
+    await expect(defaultFamilyForCard('img-to-mesh')).rejects.toThrow(/unreadable body/)
   })
 
-  it('a non-object body and ragged rows distill honestly', async () => {
+  it('a text body refuses loud too; ragged ROWS still distill honestly', async () => {
+    globalThis.fetch = vi.fn(async (): Promise<Response> => new Response('"str"', { status: 200 }))
+    await expect(fetchCardFamilies()).rejects.toThrow(/unreadable body/)
     globalThis.fetch = vi.fn(async (): Promise<Response> =>
       new Response(JSON.stringify({
         cards: {
@@ -83,9 +105,7 @@ describe('the family currency — ragged catalogs', () => {
         },
       }), { status: 200 }),
     )
-    expect(await fetchCardFamilies()).toEqual({ bare: ['bare'], good: ['fam'] })
-    globalThis.fetch = vi.fn(async (): Promise<Response> => new Response('"str"', { status: 200 }))
     resetCardFamiliesCache()
-    await expect(fetchCardFamilies()).resolves.toEqual({})
+    expect(await fetchCardFamilies()).toEqual({ bare: ['bare'], good: ['fam'] })
   })
 })

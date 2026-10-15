@@ -22,8 +22,11 @@
 // The transport laws (owned by the seam files below):
 //   - endpoint: COMFYUI_URL env (non-empty wins, trailing slashes
 //     stripped) > the endpoint config (COMFYUI_ENDPOINT_CONFIG env
-//     path, else the plugin's data/comfyui_endpoint.json; the
-//     INFERENCE_TEST_SANDBOX gate with no env path resolves to {}).
+//     path, else the repo's untracked state home
+//     <repoRoot>/data/comfyui_endpoint.json — the F1 overlay, the
+//     write target — else the shipped package seed
+//     data/comfyui_endpoint.json; the INFERENCE_TEST_SANDBOX gate
+//     with no env path resolves to {}).
 //     Absent url = the LOUD ComfyError. NO default, NO hardcoded
 //     host/port (QUEUE LANE LAW). [comfyui-config.ts]
 //   - POST /prompt {prompt, prompt_id, client_id}; non-200 refuses
@@ -80,7 +83,7 @@
 // working byte-identically. Only ACTIVE stays module-private to its
 // seam (it was never exported).
 export { ComfyError, activeCount } from "./comfyui-types.js";
-export { NO_ENDPOINT_MESSAGE, endpointConfigPath, loadEndpointConfig, packageRoot, packageRootFrom, resolveEngineBaseUrl, resolveRepoRoot, } from "./comfyui-config.js";
+export { NO_ENDPOINT_MESSAGE, endpointConfigPath, endpointSeedPath, loadEndpointConfig, packageRoot, packageRootFrom, resolveEngineBaseUrl, resolveRepoRoot, } from "./comfyui-config.js";
 export { invalidateObjectInfo, liveObjectInfo, sdkClient } from "./comfyui-transport.js";
 export { DATA_URL_IMAGE_EXT, UPLOAD_EXTS, spliceWorkflow, uploadReferenced, } from "./comfyui-upload.js";
 export { interrupt, stopForRunDir, unloadModels } from "./comfyui-control.js";

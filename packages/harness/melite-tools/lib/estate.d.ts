@@ -7,6 +7,14 @@ import type { EstateCall } from '@melite/estate-call';
  */
 export type EstateMethod = 'GET' | 'POST' | 'PATCH';
 export type EstateRequest = (method: EstateMethod, path: string, body: unknown, execSignal: AbortSignal, timeoutMs?: number) => Promise<unknown>;
+/** The service-probe face every estate consumer reads through —
+ *  cordis Context satisfies it structurally (the tutorial's
+ *  documented ctx.get probe). The retired `as { get }` inline casts
+ *  (F-2/F-4, 2026-11-05) named this face at every use site; the named
+ *  interface is the one spelling now. */
+export interface EstateHost {
+    get(name: string): unknown;
+}
 /** Narrow the seat-bound request to the canonical EstateCall the card
  * tool builders receive: the seats demand a caller signal (trySeats'
  * throwIfAborted), so a signalless call fails HERE with a named error
@@ -32,5 +40,50 @@ export declare function seatFamilyForPath(path: string): {
  *  chat-lane exit. The old voice ("the gateway lane fallback died
  *  2026-09-10 — migrate to a named Typert remote") read as a broken
  *  registry and sent an agent hunting doors for an hour. */
-export declare function makeEstateRequest(ctx: unknown): EstateRequest;
+export declare function makeEstateRequest(ctx: EstateHost): EstateRequest;
+/** The bench plane's mutation verbs — the six arms the bench seat
+ *  answers 1:1 (the router's regex admits the same six). */
+export type BenchVerb = 'patch' | 'add_stage' | 'remove_stage' | 'clear' | 'rewire' | 'undo';
+/** The tool plane's ONE estate seam: the typed lanes. A tool factory
+ *  takes `Estate` and calls methods — never `request('GET', path)`. */
+export interface Estate {
+    /** The drafts plane: the KV list, the one-draft read, the stage
+     *  wire PATCH (params edits + result persistence). */
+    draftsList(signal: AbortSignal, timeoutMs?: number): Promise<unknown>;
+    draftsGet(draftId: string, signal: AbortSignal, timeoutMs?: number): Promise<unknown>;
+    draftsStagePatch(draftId: string, stageId: string, patch: Record<string, unknown>, signal: AbortSignal, timeoutMs?: number): Promise<unknown>;
+    /** THE CARD COMPOSE (the start body → a bench-backed draft; the
+     *  CAS one-retry law lives in the ONE lane both faces share). */
+    cardCompose(body: Record<string, unknown>, signal: AbortSignal, timeoutMs?: number): Promise<unknown>;
+    /** The bench plane: the shared-bench read, the ensure (birth/load),
+     *  the six mutation verbs. */
+    benchGet(session: string, signal: AbortSignal, timeoutMs?: number): Promise<unknown>;
+    benchEnsure(doc: Record<string, unknown>, signal: AbortSignal, timeoutMs?: number): Promise<unknown>;
+    benchVerb(session: string, verb: BenchVerb, doc: Record<string, unknown>, signal: AbortSignal, timeoutMs?: number): Promise<unknown>;
+    /** The runs registry: validate (pure compile), start, live status,
+     *  stop receipt, the tail list. */
+    runsValidate(doc: unknown, signal: AbortSignal, timeoutMs?: number): Promise<unknown>;
+    runsStart(doc: unknown, signal: AbortSignal, timeoutMs?: number): Promise<unknown>;
+    runsStatus(runId: string, includeLog: boolean, signal: AbortSignal, timeoutMs?: number): Promise<unknown>;
+    runsStop(runId: string, signal: AbortSignal, timeoutMs?: number): Promise<unknown>;
+    runsList(limit: string, signal: AbortSignal, timeoutMs?: number): Promise<unknown>;
+    /** The disclosure seat: discover over both planes, the flow
+     *  contracts. Sync seats — the bound still races their answer. */
+    discover(lookup: string, q: string, tags: string, signal: AbortSignal, timeoutMs?: number): Promise<unknown>;
+    flowsContracts(signal: AbortSignal, timeoutMs?: number): Promise<unknown>;
+    /** The management seat (ComfyUI-Manager plane). */
+    manageAct(doc: unknown, signal: AbortSignal, timeoutMs?: number): Promise<unknown>;
+    /** The skills seat: the index and the one-doc read. */
+    skillsIndex(signal: AbortSignal, timeoutMs?: number): Promise<unknown>;
+    skillRead(id: string, signal: AbortSignal, timeoutMs?: number): Promise<unknown>;
+    /** The load seat: one card or flow bundle. */
+    loadCard(inferenceType: string, name: string, signal: AbortSignal, timeoutMs?: number): Promise<unknown>;
+    /** The queue seat's journal tail. SEATLESS reads as an EMPTY tail
+     *  (the designed degrade — the journal is optional infra), never
+     *  a refusal; a mounted seat's throw propagates. */
+    ledgerTail(limit: string, event: string, signal: AbortSignal, timeoutMs?: number): Promise<unknown>;
+}
+/** The typed lanes (see Estate). Same seats, same refusals, same
+ *  bounds as the URL router — no second answering of any lane law. */
+export declare function makeEstate(ctx: EstateHost): Estate;
 //# sourceMappingURL=estate.d.ts.map

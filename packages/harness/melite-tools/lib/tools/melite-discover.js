@@ -10,7 +10,7 @@ const TIMEOUT_MS = 15_000;
 /** Counts-first clamp: over this many lines the default answer
  * clamps (counts + vocabulary + the first rows ride instead). */
 const CLAMP = 12;
-export function meliteDiscover(request, expandEstateDoors) {
+export function meliteDiscover(estate, expandEstateDoors) {
     // PRESENTATION ADAPTATION (tool-presentation wall + conversion
     // invariance — presentCall output must not change): defineTool
     // soft-gates presentCall behind arg validation (invalid → undefined),
@@ -156,15 +156,13 @@ export function meliteDiscover(request, expandEstateDoors) {
             // defined object here, so no nullish fallback exists to cover
             // (2026-09-12).
             const a = args;
-            const params = new URLSearchParams();
+            // The seat reads defaulted strings — the query string's own
+            // defaults (the router parsed them the same way).
             const lookup = typeof a.lookup === 'string' && a.lookup !== '' ? a.lookup : 'all';
-            params.set('lookup', lookup);
-            if (typeof a.q === 'string' && a.q !== '')
-                params.set('q', a.q);
-            if (typeof a.tags === 'string' && a.tags !== '')
-                params.set('tags', a.tags);
+            const q = typeof a.q === 'string' && a.q !== '' ? a.q : '';
+            const tags = typeof a.tags === 'string' && a.tags !== '' ? a.tags : '';
             try {
-                const res = await request('GET', '/v1/discover?' + params.toString(), undefined, exec.signal, TIMEOUT_MS);
+                const res = await estate.discover(lookup, q, tags, exec.signal, TIMEOUT_MS);
                 // The gateway's /v1/discover answer IS the canonical result —
                 // the wire-shape assertion mirrors the music card's gwJson
                 // bridge (the tool trusts its own gateway contract; the

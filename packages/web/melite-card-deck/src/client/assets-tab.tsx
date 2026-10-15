@@ -35,6 +35,13 @@
 import * as React from 'react'
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
 import css from './assets.module.css'
+import type { Context as ClientContext } from '@deepseek-ai/cordis'
+// Type-only: the seats register() touches ride cordis Context
+// declaration-merging from each owning package's ./client entry — the
+// renderer owns ctx.slots, sidebar-right owns ctx.sidebarRightTabs.
+import type {} from '@deepseek-ai/dsh-client-ui-renderer/client'
+import type {} from '@deepseek-ai/dsh-client-ui-sidebar-right/client'
+import type { IconProps } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { ManageActDoc, ManageEnvelopeRow, ManageJsonValue } from '@melite/estate-manage/types'
 import type { RemoteResult } from '@deepseek-ai/dsh-typert-protocol'
 import { Button, Checkbox, DisclosureRow, Menu, IconBranchOutlineRegular, IconDownloadOutlineRegular, IconLinkOutlineRegular, IconPlusOutlineRegular, IconRefreshOutlineRegular, Input } from '@deepseek-ai/dsh-client-ui-primitives'
@@ -1542,7 +1549,7 @@ export function ComfyManagerPanel(): React.ReactElement {
   )
 }
 
-function ComfyIcon({ size }: { size: number }) {
+function ComfyIcon({ size }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 16 16" fill="none" aria-hidden="true">
       <rect x="2.5" y="2.5" width="11" height="4.6" rx="1.2" stroke="currentColor" strokeWidth="1.3" />
@@ -1554,29 +1561,15 @@ function ComfyIcon({ size }: { size: number }) {
   )
 }
 
-interface TabCtx {
-  effect(fn: () => void, name?: string): unknown
-  sidebarRightTabs: {
-    register(def: {
-      id: string
-      kind: string
-      title(): string
-      guide?: Array<{
-        id: string
-        order: number
-        title(): string
-        description?(): string
-        icon?: React.ComponentType<{ size?: number; className?: string }>
-      }>
-    }): unknown
-  }
-  slots: {
-    inject(name: 'sidebar.right.pane.tab', declare: () => unknown): unknown
-    register(options: { name: 'sidebar.right.pane.tab'; key: string }, component: React.ComponentType<Record<string, unknown>>): unknown
-  }
-}
-
-function register(ctx: TabCtx, id: string, kind: string, title: string, guideOrder: number, guideDescription: string, icon: React.ComponentType<{ size: number }>, component: React.ComponentType<Record<string, unknown>>): void {
+/**
+ * register — the ONE DSH right-sidebar tab registration helper over the
+ * TYPED seats (D4 cure 2026-11-05: the local structural TabCtx freeze
+ * died; the real registry/slot faces merge onto cordis Context from the
+ * owning DSH packages' ./client entries, so a registry-shape change
+ * surfaces at compile time). Copy rides assetsCopy (D1 cure) — this
+ * call's title/guide arguments are dictionary reads, never literals.
+ */
+function register(ctx: ClientContext, id: string, kind: string, title: string, guideOrder: number, guideDescription: string, icon: React.ComponentType<IconProps>, component: (props: object) => React.ReactElement): void {
   ctx.effect(() => ctx.sidebarRightTabs.register({
     id,
     kind,
@@ -1589,7 +1582,7 @@ function register(ctx: TabCtx, id: string, kind: string, title: string, guideOrd
       order: guideOrder,
       title: () => title,
       description: () => guideDescription,
-      icon: icon as unknown as React.ComponentType<{ size?: number; className?: string }>,
+      icon,
     }],
   }), 'melite-card-deck: ' + id + ' tab type')
   ctx.slots.inject('sidebar.right.pane.tab', () => {
@@ -1597,10 +1590,13 @@ function register(ctx: TabCtx, id: string, kind: string, title: string, guideOrd
       { name: 'sidebar.right.pane.tab', key: id },
       component,
     )
+    // THE FUNCTIONLESS SEAT (the wall's own arm): a registry that
+    // answers no disposer degrades to a noop — the fiber unload never
+    // crashes on a seat's loose return.
     return typeof dispose === 'function' ? dispose : () => {}
   })
 }
 
-export function registerAssetsTab(ctx: TabCtx): void {
-  register(ctx, 'melite-card-deck:comfy', 'comfy-manager', 'ComfyUI Manager', 61, 'The estate\'s ComfyUI manager — packs, snapshots, status.', ComfyIcon as unknown as React.ComponentType<{ size: number }>, ComfyManagerPanel as unknown as React.ComponentType<Record<string, unknown>>)
+export function registerAssetsTab(ctx: ClientContext): void {
+  register(ctx, 'melite-card-deck:comfy', 'comfy-manager', assetsCopy.panelTitle, 61, assetsCopy.comfyGuide, ComfyIcon, ComfyManagerPanel)
 }

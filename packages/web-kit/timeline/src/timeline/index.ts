@@ -14,5 +14,10 @@ export * from "./MotionTimelineBar.tsx";
 export * from "./FilmPlayer.tsx";
 export * from "./TimelineScrubBar.tsx";
 export * from "./viser-timeline/index.ts";
+// The melite-authored modules beside the vendored subtree (re-homed out
+// of it 2026-11-05, F2 — the vendored dir carries upstream files only).
+export { buildMotionTimelineState, makeTimelineId, MOTION_TIMELINE_TRACKS } from "./motionTimelineState.ts";
+export { TimelineScrollbar } from "./TimelineScrollbar.tsx";
+export type { TimelineScrollbarProps } from "./TimelineScrollbar.tsx";
 export { PROMPT_COLORS } from "./viser-timeline/styles.ts";
 export type { TimelineTheme } from "./viser-timeline/styles.ts";

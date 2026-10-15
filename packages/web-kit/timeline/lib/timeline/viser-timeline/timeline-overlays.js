@@ -1,12 +1,14 @@
 import { jsx as _jsx, Fragment as _Fragment, jsxs as _jsxs } from "react/jsx-runtime";
 // SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
+//
+// 2026-11-05 (F2, the nativity audit): the scrollbar + zoom chrome that
+// lived below this point was never upstream code — it is melite's estate
+// rewrite (DSH Button + card-base Tip, the kit CSS module, estate
+// testids). It re-homed to ../TimelineScrollbar.tsx; this file carries
+// upstream content only, so upstream pulls diff clean again.
 import { useEffect } from "react";
-import { Button } from "@deepseek-ai/dsh-client-ui-primitives";
-import { Tip } from "@melite/card-base/client";
-import css from "../timeline.module.css";
 import { DEFAULT_PROMPT_COLOR } from "./styles.js";
-import { getZoomEnvelopeEndFrame } from "./timeline-scales.js";
 export const SCROLLBAR_HEIGHT = 10;
 export const SCROLLBAR_TOTAL_HEIGHT = SCROLLBAR_HEIGHT + 4; // height + vertical padding
 export function TimelineEditingOverlay(props) {
@@ -112,65 +114,5 @@ export function TimelineEditingOverlay(props) {
                         overflowY: "hidden",
                         outline: "none",
                     }, children: editingPrompt.text }) }, editingPrompt.uuid)] }));
-}
-export function TimelineScrollbar(props) {
-    const { timelineState, zoomLevel, panOffset, darkMode, scrollbarTrackRef, onScrollbarTrackMouseDown, onScrollbarThumbMouseDown, zoomBy, resetZoom } = props;
-    // ── Horizontal scrollbar geometry ─────────────────────────────────
-    // The thumb covers the visible window as a fraction of the full frame
-    // range; it shrinks as the user zooms in. Show only when there are
-    // off-screen frames to reach (maxPan > 0.5 frame).
-    const scrollEnvelopeEnd = getZoomEnvelopeEndFrame(timelineState);
-    const scrollTotalFrames = Math.max(1, scrollEnvelopeEnd - timelineState.start_frame + 1);
-    const scrollVisibleFrames = scrollTotalFrames / zoomLevel;
-    const scrollMaxPan = Math.max(0, scrollTotalFrames - scrollVisibleFrames);
-    // Always visible — the wheel-only pan is undiscoverable + buggy. At zoom 1
-    // the thumb fills the track (nothing to scroll); it shrinks as you zoom in.
-    // Cap at 97% even at zoom 1 so the thumb is always visually distinct from
-    // the track (a solid bar reads as a divider, not a scrollbar).
-    const showScrollbar = true;
-    const rawThumbPct = Math.min(97, Math.max(8, (scrollVisibleFrames / scrollTotalFrames) * 100));
-    const thumbWidthPct = rawThumbPct;
-    const thumbLeftPct = scrollMaxPan > 0
-        ? (panOffset / scrollMaxPan) * (100 - thumbWidthPct)
-        : (100 - thumbWidthPct) / 2; // center when non-scrollable
-    return (_jsx(_Fragment, { children: showScrollbar && (_jsxs("div", { style: {
-                display: "flex",
-                alignItems: "center",
-                gap: 4,
-                width: "100%",
-                height: `${SCROLLBAR_HEIGHT + 4}px`,
-                padding: "0 2px",
-                backgroundColor: darkMode ? "rgba(13,21,32,0.6)" : "rgba(0,0,0,0.04)", // blue-1 tint (theme --blue-1 #0d1520)
-                borderTop: `1px solid ${darkMode ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.08)"}`,
-            }, children: [_jsx("div", { ref: scrollbarTrackRef, "data-testid": "timeline-scrollbar-track", onMouseDown: onScrollbarTrackMouseDown, style: {
-                        position: "relative",
-                        flex: 1,
-                        height: `${SCROLLBAR_HEIGHT}px`,
-                        backgroundColor: darkMode ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.08)",
-                        cursor: "pointer",
-                        borderRadius: "4px",
-                    }, children: _jsx("div", { "data-testid": "timeline-scrollbar-thumb", onMouseDown: onScrollbarThumbMouseDown, style: {
-                            position: "absolute",
-                            top: 0,
-                            bottom: 0,
-                            left: `${thumbLeftPct}%`,
-                            width: `${thumbWidthPct}%`,
-                            backgroundColor: darkMode
-                                ? "rgba(176, 180, 186, 0.9)" // --slate-11 #b0b4ba @ 90%
-                                : "rgba(100, 105, 120, 0.75)",
-                            border: `1px solid ${darkMode ? "rgba(255,255,255,0.2)" : "rgba(0,0,0,0.15)"}`,
-                            borderRadius: "4px",
-                            cursor: "grab",
-                            boxShadow: darkMode ? "0 1px 3px rgba(0,0,0,0.4)" : "none",
-                            transition: "background-color 0.15s",
-                        }, onMouseEnter: (e) => {
-                            e.currentTarget.style.backgroundColor = darkMode
-                                ? "rgba(237, 238, 240, 0.95)" // --slate-12 #edeef0
-                                : "rgba(80, 85, 100, 0.9)";
-                        }, onMouseLeave: (e) => {
-                            e.currentTarget.style.backgroundColor = darkMode
-                                ? "rgba(176, 180, 186, 0.9)"
-                                : "rgba(100, 105, 120, 0.75)";
-                        } }) }), _jsx(Tip, { tip: "Zoom out", children: _jsx(Button, { variant: "ghost", size: "sm", "data-testid": "timeline-zoom-out", onClick: () => zoomBy(1 / 1.5), "aria-label": "Zoom out", className: css.miniBtn, style: { padding: 0 }, children: "\u2212" }) }), _jsx(Tip, { tip: "Fit to window (reset zoom)", children: _jsx(Button, { variant: "ghost", size: "sm", "data-testid": "timeline-zoom-fit", onClick: resetZoom, className: css.miniFitBtn, children: "fit" }) }), _jsx(Tip, { tip: "Zoom in", children: _jsx(Button, { variant: "ghost", size: "sm", "data-testid": "timeline-zoom-in", onClick: () => zoomBy(1.5), "aria-label": "Zoom in", className: css.miniBtn, style: { padding: 0 }, children: "+" }) })] })) }));
 }
 //# sourceMappingURL=timeline-overlays.js.map

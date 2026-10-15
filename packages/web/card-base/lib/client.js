@@ -11079,6 +11079,138 @@ window.__ModuleLoader__.load({
 		function isEstateRefusal(error) {
 			return error instanceof EstateRefusedError;
 		}
+		/** The registry's duplicate-service verdict stem — the stable part of
+		*  the ONLY face cordis gives a second provide(): a bare Error (no
+		*  .code) whose message is `service "<name>" has been registered at
+		*  <fiber>` (vendor/cordis/src/reflect.ts:290, the npm build's
+		*  node_modules/@deepseek-ai/cordis/lib/index.js:813 — verified
+		*  verbatim, the nativity audit 2026-11-05 D7). The message IS the
+		*  protocol face here, so the estate's law ("discrimination is always
+		*  by code, never by message text") lands as THE ONE NAMED PREDICATE
+		*  HOME: this stem is spelled exactly once, every collision seat asks
+		*  the predicate by name, and the walled test fires the real cordis
+		*  throw through it. Never inline the template at a seat.
+		* @param error - the caught rejection.
+		* @param service - the provide() name the seat owns.
+		* @returns true when the error is cordis's duplicate-service verdict for that name. */
+		function isDuplicateServiceSeat(error, service) {
+			return error instanceof Error && error.message.startsWith(`service "${service}" has been registered at <`) && error.message.endsWith(">");
+		}
+		//#endregion
+		//#region ../melite-run-wire/src/index.ts
+		init_benchStage();
+		init_stageView();
+		/** The ONE media-url rewrite (readRunStatus + the file-era list
+		*  fallback share it): bare run-relative names ride the estate's
+		*  media route (/melite-media/runs/<runId>/<rel>); urls that already
+		*  carry a scheme or lead with / pass verbatim (never double-encoded). */
+		function toRunMediaUrl(runId, url) {
+			if (url === "") return "";
+			if (!/^(https?:\/\/|\/)/.test(url)) return RUN_MEDIA_PREFIX + "/" + encodeURIComponent(runId) + "/" + url.split("/").map((seg) => encodeURIComponent(seg)).join("/");
+			return url;
+		}
+		/** Normalize a runs/status doc: stage rows distilled, bare run-
+		*  relative urls rewritten onto the estate's media route (absolute
+		*  and leading-/ urls pass verbatim — the one rewrite, never two). */
+		function readRunStatus(runId, doc) {
+			const stages = Array.isArray(doc["stages"]) ? doc["stages"].filter((s) => typeof s === "object" && s !== null && typeof s["id"] === "string") : [];
+			for (const stage of stages) {
+				if (typeof stage.url === "string" && stage.url !== "") stage.url = toRunMediaUrl(runId, stage.url);
+				if (typeof stage.error !== "string" || stage.error === "") delete stage.error;
+				const p = stage.progress;
+				if (p === void 0 || typeof p !== "object" || typeof p.value !== "number" || typeof p.max !== "number") delete stage.progress;
+				if (typeof stage.activity !== "string" || stage.activity === "") delete stage.activity;
+			}
+			const status = doc["status"];
+			if (typeof status !== "string" || !RUN_STATUS_WORDS.has(status.toLowerCase())) throw new Error(`runs/status ${runId}: run-level status ${JSON.stringify(status)} is outside the vocabulary`);
+			return {
+				runId,
+				status,
+				draftId: typeof doc["draft_id"] === "string" && doc["draft_id"] !== "" ? doc["draft_id"] : null,
+				stages,
+				...typeof doc["error"] === "string" && doc["error"] !== "" ? { error: doc["error"] } : {}
+			};
+		}
+		/** The list row's served artifact url onto the media route. The
+		*  list's currency DIFFERS from the status door's: runArtifacts
+		*  serves urls already prefixed with the run dir
+		*  (`<runId>/<rel>` — `url: runBase + "/" + cand.rel`), while live
+		*  stage urls are bare rels (runRel strips the dir). So the list
+		*  url rides under the route root directly — prepending the run id
+		*  again would double it. Absolute and rooted urls pass verbatim. */
+		function listArtifactMediaUrl(url) {
+			if (url === "") return null;
+			if (/^(https?:\/\/|\/)/.test(url)) return url;
+			return RUN_MEDIA_PREFIX + "/" + url.split("/").map((seg) => encodeURIComponent(seg)).join("/");
+		}
+		/** The list row's first media artifact url, rewritten onto the media
+		*  route (the row's own currency is run-prefixed, like the
+		*  thumbnail). Truncated markers carry no url and are skipped. */
+		function listRowMediaUrl(row) {
+			const arts = Array.isArray(row["artifacts"]) ? row["artifacts"] : [];
+			for (const a of arts) {
+				if (typeof a !== "object" || a === null) continue;
+				const url = a["url"];
+				if (typeof url === "string") {
+					const media = listArtifactMediaUrl(url);
+					if (media !== null) return media;
+				}
+			}
+			return null;
+		}
+		/** The wire dial (audit X-E1, the card-base wire's law): every fetch
+		*  rides a socket with a bound — a caller signal ANDed with the dial,
+		*  never a bare socket. Reads are small same-origin JSON. */
+		const READ_DIAL_MS$1 = 2e4;
+		/** The caller's signal ANDed with the dial — either side lifting the
+		*  fetch aborts it (the provisioning seam's own shape). */
+		function dialed$1(signal, dialMs) {
+			const dial = AbortSignal.timeout(dialMs);
+			return signal === void 0 ? dial : AbortSignal.any([signal, dial]);
+		}
+		/** Read the same-origin /v1/model-catalog door. Non-200 → named throw
+		*  (the door's own error text when present); a 200 whose body does
+		*  not parse to an object is a served-plane misconfiguration and
+		*  refuses loud too (never a silent empty table). */
+		async function catalogGet(signal) {
+			const res = await fetch("/v1/model-catalog", { signal: dialed$1(signal, READ_DIAL_MS$1) });
+			const body = await res.json().catch(() => null);
+			if (!res.ok) {
+				const err = typeof body === "object" && body !== null ? Reflect.get(body, "error") : void 0;
+				throw new Error(typeof err === "string" ? err : "/v1/model-catalog: HTTP " + String(res.status));
+			}
+			if (typeof body !== "object" || body === null) throw new Error("/v1/model-catalog: unreadable body");
+			return body;
+		}
+		let cardCatalogRowsCache = null;
+		let cardCatalogRowsInflight = null;
+		/** The catalog's cards section, read ONCE per session (the ONE door +
+		*  cache law, nativity audit 2026-11-05 D6 — card-base's
+		*  fetchCardCatalog projection rides THIS reader; there is no second
+		*  GET of the door anywhere). Each row is the served JSON verbatim;
+		*  projections narrow their own fields. Cached per session (the
+		*  catalog is static per boot; one door round trip, every consumer
+		*  shares it; concurrent cold starts share the one in-flight read).
+		* @param signal - caller cancellation, ANDed with the read dial.
+		* @returns the cards section: card id → its served row. */
+		async function fetchCardCatalogRows(signal) {
+			if (cardCatalogRowsCache !== null) return cardCatalogRowsCache;
+			cardCatalogRowsInflight ??= (async () => {
+				const raw = (await catalogGet(signal))["cards"];
+				const out = {};
+				if (typeof raw === "object" && raw !== null) for (const [id, row] of Object.entries(raw)) {
+					if (typeof row !== "object" || row === null) continue;
+					out[id] = row;
+				}
+				return out;
+			})();
+			try {
+				cardCatalogRowsCache = await cardCatalogRowsInflight;
+				return cardCatalogRowsCache;
+			} finally {
+				cardCatalogRowsInflight = null;
+			}
+		}
 		//#endregion
 		//#region src/wire.ts
 		/** The wire dials (audit X-E1): every fetch rides a socket with a
@@ -11150,12 +11282,15 @@ window.__ModuleLoader__.load({
 			};
 		}
 		/** /v1/model-catalog → the cards section (the picker's ONE surface —
-		*  action cards, one tile per card package; models are NOT entries). */
+		*  action cards, one tile per card package; models are NOT entries).
+		*  THE ONE DOOR LAW (nativity audit 2026-11-05 D6): the GET + cache
+		*  lives in melite-run-wire's fetchCardCatalogRows — this is its
+		*  picker projection (label/description/genre walks, the label sort);
+		*  there is no second read of the door. */
 		async function fetchCardCatalog(signal) {
-			const raw = (await v1Get("/v1/model-catalog", signal))["cards"] ?? {};
+			const rows = await fetchCardCatalogRows(signal);
 			const out = [];
-			for (const [id, row] of Object.entries(raw)) {
-				if (typeof row !== "object" || row === null) continue;
+			for (const [id, row] of Object.entries(rows)) {
 				const famsRaw = row["families"];
 				out.push({
 					id,
@@ -13630,68 +13765,6 @@ window.__ModuleLoader__.load({
 			return resolveValue(spec, user, base);
 		}
 		//#endregion
-		//#region ../melite-run-wire/src/index.ts
-		init_benchStage();
-		init_stageView();
-		/** The ONE media-url rewrite (readRunStatus + the file-era list
-		*  fallback share it): bare run-relative names ride the estate's
-		*  media route (/melite-media/runs/<runId>/<rel>); urls that already
-		*  carry a scheme or lead with / pass verbatim (never double-encoded). */
-		function toRunMediaUrl(runId, url) {
-			if (url === "") return "";
-			if (!/^(https?:\/\/|\/)/.test(url)) return RUN_MEDIA_PREFIX + "/" + encodeURIComponent(runId) + "/" + url.split("/").map((seg) => encodeURIComponent(seg)).join("/");
-			return url;
-		}
-		/** Normalize a runs/status doc: stage rows distilled, bare run-
-		*  relative urls rewritten onto the estate's media route (absolute
-		*  and leading-/ urls pass verbatim — the one rewrite, never two). */
-		function readRunStatus(runId, doc) {
-			const stages = Array.isArray(doc["stages"]) ? doc["stages"].filter((s) => typeof s === "object" && s !== null && typeof s["id"] === "string") : [];
-			for (const stage of stages) {
-				if (typeof stage.url === "string" && stage.url !== "") stage.url = toRunMediaUrl(runId, stage.url);
-				if (typeof stage.error !== "string" || stage.error === "") delete stage.error;
-				const p = stage.progress;
-				if (p === void 0 || typeof p !== "object" || typeof p.value !== "number" || typeof p.max !== "number") delete stage.progress;
-				if (typeof stage.activity !== "string" || stage.activity === "") delete stage.activity;
-			}
-			const status = doc["status"];
-			if (typeof status !== "string" || !RUN_STATUS_WORDS.has(status.toLowerCase())) throw new Error(`runs/status ${runId}: run-level status ${JSON.stringify(status)} is outside the vocabulary`);
-			return {
-				runId,
-				status,
-				draftId: typeof doc["draft_id"] === "string" && doc["draft_id"] !== "" ? doc["draft_id"] : null,
-				stages,
-				...typeof doc["error"] === "string" && doc["error"] !== "" ? { error: doc["error"] } : {}
-			};
-		}
-		/** The list row's served artifact url onto the media route. The
-		*  list's currency DIFFERS from the status door's: runArtifacts
-		*  serves urls already prefixed with the run dir
-		*  (`<runId>/<rel>` — `url: runBase + "/" + cand.rel`), while live
-		*  stage urls are bare rels (runRel strips the dir). So the list
-		*  url rides under the route root directly — prepending the run id
-		*  again would double it. Absolute and rooted urls pass verbatim. */
-		function listArtifactMediaUrl(url) {
-			if (url === "") return null;
-			if (/^(https?:\/\/|\/)/.test(url)) return url;
-			return RUN_MEDIA_PREFIX + "/" + url.split("/").map((seg) => encodeURIComponent(seg)).join("/");
-		}
-		/** The list row's first media artifact url, rewritten onto the media
-		*  route (the row's own currency is run-prefixed, like the
-		*  thumbnail). Truncated markers carry no url and are skipped. */
-		function listRowMediaUrl(row) {
-			const arts = Array.isArray(row["artifacts"]) ? row["artifacts"] : [];
-			for (const a of arts) {
-				if (typeof a !== "object" || a === null) continue;
-				const url = a["url"];
-				if (typeof url === "string") {
-					const media = listArtifactMediaUrl(url);
-					if (media !== null) return media;
-				}
-			}
-			return null;
-		}
-		//#endregion
 		//#region src/runs-policy.ts
 		/**
 		* runs-policy.ts — the run verbs over THE ONE LANE (stroke 81; the
@@ -15603,6 +15676,7 @@ window.__ModuleLoader__.load({
 		exports.inject = inject;
 		exports.inputEdgeOf = inputEdgeOf;
 		exports.isCasConflict = isCasConflict;
+		exports.isDuplicateServiceSeat = isDuplicateServiceSeat;
 		exports.isEstateRefusal = isEstateRefusal;
 		exports.isHybridKind = isHybridKind;
 		exports.isImageUrl = isImageUrl;

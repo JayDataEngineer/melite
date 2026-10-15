@@ -12,22 +12,27 @@ export function asEstateCall(request) {
         return request(method, path, body, signal, timeoutMs);
     };
 }
+/** The estate row's Context-merged seats, probed lazily off a host.
+ *  OPTIONAL-dependency probes: ctx.get returns undefined when no
+ *  provider is loaded (the tutorial's pattern) — a seatless lane
+ *  then falls to the LOUD no-remote refusal. The getters re-probe per
+ *  access: a seat that mounts/unmounts mid-call reads as such, never
+ *  as a stale handle. */
+function seatsOf(host) {
+    return {
+        get draftsRemote() { return host.get('draftsRemote'); },
+        get benchRemote() { return host.get('benchRemote'); },
+        get runs() { return host.get('runs'); },
+        get disclose() { return host.get('disclose'); },
+        get manage() { return host.get('manage'); },
+        get skills() { return host.get('meliteSkills'); },
+        get load() { return host.get('load'); },
+        get queue() { return host.get('queue'); },
+    };
+}
 /** Route one KV/runs lane to its seat; undefined = no seat / no match. */
 async function trySeats(ctx, method, path, body, signal) {
-    // OPTIONAL-dependency probes: ctx.get returns undefined when no
-    // provider is loaded (the tutorial's pattern) — a seatless lane
-    // then falls to the LOUD no-remote throw below.
-    const probe = ctx;
-    const seats = {
-        get draftsRemote() { return probe.get('draftsRemote'); },
-        get benchRemote() { return probe.get('benchRemote'); },
-        get runs() { return probe.get('runs'); },
-        get disclose() { return probe.get('disclose'); },
-        get manage() { return probe.get('manage'); },
-        get skills() { return probe.get('meliteSkills'); },
-        get load() { return probe.get('load'); },
-        get queue() { return probe.get('queue'); },
-    };
+    const seats = seatsOf(ctx);
     signal.throwIfAborted();
     if (method === 'GET' && path === '/v1/flows/drafts') {
         if (seats.draftsRemote === undefined)
@@ -47,61 +52,7 @@ async function trySeats(ctx, method, path, body, signal) {
     // doc-backed draft_id). CAS law = the queue lane's own: read the
     // bench first, expect_rev rides, a fresh bench births.
     if (method === 'POST' && path === '/v1/flows/drafts') {
-        if (seats.benchRemote === undefined)
-            return undefined;
-        if (body === undefined || typeof body !== 'object' || body === null) {
-            throw new Error('card compose needs a JSON body');
-        }
-        const bag = body;
-        const intentSrc = typeof bag['prompt'] === 'string' && bag['prompt'] !== ''
-            ? bag['prompt']
-            : typeof bag['intent'] === 'string' ? bag['intent'] : 'card';
-        // NOTE (2026-09-25, the fabrication finding): intent stays the
-        // IDENTITY key verbatim (the studio consult keys cardName off
-        // it — never the prompt, never a label); the tool-mint
-        // provenance rides bench_snapshot.bench_head instead (the
-        // bench's own log head, stamped by runsStart).
-        const intent = intentSrc.length > 80 ? intentSrc.slice(0, 77) + '…' : intentSrc;
-        const params = { ...(bag['params'] ?? {}) };
-        if (typeof bag['prompt'] === 'string' && bag['prompt'] !== '')
-            params['prompt'] = bag['prompt'];
-        const ensure = {
-            session: 'default',
-            intent,
-            stages: [{ id: 's_0', engine: CARD_PLANE_ENGINE, params }],
-            // THE TOOL-BENCH OWNERSHIP LAW (2026-09-22, the maker jam):
-            // this lane is the SOLE writer of the 'default' scope — the
-            // wholesale replace of our own prior one-shot mint IS the
-            // owner-confirming overwrite the bench law (2026-09-15) wants
-            // said out loud. Omitting it wedged every render tool behind
-            // a bench/overwrite-required refusal no tool schema could
-            // utter (the end-to-end agent test, live receipt seq 4-7).
-            overwrite: true,
-        };
-        const cur = await seats.benchRemote.get('default', signal);
-        if (cur !== undefined && typeof cur['rev'] === 'number')
-            ensure['expect_rev'] = cur['rev'];
-        // CAS RETRY (one): a concurrent tool mint moved the rev between
-        // our read and our ensure — re-read, retry once. The replace is
-        // idempotent under ownership; any other refusal propagates loud.
-        const conflict = (e) => typeof e?.code === 'string' &&
-            e.code === 'bench/cas-conflict';
-        let row;
-        try {
-            row = await seats.benchRemote.ensure(ensure, signal);
-        }
-        catch (first) {
-            if (!conflict(first))
-                throw first;
-            const fresh = await seats.benchRemote.get('default', signal);
-            if (fresh !== undefined && typeof fresh['rev'] === 'number')
-                ensure['expect_rev'] = fresh['rev'];
-            row = await seats.benchRemote.ensure(ensure, signal);
-        }
-        if (row === undefined || typeof row['draft_id'] !== 'string') {
-            throw new Error('card compose returned no draft_id — refusing to start cardless');
-        }
-        return { draftId: row['draft_id'] };
+        return cardComposeLane(ctx, seats, body, signal);
     }
     // The STAGE wire PATCH (params edits + result persistence — the
     // 2022-08-22 wire PATCH + resultOutbox's result rows).
@@ -274,6 +225,73 @@ async function trySeats(ctx, method, path, body, signal) {
     }
     return undefined;
 }
+/** THE CARD COMPOSE LANE — the start body verbatim → a bench-backed
+ *  draft (the CARD BIRTH LAW: the start rides a doc-backed draft_id).
+ *  CAS law = the queue lane's own: read the bench first, expect_rev
+ *  rides, a fresh bench births. ONE implementation served by BOTH
+ *  faces (F-1, 2026-11-05): the URL router's POST /v1/flows/drafts
+ *  arm and the typed Estate.cardCompose — the browser face keeps its
+ *  grammar, the tool plane keeps the behavior, neither re-answers
+ *  the CAS question. */
+async function cardComposeLane(host, seats, body, signal) {
+    if (seats.benchRemote === undefined) {
+        seatlessRefusal(host, 'POST /v1/flows/drafts', BENCH_LANE.family, BENCH_LANE.probeNames);
+    }
+    if (body === undefined || typeof body !== 'object' || body === null) {
+        throw new Error('card compose needs a JSON body');
+    }
+    const bag = body;
+    const intentSrc = typeof bag['prompt'] === 'string' && bag['prompt'] !== ''
+        ? bag['prompt']
+        : typeof bag['intent'] === 'string' ? bag['intent'] : 'card';
+    // NOTE (2026-09-25, the fabrication finding): intent stays the
+    // IDENTITY key verbatim (the studio consult keys cardName off
+    // it — never the prompt, never a label); the tool-mint
+    // provenance rides bench_snapshot.bench_head instead (the
+    // bench's own log head, stamped by runsStart).
+    const intent = intentSrc.length > 80 ? intentSrc.slice(0, 77) + '…' : intentSrc;
+    const params = { ...(bag['params'] ?? {}) };
+    if (typeof bag['prompt'] === 'string' && bag['prompt'] !== '')
+        params['prompt'] = bag['prompt'];
+    const ensure = {
+        session: 'default',
+        intent,
+        stages: [{ id: 's_0', engine: CARD_PLANE_ENGINE, params }],
+        // THE TOOL-BENCH OWNERSHIP LAW (2026-09-22, the maker jam):
+        // this lane is the SOLE writer of the 'default' scope — the
+        // wholesale replace of our own prior one-shot mint IS the
+        // owner-confirming overwrite the bench law (2026-09-15) wants
+        // said out loud. Omitting it wedged every render tool behind
+        // a bench/overwrite-required refusal no tool schema could
+        // utter (the end-to-end agent test, live receipt seq 4-7).
+        overwrite: true,
+    };
+    const bench = seats.benchRemote;
+    const cur = await bench.get('default', signal);
+    if (cur !== undefined && typeof cur['rev'] === 'number')
+        ensure['expect_rev'] = cur['rev'];
+    // CAS RETRY (one): a concurrent tool mint moved the rev between
+    // our read and our ensure — re-read, retry once. The replace is
+    // idempotent under ownership; any other refusal propagates loud.
+    const conflict = (e) => typeof e?.code === 'string' &&
+        e.code === 'bench/cas-conflict';
+    let row;
+    try {
+        row = await bench.ensure(ensure, signal);
+    }
+    catch (first) {
+        if (!conflict(first))
+            throw first;
+        const fresh = await bench.get('default', signal);
+        if (fresh !== undefined && typeof fresh['rev'] === 'number')
+            ensure['expect_rev'] = fresh['rev'];
+        row = await bench.ensure(ensure, signal);
+    }
+    if (row === undefined || typeof row['draft_id'] !== 'string') {
+        throw new Error('card compose returned no draft_id — refusing to start cardless');
+    }
+    return { draftId: row['draft_id'] };
+}
 /** Which seat FAMILY a path needs (agent-debt F-8, 2026-09-22 —
  * coarse by design: the matcher above is the truth; this only names
  * the family for the seatless refusal so the error says what to look
@@ -322,53 +340,143 @@ export function makeEstateRequest(ctx) {
     // the WORK, never a fabricated refusal) and was rolled back.)
     return (method, path, body, execSignal, timeoutMs) => {
         const work = performEstateRequest(ctx, method, path, body, execSignal);
-        if (timeoutMs === undefined || !Number.isFinite(timeoutMs) || timeoutMs <= 0)
-            return work;
-        const bound = deadline(undefined, timeoutMs, 'ESTATE_TIMEOUT');
-        const refused = new Promise((_, reject) => {
-            // deadline()'s signal aborts with a TimeoutReason at the bound;
-            // the translation keeps the pinned voice verbatim (J8: the race
-            // rides the owned primitive, the semantics stay RACED). The
-            // caller's signal is deliberately NOT fused — the seat work owns
-            // its own cancellation (doors.spec pins the caller-gone arm: the
-            // response settles from the WORK, never a fabricated refusal),
-            // so the race's only business is the bound.
-            bound.signal.addEventListener('abort', () => {
-                const reason = bound.signal.reason;
-                if (reason instanceof TimeoutReason) {
-                    reject(new Error(`estate request ${method} ${path} outlived its ${String(timeoutMs)}ms bound`));
-                    return;
-                }
-                reject(reason instanceof Error ? reason : new Error('estate request cancelled'));
-            }, { once: true });
-        });
-        return Promise.race([work, refused]).finally(() => { bound[Symbol.dispose](); });
+        return withEstateBound(work, `${method} ${path}`, timeoutMs);
     };
 }
-async function performEstateRequest(ctx, method, path, body, execSignal) {
-    {
-        const viaSeats = await trySeats(ctx, method, path, body, execSignal);
-        if (viaSeats !== undefined)
-            return viaSeats;
-        const { family, probeNames } = seatFamilyForPath(path);
-        const probe = ctx;
-        const live = [];
-        for (const n of probeNames) {
-            try {
-                if (probe.get(n) !== undefined)
-                    live.push(n);
+/** The wall-clock bound, RACED not dropped (the seam-drift cure,
+ *  2026-10-10). deadline()'s signal aborts with a TimeoutReason at
+ *  the bound; the translation keeps the pinned voice verbatim (J8:
+ *  the race rides the owned primitive, the semantics stay RACED).
+ *  The caller's signal is deliberately NOT fused — the seat work
+ *  owns its own cancellation (doors.spec pins the caller-gone arm:
+ *  the response settles from the WORK, never a fabricated refusal),
+ *  so the race's only business is the bound. `sp` is the
+ *  request's own spelling of the lane ('METHOD /v1/path') — the
+ *  bound refusal names it so the agent sees WHICH call hung. */
+function withEstateBound(work, sp, timeoutMs) {
+    if (timeoutMs === undefined || !Number.isFinite(timeoutMs) || timeoutMs <= 0)
+        return work;
+    const bound = deadline(undefined, timeoutMs, 'ESTATE_TIMEOUT');
+    const refused = new Promise((_, reject) => {
+        bound.signal.addEventListener('abort', () => {
+            const reason = bound.signal.reason;
+            if (reason instanceof TimeoutReason) {
+                reject(new Error(`estate request ${sp} outlived its ${String(timeoutMs)}ms bound`));
+                return;
             }
-            catch {
-                /* a throwing probe reads as absent — absence is the only story */
-            }
+            reject(reason instanceof Error ? reason : new Error('estate request cancelled'));
+        }, { once: true });
+    });
+    return Promise.race([work, refused]).finally(() => { bound[Symbol.dispose](); });
+}
+/** The AGENT-USABLE no-seat refusal (F-8's voice) — ONE builder for
+ *  both faces (F-1, 2026-11-05): name the family the lane needs, the
+ *  seats that ARE live, the pin that mounts the queue plane, and the
+ *  chat-lane exit. `sp` is the request's own spelling of the lane —
+ *  the URL router passes 'METHOD /path' verbatim, the typed lanes
+ *  pass their canonical spelling, and the text reads the same. */
+function seatlessRefusal(host, sp, family, probeNames) {
+    const live = [];
+    for (const n of probeNames) {
+        try {
+            if (host.get(n) !== undefined)
+                live.push(n);
         }
-        const liveVoice = live.length > 0
-            ? `Live seats here: ${live.join(', ')}.`
-            : `No seat of that family is mounted on this lane (ABSENCE, not a broken registry; nothing crashed).`;
-        throw new Error(`no seat on this lane serves ${method} ${path} — the ${family} is not mounted. `
-            + `${liveVoice} `
-            + `The queue-plane seats mount when the estate state root is pinned (the profile config's stateRoot / repoRoot fields). `
-            + `On a chat lane, compose via melite_construct onto the shared bench instead of the raw flow doors.`);
+        catch {
+            /* a throwing probe reads as absent — absence is the only story */
+        }
     }
+    const liveVoice = live.length > 0
+        ? `Live seats here: ${live.join(', ')}.`
+        : `No seat of that family is mounted on this lane (ABSENCE, not a broken registry; nothing crashed).`;
+    throw new Error(`no seat on this lane serves ${sp} — the ${family} is not mounted. `
+        + `${liveVoice} `
+        + `The queue-plane seats mount when the estate state root is pinned (the profile config's stateRoot / repoRoot fields). `
+        + `On a chat lane, compose via melite_construct onto the shared bench instead of the raw flow doors.`);
+}
+async function performEstateRequest(ctx, method, path, body, execSignal) {
+    const viaSeats = await trySeats(ctx, method, path, body, execSignal);
+    if (viaSeats !== undefined)
+        return viaSeats;
+    const { family, probeNames } = seatFamilyForPath(path);
+    seatlessRefusal(ctx, `${method} ${path}`, family, probeNames);
+}
+/** Per-lane seat-family facts — the refusal names the family and
+ *  probes ONLY its own names (the eager-sweep hang, live proof
+ *  2026-09-22). The same rows seatFamilyForPath answers for the
+ *  router; spelled per lane because the lanes ARE the families. */
+const BENCH_LANE = { family: 'bench plane (draftsRemote/benchRemote seats)', probeNames: ['draftsRemote', 'benchRemote'] };
+const RUNS_LANE = { family: 'live-run registry (the runs seat)', probeNames: ['runs'] };
+const DISCLOSE_LANE = { family: 'disclose', probeNames: ['disclose'] };
+const MANAGE_LANE = { family: 'manage', probeNames: ['manage'] };
+const SKILLS_LANE = { family: 'meliteSkills', probeNames: ['meliteSkills'] };
+const LOAD_LANE = { family: 'load', probeNames: ['load'] };
+const QUEUE_LANE = { family: 'queue', probeNames: ['queue'] };
+/** One typed lane: abort check → seat probe → the seat call → the
+ *  seatless fall-through (a served `undefined` refuses, the router's
+ *  exact law) → the wall-clock bound. `sp` is the lane's canonical
+ *  spelling for the refusal/bound voices. */
+async function estateLane(ctx, sp, laneFacts, serve, signal, timeoutMs) {
+    signal.throwIfAborted();
+    const seats = seatsOf(ctx);
+    const work = (async () => {
+        const out = await Promise.resolve(serve(seats, signal));
+        if (out === undefined)
+            seatlessRefusal(ctx, sp, laneFacts.family, laneFacts.probeNames);
+        return out;
+    })();
+    return withEstateBound(work, sp, timeoutMs);
+}
+/** The typed lanes (see Estate). Same seats, same refusals, same
+ *  bounds as the URL router — no second answering of any lane law. */
+export function makeEstate(ctx) {
+    const lane = (sp, facts, serve) => (signal, timeoutMs) => estateLane(ctx, sp, facts, serve, signal, timeoutMs);
+    return {
+        draftsList: lane('GET /v1/flows/drafts', BENCH_LANE, (s, signal) => s.draftsRemote === undefined ? undefined : s.draftsRemote.list(signal)),
+        draftsGet: (draftId, signal, timeoutMs) => estateLane(ctx, `GET /v1/flows/drafts/${encodeURIComponent(draftId)}`, BENCH_LANE, (s) => s.draftsRemote === undefined ? undefined : s.draftsRemote.get(draftId, signal), signal, timeoutMs),
+        draftsStagePatch: (draftId, stageId, patch, signal, timeoutMs) => estateLane(ctx, `PATCH /v1/flows/drafts/${encodeURIComponent(draftId)}/stages/${encodeURIComponent(stageId)}`, BENCH_LANE, (s) => s.draftsRemote === undefined ? undefined : s.draftsRemote.patch(draftId, stageId, patch, signal), signal, timeoutMs),
+        cardCompose: (body, signal, timeoutMs) => {
+            signal.throwIfAborted();
+            const work = cardComposeLane(ctx, seatsOf(ctx), body, signal);
+            return withEstateBound(work, 'POST /v1/flows/drafts', timeoutMs);
+        },
+        benchGet: (session, signal, timeoutMs) => estateLane(ctx, `GET /v1/bench/${encodeURIComponent(session)}`, BENCH_LANE, (s) => s.benchRemote === undefined ? undefined : s.benchRemote.get(session, signal), signal, timeoutMs),
+        benchEnsure: (doc, signal, timeoutMs) => estateLane(ctx, 'POST /v1/bench/ensure', BENCH_LANE, (s) => s.benchRemote === undefined ? undefined : s.benchRemote.ensure(doc, signal), signal, timeoutMs),
+        benchVerb: (session, verb, doc, signal, timeoutMs) => estateLane(ctx, `POST /v1/bench/${encodeURIComponent(session)}/${verb}`, BENCH_LANE, (s) => {
+            const bench = s.benchRemote;
+            if (bench === undefined)
+                return undefined;
+            switch (verb) {
+                case 'patch': return bench.patch(session, doc, signal);
+                case 'add_stage': return bench.addStage(session, doc, signal);
+                case 'remove_stage': return bench.removeStage(session, doc, signal);
+                case 'clear': return bench.clear(session, doc, signal);
+                case 'rewire': return bench.rewire(session, doc, signal);
+                case 'undo': return bench.undo(session, doc, signal);
+                default: {
+                    // CLOSED UNION, LOUD END — same law as the router's arm.
+                    /* v8 ignore next 2 -- BenchVerb admits exactly the six cased arms; no honest input reaches the throw */
+                    const exhaustive = verb;
+                    throw new Error(`bench arm ${String(exhaustive)} matched its pattern but has no seat`);
+                }
+            }
+        }, signal, timeoutMs),
+        runsValidate: (doc, signal, timeoutMs) => estateLane(ctx, 'POST /v1/flows/validate', RUNS_LANE, (s) => s.runs === undefined ? undefined : s.runs.validate(doc, signal), signal, timeoutMs),
+        runsStart: (doc, signal, timeoutMs) => estateLane(ctx, 'POST /v1/flows/start', RUNS_LANE, (s) => s.runs === undefined ? undefined : s.runs.start(doc, signal), signal, timeoutMs),
+        runsStatus: (runId, includeLog, signal, timeoutMs) => estateLane(ctx, `GET /v1/flows/status/${encodeURIComponent(runId)}`, RUNS_LANE, (s) => s.runs === undefined ? undefined : s.runs.status(runId, signal, includeLog), signal, timeoutMs),
+        runsStop: (runId, signal, timeoutMs) => estateLane(ctx, `POST /v1/flows/stop/${encodeURIComponent(runId)}`, RUNS_LANE, (s) => s.runs === undefined ? undefined : s.runs.stop(runId, signal), signal, timeoutMs),
+        runsList: (limit, signal, timeoutMs) => estateLane(ctx, `GET /v1/flows/runs?limit=${encodeURIComponent(limit)}`, RUNS_LANE, (s) => s.runs === undefined ? undefined : s.runs.list(limit, signal), signal, timeoutMs),
+        discover: (lookup, q, tags, signal, timeoutMs) => estateLane(ctx, 'GET /v1/discover', DISCLOSE_LANE, (s) => s.disclose === undefined ? undefined : s.disclose.discover(lookup, q, tags), signal, timeoutMs),
+        flowsContracts: lane('GET /v1/flows', DISCLOSE_LANE, (s) => s.disclose === undefined ? undefined : s.disclose.contracts()),
+        manageAct: (doc, signal, timeoutMs) => estateLane(ctx, 'POST /v1/manage', MANAGE_LANE, (s) => s.manage === undefined ? undefined : s.manage.act(doc, signal), signal, timeoutMs),
+        skillsIndex: lane('GET /v1/skills', SKILLS_LANE, (s) => s.skills === undefined ? undefined : s.skills.index()),
+        skillRead: (id, signal, timeoutMs) => estateLane(ctx, `GET /v1/skills/${encodeURIComponent(id)}`, SKILLS_LANE, (s) => s.skills === undefined ? undefined : s.skills.read(id, signal), signal, timeoutMs),
+        loadCard: (inferenceType, name, signal, timeoutMs) => estateLane(ctx, `GET /v1/load?inference_type=${encodeURIComponent(inferenceType)}&name=${encodeURIComponent(name)}`, LOAD_LANE, (s) => s.load === undefined ? undefined : s.load.load(inferenceType, name), signal, timeoutMs),
+        ledgerTail: (limit, event, signal, timeoutMs) => estateLane(ctx, 'GET /v1/ledger', QUEUE_LANE, 
+        // The designed degrade: a SEATLESS queue reads as an EMPTY
+        // tail (optional infra — the crash-toast lesson); a mounted
+        // seat's undefined still refuses (the fall-through law).
+        (s) => s.queue === undefined ? [] : s.queue.ledger(limit, event), signal, timeoutMs),
+    };
 }
 //# sourceMappingURL=estate.js.map

@@ -7,6 +7,10 @@
 //      / 0) and a gateway {error} refuses without a status
 //   4. the render tolerates sparse values (replay path) and counts
 //      completions past null stage rows; queue suffix only past 0
+//
+// F-1 seam (2026-11-05): the tool plane speaks the typed lanes; the
+// URL grammar is the browser face's. The URL-spelling arm re-rolled
+// to the typed lane + args via `seen`; every other arm is a seam swap.
 
 import { describe, test, vi, afterEach } from 'vitest'
 import assert from 'node:assert/strict'
@@ -14,27 +18,33 @@ import { RemoteError } from '@deepseek-ai/dsh-typert-protocol'
 import { ToolArgsError } from '@deepseek-ai/dsh-tools'
 import type { GenericCallView } from '@deepseek-ai/dsh-tools'
 import { runStatus } from '../src/tools/run-status.ts'
-import type { EstateRequest } from '../src/estate.ts'
+import type { Estate } from '../src/estate.ts'
+import { fakeEstate } from './fake-estate.ts'
 import { fakeExec } from './fake-exec.ts'
 
 afterEach(() => { vi.useRealTimers() })
 
-function mockRequest(
-  handler: (method: string, path: string, body: unknown) => unknown,
-): { calls: Array<{ method: string; path: string; body: unknown }>; request: EstateRequest } {
-  const calls: Array<{ method: string; path: string; body: unknown }> = []
-  const request = (async (method: string, path: string, body: unknown): Promise<unknown> => {
-    calls.push({ method, path, body })
-    return handler(method, path, body)
-  }) as EstateRequest
-  return { calls, request }
+/** The typed-lane mock (F-1, 2026-11-05): the tool plane's tests
+ *  stub the ESTATE seam, never a URL transport. `seen` records the
+ *  lane a tool rode; runsStatus is this spec's one lane. */
+function mockEstate(handler: () => unknown): {
+  seen: Array<{ lane: string; args: unknown[] }>;
+  estate: Estate;
+} {
+  return fakeEstate({
+    runsStatus: (_runId: string, _includeLog: boolean, _signal: AbortSignal, _timeoutMs?: number) => handler(),
+  })
+}
+
+function stubEstate(): Estate {
+  return fakeEstate({ runsStatus: () => ({}) }).estate
 }
 
 const exec = fakeExec(AbortSignal.timeout(2000))
 
 describe('run_status presentCall — the streaming tile', () => {
   test('titles the run; junk renders generic (the re-attached presenter)', () => {
-    const tool = runStatus((async () => ({})) as EstateRequest)
+    const tool = runStatus(stubEstate())
     // The tile always answers the generic card (pinned below) — narrow
     // the ToolCallView union to read its rawInput.
     assert.equal(tool.presentCall!({ runId: 'r1' } as never)!.title, 'Run status: r1')
@@ -48,17 +58,17 @@ describe('run_status presentCall — the streaming tile', () => {
 
 describe('run_status execute — the run monitor', () => {
   test('missing runId throws at the wrapper gate (presence contract)', async () => {
-    const { request } = mockRequest(() => ({}))
-    const tool = runStatus(request)
+    const { estate } = mockEstate(() => ({}))
+    const tool = runStatus(estate)
     await assert.rejects(tool.execute({} as never, exec), ToolArgsError)
   })
 
   test('empty runId refuses bare without any fetch', async () => {
-    const seen = mockRequest(() => ({}))
-    const tool = runStatus(seen.request)
+    const { seen, estate } = mockEstate(() => ({}))
+    const tool = runStatus(estate)
     const out = await tool.execute({ runId: '' }, exec) as Record<string, unknown>
     assert.equal(out.error, 'runId is required')
-    assert.equal(seen.calls.length, 0)
+    assert.equal(seen.length, 0)
   })
 
   test('a completed row carrying error:"" serves RICH, never the ? — 0/0 husk (021 receipt)', async () => {
@@ -67,13 +77,13 @@ describe('run_status execute — the run monitor', () => {
     // refusal shape and returned {run_id, error:""} — the render
     // voiced "? — 0/0 stage(s)" on all four 021 stages (completed,
     // with artifacts). Only a NON-EMPTY error refuses.
-    const seen = mockRequest(() => ({
+    const { estate } = mockEstate(() => ({
       run_id: 'run-x', status: 'completed', error: '',
       stages: [{ id: 'tts', name: 'tts', index: 0, status: 'completed', outputs: {}, expected: {} }],
       artifacts: ['out/tts.flac'],
       skipped_stages: [],
     }))
-    const tool = runStatus(seen.request)
+    const tool = runStatus(estate)
     const out = await tool.execute({ runId: 'run-x' }, exec) as Record<string, unknown>
     assert.equal(out.status, 'completed')
     assert.equal(out.error, undefined)
@@ -81,17 +91,14 @@ describe('run_status execute — the run monitor', () => {
     assert.equal((out.artifacts as unknown[]).length, 1)
   })
 
-  test('a full row projects verbatim (encoding rides the path)', async () => {
-    const seen = mockRequest((_m, path) => {
-      assert.equal(path, '/v1/flows/status/' + encodeURIComponent('r/1'))
-      return {
-        run_id: 'r/1', status: 'running',
-        stages: [{ id: 's_0', status: 'completed' }],
-        artifacts: [{ path: 'out.png', bytes: 12 }],
-        queue_position: 2,
-      }
-    })
-    const tool = runStatus(seen.request)
+  test('a full row projects verbatim (the runId rides the typed lane verbatim)', async () => {
+    const { seen, estate } = mockEstate(() => ({
+      run_id: 'r/1', status: 'running',
+      stages: [{ id: 's_0', status: 'completed' }],
+      artifacts: [{ path: 'out.png', bytes: 12 }],
+      queue_position: 2,
+    }))
+    const tool = runStatus(estate)
     const out = await tool.execute({ runId: 'r/1' }, exec) as Record<string, unknown>
     assert.equal(out.run_id, 'r/1')
     assert.equal(out.status, 'running')
@@ -99,11 +106,16 @@ describe('run_status execute — the run monitor', () => {
     assert.deepEqual(out.artifacts, [{ path: 'out.png', bytes: 12 }])
     assert.equal(out.queue_position, 2)
     assert.equal(out.error, undefined)
+    // THE TYPED LANE (F-1, 2026-11-05): the tool plane speaks the typed
+    // lanes; the URL grammar is the browser face's. The old arm spelled
+    // GET /v1/flows/status/<enc runId> — the lane rides the runId
+    // verbatim, includeLog always false, the tool's own 15s bound.
+    assert.deepEqual(seen[0], { lane: 'runsStatus', args: ['r/1', false, exec.signal, 15_000] })
   })
 
   test('a sparse row falls back honestly (unknown / [] / 0, no error key)', async () => {
-    const { request } = mockRequest(() => ({}))
-    const tool = runStatus(request)
+    const { estate } = mockEstate(() => ({}))
+    const tool = runStatus(estate)
     const out = await tool.execute({ runId: 'r9' }, exec) as Record<string, unknown>
     assert.deepEqual(out, {
       run_id: 'r9', status: 'unknown', stages: [], artifacts: [], queue_position: 0,
@@ -111,8 +123,8 @@ describe('run_status execute — the run monitor', () => {
   })
 
   test('non-array stages/artifacts and a non-number queue fall back', async () => {
-    const { request } = mockRequest(() => ({ run_id: 'r', status: 'queued', stages: 'x', artifacts: null, queue_position: 'soon' }))
-    const tool = runStatus(request)
+    const { estate } = mockEstate(() => ({ run_id: 'r', status: 'queued', stages: 'x', artifacts: null, queue_position: 'soon' }))
+    const tool = runStatus(estate)
     const out = await tool.execute({ runId: 'r' }, exec) as Record<string, unknown>
     assert.deepEqual(out.stages, [])
     assert.deepEqual(out.artifacts, [])
@@ -120,34 +132,34 @@ describe('run_status execute — the run monitor', () => {
   })
 
   test('the rich receipt fields project through the execute result', async () => {
-    const { request } = mockRequest(() => ({
+    const { estate } = mockEstate(() => ({
       run_id: 'r', status: 'completed', export_name: 'voice', export_path: '/voice.qvoice', test: true,
     }))
-    const out = await runStatus(request).execute({ runId: 'r' }, exec) as Record<string, unknown>
+    const out = await runStatus(estate).execute({ runId: 'r' }, exec) as Record<string, unknown>
     assert.equal(out.export_name, 'voice')
     assert.equal(out.export_path, '/voice.qvoice')
     assert.equal(out.test, true)
   })
 
   test('a gateway {error} refuses without a status', async () => {
-    const { request } = mockRequest(() => ({ error: 'queue forgot this run' }))
-    const tool = runStatus(request)
+    const { estate } = mockEstate(() => ({ error: 'queue forgot this run' }))
+    const tool = runStatus(estate)
     const out = await tool.execute({ runId: 'r' }, exec) as Record<string, unknown>
     assert.deepEqual(out, { run_id: 'r', error: 'queue forgot this run' })
   })
 
   test('a remote refusal rides the value as code + message', async () => {
-    const { request } = mockRequest(() => {
+    const { estate } = mockEstate(() => {
       throw new RemoteError('runs/unknown-run', 'no such run', { runId: 'r9' })
     })
-    const tool = runStatus(request)
+    const tool = runStatus(estate)
     const out = await tool.execute({ runId: 'r9' }, exec) as Record<string, unknown>
     assert.deepEqual(out, { run_id: 'r9', error: 'runs/unknown-run: no such run' })
   })
 
   test('a transport failure propagates (never valued)', async () => {
-    const { request } = mockRequest(() => { throw new Error('socket hangup') })
-    const tool = runStatus(request)
+    const { estate } = mockEstate(() => { throw new Error('socket hangup') })
+    const tool = runStatus(estate)
     await assert.rejects(tool.execute({ runId: 'r' }, exec), /socket hangup/)
   })
 })
@@ -160,10 +172,10 @@ describe('run_status execute — THE WAIT PRIMITIVE (efficiency fix 5)', () => {
   }
 
   test('wait_s=0 keeps the single-shot read (no wait keys, one fetch)', async () => {
-    const seen = mockRequest(() => ({ run_id: 'r', status: 'running' }))
-    const tool = runStatus(seen.request)
+    const { seen, estate } = mockEstate(() => ({ run_id: 'r', status: 'running' }))
+    const tool = runStatus(estate)
     const out = await tool.execute({ runId: 'r', wait_s: 0 }, fakeExec(AbortSignal.timeout(2000))) as Record<string, unknown>
-    assert.equal(seen.calls.length, 1)
+    assert.equal(seen.length, 1)
     assert.equal(out.wait_expired, undefined)
     assert.equal(out.waited_s, undefined)
   })
@@ -171,17 +183,17 @@ describe('run_status execute — THE WAIT PRIMITIVE (efficiency fix 5)', () => {
   test('the long-poll absorbs the poll loop: terminal inside budget → ONE call, waited_s receipt', async () => {
     fakeClock()
     let n = 0
-    const seen = mockRequest(() => {
+    const { seen, estate } = mockEstate(() => {
       n += 1
       return n === 1
         ? { run_id: 'r', status: 'running', stages: [] }
         : { run_id: 'r', status: 'completed', stages: [{ id: 's_0', status: 'completed' }], artifacts: [{ path: 'f.mp4' }] }
     })
-    const tool = runStatus(seen.request)
+    const tool = runStatus(estate)
     const p = tool.execute({ runId: 'r', wait_s: 300 }, fakeExec(AbortSignal.timeout(5000)))
     const raced = Promise.race([p, vi.advanceTimersByTimeAsync(5000).then(() => new Promise(() => {}))])
     const out = await raced as Record<string, unknown>
-    assert.equal(seen.calls.length, 2)          // running → (5s sleep) → completed
+    assert.equal(seen.length, 2)          // running → (5s sleep) → completed
     assert.equal(out.status, 'completed')
     assert.equal(out.wait_expired, undefined)
     assert.equal(typeof out.waited_s, 'number')
@@ -189,25 +201,25 @@ describe('run_status execute — THE WAIT PRIMITIVE (efficiency fix 5)', () => {
 
   test('budget expiry on a live run → wait_expired:true + the last row (never fabricated)', async () => {
     fakeClock()
-    const seen = mockRequest(() => ({ run_id: 'r', status: 'running', stages: [] }))
-    const tool = runStatus(seen.request)
+    const { seen, estate } = mockEstate(() => ({ run_id: 'r', status: 'running', stages: [] }))
+    const tool = runStatus(estate)
     const p = tool.execute({ runId: 'r', wait_s: 3 }, fakeExec(AbortSignal.timeout(5000)))
     const out = await Promise.race([p, vi.advanceTimersByTimeAsync(10_000).then(() => new Promise(() => {}))]) as Record<string, unknown>
     assert.equal(out.status, 'running')        // the truth at expiry, not a guess
     assert.equal(out.wait_expired, true)
     assert.equal(out.wait_budget_s, 3)
-    assert.ok(seen.calls.length >= 2)          // fetch → sleep-past-deadline → fetch
+    assert.ok(seen.length >= 2)          // fetch → sleep-past-deadline → fetch
   })
 
   test('a numeric-string wait_s refuses at the gate, named (the arg-coerce valve is deleted, 2026-10-01)', async () => {
-    const seen = mockRequest(() => ({ run_id: 'r', status: 'completed' }))
+    const { seen, estate } = mockEstate(() => ({ run_id: 'r', status: 'completed' }))
     // The valve coerced "300" → 300 AFTER the session log wrote it —
     // executed args the log could not reconstruct. Deleted (the
     // handroll audit's ranked item 1): the gate's own type refusal is
     // the voice now, and the description teaches the spelling
     // beforehand. Execute's Number arm stays as depth for non-tool
     // callers; through the tool, a string never reaches it.
-    const tool = runStatus(seen.request)
+    const tool = runStatus(estate)
     await assert.rejects(
       tool.execute({ runId: 'r', wait_s: '0' } as never, fakeExec(AbortSignal.timeout(2000))),
       (e: unknown) => {
@@ -216,14 +228,14 @@ describe('run_status execute — THE WAIT PRIMITIVE (efficiency fix 5)', () => {
         return true
       },
     )
-    assert.equal(seen.calls.length, 0)
+    assert.equal(seen.length, 0)
   })
 
   test('a cancelled wait rejects through the sleep (no lingering fetch)', async () => {
     fakeClock()
     const ac = new AbortController()
-    const seen = mockRequest(() => ({ run_id: 'r', status: 'running' }))
-    const tool = runStatus(seen.request)
+    const { estate } = mockEstate(() => ({ run_id: 'r', status: 'running' }))
+    const tool = runStatus(estate)
     const p = tool.execute({ runId: 'r', wait_s: 300 }, fakeExec(ac.signal))
     const guard = p.catch((e: unknown) => e)
     vi.advanceTimersByTimeAsync(1000).then(() => ac.abort(new Error('user cancelled')))
@@ -241,33 +253,33 @@ describe('run_status execute — THE WAIT PRIMITIVE (efficiency fix 5)', () => {
 
   test('a bare abort (no reason) falls back to the generic error (the ?? arm)', async () => {
     fakeClock()
-    const seen = mockRequest(() => ({ run_id: 'r', status: 'running' }))
-    const tool = runStatus(seen.request)
+    const { seen, estate } = mockEstate(() => ({ run_id: 'r', status: 'running' }))
+    const tool = runStatus(estate)
     const ac = new AbortController()
     ac.abort()   // reason undefined — the sleep rejects with 'aborted'
     await assert.rejects(
       tool.execute({ runId: 'r', wait_s: 30 }, fakeExec(ac.signal)),
       /aborted/,
     )
-    assert.equal(seen.calls.length, 1)
+    assert.equal(seen.length, 1)
   })
 
   test('a non-conforming signal with undefined reason still rejects loud (the ?? fallback)', async () => {
     fakeClock()
-    const seen = mockRequest(() => ({ run_id: 'r', status: 'running' }))
-    const tool = runStatus(seen.request)
+    const { seen, estate } = mockEstate(() => ({ run_id: 'r', status: 'running' }))
+    const tool = runStatus(estate)
     // aborted on entry with reason undefined (a stub, never a real
     // AbortSignal whose default reason is truthy) — the fallback
     // Error('aborted') is the rejection, never a silent hang
     const stub = { aborted: true, reason: undefined } as never
     await assert.rejects(tool.execute({ runId: 'r', wait_s: 30 }, fakeExec(stub)), /aborted/) // stub signal: intentionally non-conforming (never), the ?? fallback arm
-    assert.equal(seen.calls.length, 1)
+    assert.equal(seen.length, 1)
   })
 
   test('an ALREADY-aborted signal rejects before the first fetch (the sleep pre-check arm)', async () => {
     fakeClock()
-    const seen = mockRequest(() => ({ run_id: 'r', status: 'running' }))
-    const tool = runStatus(seen.request)
+    const { seen, estate } = mockEstate(() => ({ run_id: 'r', status: 'running' }))
+    const tool = runStatus(estate)
     const ac = new AbortController()
     ac.abort(new Error('late arrival'))
     // wait_s>0 forces the loop; the signal is dead on entry — the
@@ -276,16 +288,16 @@ describe('run_status execute — THE WAIT PRIMITIVE (efficiency fix 5)', () => {
       tool.execute({ runId: 'r', wait_s: 30 }, fakeExec(ac.signal)),
       /late arrival/,
     )
-    assert.equal(seen.calls.length, 1)   // the one pre-sleep fetch only
+    assert.equal(seen.length, 1)   // the one pre-sleep fetch only
   })
 
   test('a live-plan row projects verbatim (planned_stages/card/run_age_s true paths)', async () => {
-    const seen = mockRequest(() => ({
+    const { estate } = mockEstate(() => ({
       run_id: 'r', status: 'running',
       planned_stages: [{ id: 'h3-film', engine: 'comfyui' }],
       card: 'h3-timeline', run_age_s: 42,
     }))
-    const tool = runStatus(seen.request)
+    const tool = runStatus(estate)
     const out = await tool.execute({ runId: 'r' }, fakeExec(AbortSignal.timeout(2000))) as Record<string, unknown>
     assert.deepEqual(out.planned_stages, [{ id: 'h3-film', engine: 'comfyui' }])
     assert.equal(out.card, 'h3-timeline')
@@ -295,14 +307,14 @@ describe('run_status execute — THE WAIT PRIMITIVE (efficiency fix 5)', () => {
 
 describe('run_status render — the human line', () => {
   test('errors name the run, status and refusal', () => {
-    const tool = runStatus((async () => ({})) as EstateRequest)
+    const tool = runStatus(stubEstate())
     const text = (v: unknown) => (tool.output.render({} as never, v as never) as Array<{ text?: string }>)[0].text ?? ''
     assert.equal(text({ run_id: 'r', status: 'error', error: 'boom' }), 'run r error — boom')
     assert.equal(text({ error: 'boom' }), 'run ? ? — boom')
   })
 
   test('progress counts completions past null rows; queue suffix only past 0', () => {
-    const tool = runStatus((async () => ({})) as EstateRequest)
+    const tool = runStatus(stubEstate())
     const text = (v: unknown) => (tool.output.render({} as never, v as never) as Array<{ text?: string }>)[0].text ?? ''
     assert.equal(
       text({ run_id: 'r1', status: 'running', stages: [null, { status: 'running' }, { status: 'completed' }], artifacts: [{}, {}], queue_position: 5 }),
@@ -318,7 +330,7 @@ describe('run_status render — the human line', () => {
     // (the escalation writes the health channel since 2026-10-12).
     // The view-side read answers no-information: the count says
     // not-done and the agent keeps its answer.
-    const tool = runStatus((async () => ({})) as EstateRequest)
+    const tool = runStatus(stubEstate())
     const text = (v: unknown) => (tool.output.render({} as never, v as never) as Array<{ text?: string }>)[0].text ?? ''
     assert.equal(
       text({ run_id: 'r1', status: 'running', stages: [{ status: 'completed' }, { status: 'unreachable' }, { status: 'weird' }], artifacts: [] }),
@@ -327,7 +339,7 @@ describe('run_status render — the human line', () => {
   })
 
   test('a live row with no stage rows renders its registered plan + age (Fix 2)', () => {
-    const tool = runStatus((async () => ({})) as EstateRequest)
+    const tool = runStatus(stubEstate())
     const text = (v: unknown) => (tool.output.render({} as never, v as never) as Array<{ text?: string }>)[0].text ?? ''
     assert.equal(
       text({ run_id: 'r1', status: 'running', stages: [], planned_stages: [{ id: 'h3-film', engine: 'comfyui' }], card: 'h3-timeline', run_age_s: 754 }),
@@ -346,7 +358,7 @@ describe('run_status render — the human line', () => {
   })
 
   test('THE CHANNEL DOOR (commission 020): a terminal row voices its declared output channels', () => {
-    const tool = runStatus((async () => ({})) as EstateRequest)
+    const tool = runStatus(stubEstate())
     const text = (v: unknown) => (tool.output.render({} as never, v as never) as Array<{ text?: string }>)[0].text ?? ''
     // the design lane's two channels, rendered — the maker can
     // enumerate what a run publishes from the status line alone
@@ -362,7 +374,7 @@ describe('run_status render — the human line', () => {
   })
 
   test('the wait receipts render: expiry asks for another wait, waited_s proves absorption (Fix 5)', () => {
-    const tool = runStatus((async () => ({})) as EstateRequest)
+    const tool = runStatus(stubEstate())
     const text = (v: unknown) => (tool.output.render({} as never, v as never) as Array<{ text?: string }>)[0].text ?? ''
     assert.equal(
       text({ run_id: 'r', status: 'running', stages: [], wait_expired: true, wait_budget_s: 300 }),
@@ -378,7 +390,7 @@ describe('run_status render — the human line', () => {
   })
 
   test('THE CANONICAL RECEIPT PATH (023 self-critique #3): route-relative gains its out root, absolute + repo-relative pass', () => {
-    const tool = runStatus((async () => ({})) as EstateRequest)
+    const tool = runStatus(stubEstate())
     const text = (v: unknown) => (tool.output.render({} as never, v as never) as Array<{ text?: string }>)[0].text ?? ''
     assert.equal(
       text({ run_id: 'run-abc', status: 'completed', stages: [{ id: 't', status: 'completed' }], artifacts: ['run-abc/tts/f.flac'] }),
@@ -395,7 +407,7 @@ describe('run_status render — the human line', () => {
   })
 
   test('THE EXPORT-NAME VOICE (023 self-critique #4/#6): the design receipt names the mint, never the silent hole', () => {
-    const tool = runStatus((async () => ({})) as EstateRequest)
+    const tool = runStatus(stubEstate())
     const text = (v: unknown) => (tool.output.render({} as never, v as never) as Array<{ text?: string }>)[0].text ?? ''
     const out = text({ run_id: 'run-abc', status: 'completed', stages: [{ id: 't', status: 'completed' }], artifacts: ['/repo/output/run-abc/tts/f.flac'], export_name: 'night-keeper' })
     assert.ok(out.includes("export: 'night-keeper'"), 'the mint is named')
@@ -404,7 +416,7 @@ describe('run_status render — the human line', () => {
   })
 
   test('THE EXPORT-PATH VOICE (roadmap OWED 2026-09-24 — the FULL PATH): the engine-reported mint file prints verbatim', () => {
-    const tool = runStatus((async () => ({})) as EstateRequest)
+    const tool = runStatus(stubEstate())
     const text = (v: unknown) => (tool.output.render({} as never, v as never) as Array<{ text?: string }>)[0].text ?? ''
     const mint = '/mnt/data/models/audio/voices/night-keeper_17.qvoice'
     const out = text({ run_id: 'run-abc', status: 'completed', stages: [{ id: 't', status: 'completed' }], artifacts: [], export_name: 'night-keeper', export_path: mint })
@@ -414,7 +426,7 @@ describe('run_status render — the human line', () => {
   })
 
   test('THE LOUDNESS CHIP (roadmap OWED 2026-09-26 — transcript-0034 #2): the meter reading rides the terminal line, no sidecar read needed', () => {
-    const tool = runStatus((async () => ({})) as EstateRequest)
+    const tool = runStatus(stubEstate())
     const text = (v: unknown) => (tool.output.render({} as never, v as never) as Array<{ text?: string }>)[0].text ?? ''
     const out = text({
       run_id: 'run-425', status: 'completed', stages: [{ id: 'h3-film', status: 'completed' }], artifacts: [],
@@ -430,7 +442,7 @@ describe('run_status render — the human line', () => {
   })
 
   test('THE FRESHNESS VOICE (the loudness sibling): the voice-mint receipt names the winner and stamps reuse loud', () => {
-    const tool = runStatus((async () => ({})) as EstateRequest)
+    const tool = runStatus(stubEstate())
     const text = (v: unknown) => (tool.output.render({} as never, v as never) as Array<{ text?: string }>)[0].text ?? ''
     const stale = text({
       run_id: 'run-e', status: 'completed', stages: [{ id: 'tts', status: 'completed' }], artifacts: [],
@@ -447,7 +459,7 @@ describe('run_status render — the human line', () => {
   })
 
   test('THE VARIANT VOICE (commission 033 self-critique #5): the lane rides the first line — design reads apart from performing at a glance', () => {
-    const tool = runStatus((async () => ({})) as EstateRequest)
+    const tool = runStatus(stubEstate())
     const text = (v: unknown) => (tool.output.render({} as never, v as never) as Array<{ text?: string }>)[0].text ?? ''
     // the 033 ledger named BOTH runs qwen3-tts-voicedesign; the lane
     // is what tells them apart — it voices on live rows too (known
@@ -471,7 +483,7 @@ describe('run_status render — the human line', () => {
   })
 
   test('THE LEGACY-DOUBLE COLLAPSE (024 self-critique #2): rows served pre-fix spell <run>/<run>/… — the receipt collapses the stencil', () => {
-    const tool = runStatus((async () => ({})) as EstateRequest)
+    const tool = runStatus(stubEstate())
     const text = (v: unknown) => (tool.output.render({} as never, v as never) as Array<{ text?: string }>)[0].text ?? ''
     assert.equal(
       text({ run_id: 'run-abc', status: 'completed', stages: [{ id: 't', status: 'completed' }], artifacts: ['run-abc/run-abc/tts/f.flac'] }),
@@ -482,7 +494,7 @@ describe('run_status render — the human line', () => {
 
 describe('run_status render — the live-age law (§36.6 progress-UX)', () => {
   const text = (v: unknown): string => {
-    const tool = runStatus((async () => ({})) as EstateRequest)
+    const tool = runStatus(stubEstate())
     return (tool.output.render({} as never, v as never) as Array<{ text?: string }>)[0]!.text ?? ''
   }
   test('a STAGED live row renders its age (the long-render liveness signal)', () => {

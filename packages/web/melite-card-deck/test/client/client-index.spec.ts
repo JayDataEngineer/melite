@@ -1,10 +1,18 @@
 /**
  * The deck client entry — the ComfyUI Manager tab registration: apply
- * claims the single-mount slot (a duplicated injection is a no-op),
- * releases the claim on fiber unload, and registers the assets tab;
- * a registration throw is logged, never thrown (the shell law).
+ * registers the assets tab behind fiber effects; a genuine double
+ * apply collides at the shared tab registry and the per-site catch
+ * logs it while the first registration keeps its seat (the
+ * DOUBLE-APPLY LAW, nativity audit 2026-11-05 D3 — no module-global
+ * claim guard); a registration throw is logged, never thrown (the
+ * shell law).
  */
 import { afterEach, describe, expect, it, vi } from 'vitest'
+
+/** The sidebar tab registry's seat store — shared across the fake
+ *  contexts of a double-apply arm, the way the real client registry is
+ *  shared across plugin constructions. */
+interface DeckRegistry { ids: Set<string>; tabs: unknown[] }
 
 interface FakeCtx {
   effect(fn: () => unknown, name?: string): unknown
@@ -16,10 +24,10 @@ interface FakeCtx {
   }
 }
 
-function fakeCtx(): { ctx: FakeCtx; effects: Array<() => unknown>; disposers: unknown[]; tabs: unknown[] } {
-  const effects: Array<() => unknown> = []
-  const disposers: unknown[] = []
-  const tabs: unknown[] = []
+function fakeCtx(registry: DeckRegistry = { ids: new Set(), tabs: [] }): {
+  ctx: FakeCtx
+  registry: DeckRegistry
+} {
   const ctx: FakeCtx = {
     remote: {
       // The seated manage lane (never called by these tests — the
@@ -27,13 +35,18 @@ function fakeCtx(): { ctx: FakeCtx; effects: Array<() => unknown>; disposers: un
       manage: { act: (): Promise<never> => new Promise(() => {}) },
     },
     effect(fn) {
-      effects.push(fn)
-      disposers.push(fn())
+      // cordis effect() runs the contribution immediately.
+      fn()
       return () => {}
     },
     sidebarRightTabs: {
       register(def) {
-        tabs.push(def)
+        // ui-sidebar-right's own law: register() throws on a duplicate
+        // id (the guide entry comment in assets-tab.tsx names it).
+        const id = (def as { id: string }).id
+        if (registry.ids.has(id)) throw new Error(`slot "${String(id)}" has been registered`)
+        registry.ids.add(id)
+        registry.tabs.push(def)
         return () => {}
       },
     },
@@ -46,7 +59,7 @@ function fakeCtx(): { ctx: FakeCtx; effects: Array<() => unknown>; disposers: un
       },
     },
   }
-  return { ctx, effects, disposers, tabs }
+  return { ctx, registry }
 }
 
 afterEach(() => {
@@ -66,29 +79,32 @@ describe('the deck client entry', () => {
     expect(mod.inject).toContain('remote.manage')
   })
 
-  it('apply registers the comfy-manager tab type and releases the claim on unload', async () => {
+  it('apply registers the comfy-manager tab type', async () => {
     const mod = await loadEntry()
-    const { ctx, disposers, tabs } = fakeCtx()
+    const { ctx, registry } = fakeCtx()
     mod.apply(ctx as never)
-    expect(tabs).toHaveLength(1)
-    expect((tabs[0] as { id: string }).id).toBe('melite-card-deck:comfy')
-    // the claim effect's disposer is the release — running it frees
-    // the slot so a rebuilt bundle can claim again.
-    expect(disposers.length).toBeGreaterThan(0)
-    ;(disposers[0] as () => void)()
-    const guard = await import('../../src/client/apply-guard.ts')
-    expect(guard.claimDeckApply()).toBe(true)
+    expect(registry.tabs).toHaveLength(1)
+    expect((registry.tabs[0] as { id: string }).id).toBe('melite-card-deck:comfy')
   })
 
-  it('a duplicated application is a no-op (the apply guard)', async () => {
+  it('a double-apply conflict logs per site (the first registration keeps the seat)', async () => {
     const mod = await loadEntry()
-    vi.spyOn(console, 'warn').mockImplementation(() => {})
-    const first = fakeCtx()
-    const second = fakeCtx()
-    mod.apply(first.ctx as never)
-    mod.apply(second.ctx as never)
-    expect(first.tabs).toHaveLength(1)
-    expect(second.tabs).toHaveLength(0)
+    const err = vi.spyOn(console, 'error').mockImplementation(() => {})
+    // ONE shared registry — the real client's tab registry survives
+    // across plugin constructions, so the second application's
+    // register() collides on the same seat id.
+    const shared: DeckRegistry = { ids: new Set(), tabs: [] }
+    const first = fakeCtx(shared)
+    const second = fakeCtx(shared)
+    expect(() => mod.apply(first.ctx as never)).not.toThrow()
+    expect(() => mod.apply(second.ctx as never)).not.toThrow()
+    // The first application's seat stands; the second's collision was
+    // logged per site, never thrown (the shell law).
+    expect(shared.tabs).toHaveLength(1)
+    expect(err).toHaveBeenCalledOnce()
+    const voice = err.mock.calls.map((args) => args.join(' ')).join(' ')
+    expect(voice).toContain('[melite-card-deck] assets tab registration failed')
+    err.mockRestore()
   })
 
   it('a failing tab registration is logged, never thrown (the shell law)', async () => {

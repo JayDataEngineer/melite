@@ -13,7 +13,9 @@ import { useTimelineGeometry } from "./timeline-geometry.ts";
 import { useTimelineMouseHandlers } from "./timeline-mouse.ts";
 import { useTimelineBackground } from "./timeline-render-background.ts";
 import { useTimelineForeground } from "./timeline-render-foreground.ts";
-import { SCROLLBAR_TOTAL_HEIGHT, TimelineEditingOverlay, TimelineScrollbar } from "./timeline-overlays.tsx";
+import { SCROLLBAR_TOTAL_HEIGHT, TimelineEditingOverlay } from "./timeline-overlays.tsx";
+// melite chrome (re-homed 2026-11-05, F2 — the vendored bar composes it):
+import { TimelineScrollbar } from "../TimelineScrollbar.tsx";
 
 export { calculateTimelineCoordinates, DEFAULT_KEYFRAME_COLOR, getIntervalSegments,
  getZoomEnvelopeEndFrame, OUT_OF_RANGE_CONSTRAINT_COLOR, OUT_OF_RANGE_CONSTRAINT_OPACITY,
@@ -33,9 +35,9 @@ export { useTimelineBackground };
 export type { TimelineBackgroundArgs } from "./timeline-render-background.ts";
 export { useTimelineForeground };
 export type { TimelineForegroundArgs } from "./timeline-render-foreground.ts";
-export { SCROLLBAR_TOTAL_HEIGHT, TimelineEditingOverlay, TimelineScrollbar };
+export { SCROLLBAR_TOTAL_HEIGHT, TimelineEditingOverlay };
 export { SCROLLBAR_HEIGHT } from "./timeline-overlays.tsx";
-export type { TimelineEditingOverlayProps, TimelineScrollbarProps } from "./timeline-overlays.tsx";
+export type { TimelineEditingOverlayProps } from "./timeline-overlays.tsx";
 
 interface TimelineProps {
  timelineState: TimelineMessage | null;

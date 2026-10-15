@@ -108,29 +108,34 @@ describe("store seam", () => {
 });
 
 describe("timeline seam", () => {
-  it("re-exports the bar, the viser timeline, and the palette", async () => {
+  it("re-exports the bar, the viser timeline, the re-homed melite modules, and the palette", async () => {
     const timeline = await import("../src/timeline/index.ts");
     const { MotionTimelineBar: directBar } = await import("../src/timeline/MotionTimelineBar.tsx");
     const { Timeline: directTimeline } = await import("../src/timeline/viser-timeline/Timeline.tsx");
-    const motionState = await import("../src/timeline/viser-timeline/motionTimelineState.ts");
+    // F2 (2026-11-05): the state builder + the scrollbar chrome are
+    // melite-authored — they live beside the vendored dir, not inside it.
+    const motionState = await import("../src/timeline/motionTimelineState.ts");
+    const scrollbar = await import("../src/timeline/TimelineScrollbar.tsx");
     const { PROMPT_COLORS: directColors } = await import("../src/timeline/viser-timeline/styles.ts");
     assert.equal(timeline.MotionTimelineBar, directBar);
     assert.ok(timeline.MotionTimelineBar);
     assert.equal(timeline.Timeline, directTimeline);
     assert.equal(timeline.buildMotionTimelineState, motionState.buildMotionTimelineState);
+    assert.equal(timeline.makeTimelineId, motionState.makeTimelineId);
     assert.equal(timeline.MOTION_TIMELINE_TRACKS, motionState.MOTION_TIMELINE_TRACKS);
+    assert.equal(timeline.TimelineScrollbar, scrollbar.TimelineScrollbar);
     assert.equal(timeline.PROMPT_COLORS, directColors);
   });
 });
 
 describe("viser seam", () => {
-  it("re-exports the component, state builders, and palette", async () => {
+  it("re-exports the component and the vendored types — and NO melite-authored module (F2)", async () => {
     const viser = await import("../src/timeline/viser-timeline/index.ts");
     const { Timeline: directTimeline } = await import("../src/timeline/viser-timeline/Timeline.tsx");
-    const motionState = await import("../src/timeline/viser-timeline/motionTimelineState.ts");
     assert.equal(viser.Timeline, directTimeline);
-    assert.equal(viser.buildMotionTimelineState, motionState.buildMotionTimelineState);
-    assert.equal(viser.makeTimelineId, motionState.makeTimelineId);
-    assert.equal(viser.MOTION_TIMELINE_TRACKS, motionState.MOTION_TIMELINE_TRACKS);
+    // the re-home: the barrel carries upstream exports only
+    assert.equal("buildMotionTimelineState" in viser, false);
+    assert.equal("makeTimelineId" in viser, false);
+    assert.equal("MOTION_TIMELINE_TRACKS" in viser, false);
   });
 });

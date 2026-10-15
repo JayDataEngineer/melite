@@ -16,10 +16,6 @@
       "types": "./lib/playback/index.d.ts",
       "default": "./lib/playback/index.js"
     },
-    "./client": {
-      "types": "./lib/client/index.d.ts",
-      "default": "./lib/client.js"
-    },
     "./package.json": "./package.json"
   },
   "dependencies": {
@@ -51,15 +47,7 @@
   "melite": {
     "publish": {
       "subpathOnly": true,
-      "reason": "cordis plugin loaded by the host runtime, not imported by root"
-    }
-  },
-  "dsh": {
-    "client": {
-      "platform": "web",
-      "external": [
-        "@melite/card-base/client"
-      ]
+      "reason": "UI library imported through its ui/* subpaths and inlined by consumer client bundles — no plugin, no loader face (F1 demotion, nativity audit 2026-11-05)"
     }
   },
   "license": "SSPL-1.0"

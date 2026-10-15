@@ -1,4 +1,4 @@
-// Barrel for the vendored viser timeline + the motion-card state builder.
+// Barrel for the vendored viser timeline.
 //
 // PROVENANCE (the viser-timeline dir, one home for the fact): these
 // files are vendored from NVIDIA's viser repo (the timeline demo's
@@ -8,7 +8,10 @@
 // carries the motion-card state bridge; constants ride constants.ts /
 // TimelineConstants.ts as upstream split them; draw/interaction files
 // keep upstream's structure so later upstream pulls diff clean.
+// (2026-11-05, F2: the melite-authored modules that used to sit inside
+// this dir — the motion-card state builder and the scrollbar + zoom
+// chrome — re-homed to `../` so this subtree carries upstream files
+// only; they ride the kit barrel beside this one.)
 export { Timeline } from "./Timeline.tsx";
-export { buildMotionTimelineState, makeTimelineId, MOTION_TIMELINE_TRACKS } from "./motionTimelineState.ts";
 export type { TimelineMessage, TimelineInterval } from "./messages.ts";
 export type { TimelineTrack, TimelineKeyframe, TimelinePrompt } from "./types.ts";

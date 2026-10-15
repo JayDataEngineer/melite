@@ -105,38 +105,87 @@ export function listRowMediaUrl(row) {
     }
     return null;
 }
-// ── the family currency (the {model:} door's model ids) ───────────
-/** The catalog's cards section (GET /v1/model-catalog — the
- *  discovery door, same-origin, bearer-free from the page): card id
- *  → its boarded families, first = the DEFAULT family (form-spec's
- *  card-id alias law: boarded[0]). The runs door resolves
- *  NEITHER card ids nor aliases — callers hand the start verb the
- *  family from HERE. Cached per session (the catalog is static per
- *  boot; one door round trip, every consumer shares it). */
-export async function fetchCardFamilies(signal) {
-    if (cardFamiliesCache !== null)
-        return cardFamiliesCache;
-    const res = await fetch('/v1/model-catalog', { ...(signal === undefined ? {} : { signal }) });
-    const body = await res.json().catch(() => null);
-    const cards = typeof body === 'object' && body !== null
-        ? body['cards'] : undefined;
-    const out = {};
-    if (typeof cards === 'object' && cards !== null) {
-        for (const [id, row] of Object.entries(cards)) {
-            if (typeof row !== 'object' || row === null)
-                continue;
-            const fams = row['families'];
-            out[id] = Array.isArray(fams) ? fams.filter((x) => typeof x === 'string') : [id];
-        }
-    }
-    cardFamiliesCache = out;
-    return out;
+// ── the catalog door (the ONE /v1/model-catalog reader + cache) ───
+/** The wire dial (audit X-E1, the card-base wire's law): every fetch
+ *  rides a socket with a bound — a caller signal ANDed with the dial,
+ *  never a bare socket. Reads are small same-origin JSON. */
+const READ_DIAL_MS = 20_000;
+/** The caller's signal ANDed with the dial — either side lifting the
+ *  fetch aborts it (the provisioning seam's own shape). */
+function dialed(signal, dialMs) {
+    const dial = AbortSignal.timeout(dialMs);
+    return signal === undefined ? dial : AbortSignal.any([signal, dial]);
 }
-let cardFamiliesCache = null;
-/** Drop the family cache (tests isolate; a long-lived surface could
+/** Read the same-origin /v1/model-catalog door. Non-200 → named throw
+ *  (the door's own error text when present); a 200 whose body does
+ *  not parse to an object is a served-plane misconfiguration and
+ *  refuses loud too (never a silent empty table). */
+async function catalogGet(signal) {
+    const res = await fetch('/v1/model-catalog', { signal: dialed(signal, READ_DIAL_MS) });
+    const body = await res.json().catch(() => null);
+    if (!res.ok) {
+        const err = typeof body === 'object' && body !== null ? Reflect.get(body, 'error') : undefined;
+        throw new Error(typeof err === 'string' ? err : '/v1/model-catalog: HTTP ' + String(res.status));
+    }
+    if (typeof body !== 'object' || body === null)
+        throw new Error('/v1/model-catalog: unreadable body');
+    return body;
+}
+let cardCatalogRowsCache = null;
+let cardCatalogRowsInflight = null;
+/** The catalog's cards section, read ONCE per session (the ONE door +
+ *  cache law, nativity audit 2026-11-05 D6 — card-base's
+ *  fetchCardCatalog projection rides THIS reader; there is no second
+ *  GET of the door anywhere). Each row is the served JSON verbatim;
+ *  projections narrow their own fields. Cached per session (the
+ *  catalog is static per boot; one door round trip, every consumer
+ *  shares it; concurrent cold starts share the one in-flight read).
+ * @param signal - caller cancellation, ANDed with the read dial.
+ * @returns the cards section: card id → its served row. */
+export async function fetchCardCatalogRows(signal) {
+    if (cardCatalogRowsCache !== null)
+        return cardCatalogRowsCache;
+    cardCatalogRowsInflight ??= (async () => {
+        const body = await catalogGet(signal);
+        const raw = body['cards'];
+        const out = {};
+        if (typeof raw === 'object' && raw !== null) {
+            for (const [id, row] of Object.entries(raw)) {
+                if (typeof row !== 'object' || row === null)
+                    continue;
+                out[id] = row;
+            }
+        }
+        return out;
+    })();
+    try {
+        cardCatalogRowsCache = await cardCatalogRowsInflight;
+        return cardCatalogRowsCache;
+    }
+    finally {
+        cardCatalogRowsInflight = null;
+    }
+}
+/** Drop the catalog cache (tests isolate; a long-lived surface could
  *  refresh after a models re-scan). */
 export function resetCardFamiliesCache() {
-    cardFamiliesCache = null;
+    cardCatalogRowsCache = null;
+    cardCatalogRowsInflight = null;
+}
+/** The family currency (the {model:} door's model ids — the cards
+ *  section's projection): card id → its boarded families, first = the
+ *  DEFAULT family (form-spec's card-id alias law: boarded[0]). The
+ *  runs door resolves NEITHER card ids nor aliases — callers hand the
+ *  start verb the family from HERE. Rides the one reader + cache
+ *  above. */
+export async function fetchCardFamilies(signal) {
+    const rows = await fetchCardCatalogRows(signal);
+    const out = {};
+    for (const [id, row] of Object.entries(rows)) {
+        const fams = row['families'];
+        out[id] = Array.isArray(fams) ? fams.filter((x) => typeof x === 'string') : [id];
+    }
+    return out;
 }
 /** Resolve a card's DEFAULT family (boarded[0]); the card id itself
  *  when the catalog names none (mask-studio-style self-services). */

@@ -22,8 +22,11 @@
 // The transport laws (owned by the seam files below):
 //   - endpoint: COMFYUI_URL env (non-empty wins, trailing slashes
 //     stripped) > the endpoint config (COMFYUI_ENDPOINT_CONFIG env
-//     path, else the plugin's data/comfyui_endpoint.json; the
-//     INFERENCE_TEST_SANDBOX gate with no env path resolves to {}).
+//     path, else the repo's untracked state home
+//     <repoRoot>/data/comfyui_endpoint.json — the F1 overlay, the
+//     write target — else the shipped package seed
+//     data/comfyui_endpoint.json; the INFERENCE_TEST_SANDBOX gate
+//     with no env path resolves to {}).
 //     Absent url = the LOUD ComfyError. NO default, NO hardcoded
 //     host/port (QUEUE LANE LAW). [comfyui-config.ts]
 //   - POST /prompt {prompt, prompt_id, client_id}; non-200 refuses
@@ -86,6 +89,7 @@ export type { ActivePrompt, EngineJson } from "./comfyui-types.ts";
 export {
   NO_ENDPOINT_MESSAGE,
   endpointConfigPath,
+  endpointSeedPath,
   loadEndpointConfig,
   packageRoot,
   packageRootFrom,

@@ -314,7 +314,16 @@ export const COVERAGE_BASELINE: Record<string, {
   '**/packages/harness/melite-tools/src/discovery.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/harness/melite-tools/src/doors.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/harness/melite-tools/src/enhance-agent.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
-  '**/packages/harness/melite-tools/src/estate.ts': { statements: 98.95, branches: 98.28, functions: 100, lines: 98.73 },
+  // F-1 (2026-11-05): the typed-lane rewrite re-measured this row.
+  // The three dead statements are the doors-law's own: the two
+  // closed-union `never` throws (the router regex and BenchVerb admit
+  // six arms only) and withEstateBound's non-TimeoutReason reject —
+  // the bound's upstream is `undefined` BY DESIGN (doors.spec pins
+  // the rolled-back fused form), so that reason is unreachable. The
+  // removal clause carries the drop: the rewrite deleted lines from
+  // this same file (git diff --numstat HEAD). Receipt:
+  // dev_docs/audits/contracts/cures-2026-11-05-harness-seam.md.
+  '**/packages/harness/melite-tools/src/estate.ts': { statements: 98.84, branches: 98.2, functions: 100, lines: 98.66 },
   '**/packages/harness/melite-tools/src/faceStamp.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/harness/melite-tools/src/index.ts': { statements: 89.15, branches: 100, functions: 94.44, lines: 91.78 },
   '**/packages/harness/melite-tools/src/json-clean.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
@@ -426,9 +435,21 @@ export const COVERAGE_BASELINE: Record<string, {
   '**/packages/motion/motion/src/ui/studio/MotionTimelineSection.tsx': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/motion/motion/src/ui/studio/kit.tsx': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/motion/motion/src/ui/studio/motionParams.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
+  // 2026-11-05 merge: the ratchet's new row-census arm fired on
+  // three files the 2026-11-05 lanes added but never measured —
+  // measured here scoped (json-summary, motion suite alone; the
+  // pool-merge break documented above stands). useMotionDoc is F7's
+  // projection spine: sub-100 arms are the boundary seats the studio
+  // suite does not drive (abort/undo corners) — owed with the slice-3
+  // UI work, not exempt.
+  '**/packages/motion/motion/src/ui/studio/useMotionDoc.ts': { statements: 93.87, branches: 83.33, functions: 100, lines: 92.85 },
   '**/packages/motion/motion/src/ui/studio/useMotionMedia.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/motion/motion/src/ui/studio/useMotionStage.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/motion/motion/src/ui/studio/useMotionUndoStack.ts': { statements: 98.71, branches: 96.87, functions: 100.00, lines: 100.00 },
+  // 2026-11-05 (harness-seam cure session): the ratchet's row-census
+  // arm caught this gated file carrying NO row (another lane's new
+  // file). Row pinned at its measured face (21 files, 263 tests).
+  '**/packages/motion/motion/src/ui/studio/motionDoc.ts': { statements: 100, branches: 94.31, functions: 100, lines: 100 },
   '**/packages/motion/motion/src/ui/studio/usePoseEditing.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/motion/motion/src/ui/studio/useTimelineAuthoring.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/motion/motion/src/ui/studio/useTimelineEnvelope.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
@@ -491,7 +512,6 @@ export const COVERAGE_BASELINE: Record<string, {
   '**/packages/web-kit/catalog/src/tagMap.ts': { statements: 98.74, branches: 98.76, functions: 96.96, lines: 98.46 },
   '**/packages/web-kit/catalog/src/waveform-peaks.ts': { statements: 98.79, branches: 100.00, functions: 87.50, lines: 98.46 },
   '**/packages/web-kit/contracts/src/FlowTypes.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
-  '**/packages/web-kit/contracts/src/applyGuard.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/web-kit/contracts/src/benchResult.ts': { statements: 97.05, branches: 96.7, functions: 100, lines: 96.96 },
   '**/packages/web-kit/contracts/src/benchSnapshot.ts': { statements: 98.73, branches: 98.61, functions: 100, lines: 100 },
   '**/packages/web-kit/contracts/src/benchStage.ts': { statements: 94.31, branches: 88.09, functions: 92.3, lines: 94.66 },
@@ -551,7 +571,6 @@ export const COVERAGE_BASELINE: Record<string, {
   '**/packages/web-kit/formats/src/somaSkin.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/web-kit/formats/src/textToPose.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/web-kit/formats/src/uploadToEstate.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
-  '**/packages/web-kit/timeline/src/client/index.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/web-kit/timeline/src/playback/index.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/web-kit/timeline/src/playback/useAudioPlayback.ts': { statements: 0, branches: 0, functions: 0, lines: 0 },
   '**/packages/web-kit/timeline/src/store/createStore.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
@@ -571,9 +590,17 @@ export const COVERAGE_BASELINE: Record<string, {
   '**/packages/web-kit/timeline/src/timeline/MotionTimelineBar.tsx': { statements: 100, branches: 94.11, functions: 100, lines: 100 },
   '**/packages/web-kit/timeline/src/timeline/MotionTimelineBarChrome.tsx': { statements: 45.16, branches: 47.36, functions: 57.14, lines: 50 },
   '**/packages/web-kit/timeline/src/timeline/MotionTimelineBarDrag.ts': { statements: 72.41, branches: 57.14, functions: 66.66, lines: 76.66 },
+  '**/packages/web-kit/timeline/src/timeline/motionTimelineState.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/web-kit/timeline/src/timeline/MotionTimelineBarLanes.tsx': { statements: 46.42, branches: 35.76, functions: 47.5, lines: 50.53 },
   '**/packages/web-kit/timeline/src/timeline/MotionTimelineBarLayout.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/web-kit/timeline/src/timeline/MotionTimelineBarScale.ts': { statements: 74.69, branches: 50.98, functions: 92.3, lines: 78.08 },
+  // 2026-11-05 merge: the F1 viser zoom re-home created this file;
+  // measured 0 across its own package's suite — the re-home moved
+  // the zoom cluster to exported API surface with NO direct test
+  // (vendored-provenance judges the copy's origin, not its
+  // behavior). The 0-row is the honest debt: a behavior wall for
+  // the scrollbar (drag/zoom math) is OWED (roadmap row).
+  '**/packages/web-kit/timeline/src/timeline/TimelineScrollbar.tsx': { statements: 0, branches: 0, functions: 0, lines: 0 },
   '**/packages/web-kit/timeline/src/timeline/TimelineScrubBar.tsx': { statements: 93.93, branches: 94.11, functions: 100, lines: 100 },
   '**/packages/web-kit/timeline/src/timeline/icons.tsx': { statements: 57.14, branches: 100, functions: 57.14, lines: 57.14 },
   '**/packages/web-kit/timeline/src/timeline/index.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
@@ -584,7 +611,6 @@ export const COVERAGE_BASELINE: Record<string, {
   '**/packages/web-kit/timeline/src/timeline/viser-timeline/index.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/web-kit/timeline/src/timeline/viser-timeline/interactions.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/web-kit/timeline/src/timeline/viser-timeline/messages.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
-  '**/packages/web-kit/timeline/src/timeline/viser-timeline/motionTimelineState.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/web-kit/timeline/src/timeline/viser-timeline/styles.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/web-kit/timeline/src/timeline/viser-timeline/timeline-auto-pan.ts': { statements: 0.95, branches: 0, functions: 0, lines: 1 },
   '**/packages/web-kit/timeline/src/timeline/viser-timeline/timeline-geometry.ts': { statements: 0, branches: 0, functions: 0, lines: 0 },
@@ -636,7 +662,6 @@ export const COVERAGE_BASELINE: Record<string, {
   '**/packages/web/card-base/src/write-through.ts': { statements: 100, branches: 90, functions: 100, lines: 100 },
   '**/packages/web/card-base/src/wire.ts': { statements: 97.26, branches: 97.84, functions: 100, lines: 100 },
   '**/packages/web/card-base/src/wirePicker.tsx': { statements: 100, branches: 100, functions: 100, lines: 100 },
-  '**/packages/web/infer-gallery/src/client/apply-guard.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/web/infer-gallery/src/client/artifact-address.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/web/infer-gallery/src/client/artifact-ops.ts': { statements: 100, branches: 92.59, functions: 100, lines: 100 },
   '**/packages/web/infer-gallery/src/client/bench-load.ts': { statements: 100.00, branches: 96.87, functions: 100.00, lines: 100.00 },
@@ -650,7 +675,6 @@ export const COVERAGE_BASELINE: Record<string, {
   '**/packages/web/infer-gallery/src/client/useFeed.ts': { statements: 97.72, branches: 87.50, functions: 100.00, lines: 100.00 },
   '**/packages/web/infer-gallery/src/client/waitState.ts': { statements: 100.00, branches: 96.77, functions: 100.00, lines: 100.00 },
   '**/packages/web/infer-gallery/src/drilldown.tsx': { statements: 100, branches: 100, functions: 100, lines: 100 },
-  '**/packages/web/melite-card-deck/src/client/apply-guard.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/web/melite-card-deck/src/client/index.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/web/melite-card-deck/src/client/lora-section.tsx': { statements: 92.3, branches: 88.05, functions: 90.62, lines: 95.06 },
   '**/packages/web/melite-card-deck/src/index.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },

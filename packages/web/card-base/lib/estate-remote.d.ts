@@ -155,4 +155,19 @@ export declare function isCasConflict(error: unknown): boolean;
 /** Refusal discrimination for policy code (the CAS rebase, the
  * gone-verdict, the poll's file-era arms). */
 export declare function isEstateRefusal(error: unknown): error is EstateRefusedError;
+/** The registry's duplicate-service verdict stem — the stable part of
+ *  the ONLY face cordis gives a second provide(): a bare Error (no
+ *  .code) whose message is `service "<name>" has been registered at
+ *  <fiber>` (vendor/cordis/src/reflect.ts:290, the npm build's
+ *  node_modules/@deepseek-ai/cordis/lib/index.js:813 — verified
+ *  verbatim, the nativity audit 2026-11-05 D7). The message IS the
+ *  protocol face here, so the estate's law ("discrimination is always
+ *  by code, never by message text") lands as THE ONE NAMED PREDICATE
+ *  HOME: this stem is spelled exactly once, every collision seat asks
+ *  the predicate by name, and the walled test fires the real cordis
+ *  throw through it. Never inline the template at a seat.
+ * @param error - the caught rejection.
+ * @param service - the provide() name the seat owns.
+ * @returns true when the error is cordis's duplicate-service verdict for that name. */
+export declare function isDuplicateServiceSeat(error: unknown, service: string): boolean;
 //# sourceMappingURL=estate-remote.d.ts.map

@@ -7,12 +7,11 @@
  * Every field completion rides the harness model via llm-complete.ts —
  * no keystore, no "no model".
  */
-import type { EstateRequest } from './estate.ts'
 import { formSpecArm } from './discovery.ts'
 import { harnessEnhance } from './llm-complete.ts'
 
-const FORMSPEC_TIMEOUT_MS = 15_000
-
+/** The form-spec envelope the recipes ride (the wire shape, read
+ *  in-process by formSpecArm). */
 interface FormSpecShape {
   enhance_prompt?: unknown
   enhance_prompts?: unknown
@@ -38,16 +37,18 @@ export function declaredFieldsFromSpec(spec: FormSpecShape): DeclaredFields {
   return { fields, names: Object.keys(fields) }
 }
 
-/** Read the model's declared recipes straight off the form-spec SSOT. */
+/** Read the model's declared recipes straight off the form-spec SSOT —
+ *  the IN-PROCESS arm (F-1, 2026-11-05: the retired URL lane named
+ *  `/v1/form-spec`, a path the seat plane never served; the sweep
+ *  already read formSpecArm, and now this does too). An unknown model
+ *  refuses with the sweep's voice. */
 export async function fetchDeclaredFields(
-  request: EstateRequest,
   model: string,
-  signal: AbortSignal,
 ): Promise<DeclaredFields> {
-  const spec = await request('GET', '/v1/form-spec?model=' + encodeURIComponent(model),
-    undefined, signal, FORMSPEC_TIMEOUT_MS,
-  ) as FormSpecShape
-
+  const spec = await formSpecArm(model)
+  if (spec === null) {
+    throw new Error(`enhance: '${model}' does not resolve (unknown, unoffered, or retired)`)
+  }
   return declaredFieldsFromSpec(spec)
 }
 

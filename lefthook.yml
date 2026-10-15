@@ -1,6 +1,7 @@
 # Git hooks (lefthook, DSH shape). Local checkpoints stay FAST; the
-# walls + CI own the full gate matrix. Install: `pnpm exec lefthook
-# install` (or `pnpm install` once a postinstall lands).
+# walls + CI own the full gate matrix. Install: automatic — the root
+# postinstall (tools/install-lefthook.mjs) runs `lefthook install` on
+# every `pnpm install`; CI and user-owned core.hooksPath skip it.
 
 pre-commit:
   jobs:

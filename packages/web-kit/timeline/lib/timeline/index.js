@@ -14,5 +14,9 @@ export * from "./MotionTimelineBar.js";
 export * from "./FilmPlayer.js";
 export * from "./TimelineScrubBar.js";
 export * from "./viser-timeline/index.js";
+// The melite-authored modules beside the vendored subtree (re-homed out
+// of it 2026-11-05, F2 — the vendored dir carries upstream files only).
+export { buildMotionTimelineState, makeTimelineId, MOTION_TIMELINE_TRACKS } from "./motionTimelineState.js";
+export { TimelineScrollbar } from "./TimelineScrollbar.js";
 export { PROMPT_COLORS } from "./viser-timeline/styles.js";
 //# sourceMappingURL=index.js.map

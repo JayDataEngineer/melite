@@ -34,7 +34,7 @@ import { FLOW_ID_RE } from '@melite/estate-queue'
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import type { ToolCallView } from '@deepseek-ai/dsh-tools'
 import { remoteErrorOf } from '@deepseek-ai/dsh-typert-protocol'
-import type { EstateRequest } from '../estate.ts'
+import type { Estate, BenchVerb } from '../estate.ts'
 import type { JsonValue, ToolDefinition } from '../types.ts'
 import { jsonClean } from '../json-clean.ts'
 import { unwrapItemArrays } from '@melite/comfyui-card-kit'
@@ -101,18 +101,16 @@ function refusalOf(e: unknown, verb: string, bench: string): ConstructResult {
 /** GET the bench; not-found → ensure (birth) → GET again. Reads are
  *  the freshness mechanism — always a remote round trip. */
 async function readBench(
-  request: EstateRequest, bench: string, signal: AbortSignal,
+  estate: Estate, bench: string, signal: AbortSignal,
 ): Promise<Record<string, unknown>> {
-  const get = (): Promise<unknown> =>
-    request( 'GET', `/v1/bench/${bench}`, undefined, signal, 15000)
+  const get = (): Promise<unknown> => estate.benchGet(bench, signal, 15000)
   try {
     return (await get()) as Record<string, unknown>
   } catch (e) {
     // The bench remote classifies the missing bench as
     // bench/not-found (the HTTP 404 died with the door).
     if (remoteErrorOf(e)?.code === 'bench/not-found') {
-      await request( 'POST', '/v1/bench/ensure',
-        { session: bench }, signal, 15000)
+      await estate.benchEnsure({ session: bench }, signal, 15000)
       return (await get()) as Record<string, unknown>
     }
     throw e
@@ -142,17 +140,17 @@ function isCasConflict(e: unknown): boolean {
  *  wholesale replacement still refuses when moved (a rebase there
  *  could clobber a concurrent write silently). */
 async function postBenchVerb(
-  request: EstateRequest, bench: string, verbPath: string,
+  estate: Estate, bench: string, verbPath: BenchVerb,
   body: Record<string, unknown>, signal: AbortSignal,
 ): Promise<Record<string, unknown>> {
   const attempt = (rev: unknown): Promise<Record<string, unknown>> =>
-    request('POST', `/v1/bench/${bench}/${verbPath}`,
+    estate.benchVerb(bench, verbPath,
       { ...body, expect_rev: rev }, signal, 15000) as Promise<Record<string, unknown>>
   try {
     return await attempt(body['expect_rev'])
   } catch (e) {
     if (!isCasConflict(e)) throw e
-    const fresh = await readBench(request, bench, signal)
+    const fresh = await readBench(estate, bench, signal)
     const rev = fresh['rev']
     if (typeof rev !== 'number') throw e
     return await attempt(rev)
@@ -181,7 +179,7 @@ async function postBenchVerb(
  *  (key absent) vs no-match (null + facts) stay distinct.
  *  One window: the newest 100 global runs. */
 async function withLastRun(
-  request: EstateRequest, bench: Record<string, unknown>, signal: AbortSignal,
+  estate: Estate, bench: Record<string, unknown>, signal: AbortSignal,
 ): Promise<{ stages: unknown; runs: Record<string, unknown> | null }> {
   const stages: unknown = bench['stages']
   const none = { stages, runs: null } as { stages: unknown; runs: Record<string, unknown> | null }
@@ -190,7 +188,7 @@ async function withLastRun(
   if (typeof draftId !== 'string' || draftId === '') return none
   let env: Record<string, unknown>
   try {
-    env = await request('GET', '/v1/flows/runs?limit=100', undefined, signal, 15000) as Record<string, unknown>
+    env = await estate.runsList('100', signal, 15000) as Record<string, unknown>
   } catch {
     return none
   }
@@ -355,7 +353,7 @@ export function projectStages(stages: unknown): Record<string, unknown>[] {
 
 
 export function meliteConstruct(
-  request: EstateRequest,
+  estate: Estate,
   opts: { headless?: boolean } = {},
 ): ToolDefinition {
   const presentCall: (args: unknown) => ToolCallView = (args) => {
@@ -575,8 +573,8 @@ export function meliteConstruct(
         jsonClean<ConstructResult>({ verb, bench, ok: true, ...payload })
       try {
         if (verb === 'read') {
-          const b = await readBench(request, bench, signal)
-          const enriched = await withLastRun(request, b, signal)
+          const b = await readBench(estate, bench, signal)
+          const enriched = await withLastRun(estate, b, signal)
           return out({
             rev: b.rev, intent: b.intent, stages: enriched.stages, log: b.log,
             ...(enriched.runs !== null ? { runs: enriched.runs } : {}),
@@ -584,7 +582,7 @@ export function meliteConstruct(
           })
         }
         if (verb === 'validate') {
-          const b = await readBench(request, bench, signal)
+          const b = await readBench(estate, bench, signal)
           const stages = projectStages(b.stages)
           if (stages.length === 0) return out({ rev: b.rev, compiles: false, note: 'bench is empty' })
           // THE TOOL DOES ITS OWN BOOKKEEPING (2026-09-21): the
@@ -600,13 +598,13 @@ export function meliteConstruct(
           // carrying it.
           const flowId: string =
             intent !== '' && FLOW_ID_RE.test(intent) ? intent : 'bench'
-          const r = await request( 'POST', '/v1/flows/validate',
+          const r = await estate.runsValidate(
             { flow_inline: { id: flowId, stages } }, signal, 20000) as Record<string, unknown>
           return out({ rev: b.rev, compiles: r['ok'] === true || r['valid'] === true, report: r })
         }
         if (verb === 'load') {
           const stages = Array.isArray(a.stages) ? a.stages : []
-          const r = await request( 'POST', '/v1/bench/ensure',
+          const r = await estate.benchEnsure(
             {
               session: bench, stages,
               ...(typeof a.intent === 'string' && a.intent !== '' ? { intent: a.intent } : {}),
@@ -616,7 +614,7 @@ export function meliteConstruct(
           return out({ rev: r.rev, stages: r.stages })
         }
         if (verb === 'patch') {
-          const r = await postBenchVerb(request, bench, 'patch',
+          const r = await postBenchVerb(estate, bench, 'patch',
             { stage: a.stage, params: a.params, expect_rev: a.expect_rev }, signal)
           return out({ rev: r.rev, stage: r.stage, patched: r.patched })
         }
@@ -635,7 +633,7 @@ export function meliteConstruct(
           // mints its own id).
           if (typeof a.stage === 'string' && a.stage.trim() === '') a.stage = undefined
           if (a.stage !== undefined) return out({ error: 'add_stage assigns its own stage id (s_0, s_1, ...) — the answer carries it; patch/remove_stage/rewire take {stage}. Drop the stage arg.' })
-          const r = await postBenchVerb(request, bench, 'add_stage',
+          const r = await postBenchVerb(estate, bench, 'add_stage',
             {
               card: a.card,
               ...(a.engine !== undefined ? { engine: a.engine } : {}),
@@ -657,7 +655,7 @@ export function meliteConstruct(
           return out({ rev: r.rev, stage: r.stage })
         }
         if (verb === 'remove_stage') {
-          const r = await postBenchVerb(request, bench, 'remove_stage',
+          const r = await postBenchVerb(estate, bench, 'remove_stage',
             { stage: a.stage, expect_rev: a.expect_rev }, signal)
           return out({ rev: r.rev, stage: r.stage })
         }
@@ -667,11 +665,11 @@ export function meliteConstruct(
           // undo restores everything. The cure for a bench that is
           // itself the wound (a stranded wire no repair verb could
           // reach before this law).
-          const r = await postBenchVerb(request, bench, 'clear', { expect_rev: a.expect_rev }, signal)
+          const r = await postBenchVerb(estate, bench, 'clear', { expect_rev: a.expect_rev }, signal)
           return out({ rev: r.rev, cleared: r.cleared })
         }
         if (verb === 'rewire') {
-          const r = await postBenchVerb(request, bench, 'rewire',
+          const r = await postBenchVerb(estate, bench, 'rewire',
             {
               stage: a.stage, input: a.input,
               ...(a.from !== undefined ? { from: a.from } : {}),
@@ -686,7 +684,7 @@ export function meliteConstruct(
           // melite-construct.spec.ts:480-494) — the chain above is
           // total over the declared vocabulary and an execute-side
           // duplicate unknown-verb refusal was dead.
-          const r = await postBenchVerb(request, bench, 'undo',
+          const r = await postBenchVerb(estate, bench, 'undo',
             {
               ...(a.n !== undefined ? { n: a.n } : {}),
               ...(a.author !== undefined ? { author: a.author } : {}),

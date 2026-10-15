@@ -14,6 +14,7 @@ import type { FlowResult, MergeRow, EngineJson } from "@melite/comfyui-cordis";
 import { RunsRuntimeService } from "../src/runsRegistry.ts";
 import { listRuns } from "../src/runsList.ts";
 import { EnginesService } from "@melite/engine-contract";
+import type { EngineRef } from "@melite/engine-contract";
 import { QueueCore } from "../src/queue.ts";
 import { CardArmError } from "../src/cardsRegistry.ts";
 import type { RunRecord } from "../src/runsTypes.ts";
@@ -387,7 +388,7 @@ describe("stroke-83 boot reconcile (resurrect REBORN as a replay)", () => {
     const s = seat();
     const ctx = (s.svc as unknown as { ctx: Context }).ctx;
     const engines = new EnginesService(ctx);
-    engines.register("comfyui", { executor: { executeStages: async () => ({ stages: [], engineRef: "" }) } });
+    engines.register("comfyui", { executor: { executeStages: async () => ({ stages: [], engineRef: "" as EngineRef }) } });
     const outRoot = join(s.state, "output");
     mkdirSync(join(outRoot, "run-corruptreq"), { recursive: true });
     writeFileSync(

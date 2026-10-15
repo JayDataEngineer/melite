@@ -34,8 +34,8 @@ import type { Context } from '@deepseek-ai/cordis';
 import Schema from '@deepseek-ai/schemastery';
 import { harnessEnhance, resolveHarnessRoutes, matchHarnessRoute, routeName } from './llm-complete.js';
 export { harnessEnhance, resolveHarnessRoutes, matchHarnessRoute, routeName };
-export { makeEstateRequest } from './estate.js';
-export type { EstateRequest } from './estate.js';
+export { makeEstate, makeEstateRequest } from './estate.js';
+export type { EstateRequest, Estate, BenchVerb } from './estate.js';
 export { runStatus } from './tools/run-status.js';
 export { meliteDiscover } from './tools/melite-discover.js';
 export { meliteConstruct, DEFAULT_BENCH } from './tools/melite-construct.js';
@@ -105,6 +105,11 @@ export declare const HEADLESS_TOOL_NAMES: readonly ["melite_flow", "run_status"]
 export declare const ADHOC_TOOL_NAMES: readonly [];
 /** Every tool name this plugin can own (registration log + smoke filter). */
 export declare const MELITE_TOOL_NAMES: readonly ["melite_discover", "melite_load", "melite_construct", "melite_view", "melite_read", "comfy_manage", "melite_skill_index", "melite_skill_read", "ledger_tail", "melite_flow", "run_status"];
-/** Register the Melite tools against the live estate gateway. */
+/** Register the Melite tools against the live estate gateway.
+ *  THE TYPED CONTEXT (F-2/F-4 cure, 2026-11-05): the hand-declared
+ *  CtxView parallel is retired — logger/effect are cordis Context
+ *  members, `tools` is the dsh-tools Context augmentation, and the
+ *  commands seam rides the dynamic child inject below with its
+ *  structural callback parameter. */
 export declare function apply(ctx: Context, config?: Config): Promise<void>;
 //# sourceMappingURL=index.d.ts.map

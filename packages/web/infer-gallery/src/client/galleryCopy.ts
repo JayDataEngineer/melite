@@ -66,6 +66,13 @@ export const galleryCopy = {
   kindModel: "3D",
   /** Kind label: text artifacts. */
   kindText: "Text",
+  // ── Sidebar tab registration (the entry's faces, the 2026-11-05 cure) ─
+  /** The Media tab's chip + guide-row title (one home, both read it). */
+  mediaTabTitle: "Media",
+  /** The guide row's description under the Media title. */
+  mediaTabGuide: "Every run's artifacts — the archive, with the lightbox, chips, search and the cards wand.",
+  /** The estate-artifact tab's title when the address decodes to no file. */
+  artifactFallbackTitle: "artifact",
   // ── Flows tab ────────────────────────────────────────────────────────
   /** The empty flows face. */
   emptyDrafts: "no composed cards yet — build one in a chat.",

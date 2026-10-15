@@ -17,9 +17,10 @@
  *   - the ONE media-url rewrite (toRunMediaUrl) and the list-row
  *     url laws (listArtifactMediaUrl / listRowMediaUrl);
  *   - the terminal vocabulary (isTerminalRun);
- *   - the catalog door (fetchCardFamilies / defaultFamilyForCard —
- *     GET /v1/model-catalog, a plain same-origin door, not an
- *     estate remote).
+ *   - the catalog door (fetchCardCatalogRows — the ONE /v1/model-catalog
+ *     reader + cache, D6 2026-11-05; fetchCardFamilies and card-base's
+ *     fetchCardCatalog are its projections — a plain same-origin door,
+ *     not an estate remote).
  *
  * Consumers import these laws; nothing in this package fetches an
  * /api envelope.
@@ -90,17 +91,26 @@ export declare function listArtifactMediaUrl(url: string): string | null;
  *  route (the row's own currency is run-prefixed, like the
  *  thumbnail). Truncated markers carry no url and are skipped. */
 export declare function listRowMediaUrl(row: Record<string, unknown>): string | null;
-/** The catalog's cards section (GET /v1/model-catalog — the
- *  discovery door, same-origin, bearer-free from the page): card id
- *  → its boarded families, first = the DEFAULT family (form-spec's
- *  card-id alias law: boarded[0]). The runs door resolves
- *  NEITHER card ids nor aliases — callers hand the start verb the
- *  family from HERE. Cached per session (the catalog is static per
- *  boot; one door round trip, every consumer shares it). */
-export declare function fetchCardFamilies(signal?: AbortSignal): Promise<Record<string, string[]>>;
-/** Drop the family cache (tests isolate; a long-lived surface could
+/** The catalog's cards section, read ONCE per session (the ONE door +
+ *  cache law, nativity audit 2026-11-05 D6 — card-base's
+ *  fetchCardCatalog projection rides THIS reader; there is no second
+ *  GET of the door anywhere). Each row is the served JSON verbatim;
+ *  projections narrow their own fields. Cached per session (the
+ *  catalog is static per boot; one door round trip, every consumer
+ *  shares it; concurrent cold starts share the one in-flight read).
+ * @param signal - caller cancellation, ANDed with the read dial.
+ * @returns the cards section: card id → its served row. */
+export declare function fetchCardCatalogRows(signal?: AbortSignal): Promise<Record<string, Record<string, unknown>>>;
+/** Drop the catalog cache (tests isolate; a long-lived surface could
  *  refresh after a models re-scan). */
 export declare function resetCardFamiliesCache(): void;
+/** The family currency (the {model:} door's model ids — the cards
+ *  section's projection): card id → its boarded families, first = the
+ *  DEFAULT family (form-spec's card-id alias law: boarded[0]). The
+ *  runs door resolves NEITHER card ids nor aliases — callers hand the
+ *  start verb the family from HERE. Rides the one reader + cache
+ *  above. */
+export declare function fetchCardFamilies(signal?: AbortSignal): Promise<Record<string, string[]>>;
 /** Resolve a card's DEFAULT family (boarded[0]); the card id itself
  *  when the catalog names none (mask-studio-style self-services). */
 export declare function defaultFamilyForCard(cardId: string, signal?: AbortSignal): Promise<string>;

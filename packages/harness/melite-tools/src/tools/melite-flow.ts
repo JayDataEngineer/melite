@@ -27,7 +27,7 @@ import { defineTool } from '@deepseek-ai/dsh-tools'
 import type { ToolCallView } from '@deepseek-ai/dsh-tools'
 import { remoteErrorOf } from '@deepseek-ai/dsh-typert-protocol'
 import { normalizeJsonArrayParams } from '@melite/estate-call/cardTool'
-import type { EstateRequest } from '../estate.ts'
+import type { Estate } from '../estate.ts'
 import type { JsonValue, ToolDefinition } from '../types.ts'
 import { jsonClean } from '../json-clean.ts'
 import { unwrapItemArrays } from '@melite/comfyui-card-kit'
@@ -236,13 +236,13 @@ function wireBool(v: unknown): boolean {
 }
 
 async function startRun(
-  request: EstateRequest,
+  estate: Estate,
   body: Record<string, unknown>,
   signal: AbortSignal,
 ): Promise<Record<string, unknown>> {
   let res: StartResult
   try {
-    res = await request( 'POST', '/v1/flows/start', body, signal, TIMEOUT_MS) as StartResult
+    res = await estate.runsStart(body, signal, TIMEOUT_MS) as StartResult
   } catch (e) {
     // Remote refusals carry their named error on the protocol's one
     // class (the RayGatewayError HTTP-era arm died with the seats).
@@ -269,7 +269,7 @@ async function startRun(
  *  their composition in the run registry (CARD BIRTH LAW holds —
  *  the start still rides a doc-backed draft_id, now the bench's). */
 async function loadBench(
-  request: EstateRequest,
+  estate: Estate,
   body: Record<string, unknown>,
   signal: AbortSignal,
 ): Promise<string> {
@@ -286,8 +286,7 @@ async function loadBench(
   const session: string = body['session'] as string
   let expectRev: number | undefined
   try {
-    const cur = await request( 'GET', `/v1/bench/${encodeURIComponent(session)}`, undefined, signal, DRAFT_TIMEOUT_MS,
-    ) as { rev?: unknown }
+    const cur = await estate.benchGet(session, signal, DRAFT_TIMEOUT_MS) as { rev?: unknown }
     if (cur !== null && typeof cur === 'object' && typeof cur['rev'] === 'number') {
       expectRev = cur['rev']
     }
@@ -297,7 +296,7 @@ async function loadBench(
     const re = remoteErrorOf(e)
     if (re === null || re === undefined || re.code !== 'bench/not-found') throw e
   }
-  const b = await request( 'POST', '/v1/bench/ensure', {
+  const b = await estate.benchEnsure({
     ...body,
     // THE LANDING DECLARES ITSELF (the overwrite law, 2026-09-15):
     // a run landing replaces the shared bench by design (the
@@ -306,8 +305,7 @@ async function loadBench(
     // such pass; it must confirm each wipe itself.
     overwrite: true,
     ...(expectRev !== undefined ? { expect_rev: expectRev } : {}),
-  }, signal, DRAFT_TIMEOUT_MS,
-  ) as { draft_id?: unknown; error?: string }
+  }, signal, DRAFT_TIMEOUT_MS) as { draft_id?: unknown; error?: string }
   if (b && typeof b.error === 'string' && b.error) throw new Error(b.error)
   const id = b && b.draft_id
   if (typeof id !== 'string' || id === '') throw new Error('bench ensure returned no draft_id')
@@ -330,14 +328,14 @@ async function loadBench(
  *  The pass law is Run All's law verbatim: bench order, skip done
  *  rows, one refusal or failed terminal STOPS the pass. */
 async function runBench(
-  request: EstateRequest,
+  estate: Estate,
   a: { test?: boolean; bench: string },
   signal: AbortSignal,
 ): Promise<Record<string, unknown>> {
   const empty = { mode: 'bench', target: benchDraftIdOf(a.bench), error: 'the bench is empty — construct stages first (melite_construct)' }
   let b: Record<string, unknown>
   try {
-    b = await request( 'GET', `/v1/bench/${a.bench}`, undefined, signal, 15_000) as Record<string, unknown>
+    b = await estate.benchGet(a.bench, signal, 15_000) as Record<string, unknown>
   } catch (e) {
     // The bench remote classifies the empty bench as bench/not-found
     // (the HTTP 404 died with the door).
@@ -382,7 +380,7 @@ async function runBench(
     // runSingle's wired path rides): the run door composes the bench's
     // stages — the familyless one by its own card id. A model key here
     // would select the card arm and hit the board check.
-    const started = await startRun(request, model === ''
+    const started = await startRun(estate, model === ''
       ? { test: wireBool(a.test), draft_id: draftId }
       : { ...params, model, test: wireBool(a.test), draft_id: draftId },
     signal)
@@ -390,7 +388,7 @@ async function runBench(
       return { mode: 'bench', target, draft_id: draftId, status: 'stopped', stoppedAt: stageId, error: started['error'], pass }
     }
     const runId = started['run_id'] as string
-    const outcome = await observeAndAttribute(request, draftId, stageId, runId, signal)
+    const outcome = await observeAndAttribute(estate, draftId, stageId, runId, signal)
     pass.push({ stage: stageId, card, run_id: runId, status: outcome.status,
       ...(outcome.url !== '' ? { url: outcome.url } : {}),
       ...(outcome.artifacts.length > 0 ? { artifacts: outcome.artifacts } : {}) })
@@ -461,7 +459,7 @@ function sleepAbort(ms: number, signal: AbortSignal): Promise<void> {
  *  with / pass verbatim (the ONE rewrite — the run-wire law,
  *  mirrored). */
 export async function observeAndAttribute(
-  request: EstateRequest,
+  estate: Estate,
   draftId: string,
   stageId: string,
   runId: string,
@@ -475,7 +473,7 @@ export async function observeAndAttribute(
     signal.throwIfAborted()
     let doc: Record<string, unknown>
     try {
-      doc = await request( 'GET', `/v1/flows/status/${encodeURIComponent(runId)}`, undefined, signal, TIMEOUT_MS) as Record<string, unknown>
+      doc = await estate.runsStatus(runId, false, signal, TIMEOUT_MS) as Record<string, unknown>
     } catch (e) {
       // a classified unknown-run is terminal (the poll's stop set
       // must match the stream's — runFinished's law); transport
@@ -548,8 +546,7 @@ export async function observeAndAttribute(
       // nothing translated. One fold classifies every word.
       const terminal = statusOf(status)
       try {
-        await request( 'PATCH', `/v1/flows/drafts/${encodeURIComponent(draftId)}/stages/${encodeURIComponent(stageId)}`,
-          { runStatus: terminal, result }, signal, DRAFT_TIMEOUT_MS)
+        await estate.draftsStagePatch(draftId, stageId, { runStatus: terminal, result }, signal, DRAFT_TIMEOUT_MS)
       } catch { /* bookkeeping — the run's own outcome is the answer */ }
       return { status: terminal, url, artifacts: arts }
     }
@@ -564,8 +561,7 @@ export async function observeAndAttribute(
     if (live !== lastLive) {
       lastLive = live
       try {
-        await request( 'PATCH', `/v1/flows/drafts/${encodeURIComponent(draftId)}/stages/${encodeURIComponent(stageId)}`,
-          { runStatus: live, result: { run_id: runId } }, signal, DRAFT_TIMEOUT_MS)
+        await estate.draftsStagePatch(draftId, stageId, { runStatus: live, result: { run_id: runId } }, signal, DRAFT_TIMEOUT_MS)
       } catch { /* bookkeeping */ }
     }
     if (Date.now() >= deadline) {
@@ -580,7 +576,7 @@ export async function observeAndAttribute(
       // settles or the chain's re-arms run out (the queue-side
       // armor bounds the run itself).
       if (rearms > 0) {
-        void observeAndAttribute(request, draftId, stageId, runId, new AbortController().signal, budgetMs, rearms - 1).catch(String)
+        void observeAndAttribute(estate, draftId, stageId, runId, new AbortController().signal, budgetMs, rearms - 1).catch(String)
       }
       return { status: 'queued', url: '', artifacts: [] }
     }
@@ -591,7 +587,7 @@ export async function observeAndAttribute(
 /** SINGLE (the old card_run path, composed inside): manifest gate
  *  + runnability gate + defaults merge, then draft + {model}. */
 async function runSingle(
-  request: EstateRequest,
+  estate: Estate,
   // hasCard gate (execute, the sole caller): card is a non-empty string
   // and params always an object here — no empty fallbacks exist to cover
   // (2026-09-12). model normalizes at the caller (missing → ''), so the
@@ -647,7 +643,7 @@ async function runSingle(
   const intent = card.length > 80 ? card.slice(0, 77) + '…' : card
   let draftId: string
   try {
-    draftId = await loadBench(request, {
+    draftId = await loadBench(estate, {
       session: a.bench,
       intent,
       stages: [{
@@ -674,7 +670,7 @@ async function runSingle(
   // bench holds.
   let benchStages: Array<Record<string, unknown>> = []
   try {
-    const row = await request('GET', `/v1/bench/${encodeURIComponent(a.bench)}`, undefined, signal, DRAFT_TIMEOUT_MS) as { stages?: unknown }
+    const row = await estate.benchGet(a.bench, signal, DRAFT_TIMEOUT_MS) as { stages?: unknown }
     if (row !== null && typeof row === 'object' && Array.isArray(row['stages'])) {
       benchStages = row['stages'].filter((st: unknown): st is Record<string, unknown> => typeof st === 'object' && st !== null)
     }
@@ -684,26 +680,26 @@ async function runSingle(
     return typeof ins === 'object' && ins !== null && !Array.isArray(ins) && Object.keys(ins).length > 0
   })
   if (wired.length > 0) {
-    const started = await startRun(request, { test: wireBool(a.test), draft_id: draftId }, signal)
+    const started = await startRun(estate, { test: wireBool(a.test), draft_id: draftId }, signal)
     if (typeof started["error"] === "string") return { mode: 'card', target: card, rode: 'flow-arm (bench carries wiring — the wires ride as stage inputs)', ...started }
     const runId = started['run_id']
     if (typeof runId === 'string' && runId !== '') {
-      void observeAndAttribute(request, draftId, 's_0', runId, new AbortController().signal).catch(String)
+      void observeAndAttribute(estate, draftId, 's_0', runId, new AbortController().signal).catch(String)
     }
     return { mode: 'card', target: card, model, draft_id: draftId, rode: 'flow-arm (bench carries wiring — the wires ride as stage inputs)', ...started }
   }
-  const started = await startRun(request, { ...normalizedBag, model, test: wireBool(a.test), draft_id: draftId }, signal)
+  const started = await startRun(estate, { ...normalizedBag, model, test: wireBool(a.test), draft_id: draftId }, signal)
   if (typeof started["error"] === "string") return { mode: 'card', target: card, ...started }
   const runId = started['run_id']
   if (typeof runId === 'string' && runId !== '') {
-    void observeAndAttribute(request, draftId, 's_0', runId, new AbortController().signal).catch(String)
+    void observeAndAttribute(estate, draftId, 's_0', runId, new AbortController().signal).catch(String)
   }
   return { mode: 'card', target: card, model, draft_id: draftId, ...started }
 }
 
 /** TEMPLATE (the old flow_run path): drafts {flow,...} + start. */
 async function runTemplate(
-  request: EstateRequest,
+  estate: Estate,
   // hasFlow gate (execute, the sole caller): flow is a non-empty string
   // and params always an object here — no fallbacks exist to cover
   // (2026-09-12).
@@ -719,7 +715,7 @@ async function runTemplate(
     // TEMPLATE load sugar: the bench carries the template REFERENCE
     // (the {flow} start arm expands the graph server-side; the run
     // registry snapshots it). One marker row keeps the doc honest.
-    draftId = await loadBench(request, {
+    draftId = await loadBench(estate, {
       session: a.bench,
       intent: flow,
       stages: [{ id: 's_0', engine: CARD_PLANE_ENGINE, ref_flow: flow, params: {} }],
@@ -729,7 +725,7 @@ async function runTemplate(
     // diagnostic ("bench moved: rev is N, caller held M").
     return { mode: 'flow', target: flow, error: e instanceof Error ? e.message : String(e) }
   }
-  const started = await startRun(request, { ...overrides, flow, test: wireBool(a.test), draft_id: draftId }, signal)
+  const started = await startRun(estate, { ...overrides, flow, test: wireBool(a.test), draft_id: draftId }, signal)
   // a refused start carries the error and NO draft_id — a tile never
   // mounts for a run that never registered (the estate card-tool law).
   if (typeof started["error"] === 'string') return { mode: 'flow', target: flow, ...started }
@@ -739,7 +735,7 @@ async function runTemplate(
 /** AD-HOC (the old build_flow MULTI path): COMPILE FIRST at
  *  validate (no GPU on a bad wire), then draft + {flow_inline}. */
 async function runAdHoc(
-  request: EstateRequest,
+  estate: Estate,
   a: { stages?: unknown; connects?: unknown; id?: unknown; description?: unknown; test?: boolean; bench: string },
   signal: AbortSignal,
 ): Promise<Record<string, unknown>> {
@@ -770,7 +766,7 @@ async function runAdHoc(
     })),
   }
   try {
-    await request( 'POST', '/v1/flows/validate', flowBody, signal, VALIDATE_TIMEOUT_MS)
+    await estate.runsValidate(flowBody, signal, VALIDATE_TIMEOUT_MS)
   } catch (e) {
     const re = remoteErrorOf(e)
     if (re !== null && re !== undefined) {
@@ -780,7 +776,7 @@ async function runAdHoc(
   }
   let draftId: string
   try {
-    draftId = await loadBench(request, {
+    draftId = await loadBench(estate, {
       session: a.bench,
       intent: flowId,
       stages: folded,
@@ -788,7 +784,7 @@ async function runAdHoc(
   } catch (e) {
     return { mode: 'adhoc', target: flowId, error: e instanceof Error ? e.message : String(e) }
   }
-  const started = await startRun(request, { flow_inline: flowBody, test: wireBool(a.test), draft_id: draftId }, signal)
+  const started = await startRun(estate, { flow_inline: flowBody, test: wireBool(a.test), draft_id: draftId }, signal)
   if (typeof started["error"] === 'string') return { mode: 'adhoc', target: flowId, ...started }
   return { mode: 'adhoc', target: flowId, draft_id: draftId, ...started }
 }
@@ -809,7 +805,7 @@ type FlowResult = {
   error?: string;
 } & Record<string, JsonValue>;
 
-export function meliteFlow(request: EstateRequest): ToolDefinition {
+export function meliteFlow(estate: Estate): ToolDefinition {
   // PRESENTATION ADAPTATION (tool-presentation wall + conversion
   // invariance — presentCall output must not change): defineTool
   // soft-gates presentCall behind arg validation (invalid → undefined),
@@ -1060,22 +1056,22 @@ export function meliteFlow(request: EstateRequest): ToolDefinition {
       const bench = benchKeyOfExec(exec as { agent?: { id?: unknown } })
       try {
         if (hasBench) {
-          return jsonClean(await runBench(request, { test, bench }, exec.signal)) as FlowResult;
+          return jsonClean(await runBench(estate, { test, bench }, exec.signal)) as FlowResult;
         }
         if (hasFlow) {
-          return jsonClean(await runTemplate(request, {
+          return jsonClean(await runTemplate(estate, {
             flow: a.flow as string, params: bag, test, bench,
           }, exec.signal)) as FlowResult;
         }
         if (hasCard) {
-          return jsonClean(await runSingle(request, {
+          return jsonClean(await runSingle(estate, {
             card: a.card as string,
             model: typeof a.model === 'string' ? a.model : '',
             prompt: typeof a.prompt === 'string' ? a.prompt : undefined,
             params: bag, test, bench,
           }, exec.signal)) as FlowResult;
         }
-        return jsonClean(await runAdHoc(request, {
+        return jsonClean(await runAdHoc(estate, {
           stages: a.stages,
           connects: a.connects,
           id: a.id,

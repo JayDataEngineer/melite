@@ -7701,27 +7701,74 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				...typeof doc["error"] === "string" && doc["error"] !== "" ? { error: doc["error"] } : {}
 			};
 		}
-		/** The catalog's cards section (GET /v1/model-catalog — the
-		*  discovery door, same-origin, bearer-free from the page): card id
-		*  → its boarded families, first = the DEFAULT family (form-spec's
-		*  card-id alias law: boarded[0]). The runs door resolves
-		*  NEITHER card ids nor aliases — callers hand the start verb the
-		*  family from HERE. Cached per session (the catalog is static per
-		*  boot; one door round trip, every consumer shares it). */
+		/** The wire dial (audit X-E1, the card-base wire's law): every fetch
+		*  rides a socket with a bound — a caller signal ANDed with the dial,
+		*  never a bare socket. Reads are small same-origin JSON. */
+		const READ_DIAL_MS = 2e4;
+		/** The caller's signal ANDed with the dial — either side lifting the
+		*  fetch aborts it (the provisioning seam's own shape). */
+		function dialed(signal, dialMs) {
+			const dial = AbortSignal.timeout(dialMs);
+			return signal === void 0 ? dial : AbortSignal.any([signal, dial]);
+		}
+		/** Read the same-origin /v1/model-catalog door. Non-200 → named throw
+		*  (the door's own error text when present); a 200 whose body does
+		*  not parse to an object is a served-plane misconfiguration and
+		*  refuses loud too (never a silent empty table). */
+		async function catalogGet(signal) {
+			const res = await fetch("/v1/model-catalog", { signal: dialed(signal, READ_DIAL_MS) });
+			const body = await res.json().catch(() => null);
+			if (!res.ok) {
+				const err = typeof body === "object" && body !== null ? Reflect.get(body, "error") : void 0;
+				throw new Error(typeof err === "string" ? err : "/v1/model-catalog: HTTP " + String(res.status));
+			}
+			if (typeof body !== "object" || body === null) throw new Error("/v1/model-catalog: unreadable body");
+			return body;
+		}
+		let cardCatalogRowsCache = null;
+		let cardCatalogRowsInflight = null;
+		/** The catalog's cards section, read ONCE per session (the ONE door +
+		*  cache law, nativity audit 2026-11-05 D6 — card-base's
+		*  fetchCardCatalog projection rides THIS reader; there is no second
+		*  GET of the door anywhere). Each row is the served JSON verbatim;
+		*  projections narrow their own fields. Cached per session (the
+		*  catalog is static per boot; one door round trip, every consumer
+		*  shares it; concurrent cold starts share the one in-flight read).
+		* @param signal - caller cancellation, ANDed with the read dial.
+		* @returns the cards section: card id → its served row. */
+		async function fetchCardCatalogRows(signal) {
+			if (cardCatalogRowsCache !== null) return cardCatalogRowsCache;
+			cardCatalogRowsInflight ??= (async () => {
+				const raw = (await catalogGet(signal))["cards"];
+				const out = {};
+				if (typeof raw === "object" && raw !== null) for (const [id, row] of Object.entries(raw)) {
+					if (typeof row !== "object" || row === null) continue;
+					out[id] = row;
+				}
+				return out;
+			})();
+			try {
+				cardCatalogRowsCache = await cardCatalogRowsInflight;
+				return cardCatalogRowsCache;
+			} finally {
+				cardCatalogRowsInflight = null;
+			}
+		}
+		/** The family currency (the {model:} door's model ids — the cards
+		*  section's projection): card id → its boarded families, first = the
+		*  DEFAULT family (form-spec's card-id alias law: boarded[0]). The
+		*  runs door resolves NEITHER card ids nor aliases — callers hand the
+		*  start verb the family from HERE. Rides the one reader + cache
+		*  above. */
 		async function fetchCardFamilies(signal) {
-			if (cardFamiliesCache !== null) return cardFamiliesCache;
-			const body = await (await fetch("/v1/model-catalog", { ...signal === void 0 ? {} : { signal } })).json().catch(() => null);
-			const cards = typeof body === "object" && body !== null ? body["cards"] : void 0;
+			const rows = await fetchCardCatalogRows(signal);
 			const out = {};
-			if (typeof cards === "object" && cards !== null) for (const [id, row] of Object.entries(cards)) {
-				if (typeof row !== "object" || row === null) continue;
+			for (const [id, row] of Object.entries(rows)) {
 				const fams = row["families"];
 				out[id] = Array.isArray(fams) ? fams.filter((x) => typeof x === "string") : [id];
 			}
-			cardFamiliesCache = out;
 			return out;
 		}
-		let cardFamiliesCache = null;
 		/** Resolve a card's DEFAULT family (boarded[0]); the card id itself
 		*  when the catalog names none (mask-studio-style self-services). */
 		async function defaultFamilyForCard(cardId, signal) {
@@ -8651,6 +8698,13 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			retrySuffix: " · retry",
 			/** Header door to the shell's Media page (the card runs' archive). */
 			openMedia: "open media",
+			/** The sidebar tab's chip + guide title — the bench page is titled this
+			*  no matter which address form reached it (the address law, 2026-09-11). */
+			cardsTabTitle: "Media Flow",
+			/** The cards tab guide row's description under the tab title. */
+			cardsTabGuide: "The media flow — the shared bench and its runs.",
+			/** A chat file mention's tooltip title, naming the live kind + value. */
+			mentionTitle: (p) => `melite ${p.kind} ${p.value} — opens the Media page`,
 			/** Loading face while the draft doc hydrates. */
 			cardsLoading: "cards…",
 			/** Drill title: the host's "Card " prefix over the row's own (data) title. */
@@ -10890,7 +10944,10 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 							openMediaTab();
 						},
 						label: value,
-						title: `melite ${kind} ${value} — opens the Media page`
+						title: chromeCopy.mentionTitle({
+							kind,
+							value
+						})
 					};
 				} };
 			} };
@@ -18873,6 +18930,12 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			kindModel: "3D",
 			/** Kind label: text artifacts. */
 			kindText: "Text",
+			/** The Media tab's chip + guide-row title (one home, both read it). */
+			mediaTabTitle: "Media",
+			/** The guide row's description under the Media title. */
+			mediaTabGuide: "Every run's artifacts — the archive, with the lightbox, chips, search and the cards wand.",
+			/** The estate-artifact tab's title when the address decodes to no file. */
+			artifactFallbackTitle: "artifact",
 			/** The empty flows face. */
 			emptyDrafts: "no composed cards yet — build one in a chat.",
 			/** A draft row's fallback kind word when the model is unknown. */
@@ -19849,9 +19912,11 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		* the estate's documented bounds: `tip=` hover help is not a census
 		* seat and stays at the site (the motionCopy bound), and the vendored
 		* `viser-timeline/` subtree is NVIDIA upstream kept pull-diff-clean —
-		* its rendered faces (the ruler "Prompts" label, the zoom aria names,
-		* the "(Empty)" placeholder) are upstream's, argued at the copy wall's
-		* pin, never this dictionary's.
+		* its remaining rendered faces (the canvas seconds unit, the "(Empty)"
+		* placeholder) are upstream's, argued at the copy wall's pin, never
+		* this dictionary's. (F2, 2026-11-05: the zoom cluster re-homed out of
+		* the vendored dir to `TimelineScrollbar.tsx`; its copy joined this
+		* dictionary — `zoomFitTip`/`zoomFitLabel` beside the aria names.)
 		*/
 		/** The typed dictionary. Keys are stable copy ids. */
 		// v8 ignore next -- exercised key-by-key by the copy wall's census arm
@@ -19872,6 +19937,10 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			zoomOutAria: "Zoom out",
 			/** The zoom-in button's accessible name. */
 			zoomInAria: "Zoom in",
+			/** The fit-to-window button's hover title + accessible name. */
+			zoomFitTip: "Fit to window (reset zoom)",
+			/** The fit-to-window button's rendered glyph text. */
+			zoomFitLabel: "fit",
 			/** A stem-carrying layer's hover title (the bed-under-every-cut law). */
 			audioBedTitle: (p) => `${p.stem} — one bed under every cut; each window hears its own slice in time`,
 			/** A layer head's hover title before a stem is wired. */
@@ -20171,6 +20240,21 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			});
 		}
 		(0, react.createContext)({ useGui: (selector) => selector({ theme: { dark_mode: true } }) });
+		//#endregion
+		//#region ../../web-kit/timeline/src/timeline/TimelineScrollbar.tsx
+		/**
+		* TimelineScrollbar — the timeline's scrollbar + zoom chrome,
+		* MELITE-AUTHORED. Re-homed out of the vendored
+		* `viser-timeline/timeline-overlays.tsx` 2026-11-05 (F2, the nativity
+		* audit): the section was never upstream code — it renders the estate's
+		* DSH Button + card-base Tip, imports the kit's own CSS module, and
+		* carries estate testids and copy. Housing it here returns the vendored
+		* files to upstream-only content, so a later upstream pull diffs clean;
+		* the zoom copy rides `timelineCopy.ts` (one owner — the dictionary
+		* already held `zoomOutAria`/`zoomInAria` beside the overlays' literals).
+		* The scrollbar body moved verbatim; only the imports and the zoom seats
+		* (now `TimelineZoomCluster`) changed.
+		*/
 		//#endregion
 		//#region \0dsh-css:packages/web/melite-card-view/src/client/filmSeam.module.css.mjs
 		const css = ".obTlHq_player{object-fit:contain;background:var(--dsw-alias-bg-base);border:1px solid var(--dsw-alias-border-l2);border-radius:6px;width:100%;min-width:0;max-width:100%;height:auto;max-height:100%;display:block}";
@@ -22769,16 +22853,18 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		/** Required services (fiber inject waiting — the registries must be up
 		*  first: the native sidebar subsystem + the resource model + the
 		*  sidebar's navigation face, which the conversation card's rows ride
-		*  to open the Cards tab at a draft stage — the old embed's law — and
-		*  the gateway client's remote service, which carries the mounted
-		*  estate namespaces the bench tail consumes). */
+		*  to open the Cards tab at a draft stage — the old embed's law — the
+		*  gateway client's remote service, which carries the mounted estate
+		*  namespaces the bench tail consumes, and the Session Controller
+		*  adapter whose selection the bench spotlight follows). */
 		const inject = [
 			"slots",
 			"sidebarRightTabs",
 			"resources",
 			"sidebarRight",
 			"remote",
-			"uiConversation"
+			"uiConversation",
+			"uiSession"
 		];
 		/**
 		* Register both planes: the toolview keys for every card tool, and the
@@ -22861,7 +22947,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					} catch {}
 				})), "melite-card-view: chat file mentions");
 			} catch (error) {
-				if (/service "chatFileMentions" has been registered at </.test(String(error?.message))) console.info("[melite-card-view] chat file mentions: already seated — nothing to do");
+				if ((0, _melite_card_base_client.isDuplicateServiceSeat)(error, "chatFileMentions")) console.info("[melite-card-view] chat file mentions: already seated — nothing to do");
 				else console.error("[melite-card-view] chat file mentions registration failed:", error);
 			}
 			try {
@@ -22871,14 +22957,14 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					patterns: ["dsh-resource://cards/**"],
 					title: (address) => {
 						const resolved = resolveCardsAddress(address);
-						if (resolved.startsWith("dsh-resource://cards/bench")) return "Media Flow";
+						if (resolved.startsWith("dsh-resource://cards/bench")) return chromeCopy.cardsTabTitle;
 						return resolved.replace(/^dsh-resource:\/\/cards\//, "");
 					},
 					guide: [{
 						id: "cards-tab-guide",
 						order: 50,
-						title: () => "Media Flow",
-						description: () => "The media flow — the shared bench and its runs."
+						title: () => chromeCopy.cardsTabTitle,
+						description: () => chromeCopy.cardsTabGuide
 					}]
 				}), "melite-card-view: cards tab type");
 			} catch (error) {
@@ -22913,7 +22999,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			try {
 				const activeBenchSession = () => {
 					try {
-						const sid = (ctx.uiSession?.adapter?.current?.getSnapshot?.())?.props?.["sessionId"];
+						const sid = ctx.uiSession.adapter.current.getSnapshot().props["sessionId"];
 						return benchSessionOf(typeof sid === "string" ? sid : void 0);
 					} catch {
 						return benchSessionOf(void 0);
@@ -22921,8 +23007,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				};
 				const subscribeBenchSession = (fn) => {
 					try {
-						const off = ctx.uiSession?.adapter?.current?.subscribe?.(fn);
-						return typeof off === "function" ? off : () => {};
+						return ctx.uiSession.adapter.current.subscribe(fn);
 					} catch {
 						return () => {};
 					}

@@ -75,6 +75,19 @@ function fakeCtx(): FakeCtx {
     absentNamespaces: false,
     failRegisterKeys: new Set(),
     failProvideDuplicate: false,
+    // THE SESSION FACE (D2 cure 2026-11-05): apply now waits on
+    // 'uiSession' via inject, so the default fake carries the
+    // unselected-binding face — an empty props map and a no-op
+    // subscribe — exactly what the real adapter answers before any
+    // conversation is mounted. Tests that need a session override it.
+    uiSession: {
+      adapter: {
+        current: {
+          getSnapshot: (): { props: Record<string, unknown> } => ({ props: {} }),
+          subscribe: (): (() => void) => () => {},
+        },
+      },
+    },
     ctx: {},
   };
   const origError = console.error;
@@ -191,8 +204,8 @@ function restore(fake: FakeCtx): void {
 }
 
 describe("the entry exports — the client contract", () => {
-  test("inject names the five seats (registries before bodies)", () => {
-    expect(inject).toEqual(["slots", "sidebarRightTabs", "resources", "sidebarRight", "remote", "uiConversation"]);
+  test("inject names the seats (registries before bodies)", () => {
+    expect(inject).toEqual(["slots", "sidebarRightTabs", "resources", "sidebarRight", "remote", "uiConversation", "uiSession"]);
   });
 
   test("CARD_TOOLS claims every producing tool (the tile renders for all)", () => {

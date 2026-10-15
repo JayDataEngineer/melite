@@ -11,7 +11,7 @@ import { registryModel, theService } from '@melite/comfyui-cordis';
 import { defineTool } from '@deepseek-ai/dsh-tools';
 import { jsonClean } from "../json-clean.js";
 const TIMEOUT_MS = 20_000;
-export function meliteLoad(request, 
+export function meliteLoad(estate, 
 // expandEstateDoors (the expansion seat) is optional AT THE BUILDER:
 // unit tests construct the tool to pin render/present paths, and the
 // seat law is index.spec's subject (the apply wiring always passes
@@ -351,9 +351,8 @@ opts = {}) {
             if (inferenceType !== 'card' && inferenceType !== 'flow') {
                 return jsonClean({ error: 'inference_type must be card|flow — a card or a flow tool call; nothing else executes', name, inference_type: inferenceType });
             }
-            const params = new URLSearchParams({ name, inference_type: inferenceType });
             try {
-                const res = await request('GET', '/v1/load?' + params.toString(), undefined, exec.signal, TIMEOUT_MS);
+                const res = await estate.loadCard(inferenceType, name, exec.signal, TIMEOUT_MS);
                 // THE ECHO LAW (agent-trace audit, 2026-09-13): the output
                 // schema marks name/inference_type required on EVERY shape
                 // (ledger row 11) and dsh-tools' registry validates the value

@@ -49,7 +49,7 @@ import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
  */
 import { useRef } from "react";
 import { clsx as cn } from "clsx";
-import { MOTION_TIMELINE_TRACKS } from "./viser-timeline/motionTimelineState.js";
+import { MOTION_TIMELINE_TRACKS } from "./motionTimelineState.js";
 import { BEATS_H, PROMPTS_H } from "./MotionTimelineBarLayout.js";
 import { buildTicks, useTimelineScale } from "./MotionTimelineBarScale.js";
 import { useTimelineDragSession } from "./MotionTimelineBarDrag.js";

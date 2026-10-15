@@ -149,7 +149,11 @@ describe("the estate singleton law — one binder per bundle, stamped honest", (
     // against, not an estate remote (the dotted-name ban below is
     // untouched).
     const cardView = readFileSync(join(ROOT, "packages/web/melite-card-view/src/client/index.ts"), "utf8");
-    expect(cardView.includes("export const inject = ['slots', 'sidebarRightTabs', 'resources', 'sidebarRight', 'remote', 'uiConversation']"), "card-view's injects are exactly the parent-level set").toBe(true);
+    // 'uiSession' joined the parent-level set with D2's typed inject
+// (2026-11-05, cures-2026-11-05-web-cards.md): the session engine is
+// a parent seat the entry registers against — same class as
+// 'uiConversation', never an estate remote.
+expect(cardView.includes("export const inject = ['slots', 'sidebarRightTabs', 'resources', 'sidebarRight', 'remote', 'uiConversation', 'uiSession']"), "card-view's injects are exactly the parent-level set").toBe(true);
     expect(cardView.includes("ctx.get('remote.bench')"), "card-view binds through the inject-free reflect seam").toBe(true);
     expect(cardView.includes("bindEstateRemoteFromRemote"), "card-view's bind is the shared direct bind").toBe(true);
   });

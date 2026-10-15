@@ -552,7 +552,7 @@ export function apply(c, config = {}) {
             // and a lane that HAS one fences it with that lane's own
             // config. No melite-owned token scheme: DSH's note records the
             // decision that API tokens are not accepted on API paths.
-            const connection = c.get?.('connection');
+            const connection = c.get('connection');
             // THE SEAM TAKES THE REQUEST, NOT ITS HEADERS (the 2026-10-04
             // audit's catch): ConnectionTrustRequest is `{ headers }`
             // (packages/client/connection/src/rpc.ts:98-101) and DSH's own

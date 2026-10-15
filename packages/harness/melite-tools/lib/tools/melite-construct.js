@@ -83,8 +83,8 @@ function refusalOf(e, verb, bench) {
 }
 /** GET the bench; not-found → ensure (birth) → GET again. Reads are
  *  the freshness mechanism — always a remote round trip. */
-async function readBench(request, bench, signal) {
-    const get = () => request('GET', `/v1/bench/${bench}`, undefined, signal, 15000);
+async function readBench(estate, bench, signal) {
+    const get = () => estate.benchGet(bench, signal, 15000);
     try {
         return (await get());
     }
@@ -92,7 +92,7 @@ async function readBench(request, bench, signal) {
         // The bench remote classifies the missing bench as
         // bench/not-found (the HTTP 404 died with the door).
         if (remoteErrorOf(e)?.code === 'bench/not-found') {
-            await request('POST', '/v1/bench/ensure', { session: bench }, signal, 15000);
+            await estate.benchEnsure({ session: bench }, signal, 15000);
             return (await get());
         }
         throw e;
@@ -119,15 +119,15 @@ function isCasConflict(e) {
  *  rev and re-apply ONCE. Non-destructive verbs only — load's
  *  wholesale replacement still refuses when moved (a rebase there
  *  could clobber a concurrent write silently). */
-async function postBenchVerb(request, bench, verbPath, body, signal) {
-    const attempt = (rev) => request('POST', `/v1/bench/${bench}/${verbPath}`, { ...body, expect_rev: rev }, signal, 15000);
+async function postBenchVerb(estate, bench, verbPath, body, signal) {
+    const attempt = (rev) => estate.benchVerb(bench, verbPath, { ...body, expect_rev: rev }, signal, 15000);
     try {
         return await attempt(body['expect_rev']);
     }
     catch (e) {
         if (!isCasConflict(e))
             throw e;
-        const fresh = await readBench(request, bench, signal);
+        const fresh = await readBench(estate, bench, signal);
         const rev = fresh['rev'];
         if (typeof rev !== 'number')
             throw e;
@@ -155,7 +155,7 @@ async function postBenchVerb(request, bench, verbPath, body, signal) {
  *  returns the stages verbatim with no runs key — lookup-failed
  *  (key absent) vs no-match (null + facts) stay distinct.
  *  One window: the newest 100 global runs. */
-async function withLastRun(request, bench, signal) {
+async function withLastRun(estate, bench, signal) {
     const stages = bench['stages'];
     const none = { stages, runs: null };
     if (!Array.isArray(stages) || stages.length === 0)
@@ -165,7 +165,7 @@ async function withLastRun(request, bench, signal) {
         return none;
     let env;
     try {
-        env = await request('GET', '/v1/flows/runs?limit=100', undefined, signal, 15000);
+        env = await estate.runsList('100', signal, 15000);
     }
     catch {
         return none;
@@ -338,7 +338,7 @@ export function projectStages(stages) {
         return row;
     });
 }
-export function meliteConstruct(request, opts = {}) {
+export function meliteConstruct(estate, opts = {}) {
     const presentCall = (args) => {
         const a = (args ?? {});
         const verb = typeof a.verb === 'string' ? a.verb : '?';
@@ -558,8 +558,8 @@ export function meliteConstruct(request, opts = {}) {
             const out = (payload) => jsonClean({ verb, bench, ok: true, ...payload });
             try {
                 if (verb === 'read') {
-                    const b = await readBench(request, bench, signal);
-                    const enriched = await withLastRun(request, b, signal);
+                    const b = await readBench(estate, bench, signal);
+                    const enriched = await withLastRun(estate, b, signal);
                     return out({
                         rev: b.rev, intent: b.intent, stages: enriched.stages, log: b.log,
                         ...(enriched.runs !== null ? { runs: enriched.runs } : {}),
@@ -567,7 +567,7 @@ export function meliteConstruct(request, opts = {}) {
                     });
                 }
                 if (verb === 'validate') {
-                    const b = await readBench(request, bench, signal);
+                    const b = await readBench(estate, bench, signal);
                     const stages = projectStages(b.stages);
                     if (stages.length === 0)
                         return out({ rev: b.rev, compiles: false, note: 'bench is empty' });
@@ -583,12 +583,12 @@ export function meliteConstruct(request, opts = {}) {
                     // exists to prevent, in the one file that was still
                     // carrying it.
                     const flowId = intent !== '' && FLOW_ID_RE.test(intent) ? intent : 'bench';
-                    const r = await request('POST', '/v1/flows/validate', { flow_inline: { id: flowId, stages } }, signal, 20000);
+                    const r = await estate.runsValidate({ flow_inline: { id: flowId, stages } }, signal, 20000);
                     return out({ rev: b.rev, compiles: r['ok'] === true || r['valid'] === true, report: r });
                 }
                 if (verb === 'load') {
                     const stages = Array.isArray(a.stages) ? a.stages : [];
-                    const r = await request('POST', '/v1/bench/ensure', {
+                    const r = await estate.benchEnsure({
                         session: bench, stages,
                         ...(typeof a.intent === 'string' && a.intent !== '' ? { intent: a.intent } : {}),
                         ...(a.overwrite === true ? { overwrite: true } : {}),
@@ -597,7 +597,7 @@ export function meliteConstruct(request, opts = {}) {
                     return out({ rev: r.rev, stages: r.stages });
                 }
                 if (verb === 'patch') {
-                    const r = await postBenchVerb(request, bench, 'patch', { stage: a.stage, params: a.params, expect_rev: a.expect_rev }, signal);
+                    const r = await postBenchVerb(estate, bench, 'patch', { stage: a.stage, params: a.params, expect_rev: a.expect_rev }, signal);
                     return out({ rev: r.rev, stage: r.stage, patched: r.patched });
                 }
                 if (verb === 'add_stage') {
@@ -617,7 +617,7 @@ export function meliteConstruct(request, opts = {}) {
                         a.stage = undefined;
                     if (a.stage !== undefined)
                         return out({ error: 'add_stage assigns its own stage id (s_0, s_1, ...) — the answer carries it; patch/remove_stage/rewire take {stage}. Drop the stage arg.' });
-                    const r = await postBenchVerb(request, bench, 'add_stage', {
+                    const r = await postBenchVerb(estate, bench, 'add_stage', {
                         card: a.card,
                         ...(a.engine !== undefined ? { engine: a.engine } : {}),
                         ...(a.params !== undefined ? { params: a.params } : {}),
@@ -638,7 +638,7 @@ export function meliteConstruct(request, opts = {}) {
                     return out({ rev: r.rev, stage: r.stage });
                 }
                 if (verb === 'remove_stage') {
-                    const r = await postBenchVerb(request, bench, 'remove_stage', { stage: a.stage, expect_rev: a.expect_rev }, signal);
+                    const r = await postBenchVerb(estate, bench, 'remove_stage', { stage: a.stage, expect_rev: a.expect_rev }, signal);
                     return out({ rev: r.rev, stage: r.stage });
                 }
                 if (verb === 'clear') {
@@ -647,11 +647,11 @@ export function meliteConstruct(request, opts = {}) {
                     // undo restores everything. The cure for a bench that is
                     // itself the wound (a stranded wire no repair verb could
                     // reach before this law).
-                    const r = await postBenchVerb(request, bench, 'clear', { expect_rev: a.expect_rev }, signal);
+                    const r = await postBenchVerb(estate, bench, 'clear', { expect_rev: a.expect_rev }, signal);
                     return out({ rev: r.rev, cleared: r.cleared });
                 }
                 if (verb === 'rewire') {
-                    const r = await postBenchVerb(request, bench, 'rewire', {
+                    const r = await postBenchVerb(estate, bench, 'rewire', {
                         stage: a.stage, input: a.input,
                         ...(a.from !== undefined ? { from: a.from } : {}),
                         expect_rev: a.expect_rev,
@@ -666,7 +666,7 @@ export function meliteConstruct(request, opts = {}) {
                     // melite-construct.spec.ts:480-494) — the chain above is
                     // total over the declared vocabulary and an execute-side
                     // duplicate unknown-verb refusal was dead.
-                    const r = await postBenchVerb(request, bench, 'undo', {
+                    const r = await postBenchVerb(estate, bench, 'undo', {
                         ...(a.n !== undefined ? { n: a.n } : {}),
                         ...(a.author !== undefined ? { author: a.author } : {}),
                         expect_rev: a.expect_rev,

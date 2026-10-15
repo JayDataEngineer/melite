@@ -49,7 +49,7 @@
 import { useRef } from "react"
 import type { CSSProperties } from "react"
 import { clsx as cn } from "clsx"
-import { MOTION_TIMELINE_TRACKS } from "./viser-timeline/motionTimelineState.ts"
+import { MOTION_TIMELINE_TRACKS } from "./motionTimelineState.ts"
 import { BEATS_H, PROMPTS_H } from "./MotionTimelineBarLayout.ts"
 import { buildTicks, useTimelineScale } from "./MotionTimelineBarScale.ts"
 import { useTimelineDragSession } from "./MotionTimelineBarDrag.ts"

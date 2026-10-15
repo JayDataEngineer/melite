@@ -4,10 +4,10 @@
 // get(name) answers the seat or undefined (seatless).
 import { describe, test } from 'vitest'
 import assert from 'node:assert/strict'
-import { makeEstateRequest, asEstateCall, seatFamilyForPath, type EstateRequest } from '../src/estate.ts'
+import { makeEstateRequest, asEstateCall, seatFamilyForPath, type EstateRequest , type EstateHost } from '../src/estate.ts'
 
-function ctxWith(seats: Record<string, unknown>): unknown {
-  return { get: (name: string) => seats[name] }
+function ctxWith(seats: Record<string, unknown>): EstateHost {
+  return { get: (name: string) => seats[name] } as unknown as EstateHost
 }
 
 const SIG = AbortSignal.timeout(5000)

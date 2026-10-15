@@ -6,26 +6,45 @@
 // count, each row carrying its ENTRANCE id — and disclosure of
 // actual skills flows through the owning surface (melite_load's
 // tier-1 lines). These walls pin the vocabulary end to end.
+//
+// F-1 seam (2026-11-05): the tool plane speaks the typed lanes; the
+// URL grammar is the browser face's. The URL-spelling arm re-rolled
+// to the typed lane + args via `seen`; every other arm is a seam swap.
 import { test, describe } from 'vitest'
 import assert from 'node:assert/strict'
 import { skillIndex } from '../src/tools/skill-index.ts'
-import type { EstateRequest } from '../src/estate.ts'
+import type { ToolRunContext } from '@deepseek-ai/dsh-tools'
+import type { Estate } from '../src/estate.ts'
+import { fakeEstate } from './fake-estate.ts'
 import { ToolArgsError } from '@deepseek-ai/dsh-tools'
 
-const exec = { signal: new AbortController().signal, sessionId: 's' } as never
+// the tool plane's exec face (ToolRunContext, the package idiom —
+// comfy-manage's fixture): signal is the whole contract the router
+// rides; sessionId voices presentCall phrasing
+const exec = {
+  signal: new AbortController().signal,
+  sessionId: 's',
+} as unknown as ToolRunContext
 
-function mockRequest(handle: (method: string, path: string) => unknown): { request: EstateRequest; calls: string[] } {
-  const calls: string[] = []
-  const request = (async (method: string, path: string) => {
-    calls.push(method + ' ' + path)
-    return handle(method, path)
-  }) as unknown as EstateRequest
-  return { request, calls }
+/** The typed-lane mock (F-1, 2026-11-05): the tool plane's tests
+ *  stub the ESTATE seam, never a URL transport. `seen` records the
+ *  lane a tool rode; skillsIndex is this spec's one lane. */
+function mockEstate(handler: () => unknown): {
+  seen: Array<{ lane: string; args: unknown[] }>;
+  estate: Estate;
+} {
+  return fakeEstate({
+    skillsIndex: (_signal: AbortSignal, _timeoutMs?: number) => handler(),
+  })
+}
+
+function stubEstate(): Estate {
+  return fakeEstate({ skillsIndex: () => ({}) }).estate
 }
 
 describe('melite_skill_index — the static face', () => {
   test('the scan has one static face', () => {
-    const tool = skillIndex((async () => ({})) as EstateRequest)
+    const tool = skillIndex(stubEstate())
     assert.deepEqual(tool.presentCall!(undefined as never), { card: 'generic', title: 'Skill index', kind: 'search' }) // the face takes no args at runtime; the type demands one
   })
 })
@@ -39,22 +58,23 @@ describe('melite_skill_index execute — the binding vocabulary', () => {
       flows: { count: 5, ids: ['flow:a'] },
       note: 'skills bind to its owner',
     }
-    const seen = mockRequest((_m, path) => {
-      assert.equal(path, '/v1/skills')
-      return payload
-    })
-    const tool = skillIndex(seen.request)
+    const { seen, estate } = mockEstate(() => payload)
+    const tool = skillIndex(estate)
     const out = await tool.execute({}, exec) as Record<string, unknown>
     assert.equal((out.cards as Array<unknown>).length, 1)
     assert.equal(JSON.stringify(out).includes('krea-2'), false, 'THE CARD ABSTRACTION: family rows never ride')
     assert.deepEqual(out.cards, payload.cards)
     assert.deepEqual(out.flows, payload.flows)
     assert.equal(out.error, undefined)
+    // THE TYPED LANE (F-1, 2026-11-05): the tool plane speaks the typed
+    // lanes; the URL grammar is the browser face's. The old arm spelled
+    // GET /v1/skills — the lane rides the tool's own 15s bound.
+    assert.deepEqual(seen[0], { lane: 'skillsIndex', args: [exec.signal, 15_000] })
   })
 
   test('a sparse payload scans empty (never a crash)', async () => {
-    const { request } = mockRequest(() => ({}))
-    const tool = skillIndex(request)
+    const { estate } = mockEstate(() => ({}))
+    const tool = skillIndex(estate)
     const out = await tool.execute({}, exec) as Record<string, unknown>
     assert.equal(out.count, 0)
     assert.deepEqual(out.cards, [])
@@ -64,21 +84,21 @@ describe('melite_skill_index execute — the binding vocabulary', () => {
     // a seat still serving the OLD flat shape must not leak rows
     // through the tool: families/cards default empty, and the row
     // ids never ride the result.
-    const { request } = mockRequest(() => ({ count: 2, skills: [{ id: 'card:image-gen:image-craft' }] }))
-    const tool = skillIndex(request)
+    const { estate } = mockEstate(() => ({ count: 2, skills: [{ id: 'card:image-gen:image-craft' }] }))
+    const tool = skillIndex(estate)
     const out = await tool.execute({}, exec) as Record<string, unknown>
     assert.equal(JSON.stringify(out).includes('image-craft'), false)
   })
 
   test('non-object args throw at the wrapper gate (presence contract)', async () => {
-    const { request } = mockRequest(() => ({}))
-    const tool = skillIndex(request)
+    const { estate } = mockEstate(() => ({}))
+    const tool = skillIndex(estate)
     await assert.rejects(tool.execute(undefined as never, exec), ToolArgsError)
   })
 })
 
 describe('melite_skill_index render — the vocabulary, never rows', () => {
-  const tool = skillIndex((async () => ({})) as EstateRequest)
+  const tool = skillIndex(stubEstate())
   const text = (v: unknown) => (tool.output.render({} as never, v as never) as Array<{ text?: string }>)[0].text ?? ''
 
   test('an empty selection lists NOTHING — the discover pointer only', () => {

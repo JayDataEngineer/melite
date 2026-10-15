@@ -28,13 +28,16 @@ vi.mock('../src/discovery.ts', () => ({
 }))
 
 import { meliteLoad } from '../src/tools/melite-load.ts'
-import type { EstateRequest } from '../src/estate.ts'
+import { fakeEstate } from './fake-estate.ts'
 
-const request = (async () => ({})) as EstateRequest
+// The typed-lane stub (F-1, 2026-11-05): the tool plane's tests stub
+// the ESTATE seam — this spec drives render only, so the loadCard
+// lane never fires.
+const estate = fakeEstate({ loadCard: () => ({}) }).estate
 const exec = { signal: new AbortController().signal }
 
 function render(bundle: Record<string, unknown>, modifiers: unknown[] = []): string {
-  const tool = meliteLoad(request)
+  const tool = meliteLoad(estate)
   return (tool.output.render({}, { bundle: { kind: 'card', name: 'card', ...bundle }, error: undefined } as never) as Array<{ text?: string }>)
     .map((part) => part.text ?? '')
     .join('\n')

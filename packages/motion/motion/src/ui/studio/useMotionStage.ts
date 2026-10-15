@@ -6,7 +6,9 @@
  *   with the kept-refine overlay.
  * - discardKeptEdit (~897): revert the kept refine at the current frame.
  * - stampConstraintAtFrame (~941): capture the edited pose as a fullbody
- *   keyframe at the current frame (create or update the bound diamond).
+ *   keyframe at the current frame (create or update the bound diamond)
+ *   — stated through the constraints commit door (one-truth rework,
+ *   2026-11-05, nativity audit F7).
  * - Export framing (~1051–1178): typed-pixel output truth + aspect-locked
  *   stage rect (move + corner-resize math), coherence refits, and the
  *   ResizeObserver live-refit while framing.
@@ -22,6 +24,7 @@ import type { MotionConstraint } from "@melite/formats/motionConstraints"
 import { makeTimelineId } from "@melite-plugin/timeline/ui/timeline"
 import { jointsFromCm, patchFrame } from "@melite/formats"
 import { stampEditedPose } from "@melite/formats/motionConstraints"
+import type { MotionDocHooks } from "./useMotionDoc.ts"
 import type { StageRect } from "./MotionExportDialog.tsx"
 
 export type ToastFn = (type: "error" | "success" | "info", message: string) => void
@@ -36,8 +39,9 @@ export interface MotionStageArgs {
   pushUndo: () => void
   setKeptEdit: React.Dispatch<React.SetStateAction<{ joints: Float32Array; frame: number } | null>>
   setEditedDeformedB64: React.Dispatch<React.SetStateAction<string | null>>
-  setConstraintPayloads: React.Dispatch<React.SetStateAction<Record<string, MotionConstraint>>>
-  setTlKeyframes: React.Dispatch<React.SetStateAction<TimelineKeyframe[]>>
+  /** The constraints write door (one-truth: stamp + discard state the
+   *  keyframe/payload pair through the doc commit). */
+  commitConstraints: MotionDocHooks["commitConstraints"]
   exportOpen: boolean
   stageRect: StageRect
   setStageRect: React.Dispatch<React.SetStateAction<StageRect>>
@@ -46,7 +50,7 @@ export interface MotionStageArgs {
 export function useMotionStage({
   effectiveNpz, keptEdit, editableJoints, frameIdx, fullbodyKfAtFrame,
   toast, pushUndo,
-  setKeptEdit, setEditedDeformedB64, setConstraintPayloads, setTlKeyframes,
+  setKeptEdit, setEditedDeformedB64, commitConstraints,
   exportOpen, stageRect, setStageRect,
 }: MotionStageArgs) {
   // T × 77 × 3 Float32Array (cm) — the skeleton overlay's flat prop shape.
@@ -102,15 +106,18 @@ export function useMotionStage({
     )
     const existing = fullbodyKfAtFrame
     if (existing) {
-      setConstraintPayloads((prev) => ({ ...prev, [existing.uuid]: payload }))
+      commitConstraints((doc) => ({ ...doc, payloads: { ...doc.payloads, [existing.uuid]: payload } }))
       toast("success", `Updated keyframe at frame ${frameIdx + 1} (full-body)`)
     } else {
       const uuid = makeTimelineId()
-      setConstraintPayloads((prev) => ({ ...prev, [uuid]: payload }))
-      setTlKeyframes((prev) => [...prev, { uuid, track_id: "fullbody", frame: frameIdx, value: null, opacity: 1, locked: false }])
+      commitConstraints((doc) => ({
+        ...doc,
+        keyframes: [...doc.keyframes, { uuid, track_id: "fullbody", frame: frameIdx, value: null, opacity: 1, locked: false }],
+        payloads: { ...doc.payloads, [uuid]: payload },
+      }))
       toast("success", `Stamped authored pose → keyframe at frame ${frameIdx + 1}`)
     }
-  }, [effectiveNpz, editableJoints, frameIdx, fullbodyKfAtFrame, toast, pushUndo, setConstraintPayloads, setTlKeyframes])
+  }, [effectiveNpz, editableJoints, frameIdx, fullbodyKfAtFrame, toast, pushUndo, commitConstraints])
 
   // ── Export framing — PIXEL OUTPUT + aspect-locked rect (round 3) ────────
   // exportOut (typed PIXELS) is the OUTPUT TRUTH; the stage rect is only the

@@ -42,12 +42,19 @@ import { meliteView } from "../../../../packages/harness/melite-tools/src/tools/
 import { meliteRead } from "../../../../packages/harness/melite-tools/src/tools/melite-read.ts";
 import { MELITE_TOOL_NAMES } from "../../../../packages/harness/melite-tools/src/index.ts";
 
-import type { EstateRequest } from "../../../../packages/harness/melite-tools/src/estate.ts";
+import type { Estate } from "../../../../packages/harness/melite-tools/src/estate.ts";
 
-// the factories' seam drifted gateway-string → request-closure; this
-// wall never dials (construction + presentCall only), so the undialed
-// URL stands in for the closure — one cast here, not eleven below.
-const GW = "http://127.0.0.1:9" as unknown as EstateRequest;
+// F-1 re-roll (2026-11-05): the factories' first parameter drifted the
+// request-closure → the typed Estate lanes (the URL grammar stays the
+// browser face's own; a URL pin would re-roll to the lane NAME, but no
+// arm here dials). This wall never dials (construction + presentCall
+// only), so every lane refuses naming itself — one undialed typed seam
+// here, not eleven below.
+const LANES: Estate = new Proxy({} as Estate, {
+  get: (_target, lane) => (..._args: unknown[]) => {
+    throw new Error(`tool-presentation wall never dials the estate (lane ${String(lane)} reached)`);
+  },
+});
 const STUB_LLM = { complete: async () => ({ text: "stub" }) };
 // the observe doors take the harness Context, not the request — an
 // undialed stand-in with the one method their presentCall paths touch.
@@ -61,15 +68,17 @@ const STUB_CTX = { get: (): undefined => undefined } as never;
 // wall row fails the equality, and a wall row without a registry seat
 // fails it too. The count is never spelled again.
 const ALL: Array<[string, ToolDefinition]> = [
-  ["comfy_manage", comfyManage(GW)],
-  ["melite_discover", meliteDiscover(GW)],
-  ["melite_flow", meliteFlow(GW)],
-  ["melite_construct", meliteConstruct(GW)],
-  ["ledger_tail", ledgerTail(GW)],
-  ["melite_load", meliteLoad(GW)],
-  ["run_status", runStatus(GW)],
-  ["melite_skill_index", skillIndex(GW)],
-  ["melite_skill_read", skillRead(GW)],
+  ["comfy_manage", comfyManage(LANES)],
+  // the expansion thunk is execute-time only — this wall never executes,
+  // so a no-op stands in (the seat law is index.spec's subject).
+  ["melite_discover", meliteDiscover(LANES, () => {})],
+  ["melite_flow", meliteFlow(LANES)],
+  ["melite_construct", meliteConstruct(LANES)],
+  ["ledger_tail", ledgerTail(LANES)],
+  ["melite_load", meliteLoad(LANES)],
+  ["run_status", runStatus(LANES)],
+  ["melite_skill_index", skillIndex(LANES)],
+  ["melite_skill_read", skillRead(LANES)],
   ["melite_view", meliteView(STUB_CTX)],
   ["melite_read", meliteRead(STUB_CTX)],
 ];

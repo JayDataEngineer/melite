@@ -24,10 +24,18 @@
  * The body is self-driving (useFeed → the gallery's own host routes —
  * no transport threading, the panel carries its own fetch caller).
  *
- * The seat spellings below are the LOCAL TabCtx pattern (same as
- * dsh-card-deck's assets-tab — a local structural interface, like
- * dsh-task-board's local 'web-ui.plugin.item' spelling) so this
- * package registers without the sibling UI packages' type graphs.
+ * The seats this entry touches ride TYPE-ONLY imports (the card-view
+ * entry's pattern, D4 cure 2026-11-05): the real registry/slot types
+ * merge onto Context from the owning DSH packages' ./client entries,
+ * so `ctx.sidebarRightTabs` / `ctx.slots` carry their declared faces —
+ * a DSH registry-shape change surfaces at compile time, never as a
+ * frozen local interface that passes while the truth moves.
+ *
+ * DOUBLE-APPLY LAW (D3 cure 2026-11-05, the estate pattern from
+ * card-view): no module-global claim guard. apply runs once per page
+ * by the loader's contract; a genuine second application collides at
+ * the registries themselves and the per-site catches log it (walled by
+ * tests/client-registration.spec.ts's double-apply arm).
  *
  * This entry is deliberately JSX-free (the shared preset only
  * discovers src/client/index.ts); the glyph lives in MediaPanel.tsx.
@@ -35,12 +43,16 @@
  * The store + view exports below remain for headless harnesses.
  */
 import type { Context as ClientContext } from '@deepseek-ai/cordis'
-import type { ComponentType } from 'react'
-import { claimGalleryApply, releaseGalleryApply } from './apply-guard.ts'
+// Type-only: the seats this entry touches ride cordis Context
+// declaration-merging from each owning package's ./client entry —
+// the renderer owns ctx.slots, sidebar-right owns ctx.sidebarRightTabs.
+import type {} from '@deepseek-ai/dsh-client-ui-renderer/client'
+import type {} from '@deepseek-ai/dsh-client-ui-sidebar-right/client'
 import { MediaPanel, MediaTabIcon } from './MediaPanel.tsx'
 import { ArtifactTabBody } from './mesh-view.tsx'
 import { artifactUrlOfAddress } from './artifact-address.ts'
 import { artifactNameOf } from './artifact-ops.ts'
+import { galleryCopy } from './galleryCopy.ts'
 
 import { setContractToastSink } from '@melite/catalog'
 import { useToastStore } from '@melite/card-base/client'
@@ -58,66 +70,29 @@ const MEDIA_TAB_ID = 'infer-media:media'
 /** The estate-artifact resource type's identity (its body registers under it). */
 const ESTATE_ARTIFACT_TAB_ID = 'infer-media:estate-artifact'
 
-/** Local structural spelling of the seats this entry touches (the
- *  card-deck pattern: no type-merge dependency on sibling UI
- *  packages). */
-interface TabCtx {
-  effect(fn: () => void, name?: string): unknown
-  /** The native right-sidebar tab registry (ui-sidebar-right). */
-  sidebarRightTabs: {
-    register(def: {
-      id: string
-      kind: string
-      /** Page kinds take no argument; resource kinds title each address. */
-      title: (() => string) | ((address: string) => string)
-      /** Resource-address globs; omitted by page kinds (opened by kind). */
-      patterns?: readonly string[]
-      /** Band rank; a type that says nothing is an extension. */
-      priority?: 'extension' | 'builtin' | 'fallback'
-      guide?: Array<{
-        id: string
-        order: number
-        title(): string
-        description?(): string
-        icon?: ComponentType<{ size?: number; className?: string }>
-      }>
-    }): unknown
-  }
-  slots: {
-    inject(name: 'sidebar.right.pane.tab', declare: () => unknown): unknown
-    register(options: { name: 'sidebar.right.pane.tab'; key: string }, component: ComponentType<Record<string, unknown>>): unknown
-  }
-}
-
 /** Required services (fiber inject waiting — the tab registry must be
  *  up first). */
 export const inject = ['slots', 'sidebarRightTabs']
 
 /**
- * Client apply: claims the single application slot, then registers
+ * Client apply: registers
  * the Media tab (type + body) exactly as the deleted client and the
  * shipped tabs do.
  * @param ctx - client root context.
  */
 export function apply(ctx: ClientContext): void {
-  // A duplicated client injection (factory executed twice per page
-  // lifetime) would register a second entry. First application wins.
-  if (!claimGalleryApply()) return
-  ctx.effect(() => releaseGalleryApply, 'melite-gallery: apply claim')
-  const tab = ctx as unknown as TabCtx
-
   // Stage one — the tab type (page kind: no patterns, opened by kind
   // from the guide row). Logged, never thrown (shell law).
   try {
-    tab.effect(() => tab.sidebarRightTabs.register({
+    ctx.effect(() => ctx.sidebarRightTabs.register({
       id: MEDIA_TAB_ID,
       kind: 'media',
-      title: (): string => 'Media',
+      title: (): string => galleryCopy.mediaTabTitle,
       guide: [{
         id: 'media-tab-guide',
         order: 51,
-        title: (): string => 'Media',
-        description: (): string => 'Every run\'s artifacts — the archive, with the lightbox, chips, search and the cards wand.',
+        title: (): string => galleryCopy.mediaTabTitle,
+        description: (): string => galleryCopy.mediaTabGuide,
         icon: MediaTabIcon,
       }],
     }), 'melite-gallery: media tab type')
@@ -127,9 +102,9 @@ export function apply(ctx: ClientContext): void {
 
   // Stage two — the body, dispatched under the type's id.
   try {
-    tab.slots.inject('sidebar.right.pane.tab', () => tab.slots.register(
+    ctx.slots.inject('sidebar.right.pane.tab', () => ctx.slots.register(
       { name: 'sidebar.right.pane.tab', key: MEDIA_TAB_ID },
-      MediaPanel as unknown as ComponentType<Record<string, unknown>>,
+      MediaPanel,
     ))
   } catch (error: unknown) {
     console.error('[melite-gallery] media tab body registration failed:', error)
@@ -143,14 +118,14 @@ export function apply(ctx: ClientContext): void {
   // standard openResource hook; without this claim that open throws
   // (an address nothing claims is a refusal, not a no-op).
   try {
-    tab.effect(() => tab.sidebarRightTabs.register({
+    ctx.effect(() => ctx.sidebarRightTabs.register({
       id: ESTATE_ARTIFACT_TAB_ID,
       kind: 'estate-artifact',
       patterns: ['dsh-resource://estate-artifact/**'],
       priority: 'builtin',
       title: (address: string): string => {
         const url = artifactUrlOfAddress(address)
-        return url !== null ? artifactNameOf(url) : 'artifact'
+        return url !== null ? artifactNameOf(url) : galleryCopy.artifactFallbackTitle
       },
     }), 'melite-gallery: estate-artifact tab type')
   } catch (error: unknown) {
@@ -158,9 +133,9 @@ export function apply(ctx: ClientContext): void {
   }
 
   try {
-    tab.slots.inject('sidebar.right.pane.tab', () => tab.slots.register(
+    ctx.slots.inject('sidebar.right.pane.tab', () => ctx.slots.register(
       { name: 'sidebar.right.pane.tab', key: ESTATE_ARTIFACT_TAB_ID },
-      ArtifactTabBody as unknown as ComponentType<Record<string, unknown>>,
+      ArtifactTabBody,
     ))
   } catch (error: unknown) {
     console.error('[melite-gallery] estate-artifact tab body registration failed:', error)

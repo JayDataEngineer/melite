@@ -15,9 +15,11 @@
  * the estate's documented bounds: `tip=` hover help is not a census
  * seat and stays at the site (the motionCopy bound), and the vendored
  * `viser-timeline/` subtree is NVIDIA upstream kept pull-diff-clean —
- * its rendered faces (the ruler "Prompts" label, the zoom aria names,
- * the "(Empty)" placeholder) are upstream's, argued at the copy wall's
- * pin, never this dictionary's.
+ * its remaining rendered faces (the canvas seconds unit, the "(Empty)"
+ * placeholder) are upstream's, argued at the copy wall's pin, never
+ * this dictionary's. (F2, 2026-11-05: the zoom cluster re-homed out of
+ * the vendored dir to `TimelineScrollbar.tsx`; its copy joined this
+ * dictionary — `zoomFitTip`/`zoomFitLabel` beside the aria names.)
  */
 /** The typed dictionary. Keys are stable copy ids. */
 export declare const timelineCopy: {
@@ -39,6 +41,10 @@ export declare const timelineCopy: {
     readonly zoomOutAria: "Zoom out";
     /** The zoom-in button's accessible name. */
     readonly zoomInAria: "Zoom in";
+    /** The fit-to-window button's hover title + accessible name. */
+    readonly zoomFitTip: "Fit to window (reset zoom)";
+    /** The fit-to-window button's rendered glyph text. */
+    readonly zoomFitLabel: "fit";
     /** A stem-carrying layer's hover title (the bed-under-every-cut law). */
     readonly audioBedTitle: (p: {
         stem: string;

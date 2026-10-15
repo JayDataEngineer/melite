@@ -26,7 +26,7 @@ import { remoteErrorOf } from '@deepseek-ai/dsh-typert-protocol'
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import type { ToolCallView } from '@deepseek-ai/dsh-tools'
 import type { JsonValue, ToolDefinition } from '../types.ts'
-import type { EstateRequest } from '../estate.ts'
+import type { Estate } from '../estate.ts'
 import { jsonClean } from '../json-clean.ts'
 
 /** The manage seat's refusal code (the envelope rides the details —
@@ -276,7 +276,7 @@ function renderManage(_args: unknown, value: unknown): Array<{ type: 'text'; tex
   return [{ type: 'text', text: lines.join('\n') }]
 }
 
-export function comfyManage(request: EstateRequest): ToolDefinition {
+export function comfyManage(estate: Estate): ToolDefinition {
   // PRESENTATION ADAPTATION (tool-presentation wall + conversion
   // invariance — presentCall output must not change): defineTool
   // soft-gates presentCall behind arg validation (invalid → undefined),
@@ -441,9 +441,7 @@ export function comfyManage(request: EstateRequest): ToolDefinition {
          })
       }
       try {
-        res = await request( 'POST', '/v1/manage', body,
-          exec.signal,
-          MANAGE_TIMEOUT_MS) as Record<string, unknown>
+        res = await estate.manageAct(body, exec.signal, MANAGE_TIMEOUT_MS) as Record<string, unknown>
       } catch (e) {
         // A refusal IS the answer, not a crash: the manage seat
         // throws manage/refused CARRYING the envelope (action,

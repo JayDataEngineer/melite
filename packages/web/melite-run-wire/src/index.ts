@@ -19,9 +19,10 @@ import { RUN_MEDIA_PREFIX } from "@melite/contracts/benchStage"
  *   - the ONE media-url rewrite (toRunMediaUrl) and the list-row
  *     url laws (listArtifactMediaUrl / listRowMediaUrl);
  *   - the terminal vocabulary (isTerminalRun);
- *   - the catalog door (fetchCardFamilies / defaultFamilyForCard —
- *     GET /v1/model-catalog, a plain same-origin door, not an
- *     estate remote).
+ *   - the catalog door (fetchCardCatalogRows — the ONE /v1/model-catalog
+ *     reader + cache, D6 2026-11-05; fetchCardFamilies and card-base's
+ *     fetchCardCatalog are its projections — a plain same-origin door,
+ *     not an estate remote).
  *
  * Consumers import these laws; nothing in this package fetches an
  * /api envelope.
@@ -184,39 +185,90 @@ export function listRowMediaUrl(
   return null
 }
 
-// ── the family currency (the {model:} door's model ids) ───────────
+// ── the catalog door (the ONE /v1/model-catalog reader + cache) ───
 
-/** The catalog's cards section (GET /v1/model-catalog — the
- *  discovery door, same-origin, bearer-free from the page): card id
- *  → its boarded families, first = the DEFAULT family (form-spec's
- *  card-id alias law: boarded[0]). The runs door resolves
- *  NEITHER card ids nor aliases — callers hand the start verb the
- *  family from HERE. Cached per session (the catalog is static per
- *  boot; one door round trip, every consumer shares it). */
-export async function fetchCardFamilies(signal?: AbortSignal): Promise<Record<string, string[]>> {
-  if (cardFamiliesCache !== null) return cardFamiliesCache
-  const res = await fetch('/v1/model-catalog', { ...(signal === undefined ? {} : { signal }) })
-  const body: unknown = await res.json().catch(() => null)
-  const cards = typeof body === 'object' && body !== null
-    ? (body as Record<string, unknown>)['cards'] : undefined
-  const out: Record<string, string[]> = {}
-  if (typeof cards === 'object' && cards !== null) {
-    for (const [id, row] of Object.entries(cards as Record<string, unknown>)) {
-      if (typeof row !== 'object' || row === null) continue
-      const fams = (row as Record<string, unknown>)['families']
-      out[id] = Array.isArray(fams) ? fams.filter((x): x is string => typeof x === 'string') : [id]
-    }
-  }
-  cardFamiliesCache = out
-  return out
+/** The wire dial (audit X-E1, the card-base wire's law): every fetch
+ *  rides a socket with a bound — a caller signal ANDed with the dial,
+ *  never a bare socket. Reads are small same-origin JSON. */
+const READ_DIAL_MS = 20_000
+
+/** The caller's signal ANDed with the dial — either side lifting the
+ *  fetch aborts it (the provisioning seam's own shape). */
+function dialed(signal: AbortSignal | undefined, dialMs: number): AbortSignal {
+  const dial = AbortSignal.timeout(dialMs)
+  return signal === undefined ? dial : AbortSignal.any([signal, dial])
 }
 
-let cardFamiliesCache: Record<string, string[]> | null = null
+/** Read the same-origin /v1/model-catalog door. Non-200 → named throw
+ *  (the door's own error text when present); a 200 whose body does
+ *  not parse to an object is a served-plane misconfiguration and
+ *  refuses loud too (never a silent empty table). */
+async function catalogGet(signal?: AbortSignal): Promise<Record<string, unknown>> {
+  const res = await fetch('/v1/model-catalog', { signal: dialed(signal, READ_DIAL_MS) })
+  const body: unknown = await res.json().catch(() => null)
+  if (!res.ok) {
+    const err = typeof body === 'object' && body !== null ? Reflect.get(body, 'error') : undefined
+    throw new Error(typeof err === 'string' ? err : '/v1/model-catalog: HTTP ' + String(res.status))
+  }
+  if (typeof body !== 'object' || body === null) throw new Error('/v1/model-catalog: unreadable body')
+  return body as Record<string, unknown>
+}
 
-/** Drop the family cache (tests isolate; a long-lived surface could
+let cardCatalogRowsCache: Record<string, Record<string, unknown>> | null = null
+let cardCatalogRowsInflight: Promise<Record<string, Record<string, unknown>>> | null = null
+
+/** The catalog's cards section, read ONCE per session (the ONE door +
+ *  cache law, nativity audit 2026-11-05 D6 — card-base's
+ *  fetchCardCatalog projection rides THIS reader; there is no second
+ *  GET of the door anywhere). Each row is the served JSON verbatim;
+ *  projections narrow their own fields. Cached per session (the
+ *  catalog is static per boot; one door round trip, every consumer
+ *  shares it; concurrent cold starts share the one in-flight read).
+ * @param signal - caller cancellation, ANDed with the read dial.
+ * @returns the cards section: card id → its served row. */
+export async function fetchCardCatalogRows(signal?: AbortSignal): Promise<Record<string, Record<string, unknown>>> {
+  if (cardCatalogRowsCache !== null) return cardCatalogRowsCache
+  cardCatalogRowsInflight ??= (async (): Promise<Record<string, Record<string, unknown>>> => {
+    const body = await catalogGet(signal)
+    const raw: unknown = body['cards']
+    const out: Record<string, Record<string, unknown>> = {}
+    if (typeof raw === 'object' && raw !== null) {
+      for (const [id, row] of Object.entries(raw as Record<string, unknown>)) {
+        if (typeof row !== 'object' || row === null) continue
+        out[id] = row as Record<string, unknown>
+      }
+    }
+    return out
+  })()
+  try {
+    cardCatalogRowsCache = await cardCatalogRowsInflight
+    return cardCatalogRowsCache
+  } finally {
+    cardCatalogRowsInflight = null
+  }
+}
+
+/** Drop the catalog cache (tests isolate; a long-lived surface could
  *  refresh after a models re-scan). */
 export function resetCardFamiliesCache(): void {
-  cardFamiliesCache = null
+  cardCatalogRowsCache = null
+  cardCatalogRowsInflight = null
+}
+
+/** The family currency (the {model:} door's model ids — the cards
+ *  section's projection): card id → its boarded families, first = the
+ *  DEFAULT family (form-spec's card-id alias law: boarded[0]). The
+ *  runs door resolves NEITHER card ids nor aliases — callers hand the
+ *  start verb the family from HERE. Rides the one reader + cache
+ *  above. */
+export async function fetchCardFamilies(signal?: AbortSignal): Promise<Record<string, string[]>> {
+  const rows = await fetchCardCatalogRows(signal)
+  const out: Record<string, string[]> = {}
+  for (const [id, row] of Object.entries(rows)) {
+    const fams: unknown = row['families']
+    out[id] = Array.isArray(fams) ? fams.filter((x): x is string => typeof x === 'string') : [id]
+  }
+  return out
 }
 
 /** Resolve a card's DEFAULT family (boarded[0]); the card id itself

@@ -16,7 +16,7 @@
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import type { ToolCallView } from '@deepseek-ai/dsh-tools'
 import type { JsonValue, ToolDefinition } from '../types.ts'
-import type { EstateRequest } from '../estate.ts'
+import type { Estate } from '../estate.ts'
 import { jsonClean } from '../json-clean.ts'
 
 const INDEX_TIMEOUT_MS = 15_000
@@ -31,7 +31,7 @@ type SkillIndexResult = {
   error?: string;
 } & Record<string, JsonValue>
 
-export function skillIndex(request: EstateRequest): ToolDefinition {
+export function skillIndex(estate: Estate): ToolDefinition {
   // PRESENTATION ADAPTATION (tool-presentation wall + conversion
   // invariance — presentCall output must not change): defineTool
   // soft-gates presentCall behind arg validation (invalid → undefined),
@@ -125,7 +125,7 @@ export function skillIndex(request: EstateRequest): ToolDefinition {
       },
     },
     async execute(_args, exec): Promise<SkillIndexResult> {
-      const res = await request( 'GET', '/v1/skills', undefined, exec.signal, INDEX_TIMEOUT_MS,
+      const res = await estate.skillsIndex(exec.signal, INDEX_TIMEOUT_MS
       ) as { families?: unknown; cards?: unknown; flows?: unknown; count?: unknown }
       // A seat serving the LEGACY flat shape (a `skills` rows array)
       // contributes nothing — families/cards default empty and the

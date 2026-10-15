@@ -58,6 +58,7 @@ for (const group of readdirSync(packagesDir).sort()) {
   try {
     entries = readdirSync(groupDir).sort()
   } catch {
+    /* unreadable group dir — no manifests inside, nothing to check */
     continue
   }
   for (const pkg of entries) {

@@ -18,9 +18,14 @@
  * media plugin). Migrated 2026-09-10 off
  * the retired dsh-better-sidebar registry onto ui-sidebar-right's
  * two-stage contract (type + keyed body).
+ *
+ * DOUBLE-APPLY LAW (D3 cure 2026-11-05, the estate pattern from
+ * card-view): no module-global claim guard. apply runs once per page
+ * by the loader's contract; a genuine second application collides at
+ * the registries themselves and the per-site catch logs it (walled by
+ * test/client/client-index.spec.ts's double-apply arm).
  */
 import type { Context as ClientContext } from '@deepseek-ai/cordis'
-import { claimDeckApply, releaseDeckApply } from './apply-guard.ts'
 import { registerAssetsTab, seatManageNamespace } from './assets-tab.tsx'
 import type {} from '@melite/estate-manage/remote'
 // The gateway client's remote service seat (ctx.remote + the mounted
@@ -37,9 +42,6 @@ import type {} from '@deepseek-ai/dsh-api-gateway/client'
 export const inject = ['slots', 'sidebarRightTabs', 'remote', 'remote.manage']
 
 export function apply(ctx: ClientContext): void {
-  if (!claimDeckApply()) return
-  ctx.effect(() => releaseDeckApply, 'melite-card-deck: apply claim')
-
   // The manage lane (typed by the declaration merge above; structural
   // seat — the panel bundle carries no transport of its own).
   seatManageNamespace(ctx.remote.manage)
@@ -47,7 +49,7 @@ export function apply(ctx: ClientContext): void {
   // The native tab (comfy management — NOT cards). Logged, never
   // thrown (shell law).
   try {
-    registerAssetsTab(ctx as unknown as Parameters<typeof registerAssetsTab>[0])
+    registerAssetsTab(ctx)
   } catch (error) {
     console.error('[melite-card-deck] assets tab registration failed:', error)
   }

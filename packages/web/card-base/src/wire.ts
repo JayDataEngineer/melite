@@ -9,6 +9,7 @@ import type { CatalogCard, FormSpecDoc } from './spec.ts'
 import { WTYPE_SET } from '@melite/contracts/extraKeys'
 import { readAsDataURL } from '@melite/formats/readFile'
 import { manageRemote } from './estate-remote.ts'
+import { fetchCardCatalogRows } from '@melite-plugin/melite-run-wire'
 import type { ManageActDoc, ManageJsonValue } from '@melite/estate-manage/types'
 
 /** The wire dials (audit X-E1): every fetch rides a socket with a
@@ -85,14 +86,16 @@ export async function postManageAction(
 }
 
 /** /v1/model-catalog → the cards section (the picker's ONE surface —
- *  action cards, one tile per card package; models are NOT entries). */
+ *  action cards, one tile per card package; models are NOT entries).
+ *  THE ONE DOOR LAW (nativity audit 2026-11-05 D6): the GET + cache
+ *  lives in melite-run-wire's fetchCardCatalogRows — this is its
+ *  picker projection (label/description/genre walks, the label sort);
+ *  there is no second read of the door. */
 export async function fetchCardCatalog(signal?: AbortSignal): Promise<CatalogCard[]> {
-  const doc = await v1Get<{ cards?: Record<string, Record<string, unknown>> }>('/v1/model-catalog', signal)
-  const raw = doc['cards'] ?? {}
+  const rows = await fetchCardCatalogRows(signal)
   const out: CatalogCard[] = []
-  for (const [id, row] of Object.entries(raw)) {
-    if (typeof row !== 'object' || row === null) continue
-    const famsRaw = row['families']
+  for (const [id, row] of Object.entries(rows)) {
+    const famsRaw: unknown = row['families']
     out.push({
       id,
       label: typeof row['label'] === 'string' ? row['label'] : id,

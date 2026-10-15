@@ -96,6 +96,8 @@ class MockAudioContext {
 (globalThis as any).AudioContext = MockAudioContext
 
 // Suppress console.error for expected test noise
+import { resetCardFamiliesCache } from '@melite-plugin/melite-run-wire'
+
 const origError = console.error
 beforeEach(() => {
   console.error = (...args: unknown[]) => {
@@ -105,5 +107,13 @@ beforeEach(() => {
   }
 })
 afterEach(() => {
+  // THE ONE CATALOG DOOR'S ISOLATION VALVE (D6 cure 2026-11-05): the
+  // /v1/model-catalog rows cache is module state in melite-run-wire,
+  // shared by every surface that reads the door (picker, families,
+  // stage specs). Tests stub fetch per test with their own fixtures —
+  // a leaked cache (or a leaked in-flight read) would serve test N-1's
+  // table to test N. Production keeps the one-read-per-session law;
+  // the valve is test-only.
+  resetCardFamiliesCache()
   console.error = origError
 })

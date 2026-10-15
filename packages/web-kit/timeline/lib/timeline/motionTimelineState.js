@@ -1,5 +1,8 @@
-// Builds a viser `TimelineMessage` from the motion card's runtime state so
-// the vendored Timeline.tsx renders the Kimodo demo's bar byte-for-byte:
+// Builds a viser `TimelineMessage` from the motion card's runtime state for
+// the motion card's bar. Melite-authored (no upstream SPDX) — re-homed out of
+// the vendored `viser-timeline/` dir 2026-11-05 (F2, nativity audit): the
+// vendored subtree carries upstream files only, so later upstream pulls diff
+// clean against it.
 // the 6 keyframe tracks (Full-Body / 2D Root / L.Hand / R.Hand / L.Foot /
 // R.Foot) with the demo's exact colors + height_scale=0.5, the motion's frame
 // range, and the prompt as a segments row. Scrubbing + constraint editing

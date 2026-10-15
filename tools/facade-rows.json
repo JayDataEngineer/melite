@@ -578,9 +578,6 @@
   "@melite/contracts/benchStage": [
     "./packages/web-kit/contracts/src/benchStage.ts"
   ],
-  "@melite/contracts/applyGuard": [
-    "./packages/web-kit/contracts/src/applyGuard.ts"
-  ],
   "@melite/contracts/formSpec": [
     "./packages/web-kit/contracts/src/formSpec.ts"
   ],
@@ -691,9 +688,6 @@
   ],
   "@melite-plugin/timeline/ui/playback": [
     "./packages/web-kit/timeline/src/playback/index.ts"
-  ],
-  "@melite-plugin/timeline/client": [
-    "./packages/web-kit/timeline/src/client/index.ts"
   ],
   "@melite/card-base": [
     "./packages/web/card-base/src/host.ts"

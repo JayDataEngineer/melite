@@ -11,7 +11,7 @@
 import { defineTool } from '@deepseek-ai/dsh-tools';
 import { jsonClean } from "../json-clean.js";
 const READ_TIMEOUT_MS = 15_000;
-export function skillRead(request) {
+export function skillRead(estate) {
     // PRESENTATION ADAPTATION (tool-presentation wall + conversion
     // invariance — presentCall output must not change): defineTool
     // soft-gates presentCall behind arg validation (invalid → undefined),
@@ -90,7 +90,7 @@ export function skillRead(request) {
             }
             // Unknown ids arrive as RayGatewayError with the gateway's 404 body
             // VERBATIM - let it propagate; that IS the honest answer.
-            const res = await request('GET', '/v1/skills/' + encodeURIComponent(id), undefined, exec.signal, READ_TIMEOUT_MS);
+            const res = await estate.skillRead(id, exec.signal, READ_TIMEOUT_MS);
             return jsonClean({
                 id: res.id ?? id,
                 name: res.name ?? null,

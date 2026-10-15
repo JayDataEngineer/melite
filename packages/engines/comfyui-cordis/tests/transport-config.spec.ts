@@ -5,14 +5,14 @@
 import { afterEach, beforeEach, describe, it, onTestFinished } from "vitest";
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
-import { cpSync, existsSync, mkdirSync, mkdtempSync, writeFileSync, rmSync } from "node:fs";
+import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { Context } from "@deepseek-ai/cordis";
 import {
   ComfyError, ComfyUIHostService, activeCount, comfyuiHostProvider,
-  endpointConfigPath, loadEndpointConfig, needComfyUI, packageRoot,
+  endpointConfigPath, endpointSeedPath, loadEndpointConfig, needComfyUI, packageRoot,
   packageRootFrom, parseComfyUIHostConfig, resolveEngineBaseUrl, resolveRepoRoot
 } from "../src/comfyui.ts";
 import { ComfyUIService } from "../src/service.ts";
@@ -80,7 +80,10 @@ describe("endpoint config (the SSOT read)", () => {
     process.env["COMFYUI_ENDPOINT_CONFIG"] = "/tmp/x.json";
     assert.equal(endpointConfigPath(), "/tmp/x.json");
     delete process.env["COMFYUI_ENDPOINT_CONFIG"];
-    assert.ok(endpointConfigPath().endsWith(join("packages", "engines", "comfyui-cordis", "data", "comfyui_endpoint.json")));
+    // F1 (2026-11-05): without the env pin the WRITE target is the
+    // repo's untracked state home, never the tracked package seed.
+    process.env["MELITE_REPO_ROOT"] = tmpRoot();
+    assert.equal(endpointConfigPath(), join(resolveRepoRoot(), "data", "comfyui_endpoint.json"));
   });
   it("loads, refuses, and gates", () => {
     const root = tmpRoot();
@@ -104,10 +107,12 @@ describe("endpoint config (the SSOT read)", () => {
   });
   it("a fixture repo root no longer isolates package data — the anchor split (2026-10-18)", () => {
     // Population 2 (estate roots) still follows the env seam; the
-    // endpoint default (population 1, package-shipped data) follows
+    // endpoint SEED (population 1, package-shipped data) follows
     // the package, so a fixture root WITHOUT the file still finds
     // the real one. Fixture isolation is the sandbox gate's or the
-    // env path's job — never the repo anchor's accident.
+    // env path's job — never the repo anchor's accident. (The F1
+    // state home, by contrast, FOLLOWS the repo root by design —
+    // the next arm pins that.)
     process.env["MELITE_REPO_ROOT"] = tmpRoot();
     assert.deepEqual(Object.keys(loadEndpointConfig()).length > 0, true,
       "package-anchored default finds the shipped endpoint under a fixture repo root");
@@ -115,21 +120,50 @@ describe("endpoint config (the SSOT read)", () => {
     delete process.env["MELITE_REPO_ROOT"];
     assert.ok(resolveRepoRoot().endsWith("inference.cpp"), "the default climbs four hops to the repo");
   });
+  it("THE STATE HOME LAW (F1): the write target is the untracked overlay, never the tracked seed", () => {
+    const root = tmpRoot();
+    process.env["MELITE_REPO_ROOT"] = root;
+    // the write target resolves INSIDE the fixture root's untracked
+    // data/ tree — exactly, and byte-apart from the shipped seed
+    assert.equal(endpointConfigPath(), join(root, "data", "comfyui_endpoint.json"),
+      "the write target is <repoRoot>/data/comfyui_endpoint.json (the gitignored state tree)");
+    assert.notEqual(endpointConfigPath(), endpointSeedPath(),
+      "the state home and the shipped seed are two different files — the tracked seed is write-untouched");
+    assert.ok(endpointSeedPath().endsWith(join("packages", "engines", "comfyui-cordis", "data", "comfyui_endpoint.json")),
+      "the seed stays package-anchored (what the published files set ships)");
+  });
+  it("THE OVERLAY LAW (F1): a state home shadows the shipped seed; absent, the seed serves", () => {
+    const root = tmpRoot();
+    process.env["MELITE_REPO_ROOT"] = root;
+    // no state home yet: the fresh-clone read falls to the seed
+    const seed = JSON.parse(readFileSync(endpointSeedPath(), "utf8")) as Record<string, unknown>;
+    assert.deepEqual(loadEndpointConfig(), seed,
+      "no state home -> the shipped seed serves (fresh clone)");
+    // endpoint_set writes the state home: every reader keys off IT
+    mkdirSync(join(root, "data"), { recursive: true });
+    writeFileSync(join(root, "data", "comfyui_endpoint.json"), JSON.stringify({ url: "http://state:9" }));
+    assert.deepEqual(loadEndpointConfig(), { url: "http://state:9" },
+      "the state home overlays the seed — the door's write is the live truth");
+    // and the seed file stayed byte-untouched by the write
+    assert.deepEqual(JSON.parse(readFileSync(endpointSeedPath(), "utf8")) as Record<string, unknown>, seed,
+      "the tracked seed never carries the machine statement");
+  });
   it("packageRoot anchors the shipped data on the source plane", () => {
     assert.ok(packageRoot().endsWith("comfyui-cordis"), "two hops from src land on the package");
     assert.ok(existsSync(join(packageRoot(), "data", "comfyui_endpoint.json")), "the endpoint default candidate exists");
     assert.ok(existsSync(join(packageRoot(), "data", "model-facts.json")), "the facts file exists");
-    assert.equal(endpointConfigPath(), join(packageRoot(), "data", "comfyui_endpoint.json"));
+    assert.equal(endpointSeedPath(), join(packageRoot(), "data", "comfyui_endpoint.json"));
   });
   it("THE CONSUMER RECEIPT: the built lib finds shipped data with no env pin (install shape, artifact plane)", () => {
     // The four-copy consumer's contract: an install with NO
-    // MELITE_REPO_ROOT still resolves the shipped endpoint — the
-    // sweep stops being load-bearing. Runs the BUILT lib under
-    // plain node from a COPY shaped like an install (lib/ + data/ +
-    // package.json in a temp root): in the dev checkout both anchor
-    // spellings name the same file, so only the install shape makes
-    // the receipt bite — the old 4-up default would resolve to the
-    // temp root's nonexistent parent and miss.
+    // MELITE_REPO_ROOT still RESOLVES the shipped seed through the
+    // overlay walk, and its WRITE target lands OUTSIDE the package
+    // (the F1 state home of whatever root the install resolves —
+    // never the tracked data/ the files set ships). Runs the BUILT
+    // lib under plain node from a COPY shaped like an install (lib/
+    // + data/ + package.json in a temp root): in the dev checkout
+    // both anchor spellings name files under the real repo, so only
+    // the install shape makes the receipt bite.
     const built = join(dirname(fileURLToPath(import.meta.url)), "..", "lib", "src", "comfyui-config.js");
     assert.ok(existsSync(built), "built artifact present (run pnpm run build)");
     const pkgDir = dirname(dirname(dirname(built))); // <pkg>/lib/src → <pkg>
@@ -141,11 +175,18 @@ describe("endpoint config (the SSOT read)", () => {
     const childEnv: Record<string, string | undefined> = { ...process.env };
     for (const k of ENV_KEYS) delete childEnv[k];
     const out = execFileSync("node", ["-e",
-      "import(process.argv[1]).then(m => process.stdout.write(m.endpointConfigPath()))",
+      "import(process.argv[1]).then(m => process.stdout.write(JSON.stringify([" +
+      "m.endpointConfigPath(), m.endpointSeedPath(), Object.keys(m.loadEndpointConfig()).length > 0])))",
       join(install, "lib", "src", "comfyui-config.js")], { encoding: "utf8", env: childEnv });
-    assert.equal(out, join(install, "data", "comfyui_endpoint.json"),
-      "the installed copy anchored on its own package root");
-    assert.ok(existsSync(out), "the installed copy's candidate exists on disk");
+    const [writeTarget, seedPath, seedServes]: [string, string, boolean] = JSON.parse(out) as [string, string, boolean];
+    assert.equal(seedPath, join(install, "data", "comfyui_endpoint.json"),
+      "the installed copy anchored its seed on its own package root");
+    assert.ok(seedServes, "the installed copy's seed resolves with no env pin");
+    assert.ok(existsSync(seedPath), "the installed copy's candidate exists on disk");
+    assert.notEqual(writeTarget, seedPath,
+      "the install's write target is NOT the shipped seed (the F1 law holds on the artifact plane)");
+    assert.ok(writeTarget.endsWith(join("data", "comfyui_endpoint.json")) && !writeTarget.startsWith(install),
+      "the write target rides the resolved repo root's own data tree, outside the package");
   });
   it("packageRootFrom climbs past a foreign package.json and refuses a rootless tree loud", () => {
     // The pure core, driven in-process from shaped start dirs (the

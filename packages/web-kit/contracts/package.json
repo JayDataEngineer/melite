@@ -1,6 +1,5 @@
 {
   "name": "@melite/contracts",
-  "private": true,
   "license": "SSPL-1.0",
   "type": "module",
   "dependencies": {
@@ -87,10 +86,6 @@
     "./benchStage": {
       "types": "./lib/benchStage.d.ts",
       "default": "./lib/benchStage.js"
-    },
-    "./applyGuard": {
-      "types": "./lib/applyGuard.d.ts",
-      "default": "./lib/applyGuard.js"
     },
     "./formSpec": {
       "types": "./lib/formSpec.d.ts",

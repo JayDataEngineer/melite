@@ -517,6 +517,12 @@ test('THE SPEC-DOOR LAW: a downed form-spec door REFUSES the run, naming the doo
   })
   const realFetch = globalThis.fetch
   ;(globalThis as Record<string, unknown>)['fetch'] = async (url: unknown): Promise<unknown> => {
+    // the catalog door ANSWERS (the family currency — the one door,
+    // D6 2026-11-05, reads it fresh per test now that the isolation
+    // valve resets it); the SPEC door is DOWN — the probe's subject.
+    if (String(url).includes('/v1/model-catalog')) {
+      return new Response(JSON.stringify({ cards: { 'image-edit': { families: ['image-edit'] } } }), { status: 200, headers: { 'content-type': 'application/json' } })
+    }
     if (String(url).includes('/v1/form-spec')) throw new Error('door down')
     throw new Error('estate door on the fetch lane: ' + String(url))
   }

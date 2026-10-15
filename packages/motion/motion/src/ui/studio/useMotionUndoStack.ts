@@ -1,72 +1,66 @@
 /**
- * useMotionUndoStack — the undo/redo cluster moved verbatim from
- * `component.tsx` (MotionCardEditor lines ~441–554).
+ * useMotionUndoStack — the undo/redo cluster, re-homed onto the one-truth
+ * doc doors (2026-11-05, nativity audit F7).
  *
  * Snapshots ALL authoring state before each mutation so the user can step
  * back through timeline edits (prompt add/move/resize/delete/split/merge,
- * keyframe add/move/delete, interval add/move/delete) and joint-edit
- * operations (enter edit mode, stamp, repose, discard). Read via refs so
- * pushUndo stays stable (zero re-render cascade).
- *
- * Free-variable reads became explicit hook args; the verbs + snapshot fn
- * are returned. Behavior is IDENTICAL to the inline block.
+ * keyframe add/move/delete) and joint-edit operations (enter edit mode,
+ * stamp, repose, discard). The doc channels (prompts, keyframes, payloads)
+ * are captured from the SHOWN document and restored through the commit
+ * doors — an undo is a stated edit like any gesture, never a mirror
+ * write. The joints/kept-edit/deformed-image cluster stays component UI
+ * state (viewer-local, not doc state). Read via refs so pushUndo stays
+ * stable (zero re-render cascade).
  */
 import { useCallback, useEffect, useRef, useState } from "react"
+import type * as React from "react"
 import type {
-  TimelineInterval, TimelineKeyframe, TimelinePrompt,
+  TimelineKeyframe, TimelinePrompt,
 } from "@melite-plugin/timeline/ui/timeline"
 import type { MotionConstraint } from "@melite/formats/motionConstraints"
 
-export type AuthoringSnapshot = {
-  tlPrompts: TimelinePrompt[]
-  tlKeyframes: TimelineKeyframe[]
-  constraintPayloads: Record<string, MotionConstraint>
-  tlIntervals: TimelineInterval[]
+/** The doc channels' snapshot shape (the shown document, verbatim). */
+export type DocSnapshot = {
+  prompts: TimelinePrompt[]
+  keyframes: TimelineKeyframe[]
+  payloads: Record<string, MotionConstraint>
+}
+
+export type AuthoringSnapshot = DocSnapshot & {
   editableJoints: Float32Array | null
   keptEdit: { joints: Float32Array; frame: number } | null
   editedDeformedB64: string | null
 }
 
 export interface MotionUndoStackArgs {
-  tlPrompts: TimelinePrompt[]
-  tlKeyframes: TimelineKeyframe[]
-  constraintPayloads: Record<string, MotionConstraint>
-  tlIntervals: TimelineInterval[]
+  /** Read the current SHOWN document (from the one-truth hook's refs). */
+  captureDoc: () => DocSnapshot
+  /** State the captured doc channels back through the commit doors. */
+  restoreDoc: (doc: DocSnapshot) => void
   keptEdit: { joints: Float32Array; frame: number } | null
   editedDeformedB64: string | null
   editableJointsRef: React.MutableRefObject<Float32Array | null>
-  promptsAuthoredRef: React.MutableRefObject<boolean>
-  setTlPrompts: React.Dispatch<React.SetStateAction<TimelinePrompt[]>>
-  setTlKeyframes: React.Dispatch<React.SetStateAction<TimelineKeyframe[]>>
-  setConstraintPayloads: React.Dispatch<React.SetStateAction<Record<string, MotionConstraint>>>
-  setTlIntervals: React.Dispatch<React.SetStateAction<TimelineInterval[]>>
   setEditableJoints: React.Dispatch<React.SetStateAction<Float32Array | null>>
   setKeptEdit: React.Dispatch<React.SetStateAction<{ joints: Float32Array; frame: number } | null>>
   setEditedDeformedB64: React.Dispatch<React.SetStateAction<string | null>>
 }
 
 export function useMotionUndoStack({
-  tlPrompts, tlKeyframes, constraintPayloads, tlIntervals,
+  captureDoc, restoreDoc,
   keptEdit, editedDeformedB64,
-  editableJointsRef, promptsAuthoredRef,
-  setTlPrompts, setTlKeyframes, setConstraintPayloads, setTlIntervals,
+  editableJointsRef,
   setEditableJoints, setKeptEdit, setEditedDeformedB64,
 }: MotionUndoStackArgs) {
   const undoStack = useRef<AuthoringSnapshot[]>([])
   const redoStack = useRef<AuthoringSnapshot[]>([])
   const [undoVersion, setUndoVersion] = useState(0)
-  // Ref mirrors — pushUndo reads these (stable callback, no deps).
-  const tlPromptsRef = useRef(tlPrompts)
-  const tlKeyframesRef = useRef(tlKeyframes)
-  const constraintPayloadsRef = useRef(constraintPayloads)
-  const tlIntervalsRef = useRef(tlIntervals)
+  const captureDocRef = useRef(captureDoc)
+  const restoreDocRef = useRef(restoreDoc)
+  // Sync refs every render (before JSX return — safe, cheap).
+  captureDocRef.current = captureDoc
+  restoreDocRef.current = restoreDoc
   const keptEditRef = useRef<{ joints: Float32Array; frame: number } | null>(null)
   const editedDeformedB64Ref = useRef<string | null>(null)
-  // Sync refs every render (before JSX return — safe, cheap).
-  tlPromptsRef.current = tlPrompts
-  tlKeyframesRef.current = tlKeyframes
-  constraintPayloadsRef.current = constraintPayloads
-  tlIntervalsRef.current = tlIntervals
   keptEditRef.current = keptEdit
   editedDeformedB64Ref.current = editedDeformedB64
 
@@ -74,19 +68,20 @@ export function useMotionUndoStack({
     // the only writer clears intervals wholesale — the null arm is the
     // never-edited fence (probe 2026-09-19)
     const editableJoints = /* v8 ignore next -- the only writer clears intervals wholesale; the null arm is the never-edited fence (probe 2026-09-19) */ editableJointsRef.current ? new Float32Array(editableJointsRef.current) : null
-    return ({
-    tlPrompts: tlPromptsRef.current.map((p) => ({ ...p })),
-    tlKeyframes: tlKeyframesRef.current.map((k) => ({ ...k })),
-    constraintPayloads: Object.fromEntries(
-      Object.entries(constraintPayloadsRef.current).map(([k, v]) => [k, { ...v }]),
-    ),
-    tlIntervals: tlIntervalsRef.current.map(/* v8 ignore next -- tlIntervalsRef is only ever written as [] (the sole writer clears wholesale — probe 2026-09-19): the mapper never runs */ (iv) => ({ ...iv })),
-    editableJoints,
-    keptEdit: keptEditRef.current
-      ? { joints: new Float32Array(keptEditRef.current.joints), frame: keptEditRef.current.frame }
-      : null,
-    editedDeformedB64: editedDeformedB64Ref.current,
-  })}, [editableJointsRef]) // stable — reads from refs
+    const doc = captureDocRef.current()
+    return {
+      prompts: doc.prompts.map((p) => ({ ...p })),
+      keyframes: doc.keyframes.map((k) => ({ ...k })),
+      payloads: Object.fromEntries(
+        Object.entries(doc.payloads).map(([k, v]) => [k, { ...v }]),
+      ),
+      editableJoints,
+      keptEdit: keptEditRef.current
+        ? { joints: new Float32Array(keptEditRef.current.joints), frame: keptEditRef.current.frame }
+        : null,
+      editedDeformedB64: editedDeformedB64Ref.current,
+    }
+  }, [editableJointsRef]) // stable — reads from refs
 
   /** Snapshot current state before a mutation. Call this FIRST in every
    *  mutation handler (before the setState that changes authoring state). */
@@ -98,18 +93,19 @@ export function useMotionUndoStack({
   }, [captureSnapshot])
 
   const restoreSnapshot = useCallback((snap: AuthoringSnapshot) => {
-    promptsAuthoredRef.current = true
-    setTlPrompts(snap.tlPrompts)
-    setTlKeyframes(snap.tlKeyframes)
-    setConstraintPayloads(snap.constraintPayloads)
-    setTlIntervals(snap.tlIntervals)
+    restoreDocRef.current({
+      prompts: snap.prompts.map((p) => ({ ...p })),
+      keyframes: snap.keyframes.map((k) => ({ ...k })),
+      payloads: Object.fromEntries(
+        Object.entries(snap.payloads).map(([k, v]) => [k, { ...v }]),
+      ),
+    })
     setEditableJoints(snap.editableJoints)
     editableJointsRef.current = snap.editableJoints
     setKeptEdit(snap.keptEdit)
     setEditedDeformedB64(snap.editedDeformedB64)
   }, [
-    promptsAuthoredRef, editableJointsRef,
-    setTlPrompts, setTlKeyframes, setConstraintPayloads, setTlIntervals,
+    editableJointsRef,
     setEditableJoints, setKeptEdit, setEditedDeformedB64,
   ])
 

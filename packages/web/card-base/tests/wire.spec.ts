@@ -15,6 +15,7 @@ import {
   postManageAction,
   uploadInputFile,
 } from '../src/wire.ts'
+import { resetCardFamiliesCache } from '@melite-plugin/melite-run-wire'
 import { bindEstateRemoteFromRemote, unbindEstateRemote, type EstateNamespaces } from '../src/estate-remote.ts'
 import type { ManageActDoc, ManageEnvelopeRow } from '@melite/estate-manage/types'
 import { RemoteError, type RemoteResult } from '@deepseek-ai/dsh-typert-protocol'
@@ -61,6 +62,7 @@ const json = (body: unknown, status = 200): Response =>
 let restoreFetch: (() => void) | null = null
 afterEach(() => {
   unbindEstateRemote()
+  resetCardFamiliesCache()
   resetFake()
 })
 
@@ -118,6 +120,25 @@ test('THE LOUD REFUSAL: a non-200 door throws its own error text', async () => {
 test('THE LOUD REFUSAL: a textless non-200 names the door + status (never an empty throw)', async () => {
   useFake({ '/v1/model-catalog': () => new Response('boom', { status: 500 }) })
   await expect(fetchCardCatalog()).rejects.toThrow(/\/v1\/model-catalog: HTTP 500/)
+})
+
+test('THE LOUD REFUSAL: a 200 whose body is not an object refuses (never a silent empty table)', async () => {
+  useFake({ '/v1/model-catalog': () => new Response('garbage{{{', { status: 200 }) })
+  await expect(fetchCardCatalog()).rejects.toThrow(/\/v1\/model-catalog: unreadable body/)
+})
+
+test('THE ONE DOOR LAW: the second read rides the cache — one GET total (D6)', async () => {
+  let calls = 0
+  useFake({
+    '/v1/model-catalog': () => {
+      calls += 1
+      return json({ cards: { krea: { label: 'Krea' } } })
+    },
+  })
+  const first = await fetchCardCatalog()
+  const second = await fetchCardCatalog()
+  expect(calls).toBe(1)
+  expect(second).toEqual(first)
 })
 
 test('fetchFormSpec: a valid envelope rides through (null schema = the unserializable carrier)', async () => {

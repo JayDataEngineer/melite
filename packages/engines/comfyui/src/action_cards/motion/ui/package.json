@@ -32,7 +32,7 @@
     "@types/react": "^19"
   },
   "scripts": {
-    "build": "tsc -p tsconfig.build-viewers.json && tsc -p tsconfig.build.json"
+    "build": "tsc -p tsconfig.build.json"
   },
   "files": [
     "lib/**/*.js",

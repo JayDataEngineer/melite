@@ -1,4 +1,4 @@
-import type { EstateRequest } from '../estate.js';
+import type { Estate } from '../estate.js';
 import type { ToolDefinition } from '../types.js';
 export interface MeliteConnectArg {
     from?: unknown;
@@ -57,11 +57,11 @@ export declare function foldConnects(flowId: string, stages: MeliteStageArg[], c
  *  /melite-media/runs/<runId>/, urls that carry a scheme or lead
  *  with / pass verbatim (the ONE rewrite — the run-wire law,
  *  mirrored). */
-export declare function observeAndAttribute(request: EstateRequest, draftId: string, stageId: string, runId: string, signal: AbortSignal, budgetMs?: number, rearms?: number): Promise<{
+export declare function observeAndAttribute(estate: Estate, draftId: string, stageId: string, runId: string, signal: AbortSignal, budgetMs?: number, rearms?: number): Promise<{
     status: string;
     url: string;
     artifacts: string[];
 }>;
-export declare function meliteFlow(request: EstateRequest): ToolDefinition;
+export declare function meliteFlow(estate: Estate): ToolDefinition;
 export {};
 //# sourceMappingURL=melite-flow.d.ts.map

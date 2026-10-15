@@ -7,6 +7,15 @@
 // of that consumption, re-homed at the owning package as plain
 // exported types. No generator, no central artifact: the owner's
 // types are the contract.
+//
+// F-10 (2026-11-05 harness-seam audit): the last two fossil rows'
+// `& { [key: string]: unknown }` intersections are closed — the
+// weakest-typing class DSH's wire rules ban. FormField/
+// FormFieldOption's sole consumer is the types.spec compile pin; the
+// remaining `{ [key: string]: unknown }` dicts on ModifierOption
+// defaults/metadata stay: the catalog declares those bags ARBITRARY
+// by design (its own comment), and closing them would invent a
+// schema the backend never promised.
 export type FormField = {
     /** Name */
     name: string;
@@ -31,8 +40,6 @@ export type FormField = {
     section?: ("input" | "core" | "advanced") | null;
     /** Order */
     order?: number | null;
-} & {
-    [key: string]: unknown;
 };
 /**
  * ModifierField
@@ -47,8 +54,6 @@ export type FormFieldOption = {
     value: string;
     /** Label */
     label: string;
-} & {
-    [key: string]: unknown;
 };
 /**
  * FormField

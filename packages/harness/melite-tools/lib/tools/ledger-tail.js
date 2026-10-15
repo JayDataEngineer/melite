@@ -10,7 +10,7 @@
 import { defineTool } from '@deepseek-ai/dsh-tools';
 import { jsonClean } from "../json-clean.js";
 const LEDGER_TIMEOUT_MS = 15_000;
-export function ledgerTail(request) {
+export function ledgerTail(estate) {
     // PRESENTATION ADAPTATION (tool-presentation wall + conversion
     // invariance — presentCall output must not change): defineTool
     // soft-gates presentCall behind arg validation (invalid → undefined),
@@ -124,18 +124,16 @@ export function ledgerTail(request) {
             // (invalid args throw ToolArgsError there) — args is always a
             // defined object here (2026-09-12).
             const a = args;
-            const q = [];
             // limit is schema-typed number: the wrapper gate rejects strings
             // before the body (a string limit throws ToolArgsError there), so
             // no string arm rides — the old one was gate-dead (2026-09-12).
-            if (typeof a.limit === 'number' && Number.isFinite(a.limit) && a.limit > 0) {
-                q.push('limit=' + encodeURIComponent(String(Math.floor(a.limit))));
-            }
-            if (typeof a.event === 'string' && a.event.length > 0) {
-                q.push('event=' + encodeURIComponent(a.event));
-            }
-            const path = '/v1/ledger' + (q.length > 0 ? '?' + q.join('&') : '');
-            const res = await request('GET', path, undefined, exec.signal, LEDGER_TIMEOUT_MS);
+            // The seat reads defaulted strings ('50' / '') — the query
+            // string's own defaults (the router parsed them the same way).
+            const limit = typeof a.limit === 'number' && Number.isFinite(a.limit) && a.limit > 0
+                ? String(Math.floor(a.limit))
+                : '50';
+            const event = typeof a.event === 'string' && a.event.length > 0 ? a.event : '';
+            const res = await estate.ledgerTail(limit, event, exec.signal, LEDGER_TIMEOUT_MS);
             const entries = Array.isArray(res.entries) ? res.entries : [];
             return jsonClean({
                 shown: typeof res.shown === 'number' ? res.shown : entries.length,

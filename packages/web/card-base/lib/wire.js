@@ -1,6 +1,7 @@
 import { WTYPE_SET } from '@melite/contracts/extraKeys';
 import { readAsDataURL } from '@melite/formats/readFile';
 import { manageRemote } from "./estate-remote.js";
+import { fetchCardCatalogRows } from '@melite-plugin/melite-run-wire';
 /** The wire dials (audit X-E1): every fetch rides a socket with a
  *  bound — a caller signal ANDed with the dial, never a bare socket.
  *  Reads are small same-origin JSON; uploads carry a data-URL of a
@@ -62,14 +63,15 @@ export async function postManageAction(action, payload, signal) {
     return { ok: false, detail: message };
 }
 /** /v1/model-catalog → the cards section (the picker's ONE surface —
- *  action cards, one tile per card package; models are NOT entries). */
+ *  action cards, one tile per card package; models are NOT entries).
+ *  THE ONE DOOR LAW (nativity audit 2026-11-05 D6): the GET + cache
+ *  lives in melite-run-wire's fetchCardCatalogRows — this is its
+ *  picker projection (label/description/genre walks, the label sort);
+ *  there is no second read of the door. */
 export async function fetchCardCatalog(signal) {
-    const doc = await v1Get('/v1/model-catalog', signal);
-    const raw = doc['cards'] ?? {};
+    const rows = await fetchCardCatalogRows(signal);
     const out = [];
-    for (const [id, row] of Object.entries(raw)) {
-        if (typeof row !== 'object' || row === null)
-            continue;
+    for (const [id, row] of Object.entries(rows)) {
         const famsRaw = row['families'];
         out.push({
             id,

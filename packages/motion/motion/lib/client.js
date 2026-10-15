@@ -9414,6 +9414,302 @@ window.__ModuleLoader__.load({
 		}
 		Object.freeze(flatten$1(prompt_tags_default$1));
 		//#endregion
+		//#region src/ui/studio/motionDoc.ts
+		/** Canonical JSON for content comparison (the h3 A1 law): keys sorted
+		*  recursively, arrays order-preserved (row order is semantic),
+		*  undefined-valued keys SKIPPED, top-level undefined digests null.
+		*  Verbatim with h3's pendingOps.ts — one digest law, estate-wide. */
+		function canonicalJson(v) {
+			if (Array.isArray(v)) return `[${v.map(canonicalJson).join(",")}]`;
+			if (v !== null && typeof v === "object") {
+				const rec = v;
+				return `{${Object.keys(rec).filter((k) => rec[k] !== void 0).sort().map((k) => `${JSON.stringify(k)}:${canonicalJson(rec[k])}`).join(",")}}`;
+			}
+			return JSON.stringify(v) ?? "null";
+		}
+		/** The wire form of motion_constraints is the persist effect's own JSON
+		*  STRING (older docs may hold the object); a corrupt string degrades to
+		*  null → empty constraints, never a crash (the corrupt-sentinel law). */
+		function parseWireJson(raw) {
+			if (typeof raw !== "string") return raw;
+			const trimmed = raw.trim();
+			if (!trimmed) return null;
+			try {
+				return JSON.parse(trimmed);
+			} catch {
+				return null;
+			}
+		}
+		/** The semantic prompt row — uuid/color are view identity, not
+		*  statements; retirement compares text + frames only. */
+		function semanticRow(p) {
+			return {
+				text: p.text,
+				start_frame: p.start_frame,
+				end_frame: p.end_frame
+			};
+		}
+		/** The prompts channel's settlement form: both sides of a retirement
+		*  comparison are normalized through the SAME serialize→hydrate law at
+		*  the current envelope, so the projection's last-segment stretch
+		*  (hydrateMotionPrompts extends the last card to targetT-1) can never
+		*  wedge a STATEABLE op live forever — a settled wire retires its op
+		*  however the envelope has since moved. Below the 2-segment threshold
+		*  the wire carries no frames, so the raw rows compare (the seed law:
+		*  one card over [0, targetT-1] retires when the doc seeds the same
+		*  text); a multi-EMPTY composition is the one unstateable residue —
+		*  the wire cannot carry empty cards' existence, so that op stays live
+		*  by design until a stateable gesture supersedes it or the stage
+		*  switch clears it (the authoring surface the seed exists for). */
+		function promptsSettle(rows, ctx) {
+			const safeFps = ctx.fps > 0 ? ctx.fps : 30;
+			const wire = serializeMotionPrompts(rows, safeFps);
+			if (wire !== "") {
+				const hydrated = hydrateMotionPrompts(wire, safeFps, Math.max(1, Math.floor(ctx.targetT)));
+				if (hydrated && hydrated.length > 0) return hydrated;
+			}
+			return rows;
+		}
+		/** Deterministic view identity: prompts hydrate in sequence order, so
+		*  the index IS the stable uuid (Date.now() churn would break the bar's
+		*  drag identity across re-projections). */
+		function viewRows(segments) {
+			return segments.map((s, i) => ({
+				uuid: `motion-prompt-${i}`,
+				text: s.text,
+				start_frame: s.start_frame,
+				end_frame: s.end_frame,
+				color: null
+			}));
+		}
+		/** Pure projection: the bench row hydrated (the doc, verbatim).
+		*  Prompts: the persisted multi-segment payload; else the single
+		*  `prompt` param seeding one card over [0, targetT-1] (the demo's
+		*  authoring surface — always one editable card before any authoring). */
+		function projectMotionDoc(params, fps, targetT) {
+			const safeFps = fps > 0 ? fps : 30;
+			const safeT = Math.max(1, Math.floor(targetT));
+			const constraintJson = parseWireJson(params?.[MOTION_CONSTRAINTS_PARAM]);
+			const hydrated = constraintJson ? hydrateConstraints(constraintJson) : null;
+			const segments = hydrateMotionPrompts(params?.[MOTION_PROMPTS_PARAM], safeFps, safeT);
+			return {
+				prompts: segments && segments.length > 0 ? viewRows(segments) : viewRows([{
+					text: typeof params?.prompt === "string" ? params.prompt : "",
+					start_frame: 0,
+					end_frame: Math.max(0, safeT - 1)
+				}]),
+				keyframes: hydrated?.keyframes ?? [],
+				payloads: hydrated?.payloads ?? {}
+			};
+		}
+		/** The prompts channel's DOOR payload: the wire params one onSave
+		*  carries — motion_prompts ("" below the 2-segment override threshold)
+		*  plus the single-prompt mirror param the node reads in that case. */
+		function serializePromptsParams(rows, fps) {
+			const safeFps = fps > 0 ? fps : 30;
+			return {
+				[MOTION_PROMPTS_PARAM]: serializeMotionPrompts(rows, safeFps),
+				prompt: rows.find((p) => p.text.trim() !== "")?.text ?? ""
+			};
+		}
+		/** The constraints channel's wire form: the transport JSON string (empty
+		*  string when no live constraint exists — the persist form). */
+		function serializeConstraintsParam(doc) {
+			const json = serializeConstraints(doc.keyframes, doc.payloads);
+			return (json.fullbody?.length ?? 0) === 0 && (json.end_effectors?.length ?? 0) === 0 && (json.root2d?.length ?? 0) === 0 ? "" : JSON.stringify(json);
+		}
+		/** The retirement currency of one channel against a projected doc.
+		*  Constraints: the wire string, digested as parsed content (a
+		*  re-ordered-key settlement — the same facts, different bytes — still
+		*  retires the op). Prompts: the projection's semantic rows VERBATIM —
+		*  the projection IS doc space (it already rode hydrateMotionPrompts;
+		*  re-normalizing it would drift the +1 frame convention). */
+		function serializeChannel(doc, channel, _ctx) {
+			if (channel === "prompts") return doc.prompts.map(semanticRow);
+			return serializeConstraintsParam(doc);
+		}
+		/** The settlement law applied to an op's stored value: raw authored rows
+		*  normalize into doc space at the current envelope (the stretch law),
+		*  so a stateable op retires however the envelope has since moved. */
+		function opCurrency(value, channel, ctx) {
+			if (channel === "prompts") return promptsSettle(value, ctx);
+			return value;
+		}
+		/** The settlement's common currency: strings digest through their PARSED
+		*  content, and the constraints object digests with its EMPTY ARRAYS
+		*  stripped (serializeConstraints omits empty groups; a foreign writer
+		*  may carry them — the same facts in different key shapes are one
+		*  statement). null/undefined/"" all state "nothing on this channel". */
+		function settleCurrency(v) {
+			const parsed = typeof v === "string" ? parseWireJson(v) : v;
+			if (parsed === null || parsed === void 0 || parsed === "") return {};
+			if (parsed !== null && typeof parsed === "object" && !Array.isArray(parsed)) {
+				const rec = parsed;
+				const out = {};
+				for (const k of Object.keys(rec)) {
+					if (Array.isArray(rec[k]) && rec[k].length === 0) continue;
+					out[k] = rec[k];
+				}
+				return out;
+			}
+			return parsed;
+		}
+		/** Content-equal under the door's semantics (canonical digest). */
+		function settledEquals(a, b) {
+			return canonicalJson(settleCurrency(a)) === canonicalJson(settleCurrency(b));
+		}
+		/** THE SUPERSEDE LAW (motion's refinement of the h3 log — 2026-11-05):
+		*  a channel holds ONE live statement. Appending an op retires every
+		*  older op on that channel: the door can only ever settle the NEWEST
+		*  payload, so an older statement is dead on arrival — kept live it
+		*  would re-mask the shown doc the moment the newer op retired (the
+		*  zombie-resurface hazard: undo-to-doc-shape would resurrect the last
+		*  gesture). Commit order still rides seq (A2); this trims the log. */
+		function supersedeOps(ops, op) {
+			return [...ops.filter((o) => o.channel !== op.channel), op];
+		}
+		/** The live ops: ops whose value the projected doc does not yet contain.
+		*  Derived per render — never bookkept, so nothing can leak or go stale
+		*  (an op is retired by the settlement itself). */
+		function liveOps(doc, ops, ctx) {
+			return ops.filter((op) => !settledEquals(serializeChannel(doc, op.channel, ctx), opCurrency(op.value, op.channel, ctx)));
+		}
+		/** The shown document: the projection with the live ops applied (latest
+		*  op per channel wins; re-hydration re-runs so the shown doc is always
+		*  well-formed view state, never raw payload). */
+		function overlayMotionDoc(doc, ops, ctx) {
+			const live = liveOps(doc, ops, ctx);
+			const latest = (channel) => {
+				let out;
+				for (const op of live) if (op.channel === channel && (out === void 0 || op.seq > out.seq)) out = op;
+				return out;
+			};
+			const promptsOp = latest("prompts");
+			const constraintsOp = latest("constraints");
+			if (promptsOp === void 0 && constraintsOp === void 0) return doc;
+			const segments = promptsOp === void 0 ? doc.prompts : promptsOp.value;
+			const constraintJson = constraintsOp === void 0 ? null : parseWireJson(constraintsOp.value);
+			const hydrated = constraintJson ? hydrateConstraints(constraintJson) : null;
+			return {
+				prompts: viewRows(segments),
+				keyframes: hydrated?.keyframes ?? (constraintsOp === void 0 ? doc.keyframes : []),
+				payloads: hydrated?.payloads ?? (constraintsOp === void 0 ? doc.payloads : {})
+			};
+		}
+		/** The no-overlap heal rides the write door (the dead effect's law,
+		*  kept): every committed prompts shape is a strict sequence. */
+		function healPrompts(rows) {
+			return untanglePrompts(rows);
+		}
+		//#endregion
+		//#region src/ui/studio/useMotionDoc.ts
+		/**
+		* useMotionDoc — the one-truth hook (the h3-timeline useShownDoc pattern
+		* ported to motion's channels; nativity audit F7, 2026-11-05).
+		*
+		* THE LAW (DSH doc law: presenters are pure functions of durable truth;
+		* the adapter owns writes; live incrementality is transient and marked):
+		* the bench doc (stage.params) is the ONLY document state. This hook
+		* holds NO mirror — it projects the row (projectMotionDoc), overlays the
+		* transient op log (overlayMotionDoc), and commits every gesture
+		* straight through onSave while appending the exact channel statement as
+		* an op. An op retires when the durable doc itself contains it, so an
+		* external bench write re-hydrates naturally (the projection re-reads
+		* stage.params on every change — there is no once-only hydration gate).
+		* No guard, no echo ref, no seed-once latch — a stale refresh cannot
+		* rewrite stated content because there is no second state to rewrite.
+		*
+		* REPLACES the tlPrompts/tlKeyframes/tlIntervals/constraintPayloads
+		* mirrors, the once-only constraints hydration + didHydratePrompts seed
+		* latch, the echo-guard persist effects, and the derived `prompt`
+		* write-back (the prompts door now carries motion_prompts + prompt in
+		* ONE fused statement).
+		*/
+		function useMotionDoc(stage, onSave, fps, targetT) {
+			const projected = (0, react.useMemo)(() => projectMotionDoc(stage.params, fps, targetT), [
+				canonicalJson(stage.params),
+				fps,
+				targetT
+			]);
+			const [ops, setOps] = (0, react.useState)([]);
+			const seqRef = (0, react.useRef)(0);
+			const projectedRef = (0, react.useRef)(projected);
+			projectedRef.current = projected;
+			const opsRef = (0, react.useRef)(ops);
+			opsRef.current = ops;
+			const fpsRef = (0, react.useRef)(fps);
+			fpsRef.current = fps;
+			const settleCtxRef = (0, react.useRef)({
+				fps,
+				targetT
+			});
+			settleCtxRef.current = {
+				fps,
+				targetT
+			};
+			const shownOf = () => {
+				const base = projectedRef.current;
+				return overlayMotionDoc(base, liveOps(base, opsRef.current, settleCtxRef.current), settleCtxRef.current);
+			};
+			const stageIdRef = (0, react.useRef)(stage.id);
+			if (stageIdRef.current !== stage.id) {
+				stageIdRef.current = stage.id;
+				opsRef.current = [];
+				setOps([]);
+			}
+			const live = (0, react.useMemo)(() => liveOps(projected, ops, settleCtxRef.current), [
+				projected,
+				ops,
+				fps,
+				targetT
+			]);
+			const shown = (0, react.useMemo)(() => overlayMotionDoc(projected, live, settleCtxRef.current), [
+				projected,
+				live,
+				fps,
+				targetT
+			]);
+			const appendOp = (op) => {
+				opsRef.current = supersedeOps(opsRef.current, op);
+				setOps(opsRef.current);
+			};
+			return {
+				shown,
+				commitPrompts: (0, react.useMemo)(() => (update) => {
+					const prevRows = shownOf().prompts;
+					const next = healPrompts(update(prevRows));
+					const semantic = next.map((p) => ({
+						text: p.text,
+						start_frame: p.start_frame,
+						end_frame: p.end_frame
+					}));
+					const prevSemantic = prevRows.map((p) => ({
+						text: p.text,
+						start_frame: p.start_frame,
+						end_frame: p.end_frame
+					}));
+					if (canonicalJson(promptsSettle(semantic, settleCtxRef.current)) === canonicalJson(prevSemantic)) return;
+					onSave(serializePromptsParams(next, fpsRef.current));
+					appendOp({
+						channel: "prompts",
+						value: semantic,
+						seq: seqRef.current++
+					});
+				}, [onSave]),
+				commitConstraints: (0, react.useMemo)(() => (update) => {
+					const prevDoc = shownOf();
+					const wire = serializeConstraintsParam(update(prevDoc));
+					if (wire === serializeConstraintsParam(prevDoc)) return;
+					onSave({ motion_constraints: wire });
+					appendOp({
+						channel: "constraints",
+						value: wire,
+						seq: seqRef.current++
+					});
+				}, [onSave])
+			};
+		}
+		//#endregion
 		//#region \0dsh-css:packages/motion/motion/src/ui/studio/component.module.css.mjs
 		const css$3 = "@keyframes ihGs4q_motionSpin{to{transform:rotate(360deg)}}.ihGs4q_shellPad{gap:8px;padding:12px 16px}.ihGs4q_railGrid{border-bottom:1px solid color-mix(in srgb, var(--dsw-alias-border,#e2e4e9) 45%, transparent);grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;padding:10px 12px;display:grid}.ihGs4q_railGroupLabel{text-transform:uppercase;letter-spacing:.14em;color:color-mix(in srgb, var(--dsw-alias-label-secondary) 40%, transparent);grid-column:span 2;padding:0 4px 2px;font-size:9px;font-weight:600}.ihGs4q_railGroupLabelMt{text-transform:uppercase;letter-spacing:.14em;color:color-mix(in srgb, var(--dsw-alias-label-secondary) 40%, transparent);grid-column:span 2;margin-top:4px;padding:0 4px 2px;font-size:9px;font-weight:600}.ihGs4q_contents{display:contents}.ihGs4q_railBtn{border:1px solid #0000;border-radius:6px;justify-content:center;align-items:center;gap:6px;width:100%;height:32px;padding:0 6px;font-size:10px;font-weight:500;transition:color .12s,background-color .12s,border-color .12s;display:flex}.ihGs4q_railBtn:disabled{cursor:not-allowed;opacity:.4}.ihGs4q_railBtnActive{border-color:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 50%, transparent);background:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 15%, transparent);color:var(--dsw-alias-accent,#3b82f6)}.ihGs4q_railBtnIdle{border-color:color-mix(in srgb, var(--dsw-alias-border,#e2e4e9) 50%, transparent);background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 30%, transparent);color:var(--dsw-alias-label-secondary)}.ihGs4q_railBtnIdle:hover{border-color:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 40%, transparent);color:var(--dsw-alias-accent,#3b82f6)}.ihGs4q_railBtnEditActive{border-color:color-mix(in srgb, var(--dsw-alias-danger,#dc2626) 60%, transparent);background:color-mix(in srgb, var(--dsw-alias-danger,#dc2626) 15%, transparent);color:var(--dsw-alias-danger,#dc2626)}.ihGs4q_stampBtn{border:1px solid color-mix(in srgb, var(--dsw-alias-danger,#dc2626) 70%, transparent);background:color-mix(in srgb, var(--dsw-alias-danger,#dc2626) 20%, transparent);width:100%;height:32px;color:var(--dsw-alias-danger,#dc2626);border-radius:6px;justify-content:center;align-items:center;gap:6px;padding:0 6px;font-size:10px;font-weight:600;transition:color .12s,background-color .12s,border-color .12s;display:flex}.ihGs4q_stampBtn:hover{background:color-mix(in srgb, var(--dsw-alias-danger,#dc2626) 30%, transparent)}.ihGs4q_stampBtn:disabled{opacity:.5}.ihGs4q_reposeBtn{border:1px solid color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 60%, transparent);background:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 15%, transparent);width:100%;height:32px;color:var(--dsw-alias-accent,#3b82f6);border-radius:6px;justify-content:center;align-items:center;gap:6px;padding:0 6px;font-size:10px;font-weight:600;transition:color .12s,background-color .12s,border-color .12s;display:flex}.ihGs4q_reposeBtn:hover{background:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 25%, transparent)}.ihGs4q_reposeBtn:disabled{opacity:.5}.ihGs4q_railBtnDanger{border:1px solid color-mix(in srgb, var(--dsw-alias-border,#e2e4e9) 50%, transparent);background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 30%, transparent);width:100%;height:32px;color:var(--dsw-alias-label-secondary);border-radius:6px;justify-content:center;align-items:center;gap:6px;padding:0 6px;font-size:10px;font-weight:500;transition:color .12s,background-color .12s,border-color .12s;display:flex}.ihGs4q_railBtnDanger:hover{border-color:color-mix(in srgb, var(--dsw-alias-danger,#dc2626) 50%, transparent);color:var(--dsw-alias-danger,#dc2626)}.ihGs4q_bgBtnIdle{border:1px solid color-mix(in srgb, var(--dsw-alias-border,#e2e4e9) 50%, transparent);background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 30%, transparent);width:100%;height:32px;color:var(--dsw-alias-label-secondary);border-radius:6px;justify-content:center;align-items:center;gap:6px;padding:0 6px;font-size:10px;font-weight:500;transition:color .12s,background-color .12s,border-color .12s;display:flex}.ihGs4q_bgBtnIdle:hover{border-color:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 50%, transparent);color:var(--dsw-alias-accent,#3b82f6)}.ihGs4q_hiddenInput{display:none}.ihGs4q_bodySquareWrap{grid-column:span 2;justify-content:center;padding:4px 0;display:flex}.ihGs4q_bodyNotice{border:1px solid color-mix(in srgb, var(--dsw-alias-danger,#dc2626) 40%, transparent);background:color-mix(in srgb, var(--dsw-alias-danger,#dc2626) 10%, transparent);color:var(--dsw-alias-danger,#dc2626);border-radius:4px;grid-column:span 2;padding:4px 6px;font-size:9px;line-height:1.6}.ihGs4q_bodyEmptyIcon{width:20px;height:20px;color:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 60%, transparent)}.ihGs4q_wireBtn{background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 90%, transparent);border-radius:4px;justify-content:center;align-items:center;width:20px;height:20px;display:flex}.ihGs4q_wireBtn:hover,.ihGs4q_wireBtnOn{color:var(--dsw-alias-accent,#3b82f6)}.ihGs4q_wireBtnOff{color:color-mix(in srgb, var(--dsw-alias-label-secondary) 70%, transparent)}.ihGs4q_centerRow{flex:1;gap:8px;min-height:0;display:flex}.ihGs4q_stageFrame{min-width:0;transition:color .12s,background-color .12s,border-color .12s}.ihGs4q_stageFrameDrag{border-color:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 80%, transparent);box-shadow:0 0 0 2px color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 40%, transparent)}.ihGs4q_ovBg{z-index:0}.ihGs4q_ovCam{z-index:30}.ihGs4q_ovDrop{pointer-events:none;z-index:20}.ihGs4q_ovRect{pointer-events:none;z-index:40}.ihGs4q_bgImg{pointer-events:none;object-fit:cover;width:100%;height:100%}.ihGs4q_dropVeil{background:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 10%, transparent);backdrop-filter:blur(1px);justify-content:center;align-items:center;width:100%;height:100%;display:flex}.ihGs4q_dropVeilLabel{background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 80%, transparent);color:var(--dsw-alias-accent,#3b82f6);border-radius:6px;padding:6px 12px;font-size:11px;font-weight:500}.ihGs4q_stageLoading{height:100%;color:color-mix(in srgb, var(--dsw-alias-label-secondary) 60%, transparent);flex-direction:column;justify-content:center;align-items:center;gap:8px;display:flex}.ihGs4q_skelAvatar{border-radius:999px;width:96px;height:96px}.ihGs4q_skelAvatarSm{border-radius:999px;width:80px;height:80px}.ihGs4q_skelLine{width:112px;height:12px}.ihGs4q_stageVeil{background:color-mix(in srgb, var(--melite-stage-bg) 60%, transparent);width:100%;height:100%;color:color-mix(in srgb, var(--dsw-alias-label-secondary) 70%, transparent);flex-direction:column;justify-content:center;align-items:center;gap:8px;display:flex}.ihGs4q_warnIcon{width:24px;height:24px;color:color-mix(in srgb, var(--dsw-alias-danger,#dc2626) 70%, transparent)}.ihGs4q_veilText{font-size:12px}.ihGs4q_camPill{box-shadow:none;background:0 0;border:0;border-radius:999px;align-items:center;gap:4px;padding:4px;display:flex}.ihGs4q_camPill>span{flex:none;display:inline-flex}.ihGs4q_camBtn,.ihGs4q_frameBtn{box-sizing:border-box;background:0 0;border:0;flex:none;padding:0}.ihGs4q_camBtn{border:1px solid color-mix(in srgb, var(--dsw-alias-border,#e2e4e9) 50%, transparent);background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 30%, transparent);width:28px;height:28px;color:var(--dsw-alias-label-secondary);border-radius:999px;justify-content:center;align-items:center;transition:color .12s,background-color .12s,border-color .12s;display:flex}.ihGs4q_camBtn:hover{background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 40%, transparent);color:var(--dsw-alias-accent,#3b82f6)}.ihGs4q_camDivider{background:color-mix(in srgb, var(--dsw-alias-border,#e2e4e9) 60%, transparent);width:1px;height:16px;margin:0 2px}.ihGs4q_frameBtn{border-radius:999px;justify-content:center;align-items:center;width:28px;height:28px;transition:color .12s,background-color .12s,border-color .12s;display:flex}.ihGs4q_frameBtnActive{background:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 15%, transparent);color:var(--dsw-alias-accent,#3b82f6)}.ihGs4q_frameBtnIdle{border:1px solid color-mix(in srgb, var(--dsw-alias-border,#e2e4e9) 50%, transparent);background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 30%, transparent);color:var(--dsw-alias-label-secondary)}.ihGs4q_frameBtnIdle:hover{background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 40%, transparent);color:var(--dsw-alias-accent,#3b82f6)}.ihGs4q_exportRect{pointer-events:auto;cursor:move;touch-action:none;border:2px solid var(--dsw-alias-accent,#3b82f6);position:absolute}.ihGs4q_cornerHandle{background:var(--dsw-alias-accent,#3b82f6);border:2px solid #fff;border-radius:999px;width:12px;height:12px;position:absolute}.ihGs4q_cornerNW{cursor:nwse-resize;top:-6px;left:-6px}.ihGs4q_cornerNE{cursor:nesw-resize;top:-6px;right:-6px}.ihGs4q_cornerSW{cursor:nesw-resize;bottom:-6px;left:-6px}.ihGs4q_cornerSE{cursor:nwse-resize;bottom:-6px;right:-6px}.ihGs4q_crossV{pointer-events:none;background:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 60%, transparent);width:1px;height:12px;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)}.ihGs4q_crossH{pointer-events:none;background:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 60%, transparent);width:12px;height:1px;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)}.ihGs4q_rectHint{border:1px solid color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 30%, transparent);background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 80%, transparent);color:var(--dsw-alias-accent,#3b82f6);backdrop-filter:blur(4px);border-radius:999px;padding:4px 12px;font-size:10px;box-shadow:0 8px 28px -12px #00000073}.ihGs4q_timelineShell{border-color:color-mix(in srgb, var(--dsw-alias-border,#e2e4e9) 40%, transparent);border-radius:8px}.ihGs4q_transportHead{border-color:color-mix(in srgb, var(--dsw-alias-border,#e2e4e9) 40%, transparent);background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 20%, transparent);flex-wrap:wrap;padding:6px 12px}.ihGs4q_playBtn{width:32px;height:32px;color:var(--dsw-alias-label-primary);background:#ffffff1a;border-radius:999px;flex-shrink:0;justify-content:center;align-items:center;transition:color .12s,background-color .12s,border-color .12s;display:flex}.ihGs4q_playBtn:hover{background:#fff3}.ihGs4q_playBtn:disabled{cursor:not-allowed;opacity:.4}.ihGs4q_playIcon{width:14px;height:14px;margin-left:2px}.ihGs4q_timeWrap{flex-shrink:0;font-size:11px}.ihGs4q_timeText{font-variant-numeric:tabular-nums;color:color-mix(in srgb, var(--dsw-alias-label-primary) 80%, transparent);font-family:ui-monospace,monospace}.ihGs4q_noMotion{color:color-mix(in srgb, var(--dsw-alias-label-secondary) 60%, transparent);align-items:center;gap:4px;display:flex}.ihGs4q_fpsChip{color:color-mix(in srgb, var(--dsw-alias-label-primary) 60%, transparent);background:#ffffff1a;border-radius:4px;flex-shrink:0;padding:2px 6px;font-family:ui-monospace,monospace;font-size:10px;display:none}@media (width>=640px){.ihGs4q_fpsChip{display:block}}.ihGs4q_hintWrap{align-items:center;gap:8px;display:flex}.ihGs4q_hintTitle{text-transform:uppercase;letter-spacing:.025em;color:color-mix(in srgb, var(--dsw-alias-label-secondary) 70%, transparent);flex-shrink:0;font-size:10px;font-weight:600}.ihGs4q_addCardBtn{border:1px solid color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 60%, transparent);background:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 15%, transparent);color:var(--dsw-alias-accent,#3b82f6);border-radius:999px;align-items:center;gap:4px;padding:2px 10px;font-size:10px;font-weight:600;transition:color .12s,background-color .12s,border-color .12s;display:flex}.ihGs4q_addCardBtn:hover{background:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 25%, transparent)}.ihGs4q_addCardBtn:disabled{cursor:not-allowed;opacity:.4}.ihGs4q_timelineEmpty{color:color-mix(in srgb, var(--dsw-alias-label-secondary) 60%, transparent);justify-content:center;align-items:center;gap:6px;padding:24px 12px;font-size:11px;display:flex}.ihGs4q_editHintBar{background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 20%, transparent);color:color-mix(in srgb, var(--dsw-alias-label-secondary) 60%, transparent);flex-shrink:0;align-items:flex-start;gap:8px;padding:8px 12px;font-size:10px;display:flex}.ihGs4q_editHintIcon{width:12px;height:12px;color:color-mix(in srgb, var(--dsw-alias-danger,#dc2626) 70%, transparent);flex-shrink:0;margin-top:2px}.ihGs4q_editHintStrong{color:color-mix(in srgb, var(--dsw-alias-label-secondary) 80%, transparent)}.ihGs4q_i12{width:12px;height:12px}.ihGs4q_i14{width:14px;height:14px}.ihGs4q_spinIcon{width:14px;height:14px;animation:1s linear infinite ihGs4q_motionSpin}";
 		const tagId$3 = "@melite/motion-motion/component.module.css@7c875ed4";
@@ -10602,44 +10898,38 @@ window.__ModuleLoader__.load({
 		//#endregion
 		//#region src/ui/studio/useMotionUndoStack.ts
 		/**
-		* useMotionUndoStack — the undo/redo cluster moved verbatim from
-		* `component.tsx` (MotionCardEditor lines ~441–554).
+		* useMotionUndoStack — the undo/redo cluster, re-homed onto the one-truth
+		* doc doors (2026-11-05, nativity audit F7).
 		*
 		* Snapshots ALL authoring state before each mutation so the user can step
 		* back through timeline edits (prompt add/move/resize/delete/split/merge,
-		* keyframe add/move/delete, interval add/move/delete) and joint-edit
-		* operations (enter edit mode, stamp, repose, discard). Read via refs so
-		* pushUndo stays stable (zero re-render cascade).
-		*
-		* Free-variable reads became explicit hook args; the verbs + snapshot fn
-		* are returned. Behavior is IDENTICAL to the inline block.
+		* keyframe add/move/delete) and joint-edit operations (enter edit mode,
+		* stamp, repose, discard). The doc channels (prompts, keyframes, payloads)
+		* are captured from the SHOWN document and restored through the commit
+		* doors — an undo is a stated edit like any gesture, never a mirror
+		* write. The joints/kept-edit/deformed-image cluster stays component UI
+		* state (viewer-local, not doc state). Read via refs so pushUndo stays
+		* stable (zero re-render cascade).
 		*/
-		function useMotionUndoStack({ tlPrompts, tlKeyframes, constraintPayloads, tlIntervals, keptEdit, editedDeformedB64, editableJointsRef, promptsAuthoredRef, setTlPrompts, setTlKeyframes, setConstraintPayloads, setTlIntervals, setEditableJoints, setKeptEdit, setEditedDeformedB64 }) {
+		function useMotionUndoStack({ captureDoc, restoreDoc, keptEdit, editedDeformedB64, editableJointsRef, setEditableJoints, setKeptEdit, setEditedDeformedB64 }) {
 			const undoStack = (0, react.useRef)([]);
 			const redoStack = (0, react.useRef)([]);
 			const [undoVersion, setUndoVersion] = (0, react.useState)(0);
-			const tlPromptsRef = (0, react.useRef)(tlPrompts);
-			const tlKeyframesRef = (0, react.useRef)(tlKeyframes);
-			const constraintPayloadsRef = (0, react.useRef)(constraintPayloads);
-			const tlIntervalsRef = (0, react.useRef)(tlIntervals);
+			const captureDocRef = (0, react.useRef)(captureDoc);
+			const restoreDocRef = (0, react.useRef)(restoreDoc);
+			captureDocRef.current = captureDoc;
+			restoreDocRef.current = restoreDoc;
 			const keptEditRef = (0, react.useRef)(null);
 			const editedDeformedB64Ref = (0, react.useRef)(null);
-			tlPromptsRef.current = tlPrompts;
-			tlKeyframesRef.current = tlKeyframes;
-			constraintPayloadsRef.current = constraintPayloads;
-			tlIntervalsRef.current = tlIntervals;
 			keptEditRef.current = keptEdit;
 			editedDeformedB64Ref.current = editedDeformedB64;
 			const captureSnapshot = (0, react.useCallback)(() => {
 				const editableJoints = editableJointsRef.current ? new Float32Array(editableJointsRef.current) : null;
+				const doc = captureDocRef.current();
 				return {
-					tlPrompts: tlPromptsRef.current.map((p) => ({ ...p })),
-					tlKeyframes: tlKeyframesRef.current.map((k) => ({ ...k })),
-					constraintPayloads: Object.fromEntries(Object.entries(constraintPayloadsRef.current).map(([k, v]) => [k, { ...v }])),
-					tlIntervals: tlIntervalsRef.current.map(
-						/* v8 ignore next -- tlIntervalsRef is only ever written as [] (the sole writer clears wholesale — probe 2026-09-19): the mapper never runs */
-						(iv) => ({ ...iv })
-					),
+					prompts: doc.prompts.map((p) => ({ ...p })),
+					keyframes: doc.keyframes.map((k) => ({ ...k })),
+					payloads: Object.fromEntries(Object.entries(doc.payloads).map(([k, v]) => [k, { ...v }])),
 					editableJoints,
 					keptEdit: keptEditRef.current ? {
 						joints: new Float32Array(keptEditRef.current.joints),
@@ -10657,22 +10947,17 @@ window.__ModuleLoader__.load({
 				setUndoVersion((v) => v + 1);
 			}, [captureSnapshot]);
 			const restoreSnapshot = (0, react.useCallback)((snap) => {
-				promptsAuthoredRef.current = true;
-				setTlPrompts(snap.tlPrompts);
-				setTlKeyframes(snap.tlKeyframes);
-				setConstraintPayloads(snap.constraintPayloads);
-				setTlIntervals(snap.tlIntervals);
+				restoreDocRef.current({
+					prompts: snap.prompts.map((p) => ({ ...p })),
+					keyframes: snap.keyframes.map((k) => ({ ...k })),
+					payloads: Object.fromEntries(Object.entries(snap.payloads).map(([k, v]) => [k, { ...v }]))
+				});
 				setEditableJoints(snap.editableJoints);
 				editableJointsRef.current = snap.editableJoints;
 				setKeptEdit(snap.keptEdit);
 				setEditedDeformedB64(snap.editedDeformedB64);
 			}, [
-				promptsAuthoredRef,
 				editableJointsRef,
-				setTlPrompts,
-				setTlKeyframes,
-				setConstraintPayloads,
-				setTlIntervals,
 				setEditableJoints,
 				setKeptEdit,
 				setEditedDeformedB64
@@ -11183,9 +11468,10 @@ window.__ModuleLoader__.load({
 		*
 		* Owns no primitive state (the remnant orchestrates all useState/useRef);
 		* it owns the memos, verbs, and the client-side re-skin effect.
-		* Free-variable reads became explicit hook args. Behavior is IDENTICAL.
+		* Free-variable reads became explicit hook args. The live-bind joint edit
+		* rides the constraints commit door (one-truth rework, 2026-11-05).
 		*/
-		function usePoseEditing({ effectiveNpz, frameIdx, tlKeyframes: _tlKeyframes, constraintPayloads, keptEdit, currentJointsM, fullbodyKfAtFrame, pushUndo, toast, skin, onSave, editMode, setEditMode, editableJoints, setEditableJoints, editableJointsRef, setSelectedJoint, setEditedDeformedB64, reposing: _reposing, setReposing, setKeptEdit, setPlaying, setConstraintPayloads }) {
+		function usePoseEditing({ effectiveNpz, frameIdx, tlKeyframes: _tlKeyframes, constraintPayloads, keptEdit, currentJointsM, fullbodyKfAtFrame, pushUndo, toast, skin, onSave, editMode, setEditMode, editableJoints, setEditableJoints, editableJointsRef, setSelectedJoint, setEditedDeformedB64, reposing: _reposing, setReposing, setKeptEdit, setPlaying, commitConstraints }) {
 			const toggleEdit = () => {
 				/* v8 ignore next 1 -- Refine is disabled exactly when currentJointsM is null (probe 2026-09-19) */
 				if (!currentJointsM) return;
@@ -11225,9 +11511,12 @@ window.__ModuleLoader__.load({
 				if (!src || !kf) return;
 				const editedM = jointsFromCm(next);
 				const payload = stampEditedPose(editedM, patchFrame(src.posedJoints, src.globalRotMats, editedM, frameIdx).globalRotMats.subarray(frameIdx * 77 * 9, (frameIdx + 1) * 77 * 9), frameIdx, src.T);
-				setConstraintPayloads((p) => ({
-					...p,
-					[kf.uuid]: payload
+				commitConstraints((doc) => ({
+					...doc,
+					payloads: {
+						...doc.payloads,
+						[kf.uuid]: payload
+					}
 				}));
 			}, [
 				effectiveNpz,
@@ -11235,7 +11524,7 @@ window.__ModuleLoader__.load({
 				frameIdx,
 				editableJointsRef,
 				setEditableJoints,
-				setConstraintPayloads
+				commitConstraints
 			]);
 			usePoseReskinEffect({
 				skin,
@@ -11345,7 +11634,7 @@ window.__ModuleLoader__.load({
 			return n;
 		}
 		//#endregion
-		//#region ../../web-kit/timeline/src/timeline/viser-timeline/motionTimelineState.ts
+		//#region ../../web-kit/timeline/src/timeline/motionTimelineState.ts
 		const MOTION_TIMELINE_TRACKS = [
 			{
 				uuid: "fullbody",
@@ -11977,6 +12266,109 @@ window.__ModuleLoader__.load({
 			"zoomRow": "t2WLSa_zoomRow"
 		};
 		//#endregion
+		//#region ../../web-kit/timeline/src/timelineCopy.ts
+		/**
+		* timelineCopy.ts — THE TIMELINE KIT COPY DICTIONARY (the copy-scope
+		* extension, 2026-11-05). Client UI copy is locale-owned (the estate's
+		* decision, the DSH verify-client-ui-i18n law): presentation code owns
+		* no copy literals; it consumes them here through the typed seat. A
+		* second locale plugs into this dictionary without touching a single
+		* timeline component.
+		*
+		* THE BOUND: static user-visible FACES of the melite-authored
+		* components live here (lane heads, zoom aria names, clip and keyframe
+		* labels, empty/hint states, the scrub bar's transport copy).
+		* Parameterized sentences whose shape is fixed but whose slots are live
+		* live here as typed dict functions (the square.ts pattern) — the site
+		* passes exactly the params the entry declares. Two exclusions carry
+		* the estate's documented bounds: `tip=` hover help is not a census
+		* seat and stays at the site (the motionCopy bound), and the vendored
+		* `viser-timeline/` subtree is NVIDIA upstream kept pull-diff-clean —
+		* its remaining rendered faces (the canvas seconds unit, the "(Empty)"
+		* placeholder) are upstream's, argued at the copy wall's pin, never
+		* this dictionary's. (F2, 2026-11-05: the zoom cluster re-homed out of
+		* the vendored dir to `TimelineScrollbar.tsx`; its copy joined this
+		* dictionary — `zoomFitTip`/`zoomFitLabel` beside the aria names.)
+		*/
+		/** The typed dictionary. Keys are stable copy ids. */
+		// v8 ignore next -- exercised key-by-key by the copy wall's census arm
+		const timelineCopy = {
+			/** The prompts lane's gutter head (the bar's default label). */
+			lanePrompts: "Prompts",
+			/** The beats lane's gutter head (the bar's default label). */
+			laneBeats: "Beats",
+			/** A chapter marker's auto label when the caller names none. */
+			markerAutoLabel: (p) => `Marker ${p.index}`,
+			/** The keyframe lanes' empty hint (the bar's default). */
+			laneHintDefault: "Double-click a lane to pin a pose constraint at the playhead",
+			/** The prompts lane's empty hint (the bar's default). */
+			emptyPromptsHint: "No prompt cards — the Add button carves one",
+			/** The beats lane's empty hint (the bar's default). */
+			beatsHintDefault: "double-click to add a beat — prompt segments join into the call's one prompt",
+			/** The zoom-out button's accessible name. */
+			zoomOutAria: "Zoom out",
+			/** The zoom-in button's accessible name. */
+			zoomInAria: "Zoom in",
+			/** The fit-to-window button's hover title + accessible name. */
+			zoomFitTip: "Fit to window (reset zoom)",
+			/** The fit-to-window button's rendered glyph text. */
+			zoomFitLabel: "fit",
+			/** A stem-carrying layer's hover title (the bed-under-every-cut law). */
+			audioBedTitle: (p) => `${p.stem} — one bed under every cut; each window hears its own slice in time`,
+			/** A layer head's hover title before a stem is wired. */
+			audioDropTitle: "drop an audio / music track — sliced to each window in time",
+			/** The add door's accessible name for one layer. */
+			addClipAria: (p) => `Add ${p.label} clip`,
+			/** The add door's hover title for one layer. */
+			addClipTitle: (p) => `Add a ${p.label} clip — from flow, from media, or from file`,
+			/** The detach button's accessible name for one layer. */
+			detachAria: (p) => `Detach ${p.label}`,
+			/** The ruler tick's second-suffixed label. */
+			tickSeconds: (p) => `${p.value}s`,
+			/** A first clip's dead left-edge hover title (the frame-0 wall). */
+			firstCallTitle: "First call — nothing before it to trim into",
+			/** The extend-seam dot's hover title. */
+			seamExtendTitle: "extend — latent tail carries across this seam",
+			/** The clip editor's placeholder. */
+			promptPlaceholder: "Enter prompt…",
+			/** A clip's face when its prompt text is empty. */
+			emptyClip: "(empty)",
+			/** A clip's duration chip ("2.4s"). */
+			clipSeconds: (p) => `${p.seconds}s`,
+			/** The knob-override dot's hover title. */
+			knobOverrideTitle: "This call overrides run knobs (per-call)",
+			/** The reference-image badge's hover title (singular/plural). */
+			refImagesTitle: (p) => `${p.count} reference image${p.count === 1 ? "" : "s"} (guide + extras)`,
+			/** The clip delete button's accessible name. */
+			deletePromptCardAria: "Delete this prompt card",
+			/** An audio clip's hover title (name · window · gain — drag law). */
+			audioClipTitle: (p) => `${p.name} · ${p.start}–${p.end}s${p.gain !== null ? ` · gain ${p.gain}` : ""} — drag to move`,
+			/** The audio clip delete button's accessible name. */
+			deleteClipAria: (p) => `Delete ${p.name}`,
+			/** A stem slice's hover title (which call hears which window). */
+			audioSliceTitle: (p) => `call #${p.call} · window hears bed ${p.start}–${p.end}s`,
+			/** A stem slice's rendered range ("1.0–3.5s"). */
+			sliceRange: (p) => `${p.start}–${p.end}s`,
+			/** The empty audio lane's drop hint. */
+			audioDropHint: "drop or upload audio — clips land where you drop them, drag to move",
+			/** A keyframe pin's accessible name. */
+			keyframeAria: (p) => `${p.track} keyframe at frame ${p.frame}`,
+			/** A keyframe delete button's accessible name. */
+			deleteKeyframeAria: (p) => `Delete ${p.track} keyframe at frame ${p.frame}`,
+			/** The toggle's accessible name while playing. */
+			scrubPauseAria: "Pause",
+			/** The toggle's accessible name while paused. */
+			scrubPlayAria: "Play",
+			/** The scrub track's accessible name. */
+			scrubAria: "Timeline scrub",
+			/** The track's value text ("1.2s of 9.8s"). */
+			scrubValuetext: (p) => `${p.current} of ${p.duration}`,
+			/** The readout's frame column (" · frame 24/96"). */
+			scrubFramesSuffix: (p) => ` · frame ${p.frame}/${p.total}`,
+			/** The sub-minute second unit ("5.2s"). */
+			secondsUnit: "s"
+		};
+		//#endregion
 		//#region ../../web-kit/timeline/src/timeline/MotionTimelineBarChrome.tsx
 		/**
 		* MotionTimelineBarChrome — the bar's pinned + ruler + playhead chrome
@@ -12004,7 +12396,7 @@ window.__ModuleLoader__.load({
 									variant: "ghost",
 									size: "sm",
 									onClick: () => zoom(1 / ZOOM_STEP),
-									"aria-label": "Zoom out",
+									"aria-label": timelineCopy.zoomOutAria,
 									className: timeline_module_css_default.zoomBtn,
 									children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(ZoomOut, {})
 								})
@@ -12032,7 +12424,7 @@ window.__ModuleLoader__.load({
 									variant: "ghost",
 									size: "sm",
 									onClick: () => zoom(ZOOM_STEP),
-									"aria-label": "Zoom in",
+									"aria-label": timelineCopy.zoomInAria,
 									className: timeline_module_css_default.zoomBtn,
 									children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(ZoomIn, {})
 								})
@@ -12064,7 +12456,7 @@ window.__ModuleLoader__.load({
 								height: audioClipCards ? 44 : 26,
 								...L.accent ? { color: L.accent } : {}
 							},
-							title: L.stem ? `${L.stem} — one bed under every cut; each window hears its own slice in time` : "drop an audio / music track — sliced to each window in time",
+							title: L.stem ? timelineCopy.audioBedTitle({ stem: L.stem }) : timelineCopy.audioDropTitle,
 							children: [
 								/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Glyph, { "aria-hidden": true }),
 								/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
@@ -12075,8 +12467,8 @@ window.__ModuleLoader__.load({
 									variant: "ghost",
 									size: "sm",
 									"data-audio-upload": L.id,
-									"aria-label": `Add ${L.label} clip`,
-									title: `Add a ${L.label} clip — from flow, from media, or from file`,
+									"aria-label": timelineCopy.addClipAria({ label: L.label }),
+									title: timelineCopy.addClipTitle({ label: L.label }),
 									className: timeline_module_css_default.uploadBtn,
 									onClick: (e) => {
 										L.onUpload?.(e.currentTarget);
@@ -12087,7 +12479,7 @@ window.__ModuleLoader__.load({
 									variant: "ghost",
 									size: "sm",
 									onClick: () => onAudioDetach(L.id),
-									"aria-label": `Detach ${L.label}`,
+									"aria-label": timelineCopy.detachAria({ label: L.label }),
 									className: timeline_module_css_default.detachBtn,
 									children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.IconCloseOutlineRegular, {})
 								})
@@ -12162,7 +12554,7 @@ window.__ModuleLoader__.load({
 						style: { left: frameToPx(s * fps) },
 						children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", { className: timeline_module_css_default.tickLine }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 							className: timeline_module_css_default.tickLabel,
-							children: stepSec < 1 ? `${s.toFixed(1)}s` : `${s}s`
+							children: timelineCopy.tickSeconds({ value: stepSec < 1 ? s.toFixed(1) : String(s) })
 						})]
 					}, s)), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 						"data-testid": "motion-timeline-timecode",
@@ -12323,7 +12715,7 @@ window.__ModuleLoader__.load({
 							children: [
 								/* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
 									"data-prompt-edge": "l",
-									title: isFirst ? "First call — nothing before it to trim into" : void 0,
+									title: isFirst ? timelineCopy.firstCallTitle : void 0,
 									className: clsx(timeline_module_css_default.edgeL, isFirst && timeline_module_css_default.edgeDead),
 									onPointerDown: (e) => !isFirst && startDrag(e, {
 										kind: "prompt-l",
@@ -12341,7 +12733,7 @@ window.__ModuleLoader__.load({
 										background: playhead,
 										boxShadow: `0 0 4px ${playhead}`
 									},
-									title: "extend — latent tail carries across this seam"
+									title: timelineCopy.seamExtendTitle
 								}),
 								/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.Tip, {
 									tip: isLast ? "PULL to extend the motion — the timeline + duration grow as you drag" : "Drag to resize this card",
@@ -12370,7 +12762,7 @@ window.__ModuleLoader__.load({
 									},
 									onPointerDown: (e) => e.stopPropagation(),
 									onDoubleClick: (e) => e.stopPropagation(),
-									placeholder: "Enter prompt…",
+									placeholder: timelineCopy.promptPlaceholder,
 									className: timeline_module_css_default.clipEditor
 								}) : previewUrl ? /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 									className: timeline_module_css_default.previewWrap,
@@ -12391,11 +12783,11 @@ window.__ModuleLoader__.load({
 												style: { color },
 												children: p.text || /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 													className: timeline_module_css_default.clipEmpty,
-													children: "(empty)"
+													children: timelineCopy.emptyClip
 												})
-											}), wPx > 72 && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
+											}), wPx > 72 && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 												className: timeline_module_css_default.clipDur,
-												children: [((p.end_frame - p.start_frame) / Math.max(1, fps)).toFixed(1), "s"]
+												children: timelineCopy.clipSeconds({ seconds: ((p.end_frame - p.start_frame) / Math.max(1, fps)).toFixed(1) })
 											})]
 										})
 									]
@@ -12406,15 +12798,15 @@ window.__ModuleLoader__.load({
 										style: { color },
 										children: p.text || /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 											className: timeline_module_css_default.clipEmpty,
-											children: "(empty)"
+											children: timelineCopy.emptyClip
 										})
-									}), wPx > 64 && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
+									}), wPx > 64 && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 										className: timeline_module_css_default.clipDur,
-										children: [((p.end_frame - p.start_frame) / Math.max(1, fps)).toFixed(1), "s"]
+										children: timelineCopy.clipSeconds({ seconds: ((p.end_frame - p.start_frame) / Math.max(1, fps)).toFixed(1) })
 									})]
 								}),
 								p.override && !isEditing && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-									title: "This call overrides run knobs (per-call)",
+									title: timelineCopy.knobOverrideTitle,
 									className: timeline_module_css_default.knobDot
 								}),
 								p.audio && !isEditing && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Music, {
@@ -12424,7 +12816,7 @@ window.__ModuleLoader__.load({
 								(p.refImages ?? 0) > 0 && !isEditing && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
 									"data-testid": "tl-ref-badge",
 									className: timeline_module_css_default.refBadge,
-									title: `${p.refImages} reference image${p.refImages === 1 ? "" : "s"} (guide + extras)`,
+									title: timelineCopy.refImagesTitle({ count: p.refImages ?? 0 }),
 									children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.Image, { "aria-hidden": true }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 										className: timeline_module_css_default.refCount,
 										children: p.refImages
@@ -12440,7 +12832,7 @@ window.__ModuleLoader__.load({
 											e.stopPropagation();
 											onPromptDelete(p.uuid);
 										},
-										"aria-label": "Delete this prompt card",
+										"aria-label": timelineCopy.deletePromptCardAria,
 										className: timeline_module_css_default.promptDelete,
 										children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.IconCloseOutlineRegular, {})
 									})
@@ -12499,7 +12891,7 @@ window.__ModuleLoader__.load({
 									className: timeline_module_css_default.truncate,
 									children: b.text || /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 										className: timeline_module_css_default.beatEmpty,
-										children: "(empty)"
+										children: timelineCopy.emptyClip
 									})
 								})
 							})
@@ -12549,7 +12941,12 @@ window.__ModuleLoader__.load({
 						return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 							"data-audio-clip": c.id,
 							"data-card": audioClipCards ? "true" : void 0,
-							title: `${c.name} · ${a}–${b}s${c.gain != null ? ` · gain ${c.gain.toFixed(2)}` : ""} — drag to move`,
+							title: timelineCopy.audioClipTitle({
+								name: c.name,
+								start: a,
+								end: b,
+								gain: c.gain != null ? c.gain.toFixed(2) : null
+							}),
 							className: clsx(timeline_module_css_default.audioClip, audioClipCards && timeline_module_css_default.audioCard),
 							style: {
 								left: frameToPx(c.start_frame),
@@ -12590,16 +12987,16 @@ window.__ModuleLoader__.load({
 									children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 										className: timeline_module_css_default.audioName,
 										children: c.name
-									}), /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
+									}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 										className: timeline_module_css_default.audioTime,
-										children: [a, "s"]
+										children: timelineCopy.clipSeconds({ seconds: a })
 									})]
 								}),
 								onAudioClipDelete && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
 									variant: "ghost",
 									size: "sm",
 									"data-audio-clip-delete": c.id,
-									"aria-label": `Delete ${c.name}`,
+									"aria-label": timelineCopy.deleteClipAria({ name: c.name }),
 									onClick: (e) => {
 										e.stopPropagation();
 										onAudioClipDelete(L.id, c.id);
@@ -12614,27 +13011,29 @@ window.__ModuleLoader__.load({
 						const b = (p.end_frame / Math.max(1, fps)).toFixed(1);
 						return /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
 							"data-audio-slice": i,
-							title: `call #${i} · window hears bed ${a}–${b}s`,
+							title: timelineCopy.audioSliceTitle({
+								call: i,
+								start: a,
+								end: b
+							}),
 							className: timeline_module_css_default.audioSlice,
 							style: {
 								left: frameToPx(p.start_frame),
 								width: `max(4px, ${frameToPx(Math.max(1, p.end_frame - p.start_frame))}px)`
 							},
-							children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
+							children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 								className: timeline_module_css_default.sliceLabel,
-								children: [
-									a,
-									"–",
-									b,
-									"s"
-								]
+								children: timelineCopy.sliceRange({
+									start: a,
+									end: b
+								})
 							})
 						}, p.uuid);
 					}) : /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
 						className: timeline_module_css_default.audioDrop,
 						children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 							className: timeline_module_css_default.dropHint,
-							children: "drop or upload audio — clips land where you drop them, drag to move"
+							children: timelineCopy.audioDropHint
 						})
 					})
 				}, L.id);
@@ -12672,7 +13071,10 @@ window.__ModuleLoader__.load({
 									variant: "ghost",
 									size: "sm",
 									"data-kf": kf.uuid,
-									"aria-label": `${track.name} keyframe at frame ${kf.frame}`,
+									"aria-label": timelineCopy.keyframeAria({
+										track: track.name,
+										frame: kf.frame
+									}),
 									onPointerDown: (e) => startDrag(e, {
 										kind: "kf",
 										id: kf.uuid,
@@ -12700,7 +13102,10 @@ window.__ModuleLoader__.load({
 										e.stopPropagation();
 										onKeyframeDelete(kf.uuid);
 									},
-									"aria-label": `Delete ${track.name} keyframe at frame ${kf.frame}`,
+									"aria-label": timelineCopy.deleteKeyframeAria({
+										track: track.name,
+										frame: kf.frame
+									}),
 									className: timeline_module_css_default.kfDelete,
 									children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.IconCloseOutlineRegular, {})
 								})
@@ -12764,7 +13169,7 @@ window.__ModuleLoader__.load({
 		const PLAYHEAD = "var(--dsw-alias-brand-primary)";
 		/** Unified background for the timeline bar and its sticky timecode chip. */
 		const BAR_BG = "var(--dsw-alias-bg-layer-1)";
-		function MotionTimelineBar({ prompts, keyframes, frameIdx, onFrameChange, onScrubStart, onScrubEnd, totalFrames, fps, initialSeconds, onKeyframeAdd, onKeyframeMove, onKeyframeDelete, onPromptUpdate, onPromptMove, onPromptResize, onPromptDelete, onExtend, tracks = MOTION_TIMELINE_TRACKS, promptsLabel = "Prompts", laneHint = "Double-click a lane to pin a pose constraint at the playhead", packed = false, emptyPromptsHint = "No prompt cards — the Add button carves one", promptsHeight = 36, beats, beatsLabel = "Beats", beatsHeight = 26, beatsHint = "double-click to add a beat — prompt segments join into the call's one prompt", onBeatAdd, onPromptAdd, previews, selectedId = null, onSelect, audioLayers, onAudioDrop, onAudioDropAt, onAudioFileDrop, onAudioClipMove, onAudioClipDelete, onAudioDetach, audioClipCards = false, className, style, theme }) {
+		function MotionTimelineBar({ prompts, keyframes, frameIdx, onFrameChange, onScrubStart, onScrubEnd, totalFrames, fps, initialSeconds, onKeyframeAdd, onKeyframeMove, onKeyframeDelete, onPromptUpdate, onPromptMove, onPromptResize, onPromptDelete, onExtend, tracks = MOTION_TIMELINE_TRACKS, promptsLabel = timelineCopy.lanePrompts, laneHint = timelineCopy.laneHintDefault, packed = false, emptyPromptsHint = timelineCopy.emptyPromptsHint, promptsHeight = 36, beats, beatsLabel = timelineCopy.laneBeats, beatsHeight = 26, beatsHint = timelineCopy.beatsHintDefault, onBeatAdd, onPromptAdd, previews, selectedId = null, onSelect, audioLayers, onAudioDrop, onAudioDropAt, onAudioFileDrop, onAudioClipMove, onAudioClipDelete, onAudioDetach, audioClipCards = false, className, style, theme }) {
 			const barBg = theme?.barBg ?? BAR_BG;
 			const playhead = theme?.playhead ?? PLAYHEAD;
 			const scrollRef = (0, react.useRef)(null);
@@ -12974,6 +13379,21 @@ window.__ModuleLoader__.load({
 		});
 		(0, react.createContext)({ useGui: (selector) => selector({ theme: { dark_mode: true } }) });
 		//#endregion
+		//#region ../../web-kit/timeline/src/timeline/TimelineScrollbar.tsx
+		/**
+		* TimelineScrollbar — the timeline's scrollbar + zoom chrome,
+		* MELITE-AUTHORED. Re-homed out of the vendored
+		* `viser-timeline/timeline-overlays.tsx` 2026-11-05 (F2, the nativity
+		* audit): the section was never upstream code — it renders the estate's
+		* DSH Button + card-base Tip, imports the kit's own CSS module, and
+		* carries estate testids and copy. Housing it here returns the vendored
+		* files to upstream-only content, so a later upstream pull diffs clean;
+		* the zoom copy rides `timelineCopy.ts` (one owner — the dictionary
+		* already held `zoomOutAria`/`zoomInAria` beside the overlays' literals).
+		* The scrollbar body moved verbatim; only the imports and the zoom seats
+		* (now `TimelineZoomCluster`) changed.
+		*/
+		//#endregion
 		//#region src/ui/studio/useMotionStage.ts
 		/**
 		* useMotionStage — the 3D/stage cluster moved verbatim from `component.tsx`.
@@ -12983,7 +13403,9 @@ window.__ModuleLoader__.load({
 		*   with the kept-refine overlay.
 		* - discardKeptEdit (~897): revert the kept refine at the current frame.
 		* - stampConstraintAtFrame (~941): capture the edited pose as a fullbody
-		*   keyframe at the current frame (create or update the bound diamond).
+		*   keyframe at the current frame (create or update the bound diamond)
+		*   — stated through the constraints commit door (one-truth rework,
+		*   2026-11-05, nativity audit F7).
 		* - Export framing (~1051–1178): typed-pixel output truth + aspect-locked
 		*   stage rect (move + corner-resize math), coherence refits, and the
 		*   ResizeObserver live-refit while framing.
@@ -12991,7 +13413,7 @@ window.__ModuleLoader__.load({
 		* Free-variable reads became explicit hook args; the memo + verbs +
 		* framing state/handlers are returned. Behavior is IDENTICAL.
 		*/
-		function useMotionStage({ effectiveNpz, keptEdit, editableJoints, frameIdx, fullbodyKfAtFrame, toast, pushUndo, setKeptEdit, setEditedDeformedB64, setConstraintPayloads, setTlKeyframes, exportOpen, stageRect, setStageRect }) {
+		function useMotionStage({ effectiveNpz, keptEdit, editableJoints, frameIdx, fullbodyKfAtFrame, toast, pushUndo, setKeptEdit, setEditedDeformedB64, commitConstraints, exportOpen, stageRect, setStageRect }) {
 			const jointsFlatCm = (0, react.useMemo)(() => {
 				const src = effectiveNpz;
 				if (!src) return null;
@@ -13032,25 +13454,31 @@ window.__ModuleLoader__.load({
 				const payload = stampEditedPose(editedM, patchFrame(src.posedJoints, src.globalRotMats, editedM, frameIdx).globalRotMats.subarray(frameIdx * 77 * 9, (frameIdx + 1) * 77 * 9), frameIdx, src.T);
 				const existing = fullbodyKfAtFrame;
 				if (existing) {
-					setConstraintPayloads((prev) => ({
-						...prev,
-						[existing.uuid]: payload
+					commitConstraints((doc) => ({
+						...doc,
+						payloads: {
+							...doc.payloads,
+							[existing.uuid]: payload
+						}
 					}));
 					toast("success", `Updated keyframe at frame ${frameIdx + 1} (full-body)`);
 				} else {
 					const uuid = makeTimelineId();
-					setConstraintPayloads((prev) => ({
-						...prev,
-						[uuid]: payload
+					commitConstraints((doc) => ({
+						...doc,
+						keyframes: [...doc.keyframes, {
+							uuid,
+							track_id: "fullbody",
+							frame: frameIdx,
+							value: null,
+							opacity: 1,
+							locked: false
+						}],
+						payloads: {
+							...doc.payloads,
+							[uuid]: payload
+						}
 					}));
-					setTlKeyframes((prev) => [...prev, {
-						uuid,
-						track_id: "fullbody",
-						frame: frameIdx,
-						value: null,
-						opacity: 1,
-						locked: false
-					}]);
 					toast("success", `Stamped authored pose → keyframe at frame ${frameIdx + 1}`);
 				}
 			}, [
@@ -13060,8 +13488,7 @@ window.__ModuleLoader__.load({
 				fullbodyKfAtFrame,
 				toast,
 				pushUndo,
-				setConstraintPayloads,
-				setTlKeyframes
+				commitConstraints
 			]);
 			const [exportOut, setExportOut] = (0, react.useState)({
 				w: 768,
@@ -13231,37 +13658,19 @@ window.__ModuleLoader__.load({
 		//#endregion
 		//#region src/ui/studio/useTimelineEnvelope.ts
 		/**
-		* useTimelineEnvelope — the timeline synthesis + persistence cluster moved
-		* verbatim from `component.tsx` (MotionCardEditor lines ~1189–1372).
-		*
-		* Owns: persisted-constraints hydration, the authoring envelope
-		* (baseT/tlExtendT/targetT + pull-the-tail extend), the prompt seed effect
-		* with THE AUTHORING GUARD (promptsAuthoredRef law — a late envelope settle
-		* never rewrites authored frames), the no-overlap heal, and the two persist
-		* effects (constraints + prompts → stage.params).
-		*
-		* Owns no primitive authoring state (the remnant orchestrates all
-		* useState/useRef); promptsAuthoredRef is shared and passed in, the rest of
-		* the envelope refs live here. Behavior is IDENTICAL.
+		* useTimelineEnvelope — the authoring envelope math (baseT/targetT +
+		* pull-the-tail extend). The doc cluster that used to live beside it —
+		* the once-only constraints hydration, the didHydratePrompts seed latch,
+		* the rescale guard, and the two echo-guard persist effects — died in
+		* the one-truth rework (2026-11-05, nativity audit F7): the doc is
+		* projected by useMotionDoc from stage.params (external writes
+		* re-hydrate naturally), persistence rides the gesture commits, and the
+		* seed is the projection's own default. What remains here is the frame
+		* envelope: the real run's T once a motion exists, else the form's
+		* duration_sec × fps, plus the pull-the-tail override that extends the
+		* envelope and syncs duration_sec.
 		*/
-		function useTimelineEnvelope({ stage, effectiveNpz, onSave, toast, promptsAuthoredRef, tlPrompts, setTlPrompts, tlKeyframes, setTlKeyframes, constraintPayloads, setConstraintPayloads, setTlIntervals }) {
-			(0, react.useEffect)(() => {
-				const raw = stage.params?.[MOTION_CONSTRAINTS_PARAM];
-				const hydrated = raw ? hydrateConstraints(raw) : null;
-				if (hydrated) {
-					setTlKeyframes(hydrated.keyframes);
-					setConstraintPayloads(hydrated.payloads);
-				} else {
-					setTlKeyframes([]);
-					setConstraintPayloads({});
-				}
-				setTlIntervals([]);
-			}, [
-				stage.id,
-				setTlKeyframes,
-				setConstraintPayloads,
-				setTlIntervals
-			]);
+		function useTimelineEnvelope({ stage, effectiveNpz, onSave, toast }) {
 			const baseT = (0, react.useMemo)(() => {
 				if (effectiveNpz && effectiveNpz.T > 1) return effectiveNpz.T;
 				const d = typeof stage.params?.duration_sec === "number" ? stage.params.duration_sec : 5;
@@ -13273,121 +13682,36 @@ window.__ModuleLoader__.load({
 				setTlExtendT(0);
 			}, [baseT]);
 			const lastExtendToastRef = (0, react.useRef)(0);
-			const lastSeededT = (0, react.useRef)(-1);
-			const onTimelineExtend = (0, react.useCallback)((newTotal) => {
-				const t = Math.max(1, Math.floor(newTotal));
-				lastSeededT.current = t;
-				setTlExtendT(t);
-				onSave({ duration_sec: t / 30 });
-				const now = Date.now();
-				if (now - lastExtendToastRef.current > 1e3) {
-					lastExtendToastRef.current = now;
-					toast("info", `Timeline extended to ${(t / 30).toFixed(1)}s`);
-				}
-			}, [onSave, toast]);
-			const didHydratePrompts = (0, react.useRef)(false);
-			(0, react.useEffect)(() => {
-				if (!didHydratePrompts.current) {
-					didHydratePrompts.current = true;
-					const fps = effectiveNpz?.fps ?? 30;
-					const raw = stage.params?.[MOTION_PROMPTS_PARAM];
-					const hydrated = hydrateMotionPrompts(raw, fps, targetT);
-					if (hydrated && hydrated.length > 0) {
-						lastSeededT.current = targetT;
-						setTlPrompts(hydrated.map((s, i) => ({
-							uuid: `motion-prompt-${i}-${Date.now()}`,
-							text: s.text,
-							start_frame: s.start_frame,
-							end_frame: s.end_frame,
-							color: null
-						})));
-						return;
-					}
-					const singlePrompt = typeof stage.params?.prompt === "string" ? stage.params.prompt : "";
-					lastSeededT.current = targetT;
-					setTlPrompts([{
-						uuid: "motion-prompt",
-						text: singlePrompt,
-						start_frame: 0,
-						end_frame: Math.max(0, targetT - 1),
-						color: null
-					}]);
-					return;
-				}
-				if (targetT === lastSeededT.current) return;
-				lastSeededT.current = targetT;
-				if (promptsAuthoredRef.current) return;
-				setTlPrompts((prev) => {
-					/* v8 ignore next 4 -- the seed prompt always exists before any rescale (probe 2026-09-19) */
-					if (prev.length === 0) return [{
-						uuid: "motion-prompt",
-						text: "",
-						start_frame: 0,
-						end_frame: Math.max(0, targetT - 1),
-						color: null
-					}];
-					const oldT = prev.reduce((max, p) => Math.max(max, p.end_frame), 0) + 1;
-					/* v8 ignore next 1 -- end_frame ≥ 0 from every constructor ⟹ oldT ≥ 1 (probe 2026-09-19) */
-					if (oldT <= 0) return prev;
-					const scale = targetT / oldT;
-					return prev.map((p) => ({
-						...p,
-						start_frame: Math.round(p.start_frame * scale),
-						end_frame: Math.min(targetT - 1, Math.round((p.end_frame + 1) * scale) - 1)
-					}));
-				});
-			}, [targetT]);
-			(0, react.useEffect)(() => {
-				setTlPrompts((prev) => untanglePrompts(prev));
-			}, [tlPrompts, setTlPrompts]);
-			const lastPersistedRef = (0, react.useRef)("");
-			(0, react.useEffect)(() => {
-				const json = serializeConstraints(tlKeyframes.map((k) => ({
-					uuid: k.uuid,
-					track_id: k.track_id,
-					frame: k.frame
-				})), constraintPayloads);
-				const candidate = !json.fullbody && !json.end_effectors && !json.root2d ? "" : JSON.stringify(json);
-				if (candidate === lastPersistedRef.current) return;
-				lastPersistedRef.current = candidate;
-				onSave({ [MOTION_CONSTRAINTS_PARAM]: candidate });
-			}, [
-				tlKeyframes,
-				constraintPayloads,
-				onSave
-			]);
-			const lastPromptsPersistedRef = (0, react.useRef)("");
-			(0, react.useEffect)(() => {
-				const candidate = serializeMotionPrompts(tlPrompts, effectiveNpz?.fps ?? 30);
-				if (candidate === lastPromptsPersistedRef.current) return;
-				lastPromptsPersistedRef.current = candidate;
-				onSave({ [MOTION_PROMPTS_PARAM]: candidate });
-			}, [
-				tlPrompts,
-				effectiveNpz,
-				onSave
-			]);
 			return {
-				baseT,
 				targetT,
-				onTimelineExtend
+				onTimelineExtend: (0, react.useCallback)((newTotal) => {
+					const t = Math.max(1, Math.floor(newTotal));
+					setTlExtendT(t);
+					onSave({ duration_sec: t / 30 });
+					const now = Date.now();
+					if (now - lastExtendToastRef.current > 1e3) {
+						lastExtendToastRef.current = now;
+						toast("info", `Timeline extended to ${(t / 30).toFixed(1)}s`);
+					}
+				}, [onSave, toast])
 			};
 		}
 		//#endregion
 		//#region src/ui/studio/useTimelineAuthoring.ts
 		/**
-		* useTimelineAuthoring — the timeline authoring verbs moved verbatim from
-		* `component.tsx` (MotionCardEditor lines ~1381–1457).
+		* useTimelineAuthoring — the timeline authoring verbs, re-homed onto the
+		* one-truth commit doors (2026-11-05, nativity audit F7). Every verb is
+		* ONE statement through commitConstraints / commitPrompts — there are no
+		* mirror setters and no authoring guard: the doc hook owns hydration,
+		* persistence, and the shown overlay, so a verb's only job is to compute
+		* the next shape. The rescale-guard law ("a late envelope settle never
+		* erases an authored drag") holds by construction — there is no effect
+		* left that writes the doc channel.
 		*
-		* Returns the bar's verbs. THE AUTHORING GUARD is preserved EXACTLY:
-		* every verb that set `promptsAuthoredRef` inline still sets it here, and
-		* the verbs that never set it (keyframe add/move/delete, prompt resize)
-		* still don't — the rescale-guard regression test pins the authored-drag
-		* law ("a late envelope settle never erases an authored drag").
-		*
-		* Free-variable reads became explicit hook args. Behavior is IDENTICAL.
+		* Free-variable reads became explicit hook args. Gesture/undo cadence is
+		* IDENTICAL (pushUndo on the same verbs, maybePushDragUndo on drags).
 		*/
-		function useTimelineAuthoring({ effectiveNpz, toast, pushUndo, maybePushDragUndo, promptsAuthoredRef, targetT, setFrameIdx, setPlaying, setConstraintPayloads, setTlKeyframes, setTlPrompts }) {
+		function useTimelineAuthoring({ effectiveNpz, toast, pushUndo, maybePushDragUndo, targetT, setFrameIdx, setPlaying, commitConstraints, commitPrompts }) {
 			return {
 				handleTimelineFrameChange: (0, react.useCallback)((f) => {
 					setFrameIdx(f);
@@ -13407,116 +13731,117 @@ window.__ModuleLoader__.load({
 						toast("error", `Unknown constraint lane "${trackId}"`);
 						return uuid;
 					}
-					setConstraintPayloads((prev) => ({
-						...prev,
-						[uuid]: payload
-					}));
-					setTlKeyframes((prev) => [...prev, {
-						uuid,
-						track_id: trackId,
-						frame: payload.frame,
-						value: null,
-						opacity: 1,
-						locked: false
-					}]);
+					commitConstraints((prev) => {
+						const seated = prev.keyframes.find((k) => k.track_id === trackId && k.frame === payload.frame);
+						if (seated) return {
+							...prev,
+							payloads: {
+								...prev.payloads,
+								[seated.uuid]: payload
+							}
+						};
+						return {
+							...prev,
+							keyframes: [...prev.keyframes, {
+								uuid,
+								track_id: trackId,
+								frame: payload.frame,
+								value: null,
+								opacity: 1,
+								locked: false
+							}],
+							payloads: {
+								...prev.payloads,
+								[uuid]: payload
+							}
+						};
+					});
 					return uuid;
 				}, [
 					effectiveNpz,
 					toast,
 					pushUndo,
-					setConstraintPayloads,
-					setTlKeyframes
+					commitConstraints
 				]),
 				onKeyframeMove: (0, react.useCallback)((id, frame) => {
 					const f = Math.max(0, Math.floor(frame));
 					maybePushDragUndo(`kf:${id}`);
-					setTlKeyframes((prev) => prev.map((k) => k.uuid === id ? {
-						...k,
-						frame: f
-					} : k));
-					setConstraintPayloads((prev) => {
-						const p = prev[id];
+					commitConstraints((prev) => {
+						const p = prev.payloads[id];
 						/* v8 ignore next 1 -- keyframes and payloads are written paired; hydrate drops orphans (probe 2026-09-19) */
-						if (!p) return prev;
+						if (!p) return {
+							...prev,
+							keyframes: prev.keyframes.map((k) => k.uuid === id ? {
+								...k,
+								frame: f
+							} : k)
+						};
 						return {
 							...prev,
-							[id]: {
-								...p,
+							keyframes: prev.keyframes.map((k) => k.uuid === id ? {
+								...k,
 								frame: f
+							} : k),
+							payloads: {
+								...prev.payloads,
+								[id]: {
+									...p,
+									frame: f
+								}
 							}
 						};
 					});
-				}, [
-					maybePushDragUndo,
-					setTlKeyframes,
-					setConstraintPayloads
-				]),
+				}, [maybePushDragUndo, commitConstraints]),
 				onKeyframeDelete: (0, react.useCallback)((id) => {
 					pushUndo();
-					setTlKeyframes((prev) => prev.filter((k) => k.uuid !== id));
-					setConstraintPayloads((prev) => {
-						/* v8 ignore next 1 -- keyframes and payloads are written paired; hydrate drops orphans (probe 2026-09-19) */
-						if (!(id in prev)) return prev;
-						const next = { ...prev };
-						delete next[id];
-						return next;
+					commitConstraints((prev) => {
+						if (!(id in prev.payloads)) return {
+							...prev,
+							keyframes: prev.keyframes.filter((k) => k.uuid !== id)
+						};
+						const payloads = { ...prev.payloads };
+						delete payloads[id];
+						return {
+							...prev,
+							keyframes: prev.keyframes.filter((k) => k.uuid !== id),
+							payloads
+						};
 					});
-				}, [
-					pushUndo,
-					setTlKeyframes,
-					setConstraintPayloads
-				]),
+				}, [pushUndo, commitConstraints]),
 				onPromptUpdate: (0, react.useCallback)((id, text) => {
-					promptsAuthoredRef.current = true;
 					pushUndo();
-					setTlPrompts((prev) => prev.map((p) => p.uuid === id ? {
+					commitPrompts((prev) => prev.map((p) => p.uuid === id ? {
 						...p,
 						text
 					} : p));
-				}, [
-					promptsAuthoredRef,
-					pushUndo,
-					setTlPrompts
-				]),
+				}, [pushUndo, commitPrompts]),
 				onPromptResize: (0, react.useCallback)((id, startFrame, endFrame) => {
 					maybePushDragUndo(`pr:${id}`);
-					setTlPrompts((prev) => prev.map((p) => p.uuid === id ? {
+					commitPrompts((prev) => prev.map((p) => p.uuid === id ? {
 						...p,
 						start_frame: startFrame,
 						end_frame: endFrame
 					} : p));
-				}, [maybePushDragUndo, setTlPrompts]),
+				}, [maybePushDragUndo, commitPrompts]),
 				onPromptMove: (0, react.useCallback)((id, startFrame, endFrame) => {
-					promptsAuthoredRef.current = true;
 					maybePushDragUndo(`pm:${id}`);
-					setTlPrompts((prev) => prev.map((p) => p.uuid === id ? {
+					commitPrompts((prev) => prev.map((p) => p.uuid === id ? {
 						...p,
 						start_frame: startFrame,
 						end_frame: endFrame
 					} : p));
-				}, [
-					promptsAuthoredRef,
-					maybePushDragUndo,
-					setTlPrompts
-				]),
+				}, [maybePushDragUndo, commitPrompts]),
 				onPromptDelete: (0, react.useCallback)((id) => {
-					promptsAuthoredRef.current = true;
 					pushUndo();
-					setTlPrompts((prev) => prev.filter((p) => p.uuid !== id));
-				}, [
-					promptsAuthoredRef,
-					pushUndo,
-					setTlPrompts
-				]),
+					commitPrompts((prev) => prev.filter((p) => p.uuid !== id));
+				}, [pushUndo, commitPrompts]),
 				addPromptCard: (0, react.useCallback)(() => {
-					promptsAuthoredRef.current = true;
 					pushUndo();
-					setTlPrompts((prev) => carveNewPromptCard(prev, targetT));
+					commitPrompts((prev) => carveNewPromptCard(prev, targetT));
 				}, [
 					targetT,
-					promptsAuthoredRef,
 					pushUndo,
-					setTlPrompts
+					commitPrompts
 				])
 			};
 		}
@@ -13753,6 +14078,55 @@ window.__ModuleLoader__.load({
 			"loadingBox": "nTYLQW_loadingBox",
 			"loadingIcon": "nTYLQW_loadingIcon",
 			"loadingLabel": "nTYLQW_loadingLabel"
+		};
+		//#endregion
+		//#region ../../engines/comfyui/src/action_cards/motion/ui/actionCopy.ts
+		/**
+		* actionCopy.ts — THE MOTION/UI COPY DICTIONARY (the copy-scope
+		* extension, 2026-11-05). Client UI copy is locale-owned (the estate's
+		* decision, the DSH verify-client-i18n law): presentation code owns no
+		* copy literals; it consumes them here through the typed seat. A second
+		* locale plugs into this dictionary without touching a single
+		* action-card viewer.
+		*
+		* THE BOUND: static user-visible FACES of the pose stage and the motion
+		* poster/viewer live here. Parameterized sentences whose shape is fixed
+		* but whose slots are live live here as typed dict functions (the
+		* square.ts pattern). DATA never rides the dictionary: engine refusal
+		* strings and decode-error detail text pass through as live values
+		* (the `{error}` slots), never dictionary entries.
+		*
+		* UNIT LAW: this tree compiles as separate tsc build units
+		* (motion/ui's rootDir is motion/ui; src's rootDir is src), so the
+		* tree's copy seats one dictionary PER UNIT — this file owns the
+		* motion/ui unit's faces; the poster shell's face lives in
+		* src/actionCopy.ts. No string appears in both.
+		*/
+		/** The typed dictionary. Keys are stable copy ids. */
+		// v8 ignore next -- exercised key-by-key by the copy wall's census arm
+		const actionCopy = {
+			/** The pose stage's mesh-loading face. */
+			poseLoadingMesh: "Loading mesh…",
+			/** The pose stage's mesh-failure lead (the detail is the live error). */
+			poseMeshError: (p) => `Mesh error: ${p.error}`,
+			/** The pose stage's no-data face. */
+			poseNoMesh: "No mesh",
+			/** The poster skeleton's accessible name while the snapshot renders. */
+			posterLoadingLabel: "Loading motion preview",
+			/** The rendered poster image's alt text. */
+			posterAlt: "Motion preview",
+			/** The viewer's failure-state title (the detail is the live error). */
+			viewerUnavailable: "Motion preview unavailable",
+			/** The viewer skeleton's accessible name while frames decode. */
+			viewerLoading: "Loading motion",
+			/** The play toggle's accessible name (the Space shortcut named). */
+			playAria: "Play (Space)",
+			/** The pause toggle's accessible name (the Space shortcut named). */
+			pauseAria: "Pause (Space)",
+			/** The scrub input's accessible name. */
+			seekAria: "Seek",
+			/** The transport's fps badge ("<fps> fps · <frames>f"). */
+			fpsBadge: (p) => `${p.fps} fps · ${p.frames}f`
 		};
 		//#endregion
 		//#region ../../web-kit/formats/lib/somaSkin.js
@@ -16269,18 +16643,18 @@ window.__ModuleLoader__.load({
 				style: { height },
 				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.IconLoadingOutlineRegular, { className: PoseViewer3D_module_css_default.loadingIcon }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 					className: PoseViewer3D_module_css_default.loadingLabel,
-					children: "Loading mesh…"
+					children: actionCopy.poseLoadingMesh
 				})]
 			});
-			if (meshError) return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+			if (meshError) return /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
 				className: PoseViewer3D_module_css_default.errorBox,
 				style: { height },
-				children: ["Mesh error: ", meshError]
+				children: actionCopy.poseMeshError({ error: meshError })
 			});
 			if (!meshData) return /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
 				className: PoseViewer3D_module_css_default.errorBox,
 				style: { height },
-				children: "No mesh"
+				children: actionCopy.poseNoMesh
 			});
 			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
 				style: {
@@ -16700,9 +17074,18 @@ window.__ModuleLoader__.load({
 		* useMotionUndoStack (undo/redo), useMotionMedia (body/skin/load/playback/
 		* thumb/background), usePoseEditing (edit mode + reskin + repose),
 		* useMotionStage (joints flat + stamp/discard + export framing),
-		* useTimelineEnvelope (envelope + seed guard + persists),
+		* useTimelineEnvelope (envelope math + pull-the-tail),
 		* useTimelineAuthoring (timeline CRUD verbs), and the MotionRail /
-		* MotionStageView / MotionTimelineSection panels. Behavior is IDENTICAL.
+		* MotionStageView / MotionTimelineSection panels.
+		*
+		* ONE TRUTH (2026-11-05, nativity audit F7 — the h3-timeline pattern):
+		* stage.params is the ONLY document state. The tlPrompts/tlKeyframes/
+		* tlIntervals/constraintPayloads mirrors, the once-only hydration, the
+		* echo-guard persist effects, and the derived `prompt` write-back are
+		* gone: useMotionDoc projects the row, overlays the transient op log,
+		* and commits every gesture straight through onSave (fused prompts
+		* statement: motion_prompts + prompt in ONE call). The bar renders the
+		* shown projection; an external bench write re-hydrates naturally.
 		*/
 		function MotionCardEditor({ stage, onSave, upstreams = [], onWireSlot, runCompiledGeneration }) {
 			const toast = (0, _melite_card_base_client.useToastStore)((s) => s.addToast);
@@ -16731,10 +17114,6 @@ window.__ModuleLoader__.load({
 			const [keptEdit, setKeptEdit] = (0, react.useState)(null);
 			const [frameIdx, setFrameIdx] = (0, react.useState)(0);
 			const [playing, setPlaying] = (0, react.useState)(false);
-			const [tlKeyframes, setTlKeyframes] = (0, react.useState)([]);
-			const [tlIntervals, setTlIntervals] = (0, react.useState)([]);
-			const [tlPrompts, setTlPrompts] = (0, react.useState)([]);
-			const [constraintPayloads, setConstraintPayloads] = (0, react.useState)({});
 			const [editMode, setEditMode] = (0, react.useState)(false);
 			const [editableJoints, setEditableJoints] = (0, react.useState)(null);
 			const editableJointsRef = (0, react.useRef)(null);
@@ -16751,7 +17130,6 @@ window.__ModuleLoader__.load({
 			const bgInputRef = (0, react.useRef)(null);
 			const [bgImage, setBgImage] = (0, react.useState)(null);
 			const [bgDragOver, setBgDragOver] = (0, react.useState)(false);
-			const promptsAuthoredRef = (0, react.useRef)(false);
 			const restNpz = (0, react.useMemo)(() => {
 				if (!skin) return null;
 				return {
@@ -16801,11 +17179,16 @@ window.__ModuleLoader__.load({
 				const i = Math.min(frameIdx, src.T - 1) * 77 * 3;
 				return src.posedJoints.slice(i, i + 231);
 			}, [effectiveNpz, frameIdx]);
-			const fullbodyKfAtFrame = (0, react.useMemo)(() => tlKeyframes.find((k) => k.track_id === "fullbody" && k.frame === frameIdx) ?? null, [tlKeyframes, frameIdx]);
-			const firstNonEmptyCardText = (0, react.useMemo)(() => tlPrompts.find((p) => p.text.trim())?.text ?? "", [tlPrompts]);
-			(0, react.useEffect)(() => {
-				onSave({ prompt: firstNonEmptyCardText });
-			}, [firstNonEmptyCardText]);
+			const { targetT, onTimelineExtend } = useTimelineEnvelope({
+				stage,
+				effectiveNpz,
+				onSave,
+				toast
+			});
+			const { shown, commitPrompts, commitConstraints } = useMotionDoc(stage, onSave, effectiveNpz?.fps ?? 30, targetT);
+			const shownRef = (0, react.useRef)(shown);
+			shownRef.current = shown;
+			const fullbodyKfAtFrame = (0, react.useMemo)(() => shown.keyframes.find((k) => k.track_id === "fullbody" && k.frame === frameIdx) ?? null, [shown.keyframes, frameIdx]);
 			const { bodySlotIdx, bodyWiredId, bodyWiredUpstream, bodyWired, bodyWiredUrl, bodySrc, attachBody, handleBodyFile, priorStages, setBg, handleBgFile, handleStageDrop } = useMotionMedia({
 				stage,
 				upstreams,
@@ -16836,18 +17219,22 @@ window.__ModuleLoader__.load({
 				setBgDragOver
 			});
 			const { pushUndo, handleUndo, handleRedo, maybePushDragUndo } = useMotionUndoStack({
-				tlPrompts,
-				tlKeyframes,
-				constraintPayloads,
-				tlIntervals,
+				captureDoc: () => ({
+					prompts: shownRef.current.prompts,
+					keyframes: shownRef.current.keyframes,
+					payloads: shownRef.current.payloads
+				}),
+				restoreDoc: (doc) => {
+					commitPrompts(() => doc.prompts);
+					commitConstraints((prev) => ({
+						...prev,
+						keyframes: doc.keyframes,
+						payloads: doc.payloads
+					}));
+				},
 				keptEdit,
 				editedDeformedB64,
 				editableJointsRef,
-				promptsAuthoredRef,
-				setTlPrompts,
-				setTlKeyframes,
-				setConstraintPayloads,
-				setTlIntervals,
 				setEditableJoints,
 				setKeptEdit,
 				setEditedDeformedB64
@@ -16855,8 +17242,8 @@ window.__ModuleLoader__.load({
 			const { toggleEdit, handleJointMove, displayJointsM, handleRepose } = usePoseEditing({
 				effectiveNpz,
 				frameIdx,
-				tlKeyframes,
-				constraintPayloads,
+				tlKeyframes: shown.keyframes,
+				constraintPayloads: shown.payloads,
 				keptEdit,
 				currentJointsM,
 				fullbodyKfAtFrame,
@@ -16875,7 +17262,7 @@ window.__ModuleLoader__.load({
 				setReposing,
 				setKeptEdit,
 				setPlaying,
-				setConstraintPayloads
+				commitConstraints
 			});
 			const { jointsFlatCm, discardKeptEdit, stampConstraintAtFrame, exportOut, handleOutSize, handleFramePreset, stageBoxRef, beginRectDrag, onRectPointerMove, endRectDrag } = useMotionStage({
 				effectiveNpz,
@@ -16887,38 +17274,21 @@ window.__ModuleLoader__.load({
 				pushUndo,
 				setKeptEdit,
 				setEditedDeformedB64,
-				setConstraintPayloads,
-				setTlKeyframes,
+				commitConstraints,
 				exportOpen,
 				stageRect,
 				setStageRect
-			});
-			const { targetT, onTimelineExtend } = useTimelineEnvelope({
-				stage,
-				effectiveNpz,
-				onSave,
-				toast,
-				promptsAuthoredRef,
-				tlPrompts,
-				setTlPrompts,
-				tlKeyframes,
-				setTlKeyframes,
-				constraintPayloads,
-				setConstraintPayloads,
-				setTlIntervals
 			});
 			const { handleTimelineFrameChange, onKeyframeAdd, onKeyframeMove, onKeyframeDelete, onPromptUpdate, onPromptResize, onPromptMove, onPromptDelete, addPromptCard } = useTimelineAuthoring({
 				effectiveNpz,
 				toast,
 				pushUndo,
 				maybePushDragUndo,
-				promptsAuthoredRef,
 				targetT,
 				setFrameIdx,
 				setPlaying,
-				setConstraintPayloads,
-				setTlKeyframes,
-				setTlPrompts
+				commitConstraints,
+				commitPrompts
 			});
 			const totalSec = npz ? npz.T / npz.fps : 0;
 			const curSec = npz ? frameIdx / npz.fps : 0;
@@ -17023,10 +17393,10 @@ window.__ModuleLoader__.load({
 					fmt,
 					curSec,
 					totalSec,
-					tlPrompts,
+					tlPrompts: shown.prompts,
 					targetT,
 					addPromptCard,
-					tlKeyframes,
+					tlKeyframes: shown.keyframes,
 					frameIdx,
 					effectiveNpz,
 					onTimelineExtend,

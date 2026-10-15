@@ -282,3 +282,112 @@ describe("THE PIN LAW (the extensions law, 2026-10-15)", () => {
     assert.deepEqual(dead, [], `manifest keys no row sets (dead fields): ${dead.join(", ")}`);
   });
 });
+
+// ── THE UV PIN LAW (F2, nativity audit 2026-11-05) ────────────────
+// infra/comfyui/pyproject.toml's [tool.uv.sources] freezes pip-level
+// Layer C at git revs. Before 2026-11-05 NO wall read those revs —
+// the comment "the walls pin that equality" was a paper wall, and
+// the melite-model-base pair drifted two commits in silence (gitlink
+// b18214cd vs rev 8444fe5d). This describe is the judge the comment
+// claimed: every uv git source with a vendored twin pins EXACTLY the
+// tracked submodule gitlink, and the lock names the same rev (the
+// lock is the deployment truth; a lock that disagrees with the
+// pyproject is a half-landed re-pin).
+describe("the uv git-source pins equal the vendored submodule gitlinks (F2)", () => {
+  const pyproject = readFileSync(join(repoRoot, "infra/comfyui/pyproject.toml"), "utf8");
+  const lock = readFileSync(join(repoRoot, "infra/comfyui/uv.lock"), "utf8");
+
+  /** The [tool.uv.sources] git rows: name → { repo, rev }. */
+  function uvGitSources(): Map<string, { repo: string; rev: string }> {
+    const section = /\[tool\.uv\.sources\]\n([\s\S]*?)(?=\n\[|$)/u.exec(pyproject)?.[1] ?? "";
+    const out = new Map<string, { repo: string; rev: string }>();
+    for (const m of section.matchAll(/^([\w.-]+) = \{ git = "([^"]+)", rev = "([0-9a-f]{40})" \}/gmu)) {
+      out.set(m[1]!, { repo: m[2]!.replace(/\.git$/u, ""), rev: m[3]! });
+    }
+    return out;
+  }
+
+  /** .gitmodules' vendored extension paths under vendor/. */
+  function vendoredPaths(): Map<string, string> {
+    const text = readFileSync(join(repoRoot, ".gitmodules"), "utf8");
+    const out = new Map<string, string>();
+    for (const m of text.matchAll(/\[submodule "([^"]+)"\]\n\tpath = (\S+)\n\turl = (\S+)/gu)) {
+      if (m[2]!.startsWith("vendor/comfyui_extensions/")) {
+        // repo basename (url minus .git) → tracked submodule path
+        out.set(m[3]!.replace(/\.git$/u, "").split("/").pop()!, m[2]!);
+      }
+    }
+    return out;
+  }
+
+  /** The tracked gitlink for a submodule path — read from the index
+   *  (`git ls-tree HEAD`), never the worktree: the gitlink IS the
+   *  pin of record and holds even mid-hop. */
+  function gitlink(path: string): string {
+    return execFileSync("git", ["ls-tree", "HEAD", path], { cwd: repoRoot, encoding: "utf8" })
+      .trim().split(/\s+/u)[2] ?? "";
+  }
+
+  it("the pyproject carries the uv git sources this law judges (the vacuous guard)", () => {
+    assert.ok(uvGitSources().size >= 2,
+      "the [tool.uv.sources] parse found no git rows — the section moved or the regex rotted; fix the reader, never the floor");
+    assert.ok(vendoredPaths().size >= 8,
+      "the .gitmodules parse found fewer vendored extension packs than the estate vendors — the reader rotted");
+  });
+
+  it("every uv git source with a vendored twin pins EXACTLY the tracked gitlink", () => {
+    const sources = uvGitSources();
+    const vendored = vendoredPaths();
+    const drifted: string[] = [];
+    for (const [name, src] of sources) {
+      const path = vendored.get(src.repo.split("/").pop()!);
+      if (path === undefined) continue; // no vendored twin — the named-list arm below owns it
+      const pin = gitlink(path);
+      if (src.rev !== pin) {
+        drifted.push(`${name}: pyproject rev ${src.rev.slice(0, 12)} vs vendored gitlink ${pin.slice(0, 12)} (${path})`);
+      }
+    }
+    assert.deepEqual(drifted, [],
+      "the pip-level pin and the vendored tree name different commits — re-point the pair DELIBERATELY (verify which rev is the true tree state), never let it drift");
+  });
+
+  it("uv.lock resolves every vendored uv source at the pyproject rev (lock ≡ pin)", () => {
+    const sources = uvGitSources();
+    const vendored = vendoredPaths();
+    const drifted: string[] = [];
+    for (const [name, src] of sources) {
+      if (!vendored.has(src.repo.split("/").pop()!)) continue;
+      // the lock carries the rev twice: the consumer's dep row and
+      // the package block's own source (rev + resolved commit)
+      const depRow = new RegExp(`\\{ name = "${name}", git = "[^"]*\\?rev=([0-9a-f]{40})" \\}`, "u").exec(lock)?.[1];
+      const block = new RegExp(`\\[\\[package\\]\\]\\nname = "${name}"[\\s\\S]*?source = \\{ git = "[^"]*\\?rev=([0-9a-f]{40})#`, "u").exec(lock)?.[1];
+      assert.ok(depRow !== undefined && block !== undefined,
+        `${name}: uv.lock is missing its dep row or its package block — the lock's shape moved`);
+      if (depRow !== src.rev) drifted.push(`${name}: uv.lock dep row resolves ${depRow.slice(0, 12)} but pyproject pins ${src.rev.slice(0, 12)}`);
+      if (block !== src.rev) drifted.push(`${name}: uv.lock package block resolves ${block.slice(0, 12)} but pyproject pins ${src.rev.slice(0, 12)}`);
+    }
+    assert.deepEqual(drifted, [],
+      "the lock and the pyproject disagree — a half-landed re-pin; regenerate the lock at the pinned rev");
+  });
+
+  it("every uv git source WITHOUT a vendored twin is named below (no silent third class)", () => {
+    const sources = uvGitSources();
+    const vendored = vendoredPaths();
+    // Published-only pip packs: repos that are deliberately never
+    // vendored as submodules, so no gitlink exists to pin against.
+    const NO_VENDORED_TWIN: Readonly<Record<string, string>> = {
+      "motion-correction": "kimodo's motion lib, published-only (the vendor path blocked every fresh clone; removed 2026-10-15) — no submodule, the frozen rev IS the pin",
+    };
+    const unnamed = [...sources.keys()].filter((name) => {
+      const repo = sources.get(name)!.repo.split("/").pop()!;
+      return !vendored.has(repo) && !(name in NO_VENDORED_TWIN);
+    });
+    assert.deepEqual(unnamed, [],
+      "these uv git sources have no vendored twin and no named reason — name them in NO_VENDORED_TWIN or vendor the repo");
+    // and the list does not rot: a named twin that GAINED a submodule
+    // must leave the list (the vendored arm would judge it — stale
+    // reasons are the paper-wall sin again)
+    const stale = Object.keys(NO_VENDORED_TWIN).filter((name) => vendored.has(sources.get(name)?.repo.split("/").pop() ?? ""));
+    assert.deepEqual(stale, [], "these named no-twin sources now HAVE a vendored submodule — delete the exemption");
+  });
+});

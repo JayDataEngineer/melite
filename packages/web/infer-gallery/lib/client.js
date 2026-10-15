@@ -46,44 +46,11 @@ window.__ModuleLoader__.load({
 		let react = require("react");
 		react = __toESM(react, 1);
 		let _deepseek_ai_dsh_client_ui_primitives = require("@deepseek-ai/dsh-client-ui-primitives");
+		let _melite_card_base_client = require("@melite/card-base/client");
 		let _melite_three_client_client = require("@melite/three-client/client");
 		_melite_three_client_client = __toESM(_melite_three_client_client, 1);
-		let _melite_card_base_client = require("@melite/card-base/client");
 		let react_jsx_runtime = require("react/jsx-runtime");
 		let _deepseek_ai_dsh_client_store = require("@deepseek-ai/dsh-client-store");
-		//#region ../../web-kit/contracts/src/applyGuard.ts
-		function createApplyGuard(label, opts = {}) {
-			let claimed = false;
-			return {
-				claim() {
-					if (claimed) {
-						if (opts.warnOnRefusal === true) console.warn(`[${label}] apply called twice — second mount skipped`);
-						return false;
-					}
-					claimed = true;
-					return true;
-				},
-				release() {
-					claimed = false;
-				}
-			};
-		}
-		//#endregion
-		//#region src/client/apply-guard.ts
-		/**
-		* apply-guard — THIS PLUGIN'S single-mount claim. The guard itself is
-		* one implementation in @melite/contracts (createApplyGuard); this
-		* module exists so the gallery's claim is its OWN module instance (a
-		* shared boolean would make the gallery's apply refuse the deck's).
-		*/
-		const guard = createApplyGuard("melite-plugin/dsh-gallery");
-		function claimGalleryApply() {
-			return guard.claim();
-		}
-		function releaseGalleryApply() {
-			guard.release();
-		}
-		//#endregion
 		//#region \0dsh-css:packages/web/infer-gallery/src/client/overlay.module.css.mjs
 		const css = ".P_5Nua_lightbox{width:min(1200px,96vw);max-width:96vw}.P_5Nua_dangerVerb{color:var(--dsw-alias-state-error-primary)}.P_5Nua_walkBtn{z-index:10;border:1px solid var(--dsw-alias-border-l3);border-radius:999px;width:40px;height:40px;padding:0;position:absolute;top:50%;transform:translateY(-50%)}.P_5Nua_walkBtn[aria-label=Previous\\ media]{left:10px}.P_5Nua_walkBtn[aria-label=Next\\ media]{right:10px}.P_5Nua_overlayClose{z-index:10;position:absolute;top:8px;right:8px}.P_5Nua_renameInput{width:min(280px,60vw)}.P_5Nua_wand{z-index:3;background:var(--dsw-alias-fill-subtle,#020617d1);color:var(--dsw-alias-state-warn-primary,#fde68a);letter-spacing:.4px;cursor:pointer;opacity:0;border-radius:6px;align-items:center;gap:4px;padding:4px 6px;font-family:inherit;font-size:9px;font-weight:700;transition:opacity .12s;display:flex;position:absolute;top:6px;right:6px}.P_5Nua_tile:hover .P_5Nua_wand,.P_5Nua_tile:focus-visible .P_5Nua_wand,.P_5Nua_wand:focus-visible{opacity:1}";
 		const tagId = "@melite-plugin/dsh-gallery/overlay.module.css@71525c21";
@@ -501,6 +468,12 @@ window.__ModuleLoader__.load({
 			kindModel: "3D",
 			/** Kind label: text artifacts. */
 			kindText: "Text",
+			/** The Media tab's chip + guide-row title (one home, both read it). */
+			mediaTabTitle: "Media",
+			/** The guide row's description under the Media title. */
+			mediaTabGuide: "Every run's artifacts — the archive, with the lightbox, chips, search and the cards wand.",
+			/** The estate-artifact tab's title when the address decodes to no file. */
+			artifactFallbackTitle: "artifact",
 			/** The empty flows face. */
 			emptyDrafts: "no composed cards yet — build one in a chat.",
 			/** A draft row's fallback kind word when the model is unknown. */
@@ -3341,8 +3314,8 @@ window.__ModuleLoader__.load({
 									},
 									children: selected.has(it.id) ? "✓" : ""
 								}) : null,
-								!selectMode && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Tooltip, {
-									label: galleryCopy.wandTooltip,
+								!selectMode && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.Tip, {
+									tip: galleryCopy.wandTooltip,
 									children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 										role: "button",
 										tabIndex: 0,
@@ -10838,25 +10811,22 @@ window.__ModuleLoader__.load({
 		*  up first). */
 		const inject = ["slots", "sidebarRightTabs"];
 		/**
-		* Client apply: claims the single application slot, then registers
+		* Client apply: registers
 		* the Media tab (type + body) exactly as the deleted client and the
 		* shipped tabs do.
 		* @param ctx - client root context.
 		*/
 		function apply(ctx) {
-			if (!claimGalleryApply()) return;
-			ctx.effect(() => releaseGalleryApply, "melite-gallery: apply claim");
-			const tab = ctx;
 			try {
-				tab.effect(() => tab.sidebarRightTabs.register({
+				ctx.effect(() => ctx.sidebarRightTabs.register({
 					id: MEDIA_TAB_ID,
 					kind: "media",
-					title: () => "Media",
+					title: () => galleryCopy.mediaTabTitle,
 					guide: [{
 						id: "media-tab-guide",
 						order: 51,
-						title: () => "Media",
-						description: () => "Every run's artifacts — the archive, with the lightbox, chips, search and the cards wand.",
+						title: () => galleryCopy.mediaTabTitle,
+						description: () => galleryCopy.mediaTabGuide,
 						icon: MediaTabIcon
 					}]
 				}), "melite-gallery: media tab type");
@@ -10864,7 +10834,7 @@ window.__ModuleLoader__.load({
 				console.error("[melite-gallery] media tab type registration failed:", error);
 			}
 			try {
-				tab.slots.inject("sidebar.right.pane.tab", () => tab.slots.register({
+				ctx.slots.inject("sidebar.right.pane.tab", () => ctx.slots.register({
 					name: "sidebar.right.pane.tab",
 					key: MEDIA_TAB_ID
 				}, MediaPanel));
@@ -10872,21 +10842,21 @@ window.__ModuleLoader__.load({
 				console.error("[melite-gallery] media tab body registration failed:", error);
 			}
 			try {
-				tab.effect(() => tab.sidebarRightTabs.register({
+				ctx.effect(() => ctx.sidebarRightTabs.register({
 					id: ESTATE_ARTIFACT_TAB_ID,
 					kind: "estate-artifact",
 					patterns: ["dsh-resource://estate-artifact/**"],
 					priority: "builtin",
 					title: (address) => {
 						const url = artifactUrlOfAddress(address);
-						return url !== null ? artifactNameOf(url) : "artifact";
+						return url !== null ? artifactNameOf(url) : galleryCopy.artifactFallbackTitle;
 					}
 				}), "melite-gallery: estate-artifact tab type");
 			} catch (error) {
 				console.error("[melite-gallery] estate-artifact tab type registration failed:", error);
 			}
 			try {
-				tab.slots.inject("sidebar.right.pane.tab", () => tab.slots.register({
+				ctx.slots.inject("sidebar.right.pane.tab", () => ctx.slots.register({
 					name: "sidebar.right.pane.tab",
 					key: ESTATE_ARTIFACT_TAB_ID
 				}, ArtifactTabBody));
