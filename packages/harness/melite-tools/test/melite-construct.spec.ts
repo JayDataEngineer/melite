@@ -1370,6 +1370,43 @@ describe('melite_construct presentationMeta — the native flow-link channel', (
     assert.ok(String(meta.error).includes('bench moved'), 'the error rides beside the bench')
   })
 
+  // (flow-link F2 sweep, 2026-11-06) the universal 'bench key
+  // survives every verb' was judged on 2 of 9 verbs (read + patch).
+  // This sweep executes EVERY remaining verb through the mocked
+  // estate and deep-equals the projected meta to {bench} — the
+  // link contract holds per-verb, not by accident of the two arms.
+  test('EVERY verb projects its bench key — load, add_stage, remove_stage, clear, rewire, undo, validate', async () => {
+    const { estate } = mockEstate((lane, args) => {
+      const verb = args[1]
+      if (lane === 'benchGet') return { ...ROW, session: 'main' }
+      if (lane === 'benchEnsure') return { rev: 5, stages: [] }
+      if (lane === 'benchVerb') {
+        if (verb === 'add_stage') return { rev: 5, stage: 's1', added: true }
+        if (verb === 'add_stage') return { rev: 5, stage: 's1', added: true }
+        if (verb === 'remove_stage') return { rev: 7, removed: 's1' }
+        if (verb === 'clear') return { rev: 12, cleared: 6 }
+        if (verb === 'rewire') return { rev: 8, wired: true }
+        if (verb === 'undo') return { rev: 10, undone: 2 }
+      }
+      if (lane === 'runsValidate') return { ok: true, valid: true }
+      throw new Error('unmocked lane ' + lane + ' ' + String(verb))
+    })
+    const tool = meliteConstruct(estate)
+    const cases: Array<[string, Record<string, unknown>, string]> = [
+      ['load', { verb: 'load', stages: [], intent: 'x', expect_rev: 4 }, 'main'],
+      ['remove_stage', { verb: 'remove_stage', stage: 's1', expect_rev: 7 }, 'main'],
+      ['clear', { verb: 'clear', expect_rev: 11 }, 'main'],
+      ['rewire', { verb: 'rewire', stage: 's1', input: 'in', expect_rev: 8 }, 'main'],
+      ['undo', { verb: 'undo', n: 2, expect_rev: 11 }, 'main'],
+      ['validate', { verb: 'validate' }, 'main'],
+    ]
+    for (const [name, input, bench] of cases) {
+      const out = await tool.execute(input, exec()) as Record<string, unknown>
+      assert.equal(out.bench, bench, `${name} carries its bench key`)
+      assert.deepEqual(metaOf(tool, out), { bench }, `${name} projects exactly {bench}`)
+    }
+  })
+
   test('the projector is pure and minimal — junk bench omitted, never a dead link', async () => {
     const tool = meliteConstruct(stubEstate())
     assert.deepEqual(metaOf(tool, { verb: 'read', bench: 'main', rev: 1 }), { bench: 'main' })
