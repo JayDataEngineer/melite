@@ -537,4 +537,21 @@ describe("THE MODS SQUARE (slice 4, design §B): the add door rides the SourceRo
     fireEvent.click(strips[0]!)
     assert.deepEqual(calls.refs, [[0, "mods", "refmods/b.safetensors"]], "the strip removes exactly that pack")
   })
+
+  it("THE FOLD LAWS (operator 2026-11-05: the call editor fold behavior is wrong — the BAR click owns the toggle): bar click opens; a click INSIDE the content never collapses the fold", async () => {
+    const { d, calls } = deps()
+    render(<CallCard c={{ ...BASE, knobs: { denoise: 0.7 } }} i={0} deps={d} />)
+    // LAW 1: the BAR click toggles — the FULL bar (the row element,
+    // not just its title text — the operator hits the whole bar)
+    const bar = screen.getByText(studioCopy.knobsHead).closest("[class*=knobFold]") as HTMLElement | null
+      ?? (screen.getByText(studioCopy.knobsHead).closest("div") as HTMLElement)
+    fireEvent.click(bar)
+    fireEvent.click(screen.getByText(studioCopy.knobsHead))
+    const knob = await screen.findByLabelText("Call 0 knob: denoise")
+    // LAW 2: interacting INSIDE the content (the knob's own face)
+    // never rides the row toggle — the fold STAYS open, the edit lands
+    fireEvent.change(knob, { target: { value: "0.5" } })
+    assert.ok(screen.getByLabelText("Call 0 knob: denoise"), "the fold is still open after the content click")
+    assert.deepEqual(calls.knobs, [[0, "denoise", 0.5]])
+  })
 })
