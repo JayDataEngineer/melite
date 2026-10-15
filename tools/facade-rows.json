@@ -299,6 +299,9 @@
   "@melite/models-anima": [
     "./packages/models/anima/src/index.ts"
   ],
+  "@melite/models-anima/mods/loras": [
+    "./packages/models/anima/mods/loras.ts"
+  ],
   "@melite/models-anny": [
     "./packages/models/anny/src/index.ts"
   ],
@@ -319,6 +322,9 @@
   ],
   "@melite/models-flux-klein": [
     "./packages/models/flux-klein/src/index.ts"
+  ],
+  "@melite/models-flux-klein/mods/loras": [
+    "./packages/models/flux-klein/mods/loras.ts"
   ],
   "@melite/models-gem_soma": [
     "./packages/models/gem_soma/src/index.ts"

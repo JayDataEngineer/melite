@@ -207,6 +207,16 @@ export const composeModPlane = async (ctx: Context): Promise<void> => {
     ['@melite/models-krea-2/mods/loras', 'krea-2 loras'],
     ['@melite/models-h3/mods/loras', 'h3 loras'],
     ['@melite/models-z-image/mods/loras', 'z-image loras'],
+    // THE LORAS TRUTH (operator 2026-11-06: every family applies
+    // LoRAs — the fired lane fires on every boarding atom): the
+    // seeds below served no boarding family because they were never
+    // composed here (authored, packaged, never wired — the write
+    // door refused `loras` on these lanes while compose would have
+    // fired it). Seeds carry no first-party rows; user files ride.
+    ['@melite/models-qwen-img-21/mods/loras', 'qwen-img-21 loras'],
+    ['@melite/models-anima/mods/loras', 'anima loras'],
+    ['@melite/models-flux-klein/mods/loras', 'flux-klein loras'],
+    ['@melite/models-qwen-img-edit-21/mods/loras', 'qwen-img-edit-21 loras'],
     ['@melite/models-z-image/mods/controlnet', 'z-image controlnet'],
     ['@melite/models-z-image/mods/ip_adapter', 'z-image ip_adapter'],
     ['@melite/models-anny/mods/verbs', 'anny verbs'],

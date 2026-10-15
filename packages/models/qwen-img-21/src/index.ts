@@ -45,11 +45,18 @@ export const DECL: ModelDecl = {
   // this family. Refused-fate honesty: no image-gen lane builds a
   // region arm (compose untouched) — a stated mask on a gen run
   // refuses LOUD at admission, field-named, never a silent plain
-  // run; the region work itself rides the edit plane. The loras
-  // flavor seed in mods/loras.ts stays unboarded until an adapter
-  // exists.
+  // run; the region work itself rides the edit plane. THE LORAS
+  // BOARDING (operator 2026-11-06: every family applies LoRAs —
+  // the 'until an adapter exists' gating was the refusal lie):
+  // boards 'loras' — the pack's fired lane (kit stackLoras) fires
+  // on every boarding atom; with no first-party rows the catalog
+  // serves empty, user filename rows pass through compose, and an
+  // id with no row refuses at compose naming the empty registry
+  // (install the rows), never the admission nuke. The flavor seed
+  // in mods/loras.ts lands with this declaration.
   "mods": [
-    "mask"
+    "mask",
+    "loras"
   ],
   // THE PROVISION TRUTH (the silent-failure cure, 2511's law):
   // every lane weight carries its provision — the text encoder and

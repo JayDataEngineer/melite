@@ -9,7 +9,11 @@
       "types": "./lib/index.d.ts",
       "default": "./lib/index.js"
     },
-    "./package.json": "./package.json"
+    "./package.json": "./package.json",
+    "./mods/loras": {
+      "types": "./lib/mods/loras.d.ts",
+      "default": "./lib/mods/loras.js"
+    }
   },
   "dependencies": {
     "@melite/comfyui-card-kit": "workspace:*"
@@ -20,7 +24,7 @@
     "@deepseek-ai/cordis": "^4.0.4"
   },
   "scripts": {
-    "build": "tsc -p tsconfig.build.json",
+    "build": "tsc -p tsconfig.build-mods.json && tsc -p tsconfig.build.json",
     "typecheck": "tsc --noEmit"
   },
   "files": [

@@ -74,10 +74,11 @@ export const ACTION_BINDINGS = {
 export const schema = z.object({
     // CARD-OWNED SURFACE (the 1:1 port, 2026-09-08): declaration
     // order = the field order (frozen form_spec krea-2 referee).
-    // loras is NOT here — the krea-2 LoRA knob rides the MOD
-    // absorption (mods/loras.ts; the interlock). compose still
-    // consumes p.loras (kit.ts stackLoras) — the user bag, however
-    // it was filled (a family Recipe macro may have stamped it).
+    // loras is NOT here — the LoRA bag rides the MOD absorption
+    // (each boarded family's mods/loras.ts flavor; the interlock).
+    // compose still consumes p.loras (kit.ts stackLoras) — the user
+    // bag, however it was filled (a family Recipe macro may have
+    // stamped it).
     prompt: z.string().description('Prompt').extra('extra', bag(promptPairExtra().prompt)),
     negative_prompt: z.string().description('Negative Prompt').extra('extra', bag(promptPairExtra().negative_prompt)),
     width: z.number().description('Width').min(256).max(2048).step(16).extra('extra', bag({ order: 0, group: 'resolution', columns: 2, width: 1, zone: 'params', wtype: 'number' })),
@@ -104,7 +105,7 @@ export const identity = {
         'ONE param cascade (stroke 34 — the card-recipe layer is dead): schema defaults < model-folder defaults (the family rail resolves the model row) < your explicit values. Presets are FAMILY Recipe rows — one-click macros that stamp declared knobs/bags, never a persisted mode',
         'Sampler and scheduler option lists resolve from the ONE vocabulary (media.comfyui.sampler_vocab) — never hand-copied',
         'A preset fills untouched fields; values you have set win',
-        'Mods are model-level declarations: loras ride krea-2 (apply on Turbo, train on Raw)',
+        'Mods are model-level declarations: every boarded family boards loras (krea-2 applies on Turbo and trains on Raw; row-less families take user files until first-party adapters exist)',
         'Mask prep (grow/feather/threshold/invert) and outpaint pads are applied host-side before the run — no silent param drops',
     ],
 };

@@ -29,10 +29,17 @@ export const DECL: ModelDecl = {
   },
   "genre": "image",
   // MASK-C (the image-gen region gap — deliberate no-board): no
-  // mods key (absent ≡ boards nothing) — the anime T2I lane takes no
-  // region input upstream and no edit lane shares these weights.
-  // Serving the surface would promise what no lane builds; a stated
-  // mask refuses LOUD at admission like every undeclared key.
+  // 'mask' — the anime T2I lane takes no region input upstream and
+  // no edit lane shares these weights. Serving the mask surface
+  // would promise what no lane builds; a stated mask refuses LOUD
+  // at admission like every undeclared key. THE LORAS BOARDING
+  // (operator 2026-11-06: every family applies LoRAs): boards
+  // 'loras' — the pack's fired lane fires on every boarding atom;
+  // no first-party rows yet, so user filename rows pass through
+  // and unknown ids refuse at compose naming the empty registry.
+  "mods": [
+    "loras"
+  ],
   "variants": [
     {
       "id": "standard",
