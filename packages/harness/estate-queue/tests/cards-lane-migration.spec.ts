@@ -87,6 +87,67 @@ describe("THE STUCK-SWITCH WALL (the live :3088 paste, verbatim)", () => {
   });
 });
 
+describe("T3 (lane-migration audit, 2026-11-06) — the NO-RESURRECT boot sweep: a defaulted together-member on a lane that drops it carries a null stamp", () => {
+  // The forgotten-stamp class (the qwen3-tts 'voice: null'
+  // precedent, operator 2026-09-23): a family DEFAULT bleeds onto
+  // every lane's stored row unless the lane that does NOT declare
+  // the member stamps it null in resolver_defaults. A resurrected
+  // TOGETHER-member half-fires its group on the foreign lane — the
+  // wedge this sweep kills. Scoped to together/requires members per
+  // the audit's own class (a broadened every-defaulted-member sweep
+  // fired on 168 resolver-path rows — florence2's checkpoint et al —
+  // a DIFFERENT law: those ride the patch-time union-drop, not the
+  // stamp; recorded in the verification report as follow-up).
+  // Derived over the BOOTED registry — a new family reds this sweep
+  // until stamped.
+  it("every booted family stamps its dropped defaulted together-members null (the sweep is green at HEAD)", () => {
+    const facts = svc.modelFacts();
+    const offenders: string[] = [];
+    for (const [fam, f] of Object.entries(facts)) {
+      const rel = f.relations as { together?: { fields: string[] }[] } | undefined;
+      const group = new Set<string>();
+      for (const row of rel?.together ?? []) for (const m of row.fields) group.add(m);
+      if (group.size === 0) continue;
+      for (const [k, v] of Object.entries(f.defaults)) {
+        if (v === null || v === undefined) continue; // null IS the stamp
+        if (!group.has(k)) continue; // only together-members can half-fire
+        for (const variant of f.variants) {
+          const surface = new Set<string>([...(f.params ?? []), ...(variant.params ?? [])]);
+          for (const c of variant.cells ?? []) for (const p of c.params ?? []) surface.add(p);
+          const stamped = variant.resolver_defaults?.[k] === null;
+          if (!surface.has(k) && !stamped) offenders.push(`${fam}/${variant.id}: defaulted together-member '${k}' rides without a null stamp`);
+        }
+      }
+    }
+    expect(offenders, `no-resurrect offenders — stamp the member null on the lanes that drop it (the voice: null precedent):\n${offenders.join("\n")}`).toEqual([]);
+  });
+  it("the sweep's own judge fires: a defaulted together-member on a stamp-less dropping lane reds", () => {
+    // the synthetic arm (the audit's first firing): the sweep logic
+    // itself must RED on the forgotten-stamp shape, so a green sweep
+    // is proof the registry carries none — not proof the sweep is
+    // blind. Rebuilt inline over one synthetic family.
+    const synthetic = {
+      card: "synthetic", defaults: { voice: "vivian" }, params: undefined,
+      variants: [
+        { id: "base", params: ["ref_audio"], resolver_defaults: {}, cells: [] },
+      ],
+      relations: { together: [{ fields: ["voice", "design_prompt"] }] },
+    } as unknown as Facts[string];
+    const caught: string[] = [];
+    const group = new Set<string>(synthetic.relations.together![0]!.fields);
+    for (const [k, v] of Object.entries(synthetic.defaults)) {
+      if (v === null || v === undefined || !group.has(k)) continue;
+      for (const variant of synthetic.variants) {
+        const surface = new Set<string>([...(synthetic.params ?? []), ...(variant.params ?? [])]);
+        for (const c of variant.cells ?? []) for (const p of c.params ?? []) surface.add(p);
+        const stamped = variant.resolver_defaults?.[k] === null;
+        if (!surface.has(k) && !stamped) caught.push(`${k}`);
+      }
+    }
+    expect(caught).toEqual(["voice"]);
+  });
+});
+
 describe("T1 (lane-migration audit, 2026-11-06) — the QUANT-ONLY reshape: a same-variant quant switch lands, group members ride", () => {
   // The journey matrix rides the MODEL/VARIANT axes; the cellOf
   // RESHAPE (a quant change re-seats the cell's group members) had
