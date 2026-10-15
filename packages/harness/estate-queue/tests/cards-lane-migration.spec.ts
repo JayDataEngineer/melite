@@ -87,6 +87,25 @@ describe("THE STUCK-SWITCH WALL (the live :3088 paste, verbatim)", () => {
   });
 });
 
+describe("T1 (lane-migration audit, 2026-11-06) — the QUANT-ONLY reshape: a same-variant quant switch lands, group members ride", () => {
+  // The journey matrix rides the MODEL/VARIANT axes; the cellOf
+  // RESHAPE (a quant change re-seats the cell's group members) had
+  // no arm — a regression to "quant change with a stale group
+  // member refuses" would redden nothing.
+  it("customvoice + quant 1_7b → 0_6b lands: voice rides, style_instruction drops, quant lands", () => {
+    const prior = { model: "qwen3-tts", variant: "customvoice", quant: "1_7b", text: "w", voice: "vivian", style_instruction: "warm and slow" };
+    const landed = landPatch("tts", prior, { quant: "0_6b" });
+    expect(landed.ok).toBe(true);
+    // the reshape drops the stale group member that 0_6b's cell
+    // does not carry (style_instruction rides the 1_7b cell only)
+    expect(landed.stored["style_instruction"]).toBeUndefined();
+    // the surviving group member rides
+    expect(landed.stored["voice"]).toBe("vivian");
+    // the quant itself landed
+    expect(landed.stored["quant"]).toBe("0_6b");
+  });
+});
+
 describe("THE FULL JOURNEY MATRIX (every ordered lane pair, the prior lane's own members stated)", () => {
   it("voicedesign → customvoice: the export pair drops, the switch lands", () => {
     const prior = { model: LARGE, variant: "voicedesign", text: "words", design_prompt: "a gravel narrator", voice_name: "radio-host" };
