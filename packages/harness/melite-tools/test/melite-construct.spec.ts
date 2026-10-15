@@ -675,6 +675,22 @@ describe('melite_construct render — refused or revved', () => {
     assert.equal(parts.map((p) => p?.text ?? '').join('\n'), 'melite_construct REFUSED: bench moved')
   })
 
+  // (flow-link F4, 2026-11-06) 'the agent never sees this payload'
+  // was narrated, never judged: no arm rendered a settled value and
+  // asserted the bench key is ABSENT from the model-visible text.
+  // The link address rides the persisted meta alone; a render
+  // regression that leaked the key would have passed every arm.
+  test('THE NO-LEAK ARM: a settled read with a chat bench never renders the key', () => {
+    const tool = meliteConstruct(stubEstate())
+    const parts = tool.output.render(
+      { verb: 'read' },
+      { verb: 'read', bench: 's_chat7', ok: true, rev: 5, stages: [{ id: 's1' }] } as never,
+    ) as Array<{ text?: string }>
+    const text = parts.map((p) => p?.text ?? '').join('\n')
+    assert.equal(text, 'bench read → rev 5\nstages: 1\n  s1 — ? [?]')
+    assert.ok(!text.includes('s_chat7'), 'the bench key is meta-only — the model-visible text never carries it')
+  });
+
   test('a success renders verb → rev', () => {
     const tool = meliteConstruct(stubEstate())
     const parts = tool.output.render(
