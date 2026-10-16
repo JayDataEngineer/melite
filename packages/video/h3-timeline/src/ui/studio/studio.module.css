@@ -128,8 +128,6 @@
  * content rules below make them fit instead of spill. */
 .railCol > * { min-width: 0; }
 .docLines { display: flex; flex-direction: column; gap: 4px; padding: 0 4px; font-size: 10px; line-height: 1.625; color: var(--dsw-alias-label-secondary); overflow-wrap: anywhere; }
-.warnRow { display: flex; align-items: flex-start; gap: 4px; color: var(--dsw-alias-state-warn-primary); }
-.warnIcon { margin-top: 2px; flex: none; }
 .runFold { flex: none; border-bottom: 1px solid var(--dsw-alias-border-l1); }
 /* The fold header chrome is DisclosureRow's own (pattern campaign
    S3 killed the hand-rolled .runSummary rows); the note still rides

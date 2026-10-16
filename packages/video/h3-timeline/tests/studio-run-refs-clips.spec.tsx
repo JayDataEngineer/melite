@@ -112,6 +112,29 @@ describe("the lane inspector's own verbs (audit #8)", () => {
     els.unmount()
   })
 
+  it("Escape dismisses the open lane menu through the menu's own onClose (no patch committed)", () => {
+    // (infra #8, 2026-11-06) the dismiss path: the row's onClose
+    // closure is the one function body the select/words/delete arms
+    // never execute — an undismissable menu strands the lane door
+    // open with no red. Escape must close it AND commit nothing.
+    const updates: Array<[string, Record<string, unknown>]> = []
+    const els = render(
+      <RunRefsClips
+        layerA={{ audio_clips: [
+          { id: "c1", name: "a.mp3", class: "sfx" },
+        ] } as unknown as LayerA}
+        updateAudioClip={(id, patch) => { updates.push([id, patch]) }}
+        deleteAudioClip={() => {}}
+      />,
+    )
+    fireEvent.click(screen.getAllByTestId("tl-lane-class")[0]!)
+    assert.equal(screen.queryAllByText("Dialogue").length, 1, "the lane menu is open")
+    fireEvent.keyDown(document.body, { key: "Escape" })
+    assert.equal(screen.queryAllByText("Dialogue").length, 0, "Escape closed the menu through onClose")
+    assert.deepEqual(updates, [], "a dismiss commits no class patch")
+    els.unmount()
+  })
+
   it("ONE menu open at a time — opening the second lane closes the first", () => {
     const els = render(
       <RunRefsClips

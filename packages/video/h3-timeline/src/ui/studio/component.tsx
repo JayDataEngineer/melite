@@ -71,7 +71,7 @@ import { isLiveRunStatus } from "@melite/contracts/stageView"
 import { defineShellDeclaration, SectionLabel, StudioShell, Tip } from '@melite/card-base/client'
 import { manageRemote, type ManageNamespace } from '@melite/card-base/client'
 import {
-  Button, IconWarningTriangleOutlineRegular,
+  Button,
 } from '@deepseek-ai/dsh-client-ui-primitives'
 import { RailBackButton } from './RailBackButton'
 import { cn } from '@melite/card-base/client'
@@ -243,6 +243,10 @@ export function VideoTimelineStudio(owner: StageViewOwnerProps) {
        a direct gesture on the bar (add = double-click, delete = ✕ /
        the rail card's Delete). */
     <StudioShell className={cn(s.studioRoot)}
+      // (Sahar R5, 2026-11-06) the unwired warning rides the shell's
+      // error channel — the hand-rolled warnRow died with this
+      // conversion; the shell renders it once as the loud line.
+      errors={unwired > 0 ? [{ id: "unwired", message: studioCopy.unwiredWarning(unwired) }] : []}
       params={
         <div className={s.railCol}>
           <div className={s.docBlock}>
@@ -257,14 +261,6 @@ export function VideoTimelineStudio(owner: StageViewOwnerProps) {
                 point of entry — a rail banner is a third voice for
                 a law already spoken twice. The gate itself is
                 untouched (card.ts compose refusal). */}
-            {unwired > 0 && (
-              <div className={s.warnRow}>
-                <IconWarningTriangleOutlineRegular className={cn(s.warnIcon, s.sz12)} />
-                <span>
-                  {studioCopy.unwiredWarning(unwired)}
-                </span>
-              </div>
-            )}
           </div>
           </div>
 

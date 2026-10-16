@@ -90,6 +90,25 @@ describe("the rail reads the document out", () => {
     assert.ok(readout.includes("2 calls with knobs"))
     assert.ok(document.body.textContent!.includes("2 keyframe sources unwired"))
   })
+
+  it("the unwired warning rides the shell error line (Sahar R5 — the hand-rolled warnRow is dead)", () => {
+    // (R5, 2026-11-06) the argued-tier conversion: the unwired count
+    // passes through the shell's errors prop — the loud line owns
+    // the face, no tenant warnRow exists. The copy is unchanged
+    // (the shell prefixes its own id grammar).
+    const h = studio(TWO)
+    const line = document.body.querySelector('[role="alert"]')
+    assert.ok(line, "the shell error line renders while sources sit unwired")
+    assert.ok(line!.textContent!.includes("1 keyframe source unwired"))
+    assert.ok(line!.textContent!.includes("unwired"), "the shell's id grammar names the row")
+    h.els.unmount()
+  })
+
+  it("a fully-wired doc renders no shell error line", () => {
+    const h = studio({ calls: [{ text: "solo", start_frame: 0, end_frame: 48 }], fps: 24 })
+    assert.equal(document.body.querySelector('[role="alert"]'), null)
+    h.els.unmount()
+  })
 })
 
 describe("the mode-switching rail", () => {
