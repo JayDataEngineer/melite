@@ -6,20 +6,17 @@
     "lib": [
       "ES2023"
     ],
-    "outDir": "lib",
-    "rootDir": "src",
-    "declaration": true,
-    "declarationMap": true,
-    "sourceMap": true,
     "strict": true,
     "noEmitOnError": true,
+    "paths": {
+      "@melite/comfyui-cordis": ["./../../engines/comfyui-cordis/src/index.ts"]
+    },
     "skipLibCheck": true,
     "verbatimModuleSyntax": true,
     "types": [
       "node"
     ],
     "allowImportingTsExtensions": true,
-    "noEmit": false,
     "rewriteRelativeImportExtensions": true
   },
   "include": [
