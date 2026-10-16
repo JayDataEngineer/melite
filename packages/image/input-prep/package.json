@@ -3,14 +3,18 @@
   "private": true,
   "license": "SSPL-1.0",
   "type": "module",
-  "description": "the input-prep card (the image lane) — one card one package: card.ts host face + the ANNY-style crop/scale studio (src/ui/studio, registered on cards.stage.view by ./client)",
+  "description": "the input-prep card (the image lane) \u2014 one card one package: card.ts host face + the ANNY-style crop/scale studio (src/ui/studio, registered on cards.stage.view by ./client)",
   "exports": {
     ".": {
       "types": "./lib/card.d.ts",
       "default": "./lib/card.js"
     },
     "./package.json": "./package.json",
-    "./client": "./lib/client.js"
+    "./client": "./lib/client.js",
+    "./card": {
+      "types": "./lib/card.d.ts",
+      "default": "./lib/card.js"
+    }
   },
   "scripts": {
     "build": "tsc -p tsconfig.build.json",

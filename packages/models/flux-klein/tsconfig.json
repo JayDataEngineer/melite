@@ -18,6 +18,11 @@
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "paths": {
+        "@melite/audio-sfx/card": ["./../../audio/sfx/src/card.ts"],
+        "@melite/image-image-gen/card": ["./../../image/image-gen/src/card.ts"],
+        "@melite/image-input-prep/card": ["./../../image/input-prep/src/card.ts"],
+        "@melite/image-tagger/card": ["./../../image/tagger/src/card.ts"],
+        "@melite/image-upscale-tools/card": ["./../../image/upscale-tools/src/card.ts"],
         "@melite/image-input-prep/client": ["./../../image/input-prep/src/client/index.ts"],
         "@melite/models-anima/mods/loras": ["./../anima/mods/loras.ts"],
         "@melite/models-flux-klein/mods/loras": ["./mods/loras.ts"],

@@ -35,6 +35,9 @@
   "@melite/audio-sfx": [
     "./packages/audio/sfx/src/card.ts"
   ],
+  "@melite/audio-sfx/card": [
+    "./packages/audio/sfx/src/card.ts"
+  ],
   "@melite/audio-tts": [
     "./packages/audio/tts/src/index.ts"
   ],
@@ -269,6 +272,9 @@
   "@melite/image-image-gen/wire": [
     "./packages/image/image-gen/src/wire.ts"
   ],
+  "@melite/image-image-gen/card": [
+    "./packages/image/image-gen/src/card.ts"
+  ],
   "@melite/image-image-gen/tool": [
     "./packages/image/image-gen/src/tool.ts"
   ],
@@ -277,6 +283,9 @@
   ],
   "@melite/image-input-prep/client": [
     "./packages/image/input-prep/src/client/index.ts"
+  ],
+  "@melite/image-input-prep/card": [
+    "./packages/image/input-prep/src/card.ts"
   ],
   "@melite/image-mask": [
     "./packages/image/mask/src/index.ts"
@@ -296,7 +305,13 @@
   "@melite/image-tagger": [
     "./packages/image/tagger/src/card.ts"
   ],
+  "@melite/image-tagger/card": [
+    "./packages/image/tagger/src/card.ts"
+  ],
   "@melite/image-upscale-tools": [
+    "./packages/image/upscale-tools/src/card.ts"
+  ],
+  "@melite/image-upscale-tools/card": [
     "./packages/image/upscale-tools/src/card.ts"
   ],
   "@melite/models-anima": [

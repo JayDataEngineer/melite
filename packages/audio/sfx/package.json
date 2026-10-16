@@ -3,13 +3,17 @@
   "private": true,
   "license": "SSPL-1.0",
   "type": "module",
-  "description": "the sfx card (the audio lane) — one card one package: card.ts host face + agents/ context (no tool face, no ui/ — the view is constructed by @melite/card-base from the emission)",
+  "description": "the sfx card (the audio lane) \u2014 one card one package: card.ts host face + agents/ context (no tool face, no ui/ \u2014 the view is constructed by @melite/card-base from the emission)",
   "exports": {
     ".": {
       "types": "./lib/card.d.ts",
       "default": "./lib/card.js"
     },
-    "./package.json": "./package.json"
+    "./package.json": "./package.json",
+    "./card": {
+      "types": "./lib/card.d.ts",
+      "default": "./lib/card.js"
+    }
   },
   "scripts": {
     "build": "tsc -p tsconfig.build.json",

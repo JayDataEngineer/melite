@@ -3,13 +3,17 @@
   "private": true,
   "license": "SSPL-1.0",
   "type": "module",
-  "description": "the tagger card (the image lane) — one card one package: card.ts host face (no tool face, no ui/, no agents/ — the view is constructed by @melite/card-base from the emission)",
+  "description": "the tagger card (the image lane) \u2014 one card one package: card.ts host face (no tool face, no ui/, no agents/ \u2014 the view is constructed by @melite/card-base from the emission)",
   "exports": {
     ".": {
       "types": "./lib/card.d.ts",
       "default": "./lib/card.js"
     },
-    "./package.json": "./package.json"
+    "./package.json": "./package.json",
+    "./card": {
+      "types": "./lib/card.d.ts",
+      "default": "./lib/card.js"
+    }
   },
   "scripts": {
     "build": "tsc -p tsconfig.build.json",

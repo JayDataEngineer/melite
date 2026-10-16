@@ -140,6 +140,26 @@ describe("every cardPackages row registers one honest row on the live registry",
   // the row's CARD ID — so a claim registered under any other key is a
   // studio that never renders its surface, which is the timeline bar's
   // absence one seam over from the incident that opened this round.
+  it("THE MANIFEST SWEEP (cards-census wave-2): every cardPackages specifier's package carries the ./card exports row and the built targets (input-prep shipped missing from four rosters; image-gen shipped a built lib/card.js with no exports row — the class has no firing arm)", () => {
+    // derived universe: the SSOT itself — no hand list. A specifier
+    // '@melite/<genre>-<pkg>/card' names the package dir directly.
+    const failures: string[] = [];
+    for (const specifier of cardPackages) {
+      const { genre, pkg } = pkgOf(specifier);
+      const dir: string = join(REPO, "packages", genre, pkg);
+      const manifest: string = join(dir, "package.json");
+      if (!existsSync(manifest)) { failures.push(`${genre}/${pkg}: no package.json`); continue; }
+      const ex: unknown = JSON.parse(readFileSync(manifest, "utf8")).exports;
+      const row: unknown = typeof ex === "object" && ex !== null
+        ? (ex as Record<string, unknown>)["./card"] : undefined;
+      if (row === undefined) { failures.push(`${genre}/${pkg}: src card mounted at '@melite/${genre}-${pkg}/card' but package.json exports carries no './card' row`); continue; }
+      for (const target of ["lib/card.js", "lib/card.d.ts"]) {
+        if (!existsSync(join(dir, target))) failures.push(`${genre}/${pkg}: exports './card' points at ${target} but the build never emitted it`);
+      }
+    }
+    assert.deepEqual(failures, []);
+  });
+
   it("every stage-view claim names the row's own id (the bench's lookup key)", () => {
     const claims: string[] = [];
     for (const card of CARDS) {

@@ -18,6 +18,10 @@
           "node"
       ],
       "paths": {
+        "@melite/audio-sfx/card": ["./../../audio/sfx/src/card.ts"],
+        "@melite/image-image-gen/card": ["./../image-gen/src/card.ts"],
+        "@melite/image-tagger/card": ["./../tagger/src/card.ts"],
+        "@melite/image-upscale-tools/card": ["./../upscale-tools/src/card.ts"],
         "@melite/3d-img-to-mesh": ["./../../3d/img-to-mesh/src/index.ts"],
         "@melite/3d-img-to-mesh/card": ["./../../3d/img-to-mesh/src/card.ts"],
         "@melite/3d-img-to-mesh/client": ["./../../3d/img-to-mesh/src/client/index.ts"],
