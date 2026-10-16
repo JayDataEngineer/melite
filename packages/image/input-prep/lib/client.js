@@ -95,7 +95,20 @@ window.__ModuleLoader__.load({
 			"bicubic",
 			"lanczos"
 		];
-		Number.MAX_SAFE_INTEGER, Number.MAX_SAFE_INTEGER, Number.MAX_SAFE_INTEGER, Number.MAX_SAFE_INTEGER, Number.MAX_SAFE_INTEGER, Number.MAX_SAFE_INTEGER, [...SCALE_METHODS];
+		/** The scale_model dropdown: the roster led by the "" unstated
+		*  sentinel. "" is a declared member because schemastery validates
+		*  a schema default against its closed union — the unstated face
+		*  must parse, not refuse. The card's vocabulary() and this
+		*  action's enum options cite THIS export — one truth, two
+		*  consumers (the SCALE_METHODS idiom). */
+		const SCALE_MODEL_OPTIONS = ["", ...[
+			"RealESRGAN_x4plus",
+			"RealESRGAN_x2plus",
+			"RealESRGANGeneral_x4v3",
+			"4x-UltraSharp",
+			"ESRGAN_x4"
+		]];
+		Number.MAX_SAFE_INTEGER, Number.MAX_SAFE_INTEGER, Number.MAX_SAFE_INTEGER, Number.MAX_SAFE_INTEGER, Number.MAX_SAFE_INTEGER, Number.MAX_SAFE_INTEGER, [...SCALE_METHODS], [...SCALE_MODEL_OPTIONS];
 		//#endregion
 		//#region \0dsh-css:packages/image/input-prep/src/ui/studio/prep.module.css.mjs
 		const css = ".o0BhZq_studio{align-items:stretch;gap:14px;width:100%;min-height:260px;display:flex}.o0BhZq_previewPane{flex-direction:column;flex:auto;gap:6px;min-width:0;display:flex}.o0BhZq_paneNote{color:#ffffffa6;border:1px dashed #7f7f7f66;border-radius:8px;padding:18px 14px;font-size:12px;line-height:1.5}.o0BhZq_paneMeta{color:#ffffff80;font-size:11px}.o0BhZq_previewWrap{user-select:none;touch-action:none;align-self:flex-start;max-width:100%;display:inline-block;position:relative}.o0BhZq_previewImg{border-radius:8px;max-width:100%;max-height:52vh;display:block}.o0BhZq_previewOverlay{cursor:crosshair;border-radius:8px;position:absolute;inset:0}.o0BhZq_cropBox{cursor:move;border:1px solid #fff;position:absolute;box-shadow:0 0 0 100000px #00000080}.o0BhZq_cropBadge{color:#fff;white-space:nowrap;background:#0009;border-radius:4px;padding:1px 5px;font-size:10px;position:absolute;top:-20px;left:4px}.o0BhZq_previewHint{color:#ffffffbf;pointer-events:none;white-space:nowrap;background:#00000080;border-radius:4px;padding:2px 8px;font-size:11px;position:absolute;bottom:10px;left:50%;transform:translate(-50%)}.o0BhZq_handle,.o0BhZq_handle_nw,.o0BhZq_handle_ne,.o0BhZq_handle_se,.o0BhZq_handle_sw,.o0BhZq_handle_n,.o0BhZq_handle_e,.o0BhZq_handle_s,.o0BhZq_handle_w{background:#fff;border:1px solid #0006;border-radius:2px;width:12px;height:12px;position:absolute}.o0BhZq_handle_nw{cursor:nwse-resize;top:-7px;left:-7px}.o0BhZq_handle_ne{cursor:nesw-resize;top:-7px;right:-7px}.o0BhZq_handle_se{cursor:nwse-resize;bottom:-7px;right:-7px}.o0BhZq_handle_sw{cursor:nesw-resize;bottom:-7px;left:-7px}.o0BhZq_handle_n{cursor:ns-resize;margin-left:-6px;top:-7px;left:50%}.o0BhZq_handle_s{cursor:ns-resize;margin-left:-6px;bottom:-7px;left:50%}.o0BhZq_handle_w{cursor:ew-resize;margin-top:-6px;top:50%;left:-7px}.o0BhZq_handle_e{cursor:ew-resize;margin-top:-6px;top:50%;right:-7px}.o0BhZq_rail{background:#7f7f7f14;border:1px solid #7f7f7f40;border-radius:8px;flex-direction:column;flex:0 0 240px;gap:8px;padding:10px;display:flex}.o0BhZq_railTitle{letter-spacing:.04em;text-transform:uppercase;color:#fff9;font-size:11px;font-weight:600}.o0BhZq_railRow{flex-wrap:wrap;align-items:flex-end;gap:8px;display:flex}.o0BhZq_railHint{color:#ffffff80;font-size:11px;line-height:1.4}.o0BhZq_field{color:#ffffffb3;flex-direction:column;flex:1;gap:3px;min-width:0;font-size:11px;display:flex}.o0BhZq_field input,.o0BhZq_field select{color-scheme:light;box-sizing:border-box;color:#fff;background:#00000059;border:1px solid #7f7f7f66;border-radius:6px;width:100%;padding:5px 7px;font-size:12px}.o0BhZq_chip{color:#ffffffd9;cursor:pointer;background:#00000040;border:1px solid #7f7f7f66;border-radius:6px;padding:5px 10px;font-size:11px}.o0BhZq_chip:disabled{opacity:.45;cursor:default}";
@@ -409,10 +422,15 @@ window.__ModuleLoader__.load({
 		* release); this component translates between the four flat crop
 		* params (the card's declared knobs — crop_x/y/width/height, -1 =
 		* unset) and the leaf's CropRect, and owns the resample rail
-		* (scale_width/scale_height/scale_method — the METHOD ROW IS THE
-		* MODEL CHOICE: the five resample models the card's compose
-		* actually drives into ImageScale; the diffusion upscaler is the
-		* upscale-tools card's own stage, never a phantom row here).
+		* (scale_width/scale_height/scale_method). THE MODEL CHOICE rides
+		* the same rail since the operator's 2026-11-08 directive: a picked
+		* scale_model (the standard ComfyUI upscale-model roster, ""
+		* unstated) composes THIS card's own UpscaleModelLoader →
+		* ImageUpscaleWithModel ahead of the plain width/height resize —
+		* the former ruling that parked the diffusion upscaler on the
+		* upscale-tools card is superseded (the compose lives in
+		* packages/models/input/src/actions.ts, the family's declared
+		* action).
 		*/
 		/** Read one numeric param (numbers only — anything else is unset). */
 		const num = (v) => typeof v === "number" && Number.isFinite(v) ? v : null;
@@ -454,6 +472,7 @@ window.__ModuleLoader__.load({
 			const scaleW = num(user["scale_width"]);
 			const scaleH = num(user["scale_height"]);
 			const method = typeof user["scale_method"] === "string" && SCALE_METHODS.includes(user["scale_method"]) ? user["scale_method"] : "lanczos";
+			const scaleModel = typeof user["scale_model"] === "string" && SCALE_MODEL_OPTIONS.includes(user["scale_model"]) ? user["scale_model"] : "";
 			const edit = (patch) => {
 				setUser((prev) => ({
 					...prev,
@@ -642,7 +661,7 @@ window.__ModuleLoader__.load({
 						/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("label", {
 							className: prep_module_css_default.field,
 							"data-testid": "prep-method-field",
-							children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", { children: "resample model" }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("select", {
+							children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", { children: "resample method" }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("select", {
 								"data-testid": "prep-scale-method",
 								value: method,
 								onChange: (e) => {
@@ -654,9 +673,24 @@ window.__ModuleLoader__.load({
 								}, m))
 							})]
 						}),
+						/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("label", {
+							className: prep_module_css_default.field,
+							"data-testid": "prep-model-field",
+							children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", { children: "upscale model" }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("select", {
+								"data-testid": "prep-scale-model",
+								value: scaleModel,
+								onChange: (e) => {
+									edit({ scale_model: e.target.value });
+								},
+								children: SCALE_MODEL_OPTIONS.map((m) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)("option", {
+									value: m,
+									children: m === "" ? "(none — plain resample only)" : m
+								}, m))
+							})]
+						}),
 						/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 							className: prep_module_css_default.railHint,
-							children: "diffusion upscale is the Upscale Image card's own stage — wire this output into it"
+							children: "pick a model to run the engine's model upscaler in this lane (UpscaleModelLoader → ImageUpscaleWithModel); a width/height resize rides after it"
 						})
 					]
 				})]

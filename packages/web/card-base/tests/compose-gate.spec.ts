@@ -106,13 +106,18 @@ describe('THE MIRROR LAW: clause 2 — the quant cell (owned by the stated varia
       'card_compose: unknown quant "q-ghost" for model "krea-2" variant "turbo" (known: q-fp8)',
     )
   })
-  test('a variant that declares NO cells says so — the (known:) tail never lies (the convergence)', () => {
+  test('a variant whose served matrix has no cells names the projection break — the honest voice', () => {
     // the door's empty-cells arm: before the voices converged this
     // seat printed "(known: )" — an empty list the operator cannot
-    // act on. The door's tail is the mirror's tail.
+    // act on. The door's tail is the mirror's tail — and since the
+    // axis-unification cure (2026-11-06) that tail is the HONEST
+    // one: the caller's matrix is the only matrix this seat can see,
+    // so an empty one is named a DECL/projection sync break, never a
+    // DECL fact (the anima burn: the served spec starved the cells
+    // and the old tail blamed the DECL).
     const v = composeValidate(spec, { variant: 'raw', quant: 'q-ghost' })
     expect(v[0]!.message).toBe(
-      'card_compose: unknown quant "q-ghost" for model "krea-2" variant "raw" (the variant declares no cells)',
+      'card_compose: unknown quant "q-ghost" for model "krea-2" variant "raw" (the served matrix declares no cells for this variant — DECL/projection sync break)',
     )
   })
   test('a quant owned by ANOTHER variant is a ghost here (the chain: variant filters quant)', () => {

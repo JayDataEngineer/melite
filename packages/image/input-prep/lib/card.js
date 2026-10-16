@@ -2,7 +2,7 @@ import z from '@deepseek-ai/schemastery';
 import { declaredAction, instantiateAction } from '@melite/comfyui-card-kit';
 import { vocabulary } from '@melite/comfyui-card-kit/vocab';
 import { bag } from '@melite/contracts/extraKeys';
-import { DECL as inputDecl, SCALE_METHODS, MIN_DIM } from '@melite/models-input';
+import { DECL as inputDecl, SCALE_METHODS, SCALE_MODEL_OPTIONS, MIN_DIM } from '@melite/models-input';
 import { callableSchema, gatedResolve } from '@melite/comfyui-card-kit/admission';
 // THE FAMILY BINDINGS (the atom vocabulary, stroke 3): the declared
 // action composes the whole segment; an unbound family refuses loud
@@ -31,6 +31,21 @@ export const schema = z.object({
     scale_width: z.number().description("Scale Width").min(-1).step(1).default(-1).extra('extra', bag({ order: 4, group: "transform", wtype: 'number', visible_when: 'media_type=image' })),
     scale_height: z.number().description("Scale Height").min(-1).step(1).default(-1).extra('extra', bag({ order: 5, group: "transform", wtype: 'number', visible_when: 'media_type=image' })),
     scale_method: vocabulary([...SCALE_METHODS]).description("Scale Method").default("lanczos").extra('extra', bag({ order: 6, group: "transform", wtype: 'select', visible_when: 'media_type=image' })),
+    // THE MODEL CHOICE (operator directive, 2026-11-08 — the studio
+    // card: "parameters to upscale / downscale optionally, letting
+    // you choose the model"): the standard ComfyUI upscale-model
+    // roster led by the "" unstated sentinel (a declared member —
+    // schemastery validates a default against its closed union).
+    // GROUNDED: the live engine's UpscaleModelLoader COMBO is EMPTY
+    // today (options: [] — no model files installed in
+    // models/upscale_models); the declared vocabulary is the standard
+    // set a user installs there, and the ENGINE refuses loud if a
+    // picked file is absent — that refusal is the honest face, never
+    // a silent drop. The family's SCALE_MODEL_OPTIONS export is the
+    // one truth (this vocabulary and the prep action's enum options
+    // cite it; the vocab-rails-subset wall seats the site LOCAL for
+    // the same empty-combo reason).
+    scale_model: vocabulary([...SCALE_MODEL_OPTIONS]).description("Upscale Model").default("").extra('extra', bag({ order: 7, group: "transform", wtype: 'select', visible_when: 'media_type=image' })),
 });
 const schemaFn = callableSchema(schema);
 export const inject = ['comfyui'];

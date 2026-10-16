@@ -5,9 +5,9 @@
 // two byte-for-byte. That arm is deleted (the families own their
 // lanes now), so the golden carries the compatibility law. The lane is
 // weightless (the facts door is vacuous); the audio restage, the crop
-// row, and the scale row each keep their proven bytes (and their
-// refusal voices). The interpreter's own contract walls live in
-// card-kit's tests/action.spec.ts.
+// row, the scale row, and the model-upscale chain each keep their
+// proven bytes (and their refusal voices). The interpreter's own
+// contract walls live in card-kit's tests/action.spec.ts.
 import { describe, it } from "vitest";
 import assert from "node:assert/strict";
 import { GraphBuilder } from "@melite/comfyui-card-kit/graph";
@@ -16,7 +16,7 @@ import { assertGraphGolden } from "../../../../tests/helpers/graph-golden.ts";
 import type { ModelFacts } from "@melite/comfyui-card-kit/facts";
 import { join } from "node:path";
 import { DECL } from "../src/index.ts";
-import { prep, parsePrepFacts } from "../src/actions.ts";
+import { prep, parsePrepFacts, SCALE_MODEL_OPTIONS } from "../src/actions.ts";
 
 // The REAL resolved shape the service hands compose: a weightless
 // family row (lane_inputs ≡ {} — the loader's absent-≡-{} law).
@@ -88,6 +88,43 @@ describe("the prep action — byte-stability (the compatibility law)", () => {
   it("the combined arm holds its golden (crop then scale)", () => {
     const p = { ...PARAMS, crop: { x: 0, y: 0, width: 800, height: 600 }, scale: { width: 1600, height: 1200 } };
     assertGraphGolden(golden("prep-crop-then-scale"), compose(p, "probe-both"), "the combined arm");
+  });
+
+  it("the model-upscale arm holds its golden (the stated model rides; the with-model consumes the loader's OUTPUT handle)", () => {
+    const p = { ...PARAMS, scale_model: "RealESRGAN_x4plus" };
+    const graph = compose(p, "probe-model");
+    assertGraphGolden(golden("prep-model-upscale"), graph, "the model-upscale arm");
+    const loader = Object.values(graph).find((n) => n.class_type === "UpscaleModelLoader")!;
+    assert.equal(loader.inputs.model_name, "RealESRGAN_x4plus", "UpscaleModelLoader.model_name rides the stated value verbatim");
+    const withModel = Object.values(graph).find((n) => n.class_type === "ImageUpscaleWithModel")!;
+    assert.deepEqual(withModel.inputs.upscale_model, ["UpscaleModelLoader.0", 0], "ImageUpscaleWithModel consumes the loader's OUTPUT handle");
+    assert.deepEqual(withModel.inputs.image, ["LoadImage.0", 0], "the load rides upstream of the model");
+    assert.ok(!Object.values(graph).some((n) => n.class_type === "ImageScale"), "no plain ImageScale when no dims are stated — the model's xN is the whole resize");
+  });
+
+  it("the full chain arm holds its golden (crop → model upscale → plain scale, in that order)", () => {
+    const p = { ...PARAMS, crop: { x: 0, y: 0, width: 800, height: 600 }, scale_model: "4x-UltraSharp", scale: { width: 512, height: 384 } };
+    const graph = compose(p, "probe-full");
+    assertGraphGolden(golden("prep-crop-model-scale"), graph, "the full chain");
+    const withModel = Object.values(graph).find((n) => n.class_type === "ImageUpscaleWithModel")!;
+    assert.deepEqual(withModel.inputs.image, ["ImageCrop.0", 0], "the crop rides upstream of the model");
+    const scale = Object.values(graph).find((n) => n.class_type === "ImageScale")!;
+    assert.deepEqual(scale.inputs.image, ["ImageUpscaleWithModel.0", 0], "the plain resize rides downstream of the model (a stated downsize after the model's xN)");
+  });
+
+  it("THE UNSTATED FACE: scale_model \"\" and absent compose byte-identical to the plain-chain golden", () => {
+    const graph = compose({ ...PARAMS, scale_model: "" }, "probe");
+    assertGraphGolden(golden("prep-passthrough"), graph, "the unstated model face is today's chain");
+    assert.deepEqual(compose({ ...PARAMS }, "probe"), graph, "absent and \"\" are the same chain — no phantom loader, no drift");
+  });
+
+  it("THE CLOSED SET (the model's own backstop): a bogus scale_model refuses — and the declared row is the engine-facing enum", () => {
+    assert.throws(
+      () => compose({ ...PARAMS, scale_model: "ultra-sharp" }, "probe-bogus-model"),
+      /scale_model refused on the input-prep card: must be one of .* \(got "ultra-sharp"\)/,
+    );
+    const row = prep.params.find((p) => p.name === "scale_model");
+    assert.deepEqual(row, { name: "scale_model", type: "enum", options: [...SCALE_MODEL_OPTIONS] });
   });
 
   it("the malformed rows refuse in the family's voice (field-named, never composes)", () => {

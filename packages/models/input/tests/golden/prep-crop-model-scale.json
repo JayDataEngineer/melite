@@ -1,0 +1,63 @@
+{
+  "LoadImage.0": {
+    "class_type": "LoadImage",
+    "inputs": {
+      "image": "/m/i.png"
+    }
+  },
+  "ImageCrop.0": {
+    "class_type": "ImageCrop",
+    "inputs": {
+      "image": [
+        "LoadImage.0",
+        0
+      ],
+      "x": 0,
+      "y": 0,
+      "width": 800,
+      "height": 600
+    }
+  },
+  "UpscaleModelLoader.0": {
+    "class_type": "UpscaleModelLoader",
+    "inputs": {
+      "model_name": "4x-UltraSharp"
+    }
+  },
+  "ImageUpscaleWithModel.0": {
+    "class_type": "ImageUpscaleWithModel",
+    "inputs": {
+      "upscale_model": [
+        "UpscaleModelLoader.0",
+        0
+      ],
+      "image": [
+        "ImageCrop.0",
+        0
+      ]
+    }
+  },
+  "ImageScale.0": {
+    "class_type": "ImageScale",
+    "inputs": {
+      "image": [
+        "ImageUpscaleWithModel.0",
+        0
+      ],
+      "upscale_method": "lanczos",
+      "width": 512,
+      "height": 384,
+      "crop": "disabled"
+    }
+  },
+  "SaveImage.0": {
+    "class_type": "SaveImage",
+    "inputs": {
+      "images": [
+        "ImageScale.0",
+        0
+      ],
+      "filename_prefix": "probe-full/input_prep"
+    }
+  }
+}

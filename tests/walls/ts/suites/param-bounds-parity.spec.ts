@@ -70,7 +70,7 @@ import { BOARDED as IMAGE_EDIT_BOARDED } from "../../../../packages/image/image-
 // Judged by nobody estate-side while both planes held package-local
 // pins (packages/image/input-prep, packages/models/input).
 import { schema as inputPrepSchema } from "../../../../packages/image/input-prep/src/card.ts";
-import { prep as inputPrepAction, SCALE_METHODS as INPUT_SCALE_METHODS, MIN_DIM as INPUT_MIN_DIM } from "../../../../packages/models/input/src/actions.ts";
+import { prep as inputPrepAction, SCALE_METHODS as INPUT_SCALE_METHODS, SCALE_MODEL_OPTIONS as INPUT_SCALE_MODEL_OPTIONS, MIN_DIM as INPUT_MIN_DIM } from "../../../../packages/models/input/src/actions.ts";
 import { DECL as inputDecl } from "../../../../packages/models/input/src/index.ts";
 import { extraOf } from "../../../../packages/web-kit/contracts/src/extraKeys.ts";
 
@@ -275,7 +275,7 @@ describe("THE PARAM-BOUNDS PARITY WALL — the card's schema and the action's ro
     asserted.push(`input-prep input/prep "source" (type)`);
     // THE ENUM SEATS, ORDER-SENSITIVE: the card's dropdown order is
     // the user's menu order, so a reordered vocabulary is drift.
-    for (const name of ["media_type", "scale_method"] as const) {
+    for (const name of ["media_type", "scale_method", "scale_model"] as const) {
       const row = action.params.find((r) => r.name === name);
       assert.ok(row !== undefined, `input-prep's prep action declares no "${name}" row`);
       assert.deepEqual(
@@ -299,6 +299,17 @@ describe("THE PARAM-BOUNDS PARITY WALL — the card's schema and the action's ro
       [...(field("scale_method").options ?? [])],
       [...INPUT_SCALE_METHODS],
       `input-prep input/prep "scale_method": the served dropdown must EQUAL the family's SCALE_METHODS export — one truth, two consumers (card.ts vocabulary, actions.ts enum options)`,
+    );
+    // THE MODEL CHOICE'S ONE TRUTH (the studio-card directive,
+    // 2026-11-08): the served dropdown IS the family's
+    // SCALE_MODEL_OPTIONS export — the standard upscale-model roster
+    // led by the "" unstated sentinel; the card's vocabulary and the
+    // action's enum options cite it, so a hand copy drifting from
+    // the family reds here naming input-prep.
+    assert.deepEqual(
+      [...(field("scale_model").options ?? [])],
+      [...INPUT_SCALE_MODEL_OPTIONS],
+      `input-prep input/prep "scale_model": the served dropdown must EQUAL the family's SCALE_MODEL_OPTIONS export — one truth, two consumers (card.ts vocabulary, actions.ts enum options)`,
     );
     // THE HALF-BOUNDED MEMBERS (the unset sentinel): the served floor
     // EQUALS the action's floor (-1, the unset sentinel both planes

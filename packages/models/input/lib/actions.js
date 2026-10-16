@@ -14,6 +14,30 @@ export const SCALE_METHODS = ["nearest-exact", "bilinear", "area", "bicubic", "l
  *  below 8px, so nothing legitimate composes smaller. The
  *  input-prep card's gate serves THIS export — one truth. */
 export const MIN_DIM = 8;
+/** The standard ComfyUI upscale-model roster (operator directive,
+ *  2026-11-08 — the studio card: "parameters to upscale / downscale
+ *  optionally, letting you choose the model"): the model files a
+ *  user installs into models/upscale_models. GROUNDED: the live
+ *  engine's UpscaleModelLoader.model_name COMBO is EMPTY today
+ *  (object_info serves options: [] — no model files installed), so
+ *  there is no live roster to cite; this declared set is the
+ *  standard set the node ships for, and the ENGINE refuses loud
+ *  when a picked file is absent — that refusal is the honest face,
+ *  never a silent drop. */
+export const UPSCALE_MODELS = [
+    "RealESRGAN_x4plus",
+    "RealESRGAN_x2plus",
+    "RealESRGANGeneral_x4v3",
+    "4x-UltraSharp",
+    "ESRGAN_x4",
+];
+/** The scale_model dropdown: the roster led by the "" unstated
+ *  sentinel. "" is a declared member because schemastery validates
+ *  a schema default against its closed union — the unstated face
+ *  must parse, not refuse. The card's vocabulary() and this
+ *  action's enum options cite THIS export — one truth, two
+ *  consumers (the SCALE_METHODS idiom). */
+export const SCALE_MODEL_OPTIONS = ["", ...UPSCALE_MODELS];
 /** The weightless door: the family declares no lane_inputs, so
  * there is nothing to parse and nothing that can drift. The raw
  * view rides unvalidated by contract (absent ≡ {}).
@@ -23,8 +47,8 @@ export function parsePrepFacts(_raw) {
     return {};
 }
 /** The staged-source transform action: audio passthrough
- * (LoadAudio→SaveAudio) or image LoadImage→[crop]→[scale]→SaveImage
- * under <run>/input_prep. */
+ * (LoadAudio→SaveAudio) or image LoadImage→[crop]→[model upscale]→
+ * [scale]→SaveImage under <run>/input_prep. */
 export const prep = {
     id: "prep",
     inputs: [],
@@ -47,6 +71,7 @@ export const prep = {
         { name: "scale_width", type: "number", bounds: [-1, Number.MAX_SAFE_INTEGER] },
         { name: "scale_height", type: "number", bounds: [-1, Number.MAX_SAFE_INTEGER] },
         { name: "scale_method", type: "enum", options: [...SCALE_METHODS] },
+        { name: "scale_model", type: "enum", options: [...SCALE_MODEL_OPTIONS] },
     ],
     facts: parsePrepFacts,
     build({ p, g, runId }) {
@@ -86,6 +111,27 @@ export const prep = {
                 throw new Error(`crop row refused on the input-prep card: 'width'/'height' must be at least ${MIN_DIM}px (got ${crop.width}x${crop.height}) — smaller crops upscale to a blank`);
             }
             img = g.node("ImageCrop", { image: img, x: crop.x, y: crop.y, width: crop.width, height: crop.height }).out(0);
+        }
+        // THE MODEL-UPSCALE CHAIN (operator directive, 2026-11-08 — the
+        // studio card's own model choice, superseding the header ruling
+        // that parked the diffusion upscaler on the upscale-tools card):
+        // a stated scale_model rides UpscaleModelLoader →
+        // ImageUpscaleWithModel FIRST, consuming the loader's OUTPUT
+        // handle; the plain ImageScale (a stated downsize after the
+        // model's xN) composes only after it. The "" sentinel (the
+        // unstated face the card ships) keeps today's chain byte-for-byte.
+        const scaleModel = typeof p.scale_model === "string" ? p.scale_model : "";
+        if (scaleModel !== "") {
+            // THE CLOSED SET (the dropdown law's backstop): the legacy
+            // flat-params path bypasses the card's vocabulary gate, so a
+            // bogus model string is refused here — the engine's combo
+            // would 500 it raw (and an absent file dies at the engine,
+            // loud, in the engine's own voice).
+            if (!UPSCALE_MODELS.includes(scaleModel)) {
+                throw new Error(`scale_model refused on the input-prep card: must be one of ${UPSCALE_MODELS.join(" | ")} (got ${JSON.stringify(p.scale_model)})`);
+            }
+            const loaded = g.node("UpscaleModelLoader", { model_name: scaleModel });
+            img = g.node("ImageUpscaleWithModel", { upscale_model: loaded.out(0), image: img }).out(0);
         }
         const scale = p.scale;
         if (scale) {

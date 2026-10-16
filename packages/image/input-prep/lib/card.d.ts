@@ -13,6 +13,7 @@ export declare const schema: z<Schemastery.ObjectS<NoInfer<{
     scale_width: z<number, number, "defined">;
     scale_height: z<number, number, "defined">;
     scale_method: z<string, string, "defined">;
+    scale_model: z<string, string, "defined">;
 }>>, Schemastery.ObjectT<NoInfer<{
     source: z<string, string, "plain">;
     media_type: z<string, string, "defined">;
@@ -23,6 +24,7 @@ export declare const schema: z<Schemastery.ObjectS<NoInfer<{
     scale_width: z<number, number, "defined">;
     scale_height: z<number, number, "defined">;
     scale_method: z<string, string, "defined">;
+    scale_model: z<string, string, "defined">;
 }>>, "plain">;
 export declare const inject: string[];
 export declare const identity: {

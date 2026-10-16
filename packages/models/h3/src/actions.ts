@@ -1517,6 +1517,15 @@ function renderH3Window(
       const extractInputs: Record<string, string | number | boolean | OutputHandle> = {
         name: nameBase,
         mode: 'Compressed Reference', concept_type: 'generic', save: true,
+        // THE VAE EDGE (2026-11-06 live burn: 'connect an av_encoder
+        // (MiniMax-H3 VAE loader) or a standard VAE' — the engine
+        // refuses the extract at run time without one; both inputs
+        // are schema-optional, so no phase-1 judge can catch it).
+        // The family's own optimized H3 VAE rides (the int8-convrot
+        // video VAE, the same handle the film lane loads); no
+        // MINIMAX_H3_AV_ENCODER loader node exists in this engine's
+        // /object_info, so the standard-VAE input is THE wire.
+        vae: vaeVideo,
       }
       modImages.forEach((img, i) => {
         extractInputs[`refs_image.ref_image_${i}`] = g.node('LoadImage', { image: img, upload: 'image' }).out(0)

@@ -150,6 +150,84 @@ describe('THE THREE-PLANE AGREEMENT (image-3d wave-2 cure 3): rail == declaratio
   })
 })
 
+describe('THE MODEL FACE JOINS THE AGREEMENT (the studio-card directive, 2026-11-08): rail == declaration == compose for scale_model, per media_type arm', () => {
+  const STATED_MODEL = 'RealESRGAN_x4plus'
+
+  /** The COMPOSE plane for the model face: the ImageUpscaleWithModel
+   *  inputs + the loader's model_name when a stated scale_model
+   *  reaches the graph on this arm, null when compose drops the
+   *  face (the audio passthrough returns before the image chain). */
+  function composeModelFace(arm: string): { withModel: Record<string, unknown>, loaderName: unknown } | null {
+    const g = new GraphBuilder()
+    def.compose(
+      def.schema({ source: 'upload.png', media_type: arm, scale_model: STATED_MODEL }),
+      DUMMY, g, `model_agreement_${arm}`,
+    )
+    const graph = g.toJSON() as Record<string, { class_type: string; inputs: Record<string, unknown> }>
+    const withModel = Object.values(graph).find((n) => n.class_type === 'ImageUpscaleWithModel')
+    if (withModel === undefined) return null
+    const loader = Object.values(graph).find((n) => n.class_type === 'UpscaleModelLoader')
+    return { withModel: withModel.inputs, loaderName: loader?.inputs['model_name'] }
+  }
+
+  /** The RAIL plane for the model face: does the studio seat the
+   *  upscale-model select on this arm? */
+  function railSeatsModel(arm: string): boolean {
+    render(h(InputPrepStudio, {
+      stageId: 's_0',
+      cardName: 'input-prep',
+      row: {
+        id: 's_0',
+        card: 'input-prep',
+        params: { source: arm === 'audio' ? 'x.wav' : 'x.png', media_type: arm, scale_model: STATED_MODEL },
+      },
+      runStatus: '',
+      onPatch: vi.fn(),
+      onRun: vi.fn(),
+      onStop: () => {},
+      onRemove: () => {},
+      onSurface: () => {},
+      upstream: [],
+      runId: null,
+    } as never))
+    return screen.queryByTestId('prep-scale-model') !== null
+  }
+
+  it.each(MEDIA_ARMS)('the %s arm: the model face gives the same verdict on all three planes', (arm) => {
+    // THE COMPOSE PLANE first — compose is the truth home. Honored
+    // means HONORED: the stated model rides the loader verbatim and
+    // the with-model consumes the loader's OUTPUT handle.
+    const honored = composeModelFace(arm)
+    if (honored !== null) {
+      expect(honored.loaderName).toBe(STATED_MODEL)
+      expect(honored.withModel['upscale_model']).toEqual(['UpscaleModelLoader.0', 0])
+    }
+    // THE DECL PLANE: the registered rule is the transform group's
+    // image-lane rule, and the form's own evaluator must agree with
+    // compose per arm.
+    expect(visibleWhenOf('scale_model')).toBe('media_type=image')
+    expect(declSeats('scale_model', arm), `scale_model: the declaration must agree with compose on the ${arm} arm`)
+      .toBe(honored !== null)
+    // THE RAIL PLANE: the model select seats exactly when the other
+    // two planes seat the face.
+    expect(railSeatsModel(arm), `the rail must agree with the declaration and compose on the ${arm} arm`)
+      .toBe(honored !== null)
+  })
+
+  it('the unstated face composes NEITHER node — absent, never phantom; stated composes the pair', () => {
+    const g = new GraphBuilder()
+    def.compose(def.schema({ source: 'upload.png', media_type: 'image' }), DUMMY, g, 'model_unstated')
+    const graph = g.toJSON() as Record<string, { class_type: string }>
+    expect(Object.values(graph).some((n) => n.class_type === 'UpscaleModelLoader')).toBe(false)
+    expect(Object.values(graph).some((n) => n.class_type === 'ImageUpscaleWithModel')).toBe(false)
+    const g2 = new GraphBuilder()
+    def.compose(def.schema({ source: 'upload.png', media_type: 'image', scale_model: STATED_MODEL }), DUMMY, g2, 'model_stated')
+    const graph2 = g2.toJSON() as Record<string, { class_type: string }>
+    expect(Object.values(graph2).some((n) => n.class_type === 'UpscaleModelLoader')).toBe(true)
+    expect(Object.values(graph2).some((n) => n.class_type === 'ImageUpscaleWithModel')).toBe(true)
+  })
+})
+
 describe('THE FLUSH IS THE VERBATIM USER LAYER (the merge behavior unchanged without the deleted JSON-merge loop)', () => {
   function ownerWith(params: Record<string, unknown>, over: Record<string, unknown>) {
     return {

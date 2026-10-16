@@ -83,7 +83,10 @@ import { cardPackages, loadCardDefs } from "@melite/comfyui-cordis";
 // argued here per this arm's own law.
 const CARD_ROSTER = 14;
 // 466 (2026-11-06): input-prep's crop-studio field joined the estate.
-const FIELD_ROSTER = 466;
+// 466 -> 467 (2026-11-08, the model choice): input-prep's scale_model
+// select — the standard upscale-model vocabulary (union of consts →
+// select, the lawful mapping's first rule).
+const FIELD_ROSTER = 467;
 
 interface DictField {
   readonly type?: string;

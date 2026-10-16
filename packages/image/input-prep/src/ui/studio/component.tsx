@@ -14,14 +14,19 @@
  * release); this component translates between the four flat crop
  * params (the card's declared knobs — crop_x/y/width/height, -1 =
  * unset) and the leaf's CropRect, and owns the resample rail
- * (scale_width/scale_height/scale_method — the METHOD ROW IS THE
- * MODEL CHOICE: the five resample models the card's compose
- * actually drives into ImageScale; the diffusion upscaler is the
- * upscale-tools card's own stage, never a phantom row here).
+ * (scale_width/scale_height/scale_method). THE MODEL CHOICE rides
+ * the same rail since the operator's 2026-11-08 directive: a picked
+ * scale_model (the standard ComfyUI upscale-model roster, ""
+ * unstated) composes THIS card's own UpscaleModelLoader →
+ * ImageUpscaleWithModel ahead of the plain width/height resize —
+ * the former ruling that parked the diffusion upscaler on the
+ * upscale-tools card is superseded (the compose lives in
+ * packages/models/input/src/actions.ts, the family's declared
+ * action).
  */
 import { useEffect, useRef, useState } from 'react'
 import type { StageViewOwnerProps } from '@melite/contracts/stageView'
-import { SCALE_METHODS } from '@melite/models-input'
+import { SCALE_METHODS, SCALE_MODEL_OPTIONS } from '@melite/models-input'
 import { CropPreview } from './CropPreview.tsx'
 import type { CropRect, NaturalSize } from './CropPreview.tsx'
 import css from './prep.module.css'
@@ -80,6 +85,11 @@ export function InputPrepStudio(props: StageViewOwnerProps) {
   const method = typeof user['scale_method'] === 'string'
     && (SCALE_METHODS as readonly string[]).includes(user['scale_method'])
     ? user['scale_method'] : 'lanczos'
+  // THE MODEL CHOICE: the stated roster member verbatim; anything
+  // else (absent, non-string) is the "" unstated face.
+  const scaleModel = typeof user['scale_model'] === 'string'
+    && (SCALE_MODEL_OPTIONS as readonly string[]).includes(user['scale_model'])
+    ? user['scale_model'] : ''
 
   const edit = (patch: Record<string, unknown>): void => {
     setUser((prev) => ({ ...prev, ...patch }))
@@ -203,7 +213,7 @@ export function InputPrepStudio(props: StageViewOwnerProps) {
           >clear</button>
         </div>
         <label className={css.field} data-testid="prep-method-field">
-          <span>resample model</span>
+          <span>resample method</span>
           <select
             data-testid="prep-scale-method"
             value={method}
@@ -214,8 +224,20 @@ export function InputPrepStudio(props: StageViewOwnerProps) {
             ))}
           </select>
         </label>
+        <label className={css.field} data-testid="prep-model-field">
+          <span>upscale model</span>
+          <select
+            data-testid="prep-scale-model"
+            value={scaleModel}
+            onChange={(e) => { edit({ scale_model: e.target.value }) }}
+          >
+            {SCALE_MODEL_OPTIONS.map((m) => (
+              <option key={m} value={m}>{m === '' ? '(none — plain resample only)' : m}</option>
+            ))}
+          </select>
+        </label>
         <span className={css.railHint}>
-          diffusion upscale is the Upscale Image card's own stage — wire this output into it
+          pick a model to run the engine's model upscaler in this lane (UpscaleModelLoader → ImageUpscaleWithModel); a width/height resize rides after it
         </span>
       </div>
       )}

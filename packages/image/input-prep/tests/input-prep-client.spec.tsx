@@ -22,7 +22,7 @@ import { createElement as h } from 'react'
 import { InputPrepStudio, cropOf, isPreviewable } from '../src/ui/studio/component.tsx'
 import { CropPreview, cropIsHonorable } from '../src/ui/studio/CropPreview.tsx'
 import { apply, inject, name } from '../src/client/index.ts'
-import { SCALE_METHODS, MIN_DIM } from '@melite/models-input'
+import { SCALE_METHODS, SCALE_MODEL_OPTIONS, UPSCALE_MODELS, MIN_DIM } from '@melite/models-input'
 
 const IMG = 'data:image/png;base64,iVBORw0KGgo='
 
@@ -74,6 +74,18 @@ function drag(el: Element, points: Array<[number, number]>) {
 }
 
 describe('the crop leaf (CropPreview)', () => {
+  it('THE PREVIEW SEAT IS THE IMAGE (the ANNY-studio pin): the <img> renders the stage media and the drag box rides OVER it', () => {
+    const onChange = vi.fn()
+    render(h(CropPreview, { src: IMG, crop: null, onChange }))
+    seatPreview(800, 600)
+    drag(screen.getByTestId('prep-crop-overlay'), [[10, 20], [110, 170]])
+    expect(onChange).toHaveBeenCalledTimes(1)
+    const wrap = screen.getByTestId('prep-crop-preview')
+    const img = wrap.querySelector('img')
+    expect(img?.getAttribute('src')).toBe(IMG)
+    expect(wrap.contains(screen.getByTestId('prep-crop-box'))).toBe(true)
+  })
+
   it('A DRAW COMMITS ATOMICALLY: one onChange at release, in image px, normalized', () => {
     const onChange = vi.fn()
     render(h(CropPreview, { src: IMG, crop: null, onChange }))
@@ -172,6 +184,10 @@ describe('the studio (InputPrepStudio)', () => {
   it('DERIVES THE BOX FROM THE CARD PARAMS: crop_x/y/width/height seat the box', () => {
     render(h(InputPrepStudio, owner({ params: { source: IMG, crop_x: 10, crop_y: 20, crop_width: 100, crop_height: 150 } })))
     seatPreview(800, 600)
+    // THE STAGE'S MEDIA: the preview <img> renders the row's source —
+    // the drag box is drawn over THE image, never a separate abstract control.
+    const img = screen.getByTestId('prep-crop-preview').querySelector('img')
+    expect(img?.getAttribute('src')).toBe(IMG)
     expect(screen.getByTestId('prep-crop-box').textContent).toContain('100×150')
     expect(screen.getByTestId('prep-natural').textContent).toContain('crop 100×150 at 10,20')
   })
@@ -255,7 +271,23 @@ describe('the studio (InputPrepStudio)', () => {
     expect(onPatch.mock.calls[1][0]).toMatchObject({ scale_width: -1, scale_height: -1 })
   })
 
-  it('THE MODEL CHOICE IS THE RESAMPLE VOCABULARY (its own home is the oracle)', () => {
+  it('THE MODEL CHOICE IS THE UPSCALE-MODEL VOCABULARY (its own home is the oracle; "" unstated leads)', () => {
+    render(h(InputPrepStudio, owner({ params: { source: IMG } })))
+    const select = screen.getByTestId('prep-scale-model') as HTMLSelectElement
+    const offered = Array.from(select.options).map((o) => o.value)
+    expect(offered).toEqual(['', ...UPSCALE_MODELS])
+    expect(select.value).toBe('')
+    act(() => {
+      fireEvent.change(select, { target: { value: 'RealESRGAN_x4plus' } })
+    })
+    expect(select.value).toBe('RealESRGAN_x4plus')
+    act(() => {
+      fireEvent.change(select, { target: { value: '' } })
+    })
+    expect(select.value).toBe('')
+  })
+
+  it('THE RESAMPLE METHOD IS THE RESAMPLE VOCABULARY (its own home is the oracle)', () => {
     render(h(InputPrepStudio, owner({ params: { source: IMG } })))
     const select = screen.getByTestId('prep-scale-method') as HTMLSelectElement
     const offered = Array.from(select.options).map((o) => o.value)
@@ -266,6 +298,28 @@ describe('the studio (InputPrepStudio)', () => {
       fireEvent.change(select, { target: { value: 'bicubic' } })
     })
     expect(select.value).toBe('bicubic')
+  })
+
+  it('THE MODEL CHOICE RIDES THE SAVED DOC (the picked value flushes in the run patch; the sentinel unstateds)', () => {
+    const onPatch = vi.fn()
+    const bindRun = vi.fn()
+    render(h(InputPrepStudio, owner(
+      { params: { source: IMG, scale_model: '4x-UltraSharp' } },
+      { onPatch, bindRun },
+    )))
+    const verb = bindRun.mock.calls[0][0] as () => void
+    act(() => { verb() })
+    expect(onPatch.mock.calls[0][0]).toMatchObject({ scale_model: '4x-UltraSharp' })
+    act(() => {
+      fireEvent.change(screen.getByTestId('prep-scale-model'), { target: { value: 'ESRGAN_x4' } })
+    })
+    act(() => { verb2Of(bindRun)() })
+    expect(onPatch.mock.calls[1][0]).toMatchObject({ scale_model: 'ESRGAN_x4' })
+    act(() => {
+      fireEvent.change(screen.getByTestId('prep-scale-model'), { target: { value: '' } })
+    })
+    act(() => { verb2Of(bindRun)() })
+    expect(onPatch.mock.calls[2][0]).toMatchObject({ scale_model: '' })
   })
 
   it('A STAGED (non-browser) SOURCE SAYS SO — no broken preview frame', () => {
@@ -289,10 +343,12 @@ describe('the studio (InputPrepStudio)', () => {
     render(h(InputPrepStudio, owner({ params: { source: 'x.wav', media_type: 'audio' } })))
     expect(screen.queryByTestId('prep-rail')).toBeNull()
     expect(screen.queryByTestId('prep-scale-scale_width')).toBeNull()
-    // the image arm keeps the full rail
+    expect(screen.queryByTestId('prep-scale-model')).toBeNull()
+    // the image arm keeps the full rail, model choice included
     render(h(InputPrepStudio, owner({ params: { source: 'x.png', media_type: 'image' } })))
     expect(screen.getByTestId('prep-rail')).not.toBeNull()
     expect(screen.getByTestId('prep-scale-scale_width')).not.toBeNull()
+    expect(screen.getByTestId('prep-scale-model')).not.toBeNull()
   })
 })
 

@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { SAMPLER_OPTIONS, SCHEDULER_OPTIONS } from "../../../../packages/engines/comfyui-card-kit/src/vocab.ts";
 import { TAGGER_CAPTION_TASKS, TAGGER_CAPTION_TYPES, TAGGER_CAPTION_LENGTHS, TAGGER_EXTRA_OPTIONS } from "../../../../packages/engines/comfyui-card-kit/src/lanes-image-tools.ts";
 import { PRESET_SPEAKERS } from "../../../../packages/models/qwen3-tts/src/actions.ts";
-import { SCALE_METHODS } from "../../../../packages/models/input/src/actions.ts";
+import { SCALE_METHODS, SCALE_MODEL_OPTIONS } from "../../../../packages/models/input/src/actions.ts";
 import { parseInputSpec } from "../../../../packages/engines/comfyui-cordis/src/wiringWall.ts";
 
 // THE VOCAB-RAILS SUBSET WALL (schema-gate-inventory fix 3, 2026-10-12):
@@ -125,6 +125,16 @@ const LOCAL: { site: string; values: () => readonly string[]; reason: string }[]
   { site: "h3:sla_dense_backend", values: () => inlineVocab("models/h3/src/schema.ts", "sla_dense_backend"), reason: "the h3 family's own dense backend picker" },
   { site: "h3:sla_reference_protection", values: () => inlineVocab("models/h3/src/schema.ts", "sla_reference_protection"), reason: "the h3 family's own protection levels" },
   { site: "h3:sharpen_method", values: () => inlineVocab("models/h3/src/schema.ts", "sharpen_method"), reason: "the h3 family's own sharpener kernels" },
+  // THE MODEL CHOICE (operator directive, 2026-11-08): the standard
+  // ComfyUI upscale-model roster (led by the "" unstated sentinel)
+  // — declared LOCAL because the LIVE engine's
+  // UpscaleModelLoader.model_name COMBO is EMPTY today (object_info
+  // serves options: [] — no model files installed in
+  // models/upscale_models): there is no live roster to join, and a
+  // join to the empty combo would condemn every name. When a user
+  // installs files the combo grows; the honest face is this
+  // declared set + the engine's own loud refusal on an absent file.
+  { site: "input-prep:scale_model", values: () => SCALE_MODEL_OPTIONS, reason: "the standard models/upscale_models install roster — the live UpscaleModelLoader combo is EMPTY (no model files installed), so there is no engine roster to join; the engine refuses loud on a picked-but-absent file" },
 ];
 
 const LOCAL_RAILS: string[] = [];
@@ -252,7 +262,9 @@ describe("THE VOCAB-RAILS SUBSET WALL — every closed vocabulary is engine-join
       "3d/rig/src/card.ts": 1,
       "audio/music/src/card.ts": 1,
       "audio/tts/src/card.ts": 1,
-      "image/input-prep/src/card.ts": 2,
+      // 2 -> 3 (2026-11-08, the model choice): scale_model joined —
+      // the standard upscale-model roster, LOCAL for the empty live combo.
+      "image/input-prep/src/card.ts": 3,
       "motion/motion/src/card.ts": 1,
     });
 

@@ -746,6 +746,15 @@ describe("the refmod seat (audit 010/R1, 2026-10-18)", () => {
     // the baked pack lands in the loader dropdown for reuse
     expect(extract![1].inputs.name).toBe("vanellope");
     expect(extract![1].inputs.save).toBe(true);
+    // THE VAE EDGE (2026-11-06 live burn: the engine refuses the
+    // extract at run — 'connect an av_encoder (MiniMax-H3 VAE
+    // loader) or a standard VAE' — both inputs schema-optional, so
+    // no phase-1 judge catches it): the extract consumes the
+    // family's own optimized H3 VAE (the int8-convrot video VAE the
+    // film lane loads), never an unwired extract.
+    const vaeLoader = entries.find(([, n]) => n.class_type === "VAELoader" && (n.inputs.vae_name as string)?.includes("minimax_h3_video_vae"));
+    expect(vaeLoader, "the family's H3 video VAE loader composes").toBeDefined();
+    expect(extract![1].inputs.vae, "the extract's vae input rides the family VAE (the run-time refusal seam)").toEqual([vaeLoader![0], 0]);
     // the still rides LoadImage → refs_image.ref_image_0; the video
     // rides LoadVideo → GetVideoComponents → refs_video.ref_video_0
     // (frame batch). DOTTED container.slot addressing — the autogrow

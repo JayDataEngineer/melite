@@ -106,6 +106,59 @@ describe("the input-prep compose gate", () => {
     );
   });
 
+  it("THE MODEL CHAIN (the studio-card directive, 2026-11-08): a stated scale_model composes loader → with-model, verbatim, before any plain scale", () => {
+    // The stated model rides UpscaleModelLoader.model_name verbatim;
+    // ImageUpscaleWithModel consumes the loader's OUTPUT handle; the
+    // plain ImageScale rides downstream ONLY when dims are also
+    // stated (a stated downsize after the model's xN).
+    const g = new GraphBuilder();
+    def.compose(def.schema({ source: "upload.png", scale_model: "RealESRGAN_x4plus" }), DUMMY, g, "run_model");
+    const graph = g.toJSON() as Record<string, { class_type: string; inputs: Record<string, unknown> }>;
+    const loader = Object.values(graph).find((n) => n.class_type === "UpscaleModelLoader");
+    assert.ok(loader, "the stated model composes the loader");
+    assert.equal(loader!.inputs.model_name, "RealESRGAN_x4plus");
+    const withModel = Object.values(graph).find((n) => n.class_type === "ImageUpscaleWithModel");
+    assert.ok(withModel, "the with-model node composes");
+    assert.deepEqual(withModel!.inputs.upscale_model, ["UpscaleModelLoader.0", 0], "the with-model consumes the loader's OUTPUT handle");
+    assert.deepEqual(withModel!.inputs.image, ["LoadImage.0", 0], "the load rides upstream");
+    assert.ok(!Object.values(graph).some((n) => n.class_type === "ImageScale"), "no plain scale when no dims are stated");
+  });
+
+  it("THE MODEL CHAIN ORDER: crop rides upstream and the plain scale rides downstream of the model", () => {
+    const g = new GraphBuilder();
+    def.compose(def.schema({
+      source: "upload.png",
+      crop_x: 0, crop_y: 0, crop_width: 800, crop_height: 600,
+      scale_model: "ESRGAN_x4",
+      scale_width: 512, scale_height: 384,
+    }), DUMMY, g, "run_model_chain");
+    const graph = g.toJSON() as Record<string, { class_type: string; inputs: Record<string, unknown> }>;
+    const withModel = Object.values(graph).find((n) => n.class_type === "ImageUpscaleWithModel")!;
+    assert.ok(withModel, "the model chain composes under crop + dims");
+    assert.deepEqual(withModel.inputs.image, ["ImageCrop.0", 0], "the crop rides upstream of the model");
+    const scale = Object.values(graph).find((n) => n.class_type === "ImageScale")!;
+    assert.deepEqual(scale.inputs.image, ["ImageUpscaleWithModel.0", 0], "the plain resize rides downstream of the model");
+  });
+
+  it("THE UNSTATED MODEL IS ABSENT, NEVER PHANTOM: the shipped default composes no model nodes", () => {
+    const g = new GraphBuilder();
+    def.compose(def.schema({ source: "upload.png" }), DUMMY, g, "run_unstated");
+    const graph = g.toJSON();
+    assert.ok(!Object.values(graph).some((n) => n.class_type === "UpscaleModelLoader"), "no loader from the \"\" default");
+    assert.ok(!Object.values(graph).some((n) => n.class_type === "ImageUpscaleWithModel"), "no with-model from the \"\" default");
+    const stated = def.schema({ source: "upload.png", scale_model: "" });
+    const g2 = new GraphBuilder();
+    def.compose(stated, DUMMY, g2, "run_unstated");
+    assert.deepEqual(g2.toJSON(), g.toJSON(), "\"\" and absent are the same chain");
+  });
+
+  it("THE MODEL'S CLOSED SET: a bogus scale_model refuses at the schema gate (the vocabulary is the card's voice)", () => {
+    assert.throws(
+      () => def.schema({ source: "upload.png", scale_model: "ultra-sharp" }),
+      /\$\.scale_model expected .*but got "ultra-sharp"/,
+    );
+  });
+
   it("THE BLANK-IMAGE LAW (volley item f, 2026-10-24): degenerate dims refuse at the gate — the 2x1 receipt never composes again", () => {
     // The live receipt: run-c5eb3f2ec512 rode scale_width 2 /
     // scale_height 1 (+ a 1x1 crop) through every gate, and the lane

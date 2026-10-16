@@ -67,11 +67,12 @@ export const DECL: ModelDecl = {
 
   // THE LANE SURFACE (the z-image precedent): exactly the knobs the
   // input-prep card serves — the staged source plus the crop/scale
-  // tail.
+  // tail (scale_model: the studio-card directive's model choice,
+  // 2026-11-08).
   "params": [
     "source", "media_type",
     "crop_x", "crop_y", "crop_width", "crop_height",
-    "scale_width", "scale_height", "scale_method",
+    "scale_width", "scale_height", "scale_method", "scale_model",
   ],
 
   // THE FAMILY'S DECLARED ACTIONS (the atom vocabulary, stroke 3):
@@ -91,7 +92,7 @@ export const family: Plugin = {
   },
 };
 
-export { prep, parsePrepFacts, SCALE_METHODS, MIN_DIM, type PrepFacts, type PrepParams } from "./actions.ts";
+export { prep, parsePrepFacts, SCALE_METHODS, UPSCALE_MODELS, SCALE_MODEL_OPTIONS, MIN_DIM, type PrepFacts, type PrepParams } from "./actions.ts";
 
 // The Loader-row face: DSH loads plugin rows by bare specifier and
 // unwraps `exports.default ?? exports` (vendor/cordis_plugins/loader
