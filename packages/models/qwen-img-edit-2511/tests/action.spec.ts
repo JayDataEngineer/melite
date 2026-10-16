@@ -94,6 +94,26 @@ describe("the edit action — byte-stability (the compatibility law)", () => {
     assert.ok(nodes.some((n) => n.class_type === "VAEDecode") === false, "no plain decode on this arm");
   });
 
+  it("THE STATED-KNOB WALL (models-hop56 wave-2): the lanpaint knobs ride their stated VALUES, not the defaults — feather 12, lambda 0.8, step size 1.5", () => {
+    const p = {
+      ...PARAMS,
+      input_mask: "input/region.png",
+      mask_feather: "12",
+      lanpaint_lambda: "0.8",
+      lanpaint_step_size: "1.5",
+    };
+    const action = new GraphBuilder({});
+    instantiateAction(edit, p, FACTS, action, "probe-stated");
+    const nodes = Object.values(action.toJSON() as Record<string, { class_type?: string; inputs?: Record<string, unknown> }>);
+    const feather = nodes.find((n) => n.class_type === "FeatherMask");
+    assert.ok(feather, "the stated mask rides the feather node");
+    assert.strictEqual(feather!.inputs?.left, 12, "FeatherMask.left carries the stated 12 (number, not the string)");
+    assert.strictEqual(feather!.inputs?.bottom, 12, "all four edges carry the stated feather");
+    const sampler = nodes.find((n) => n.class_type === "LanPaint_KSamplerAdvanced")!;
+    assert.strictEqual(sampler.inputs?.LanPaint_Lambda, 0.8, "the stated lambda rides");
+    assert.strictEqual(sampler.inputs?.LanPaint_StepSize, 1.5, "the stated step size rides");
+  });
+
   it("the golden holds on the crop_stitch arm (the region detailer tail)", () => {
     const p = {
       ...PARAMS,

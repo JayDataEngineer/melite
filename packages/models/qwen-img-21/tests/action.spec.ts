@@ -54,6 +54,38 @@ describe("the t2i action — byte-stability (the pilot's compatibility law)", ()
     assertGraphGolden(golden("the-composed-prompt-is-the-committed-golden-arm-t-f241fab97f"), graphOf(action), "the composed prompt is the committed golden arm (the plain path)");
   });
 
+  it("THE AUTOGROW WALL (models-hop56 wave-2): stated reference_images map the dotted images.image_N keys contiguously from image_1 — the edit lane's :73-74 pin lifted to the t2i lane", () => {
+    const p = { ...PARAMS, reference_images: ["input/anchor.png", "input/r1.png"] };
+    const action = new GraphBuilder({});
+    instantiateAction(t2i, p, FACTS, action, "probe-t2i-refs");
+    const enc = Object.values(action.toJSON() as Record<string, { class_type?: string; inputs?: Record<string, unknown> }>).find(
+      (n) => n.class_type === "TextEncodeQwenImage21",
+    );
+    assert.ok(enc, "the t2i lane rides the same encoder class");
+    const inputs = enc!.inputs ?? {};
+    // t2i carries NO anchor slot: the refs own image_1..N contiguous,
+    // no gaps (the executor's dynamic-path split nests them — a bare
+    // image_N kwarg dies)
+    assert.ok("images.image_1" in inputs, "ref 1 rides the dotted key image_1");
+    assert.ok("images.image_2" in inputs, "ref 2 rides the dotted key image_2");
+    assert.ok(!("images.image_3" in inputs), "no gap key past the stated refs");
+    // the refs are per-slot LoadImage anchors (not bare strings)
+    const loads = Object.values(action.toJSON() as Record<string, { class_type?: string; inputs?: Record<string, unknown> }>)
+      .filter((n) => n.class_type === "LoadImage")
+      .map((n) => n.inputs?.image);
+    assert.deepEqual(loads, ["input/anchor.png", "input/r1.png"], "each stated ref mints its own LoadImage");
+    // and the encoder's vae seam rides with the refs (the splice law)
+    assert.ok("vae" in inputs, "the encoder carries the vae splice when refs ride");
+  });
+
+  it("the autogrow law byte-stable across the blank-ref filter (a '' ref rides nothing, never a gap)", () => {
+    const clean = new GraphBuilder({});
+    instantiateAction(t2i, { ...PARAMS, reference_images: ["input/a.png", "input/b.png"] }, FACTS, clean, "probe-blank");
+    const blanked = new GraphBuilder({});
+    instantiateAction(t2i, { ...PARAMS, reference_images: ["input/a.png", "", "input/b.png"] }, FACTS, blanked, "probe-blank");
+    assert.deepEqual(blanked.toJSON(), clean.toJSON(), "a blank ref filters out — the composed graph is byte-identical");
+  });
+
   it("the golden holds on the sampling-shift arm (the AuraFlow wrap)", () => {
     const shifted: ModelFacts = { ...FACTS, lane_inputs: { ...FACTS.lane_inputs, sampling_shift: 3 } };
     const action = new GraphBuilder({});

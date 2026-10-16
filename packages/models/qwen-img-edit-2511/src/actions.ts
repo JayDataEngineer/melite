@@ -58,6 +58,17 @@ export function parseEditFacts(raw: LaneInputsFacts): EditFacts {
  *  image2/image3 optionals) → ModelSamplingAuraFlow 1.0 → the
  *  lanpaint arm, the crop_stitch region detailer, or the plain
  *  VAEEncode-of-source → KSampler → decode + save under <run>/edit. */
+/** The knob read: the declared numeric row coerces the wire's
+ *  string spill (a JSON form hands "12"; the node's input is a
+ *  number — a bare cast rode the string verbatim and the graph
+ *  lied), and a stated non-numeric refuses field-named. */
+function numOf(v: unknown, d: number, name: string): number {
+  if (v === undefined || v === null || v === "") return d;
+  const n = Number(v);
+  if (!Number.isFinite(n)) throw new Error(`qwen-img-edit-2511: '${name}' stated ${JSON.stringify(v)} — not a number`);
+  return n;
+}
+
 export const edit: ComfyActionSpec<EditParams, EditFacts> = {
   id: "edit",
   inputs: [],
@@ -165,9 +176,9 @@ export const edit: ComfyActionSpec<EditParams, EditFacts> = {
       let m: TensorRef = isSpell(maskPath)
         ? maskPath
         : g.node("LoadImageMask", { image: maskPath, channel: "alpha" }).out();
-      const grow = (merged.mask_grow ?? 8) as number;
+      const grow = numOf(merged.mask_grow, 8, "mask_grow");
       if (grow !== 0) m = g.node("GrowMask", { mask: m, expand: grow, tapered_corners: true }).out();
-      const feather = (merged.mask_feather ?? 8) as number;
+      const feather = numOf(merged.mask_feather, 8, "mask_feather");
       if (feather > 0) {
         m = g.node("FeatherMask", { mask: m, left: feather, top: feather, right: feather, bottom: feather }).out();
       }
@@ -178,13 +189,13 @@ export const edit: ComfyActionSpec<EditParams, EditFacts> = {
         : "Image First";
       const lpSampled = g.node("LanPaint_KSamplerAdvanced", {
         model: shifted, add_noise: "enable", noise_seed: seed,
-        steps: (p.lanpaint_num_steps ?? 20) as number, cfg: p.cfg,
+        steps: numOf(p.lanpaint_num_steps, 20, "lanpaint_num_steps"), cfg: p.cfg,
         sampler_name: laneSampler(p), scheduler: laneScheduler(p),
         positive: pos.out(), negative: neg.out(), latent_image: lpLatent,
         start_at_step: 0, end_at_step: 10000, return_with_leftover_noise: "disable",
         LanPaint_NumSteps: 5,
-        LanPaint_Lambda: (p.lanpaint_lambda ?? 0.5) as number,
-        LanPaint_StepSize: (p.lanpaint_step_size ?? 1.0) as number,
+        LanPaint_Lambda: numOf(p.lanpaint_lambda, 0.5, "lanpaint_lambda"),
+        LanPaint_StepSize: numOf(p.lanpaint_step_size, 1.0, "lanpaint_step_size"),
         LanPaint_Beta: 1, LanPaint_Friction: 15,
         LanPaint_EarlyStop: 1, LanPaint_InnerThreshold: 0, LanPaint_InnerPatience: 1, LanPaint_MinStepFrac: 1.0,
         LanPaint_PromptMode: promptMode, LanPaint_Info: "LanPaint KSampler Adv.",

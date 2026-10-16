@@ -22,15 +22,13 @@
   "LoadImage.0": {
     "class_type": "LoadImage",
     "inputs": {
-      "image": "input/anchor.png",
-      "upload": "image"
+      "image": "input/anchor.png"
     }
   },
   "LoadImage.1": {
     "class_type": "LoadImage",
     "inputs": {
-      "image": "input/r1.png",
-      "upload": "image"
+      "image": "input/r1.png"
     }
   },
   "QwenImage21Cache.0": {

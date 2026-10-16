@@ -101,6 +101,18 @@ describe("the t2i action — byte-stability (the compatibility law)", () => {
     );
   });
 
+  it("THE TURBO-STAMP WALL (models-hop56 wave-2): a stated turbo lora pick stamps LoraLoaderModelOnly at the stated strength", () => {
+    const p = { ...PARAMS, loras: [{ name: "krea2_turbo_lora_rank_64_bf16", strength: 1.0 }] };
+    const action = new GraphBuilder({});
+    instantiateAction(t2i, p, FACTS, action, "probe-turbo");
+    const lora = Object.values(action.toJSON() as Record<string, { class_type?: string; inputs?: Record<string, unknown> }>).find(
+      (n) => n.class_type === "LoraLoaderModelOnly",
+    );
+    assert.ok(lora, "the stated pick mints the loader node");
+    assert.strictEqual(lora!.inputs?.strength_model, 1.0, "the turbo recipe's 1.0 strength rides");
+    assert.strictEqual(lora!.inputs?.lora_name, "krea2_turbo_lora_rank_64_bf16", "the turbo rank-64 adapter rides by name");
+  });
+
   it("GATE S rides the declared rule: the sentinel -1 mints a concrete seed, two runs differ", () => {
     const g1 = new GraphBuilder({});
     instantiateAction(t2i, { ...PARAMS, seed: -1 }, FACTS, g1, "r-a");

@@ -67,6 +67,13 @@ describe("the tag action — byte-stability (the compatibility law)", () => {
     assertGraphGolden(golden("tag-caption-extra-option"), compose(p, "probe-opt"), "the extra option");
   });
 
+  it("THE STATED-VALUE WALL (models-hop56 wave-2): a stated extra_option ENUM value rides extra_option1 verbatim", () => {
+    const graph = compose({ ...PARAMS, extra_option: "high-quality" }, "probe-enum");
+    const jjc = Object.values(graph).find((n) => n.class_type === "JJC_JoyCaption")!;
+    assert.equal(jjc.inputs["extra_option1"], "high-quality", "the stated enum value rides the node's option1 slot");
+    assert.equal(jjc.inputs["extra_option2"], "", "the unstated slots stay empty");
+  });
+
   it("the wired spell holds the golden (a '$name' image rides verbatim, no loader)", () => {
     const p = { ...PARAMS, input_image: "$stage1" };
     const graph = compose(p, "probe-spell");

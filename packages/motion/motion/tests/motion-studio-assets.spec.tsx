@@ -207,7 +207,12 @@ describe('background + body slot (drops / picks / wire)', () => {
     }, { timeout: 10000 })
     fireEvent.click(document.body.querySelector('[data-wire-option]') as HTMLButtonElement)
     expect(onWireSlot).toHaveBeenCalledWith('preview_glb', 'up1', null)
-    expect(onSave).toHaveBeenCalledWith({ preview_glb: null })
+    // ONE WRITER PER GESTURE (motion-journey CURE-4): the wire verb
+    // (onWireSlot → the drill's patchStageParams with the settled
+    // url-or-null) is the ONLY write — the studio's companion
+    // onSave({preview_glb: null}) was a second write of the same
+    // key from one click, and this assert once pinned it as law.
+    expect(onSave).not.toHaveBeenCalled()
   })
 
   test('picker close shuts it without wiring', async () => {

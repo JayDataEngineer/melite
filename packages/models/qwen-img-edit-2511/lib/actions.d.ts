@@ -21,11 +21,5 @@ export type EditParams = Record<string, unknown>;
  *  @param raw the resolved lane_inputs (family ⊕ variant)
  *  @returns the typed facts the segment factory reads */
 export declare function parseEditFacts(raw: LaneInputsFacts): EditFacts;
-/** The edit action: the anchored instruction-edit lane — loaders →
- *  lora stack → text pair → per-slot LoadImage anchors →
- *  TextEncodeQwenImageEditPlus pair (refs on the stock node's native
- *  image2/image3 optionals) → ModelSamplingAuraFlow 1.0 → the
- *  lanpaint arm, the crop_stitch region detailer, or the plain
- *  VAEEncode-of-source → KSampler → decode + save under <run>/edit. */
 export declare const edit: ComfyActionSpec<EditParams, EditFacts>;
 //# sourceMappingURL=actions.d.ts.map

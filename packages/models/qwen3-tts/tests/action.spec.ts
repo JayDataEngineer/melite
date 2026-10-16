@@ -98,6 +98,13 @@ describe("the qwen3-tts speak + export actions — byte-stability (the compatibi
     assert.equal(nodeOf(action, "LoadAudiocoreModel")!.inputs.model_path, "Qwen3-TTS-12Hz-1.7B-CustomVoice-merged");
   });
 
+  it("THE STATED-VALUE WALL (models-hop56 wave-2): a stated style_instruction rides AudiocoreTTS.instruct on the customvoice lane", () => {
+    const action = new GraphBuilder({});
+    instantiateAction(speak, { ...PARAMS, style_instruction: "a hushed evening tone" }, FACTS, action, "probe-instruct");
+    const synth = nodeOf(action, "AudiocoreTTS")!;
+    assert.equal(synth.inputs.instruct, "a hushed evening tone", "the stated instruction rides the instruct input verbatim");
+  });
+
   it("THE SMALL CELL — the same lane on the 0.6B tree (the size coordinate changes ONLY the load)", () => {
     const action = new GraphBuilder({});
     instantiateAction(speak, { ...PARAMS, voice: "vivian" }, SMALL_FACTS, action, "probe-small");

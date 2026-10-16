@@ -62,6 +62,18 @@ describe("the edit action — byte-stability (the compatibility law)", () => {
     assert.ok(nodes.some((n) => n.class_type === "EmptyLatentImage"), "the target-resolution latent rides");
   });
 
+  it("THE STATED-SIZE WALL (models-hop56 wave-2): the plain arm's latent bakes at the stated width/height", () => {
+    const p = { ...PARAMS, width: 832, height: 1216 };
+    const action = new GraphBuilder({});
+    instantiateAction(edit, p, FACTS, action, "probe-size");
+    const latent = Object.values(action.toJSON() as Record<string, { class_type?: string; inputs?: Record<string, unknown> }>).find(
+      (n) => n.class_type === "EmptyLatentImage",
+    );
+    assert.ok(latent, "the target-resolution latent rides");
+    assert.strictEqual(latent!.inputs?.width, 832, "the stated width bakes");
+    assert.strictEqual(latent!.inputs?.height, 1216, "the stated height bakes");
+  });
+
   it("the golden holds with stated references — the autogrow keys map contiguously", () => {
     const p = { ...PARAMS, input_images: ["input/anchor.png", "input/r1.png", "input/r2.png", "input/r3.png"] };
     const action = new GraphBuilder({});

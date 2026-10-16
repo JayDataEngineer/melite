@@ -11,6 +11,33 @@ import assert from "node:assert/strict";
 import { DECL, family, coat } from "../src/index.ts";
 import { GraphBuilder } from "@melite/comfyui-card-kit/graph";
 
+describe("THE COAT CI GOLDEN (models-hop56 wave-2: the e2e receipt promoted to a unit judge)", () => {
+  it("the composed coat graph pins the verb's fixed vocabulary at the named nodes (SkinPack/SkinSidecar/SkinApply), the stated body at the graft", () => {
+    const g = new GraphBuilder();
+    coat.build({
+      p: { body: "$body" },
+      facts: {},
+      model: {
+        id: "skin", card: "", family: "skin", defaults: {}, lane_inputs: {},
+        variants: [], variant_groups: [], outputs: [], mods: [],
+      },
+      g,
+      runId: "",
+    } as never);
+    const graph = g.toJSON() as Record<string, { inputs: Record<string, unknown> }>;
+    assert.deepEqual(graph["SkinPack.0"]?.inputs, { size: 512, seed: 20260906 },
+      "the pack bakes at the fixed map size + seed");
+    assert.deepEqual(graph["SkinSidecar.0"]?.inputs, { kind: "keeper", size: 512, seed: 20260906 },
+      "the sidecar rides the fixed kind at the same size + seed");
+    assert.equal(graph["SkinApply.0"]?.inputs["body_glb_path"], "$body",
+      "the stated body grafts verbatim");
+    assert.deepEqual(graph["SkinApply.0"]?.inputs["albedo"], ["SkinPack.0", 0],
+      "the albedo maps ride the pack's first output");
+    assert.deepEqual(graph["SkinApply.0"]?.inputs["normal"], ["SkinPack.0", 1],
+      "the normal maps ride the pack's second output");
+  });
+});
+
 describe("the skin model plugin (the whole model, one package)", () => {
   it("is a plugin: named family export, inject ['models'], apply registers", () => {
     assert.equal(family.name, "family-skin");

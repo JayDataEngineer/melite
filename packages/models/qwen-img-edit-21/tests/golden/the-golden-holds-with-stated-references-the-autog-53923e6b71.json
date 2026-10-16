@@ -22,29 +22,25 @@
   "LoadImage.0": {
     "class_type": "LoadImage",
     "inputs": {
-      "image": "input/anchor.png",
-      "upload": "image"
+      "image": "input/anchor.png"
     }
   },
   "LoadImage.1": {
     "class_type": "LoadImage",
     "inputs": {
-      "image": "input/r1.png",
-      "upload": "image"
+      "image": "input/r1.png"
     }
   },
   "LoadImage.2": {
     "class_type": "LoadImage",
     "inputs": {
-      "image": "input/r2.png",
-      "upload": "image"
+      "image": "input/r2.png"
     }
   },
   "LoadImage.3": {
     "class_type": "LoadImage",
     "inputs": {
-      "image": "input/r3.png",
-      "upload": "image"
+      "image": "input/r3.png"
     }
   },
   "QwenImage21Cache.0": {

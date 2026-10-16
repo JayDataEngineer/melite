@@ -22,8 +22,7 @@
   "LoadImage.0": {
     "class_type": "LoadImage",
     "inputs": {
-      "image": "input/anchor.png",
-      "upload": "image"
+      "image": "input/anchor.png"
     }
   },
   "QwenImage21Cache.0": {

@@ -190,8 +190,13 @@ export function MotionTimelineSection({
  currentId={bodyWired ? bodyWiredId : ""}
  currentOutput={null}
  onPick={(upstreamId) => {
+ // ONE WRITER PER GESTURE (motion-journey CURE-4, 2026-11-06):
+ // onWireSlot IS the drill's wire verb — it patches the slot key
+ // with the settled value itself (wired → the candidate url,
+ // unwired → null, stage-drill.tsx's onWireSlot). The companion
+ // onSave(null) here was a SECOND write of the same key from one
+ // click (a null racing the verb's url on the wired arm).
  onWireSlot(MOTION_PREVIEW_GLB_PARAM, upstreamId, null)
- onSave({ [MOTION_PREVIEW_GLB_PARAM]: null })
  setBodyGlbState(null)
  setBodyNotice(null)
  setBodyWireOpen(false)
