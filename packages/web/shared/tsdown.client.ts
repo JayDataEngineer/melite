@@ -407,6 +407,33 @@ function clientConfig(id: string, entry: string): UserConfig {
         )
       },
     }, {
+      // REQUIRE-TABLE SCAN (the 2026-10-16 boot death's build-time
+      // twin): the purity gate above judges resolveId sources, but a
+      // dependency the bundler externalizes behind our back (zod via
+      // the drafts typert remote-client) never passes resolveId — it
+      // lands in the EMITTED bytes as require("zod") and dies at the
+      // frozen module table on the next lane boot. Scan what we are
+      // about to write: every require target must be a platform word,
+      // a manifest row external, or a relative id.
+      name: 'dsh-client-require-table',
+      generateBundle(_options, bundle) {
+        const allowed = new Set<string>([...CLIENT_EXTERNALS, ...manifestExternal])
+        for (const [file, artifact] of Object.entries(bundle)) {
+          const code = (artifact as { code?: string }).code
+          if (typeof code !== 'string') continue
+          for (const m of code.matchAll(/\brequire\((['"])([^'"]+)\1\)/g)) {
+            const spec = m[2]
+            if (spec === undefined || spec.startsWith('./') || spec.startsWith('../')) continue
+            if (allowed.has(spec)) continue
+            this.error(
+              `${id}/lib/${file} requires "${spec}" — not a platform module (PLATFORM_MODULES) and not a manifest row external; `
+              + 'the frozen module table cannot answer it at boot. Inline it or seat it, never externalize silently '
+              + '(the 2026-10-16 card-view boot death class).',
+            )
+          }
+        }
+      },
+    }, {
       name: 'dsh-css-modules-inline',
       resolveId(source: string, importer: string | undefined) {
         if (!source.endsWith('.module.css')) return null

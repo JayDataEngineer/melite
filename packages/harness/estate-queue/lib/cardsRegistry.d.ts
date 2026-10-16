@@ -126,9 +126,18 @@ export declare class CardRegistryService extends Service {
     objectInfo(): Record<string, unknown> | null;
     /** Prime the live node-definitions doc off the engine (/object_info
      *  via the SDK, cached per process). Never throws: false = the
-     *  engine is unreachable and the doc stays null (the compose gate
-     *  refuses CLOSED on that; the serving surfaces degrade). */
-    primeObjectInfo(): Promise<boolean>;
+     *  engine is unreachable (or the census outruns the bound) and
+     *  the doc stays null (the compose gate refuses CLOSED on that;
+     *  the serving surfaces degrade).
+     *
+     *  THE PRIME BOUND (the gate-37 flake cure, 2026-11-07): the boot
+     *  census is the ONLY unbounded fetch on the estate boot path —
+     *  no signal, no boundMs — so a wedged engine hangs every boot
+     *  behind it forever (the 15s settle polls red first, but the
+     *  hang is the production wound). 60s is 300× the quiet 0.2s
+     *  fetch and past every loaded-but-alive observation; past it
+     *  the prime degrades instead of hanging. */
+    primeObjectInfo(boundMs?: number): Promise<boolean>;
     /** Arm the shared wiring doc from a landed /object_info body —
      *  THE PRODUCTION ARMER (the second wiringWall reseat: the estate
      *  bundle mounts this registry, not the card-plane service, so

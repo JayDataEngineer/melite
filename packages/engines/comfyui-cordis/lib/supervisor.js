@@ -28,6 +28,14 @@
 // Never blocks a run on the monitor: unknown (first probe in
 // flight) proceeds; down throws the RECORDED error fast (same LOUD
 // failure class as today, minus the timeout burn).
+//
+// PROCESS LIFECYCLE (operator order 2026-11-06) is explicitly NOT
+// this supervisor's job — "we spawn nothing" above stands for the
+// supervisor's exhaustion behavior. The explicit process owner is
+// scripts/comfy-engine.sh (status/up/down, config-driven off the
+// endpoint config's url + boot_cmd, pidfile under the repo's
+// untracked data tree; down refuses a busy engine unless
+// --force). Reachability here, process there — one home per fact.
 /** Transport-dead signals: the engine's TCP stack is unreachable
  *  (refused/reset/unroutable/unresolvable). Timeouts, socket
  *  hang-ups, and HTTP statuses are EXCLUDED — a slow or sick engine
