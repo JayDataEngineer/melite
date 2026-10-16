@@ -496,6 +496,9 @@ export default defineConfig({
         'packages/web/card-base/src/glb-stage.tsx',
         'packages/web/card-base/src/stage3d.ts',
         'packages/web/melite-card-view/src/client/CardsTab.tsx',
+        // FlowCards.tsx: the row prune + voice law is owned by row-law.spec.tsx
+        // (the vanish-branch firing arm + the same-words re-arm — audit-followups M2;
+        // the exemption is the coverage residual, never the law — D4 annotated 2026-11-06).
         'packages/web/melite-card-view/src/client/FlowCards.tsx',
         'packages/web/melite-card-view/src/client/zoom.tsx',
         'packages/web/melite-card-view/src/client/draft.ts',

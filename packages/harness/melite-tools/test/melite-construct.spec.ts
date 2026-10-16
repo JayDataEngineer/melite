@@ -1430,6 +1430,9 @@ describe('melite_construct presentationMeta — the native flow-link channel', (
     assert.deepEqual(metaOf(tool, { verb: 'read', bench: 'main', rev: 1 }), { bench: 'main' })
     assert.deepEqual(metaOf(tool, { verb: 'read', bench: 'main', error: '' }), { bench: 'main' })
     assert.deepEqual(metaOf(tool, { verb: 'read', bench: '', rev: 1 }), {})
+    // (audit-followups W7, 2026-11-06) a NON-STRING bench drops
+    // silently through the typeof guard — never a dead link
+    assert.deepEqual(metaOf(tool, { verb: 'read', bench: 7, rev: 1 }), {})
     assert.deepEqual(metaOf(tool, { verb: 'read', rev: 1 }), {})
     assert.deepEqual(metaOf(tool, undefined), {})
     // purity: the same frozen value projects the same payload twice

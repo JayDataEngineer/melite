@@ -12,7 +12,8 @@
 import { describe, test } from "vitest";
 import assert from "node:assert/strict";
 import { meliteConstruct } from "../../../harness/melite-tools/src/tools/melite-construct.ts";
-import { parseConstructBlock } from "../src/client/construct-card.tsx";
+import { RemoteError } from "@deepseek-ai/dsh-typert-protocol";
+import { parseConstructBlock, constructTitleOf } from "../src/client/construct-card.tsx";
 import type { ToolCallBlockView } from "../src/client/types.ts";
 
 describe("construct meta cross-judge (the projector's real output through the client's reader)", () => {
@@ -37,15 +38,60 @@ describe("construct meta cross-judge (the projector's real output through the cl
     assert.equal(parsed.settled, true);
   });
 
-  test("a refusal's meta parses with the bench beside the error line", async () => {
+  // (audit-followups M7, 2026-11-06) THE TITLE MIRROR'S CROSS-JUDGE:
+  // the host's presentCall (melite-construct.ts:363) and the client's
+  // constructTitleOf (construct-card.tsx → chromeCopy.constructTitle)
+  // spell the same verdict title in two homes — each side's wall pins
+  // its own literal independently, so a host rewording with the
+  // dictionary left behind keeps both green against different live
+  // strings. This arm feeds ONE args value through BOTH real faces
+  // and demands agreement; drift reds at the next wording change.
+  test("the verdict title agrees across its two homes (host presentCall vs client constructTitleOf)", async () => {
     const estate = {
-      benchGet: async () => { throw new Error("bench moved: rev is 7, caller held 6"); },
+      benchGet: async () => ({ session: "s_chat7", rev: 5, intent: "x", stages: [{ id: "s1" }], log: [] }),
+    } as never;
+    const tool = meliteConstruct(estate);
+    const present = tool.presentCall as (args: unknown) => { title: string };
+    const cases: Array<Record<string, unknown>> = [
+      { verb: "patch", stage: "s1" },
+      { verb: "add_stage", card: "image-gen" },
+      { verb: "read" },
+      { verb: "remove_stage", stage: "" },
+    ];
+    for (const args of cases) {
+      const host = present(args).title;
+      const client = constructTitleOf(JSON.stringify(args));
+      assert.equal(client.malformedArgs, false);
+      assert.equal(host, client.title, `title drift for ${JSON.stringify(args)}: host "${host}" vs client "${client.title}"`);
+    }
+  });
+
+  test("a CAS-shaped refusal crosses with its kind and rev intact (host) and its bench beside the error line (client)", async () => {
+    // (audit-followups W6, 2026-11-06) the REAL refusal shape: the
+    // bench's cas-conflict arrives as a RemoteError (code +
+    // current_rev — the harness refusal arm's shape), never a plain
+    // Error. The cross tier judges all three legs: the execute
+    // value carries the kind + rev, the meta projects {bench,
+    // error} (the cas details drop BY DESIGN at the projector —
+    // pinned here), and the client reads the same bench + error
+    // line from the row.
+    const estate = {
+      benchGet: async () => {
+        throw new RemoteError("bench/cas-conflict", "bench moved: rev is 7, caller held 6", {
+          current_rev: 7,
+          expect_rev: 6,
+        });
+      },
     } as never;
     const tool = meliteConstruct(estate);
     const out = (await tool.execute({ verb: "read" }, {
       signal: AbortSignal.timeout(5000),
     } as never)) as Record<string, unknown>;
+    assert.equal(out.ok, false);
+    assert.equal(out.error_kind, "bench/cas-conflict");
+    assert.equal(out.current_rev, 7);
     const meta = tool.output.presentationMeta!({} as never, out as never) as Record<string, unknown>;
+    assert.deepEqual(meta, { bench: "main", error: "bench moved: rev is 7, caller held 6" });
     const parsed = parseConstructBlock({
       kind: "tool-result", meta, isError: true,
       call: { argsRaw: JSON.stringify({ verb: "read" }) },

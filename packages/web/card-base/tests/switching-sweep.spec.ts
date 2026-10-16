@@ -22,6 +22,14 @@
 import { describe, expect, test } from 'vitest'
 import { composeCandidateDoc, composeValidate, axisPickPatch, modelSwitchPatch, seedUser, reseatEnvelopeKeys,
   type FormSpecDoc, type FormVariantRow, type SpecValues } from '../src/spec.ts'
+// (reseat-chrome M6, 2026-11-06) the DOOR's own relation judge, in
+// the seat's own spelling (cardsRegistry.ts:1141 calls exactly
+// judgeLaneRelations([relations], lift)). SCOPE: this arm judges the
+// judge over the DECL's family-level words — the seat's full
+// family+variant merge (laneContractOf → agreed rows) is estate-walled
+// at cards-lane-law.spec.ts; the client-side point is that the words
+// composeValidate never reads still refuse the seated doc.
+import { judgeLaneRelations, type LaneRelations } from '@melite/contracts/laneRelations'
 import { DECL as anima } from '../../../models/anima/src/index.ts'
 import { DECL as anny } from '../../../models/anny/src/index.ts'
 import { DECL as anycreature } from '../../../models/anycreature/src/index.ts'
@@ -81,7 +89,7 @@ interface DeclRow {
   wire_defaults?: Record<string, unknown> | null
   cells?: DeclCell[]
 }
-interface FamilyDecl { id: string; engine?: string; variants?: DeclRow[] }
+interface FamilyDecl { id: string; engine?: string; variants?: DeclRow[]; relations?: LaneRelations }
 
 /** Every family DECL in the tree — the census law: a new family
  * package that exports DECL owes this list a row (adding a family
@@ -245,23 +253,54 @@ describe('THE SWITCHING SWEEP — every real family × every switch (the core-fe
     // carry no cfg). THE CURE JUDGED: the arrival re-spec seed's
     // RE-KEY arm reseats (reseatEnvelopeKeys) — stated numerics clamp
     // into the resolved variant's envelope, the doc composes clean.
+    // (reseat-chrome M5, 2026-11-06) THE DERIVED BAG: the incident
+    // pair stays the named head; every OTHER key in the arrival's
+    // envelope vocabulary rides too — a family boarding tomorrow with
+    // a third envelope key walls the day its DECL lands, instead of
+    // the frozen-literal vacuity this arm was written to kill.
     const STATED: SpecValues = { cfg: 3.5, steps: 52 }
+    const vocabOf = (s: FormSpecDoc): string[] => {
+      const keys = new Set<string>()
+      for (const row of s.variants ?? []) {
+        if (row.group !== 'Variant') continue
+        for (const k of Object.keys(row.sampler_envelope ?? {})) keys.add(k)
+      }
+      return [...keys]
+    }
+    // M5's own mechanism check: the derivation reads the DECL's
+    // vocabulary, never a frozen list — a synthetic third envelope
+    // key (the class SamplerEnvelope grows into) derives into the bag
+    // the day it boards. Today no real DECL carries one, so this is
+    // the live receipt for the mechanism; the pairs above fire it.
+    expect(vocabOf({
+      form: 'synthetic', model: 'x',
+      variants: [{ id: 'v', label: 'v', group: 'Variant', defaults: {}, route: 'x',
+        sampler_envelope: { steps: [1, 2], cfg: [1, 2] } }],
+    } as unknown as FormSpecDoc)).toEqual(['steps', 'cfg'])
     for (const from of FAMILIES) {
       const specFrom = servedSpec(from)
       const variants = (specFrom.variants ?? []).filter((r) => r.group === 'Variant')
-      const held: SpecValues = variants.length > 0
+      const heldBase: SpecValues = variants.length > 0
         ? { model: from.id, variant: variants[0].id, ...STATED }
         : { model: from.id, ...STATED }
       for (const to of FAMILIES) {
         if (to.id === from.id) continue
         const specTo = servedSpec(to)
+        // (M5) THE DERIVED BAG: the incident pair + one
+        // out-of-envelope stated value per arrival-vocabulary key the
+        // pair does not name — the held rides it into the switch
+        const stated: SpecValues = { ...STATED }
+        for (const k of vocabOf(specTo)) {
+          if (!(k in stated)) stated[k] = 999
+        }
+        const held: SpecValues = { ...heldBase, ...stated }
         const patch = modelSwitchPatch(specFrom, to.id, held)
         // the drill's re-key arm: the arrival seed + the reseat
         const seeded = seedUser(specTo, { ...held, ...patch } as SpecValues)
         const seated = reseatEnvelopeKeys(specTo, seeded)
         const doc = composeCandidateDoc({}, seated, {})
         const violations = composeValidate(specTo, doc)
-        expect(violations, `${from.id} → ${to.id}: stated ${JSON.stringify(STATED)} seated ${JSON.stringify(seated)} judged ${JSON.stringify(violations)}`).toEqual([])
+        expect(violations, `${from.id} → ${to.id}: stated ${JSON.stringify(stated)} seated ${JSON.stringify(seated)} judged ${JSON.stringify(violations)}`).toEqual([])
         // and the seated numerics sit INSIDE the resolved variant's
         // own envelope (the lane never wakes up refusable)
         const resolved = (specTo.variants ?? []).find((r) =>
@@ -269,6 +308,48 @@ describe('THE SWITCHING SWEEP — every real family × every switch (the core-fe
         if (resolved !== undefined) expectInsideEnvelope(resolved, seated, to.id)
       }
     }
+  })
+
+  // (reseat-chrome M6, 2026-11-06) THE DOOR'S FULL LAW AT THE SEAT:
+  // composeValidate (clauses 1–3: envelope/marriage/quant) is a
+  // WEAKER judge than the door that refuses the operator — the
+  // relation words (required/together) live only in
+  // judgeLaneRelations. This arm ties the re-key seat to the door's
+  // own judge over the seated doc: the required half refuses a
+  // prompt-less krea-2 doc that composes 'clean', and the together
+  // half judges a held pair surviving a re-key.
+  test('the door\'s relation judge reads the seated doc: required refuses a prompt-less krea-2 seat; together judges a held pair half', () => {
+    // (i) REQUIRED — krea-2's own declaration (models/krea-2
+    // src/index.ts:243): every image lane states what the picture is
+    const krea = krea2 as FamilyDecl
+    expect(krea.relations, 'krea-2 declares relations (the audit\'s own receipt)').toBeDefined()
+    const rels = krea.relations
+    if (rels === undefined) throw new Error('krea-2 declares relations (the audit\'s own receipt)')
+    const seated: SpecValues = { model: 'krea-2', variant: 'turbo', cfg: 2, steps: 8 }
+    // clauses 1–3 say CLEAN (the weaker client mirror)…
+    const spec = servedSpec(krea2)
+    expect(composeValidate(spec, composeCandidateDoc({}, seated, {}))).toEqual([])
+    // …while the DOOR refuses the same doc: no prompt
+    const violations = judgeLaneRelations([rels], seated)
+    expect(violations.length, 'the door refuses what the client mirror calls clean').toBeGreaterThanOrEqual(1)
+    expect(violations[0].field).toBe('prompt')
+    // and the honest doc (prompt stated) admits at BOTH judges
+    const honest: SpecValues = { ...seated, prompt: 'a red cube' }
+    expect(composeValidate(spec, composeCandidateDoc({}, honest, {}))).toEqual([])
+    expect(judgeLaneRelations([rels], honest)).toEqual([])
+    // (ii) TOGETHER — qwen3-tts's persona export pair
+    // (voice_name + design_prompt): a held HALF surviving a re-key
+    // refuses through the door's judge, both halves admit
+    const tts = qwen3Tts as FamilyDecl
+    const ttsRels = tts.relations
+    if (ttsRels === undefined) throw new Error('qwen3-tts declares relations (the audit\'s own receipt)')
+    expect(ttsRels?.together?.length, 'qwen3-tts declares the persona export pair').toBeGreaterThan(0)
+    const half: SpecValues = { model: 'qwen3-tts', voice_name: 'nova' }
+    expect(judgeLaneRelations([ttsRels], half).some((v) => v.field === 'voice_name' || v.field === 'design_prompt'),
+      'a held together-pair half refuses').toBe(true)
+    // (qwen3-tts also requires `text` on every lane — the family's
+    // own required word rides alongside the pair)
+    expect(judgeLaneRelations([ttsRels], { ...half, design_prompt: 'warm alto', text: 'hello' })).toEqual([])
   })
 
   test('a variant pick lands the CHOICE\'s declared defaults (the latest selection overrides)', () => {

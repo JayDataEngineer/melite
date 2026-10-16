@@ -25,9 +25,15 @@ const here = dirname(fileURLToPath(import.meta.url))
 
 describe('construct flow-link (keyless replay)', () => {
   it('the recorded construct call settles, persists its bench meta, and the card link opens the bench address', async () => {
+    // (audit-followups W5, 2026-11-06) REPLAY ONLY, fail loud:
+    // this scenario owns no record machinery (the log IS the
+    // fixture; re-verifying the committed log against a fresh
+    // execution is the still-open refresh semantics) — accepting
+    // record/refresh as silent replay-equivalents would let an
+    // operator believe they re-recorded. Until the refresh
+    // semantics land, any other mode refuses here.
     const mode = process.env.DSH_SNAPSHOT ?? 'replay'
-    assert.ok(['replay', 'record', 'refresh'].includes(mode), `unknown DSH_SNAPSHOT=${mode}`)
-    if (process.env.CI !== undefined) assert.equal(mode, 'replay')
+    assert.equal(mode, 'replay', `DSH_SNAPSHOT=${mode}: this scenario replays only (no record machinery — see above)`)
 
     const manifest = parseSnapshotManifest(
       readFileSync(join(here, 'snapshot.yml'), 'utf8'),

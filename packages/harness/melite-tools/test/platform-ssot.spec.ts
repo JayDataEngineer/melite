@@ -40,9 +40,10 @@ const parsePlatformModules = (path: string): string[] => {
 }
 
 describe('PLATFORM_MODULES (web-platform.ts vs the DSH SSOT)', () => {
-  test('the tracked census: nine entries, exact order (an accidental edit is red with no reference needed)', () => {
+  test('the tracked census: eleven entries, exact order (an accidental edit is red with no reference needed)', () => {
     assert.deepEqual(parsePlatformModules(MELITE_PLATFORM), [
       'react', 'react/jsx-runtime', 'react-dom', 'react-dom/client', '@deepseek-ai/cordis',
+      'zod', '@tanstack/react-virtual',
       '@deepseek-ai/dsh-client-store',
       '@deepseek-ai/dsh-client-ui-slots',
       '@deepseek-ai/dsh-client-ui-primitives',

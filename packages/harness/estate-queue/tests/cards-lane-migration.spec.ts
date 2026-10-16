@@ -26,6 +26,7 @@ import { Context } from "@deepseek-ai/cordis";
 import { CardRegistryService } from "../src/cardsRegistry.ts";
 import { FlowsSeatService } from "../src/flowsData.ts";
 import { selectCardVariant, stampCardOverlay, liftCardParams } from "../src/cardsVariant.ts";
+import { theService, owningAtom } from "@melite/comfyui-cordis";
 import type { ModelFactsRow, ResolvedVariantRow } from "../src/cardsFacts.ts";
 
 let svc: CardRegistryService;
@@ -104,6 +105,22 @@ const DESIGNED_FLOOR_ROSTER: readonly string[] = [
   ...["steady-read:mode", "expressive-read:mode", "default:mode"].map((lane) => "qwen3-tts-voicedesign-base/" + lane),
 ];
 
+/** The census skip roster (audit-followups W4, 2026-11-06): variants
+ *  whose selection throws during census composition — hidden or
+ *  dropdown-less routes that never compose. Pinned beside the rider
+ *  roster: a newly unselectable variant reds, a newly selectable one
+ *  shrinks the pin. */
+const CENSUS_SKIP_ROSTER: readonly string[] = [
+  // pixal3d + trellis2 (the 3D mesh families): every lane's route is
+  // hidden from the dropdown ("not offered") — variant selection
+  // throws before composition, so these lanes never compose and can
+  // carry no riders. A newly offered 3D lane reds here.
+  ...[
+    "pixal3d-bf16", "pixal3d-int8",
+    "trellis2-native-bf16", "trellis2-native-int8",
+  ].flatMap((fam) => ["1024", "fast", "quality", "standard"].map((lane) => fam + "/" + lane)),
+];
+
 const LARGE = "qwen3-tts-voicedesign";
 const SMALL = "qwen3-tts";
 
@@ -144,24 +161,80 @@ describe("T3 (lane-migration audit, 2026-11-06) — the NO-RESURRECT boot sweep:
   // stamp; recorded in the verification report as follow-up).
   // Derived over the BOOTED registry — a new family reds this sweep
   // until stamped.
+/** Pack-defaulted fields in scope for one family (audit-followups M5,
+ *  2026-11-06): cardModFields dict entries carrying a schema default
+ *  (meta.default — voice_strength defaults 1 in the qvoice pack),
+ *  scoped by the same route→atom fold the seats judge (stampCardOverlay,
+ *  compose, the migration seat — one spelling). A pack default on a
+ *  together-member resurrects through the pack's own application when
+ *  the seat drops the member, the same wedge as a family default, so
+ *  the no-resurrect sweep unions both sources. */
+function packDefaultedFields(card: string, fam: string): Map<string, unknown> {
+  const out = new Map<string, unknown>();
+  try {
+    const atom = owningAtom(fam);
+    const packs = theService().cardModFields(card) as {
+      families: readonly string[];
+      fields: { dict?: Record<string, unknown> };
+    }[];
+    for (const p of packs) {
+      if (!p.families.includes(atom)) continue;
+      for (const [k, schema] of Object.entries(p.fields.dict ?? {})) {
+        const d = (schema as { meta?: { default?: unknown } } | null | undefined)?.meta?.default;
+        if (d === undefined || d === null) continue;
+        if (!out.has(k)) out.set(k, d);
+      }
+    }
+  } catch {
+    // card defs not booted in this fiber — no pack defaults to union
+  }
+  return out;
+}
+
+/** THE judge (audit-followups W2, 2026-11-06): the no-resurrect
+ *  predicate, one spelling — the real sweep AND the synthetic firing
+ *  arm both call it, so the firing proof is the fired code (never a
+ *  twin that can drift). packDefaults injects the pack source: the
+ *  real sweep reads it live per family; the synthetic arm supplies
+ *  its literal shape (an unregistered card has no dicts to read). */
+function noResurrectOffenders(
+  fam: string,
+  f: ModelFactsRow,
+  packDefaults: Map<string, unknown>,
+): string[] {
+  const out: string[] = [];
+  const rel = f.relations as { together?: { fields: string[] }[] } | undefined;
+  const group = new Set<string>();
+  for (const row of rel?.together ?? []) for (const m of row.fields) group.add(m);
+  if (group.size === 0) return out;
+  // the default source is family defaults UNION pack defaults —
+  // either one resurrects a dropped member
+  const defaulted = new Map<string, unknown>();
+  for (const [k, v] of Object.entries(f.defaults ?? {})) {
+    if (v === null || v === undefined) continue; // null IS the stamp
+    defaulted.set(k, v);
+  }
+  for (const [k, v] of packDefaults) {
+    if (!defaulted.has(k)) defaulted.set(k, v);
+  }
+  for (const [k, v] of defaulted) {
+    if (v === null || v === undefined) continue;
+    if (!group.has(k)) continue; // only together-members can half-fire
+    for (const variant of f.variants) {
+      const surface = new Set<string>([...(f.params ?? []), ...(variant.params ?? [])]);
+      for (const c of variant.cells ?? []) for (const p of c.params ?? []) surface.add(p);
+      const stamped = variant.resolver_defaults?.[k] === null;
+      if (!surface.has(k) && !stamped) out.push(`${fam}/${variant.id}: defaulted together-member '${k}' rides without a null stamp`);
+    }
+  }
+  return out;
+}
+
   it("every booted family stamps its dropped defaulted together-members null (the sweep is green at HEAD)", () => {
     const facts = svc.modelFacts();
     const offenders: string[] = [];
     for (const [fam, f] of Object.entries(facts)) {
-      const rel = f.relations as { together?: { fields: string[] }[] } | undefined;
-      const group = new Set<string>();
-      for (const row of rel?.together ?? []) for (const m of row.fields) group.add(m);
-      if (group.size === 0) continue;
-      for (const [k, v] of Object.entries(f.defaults)) {
-        if (v === null || v === undefined) continue; // null IS the stamp
-        if (!group.has(k)) continue; // only together-members can half-fire
-        for (const variant of f.variants) {
-          const surface = new Set<string>([...(f.params ?? []), ...(variant.params ?? [])]);
-          for (const c of variant.cells ?? []) for (const p of c.params ?? []) surface.add(p);
-          const stamped = variant.resolver_defaults?.[k] === null;
-          if (!surface.has(k) && !stamped) offenders.push(`${fam}/${variant.id}: defaulted together-member '${k}' rides without a null stamp`);
-        }
-      }
+      offenders.push(...noResurrectOffenders(fam, f, packDefaultedFields(f.card, fam)));
     }
     expect(offenders, `no-resurrect offenders — stamp the member null on the lanes that drop it (the voice: null precedent):\n${offenders.join("\n")}`).toEqual([]);
   });
@@ -175,20 +248,39 @@ describe("T3 (lane-migration audit, 2026-11-06) — the NO-RESURRECT boot sweep:
       variants: [
         { id: "base", params: ["ref_audio"], resolver_defaults: {}, cells: [] },
       ],
-      relations: { together: [{ fields: ["voice", "design_prompt"] }] },
+      relations: { together: [{ fields: ["voice", "design_prompt", "voice_pack"] }] },
     } as unknown as ModelFactsRow;
-    const caught: string[] = [];
-    const group = new Set<string>((synthetic.relations as { together?: { fields: string[] }[] }).together![0]!.fields);
-    for (const [k, v] of Object.entries(synthetic.defaults)) {
-      if (v === null || v === undefined || !group.has(k)) continue;
-      for (const variant of synthetic.variants) {
-        const surface = new Set<string>([...(synthetic.params ?? []), ...(variant.params ?? [])]);
-        for (const c of variant.cells ?? []) for (const p of c.params ?? []) surface.add(p);
-        const stamped = variant.resolver_defaults?.[k] === null;
-        if (!surface.has(k) && !stamped) caught.push(`${k}`);
-      }
+    // M5: the pack-default half rides the same check — a pack dict
+    // default on a dropped together-member (the voice_strength
+    // shape: default 1, no lane surface, no stamp)
+    const syntheticPackDefaults = new Map<string, unknown>([["voice_pack", 1]]);
+    // W2: the synthetic family proves the REAL judge — the
+    // pack half rides as the injected source, the family half as
+    // the row's own defaults
+    expect(noResurrectOffenders("synthetic", synthetic, syntheticPackDefaults)).toEqual([
+      "synthetic/base: defaulted together-member 'voice' rides without a null stamp",
+      "synthetic/base: defaulted together-member 'voice_pack' rides without a null stamp",
+    ]);
+  });
+
+  it("the pack-default reader rides the live precedent (qvoice voice_strength defaults 1, outside every together group)", () => {
+    // M5's reader fires on real dicts, not just the synthetic map:
+    // the audit's named precedent must resolve through the helper
+    // with its live value — a broken meta.default read empties
+    // every family's pack source and this arm reds.
+    const facts = svc.modelFacts();
+    let found = "";
+    for (const [fam, f] of Object.entries(facts)) {
+      const packDefs = packDefaultedFields(f.card, fam);
+      if (!packDefs.has("voice_strength")) continue;
+      found = fam;
+      expect(packDefs.get("voice_strength")).toBe(1);
+      const rel = f.relations as { together?: { fields: string[] }[] } | undefined;
+      const group = new Set<string>();
+      for (const row of rel?.together ?? []) for (const m of row.fields) group.add(m);
+      expect(group.has("voice_strength")).toBe(false);
     }
-    expect(caught).toEqual(["voice"]);
+    expect(found).not.toBe("");
   });
 });
 
@@ -233,6 +325,28 @@ describe("THE FULL JOURNEY MATRIX (every ordered lane pair, the prior lane's own
     const synthetic = { ...tts!, variants: [...lanes, { id: "newlane", group: "Variant" } as ResolvedVariantRow] };
     const syntheticLanes = synthetic.variants.filter((v) => v.group === "Variant" && v.hide_from_dropdown !== true);
     expect(syntheticLanes.length * (syntheticLanes.length - 1)).not.toBe(6);
+    // (audit-followups W1, 2026-11-06) THE OFFERED-CELLS WALK: the
+    // quant axis T1 proves matters — a new cell re-seats its lane's
+    // group members, so the census pins the per-lane cell roster
+    // beside the lane count. A new cell reds here until its pin +
+    // its T1-pattern reshape arm land; Recipe rows stay out (wire
+    // stamps, not lanes — the narrowed law, seated, not overlooked).
+    const cellWalk = lanes
+      .map((v) => v.id + ":" + [...(v.cells ?? [])].map((c) => c.quant).sort().join(","))
+      .sort();
+    expect(cellWalk).toEqual([
+      "base:0_6b,1_7b",
+      "customvoice:0_6b,1_7b",
+      "voicedesign:1_7b",
+    ]);
+    const syntheticCells = [...lanes.slice(0, -1), {
+      ...lanes[lanes.length - 1]!,
+      cells: [...(lanes[lanes.length - 1]!.cells ?? []), { quant: "newcell", route: "x" }],
+    }];
+    const syntheticWalk = syntheticCells
+      .map((v) => v.id + ":" + [...(v.cells ?? [])].map((c) => (c as { quant: string }).quant).sort().join(","))
+      .sort();
+    expect(syntheticWalk).not.toEqual(cellWalk);
   });
 
   it("voicedesign → customvoice: the export pair drops, the switch lands", () => {
@@ -331,6 +445,10 @@ describe("THE DESIGNED FLOOR census (the T3 follow-up, 2026-11-06) — the resol
     const facts = svc.modelFacts();
     const decls = svc.cardDecls(facts);
     const riding: string[] = [];
+    // (audit-followups W4, 2026-11-06) the skip set: variants whose
+    // selection throws (hidden/dropdown-less routes) escape the
+    // census — collected and judged below, never silently skipped
+    const skipped: string[] = [];
     for (const [fam, f] of Object.entries(facts)) {
       const decl = decls[f.card];
       if (decl === undefined) continue;
@@ -341,9 +459,17 @@ describe("THE DESIGNED FLOOR census (the T3 follow-up, 2026-11-06) — the resol
         try {
           sel = selectCardVariant(fam, f, { variant: variant.id }, "census");
         } catch {
-          continue; // hidden/dropdown-less routes never compose
+          skipped.push(`${fam}/${variant.id}`); // hidden/dropdown-less routes never compose
+          continue;
         }
         const params = liftCardParams(stampCardOverlay({}, f, decl, sel, "census", fam));
+        // (audit-followups M5, 2026-11-06) the key set is family
+        // defaults ONLY, by construction: the overlay this census
+        // judges injects famRow.defaults + resolver stamps and
+        // nothing else (stampCardOverlay — pack defaults enter at
+        // the pack's own application, never this path), so a pack
+        // key could never appear in `params` here. The pack half of
+        // the no-resurrect law is the sweep's above, not this census's.
         for (const k of Object.keys(f.defaults)) {
           if (surface.has(k)) continue;
           if (variant.resolver_defaults?.[k] !== undefined) continue; // stamped (null or override)
@@ -357,6 +483,9 @@ describe("THE DESIGNED FLOOR census (the T3 follow-up, 2026-11-06) — the resol
       `unpinned riders (stamp the member null or seat it with a dated why):\n${unpinned.join("\n")}\nstale roster rows (the rider is gone — shrink the pin):\n${stale.join("\n")}`,
     ).toBe(`unpinned riders (stamp the member null or seat it with a dated why):\n\nstale roster rows (the rider is gone — shrink the pin):\n`);
     expect(riding.sort()).toEqual([...DESIGNED_FLOOR_ROSTER].sort());
+    // W4: the skip set rides beside the roster — a newly
+    // unselectable variant reds here instead of escaping silently
+    expect(skipped.sort()).toEqual([...CENSUS_SKIP_ROSTER].sort());
   });
 
   it("the census's own judge fires: an un-stamped dropped default that composes is caught", () => {

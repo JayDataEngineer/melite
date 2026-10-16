@@ -14,6 +14,7 @@ import {
   judgeLaneSurface,
   laneBoundsOf,
   laneContractOf,
+  laneTogetherClosure,
   laneSurfaceOf,
   isPurelyUnstatedRequiredVoice,
   isUnstatedRequiredVoice,
@@ -112,6 +113,27 @@ describe("requires (a stated field needs its companions)", () => {
   };
   it("unstated field never fires", () => {
     expect(judgeLaneRelations([rel], { text: "x" })).toEqual([]);
+  });
+  // (audit-followups M4, 2026-11-06) THE REQUIRES-ROW MIGRATION LAW —
+  // the division of labor between the two seats. A requires edge is
+  // an ADMISSION VOICE, never a membership group: when a switch
+  // drops a companion (stale seed), the closure does NOT pull the
+  // surviving requirer into the stale set (laneTogetherClosure loops
+  // together rows only — a together group MOVES, a requires edge
+  // REFUSES); the requirer rides fresh and the judge fires its
+  // refusal at the next admission. No live DECL declares requires
+  // today (qwen3-tts declares together; krea-2 declares required) —
+  // these arms state the law the day one boards.
+  it("migration closure never extends through a requires edge — the judge owns that voice", () => {
+    const stale = new Set(["ref_text"]);
+    const closed = laneTogetherClosure([rel], stale, { ref_audio: "/a.flac", ref_text: "" });
+    expect([...closed].sort()).toEqual(["ref_text"]);
+  });
+  it("a switch-dropped companion fires the judge on the surviving requirer", () => {
+    const v = judgeLaneRelations([rel], { ref_audio: "/a.flac" });
+    expect(v).toHaveLength(1);
+    expect(v[0]!.field).toBe("ref_audio");
+    expect(v[0]!.message).toContain("ref_text");
   });
   it("stated field with a missing companion refuses by NAME", () => {
     const v = judgeLaneRelations([rel], { ref_audio: "/a.flac" });

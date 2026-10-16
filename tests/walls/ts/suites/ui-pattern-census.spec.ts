@@ -709,3 +709,48 @@ describe('THE UI-PATTERN CENSUS (the playbook wall)', () => {
       'PluginManagerPage.tsx:209 h4.sectionTitle + TrajectoryTable.tsx:846,850 h4.usageHeading are the section-head pattern')
   })
 })
+
+/** THE DEAD-CSS STANDING JUDGE (reseat-chrome W5, 2026-11-06): the R7
+ *  purge cut 40 dead classes / 50 blocks from the studio css by a
+ *  one-shot inline script — class regrowth after it is invisible.
+ *  This describe is the purge guard made standing: every class the
+ *  css DEFINES must be referenced in code (comments stripped both
+ *  sides — the purge's kill-notes name the dead in prose, which
+ *  must never count as a reference), and the rule-block count only
+ *  shrinks past its pin. */
+describe('the studio css carries no dead rules (the R7 purge stands)', () => {
+  const CSS = 'packages/video/h3-timeline/src/ui/studio/studio.module.css'
+  const TREE = 'packages/video/h3-timeline/src'
+  const BLOCK_PIN = 110
+  const stripComments = (s: string): string =>
+    s.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n]*/g, '')
+  function definedClasses(): Set<string> {
+    const bare = stripComments(readFileSync(resolve(ROOT, CSS), 'utf8'))
+    const keyframes = new Set([...bare.matchAll(/@keyframes\s+([\w-]+)/g)].map((m) => m[1]!))
+    const out = new Set<string>()
+    for (const m of bare.matchAll(/\.([A-Za-z_][\w-]*)/g)) {
+      if (!keyframes.has(m[1]!)) out.add(m[1]!)
+    }
+    return out
+  }
+  function codeBlob(): string {
+    let blob = ''
+    for (const f of globSync(`${TREE}/**/*.{ts,tsx}`, { cwd: ROOT })) {
+      if (f.endsWith('.css')) continue
+      blob += stripComments(readFileSync(resolve(ROOT, f), 'utf8')) + '\n'
+    }
+    return blob
+  }
+
+  it('every defined class is referenced in code — a dead rule reds', () => {
+    const code = codeBlob()
+    const dead = [...definedClasses()].filter((c) => !code.includes(c)).sort()
+    expect(dead, `dead css rules (cut the rule or reference the class — kill-note prose does not count):\n${dead.join('\n')}`).toEqual([])
+  })
+
+  it('the rule-block count only shrinks past its pin', () => {
+    const bare = stripComments(readFileSync(resolve(ROOT, CSS), 'utf8'))
+    const blocks = (bare.match(/\{/g) ?? []).length
+    expect(blocks <= BLOCK_PIN, `rule blocks grew past the pin (${blocks} > ${BLOCK_PIN}) — a cure shrinks it, a new rule re-pins deliberately`).toBe(true)
+  })
+})

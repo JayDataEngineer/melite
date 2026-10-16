@@ -668,6 +668,91 @@ test('picking a family in the Model select RE-SPECS LIVE: the anima matrix lands
   expect(offered).toEqual(['Standard'])
 })
 
+// (reseat-chrome M1, 2026-11-06) THE DRILL-LEVEL TWO-HOP ARM — the
+// call-site's own behavior judge, owed by name in §3.13's receipt:
+// a live model pick on a stage holding STATED cfg 3.5 / steps 52
+// (carried from an envelope-LESS departure) reseats the user layer
+// into the arrival lane — the knobs clamp, no refusable card ever
+// renders, and the Run press FIRES (the run fence stays quiet).
+// The source-text wall (drill-run-fence) reds a spelling change;
+// only THIS arm reds a behavior change at the call site.
+test('TWO-HOP: picking an envelope-owning family on a stage holding stated numerics reseats them into the lane — no refusable card, the Run press fires', async () => {
+  const NUM = {
+    cfg: { type: 'number', meta: { description: 'Cfg', default: 4.5, min: 1, max: 20, step: 0.5, extra: { wtype: 'number' } } },
+    steps: { type: 'number', meta: { description: 'Steps', default: 30, min: 1, max: 150, step: 1, extra: { wtype: 'number' } } },
+  }
+  const animaSpec = {
+    form: 'image-gen', genre: 'image', engine: 'comfyui', model: 'anima',
+    families: [{ id: 'krea-2', present: true }],
+    schema: schemaEnvelope({
+      prompt: { type: 'string', meta: { description: 'Prompt', extra: { wtype: 'textarea' } } },
+      ...NUM,
+    }),
+    variants: [{ id: 'standard', label: 'Standard', group: 'Variant', defaults: {}, route: 'anima' }],
+  }
+  const kreaSpec = {
+    form: 'image-gen', genre: 'image', engine: 'comfyui', model: 'krea-2',
+    families: [{ id: 'anima', present: true }],
+    schema: schemaEnvelope({
+      prompt: { type: 'string', meta: { description: 'Prompt', extra: { wtype: 'textarea' } } },
+      ...NUM,
+    }),
+    variants: [
+      { id: 'turbo', label: 'Turbo', group: 'Variant', defaults: { model: 'krea-2' }, route: 'krea-2',
+        sampler_envelope: { steps: [4, 8], cfg: [1, 2] } },
+    ],
+  }
+  const specsSeen: string[] = []
+  const { calls } = stubWire({
+    formSpecs: { anima: animaSpec, 'krea-2': kreaSpec },
+    specsSeen,
+    bench: {
+      draft_id: 'bench-s1', rev: 7,
+      stages: [{ id: 's_0', card: 'image-gen', title: 'hero frame', engine: 'comfyui',
+        params: { model: 'anima', prompt: 'a red cube', cfg: 3.5, steps: 52 } }],
+      log: [],
+    },
+  })
+  const LIVE: CardsBenchValue = {
+    ...BENCH,
+    stages: [{ ...BENCH.stages[0], params: { ...BENCH.stages[0].params, model: 'anima', cfg: 3.5, steps: 52 } }],
+  }
+  const user = userEvent.setup()
+  render(createElement(CardsTab, {
+    useTabInfo: () => ({
+      tab: {
+        kind: 'sidebar.right.pane.tab', contentId: undefined,
+        navigation: { address: 'dsh-resource://cards/bench' },
+        actions: { openResource: noop },
+      },
+    }),
+    useResource: () => ({ status: 'live' as const, value: LIVE }),
+  }))
+  await user.click(tileButton())
+  await screen.findByText('Prompt', {}, { timeout: 4000 })
+  // THE INCIDENT'S HELD STATE: cfg 3.5 / steps 52 stated by hand on
+  // the envelope-LESS anima lane — the pre-cure compose refused these
+  const cfgFace = await screen.findByLabelText('Cfg', {}, { timeout: 4000 }) as HTMLInputElement
+  expect(cfgFace.value).toBe('3.5')
+  // THE PICK: krea-2 (an envelope-owning arrival, cfg [1,2], steps [4,8])
+  const modelSel = await screen.findByLabelText('Model', {}, { timeout: 2000 })
+  await user.click(modelSel)
+  await user.click(screen.getByRole('menuitem', { name: 'Krea 2' }))
+  await waitFor(() => { expect(specsSeen).toContain('krea-2') })
+  // THE RESEAT: both knobs land on the lane's nearest bounds — 3.5→2,
+  // 52→8 — and the faces read exactly that
+  await waitFor(() => { expect((screen.getByLabelText('Cfg') as HTMLInputElement).value).toBe('2') })
+  expect((screen.getByLabelText('Steps') as HTMLInputElement).value).toBe('8')
+  // no refusable card ever renders: neither refusal voice appears
+  const text = document.body.textContent ?? ''
+  expect(text.includes('OUTSIDE the variant envelope'), 'the client mirror stays quiet').toBe(false)
+  expect(text.includes("outside this lane's range"), 'the lane voice stays quiet').toBe(false)
+  // and the run fence stays QUIET: the Run press fires the run
+  const detail = screen.getByText('Cfg').closest('div[class*="zoomCard"]') as HTMLElement
+  await user.click(within(detail).getByRole('button', { name: 'Run stage' }))
+  await waitFor(() => { expect(calls.some((c) => c.method === 'runs/start')).toBe(true) })
+})
+
 
 // ── STROKE 25: THE NO-SILENT-REJECT LAW (the operator: "I should
 //    never get auto rejected without an error message") — every
