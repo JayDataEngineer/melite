@@ -812,27 +812,37 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
     setError(null)
     try {
       // THE USER LAYER RIDES VERBATIM (the parameter audit): the
-      // whole explicit map — params, axis keys, macro stamps —
-      // presence IS the truth the engine composes. Keys the stage HELD that
-      // left the user map ride as nulls (JSON Merge Patch: null
-      // deletes — the unset's domain half) ONLY when this drill owns
-      // their domain half: authored here (touched) or deliberately
-      // dropped by its own seed (the dead recipe layer). Held keys
-      // written after open by OTHER hands — the studio, the wire menu,
-      // the agent — are never nulled (the h3-timeline void,
-      // 2026-10-11: the flush deleted the operator's calls at Run
-      // press). An identical map skips the write (a noise guard,
+      // explicit map's TOUCHED domain — params, axis keys, macro
+      // stamps — presence IS the truth the engine composes. THE
+      // WRITE DOMAIN (2026-10-16, the loras revert — journey audit
+      // e17d1ee8): the flush used to write the WHOLE user map, but
+      // the map is seeded ONCE at open while `held` is live — every
+      // key the STUDIO (or the wire menu, or the agent) moved after
+      // open read as stale seed and was REVERTED at Run press (the
+      // operator's burn verbatim: 'I add it, and drop it. The result
+      // is the same.' — the mod bag was the visible case because the
+      // birth recipe guarantees the key exists in the seed). The
+      // write half now rides the SAME domain law the 2026-10-11 void
+      // cure gave the null half: only what THIS drill authored
+      // (touched) is written; only what it authored or deliberately
+      // dropped (the dead recipe layer) is nulled. Foreign-since-open
+      // keys ride through untouched, both directions.
+      // Keys the drill held that left the user map ride as nulls
+      // (JSON Merge Patch: null deletes — the unset's domain half).
+      // An already-matching patch skips the write (a noise guard,
       // never a semantic — marking is by presence, this only avoids
       // re-writing the same bench).
       const patch: SpecValues = {}
       const userKeys = new Set(Object.keys(user))
       const heldKeys = new Set(Object.keys(held))
-      for (const k of userKeys) patch[k] = user[k]
+      for (const k of userKeys) {
+        if (touchedRef.current.has(k)) patch[k] = user[k]
+      }
       for (const k of heldKeys) {
         if (!userKeys.has(k) && (touchedRef.current.has(k) || droppedRef.current.has(k))) patch[k] = null
       }
-      const sameAsHeld = userKeys.size === heldKeys.size
-        && [...userKeys].every((k) => Object.is(user[k], held[k]))
+      const sameAsHeld = Object.keys(patch).length > 0
+        && Object.entries(patch).every(([k, v]) => heldKeys.has(k) && Object.is(held[k], v))
       if (Object.keys(patch).length > 0 && !sameAsHeld) {
         // THE COMPOSE GATE AT THE RUN SEAT: the full-doc sync is a
         // write like any other — an invalid candidate refuses HERE,

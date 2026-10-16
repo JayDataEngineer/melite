@@ -213,6 +213,59 @@ describe("the run verb — the flush-then-start law", () => {
     expect(screen.getByText(/unlanded keys: prompt/)).toBeTruthy();
     expect(posted.some((p) => p.method === "runs/start")).toBe(false);
   });
+
+  test("THE WRITE DOMAIN (2026-10-16, the loras revert): a foreign-since-open key is never re-written by the flush — only the drill's OWN touched keys ride", async () => {
+    // THE JOURNEY-LAW BURN (audit e17d1ee8, operator verbatim: 'I
+    // add it, and drop it. The result is the same.'): the h3 studio
+    // has no Run of its own — the zoom's pill runs THIS drill's
+    // flush, and the flush wrote its whole user map, seeded ONCE at
+    // open. Every key the studio moved after open (the mod bag is
+    // the visible case — the birth recipe guarantees it in the
+    // seed) was silently REVERTED to the open-time value at every
+    // Run press inside the open studio. THE CURE: the write half
+    // rides the same domain law the 2026-10-11 void cure gave the
+    // null half — touched keys write, foreign keys ride through.
+    // FIRING ARM: the drill stays OPEN while a foreign hand (the
+    // studio) lands a newer loras bag on the bench; the press's
+    // patch must carry the drill's OWN edit (the typed prompt) and
+    // must NOT carry loras at all. Reverting the write-domain gate
+    // reds the '"loras"' half (the stale seed rides again).
+    mountBench(
+      [{ id: "s_0", card: "image-gen", engine: "comfyui", params: { prompt: "p", loras: [{ id: "birth" }] } }],
+      { refusals: [{ method: "runs/start", message: "no engine today" }] },
+    );
+    await openFirstTile();
+    await screen.findByText("Prompt", {}, { timeout: 4000 });
+    // the studio's write lands on the bench AFTER open — a foreign
+    // hand, rev ahead, the drill stays mounted
+    fakes?.setDraftDoc({
+      rev: 2,
+      stages: [{ id: "s_0", card: "image-gen", engine: "comfyui", params: { prompt: "p", loras: [{ id: "studio-added" }] } }],
+    });
+    await new Promise((r) => setTimeout(r, 120));
+    const user = userEvent.setup();
+    const area = document.querySelector("textarea");
+    if (area === null) throw new Error("prompt field not found");
+    await user.type(area, "!!!");
+    fireEvent.click(within(zoomCard()).getByRole("button", { name: "Run stage" }));
+    await waitFor(() => {
+      expect(posted.some((p) => p.method === "runs/start")).toBe(true);
+    });
+    // judge EVERY patch on the wire (the form's per-key writes land
+    // their own prompt patches before the press — the flush's patch
+    // is only one of the calls; judging the first alone let the old
+    // code pass vacuously, the fixture-starved twin of this burn)
+    const allPatches = posted
+      .filter((p) => p.method === "drafts/patch")
+      .map((p) => JSON.stringify(p.args))
+      .join("|");
+    // the drill's OWN edit rides...
+    expect(allPatches).toContain('"prompt":"p!!!"');
+    // ...and the foreign-since-open key NEVER rides: not the stale
+    // seed, not any value — the drill does not own that domain half
+    expect(allPatches).not.toContain('"loras"');
+    expect(allPatches).not.toContain("birth");
+  });
 });
 
 describe("the error face retires on an external success — an error is a claim, not a latch", () => {
