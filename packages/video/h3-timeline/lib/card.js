@@ -120,11 +120,19 @@ export function registerCard(ctx, comfy) {
         // writes, which the projection unions from the facts file —
         // trailing-* ride verbatim, the gate matches them as prefixes).
         // + the AXIS KEYS this card's own families stamp (the h3-timeline
-        // family declares Variant/Quant/Recipe groups — the axis seeding
-        // writes `variant`/`quant`/`recipe` onto every fresh stage; the
-        // admission covers the card's own served surface, image-gen's
-        // recipe-knob law).
-        admits: ['ctx_*', 'fps_seconds', 'image_name', 'k', 'noise_seed', 'quant', 'recipe', 'ref_image_size', 'sla_*', 'variant'],
+        // family declares Variant/Quant groups — the axis seeding writes
+        // `variant`/`quant` onto every fresh stage; the admission covers
+        // the card's own served surface, image-gen's recipe-knob law).
+        // `recipe` LEFT THIS LIST (2026-10-16, audit 0be61df8 F5): the
+        // prose here used to claim the axis seeding writes it, but the
+        // RECIPE-AXIS YIELD forbids the key (spec.ts axisGroups filters
+        // 'Recipe'), no card declares a `recipe` field, no client path
+        // writes one, and this card's compose has no reader of p.recipe —
+        // the admission was dead surface advertising a key nothing can
+        // produce. A doc carrying it now refuses LOUD at the door
+        // ('unknown-param') instead of riding as an inert rider; seedUser
+        // already deletes it on drill-open (the dead-layer law).
+        admits: ['ctx_*', 'fps_seconds', 'image_name', 'k', 'noise_seed', 'quant', 'ref_image_size', 'sla_*', 'variant'],
         jsonArrayParams: JSON_ARRAY_PARAMS,
         // the packs the window graph rides (EXTENSION LAW) + the film
         // tail's file boundary (melite-utility-nodes: MeliteUnload +
@@ -182,15 +190,18 @@ export function registerCard(ctx, comfy) {
             // composer's own non-knob reads: the studio shot vocab
             // (calls, audio_clips, keyframes, refs, document), the lora
             // bag, the per-window fences, the derive keys (variant,
-            // quant, recipe, refine — refine is injected by the door
+            // quant, refine — refine is injected by the door
             // AFTER this walk), the schema's __steps_pinned stamp (007
             // L3 — the walk's own explicit-steps fact, read by the film
             // build's single-window marriage) and the context prefix class
             // (ctx_* — the compat law's own list at schema.ts names it;
             // motion_* is gone: no reader, no producer, no draft carries it).
+            // `recipe` LEFT THIS LIST TOO (2026-10-16, audit 0be61df8 F5):
+            // no reader, no producer, no admit — a doc carrying it refuses
+            // loud here, which is the dead-layer law working.
             p = gatedResolve('h3-timeline', schemaFn, [
                 'calls', 'audio_clips', 'keyframes', 'fps', 'audio_stem', 'document', 'loras',
-                'refs', 'variant', 'quant', 'recipe', 'refine', 'model', '__steps_pinned', 'ctx_*',
+                'refs', 'variant', 'quant', 'refine', 'model', '__steps_pinned', 'ctx_*',
             ], gateInput);
             // THE SINGLE-CALL LIFT runs FIRST (the guard below reads the
             // lifted anchor): a one-call doc's row IS the window — its

@@ -26,6 +26,11 @@ import {
   getModel, registryIds, registryModel,
 } from "../../../engines/comfyui-cordis/src/models/models.ts";
 import { gridSnap } from "../src/card.ts";
+import {
+  axisPickPatch, type FormSpecDoc, type FormVariantRow,
+} from "@melite/card-base/client";
+import { DECL as h3decl } from "../../../models/h3/src/index.ts";
+import { H3_LORA_ROWS } from "../../../models/h3/mods/loras.ts";
 import { computeFilmMix, parseFilmMixClips, stanzaSecs } from '@melite/models-h3/filmMix';
 
 const FACTS_PATH = join(
@@ -628,6 +633,126 @@ describe("the single-window doors", () => {
     // audit: the 12 carried no receipt and matched neither his v7=6
     // nor v9=8; the engine kernel's own tooltip calibrates 6)
     expect(scoped(graphOf(g2), "", "BasicScheduler")[0]![1].inputs.steps).toBe(6);
+  });
+
+  // ── THE RECIPE DOOR SWEEP (2026-10-16, audit 0be61df8 F4 + F2) ──
+  // F4's finding: EVERY genre holds only static + mirror arms for
+  // recipes — no wall anywhere ran a real recipe stamp through a real
+  // compose, which is why the Final Cut × t4r brick survived an
+  // all-green suite and why the departed-preset reseat could be DEAD
+  // CODE (F2) without a single red. This is the door-depth half: the
+  // REAL DECL's recipe rows, the REAL pick verb, the REAL compose.
+  describe("THE RECIPE DOOR SWEEP — the real DECL's recipe rows through the real compose", () => {
+    // the served row shape the discovery mirror builds (resolver +
+    // wire defaults merge into the pick stamp), and the SERVICE's bag
+    // resolution mirrored (an id-only row — the recipe's pure
+    // selection — resolves against the family catalog into the
+    // {name, strength, steps} wire shape the compose reads; the
+    // compose reads r.name/r.strength directly, so a hermetic arm
+    // must state the resolution the service performs).
+    const resolveBag = (bag: unknown): unknown => {
+      if (!Array.isArray(bag)) return bag
+      return bag.map((r) => {
+        const row = r as { id?: string; strength?: number; name?: string; steps?: number }
+        if (row.id === undefined) return row
+        const cat = H3_LORA_ROWS.find((c) => c.id === row.id)
+        if (cat === undefined) throw new Error(`the catalog serves no '${row.id}' row`)
+        return {
+          name: cat.filename, strength: row.strength ?? cat.default_strength,
+          steps: row.steps ?? cat.steps,
+        }
+      })
+    }
+    const recipes = (): FormVariantRow[] => (h3decl.variants ?? [])
+      .filter((v) => v.group === "Recipe")
+      .map((v) => {
+        const defaults: Record<string, unknown> = {
+          ...(v.resolver_defaults ?? {}), ...(v.wire_defaults ?? {}),
+        }
+        if (defaults["loras"] !== undefined) defaults["loras"] = resolveBag(defaults["loras"])
+        return {
+          id: v.id, label: v.label ?? v.id, group: "Recipe",
+          defaults,
+          route: "", hint: v.hint ?? null, engine: "", sampler_envelope: null,
+          quant: null, vram_peak_gb: null, owner: "",
+        }
+      })
+    const spec = (): FormSpecDoc => ({
+      form: "h3-timeline", model: "h3", variants: recipes(),
+    } as unknown as FormSpecDoc)
+    const composeDoc = (doc: Record<string, unknown>): Record<string, Node> => {
+      const g = new GraphBuilder()
+      def.compose(def.schema(doc), model, g, "run_recipe_sweep")
+      return graphOf(g)
+    }
+
+    it("every real recipe row's stamp composes through the real door (the bag marriage lands 4 steps)", () => {
+      const rows = recipes()
+      assert.ok(rows.length >= 3, "the DECL serves Standard/Draft/Final Cut")
+      for (const row of rows) {
+        const patch = axisPickPatch(spec(), row, {})
+        // a text-only single call derives t4_open — the lane Final
+        // Cut's own row gate offers it on
+        const out = composeDoc({ calls: [SHOT()], ...patch })
+        const sched = scoped(out, "", "BasicScheduler")[0]
+        assert.ok(sched !== undefined, `${row.id}: the scheduler composes`)
+        assert.equal(sched![1].inputs.steps, 4,
+          `${row.id}: the DMAD bag marries its 4 steps`)
+      }
+    })
+
+    it("THE RESOLUTION BURN (operator: 'THEY ARE ALL LOSE RESOLUTION', four times): Draft → Standard drops the 768×448 residue at the real door", () => {
+      const rows = recipes()
+      const draft = rows.find((r) => r.id === "draft")!
+      const standard = rows.find((r) => r.id === "standard")!
+      const final = rows.find((r) => r.id === "final")!
+      const hasGeometry = (out: Record<string, Node>, h: number): boolean =>
+        Object.values(out).some((n) => n.inputs.height === h)
+      // the Draft pick's own geometry composes (448 is draft's height;
+      // the family floor is 1344×768, so 448 is unambiguous)
+      const held = axisPickPatch(spec(), draft, {})
+      assert.equal(held["height"], 448, "the draft pick stamps its geometry")
+      assert.ok(hasGeometry(composeDoc({ calls: [SHOT()], ...held }), 448),
+        "draft's 448 height rides the composed graph")
+      // THE FLIP: the departed recipe's residue must not survive
+      const patch = axisPickPatch(spec(), standard, held)
+      assert.equal(patch["height"], null, "the departed draft height unstates")
+      assert.equal(patch["width"], null, "the departed draft width unstates")
+      const out2 = composeDoc({ calls: [SHOT()], ...held, ...patch })
+      assert.equal(hasGeometry(out2, 448), false,
+        "the departed recipe's geometry must not survive the flip")
+      // THE SECOND FACE (F2's other half): Final Cut's rail must not
+      // survive a flip back to Standard — the old dead-code reseat
+      // left second_pass_enabled/sr_switch standing, so the run kept
+      // super-ressing behind a Standard dropdown
+      const heldFinal = axisPickPatch(spec(), final, {})
+      const back = axisPickPatch(spec(), standard, heldFinal)
+      assert.equal(back["second_pass_enabled"], null)
+      assert.equal(back["sr_switch"], null)
+      // and the composed graph BYPASSES the departed rail: the post
+      // chain's nodes always mount on the non-t4r arm (the master
+      // gate is the SWITCH's value, not node presence — the walk's
+      // own law), so the tell is every switch whose on_true names a
+      // post-chain node sitting at switch:false
+      const out3 = composeDoc({ calls: [SHOT()], ...heldFinal, ...back })
+      const postIds = new Set(
+        Object.entries(out3)
+          .filter(([, n]) => n.class_type.startsWith("SeedVR2") || n.class_type === "ImageSharpenKJ"
+            || n.class_type === "FrameInterpolate")
+          .map(([id]) => id),
+      )
+      assert.ok(postIds.size > 0, "the post chain mounts (its bypass is what we judge)")
+      const railSwitches = ofClass(out3, "ComfySwitchNode").filter(([, n]) => {
+        const onTrue = n.inputs.on_true
+        const ref = Array.isArray(onTrue) ? String(onTrue[0]) : String(onTrue ?? "")
+        return postIds.has(ref)
+      })
+      assert.ok(railSwitches.length > 0, "the rail's own switches compose")
+      for (const [id, n] of railSwitches) {
+        assert.equal(n.inputs.switch, false,
+          `the departed second-pass rail must be bypassed (${id})`)
+      }
+    })
   });
 
   // ── L3 (007-H3-LoRA-PLANE L3): ONE STEPS LAW for both window

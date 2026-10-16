@@ -778,29 +778,45 @@ test('axisPickPatch: departing a recipe unstated its residue (null deletes at co
   const draft = rows.find((r) => r.id === 'draft')!
   const standard = rows.find((r) => r.id === 'standard')!
   const final = rows.find((r) => r.id === 'final')!
+  // THE ARMS RIDE THE PUBLIC VERB (write-then-pick — never a
+  // hand-fed `recipe` literal; audit 0be61df8 F2: the old arms fed a
+  // key no writer produces, so they certified a precondition
+  // production never reaches). `held` is what the PREVIOUS PICK
+  // actually wrote.
+  const heldFromDraft = axisPickPatch(spec, draft, {})
+  expect(heldFromDraft).toEqual({ width: 768, height: 448 })
   // THE LAW: draft's 768×448 still held verbatim → picking final
   // unstated BOTH (the carrier floor shows again), while final's own
   // stamps ride as values. The model re-point never lands (stroke 21).
-  expect(axisPickPatch(spec, final, { recipe: 'draft', width: 768, height: 448 })).toEqual({
+  expect(axisPickPatch(spec, final, heldFromDraft)).toEqual({
     steps: 4, sr_switch: true, width: null, height: null,
   })
   // STATED-BY-HAND: a width the operator edited away from the stamp
-  // is THEIR word — the pick does not unstate it.
-  expect(axisPickPatch(spec, final, { recipe: 'draft', width: 1024, height: 448 })).toEqual({
+  // is THEIR word — the pick does not unstate it, while the untouched
+  // height (still equal to draft's stamp) does unstate.
+  expect(axisPickPatch(spec, final, { ...heldFromDraft, width: 1024 })).toEqual({
     steps: 4, sr_switch: true, height: null,
   })
-  // NO DEPARTURE: re-picking the named row unstated nothing.
-  expect(axisPickPatch(spec, final, { recipe: 'final', width: 768 })).toEqual({
+  // NO DEPARTURE: re-picking the row the doc already holds unstated
+  // nothing (the held layer IS the incoming row's own roster).
+  const heldFromFinal = axisPickPatch(spec, final, {})
+  expect(axisPickPatch(spec, final, heldFromFinal)).toEqual({
     steps: 4, sr_switch: true,
   })
-  // NOTHING NAMED (a fresh doc): no departure, no nulls.
+  // THE DERIVED IDENTITY (2026-10-16, F2's cure): a held layer
+  // carrying a sibling's roster IS a departure even with no identity
+  // key — the identity is derived from the values, which is why the
+  // reseat works without a channel nothing writes. Draft's stamps are
+  // held verbatim → picking standard returns the family floor for
+  // both (the composability the operator asked for).
   expect(axisPickPatch(spec, standard, { width: 768, height: 448 })).toEqual({
-    steps: 30,
+    steps: 30, width: null, height: null,
   })
-  // STALE STAMP (names a row the spec no longer serves): nothing to
-  // reseat against — the incoming stamps ride alone.
+  // A STALE IDENTITY KEY (names a row the spec no longer serves) is
+  // not the law — the derivation still reads the roster the doc
+  // carries, so the departure is found.
   expect(axisPickPatch(spec, standard, { recipe: 'ghost', width: 768 })).toEqual({
-    steps: 30,
+    steps: 30, width: null,
   })
 })
 

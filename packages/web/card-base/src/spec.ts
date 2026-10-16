@@ -935,13 +935,47 @@ export function rowsFor(spec: FormSpecDoc, group: string): FormVariantRow[] {
  *  to reseat against). PURE. */
 function departedRowOf(spec: FormSpecDoc, incoming: FormVariantRow, held?: SpecValues): FormVariantRow | undefined {
   if (held === undefined) return undefined
+  const siblings = (spec.variants ?? []).filter((r) => r.group === incoming.group)
+  // THE AXIS ARM: an axis group's identity IS its durable stamp
+  // (variant/quant ride the doc). A stamp naming the incoming row is
+  // no departure; a stamp naming no row is a stale doc — for an AXIS
+  // group that is the whole answer (nothing to reseat against).
   const stamp = held[axisKey(incoming.group)]
-  if (typeof stamp !== 'string' || stamp === '') return undefined
-  const named = (spec.variants ?? [])
-    .filter((r) => r.group === incoming.group)
-    .find((r) => (r.group === 'Quant' ? r.quant === stamp : r.id === stamp))
-  if (named === undefined || named.id === incoming.id) return undefined
-  return named
+  if (typeof stamp === 'string' && stamp !== '') {
+    const named = siblings.find((r) => (r.group === 'Quant' ? r.quant === stamp : r.id === stamp))
+    if (named !== undefined) return named.id === incoming.id ? undefined : named
+    if (axisGroups(spec).includes(incoming.group)) return undefined
+  }
+  // THE DERIVED ARM (the Recipe group — the yield refuses its durable
+  // key, so a recipe has no stamp to read). THE BURN this cures
+  // (2026-10-16, audit 0be61df8 F2): the D4 reseat read
+  // `held['recipe']` — a key NO writer produces (the vocabulary guard
+  // refuses it, seedUser deletes it) — so the reseat was DEAD CODE and
+  // a departed preset's stamps rode forever (the operator's
+  // four-times-reported "THEY ARE ALL LOSE RESOLUTION": Draft's
+  // 768×448 under Standard and Final Cut).
+  // The identity is DERIVED instead, from the roster the held layer
+  // still carries: the sibling whose declared stamps the doc still
+  // holds is the preset the face was showing before this pick. A held
+  // value equal to a sibling's stamp IS the departure (the pick owns
+  // its roster in both directions); a value the user edited AWAY from
+  // every stamp matches nothing and stands. Ties resolve by served
+  // order (first declared) — deterministic, never a coin flip. Keys
+  // the incoming row also declares are the incoming's own and never
+  // count as departure evidence.
+  let best: FormVariantRow | undefined
+  let bestHits = 0
+  for (const r of siblings) {
+    if (r.id === incoming.id) continue
+    let hits = 0
+    for (const [k, v] of Object.entries(r.defaults)) {
+      if (k === 'model') continue
+      if (k in incoming.defaults) continue
+      if (deepEqualJson(held[k], v)) hits++
+    }
+    if (hits > bestHits) { bestHits = hits; best = r }
+  }
+  return bestHits > 0 ? best : undefined
 }
 
 export function composingRows(spec: FormSpecDoc, group: string, active: Record<string, string | undefined>): FormVariantRow[] {  return rowsFor(spec, group).filter((v) => {
@@ -1109,13 +1143,21 @@ export function axisPickPatch(spec: FormSpecDoc, row: FormVariantRow, held?: Spe
     // THE DEPARTED-PRESET RESEAT (D4, 2026-11-06 — operator: "switch
     // between recipes. THEY ARE ALL LOSE RESOLUTION", reported four
     // times): a preset OWNS its stamps while it is the named pick.
-    // When the doc's durable axis names a DIFFERENT row of the same
-    // group, every key the DEPARTED row stamped that the incoming
-    // row does not carry is preset residue — Draft's 768×448 rode
-    // under Standard and Final Cut forever (patch-only rows never
-    // unstate). A key whose held value still EQUALS the departed
-    // stamp unstated (null deletes at compose — modelSwitchPatch's
-    // spelling); a hand-edited value is the USER's word and stands.
+    // When the doc's held layer names a DIFFERENT row of the same
+    // group (departedRowOf — the durable stamp for an axis group, the
+    // DERIVED roster for the Recipe group since the yield), every key
+    // the DEPARTED row stamped that the incoming row does not carry is
+    // preset residue — Draft's 768×448 rode under Standard and Final
+    // Cut forever (patch-only rows never unstate). A key whose held
+    // value still EQUALS the departed stamp unstated (null deletes at
+    // compose — modelSwitchPatch's spelling); a hand-edited value is
+    // the USER's word and stands.
+    // THE VALUE COMPARISON IS DEEP (2026-10-16, the same audit's F3):
+    // the check was `===`, which is REFERENCE equality for arrays —
+    // an array bag (loras, ref_mods) never compared equal, so a
+    // departed recipe's bag ALWAYS rode and could never be unstated.
+    // deepEqualJson is the comparison the rest of this file already
+    // uses for held-vs-stamp judgments.
     // Scoped to NON-AXIS groups: the chain groups' values are the
     // envelope law's (reconcilePick) — this cures the one seam that
     // had no reconciler at all.
@@ -1124,7 +1166,7 @@ export function axisPickPatch(spec: FormSpecDoc, row: FormVariantRow, held?: Spe
       for (const [k, v] of Object.entries(departed.defaults)) {
         if (k === 'model') continue
         if (k in row.defaults) continue
-        if (held !== undefined && held[k] === v) patch[k] = null
+        if (held !== undefined && deepEqualJson(held[k], v)) patch[k] = null
       }
     }
     reconcilePick(patch, spec, row, held)
