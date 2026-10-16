@@ -3,28 +3,36 @@
   "private": true,
   "license": "SSPL-1.0",
   "type": "module",
-  "description": "the input-prep card (the image lane) — one card one package: card.ts host face (no tool face, no ui/, no agents/ — the view is constructed by @melite/card-base from the emission)",
+  "description": "the input-prep card (the image lane) — one card one package: card.ts host face + the ANNY-style crop/scale studio (src/ui/studio, registered on cards.stage.view by ./client)",
   "exports": {
     ".": {
       "types": "./lib/card.d.ts",
       "default": "./lib/card.js"
     },
-    "./package.json": "./package.json"
+    "./package.json": "./package.json",
+    "./client": "./lib/client.js"
   },
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit -p tsconfig.host.json && tsc --noEmit -p tsconfig.client.json",
+    "bundle": "tsdown"
   },
   "dependencies": {
     "@deepseek-ai/schemastery": "^3.18.4",
     "@melite/comfyui-card-kit": "workspace:*",
     "@melite/contracts": "workspace:*",
-    "@melite/models-input": "workspace:*"
+    "@melite/models-input": "workspace:*",
+    "@melite/card-base": "workspace:*",
+    "react": "^19.3.0"
   },
   "devDependencies": {
     "@types/node": "^22.20.0",
     "typescript": "^5.9.3",
-    "@deepseek-ai/cordis": "^4.0.4"
+    "@deepseek-ai/cordis": "^4.0.4",
+    "@types/react": "^19.1.0",
+    "@testing-library/react": "*",
+    "@testing-library/jest-dom": "*",
+    "tsdown": "^0.22.14"
   },
   "name": "@melite/image-input-prep",
   "files": [
@@ -34,5 +42,13 @@
   ],
   "peerDependencies": {
     "@deepseek-ai/cordis": "^4.0.4"
+  },
+  "dsh": {
+    "client": {
+      "platform": "web",
+      "external": [
+        "@melite/card-base/client"
+      ]
+    }
   }
 }

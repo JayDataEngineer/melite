@@ -15,6 +15,7 @@
     ],
     "types": ["node"],
     "paths": {
+        "@melite/image-input-prep/client": ["./../input-prep/src/client/index.ts"],
         "@melite/models-anima/mods/loras": ["./../../models/anima/mods/loras.ts"],
         "@melite/models-flux-klein/mods/loras": ["./../../models/flux-klein/mods/loras.ts"],
         "@melite/contracts/planes": ["./../../web-kit/contracts/src/planes.ts"],

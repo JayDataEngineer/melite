@@ -1,0 +1,189 @@
+/* prep.module.css — the input-prep studio's chrome (the ANNY-style
+ * card face, 2026-11): preview pane + transform rail. */
+
+.studio {
+  display: flex;
+  gap: 14px;
+  align-items: stretch;
+  width: 100%;
+  min-height: 260px;
+}
+
+.previewPane {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.paneNote {
+  padding: 18px 14px;
+  border: 1px dashed rgba(127, 127, 127, 0.4);
+  border-radius: 8px;
+  color: rgba(255, 255, 255, 0.65);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.paneMeta {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.previewWrap {
+  position: relative;
+  display: inline-block;
+  max-width: 100%;
+  align-self: flex-start;
+  user-select: none;
+  touch-action: none;
+}
+
+.previewImg {
+  display: block;
+  max-width: 100%;
+  max-height: 52vh;
+  border-radius: 8px;
+}
+
+.previewOverlay {
+  position: absolute;
+  inset: 0;
+  cursor: crosshair;
+  border-radius: 8px;
+}
+
+.cropBox {
+  position: absolute;
+  border: 1px solid #fff;
+  /* the veil: one huge spread dims everything outside the box (the
+   * element's own interior stays clear — box-shadow paints outside
+   * the border box only) */
+  box-shadow: 0 0 0 100000px rgba(0, 0, 0, 0.5);
+  cursor: move;
+}
+
+.cropBadge {
+  position: absolute;
+  left: 4px;
+  top: -20px;
+  font-size: 10px;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.6);
+  border-radius: 4px;
+  padding: 1px 5px;
+  white-space: nowrap;
+}
+
+.previewHint {
+  position: absolute;
+  left: 50%;
+  bottom: 10px;
+  transform: translateX(-50%);
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.75);
+  background: rgba(0, 0, 0, 0.5);
+  border-radius: 4px;
+  padding: 2px 8px;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+/* The eight resize handles (corners + edges). The shared .handle is
+ * the floor; the per-edge variants only reposition. */
+.handle,
+.handle_nw,
+.handle_ne,
+.handle_se,
+.handle_sw,
+.handle_n,
+.handle_e,
+.handle_s,
+.handle_w {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  background: #fff;
+  border: 1px solid rgba(0, 0, 0, 0.4);
+  border-radius: 2px;
+}
+
+.handle_nw { left: -7px; top: -7px; cursor: nwse-resize; }
+.handle_ne { right: -7px; top: -7px; cursor: nesw-resize; }
+.handle_se { right: -7px; bottom: -7px; cursor: nwse-resize; }
+.handle_sw { left: -7px; bottom: -7px; cursor: nesw-resize; }
+.handle_n { left: 50%; top: -7px; margin-left: -6px; cursor: ns-resize; }
+.handle_s { left: 50%; bottom: -7px; margin-left: -6px; cursor: ns-resize; }
+.handle_w { top: 50%; left: -7px; margin-top: -6px; cursor: ew-resize; }
+.handle_e { top: 50%; right: -7px; margin-top: -6px; cursor: ew-resize; }
+
+/* THE RAIL (transform + scale knobs) */
+.rail {
+  flex: 0 0 240px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid rgba(127, 127, 127, 0.25);
+  border-radius: 8px;
+  background: rgba(127, 127, 127, 0.08);
+}
+
+.railTitle {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.railRow {
+  display: flex;
+  gap: 8px;
+  align-items: flex-end;
+  flex-wrap: wrap;
+}
+
+.railHint {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.5);
+  line-height: 1.4;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  flex: 1;
+  min-width: 0;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.field input,
+.field select {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 5px 7px;
+  border-radius: 6px;
+  border: 1px solid rgba(127, 127, 127, 0.4);
+  background: rgba(0, 0, 0, 0.35);
+  color: #fff;
+  font-size: 12px;
+}
+
+.chip {
+  padding: 5px 10px;
+  border-radius: 6px;
+  border: 1px solid rgba(127, 127, 127, 0.4);
+  background: rgba(0, 0, 0, 0.25);
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.chip:disabled {
+  opacity: 0.45;
+  cursor: default;
+}

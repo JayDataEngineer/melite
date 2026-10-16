@@ -275,6 +275,9 @@
   "@melite/image-input-prep": [
     "./packages/image/input-prep/src/card.ts"
   ],
+  "@melite/image-input-prep/client": [
+    "./packages/image/input-prep/src/client/index.ts"
+  ],
   "@melite/image-mask": [
     "./packages/image/mask/src/index.ts"
   ],

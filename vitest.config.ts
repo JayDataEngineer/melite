@@ -99,6 +99,10 @@ const DOM_SPEC_TREES = [
   // studio — card.spec.ts + index.spec.ts remain, the node lane's
   // compose/index gates for the form card).
   `${rootPath('packages/3d/anny')}/tests/**/*.spec.{ts,tsx}`,
+  // the input-prep studio's client spec (the ANNY-style crop card,
+  // 2026-11): same composition-root correction — the studio spec
+  // rides dom, the node lane keeps card.spec.ts (*.spec.ts only).
+  `${rootPath('packages/image/input-prep')}/tests/**/*.spec.tsx`,
   // the motion studio + client specs (2026-09-16): the motion lane row —
   // same composition-root correction as the trees above (the studio
   // specs ride dom; the node lane keeps motion's *.spec.ts gates).

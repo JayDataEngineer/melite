@@ -102,6 +102,7 @@
       "@melite/image-image-gen/wire": ["./packages/image/image-gen/src/wire.ts"],
       "@melite/image-image-gen/tool": ["./packages/image/image-gen/src/tool.ts"],
       "@melite/image-input-prep": ["./packages/image/input-prep/src/card.ts"],
+      "@melite/image-input-prep/client": ["./packages/image/input-prep/src/client/index.ts"],
       "@melite/image-mask": ["./packages/image/mask/src/index.ts"],
       "@melite/image-mask/card": ["./packages/image/mask/src/card.ts"],
       "@melite/image-mask-studio": ["./packages/image/mask-studio/src/index.ts"],

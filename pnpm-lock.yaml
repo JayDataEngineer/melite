@@ -1132,6 +1132,9 @@ importers:
       '@deepseek-ai/schemastery':
         specifier: ^3.18.4
         version: 3.18.4
+      '@melite/card-base':
+        specifier: workspace:*
+        version: link:../../web/card-base
       '@melite/comfyui-card-kit':
         specifier: workspace:*
         version: link:../../engines/comfyui-card-kit
@@ -1141,13 +1144,28 @@ importers:
       '@melite/models-input':
         specifier: workspace:*
         version: link:../../models/input
+      react:
+        specifier: ^19.3.0
+        version: 19.3.0
     devDependencies:
       '@deepseek-ai/cordis':
         specifier: ^4.0.4
         version: 4.0.4(@deepseek-ai/cordis-plugin-include@1.0.9)(@deepseek-ai/cordis-plugin-loader@1.0.5)
+      '@testing-library/jest-dom':
+        specifier: '*'
+        version: 6.10.0(@testing-library/dom@10.4.1)
+      '@testing-library/react':
+        specifier: '*'
+        version: 16.3.3(@testing-library/dom@10.4.1)(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@types/node':
         specifier: ^22.20.0
         version: 22.20.1
+      '@types/react':
+        specifier: ^19.1.0
+        version: 19.3.0
+      tsdown:
+        specifier: ^0.22.14
+        version: 0.22.14(@tsdown/css@0.22.14)(oxc-resolver@11.24.2)(publint@0.3.25)(typescript@5.9.3)(unrun@0.3.1)
       typescript:
         specifier: ^5.9.3
         version: 5.9.3
