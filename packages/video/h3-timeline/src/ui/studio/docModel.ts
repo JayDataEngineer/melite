@@ -311,11 +311,11 @@ export interface LayerA {
   ref_images?: string[]
   ref_videos?: string[]
   ref_audios?: string[]
-  /** Card-level ref_mods (the declared mods surface — the compose
-   * merges them as PRIMARY over every stanza's mods lane, the same
-   * law as the three bus lanes above). Display-owned like its
-   * siblings: the studio renders them as card-level chips; the agent
-   * path authors them. */
+  /** Card-level ref_mods (the declared mods surface — the canon's
+   * REPLACE arm, the same law as the three bus lanes above: a
+   * stanza's own mods lane REPLACES it per lane, an absent stanza
+   * lane inherits it). Display-owned like its siblings: the studio
+   * renders them as card-level chips; the agent path authors them. */
   ref_mods?: string[]
   /** Per-video trims, index-paired with ref_videos (entry i slices
    * guide i: start seconds + duration seconds before conditioning;

@@ -606,7 +606,9 @@ export function CallCard({
   // candidates are the engine's own refmods stems, served through
   // deps by the estate's wire door (the /object_info combo read —
   // the door receipt lives in the slice report). Absent (the
-  // interim): the honest-empty picker + the manual path fallback —
+  // interim): the honest-empty picker — the estate-media and OS-file
+  // doors still ride (the any-media law); the manual path form is
+  // DEAD (one square, one grammar).
   // door law (3), never a hand list, never a non-engine fetch. The
   // optional row lands on CallCardDeps with the panel lane's wiring.
   const modsListing = (deps as { modsListing?: readonly string[] }).modsListing
