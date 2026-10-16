@@ -380,7 +380,7 @@ describe("models against cards (the cross-validation, resurrected)", () => {
     // 1) own the floor, so the knob ENTERS the judged set as a
     // family-owned numeric params field (no starve: every boarded
     // family declares it — the starving array above stayed empty).
-    assert.equal(walked, 465,
+    assert.equal(walked, 466,
       `the census walked the estate's fields (${String(walked)} — a re-zoned or re-typed field set MOVES this number; growth is argued here, loss means the census emptied an arm)`);
     assert.equal(judged, 8,
       `the census JUDGED the estate's numeric params fields (${String(judged)} of ${String(walked)} walked — re-typing them out of the judge MOVES this number down; a new judged knob moves it up and is argued here)`);

@@ -100,7 +100,7 @@ test('RECIPE ROW GATE (2026-10-16, the Final Cut brick — audit 0be61df8 F1): a
   const onPick = vi.fn()
   // the host's predicate shape (RunRecipeEngine's own): a row whose
   // stamp intersects the family-dead keys is omitted
-  const omitRow = (row: never): boolean =>
+  const omitRow = (row: FormVariantRow): boolean =>
     Object.keys((row as unknown as { defaults?: Record<string, unknown> }).defaults ?? {})
       .includes('sr_switch')
   render(h(RecipePills, { spec: doc(), values: {}, onPick, omitRow }))

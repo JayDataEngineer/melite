@@ -23,10 +23,10 @@
 export * from "./MotionTimelineBar.tsx";
 export * from "./FilmPlayer.tsx";
 export * from "./TimelineScrubBar.tsx";
-export * from "./viser-timeline/index.ts";
-export { buildMotionTimelineState, makeTimelineId, MOTION_TIMELINE_TRACKS } from "./motionTimelineState.ts";
+export * from "./viser-timeline/index.js";
+export { buildMotionTimelineState, makeTimelineId, MOTION_TIMELINE_TRACKS } from "./motionTimelineState.js";
 export { TimelineScrollbar } from "./TimelineScrollbar.tsx";
 export type { TimelineScrollbarProps } from "./TimelineScrollbar.tsx";
-export { PROMPT_COLORS } from "./viser-timeline/styles.ts";
-export type { TimelineTheme } from "./viser-timeline/styles.ts";
+export { PROMPT_COLORS } from "./viser-timeline/styles.js";
+export type { TimelineTheme } from "./viser-timeline/styles.js";
 //# sourceMappingURL=index.d.ts.map

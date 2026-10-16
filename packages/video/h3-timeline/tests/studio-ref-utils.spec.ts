@@ -269,7 +269,7 @@ describe("fitImageToAspect (the D1 canvas rider)", () => {
       const out = await fitImageToAspect("https://estate/v1/assets/runs/pin.png", 1344, 768)
       expect(out).toBe("data:image/png;base64,FITTED")
       expect(draws.length).toBe(1)
-      expect(draws[0]!.slice(1)).toEqual([0, 192, 1344, 384], "the same contain rect as the file arm")
+      expect(draws[0]!.slice(1), "the same contain rect as the file arm").toEqual([0, 192, 1344, 384])
     } finally {
       spy.mockRestore()
       vi.unstubAllGlobals()

@@ -4001,7 +4001,7 @@ window.__ModuleLoader__.load({
 			const { spec, edit, resolved } = (0, _melite_card_base_client.useResolvedForm)("h3-timeline", layerA, setLayerAKey, base);
 			const family = (0, react.useMemo)(() => deriveWindowFamily(mergeDocLayers(base, layerA)), [base, layerA]);
 			const omitT4 = family === "t4r" ? (name) => T4_ONLY_KEYS.includes(name) || FILM_ONLY_KEYS.includes(name) : family === "t4_chain" ? void 0 : (name) => FILM_ONLY_KEYS.includes(name);
-			const omitT4Recipe = family === "t4r" ? (row) => {
+			const omitT4Recipe = family === "t4r" && spec !== null ? (row) => {
 				const stamp = (0, _melite_card_base_client.axisPickPatch)(spec, row, {});
 				return Object.keys(stamp).some((k) => T4_ONLY_KEYS.includes(k) || FILM_ONLY_KEYS.includes(k));
 			} : void 0;
@@ -4499,8 +4499,8 @@ window.__ModuleLoader__.load({
 								}
 							}, `chip-${ci}`)),
 							/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.SourceRow, {
-								label: addLabel ?? `+ ${label.toLowerCase()}`,
-								ariaLabel: addLabel ?? `+ ${label.toLowerCase()}`,
+								label: addLabel,
+								ariaLabel: addLabel,
 								hideLabel: true,
 								kind: kind === "image" ? "image" : "file",
 								accept,

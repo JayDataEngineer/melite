@@ -596,6 +596,90 @@ describe("THE LAYER A/B CANON (2026-10-24): a stated call lane REPLACES the decl
   })
 
 describe("THE MODS SQUARE (slice 4, design §B): the add door rides the SourceRow grammar", () => {
+  it("THE CHIP-REPLACE seat (the square grammar on the mods lane): a listing pick over an existing stem swaps IN PLACE; the stem's verbatim name rides the chip", async () => {
+    // the mods chip row's own edit arm (the 2026-11-06 sweep: the
+    // ADD door was walled, the chip row's swap never rode — and the
+    // verbatim fallback of chipOfListing fires exactly HERE: a stem
+    // pick is neither a candidate URL nor estate media)
+    const { d, calls } = deps({ modsListing: ["pack_one", "pack_two", "pack_three"] })
+    render(<CallCard c={{ ...BASE, refs: { mods: "refmods/pack_one.safetensors" } }} i={0} deps={d} />)
+    // the chip row's square opens the same picker over its own seat
+    fireEvent.click(screen.getByRole("button", { name: "pack_one.safetensors source" }))
+    fireEvent.click(await screen.findByRole("menuitem", { name: "From flow" }))
+    const row = (await screen.findAllByTestId("source-pick-row")).find((r) => r.textContent!.includes("pack_two"))!
+    fireEvent.click(row)
+    assert.deepEqual(calls.refs, [[0, "mods", "pack_two.safetensors"]],
+      "one write, the picked stem IN the old chip's seat — the swap is in place, never an append")
+    assert.equal(calls.refs.length, 1, "a single write — the commit is atomic")
+  })
+  it("THE CHIP-REPLACE seat, FILE arm: a good media file over an existing stem chip swaps the chip for the data: URL in place", async () => {
+    // the mods commitUpload's replace ternary (the 2026-11-06
+    // sweep: the ADD file arm was walled, the chip-row file swap
+    // never rode)
+    const { d, calls } = deps()
+    render(<CallCard c={{ ...BASE, refs: { mods: "refmods/pack_one.safetensors" } }} i={0} deps={d} />)
+    const realReader = globalThis.FileReader
+    globalThis.FileReader = fakeReader("data:audio/wav;base64,QUJD") as unknown as typeof FileReader
+    try {
+      fireEvent.click(screen.getByRole("button", { name: "pack_one.safetensors source" }))
+      fireEvent.click(await screen.findByRole("menuitem", { name: "From file" }))
+      const inp = document.querySelector('input[type="file"][class*="squareFileInput"]') as HTMLInputElement
+      assert.ok(inp, "the retargeted file input")
+      fireEvent.change(inp, { target: { files: [new File(["bytes"], "line.wav", { type: "audio/wav" })] } })
+      await waitFor(() => assert.equal(calls.refs.length, 1))
+      assert.ok(calls.refs[0][2].startsWith("data:audio/wav;base64,"), "the stem chip became the data: chip — swapped in place")
+    } finally {
+      globalThis.FileReader = realReader
+    }
+  })
+  it("THE CHIP-REPLACE seat refuses bad files too (the mods lane owes the anchor's law on its own chip rows)", async () => {
+    // the mods commitUpload's own too-large arm and unreadable
+    // catch (491/499 in the sweep): the refs bucket's failure modes
+    // were walled at their seat; the mods chip rows ride the same
+    // law — a drop that neither commits nor refuses is THE SILENT
+    // DROP
+    const { d, calls } = deps()
+    render(<CallCard c={{ ...BASE, refs: { mods: "refmods/pack_one.safetensors" } }} i={0} deps={d} />)
+    const openChip = async (): Promise<HTMLInputElement> => {
+      fireEvent.click(screen.getByRole("button", { name: "pack_one.safetensors source" }))
+      fireEvent.click(await screen.findByRole("menuitem", { name: "From file" }))
+      // scope INSIDE the mods bucket — the call card carries many
+      // SourceRows; the first [data-source-row] in the document is
+      // never necessarily this one
+      const bucket = screen.getByTestId("tl-call-mods-bucket")
+      const row = bucket.querySelector("[data-source-row]") as HTMLElement | null
+      const inp = (row?.querySelector('input[type="file"]') ?? bucket.querySelector('input[type="file"][class*="squareFileInput"]')) as HTMLInputElement
+      assert.ok(inp, "the chip's retargeted file input")
+      return inp
+    }
+    // TOO LARGE: the mods lane's own cap row refuses loud
+    const inp = await openChip()
+    const big = new File([new Uint8Array(8)], "big.mp4", { type: "video/mp4" })
+    Object.defineProperty(big, "size", { value: 999 * 1024 * 1024 })
+    fireEvent.change(inp, { target: { files: [big] } })
+    const err = await screen.findByTestId("tl-call-mods-error")
+    assert.ok(err.textContent!.includes("too large"), err.textContent!)
+    // UNREADABLE: the reader's failure surfaces, never a silent drop
+    class FailReader {
+      onload: (() => void) | null = null
+      onerror: (() => void) | null = null
+      error = new Error("denied")
+      result: string | null = null
+      readAsDataURL(): void { this.onerror?.() }
+    }
+    const realReader = globalThis.FileReader
+    globalThis.FileReader = FailReader as unknown as typeof FileReader
+    try {
+      const inp2 = await openChip()
+      fireEvent.change(inp2, { target: { files: [new File(["x"], "bad.mp3", { type: "audio/mpeg" })] } })
+      const err2 = await screen.findByTestId("tl-call-mods-error")
+      assert.ok(err2.textContent!.includes("could not read"), err2.textContent!)
+    } finally {
+      globalThis.FileReader = realReader
+    }
+    assert.equal(calls.refs.length, 0, "neither refusal commits a chip")
+  })
+
   it("THE DOOR'S CANDIDATE-SET ARM: the engine listing → the pick commits the stem's wire form", async () => {
     const { d, calls } = deps({ modsListing: ["pack_one", "pack_two"] })
     render(<CallCard c={BASE} i={0} deps={d} />)

@@ -654,6 +654,46 @@ describe("RunRecipeEngine: the t4r family gate (omitFields)", () => {
     }
   })
 
+  it("THE RECIPE-ROW GATE fires on the row's OWN stamp (the Final Cut burn): a recipe stamping a t4r-dead key is not offered on the t4r lane", async () => {
+    // the 2026-11-06 coverage sweep found the row gate's closure
+    // never called by any fixture: the t4r tests served no
+    // Recipe-group rows, so omitRecipeRow judged nothing — a gate
+    // with no firing arm is the tautology seat LAW 3/ENFORCEMENT
+    // exists to catch. This arm serves the burn itself (a Final Cut
+    // row stamping sr_switch) plus a clean sibling (geometry only):
+    // the dead-stamped pill is withheld, the clean one still rides.
+    vi.stubGlobal("fetch", () => Promise.resolve(new Response(JSON.stringify({
+      form: "h3-timeline",
+      features: { variant_groups: { Variant: { label: "Variant" }, Recipe: { label: "Recipe" } } },
+      schema: realEnvelope,
+      variants: [
+        { id: "h3", label: "Standard", group: "Variant", defaults: {}, route: "h3-timeline", hint: null, engine: "comfyui", quant: null, vram_peak_gb: null, owner: "" },
+        { id: "final_cut", label: "Final Cut", group: "Recipe",
+          defaults: { sr_switch: true, sr_resolution: 2 }, route: "", hint: null, engine: "comfyui", quant: null, vram_peak_gb: null, owner: "" },
+        { id: "draft_02mp", label: "Draft 02MP", group: "Recipe",
+          defaults: { width: 768, height: 448 }, route: "", hint: null, engine: "comfyui", quant: null, vram_peak_gb: null, owner: "" },
+      ],
+    }), { headers: { "content-type": "application/json" } })))
+    render(
+      <RunRecipeEngine
+        base={t4rBase as never}
+        layerA={{} as unknown as LayerA}
+        setLayerAKey={() => {}}
+        setLayerA={() => {}}
+        refArtifacts={[]}
+      />,
+    )
+    await screen.findByText("Width")
+    // the pills ride the Recipe select's own menu (the generic seam
+    // seats them): open it, then the DEAD-stamped row is gone from
+    // the menu while the clean sibling still offers
+    fireEvent.click(await screen.findByLabelText("Recipe"))
+    assert.equal(screen.queryByRole("menuitem", { name: "Final Cut" }), null,
+      "the sr_switch-stamped recipe is not offered on a t4r doc — the walk would refuse the stamp")
+    assert.notEqual(screen.queryByRole("menuitem", { name: "Draft 02MP" }), null,
+      "a clean geometry-only recipe still rides — the gate refuses the dead vocabulary, not the whole Recipe group")
+  })
+
   it("films and open windows keep the finishing rail (the gate is the t4r lane's, not the knobs')", async () => {
     serveT4()
     // the leaves carry their declared visible_when (the real envelope

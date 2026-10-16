@@ -354,6 +354,13 @@ export const COVERAGE_BASELINE: Record<string, {
   '**/packages/image/image-gen/src/index.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/image/image-gen/src/tool.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/image/image-gen/src/wire.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
+  // (2026-11-06) the ANNY-style crop studio's src faces — floors
+  // pinned at the studio suite's measured coverage (the crop
+  // preview's branch floor is the pointer-gesture matrix; the
+  // component's the restage lane).
+  '**/packages/image/input-prep/src/client/index.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
+  '**/packages/image/input-prep/src/ui/studio/CropPreview.tsx': { statements: 90.65, branches: 76.38, functions: 100, lines: 100 },
+  '**/packages/image/input-prep/src/ui/studio/component.tsx': { statements: 91.8, branches: 92.3, functions: 89.47, lines: 94.54 },
   '**/packages/image/input-prep/src/card.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/image/mask-studio/src/index.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/image/mask-studio/src/paintInk.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
@@ -462,7 +469,12 @@ export const COVERAGE_BASELINE: Record<string, {
   // call-cards suites measures 100×4)
   '**/packages/video/h3-timeline/src/ui/studio/RailBackButton.tsx': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/video/h3-timeline/src/ui/studio/useFamilyReseatHeal.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
-  '**/packages/video/h3-timeline/src/ui/studio/CallCard.tsx': { statements: 97.35, branches: 96.81, functions: 98.27, lines: 96.63 },
+  // (2026-11-06) the square-grammar sweep: the mods chip-row swap
+  // arms (listing/upload/chipOfListing's verbatim else) are doors
+  // the wire-picker re-wiring orphaned — branches argued to the
+  // measured face, every other metric climbed. Receipt: the
+  // ARGUED_FLOOR_DROPS entry + the roadmap heading.
+  '**/packages/video/h3-timeline/src/ui/studio/CallCard.tsx': { statements: 99.39, branches: 96.44, functions: 98.38, lines: 100 },
   '**/packages/video/h3-timeline/src/ui/studio/CallCardPrompt.tsx': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/video/h3-timeline/src/ui/studio/CallCardsPanel.tsx': { statements: 87.67, branches: 85.36, functions: 95, lines: 91.07 },
   '**/packages/video/h3-timeline/src/ui/studio/CallFrameSubcard.tsx': { statements: 100, branches: 100, functions: 100, lines: 100 },

@@ -329,7 +329,7 @@ test('MENU SELECT: the anchor label rides its own clamp span (the dropdown pill 
   const spec = {
     ...doc(),
     variants: [
-      ...doc().variants.filter((r) => r.group !== 'Recipe'),
+      ...(doc().variants ?? []).filter((r) => r.group !== 'Recipe'),
       V('recipe-long', 'Recipe', { label: 'Long', hint: longHint, defaults: { steps: 50 } }),
     ],
   } as unknown as FormSpecDoc
@@ -338,6 +338,7 @@ test('MENU SELECT: the anchor label rides its own clamp span (the dropdown pill 
   // THE STRUCTURAL HALF: the label is the span's text, never the
   // button's bare text node (the span is what the flex box clamps)
   const span = trigger.querySelector('span')
+  if (span === null) throw new Error('the recipe label span did not render')
   expect(span).not.toBeNull()
   expect(span!.textContent).toBe(`Long — ${longHint}`)
   expect(trigger.textContent).toBe(span!.textContent)

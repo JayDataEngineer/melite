@@ -42,6 +42,10 @@ const LANE = {
   unet: "minimax_h3_hybrid_fl2va_ref2va_b30-49-int8.safetensors",
 };
 
+/** The serialized graph's node map — every compose-asserting arm's
+ *  read shape (file scope: the walk arms and the sweep arms share it). */
+type Doc = Record<string, { class_type: string, inputs: Record<string, unknown> }>;
+
 describe("the h3 film action's facts door", () => {
   it("parses the row's unet + the package const's three lane files into the closed engine shape", () => {
     const facts = parseH3Facts(LANE);
@@ -205,7 +209,6 @@ describe("the two-clocks law (2026-10-16 — 'the timeline bar says 5 seconds, t
 
 describe("ONE CLOCK, BOTH ARMS (2026-10-16 — the single-call burn: 'it works without a keyframe, breaks when I add one' + 'the call was 90 frames, only 4 seconds came out')", () => {
   const BAG = [{ name: "distill-8.safetensors", strength: 0.6, steps: 8 }];
-  type Doc = Record<string, { class_type: string, inputs: Record<string, unknown> }>;
 
   // THE ESTATE'S REAL SHAPE: the door's schema() walk runs BEFORE the
   // action (fills declared defaults, stamps the explicit-keys facts)
@@ -408,7 +411,7 @@ describe("ONE CLOCK, BOTH ARMS (2026-10-16 — the single-call burn: 'it works w
       }),
       WINDOW_MODEL, gk, "run_steps_kmarked",
     );
-    expect(schedSteps(gk.toJSON() as Doc)).toEqual([6], "the frozen window's OWN knob steps wins over the bag");
+    expect(schedSteps(gk.toJSON() as Doc), "the frozen window's OWN knob steps wins over the bag").toEqual([6]);
     // the inverse-cheat guard: no knob steps on the row → the bag's
     // 4 applies (the marriage's lawful arm holds on this shape too)
     const gki = new GraphBuilder();
@@ -662,6 +665,28 @@ describe("the refmod seat (audit 010/R1, 2026-10-18)", () => {
     expect(stanzaSecs([span], 16)[0]).toBeCloseTo(5.625, 3);
     expect(stanzaSecs([span], 24)[0]).toBeCloseTo(3.75, 3);
     expect(stanzaSecs([span])[0]).toBeCloseTo(3.75, 3);
+    // SEAT 6 — the ABSENT clock: no fps key at all and the stamps
+    // ride the doc default (24 — the same clock the walk fills), a
+    // 64-frame dialogue slice books 2.667s. The fallback arm of the
+    // stamps' own ternary (fps missing OR non-positive → the
+    // default) is THIS seat: a doc that predates the clock key must
+    // not book at a foreign divisor.
+    const g3 = new GraphBuilder();
+    instantiateAction(
+      film,
+      h3schema({
+        loras: SWEEP_BAG_REF, seed: 11,
+        calls: [
+          { text: "quiet open", start_frame: 0, end_frame: 90 },
+          { text: "quiet close", start_frame: 90, end_frame: 175 },
+        ],
+        audio_clips: [{ src: "/a/open.flac", start_frame: 0, dur_frames: 64, text: "Open." }],
+      } as Record<string, unknown>),
+      WINDOW_MODEL, g3, "run_one_clock_absent",
+    );
+    const slice24 = Object.values(g3.toJSON() as Doc).find((n) => n.class_type === "MeliteAudioSlice");
+    expect(slice24, "the absent-clock stamps still compose").toBeDefined();
+    expect(slice24!.inputs.duration_seconds).toBeCloseTo(64 / 24, 3);
   });
 
   it("ref_mods compose the loader→apply chain, stems out, wired into the guider's conditioning", () => {
@@ -857,6 +882,47 @@ describe("the refmod seat (audit 010/R1, 2026-10-18)", () => {
       },
       WINDOW_MODEL, g, "run_refmod_bad",
     )).toThrow(/ref_mods entries are ANY media \(image\/video\/audio — the system bakes the pack\) or pre-baked \.safetensors stems under models\/refmods\/ \(saw 'vanellope\.xyz'\)/);
+  });
+
+  it("ref_mods data URLs board by their own mime (image, video, audio) — and a foreign mime refuses loud", () => {
+    // the chip-commit lane: upload chips commit data URLs and the
+    // family reads the MEDIA KIND off the mime, never the file
+    // extension (a renamed upload still boards the right lane)
+    // each media kind rides its OWN creator lane (image → the
+    // image extract, video → the video component split, audio → the
+    // audio extractor) — judged on the lane's marker node, the same
+    // seats the path-based arms pin
+    const mk = (mime: string): string => `data:${mime};base64,QUJD`;
+    const LANES = [
+      ["image/png", "MiniMaxH3RefModExtract"],
+      ["video/webm", "GetVideoComponents"],
+      ["audio/ogg", "MiniMaxH3RefModAudioExtract"],
+    ] as const;
+    for (const [mime, cls] of LANES) {
+      const g = new GraphBuilder();
+      instantiateAction(
+        film,
+        {
+          variant: "t4_open", length: 124, prompt: "mime push", seed: 42,
+          loras: BAG, ref_mods: [mk(mime)],
+        },
+        WINDOW_MODEL, g, `run_refmod_data_${mime.split("/")[0]}`,
+      );
+      const lane = Object.values(g.toJSON() as Doc).find((n) => n.class_type === cls);
+      expect(lane, `a data: ${mime} chip boards its own media lane (${cls})`).toBeDefined();
+    }
+    // the foreign mime (text/html) is neither image, video, nor
+    // audio — it refuses with the lane's own words, never silently
+    // boarding a fourth lane
+    const g2 = new GraphBuilder();
+    expect(() => instantiateAction(
+      film,
+      {
+        variant: "t4_open", length: 124, prompt: "mime push", seed: 42,
+        loras: BAG, ref_mods: [mk("text/html")],
+      },
+      WINDOW_MODEL, g2, "run_refmod_data_bad",
+    )).toThrow(/ref_mods entries are ANY media/);
   });
 
   it("more than the loader's 8 slots refuses loud, naming the cap", () => {

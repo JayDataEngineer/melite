@@ -202,7 +202,7 @@ export const DECL = {
         "sharpen_enabled", "sharpen_method", "sharpen_radius", "sharpen_strength",
         "sharpen_threshold", "sharpen_iterations", "sharpen_switch",
         "interpolate_enabled", "interp_model", "interp_multiplier", "interp_switch",
-        "sampler_name", "sched_name", "k", "noise_seed", "fps_seconds",
+        "sampler_name", "sched_name", "k", "noise_seed", "fps", "fps_seconds",
         "refine_lora", "refine_strength", "refine_steps",
         "attention_backend",
         "sr_switch", "sr_resolution", "sr_model",

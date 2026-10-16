@@ -186,6 +186,29 @@ describe("every media seat refuses a bad upload VISIBLY (the anchor's law, every
     })
   })
 
+  it("THE CHIP-REPLACE happy path: a good file over an existing chip swaps IN PLACE (siblings kept, never a silent append)", async () => {
+    // the replace arm's success seat (the 2026-11-06 sweep: the
+    // failure modes were walled, the SUCCESS swap never rode — the
+    // ternary's replace side had no firing arm)
+    const seen = card({ refs: { videos: "https://u/old.mp4", videos2: "https://u/keep.mp4" } } as never)
+    const chip = await fileGesture("https://u/old.mp4")
+    fireEvent.change(chip, { target: { files: [new File([new Uint8Array(4)], "new.mp4", { type: "video/mp4" })] } })
+    await waitFor(() => {
+      assert.equal(seen.refs.length, 1, "one write — the swap is atomic, the sibling is untouched")
+      assert.match(seen.refs[0]!, /^videos=data:video\/mp4/)
+    })
+  })
+
+  it("a verbatim-named chip (neither candidate nor estate media) renders VERBATIM (the listing's fallback arm)", async () => {
+    // an input-dir name typed by hand commits verbatim — the chip
+    // face must not invent a URL for it (chipOfListing's else arm)
+    card({ refs: { videos: "staged/clip.mp4" } } as never)
+    const row = document.querySelector('[data-source-row="staged/clip.mp4"]') as HTMLElement | null
+    assert.ok(row, "the verbatim chip row renders")
+    const shown = row.textContent ?? ""
+    assert.ok(shown.includes("staged/clip.mp4"), "the chip shows its own verbatim name")
+  })
+
   it("the CHIP-ADD seat: an unreadable file refuses loud (the audit's S12 — the add-arm catch had no firing arm of its own)", async () => {
     const seen = card()
     class FailReader {

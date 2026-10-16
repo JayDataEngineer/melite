@@ -34,6 +34,7 @@ import {
   variantRows,
   type FormSpecDoc,
   type SpecField,
+  type SpecValues,
   type FormVariantRow,
 } from '../src/spec.ts'
 

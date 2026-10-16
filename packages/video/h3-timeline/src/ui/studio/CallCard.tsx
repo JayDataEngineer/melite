@@ -151,9 +151,12 @@ function RefsBucket({
    * wording carries lane-specific law (the image bus's slicing note).
    * Without it the bucket's own default tail titles the arm. */
   countTitle?: (info: { total: number; cap: number; over: boolean; overrides: boolean; declaredCount: number }) => string
-  /** The add-row's label (defaults to `+ ${label.toLowerCase()}` —
-   *  the image lane's short verb overrides its long lane label). */
-  addLabel?: string
+  /** The add-row's label — REQUIRED (every bucket names its own
+   *  verb: the image lane's short verb, the refs' "+ N source";
+   *  a silent `+ label` default is a bucket that forgot its voice,
+   *  and the dead fallback arm was the 2026-11-06 coverage sweep's
+   *  finding). */
+  addLabel: string
   /** A lane's seat ahead of the chips (the image bus's first-frame
    *  anchor slot + its truth note). */
   anchorSlot?: ReactNode
@@ -311,8 +314,8 @@ function RefsBucket({
           />
         ))}
         <SourceRow
-          label={addLabel ?? `+ ${label.toLowerCase()}`}
-          ariaLabel={addLabel ?? `+ ${label.toLowerCase()}`}
+          label={addLabel}
+          ariaLabel={addLabel}
           // (operator 2026-11-05, the FOURTH time: the bucket label
           // already names the kind — a second visible "+ image" under
           // "Images" is a double label. The add face is the square's

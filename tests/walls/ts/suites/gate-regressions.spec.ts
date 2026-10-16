@@ -29,7 +29,12 @@ describe("THE HOOK THAT CRIED RED (the SIGPIPE wedge)", () => {
     // vitest's own exit code. A future edit back to bare piping is
     // exactly the edit this pin exists to catch.
     const yml = read("lefthook.yml");
-    const walls = yml.split("- name: walls (staged anything)")[1]?.split("- name:")[0] ?? "";
+    // (2026-11-06) the split key rides the PUSH seat: every
+    // commit-stage job moved to pre-push (operator order
+    // 2026-10-16, lefthook.yml's NO COMMIT HOOKS header) and the
+    // key stayed behind on "staged anything", splitting an empty
+    // string — every arm below greened on a hook that had moved.
+    const walls = yml.split("- name: walls (pushed anything)")[1]?.split("- name:")[0] ?? "";
     expect(walls, "the walls job still exists in lefthook.yml").toContain(
       "node node_modules/vitest/vitest.mjs run --project node",
     );
@@ -66,7 +71,7 @@ describe("THE FRESH-CLONE HOOK (GT-01/GT-02, the round-5 gate audit)", () => {
   // most commits) and the log-keep branch (a red run keeps its log
   // for the name).
   const yml = read("lefthook.yml");
-  const walls = yml.split("- name: walls (staged anything)")[1]?.split("- name:")[0] ?? "";
+  const walls = yml.split("- name: walls (pushed anything)")[1]?.split("- name:")[0] ?? "";
   const runLine = walls.split("run: ")[1] ?? "";
 
   it("the .scratch dir is created before the walls log redirects into it", () => {
@@ -505,7 +510,9 @@ describe("THE COMMITTED LIB (an emitted import Node can actually resolve)", () =
   // models/anima/lib/mods/loras.js + models/flux-klein/lib/mods/
   // loras.js, the pack's authored flavor rows the boot interlock
   // demands. Deliberate adds, same-change as the DECL.mods law.
-  const LIB_CENSUS_PIN = 581;
+  // 582 (2026-11-06): input-prep's committed lib joined the tree
+  // (the ANNY-style crop studio, operator defect 3).
+  const LIB_CENSUS_PIN = 582;
   const specRe = /(?:from\s*|import\(\s*)(["'])(\.[^"']*)\1/g;
 
   it("the census is exact (a deletion OR a lowered floor reds — the count is pinned, not floored)", () => {
@@ -639,6 +646,9 @@ describe("THE SHIP'S OWN HOLES (the lane audit's findings, 2026-10-10)", () => {
       "every manifest carrying a ./client export, and whether it is BUILT")
       .toEqual([
         ["packages/3d/img-to-mesh", "./lib/client.js", true],
+        // (2026-11-06): input-prep's client face — the ANNY-style
+        // crop studio (operator defect 3). 10 rows.
+        ["packages/image/input-prep", "./lib/client.js", true],
         ["packages/motion/motion", "./lib/client.js", true],
         ["packages/video/h3-timeline", "./lib/client.js", true],
         // (2026-11-05, lane 4's F1 demotion: web-kit/timeline's
@@ -677,7 +687,7 @@ describe("THE SHIP'S OWN HOLES (the lane audit's findings, 2026-10-10)", () => {
     // externals resolve through the injected require), and this arm
     // refuses any regression to module-format bytes on the wire.
     const built = discoveredRows();
-    expect(built.length, "the discovered set carries the nine bundles (timeline demoted 2026-11-05, F1)").toBe(9);
+    expect(built.length, "the discovered set carries the ten bundles (timeline demoted 2026-11-05 F1; input-prep joined 2026-11-06)").toBe(10);
     for (const row of built) {
       const file = join(row.pkg, "lib", "client.js");
       expect(existsSync(file), `${file} exists (build it: pnpm exec tsdown in the package)`).toBe(true);

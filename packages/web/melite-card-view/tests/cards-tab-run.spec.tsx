@@ -20,12 +20,12 @@ import { createElement as h } from "react";
 import { CardsTab } from "../src/client/CardsTab.tsx";
 import { schemaEnvelope } from '@melite/card-base/client';
 import type { BenchStageView, CardsBenchValue } from "../src/client/cards-resource.ts";
-import { mountEstateFakes } from "./estate-harness.ts";
+import { mountEstateFakes, type EstateFakes } from "./estate-harness.ts";
 import { unbindEstateRemote } from '@melite/card-base/client';
 
 interface Call { method: string; args: Record<string, unknown> }
 
-let fakes: { calls: Call[]; unmount: () => void } | null = null;
+let fakes: EstateFakes | null = null;
 let posted: Call[] = [];
 
 // the fetch half (kept verbatim): the form-spec mode + the deferred

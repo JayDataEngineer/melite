@@ -1,4 +1,4 @@
-export { spanOverlap, spanStanzaFrames } from './timelineContract.ts';
+export { spanOverlap, spanStanzaFrames } from './timelineContract.js';
 export type FilmMixClipClass = 'dialogue' | 'sfx' | 'music';
 /** One clip row — the card's audio_clips shape, post-parse. */
 export interface FilmMixClip {

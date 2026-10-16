@@ -1,5 +1,5 @@
 import z from '@deepseek-ai/schemastery';
-import { normalizeDeclaredRefs } from './timelineContract.ts';
+import { normalizeDeclaredRefs } from './timelineContract.js';
 export declare const FAMILIES: readonly ["t4r", "t4_open", "t4_chain"];
 export type Family = (typeof FAMILIES)[number];
 export declare const wireList: typeof normalizeDeclaredRefs;

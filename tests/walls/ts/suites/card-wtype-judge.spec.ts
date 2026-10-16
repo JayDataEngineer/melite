@@ -82,7 +82,8 @@ import { cardPackages, loadCardDefs } from "@melite/comfyui-cordis";
 // own seat, toJSON judge red-proofed there). A deliberate shrink,
 // argued here per this arm's own law.
 const CARD_ROSTER = 14;
-const FIELD_ROSTER = 465;
+// 466 (2026-11-06): input-prep's crop-studio field joined the estate.
+const FIELD_ROSTER = 466;
 
 interface DictField {
   readonly type?: string;

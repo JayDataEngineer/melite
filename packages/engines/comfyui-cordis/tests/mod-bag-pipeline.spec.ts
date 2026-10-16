@@ -93,10 +93,15 @@ describe("THE MOD-BAG PIPELINE (studio bag → service door → loader stack)", 
     );
   });
 
-  it("AN EMPTY BAG rides the family default — and THAT row too carries the DECL'S real filename", () => {
+  // THE J1 SPLIT (journey audit refs-mods, 2026-10-16): `loras: []`
+  // is the operator's NO-LORAS override — an EMPTY stack, zero rows;
+  // an ABSENT bag is unset — the family default rides. The old arm
+  // fed [] and demanded the default solo, pinning the pre-J1 law
+  // where "no loras" was unexpressible (the compose stamped the DMAD
+  // default the UI never showed).
+  it("AN ABSENT BAG rides the family default — and THAT row too carries the DECL'S real filename", () => {
     const graph = svc.compose(H3_CARD, H3_MODEL, {
       calls: [{ text: "x", start_frame: 0, end_frame: 90 }],
-      loras: [],
       seed: 1,
     }, "wall_empty") as Graph;
     const rows = stackRows(graph).flat();
@@ -113,5 +118,15 @@ describe("THE MOD-BAG PIPELINE (studio bag → service door → loader stack)", 
       rows.some((r) => r.lora === dmad.filename),
       `the default row is the DECL's dmad filename (${dmad.filename})`,
     );
+  });
+
+  it("THE EMPTY BAG IS THE NO-LORAS OVERRIDE (J1): loras: [] composes ZERO rows — never the family default", () => {
+    const graph = svc.compose(H3_CARD, H3_MODEL, {
+      calls: [{ text: "x", start_frame: 0, end_frame: 90 }],
+      loras: [],
+      seed: 1,
+    }, "wall_empty_bag") as Graph;
+    const rows = stackRows(graph).flat();
+    assert.equal(rows.length, 0, "an explicit empty bag is the operator's no-loras word — the DMAD default must NOT ride");
   });
 });

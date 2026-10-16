@@ -18,7 +18,7 @@ import { RailBackButton } from './RailBackButton'
 import { SectionLabel, Tip, type SpecField } from '@melite/card-base/client'
 import { readAsDataURL, Upload, useSquareProvider } from '@melite/card-base/client'
 import s from "./studio.module.css"
-import type { CallRefs, DocCall, DocKeyframe, LayerA } from "./docModel.ts"
+import type { CallRefs, DocCall, DocKeyframe, LayerA, GuideKind } from "./docModel.ts"
 import { CallCard } from "./CallCard.tsx"
 import { FOREIGN_URL_REFUSAL, REF_READ_ERROR, refUploadError, classifyImageSrc, fitImageToAspect, loadImageMedia } from "./refUtils.ts"
 import type { LinkArtifact } from "./refUtils.ts"
@@ -69,7 +69,7 @@ export interface CallCardDeps {
   enhanceErr: Record<string, string | null>
   enhanceUndo: Record<string, string>
   setCallSpan: (i: number, which: "start" | "end", frame: number) => void
-  setCallGuide: (i: number, kind: "image" | "clip" | "audio", source: string) => void
+  setCallGuide: (i: number, kind: GuideKind, source: string) => void
   setCallTransition: (i: number, t: "extend" | "cut") => void
   setCallRefs: (i: number, key: keyof CallRefs, value: string) => void
   setCallKnob: (i: number, key: string, value: number | string | boolean | undefined) => void

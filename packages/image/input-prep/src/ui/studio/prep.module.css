@@ -163,6 +163,7 @@
 
 .field input,
 .field select {
+  color-scheme: light;
   width: 100%;
   box-sizing: border-box;
   padding: 5px 7px;

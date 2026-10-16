@@ -125,6 +125,9 @@ COMPILED=($(derive_compiled))
 # declares a ./client export is built and stamped, and a package
 # whose bundle DISAPPEARS fails the ship rather than skipping.
 CLIENT_BUNDLES=(
+  # (2026-11-06) input-prep's crop-studio client face joined the
+  # estate (the ANNY-style crop card, operator defect 3).
+  packages/image/input-prep
   packages/web/melite-card-view
   packages/web/melite-card-deck
   packages/web/infer-gallery

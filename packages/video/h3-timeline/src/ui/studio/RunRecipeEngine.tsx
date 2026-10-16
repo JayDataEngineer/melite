@@ -119,7 +119,10 @@ export function RunRecipeEngine({
   // the pick landed, every later run bricked. Judged on the row's
   // OWN stamp (never a hand id list): any recipe whose stamp
   // intersects the family-dead keys is not offered on that lane.
-  const omitT4Recipe = family === "t4r"
+  // (spec !== null in the guard narrows the const binding — the
+  // gate is only ever handed to CardForm inside the spec'd render,
+  // so it can never deref a null it would never judge)
+  const omitT4Recipe = family === "t4r" && spec !== null
     ? (row: unknown): boolean => {
         const stamp = axisPickPatch(spec, row as never, {})
         // the ROW gate judges the same dead vocabulary the field
