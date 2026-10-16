@@ -8,7 +8,7 @@ import { CardDrill } from './card-drill.tsx'
 import { MediaDrilldown, type MediaDrilldownItem } from '@melite-plugin/dsh-gallery/drilldown'
 import type { StageViewOwnerProps } from './types.ts'
 import { coerceFieldEdit, fetchFormSpec, fieldsOf, resolveValue, seedUser, reseatEnvelopeKeys, CardForm, type FormSpecDoc, type SpecValues } from '@melite/card-base/client'
-import { axisUnset, composeCandidateDoc, composeValidate } from '@melite/card-base/client'
+import { axisUnset, composeCandidateDoc, composeValidate, modelSwitchPatch } from '@melite/card-base/client'
 import { forgetStageWrites, reconcileStageWriteFailures, refuseForUnlandedWrite, scheduleStageParam } from './draft.ts'
 import { canonicalOutputUrl, trailDedupe } from '@melite/estate-drafts/trail'
 import { postManageAction } from '@melite/card-base/client'
@@ -103,6 +103,19 @@ export function ScrollLockedDetail(props: { children?: ReactNode, testid?: strin
  *  it. The studio still shows the edit (the same hopeful-overlay
  *  semantics the door-refusal always had), but NO frame leaves and
  *  the bench never receives a doc it would refuse. */
+/** THE MOD-BAG KEYS THE SERVED KINDS NAME (the re-point rescope's
+ *  mod-currency clause, 2026-11-06): the DECL's mod bags ride
+ *  features.modifiers' param_key — the card schema never declares
+ *  them (image-gen serves one array node, reference_images), so the
+ *  bag law's schema walk (bagKeysOf, card-base) cannot see them. A
+ *  cross-model switch nulls these too: mods are per model, "if I
+ *  switch model, keeping the lora on makes zero sense" (operator,
+ *  2026-10-16). */
+function modBagKeys(doc: FormSpecDoc | null): string[] {
+  if (doc === null) return []
+  return (doc.features?.modifiers ?? []).map((k) => k.param_key)
+}
+
 function composeGateRefusal(
   spec: FormSpecDoc | null,
   held: Record<string, unknown> | undefined,
@@ -268,6 +281,15 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
   useEffect(() => () => { enhanceAbort.current?.abort() }, [])
   const userRef = useRef<SpecValues>(user)
   userRef.current = user
+  // THE DEPARTING SPEC (the re-key arm's law-holder, 2026-11-06):
+  // modelSwitchPatch needs the family the switch LEAVES — at the
+  // moment a re-key lands this is still the previous doc (setSpec
+  // runs only inside the fetch settle). A ref, never the bare
+  // closure value: the effect's dep pair is [stage.id, modelKey],
+  // and the law must read the LAST landed doc, not re-fire the
+  // fetch on every spec write.
+  const specRef = useRef<FormSpecDoc | null>(null)
+  specRef.current = spec
   useEffect(() => {
     let alive = true
     const freshOpen = lastStageRef.current !== stage.id
@@ -301,7 +323,37 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
         // null-domain half deletes the bench key). A model-pick
         // re-key seeds from the USER state (the pick survives; the
         // new matrix's rows seed under it).
-        const seeded = seedUser(doc, freshOpen ? held : userRef.current)
+        // THE RE-KEY ARM ROUTES THROUGH THE SWITCH LAW (ONE switch
+        // semantics, 2026-11-06 — audits journey/axis-unification
+        // cure 4 + journey/anima-turbo-quant-burn cure 3): a re-key
+        // is a CROSS-SPEC arrival no matter which face re-pointed the
+        // key, so the seed re-scopes the holding through
+        // modelSwitchPatch's law against the DEPARTING spec (axes
+        // clear, the departing envelope vocabulary nulls, THE MOD
+        // BAG DIES WITH ITS MODEL) before seedUser re-derives the
+        // arrival's rows. Without it this arm was the second switch
+        // semantics: it reseated envelope numerics while a departed
+        // family's bag rode the seed (the krea-2 lora tile on the
+        // anima card). THE ENVELOPE RE-SEAT STAYS — REDUCED to its
+        // born job: the law's null set reads the DEPARTING spec's
+        // envelope keys, so an envelope-LESS departure (anima) nulls
+        // nothing and its stated numerics still re-seat at the
+        // arrival seed.
+        const seedSource = freshOpen ? held : userRef.current
+        const fromModel = typeof seedSource['model'] === 'string' ? seedSource['model'] as string : ''
+        const departing = specRef.current
+        const arrival = typeof doc.model === 'string' ? doc.model : ''
+        const rekey = !freshOpen && fromModel !== '' && arrival !== ''
+          && fromModel !== arrival
+        let rescope: Record<string, unknown> = {}
+        if (rekey && departing !== null && departing.model === fromModel) {
+          rescope = modelSwitchPatch(departing, arrival, seedSource)
+          // THE MOD-CURRENCY CLAUSE (the verb's second half, same law):
+          // the departing kinds' bags die with their model even though
+          // the served schema never names them (modBagKeys above).
+          for (const k of modBagKeys(departing)) if (!(k in rescope)) rescope[k] = null
+        }
+        const seeded = seedUser(doc, { ...seedSource, ...rescope })
         // THE RE-KEY RESEAT (order d, 2026-11-06): only the model-pick
         // re-key arm reconciles — an envelope-less departure nulls no
         // vocabulary in modelSwitchPatch, so stated envelope-bound
@@ -315,7 +367,6 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
         // drill-owned garbage — the flush still nulls them. Anything
         // else absent from the seeded map was never the drill's and
         // is never nulled.
-        const seedSource = freshOpen ? held : userRef.current
         for (const k of Object.keys(seedSource)) if (!(k in seeded)) droppedRef.current.add(k)
         if (freshOpen) {
           // THE FACE FOLLOWS THE SEAT (the 2026-11-02 audit's F5): the
@@ -394,7 +445,87 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
       return outs !== undefined && Object.values(outs).some(accepts)
     })
   }, [spec, edgeMeta, candidates, others])
+  // THE RE-POINT RESCOPE VERB (2026-11-06, the anima burn — audits
+  // journey/anima-turbo-quant-burn-2026-11-06 cure 3 +
+  // journey/axis-unification-2026-11-06 cure 4, ONE SWITCH SEMANTICS
+  // AT THE WRITE SEAM): a params frame that CHANGES the model key is
+  // a cross-family switch no matter which face authored it — the
+  // Model rail (axes.tsx derives its frame through modelSwitchPatch),
+  // a schema-level model knob (the semantic-model face), a future
+  // tool/agent patch routed through this drill. Such a frame
+  // re-derives through modelSwitchPatch's law against the CURRENT
+  // (departing) spec — axes clear to the arrival's rows, the
+  // departing envelope vocabulary nulls, THE MOD BAG DIES WITH ITS
+  // MODEL — judged against the FULL holding (the bench row under the
+  // user map, the doc the run composes), so a bag that lives only in
+  // stage.params dies with the switch too. THE MOD-CURRENCY CLAUSE
+  // rides here because the DECL's mod bags are named by the SERVED
+  // KINDS (features.modifiers' param_key — loras never rides the
+  // card schema; the one array node image-gen serves is
+  // reference_images), so modelSwitchPatch's schema-node bag walk
+  // (bagKeysOf) cannot see them: the clause nulls every served
+  // kind's bag the law's own walk misses. The caller's own keys win
+  // the merge: an already-rescoped rail frame re-derives to the same
+  // shape (idempotent). Engine stages never rescope — a brain route
+  // is a plain field there, never a family re-key (stroke 66).
+  const rePointFrame = (frame: Record<string, unknown>): Record<string, unknown> => {
+    const m = frame['model']
+    if (spec === null || String(stage.card ?? '') === '') return frame
+    if (typeof m !== 'string' || m === '' || m === (spec.model ?? '')) return frame
+    const out: Record<string, unknown> = {
+      ...modelSwitchPatch(spec, m, composeCandidateDoc(held, user, {})),
+      ...frame,
+    }
+    for (const k of modBagKeys(spec)) if (!(k in out)) out[k] = null
+    return out
+  }
   const onSet = useCallback((name: string, v: unknown): void => {
+    // THE MODEL RE-POINT IS AN ATOMIC, RESCOPED WRITE (the re-point
+    // rescope verb above, at the per-key seam): a schema-level model
+    // knob (the semantic-model face) that changes the family lands
+    // the WHOLE switch law in ONE CAS — axes, departing vocabulary,
+    // the mod bag — never a bare model key riding per-key writes
+    // while the krea-2 bag and its int8 stay put (the operator's
+    // burn). Same model, engine stages, or a spec-less drill: the
+    // ordinary paths below.
+    if (name === 'model' && spec !== null && String(stage.card ?? '') !== ''
+      && typeof v === 'string' && v !== '' && v !== (spec.model ?? '')) {
+      const rescoped = rePointFrame({ [name]: v })
+      const landedM: Record<string, unknown> = {}
+      const nullsM: Record<string, unknown> = {}
+      for (const [k, kv] of Object.entries(rescoped)) {
+        if (axisUnset(k, kv, spec)) nullsM[k] = null
+        else landedM[k] = kv
+      }
+      for (const k of Object.keys(landedM)) touchedRef.current.add(k)
+      for (const k of Object.keys(nullsM)) touchedRef.current.add(k)
+      setUser((m) => {
+        const next: SpecValues = { ...m }
+        for (const k of Object.keys(nullsM)) delete next[k]
+        return { ...next, ...landedM }
+      })
+      const frameM = { ...landedM, ...nullsM }
+      const refusedM = composeGateRefusal(spec, stage.params, user, frameM)
+      if (refusedM !== null) { setWriteFace(refusedM); return }
+      const settleDraftId = bench.draftId
+      const settleStageId = stage.id
+      void patchStageParams(settleDraftId, settleStageId, frameM, bench.rev).then(
+        () => {
+          if (lastStageRef.current !== settleStageId) return
+          setWriteFace(stageWriteState(settleDraftId, settleStageId).failedKeys.length > 0
+            ? unlandedWriteVoice(settleDraftId, settleStageId)
+            : null)
+        },
+        () => {
+          // the ledger row keeps the memory (draft.ts stamped the
+          // failure before rethrowing) — the row's own voice, the
+          // same one-voice law every write arm speaks
+          if (lastStageRef.current !== settleStageId) return
+          setWriteFace(unlandedWriteVoice(settleDraftId, settleStageId))
+        },
+      )
+      return
+    }
     // THE EMPTY-SELECTION LAW at the authoring boundary (2026-10-10,
     // the operator's live bench: a stage carrying quant:"" — born by
     // the model switch clearing an axis to '' — which the RUN door
@@ -543,13 +674,18 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
   // NEW variant's envelope — the door's marriage law, honored at the
   // authoring boundary.
   const onPick = useCallback((patch: Record<string, unknown>): void => {
+    // THE RE-POINT RESCOPE rides the atomic pick (the verb above):
+    // a frame that changes the model key re-derives through the
+    // switch law BEFORE the split, so the rescope's nulls land in
+    // the same write and the same user-map merge.
+    const rescoped = rePointFrame(patch)
     // THE EMPTY-SELECTION LAW rides the atomic pick too (a model
     // switch CLEARS cross-spec axes to ''): an axis key set to '' is
     // UNSTATED — it leaves the user map and its wire key rides null
     // (a DELETE, the door's own law), exactly like onSet's unset arm.
     const landed: Record<string, unknown> = {}
     const nulls: Record<string, unknown> = {}
-    for (const [k, v] of Object.entries(patch)) {
+    for (const [k, v] of Object.entries(rescoped)) {
       if (axisUnset(k, v, spec)) nulls[k] = null
       else landed[k] = v
     }

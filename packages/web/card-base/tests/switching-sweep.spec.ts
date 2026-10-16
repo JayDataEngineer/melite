@@ -255,6 +255,69 @@ describe('THE SWITCHING SWEEP — every real family × every switch (the core-fe
     }
   })
 
+  test('THE BURN SHAPE — krea-2\'s lora bag + int8 quant re-pointed under anima die at the laws\' seats (2026-11-06, the anima burn: dev_docs/audits/journey/anima-turbo-quant-burn-2026-11-06 cure 4)', () => {
+    // THE BURN HOLDING (the operator's saved doc, hop 3): krea-2's own
+    // rows PLUS its realism lora bag PLUS its int8 quant cell — the
+    // exact shape the sibling cross-family arms never carried (their
+    // held builds from the FROM variant's own stamps, no bag, no
+    // foreign quant).
+    const specFrom = servedSpec(krea2)
+    const specTo = servedSpec(anima)
+    const variants = (specFrom.variants ?? []).filter((r) => r.group === 'Variant')
+    const turbo = variants.find((r) => r.id === 'turbo') ?? variants[0]
+    const held: SpecValues = {
+      model: 'krea-2', variant: (turbo ?? variants[0]).id, quant: 'int8',
+      loras: [{ id: 'krea2_realism_lora' }],
+      ...numericStamps(turbo ?? variants[0]),
+    }
+    // THE PICK LAW (the write seat): the switch's own derivation
+    // clears the axes to the arrival's rows and nulls the departing
+    // envelope vocabulary in the SAME frame — the foreign int8 is an
+    // axis write, and axis writes die with the family
+    const patch = modelSwitchPatch(specFrom, 'anima', held)
+    expect(patch['variant']).toBe('')
+    expect(patch['quant']).toBe('')
+    const envelope = (turbo ?? variants[0]).sampler_envelope ?? {}
+    for (const k of Object.keys(envelope)) {
+      expect(patch[k], `${k}: the departing envelope numeric rides as a null write`).toBeNull()
+    }
+    const doc = composeCandidateDoc({}, { ...held, ...patch }, {})
+    expect(composeValidate(specTo, doc), `${JSON.stringify(doc)}`).toEqual([])
+    // THE BURNED ARRIVAL (the seed seat, the ghost drop): an already
+    // re-pointed doc — a write that SKIPPED the switch law — reseeds
+    // under anima: the foreign int8 names no composing row, and the
+    // arrival stamps a row of ITS OWN resolved variant
+    const burned: SpecValues = { ...held, model: 'anima' }
+    const seeded = seedUser(specTo, burned)
+    expect(seeded['quant'], 'the foreign int8 is a departed family\'s ghost — it cannot survive the seed').not.toBe('int8')
+    const stampedOwnRow = (specTo.variants ?? []).some((r) =>
+      r.group === 'Quant' && r.owner === (seeded['variant'] ?? '')
+      && (r.id === seeded['quant'] || r.quant === seeded['quant']))
+    expect(stampedOwnRow, `the seed stamps the resolved variant's own served row (got ${String(seeded['quant'])})`).toBe(true)
+    // RESIDUAL, NAMED (the spec lane owes the cure): the ghost stamp
+    // writes the served ROW ID; for a duplicate cell id the
+    // serializer namespaces it (turbo__int8_convrot), while the
+    // compose door's clause 2 judges the RAW coordinate (c.quant ===
+    // rawQuant) — this stamped reopen refuses at the run ('unknown
+    // quant "turbo__int8_convrot"'). The ghost drop fixed the value's
+    // family; the stamp's plane is owed as its own finding (receipt:
+    // this arm; the drill's burn arms never cross it — the anima
+    // arrival seed rides the FIRST variant, whose cell ids are raw).
+    // THE BAG AT THE SEED'S MISMATCH ARM: a held bag whose model
+    // still names the DEPARTED family drops at the seed (mods are
+    // per model — operator 2026-10-16)
+    const mismatched = seedUser(specTo, held)
+    expect(mismatched['loras'], 'the krea-2 lora bag dies at the mismatch arm').toBeUndefined()
+    // THE WRITE-SEAT DEBT, NAMED NOT PAPERED: the verbs' bag walk
+    // reads the SCHEMA's array nodes; the served image-gen schema
+    // never declares the loras bag (features.modifiers names it) and
+    // this sweep's spec is schema-less by construction — so the
+    // cross-family WRITE cannot null it here. The kill at the write
+    // seam rides the drill's re-point verb (cards-tab-drill, THE
+    // RE-POINT RESCOPE arms) and owes the estate door the same shape.
+    expect(modelSwitchPatch(specFrom, 'anima', held)['loras']).toBeUndefined()
+  })
+
   test('every CROSS-FAMILY switch lands STATED-BY-HAND envelope-bound numerics inside the arrival lane (order d, 2026-11-06)', () => {
     // THE INCIDENT (operator, third demand): held from an envelope-LESS
     // departure (anima — no sampler_envelope) carries a stated-by-hand

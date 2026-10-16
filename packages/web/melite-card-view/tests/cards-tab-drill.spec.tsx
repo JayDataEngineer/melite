@@ -8,7 +8,7 @@
 // draft view's noop surface. CardsTab mounted whole (the
 // preview-dispatch harness); fetch stubbed whole per door with
 // deferred form-spec / forms-table for the race tests.
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, test, vi } from "vitest";
 import { createElement as h } from "react";
@@ -19,6 +19,15 @@ import { resetPickCellsForTests } from '@melite/card-base/client';
 import { CardsTab } from "../src/client/CardsTab.tsx";
 import { schemaEnvelope } from '@melite/card-base/client';
 import type { BenchStageView, CardsBenchValue, CardsDraftValue } from "../src/client/cards-resource.ts";
+// THE RE-POINT RESCOPE's REAL ROWS (2026-11-06, the anima burn): the
+// wall arms below serve the two burn families' DECL truth through the
+// real /v1/form-spec door stub — krea-2's turbo (int8 cell, the
+// [4,8]/[1,2] envelope) against anima's turbo (int8_convrot + bf16,
+// resolver steps 8 / cfg 1). The serializer-parity wall itself is the
+// sync lane's (discovery.ts); these fixtures ride the DECLs' own rows
+// so the drill's law judges real coordinates, never hand spellings.
+import { DECL as krea2WallDecl } from "../../../models/krea-2/src/index.ts";
+import { DECL as animaWallDecl } from "../../../models/anima/src/index.ts";
 
 afterEach(() => {
   cleanup();
@@ -118,10 +127,11 @@ interface EstateOpts {
   throws?: EstateRefusal[];
 }
 
-function mountBench(stages: BenchStageView[], renderSlot?: Parameters<typeof CardsTab>[0]["renderSlot"], estate?: EstateOpts): void {
+function mountBench(stages: BenchStageView[], renderSlot?: Parameters<typeof CardsTab>[0]["renderSlot"], estate?: EstateOpts, wallDocs?: Record<string, Record<string, unknown>>): void {
   doors.formSpec = "ok";
   doors.formsTable = "ok";
-  stubFetch();
+  if (wallDocs !== undefined) stubFetchWall(wallDocs);
+  else stubFetch();
   fakes = mountEstateFakes({
     benchDoc: benchDoc(stages),
     draftStages: stages as Array<Record<string, unknown>>,
@@ -947,3 +957,262 @@ function rerenderTab(stages: BenchStageView[], status: "live" | "loading" | "fai
     }),
   }));
 }
+
+// ── THE RE-POINT RESCOPE AT THE DRILL'S WRITE SEAM (2026-11-06, the
+// anima burn: dev_docs/audits/journey/anima-turbo-quant-burn-
+// 2026-11-06 cure 3 + dev_docs/audits/journey/axis-unification-
+// 2026-11-06 cure 4) — ONE SWITCH SEMANTICS: a params write that
+// CHANGES the model key re-scopes axes + bags through the switch law
+// at the seam where it lands, no matter which face authored it. The
+// arms serve the REAL DECL rows (krea-2 turbo: the int8 cell, the
+// [4,8]/[1,2] envelope; anima base/turbo: int8_convrot + bf16,
+// resolver steps 8 / cfg 1) through the real /v1/form-spec door and
+// judge the LANDED DOOR WRITE (the estate fakes' drafts/patch frame)
+// — the doc the run composes, never a client-side copy. THE BURN
+// RECEIPT: krea-2's lora bag + its int8 quant riding onto anima.
+// (The served-shape fixtures ride the DECLs' own rows; serializer
+// parity itself is the sync lane's wall.) ──────────────────────────
+
+interface WallCell { quant?: string; label?: string; route?: string }
+interface WallRow {
+  id: string; label: string; group: string; route?: string; hint?: string;
+  sampler_envelope?: Record<string, [number, number]> | null;
+  resolver_defaults?: Record<string, unknown> | null;
+  wire_defaults?: Record<string, unknown> | null;
+  cells?: WallCell[];
+}
+interface WallDecl { id: string; label?: string; variants?: WallRow[] }
+
+const WALL_KREA2 = krea2WallDecl as WallDecl;
+const WALL_ANIMA = animaWallDecl as WallDecl;
+
+// the served loras kind (the mod currency the real lane serves — the
+// card schema never declares the bag; features.modifiers names it)
+const WALL_LORA_KIND = {
+  kind: "lora", label: "LoRA", param_key: "loras", cardinality: "multi",
+  options: [{ value: "krea2_realism_lora", label: "Krea2 Realism Lora" }],
+};
+
+function wallSpec(decl: WallDecl, opts?: { modelField?: boolean }): Record<string, unknown> {
+  const variants: Array<Record<string, unknown>> = [];
+  const seen = new Set<string>();
+  for (const v of decl.variants ?? []) {
+    if (v.group !== "Variant" && v.group !== "Recipe") continue;
+    variants.push({
+      id: v.id, label: v.label, group: v.group,
+      defaults: { ...(v.resolver_defaults ?? {}), ...(v.wire_defaults ?? {}) },
+      route: v.route ?? "", hint: v.hint ?? null, engine: "comfyui",
+      sampler_envelope: v.sampler_envelope ?? null,
+      quant: null, vram_peak_gb: null, owner: "",
+    });
+    if (v.group !== "Variant") continue;
+    for (const c of v.cells ?? []) {
+      if (typeof c.quant !== "string" || c.quant === "") continue;
+      // THE SERVED ID (discovery.specVariants' own rule): a cell quant
+      // that already served rides namespaced (`${variant}__${quant}`)
+      // — the fixture spells the serializer's ids, never its own
+      const id = seen.has(c.quant) ? `${v.id}__${c.quant}` : c.quant;
+      seen.add(id);
+      variants.push({
+        id, label: c.label ?? c.quant, group: "Quant",
+        defaults: {}, route: c.route ?? "", hint: null, engine: "comfyui",
+        sampler_envelope: null, quant: c.quant, vram_peak_gb: null, owner: v.id,
+      });
+    }
+  }
+  return {
+    form: "image-gen", genre: "image", engine: "comfyui",
+    model: decl.id, label: decl.label ?? decl.id, size: "small",
+    variants,
+    families: [
+      { id: "krea-2", label: "Krea 2", present: true },
+      { id: "anima", label: "Anima", present: true },
+    ],
+    schema: schemaEnvelope({
+      prompt: { type: "string", meta: { description: "Prompt", extra: { wtype: "textarea" } } },
+      // THE KNOB FACE (arm 1): the schema-level model field the
+      // semantic-model lane writes — a bare model key through a form
+      // field, no axes, no bag
+      ...(opts?.modelField === true
+        ? { model: { type: "string", meta: { description: "Style" } } }
+        : {}),
+    }),
+    features: { modifiers: [WALL_LORA_KIND] },
+    mod_schemas: {},
+    inputs: [], outputs: [],
+  };
+}
+
+const WALL_DOCS = {
+  "krea-2": wallSpec(WALL_KREA2),
+  "anima": wallSpec(WALL_ANIMA),
+};
+const WALL_DOCS_KNOB = {
+  "krea-2": wallSpec(WALL_KREA2, { modelField: true }),
+  "anima": wallSpec(WALL_ANIMA, { modelField: true }),
+};
+
+const wallDoors: { specUrls: string[] } = { specUrls: [] };
+
+function stubFetchWall(docs: Record<string, Record<string, unknown>>): void {
+  doors.resolveFormSpec = null;
+  doors.resolveFormsTable = null;
+  wallDoors.specUrls = [];
+  vi.stubGlobal("fetch", async (url: unknown): Promise<Response> => {
+    const path = String(url);
+    if (path.includes("/v1/form-spec")) {
+      const model = decodeURIComponent(path.split("model=")[1] ?? "");
+      wallDoors.specUrls.push(model);
+      const doc = docs[model];
+      if (doc === undefined) throw new Error("wall door: no served doc for " + model);
+      return new Response(JSON.stringify(doc), {
+        status: 200, headers: { "content-type": "application/json" },
+      });
+    }
+    if (path.includes("/v1/forms")) {
+      return new Response(JSON.stringify({}), {
+        status: 200, headers: { "content-type": "application/json" },
+      });
+    }
+    if (path.includes("/v1/model-catalog")) {
+      return new Response(JSON.stringify({ cards: {} }), {
+        status: 200, headers: { "content-type": "application/json" },
+      });
+    }
+    throw new Error("estate door on the fetch lane: " + path);
+  });
+}
+
+/** THE BURN HOLDING: krea-2's own rows — its turbo variant, its int8
+ *  cell, its realism lora (the operator's DOM, hop 3 → the saved
+ *  doc). */
+function burnParams(withBag: boolean): Record<string, unknown> {
+  return {
+    model: "krea-2", variant: "turbo", quant: "int8", prompt: "the burn",
+    ...(withBag ? { loras: [{ id: "krea2_realism_lora" }] } : {}),
+  };
+}
+
+/** The landed params frames (the door's STAGE_PATCH_KEYS envelope —
+ *  the law rides under `params`). */
+function wallWrites(): Array<Record<string, unknown>> {
+  return calls()
+    .filter((c) => c.method === "drafts/patch")
+    .map((c) => ((c.args.patch as Record<string, unknown>)["params"] ?? {}) as Record<string, unknown>);
+}
+
+async function openWallDrill(): Promise<void> {
+  await openFirstTile();
+  await screen.findByText("Prompt", {}, { timeout: 4000 });
+}
+
+async function wallAxes(): Promise<HTMLElement> {
+  return await waitFor(() => {
+    const el = document.querySelector('[data-model-axes="1"]');
+    if (el === null) throw new Error("model axes not found");
+    return el as HTMLElement;
+  });
+}
+
+async function axisFace(label: string): Promise<string> {
+  const axes = await wallAxes();
+  const btn = axes.querySelector(`[aria-label="${label}"]`);
+  if (btn === null) throw new Error(`axis button not found: ${label}`);
+  return (btn as HTMLElement).textContent ?? "";
+}
+
+describe("THE RE-POINT RESCOPE AT THE WRITE SEAM — the anima burn cures", () => {
+  test("THE KNOB RE-POINT: a schema-level model re-point lands the WHOLE switch law — neither the krea-2 lora bag nor the foreign quant persists in the landed doc", async () => {
+    mountBench([
+      { id: "s_0", card: "image-gen", engine: "comfyui", params: burnParams(true) } as never,
+    ], undefined, undefined, WALL_DOCS_KNOB);
+    await openWallDrill();
+    // the burn's face: the krea-2 lora tile rides the krea-2 stage
+    expect(document.querySelector('[data-mod-tile="loras-0"]')).not.toBeNull();
+    // THE OPERATOR'S RE-POINT (the semantic-model face): ONE bare
+    // model key — exactly the write the tool face / an agent patch /
+    // a stage copy lands
+    fireEvent.change(screen.getByLabelText("Style"), { target: { value: "anima" } });
+    // THE LANDED DOC: the door write carries the model AND the law's
+    // nulls — the bag, the foreign quant, the axes, and the departing
+    // envelope numerics die in the SAME CAS frame
+    await waitFor(() => { expect(wallWrites().length).toBe(1); });
+    const frame = wallWrites()[0]!;
+    expect(frame["model"]).toBe("anima");
+    expect(frame["loras"]).toBeNull();
+    expect(frame["quant"]).toBeNull();
+    expect(frame["variant"]).toBeNull();
+    expect(frame["steps"]).toBeNull();
+    expect(frame["cfg"]).toBeNull();
+    // THE ARRIVAL (real fetch → the anima spec lands): the tile is
+    // GONE, the model face re-pointed, the axes re-seeded to anima's
+    // own first rows
+    expect(await screen.findByTestId("stage-preview-seat", {}, { timeout: 4000 })).toBeTruthy();
+    await waitFor(() => {
+      expect(document.querySelector('[data-mod-tile="loras-0"]')).toBeNull();
+    });
+    await waitFor(async () => { expect(await axisFace("Model")).toBe("Anima"); });
+    await waitFor(async () => { expect(await axisFace("Variant")).toContain("Base V1.0"); });
+    await waitFor(async () => { expect(await axisFace("Quant")).toContain("INT8 ConvRot"); });
+    expect(wallDoors.specUrls).toContain("anima");
+  });
+
+  test("THE RAIL RE-KEY, REAL FETCH: mount krea-2 with a held lora, switch to anima — tile GONE, axes cleared, arrival defaults stamped, and the door write carries the bag null", async () => {
+    mountBench([
+      { id: "s_0", card: "image-gen", engine: "comfyui", params: burnParams(true) } as never,
+    ], undefined, undefined, WALL_DOCS);
+    await openWallDrill();
+    expect(document.querySelector('[data-mod-tile="loras-0"]')).not.toBeNull();
+    // THE MODEL RAIL (the one model gesture the axes serve): the
+    // pick's frame re-derives through the switch law against the FULL
+    // holding — the served schema never names the loras bag (the one
+    // array node image-gen serves is reference_images), so the MOD-
+    // CURRENCY clause is what kills it
+    const user = userEvent.setup();
+    await user.click(await within(await wallAxes()).getByLabelText("Model"));
+    await user.click(screen.getByRole("menuitem", { name: "Anima" }));
+    await waitFor(() => { expect(wallWrites().length).toBe(1); });
+    const frame = wallWrites()[0]!;
+    expect(frame["model"]).toBe("anima");
+    expect(frame["loras"]).toBeNull();
+    expect(frame["quant"]).toBeNull();
+    // the anima spec lands over the real door: tile GONE, the axes
+    // cleared and re-stamped with the arrival's own rows
+    await waitFor(() => {
+      expect(document.querySelector('[data-mod-tile="loras-0"]')).toBeNull();
+    });
+    await waitFor(async () => { expect(await axisFace("Model")).toBe("Anima"); });
+    await waitFor(async () => { expect(await axisFace("Variant")).toContain("Base V1.0"); });
+    await waitFor(async () => { expect(await axisFace("Quant")).toContain("INT8 ConvRot"); });
+    expect(wallDoors.specUrls).toContain("anima");
+  });
+
+  test("THE BENCH-ROW BAG THE PICK CANNOT SEE: an external writer's bag on the bench row dies with the switch — the pick's own holding never saw it", async () => {
+    // the bag is NOT in the mount: the user map seeds clean, so the
+    // axes' own pickHeld (resolved + user) can never see the bag that
+    // arrives on the bench row below
+    const stages: BenchStageView[] = [
+      { id: "s_0", card: "image-gen", engine: "comfyui", params: burnParams(false) } as never,
+    ];
+    mountBench(stages, undefined, undefined, WALL_DOCS);
+    await openWallDrill();
+    expect(document.querySelector('[data-mod-tile="loras-0"]')).toBeNull();
+    // THE EXTERNAL WRITER (the studio / the agent's bag write): the
+    // bag lands on the BENCH row after open — the drill's user map
+    // never reseeds (stage.id + modelKey are unmoved)
+    stages[0]!.params = { ...burnParams(false), loras: [{ id: "krea2_realism_lora" }] };
+    rerenderTab(stages, "live");
+    // THE SWITCH: the seam's holding is the FULL doc (bench row under
+    // the user map — what the run composes), so the bag dies in the
+    // landed write even though the rail's own pick patch missed it
+    const user = userEvent.setup();
+    await user.click(await within(await wallAxes()).getByLabelText("Model"));
+    await user.click(screen.getByRole("menuitem", { name: "Anima" }));
+    await waitFor(() => { expect(wallWrites().length).toBe(1); });
+    const frame = wallWrites()[0]!;
+    expect(frame["model"]).toBe("anima");
+    expect(frame["loras"]).toBeNull();
+    expect(frame["quant"]).toBeNull();
+    await waitFor(async () => { expect(await axisFace("Model")).toBe("Anima"); });
+  });
+});
