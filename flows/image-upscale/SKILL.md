@@ -6,7 +6,7 @@ no card to compose — stage the flow and the user runs it.
 ## Call shape
 
 ```
-melite_construct add_stage  card "image-upscale" (or the two cards:
+melite_construct add_stage  flow "image-upscale" (or the two cards:
 image-gen + upscale-tools) — the stage is live in the user's cards
 tab; the run starts at the user's Run press.
 ```
@@ -48,7 +48,7 @@ no model docs, so all upscale craft rides the card row).
 
 ```json
 {
-  "card": "image-upscale",
+  "flow": "image-upscale",
   "params": {
     "image_model": "krea-2",
     "prompt": "a fox at dawn, mist, 35mm",

@@ -21,6 +21,7 @@ import { fileURLToPath } from "node:url";
 import { assert } from "vitest";
 import { describe, expect, it } from "vitest";
 import { modelRows } from "../../../../packages/harness/estate-queue/src/skillRows.ts";
+import { loadCardDefs, theService } from "../../../../packages/engines/comfyui-cordis/src/cardDefs.ts";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "../../../..");
 const ENGINE = join(ROOT, "packages/engines/comfyui-cordis");
@@ -98,6 +99,46 @@ describe("THE SERVED-DOC TRUTH WALL (phantom tools, dead paths, unreachable rows
       if (m !== null) offenders.push(f.replace(ROOT + "/", "") + " — " + m[0]);
     }
     assert.deepStrictEqual(offenders, [], "served docs naming tool carriers that no door serves:\n" + offenders.join("\n"));
+  });
+
+  it("every card id a served doc names resolves to a real card (CO-W2, flows wave-2: image-upscale's served body taught 'card \"image-upscale\"' — a flow id the card plane refuses)", async () => {
+    // boot-models registers the card defs; the wall resolves every
+    // card id a served doc speaks, in BOTH spellings: the backticked
+    // `card:<id>` reference and the JSON/prose shapes
+    // {"card": "<id>"} / card "<id>".
+    await loadCardDefs();
+    const svc = theService();
+    const real = new Set(svc.cardIds());
+    const offenders: string[] = [];
+    const backtick = /`card:([a-z0-9-]+)`/gu;
+    const shaped = /(?:"card"\s*:\s*"([a-z0-9-]+)")|(?:\bcard\s+"([a-z0-9-]+)")/gu;
+    for (const f of SERVED) {
+      const text = readFileSync(f, "utf8");
+      for (const m of text.matchAll(backtick)) {
+        if (!real.has(m[1]!)) offenders.push(`${f.replace(ROOT + "/", "")} — backticked card:${m[1]}`);
+      }
+      for (const m of text.matchAll(shaped)) {
+        const id = m[1] ?? m[2];
+        if (id !== undefined && !real.has(id)) offenders.push(`${f.replace(ROOT + "/", "")} — speaks card "${id}" (no such card)`);
+      }
+    }
+    assert.deepStrictEqual(offenders, [], "served docs naming cards that do not exist:\n" + offenders.join("\n"));
+  });
+
+  it("every repo path a served doc names exists (the header's own law, finally armed)", () => {
+    // the file's header promises "(c) repo paths that exist" —
+    // stated, never asserted (LAW 4 axis 1). Paths are relative to
+    // the repo root, spelled packages/... or flows/...
+    const offenders: string[] = [];
+    const pathRe = /\b((?:packages|flows|vendor)\/[A-Za-z0-9_\/.-]+)/gu;
+    for (const f of SERVED) {
+      const text = readFileSync(f, "utf8");
+      for (const m of text.matchAll(pathRe)) {
+        const raw = m[1]!.replace(/[.,;:)]+$/u, "");
+        if (!existsSync(join(ROOT, raw))) offenders.push(`${f.replace(ROOT + "/", "")} — names ${raw}, which does not exist`);
+      }
+    }
+    assert.deepStrictEqual(offenders, [], "served docs naming repo paths that do not exist:\n" + offenders.join("\n"));
   });
 
   it("no served doc points at dev_docs (untracked by law — a clone never carries it)", () => {

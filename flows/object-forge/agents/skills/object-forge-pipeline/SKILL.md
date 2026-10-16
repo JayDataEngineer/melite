@@ -8,7 +8,7 @@ image-upscale's shape).
 ## Call shape
 
 ```
-melite_construct add_stage  card "object-forge" — validate, then the
+melite_construct add_stage  flow "object-forge" — validate, then the
 {flow:} door submits the merged run; the stages also drive
 individually (image-gen + img-to-mesh) through the {model:} door for
 surgical re-takes.

@@ -5,7 +5,7 @@ You drive one merged run — both stages are card=, so the
 job:
 
 1. **Validate first**: `melite_construct validate` on a
-   `card:object-forge` stage — verbatim refusals, zero GPU. A refusal
+   `flow:object-forge` stage — verbatim refusals, zero GPU. A refusal
    here is the contract, not a setback; read it, fix the params,
    revalidate.
 2. **Submit**: `{flow: object-forge, prompt: "<one clear subject>"}`.

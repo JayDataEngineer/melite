@@ -7,13 +7,13 @@ Static (non-creature) 3D assets: weapons, props, tools, containers. Live-proven 
 
 ## Lane shape (live card ids, NOT a YAML to copy)
 z-image (concept render) -> trellis/pixal3d (image->mesh) -> quad remesh (prop preset) -> render_glb_views (turntable review).
-There is NO single-shot YAML door and NO named `prop-flow` row: the prop lane is an
+There is NO single-shot YAML door and NO named prop-flow registry row: the prop lane is an
 AGENT-DRIVEN card chain — drive each stage card through the queue door
 (`melite_construct` `add_stage` with `card=` + `model=`, then `melite_flow`). The
 card is `img-to-mesh` (model `trellis2-native` or `pixal3d`).
-(2026-10-04: the `flows/prop-flow/` authoring leaf is GONE — it was never an
+(2026-10-04: the prop-flow authoring leaf is GONE — it was never an
 executable row and this skill is the only served statement of the lane.)
-The old `flows/scrap_machete/flow.yaml` this section used to name does not exist
+The old scrap-machete flow YAML this section used to name does not exist
 in this checkout, and an agent that followed it burned a read chasing a file
 that was never there (the 3D lane's first live commission, 2026-09-26).
 

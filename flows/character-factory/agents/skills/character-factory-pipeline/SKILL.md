@@ -7,7 +7,7 @@ through the queue door and the user runs each press.
 ## Call shape
 
 ```
-melite_construct add_stage  card "character-factory" (or the three
+melite_construct add_stage  flow "character-factory" (or the three
 cards: img-to-mesh + rig + motion) — the stages are live in the
 user's cards tab; each run starts at the user's Run press.
 ```
