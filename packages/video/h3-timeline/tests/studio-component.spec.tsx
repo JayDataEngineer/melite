@@ -111,6 +111,31 @@ describe("the rail reads the document out", () => {
   })
 })
 
+it("the new stage's rail carries no open submenu at the component door (h3-submenu M3 twin)", () => {
+  // (M3 twin, 2026-11-06) the filed component debt is CLOSED: the
+  // wave-33 hang (click + rerender burning past budget) no longer
+  // reproduces at HEAD — green standalone, s_4→s_9, and in this
+  // file's own frame. The arm's own red-proof (seam setSub(null)
+  // gutted → the panel survives) is OWED to a quiet window — the
+  // toggle run SIGTERM'd under foreign load (godot 1033% + QEMU on
+  // the box), no verdict. The seat's law is meanwhile held by the
+  // M3 unit arm's live receipt. The submenu opens by the lane door, the
+  // stage seam reseats, the audio panel is gone.
+  const h = studio(TWO)
+  fireEvent.click(document.body.querySelector('[data-audio-layer="music"]')!)
+  assert.ok(screen.getByTestId("tl-audio-panel"), "the lane door opens the audio submenu")
+  h.els.rerender(
+    <VideoTimelineStudio
+      stageId="s_9" cardName="h3-timeline"
+      row={{ id: "s_9", card: "h3-timeline", title: "H3", params: TWO as unknown as Record<string, unknown> }}
+      runStatus="" onPatch={() => {}} onRun={() => {}} onStop={() => {}}
+      onRemove={() => {}} onSurface={() => {}} upstream={[]} runId={null}
+    />,
+  )
+  assert.equal(screen.queryByTestId("tl-audio-panel"), null, "the new stage reseats the submenu")
+  h.els.unmount()
+})
+
 describe("the mode-switching rail", () => {
   it("global mode owns the OPEN run params — no rows list, no fold (the bar is the menu)", () => {
     studio(TWO)
