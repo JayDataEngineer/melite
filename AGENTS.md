@@ -154,15 +154,54 @@ these four axes, nothing else:
    over hand-maintained counts. A wall judging a copy of the truth
    passes while the truth burns.
 
-Canon seats:
-* `dev_docs/CONTRACTS.md` — the ledger of record: §3 tables
-  (contract → truth home → fires at → depth → red-proof receipt),
-  §4 ordered debts, §5 the subagent verification protocol.
+Canon seats — THE TWO-TIER CONTRACT TRACKING (operator 2026-10-16:
+"rework how we deal with the roadmap and contracts so we can track
+them better"; the monolithic prose table was retired: active law
+separated from forensic evidence, prose tables replaced by
+machine-readable rows — the table-breakage class is dead, not
+patched):
+* `dev_docs/contracts/INVARIANTS.md` — the cheat sheet: every ACTIVE
+  contract, one line each (id → invariant → wall spec → gate
+  command), generated from the registry, human-curated. The only
+  contract file a coding session must read to know what walls hold.
+* `dev_docs/contracts/registry/<tier>.yaml` — the machine-readable
+  registry, one file per tier (models, cards, gates, flows, infra).
+  Row schema: id / status (active|superseded|draft) / invariant /
+  truth_home (files + seam) / wall (spec + arms) / depth /
+  receipt_ref. Agents edit YAML rows, never prose tables.
+* `dev_docs/contracts/receipts/<date>-<contract>.md` — the forensic
+  receipts: the burn's verbatim stderr, the operator order, the
+  toggle instructions, the red output, the commit hashes. Appended
+  per contract when a red-proof lands; never read to code against.
+* `dev_docs/CONTRACTS.md` — the LAW half only: §1 what qualifies,
+  §2 the four axes, §4 the ordered debts (each debt names its
+  registry id; drained debts delete their row), §5 the subagent
+  protocol, §7 superseded (the retired §3 ledger, kept for
+  archaeology). The §3 prose tables do not grow back: a new contract
+  lands as a registry row + a receipt, never a table row.
+* `dev_docs/ROADMAP.md` — the owed-work index tracks the same way:
+  each row carries status (owed|in-flight|landed) and, when it
+  closes, the receipt or registry id it landed with plus the walls
+  it left firing. A landed row shrinks to its one-line pointer —
+  the index stays readable, the evidence lives in the receipt.
+* THE CONTRACT CLI (`pnpm contract <verb>` — deterministic updates,
+  zero hand-edited tables): `list --tier <t>`, `show <ID>`,
+  `record-proof --id <ID> --toggle <what was toggled> --red-output
+  <verbatim> --commit <sha>` — validates, updates the registry row,
+  appends the receipt, regenerates INVARIANTS.md. The CLI is the
+  only writer of registry rows after the initial migration.
+* THE REGISTRY WALL — a gate that refuses an unaccounted law: every
+  suite in `tests/walls/ts/suites/` and every `@contract` header in
+  package suites must map to a registry row, and every registry
+  row's wall spec must exist. A wall outside the registry is a law
+  nobody tracks; a registry row with no wall is a lie.
 * Walls live estate-side in `tests/walls/ts/suites/` and
   package-local under each package's `tests/`.
-* Audit reports land in `dev_docs/audits/contracts/` and are
-  verified or closed by a later session — the tree never drifts
-  from its reported findings.
+* Audit reports land in `dev_docs/audits/` (journey/ for burn-cycle
+  audits, contracts/ for wall-ledger audits) and are verified or
+  closed by a later session — the tree never drifts from its
+  reported findings. An audit's cure items close INTO the registry
+  (row + receipt), not into a report nobody re-reads.
 * Toggle-proofs are performed only by hands that are off the
   target files (the §5 protocol): read-only auditors during live
   edits, hands-on proofs after the files settle.

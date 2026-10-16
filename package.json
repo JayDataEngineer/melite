@@ -38,12 +38,13 @@
     "shiki": "4.4.3",
     "simple-icons": "16.31.0",
     "vitest": "^4.1.8",
-    "yaml": "2.9.0"
+    "yaml": "2.9.1"
   },
   "scripts": {
     "postinstall": "node tools/install-lefthook.mjs",
     "build": "node tools/build-plane.mjs build",
     "knip": "node tools/knip-budget.mjs",
+    "contract": "node scripts/contracts.mjs",
     "lint": "node tools/arch-lint.ts",
     "test:docs": "node tools/check-package-readmes.mjs",
     "provision": "node --experimental-strip-types --no-warnings packages/engines/comfyui-cordis/scripts/provision.ts",
