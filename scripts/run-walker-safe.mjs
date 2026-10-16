@@ -166,6 +166,48 @@ export function runPreflight(deps = {}) {
   return { pruned, failed, freeBytes: after, refused: false, degraded: listed ? null : 'readdir' }
 }
 
+/** THE TYPECHECK LANE (flake-slowness-wave2 C2, 2026-11-06): the
+ *  two full-estate tsc passes (typecheck-gate ~64s, models-lib-sync
+ *  ~32s) rode the vitest critical path while 23 forks idled — ~65%
+ *  of the gate's wall floor. The lane runs the two suites in a
+ *  SEPARATE vitest process CONCURRENTLY with the main run, and the
+ *  main run excludes them by path. The lane carries NO --coverage
+ *  flag: two concurrent coverage runs share coverage/.tmp and the
+ *  second deletes the first's tmp directory mid-merge (reproduced
+ *  twice, 2026-11-06 — gate17/gate18 died exactly there). Coverage
+ *  invocations stay SERIAL, always. */
+const TYPECHECK_LANE_FILES = [
+  'tests/walls/ts/suites/typecheck-gate.spec.ts',
+  'tests/walls/ts/suites/models-lib-sync.spec.ts',
+]
+const TYPECHECK_LANE = ['node', 'node_modules/vitest/dist/cli.js',
+  'run', '--config', 'vitest.config.ts', '--project', 'typecheck-lane']
+
+/** One lane's final exit after its own walker verdict (the retry
+ *  semantics are per-lane: contention in the main run says nothing
+ *  about the lane's lib plane, and vice versa). */
+async function runLane(argv) {
+  const first = await runTee(argv)
+  if (first.spawnError !== null) {
+    console.error(`run-walker-safe: ${first.spawnError.message}`)
+    return 1
+  }
+  if (first.code === 0) return 0
+  const verdict = walkerVerdict(first.text)
+  if (!verdict.retry) {
+    // An honest failure (or a signal death) propagates untouched —
+    // the caller names the lane.
+    if (first.signal !== null) return { signal: first.signal }
+    return first.code ?? 1
+  }
+  console.error(`\n[run-walker-safe] walker contention named: ${verdict.named.join(', ')} — every path now resolves; one final pass follows\n`)
+  const second = await runTee(argv)
+  if (second.spawnError !== null) return 1
+  if (second.code === 0) return 0
+  if (second.signal !== null) return { signal: second.signal }
+  return second.code ?? 1
+}
+
 async function main() {
   const argv = process.argv.slice(2)
   if (argv.length === 0) {
@@ -174,26 +216,31 @@ async function main() {
   }
   const pre = runPreflight()
   if (pre.refused) process.exit(3)
-  const first = await runTee(argv)
-  if (first.spawnError !== null) {
-    console.error(`run-walker-safe: ${first.spawnError.message}`)
-    process.exit(1)
-  }
-  if (first.code === 0) process.exit(0)
 
-  const verdict = walkerVerdict(first.text)
-  if (!verdict.retry) {
-    // An honest failure (or a signal death) propagates untouched.
-    if (first.signal !== null) process.kill(process.pid, first.signal)
-    process.exit(first.code ?? 1)
+  // A vitest run whose own paths do not name the typecheck lane
+  // splits: main (excluding the two suites) + the lane, concurrent.
+  const argvText = argv.join(' ')
+  const isLaneItself = TYPECHECK_LANE_FILES.some((f) => argvText.includes(f))
+  const isVitestRun = /vitest/.test(argv[0] ?? '') && argvText.includes('run')
+  if (isVitestRun && !isLaneItself) {
+    const mainArgv = [...argv]
+    mainArgv.push('--project', '!typecheck-lane')
+    console.error('[run-walker-safe] typecheck lane splits out: main excludes typecheck-gate + models-lib-sync; the lane runs concurrently (no coverage on the lane — coverage stays serial)\n')
+    const [mainR, laneR] = await Promise.all([runLane(mainArgv), runLane(TYPECHECK_LANE)])
+    for (const r of [mainR, laneR]) {
+      if (r !== null && typeof r === 'object' && r.signal !== undefined) {
+        process.kill(process.pid, r.signal)
+      }
+    }
+    const code = mainR === 0 && laneR === 0 ? 0 : (mainR !== 0 ? mainR : laneR)
+    process.exit(typeof code === 'number' ? code : 1)
   }
 
-  console.error(`\n[run-walker-safe] walker contention named: ${verdict.named.join(', ')} — every path now resolves; one final pass follows\n`)
-  const second = await runTee(argv)
-  if (second.spawnError !== null) process.exit(1)
-  if (second.code === 0) process.exit(0)
-  if (second.signal !== null) process.kill(process.pid, second.signal)
-  process.exit(second.code ?? 1)
+  const code = await runLane(argv)
+  if (code !== null && typeof code === 'object' && code.signal !== undefined) {
+    process.kill(process.pid, code.signal)
+  }
+  process.exit(typeof code === 'number' ? code : 1)
 }
 
 if (isEntry) await main()

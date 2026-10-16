@@ -436,7 +436,7 @@ describe('timeline (prompts + keyframes)', () => {
     expect(after.style.left).not.toBe('0px')
   })
 
-  test('pulling the last edge past the end extends the timeline', async () => {
+  test('pulling the last edge past the end extends the timeline', { timeout: 45000 }, async () => {
     const { onSave } = await mountedWithRun()
     await vi.waitFor(() => {
       if (!document.body.querySelector('[data-prompt-clip]')) throw new Error('no seeded clip yet')
@@ -461,7 +461,12 @@ describe('timeline (prompts + keyframes)', () => {
     await vi.waitFor(() => {
       const toasted = useToastStore.getState().toasts.some((t) => t.message.includes('Timeline extended to'))
       if (!toasted) throw new Error('no extend toast yet')
-    }, { timeout: 10000 })
+    }, { timeout: 30000 })
+    // THE FLAKE CURE (flake-slowness-wave2 class 5, 2026-11-06): a
+    // 10s real-timer rAF-poll budget on this arm reds under gate
+    // load (gate22: the typecheck lane's concurrent tsc passes now
+    // share the host) — the sibling drill arms carry the same cure.
+    // 30s budget, 45s per-test.
     // a second tail pull inside the toast window extends silently —
     // still exactly ONE extend toast after both pulls
     const clips2 = [...document.body.querySelectorAll('[data-prompt-clip]')] as HTMLElement[]

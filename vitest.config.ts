@@ -215,6 +215,13 @@ export default defineConfig({
             // The 3088 lane harness's analyst walls (tests/lane/): the
             // fixture proof behind the live lane spec's analysis.
             'tests/lane/**/*.spec.ts',
+            // THE TYPECHECK LANE SPLIT (flake-slowness-wave2 C2): the
+            // two full-estate tsc suites left the node project for
+            // their own project below — the walker runs that lane
+            // CONCURRENTLY with the main gate (CLI --exclude cannot
+            // override a project include; the split lives here).
+            '!tests/walls/ts/suites/typecheck-gate.spec.ts',
+            '!tests/walls/ts/suites/models-lib-sync.spec.ts',
           ],
           exclude: [
             ...DOM_SPEC_TREES,
@@ -223,6 +230,36 @@ export default defineConfig({
             '**/*.expected.e2e.ts',
             '**/*.snapshot.ts',
             '**/*.bench.ts',
+          ],
+        },
+      },
+      {
+        // THE TYPECHECK LANE (flake-slowness-wave2 C2, 2026-11-06):
+        // the two full-estate tsc suites (~96s of serial tsc) rode
+        // the node project's critical path while the gate's forks
+        // idled. The lane is its own project so the walker can run
+        // it in a SEPARATE vitest process concurrently with the
+        // main gate: `vitest run --project typecheck-lane` (never
+        // with --coverage — coverage invocations stay serial; two
+        // concurrent coverage runs share coverage/.tmp and the
+        // second deletes the first's tmp tree mid-merge).
+        plugins: [standardDecoratorPlugin()],
+        ...BOOT_BUDGET,
+        resolve: {
+          alias: { ...resolutionFacade() },
+        },
+        test: {
+          testTimeout: BOOT_BUDGET.testTimeout,
+          hookTimeout: BOOT_BUDGET.hookTimeout,
+          name: 'typecheck-lane',
+          globalSetup: [TMP_SWEEP],
+          environment: 'node',
+          pool: 'forks',
+          execArgv: vitestExecArgv,
+          setupFiles: [PROXY_SETUP],
+          include: [
+            'tests/walls/ts/suites/typecheck-gate.spec.ts',
+            'tests/walls/ts/suites/models-lib-sync.spec.ts',
           ],
         },
       },

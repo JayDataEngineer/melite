@@ -57,6 +57,7 @@
     "rehearse:first-image": "node tools/first-image-rehearsal.mjs",
     "test": "env -u MELITE_MCP_ENGINES -u MELITE_AGENT_ROUTE node scripts/run-walker-safe.mjs vitest run",
     "test:bench": "env -u MELITE_MCP_ENGINES -u MELITE_AGENT_ROUTE vitest run --config vitest.bench.config.ts",
+    "test:typecheck": "env -u MELITE_MCP_ENGINES -u MELITE_AGENT_ROUTE node node_modules/vitest/dist/cli.js run --config vitest.config.ts --project typecheck-lane",
     "test:coverage": "env -u MELITE_MCP_ENGINES -u MELITE_AGENT_ROUTE node scripts/run-walker-safe.mjs vitest run --coverage",
     "test:e2e": "vitest run --config vitest.e2e.config.ts",
     "test:e2e:studio": "bash scripts/e2e-studio-lane.sh",
