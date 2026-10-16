@@ -198,7 +198,7 @@
      {
       "default": 0,
       "min": 0,
-      "max": 18446744073709551615,
+      "max": 18446744073709552000,
       "control_after_generate": true,
       "tooltip": "The random seed used for creating the noise."
      }
@@ -215,9 +215,9 @@
     "cfg": [
      "FLOAT",
      {
-      "default": 8.0,
-      "min": 0.0,
-      "max": 100.0,
+      "default": 8,
+      "min": 0,
+      "max": 100,
       "step": 0.1,
       "round": 0.01,
       "tooltip": "The Classifier-Free Guidance scale balances creativity and adherence to the prompt. Higher values result in images more closely matching the prompt however too high values will negatively impact quality."
@@ -312,9 +312,9 @@
     "denoise": [
      "FLOAT",
      {
-      "default": 1.0,
-      "min": 0.0,
-      "max": 1.0,
+      "default": 1,
+      "min": 0,
+      "max": 1,
       "step": 0.01,
       "tooltip": "The amount of denoising applied, lower values will maintain the structure of the initial image allowing for image to image sampling."
      }
@@ -580,9 +580,9 @@
     "strength_model": [
      "FLOAT",
      {
-      "default": 1.0,
-      "min": -100.0,
-      "max": 100.0,
+      "default": 1,
+      "min": -100,
+      "max": 100,
       "step": 0.01,
       "tooltip": "How strongly to modify the diffusion model. This value can be negative."
      }
@@ -590,9 +590,9 @@
     "strength_clip": [
      "FLOAT",
      {
-      "default": 1.0,
-      "min": -100.0,
-      "max": 100.0,
+      "default": 1,
+      "min": -100,
+      "max": 100,
       "step": 0.01,
       "tooltip": "How strongly to modify the CLIP model. This value can be negative."
      }
@@ -922,8 +922,8 @@
      "FLOAT",
      {
       "default": 0.8,
-      "min": 0.0,
-      "max": 2.0,
+      "min": 0,
+      "max": 2,
       "step": 0.05
      }
     ],
@@ -931,8 +931,8 @@
      "FLOAT",
      {
       "default": 0.9,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01
      }
     ],
@@ -948,9 +948,9 @@
     "speed": [
      "FLOAT",
      {
-      "default": 1.0,
+      "default": 1,
       "min": 0.5,
-      "max": 2.0,
+      "max": 2,
       "step": 0.1
      }
     ],
@@ -959,7 +959,7 @@
      {
       "default": 1.05,
       "min": 0.8,
-      "max": 2.0,
+      "max": 2,
       "step": 0.01
      }
     ],
@@ -974,9 +974,9 @@
     "guidance_scale": [
      "FLOAT",
      {
-      "default": 5.0,
-      "min": 0.0,
-      "max": 20.0,
+      "default": 5,
+      "min": 0,
+      "max": 20,
       "step": 0.1,
       "tooltip": "Diffusion classifier-free guidance (SFX only)"
      }
@@ -988,15 +988,15 @@
       "min": 1,
       "max": 500,
       "step": 1,
-      "tooltip": "Diffusion steps (SFX only \u2014 more = higher quality, slower)"
+      "tooltip": "Diffusion steps (SFX only — more = higher quality, slower)"
      }
     ],
     "duration_seconds": [
      "FLOAT",
      {
-      "default": 10.0,
+      "default": 10,
       "min": 0.5,
-      "max": 300.0,
+      "max": 300,
       "step": 0.5,
       "tooltip": "Output length in seconds (SFX only)"
      }
@@ -1176,17 +1176,17 @@
      "FLOAT",
      {
       "default": 0.9,
-      "min": 0.0,
-      "max": 2.0,
+      "min": 0,
+      "max": 2,
       "step": 0.05
      }
     ],
     "top_p": [
      "FLOAT",
      {
-      "default": 1.0,
-      "min": 0.0,
-      "max": 1.0,
+      "default": 1,
+      "min": 0,
+      "max": 1,
       "step": 0.01
      }
     ],
@@ -1203,25 +1203,25 @@
      {
       "default": 1.05,
       "min": 0.8,
-      "max": 2.0,
+      "max": 2,
       "step": 0.01
      }
     ],
     "voice_strength": [
      "FLOAT",
      {
-      "default": 1.0,
-      "min": 0.0,
-      "max": 2.0,
+      "default": 1,
+      "min": 0,
+      "max": 2,
       "step": 0.05
      }
     ],
     "speed": [
      "FLOAT",
      {
-      "default": 1.0,
+      "default": 1,
       "min": 0.5,
-      "max": 2.0,
+      "max": 2,
       "step": 0.05
      }
     ],
@@ -1369,15 +1369,15 @@
     "start_seconds": [
      "FLOAT",
      {
-      "default": 0.0,
-      "min": 0.0,
+      "default": 0,
+      "min": 0,
       "step": 0.01
      }
     ],
     "duration_seconds": [
      "FLOAT",
      {
-      "default": 10.0,
+      "default": 10,
       "min": 0.1,
       "step": 0.01
      }
@@ -1418,7 +1418,7 @@
      {
       "default": "",
       "multiline": false,
-      "tooltip": "JSON array of absolute state roots ([\"/abs/root\", ...]) \u2014 Layer A's submit-time walk stamps the estate's roots manifest here; the clip-source walk searches these output/ trees before any env arm"
+      "tooltip": "JSON array of absolute state roots ([\"/abs/root\", ...]) — Layer A's submit-time walk stamps the estate's roots manifest here; the clip-source walk searches these output/ trees before any env arm"
      }
     ]
    },
@@ -1434,7 +1434,7 @@
     "after": [
      "STRING",
      {
-      "tooltip": "The MeliteUnload boundary token \u2014 proof every window save completed"
+      "tooltip": "The MeliteUnload boundary token — proof every window save completed"
      }
     ],
     "clips_json": [
@@ -1442,7 +1442,7 @@
      {
       "default": "[]",
       "multiline": true,
-      "tooltip": "JSON array of {src, start_sec, dur_sec, class} \u2014 the card renders the filmMix manifest here verbatim"
+      "tooltip": "JSON array of {src, start_sec, dur_sec, class} — the card renders the filmMix manifest here verbatim"
      }
     ],
     "duck_spans": [
@@ -1464,9 +1464,9 @@
     "duck_db": [
      "FLOAT",
      {
-      "default": -14.0,
-      "min": -60.0,
-      "max": 0.0,
+      "default": -14,
+      "min": -60,
+      "max": 0,
       "step": 0.5,
       "tooltip": "Duck depth in dB (the card's duck_depth_db knob, verbatim)"
      }
@@ -1474,10 +1474,10 @@
     "film_seconds": [
      "FLOAT",
      {
-      "default": 0.0,
-      "min": 0.0,
+      "default": 0,
+      "min": 0,
       "step": 0.001,
-      "tooltip": "Total film length in seconds (the manifest's filmSec) \u2014 the output fits exactly"
+      "tooltip": "Total film length in seconds (the manifest's filmSec) — the output fits exactly"
      }
     ]
    }
@@ -1521,7 +1521,7 @@
     "audio": [
      "AUDIO",
      {
-      "tooltip": "The film's final mixed audio \u2014 passthrough: the same tensor rides out (meter taps, never transforms)"
+      "tooltip": "The film's final mixed audio — passthrough: the same tensor rides out (meter taps, never transforms)"
      }
     ]
    }
@@ -1556,7 +1556,7 @@
     "voice_name": [
      "STRING",
      {
-      "tooltip": "The studio export's name (the qvoice_save name) \u2014 the mint is <name>*.qvoice, newest wins (collision-numbered mounts)"
+      "tooltip": "The studio export's name (the qvoice_save name) — the mint is <name>*.qvoice, newest wins (collision-numbered mounts)"
      }
     ],
     "dest_prefix": [
@@ -1568,7 +1568,7 @@
     "audio": [
      "AUDIO",
      {
-      "tooltip": "The studio's own audio output \u2014 ORDERING ONLY (never read): the copy provably runs after the mint"
+      "tooltip": "The studio's own audio output — ORDERING ONLY (never read): the copy provably runs after the mint"
      }
     ]
    },
@@ -1577,7 +1577,7 @@
      "STRING",
      {
       "default": "",
-      "tooltip": "Engine-side voices mount override. EMPTY = the documented root (/mnt/data/models/audio/voices) resolved at RUN time \u2014 an empty default is deliberate: a directory path defaultled into the graph is unrepresentable to the source-echo guard (attempt-018's finding: the whole design lane refused), so the fallback lives in the node, never in the graph"
+      "tooltip": "Engine-side voices mount override. EMPTY = the documented root (/mnt/data/models/audio/voices) resolved at RUN time — an empty default is deliberate: a directory path defaultled into the graph is unrepresentable to the source-echo guard (attempt-018's finding: the whole design lane refused), so the fallback lives in the node, never in the graph"
      }
     ]
    }
@@ -1689,8 +1689,8 @@
      "FLOAT",
      {
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01
      }
     ],
@@ -1706,8 +1706,8 @@
     "crop_factor": [
      "FLOAT",
      {
-      "default": 3.0,
-      "min": 1.0,
+      "default": 3,
+      "min": 1,
       "max": 100,
       "step": 0.1
      }
@@ -1818,7 +1818,7 @@
      {
       "default": 0,
       "min": 0,
-      "max": 18446744073709551615
+      "max": 18446744073709552000
      }
     ],
     "steps": [
@@ -1832,9 +1832,9 @@
     "cfg": [
      "FLOAT",
      {
-      "default": 8.0,
-      "min": 0.0,
-      "max": 100.0
+      "default": 8,
+      "min": 0,
+      "max": 100
      }
     ],
     "sampler_name": [
@@ -1918,7 +1918,7 @@
      {
       "default": 0.5,
       "min": 0.0001,
-      "max": 1.0,
+      "max": 1,
       "step": 0.01
      }
     ],
@@ -1951,8 +1951,8 @@
      "FLOAT",
      {
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01
      }
     ],
@@ -1968,8 +1968,8 @@
     "bbox_crop_factor": [
      "FLOAT",
      {
-      "default": 3.0,
-      "min": 1.0,
+      "default": 3,
+      "min": 1,
       "max": 10,
       "step": 0.1
      }
@@ -2000,8 +2000,8 @@
      "FLOAT",
      {
       "default": 0.93,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01
      }
     ],
@@ -2018,8 +2018,8 @@
      "FLOAT",
      {
       "default": 0.7,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01
      }
     ],
@@ -2237,8 +2237,8 @@
      "FLOAT",
      {
       "default": 0.93,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01,
       "tooltip": "Set the sensitivity threshold for the mask detected by SAM (Segment Anything). A higher value generates a more specific mask with a narrower range. For example, when pointing to a person's area, it might detect clothes, which is a narrower range, instead of the entire person."
      }
@@ -2257,8 +2257,8 @@
      "FLOAT",
      {
       "default": 0.7,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01,
       "tooltip": "When detection_hint is mask-area, the mask of SEGS is used as a point hint for SAM (Segment Anything).\nIn this case, only the areas of the mask with brightness values equal to or greater than mask_hint_threshold are used as hints."
      }
@@ -2369,8 +2369,8 @@
      "FLOAT",
      {
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01
      }
     ],
@@ -2386,8 +2386,8 @@
     "crop_factor": [
      "FLOAT",
      {
-      "default": 3.0,
-      "min": 1.0,
+      "default": 3,
+      "min": 1,
       "max": 100,
       "step": 0.1
      }
@@ -2566,7 +2566,7 @@
      {
       "default": "",
       "multiline": true,
-      "tooltip": "Canonical preset params (the presets door row verbatim \u2014 never hand-edited)."
+      "tooltip": "Canonical preset params (the presets door row verbatim — never hand-edited)."
      }
     ]
    }
@@ -2587,7 +2587,7 @@
    "glb_path"
   ],
   "name": "AnnyParamsToGlb",
-  "display_name": "\ud83e\uddcd\ud83d\udccb Params \u2192 Body \u00b7 preset instantiate",
+  "display_name": "🧍📋 Params → Body · preset instantiate",
   "description": "",
   "python_module": "custom_nodes.melite-kimodo-nodes",
   "category": "Melite/Anny",
@@ -2700,10 +2700,10 @@
     "fps": [
      "FLOAT",
      {
-      "default": 30.0,
-      "min": 1.0,
-      "max": 120.0,
-      "step": 1.0
+      "default": 30,
+      "min": 1,
+      "max": 120,
+      "step": 1
      }
     ]
    },
@@ -2893,9 +2893,9 @@
     "duration_sec": [
      "FLOAT",
      {
-      "default": 6.0,
+      "default": 6,
       "min": 0.1,
-      "max": 10.0
+      "max": 10
      }
     ],
     "diffusion_steps": [
@@ -2935,17 +2935,17 @@
     "cfg_weight_a": [
      "FLOAT",
      {
-      "default": 2.0,
-      "min": 0.0,
-      "max": 20.0
+      "default": 2,
+      "min": 0,
+      "max": 20
      }
     ],
     "cfg_weight_b": [
      "FLOAT",
      {
-      "default": 2.0,
-      "min": 0.0,
-      "max": 20.0
+      "default": 2,
+      "min": 0,
+      "max": 20
      }
     ],
     "prev_motion_npz": [
@@ -3360,8 +3360,8 @@
      "FLOAT",
      {
       "default": 1.2,
-      "min": 1.0,
-      "max": 3.0,
+      "min": 1,
+      "max": 3,
       "tooltip": "Camera margin multiplier (1.0=exact fit, 1.2=20% headroom)."
      }
     ],
@@ -3423,7 +3423,7 @@
    "front_left_mesh"
   ],
   "name": "RayRenderGLBViews",
-  "display_name": "\ud83c\udfac Render GLB Views (Blender EEVEE_NEXT \u00d78 angles)",
+  "display_name": "🎬 Render GLB Views (Blender EEVEE_NEXT ×8 angles)",
   "description": "",
   "python_module": "custom_nodes.melite-poser-nodes",
   "category": "Melite/Mesh",
@@ -3451,8 +3451,8 @@
      {
       "display_name": "threshold",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01
      }
     ],
@@ -3578,7 +3578,7 @@
     "image": [
      "IMAGE",
      {
-      "tooltip": "Image tensor (H,W,C in 0..1) \u2014 batch index 0"
+      "tooltip": "Image tensor (H,W,C in 0..1) — batch index 0"
      }
     ]
    },
@@ -3625,7 +3625,7 @@
    "anny_params_path"
   ],
   "name": "Sam3dBodyImageToAnny",
-  "display_name": "\ud83e\uddcd SAM 3D Body \u00b7 estimator \u2192 Anny",
+  "display_name": "🧍 SAM 3D Body · estimator → Anny",
   "description": "",
   "python_module": "custom_nodes.melite-kimodo-nodes",
   "category": "Melite/Anny",
@@ -3779,10 +3779,10 @@
                        "FLOAT",
                        {
                         "tooltip": "Lower values produce higher quality and larger files.",
-                        "default": 18.0,
-                        "min": 0.0,
-                        "max": 51.0,
-                        "step": 1.0
+                        "default": 18,
+                        "min": 0,
+                        "max": 51,
+                        "step": 1
                        }
                       ]
                      }
@@ -3819,10 +3819,10 @@
                        "FLOAT",
                        {
                         "tooltip": "Lower values produce higher quality and larger files.",
-                        "default": 24.0,
-                        "min": 0.0,
-                        "max": 63.0,
-                        "step": 1.0
+                        "default": 24,
+                        "min": 0,
+                        "max": 63,
+                        "step": 1
                        }
                       ]
                      }
@@ -3880,10 +3880,10 @@
                        "FLOAT",
                        {
                         "tooltip": "Lower values produce higher quality and larger files.",
-                        "default": 18.0,
-                        "min": 0.0,
-                        "max": 51.0,
-                        "step": 1.0
+                        "default": 18,
+                        "min": 0,
+                        "max": 51,
+                        "step": 1
                        }
                       ]
                      }
@@ -3920,10 +3920,10 @@
                        "FLOAT",
                        {
                         "tooltip": "Lower values produce higher quality and larger files.",
-                        "default": 24.0,
-                        "min": 0.0,
-                        "max": 63.0,
-                        "step": 1.0
+                        "default": 24,
+                        "min": 0,
+                        "max": 63,
+                        "step": 1
                        }
                       ]
                      }
@@ -3981,10 +3981,10 @@
                        "FLOAT",
                        {
                         "tooltip": "Lower values produce higher quality and larger files.",
-                        "default": 18.0,
-                        "min": 0.0,
-                        "max": 51.0,
-                        "step": 1.0
+                        "default": 18,
+                        "min": 0,
+                        "max": 51,
+                        "step": 1
                        }
                       ]
                      }
@@ -4021,10 +4021,10 @@
                        "FLOAT",
                        {
                         "tooltip": "Lower values produce higher quality and larger files.",
-                        "default": 24.0,
-                        "min": 0.0,
-                        "max": 63.0,
-                        "step": 1.0
+                        "default": 24,
+                        "min": 0,
+                        "max": 63,
+                        "step": 1
                        }
                       ]
                      }
@@ -4082,10 +4082,10 @@
                        "FLOAT",
                        {
                         "tooltip": "Lower values produce higher quality and larger files.",
-                        "default": 24.0,
-                        "min": 0.0,
-                        "max": 63.0,
-                        "step": 1.0
+                        "default": 24,
+                        "min": 0,
+                        "max": 63,
+                        "step": 1
                        }
                       ]
                      }
@@ -4145,10 +4145,10 @@
                  "FLOAT",
                  {
                   "tooltip": "Lower values produce higher quality and larger files.",
-                  "default": 18.0,
-                  "min": 0.0,
-                  "max": 51.0,
-                  "step": 1.0
+                  "default": 18,
+                  "min": 0,
+                  "max": 51,
+                  "step": 1
                  }
                 ]
                }
@@ -4185,10 +4185,10 @@
                  "FLOAT",
                  {
                   "tooltip": "Lower values produce higher quality and larger files.",
-                  "default": 24.0,
-                  "min": 0.0,
-                  "max": 63.0,
-                  "step": 1.0
+                  "default": 24,
+                  "min": 0,
+                  "max": 63,
+                  "step": 1
                  }
                 ]
                }
@@ -4297,7 +4297,7 @@
     "blocks_to_swap": [
      "INT",
      {
-      "tooltip": "Number of transformer blocks to swap between devices for VRAM optimization.\n\u2022 0: Disabled (default)\n\u2022 3B model: 0-32 blocks\n\u2022 7B model: 0-36 blocks\n\nRequires offload_device to be set and different from device.\nNot available on macOS (unified memory architecture).",
+      "tooltip": "Number of transformer blocks to swap between devices for VRAM optimization.\n• 0: Disabled (default)\n• 3B model: 0-32 blocks\n• 7B model: 0-36 blocks\n\nRequires offload_device to be set and different from device.\nNot available on macOS (unified memory architecture).",
       "default": 0,
       "min": 0,
       "max": 36,
@@ -4314,7 +4314,7 @@
     "offload_device": [
      "COMBO",
      {
-      "tooltip": "Device to offload DiT model when not actively processing.\n\u2022 'none': Keep model on inference device (default, fastest)\n\u2022 'cpu': Offload to system RAM (reduces VRAM usage)\n\u2022 'cuda:X': Offload to another GPU (good balance if available)\n\nRequired for BlockSwap (blocks_to_swap or swap_io_components).",
+      "tooltip": "Device to offload DiT model when not actively processing.\n• 'none': Keep model on inference device (default, fastest)\n• 'cpu': Offload to system RAM (reduces VRAM usage)\n• 'cuda:X': Offload to another GPU (good balance if available)\n\nRequired for BlockSwap (blocks_to_swap or swap_io_components).",
       "default": "none",
       "multiselect": false,
       "options": [
@@ -4334,7 +4334,7 @@
     "attention_mode": [
      "COMBO",
      {
-      "tooltip": "Attention computation backend:\n\u2022 sdpa: PyTorch scaled_dot_product_attention (default, stable, always available)\n\u2022 flash_attn_2: Flash Attention 2 (Ampere+, requires flash-attn package)\n\u2022 flash_attn_3: Flash Attention 3 (Hopper+, requires flash-attn with FA3 support)\n\u2022 sageattn_2: SageAttention 2 (requires sageattention package)\n\u2022 sageattn_3: SageAttention 3 (Blackwell/RTX 50xx only, requires sageattn3 package)\n\nSDPA is recommended - stable and works everywhere.\nFlash Attention and SageAttention provide speedup through optimized CUDA kernels on compatible GPUs.",
+      "tooltip": "Attention computation backend:\n• sdpa: PyTorch scaled_dot_product_attention (default, stable, always available)\n• flash_attn_2: Flash Attention 2 (Ampere+, requires flash-attn package)\n• flash_attn_3: Flash Attention 3 (Hopper+, requires flash-attn with FA3 support)\n• sageattn_2: SageAttention 2 (requires sageattention package)\n• sageattn_3: SageAttention 3 (Blackwell/RTX 50xx only, requires sageattn3 package)\n\nSDPA is recommended - stable and works everywhere.\nFlash Attention and SageAttention provide speedup through optimized CUDA kernels on compatible GPUs.",
       "default": "sdpa",
       "multiselect": false,
       "options": [
@@ -4477,7 +4477,7 @@
     "tile_debug": [
      "COMBO",
      {
-      "tooltip": "Tile debug visualization mode:\n\u2022 'false': No visualization overlay (default)\n\u2022 'encode': Show encoding tile boundaries\n\u2022 'decode': Show decoding tile boundaries\n\nOnly works when respective tiling is enabled.",
+      "tooltip": "Tile debug visualization mode:\n• 'false': No visualization overlay (default)\n• 'encode': Show encoding tile boundaries\n• 'decode': Show decoding tile boundaries\n\nOnly works when respective tiling is enabled.",
       "default": "false",
       "multiselect": false,
       "options": [
@@ -4490,7 +4490,7 @@
     "offload_device": [
      "COMBO",
      {
-      "tooltip": "Device to offload VAE model when not actively processing.\n\u2022 'none': Keep model on inference device (default, fastest)\n\u2022 'cpu': Offload to system RAM (reduces VRAM usage)\n\u2022 'cuda:X': Offload to another GPU (good balance if available)",
+      "tooltip": "Device to offload VAE model when not actively processing.\n• 'none': Keep model on inference device (default, fastest)\n• 'cpu': Offload to system RAM (reduces VRAM usage)\n• 'cuda:X': Offload to another GPU (good balance if available)",
       "default": "none",
       "multiselect": false,
       "options": [
@@ -5139,10 +5139,10 @@
    "video_info"
   ],
   "name": "VHS_LoadVideo",
-  "display_name": "Load Video (Upload) \ud83c\udfa5\ud83c\udd65\ud83c\udd57\ud83c\udd62",
-  "description": "Load Video \ud83c\udfa5\ud83c\udd65\ud83c\udd57\ud83c\udd62<div style=\"font-size: 0.8em\"><div id=VHS_shortdesc>Loads a video from the input folder</div></div><div style=\"font-size: 0.8em\"><div vhs_title=\"Inputs\" style=\"display: flex; font-size: 0.8em\" class=\"VHS_collapse\"><div style=\"color: #AAA; height: 1.5em;\">[<span style=\"font-family: monospace\">-</span>]</div><div style=\"width: 100%\">Inputs: <div vhs_title=\"meta_batch\" style=\"display: flex; font-size: 1em\" class=\"VHS_collapse\"><div style=\"color: #AAA; height: 1.5em;\">[<span style=\"font-family: monospace\">-</span>]</div><div style=\"width: 100%\">meta_batch: (optional) Connect to a Meta Batch manager to divide extremely long sequences into sub batches. See the documentation for Meta Batch Manager</div></div><div vhs_title=\"vae\" style=\"display: flex; font-size: 1em\" class=\"VHS_collapse\"><div style=\"color: #AAA; height: 1.5em;\">[<span style=\"font-family: monospace\">-</span>]</div><div style=\"width: 100%\">vae: (optional) If provided the node will output latents instead of images. This drastically reduces the required RAM (not VRAM) when working with long (100+ frames) sequences<div style=\"font-size: 1em\">Using this is strongly encouraged unless connecting to a node that requires a blue image connection such as Apply Controllnet</div></div></div></div></div><div vhs_title=\"Outputs\" style=\"display: flex; font-size: 0.8em\" class=\"VHS_collapse\"><div style=\"color: #AAA; height: 1.5em;\">[<span style=\"font-family: monospace\">-</span>]</div><div style=\"width: 100%\">Outputs: <div vhs_title=\"IMAGE\" style=\"display: flex; font-size: 1em\" class=\"VHS_collapse\"><div style=\"color: #AAA; height: 1.5em;\">[<span style=\"font-family: monospace\">-</span>]</div><div style=\"width: 100%\">IMAGE: The loaded images</div></div><div vhs_title=\"frame_count\" style=\"display: flex; font-size: 1em\" class=\"VHS_collapse\"><div style=\"color: #AAA; height: 1.5em;\">[<span style=\"font-family: monospace\">-</span>]</div><div style=\"width: 100%\">frame_count: The length of images just returned</div></div><div vhs_title=\"audio\" style=\"display: flex; font-size: 1em\" class=\"VHS_collapse\"><div style=\"color: #AAA; height: 1.5em;\">[<span style=\"font-family: monospace\">-</span>]</div><div style=\"width: 100%\">audio: The audio from the loaded video</div></div><div vhs_title=\"video_info\" style=\"display: flex; font-size: 1em\" class=\"VHS_collapse\"><div style=\"color: #AAA; height: 1.5em;\">[<span style=\"font-family: monospace\">-</span>]</div><div style=\"width: 100%\">video_info: Exposes additional info about the video such as the source frame rate, or the total length</div></div><div vhs_title=\"LATENT\" style=\"display: flex; font-size: 1em\" class=\"VHS_collapse\"><div style=\"color: #AAA; height: 1.5em;\">[<span style=\"font-family: monospace\">-</span>]</div><div style=\"width: 100%\">LATENT: The loaded images pre-converted to latents. Only available when a vae is connected</div></div></div></div><div vhs_title=\"Widgets\" style=\"display: flex; font-size: 0.8em\" class=\"VHS_collapse\"><div style=\"color: #AAA; height: 1.5em;\">[<span style=\"font-family: monospace\">-</span>]</div><div style=\"width: 100%\">Widgets: <div vhs_title=\"video\" style=\"display: flex; font-size: 1em\" class=\"VHS_collapse\"><div style=\"color: #AAA; height: 1.5em;\">[<span style=\"font-family: monospace\">-</span>]</div><div style=\"width: 100%\">video: The video file to be loaded. Lists all files with a video extension in the ComfyUI/Input folder</div></div><div vhs_title=\"force_rate\" style=\"display: flex; font-size: 1em\" class=\"VHS_collapse\"><div style=\"color: #AAA; height: 1.5em;\">[<span style=\"font-family: monospace\">-</span>]</div><div style=\"width: 100%\">force_rate: Drops or duplicates frames so that the produced output has the target frame rate. Many motion models are trained on videos of a specific frame rate and will give better results if input matches that frame rate. If set to 0, all frames are returned. May give unusual results with inputs that have a variable frame rate like animated gifs. Reducing this value can also greatly reduce the execution time and memory requirements.</div></div><div vhs_title=\"force_size\" style=\"display: flex; font-size: 1em\" class=\"VHS_collapse\"><div style=\"color: #AAA; height: 1.5em;\">[<span style=\"font-family: monospace\">-</span>]</div><div style=\"width: 100%\">force_size: Previously was used to provide suggested resolutions. Instead, custom_width and custom_height can be disabled by setting to 0.</div></div><div vhs_title=\"custom_width\" style=\"display: flex; font-size: 1em\" class=\"VHS_collapse\"><div style=\"color: #AAA; height: 1.5em;\">[<span style=\"font-family: monospace\">-</span>]</div><div style=\"width: 100%\">custom_width: Allows for an arbitrary width to be entered, cropping to maintain aspect ratio if both are set</div></div><div vhs_title=\"custom_height\" style=\"display: flex; font-size: 1em\" class=\"VHS_collapse\"><div style=\"color: #AAA; height: 1.5em;\">[<span style=\"font-family: monospace\">-</span>]</div><div style=\"width: 100%\">custom_height: Allows for an arbitrary height to be entered, cropping to maintain aspect ratio if both are set</div></div><div vhs_title=\"frame_load_cap\" style=\"display: flex; font-size: 1em\" class=\"VHS_collapse\"><div style=\"color: #AAA; height: 1.5em;\">[<span style=\"font-family: monospace\">-</span>]</div><div style=\"width: 100%\">frame_load_cap: The maximum number of frames to load. If 0, all frames are loaded.</div></div><div vhs_title=\"skip_first_frames\" style=\"display: flex; font-size: 1em\" class=\"VHS_collapse\"><div style=\"color: #AAA; height: 1.5em;\">[<span style=\"font-family: monospace\">-</span>]</div><div style=\"width: 100%\">skip_first_frames: A number of frames which are discarded before producing output.</div></div><div vhs_title=\"select_every_nth\" style=\"display: flex; font-size: 1em\" class=\"VHS_collapse\"><div style=\"color: #AAA; height: 1.5em;\">[<span style=\"font-family: monospace\">-</span>]</div><div style=\"width: 100%\">select_every_nth: Similar to frame rate. Keeps only the first of every n frames and discard the rest. Has better compatibility with variable frame rate inputs such as gifs. When combined with force_rate, select_every_nth_applies after force_rate so the resulting output has a frame rate equivalent to force_rate/select_every_nth. select_every_nth does not apply to skip_first_frames</div></div><div vhs_title=\"format\" style=\"display: flex; font-size: 1em\" class=\"VHS_collapse\"><div style=\"color: #AAA; height: 1.5em;\">[<span style=\"font-family: monospace\">-</span>]</div><div style=\"width: 100%\">format: Updates other widgets so that only values supported by the given format can be entered and provides recommended defaults.</div></div><div vhs_title=\"choose video to upload\" style=\"display: flex; font-size: 1em\" class=\"VHS_collapse\"><div style=\"color: #AAA; height: 1.5em;\">[<span style=\"font-family: monospace\">-</span>]</div><div style=\"width: 100%\">choose video to upload: An upload button is provided to upload local files to the input folder</div></div><div vhs_title=\"videopreview\" style=\"display: flex; font-size: 1em\" class=\"VHS_collapse\"><div style=\"color: #AAA; height: 1.5em;\">[<span style=\"font-family: monospace\">-</span>]</div><div style=\"width: 100%\">videopreview: Displays a preview for the selected video input. If advanced previews is enabled, this preview will reflect the frame_load_cap, force_rate, skip_first_frames, and select_every_nth values chosen. If the video has audio, it will also be previewed when moused over. Additional preview options can be accessed with right click.</div></div></div></div></div>",
+  "display_name": "Load Video (Upload) 🎥🅥🅗🅢",
+  "description": "Load Video 🎥🅥🅗🅢<div style=\"font-size: 0.8em\"><div id=VHS_shortdesc>Loads a video from the input folder</div></div><div style=\"font-size: 0.8em\"><div vhs_title=\"Inputs\" style=\"display: flex; font-size: 0.8em\" class=\"VHS_collapse\"><div style=\"color: #AAA; height: 1.5em;\">[<span style=\"font-family: monospace\">-</span>]</div><div style=\"width: 100%\">Inputs: <div vhs_title=\"meta_batch\" style=\"display: flex; font-size: 1em\" class=\"VHS_collapse\"><div style=\"color: #AAA; height: 1.5em;\">[<span style=\"font-family: monospace\">-</span>]</div><div style=\"width: 100%\">meta_batch: (optional) Connect to a Meta Batch manager to divide extremely long sequences into sub batches. See the documentation for Meta Batch Manager</div></div><div vhs_title=\"vae\" style=\"display: flex; font-size: 1em\" class=\"VHS_collapse\"><div style=\"color: #AAA; height: 1.5em;\">[<span style=\"font-family: monospace\">-</span>]</div><div style=\"width: 100%\">vae: (optional) If provided the node will output latents instead of images. This drastically reduces the required RAM (not VRAM) when working with long (100+ frames) sequences<div style=\"font-size: 1em\">Using this is strongly encouraged unless connecting to a node that requires a blue image connection such as Apply Controllnet</div></div></div></div></div><div vhs_title=\"Outputs\" style=\"display: flex; font-size: 0.8em\" class=\"VHS_collapse\"><div style=\"color: #AAA; height: 1.5em;\">[<span style=\"font-family: monospace\">-</span>]</div><div style=\"width: 100%\">Outputs: <div vhs_title=\"IMAGE\" style=\"display: flex; font-size: 1em\" class=\"VHS_collapse\"><div style=\"color: #AAA; height: 1.5em;\">[<span style=\"font-family: monospace\">-</span>]</div><div style=\"width: 100%\">IMAGE: The loaded images</div></div><div vhs_title=\"frame_count\" style=\"display: flex; font-size: 1em\" class=\"VHS_collapse\"><div style=\"color: #AAA; height: 1.5em;\">[<span style=\"font-family: monospace\">-</span>]</div><div style=\"width: 100%\">frame_count: The length of images just returned</div></div><div vhs_title=\"audio\" style=\"display: flex; font-size: 1em\" class=\"VHS_collapse\"><div style=\"color: #AAA; height: 1.5em;\">[<span style=\"font-family: monospace\">-</span>]</div><div style=\"width: 100%\">audio: The audio from the loaded video</div></div><div vhs_title=\"video_info\" style=\"display: flex; font-size: 1em\" class=\"VHS_collapse\"><div style=\"color: #AAA; height: 1.5em;\">[<span style=\"font-family: monospace\">-</span>]</div><div style=\"width: 100%\">video_info: Exposes additional info about the video such as the source frame rate, or the total length</div></div><div vhs_title=\"LATENT\" style=\"display: flex; font-size: 1em\" class=\"VHS_collapse\"><div style=\"color: #AAA; height: 1.5em;\">[<span style=\"font-family: monospace\">-</span>]</div><div style=\"width: 100%\">LATENT: The loaded images pre-converted to latents. Only available when a vae is connected</div></div></div></div><div vhs_title=\"Widgets\" style=\"display: flex; font-size: 0.8em\" class=\"VHS_collapse\"><div style=\"color: #AAA; height: 1.5em;\">[<span style=\"font-family: monospace\">-</span>]</div><div style=\"width: 100%\">Widgets: <div vhs_title=\"video\" style=\"display: flex; font-size: 1em\" class=\"VHS_collapse\"><div style=\"color: #AAA; height: 1.5em;\">[<span style=\"font-family: monospace\">-</span>]</div><div style=\"width: 100%\">video: The video file to be loaded. Lists all files with a video extension in the ComfyUI/Input folder</div></div><div vhs_title=\"force_rate\" style=\"display: flex; font-size: 1em\" class=\"VHS_collapse\"><div style=\"color: #AAA; height: 1.5em;\">[<span style=\"font-family: monospace\">-</span>]</div><div style=\"width: 100%\">force_rate: Drops or duplicates frames so that the produced output has the target frame rate. Many motion models are trained on videos of a specific frame rate and will give better results if input matches that frame rate. If set to 0, all frames are returned. May give unusual results with inputs that have a variable frame rate like animated gifs. Reducing this value can also greatly reduce the execution time and memory requirements.</div></div><div vhs_title=\"force_size\" style=\"display: flex; font-size: 1em\" class=\"VHS_collapse\"><div style=\"color: #AAA; height: 1.5em;\">[<span style=\"font-family: monospace\">-</span>]</div><div style=\"width: 100%\">force_size: Previously was used to provide suggested resolutions. Instead, custom_width and custom_height can be disabled by setting to 0.</div></div><div vhs_title=\"custom_width\" style=\"display: flex; font-size: 1em\" class=\"VHS_collapse\"><div style=\"color: #AAA; height: 1.5em;\">[<span style=\"font-family: monospace\">-</span>]</div><div style=\"width: 100%\">custom_width: Allows for an arbitrary width to be entered, cropping to maintain aspect ratio if both are set</div></div><div vhs_title=\"custom_height\" style=\"display: flex; font-size: 1em\" class=\"VHS_collapse\"><div style=\"color: #AAA; height: 1.5em;\">[<span style=\"font-family: monospace\">-</span>]</div><div style=\"width: 100%\">custom_height: Allows for an arbitrary height to be entered, cropping to maintain aspect ratio if both are set</div></div><div vhs_title=\"frame_load_cap\" style=\"display: flex; font-size: 1em\" class=\"VHS_collapse\"><div style=\"color: #AAA; height: 1.5em;\">[<span style=\"font-family: monospace\">-</span>]</div><div style=\"width: 100%\">frame_load_cap: The maximum number of frames to load. If 0, all frames are loaded.</div></div><div vhs_title=\"skip_first_frames\" style=\"display: flex; font-size: 1em\" class=\"VHS_collapse\"><div style=\"color: #AAA; height: 1.5em;\">[<span style=\"font-family: monospace\">-</span>]</div><div style=\"width: 100%\">skip_first_frames: A number of frames which are discarded before producing output.</div></div><div vhs_title=\"select_every_nth\" style=\"display: flex; font-size: 1em\" class=\"VHS_collapse\"><div style=\"color: #AAA; height: 1.5em;\">[<span style=\"font-family: monospace\">-</span>]</div><div style=\"width: 100%\">select_every_nth: Similar to frame rate. Keeps only the first of every n frames and discard the rest. Has better compatibility with variable frame rate inputs such as gifs. When combined with force_rate, select_every_nth_applies after force_rate so the resulting output has a frame rate equivalent to force_rate/select_every_nth. select_every_nth does not apply to skip_first_frames</div></div><div vhs_title=\"format\" style=\"display: flex; font-size: 1em\" class=\"VHS_collapse\"><div style=\"color: #AAA; height: 1.5em;\">[<span style=\"font-family: monospace\">-</span>]</div><div style=\"width: 100%\">format: Updates other widgets so that only values supported by the given format can be entered and provides recommended defaults.</div></div><div vhs_title=\"choose video to upload\" style=\"display: flex; font-size: 1em\" class=\"VHS_collapse\"><div style=\"color: #AAA; height: 1.5em;\">[<span style=\"font-family: monospace\">-</span>]</div><div style=\"width: 100%\">choose video to upload: An upload button is provided to upload local files to the input folder</div></div><div vhs_title=\"videopreview\" style=\"display: flex; font-size: 1em\" class=\"VHS_collapse\"><div style=\"color: #AAA; height: 1.5em;\">[<span style=\"font-family: monospace\">-</span>]</div><div style=\"width: 100%\">videopreview: Displays a preview for the selected video input. If advanced previews is enabled, this preview will reflect the frame_load_cap, force_rate, skip_first_frames, and select_every_nth values chosen. If the video has audio, it will also be previewed when moused over. Additional preview options can be accessed with right click.</div></div></div></div></div>",
   "python_module": "custom_nodes.comfyui-videohelpersuite",
-  "category": "Video Helper Suite \ud83c\udfa5\ud83c\udd65\ud83c\udd57\ud83c\udd62",
+  "category": "Video Helper Suite 🎥🅥🅗🅢",
   "output_node": false,
   "has_intermediate_output": false,
   "search_aliases": []
@@ -5378,10 +5378,10 @@
    "video_info"
   ],
   "name": "VHS_LoadVideoPath",
-  "display_name": "Load Video (Path) \ud83c\udfa5\ud83c\udd65\ud83c\udd57\ud83c\udd62",
-  "description": "Load Video (Path) \ud83c\udfa5\ud83c\udd65\ud83c\udd57\ud83c\udd62<div style=\"font-size: 0.8em\"><div id=VHS_shortdesc>Loads a video from an arbitrary path</div></div><div style=\"font-size: 0.8em\"><div vhs_title=\"Inputs\" style=\"display: flex; font-size: 0.8em\" class=\"VHS_collapse\"><div style=\"color: #AAA; height: 1.5em;\">[<span style=\"font-family: monospace\">-</span>]</div><div style=\"width: 100%\">Inputs: <div vhs_title=\"meta_batch\" style=\"display: flex; font-size: 1em\" class=\"VHS_collapse\"><div style=\"color: #AAA; height: 1.5em;\">[<span style=\"font-family: monospace\">-</span>]</div><div style=\"width: 100%\">meta_batch: (optional) Connect to a Meta Batch manager to divide extremely long sequences into sub batches. See the documentation for Meta Batch Manager</div></div><div vhs_title=\"vae\" style=\"display: flex; font-size: 1em\" class=\"VHS_collapse\"><div style=\"color: #AAA; height: 1.5em;\">[<span style=\"font-family: monospace\">-</span>]</div><div style=\"width: 100%\">vae: (optional) If provided the node will output latents instead of images. This drastically reduces the required RAM (not VRAM) when working with long (100+ frames) sequences<div style=\"font-size: 1em\">Using this is strongly encouraged unless connecting to a node that requires a blue image connection such as Apply Controllnet</div></div></div></div></div><div vhs_title=\"Outputs\" style=\"display: flex; font-size: 0.8em\" class=\"VHS_collapse\"><div style=\"color: #AAA; height: 1.5em;\">[<span style=\"font-family: monospace\">-</span>]</div><div style=\"width: 100%\">Outputs: <div vhs_title=\"IMAGE\" style=\"display: flex; font-size: 1em\" class=\"VHS_collapse\"><div style=\"color: #AAA; height: 1.5em;\">[<span style=\"font-family: monospace\">-</span>]</div><div style=\"width: 100%\">IMAGE: The loaded images</div></div><div vhs_title=\"frame_count\" style=\"display: flex; font-size: 1em\" class=\"VHS_collapse\"><div style=\"color: #AAA; height: 1.5em;\">[<span style=\"font-family: monospace\">-</span>]</div><div style=\"width: 100%\">frame_count: The length of images just returned</div></div><div vhs_title=\"audio\" style=\"display: flex; font-size: 1em\" class=\"VHS_collapse\"><div style=\"color: #AAA; height: 1.5em;\">[<span style=\"font-family: monospace\">-</span>]</div><div style=\"width: 100%\">audio: The audio from the loaded video</div></div><div vhs_title=\"video_info\" style=\"display: flex; font-size: 1em\" class=\"VHS_collapse\"><div style=\"color: #AAA; height: 1.5em;\">[<span style=\"font-family: monospace\">-</span>]</div><div style=\"width: 100%\">video_info: Exposes additional info about the video such as the source frame rate, or the total length</div></div><div vhs_title=\"LATENT\" style=\"display: flex; font-size: 1em\" class=\"VHS_collapse\"><div style=\"color: #AAA; height: 1.5em;\">[<span style=\"font-family: monospace\">-</span>]</div><div style=\"width: 100%\">LATENT: The loaded images pre-converted to latents. Only available when a vae is connected</div></div></div></div><div vhs_title=\"Widgets\" style=\"display: flex; font-size: 0.8em\" class=\"VHS_collapse\"><div style=\"color: #AAA; height: 1.5em;\">[<span style=\"font-family: monospace\">-</span>]</div><div style=\"width: 100%\">Widgets: <div vhs_title=\"video\" style=\"display: flex; font-size: 1em\" class=\"VHS_collapse\"><div style=\"color: #AAA; height: 1.5em;\">[<span style=\"font-family: monospace\">-</span>]</div><div style=\"width: 100%\">video: The video file to be loaded.<div style=\"font-size: 1em\">You can also select an image to load it as a single frame</div><div style=\"font-size: 1em\">This is a VHS_PATH input. When edited, it provides a list of possible valid files or directories</div><div style=\"font-size: 1em\"><video preload=\"none\" src=https://github.com/Kosinkadink/ComfyUI-VideoHelperSuite/assets/4284322/729b7185-1fca-41d8-bc8d-a770bb2a5ce6 muted loop controls controlslist=\"nodownload noremoteplayback noplaybackrate\" style=\"width: 0px; min-width: 100%\" class=\"VHS_loopedvideo\"></div><div style=\"font-size: 1em\">The current top-most completion may be selected with Tab</div><div style=\"font-size: 1em\">You can navigate up a directory by pressing Ctrl+B (or Ctrl+W if supported by browser)</div><div style=\"font-size: 1em\">The filter on suggested file types can be disabled by pressing Ctrl+G.</div><div style=\"font-size: 1em\">If converted to an input, this functions as a string</div></div></div><div vhs_title=\"force_rate\" style=\"display: flex; font-size: 1em\" class=\"VHS_collapse\"><div style=\"color: #AAA; height: 1.5em;\">[<span style=\"font-family: monospace\">-</span>]</div><div style=\"width: 100%\">force_rate: Drops or duplicates frames so that the produced output has the target frame rate. Many motion models are trained on videos of a specific frame rate and will give better results if input matches that frame rate. If set to 0, all frames are returned. May give unusual results with inputs that have a variable frame rate like animated gifs. Reducing this value can also greatly reduce the execution time and memory requirements.</div></div><div vhs_title=\"force_size\" style=\"display: flex; font-size: 1em\" class=\"VHS_collapse\"><div style=\"color: #AAA; height: 1.5em;\">[<span style=\"font-family: monospace\">-</span>]</div><div style=\"width: 100%\">force_size: Previously was used to provide suggested resolutions. Instead, custom_width and custom_height can be disabled by setting to 0.</div></div><div vhs_title=\"custom_width\" style=\"display: flex; font-size: 1em\" class=\"VHS_collapse\"><div style=\"color: #AAA; height: 1.5em;\">[<span style=\"font-family: monospace\">-</span>]</div><div style=\"width: 100%\">custom_width: Allows for an arbitrary width to be entered, cropping to maintain aspect ratio if both are set</div></div><div vhs_title=\"custom_height\" style=\"display: flex; font-size: 1em\" class=\"VHS_collapse\"><div style=\"color: #AAA; height: 1.5em;\">[<span style=\"font-family: monospace\">-</span>]</div><div style=\"width: 100%\">custom_height: Allows for an arbitrary height to be entered, cropping to maintain aspect ratio if both are set</div></div><div vhs_title=\"frame_load_cap\" style=\"display: flex; font-size: 1em\" class=\"VHS_collapse\"><div style=\"color: #AAA; height: 1.5em;\">[<span style=\"font-family: monospace\">-</span>]</div><div style=\"width: 100%\">frame_load_cap: The maximum number of frames to load. If 0, all frames are loaded.</div></div><div vhs_title=\"skip_first_frames\" style=\"display: flex; font-size: 1em\" class=\"VHS_collapse\"><div style=\"color: #AAA; height: 1.5em;\">[<span style=\"font-family: monospace\">-</span>]</div><div style=\"width: 100%\">skip_first_frames: A number of frames which are discarded before producing output.</div></div><div vhs_title=\"select_every_nth\" style=\"display: flex; font-size: 1em\" class=\"VHS_collapse\"><div style=\"color: #AAA; height: 1.5em;\">[<span style=\"font-family: monospace\">-</span>]</div><div style=\"width: 100%\">select_every_nth: Similar to frame rate. Keeps only the first of every n frames and discard the rest. Has better compatibility with variable frame rate inputs such as gifs. When combined with force_rate, select_every_nth_applies after force_rate so the resulting output has a frame rate equivalent to force_rate/select_every_nth. select_every_nth does not apply to skip_first_frames</div></div><div vhs_title=\"format\" style=\"display: flex; font-size: 1em\" class=\"VHS_collapse\"><div style=\"color: #AAA; height: 1.5em;\">[<span style=\"font-family: monospace\">-</span>]</div><div style=\"width: 100%\">format: Updates other widgets so that only values supported by the given format can be entered and provides recommended defaults.</div></div><div vhs_title=\"videopreview\" style=\"display: flex; font-size: 1em\" class=\"VHS_collapse\"><div style=\"color: #AAA; height: 1.5em;\">[<span style=\"font-family: monospace\">-</span>]</div><div style=\"width: 100%\">videopreview: Displays a preview for the selected video input. Will only be shown if Advanced Previews is enabled. This preview will reflect the frame_load_cap, force_rate, skip_first_frames, and select_every_nth values chosen. If the video has audio, it will also be previewed when moused over. Additional preview options can be accessed with right click.</div></div></div></div></div>",
+  "display_name": "Load Video (Path) 🎥🅥🅗🅢",
+  "description": "Load Video (Path) 🎥🅥🅗🅢<div style=\"font-size: 0.8em\"><div id=VHS_shortdesc>Loads a video from an arbitrary path</div></div><div style=\"font-size: 0.8em\"><div vhs_title=\"Inputs\" style=\"display: flex; font-size: 0.8em\" class=\"VHS_collapse\"><div style=\"color: #AAA; height: 1.5em;\">[<span style=\"font-family: monospace\">-</span>]</div><div style=\"width: 100%\">Inputs: <div vhs_title=\"meta_batch\" style=\"display: flex; font-size: 1em\" class=\"VHS_collapse\"><div style=\"color: #AAA; height: 1.5em;\">[<span style=\"font-family: monospace\">-</span>]</div><div style=\"width: 100%\">meta_batch: (optional) Connect to a Meta Batch manager to divide extremely long sequences into sub batches. See the documentation for Meta Batch Manager</div></div><div vhs_title=\"vae\" style=\"display: flex; font-size: 1em\" class=\"VHS_collapse\"><div style=\"color: #AAA; height: 1.5em;\">[<span style=\"font-family: monospace\">-</span>]</div><div style=\"width: 100%\">vae: (optional) If provided the node will output latents instead of images. This drastically reduces the required RAM (not VRAM) when working with long (100+ frames) sequences<div style=\"font-size: 1em\">Using this is strongly encouraged unless connecting to a node that requires a blue image connection such as Apply Controllnet</div></div></div></div></div><div vhs_title=\"Outputs\" style=\"display: flex; font-size: 0.8em\" class=\"VHS_collapse\"><div style=\"color: #AAA; height: 1.5em;\">[<span style=\"font-family: monospace\">-</span>]</div><div style=\"width: 100%\">Outputs: <div vhs_title=\"IMAGE\" style=\"display: flex; font-size: 1em\" class=\"VHS_collapse\"><div style=\"color: #AAA; height: 1.5em;\">[<span style=\"font-family: monospace\">-</span>]</div><div style=\"width: 100%\">IMAGE: The loaded images</div></div><div vhs_title=\"frame_count\" style=\"display: flex; font-size: 1em\" class=\"VHS_collapse\"><div style=\"color: #AAA; height: 1.5em;\">[<span style=\"font-family: monospace\">-</span>]</div><div style=\"width: 100%\">frame_count: The length of images just returned</div></div><div vhs_title=\"audio\" style=\"display: flex; font-size: 1em\" class=\"VHS_collapse\"><div style=\"color: #AAA; height: 1.5em;\">[<span style=\"font-family: monospace\">-</span>]</div><div style=\"width: 100%\">audio: The audio from the loaded video</div></div><div vhs_title=\"video_info\" style=\"display: flex; font-size: 1em\" class=\"VHS_collapse\"><div style=\"color: #AAA; height: 1.5em;\">[<span style=\"font-family: monospace\">-</span>]</div><div style=\"width: 100%\">video_info: Exposes additional info about the video such as the source frame rate, or the total length</div></div><div vhs_title=\"LATENT\" style=\"display: flex; font-size: 1em\" class=\"VHS_collapse\"><div style=\"color: #AAA; height: 1.5em;\">[<span style=\"font-family: monospace\">-</span>]</div><div style=\"width: 100%\">LATENT: The loaded images pre-converted to latents. Only available when a vae is connected</div></div></div></div><div vhs_title=\"Widgets\" style=\"display: flex; font-size: 0.8em\" class=\"VHS_collapse\"><div style=\"color: #AAA; height: 1.5em;\">[<span style=\"font-family: monospace\">-</span>]</div><div style=\"width: 100%\">Widgets: <div vhs_title=\"video\" style=\"display: flex; font-size: 1em\" class=\"VHS_collapse\"><div style=\"color: #AAA; height: 1.5em;\">[<span style=\"font-family: monospace\">-</span>]</div><div style=\"width: 100%\">video: The video file to be loaded.<div style=\"font-size: 1em\">You can also select an image to load it as a single frame</div><div style=\"font-size: 1em\">This is a VHS_PATH input. When edited, it provides a list of possible valid files or directories</div><div style=\"font-size: 1em\"><video preload=\"none\" src=https://github.com/Kosinkadink/ComfyUI-VideoHelperSuite/assets/4284322/729b7185-1fca-41d8-bc8d-a770bb2a5ce6 muted loop controls controlslist=\"nodownload noremoteplayback noplaybackrate\" style=\"width: 0px; min-width: 100%\" class=\"VHS_loopedvideo\"></div><div style=\"font-size: 1em\">The current top-most completion may be selected with Tab</div><div style=\"font-size: 1em\">You can navigate up a directory by pressing Ctrl+B (or Ctrl+W if supported by browser)</div><div style=\"font-size: 1em\">The filter on suggested file types can be disabled by pressing Ctrl+G.</div><div style=\"font-size: 1em\">If converted to an input, this functions as a string</div></div></div><div vhs_title=\"force_rate\" style=\"display: flex; font-size: 1em\" class=\"VHS_collapse\"><div style=\"color: #AAA; height: 1.5em;\">[<span style=\"font-family: monospace\">-</span>]</div><div style=\"width: 100%\">force_rate: Drops or duplicates frames so that the produced output has the target frame rate. Many motion models are trained on videos of a specific frame rate and will give better results if input matches that frame rate. If set to 0, all frames are returned. May give unusual results with inputs that have a variable frame rate like animated gifs. Reducing this value can also greatly reduce the execution time and memory requirements.</div></div><div vhs_title=\"force_size\" style=\"display: flex; font-size: 1em\" class=\"VHS_collapse\"><div style=\"color: #AAA; height: 1.5em;\">[<span style=\"font-family: monospace\">-</span>]</div><div style=\"width: 100%\">force_size: Previously was used to provide suggested resolutions. Instead, custom_width and custom_height can be disabled by setting to 0.</div></div><div vhs_title=\"custom_width\" style=\"display: flex; font-size: 1em\" class=\"VHS_collapse\"><div style=\"color: #AAA; height: 1.5em;\">[<span style=\"font-family: monospace\">-</span>]</div><div style=\"width: 100%\">custom_width: Allows for an arbitrary width to be entered, cropping to maintain aspect ratio if both are set</div></div><div vhs_title=\"custom_height\" style=\"display: flex; font-size: 1em\" class=\"VHS_collapse\"><div style=\"color: #AAA; height: 1.5em;\">[<span style=\"font-family: monospace\">-</span>]</div><div style=\"width: 100%\">custom_height: Allows for an arbitrary height to be entered, cropping to maintain aspect ratio if both are set</div></div><div vhs_title=\"frame_load_cap\" style=\"display: flex; font-size: 1em\" class=\"VHS_collapse\"><div style=\"color: #AAA; height: 1.5em;\">[<span style=\"font-family: monospace\">-</span>]</div><div style=\"width: 100%\">frame_load_cap: The maximum number of frames to load. If 0, all frames are loaded.</div></div><div vhs_title=\"skip_first_frames\" style=\"display: flex; font-size: 1em\" class=\"VHS_collapse\"><div style=\"color: #AAA; height: 1.5em;\">[<span style=\"font-family: monospace\">-</span>]</div><div style=\"width: 100%\">skip_first_frames: A number of frames which are discarded before producing output.</div></div><div vhs_title=\"select_every_nth\" style=\"display: flex; font-size: 1em\" class=\"VHS_collapse\"><div style=\"color: #AAA; height: 1.5em;\">[<span style=\"font-family: monospace\">-</span>]</div><div style=\"width: 100%\">select_every_nth: Similar to frame rate. Keeps only the first of every n frames and discard the rest. Has better compatibility with variable frame rate inputs such as gifs. When combined with force_rate, select_every_nth_applies after force_rate so the resulting output has a frame rate equivalent to force_rate/select_every_nth. select_every_nth does not apply to skip_first_frames</div></div><div vhs_title=\"format\" style=\"display: flex; font-size: 1em\" class=\"VHS_collapse\"><div style=\"color: #AAA; height: 1.5em;\">[<span style=\"font-family: monospace\">-</span>]</div><div style=\"width: 100%\">format: Updates other widgets so that only values supported by the given format can be entered and provides recommended defaults.</div></div><div vhs_title=\"videopreview\" style=\"display: flex; font-size: 1em\" class=\"VHS_collapse\"><div style=\"color: #AAA; height: 1.5em;\">[<span style=\"font-family: monospace\">-</span>]</div><div style=\"width: 100%\">videopreview: Displays a preview for the selected video input. Will only be shown if Advanced Previews is enabled. This preview will reflect the frame_load_cap, force_rate, skip_first_frames, and select_every_nth values chosen. If the video has audio, it will also be previewed when moused over. Additional preview options can be accessed with right click.</div></div></div></div></div>",
   "python_module": "custom_nodes.comfyui-videohelpersuite",
-  "category": "Video Helper Suite \ud83c\udfa5\ud83c\udd65\ud83c\udd57\ud83c\udd62",
+  "category": "Video Helper Suite 🎥🅥🅗🅢",
   "output_node": false,
   "has_intermediate_output": false,
   "search_aliases": []
@@ -5396,8 +5396,8 @@
      "FLOAT",
      {
       "default": 1.73,
-      "min": 0.0,
-      "max": 100.0,
+      "min": 0,
+      "max": 100,
       "step": 0.01
      }
     ]
@@ -5487,8 +5487,8 @@
     "fit_ratio": [
      "FLOAT",
      {
-      "default": 0.0,
-      "min": 0.0,
+      "default": 0,
+      "min": 0,
       "step": 0.01
      }
     ],
@@ -5510,8 +5510,8 @@
      "FLOAT",
      {
       "default": 0.22,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01
      }
     ],
@@ -5532,8 +5532,8 @@
     "target_width": [
      "FLOAT",
      {
-      "default": 0.0,
-      "min": 0.0,
+      "default": 0,
+      "min": 0,
       "step": 0.01
      }
     ]
@@ -5628,5 +5628,1004 @@
   "output_node": true,
   "has_intermediate_output": false,
   "search_aliases": []
+ },
+ "MiniMaxH3RefModExtract": {
+  "input": {
+   "required": {
+    "name": [
+     "STRING",
+     {
+      "tooltip": "Saved mod name (appears in the Load H3 RefMods dropdown after a reload).",
+      "default": "my_concept",
+      "multiline": false
+     }
+    ],
+    "mode": [
+     "COMBO",
+     {
+      "tooltip": "Compressed Reference pools the latent and optionally refines its reconstruction. Full Reference stores the VAE encode, subject to resolution/frame/token limits. Neither mode trains H3 weights. Legacy mode values remain accepted.",
+      "default": "Compressed Reference",
+      "multiselect": false,
+      "options": [
+       "Compressed Reference",
+       "Full Reference",
+       "training",
+       "encode"
+      ]
+     }
+    ],
+    "concept_type": [
+     "COMBO",
+     {
+      "tooltip": "Metadata only; does not select a learning algorithm. What this mod represents — 'identity' (a specific person/character), 'pose_motion' (a pose/dance/gesture/camera move), 'clothing', 'background', 'style', or 'generic'. Stored in the mod and used by the loaders' prompt_hint output (merges concept_type + description into a string you can concat onto your CLIP prompt). 'identity' in training mode with a small grid also triggers a warning nudging you toward 'encode' mode or a bigger grid — pooling is lossy in exactly the way that destroys facial identity.",
+      "default": "generic",
+      "multiselect": false,
+      "options": [
+       "generic",
+       "identity",
+       "pose_motion",
+       "clothing",
+       "background",
+       "voice",
+       "singing",
+       "music_style",
+       "sound_fx",
+       "ambience",
+       "style"
+      ]
+     }
+    ],
+    "background_retention": [
+     "FLOAT",
+     {
+      "tooltip": "Only used when 'mask' is connected. Floor weight for the region outside the mask: 0 = that region collapses to a heavily blurred copy of itself (kills specific structure like a skyline/treeline while staying smooth and in-distribution), 1 = mask has no effect. Middle values (0.3-0.6) partially blur instead of fully.",
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "step": 0.05
+     }
+    ],
+    "ref_resolution": [
+     "INT",
+     {
+      "tooltip": "Target short edge in px (downscale only, never upscale), applied to BOTH modes: 'encode' stores at that res, 'training' encodes smaller too (it pools to a grid anyway, so native-res encoding is wasted compute — this is the main speed dial for training mode). 1024 is a good default; 512 halves encode cost; 2048 = official max fidelity, 4x the tokens of 1024.",
+      "default": 1024,
+      "min": 256,
+      "max": 2048,
+      "step": 64
+     }
+    ],
+    "pool_h": [
+     "INT",
+     {
+      "tooltip": "Pooled mode: spatial latent grid after pooling. The grid is auto-fit to the source's aspect ratio (long edge = max of the two dials, other edge derived), so a portrait person isn't squished into a square grid (the 'fat/chubby' distortion). Square sources keep the exact dial value. 16x16 = 64 tokens/frame (concept sweet spot); 32x32 = 256; 64x64 = 1024, full-mode parity for identity.",
+      "default": 16,
+      "min": 2,
+      "max": 64,
+      "step": 2
+     }
+    ],
+    "pool_w": [
+     "INT",
+     {
+      "tooltip": "Pooled mode: grid width (long edge if the source is wider than tall).",
+      "default": 16,
+      "min": 2,
+      "max": 64,
+      "step": 2
+     }
+    ],
+    "latent_frames": [
+     "INT",
+     {
+      "tooltip": "Per-video temporal limit. Encode mode samples up to this many source frames before VAE encoding and causal 4k+1 trimming; training mode pools to up to this many latent frames after encoding. Set at least the source frame count to avoid encode-mode sampling. Images use 1. Higher values increase memory and token cost; max_tokens can still reduce the result.",
+      "default": 16,
+      "min": 1,
+      "max": 2147483647
+     }
+    ],
+    "identity": [
+     "INT",
+     {
+      "display_name": "Refinement Steps",
+      "tooltip": "Compressed Reference only: optimization steps to reduce latent reconstruction error. 0 uses pooling alone. This is not identity strength or model training.",
+      "default": 500,
+      "min": 0,
+      "max": 2000,
+      "step": 50
+     }
+    ],
+    "merge": [
+     "BOOLEAN",
+     {
+      "tooltip": "Merge mode (training only): instead of stacking each ref's own pooled latent, optimize ONE shared grid against every full encode jointly — the result lands on what's COMMON across all the views (structure, motion, identity) rather than any single shot's framing/background. Ideal for a collection: many angles of a subject, a folder of similar clips -> one tiny consensus mod, one ref block's worth of tokens. Keeps every full encode in VRAM during refinement. Off = stack (each ref keeps its own frames). Ignored when mode='encode'.",
+      "default": false,
+      "label_on": "merge",
+      "label_off": "stack"
+     }
+    ],
+    "motion_only": [
+     "BOOLEAN",
+     {
+      "tooltip": "EXPERIMENTAL — extract only what MOVES. Video refs are converted to per-frame temporal differences (|f[t+1] - f[t]|, normalized) before encoding, so the mod carries where/how things move and the static appearance (background, the lineart look, an outfit) never enters the latent. For a lineart animation this keeps the moving lines and drops the static drawing. Needs video refs — a still has no motion, so image refs keep their appearance (warned). Training mode only; the ref channel is content-based, so treat the result as a soft motion guide, not a ControlNet. Combines with 'merge'.",
+      "default": false,
+      "label_on": "motion",
+      "label_off": "full"
+     }
+    ],
+    "multiplier": [
+     "INT",
+     {
+      "tooltip": "Data multiplier: repeat the extracted ref N times along time so a short video/GIF (few tokens) isn't drowned out by the main video's tokens. Each repeat duplicates the same latent frames, so attention weight on the ref scales roughly with N. 1 = no repeat; file size grows with N.",
+      "default": 1,
+      "min": 1,
+      "max": 10,
+      "step": 1
+     }
+    ],
+    "max_tokens": [
+     "INT",
+     {
+      "tooltip": "Hard cap on the total tokens the mod injects (0 = no cap; 5120 is a good performance default). If the stacked refs exceed it, near-duplicate latent frames are dropped first (video refs are full of frames that differ only by noise — each one still costs a token per spatial patch in every block), then frames are resampled to fit. The cap is honored after the multiplier. Lower latent_frames/ref_resolution instead to avoid wasting encode work: ~23K tokens = one 1024px encode-mode video ref at 16 frames.",
+      "default": 5120,
+      "min": 0,
+      "max": 2147483647,
+      "step": 512
+     }
+    ],
+    "description": [
+     "STRING",
+     {
+      "tooltip": "Optional text describing the concept (e.g. 'a ginger woman with messy hair', 'an animation style', 'handheld camera movement'). Stored in the mod and printed in the info block — documentation only, no wiring.",
+      "default": "",
+      "multiline": true
+     }
+    ],
+    "save": [
+     "BOOLEAN",
+     {
+      "tooltip": "Save the mod to mods/ so Load H3 RefMods can pick it up later.",
+      "default": true,
+      "label_on": "save",
+      "label_off": "don't save"
+     }
+    ]
+   },
+   "optional": {
+    "refs_image": [
+     "COMFY_AUTOGROW_V3",
+     {
+      "template": {
+       "input": {
+        "required": {
+         "ref_image": [
+          "IMAGE",
+          {
+           "tooltip": "Reference still: one image of the concept (angle / expression / outfit). Optional — leave empty when using video refs and/or a folder bundle."
+          }
+         ]
+        }
+       },
+       "prefix": "ref_image_",
+       "min": 0,
+       "max": 16
+      }
+     }
+    ],
+    "refs_video": [
+     "COMFY_AUTOGROW_V3",
+     {
+      "template": {
+       "input": {
+        "required": {
+         "ref_video": [
+          "IMAGE",
+          {
+           "tooltip": "Reference video frames [T,H,W,C] (a multi-frame batch = a video ref with motion). Optional — leave empty when using image refs and/or a folder bundle."
+          }
+         ]
+        }
+       },
+       "prefix": "ref_video_",
+       "min": 0,
+       "max": 8
+      }
+     }
+    ],
+    "refs_bundle": [
+     "H3_REF_LIST",
+     {
+      "tooltip": "All images/videos from a Load H3 RefMod Folder node, appended after the autogrow refs (bulk extraction)."
+     }
+    ],
+    "mask": [
+     "MASK",
+     {
+      "tooltip": "Subject mask (or a batch, one per reference in order: images then videos) marking what to keep at full weight. Everything outside the mask collapses toward a heavily blurred copy of itself per spatial cell (stays in-distribution — a flat noise-mix here decodes as a woven/static texture instead of 'nothing'), controlled by background_retention. Fixes 'encode' mode pulling in a background/style that doesn't belong to the subject. A single mask broadcasts to every reference; a batch must match the reference count."
+     }
+    ],
+    "av_encoder": [
+     "MINIMAX_H3_AV_ENCODER",
+     {
+      "tooltip": "Legacy MiniMax-H3 VAERef. Loads its video checkpoint using the native ComfyUI VAE; prefer vae to share an already loaded VAE."
+     }
+    ],
+    "vae": [
+     "VAE",
+     {
+      "tooltip": "Standard VAE, used when av_encoder is not connected."
+     }
+    ],
+    "extraction_preset": [
+     "COMBO",
+     {
+      "tooltip": "manual preserves controls. identity_encode: Full Reference, resolution=1024, steps=0, merge/motion_only off. style_experimental: Compressed Reference, pool=8x8, steps=150, merge/motion_only off. motion_sequence: Compressed Reference, pool=16x16, merge/motion_only off; preserves frame limit and Refinement Steps. It keeps appearance, not frame differences.",
+      "default": "manual",
+      "multiselect": false,
+      "options": [
+       "manual",
+       "identity_encode",
+       "style_experimental",
+       "motion_sequence"
+      ]
+     }
+    ],
+    "subfolder": [
+     "STRING",
+     {
+      "tooltip": "Optional folder inside models/refmods, for example celebs or voices.",
+      "default": "",
+      "multiline": false
+     }
+    ],
+    "budget_policy": [
+     "COMBO",
+     {
+      "tooltip": "On max_tokens overflow: truncate uses the existing frame reduction; error stops without saving. 0 max_tokens disables the cap.",
+      "default": "truncate",
+      "multiselect": false,
+      "options": [
+       "truncate",
+       "error"
+      ]
+     }
+    ]
+   }
+  }
+ },
+ "MiniMaxH3RefModsLoader": {
+  "input": {
+   "required": {
+    "show_info": [
+     "BOOLEAN",
+     {
+      "default": false,
+      "tooltip": "Print full details (tokens, layout, source, pool) of every loaded mod to the console."
+     }
+    ],
+    "mod_1": [
+     [
+      "(none)",
+      "vanellope_example"
+     ],
+     {
+      "tooltip": "RefMod 1 to load, or (none)."
+     }
+    ],
+    "strength_1": [
+     "FLOAT",
+     {
+      "default": 1,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "display": "number",
+      "tooltip": "How strongly this mod's reference is preserved. 1.0 = full ref (official behavior). Lower values blur the ref toward a softened copy of itself — identity fades smoothly and stays plausible instead of turning into static/noise texture. 0 skips the mod entirely."
+     }
+    ],
+    "copies_1": [
+     "INT",
+     {
+      "default": 1,
+      "min": 1,
+      "max": 10,
+      "step": 1,
+      "display": "number",
+      "tooltip": "How many copies of this mod to inject (1 = normal, 2+ = the same ref repeated — the manual row-duplication trick as a knob, up to 10x). More copies = noticeably stronger reference, but each copy costs its full token count in every DiT block, so it slows down inference and eats VRAM — 2-3 copies is the sweet spot, 10x will be very slow."
+     }
+    ],
+    "mod_2": [
+     [
+      "(none)",
+      "vanellope_example"
+     ],
+     {
+      "tooltip": "RefMod 2 to load, or (none)."
+     }
+    ],
+    "strength_2": [
+     "FLOAT",
+     {
+      "default": 1,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "display": "number",
+      "tooltip": "How strongly this mod's reference is preserved. 1.0 = full ref (official behavior). Lower values blur the ref toward a softened copy of itself — identity fades smoothly and stays plausible instead of turning into static/noise texture. 0 skips the mod entirely."
+     }
+    ],
+    "copies_2": [
+     "INT",
+     {
+      "default": 1,
+      "min": 1,
+      "max": 10,
+      "step": 1,
+      "display": "number",
+      "tooltip": "How many copies of this mod to inject (1 = normal, 2+ = the same ref repeated — the manual row-duplication trick as a knob, up to 10x). More copies = noticeably stronger reference, but each copy costs its full token count in every DiT block, so it slows down inference and eats VRAM — 2-3 copies is the sweet spot, 10x will be very slow."
+     }
+    ],
+    "mod_3": [
+     [
+      "(none)",
+      "vanellope_example"
+     ],
+     {
+      "tooltip": "RefMod 3 to load, or (none)."
+     }
+    ],
+    "strength_3": [
+     "FLOAT",
+     {
+      "default": 1,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "display": "number",
+      "tooltip": "How strongly this mod's reference is preserved. 1.0 = full ref (official behavior). Lower values blur the ref toward a softened copy of itself — identity fades smoothly and stays plausible instead of turning into static/noise texture. 0 skips the mod entirely."
+     }
+    ],
+    "copies_3": [
+     "INT",
+     {
+      "default": 1,
+      "min": 1,
+      "max": 10,
+      "step": 1,
+      "display": "number",
+      "tooltip": "How many copies of this mod to inject (1 = normal, 2+ = the same ref repeated — the manual row-duplication trick as a knob, up to 10x). More copies = noticeably stronger reference, but each copy costs its full token count in every DiT block, so it slows down inference and eats VRAM — 2-3 copies is the sweet spot, 10x will be very slow."
+     }
+    ],
+    "mod_4": [
+     [
+      "(none)",
+      "vanellope_example"
+     ],
+     {
+      "tooltip": "RefMod 4 to load, or (none)."
+     }
+    ],
+    "strength_4": [
+     "FLOAT",
+     {
+      "default": 1,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "display": "number",
+      "tooltip": "How strongly this mod's reference is preserved. 1.0 = full ref (official behavior). Lower values blur the ref toward a softened copy of itself — identity fades smoothly and stays plausible instead of turning into static/noise texture. 0 skips the mod entirely."
+     }
+    ],
+    "copies_4": [
+     "INT",
+     {
+      "default": 1,
+      "min": 1,
+      "max": 10,
+      "step": 1,
+      "display": "number",
+      "tooltip": "How many copies of this mod to inject (1 = normal, 2+ = the same ref repeated — the manual row-duplication trick as a knob, up to 10x). More copies = noticeably stronger reference, but each copy costs its full token count in every DiT block, so it slows down inference and eats VRAM — 2-3 copies is the sweet spot, 10x will be very slow."
+     }
+    ],
+    "mod_5": [
+     [
+      "(none)",
+      "vanellope_example"
+     ],
+     {
+      "tooltip": "RefMod 5 to load, or (none)."
+     }
+    ],
+    "strength_5": [
+     "FLOAT",
+     {
+      "default": 1,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "display": "number",
+      "tooltip": "How strongly this mod's reference is preserved. 1.0 = full ref (official behavior). Lower values blur the ref toward a softened copy of itself — identity fades smoothly and stays plausible instead of turning into static/noise texture. 0 skips the mod entirely."
+     }
+    ],
+    "copies_5": [
+     "INT",
+     {
+      "default": 1,
+      "min": 1,
+      "max": 10,
+      "step": 1,
+      "display": "number",
+      "tooltip": "How many copies of this mod to inject (1 = normal, 2+ = the same ref repeated — the manual row-duplication trick as a knob, up to 10x). More copies = noticeably stronger reference, but each copy costs its full token count in every DiT block, so it slows down inference and eats VRAM — 2-3 copies is the sweet spot, 10x will be very slow."
+     }
+    ],
+    "mod_6": [
+     [
+      "(none)",
+      "vanellope_example"
+     ],
+     {
+      "tooltip": "RefMod 6 to load, or (none)."
+     }
+    ],
+    "strength_6": [
+     "FLOAT",
+     {
+      "default": 1,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "display": "number",
+      "tooltip": "How strongly this mod's reference is preserved. 1.0 = full ref (official behavior). Lower values blur the ref toward a softened copy of itself — identity fades smoothly and stays plausible instead of turning into static/noise texture. 0 skips the mod entirely."
+     }
+    ],
+    "copies_6": [
+     "INT",
+     {
+      "default": 1,
+      "min": 1,
+      "max": 10,
+      "step": 1,
+      "display": "number",
+      "tooltip": "How many copies of this mod to inject (1 = normal, 2+ = the same ref repeated — the manual row-duplication trick as a knob, up to 10x). More copies = noticeably stronger reference, but each copy costs its full token count in every DiT block, so it slows down inference and eats VRAM — 2-3 copies is the sweet spot, 10x will be very slow."
+     }
+    ],
+    "mod_7": [
+     [
+      "(none)",
+      "vanellope_example"
+     ],
+     {
+      "tooltip": "RefMod 7 to load, or (none)."
+     }
+    ],
+    "strength_7": [
+     "FLOAT",
+     {
+      "default": 1,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "display": "number",
+      "tooltip": "How strongly this mod's reference is preserved. 1.0 = full ref (official behavior). Lower values blur the ref toward a softened copy of itself — identity fades smoothly and stays plausible instead of turning into static/noise texture. 0 skips the mod entirely."
+     }
+    ],
+    "copies_7": [
+     "INT",
+     {
+      "default": 1,
+      "min": 1,
+      "max": 10,
+      "step": 1,
+      "display": "number",
+      "tooltip": "How many copies of this mod to inject (1 = normal, 2+ = the same ref repeated — the manual row-duplication trick as a knob, up to 10x). More copies = noticeably stronger reference, but each copy costs its full token count in every DiT block, so it slows down inference and eats VRAM — 2-3 copies is the sweet spot, 10x will be very slow."
+     }
+    ],
+    "mod_8": [
+     [
+      "(none)",
+      "vanellope_example"
+     ],
+     {
+      "tooltip": "RefMod 8 to load, or (none)."
+     }
+    ],
+    "strength_8": [
+     "FLOAT",
+     {
+      "default": 1,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "display": "number",
+      "tooltip": "How strongly this mod's reference is preserved. 1.0 = full ref (official behavior). Lower values blur the ref toward a softened copy of itself — identity fades smoothly and stays plausible instead of turning into static/noise texture. 0 skips the mod entirely."
+     }
+    ],
+    "copies_8": [
+     "INT",
+     {
+      "default": 1,
+      "min": 1,
+      "max": 10,
+      "step": 1,
+      "display": "number",
+      "tooltip": "How many copies of this mod to inject (1 = normal, 2+ = the same ref repeated — the manual row-duplication trick as a knob, up to 10x). More copies = noticeably stronger reference, but each copy costs its full token count in every DiT block, so it slows down inference and eats VRAM — 2-3 copies is the sweet spot, 10x will be very slow."
+     }
+    ]
+   },
+   "optional": {
+    "max_total_tokens": [
+     "INT",
+     {
+      "default": 0,
+      "min": 0,
+      "max": 1048576,
+      "tooltip": "0 disables the budget. Positive values limit selected components after copies."
+     }
+    ],
+    "components_1": [
+     [
+      "All",
+      "Visual",
+      "Audio"
+     ],
+     {
+      "default": "All",
+      "tooltip": "Select the modalities to load from this slot. Excluded tensors are not loaded. Also applies to standalone RefMods."
+     }
+    ],
+    "visual_strength_1": [
+     "FLOAT",
+     {
+      "default": 1,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "tooltip": "Multiplies the slot strength for this modality. 0 skips loading it."
+     }
+    ],
+    "audio_strength_1": [
+     "FLOAT",
+     {
+      "default": 1,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "tooltip": "Multiplies the slot strength for this modality. 0 skips loading it."
+     }
+    ],
+    "components_2": [
+     [
+      "All",
+      "Visual",
+      "Audio"
+     ],
+     {
+      "default": "All",
+      "tooltip": "Select the modalities to load from this slot. Excluded tensors are not loaded. Also applies to standalone RefMods."
+     }
+    ],
+    "visual_strength_2": [
+     "FLOAT",
+     {
+      "default": 1,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "tooltip": "Multiplies the slot strength for this modality. 0 skips loading it."
+     }
+    ],
+    "audio_strength_2": [
+     "FLOAT",
+     {
+      "default": 1,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "tooltip": "Multiplies the slot strength for this modality. 0 skips loading it."
+     }
+    ],
+    "components_3": [
+     [
+      "All",
+      "Visual",
+      "Audio"
+     ],
+     {
+      "default": "All",
+      "tooltip": "Select the modalities to load from this slot. Excluded tensors are not loaded. Also applies to standalone RefMods."
+     }
+    ],
+    "visual_strength_3": [
+     "FLOAT",
+     {
+      "default": 1,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "tooltip": "Multiplies the slot strength for this modality. 0 skips loading it."
+     }
+    ],
+    "audio_strength_3": [
+     "FLOAT",
+     {
+      "default": 1,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "tooltip": "Multiplies the slot strength for this modality. 0 skips loading it."
+     }
+    ],
+    "components_4": [
+     [
+      "All",
+      "Visual",
+      "Audio"
+     ],
+     {
+      "default": "All",
+      "tooltip": "Select the modalities to load from this slot. Excluded tensors are not loaded. Also applies to standalone RefMods."
+     }
+    ],
+    "visual_strength_4": [
+     "FLOAT",
+     {
+      "default": 1,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "tooltip": "Multiplies the slot strength for this modality. 0 skips loading it."
+     }
+    ],
+    "audio_strength_4": [
+     "FLOAT",
+     {
+      "default": 1,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "tooltip": "Multiplies the slot strength for this modality. 0 skips loading it."
+     }
+    ],
+    "components_5": [
+     [
+      "All",
+      "Visual",
+      "Audio"
+     ],
+     {
+      "default": "All",
+      "tooltip": "Select the modalities to load from this slot. Excluded tensors are not loaded. Also applies to standalone RefMods."
+     }
+    ],
+    "visual_strength_5": [
+     "FLOAT",
+     {
+      "default": 1,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "tooltip": "Multiplies the slot strength for this modality. 0 skips loading it."
+     }
+    ],
+    "audio_strength_5": [
+     "FLOAT",
+     {
+      "default": 1,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "tooltip": "Multiplies the slot strength for this modality. 0 skips loading it."
+     }
+    ],
+    "components_6": [
+     [
+      "All",
+      "Visual",
+      "Audio"
+     ],
+     {
+      "default": "All",
+      "tooltip": "Select the modalities to load from this slot. Excluded tensors are not loaded. Also applies to standalone RefMods."
+     }
+    ],
+    "visual_strength_6": [
+     "FLOAT",
+     {
+      "default": 1,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "tooltip": "Multiplies the slot strength for this modality. 0 skips loading it."
+     }
+    ],
+    "audio_strength_6": [
+     "FLOAT",
+     {
+      "default": 1,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "tooltip": "Multiplies the slot strength for this modality. 0 skips loading it."
+     }
+    ],
+    "components_7": [
+     [
+      "All",
+      "Visual",
+      "Audio"
+     ],
+     {
+      "default": "All",
+      "tooltip": "Select the modalities to load from this slot. Excluded tensors are not loaded. Also applies to standalone RefMods."
+     }
+    ],
+    "visual_strength_7": [
+     "FLOAT",
+     {
+      "default": 1,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "tooltip": "Multiplies the slot strength for this modality. 0 skips loading it."
+     }
+    ],
+    "audio_strength_7": [
+     "FLOAT",
+     {
+      "default": 1,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "tooltip": "Multiplies the slot strength for this modality. 0 skips loading it."
+     }
+    ],
+    "components_8": [
+     [
+      "All",
+      "Visual",
+      "Audio"
+     ],
+     {
+      "default": "All",
+      "tooltip": "Select the modalities to load from this slot. Excluded tensors are not loaded. Also applies to standalone RefMods."
+     }
+    ],
+    "visual_strength_8": [
+     "FLOAT",
+     {
+      "default": 1,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "tooltip": "Multiplies the slot strength for this modality. 0 skips loading it."
+     }
+    ],
+    "audio_strength_8": [
+     "FLOAT",
+     {
+      "default": 1,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "tooltip": "Multiplies the slot strength for this modality. 0 skips loading it."
+     }
+    ]
+   }
+  }
+ },
+ "MiniMaxH3RefModApply": {
+  "input": {
+   "required": {
+    "conditioning": [
+     "COMFY_MATCHTYPE_V3",
+     {
+      "tooltip": "MINIMAX_H3_COND (ComfyUI-MiniMaxH3 pack) or CONDITIONING (core MiniMaxH3ReferenceToVideo).",
+      "template": {
+       "template_id": "cond",
+       "allowed_types": "MINIMAX_H3_COND,CONDITIONING"
+      }
+     }
+    ],
+    "mods": [
+     "H3_REF_MODS",
+     {
+      "tooltip": "Bundle from Load H3 RefMods / Load H3 RefMod Axis / Create H3 RefMod."
+     }
+    ],
+    "override": [
+     "BOOLEAN",
+     {
+      "tooltip": "Use the config fixed into the mods' own metadata (by 'Fix H3 RefMod Config') instead of the widgets below: retention + curve come from the first mod in the bundle that carries one. Handy for sharing mods whose magic settings took real tuning. Off (default) = use the manual parameters. If no mod has a saved config it falls back to the manual parameters and prints a note.",
+      "default": false
+     }
+    ],
+    "retention": [
+     "FLOAT",
+     {
+      "tooltip": "Master reference strength, multiplied with each loader row's strength. MiniMax retention levels: 1.0 = fully_preserved, 0.7 = partially_preserved, 0.4 = attribute_transfer (keep style/attributes, not identity), 0.15 = weak_reference. 0 = no reference.",
+      "default": 1,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+     }
+    ],
+    "curve_direction": [
+     "COMBO",
+     {
+      "tooltip": "Weighting envelope across THIS MOD'S OWN ref frames (stacked images / video-ref latent frames) — i.e. WHICH reference content dominates, NOT where the concept appears in the output video (ref tokens are not bound to output time; for output-timing control use the 'H3 RefMod Step Curve' node instead, which runs over the denoise timeline). 'constant' (default) = every ref frame at full strength (official-ref parity). The old default 'concept_at_end' fades early stack frames toward blur, roughly HALVING average strength on multi-frame mods. Old saved workflows keep their saved values.",
+      "default": "constant",
+      "multiselect": false,
+      "options": [
+       "constant",
+       "concept_at_start",
+       "concept_at_middle",
+       "concept_at_end",
+       "concept_at_ends"
+      ]
+     }
+    ],
+    "scramble_seed": [
+     "INT",
+     {
+      "tooltip": "Ref scrambling seed. -1 (default) = off: all refs in saved order. With 2+ refs in the bundle, a seed >= 0 shuffles the ref order and keeps a random subset, so a different ref leads each run (a multi-ref mod 'pops' a different video/image per seed). Same seed = same scramble; set this widget's control-after-generate to 'randomize' for per-run variation.",
+      "default": -1,
+      "min": -1,
+      "max": 2147483647,
+      "step": 1,
+      "control_after_generate": "fixed"
+     }
+    ],
+    "curve_shape": [
+     "COMBO",
+     {
+      "tooltip": "How the weighting travels between its endpoints: 'linear', 'ease' (smoothstep), 'sigmoid'/'tanh' (S-curves, tanh with a steeper knee), 'quadratic', 'cubic', 'exponential', 'stair' (stepped), 'elastic' (overshoots), 'bump'/'dip' (peak/trough mid-stack). Only matters when curve_direction != constant.",
+      "default": "linear",
+      "multiselect": false,
+      "options": [
+       "linear",
+       "ease",
+       "sigmoid",
+       "tanh",
+       "quadratic",
+       "cubic",
+       "exponential",
+       "stair",
+       "elastic",
+       "bump",
+       "dip"
+      ]
+     }
+    ],
+    "curve_value": [
+     "FLOAT",
+     {
+      "tooltip": "Endpoint weight ('user input'): both endpoints for 'constant' and 'concept_at_ends', the start for 'concept_at_start', the end for 'concept_at_end', the mid peak for 'concept_at_middle'. On single-image ('image'-kind) mods this acts as a simple STRENGTH CAP (directions are meaningless on one frame): 0.4 = the ref blends 40% toward its blurred self.",
+      "default": 1,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+     }
+    ]
+   },
+   "optional": {
+    "graph_preset": [
+     "COMBO",
+     {
+      "tooltip": "Optional shared graph preset — leave on '(none)' to use the curve widgets above. Selecting one loads direction/shape/value from a saved debug-grid PNG (graph embedded in its metadata) or a legacy .json, in models/refmods/graph_presets/. Share the preset PNG itself to share a curve. New presets appear after a restart.",
+      "default": "(none)",
+      "multiselect": false,
+      "options": [
+       "(none)"
+      ]
+     }
+    ],
+    "scramble_mode": [
+     "COMBO",
+     {
+      "default": "shuffle",
+      "multiselect": false,
+      "options": [
+       "shuffle",
+       "subset",
+       "legacy_subset"
+      ]
+     }
+    ],
+    "scramble_keep": [
+     "INT",
+     {
+      "tooltip": "Refs retained in subset mode; shuffle keeps all refs.",
+      "default": 1,
+      "min": 1,
+      "max": 80
+     }
+    ],
+    "max_total_tokens": [
+     "INT",
+     {
+      "tooltip": "Total reference token budget after copies; 0 disables the limit.",
+      "default": 0,
+      "min": 0,
+      "max": 1048576
+     }
+    ],
+    "save_preset_as": [
+     "STRING",
+     {
+      "tooltip": "Optional: type a name and run to save the current (resolved) curve as a PNG preset — the curve graph itself with the graph embedded in its metadata — in models/refmods/graph_presets/. Share that image to share the curve. Leave empty to skip.",
+      "default": "",
+      "multiline": false
+     }
+    ]
+   }
+  }
+ },
+ "MiniMaxH3RefModAudioExtract": {
+  "input": {
+   "required": {
+    "audio": [
+     "AUDIO"
+    ],
+    "audio_vae": [
+     "VAE"
+    ],
+    "name": [
+     "STRING",
+     {
+      "default": "audio_refmod"
+     }
+    ],
+    "max_seconds": [
+     "FLOAT",
+     {
+      "default": 30,
+      "min": 0.025,
+      "max": 600
+     }
+    ],
+    "max_tokens": [
+     "INT",
+     {
+      "default": 5120,
+      "min": 0,
+      "max": 2147483647
+     }
+    ],
+    "budget_policy": [
+     [
+      "error",
+      "truncate"
+     ]
+    ],
+    "concept_type": [
+     [
+      "voice",
+      "singing",
+      "music_style",
+      "sound_fx",
+      "ambience"
+     ]
+    ],
+    "description": [
+     "STRING",
+     {
+      "default": "",
+      "multiline": true
+     }
+    ],
+    "subfolder": [
+     "STRING",
+     {
+      "default": ""
+     }
+    ],
+    "save": [
+     "BOOLEAN",
+     {
+      "default": true
+     }
+    ]
+   }
+  }
  }
 }

@@ -3,9 +3,11 @@
 // missing lane file, a blank string, a non-string) refuses loud at
 // instantiate — never a silent route to a stock lane.
 import { describe, it, expect, vi } from "vitest";
+import { readFileSync } from "node:fs";
 import { film, parseH3Facts } from "../src/actions.ts";
 import { schema as h3schema } from "../src/schema.ts";
 import { GraphBuilder } from "@melite/comfyui-card-kit/graph";
+import { assertWiringAgainst, deriveWiringDoc } from "@melite/comfyui-cordis/comfyui-wiring";
 import { instantiateAction } from "@melite/comfyui-card-kit";
 import type { ModelFacts } from "@melite/comfyui-card-kit/facts";
 
@@ -168,19 +170,75 @@ describe("the refmod seat (audit 010/R1, 2026-10-18)", () => {
     // the baked pack lands in the loader dropdown for reuse
     expect(extract![1].inputs.name).toBe("vanellope");
     expect(extract![1].inputs.save).toBe(true);
-    // the still rides LoadImage → ref_image_1; the video rides
-    // LoadVideo → GetVideoComponents → ref_video_1 (frame batch)
+    // the still rides LoadImage → refs_image.ref_image_0; the video
+    // rides LoadVideo → GetVideoComponents → refs_video.ref_video_0
+    // (frame batch). DOTTED container.slot addressing — the autogrow
+    // grammar of the r2v ref_images.ref_image_0 receipt; a BARE
+    // ref_image_1 key is an undeclared input and phase 1 refused it
+    // live (the 2026-10-16 boot-death burn).
     const loadImg = entries.find(([, n]) => n.class_type === "LoadImage")!;
     expect(loadImg![1].inputs.image).toBe("/melite-media/runs/hero/vanellope.png");
-    expect(extract![1].inputs.ref_image_1).toEqual([loadImg![0], 0]);
+    expect(extract![1].inputs["refs_image.ref_image_0"]).toEqual([loadImg![0], 0]);
     const comps = entries.find(([, n]) => n.class_type === "GetVideoComponents")!;
     const loadVid = entries.find(([, n]) => n.class_type === "LoadVideo")!;
     expect(loadVid![1].inputs.file).toBe("/melite-media/runs/hero/turn.mp4");
     expect(comps![1].inputs.video).toEqual([loadVid![0], 0]);
-    expect(extract![1].inputs.ref_video_1).toEqual([comps![0], 0]);
+    expect(extract![1].inputs["refs_video.ref_video_0"]).toEqual([comps![0], 0]);
     // the wiring: extract.mods → apply → the guider's conditioning
     expect(apply![1].inputs.mods).toEqual([extract![0], 0]);
     expect(guider![1].inputs.conditioning).toEqual([apply![0], 0]);
+    // THE DECLARED-INPUT SWEEP (the tooth the live burn proved
+    // missing, 2026-10-16): the refmod family's subgraph is judged
+    // against the boot fixture's declarations — the four classes are
+    // authored there from the live doc, so a bare grown-slot key
+    // (ref_image_1), an invented input, or a wiring drift reds HERE,
+    // hermetically, instead of at the operator's next run.
+    const refModFamily = new Set([
+      "MiniMaxH3RefModExtract", "MiniMaxH3RefModsLoader",
+      "MiniMaxH3RefModApply", "MiniMaxH3RefModAudioExtract",
+    ]);
+    const subgraph = Object.fromEntries(
+      entries.filter(([, n]) => refModFamily.has(n.class_type)).map(([id, n]) => [id, n]),
+    );
+    const fixture = JSON.parse(
+      readFileSync(new URL("../../../../tests/walls/fixtures/object_info.boot.json", import.meta.url), "utf8"),
+    ) as Record<string, unknown>;
+    const doc = deriveWiringDoc(Object.fromEntries(
+      Object.entries(fixture).filter(([name]) => refModFamily.has(name)),
+    ));
+    expect(() => assertWiringAgainst(doc.nodes, doc.inputs, "h3-timeline", subgraph)).not.toThrow();
+  });
+
+  it("a bare grown-slot key on the creator node is refused by the declared-input sweep (the 2026-10-16 live burn, hermetic)", () => {
+    // RED-PROOF SEAT: the wiring the card shipped before the cure —
+    // ref_image_1 bare, no container base — is run through the same
+    // wall the lane rides at phase 1, and it must refuse with the
+    // operator's exact error class. If the wall ever stops refusing
+    // this, the hermetic tier has gone deaf to the live grammar.
+    const g = new GraphBuilder();
+    g.node("MiniMaxH3RefModExtract", {
+      name: "vanellope", mode: "Compressed Reference", concept_type: "generic", save: true,
+      ref_image_1: g.node("LoadImage", { image: "/melite-media/runs/hero/vanellope.png", upload: "image" }).out(0),
+    });
+    const refModFamily = new Set([
+      "MiniMaxH3RefModExtract", "MiniMaxH3RefModsLoader",
+      "MiniMaxH3RefModApply", "MiniMaxH3RefModAudioExtract",
+    ]);
+    const fixture = JSON.parse(
+      readFileSync(new URL("../../../../tests/walls/fixtures/object_info.boot.json", import.meta.url), "utf8"),
+    ) as Record<string, unknown>;
+    const doc = deriveWiringDoc(Object.fromEntries(
+      Object.entries(fixture).filter(([name]) => refModFamily.has(name)),
+    ));
+    // judge the family subgraph only (the loader's LoadImage helper
+    // nodes ride the full fixture's class set on the lane, not this
+    // four-class doc — the unknown-input tooth is the Extract wiring)
+    const subgraph = Object.fromEntries(
+      Object.entries(g.toJSON() as Record<string, { class_type: string }>)
+        .filter(([, n]) => refModFamily.has(n.class_type)),
+    );
+    expect(() => assertWiringAgainst(doc.nodes, doc.inputs, "h3-timeline", subgraph))
+      .toThrow(/card 'h3-timeline' wired 'MiniMaxH3RefModExtract\.ref_image_1' .* the node declares no such input .* the card's compose is stale against the engine build/);
   });
 
   it("audio media rides its own extractor (MiniMaxH3RefModAudioExtract) on the audio VAE", () => {

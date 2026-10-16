@@ -2,41 +2,46 @@
 # walls + CI own the full gate matrix. Install: automatic — the root
 # postinstall (tools/install-lefthook.mjs) runs `lefthook install` on
 # every `pnpm install`; CI and user-owned core.hooksPath skip it.
+#
+# NO COMMIT HOOKS (operator order, 2026-10-16): every commit-stage
+# job moved to pre-push — the staged-set gates ride {push_files}, the
+# wholesale gates ride nothing, and `git commit` is instant. The
+# commit stage judged the same tree the push stage judges, twice per
+# wave; the second run bought nothing but dead minutes. The residual
+# gap (all pre-push jobs skipped on a no-upstream first push —
+# lefthook's empty-push-set law, documented at the profanity job)
+# is backstopped by the wall suite on every root test run.
 
-pre-commit:
+pre-push:
   jobs:
     # THE STAGED-TRASH GATE (2026-11-06 — the tool shipped 2026-11-05
     # wired into nothing, the same defect class as the arch-lint fix
-    # above: a gate that cannot fire). Runs FIRST (sub-second,
-    # staged-set only) so junk bytes never pay for the walls run:
-    # SIZE (>5MB outside lib/fixtures/lock), IGNORED-PATH (a staged
+    # below: a gate that cannot fire). Sub-second over the push set.
+    # SIZE (>5MB outside lib/fixtures/lock), IGNORED-PATH (a pushed
     # path check-ignore names — a force-add past the SSOT), JUNK
-    # CLASS (archives/raw media outside fixtures). No file template
-    # — the tool reads the staged set itself, so it fires on every
-    # commit that stages anything.
-    - name: trash (staged bytes)
-      run: node tools/staged-trash-gate.mjs
+    # CLASS (archives/raw media outside fixtures).
+    - name: trash (pushed bytes)
+      run: node tools/staged-trash-gate.mjs {push_files}
     # THE BOUNDARY LINT (schema-gate-inventory fix 5, 2026-10-12):
     # `pnpm run lint` (tools/arch-lint.ts) was declared but wired
     # into nothing — a gate that cannot fire is the same defect
     # class as a self-skipping wall. It reads source files and
     # regexes imports (~2s, executes nothing, no network), so it
-    # carries no explicit glob — lefthook's default staged-file
-    # template fires it on every commit that stages anything.
+    # carries no explicit glob — it fires on every push.
     - name: arch-lint (estate boundaries)
       run: node tools/arch-lint.ts --quiet
 
     # THE UNIT PLANE IS THE GATE (walls' successor, 2026-09-11 — the
-    # run.mjs orchestrator died with the vitest migration): any staged
+    # run.mjs orchestrator died with the vitest migration): any pushed
     # change that can move a wall (estate TS or the suites themselves)
     # re-runs the node project that owns tests/walls/ts/suites.
     # NO GLOB (R4-10, 2026-10-13): the glob was '*.{ts,tsx,mjs}',
-    # so a commit staging only .json/.yaml/.md skipped the walls —
+    # so a push staging only .json/.yaml/.md skipped the walls —
     # while the walls judge data/model-facts.json, models/*/nodes.yaml
     # and pnpm-workspace.yaml. An enumerated extension list is the
     # same rot class it cures; like arch-lint above, the job fires on
-    # every commit that stages anything.
-    - name: walls (staged anything)
+    # every push.
+    - name: walls (pushed anything)
       # Direct node invocation (2026-09-11): pnpm exec re-verifies
       # deps before every run and the tree's unapproved
       # @parcel/watcher build script fails that check; the root
@@ -86,11 +91,9 @@ pre-commit:
       # judged nothing.
       run: d=$(mktemp -d /var/tmp/melite-hook-XXXXXX) && mkdir -p .scratch && env -u MELITE_MCP_ENGINES -u MELITE_AGENT_ROUTE TMPDIR=$d node node_modules/vitest/vitest.mjs run --project node > .scratch/hook-walls.$$.log 2>&1; code=$?; tail -n 4 .scratch/hook-walls.$$.log; if [ $code -ne 0 ]; then echo "walls log kept at .scratch/hook-walls.$$"; mv .scratch/hook-walls.$$.log .scratch/hook-walls.$$.kept.log; rm -rf "$d"; exit $code; fi; rm -rf "$d" .scratch/hook-walls.$$.log; exit $code
 
-    - name: final-newline (staged text)
-      run: node tools/hook-final-newline.mjs {staged_files}
+    - name: final-newline (pushed text)
+      run: node tools/hook-final-newline.mjs {push_files}
 
-pre-push:
-  jobs:
     # The full local battery on push: tsc per typecheck package
     # (CI runs unit/coverage/tiers only — types are the battery's
     # to own) + the walls via the root vitest node project.

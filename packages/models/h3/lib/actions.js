@@ -1152,7 +1152,8 @@ function renderH3Window(p, g, facts, model) {
     // media kind — stills, videos, audio — and THE SYSTEM HANDLES THE
     // CONVERSION: the pack's own creator node (Create H3 RefMod /
     // MiniMaxH3RefModExtract) bakes the media into a mod at run time
-    // (ref_image_N stills ≤16, ref_video_N frame batches ≤8; audio
+    // (refs_image.ref_image_N stills ≤16, refs_video.ref_video_N frame
+    // batches ≤8 — dotted autogrow addressing; audio
     // rides MiniMaxH3RefModAudioExtract). Forcing operators to
     // hand-place .safetensors packs was the regression (4f2342f46 →
     // ce79f052a), not the law. Pre-baked .safetensors stems under
@@ -1210,8 +1211,9 @@ function renderH3Window(p, g, facts, model) {
                 continue;
             }
             // ANY media kind boards (mediaKindOf — the contracts SSOT):
-            // image → the creator's ref_image_N, video → ref_video_N via
-            // the component split, audio → the audio extractor. Anything
+            // image → the creator's refs_image.ref_image_N, video →
+            // refs_video.ref_video_N via the component split, audio → the
+            // audio extractor. Anything
             // the estate does not recognize as media refuses HERE, loud,
             // instead of dying server-side (the I2V census-alignment law).
             const kind = mediaKindOf(base);
@@ -1249,11 +1251,15 @@ function renderH3Window(p, g, facts, model) {
         if (modImages.length > 0 || modVideos.length > 0) {
             // One creator node stacks every visual ref of the seat into a
             // single video-kind mod (the node's own grammar: stills into
-            // ref_image_N, frame batches into ref_video_N; name = the
-            // first PATH ref's basename, sanitized node-side — a data:
-            // upload chip has no basename, so a data-only seat names the
-            // generic 'mod'). save rides the node default (true) so the
-            // baked pack lands in the loader's dropdown for later reuse.
+            // the refs_image autogrow container's grown slots, frame
+            // batches into refs_video's — DOTTED container.slot addressing,
+            // the r2v ref_images.ref_image_0 receipt; a BARE ref_image_1
+            // key is an undeclared input and phase 1 refuses it, the
+            // 2026-10-16 boot-death live burn). name = the first PATH
+            // ref's basename, sanitized node-side — a data: upload chip
+            // has no basename, so a data-only seat names the generic
+            // 'mod'. save rides the node default (true) so the baked pack
+            // lands in the loader's dropdown for later reuse.
             const firstVisual = (modImages[0] ?? modVideos[0]);
             const nameBase = firstVisual.startsWith('data:') ? 'mod' : firstVisual.split(/[\\/]/).pop()?.replace(/\.[^.]+$/, '') ?? 'mod';
             const extractInputs = {
@@ -1261,10 +1267,10 @@ function renderH3Window(p, g, facts, model) {
                 mode: 'Compressed Reference', concept_type: 'generic', save: true,
             };
             modImages.forEach((img, i) => {
-                extractInputs[`ref_image_${i + 1}`] = g.node('LoadImage', { image: img, upload: 'image' }).out(0);
+                extractInputs[`refs_image.ref_image_${i}`] = g.node('LoadImage', { image: img, upload: 'image' }).out(0);
             });
             modVideos.forEach((vid, i) => {
-                extractInputs[`ref_video_${i + 1}`] = g.node('GetVideoComponents', {
+                extractInputs[`refs_video.ref_video_${i}`] = g.node('GetVideoComponents', {
                     video: g.node('LoadVideo', { file: vid }).out(),
                 }).out(0);
             });
