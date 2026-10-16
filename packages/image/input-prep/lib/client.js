@@ -81,7 +81,7 @@ window.__ModuleLoader__.load({
 		impactDetector("hand");
 		[...Array.from({ length: 25 }, (_, i) => String(20 + i * 10))];
 		//#endregion
-		//#region ../../models/input/lib/actions.js
+		//#region ../../models/input/src/actions.ts
 		/** The closed upscale-method set (the dropdown law, 2026-10-24):
 		*  ComfyUI core ImageScale's own combo values, grounded in the live
 		*  engine's object_info (not memory). The input-prep card's

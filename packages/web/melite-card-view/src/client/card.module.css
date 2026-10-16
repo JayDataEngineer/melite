@@ -1116,9 +1116,3 @@
   margin: 0;
 }
 
-.zoomBuild {
-  color: var(--dsh-alias-label-tertiary);
-  flex: 0 0 auto;
-  font-size: 10px;
-  opacity: 0.55;
-}

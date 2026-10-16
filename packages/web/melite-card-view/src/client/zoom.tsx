@@ -134,10 +134,6 @@ function ZoomSkeleton(): ReturnType<typeof h> {
 }
 
 /** One overlay mount (keyed per stage by the caller). */
-// THE BUILD STAMP (the verification law, 2026-09-21): the operator
-// decides in one glance whether the screen runs the bytes that hold
-// the fix — UTC stamp, dim, right of the stage title.
-const ZOOM_BUILD = 'build 09-20 18:47'
 
 function ZoomMount(props: ZoomDetailProps & { detail: (p: ZoomDetailProps) => ReturnType<typeof h> }): ReturnType<typeof h> {
   const { stage, detail, onClose, ...rest } = props
@@ -272,7 +268,12 @@ function ZoomMount(props: ZoomDetailProps & { detail: (p: ZoomDetailProps) => Re
         },
           h('div', { className: css.zoomBar },
             h('span', { className: css.zoomTitle }, chromeCopy.stageAria({ name: String(stage.title ?? props.cardLabel ?? stage.card ?? stage.id) })),
-            h('span', { className: css.zoomBuild, title: ZOOM_BUILD }, ZOOM_BUILD),
+            // THE BUILD CLAIM IS GONE (2026-11-06, the operator read
+            // the stale hand literal as evidence the estate served a
+            // month-old bundle): a hand-dated span the build never
+            // refreshes is a staleness claim with no truth behind
+            // it. Freshness is the STAMP PLANE's to judge
+            // (estate-singleton-law), never the chrome's to date.
             // THE RUN PILL (the one gesture seat, frame-owned): ghost
             // face, glyph + word, Stop mid-run — the drill/studio
             // bottom seats retired with it.

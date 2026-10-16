@@ -817,6 +817,29 @@ describe("the history pick round-trip at the drill seam", () => {
 // TRUE-contract snapshots — a failure frame carries its value,
 // and the seat survives on the snapshot alone (ledger #44: the
 // heldValue ref is deleted).
+describe("the zoom bar carries NO build claim (2026-11-06: the operator read the stale hand literal as evidence the estate served a month-old bundle)", () => {
+  test("no hand-dated build span rides the chrome — freshness is the STAMP PLANE's to judge, never the chrome's to date", async () => {
+    const stages: BenchStageView[] = [{
+      id: "s1", card: "image-gen", engine: "comfyui", title: "Stage Generate Image",
+      params: { prompt: "A" }, runStatus: "done",
+    } as never];
+    mountBench(stages);
+    await openFirstTile();
+    await waitFor(() => {
+      if (document.querySelector("div[class*='zoomBar']") === null) throw new Error("zoom bar not mounted yet");
+    });
+    // the zoom bar may carry the stage title and its affordances —
+    // a dated build claim is a staleness assertion the build never
+    // refreshes (cruft that lied); assert NO span's text matches a
+    // build-date shape.
+    const spans = Array.from(document.querySelectorAll("div[class*='zoomBar'] span"));
+    expect(spans.length).toBeGreaterThan(0);
+    for (const sp of spans) {
+      expect(sp.textContent ?? "").not.toMatch(/build \d\d-\d\d/);
+    }
+  });
+});
+
 describe("the seat survives the refresh (the DSH failed-keeps-value contract)", () => {
   test("a 'failed' frame carries the last value — the drill stays mounted, scrolled, and clickable", async () => {
     const stages: BenchStageView[] = [{
