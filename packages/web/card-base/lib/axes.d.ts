@@ -15,13 +15,21 @@ export declare function PackPrompt({ spec, onInstallPack }: {
     spec: FormSpecDoc;
     onInstallPack?: (id: string) => Promise<boolean>;
 }): ReturnType<typeof h> | null;
-export declare function ModelAxes({ spec, value, user, onSet, onPick, onDownloadModel, omitRecipeRow }: {
+export declare function ModelAxes({ spec, value, user, pickHeld, onSet, onPick, onDownloadModel, omitRecipeRow }: {
     spec: FormSpecDoc;
     value: SpecValues;
     /** The USER layer (the pick-reconcile law, 2026-11-05): the pick
      *  clamps HELD out-of-envelope knobs into the picked row's
      *  envelope — the resolved layer is never stamped. */
     user?: SpecValues;
+    /** The SHOWN doc the door composes (base under user — the
+     *  composability cure, 2026-11-06: the pick's departed-key unstate
+     *  and envelope reconcile judge the truth the RUN merges, never
+     *  the user layer alone. A base-held departed key (the stage row's
+     *  saved params) resurrects through resolveValueLayered when the
+     *  user's null-write lands — the patch must derive its unstated
+     *  keys against base+user or the swap bricks behind the gate. */
+    pickHeld?: SpecValues;
     onSet(name: string, v: unknown): void;
     /** THE ATOMIC PICK, REQUIRED BY CONSTRUCTION (2026-10-12, the
      *  operator's live break: switch krea-2 turbo→raw refused 'stated

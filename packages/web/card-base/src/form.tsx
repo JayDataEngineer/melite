@@ -30,7 +30,7 @@
 import { createElement as h, useId, useState } from 'react'
 import { SegmentedTabs, type SegmentedTab as segTab } from '@deepseek-ai/dsh-client-ui-primitives'
 import { type BboxFaceComponent, ModifiersSection, type PaintFaceComponent } from './mods.tsx'
-import { type FormSpecDoc, type FormVariantRow, type SpecField, type SpecValues, coerceFieldEdit, entryFieldsOfEnvelope, fieldOnLane, fieldVisible, fieldsOf, fieldsOfEnvelope, groupFields, kindScalarFieldsOfEnvelope, composeValidate, laneViolations, modOwnedFields, offeredVariantOf, resolveFamilyKey, resolveValue, titleCaseId } from './spec.ts'
+import { type FormSpecDoc, type FormVariantRow, type SpecField, type SpecValues, coerceFieldEdit, composeCandidateDoc, entryFieldsOfEnvelope, fieldOnLane, fieldVisible, fieldsOf, fieldsOfEnvelope, groupFields, kindScalarFieldsOfEnvelope, composeValidate, laneViolations, modOwnedFields, offeredVariantOf, resolveFamilyKey, resolveValue, titleCaseId } from './spec.ts'
 import { isUnstatedRequiredVoice } from '@melite/contracts/laneRelations'
 import css from './card.module.css'
 import { useFormSpec } from './use-form-spec.ts'
@@ -485,7 +485,12 @@ export function CardForm({ spec, user, base, onSet, onPick, onUnset, wire, squar
     // THE AXES ride the user layer through the same edit seam (their
     // picks are ordinary sets; the resolved value passes along).
     h(PackPrompt, { spec, onInstallPack }),
-    h(ModelAxes, { spec, value, user, onSet: edit, onPick, onDownloadModel, omitRecipeRow }),
+    // THE COMPOSABILITY CURE (2026-11-06, the model/quant/variant/
+    // recipe swap failure): the pick patches judge the SHOWN doc —
+    // base under user, the exact shape composeCandidateDoc gives the
+    // door — so a base-held departed key derives its null-write from
+    // the truth the run merges (held=user alone never saw it).
+    h(ModelAxes, { spec, value, user, pickHeld: composeCandidateDoc(base ?? {}, user, {}), onSet: edit, onPick, onDownloadModel, omitRecipeRow }),
     (railFields.length > 0 || stackFields.length > 0) && omitInputRail !== true
       ? h('section', { className: css.specGroup + ' ' + css.inputRail, 'data-input-rail': '1' },
           // THE SECTION HEAD (#37, the Modifiers symmetry): the input

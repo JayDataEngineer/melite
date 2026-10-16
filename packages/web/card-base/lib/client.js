@@ -12523,7 +12523,7 @@ window.__ModuleLoader__.load({
 				}
 			}, st === "idle" ? chromeCopy.installPackVerb({ id }) : st === "busy" ? chromeCopy.requestingWord : st === "queued" ? chromeCopy.installQueuedNote : chromeCopy.installFailedNote));
 		}
-		function ModelAxes({ spec, value, user, onSet, onPick, onDownloadModel, omitRecipeRow }) {
+		function ModelAxes({ spec, value, user, pickHeld = user, onSet, onPick, onDownloadModel, omitRecipeRow }) {
 			const groups = axisGroups(spec);
 			if (groups.length === 0 && (spec.families ?? []).length === 0) return null;
 			const models = modelChoices(spec);
@@ -12536,9 +12536,9 @@ window.__ModuleLoader__.load({
 			for (const f of spec.families ?? []) if (f.label !== void 0 && f.label !== "") familyFace.set(f.id, f.label);
 			const contract = spec.features?.variant_groups ?? {};
 			const pick = (row) => {
-				onPick(axisPickPatch(spec, row, user));
+				onPick(axisPickPatch(spec, row, pickHeld));
 			};
-			const knobStamp = (r) => axisPickPatch(spec, r, user);
+			const knobStamp = (r) => axisPickPatch(spec, r, pickHeld);
 			rowsFor(spec, "Recipe").filter((r) => Object.keys(knobStamp(r)).length > 0);
 			const heldModelRaw = value["model"];
 			const heldModel = typeof heldModelRaw === "string" && heldModelRaw !== "" ? heldModelRaw : void 0;
@@ -12588,7 +12588,7 @@ window.__ModuleLoader__.load({
 				rows: modelRows,
 				markers: refusedModel !== void 0 ? { "data-refused": "model" } : void 0,
 				onPick: (m) => {
-					onPick(modelSwitchPatch(spec, m, user));
+					onPick(modelSwitchPatch(spec, m, pickHeld));
 				}
 			}));
 			const axisField = (g) => {
@@ -12994,6 +12994,7 @@ window.__ModuleLoader__.load({
 				spec,
 				value,
 				user,
+				pickHeld: composeCandidateDoc(base ?? {}, user, {}),
 				onSet: edit,
 				onPick,
 				onDownloadModel,

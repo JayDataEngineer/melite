@@ -71,13 +71,21 @@ function PackPromptRow({ id, onInstallPack }: {
       : chromeCopy.installFailedNote))
 }
 
-export function ModelAxes({ spec, value, user, onSet, onPick, onDownloadModel, omitRecipeRow }: {
+export function ModelAxes({ spec, value, user, pickHeld = user, onSet, onPick, onDownloadModel, omitRecipeRow }: {
   spec: FormSpecDoc
   value: SpecValues
   /** The USER layer (the pick-reconcile law, 2026-11-05): the pick
    *  clamps HELD out-of-envelope knobs into the picked row's
    *  envelope — the resolved layer is never stamped. */
   user?: SpecValues
+  /** The SHOWN doc the door composes (base under user — the
+   *  composability cure, 2026-11-06: the pick's departed-key unstate
+   *  and envelope reconcile judge the truth the RUN merges, never
+   *  the user layer alone. A base-held departed key (the stage row's
+   *  saved params) resurrects through resolveValueLayered when the
+   *  user's null-write lands — the patch must derive its unstated
+   *  keys against base+user or the swap bricks behind the gate. */
+  pickHeld?: SpecValues
   onSet(name: string, v: unknown): void
   /** THE ATOMIC PICK, REQUIRED BY CONSTRUCTION (2026-10-12, the
    *  operator's live break: switch krea-2 turbo→raw refused 'stated
@@ -139,7 +147,7 @@ export function ModelAxes({ spec, value, user, onSet, onPick, onDownloadModel, o
   }
   const contract = spec.features?.variant_groups ?? {}
   const pick = (row: FormVariantRow): void => {
-    onPick(axisPickPatch(spec, row, user))
+    onPick(axisPickPatch(spec, row, pickHeld))
   }
   // RULE A — THE RECIPE LAW (operator, 2026-09-18: "All Cards must
   // have Recipies… This *includes* LORAs being setup this way"):
@@ -154,7 +162,7 @@ export function ModelAxes({ spec, value, user, onSet, onPick, onDownloadModel, o
   // rows resolved by the mod plane, never a bespoke card field.)
   // the recipe stamp shares the pick-reconcile seam (operator
   // 2026-11-05: the auto-switch is a SHARED feature with recipes)
-  const knobStamp = (r: FormVariantRow): SpecValues => axisPickPatch(spec, r, user)
+  const knobStamp = (r: FormVariantRow): SpecValues => axisPickPatch(spec, r, pickHeld)
   const pillRows = rowsFor(spec, 'Recipe').filter((r) => Object.keys(knobStamp(r)).length > 0)
   // ── THE NO-FALLBACK LAW (operator, hour 26: "NO. MORE.
   //    FALLBACKS.") ───────────────────────────────────────────────
@@ -257,7 +265,7 @@ export function ModelAxes({ spec, value, user, onSet, onPick, onDownloadModel, o
         // held rides (the override law's model face): the switch
         // lands the seeded variant's envelope keys on the new
         // choice's truth / nulls the departing vocabulary
-        onPick: (m: string) => { onPick(modelSwitchPatch(spec, m, user)) },
+        onPick: (m: string) => { onPick(modelSwitchPatch(spec, m, pickHeld)) },
       }));
   // ONE AXIS' FIELD (the groups.map body, extracted so the pair
   // row seats the Variant axis beside the Model — one function,

@@ -50,7 +50,7 @@ function PackPromptRow({ id, onInstallPack }) {
             : st === 'queued' ? chromeCopy.installQueuedNote
                 : chromeCopy.installFailedNote));
 }
-export function ModelAxes({ spec, value, user, onSet, onPick, onDownloadModel, omitRecipeRow }) {
+export function ModelAxes({ spec, value, user, pickHeld = user, onSet, onPick, onDownloadModel, omitRecipeRow }) {
     const groups = axisGroups(spec);
     // THE RENDER CONTRACT (the schema-contract cure, 2026-10-18): the
     // Model axis exists when the spec declares EITHER a variant matrix
@@ -81,7 +81,7 @@ export function ModelAxes({ spec, value, user, onSet, onPick, onDownloadModel, o
     }
     const contract = spec.features?.variant_groups ?? {};
     const pick = (row) => {
-        onPick(axisPickPatch(spec, row, user));
+        onPick(axisPickPatch(spec, row, pickHeld));
     };
     // RULE A — THE RECIPE LAW (operator, 2026-09-18: "All Cards must
     // have Recipies… This *includes* LORAs being setup this way"):
@@ -96,7 +96,7 @@ export function ModelAxes({ spec, value, user, onSet, onPick, onDownloadModel, o
     // rows resolved by the mod plane, never a bespoke card field.)
     // the recipe stamp shares the pick-reconcile seam (operator
     // 2026-11-05: the auto-switch is a SHARED feature with recipes)
-    const knobStamp = (r) => axisPickPatch(spec, r, user);
+    const knobStamp = (r) => axisPickPatch(spec, r, pickHeld);
     const pillRows = rowsFor(spec, 'Recipe').filter((r) => Object.keys(knobStamp(r)).length > 0);
     // ── THE NO-FALLBACK LAW (operator, hour 26: "NO. MORE.
     //    FALLBACKS.") ───────────────────────────────────────────────
@@ -197,7 +197,7 @@ export function ModelAxes({ spec, value, user, onSet, onPick, onDownloadModel, o
             // held rides (the override law's model face): the switch
             // lands the seeded variant's envelope keys on the new
             // choice's truth / nulls the departing vocabulary
-            onPick: (m) => { onPick(modelSwitchPatch(spec, m, user)); },
+            onPick: (m) => { onPick(modelSwitchPatch(spec, m, pickHeld)); },
         }));
     // ONE AXIS' FIELD (the groups.map body, extracted so the pair
     // row seats the Variant axis beside the Model — one function,

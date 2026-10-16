@@ -221,6 +221,54 @@ describe('THE SWITCHING SWEEP — every real family × every switch (the core-fe
     }
   })
 
+  test('THE BASE-RESIDUE COMPOSABILITY WALL (2026-11-06, the model/quant/variant/recipe swap failure): every variant/quant/recipe pick over a NON-EMPTY base composes clean at the door\'s own merge', () => {
+    // THE LIVE BURN: the pick patches judged the USER layer alone
+    // while the run composes BASE under user — a base-held numeric
+    // outside the arrival variant's envelope never clamped, and the
+    // compose gate refused naming a value the studio never showed
+    // ("Fix the stated value" — the value was the stage row's, not
+    // stated anywhere). The cure threads pickHeld (base+user, the
+    // composeCandidateDoc shape) through ModelAxes; THIS wall holds
+    // the seat: for every family, the base carries a sibling
+    // variant's own stamps (the previous pick's landed truth), and
+    // every other variant-row pick must land the door doc CLEAN.
+    for (const decl of FAMILIES) {
+      const spec = servedSpec(decl)
+      const variants = (spec.variants ?? []).filter((r) => r.group === 'Variant')
+      if (variants.length < 2) continue
+      for (const from of variants) {
+        // base = the from-row's landed pick (its stamps under its
+        // axis id) — what the stage row carries after that pick
+        const base: SpecValues = { variant: from.id, ...numericStamps(from) }
+        for (const to of variants) {
+          if (to.id === from.id) continue
+          const patch = axisPickPatch(spec, to, { ...base } as SpecValues)
+          // THE DOOR TRUTH: base under user, frame = the patch —
+          // nulls delete, stamps land; the composed doc is what the
+          // run merges
+          const doc = composeCandidateDoc(base, {}, patch)
+          const violations = composeValidate(spec, doc)
+          expect(violations, `${decl.id} / base ${from.id} -> pick ${to.id}: ${JSON.stringify(doc)} judged ${JSON.stringify(violations)}`).toEqual([])
+          // and the clamp law holds on the ARRIVAL row over the
+          // door doc (base residue included)
+          expectInsideEnvelope(to, doc, decl.id)
+        }
+      }
+      // the same law for RECIPE rows over a variant-held base: a
+      // recipe stamp over any variant's landed base composes clean
+      const recipes = (spec.variants ?? []).filter((r) => r.group === 'Recipe')
+      for (const from of variants) {
+        const base: SpecValues = { variant: from.id, ...numericStamps(from) }
+        for (const rec of recipes) {
+          const patch = axisPickPatch(spec, rec, { ...base } as SpecValues)
+          const doc = composeCandidateDoc(base, {}, patch)
+          const violations = composeValidate(spec, doc)
+          expect(violations, `${decl.id} / base ${from.id} + recipe ${rec.id}: ${JSON.stringify(doc)} judged ${JSON.stringify(violations)}`).toEqual([])
+        }
+      }
+    }
+  })
+
   test('every CROSS-FAMILY switch drops the departing vocabulary and composes clean under the NEW family\'s law', () => {
     for (const from of FAMILIES) {
       const specFrom = servedSpec(from)
