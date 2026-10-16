@@ -158,7 +158,7 @@ describe("the refmods listing door — the tenant's feed (2026-11-05)", () => {
     // commits at the gesture; junk suffix refuses loud
     await dropPack()
     await waitFor(() => {
-      assert.equal(screen.getAllByTestId("tl-call-mod-chip").length, 1, "the manual pack still writes")
+      assert.equal(screen.getAllByRole("button", { name: /^Detach/ }).length, 1, "the manual pack still writes — one held square")
     })
   })
 
@@ -170,7 +170,7 @@ describe("the refmods listing door — the tenant's feed (2026-11-05)", () => {
     assert.ok(await screen.findByText("nothing to pick yet"))
     await dropPack()
     await waitFor(() => {
-      assert.equal(screen.getAllByTestId("tl-call-mod-chip").length, 1)
+      assert.equal(screen.getAllByRole("button", { name: /^Detach/ }).length, 1)
     })
   })
 
@@ -187,7 +187,7 @@ describe("the refmods listing door — the tenant's feed (2026-11-05)", () => {
     fireEvent.change(inp, { target: { files: [new File(["p"], "manual.safetensors")] } })
     const face = await screen.findByTestId("tl-call-mods-error")
     assert.match(face.textContent ?? "", /manual\.safetensors/)
-    assert.equal(document.querySelectorAll('[data-testid="tl-call-mod-chip"]').length, 0, "a refused file never chips")
+    assert.equal(screen.queryAllByRole("button", { name: /^Detach/ }).length, 0, "a refused file never chips")
   })
 
   it("THE D2 PREVIEW ARM (2026-11-06): an uploaded IMAGE chip carries the thumb door — the DSH lightbox opener", async () => {
@@ -203,12 +203,12 @@ describe("the refmods listing door — the tenant's feed (2026-11-05)", () => {
     fireEvent.click(await screen.findByRole("menuitem", { name: "From file" }))
     const inp = document.querySelector('[data-source-row="+ ref mods"] input[type=file]') as HTMLInputElement
     fireEvent.change(inp, { target: { files: [new File(["p"], "shot.png", { type: "image/png" })] } })
-    const chip = await screen.findByTestId("tl-call-mod-chip")
-    const door = chip.querySelector("button")
-    assert.ok(door, "the image chip carries the preview door")
-    assert.match(door!.getAttribute("aria-label") ?? "", /preview upload 1/)
-    const stem = document.querySelectorAll('[data-testid="tl-call-mod-chip"]')
-    assert.equal(stem.length, 1)
+    // (2026-10-16, THE SQUARE GRAMMAR) the dropped image renders INSIDE its square — the refs canon, never a floating chip
+    await waitFor(() => {
+      const img = document.querySelector('[data-source-row] [data-slot-square] img[src^="data:image/png"]')
+      assert.ok(img, "the image renders inside the square")
+    })
+    assert.equal(screen.getAllByRole("button", { name: /^Detach/ }).length, 1)
   })
 
   it("THE SIZE ARM (any-media, 2026-11-06): an oversize media file refuses on the seat's own face — never chips", async () => {
@@ -224,7 +224,7 @@ describe("the refmods listing door — the tenant's feed (2026-11-05)", () => {
     fireEvent.change(inp, { target: { files: [big] } })
     const face = await screen.findByTestId("tl-call-mods-error")
     assert.match(face.textContent ?? "", /file too large \(max 20 MB\)/)
-    assert.equal(document.querySelectorAll('[data-testid="tl-call-mod-chip"]').length, 0, "an oversize file never chips")
+    assert.equal(screen.queryAllByRole("button", { name: /^Detach/ }).length, 0, "an oversize file never chips")
   })
 
   it("THE READ-FAILURE ARM (any-media, 2026-11-06): an unreadable media file refuses — could not read, never a chip", async () => {
@@ -243,7 +243,7 @@ describe("the refmods listing door — the tenant's feed (2026-11-05)", () => {
     try {
       fireEvent.change(inp, { target: { files: [fail] } })
       await waitFor(() => { assert.match(screen.getByTestId("tl-call-mods-error").textContent ?? "", /could not read/) })
-      assert.equal(document.querySelectorAll('[data-testid="tl-call-mod-chip"]').length, 0, "a dead read never chips")
+      assert.equal(screen.queryAllByRole("button", { name: /^Detach/ }).length, 0, "a dead read never chips")
     } finally {
       FileReader.prototype.readAsDataURL = origRead
     }

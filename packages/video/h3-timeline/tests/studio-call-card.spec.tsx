@@ -356,7 +356,7 @@ describe("D2 (operator 2026-11-06): image chips preview through the DSH ImagePre
     h.unmount()
   })
 
-  it("THE MODS THUMB (D2): a data: image chip on the mods lane carries the door and the lightbox law", async () => {
+  it("THE SQUARE GRAMMAR (operator 2026-10-16: 'IT FLOATS ON TOP'): a data: image chip on the mods lane renders INSIDE the square", () => {
     const h = render(
       <CallCard
         c={{ ...BASE, refs: { mods: "data:image/png;base64,AA" } }}
@@ -364,18 +364,15 @@ describe("D2 (operator 2026-11-06): image chips preview through the DSH ImagePre
         deps={deps({ layerA: { fps: 24, seed: 42 } }).d}
       />,
     )
-    const chip = h.container.querySelector('[data-testid="tl-call-mod-chip"]')
-    assert.ok(chip, "the data: chip renders on the mods lane")
-    const door = chip!.querySelector("button")
-    assert.ok(door, "the mods thumb door renders for image currency")
-    assert.match(door!.getAttribute("aria-label") ?? "", /preview upload 1/)
-    assert.equal(document.querySelector('[role="dialog"]'), null)
-    fireEvent.click(door!)
-    const dialog = await screen.findByRole("dialog")
-    assert.ok(dialog.querySelector('img[src="data:image/png;base64,AA"]'),
-      "the DSH lightbox opens with the chip's own bytes")
-    fireEvent.click(screen.getByRole("button", { name: "close preview" }))
-    await waitFor(() => { assert.equal(document.querySelector('[role="dialog"]'), null, "the close verb unmounts it") })
+    // THE LAW: a committed image renders INSIDE its SourceRow square
+    // (the refs seat's canon — one grammar, every bucket); the
+    // floating declaredChip span that hovered its own thumbnail OVER
+    // an empty square is dead, and the detach verb rides the held
+    // image (a write verb, never PLUS over a full slot)
+    const inSquare = h.container.querySelector('[data-source-row] [data-slot-square] img[src="data:image/png;base64,AA"]')
+    assert.ok(inSquare, "the image renders inside the square")
+    assert.equal(h.container.querySelector('[data-testid="tl-call-mod-chip"]'), null, "the floating chip is dead")
+    assert.ok(screen.getAllByRole("button", { name: /^Detach/ }).length >= 1, "the detach verb is armed over the held image")
     h.unmount()
   })
 
@@ -479,13 +476,14 @@ describe("THE LAYER A/B CANON (2026-10-24): a stated call lane REPLACES the decl
     fireEvent.click(await screen.findByText("From flow"))
     fireEvent.click(await screen.findByText("pack_two"))
     assert.deepEqual(calls.refs, [[0, "mods", "refmods/pack_one.safetensors, pack_two.safetensors"]])
-    // the strip door: this harness renders once, so the strip's
-    // pass addresses the RENDERED chips (the original one) — the
-    // mutation stream records the add, then the strip of the
-    // rendered chip (real usage re-renders between mutations).
-    const strips = h.container.querySelectorAll('[data-testid="tl-call-mod-strip"]')
-    assert.equal(strips.length, 1)
-    fireEvent.click(strips[0]!)
+    // the strip door (the square's own detach verb now): this
+    // harness renders once, so the strip's pass addresses the
+    // RENDERED chips (the original one) — the mutation stream
+    // records the add, then the strip of the rendered chip (real
+    // usage re-renders between mutations).
+    const detaches = screen.getAllByRole("button", { name: /^Detach/ })
+    assert.equal(detaches.length, 1)
+    fireEvent.click(detaches[0]!)
     assert.deepEqual(calls.refs.at(-1), [0, "mods", ""])
     h.unmount()
   })
@@ -674,12 +672,12 @@ describe("THE MODS SQUARE (slice 4, design §B): the add door rides the SourceRo
     }
   })
 
-  it("the strip verb keeps its seat and its wire law (the F8 re-face changes the element, never the behavior)", () => {
+  it("the strip verb keeps its seat and its wire law (the square's detach ✕ — the element changed with the grammar, never the behavior)", () => {
     const { d, calls } = deps()
     const h = render(<CallCard c={{ ...BASE, refs: { mods: "refmods/a.safetensors, refmods/b.safetensors" } }} i={0} deps={d} />)
-    const strips = h.container.querySelectorAll('[data-testid="tl-call-mod-strip"]')
-    assert.equal(strips.length, 2)
-    fireEvent.click(strips[0]!)
+    const detaches = screen.getAllByRole("button", { name: /^Detach/ })
+    assert.equal(detaches.length, 2)
+    fireEvent.click(detaches[0]!)
     assert.deepEqual(calls.refs, [[0, "mods", "refmods/b.safetensors"]], "the strip removes exactly that pack")
   })
 

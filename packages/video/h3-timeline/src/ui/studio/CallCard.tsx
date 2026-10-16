@@ -371,34 +371,11 @@ function modsNotMediaLine(entry: string) {
   return `${entry} is not media — drop an image, video, or audio file (the system bakes the pack); pre-baked .safetensors stems ride the engine listing`
 }
 
-/** (D2) The mod lane's thumb door — the same law DeclaredChip
- *  rides: the estate glyph opens the DSH ImageLightbox. One spelling
- *  for the lane's own seat (the declared chip owns its own). */
-function ModChipThumb({ chip, slot }: { chip: string; slot: number }) {
-  const [open, setOpen] = useState(false)
-  const label = studioCopy.uploadChipLabel(slot + 1)
-  return (
-    <>
-      <Button
-        type="button"
-        variant="ghost"
-        className={s.declaredThumbBtn}
-        aria-label={studioCopy.imagePreviewAria(label)}
-        onClick={() => { setOpen(true) }}
-      >
-        <img src={chip} alt={label} className={s.declaredThumb} />
-      </Button>
-      {open ? (
-        <ImageLightbox
-          src={chip}
-          alt={label}
-          labels={{ dialog: studioCopy.imagePreviewDialog, close: studioCopy.imagePreviewClose }}
-          onClose={() => { setOpen(false) }}
-        />
-      ) : null}
-    </>
-  )
-}
+/** (DEAD 2026-10-16, the square-grammar cure: the chip that floated
+ *  its own thumbnail OVER the square is gone — a committed image
+ *  renders INSIDE its SourceRow square like every input lane, and
+ *  the square's own face owns the lightbox. ModChipThumb deleted,
+ *  never revived.) */
 
 /** THE MODS LANE (2026-10-24, the operator's compound report: "at
  *  layer B, i do not see a refmod spot") — reusable reference-mod
@@ -456,6 +433,13 @@ function ModsBucket({
   const candidates = (listing ?? [])
     .filter((stem) => !held.has(stem))
     .map((stem) => ({ id: stem, label: stem, url: `${stem}.safetensors` }))
+  // THE DISPLAY MAP (the refs canon's spelling): the mods seat holds
+  // stems, data: chips, and estate-media spellings — no run-artifact
+  // names — so the map rides empty and displaySource degrades
+  // honestly (data: → the square's thumb, a stem → the held face,
+  // estate media → the estate's servable url via SourceRow's own
+  // mirror). DISPLAY ONLY — the wire keeps its currency.
+  const chipUrl = new Map<string, string>()
   // THE PICK TRANSLATION (the refs seat's own grammar): a listing
   // pick commits the SUFFIXED stem (the wire form the compose's
   // classifier stems — `pack.safetensors`, never the bare stem);
@@ -484,7 +468,10 @@ function ModsBucket({
   // data: chip; the run's staging walk uploads it into the engine's
   // input tree and the compose's creator node bakes the pack. A
   // non-media file refuses at the gesture (the seat's own face).
-  const commitUpload = async (f: File): Promise<void> => {
+  // (2026-10-16, THE SQUARE GRAMMAR: `at` rides like the refs
+  // seat's spine — a drop on an EXISTING square replaces that
+  // entry; the + square appends. The floating chip is dead.)
+  const commitUpload = async (f: File, at: number | null): Promise<void> => {
     const fam = f.type.startsWith("image/") ? "image" : f.type.startsWith("video/") ? "video" : f.type.startsWith("audio/") ? "audio" : null
     if (fam === null) { setFileError(modsNotMediaLine(f.name)); return }
     const up = REF_UPLOAD_SPEC[fam]
@@ -495,7 +482,7 @@ function ModsBucket({
     try {
       const data = await readAsDataURL(f)
       setFileError(null)
-      setChips([...chips, data])
+      setChips(at === null ? [...chips, data] : chips.map((x, idx) => (idx === at ? data : x)))
     } catch {
       setFileError("could not read that file")
     }
@@ -526,36 +513,34 @@ function ModsBucket({
         {!overrides && declared.map((path) => (
           <DeclaredChip key={`declared-${path}`} url={path} kind="mod" />
         ))}
+        {/* THE SQUARE GRAMMAR (operator 2026-10-16: "THE REFMOD IS
+            NOT APPEARING LIKE THE OTHER INPUT SQUARES. INSTEAD OF
+            GOING INSIDE THE SQUARE IF IT IS AN IMAGE, IT FLOATS ON
+            TOP") — every committed entry renders as its own
+            value-carrying SourceRow, THE REFS SEAT'S CANON (one
+            grammar, every bucket): the image goes INSIDE the square
+            (the square's own thumb face), the ✕ strips THAT entry,
+            a pick or drop on an existing square REPLACES it, and the
+            + square below stays the add verb. The floating
+            declaredChip span — a thumbnail hovering over an empty
+            square — is dead. Stems keep the square's held face (a
+            .safetensors stem has no thumb; the raw name with detach
+            armed is the honest face). */}
         {chips.map((chip, ci) => (
-          <span
-            key={`${chip}-${ci}`}
-            className={s.declaredChip}
-            data-testid="tl-call-mod-chip"
-            title={studioCopy.modChipTitle(chip)}
-          >
-            {/* (D2) the mod chip previews image currency through the
-                same DSH primitive — a data: still upload shows its
-                face and opens the lightbox; an engine stem keeps the
-                text face. */}
-            {isImageUrl(chip) ? <ModChipThumb chip={chip} slot={ci} /> : null}
-            <span className={s.declaredName}>
-              {chip.startsWith("data:") ? studioCopy.uploadChipLabel(ci + 1) : declaredShortName(chip)}
-            </span>
-            {/* THE STRIP VERB, ONE SPELLING (audit b's F8): every
-                sibling remove verb rides DSH Button ghost — the raw
-                <button> was the lane's lone idiom split. */}
-            <Button
-              type="button"
-              variant="ghost"
-              className={s.declaredTag}
-              data-testid="tl-call-mod-strip"
-              onClick={() => setChips(chips.filter((_, x) => x !== ci))}
-              title={studioCopy.removePack}
-              aria-label={studioCopy.removePack}
-            >
-              ×
-            </Button>
-          </span>
+          <SourceRow
+            key={`modchip-${ci}`}
+            label={chip.startsWith("data:") ? studioCopy.uploadChipLabel(ci + 1) : declaredShortName(chip)}
+            kind="file"
+            accept="image/*,video/*,audio/*"
+            value={displaySource(chip, chipUrl)}
+            onEdit={(v) => {
+              if (v === "") setChips(chips.filter((_, x) => x !== ci))
+              else if (commitListingChip(v)) { setFileError(null); setChips(chips.map((x, idx) => (idx === ci ? chipOfListing(v) : x))) }
+            }}
+            candidates={candidates}
+            loadMedia={fetchMediaLibrary}
+            onFile={(f) => { void commitUpload(f, ci) }}
+          />
         ))}
         {/* (operator 2026-11-05: "WHY IS IT NOT AN UPLOAD SQUARE?")
             — the add face is the SQUARE grammar every input lane
@@ -575,7 +560,7 @@ function ModsBucket({
           onEdit={(v) => {
             if (v !== "" && commitListingChip(v)) { setFileError(null); setChips([...chips, chipOfListing(v)]) }
           }}
-          onFile={(f) => { void commitUpload(f) }}
+          onFile={(f) => { void commitUpload(f, null) }}
         />
       </div>
       {fileError && (
