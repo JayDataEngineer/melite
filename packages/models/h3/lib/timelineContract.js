@@ -32,11 +32,25 @@ export function transitionOverlap(transition) {
  *  goes straight to CreateVideo), so the schema walk REFUSES these
  *  keys on a derived-t4r doc rather than silently dropping them (the
  *  no-silent-resolution law). Shared with the studio so its rail and
- *  its heal judge the SAME twelve the walk refuses. */
+ *  its heal judge the SAME set the walk refuses.
+ *
+ *  THE DEAD-LETTER MASTERS (2026-10-16, audit 3f0b7c1a layera-globals
+ *  #3): the twelve leaves above are gated, but the three MASTERS that
+ *  own them — second_pass_enabled, sharpen_enabled, interpolate_enabled
+ *  — and attention_backend were not, and each is read ONLY inside the
+ *  non-t4r branch of the compose (actions.ts: second_pass_enabled at
+ *  the post gate, the two leaves in the post chain, attention_backend
+ *  at the chunked ModelAttentionBackend). On a t4r doc they rendered,
+ *  persisted, composed LEGAL, and landed in NO node: a switch the user
+ *  sees ON while the run ignores it — the exact silent-drop the twelve
+ *  leaves are gated against, one level up. Joined here so the field
+ *  gate, the row gate and the reseat heal judge them together. */
 export const T4_ONLY_KEYS = [
     'sharpen_switch', 'sharpen_method', 'sharpen_strength', 'sharpen_radius',
     'sharpen_threshold', 'sharpen_iterations', 'interp_switch',
     'interp_multiplier', 'interp_model', 'sr_switch', 'sr_model', 'sr_resolution',
+    'second_pass_enabled', 'sharpen_enabled', 'interpolate_enabled',
+    'attention_backend',
 ];
 /** (2026-11-06, the family-reseat cure) the doc-level window family
  *  derivation, ONE spelling for every door that needs the family

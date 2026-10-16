@@ -71,14 +71,21 @@ describe("useFamilyReseatHeal (the D8 cure)", () => {
     })
     assert.equal(writes.length, 1, "exactly one reseat write")
     const w = writes[0]!
-    // the twelve T4_ONLY keys the layer carried all unstate
+    // the T4_ONLY keys the layer carried all unstate
     assert.equal(w["sr_switch"], undefined)
     assert.equal(w["sr_resolution"], undefined)
     assert.equal(w["sharpen_method"], undefined)
     assert.equal(w["interp_multiplier"], undefined)
-    // every NON-T4 key rides untouched — the heal speaks only the
-    // dead lane's vocabulary (the master switch and geometry stay)
-    assert.equal(w["second_pass_enabled"], true)
+    // THE DEAD-LETTER MASTER JOINS THEM (2026-10-16, audit 3f0b7c1a
+    // layera-globals #3): this arm used to pin the master ON as a
+    // "NON-T4 key" — under the twelve-key belief. The master is read
+    // only inside the non-t4r branch of the compose, so on a t4r doc
+    // it is the same dead letter as its own leaves: a switch the user
+    // sees ON while the run ignores it. It unstates with them (this
+    // pin moved true -> undefined when the set widened).
+    assert.equal(w["second_pass_enabled"], undefined)
+    // and the genuinely non-T4 key rides untouched — the heal speaks
+    // only the dead lane's vocabulary (geometry stays)
     assert.equal(w["width"], 1344)
   })
 

@@ -13,7 +13,7 @@
  * FP16/Torch/CFG/context frames, legacy spellings) stay pinned
  * ABSENT.
  */
-import { describe, it, vi } from "vitest"
+import { beforeAll, describe, it, vi } from "vitest"
 import assert from "node:assert/strict"
 import { readFileSync } from "node:fs"
 import { resolve } from "node:path"
@@ -21,6 +21,10 @@ import { cleanup, fireEvent, render, screen, within } from "@testing-library/rea
 import { DEFAULT_SEGMENT_PARAMS } from "@melite/contracts/timelineTypes"
 import { RunRecipeEngine } from "../src/ui/studio/RunRecipeEngine.tsx"
 import { schemaEnvelope } from "@melite/card-base/client"
+import { emitParamsSpec } from "@melite/comfyui-card-kit/params-emit"
+import { loadCardDefs } from "@melite/comfyui-cordis"
+import "../../../../tests/helpers/boot-models.ts"
+import { carrier, BOARDED, VARIANT_ADDRESSES } from "../src/card.ts"
 import { bindEstateRemote, unbindEstateRemote } from '@melite/card-base/client'
 import type { LayerA } from "../src/ui/studio/docModel.ts"
 
@@ -572,22 +576,27 @@ describe("the pick judges truth-in-hand — the collapse", () => {
 // RENDERING what the family cannot honor; films (t4_chain) and
 // open single windows (t4_open) keep the finishing rail.
 describe("RunRecipeEngine: the t4r family gate (omitFields)", () => {
+  // the card's REAL served envelope (schemastery's own toJSON — the
+  // exact value discovery.ts:911 hands the panel)
+  let realEnvelope: unknown
+  beforeAll(async () => {
+    const def = (await loadCardDefs()).get("h3-timeline")
+    assert.ok(def, "the composition root serves the h3-timeline card")
+    realEnvelope = ((def.schemaCarrier ?? def.schema) as unknown as { toJSON(): unknown }).toJSON()
+  })
   function serveT4(): void {
-    const num = (description: string, dflt: number) => ({
-      type: "number", meta: { description, default: dflt, extra: { group: "sampling" } },
-    })
-    const bool = (description: string) => ({
-      type: "boolean", meta: { description, default: false, extra: { group: "second_pass" } },
-    })
+    // THE SERVED-SURFACE LAW (2026-10-16, audit 3f0b7c1a
+    // layera-globals #3): this fixture used to hand-serve FOUR keys
+    // (width, sr_switch, sr_resolution, sharpen_method) — every one
+    // of them in T4_ONLY_KEYS — so the tab-absence arm below passed
+    // no matter what the gate did: the fixture had already removed
+    // the masters. It now serves the card's REAL envelope (the same
+    // schemastery toJSON the estate's discovery serializes), so the
+    // group grammar judges what the estate actually serves.
     vi.stubGlobal("fetch", () => Promise.resolve(new Response(JSON.stringify({
       form: "h3-timeline",
       features: { variant_groups: { Variant: { label: "Variant" }, Recipe: { label: "Recipe" } } },
-      schema: schemaEnvelope({
-        width: num("Width", 1344),
-        sr_switch: bool("Super-Res (SeedVR2)"),
-        sr_resolution: num("Super-Res target", 1080),
-        sharpen_method: bool("Sharpen method"),
-      }),
+      schema: realEnvelope,
       variants: [
         { id: "h3", label: "Standard", group: "Variant", defaults: {}, route: "h3-timeline", hint: null, engine: "comfyui", quant: null, vram_peak_gb: null, owner: "" },
       ],
@@ -631,14 +640,32 @@ describe("RunRecipeEngine: the t4r family gate (omitFields)", () => {
     // and with the whole group gone, its rows ride no panel either
     assert.equal(screen.queryByText("Super-Res (SeedVR2)"), null)
     assert.equal(screen.queryByText("Sharpen method"), null)
+    // THE DEAD-LETTER MASTERS (audit 3f0b7c1a layera-globals #3):
+    // the three masters that OWN the leaves above and the attention
+    // backend were NOT in the gate, and each is read only inside the
+    // non-t4r branch of the compose — on a t4r doc they rendered
+    // (the group kept members, so its tab kept rendering) while the
+    // run landed them in no node. The real served envelope is what
+    // makes these queries load-bearing: with the hand fixture the
+    // masters were absent from the wire already.
+    for (const label of ["Second pass", "FSR Sharpening", "FILM Interpolation", "Attention backend"]) {
+      assert.equal(screen.queryByText(label), null,
+        `${label} renders on no t4r doc — the run cannot honor it`)
+    }
   })
 
   it("films and open windows keep the finishing rail (the gate is the t4r lane's, not the knobs')", async () => {
     serveT4()
+    // the leaves carry their declared visible_when (the real envelope
+    // is now what the panel reads): the master gates the group, and
+    // sharpen_method additionally demands its own leaf switch — the
+    // operator's own flow; the labels are the schema's ("Sharpen
+    // Method", not the retired hand fixture's spelling)
+    const rail = { second_pass_enabled: true, sharpen_enabled: true } as unknown as LayerA
     const { unmount } = render(
       <RunRecipeEngine
         base={chainBase as never}
-        layerA={{} as unknown as LayerA}
+        layerA={rail}
         setLayerAKey={() => {}}
         setLayerA={() => {}}
         refArtifacts={[]}
@@ -649,12 +676,12 @@ describe("RunRecipeEngine: the t4r family gate (omitFields)", () => {
     const tab = await screen.findByRole("tab", { name: /second/i })
     fireEvent.click(tab)
     assert.notEqual(await screen.findByText("Super-Res (SeedVR2)"), null)
-    assert.notEqual(screen.queryByText("Sharpen method"), null)
+    assert.notEqual(screen.queryByText("Sharpen Method"), null)
     unmount()
     render(
       <RunRecipeEngine
         base={openBase as never}
-        layerA={{} as unknown as LayerA}
+        layerA={rail}
         setLayerAKey={() => {}}
         setLayerA={() => {}}
         refArtifacts={[]}
