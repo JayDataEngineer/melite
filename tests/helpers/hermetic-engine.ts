@@ -19,7 +19,7 @@
  * register before the barrel's first evaluation) hermeticizes the
  * engine for the file: liveObjectInfo answers the tracked boot
  * double (../walls/fixtures/object_info.boot.json — a hand-kept
- * TEST DOUBLE of twelve node classes, authored once from the live
+ * TEST DOUBLE of 58 node classes (count stated here, derived at last edit — the fixture grows with the key judge's needs), authored once from the live
  * doc, NOT an inventory snapshot; the min fixture owns inventory
  * truth). Every other barrel export rides spread-actual. The
  * double feeds the REAL deriveWiringDoc/setObjectInfo path — only
