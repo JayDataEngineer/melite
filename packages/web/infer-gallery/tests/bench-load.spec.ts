@@ -364,9 +364,10 @@ describe('loadRunOntoBench — the run record wins', () => {
     expect(d.errors).toEqual(['that run keeps no readable sidecar (HTTP 200)'])
   })
 
-  it('the bench_snapshot restores every stage (stale state stripped, the ran card keeps its preview)', async () => {
+  it('the bench_snapshot restores every stage (stale state stripped; D6, 2026-11-06: EVERY ran stage keeps the run previews, not the matched card alone)', async () => {
     const side = {
       run_id: 'r1',
+      skipped_stages: ['s_2'],
       flow: {
         artifacts: ['/data/run-0f1e2d-r1/out.png'],
         card_snapshot: { card: 'image-gen', params: { prompt: 'ran prompt', draft_id: 'd9', test: 1 } },
@@ -374,6 +375,7 @@ describe('loadRunOntoBench — the run record wins', () => {
           stages: [
             { id: 's_0', card: 'image-gen', result: { old: true }, runStatus: 'x', resolved: true },
             { id: 's_1', card: 'other' },
+            { id: 's_2', card: 'skipped-card' },
           ],
           intent: 'the full workflow intent from the run press, kept verbatim here for the restore',
         },
@@ -385,15 +387,18 @@ describe('loadRunOntoBench — the run record wins', () => {
     expect(d.errors).toEqual([])
     expect(d.opened).toEqual(['dsh-resource://cards/bench/s1'])
     const stages = ensuredBody(calls).stages as Array<Record<string, unknown>>
-    expect(stages).toHaveLength(2)
-    expect(stages[0]).toMatchObject({
-      id: 's_0',
-      card: 'image-gen',
-      provenance: 'restored',
-      result: { run_id: 'r1', url: '/infer-gallery/artifact?path=' + encodeURIComponent('run-0f1e2d-r1/out.png') },
-    })
+    expect(stages).toHaveLength(3)
+    const shared = { run_id: 'r1', url: '/infer-gallery/artifact?path=' + encodeURIComponent('run-0f1e2d-r1/out.png') }
+    expect(stages[0]).toMatchObject({ id: 's_0', card: 'image-gen', provenance: 'restored', result: shared })
     expect('runStatus' in stages[0]!).toBe(false)
-    expect(stages[1]).toEqual({ id: 's_1', card: 'other', provenance: 'restored' })
+    // (D6 re-pin, 2026-11-06: "image previews not recovered on all
+    // cards") the old arm pinned the DEFECT as law — s_1 (card
+    // 'other', never matched by card_snapshot.card) restored
+    // previewless and its card rendered no image. The run's result
+    // is shared truth; each card's own preview law picks its hero.
+    expect(stages[1]).toMatchObject({ id: 's_1', card: 'other', provenance: 'restored', result: shared })
+    // THE SKIPPED SET never carries another stage's product.
+    expect(stages[2]).toEqual({ id: 's_2', card: 'skipped-card', provenance: 'restored' })
     expect(String(ensuredBody(calls).intent).length).toBeLessThanOrEqual(77)
   })
 
@@ -829,7 +834,11 @@ describe('loadRunOntoBench — the run record wins', () => {
     expect(ensuredBody(fullCalls.calls).intent).toBe('restored run')
   })
 
-  it('a multi-stage snapshot without the ran card stamps nothing', async () => {
+  it('D6: a multi-stage snapshot without the ran card still recovers previews (and an artifactless run stamps nothing)', async () => {
+    // (re-pin 2026-11-06) the old arm pinned the DEFECT as law: no
+    // card_snapshot match -> no stage carried a result -> every card
+    // in the restored flow rendered previewless. The run's result is
+    // shared truth; the card match was never the gate.
     const side = {
       run_id: 'r6',
       flow: {
@@ -845,8 +854,16 @@ describe('loadRunOntoBench — the run record wins', () => {
     await loadRunOntoBench('r6', d)
     expect(d.errors).toEqual([])
     const stages = ensuredBody(calls).stages as Array<Record<string, unknown>>
-    expect(stages.every((st) => !('result' in st))).toBe(true)
+    expect(stages.every((st) => 'result' in st)).toBe(true)
     expect(ensuredBody(calls).intent).toBe('two stages, no snapshot card')
+    // the honest NOTHING: a run with no servable artifact has no
+    // result to share — nothing is stamped anywhere.
+    const bare = stubFetch(runWith({ run_id: 'r6b', flow: { artifacts: [], bench_snapshot: { stages: [{ id: 's_0', card: 'a' }, { id: 's_1', card: 'b' }], intent: 'bare' } } }))
+    const d2 = deps('s2')
+    await loadRunOntoBench('r6b', d2)
+    expect(d2.errors).toEqual([])
+    const bareStages = ensuredBody(bare.calls).stages as Array<Record<string, unknown>>
+    expect(bareStages.every((st) => !('result' in st))).toBe(true)
   })
 
   it('the verbatim request restores older runs (draft/test keys stripped)', async () => {

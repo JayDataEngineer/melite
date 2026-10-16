@@ -440,6 +440,62 @@ interface RunsEnt {
 
 /** The single-root scan (the file-era walk, intact): PROD output
  *  root only (test runs never listed — kept 1:1). */
+/** (D6, operator 2026-11-06: "flow restore via media tab history
+ *  extremely slow") the per-open walk read EVERY run's sidecar and
+ *  probed EVERY run dir for media — O(runs × (file read + readdir +
+ *  per-file stat)) on every panel open, thousands of synchronous
+ *  syscalls with a real history. THE SCAN CACHE: each run dir's
+ *  facts (created + media) cached against the dir's own mtimeMs —
+ *  a run writing artifacts bumps its dir mtime and rescans that one
+ *  dir on the next open; nothing else re-reads. Never stale past
+ *  the filesystem's own truth, never a TTL lie. */
+interface ScanEnt {
+  dirMtime: number;
+  flowMtime: number;
+  created: number;
+  media: boolean;
+}
+const scanCache = new Map<string, ScanEnt>();
+
+function mtimeMsOf(path: string): number {
+  try {
+    return statSync(path).mtimeMs;
+  } catch {
+    return -1;
+  }
+}
+
+function scanRunEnt(runDir: string): ScanEnt | undefined {
+  // TWO KEYS, one convergence law: the DIR mtime bumps when a file
+  // lands at the top level, but a run that writes its artifacts one
+  // level down never bumps it. The SIDECAR mtime closes that hole —
+  // the registry rewrites _flow.json on every status transition, so
+  // the final write (completed) lands AFTER the last artifact
+  // wherever it went, and any sidecar rewrite re-opens the dir for
+  // one fresh scan. Warm cost per run: two stats, zero reads.
+  const dirMtime = mtimeMsOf(runDir);
+  const flowMtime = mtimeMsOf(join(runDir, "_flow.json"));
+  if (dirMtime < 0 && flowMtime < 0) return undefined;
+  const hit = scanCache.get(runDir);
+  if (hit !== undefined && hit.dirMtime === dirMtime && hit.flowMtime === flowMtime) return hit;
+  let created = 0;
+  let buf = "";
+  try {
+    buf = readFileSync(join(runDir, "_flow.json"), "utf8").slice(0, 8191);
+  } catch {
+    buf = "";
+  }
+  if (buf) {
+    // created_at (sidecar) first, "created" (C fossil) fallback.
+    created = sidecarNum(buf, "created", 0);
+    const at: number = buf.indexOf('"created_at":');
+    if (at >= 0) created = parseLeadingInt(buf.slice(at + 13));
+  }
+  const ent: ScanEnt = { dirMtime, flowMtime, created, media: runDirHasMedia(runDir) };
+  scanCache.set(runDir, ent);
+  return ent;
+}
+
 function scanRunsRoot(stateRoot: string): RunsEnt[] {
   // The PROD output root only (the door's list scanned
   // roots.runsRoot; test runs never listed — kept 1:1).
@@ -454,24 +510,12 @@ function scanRunsRoot(stateRoot: string): RunsEnt[] {
   for (const name of names) {
     if (ents.length >= 8192) break; // the C's 8192 collected cap
     if (!name.startsWith("run-")) continue;
-    const runDir: string = join(outputRoot, name);
-    let created = 0;
-    let buf = "";
-    try {
-      buf = readFileSync(join(runDir, "_flow.json"), "utf8").slice(0, 8191);
-    } catch {
-      buf = "";
-    }
-    if (buf) {
-      // created_at (sidecar) first, "created" (C fossil) fallback.
-      created = sidecarNum(buf, "created", 0);
-      const at: number = buf.indexOf('"created_at":');
-      if (at >= 0) created = parseLeadingInt(buf.slice(at + 13));
-    }
+    const ent = scanRunEnt(join(outputRoot, name));
+    if (ent === undefined) continue;
     ents.push({
       dir: name,
-      created,
-      media: runDirHasMedia(runDir),
+      created: ent.created,
+      media: ent.media,
       root: stateRoot,
     });
   }
@@ -485,12 +529,35 @@ function scanRunsRoot(stateRoot: string): RunsEnt[] {
  *  ASYNC (the drafts remote's birth-certificate face — the legacy
  *  drafts/<id>.json stat died with the drafts-door migration;
  *  orphans lose their draft link, never the row). */
+// (D6, second half) the ROW build was the other per-open cost:
+// every listed row re-read its sidecar, re-walked its artifacts
+// (readdir + per-file stat), and re-probed its poster — 500 of each
+// on every panel open. The row is DISK TRUTH under the same dual
+// mtime key as the scan cache (the convergence law is identical:
+// the final sidecar rewrite lands after the last artifact), so the
+// built row caches against it. The hasDraft overlay stays FRESH —
+// it probes registry state, not disk, and never rides a key.
+interface RowEnt {
+  dirMtime: number;
+  flowMtime: number;
+  /** never null: a refused row returns BEFORE the cache write —
+   *  refusals are re-judged fresh every pass by design. */
+  row: Record<string, unknown>;
+}
+const rowCache = new Map<string, RowEnt>();
+
 async function buildRunCard(
   outputRoot: string,
   ent: RunsEnt,
   hasDraft: (draftId: string) => Promise<boolean>,
 ): Promise<Record<string, unknown> | null> {
   const runDir: string = join(outputRoot, ent.dir);
+  const dirMtime = mtimeMsOf(runDir);
+  const flowMtime = mtimeMsOf(join(runDir, "_flow.json"));
+  const cached = rowCache.get(runDir);
+  if (cached !== undefined && cached.dirMtime === dirMtime && cached.flowMtime === flowMtime) {
+    return applyDraftOverlay(cached.row, hasDraft);
+  }
   let buf: string | null = null;
   // NO sidecar (ENOENT) is the file-era completed-run law: it reads
   // the "success" default, pinned by runs-list.spec. A sidecar that
@@ -548,11 +615,8 @@ async function buildRunCard(
     if (at >= 0) created = parseLeadingInt(buf.slice(at + 13));
   }
   if (pipeline.startsWith("_")) return null; // user-surface law
-  if (draft && !(await hasDraft(draft))) {
-    draft = "";
-  }
   const literal: string = "./output/" + ent.dir;
-  const row = runRowOrNull({
+  const built: Record<string, unknown> | null = runRowOrNull({
     run_id: ent.dir,
     name: pipeline,
     flow: pipeline,
@@ -568,7 +632,28 @@ async function buildRunCard(
     ...(exported !== "" ? { export_name: exported } : {}),
     ...(exportedPath !== "" ? { export_path: exportedPath } : {}),
   });
-  return row; // null = RESILIENCE LAW loud skip
+  if (built === null) return null; // user-surface / RESILIENCE LAW loud skip — never cached
+  // TORN reads are transient (permissions, torn mid-write): caching
+  // one would freeze "unknown" while the mtimes hold. Clean reads
+  // (and absent sidecars — their APPEARANCE moves the flow key)
+  // cache.
+  if (!torn) rowCache.set(runDir, { dirMtime, flowMtime, row: built });
+  return applyDraftOverlay(built, hasDraft);
+}
+
+/** The FRESH overlay on a served row: the draft probe is registry
+ *  state, never disk truth — it re-runs on every serve, mutating a
+ *  CLONE so the cache never learns the probe's answer. */
+async function applyDraftOverlay(
+  row: Record<string, unknown>,
+  hasDraft: (draftId: string) => Promise<boolean>,
+): Promise<Record<string, unknown>> {
+  const served: Record<string, unknown> = structuredClone(row);
+  const draft = served["draft_id"];
+  if (typeof draft === "string" && draft !== "" && !(await hasDraft(draft))) {
+    served["draft_id"] = "";
+  }
+  return served;
 }
 
 /** The runs-list envelope (the restore port): the output-root scan, media-first + newest sort, the limit parse (raw STRING — the lane/remote pass the raw text; underscores parse, non-ints refuse), refused cards SKIPPED but counted. */

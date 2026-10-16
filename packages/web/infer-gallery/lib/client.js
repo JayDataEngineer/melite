@@ -1927,12 +1927,13 @@ window.__ModuleLoader__.load({
 					const bs = parsedBench.value;
 					const bsStages = bs.stages.map((st) => ({ ...st }));
 					if (bsStages.length > 1) {
-						const ranCard = typeof snap === "object" && snap !== null ? snap["card"] : void 0;
+						typeof snap === "object" && snap !== null && snap["card"];
 						const result = resultOfRun(flow, String(side["run_id"] ?? ""));
 						for (const st of bsStages) {
 							stripKeys$1(st, RESTORE_STRIP_KEYS$1);
 							stripSelfNamedModel$1(st["card"], st["params"]);
-							if (ranCard !== void 0 && st["card"] === ranCard && result !== void 0) st["result"] = result;
+							const skippedRaw = side["skipped_stages"];
+							if (!(Array.isArray(skippedRaw) ? skippedRaw : []).some((k) => k === st["id"]) && result !== void 0) st["result"] = result;
 							st["provenance"] = RESTORED_PROVENANCE_SPELLING$1;
 						}
 						await loadStagesOntoBench(bsStages, (bs.intent !== "" ? bs.intent : "restored run").slice(0, 77), deps);

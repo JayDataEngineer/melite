@@ -313,7 +313,19 @@ export async function loadRunOntoBench(runId: string, deps: BenchLoadDeps): Prom
           // the walls pin the contract and the SET and never drove
           // these two restore arms).
           stripSelfNamedModel(st['card'], st['params'])
-          if (ranCard !== undefined && st['card'] === ranCard && result !== undefined) st['result'] = result
+          // (D6, operator 2026-11-06: "image previews not recovered
+          // on all cards") the old arm re-attached the run's result
+          // to the ONE stage whose card matched the ran card — every
+          // OTHER ran stage in the flow restored previewless. The
+          // run's result is SHARED truth (the artifacts map carries
+          // every clip, keyed by its run-relative name): every
+          // non-skipped stage rides it, and each card's own preview
+          // law picks its hero out of the map. The SKIPPED set never
+          // carries another stage's product.
+          const skippedRaw: unknown = (side as Record<string, unknown>)['skipped_stages']
+          const skipped: unknown[] = Array.isArray(skippedRaw) ? skippedRaw : []
+          const isSkipped = skipped.some((k) => k === st['id'])
+          if (!isSkipped && result !== undefined) st['result'] = result
           st['provenance'] = RESTORED_PROVENANCE_SPELLING
         }
         const bsIntent = bs.intent !== '' ? bs.intent : 'restored run'

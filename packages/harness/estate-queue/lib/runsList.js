@@ -401,8 +401,49 @@ export function firstQuery(qs, name, dflt) {
     }
     return dflt;
 }
-/** The single-root scan (the file-era walk, intact): PROD output
- *  root only (test runs never listed — kept 1:1). */
+const scanCache = new Map();
+function mtimeMsOf(path) {
+    try {
+        return statSync(path).mtimeMs;
+    }
+    catch {
+        return -1;
+    }
+}
+function scanRunEnt(runDir) {
+    // TWO KEYS, one convergence law: the DIR mtime bumps when a file
+    // lands at the top level, but a run that writes its artifacts one
+    // level down never bumps it. The SIDECAR mtime closes that hole —
+    // the registry rewrites _flow.json on every status transition, so
+    // the final write (completed) lands AFTER the last artifact
+    // wherever it went, and any sidecar rewrite re-opens the dir for
+    // one fresh scan. Warm cost per run: two stats, zero reads.
+    const dirMtime = mtimeMsOf(runDir);
+    const flowMtime = mtimeMsOf(join(runDir, "_flow.json"));
+    if (dirMtime < 0 && flowMtime < 0)
+        return undefined;
+    const hit = scanCache.get(runDir);
+    if (hit !== undefined && hit.dirMtime === dirMtime && hit.flowMtime === flowMtime)
+        return hit;
+    let created = 0;
+    let buf = "";
+    try {
+        buf = readFileSync(join(runDir, "_flow.json"), "utf8").slice(0, 8191);
+    }
+    catch {
+        buf = "";
+    }
+    if (buf) {
+        // created_at (sidecar) first, "created" (C fossil) fallback.
+        created = sidecarNum(buf, "created", 0);
+        const at = buf.indexOf('"created_at":');
+        if (at >= 0)
+            created = parseLeadingInt(buf.slice(at + 13));
+    }
+    const ent = { dirMtime, flowMtime, created, media: runDirHasMedia(runDir) };
+    scanCache.set(runDir, ent);
+    return ent;
+}
 function scanRunsRoot(stateRoot) {
     // The PROD output root only (the door's list scanned
     // roots.runsRoot; test runs never listed — kept 1:1).
@@ -420,40 +461,27 @@ function scanRunsRoot(stateRoot) {
             break; // the C's 8192 collected cap
         if (!name.startsWith("run-"))
             continue;
-        const runDir = join(outputRoot, name);
-        let created = 0;
-        let buf = "";
-        try {
-            buf = readFileSync(join(runDir, "_flow.json"), "utf8").slice(0, 8191);
-        }
-        catch {
-            buf = "";
-        }
-        if (buf) {
-            // created_at (sidecar) first, "created" (C fossil) fallback.
-            created = sidecarNum(buf, "created", 0);
-            const at = buf.indexOf('"created_at":');
-            if (at >= 0)
-                created = parseLeadingInt(buf.slice(at + 13));
-        }
+        const ent = scanRunEnt(join(outputRoot, name));
+        if (ent === undefined)
+            continue;
         ents.push({
             dir: name,
-            created,
-            media: runDirHasMedia(runDir),
+            created: ent.created,
+            media: ent.media,
             root: stateRoot,
         });
     }
     return ents;
 }
-/** The per-run card build (the file-era row law, intact): sidecar
- *  byte-scan → zombie override → user-surface skip → orphan-draft
- *  clearing → runRowOrNull. Null = skipped (never stored, never
- *  served — the count still counts the dir). The drafts probe is
- *  ASYNC (the drafts remote's birth-certificate face — the legacy
- *  drafts/<id>.json stat died with the drafts-door migration;
- *  orphans lose their draft link, never the row). */
+const rowCache = new Map();
 async function buildRunCard(outputRoot, ent, hasDraft) {
     const runDir = join(outputRoot, ent.dir);
+    const dirMtime = mtimeMsOf(runDir);
+    const flowMtime = mtimeMsOf(join(runDir, "_flow.json"));
+    const cached = rowCache.get(runDir);
+    if (cached !== undefined && cached.dirMtime === dirMtime && cached.flowMtime === flowMtime) {
+        return applyDraftOverlay(cached.row, hasDraft);
+    }
     let buf = null;
     // NO sidecar (ENOENT) is the file-era completed-run law: it reads
     // the "success" default, pinned by runs-list.spec. A sidecar that
@@ -511,11 +539,8 @@ async function buildRunCard(outputRoot, ent, hasDraft) {
     }
     if (pipeline.startsWith("_"))
         return null; // user-surface law
-    if (draft && !(await hasDraft(draft))) {
-        draft = "";
-    }
     const literal = "./output/" + ent.dir;
-    const row = runRowOrNull({
+    const built = runRowOrNull({
         run_id: ent.dir,
         name: pipeline,
         flow: pipeline,
@@ -531,7 +556,26 @@ async function buildRunCard(outputRoot, ent, hasDraft) {
         ...(exported !== "" ? { export_name: exported } : {}),
         ...(exportedPath !== "" ? { export_path: exportedPath } : {}),
     });
-    return row; // null = RESILIENCE LAW loud skip
+    if (built === null)
+        return null; // user-surface / RESILIENCE LAW loud skip — never cached
+    // TORN reads are transient (permissions, torn mid-write): caching
+    // one would freeze "unknown" while the mtimes hold. Clean reads
+    // (and absent sidecars — their APPEARANCE moves the flow key)
+    // cache.
+    if (!torn)
+        rowCache.set(runDir, { dirMtime, flowMtime, row: built });
+    return applyDraftOverlay(built, hasDraft);
+}
+/** The FRESH overlay on a served row: the draft probe is registry
+ *  state, never disk truth — it re-runs on every serve, mutating a
+ *  CLONE so the cache never learns the probe's answer. */
+async function applyDraftOverlay(row, hasDraft) {
+    const served = structuredClone(row);
+    const draft = served["draft_id"];
+    if (typeof draft === "string" && draft !== "" && !(await hasDraft(draft))) {
+        served["draft_id"] = "";
+    }
+    return served;
 }
 /** The runs-list envelope (the restore port): the output-root scan, media-first + newest sort, the limit parse (raw STRING — the lane/remote pass the raw text; underscores parse, non-ints refuse), refused cards SKIPPED but counted. */
 /** url/thumbnail are run-RELATIVE (the /v1/assets prefix died with the app — the header's law). */

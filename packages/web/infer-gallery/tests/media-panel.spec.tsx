@@ -702,11 +702,16 @@ describe('MediaPanel — the wand restores the run onto the bench', () => {
     const stages = ensures[0]?.['stages'] as Record<string, unknown>[]
     expect(stages).toHaveLength(2)
     expect(ensures[0]?.['intent']).toBe('the beach flow')
-    // stale run state stripped; provenance restored
-    expect(stages?.[0]).not.toHaveProperty('result')
+    // (D6 re-pin, 2026-11-06: "image previews not recovered on all
+    // cards") the old arm pinned the DEFECT as law — only the ran
+    // card carried a preview, the image-gen stage restored bare.
+    // The run's result is shared truth; stale run state still dies
+    // first (the strip), then the fresh stamp lands on EVERY ran
+    // stage. The stale '/old.png' must never ride.
     expect(stages?.[0]?.['provenance']).toBe('restored')
-    // THE RAN CARD carries the run's preview
-    expect(stages?.[1]?.['result']).toEqual({ run_id: 'r1', url: '/infer-gallery/artifact?path=' + encodeURIComponent('run-0f1e2d-r1/edit/out.png'), artifacts: { 'run-0f1e2d-r1/edit/out.png': '/infer-gallery/artifact?path=' + encodeURIComponent('run-0f1e2d-r1/edit/out.png') }, assetUrls: ['/infer-gallery/artifact?path=' + encodeURIComponent('run-0f1e2d-r1/edit/out.png')] })
+    const shared = { run_id: 'r1', url: '/infer-gallery/artifact?path=' + encodeURIComponent('run-0f1e2d-r1/edit/out.png'), artifacts: { 'run-0f1e2d-r1/edit/out.png': '/infer-gallery/artifact?path=' + encodeURIComponent('run-0f1e2d-r1/edit/out.png') }, assetUrls: ['/infer-gallery/artifact?path=' + encodeURIComponent('run-0f1e2d-r1/edit/out.png')] }
+    expect(stages?.[0]?.['result']).toEqual(shared)
+    expect(stages?.[1]?.['result']).toEqual(shared)
     expect(stages?.[1]).not.toHaveProperty('runStatus')
   })
 

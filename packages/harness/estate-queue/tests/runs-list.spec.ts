@@ -510,6 +510,26 @@ describe("listRuns envelope", () => {
     assert.equal(row["created_at"], 1234567890);
   });
 
+  it("subdir media rides the warm scan too (the frames layout lists)", async () => {
+    // (D6) the scan cache keys on dir + sidecar mtimes; a run whose
+    // artifacts live one level down (the h3 frames layout) must list
+    // through runDirHasMedia's subdir walk on the FRESH pass.
+    const state = tmp();
+    const dir = join(state, "output", "run-subdir-media");
+    mkdirSync(join(dir, "frames"), { recursive: true });
+    writeFileSync(join(dir, "_flow.json"), JSON.stringify({
+      status: "completed", pipeline: "voice", seed: 7, created_at: 100,
+    }));
+    writeFileSync(join(dir, "frames", "w0_abc.png"), "png");
+    const { runs } = await listRuns(state, 10, async () => true);
+    assert.equal(runs.length, 1);
+    assert.ok(runs[0]!["thumbnail"] !== undefined || Array.isArray(runs[0]!["artifacts"]),
+      "the subdir artifact surfaced on the row");
+    const arts = runs[0]!["artifacts"] as Record<string, unknown>[];
+    assert.ok(arts.some((a) => String(a["url"] ?? "").includes("frames/w0_abc.png")),
+      "the subdir artifact is listed by its run-relative name");
+  });
+
   it("a missing root lists nothing", async () => {
     assert.deepEqual(await listRuns(join(tmp(), "missing"), 10, async () => true), {
       count: 0,
