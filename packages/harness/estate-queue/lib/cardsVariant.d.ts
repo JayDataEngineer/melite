@@ -11,7 +11,7 @@ export interface VariantSelection {
      *  resolve() reads cell-before-variant; the estate's compose
      *  composes through the same cell), and its PARAMS add to the
      *  lane surface at the bench door. "" / undefined when the
-     *  variant declares no cells. */
+     *  row's matrix carries no cells. */
     readonly cellRoute: string;
     readonly cellParams?: readonly string[];
     readonly resolverDefaults: Record<string, unknown>;

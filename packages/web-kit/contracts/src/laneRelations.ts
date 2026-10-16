@@ -635,12 +635,20 @@ export function unknownVariantVoice (
 
 /** The variant rail's unknown-quant refusal body — same contract as
  *  {@link unknownVariantVoice}: one spelling, frame at the caller.
+ *  THE HONEST VOICE (the axis-unification cure, 2026-11-06 — the
+ *  operator's anima burn: the served matrix carried zero Quant rows
+ *  while the DECL declared two, and the old empty tail asserted the
+ *  DECL's absence, which the caller's matrix cannot see). An empty
+ *  `known` is a statement about the CALLER'S PROJECTION — the served
+ *  matrix it was handed — so the tail names the projection and the
+ *  sync break, never a DECL fact; the DECL's own cells, when the
+ *  projection carries them, ride the known list.
  *
  * @param stated the quant the caller stated, verbatim.
  * @param model the model id the cells belong to.
  * @param variant the variant whose cells were searched.
  * @param known the variant's offered quants, door order; empty
- *  yields the declares-no-cells tail.
+ *  yields the projection-break tail.
  * @returns the refusal body, frame-free. */
 export function unknownQuantVoice (
   stated: string,
@@ -651,7 +659,9 @@ export function unknownQuantVoice (
   return 'unknown quant ' + JSON.stringify(stated)
     + ' for model ' + JSON.stringify(model)
     + ' variant ' + JSON.stringify(variant)
-    + (known.length > 0 ? ' (known: ' + known.join(', ') + ')' : ' (the variant declares no cells)')
+    + (known.length > 0
+      ? ' (known: ' + known.join(', ') + ')'
+      : ' (the served matrix declares no cells for this variant — DECL/projection sync break)')
 }
 
 /** A stated knob the envelope gate refused.

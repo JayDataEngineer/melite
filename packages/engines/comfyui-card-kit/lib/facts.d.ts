@@ -1,4 +1,5 @@
-import type { GraphBuilder } from './graph.js';
+import type { GraphBuilder } from './graph.ts';
+import type { DeclVariantRow } from './model-contract.ts';
 /** The registry reads derivation renders through — injected, never
  *  imported (this module is evaluation-cycle-clean: models.ts runs
  *  its top-level boot, so any static edge back into it deadlocks
@@ -154,6 +155,12 @@ export interface VariantCellFacts {
     hide_from_dropdown?: boolean;
     artifact: string;
     vram_peak_gb: number | null;
+    /** THE CELL'S RESOLVER DEFAULTS (the one-walk carry, 2026-11-06):
+     *  the DECL cell's own resolver overlay — the face the served
+     *  Quant row serves as its defaults; absent ≡ {} inside deriveRow
+     *  (optional on literal fixtures, the lane_inputs law). The
+     *  spec-facts-sync wall judges it sync against the serve. */
+    resolver_defaults?: Record<string, unknown>;
     /** THE CELL'S SURFACE ADDITIONS (the size-at-quant reshape,
      *  operator 2026-10-26): adds to family ∪ variant at the lane
      *  resolution (laneSurfaceOf's cell axis) — qwen3-tts customvoice
@@ -231,6 +238,60 @@ export interface FactsFile {
      *  omits it without a cast-through-unknown. */
     owners?: Record<string, string>;
 }
+/** THE VARIANT MATRIX — ONE WALK OF THE DECL (the axis-unification
+ *  cure, 2026-11-06 — the audit's "one serializer"): the family's
+ *  variant/quant facts, walked once, carried verbatim (every DECL
+ *  member the matrix's two projections need, nothing derived away).
+ *  deriveRow projects it NESTED into the door's ModelFacts row;
+ *  discovery's specVariants projects it FLAT into the served
+ *  form-spec. Before this walk, the two seats each walked the DECL
+ *  with their own copy and drifted — the served spec starved anima's
+ *  cells while the facts row carried them, and the mirror refused
+ *  with a voice that blamed the DECL. A cell dropped here drops from
+ *  every view; the spec-facts-sync wall's DECL arm and the switching
+ *  sweep's completeness arm are the toggles that prove it. */
+export interface MatrixCell {
+    quant: string;
+    label: string;
+    hide_from_dropdown?: boolean;
+    route: string;
+    /** Absent = the atom's engine (the DECL's own spelling). */
+    engine?: string;
+    vram_peak_gb: number | null;
+    resolver_defaults?: Record<string, unknown>;
+    /** The download place's basename ("" when the cell ships no
+     *  artifact) — artifactBasename of the DECL cell. */
+    artifact: string;
+    params?: string[];
+}
+export interface MatrixVariant {
+    id: string;
+    label: string;
+    group: string;
+    hide_from_dropdown?: boolean;
+    route: string;
+    hint?: string;
+    engine?: string;
+    resolver_defaults: Record<string, unknown>;
+    wire_defaults?: Record<string, unknown> | null;
+    lane_inputs: LaneInputsFacts;
+    sampler_envelope?: SamplerEnvelope | null;
+    params?: string[];
+    relations?: LaneRelationsFacts | null;
+    bounds?: Record<string, {
+        min?: number;
+        max?: number;
+    }> | null;
+    cells: MatrixCell[];
+}
+/** The matrix walk: every DECL variant row (hidden rows ride — their
+ *  flag is data the projections judge), cells verbatim, lane inputs
+ *  defaulted to {}, relations/bounds deep-cloned out of the registry's
+ *  live DECL objects (the rows are frozen snapshots — plain-JSON
+ *  shapes only). */
+export declare function deriveVariants(decl: {
+    variants?: DeclVariantRow[];
+}): MatrixVariant[];
 /** Assemble the compose contract: frozen slices in, registry truth
  *  derived through the caller's reads, rows out. Same return shape
  *  every reader renders from — the file shrank, the callers boot

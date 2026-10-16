@@ -89,13 +89,13 @@ describe("selectCardVariant (the R1 wire contract)", () => {
     expect(sel.variantId).toBe("");
     expect(sel.quant).toBe("");
     expect(() => selectCardVariant("m", row({ variants: undefined }), { quant: "fp8" }, "1"))
-      .toThrow(/the variant declares no cells/);
+      .toThrow(/the served matrix declares no cells for this variant/);
   });
   it("a non-string quant refuses with the type voice", () => {
     expect(() => selectCardVariant("m", row(), { quant: 7 }, "1")).toThrow(/quant must be a string \(got number\)/);
     expect(() => selectCardVariant("m", row(), { quant: ["x"] }, "1")).toThrow(/quant must be a string \(got list\)/);
   });
-  it("an unknown quant refuses with the known cells; a cell-less variant names the absence", () => {
+  it("an unknown quant refuses with the known cells; a cell-less variant names the projection break", () => {
     try {
       selectCardVariant("m", row(), { quant: "q4" }, "1");
       expect.unreachable();
@@ -107,7 +107,10 @@ describe("selectCardVariant (the R1 wire contract)", () => {
       selectCardVariant("m", row(), { variant: "turbo", quant: "q4" }, "1");
       expect.unreachable();
     } catch (e) {
-      expect((e as Error).message).toMatch(/the variant declares no cells/);
+      // the honest voice (the axis-unification cure): the door's row
+      // is the projection it read — it names the matrix it holds and
+      // the sync break, never a DECL fact.
+      expect((e as Error).message).toMatch(/the served matrix declares no cells for this variant — DECL\/projection sync break/);
     }
   });
   it("hidden variants and cells never enter the offered coordinate space", () => {
@@ -139,7 +142,7 @@ describe("selectCardVariant (the R1 wire contract)", () => {
     ] });
     // cells key ABSENT-or-empty + explicit quant -> the empty-cells refusal
     expect(() => selectCardVariant("m", bare, { variant: "bare", quant: "q" }, "1"))
-      .toThrow(/declares no cells/);
+      .toThrow(/declares no cells for this variant/);
     // a cell with NO quant key tolls the empty string
     expect(selectCardVariant("m", bare, { variant: "objcell" }, "1").quant).toBe("");
     // the unknown-variant refusal on a variants-less row tolls the

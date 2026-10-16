@@ -1,7 +1,8 @@
 import type { ComfyUIService } from '@melite/comfyui-cordis';
 import type { CardDefinition } from '@melite/comfyui-card-kit/card-definition';
 import type { DeclaredModifierKind } from '@melite/comfyui-card-kit/params-emit';
-import type { FormSpecDoc } from '@melite/contracts/formSpec';
+import type { ModelDecl } from '@melite/comfyui-card-kit/model-contract';
+import type { FormSpecDoc, FormVariantRow } from '@melite/contracts/formSpec';
 /** The boarded map (family -> the card that boards it, first-seen).
  *  Exported for the flow tool's bench pass (the card-id alias
  *  resolution rides the SAME table form-spec serves — one truth). */
@@ -39,6 +40,29 @@ export declare function resolveSpecKey(key: string, defs: Map<string, CardDefini
  * @param boarded family id → owning card id.
  * @returns the resolution, or null when neither census answers. */
 export declare function resolveSpecKeyForTool(key: string, defs: Map<string, CardDefinition>, boarded: Map<string, string>): SpecResolution | null;
+/** THE LANE CONTRACT SERVE (2026-10-10, the fix shape 2+4): the
+ *  family's declared surface + relation words, verbatim, for the
+ *  form plane — the client resolves (family base ∪ variant
+ *  additions) with laneSurfaceOf and judges with
+ *  judgeLaneRelations, the same calls the bench-write door uses.
+ *  Served ONLY when the family declares a base surface (the
+ *  spread at the call site gates it). */
+/** The key family's variants + its offered quant cells — THE SERVED
+ *  PROJECTION OF THE ONE WALK (facts.ts deriveVariants). A cell
+ *  serves the envelope iff its route is addressable at the key: a
+ *  ROUTE key scopes to its own lane (cells addressed at the key or
+ *  the owning family); a served FAMILY key (key === service) serves
+ *  its OWN DECL's cells ALWAYS — the boarded[0] gate may scope only
+ *  foreign lanes, never starve (the anima burn cure, 2026-11-06: the
+ *  old `primary` form dropped EVERY cell of a non-first-boarded
+ *  family — image-gen boards krea-2 first, so the served anima spec
+ *  carried zero Quant rows while the DECL declared two, and the
+ *  mirror refused with a voice that blamed the DECL). Routeless
+ *  cells are unaddressable, never offered. Variant rows serve whole
+ *  (all ten keys, always) regardless of route. Exported as the one
+ *  serializer the walls ride (the switching sweep; the sync wall's
+ *  P2 face is formSpecArm, this door's own body). */
+export declare function specVariants(decl: ModelDecl, key: string, service: string): FormVariantRow[];
 /** The modifier-pack table (the subcard packs). controlnet waits
  *  unboarded (the phantom-capability gate). kind/label/cardinality
  *  are UI strings with no other live source — one row per pack,

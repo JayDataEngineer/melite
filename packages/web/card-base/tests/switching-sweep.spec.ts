@@ -4,9 +4,13 @@
  * the live estate red-bricked every switch while the frozen-fixture
  * suites stayed green). DEPTH is the cure this wall exists to hold:
  * NO frozen spec literal anywhere — the sweep rides EVERY real
- * family DECL through the discovery serialization (mirrored
- * verbatim from melite-tools/src/discovery.ts: variantRow +
- * specVariants' cell expansion + the head-claim row) into the REAL
+ * family DECL through THE REAL SERIALIZER (the axis-unification
+ * cure, 2026-11-06: melite-tools discovery.ts specVariants, itself a
+ * projection of the one DECL walk — comfyui-card-kit facts.ts
+ * deriveVariants — that the door's facts row projects too; the
+ * hand-mirrored copy this file once maintained is deleted — a mirror
+ * can drift while the serve drifts differently, and this wall would
+ * have judged the mirror green while the burn shipped) into the REAL
  * pick verbs (axisPickPatch, modelSwitchPatch) and the REAL judge
  * (composeValidate, the door's own mirror). A family that boards
  * tomorrow rides this wall the day its DECL lands.
@@ -29,7 +33,14 @@ import { composeCandidateDoc, composeValidate, axisPickPatch, modelSwitchPatch, 
 // family+variant merge (laneContractOf → agreed rows) is estate-walled
 // at cards-lane-law.spec.ts; the client-side point is that the words
 // composeValidate never reads still refuse the seated doc.
-import { judgeLaneRelations, type LaneRelations } from '@melite/contracts/laneRelations'
+import { judgeLaneRelations, type LaneRelations, type SamplerEnvelope } from '@melite/contracts/laneRelations'
+import type { ModelDecl } from '@melite/comfyui-card-kit/model-contract'
+// THE REAL SERIALIZER (the axis-unification cure, 2026-11-06): the
+// served flat-variant projection itself — the exact rows
+// /v1/form-spec serves, derived from the ONE DECL walk
+// (comfyui-card-kit facts.ts deriveVariants) that the door's facts
+// row projects too.
+import { specVariants } from '../../../../packages/harness/melite-tools/src/discovery.ts'
 import { DECL as anima } from '../../../models/anima/src/index.ts'
 import { DECL as anny } from '../../../models/anny/src/index.ts'
 import { DECL as anycreature } from '../../../models/anycreature/src/index.ts'
@@ -60,104 +71,59 @@ import { DECL as trellis2 } from '../../../models/trellis2-native/src/index.ts'
 import { DECL as wd14 } from '../../../models/wd14/src/index.ts'
 import { DECL as yue2 } from '../../../models/yue2/src/index.ts'
 import { DECL as zImage } from '../../../models/z-image/src/index.ts'
-import type { SamplerEnvelope } from '@melite/contracts/laneRelations'
-
-/** The DECL's served shape (the structural slice the discovery
- * serialization reads — packages/models/<family>/src/index.ts DECL). */
-interface DeclCell {
-  quant: string
-  label?: string
-  route?: string
-  engine?: string
-  vram_peak_gb?: number
-  hide_from_dropdown?: boolean
-  resolver_defaults?: Record<string, unknown>
-}
-interface DeclRow {
-  id: string
-  label: string
-  group: string
-  route?: string
-  hint?: string
-  engine?: string
-  hide_from_dropdown?: boolean
-  // (the sampler envelope rides the REAL contract type — the
-  // mirror drifted when discovery's envelope became structured
-  // {steps, cfg}; re-spelling it here would re-drift silently.)
-  sampler_envelope?: SamplerEnvelope | null
-  resolver_defaults?: Record<string, unknown>
-  wire_defaults?: Record<string, unknown> | null
-  cells?: DeclCell[]
-}
-interface FamilyDecl { id: string; engine?: string; variants?: DeclRow[]; relations?: LaneRelations }
 
 /** Every family DECL in the tree — the census law: a new family
  * package that exports DECL owes this list a row (adding a family
- * without boarding it here leaves its switching face unjudged). */
-const FAMILIES: readonly FamilyDecl[] = [
+ * without boarding it here leaves its switching face unjudged). The
+ * rows are the REAL contract type: the DECL export is ModelDecl, and
+ * the serializer this wall drives is the served one — no structural
+ * re-spelling of the DECL lives here anymore. */
+const FAMILIES: readonly ModelDecl[] = [
   anima, anny, anycreature, concat, fit, florence2, fluxKlein, gemSoma, h3,
   input, joycaption, joytag, kimodo, krea2, mask, mossSfx, music3, pixal3d,
   qwenImg21, qwenImgEdit21, qwenImgEdit2511, qwen3Tts, seedvr2, skin, somax,
   transferRig, trellis2, wd14, yue2, zImage,
 ]
 
-/** The discovery serialization, mirrored VERBATIM (melite-tools/
- * src/discovery.ts variantRow + specVariants): resolver_defaults +
- * wire_defaults merge into the pick stamp; cells expand into Quant
- * rows owned by their variant (composite id only on collision); the
- * head-claim alias serves when no row routes the family id. The
- * mirror is deliberate DEPTH, not duplication: this wall judges the
- * CLIENT machinery against the exact row shapes the door serves —
- * when discovery's serialization changes, this mirror changes WITH
- * it or the wall reds on the first drifted pick. */
-function servedSpec(decl: FamilyDecl): FormSpecDoc {
-  const rows: FormVariantRow[] = []
-  const seen = new Set<string>()
-  const declEngine = decl.engine ?? ''
-  for (const v of decl.variants ?? []) {
-    if (v.hide_from_dropdown === true) continue
-    rows.push({
-      id: v.id, label: v.label, group: v.group,
-      defaults: { ...(v.resolver_defaults ?? {}), ...(v.wire_defaults ?? {}) },
-      route: v.route ?? '', hint: v.hint ?? null, engine: v.engine ?? declEngine,
-      sampler_envelope: v.sampler_envelope ?? null,
-      quant: null, vram_peak_gb: null, owner: '',
-    })
-    seen.add(v.id)
-    for (const c of v.cells ?? []) {
-      if (c.hide_from_dropdown === true) continue
-      if (!c.route) continue
-      const id = seen.has(c.quant) ? `${v.id}__${c.quant}` : c.quant
-      seen.add(id)
-      rows.push({
-        id, label: c.label || c.quant, group: 'Quant',
-        defaults: c.resolver_defaults ?? {}, route: c.route, hint: null,
-        engine: c.engine ?? declEngine, quant: c.quant,
-        vram_peak_gb: c.vram_peak_gb ?? null, owner: v.id,
-      })
-    }
-  }
-  const routed = new Set<string>()
-  for (const v of decl.variants ?? []) {
-    if (v.route) routed.add(v.route)
-    for (const c of v.cells ?? []) if (c.route) routed.add(c.route)
-  }
-  if (!routed.has(decl.id)) {
-    const resolving = (decl.variants ?? []).find((v) => (v.cells ?? []).length > 0)
-      ?? (decl.variants ?? [])[0]
-    if (resolving !== undefined && resolving.hide_from_dropdown !== true) {
-      const id = seen.has(resolving.id) ? `${resolving.id}__head` : resolving.id
-      rows.push({
-        id, label: resolving.label, group: 'Variant', defaults: {},
-        route: decl.id, hint: resolving.hint ?? null,
-        engine: resolving.engine ?? declEngine,
-        sampler_envelope: resolving.sampler_envelope ?? null,
-        quant: null, vram_peak_gb: null, owner: '',
-      })
-    }
-  }
-  return { model: decl.id, variants: rows, label: null, form: decl.id }
+/** THE SERVED SPEC, FOR REAL (the axis-unification cure, 2026-11-06):
+ *  discovery's specVariants driven exactly as the form-spec door
+ *  drives it for a family's own face (key === service === decl.id —
+ *  the family's own cells always serve). The hand-mirrored
+ *  serialization this seat once maintained (variantRow + cell
+ *  expansion + the head-claim row, re-spelled line by line, its own
+ *  header calling the mirror "deliberate DEPTH") is DELETED: a mirror
+ *  is a second serializer, and this wall judged the mirror's rows
+ *  while the SERVE's rows shipped — the anima burn crossed exactly
+ *  that gap. The rows judged here ARE the rows the door serves. */
+function servedSpec(decl: ModelDecl): FormSpecDoc {
+  return { model: decl.id, variants: specVariants(decl, decl.id, decl.id), label: null, form: decl.id }
 }
+
+/** THE ONE-WALK RECEIPT (the cure's red-proof arm): the served spec
+ *  carries EVERY DECL variant and cell — the serializer projects the
+ *  DECL's whole matrix, never starves a row. A cell dropped in the
+ *  walk (facts.ts deriveVariants) reds HERE and in the sync wall's
+ *  DECL arm: the DECL is the truth home, and nothing between it and
+ *  the served spec may lose a row. */
+test('THE ONE-WALK RECEIPT: the served spec carries every DECL variant and cell', () => {
+  const failures: string[] = []
+  for (const decl of FAMILIES) {
+    const spec = servedSpec(decl)
+    const servedVariantIds = new Set((spec.variants ?? []).filter((r) => r.group !== 'Quant').map((r) => r.id))
+    const servedCells = (spec.variants ?? []).filter((r) => r.group === 'Quant')
+    for (const v of decl.variants ?? []) {
+      if (v.hide_from_dropdown === true) continue
+      if (!servedVariantIds.has(v.id)) failures.push(`${decl.id}: the served spec is missing the Variant row '${v.id}'`)
+      for (const c of v.cells ?? []) {
+        if (c.hide_from_dropdown === true) continue
+        if (!c.route) continue // routeless cells are unaddressable — never offered
+        const served = servedCells.some((r) => r.owner === v.id && r.quant === c.quant)
+        if (!served) failures.push(`${decl.id}/${v.id}: the served spec is missing the Quant row for cell '${c.quant}' (route ${c.route}) — A CELL WAS DROPPED BETWEEN THE DECL AND THE SERVE`)
+      }
+    }
+  }
+  expect(failures, 'the serializer dropped DECL rows').toEqual([])
+})
 
 /** The numeric knobs a row stamps (the envelope's own vocabulary —
  * steps, cfg — plus any other numeric default the row carries). */
@@ -369,7 +335,7 @@ describe('THE SWITCHING SWEEP — every real family × every switch (the core-fe
   test('the door\'s relation judge reads the seated doc: required refuses a prompt-less krea-2 seat; together judges a held pair half', () => {
     // (i) REQUIRED — krea-2's own declaration (models/krea-2
     // src/index.ts:243): every image lane states what the picture is
-    const krea = krea2 as FamilyDecl
+    const krea = krea2 as ModelDecl
     expect(krea.relations, 'krea-2 declares relations (the audit\'s own receipt)').toBeDefined()
     const rels = krea.relations
     if (rels === undefined) throw new Error('krea-2 declares relations (the audit\'s own receipt)')
@@ -388,7 +354,7 @@ describe('THE SWITCHING SWEEP — every real family × every switch (the core-fe
     // (ii) TOGETHER — qwen3-tts's persona export pair
     // (voice_name + design_prompt): a held HALF surviving a re-key
     // refuses through the door's judge, both halves admit
-    const tts = qwen3Tts as FamilyDecl
+    const tts = qwen3Tts as ModelDecl
     const ttsRels = tts.relations
     if (ttsRels === undefined) throw new Error('qwen3-tts declares relations (the audit\'s own receipt)')
     expect(ttsRels?.together?.length, 'qwen3-tts declares the persona export pair').toBeGreaterThan(0)

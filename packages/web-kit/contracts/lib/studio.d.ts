@@ -24,8 +24,8 @@ export interface StudioTenantProps {
      *  the media version so open library views refetch. Returns the served
      *  URL, or null on failure (the tenant toasts). An OUTPUT channel, not
      *  a param write: exports are artifacts, never node inputs (E1's spirit
-     *  — the tenant still has zero RPC imports; card-studio-boundary.test.ts
-     *  holds the line). */
+     *  — the tenant-props contract is zero-RPC by construction: this
+     *  interface declares no engine/RPC seam, so no import can ride it). */
     onSaveToMedia?: (file: File) => Promise<string | null>;
 }
 //# sourceMappingURL=studio.d.ts.map

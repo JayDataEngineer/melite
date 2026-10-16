@@ -16,6 +16,7 @@
 // composed server-side. NO second spelling, no remote fetch.
 import { laneContractOf as sharedLaneContractOf } from '@melite/contracts/laneRelations';
 import { buildCatalog, CARD_KINDS, emitParamsSchema, enhanceRecipeFor, getModel, isServedFamily, liveScanOrder, modelsBooted, owningAtom, registryModel, loadCardDefs, modelIds, theService, emitModifierKinds, declaredDefaults, } from '@melite/comfyui-cordis';
+import { deriveVariants } from '@melite/comfyui-card-kit/facts';
 import { faceStamp } from "./faceStamp.js";
 /** The boarded map (family -> the card that boards it, first-seen).
  *  Exported for the flow tool's bench pass (the card-id alias
@@ -130,7 +131,12 @@ function isFamilyKey(key) {
 }
 // ── form-spec bodies ──────────────────────────────────────────────
 /** One DECL variant's wire row (the editor Variant contract: all ten
- *  keys, always — null/"" for absent, never a missing key). */
+ *  keys, always — null/"" for absent, never a missing key). Takes the
+ *  ONE-WALK matrix row (facts.ts deriveVariants) — the served spec
+ *  projects the same walk the door's facts row projects, never a
+ *  second walk of the DECL (the axis-unification cure, 2026-11-06:
+ *  the seats' separate walks drifted, and the served spec starved
+ *  anima's cells while the facts row carried them). */
 function variantRow(v, declEngine) {
     return {
         id: v.id,
@@ -162,11 +168,6 @@ function capQuant(quant) {
     // unreachable, kept only so the helper is total (2026-09-12).
     return quant.length > 0 ? quant[0].toUpperCase() + quant.slice(1) : /* v8 ignore next -- !c.quant gate */ quant;
 }
-/** The key family's variants + its offered quant cells (a cell
- *  serves the envelope iff its route is the key, the service owner,
- *  or the key is the card's default family. Routeless cells are
- *  unaddressable, never offered. Variant rows serve whole (all ten
- *  keys, always) regardless of route.) */
 /** THE LANE CONTRACT SERVE (2026-10-10, the fix shape 2+4): the
  *  family's declared surface + relation words, verbatim, for the
  *  form plane — the client resolves (family base ∪ variant
@@ -174,16 +175,32 @@ function capQuant(quant) {
  *  judgeLaneRelations, the same calls the bench-write door uses.
  *  Served ONLY when the family declares a base surface (the
  *  spread at the call site gates it). */
-function specVariants(decl, key, service, primary) {
+/** The key family's variants + its offered quant cells — THE SERVED
+ *  PROJECTION OF THE ONE WALK (facts.ts deriveVariants). A cell
+ *  serves the envelope iff its route is addressable at the key: a
+ *  ROUTE key scopes to its own lane (cells addressed at the key or
+ *  the owning family); a served FAMILY key (key === service) serves
+ *  its OWN DECL's cells ALWAYS — the boarded[0] gate may scope only
+ *  foreign lanes, never starve (the anima burn cure, 2026-11-06: the
+ *  old `primary` form dropped EVERY cell of a non-first-boarded
+ *  family — image-gen boards krea-2 first, so the served anima spec
+ *  carried zero Quant rows while the DECL declared two, and the
+ *  mirror refused with a voice that blamed the DECL). Routeless
+ *  cells are unaddressable, never offered. Variant rows serve whole
+ *  (all ten keys, always) regardless of route. Exported as the one
+ *  serializer the walls ride (the switching sweep; the sync wall's
+ *  P2 face is formSpecArm, this door's own body). */
+export function specVariants(decl, key, service) {
     const rows = [];
     const seen = new Set();
     const declEngine = decl.engine ?? '';
-    for (const v of decl.variants ?? []) {
+    const matrix = deriveVariants(decl);
+    for (const v of matrix) {
         if (v.hide_from_dropdown === true)
             continue;
         rows.push(variantRow(v, declEngine));
         seen.add(v.id);
-        for (const c of v.cells ?? []) {
+        for (const c of v.cells) {
             if (c.hide_from_dropdown === true)
                 continue;
             if (!c.quant) {
@@ -197,7 +214,9 @@ function specVariants(decl, key, service, primary) {
             }
             if (!c.route)
                 continue;
-            if (c.route !== key && c.route !== service && !primary)
+            // THE FAMILY'S OWN CELLS ALWAYS SERVE (the burn cure): scoping
+            // bites on ROUTE keys only — see this function's doc.
+            if (key !== service && c.route !== key && c.route !== service)
                 continue;
             const id = seen.has(c.quant) ? `${v.id}__${c.quant}` : c.quant;
             seen.add(id);
@@ -229,17 +248,16 @@ function specVariants(decl, key, service, primary) {
     // the engine's (first variant with cells, else the first row) —
     // the engine owns the rule; this is its served-face projection.
     const routed = new Set();
-    for (const v of decl.variants ?? []) {
+    for (const v of matrix) {
         if (v.route)
             routed.add(v.route);
-        for (const c of v.cells ?? []) {
+        for (const c of v.cells) {
             if (c.route)
                 routed.add(c.route);
         }
     }
     if (!routed.has(decl.id)) {
-        const resolving = (decl.variants ?? []).find((v) => (v.cells ?? []).length > 0)
-            ?? (decl.variants ?? [])[0];
+        const resolving = matrix.find((v) => v.cells.length > 0) ?? matrix[0];
         if (resolving !== undefined && resolving.hide_from_dropdown !== true) {
             const id = seen.has(resolving.id) ? `${resolving.id}__head` : resolving.id;
             rows.push({
@@ -712,7 +730,6 @@ export function specBody(svc, defs, res) {
     }
     const surface = def.surface ?? {};
     const boarded = def.boarded ?? [];
-    const primary = (boarded.length > 0 ? boarded[0] : res.card) === key;
     // THE EDGE EMISSION (operator order, 2026-09-12: "whenever a card
     // emits via the package system, it needs to have 'input'
     // 'required=True', or 'output', so the edges are defined"). The
@@ -783,7 +800,7 @@ export function specBody(svc, defs, res) {
         schema: servedEnvelope(schemas.schema, res.card),
         service: res.service,
         size: surface.size === 'huge' ? 'huge' : null,
-        variants: decl ? specVariants(decl, key, res.service, primary) : [],
+        variants: decl ? specVariants(decl, key, res.service) : [],
         // THE LANE CONTRACT (2026-10-10, the YOU_ARE_A_LIAR fix shape 2
         // + 4: "cards consume: zones, order, craft recipes, compose
         // wiring — no per-model field tables" + "the form gates inline

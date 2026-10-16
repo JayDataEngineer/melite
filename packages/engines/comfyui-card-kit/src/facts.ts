@@ -10,6 +10,7 @@
 // row roster and extension_node_types.
 
 import type { GraphBuilder } from './graph.ts'
+import type { DeclVariantRow } from './model-contract.ts'
 import { readFileSync } from 'node:fs'
 
 /** The registry reads derivation renders through — injected, never
@@ -231,6 +232,12 @@ export interface VariantCellFacts {
   hide_from_dropdown?: boolean
   artifact: string
   vram_peak_gb: number | null
+  /** THE CELL'S RESOLVER DEFAULTS (the one-walk carry, 2026-11-06):
+   *  the DECL cell's own resolver overlay — the face the served
+   *  Quant row serves as its defaults; absent ≡ {} inside deriveRow
+   *  (optional on literal fixtures, the lane_inputs law). The
+   *  spec-facts-sync wall judges it sync against the serve. */
+  resolver_defaults?: Record<string, unknown>
   /** THE CELL'S SURFACE ADDITIONS (the size-at-quant reshape,
    *  operator 2026-10-26): adds to family ∪ variant at the lane
    *  resolution (laneSurfaceOf's cell axis) — qwen3-tts customvoice
@@ -349,12 +356,94 @@ function structuredCloneRelations(raw: unknown): LaneRelationsFacts {
   return JSON.parse(JSON.stringify(raw)) as LaneRelationsFacts
 }
 
-function artifactBasename(cell: { artifact?: { source_url?: string; filename?: string } }): string {
+function artifactBasename(cell: { artifact?: { source_url?: string; filename?: string } | null }): string {
   const a = cell.artifact
   if (a === undefined || a === null) return ''
   if (typeof a.filename === 'string' && a.filename !== '') return a.filename.split('/').pop() as string
   if (typeof a.source_url === 'string' && a.source_url !== '') return a.source_url.split('/').pop() as string
   return ''
+}
+
+/** THE VARIANT MATRIX — ONE WALK OF THE DECL (the axis-unification
+ *  cure, 2026-11-06 — the audit's "one serializer"): the family's
+ *  variant/quant facts, walked once, carried verbatim (every DECL
+ *  member the matrix's two projections need, nothing derived away).
+ *  deriveRow projects it NESTED into the door's ModelFacts row;
+ *  discovery's specVariants projects it FLAT into the served
+ *  form-spec. Before this walk, the two seats each walked the DECL
+ *  with their own copy and drifted — the served spec starved anima's
+ *  cells while the facts row carried them, and the mirror refused
+ *  with a voice that blamed the DECL. A cell dropped here drops from
+ *  every view; the spec-facts-sync wall's DECL arm and the switching
+ *  sweep's completeness arm are the toggles that prove it. */
+export interface MatrixCell {
+  quant: string
+  label: string
+  hide_from_dropdown?: boolean
+  route: string
+  /** Absent = the atom's engine (the DECL's own spelling). */
+  engine?: string
+  vram_peak_gb: number | null
+  resolver_defaults?: Record<string, unknown>
+  /** The download place's basename ("" when the cell ships no
+   *  artifact) — artifactBasename of the DECL cell. */
+  artifact: string
+  params?: string[]
+}
+
+export interface MatrixVariant {
+  id: string
+  label: string
+  group: string
+  hide_from_dropdown?: boolean
+  route: string
+  hint?: string
+  engine?: string
+  resolver_defaults: Record<string, unknown>
+  wire_defaults?: Record<string, unknown> | null
+  lane_inputs: LaneInputsFacts
+  sampler_envelope?: SamplerEnvelope | null
+  params?: string[]
+  relations?: LaneRelationsFacts | null
+  bounds?: Record<string, { min?: number; max?: number }> | null
+  cells: MatrixCell[]
+}
+
+/** The matrix walk: every DECL variant row (hidden rows ride — their
+ *  flag is data the projections judge), cells verbatim, lane inputs
+ *  defaulted to {}, relations/bounds deep-cloned out of the registry's
+ *  live DECL objects (the rows are frozen snapshots — plain-JSON
+ *  shapes only). */
+export function deriveVariants(decl: { variants?: DeclVariantRow[] }): MatrixVariant[] {
+  return (decl.variants ?? []).map((v) => ({
+    id: v.id,
+    label: v.label,
+    group: v.group,
+    ...(v.hide_from_dropdown === true ? { hide_from_dropdown: true } : {}),
+    route: v.route ?? '',
+    hint: v.hint,
+    engine: v.engine,
+    resolver_defaults: v.resolver_defaults ?? {},
+    wire_defaults: v.wire_defaults ?? null,
+    lane_inputs: v.lane_inputs ?? {},
+    sampler_envelope: v.sampler_envelope ?? null,
+    ...(Array.isArray(v.params) ? { params: [...v.params] } : {}),
+    ...(v.relations !== undefined && v.relations !== null
+      ? { relations: structuredCloneRelations(v.relations) } : {}),
+    ...(v.bounds !== undefined && v.bounds !== null
+      ? { bounds: JSON.parse(JSON.stringify(v.bounds)) as Record<string, { min?: number; max?: number }> } : {}),
+    cells: (v.cells ?? []).map((c) => ({
+      quant: c.quant,
+      label: c.label,
+      ...(c.hide_from_dropdown === true ? { hide_from_dropdown: true } : {}),
+      route: c.route ?? '',
+      engine: c.engine,
+      vram_peak_gb: c.vram_peak_gb ?? null,
+      resolver_defaults: c.resolver_defaults,
+      artifact: artifactBasename(c),
+      ...(Array.isArray(c.params) ? { params: [...c.params] } : {}),
+    })),
+  }))
 }
 
 /** The derived row for one roster address (route addresses offer the
@@ -370,59 +459,64 @@ function deriveRow(
 ): ModelFacts {
   const owner = owners.get(address) ?? address
   const d = reads.getModel(address) as unknown as Record<string, unknown>
-  const declVariants = (d.variants ?? []) as Array<Record<string, unknown>>
-  // Route rows are SELF-CONTAINED (the exporter rule, kept): the
-  // address offers the shared matrix with variants re-addressed to
-  // itself (selecting standard under qwen3-tts-base stays on the
-  // base table — consumers never leave the row). Recipe "" stays.
+  // THE ONE WALK (the axis-unification cure, 2026-11-06): the
+  // variant/quant matrix is walked ONCE — deriveVariants above — and
+  // every view projects it. This row projects NESTED; discovery's
+  // specVariants projects the same walk FLAT into the served form-spec.
+  // Route rows keep the exporter rule: the address offers the shared
+  // matrix minus siblings' tables (variants routed to "" or the
+  // ladder owner), re-addressed to itself (selecting standard under
+  // qwen3-tts-base stays on the base table — consumers never leave
+  // the row). Recipe "" stays.
   const isRouteRow = address !== owner
-  const kept = isRouteRow
-    ? declVariants.filter((v) => {
-        const r = (v.route ?? '') as string
-        return r === '' || r === owner
-      })
-    : declVariants
-  const variants: ModelVariantFacts[] = kept.map((v) => {
-    const reAddr = (r: string): string => (isRouteRow && r !== '' ? address : r)
+  const reAddr = (r: string): string => (isRouteRow && r !== '' ? address : r)
+  const matrix = deriveVariants(d as { variants?: DeclVariantRow[] })
+  const variants: ModelVariantFacts[] = (isRouteRow
+    ? matrix.filter((v) => v.route === '' || v.route === owner)
+    : matrix
+  ).map((v) => {
     return {
-      id: v.id as string,
-      label: v.label as string,
-      group: v.group as string,
+      id: v.id,
+      label: v.label,
+      group: v.group,
       ...(v.hide_from_dropdown === true ? { hide_from_dropdown: true } : {}),
-      route: reAddr((v.route ?? '') as string),
-      resolver_defaults: (v.resolver_defaults ?? {}) as Record<string, unknown>,
-      lane_inputs: ((v.lane_inputs ?? {}) as LaneInputsFacts),
+      route: reAddr(v.route),
+      resolver_defaults: v.resolver_defaults,
+      lane_inputs: v.lane_inputs,
       // THE ROUTE ENVELOPE (cardsVariant.envelopeRefusal reads it):
       // a distilled lane declares the closed bounds its sampler
       // marriage lives in — stated values outside refuse at compose.
-      // number[] — the declaration (line 136), the floor, and every
-      // consumer twin. The 2-tuple this cast claimed bought a reader
-      // asking "is steps: [4] legal" a second answer; normalizeEnvelope
-      // reads unknown and length-checks at runtime, so it accepts the
-      // array either way.
-      sampler_envelope: (v.sampler_envelope ?? null) as Partial<SamplerEnvelope> | null,
-      defaults: (v.wire_defaults ?? {}) as Record<string, unknown>,
+      // number[] — the declaration, the floor, and every
+      // consumer twin. The 2-tuple an early cast claimed bought a
+      // reader asking "is steps: [4] legal" a second answer;
+      // normalizeEnvelope reads unknown and length-checks at runtime,
+      // so it accepts the array either way.
+      sampler_envelope: v.sampler_envelope ?? null,
+      defaults: v.wire_defaults ?? {},
       // THE LANE SURFACE + RELATIONS (2026-10-10, the fix shape):
       // carried VERBATIM from the DECL variant — present only where
       // declared (the absent-equals-empty law; deriveRow never
       // invents a surface).
-      ...(Array.isArray(v.params)
-        ? { params: [...(v.params as string[])] } : {}),
-      ...(v.relations !== undefined && v.relations !== null
-        ? { relations: structuredCloneRelations(v.relations) } : {}),
-      ...(v.bounds !== undefined && v.bounds !== null
-        ? { bounds: JSON.parse(JSON.stringify(v.bounds)) as Record<string, { min?: number; max?: number }> } : {}),
-      cells: ((v.cells ?? []) as Array<Record<string, unknown>>).map((c) => ({
-        quant: c.quant as string,
-        label: c.label as string,
+      ...(v.params !== undefined ? { params: [...v.params] } : {}),
+      ...(v.relations !== undefined && v.relations !== null ? { relations: v.relations } : {}),
+      ...(v.bounds !== undefined && v.bounds !== null ? { bounds: v.bounds } : {}),
+      cells: v.cells.map((c) => ({
+        quant: c.quant,
+        label: c.label,
         ...(c.hide_from_dropdown === true ? { hide_from_dropdown: true } : {}),
-        route: reAddr((c.route ?? '') as string),
-        artifact: artifactBasename(c as { artifact?: { source_url?: string; filename?: string } }),
-        vram_peak_gb: (c.vram_peak_gb ?? null) as number | null,
+        route: reAddr(c.route),
+        artifact: c.artifact,
+        vram_peak_gb: c.vram_peak_gb,
+        // THE CELL'S RESOLVER DEFAULTS (the one-walk carry, the
+        // sync tuple's last member): the DECL cell's own resolver
+        // overlay, absent ≡ {} — the face the served Quant row
+        // serves as its defaults, judged sync by the spec-facts-sync
+        // wall.
+        resolver_defaults: c.resolver_defaults ?? {},
         // THE CELL SURFACE (the size-at-quant reshape): verbatim,
         // present only where the DECL declares it — deriveRow never
         // invents a surface member (the absent-equals-empty law).
-        ...(Array.isArray(c.params) ? { params: [...(c.params as string[])] } : {}),
+        ...(c.params !== undefined ? { params: [...c.params] } : {}),
       })),
     }
   })

@@ -35,10 +35,10 @@ describe("unknownQuantVoice (the one spelling)", () => {
     );
   });
 
-  it("an empty cell list says so — the (known:) tail never lies", () => {
+  it("an empty cell list names the projection, never a DECL fact — the honest voice (the axis-unification cure)", () => {
     assert.equal(
       unknownQuantVoice("fp16", "z-image", "turbo", []),
-      'unknown quant "fp16" for model "z-image" variant "turbo" (the variant declares no cells)',
+      'unknown quant "fp16" for model "z-image" variant "turbo" (the served matrix declares no cells for this variant — DECL/projection sync break)',
     );
   });
 });

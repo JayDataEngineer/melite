@@ -403,9 +403,10 @@ test('THE MODEL-SWITCH JOURNEY: a departed family\'s axis ids are ghosts — the
   // cells → the switch's own write refused at the door (rev moved,
   // half-state) → the stage reopens holding the ghost — quant int8
   // rides the seed VERBATIM (the pass-along law) → every later edit
-  // refuses at the compose gate: 'unknown quant "int8" for model
-  // "anima" variant "turbo" (the variant declares no cells) — the
-  // write never left the studio'. The pass-along law protects USER
+  // refuses at the compose gate — the door's unknown-quant voice
+  // naming the known cells (the projection-honest spelling since
+  // the axis-unification P0#1 cure; the served matrix's cells, not
+  // a DECL fact). The pass-along law protects USER
   // WORDS; a departed family's row id is not one. The ghost drop in
   // seedUser is the cure; THIS arm is the journey proof — the seeded
   // arrival state must compose clean, not merely look clean.
