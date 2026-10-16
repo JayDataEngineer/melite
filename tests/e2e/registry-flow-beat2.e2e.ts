@@ -43,27 +43,15 @@ import modelsFamiliesProvider from '../../packages/engines/comfyui-cordis/src/en
 import { QueueCore } from '../../packages/harness/estate-queue/src/queue.ts'
 import { RunsRuntimeService } from '../../packages/harness/estate-queue/src/runsRegistry.ts'
 import { mintSandbox } from '../harness.ts'
+import { ENGINE_FREE, ENGINE_HOST, ENGINE_PORT } from './engine-gate.ts'
 
-const ENGINE_HOST = process.env['MELITE_E2E_COMFYUI_HOST'] ?? '127.0.0.1'
-const ENGINE_PORT = Number(process.env['MELITE_E2E_COMFYUI_PORT'] ?? '8188')
 /** A real anny body GLB — the chain's beat-1 output. */
 const ANNY_BODY = process.env['ANNY_BODY'] ?? ''
 
-async function engineAlive(): Promise<boolean> {
-  try {
-    const res = await fetch(`http://${ENGINE_HOST}:${ENGINE_PORT}/system_stats`, {
-      signal: AbortSignal.timeout(30_000),
-    })
-    return res.ok
-  } catch {
-    return false
-  }
-}
 
-const HAS_ENGINE = await engineAlive()
 const HAS_BODY = ANNY_BODY !== '' && existsSync(ANNY_BODY)
 
-describe.skipIf(!HAS_ENGINE || !HAS_BODY)(
+describe.skipIf(!ENGINE_FREE || !HAS_BODY)(
   'the census chain beat 2 (skin-apply on a real body, live ComfyUI)',
   () => {
     it('the $body initial links, the three-save action composes, and the skinned body lands on disk', async () => {

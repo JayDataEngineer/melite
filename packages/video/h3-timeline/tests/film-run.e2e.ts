@@ -26,6 +26,7 @@ import { GraphBuilder } from "@melite/comfyui-card-kit/graph";
 import { loadCardDefs } from "@melite/comfyui-cordis";
 import { loadFacts } from "@melite/comfyui-card-kit/facts";
 import type { ModelFacts } from "@melite/comfyui-card-kit/facts";
+import { ENGINE_FREE } from "../../../../tests/e2e/engine-gate.ts";
 import {
   getModel, registryIds, registryModel,
 } from "../../../engines/comfyui-cordis/src/models/models.ts";
@@ -47,7 +48,7 @@ beforeAll(async () => {
 });
 
 describe("the film tail, LIVE (engine run)", { timeout: 2_100_000 }, () => {
-  it.skipIf(!RUN)("3 windows + seam-crossing dialogue + music bed → one mp4", async () => {
+  it.skipIf(!RUN || !ENGINE_FREE)("3 windows + seam-crossing dialogue + music bed → one mp4", async () => {
     const def = (await loadCardDefs()).get("h3-timeline")!;
     const g = new GraphBuilder();
     def.compose(

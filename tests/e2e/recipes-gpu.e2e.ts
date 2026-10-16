@@ -32,21 +32,8 @@ import { RunsRuntimeService } from '../../packages/harness/estate-queue/src/runs
 import { QueueService } from '../../packages/harness/estate-queue/src/service.ts'
 import { mintSandbox } from '../harness.ts'
 import { lanePresenceMiss } from '../../packages/harness/estate-queue/src/cardsLanes.ts'
+import { ENGINE_FREE, ENGINE_HOST, ENGINE_PORT } from './engine-gate.ts'
 
-const ENGINE_HOST = process.env['MELITE_E2E_COMFYUI_HOST'] ?? '127.0.0.1'
-const ENGINE_PORT = Number(process.env['MELITE_E2E_COMFYUI_PORT'] ?? '8188')
-
-async function engineAlive(): Promise<boolean> {
-  try {
-    const res = await fetch(`http://${ENGINE_HOST}:${ENGINE_PORT}/system_stats`, {
-      signal: AbortSignal.timeout(30_000),
-    })
-    return res.ok
-  } catch {
-    return false
-  }
-}
-const HAS_ENGINE = await engineAlive()
 
 /** THE WEIGHTS GATE (roadmap §10's e2e debt, 2026-09-21): a GPU
  *  receipt row needs BOTH the engine and the family's lane weights —
@@ -181,8 +168,8 @@ function byClass(s: Settled, cls: string): Array<[string, { class_type?: string,
     .filter(([, r]) => (r as { class_type?: string }).class_type === cls) as Array<[string, { class_type?: string, inputs?: Record<string, unknown> }]>
 }
 
-describe.skipIf(!HAS_ENGINE)('the recipe law on the GPU (with live ComfyUI)', () => {
-  it.skipIf(!HAS_ENGINE || !weightsPresent('krea-2'))('krea-2 turbo_distill: the pill payload composes the rank-64 adapter at 1.0 and RUNS', async () => {
+describe.skipIf(!ENGINE_FREE)('the recipe law on the GPU (with live ComfyUI)', () => {
+  it.skipIf(!ENGINE_FREE || !weightsPresent('krea-2'))('krea-2 turbo_distill: the pill payload composes the rank-64 adapter at 1.0 and RUNS', async () => {
     const w = await bootWorld('recipes-krea-')
     try {
       // compose FIRST (a refusal names its field before any GPU time)
@@ -213,7 +200,7 @@ describe.skipIf(!HAS_ENGINE)('the recipe law on the GPU (with live ComfyUI)', ()
     }
   }, 240_000)
 
-  it.skipIf(!HAS_ENGINE || !weightsPresent('krea-2'))('krea-2 realism: the strength-less pill rides the flavor default 0.7 on silicon', async () => {
+  it.skipIf(!ENGINE_FREE || !weightsPresent('krea-2'))('krea-2 realism: the strength-less pill rides the flavor default 0.7 on silicon', async () => {
     const w = await bootWorld('recipes-krea-r-')
     try {
       const s = await runCard(w, {
@@ -235,7 +222,7 @@ describe.skipIf(!HAS_ENGINE)('the recipe law on the GPU (with live ComfyUI)', ()
     }
   }, 240_000)
 
-  it.skipIf(!HAS_ENGINE || !weightsPresent('z-image'))('z-image realism: the pill payload composes the adapter at its declared 0.7 and RUNS', async () => {
+  it.skipIf(!ENGINE_FREE || !weightsPresent('z-image'))('z-image realism: the pill payload composes the adapter at its declared 0.7 and RUNS', async () => {
     const w = await bootWorld('recipes-zimage-')
     try {
       const s = await runCard(w, {
@@ -253,7 +240,7 @@ describe.skipIf(!HAS_ENGINE)('the recipe law on the GPU (with live ComfyUI)', ()
     }
   }, 240_000)
 
-  it.skipIf(!HAS_ENGINE || !weightsPresent('h3-timeline'))('h3-timeline draft: the low-res tier composes the ByteDance bag at draft geometry and RUNS', async () => {
+  it.skipIf(!ENGINE_FREE || !weightsPresent('h3-timeline'))('h3-timeline draft: the low-res tier composes the ByteDance bag at draft geometry and RUNS', async () => {
     const w = await bootWorld('recipes-h3-draft-')
     try {
       // THE ANCHOR: a real upload through ComfyUI's own upload door
@@ -295,7 +282,7 @@ describe.skipIf(!HAS_ENGINE)('the recipe law on the GPU (with live ComfyUI)', ()
     }
   }, 600_000)
 
-  it.skipIf(!HAS_ENGINE || !weightsPresent('h3-timeline'))('h3-timeline standard: the default composes the ByteDance DMAD 4-step at the calibrated floor and RUNS', async () => {
+  it.skipIf(!ENGINE_FREE || !weightsPresent('h3-timeline'))('h3-timeline standard: the default composes the ByteDance DMAD 4-step at the calibrated floor and RUNS', async () => {
     const w = await bootWorld('recipes-h3-standard-')
     try {
       // THE ANCHOR: a real upload through ComfyUI's own upload door
@@ -339,7 +326,7 @@ describe.skipIf(!HAS_ENGINE)('the recipe law on the GPU (with live ComfyUI)', ()
     }
   }, 600_000)
 
-  it.skipIf(!HAS_ENGINE || !weightsPresent('h3-timeline') || !weightsPresent('seedvr2-ema'))('h3-timeline final: the finishing tier mounts the SeedVR2 rail behind the master switch and RUNS', async () => {
+  it.skipIf(!ENGINE_FREE || !weightsPresent('h3-timeline') || !weightsPresent('seedvr2-ema'))('h3-timeline final: the finishing tier mounts the SeedVR2 rail behind the master switch and RUNS', async () => {
     const w = await bootWorld('recipes-h3-final-')
     try {
       const png = Buffer.from(
@@ -382,7 +369,7 @@ describe.skipIf(!HAS_ENGINE)('the recipe law on the GPU (with live ComfyUI)', ()
     }
   }, 600_000)
 
-  it.skipIf(!HAS_ENGINE || !weightsPresent('h3-timeline'))('h3-timeline void receipt: estate-held calls compose into the workflow and RUN', async () => {
+  it.skipIf(!ENGINE_FREE || !weightsPresent('h3-timeline'))('h3-timeline void receipt: estate-held calls compose into the workflow and RUN', async () => {
     const w = await bootWorld('recipes-h3-void-')
     try {
       const png = Buffer.from(
@@ -440,7 +427,7 @@ describe.skipIf(!HAS_ENGINE)('the recipe law on the GPU (with live ComfyUI)', ()
   // MOUNTS on the run workflow (two samplers, the rider's own
   // loader, the row-declared schedule) and the film settles with
   // real bytes. ──
-  it.skipIf(!HAS_ENGINE || !weightsPresent('h3-timeline'))('h3-timeline T3 refine rider: the taomate closing pass mounts (own loader @ 0.7/3) and RUNS', async () => {
+  it.skipIf(!ENGINE_FREE || !weightsPresent('h3-timeline'))('h3-timeline T3 refine rider: the taomate closing pass mounts (own loader @ 0.7/3) and RUNS', async () => {
     const w = await bootWorld('recipes-h3-refine-')
     try {
       const s = await runCard(w, {
@@ -469,7 +456,7 @@ describe.skipIf(!HAS_ENGINE)('the recipe law on the GPU (with live ComfyUI)', ()
     }
   }, 600_000)
 
-  it.skipIf(!HAS_ENGINE || !weightsPresent('kimodo'))('motion (kimodo): the Rule B panel-path writes (steps/seed/duration) compose and RUN', async () => {
+  it.skipIf(!ENGINE_FREE || !weightsPresent('kimodo'))('motion (kimodo): the Rule B panel-path writes (steps/seed/duration) compose and RUN', async () => {
     const w = await bootWorld('recipes-motion-')
     try {
       const s = await runCard(w, {
@@ -491,7 +478,7 @@ describe.skipIf(!HAS_ENGINE)('the recipe law on the GPU (with live ComfyUI)', ()
   //    bound-anchored stamps proven on silicon — the schema's own
   //    floors/ceilings, values 1:1 with the cards' declared keys) ──
 
-  it.skipIf(!HAS_ENGINE || !weightsPresent('music3'))('music3 short-sting: the pill payload composes duration 5 (the schema floor) and RUNS', async () => {
+  it.skipIf(!ENGINE_FREE || !weightsPresent('music3'))('music3 short-sting: the pill payload composes duration 5 (the schema floor) and RUNS', async () => {
     const w = await bootWorld('recipes-music3-')
     try {
       const s = await runCard(w, {
@@ -516,7 +503,7 @@ describe.skipIf(!HAS_ENGINE)('the recipe law on the GPU (with live ComfyUI)', ()
     }
   }, 480_000)
 
-  it.skipIf(!HAS_ENGINE || !weightsPresent('moss-sfx'))('moss-sfx one_shot: the pill payload composes duration 0.5 (the schema floor) and RUNS', async () => {
+  it.skipIf(!ENGINE_FREE || !weightsPresent('moss-sfx'))('moss-sfx one_shot: the pill payload composes duration 0.5 (the schema floor) and RUNS', async () => {
     const w = await bootWorld('recipes-mosssfx-')
     try {
       const s = await runCard(w, {
@@ -538,7 +525,7 @@ describe.skipIf(!HAS_ENGINE)('the recipe law on the GPU (with live ComfyUI)', ()
     }
   }, 300_000)
 
-  it.skipIf(!HAS_ENGINE || !weightsPresent('qwen3-tts'))('qwen3-tts steady-read: the pill payload composes temperature 0.05 (the engine-true floor) and RUNS', async () => {
+  it.skipIf(!ENGINE_FREE || !weightsPresent('qwen3-tts'))('qwen3-tts steady-read: the pill payload composes temperature 0.05 (the engine-true floor) and RUNS', async () => {
     const w = await bootWorld('recipes-qwen3tts-')
     try {
       const s = await runCard(w, {
@@ -566,8 +553,8 @@ describe.skipIf(!HAS_ENGINE)('the recipe law on the GPU (with live ComfyUI)', ()
 // ── THE QWEN 2.1 PAIR (2026-09-21, the Comfy-Org release; the naming
 // law: qwen-img-21 = the t2i lane, qwen-img-edit-21 = the cached-
 // reference edit lane over the SAME base weights) ──────────────────
-describe.skipIf(!HAS_ENGINE)('the qwen 2.1 pair on the GPU (with live ComfyUI)', () => {
-  it.skipIf(!HAS_ENGINE || !weightsPresent('qwen-img-21'))('qwen-img-21 upstream-solvers: the pill payload composes the ONE TextEncodeQwenImage21 node (pos out 0, neg out 1) and RUNS', async () => {
+describe.skipIf(!ENGINE_FREE)('the qwen 2.1 pair on the GPU (with live ComfyUI)', () => {
+  it.skipIf(!ENGINE_FREE || !weightsPresent('qwen-img-21'))('qwen-img-21 upstream-solvers: the pill payload composes the ONE TextEncodeQwenImage21 node (pos out 0, neg out 1) and RUNS', async () => {
     const w = await bootWorld('recipes-q21-')
     try {
       const cards = (w.ctx as unknown as { cardRegistry: { phase1Card: (b: Record<string, unknown>, m: string) => Promise<{ params: Record<string, unknown> }>, phase2Card: (p1: unknown, runId: string) => Promise<{ graph: Record<string, unknown> }> } }).cardRegistry
@@ -640,7 +627,7 @@ describe.skipIf(!HAS_ENGINE)('the qwen 2.1 pair on the GPU (with live ComfyUI)',
     }
   }, 900_000)
 
-  it.skipIf(!HAS_ENGINE || !weightsPresent('qwen-img-21'))('qwen-img-21 turbo-int8: the route address composes the distilled unet at 8 steps and RUNS', async () => {
+  it.skipIf(!ENGINE_FREE || !weightsPresent('qwen-img-21'))('qwen-img-21 turbo-int8: the route address composes the distilled unet at 8 steps and RUNS', async () => {
     const w = await bootWorld('recipes-q21-turbo-')
     try {
       const cards = (w.ctx as unknown as { cardRegistry: { phase1Card: (b: Record<string, unknown>, m: string) => Promise<{ params: Record<string, unknown> }>, phase2Card: (p1: unknown, runId: string) => Promise<{ graph: Record<string, unknown> }> } }).cardRegistry
@@ -681,7 +668,7 @@ describe.skipIf(!HAS_ENGINE)('the qwen 2.1 pair on the GPU (with live ComfyUI)',
   // painted mask (synthetic alpha fixture, deterministic) and the
   // face detector (a real detection off a generated portrait). ──
 
-  it.skipIf(!HAS_ENGINE || !weightsPresent('qwen-img-edit-21'))('qwen-img-edit-21 crop_stitch painted mask: MaskToSEGS(combined) → DetailerForEach on the cache model RUNS', async () => {
+  it.skipIf(!ENGINE_FREE || !weightsPresent('qwen-img-edit-21'))('qwen-img-edit-21 crop_stitch painted mask: MaskToSEGS(combined) → DetailerForEach on the cache model RUNS', async () => {
     const w = await bootWorld('recipes-q21-cropmask-')
     try {
       // THE ANCHOR + THE ALPHA MASK: two local fixture files (the
@@ -741,7 +728,7 @@ describe.skipIf(!HAS_ENGINE)('the qwen 2.1 pair on the GPU (with live ComfyUI)',
     }
   }, 600_000)
 
-  it.skipIf(!HAS_ENGINE || !weightsPresent('qwen-img-21'))('qwen-img-edit-21 crop_stitch face detector: the Impact chain proposes the region off a generated portrait and RUNS', async () => {
+  it.skipIf(!ENGINE_FREE || !weightsPresent('qwen-img-21'))('qwen-img-edit-21 crop_stitch face detector: the Impact chain proposes the region off a generated portrait and RUNS', async () => {
     const w = await bootWorld('recipes-q21-cropface-')
     try {
       // A REAL FACE TO FIND: the 2.1 t2i lane generates the portrait

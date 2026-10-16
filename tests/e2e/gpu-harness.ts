@@ -4,15 +4,18 @@
  *
  * recipes-gpu.e2e.ts hand-carried this whole harness inline
  * (engineAlive / weightsPresent / bootWorld / runCard / the assert
- * helpers); four other e2e files hand-copy engineAlive. New receipt
- * suites import it from here — one home per fact. (Migrating the
- * older files onto it is owed, not done here: their landed rows
- * stay byte-untouched.)
+ * helpers). The engine half has since moved to its own home:
+ * ./engine-gate.ts owns presence, busy-defer, and pins for every
+ * engine suite (operator order 2026-11-06); this harness keeps the
+ * weights gate, the world mirror, and the run helpers, importing
+ * the engine address from the gate.
  *
  * Engine-gated throughout (the inference-smoke precedent): no
- * ComfyUI at the seat's address = self-skip (a skip is not a cost
- * signal). Every row additionally gates on its family's lane
- * weights via weightsPresent().
+ * ComfyUI at the seat's address = self-skip, and a busy engine
+ * (the operator's own render on the GPU) defers unless
+ * MELITE_E2E_FORCE=1 — a skip is not a cost signal. Every row
+ * additionally gates on its family's lane weights via
+ * weightsPresent().
  */
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -28,23 +31,13 @@ import { QueueService } from '../../packages/harness/estate-queue/src/service.ts
 import { lanePresenceMiss } from '../../packages/harness/estate-queue/src/cardsLanes.ts'
 import { mintSandbox } from '../harness.ts'
 
-export const ENGINE_HOST = process.env['MELITE_E2E_COMFYUI_HOST'] ?? '127.0.0.1'
-export const ENGINE_PORT = Number(process.env['MELITE_E2E_COMFYUI_PORT'] ?? '8188')
-
-export async function engineAlive(): Promise<boolean> {
-  try {
-    const res = await fetch(`http://${ENGINE_HOST}:${ENGINE_PORT}/system_stats`, {
-      signal: AbortSignal.timeout(30_000),
-    })
-    return res.ok
-  } catch {
-    return false
-  }
-}
-
-/** Module-scope engine presence (top-level await — the recipes-gpu
- *  precedent): suites gate their describe on this. */
-export const HAS_ENGINE = await engineAlive()
+/** The engine gate lives in ONE home now (operator order 2026-11-06):
+ *  presence, busy-defer, and pins ride ./engine-gate.ts — this
+ *  harness re-exports the address the world-mirror fixture stamps.
+ *  HAS_ENGINE is retired: suites gate on ENGINE_FREE (presence AND
+ *  deferral), never presence alone. */
+export { ENGINE_HOST, ENGINE_PORT } from './engine-gate.ts'
+import { ENGINE_HOST, ENGINE_PORT } from './engine-gate.ts'
 
 /** THE WEIGHTS GATE (roadmap §10's e2e debt, 2026-09-21): a GPU
  *  receipt row needs BOTH the engine and the family's lane weights —

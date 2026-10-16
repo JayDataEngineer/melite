@@ -1,3 +1,4 @@
+// NO-ENGINE: upstream-truth probe (HEADs declared download urls) — never submits to the engine.
 // THE TRUTH PROBE (2026-10-13, operator order: "is this model
 // real"). The offline wall holds DECLARED coherence — a cell that
 // names weights it cannot fetch, a plan that refuses. This probe

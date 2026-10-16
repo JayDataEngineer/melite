@@ -1,3 +1,4 @@
+// NO-ENGINE: headless boot composition — no engine, no model, no key by design.
 /**
  * estate-smoke.e2e.ts — the SHIPPED-COMPOSITION smoke (stroke 82:
  * the old with-key body was a placeholder writing a marker file —

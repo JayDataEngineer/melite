@@ -34,24 +34,12 @@ import modelsFamiliesProvider from '../../packages/engines/comfyui-cordis/src/en
 import { QueueCore } from '../../packages/harness/estate-queue/src/queue.ts'
 import { RunsRuntimeService } from '../../packages/harness/estate-queue/src/runsRegistry.ts'
 import { mintSandbox } from '../harness.ts'
+import { ENGINE_FREE, ENGINE_HOST, ENGINE_PORT } from './engine-gate.ts'
 
-const ENGINE_HOST = process.env['MELITE_E2E_COMFYUI_HOST'] ?? '127.0.0.1'
-const ENGINE_PORT = Number(process.env['MELITE_E2E_COMFYUI_PORT'] ?? '8188')
 const REPO_ROOT = resolve(new URL('../..', import.meta.url).pathname)
 const PHOTO = join(REPO_ROOT, 'data', 'input', '36039.jpg')
 
-async function engineAlive(): Promise<boolean> {
-  try {
-    const res = await fetch(`http://${ENGINE_HOST}:${ENGINE_PORT}/system_stats`, {
-      signal: AbortSignal.timeout(30_000),
-    })
-    return res.ok
-  } catch {
-    return false
-  }
-}
 
-const HAS_ENGINE = await engineAlive()
 const HAS_PHOTO = existsSync(PHOTO)
 // THE ESTIMATOR RUNTIME (the tier-3 key law, ROADMAP :222): the
 // anny-hmr-estimator flow's estimator needs the provisioned
@@ -66,7 +54,7 @@ const ANNY_ESTIMATOR_ROOT = process.env['ANNY_ESTIMATOR_ROOT'] ??
   join(REPO_ROOT, 'data', 'runtime', 'anny-estimator')
 const HAS_ESTIMATOR = existsSync(join(ANNY_ESTIMATOR_ROOT, 'estimator_chain.py'))
 
-describe.skipIf(!HAS_ENGINE || !HAS_PHOTO || !HAS_ESTIMATOR)(
+describe.skipIf(!ENGINE_FREE || !HAS_PHOTO || !HAS_ESTIMATOR)(
   'registry flow through the {flow:} door (live ComfyUI)',
   () => {
     it("anny-hmr-estimator on a real portrait: the $photo initial links at planMerge and the estimator's GLB lands on disk", async () => {

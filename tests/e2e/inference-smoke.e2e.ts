@@ -31,24 +31,12 @@ import { QueueCore } from '../../packages/harness/estate-queue/src/queue.ts'
 import { FlowsSeatService } from '../../packages/harness/estate-queue/src/flowsData.ts'
 import { RunsRuntimeService } from '../../packages/harness/estate-queue/src/runsRegistry.ts'
 import { mintSandbox } from '../harness.ts'
+import { ENGINE_FREE, ENGINE_HOST, ENGINE_PORT } from './engine-gate.ts'
 
-const ENGINE_HOST = process.env['MELITE_E2E_COMFYUI_HOST'] ?? '127.0.0.1'
-const ENGINE_PORT = Number(process.env['MELITE_E2E_COMFYUI_PORT'] ?? '8188')
 
 /** Top-level liveness probe (loaded boxes answer slowly — generous
  *  timeout, one try): an absent engine self-skips the suite. */
-async function engineAlive(): Promise<boolean> {
-  try {
-    const res = await fetch(`http://${ENGINE_HOST}:${ENGINE_PORT}/system_stats`, {
-      signal: AbortSignal.timeout(30_000),
-    })
-    return res.ok
-  } catch {
-    return false
-  }
-}
 
-const HAS_ENGINE = await engineAlive()
 
 /** One REAL 1-step inference graph (turbo checkpoint, 64×64): seven
  *  nodes, every class stock ComfyUI — load, encode, latent, sample,
@@ -64,7 +52,7 @@ const TURBO_GRAPH: Record<string, unknown> = {
   '7': { class_type: 'SaveImage', inputs: { images: ['6', 0], filename_prefix: 'melite_e2e' } },
 }
 
-describe.skipIf(!HAS_ENGINE)('inference smoke (with live ComfyUI)', () => {
+describe.skipIf(!ENGINE_FREE)('inference smoke (with live ComfyUI)', () => {
   it('one run press lands real image bytes on disk through the full stack (seat → adapter → host → HTTP)', async () => {
     const sandbox = mintSandbox('inference-e2e-')
     const ctx = new Context()
@@ -139,11 +127,11 @@ describe.skipIf(!HAS_ENGINE)('inference smoke (with live ComfyUI)', () => {
   }, 240_000)
 })
 
-describe.runIf(!HAS_ENGINE)('inference smoke (no engine — plumbing only)', () => {
+describe.runIf(!ENGINE_FREE)('inference smoke (no engine — plumbing only)', () => {
   it('self-skips the live arm and proves the gate is honest (probe, not a cost signal)', () => {
     // The probe answered no ComfyUI at ENGINE_HOST:ENGINE_PORT. The
     // with-engine arm above is the receipt; this arm pins the tier
     // law — an absent engine self-skips, it never fakes a run.
-    assert.ok(typeof HAS_ENGINE === 'boolean')
+    assert.ok(typeof ENGINE_FREE === 'boolean')
   })
 })

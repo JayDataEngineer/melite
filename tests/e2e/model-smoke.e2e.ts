@@ -1,3 +1,4 @@
+// NO-ENGINE: key-gated LLM craft critique — no engine on the path.
 /**
  * model-smoke.e2e.ts — the MODEL live-fire receipt (stroke 83).
  *

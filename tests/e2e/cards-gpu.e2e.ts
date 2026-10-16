@@ -27,8 +27,8 @@ import { describe, it } from 'vitest'
 import assert from 'node:assert/strict'
 import { existsSync } from 'node:fs'
 import { join } from 'node:path'
+import { ENGINE_FREE } from './engine-gate.ts'
 import {
-  HAS_ENGINE,
   type World,
   byClass,
   firstBytes,
@@ -43,7 +43,7 @@ import {
 
 const PROMPT_CUBE = 'a small red cube on a white field'
 
-describe.skipIf(!HAS_ENGINE)('cards-gpu: image-gen (the uncovered families)', () => {
+describe.skipIf(!ENGINE_FREE)('cards-gpu: image-gen (the uncovered families)', () => {
   it.skipIf(!weightsPresent('flux-klein'))('flux-klein default: the distilled lane composes and RUNS', async () => {
     await withWorld('cards-gpu-flux', async (w) => {
       const s = await runCard(w, {
@@ -69,7 +69,7 @@ describe.skipIf(!HAS_ENGINE)('cards-gpu: image-gen (the uncovered families)', ()
   }, 240_000)
 })
 
-describe.skipIf(!HAS_ENGINE)('cards-gpu: image-edit (the 2511 lane)', () => {
+describe.skipIf(!ENGINE_FREE)('cards-gpu: image-edit (the 2511 lane)', () => {
   it.skipIf(!weightsPresent('qwen-img-edit-2511'))('qwen-img-edit-2511 default: the lightning edit lane composes and RUNS', async () => {
     await withWorld('cards-gpu-2511', async (w) => {
       const anchor = await uploadAnchorPng('2511 default')
@@ -85,7 +85,7 @@ describe.skipIf(!HAS_ENGINE)('cards-gpu: image-edit (the 2511 lane)', () => {
   }, 600_000)
 })
 
-describe.skipIf(!HAS_ENGINE)('cards-gpu: tagger, upscale, mask, input-prep (the tool lanes)', () => {
+describe.skipIf(!ENGINE_FREE)('cards-gpu: tagger, upscale, mask, input-prep (the tool lanes)', () => {
   // THE INTENT-MARKER GATES (audit 2026-10-31): wd14 declares no
   // lane_inputs (weightless lane — the checkpoint rides the variant
   // rail), so weightsPresent is trivially true and the engine's own
@@ -195,7 +195,7 @@ describe.skipIf(!HAS_ENGINE)('cards-gpu: tagger, upscale, mask, input-prep (the 
   }, 120_000)
 })
 
-describe.skipIf(!HAS_ENGINE)('cards-gpu: mesh (anny, the trellis lift, rig)', () => {
+describe.skipIf(!ENGINE_FREE)('cards-gpu: mesh (anny, the trellis lift, rig)', () => {
   it.skipIf(!weightsPresent('anny'))('anny default: the parametric bake composes and RUNS', async () => {
     await withWorld('cards-gpu-anny', async (w) => {
       const s = await runCard(w, {
@@ -296,7 +296,7 @@ describe.skipIf(!HAS_ENGINE)('cards-gpu: mesh (anny, the trellis lift, rig)', ()
   }, 300_000)
 })
 
-describe.skipIf(!HAS_ENGINE)('cards-gpu: audio (tts lanes, music lengths, the sfx bed)', () => {
+describe.skipIf(!ENGINE_FREE)('cards-gpu: audio (tts lanes, music lengths, the sfx bed)', () => {
   it.skipIf(!weightsPresent('qwen3-tts'))('tts expressive-read: the pill payload composes and RUNS', async () => {
     await withWorld('cards-gpu-tts-expr', async (w) => {
       const s = await runCard(w, {
@@ -410,7 +410,7 @@ describe.skipIf(!HAS_ENGINE)('cards-gpu: audio (tts lanes, music lengths, the sf
   }, 600_000)
 })
 
-describe.skipIf(!HAS_ENGINE)('cards-gpu: film and motion (the remaining h3 + kimodo recipes)', () => {
+describe.skipIf(!ENGINE_FREE)('cards-gpu: film and motion (the remaining h3 + kimodo recipes)', () => {
   it.skipIf(!weightsPresent('h3-timeline'))('h3 lightx2v dareties PICK: the catalog adapter composes and RUNS (the recipe row retired 2026-11-02; the lora stays pick-only)', async () => {
     await withWorld('cards-gpu-h3-dare', async (w) => {
       // THE CALLS SPELLING (anchor-guide.spec.ts, the one-truth

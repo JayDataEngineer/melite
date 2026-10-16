@@ -1,3 +1,4 @@
+// NO-ENGINE: refusal-order law — body-shape only, holds without weights or engine.
 // compose-smoke.e2e.ts — THE COMPOSE-DOOR RECIPE LAW (the probe
 // that decided the dropdown's shape, 2026-09-18): the door REFUSES
 // an undeclared `recipe` param ("admission is the declared surface")

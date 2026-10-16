@@ -1,3 +1,4 @@
+// NO-ENGINE: upstream-network gate — extensions as code, never submits to the engine.
 /**
  * extension-upstream.e2e.ts — THE UPSTREAM VERIFICATION GATE (the
  * nomenclature ruin the operator named, 2026-10-15): the estate is

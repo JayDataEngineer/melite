@@ -21,25 +21,11 @@ import { RunsRuntimeService } from '../../packages/harness/estate-queue/src/runs
 import { QueueService } from '../../packages/harness/estate-queue/src/service.ts'
 import { mintSandbox } from '../harness.ts'
 import { lanePresenceMiss } from '../../packages/harness/estate-queue/src/cardsLanes.ts'
+import { ENGINE_FREE, ENGINE_HOST, ENGINE_PORT } from './engine-gate.ts'
 
-const ENGINE_HOST = '127.0.0.1'
-const ENGINE_PORT = 8188
-
-async function engineAlive(): Promise<boolean> {
-  try {
-    const res = await fetch(`http://${ENGINE_HOST}:${ENGINE_PORT}/system_stats`, {
-      signal: AbortSignal.timeout(30_000),
-    })
-    return res.ok
-  } catch {
-    return false
-  }
-}
-
-const HAS_ENGINE = await engineAlive()
 
 function weightsPresent(cardId: string): boolean {
-  if (!HAS_ENGINE) return false
+  if (!ENGINE_FREE) return false
   try {
     return lanePresenceMiss(cardId) === null
   } catch {
@@ -47,7 +33,7 @@ function weightsPresent(cardId: string): boolean {
   }
 }
 
-it.skipIf(!HAS_ENGINE || !weightsPresent('h3-timeline'))('h3-timeline live fold: the running status voices node activity and sample progress before settlement', async () => {
+it.skipIf(!ENGINE_FREE || !weightsPresent('h3-timeline'))('h3-timeline live fold: the running status voices node activity and sample progress before settlement', async () => {
   const sandbox = mintSandbox('webhook-fold-')
   const ctx = new Context()
   try {

@@ -1,3 +1,4 @@
+// NO-ENGINE: served-lane gate — reads defaults over HTTP, never submits to the engine.
 /**
  * lane-defaults.e2e.ts — THE SERVED-ORIGIN DEFAULTS GATE (the
  * zombie-tab correction, 2026-09-19): correction #28's "live

@@ -29,6 +29,7 @@ import { GraphBuilder } from "@melite/comfyui-card-kit/graph";
 import { loadCardDefs } from "@melite/comfyui-cordis";
 import { loadFacts } from "@melite/comfyui-card-kit/facts";
 import type { ModelFacts } from "@melite/comfyui-card-kit/facts";
+import { ENGINE_FREE } from "../../../../tests/e2e/engine-gate.ts";
 import {
   getModel, registryIds, registryModel,
 } from "../../../engines/comfyui-cordis/src/models/models.ts";
@@ -61,7 +62,7 @@ function bandDb(path: string, from: number, dur: number): number {
 }
 
 describe("the stitch proof, LIVE (engine run)", { timeout: 2_100_000 }, () => {
-  it.skipIf(!RUN)("one continuous shot across 3 extend seams → a film that carries", async () => {
+  it.skipIf(!RUN || !ENGINE_FREE)("one continuous shot across 3 extend seams → a film that carries", async () => {
     const def = (await loadCardDefs()).get("h3-timeline")!;
     const g = new GraphBuilder();
     def.compose(
