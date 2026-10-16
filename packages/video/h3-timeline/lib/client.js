@@ -5236,6 +5236,11 @@ window.__ModuleLoader__.load({
 				sr_switch: raw?.sr_switch === true,
 				sr_model: raw?.sr_model === "seedvr2_ema_3b_fp16.safetensors" || raw?.sr_model === "seedvr2_ema_3b_fp8_e4m3fn.safetensors" ? raw.sr_model : void 0,
 				sr_resolution: optNum("sr_resolution"),
+				attention_backend: raw?.attention_backend === "pytorch attention" || raw?.attention_backend === "comfy kitchen attention" ? raw.attention_backend : void 0,
+				second_pass_enabled: raw?.second_pass_enabled === true,
+				refine_lora: typeof raw?.refine_lora === "string" && raw.refine_lora !== "" ? raw.refine_lora : void 0,
+				refine_strength: optNum("refine_strength"),
+				refine_steps: optNum("refine_steps"),
 				ref_image_size: raw?.ref_image_size === "match" || raw?.ref_image_size === "max" ? raw.ref_image_size : void 0,
 				loras: Array.isArray(raw?.loras) ? raw.loras.filter((r) => !!r && typeof r.id === "string").map((r) => {
 					const steps = typeof r.steps === "number" && Number.isFinite(r.steps) ? r.steps : void 0;
@@ -5305,6 +5310,7 @@ window.__ModuleLoader__.load({
 			"sla_protect_audio",
 			"sla_stabilize_motion",
 			"sla_disable_fp16_accum",
+			"attention_backend",
 			"sharpen_enabled",
 			"sharpen_method",
 			"sharpen_strength",
@@ -5320,6 +5326,10 @@ window.__ModuleLoader__.load({
 			"ref_image_size",
 			"model",
 			"audio_stem",
+			"second_pass_enabled",
+			"refine_lora",
+			"refine_strength",
+			"refine_steps",
 			"loras",
 			"audio_clips",
 			"ref_images",
@@ -5361,6 +5371,7 @@ window.__ModuleLoader__.load({
 				"sharpen_iterations",
 				"interp_model",
 				"interp_multiplier",
+				"attention_backend",
 				"ref_image_size",
 				"model",
 				"audio_stem"
@@ -5373,6 +5384,12 @@ window.__ModuleLoader__.load({
 				out.sr_switch = true;
 				if (a.sr_model != null) out.sr_model = a.sr_model;
 				if (a.sr_resolution != null) out.sr_resolution = a.sr_resolution;
+			}
+			if (a.second_pass_enabled === true) {
+				out.second_pass_enabled = true;
+				if (a.refine_lora != null && a.refine_lora !== "") out.refine_lora = a.refine_lora;
+				if (a.refine_strength != null) out.refine_strength = a.refine_strength;
+				if (a.refine_steps != null) out.refine_steps = a.refine_steps;
 			}
 			if (a.sla_enabled === false) out.sla_enabled = false;
 			if (a.audio_clips?.length) out.audio_clips = a.audio_clips;

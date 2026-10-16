@@ -135,12 +135,17 @@ describe("the two-clocks law (2026-10-16 — 'the timeline bar says 5 seconds, t
     // never the stale 10s pin the knob carried
     const exprs = Object.entries(doc).filter(([, n]) => n.class_type === "ComfyMathExpression");
     expect(exprs.length, "one expression per window").toBe(2);
-    for (const [, n] of exprs) {
+    // ORDER-BOUND (tautology sweep, 2026-10-16): the old 2-value
+    // allowlist could not see a SWAP — window 1 booked at the seam's
+    // seconds stayed green. Node insertion follows render order, so
+    // the feeds pin per-window: first window 5.167, seam 5.875.
+    const orderedFeeds = exprs.map(([, n]) => {
       const link = n.inputs["values.a"] as [string, number];
       const feed = doc[String(link[0])];
       expect(feed.class_type).toBe("PrimitiveFloat");
-      expect([5.167, 5.875]).toContain(feed.inputs.value);
-    }
+      return feed.inputs.value;
+    });
+    expect(orderedFeeds).toEqual([5.167, 5.875]);
     // NO STALE CLOCK NODE EXISTS AT ALL — a 10-second PrimitiveFloat
     // anywhere in the film is the operator's mush, refused at zero GPU
     const stale = Object.values(doc).filter(
@@ -178,6 +183,195 @@ describe("the two-clocks law (2026-10-16 — 'the timeline bar says 5 seconds, t
       return doc[String(link[0])]!.inputs.value;
     });
     expect(feeds).toEqual([5.167, 5.875]);
+  });
+});
+
+describe("ONE CLOCK, BOTH ARMS (2026-10-16 — the single-call burn: 'it works without a keyframe, breaks when I add one' + 'the call was 90 frames, only 4 seconds came out')", () => {
+  const BAG = [{ name: "distill-8.safetensors", strength: 0.6, steps: 8 }];
+  type Doc = Record<string, { class_type: string, inputs: Record<string, unknown> }>;
+
+  // THE ESTATE'S REAL SHAPE: the door's schema() walk runs BEFORE the
+  // action (fills declared defaults, stamps the explicit-keys facts)
+  // — the wall rides the same sequence the run does, never the raw
+  // unwalked doc (a raw doc has no default fill; judging it would
+  // test a path no run ever takes).
+  const composeSingle = (extra: Record<string, unknown>): Doc => {
+    const g = new GraphBuilder();
+    instantiateAction(
+      film,
+      h3schema({
+        variant: undefined,
+        calls: [
+          { text: "the courier steps in", start_frame: 0, end_frame: 90, ...("image" in extra ? { image: "anchor.png" } : {}) },
+        ],
+        loras: BAG, seed: 42,
+        ...extra,
+      }),
+      WINDOW_MODEL, g, "run_single",
+    );
+    return g.toJSON() as Doc;
+  };
+
+  it("THE 400 CURE: a single-call t4r doc with NO fps_seconds composes — the clock derives at the render seat, never undefined on the wire", () => {
+    // The removed .default(10) left the frozen single-window arm
+    // serializing PrimitiveFloat{value: undefined} — the engine's
+    // 400 Bad Request on every keyframed/guided single-call doc
+    // (works without the guide: t4_open never builds the seconds
+    // node). The derivation now lives at renderH3Window's own head —
+    // BOTH arms, one owner.
+    const doc = composeSingle({ image: "anchor.png" });
+    const exprs = Object.entries(doc).filter(([, n]) => n.class_type === "ComfyMathExpression");
+    expect(exprs.length, "the t4r arm builds the seconds expression").toBe(1);
+    const link = exprs[0]![1].inputs["values.a"] as [string, number];
+    const feed = doc[String(link[0])];
+    expect(feed.class_type).toBe("PrimitiveFloat");
+    expect(feed.inputs.value, "90 frames = 3.75s — the span's own seconds").toBe(3.75);
+    // THE 400-KILLER CLASS, judged graph-wide: no PrimitiveFloat
+    // anywhere carries undefined — that value IS the engine's refusal
+    const undef = Object.values(doc).filter(
+      (n) => n.class_type === "PrimitiveFloat" && typeof n.inputs.value !== "number",
+    );
+    expect(undef).toEqual([]);
+  });
+
+  it("FRAMES ARE LAYER B: a stale doc-level length never outrides the single call's span (t4r seat)", () => {
+    // The operator's screen: header 5.6s (the authored 90-frame span)
+    // vs a stale Layer-A length knob tied to nothing. Before the
+    // sole-call span lift, the frozen arm rendered the doc's length
+    // — 56 here (stale but grid-legal, so it RAN): the clock feed
+    // would state 2.333s. The span owns the window: 90f = 3.75s.
+    const doc = composeSingle({ image: "anchor.png", length: 56 });
+    const exprs = Object.entries(doc).filter(([, n]) => n.class_type === "ComfyMathExpression");
+    const link = exprs[0]![1].inputs["values.a"] as [string, number];
+    expect(doc[String(link[0])]!.inputs.value).toBe(3.75);
+  });
+
+  it("FRAMES ARE LAYER B, the non-reference seat: the generator's length input rides the span, not the doc row", () => {
+    // t4_open (no guide, no refs): the length rides the generator
+    // node directly — judged at that seat, 90 (the span's snap),
+    // never the stale 56.
+    const doc = composeSingle({ length: 56 });
+    const gens = Object.values(doc).filter(
+      (n) => /ImageToVideo|ReferenceToVideo/.test(n.class_type),
+    );
+    expect(gens.length).toBe(1);
+    expect(gens[0]!.inputs.length).toBe(90);
+  });
+
+  it("FPS IS LAYER A: the doc's stated fps rides every output container — and the declared default fills unstated docs", () => {
+    // The old hardcoded 24 played a 90-frame window at 3.75s under a
+    // 5.6s bar (the operator's 'only 4 seconds came out'). The
+    // container clock is the PROJECT's — stated 16 rides 16.
+    const stated = composeSingle({ image: "anchor.png", fps: 16 });
+    const cv16 = Object.values(stated).filter((n) => n.class_type === "CreateVideo");
+    // LENGTH GUARD (tautology sweep, 2026-10-16): an unguarded for-loop
+    // over an empty filter is the vacuous-truth class — the arm would
+    // pass green while judging nothing if CreateVideo ever stopped
+    // riding this path
+    expect(cv16.length, "the single-call compose emits output containers").toBeGreaterThan(0);
+    for (const n of cv16) {
+      const f = n.inputs.fps;
+      if (Array.isArray(f)) {
+        const src = stated[String(f[0])];
+        expect(src.class_type).toBe("PrimitiveFloat");
+        expect(src.inputs.value).toBe(16);
+      } else {
+        expect(f).toBe(16);
+      }
+    }
+    // THE BAR-CLOCK LAW (audit f1cc1197): the seconds seat derives at
+    // THE DOC'S OWN CLOCK — /24 under a stated 16 booked 3.75s while
+    // the clip PLAYED 5.625s (the '4 seconds came out' burn's second
+    // face). This t4r window: 90 frames at 16 = 5.625s exactly. A
+    // reverted divisor reds here with the stale 3.75.
+    const secs16 = Object.values(stated)
+      .filter((n) => n.class_type === "PrimitiveFloat")
+      .map((n) => (n.inputs as Record<string, unknown>).value);
+    expect(secs16).toContain(5.625);
+    // unstated: the DECLARED default (24) — the walk fills it, never
+    // a silent ?? in the compose
+    const unstated = composeSingle({ image: "anchor.png" });
+    const cvU = Object.values(unstated).filter((m) => m.class_type === "CreateVideo");
+    expect(cvU.length, "the unstated arm's container census").toBeGreaterThan(0);
+    for (const n of cvU) {
+      const f = n.inputs.fps;
+      if (Array.isArray(f)) {
+        expect(unstated[String(f[0])].inputs.value).toBe(24);
+      } else {
+        expect(f).toBe(24);
+      }
+    }
+    // THE NON-REFERENCE SEAT (audit f1cc1197, 2026-10-16 — the
+    // dead-store lie): a text-only window rides the ELSE arm's
+    // CreateVideo, whose fps was a hardcoded 24 while the
+    // `fpsInput = p.fps` "cure" sat two blocks above it, never read
+    // on this path. This arm burns on that revert — the container
+    // rides the doc's 16, scalar seat included.
+    const textOnly = composeSingle({ prompt: "a text window", fps: 16 });
+    const cvT = Object.values(textOnly).filter((m) => m.class_type === "CreateVideo");
+    expect(cvT.length, "the text-only arm's container census").toBeGreaterThan(0);
+    for (const n of cvT) {
+      const f = n.inputs.fps;
+      if (Array.isArray(f)) {
+        expect(textOnly[String(f[0])].inputs.value).toBe(16);
+      } else {
+        expect(f).toBe(16);
+      }
+    }
+  });
+
+  it("THE USER'S STEPS NEVER LOSES TO THE BAG (the marriage consults the pin, BOTH arms)", () => {
+    // Operator 2026-10-16: "I SET STEPS TO SIX. IT STILL DOES ONLY
+    // FOUR STEPS." The distill bag carries steps:4; the marriage
+    // exists to apply it when the user stated NOTHING. The
+    // single-window arm consulted the walk's __steps_pinned stamp;
+    // the film loop did not — every multi-call film stomped the
+    // doc-level steps. One law, both arms: a stated steps (doc or
+    // per-call knob) wins; the bag applies only to the unstated.
+    const schedSteps = (doc: Doc): Array<unknown> =>
+      Object.values(doc)
+        .filter((n) => n.class_type === "BasicScheduler")
+        .map((n) => n.inputs.steps);
+    // film: doc-level 6, bag 4 — every window's scheduler rides 6
+    const g = new GraphBuilder();
+    instantiateAction(
+      film,
+      h3schema({
+        variant: undefined, steps: 6,
+        calls: [
+          { text: "a slow push in", start_frame: 0, end_frame: 90 },
+          { text: "the crowd turns", start_frame: 90, end_frame: 175 },
+        ],
+        loras: [{ name: "distill-8.safetensors", strength: 0.6, steps: 4 }], seed: 1,
+      }),
+      WINDOW_MODEL, g, "run_steps_film",
+    );
+    expect(schedSteps(g.toJSON() as Doc)).toEqual([6, 6]);
+    // single-call: doc-level 6 — the sole-call shape, same law
+    const gs = new GraphBuilder();
+    instantiateAction(
+      film,
+      h3schema({
+        variant: undefined, steps: 6,
+        calls: [{ text: "a slow push in", start_frame: 0, end_frame: 90 }],
+        loras: [{ name: "distill-8.safetensors", strength: 0.6, steps: 4 }], seed: 1,
+      }),
+      WINDOW_MODEL, gs, "run_steps_single",
+    );
+    expect(schedSteps(gs.toJSON() as Doc)).toEqual([6]);
+    // UNSTATED: the bag applies (the marriage's lawful arm — the
+    // distill's count is the point of boarding it)
+    const gu = new GraphBuilder();
+    instantiateAction(
+      film,
+      h3schema({
+        variant: undefined,
+        calls: [{ text: "a slow push in", start_frame: 0, end_frame: 90 }],
+        loras: [{ name: "distill-8.safetensors", strength: 0.6, steps: 4 }], seed: 1,
+      }),
+      WINDOW_MODEL, gu, "run_steps_unstated",
+    );
+    expect(schedSteps(gu.toJSON() as Doc)).toEqual([4]);
   });
 });
 

@@ -255,6 +255,13 @@ export interface LayerA {
   sla_dense_backend?: "comfy_kitchen" | "pytorch" | "auto"
   sla_dense_steps?: string
   sla_disable_fp16_accum?: boolean
+  /** The dense branch's attention implementation (Layer A global —
+   * the schema's own enum; 'comfy kitchen attention' is the declared
+   * default). Had NO studio seat until 2026-10-16: the contract
+   * wall's new two-directional law caught the pick dying
+   * unserialized — the same silent-drop class as the Second Pass
+   * switch. */
+  attention_backend?: "pytorch attention" | "comfy kitchen attention"
   sharpen_enabled?: boolean
   sharpen_method?: "rcas" | "adaptive_usm" | "high_pass" | "deconvolution"
   sharpen_strength?: number
@@ -267,6 +274,24 @@ export interface LayerA {
   sr_switch?: boolean
   sr_model?: "seedvr2_ema_3b_fp16.safetensors" | "seedvr2_ema_3b_fp8_e4m3fn.safetensors"
   sr_resolution?: number
+  /** THE SECOND-PASS MASTER (operator 2026-09-22: "it is very
+   * unclear if it is on or off" — and 2026-10-16: the switch was
+   * STILL broken, because the 10-15 "walled at both depths" cure
+   * judged the form component and never the saved doc: the key had
+   * no studio seat, so ON never persisted and the post chain never
+   * fired). Absent = off (the family default); true arms the whole
+   * post chain — sharpening, interpolation, super-res, the refine
+   * lora. */
+  second_pass_enabled?: boolean
+  /** The refine rider's doc keys (the service resolver's own
+   * vocabulary, service.ts's T3 arm): refine_lora is a CATALOG ID
+   * resolved against the served flavor rows; refine_strength and
+   * refine_steps override the row's declared defaults. A row with
+   * no step count and no explicit refine_steps refuses loud at the
+   * compose door. */
+  refine_lora?: string
+  refine_strength?: number
+  refine_steps?: number
   /** R2V COMBO "match"|"max" — NOT a number (numbers fail node validation). */
   ref_image_size?: string
   /** The loras MOD BAG (the operator's law: loras are MODS, never

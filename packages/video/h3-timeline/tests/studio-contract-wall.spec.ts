@@ -72,12 +72,24 @@ describe("the studio contract wall (Layer A writes only card truth)", () => {
       else if (key === "ref_images" || key === "ref_videos" || key === "ref_audios") populated[key] = ["https://u/d.png"]
       else if (key === "seed") populated.seed = 7
       else if (key === "sharpen_enabled" || key === "interpolate_enabled" || key === "sr_switch" || key === "second_pass_enabled") populated[key] = true
+      // pin-equals-default booleans: TRUE is the hydrated state (the
+      // ride law emits the override when the state exists)
+      else if (key === "sla_protect_audio" || key === "sla_stabilize_motion" || key === "sla_disable_fp16_accum") populated[key] = true
+      // enum rows: a value OUTSIDE the hydrate's own grammar would
+      // lawfully drop — populate every enum with a MEMBER so the
+      // presence loop judges emission, not grammar
+      else if (key === "ref_image_size") populated[key] = "match"
       // the SLA master switch rides the wire ONLY as false (absent =
-      // on); populate the override so the emitted vocabulary pins it
+      // on): the override is the lawful emitted state
       else if (key === "sla_enabled") populated[key] = false
-      else if (key === "audio_stem" || key === "model" || key === "ref_image_size"
-        || key === "sampler_name" || key === "sched_name" || key === "sharpen_method"
-        || key === "interp_model" || key === "sla_dense_backend") populated[key] = "euler"
+      else if (key === "sla_block_size") populated[key] = "64"
+      else if (key === "sla_reference_protection") populated[key] = "Light"
+      else if (key === "sla_dense_backend") populated[key] = "auto"
+      else if (key === "sla_dense_steps") populated[key] = "0,1"
+      else if (key === "sharpen_method") populated[key] = "rcas"
+      else if (key === "interp_model") populated[key] = "film_net_fp16.safetensors"
+      else if (key === "sampler_name" || key === "sched_name" || key === "model") populated[key] = "euler"
+      else if (key === "audio_stem") populated[key] = "legacy-stem.wav"
       else if (key === "refine_lora") populated[key] = "h3_taomate_3step"
       else if (key === "attention_backend") populated[key] = "pytorch attention"
       else if (key === "sr_model") populated[key] = "seedvr2_ema_3b_fp16.safetensors"
@@ -91,6 +103,29 @@ describe("the studio contract wall (Layer A writes only card truth)", () => {
         `serializeLayerA emitted "${key}" — neither declared nor admitted`,
       ).toBe(true)
     }
+    // THE EXACT-STRENGTH HALF (2026-10-16, the Second Pass burn): the
+    // loop above iterates EMITTED keys — one direction — so a key the
+    // serializer FORGETS never entered it and its absence could not
+    // fail. That is how second_pass_enabled: true sat in `populated`,
+    // was dropped by the serializer, and this wall stayed green while
+    // the operator's switch never persisted ("walled at both depths,"
+    // 10-15 — both depths shallower than the save). The law is
+    // two-directional: every populated non-default key MUST appear in
+    // the emitted doc, by name.
+    for (const key of Object.keys(populated)) {
+      if (key === "seed" || key === "preset") continue // seed rides as the base row; preset is the dead key by law
+      expect(
+        key in out,
+        `populate set "${key}" but serializeLayerA DROPPED it — a key the UI can state and the doc never carries is the silent-drop class (the operator's burn)`,
+      ).toBe(true)
+    }
+    // THE SECOND-PASS RECEIPT at the save depth: the master arms and
+    // the refine rider rides — the exact keys the service resolver
+    // reads at the compose door
+    expect(out.second_pass_enabled).toBe(true)
+    expect(out.refine_lora).toBe("h3_taomate_3step")
+    expect(out.refine_strength).toBe(1)
+    expect(out.refine_steps).toBe(1)
     // THE DECLARED-SURFACE ROUND TRIP (2026-09-23): card-level refs
     // hydrate AND serialize back — a save never drops what the lanes show
     expect(out.ref_images).toEqual(["https://u/d.png"])

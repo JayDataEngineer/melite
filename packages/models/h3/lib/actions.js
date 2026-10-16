@@ -337,7 +337,14 @@ function renderH3Film(p, g, facts, model) {
         const winPins = (p.__keyframe_pins ?? {})[String(k)] ?? [];
         stanza.variant = (guide !== '' || hasRefs || hasDirectRefs || anyStamp || winPins.length > 0) ? 't4r' : chainLike ? 't4_chain' : 't4_open';
         // the distill's steps apply unless this call's knobs pinned steps
-        if (knobs.steps === undefined && loraStepsApplied !== null)
+        // — or the DOC did (the __steps_pinned stamp, the walk's own
+        // explicit-keys fact; the single-window marriage always consulted
+        // it, the film loop did not — the split-brain that stomped a
+        // user-stated doc steps with the bag's count on every multi-call
+        // film, operator 2026-10-16: "I SET STEPS TO SIX. IT STILL DOES
+        // ONLY FOUR STEPS"). One law, both arms: the user's stated steps
+        // — doc-level or per-call knob — never loses to the bag.
+        if (knobs.steps === undefined && loraStepsApplied !== null && p.__steps_pinned !== true)
             stanza.steps = loraStepsApplied;
         // THE DOOR GUARD, voice arm: a dialogue/sfx-pinned window mutes
         // the user ref audios (film-level and per-call) — the pins own
@@ -397,11 +404,9 @@ function renderH3Film(p, g, facts, model) {
         // render clock (fps_seconds) and the bar clock (the span) then
         // disagreed forever: a 5-second span on the bar rendered a
         // 10-second mush. The compose OWNS internal rows unconditionally
-        // — fps_seconds derives from the window's actual generation
-        // length every compose (the span rider's snapped frames, else
-        // the user-pinned length). No pin survives. No fallback. No
-        // silent disagreement.
-        stanza.fps_seconds = Math.round((stanza.length / 24) * 1000) / 1000;
+        // — fps_seconds derives at renderH3Window's own head (the one
+        // owner, both arms) from the window's actual generation length.
+        // No pin survives. No fallback. No silent disagreement.
         // THE GRID GATE (§26): a knob-pinned length bypassed the snap
         // above — validate, never trust. Refuses at compose (zero GPU)
         // with the span, the nearest legal length, and the proven
@@ -662,6 +667,24 @@ function renderH3Window(p, g, facts, model) {
     // off-grid — the film loop's pin check voices the call span, this
     // one catches the single-call path and any direct caller.
     assertGridLength(p.length, `h3-timeline window ${k}`);
+    // THE CLOCK DERIVES AT THE RENDER SEAT (operator 2026-10-16, "NO
+    // STALE ANYWHERE"): fps_seconds is INTERNAL and derives from THIS
+    // window's actual render length, every compose, BOTH arms — the
+    // film loop's stanzas and the frozen single-window doc alike (one
+    // owner: this seat; the film loop's old copy is deleted). The
+    // removed .default(10) left this arm serializing
+    // PrimitiveFloat{value: undefined} — the engine's 400 on every
+    // keyframed single-call doc. No default, no doc pin, no fallback:
+    // the length owns the clock. THE DIVISOR IS THE DOC'S OWN FPS
+    // (audit f1cc1197, the bar-clock mismatch): /24 booked 3.75s while
+    // a stated fps 16 container PLAYED 5.625s — the seconds seat and
+    // the play seat must share one clock or the bar lies. The 24
+    // mirror is the row's own declared default (schema.ts fps
+    // .default(24) — the walk fills it on every real door; raw
+    // walk-bypass callers get the declared default, never an invented
+    // one).
+    const fpsClock = typeof p.fps === 'number' && p.fps > 0 ? p.fps : 24;
+    p.fps_seconds = Math.round((p.length / fpsClock) * 1000) / 1000;
     const isT4r = family === 't4r';
     const isChain = family === 't4_chain';
     // (M5, the fallback audit — judged LAWFUL and now documented: this
@@ -734,7 +757,15 @@ function renderH3Window(p, g, facts, model) {
     let cond;
     let latent;
     let sigmaModel;
-    let fpsInput;
+    // ONE CLOCK FOR EVERY ARM (audit f1cc1197, 2026-10-16 — the
+    // non-reference seat was a DEAD STORE: the only fpsInput read sat
+    // inside if (isT4r), so the else-arm's CreateVideo kept its
+    // hardcoded 24 while the cure line sat two blocks above it). The
+    // initializer puts the DOC's clock under every arm; the t4r branch
+    // upgrades it to the walk-first PrimitiveFloat node, and the
+    // else-arm container reads it directly. p.fps is a declared row
+    // (default 24, the walk fills it on every real door).
+    let fpsInput = p.fps;
     if (isT4r) {
         // opener: switch(SLABool) picks SLA-direct vs chunked; lora rides
         // the switch; preview override wired to the in-graph step count.
@@ -743,7 +774,14 @@ function renderH3Window(p, g, facts, model) {
         // scalar straight when sla_switch is set. sla_enabled=false
         // forces the chunked (SLA-off) path; otherwise the legacy
         // sla_switch spelling rides untouched.
-        const fpsNode = g.node('PrimitiveFloat', { value: 24.0 }).out(); // id .0 — CreateVideo.fps walks first
+        // FPS IS LAYER A (operator 2026-10-16, verbatim): the container
+        // clock rides the DOC's fps — the same clock the bar books — so
+        // the clip's seconds equal the bar's seconds. The old hardcoded
+        // 24 generated a 90-frame window that PLAYED 3.75s under a
+        // 5.6s bar (frames right, seconds stolen by a third). p.fps is
+        // a declared row (default 24, the walk fills it) — never a ??
+        // fallback, never undefined on the wire.
+        const fpsNode = g.node('PrimitiveFloat', { value: p.fps }).out(); // id .0 — CreateVideo.fps walks first
         let slaSel = p.sla_enabled === false
             ? true
             : (p.sla_switch ?? null);
@@ -1149,7 +1187,10 @@ function renderH3Window(p, g, facts, model) {
         });
         cond = r2v.out(0);
         latent = r2v.out(1);
-        fpsInput = 24;
+        // FPS IS LAYER A, this arm too: the non-reference arm's container
+        // clock rides the doc's declared fps — same law as the t4r arm's
+        // fpsNode, no arm may hardcode a clock the bar disagrees with.
+        fpsInput = p.fps;
     }
     // THE REFMOD SEAM (audit 010/R1, 2026-10-18): reusable reference
     // mods appended to the conditioning's reference tokens through ALL
@@ -1518,12 +1559,14 @@ function renderH3Window(p, g, facts, model) {
         // CreateVideo.fps = base × interp multiplier (his Enhancements:
         // PrimitiveFloat 24 → ComfyMathExpression "a * 2" → fps). Without
         // it every interp-on window plays at HALF speed — the frames
-        // double, the fps doesn't. Byte-stable at defaults (interp off →
-        // the served literal 24).
+        // double, the fps doesn't. THE BASE IS THE DOC'S CLOCK, never a
+        // hardcoded 24 (audit f1cc1197: this seat rode a literal while
+        // the fpsInput "cure" above sat dead — the exact dead-store
+        // class: a line that looks like a fix and never fires).
         const interpOn = secondPassOn && p.interpolate_enabled;
         const interpMult = p.interp_multiplier;
         const created = g.node('CreateVideo', {
-            images: sharpSw, audio: vadec, fps: interpOn ? 24 * interpMult : 24, bit_depth: FILM_BIT_DEPTH,
+            images: sharpSw, audio: vadec, fps: interpOn ? fpsInput * interpMult : fpsInput, bit_depth: FILM_BIT_DEPTH,
             // color_space: pin autofill "sRGB"
         });
         const saved = g.node('SaveVideo', {
@@ -1797,6 +1840,20 @@ export const film = {
                 ? p.calls[0]
                 : null;
             if (row !== null) {
+                // FRAMES ARE LAYER B (operator 2026-10-16: "NUMBER OF FRAMES
+                // IS ALWAYS LAYER B"): the single call's span OWNS the window
+                // length — lifted here through the same snap the film loop's
+                // span rider uses, BEFORE the knobs assign (a deliberate
+                // knob pin still wins; the walk's declared default and any
+                // stale doc-level length NEVER do). Before this lift the
+                // frozen arm rendered the doc's Layer-A length — a knob tied
+                // to nothing the bar updates — and a 90-frame call generated
+                // whatever the stale row said.
+                const rowSf = typeof row.start_frame === 'number' && Number.isFinite(row.start_frame) ? row.start_frame : null;
+                const rowEf = typeof row.end_frame === 'number' && Number.isFinite(row.end_frame) ? row.end_frame : null;
+                if (rowSf !== null && rowEf !== null && rowEf > rowSf) {
+                    p.length = spanStanzaFrames({ start: rowSf, end: rowEf }, 0);
+                }
                 const rowText = typeof row.text === 'string' ? row.text.trim() : '';
                 if (rowText !== '')
                     p.prompt = row.text;

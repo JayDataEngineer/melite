@@ -121,7 +121,23 @@ export const paramSchema = z.object({
   // explicit 90 passes the walk. 56 (the declared
   // default) is on-grid; the omitted-key path normalizes to null in
   // schema() so the body computes the family's frame budget.
-  length: z.number().description("Frames").min(GRID_BASE_FRAMES).max(GRID_MAX_FRAMES).step(GRID_STEP_FRAMES).default(56).extra('extra', bag({ order: null, columns: 2, width: 1, tooltip: "17k+5 grid at 24fps: 56 = 2.33s, 124 = 5.17s, 362 = 15s", wtype: 'number' })),
+  // FRAMES ARE LAYER B (operator 2026-10-16: "NUMBER OF FRAMES IS
+  // ALWAYS LAYER B"): the timeline's calls own the window lengths —
+  // the single-call lift derives this row from the call's span at
+  // compose (a stated span outranks this default; a knob pin still
+  // outranks both — the user's own word). The row STAYS SERVED
+  // (hidden = unserved by the hidden-alias law, and CALL_KNOB_KEYS
+  // pins length per call — the studio-contract wall burns on drift
+  // here); the LAYER-A FACE never shows it as the span's rival.
+  length: z.number().description("Frames (Layer B — the timeline's calls own it; a stated span derives it at compose)").min(GRID_BASE_FRAMES).max(GRID_MAX_FRAMES).step(GRID_STEP_FRAMES).default(56).extra('extra', bag({ order: null, columns: 2, width: 1, tooltip: "17k+5 grid: 56 = 2.33s, 124 = 5.17s, 362 = 15s (the call's span snaps to this grid at compose)", wtype: 'number' })),
+  // FPS IS LAYER A (operator 2026-10-16, verbatim) — the project
+  // clock, ONE owner: the doc's stated fps rides into every
+  // CreateVideo container so the clip's seconds equal the bar's
+  // seconds. Declared default 24 (the walk fills it — the lawful
+  // declared kind, never a silent ?? in the compose). The old
+  // hardcoded 24 in both render arms played a 90-frame window at
+  // 3.75s under a 5.6s bar.
+  fps: z.number().description("Playback fps (Layer A — the project clock; rides the output container)").min(1).max(120).default(24).extra('extra', bag({ hidden: true })),
   steps: z.number().description("Steps").min(4).max(30).default(12).extra('extra', samplingExtra('steps', { tooltip: "12 for draft; 30 standard; a boarded distill lora applies its own steps (edit them on the lora entry)" })),
   // THE SECOND-PASS MASTER (2026-09-22, operator: "Second Pass also
   // needs an on/off switch, it is very unclear if it is on or off"):

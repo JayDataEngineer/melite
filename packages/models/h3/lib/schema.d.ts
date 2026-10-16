@@ -1,5 +1,5 @@
 import z from '@deepseek-ai/schemastery';
-import { normalizeDeclaredRefs } from './timelineContract.js';
+import { normalizeDeclaredRefs } from './timelineContract.ts';
 export declare const FAMILIES: readonly ["t4r", "t4_open", "t4_chain"];
 export type Family = (typeof FAMILIES)[number];
 export declare const wireList: typeof normalizeDeclaredRefs;
@@ -24,6 +24,7 @@ export declare const paramSchema: z<Schemastery.ObjectS<NoInfer<{
     width: z<number, number, "defined">;
     height: z<number, number, "defined">;
     length: z<number, number, "defined">;
+    fps: z<number, number, "defined">;
     steps: z<number, number, "defined">;
     second_pass_enabled: z<boolean, boolean, "defined">;
     sharpen_enabled: z<boolean, boolean, "defined">;
@@ -85,6 +86,7 @@ export declare const paramSchema: z<Schemastery.ObjectS<NoInfer<{
     width: z<number, number, "defined">;
     height: z<number, number, "defined">;
     length: z<number, number, "defined">;
+    fps: z<number, number, "defined">;
     steps: z<number, number, "defined">;
     second_pass_enabled: z<boolean, boolean, "defined">;
     sharpen_enabled: z<boolean, boolean, "defined">;
@@ -158,6 +160,7 @@ export declare const carrier: z<Schemastery.ObjectS<NoInfer<{
     width: z<number, number, "defined">;
     height: z<number, number, "defined">;
     length: z<number, number, "defined">;
+    fps: z<number, number, "defined">;
     steps: z<number, number, "defined">;
     second_pass_enabled: z<boolean, boolean, "defined">;
     sharpen_enabled: z<boolean, boolean, "defined">;
@@ -219,6 +222,7 @@ export declare const carrier: z<Schemastery.ObjectS<NoInfer<{
     width: z<number, number, "defined">;
     height: z<number, number, "defined">;
     length: z<number, number, "defined">;
+    fps: z<number, number, "defined">;
     steps: z<number, number, "defined">;
     second_pass_enabled: z<boolean, boolean, "defined">;
     sharpen_enabled: z<boolean, boolean, "defined">;

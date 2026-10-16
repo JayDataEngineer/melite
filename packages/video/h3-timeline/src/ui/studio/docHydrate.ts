@@ -173,6 +173,20 @@ export function hydrateLayerA(rawDoc: Record<string, unknown> | undefined): Laye
     sr_model: raw?.sr_model === "seedvr2_ema_3b_fp16.safetensors" || raw?.sr_model === "seedvr2_ema_3b_fp8_e4m3fn.safetensors"
       ? raw.sr_model : undefined,
     sr_resolution: optNum("sr_resolution"),
+    // THE ATTENTION BACKEND (2026-10-16: caught by the contract
+    // wall's new two-directional law — the pick had a schema row and
+    // a compose read but NO studio seat: a UI state the doc never
+    // carried, the same silent-drop class as the Second Pass switch)
+    attention_backend: raw?.attention_backend === "pytorch attention" || raw?.attention_backend === "comfy kitchen attention"
+      ? raw.attention_backend : undefined,
+    // THE SECOND-PASS MASTER + refine rider (2026-10-16: the switch
+    // had NO studio seat — the 10-15 cure walled the form component,
+    // never the saved doc, so ON never persisted and the post chain
+    // never fired). Absent = off, the family default.
+    second_pass_enabled: raw?.second_pass_enabled === true,
+    refine_lora: typeof raw?.refine_lora === "string" && raw.refine_lora !== "" ? raw.refine_lora : undefined,
+    refine_strength: optNum("refine_strength"),
+    refine_steps: optNum("refine_steps"),
     ref_image_size: raw?.ref_image_size === "match" || raw?.ref_image_size === "max" ? raw.ref_image_size : undefined,
     loras: Array.isArray(raw?.loras)
       ? (raw.loras as Array<Record<string, unknown>>)
@@ -250,10 +264,12 @@ const LAYERA_KEY_UNIVERSE: ReadonlySet<string> = new Set([
   "sla_sparsity", "sla_block_size", "sla_min_seq_len", "sla_dense_last_steps",
   "sla_reference_protection", "sla_dense_backend", "sla_dense_steps", "sla_enabled",
   "sla_protect_audio", "sla_stabilize_motion", "sla_disable_fp16_accum",
+  "attention_backend",
   "sharpen_enabled", "sharpen_method", "sharpen_strength",
   "sharpen_radius", "sharpen_threshold", "sharpen_iterations",
   "interpolate_enabled", "interp_model", "interp_multiplier",
   "sr_switch", "sr_model", "sr_resolution", "ref_image_size", "model", "audio_stem",
+  "second_pass_enabled", "refine_lora", "refine_strength", "refine_steps",
   "loras", "audio_clips", "ref_images", "ref_videos", "ref_audios", "ref_mods",
 ])
 
@@ -277,6 +293,7 @@ export function serializeLayerA(a: LayerA, base?: Record<string, unknown>): Reco
                    "sharpen_method", "sharpen_strength",
                    "sharpen_radius", "sharpen_threshold", "sharpen_iterations",
                    "interp_model", "interp_multiplier",
+                   "attention_backend",
                    "ref_image_size", "model", "audio_stem"] as const) {
     const v = (a as unknown as Record<string, unknown>)[k]
     if (v !== undefined && v !== "") out[k] = v
@@ -290,6 +307,18 @@ export function serializeLayerA(a: LayerA, base?: Record<string, unknown>): Reco
     out.sr_switch = true
     if (a.sr_model != null) out.sr_model = a.sr_model
     if (a.sr_resolution != null) out.sr_resolution = a.sr_resolution
+  }
+  // THE SECOND-PASS MASTER rides only when ON (absent = off — the
+  // family default false; the same ride law as sr_switch). The
+  // refine rider's keys ride when stated — the resolver reads them
+  // at the compose door and refuses unknown ids loud. Before this
+  // seat the switch never persisted from the studio at all: the
+  // post chain was unreachable from the panel (operator 2026-10-16).
+  if (a.second_pass_enabled === true) {
+    out.second_pass_enabled = true
+    if (a.refine_lora != null && a.refine_lora !== "") out.refine_lora = a.refine_lora
+    if (a.refine_strength != null) out.refine_strength = a.refine_strength
+    if (a.refine_steps != null) out.refine_steps = a.refine_steps
   }
   // THE SLA MASTER SWITCH rides only when OFF (absent = on — the
   // family default; a false is the real override compose reads).
