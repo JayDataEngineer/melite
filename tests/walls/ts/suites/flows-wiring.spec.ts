@@ -15,6 +15,7 @@
 // Run: npx vitest run tests/walls/ts/suites/flows-wiring.spec.ts
 
 import { assertHermeticRode } from "../../../helpers/hermetic-engine.ts";
+import { existsSync, readFileSync } from "node:fs";
 import "../../../helpers/boot-models.ts";
 import { describe, it, beforeAll } from "vitest";
 import assert from "node:assert/strict";
@@ -39,6 +40,73 @@ beforeAll(async (): Promise<void> => {
   const svc = new CardRegistryService(ctx);
   await svc.prime();
   cards = svc as unknown as CardRegistryLike;
+});
+
+describe("THE LEAF<->ROW INTERLOCK (flows wave-2: object-forge taught a dead remesh stage for a month under all-green suites)", () => {
+  // The row deleted its remesh stage 2026-10-13; the row tool's
+  // overlay, the leaf tool.json, AGENTS.md, and the SKILL kept
+  // teaching the three-stage chain + target_quads + card:quad-remesh
+  // + a dead repo path — and NO wall compared any of it. This
+  // interlock derives both faces and judges them against each
+  // other: the leaf describes exactly the row that runs.
+  const REPO: string = new URL("../../../../", import.meta.url).pathname;
+
+  it("every flow with a leaf: tool.json names <id_snake>_flow, models the registry id, carries only the row's own params, and names only the row's stage ids in overlays", () => {
+    const failures: string[] = [];
+    for (const name of SEED.names()) {
+      const row = SEED.get(name);
+      if (row === undefined) continue;
+      const stageIds = new Set(row.stages.map((st) => st.id));
+      // the row's OWN face first: overlays must target real stages
+      for (const ov of row.tool?.overlays ?? []) {
+        if (!stageIds.has(ov.stage)) {
+          failures.push(`${name}: registry tool overlays ${ov.param} -> stage '${ov.stage}' but the row carries no such stage (dead overlay teaching a deleted stage)`);
+        }
+      }
+      const leafDir = `${REPO}flows/${name}`;
+      const leafPath = `${leafDir}/tool.json`;
+      if (!existsSync(leafPath)) continue;
+      const leaf: {
+        name?: string; model?: string;
+        params_schema?: { properties?: Record<string, unknown>; required?: string[] };
+        description?: string;
+      } = JSON.parse(readFileSync(leafPath, "utf8"));
+      const snake = name.replace(/-/g, "_");
+      if (leaf.name !== `${snake}_flow`) failures.push(`${name}: leaf tool.json name '${leaf.name}' != '${snake}_flow'`);
+      if (leaf.model !== name) failures.push(`${name}: leaf tool.json model '${leaf.model}' != registry id`);
+      // THE PARAMS LAW, BY ROW FACE: a row WITH a tool judges the
+      // leaf's params against tool.properties; a tool:null row with
+      // declared initials judges against initialValidators (the
+      // leaf documents the flow's initial params — character-
+      // factory's photo/prompt); a tool:null row with NO initials
+      // (craft-loop) documents a NON-flow tool face the row's own
+      // description points at — the interlock asserts the pointer,
+      // never param equality it cannot derive.
+      if (row.tool !== null && row.tool !== undefined) {
+        const rowProps = new Set(Object.keys(row.tool.properties ?? {}));
+        for (const key of Object.keys(leaf.params_schema?.properties ?? {})) {
+          if (!rowProps.has(key)) failures.push(`${name}: leaf teaches param '${key}' the registry row does not carry (row deleted it)`);
+        }
+        const rowRequired = new Set(row.tool.required ?? []);
+        for (const key of leaf.params_schema?.required ?? []) {
+          if (!rowRequired.has(key)) failures.push(`${name}: leaf marks '${key}' required; the row does not`);
+        }
+      } else {
+        const initials = new Set([...Object.keys(row.initialValidators ?? {}), ...(row.requiredInitials ?? [])]);
+        if (initials.size > 0) {
+          for (const key of Object.keys(leaf.params_schema?.properties ?? {})) {
+            if (!initials.has(key)) failures.push(`${name}: leaf teaches param '${key}' the row's initials do not carry`);
+          }
+          for (const key of leaf.params_schema?.required ?? []) {
+            if (!initials.has(key)) failures.push(`${name}: leaf marks '${key}' required; the row's initials do not require it`);
+          }
+        } else if (!row.description.includes(`flows/${name}`)) {
+          failures.push(`${name}: tool:null row with no initials, and the description never points at the leaf that documents its face`);
+        }
+      }
+    }
+    assert.deepEqual(failures, []);
+  });
 });
 
 describe("the flow-registry wiring wall (the live door's own construction, over every registry flow)", () => {

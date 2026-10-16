@@ -8,7 +8,7 @@ CHARACTER_FACTORY) is the TEMPLATE, this leaf is the agent face.
 - **Route B is the chain** (operator ruling 2026-10-09: Route A
   closed, B/C blessed). The lift fills the frame with a clothed
   character; AI never estimates a naked body.
-- **Multi-stage serves at validate; start refuses multi-stage.**
+- **Multi-stage drives at start** (the curated-lane lift: named registry flows run multi-stage through the {flow:} door; the start refusal is hand-authored inline only). Stages also drive one card at a time for surgical re-takes.
   Agents drive one card at a time (`{model:}` door or the bench);
   the done-stage skip makes re-runs cheap (a done lift never
   re-executes).

@@ -14,7 +14,7 @@ user's cards tab; each run starts at the user's Run press.
 
 The compile gate rides the flow's own validate (`melite_construct`
 `validate` — verbatim refusals, zero GPU) before any Run press.
-Multi-stage serves at validate only — `start` refuses multi-stage
+Multi-stage drives at start (the curated-lane lift: named registry flows run multi-stage; the refusal is hand-authored inline only)
 explicitly, and that refusal is the contract, not a gap.
 
 ## Knobs

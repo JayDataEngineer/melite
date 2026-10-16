@@ -398,8 +398,9 @@ export const CHARACTER_FACTORY: RegistryFlow = {
     "chain, estate-native): img-to-mesh lift with the repair knobs ON, rig " +
     "auto (SOMA-77, BODY_TO_SOMAX's lane chained), kimodo text→motion " +
     "skinned onto the rigged mesh (somax bake in-graph). Multi-stage: " +
-    "serves at validate (start refuses multi-stage); agents drive the " +
-    "stages through the queue door, one card at a time — see " +
+    "named registry flows DRIVE at start (the curated-lane lift, " +
+    "runsRegistry's own law — the refusal is hand-authored inline " +
+    "only); stages also drive one card at a time — see " +
     "flows/character-factory/agents/AGENT.md. Creature motion rides the " +
     "MOTION phase instead (unimate dataset clip → rig copy bridge, " +
     "game-profile MCPs) — documented in the leaf, never a registry " +
@@ -491,9 +492,10 @@ export const OBJECT_FORGE: RegistryFlow = {
     name: "object_forge",
     version: 1,
     description:
-      "Generate a game-ready 3D object from one prompt line: concept render " +
-      "(z-image), image-to-mesh lift (trellis2-native), quad remesh to game " +
-      "topology. One POST runs the whole flow and returns both meshes.",
+      "Generate a 3D object from one prompt line: concept render " +
+      "(z-image), image-to-mesh lift (trellis2-native). One POST runs " +
+      "the whole flow and returns the textured mesh. (The remesh stage " +
+      "left 2026-10-13; quad topology is downstream work.)",
     properties: {
       prompt: {
         ptype: "string",
@@ -503,15 +505,6 @@ export const OBJECT_FORGE: RegistryFlow = {
         hasDefault: false,
         minimum: null,
         maximum: null,
-        enum: null,
-      },
-      target_quads: {
-        ptype: "integer",
-        description: "quad budget for the remesh stage",
-        default: 50000,
-        hasDefault: true,
-        minimum: 0,
-        maximum: 200000,
         enum: null,
       },
       image_model: {
@@ -532,7 +525,6 @@ export const OBJECT_FORGE: RegistryFlow = {
         path: ["model"],
         choices: { "z-image": "z-image", "krea-2": "krea-2" },
       },
-      { param: "target_quads", stage: "remesh", path: ["target_quads"], choices: null },
     ],
   },
   // ref would resolve null (the loadPlane null arm, never fired

@@ -1,9 +1,9 @@
 import { emitModifierKinds } from "@melite/comfyui-cordis";
 import type { ModelsService } from "@melite/comfyui-cordis";
-import type { CardRegistryService } from "./cardsRegistry.js";
-import type { FlowsSeat } from "./flowsData.js";
-import { toolBaseRows } from "./toolProjection.js";
-import type { FamilyModelsSeat } from "./flowsFamilyCompose.js";
+import type { CardRegistryService } from "./cardsRegistry.ts";
+import type { FlowsSeat } from "./flowsData.ts";
+import { toolBaseRows } from "./toolProjection.ts";
+import type { FamilyModelsSeat } from "./flowsFamilyCompose.ts";
 /** A card id → its package dir. The cardPackages rows are package
  *  NAMES ('@melite/<genre>-<card>'); the id is the row's tail past
  *  the genre prefix, which is NOT reparseable from the string alone

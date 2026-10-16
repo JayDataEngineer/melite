@@ -1,17 +1,29 @@
 {
-  "name": "craft_loop",
+  "name": "craft_loop_flow",
   "version": 1,
   "kind": "flow",
   "model": "craft-loop",
   "stage_title": "Craft Loop",
-  "description": "The agentic craft loop: act (any registered engine command — a comfyui graph or an mcp:blender tool call) -> capture (artifacts land in the run dir) -> critique (a named image-capable model route sees the capture itself) -> decide (done, or refine with the next act command). Bounded by max_iterations (default unlimited, hard cap 1000). Drive it by starting a run with an engine 'craft' stage: params carry agent_prompt (the brief), inputs.command (the first act: {engine, params}), optional model (the critic route id, when the loop card names one) and max_iterations.",
+  "description": "The agentic craft loop: act (any registered engine command \u2014 a comfyui graph or an mcp:blender tool call) -> capture (artifacts land in the run dir) -> critique (a named image-capable model route sees the capture itself) -> decide (done, or refine with the next act command). Bounded by max_iterations (default unlimited, hard cap 1000). Drive it by starting a run with an engine 'craft' stage: params carry agent_prompt (the brief), inputs.command (the first act: {engine, params}), optional model (the critic route id, when the loop card names one) and max_iterations.",
   "params_schema": {
     "type": "object",
     "properties": {
-      "agent_prompt": { "type": "string", "description": "The brief the critic holds the captures against." },
-      "inputs": { "type": "object", "description": "Generic input map; must carry command: {engine, params} — the first act." },
-      "model": { "type": "string", "description": "Optional critic route id (image-capable; the boot-resolved route serves otherwise)." },
-      "max_iterations": { "type": "integer", "description": "Optional iteration bound (default unlimited; hard cap 1000)." }
+      "agent_prompt": {
+        "type": "string",
+        "description": "The brief the critic holds the captures against."
+      },
+      "inputs": {
+        "type": "object",
+        "description": "Generic input map; must carry command: {engine, params} \u2014 the first act."
+      },
+      "model": {
+        "type": "string",
+        "description": "Optional critic route id (image-capable; the boot-resolved route serves otherwise)."
+      },
+      "max_iterations": {
+        "type": "integer",
+        "description": "Optional iteration bound (default unlimited; hard cap 1000)."
+      }
     }
   }
 }
