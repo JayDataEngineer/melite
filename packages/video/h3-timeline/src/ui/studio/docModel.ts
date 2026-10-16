@@ -15,7 +15,7 @@ import {
 import { DEFAULT_SEGMENT_PARAMS } from "@melite/contracts/timelineTypes"
 import { studioCopy } from "./studioCopy.ts"
 
-export { CALL_KNOB_KEYS, KNOB_ORDER, LEGACY_KNOB_KEY } from '@melite/models-h3/timelineContract'
+export { CALL_KNOB_KEYS, KNOB_ORDER, LEGACY_KNOB_KEY, SECOND_PASS_KNOBS } from '@melite/models-h3/timelineContract'
 export type { KnobKey } from '@melite/models-h3/timelineContract'
 
 // ── The document types (the builder SCHEMA's shapes, client-side) ─────────
@@ -413,9 +413,10 @@ export interface DocKeyframe {
 
 /** The fresh-card document: ONE window 0→90 — the t4_open draft
  * budget . The canvas IS the film: the readout shows
- * 3.8 s and 3.8 s renders. A user authoring a longer window gets it
- * ungated (the operator's order 2026-09-17) — the span-vs-engine
- * receipts live in the ledger, not in any gate. Used only when
+ * 3.8 s and 3.8 s renders. A user authoring a longer window rides
+ * the UNIFORM SPAN GATE (2026-09-25): writes snap to the grid and a
+ * reversed/crossed write refuses at the mutation seat — the
+ * starter's 0→90 survives because it is grid-exact. Used only when
  * params carry no valid calls (never authored, or legacy malformed). */
 export const STARTER_CALLS: DocCall[] = [
   {

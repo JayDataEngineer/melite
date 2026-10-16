@@ -430,6 +430,51 @@ describe("ONE CLOCK, BOTH ARMS (2026-10-16 — the single-call burn: 'it works w
       .filter((n) => /ImageToVideo|ReferenceToVideo/.test(n.class_type));
     expect(gens[0]!.inputs.length).toBe(90);
   });
+
+  // THE STATED-FAMILY BYPASS (calls-stanza audit #2, 2026-10-16): a
+  // doc stating variant verbatim skips the schema walk's ENTIRE
+  // shot-law sweep (every row/span law guards on variant ===
+  // undefined), and the film loop's old ef > sf guard then SILENTLY
+  // skipped assertSpanGrid and the length lift for a reversed span —
+  // the window rendered at the doc length with a span the manifest
+  // booked backwards. The loop's floor now refuses LOUD: a stated
+  // pair that does not advance never composes.
+  it("THE STATED-FAMILY BYPASS'S LOUD FLOOR: a reversed span under a stated variant refuses — never the silent skip", () => {
+    // 2+ calls rides the FILM LOOP (isFilm) — the arm whose old
+    // ef > sf guard silently skipped the span laws
+    expect(() => {
+      const g = new GraphBuilder();
+      instantiateAction(
+        film,
+        h3schema({
+          variant: "t4_open",
+          calls: [
+            { text: "a slow push in", start_frame: 0, end_frame: 90 },
+            { text: "the crowd turns", start_frame: 175, end_frame: 90 },
+          ],
+          loras: BAG, seed: 1,
+        }),
+        WINDOW_MODEL, g, "run_reversed_stated",
+      );
+    }).toThrow(/window 2: reversed span \(end_frame 90 <= start_frame 175\)/);
+    // the equal-span pole (an empty window) refuses under the same
+    // floor — the walk's own "reversed/empty" law, one voice
+    expect(() => {
+      const g = new GraphBuilder();
+      instantiateAction(
+        film,
+        h3schema({
+          variant: "t4_chain",
+          calls: [
+            { text: "a slow push in", start_frame: 0, end_frame: 90 },
+            { text: "the crowd turns", start_frame: 45, end_frame: 45 },
+          ],
+          loras: BAG, seed: 1,
+        }),
+        WINDOW_MODEL, g, "run_empty_stated",
+      );
+    }).toThrow(/window 2: reversed span \(end_frame 45 <= start_frame 45\)/);
+  });
 });
 
 describe("the refmod seat (audit 010/R1, 2026-10-18)", () => {

@@ -10,7 +10,7 @@ import { useState } from "react"
 import { OverlayKnob, SectionLabel, SpecAtom, Tip, fetchMediaLibrary, isImageUrl } from '@melite/card-base/client'
 import { cn } from '@melite/card-base/client'
 import s from "./studio.module.css"
-import { trackColor,  GUIDE_KINDS, KNOB_ORDER, VIDEO_TIMELINE_TRACKS } from "./docModel.ts"
+import { trackColor,  GUIDE_KINDS, KNOB_ORDER, SECOND_PASS_KNOBS, VIDEO_TIMELINE_TRACKS } from "./docModel.ts"
 import type { ReactNode } from "react"
 import type { DocCall } from "./docModel.ts"
 import type { GuideKind } from "./docModel.ts"
@@ -863,17 +863,27 @@ export function CallCard({
       ) : null}
     >
       <div className={s.knobGrid}>
-        {KNOB_ORDER.map((knob) => (
-          <OverlayKnob
-            key={knob}
-            name={knob}
-            field={knobFields[knob]}
-            value={c.knobs?.[knob]}
-            base={(layerA as unknown as Record<string, unknown> | undefined)?.[knob]}
-            ariaLabel={studioCopy.callKnobAria(i, knob)}
-            onEdit={(v) => setCallKnob(i, knob, v)}
-          />
-        ))}
+        {KNOB_ORDER.map((knob) => {
+          // THE MASTER-GATED NINE (calls-stanza audit #3, 2026-10-16):
+          // sharpen_*/interp_* read ONLY inside the post chain, whose
+          // only door is the DOC-level second_pass_enabled master — a
+          // switch the call plane cannot state. Offered with the
+          // master off, they sold dead knobs: stated, seen by no
+          // node, silent. The rows ride only when the master opens
+          // the chain (SECOND_PASS_KNOBS, the compose's own law).
+          if (SECOND_PASS_KNOBS.has(knob) && (layerA as { second_pass_enabled?: boolean } | undefined)?.second_pass_enabled !== true) return null
+          return (
+            <OverlayKnob
+              key={knob}
+              name={knob}
+              field={knobFields[knob]}
+              value={c.knobs?.[knob]}
+              base={(layerA as unknown as Record<string, unknown> | undefined)?.[knob]}
+              ariaLabel={studioCopy.callKnobAria(i, knob)}
+              onEdit={(v) => setCallKnob(i, knob, v)}
+            />
+          )
+        })}
       </div>
     </DisclosureRow>
   </div>

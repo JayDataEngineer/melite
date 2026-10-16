@@ -123,6 +123,32 @@ describe("focus + header", () => {
     assert.ok(screen.getByText("2 knobs"))
     two.unmount()
   })
+
+  // THE MASTER-GATED NINE (calls-stanza audit #3, 2026-10-16):
+  // sharpen_*/interp_* read ONLY inside the post chain, whose only
+  // door is the DOC-level second_pass_enabled master — a switch the
+  // call plane cannot state. Offered with the master off (the
+  // default), they sold dead knobs: stated, seen by no node, silent.
+  // The fold gates its rows on the master.
+  it("THE MASTER-GATED NINE: the fold never offers a dead post-chain knob (master off) — and offers all nine when the master opens the chain", async () => {
+    const openFold = (): void => { fireEvent.click(screen.getByText("Call knobs")) }
+    // master OFF (the default): the nine are absent from the fold
+    const off = render(<CallCard c={BASE} i={0} deps={deps().d} />)
+    openFold()
+    assert.equal(screen.queryByLabelText("Call 0 knob: sharpen_strength"), null,
+      "a post-chain knob is never offered with the master off")
+    assert.equal(screen.queryByLabelText("Call 0 knob: interp_model"), null,
+      "the interp knobs ride the same master")
+    assert.ok(screen.getByLabelText("Call 0 knob: denoise"), "the ungated knobs still ride")
+    off.unmount()
+    // master ON: all nine ride
+    const on = render(<CallCard c={BASE} i={0} deps={deps({ layerA: { fps: 24, second_pass_enabled: true } }).d} />)
+    openFold()
+    for (const knob of ["sharpen_enabled", "sharpen_method", "sharpen_strength", "sharpen_radius", "sharpen_threshold", "sharpen_iterations", "interpolate_enabled", "interp_model", "interp_multiplier"]) {
+      assert.ok(screen.getByLabelText(`Call 0 knob: ${knob}`), `${knob} rides when the master opens the chain`)
+    }
+    on.unmount()
+  })
 })
 
 describe("span + guides", () => {

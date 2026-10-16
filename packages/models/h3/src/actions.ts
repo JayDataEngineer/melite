@@ -471,6 +471,19 @@ function renderH3Film(
       : call.refs
     if (guide !== '') stanza.image = guide
     else delete stanza.image
+    // THE STATED-FAMILY BYPASS'S LOUD FLOOR (calls-stanza audit #2,
+    // 2026-10-16): a doc stating variant verbatim skips the walk's
+    // whole shot-law sweep (schema.ts guards every row/span law on
+    // variant === undefined) — the agent plane can state a family
+    // and hand a reversed span past it. The old guard (ef > sf)
+    // SILENTLY SKIPPED assertSpanGrid and the length lift for
+    // exactly that shape: the window rendered at the doc length with
+    // a span the manifest booked backwards. A stated pair that does
+    // not advance refuses LOUD here — the walk's own law, stated at
+    // the loop's floor, on the path the walk cannot see.
+    if (sf !== null && ef !== null && ef <= sf) {
+      throw new Error(`h3-timeline window ${k}: reversed span (end_frame ${String(ef)} <= start_frame ${String(sf)}) — a stated family bypasses the walk's span laws, never the compose's`)
+    }
     if (sf !== null && ef !== null && ef > sf) {
       // THE UNIFORM SPAN GATE, second door: a stale or hand-built
       // document re-rides the same law the walk admitted under, so

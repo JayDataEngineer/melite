@@ -2892,6 +2892,23 @@ window.__ModuleLoader__.load({
 			"length"
 		];
 		const CALL_KNOB_KEYS = new Set(KNOB_ORDER);
+		/** The master-gated nine (calls-stanza audit #3, 2026-10-16): these
+		*  knobs' ONLY read seats live inside the post chain, whose only
+		*  door is the DOC-level second_pass_enabled master — a switch the
+		*  call plane cannot state. With the master off (the default) a
+		*  per-call pin here composes to nothing, silently; the UI fold
+		*  gates its rows on this set so a dead knob is never offered. */
+		const SECOND_PASS_KNOBS = /* @__PURE__ */ new Set([
+			"sharpen_enabled",
+			"sharpen_method",
+			"sharpen_strength",
+			"sharpen_radius",
+			"sharpen_threshold",
+			"sharpen_iterations",
+			"interpolate_enabled",
+			"interp_model",
+			"interp_multiplier"
+		]);
 		const LEGACY_KNOB_KEY = {
 			sampling_steps: "steps",
 			sampler: "sampler_name",
@@ -3438,9 +3455,10 @@ window.__ModuleLoader__.load({
 		const GUIDE_KINDS = ["image"];
 		/** The fresh-card document: ONE window 0→90 — the t4_open draft
 		* budget . The canvas IS the film: the readout shows
-		* 3.8 s and 3.8 s renders. A user authoring a longer window gets it
-		* ungated (the operator's order 2026-09-17) — the span-vs-engine
-		* receipts live in the ledger, not in any gate. Used only when
+		* 3.8 s and 3.8 s renders. A user authoring a longer window rides
+		* the UNIFORM SPAN GATE (2026-09-25): writes snap to the grid and a
+		* reversed/crossed write refuses at the mutation seat — the
+		* starter's 0→90 survives because it is grid-exact. Used only when
 		* params carry no valid calls (never authored, or legacy malformed). */
 		const STARTER_CALLS = [{
 			text: "A single shot — describe the action, camera, and mood.",
@@ -4887,14 +4905,17 @@ window.__ModuleLoader__.load({
 						}) : null,
 						children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
 							className: studio_module_css_default.knobGrid,
-							children: KNOB_ORDER.map((knob) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.OverlayKnob, {
-								name: knob,
-								field: knobFields[knob],
-								value: c.knobs?.[knob],
-								base: layerA?.[knob],
-								ariaLabel: studioCopy.callKnobAria(i, knob),
-								onEdit: (v) => setCallKnob(i, knob, v)
-							}, knob))
+							children: KNOB_ORDER.map((knob) => {
+								if (SECOND_PASS_KNOBS.has(knob) && layerA?.second_pass_enabled !== true) return null;
+								return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.OverlayKnob, {
+									name: knob,
+									field: knobFields[knob],
+									value: c.knobs?.[knob],
+									base: layerA?.[knob],
+									ariaLabel: studioCopy.callKnobAria(i, knob),
+									onEdit: (v) => setCallKnob(i, knob, v)
+								}, knob);
+							})
 						})
 					})
 				]

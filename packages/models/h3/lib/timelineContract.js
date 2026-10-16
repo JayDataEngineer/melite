@@ -263,6 +263,17 @@ export const KNOB_ORDER = [
     'length',
 ];
 export const CALL_KNOB_KEYS = new Set(KNOB_ORDER);
+/** The master-gated nine (calls-stanza audit #3, 2026-10-16): these
+ *  knobs' ONLY read seats live inside the post chain, whose only
+ *  door is the DOC-level second_pass_enabled master — a switch the
+ *  call plane cannot state. With the master off (the default) a
+ *  per-call pin here composes to nothing, silently; the UI fold
+ *  gates its rows on this set so a dead knob is never offered. */
+export const SECOND_PASS_KNOBS = new Set([
+    'sharpen_enabled', 'sharpen_method', 'sharpen_strength',
+    'sharpen_radius', 'sharpen_threshold', 'sharpen_iterations',
+    'interpolate_enabled', 'interp_model', 'interp_multiplier',
+]);
 /** The per-call vocabulary the schema's call walk admits. `clip` and
  *  `audio` LEFT THIS SET (2026-10-16, audit 3f0b7c1a ui-truth-gap
  *  #3): no compose arm reads either — a per-call clip or audio guide
