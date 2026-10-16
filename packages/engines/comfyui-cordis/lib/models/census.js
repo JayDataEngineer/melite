@@ -65,25 +65,32 @@ export const modelsCensusGate = {
         // the gate is engine-internal: it narrows the plugin face to the
         // concrete registry it owns (familyCount, the contracts walk).
         const svc = ctx.models;
-        try {
-            await censusPass(ctx, svc);
-        }
-        catch (err) {
-            // the boot refusal crosses the settle — never a hang
-            failModelsSeat(err);
-            throw err;
-        }
+        // THE TEARDOWN CONTRACT REGISTERS BEFORE THE BOOT CENSUS (audit
+        // #5, 2026-11-06): whenModelsArmed resolves inside censusPass's
+        // arm step, so a consumer settling the gate right after can
+        // dispose it BEFORE any post-await registration ran — the
+        // disposer would never land and the process seat would leak
+        // armed past the composition's death (the toggle-out wall
+        // catches the leak). Everything below the settle registers
+        // synchronously first; the boot census awaits last.
+        //
         // live changes: re-census on family-fiber transitions (mount,
-        // unmount, failure). One microtask coalesces the per-family
-        // burst a config reload produces. After the gate's own dispose
-        // (disarmed) the listener no-ops — teardown disposals are not
-        // composition events.
+        // unmount, failure). TWO windows coalesce the per-family burst
+        // a config reload produces: the microtask queue (legs arriving
+        // in the same tick) and the in-flight pass itself — a pass
+        // reads the registry live, so legs landing while it runs are
+        // subsumed by it, never re-censused (audit #5, 2026-11-06: a
+        // single dispose's two legs straddled the first pass's own
+        // awaits and spoke the refusal twice). After the gate's own
+        // dispose (disarmed) the listener no-ops — teardown disposals
+        // are not composition events.
         let armed = true;
         let scheduled = false;
+        let inFlight = null;
         ctx.on("internal/status", (fiber) => {
             if (!armed || !fiber.name.startsWith(FAMILY_PREFIX))
                 return;
-            if (scheduled)
+            if (scheduled || inFlight !== null)
                 return;
             scheduled = true;
             void Promise.resolve().then(() => {
@@ -91,10 +98,15 @@ export const modelsCensusGate = {
                 // A refusal here is a live-add defect, not a boot defect:
                 // log it loud and keep the last-good arm — the failed fiber
                 // shows in the Loader's diagnostics; the walls pin the
-                // healthy path.
-                censusPass(ctx, svc).catch((err) => {
+                // healthy path, the refusal voice, the coalesced burst, and
+                // the post-dispose no-op (models-composition.spec, audit #5).
+                inFlight = censusPass(ctx, svc)
+                    .catch((err) => {
                     ctx.logger.error(new ModelError("models census re-check refused after a family-fiber change — the table stands at its last-good arm: " +
                         String(err instanceof Error ? err.message : err)));
+                })
+                    .finally(() => {
+                    inFlight = null;
                 });
             });
         });
@@ -104,6 +116,14 @@ export const modelsCensusGate = {
                 disarmModelsSeat(svc);
             };
         });
+        try {
+            await censusPass(ctx, svc);
+        }
+        catch (err) {
+            // the boot refusal crosses the settle — never a hang
+            failModelsSeat(err);
+            throw err;
+        }
     },
 };
 //# sourceMappingURL=census.js.map

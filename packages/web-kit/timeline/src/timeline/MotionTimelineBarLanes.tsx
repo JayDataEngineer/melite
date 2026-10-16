@@ -450,6 +450,21 @@ export function TimelineAudioLanes(props: TimelineAudioLanesProps) {
           className={css.audioLane}
           style={{ height: audioClipCards ? AUDIO_CARDS_H : AUDIO_H, background: "color-mix(in srgb, var(--dsw-alias-state-business-primary) 3%, transparent)" }}
           onDragOver={(e) => e.preventDefault()}
+          // (h3-submenu M11, 2026-11-06) the lane door is one of the
+          // law's two nav doors and was pointer-only: no role, no tab
+          // stop, no key verb — a keyboard user could not open the
+          // audio submenu at all. The row carries the button face and
+          // Enter/Space rides the SAME guard as the click (focus on
+          // the row itself never sits inside a clip).
+          role={onAudioLaneActivate ? "button" : undefined}
+          tabIndex={onAudioLaneActivate ? 0 : undefined}
+          aria-label={onAudioLaneActivate ? L.label : undefined}
+          onKeyDown={onAudioLaneActivate ? (e) => {
+            if (e.key !== "Enter" && e.key !== " ") return
+            e.preventDefault()
+            e.stopPropagation()
+            onAudioLaneActivate(L.id)
+          } : undefined}
           onClick={(e) => {
             // the submenu law: the LANE is the door — a click that
             // did not land on a clip (or its hover ×) opens the

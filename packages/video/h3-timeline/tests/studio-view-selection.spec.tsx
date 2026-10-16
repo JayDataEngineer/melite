@@ -1,10 +1,11 @@
 /**
  * useViewSelection — bar↔sidebar selection (BEHAVIORAL).
  *
- * PINS: clip-id routing (call-N → the card, beat-i-j → the segment,
- * null → global params, junk → cleared), the frame seam, and the
- * scroll/seek gestures (missing refs never throw; seek selects the
- * containing call).
+ * PINS: clip-id routing (call-N → the card; a beat id has no
+ * producer and is a no-op — the beat plane left the bar), null →
+ * global params AND exits any open submenu, junk → cleared, the
+ * frame seam, and the sub seat's own verbs (enter/exit/replace —
+ * the h3-submenu audit M1/M2/M4, 2026-11-06).
  */
 import { describe, expect, it } from "vitest"
 import assert from "node:assert/strict"
@@ -124,6 +125,64 @@ describe("THE CLOCK DEFAULT'S NULL ARM + the submenu verbs (the missing-tests au
     assert.equal(result.current.selected, null)
     act(() => { result.current.exitKfView() })
     assert.equal(result.current.sub, null)
+    assert.equal(result.current.kfView, false)
+  })
+})
+
+describe("the sub seat directly (the h3-submenu audit M1/M2/M4, 2026-11-06)", () => {
+  // The hook is the truth home of the seat; the component arms ride
+  // the doors. These arms drive the seat verbs themselves.
+  it("enterSub seats the view and clears the focus; exitSub empties it (M1)", () => {
+    const { result } = harness()
+    act(() => { result.current.handleTimelineSelect("call-1") })
+    act(() => { result.current.enterSub("audio") })
+    assert.equal(result.current.sub, "audio")
+    assert.equal(result.current.selected, null, "seating a submenu clears the call focus")
+    act(() => { result.current.exitSub() })
+    assert.equal(result.current.sub, null)
+    assert.equal(result.current.kfView, false, "exitSub also retires the compat seat")
+  })
+
+  it("a second submenu REPLACES the first — the rail is one view, never two (M4)", () => {
+    const { result } = harness()
+    act(() => { result.current.enterSub("audio") })
+    act(() => { result.current.enterSub("keyframes") })
+    assert.equal(result.current.sub, "keyframes", "the later door wins")
+    assert.notEqual(result.current.sub, "audio")
+    act(() => { result.current.enterSub("audio") })
+    assert.equal(result.current.sub, "audio", "the law holds in the other direction")
+  })
+
+  it("a click-away (null select) EXITS an open submenu (M2)", () => {
+    const { result } = harness()
+    act(() => { result.current.enterSub("audio") })
+    act(() => { result.current.handleTimelineSelect(null) })
+    assert.equal(result.current.sub, null, "the empty-timeline click leaves the audio view, not only the focus")
+  })
+
+  it("a stage re-seat clears an open submenu (M3, the seat's own door — renderHook rerender; the component arm is a filed debt below)", () => {
+    // THE COMPONENT-LEVEL TWIN IS A FILED DEBT (h3-submenu ledger,
+    // 2026-11-06): rerendering the mounted studio while sub ===
+    // "audio" spins the tree past any budget under the dom
+    // environment (receipts in the ledger — studio renders stop at
+    // #29, bar at #32, a click + SAME-stage rerender hangs while a
+    // no-click rerender is green). The hook owns the law; this arm
+    // walls it at the seat's own door.
+    const CALLS_B: DocCall[] = [{ text: "z", start_frame: 0, end_frame: 24 }]
+    const hook = renderHook(({ sid }) => useViewSelection(CALLS_B, hydrateLayerA({ fps: 24 }), sid), { initialProps: { sid: "s_4" } })
+    act(() => { hook.result.current.enterSub("audio") })
+    assert.equal(hook.result.current.sub, "audio")
+    hook.rerender({ sid: "s_9" })
+    assert.equal(hook.result.current.sub, null, "the new stage's rail carries no open submenu")
+    assert.equal(hook.result.current.selected, null)
+  })
+
+  it("the compat seats mirror the seat: kfView is (sub === keyframes), exactly (M1 parity)", () => {
+    const { result } = harness()
+    assert.equal(result.current.kfView, false)
+    act(() => { result.current.enterSub("keyframes") })
+    assert.equal(result.current.kfView, true, "the compat seat derives from the seat")
+    act(() => { result.current.exitSub() })
     assert.equal(result.current.kfView, false)
   })
 })

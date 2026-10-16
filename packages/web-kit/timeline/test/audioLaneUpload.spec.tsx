@@ -107,3 +107,57 @@ describe("the lane gutter's add door (opt-in)", () => {
     expect(anchor).toBe(btn)
   })
 })
+
+describe("the lane ACTIVATE door (the submenu seam's opt-in — h3-submenu M8/M11, 2026-11-06)", () => {
+  // The tenant contract: onAudioLaneActivate?(layerId) — absent, the
+  // kit consumes lane clicks as inert no-ops and the row renders
+  // byte-identical; present, the row carries a keyboard-operable
+  // button face (role + tab stop + the lane's own name) and Enter/
+  // Space ride the same door with the lane's id.
+  it("absent onAudioLaneActivate — a lane click is an inert no-op, the row carries no button face (M8)", () => {
+    render(bar([{ id: "music", label: "Music" }]))
+    const row = document.querySelector('[data-audio-layer="music"]') as HTMLElement
+    expect(row).not.toBeNull()
+    expect(row.getAttribute("role")).toBeNull()
+    expect(row.getAttribute("tabIndex")).toBeNull()
+    expect(() => fireEvent.click(row)).not.toThrow()
+  })
+
+  it("present — the row is a named button and Enter/Space open the door with the lane's own id (M11)", () => {
+    const activate = vi.fn()
+    render(h(MotionTimelineBar, {
+      prompts: [],
+      keyframes: [],
+      frameIdx: 0,
+      totalFrames: 96,
+      fps: 24,
+      audioLayers: [{ id: "music", label: "Music" }],
+      onAudioLaneActivate: activate,
+      onFrameChange: noop,
+      onKeyframeAdd: () => "kf",
+      onKeyframeMove: noop,
+      onKeyframeDelete: noop,
+      onPromptUpdate: noop,
+      onPromptMove: noop,
+    } as never))
+    const row = document.querySelector('[data-audio-layer="music"]') as HTMLElement
+    expect(row.getAttribute("role")).toBe("button")
+    expect(row.getAttribute("tabIndex")).toBe("0")
+    expect(row.getAttribute("aria-label")).toBe("Music")
+    fireEvent.keyDown(row, { key: "Enter" })
+    expect(activate).toHaveBeenCalledTimes(1)
+    expect(activate).toHaveBeenCalledWith("music")
+    fireEvent.keyDown(row, { key: " " })
+    expect(activate).toHaveBeenCalledTimes(2)
+    // a key that is neither Enter nor Space never opens the door
+    fireEvent.keyDown(row, { key: "a" })
+    expect(activate).toHaveBeenCalledTimes(2)
+    // the CLICK path rides the same payload: the lane's own id, not
+    // its label, an event object, or a foreign id (M9/W1's kit half —
+    // the tenant half deep-equals ["music"] at the strip)
+    activate.mockClear()
+    fireEvent.click(row)
+    expect(activate).toHaveBeenCalledTimes(1)
+    expect(activate).toHaveBeenCalledWith("music")
+  })
+})

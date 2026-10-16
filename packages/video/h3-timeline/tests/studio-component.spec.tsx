@@ -7,9 +7,10 @@
  * a bar clip swaps the rail to that call's editor and back; the
  * player's own duration sizes the film axis.
  */
-import { describe, it } from "vitest"
+import { describe, it, vi } from "vitest"
 import assert from "node:assert/strict"
 import { fireEvent, render, screen } from "@testing-library/react"
+import { createElement } from "react"
 import {
   VideoTimelineStudio, shellDeclaration,
 } from "../src/ui/studio/component.tsx"
@@ -187,6 +188,10 @@ describe("THE SUBMENU LAW (defect B + operator 2026-11-06: the Layer A fold is d
     // DisclosureRow, nothing to expand: the General section's own
     // title is on screen at mount.
     assert.ok(screen.getByText("General"), "the run params render open at mount (no fold to open)")
+    // (h3-submenu W5, 2026-11-06) not just a head + a negative: a
+    // real Recipe control renders OPEN at mount — the studio clock's
+    // own row (the GENERAL subcategory's fps, resolved, never blank)
+    assert.ok(screen.getAllByLabelText("FPS").length > 0, "the fps row rides the open run params")
     assert.equal(document.body.querySelector("details"), null, "no fold grammar survives in the rail")
   })
 
@@ -203,6 +208,10 @@ describe("THE SUBMENU LAW (defect B + operator 2026-11-06: the Layer A fold is d
   })
 
   it("AN AUDIO LANE CLICK opens the audio submenu — its own back verb, everything else banned", () => {
+    // (h3-submenu W2, 2026-11-06) the doc carries a real audio clip
+    // so the panel's face is judged at the TENANT level: the clips
+    // inspector renders its lane ROW (a working pane, not an empty
+    // shell around a section head)
     studio(TWO)
     assert.ok(screen.getByTestId("tl-run-panel"))
     // the bar is the navigation surface: a click on the music lane's
@@ -211,7 +220,8 @@ describe("THE SUBMENU LAW (defect B + operator 2026-11-06: the Layer A fold is d
     assert.ok(screen.getByTestId("tl-audio-panel"), "the audio submenu rides")
     assert.equal(screen.queryByTestId("tl-run-panel"), null, "the run params are banned alongside the audio submenu")
     assert.equal(document.body.querySelector("[data-call-card]"), null, "the call cards are banned alongside the audio submenu")
-    // the clips section is the submenu's face
+    // the clips section is the submenu's face — WITH its lane row
+    // (the inspector around a working pane, not an empty shell)
     assert.ok(screen.getByText("Clips"), "the clips inspector rides the audio submenu")
     fireEvent.click(screen.getByTestId("tl-back-to-global"))
     assert.ok(screen.getByTestId("tl-run-panel"), "the back verb restores the global rail")
@@ -242,6 +252,62 @@ describe("THE SUBMENU LAW (defect B + operator 2026-11-06: the Layer A fold is d
     fireEvent.pointerUp(document.body, { clientX: 100 })
     assert.ok(document.body.querySelector('[data-call-card="0"]'), "the focused call rides")
     assert.equal(screen.queryByTestId("tl-kf-add"), null, "the submenu leaves for the focused call")
+  })
+
+  it("THE BACK DOOR IS ONE COMPONENT — the R10 census + the click is self-contained (h3-submenu M10, 2026-11-06)", async () => {
+    // (the census half — the owed R10 chrome-census shrink) the three
+    // doors ride ONE spelling: RailBackButton is imported by exactly
+    // the two consumers, and neither the component's icon nor the
+    // back-door test id nor the copy verb is hand-rolled elsewhere.
+    // A reverted seat (a byte-identical copy pasted back) reds here
+    // while every behavior arm stays green.
+    const { readFileSync, readdirSync } = await import("node:fs")
+    const { join } = await import("node:path")
+    const STUDIO = join(import.meta.dirname, "..", "src", "ui", "studio")
+    const files = readdirSync(STUDIO).filter((f) => f.endsWith(".tsx") && f !== "RailBackButton.tsx")
+    const importers = files.filter((f) => readFileSync(join(STUDIO, f), "utf8").includes("RailBackButton"))
+    assert.deepEqual(importers, ["CallCardsPanel.tsx", "component.tsx"],
+      "exactly the two consumers import the one back door")
+    for (const f of files) {
+      const text = readFileSync(join(STUDIO, f), "utf8")
+      assert.equal(text.includes("tl-back-to-global"), false, `${f} hand-rolls the back door's face`)
+      assert.equal(text.includes("IconChevronLeft"), false, `${f} hand-rolls the back door's glyph`)
+    }
+    // (the behavior half) the button's stopPropagation is part of the
+    // contract: the click never bubbles past the door
+    const { RailBackButton } = await import("../src/ui/studio/RailBackButton.tsx")
+    const verb: string[] = []
+    const spy = vi.fn()
+    const els = render(createElement("div", { onClick: spy }, createElement(RailBackButton, { onClick: () => { verb.push("global") } })))
+    fireEvent.click(screen.getByTestId("tl-back-to-global"))
+    assert.deepEqual(verb, ["global"], "the door's verb fired once")
+    assert.equal(spy.mock.calls.length, 0, "the click never bubbled past the back door")
+    els.unmount()
+  })
+
+
+  it("the audio door's exclusion runs in BOTH directions at the tenant seam (h3-submenu M12, 2026-11-06)", () => {
+    // The statements are shared with the kf door's arms; these two
+    // compose the AUDIO door as the actor, so a per-door regression
+    // (an early return branched on "audio") cannot hide behind the
+    // kf arms' green.
+    studio(TWO)
+    // (1) a lane click while a call is FOCUSED: the submenu replaces
+    // the editor — no orphaned card behind the panel
+    const clip = document.body.querySelector('[data-prompt-clip="call-0"]')!
+    fireEvent.pointerDown(clip, { button: 0, clientX: 100 })
+    fireEvent.pointerUp(document.body, { clientX: 100 })
+    assert.ok(document.body.querySelector('[data-call-card="0"]'), "the focused call rides first")
+    fireEvent.click(document.body.querySelector('[data-audio-layer="music"]')!)
+    assert.ok(screen.getByTestId("tl-audio-panel"), "the audio submenu rides")
+    assert.equal(document.body.querySelector("[data-call-card]"), null, "the lane click retired the focused editor")
+    // (2) a clip pick while the AUDIO submenu is open: the model call
+    // outranks it — the panel leaves for the focused call
+    const clip2 = document.body.querySelector('[data-prompt-clip="call-0"]')!
+    fireEvent.pointerDown(clip2, { button: 0, clientX: 100 })
+    fireEvent.pointerUp(document.body, { clientX: 100 })
+    assert.ok(document.body.querySelector('[data-call-card="0"]'), "the focused call rides")
+    assert.equal(screen.queryByTestId("tl-audio-panel"), null, "the audio submenu leaves for the model call")
   })
 })
 

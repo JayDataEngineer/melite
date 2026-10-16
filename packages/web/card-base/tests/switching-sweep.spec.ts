@@ -294,6 +294,30 @@ describe('THE SWITCHING SWEEP — every real family × every switch (the core-fe
     }
   })
 
+  // (reseat-chrome M4, 2026-11-06) THE LYING-DECL CONTRACT: a
+  // Variant-row pick whose own declared default sits OUTSIDE its own
+  // envelope lands the stamp VERBATIM (trustStamps — the gate's to
+  // refuse live), never silently clamped. Over every honest real
+  // DECL clamp(v) === v, so the declared-defaults arm above cannot
+  // distinguish trustStamps true from false — this synthetic cell
+  // can, and the same row as a Recipe pick still clamps.
+  test('a lying Variant DECL lands verbatim and the gate refuses it; the same stamp as a Recipe pick clamps', () => {
+    const liar: FormVariantRow = {
+      id: 'liar', label: 'liar', group: 'Variant', defaults: { cfg: 9 }, route: 'm',
+      sampler_envelope: { cfg: [1, 2], steps: [4, 8] },
+    }
+    const spec: FormSpecDoc = { form: 'x', model: 'm', variants: [liar] } as unknown as FormSpecDoc
+    const patch = axisPickPatch(spec, liar, { model: 'm' })
+    expect(patch.cfg, 'the variant pick is the law-holder: its own stamp rides VERBATIM').toBe(9)
+    const refusal = composeValidate(spec, composeCandidateDoc({}, { model: 'm', variant: 'liar', ...patch }, {}))
+    expect(refusal.length, 'the compose gate refuses the lying doc — the cure never silently clamps a variant\'s own declaration').toBe(1)
+    expect(JSON.stringify(refusal[0]), 'the offence is the envelope voice (the structured SamplerEnvelopeOffence)').toMatch(/envelope|cfg/i)
+    const recipeRow: FormVariantRow = { ...liar, group: 'Recipe', id: 'r-liar' }
+    const spec2: FormSpecDoc = { form: 'x', model: 'm', variants: [liar, recipeRow] } as unknown as FormSpecDoc
+    const patch2 = axisPickPatch(spec2, recipeRow, { model: 'm', variant: 'liar' })
+    expect(patch2.cfg, 'a cross-row (Recipe) stamp clamps through the variant\'s envelope').toBe(2)
+  })
+
   test('every variant pick composes clean from every sibling\'s held knobs (the reconcile law)', () => {
     for (const decl of FAMILIES) {
       const spec = servedSpec(decl)

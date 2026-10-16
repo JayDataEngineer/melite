@@ -159,6 +159,7 @@ function useModsListing(): readonly string[] {
 // ── The tenant ─────────────────────────────────────────────────────────────
 
 export function VideoTimelineStudio(owner: StageViewOwnerProps) {
+
   // The owner currency, projected once at the boundary (the locals
   // below keep their names — every hook block underneath is verbatim).
   const { stage, upstreams } = projectH3StageViewProps(owner)

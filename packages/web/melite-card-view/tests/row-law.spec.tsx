@@ -241,7 +241,7 @@ describe("the row error face (the failure description under the card)", () => {
     expect(within(wrap).getAllByRole("button")).toHaveLength(2)
   });
 
-  test("a changed refusal re-voices; clean and vanished rows re-arm the same words", async () => {
+  test("a CHANGED refusal re-voices through the silence; a vanished row retires its own entry only for ITS text", async () => {
     stubErrorDraftDoc()
     render(h(FlowCards, { block: flowBlock("draft-1") }))
     const row = await screen.findByText("s_1", {}, { timeout: 4000 })
@@ -261,10 +261,35 @@ describe("the row error face (the failure description under the card)", () => {
     active?.setDraftDoc({ stages: [{ id: "s_0", card: "image-gen", params: {} }] })
     await refreshViaDrill()
     await waitFor(() => { expect(screen.queryByText("s_1")).toBeNull() }, { timeout: 4000 })
-    // the same words voice again on return (no stale silence anywhere)
+    // a DIFFERENT text voices on return (the entry was per-text all along;
+    // the same-words vanish law is the M2 arm below)
     active?.setDraftDoc({ stages: errorDoc() })
     await refreshViaDrill("s_0")
     const row3 = await screen.findByText("s_1", {}, { timeout: 4000 })
     expect(within(row3.closest("button")!.parentElement as HTMLElement).getByRole("alert").textContent ?? "").toContain("stage blew up")
+  })
+
+  test("THE VANISH BRANCH'S OWN FIRING ARM (audit-followups M2, 2026-11-06): a stage removed while silenced, re-added failing with the SAME words, re-voices", async () => {
+    // The prune's vanish half (FlowCards' row === undefined tail):
+    // the row leaves the doc ENTIRELY while its silence entry sits.
+    // Deleting that branch reds nothing else — the F1 arm rides the
+    // clean-while-mounted half; the arm above restores a DIFFERENT
+    // text. Only this arm demands the vanish tail prunes the entry.
+    stubErrorDraftDoc()
+    render(h(FlowCards, { block: flowBlock("draft-1") }))
+    const row = await screen.findByText("s_1", {}, { timeout: 4000 })
+    fireEvent.click(within(row.closest("button")!.parentElement as HTMLElement).getByRole("button", { name: "Dismiss error" }))
+    await waitFor(() => { expect(screen.queryByText("stage blew up")).toBeNull() }, { timeout: 4000 })
+    // the stage VANISHES while silenced — the vanish tail must drop
+    // the silence entry keyed to it
+    active?.setDraftDoc({ stages: [{ id: "s_0", card: "image-gen", params: {} }] })
+    await refreshViaDrill()
+    await waitFor(() => { expect(screen.queryByText("s_1")).toBeNull() }, { timeout: 4000 })
+    // it returns failing with the SAME text — a deleted vanish branch
+    // leaves the stale entry and swallows this voice
+    active?.setDraftDoc({ stages: errorDoc() })
+    await refreshViaDrill("s_0")
+    const row2 = await screen.findByText("s_1", {}, { timeout: 4000 })
+    expect(within(row2.closest("button")!.parentElement as HTMLElement).getByRole("alert").textContent ?? "").toContain("stage blew up")
   });
 });

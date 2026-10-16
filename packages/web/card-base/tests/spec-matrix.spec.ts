@@ -395,9 +395,10 @@ test('reseatEnvelopeKeys: stated out-of-envelope numerics clamp into the arrival
   } as unknown as FormSpecDoc
   // stated-by-hand stale knobs (the two-hop incident's residue)
   const seated = reseatEnvelopeKeys(spec, { model: 'krea-2', variant: 'turbo', cfg: 3.5, steps: 52 })
-  expect(seated.cfg, 'stated cfg 3.5 reseats INSIDE [1,2] (the operator order)').toBeLessThanOrEqual(2)
-  expect(seated.cfg).toBeGreaterThanOrEqual(1)
-  expect(seated.steps, 'stated steps 52 reseats INSIDE [4,8]').toBeLessThanOrEqual(8)
+  // (reseat-chrome W1, 2026-11-06) nearest bound EXACTLY, not a
+  // range: 3.5 → 2, 52 → 8 (a lo-clamp regression stays green on ranges)
+  expect(seated.cfg, 'stated cfg 3.5 reseats to the NEAREST bound: 2').toBe(2)
+  expect(seated.steps, 'stated steps 52 reseats to the NEAREST bound: 8').toBe(8)
   // absent envelope: the seed rides VERBATIM (the pass-along law —
   // nothing judges, nothing rewrites)
   const plain: FormSpecDoc = {
@@ -406,6 +407,49 @@ test('reseatEnvelopeKeys: stated out-of-envelope numerics clamp into the arrival
     variants: [V('base', 'Variant')],
   } as unknown as FormSpecDoc
   expect(reseatEnvelopeKeys(plain, { model: 'anima', variant: 'base', cfg: 3.5 })).toEqual({ model: 'anima', variant: 'base', cfg: 3.5 })
+})
+
+// (reseat-chrome M2, 2026-11-06) THE ABSENT-KEY SEED HALF: on a
+// re-key whose arrival lane declares envelope numerics the user layer
+// LACKS, the offered row's declared defaults (else model_defaults)
+// seed the user layer — the lane's own truth, never an invented
+// ghost. No arm anywhere drove reseatEnvelopeKeys with unstated
+// numerics before this one.
+test("reseatEnvelopeKeys: unstated envelope keys seed from the offered row's declared defaults — never invented", () => {
+  const spec: FormSpecDoc = {
+    form: 'x',
+    model: 'krea-2',
+    model_defaults: { steps: 51, cfg: 1.5 },
+    variants: [
+      V('raw', 'Variant', { sampler_envelope: { steps: [30, 60], cfg: [2, 6] }, defaults: { steps: 52, cfg: 3.5 } }),
+    ],
+  } as unknown as FormSpecDoc
+  const seated = reseatEnvelopeKeys(spec, { model: 'krea-2', variant: 'raw' })
+  expect(seated, 'the row\'s declared defaults seed (inside their envelope), not model_defaults').toEqual({ model: 'krea-2', variant: 'raw', steps: 52, cfg: 3.5 })
+  // the no-declared-numerics cell: NOTHING seeds — absent stays absent
+  const bare: FormSpecDoc = {
+    form: 'y',
+    model: 'anima',
+    variants: [V('base', 'Variant', { sampler_envelope: { steps: [1, 9], cfg: [1, 2] } })],
+  } as unknown as FormSpecDoc
+  expect(reseatEnvelopeKeys(bare, { model: 'anima', variant: 'base' }), 'no declared default and no model_defaults: the key stays ABSENT').toEqual({ model: 'anima', variant: 'base' })
+})
+
+// (reseat-chrome M3, 2026-11-06) THE MIXED WRITE: free (non-envelope)
+// stated keys ride VERBATIM while envelope-bound keys clamp in the
+// SAME write — the reseat touches only the envelope's vocabulary.
+test('reseatEnvelopeKeys: a MIXED doc clamps the bound key and passes the free key through untouched', () => {
+  const spec: FormSpecDoc = {
+    form: 'x',
+    model: 'krea-2',
+    variants: [
+      V('turbo', 'Variant', { sampler_envelope: { steps: [4, 8], cfg: [1, 2] } }),
+    ],
+  } as unknown as FormSpecDoc
+  const seated = reseatEnvelopeKeys(spec, { model: 'krea-2', variant: 'turbo', cfg: 3.5, steps: 52, guidance: 7 })
+  expect(seated.guidance, 'guidance sits OUTSIDE the envelope vocabulary: rides verbatim').toBe(7)
+  expect(seated.cfg, 'cfg IS the envelope vocabulary: clamps to the nearest bound').toBe(2)
+  expect(seated.steps, 'steps IS the envelope vocabulary: clamps to the nearest bound').toBe(8)
 })
 
 test('modelSwitchPatch: an axis with nothing composing rests empty', () => {

@@ -1398,7 +1398,6 @@ describe('melite_construct presentationMeta — the native flow-link channel', (
       if (lane === 'benchEnsure') return { rev: 5, stages: [] }
       if (lane === 'benchVerb') {
         if (verb === 'add_stage') return { rev: 5, stage: 's1', added: true }
-        if (verb === 'add_stage') return { rev: 5, stage: 's1', added: true }
         if (verb === 'remove_stage') return { rev: 7, removed: 's1' }
         if (verb === 'clear') return { rev: 12, cleared: 6 }
         if (verb === 'rewire') return { rev: 8, wired: true }
@@ -1409,6 +1408,9 @@ describe('melite_construct presentationMeta — the native flow-link channel', (
     })
     const tool = meliteConstruct(estate)
     const cases: Array<[string, Record<string, unknown>, string]> = [
+      // (audit-followups M1, 2026-11-06) add_stage rides the sweep too
+      // — the title always named it; the cases array never did.
+      ['add_stage', { verb: 'add_stage', card: 'image-gen', expect_rev: 4 }, 'main'],
       ['load', { verb: 'load', stages: [], intent: 'x', expect_rev: 4 }, 'main'],
       ['remove_stage', { verb: 'remove_stage', stage: 's1', expect_rev: 7 }, 'main'],
       ['clear', { verb: 'clear', expect_rev: 11 }, 'main'],

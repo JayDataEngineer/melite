@@ -104,7 +104,7 @@ export function StudioStripPane({
   enterKfView: () => void
   /** (the submenu law) an audio-lane click on the bar opens the
    *  rail's audio submenu — the bar is the navigation surface. */
-  enterAudioView: () => void
+  enterAudioView: (laneId: string) => void
 }) {
   // ── THE LANE PICKER (2026-09-22, the operator's law: the add door
   // is an upload icon beside each lane TITLE in the gutter, opening
@@ -397,10 +397,14 @@ export function StudioStripPane({
       onAudioClipDelete={(_id, clipId) => {
         deleteAudioClip(clipId)
       }}
-      onAudioLaneActivate={() => {
+      onAudioLaneActivate={(layerId) => {
         // (the submenu law, 2026-11-06) the LANE is the door: a
-        // click that missed every clip opens the audio submenu.
-        enterAudioView()
+        // click that missed every clip opens the audio submenu. The
+        // lane's own id rides through (h3-submenu M9/W1: the seam's
+        // payload survives to the tenant verb — the door is lane-
+        // keyed at the kit, and the tenant's future per-lane faces
+        // read it here instead of re-deriving it).
+        enterAudioView(layerId)
       }}
       onAudioDetach={(layerId) => {
         // Per-lane detach (D-M-E): clear the lane's clips only; the

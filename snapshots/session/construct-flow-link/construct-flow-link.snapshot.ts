@@ -53,15 +53,31 @@ describe('construct flow-link (keyless replay)', () => {
     const meta = tool.output.presentationMeta!({} as never, out as never) as Record<string, unknown>
     assert.deepEqual(meta, { bench: 's_chat7' })
 
-    // the settled block the conversation card replays
+    // (audit-followups M3, 2026-11-06) the settled block rides the
+    // RECORDED tool-result row — the log→meta→card half the F3 audit
+    // demanded: the persisted shape must survive the log round-trip.
+    // The hand-built block is GONE; this arm selects the row from the
+    // fixture and narrows it through the runtime's settled form.
+    const row = parent.rows.find((r): boolean => (r as { type?: string }).type === 'tool-result')
+    assert.ok(row, 'the recorded session owns a tool-result row')
+    const rec = row as {
+      callId: string
+      call: { name: string; argsRaw: string } | null
+      isError: boolean
+      meta: { bench?: string }
+      content: readonly unknown[]
+    }
+    assert.equal(rec.call?.name, 'melite_construct', 'the row carries its call head')
+    assert.deepEqual(rec.meta, { bench: 's_chat7' }, 'the persisted meta survives the log round-trip byte-for-byte')
+    assert.deepEqual(rec.meta, meta, 'the recorded meta equals the live projection')
     const block: ToolCallBlockView = {
       kind: 'tool-result',
-      callId: 'c1',
-      call: { name: 'melite_construct', argsRaw: JSON.stringify({ verb: 'read' }) },
-      isError: false,
-      meta,
-      content: [{ type: 'text', text: 'bench read → rev 5' }],
-    } as unknown as ToolCallBlockView
+      callId: rec.callId,
+      call: rec.call,
+      isError: rec.isError,
+      meta: rec.meta,
+      content: rec.content,
+    }
 
     const opened: string[] = []
     render(h(ConstructCard, { block, openSurface: (a: string) => { opened.push(a) } }))

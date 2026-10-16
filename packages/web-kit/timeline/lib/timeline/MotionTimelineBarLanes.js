@@ -103,7 +103,11 @@ export function TimelinePromptsLane(props) {
                                             commitEdit(p.uuid);
                                         if (e.key === "Escape")
                                             setEditingId(null);
-                                    }, onPointerDown: (e) => e.stopPropagation(), onDoubleClick: (e) => e.stopPropagation(), placeholder: timelineCopy.promptPlaceholder, className: css.clipEditor })) : previewUrl ? (_jsxs("div", { className: css.previewWrap, children: [_jsx("video", { src: previewUrl, muted: true, loop: true, playsInline: true, preload: "metadata", className: css.previewVideo }), _jsx("div", { className: css.scrim }), _jsxs("div", { className: css.clipTextCol, children: [_jsx("span", { className: css.clipTitle, style: { color }, children: p.text || _jsx("span", { className: css.clipEmpty, children: timelineCopy.emptyClip }) }), wPx > 72 && (_jsx("span", { className: css.clipDur, children: timelineCopy.clipSeconds({ seconds: ((p.end_frame - p.start_frame) / Math.max(1, fps)).toFixed(1) }) }))] })] })) : (_jsxs("div", { className: css.clipTextStack, children: [_jsx("span", { className: css.clipTitle, style: { color }, children: p.text || _jsx("span", { className: css.clipEmpty, children: timelineCopy.emptyClip }) }), wPx > 64 && (_jsx("span", { className: css.clipDur, children: timelineCopy.clipSeconds({ seconds: ((p.end_frame - p.start_frame) / Math.max(1, fps)).toFixed(1) }) }))] })), p.override && !isEditing && (_jsx("span", { title: timelineCopy.knobOverrideTitle, className: css.knobDot })), p.audio && !isEditing && (_jsx(Music, { "aria-hidden": true, className: css.refAudioBadge })), (p.refImages ?? 0) > 0 && !isEditing && (_jsxs("span", { "data-testid": "tl-ref-badge", className: css.refBadge, title: timelineCopy.refImagesTitle({ count: p.refImages ?? 0 }), children: [_jsx(Image, { "aria-hidden": true }), _jsx("span", { className: css.refCount, children: p.refImages })] })), !isEditing && (_jsx(Tip, { tip: "Delete this prompt card", children: _jsx(Button, { variant: "ghost", size: "sm", onPointerDown: (e) => e.stopPropagation(), onClick: (e) => {
+                                    }, onPointerDown: (e) => e.stopPropagation(), onDoubleClick: (e) => e.stopPropagation(), placeholder: timelineCopy.promptPlaceholder, className: css.clipEditor })) : previewUrl ? (
+                                // The window render INSIDE the clip (video timeline):
+                                // first frame at rest, plays on hover, gradient scrim
+                                // keeps the text legible over the frame.
+                                _jsxs("div", { className: css.previewWrap, children: [_jsx("video", { src: previewUrl, muted: true, loop: true, playsInline: true, preload: "metadata", className: css.previewVideo }), _jsx("div", { className: css.scrim }), _jsxs("div", { className: css.clipTextCol, children: [_jsx("span", { className: css.clipTitle, style: { color }, children: p.text || _jsx("span", { className: css.clipEmpty, children: timelineCopy.emptyClip }) }), wPx > 72 && (_jsx("span", { className: css.clipDur, children: timelineCopy.clipSeconds({ seconds: ((p.end_frame - p.start_frame) / Math.max(1, fps)).toFixed(1) }) }))] })] })) : (_jsxs("div", { className: css.clipTextStack, children: [_jsx("span", { className: css.clipTitle, style: { color }, children: p.text || _jsx("span", { className: css.clipEmpty, children: timelineCopy.emptyClip }) }), wPx > 64 && (_jsx("span", { className: css.clipDur, children: timelineCopy.clipSeconds({ seconds: ((p.end_frame - p.start_frame) / Math.max(1, fps)).toFixed(1) }) }))] })), p.override && !isEditing && (_jsx("span", { title: timelineCopy.knobOverrideTitle, className: css.knobDot })), p.audio && !isEditing && (_jsx(Music, { "aria-hidden": true, className: css.refAudioBadge })), (p.refImages ?? 0) > 0 && !isEditing && (_jsxs("span", { "data-testid": "tl-ref-badge", className: css.refBadge, title: timelineCopy.refImagesTitle({ count: p.refImages ?? 0 }), children: [_jsx(Image, { "aria-hidden": true }), _jsx("span", { className: css.refCount, children: p.refImages })] })), !isEditing && (_jsx(Tip, { tip: "Delete this prompt card", children: _jsx(Button, { variant: "ghost", size: "sm", onPointerDown: (e) => e.stopPropagation(), onClick: (e) => {
                                             e.stopPropagation();
                                             onPromptDelete(p.uuid);
                                         }, "aria-label": timelineCopy.deletePromptCardAria, className: css.promptDelete, children: _jsx(IconCloseOutlineRegular, {}) }) }))] }) }, p.uuid));
@@ -141,7 +145,20 @@ export function TimelineAudioLanes(props) {
             // ride its clips: dialogue a mic, sfx a bolt, music the note.
             const Glyph = L.icon === "mic" ? Mic : L.icon === "zap" ? Zap : Music;
             const accent = L.accent;
-            return (_jsx("div", { "data-audio-layer": L.id, "data-wired": L.stem ? "true" : "false", "data-clips": clips.length ? "true" : "false", "data-lane-cards": audioClipCards ? "true" : "false", className: css.audioLane, style: { height: audioClipCards ? AUDIO_CARDS_H : AUDIO_H, background: "color-mix(in srgb, var(--dsw-alias-state-business-primary) 3%, transparent)" }, onDragOver: (e) => e.preventDefault(), onClick: (e) => {
+            return (_jsx("div", { "data-audio-layer": L.id, "data-wired": L.stem ? "true" : "false", "data-clips": clips.length ? "true" : "false", "data-lane-cards": audioClipCards ? "true" : "false", className: css.audioLane, style: { height: audioClipCards ? AUDIO_CARDS_H : AUDIO_H, background: "color-mix(in srgb, var(--dsw-alias-state-business-primary) 3%, transparent)" }, onDragOver: (e) => e.preventDefault(), 
+                // (h3-submenu M11, 2026-11-06) the lane door is one of the
+                // law's two nav doors and was pointer-only: no role, no tab
+                // stop, no key verb — a keyboard user could not open the
+                // audio submenu at all. The row carries the button face and
+                // Enter/Space rides the SAME guard as the click (focus on
+                // the row itself never sits inside a clip).
+                role: onAudioLaneActivate ? "button" : undefined, tabIndex: onAudioLaneActivate ? 0 : undefined, "aria-label": onAudioLaneActivate ? L.label : undefined, onKeyDown: onAudioLaneActivate ? (e) => {
+                    if (e.key !== "Enter" && e.key !== " ")
+                        return;
+                    e.preventDefault();
+                    e.stopPropagation();
+                    onAudioLaneActivate(L.id);
+                } : undefined, onClick: (e) => {
                     // the submenu law: the LANE is the door — a click that
                     // did not land on a clip (or its hover ×) opens the
                     // tenant's audio submenu. No handler → nothing. The

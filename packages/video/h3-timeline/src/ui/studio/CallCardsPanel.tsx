@@ -12,7 +12,7 @@
  * timeline-bar lane icon), and the rows work like the audio upload
  * inputs — a pick icon per row, NO input image square.
  */
-import { Button, IconChevronLeftOutlineRegular } from '@deepseek-ai/dsh-client-ui-primitives'
+import { Button } from '@deepseek-ai/dsh-client-ui-primitives'
 import { EmptyState } from '@melite/card-base/client'
 import { RailBackButton } from './RailBackButton'
 import { SectionLabel, Tip, type SpecField } from '@melite/card-base/client'

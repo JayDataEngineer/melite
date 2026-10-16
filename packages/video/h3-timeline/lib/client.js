@@ -2074,6 +2074,15 @@ window.__ModuleLoader__.load({
 						background: "color-mix(in srgb, var(--dsw-alias-state-business-primary) 3%, transparent)"
 					},
 					onDragOver: (e) => e.preventDefault(),
+					role: onAudioLaneActivate ? "button" : void 0,
+					tabIndex: onAudioLaneActivate ? 0 : void 0,
+					"aria-label": onAudioLaneActivate ? L.label : void 0,
+					onKeyDown: onAudioLaneActivate ? (e) => {
+						if (e.key !== "Enter" && e.key !== " ") return;
+						e.preventDefault();
+						e.stopPropagation();
+						onAudioLaneActivate(L.id);
+					} : void 0,
 					onClick: (e) => {
 						if (!e.target.closest("[data-audio-clip]")) {
 							e.stopPropagation();
@@ -3851,8 +3860,8 @@ window.__ModuleLoader__.load({
 						onAudioClipDelete: (_id, clipId) => {
 							deleteAudioClip(clipId);
 						},
-						onAudioLaneActivate: () => {
-							enterAudioView();
+						onAudioLaneActivate: (layerId) => {
+							enterAudioView(layerId);
 						},
 						onAudioDetach: (layerId) => {
 							const laneCls = layerId === "music" ? "music" : layerId === "sfx" ? "sfx" : "dialogue";

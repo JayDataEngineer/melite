@@ -39,7 +39,7 @@ const CLIP = { id: "c1", name: "song.mp3", start_frame: 10, dur_frames: 48 }
 function strip(over?: Record<string, unknown>) {
   const rec: Record<string, unknown[]> = {
     bar: [], scrubStart: [], scrubEnd: [], kfAdd: [], kfMove: [], kfDel: [], kfDoor: [] as number[], kfWithImage: [] as [string, number][],
-  audioDoor: [] as number[],
+  audioDoor: [] as string[],
     promptUpdate: [], promptMove: [], promptResize: [], promptDel: [],
     extend: [], addCall: [], select: [], addedClip: [], taken: [],
     movedClip: [], delClip: [], keys: [],
@@ -84,7 +84,7 @@ function strip(over?: Record<string, unknown>) {
       keyframes={[{}] as never}
       addKeyframeWithImage={(image, frame) => { rec.kfWithImage.push([image, frame]); return "k77" }}
       enterKfView={() => { rec.kfDoor.push(0) }}
-      enterAudioView={() => { rec.audioDoor.push(0) }}
+      enterAudioView={(id) => { rec.audioDoor.push(id) }}
       {...over}
     />,
   )
@@ -366,7 +366,7 @@ describe("the keyframes lane's add door (the lane-add parity law)", () => {
     // the rail the audio-submenu verb — the bar is the navigation
     // surface (the submenu law, operator 2026-11-06).
     fireEvent.click(document.body.querySelector('[data-audio-layer="music"]')!)
-    assert.deepEqual(rec.audioDoor, [0], "one lane click, one audio-submenu gesture")
+    assert.deepEqual(rec.audioDoor, ["music"], "one lane click, one audio-submenu gesture — the lane's own id rides the door (M9/W1)")
     els.unmount()
   })
 
@@ -744,12 +744,20 @@ describe("the Music row (drops land positioned; foreign writes nothing)", () => 
     assert.deepEqual(rec.taken, [["take.wav", 4242]])
   })
 
-  it("clip drag moves; the × deletes", () => {
+  it("clip drag moves; the × deletes — and NEITHER clip gesture opens the lane door (h3-submenu M6/M7, 2026-11-06)", () => {
     const { rec } = strip()
     drag(document.body.querySelector('[data-audio-clip="c1"]')!, 100, 140)
     assert.deepEqual(rec.movedClip, [["c1", 4242]])
+    // (M6) a click landing on a CLIP rides the clip verb only: the
+    // lane-click seam's guard means the drag's pointer landing never
+    // activates the lane — removing the guard at the lanes row would
+    // push "music" here while every other arm stays green.
+    assert.deepEqual(rec.audioDoor, [], "a clip gesture never opens the audio submenu")
     fireEvent.click(screen.getByLabelText("Delete song.mp3"))
     assert.deepEqual(rec.delClip, [["c1"]])
+    // (M7) the ✕ is double-protected (its own stopPropagation + the
+    // lane guard): composing the two, the delete NEVER opens the door
+    assert.deepEqual(rec.audioDoor, [], "the delete never opens the lane door")
   })
 
   it("detach clears clips AND the legacy stem", () => {
