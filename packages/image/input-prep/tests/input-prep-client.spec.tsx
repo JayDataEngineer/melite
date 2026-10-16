@@ -131,6 +131,37 @@ describe('the crop leaf (CropPreview)', () => {
     expect(onChange).toHaveBeenCalledWith({ x: 10, y: 20, width: 200, height: 200 })
   })
 
+  // THE 8-HANDLE MATRIX (image-3d wave-2 cure 2: only `se` ever
+  // drove resizeRect — 7 of 8 handles carried no judge and the
+  // branch floor sat at 76.38). Every handle drives the REAL
+  // pointer seam; the table states the moving edges and the pinned
+  // edges per handle, in image px on the 800x600 natural.
+  it.each([
+    ['nw', [5, 5], { x: 5, y: 5, width: 105, height: 165 }],
+    ['ne', [300, 5], { x: 10, y: 5, width: 290, height: 165 }],
+    ['se', [210, 220], { x: 10, y: 20, width: 200, height: 200 }],
+    ['sw', [5, 220], { x: 5, y: 20, width: 105, height: 200 }],
+    ['n', [60, 5], { x: 10, y: 5, width: 100, height: 165 }],
+    ['e', [300, 170], { x: 10, y: 20, width: 290, height: 150 }],
+    ['s', [60, 220], { x: 10, y: 20, width: 100, height: 200 }],
+    ['w', [5, 170], { x: 5, y: 20, width: 105, height: 150 }],
+  ])('THE %s HANDLE RESIZES (moving edge follows, opposite edge pinned)', (hd, to, want) => {
+    const onChange = vi.fn()
+    render(h(CropPreview, { src: IMG, crop: { x: 10, y: 20, width: 100, height: 150 }, onChange }))
+    seatPreview(800, 600)
+    drag(screen.getByTestId(`prep-crop-handle-${hd}`), [[110, 170], to as [number, number]])
+    expect(onChange).toHaveBeenCalledTimes(1)
+    expect(onChange).toHaveBeenCalledWith(want)
+  })
+
+  it('THE E HANDLE CLAMPS AT THE IMAGE EDGE (resizeRect never leaves the natural)', () => {
+    const onChange = vi.fn()
+    render(h(CropPreview, { src: IMG, crop: { x: 10, y: 20, width: 100, height: 150 }, onChange }))
+    seatPreview(800, 600)
+    drag(screen.getByTestId('prep-crop-handle-e'), [[110, 170], [1200, 170]])
+    expect(onChange).toHaveBeenCalledWith({ x: 10, y: 20, width: 790, height: 150 })
+  })
+
   it('cropIsHonorable guards the engine floor (MIN_DIM from the family, not a copy)', () => {
     expect(cropIsHonorable({ x: 0, y: 0, width: MIN_DIM, height: MIN_DIM })).toBe(true)
     expect(cropIsHonorable({ x: 0, y: 0, width: MIN_DIM - 1, height: 100 })).toBe(false)

@@ -217,8 +217,72 @@ describe("the resurrected model registry (families/variants/cells/links)", () =>
     // aesthetic variant routes and all three families' int8/bf16
     // cell routes ride the untyped carve (origins via the five
     // cell artifacts + the base bf16 provisions row).
-    assert.equal(untypedIds.length, 57,
-      `the untyped census is exact (${String(untypedIds.length)} — atoms whose origins ride the provisioner catalog; growth or shrinkage is a deliberate edit)`);
+    // THE NAMED UNTYPED ROSTER (walls-meta wave-2 pin 4: the
+    // 65->49->57 repin history died with the count — the atoms whose
+    // origins ride the provisioner catalog are named here, so a
+    // growth, a shrinkage, or a rename reds with the NAME and the
+    // deliberate edit is a visible roster diff, never a bumped
+    // number):
+    assert.deepEqual([...untypedIds].sort(), [
+      "anima",
+  "anima-aesthetic",
+  "anima-aesthetic-bf16",
+  "anima-aesthetic-int8",
+  "anima-bf16",
+  "anima-int8",
+  "anima-turbo",
+  "anima-turbo-bf16",
+  "anima-turbo-int8",
+  "anny",
+  "florence2",
+  "flux-klein",
+  "flux-klein-base",
+  "h3",
+  "h3-timeline",
+  "input",
+  "joycaption",
+  "joytag",
+  "kimodo",
+  "krea-2",
+  "krea-2-raw",
+  "moss-sfx",
+  "pixal3d",
+  "pixal3d-bf16",
+  "pixal3d-int8",
+  "qwen-img-21",
+  "qwen-img-21-bf16",
+  "qwen-img-21-int8",
+  "qwen-img-21-turbo",
+  "qwen-img-21-turbo-bf16",
+  "qwen-img-21-turbo-int8",
+  "qwen-img-edit-21",
+  "qwen-img-edit-21-bf16",
+  "qwen-img-edit-21-int8",
+  "qwen-img-edit-21-turbo",
+  "qwen-img-edit-21-turbo-bf16",
+  "qwen-img-edit-21-turbo-int8",
+  "qwen-img-edit-2511",
+  "qwen-img-edit-2511-int8",
+  "qwen-img-edit-2511-lightning4",
+  "qwen3-tts",
+  "qwen3-tts-base",
+  "qwen3-tts-voicedesign",
+  "qwen3-tts-voicedesign-base",
+  "qwen3-tts-voicedesign-design",
+  "seedvr2-ema",
+  "seedvr2-ema-7b",
+  "seedvr2-ema-vae-fp16",
+  "transfer-rig",
+  "trellis2-native",
+  "trellis2-native-bf16",
+  "trellis2-native-int8",
+  "wd14",
+  "z-image",
+  "z-image-base",
+  "z-image-base-int8",
+  "z-image-int8",
+    ],
+      `the untyped roster drifted (saw ${JSON.stringify([...untypedIds].sort())}) — atoms whose origins ride the provisioner catalog are named here; growth or shrinkage is a deliberate edit to THIS roster`);
     // 2 -> 0 (2026-10-13, the four audio families' URL cures):
     // music3 and yue2's stale GGUF cell filenames died — their
     // downloads ride the provisions rows, not cell sources

@@ -57,34 +57,53 @@ const SERVED: string[] = [...servedFiles(MODELS), ...servedFiles(FLOWS)];
 
 describe("THE SERVED-DOC TRUTH WALL (phantom tools, dead paths, unreachable rows)", () => {
   it("the served tree carries EXACTLY the docs a model can be handed", () => {
-    // The exact pin replaced a `> 50` floor on 2026-10-04: the floor
-    // was being propped up by five UNREACHABLE authoring leaves
-    // (flows/{prop,creature,humanoid,non-humanoid,sprite-sheet}-flow
-    // and sprite-sheet — 25 files, 12 of them SKILL.md under
-    // flows/*/agents/skills/, which NO walker serves: only
-    // flows/<registry-id>/SKILL.md is a served row, and only for a
-    // registry row). Deleting the cruft dropped the walk from 56 to
-    // 46. An exact pin now catches an accidental DELETION and a
-    // silent ADDITION alike — a floor could not. 46 → 50
-    // (2026-10-09: the character-factory leaf — tool.json,
-    // AGENTS.md, agents/AGENT.md, agents/skills/
-    // character-factory-pipeline/SKILL.md). 50 → 52 (2026-10-22:
-    // anima's A2 — the authored agents/AGENT.md entrance + the
-    // anima-prompt-writing skill beside the enhance recipe).
-    // 52 → 53 (2026-10-22: audit 004/C7 — the character-sheet
-    // recipe skill under qwen-img-21's agents tree, its own grammar
-    // beside the factory pipeline's). 53 → 57 (2026-10-11:
-    // object-forge's leaf — tool.json, AGENTS.md, agents/AGENT.md,
-    // agents/skills/object-forge-pipeline/SKILL.md). 57 → 56
-    // (2026-10-12: kill-residue audit F1 — the ltx-director-distilled
-    // prompt-enhance SKILL.md, a dead family's orphaned leaf serving
-    // through the fs-skill walk; killed with its family, and the
-    // fs-skill→DECL edge now walled in family-coverage).
-    // 56 → 55 (2026-11-02: the h3-keyframe leaf's docs die with the
-    // route — GUIDE/AGENT/keyframe-flow/lora_stack/nodes/presets
-    // out; keyframe-flow survives ON THE LIVE h3 leaf with live
-    // spellings, net −1).
-    expect(SERVED.length).toBe(55);
+    // THE FLOORS-AS-CENSUS CURE (walls-meta wave-2 pin 3: the exact
+    // 55 died with its 8-repin era stack — 56→46→50→52→53→57→56→55,
+    // each repin rubber-stamping a doc landing, so the pin guarded
+    // nothing but the reviewer's patience). Two assertions carry the
+    // teeth that survived: (1) per-tree floors — a silent DELETION
+    // below the tree's real census reds (the 2026-10-04 disease the
+    // exact pin was minted for: unreachable authoring leaves propping
+    // a floor; floors sit at today's 42+13=55 minus headroom for the
+    // walk's lawful churn); (2) an INDEPENDENT WALK (iterative stack,
+    // no shared code with servedFiles) — a helper regression (a
+    // subtree skipped, a filter inverted) diverges from the raw walk
+    // and reds here.
+    const rawWalk = (roots: string[]): string[] => {
+      const out: string[] = [];
+      const stack = [...roots];
+      while (stack.length > 0) {
+        const dir = stack.pop()!;
+        let entries: string[];
+        try {
+          entries = readdirSync(dir);
+        } catch {
+          continue;
+        }
+        for (const e of entries) {
+          if (e === "node_modules" || e.startsWith(".")) continue;
+          const full = join(dir, e);
+          let st: import("node:fs").Stats;
+          try {
+            st = statSync(full);
+          } catch {
+            continue;
+          }
+          if (st.isDirectory()) stack.push(full);
+          else if (/\.(md|json|txt)$/.test(e)) out.push(full);
+        }
+      }
+      return out;
+    };
+    const raw = rawWalk([MODELS, FLOWS]);
+    assert.equal(
+      raw.length, SERVED.length,
+      `the served walk (${String(SERVED.length)}) and the raw walk (${String(raw.length)}) disagree — servedFiles is skipping or inventing files`,
+    );
+    const modelsCount = SERVED.filter((f) => f.startsWith(MODELS)).length;
+    const flowsCount = SERVED.filter((f) => f.startsWith(FLOWS)).length;
+    assert.ok(modelsCount >= 38, `the models tree serves ${String(modelsCount)} docs — below the 38 floor (a silent deletion reds here)`);
+    assert.ok(flowsCount >= 10, `the flows tree serves ${String(flowsCount)} docs — below the 10 floor (a silent deletion reds here)`);
   });
 
   it("no served doc names a phantom tool carrier or tool call", () => {

@@ -44,6 +44,20 @@ const GENRE_GROUPS = new Map([
   ['qvoice', 'comfyui-card-kit'],
   ['qvoice_save', 'comfyui-card-kit'],
   ['input', 'img-to-mesh + comfyui-card-kit'],
+  // THE SECOND HALF (walls-meta wave-2: the receipt toggle proved
+  // the sweep's single-quote regex never saw the double-quoted
+  // population — these card-owned surfaces served unjudged):
+  ['body', 'anny'], ['identity', 'anny'], ['morph', 'anny'], ['turnaround', 'anny'],
+  ['bake', 'img-to-mesh'], ['generation', 'img-to-mesh + music + motion'],
+  ['lab', 'img-to-mesh'], ['mesh', 'img-to-mesh'], ['stage', 'img-to-mesh'],
+  ['brief', 'agent + craft'], ['mods', 'agent + craft'],
+  ['call', 'mcp'],
+  ['edit_tuning', 'image-edit'],
+  ['transform', 'input-prep'],
+  ['tagger', 'tagger'],
+  ['target', 'upscale-tools'],
+  ['sla', 'h3'],
+  ['chain', 'motion'], ['guidance', 'motion'], ['output', 'motion'],
 ])
 /** The DEBT register (L1–L3): spellings that violate the law today,
  *  owed renames — this wall fires the moment a NEW one appears and
@@ -67,7 +81,7 @@ function sweepGroups(): Array<{ file: string, groups: string[] }> {
       if (!/\.(ts|tsx)$/.test(name)) continue
       if (!/(card|schema|pack-fields|fields)\.(ts|tsx)$/.test(name)) continue
       const text = readFileSync(full, 'utf8')
-      const groups = [...text.matchAll(/group: '([a-z_]+)'/g)].map((m) => m[1]!)
+      const groups = [...text.matchAll(/group: (['"])([a-z_]+)\1/g)].map((m) => m[2]!)
       if (groups.length > 0) out.push({ file: full, groups })
     }
   }

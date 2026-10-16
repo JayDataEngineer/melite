@@ -810,7 +810,6 @@ describe("models against cards (the cross-validation, resurrected)", () => {
     // kill): ace-step's 4 and moss's 3 per-cell gguf artifacts and
     // their 7 distinct upstream urls die with the families.
     const ARTIFACT_ROW_COUNT = 21 - 7 + 5; // +2 (2026-10-23, the operator's turbo call): the qwen 2.1 turbo cells // +2 (2026-10-24, THE 2.1 MATRIX RESHAPE): the edit lane's turbo cells join with the fold // +5 (2026-10-16, the anima three checkpoints): three Bedovyy convrot + two official bf16
-    const ARTIFACT_DISTINCT_COUNT = 17 - 7 + 5; // +2 (2026-10-23): the two distinct turbo unet urls // unchanged (2026-10-24, THE 2.1 MATRIX RESHAPE): the edit lane's turbo cells ride the SAME two unet urls the t2i family downloads — distinct-by-url stays while the row census moves // +5 (2026-10-16): anima's five urls are all distinct (base bf16 stays a provisions row, not an artifact)
     const artifacts: Array<{ id: string; url: string }> = [];
     for (const id of registryIds()) {
       const decl = registryModel(id) as { variants?: Array<{ cells?: Array<{ artifact?: unknown }> }> };
@@ -849,11 +848,48 @@ describe("models against cards (the cross-validation, resurrected)", () => {
       `the artifact declarers are the named 6 (saw ${ARTIFACT_DECLARERS.join(", ")}) — a family starting or stopping its cell-artifact channel is a deliberate edit`);
     assert.equal(artifacts.length, ARTIFACT_ROW_COUNT,
       `the variant-cell artifact rows are exactly ${String(ARTIFACT_ROW_COUNT)} (saw ${String(artifacts.length)}) — a cell appearing or leaving is a deliberate edit`);
-    // deduped by url+dest the same way the union walk dedupes —
-    // variants sharing one artifact are ONE download
-    const distinct = new Set(artifacts.map((a) => a.url)).size;
-    assert.equal(distinct, ARTIFACT_DISTINCT_COUNT,
-      `the distinct variant-cell artifacts are exactly ${String(ARTIFACT_DISTINCT_COUNT)} (saw ${String(distinct)}: ${[...new Set(artifacts.map((a) => a.id + " " + a.url))].join(", ")}) — an artifact appearing or leaving is a deliberate edit`);
+    // deduped by url the same way the union walk dedupes —
+    // variants sharing one artifact are ONE download. THE NAMED
+    // ROSTER (walls-meta wave-2 pin 1: the 17-7+5 arithmetic and its
+    // stacked era comments died — each family's distinct-url count
+    // stands as its own named fact, so a change reds with the
+    // FAMILY's name, never a sum to re-derive). Distinct-by-url
+    // stays honest across the 2026-10-24 reshape: the edit lane's
+    // turbo cells ride the SAME two unet urls the t2i family
+    // downloads.
+    const perFamily: Record<string, Set<string>> = {};
+    for (const a of artifacts) (perFamily[a.id] ??= new Set()).add(a.url);
+    const roster: Record<string, number> = Object.fromEntries(
+      Object.entries(perFamily).map(([id, urls]) => [id, urls.size]),
+    );
+    assert.deepEqual(roster, {
+      "anima": 5,
+      "flux-klein": 2,
+      "krea-2": 2,
+      "qwen-img-21": 4,
+      "qwen-img-edit-21": 4,
+      "qwen-img-edit-2511": 2,
+    } as Record<string, number>,
+      `the per-family distinct artifact urls drifted from the named roster (saw ${JSON.stringify(roster)}) — a cell appearing, leaving, or sharing differently is a deliberate edit to THIS roster`);
+    // THE CROSS-FAMILY SHARING ROSTER (the fact the old 17-7+5 sum
+    // could only gesture at): a url downloaded by MORE THAN ONE
+    // family is a deliberate dedup fact, named here by url tail →
+    // families. The 2026-10-24 reshape's law lives here: the edit
+    // lane's turbo cells ride the SAME two unet urls the t2i family
+    // downloads.
+    const urlFamilies: Record<string, Set<string>> = {};
+    for (const a of artifacts) (urlFamilies[a.url] ??= new Set()).add(a.id);
+    const shared: Record<string, string[]> = {};
+    for (const [url, fams] of Object.entries(urlFamilies)) {
+      if (fams.size > 1) shared[url.split("/").pop() ?? url] = [...fams].sort();
+    }
+    assert.deepEqual(shared, {
+      "qwen_image_2.1_int8_convrot.safetensors": ["qwen-img-21", "qwen-img-edit-21"],
+      "qwen_image_2.1_bf16.safetensors": ["qwen-img-21", "qwen-img-edit-21"],
+      "qwen_image_2.1_turbo_int8_convrot.safetensors": ["qwen-img-21", "qwen-img-edit-21"],
+      "qwen_image_2.1_turbo_bf16.safetensors": ["qwen-img-21", "qwen-img-edit-21"],
+    } as Record<string, string[]>,
+      `cross-family artifact sharing drifted (saw ${JSON.stringify(shared)}) — a url gaining or losing a second family is a deliberate edit to THIS roster`);
   });
 
   // THE CLASS WALL (the hunt's F4 cure, 2026-10-12): the census above
@@ -1118,11 +1154,16 @@ describe("curated vocabulary subsets derive from the engine SSOT", () => {
     const members = [...code.matchAll(/"([^"]+)"/g)].map((m) => m[1]!);
     // D-M10 (the wall audit, 2026-09-28): `> 0` was the floor that
     // let dead code pass (the card could stop READING the list and
-    // the wall stayed green on the comment's prose). The count is
-    // EXACT — eleven stand today — and the served schema options
-    // DERIVE from the same members (the curation IS the served set).
-    assert.equal(members.length, 11,
-      `the film's curated sampler list is eleven (saw ${String(members.length)}) — a deliberate edit, never silent drift`);
+    // the wall stayed green on the comment's prose). THE NAMED
+    // ROSTER (walls-meta wave-2 pin 5: the magic 11 died — the
+    // curation's identity IS these names, so a gutting, a growth,
+    // or a rename reds with the NAME, and the membership arm below
+    // keeps every name inside the engine's SSOT).
+    assert.deepEqual(members, [
+      "euler", "euler_cfg_pp", "euler_ancestral", "dpmpp_2m", "dpmpp_2m_sde", "heun",
+      "res_multistep", "res_multistep_cfg_pp", "er_sde", "seeds_2", "seeds_3",
+    ],
+      `the film's curated sampler roster drifted (saw ${members.join(", ")}) — the curation is deliberate: edit THIS roster, never silently`);
     for (const name of members) {
       assert.ok(
         (SAMPLER_OPTIONS as readonly string[]).includes(name),
