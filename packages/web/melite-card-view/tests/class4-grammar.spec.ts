@@ -101,13 +101,16 @@ describe('THE S7 CLASS-4 WALL · card-view · TIP GRAMMAR', () => {
     const seats = titleSeats()
     // ELEMENT seats — the truncation/overflow class (the reference's
     // own idiom, TrajectoryTable.tsx:1174,1265 + :2881): the tile's
-    // run-error clip (:214) and transport word (:222), the zoom build
-    // id (:259), the add-card picker card's label+description overflow
+    // run-error clip (:214) and transport word (:222), the add-card
+    // picker card's label+description overflow
     // (:159; ModelSelect.tsx:453 receipt). The wired mark (:198) was
     // CONVERTED to the estate Tip this round — a revert reds the
-    // count below.
+    // count below. (The zoom build id's seat — the old :259 row —
+    // is GONE: commit a44dcd5b4 deleted the lying build stamp the
+    // build never refreshed; the row re-pins at 0 and still reds on
+    // any new bare title in the file.)
     expect(count(seats, 'sortable-tile.tsx', 'element'), 'sortable-tile.tsx').toBe(2)
-    expect(count(seats, 'zoom.tsx', 'element'), 'zoom.tsx').toBe(1)
+    expect(count(seats, 'zoom.tsx', 'element'), 'zoom.tsx').toBe(0)
     expect(count(seats, 'add-card-door.tsx', 'element'), 'add-card-door.tsx').toBe(1)
     // REST-CHANNEL seats — labeled verb hints on catalog Button rest
     // channels (TrajectoryToolbar.tsx:60,92,105 — the reference's

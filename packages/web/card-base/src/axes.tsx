@@ -249,7 +249,12 @@ export function ModelAxes({ spec, value, user, pickHeld = user, onSet, onPick, o
           'data-model-static': '1',
           'aria-label': chromeCopy.modelLabel,
           title: modelRows[0].label,
-        }, modelRows[0].label)
+        // THE STATIC FACE RIDES THE SAME CLAMP SPAN (defect 2's last
+        // belt-only seat): a long lone model id is the div's raw text
+        // node otherwise — .specSelect's block+ellipsis holds only
+        // while the cascade orders this sheet after the primitives',
+        // the exact "sometimes" spill the span removes.
+        }, h('span', { className: css.specSelectText }, modelRows[0].label))
     // THE STALE-VARIANT CURE (operator 2026-09-14): a model
     // switch re-seeds EVERY axis (variant/quant/…) to the new
     // family's rows — keeping turbo while pointing at anima is

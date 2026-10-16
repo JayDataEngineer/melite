@@ -1836,15 +1836,23 @@ window.__ModuleLoader__.load({
 		}
 		/** The variant rail's unknown-quant refusal body — same contract as
 		*  {@link unknownVariantVoice}: one spelling, frame at the caller.
+		*  THE HONEST VOICE (the axis-unification cure, 2026-11-06 — the
+		*  operator's anima burn: the served matrix carried zero Quant rows
+		*  while the DECL declared two, and the old empty tail asserted the
+		*  DECL's absence, which the caller's matrix cannot see). An empty
+		*  `known` is a statement about the CALLER'S PROJECTION — the served
+		*  matrix it was handed — so the tail names the projection and the
+		*  sync break, never a DECL fact; the DECL's own cells, when the
+		*  projection carries them, ride the known list.
 		*
 		* @param stated the quant the caller stated, verbatim.
 		* @param model the model id the cells belong to.
 		* @param variant the variant whose cells were searched.
 		* @param known the variant's offered quants, door order; empty
-		*  yields the declares-no-cells tail.
+		*  yields the projection-break tail.
 		* @returns the refusal body, frame-free. */
 		function unknownQuantVoice$1(stated, model, variant, known) {
-			return "unknown quant " + JSON.stringify(stated) + " for model " + JSON.stringify(model) + " variant " + JSON.stringify(variant) + (known.length > 0 ? " (known: " + known.join(", ") + ")" : " (the variant declares no cells)");
+			return "unknown quant " + JSON.stringify(stated) + " for model " + JSON.stringify(model) + " variant " + JSON.stringify(variant) + (known.length > 0 ? " (known: " + known.join(", ") + ")" : " (the served matrix declares no cells for this variant — DECL/projection sync break)");
 		}
 		/** THE ROUTE ENVELOPE GATE'S ONE JUDGE (the voice audit, 2026-10-11:
 		*  six hand-mirrored spellings, two frames): a stated numeric
@@ -7770,15 +7778,23 @@ window.__ModuleLoader__.load({
 		}
 		/** The variant rail's unknown-quant refusal body — same contract as
 		*  {@link unknownVariantVoice}: one spelling, frame at the caller.
+		*  THE HONEST VOICE (the axis-unification cure, 2026-11-06 — the
+		*  operator's anima burn: the served matrix carried zero Quant rows
+		*  while the DECL declared two, and the old empty tail asserted the
+		*  DECL's absence, which the caller's matrix cannot see). An empty
+		*  `known` is a statement about the CALLER'S PROJECTION — the served
+		*  matrix it was handed — so the tail names the projection and the
+		*  sync break, never a DECL fact; the DECL's own cells, when the
+		*  projection carries them, ride the known list.
 		*
 		* @param stated the quant the caller stated, verbatim.
 		* @param model the model id the cells belong to.
 		* @param variant the variant whose cells were searched.
 		* @param known the variant's offered quants, door order; empty
-		*  yields the declares-no-cells tail.
+		*  yields the projection-break tail.
 		* @returns the refusal body, frame-free. */
 		function unknownQuantVoice(stated, model, variant, known) {
-			return "unknown quant " + JSON.stringify(stated) + " for model " + JSON.stringify(model) + " variant " + JSON.stringify(variant) + (known.length > 0 ? " (known: " + known.join(", ") + ")" : " (the variant declares no cells)");
+			return "unknown quant " + JSON.stringify(stated) + " for model " + JSON.stringify(model) + " variant " + JSON.stringify(variant) + (known.length > 0 ? " (known: " + known.join(", ") + ")" : " (the served matrix declares no cells for this variant — DECL/projection sync break)");
 		}
 		/** THE ROUTE ENVELOPE GATE'S ONE JUDGE (the voice audit, 2026-10-11:
 		*  six hand-mirrored spellings, two frames): a stated numeric
@@ -7863,6 +7879,11 @@ window.__ModuleLoader__.load({
 			notDownloadedSuffix: " — not downloaded on this machine",
 			/** Refused axis row: the invalid id leads, the axis + holder follow. */
 			invalidAxisNote: (p) => p.id + " — invalid " + p.axis + " for " + p.holder,
+			/** Refused-coord repair note (axis-unification P0#3): the one-pick
+			*  cure is a verb — the repair button's lead-in sentence. */
+			axisRepairNote: "Not an offered coordinate of the held matrix — the nearest current cell is one click away:",
+			/** Refused-coord repair verb: the nearest current cell's face rides in. */
+			axisRepairVerb: (p) => "Write " + p.face,
 			/** Recipe picker's resting placeholder (nothing held). */
 			recipePlaceholder: "-- recipe --",
 			/** Recipe picker's custom face (a held stamp no row matches). */
@@ -8738,6 +8759,52 @@ window.__ModuleLoader__.load({
 			reconcilePick(patch, spec, row, held);
 			return patch;
 		}
+		/** THE OVERRIDE RECONCILE (operator 2026-11-05: "THE LATEST
+		*  SELECTION MUST OVERRIDE" — the multi-level live break: model,
+		*  variant, recipe, and quant switches EACH bricked the card at the
+		*  compose gate while the frozen-fixture suites stayed green). The
+		*  judge reads the doc against the RESOLVED VARIANT's
+		*  sampler_envelope — so the pick's ONE write must land every
+		*  judged key on a truth the envelope admits, priority:
+		*  1. the picked row's stamps: TRUSTED verbatim when the row IS the
+		*     law-holder (a variant pick — a row whose declared default
+		*     falls outside its own envelope is a lying DECL, the gate's to
+		*     refuse); otherwise clamped through the variant's envelope (a
+		*     recipe's 50 composes to 8 under a 4-step distill);
+		*  2. the value the doc already carries: inside the envelope it
+		*     STANDS unwritten (a pick overrides only what it speaks — a
+		*     quant pick that declares no steps never tramples the recipe's
+		*     50), outside it clamps to the nearest bound;
+		*  3. nothing carried: the RESOLVED VARIANT's declared default for
+		*     the key, else the family row's (spec.model_defaults) — the
+		*     absent-key seed (flux's numbers on a fresh switch, never a
+		*     departed family's 52 resurrected by the schema).
+		*  A switch never leaves a judged key outside the envelope. Mutates
+		*  the patch. */
+		function overrideEnvelopeKeys(patch, spec, offered, held, trustStamps = false) {
+			const env = offered.sampler_envelope;
+			if (env === void 0 || env === null) return;
+			const familyDefaults = spec.model_defaults ?? {};
+			for (const [k, range] of Object.entries(env)) {
+				if (!Array.isArray(range) || range.length !== 2) continue;
+				const [lo, hi] = range;
+				if (typeof lo !== "number" || typeof hi !== "number") continue;
+				const clamp = (v) => v < lo ? lo : v > hi ? hi : v;
+				const stamp = patch[k];
+				if (typeof stamp === "number" && Number.isFinite(stamp)) {
+					if (!trustStamps) patch[k] = clamp(stamp);
+					continue;
+				}
+				const doc = held?.[k];
+				if (typeof doc === "number" && Number.isFinite(doc)) {
+					const c = clamp(doc);
+					if (c !== doc) patch[k] = c;
+					continue;
+				}
+				const declared = offered.defaults[k] ?? familyDefaults[k];
+				if (typeof declared === "number" && Number.isFinite(declared)) patch[k] = clamp(declared);
+			}
+		}
 		/** A pick's full reconcile: resolve the variant the DOOR will judge
 		*  (offeredVariantOf — the door's own resolution over the doc the
 		*  pick produces), then land its envelope keys on a truth the
@@ -8753,7 +8820,8 @@ window.__ModuleLoader__.load({
 				...held ?? {},
 				...patch
 			};
-			(offeredVariantOf(spec.variants ?? [], doc) ?? row).id === row.id && row.group;
+			const offered = offeredVariantOf(spec.variants ?? [], doc) ?? row;
+			overrideEnvelopeKeys(patch, spec, offered, held, offered.id === row.id && row.group === "Variant");
 		}
 		/** A model switch's full value patch (the stale-variant cure,
 		*  operator 2026-09-14: model anima + variant turbo refused at
@@ -8907,6 +8975,7 @@ window.__ModuleLoader__.load({
 			const offered = offeredVariantOf(spec.variants ?? [], seeded);
 			if (offered === void 0 || offered.sampler_envelope == null) return seeded;
 			const patch = {};
+			overrideEnvelopeKeys(patch, spec, offered, seeded, false);
 			if (Object.keys(patch).length === 0) return seeded;
 			return {
 				...seeded,
@@ -12534,7 +12603,7 @@ window.__ModuleLoader__.load({
 				"data-model-static": "1",
 				"aria-label": chromeCopy.modelLabel,
 				title: modelRows[0].label
-			}, modelRows[0].label) : (0, react.createElement)(AxisMenuSelect, {
+			}, (0, react.createElement)("span", { className: card_module_css_default.specSelectText }, modelRows[0].label)) : (0, react.createElement)(AxisMenuSelect, {
 				label: chromeCopy.modelLabel,
 				value: shownModel,
 				rows: modelRows,
@@ -12561,10 +12630,8 @@ window.__ModuleLoader__.load({
 					id: v.id,
 					label: titleCaseId(v.label) + (typeof v.hint === "string" && v.hint !== "" ? ` — ${v.hint}` : "")
 				}))];
-				return (0, react.createElement)("label", {
-					key: g,
-					className: card_module_css_default.specField
-				}, (0, react.createElement)("span", { className: card_module_css_default.specFieldKey }, label), (0, react.createElement)(AxisMenuSelect, {
+				const nearest = rows[0];
+				return (0, react.createElement)(react.Fragment, { key: g }, (0, react.createElement)("label", { className: card_module_css_default.specField }, (0, react.createElement)("span", { className: card_module_css_default.specFieldKey }, label), (0, react.createElement)(AxisMenuSelect, {
 					label,
 					value: active[g],
 					rows: axisRows,
@@ -12576,7 +12643,17 @@ window.__ModuleLoader__.load({
 						const row = rows.find((v) => v.id === id);
 						if (row !== void 0) pick(row);
 					}
-				}));
+				})), refusedId !== void 0 && nearest !== void 0 ? (0, react.createElement)("div", {
+					className: card_module_css_default.specHint,
+					"data-axis-repair": g
+				}, chromeCopy.axisRepairNote, " ", (0, react.createElement)("button", {
+					type: "button",
+					className: card_module_css_default.specLinkBtn,
+					"data-axis-repair-btn": g,
+					onClick: () => {
+						pick(nearest);
+					}
+				}, chromeCopy.axisRepairVerb({ face: titleCaseId(nearest.label) }))) : null);
 			};
 			const variantAxis = groups.includes("Variant") ? "Variant" : void 0;
 			const variantField = variantAxis !== void 0 ? axisField(variantAxis) : null;

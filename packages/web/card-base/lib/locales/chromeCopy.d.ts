@@ -61,6 +61,13 @@ export declare const chromeCopy: {
         axis: string;
         holder: string;
     }) => string;
+    /** Refused-coord repair note (axis-unification P0#3): the one-pick
+     *  cure is a verb — the repair button's lead-in sentence. */
+    readonly axisRepairNote: "Not an offered coordinate of the held matrix — the nearest current cell is one click away:";
+    /** Refused-coord repair verb: the nearest current cell's face rides in. */
+    readonly axisRepairVerb: (p: {
+        face: string;
+    }) => string;
     /** Recipe picker's resting placeholder (nothing held). */
     readonly recipePlaceholder: "-- recipe --";
     /** Recipe picker's custom face (a held stamp no row matches). */

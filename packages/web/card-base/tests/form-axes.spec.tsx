@@ -352,6 +352,21 @@ test('MENU SELECT: the anchor label rides its own clamp span (the dropdown pill 
   expect(rule).toContain('white-space: nowrap')
 })
 
+test('MENU SELECT: the STATIC single-model face rides the same clamp span (defect 2 has no belt-only seat left)', () => {
+  // doc() carries exactly one model row and no refusal — the static
+  // face (the 2026-11-05 single-model law). Its label used to be the
+  // div's RAW text node: .specSelect's block+ellipsis is the
+  // cascade-sensitive belt, the exact "sometimes" spill. The span is
+  // the suspenders — same law as the menu trigger above.
+  axes()
+  const staticFace = screen.getByLabelText('Model') as HTMLElement
+  expect(staticFace.getAttribute('data-model-static')).toBe('1')
+  const span = staticFace.querySelector('span')
+  if (span === null) throw new Error('the static model label span did not render')
+  expect(span.textContent).not.toBe('')
+  expect(staticFace.textContent).toBe(span.textContent)
+})
+
 test('AXES: a held stranger on an axis renders AS ITSELF, refused (the lane proof, held)', () => {
   axes({ value: { variant: 'nope' } })
   expect(shown('Variant')).toMatch(/^Nope — invalid variant/)
