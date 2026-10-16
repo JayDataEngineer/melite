@@ -17,6 +17,8 @@ import assert from "node:assert/strict"
 import { act, renderHook } from "@testing-library/react"
 import { useState } from "react"
 import { useCallMutations } from "../src/ui/studio/useCallMutations.ts"
+import { snapCallLength } from "../src/ui/studio/docGrid.ts"
+import { DOC_FPS_DEFAULT } from "@melite/models-h3/timelineContract"
 import type { DocCall } from "../src/ui/studio/docModel.ts"
 
 function harness(initial: DocCall[], fps = 24) {
@@ -85,6 +87,31 @@ describe("addCallAt", () => {
     act(() => { tiny.result.current.addCallAt(0) })
     // the shortest legal first window is the 22f base, never 1f
     assert.equal(tiny.result.current.calls[0]!.end_frame, 22)
+  })
+
+  // (timeline-plane wave-2 G5, the S11 seat) the fresh call's booked
+  // LENGTH was unwalled: it books TWO SECONDS of frames at the doc
+  // clock (the seat's own fps × 2), snapped by the grid's real law —
+  // derived here through the const and the shared snap, never a
+  // frozen 48. The stated-fps arm proves the booking rides the PASSED
+  // clock, not the default.
+  it("the appended call books fps×2 frames at the doc clock (G5)", () => {
+    const { result } = harness([A], DOC_FPS_DEFAULT)
+    act(() => { result.current.addCallAt(A.end_frame) })
+    const booked = result.current.calls[1]!
+    assert.equal(
+      booked.end_frame - booked.start_frame,
+      snapCallLength(Math.round(DOC_FPS_DEFAULT * 2), true),
+      `a fresh call books 2s of frames at ${DOC_FPS_DEFAULT}fps, snapped carried`,
+    )
+    const slow = harness([A], 12)
+    act(() => { slow.result.current.addCallAt(A.end_frame) })
+    const bookedSlow = slow.result.current.calls[1]!
+    assert.equal(
+      bookedSlow.end_frame - bookedSlow.start_frame,
+      snapCallLength(Math.round(12 * 2), true),
+      "the booking rides the passed fps — 12fps books half the frames",
+    )
   })
 })
 

@@ -26,6 +26,7 @@ import {
 } from "../src/ui/studio/docCalls.ts"
 import { STARTER_CALLS } from "../src/ui/studio/docModel.ts"
 import { studioCopy } from "../src/ui/studio/studioCopy.ts"
+import { DOC_FPS_DEFAULT } from "@melite/models-h3/timelineContract"
 
 // (re-pin 2026-11-06, the heal law ce79f052a) hydrateCalls ends
 // healOffGridCalls — the engine renders 22+17k frames, so a 48f
@@ -487,6 +488,26 @@ describe("hasKnobs / callsToPrompts / keyframesToLanes", () => {
   it("callsToPrompts: zero fps never divides by zero", () => {
     const [p] = callsToPrompts([{ ...CALL }], 0)
     assert.ok(p!.text.includes("C1"))
+  })
+
+  // (timeline-plane wave-2 G4) the fallback arm's PRESENCE was walled,
+  // never its VALUE — the one S-seat whose ONE-CLOCK booking no wall
+  // pinned. The expected seconds derive through the const (no frozen
+  // literal): a seat falling to the timeline vocabulary's 16 — or any
+  // second spelling — reds here.
+  it("callsToPrompts: the fps-ABSENT arm books the seconds at DOC_FPS_DEFAULT (ONE CLOCK's value, G4)", () => {
+    const [p] = callsToPrompts([{ ...CALL }], 0)
+    const booked = ((CALL.end_frame - CALL.start_frame) / DOC_FPS_DEFAULT).toFixed(1)
+    assert.ok(
+      p!.text.startsWith(`C1 · ${booked}s — `),
+      `the unstated-fps clip header books at the doc clock (${booked}s): ${p!.text}`,
+    )
+    // the header's own face is the dictionary's — the arm judges the
+    // CLOCK, so the expected string composes through the same face
+    assert.equal(
+      p!.text,
+      studioCopy.clipHeader(0, booked, CALL.text!),
+    )
   })
 
   it("keyframesToLanes: flat diamonds on the image track, negatives clamp to 0", () => {

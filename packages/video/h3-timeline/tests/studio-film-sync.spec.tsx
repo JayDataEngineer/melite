@@ -11,6 +11,7 @@ import assert from "node:assert/strict"
 import { act, renderHook } from "@testing-library/react"
 import { useState } from "react"
 import { useFilmSync } from "../src/ui/studio/useFilmSync.ts"
+import { DOC_FPS_DEFAULT } from "@melite/models-h3/timelineContract"
 import type { FilmPlayerHandle } from "@melite-plugin/timeline/ui/timeline"
 import type { DocCall, DocKeyframe } from "../src/ui/studio/docModel.ts"
 
@@ -37,7 +38,7 @@ function fakePlayer() {
   return { handle, calls, seeks }
 }
 
-function harness(fps = 24) {
+function harness(fps = DOC_FPS_DEFAULT) {
   return renderHook(() => {
     const [frame, setFrame] = useState(0)
     const s = useFilmSync({ fps, totalFrames: 96, keyframes: KEYS, calls: CALLS, setFrameIdx: setFrame })
@@ -66,13 +67,13 @@ describe("handleFilmTime (playback moves the bar)", () => {
   })
 
   it("the film's fps wins the axis (not the doc rail's)", () => {
-    const { result } = harness(24)
+    const { result } = harness(DOC_FPS_DEFAULT)
     act(() => { result.current.filmFpsRef.current = 30 })
     assert.equal(result.current.axisFps(), 30)
     act(() => { result.current.handleFilmTime(1) })
     assert.equal(result.current.frame, 30)
     act(() => { result.current.filmFpsRef.current = null })
-    assert.equal(result.current.axisFps(), 24)
+    assert.equal(result.current.axisFps(), DOC_FPS_DEFAULT)
   })
 })
 
@@ -121,6 +122,23 @@ describe("handleBarFrame (the hand moves the film)", () => {
     const { result } = harness()
     act(() => { result.current.handleBarFrame(12) })
     assert.equal(result.current.frame, 12)
+  })
+
+  // (timeline-plane wave-2 G6) the triangle's OTHER direction: the
+  // bar→film seek must divide by the FILM's fps too. The audit's F2
+  // disease was exactly this half — an axis riding the doc fps scaled
+  // every seek by the fps ratio. Film 30 vs doc DOC_FPS_DEFAULT: a
+  // regression to doc-fps-only lands 60/24 = 2.5 and reds here.
+  it("the seek divides by the FILM fps when the axis diverges (G6, the override arm)", () => {
+    const { result } = harness(DOC_FPS_DEFAULT)
+    const p = fakePlayer()
+    act(() => {
+      result.current.filmRef.current = p.handle
+      result.current.filmFpsRef.current = 30
+    })
+    act(() => { result.current.handleBarFrame(60) })
+    assert.equal(result.current.frame, 60, "the playhead takes the bar's film frame verbatim")
+    assert.deepEqual(p.seeks, [2], "60 film frames @ 30fps = 2s — the film clock, never the doc rail's")
   })
 })
 

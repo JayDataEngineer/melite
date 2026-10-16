@@ -17,6 +17,7 @@ import { CallCardsPanel } from "../src/ui/studio/CallCardsPanel.tsx"
 import { useBeatMutations } from "../src/ui/studio/useBeatMutations.ts"
 import type { DocCall, DocKeyframe } from "../src/ui/studio/docModel.ts"
 import { fieldsOfEnvelope, type SpecField, bindEstateRemote, unbindEstateRemote } from "@melite/card-base/client"
+import { DOC_FPS_DEFAULT } from "@melite/models-h3/timelineContract"
 import { carrier } from "../src/card.ts"
 
 // THE SERVED WALK (hour 22): the fold's schema truth, keyed by wire name.
@@ -320,6 +321,30 @@ describe("THE STANDALONE KEYFRAMES SUBVIEW (defect B, operator 2026-11-06: its o
     const h = render(<CallCardsPanel {...p} />)
     assert.match(screen.getByText("Keyframes").className, /_sectionLabelText_/, "the kf head is SectionLabel's label face")
     h.unmount()
+  })
+
+  // (timeline-plane wave-2 G5) the row's seconds label was unwalled —
+  // the audit's S7 seat rode doc fps correctly but no wall pinned the
+  // VALUE. Both arms derive the expected seconds through the clock:
+  // the const at the doc-clock arm, the prop at the stated arm — a
+  // frozen literal at the seat reds one of the two.
+  describe("the keyframe seconds label's clock (G5)", () => {
+    it("the pin's seconds divide by DOC_FPS_DEFAULT (the doc clock)", () => {
+      const { p } = panel({ kfView: true, fps: DOC_FPS_DEFAULT, keyframes: [{ image: "still-a", frame: 48 }] })
+      const h = render(<CallCardsPanel {...p} />)
+      assert.ok(
+        screen.getByText(`${(48 / DOC_FPS_DEFAULT).toFixed(2)}s`),
+        `48 frames book ${(48 / DOC_FPS_DEFAULT).toFixed(2)}s at the doc clock`,
+      )
+      h.unmount()
+    })
+
+    it("the label rides the panel's OWN fps — a stated 12fps doc books double", () => {
+      const { p } = panel({ kfView: true, fps: 12, keyframes: [{ image: "still-a", frame: 48 }] })
+      const h = render(<CallCardsPanel {...p} />)
+      assert.ok(screen.getByText(`${(48 / 12).toFixed(2)}s`), "48 frames book 4.00s at 12fps")
+      h.unmount()
+    })
   })
 })
 

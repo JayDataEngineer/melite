@@ -12,6 +12,7 @@ import { useState } from "react"
 import { fireEvent, render, screen, waitFor } from "@testing-library/react"
 import { CallCard } from "../src/ui/studio/CallCard.tsx"
 import { studioCopy } from "../src/ui/studio/studioCopy.ts"
+import { DOC_FPS_DEFAULT, deliveredFrames } from "@melite/models-h3/timelineContract"
 import type { DocCall } from "../src/ui/studio/docModel.ts"
 import { bindEstateRemote, fieldsOfEnvelope, unbindEstateRemote, type SpecField, ASSET_DRAG_MIME } from "@melite/card-base/client"
 import { carrier } from "../src/card.ts"
@@ -122,6 +123,43 @@ describe("focus + header", () => {
     )
     assert.ok(screen.getByText("2 knobs"))
     two.unmount()
+  })
+
+  // (timeline-plane wave-2 G5, the S6 seat) the card header's span
+  // readout was unwalled — the copy census saw the dict key, never the
+  // booked seconds. Both seconds derive through the clock: the const
+  // at the doc-clock arm, the prop at the stated arm, and the carried
+  // window's delivered arm pins span ≠ delivered — a frozen literal at
+  // the seat reds at least one of the three.
+  describe("the span readout's clock (G5)", () => {
+    it("span + delivered seconds divide by DOC_FPS_DEFAULT (the doc clock)", () => {
+      const h = render(<CallCard c={BASE} i={0} deps={deps({ fps: DOC_FPS_DEFAULT }).d} />)
+      const span = ((BASE.end_frame - BASE.start_frame) / DOC_FPS_DEFAULT).toFixed(1)
+      const delivered = (deliveredFrames(BASE, 0) / DOC_FPS_DEFAULT).toFixed(1)
+      assert.ok(
+        screen.getByText(studioCopy.spanReadout(BASE.start_frame, BASE.end_frame, span, delivered)),
+        `frames ${BASE.start_frame}–${BASE.end_frame} book ${span}s → delivered ${delivered}s at the doc clock`,
+      )
+      h.unmount()
+    })
+
+    it("the readout rides the card's OWN fps — a stated 12fps doc books double", () => {
+      const h = render(<CallCard c={BASE} i={0} deps={deps({ fps: 12 }).d} />)
+      const span = ((BASE.end_frame - BASE.start_frame) / 12).toFixed(1)
+      const delivered = (deliveredFrames(BASE, 0) / 12).toFixed(1)
+      assert.ok(screen.getByText(studioCopy.spanReadout(BASE.start_frame, BASE.end_frame, span, delivered)))
+      h.unmount()
+    })
+
+    it("a carried window's delivered seconds lose the 22f seam (span ≠ delivered)", () => {
+      const carried: DocCall = { text: "b", start_frame: 48, end_frame: 90 }
+      const h = render(<CallCard c={carried} i={1} deps={deps({ fps: DOC_FPS_DEFAULT }).d} />)
+      const span = ((carried.end_frame - carried.start_frame) / DOC_FPS_DEFAULT).toFixed(1)
+      const delivered = (deliveredFrames(carried, 1) / DOC_FPS_DEFAULT).toFixed(1)
+      assert.notEqual(delivered, span, "a carried window delivers span − 22f, never the span itself")
+      assert.ok(screen.getByText(studioCopy.spanReadout(carried.start_frame, carried.end_frame, span, delivered)))
+      h.unmount()
+    })
   })
 
   // THE MASTER-GATED NINE (calls-stanza audit #3, 2026-10-16):
