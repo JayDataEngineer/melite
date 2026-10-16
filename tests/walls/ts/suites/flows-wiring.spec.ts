@@ -107,6 +107,40 @@ describe("THE LEAF<->ROW INTERLOCK (flows wave-2: object-forge taught a dead rem
     }
     assert.deepEqual(failures, []);
   });
+
+  // CO-W5 (flows-registry wave-2): discloseRegistry's leaf read
+  // falls back to name-as-title when flows/<id>/tool.json is absent
+  // — legal since the 2026-10-04 leaf retirement, but SILENT, and
+  // nothing stated WHICH flows owe the leaf home the make-flow skill
+  // promises ("a flow has TWO homes"). The law, derived from the
+  // rows themselves: a flow OWES flows/<id>/tool.json iff its row
+  // carries a RegistryTool (the agent tool face) or non-empty
+  // skillRefs (the advertised skill bundle). The roster below is
+  // DERIVED — a new tool row owes its leaf the hour it lands, no
+  // roster edit, no repin.
+  it("every row that owes a leaf (a RegistryTool or non-empty skillRefs) carries flows/<id>/tool.json", () => {
+    const failures: string[] = [];
+    const owed: string[] = [];
+    for (const name of SEED.names()) {
+      const row = SEED.get(name);
+      if (row === undefined) continue;
+      const hasTool = row.tool !== null && row.tool !== undefined;
+      const hasRefs = row.skillRefs.length > 0;
+      if (!hasTool && !hasRefs) continue;
+      owed.push(name);
+      if (!existsSync(`${REPO}flows/${name}/tool.json`)) {
+        failures.push(
+          `${name}: the row carries ${hasTool ? `RegistryTool '${row.tool!.name}'` : "non-empty skillRefs"} ` +
+          `but flows/${name}/tool.json is absent — the leaf home is OWED ` +
+          `(disclose falls back to name-as-title and the interlock judges nothing)`,
+        );
+      }
+    }
+    assert.ok(owed.length > 0, "the derived owed-leaf roster is empty — the derivation broke");
+    console.log(`owed-leaf roster (RegistryTool or non-empty skillRefs): ${owed.sort().join(", ")}`);
+    assert.deepEqual(failures, [],
+      "rows that owe a leaf home but carry no flows/<id>/tool.json:\n" + failures.join("\n"));
+  });
 });
 
 describe("the flow-registry wiring wall (the live door's own construction, over every registry flow)", () => {
@@ -118,8 +152,9 @@ describe("the flow-registry wiring wall (the live door's own construction, over 
     // retired; body-to-somax stays — the motion studio drives it)
     // + character-factory (2026-10-09: the AssetFurnace-shape
     // lift→rig→motion chain, gap audit 012)
-    // + object-forge (2026-10-11: concept→lift→remesh, all card=,
-    // the second {flow:}-door one-shot).
+    // + object-forge (2026-10-11: concept→lift, all card= — the
+    // row's remesh stage left 2026-10-13; the second {flow:}-door
+    // one-shot).
     const names = SEED.names();
     assert.equal(names.length, 10, `the registry serves exactly 10 flows, got ${names.length}`);
     assert.equal(new Set(names).size, names.length, "the registry's flow names are unique");

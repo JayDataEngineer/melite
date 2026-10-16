@@ -73,6 +73,11 @@ flows/<name>/
   agents/skills/<name>-pipeline/SKILL.md   # the stage-by-stage skill
 ```
 
+The leaf is OWED, not decorative: a row that carries a RegistryTool
+(`tool:`) or non-empty `skillRefs` must carry `flows/<name>/tool.json`
+— the flows-wiring wall derives that owed roster from the rows and
+reds an owed row whose leaf is absent.
+
 The `description` in tool.json is where agents learn the drive model:
 stages are AGENT-DRIVEN card chains through the queue door
 (`{model: ...}`) — there is no single-shot yaml door

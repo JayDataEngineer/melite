@@ -157,7 +157,8 @@ describe("the registry-flow wiring wall (the hand-authored graphs, judged)", () 
     // the CUT roster's census (2026-10-13: five 3D/rig rows
     // retired; body-to-somax stays — the motion studio drives it)
     // + character-factory (2026-10-09: lift→rig→motion, audit 012)
-    // + object-forge (2026-10-11: concept→lift→remesh, all card=)
+    // + object-forge (2026-10-11: concept→lift, all card= — its
+    // remesh stage left 2026-10-13)
     expect(names.length, "the registry flows judged, exact").toBe(10);
     // (the atom vocabulary, stroke 4 — completed): EVERY census
     // stage's backend is a declared action now — anny's estimator

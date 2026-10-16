@@ -1,0 +1,29 @@
+{
+  "name": "image_upscale_flow",
+  "version": 1,
+  "kind": "flow",
+  "model": "image-upscale",
+  "stage_title": "Image Upscale",
+  "description": "One call: prompt to a 1080p image — the make stage generates (krea-2 or z-image via the image-gen card), the polish stage upscales (SeedVR2 1080p via the upscale-tools card, always on). WHAT it produces: the upscaled image artifact. HOW it runs: both stages are card=, so the {flow:} door submits ONE merged run (validate then start); the image_upscale POST tool runs the same row in one call; the two cards also drive one at a time through the {model:} door or the bench. Knobs: image_model (required, no default) — krea-2 or z-image, picks the generator family and its baked graph; prompt (required) — what to generate, up to 4000 chars; seed (optional, default 42) — sampler seed on both stages.",
+  "params_schema": {
+    "type": "object",
+    "properties": {
+      "image_model": {
+        "type": "string",
+        "description": "Required. Generator family: krea-2 or z-image (no default — the call names its family)."
+      },
+      "prompt": {
+        "type": "string",
+        "description": "Required. What to generate (up to 4000 chars); an empty one refuses at the door."
+      },
+      "seed": {
+        "type": "integer",
+        "description": "Optional. Sampler seed (default 42, range 0..2147483647), stamped onto both stages."
+      }
+    },
+    "required": [
+      "image_model",
+      "prompt"
+    ]
+  }
+}
