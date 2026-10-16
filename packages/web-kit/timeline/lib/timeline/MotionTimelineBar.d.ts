@@ -146,6 +146,9 @@ export interface MotionTimelineBarProps {
     onAudioLaneActivate?: (layerId: string) => void;
     /** Detach a wired layer (its × in the gutter). */
     onAudioDetach?: (layerId: string) => void;
+    /** (2026-11-06, the lane-add parity law) a track head's add door —
+     *  the host opens its source picker anchored at the button. */
+    onTrackAdd?: (trackUuid: string, anchor: HTMLButtonElement) => void;
     /** (2026-09-22, the D-M-E card law) render audio clips as SMALL CALL
      * CARDS — gradient fill, accent left edge, glyph + name + span, 44px
      * lanes — instead of the 26px blocks. Opt-in; absent → byte-identical
@@ -219,5 +222,5 @@ export { TimelineContent, TimelineGutter, TimelinePlayhead, TimelineRuler } from
 export type { TimelineContentProps, TimelineGutterProps, TimelineGutterScale, TimelinePlayheadProps, TimelineRulerProps } from "./MotionTimelineBarChrome.tsx";
 export { TimelineAudioLanes, TimelineBeatsLane, TimelineKeyframeLanes, TimelinePromptsLane } from "./MotionTimelineBarLanes.tsx";
 export type { TimelineAudioLanesProps, TimelineBeatsLaneProps, TimelineKeyframeLanesProps, TimelinePromptsLaneProps } from "./MotionTimelineBarLanes.tsx";
-export declare function MotionTimelineBar({ prompts, keyframes, frameIdx, onFrameChange, onScrubStart, onScrubEnd, totalFrames, fps, initialSeconds, onKeyframeAdd, onKeyframeMove, onKeyframeDelete, onPromptUpdate, onPromptMove, onPromptResize, onPromptDelete, onExtend, tracks, promptsLabel, laneHint, packed, emptyPromptsHint, promptsHeight, beats, beatsLabel, beatsHeight, beatsHint, onBeatAdd, onPromptAdd, previews, selectedId, onSelect, audioLayers, onAudioDrop, onAudioDropAt, onAudioFileDrop, onAudioClipMove, onAudioClipDelete, onAudioLaneActivate, onAudioDetach, audioClipCards, className, style, theme, }: MotionTimelineBarProps): import("react").JSX.Element;
+export declare function MotionTimelineBar({ prompts, keyframes, frameIdx, onFrameChange, onScrubStart, onScrubEnd, totalFrames, fps, initialSeconds, onKeyframeAdd, onKeyframeMove, onKeyframeDelete, onPromptUpdate, onPromptMove, onPromptResize, onPromptDelete, onExtend, tracks, promptsLabel, laneHint, packed, emptyPromptsHint, promptsHeight, beats, beatsLabel, beatsHeight, beatsHint, onBeatAdd, onPromptAdd, previews, selectedId, onSelect, audioLayers, onAudioDrop, onAudioDropAt, onAudioFileDrop, onAudioClipMove, onAudioClipDelete, onAudioLaneActivate, onAudioDetach, onTrackAdd, audioClipCards, className, style, theme, }: MotionTimelineBarProps): import("react").JSX.Element;
 //# sourceMappingURL=MotionTimelineBar.d.ts.map

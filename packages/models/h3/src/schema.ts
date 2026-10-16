@@ -9,7 +9,7 @@ import { vocabulary } from '@melite/comfyui-card-kit/vocab'
 import { samplingExtra } from '@melite/comfyui-card-kit/fields'
 import { bag } from '@melite/contracts/extraKeys'
 import { coerceWireArrays } from '@melite/comfyui-card-kit'
-import { CALL_KEYS, GRID_BASE_FRAMES, GRID_MAX_FRAMES, GRID_STEP_FRAMES, REF_CAPS, assertGridLength, assertSpanGrid, isMediaRef, normalizeDeclaredRefs, transitionOverlap } from './timelineContract.ts'
+import { CALL_KEYS, GRID_BASE_FRAMES, GRID_MAX_FRAMES, GRID_STEP_FRAMES, REF_CAPS, T4_ONLY_KEYS, assertGridLength, assertSpanGrid, deriveWindowFamily, isMediaRef, normalizeDeclaredRefs, transitionOverlap } from './timelineContract.ts'
 
 // the window families this renderer builds (three shapes:
 // t4r opener / t4_open window / t4_chain window).
@@ -31,12 +31,6 @@ export const H3_RECOMMENDED_SAMPLERS = [
 ] as const
 
 export const JSON_ARRAY_PARAMS = ['calls', 'audio_clips'] as const
-
-const T4_ONLY_KEYS = [
-  'sharpen_switch', 'sharpen_method', 'sharpen_strength', 'sharpen_radius',
-  'sharpen_threshold', 'sharpen_iterations', 'interp_switch',
-  'interp_multiplier', 'interp_model', 'sr_switch', 'sr_model', 'sr_resolution',
-] as const
 
 // ── the params schema — H3TimelineCard mirrored 1:1 ─────────────────────────
 // the declared field order and defaults. Bare (defaultless) keys are the
@@ -494,33 +488,21 @@ export function schema(v: unknown): Record<string, unknown> {
     // derives a text-only window (run-899a8448: the UI wrote `image`,
     // the derivation checked the other three, variant fell t4_open and
     // the reference never became a node).
-    const hasGuide = calls.some((c) => {
-      const cc = c as Record<string, unknown>
-      return Boolean(cc.image) || Boolean(cc.ref_images) || Boolean(cc.ref_image) || Boolean(cc.image_name)
-    })
-      // THE KEYFRAME PIN CHANNEL (the keyframe lane, slice 2 — 2026-11-05):
-      // a doc carrying pins claims the reference lane — an endpoint pin
-      // rides the anchor/end-anchor seats at compose, an interior pin
-      // composes the AddGuide image arm — every pin spelling derives t4r
-      // by the same law as the guide seats (the derivation must know
-      // every seat the compose knows, or a pinned doc walks t4_open and
-      // the build door's stated-family guard falsely refuses the pin's
-      // own anchor: the run-899a8448 shape, one seat over). Multi-call
-      // docs derive t4_chain below regardless — the film loop derives
-      // each window's family from its own seats.
-      || (Array.isArray(raw.keyframes) && (raw.keyframes as unknown[]).length > 0)
-      // THE DECLARED INPUT SURFACE (the input rail's law): card-level
-      // refs / an end anchor / the audio bed imply the r2v lane by the
-      // same law as a per-call guide — the window re-checks, but the
-      // derivation owns it first
-      || wireList(raw.ref_images).length + wireList(raw.ref_videos).length + wireList(raw.ref_audios).length > 0
-      || (typeof raw.last_frame === 'string' && raw.last_frame.trim() !== '')
-    variant = calls.length > 1 ? 't4_chain' : hasGuide ? 't4r' : 't4_open'
+    // ONE spelling now — deriveWindowFamily above (the
+    // family-reseat cure, 2026-11-06). The walk passes the
+    // SYNTHESIZED calls (the fresh-card arm above), so the
+    // fresh-press shape derives exactly as it composes; the guide
+    // union, the pin channel, and the declared input surface live
+    // in the export, never re-spelled here.
+    variant = deriveWindowFamily({ ...raw, calls })
     out.variant = variant
   }
-  if (!(FAMILIES as readonly string[]).includes(variant)) {
-    throw new Error(`unknown window family '${variant}' (known: ${[...FAMILIES].sort().join(', ')})`)
-  }
+  // (2026-11-06, the family-reseat cure) the unknown-family throw is
+  // DEAD by totality and deleted: variant is either a STATED family
+  // (only ever assigned when it is a FAMILIES member) or a DERIVED
+  // one (deriveWindowFamily returns exactly the three members), so
+  // `includes(variant)` could never be false — the guard was
+  // uncoverable code the per-file gate kept paying for.
   const explicit = new Set(Object.keys(raw))
   // NO SILENT RESOLUTION LAW (2026-09-20): shift_video's declared
   // default(8) is THE owner. The old nulling — "an omitted key

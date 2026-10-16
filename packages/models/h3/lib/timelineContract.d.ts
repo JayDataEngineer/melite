@@ -30,6 +30,26 @@ export interface TimelineCallSpan {
  *  spelling. */
 export declare function isMediaRef(v: string): boolean;
 export declare function transitionOverlap(transition?: string): number;
+/** (2026-11-06, the family-reseat cure) the post-pass knobs the t4r
+ *  lane cannot honor — its renderer wires NO post chain (the graph
+ *  goes straight to CreateVideo), so the schema walk REFUSES these
+ *  keys on a derived-t4r doc rather than silently dropping them (the
+ *  no-silent-resolution law). Shared with the studio so its rail and
+ *  its heal judge the SAME twelve the walk refuses. */
+export declare const T4_ONLY_KEYS: readonly ["sharpen_switch", "sharpen_method", "sharpen_strength", "sharpen_radius", "sharpen_threshold", "sharpen_iterations", "interp_switch", "interp_multiplier", "interp_model", "sr_switch", "sr_model", "sr_resolution"];
+/** (2026-11-06, the family-reseat cure) the doc-level window family
+ *  derivation, ONE spelling for every door that needs the family
+ *  BEFORE the walk refuses: the walk derives the composed doc's
+ *  family; the studio rail gates the second-pass group on the t4r
+ *  lane; the reseat heal unstated post keys a family edit stranded
+ *  (the live brick: a film legally stamped sr_switch lost its
+ *  second call, derived t4r, and EVERY compose refused). Reads
+ *  exactly the seats the walk reads — the guide-key union, the pin
+ *  channel, the declared input surface (a private spelling elsewhere
+ *  is the run-899a8448 disease: one seat missed, the family lies).
+ *  @param raw the doc-shaped record (calls/keyframes/ref surface)
+ *  @returns the derived window family */
+export declare function deriveWindowFamily(raw: Record<string, unknown>): 't4r' | 't4_open' | 't4_chain';
 export declare function spanOverlap(span: TimelineSpan): number;
 export declare function spanStanzaFrames(span: TimelineSpan, carry?: number): number;
 export interface CarriedSpanGrid {

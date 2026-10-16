@@ -57,9 +57,9 @@ describe("the lane gutter's add door (opt-in)", () => {
     expect(document.querySelector('[data-audio-upload="music"]')).toBeNull()
   })
 
-  it("THE KEYFRAMES TRACK carries the same opt-in door (operator 2026-11-05: the lane works exactly like the audio inputs) — absent, byte-identical; present, the icon rides with the track's name and hands the button back", () => {
-    const seen: string[] = []
-    render(h(MotionTimelineBar, {
+  it("THE TRACK HEADS carry the same opt-in door (the lane-add parity law, operator 2026-11-06: the keyframes heads owe the same up-arrow icon the audio inputs carry) — absent onTrackAdd, byte-identical; present, every track head's icon rides named for its track and hands (uuid, the button) back", () => {
+    const seen: [string, string][] = []
+    const bar = (onTrackAdd?: (uuid: string, anchor: HTMLButtonElement) => void) => h(MotionTimelineBar, {
       prompts: [],
       keyframes: [],
       frameIdx: 0,
@@ -67,8 +67,7 @@ describe("the lane gutter's add door (opt-in)", () => {
       fps: 24,
       tracks: [
         { uuid: "image", name: "Keyframes", track_type: "keyframe", color: [86, 140, 245] },
-        { uuid: "pose", name: "Pose", track_type: "keyframe", color: null,
-          onUpload: (anchor: HTMLButtonElement) => { seen.push(anchor.getAttribute("data-kf-upload") ?? "?") } },
+        { uuid: "pose", name: "Pose", track_type: "keyframe", color: null },
       ],
       onFrameChange: noop,
       onKeyframeAdd: () => "kf",
@@ -76,15 +75,25 @@ describe("the lane gutter's add door (opt-in)", () => {
       onKeyframeDelete: noop,
       onPromptUpdate: noop,
       onPromptMove: noop,
-    } as never))
-    // absent = no affordance
-    expect(document.querySelector('[data-kf-upload="image"]')).toBeNull()
-    // present = the named icon, the anchor handed back
-    const btn = document.querySelector('[data-kf-upload="pose"]') as HTMLElement
-    expect(btn).not.toBeNull()
-    expect(btn.getAttribute("aria-label")).toContain("Pose")
-    fireEvent.click(btn)
-    expect(seen).toEqual(["pose"])
+      onTrackAdd,
+    } as never)
+    // absent = no affordance on ANY track head (byte-identical head)
+    const { unmount } = render(bar())
+    expect(document.querySelector('[data-track-upload="image"]')).toBeNull()
+    expect(document.querySelector('[data-track-upload="pose"]')).toBeNull()
+    unmount()
+    // present = every track head gains its named icon; the click
+    // hands (uuid, the button element) back — the host's picker
+    // anchor (the uuid lets one host serve many heads)
+    render(bar((uuid, anchor) => { seen.push([uuid, anchor.getAttribute("data-track-upload") ?? "?"]) }))
+    const kfBtn = document.querySelector('[data-track-upload="image"]') as HTMLElement
+    expect(kfBtn).not.toBeNull()
+    expect(kfBtn.getAttribute("aria-label")).toContain("Keyframes")
+    fireEvent.click(kfBtn)
+    const poseBtn = document.querySelector('[data-track-upload="pose"]') as HTMLElement
+    expect(poseBtn.getAttribute("aria-label")).toContain("Pose")
+    fireEvent.click(poseBtn)
+    expect(seen).toEqual([["image", "image"], ["pose", "pose"]])
   })
 
   it("the click hands the BUTTON ELEMENT back — the picker's anchor", () => {

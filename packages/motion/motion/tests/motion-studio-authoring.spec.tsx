@@ -423,17 +423,24 @@ describe('timeline (prompts + keyframes)', () => {
     fireEvent.pointerDown(edge, { clientX: 30, button: 0 })
     fireEvent.pointerMove(window, { clientX: 130 })
     fireEvent.pointerUp(window, { clientX: 130 })
-    // a second tail pull inside the toast window extends silently
+    // (2026-11-06, the pool-load receipt) judge the toast RIGHT AFTER
+    // the pull that fires it: polling after the second drag let the
+    // first toast's TTL expire under the full pool (deterministic
+    // 'no extend toast yet' at 6G while standalone stayed green).
+    await vi.waitFor(() => {
+      const toasted = useToastStore.getState().toasts.some((t) => t.message.includes('Timeline extended to'))
+      if (!toasted) throw new Error('no extend toast yet')
+    }, { timeout: 10000 })
+    // a second tail pull inside the toast window extends silently —
+    // still exactly ONE extend toast after both pulls
     const clips2 = [...document.body.querySelectorAll('[data-prompt-clip]')] as HTMLElement[]
     const last2 = clips2[clips2.length - 1]
     const edge2 = last2.querySelector('[data-prompt-edge="r"]') as HTMLElement
     fireEvent.pointerDown(edge2, { clientX: 130, button: 0 })
     fireEvent.pointerMove(window, { clientX: 230 })
     fireEvent.pointerUp(window, { clientX: 230 })
-    await vi.waitFor(() => {
-      const toasted = useToastStore.getState().toasts.some((t) => t.message.includes('Timeline extended to'))
-      if (!toasted) throw new Error('no extend toast yet')
-    }, { timeout: 10000 })
+    const extendToasts = useToastStore.getState().toasts.filter((t) => t.message.includes('Timeline extended to'))
+    expect(extendToasts.length).toBe(1)
     expect(onSave.mock.calls.some(([p]) => (p as Record<string, unknown>).duration_sec !== undefined)).toBe(true)
   })
 

@@ -414,3 +414,22 @@ export function trackColor(track: { color: number[] | null }): string {
 
 /** The Layer A key setter the rail panels share (the tenant owns it). */
 export type SetLayerAKey = <K extends keyof LayerA>(k: K, v: LayerA[K]) => void
+
+/** Defined-wins layer merge (the family-gate derivation input,
+ *  2026-11-06): the settled stage params (calls, keyframes, the
+ *  declared ref surface) overlaid with the layer's STATED keys. A
+ *  plain spread would let the layer's undefined holes erase the
+ *  base's seats and mis-derive the family (t4_open for a t4r doc —
+ *  the exact lie the gate exists to kill). Shared by the rail's
+ *  omitFields gate and the component's family-reseat heal: one
+ *  merge, one truth. */
+export function mergeDocLayers(
+  base: Record<string, unknown> | null | undefined,
+  layer: Record<string, unknown>,
+): Record<string, unknown> {
+  const out: Record<string, unknown> = { ...(base ?? {}) }
+  for (const [k, v] of Object.entries(layer)) {
+    if (v !== undefined && v !== "") out[k] = v
+  }
+  return out
+}

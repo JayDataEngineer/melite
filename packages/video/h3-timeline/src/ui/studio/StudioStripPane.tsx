@@ -14,7 +14,7 @@ import { MotionTimelineBar } from "@melite-plugin/timeline/ui/timeline"
 import type { TimelineKeyframe, TimelinePrompt } from "@melite-plugin/timeline/ui/timeline"
 import { useSquareProvider, readAsDataURL, fetchMediaLibrary, PaneHeader, PaneShell } from '@melite/card-base/client'
 import type { SpecField } from '@melite/card-base/client'
-import { refUploadError, REF_READ_ERROR, FOREIGN_URL_REFUSAL, estateMediaChip } from './refUtils.ts' 
+import { refUploadError, REF_READ_ERROR, FOREIGN_URL_REFUSAL, estateMediaChip, classifyImageSrc, loadImageMedia, IMAGE_ROW_RE } from './refUtils.ts'
 import s from "./studio.module.css"
 import { VIDEO_TIMELINE_TRACKS } from "./docModel.ts"
 import type { DocCall, DocKeyframe, LayerA, SetLayerAKey } from "./docModel.ts"
@@ -54,7 +54,7 @@ export function StudioStripPane({
   handleExtend, addCallAt, handleTimelineSelect,
   layerA, refAudiosBlocked, addAudioClip, takeAudioFile, moveAudioClip, deleteAudioClip,
   updateAudioClip,
-  setLayerAKey, artifactIndex, docFromFilm, keyframes, enterKfView, enterAudioView,
+  setLayerAKey, artifactIndex, docFromFilm, keyframes, addKeyframeWithImage, enterKfView, enterAudioView,
 }: {
   calls: DocCall[]
   totalFrames: number
@@ -97,6 +97,10 @@ export function StudioStripPane({
   artifactIndex: { byUrl: Map<string, string> }
   docFromFilm: (g: number) => number
   keyframes: DocKeyframe[]
+  /** (D7, the lane-add parity law, 2026-11-06) the ATOMIC pin+image
+   *  verb — the track head's add door commits BOTH in one write
+   *  (the same law the rail subview's add door rides). */
+  addKeyframeWithImage: (image: string, frame: number) => string
   /** THE SUBVIEW DOOR (defect B): opens the rail's standalone
    *  keyframes editor — the strip head's one keyframes verb. */
   enterKfView: () => void
@@ -156,17 +160,71 @@ export function StudioStripPane({
       },
     },
   )
-  // (defect B, operator 2026-11-06) THE KEYFRAMES LANE UPLOAD DOOR IS
-  // DEAD: the add door rides the rail's keyframes subview — an upload
-  // icon beside its title, never an icon inside the timeline bar. The
-  // lane keeps its document gestures (double-click pins, drag moves,
-  // ✕ deletes); the SUBVIEW DOOR below is the strip's one addition.
+  // (defect B SUPERSEDED by the lane-add parity law, operator
+  // 2026-11-06: "WHERE IS MY UP ARROW ICON FOR THE KEYFRAMES? THE
+  // AUDIO INPUTS HAVE THEM") — the keyframes lane head now carries
+  // the SAME add door the audio heads carry: an upload icon on the
+  // lane row, opening the generic source grammar (From flow / From
+  // media / From file). The rail's keyframes subview KEEPS its own
+  // add door; the lane keeps its document gestures (double-click
+  // pins, drag moves, ✕ deletes). The subview door below stays.
 
   const openLanePicker = (lane: LaneCls) => (anchor: HTMLElement): void => {
     pickLane.current = lane
     // (the slot-shape proof) type 'file' always hosts; the verb is
     // optional in the InputSquareVerbs interface — both belts ride ?.
     square(laneField(lane))?.verbs.onPick?.(anchor)
+  }
+
+  // ── THE TRACK-HEAD ADD DOOR (D7, the lane-add parity law,
+  // 2026-11-06) ─────────────────────────────────────────────────
+  // The keyframes lane row's upload icon — the SAME grammar the
+  // audio lane heads ride (useSquareProvider's three-entry picker).
+  // The commit is the ATOMIC pin+image law: classifyImageSrc judges
+  // the currency (estate media canonical / the run's artifacts /
+  // data: chips ride; foreign URLs refuse on the strip's error
+  // face), then ONE write pins the image at the CURRENT PLAYHEAD
+  // (docFromFilm(frameIdx) — the same frame a double-click pins).
+  // ONE spelling for the judge: refUtils' classifyImageSrc, the
+  // same spine the rail subview's add door rides.
+  const [kfErr, setKfErr] = useState<string | null>(null)
+  const kfAddField: SpecField =
+    { name: "kf:add", label: studioCopy.imageGuideLane, type: "file" }
+  const { square: kfAddSquare, wireMenu: kfAddMenu } = useSquareProvider(
+    (_name, v) => {
+      if (typeof v !== "string" || v === "") return
+      const got = classifyImageSrc(v, artifactIndex.byUrl)
+      if ("refusal" in got) { setKfErr(got.refusal); return }
+      setKfErr(null)
+      addKeyframeWithImage(got.image, docFromFilm(frameIdx))
+    },
+    {
+      // From flow: the run's own artifacts, image rows only.
+      candidates: Array.from(artifactIndex.byUrl.entries())
+        .filter(([url]) => IMAGE_ROW_RE.test(url))
+        .map(([url, name2]) => ({ id: url, label: name2, url })),
+      // From media: the estate library through its one door, image
+      // rows only — the STABLE module-level wrapper (THE DEP LAW:
+      // never an inline arrow here).
+      loadMedia: loadImageMedia,
+      // From file: the OS dialog, image family — the atomic verb.
+      accept: "image/*",
+      onFile: (file: File) => {
+        setKfErr(null)
+        const refusal = refUploadError(file, "image")
+        if (refusal !== null) { setKfErr(refusal); return }
+        readAsDataURL(file).then(
+          (data) => { addKeyframeWithImage(data, docFromFilm(frameIdx)) },
+          () => { setKfErr(REF_READ_ERROR) },
+        )
+      },
+    },
+  )
+  const openTrackAdd = (_trackUuid: string, anchor: HTMLButtonElement): void => {
+    // (2026-11-06) no uuid gate: VIDEO_TIMELINE_TRACKS is this pane's
+    // ONE keyframes track — every track head the bar renders IS the
+    // kf door (a uuid check here was uncoverable defensive code).
+    kfAddSquare(kfAddField)?.verbs.onPick?.(anchor)
   }
   // ── THE KEYFRAME CHIP FACES (slice 3, 2026-11-05) ──────────────────
   // The bar renders WHAT it is given; the words are the dictionary's
@@ -229,6 +287,9 @@ export function StudioStripPane({
           {studioCopy.laneBlockedMessage}
         </div>
       )}
+      {kfErr !== null && (
+        <div data-testid="tl-strip-kf-error" className={s.fileErr} role="alert">{kfErr}</div>
+      )}
     <MotionTimelineBar
       prompts={barPrompts}
       keyframes={kfChips}
@@ -242,6 +303,9 @@ export function StudioStripPane({
       onKeyframeAdd={(trackId, frame) => handleKeyframeAdd(trackId, docFromFilm(frame))}
       onKeyframeMove={(id, frame) => handleKeyframeMove(id, docFromFilm(frame))}
       onKeyframeDelete={handleKeyframeDelete}
+      // (D7, the lane-add parity law) the keyframes track head's add
+      // door — the up-arrow icon, the audio heads' own grammar.
+      onTrackAdd={openTrackAdd}
       onPromptUpdate={handlePromptUpdate}
       onPromptMove={(id, s, e) => handlePromptMove(id, docFromFilm(s), docFromFilm(e))}
       onPromptResize={(id, s, e) => handlePromptResize(id, docFromFilm(s), docFromFilm(e))}
@@ -251,8 +315,9 @@ export function StudioStripPane({
       // KEYFRAMES") — the lanes ride ALWAYS: a fresh doc's empty
       // keyframe lane is the PICK SURFACE (double-click pins); a
       // starved lane (tracks=[] until pins exist) hid the door.
-      // (defect B, 2026-11-06) NO upload icon on the lane — the add
-      // door lives in the rail's keyframes subview, beside its title.
+      // (the lane-add parity law, 2026-11-06) the track head's add
+      // door rides the bar (onTrackAdd) — the SAME upload-icon
+      // grammar the audio lane heads carry.
       // (the copy is load-bearing: the bar stamps runtime state onto
       // its track objects — the module static must never be poisoned)
       tracks={VIDEO_TIMELINE_TRACKS.map((t) => ({ ...t }))}
@@ -335,6 +400,9 @@ export function StudioStripPane({
     {/* the lane picker's anchored menu + modal + hidden file input —
         the provider's own tree, mounted once for all three lanes. */}
     {wireMenu}
+    {/* (D7) the kf door's own picker seat — every provider's wireMenu
+     * renders or its menu never opens */}
+    {kfAddMenu}
     </div>
   </PaneShell>
   )

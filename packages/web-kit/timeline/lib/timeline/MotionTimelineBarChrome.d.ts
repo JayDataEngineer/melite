@@ -25,6 +25,13 @@ export interface TimelineGutterProps {
     beatsHeight: number;
     audioLayers?: AudioLayer[];
     onAudioDetach?: (layerId: string) => void;
+    /** (2026-11-06, the lane-add parity law) the track rows' add door:
+     *  when the host wires it, every track row carries the SAME upload
+     *  verb the audio heads do (anchored at THIS button — the host
+     *  opens its source picker); unwired renders no button. The
+     *  keyframes lane is a first-class lane: its head owns the door
+     *  exactly like Dialogue/Music/SFX. */
+    onTrackAdd?: (trackUuid: string, anchor: HTMLButtonElement) => void;
     /** (2026-09-22, the D-M-E card law) cards-mode heads match the lanes. */
     audioClipCards?: boolean;
     tracks: TimelineTrack[];

@@ -798,3 +798,27 @@ test('THE INTAKE GATE: an unfinished card still renders — only CONSTRUCTED imp
     fireEvent.click(sw)
     expect(onSet).toHaveBeenCalledWith('turbo', true)
   })
+
+// ── omitFields (2026-11-06, the family-reseat cure's filter seat)
+// ─────────────────────────────────────────────────────────────────
+// The host's per-field admission filter: h3's t4r lane wires NO
+// post chain, so its rail filters the twelve T4_ONLY knobs the
+// walk would refuse. The filter is TOTAL — a filtered field
+// renders nowhere: not its group's panel, not any atom face. This
+// is the seat's red-proof arm (the h3 rail arm holds the
+// integration truth; this one fires light).
+test('omitFields: a filtered field renders NOWHERE (the group loses its member)', () => {
+  form({ omitFields: (name: string) => name === 'turbo' })
+  // the filtered boolean is gone from every face
+  expect(screen.queryByLabelText('Turbo')).toBeNull()
+  expect(screen.queryByText('Turbo')).toBeNull()
+  // a sibling field in the same doc still renders — the predicate
+  // speaks one field, never the form
+  expect(screen.getByText('Cfg')).not.toBeNull()
+})
+
+test('omitFields: absent (or undefined) the form renders every declared field', () => {
+  form({ omitFields: undefined })
+  expect(screen.getByText('Turbo')).not.toBeNull()
+  expect(screen.getByText('Cfg')).not.toBeNull()
+})

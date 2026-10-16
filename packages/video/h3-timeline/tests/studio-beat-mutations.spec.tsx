@@ -22,6 +22,28 @@ function harness(initial: DocKeyframe[]) {
 
 const KF: DocKeyframe = { image: "a", frame: 10 }
 
+describe("addKeyframeWithImage (the lane-add parity law, 2026-11-06)", () => {
+  // (auditor finding: this verb shipped untested — the strip pane's
+  // door mocked it in every arm; the atomic law gets its own judge)
+  it("ONE atomic write — the pin and its image ride together, never an imageless pin", () => {
+    const { result } = harness([])
+    let id = ""
+    act(() => { id = result.current.addKeyframeWithImage("shot.png", 4242) })
+    assert.equal(result.current.keyframes.length, 1, "exactly one keyframe lands")
+    assert.deepEqual(result.current.keyframes[0], { image: "shot.png", frame: 4242 },
+      "image and frame commit in the SAME write")
+    assert.equal(id, "kf-0", "the index-derived id (the bar binds the diamond to it)")
+  })
+
+  it("a second pin derives the next index — the id channel never collides", () => {
+    const { result } = harness([KF])
+    let id = ""
+    act(() => { id = result.current.addKeyframeWithImage("still-b", 20) })
+    assert.equal(id, "kf-1")
+    assert.deepEqual(result.current.keyframes[1], { image: "still-b", frame: 20 })
+  })
+})
+
 describe("handleKeyframeAdd", () => {
   it("adds an unwired image pin and returns the index-derived id", () => {
     const { result } = harness([KF])

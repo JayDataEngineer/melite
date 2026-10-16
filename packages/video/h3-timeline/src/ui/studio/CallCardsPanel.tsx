@@ -16,31 +16,22 @@ import { Button, IconChevronLeftOutlineRegular } from '@deepseek-ai/dsh-client-u
 import { EmptyState } from '@melite/card-base/client'
 import { RailBackButton } from './RailBackButton'
 import { SectionLabel, Tip, type SpecField } from '@melite/card-base/client'
-import { readAsDataURL, fetchMediaLibrary, Upload, useSquareProvider } from '@melite/card-base/client'
+import { readAsDataURL, Upload, useSquareProvider } from '@melite/card-base/client'
 import s from "./studio.module.css"
 import type { CallRefs, DocCall, DocKeyframe, LayerA } from "./docModel.ts"
 import { CallCard } from "./CallCard.tsx"
-import { FOREIGN_URL_REFUSAL, REF_READ_ERROR, refUploadError, estateMediaChip } from "./refUtils.ts"
+import { FOREIGN_URL_REFUSAL, REF_READ_ERROR, refUploadError, classifyImageSrc, loadImageMedia } from "./refUtils.ts"
 import type { LinkArtifact } from "./refUtils.ts"
 import type { TimelineSelection } from "./useViewSelection.ts"
 import { useRef, useState } from "react"
 import type * as React from "react"
 import { studioCopy } from "./studioCopy.ts"
 
-/** The image filter wrapper (THE DEP LAW, 2026-09-22): the provider's
- *  modal effect keys on the loadMedia FUNCTION'S IDENTITY — an inline
- *  arrow in the component is a fresh identity every render, and the
- *  effect re-fires into the freeze the base's own comment names. The
- *  wrapper lives at MODULE SCOPE — one identity, forever; From media
- *  serves image rows only (a keyframe pin is an image). */
-const IMAGE_ROW_RE = /\.(png|jpe?g|webp|gif|bmp|avif)(\?|$)/i
-const loadImageMedia = async (_kind: string, signal: AbortSignal) => {
-  const rows = await fetchMediaLibrary("all", signal)
-  // a data: IMAGE chip rides too (the system's chip law): its mime
-  // spelling carries no dot-extension, so the regex alone would
-  // starve the door of legal currency.
-  return rows.filter((r) => r.url.startsWith("data:image/") || IMAGE_ROW_RE.test(r.url) || IMAGE_ROW_RE.test(r.name))
-}
+/** (2026-11-06, the one-spelling law) the image loader + row RE ride
+ *  refUtils now — the strip pane's lane door and this subview door
+ *  judge identically (the twins this panel used to carry are dead).
+ *  The module-scope identity law holds: refUtils' export IS the one
+ *  identity (THE DEP LAW — never an inline arrow at the provider). */
 
 /** Handlers + bags the call-card tree needs (all owned by the tenant). */
 export interface CallCardDeps {
@@ -150,24 +141,13 @@ export function CallCardsPanel({
    *  artifact URLs, data: chips ride verbatim — foreign URLs refuse.
    *  @returns the image value to commit, or null when refused (the
    *  refusal's words ride the caller's error seat). */
-  const classifyImage = (src: string): { image: string } | { refusal: string } => {
-    if (src.startsWith("data:")) return { image: src }
-    // (2026-11-05) the estate's own media paths are legal currency
-    // at this door — From media picks commit in the canonical live
-    // spelling and the run's media heal resolves them.
-    const media = estateMediaChip(src)
-    if (media !== null) return { image: media }
-    const name = deps.artifactIndex.byUrl.get(src)
-    if (name !== undefined) return { image: name }
-    return { refusal: FOREIGN_URL_REFUSAL }
-  }
   // ── THE ADD DOOR (beside the subview's title — the audio-lane
   // grammar: an upload icon that opens the three-entry picker; the
   // pin lands at the PLAYHEAD with its image in one write). ────────
   const { square: kfAddSquare, wireMenu: kfAddMenu } = useSquareProvider(
     (_name, v) => {
       if (typeof v !== "string" || v === "") return
-      const got = classifyImage(v)
+      const got = classifyImageSrc(v, deps.artifactIndex.byUrl)
       if ("refusal" in got) { setKfAddError(got.refusal); return }
       setKfAddError(null)
       addKeyframeWithImage(got.image, playheadDocFrame)
@@ -197,7 +177,7 @@ export function CallCardsPanel({
     (_name, v) => {
       if (typeof v !== "string" || v === "") return
       const i = pickRow.current
-      const got = classifyImage(v)
+      const got = classifyImageSrc(v, deps.artifactIndex.byUrl)
       if ("refusal" in got) { setKfUploadError(i, got.refusal); return }
       setKeyframeImage(i, got.image)
       setKfUploadError(i, null)

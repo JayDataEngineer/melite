@@ -15,7 +15,7 @@ import { timelineCopy } from "../timelineCopy.js";
 /** The pinned label gutter (bar line 820): the zoom cluster + lane
  *  heads. The Fit pin reads the live scale — the body is the bar's. */
 export function TimelineGutter(props) {
-    const { scale, scrollRef, frameIdx, promptsHeight, promptsLabel, beats, beatsLabel, beatsHeight, audioLayers, onAudioDetach, tracks, audioClipCards, } = props;
+    const { scale, scrollRef, frameIdx, promptsHeight, promptsLabel, beats, beatsLabel, beatsHeight, audioLayers, onAudioDetach, tracks, audioClipCards, onTrackAdd, } = props;
     const { zoom, anchorRef, frameToPx, setPpf, setBasePpf, fitPpf, effPpf, basePpf, } = scale;
     return (_jsx(_Fragment, { children: _jsxs("div", { className: css.gutter, style: { width: GUTTER_W }, children: [_jsxs("div", { className: css.zoomRow, style: { height: RULER_H }, children: [_jsx(Tip, { tip: "Zoom out (back toward fit)", children: _jsx(Button, { variant: "ghost", size: "sm", onClick: () => zoom(1 / ZOOM_STEP), "aria-label": timelineCopy.zoomOutAria, className: css.zoomBtn, children: _jsx(ZoomOut, {}) }) }), _jsx(Tip, { tip: "Fit the whole motion in view", children: _jsxs(Button, { variant: "ghost", size: "sm", onClick: () => {
                                     anchorRef.current = { frame: frameIdx, off: frameToPx(frameIdx) - (scrollRef.current?.scrollLeft ?? 0) };
@@ -32,7 +32,7 @@ export function TimelineGutter(props) {
                         }, title: L.stem
                             ? timelineCopy.audioBedTitle({ stem: L.stem })
                             : timelineCopy.audioDropTitle, children: [_jsx(Glyph, { "aria-hidden": true }), _jsx("span", { className: css.gutterLabelDim, children: L.label }), L.onUpload && (_jsx(Button, { variant: "ghost", size: "sm", "data-audio-upload": L.id, "aria-label": timelineCopy.addClipAria({ label: L.label }), title: timelineCopy.addClipTitle({ label: L.label }), className: css.uploadBtn, onClick: (e) => { L.onUpload?.(e.currentTarget); }, children: _jsx(Upload, { "aria-hidden": true }) })), (L.stem || (L.clips?.length ?? 0) > 0) && onAudioDetach && (_jsx(Button, { variant: "ghost", size: "sm", onClick: () => onAudioDetach(L.id), "aria-label": timelineCopy.detachAria({ label: L.label }), className: css.detachBtn, children: _jsx(IconCloseOutlineRegular, {}) }))] }, L.id));
-                }), tracks.map((t) => (_jsxs("div", { className: css.laneRow, style: { height: LANE_H }, children: [_jsx("span", { className: css.laneDot, style: { background: rgb(t.color ?? [176, 180, 186]) }, "aria-hidden": true }), _jsx("span", { className: css.laneName, children: t.name })] }, t.uuid)))] }) }));
+                }), tracks.map((t) => (_jsxs("div", { className: css.laneRow, style: { height: LANE_H }, children: [_jsx("span", { className: css.laneDot, style: { background: rgb(t.color ?? [176, 180, 186]) }, "aria-hidden": true }), _jsx("span", { className: css.laneName, children: t.name }), onTrackAdd && (_jsx(Button, { variant: "ghost", size: "sm", "data-track-upload": t.uuid, "aria-label": timelineCopy.addTrackAria({ track: t.name }), title: timelineCopy.addTrackTitle({ track: t.name }), className: css.uploadBtn, onClick: (e) => { onTrackAdd?.(t.uuid, e.currentTarget); }, children: _jsx(Upload, { "aria-hidden": true }) }))] }, t.uuid)))] }) }));
 }
 /** The scrollable shell + click-away deselect (bar line 921). */
 export function TimelineContent(props) {

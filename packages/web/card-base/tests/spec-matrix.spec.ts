@@ -631,3 +631,85 @@ test('seedRecipeStamp: the first composing recipe stamps its payload — model r
   const out2 = seedRecipeStamp(d, { quant: 'q-fp8' })
   expect(out2).toMatchObject({ steps: 4 })
 })
+
+// ── THE DEPARTED-PRESET RESEAT (D4, 2026-11-06 — the four-time
+// recurrence: "switch between recipes. THEY ARE ALL LOSE
+// RESOLUTION") ──────────────────────────────────────────────────
+// A preset OWNS its stamps while it is the named pick: Draft's
+// 768×448 rode under Standard and Final Cut forever because
+// patch-only rows never unstate. The reseat nulls a departed row's
+// residue (held value still equal to the departed stamp); a
+// hand-edit is the user's word and stands. Scoped to NON-AXIS
+// groups — the chain groups belong to the envelope law.
+test('axisPickPatch: departing a recipe unstated its residue (null deletes at compose)', () => {
+  const spec = {
+    form: 'x',
+    model: 'krea-2',
+    schema: {
+      uid: 0,
+      refs: {
+        0: { type: 'object', dict: { prompt: 1, steps: 2, width: 3, height: 4, sr_switch: 5 } },
+        1: { type: 'string', meta: { default: 'a cat' } },
+        2: { type: 'number', meta: { default: 20 } },
+        3: { type: 'number', meta: { default: 1344 } },
+        4: { type: 'number', meta: { default: 768 } },
+        5: { type: 'boolean', meta: { default: false } },
+      },
+    },
+    features: { variant_groups: { Recipe: { label: 'Recipe' } } },
+    variants: [
+      V('draft', 'Recipe', { label: 'Draft', defaults: { model: 'krea-2', width: 768, height: 448 } }),
+      V('standard', 'Recipe', { label: 'Standard', defaults: { model: 'krea-2', steps: 30 } }),
+      V('final', 'Recipe', { label: 'Final Cut', defaults: { model: 'krea-2', steps: 4, sr_switch: true } }),
+    ],
+  } as unknown as FormSpecDoc
+  const rows = rowsFor(spec, 'Recipe')
+  const draft = rows.find((r) => r.id === 'draft')!
+  const standard = rows.find((r) => r.id === 'standard')!
+  const final = rows.find((r) => r.id === 'final')!
+  // THE LAW: draft's 768×448 still held verbatim → picking final
+  // unstated BOTH (the carrier floor shows again), while final's own
+  // stamps ride as values. The model re-point never lands (stroke 21).
+  expect(axisPickPatch(spec, final, { recipe: 'draft', width: 768, height: 448 })).toEqual({
+    steps: 4, sr_switch: true, width: null, height: null,
+  })
+  // STATED-BY-HAND: a width the operator edited away from the stamp
+  // is THEIR word — the pick does not unstate it.
+  expect(axisPickPatch(spec, final, { recipe: 'draft', width: 1024, height: 448 })).toEqual({
+    steps: 4, sr_switch: true, height: null,
+  })
+  // NO DEPARTURE: re-picking the named row unstated nothing.
+  expect(axisPickPatch(spec, final, { recipe: 'final', width: 768 })).toEqual({
+    steps: 4, sr_switch: true,
+  })
+  // NOTHING NAMED (a fresh doc): no departure, no nulls.
+  expect(axisPickPatch(spec, standard, { width: 768, height: 448 })).toEqual({
+    steps: 30,
+  })
+  // STALE STAMP (names a row the spec no longer serves): nothing to
+  // reseat against — the incoming stamps ride alone.
+  expect(axisPickPatch(spec, standard, { recipe: 'ghost', width: 768 })).toEqual({
+    steps: 30,
+  })
+})
+
+test('axisPickPatch: the reseat never fires on an axis group (the envelope law owns the chain)', () => {
+  const spec = {
+    form: 'x',
+    model: 'krea-2',
+    schema: { uid: 0, refs: { 0: { type: 'object', dict: { steps: 1 } }, 1: { type: 'number', meta: { default: 20 } } } },
+    features: { variant_groups: { Variant: { label: 'Variant' } } },
+    variants: [
+      V('r-hd', 'Variant', { label: 'HD', defaults: { model: 'krea-2', steps: 40 } }),
+      V('r-sd', 'Variant', { label: 'SD', defaults: { model: 'krea-2', steps: 10 } }),
+    ],
+  } as unknown as FormSpecDoc
+  const hd = rowsFor(spec, 'Variant').find((r) => r.id === 'r-hd')!
+  const sd = rowsFor(spec, 'Variant').find((r) => r.id === 'r-sd')!
+  // a departed variant's differing stamp NEVER nulls through the
+  // reseat — the envelope reconcile judges numerics its own way and
+  // null never appears in a chain pick's patch
+  const patch = axisPickPatch(spec, sd, { variant: 'r-hd', steps: 40 })
+  expect(Object.values(patch).includes(null)).toBe(false)
+  expect(patch['variant']).toBe('r-sd')
+})

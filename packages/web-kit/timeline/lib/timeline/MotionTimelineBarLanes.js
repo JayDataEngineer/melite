@@ -5,7 +5,7 @@ import { jsx as _jsx, jsxs as _jsxs, Fragment as _Fragment } from "react/jsx-run
  * tracks, keyframe lanes. Chrome (gutter/ruler/playhead) lives in
  * MotionTimelineBarChrome.
  */
-import { Image, Mic, Music, Upload, Zap } from "./icons.js";
+import { Image, Mic, Music, Zap } from "./icons.js";
 import { clsx as cn } from "clsx";
 import { ASSET_DRAG_MIME, Tip } from '@melite/card-base/client';
 import { PROMPT_COLORS } from "./viser-timeline/styles.js";
@@ -223,10 +223,7 @@ export function TimelineKeyframeLanes(props) {
                     const f = xToFrame(e.clientX);
                     if (f != null)
                         onKeyframeAdd(track.uuid, f);
-                }, children: [track.onUpload !== undefined && (_jsx(Tip, { tip: timelineCopy.laneUploadTip(track.name), children: _jsx(Button, { variant: "ghost", size: "sm", "data-kf-upload": track.uuid, "aria-label": timelineCopy.laneUploadAria(track.name), className: css.laneUploadBtn, onClick: (e) => {
-                                e.stopPropagation();
-                                track.onUpload?.(e.currentTarget);
-                            }, children: _jsx(Upload, { className: css.laneUploadGlyph }) }) })), keyframes.length === 0 && ti === 0 && (_jsx("span", { className: css.laneHint, children: laneHint })), kfs.map((kf) => {
+                }, children: [keyframes.length === 0 && ti === 0 && (_jsx("span", { className: css.laneHint, children: laneHint })), kfs.map((kf) => {
                         const isMoving = dragId === kf.uuid;
                         return (_jsxs("div", { className: css.kfWrap, style: { left: frameToPx(kf.frame) }, "data-drop-hint": kf.dropHint, children: [_jsx(Tip, { tip: `${track.name} constraint @ frame ${kf.frame} — drag to move, click to jump, hover ✕ to delete${kf.dropHint ? `\n\n${kf.dropHint}` : ""}`, children: _jsx(Button, { variant: "ghost", size: "sm", "data-kf": kf.uuid, "aria-label": kf.ariaLabel ?? timelineCopy.keyframeAria({ track: track.name, frame: kf.frame }), onPointerDown: (e) => startDrag(e, {
                                             kind: "kf",

@@ -43,6 +43,51 @@ export function transitionOverlap(transition?: string): number {
   return transition === 'cut' ? 0 : SEAM_OVERLAP_FRAMES
 }
 
+/** (2026-11-06, the family-reseat cure) the post-pass knobs the t4r
+ *  lane cannot honor — its renderer wires NO post chain (the graph
+ *  goes straight to CreateVideo), so the schema walk REFUSES these
+ *  keys on a derived-t4r doc rather than silently dropping them (the
+ *  no-silent-resolution law). Shared with the studio so its rail and
+ *  its heal judge the SAME twelve the walk refuses. */
+export const T4_ONLY_KEYS = [
+  'sharpen_switch', 'sharpen_method', 'sharpen_strength', 'sharpen_radius',
+  'sharpen_threshold', 'sharpen_iterations', 'interp_switch',
+  'interp_multiplier', 'interp_model', 'sr_switch', 'sr_model', 'sr_resolution',
+] as const
+
+/** (2026-11-06, the family-reseat cure) the doc-level window family
+ *  derivation, ONE spelling for every door that needs the family
+ *  BEFORE the walk refuses: the walk derives the composed doc's
+ *  family; the studio rail gates the second-pass group on the t4r
+ *  lane; the reseat heal unstated post keys a family edit stranded
+ *  (the live brick: a film legally stamped sr_switch lost its
+ *  second call, derived t4r, and EVERY compose refused). Reads
+ *  exactly the seats the walk reads — the guide-key union, the pin
+ *  channel, the declared input surface (a private spelling elsewhere
+ *  is the run-899a8448 disease: one seat missed, the family lies).
+ *  @param raw the doc-shaped record (calls/keyframes/ref surface)
+ *  @returns the derived window family */
+export function deriveWindowFamily(raw: Record<string, unknown>): 't4r' | 't4_open' | 't4_chain' {
+  const calls: unknown[] = Array.isArray(raw.calls) ? raw.calls : []
+  const hasGuide = calls.some((c) => {
+    const cc = (c ?? {}) as Record<string, unknown>
+    return Boolean(cc.image) || Boolean(cc.ref_images) || Boolean(cc.ref_image) || Boolean(cc.image_name)
+  })
+    // the keyframe pin channel + the declared input surface imply the
+    // reference lane by the same law as a per-call guide
+    || (Array.isArray(raw.keyframes) && raw.keyframes.length > 0)
+    || refSurfaceCount(raw) > 0
+    || (typeof raw.last_frame === 'string' && raw.last_frame.trim() !== '')
+  return calls.length > 1 ? 't4_chain' : hasGuide ? 't4r' : 't4_open'
+}
+
+function refSurfaceCount(raw: Record<string, unknown>): number {
+  // wire-literal strings count too (normalizeDeclaredRefs owns the
+  // spelling — a "a, b" ref_images is two refs, never zero)
+  return ['ref_images', 'ref_videos', 'ref_audios']
+    .reduce((n, k) => n + normalizeDeclaredRefs(raw[k]).length, 0)
+}
+
 export function spanOverlap(span: TimelineSpan): number {
   return transitionOverlap(span.transition)
 }

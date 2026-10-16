@@ -461,6 +461,7 @@ export const COVERAGE_BASELINE: Record<string, {
   // door (Sahar R2, order b); scoped probe over the component +
   // call-cards suites measures 100×4)
   '**/packages/video/h3-timeline/src/ui/studio/RailBackButton.tsx': { statements: 100, branches: 100, functions: 100, lines: 100 },
+  '**/packages/video/h3-timeline/src/ui/studio/useFamilyReseatHeal.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/video/h3-timeline/src/ui/studio/CallCard.tsx': { statements: 97.35, branches: 96.81, functions: 98.27, lines: 96.63 },
   '**/packages/video/h3-timeline/src/ui/studio/CallCardPrompt.tsx': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/video/h3-timeline/src/ui/studio/CallCardsPanel.tsx': { statements: 87.67, branches: 85.36, functions: 95, lines: 91.07 },

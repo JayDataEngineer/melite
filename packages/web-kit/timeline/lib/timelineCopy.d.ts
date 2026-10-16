@@ -63,6 +63,17 @@ export declare const timelineCopy: {
     readonly addClipTitle: (p: {
         label: string;
     }) => string;
+    /** (2026-11-06, the lane-add parity law) a track head's add door —
+     *  accessible name. `track` is the lane's own gutter name. */
+    readonly addTrackAria: (p: {
+        track: string;
+    }) => string;
+    /** (2026-11-06, the lane-add parity law) a track head's add door —
+     *  hover title (the same three-entry source grammar the audio
+     *  heads ride). */
+    readonly addTrackTitle: (p: {
+        track: string;
+    }) => string;
     /** The detach button's accessible name for one layer. */
     readonly detachAria: (p: {
         label: string;
@@ -143,7 +154,5 @@ export declare const timelineCopy: {
     }) => string;
     /** The sub-minute second unit ("5.2s"). */
     readonly secondsUnit: "s";
-    readonly laneUploadTip: (lane: string) => string;
-    readonly laneUploadAria: (lane: string) => string;
 };
 //# sourceMappingURL=timelineCopy.d.ts.map

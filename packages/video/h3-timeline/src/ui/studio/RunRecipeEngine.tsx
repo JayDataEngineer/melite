@@ -26,10 +26,12 @@ import { CardForm, ControlRow, SectionLabel, SpecAtom, useResolvedForm, type Squ
 import { axisUnset, composeValidate } from '@melite/card-base/client'
 import { resolvePickVerdictDoc } from "./pickVerdict.ts"
 import { fetchMediaLibrary } from '@melite/card-base/client'
-import { type Dispatch, type SetStateAction, useState } from "react"
+import { type Dispatch, type SetStateAction, useMemo, useState } from "react"
 import s from "./studio.module.css"
 import { DEFAULT_SEGMENT_PARAMS } from "@melite/contracts/timelineTypes"
+import { T4_ONLY_KEYS, deriveWindowFamily } from "@melite/models-h3/timelineContract"
 import type { LayerA, SetLayerAKey } from "./docModel.ts"
+import { mergeDocLayers } from "./docModel.ts"
 import { parseSpecNumber } from "./docGrid.ts"
 import { studioCopy } from "./studioCopy.ts"
 
@@ -78,6 +80,25 @@ export function RunRecipeEngine({
   // shape; loadMedia = the one media-library fetch. CardForm's input
   // rail hands BOTH to every SourceRow — absent, From media is the
   // honest-empty modal (the break this wire closes).
+  // THE FAMILY GATE (2026-11-06, the family-reseat cure — the live
+  // brick: "card 'h3-timeline' refused params: h3_window(t4r):
+  // unsanctioned inject keys: sr_switch"). The t4r lane wires NO
+  // post chain — the walk refuses the twelve T4_ONLY knobs on a
+  // doc that derived t4r, so a rail that RENDERS them offers a
+  // switch whose every flip refuses the compose (the "second-pass
+  // switch does not switch" shape) and a Final Cut pill that
+  // bricks the card. The rail derives the family from the SAME
+  // seats the walk reads (one spelling: deriveWindowFamily, the
+  // contract face) and stops serving what the family cannot
+  // honor. Defined-wins merge — an undefined layer key never
+  // erases the base's seats mid-derivation.
+  const family = useMemo(
+    () => deriveWindowFamily(mergeDocLayers(base, layerA as unknown as Record<string, unknown>)),
+    [base, layerA],
+  )
+  const omitT4 = family === "t4r"
+    ? (name: string): boolean => (T4_ONLY_KEYS as readonly string[]).includes(name)
+    : undefined
   const wire: SquareWire = {
     candidates: refArtifacts.map((a) => ({ id: a.name, label: a.name, url: a.url })),
     loadMedia: fetchMediaLibrary,
@@ -132,6 +153,7 @@ export function RunRecipeEngine({
           // lane, the D-M-E audio lanes, the clips row, the call
           // editor's reference bundles. Knobs and axes only.
           omitInputRail
+          omitFields={omitT4}
           onSet={edit}
           onUnset={(n) => setLayerAKey(n as keyof LayerA, undefined)}
           // THE ATOMIC PICK LAW (the same arm the bench drill seats):

@@ -6,11 +6,12 @@
  * grows the envelope by exactly its overshoot; tray drops wire only
  * known artifacts; foreign URLs write nothing.
  */
-import { describe, it } from "vitest"
+import { describe, it, vi } from "vitest"
 import assert from "node:assert/strict"
-import { fireEvent, render, screen } from "@testing-library/react"
+import { fireEvent, render, screen, waitFor } from "@testing-library/react"
 import { StudioStripPane } from "../src/ui/studio/StudioStripPane.tsx"
 import { studioCopy } from "../src/ui/studio/studioCopy.ts"
+import { bindEstateRemote, unbindEstateRemote } from "@melite/card-base/client"
 
 // happy-dom returns zero rects (no layout) — the bar's ClientX→frame
 // doors need a viewport width, as every real browser provides.
@@ -37,7 +38,7 @@ const CLIP = { id: "c1", name: "song.mp3", start_frame: 10, dur_frames: 48 }
 
 function strip(over?: Record<string, unknown>) {
   const rec: Record<string, unknown[]> = {
-    bar: [], scrubStart: [], scrubEnd: [], kfAdd: [], kfMove: [], kfDel: [], kfDoor: [] as number[],
+    bar: [], scrubStart: [], scrubEnd: [], kfAdd: [], kfMove: [], kfDel: [], kfDoor: [] as number[], kfWithImage: [] as [string, number][],
   audioDoor: [] as number[],
     promptUpdate: [], promptMove: [], promptResize: [], promptDel: [],
     extend: [], addCall: [], select: [], addedClip: [], taken: [],
@@ -78,11 +79,12 @@ function strip(over?: Record<string, unknown>) {
       deleteAudioClip={(id) => { rec.delClip.push([id]) }}
       updateAudioClip={() => {}}
       setLayerAKey={(k, v) => { rec.keys.push([k, v]) }}
-      artifactIndex={{ byUrl: new Map([["https://u/song.mp3", "song.mp3"]]) }}
+      artifactIndex={{ byUrl: new Map([["https://u/song.mp3", "song.mp3"], ["https://u/shot.png", "shot.png"]]) }}
       // a CONSTANT map proves every door applies it (pass-through
       // would leak raw film frames; the constant cannot occur raw)
       docFromFilm={() => 4242}
       keyframes={[{}] as never}
+      addKeyframeWithImage={(image, frame) => { rec.kfWithImage.push([image, frame]); return "k77" }}
       enterKfView={() => { rec.kfDoor.push(0) }}
       enterAudioView={() => { rec.audioDoor.push(0) }}
       {...over}
@@ -307,21 +309,46 @@ if (!/const loadAudioMedia/.test(paneSrc)) {
   throw new Error("DEP-LAW WALL: the stable module-level audio loader (loadAudioMedia) is missing from StudioStripPane")
 }
 
-// ── DEFECT B (operator 2026-11-06): the keyframes lane's upload
-// icon is DEAD — the add door rides the rail's keyframes subview,
-// an upload icon beside its title. The strip's one keyframes verb
-// is the SUBVIEW DOOR in its header. ─────────────────────────────
-describe("the keyframes verbs on the strip (defect B)", () => {
-  it("NO upload icon on the lane (the bar icon is dead); the header carries the SUBVIEW DOOR instead", () => {
+// ── THE LANE-ADD PARITY LAW (operator 2026-11-06, D7: "WHERE IS MY
+// UP ARROW ICON FOR THE KEYFRAMES? THE AUDIO INPUTS HAVE THEM") —
+// defect B's no-door design is SUPERSEDED: the keyframes lane row
+// carries the SAME upload-icon add door the audio lane heads carry,
+// opening the generic source grammar; the rail's keyframes subview
+// KEEPS its own door (two doors, one verb). ──────────────────────
+describe("the keyframes lane's add door (the lane-add parity law)", () => {
+  it("THE LANE ROW CARRIES THE UP-ARROW DOOR — the audio heads' own affordance grammar", () => {
     const { els } = strip()
-    // (no negative queryByRole here: computing accessible names over
-    // the whole timeline DOM stalls jsdom — the direct probes are the
-    // honest judges anyway, the affordance is its own attribute)
-    assert.equal(document.querySelector("[data-kf-upload]"), null, "no lane upload affordance renders")
-    assert.equal(document.querySelector('[data-testid="tl-kf-add"]'), null, "no add door renders on the strip (it lives in the rail)")
-    const door = screen.getByTestId("tl-keyframes-door")
-    assert.equal(door.getAttribute("aria-label"), "Keyframes", "the door is named for the subview")
-    assert.ok(door.textContent!.includes("Keyframes"))
+    // the chrome's per-track upload affordance, fed by onTrackAdd
+    const door = document.body.querySelector('[data-track-upload="image"]')
+    assert.ok(door instanceof HTMLButtonElement, "the keyframes track head renders the upload-icon add door")
+    // the subview door STAYS (defect B's header verb survives)
+    assert.ok(screen.getByTestId("tl-keyframes-door").textContent!.includes("Keyframes"))
+    els.unmount()
+  })
+
+  it("the door opens the estate's picker — the three-entry source grammar, image rows", async () => {
+    const { els } = strip()
+    fireEvent.click(document.body.querySelector('[data-track-upload="image"]')!)
+    fireEvent.click(await screen.findByRole("menuitem", { name: "From flow" }))
+    const rows = await screen.findAllByTestId("source-pick-row")
+    assert.ok(rows.some((r) => r.textContent!.includes("shot.png")),
+      "the run's image artifacts list at the door (image rows only — song.mp3 never appears)")
+    assert.ok(!rows.some((r) => r.textContent!.includes("song.mp3")), "audio rows never list at the keyframes door")
+    els.unmount()
+  })
+
+  it("a pick commits the ATOMIC pin+image at the playhead — ONE write, both halves", async () => {
+    const { els, rec } = strip()
+    fireEvent.click(document.body.querySelector('[data-track-upload="image"]')!)
+    fireEvent.click(await screen.findByRole("menuitem", { name: "From flow" }))
+    const row = (await screen.findAllByTestId("source-pick-row")).find((r) => r.textContent!.includes("shot.png"))!
+    fireEvent.click(row)
+    // docFromFilm is the fixture's constant (4242) — the commit pins
+    // at the CURRENT PLAYHEAD, the same frame a double-click pins;
+    // the artifact row commits in its canonical label spelling
+    assert.deepEqual(rec.kfWithImage, [["shot.png", 4242]],
+      "the atomic verb fires once with image + playhead frame")
+    assert.equal(document.body.querySelector('[data-testid="tl-strip-kf-error"]'), null, "no refusal face on a clean pick")
     els.unmount()
   })
 
@@ -342,10 +369,117 @@ describe("the keyframes verbs on the strip (defect B)", () => {
     els.unmount()
   })
 
-  it("the source-plane wall: the strip carries NO kf source provider anymore (the door moved to the rail)", () => {
-    assert.ok(!paneSrc.includes("addKeyframeWithImage"), "the atomic pin+image verb left the strip with the door")
-    assert.ok(!paneSrc.includes("loadImageMedia"), "the image loader moved with it")
-    assert.ok(paneSrc.includes("enterKfView"), "the strip's one keyframes verb is the subview door")
+  it("a FOREIGN media URL picked at the door refuses on the strip's error face — the wire never hears it", async () => {
+    const { els, rec } = strip()
+    // an http(s) URL outside this run's artifacts — the same law the
+    // audio door and the call-card buckets ride (classifyImageSrc):
+    // feed the picker a foreign media row through the estate door
+    bindEstateRemote({ media: { list: async () => ({ ok: true, value: { items: [{ url: "https://lib/foreign.png", name: "foreign.png" }] } }) } } as never)
+    fireEvent.click(document.body.querySelector('[data-track-upload="image"]')!)
+    fireEvent.click(await screen.findByRole("menuitem", { name: "From media" }))
+    const row = (await screen.findAllByTestId("source-pick-row")).find((r) => r.textContent!.includes("foreign.png"))!
+    fireEvent.click(row)
+    assert.deepEqual(rec.kfWithImage, [], "a URL outside this run's artifacts never commits")
+    assert.ok(screen.getByTestId("tl-strip-kf-error").textContent!.length > 0,
+      "the refusal lands on the strip's own error face")
+    unbindEstateRemote()
+    els.unmount()
+  })
+
+  it("From file at the kf door: a wrong-genre upload refuses on the strip face — no write", async () => {
+    const { els, rec } = strip()
+    fireEvent.click(document.body.querySelector('[data-track-upload="image"]')!)
+    fireEvent.click(await screen.findByText("From file"))
+    // the kf provider's file input is the pane's LAST one (the audio
+    // provider's rides first)
+    const inputs = [...document.body.querySelectorAll('input[type="file"]')] as HTMLInputElement[]
+    fireEvent.change(inputs[inputs.length - 1]!, { target: { files: [new File(["x"], "v.mp4", { type: "video/mp4" })] } })
+    const err = await screen.findByTestId("tl-strip-kf-error")
+    assert.ok(err.textContent!.includes("wrong file type (video/mp4"), err.textContent)
+    assert.deepEqual(rec.kfWithImage, [], "the refused file never pins")
+    els.unmount()
+  })
+
+  it("From file at the kf door: an honest image lands as a data: pin at the playhead and clears the refusal", async () => {
+    const { els, rec } = strip()
+    // a refusal first, so the CLEAR is observable (not just the write)
+    fireEvent.click(document.body.querySelector('[data-track-upload="image"]')!)
+    fireEvent.click(await screen.findByText("From file"))
+    let inputs = [...document.body.querySelectorAll('input[type="file"]')] as HTMLInputElement[]
+    fireEvent.change(inputs[inputs.length - 1]!, { target: { files: [new File(["x"], "v.mp4", { type: "video/mp4" })] } })
+    await screen.findByTestId("tl-strip-kf-error")
+    // the retry is a NEW gesture (the From-file door is one-shot)
+    fireEvent.click(document.body.querySelector('[data-track-upload="image"]')!)
+    fireEvent.click(await screen.findByText("From file"))
+    inputs = [...document.body.querySelectorAll('input[type="file"]')] as HTMLInputElement[]
+    fireEvent.change(inputs[inputs.length - 1]!, { target: { files: [new File(["bytes"], "a.png", { type: "image/png" })] } })
+    await waitFor(() => { assert.equal(rec.kfWithImage.length, 1) })
+    const pin = rec.kfWithImage[0] as unknown as [string, number]
+    assert.ok(pin[0]!.startsWith("data:image/png;base64,"), pin[0])
+    assert.equal(pin[1], 4242, "the data: pin lands at the playhead")
+    assert.equal(screen.queryByTestId("tl-strip-kf-error"), null, "the retry clears the refusal")
+    els.unmount()
+  })
+
+  it("From file at the kf door: an unreadable file refuses with the read error — never a pin", async () => {
+    const { els, rec } = strip()
+    class FailReader {
+      onload: (() => void) | null = null
+      onerror: (() => void) | null = null
+      error = new Error("denied")
+      result: string | null = null
+      readAsDataURL(): void { this.onerror?.() }
+    }
+    vi.stubGlobal("FileReader", FailReader)
+    try {
+      fireEvent.click(document.body.querySelector('[data-track-upload="image"]')!)
+      fireEvent.click(await screen.findByText("From file"))
+      const inputs = [...document.body.querySelectorAll('input[type="file"]')] as HTMLInputElement[]
+      fireEvent.change(inputs[inputs.length - 1]!, { target: { files: [new File(["x"], "bad.png", { type: "image/png" })] } })
+      const err = await screen.findByTestId("tl-strip-kf-error")
+      assert.ok(err.textContent!.includes("could not read that file"), err.textContent)
+    } finally {
+      vi.unstubAllGlobals()
+    }
+    assert.deepEqual(rec.kfWithImage, [], "the unreadable file never pins")
+    els.unmount()
+  })
+
+  it("From media at the kf door: a row named *.png with a bare URL still lists (the name arm of the image-row judge) — data: chips list too", async () => {
+    const { els } = strip()
+    bindEstateRemote({ media: { list: async () => ({ ok: true, value: { items: [
+      // the bare URL carries no dot-extension — the NAME arm is the
+      // only judge that can seat this row at an image door
+      { url: "https://lib/row/1", name: "named-shot.png" },
+      { url: "data:image/png;base64,eA", name: "chip" },
+      { url: "https://lib/row/2", name: "voice.mp3" },
+    ] } }) } } as never)
+    try {
+      fireEvent.click(document.body.querySelector('[data-track-upload="image"]')!)
+      fireEvent.click(await screen.findByRole("menuitem", { name: "From media" }))
+      const rows = await screen.findAllByTestId("source-pick-row")
+      assert.ok(rows.some((r) => r.textContent!.includes("named-shot.png")), "the name arm seats the row")
+      assert.ok(rows.some((r) => r.textContent!.includes("chip")), "a data: image chip rides the door")
+      assert.ok(!rows.some((r) => r.textContent!.includes("voice.mp3")), "audio rows never list")
+    } finally {
+      unbindEstateRemote()
+    }
+    els.unmount()
+  })
+
+  it("the clear row at the kf door commits the empty string — the guard returns, never a write", async () => {
+    const { els, rec } = strip()
+    fireEvent.click(document.body.querySelector('[data-track-upload="image"]')!)
+    fireEvent.click(await screen.findByText("— clear —"))
+    assert.deepEqual(rec.kfWithImage, [], "an empty pick never pins")
+    els.unmount()
+  })
+
+  it("the source-plane wall: the strip's kf door rides the estate provider (the same grammar every door rides)", () => {
+    assert.ok(paneSrc.includes("addKeyframeWithImage"), "the atomic pin+image verb is fed by the strip's door")
+    assert.ok(paneSrc.includes("classifyImageSrc"), "ONE commit judge: refUtils' classifier, never a hand-roll")
+    assert.ok(paneSrc.includes("loadImageMedia"), "the image loader rides the door (module-scope, the dep law)")
+    assert.ok(paneSrc.includes("enterKfView"), "the subview door stays too (two doors, one verb)")
   })
 })
 

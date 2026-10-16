@@ -59,6 +59,13 @@ export const timelineCopy = {
   addClipAria: (p: { label: string }): string => `Add ${p.label} clip`,
   /** The add door's hover title for one layer. */
   addClipTitle: (p: { label: string }): string => `Add a ${p.label} clip — from flow, from media, or from file`,
+  /** (2026-11-06, the lane-add parity law) a track head's add door —
+   *  accessible name. `track` is the lane's own gutter name. */
+  addTrackAria: (p: { track: string }): string => `Add ${p.track} pin`,
+  /** (2026-11-06, the lane-add parity law) a track head's add door —
+   *  hover title (the same three-entry source grammar the audio
+   *  heads ride). */
+  addTrackTitle: (p: { track: string }): string => `Add a ${p.track} pin — from flow, from media, or from file`,
   /** The detach button's accessible name for one layer. */
   detachAria: (p: { label: string }): string => `Detach ${p.label}`,
   /** The ruler tick's second-suffixed label. */
@@ -110,7 +117,5 @@ export const timelineCopy = {
   scrubFramesSuffix: (p: { frame: number; total: number }): string => ` · frame ${p.frame}/${p.total}`,
   /** The sub-minute second unit ("5.2s"). */
   secondsUnit: "s",
-  laneUploadTip: (lane: string): string => `Upload a frame to ${lane}`,
-  laneUploadAria: (lane: string): string => `Upload a frame to ${lane}`,
 
 } as const

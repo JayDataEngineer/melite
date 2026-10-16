@@ -44,7 +44,7 @@ export { PackPrompt, ModelAxes, RecipePills } from './axes.tsx';
  *  over the USER layer (the settings law: presence IS the override
  *  mark, the reset chip removes it). The constructor OWNS the square
  *  provider (no call site wires it, no call site can forget it). */
-export declare function CardForm({ spec, user, base, onSet, onPick, onUnset, wire, square, atoms, onPatch, onDownloadModel, onInstallPack, paintFace, bboxFace, paintReference, omitInputRail }: {
+export declare function CardForm({ spec, user, base, onSet, onPick, onUnset, wire, square, atoms, onPatch, onDownloadModel, onInstallPack, paintFace, bboxFace, paintReference, omitInputRail, omitFields }: {
     /** the WHOLE emission (the schema envelope + model/variants) —
      *  REQUIRED now: the fields, the axes, and the mod param rows all
      *  derive from THIS (useFormSpec fetches it). */
@@ -79,6 +79,13 @@ export declare function CardForm({ spec, user, base, onSet, onPick, onUnset, wir
      *  carries knobs and axes only. The rail stays DEFAULT: plain
      *  cards whose form IS the input surface render it untouched. */
     omitInputRail?: boolean;
+    /** the host's per-field admission filter (2026-11-06, the
+     *  family-reseat cure): true REMOVES the field from every render
+     *  — the family rail's answer for knobs the doc's derived shape
+     *  cannot honor (h3's t4r lane owns no post chain). Family-
+     *  agnostic by design: card-base never derives a family; the
+     *  host's predicate IS the law. */
+    omitFields?: (name: string) => boolean;
     /** the host's square override (the claim seam). Rare. */
     square?: (f: SpecField) => SquareHost | undefined;
     /** the field-atom seam's claims, keyed by emitted wire type —

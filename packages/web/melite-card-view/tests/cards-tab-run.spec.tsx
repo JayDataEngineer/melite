@@ -255,7 +255,11 @@ describe("the error face retires on an external success — an error is a claim,
     // lanes share the box, so arrival latency is load-owned.
     await waitFor(() => {
       expect(screen.getAllByText(/refuses the state/).length).toBeGreaterThan(0);
-    }, { timeout: 5000 });
+      // (2026-11-06, the pool-load receipt, 2nd raise) 5s red twice
+      // under the full pool at 6G while standalone stays green — the
+      // arrival is load-owned (the file's own law above); 10s is the
+      // ceiling the motion lane's toast receipt already proved stable.
+    }, { timeout: 10000 });
     // THE OTHER HAND: the agent's generation lands — the resource
     // re-emits the row terminal-done; THIS tab pressed nothing
     benchValue = {
@@ -280,7 +284,10 @@ describe("the error face retires on an external success — an error is a claim,
       // both honest seats may carry it (the tab strip and the zoom's
       // status seat) — at least one must
       expect(screen.getAllByText("engine cold").length).toBeGreaterThan(0);
-    });
+      // (2026-11-06, the pool-load receipt) the 5s ceiling matches
+      // the two waits above — the fleet's dom lanes share the box, a
+      // bare default 1s red this arm only under the full pool.
+    }, { timeout: 5000 });
   });
 
   test("a VERB refusal survives a foreign terminal-done — only its own verb's success clears it (W6)", async () => {

@@ -110,6 +110,7 @@ function makeStripProps(rec: StripRecord, over: Partial<StripProps> = {}): Strip
     artifactIndex: { byUrl: new Map(ARTIFACTS) },
     docFromFilm: (frame) => frame,
     keyframes: [],
+    addKeyframeWithImage: () => "k",
     enterKfView: () => {},
     enterAudioView: () => {},
   }

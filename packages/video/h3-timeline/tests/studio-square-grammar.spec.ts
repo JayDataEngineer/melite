@@ -59,17 +59,26 @@ describe("SOURCE — the datalist hand-roll is dead, the grammar rides", () => {
     assert.ok(!sub.includes("20 * 1024 * 1024"), "no seat-local size cap survives")
   })
 
-  it("the kf source seat rides the subview's picker grammar (defect B killed the SourceRow square)", () => {
+  it("the kf source seat rides the subview's picker grammar — ONE spelling with the strip lane door (the lane-add parity law)", () => {
     const panel = read("CallCardsPanel.tsx")
-    // (re-pin, defect B, 2026-11-06) the operator's order: NO input
-    // image square — the kf seat is the standalone subview's pick-icon
-    // rows (classifyImage + the provider door), the audio-input
-    // grammar; the panel seats NO SourceRow anywhere.
+    const utils = read("refUtils.ts")
+    const strip = read("StudioStripPane.tsx")
+    // (re-pin, 2026-11-06) the operator's order: NO input image square
+    // — the kf seat is the subview's pick-icon rows (the audio-input
+    // grammar); the panel seats NO SourceRow anywhere. The judge +
+    // loader twins are DELETED from the panel: refUtils owns them and
+    // BOTH doors (subview + strip lane head) import the one spelling.
     assert.ok(!panel.includes("<SourceRow"), "no SourceRow square survives in the panel")
-    assert.ok(panel.includes("byUrl.get"), "the URL→NAME honesty rides the artifact index")
-    assert.ok(panel.includes("FOREIGN_URL_REFUSAL"), "a foreign pick refuses visibly")
+    assert.ok(panel.includes("classifyImageSrc("), "the commit judge is refUtils' classifier (never a hand-roll)")
+    assert.ok(panel.includes("loadImageMedia"), "the image loader is refUtils' module-scope export")
+    assert.ok(!panel.includes("const classifyImage"), "the panel's local classifier twin is DEAD")
+    assert.ok(!panel.includes("const loadImageMedia"), "the panel's local loader twin is DEAD")
+    assert.ok(strip.includes("classifyImageSrc("), "the strip's lane door judges identically — one spelling")
+    assert.ok(utils.includes("export function classifyImageSrc"), "refUtils is the owner")
+    assert.ok(utils.includes("byUrl.get"), "the URL→NAME honesty rides the artifact index")
+    assert.ok(panel.includes("FOREIGN_URL_REFUSAL") && utils.includes("FOREIGN_URL_REFUSAL"), "a foreign pick refuses visibly")
     assert.ok(panel.includes("refUploadError("), "the upload gate is the shared law")
-    assert.ok(panel.includes("estateMediaChip"), "the estate's own media paths stay legal currency")
+    assert.ok(utils.includes("estateMediaChip"), "the estate's own media paths stay legal currency")
   })
 
   it("refUtils owns the shared upload law (one spelling)", () => {

@@ -32,11 +32,6 @@ export interface TimelineTrack {
     track_type: string;
     color: [number, number, number] | null;
     height_scale?: number;
-    /** (2026-11-05, the operator's law: the keyframes lane works
-     *  EXACTLY like the audio inputs) — an optional upload icon on
-     *  the lane itself, the same open-picker gesture the audio lane
-     *  heads ride. Absent = no icon (tracks without a pick door). */
-    onUpload?: (anchor: HTMLButtonElement) => void;
 }
 export interface TimelineKeyframe {
     uuid: string;

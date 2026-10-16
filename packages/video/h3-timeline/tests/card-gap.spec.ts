@@ -182,6 +182,32 @@ describe("the schema gate arms", () => {
     );
   });
 
+  // THE D8 GUARD (2026-11-06 — the live brick: a film legally
+  // stamped sr_switch lost a call, derived t4r, and every compose
+  // refused). The walk keeps refusing the post rail on the guided
+  // lane — LOUD, naming the key — while the rail's family gate and
+  // the reseat heal (useFamilyReseatHeal) keep the UI from ever
+  // WRITING one there. The refusal is the last line, not the first.
+  it("t4r openers refuse the second-pass rail by its live spelling — sr_switch", () => {
+    assert.throws(
+      () => def.schema({ variant: "t4r", calls: [SHOT()], sr_switch: true }),
+      /h3_window\(t4r\): unsanctioned inject keys: sr_switch/,
+    );
+  });
+
+  it("t4_chain and t4_open docs carry the same stamp legally (the refusal is the guided lane's alone)", () => {
+    const chain = def.schema({
+      variant: "t4_chain",
+      calls: [SHOT(), SHOT({ start_frame: 56, end_frame: 112 })],
+      sr_switch: true, sr_resolution: 1080,
+    });
+    assert.equal(chain.variant, "t4_chain");
+    assert.equal(chain.sr_switch, true);
+    const open = def.schema({ variant: "t4_open", calls: [SHOT()], sr_switch: true });
+    assert.equal(open.variant, "t4_open");
+    assert.equal(open.sr_switch, true);
+  });
+
   it("the chaining rail vocabulary is retired — ctx rides inert, motion_* is gone outright", () => {
     // (2026-09-20: the MotionContext seam is forgotten; the
     // drift-control continuation owns the chaining. The ctx_*

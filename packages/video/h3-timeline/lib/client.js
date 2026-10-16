@@ -1285,8 +1285,8 @@ window.__ModuleLoader__.load({
 		}
 		//#endregion
 		//#region \0dsh-css:packages/web-kit/timeline/src/timeline/timeline.module.css.mjs
-		const css = ".t2WLSa_root{user-select:none;display:flex}.t2WLSa_gutter{border-right:1px solid var(--dsw-alias-border-l2);flex-direction:column;flex:none;display:flex}.t2WLSa_zoomRow{border-bottom:1px solid var(--dsw-alias-border-l2);justify-content:center;align-items:center;gap:2px;display:flex}.t2WLSa_zoomBtn{width:20px;height:20px;color:var(--dsw-alias-label-secondary);font-size:inherit;cursor:pointer;background:0 0;border:none;border-radius:4px;justify-content:center;align-items:center;padding:0;line-height:1;display:inline-flex}.t2WLSa_zoomBtn:hover{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-brand-primary)}.t2WLSa_zoomBtn svg{width:14px;height:14px}.t2WLSa_zoomPct{min-width:32px;height:auto;color:var(--dsw-alias-label-secondary);text-align:center;font-variant-numeric:tabular-nums;cursor:pointer;background:0 0;border:none;border-radius:4px;padding:0 2px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:10px}.t2WLSa_zoomPct:hover{color:var(--dsw-alias-brand-primary)}.t2WLSa_laneHead,.t2WLSa_laneHeadBeats{border-bottom:1px solid var(--dsw-alias-border-l1);background:var(--dsw-alias-bg-layer-1);align-items:center;gap:6px;padding:0 8px;display:flex}.t2WLSa_laneHead>svg,.t2WLSa_laneHeadBeats>svg{width:14px;height:14px;color:var(--dsw-alias-brand-primary);flex:none}.t2WLSa_laneHeadBeats>svg{color:var(--dsw-alias-brand-primary)}.t2WLSa_gutterLabel{text-overflow:ellipsis;white-space:nowrap;color:var(--dsw-alias-label-tertiary);font-size:10px;font-weight:500;overflow:hidden}.t2WLSa_audioHead{border-bottom:1px solid var(--dsw-alias-border-l1);align-items:center;gap:6px;padding:0 8px;display:flex}.t2WLSa_audioHead>svg{width:12px;height:12px;color:var(--dsw-alias-state-business-primary);flex:none}.t2WLSa_gutterLabelDim{text-overflow:ellipsis;white-space:nowrap;color:var(--dsw-alias-label-tertiary);font-size:10px;font-weight:500;overflow:hidden}.t2WLSa_detachBtn{width:16px;height:16px;color:var(--dsw-alias-label-tertiary);cursor:pointer;background:0 0;border:none;border-radius:4px;flex:none;justify-content:center;align-items:center;margin-left:auto;padding:0;display:inline-flex}.t2WLSa_detachBtn:hover{background:var(--dsw-alias-state-error-primary);color:var(--dsw-alias-label-primary)}.t2WLSa_detachBtn svg{width:10px;height:10px}.t2WLSa_uploadBtn{width:16px;height:16px;color:var(--dsw-alias-label-tertiary);cursor:pointer;background:0 0;border:none;border-radius:4px;flex:none;justify-content:center;align-items:center;padding:0;display:inline-flex}.t2WLSa_uploadBtn:hover{background:color-mix(in srgb, var(--dsw-alias-label-tertiary) 14%, transparent);color:var(--dsw-alias-label-primary)}.t2WLSa_uploadBtn svg{width:10px;height:10px}.t2WLSa_laneRow{border-bottom:1px solid var(--dsw-alias-border-l1);align-items:center;gap:6px;padding:0 8px;display:flex}.t2WLSa_laneRow:last-child{border-bottom:0}.t2WLSa_laneDot{border-radius:9999px;flex:none;width:6px;height:6px}.t2WLSa_laneName{text-overflow:ellipsis;white-space:nowrap;color:var(--dsw-alias-label-tertiary);font-size:10px;overflow:hidden}.t2WLSa_contentWrap{flex:1;min-width:0;position:relative}.t2WLSa_scroller{scrollbar-width:thin;scrollbar-color:var(--dsw-alias-border-l3) transparent;height:100%;overflow:auto hidden}.t2WLSa_scroller::-webkit-scrollbar{height:8px}.t2WLSa_scroller::-webkit-scrollbar-track{background:0 0}.t2WLSa_scroller::-webkit-scrollbar-thumb{background:var(--dsw-alias-border-l2);border-radius:4px}.t2WLSa_content{position:relative}.t2WLSa_ruler{border-bottom:1px solid var(--dsw-alias-border-l2);cursor:ew-resize;touch-action:none;position:relative}.t2WLSa_tick{position:absolute;top:0;bottom:0}.t2WLSa_tickLine{background:var(--dsw-alias-border-l2);width:1px;height:100%}.t2WLSa_tickLabel{color:var(--dsw-alias-label-tertiary);font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:10px;line-height:1;position:absolute;top:2px;left:4px}.t2WLSa_timecode{z-index:10;font-variant-numeric:tabular-nums;height:100%;color:var(--dsw-alias-brand-primary);align-items:center;padding-left:6px;padding-right:8px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:10px;line-height:1;display:flex;position:sticky;left:0}.t2WLSa_promptsLane{border-bottom:1px solid var(--dsw-alias-border-l1);position:relative}.t2WLSa_canAdd{cursor:copy}.t2WLSa_emptyCenter{justify-content:center;align-items:center;display:flex;position:absolute;inset:0}.t2WLSa_emptyHint{color:var(--dsw-alias-label-tertiary);font-size:10px}.t2WLSa_promptClip{touch-action:none;cursor:grab;border:1px solid var(--dsw-alias-border-l2);border-radius:8px;position:absolute;top:4px;bottom:4px;overflow:hidden}.t2WLSa_promptClip:hover{border-color:var(--dsw-alias-border-l4)}.t2WLSa_clipSelected{z-index:30;border-color:var(--dsw-alias-brand-primary);box-shadow:0 0 0 2px color-mix(in srgb, var(--dsw-alias-brand-primary) 60%, transparent);border-width:0}.t2WLSa_clipSelected:hover{border-color:var(--dsw-alias-brand-primary)}.t2WLSa_clipMoving{z-index:30;cursor:grabbing;border:1px solid var(--dsw-alias-brand-primary);box-shadow:0 20px 25px -5px color-mix(in srgb, var(--dsw-alias-bg-base) 50%, transparent), 0 8px 10px -6px color-mix(in srgb, var(--dsw-alias-bg-base) 50%, transparent), 0 0 0 2px color-mix(in srgb, var(--dsw-alias-brand-primary) 70%, transparent)}.t2WLSa_edgeL{z-index:30;touch-action:none;cursor:ew-resize;justify-content:center;align-items:center;width:12px;display:flex;position:absolute;top:0;bottom:0;left:0}.t2WLSa_edgeL:hover{background:var(--dsw-alias-interactive-bg-hover)}.t2WLSa_edgeDead{cursor:default;opacity:.35}.t2WLSa_edgeDead:hover{background:0 0}.t2WLSa_gripPill{background:color-mix(in srgb, var(--dsw-alias-label-primary) 25%, transparent);border-radius:9999px;width:3px;height:20px}.t2WLSa_promptClip:hover .t2WLSa_gripPill{background:color-mix(in srgb, var(--dsw-alias-label-primary) 60%, transparent)}.t2WLSa_seamDot{z-index:35;border-radius:9999px;width:8px;height:8px;position:absolute;top:0;left:0;transform:translate(-50%,-50%)}.t2WLSa_edgeR{z-index:30;touch-action:none;cursor:ew-resize;justify-content:center;align-items:center;width:12px;display:flex;position:absolute;top:16px;bottom:0;right:0}.t2WLSa_edgeR:hover{background:var(--dsw-alias-interactive-bg-hover)}.t2WLSa_edgeWide{width:16px}.t2WLSa_gripPillR{background:color-mix(in srgb, var(--dsw-alias-label-primary) 25%, transparent);border-radius:9999px;width:3px;height:20px}.t2WLSa_gripPillBright{background:color-mix(in srgb, var(--dsw-alias-label-primary) 45%, transparent)}.t2WLSa_promptClip:hover .t2WLSa_gripPillR{background:color-mix(in srgb, var(--dsw-alias-label-primary) 60%, transparent)}.t2WLSa_promptClip:hover .t2WLSa_gripPillBright{background:color-mix(in srgb, var(--dsw-alias-label-primary) 80%, transparent)}.t2WLSa_clipEditor{background:color-mix(in srgb, var(--dsw-alias-bg-base) 60%, transparent);height:24px;box-shadow:0 0 0 1px color-mix(in srgb, var(--dsw-alias-brand-primary) 50%, transparent);pointer-events:auto;border:none;border-radius:4px;align-items:center;padding:0 6px;display:inline-flex;position:absolute;top:50%;left:8px;right:8px;transform:translateY(-50%)}.t2WLSa_clipEditor input{width:100%;min-width:0;height:100%;color:var(--dsw-alias-label-primary);background:0 0;border:none;outline:none;flex:1;padding:0;font-size:11px;line-height:1.5}.t2WLSa_clipEditor input::placeholder{color:var(--dsw-alias-label-tertiary)}.t2WLSa_previewWrap{z-index:10;pointer-events:none;position:absolute;inset:0;overflow:hidden}.t2WLSa_previewVideo{object-fit:cover;opacity:.6;width:100%;height:100%;position:absolute;inset:0}.t2WLSa_scrim{background:linear-gradient(to top, color-mix(in srgb, var(--dsw-alias-bg-base) 85%, transparent), color-mix(in srgb, var(--dsw-alias-bg-base) 45%, transparent) 50%, color-mix(in srgb, var(--dsw-alias-bg-base) 10%, transparent));position:absolute;inset:0}.t2WLSa_clipTextCol{z-index:20;flex-direction:column;gap:2px;padding:0 12px 6px;display:flex;position:absolute;bottom:0;left:0;right:0}.t2WLSa_clipTextStack{z-index:10;pointer-events:none;flex-direction:column;justify-content:center;gap:2px;padding:0 12px;display:flex;position:absolute;inset:0}.t2WLSa_clipTitle{text-overflow:ellipsis;white-space:nowrap;font-size:11px;font-weight:500;overflow:hidden}.t2WLSa_clipEmpty{color:var(--dsw-alias-label-tertiary);font-style:italic}.t2WLSa_clipDur{font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-tertiary);font-size:10px}.t2WLSa_knobDot{z-index:20;background:var(--dsw-alias-brand-primary);width:6px;height:6px;box-shadow:0 0 6px color-mix(in srgb, var(--dsw-alias-brand-primary) 80%, transparent);pointer-events:none;border-radius:9999px;position:absolute;top:4px;right:6px}.t2WLSa_refAudioBadge{z-index:20;width:10px;height:10px;color:var(--dsw-alias-state-business-primary);pointer-events:none;position:absolute;top:12px;right:4px}.t2WLSa_refBadge{z-index:20;pointer-events:none;align-items:center;gap:1px;display:flex;position:absolute;top:22px;right:2px}.t2WLSa_refBadge svg{width:8px;height:8px;color:var(--dsw-alias-state-success-primary)}.t2WLSa_refCount{color:var(--dsw-alias-state-success-primary);font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:8px;line-height:1}.t2WLSa_promptDelete{z-index:40;background:var(--dsw-alias-state-error-primary);opacity:0;cursor:pointer;border:none;border-radius:9999px;justify-content:center;align-items:center;width:16px;height:16px;padding:0;display:inline-flex;position:absolute;top:4px;right:4px}.t2WLSa_promptDelete:hover{background:color-mix(in srgb, var(--dsw-alias-state-error-primary) 85%, var(--dsw-alias-label-primary))}.t2WLSa_promptClip:hover .t2WLSa_promptDelete{opacity:1}.t2WLSa_promptDelete svg{width:8px;height:8px;color:var(--dsw-alias-label-primary)}.t2WLSa_beatsLane{border-bottom:1px solid var(--dsw-alias-border-l1);position:relative}.t2WLSa_beatsAdd{cursor:crosshair}.t2WLSa_beatsEmpty{align-items:center;padding-left:12px;display:flex;position:absolute;inset:0}.t2WLSa_hintLine{color:var(--dsw-alias-label-tertiary);font-size:10px}.t2WLSa_beatClip{border:1px solid var(--dsw-alias-border-l2);cursor:pointer;border-radius:6px;position:absolute;top:4px;bottom:4px;overflow:hidden}.t2WLSa_beatClip:hover{border-color:var(--dsw-alias-border-l4)}.t2WLSa_beatSelected{z-index:30;border-color:var(--dsw-alias-brand-primary);box-shadow:0 0 0 2px color-mix(in srgb, var(--dsw-alias-brand-primary) 60%, transparent)}.t2WLSa_beatSelected:hover{border-color:var(--dsw-alias-brand-primary)}.t2WLSa_beatLabel{color:var(--dsw-alias-label-secondary);pointer-events:none;align-items:center;padding:0 6px;font-size:10px;line-height:1.25;display:flex;position:absolute;inset:0}.t2WLSa_truncate{text-overflow:ellipsis;white-space:nowrap;overflow:hidden}.t2WLSa_beatEmpty{color:var(--dsw-alias-label-tertiary);font-style:italic}.t2WLSa_audioLane{border-bottom:1px solid var(--dsw-alias-border-l1);position:relative}.t2WLSa_audioClip{border:1px solid color-mix(in srgb, var(--dsw-alias-state-business-primary) 40%, transparent);background:color-mix(in srgb, var(--dsw-alias-state-business-primary) 25%, transparent);cursor:grab;touch-action:none;border-radius:2px;position:absolute;top:2px;bottom:2px;overflow:hidden}.t2WLSa_audioClip:active{cursor:grabbing}.t2WLSa_audioCard{border-radius:6px;top:3px;bottom:3px}.t2WLSa_audioCardIcon{pointer-events:none;display:flex;position:absolute;top:50%;left:5px;transform:translateY(-50%)}.t2WLSa_audioCardIcon svg{width:13px;height:13px}.t2WLSa_audioCard .t2WLSa_audioClipLabel{flex-direction:column;justify-content:center;align-items:flex-start;gap:1px;font-size:10px;display:flex;left:23px;right:4px}.t2WLSa_audioCard .t2WLSa_audioTime{margin-left:0}.t2WLSa_gainFill{background:color-mix(in srgb, var(--dsw-alias-state-business-primary) 20%, transparent);pointer-events:none;position:absolute;bottom:0;left:0;right:0}.t2WLSa_audioClipLabel{text-overflow:ellipsis;white-space:nowrap;color:color-mix(in srgb, var(--dsw-alias-state-business-primary) 70%, var(--dsw-alias-label-primary));pointer-events:none;align-items:center;padding:0 4px;font-size:9px;line-height:1;display:flex;position:absolute;inset:0;overflow:hidden}.t2WLSa_audioName{text-overflow:ellipsis;white-space:nowrap;font-weight:500;overflow:hidden}.t2WLSa_audioTime{font-variant-numeric:tabular-nums;color:color-mix(in srgb, var(--dsw-alias-state-business-primary) 50%, var(--dsw-alias-label-tertiary));flex:none;margin-left:4px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}.t2WLSa_audioClipDelete{background:color-mix(in srgb, var(--dsw-alias-bg-base) 40%, transparent);width:14px;height:14px;color:var(--dsw-alias-label-tertiary);cursor:pointer;border:none;border-radius:0 0 0 4px;justify-content:center;align-items:center;padding:0;display:none;position:absolute;top:0;right:0}.t2WLSa_audioClipDelete:hover{background:var(--dsw-alias-state-error-primary);color:var(--dsw-alias-label-primary)}.t2WLSa_audioClip:hover .t2WLSa_audioClipDelete{display:flex}.t2WLSa_audioClipDelete svg{width:8px;height:8px}.t2WLSa_audioSlice{border:1px solid color-mix(in srgb, var(--dsw-alias-state-business-primary) 25%, transparent);background:color-mix(in srgb, var(--dsw-alias-state-business-primary) 15%, transparent);border-radius:2px;position:absolute;top:2px;bottom:2px;overflow:hidden}.t2WLSa_sliceLabel{text-overflow:ellipsis;white-space:nowrap;font-variant-numeric:tabular-nums;color:color-mix(in srgb, var(--dsw-alias-state-business-primary) 70%, var(--dsw-alias-label-secondary));pointer-events:none;justify-content:center;align-items:center;padding:0 4px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:9px;display:flex;position:absolute;inset:0;overflow:hidden}.t2WLSa_audioDrop{border:1px dashed color-mix(in srgb, var(--dsw-alias-state-business-primary) 20%, transparent);pointer-events:none;border-radius:4px;justify-content:center;align-items:center;display:flex;position:absolute;inset:2px 4px}.t2WLSa_dropHint{text-overflow:ellipsis;white-space:nowrap;color:var(--dsw-alias-label-tertiary);padding:0 8px;font-size:9px;overflow:hidden}.t2WLSa_kfLane{border-bottom:1px solid var(--dsw-alias-border-l1);position:relative}.t2WLSa_kfLane:last-child{border-bottom:0}.t2WLSa_laneHint{color:var(--dsw-alias-label-tertiary);pointer-events:none;align-items:center;padding-left:12px;font-size:10px;display:flex;position:absolute;inset:0}.t2WLSa_kfWrap{position:absolute;top:0;bottom:0}.t2WLSa_kfBtn{cursor:grab;background:0 0;border:none;justify-content:center;align-items:center;width:16px;height:16px;padding:0;display:flex;position:absolute;top:50%;left:0;transform:translate(-50%,-50%)}.t2WLSa_kfBtn:active{cursor:grabbing;transform:translate(-50%)}.t2WLSa_kfDiamond{width:10px;height:10px;box-shadow:0 0 0 1px var(--dsw-alias-border-l4);border:1px solid;display:block;transform:rotate(45deg)}.t2WLSa_kfMoving{transform:rotate(45deg)scale(1.25)}.t2WLSa_kfDelete{z-index:10;background:var(--dsw-alias-state-error-primary);opacity:0;cursor:pointer;border:none;border-radius:9999px;justify-content:center;align-items:center;width:14px;height:14px;padding:0;display:inline-flex;position:absolute;top:0;left:6px}.t2WLSa_kfDelete:hover{background:color-mix(in srgb, var(--dsw-alias-state-error-primary) 85%, var(--dsw-alias-label-primary))}.t2WLSa_kfWrap:hover .t2WLSa_kfDelete{opacity:1}.t2WLSa_kfDelete svg{width:8px;height:8px;color:var(--dsw-alias-label-primary)}.t2WLSa_playhead{z-index:40;pointer-events:none;position:absolute;top:0;bottom:0}.t2WLSa_playheadCap{border:1px solid var(--dsw-alias-border-l4);border-radius:9999px;width:8px;height:8px;position:absolute;top:0;left:50%;transform:translate(-50%)}.t2WLSa_miniBtn{border:1px solid color-mix(in srgb, var(--dsw-alias-brand-primary) 60%, transparent);background:color-mix(in srgb, var(--dsw-alias-brand-primary) 15%, transparent);width:20px;height:20px;color:var(--dsw-alias-brand-primary);cursor:pointer;border-radius:6px;flex:none;justify-content:center;align-items:center;padding:0;font-size:13px;line-height:1;display:inline-flex}.t2WLSa_miniBtn:hover{background:color-mix(in srgb, var(--dsw-alias-brand-primary) 25%, transparent)}.t2WLSa_miniFitBtn{border:1px solid color-mix(in srgb, var(--dsw-alias-brand-primary) 60%, transparent);background:color-mix(in srgb, var(--dsw-alias-brand-primary) 15%, transparent);height:20px;color:var(--dsw-alias-brand-primary);cursor:pointer;border-radius:6px;flex:none;justify-content:center;align-items:center;padding:0 6px;font-size:10px;font-weight:600;display:inline-flex}.t2WLSa_miniFitBtn:hover{background:color-mix(in srgb, var(--dsw-alias-brand-primary) 25%, transparent)}.t2WLSa_scrubBar{align-items:center;gap:8px;width:100%;display:flex}.t2WLSa_scrubToggle{cursor:pointer;background:0 0;border:none;flex:none;padding:4px 2px;font-size:11px;line-height:1}.t2WLSa_scrubTrack{cursor:pointer;touch-action:none;flex:1;min-width:0;height:18px;position:relative}.t2WLSa_scrubFill{background:var(--dsw-alias-interactive-bg-active);border-radius:2px;height:4px;position:absolute;top:7px;left:0}.t2WLSa_scrubHead{background:var(--dsw-alias-label-primary);border-radius:1px;width:2px;height:10px;margin-left:-1px;position:absolute;top:4px}.t2WLSa_scrubReadout{color:var(--dsw-alias-label-secondary);white-space:nowrap;flex:none;font-size:11px}.t2WLSa_laneUploadBtn{z-index:5;padding:2px;position:absolute;top:50%;left:6px;transform:translateY(-50%)}.t2WLSa_laneUploadGlyph{width:13px;height:13px}";
-		const tagId = "@melite/video-h3-timeline/timeline.module.css@22cb95b9";
+		const css = ".t2WLSa_root{user-select:none;display:flex}.t2WLSa_gutter{border-right:1px solid var(--dsw-alias-border-l2);flex-direction:column;flex:none;display:flex}.t2WLSa_zoomRow{border-bottom:1px solid var(--dsw-alias-border-l2);justify-content:center;align-items:center;gap:2px;display:flex}.t2WLSa_zoomBtn{width:20px;height:20px;color:var(--dsw-alias-label-secondary);font-size:inherit;cursor:pointer;background:0 0;border:none;border-radius:4px;justify-content:center;align-items:center;padding:0;line-height:1;display:inline-flex}.t2WLSa_zoomBtn:hover{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-brand-primary)}.t2WLSa_zoomBtn svg{width:14px;height:14px}.t2WLSa_zoomPct{min-width:32px;height:auto;color:var(--dsw-alias-label-secondary);text-align:center;font-variant-numeric:tabular-nums;cursor:pointer;background:0 0;border:none;border-radius:4px;padding:0 2px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:10px}.t2WLSa_zoomPct:hover{color:var(--dsw-alias-brand-primary)}.t2WLSa_laneHead,.t2WLSa_laneHeadBeats{border-bottom:1px solid var(--dsw-alias-border-l1);background:var(--dsw-alias-bg-layer-1);align-items:center;gap:6px;padding:0 8px;display:flex}.t2WLSa_laneHead>svg,.t2WLSa_laneHeadBeats>svg{width:14px;height:14px;color:var(--dsw-alias-brand-primary);flex:none}.t2WLSa_laneHeadBeats>svg{color:var(--dsw-alias-brand-primary)}.t2WLSa_gutterLabel{text-overflow:ellipsis;white-space:nowrap;color:var(--dsw-alias-label-tertiary);font-size:10px;font-weight:500;overflow:hidden}.t2WLSa_audioHead{border-bottom:1px solid var(--dsw-alias-border-l1);align-items:center;gap:6px;padding:0 8px;display:flex}.t2WLSa_audioHead>svg{width:12px;height:12px;color:var(--dsw-alias-state-business-primary);flex:none}.t2WLSa_gutterLabelDim{text-overflow:ellipsis;white-space:nowrap;color:var(--dsw-alias-label-tertiary);font-size:10px;font-weight:500;overflow:hidden}.t2WLSa_detachBtn{width:16px;height:16px;color:var(--dsw-alias-label-tertiary);cursor:pointer;background:0 0;border:none;border-radius:4px;flex:none;justify-content:center;align-items:center;margin-left:auto;padding:0;display:inline-flex}.t2WLSa_detachBtn:hover{background:var(--dsw-alias-state-error-primary);color:var(--dsw-alias-label-primary)}.t2WLSa_detachBtn svg{width:10px;height:10px}.t2WLSa_uploadBtn{width:16px;height:16px;color:var(--dsw-alias-label-tertiary);cursor:pointer;background:0 0;border:none;border-radius:4px;flex:none;justify-content:center;align-items:center;padding:0;display:inline-flex}.t2WLSa_uploadBtn:hover{background:color-mix(in srgb, var(--dsw-alias-label-tertiary) 14%, transparent);color:var(--dsw-alias-label-primary)}.t2WLSa_uploadBtn svg{width:10px;height:10px}.t2WLSa_laneRow{border-bottom:1px solid var(--dsw-alias-border-l1);align-items:center;gap:6px;padding:0 8px;display:flex}.t2WLSa_laneRow:last-child{border-bottom:0}.t2WLSa_laneDot{border-radius:9999px;flex:none;width:6px;height:6px}.t2WLSa_laneName{text-overflow:ellipsis;white-space:nowrap;color:var(--dsw-alias-label-tertiary);font-size:10px;overflow:hidden}.t2WLSa_contentWrap{flex:1;min-width:0;position:relative}.t2WLSa_scroller{scrollbar-width:thin;scrollbar-color:var(--dsw-alias-border-l3) transparent;height:100%;overflow:auto hidden}.t2WLSa_scroller::-webkit-scrollbar{height:8px}.t2WLSa_scroller::-webkit-scrollbar-track{background:0 0}.t2WLSa_scroller::-webkit-scrollbar-thumb{background:var(--dsw-alias-border-l2);border-radius:4px}.t2WLSa_content{position:relative}.t2WLSa_ruler{border-bottom:1px solid var(--dsw-alias-border-l2);cursor:ew-resize;touch-action:none;position:relative}.t2WLSa_tick{position:absolute;top:0;bottom:0}.t2WLSa_tickLine{background:var(--dsw-alias-border-l2);width:1px;height:100%}.t2WLSa_tickLabel{color:var(--dsw-alias-label-tertiary);font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:10px;line-height:1;position:absolute;top:2px;left:4px}.t2WLSa_timecode{z-index:10;font-variant-numeric:tabular-nums;height:100%;color:var(--dsw-alias-brand-primary);align-items:center;padding-left:6px;padding-right:8px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:10px;line-height:1;display:flex;position:sticky;left:0}.t2WLSa_promptsLane{border-bottom:1px solid var(--dsw-alias-border-l1);position:relative}.t2WLSa_canAdd{cursor:copy}.t2WLSa_emptyCenter{justify-content:center;align-items:center;display:flex;position:absolute;inset:0}.t2WLSa_emptyHint{color:var(--dsw-alias-label-tertiary);font-size:10px}.t2WLSa_promptClip{touch-action:none;cursor:grab;border:1px solid var(--dsw-alias-border-l2);border-radius:8px;position:absolute;top:4px;bottom:4px;overflow:hidden}.t2WLSa_promptClip:hover{border-color:var(--dsw-alias-border-l4)}.t2WLSa_clipSelected{z-index:30;border-color:var(--dsw-alias-brand-primary);box-shadow:0 0 0 2px color-mix(in srgb, var(--dsw-alias-brand-primary) 60%, transparent);border-width:0}.t2WLSa_clipSelected:hover{border-color:var(--dsw-alias-brand-primary)}.t2WLSa_clipMoving{z-index:30;cursor:grabbing;border:1px solid var(--dsw-alias-brand-primary);box-shadow:0 20px 25px -5px color-mix(in srgb, var(--dsw-alias-bg-base) 50%, transparent), 0 8px 10px -6px color-mix(in srgb, var(--dsw-alias-bg-base) 50%, transparent), 0 0 0 2px color-mix(in srgb, var(--dsw-alias-brand-primary) 70%, transparent)}.t2WLSa_edgeL{z-index:30;touch-action:none;cursor:ew-resize;justify-content:center;align-items:center;width:12px;display:flex;position:absolute;top:0;bottom:0;left:0}.t2WLSa_edgeL:hover{background:var(--dsw-alias-interactive-bg-hover)}.t2WLSa_edgeDead{cursor:default;opacity:.35}.t2WLSa_edgeDead:hover{background:0 0}.t2WLSa_gripPill{background:color-mix(in srgb, var(--dsw-alias-label-primary) 25%, transparent);border-radius:9999px;width:3px;height:20px}.t2WLSa_promptClip:hover .t2WLSa_gripPill{background:color-mix(in srgb, var(--dsw-alias-label-primary) 60%, transparent)}.t2WLSa_seamDot{z-index:35;border-radius:9999px;width:8px;height:8px;position:absolute;top:0;left:0;transform:translate(-50%,-50%)}.t2WLSa_edgeR{z-index:30;touch-action:none;cursor:ew-resize;justify-content:center;align-items:center;width:12px;display:flex;position:absolute;top:16px;bottom:0;right:0}.t2WLSa_edgeR:hover{background:var(--dsw-alias-interactive-bg-hover)}.t2WLSa_edgeWide{width:16px}.t2WLSa_gripPillR{background:color-mix(in srgb, var(--dsw-alias-label-primary) 25%, transparent);border-radius:9999px;width:3px;height:20px}.t2WLSa_gripPillBright{background:color-mix(in srgb, var(--dsw-alias-label-primary) 45%, transparent)}.t2WLSa_promptClip:hover .t2WLSa_gripPillR{background:color-mix(in srgb, var(--dsw-alias-label-primary) 60%, transparent)}.t2WLSa_promptClip:hover .t2WLSa_gripPillBright{background:color-mix(in srgb, var(--dsw-alias-label-primary) 80%, transparent)}.t2WLSa_clipEditor{background:color-mix(in srgb, var(--dsw-alias-bg-base) 60%, transparent);height:24px;box-shadow:0 0 0 1px color-mix(in srgb, var(--dsw-alias-brand-primary) 50%, transparent);pointer-events:auto;border:none;border-radius:4px;align-items:center;padding:0 6px;display:inline-flex;position:absolute;top:50%;left:8px;right:8px;transform:translateY(-50%)}.t2WLSa_clipEditor input{width:100%;min-width:0;height:100%;color:var(--dsw-alias-label-primary);background:0 0;border:none;outline:none;flex:1;padding:0;font-size:11px;line-height:1.5}.t2WLSa_clipEditor input::placeholder{color:var(--dsw-alias-label-tertiary)}.t2WLSa_previewWrap{z-index:10;pointer-events:none;position:absolute;inset:0;overflow:hidden}.t2WLSa_previewVideo{object-fit:cover;opacity:.6;width:100%;height:100%;position:absolute;inset:0}.t2WLSa_scrim{background:linear-gradient(to top, color-mix(in srgb, var(--dsw-alias-bg-base) 85%, transparent), color-mix(in srgb, var(--dsw-alias-bg-base) 45%, transparent) 50%, color-mix(in srgb, var(--dsw-alias-bg-base) 10%, transparent));position:absolute;inset:0}.t2WLSa_clipTextCol{z-index:20;flex-direction:column;gap:2px;padding:0 12px 6px;display:flex;position:absolute;bottom:0;left:0;right:0}.t2WLSa_clipTextStack{z-index:10;pointer-events:none;flex-direction:column;justify-content:center;gap:2px;padding:0 12px;display:flex;position:absolute;inset:0}.t2WLSa_clipTitle{text-overflow:ellipsis;white-space:nowrap;font-size:11px;font-weight:500;overflow:hidden}.t2WLSa_clipEmpty{color:var(--dsw-alias-label-tertiary);font-style:italic}.t2WLSa_clipDur{font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-tertiary);font-size:10px}.t2WLSa_knobDot{z-index:20;background:var(--dsw-alias-brand-primary);width:6px;height:6px;box-shadow:0 0 6px color-mix(in srgb, var(--dsw-alias-brand-primary) 80%, transparent);pointer-events:none;border-radius:9999px;position:absolute;top:4px;right:6px}.t2WLSa_refAudioBadge{z-index:20;width:10px;height:10px;color:var(--dsw-alias-state-business-primary);pointer-events:none;position:absolute;top:12px;right:4px}.t2WLSa_refBadge{z-index:20;pointer-events:none;align-items:center;gap:1px;display:flex;position:absolute;top:22px;right:2px}.t2WLSa_refBadge svg{width:8px;height:8px;color:var(--dsw-alias-state-success-primary)}.t2WLSa_refCount{color:var(--dsw-alias-state-success-primary);font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:8px;line-height:1}.t2WLSa_promptDelete{z-index:40;background:var(--dsw-alias-state-error-primary);opacity:0;cursor:pointer;border:none;border-radius:9999px;justify-content:center;align-items:center;width:16px;height:16px;padding:0;display:inline-flex;position:absolute;top:4px;right:4px}.t2WLSa_promptDelete:hover{background:color-mix(in srgb, var(--dsw-alias-state-error-primary) 85%, var(--dsw-alias-label-primary))}.t2WLSa_promptClip:hover .t2WLSa_promptDelete{opacity:1}.t2WLSa_promptDelete svg{width:8px;height:8px;color:var(--dsw-alias-label-primary)}.t2WLSa_beatsLane{border-bottom:1px solid var(--dsw-alias-border-l1);position:relative}.t2WLSa_beatsAdd{cursor:crosshair}.t2WLSa_beatsEmpty{align-items:center;padding-left:12px;display:flex;position:absolute;inset:0}.t2WLSa_hintLine{color:var(--dsw-alias-label-tertiary);font-size:10px}.t2WLSa_beatClip{border:1px solid var(--dsw-alias-border-l2);cursor:pointer;border-radius:6px;position:absolute;top:4px;bottom:4px;overflow:hidden}.t2WLSa_beatClip:hover{border-color:var(--dsw-alias-border-l4)}.t2WLSa_beatSelected{z-index:30;border-color:var(--dsw-alias-brand-primary);box-shadow:0 0 0 2px color-mix(in srgb, var(--dsw-alias-brand-primary) 60%, transparent)}.t2WLSa_beatSelected:hover{border-color:var(--dsw-alias-brand-primary)}.t2WLSa_beatLabel{color:var(--dsw-alias-label-secondary);pointer-events:none;align-items:center;padding:0 6px;font-size:10px;line-height:1.25;display:flex;position:absolute;inset:0}.t2WLSa_truncate{text-overflow:ellipsis;white-space:nowrap;overflow:hidden}.t2WLSa_beatEmpty{color:var(--dsw-alias-label-tertiary);font-style:italic}.t2WLSa_audioLane{border-bottom:1px solid var(--dsw-alias-border-l1);position:relative}.t2WLSa_audioClip{border:1px solid color-mix(in srgb, var(--dsw-alias-state-business-primary) 40%, transparent);background:color-mix(in srgb, var(--dsw-alias-state-business-primary) 25%, transparent);cursor:grab;touch-action:none;border-radius:2px;position:absolute;top:2px;bottom:2px;overflow:hidden}.t2WLSa_audioClip:active{cursor:grabbing}.t2WLSa_audioCard{border-radius:6px;top:3px;bottom:3px}.t2WLSa_audioCardIcon{pointer-events:none;display:flex;position:absolute;top:50%;left:5px;transform:translateY(-50%)}.t2WLSa_audioCardIcon svg{width:13px;height:13px}.t2WLSa_audioCard .t2WLSa_audioClipLabel{flex-direction:column;justify-content:center;align-items:flex-start;gap:1px;font-size:10px;display:flex;left:23px;right:4px}.t2WLSa_audioCard .t2WLSa_audioTime{margin-left:0}.t2WLSa_gainFill{background:color-mix(in srgb, var(--dsw-alias-state-business-primary) 20%, transparent);pointer-events:none;position:absolute;bottom:0;left:0;right:0}.t2WLSa_audioClipLabel{text-overflow:ellipsis;white-space:nowrap;color:color-mix(in srgb, var(--dsw-alias-state-business-primary) 70%, var(--dsw-alias-label-primary));pointer-events:none;align-items:center;padding:0 4px;font-size:9px;line-height:1;display:flex;position:absolute;inset:0;overflow:hidden}.t2WLSa_audioName{text-overflow:ellipsis;white-space:nowrap;font-weight:500;overflow:hidden}.t2WLSa_audioTime{font-variant-numeric:tabular-nums;color:color-mix(in srgb, var(--dsw-alias-state-business-primary) 50%, var(--dsw-alias-label-tertiary));flex:none;margin-left:4px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}.t2WLSa_audioClipDelete{background:color-mix(in srgb, var(--dsw-alias-bg-base) 40%, transparent);width:14px;height:14px;color:var(--dsw-alias-label-tertiary);cursor:pointer;border:none;border-radius:0 0 0 4px;justify-content:center;align-items:center;padding:0;display:none;position:absolute;top:0;right:0}.t2WLSa_audioClipDelete:hover{background:var(--dsw-alias-state-error-primary);color:var(--dsw-alias-label-primary)}.t2WLSa_audioClip:hover .t2WLSa_audioClipDelete{display:flex}.t2WLSa_audioClipDelete svg{width:8px;height:8px}.t2WLSa_audioSlice{border:1px solid color-mix(in srgb, var(--dsw-alias-state-business-primary) 25%, transparent);background:color-mix(in srgb, var(--dsw-alias-state-business-primary) 15%, transparent);border-radius:2px;position:absolute;top:2px;bottom:2px;overflow:hidden}.t2WLSa_sliceLabel{text-overflow:ellipsis;white-space:nowrap;font-variant-numeric:tabular-nums;color:color-mix(in srgb, var(--dsw-alias-state-business-primary) 70%, var(--dsw-alias-label-secondary));pointer-events:none;justify-content:center;align-items:center;padding:0 4px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:9px;display:flex;position:absolute;inset:0;overflow:hidden}.t2WLSa_audioDrop{border:1px dashed color-mix(in srgb, var(--dsw-alias-state-business-primary) 20%, transparent);pointer-events:none;border-radius:4px;justify-content:center;align-items:center;display:flex;position:absolute;inset:2px 4px}.t2WLSa_dropHint{text-overflow:ellipsis;white-space:nowrap;color:var(--dsw-alias-label-tertiary);padding:0 8px;font-size:9px;overflow:hidden}.t2WLSa_kfLane{border-bottom:1px solid var(--dsw-alias-border-l1);position:relative}.t2WLSa_kfLane:last-child{border-bottom:0}.t2WLSa_laneHint{color:var(--dsw-alias-label-tertiary);pointer-events:none;align-items:center;padding-left:12px;font-size:10px;display:flex;position:absolute;inset:0}.t2WLSa_kfWrap{position:absolute;top:0;bottom:0}.t2WLSa_kfBtn{cursor:grab;background:0 0;border:none;justify-content:center;align-items:center;width:16px;height:16px;padding:0;display:flex;position:absolute;top:50%;left:0;transform:translate(-50%,-50%)}.t2WLSa_kfBtn:active{cursor:grabbing;transform:translate(-50%)}.t2WLSa_kfDiamond{width:10px;height:10px;box-shadow:0 0 0 1px var(--dsw-alias-border-l4);border:1px solid;display:block;transform:rotate(45deg)}.t2WLSa_kfMoving{transform:rotate(45deg)scale(1.25)}.t2WLSa_kfDelete{z-index:10;background:var(--dsw-alias-state-error-primary);opacity:0;cursor:pointer;border:none;border-radius:9999px;justify-content:center;align-items:center;width:14px;height:14px;padding:0;display:inline-flex;position:absolute;top:0;left:6px}.t2WLSa_kfDelete:hover{background:color-mix(in srgb, var(--dsw-alias-state-error-primary) 85%, var(--dsw-alias-label-primary))}.t2WLSa_kfWrap:hover .t2WLSa_kfDelete{opacity:1}.t2WLSa_kfDelete svg{width:8px;height:8px;color:var(--dsw-alias-label-primary)}.t2WLSa_playhead{z-index:40;pointer-events:none;position:absolute;top:0;bottom:0}.t2WLSa_playheadCap{border:1px solid var(--dsw-alias-border-l4);border-radius:9999px;width:8px;height:8px;position:absolute;top:0;left:50%;transform:translate(-50%)}.t2WLSa_miniBtn{border:1px solid color-mix(in srgb, var(--dsw-alias-brand-primary) 60%, transparent);background:color-mix(in srgb, var(--dsw-alias-brand-primary) 15%, transparent);width:20px;height:20px;color:var(--dsw-alias-brand-primary);cursor:pointer;border-radius:6px;flex:none;justify-content:center;align-items:center;padding:0;font-size:13px;line-height:1;display:inline-flex}.t2WLSa_miniBtn:hover{background:color-mix(in srgb, var(--dsw-alias-brand-primary) 25%, transparent)}.t2WLSa_miniFitBtn{border:1px solid color-mix(in srgb, var(--dsw-alias-brand-primary) 60%, transparent);background:color-mix(in srgb, var(--dsw-alias-brand-primary) 15%, transparent);height:20px;color:var(--dsw-alias-brand-primary);cursor:pointer;border-radius:6px;flex:none;justify-content:center;align-items:center;padding:0 6px;font-size:10px;font-weight:600;display:inline-flex}.t2WLSa_miniFitBtn:hover{background:color-mix(in srgb, var(--dsw-alias-brand-primary) 25%, transparent)}.t2WLSa_scrubBar{align-items:center;gap:8px;width:100%;display:flex}.t2WLSa_scrubToggle{cursor:pointer;background:0 0;border:none;flex:none;padding:4px 2px;font-size:11px;line-height:1}.t2WLSa_scrubTrack{cursor:pointer;touch-action:none;flex:1;min-width:0;height:18px;position:relative}.t2WLSa_scrubFill{background:var(--dsw-alias-interactive-bg-active);border-radius:2px;height:4px;position:absolute;top:7px;left:0}.t2WLSa_scrubHead{background:var(--dsw-alias-label-primary);border-radius:1px;width:2px;height:10px;margin-left:-1px;position:absolute;top:4px}.t2WLSa_scrubReadout{color:var(--dsw-alias-label-secondary);white-space:nowrap;flex:none;font-size:11px}";
+		const tagId = "@melite/video-h3-timeline/timeline.module.css@9598b92a";
 		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId) + "]") === null) {
 			const tag = document.createElement("style");
 			tag.dataset.plugin = "@melite/video-h3-timeline";
@@ -1353,8 +1353,6 @@ window.__ModuleLoader__.load({
 			"laneHint": "t2WLSa_laneHint",
 			"laneName": "t2WLSa_laneName",
 			"laneRow": "t2WLSa_laneRow",
-			"laneUploadBtn": "t2WLSa_laneUploadBtn",
-			"laneUploadGlyph": "t2WLSa_laneUploadGlyph",
 			"miniBtn": "t2WLSa_miniBtn",
 			"miniFitBtn": "t2WLSa_miniFitBtn",
 			"playhead": "t2WLSa_playhead",
@@ -1449,6 +1447,13 @@ window.__ModuleLoader__.load({
 			addClipAria: (p) => `Add ${p.label} clip`,
 			/** The add door's hover title for one layer. */
 			addClipTitle: (p) => `Add a ${p.label} clip — from flow, from media, or from file`,
+			/** (2026-11-06, the lane-add parity law) a track head's add door —
+			*  accessible name. `track` is the lane's own gutter name. */
+			addTrackAria: (p) => `Add ${p.track} pin`,
+			/** (2026-11-06, the lane-add parity law) a track head's add door —
+			*  hover title (the same three-entry source grammar the audio
+			*  heads ride). */
+			addTrackTitle: (p) => `Add a ${p.track} pin — from flow, from media, or from file`,
 			/** The detach button's accessible name for one layer. */
 			detachAria: (p) => `Detach ${p.label}`,
 			/** The ruler tick's second-suffixed label. */
@@ -1494,9 +1499,7 @@ window.__ModuleLoader__.load({
 			/** The readout's frame column (" · frame 24/96"). */
 			scrubFramesSuffix: (p) => ` · frame ${p.frame}/${p.total}`,
 			/** The sub-minute second unit ("5.2s"). */
-			secondsUnit: "s",
-			laneUploadTip: (lane) => `Upload a frame to ${lane}`,
-			laneUploadAria: (lane) => `Upload a frame to ${lane}`
+			secondsUnit: "s"
 		};
 		//#endregion
 		//#region ../../web-kit/timeline/src/timeline/MotionTimelineBarChrome.tsx
@@ -1510,7 +1513,7 @@ window.__ModuleLoader__.load({
 		/** The pinned label gutter (bar line 820): the zoom cluster + lane
 		*  heads. The Fit pin reads the live scale — the body is the bar's. */
 		function TimelineGutter(props) {
-			const { scale, scrollRef, frameIdx, promptsHeight, promptsLabel, beats, beatsLabel, beatsHeight, audioLayers, onAudioDetach, tracks, audioClipCards } = props;
+			const { scale, scrollRef, frameIdx, promptsHeight, promptsLabel, beats, beatsLabel, beatsHeight, audioLayers, onAudioDetach, tracks, audioClipCards, onTrackAdd } = props;
 			const { zoom, anchorRef, frameToPx, setPpf, setBasePpf, fitPpf, effPpf, basePpf } = scale;
 			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(react_jsx_runtime.Fragment, { children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 				className: timeline_module_css_default.gutter,
@@ -1619,18 +1622,33 @@ window.__ModuleLoader__.load({
 					tracks.map((t) => /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 						className: timeline_module_css_default.laneRow,
 						style: { height: 24 },
-						children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-							className: timeline_module_css_default.laneDot,
-							style: { background: rgb(t.color ?? [
-								176,
-								180,
-								186
-							]) },
-							"aria-hidden": true
-						}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-							className: timeline_module_css_default.laneName,
-							children: t.name
-						})]
+						children: [
+							/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+								className: timeline_module_css_default.laneDot,
+								style: { background: rgb(t.color ?? [
+									176,
+									180,
+									186
+								]) },
+								"aria-hidden": true
+							}),
+							/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+								className: timeline_module_css_default.laneName,
+								children: t.name
+							}),
+							onTrackAdd && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+								variant: "ghost",
+								size: "sm",
+								"data-track-upload": t.uuid,
+								"aria-label": timelineCopy.addTrackAria({ track: t.name }),
+								title: timelineCopy.addTrackTitle({ track: t.name }),
+								className: timeline_module_css_default.uploadBtn,
+								onClick: (e) => {
+									onTrackAdd?.(t.uuid, e.currentTarget);
+								},
+								children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.Upload, { "aria-hidden": true })
+							})
+						]
 					}, t.uuid))
 				]
 			}) });
@@ -2193,117 +2211,99 @@ window.__ModuleLoader__.load({
 						const f = xToFrame(e.clientX);
 						if (f != null) onKeyframeAdd(track.uuid, f);
 					},
-					children: [
-						track.onUpload !== void 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.Tip, {
-							tip: timelineCopy.laneUploadTip(track.name),
-							children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
-								variant: "ghost",
-								size: "sm",
-								"data-kf-upload": track.uuid,
-								"aria-label": timelineCopy.laneUploadAria(track.name),
-								className: timeline_module_css_default.laneUploadBtn,
-								onClick: (e) => {
-									e.stopPropagation();
-									track.onUpload?.(e.currentTarget);
-								},
-								children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.Upload, { className: timeline_module_css_default.laneUploadGlyph })
-							})
-						}),
-						keyframes.length === 0 && ti === 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-							className: timeline_module_css_default.laneHint,
-							children: laneHint
-						}),
-						kfs.map((kf) => {
-							const isMoving = dragId === kf.uuid;
-							return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-								className: timeline_module_css_default.kfWrap,
-								style: { left: frameToPx(kf.frame) },
-								"data-drop-hint": kf.dropHint,
-								children: [
-									/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.Tip, {
-										tip: `${track.name} constraint @ frame ${kf.frame} — drag to move, click to jump, hover ✕ to delete${kf.dropHint ? `\n\n${kf.dropHint}` : ""}`,
-										children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
-											variant: "ghost",
-											size: "sm",
-											"data-kf": kf.uuid,
-											"aria-label": kf.ariaLabel ?? timelineCopy.keyframeAria({
-												track: track.name,
-												frame: kf.frame
-											}),
-											onPointerDown: (e) => startDrag(e, {
-												kind: "kf",
-												id: kf.uuid,
-												startX: e.clientX,
-												frame: kf.frame,
-												moved: false
-											}),
-											onDoubleClick: (e) => e.stopPropagation(),
-											className: timeline_module_css_default.kfBtn,
-											children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-												className: clsx(timeline_module_css_default.kfDiamond, isMoving && timeline_module_css_default.kfMoving),
-												style: {
-													background: color,
-													borderColor: color
-												}
-											})
-										})
-									}),
-									kf.thumbUrl !== void 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("img", {
-										src: kf.thumbUrl,
-										alt: "",
-										draggable: false,
-										"data-kf-thumb": kf.uuid,
-										style: {
-											position: "absolute",
-											left: 10,
-											top: "50%",
-											transform: "translateY(-50%)",
-											width: 14,
-											height: 14,
-											borderRadius: 3,
-											objectFit: "cover",
-											pointerEvents: "none",
-											boxShadow: "0 0 0 1px var(--dsw-alias-border-l4)"
-										}
-									}),
-									kf.readout !== void 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-										"data-kf-frame": kf.uuid,
-										style: {
-											position: "absolute",
-											left: kf.thumbUrl !== void 0 ? 26 : 10,
-											top: "50%",
-											transform: "translateY(-50%)",
-											fontSize: 9,
-											lineHeight: 1,
-											color: "var(--dsw-alias-label-secondary)",
-											whiteSpace: "nowrap",
-											fontVariantNumeric: "tabular-nums",
-											pointerEvents: "none"
-										},
-										children: kf.readout
-									}),
-									/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.Tip, {
-										tip: `Delete ${track.name} keyframe at frame ${kf.frame}`,
-										children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
-											variant: "ghost",
-											size: "sm",
-											onPointerDown: (e) => e.stopPropagation(),
-											onClick: (e) => {
-												e.stopPropagation();
-												onKeyframeDelete(kf.uuid);
-											},
-											"aria-label": timelineCopy.deleteKeyframeAria({
-												track: track.name,
-												frame: kf.frame
-											}),
-											className: timeline_module_css_default.kfDelete,
-											children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.IconCloseOutlineRegular, {})
+					children: [keyframes.length === 0 && ti === 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+						className: timeline_module_css_default.laneHint,
+						children: laneHint
+					}), kfs.map((kf) => {
+						const isMoving = dragId === kf.uuid;
+						return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+							className: timeline_module_css_default.kfWrap,
+							style: { left: frameToPx(kf.frame) },
+							"data-drop-hint": kf.dropHint,
+							children: [
+								/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.Tip, {
+									tip: `${track.name} constraint @ frame ${kf.frame} — drag to move, click to jump, hover ✕ to delete${kf.dropHint ? `\n\n${kf.dropHint}` : ""}`,
+									children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+										variant: "ghost",
+										size: "sm",
+										"data-kf": kf.uuid,
+										"aria-label": kf.ariaLabel ?? timelineCopy.keyframeAria({
+											track: track.name,
+											frame: kf.frame
+										}),
+										onPointerDown: (e) => startDrag(e, {
+											kind: "kf",
+											id: kf.uuid,
+											startX: e.clientX,
+											frame: kf.frame,
+											moved: false
+										}),
+										onDoubleClick: (e) => e.stopPropagation(),
+										className: timeline_module_css_default.kfBtn,
+										children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+											className: clsx(timeline_module_css_default.kfDiamond, isMoving && timeline_module_css_default.kfMoving),
+											style: {
+												background: color,
+												borderColor: color
+											}
 										})
 									})
-								]
-							}, kf.uuid);
-						})
-					]
+								}),
+								kf.thumbUrl !== void 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("img", {
+									src: kf.thumbUrl,
+									alt: "",
+									draggable: false,
+									"data-kf-thumb": kf.uuid,
+									style: {
+										position: "absolute",
+										left: 10,
+										top: "50%",
+										transform: "translateY(-50%)",
+										width: 14,
+										height: 14,
+										borderRadius: 3,
+										objectFit: "cover",
+										pointerEvents: "none",
+										boxShadow: "0 0 0 1px var(--dsw-alias-border-l4)"
+									}
+								}),
+								kf.readout !== void 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+									"data-kf-frame": kf.uuid,
+									style: {
+										position: "absolute",
+										left: kf.thumbUrl !== void 0 ? 26 : 10,
+										top: "50%",
+										transform: "translateY(-50%)",
+										fontSize: 9,
+										lineHeight: 1,
+										color: "var(--dsw-alias-label-secondary)",
+										whiteSpace: "nowrap",
+										fontVariantNumeric: "tabular-nums",
+										pointerEvents: "none"
+									},
+									children: kf.readout
+								}),
+								/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.Tip, {
+									tip: `Delete ${track.name} keyframe at frame ${kf.frame}`,
+									children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+										variant: "ghost",
+										size: "sm",
+										onPointerDown: (e) => e.stopPropagation(),
+										onClick: (e) => {
+											e.stopPropagation();
+											onKeyframeDelete(kf.uuid);
+										},
+										"aria-label": timelineCopy.deleteKeyframeAria({
+											track: track.name,
+											frame: kf.frame
+										}),
+										className: timeline_module_css_default.kfDelete,
+										children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.IconCloseOutlineRegular, {})
+									})
+								})
+							]
+						}, kf.uuid);
+					})]
 				}, track.uuid);
 			}) });
 		}
@@ -2361,7 +2361,7 @@ window.__ModuleLoader__.load({
 		const PLAYHEAD = "var(--dsw-alias-brand-primary)";
 		/** Unified background for the timeline bar and its sticky timecode chip. */
 		const BAR_BG = "var(--dsw-alias-bg-layer-1)";
-		function MotionTimelineBar({ prompts, keyframes, frameIdx, onFrameChange, onScrubStart, onScrubEnd, totalFrames, fps, initialSeconds, onKeyframeAdd, onKeyframeMove, onKeyframeDelete, onPromptUpdate, onPromptMove, onPromptResize, onPromptDelete, onExtend, tracks = MOTION_TIMELINE_TRACKS, promptsLabel = timelineCopy.lanePrompts, laneHint = timelineCopy.laneHintDefault, packed = false, emptyPromptsHint = timelineCopy.emptyPromptsHint, promptsHeight = 36, beats, beatsLabel = timelineCopy.laneBeats, beatsHeight = 26, beatsHint = timelineCopy.beatsHintDefault, onBeatAdd, onPromptAdd, previews, selectedId = null, onSelect, audioLayers, onAudioDrop, onAudioDropAt, onAudioFileDrop, onAudioClipMove, onAudioClipDelete, onAudioLaneActivate, onAudioDetach, audioClipCards = false, className, style, theme }) {
+		function MotionTimelineBar({ prompts, keyframes, frameIdx, onFrameChange, onScrubStart, onScrubEnd, totalFrames, fps, initialSeconds, onKeyframeAdd, onKeyframeMove, onKeyframeDelete, onPromptUpdate, onPromptMove, onPromptResize, onPromptDelete, onExtend, tracks = MOTION_TIMELINE_TRACKS, promptsLabel = timelineCopy.lanePrompts, laneHint = timelineCopy.laneHintDefault, packed = false, emptyPromptsHint = timelineCopy.emptyPromptsHint, promptsHeight = 36, beats, beatsLabel = timelineCopy.laneBeats, beatsHeight = 26, beatsHint = timelineCopy.beatsHintDefault, onBeatAdd, onPromptAdd, previews, selectedId = null, onSelect, audioLayers, onAudioDrop, onAudioDropAt, onAudioFileDrop, onAudioClipMove, onAudioClipDelete, onAudioLaneActivate, onAudioDetach, onTrackAdd, audioClipCards = false, className, style, theme }) {
 			const barBg = theme?.barBg ?? BAR_BG;
 			const playhead = theme?.playhead ?? PLAYHEAD;
 			const scrollRef = (0, react.useRef)(null);
@@ -2415,7 +2415,8 @@ window.__ModuleLoader__.load({
 					audioLayers,
 					onAudioDetach,
 					tracks,
-					audioClipCards
+					audioClipCards,
+					onTrackAdd
 				}), /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(TimelineContent, {
 					scrollRef,
 					contentW: scale.contentW,
@@ -2680,6 +2681,53 @@ window.__ModuleLoader__.load({
 		};
 		function transitionOverlap(transition) {
 			return transition === "cut" ? 0 : 22;
+		}
+		/** (2026-11-06, the family-reseat cure) the post-pass knobs the t4r
+		*  lane cannot honor — its renderer wires NO post chain (the graph
+		*  goes straight to CreateVideo), so the schema walk REFUSES these
+		*  keys on a derived-t4r doc rather than silently dropping them (the
+		*  no-silent-resolution law). Shared with the studio so its rail and
+		*  its heal judge the SAME twelve the walk refuses. */
+		const T4_ONLY_KEYS = [
+			"sharpen_switch",
+			"sharpen_method",
+			"sharpen_strength",
+			"sharpen_radius",
+			"sharpen_threshold",
+			"sharpen_iterations",
+			"interp_switch",
+			"interp_multiplier",
+			"interp_model",
+			"sr_switch",
+			"sr_model",
+			"sr_resolution"
+		];
+		/** (2026-11-06, the family-reseat cure) the doc-level window family
+		*  derivation, ONE spelling for every door that needs the family
+		*  BEFORE the walk refuses: the walk derives the composed doc's
+		*  family; the studio rail gates the second-pass group on the t4r
+		*  lane; the reseat heal unstated post keys a family edit stranded
+		*  (the live brick: a film legally stamped sr_switch lost its
+		*  second call, derived t4r, and EVERY compose refused). Reads
+		*  exactly the seats the walk reads — the guide-key union, the pin
+		*  channel, the declared input surface (a private spelling elsewhere
+		*  is the run-899a8448 disease: one seat missed, the family lies).
+		*  @param raw the doc-shaped record (calls/keyframes/ref surface)
+		*  @returns the derived window family */
+		function deriveWindowFamily(raw) {
+			const calls = Array.isArray(raw.calls) ? raw.calls : [];
+			const hasGuide = calls.some((c) => {
+				const cc = c ?? {};
+				return Boolean(cc.image) || Boolean(cc.ref_images) || Boolean(cc.ref_image) || Boolean(cc.image_name);
+			}) || Array.isArray(raw.keyframes) && raw.keyframes.length > 0 || refSurfaceCount(raw) > 0 || typeof raw.last_frame === "string" && raw.last_frame.trim() !== "";
+			return calls.length > 1 ? "t4_chain" : hasGuide ? "t4r" : "t4_open";
+		}
+		function refSurfaceCount(raw) {
+			return [
+				"ref_images",
+				"ref_videos",
+				"ref_audios"
+			].reduce((n, k) => n + normalizeDeclaredRefs(raw[k]).length, 0);
 		}
 		function gridSnap(length) {
 			const k = Math.round((length - 22) / 17);
@@ -3195,6 +3243,30 @@ window.__ModuleLoader__.load({
 			const tail = path.slice(path.lastIndexOf("/") + 1);
 			return tail === "" ? url : tail;
 		}
+		/** (2026-11-06, the lane-add parity law) the image-row filter for the
+		*  keyframe add doors' From-media arm (THE DEP LAW: module scope, one
+		*  identity forever — the provider's modal effect keys on the
+		*  function's identity; an inline arrow re-fires it into the freeze).
+		*  A data: IMAGE chip rides too (the chip law): its mime spelling
+		*  carries no dot-extension, so the regex alone would starve the door
+		*  of legal currency. */
+		const IMAGE_ROW_RE = /\.(png|jpe?g|webp|gif|bmp|avif)(\?|$)/i;
+		const loadImageMedia = async (_kind, signal) => {
+			return (await (0, _melite_card_base_client.fetchMediaLibrary)("all", signal)).filter((r) => r.url.startsWith("data:image/") || IMAGE_ROW_RE.test(r.url) || IMAGE_ROW_RE.test(r.name));
+		};
+		/** (2026-11-06) the keyframe add doors' shared commit spine — estate
+		*  media canonical, the run's own artifact URLs, data: chips ride
+		*  verbatim; foreign URLs refuse. ONE spelling: the rail subview's
+		*  add door and the lane head's add door judge identically.
+		*  @returns the image value to commit, or the refusal's words. */
+		function classifyImageSrc(src, byUrl) {
+			if (src.startsWith("data:")) return { image: src };
+			const media = estateMediaChip(src);
+			if (media !== null) return { image: media };
+			const name = byUrl.get(src);
+			if (name !== void 0) return { image: name };
+			return { refusal: FOREIGN_URL_REFUSAL };
+		}
 		studioCopy.knobSteps, studioCopy.knobDenoise, studioCopy.knobSampler, studioCopy.knobScheduler, studioCopy.knobShiftVideo, studioCopy.knobShiftAudio, studioCopy.knobSlaSparsity, studioCopy.knobSlaBlockSize, studioCopy.knobSlaMinSeqLen, studioCopy.knobSlaDenseLastSteps, studioCopy.knobSlaProtectAudio, studioCopy.knobSlaStabilizeMotion, studioCopy.knobSlaRefProtection, studioCopy.knobSlaDenseBackend, studioCopy.knobSlaDenseSteps, studioCopy.knobSlaFullPrecAccum, studioCopy.knobSharpen, studioCopy.knobSharpenMethod, studioCopy.knobSharpenStrength, studioCopy.knobSharpenRadius, studioCopy.knobSharpenNoiseGate, studioCopy.knobSharpenIterations, studioCopy.knobInterpolate, studioCopy.knobInterpModel, studioCopy.knobInterpMultiplier, studioCopy.knobWindowLength;
 		/**
 		* Convert a legacy audio_stem artifact name into a positioned clip at
@@ -3270,6 +3342,19 @@ window.__ModuleLoader__.load({
 			],
 			height_scale: .6
 		}];
+		/** Defined-wins layer merge (the family-gate derivation input,
+		*  2026-11-06): the settled stage params (calls, keyframes, the
+		*  declared ref surface) overlaid with the layer's STATED keys. A
+		*  plain spread would let the layer's undefined holes erase the
+		*  base's seats and mis-derive the family (t4_open for a t4r doc —
+		*  the exact lie the gate exists to kill). Shared by the rail's
+		*  omitFields gate and the component's family-reseat heal: one
+		*  merge, one truth. */
+		function mergeDocLayers(base, layer) {
+			const out = { ...base ?? {} };
+			for (const [k, v] of Object.entries(layer)) if (v !== void 0 && v !== "") out[k] = v;
+			return out;
+		}
 		//#endregion
 		//#region src/ui/studio/docGrid.ts
 		/**
@@ -3476,7 +3561,7 @@ window.__ModuleLoader__.load({
 		const loadAudioMedia = async (_kind, signal) => {
 			return (await (0, _melite_card_base_client.fetchMediaLibrary)("all", signal)).filter((r) => AUDIO_ROW_RE.test(r.url) || AUDIO_ROW_RE.test(r.name));
 		};
-		function StudioStripPane({ calls, totalFrames, fps, seconds, barPrompts, barLanes, barAudioClips, barTotal, frameIdx, callPreviews, selectedBarId, filmMap, handleBarFrame, handleScrubStart, handleScrubEnd, handleKeyframeAdd, handleKeyframeMove, handleKeyframeDelete, handlePromptUpdate, handlePromptMove, handlePromptResize, handlePromptDelete, handleExtend, addCallAt, handleTimelineSelect, layerA, refAudiosBlocked, addAudioClip, takeAudioFile, moveAudioClip, deleteAudioClip, updateAudioClip, setLayerAKey, artifactIndex, docFromFilm, keyframes, enterKfView, enterAudioView }) {
+		function StudioStripPane({ calls, totalFrames, fps, seconds, barPrompts, barLanes, barAudioClips, barTotal, frameIdx, callPreviews, selectedBarId, filmMap, handleBarFrame, handleScrubStart, handleScrubEnd, handleKeyframeAdd, handleKeyframeMove, handleKeyframeDelete, handlePromptUpdate, handlePromptMove, handlePromptResize, handlePromptDelete, handleExtend, addCallAt, handleTimelineSelect, layerA, refAudiosBlocked, addAudioClip, takeAudioFile, moveAudioClip, deleteAudioClip, updateAudioClip, setLayerAKey, artifactIndex, docFromFilm, keyframes, addKeyframeWithImage, enterKfView, enterAudioView }) {
 			const pickLane = (0, react.useRef)("music");
 			const [laneErr, setLaneErr] = (0, react.useState)(null);
 			const laneField = (lane) => ({
@@ -3523,6 +3608,46 @@ window.__ModuleLoader__.load({
 				pickLane.current = lane;
 				square(laneField(lane))?.verbs.onPick?.(anchor);
 			};
+			const [kfErr, setKfErr] = (0, react.useState)(null);
+			const kfAddField = {
+				name: "kf:add",
+				label: studioCopy.imageGuideLane,
+				type: "file"
+			};
+			const { square: kfAddSquare, wireMenu: kfAddMenu } = (0, _melite_card_base_client.useSquareProvider)((_name, v) => {
+				if (typeof v !== "string" || v === "") return;
+				const got = classifyImageSrc(v, artifactIndex.byUrl);
+				if ("refusal" in got) {
+					setKfErr(got.refusal);
+					return;
+				}
+				setKfErr(null);
+				addKeyframeWithImage(got.image, docFromFilm(frameIdx));
+			}, {
+				candidates: Array.from(artifactIndex.byUrl.entries()).filter(([url]) => IMAGE_ROW_RE.test(url)).map(([url, name2]) => ({
+					id: url,
+					label: name2,
+					url
+				})),
+				loadMedia: loadImageMedia,
+				accept: "image/*",
+				onFile: (file) => {
+					setKfErr(null);
+					const refusal = refUploadError(file, "image");
+					if (refusal !== null) {
+						setKfErr(refusal);
+						return;
+					}
+					(0, _melite_card_base_client.readAsDataURL)(file).then((data) => {
+						addKeyframeWithImage(data, docFromFilm(frameIdx));
+					}, () => {
+						setKfErr(REF_READ_ERROR);
+					});
+				}
+			});
+			const openTrackAdd = (_trackUuid, anchor) => {
+				kfAddSquare(kfAddField)?.verbs.onPick?.(anchor);
+			};
 			const kfChips = barLanes.map((k, i) => {
 				const docFrame = keyframes[i]?.frame;
 				const verdict = typeof docFrame === "number" ? pinDropVerdict(calls, docFrame) : null;
@@ -3567,6 +3692,12 @@ window.__ModuleLoader__.load({
 						className: studio_module_css_default.laneBlocker,
 						children: studioCopy.laneBlockedMessage
 					}),
+					kfErr !== null && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+						"data-testid": "tl-strip-kf-error",
+						className: studio_module_css_default.fileErr,
+						role: "alert",
+						children: kfErr
+					}),
 					/* @__PURE__ */ (0, react_jsx_runtime.jsx)(MotionTimelineBar, {
 						prompts: barPrompts,
 						keyframes: kfChips,
@@ -3580,6 +3711,7 @@ window.__ModuleLoader__.load({
 						onKeyframeAdd: (trackId, frame) => handleKeyframeAdd(trackId, docFromFilm(frame)),
 						onKeyframeMove: (id, frame) => handleKeyframeMove(id, docFromFilm(frame)),
 						onKeyframeDelete: handleKeyframeDelete,
+						onTrackAdd: openTrackAdd,
 						onPromptUpdate: handlePromptUpdate,
 						onPromptMove: (id, s, e) => handlePromptMove(id, docFromFilm(s), docFromFilm(e)),
 						onPromptResize: (id, s, e) => handlePromptResize(id, docFromFilm(s), docFromFilm(e)),
@@ -3660,7 +3792,8 @@ window.__ModuleLoader__.load({
 							if (layerId === "music") setLayerAKey("audio_stem", void 0);
 						}
 					}),
-					wireMenu
+					wireMenu,
+					kfAddMenu
 				]
 			})] });
 		}
@@ -3722,6 +3855,7 @@ window.__ModuleLoader__.load({
 		/** Layer A rail: Recipe (clock) + Engine (H3 sampling) + geometry. */
 		function RunRecipeEngine({ base, layerA, setLayerAKey, setLayerA, refArtifacts }) {
 			const { spec, edit, resolved } = (0, _melite_card_base_client.useResolvedForm)("h3-timeline", layerA, setLayerAKey, base);
+			const omitT4 = (0, react.useMemo)(() => deriveWindowFamily(mergeDocLayers(base, layerA)), [base, layerA]) === "t4r" ? (name) => T4_ONLY_KEYS.includes(name) : void 0;
 			const wire = {
 				candidates: refArtifacts.map((a) => ({
 					id: a.name,
@@ -3763,6 +3897,7 @@ window.__ModuleLoader__.load({
 					user: layerA,
 					base,
 					omitInputRail: true,
+					omitFields: omitT4,
 					onSet: edit,
 					onUnset: (n) => setLayerAKey(n, void 0),
 					onPick: (patch) => {
@@ -4615,16 +4750,6 @@ window.__ModuleLoader__.load({
 		* timeline-bar lane icon), and the rows work like the audio upload
 		* inputs — a pick icon per row, NO input image square.
 		*/
-		/** The image filter wrapper (THE DEP LAW, 2026-09-22): the provider's
-		*  modal effect keys on the loadMedia FUNCTION'S IDENTITY — an inline
-		*  arrow in the component is a fresh identity every render, and the
-		*  effect re-fires into the freeze the base's own comment names. The
-		*  wrapper lives at MODULE SCOPE — one identity, forever; From media
-		*  serves image rows only (a keyframe pin is an image). */
-		const IMAGE_ROW_RE = /\.(png|jpe?g|webp|gif|bmp|avif)(\?|$)/i;
-		const loadImageMedia = async (_kind, signal) => {
-			return (await (0, _melite_card_base_client.fetchMediaLibrary)("all", signal)).filter((r) => r.url.startsWith("data:image/") || IMAGE_ROW_RE.test(r.url) || IMAGE_ROW_RE.test(r.name));
-		};
 		/** Layer B rail: compact call rows ⇄ focused call editor + the
 		*  standalone keyframes subview (defect B, 2026-11-06). */
 		function CallCardsPanel({ calls, selected, setSelected, fps, sourceOptions, keyframes, handleKeyframeMove, handleKeyframeDelete, setKeyframeImage, kfView, exitKfView, addKeyframeWithImage, playheadDocFrame, deps }) {
@@ -4651,17 +4776,9 @@ window.__ModuleLoader__.load({
 			*  artifact URLs, data: chips ride verbatim — foreign URLs refuse.
 			*  @returns the image value to commit, or null when refused (the
 			*  refusal's words ride the caller's error seat). */
-			const classifyImage = (src) => {
-				if (src.startsWith("data:")) return { image: src };
-				const media = estateMediaChip(src);
-				if (media !== null) return { image: media };
-				const name = deps.artifactIndex.byUrl.get(src);
-				if (name !== void 0) return { image: name };
-				return { refusal: FOREIGN_URL_REFUSAL };
-			};
 			const { square: kfAddSquare, wireMenu: kfAddMenu } = (0, _melite_card_base_client.useSquareProvider)((_name, v) => {
 				if (typeof v !== "string" || v === "") return;
-				const got = classifyImage(v);
+				const got = classifyImageSrc(v, deps.artifactIndex.byUrl);
 				if ("refusal" in got) {
 					setKfAddError(got.refusal);
 					return;
@@ -4691,7 +4808,7 @@ window.__ModuleLoader__.load({
 			const { square: kfRowSquare, wireMenu: kfRowMenu } = (0, _melite_card_base_client.useSquareProvider)((_name, v) => {
 				if (typeof v !== "string" || v === "") return;
 				const i = pickRow.current;
-				const got = classifyImage(v);
+				const got = classifyImageSrc(v, deps.artifactIndex.byUrl);
 				if ("refusal" in got) {
 					setKfUploadError(i, got.refusal);
 					return;
@@ -14798,6 +14915,59 @@ window.__ModuleLoader__.load({
 			};
 		}
 		//#endregion
+		//#region src/ui/studio/useFamilyReseatHeal.ts
+		/**
+		* useFamilyReseatHeal — the family-reseat heal (D8, 2026-11-06).
+		*
+		* THE LIVE BRICK: a film legally stamped sr_switch (Final Cut on a
+		* multi-call doc) lost a call, derived t4r, and EVERY compose
+		* refused "h3_window(t4r): unsanctioned inject keys: sr_switch"
+		* while the rail kept serving the dead switches — a family edit
+		* left the card uncomposable ("physically impossible" by the
+		* operator's own reading, and he was right: no knob WRITE happened
+		* between the last green compose and the first red one; the FAMILY
+		* moved under a legal stamp).
+		*
+		* THE LAW: the t4r lane wires NO post chain (the renderer's own
+		* truth — the graph goes straight to CreateVideo), so the walk
+		* refuses the twelve T4_ONLY knobs on a doc that derived t4r.
+		* When the shown doc derives t4r, any T4_ONLY key the layer still
+		* carries is recipe/switch residue on a lane that cannot honor it
+		* — ONE write unstated them (serializeLayerA omits each key and
+		* its delete ride nulls a base-carried stamp, so the next compose
+		* reads the doc clean). The rail's omitFields gate keeps NEW
+		* writes off the dead lane; this heal clears the stranded ones.
+		* Inert-value tolerant: false/""/null ride absent from the
+		* serializer already — unstating them would be churn, not cure.
+		*/
+		/**
+		* @param base the stage's settled params (calls/keyframes/ref
+		*  surface live here — the same seats the walk reads; null is the
+		*  spine's absent-params spelling, owned HERE never at a caller)
+		* @param layerA the shown Layer A (the T4 residue's home)
+		* @param updateLayerA the whole-layer setter (useShownDoc's verb —
+		*  the heal's ONE write rides the same commit seam as every edit)
+		*/
+		function useFamilyReseatHeal(base, layerA, updateLayerA) {
+			(0, react.useEffect)(() => {
+				if (deriveWindowFamily(mergeDocLayers(base, layerA)) !== "t4r") return;
+				const residue = T4_ONLY_KEYS.filter((k) => {
+					const v = layerA[k];
+					return v !== void 0 && v !== null && v !== false && v !== "";
+				});
+				if (residue.length === 0) return;
+				updateLayerA((prev) => {
+					const next = { ...prev };
+					for (const k of residue) next[k] = void 0;
+					return next;
+				});
+			}, [
+				base,
+				layerA,
+				updateLayerA
+			]);
+		}
+		//#endregion
 		//#region src/ui/studio/component.tsx
 		let readManageLane;
 		/** Seat the studio's manage lane (the client entry's apply calls
@@ -14889,6 +15059,7 @@ window.__ModuleLoader__.load({
 			const enh = useEnhance();
 			const mut = useCallMutations(doc.updateCalls, fps);
 			const kf = useBeatMutations(keyframes, doc.updateKeyframes);
+			useFamilyReseatHeal(stage.params, layerA, doc.updateLayerA);
 			const derived = useDerivedView({
 				upstreams,
 				stage,
@@ -15052,6 +15223,7 @@ window.__ModuleLoader__.load({
 					artifactIndex: audio.artifactIndex,
 					docFromFilm: audio.docFromFilm,
 					keyframes,
+					addKeyframeWithImage: kf.addKeyframeWithImage,
 					enterKfView: view.enterKfView,
 					enterAudioView: view.enterAudioView
 				})

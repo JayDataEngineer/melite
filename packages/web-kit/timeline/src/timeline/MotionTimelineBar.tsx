@@ -221,6 +221,9 @@ export interface MotionTimelineBarProps {
   onAudioLaneActivate?: (layerId: string) => void
   /** Detach a wired layer (its × in the gutter). */
   onAudioDetach?: (layerId: string) => void
+  /** (2026-11-06, the lane-add parity law) a track head's add door —
+   *  the host opens its source picker anchored at the button. */
+  onTrackAdd?: (trackUuid: string, anchor: HTMLButtonElement) => void
   /** (2026-09-22, the D-M-E card law) render audio clips as SMALL CALL
    * CARDS — gradient fill, accent left edge, glyph + name + span, 44px
    * lanes — instead of the 26px blocks. Opt-in; absent → byte-identical
@@ -343,6 +346,7 @@ export function MotionTimelineBar({
   onAudioClipDelete,
   onAudioLaneActivate,
   onAudioDetach,
+  onTrackAdd,
   audioClipCards = false,
   className,
   style,
@@ -375,6 +379,7 @@ export function MotionTimelineBar({
         promptsHeight={promptsHeight} promptsLabel={promptsLabel}
         beats={beats} beatsLabel={beatsLabel} beatsHeight={beatsHeight}
         audioLayers={audioLayers} onAudioDetach={onAudioDetach} tracks={tracks} audioClipCards={audioClipCards}
+        onTrackAdd={onTrackAdd}
       />
       <TimelineContent
         scrollRef={scrollRef} contentW={scale.contentW}

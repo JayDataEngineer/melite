@@ -38,6 +38,13 @@ export interface TimelineGutterProps {
   beatsHeight: number
   audioLayers?: AudioLayer[]
   onAudioDetach?: (layerId: string) => void
+  /** (2026-11-06, the lane-add parity law) the track rows' add door:
+   *  when the host wires it, every track row carries the SAME upload
+   *  verb the audio heads do (anchored at THIS button — the host
+   *  opens its source picker); unwired renders no button. The
+   *  keyframes lane is a first-class lane: its head owns the door
+   *  exactly like Dialogue/Music/SFX. */
+  onTrackAdd?: (trackUuid: string, anchor: HTMLButtonElement) => void
   /** (2026-09-22, the D-M-E card law) cards-mode heads match the lanes. */
   audioClipCards?: boolean
   tracks: TimelineTrack[]
@@ -49,6 +56,7 @@ export function TimelineGutter(props: TimelineGutterProps) {
   const {
     scale, scrollRef, frameIdx, promptsHeight, promptsLabel,
     beats, beatsLabel, beatsHeight, audioLayers, onAudioDetach, tracks, audioClipCards,
+    onTrackAdd,
   } = props
   const {
     zoom, anchorRef, frameToPx, setPpf, setBasePpf, fitPpf, effPpf, basePpf,
@@ -176,6 +184,25 @@ export function TimelineGutter(props: TimelineGutterProps) {
               aria-hidden
             />
             <span className={css.laneName}>{t.name}</span>
+            {/* (2026-11-06, the lane-add parity law) the track head's
+                add door — the audio heads' own grammar verbatim (ghost
+                sm + Upload, anchored at this button). The date marks
+                the operator's live order: "WHERE IS MY UP ARROW ICON
+                FOR THE KEYFRAMES? THE AUDIO INPUTS HAVE THEM" — the
+                defect-B-era ruling (door in the rail subview only) is
+                superseded; BOTH doors live now (the subview keeps its
+                editor door, the lane head gains the add verb). */}
+            {onTrackAdd && (
+              <Button variant="ghost" size="sm"
+                data-track-upload={t.uuid}
+                aria-label={timelineCopy.addTrackAria({ track: t.name })}
+                title={timelineCopy.addTrackTitle({ track: t.name })}
+                className={css.uploadBtn}
+                onClick={(e: React.MouseEvent<HTMLButtonElement>) => { onTrackAdd?.(t.uuid, e.currentTarget) }}
+              >
+                <Upload aria-hidden />
+              </Button>
+            )}
           </div>
         ))}
       </div>

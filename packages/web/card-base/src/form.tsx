@@ -58,7 +58,7 @@ export { PackPrompt, ModelAxes, RecipePills } from './axes.tsx'
  *  over the USER layer (the settings law: presence IS the override
  *  mark, the reset chip removes it). The constructor OWNS the square
  *  provider (no call site wires it, no call site can forget it). */
-export function CardForm({ spec, user, base, onSet, onPick, onUnset, wire, square, atoms, onPatch, onDownloadModel, onInstallPack, paintFace, bboxFace, paintReference, omitInputRail }: {
+export function CardForm({ spec, user, base, onSet, onPick, onUnset, wire, square, atoms, onPatch, onDownloadModel, onInstallPack, paintFace, bboxFace, paintReference, omitInputRail, omitFields }: {
   /** the WHOLE emission (the schema envelope + model/variants) —
    *  REQUIRED now: the fields, the axes, and the mod param rows all
    *  derive from THIS (useFormSpec fetches it). */
@@ -93,6 +93,13 @@ export function CardForm({ spec, user, base, onSet, onPick, onUnset, wire, squar
    *  carries knobs and axes only. The rail stays DEFAULT: plain
    *  cards whose form IS the input surface render it untouched. */
   omitInputRail?: boolean
+  /** the host's per-field admission filter (2026-11-06, the
+   *  family-reseat cure): true REMOVES the field from every render
+   *  — the family rail's answer for knobs the doc's derived shape
+   *  cannot honor (h3's t4r lane owns no post chain). Family-
+   *  agnostic by design: card-base never derives a family; the
+   *  host's predicate IS the law. */
+  omitFields?: (name: string) => boolean
   /** the host's square override (the claim seam). Rare. */
   square?: (f: SpecField) => SquareHost | undefined
   /** the field-atom seam's claims, keyed by emitted wire type —
@@ -125,7 +132,14 @@ export function CardForm({ spec, user, base, onSet, onPick, onUnset, wire, squar
   // <- model defaults <- recipe <- user — exactly what a run
   // composes. No seeding, no mirrors, no stamp ledger: one source,
   // re-derived every render.
-  const fields = fieldsOf(spec)
+  // omitFields (2026-11-06, the family-reseat cure): the HOST'S
+  // predicate for fields this doc's derived shape cannot honor —
+  // card-base stays family-agnostic (it cannot derive any family's
+  // law); the family's own rail supplies the truth (h3: the t4r
+  // lane has no post chain, so its studio filters the twelve
+  // T4_ONLY knobs the walk would refuse). A filtered field renders
+  // NOWHERE — not the knob grid, not the per-field map below.
+  const fields = omitFields !== undefined ? fieldsOf(spec).filter((f) => !omitFields(f.name)) : fieldsOf(spec)
   const value = resolveValue(spec, user, base)
   const fieldByName = new Map(fields.map((f) => [f.name, f] as const))
   // THE EDIT COERCION (the one specPatch duty that survives, moved

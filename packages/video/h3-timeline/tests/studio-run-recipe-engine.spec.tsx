@@ -559,3 +559,109 @@ describe("the pick judges truth-in-hand — the collapse", () => {
 })
 
 
+
+// ── THE FAMILY GATE (D8, 2026-11-06 — the t4r lane serves no post
+// chain) ─────────────────────────────────────────────────────────
+// The live brick: the rail rendered the second-pass switches on a
+// doc that derived t4r (one guided call), the operator flipped
+// them / picked Final Cut, and the compose refused the whole card
+// ("unsanctioned inject keys: sr_switch" — the SECOND-PASS SWITCH
+// DOES NOT SWITCH shape, and the pick's residue then bricked every
+// later compose). The rail derives the family from the SAME seats
+// the walk reads (deriveWindowFamily, the contract face) and stops
+// RENDERING what the family cannot honor; films (t4_chain) and
+// open single windows (t4_open) keep the finishing rail.
+describe("RunRecipeEngine: the t4r family gate (omitFields)", () => {
+  function serveT4(): void {
+    const num = (description: string, dflt: number) => ({
+      type: "number", meta: { description, default: dflt, extra: { group: "sampling" } },
+    })
+    const bool = (description: string) => ({
+      type: "boolean", meta: { description, default: false, extra: { group: "second_pass" } },
+    })
+    vi.stubGlobal("fetch", () => Promise.resolve(new Response(JSON.stringify({
+      form: "h3-timeline",
+      features: { variant_groups: { Variant: { label: "Variant" }, Recipe: { label: "Recipe" } } },
+      schema: schemaEnvelope({
+        width: num("Width", 1344),
+        sr_switch: bool("Super-Res (SeedVR2)"),
+        sr_resolution: num("Super-Res target", 1080),
+        sharpen_method: bool("Sharpen method"),
+      }),
+      variants: [
+        { id: "h3", label: "Standard", group: "Variant", defaults: {}, route: "h3-timeline", hint: null, engine: "comfyui", quant: null, vram_peak_gb: null, owner: "" },
+      ],
+    }), { headers: { "content-type": "application/json" } })))
+  }
+  const t4rBase = { width: 800, height: 600, calls: [{ start_frame: 0, end_frame: 90, image: "data:image/png;base64,AAA" }] }
+  const chainBase = { width: 800, height: 600, calls: [
+    { start_frame: 0, end_frame: 90, image: "data:image/png;base64,AAA" },
+    { start_frame: 90, end_frame: 180 },
+  ] }
+  const openBase = { width: 800, height: 600, calls: [{ start_frame: 0, end_frame: 90 }] }
+
+  it("a t4r-derived doc renders NO second-pass row — the rail never offers what the walk refuses", async () => {
+    serveT4()
+    render(
+      <RunRecipeEngine
+        base={t4rBase as never}
+        layerA={{} as unknown as LayerA}
+        setLayerAKey={() => {}}
+        setLayerA={() => {}}
+        refArtifacts={[]}
+      />,
+    )
+    // the surface settles on a row that exists in BOTH worlds
+    // (Width never filters — the gate speaks only the T4
+    // vocabulary); the judges below are then single synchronous
+    // queries, never retry loops
+    await screen.findByText("Width")
+    // on a t4r doc the second_pass group loses EVERY member row, so
+    // the group grammar renders no tab for it at all (one surviving
+    // group renders tab-less) — the tab face is the strong presence
+    // proof: a row-absence query alone would pass with the gate
+    // dead behind an unopened panel
+    assert.equal(screen.queryByRole("tab", { name: /second/i }), null,
+      "the second-pass group has no tab on a t4r doc — every one of its fields was filtered")
+    // THE TAB FACE (the strong face: an unopened group's panel rows
+    // mount nowhere, so row-absence alone would pass with the gate
+    // dead — the GROUP TAB is the presence proof)
+    assert.equal(screen.queryByRole("tab", { name: /second/i }), null,
+      "the second-pass group has no tab on a t4r doc — every one of its fields was filtered")
+    // and with the whole group gone, its rows ride no panel either
+    assert.equal(screen.queryByText("Super-Res (SeedVR2)"), null)
+    assert.equal(screen.queryByText("Sharpen method"), null)
+  })
+
+  it("films and open windows keep the finishing rail (the gate is the t4r lane's, not the knobs')", async () => {
+    serveT4()
+    const { unmount } = render(
+      <RunRecipeEngine
+        base={chainBase as never}
+        layerA={{} as unknown as LayerA}
+        setLayerAKey={() => {}}
+        setLayerA={() => {}}
+        refArtifacts={[]}
+      />,
+    )
+    // the second-pass group rides its own tab (the group grammar) —
+    // open it, then the rows must be there
+    const tab = await screen.findByRole("tab", { name: /second/i })
+    fireEvent.click(tab)
+    assert.notEqual(await screen.findByText("Super-Res (SeedVR2)"), null)
+    assert.notEqual(screen.queryByText("Sharpen method"), null)
+    unmount()
+    render(
+      <RunRecipeEngine
+        base={openBase as never}
+        layerA={{} as unknown as LayerA}
+        setLayerAKey={() => {}}
+        setLayerA={() => {}}
+        refArtifacts={[]}
+      />,
+    )
+    const tab2 = await screen.findByRole("tab", { name: /second/i })
+    fireEvent.click(tab2)
+    assert.notEqual(await screen.findByText("Super-Res (SeedVR2)"), null)
+  })
+})

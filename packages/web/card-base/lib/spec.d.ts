@@ -265,10 +265,6 @@ export declare function axisGroups(spec: FormSpecDoc): string[];
 export declare function variantGroupsContract(spec: FormSpecDoc): string[];
 /** One axis' rows (served order). */
 export declare function rowsFor(spec: FormSpecDoc, group: string): FormVariantRow[];
-/** THE CHAIN (one direction: an axis filters the axes BELOW it): a
- *  row composes with the current selection when its `owner` is empty
- *  (composes with everything — patch-only rows) or names the ACTIVE
- *  row of another axis. */
 export declare function composingRows(spec: FormSpecDoc, group: string, active: Record<string, string | undefined>): FormVariantRow[];
 /** The Variant axis' rows (group 'Variant', served order). */
 export declare function variantRows(spec: FormSpecDoc): FormVariantRow[];

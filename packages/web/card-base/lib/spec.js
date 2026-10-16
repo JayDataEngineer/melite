@@ -819,6 +819,28 @@ export function rowsFor(spec, group) {
  *  row composes with the current selection when its `owner` is empty
  *  (composes with everything — patch-only rows) or names the ACTIVE
  *  row of another axis. */
+/** The row the doc's durable axis stamp names for the picked row's
+ *  group — the DEPARTED preset (the departed-preset reseat's input,
+ *  2026-11-06). The stamp's reverse: a non-Quant stamp IS the row
+ *  id; a Quant stamp is the row's quant coordinate (axisStampOf's
+ *  mirror, spelled WITHOUT its throw — a departed-row lookup never
+ *  refuses a pick over an unrelated illegal sibling). undefined
+ *  when the doc names no row, names the picked row itself (no
+ *  departure), or names a stamp no row owns (a stale doc — nothing
+ *  to reseat against). PURE. */
+function departedRowOf(spec, incoming, held) {
+    if (held === undefined)
+        return undefined;
+    const stamp = held[axisKey(incoming.group)];
+    if (typeof stamp !== 'string' || stamp === '')
+        return undefined;
+    const named = (spec.variants ?? [])
+        .filter((r) => r.group === incoming.group)
+        .find((r) => (r.group === 'Quant' ? r.quant === stamp : r.id === stamp));
+    if (named === undefined || named.id === incoming.id)
+        return undefined;
+    return named;
+}
 export function composingRows(spec, group, active) {
     return rowsFor(spec, group).filter((v) => {
         if (v.owner === undefined || v.owner === '')
@@ -936,8 +958,7 @@ export function axisStampOf(row) {
     if (row.group !== 'Quant')
         return row.id;
     if (typeof row.quant === 'string' && row.quant !== '')
-        return row.quant;
-    // NO FALLBACK (2026-09-29, the second live break): the old
+        return row.quant; // NO FALLBACK (2026-09-29, the second live break): the old
     // `?? row.id` arm was the second vocabulary's doorway — it
     // legalized stamping the catalog's composite address ('raw__int8')
     // where the door's contract speaks the cell coordinate ('int8').
@@ -991,6 +1012,30 @@ export function axisPickPatch(spec, row, held) {
     // group outside the axes (Recipe since the yield) has nothing
     // below it — no reseed at all.
     if (at < 0) {
+        // THE DEPARTED-PRESET RESEAT (D4, 2026-11-06 — operator: "switch
+        // between recipes. THEY ARE ALL LOSE RESOLUTION", reported four
+        // times): a preset OWNS its stamps while it is the named pick.
+        // When the doc's durable axis names a DIFFERENT row of the same
+        // group, every key the DEPARTED row stamped that the incoming
+        // row does not carry is preset residue — Draft's 768×448 rode
+        // under Standard and Final Cut forever (patch-only rows never
+        // unstate). A key whose held value still EQUALS the departed
+        // stamp unstated (null deletes at compose — modelSwitchPatch's
+        // spelling); a hand-edited value is the USER's word and stands.
+        // Scoped to NON-AXIS groups: the chain groups' values are the
+        // envelope law's (reconcilePick) — this cures the one seam that
+        // had no reconciler at all.
+        const departed = departedRowOf(spec, row, held);
+        if (departed !== undefined) {
+            for (const [k, v] of Object.entries(departed.defaults)) {
+                if (k === 'model')
+                    continue;
+                if (k in row.defaults)
+                    continue;
+                if (held !== undefined && held[k] === v)
+                    patch[k] = null;
+            }
+        }
         reconcilePick(patch, spec, row, held);
         return patch;
     }

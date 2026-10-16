@@ -231,6 +231,70 @@ describe("THE STANDALONE KEYFRAMES SUBVIEW (defect B, operator 2026-11-06: its o
     h.unmount()
   })
 
+  it("the add door's From-file success: an honest image lands a data: pin at the playhead (one write)", async () => {
+    const { p, seenKf } = panel({ kfView: true, keyframes: [] })
+    const h = render(<CallCardsPanel {...p} />)
+    fireEvent.click(screen.getByTestId("tl-kf-add"))
+    fireEvent.click(await screen.findByText("From file"))
+    fireEvent.change(fileInput(0), { target: { files: [new File(["bytes"], "a.png", { type: "image/png" })] } })
+    await waitFor(() => { assert.equal(seenKf.addedWithImage.length, 1) })
+    assert.ok(seenKf.addedWithImage[0]![0]!.startsWith("data:image/png;base64,"), seenKf.addedWithImage[0]![0])
+    assert.equal(screen.queryByTestId("tl-kf-add-error"), null, "a clean read leaves no refusal")
+    h.unmount()
+  })
+
+  it("the add door's From-file read failure refuses with the read error — never a pin", async () => {
+    const { p, seenKf } = panel({ kfView: true, keyframes: [] })
+    const h = render(<CallCardsPanel {...p} />)
+    class FailReader {
+      onload: (() => void) | null = null
+      onerror: (() => void) | null = null
+      error = new Error("denied")
+      result: string | null = null
+      readAsDataURL(): void { this.onerror?.() }
+    }
+    vi.stubGlobal("FileReader", FailReader)
+    try {
+      fireEvent.click(screen.getByTestId("tl-kf-add"))
+      fireEvent.click(await screen.findByText("From file"))
+      fireEvent.change(fileInput(0), { target: { files: [new File(["x"], "bad.png", { type: "image/png" })] } })
+      const err = await screen.findByTestId("tl-kf-add-error")
+      assert.ok(err.textContent!.includes("could not read that file"), err.textContent)
+    } finally {
+      vi.unstubAllGlobals()
+    }
+    assert.deepEqual(seenKf.addedWithImage, [], "the unreadable file never pins")
+    h.unmount()
+  })
+
+  it("a FOREIGN media URL at the add door refuses on its own seat — the row seats stay clean", async () => {
+    const { p, seenKf } = panel({ kfView: true, keyframes: [{ image: "", frame: 10 }] })
+    const h = render(<CallCardsPanel {...p} />)
+    bindEstateRemote({ media: { list: async () => ({ ok: true, value: { items: [{ url: "https://lib/foreign.png", name: "foreign.png" }] } }) } } as never)
+    try {
+      fireEvent.click(screen.getByTestId("tl-kf-add"))
+      fireEvent.click(await screen.findByRole("menuitem", { name: "From media" }))
+      const row = (await screen.findAllByTestId("source-pick-row")).find((r) => r.textContent!.includes("foreign.png"))!
+      fireEvent.click(row)
+      const err = await screen.findByTestId("tl-kf-add-error")
+      assert.ok(err.textContent!.includes("not in this run"), err.textContent)
+      assert.equal(screen.queryByTestId("tl-kf-source-error-0"), null, "the row seats stay clean")
+    } finally {
+      unbindEstateRemote()
+    }
+    assert.deepEqual(seenKf.addedWithImage, [], "a foreign URL never pins")
+    h.unmount()
+  })
+
+  it("the clear row at the add door commits the empty string — the guard returns, never a pin", async () => {
+    const { p, seenKf } = panel({ kfView: true, keyframes: [] })
+    const h = render(<CallCardsPanel {...p} />)
+    fireEvent.click(screen.getByTestId("tl-kf-add"))
+    fireEvent.click(await screen.findByText("— clear —"))
+    assert.deepEqual(seenKf.addedWithImage, [], "an empty pick never pins")
+    h.unmount()
+  })
+
   it("the add door's refusal lands its OWN seat (tl-kf-add-error — never a row's)", async () => {
     const { p, seenKf } = panel({
       kfView: true,

@@ -55,13 +55,20 @@ export { PackPrompt, ModelAxes, RecipePills } from "./axes.js";
  *  over the USER layer (the settings law: presence IS the override
  *  mark, the reset chip removes it). The constructor OWNS the square
  *  provider (no call site wires it, no call site can forget it). */
-export function CardForm({ spec, user, base, onSet, onPick, onUnset, wire, square, atoms, onPatch, onDownloadModel, onInstallPack, paintFace, bboxFace, paintReference, omitInputRail }) {
+export function CardForm({ spec, user, base, onSet, onPick, onUnset, wire, square, atoms, onPatch, onDownloadModel, onInstallPack, paintFace, bboxFace, paintReference, omitInputRail, omitFields }) {
     // DERIVED, ALWAYS FRESH (the layered law): fields walk the schema
     // envelope (families-scoped); the resolved value layers defaults
     // <- model defaults <- recipe <- user — exactly what a run
     // composes. No seeding, no mirrors, no stamp ledger: one source,
     // re-derived every render.
-    const fields = fieldsOf(spec);
+    // omitFields (2026-11-06, the family-reseat cure): the HOST'S
+    // predicate for fields this doc's derived shape cannot honor —
+    // card-base stays family-agnostic (it cannot derive any family's
+    // law); the family's own rail supplies the truth (h3: the t4r
+    // lane has no post chain, so its studio filters the twelve
+    // T4_ONLY knobs the walk would refuse). A filtered field renders
+    // NOWHERE — not the knob grid, not the per-field map below.
+    const fields = omitFields !== undefined ? fieldsOf(spec).filter((f) => !omitFields(f.name)) : fieldsOf(spec);
     const value = resolveValue(spec, user, base);
     const fieldByName = new Map(fields.map((f) => [f.name, f]));
     // THE EDIT COERCION (the one specPatch duty that survives, moved

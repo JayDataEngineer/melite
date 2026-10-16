@@ -8550,6 +8550,23 @@ window.__ModuleLoader__.load({
 		*  row composes with the current selection when its `owner` is empty
 		*  (composes with everything — patch-only rows) or names the ACTIVE
 		*  row of another axis. */
+		/** The row the doc's durable axis stamp names for the picked row's
+		*  group — the DEPARTED preset (the departed-preset reseat's input,
+		*  2026-11-06). The stamp's reverse: a non-Quant stamp IS the row
+		*  id; a Quant stamp is the row's quant coordinate (axisStampOf's
+		*  mirror, spelled WITHOUT its throw — a departed-row lookup never
+		*  refuses a pick over an unrelated illegal sibling). undefined
+		*  when the doc names no row, names the picked row itself (no
+		*  departure), or names a stamp no row owns (a stale doc — nothing
+		*  to reseat against). PURE. */
+		function departedRowOf(spec, incoming, held) {
+			if (held === void 0) return void 0;
+			const stamp = held[axisKey(incoming.group)];
+			if (typeof stamp !== "string" || stamp === "") return void 0;
+			const named = (spec.variants ?? []).filter((r) => r.group === incoming.group).find((r) => r.group === "Quant" ? r.quant === stamp : r.id === stamp);
+			if (named === void 0 || named.id === incoming.id) return void 0;
+			return named;
+		}
 		function composingRows(spec, group, active) {
 			return rowsFor(spec, group).filter((v) => {
 				if (v.owner === void 0 || v.owner === "") return true;
@@ -8671,6 +8688,12 @@ window.__ModuleLoader__.load({
 			else if (typeof row.defaults["model"] === "string") active[g] = void 0;
 			if (groups.includes(row.group)) patch[axisKey(row.group)] = axisStampOf(row);
 			if (at < 0) {
+				const departed = departedRowOf(spec, row, held);
+				if (departed !== void 0) for (const [k, v] of Object.entries(departed.defaults)) {
+					if (k === "model") continue;
+					if (k in row.defaults) continue;
+					if (held !== void 0 && held[k] === v) patch[k] = null;
+				}
 				reconcilePick(patch, spec, row, held);
 				return patch;
 			}
@@ -12754,8 +12777,8 @@ window.__ModuleLoader__.load({
 		*  over the USER layer (the settings law: presence IS the override
 		*  mark, the reset chip removes it). The constructor OWNS the square
 		*  provider (no call site wires it, no call site can forget it). */
-		function CardForm({ spec, user, base, onSet, onPick, onUnset, wire, square, atoms, onPatch, onDownloadModel, onInstallPack, paintFace, bboxFace, paintReference, omitInputRail }) {
-			const fields = fieldsOf(spec);
+		function CardForm({ spec, user, base, onSet, onPick, onUnset, wire, square, atoms, onPatch, onDownloadModel, onInstallPack, paintFace, bboxFace, paintReference, omitInputRail, omitFields }) {
+			const fields = omitFields !== void 0 ? fieldsOf(spec).filter((f) => !omitFields(f.name)) : fieldsOf(spec);
 			const value = resolveValue(spec, user, base);
 			const fieldByName = new Map(fields.map((f) => [f.name, f]));
 			const edit = (name, v) => {

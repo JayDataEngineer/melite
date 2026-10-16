@@ -11,6 +11,7 @@
  * short name, and the LinkArtifact type.
  */
 import { runMediaPrefixOf, canonicalRunMediaUrl } from "@melite/contracts/benchStage"
+import { fetchMediaLibrary } from "@melite/card-base/client"
 /** One upstream image artifact — a link-to-previous-output picker row. */
 export interface LinkArtifact {
   /** The ctx-key NAME the picker writes (what _resolveSource resolves). */
@@ -96,4 +97,34 @@ export function declaredShortName(url: string): string {
   const path = url.split("?")[0]
   const tail = path.slice(path.lastIndexOf("/") + 1)
   return tail === "" ? url : tail
+}
+
+/** (2026-11-06, the lane-add parity law) the image-row filter for the
+ *  keyframe add doors' From-media arm (THE DEP LAW: module scope, one
+ *  identity forever — the provider's modal effect keys on the
+ *  function's identity; an inline arrow re-fires it into the freeze).
+ *  A data: IMAGE chip rides too (the chip law): its mime spelling
+ *  carries no dot-extension, so the regex alone would starve the door
+ *  of legal currency. */
+export const IMAGE_ROW_RE = /\.(png|jpe?g|webp|gif|bmp|avif)(\?|$)/i
+export const loadImageMedia = async (_kind: string, signal: AbortSignal) => {
+  const rows = await fetchMediaLibrary("all", signal)
+  return rows.filter((r) => r.url.startsWith("data:image/") || IMAGE_ROW_RE.test(r.url) || IMAGE_ROW_RE.test(r.name))
+}
+
+/** (2026-11-06) the keyframe add doors' shared commit spine — estate
+ *  media canonical, the run's own artifact URLs, data: chips ride
+ *  verbatim; foreign URLs refuse. ONE spelling: the rail subview's
+ *  add door and the lane head's add door judge identically.
+ *  @returns the image value to commit, or the refusal's words. */
+export function classifyImageSrc(src: string, byUrl: Map<string, string>): { image: string } | { refusal: string } {
+  if (src.startsWith("data:")) return { image: src }
+  // (2026-11-05) the estate's own media paths are legal currency at
+  // this door — From media picks commit in the canonical live
+  // spelling and the run's media heal resolves them.
+  const media = estateMediaChip(src)
+  if (media !== null) return { image: media }
+  const name = byUrl.get(src)
+  if (name !== undefined) return { image: name }
+  return { refusal: FOREIGN_URL_REFUSAL }
 }
