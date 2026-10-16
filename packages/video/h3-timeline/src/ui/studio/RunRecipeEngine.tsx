@@ -28,7 +28,7 @@ import { resolvePickVerdictDoc } from "./pickVerdict.ts"
 import { fetchMediaLibrary } from '@melite/card-base/client'
 import { type Dispatch, type SetStateAction, useMemo, useState } from "react"
 import s from "./studio.module.css"
-import { DEFAULT_SEGMENT_PARAMS } from "@melite/contracts/timelineTypes"
+import { DOC_FPS_DEFAULT } from '@melite/models-h3/timelineContract'
 import { FILM_ONLY_KEYS, T4_ONLY_KEYS, deriveWindowFamily } from "@melite/models-h3/timelineContract"
 import type { LayerA, SetLayerAKey } from "./docModel.ts"
 import { mergeDocLayers } from "./docModel.ts"
@@ -161,9 +161,14 @@ export function RunRecipeEngine({
           f={{ name: "fps", label: studioCopy.fps, type: "number", min: 1, max: 60, step: 1 }}
           // (operator 2026-11-05: "FPS is blank again") — a doc
           // created before the clock default landed carries NO fps
-          // key; the row still renders the clock the run composes
-          // (DEFAULT_SEGMENT_PARAMS.fps — docModel's one owner).
-          value={(resolved.fps ?? DEFAULT_SEGMENT_PARAMS.fps) as number}
+          // key; the row still renders the clock the run composes.
+          // THE CLOCK'S ONE OWNER (timeline-plane wave-2 R1): the
+          // fallback was DEFAULT_SEGMENT_PARAMS.fps (16 — the VACE
+          // SEGMENT calibration, a different truth), booking the UI
+          // at a clock the compose never spoke. DOC_FPS_DEFAULT is
+          // the film clock — the schema row's default, the same
+          // value the walk fills and the mix divides by.
+          value={(resolved.fps ?? DOC_FPS_DEFAULT) as number}
           onEdit={(_, v) => {
             if (typeof v !== "string") return
             const n = parseSpecNumber(v)

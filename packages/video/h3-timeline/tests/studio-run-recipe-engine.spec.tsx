@@ -18,7 +18,7 @@ import assert from "node:assert/strict"
 import { readFileSync } from "node:fs"
 import { resolve } from "node:path"
 import { cleanup, fireEvent, render, screen, within } from "@testing-library/react"
-import { DEFAULT_SEGMENT_PARAMS } from "@melite/contracts/timelineTypes"
+import { DOC_FPS_DEFAULT } from '@melite/models-h3/timelineContract'
 import { RunRecipeEngine } from "../src/ui/studio/RunRecipeEngine.tsx"
 import { schemaEnvelope } from "@melite/card-base/client"
 import { emitParamsSpec } from "@melite/comfyui-card-kit/params-emit"
@@ -522,8 +522,13 @@ describe("the global recipe's face (operator 2026-11-05)", () => {
       (el) => (el as HTMLInputElement).type === "number",
     )
     assert.equal(boxes.length, 1)
-    assert.equal((boxes[0] as HTMLInputElement).value, String(DEFAULT_SEGMENT_PARAMS.fps),
-      "unstated fps renders the clock default, never a blank box")
+    // THE CLOCK'S ONE OWNER (timeline-plane wave-2 R1): the row's
+    // unstated fallback is DOC_FPS_DEFAULT (24) — the film clock the
+    // walk fills and the mix divides by. The old pin named
+    // DEFAULT_SEGMENT_PARAMS.fps (16 — the VACE segment calibration),
+    // certifying the very disease the comment claimed to cure.
+    assert.equal((boxes[0] as HTMLInputElement).value, String(DOC_FPS_DEFAULT),
+      "unstated fps renders the film clock default, never a blank box and never the segment calibration")
     cleanup()
   })
 

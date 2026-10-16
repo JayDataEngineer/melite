@@ -750,6 +750,243 @@ window.__ModuleLoader__.load({
 				})
 			});
 		}
+		const REF_CAPS = {
+			images: 8,
+			videos: 3,
+			audios: 3,
+			refmods: 8
+		};
+		function transitionOverlap(transition) {
+			return transition === "cut" ? 0 : 22;
+		}
+		/** (2026-11-06, the family-reseat cure) the post-pass knobs the t4r
+		*  lane cannot honor — its renderer wires NO post chain (the graph
+		*  goes straight to CreateVideo), so the schema walk REFUSES these
+		*  keys on a derived-t4r doc rather than silently dropping them (the
+		*  no-silent-resolution law). Shared with the studio so its rail and
+		*  its heal judge the SAME set the walk refuses.
+		*
+		*  THE DEAD-LETTER MASTERS (2026-10-16, audit 3f0b7c1a layera-globals
+		*  #3): the twelve leaves above are gated, but the three MASTERS that
+		*  own them — second_pass_enabled, sharpen_enabled, interpolate_enabled
+		*  — and attention_backend were not, and each is read ONLY inside the
+		*  non-t4r branch of the compose (actions.ts: second_pass_enabled at
+		*  the post gate, the two leaves in the post chain, attention_backend
+		*  at the chunked ModelAttentionBackend). On a t4r doc they rendered,
+		*  persisted, composed LEGAL, and landed in NO node: a switch the user
+		*  sees ON while the run ignores it — the exact silent-drop the twelve
+		*  leaves are gated against, one level up. Joined here so the field
+		*  gate, the row gate and the reseat heal judge them together. */
+		const T4_ONLY_KEYS = [
+			"sharpen_switch",
+			"sharpen_method",
+			"sharpen_strength",
+			"sharpen_radius",
+			"sharpen_threshold",
+			"sharpen_iterations",
+			"interp_switch",
+			"interp_multiplier",
+			"interp_model",
+			"sr_switch",
+			"sr_model",
+			"sr_resolution",
+			"second_pass_enabled",
+			"sharpen_enabled",
+			"interpolate_enabled",
+			"attention_backend"
+		];
+		/** The knobs only the FILM shape can honor (2026-10-16, audit
+		*  3f0b7c1a ui-truth-gap #4). `duck_depth_db` is read in exactly one
+		*  place — computeFilmMix's manifest, inside the multi-window film
+		*  boundary (actions.ts) — so on a single-window doc (t4_open, t4r)
+		*  the row rendered, persisted and composed into NO node: the
+		*  operator set a duck depth the mix desk never saw. The studio's
+		*  served surface omits these unless the doc derives t4_chain (the
+		*  same one-spelling family derivation the t4r gate uses). */
+		const FILM_ONLY_KEYS = ["duck_depth_db"];
+		/** (2026-11-06, the family-reseat cure) the doc-level window family
+		*  derivation, ONE spelling for every door that needs the family
+		*  BEFORE the walk refuses: the walk derives the composed doc's
+		*  family; the studio rail gates the second-pass group on the t4r
+		*  lane; the reseat heal unstated post keys a family edit stranded
+		*  (the live brick: a film legally stamped sr_switch lost its
+		*  second call, derived t4r, and EVERY compose refused). Reads
+		*  exactly the seats the walk reads — the guide-key union, the pin
+		*  channel, the declared input surface (a private spelling elsewhere
+		*  is the run-899a8448 disease: one seat missed, the family lies).
+		*  @param raw the doc-shaped record (calls/keyframes/ref surface)
+		*  @returns the derived window family */
+		function deriveWindowFamily(raw) {
+			const calls = Array.isArray(raw.calls) ? raw.calls : [];
+			const hasGuide = calls.some((c) => {
+				const cc = c ?? {};
+				return Boolean(cc.image) || Boolean(cc.ref_images) || Boolean(cc.ref_image) || Boolean(cc.image_name);
+			}) || Array.isArray(raw.keyframes) && raw.keyframes.length > 0 || refSurfaceCount(raw) > 0 || typeof raw.last_frame === "string" && raw.last_frame.trim() !== "";
+			return calls.length > 1 ? "t4_chain" : hasGuide ? "t4r" : "t4_open";
+		}
+		function refSurfaceCount(raw) {
+			return [
+				"ref_images",
+				"ref_videos",
+				"ref_audios"
+			].reduce((n, k) => n + normalizeDeclaredRefs(raw[k]).length, 0);
+		}
+		function gridSnap(length) {
+			const k = Math.round((length - 22) / 17);
+			return Math.min(362, Math.max(22, 22 + 17 * k));
+		}
+		/** THE GRID PREDICATE, one owner: a length the engine can render is
+		*  22+17k inside [22,362]. Every refusal door asks this question, so
+		*  knob pins, single windows, cut windows, and carried windows cannot
+		*  drift into different laws. */
+		function isGridLength(length) {
+			return Number.isInteger(length) && length >= 22 && length <= 362 && (length - 22) % 17 === 0;
+		}
+		function deliveredFrames(call, index) {
+			const span = call.end_frame - call.start_frame;
+			if (index === 0 || call.transition === "cut") return span;
+			return Math.max(0, span - 22);
+		}
+		function splitRefList(value) {
+			if (!value) return [];
+			const out = [];
+			let i = 0;
+			while (i < value.length) {
+				while (i < value.length && (value[i] === "," || value[i] === " " || value[i] === "	")) i++;
+				if (i >= value.length) break;
+				const start = i;
+				const isData = value.startsWith("data:", i);
+				let mimeComma = false;
+				while (i < value.length) {
+					if (value[i] === ",") {
+						if (isData && !mimeComma) {
+							mimeComma = true;
+							i++;
+							continue;
+						}
+						break;
+					}
+					i++;
+				}
+				let end = i;
+				while (end > start && (value[end - 1] === " " || value[end - 1] === "	")) end--;
+				out.push(value.slice(start, end));
+			}
+			return out;
+		}
+		function normalizeDeclaredRefs(value) {
+			if (Array.isArray(value)) return value.filter((entry) => typeof entry === "string" && entry.trim() !== "");
+			if (typeof value === "string") return splitRefList(value);
+			return [];
+		}
+		function joinRefList(value) {
+			if (Array.isArray(value)) {
+				const entries = value.map(String).map((entry) => entry.trim()).filter(Boolean);
+				return entries.length > 0 ? entries.join(", ") : void 0;
+			}
+			if (typeof value === "string" && value.trim()) return value.trim();
+		}
+		function refGenreOf(name, url) {
+			const lowerName = name.toLowerCase();
+			if (/^video_w\d+_/.test(lowerName)) {
+				if (lowerName.endsWith("_last_frame") || lowerName.includes("_prev")) return "image";
+				return "video";
+			}
+			const extension = `${lowerName} ${url ? url.toLowerCase().split("?")[0] : ""}`.split(".").pop().split(/[^a-z0-9]/)[0];
+			if ([
+				"png",
+				"jpg",
+				"jpeg",
+				"webp",
+				"gif",
+				"bmp",
+				"avif"
+			].includes(extension)) return "image";
+			if ([
+				"mp4",
+				"webm",
+				"mov",
+				"mkv",
+				"avi",
+				"m4v"
+			].includes(extension)) return "video";
+			if ([
+				"mp3",
+				"wav",
+				"flac",
+				"ogg",
+				"m4a",
+				"aac",
+				"opus"
+			].includes(extension)) return "audio";
+			return "other";
+		}
+		const KNOB_ORDER = [
+			"steps",
+			"denoise",
+			"sampler_name",
+			"sched_name",
+			"shift_video",
+			"shift_audio",
+			"sla_sparsity",
+			"sla_block_size",
+			"sla_min_seq_len",
+			"sla_dense_last_steps",
+			"sla_protect_audio",
+			"sla_stabilize_motion",
+			"sla_reference_protection",
+			"sla_dense_backend",
+			"sla_dense_steps",
+			"sla_disable_fp16_accum",
+			"sharpen_enabled",
+			"sharpen_method",
+			"sharpen_strength",
+			"sharpen_radius",
+			"sharpen_threshold",
+			"sharpen_iterations",
+			"interpolate_enabled",
+			"interp_model",
+			"interp_multiplier",
+			"length"
+		];
+		const CALL_KNOB_KEYS = new Set(KNOB_ORDER);
+		/** The master-gated nine (calls-stanza audit #3, 2026-10-16): these
+		*  knobs' ONLY read seats live inside the post chain, whose only
+		*  door is the DOC-level second_pass_enabled master — a switch the
+		*  call plane cannot state. With the master off (the default) a
+		*  per-call pin here composes to nothing, silently; the UI fold
+		*  gates its rows on this set so a dead knob is never offered. */
+		const SECOND_PASS_KNOBS = /* @__PURE__ */ new Set([
+			"sharpen_enabled",
+			"sharpen_method",
+			"sharpen_strength",
+			"sharpen_radius",
+			"sharpen_threshold",
+			"sharpen_iterations",
+			"interpolate_enabled",
+			"interp_model",
+			"interp_multiplier"
+		]);
+		const LEGACY_KNOB_KEY = {
+			sampling_steps: "steps",
+			sampler: "sampler_name",
+			scheduler: "sched_name",
+			h3_sla_sparsity: "sla_sparsity",
+			h3_sla_block_size: "sla_block_size",
+			h3_sla_min_seq_len: "sla_min_seq_len",
+			h3_sla_dense_last_steps: "sla_dense_last_steps",
+			h3_sla_protect_audio: "sla_protect_audio",
+			h3_sla_stabilize_motion: "sla_stabilize_motion",
+			h3_sla_reference_protection: "sla_reference_protection",
+			h3_sla_dense_backend: "sla_dense_backend",
+			h3_sla_dense_steps: "sla_dense_steps",
+			h3_sla_disable_fp16_accum: "sla_disable_fp16_accum",
+			interpolate_model: "interp_model",
+			interpolate_multiplier: "interp_multiplier"
+		};
+		function migrateCallKnobKey(key) {
+			return LEGACY_KNOB_KEY[key] ?? key;
+		}
 		//#endregion
 		//#region ../../../clsx/dist/clsx.mjs
 		function r(e) {
@@ -2621,47 +2858,6 @@ window.__ModuleLoader__.load({
 			throw new Error(`unreachable variant${context ? ` in ${context}` : ""}: ${rendered}`);
 		}
 		var init_lib$2 = __esmMin((() => {}));
-		//#endregion
-		//#region ../../web-kit/contracts/src/timelineTypes.ts
-		const DEFAULT_SEGMENT_PARAMS$1 = {
-			seed: 42,
-			width: 640,
-			height: 480,
-			frames: 33,
-			fps: 16,
-			resizeMethod: "crop",
-			samplingSteps: 10,
-			guideScale: 5,
-			model: "h3",
-			profile: "fast",
-			motionAmplitude: 1,
-			flfMode: false,
-			teacacheEnabled: false,
-			teacacheThreshold: .01,
-			progressiveEnabled: false,
-			progressiveLevels: 2,
-			progressiveDelta: .15,
-			progressiveMode: "dct",
-			relayEpsilon: .01,
-			guideStrength: 1,
-			guideCrf: 0,
-			scaleBy: 1,
-			upscaleMethod: "bicubic",
-			useTiledEncode: false,
-			tileSize: 256,
-			tileOverlap: 64,
-			imageAttentionStrength: 1,
-			loras: [],
-			motionVideoB64: null,
-			motionStrength: .7,
-			motionTrimStart: 0,
-			motionTrimEnd: 0,
-			motionOffset: 0,
-			resampleMode: "nearest",
-			retakePrompt: "",
-			retakeStartFrame: 0,
-			retakeEndFrame: -1
-		};
 		Object.values({
 			agent: "agent",
 			user: "user",
@@ -2691,243 +2887,6 @@ window.__ModuleLoader__.load({
 			const prefix = runMediaPrefixOf$1(value);
 			if (prefix === null || prefix === "/melite-media/runs") return value;
 			return RUN_MEDIA_PREFIX$1 + value.slice(prefix.length);
-		}
-		const REF_CAPS = {
-			images: 8,
-			videos: 3,
-			audios: 3,
-			refmods: 8
-		};
-		function transitionOverlap(transition) {
-			return transition === "cut" ? 0 : 22;
-		}
-		/** (2026-11-06, the family-reseat cure) the post-pass knobs the t4r
-		*  lane cannot honor — its renderer wires NO post chain (the graph
-		*  goes straight to CreateVideo), so the schema walk REFUSES these
-		*  keys on a derived-t4r doc rather than silently dropping them (the
-		*  no-silent-resolution law). Shared with the studio so its rail and
-		*  its heal judge the SAME set the walk refuses.
-		*
-		*  THE DEAD-LETTER MASTERS (2026-10-16, audit 3f0b7c1a layera-globals
-		*  #3): the twelve leaves above are gated, but the three MASTERS that
-		*  own them — second_pass_enabled, sharpen_enabled, interpolate_enabled
-		*  — and attention_backend were not, and each is read ONLY inside the
-		*  non-t4r branch of the compose (actions.ts: second_pass_enabled at
-		*  the post gate, the two leaves in the post chain, attention_backend
-		*  at the chunked ModelAttentionBackend). On a t4r doc they rendered,
-		*  persisted, composed LEGAL, and landed in NO node: a switch the user
-		*  sees ON while the run ignores it — the exact silent-drop the twelve
-		*  leaves are gated against, one level up. Joined here so the field
-		*  gate, the row gate and the reseat heal judge them together. */
-		const T4_ONLY_KEYS = [
-			"sharpen_switch",
-			"sharpen_method",
-			"sharpen_strength",
-			"sharpen_radius",
-			"sharpen_threshold",
-			"sharpen_iterations",
-			"interp_switch",
-			"interp_multiplier",
-			"interp_model",
-			"sr_switch",
-			"sr_model",
-			"sr_resolution",
-			"second_pass_enabled",
-			"sharpen_enabled",
-			"interpolate_enabled",
-			"attention_backend"
-		];
-		/** The knobs only the FILM shape can honor (2026-10-16, audit
-		*  3f0b7c1a ui-truth-gap #4). `duck_depth_db` is read in exactly one
-		*  place — computeFilmMix's manifest, inside the multi-window film
-		*  boundary (actions.ts) — so on a single-window doc (t4_open, t4r)
-		*  the row rendered, persisted and composed into NO node: the
-		*  operator set a duck depth the mix desk never saw. The studio's
-		*  served surface omits these unless the doc derives t4_chain (the
-		*  same one-spelling family derivation the t4r gate uses). */
-		const FILM_ONLY_KEYS = ["duck_depth_db"];
-		/** (2026-11-06, the family-reseat cure) the doc-level window family
-		*  derivation, ONE spelling for every door that needs the family
-		*  BEFORE the walk refuses: the walk derives the composed doc's
-		*  family; the studio rail gates the second-pass group on the t4r
-		*  lane; the reseat heal unstated post keys a family edit stranded
-		*  (the live brick: a film legally stamped sr_switch lost its
-		*  second call, derived t4r, and EVERY compose refused). Reads
-		*  exactly the seats the walk reads — the guide-key union, the pin
-		*  channel, the declared input surface (a private spelling elsewhere
-		*  is the run-899a8448 disease: one seat missed, the family lies).
-		*  @param raw the doc-shaped record (calls/keyframes/ref surface)
-		*  @returns the derived window family */
-		function deriveWindowFamily(raw) {
-			const calls = Array.isArray(raw.calls) ? raw.calls : [];
-			const hasGuide = calls.some((c) => {
-				const cc = c ?? {};
-				return Boolean(cc.image) || Boolean(cc.ref_images) || Boolean(cc.ref_image) || Boolean(cc.image_name);
-			}) || Array.isArray(raw.keyframes) && raw.keyframes.length > 0 || refSurfaceCount(raw) > 0 || typeof raw.last_frame === "string" && raw.last_frame.trim() !== "";
-			return calls.length > 1 ? "t4_chain" : hasGuide ? "t4r" : "t4_open";
-		}
-		function refSurfaceCount(raw) {
-			return [
-				"ref_images",
-				"ref_videos",
-				"ref_audios"
-			].reduce((n, k) => n + normalizeDeclaredRefs(raw[k]).length, 0);
-		}
-		function gridSnap(length) {
-			const k = Math.round((length - 22) / 17);
-			return Math.min(362, Math.max(22, 22 + 17 * k));
-		}
-		/** THE GRID PREDICATE, one owner: a length the engine can render is
-		*  22+17k inside [22,362]. Every refusal door asks this question, so
-		*  knob pins, single windows, cut windows, and carried windows cannot
-		*  drift into different laws. */
-		function isGridLength(length) {
-			return Number.isInteger(length) && length >= 22 && length <= 362 && (length - 22) % 17 === 0;
-		}
-		function deliveredFrames(call, index) {
-			const span = call.end_frame - call.start_frame;
-			if (index === 0 || call.transition === "cut") return span;
-			return Math.max(0, span - 22);
-		}
-		function splitRefList(value) {
-			if (!value) return [];
-			const out = [];
-			let i = 0;
-			while (i < value.length) {
-				while (i < value.length && (value[i] === "," || value[i] === " " || value[i] === "	")) i++;
-				if (i >= value.length) break;
-				const start = i;
-				const isData = value.startsWith("data:", i);
-				let mimeComma = false;
-				while (i < value.length) {
-					if (value[i] === ",") {
-						if (isData && !mimeComma) {
-							mimeComma = true;
-							i++;
-							continue;
-						}
-						break;
-					}
-					i++;
-				}
-				let end = i;
-				while (end > start && (value[end - 1] === " " || value[end - 1] === "	")) end--;
-				out.push(value.slice(start, end));
-			}
-			return out;
-		}
-		function normalizeDeclaredRefs(value) {
-			if (Array.isArray(value)) return value.filter((entry) => typeof entry === "string" && entry.trim() !== "");
-			if (typeof value === "string") return splitRefList(value);
-			return [];
-		}
-		function joinRefList(value) {
-			if (Array.isArray(value)) {
-				const entries = value.map(String).map((entry) => entry.trim()).filter(Boolean);
-				return entries.length > 0 ? entries.join(", ") : void 0;
-			}
-			if (typeof value === "string" && value.trim()) return value.trim();
-		}
-		function refGenreOf(name, url) {
-			const lowerName = name.toLowerCase();
-			if (/^video_w\d+_/.test(lowerName)) {
-				if (lowerName.endsWith("_last_frame") || lowerName.includes("_prev")) return "image";
-				return "video";
-			}
-			const extension = `${lowerName} ${url ? url.toLowerCase().split("?")[0] : ""}`.split(".").pop().split(/[^a-z0-9]/)[0];
-			if ([
-				"png",
-				"jpg",
-				"jpeg",
-				"webp",
-				"gif",
-				"bmp",
-				"avif"
-			].includes(extension)) return "image";
-			if ([
-				"mp4",
-				"webm",
-				"mov",
-				"mkv",
-				"avi",
-				"m4v"
-			].includes(extension)) return "video";
-			if ([
-				"mp3",
-				"wav",
-				"flac",
-				"ogg",
-				"m4a",
-				"aac",
-				"opus"
-			].includes(extension)) return "audio";
-			return "other";
-		}
-		const KNOB_ORDER = [
-			"steps",
-			"denoise",
-			"sampler_name",
-			"sched_name",
-			"shift_video",
-			"shift_audio",
-			"sla_sparsity",
-			"sla_block_size",
-			"sla_min_seq_len",
-			"sla_dense_last_steps",
-			"sla_protect_audio",
-			"sla_stabilize_motion",
-			"sla_reference_protection",
-			"sla_dense_backend",
-			"sla_dense_steps",
-			"sla_disable_fp16_accum",
-			"sharpen_enabled",
-			"sharpen_method",
-			"sharpen_strength",
-			"sharpen_radius",
-			"sharpen_threshold",
-			"sharpen_iterations",
-			"interpolate_enabled",
-			"interp_model",
-			"interp_multiplier",
-			"length"
-		];
-		const CALL_KNOB_KEYS = new Set(KNOB_ORDER);
-		/** The master-gated nine (calls-stanza audit #3, 2026-10-16): these
-		*  knobs' ONLY read seats live inside the post chain, whose only
-		*  door is the DOC-level second_pass_enabled master — a switch the
-		*  call plane cannot state. With the master off (the default) a
-		*  per-call pin here composes to nothing, silently; the UI fold
-		*  gates its rows on this set so a dead knob is never offered. */
-		const SECOND_PASS_KNOBS = /* @__PURE__ */ new Set([
-			"sharpen_enabled",
-			"sharpen_method",
-			"sharpen_strength",
-			"sharpen_radius",
-			"sharpen_threshold",
-			"sharpen_iterations",
-			"interpolate_enabled",
-			"interp_model",
-			"interp_multiplier"
-		]);
-		const LEGACY_KNOB_KEY = {
-			sampling_steps: "steps",
-			sampler: "sampler_name",
-			scheduler: "sched_name",
-			h3_sla_sparsity: "sla_sparsity",
-			h3_sla_block_size: "sla_block_size",
-			h3_sla_min_seq_len: "sla_min_seq_len",
-			h3_sla_dense_last_steps: "sla_dense_last_steps",
-			h3_sla_protect_audio: "sla_protect_audio",
-			h3_sla_stabilize_motion: "sla_stabilize_motion",
-			h3_sla_reference_protection: "sla_reference_protection",
-			h3_sla_dense_backend: "sla_dense_backend",
-			h3_sla_dense_steps: "sla_dense_steps",
-			h3_sla_disable_fp16_accum: "sla_disable_fp16_accum",
-			interpolate_model: "interp_model",
-			interpolate_multiplier: "interp_multiplier"
-		};
-		function migrateCallKnobKey(key) {
-			return LEGACY_KNOB_KEY[key] ?? key;
 		}
 		//#endregion
 		//#region src/ui/studio/projection.ts
@@ -3164,7 +3123,7 @@ window.__ModuleLoader__.load({
 										/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.SectionLabel, { children: studioCopy.finalCutTitle }),
 										/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 											className: studio_module_css_default.cutTime,
-											children: studioCopy.cutTimeLabel((frameIdx / (filmMap?.fps ?? (fps || 24))).toFixed(2), frameIdx, barTotal)
+											children: studioCopy.cutTimeLabel((frameIdx / (filmMap?.fps ?? (fps > 0 ? fps : 24))).toFixed(2), frameIdx, barTotal)
 										}),
 										/* @__PURE__ */ (0, react_jsx_runtime.jsx)("a", {
 											href: filmstrip.final,
@@ -4033,7 +3992,7 @@ window.__ModuleLoader__.load({
 							max: 60,
 							step: 1
 						},
-						value: resolved.fps ?? DEFAULT_SEGMENT_PARAMS$1.fps,
+						value: resolved.fps ?? 24,
 						onEdit: (_, v) => {
 							if (typeof v !== "string") return;
 							const n = parseSpecNumber(v);

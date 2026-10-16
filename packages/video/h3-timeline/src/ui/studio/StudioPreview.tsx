@@ -4,6 +4,7 @@
  * every logic line is verbatim from the monolith (source range noted).
  */
 import type { RefObject } from "react"
+import { DOC_FPS_DEFAULT } from '@melite/models-h3/timelineContract'
 import type { CardStage } from "@melite/contracts"
 import { statusOf, RUN_STATUS_WORDS } from "@melite/contracts/stageView"
 import { EmptyState, PaneHeader, SectionLabel } from "@melite/card-base/client"
@@ -152,7 +153,7 @@ export function StudioPreview({
             <Clapperboard className={s.cutIcon} aria-hidden />
             <SectionLabel>{studioCopy.finalCutTitle}</SectionLabel>
             <span className={s.cutTime}>
-              {studioCopy.cutTimeLabel((frameIdx / (filmMap?.fps ?? (fps || 24))).toFixed(2), frameIdx, barTotal)}
+              {studioCopy.cutTimeLabel((frameIdx / (filmMap?.fps ?? (fps > 0 ? fps : DOC_FPS_DEFAULT))).toFixed(2), frameIdx, barTotal)}
             </span>
             <a
               href={filmstrip.final}
