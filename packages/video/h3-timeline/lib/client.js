@@ -5276,6 +5276,7 @@ window.__ModuleLoader__.load({
 				denoise: optNum("denoise"),
 				width: optNum("width"),
 				height: optNum("height"),
+				length: optNum("length"),
 				sampler_name: optStr("sampler_name"),
 				sched_name: optStr("sched_name"),
 				sla_enabled: raw?.sla_enabled !== false,
@@ -5427,6 +5428,7 @@ window.__ModuleLoader__.load({
 				"denoise",
 				"width",
 				"height",
+				"length",
 				"sampler_name",
 				"sched_name",
 				"sla_sparsity",
@@ -5552,7 +5554,7 @@ window.__ModuleLoader__.load({
 					const src = r[kind];
 					if (typeof src === "string" && src.trim()) call[kind] = src;
 				}
-				if (typeof r.last_frame === "string" && r.last_frame.trim()) console.warn(`VideoTimelineStudio: call ${calls.length} carried last_frame (${r.last_frame}) — dropped; the closing-still control was cut 2026-09-15 (the reference lane owns no last-frame input)`);
+				if (typeof r.last_frame === "string" && r.last_frame.trim()) call.last_frame = r.last_frame.trim();
 				for (const kind of ["clip", "audio"]) {
 					const src = r[kind];
 					if (typeof src === "string" && src.trim()) console.warn(`VideoTimelineStudio: call ${calls.length} carried a ${kind} guide (${src}) — dropped; no compose arm reads a per-call ${kind} (the reference bus and the audio lanes own conditioning)`);
@@ -5726,6 +5728,7 @@ window.__ModuleLoader__.load({
 					const src = c[kind];
 					if (src && src.trim()) out[kind] = src;
 				}
+				if (c.last_frame && c.last_frame.trim()) out.last_frame = c.last_frame.trim();
 				if (c.transition === "extend" || c.transition === "cut") out.transition = c.transition;
 				if (c.refs) {
 					const images = joinRefList(splitRefList(c.refs.images));

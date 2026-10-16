@@ -139,6 +139,14 @@ export function hydrateLayerA(rawDoc: Record<string, unknown> | undefined): Laye
     denoise: optNum("denoise"),
     width: optNum("width"),
     height: optNum("height"),
+    // THE LAYOUT LENGTH'S ROUND-TRIP SEAT (layera-globals audit #1's
+    // third key, 2026-11-06): the schema row is HIDDEN-but-served
+    // (FRAMES ARE LAYER B — the LAYER-A face never shows it as the
+    // span's rival), yet the compose READS p.length. With no seat
+    // here, an agent-authored length died on the first studio save —
+    // the last_frame two-face class. Display-owned: no control
+    // authors it; the compose's own grid gate refuses junk loud.
+    length: optNum("length"),
     sampler_name: optStr("sampler_name"),
     sched_name: optStr("sched_name"),
     // THE SLA MASTER SWITCH: absent = on (every pre-switch doc);
@@ -297,7 +305,7 @@ export function serializeLayerA(a: LayerA, base?: Record<string, unknown>): Reco
     sharpen_enabled: a.sharpen_enabled === true,
     interpolate_enabled: a.interpolate_enabled === true,
   }
-  for (const k of ["fps", "variant", "shift_video", "shift_audio", "steps", "denoise", "width", "height",
+  for (const k of ["fps", "variant", "shift_video", "shift_audio", "steps", "denoise", "width", "height", "length",
                    "sampler_name", "sched_name",
                    "sla_sparsity", "sla_block_size",
                    "sla_min_seq_len", "sla_dense_last_steps",

@@ -319,7 +319,7 @@ describe("serializeLayerA (Layer A → persisted shape)", () => {
   it("set optionals ride at their wire names (the full loop vocabulary)", () => {
     const out = serializeLayerA(hydrateLayerA({
       shift_video: 12, shift_audio: 3, sampler_name: "euler", sched_name: "simple",
-      steps: 20, denoise: 0.8, width: 768, height: 448,
+      steps: 20, denoise: 0.8, width: 768, height: 448, length: 124,
       audio_stem: "theme",
       sla_sparsity: 0.9, sla_block_size: "64",
       sla_min_seq_len: 64, sla_dense_last_steps: 4,
@@ -333,6 +333,25 @@ describe("serializeLayerA (Layer A → persisted shape)", () => {
       "interp_model", "ref_image_size", "model"]) {
       assert.ok(k in out, `${k} rides when set`)
     }
+  })
+
+  // THE LAYOUT LENGTH'S ROUND-TRIP SEAT (layera-globals audit #1's
+  // third key, 2026-11-06): the schema row is hidden-but-served and
+  // the compose READS p.length — with no serializer seat, an
+  // agent-authored length died on the first studio save (the
+  // last_frame two-face class). It rides display-owned: hydrate
+  // carries, serialize re-emits, no control authors it.
+  it("THE LAYOUT LENGTH SEAT: an agent-authored length survives a studio round-trip (hidden-but-served, compose-read)", () => {
+    const h = hydrateLayerA({ seed: 7, length: 124 })
+    assert.equal(h.length, 124, "hydrate carries the layout length (no control shows it)")
+    const out = serializeLayerA(h)
+    assert.equal(out.length, 124, "serialize re-emits it — a studio save never deletes what composes")
+    // absent = absent (the span derives the window at compose; junk
+    // drops to the compose's own loud grid gate)
+    const bare = serializeLayerA(hydrateLayerA({ seed: 7 }))
+    assert.ok(!("length" in bare))
+    const junk = hydrateLayerA({ seed: 7, length: "wide" as never })
+    assert.equal(junk.length, undefined, "a non-numeric length drops (optNum's law)")
   })
 
   it("THE EMPTY-BAG LAW (J1): clips ride only when present; the loras bag rides AS STATED — [] is the no-loras override, never a delete", () => {

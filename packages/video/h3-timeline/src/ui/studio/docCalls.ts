@@ -135,14 +135,15 @@ export function hydrateCalls(raw: { calls?: unknown; beats?: unknown }): DocCall
     }
     // Frame-conditioning: the prev-video opener survives (positive
     // number; foreign types drop — forgiving hydration, never a
-    // re-send of an invalid doc). last_frame was CUT 2026-09-15 (the
-    // PlagueKind gen lane owns no last-frame input — the control
-    // wrote wire nothing reads): a legacy doc carrying it drops with
-    // a LOUD warn, never a silent loss.
+    // re-send of an invalid doc). last_frame RIDES (calls-stanza
+    // audit (e), 2026-11-06): the compose's no-drop law (2026-10-26)
+    // READS it at the seat union, so a cutting hydrate made hops 2
+    // and 5 disagree — an agent-authored anchor composed while a
+    // studio round-trip deleted it. Carried display-owned (no
+    // studio control authors it; the compose's own law admits
+    // string sources, blank trimmed away like every guide).
     if (typeof r.last_frame === "string" && r.last_frame.trim()) {
-      console.warn(
-        `VideoTimelineStudio: call ${calls.length} carried last_frame (${r.last_frame}) — dropped; the closing-still control was cut 2026-09-15 (the reference lane owns no last-frame input)`,
-      )
+      call.last_frame = r.last_frame.trim()
     }
     // THE DEAD GUIDE SLOTS (2026-10-16, audit 3f0b7c1a ui-truth-gap
     // #3): a legacy doc may carry per-call clip/audio guides — both
@@ -398,8 +399,11 @@ export function serializeCalls(calls: DocCall[]): DocCall[] {
       const src = c[kind]
       if (src && src.trim()) out[kind] = src
     }
+    // last_frame rides the same law (display-owned, compose-read —
+    // the (e) cure: a lane the compose reads must serialize)
+    if (c.last_frame && c.last_frame.trim()) out.last_frame = c.last_frame.trim()
     // first_frame_prev_sec is never written — cut 2026-09-20 (the
-    // seam is automatic; last_frame — cut 2026-09-15).
+    // seam is automatic).
     if (c.transition === "extend" || c.transition === "cut") out.transition = c.transition
     // Per-call refs: the wire form is the COMMA STRING (the card's
     // wireList law — trimmed entries, empties absent). All four

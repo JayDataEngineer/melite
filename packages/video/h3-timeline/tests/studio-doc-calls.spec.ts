@@ -181,18 +181,26 @@ describe("hydrateCalls (params → document)", () => {
     }
   })
 
-  it("legacy last_frame drops LOUD (never silent loss)", () => {
+  // THE (e) CURE (2026-11-06): the arm below pinned the 2026-09-15
+  // drop law. The compose's no-drop law (2026-10-26) reads
+  // call.last_frame, so the studio round-trips it display-owned —
+  // never a warn, never a loss; foreign types drop forgiving and
+  // blank means none (the guide law). See serializeCalls'
+  // round-trip arm for the full journey.
+  it("legacy last_frame RIDES (the (e) cure — the compose reads it; no warn, no loss)", () => {
     const warns: unknown[][] = []
     const orig = console.warn
     console.warn = (...a: unknown[]) => { warns.push(a) }
     try {
       const [c] = hydrateCalls({ calls: [{ ...CALL, last_frame: "still-z" }] })
-      assert.ok(!("last_frame" in c!))
-      assert.equal(warns.length, 1)
-      // blank last_frame = no warn, no key
+      assert.equal(c!.last_frame, "still-z", "the anchor rides (display-owned)")
+      assert.equal(warns.length, 0, "carrying is the law, not a warn-worthy event")
+      // blank last_frame = no key
       warns.length = 0
-      hydrateCalls({ calls: [{ ...CALL, last_frame: "   " }] })
-      hydrateCalls({ calls: [{ ...CALL, last_frame: 42 }] })
+      const [b] = hydrateCalls({ calls: [{ ...CALL, last_frame: "   " }] })
+      assert.ok(!("last_frame" in b!))
+      const [f] = hydrateCalls({ calls: [{ ...CALL, last_frame: 42 as never }] })
+      assert.ok(f!.last_frame === undefined, "a foreign-typed anchor drops (forgiving hydration)")
       assert.equal(warns.length, 0)
     } finally {
       console.warn = orig
@@ -550,6 +558,26 @@ describe("serializeCalls (document → persisted shape)", () => {
     const [b] = serializeCalls([{ ...CALL, transition: "wipe" as never }])
     assert.ok(!("transition" in b!))
     assert.ok(!("first_frame_prev_sec" in b!))
+  })
+
+  // THE (e) CURE (calls-stanza audit, 2026-11-06): the compose's
+  // no-drop law (2026-10-26) READS call.last_frame at the seat union,
+  // so the studio round-trips it — a cutting hydrate made hops 2 and
+  // 5 disagree (an agent-authored anchor composed; a studio
+  // round-trip deleted it). Both seats carry it now, blank trimmed.
+  it("last_frame round-trips both seats — the compose-read lane serializes (never the 2026-09-15 drop)", () => {
+    const raw = { text: "a dolly shot", start_frame: 0, end_frame: 56, last_frame: "/melite-media/runs/run-deadbeef-f/end.png" }
+    const [h] = hydrateCalls({ calls: [raw] })
+    assert.equal(h!.last_frame, "/melite-media/runs/run-deadbeef-f/end.png",
+      "hydrate CARRIES the closing-still anchor (the compose reads it)")
+    const [s] = serializeCalls([h!])
+    assert.equal(s!.last_frame, "/melite-media/runs/run-deadbeef-f/end.png",
+      "serialize re-emits it — a studio round-trip never deletes what composes")
+    // blank = none (the guide law), foreign types drop (forgiving)
+    const [b] = serializeCalls([{ ...CALL, last_frame: "  " }])
+    assert.ok(!("last_frame" in b!))
+    const [f] = hydrateCalls({ calls: [{ ...CALL, last_frame: 42 as never }] })
+    assert.ok(f!.last_frame === undefined, "a foreign-typed anchor drops (forgiving hydration)")
   })
 
   it("per-call refs serialize as the COMMA STRING — all three buckets", () => {

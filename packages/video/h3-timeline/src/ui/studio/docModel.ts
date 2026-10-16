@@ -38,9 +38,9 @@ export type { KnobKey } from '@melite/models-h3/timelineContract'
  * every window conditions through the reference arm — the i2v
  * first-frame input is an orphaned marker consumed by nothing — so
  * the image GUIDES the generated first frame, it never pins it. The
- * frame-conditioning subcards: `last_frame` was CUT 2026-09-15 — the
- * PlagueKind gen lane (ReferenceToVideo) owns no last-frame input, so
- * the control wrote wire nothing reads. `first_frame_prev_sec`
+ * frame-conditioning subcards: `last_frame` RIDES (the compose's
+ * no-drop law reads it at the seat union; the studio round-trips it
+ * display-owned — see DocCall.last_frame). `first_frame_prev_sec`
  * was CUT 2026-09-20 — the seam is AUTOMATIC (the drift-control
  * continuation carries every non-cut join; nothing to author). The
  * optional
@@ -54,6 +54,15 @@ export interface DocCall {
   image?: string
   clip?: string
   audio?: string
+  /** The closing-still anchor (the FL2VA pair's second seat): the
+   *  compose's no-drop law (2026-10-26) READS `call.last_frame` at
+   *  the seat union, so the studio round-trips it — hydrate carries,
+   *  serialize re-emits; the agent plane authors it, the studio
+   *  renders no control for it (display-owned like the declared refs
+   *  chips). The 2026-09-15 cut is retired: a cutting hydrate made
+   *  hops 2 and 5 disagree — an agent-authored anchor composed while
+   *  a studio round-trip deleted it (calls-stanza audit (e)). */
+  last_frame?: string
   /** Seam mode into this call: 'extend' (ABSENT = extend — the
    * drift-control continuation carries the previous window's latent,
    * automatic at the director's proven 22-frame overlap) or 'cut'
@@ -240,6 +249,13 @@ export interface LayerA {
   sched_name?: string
   width?: number
   height?: number
+  /** The layout length's ROUND-TRIP SEAT (layera-globals audit #1's
+   *  third key): the schema row is hidden-but-served (FRAMES ARE
+   *  LAYER B — no control shows it as the span's rival), the compose
+   *  READS it, so the studio carries it display-owned — an
+   *  agent-authored length survives a studio save; the compose's own
+   *  grid gate refuses junk loud. */
+  length?: number
   /** THE SLA MASTER SWITCH (2026-09-21): Layer A only (never a per-call
    * knob — the switch arms the whole run's attention path, like
    * sr_switch). Absent = on. */
