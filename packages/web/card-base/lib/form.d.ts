@@ -28,15 +28,15 @@
  * pattern).
  */
 import { createElement as h } from 'react';
-import { type BboxFaceComponent, type PaintFaceComponent } from './mods.js';
-import { type FormSpecDoc, type SpecField, type SpecValues } from './spec.js';
-import { type FieldAtomClaim, type SquareHost, type SquareWire } from './square-provider.js';
-export { useFormSpec } from './use-form-spec.js';
-export { useSquareProvider, type SquareHost, type SquareWire, type FieldAtomClaim, type SourceRowProps } from './square-provider.js';
-export { SourceRow, TriStateAtom, SpecSliderAtom, SpecAtom } from './atoms.js';
-export { SeedDice, SpecFieldRow, OverlayKnob } from './rows.js';
-export { SpecPanel, type SpecPanelRow, type SpecPanelSection } from './spec-panel.js';
-export { PackPrompt, ModelAxes, RecipePills } from './axes.js';
+import { type BboxFaceComponent, type PaintFaceComponent } from './mods.tsx';
+import { type FormSpecDoc, type FormVariantRow, type SpecField, type SpecValues } from './spec.ts';
+import { type FieldAtomClaim, type SquareHost, type SquareWire } from './square-provider.tsx';
+export { useFormSpec } from './use-form-spec.ts';
+export { useSquareProvider, type SquareHost, type SquareWire, type FieldAtomClaim, type SourceRowProps } from './square-provider.tsx';
+export { SourceRow, TriStateAtom, SpecSliderAtom, SpecAtom } from './atoms.tsx';
+export { SeedDice, SpecFieldRow, OverlayKnob } from './rows.tsx';
+export { SpecPanel, type SpecPanelRow, type SpecPanelSection } from './spec-panel.tsx';
+export { PackPrompt, ModelAxes, RecipePills } from './axes.tsx';
 /** THE CARD FORM (the constructor's surface half) — the emission's
  *  fields walked off the schema envelope, grouped, visible-when
  *  honored; the RESOLVED value derives per render (resolveValue —
@@ -44,7 +44,7 @@ export { PackPrompt, ModelAxes, RecipePills } from './axes.js';
  *  over the USER layer (the settings law: presence IS the override
  *  mark, the reset chip removes it). The constructor OWNS the square
  *  provider (no call site wires it, no call site can forget it). */
-export declare function CardForm({ spec, user, base, onSet, onPick, onUnset, wire, square, atoms, onPatch, onDownloadModel, onInstallPack, paintFace, bboxFace, paintReference, omitInputRail, omitFields }: {
+export declare function CardForm({ spec, user, base, onSet, onPick, onUnset, wire, square, atoms, onPatch, onDownloadModel, onInstallPack, paintFace, bboxFace, paintReference, omitInputRail, omitFields, omitRecipeRow }: {
     /** the WHOLE emission (the schema envelope + model/variants) —
      *  REQUIRED now: the fields, the axes, and the mod param rows all
      *  derive from THIS (useFormSpec fetches it). */
@@ -86,6 +86,13 @@ export declare function CardForm({ spec, user, base, onSet, onPick, onUnset, wir
      *  agnostic by design: card-base never derives a family; the
      *  host's predicate IS the law. */
     omitFields?: (name: string) => boolean;
+    /** the host's recipe-row admission filter (2026-10-16, the Final
+     *  Cut brick — audit 0be61df8 F1): true REMOVES the recipe row
+     *  from the pills. The field gate's row-level sibling — a recipe
+     *  whose stamp the derived lane cannot compose is never offered,
+     *  so a pick can never brick the card. Family-agnostic: the
+     *  host's predicate IS the law. */
+    omitRecipeRow?: (row: FormVariantRow) => boolean;
     /** the host's square override (the claim seam). Rare. */
     square?: (f: SpecField) => SquareHost | undefined;
     /** the field-atom seam's claims, keyed by emitted wire type —

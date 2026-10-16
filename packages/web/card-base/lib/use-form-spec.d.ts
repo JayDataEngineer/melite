@@ -1,4 +1,4 @@
-import { type FormSpecDoc } from './spec.js';
+import { type FormSpecDoc } from './spec.ts';
 /** THE SERVED-SPEC HOOK (the DRY extraction, 2026-09-13): four
  *  consumers (mask-studio's TuneSection, h3's RunAdvancedPanels,
  *  img-to-mesh's client, ideogram4's client) each hand-copied the

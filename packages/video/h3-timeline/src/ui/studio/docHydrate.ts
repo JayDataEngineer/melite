@@ -353,13 +353,26 @@ export function serializeLayerA(a: LayerA, base?: Record<string, unknown>): Reco
   // so an empty array = no trims = absent, same as the ref lanes)
   if (a.ref_video_trims !== undefined && a.ref_video_trims.length > 0) out.ref_video_trims = a.ref_video_trims
   // THE DELETE RIDE (see the doc comment): with the persisted base,
-  // a CLEARED key (state undefined/""/[]) that the base still
-  // carries emits the door's explicit null — the merge-patch delete.
-  // The universe is every layer-A key this serializer can emit; keys
-  // the base never carried delete nothing (absent = already gone).
+  // a CLEARED key that the base still carries emits the door's
+  // explicit null — the merge-patch delete. The universe is every
+  // layer-A key this serializer can emit; keys the base never
+  // carried delete nothing (absent = already gone).
   if (base !== undefined) {
+    // THE OFF POLE (2026-10-16, journey audit 6f80fa5a — the rank-1
+    // that sat green in every suite): the true-gated switches
+    // (second_pass_enabled, sr_switch, sharpen_enabled,
+    // interpolate_enabled — absent = off, the family default) EMIT
+    // only their true pole, so a flip to false wrote state false,
+    // the emit gate ignored it, and `false` was not CLEARED — the
+    // base's true survived every save while the studio showed OFF
+    // and the post chain kept firing. False IS the cleared state
+    // for a true-gated key: the delete rides, absent lands, the
+    // family default (off) is the truth. The false-pole riders are
+    // unaffected (sla_enabled emits its false directly; the
+    // pin-equals-default booleans emit their value unconditionally
+    // — neither arm reaches this branch).
     const cleared = (v: unknown): boolean =>
-      v === undefined || v === "" || (Array.isArray(v) && v.length === 0)
+      v === undefined || v === "" || v === false || (Array.isArray(v) && v.length === 0)
     const state = a as unknown as Record<string, unknown>
     for (const k of Object.keys(base)) {
       if (LAYERA_KEY_UNIVERSE.has(k) && !(k in out) && base[k] !== undefined && base[k] !== null && cleared(state[k])) {

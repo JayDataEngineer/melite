@@ -55,7 +55,7 @@ export { PackPrompt, ModelAxes, RecipePills } from "./axes.js";
  *  over the USER layer (the settings law: presence IS the override
  *  mark, the reset chip removes it). The constructor OWNS the square
  *  provider (no call site wires it, no call site can forget it). */
-export function CardForm({ spec, user, base, onSet, onPick, onUnset, wire, square, atoms, onPatch, onDownloadModel, onInstallPack, paintFace, bboxFace, paintReference, omitInputRail, omitFields }) {
+export function CardForm({ spec, user, base, onSet, onPick, onUnset, wire, square, atoms, onPatch, onDownloadModel, onInstallPack, paintFace, bboxFace, paintReference, omitInputRail, omitFields, omitRecipeRow }) {
     // DERIVED, ALWAYS FRESH (the layered law): fields walk the schema
     // envelope (families-scoped); the resolved value layers defaults
     // <- model defaults <- recipe <- user — exactly what a run
@@ -386,7 +386,7 @@ export function CardForm({ spec, user, base, onSet, onPick, onUnset, wire, squar
         : null, 
     // THE AXES ride the user layer through the same edit seam (their
     // picks are ordinary sets; the resolved value passes along).
-    h(PackPrompt, { spec, onInstallPack }), h(ModelAxes, { spec, value, user, onSet: edit, onPick, onDownloadModel }), (railFields.length > 0 || stackFields.length > 0) && omitInputRail !== true
+    h(PackPrompt, { spec, onInstallPack }), h(ModelAxes, { spec, value, user, onSet: edit, onPick, onDownloadModel, omitRecipeRow }), (railFields.length > 0 || stackFields.length > 0) && omitInputRail !== true
         ? h('section', { className: css.specGroup + ' ' + css.inputRail, 'data-input-rail': '1' }, 
         // THE SECTION HEAD (#37, the Modifiers symmetry): the input
         // zone names itself like the mod zone does — one grammar,

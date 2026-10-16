@@ -42,6 +42,7 @@ function doc(): FormSpecDoc {
       V('r-hd', 'Variant', { label: 'HD', hint: 'crisp', defaults: { model: 'krea-2-hd', steps: 40 } }),
       V('q-fp8', 'Quant', { label: 'FP8' }),
       V('recipe-x', 'Recipe', { label: 'X', hint: 'the macro', defaults: { steps: 50 } }),
+      V('recipe-sr', 'Recipe', { label: 'Finish', hint: 'the t4r-dead stamp', defaults: { sr_switch: true } }),
     ],
     packs: [{ id: 'upscale', present: true }],
   } as unknown as FormSpecDoc
@@ -83,6 +84,30 @@ test('RECIPE: re-picking the placeholder writes nothing (the empty-select skip)'
   expect(onPick).toHaveBeenCalledWith({ steps: 50 })
   onPick.mockClear()
   fireEvent.click(screen.getByLabelText('Recipe'))
+  fireEvent.click(screen.getByRole('menuitem', { name: '-- recipe --' }))
+  expect(onPick).not.toHaveBeenCalled()
+})
+
+test('RECIPE ROW GATE (2026-10-16, the Final Cut brick — audit 0be61df8 F1): an omitRow predicate removes the row from the menu (a lane that cannot honor a stamp never offers it)', () => {
+  // THE BURN: the D8 field gate stopped serving t4r-dead knobs, but
+  // the pills stayed ungated — h3's Final Cut stamps sr_switch, a
+  // guided one-call doc derives t4r, the walk refuses the stamp, and
+  // every later run bricked. The row gate is judged on the row's OWN
+  // stamp by the host; this arm pins the FILTER ITSELF: with the
+  // predicate returning true for the stamp-carrying row, the menu
+  // offers NO such row — the pick is structurally impossible, the
+  // same menu law the stale-option arm pins.
+  const onPick = vi.fn()
+  // the host's predicate shape (RunRecipeEngine's own): a row whose
+  // stamp intersects the family-dead keys is omitted
+  const omitRow = (row: never): boolean =>
+    Object.keys((row as unknown as { defaults?: Record<string, unknown> }).defaults ?? {})
+      .includes('sr_switch')
+  render(h(RecipePills, { spec: doc(), values: {}, onPick, omitRow }))
+  fireEvent.click(screen.getByLabelText('Recipe'))
+  // the gated row is structurally absent; its lawful sibling remains
+  expect(screen.queryByRole('menuitem', { name: /t4r-dead stamp/ })).toBeNull()
+  expect(screen.queryByRole('menuitem', { name: /the macro/ })).not.toBeNull()
   fireEvent.click(screen.getByRole('menuitem', { name: '-- recipe --' }))
   expect(onPick).not.toHaveBeenCalled()
 })

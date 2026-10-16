@@ -2,7 +2,7 @@
  * operator's DRY audit law: one seam, one small file, one wall). */
 import { createElement as h } from 'react';
 import type { ReactElement } from 'react';
-import { type FormSpecDoc, type SpecValues } from './spec.js';
+import { type FormSpecDoc, type SpecValues, type FormVariantRow } from './spec.ts';
 /** THE PACK PROMPT (the no-silent-drop law's extension half,
  *  stroke 18): the card's DECLARED extension packs that the engine
  *  cannot see render AS THEMSELVES — marked missing, with the
@@ -15,7 +15,7 @@ export declare function PackPrompt({ spec, onInstallPack }: {
     spec: FormSpecDoc;
     onInstallPack?: (id: string) => Promise<boolean>;
 }): ReturnType<typeof h> | null;
-export declare function ModelAxes({ spec, value, user, onSet, onPick, onDownloadModel }: {
+export declare function ModelAxes({ spec, value, user, onSet, onPick, onDownloadModel, omitRecipeRow }: {
     spec: FormSpecDoc;
     value: SpecValues;
     /** The USER layer (the pick-reconcile law, 2026-11-05): the pick
@@ -34,6 +34,11 @@ export declare function ModelAxes({ spec, value, user, onSet, onPick, onDownload
      *  cannot offer picks at all — the compiler refuses it here,
      *  not the run door later. */
     onPick: (patch: SpecValues) => void;
+    /** THE ROW GATE (2026-10-16, the Final Cut brick — audit
+     *  0be61df8 F1): forwarded to RecipePills; a derived lane that
+     *  cannot honor a recipe row's stamp stops offering it. The
+     *  D8 field gate alone left the pills live. */
+    omitRecipeRow?: (row: FormVariantRow) => boolean;
     /** THE RECIPE'S SEAT (stroke 20, the operator's placement law):
      *  when the card owns a recipe field AND the matrix serves, the
      *  field renders HERE — under Model/Variant/Quant — never at the
@@ -66,7 +71,7 @@ export declare function ModelAxes({ spec, value, user, onSet, onPick, onDownload
  * THE REUSE LAW: extracted so EVERY model surface seats the same
  * dropdown -- CardForm under the axes, a studio beside its model
  * route. Never a second implementation. */
-export declare function RecipePills({ spec, onPick, values }: {
+export declare function RecipePills({ spec, onPick, values, omitRow }: {
     spec: FormSpecDoc;
     /** THE ATOMIC PICK LAW (2026-09-29, the fourth seat): the row's
      * FULL stamp lands as ONE write — the per-key onSet loop was the
@@ -77,6 +82,15 @@ export declare function RecipePills({ spec, onPick, values }: {
     /** the USER layer (the selection derives from it -- the one
      * truth; absent = always the placeholder). */
     values?: SpecValues;
+    /** THE ROW GATE (2026-10-16, journey audit 0be61df8 F1 — the
+     * Final Cut brick): a host whose derived lane cannot honor a
+     * row's stamp stops OFFERING that row. The D8 cure gated FIELDS
+     * only — the pills stayed ungated, so a pick could land keys the
+     * compose refuses ('h3_window(t4r): unsanctioned inject keys:
+     * sr_switch') and every later run bricks. Judged on the row's
+     * own stamp, never a hand id list: a future row carrying the
+     * family-dead keys gates itself. */
+    omitRow?: (row: FormVariantRow) => boolean;
 }): ReactElement | null;
 /** THE CARD FORM (the constructor's surface half) — the emission's
  *  fields walked off the schema envelope, grouped, visible-when

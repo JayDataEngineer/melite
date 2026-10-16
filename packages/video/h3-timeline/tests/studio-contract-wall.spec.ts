@@ -15,6 +15,13 @@ import { carrier, BOARDED, VARIANT_ADDRESSES } from "../src/card.ts"
 import { emitParamsSpec } from "@melite/comfyui-card-kit/params-emit"
 import { serializeLayerA, hydrateLayerA } from "../src/ui/studio/docHydrate.ts"
 import { CALL_KNOB_KEYS } from "../src/ui/studio/docModel.ts"
+import { film } from "@melite/models-h3/actions"
+import { schema as h3schemaFn } from "@melite/models-h3/schema"
+import { T4_ONLY_KEYS } from "@melite/models-h3/timelineContract"
+import { DECL as h3Decl } from "@melite/models-h3"
+import { GraphBuilder } from "@melite/comfyui-card-kit/graph"
+import { instantiateAction } from "@melite/comfyui-card-kit"
+import type { ModelFacts } from "@melite/comfyui-card-kit/facts"
 
 /** The card's declared surface: the params schema's own names (the
  * same walk the freshness gate trusts). The model knob rides the
@@ -22,6 +29,18 @@ import { CALL_KNOB_KEYS } from "../src/ui/studio/docModel.ts"
  * source of truth with tool.ts; a bare single-family board serves
  * no picker, but the studio doc still writes the model id and the
  * run door still consumes it). */
+const WINDOW_MODEL: ModelFacts = {
+  id: "h3",
+  card: "h3-timeline",
+  defaults: {},
+  lane_inputs: {
+    unet: "minimax_h3_hybrid_fl2va_ref2va_b30-49-int8.safetensors",
+  },
+  variants: [],
+  variant_groups: [],
+  outputs: [],
+}
+
 const SURFACE = new Set(Object.keys(emitParamsSpec(carrier as never, [...BOARDED, ...VARIANT_ADDRESSES])))
 
 /** Non-knob carriers the card admits OUTSIDE the params schema — the
@@ -167,6 +186,90 @@ describe("the studio contract wall (Layer A writes only card truth)", () => {
     const unstated = serializeLayerA(hydrateLayerA({ seed: 1 } as never))
     expect("preset" in unstated).toBe(false)
     expect("fps" in unstated).toBe(false)
+  })
+
+  // THE OFF POLE (2026-10-16, journey audit 6f80fa5a — the rank-1
+  // green in every suite): the true-gated switches emit only their
+  // true pole, so a flip to false wrote state the emit gate ignored
+  // while `false` failed the cleared() test — the base's true
+  // survived every save, the studio showed OFF, and the post chain
+  // kept firing. The delete ride now treats false as the cleared
+  // state for a true-gated key. This arm round-trips the NEGATIVE
+  // doc: base true, state false → null (absent = off, the family
+  // default); the false-pole and value-emitting booleans unaffected.
+  it("THE OFF POLE persists: a true-gated switch flipped to false deletes the base's true (never silently stays on)", () => {
+    const base = {
+      seed: 1,
+      second_pass_enabled: true, sr_switch: true,
+      sharpen_enabled: true, interpolate_enabled: true,
+      sla_enabled: false,
+      sla_protect_audio: false, sla_stabilize_motion: false, sla_disable_fp16_accum: true,
+    }
+    // the OFF gesture: every true-gated switch now false in state
+    const off = { ...hydrateLayerA(base as never),
+      second_pass_enabled: false, sr_switch: false,
+      sharpen_enabled: false, interpolate_enabled: false }
+    const saved = serializeLayerA(off, base)
+    // the `if (=== true)` arms (absent = off): the delete rides —
+    // null lands, the family default is the truth
+    expect(saved.second_pass_enabled).toBe(null)
+    expect(saved.sr_switch).toBe(null)
+    // the always-emitted booleans persist their false DIRECTLY
+    // (explicit off — a second lawful dialect, same landing)
+    expect(saved.sharpen_enabled).toBe(false)
+    expect(saved.interpolate_enabled).toBe(false)
+    // the false-pole rider keeps its own law: sla_enabled's false
+    // EMITS (absent = on — the override is the off word)
+    expect(saved.sla_enabled).toBe(false)
+    // the value-emitting booleans ride their value, never a delete
+    expect(saved.sla_protect_audio).toBe(false)
+    expect(saved.sla_stabilize_motion).toBe(false)
+    expect(saved.sla_disable_fp16_accum).toBe(true)
+    // and the ON direction still rides true (the inverse-cheat arm)
+    const on = { ...hydrateLayerA({ seed: 1 } as never), second_pass_enabled: true }
+    const savedOn = serializeLayerA(on, base)
+    expect(savedOn.second_pass_enabled).toBe(true)
+  })
+
+  // THE FINAL CUT BRICK (2026-10-16, journey audit 0be61df8 F1 —
+  // the recipes audit's worst): the Final Cut recipe stamps
+  // sr_switch; a one-call doc with a guide derives t4r; the walk
+  // refuses the stamp. Two truths pinned at the seam: the DOOR
+  // refuses (the compose's own voice — if the walk ever stops
+  // refusing, this reds), and the STUDIO stops offering the row
+  // (the omitRecipeRow gate — if the gate ever stops filtering,
+  // this reds). A pick can never land what the compose refuses.
+  it("the Final Cut stamp refuses at the t4r door (unsanctioned sr_switch) — pinned beside the studio's row gate", () => {
+    // the door's truth: a derived-t4r doc carrying the Final Cut
+    // stamp's second_pass rail REFUSES at the walk
+    const g = new GraphBuilder()
+    let refused: string | null = null
+    try {
+      instantiateAction(
+        film,
+        h3schemaFn({
+          variant: undefined,
+          calls: [{ text: "the courier steps in", start_frame: 0, end_frame: 90, image: "anchor.png" }],
+          second_pass_enabled: true, sr_switch: true,
+          seed: 1,
+        }),
+        WINDOW_MODEL, g, "run_finalcut_t4r",
+      )
+    } catch (e) {
+      refused = e instanceof Error ? e.message : String(e)
+    }
+    expect(refused).not.toBe(null)
+    expect(String(refused)).toMatch(/unsanctioned inject keys/)
+    // the gate's truth: the Final Cut row's own payload carries a
+    // T4_ONLY key — the material the omitRecipeRow predicate judges
+    // (a future stamp carrying a family-dead key gates itself; if
+    // the recipe ever drops sr_switch, this arm follows the DECL,
+    // never a frozen literal)
+    const finalRow = h3Decl.variants.find((r) => r.id === "final")
+    expect(finalRow, "the Final Cut recipe row exists on the DECL").not.toBeUndefined()
+    const payloadKeys = Object.keys(finalRow!.wire_defaults ?? {})
+    expect(payloadKeys).toContain("sr_switch")
+    expect(payloadKeys.some((k) => (T4_ONLY_KEYS as readonly string[]).includes(k))).toBe(true)
   })
 
   // THE SERVED-SURFACE LAW (2026-10-16, journey audit 89d325c0

@@ -23,7 +23,7 @@
  * injects own geometry, one surface).
  */
 import { CardForm, ControlRow, SectionLabel, SpecAtom, useResolvedForm, type SquareWire } from "@melite/card-base/client"
-import { axisUnset, composeValidate } from '@melite/card-base/client'
+import { axisPickPatch, axisUnset, composeValidate } from '@melite/card-base/client'
 import { resolvePickVerdictDoc } from "./pickVerdict.ts"
 import { fetchMediaLibrary } from '@melite/card-base/client'
 import { type Dispatch, type SetStateAction, useMemo, useState } from "react"
@@ -99,6 +99,20 @@ export function RunRecipeEngine({
   const omitT4 = family === "t4r"
     ? (name: string): boolean => (T4_ONLY_KEYS as readonly string[]).includes(name)
     : undefined
+  // THE ROW GATE (2026-10-16, the Final Cut brick — audit 0be61df8
+  // F1): the field gate above stopped serving the twelve t4r-dead
+  // KNOBS, but the recipe PILLS stayed ungated — h3's Final Cut row
+  // stamps sr_switch, a one-call guided doc derives t4r, and the
+  // walk refuses the stamp ('unsanctioned inject keys: sr_switch'):
+  // the pick landed, every later run bricked. Judged on the row's
+  // OWN stamp (never a hand id list): any recipe whose stamp
+  // intersects the family-dead keys is not offered on that lane.
+  const omitT4Recipe = family === "t4r"
+    ? (row: unknown): boolean => {
+        const stamp = axisPickPatch(spec, row as never, {})
+        return Object.keys(stamp).some((k) => (T4_ONLY_KEYS as readonly string[]).includes(k))
+      }
+    : undefined
   const wire: SquareWire = {
     candidates: refArtifacts.map((a) => ({ id: a.name, label: a.name, url: a.url })),
     loadMedia: fetchMediaLibrary,
@@ -154,6 +168,7 @@ export function RunRecipeEngine({
           // editor's reference bundles. Knobs and axes only.
           omitInputRail
           omitFields={omitT4}
+          omitRecipeRow={omitT4Recipe}
           onSet={edit}
           onUnset={(n) => setLayerAKey(n as keyof LayerA, undefined)}
           // THE ATOMIC PICK LAW (the same arm the bench drill seats):

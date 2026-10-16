@@ -30,7 +30,7 @@
 import { createElement as h, useId, useState } from 'react'
 import { SegmentedTabs, type SegmentedTab as segTab } from '@deepseek-ai/dsh-client-ui-primitives'
 import { type BboxFaceComponent, ModifiersSection, type PaintFaceComponent } from './mods.tsx'
-import { type FormSpecDoc, type SpecField, type SpecValues, coerceFieldEdit, entryFieldsOfEnvelope, fieldOnLane, fieldVisible, fieldsOf, fieldsOfEnvelope, groupFields, kindScalarFieldsOfEnvelope, composeValidate, laneViolations, modOwnedFields, offeredVariantOf, resolveFamilyKey, resolveValue, titleCaseId } from './spec.ts'
+import { type FormSpecDoc, type FormVariantRow, type SpecField, type SpecValues, coerceFieldEdit, entryFieldsOfEnvelope, fieldOnLane, fieldVisible, fieldsOf, fieldsOfEnvelope, groupFields, kindScalarFieldsOfEnvelope, composeValidate, laneViolations, modOwnedFields, offeredVariantOf, resolveFamilyKey, resolveValue, titleCaseId } from './spec.ts'
 import { isUnstatedRequiredVoice } from '@melite/contracts/laneRelations'
 import css from './card.module.css'
 import { useFormSpec } from './use-form-spec.ts'
@@ -58,7 +58,7 @@ export { PackPrompt, ModelAxes, RecipePills } from './axes.tsx'
  *  over the USER layer (the settings law: presence IS the override
  *  mark, the reset chip removes it). The constructor OWNS the square
  *  provider (no call site wires it, no call site can forget it). */
-export function CardForm({ spec, user, base, onSet, onPick, onUnset, wire, square, atoms, onPatch, onDownloadModel, onInstallPack, paintFace, bboxFace, paintReference, omitInputRail, omitFields }: {
+export function CardForm({ spec, user, base, onSet, onPick, onUnset, wire, square, atoms, onPatch, onDownloadModel, onInstallPack, paintFace, bboxFace, paintReference, omitInputRail, omitFields, omitRecipeRow }: {
   /** the WHOLE emission (the schema envelope + model/variants) —
    *  REQUIRED now: the fields, the axes, and the mod param rows all
    *  derive from THIS (useFormSpec fetches it). */
@@ -100,6 +100,13 @@ export function CardForm({ spec, user, base, onSet, onPick, onUnset, wire, squar
    *  agnostic by design: card-base never derives a family; the
    *  host's predicate IS the law. */
   omitFields?: (name: string) => boolean
+  /** the host's recipe-row admission filter (2026-10-16, the Final
+   *  Cut brick — audit 0be61df8 F1): true REMOVES the recipe row
+   *  from the pills. The field gate's row-level sibling — a recipe
+   *  whose stamp the derived lane cannot compose is never offered,
+   *  so a pick can never brick the card. Family-agnostic: the
+   *  host's predicate IS the law. */
+  omitRecipeRow?: (row: FormVariantRow) => boolean
   /** the host's square override (the claim seam). Rare. */
   square?: (f: SpecField) => SquareHost | undefined
   /** the field-atom seam's claims, keyed by emitted wire type —
@@ -478,7 +485,7 @@ export function CardForm({ spec, user, base, onSet, onPick, onUnset, wire, squar
     // THE AXES ride the user layer through the same edit seam (their
     // picks are ordinary sets; the resolved value passes along).
     h(PackPrompt, { spec, onInstallPack }),
-    h(ModelAxes, { spec, value, user, onSet: edit, onPick, onDownloadModel }),
+    h(ModelAxes, { spec, value, user, onSet: edit, onPick, onDownloadModel, omitRecipeRow }),
     (railFields.length > 0 || stackFields.length > 0) && omitInputRail !== true
       ? h('section', { className: css.specGroup + ' ' + css.inputRail, 'data-input-rail': '1' },
           // THE SECTION HEAD (#37, the Modifiers symmetry): the input

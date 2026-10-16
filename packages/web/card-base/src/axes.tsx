@@ -71,7 +71,7 @@ function PackPromptRow({ id, onInstallPack }: {
       : chromeCopy.installFailedNote))
 }
 
-export function ModelAxes({ spec, value, user, onSet, onPick, onDownloadModel }: {
+export function ModelAxes({ spec, value, user, onSet, onPick, onDownloadModel, omitRecipeRow }: {
   spec: FormSpecDoc
   value: SpecValues
   /** The USER layer (the pick-reconcile law, 2026-11-05): the pick
@@ -90,6 +90,11 @@ export function ModelAxes({ spec, value, user, onSet, onPick, onDownloadModel }:
    *  cannot offer picks at all — the compiler refuses it here,
    *  not the run door later. */
   onPick: (patch: SpecValues) => void
+  /** THE ROW GATE (2026-10-16, the Final Cut brick — audit
+   *  0be61df8 F1): forwarded to RecipePills; a derived lane that
+   *  cannot honor a recipe row's stamp stops offering it. The
+   *  D8 field gate alone left the pills live. */
+  omitRecipeRow?: (row: FormVariantRow) => boolean
   /** THE RECIPE'S SEAT (stroke 20, the operator's placement law):
    *  when the card owns a recipe field AND the matrix serves, the
    *  field renders HERE — under Model/Variant/Quant — never at the
@@ -336,7 +341,7 @@ export function ModelAxes({ spec, value, user, onSet, onPick, onDownloadModel }:
       : null,
     // the axes below the pair (Quant, …) keep the grid's flow.
     restGroups.map((g) => axisField(g)),
-    h(RecipePills, { spec, onPick, values: value }),
+    h(RecipePills, { spec, onPick, values: value, omitRow: omitRecipeRow }),
   )
 }
 
@@ -356,7 +361,7 @@ export function ModelAxes({ spec, value, user, onSet, onPick, onDownloadModel }:
  * THE REUSE LAW: extracted so EVERY model surface seats the same
  * dropdown -- CardForm under the axes, a studio beside its model
  * route. Never a second implementation. */
-export function RecipePills({ spec, onPick, values }: {
+export function RecipePills({ spec, onPick, values, omitRow }: {
   spec: FormSpecDoc
   /** THE ATOMIC PICK LAW (2026-09-29, the fourth seat): the row's
    * FULL stamp lands as ONE write — the per-key onSet loop was the
@@ -367,8 +372,20 @@ export function RecipePills({ spec, onPick, values }: {
   /** the USER layer (the selection derives from it -- the one
    * truth; absent = always the placeholder). */
   values?: SpecValues
+  /** THE ROW GATE (2026-10-16, journey audit 0be61df8 F1 — the
+   * Final Cut brick): a host whose derived lane cannot honor a
+   * row's stamp stops OFFERING that row. The D8 cure gated FIELDS
+   * only — the pills stayed ungated, so a pick could land keys the
+   * compose refuses ('h3_window(t4r): unsanctioned inject keys:
+   * sr_switch') and every later run bricks. Judged on the row's
+   * own stamp, never a hand id list: a future row carrying the
+   * family-dead keys gates itself. */
+  omitRow?: (row: FormVariantRow) => boolean
 }): ReactElement | null {
-  const pillRows = rowsFor(spec, 'Recipe').filter((r) => Object.keys(axisPickPatch(spec, r)).length > 0)
+  const pillRows = rowsFor(spec, 'Recipe')
+    .filter((r) => Object.keys(axisPickPatch(spec, r)).length > 0)
+    .filter((r) => omitRow === undefined || !omitRow(r))
+
   if (pillRows.length === 0) return null
   const active = values !== undefined ? activeRecipeId(spec, values) : undefined
   const pick = (id: string): void => {

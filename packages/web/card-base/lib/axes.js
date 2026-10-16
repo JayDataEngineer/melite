@@ -50,7 +50,7 @@ function PackPromptRow({ id, onInstallPack }) {
             : st === 'queued' ? chromeCopy.installQueuedNote
                 : chromeCopy.installFailedNote));
 }
-export function ModelAxes({ spec, value, user, onSet, onPick, onDownloadModel }) {
+export function ModelAxes({ spec, value, user, onSet, onPick, onDownloadModel, omitRecipeRow }) {
     const groups = axisGroups(spec);
     // THE RENDER CONTRACT (the schema-contract cure, 2026-10-18): the
     // Model axis exists when the spec declares EITHER a variant matrix
@@ -275,7 +275,7 @@ export function ModelAxes({ spec, value, user, onSet, onPick, onDownloadModel })
                     : chromeCopy.downloadFailedNote))
         : null, 
     // the axes below the pair (Quant, …) keep the grid's flow.
-    restGroups.map((g) => axisField(g)), h(RecipePills, { spec, onPick, values: value }));
+    restGroups.map((g) => axisField(g)), h(RecipePills, { spec, onPick, values: value, omitRow: omitRecipeRow }));
 }
 /** THE FAMILY RECIPE DROPDOWN (Rule A -- the recipe law; the
  * operator's order, 2026-09-18: "RECIPES AREN'T EVEN A DROPDOWN"):
@@ -293,8 +293,10 @@ export function ModelAxes({ spec, value, user, onSet, onPick, onDownloadModel })
  * THE REUSE LAW: extracted so EVERY model surface seats the same
  * dropdown -- CardForm under the axes, a studio beside its model
  * route. Never a second implementation. */
-export function RecipePills({ spec, onPick, values }) {
-    const pillRows = rowsFor(spec, 'Recipe').filter((r) => Object.keys(axisPickPatch(spec, r)).length > 0);
+export function RecipePills({ spec, onPick, values, omitRow }) {
+    const pillRows = rowsFor(spec, 'Recipe')
+        .filter((r) => Object.keys(axisPickPatch(spec, r)).length > 0)
+        .filter((r) => omitRow === undefined || !omitRow(r));
     if (pillRows.length === 0)
         return null;
     const active = values !== undefined ? activeRecipeId(spec, values) : undefined;
