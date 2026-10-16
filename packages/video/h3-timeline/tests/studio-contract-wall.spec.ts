@@ -46,8 +46,51 @@ const LAYER_A_ALL_KEYS: string[] = [
   "interpolate_enabled", "interp_model", "interp_multiplier",
   "sr_switch", "sr_model", "sr_resolution",
   "ref_image_size", "model", "audio_stem", "loras", "audio_clips",
-  "ref_images", "ref_videos", "ref_audios",
+  "ref_images", "ref_videos", "ref_audios", "ref_mods",
+  "ref_video_trims", "duck_depth_db",
 ]
+
+/** A maximally-populated Layer A (every value non-default, every
+ * enum a lawful member) — the shared body of the presence walls:
+ * the two-directional arm below and the served-surface arm. */
+function populatedMax(): Record<string, unknown> {
+  const populated: Record<string, unknown> = {}
+  for (const key of LAYER_A_ALL_KEYS) {
+    if (key === "loras") populated.loras = [{ id: "x", strength: 0.5 }]
+    else if (key === "audio_clips") populated.audio_clips = [{ id: "a", name: "a", src: "data:audio/x", start_frame: 0, dur_frames: 24 }]
+    // THE DECLARED REFERENCE SURFACE (2026-09-23): card-level refs
+    // populate as the schema holds them (string arrays)
+    else if (key === "ref_images" || key === "ref_videos" || key === "ref_audios" || key === "ref_mods") populated[key] = ["https://u/d.png"]
+    else if (key === "ref_video_trims") populated.ref_video_trims = [{ start_time: 0, duration: 2 }]
+    else if (key === "duck_depth_db") populated.duck_depth_db = -14
+    else if (key === "seed") populated.seed = 7
+    else if (key === "sharpen_enabled" || key === "interpolate_enabled" || key === "sr_switch" || key === "second_pass_enabled") populated[key] = true
+    // pin-equals-default booleans: TRUE is the hydrated state (the
+    // ride law emits the override when the state exists)
+    else if (key === "sla_protect_audio" || key === "sla_stabilize_motion" || key === "sla_disable_fp16_accum") populated[key] = true
+    // enum rows: a value OUTSIDE the hydrate's own grammar would
+    // lawfully drop — populate every enum with a MEMBER so the
+    // presence loop judges emission, not grammar
+    else if (key === "ref_image_size") populated[key] = "match"
+    // the SLA master switch rides the wire ONLY as false (absent =
+    // on): the override is the lawful emitted state
+    else if (key === "sla_enabled") populated[key] = false
+    else if (key === "sla_block_size") populated[key] = "64"
+    else if (key === "sla_reference_protection") populated[key] = "Light"
+    else if (key === "sla_dense_backend") populated[key] = "auto"
+    else if (key === "sla_dense_steps") populated[key] = "0,1"
+    else if (key === "sharpen_method") populated[key] = "rcas"
+    else if (key === "interp_model") populated[key] = "film_net_fp16.safetensors"
+    else if (key === "sampler_name" || key === "sched_name" || key === "model") populated[key] = "euler"
+    else if (key === "audio_stem") populated[key] = "legacy-stem.wav"
+    else if (key === "refine_lora") populated[key] = "h3_taomate_3step"
+    else if (key === "attention_backend") populated[key] = "pytorch attention"
+    else if (key === "sr_model") populated[key] = "seedvr2_ema_3b_fp16.safetensors"
+    else populated[key] = 1
+  }
+  populated.sr_resolution = 1080
+  return populated
+}
 
 describe("the studio contract wall (Layer A writes only card truth)", () => {
   it("every key serializeLayerA can emit sits on the declared surface", () => {
@@ -63,39 +106,7 @@ describe("the studio contract wall (Layer A writes only card truth)", () => {
   it("the emitted vocabulary is EXACTLY the truth (walk the serializer with everything set)", () => {
     // a maximally-populated Layer A — every value non-default so no
     // key can hide behind the undefined-means-absent law
-    const populated: Record<string, unknown> = {}
-    for (const key of LAYER_A_ALL_KEYS) {
-      if (key === "loras") populated.loras = [{ id: "x", strength: 0.5 }]
-      else if (key === "audio_clips") populated.audio_clips = [{ id: "a", name: "a", src: "data:audio/x", start_frame: 0, dur_frames: 24 }]
-      // THE DECLARED REFERENCE SURFACE (2026-09-23): card-level refs
-      // populate as the schema holds them (string arrays)
-      else if (key === "ref_images" || key === "ref_videos" || key === "ref_audios") populated[key] = ["https://u/d.png"]
-      else if (key === "seed") populated.seed = 7
-      else if (key === "sharpen_enabled" || key === "interpolate_enabled" || key === "sr_switch" || key === "second_pass_enabled") populated[key] = true
-      // pin-equals-default booleans: TRUE is the hydrated state (the
-      // ride law emits the override when the state exists)
-      else if (key === "sla_protect_audio" || key === "sla_stabilize_motion" || key === "sla_disable_fp16_accum") populated[key] = true
-      // enum rows: a value OUTSIDE the hydrate's own grammar would
-      // lawfully drop — populate every enum with a MEMBER so the
-      // presence loop judges emission, not grammar
-      else if (key === "ref_image_size") populated[key] = "match"
-      // the SLA master switch rides the wire ONLY as false (absent =
-      // on): the override is the lawful emitted state
-      else if (key === "sla_enabled") populated[key] = false
-      else if (key === "sla_block_size") populated[key] = "64"
-      else if (key === "sla_reference_protection") populated[key] = "Light"
-      else if (key === "sla_dense_backend") populated[key] = "auto"
-      else if (key === "sla_dense_steps") populated[key] = "0,1"
-      else if (key === "sharpen_method") populated[key] = "rcas"
-      else if (key === "interp_model") populated[key] = "film_net_fp16.safetensors"
-      else if (key === "sampler_name" || key === "sched_name" || key === "model") populated[key] = "euler"
-      else if (key === "audio_stem") populated[key] = "legacy-stem.wav"
-      else if (key === "refine_lora") populated[key] = "h3_taomate_3step"
-      else if (key === "attention_backend") populated[key] = "pytorch attention"
-      else if (key === "sr_model") populated[key] = "seedvr2_ema_3b_fp16.safetensors"
-      else populated[key] = 1
-    }
-    populated.sr_resolution = 1080
+    const populated = populatedMax()
     const out = serializeLayerA(hydrateLayerA(populated))
     for (const key of Object.keys(out)) {
       expect(
@@ -156,5 +167,45 @@ describe("the studio contract wall (Layer A writes only card truth)", () => {
     const unstated = serializeLayerA(hydrateLayerA({ seed: 1 } as never))
     expect("preset" in unstated).toBe(false)
     expect("fps" in unstated).toBe(false)
+  })
+
+  // THE SERVED-SURFACE LAW (2026-10-16, journey audit 89d325c0
+  // finding 1 — the second-pass class, third direction): the two
+  // arms above iterate hand lists (LAYER_A_ALL_KEYS here,
+  // LAYERA_KEY_UNIVERSE in docHydrate) — so a schema row the panel
+  // SERVES that neither list carries was invisible to every wall:
+  // `duck_depth_db` and `ref_video_trims` rendered, accepted writes
+  // through the panel's cast seam, and died at save for the row's
+  // whole life. THE DERIVED ALARM: walk the DECL's own surface (the
+  // same emitParamsSpec the first arm trusts) and demand every
+  // served row is carried by SOME serializer — Layer-A emit, the
+  // call-knob plane, or a NAMED exemption with a reason. A new
+  // schema row with no seat reds HERE, at test time, before any
+  // operator drags it.
+  it("every SERVED schema row is carried by a serializer or a named exemption (no orphan rows)", () => {
+    const carried = serializeLayerA(hydrateLayerA(populatedMax() as never))
+    const emitted = new Set(Object.keys(carried))
+    // EXEMPTIONS, each with its law: rows the card declares but the
+    // studio never authors on the Layer-A face.
+    const EXEMPT = new Set([
+      // THE TEXT PLANE (Layer B): the calls' prompt faces own these
+      "prompt", "refs", "image", "last_frame",
+      // THE STRUCT CARRIERS: other doc planes, never form rows
+      "calls", "keyframes", "document", "k",
+      // THE WALK-DERIVED SEATS: compose-side derivations, never authored
+      "fps_seconds", "preset",
+      // THE PER-CALL RECIPE ROW: recipe-level, the axis layer owns it
+      "audio_mode",
+      // length: CALL_KNOB_KEYS carries it (the span's per-call pin —
+      // asserted by the arm below, listed here only for the error
+      // message's clarity when reading failures)
+    ])
+    for (const key of SURFACE) {
+      if (EXEMPT.has(key)) continue
+      expect(
+        emitted.has(key) || CALL_KNOB_KEYS.has(key),
+        `served schema row "${key}" is carried by NO serializer — not serializeLayerA, not the call-knob plane, not exempt. This is the served-never-carried class: the panel renders it, writes die at save (the duck_depth_db / ref_video_trims burn, audit 89d325c0)`,
+      ).toBe(true)
+    }
   })
 })

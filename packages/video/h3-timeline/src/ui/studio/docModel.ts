@@ -317,6 +317,19 @@ export interface LayerA {
    * siblings: the studio renders them as card-level chips; the agent
    * path authors them. */
   ref_mods?: string[]
+  /** Per-video trims, index-paired with ref_videos (entry i slices
+   * guide i: start seconds + duration seconds before conditioning;
+   * duration 0 = to the clip's end, an absent entry = the whole
+   * clip). The schema row has served this seat since the trims
+   * landed — the Layer-A face had NO field, NO hydrate, NO emit:
+   * every drag died at save (journey audit 89d325c0 finding 1, the
+   * second-pass class — served, rendered, never carried). */
+  ref_video_trims?: Array<{ start_time: number, duration: number }>
+  /** How far the generated voice ducks under a dialogue clip
+   * (dB; −14 is the mix-desk default, the schema row's declared
+   * default). Same class as ref_video_trims: a served row needs a
+   * seat, or the panel lies about what the doc carries. */
+  duck_depth_db?: number
   variant?: string
   /** The MODEL ROUTE key (Layer A selector): "h3-timeline" (FL2VA) vs
    * "h3-timeline-ref" (Ref2VA). Serialized as params.model — which WINS

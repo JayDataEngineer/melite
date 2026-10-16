@@ -233,6 +233,18 @@ export function hydrateLayerA(rawDoc: Record<string, unknown> | undefined): Laye
     // it; CallCard renders it). The hydrate gap left the chip lane
     // forever empty (R2, 2026-10-27).
     ref_mods: optRefs(raw, "ref_mods"),
+    // THE SERVED-ROW SEATS (journey audit 89d325c0 finding 1): both
+    // rows were served + rendered + writable while Layer A carried
+    // no field — every drag died at save, the second-pass class.
+    // Trims: pairs of finite numbers, non-conforming rows drop
+    // (the schema's own law: an absent entry = the whole clip).
+    ref_video_trims: Array.isArray(raw?.ref_video_trims)
+      ? (raw.ref_video_trims as Array<Record<string, unknown>>)
+          .filter((t) => !!t && typeof t === "object"
+            && Number.isFinite(Number(t.start_time)) && Number.isFinite(Number(t.duration)))
+          .map((t) => ({ start_time: Number(t.start_time), duration: Number(t.duration) }))
+      : undefined,
+    duck_depth_db: optNum("duck_depth_db"),
   }
 }
 
@@ -271,6 +283,7 @@ const LAYERA_KEY_UNIVERSE: ReadonlySet<string> = new Set([
   "sr_switch", "sr_model", "sr_resolution", "ref_image_size", "model", "audio_stem",
   "second_pass_enabled", "refine_lora", "refine_strength", "refine_steps",
   "loras", "audio_clips", "ref_images", "ref_videos", "ref_audios", "ref_mods",
+  "ref_video_trims", "duck_depth_db",
 ])
 
 export function serializeLayerA(a: LayerA, base?: Record<string, unknown>): Record<string, unknown> {
@@ -294,6 +307,7 @@ export function serializeLayerA(a: LayerA, base?: Record<string, unknown>): Reco
                    "sharpen_radius", "sharpen_threshold", "sharpen_iterations",
                    "interp_model", "interp_multiplier",
                    "attention_backend",
+                   "duck_depth_db",
                    "ref_image_size", "model", "audio_stem"] as const) {
     const v = (a as unknown as Record<string, unknown>)[k]
     if (v !== undefined && v !== "") out[k] = v
@@ -334,6 +348,10 @@ export function serializeLayerA(a: LayerA, base?: Record<string, unknown>): Reco
   if (a.ref_videos?.length) out.ref_videos = a.ref_videos
   if (a.ref_audios?.length) out.ref_audios = a.ref_audios
   if (a.ref_mods?.length) out.ref_mods = a.ref_mods
+  // THE SERVED-ROW SEAT: per-video trims ride when non-empty (the
+  // schema's index-paired law — an absent entry = the whole clip,
+  // so an empty array = no trims = absent, same as the ref lanes)
+  if (a.ref_video_trims !== undefined && a.ref_video_trims.length > 0) out.ref_video_trims = a.ref_video_trims
   // THE DELETE RIDE (see the doc comment): with the persisted base,
   // a CLEARED key (state undefined/""/[]) that the base still
   // carries emits the door's explicit null — the merge-patch delete.
