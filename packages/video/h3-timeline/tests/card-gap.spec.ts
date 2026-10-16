@@ -31,6 +31,7 @@ import {
 } from "@melite/card-base/client";
 import { DECL as h3decl } from "../../../models/h3/src/index.ts";
 import { H3_LORA_ROWS } from "../../../models/h3/mods/loras.ts";
+import { film } from "../../../models/h3/src/actions.ts";
 import { computeFilmMix, parseFilmMixClips, stanzaSecs } from '@melite/models-h3/filmMix';
 
 const FACTS_PATH = join(
@@ -753,6 +754,64 @@ describe("the single-window doors", () => {
           `the departed second-pass rail must be bypassed (${id})`)
       }
     })
+  });
+
+  // ── THE ADVERTISED FACE (2026-10-16, audit 3f0b7c1a
+  // ui-truth-gap #5): the action's `params` face is what an agent
+  // reads to learn the write plane. One of its rows (`prompt`)
+  // advertised a key the CARD's door refuses — `prompt` rides
+  // neither the rider list nor the admits, and the single-call LIFT
+  // writes p.prompt from the call's own text. An agent that trusted
+  // the row got 'unknown-param'. This is the two-way wall: every row
+  // the face serves must survive the real gated door (judged by the
+  // refusal the gate itself speaks, so a row failing on its VALUE is
+  // not miscounted as unadmitted).
+  it("THE ADVERTISED FACE IS THE ADMITTED FACE: every row the action serves survives the real door", () => {
+    const probe = (row: { name: string; type: string; options?: readonly string[]; bounds?: readonly number[] }): unknown => {
+      switch (row.type) {
+        case "boolean": return true
+        case "enum": return row.options?.[0] ?? "x"
+        case "image_list": return ["/m/probe.png"]
+        case "number": return row.bounds?.[0] ?? 1
+        default: return "x"
+      }
+    }
+    const unadmitted: string[] = []
+    for (const row of film.params as ReadonlyArray<{ name: string; type: string; options?: readonly string[]; bounds?: readonly number[] }>) {
+      try {
+        const g = new GraphBuilder()
+        def.compose(def.schema({ calls: [SHOT()], [row.name]: probe(row) }), model, g, "run_face_probe")
+      } catch (e) {
+        const msg = String(e)
+        // only the GATE's own vocabulary counts: a value/bounds
+        // refusal is a different law (and a real one). The gate's
+        // words (read from the live refusal, never guessed):
+        // "got undeclared param(s): <keys>"
+        if (/undeclared param|unknown-param|unsanctioned inject keys/.test(msg)) {
+          unadmitted.push(`${row.name} (${msg.slice(0, 80)})`)
+        }
+      }
+    }
+    assert.deepEqual(unadmitted, [],
+      "the action's params face advertises keys the card door refuses — an agent reading the face is sent to a refusal")
+  });
+
+  // ── THE DEAD GUIDE LANE'S OTHER FACE (2026-10-16, audit 3f0b7c1a
+  // ui-truth-gap #3): removing clip/audio from CALL_KEYS is only half
+  // the cure — the walk must REFUSE a newly stated one LOUD (an
+  // agent-authored row must not round-trip a phantom). The studio
+  // drops a LEGACY row at hydration with a named warn (its own arm
+  // in studio-doc-calls); this is the wire's own refusal.
+  it("a call stating a clip/audio guide refuses LOUD at the schema walk", () => {
+    for (const kind of ["clip", "audio"] as const) {
+      assert.throws(
+        () => def.schema({ calls: [{ ...SHOT(), [kind]: "/m/x.mp4" }] }),
+        new RegExp(`unknown per-call key\\(s\\): ${kind}`),
+        `${kind} must be out of the admitted per-call vocabulary`,
+      )
+    }
+    // and the surviving guide (the t4r anchor) still walks
+    assert.doesNotThrow(() => def.schema({ calls: [{ ...SHOT(), image: "/m/anchor.png" }] }))
   });
 
   // ── L3 (007-H3-LoRA-PLANE L3): ONE STEPS LAW for both window

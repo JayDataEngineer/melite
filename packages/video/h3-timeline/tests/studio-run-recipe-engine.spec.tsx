@@ -691,4 +691,43 @@ describe("RunRecipeEngine: the t4r family gate (omitFields)", () => {
     fireEvent.click(tab2)
     assert.notEqual(await screen.findByText("Super-Res (SeedVR2)"), null)
   })
+
+  // THE FILM-ONLY KNOB (2026-10-16, audit 3f0b7c1a ui-truth-gap #4):
+  // duck_depth_db is read ONLY inside the multi-window film boundary
+  // (computeFilmMix's manifest) — on a single-window doc it rendered,
+  // persisted and composed into NO node. The studio's served surface
+  // omits it unless the doc derives t4_chain; this arm judges the row
+  // face across ALL THREE families (the chain arm is the positive
+  // control: a gate that hid it everywhere would pass a one-sided
+  // assertion while breaking the mix desk).
+  it("the film-only knob is served on a chain doc and omitted on single-window docs", async () => {
+    serveT4()
+    const { unmount } = render(
+      <RunRecipeEngine
+        base={chainBase as never}
+        layerA={{} as unknown as LayerA}
+        setLayerAKey={() => {}}
+        setLayerA={() => {}}
+        refArtifacts={[]}
+      />,
+    )
+    assert.notEqual(await screen.findByText("Duck depth (dB)"), null,
+      "the film shape serves the mix-desk knob")
+    unmount()
+    for (const [label, doc] of [["t4r", t4rBase], ["t4_open", openBase]] as const) {
+      const r = render(
+        <RunRecipeEngine
+          base={doc as never}
+          layerA={{} as unknown as LayerA}
+          setLayerAKey={() => {}}
+          setLayerA={() => {}}
+          refArtifacts={[]}
+        />,
+      )
+      await screen.findByText("Width")
+      assert.equal(screen.queryByText("Duck depth (dB)"), null,
+        `${label}: the mix-desk knob composes nothing on a single window`)
+      r.unmount()
+    }
+  })
 })

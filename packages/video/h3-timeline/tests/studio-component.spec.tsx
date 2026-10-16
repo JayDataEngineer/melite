@@ -76,7 +76,12 @@ describe("the rail reads the document out", () => {
     studio({
       calls: [
         { text: "a", start_frame: 0, end_frame: 80, image: "a.png", knobs: { denoise: 0.5 } },
-        { text: "b", start_frame: 80, end_frame: 168, clip: "b.mp4", knobs: { sampler: "heun" } },
+        // (2026-10-16, audit 3f0b7c1a ui-truth-gap #3) this row used
+        // to crowd the guide count with a CLIP guide; clip/audio left
+        // GUIDE_KINDS (no compose reader), so the second guide is the
+        // surviving kind — the pluralization face is what this arm
+        // judges, and it stays crowded
+        { text: "b", start_frame: 80, end_frame: 168, image: "b.png", knobs: { sampler: "heun" } },
       ],
       keyframes: [
         { image: "", frame: 5 },

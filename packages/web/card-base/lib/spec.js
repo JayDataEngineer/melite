@@ -1371,8 +1371,16 @@ export function seedAxisValues(spec, held) {
  * PURE — the caller owns the write (onSet per fresh key). */
 export function seedUser(spec, held) {
     const out = { ...held, ...seedAxisValues(spec, held) };
-    if (!fieldsOf(spec).some((f) => f.name === 'recipe'))
+    if (!fieldsOf(spec).some((f) => f.name === 'recipe')) {
+        // EVERY DROP IS NAMED (2026-10-16, audit 3f0b7c1a ui-truth-gap
+        // #6, the allow-law): this clause deleted a dead card-recipe
+        // stamp in silence — the audio-clip pattern's voice is the
+        // estate's (name the key, name the why, name the consequence).
+        if ('recipe' in out) {
+            console.warn(`card-base: seedUser dropped held 'recipe' — this card's schema declares no recipe field (the dead card-recipe layer); the run flush deletes the bench key.`);
+        }
         delete out['recipe'];
+    }
     // THE GHOST DROP (2026-10-16, the model-switch lock): a held axis
     // value that names no row of THIS spec's composing chain is a
     // departed family's ghost — krea-2's quant int8 riding anima's
@@ -1395,8 +1403,10 @@ export function seedUser(spec, held) {
             if (typeof v2 === 'string' && v2 !== '')
                 active[g2] = v2;
         }
-        if (!composingRows(spec, g, active).some((r) => r.id === v || (r.quant ?? '') === v))
+        if (!composingRows(spec, g, active).some((r) => r.id === v || (r.quant ?? '') === v)) {
+            console.warn(`card-base: seedUser dropped held '${k}' = "${v}" — it names no row of this spec's composing chain (a departed family's ghost); the write never left the studio.`);
             delete out[k];
+        }
     }
     // THE MOD BAG DIES WITH ITS MODEL (operator, 2026-10-16: "MODS
     // (LIKE LORAS) ARE PER MODEL"): a held ARRAY is mod currency (the
@@ -1410,8 +1420,10 @@ export function seedUser(spec, held) {
     const heldModel = typeof held['model'] === 'string' ? held['model'] : '';
     if (heldModel !== '' && heldModel !== spec.model) {
         for (const k of Object.keys(out)) {
-            if (Array.isArray(out[k]))
+            if (Array.isArray(out[k])) {
+                console.warn(`card-base: seedUser dropped held mod bag '${k}' — picked for model "${heldModel}", this stage's spec is "${spec.model}" (mods are per model).`);
                 delete out[k];
+            }
         }
     }
     return out;

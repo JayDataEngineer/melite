@@ -813,8 +813,13 @@ export function CallCard({
     {/* (operator 2026-11-05: "clip guide / audio guide — WHAT IS
      * THAT THERE FOR???") — the guide slots are
      * DEAD FACES: a clip/audio guide never had a compose meaning in
-     * the keyframe era (docCalls drops them at hydration with a loud
-     * warn), and the timeline's own lanes own conditioning — image
+     * the keyframe era. (2026-10-16, audit 3f0b7c1a ui-truth-gap #3:
+     * this comment used to CLAIM docCalls dropped them at hydration
+     * while hydration actually carried them and the walk admitted
+     * them — comment-blessed silence. It is true now: docCalls drops
+     * both with a named warn, GUIDE_KINDS carries only the image
+     * guide, and CALL_KEYS refuses a newly stated one at the schema's
+     * call walk.) The timeline's own lanes own conditioning — image
      * pins on the keyframe lane, audio on the D-M-E lanes. The call
      * editor carries the reference bus + the seam + the knobs;
      * phantom seats that compose nothing die. */}

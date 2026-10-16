@@ -148,13 +148,37 @@ describe("hydrateCalls (params → document)", () => {
   })
 
   it("guides hydrate as trimmed non-blank strings only", () => {
+    // THE DEAD GUIDE SLOTS (2026-10-16, audit 3f0b7c1a ui-truth-gap
+    // #3): clip/audio no longer hydrate at all (no compose reader) —
+    // this arm used to pin `audio: "stem-a"` as hydrated truth. The
+    // image guide is the only one left; the pair drops LOUD in its
+    // own arm below.
     const [c] = hydrateCalls({
       calls: [{ ...CALL, image: "  still-a ", clip: "", audio: "stem-a", bogus: "x" }],
     })
     assert.equal(c!.image, "  still-a ")
     assert.ok(!("clip" in c!))
-    assert.equal(c!.audio, "stem-a")
+    assert.ok(!("audio" in c!))
     assert.ok(!("bogus" in c!))
+  })
+
+  it("legacy clip/audio guides drop LOUD (the dead wire lane, never silent loss)", () => {
+    const warns: unknown[][] = []
+    const orig = console.warn
+    console.warn = (...a: unknown[]) => { warns.push(a) }
+    try {
+      const [c] = hydrateCalls({ calls: [{ ...CALL, clip: "clip-a", audio: "stem-a" }] })
+      assert.ok(!("clip" in c!) && !("audio" in c!))
+      assert.equal(warns.length, 2, "one named warn per dropped guide")
+      assert.ok(String(warns[0]![0]).includes("clip guide"), "the warn names the clip slot")
+      assert.ok(String(warns[1]![0]).includes("audio guide"), "the warn names the audio slot")
+      // blank/foreign values: no warn, no key
+      warns.length = 0
+      hydrateCalls({ calls: [{ ...CALL, clip: "   ", audio: 42 }] })
+      assert.equal(warns.length, 0)
+    } finally {
+      console.warn = orig
+    }
   })
 
   it("legacy last_frame drops LOUD (never silent loss)", () => {
@@ -513,10 +537,11 @@ describe("serializeCalls (document → persisted shape)", () => {
   })
 
   it("blank guides never ride (blank = none)", () => {
-    const [c] = serializeCalls([{ ...CALL, image: "  ", clip: "clip-a", audio: "" }])
-    assert.equal(c!.clip, "clip-a")
+    // the image guide is the ONLY guide kind left (ui-truth-gap #3):
+    // clip/audio are out of GUIDE_KINDS and off the wire entirely
+    const [c] = serializeCalls([{ ...CALL, image: "  " }])
     assert.ok(!("image" in c!))
-    assert.ok(!("audio" in c!))
+    assert.ok(!("clip" in c!) && !("audio" in c!))
   })
 
   it("transition rides only when set; prev-sec never serializes (retired)", () => {

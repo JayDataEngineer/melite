@@ -441,8 +441,6 @@ window.__ModuleLoader__.load({
 			*  2026-11-06) — the bucket names its own currency so the seat
 			*  explains itself at a glance. */
 			refModsHint: "any media rides — images, videos, audio (the system bakes the pack); pre-baked .safetensors stems ride the engine listing",
-			/** The mods chip strip's hover action. */
-			removePack: "remove this pack",
 			/** The mods path door's placeholder (the wire's example path). */
 			/** The mods path door's accessible name. */
 			/** The anchor slot's square caption (the bus's slot 1). */
@@ -2702,7 +2700,19 @@ window.__ModuleLoader__.load({
 		*  goes straight to CreateVideo), so the schema walk REFUSES these
 		*  keys on a derived-t4r doc rather than silently dropping them (the
 		*  no-silent-resolution law). Shared with the studio so its rail and
-		*  its heal judge the SAME twelve the walk refuses. */
+		*  its heal judge the SAME set the walk refuses.
+		*
+		*  THE DEAD-LETTER MASTERS (2026-10-16, audit 3f0b7c1a layera-globals
+		*  #3): the twelve leaves above are gated, but the three MASTERS that
+		*  own them — second_pass_enabled, sharpen_enabled, interpolate_enabled
+		*  — and attention_backend were not, and each is read ONLY inside the
+		*  non-t4r branch of the compose (actions.ts: second_pass_enabled at
+		*  the post gate, the two leaves in the post chain, attention_backend
+		*  at the chunked ModelAttentionBackend). On a t4r doc they rendered,
+		*  persisted, composed LEGAL, and landed in NO node: a switch the user
+		*  sees ON while the run ignores it — the exact silent-drop the twelve
+		*  leaves are gated against, one level up. Joined here so the field
+		*  gate, the row gate and the reseat heal judge them together. */
 		const T4_ONLY_KEYS = [
 			"sharpen_switch",
 			"sharpen_method",
@@ -2715,8 +2725,21 @@ window.__ModuleLoader__.load({
 			"interp_model",
 			"sr_switch",
 			"sr_model",
-			"sr_resolution"
+			"sr_resolution",
+			"second_pass_enabled",
+			"sharpen_enabled",
+			"interpolate_enabled",
+			"attention_backend"
 		];
+		/** The knobs only the FILM shape can honor (2026-10-16, audit
+		*  3f0b7c1a ui-truth-gap #4). `duck_depth_db` is read in exactly one
+		*  place — computeFilmMix's manifest, inside the multi-window film
+		*  boundary (actions.ts) — so on a single-window doc (t4_open, t4r)
+		*  the row rendered, persisted and composed into NO node: the
+		*  operator set a duck depth the mix desk never saw. The studio's
+		*  served surface omits these unless the doc derives t4_chain (the
+		*  same one-spelling family derivation the t4r gate uses). */
+		const FILM_ONLY_KEYS = ["duck_depth_db"];
 		/** (2026-11-06, the family-reseat cure) the doc-level window family
 		*  derivation, ONE spelling for every door that needs the family
 		*  BEFORE the walk refuses: the walk derives the composed doc's
@@ -3323,7 +3346,7 @@ window.__ModuleLoader__.load({
 		const fitImageToAspect = async (src, tw, th) => {
 			if (tw <= 0 || th <= 0 || !/^(data:|https?:|\/)/.test(src)) return src;
 			try {
-				const img = await new Promise((resolve, reject) => {
+				const img = await Promise.race([new Promise((resolve, reject) => {
 					const el = new Image();
 					el.crossOrigin = "anonymous";
 					el.onload = () => {
@@ -3333,7 +3356,11 @@ window.__ModuleLoader__.load({
 						reject(/* @__PURE__ */ new Error("decode failed"));
 					};
 					el.src = src;
-				});
+				}), new Promise((_, reject) => {
+					setTimeout(() => {
+						reject(/* @__PURE__ */ new Error("decode stalled"));
+					}, 700);
+				})]);
 				const sw = img.naturalWidth;
 				const sh = img.naturalHeight;
 				if (sw <= 0 || sh <= 0) return src;
@@ -3394,11 +3421,15 @@ window.__ModuleLoader__.load({
 		].join(" ");
 		/** The beat's guide kinds — the planner's KEYFRAME_KINDS, in the lane /
 		* panel order. Colors: image = blue, clip = amber, audio = violet. */
-		const GUIDE_KINDS = [
-			"image",
-			"clip",
-			"audio"
-		];
+		/** The call-attached guide slots the compose actually reads.
+		*  `clip` and `audio` LEFT THIS LIST (2026-10-16, audit 3f0b7c1a
+		*  ui-truth-gap #3): neither had a compose reader (no node consumes
+		*  a per-call clip or audio source — the reference bus and the D-M-E
+		*  audio lanes own conditioning), yet both round-tripped through
+		*  hydration and rode CALL_KEYS admission, and `call.audio` painted
+		*  a speaker dot on the strip: UI truth with an engine-deaf wire.
+		*  The image guide survives (it IS the t4r anchor). */
+		const GUIDE_KINDS = ["image"];
 		/** The fresh-card document: ONE window 0→90 — the t4_open draft
 		* budget . The canvas IS the film: the readout shows
 		* 3.8 s and 3.8 s renders. A user authoring a longer window gets it
@@ -3944,7 +3975,12 @@ window.__ModuleLoader__.load({
 		/** Layer A rail: Recipe (clock) + Engine (H3 sampling) + geometry. */
 		function RunRecipeEngine({ base, layerA, setLayerAKey, setLayerA, refArtifacts }) {
 			const { spec, edit, resolved } = (0, _melite_card_base_client.useResolvedForm)("h3-timeline", layerA, setLayerAKey, base);
-			const omitT4 = (0, react.useMemo)(() => deriveWindowFamily(mergeDocLayers(base, layerA)), [base, layerA]) === "t4r" ? (name) => T4_ONLY_KEYS.includes(name) : void 0;
+			const family = (0, react.useMemo)(() => deriveWindowFamily(mergeDocLayers(base, layerA)), [base, layerA]);
+			const omitT4 = family === "t4r" ? (name) => T4_ONLY_KEYS.includes(name) || FILM_ONLY_KEYS.includes(name) : family === "t4_chain" ? void 0 : (name) => FILM_ONLY_KEYS.includes(name);
+			const omitT4Recipe = family === "t4r" ? (row) => {
+				const stamp = (0, _melite_card_base_client.axisPickPatch)(spec, row, {});
+				return Object.keys(stamp).some((k) => T4_ONLY_KEYS.includes(k) || FILM_ONLY_KEYS.includes(k));
+			} : void 0;
 			const wire = {
 				candidates: refArtifacts.map((a) => ({
 					id: a.name,
@@ -3987,6 +4023,7 @@ window.__ModuleLoader__.load({
 					base,
 					omitInputRail: true,
 					omitFields: omitT4,
+					omitRecipeRow: omitT4Recipe,
 					onSet: edit,
 					onUnset: (n) => setLayerAKey(n, void 0),
 					onPick: (patch) => {
@@ -5262,7 +5299,12 @@ window.__ModuleLoader__.load({
 				ref_images: optRefs(raw, "ref_images"),
 				ref_videos: optRefs(raw, "ref_videos"),
 				ref_audios: optRefs(raw, "ref_audios"),
-				ref_mods: optRefs(raw, "ref_mods")
+				ref_mods: optRefs(raw, "ref_mods"),
+				ref_video_trims: Array.isArray(raw?.ref_video_trims) ? raw.ref_video_trims.filter((t) => !!t && typeof t === "object" && Number.isFinite(Number(t.start_time)) && Number.isFinite(Number(t.duration))).map((t) => ({
+					start_time: Number(t.start_time),
+					duration: Number(t.duration)
+				})) : void 0,
+				duck_depth_db: optNum("duck_depth_db")
 			};
 		}
 		/** Layer A → the persisted doc shape: ONLY card wire keys, ONLY
@@ -5335,7 +5377,9 @@ window.__ModuleLoader__.load({
 			"ref_images",
 			"ref_videos",
 			"ref_audios",
-			"ref_mods"
+			"ref_mods",
+			"ref_video_trims",
+			"duck_depth_db"
 		]);
 		function serializeLayerA(a, base) {
 			const out = {
@@ -5372,6 +5416,7 @@ window.__ModuleLoader__.load({
 				"interp_model",
 				"interp_multiplier",
 				"attention_backend",
+				"duck_depth_db",
 				"ref_image_size",
 				"model",
 				"audio_stem"
@@ -5397,8 +5442,9 @@ window.__ModuleLoader__.load({
 			if (a.ref_videos?.length) out.ref_videos = a.ref_videos;
 			if (a.ref_audios?.length) out.ref_audios = a.ref_audios;
 			if (a.ref_mods?.length) out.ref_mods = a.ref_mods;
+			if (a.ref_video_trims !== void 0 && a.ref_video_trims.length > 0) out.ref_video_trims = a.ref_video_trims;
 			if (base !== void 0) {
-				const cleared = (v) => v === void 0 || v === "" || Array.isArray(v) && v.length === 0;
+				const cleared = (v) => v === void 0 || v === "" || v === false || Array.isArray(v) && v.length === 0;
 				const state = a;
 				for (const k of Object.keys(base)) if (LAYERA_KEY_UNIVERSE.has(k) && !(k in out) && base[k] !== void 0 && base[k] !== null && cleared(state[k])) out[k] = null;
 			}
@@ -5444,12 +5490,18 @@ window.__ModuleLoader__.load({
 			const list = Array.isArray(callsRaw) && callsRaw.length > 0 ? callsRaw : Array.isArray(beatsRaw) && beatsRaw.length > 0 ? beatsRaw : null;
 			if (!list) return STARTER_CALLS;
 			const calls = [];
-			for (const c of list) {
-				if (typeof c !== "object" || c === null) continue;
+			for (const [index, c] of list.entries()) {
+				if (typeof c !== "object" || c === null) {
+					console.warn(`VideoTimelineStudio: calls[${index}] is not a call row — dropped.`);
+					continue;
+				}
 				const r = c;
 				const start = Number(r.start_frame);
 				const end = Number(r.end_frame);
-				if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) continue;
+				if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) {
+					console.warn(`VideoTimelineStudio: calls[${index}] has an unusable span (start_frame=${String(r.start_frame)}, end_frame=${String(r.end_frame)}) — dropped; a shot needs two finite frames with end > start.`);
+					continue;
+				}
 				const call = {
 					text: "",
 					start_frame: Math.round(start),
@@ -5473,6 +5525,10 @@ window.__ModuleLoader__.load({
 					if (typeof src === "string" && src.trim()) call[kind] = src;
 				}
 				if (typeof r.last_frame === "string" && r.last_frame.trim()) console.warn(`VideoTimelineStudio: call ${calls.length} carried last_frame (${r.last_frame}) — dropped; the closing-still control was cut 2026-09-15 (the reference lane owns no last-frame input)`);
+				for (const kind of ["clip", "audio"]) {
+					const src = r[kind];
+					if (typeof src === "string" && src.trim()) console.warn(`VideoTimelineStudio: call ${calls.length} carried a ${kind} guide (${src}) — dropped; no compose arm reads a per-call ${kind} (the reference bus and the audio lanes own conditioning)`);
+				}
 				if (r.transition === "extend" || r.transition === "cut") call.transition = r.transition;
 				const refs = {};
 				const rr = r.refs !== null && typeof r.refs === "object" && !Array.isArray(r.refs) ? r.refs : {};
@@ -6209,10 +6265,18 @@ window.__ModuleLoader__.load({
 				} : prev);
 			}, []);
 			const deleteAudioClip = (0, react.useCallback)((clipId) => {
-				setLayerA((prev) => ({
-					...prev,
-					audio_clips: (prev.audio_clips ?? []).filter((c) => c.id !== clipId)
-				}));
+				setLayerA((prev) => {
+					const clips = (prev.audio_clips ?? []).filter((c) => c.id !== clipId);
+					if (clips.length === 0 && prev.audio_stem !== void 0) return {
+						...prev,
+						audio_clips: clips,
+						audio_stem: void 0
+					};
+					return {
+						...prev,
+						audio_clips: clips
+					};
+				});
 			}, []);
 			/** Patch a clip's lane/text (the inspector's pen): only the
 			* authored fields move — placement/duration own their own doors. */

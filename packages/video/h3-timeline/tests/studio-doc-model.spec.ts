@@ -107,12 +107,13 @@ describe("the vocabulary invariants (what the serializers assume)", () => {
   })
 
   it("the track table keeps the strip's ONE lane decl; the guide kinds are the call's, not lanes", () => {
-    // (re-pin 2026-11-06) the clip/audio LANE decls are dead — the
-    // audio lanes ride the bar's D-M-E rows and the clip/audio
-    // guides ride the call cards (GuideSlot). The strip's own track
-    // table is the IMAGE lane alone; GUIDE_KINDS stays the call's
-    // three guide sources (a card grammar, never lane decls).
-    assert.deepEqual([...GUIDE_KINDS], ["image", "clip", "audio"])
+    // (re-pin 2026-10-16, audit 3f0b7c1a ui-truth-gap #3) the
+    // clip/audio LANE decls were already dead; their GUIDE slots are
+    // dead too — no compose arm reads a per-call clip or audio, so
+    // the pair left GUIDE_KINDS and CALL_KEYS (hydrate drops a legacy
+    // one LOUD). GUIDE_KINDS is the IMAGE guide alone: the t4r
+    // anchor, the one guide the compose actually consumes.
+    assert.deepEqual([...GUIDE_KINDS], ["image"])
     assert.deepEqual(VIDEO_TIMELINE_TRACKS.map((t) => t.uuid), ["image"])
     for (const t of VIDEO_TIMELINE_TRACKS) {
       assert.ok(Array.isArray(t.color) && t.color.length === 3)

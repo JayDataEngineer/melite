@@ -69,6 +69,16 @@ export const T4_ONLY_KEYS = [
   'attention_backend',
 ] as const
 
+/** The knobs only the FILM shape can honor (2026-10-16, audit
+ *  3f0b7c1a ui-truth-gap #4). `duck_depth_db` is read in exactly one
+ *  place — computeFilmMix's manifest, inside the multi-window film
+ *  boundary (actions.ts) — so on a single-window doc (t4_open, t4r)
+ *  the row rendered, persisted and composed into NO node: the
+ *  operator set a duck depth the mix desk never saw. The studio's
+ *  served surface omits these unless the doc derives t4_chain (the
+ *  same one-spelling family derivation the t4r gate uses). */
+export const FILM_ONLY_KEYS = ['duck_depth_db'] as const
+
 /** (2026-11-06, the family-reseat cure) the doc-level window family
  *  derivation, ONE spelling for every door that needs the family
  *  BEFORE the walk refuses: the walk derives the composed doc's
@@ -292,8 +302,16 @@ export const KNOB_ORDER = [
 export type KnobKey = (typeof KNOB_ORDER)[number]
 export const CALL_KNOB_KEYS: ReadonlySet<string> = new Set(KNOB_ORDER)
 
+/** The per-call vocabulary the schema's call walk admits. `clip` and
+ *  `audio` LEFT THIS SET (2026-10-16, audit 3f0b7c1a ui-truth-gap
+ *  #3): no compose arm reads either — a per-call clip or audio guide
+ *  was UI truth over an engine-deaf wire (the studio hydrated them
+ *  and painted a speaker dot, the walk admitted them, no node ever
+ *  consumed one). A doc stating them now refuses LOUD here
+ *  ('unknown per-call key(s)') instead of round-tripping a phantom;
+ *  the studio drops legacy rows at hydration with a named warn. */
 export const CALL_KEYS: ReadonlySet<string> = new Set([
-  'text', 'start_frame', 'end_frame', 'image', 'clip', 'audio',
+  'text', 'start_frame', 'end_frame', 'image',
   'transition', 'knobs', 'refs',
   'ref_image', 'image_name', 'ref_images', 'ref_videos', 'ref_audios',
   'beats', 'last_frame', 'first_frame_prev_sec', 'seam_carry',

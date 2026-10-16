@@ -29,7 +29,7 @@ import { fetchMediaLibrary } from '@melite/card-base/client'
 import { type Dispatch, type SetStateAction, useMemo, useState } from "react"
 import s from "./studio.module.css"
 import { DEFAULT_SEGMENT_PARAMS } from "@melite/contracts/timelineTypes"
-import { T4_ONLY_KEYS, deriveWindowFamily } from "@melite/models-h3/timelineContract"
+import { FILM_ONLY_KEYS, T4_ONLY_KEYS, deriveWindowFamily } from "@melite/models-h3/timelineContract"
 import type { LayerA, SetLayerAKey } from "./docModel.ts"
 import { mergeDocLayers } from "./docModel.ts"
 import { parseSpecNumber } from "./docGrid.ts"
@@ -96,9 +96,21 @@ export function RunRecipeEngine({
     () => deriveWindowFamily(mergeDocLayers(base, layerA as unknown as Record<string, unknown>)),
     [base, layerA],
   )
-  const omitT4 = family === "t4r"
+  // THE DEAD-ROW GATE (2026-10-16): the t4r lane's whole post-pass
+  // vocabulary (T4_ONLY_KEYS — the twelve leaves plus the masters that
+  // own them and the attention backend) AND the film-only knobs
+  // (FILM_ONLY_KEYS: duck_depth_db is read only inside the multi-window
+  // film boundary, so a single-window doc composes it into no node).
+  // One predicate, one derivation (the same family spelling the walk
+  // and the reseat heal read) — a row the run cannot honor is never
+  // served.
+  const omitDead = family === "t4r"
     ? (name: string): boolean => (T4_ONLY_KEYS as readonly string[]).includes(name)
-    : undefined
+      || (FILM_ONLY_KEYS as readonly string[]).includes(name)
+    : family === "t4_chain"
+      ? undefined
+      : (name: string): boolean => (FILM_ONLY_KEYS as readonly string[]).includes(name)
+  const omitT4 = omitDead
   // THE ROW GATE (2026-10-16, the Final Cut brick — audit 0be61df8
   // F1): the field gate above stopped serving the twelve t4r-dead
   // KNOBS, but the recipe PILLS stayed ungated — h3's Final Cut row
@@ -110,7 +122,13 @@ export function RunRecipeEngine({
   const omitT4Recipe = family === "t4r"
     ? (row: unknown): boolean => {
         const stamp = axisPickPatch(spec, row as never, {})
-        return Object.keys(stamp).some((k) => (T4_ONLY_KEYS as readonly string[]).includes(k))
+        // the ROW gate judges the same dead vocabulary the field
+        // gate omits (t4r: T4_ONLY ∪ FILM_ONLY; the film-only keys
+        // are legal on a chain, so only the t4r lane consults them
+        // here — a t4r doc cannot honor either set)
+        return Object.keys(stamp).some((k) =>
+          (T4_ONLY_KEYS as readonly string[]).includes(k)
+          || (FILM_ONLY_KEYS as readonly string[]).includes(k))
       }
     : undefined
   const wire: SquareWire = {

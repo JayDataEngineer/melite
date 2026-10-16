@@ -84,12 +84,24 @@ export function hydrateCalls(raw: { calls?: unknown; beats?: unknown }): DocCall
       : null
   if (!list) return STARTER_CALLS
   const calls: DocCall[] = []
-  for (const c of list) {
-    if (typeof c !== "object" || c === null) continue
+  for (const [index, c] of list.entries()) {
+    // EVERY DROP IS NAMED (2026-10-16, audit 3f0b7c1a ui-truth-gap
+    // #6): both row drops below used to `continue` in silence — a
+    // corrupt or reversed row vanished and the plan silently lost a
+    // shot. The audio-clip pattern's voice, one channel over.
+    if (typeof c !== "object" || c === null) {
+      console.warn(`VideoTimelineStudio: calls[${index}] is not a call row — dropped.`)
+      continue
+    }
     const r = c as Record<string, unknown>
     const start = Number(r.start_frame)
     const end = Number(r.end_frame)
-    if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) continue
+    if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) {
+      console.warn(
+        `VideoTimelineStudio: calls[${index}] has an unusable span (start_frame=${String(r.start_frame)}, end_frame=${String(r.end_frame)}) — dropped; a shot needs two finite frames with end > start.`,
+      )
+      continue
+    }
     const call: DocCall = { text: "", start_frame: Math.round(start), end_frame: Math.round(end) }
     // The prompt: ONE textarea. (2026-09-15, the operator's cut: no
     // prompt segments, no prompt beats.) Old docs carrying per-call
@@ -131,6 +143,23 @@ export function hydrateCalls(raw: { calls?: unknown; beats?: unknown }): DocCall
       console.warn(
         `VideoTimelineStudio: call ${calls.length} carried last_frame (${r.last_frame}) — dropped; the closing-still control was cut 2026-09-15 (the reference lane owns no last-frame input)`,
       )
+    }
+    // THE DEAD GUIDE SLOTS (2026-10-16, audit 3f0b7c1a ui-truth-gap
+    // #3): a legacy doc may carry per-call clip/audio guides — both
+    // round-tripped (GUIDE_KINDS hydrated them, CALL_KEYS admitted
+    // them) and NEITHER had a compose reader: the reference bus and
+    // the D-M-E audio lanes own conditioning, so the pair was UI
+    // truth over an engine-deaf wire (the strip even painted a
+    // speaker dot for it). Named, never silent — the last_frame
+    // precedent. They are out of GUIDE_KINDS and out of CALL_KEYS, so
+    // a NEW doc stating one refuses loud at the schema's call walk.
+    for (const kind of ["clip", "audio"] as const) {
+      const src = r[kind]
+      if (typeof src === "string" && src.trim()) {
+        console.warn(
+          `VideoTimelineStudio: call ${calls.length} carried a ${kind} guide (${src}) — dropped; no compose arm reads a per-call ${kind} (the reference bus and the audio lanes own conditioning)`,
+        )
+      }
     }
     if (r.transition === "extend" || r.transition === "cut") {
       call.transition = r.transition

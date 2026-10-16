@@ -28,8 +28,6 @@ const full: DocCall[] = [
     text: "a lone figure crosses the ridge at dusk",
     start_frame: 0, end_frame: 39,
     image: "https://u/anchor.png",
-    clip: "https://u/clip.mp4",
-    audio: "https://u/score.mp3",
     transition: "extend",
     refs: {
       images: "https://u/a.png, data:image/png;base64,AAA",
@@ -73,8 +71,11 @@ describe("the persistence roundtrip (close/reopen never drops a field)", () => {
     assert.equal(c0.start_frame, 0)
     assert.equal(c0.end_frame, 39)
     assert.equal(c0.image, "https://u/anchor.png")
-    assert.equal(c0.clip, "https://u/clip.mp4")
-    assert.equal(c0.audio, "https://u/score.mp3")
+    // THE DEAD GUIDE SLOTS ARE OUT OF THE VOCABULARY (2026-10-16,
+    // audit 3f0b7c1a ui-truth-gap #3): clip/audio had no compose
+    // reader and no longer round-trip (GUIDE_KINDS = image only,
+    // CALL_KEYS refuses a newly stated one, hydrate drops a legacy
+    // one with a named warn — judged by its own arm below)
     assert.equal(c0.transition, "extend")
     assert.equal(c0.refs?.images, full[0].refs?.images)
     assert.equal(c0.refs?.videos, full[0].refs?.videos)
@@ -152,7 +153,8 @@ describe("the persistence roundtrip (close/reopen never drops a field)", () => {
     const wire = serializeCalls(full)
     const w0 = wire[0] as unknown as Record<string, unknown>
     assert.ok("image" in w0 && w0["image"] === "https://u/anchor.png")
-    assert.ok("clip" in w0 && "audio" in w0)
+    // and the phantom pair is NOT on the wire (the dead-lane cure)
+    assert.ok(!("clip" in w0) && !("audio" in w0))
     assert.ok(typeof w0["refs"] === "object" && w0["refs"] !== null)
     const refs = w0["refs"] as Record<string, string>
     assert.ok(refs["images"]!.includes("data:image/png;base64,AAA"))

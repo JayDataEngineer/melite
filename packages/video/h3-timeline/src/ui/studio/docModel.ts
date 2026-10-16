@@ -385,7 +385,15 @@ export const H3_ENHANCE_SYSTEM = [
 
 /** The beat's guide kinds — the planner's KEYFRAME_KINDS, in the lane /
  * panel order. Colors: image = blue, clip = amber, audio = violet. */
-export const GUIDE_KINDS = ["image", "clip", "audio"] as const
+/** The call-attached guide slots the compose actually reads.
+ *  `clip` and `audio` LEFT THIS LIST (2026-10-16, audit 3f0b7c1a
+ *  ui-truth-gap #3): neither had a compose reader (no node consumes
+ *  a per-call clip or audio source — the reference bus and the D-M-E
+ *  audio lanes own conditioning), yet both round-tripped through
+ *  hydration and rode CALL_KEYS admission, and `call.audio` painted
+ *  a speaker dot on the strip: UI truth with an engine-deaf wire.
+ *  The image guide survives (it IS the t4r anchor). */
+export const GUIDE_KINDS = ["image"] as const
 export type GuideKind = (typeof GUIDE_KINDS)[number]
 
 /** A pinned frame on the film timeline — the forced-alignment seat

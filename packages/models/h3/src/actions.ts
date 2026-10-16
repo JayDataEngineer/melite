@@ -1881,7 +1881,14 @@ export const film: ComfyActionSpec<Record<string, unknown>, H3Facts> = {
   // fps_seconds) are internal. ref_image_size is the schema's
   // const-or-WxH pattern tier — typed as its string spine.
   params: [
-    { name: "prompt", type: "string" },
+    // THE `prompt` ROW IS GONE (2026-10-16, audit 3f0b7c1a
+    // ui-truth-gap #5): this face advertised a key the card's door
+    // REFUSES — `prompt` rides neither the h3-timeline rider list nor
+    // its admits, and the single-call LIFT writes p.prompt from the
+    // call's own text (card.ts, "if (typeof single.text === ...)").
+    // An agent that trusted this row got 'unknown-param' at the door.
+    // The compose still reads p.prompt (the lift's write); the
+    // ADVERTISED surface is what changed.
     { name: "image", type: "string" },
     { name: "last_frame", type: "string" },
     { name: "ref_images", type: "image_list" },

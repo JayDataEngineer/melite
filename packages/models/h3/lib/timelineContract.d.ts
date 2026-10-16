@@ -49,6 +49,15 @@ export declare function transitionOverlap(transition?: string): number;
  *  leaves are gated against, one level up. Joined here so the field
  *  gate, the row gate and the reseat heal judge them together. */
 export declare const T4_ONLY_KEYS: readonly ["sharpen_switch", "sharpen_method", "sharpen_strength", "sharpen_radius", "sharpen_threshold", "sharpen_iterations", "interp_switch", "interp_multiplier", "interp_model", "sr_switch", "sr_model", "sr_resolution", "second_pass_enabled", "sharpen_enabled", "interpolate_enabled", "attention_backend"];
+/** The knobs only the FILM shape can honor (2026-10-16, audit
+ *  3f0b7c1a ui-truth-gap #4). `duck_depth_db` is read in exactly one
+ *  place — computeFilmMix's manifest, inside the multi-window film
+ *  boundary (actions.ts) — so on a single-window doc (t4_open, t4r)
+ *  the row rendered, persisted and composed into NO node: the
+ *  operator set a duck depth the mix desk never saw. The studio's
+ *  served surface omits these unless the doc derives t4_chain (the
+ *  same one-spelling family derivation the t4r gate uses). */
+export declare const FILM_ONLY_KEYS: readonly ["duck_depth_db"];
 /** (2026-11-06, the family-reseat cure) the doc-level window family
  *  derivation, ONE spelling for every door that needs the family
  *  BEFORE the walk refuses: the walk derives the composed doc's
@@ -98,6 +107,14 @@ export declare function refGenreOf(name: string, url?: string): 'image' | 'video
 export declare const KNOB_ORDER: readonly ["steps", "denoise", "sampler_name", "sched_name", "shift_video", "shift_audio", "sla_sparsity", "sla_block_size", "sla_min_seq_len", "sla_dense_last_steps", "sla_protect_audio", "sla_stabilize_motion", "sla_reference_protection", "sla_dense_backend", "sla_dense_steps", "sla_disable_fp16_accum", "sharpen_enabled", "sharpen_method", "sharpen_strength", "sharpen_radius", "sharpen_threshold", "sharpen_iterations", "interpolate_enabled", "interp_model", "interp_multiplier", "length"];
 export type KnobKey = (typeof KNOB_ORDER)[number];
 export declare const CALL_KNOB_KEYS: ReadonlySet<string>;
+/** The per-call vocabulary the schema's call walk admits. `clip` and
+ *  `audio` LEFT THIS SET (2026-10-16, audit 3f0b7c1a ui-truth-gap
+ *  #3): no compose arm reads either — a per-call clip or audio guide
+ *  was UI truth over an engine-deaf wire (the studio hydrated them
+ *  and painted a speaker dot, the walk admitted them, no node ever
+ *  consumed one). A doc stating them now refuses LOUD here
+ *  ('unknown per-call key(s)') instead of round-tripping a phantom;
+ *  the studio drops legacy rows at hydration with a named warn. */
 export declare const CALL_KEYS: ReadonlySet<string>;
 export declare const LEGACY_KNOB_KEY: {
     readonly sampling_steps: "steps";
