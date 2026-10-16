@@ -60,3 +60,46 @@ describe('samplingExtra (the shared sampling layout)', () => {
     expect(e.columns).toBe(2)
   })
 })
+
+// (the missing-tests audit #9, 2026-11-06) the other three DRY
+// helpers rode only indirect coverage through card DECL suites —
+// one arm each had no coverer anywhere. Direct describes now.
+import { seedExtra, promptPairExtra, inputImageExtra } from '../src/fields.ts'
+
+describe('seedExtra (the seed row bag)', () => {
+  test('bare: order alone (the sfx/tts shape — order null rides verbatim)', () => {
+    expect(seedExtra({ order: null })).toEqual({ order: null })
+  })
+  test('every optional key rides when stated', () => {
+    expect(seedExtra({ order: 3, group: 'params', width: 1, zone: 'params', tooltip: 'the seed', families: ['image-gen'] }))
+      .toEqual({ order: 3, group: 'params', width: 1, zone: 'params', tooltip: 'the seed', families: ['image-gen'] })
+  })
+  test('stated keys are never defaulted in (undefined stays absent)', () => {
+    const e = seedExtra({ order: 0, group: 'params' })
+    expect('width' in e).toBe(false)
+    expect('zone' in e).toBe(false)
+    expect('tooltip' in e).toBe(false)
+    expect('families' in e).toBe(false)
+  })
+})
+
+describe('promptPairExtra (the prompt pair bag, byte-shape)', () => {
+  test('prompt leads, negative follows; both textareas in the prompt group', () => {
+    const { prompt, negative_prompt } = promptPairExtra()
+    expect(prompt).toEqual({ order: 0, group: 'prompt', columns: 2, width: 1, required: true, zone: 'params', wtype: 'textarea' })
+    expect(negative_prompt).toEqual({ order: 1, group: 'prompt', width: 1, zone: 'params', wtype: 'textarea' })
+  })
+})
+
+describe('inputImageExtra (the canonical input-image slot)', () => {
+  test('default: order 0, group input, width 1, required, image wtype — no tooltip', () => {
+    const e = inputImageExtra()
+    expect(e).toEqual({ order: 0, group: 'input', width: 1, required: true, wtype: 'image' })
+    expect('tooltip' in e).toBe(false)
+  })
+  test("mask's two-bar law: width 2 + tooltip ride; order moves", () => {
+    expect(inputImageExtra({ width: 2, tooltip: 'the mask rail' }))
+      .toEqual({ order: 0, group: 'input', width: 2, tooltip: 'the mask rail', required: true, wtype: 'image' })
+    expect(inputImageExtra({ order: 5 }).order).toBe(5)
+  })
+})

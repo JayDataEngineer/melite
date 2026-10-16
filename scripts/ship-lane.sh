@@ -361,6 +361,17 @@ if [ "$DO_BUILD" -eq 1 ]; then
   say "BUILD the compiled-lib packages (a restart alone ships the OLD code)"
   for p in "${COMPILED[@]}"; do
     if (cd "$REPO/$p" && node "$TSC" -p tsconfig.json >/tmp/ship-build.log 2>&1); then
+      # THE D.TS REWRITE PASS (wave 21's repeat wedge, wired
+      # 2026-11-06): tsc's declaration emit still writes
+      # `from "./x.ts"` while the JS emit writes .js — a bare-tsc
+      # rebuild flips every d.ts back and the gate wall reds three
+      # weeks later. The pass runs after EVERY emit, before the
+      # stamp; a refusal fails the ship (never walk past a red).
+      if ! node "$REPO/scripts/rewrite-dts-specifiers.mjs" "$p" >/tmp/ship-dts.log 2>&1; then
+        bad "$p — the d.ts rewrite pass refused (no lib/ under it?):"
+        head -4 /tmp/ship-dts.log | sed 's/^/        /'
+        exit 1
+      fi
       write_stamp "$p"
       ok "$p"
     else

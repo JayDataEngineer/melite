@@ -6,8 +6,11 @@
 //   DRIVE_PROFILE profile mounting the estate seat (default: estate;
 //     override the day the lane moves — no agent-lane profile serving
 //     the SDK protocol exists on this box as of 2026-10-09)
-//   DRIVE_CARD   card id (rig | motion | quad-remesh)
-//   DRIVE_MODEL  model id (gem_soma | kimodo | autoremesher)
+//   DRIVE_CARD   card id (rig | motion — quad-remesh died with the
+//                 2026-10-13 excision)
+//   DRIVE_MODEL  model id (gem-soma | kimodo — the registry's
+//                 hyphen grammar; autoremesher died with the
+//                 excision)
 //   DRIVE_PARAMS JSON object of card params
 //   DRIVE_ORDER  the verbatim order sentence for the turn
 // Exit 0 = run_id observed in the committed response.

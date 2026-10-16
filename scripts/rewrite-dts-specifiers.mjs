@@ -10,7 +10,7 @@
 // back and the wall ran red for three weeks. This script is the
 // repeatable pass: run it after `pnpm run build` in any package.
 import { readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { isAbsolute, join } from 'node:path';
 
 const ROOT = new URL('..', import.meta.url).pathname;
 const SPEC = /(from\s*|import\(\s*)(["'])(\.\.?\/[^"']*?)\.ts(["'])/g;
@@ -41,5 +41,17 @@ if (pkg === undefined) {
   console.error('usage: node scripts/rewrite-dts-specifiers.mjs <package-dir>');
   process.exit(1);
 }
-walk(join(ROOT, pkg, 'lib'));
+// The arg is a repo-relative package dir (the law: run from the
+// repo root) or an absolute one — the ship lane passes relative,
+// CI seats may pass absolute.
+const lib = isAbsolute(pkg) ? join(pkg, 'lib') : join(ROOT, pkg, 'lib');
+// A MISSING lib/ is a loud refusal, never a silent zero: the tool
+// runs right after a build, so no lib means the build never
+// happened — walking past it would green a pass over nothing
+// (the same law as the ship lane's stamp verification).
+if (!statSync(lib, { throwIfNoEntry: false })) {
+  console.error(`rewrite-dts-specifiers: no lib/ under ${pkg} — build the package first`);
+  process.exit(1);
+}
+walk(lib);
 console.log(`${pkg}: ${files} d.ts walked, ${touched} rewritten (.ts → .js)`);

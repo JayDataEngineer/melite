@@ -101,4 +101,22 @@ describe("the trellis2-native mesh lane (the arm cases the kit wall used)", () =
     // the fov gate belongs to pixal, never to this family
     instantiateAction(mesh, { ...base, camera_fov: "12" }, FACTS, new GraphBuilder(), "x");
   });
+
+  // (the missing-tests audit #6, 2026-11-06) bg_removal appeared in
+  // ZERO test files across the mesh families — the explicit-value
+  // arms and the closed-set refusal were dead in every pool.
+  it("bg_removal admits its explicit values and refuses outside the closed set (verbatim voice)", () => {
+    const base = {
+      input_image: "/m/p.png", resolution: "1024",
+      atlas_size: "2048", ao_size: "512", normal_size: "1024", seed: 3,
+    };
+    for (const bg of ["auto", "on", "off"]) {
+      // an explicit value composes (the || fallback's present side)
+      instantiateAction(mesh, { ...base, bg_removal: bg }, FACTS, new GraphBuilder(), "x");
+    }
+    assert.throws(() => instantiateAction(mesh, { ...base, bg_removal: "bogus" }, FACTS, new GraphBuilder(), "x"),
+      /bg_removal "bogus" is not one of auto\|on\|off — birefnet either cuts or it doesn't/);
+    // absent falls to 'auto' (the || fallback's absent side) — composes
+    instantiateAction(mesh, { ...base }, FACTS, new GraphBuilder(), "x");
+  });
 });

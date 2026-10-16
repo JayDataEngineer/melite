@@ -40,7 +40,6 @@ import assert from "node:assert/strict";
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { registryIds, registryModel } from "../../../../packages/engines/comfyui-cordis/src/models/models.ts";
-
 const REPO_ROOT = new URL("../../../../", import.meta.url).pathname;
 
 /** The label face's bound: the longest honest id in today's tree is
@@ -133,7 +132,67 @@ function bagRowsOf(family: string): Array<{ row: string; id: string }> {
   return out;
 }
 
+/** The drive scripts' declared id vocabularies (the missing-tests
+ *  audit #12, 2026-11-06): test/drive-3d.mjs's usage line named
+ *  `gem_soma` (the underscore era died with the wave-24 rename)
+ *  and `autoremesher` (dead since the 2026-10-13 excision) — a
+ *  developer following the usage fed a dead id into the drive
+ *  protocol. The judge reads the usage blocks' OWN declarations —
+ *  every `CARD ... card id (a | b | c)` and `MODEL ... model id
+ *  (a | b)` list — and asserts each listed id resolves on its
+ *  declared plane: card ids against the cardPackages roster, model
+ *  ids against the family registry. Prose after an em dash rides
+ *  outside the list and is never judged. */
+function driveIdLists(): Array<{ script: string; kind: "card" | "model"; ids: string[] }> {
+  const out: Array<{ script: string; kind: "card" | "model"; ids: string[] }> = [];
+  for (const name of ["drive-3d.mjs", "estate-drive.mjs", "agent-drive.mjs", "craft-drive.mjs", "cold-start-drive.mjs"]) {
+    let text = "";
+    try {
+      text = readFileSync(join(REPO_ROOT, "test", name), "utf8");
+    } catch {
+      continue;
+    }
+    for (const m of text.matchAll(/DRIVE_(CARD|MODEL)\s+\w+ id \(([^)]*)\)/g)) {
+      const kind = (m[1] === "CARD" ? "card" : "model") as "card" | "model";
+      // the list ends at an em dash (the prose note after it is
+      // never judged); ASCII hyphens are PART OF ids (gem-soma)
+      const ids = (m[2] as string)
+        .split("|")
+        .map((s) => s.trim().split(/[\u2014\u2013]|\bwith\b/)[0]!.trim())
+        .filter((s) => /^[a-z][a-z0-9-]*$/.test(s));
+      if (ids.length > 0) out.push({ script: name, kind, ids });
+    }
+  }
+  return out;
+}
+
 describe("the label conventions wall (2026-11-05)", () => {
+  it("THE DRIVE SCRIPTS NAME LIVE IDS (audit #12): every id in a usage block's declared list resolves on its own plane", () => {
+    // the card plane is the FILESYSTEM roster (the card id grammar
+    // IS the package dir name: packages/<genre>/<id>); the model
+    // plane is the family registry
+    const cards = new Set(readdirSync(join(REPO_ROOT, "packages")).flatMap((genre) => {
+      try {
+        return readdirSync(join(REPO_ROOT, "packages", genre));
+      } catch {
+        return [];
+      }
+    }));
+    const families = new Set(registryIds());
+    const lists = driveIdLists();
+    assert.ok(lists.length > 0,
+      "the sweep saw declared id lists (a renamed DRIVE_ env would vacuous-pass)");
+    const offenders: string[] = [];
+    for (const { script, kind, ids } of lists) {
+      const plane = kind === "card" ? cards : families;
+      for (const id of ids) {
+        if (!plane.has(id)) offenders.push(`${script}: ${kind} id "${id}" resolves on no roster`);
+      }
+    }
+    assert.deepEqual(offenders, [],
+      "a drive script's usage names an id the estate does not serve (the gem_soma/autoremesher class)");
+  });
+
   it("LABELS ARE FACES: every family/variant/cell label is short and carries no sentence prose — prose belongs to the hint seat", () => {
     const offenders: string[] = [];
     let judged = 0;
