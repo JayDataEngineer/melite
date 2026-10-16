@@ -484,7 +484,14 @@ describe("the throwing owners — remove and ungroup fall back loud", () => {
     expect(await screen.findByText("remove failed", {}, { timeout: 15000 })).toBeTruthy();
   }, 30_000);
 
-  test("a throwing ungroup voices the fallback (never a throw past the gesture)", async () => {
+  test("a throwing ungroup voices the fallback (never a throw past the gesture)", { timeout: 30000 }, async () => {
+    // THE FLAKE CURE (flake-slowness-wave2 class 1, 2026-11-06): a
+    // fixed 4s real-timer findBy budget on a thrown-verb settlement
+    // arm reds whenever coverage instrumentation (or 23-fork CPU
+    // saturation) swings React settlement ±40% — REPRODUCED solo at
+    // maxWorkers=1, red on the cold-transform --coverage run, green
+    // warm. The remove sibling below carries this same cure; this
+    // arm never got it. 15s budget + 30s per-test.
     mountBench(
       [{ id: "g_0", card: "group", engine: "comfyui", params: {}, children: [{ id: "s_0", card: "image-gen" }] } as never],
       undefined,
@@ -493,7 +500,7 @@ describe("the throwing owners — remove and ungroup fall back loud", () => {
     const user = userEvent.setup();
     await user.click(firstTile());
     fireEvent.click(await screen.findByText("Ungroup", {}, { timeout: 4000 }));
-    expect(await screen.findByText("ungroup failed", {}, { timeout: 4000 })).toBeTruthy();
+    expect(await screen.findByText("ungroup failed", {}, { timeout: 15000 })).toBeTruthy();
   });
 
   test("a non-array children value drills as an empty compound (never a throw)", async () => {

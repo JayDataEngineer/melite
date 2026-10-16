@@ -384,7 +384,7 @@ describe("the owners' foreign voices — remove and ungroup fall back loud", () 
     expect(face.textContent).toContain("unlanded keys: input_image");
   })
 
-  test("a foreign remove throw voices its own words (never a throw past the gesture)", async () => {
+  test("a foreign remove throw voices its own words (never a throw past the gesture)", { timeout: 30000 }, async () => {
     mountClaimed(
       [{ id: "s_0", card: "image-gen", engine: "comfyui", params: {} }],
       (owner) => h("button", {
@@ -396,7 +396,11 @@ describe("the owners' foreign voices — remove and ungroup fall back loud", () 
     const user = userEvent.setup();
     await user.click(firstTile());
     fireEvent.click(await screen.findByTestId("slot-remove", {}, { timeout: 4000 }));
-    expect(await screen.findByText("kablam", {}, { timeout: 4000 })).toBeTruthy();
+    // THE FLAKE CURE (flake-slowness-wave2 class 1/2): thrown-verb
+    // settlement under coverage instrumentation swings ±40%; the
+    // ungroup sibling below already rides 15s — this arm never got
+    // it. Same cure, same shape.
+    expect(await screen.findByText("kablam", {}, { timeout: 15000 })).toBeTruthy();
   });
 
   test("a foreign ungroup throw voices its own words (never a throw past the gesture)", async () => {

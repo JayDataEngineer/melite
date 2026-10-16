@@ -72,6 +72,45 @@ describe("the fit model plugin (the whole model, one package)", () => {
     assert.deepEqual(graph["FitProp.0"]?.inputs["prop_glb_path"], "$prop");
   });
 
+  // THE FULL FIT ROW GOLDEN (models-hop56 wave-2, fit 0/0/3): the
+  // arm above asserts TWO of the row's twelve fields — a misnamed or
+  // misvalued FIT_ROW key composed silently under every suite. This
+  // golden pins the composed FitRow inputs as LITERALS (never the
+  // FIT_ROW import — a constant cannot witness itself), the
+  // FitProp pair, and the proof sheet's own four numbers.
+  it("THE FIT ROW GOLDEN: the composed FitRow carries the twelve declared fields verbatim (the H3SLAAttention class closed at fit)", () => {
+    const g = new GraphBuilder();
+    seat.build({
+      p: { body: "$body", prop: "$prop", bone: "hand_r" },
+      facts: seat.facts({}),
+      model: {
+        id: "fit", card: "", family: "fit", defaults: {}, lane_inputs: {},
+        variants: [], variant_groups: [], outputs: [], mods: [],
+      },
+      g,
+      runId: "",
+    } as never);
+    const graph = g.toJSON() as Record<string, { inputs: Record<string, unknown> }>;
+    assert.deepEqual(graph["FitRow.0"]?.inputs, {
+      model_name: "prop", align: "socket", position: "0,0,0", rotation: "0,0,0",
+      fit_ratio: 0.0, fit_ref_bone: "", fit_ref_bone2: "", seat_ratio: 0.22,
+      finger_bone: "", thumb_bone: "", target_width: 0.0, bone: "hand_r",
+    });
+    assert.deepEqual(
+      { body: graph["FitProp.0"]?.inputs["body_glb_path"], prop: graph["FitProp.0"]?.inputs["prop_glb_path"] },
+      { body: "$body", prop: "$prop" },
+    );
+    assert.deepEqual(
+      {
+        resolution: graph["RayRenderGLBViews.0"]?.inputs["resolution"],
+        framing: graph["RayRenderGLBViews.0"]?.inputs["framing"],
+        focal_length: graph["RayRenderGLBViews.0"]?.inputs["focal_length"],
+        samples: graph["RayRenderGLBViews.0"]?.inputs["samples"],
+      },
+      { resolution: 768, framing: 1.2, focal_length: 50, samples: 64 },
+    );
+  });
+
   // An empty or absent bone refuses at COMPOSE, by name — the
   // vendor's row gate refuses an empty Bone before it picks a mode
   // (fit_surgery.py:66-69), so the door's graph must never carry

@@ -202,6 +202,11 @@ describe('the studio (InputPrepStudio)', () => {
     act(() => {
       fireEvent.change(screen.getByTestId('prep-scale-scale_width'), { target: { value: '512' } })
     })
+    // the height input rides its own onChange (the width twin's
+    // coverage never reaches it — the 94.33% gate18 red named it)
+    act(() => {
+      fireEvent.change(screen.getByTestId('prep-scale-scale_height'), { target: { value: '384' } })
+    })
     // the ×2 preset multiplies the CROP box (100×150 → 200×300)
     act(() => {
       fireEvent.click(screen.getByTestId('prep-preset-2x'))
