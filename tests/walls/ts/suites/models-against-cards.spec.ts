@@ -374,13 +374,27 @@ describe("models against cards (the cross-validation, resurrected)", () => {
     // the schema field left in schema.ts and params drops it here,
     // else the claim law names a dead declaration. One walked dict
     // field departs, deliberately, argued here.
+    // 465 -> 467 (2026-10-16 late, THIS session's archaeology — two
+    // seats arrived unargued while the pin sat at 466):
+    // (1) the image-prep card's scale_model (8ccd5d7fe, seq 77744,
+    // the ANNY-studio cure): a string vocabulary field (the family's
+    // SCALE_MODEL_OPTIONS export — one truth, card vocabulary +
+    // action enum), walked, never judged. The 8ccd5d7fe receipt
+    // CLAIMED "census 466->467" and never edited this pin — a
+    // receipt outside the wall, the exact class this census refuses.
+    // (2) h3's schema fps row (8548cdc9e, the second-pass
+    // doc-clock seat): numeric WITH the schema default(24), so the
+    // starving judge passes it and the judged pin is unmoved; the
+    // walk counts it. Identified by the per-file key-set diff
+    // (git show <pin>:file vs HEAD) — the enumeration is the
+    // receipt, never a silent bump.
     // judged 7 -> 8 (2026-11-02, the dual-floor cure): image-gen's
     // cfg dropped its schema .default(4.5) — the boarded families
     // (krea-2: 1, z-image: 1, anima: 4, qwen-img-21: 1, flux-klein:
     // 1) own the floor, so the knob ENTERS the judged set as a
     // family-owned numeric params field (no starve: every boarded
     // family declares it — the starving array above stayed empty).
-    assert.equal(walked, 466,
+    assert.equal(walked, 467,
       `the census walked the estate's fields (${String(walked)} — a re-zoned or re-typed field set MOVES this number; growth is argued here, loss means the census emptied an arm)`);
     assert.equal(judged, 8,
       `the census JUDGED the estate's numeric params fields (${String(judged)} of ${String(walked)} walked — re-typing them out of the judge MOVES this number down; a new judged knob moves it up and is argued here)`);
@@ -1534,7 +1548,13 @@ describe("THE TWO-HOMES BOUNDS-SYNC WALL (card schema == action ParamSpec, every
     // film-level prompt pair departs with the operator-ordered
     // removal (storm wave 6 took the schema side; the DECL surface
     // drops it here) — offenders empty, argued here.
-    assert.equal(pairs, 654, "the shared-name pair census changed — update this pin deliberately");
+    // 654 -> 655 (2026-10-16 late, this session's archaeology):
+    // scale_model's pair arrives with 8ccd5d7fe (card dict seat +
+    // models/input action spec row `name: "scale_model", type:
+    // "enum", options: [...SCALE_MODEL_OPTIONS]` — the one-truth
+    // roster on both planes); offenders stay empty, only this pin
+    // lagged.
+    assert.equal(pairs, 655, "the shared-name pair census changed — update this pin deliberately");
     assert.deepEqual(offenders, [], `two-homes drift (card schema vs action ParamSpec):\n${offenders.join("\n")}`);
   });
 });
