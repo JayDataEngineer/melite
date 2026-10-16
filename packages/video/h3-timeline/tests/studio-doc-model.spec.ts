@@ -7,7 +7,7 @@
  * the serializers rely on (CALL_KNOB_KEYS ∩ KNOB_ORDER, the option
  * lists, the starter doc, the track table).
  */
-import { DEFAULT_SEGMENT_PARAMS } from '@melite/contracts/timelineTypes'
+import { DOC_FPS_DEFAULT } from '@melite/models-h3/timelineContract'
 import { describe, expect, it } from "vitest"
 import assert from "node:assert/strict"
 import {
@@ -45,10 +45,11 @@ describe("stemToClip (legacy stem → positioned clip at frame 0)", () => {
   it("duration is 4 seconds of doc frames at the doc fps", () => {
     assert.equal(stemToClip("s", 24, "a").dur_frames, 96)
     assert.equal(stemToClip("s", 30, "a").dur_frames, 120)
-    // fps 0 is not a clock: the declared segment fps is the default
-    // (the film's own 16), never a hardcoded 24 that stretched every
-    // dialogue and sfx slice 1.5x
-    assert.equal(stemToClip("s", 0, "a").dur_frames, Math.round(4 * DEFAULT_SEGMENT_PARAMS.fps))
+    // fps 0 is not a clock: the DOC CLOCK'S DEFAULT rides (ONE
+    // CLOCK, journey audit AUDIO-2 — the schema row's 24, the same
+    // value the walk fills and the mix divides by; the retired 16
+    // fallback booked the UI at a clock the compose never spoke)
+    assert.equal(stemToClip("s", 0, "a").dur_frames, Math.round(4 * DOC_FPS_DEFAULT))
   })
 
   it("no id = a generated stable-unique id (never empty, never colliding)", () => {

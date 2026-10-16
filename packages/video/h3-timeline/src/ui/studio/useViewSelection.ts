@@ -22,7 +22,7 @@
  */
 import { useRef, useState } from "react"
 import type { DocCall, LayerA } from "./docModel.ts"
-import { DEFAULT_SEGMENT_PARAMS } from "@melite/contracts/timelineTypes"
+import { DOC_FPS_DEFAULT } from "@melite/models-h3/timelineContract"
 
 /** Selection shared with the bar clips (tenant §2). */
 export interface TimelineSelection {
@@ -112,9 +112,13 @@ export function useViewSelection(calls: DocCall[], layerA: LayerA, stageId: stri
   // Layer A hydrates fps OPTIONAL — an unstated doc never pins a
   // clock. Every downstream `fps: number` contract (useFilmSync,
   // useFilmAudio, useDerivedView, the panes) stays true because the
-  // default rides HERE, once: DEFAULT_SEGMENT_PARAMS.fps, the same
-  // seed stemToClip and callsToPrompts fall to at read.
-  const fps = layerA.fps ?? DEFAULT_SEGMENT_PARAMS.fps
+  // default rides HERE, once: DOC_FPS_DEFAULT — the schema row's
+  // own default, the same seed stemToClip and callsToPrompts fall
+  // to at read and the SAME clock the walk fills and the compose
+  // divides by (journey audit AUDIO-2's three-clock split retired:
+  // the timeline vocabulary's 16 booked a 64-frame clip at 4.0s
+  // while the compose stamped 2.67s).
+  const fps = layerA.fps ?? DOC_FPS_DEFAULT
   const totalFrames = calls.length ? calls[calls.length - 1]!.end_frame : 1
   return {
     frameIdx, setFrameIdx, selected, setSelected,

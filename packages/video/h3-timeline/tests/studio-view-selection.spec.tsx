@@ -14,6 +14,7 @@ import { nextSelectionAfterDelete, useViewSelection } from "../src/ui/studio/use
 import type { DocCall } from "../src/ui/studio/docModel.ts"
 import type { TimelineSelection } from "../src/ui/studio/useViewSelection.ts"
 import { hydrateLayerA } from "../src/ui/studio/docHydrate.ts"
+import { DOC_FPS_DEFAULT } from "@melite/models-h3/timelineContract"
 
 const CALLS: DocCall[] = [
   { text: "a", start_frame: 0, end_frame: 48 },
@@ -98,11 +99,15 @@ describe("the view seam (fps + duration + ref registries)", () => {
 })
 
 describe("THE CLOCK DEFAULT'S NULL ARM + the submenu verbs (the missing-tests audit #4, 2026-11-06)", () => {
-  it("an unstated doc falls to DEFAULT_SEGMENT_PARAMS.fps — the default's one owner", () => {
+  it("an unstated doc falls to DOC_FPS_DEFAULT — the default's one owner (ONE CLOCK, AUDIO-2)", () => {
     const { result } = renderHook(() => useViewSelection(CALLS, hydrateLayerA({}), "stage-a"))
-    // the CONTRACT's own default, not a second spelling: 16 is
-    // VACE's proven clock (timelineTypes DEFAULT_SEGMENT_PARAMS)
-    assert.equal(result.current.fps, 16)
+    // the SCHEMA ROW's own default (24), not a second spelling: the
+    // walk fills the same value, the mix divides by it, the stamps
+    // book at it — the retired timeline-vocabulary 16 was the third
+    // clock of AUDIO-2's split (a 64-frame clip booked 4.0s in the
+    // bar while the compose stamped 2.67s)
+    assert.equal(result.current.fps, 24)
+    assert.equal(result.current.fps, DOC_FPS_DEFAULT)
   })
 
   it("the rail's views are mutually exclusive — both directions", () => {

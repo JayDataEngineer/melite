@@ -27,6 +27,21 @@ export function isMediaRef(v) {
 export function transitionOverlap(transition) {
     return transition === 'cut' ? 0 : SEAM_OVERLAP_FRAMES;
 }
+/** (2026-11-06, journey audit AUDIO-2 — the three-clock split) THE
+ *  DOC CLOCK'S DEFAULT, one owner: the schema row fps's own
+ *  .default(24). Before this const the estate spoke three clocks
+ *  for one unstated-fps doc — the studio's readers fell to
+ *  DEFAULT_SEGMENT_PARAMS.fps (16, the timeline vocabulary's own
+ *  default), the schema walk filled 24, and the film mix's
+ *  seconds math hardcoded /24 — so the UI booked a 64-frame clip
+ *  at 4.0s while the compose stamped it at 2.67s (audio drift,
+ *  the audit's worst burn). Every frames↔seconds seat falls to
+ *  THIS value: the mix's stanzaSecs/owner map (filmMix.ts), the
+ *  stamps' ms() (actions.ts), and the studio's readers
+ *  (stemToClip, docCalls' clock, useViewSelection). The derived
+ *  wall pins it to the walk's fill — h3schema({}).fps — so the
+ *  const can never drift from the declared row. */
+export const DOC_FPS_DEFAULT = 24;
 /** (2026-11-06, the family-reseat cure) the post-pass knobs the t4r
  *  lane cannot honor — its renderer wires NO post chain (the graph
  *  goes straight to CreateVideo), so the schema walk REFUSES these

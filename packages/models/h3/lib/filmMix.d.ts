@@ -59,10 +59,16 @@ export interface FilmMixManifest {
 export interface FilmMixInput {
     readonly spans: FilmMixSpan[];
     readonly clips: FilmMixClip[];
-    /** per-window rendered durations (seconds) — stanza length/24 at
-     *  compose time, probed durations disk-side. THE ground truth the
-     *  owner map accumulates (never re-derived from spans). */
+    /** per-window rendered durations (seconds) — stanza length at the
+     *  doc clock at compose time, probed durations disk-side. THE
+     *  ground truth the owner map accumulates (never re-derived from
+     *  spans). */
     readonly windowSecs: number[];
+    /** the DOC CLOCK for the owner map's frames→seconds joins (the
+     *  overlap trims). Unstated = DOC_FPS_DEFAULT — one clock with
+     *  stanzaSecs and the stamps (journey audit AUDIO-2: this seat
+     *  hardcoded /24 while the container played p.fps). */
+    readonly fps?: number;
     readonly duckDb?: number;
 }
 /** The duck span string — "start:end" at ms precision, ';'-joined. */
@@ -70,11 +76,19 @@ export declare function formatDuckSpan(start: number, end: number): string;
 /** Per-window stanza seconds — THE compose-time windowSecs
  *  (computeFilmMix's ground truth): the render grid's own promise,
  *  the deliverer's contract — SaveVideo hands back exactly stanza
- *  frames at 24fps. No probe, no disk: the clock is pure at
- *  compose. RAW fractions (frames/24, unrounded): the manifest sums
- *  these into film starts, and rounding a SUM of rounded parts
- *  compounds drift (the 3-window seat 7.416 ≠ 7.417 proof) — only
- *  the final seats/spans round (ms, computeFilmMix's own law). */
-export declare function stanzaSecs(spans: readonly FilmMixSpan[]): number[];
+ *  frames at the DOC CLOCK (fps, unstated = DOC_FPS_DEFAULT; the
+ *  three-clock cure, journey audit AUDIO-2: this divisor hardcoded
+ *  /24 while the container played p.fps — a 16fps film's manifest
+ *  overbooked every window by 1.5x). No probe, no disk: the clock
+ *  is pure at compose. RAW fractions (frames/fps, unrounded): the
+ *  manifest sums these into film starts, and rounding a SUM of
+ *  rounded parts compounds drift (the 3-window seat 7.416 ≠ 7.417
+ *  proof) — only the final seats/spans round (ms,
+ *  computeFilmMix's own law).
+ *
+ *  @param spans the film windows, doc frames
+ *  @param fps the DOC CLOCK (unstated docs pass DOC_FPS_DEFAULT —
+ *  never a foreign default; the walk fills the same value) */
+export declare function stanzaSecs(spans: readonly FilmMixSpan[], fps?: number): number[];
 export declare function computeFilmMix(input: FilmMixInput): FilmMixManifest;
 //# sourceMappingURL=filmMix.d.ts.map

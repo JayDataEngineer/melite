@@ -8,7 +8,7 @@ import type { BeatKnobs, DocCall, DocKeyframe } from "./docModel.ts"
 import { CALL_KNOB_KEYS, GUIDE_KINDS, STARTER_CALLS } from "./docModel.ts"
 import { joinRefList, migrateCallKnobKey, splitRefList } from '@melite/models-h3/timelineContract'
 import { healOffGridCalls } from "./docGrid.ts"
-import { DEFAULT_SEGMENT_PARAMS } from "@melite/contracts/timelineTypes"
+import { DOC_FPS_DEFAULT } from "@melite/models-h3/timelineContract"
 import { isImageUrl } from '@melite/card-base/client'
 import { studioCopy } from "./studioCopy.ts"
 
@@ -301,8 +301,11 @@ export const hasKnobs = (c: DocCall): boolean =>
  * shows where a call departs from the run's globals). */
 export function callsToPrompts(calls: DocCall[], fps?: number): TimelinePrompt[] {
   // The clock default rides at read (the pin law, R2): an unstated
-  // fps is undefined on Layer A — same fallback as stemToClip.
-  const clock = typeof fps === "number" && fps > 0 ? fps : DEFAULT_SEGMENT_PARAMS.fps
+  // fps is undefined on Layer A — same fallback as stemToClip
+  // (ONE CLOCK, AUDIO-2: the schema row's default, never the
+  // timeline vocabulary's 16 — the UI books what the compose
+  // stamps).
+  const clock = typeof fps === "number" && fps > 0 ? fps : DOC_FPS_DEFAULT
   return calls.map((c, i): TimelinePrompt => ({
     uuid: `call-${i}`,
     // Compact clip header: index + duration scan before the prompt text

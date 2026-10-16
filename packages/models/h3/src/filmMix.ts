@@ -16,7 +16,7 @@
 //
 // The two wrongs in the card's history (the +22f carry original,
 // the start/24 first correction) stay dead in one place.
-import { spanOverlap, spanStanzaFrames } from './timelineContract.ts'
+import { DOC_FPS_DEFAULT, spanOverlap, spanStanzaFrames } from './timelineContract.ts'
 
 export { spanOverlap, spanStanzaFrames } from './timelineContract.ts'
 
@@ -136,10 +136,16 @@ export interface FilmMixManifest {
 export interface FilmMixInput {
   readonly spans: FilmMixSpan[]
   readonly clips: FilmMixClip[]
-  /** per-window rendered durations (seconds) — stanza length/24 at
-   *  compose time, probed durations disk-side. THE ground truth the
-   *  owner map accumulates (never re-derived from spans). */
+  /** per-window rendered durations (seconds) — stanza length at the
+   *  doc clock at compose time, probed durations disk-side. THE
+   *  ground truth the owner map accumulates (never re-derived from
+   *  spans). */
   readonly windowSecs: number[]
+  /** the DOC CLOCK for the owner map's frames→seconds joins (the
+   *  overlap trims). Unstated = DOC_FPS_DEFAULT — one clock with
+   *  stanzaSecs and the stamps (journey audit AUDIO-2: this seat
+   *  hardcoded /24 while the container played p.fps). */
+  readonly fps?: number
   readonly duckDb?: number
 }
 
@@ -153,23 +159,36 @@ export function formatDuckSpan(start: number, end: number): string {
 /** Per-window stanza seconds — THE compose-time windowSecs
  *  (computeFilmMix's ground truth): the render grid's own promise,
  *  the deliverer's contract — SaveVideo hands back exactly stanza
- *  frames at 24fps. No probe, no disk: the clock is pure at
- *  compose. RAW fractions (frames/24, unrounded): the manifest sums
- *  these into film starts, and rounding a SUM of rounded parts
- *  compounds drift (the 3-window seat 7.416 ≠ 7.417 proof) — only
- *  the final seats/spans round (ms, computeFilmMix's own law). */
-export function stanzaSecs(spans: readonly FilmMixSpan[]): number[] {
+ *  frames at the DOC CLOCK (fps, unstated = DOC_FPS_DEFAULT; the
+ *  three-clock cure, journey audit AUDIO-2: this divisor hardcoded
+ *  /24 while the container played p.fps — a 16fps film's manifest
+ *  overbooked every window by 1.5x). No probe, no disk: the clock
+ *  is pure at compose. RAW fractions (frames/fps, unrounded): the
+ *  manifest sums these into film starts, and rounding a SUM of
+ *  rounded parts compounds drift (the 3-window seat 7.416 ≠ 7.417
+ *  proof) — only the final seats/spans round (ms,
+ *  computeFilmMix's own law).
+ *
+ *  @param spans the film windows, doc frames
+ *  @param fps the DOC CLOCK (unstated docs pass DOC_FPS_DEFAULT —
+ *  never a foreign default; the walk fills the same value) */
+export function stanzaSecs(spans: readonly FilmMixSpan[], fps: number = DOC_FPS_DEFAULT): number[] {
   // INDEX-AWARE CARRY (the render's chainLike law, stated here so
   // the clock and the stanza can never disagree): window 1 renders
   // fresh; k≥2 carries spanOverlap — the same 22 the finalize
   // trims off the saved clip. The stanza covers carry + span, the
   // contribution to the film is stanza − carry, so the clock's
   // window seats land where the saved frames actually are.
-  return spans.map((s, i) => spanStanzaFrames(s, i > 0 ? spanOverlap(s) : 0) / 24)
+  return spans.map((s, i) => spanStanzaFrames(s, i > 0 ? spanOverlap(s) : 0) / fps)
 }
 
 export function computeFilmMix(input: FilmMixInput): FilmMixManifest {
   const { spans, clips, windowSecs } = input
+  // ONE CLOCK (journey audit AUDIO-2): the owner map's frames→seconds
+  // joins ride the doc clock the windowSecs were booked at — the
+  // overlap trims and the stanza durations must speak the same fps or
+  // the film seats drift window by window.
+  const fps = input.fps ?? DOC_FPS_DEFAULT
   if (windowSecs.length !== spans.length) {
     throw new Error(
       `film mix: ${windowSecs.length} window duration(s) for ${spans.length} span(s) — the owner map needs one duration per window (never a guess)`,
@@ -178,14 +197,14 @@ export function computeFilmMix(input: FilmMixInput): FilmMixManifest {
   const overlaps = spans.map(spanOverlap)
   // THE OWNER MAP (the fixed point — see module header): the film
   // seat of doc frame f owned by window w is
-  // w.filmStartSec + (f − w.docStart)/24, NO carry term (the trim
+  // w.filmStartSec + (f − w.docStart)/fps, NO carry term (the trim
   // already lives inside filmStartSec — each extend join trims the
   // overlap off the film). Owning window: the LAST whose docStart ≤ f.
   const filmStarts: number[] = []
   let elapsed = 0
   for (let i = 0; i < spans.length; i++) {
     filmStarts.push(elapsed)
-    elapsed += windowSecs[i]! - (i > 0 ? overlaps[i]! : 0) / 24
+    elapsed += windowSecs[i]! - (i > 0 ? overlaps[i]! : 0) / fps
   }
   const filmSec = round3(elapsed)
   // CONDITIONED clips (the stamp law's overlay half): every window

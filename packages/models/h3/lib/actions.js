@@ -5,7 +5,7 @@ import { FAMILIES, paramSchema, wireList, H3_RECOMMENDED_SAMPLERS } from "./sche
 import { H3_LORA_ROWS } from '@melite/models-h3/mods/loras';
 import { SAMPLER_OPTIONS, SCHEDULER_OPTIONS } from '@melite/comfyui-card-kit/vocab';
 import { computeFilmMix, parseFilmMixClips, stanzaSecs } from "./filmMix.js";
-import { GRID_REMAINDER, GRID_STEP_FRAMES, IMAGE_BUS_SLOTS, REF_CAPS, assertGridLength, assertSpanGrid, imageReferenceCap, isMediaRef, spanStanzaFrames, transitionOverlap, } from "./timelineContract.js";
+import { GRID_REMAINDER, GRID_STEP_FRAMES, IMAGE_BUS_SLOTS, REF_CAPS, assertGridLength, assertSpanGrid, imageReferenceCap, isMediaRef, DOC_FPS_DEFAULT, spanStanzaFrames, transitionOverlap, } from "./timelineContract.js";
 // THE ABSENT-BAG DEFAULT (h3-a, 2026-10-12; re-pointed 2026-10-11 to
 // the ByteDance DMAD row — operator: "the one from bytedance" is the
 // default): the DMAD 4-step row, built from the family lora
@@ -24,8 +24,10 @@ const loraStackDefault = () => {
 };
 // His 17k+5 grid, in-graph (ComfyMathExpression): snap latent steps to 2 mod 5
 // (the card's own principles row: "Length snaps to the 17k+5 frame grid
-// at 24fps" — the principles).
-const MATH_STEPS_GOLD = `max(${GRID_REMAINDER}, round(a * 24)) + (${GRID_REMAINDER} - (max(${GRID_REMAINDER}, round(a * 24)) % ${GRID_STEP_FRAMES})) % ${GRID_STEP_FRAMES}`;
+// at 24fps" — the principles). The seconds→frames multiplier is the
+// caller's DOC CLOCK (a hardcoded *24 scaled every non-24 window —
+// AUDIO-2's fifth seat); the grid snap is clock-independent.
+const mathStepsGold = (fps) => `max(${GRID_REMAINDER}, round(a * ${fps})) + (${GRID_REMAINDER} - (max(${GRID_REMAINDER}, round(a * ${fps})) % ${GRID_STEP_FRAMES})) % ${GRID_STEP_FRAMES}`;
 // THE ORPHANED I2V MARKER NODE (roadmap 2026-09-26 — BRIEF14
 // finding #4): MiniMaxH3ImageToVideo exists in the serialized graph
 // ONLY as the t4r family marker (finalizeH3 keys on it to skip the
@@ -230,7 +232,13 @@ function renderH3Film(p, g, facts, model) {
                 const hi = Math.min(clip.start + clip.dur, ef);
                 if (hi - lo < 2.4)
                     continue; // below the slice node's 0.1s floor
-                const ms = (frames) => Math.round((frames / 24) * 1000) / 1000;
+                // ONE CLOCK (journey audit AUDIO-2): the stamps' seconds
+                // speak the DOC CLOCK — p.fps when stated, the schema row's
+                // default otherwise. The /24 literal stretched a 16fps
+                // film's dialogue and sfx slices by 1.5x (lip-sync drift,
+                // the audit's worst burn).
+                const stampFps = typeof p.fps === 'number' && p.fps > 0 ? p.fps : DOC_FPS_DEFAULT;
+                const ms = (frames) => Math.round((frames / stampFps) * 1000) / 1000;
                 stamps[clip.cls] = {
                     src: clip.src,
                     slice_start_seconds: ms(Math.max(0, genStart - clip.start)),
@@ -510,10 +518,16 @@ function renderH3Film(p, g, facts, model) {
     if (windowSaves.length === 0) {
         throw new Error('[h3-timeline] a family arm saved no clip to pass the film boundary — the film tail cannot order its loads');
     }
+    // ONE CLOCK (AUDIO-2): the stanza durations and the owner map's
+    // joins speak the same doc clock as the stamps above and the
+    // container's frame_rate — never a /24 literal beside a 16fps
+    // film.
+    const docFps = typeof p.fps === 'number' && p.fps > 0 ? p.fps : DOC_FPS_DEFAULT;
     const manifest = computeFilmMix({
         spans,
         clips,
-        windowSecs: stanzaSecs(spans),
+        windowSecs: stanzaSecs(spans, docFps),
+        fps: docFps,
         // the knob's declared default (−14) walks through the schema
         // door; computeFilmMix owns the fallback for the absent key
         duckDb: p.duck_depth_db,
@@ -696,7 +710,7 @@ function renderH3Window(p, g, facts, model) {
     // .default(24) — the walk fills it on every real door; raw
     // walk-bypass callers get the declared default, never an invented
     // one).
-    const fpsClock = typeof p.fps === 'number' && p.fps > 0 ? p.fps : 24;
+    const fpsClock = typeof p.fps === 'number' && p.fps > 0 ? p.fps : DOC_FPS_DEFAULT;
     p.fps_seconds = Math.round((p.length / fpsClock) * 1000) / 1000;
     const isT4r = family === 't4r';
     const isChain = family === 't4_chain';
@@ -820,8 +834,12 @@ function renderH3Window(p, g, facts, model) {
             model: picked, mode: 'minimax', stack_data: loraStack, lora_ui: '',
         }).out();
         const seconds = g.node('PrimitiveFloat', { value: p.fps_seconds }).out(); // id .1
+        // ONE CLOCK (AUDIO-2): the seconds→frames inverse rides the doc
+        // clock — fps_seconds was BOOKED at fpsClock (:length/fps), so a
+        // hardcoded *24 here scaled a 16fps window's length by 1.5x. The
+        // grid snap itself is clock-independent (frames are frames).
         const lengthNode = g.node('ComfyMathExpression', {
-            expression: MATH_STEPS_GOLD, 'values.a': seconds,
+            expression: mathStepsGold(fpsClock), 'values.a': seconds,
         }).out(1);
         const previewed = g.node('ModelPreviewOverrideKJ', {
             max_resolution: 512, jpeg_quality: 80,
@@ -1058,6 +1076,16 @@ function renderH3Window(p, g, facts, model) {
         // longer consumes a ref lane: bed + user audios keep the full
         // 3-lane budget, and the guide is the dialogue's one owner.
         {
+            // THE D-M-E LANES (2026-09-22): one stamp per class — the
+            // same slice law, the same pin law, three prompt fields. The
+            // dialogue stamp keeps the measured shape (walls ride it);
+            // sfx/music stamps are the same machinery on their lanes.
+            // ONE CLOCK (AUDIO-2): the delay's seconds→frame reconverts
+            // speak the doc clock — the stamps were booked at it in the
+            // film loop; a /24 literal here pins a 16fps film's guide rows
+            // late by 1.5x (lip-sync drift at the very pin the model
+            // hears).
+            const pinFps = typeof p.fps === 'number' && p.fps > 0 ? p.fps : DOC_FPS_DEFAULT;
             const read = (key) => (p[key] ?? null);
             const stamp = read('dialogue_slice');
             if (stamp !== null) {
@@ -1066,7 +1094,7 @@ function renderH3Window(p, g, facts, model) {
                     start_seconds: stamp.slice_start_seconds,
                     duration_seconds: stamp.slice_duration_seconds,
                 }).out(0);
-                dialogueFrameIdx = Math.round(stamp.delay_seconds * 24);
+                dialogueFrameIdx = Math.round(stamp.delay_seconds * pinFps);
             }
             const sfxStamp = read('sfx_slice');
             if (sfxStamp !== null) {
@@ -1075,7 +1103,7 @@ function renderH3Window(p, g, facts, model) {
                     start_seconds: sfxStamp.slice_start_seconds,
                     duration_seconds: sfxStamp.slice_duration_seconds,
                 }).out(0);
-                sfxFrameIdx = Math.round(sfxStamp.delay_seconds * 24);
+                sfxFrameIdx = Math.round(sfxStamp.delay_seconds * pinFps);
             }
             const musicStamp = read('music_slice');
             if (musicStamp !== null) {
@@ -1084,7 +1112,7 @@ function renderH3Window(p, g, facts, model) {
                     start_seconds: musicStamp.slice_start_seconds,
                     duration_seconds: musicStamp.slice_duration_seconds,
                 }).out(0);
-                musicFrameIdx = Math.round(musicStamp.delay_seconds * 24);
+                musicFrameIdx = Math.round(musicStamp.delay_seconds * pinFps);
             }
         }
         const r2v = g.node('MiniMaxH3ReferenceToVideo', r2vInputs);

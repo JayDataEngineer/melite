@@ -535,6 +535,15 @@ describe("hasKnobs / callsToPrompts / keyframesToLanes", () => {
     const src = readFileSync(resolve(import.meta.dirname, "../src/ui/studio/docCalls.ts"), "utf8")
     assert.ok(src.includes("studioCopy.clipHeader("), "the clip-header format face regressed to a literal — consume studioCopy.clipHeader at the callsToPrompts seat")
   })
+
+  // ONE CLOCK (journey audit AUDIO-2, 2026-11-06): the reader's
+  // fallback IS the schema row's default (24) — the old timeline-
+  // vocabulary 16 booked a 48-frame call at 3.0s in the header while
+  // the compose stamped 2.0s (the three-clock split).
+  it("ONE CLOCK: an unstated fps books the header at the schema default (48 frames = 2.0s, never 16's 3.0s)", () => {
+    const [p] = callsToPrompts([{ text: "x", start_frame: 0, end_frame: 48 }], undefined)
+    assert.ok(p!.text.includes("2.0s"), `the header must book 2.0s at the 24 default — got ${p!.text}`)
+  })
 })
 
 describe("serializeCalls (document → persisted shape)", () => {

@@ -6,6 +6,8 @@ import { describe, it, expect, vi } from "vitest";
 import { readFileSync } from "node:fs";
 import { film, parseH3Facts } from "../src/actions.ts";
 import { schema as h3schema } from "../src/schema.ts";
+import { DOC_FPS_DEFAULT } from "../src/timelineContract.ts";
+import { stanzaSecs } from "../src/filmMix.ts";
 import { GraphBuilder } from "@melite/comfyui-card-kit/graph";
 import { assertWiringAgainst, deriveWiringDoc } from "@melite/comfyui-cordis/comfyui-wiring";
 import { instantiateAction } from "@melite/comfyui-card-kit";
@@ -596,6 +598,70 @@ describe("the refmod seat (audit 010/R1, 2026-10-18)", () => {
     expect(interpLoader!.inputs.model_name).toBe("rife47.pth");
     const interp = Object.values(docB).find((n) => n.class_type === "FrameInterpolate");
     expect(interp!.inputs.multiplier).toBe(3);
+  });
+
+  // ONE CLOCK (journey audit AUDIO-2, 2026-11-06 — the three-clock
+  // split): for one unstated-fps doc the estate spoke three clocks —
+  // the studio's readers fell to 16 (the timeline vocabulary's
+  // default), the schema walk filled 24, the film mix's seconds math
+  // hardcoded /24. A stated 16fps film now rides ONE clock through
+  // every frames↔seconds seat: the stamps' ms(), the stanza
+  // durations, the owner map's overlap trims, the D-M-E pins'
+  // delay→frame reconverts, the gold expression's seconds→frames
+  // inverse, and the container's own PrimitiveFloat.
+  it("ONE CLOCK, EVERY SEAT: a stated 16fps film stamps, books, and plays at 16 — never a /24 literal", () => {
+    const SWEEP_BAG_REF = [{ name: "distill-8.safetensors", strength: 0.6 }];
+    const FILM16 = {
+      loras: SWEEP_BAG_REF, seed: 7, fps: 16,
+      calls: [
+        { text: "first", start_frame: 0, end_frame: 90 },
+        { text: "second", start_frame: 90, end_frame: 175 },
+      ],
+      audio_clips: [{ src: "/a/line.flac", start_frame: 0, dur_frames: 64, text: "Run." }],
+    };
+    const g = new GraphBuilder();
+    instantiateAction(film, h3schema(FILM16), WINDOW_MODEL, g, "run_one_clock");
+    const doc = g.toJSON() as Doc;
+    // SEAT 1 — the stamps: a 64-frame dialogue slice is 4.0s at 16
+    // (the /24 literal booked 2.667 — audio drift, the audit's burn)
+    const slice = Object.values(doc).find((n) => n.class_type === "MeliteAudioSlice");
+    expect(slice, "the dialogue pin composes").toBeDefined();
+    expect(slice!.inputs.duration_seconds).toBe(4);
+    // SEAT 2 — the container clock: the fps PrimitiveFloat carries 16
+    const fpsFloat = Object.values(doc).find(
+      (n) => n.class_type === "PrimitiveFloat" && n.inputs.value === 16,
+    );
+    expect(fpsFloat, "the container's clock node carries the stated 16").toBeDefined();
+    // SEAT 3 — the gold inverse (the t4r length lift: an anchor call
+    // with no stated length derives it FROM fps_seconds): seconds
+    // booked at 16 need round(a*16), never the hardcoded *24 that
+    // scaled the window by 1.5x
+    const g2 = new GraphBuilder();
+    instantiateAction(
+      film,
+      h3schema({
+        loras: SWEEP_BAG_REF, seed: 42, fps: 16,
+        calls: [{ text: "the courier steps in", start_frame: 0, end_frame: 90, image: "anchor.png" }],
+      }),
+      WINDOW_MODEL, g2, "run_gold16",
+    );
+    const gold = Object.values(g2.toJSON() as Doc).find((n) => n.class_type === "ComfyMathExpression");
+    expect(gold, "the length-lift expression composes").toBeDefined();
+    expect(String(gold!.inputs.expression)).toContain("* 16");
+    expect(String(gold!.inputs.expression)).not.toContain("* 24");
+    // SEAT 4 — the derived default: the walk's own fill IS the const
+    // (unstated docs: walk 24, readers 24, mix 24 — one clock by
+    // default too)
+    const walked = h3schema({ variant: "t4_open", length: 124, prompt: "p", seed: 42, loras: SWEEP_BAG_REF });
+    expect(walked.fps).toBe(DOC_FPS_DEFAULT);
+    expect(walked.fps).toBe(24);
+    // SEAT 5 — the stanza durations (pure): the same span books
+    // 90/16 at 16 and 90/24 at 24 — the divisor is the argument,
+    // never a module literal
+    const span = { start: 0, end: 90 } as Parameters<typeof stanzaSecs>[0][number];
+    expect(stanzaSecs([span], 16)[0]).toBeCloseTo(5.625, 3);
+    expect(stanzaSecs([span], 24)[0]).toBeCloseTo(3.75, 3);
+    expect(stanzaSecs([span])[0]).toBeCloseTo(3.75, 3);
   });
 
   it("ref_mods compose the loader→apply chain, stems out, wired into the guider's conditioning", () => {

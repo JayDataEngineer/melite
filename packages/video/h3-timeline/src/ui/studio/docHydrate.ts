@@ -129,7 +129,7 @@ export function hydrateLayerA(rawDoc: Record<string, unknown> | undefined): Laye
     // list (card.ts) declares fps a card wire key and the RunRecipe
     // control writes it, so it serializes when stated; readers that
     // need a concrete clock default at read (stemToClip and
-    // callsToPrompts own the DEFAULT_SEGMENT_PARAMS fallback). A
+    // callsToPrompts own the DOC_FPS_DEFAULT fallback). A
     // non-positive clock is junk (num()'s old n > 0 law) → absent.
     fps: (() => { const f = optNum("fps"); return f !== undefined && f > 0 ? f : undefined })(),
     seed: num("seed", 42),
@@ -226,7 +226,7 @@ export function hydrateLayerA(rawDoc: Record<string, unknown> | undefined): Laye
       const stem = optStr("audio_stem")
       if (stem !== undefined && parsed === undefined) {
         // optNum: an unstated clock hands stemToClip undefined, whose
-        // own guard falls to DEFAULT_SEGMENT_PARAMS.fps (docModel).
+        // own guard falls to DOC_FPS_DEFAULT (docModel — one clock).
         return [stemToClip(stem, optNum("fps"))]
       }
       return parsed

@@ -6,13 +6,11 @@
 import type { TimelineTrack } from "@melite-plugin/timeline/ui/timeline"
 import {
   CALL_KNOB_KEYS,
+  DOC_FPS_DEFAULT,
   KNOB_ORDER,
   LEGACY_KNOB_KEY,
   type KnobKey,
 } from '@melite/models-h3/timelineContract'
-// THE SEGMENT DEFAULTS are the contracts' (one owner for the film
-// clock's default — the census's M12 fix reads them from here)
-import { DEFAULT_SEGMENT_PARAMS } from "@melite/contracts/timelineTypes"
 import { studioCopy } from "./studioCopy.ts"
 
 export { CALL_KNOB_KEYS, KNOB_ORDER, LEGACY_KNOB_KEY, SECOND_PASS_KNOBS } from '@melite/models-h3/timelineContract'
@@ -199,8 +197,10 @@ export interface DocAudioClip {
 export function stemToClip(
   stemSrc: string,
   /** The film clock; OPTIONAL by the pin law (R2) — a doc that never
-   * stated one hands undefined and the DEFAULT_SEGMENT_PARAMS.fps
-   * rides inside. A non-positive value is junk, same law. */
+   * stated one hands undefined and the DOC CLOCK'S OWN DEFAULT
+   * rides inside (DOC_FPS_DEFAULT — one clock with the walk and the
+   * compose; AUDIO-2's three-clock split retired). A non-positive
+   * value is junk, same law. */
   fps?: number,
   /** Optional stable id for deterministic tests; production uses Date.now(). */
   id?: string,
@@ -211,11 +211,15 @@ export function stemToClip(
     name,
     src: stemSrc,
     start_frame: 0,
-    // THE FILM CLOCK, NOT 24 (the census's M12): `|| 24` stretched a
-    // 16fps film's dialogue and sfx slices by 1.5x and drifted
-    // lip-sync. A NON-POSITIVE fps is not a clock either — the
-    // declared segment fps is the default, for every unusable value.
-    dur_frames: Math.round(4 * (typeof fps === "number" && fps > 0 ? fps : DEFAULT_SEGMENT_PARAMS.fps)),
+    // THE FILM CLOCK, ONE OWNER (census M12 + journey audit AUDIO-2):
+    // `|| 24` stretched a 16fps film's slices by 1.5x, and the old
+    // DEFAULT_SEGMENT_PARAMS.fps fallback (16) booked the UI at a
+    // clock the compose never spoke — the three-clock split. The
+    // fallback is the schema row's own default now, the same value
+    // the walk fills and the mix divides by. A NON-POSITIVE fps is
+    // not a clock either — the same default rides for every
+    // unusable value.
+    dur_frames: Math.round(4 * (typeof fps === "number" && fps > 0 ? fps : DOC_FPS_DEFAULT)),
     gain: 1,
   }
 }
@@ -235,7 +239,7 @@ export interface LayerA {
   /** Document clock — doc-frame ↔ seconds math only. OPTIONAL (the
    * pin law, R2 2026-10-27): absent = no clock ever stated; readers
    * default at use (stemToClip/callsToPrompts own the
-   * DEFAULT_SEGMENT_PARAMS fallback). A card doc key (card.ts's own
+   * DOC_FPS_DEFAULT fallback — one clock, AUDIO-2). A card doc key (card.ts's own
    * list) — the RunRecipe FPS control writes it and it serializes
    * when stated; the old `fps: number` + "never serializes" pair
    * made that control's writes die silently on every save. */

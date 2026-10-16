@@ -3415,7 +3415,7 @@ window.__ModuleLoader__.load({
 				name,
 				src: stemSrc,
 				start_frame: 0,
-				dur_frames: Math.round(4 * (typeof fps === "number" && fps > 0 ? fps : DEFAULT_SEGMENT_PARAMS$1.fps)),
+				dur_frames: Math.round(4 * (typeof fps === "number" && fps > 0 ? fps : 24)),
 				gain: 1
 			};
 		}
@@ -5660,7 +5660,7 @@ window.__ModuleLoader__.load({
 		* `override` = the call carries per-call knobs → the cyan dot (Layer C
 		* shows where a call departs from the run's globals). */
 		function callsToPrompts(calls, fps) {
-			const clock = typeof fps === "number" && fps > 0 ? fps : DEFAULT_SEGMENT_PARAMS$1.fps;
+			const clock = typeof fps === "number" && fps > 0 ? fps : 24;
 			return calls.map((c, i) => ({
 				uuid: `call-${i}`,
 				text: studioCopy.clipHeader(i, ((c.end_frame - c.start_frame) / Math.max(1, clock)).toFixed(1), c.text ?? ""),
@@ -6087,7 +6087,7 @@ window.__ModuleLoader__.load({
 				setSelected,
 				callCardRefs,
 				handleTimelineSelect,
-				fps: layerA.fps ?? DEFAULT_SEGMENT_PARAMS$1.fps,
+				fps: layerA.fps ?? 24,
 				totalFrames: calls.length ? calls[calls.length - 1].end_frame : 1,
 				sub,
 				enterSub,

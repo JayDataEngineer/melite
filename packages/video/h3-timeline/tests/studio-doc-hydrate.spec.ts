@@ -485,9 +485,14 @@ describe("the stem→clip conversion and the sr_switch serialize law (R3, 2026-1
     assert.equal(clip.name, "rain.wav", "basename only")
     assert.equal(clip.src, "sfx/rain.wav", "full stem src")
     assert.equal(clip.start_frame, 0, "positioned at frame 0")
-    // THE FILM CLOCK, NOT 24: unstated fps hands stemToClip undefined
-    // → DEFAULT_SEGMENT_PARAMS.fps (16) rides inside — 4s × 16 = 64.
-    assert.equal(clip.dur_frames, 64)
+    // ONE CLOCK (journey audit AUDIO-2, 2026-11-06): unstated fps
+    // hands stemToClip undefined → DOC_FPS_DEFAULT (24, the schema
+    // row's own default) rides inside — 4s × 24 = 96. The OLD
+    // DEFAULT_SEGMENT_PARAMS.fps fallback (16) booked the UI at a
+    // clock the compose never spoke: 64 frames here while the walk
+    // filled 24 and the mix divided by 24 — the three-clock split
+    // (a 4s clip drifting 1.5x at the stamps).
+    assert.equal(clip.dur_frames, 96)
     assert.match(clip.id, /^aclip-stem-/, "stable id prefix")
   })
 
