@@ -106,6 +106,16 @@ describe("the three-checkpoint matrix (operator 2026-10-16)", () => {
     assert.equal(turbo.route, "anima-turbo");
   });
 
+  it("the family default is the operator's 52 steps (2026-10-16: 'ANIMA BASE ISN'T DEFAULTING TO 52 STEPS')", () => {
+    // THE OPERATOR'S WORD over the DECL author's guess: base defaults
+    // 52; the Detailed recipe rides the family number; 30 was never
+    // the prescription. Turbo keeps its own upstream 8/1 (the arm
+    // above) — a variant's declared marriage wins over inheritance.
+    assert.equal((DECL.defaults as Record<string, unknown>).steps, 52);
+    const detailed = (DECL.variants ?? []).find((v) => v.id === "detailed")!;
+    assert.deepEqual(detailed.wire_defaults, { steps: 52 });
+  });
+
   it("the family default view is base × convrot (the served tier)", () => {
     assert.equal((DECL.lane_inputs as Record<string, unknown>).unet,
       "anima-base-v1.0-int8convrot.safetensors");

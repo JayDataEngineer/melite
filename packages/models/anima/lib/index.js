@@ -8,7 +8,10 @@ export const DECL = {
     "defaults": {
         "width": 1024,
         "height": 1024,
-        "steps": 30,
+        // 52 (operator, 2026-10-16: "ANIMA BASE ISN'T DEFAULTING TO 52
+        // STEPS" — the family's own quality prescription; 30 was the
+        // DECL author's guess, not the operator's word).
+        "steps": 52,
         "sampler": "er_sde",
         "scheduler": "simple",
         "cfg": 4
@@ -174,9 +177,9 @@ export const DECL = {
         {
             "id": "detailed",
             "label": "Detailed",
-            "hint": "Steps 30 — the family DECL's own default (full-quality render; inside the card's 1–100 range).",
+            "hint": "Steps 52 — the family DECL's own default (full-quality render; inside the card's 1–100 range).",
             "group": "Recipe",
-            "wire_defaults": { "steps": 30 },
+            "wire_defaults": { "steps": 52 },
             "cells": [],
         },
         {
