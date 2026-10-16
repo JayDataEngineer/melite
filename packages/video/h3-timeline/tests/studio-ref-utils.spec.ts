@@ -237,9 +237,47 @@ describe("fitRect (the D1 contain math — pure, one spelling)", () => {
 })
 
 describe("fitImageToAspect (the D1 canvas rider)", () => {
-  it("non-data sources ride verbatim (artifact names/http URLs resolve engine-side)", async () => {
+  it("THE AUTORIZE CURE (operator 2026-10-16: 'YOU DID NOT FIX THE AUTORIZE ON THE KEYFRAME'): an http URL that decodes fits like a data: chip", async () => {
+    // THE PICKER ARMS' LAW: From media and From flow commit URLs —
+    // the old data:-only gate starved them, the fit never ran, and
+    // the engine COVER-CROPPED every off-aspect pick. The rider
+    // decodes EVERY renderable source; the stubbed Image carries the
+    // picker arm's own spelling (an estate http URL).
+    const draws: unknown[][] = []
+    class StubImg {
+      naturalWidth = 2688
+      naturalHeight = 768
+      crossOrigin = ""
+      set src(_v: string) { queueMicrotask(() => { this.onload?.() }) }
+      onload: (() => void) | null = null
+      onerror: (() => void) | null = null
+    }
+    const origCreate = document.createElement.bind(document)
+    const spy = vi.spyOn(document, "createElement").mockImplementation((tag: string) => {
+      if (tag === "canvas") {
+        const c = {
+          width: 0, height: 0,
+          getContext: () => ({ drawImage: (...a: unknown[]) => { draws.push(a) } }),
+          toDataURL: () => "data:image/png;base64,FITTED",
+        }
+        return c as unknown as HTMLCanvasElement
+      }
+      return origCreate(tag)
+    })
+    try {
+      vi.stubGlobal("Image", StubImg as unknown as typeof Image)
+      const out = await fitImageToAspect("https://estate/v1/assets/runs/pin.png", 1344, 768)
+      expect(out).toBe("data:image/png;base64,FITTED")
+      expect(draws.length).toBe(1)
+      expect(draws[0]!.slice(1)).toEqual([0, 192, 1344, 384], "the same contain rect as the file arm")
+    } finally {
+      spy.mockRestore()
+      vi.unstubAllGlobals()
+    }
+  })
+
+  it("a bare artifact name rides verbatim (engine-side resolution — no browser decode)", async () => {
     await expect(fitImageToAspect("shot.png", 1344, 768)).resolves.toBe("shot.png")
-    await expect(fitImageToAspect("https://u/x.png", 1344, 768)).resolves.toBe("https://u/x.png")
   })
 
   it("a zero target rides verbatim (no aspect truth yet)", async () => {

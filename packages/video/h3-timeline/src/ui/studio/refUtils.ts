@@ -153,12 +153,30 @@ export function fitRect(
  *  no generation loss); a source that cannot decode (CORS-blocked,
  *  dead URL, a test env without Image) also returns verbatim — the
  *  fit is a courtesy the commit never depends on.
+ *  (2026-10-16, THE AUTORIZE CURE — operator: "YOU DID NOT FIX THE
+ *  AUTORIZE ON THE KEYFRAME"): the old data:-only gate starved the
+ *  PICKER arms — From media and From flow commit URLs, the fit never
+ *  ran, and the engine COVER-CROPPED every off-aspect pick (chopped
+ *  fingers) while the file-drop arm alone fitted. The rider now
+ *  decodes EVERY browser-renderable source — data:, http(s), and
+ *  rooted estate paths — and only bare artifact NAMES ride verbatim
+ *  (no origin, no decode: the engine resolves them, and a decode
+ *  attempt would hang a loaderless source forever).
+ *  crossOrigin anonymous keeps the canvas drawable for cross-origin
+ *  artifacts; a tainted/undecodable source still falls to the
+ *  verbatim catch (the courtesy law).
  *  @returns the fitted data: URL, or src unchanged. */
 export const fitImageToAspect = async (src: string, tw: number, th: number): Promise<string> => {
-  if (tw <= 0 || th <= 0 || !src.startsWith("data:")) return src
+  // renderable spellings only: data:, protocols, and rooted estate
+  // paths. A bare name is engine currency — verbatim, never a decode.
+  if (tw <= 0 || th <= 0 || !/^(data:|https?:|\/)/.test(src)) return src
   try {
     const img = await new Promise<HTMLImageElement>((resolve, reject) => {
       const el = new Image()
+      // (the autorize cure) anonymous keeps the canvas drawable for
+      // cross-origin artifact urls — a tainted toDataURL throws into
+      // the verbatim catch, never a silent half-fit
+      el.crossOrigin = "anonymous"
       el.onload = () => { resolve(el) }
       el.onerror = () => { reject(new Error("decode failed")) }
       el.src = src
