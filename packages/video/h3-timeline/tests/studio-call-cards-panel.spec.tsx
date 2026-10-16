@@ -11,8 +11,10 @@
  */
 import { describe, it, vi } from "vitest"
 import assert from "node:assert/strict"
+import { useState } from "react"
 import { fireEvent, render, screen, waitFor } from "@testing-library/react"
 import { CallCardsPanel } from "../src/ui/studio/CallCardsPanel.tsx"
+import { useBeatMutations } from "../src/ui/studio/useBeatMutations.ts"
 import type { DocCall, DocKeyframe } from "../src/ui/studio/docModel.ts"
 import { fieldsOfEnvelope, type SpecField, bindEstateRemote, unbindEstateRemote } from "@melite/card-base/client"
 import { carrier } from "../src/card.ts"
@@ -473,5 +475,74 @@ describe("the kf pick icons (the audio-lane grammar at the keyframe rows)", () =
       unbindEstateRemote()
       h!.unmount()
     }
+  })
+})
+
+describe("THE ADD DOOR THROUGH THE REAL HOOK (infra audit #2, mounted half — 2026-11-06)", () => {
+  // The mock-prop seats above judge the PANEL's grammar; this
+  // describe judges the LAW at its true seat: the door's commit is
+  // the REAL useBeatMutations over real useState — every pin it
+  // lands is the hook's own write into live state, snapshotted per
+  // render so the atomic law is observed, not assumed.
+  const pins: DocKeyframe[][] = []
+  function RealHookHost({ playheadDocFrame, deps }: { playheadDocFrame: number; deps: unknown }) {
+    const [keyframes, setKeyframes] = useState<DocKeyframe[]>([])
+    const m = useBeatMutations(keyframes, setKeyframes)
+    pins.push(keyframes)
+    return (
+      <CallCardsPanel
+        calls={CALLS} selected={null} setSelected={() => {}} fps={24}
+        sourceOptions={[{ title: "up", name: "still-a" }]}
+        keyframes={keyframes}
+        handleKeyframeMove={m.handleKeyframeMove}
+        handleKeyframeDelete={m.handleKeyframeDelete}
+        setKeyframeImage={m.setKeyframeImage}
+        kfView exitKfView={() => {}}
+        addKeyframeWithImage={m.addKeyframeWithImage}
+        playheadDocFrame={playheadDocFrame}
+        deps={deps as never}
+      />
+    )
+  }
+
+  it("the From-file door lands pin + image in ONE write (the atomic law, mounted)", async () => {
+    const { p } = panel()
+    pins.length = 0
+    const h = render(<RealHookHost playheadDocFrame={31} deps={p.deps} />)
+    fireEvent.click(screen.getByTestId("tl-kf-add"))
+    fireEvent.click(await screen.findByText("From file"))
+    // the add door's input is the FIRST of the subview's two hidden
+    // inputs (the row picker mounts second — see fileInput's note)
+    fireEvent.change(fileInput(0), { target: { files: [new File(["bytes"], "pin.png", { type: "image/png" })] } })
+    await waitFor(() => { assert.equal(pins.at(-1)!.length, 1) })
+    const landed = pins.at(-1)![0]!
+    assert.equal(landed.frame, 31, "the pin lands at the playhead")
+    assert.ok(landed.image.startsWith("data:image/png;base64,"), landed.image)
+    // THE ATOMIC LAW'S MOUNTED FACE: every observed snapshot between
+    // empty and landed is either empty or already wired — an
+    // imageless pin followed by a second write is never observable
+    for (const snap of pins) {
+      for (const k of snap) {
+        assert.ok(k.image.trim() !== "", `no imageless pin snapshot (saw ${JSON.stringify(snap)})`)
+      }
+    }
+    // and the wired face proves it end to end (the row's own state)
+    assert.equal(document.querySelector('[data-kf-row="0"]')?.getAttribute("data-wired"), "true")
+    h.unmount()
+  })
+
+  it("the From-flow door commits the artifact NAME through the real hook (the wire law, mounted)", async () => {
+    const { p } = panel()
+    pins.length = 0
+    const h = render(<RealHookHost playheadDocFrame={12} deps={p.deps} />)
+    fireEvent.click(screen.getByTestId("tl-kf-add"))
+    fireEvent.click(await screen.findByText("From flow"))
+    const row = await screen.findByText("up · still-a")
+    fireEvent.click(row.closest("button") ?? row)
+    await waitFor(() => { assert.equal(pins.at(-1)!.length, 1) })
+    // the URL the picker handed the door became the ctx-key NAME (the
+    // estate re-resolves names each run) — one atomic write
+    assert.deepEqual(pins.at(-1)![0], { image: "still-a", frame: 12 })
+    h.unmount()
   })
 })

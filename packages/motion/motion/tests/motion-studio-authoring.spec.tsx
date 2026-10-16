@@ -420,9 +420,16 @@ describe('timeline (prompts + keyframes)', () => {
     const clips = [...document.body.querySelectorAll('[data-prompt-clip]')] as HTMLElement[]
     const last = clips[clips.length - 1]
     const edge = last.querySelector('[data-prompt-edge="r"]') as HTMLElement
+    // (2026-11-06, wave 32) the pull spans 1000px: the extend law is
+    // `endF + dx/effPpf > T1`, and effPpf is pinned from a measured
+    // boxW race (fit at mount). A 100px pull only cleared T1 at some
+    // pinned scales — under the full pool the arm red-flaked for three
+    // straight gates while every smaller pool stayed green. The user
+    // gesture "pull past the end" is a pull that clears the envelope
+    // at ANY scale: 1000px > MAX_PPF × envelope-gap by construction.
     fireEvent.pointerDown(edge, { clientX: 30, button: 0 })
-    fireEvent.pointerMove(window, { clientX: 130 })
-    fireEvent.pointerUp(window, { clientX: 130 })
+    fireEvent.pointerMove(window, { clientX: 1030 })
+    fireEvent.pointerUp(window, { clientX: 1030 })
     // (2026-11-06, the pool-load receipt) judge the toast RIGHT AFTER
     // the pull that fires it: polling after the second drag let the
     // first toast's TTL expire under the full pool (deterministic
@@ -436,9 +443,9 @@ describe('timeline (prompts + keyframes)', () => {
     const clips2 = [...document.body.querySelectorAll('[data-prompt-clip]')] as HTMLElement[]
     const last2 = clips2[clips2.length - 1]
     const edge2 = last2.querySelector('[data-prompt-edge="r"]') as HTMLElement
-    fireEvent.pointerDown(edge2, { clientX: 130, button: 0 })
-    fireEvent.pointerMove(window, { clientX: 230 })
-    fireEvent.pointerUp(window, { clientX: 230 })
+    fireEvent.pointerDown(edge2, { clientX: 1030, button: 0 })
+    fireEvent.pointerMove(window, { clientX: 2030 })
+    fireEvent.pointerUp(window, { clientX: 2030 })
     const extendToasts = useToastStore.getState().toasts.filter((t) => t.message.includes('Timeline extended to'))
     expect(extendToasts.length).toBe(1)
     expect(onSave.mock.calls.some(([p]) => (p as Record<string, unknown>).duration_sec !== undefined)).toBe(true)

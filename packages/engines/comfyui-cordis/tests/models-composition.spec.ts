@@ -32,6 +32,25 @@
  *      gate, composition face).
  *   5. BROKEN LIVE-ADD STANDS — a family failing AFTER boot logs
  *      loud and the last-good arm stands (the table never drains).
+ *      5b. THE REFUSAL VOICE (audit #5, 2026-11-06) — a family that
+ *      REGISTERS cleanly but breaks a boot contract (an
+ *      unaddressable variants:[] row) refuses the coalesced
+ *      re-census LOUD: the log names the last-good arm and carries
+ *      the refusing family's own voice. A THROWING apply never
+ *      reaches this voice — cordis auto-unloads a FAILED fiber
+ *      before the census counts it (the adjudication that reshaped
+ *      this arm).
+ *   5c. COALESCED BURST (audit #5) — one real dispose() walks its
+ *      fiber through multiple internal/status legs that straddle
+ *      the first pass's own awaits; the two coalescing windows
+ *      (the microtask queue + the in-flight pass) fold the burst
+ *      into exactly ONE census pass. Synthetic ctx.emit payloads
+ *      never reach the gate's hook (only the transitioning fiber's
+ *      own dispatch does) — the burst rides real transitions.
+ *   5d. POST-DISPOSE NO-OP (audit #5) — after the gate's own
+ *      dispose a REAL family transition re-censuses nothing and
+ *      refuses nothing (the listener dies with the gate's fiber;
+ *      the armed flag is the teardown race's backstop).
  *   6. NO GATE, NO ARM — without the census gate the composition
  *      never arms the seat (the toggle-out proof).
  *   7. THE ROSTER RESOLVES FROM THE ESTATE — the yml is read through
@@ -54,7 +73,7 @@
  *      arm's modelsBooted() (order-luck; a fresh file owns its
  *      cell).
  */
-import { describe, it } from 'vitest'
+import { describe, it, vi } from 'vitest'
 import assert from 'node:assert/strict'
 import { Context, type Fiber, type Plugin } from '@deepseek-ai/cordis'
 import {
@@ -62,6 +81,7 @@ import {
   modelsProvider,
   modelsService,
   ModelsService,
+  onModelsSeat,
   whenModelsArmed,
 } from '../src/models/service.ts'
 import { modelsCensusGate } from '../src/models/census.ts'
@@ -87,6 +107,33 @@ const THROWING_PROBE: Plugin = {
     throw new Error('probe: broken family')
   },
 }
+
+/** A family-shaped probe that REGISTERS cleanly but breaks a boot
+ * contract: a routeless variants:[] row — the satisfaction gate
+ * (§3.2.2) refuses it as unaddressable at the census, never at
+ * registration (assertAddressesServe's own doc names this the one
+ * live trigger). This is the honest broken LIVE-ADD: a throwing
+ * apply is auto-unloaded by cordis before the coalesced census
+ * counts it, so only a registered-then-refusing family can speak
+ * the re-check refusal (audit #5, 2026-11-06). */
+/** The contract-breaking probe, parameterized per mount: distinct
+ * plugin names and distinct DECL ids (the registerFamily interlock
+ * refuses a duplicate id), each an unaddressable row. */
+const contractBreakingProbe = (n: number): Plugin => ({
+  name: `family-breaks-contracts-${n}`,
+  inject: ['models'],
+  apply(ctx: Context): void {
+    ctx.effect(() => (ctx.models as ModelsService).registerFamily({
+      id: `probe-unaddressable-${n}`,
+      label: `Probe Unaddressable ${n}`,
+      genre: 'image',
+      engine: 'comfyui',
+      provisions: [],
+      variants: [],
+    } as unknown as Parameters<ModelsService['registerFamily']>[0]))
+  },
+})
+const CONTRACT_BREAKING_PROBE: Plugin = contractBreakingProbe(0)
 
 
 describe('the models boot is a Loader composition (families as rows, the census gate armed)', () => {
@@ -245,6 +292,120 @@ describe('the models boot is a Loader composition (families as rows, the census 
       assert.equal(svc.familyCount(), rows.length, 'the table never drained')
     } finally {
       await gateFiber.dispose()
+      await Promise.allSettled(familyFibers.map((f) => f.dispose()))
+      await providerFiber.dispose()
+    }
+  })
+
+  it('the broken live-add refuses LOUD — the log names the last-good arm in the gate\'s own words (infra audit #5)', { timeout: 30000 }, async () => {
+    const ctx = new Context()
+    const familyFibers = await mountRoster(ctx)
+    const providerFiber = ctx.plugin(modelsProvider)
+    const gateFiber = ctx.plugin(modelsCensusGate)
+    await whenModelsArmed()
+    const rows = rosterRows()
+    const svc = ctx.models as ModelsService
+    const errors: string[] = []
+    const errSpy = vi.spyOn(ctx.logger, 'error').mockImplementation(((...args: unknown[]) => {
+      errors.push(args.map(String).join(' '))
+    }) as never)
+    let probeFiber: Fiber | null = null
+    try {
+      assert.equal(svc.familyCount(), rows.length)
+      // THE HONEST BROKEN LIVE-ADD: the probe REGISTERS (a clean
+      // apply), then the coalesced re-census walks the boot
+      // contracts and refuses the unaddressable row — a throwing
+      // apply never reaches this voice (cordis auto-unloads a
+      // FAILED fiber before the census counts it)
+      probeFiber = ctx.plugin(CONTRACT_BREAKING_PROBE)
+      await probeFiber
+      await waitFor('the refusal log to speak', () => errors.some((e) => e.includes('last-good arm')))
+      const voice = errors.find((e) => e.includes('last-good arm'))
+      assert.ok(voice !== undefined, `the re-census refusal log names the last-good arm (saw ${JSON.stringify(errors)})`)
+      assert.ok(voice!.includes('probe-unaddressable'), 'the log carries the refusing family\'s own voice')
+      // the arm stands THROUGH the loud refusal — the log is the
+      // operator's truth, never a teardown
+      assert.ok(modelsBooted(), 'the arm stands behind the loud refusal')
+    } finally {
+      errSpy.mockRestore()
+      // gate BEFORE probe: disposing the probe first would schedule
+      // one more coalesced re-census whose pass can arm AFTER the
+      // gate's own disarm (an in-flight pass holds the closure, not
+      // the armed flag) — the process-global seat would leak armed
+      // into the next arm. Gate gone first, the probe's disposal
+      // event no-ops (the teardown law the post-dispose arm pins).
+      await gateFiber.dispose()
+      await probeFiber?.dispose()
+      await Promise.allSettled(familyFibers.map((f) => f.dispose()))
+      await providerFiber.dispose()
+    }
+  })
+
+  it('a same-burst family storm coalesces into ONE census pass (infra audit #5: the config-reload shape)', { timeout: 30000 }, async () => {
+    const ctx = new Context()
+    const familyFibers = await mountRoster(ctx)
+    const providerFiber = ctx.plugin(modelsProvider)
+    const gateFiber = ctx.plugin(modelsCensusGate)
+    await whenModelsArmed()
+    const errors: string[] = []
+    const stormSpy = vi.spyOn(ctx.logger, 'error').mockImplementation(((...a: unknown[]) => { errors.push(a.map(String).join(' ')) }) as never)
+    try {
+      // THE BURST IS THE PER-FAMILY DISPOSAL ONE: a single dispose()
+      // walks the fiber through MULTIPLE internal/status legs in one
+      // tick (the roster probe hears each disposed family twice),
+      // and the coalescing microtask folds that same-tick burst into
+      // ONE census pass — the exact law the gate's own comment
+      // states. Separate disposals/mounts each earn their own
+      // window (a pass apiece is CORRECT for independent events),
+      // and synthetic ctx.emit payloads never reach the gate's hook
+      // (only the transitioning fiber's own dispatch does —
+      // lib/index.js:1298) — so the burst this arm rides is one
+      // real disposal's own transition legs (audit #5, 2026-11-06).
+      await familyFibers[0]!.dispose()
+      // the coalesced pass refuses (a card still boards the dropped
+      // family — the drift law) and each pass speaks its refusal
+      // exactly once: the refusal count IS the pass count
+      await waitFor('the coalesced pass to speak', () => errors.some((e) => e.includes('models census re-check refused')))
+      await new Promise((resolve) => { setTimeout(resolve, 300) })
+      const passes = errors.filter((e) => e.includes('models census re-check refused')).length
+      assert.equal(passes, 1, `the disposal's same-tick transition burst censused exactly once (saw ${String(passes)} refusals)`)
+      // the last-good arm stands through the refused burst
+      assert.ok(modelsBooted(), 'the last-good arm stands through the storm')
+    } finally {
+      stormSpy.mockRestore()
+      await gateFiber.dispose()
+      await Promise.allSettled(familyFibers.map((f) => f.dispose()))
+      await providerFiber.dispose()
+    }
+  })
+
+  it('after the gate\'s own dispose, family events no-op — no re-census, no throw (infra audit #5)', { timeout: 30000 }, async () => {
+    const ctx = new Context()
+    const familyFibers = await mountRoster(ctx)
+    const providerFiber = ctx.plugin(modelsProvider)
+    const gateFiber = ctx.plugin(modelsCensusGate)
+    await whenModelsArmed()
+    await gateFiber.dispose()
+    const errors: string[] = []
+    const lateSpy = vi.spyOn(ctx.logger, 'error').mockImplementation(((...a: unknown[]) => { errors.push(a.map(String).join(' ')) }) as never)
+    try {
+      let arms = 0
+      const off = onModelsSeat(() => { arms += 1 })
+      try {
+        // a REAL late family transition against a disposed gate
+        // (a real disposal — synthetic emits never dispatch to the
+        // gate's hook): the teardown law — teardown disposals are
+        // not composition events; the listener is gone with the
+        // gate's fiber, so no re-census, no refusal, no throw
+        await familyFibers[0]!.dispose()
+        await new Promise((resolve) => { setTimeout(resolve, 300) })
+        assert.equal(arms, 0, 'a disposed gate re-censuses nothing')
+        assert.ok(!errors.some((e) => e.includes('models census re-check refused')), 'a disposed gate refuses nothing')
+      } finally {
+        off()
+      }
+    } finally {
+      lateSpy.mockRestore()
       await Promise.allSettled(familyFibers.map((f) => f.dispose()))
       await providerFiber.dispose()
     }

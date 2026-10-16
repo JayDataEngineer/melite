@@ -98,6 +98,10 @@ export function useTimelineAuthoring({
   const onKeyframeDelete = useCallback((id: string) => {
     pushUndo()
     commitConstraints((prev) => {
+      /* v8 ignore next 2 -- keyframes and payloads are written paired
+       * and hydrate drops orphans (probe 2026-09-19), so a payload-less
+       * delete never reaches the doc door (infra-coverage #10,
+       * 2026-11-06: deletion adjudication, same law as the move arm) */
       if (!(id in prev.payloads)) {
         return { ...prev, keyframes: prev.keyframes.filter((k) => k.uuid !== id) }
       }

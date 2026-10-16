@@ -445,13 +445,13 @@ export const COVERAGE_BASELINE: Record<string, {
   '**/packages/motion/motion/src/ui/studio/useMotionDoc.ts': { statements: 93.87, branches: 83.33, functions: 100, lines: 92.85 },
   '**/packages/motion/motion/src/ui/studio/useMotionMedia.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/motion/motion/src/ui/studio/useMotionStage.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
-  '**/packages/motion/motion/src/ui/studio/useMotionUndoStack.ts': { statements: 97.29, branches: 96.87, functions: 90, lines: 96.72 },
+  '**/packages/motion/motion/src/ui/studio/useMotionUndoStack.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   // 2026-11-05 (harness-seam cure session): the ratchet's row-census
   // arm caught this gated file carrying NO row (another lane's new
   // file). Row pinned at its measured face (21 files, 263 tests).
   '**/packages/motion/motion/src/ui/studio/motionDoc.ts': { statements: 100, branches: 94.31, functions: 100, lines: 100 },
   '**/packages/motion/motion/src/ui/studio/usePoseEditing.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
-  '**/packages/motion/motion/src/ui/studio/useTimelineAuthoring.ts': { statements: 96.66, branches: 93.75, functions: 96.15, lines: 97.91 },
+  '**/packages/motion/motion/src/ui/studio/useTimelineAuthoring.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/motion/motion/src/ui/studio/useTimelineEnvelope.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/video/h3-timeline/src/card.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/video/h3-timeline/src/client/index.ts': { statements: 98.78, branches: 99.07, functions: 92.85, lines: 98.52 },

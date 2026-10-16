@@ -356,7 +356,10 @@ const ARGUED_FLOOR_DROPS: Record<string, {
     '**/packages/image/image-gen/src/card.ts',
     '**/packages/image/upscale-tools/src/card.ts',
     '**/packages/models/qwen-img-21/src/actions.ts',
-    '**/packages/motion/motion/src/ui/studio/useMotionUndoStack.ts',
+    // useMotionUndoStack left this list 2026-11-06 (wave 32): the
+    // undo-stack spec's own-laws arms lifted the row to 100x4 —
+    // back above this entry's from face (98.71/96.87/100/100), so
+    // the cleanup arm demanded its removal in the same landing.
     '**/packages/web-kit/catalog/src/enhance.ts',
     '**/packages/web-kit/catalog/src/familyParamContract.ts',
     '**/packages/web-kit/catalog/src/modelCatalog.ts',
@@ -408,8 +411,13 @@ const ARGUED_FLOOR_DROPS: Record<string, {
     '**/packages/image/image-edit/src/card.ts',
     '**/packages/models/h3/src/actions.ts',
     '**/packages/models/h3/src/schema.ts',
-    '**/packages/motion/motion/src/ui/studio/useMotionUndoStack.ts',
-    '**/packages/motion/motion/src/ui/studio/useTimelineAuthoring.ts',
+    // both motion studio hooks left this list 2026-11-06 (wave
+    // 32): motion-undo-stack.spec.tsx (the drag guard, ctrl+y + the
+    // never-hijack input guard, the clone fence) lifted
+    // useMotionUndoStack to 100x4 and the line-102 deletion
+    // adjudication restored useTimelineAuthoring to 100x4 — both
+    // rows climbed back to their argued from faces, so the cleanup
+    // arm demanded their removal in the same landing.
     '**/packages/video/h3-timeline/src/ui/studio/CallCard.tsx',
     '**/packages/video/h3-timeline/src/ui/studio/CallCardsPanel.tsx',
     '**/packages/video/h3-timeline/src/ui/studio/RunRecipeEngine.tsx',
