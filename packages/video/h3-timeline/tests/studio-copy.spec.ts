@@ -92,7 +92,7 @@ describe("SOURCE — the copy dictionary owns the static faces", () => {
     }
   })
 
-  it("CENSUS — the dictionary is non-empty, every entry consumed, count pinned at 100", () => {
+  it("CENSUS — the dictionary is non-empty, every entry consumed, count pinned at 102", () => {
     // THE CENSUS (the 2026-11-02 docs-plane finding H5): a
     // dictionary nobody reads is a locale theater — every entry
     // must be consumed by at least one presentation seat (a dead
@@ -128,14 +128,16 @@ describe("SOURCE — the copy dictionary owns the static faces", () => {
     // its own currency now). The pin rides the found census.
     // RE-PIN 2026-11-06 (defect B + the submenu law): 92 → 97
     // (keyframe subview) → 100 (backToGlobalTip one-spelling +
-    // audioSubTitle + audioSubHint).
+    // audioSubTitle + audioSubHint). → 102 (D2: imagePreviewAria +
+    // imagePreviewDialog + imagePreviewClose for the DSH lightbox's
+    // locale-owned labels).
     // +6 flat ids (keyframesDoor, keyframesDoorTip, kfAddAria,
     // kfAddTip, kfEmptyNote — the subview's door/add/empty faces —
     // and the refModsHint re-pin rides above); −1 kfSourceLabel (the
     // input image square died with the SourceRow grammar; the rows
     // are pick icons now). kfRowPickAria rides as a function, outside
     // this count by construction.
-    assert.equal(ids.length, 100, `the dictionary holds 100 copy ids (found ${ids.length}) — re-pin this wall when copy is added or removed`)
+    assert.equal(ids.length, 102, `the dictionary holds 102 copy ids (found ${ids.length}) — re-pin this wall when copy is added or removed`)
     // THE NON-EMPTY VALUE (the 2026-11-04 docs-plane finding F2):
     // the id regex alone matches `foo: ""` — an empty-string value
     // would sail green through every other face. Each entry's

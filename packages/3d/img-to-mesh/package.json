@@ -23,7 +23,7 @@
   "dependencies": {
     "@deepseek-ai/dsh-client-ui-primitives": "0.2.0-rc.1",
     "@deepseek-ai/dsh-client-ui-renderer": "0.2.0-rc.1",
-    "@deepseek-ai/schemastery": "3.18.4",
+    "@deepseek-ai/schemastery": "^3.18.4",
     "@melite-plugin/melite-run-wire": "workspace:*",
     "@melite/card-base": "workspace:*",
     "@melite/comfyui-card-kit": "workspace:*",

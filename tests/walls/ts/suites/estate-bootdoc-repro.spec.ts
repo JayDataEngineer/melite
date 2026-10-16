@@ -120,7 +120,11 @@ describe("the estate bundle boots with a live bench doc present", () => {
       "runs",
       "runsRemote",
     ]);
-    const deadline = Date.now() + 20_000;
+    // (2026-11-06, the D2+version-convergence gate) 20s red under
+    // the loaded 6G full pool while passing standalone — the
+    // pool-load flake class: the deadline rides the house ceiling,
+    // the settle law is unchanged.
+    const deadline = Date.now() + 45_000;
     for (;;) {
       const missing = names.filter((n) => ctx.get(n, false) === undefined);
       if (missing.length === 0) break;
@@ -140,5 +144,5 @@ describe("the estate bundle boots with a live bench doc present", () => {
     expect(ex(seedPath), "the seeded bench doc survived the boot (a boot that wiped it would still settle every seat)").toBe(true);
     const row = JSON.parse(rf(seedPath, "utf8")) as { record?: { doc?: { stages?: unknown[] } } };
     expect((row.record?.doc?.stages ?? []).length, "and it still carries its stage").toBe(1);
-  }, 30_000);
+  }, 60_000);
 });

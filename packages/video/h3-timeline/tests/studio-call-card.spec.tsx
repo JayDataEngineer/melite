@@ -326,6 +326,76 @@ describe("THE BLOCKER (2026-09-22): clips and reference audio are mutually exclu
   })
 })
 
+describe("D2 (operator 2026-11-06): image chips preview through the DSH ImagePreview primitive", () => {
+  it("a declared IMAGE chip carries the thumb door — clicking opens the DSH lightbox (the preview primitive)", async () => {
+    const h = render(
+      <CallCard
+        c={{ ...BASE }}
+        i={0}
+        deps={deps({ layerA: { fps: 24, seed: 42, ref_images: ["https://u/l1.png"] } }).d}
+      />,
+    )
+    // no refs.images stated → the images lane INHERITS the declared
+    // URL → its declared chip renders WITH the thumb door
+    const declared = h.container.querySelectorAll('[data-testid="tl-declared-ref"]')
+    assert.equal(declared.length, 1)
+    const chip = declared[0]!
+    const img = chip.querySelector("img")
+    assert.ok(img, "the estate thumb renders inside the chip")
+    assert.equal(img!.getAttribute("src"), "https://u/l1.png")
+    const door = chip.querySelector("button")
+    assert.ok(door, "the thumb is a button — the lightbox opener")
+    assert.equal(door!.getAttribute("aria-label"), "preview l1.png")
+    assert.equal(document.querySelector('[role="dialog"]'), null, "the lightbox starts closed")
+    fireEvent.click(door!)
+    const dialog = await screen.findByRole("dialog")
+    assert.ok(dialog.querySelector('img[src="https://u/l1.png"]'),
+      "the DSH ImageLightbox opens with the original URL")
+    fireEvent.click(screen.getByRole("button", { name: "close preview" }))
+    await waitFor(() => { assert.equal(document.querySelector('[role="dialog"]'), null, "the close verb unmounts the lightbox") })
+    h.unmount()
+  })
+
+  it("THE MODS THUMB (D2): a data: image chip on the mods lane carries the door and the lightbox law", async () => {
+    const h = render(
+      <CallCard
+        c={{ ...BASE, refs: { mods: "data:image/png;base64,AA" } }}
+        i={0}
+        deps={deps({ layerA: { fps: 24, seed: 42 } }).d}
+      />,
+    )
+    const chip = h.container.querySelector('[data-testid="tl-call-mod-chip"]')
+    assert.ok(chip, "the data: chip renders on the mods lane")
+    const door = chip!.querySelector("button")
+    assert.ok(door, "the mods thumb door renders for image currency")
+    assert.match(door!.getAttribute("aria-label") ?? "", /preview upload 1/)
+    assert.equal(document.querySelector('[role="dialog"]'), null)
+    fireEvent.click(door!)
+    const dialog = await screen.findByRole("dialog")
+    assert.ok(dialog.querySelector('img[src="data:image/png;base64,AA"]'),
+      "the DSH lightbox opens with the chip's own bytes")
+    fireEvent.click(screen.getByRole("button", { name: "close preview" }))
+    await waitFor(() => { assert.equal(document.querySelector('[role="dialog"]'), null, "the close verb unmounts it") })
+    h.unmount()
+  })
+
+  it("an image-currency chip on ANY lane carries the same door — the judge is isImageUrl, one spelling", () => {
+    const h = render(
+      <CallCard
+        c={{ ...BASE }}
+        i={0}
+        deps={deps({ layerA: { fps: 24, seed: 42, ref_videos: ["https://u/declared.png"] } }).d}
+      />,
+    )
+    const chip = h.container.querySelector('[data-testid="tl-declared-ref"]')
+    assert.ok(chip, "the inheriting lane renders its declared chip")
+    const door = chip!.querySelector("button")
+    assert.ok(door, "image currency on the video lane carries the preview door")
+    assert.equal(door!.getAttribute("aria-label"), "preview declared.png")
+    h.unmount()
+  })
+})
+
 describe("THE LAYER A/B CANON (2026-10-24): a stated call lane REPLACES the declared lane; absent inherits", () => {
   const LAYER = { fps: 24, seed: 42, ref_images: ["https://u/d1.png", "https://u/d2.png"] }
   it("a stated call lane hides the card defaults — the count rides the EFFECTIVE list, the tail names the arm", () => {
@@ -417,6 +487,27 @@ describe("THE LAYER A/B CANON (2026-10-24): a stated call lane REPLACES the decl
     assert.equal(strips.length, 1)
     fireEvent.click(strips[0]!)
     assert.deepEqual(calls.refs.at(-1), [0, "mods", ""])
+    h.unmount()
+  })
+
+  it("THE MODS LANE estate-media arm (2026-11-06): a legacy run-media pick commits in its canonical live spelling (chipOfListing's estate face)", async () => {
+    const { d, calls } = deps({ modsListing: [] })
+    const h = render(<CallCard c={{ ...BASE }} i={0} deps={d} />)
+    bindEstateRemote({ media: { list: async () => ({ ok: true, value: { items: [{ url: "/v1/assets/runs/legacy.png", name: "legacy.png" }] } }) } } as never)
+    try {
+      fireEvent.click(screen.getByRole("button", { name: "+ ref mods source" }))
+      fireEvent.click(await screen.findByRole("menuitem", { name: "From media" }))
+      const row = (await screen.findAllByTestId("source-pick-row")).find((r) => r.textContent!.includes("legacy.png"))!
+      fireEvent.click(row)
+      await waitFor(() => {
+        // estateMediaChip's face: the legacy /v1/assets/runs prefix
+        // rides canonicalRunMediaUrl — the live spelling lands
+        assert.ok(calls.refs.some(([, lane, v]) => lane === "mods" && v.includes("runs/legacy.png")),
+          `the estate-media pick committed: ${JSON.stringify(calls.refs)}`)
+      })
+    } finally {
+      unbindEstateRemote()
+    }
     h.unmount()
   })
 

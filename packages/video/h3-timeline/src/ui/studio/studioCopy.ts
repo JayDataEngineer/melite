@@ -114,6 +114,13 @@ export const studioCopy = {
   callKnobAria: (index: number, knob: string): string => `Call ${index} knob: ${knob}`,
   /** The data-URL chip's slot label. */
   uploadChipLabel: (slot: number): string => `upload ${slot}`,
+  /** (D2) The thumb's accessible name — opens the DSH lightbox. */
+  imagePreviewAria: (name: string): string => `preview ${name}`,
+  /** (D2) ImageLightbox's dialog name — locale-owned copy for the
+   *  DSH primitive's own labels, never hardcoded at the seat. */
+  imagePreviewDialog: "image preview",
+  /** (D2) ImageLightbox's close-control label. */
+  imagePreviewClose: "close preview",
   /** The prompt lane's head. */
   promptHead: "the prompt this call sends to H3",
   /** The enhance button's accessible name. */

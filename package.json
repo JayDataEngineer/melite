@@ -75,5 +75,10 @@
     "test:web:mesh": "pnpm --filter @melite-plugin/dsh-gallery run build:mesh-door && pnpm --filter @melite-plugin/dsh-gallery exec playwright test",
     "test:web:refresh": "DSH_SNAPSHOT=refresh vitest run --config vitest.web.config.ts"
   },
-  "license": "AGPL-3.0-or-later"
+  "license": "AGPL-3.0-or-later",
+  "pnpm": {
+    "overrides": {
+      "@deepseek-ai/cosmokit": "1.8.5"
+    }
+  }
 }

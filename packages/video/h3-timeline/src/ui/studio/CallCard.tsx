@@ -4,10 +4,10 @@
  * every logic line is verbatim from the monolith (source range noted).
  */
 import {
-  Button, DisclosureRow, IconCloseOutlineRegular, IconSlidersTwoOutlineRegular, Pill,
+  Button, DisclosureRow, IconCloseOutlineRegular, IconSlidersTwoOutlineRegular, ImageLightbox, Pill,
 } from '@deepseek-ai/dsh-client-ui-primitives'
 import { useState } from "react"
-import { OverlayKnob, SectionLabel, SpecAtom, Tip, fetchMediaLibrary } from '@melite/card-base/client'
+import { OverlayKnob, SectionLabel, SpecAtom, Tip, fetchMediaLibrary, isImageUrl } from '@melite/card-base/client'
 import { cn } from '@melite/card-base/client'
 import s from "./studio.module.css"
 import { trackColor,  GUIDE_KINDS, KNOB_ORDER, VIDEO_TIMELINE_TRACKS } from "./docModel.ts"
@@ -61,9 +61,6 @@ function modsTailLine(info: { count: number; cap: number; over: boolean; overrid
  *  rename it). The upload door stays closed — packs are engine files
  *  under models/refmods/, never run artifacts, so a file gesture can
  *  only refuse: pick from the engine's listing or type the path. */
-function modsClosedDoorLine(name: string) {
-  return `${name} is an engine-side pack — the upload door is closed: pick a pack from the engine's refmods listing, or type its models/refmods/ path`
-}
 /** The card header's span hover (frames + seam-carried delivery). */
 function cardSpanLine(start: number, end: number, delivered: number) {
   return `frames ${start}–${end} (end exclusive) — delivered ${delivered}f after the seam's carry`
@@ -77,15 +74,41 @@ function cardSpanLine(start: number, end: number, delivered: number) {
  *  the title; a dead URL shows its broken thumb honestly. */
 function DeclaredChip({ url, kind }: { url: string; kind: "image" | "video" | "audio" | "mod" }) {
   const short = declaredShortName(url)
+  const [open, setOpen] = useState(false)
   return (
     <span
       className={s.declaredChip}
       data-testid="tl-declared-ref"
       title={studioCopy.declaredChipTitle(url)}
     >
-      {kind === "image" ? <img src={url} alt={short} className={s.declaredThumb} /> : null}
+      {/* (D2, operator 2026-11-06: "REF MODs must preview an IMAGE
+          via the DSH primitive") — the thumb is the estate's own
+          glyph; the PREVIEW is the DSH ImageLightbox (the shipped
+          primitive: body portal, Escape/backdrop close, focus
+          restore). The judge is isImageUrl (one spelling,
+          card-base's own), so a mod lane carrying image currency
+          previews identically to a reference lane. */}
+      {isImageUrl(url) ? (
+        <Button
+          type="button"
+          variant="ghost"
+          className={s.declaredThumbBtn}
+          aria-label={studioCopy.imagePreviewAria(short)}
+          onClick={() => { setOpen(true) }}
+        >
+          <img src={url} alt={short} className={s.declaredThumb} />
+        </Button>
+      ) : null}
       <span className={s.declaredName}>{short}</span>
       <span className={s.declaredTag}>{studioCopy.declaredCardTag}</span>
+      {open ? (
+        <ImageLightbox
+          src={url}
+          alt={short}
+          labels={{ dialog: studioCopy.imagePreviewDialog, close: studioCopy.imagePreviewClose }}
+          onClose={() => { setOpen(false) }}
+        />
+      ) : null}
     </span>
   )
 }
@@ -348,6 +371,35 @@ function modsNotMediaLine(entry: string) {
   return `${entry} is not media — drop an image, video, or audio file (the system bakes the pack); pre-baked .safetensors stems ride the engine listing`
 }
 
+/** (D2) The mod lane's thumb door — the same law DeclaredChip
+ *  rides: the estate glyph opens the DSH ImageLightbox. One spelling
+ *  for the lane's own seat (the declared chip owns its own). */
+function ModChipThumb({ chip, slot }: { chip: string; slot: number }) {
+  const [open, setOpen] = useState(false)
+  const label = studioCopy.uploadChipLabel(slot + 1)
+  return (
+    <>
+      <Button
+        type="button"
+        variant="ghost"
+        className={s.declaredThumbBtn}
+        aria-label={studioCopy.imagePreviewAria(label)}
+        onClick={() => { setOpen(true) }}
+      >
+        <img src={chip} alt={label} className={s.declaredThumb} />
+      </Button>
+      {open ? (
+        <ImageLightbox
+          src={chip}
+          alt={label}
+          labels={{ dialog: studioCopy.imagePreviewDialog, close: studioCopy.imagePreviewClose }}
+          onClose={() => { setOpen(false) }}
+        />
+      ) : null}
+    </>
+  )
+}
+
 /** THE MODS LANE (2026-10-24, the operator's compound report: "at
  *  layer B, i do not see a refmod spot") — reusable reference-mod
  *  packs. THE ANY-MEDIA LAW (operator, 2026-11-06): the seat takes
@@ -481,6 +533,11 @@ function ModsBucket({
             data-testid="tl-call-mod-chip"
             title={studioCopy.modChipTitle(chip)}
           >
+            {/* (D2) the mod chip previews image currency through the
+                same DSH primitive — a data: still upload shows its
+                face and opens the lightbox; an engine stem keeps the
+                text face. */}
+            {isImageUrl(chip) ? <ModChipThumb chip={chip} slot={ci} /> : null}
             <span className={s.declaredName}>
               {chip.startsWith("data:") ? studioCopy.uploadChipLabel(ci + 1) : declaredShortName(chip)}
             </span>

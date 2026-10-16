@@ -190,6 +190,65 @@ describe("the refmods listing door — the tenant's feed (2026-11-05)", () => {
     assert.equal(document.querySelectorAll('[data-testid="tl-call-mod-chip"]').length, 0, "a refused file never chips")
   })
 
+  it("THE D2 PREVIEW ARM (2026-11-06): an uploaded IMAGE chip carries the thumb door — the DSH lightbox opener", async () => {
+    // (the lightbox's own open/close law rides the bare-primitive
+    // wall in studio-image-lightbox.spec.tsx — mounting the portal
+    // inside the studio tree wedges the jsdom pool; the door + the
+    // primitive are judged separately, each on its own live path)
+    bindWith(fakeManage(served(["pack_one"])).lane)
+    studio()
+    focusCall0()
+    await openModsPicker()
+    fireEvent.click(screen.getByRole("button", { name: "+ ref mods source" }))
+    fireEvent.click(await screen.findByRole("menuitem", { name: "From file" }))
+    const inp = document.querySelector('[data-source-row="+ ref mods"] input[type=file]') as HTMLInputElement
+    fireEvent.change(inp, { target: { files: [new File(["p"], "shot.png", { type: "image/png" })] } })
+    const chip = await screen.findByTestId("tl-call-mod-chip")
+    const door = chip.querySelector("button")
+    assert.ok(door, "the image chip carries the preview door")
+    assert.match(door!.getAttribute("aria-label") ?? "", /preview upload 1/)
+    const stem = document.querySelectorAll('[data-testid="tl-call-mod-chip"]')
+    assert.equal(stem.length, 1)
+  })
+
+  it("THE SIZE ARM (any-media, 2026-11-06): an oversize media file refuses on the seat's own face — never chips", async () => {
+    bindWith(fakeManage(served(["pack_one"])).lane)
+    studio()
+    focusCall0()
+    await openModsPicker()
+    fireEvent.click(screen.getByRole("button", { name: "+ ref mods source" }))
+    fireEvent.click(await screen.findByRole("menuitem", { name: "From file" }))
+    const inp = document.querySelector('[data-source-row="+ ref mods"] input[type=file]') as HTMLInputElement
+    // image cap is 20 MB (REF_UPLOAD_SPEC.image) — a 21 MB blob refuses
+    const big = new File([new Uint8Array(21 * 1024 * 1024)], "huge.png", { type: "image/png" })
+    fireEvent.change(inp, { target: { files: [big] } })
+    const face = await screen.findByTestId("tl-call-mods-error")
+    assert.match(face.textContent ?? "", /file too large \(max 20 MB\)/)
+    assert.equal(document.querySelectorAll('[data-testid="tl-call-mod-chip"]').length, 0, "an oversize file never chips")
+  })
+
+  it("THE READ-FAILURE ARM (any-media, 2026-11-06): an unreadable media file refuses — could not read, never a chip", async () => {
+    bindWith(fakeManage(served(["pack_one"])).lane)
+    studio()
+    focusCall0()
+    await openModsPicker()
+    fireEvent.click(screen.getByRole("button", { name: "+ ref mods source" }))
+    fireEvent.click(await screen.findByRole("menuitem", { name: "From file" }))
+    const inp = document.querySelector('[data-source-row="+ ref mods"] input[type=file]') as HTMLInputElement
+    const fail = new File(["p"], "dead.png", { type: "image/png" })
+    const origRead = FileReader.prototype.readAsDataURL
+    FileReader.prototype.readAsDataURL = function (this: FileReader): void {
+      queueMicrotask(() => { this.onerror?.(new ProgressEvent("error") as ProgressEvent<FileReader>) })
+    }
+    try {
+      fireEvent.change(inp, { target: { files: [fail] } })
+      await waitFor(() => { assert.match(screen.getByTestId("tl-call-mods-error").textContent ?? "", /could not read/) })
+      assert.equal(document.querySelectorAll('[data-testid="tl-call-mod-chip"]').length, 0, "a dead read never chips")
+    } finally {
+      FileReader.prototype.readAsDataURL = origRead
+    }
+  })
+
   it("THE WIRE-CHECK ARM: a junk or mixed stems row serves only its string members", async () => {
     // junk data (no stems row) — the empty answer
     bindWith(fakeManage(served(undefined)).lane)

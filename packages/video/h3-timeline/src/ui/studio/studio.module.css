@@ -337,7 +337,8 @@
  * law: a long run URL never widens the rail — the name ellipsizes,
  * the full URL rides the title). */
 .declaredChip { display: inline-flex; align-items: center; gap: 4px; min-width: 0; max-width: 100%; border: 1px dashed var(--dsw-alias-border-l2); border-radius: 6px; padding: 2px 6px 2px 2px; font-size: 9px; color: var(--dsw-alias-label-secondary); }
-.declaredThumb { width: 24px; height: 24px; flex: none; object-fit: cover; border-radius: 4px; }
+.declaredThumb { width: 24px; height: 24px; flex: none; object-fit: cover; border-radius: 4px; display: block; }
+.declaredThumbBtn { padding: 0; border: 0; line-height: 0; flex: none; }
 .declaredName { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .declaredTag { flex: none; font-size: 8px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--dsw-alias-label-tertiary); }
 /* THE REDUNDANT ROW (H4, 2026-09-23 — no hole left): a hidden
