@@ -4404,10 +4404,11 @@ window.__ModuleLoader__.load({
 				declaredCount: declared.length
 			});
 			const chipOf = (v) => {
+				const media = estateMediaChip(v);
+				if (media !== null) return media;
 				const byUrl = candidates.find((c) => c.url === v);
 				if (byUrl !== void 0) return byUrl.id;
-				const media = estateMediaChip(v);
-				return media !== null ? media : v;
+				return v;
 			};
 			const chipUrl = new Map(artifacts.map((a) => [a.name, a.url]));
 			const commitChip = (v) => {
@@ -5430,7 +5431,7 @@ window.__ModuleLoader__.load({
 				const v = a[k];
 				if (v !== void 0 && v !== "") out[k] = v;
 			}
-			if (a.loras !== void 0 && a.loras.length > 0) out.loras = a.loras;
+			if (a.loras !== void 0) out.loras = a.loras;
 			if (a.sr_switch === true) {
 				out.sr_switch = true;
 				if (a.sr_model != null) out.sr_model = a.sr_model;

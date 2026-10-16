@@ -289,6 +289,53 @@ describe("the chip face law (2026-11-04 — THE ONE DISPLAY SPELLING rides every
     assert.ok(screen.getByText("data:video/mp4;base64,AAA"), "the data: URL rides the face verbatim")
   })
 
+  // THE NAME WAS NEVER CURRENCY (J2, refs-mods journey audit
+  // 2026-10-16): the From-flow pick committed the candidate's NAME
+  // — an own-run name (a gallery filename, extension-bearing)
+  // passed the wiring wall's staged-artifact carve-out and died at
+  // the engine's /prompt; a cross-card name (a stage title, no
+  // extension) refused 'bad-value' at the wall naming the whole
+  // input-dir enum. Three comments claimed "the estate re-resolves
+  // names each run" — no seat does. The pick commits the CANONICAL
+  // ESTATE URL: the one spelling every staging seat resolves
+  // loudly (fetch → upload → refuse, never a verbatim ride).
+  it("THE FROM-FLOW PICK COMMITS THE URL, NEVER THE NAME (J2) — both death forms", async () => {
+    const seen = card({}, [
+      { name: "out.png", url: "/melite-media/runs/run-deadbeef-frame/out.png" },
+      { name: "My Stage", url: "/melite-media/runs/run-deadbeef-frame/stage.png" },
+    ])
+    const forms: Array<[string, string]> = [
+      // (a) the own-run death: a gallery filename — extension-bearing,
+      // passed the wiring wall's carve-out, died at the engine
+      ["out.png", "/melite-media/runs/run-deadbeef-frame/out.png"],
+      // (b) the cross-card death: a stage title — no extension,
+      // refused 'bad-value' at the wall
+      ["My Stage", "/melite-media/runs/run-deadbeef-frame/stage.png"],
+    ]
+    // (the recorder-parent rig never feeds the write back — the chip
+    // row re-seats from the parent's refs on re-render, so the second
+    // pick drives from an empty wire; the accumulation law is the
+    // PARENT's, walled where the parent lives. THIS seat's law: the
+    // committed chip is the CANONICAL URL, never the artifact name.)
+    for (const [label, want] of forms) {
+      const row = document.querySelector('[data-source-row="+ image"]') as HTMLElement | null
+      assert.ok(row, "the add row")
+      fireEvent.click(row.querySelector("[data-slot-square]")!)
+      fireEvent.click(await screen.findByText("From flow"))
+      const pick = (await screen.findAllByTestId("source-pick-row")).find((r) => r.textContent!.includes(label))
+      assert.ok(pick, "the candidate row for " + label)
+      fireEvent.click(pick)
+      const wantWire = "images=" + want
+      await waitFor(() => {
+        // the chip is the CANONICAL URL — never the artifact name
+        assert.equal(seen.refs[seen.refs.length - 1], wantWire,
+          "the pick commits the estate URL for " + label)
+      })
+      assert.ok(!seen.refs.some((w) => w.includes(label) && w !== wantWire),
+        "the artifact name never enters the wire for " + label)
+    }
+  })
+
   it("the detach verb voices per-chip (chip-N identity — the middle chip's ✕ removes only it)", () => {
     const seen = card({ refs: { videos: "keep-1.mp4,mid.mp4,keep-2.mp4" } })
     fireEvent.click(screen.getByRole("button", { name: "Detach mid.mp4" }))

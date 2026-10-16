@@ -199,17 +199,26 @@ function RefsBucket({
       ? disabledTitle
       : refsTailLine({ count: bus.length, cap, over, overrides, declaredCount: declared.length })
   // THE PICK TRANSLATION (the slot grammar): a From-flow pick hands
-  // the candidate's URL — the refs wire carries artifact NAMES (the
-  // estate re-resolves names each run). A data: URL or bare name
-  // rides verbatim.
+  // the candidate's URL. THE NAME WAS NEVER CURRENCY (J2, the
+  // refs-mods journey audit 2026-10-16: three comments claimed "the
+  // estate re-resolves names each run" — no seat does). An own-run
+  // name (a gallery filename, extension-bearing) passed the wiring
+  // wall's staged-artifact carve-out and died at the engine's
+  // /prompt; a cross-card name (a stage title, no extension)
+  // refused 'bad-value' at the wall naming the whole input-dir
+  // enum. THE URL IS THE ONE SPELLING every downstream seat stages
+  // loudly — an estate run-media URL commits in its canonical live
+  // spelling (same law as the estate-media pick, refUtils.ts); a
+  // data: URL or bare name rides verbatim.
   const chipOf = (v: string): string => {
+    const media = estateMediaChip(v)
+    if (media !== null) return media
     const byUrl = candidates.find((c) => c.url === v)
     if (byUrl !== undefined) return byUrl.id
     // (2026-11-05) an estate-media pick commits in its canonical
     // live spelling — one chip form for the wire, the display, and
     // the run's media heal.
-    const media = estateMediaChip(v)
-    return media !== null ? media : v
+    return v
   }
   // THE DISPLAY MAP (2026-11-04, the stale-✕ cure's bucket arm): the
   // one displaySource spelling every source seat rides — a data:
