@@ -223,3 +223,4 @@ data/runtime/real-install-tarballs/
 # (operator 2026-11-05: build artifacts are reproducible from source;
 # the mint packs fresh, publish reads from disk).
 /dist/
+*.tsbuildinfo
