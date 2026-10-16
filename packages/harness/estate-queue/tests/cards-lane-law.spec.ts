@@ -833,7 +833,7 @@ describe("THE PARITY LAW (the write door and the run must agree, BOTH ways)", ()
     { name: "base ADDRESS without a variant (synth lane, reference fires nothing)", params: { model: "qwen3-tts-base", text: "x", ref_audio: "/a.flac", ref_text: "t" } },
     { name: "1.7B customvoice with instruction", params: { model: "qwen3-tts-voicedesign", variant: "customvoice", text: "x", voice: "vivian", style_instruction: "whispered" } },
     { name: "1.7B base clone (variant stated)", params: { model: "qwen3-tts-voicedesign", variant: "base", text: "x", ref_audio: "/a.flac", ref_text: "t" } },
-    { name: "a recipe variant (inherits the family base)", params: { model: "qwen3-tts", variant: "steady_read", text: "x" } },
+    { name: "a recipe variant (inherits the family base)", params: { model: "qwen3-tts", variant: "steady-read", text: "x" } },
     { name: "export beside a .qvoice", params: { model: "qwen3-tts", variant: "customvoice", text: "x", voice: "vivian", qvoice: "/v.qvoice", voice_name: "warm_1", design_prompt: "warm" } },
     { name: "a legacy family is untouched", params: { model: "z-image", prompt: "x" } },
   ];

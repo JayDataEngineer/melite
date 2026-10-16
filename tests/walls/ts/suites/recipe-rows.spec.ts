@@ -149,7 +149,7 @@ describe("the recipe schema-master (Rule A/B/C — semantic validation over the 
     // into ONE family qwen3-tts — the dead voicedesign atom declared
     // NO Recipe group, so only the 0.6B atom's two addresses counted;
     // the folded family declares the three Recipe rows
-    // (steady_read/expressive_read/default), so all five cell routes
+    // (steady-read/expressive-read/default), so all five cell routes
     // [qwen3-tts, qwen3-tts-voicedesign,
     // qwen3-tts-voicedesign-design, qwen3-tts-voicedesign-base,
     // qwen3-tts-base] are card-carried Recipe declarers: +3).

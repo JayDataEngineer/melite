@@ -285,7 +285,7 @@ export const DECL = {
             ]
         },
         {
-            "id": "steady_read",
+            "id": "steady-read",
             "label": "Steady Read",
             "hint": "Temperature 0.05 — the card schema's floor (the engine's positive-sampling minimum: the native node refuses 0).",
             "group": "Recipe",
@@ -293,7 +293,7 @@ export const DECL = {
             "cells": [],
         },
         {
-            "id": "expressive_read",
+            "id": "expressive-read",
             "label": "Expressive Read",
             "hint": "Temperature 2 — the card schema's own ceiling (maximum variation).",
             "group": "Recipe",

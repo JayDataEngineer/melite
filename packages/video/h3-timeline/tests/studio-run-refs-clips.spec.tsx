@@ -76,3 +76,63 @@ describe("the clips row", () => {
     h.els.unmount()
   })
 })
+
+// (the missing-tests audit #8, 2026-11-06) the lane-menu handler
+// chain had no driving arm against the real handlers — spies now:
+// open → reclass → text edit → delete, and one-menu-at-a-time.
+describe("the lane inspector's own verbs (audit #8)", () => {
+  it("reclass through the menu commits the patch; typing commits words; delete fires", () => {
+    const updates: Array<[string, Record<string, unknown>]> = []
+    const dels: string[] = []
+    const els = render(
+      <RunRefsClips
+        layerA={{ audio_clips: [
+          { id: "c1", name: "bed.mp3", class: "music" },
+          { id: "c2", name: "vo.mp3" },
+        ] } as unknown as LayerA}
+        updateAudioClip={(id, patch) => { updates.push([id, patch]) }}
+        deleteAudioClip={(id) => { dels.push(id) }}
+      />,
+    )
+    // open c1's lane menu and pick dialogue
+    fireEvent.click(screen.getAllByTestId("tl-lane-class")[0]!)
+    fireEvent.click(screen.getByText("Dialogue"))
+    assert.deepEqual(updates.at(-1), ["c1", { class: "dialogue" }],
+      "the menu pick commits the class patch through the real handler")
+    // and the menu CLOSED on select (the row's button still reads
+    // Music — the parent spy never applied the patch — so any
+    // remaining "Dialogue" would be the menu still open)
+    assert.equal(screen.queryAllByText("Dialogue").length, 0, "select closes the menu")
+    // words commit on the same row
+    fireEvent.change(screen.getAllByTestId("tl-lane-text")[0]!, { target: { value: "hello there" } })
+    assert.deepEqual(updates.at(-1), ["c1", { text: "hello there" }])
+    // delete fires with the row's own id
+    fireEvent.click(screen.getAllByTestId("tl-lane-delete")[1]!)
+    assert.deepEqual(dels, ["c2"])
+    els.unmount()
+  })
+
+  it("ONE menu open at a time — opening the second lane closes the first", () => {
+    const els = render(
+      <RunRefsClips
+        layerA={{ audio_clips: [
+          { id: "c1", name: "a.mp3", class: "sfx" },
+          { id: "c2", name: "b.mp3", class: "music" },
+        ] } as unknown as LayerA}
+        updateAudioClip={() => {}}
+        deleteAudioClip={() => {}}
+      />,
+    )
+    const [first, second] = screen.getAllByTestId("tl-lane-class")
+    fireEvent.click(first!)
+    // "Dialogue" renders ONLY inside an open menu (the buttons
+    // carry their current class labels — SFX/Music — never the
+    // dialogue word), so its count IS the open-menu count
+    assert.equal(screen.queryAllByText("Dialogue").length, 1,
+      "the first lane's menu is open")
+    fireEvent.click(second!)
+    assert.equal(screen.queryAllByText("Dialogue").length, 1,
+      "still exactly ONE menu (the first closed when the second opened)")
+    els.unmount()
+  })
+})

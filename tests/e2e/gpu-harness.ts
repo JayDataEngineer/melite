@@ -131,7 +131,7 @@ export interface Settled {
  * workflow + the harvested artifacts.
  *
  * THE 600s CEILING (audit 2026-10-31): the settlement poll runs
- * 1200 × 500ms — row budgets above 600s (music full_length,
+ * 1200 × 500ms — row budgets above 600s (music full-length,
  * h3 final_hd) state engine-side patience the harness cannot
  * honor; proven runtimes fit inside (music ~300s), so the ceiling
  * is documented, not hit. */

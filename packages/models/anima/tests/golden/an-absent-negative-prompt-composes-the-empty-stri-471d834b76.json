@@ -2,7 +2,7 @@
   "UNETLoader.0": {
     "class_type": "UNETLoader",
     "inputs": {
-      "unet_name": "anima-base-v1.0.safetensors",
+      "unet_name": "anima-base-v1.0-int8convrot.safetensors",
       "weight_dtype": "default"
     }
   },

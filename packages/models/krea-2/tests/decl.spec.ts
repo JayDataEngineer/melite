@@ -28,9 +28,9 @@ describe("the krea-2 model plugin (the whole model, one package)", () => {
   it("carries its variants — turbo, raw, realism — with routes and resolver defaults", () => {
     const ids = DECL.variants.map((v) => v.id);
     // (Rule A, 2026-09-18) the Recipe axis carries the functional
-    // lora presets — turbo_distill joins the PRE-EXISTING realism
+    // lora presets — turbo-distill joins the PRE-EXISTING realism
     // row (the strength-less idiom: the flavor's default 0.7)
-    assert.deepEqual(ids, ["turbo", "raw", "realism", "default", "turbo_distill"]);
+    assert.deepEqual(ids, ["turbo", "raw", "realism", "default", "turbo-distill"]);
     const raw = DECL.variants.find((v) => v.id === "raw")!;
     const rd = raw.resolver_defaults ?? {};
     assert.equal(raw.route, "krea-2-raw");

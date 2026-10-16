@@ -579,7 +579,7 @@ const ttsDoc = (over: Record<string, unknown> = {}): FormSpecDoc => ({
   variants: [
     { id: 'customvoice', label: 'CustomVoice', group: 'Variant', defaults: {}, cells: [{ quant: 'native', label: 'Native', route: 'qwen3-tts' }] },
     { id: 'base', label: 'Base', group: 'Variant', defaults: {}, cells: [{ quant: 'native', label: 'Native', route: 'qwen3-tts-base' }] },
-    { id: 'steady_read', label: 'Steady Read', group: 'Recipe', defaults: {}, cells: [] },
+    { id: 'steady-read', label: 'Steady Read', group: 'Recipe', defaults: {}, cells: [] },
   ],
   lanes: {
     base: ['text', 'temperature', 'design_prompt', 'voice_name'],
@@ -655,7 +655,7 @@ test('LANES: an unknown or cleared variant is the run door\'s voice, never this 
     cleanup()
   }
   // a RECIPE variant is served and inherits the family base — judged
-  form({ spec: ttsDoc(), user: { model: 'qwen3-tts', variant: 'steady_read', ref_audio: '/a.flac' } })
+  form({ spec: ttsDoc(), user: { model: 'qwen3-tts', variant: 'steady-read', ref_audio: '/a.flac' } })
   expect(document.querySelector('[data-lane-warn="1"]')).not.toBeNull()
 })
 

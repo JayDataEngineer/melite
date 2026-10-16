@@ -1106,7 +1106,7 @@
       "owner": "turbo"
     },
     {
-      "id": "remove_background",
+      "id": "remove-background",
       "label": "Remove Background",
       "group": "Recipe",
       "defaults": {
@@ -1121,7 +1121,7 @@
       "owner": ""
     },
     {
-      "id": "upstream_solvers",
+      "id": "upstream-solvers",
       "label": "Upstream Solvers",
       "group": "Recipe",
       "defaults": {

@@ -42,7 +42,7 @@ export const DECL: ModelDecl = {
       ]
     },
     {
-      "id": "short_sting",
+      "id": "short-sting",
       "label": "Short Sting",
       "hint": "Duration 5s — the card schema's own floor (a sting or loop).",
       "group": "Recipe",
@@ -50,7 +50,7 @@ export const DECL: ModelDecl = {
       "cells": [],
     },
     {
-      "id": "full_length",
+      "id": "full-length",
       "label": "Full Length",
       "hint": "Duration 360s — the card schema's own ceiling (full-song length).",
       "group": "Recipe",

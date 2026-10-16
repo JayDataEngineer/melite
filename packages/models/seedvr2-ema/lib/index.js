@@ -40,7 +40,7 @@ export const DECL = {
             "cells": []
         },
         {
-            "id": "preview_256",
+            "id": "preview-256",
             "label": "Preview 256",
             "hint": "Resolution 256 — the card schema's own floor (256–2160): a fast preview upscale.",
             "group": "Recipe",
@@ -48,7 +48,7 @@ export const DECL = {
             "cells": [],
         },
         {
-            "id": "fhd_1080",
+            "id": "fhd-1080",
             "label": "FHD 1080",
             "hint": "Resolution 1080 — this family's own default and the card's FHD rail (1080 = FHD rail), inside the card schema's bounds (256–2160).",
             "group": "Recipe",
@@ -56,7 +56,7 @@ export const DECL = {
             "cells": [],
         },
         {
-            "id": "uhd_2160",
+            "id": "uhd-2160",
             "label": "UHD 2160",
             "hint": "Resolution 2160 — the card schema's own ceiling (256–2160): maximum-detail upscale.",
             "group": "Recipe",

@@ -43,7 +43,7 @@ export const DECL: ModelDecl = {
       ]
     },
     {
-      "id": "one_shot",
+      "id": "one-shot",
       "label": "One Shot",
       "hint": "Duration 0.5s — the card schema's own floor (a single hit).",
       "group": "Recipe",
@@ -51,7 +51,7 @@ export const DECL: ModelDecl = {
       "cells": [],
     },
     {
-      "id": "ambience_bed",
+      "id": "ambience-bed",
       "label": "Ambience Bed",
       "hint": "Duration 300s — the card schema's own ceiling (a long bed).",
       "group": "Recipe",

@@ -51,7 +51,10 @@ import { describe, it } from "vitest";
 // variant, 1 quant, and 3 recipes"), and both mesh families lost
 // their 1536/512 rows (the trio's fast/standard tiers floor at 1024;
 // quality's 1536 is a recipe pick, not a served route).
-const SERVED_ADDR_CENSUS = 51
+// 51 -> 59 (2026-10-16, the anima three checkpoints): base keeps
+// route anima; turbo + aesthetic add variant routes and all three
+// add int8/bf16 cell routes (8 new served addresses).
+const SERVED_ADDR_CENSUS = 59
 // 24 -> 25 (2026-10-22, audit 006/U1): flux-klein claims its own
 // atom (the family's routes resolve to its declared owners)
 // 25 -> 24 (2026-10-13, the autoremesher excision — the pack the owner removed from the system)
@@ -806,8 +809,8 @@ describe("models against cards (the cross-validation, resurrected)", () => {
     // 21 -> 14, 17 -> 10 (2026-10-12, the operator's five-family
     // kill): ace-step's 4 and moss's 3 per-cell gguf artifacts and
     // their 7 distinct upstream urls die with the families.
-    const ARTIFACT_ROW_COUNT = 21 - 7; // +2 (2026-10-23, the operator's turbo call): the qwen 2.1 turbo cells // +2 (2026-10-24, THE 2.1 MATRIX RESHAPE): the edit lane's turbo cells join with the fold
-    const ARTIFACT_DISTINCT_COUNT = 17 - 7; // +2 (2026-10-23): the two distinct turbo unet urls // unchanged (2026-10-24, THE 2.1 MATRIX RESHAPE): the edit lane's turbo cells ride the SAME two unet urls the t2i family downloads — distinct-by-url stays while the row census moves
+    const ARTIFACT_ROW_COUNT = 21 - 7 + 5; // +2 (2026-10-23, the operator's turbo call): the qwen 2.1 turbo cells // +2 (2026-10-24, THE 2.1 MATRIX RESHAPE): the edit lane's turbo cells join with the fold // +5 (2026-10-16, the anima three checkpoints): three Bedovyy convrot + two official bf16
+    const ARTIFACT_DISTINCT_COUNT = 17 - 7 + 5; // +2 (2026-10-23): the two distinct turbo unet urls // unchanged (2026-10-24, THE 2.1 MATRIX RESHAPE): the edit lane's turbo cells ride the SAME two unet urls the t2i family downloads — distinct-by-url stays while the row census moves // +5 (2026-10-16): anima's five urls are all distinct (base bf16 stays a provisions row, not an artifact)
     const artifacts: Array<{ id: string; url: string }> = [];
     for (const id of registryIds()) {
       const decl = registryModel(id) as { variants?: Array<{ cells?: Array<{ artifact?: unknown }> }> };
@@ -838,8 +841,12 @@ describe("models against cards (the cross-validation, resurrected)", () => {
     // now a CLI-verified per-cell download
     // 7 -> 5 (2026-10-12, the operator's five-family kill): ace-step
     // and moss died with the sweep.
-    assert.deepEqual(ARTIFACT_DECLARERS, ["flux-klein", "krea-2", "qwen-img-21", "qwen-img-edit-21", "qwen-img-edit-2511"],
-      `the artifact declarers are the named 5 (saw ${ARTIFACT_DECLARERS.join(", ")}) — a family starting or stopping its cell-artifact channel is a deliberate edit`);
+    // 5 -> 6 (2026-10-16, the anima three checkpoints):
+    // base/turbo/aesthetic ride five per-cell downloads (three
+    // Bedovyy convrot + two official bf16; base bf16 stays a
+    // provisions row).
+    assert.deepEqual(ARTIFACT_DECLARERS, ["anima", "flux-klein", "krea-2", "qwen-img-21", "qwen-img-edit-21", "qwen-img-edit-2511"],
+      `the artifact declarers are the named 6 (saw ${ARTIFACT_DECLARERS.join(", ")}) — a family starting or stopping its cell-artifact channel is a deliberate edit`);
     assert.equal(artifacts.length, ARTIFACT_ROW_COUNT,
       `the variant-cell artifact rows are exactly ${String(ARTIFACT_ROW_COUNT)} (saw ${String(artifacts.length)}) — a cell appearing or leaving is a deliberate edit`);
     // deduped by url+dest the same way the union walk dedupes —

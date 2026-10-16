@@ -1357,7 +1357,7 @@
       "owner": ""
     },
     {
-      "id": "strong_identity",
+      "id": "strong-identity",
       "label": "Strong Identity",
       "group": "Recipe",
       "defaults": {
@@ -1372,7 +1372,7 @@
       "owner": ""
     },
     {
-      "id": "upstream_solvers",
+      "id": "upstream-solvers",
       "label": "Upstream Solvers",
       "group": "Recipe",
       "defaults": {

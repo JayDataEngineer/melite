@@ -203,7 +203,10 @@ describe("the models plane feeds the compose/flows plane (A2)", () => {
     // ("1 model, 1 variant, 1 quant, and 3 recipes"), and both mesh
     // families lose their 1536/512 routes (the trio floors at 1024;
     // quality's 1536 is a recipe pick, not a served route).
-    assert.equal(total, 51, `the facts roster is 51 rows (saw ${String(total)}) — a new family route is a deliberate edit`);
+    // 51 -> 59 (2026-10-16, the anima three checkpoints): base keeps
+    // route anima; turbo + aesthetic variant routes and all three
+    // int8/bf16 cell routes join the roster.
+    assert.equal(total, 59, `the facts roster is 59 rows (saw ${String(total)}) — a new family route is a deliberate edit`);
   });
 });
 

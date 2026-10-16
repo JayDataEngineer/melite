@@ -199,12 +199,12 @@ describe("the qwen3-tts model plugin (ONE family, size at the quant cell)", () =
     const recipes = DECL.variants.filter((v) => v.group === "Recipe");
     assert.deepEqual(
       recipes.map((r) => r.id).sort(),
-      ["default", "expressive_read", "steady_read"],
+      ["default", "expressive-read", "steady-read"],
       "the preset truth rides Recipe rows (RULE A), not lane variants",
     );
-    const steady = recipes.find((r) => r.id === "steady_read")!;
+    const steady = recipes.find((r) => r.id === "steady-read")!;
     assert.deepEqual((steady as { wire_defaults?: Record<string, unknown> }).wire_defaults, { temperature: 0.05 });
-    const expr = recipes.find((r) => r.id === "expressive_read")!;
+    const expr = recipes.find((r) => r.id === "expressive-read")!;
     assert.deepEqual((expr as { wire_defaults?: Record<string, unknown> }).wire_defaults, { temperature: 2 });
     const plain = recipes.find((r) => r.id === "default")!;
     assert.ok(!("wire_defaults" in plain), "Default stamps nothing — a fresh card lands here");

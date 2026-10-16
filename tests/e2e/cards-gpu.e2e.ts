@@ -148,13 +148,13 @@ describe.skipIf(!HAS_ENGINE)('cards-gpu: tagger, upscale, mask, input-prep (the 
     })
   }, 600_000)
 
-  it.skipIf(!weightsPresent('seedvr2-ema'))('seedvr2 preview_256: the pill payload composes and RUNS', async () => {
+  it.skipIf(!weightsPresent('seedvr2-ema'))('seedvr2 preview-256: the pill payload composes and RUNS', async () => {
     await withWorld('cards-gpu-seedvr2', async (w) => {
       // THE ESTATE-FILE LAW: this card's input_image admission
       // refuses bare engine-side names — the anchor rides staged.
       const s = await runCard(w, {
         model: 'seedvr2-ema', input_image: stageAnchorPng('cards-gpu-seedvr2'), resolution: 256,
-      }, 'seedvr2 preview_256')
+      }, 'seedvr2 preview-256')
       assert.equal(byClass(s, 'SeedVR2LoadDiTModel').length, 1, 'the DiT loads')
       assert.equal(byClass(s, 'SeedVR2LoadVAEModel').length, 1, 'the VAE loads')
       assert.equal(byClass(s, 'SeedVR2VideoUpscaler').length, 1, 'the upscaler runs at the pill resolution')
@@ -297,14 +297,14 @@ describe.skipIf(!HAS_ENGINE)('cards-gpu: mesh (anny, the trellis lift, rig)', ()
 })
 
 describe.skipIf(!HAS_ENGINE)('cards-gpu: audio (tts lanes, music lengths, the sfx bed)', () => {
-  it.skipIf(!weightsPresent('qwen3-tts'))('tts expressive_read: the pill payload composes and RUNS', async () => {
+  it.skipIf(!weightsPresent('qwen3-tts'))('tts expressive-read: the pill payload composes and RUNS', async () => {
     await withWorld('cards-gpu-tts-expr', async (w) => {
       const s = await runCard(w, {
         model: 'qwen3-tts-voicedesign', text: 'The express lane runs hot.', temperature: 2,
-      }, 'tts expressive_read')
+      }, 'tts expressive-read')
       const tts = byClass(s, 'AudiocoreTTS')
       assert.ok(tts.length >= 1, 'the TTS lane speaks')
-      assert.equal(tts[0]![1].inputs?.temperature, 2, 'the expressive_read pill stamps temperature 2')
+      assert.equal(tts[0]![1].inputs?.temperature, 2, 'the expressive-read pill stamps temperature 2')
       assert.ok(byClass(s, 'SaveAudio').length >= 1, 'the line saves')
       assert.ok(firstBytes(s).length > 512, 'the audio artifact carries real bytes')
     })
@@ -359,14 +359,14 @@ describe.skipIf(!HAS_ENGINE)('cards-gpu: audio (tts lanes, music lengths, the sf
     })
   }, 480_000)
 
-  it.skipIf(!weightsPresent('music3'))('music3 full_length: the duration pill composes and RUNS', async () => {
+  it.skipIf(!weightsPresent('music3'))('music3 full-length: the duration pill composes and RUNS', async () => {
     await withWorld('cards-gpu-music-full', async (w) => {
       const s = await runCard(w, {
         model: 'music3', prompt: 'funk, pop, soul, guitar, 105 BPM', duration: 360,
-      }, 'music full_length')
+      }, 'music full-length')
       const latent = byClass(s, 'EmptyMiniMaxMusic3LatentAudio')
       assert.equal(latent.length, 1, 'the music latent seats the pill duration')
-      assert.equal(latent[0]![1].inputs?.seconds, 360, 'the full_length pill stamps 360 seconds')
+      assert.equal(latent[0]![1].inputs?.seconds, 360, 'the full-length pill stamps 360 seconds')
       const enc = byClass(s, 'MiniMaxMusic3TextEncode')
       assert.equal(enc.length, 1, 'the caption encodes')
       assert.equal(enc[0]![1].inputs?.max_duration, 360, 'the encoder rides the same duration')
@@ -374,16 +374,16 @@ describe.skipIf(!HAS_ENGINE)('cards-gpu: audio (tts lanes, music lengths, the sf
     })
   }, 1_200_000)
 
-  it.skipIf(!weightsPresent('yue2'))('yue2 short_sting: the second music lane composes and RUNS', async () => {
+  it.skipIf(!weightsPresent('yue2'))('yue2 short-sting: the second music lane composes and RUNS', async () => {
     await withWorld('cards-gpu-yue2', async (w) => {
       const s = await runCard(w, {
         model: 'yue2', prompt: 'warm female vocal, indie pop, 96 BPM', lyrics: '', duration: 5, mode: 'full',
-      }, 'yue2 short_sting')
+      }, 'yue2 short-sting')
       assert.equal(byClass(s, 'CheckpointLoaderSimple').length, 1, 'the YuE2 checkpoint loads')
       assert.equal(byClass(s, 'YuE2GenerateABC').length, 1, 'the ABC planner runs')
       const gen = byClass(s, 'YuE2GenerateMusic')
       assert.equal(gen.length, 1, 'the generator runs')
-      assert.equal(gen[0]![1].inputs?.max_duration, 5, 'the short_sting pill stamps 5 seconds')
+      assert.equal(gen[0]![1].inputs?.max_duration, 5, 'the short-sting pill stamps 5 seconds')
       assert.equal(byClass(s, 'EmptyYuE2LatentAudio').length, 1, 'the latent seats the plan')
       assert.ok(byClass(s, 'SaveAudioAdvanced').length >= 1, 'the sting saves')
       assert.ok(firstBytes(s).length > 1024, 'the audio artifact carries real bytes')

@@ -209,6 +209,28 @@ describe("the label conventions wall (2026-11-05)", () => {
       "a label with prose or past 48 chars is a HINT wearing a LABEL — move the sentence to the row's hint seat");
   });
 
+  it("THE RENAME BOUNDARY'S VARIANT PLANE (audit #11): variant ids ride the hyphen grammar; checkpoint FILENAMES stay upstream-true underscore", () => {
+    const offenders: string[] = [];
+    let variants = 0;
+    for (const fam of registryIds()) {
+      for (const v of registryModel(fam).variants) {
+        variants += 1;
+        if (!/^[a-z0-9][a-z0-9-]*$/.test(v.id)) {
+          offenders.push(`${fam} variant "${v.id}" — underscore/camelCase died with the wave-24 rename`);
+        }
+      }
+    }
+    assert.ok(variants > 10, `the walk judged variant ids (judged ${String(variants)})`);
+    assert.deepEqual(offenders, [],
+      "a variant id reverting to vae_fp16 grammar greens nothing — the boundary is judged");
+    // THE FILENAME HALF: provisions names + checkpoint files stay
+    // UPSTREAM-TRUE (seedvr2_ema_3b_fp16.safetensors) — a zealous
+    // hyphenate-everything pass cannot rename bytes the URL serves
+    const decls = readFileSync(join(REPO_ROOT, "packages/models/seedvr2-ema/src/index.ts"), "utf8");
+    assert.match(decls, /seedvr2_ema_3b_fp16\.safetensors/,
+      "the checkpoint filename keeps its upstream underscore spelling");
+  });
+
   it("THE SHARED BAG RESOLVES: every wire_defaults loras id resolves against its own family's declared vocabulary", () => {
     const offenders: string[] = [];
     let judged = 0;

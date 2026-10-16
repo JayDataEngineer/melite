@@ -172,7 +172,7 @@ export const DECL = {
             ]
         },
         {
-            "id": "strong_identity",
+            "id": "strong-identity",
             "label": "Strong Identity",
             "hint": "Double-reference ON — the card schema's own identity knob (encode the input twice for stronger identity preservation); this family's own default is false. Steps/CFG stay on the Variant routes (Lightning 4-step / Standard 20-step cfg 2.5) — never duplicated here. PLANE TRUTH (agent-debt F-4, 2026-09-22): the TS compose plane refuses double_reference=true LOUD — it builds the stock plain-edit graph only. Selecting this variant GUARANTEES a refusal; do not plan runs around it until the double-encode lane exists.",
             "group": "Recipe",
@@ -180,7 +180,7 @@ export const DECL = {
             "cells": [],
         },
         {
-            "id": "upstream_solvers",
+            "id": "upstream-solvers",
             "label": "Upstream Solvers",
             "hint": "Sampler euler + scheduler simple — this family's own DECL defaults, both members of the card's sampler/scheduler vocabularies.",
             "group": "Recipe",

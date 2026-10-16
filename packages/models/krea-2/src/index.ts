@@ -149,10 +149,10 @@ export const DECL: ModelDecl = {
     // the flavor's own declared strength (mods/loras.ts). Style rows
     // stay individual Modifiers-menu picks (an option is not a
     // preset); step marriages stay in the turbo ROUTE's
-    // resolver_defaults — never duplicated on two axes. (turbo_distill
+    // resolver_defaults — never duplicated on two axes. (turbo-distill
     // joins the PRE-EXISTING realism row — one preset per fact.)
     {
-      "id": "turbo_distill",
+      "id": "turbo-distill",
       "label": "Turbo Distill",
       "hint": "The rank-64 turbo adapter at 1.0 — pairs with the Turbo route's own 8-step cascade.",
       "group": "Recipe",

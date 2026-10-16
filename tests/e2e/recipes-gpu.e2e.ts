@@ -491,16 +491,16 @@ describe.skipIf(!HAS_ENGINE)('the recipe law on the GPU (with live ComfyUI)', ()
   //    bound-anchored stamps proven on silicon — the schema's own
   //    floors/ceilings, values 1:1 with the cards' declared keys) ──
 
-  it.skipIf(!HAS_ENGINE || !weightsPresent('music3'))('music3 short_sting: the pill payload composes duration 5 (the schema floor) and RUNS', async () => {
+  it.skipIf(!HAS_ENGINE || !weightsPresent('music3'))('music3 short-sting: the pill payload composes duration 5 (the schema floor) and RUNS', async () => {
     const w = await bootWorld('recipes-music3-')
     try {
       const s = await runCard(w, {
         model: 'music3',
         prompt: 'funk, pop, soul, guitar, 105 BPM',
-        // THE PILL PAYLOAD VERBATIM (short_sting): duration 5 — the
+        // THE PILL PAYLOAD VERBATIM (short-sting): duration 5 — the
         // card schema's own declared floor (min 5)
         duration: 5,
-      }, 'music3 short_sting')
+      }, 'music3 short-sting')
       const latent = nodesWith(s, /EmptyMiniMaxMusic3LatentAudio/)
       assert.ok(latent.length >= 1, 'the RUN workflow carries the music latent node')
       const seconds = (latent[0]![1] as { inputs: Record<string, unknown> }).inputs['seconds']
@@ -538,18 +538,18 @@ describe.skipIf(!HAS_ENGINE)('the recipe law on the GPU (with live ComfyUI)', ()
     }
   }, 300_000)
 
-  it.skipIf(!HAS_ENGINE || !weightsPresent('qwen3-tts'))('qwen3-tts steady_read: the pill payload composes temperature 0.05 (the engine-true floor) and RUNS', async () => {
+  it.skipIf(!HAS_ENGINE || !weightsPresent('qwen3-tts'))('qwen3-tts steady-read: the pill payload composes temperature 0.05 (the engine-true floor) and RUNS', async () => {
     const w = await bootWorld('recipes-qwen3tts-')
     try {
       const s = await runCard(w, {
         model: 'qwen3-tts',
         text: 'The steadiest read lands at the floor of the dial.',
-        // THE PILL PAYLOAD VERBATIM (steady_read): temperature 0.05 —
+        // THE PILL PAYLOAD VERBATIM (steady-read): temperature 0.05 —
         // the engine's positive-sampling minimum (the native node
         // refuses 0; the GPU receipt exposed the lying bound, the
         // schema + row now declare the engine's truth)
         temperature: 0.05,
-      }, 'qwen3-tts steady_read')
+      }, 'qwen3-tts steady-read')
       const synth = nodesWith(s, /AudiocoreTTS/)
       assert.ok(synth.length >= 1, 'the RUN workflow carries the audiocore synth node')
       const inputs = (synth[0]![1] as { inputs: Record<string, unknown> }).inputs
@@ -567,11 +567,11 @@ describe.skipIf(!HAS_ENGINE)('the recipe law on the GPU (with live ComfyUI)', ()
 // law: qwen-img-21 = the t2i lane, qwen-img-edit-21 = the cached-
 // reference edit lane over the SAME base weights) ──────────────────
 describe.skipIf(!HAS_ENGINE)('the qwen 2.1 pair on the GPU (with live ComfyUI)', () => {
-  it.skipIf(!HAS_ENGINE || !weightsPresent('qwen-img-21'))('qwen-img-21 upstream_solvers: the pill payload composes the ONE TextEncodeQwenImage21 node (pos out 0, neg out 1) and RUNS', async () => {
+  it.skipIf(!HAS_ENGINE || !weightsPresent('qwen-img-21'))('qwen-img-21 upstream-solvers: the pill payload composes the ONE TextEncodeQwenImage21 node (pos out 0, neg out 1) and RUNS', async () => {
     const w = await bootWorld('recipes-q21-')
     try {
       const cards = (w.ctx as unknown as { cardRegistry: { phase1Card: (b: Record<string, unknown>, m: string) => Promise<{ params: Record<string, unknown> }>, phase2Card: (p1: unknown, runId: string) => Promise<{ graph: Record<string, unknown> }> } }).cardRegistry
-      // the pill payload: what the upstream_solvers recipe stamps (euler/simple)
+      // the pill payload: what the upstream-solvers recipe stamps (euler/simple)
       const p1 = await cards.phase1Card({
         model: 'qwen-img-21', prompt: 'a small red cube on a white field',
         width: 512, height: 512, sampler: 'euler', scheduler: 'simple',
@@ -610,7 +610,7 @@ describe.skipIf(!HAS_ENGINE)('the qwen 2.1 pair on the GPU (with live ComfyUI)',
 
         // THE OFFICIAL BACKGROUND-REMOVAL ONE-CLICK (roadmap §10's
         // last firing): the Comfy-Org template is THIS lane + the
-        // canned prompt — the remove_background pill payload rides
+        // canned prompt — the remove-background pill payload rides
         // the chain (the edit artifact is the anchor image), the
         // wiring asserted verbatim before the run.
         const bgPayload = {
@@ -627,7 +627,7 @@ describe.skipIf(!HAS_ENGINE)('the qwen 2.1 pair on the GPU (with live ComfyUI)',
         assert.equal(bgSampler.inputs?.cfg, 1, 'the official path rides cfg 1 (family default)')
         assert.equal(bgSampler.inputs?.sampler_name, 'euler')
         assert.equal(bgSampler.inputs?.scheduler, 'simple')
-        const s3 = await runCard(w2, bgPayload, 'qwen-img-edit-21 remove_background')
+        const s3 = await runCard(w2, bgPayload, 'qwen-img-edit-21 remove-background')
         assert.ok(byClass(s3, 'QwenImage21Cache').length === 1, 'the one-click rides the same cached-reference lane')
         assert.equal(firstBytes(s3).readUInt32BE(0), 0x89504e47, 'the background-removal artifact is a real PNG')
       } finally {

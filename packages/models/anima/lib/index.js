@@ -26,18 +26,140 @@ export const DECL = {
     "mods": [
         "loras"
     ],
+    // THE THREE CHECKPOINTS (operator 2026-10-16: Base v1.0,
+    // Turbo v1.1, Aesthetic v1.1 — upstream's own names, one Variant
+    // row each). The axes are TOKENS (the qwen 2.1 matrix law,
+    // 2026-10-24): Variant = Base/Turbo/Aesthetic, Quant =
+    // int8_convrot/bf16. The single f32 "standard" row died here —
+    // the convrot tier serves below it (Bedovyy's int8convrot quant:
+    // ~2.6GB, 12GB cards welcome per their 3060 speed tables) and
+    // BF16 rides beside it (the official split_files, ~4.2GB).
+    // The base row keeps route "anima" (existing drafts resolve
+    // migration-free); turbo stamps its upstream marriage (CFG 1,
+    // 8 steps — the Civitai version card's own prescription).
     "variants": [
         {
-            "id": "standard",
-            "label": "Standard",
+            "id": "base",
+            "label": "Base v1.0",
+            "hint": "Base v1.0 — the pretrained base (maximum flexibility; LoRAs train here). INT8 ConvRot is the served tier (DEFAULT); BF16 beside it.",
             "group": "Variant",
             "route": "anima",
+            "order": 0,
             "cells": [
                 {
-                    "quant": "f32",
-                    "label": "F32",
-                    "route": "anima",
+                    "quant": "int8_convrot",
+                    "label": "INT8 ConvRot",
+                    "route": "anima-int8",
+                    "vram_peak_gb": 12,
+                    "lane_inputs": {
+                        "unet": "anima-base-v1.0-int8convrot.safetensors"
+                    },
+                    "artifact": {
+                        "source_url": "https://huggingface.co/Bedovyy/Anima-INT8/resolve/main/anima-base-v1.0-int8convrot.safetensors",
+                        "size_bytes": 2649827358,
+                        "sha256": "1ee1da031d651cea747716afccedd45b1c51317330a3e2393da08f013174fd69",
+                        "dest_root": "COMFYUI_ROOT",
+                        "dest_sub": "diffusion_models",
+                        "size_hint_gb": 2.7
+                    }
+                },
+                {
+                    "quant": "bf16",
+                    "label": "BF16",
+                    "route": "anima-bf16",
                     "vram_peak_gb": 20,
+                    "lane_inputs": {
+                        "unet": "anima-base-v1.0.safetensors"
+                    }
+                }
+            ]
+        },
+        {
+            "id": "turbo",
+            "label": "Turbo v1.1",
+            "hint": "Turbo v1.1 — the distilled weights (fast generations; stamps 8 steps at CFG 1, upstream's own prescription). Same two tiers.",
+            "group": "Variant",
+            "route": "anima-turbo",
+            "order": 1,
+            "resolver_defaults": { "steps": 8, "cfg": 1 },
+            "cells": [
+                {
+                    "quant": "int8_convrot",
+                    "label": "INT8 ConvRot",
+                    "route": "anima-turbo-int8",
+                    "vram_peak_gb": 12,
+                    "lane_inputs": {
+                        "unet": "anima-turbo-v1.1-int8convrot.safetensors"
+                    },
+                    "artifact": {
+                        "source_url": "https://huggingface.co/Bedovyy/Anima-INT8/resolve/main/anima-turbo-v1.1-int8convrot.safetensors",
+                        "size_bytes": 2649848838,
+                        "sha256": "c462bea054de87ea03000e83f2b60e6d58fbcb6b925d9f607f8a470eeaad52b4",
+                        "dest_root": "COMFYUI_ROOT",
+                        "dest_sub": "diffusion_models",
+                        "size_hint_gb": 2.7
+                    }
+                },
+                {
+                    "quant": "bf16",
+                    "label": "BF16",
+                    "route": "anima-turbo-bf16",
+                    "vram_peak_gb": 20,
+                    "lane_inputs": {
+                        "unet": "anima-turbo-v1.1.safetensors"
+                    },
+                    "artifact": {
+                        "source_url": "https://huggingface.co/circlestone-labs/Anima/resolve/main/split_files/diffusion_models/anima-turbo-v1.1.safetensors",
+                        "size_bytes": 4182230656,
+                        "sha256": "fba11953276b57edf59d1dc4f1857ac05aa079c56f982b4d7c20298d57d3f7eb",
+                        "dest_root": "COMFYUI_ROOT",
+                        "dest_sub": "diffusion_models",
+                        "size_hint_gb": 4.2
+                    }
+                }
+            ]
+        },
+        {
+            "id": "aesthetic",
+            "label": "Aesthetic v1.1",
+            "hint": "Aesthetic v1.1 — fine-tuned for consistency and a stronger default style (less diverse than base; quality tags optional). Same two tiers.",
+            "group": "Variant",
+            "route": "anima-aesthetic",
+            "order": 2,
+            "cells": [
+                {
+                    "quant": "int8_convrot",
+                    "label": "INT8 ConvRot",
+                    "route": "anima-aesthetic-int8",
+                    "vram_peak_gb": 12,
+                    "lane_inputs": {
+                        "unet": "anima-aesthetic-v1.1-int8convrot.safetensors"
+                    },
+                    "artifact": {
+                        "source_url": "https://huggingface.co/Bedovyy/Anima-INT8/resolve/main/anima-aesthetic-v1.1-int8convrot.safetensors",
+                        "size_bytes": 2649848838,
+                        "sha256": "3fcddb378b9b2ffab20878ed8fb379ae2c34005ba327f475d2cd3b9e91350cda",
+                        "dest_root": "COMFYUI_ROOT",
+                        "dest_sub": "diffusion_models",
+                        "size_hint_gb": 2.7
+                    }
+                },
+                {
+                    "quant": "bf16",
+                    "label": "BF16",
+                    "route": "anima-aesthetic-bf16",
+                    "vram_peak_gb": 20,
+                    "lane_inputs": {
+                        "unet": "anima-aesthetic-v1.1.safetensors"
+                    },
+                    "artifact": {
+                        "source_url": "https://huggingface.co/circlestone-labs/Anima/resolve/main/split_files/diffusion_models/anima-aesthetic-v1.1.safetensors",
+                        "size_bytes": 4182230656,
+                        "sha256": "3c1868387a3a1ff504bbb87c33678321965ead381fcf87afbd0264daa600c082",
+                        "dest_root": "COMFYUI_ROOT",
+                        "dest_sub": "diffusion_models",
+                        "size_hint_gb": 4.2
+                    }
                 }
             ]
         },
@@ -81,6 +203,7 @@ export const DECL = {
         {
             "id": "Quant",
             "label": "Quant",
+            "tooltip": "Quantization tier — INT8 ConvRot (Bedovyy's convrot quant, DEFAULT) or BF16 (the official split_files).",
         },
         {
             "id": "Recipe",
@@ -108,7 +231,11 @@ export const DECL = {
         "latent_node": "EmptyLatentImage",
         "sampling_shift": 0,
         "text_encoder": "qwen_3_06b_base.safetensors",
-        "unet": "anima-base-v1.0.safetensors",
+        // THE FAMILY DEFAULT VIEW (the krea-2 raw precedent): the
+        // atom's lane_inputs spell the first-declared variant's
+        // default tier — base × INT8 ConvRot (operator 2026-10-16:
+        // the convrot tier serves over fp32).
+        "unet": "anima-base-v1.0-int8convrot.safetensors",
         "vae": "qwen_image_vae.safetensors"
     },
     // GHOST DEBT CLEARED (2026-10-12 model audit, fix 4): base from
