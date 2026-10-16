@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 /**
  * motion studio II — authoring (timeline prompts + keyframes, edit mode).
- * Split from motion-studio.spec.tsx: PURE MOVE, zero test-content
+ * Split from the motion-studio suite: PURE MOVE, zero test-content
  * changes (sibling spec in the same tests/ dir, auto-discovered by
  * the vitest dom project). Shared setup lives in ./helpers.ts.
  *
@@ -109,7 +109,8 @@ describe('timeline (prompts + keyframes)', () => {
     // Ctrl+Z on B: the A-era stack must be EMPTY — a no-op, never A's restore
     fireEvent.keyDown(document.body, { key: 'z', ctrlKey: true })
     await new Promise((r) => setTimeout(r, 250))
-    expect(onSaveB.mock.calls.length).toBe(0, 'undo on stage B wrote nothing — the A-era stack was cleared on the switch')
+    // undo on stage B writes nothing — the A-era stack was cleared on the switch
+    expect(onSaveB.mock.calls.length).toBe(0)
   })
 
   test('lane double-click pins a keyframe and persists it', async () => {

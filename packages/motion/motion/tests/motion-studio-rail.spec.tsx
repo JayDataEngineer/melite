@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 /**
  * motion studio II — rail chrome (view + transport, the generic parameter form).
- * Split from motion-studio.spec.tsx: PURE MOVE, zero test-content
+ * Split from the motion-studio suite: PURE MOVE, zero test-content
  * changes (sibling spec in the same tests/ dir, auto-discovered by
  * the vitest dom project). Shared setup lives in ./helpers.ts.
  *

@@ -36,6 +36,7 @@ function harness() {
   const restore = vi.fn((d: DocSnapshot) => { doc = d })
   const Probe = () => {
     const stack = useMotionUndoStack({
+      stageId: 'm1',
       captureDoc: capture,
       restoreDoc: restore,
       keptEdit: null,

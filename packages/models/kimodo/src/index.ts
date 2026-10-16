@@ -44,8 +44,12 @@ export const DECL: ModelDecl = {
     // the Python estate 2026-09-05. writes is the declaration: the
     // key admits at the door; the graph builder consumes none of it
     // (UI-only — it never rides the wire; the card.spec hop-5 arm
-    // pins that half).
-    "writes": ["motion_bg_image"],
+    // pins that half). preview_glb rides beside it (the
+    // compose-liveness studio-write arm, 2026-11-06): the studio
+    // persists it through the same onSave merge-patch (picker /
+    // unwire / rail clear) — it is ALSO a declared knob (params
+    // below), so the row is truth-telling, not a new admission.
+    "writes": ["motion_bg_image", "preview_glb"],
     "kind": "custom",
     "size": "normal",
     "layout": "studio"

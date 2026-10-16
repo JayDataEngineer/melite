@@ -308,10 +308,72 @@ describe('W2 — emit face shape (buildfaces audit)', () => {
   })
 })
 
+/** One `build-plane paths --check` invocation's judged face. */
+export interface PathsCheckRun {
+  status: number | null
+  output: string
+}
+
+/** The settle window between the two checks: long enough for the
+ *  publish walker's surgical tsconfig rewrite to pass, far under the
+ *  project's 30s test budget. */
+const SETTLE_MS = 2500
+
+/** THE SETTLE-AND-RECHECK VERDICT (flake class 4's cure): the check
+ *  regenerates the paths table by merging 80 tsconfig faces BESIDE
+ *  the publish walker, which rewrites those same faces mid-gate
+ *  (run-walker-safe.mjs's own header documents the contention) — a
+ *  check spawning mid-rewrite reads a half-merged face and exits 1
+ *  on transient drift. On a nonzero first exit the verdict settles
+ *  once, re-runs the check, and judges the PERSISTENT exit: a
+ *  walker race passes; genuine drift reds. The same "verdict, not
+ *  blind retry" law run-walker-safe.mjs implements, extended to
+ *  subprocess exit codes. Exported for the negative controls (the
+ *  transient race must be unreachable without the recheck). */
+export async function pathsCheckVerdict(
+  run: () => PathsCheckRun,
+  sleep: (ms: number) => Promise<void>,
+): Promise<PathsCheckRun & { rechecked: boolean }> {
+  const first = run()
+  if (first.status === 0) return { ...first, rechecked: false }
+  await sleep(SETTLE_MS)
+  const second = run()
+  return { ...second, rechecked: true }
+}
+
 describe('W4 — the facade table is fresh (one truth)', () => {
-  it('build-plane paths --check exits 0', () => {
-    const r = spawnSync(process.execPath, ['tools/build-plane.mjs', 'paths', '--check'], { cwd: ROOT, encoding: 'utf8' })
-    expect(r.status, `paths drift:\n${r.stdout}${r.stderr}`).toBe(0)
+  it('build-plane paths --check exits 0 (settle-and-recheck: a walker race is not drift)', async () => {
+    const verdict = await pathsCheckVerdict(() => {
+      const r = spawnSync(process.execPath, ['tools/build-plane.mjs', 'paths', '--check'], { cwd: ROOT, encoding: 'utf8' })
+      return { status: r.status, output: `${r.stdout}${r.stderr}` }
+    }, (ms) => new Promise((resolve) => { setTimeout(resolve, ms) }))
+    expect(verdict.status, `paths drift${verdict.rechecked ? ' (persisted across the settle-and-recheck — not a walker race)' : ''}:\n${verdict.output}`).toBe(0)
+  })
+
+  it('a transient walker race (first exit 1, settled exit 0) passes ONLY through the recheck', async () => {
+    // THE CLASS-4 RED-PROOF, positive face: the gate13 shape — a
+    // half-merged face read, then a settled tree. Single-shot
+    // judging reds here; the cure's verdict must not.
+    let calls = 0
+    const verdict = await pathsCheckVerdict(() => {
+      calls += 1
+      return calls === 1
+        ? { status: 1, output: '80 faces merged, 262 rows, base rewritten (mid-rewrite read)' }
+        : { status: 0, output: '' }
+    }, async () => {})
+    expect(calls).toBe(2)
+    expect(verdict).toEqual({ status: 0, output: '', rechecked: true })
+  })
+
+  it('genuine drift reds across the recheck (the wall keeps its own firing arm)', async () => {
+    let calls = 0
+    const verdict = await pathsCheckVerdict(() => {
+      calls += 1
+      return { status: 1, output: `paths drift (call ${calls}: a stale paths table)` }
+    }, async () => {})
+    expect(calls).toBe(2)
+    expect(verdict.status).toBe(1)
+    expect(verdict.rechecked).toBe(true)
   })
 
   it('tools/facade-rows.json exists beside the generator', () => {

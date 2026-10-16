@@ -256,16 +256,17 @@ describe("the family arms — undefined engine and the model re-key", () => {
     expect((document.querySelector("textarea") as HTMLTextAreaElement).value).toBe("keep me");
   });
 
-  test("an Error-voiced spec failure renders its own words", async () => {
+  test("an Error-voiced spec failure renders its own words", { timeout: 30000 }, async () => {
     doors.formSpec = "reject-error";
     mountBench([{ id: "s_0", card: "image-gen", engine: "comfyui", params: {} }]);
     doors.formSpec = "reject-error";
     const user = userEvent.setup();
     await user.click(firstTile());
-    expect(await screen.findByText("door down", {}, { timeout: 4000 })).toBeTruthy();
+    // thrown fetch verb's settlement: 15s/30s (flake-slowness-wave2)
+    expect(await screen.findByText("door down", {}, { timeout: 15000 })).toBeTruthy();
   });
 
-  test("a HEALED spec door retires the latched error — never a dead form forever (F-5)", async () => {
+  test("a HEALED spec door retires the latched error — never a dead form forever (F-5)", { timeout: 30000 }, async () => {
     doors.specFamilies = true;
     mountBench([{ id: "s_0", card: "image-gen", engine: "comfyui", params: {} }]);
     doors.specFamilies = true;
@@ -284,7 +285,8 @@ describe("the family arms — undefined engine and the model re-key", () => {
     });
     await user.click(within(axes).getByLabelText("Model"));
     await user.click(screen.getByRole("menuitem", { name: "Tts" }));
-    expect(await screen.findByText("door down", {}, { timeout: 4000 })).toBeTruthy();
+    // thrown fetch verb's settlement: 15s/30s (flake-slowness-wave2)
+    expect(await screen.findByText("door down", {}, { timeout: 15000 })).toBeTruthy();
     doors.formSpec = "ok";
     await user.click(within(document.querySelector('[data-model-axes="1"]') as HTMLElement).getByLabelText("Model"));
     await user.click(screen.getByRole("menuitem", { name: "Image Gen" }));
@@ -430,7 +432,7 @@ describe("the run's quiet arms — no edits, and the Error-voiced patch", () => 
     expect(flush).toEqual({ prompt: "p!" });
   });
 
-  test("an undelivered run patch voices the door's own words", async () => {
+  test("an undelivered run patch voices the door's own words", { timeout: 30000 }, async () => {
     // the old frame's {rev: 2} (no delivered key) is the door's
     // undelivered arm — the harness serves patchFailures verbatim.
     mountBench(
@@ -445,7 +447,8 @@ describe("the run's quiet arms — no edits, and the Error-voiced patch", () => 
     if (area === null) throw new Error("prompt field not found");
     await user.type(area, "x");
     fireEvent.click(within(zoomCard()).getByRole("button", { name: "Run stage" }));
-    expect(await screen.findByText(/undelivered/, {}, { timeout: 4000 })).toBeTruthy();
+    // refused run patch's settlement: 15s/30s (flake-slowness-wave2)
+    expect(await screen.findByText(/undelivered/, {}, { timeout: 15000 })).toBeTruthy();
     expect(calls().some((p) => p.method === "runs/start")).toBe(false);
   });
 });

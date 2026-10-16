@@ -25,20 +25,31 @@
 // engine does not have reds here, before any lane ships it.
 //
 // Run: npx vitest run tests/walls/ts/suites/card-compose-liveness.spec.ts
+// THE HERMETIC ENGINE first (the mock-first law, tests/helpers/
+// hermetic-engine.ts): the studio-write admission arm below primes a
+// CardRegistryService, and prime() fetches /object_info — the mock
+// must register before the barrel's first evaluation, so this import
+// precedes boot-models.
+import { assertHermeticRode } from "../../../helpers/hermetic-engine.ts";
 import { describe, it } from "vitest";
 import assert from "node:assert/strict";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { readFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, readdirSync, statSync } from "node:fs";
+import { tmpdir } from "node:os";
 
 // THE CARD TIER, BOOTED THE CARD SPEC'S WAY (models registry + card
 // defs + facts — the upload-referenced precedent). The registry
 // import order matters — boot-models first.
 import "../../../helpers/boot-models.ts";
+import { Context } from "@deepseek-ai/cordis";
 import { loadCardDefs } from "@melite/comfyui-cordis";
 import { GraphBuilder } from "@melite/comfyui-card-kit/graph";
 import { loadFacts } from "@melite/comfyui-card-kit/facts";
 import { getModel, registryIds, registryModel, modelIds } from "../../../../packages/engines/comfyui-cordis/src/models/models.ts";
+import { CardRegistryService } from "../../../../packages/harness/estate-queue/src/cardsRegistry.ts";
+import { admissionRefusal, prepareCardParams } from "../../../../packages/harness/estate-queue/src/cardsCompose.ts";
+import { liftCardParams } from "../../../../packages/harness/estate-queue/src/cardsVariant.ts";
 
 const FACTS_PATH = join(
   dirname(fileURLToPath(import.meta.url)),
@@ -137,6 +148,58 @@ function namedMulti(message: string): string[] {
   // the schema walk's path voice: $.field expected "x" | "y"
   for (const m of message.matchAll(/\$\.([A-Za-z_][\w-]*)/g)) names.add(m[1]);
   return [...names].filter((n) => !["random", "int", "undefined", "required"].includes(n));
+}
+
+/** THE STUDIO-EMIT GREP (CURE-1's emit depth): the computed
+ *  `[MOTION_*_PARAM]` keys inside every onSave(...) payload of one
+ *  source file. The segment between the call's parens is walked with
+ *  a depth counter, so a ternary payload yields both objects. */
+function onSaveParamConstants(src: string): string[] {
+  const out: string[] = [];
+  for (const m of src.matchAll(/onSave\s*\(/g)) {
+    const start = m.index ?? 0;
+    let depth = 1;
+    let i = start + m[0].length;
+    let seg = "";
+    for (; i < src.length && depth > 0; i++) {
+      const ch = src[i]!;
+      if (ch === "(") depth += 1;
+      else if (ch === ")") {
+        depth -= 1;
+        if (depth === 0) break;
+      }
+      seg += ch;
+    }
+    for (const k of seg.matchAll(/\[\s*([A-Z][A-Z0-9_]*)\s*\]\s*:/g)) out.push(k[1]!);
+  }
+  return out;
+}
+
+/** The literal a studio param constant names, read from the studio
+ *  tree's own export (motionParams.ts is the constants' home). */
+function paramLiteral(files: string[], name: string): string | null {
+  const re = new RegExp(`\\b(?:export\\s+)?(?:const|let|var)\\s+${name}\\s*=\\s*"([^"]+)"`);
+  for (const f of files) {
+    const m = re.exec(readFileSync(f, "utf8"));
+    if (m) return m[1]!;
+  }
+  return null;
+}
+
+/** Every .ts/.tsx file under dir — source only, never node_modules. */
+function walkSources(dir: string): string[] {
+  const out: string[] = [];
+  const walk = (d: string): void => {
+    for (const e of readdirSync(d)) {
+      if (e === "node_modules" || e === "lib") continue;
+      const p = join(d, e);
+      const st = statSync(p);
+      if (st.isDirectory()) walk(p);
+      else if (/\.(tsx?)$/.test(e)) out.push(p);
+    }
+  };
+  walk(dir);
+  return out;
 }
 
 /** THE VOCABULARY CHECK, exported for the rejection-path proof: every
@@ -421,6 +484,108 @@ describe("every facts row composes its card alive (the dead-card wall)", () => {
     assert.deepEqual(offenders, [], "CARD KEY DRIFT:\n" + offenders.join("\n"));
     const unjudged = Object.keys(keyDoc).filter((ct) => !seenClasses.has(ct));
     assert.deepEqual(unjudged, [], "key fixture rows no card composes (vacuous judges — prune or extend the composed universe):\n" + unjudged.join(", "));
+  });
+
+  // ─── CURE-1 (motion-journey wave-2): the bg brick ─────────────────
+  // The burn: the studio persisted motion_bg_image into stage.params
+  // and the compose door refused every bg-carrying stage — the audit
+  // headline's refusal — because no surface declared the key and no
+  // test composed a doc carrying it (the probe loops above fill the
+  // SCHEMA's own knobs only). This arm lifts the F7 roundtrip law one
+  // hop (emit-depth × admit-depth): the key set is DERIVED from the
+  // studio's own onSave payloads, then pushed through the run's real
+  // admission path in its own order (cardsRegistry runCardStage:
+  // prepareCardParams → admissionRefusal).
+  it("THE STUDIO-WRITE ADMISSION (CURE-1): every key the motion studio persists through onSave admits at the compose door — inside the envelope, never refused, never silently dropped", async () => {
+    // EMIT DEPTH — the doc the studio itself would save.
+    const studioDir = join(
+      dirname(fileURLToPath(import.meta.url)),
+      "..", "..", "..", "..",
+      "packages", "motion", "motion", "src", "ui", "studio",
+    );
+    const studioFiles = walkSources(studioDir);
+    const constants = new Set<string>();
+    for (const f of studioFiles) for (const c of onSaveParamConstants(readFileSync(f, "utf8"))) constants.add(c);
+    const keys: string[] = [];
+    const unresolved: string[] = [];
+    for (const c of constants) {
+      const literal = paramLiteral(studioFiles, c);
+      if (literal === null) unresolved.push(c);
+      else keys.push(literal);
+    }
+    assert.deepEqual(unresolved, [], `studio onSave writes name constants with no string-literal export in the studio tree: ${unresolved.join(", ")}`);
+    assert.ok(keys.length > 0, "the emit grep found no MOTION_*_PARAM onSave write — the derivation went vacuous (the grep broke or the studio stopped persisting; fix the grep, never shrink the door)");
+    assert.ok(
+      keys.includes("motion_bg_image"),
+      `the incident write (motion_bg_image) is no longer persisted by the studio — a cure-claiming change; this wall moves with it (derived: ${keys.join(", ")})`,
+    );
+    keys.sort();
+
+    // ADMIT DEPTH — the real compose seat (the queue stub is the
+    // family-coverage precedent: the dangling sweep's stateRoots
+    // manifest reads through it, and a bare Context would swallow the
+    // sweep into a vacuous green).
+    const ctx = new Context();
+    (ctx as unknown as { queue: unknown }).queue = {
+      stateRoot: mkdtempSync(join(tmpdir(), "compose-liveness-")),
+      stateRoots: [] as string[],
+    };
+    const registry = new CardRegistryService(ctx);
+    await registry.prime();
+    await loadCardDefs();
+    assertHermeticRode();
+    const facts = registry.modelFacts();
+    const motionFams = Object.entries(facts)
+      .filter(([, row]) => row.card === "motion" && row.studio !== undefined && row.studio !== null)
+      .map(([id]) => id);
+    assert.ok(motionFams.length > 0, "no facts row serves the motion card with a studio block — the tenant fold vanished");
+
+    // the studio's own payload shape: a data: URL (the file picker's
+    // write). The door's media seats read strings; the dangling sweep
+    // judges only /v1/assets/ refs — exactly as a picked file arrives.
+    const STUDIO_MEDIA_PROBE = "data:image/png;base64,bW90aW9uLWxpdmVuZXNz";
+    const offenders: string[] = [];
+    for (const fam of motionFams) {
+      const body: Record<string, unknown> = { model: fam };
+      for (const k of keys) body[k] = STUDIO_MEDIA_PROBE;
+      // (1) the door must NOT refuse a studio-persisted state
+      const prep = prepareCardParams(registry, body, fam, "admission");
+      admissionRefusal(registry, prep.card, prep.fam, prep.params, "admission");
+      // (2) the keys ride INSIDE the envelope, values verbatim
+      for (const k of keys) {
+        if (!(k in prep.params) || prep.params[k] !== STUDIO_MEDIA_PROBE) {
+          offenders.push(`${fam}: studio write '${k}' did not land inside the envelope (params: ${Object.keys(prep.params).join(", ")})`);
+        }
+      }
+      // (3) DECL COVERAGE — the declaration home (the family DECL's
+      // studio.writes row; cardsFacts deriveDecls unions it into
+      // admits). A studio write no DECL declares is the brick's first
+      // half, named here before the door even sees it.
+      const writeRows = Array.isArray(facts[fam]?.studio?.writes)
+        ? (facts[fam]!.studio!.writes as unknown[]).filter((w): w is string => typeof w === "string")
+        : [];
+      for (const k of keys) {
+        if (!writeRows.includes(k)) {
+          offenders.push(`${fam}: the studio persists '${k}' but the family DECL's studio.writes does not declare it (rows: ${writeRows.join(", ") || "none"})`);
+        }
+      }
+    }
+
+    // REFUSE-LOUD — the gate's other half: a key on NO surface is
+    // refused NAMED, never silently dropped (an always-swallowing door
+    // would satisfy the envelope assert by eating everything).
+    const fam0 = motionFams[0]!;
+    const motionCard = facts[fam0]?.card ?? "motion";
+    let loud = "";
+    try {
+      admissionRefusal(registry, motionCard, fam0, liftCardParams({ model: fam0, definitely_not_a_motion_param: 1 }), "admission");
+    } catch (err) {
+      loud = err instanceof Error ? err.message : String(err);
+    }
+    if (loud === "") offenders.push("the compose door ADMITTED 'definitely_not_a_motion_param' — a key no surface declares; the refusal is silent");
+    else if (!loud.includes("definitely_not_a_motion_param")) offenders.push(`the refusal for an undeclared key does not name it: ${loud}`);
+
+    assert.deepEqual(offenders, [], `STUDIO-WRITE ADMISSION BROKEN:\n${offenders.join("\n")}`);
   });
 
   it("the rejection path: phantom classes and param-less refusals are named, never swallowed", () => {

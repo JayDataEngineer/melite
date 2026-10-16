@@ -1,6 +1,6 @@
 /**
  * Shared motion-studio spec setup — extracted VERBATIM from
- * motion-studio.spec.tsx (pure move; the file was split into sibling
+ * the motion-studio suite (pure move; it lives as the sibling
  * motion-studio-*.spec.tsx files). Mount/stub factories plus the
  * per-test teardown body.
  */

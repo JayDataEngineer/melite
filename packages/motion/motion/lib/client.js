@@ -17184,7 +17184,8 @@ window.__ModuleLoader__.load({
 		* with it the interrupt (editorClient.stopRun → /v1/flows/stop → ComfyUI
 		* /interrupt — the kimodo node's per-step hook makes the abort land
 		* mid-generation). The tenant carries ZERO rpc imports: its only write
-		* channel is onSave (E1, enforced by card-studio-boundary.test.ts).
+		* channel is onSave (E1 — the tenant-props contract, web-kit/contracts
+		* studio.ts; zero RPC imports by construction).
 		*
 		* REPOSE (Phase B): edit mode drives PoseViewer3D's joint gizmos. The
 		* sculpt is re-skinned client-side (edited joints cm→m → deformFrame →
