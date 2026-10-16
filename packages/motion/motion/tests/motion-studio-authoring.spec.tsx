@@ -196,9 +196,13 @@ describe('timeline (prompts + keyframes)', () => {
     await vi.waitFor(() => {
       if (!document.body.querySelector('[data-kf]')) throw new Error('no diamond yet')
     }, { timeout: 10000 })
-    // park at frame 0, then click the frame-2 diamond to jump
-    const ruler = document.body.querySelector('[data-testid="motion-timeline-ruler"]') as HTMLElement
-    fireEvent.pointerDown(ruler, { clientX: 0, button: 0 })
+    // park at frame 0, then click the frame-2 diamond to jump.
+    // (2026-11 scrub cure) the park rides the playhead CAP — the
+    // ruler body is not a scrub surface anymore; and the cap's press
+    // seeks nothing, so the MOVE is the gesture (a grab never jumps).
+    const cap = document.body.querySelector('[data-testid="motion-timeline-playhead-cap"]') as HTMLElement
+    fireEvent.pointerDown(cap, { clientX: 0, button: 0 })
+    fireEvent.pointerMove(window, { clientX: 0 })
     fireEvent.pointerUp(window, { clientX: 0 })
     await vi.waitFor(() => {
       if (document.body.querySelector('[data-testid="motion-timeline-timecode"]')?.textContent !== '00:00:00') {
@@ -215,18 +219,38 @@ describe('timeline (prompts + keyframes)', () => {
     }, { timeout: 10000 })
   })
 
-  test('ruler pointer-drag scrubs the playhead', async () => {
+  // THE SCRUB SEAT (operator 2026-11: "MAKE SURE IT ONLY SCRUBS WHEN
+  // THE MOUSE IS OVER THE WHITE CIRCLE AT THE TOP, AND NOT WHEN IT IS
+  // IN THE MIDDLE"): the cap owns the gesture, the ruler body never
+  // does, and the cap's own press never jumps — the move is the seek.
+  test('the playhead cap drags the playhead; the ruler body never scrubs', async () => {
     await paused(await mountedWithRun())
     stubScrollerRect()
-    const ruler = document.body.querySelector('[data-testid="motion-timeline-ruler"]') as HTMLElement
-    fireEvent.pointerDown(ruler, { clientX: 16, button: 0 })
+    const timecode = () =>
+      document.body.querySelector('[data-testid="motion-timeline-timecode"]')?.textContent
+    const cap = document.body.querySelector('[data-testid="motion-timeline-playhead-cap"]') as HTMLElement
+    // THE GRAB NEVER JUMPS: press alone (even a press-and-release)
+    // leaves the playhead exactly where it was
+    fireEvent.pointerDown(cap, { clientX: 0, button: 0 })
+    fireEvent.pointerUp(window, { clientX: 0 })
+    if (timecode() !== '00:00:00') throw new Error(`the grab jumped to ${timecode() ?? '??'}`)
+    // the drag proper: cap press + move seeks absolutely
+    fireEvent.pointerDown(cap, { clientX: 0, button: 0 })
     fireEvent.pointerMove(window, { clientX: 16 })
     fireEvent.pointerUp(window, { clientX: 16 })
     await vi.waitFor(() => {
-      if (document.body.querySelector('[data-testid="motion-timeline-timecode"]')?.textContent !== '00:00:02') {
+      if (timecode() !== '00:00:02') {
         throw new Error('scrub did not land yet')
       }
     }, { timeout: 10000 })
+    // THE RULER BODY IS DEAD: the same press+move on the bar's middle
+    // moves nothing (the defect was scrubbing from here)
+    const ruler = document.body.querySelector('[data-testid="motion-timeline-ruler"]') as HTMLElement
+    fireEvent.pointerDown(ruler, { clientX: 64, button: 0 })
+    fireEvent.pointerMove(window, { clientX: 64 })
+    fireEvent.pointerUp(window, { clientX: 64 })
+    await new Promise((r) => setTimeout(r, 50))
+    if (timecode() !== '00:00:02') throw new Error(`the ruler body scrubbed to ${timecode() ?? '??'}`)
   })
 
   test('prompt double-click edits and commits text', async () => {

@@ -1,6 +1,6 @@
 import type * as React from "react";
-import type { TimelineTrack } from "./viser-timeline/types.js";
-import type { AudioLayer, TimelineBeat } from "./MotionTimelineBar.js";
+import type { TimelineTrack } from "./viser-timeline/types.ts";
+import type { AudioLayer, TimelineBeat } from "./MotionTimelineBar.tsx";
 export interface TimelineGutterScale {
     zoom: (factor: number) => void;
     anchorRef: React.MutableRefObject<{
@@ -56,16 +56,22 @@ export interface TimelineRulerProps {
     barBg: string;
     frameToPx: (f: number) => number;
     frameAt: (clientX: number) => number | null;
-    seek: (e: React.PointerEvent) => void;
     onPromptAdd?: (frame: number) => void;
 }
-/** The ruler: scrub surface, ticks, sticky timecode (bar line 947). */
+/** The ruler: ticks + sticky timecode. NOT a scrub surface (operator
+ *  2026-11: the scrub gesture belongs to the playhead CAP alone — the
+ *  white circle at the top of the line — never the bar's middle); its
+ *  one gesture left is the double-click ADD (bar line 947). */
 export declare function TimelineRuler(props: TimelineRulerProps): React.JSX.Element;
 export interface TimelinePlayheadProps {
     frameIdx: number;
     frameToPx: (f: number) => number;
     playhead: string;
+    onGrab: (e: React.PointerEvent) => void;
 }
-/** The playhead, spanning every row (bar line 1517). */
+/** The playhead, spanning every row (bar line 1517). The cap at its
+ *  top is THE scrub handle (operator 2026-11: the gesture lives on
+ *  the white circle, never the bar's middle) — the line itself stays
+ *  pointer-dead so clips underneath keep their own gestures. */
 export declare function TimelinePlayhead(props: TimelinePlayheadProps): React.JSX.Element;
 //# sourceMappingURL=MotionTimelineBarChrome.d.ts.map

@@ -682,14 +682,32 @@ describe("drag gestures (every door maps film→doc)", () => {
   })
 })
 
-describe("scrub (seek pairs the interaction state)", () => {
-  it("ruler press seeks + opens; release closes", () => {
+describe("scrub (the cap owns the gesture; seek pairs the interaction state)", () => {
+  // THE SCRUB SEAT (operator 2026-11: "ONLY SCRUBS WHEN THE MOUSE IS
+  // OVER THE WHITE CIRCLE AT THE TOP, NOT IN THE MIDDLE"): the cap is
+  // the one scrub surface; its press opens the interaction state and
+  // seeks NOTHING (a grab never jumps) — the move is the seek; and the
+  // ruler body carries no scrub at all (its double-click add is its
+  // own arm above).
+  it("cap press opens + never jumps; the move seeks; release closes", () => {
     const { rec } = strip()
-    fireEvent.pointerDown(screen.getByTestId("motion-timeline-ruler"), { button: 0, clientX: 60 })
-    assert.equal(rec.scrubStart.length, 1)
-    assert.equal(rec.bar.length, 1)
+    const cap = screen.getByTestId("motion-timeline-playhead-cap")
+    fireEvent.pointerDown(cap, { button: 0, clientX: 60 })
+    assert.equal(rec.scrubStart.length, 1, "the press opens the interaction state")
+    assert.equal(rec.bar.length, 0, "a grab never jumps — the press seeks nothing")
+    fireEvent.pointerMove(document.body, { clientX: 60 })
+    assert.equal(rec.bar.length, 1, "the move is the seek")
     fireEvent.pointerUp(document.body, { clientX: 60 })
     assert.equal(rec.scrubEnd.length, 1)
+  })
+
+  it("the ruler body never scrubs (the defect's own face)", () => {
+    const { rec } = strip()
+    fireEvent.pointerDown(screen.getByTestId("motion-timeline-ruler"), { button: 0, clientX: 60 })
+    fireEvent.pointerMove(document.body, { clientX: 120 })
+    fireEvent.pointerUp(document.body, { clientX: 120 })
+    assert.deepEqual(rec.scrubStart, [], "no interaction state from the bar's middle")
+    assert.deepEqual(rec.bar, [], "no seek from the bar's middle")
   })
 })
 

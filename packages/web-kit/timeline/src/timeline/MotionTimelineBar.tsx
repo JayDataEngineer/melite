@@ -387,7 +387,7 @@ export function MotionTimelineBar({
       >
         <TimelineRuler
           ticks={ticks} stepSec={stepSec} fps={fps} frameIdx={frameIdx} barBg={barBg}
-          frameToPx={scale.frameToPx} frameAt={scale.frameAt} seek={drag.seek} onPromptAdd={onPromptAdd}
+          frameToPx={scale.frameToPx} frameAt={scale.frameAt} onPromptAdd={onPromptAdd}
         />
         <TimelinePromptsLane
           prompts={prompts} fps={fps} promptsHeight={promptsHeight} emptyPromptsHint={emptyPromptsHint}
@@ -414,7 +414,7 @@ export function MotionTimelineBar({
           frameToPx={scale.frameToPx} xToFrame={scale.xToFrame} startDrag={drag.startDrag}
           onKeyframeAdd={onKeyframeAdd} onKeyframeDelete={onKeyframeDelete}
         />
-        <TimelinePlayhead frameIdx={frameIdx} frameToPx={scale.frameToPx} playhead={playhead} />
+        <TimelinePlayhead frameIdx={frameIdx} frameToPx={scale.frameToPx} playhead={playhead} onGrab={drag.grabPlayhead} />
       </TimelineContent>
     </div>
   )

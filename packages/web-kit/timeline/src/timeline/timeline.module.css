@@ -230,11 +230,12 @@
 }
 
 /* ── Ruler ─────────────────────────────────────────────────────────── */
+/* NOT a scrub surface (operator 2026-11): the ruler body carries
+   ticks + the double-click add only — the ew-resize cursor and the
+   touch-action lock died with the press-to-seek; the cap owns both. */
 .ruler {
   position: relative;
   border-bottom: 1px solid var(--dsw-alias-border-l2);
-  cursor: ew-resize;
-  touch-action: none;
 }
 .tick {
   position: absolute;
@@ -897,6 +898,25 @@
   transform: translateX(-50%);
   border-radius: 9999px;
   border: 1px solid var(--dsw-alias-border-l4);
+  /* THE SCRUB HANDLE (operator 2026-11: the gesture lives on the
+     white circle at the top, never the bar's middle): the cap is the
+     timeline's one scrub surface — the parent line stays
+     pointer-dead so the clips beneath keep their gestures. The
+     ::before widens the grab target to ~18px without growing the
+     painted dot (audit F7: an honest affordance, not a lying
+     cursor — grab/grabbing say exactly what the pointer does). */
+  pointer-events: auto;
+  cursor: grab;
+  touch-action: none;
+}
+.playheadCap:active {
+  cursor: grabbing;
+}
+.playheadCap::before {
+  content: "";
+  position: absolute;
+  inset: -5px;
+  border-radius: 9999px;
 }
 
 /* ── Viser-timeline zoom cluster (DSH Buttons, ghost) ──────────────── */

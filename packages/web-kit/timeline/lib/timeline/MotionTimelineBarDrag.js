@@ -289,14 +289,19 @@ export function useTimelineDragSession(opts) {
         };
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [T1, effPpf, onFrameChange, onKeyframeMove, onPromptMove, onPromptResize, onExtend]);
-    const seek = (e) => {
+    // THE PLAYHEAD GRAB (operator 2026-11: "FOR THE SCRUBBER WHITE LINE.
+    // MAKE SURE IT ONLY SCRUBS WHEN THE MOUSE IS OVER THE WHITE CIRCLE AT
+    // THE TOP, AND NOT WHEN IT IS IN THE MIDDLE"): the ruler body is no
+    // longer a scrub surface — the cap owns the whole gesture. The press
+    // ARMS the scrub session and seeks NOTHING (a grab never jumps, even
+    // from the hit-area's edge); the first pointermove seeks absolutely,
+    // so the handle follows the hand.
+    const grabPlayhead = (e) => {
         if (e.button !== 0)
             return;
+        e.preventDefault();
         dragRef.current = { kind: "scrub", startX: e.clientX, moved: false };
         onScrubStart?.();
-        const f = xToFrame(e.clientX);
-        if (f != null)
-            onFrameChange(f);
     };
     return {
         dragId,
@@ -306,7 +311,7 @@ export function useTimelineDragSession(opts) {
         firstPromptRef,
         promptsRef,
         startDrag,
-        seek,
+        grabPlayhead,
     };
 }
 //# sourceMappingURL=MotionTimelineBarDrag.js.map

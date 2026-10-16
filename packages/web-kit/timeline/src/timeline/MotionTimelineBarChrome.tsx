@@ -265,33 +265,34 @@ export interface TimelineRulerProps {
   barBg: string
   frameToPx: (f: number) => number
   frameAt: (clientX: number) => number | null
-  seek: (e: React.PointerEvent) => void
   onPromptAdd?: (frame: number) => void
 }
 
-/** The ruler: scrub surface, ticks, sticky timecode (bar line 947). */
+/** The ruler: ticks + sticky timecode. NOT a scrub surface (operator
+ *  2026-11: the scrub gesture belongs to the playhead CAP alone — the
+ *  white circle at the top of the line — never the bar's middle); its
+ *  one gesture left is the double-click ADD (bar line 947). */
 export function TimelineRuler(props: TimelineRulerProps) {
   const {
     ticks, stepSec, fps, frameIdx, barBg,
-    frameToPx, frameAt, seek, onPromptAdd,
+    frameToPx, frameAt, onPromptAdd,
   } = props
   return (
     <>
-      {/* Ruler — click/drag scrubs; double-click ADDS a clip at that
-          frame (the additive gesture's always-computable home — the
-          calls row's clips own their own double-click for editing). */}
+      {/* Ruler — double-click ADDS a clip at that frame (the additive
+          gesture's always-computable home — the calls row's clips own
+          their own double-click for editing). Scrubbing is the cap's. */}
       <Tip
         tip={
           onPromptAdd
-            ? "Click or drag to move the playhead — double-click to add a call at that frame"
-            : "Click or drag to move the playhead"
+            ? "Drag the playhead cap to scrub — double-click here to add a call at that frame"
+            : "Drag the playhead cap to scrub"
         }
       >
         <div
           data-testid="motion-timeline-ruler"
           className={css.ruler}
           style={{ height: RULER_H }}
-          onPointerDown={seek}
           onDoubleClick={(e) => {
             if (!onPromptAdd) return
             // UNclamped (the tail-pull precedent): a double-click
@@ -312,8 +313,8 @@ export function TimelineRuler(props: TimelineRulerProps) {
             playhead's timecode mm:ss:ff, sticky-pinned at the
             bar's left edge — 1:1 with the playhead (same frameIdx,
             same fps axis the clips are drawn on; audit F2 unifies
-            the axis in the tenant). It IS part of the ruler
-            surface: clicking or dragging it scrubs. */}
+            the axis in the tenant). A readout only: scrubbing is
+            the cap's gesture, and this chip rides no pointer. */}
         <span
           data-testid="motion-timeline-timecode"
           className={css.timecode}
@@ -331,11 +332,15 @@ export interface TimelinePlayheadProps {
   frameIdx: number
   frameToPx: (f: number) => number
   playhead: string
+  onGrab: (e: React.PointerEvent) => void
 }
 
-/** The playhead, spanning every row (bar line 1517). */
+/** The playhead, spanning every row (bar line 1517). The cap at its
+ *  top is THE scrub handle (operator 2026-11: the gesture lives on
+ *  the white circle, never the bar's middle) — the line itself stays
+ *  pointer-dead so clips underneath keep their own gestures. */
 export function TimelinePlayhead(props: TimelinePlayheadProps) {
-  const { frameIdx, frameToPx, playhead } = props
+  const { frameIdx, frameToPx, playhead, onGrab } = props
   return (
     <>
       {/* Playhead — brand cyan, spans every row, above the clips. */}
@@ -351,8 +356,10 @@ export function TimelinePlayhead(props: TimelinePlayheadProps) {
         }}
       >
         <span
+          data-testid="motion-timeline-playhead-cap"
           className={css.playheadCap}
           style={{ background: playhead }}
+          onPointerDown={onGrab}
         />
       </div>
     </>

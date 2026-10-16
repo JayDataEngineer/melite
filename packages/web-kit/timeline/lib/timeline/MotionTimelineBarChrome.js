@@ -57,12 +57,15 @@ export function TimelineContent(props) {
                         onSelect?.(null);
                     }, children: children }) }) }) }));
 }
-/** The ruler: scrub surface, ticks, sticky timecode (bar line 947). */
+/** The ruler: ticks + sticky timecode. NOT a scrub surface (operator
+ *  2026-11: the scrub gesture belongs to the playhead CAP alone — the
+ *  white circle at the top of the line — never the bar's middle); its
+ *  one gesture left is the double-click ADD (bar line 947). */
 export function TimelineRuler(props) {
-    const { ticks, stepSec, fps, frameIdx, barBg, frameToPx, frameAt, seek, onPromptAdd, } = props;
+    const { ticks, stepSec, fps, frameIdx, barBg, frameToPx, frameAt, onPromptAdd, } = props;
     return (_jsx(_Fragment, { children: _jsx(Tip, { tip: onPromptAdd
-                ? "Click or drag to move the playhead — double-click to add a call at that frame"
-                : "Click or drag to move the playhead", children: _jsxs("div", { "data-testid": "motion-timeline-ruler", className: css.ruler, style: { height: RULER_H }, onPointerDown: seek, onDoubleClick: (e) => {
+                ? "Drag the playhead cap to scrub — double-click here to add a call at that frame"
+                : "Drag the playhead cap to scrub", children: _jsxs("div", { "data-testid": "motion-timeline-ruler", className: css.ruler, style: { height: RULER_H }, onDoubleClick: (e) => {
                     if (!onPromptAdd)
                         return;
                     // UNclamped (the tail-pull precedent): a double-click
@@ -72,15 +75,18 @@ export function TimelineRuler(props) {
                         onPromptAdd(f);
                 }, children: [ticks.map((s) => (_jsxs("div", { className: css.tick, style: { left: frameToPx(s * fps) }, children: [_jsx("div", { className: css.tickLine }), _jsx("span", { className: css.tickLabel, children: timelineCopy.tickSeconds({ value: stepSec < 1 ? s.toFixed(1) : String(s) }) })] }, s))), _jsx("span", { "data-testid": "motion-timeline-timecode", className: css.timecode, style: { background: barBg, boxShadow: "2px 0 6px -2px color-mix(in srgb, var(--dsw-alias-bg-base) 80%, transparent)" }, children: fmtTimecode(frameIdx, fps) })] }) }) }));
 }
-/** The playhead, spanning every row (bar line 1517). */
+/** The playhead, spanning every row (bar line 1517). The cap at its
+ *  top is THE scrub handle (operator 2026-11: the gesture lives on
+ *  the white circle, never the bar's middle) — the line itself stays
+ *  pointer-dead so clips underneath keep their own gestures. */
 export function TimelinePlayhead(props) {
-    const { frameIdx, frameToPx, playhead } = props;
+    const { frameIdx, frameToPx, playhead, onGrab } = props;
     return (_jsx(_Fragment, { children: _jsx("div", { "data-testid": "motion-timeline-playhead", className: css.playhead, style: {
                 left: frameToPx(frameIdx),
                 width: 2,
                 background: playhead,
                 boxShadow: `0 0 6px color-mix(in srgb, ${playhead} 40%, transparent)`,
                 transform: "translateX(-50%)",
-            }, children: _jsx("span", { className: css.playheadCap, style: { background: playhead } }) }) }));
+            }, children: _jsx("span", { "data-testid": "motion-timeline-playhead-cap", className: css.playheadCap, style: { background: playhead }, onPointerDown: onGrab }) }) }));
 }
 //# sourceMappingURL=MotionTimelineBarChrome.js.map
