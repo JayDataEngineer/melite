@@ -8738,52 +8738,6 @@ window.__ModuleLoader__.load({
 			reconcilePick(patch, spec, row, held);
 			return patch;
 		}
-		/** THE OVERRIDE RECONCILE (operator 2026-11-05: "THE LATEST
-		*  SELECTION MUST OVERRIDE" — the multi-level live break: model,
-		*  variant, recipe, and quant switches EACH bricked the card at the
-		*  compose gate while the frozen-fixture suites stayed green). The
-		*  judge reads the doc against the RESOLVED VARIANT's
-		*  sampler_envelope — so the pick's ONE write must land every
-		*  judged key on a truth the envelope admits, priority:
-		*  1. the picked row's stamps: TRUSTED verbatim when the row IS the
-		*     law-holder (a variant pick — a row whose declared default
-		*     falls outside its own envelope is a lying DECL, the gate's to
-		*     refuse); otherwise clamped through the variant's envelope (a
-		*     recipe's 50 composes to 8 under a 4-step distill);
-		*  2. the value the doc already carries: inside the envelope it
-		*     STANDS unwritten (a pick overrides only what it speaks — a
-		*     quant pick that declares no steps never tramples the recipe's
-		*     50), outside it clamps to the nearest bound;
-		*  3. nothing carried: the RESOLVED VARIANT's declared default for
-		*     the key, else the family row's (spec.model_defaults) — the
-		*     absent-key seed (flux's numbers on a fresh switch, never a
-		*     departed family's 52 resurrected by the schema).
-		*  A switch never leaves a judged key outside the envelope. Mutates
-		*  the patch. */
-		function overrideEnvelopeKeys(patch, spec, offered, held, trustStamps = false) {
-			const env = offered.sampler_envelope;
-			if (env === void 0 || env === null) return;
-			const familyDefaults = spec.model_defaults ?? {};
-			for (const [k, range] of Object.entries(env)) {
-				if (!Array.isArray(range) || range.length !== 2) continue;
-				const [lo, hi] = range;
-				if (typeof lo !== "number" || typeof hi !== "number") continue;
-				const clamp = (v) => v < lo ? lo : v > hi ? hi : v;
-				const stamp = patch[k];
-				if (typeof stamp === "number" && Number.isFinite(stamp)) {
-					if (!trustStamps) patch[k] = clamp(stamp);
-					continue;
-				}
-				const doc = held?.[k];
-				if (typeof doc === "number" && Number.isFinite(doc)) {
-					const c = clamp(doc);
-					if (c !== doc) patch[k] = c;
-					continue;
-				}
-				const declared = offered.defaults[k] ?? familyDefaults[k];
-				if (typeof declared === "number" && Number.isFinite(declared)) patch[k] = clamp(declared);
-			}
-		}
 		/** A pick's full reconcile: resolve the variant the DOOR will judge
 		*  (offeredVariantOf — the door's own resolution over the doc the
 		*  pick produces), then land its envelope keys on a truth the
@@ -8799,8 +8753,7 @@ window.__ModuleLoader__.load({
 				...held ?? {},
 				...patch
 			};
-			const offered = offeredVariantOf(spec.variants ?? [], doc) ?? row;
-			overrideEnvelopeKeys(patch, spec, offered, held, offered.id === row.id && row.group === "Variant");
+			(offeredVariantOf(spec.variants ?? [], doc) ?? row).id === row.id && row.group;
 		}
 		/** A model switch's full value patch (the stale-variant cure,
 		*  operator 2026-09-14: model anima + variant turbo refused at
@@ -8954,7 +8907,6 @@ window.__ModuleLoader__.load({
 			const offered = offeredVariantOf(spec.variants ?? [], seeded);
 			if (offered === void 0 || offered.sampler_envelope == null) return seeded;
 			const patch = {};
-			overrideEnvelopeKeys(patch, spec, offered, seeded, false);
 			if (Object.keys(patch).length === 0) return seeded;
 			return {
 				...seeded,

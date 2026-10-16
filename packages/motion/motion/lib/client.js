@@ -10945,9 +10945,15 @@ window.__ModuleLoader__.load({
 		* state (viewer-local, not doc state). Read via refs so pushUndo stays
 		* stable (zero re-render cascade).
 		*/
-		function useMotionUndoStack({ captureDoc, restoreDoc, keptEdit, editedDeformedB64, editableJointsRef, setEditableJoints, setKeptEdit, setEditedDeformedB64 }) {
+		function useMotionUndoStack({ captureDoc, restoreDoc, keptEdit, editedDeformedB64, editableJointsRef, setEditableJoints, setKeptEdit, setEditedDeformedB64, stageId }) {
 			const undoStack = (0, react.useRef)([]);
 			const redoStack = (0, react.useRef)([]);
+			const scopeRef = (0, react.useRef)(stageId);
+			if (scopeRef.current !== stageId) {
+				scopeRef.current = stageId;
+				undoStack.current = [];
+				redoStack.current = [];
+			}
 			const [undoVersion, setUndoVersion] = (0, react.useState)(0);
 			const captureDocRef = (0, react.useRef)(captureDoc);
 			const restoreDocRef = (0, react.useRef)(restoreDoc);
@@ -11229,12 +11235,14 @@ window.__ModuleLoader__.load({
 			const bodyWired = !!bodyWiredUpstream;
 			const bodyWiredUrl = bodyWiredUpstream?.result ? [...Object.values(bodyWiredUpstream.result.artifacts ?? {}), ...bodyWiredUpstream.result.assetUrls].find((u) => typeof u === "string" && isModelUrl(u)) ?? null : null;
 			const bodySrc = bodyWired ? bodyWiredUrl ?? "" : bodyGlb ?? "";
+			const previewParam = stage.params?.[MOTION_PREVIEW_GLB_PARAM];
 			(0, react.useEffect)(() => {
-				const v = stage.params?.[MOTION_PREVIEW_GLB_PARAM];
+				const v = previewParam;
 				setBodyGlbState(typeof v === "string" && v.length > 0 ? v : null);
 				setBodyNotice(null);
 			}, [
 				stage.id,
+				previewParam,
 				setBodyGlbState,
 				setBodyNotice
 			]);
@@ -11415,10 +11423,15 @@ window.__ModuleLoader__.load({
 				setBgImage(url);
 				onSave(url ? { [MOTION_BG_IMAGE_PARAM]: url } : { [MOTION_BG_IMAGE_PARAM]: "" });
 			}, [onSave, setBgImage]);
+			const bgParam = stage.params?.[MOTION_BG_IMAGE_PARAM];
 			(0, react.useEffect)(() => {
-				const v = stage.params?.[MOTION_BG_IMAGE_PARAM];
+				const v = bgParam;
 				setBgImage(typeof v === "string" && v.length > 0 ? v : null);
-			}, [stage.id, setBgImage]);
+			}, [
+				stage.id,
+				bgParam,
+				setBgImage
+			]);
 			const handleBgFile = (0, react.useCallback)((file) => {
 				if (!file) return;
 				(0, _melite_card_base_client.readAsDataURL)(file).then(setBg);
@@ -17135,7 +17148,6 @@ window.__ModuleLoader__.load({
 					currentOutput: null,
 					onPick: (upstreamId) => {
 						onWireSlot("preview_glb", upstreamId, null);
-						onSave({ ["preview_glb"]: null });
 						setBodyGlbState(null);
 						setBodyNotice(null);
 						setBodyWireOpen(false);
@@ -17359,7 +17371,8 @@ window.__ModuleLoader__.load({
 				editableJointsRef,
 				setEditableJoints,
 				setKeptEdit,
-				setEditedDeformedB64
+				setEditedDeformedB64,
+				stageId: stage.id
 			});
 			const { toggleEdit, handleJointMove, displayJointsM, handleRepose } = usePoseEditing({
 				effectiveNpz,
