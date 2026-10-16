@@ -312,9 +312,15 @@ export function serializeLayerA(a: LayerA, base?: Record<string, unknown>): Reco
     const v = (a as unknown as Record<string, unknown>)[k]
     if (v !== undefined && v !== "") out[k] = v
   }
-  // the loras MOD BAG rides when non-empty (the mod plane resolves
-  // ids against the family catalog at compose)
-  if (a.loras !== undefined && a.loras.length > 0) out.loras = a.loras
+  // THE LORAS MOD BAG RIDES AS STATED — including the EXPLICIT
+  // EMPTY bag (J1, refs-mods journey audit 2026-10-16: the length
+  // gate made "no loras" unexpressible — a cleared bag serialized
+  // to nothing, the delete ride nulled the key, and the compose
+  // stamped the DMAD default the UI never showed). `loras: []` is
+  // the operator's "no loras" override; ABSENT is unset (the
+  // family default composes). The delete ride skips keys already
+  // in `out`, so [] rides as [] — never as a delete.
+  if (a.loras !== undefined) out.loras = a.loras
   // Super-Res rides only when ON (absent = off — the family default);
   // the model + target resolution ride only when the switch is on.
   if (a.sr_switch === true) {

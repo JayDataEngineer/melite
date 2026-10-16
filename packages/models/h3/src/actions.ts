@@ -873,11 +873,14 @@ function renderH3Window(
   // writes the mod bag `loras` — [{id, strength}] rows the service
   // resolves to {name, strength} filenames against the family's
   // flavor catalog. Those rows build the upstream stack verbatim
-  // ({on, lora, str, v:1, a:1, t:1}); an empty bag rides the
-  // family catalog's turbo row (the mod plane's own default, built
+  // ({on, lora, str, v:1, a:1, t:1}). THE EMPTY-BAG LAW (J1,
+  // refs-mods journey audit 2026-10-16): an EXPLICIT `[]` is the
+  // operator's "no loras" — the wire carries an EMPTY stack and
+  // nothing loads; only an ABSENT bag (unset) rides the family
+  // catalog's default row (the mod plane's own default, built
   // from the catalog so the value has one owner). ONE surface, one
-  // owner.
-  const loraStack = Array.isArray(p.loras) && (p.loras as unknown[]).length > 0
+  // owner, two honest poles.
+  const loraStack = Array.isArray(p.loras)
     ? JSON.stringify((p.loras as Array<Record<string, unknown>>).map((r) => ({
         // the service resolves every row against the family catalog
         // (unknown ids refuse LOUD upstream) — {name, strength} is

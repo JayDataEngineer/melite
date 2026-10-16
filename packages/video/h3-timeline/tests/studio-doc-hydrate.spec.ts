@@ -335,7 +335,7 @@ describe("serializeLayerA (Layer A → persisted shape)", () => {
     }
   })
 
-  it("clips ride only when present; the loras bag rides only when non-empty", () => {
+  it("THE EMPTY-BAG LAW (J1): clips ride only when present; the loras bag rides AS STATED — [] is the no-loras override, never a delete", () => {
     const good = { id: "c1", name: "n", src: "theme", start_frame: 0, dur_frames: 96 }
     const withClips = serializeLayerA({ ...hydrateLayerA(undefined), audio_clips: [good] })
     assert.deepEqual(withClips["audio_clips"], [good])
@@ -343,8 +343,23 @@ describe("serializeLayerA (Layer A → persisted shape)", () => {
     assert.ok(!("audio_clips" in emptyClips))
     const bag = serializeLayerA({ ...hydrateLayerA(undefined), loras: [{ id: "h3_lightx2v_turbo", strength: 0.6 }] })
     assert.deepEqual(bag["loras"], [{ id: "h3_lightx2v_turbo", strength: 0.6 }])
+    // THE CLEARED BAG RIDES AS [] (the refs-mods journey audit J1: the
+    // length gate made "no loras" unexpressible — [] serialized to
+    // nothing, the delete ride nulled the key, and the compose stamped
+    // the DMAD default the UI never showed)
     const bagEmpty = serializeLayerA({ ...hydrateLayerA(undefined), loras: [] })
-    assert.ok(!("loras" in bagEmpty))
+    assert.deepEqual(bagEmpty["loras"], [])
+    // and over a base that still carries rows: [] is an OVERRIDE, not a
+    // delete — the merge-patch sets the key to [], never nulls it
+    const clearedOverBase = serializeLayerA(
+      { ...hydrateLayerA(undefined), loras: [] },
+      { loras: [{ id: "h3_lightx2v_turbo", strength: 0.6 }] },
+    )
+    assert.deepEqual(clearedOverBase["loras"], [])
+    // an UNSET bag (absent state) still serializes to nothing — the
+    // family default stays the absent-pole truth
+    const absentBag = serializeLayerA(hydrateLayerA(undefined))
+    assert.ok(!("loras" in absentBag))
   })
 
   it("Super-Res rides only when ON (switch + model + target together)", () => {

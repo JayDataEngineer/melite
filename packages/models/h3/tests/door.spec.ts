@@ -85,11 +85,26 @@ describe("the h3 film action's facts door", () => {
 });
 
 describe("the film build's single-window arms (no calls wrapper)", () => {
-  it("an empty bag with no DMAD catalog row refuses loud (the absent-bag default has no source)", () => {
+  it("THE EMPTY-BAG LAW (J1): an explicit [] composes an EMPTY stack — no loras load, no default resurrection", () => {
+    const g = new GraphBuilder();
+    instantiateAction(
+      film,
+      { variant: "t4_open", length: 124, prompt: "a slow push in", seed: 42, loras: [] },
+      WINDOW_MODEL, g, "run_empty_bag",
+    );
+    const loaders = Object.entries(g.toJSON()).filter(([, n]) => n.class_type === "LTX_lora_loader");
+    expect(loaders.length).toBeGreaterThan(0);
+    // the wire carries an empty stack — the catalog's default row is
+    // NEVER consulted for an explicit empty bag (the mock strips the
+    // catalog: reaching for the default would refuse right here)
+    expect(loaders[0]![1].inputs.stack_data).toBe("[]");
+  });
+
+  it("THE ABSENT-BAG POLE: unset loras rides the family default (no catalog row refuses loud — the default has no source)", () => {
     const g = new GraphBuilder();
     expect(() => instantiateAction(
       film,
-      { variant: "t4_open", length: 124, prompt: "a slow push in", seed: 42, loras: [] },
+      { variant: "t4_open", length: 124, prompt: "a slow push in", seed: 42 },
       WINDOW_MODEL, g, "run_no_turbo",
     )).toThrow(/the lora catalog has no 'h3_dmad_4step' row/);
   });

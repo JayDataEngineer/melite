@@ -848,16 +848,23 @@ describe("the single-window doors", () => {
       "an unpinned doc still takes the bag's steps");
   });
 
-  it("an empty loras bag rides the catalog's DMAD solo (the operator's 2026-10-12 default — 4-step ByteDance distill at 1, never a pair)", () => {
+  // THE EMPTY-BAG LAW (J1, refs-mods journey audit 2026-10-16):
+  // `loras: []` is the EXPLICIT no-loras override — the compose
+  // stamps an EMPTY stack, never the family default. The old arm
+  // (2026-10-12) asserted the opposite pole (empty = default solo);
+  // that law resurrected a deleted bag (the delete ride nulls only
+  // keys NOT in `out`, then compose re-stamped DMAD on the empty
+  // residue — a cleared bag could never clear). The absent pole is
+  // the default's only owner now: see door.spec's ABSENT-BAG arm.
+  it("an empty loras bag composes an EMPTY stack (J1) — [] is the no-loras override, never the default", () => {
     const g = new GraphBuilder();
     def.compose(def.schema({ calls: [SHOT()], loras: [] }), model, g, "run_lora_empty");
     const stacks = ofClass(graphOf(g), "LTX_lora_loader");
     assert.ok(stacks.length >= 1);
-    const rows = JSON.parse(String(stacks[0]![1].inputs.stack_data)) as Array<{ on?: boolean, lora?: string, str?: number }>;
-    const on = rows.filter((r) => r.on === true);
-    assert.equal(on.length, 1, "ONE lora rides — never a pair, never a fallback stack");
-    assert.ok(String(on[0]!.lora).includes("dmad_minimax_h3_4step"), "the DMAD solo rides (built from the family catalog's h3_dmad_4step row, one owner)");
-    assert.equal(on[0]!.str, 1, "at the catalog's default_strength 1");
+    const data = String(stacks[0]![1].inputs.stack_data);
+    assert.equal(data, "[]", "the empty bag rides as an EMPTY stack (the override, not a delete, not a default)");
+    const rows = JSON.parse(data) as Array<{ on?: boolean, lora?: string, str?: number }>;
+    assert.equal(rows.filter((r) => r.on === true).length, 0, "ZERO loras ride — the DMAD solo never resurrects over an explicit []");
   });
 
   // ── THE T3 REFINE RIDER (roadmap item 2): the service-resolved
