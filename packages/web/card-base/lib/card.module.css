@@ -191,6 +191,22 @@ select option {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+/* THE FACE'S OWN CLAMP (operator 2026-11, defect 2: the dropdown
+ * pills/badges "sometimes" overflow instead of being cut off):
+ * .specSelect's block+ellipsis only holds while the cascade puts
+ * this sheet after DSH's Button.module.css — the Button base is
+ * display:inline-flex and a flex container IGNORES text-overflow, so
+ * a late-loading primitives sheet resurrected the spill. The anchor's
+ * label rides this span: a flex item with min-width:0 +
+ * overflow:hidden clamps under ANY cascade order (the button-level
+ * rules stay as the belt; this is the suspenders). */
+.specSelectText {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 /* The single-model static face (2026-11-05): a stated value, never
  * a dead dropdown — non-interactive, titled, the same clamp. */
 .specSelectStatic { cursor: default; }

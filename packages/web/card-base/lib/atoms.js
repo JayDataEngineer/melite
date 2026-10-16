@@ -103,7 +103,18 @@ export function SpecMenuSelect(props) {
                 ? { title: props.title ?? current?.label }
                 : {}),
             onClick: () => { setOpen(!open); },
-        }, current?.label ?? ''),
+        }, 
+        // THE FACE'S OWN CLAMP (operator 2026-11, defect 2: "pills /
+        // badges for the dropdown buttons OVERFLOWS when the contents
+        // are too long, instead of just being cut off"): the label rides
+        // its OWN span, not the button's text node. DSH's Button base is
+        // display:inline-flex (Button.module.css .button) and a flex
+        // container ignores text-overflow — .specSelect's own
+        // display:block wins only while the cascade order holds, which
+        // made the bug "sometimes". A flex ITEM with min-width:0 +
+        // overflow:hidden clamps regardless of which stylesheet lands
+        // last; the full text stays on the title (the 2026-11-05 face).
+        h('span', { className: css.specSelectText }, current?.label ?? '')),
     });
 }
 /** THE TRI-STATE ATOM (hour 15, stroke C): inherit / on / off —

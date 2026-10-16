@@ -315,6 +315,42 @@ test('CLEAN-ROW LAW: the axes zone owns exactly TWO rails — the rows below the
   expect(css).toMatch(/\.modelAxes > \.specHint \{ grid-column: 1 \/ -1;? \}/)
 })
 
+// THE DROPDOWN PILL CLAMP (operator 2026-11, defect 2: "the pills /
+// badges for the dropdown buttons OVERFLOWS when the contents are too
+// long, instead of just being cut off"). The 2026-11-05 cure put
+// block+ellipsis on .specSelect — but DSH's Button base is
+// display:inline-flex (Button.module.css .button), a flex container
+// IGNORES text-overflow, and the cascade order between the two sheets
+// decides who wins: the spill was "sometimes". The cascade-proof cure
+// is STRUCTURAL — the anchor's label rides its own span, and a flex
+// item with min-width:0 + overflow:hidden clamps under ANY order.
+test('MENU SELECT: the anchor label rides its own clamp span (the dropdown pill never overflows)', () => {
+  const longHint = 'a recipe label long enough to overflow any rail cell the studio renders'
+  const spec = {
+    ...doc(),
+    variants: [
+      ...doc().variants.filter((r) => r.group !== 'Recipe'),
+      V('recipe-long', 'Recipe', { label: 'Long', hint: longHint, defaults: { steps: 50 } }),
+    ],
+  } as unknown as FormSpecDoc
+  axes({ spec, value: { steps: 50 } })
+  const trigger = axisTrigger('Recipe')
+  // THE STRUCTURAL HALF: the label is the span's text, never the
+  // button's bare text node (the span is what the flex box clamps)
+  const span = trigger.querySelector('span')
+  expect(span).not.toBeNull()
+  expect(span!.textContent).toBe(`Long — ${longHint}`)
+  expect(trigger.textContent).toBe(span!.textContent)
+  // THE RULE HALF: the clamp trio pinned verbatim from the module —
+  // min-width:0 is the flex-item law that survives the cascade
+  const css = readFileSync('packages/web/card-base/src/card.module.css', 'utf8')
+  const rule = css.match(/\.specSelectText \{[^}]*\}/)![0]
+  expect(rule).toContain('min-width: 0')
+  expect(rule).toContain('overflow: hidden')
+  expect(rule).toContain('text-overflow: ellipsis')
+  expect(rule).toContain('white-space: nowrap')
+})
+
 test('AXES: a held stranger on an axis renders AS ITSELF, refused (the lane proof, held)', () => {
   axes({ value: { variant: 'nope' } })
   expect(shown('Variant')).toMatch(/^Nope — invalid variant/)
