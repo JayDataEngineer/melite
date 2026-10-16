@@ -11,11 +11,15 @@
  * warnings are tolerated noise.
  */
 import { fireEvent, getByRole, getByText, queryByText } from '@testing-library/dom'
+import { createElement as h } from 'react'
 import { afterEach, describe, expect, test, vi } from 'vitest'
 import { useToastStore } from '@melite/card-base/client'
 import { waitForText } from './harness.tsx'
 import { MOTION_URL } from './fixtures.ts'
-import { resetStudio, stubLoads, mountEditor } from './helpers.ts'
+import { resetStudio, stubLoads, mountEditor, mkStage, mounted } from './helpers.ts'
+import { createRoot } from 'react-dom/client'
+import { MotionCardEditor } from '../src/ui/studio/component.tsx'
+import { runCompiledGeneration } from '@melite/catalog'
 
 afterEach(() => resetStudio())
 
@@ -194,6 +198,34 @@ describe('background + body slot (drops / picks / wire)', () => {
     await waitForText('No motion yet')
     return m
   }
+
+  test('EXTERNAL PARAM WRITES RE-HYDRATE WHILE MOUNTED (CURE-3): a bg param change on the same stage repaints without remount', async () => {
+    // THE LESION (motion-journey wave-2): the media pair hydrated
+    // once per stage.id — an external write (the drill's wire verb,
+    // a bench re-target) left the studio rendering the stale image
+    // until remount. The cure keys the hydrate on the param VALUE;
+    // this arm is its firing proof (stage id UNCHANGED).
+    stubLoads()
+    const onSave = vi.fn()
+    const stage = mkStage({ params: { motion_bg_image: 'https://host/a.png' } })
+    const container = document.createElement('div')
+    document.body.appendChild(container)
+    const root = createRoot(container)
+    mounted.push(root)
+    const editorFor = (params: Record<string, unknown>) =>
+      h(MotionCardEditor, { stage: { ...stage, params }, onSave, runCompiledGeneration } as never)
+    root.render(editorFor({ motion_bg_image: 'https://host/a.png' }))
+    await vi.waitFor(() => {
+      const img = document.body.querySelector('img[aria-hidden]') as HTMLImageElement | null
+      if (img?.src !== 'https://host/a.png') throw new Error('bg a not painted yet')
+    }, { timeout: 10000 })
+    // the EXTERNAL write: same stage id, new param value
+    root.render(editorFor({ motion_bg_image: 'https://host/b.png' }))
+    await vi.waitFor(() => {
+      const img = document.body.querySelector('img[aria-hidden]') as HTMLImageElement | null
+      if (img?.src !== 'https://host/b.png') throw new Error('external bg write did NOT re-hydrate (stale image still painted)')
+    }, { timeout: 10000 })
+  })
 
   test('wire button opens the picker, pick wires the slot', async () => {
     const onWireSlot = vi.fn()

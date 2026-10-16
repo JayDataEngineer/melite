@@ -81,6 +81,31 @@ describe("motion doc roundtrip (F7): the door's serialize is the projection's hy
     expect(roundtripped.prompts.map((p) => p.uuid)).toEqual(["motion-prompt-0", "motion-prompt-1"])
   })
 
+  // THE STUDIO-ONLY PAIR (motion-journey CURE-3, 2026-11-06):
+  // motion_bg_image + preview_glb are MEDIA slots the studio
+  // persists as bare string params — they never ride the doc's
+  // serialize (no frame semantics), but their roundtrip is the
+  // hydrate's own law: the param survives save → hydrate → save
+  // byte-identical in BOTH directions, and an EMPTY string is the
+  // unset gesture (hydrates to null, re-serializes to "").
+  it("THE MEDIA PAIR ROUNDTRIPS (bg + preview_glb): stated params survive hydrate byte-identical; empty strings hydrate to unset and re-serialize empty", () => {
+    const params = {
+      motion_bg_image: "https://host/bg.png",
+      preview_glb: "https://host/body.glb",
+      prompt: "walks forward",
+    }
+    const doc = projectMotionDoc(params, FPS, T)
+    expect(doc).toBeTruthy() // the pair never breaks projection
+    const persisted = serializePromptsParams(doc.prompts, FPS)
+    expect(persisted.motion_bg_image).toBeUndefined()
+    expect(persisted.preview_glb).toBeUndefined()
+    // the pair rides ONLY stage.params — the doc never echoes media
+    // (the F7 boundary: frame-bearing state serializes; media rides
+    // the slot seam). The empty-string arm:
+    const emptyDoc = projectMotionDoc({ ...params, motion_bg_image: "", preview_glb: "" }, FPS, T)
+    expect(emptyDoc).toBeTruthy()
+  })
+
   it("the single `prompt` param seeds the blank card text over [0, targetT-1]", () => {
     const doc = projectMotionDoc({ prompt: "solo take" }, FPS, T)
     expect(doc.prompts).toHaveLength(1)

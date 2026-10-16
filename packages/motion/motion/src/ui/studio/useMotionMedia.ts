@@ -122,12 +122,20 @@ export function useMotionMedia({
 
   // Hydrate the MANUAL attachment from stage.params once per card (a wired
   // slot keeps params null — the wire branch above carries it).
+  const previewParam = stage.params?.[MOTION_PREVIEW_GLB_PARAM]
   useEffect(() => {
-    const v = stage.params?.[MOTION_PREVIEW_GLB_PARAM]
+    const v = previewParam
     setBodyGlbState(typeof v === "string" && v.length > 0 ? v : null)
     setBodyNotice(null)
+    // PARAM-CHANGE-KEYED (motion-journey CURE-3, 2026-11-06): the
+    // once-per-stage.id hydration left an EXTERNAL param write (the
+    // drill's wire verb, a bench re-target) invisible while mounted
+    // — the studio rendered the stale mesh until remount. The value
+    // rides the deps: an external write re-hydrates NOW; the
+    // studio's own setBody writes round-trip the same value and
+    // React bails (no loop).
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [stage.id, setBodyGlbState, setBodyNotice])
+  }, [stage.id, previewParam, setBodyGlbState, setBodyNotice])
 
   useEffect(() => {
     let cancelled = false
@@ -324,11 +332,14 @@ export function useMotionMedia({
   }, [onSave, setBgImage])
 
   // Hydrate from stage.params once per card (mirrors MOTION_CONSTRAINTS_PARAM).
+  const bgParam = stage.params?.[MOTION_BG_IMAGE_PARAM]
   useEffect(() => {
-    const v = stage.params?.[MOTION_BG_IMAGE_PARAM]
+    const v = bgParam
     setBgImage(typeof v === "string" && v.length > 0 ? v : null)
+    // PARAM-CHANGE-KEYED (CURE-3, the preview twin's comment above):
+    // an external bg write re-hydrates while mounted.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [stage.id, setBgImage])
+  }, [stage.id, bgParam, setBgImage])
 
   // File → data URL → persist (shared readAsDataURL — the ONE read path
   // every slot-shaped attach uses; InputCardEditor / SlotGrid / MaskStudio).
