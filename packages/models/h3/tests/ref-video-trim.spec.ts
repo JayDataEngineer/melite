@@ -110,4 +110,58 @@ describe("the h3 ref-video trim seat (003 V4)", () => {
       );
     }).toThrow(/expected at most 3 entries/);
   });
+
+  // THE MIS-SLICE REFUSAL (J3, refs-mods journey audit 2026-10-16):
+  // trims index-pair with the EFFECTIVE video lane. A doc authored
+  // against a longer declared list plus a call replacing the lane
+  // used to ride SILENT — the wrong video's trim, the surplus rows
+  // dropped without a word. Both mismatch poles refuse LOUD, naming
+  // the lane; the healthy replaced-lane pairing slices the CALL's
+  // video (never the declared one it displaced).
+  it("THE MIS-SLICE REFUSAL (J3): trim rows beyond the effective videos refuse LOUD, both lanes", () => {
+    expect(() => {
+      const g = new GraphBuilder();
+      instantiateAction(
+        film,
+        { ...bag(), ref_videos: ["/guides/solo.mp4"], ref_video_trims: [{ start_time: 1, duration: 2 }, { start_time: 3, duration: 1 }] },
+        H3, g, "run_trim_declared_mismatch",
+      );
+    }).toThrow(/2 trim rows pair with 1 effective videos \(the declared lane\)/);
+    expect(() => {
+      const g = new GraphBuilder();
+      instantiateAction(
+        film,
+        {
+          ...bag(), ref_videos: ["/guides/a.mp4", "/guides/b.mp4"],
+          refs: { videos: "/guides/x.mp4" },
+          ref_video_trims: [{ start_time: 1, duration: 2 }, { start_time: 3, duration: 1 }],
+        },
+        H3, g, "run_trim_replaced_mismatch",
+      );
+    }).toThrow(/2 trim rows pair with 1 effective videos \(the call replaced the lane\)/);
+  });
+
+  it("THE EFFECTIVE-PAIRING POLE (J3): a replaced lane's trim slices the CALL's video, entry i to video i", () => {
+    const g = new GraphBuilder();
+    instantiateAction(
+      film,
+      {
+        ...bag(), ref_videos: ["/guides/declared.mp4", "/guides/other.mp4"],
+        refs: { videos: "/guides/call.mp4, /guides/second.mp4" },
+        ref_video_trims: [{ start_time: 0, duration: 0 }, { start_time: 5, duration: 2 }],
+      },
+      H3, g, "run_trim_effective_pair",
+    );
+    const slice = ofClass(g, "Video Slice");
+    expect(slice.length).toBe(1);
+    expect(slice[0]![1].inputs.start_time).toBe(5);
+    expect(slice[0]![1].inputs.duration).toBe(2);
+    // entry 1 pairs with the SECOND effective video — never declared
+    // [0] (the mis-slice the silent path once committed)
+    const loads = ofClass(g, "LoadVideo");
+    expect(loads.map(([, n]) => String(n.inputs.file))).toContain("/guides/second.mp4");
+    expect((slice[0]![1].inputs.video as [string, number])[0]).toBe(
+      loads.find(([, n]) => n.inputs.file === "/guides/second.mp4")![0],
+    );
+  });
 });

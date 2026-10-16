@@ -1025,6 +1025,18 @@ function renderH3Window(
       if (dur !== undefined && typeof dur !== 'number') throw new Error(`ref_video_trims: entry ${i} duration must be a number — got ${JSON.stringify(dur).slice(0, 40)}`)
       return { start_time: start ?? 0, duration: dur ?? 0 }
     })
+    // THE MIS-SLICE REFUSAL (J3, refs-mods journey audit 2026-10-16):
+    // trims index-pair with the EFFECTIVE video lane — the call's
+    // replaced bag when it states one, else the declared lane. A doc
+    // authored against a longer declared list ([A,B,C] + [tA,tB,tC])
+    // plus a call replacing with [X] used to ride SILENT: tA (authored
+    // for A) sliced X, tB/tC fell off — the wrong video's trim, never
+    // a word. A trim row with no video to pair is the mis-slice's
+    // signature; the compose refuses it LOUD, naming both counts.
+    if (videoTrims.length > refVideos.length) {
+      const lane = bagVideos.length > 0 ? 'the call replaced the lane' : 'the declared lane'
+      throw new Error(`ref_video_trims: ${String(videoTrims.length)} trim rows pair with ${String(refVideos.length)} effective videos (${lane}) — a trim row with no video is the silent mis-slice; re-trim against the lane's videos`)
+    }
     const bagAudios = wireList(refBag.audios)
     const refAudios = (bagAudios.length > 0 ? bagAudios : declaredAudios).slice(0, REF_CAPS.audios)
     // a tensor carrier: a node's output handle, or the spell arm's
