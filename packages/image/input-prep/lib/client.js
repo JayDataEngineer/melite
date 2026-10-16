@@ -414,13 +414,6 @@ window.__ModuleLoader__.load({
 		* actually drives into ImageScale; the diffusion upscaler is the
 		* upscale-tools card's own stage, never a phantom row here).
 		*/
-		const CROP_KEYS = [
-			"crop_x",
-			"crop_y",
-			"crop_width",
-			"crop_height"
-		];
-		const SCALE_KEYS = ["scale_width", "scale_height"];
 		/** Read one numeric param (numbers only — anything else is unset). */
 		const num = (v) => typeof v === "number" && Number.isFinite(v) ? v : null;
 		/** The four crop params as one rect (null unless ALL four are
@@ -488,19 +481,10 @@ window.__ModuleLoader__.load({
 			(0, react.useEffect)(() => {
 				bindRun?.(() => {
 					const patch = { ...userRef.current };
-					for (const k of [
-						...CROP_KEYS,
-						...SCALE_KEYS,
-						"scale_method"
-					]) if (k in params && !(k in patch)) patch[k] = null;
 					props.onPatch(patch);
 					runRef.current();
 				});
-			}, [
-				bindRun,
-				params,
-				props.onPatch
-			]);
+			}, [bindRun, props.onPatch]);
 			/** The crop box (or the full frame when uncropped) — the base the
 			* scale presets multiply. */
 			const base = crop ?? (natural !== null ? {
@@ -559,7 +543,7 @@ window.__ModuleLoader__.load({
 							]
 						})
 					]
-				}), /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+				}), mediaType === "image" && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 					className: prep_module_css_default.rail,
 					"data-testid": "prep-rail",
 					children: [

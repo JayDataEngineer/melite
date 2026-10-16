@@ -99,15 +99,10 @@ export function InputPrepStudio(props: StageViewOwnerProps) {
   useEffect(() => {
     bindRun?.(() => {
       const patch: Record<string, unknown> = { ...userRef.current }
-      // keys the frozen row held that left the map (JSON Merge
-      // Patch deletes them — the unset path's domain half)
-      for (const k of [...CROP_KEYS, ...SCALE_KEYS, 'scale_method']) {
-        if (k in params && !(k in patch)) patch[k] = null
-      }
       void props.onPatch(patch)
       runRef.current()
     })
-  }, [bindRun, params, props.onPatch])
+  }, [bindRun, props.onPatch])
 
   /** The crop box (or the full frame when uncropped) — the base the
    * scale presets multiply. */
@@ -148,6 +143,11 @@ export function InputPrepStudio(props: StageViewOwnerProps) {
           </div>
         )}
       </div>
+      {/* THE DECLARED SURFACE LAW (image-3d wave-2): the transform
+          rail mirrors the declaration's visible_when — crop/scale
+          are image-lane knobs (card.ts); on the audio arm the rail
+          hid nothing and compose silently dropped the keys. */}
+      {mediaType === 'image' && (
       <div className={css.rail} data-testid="prep-rail">
         <div className={css.railTitle}>Transform</div>
         <div className={css.railRow}>
@@ -218,6 +218,7 @@ export function InputPrepStudio(props: StageViewOwnerProps) {
           diffusion upscale is the Upscale Image card's own stage — wire this output into it
         </span>
       </div>
+      )}
     </div>
   )
 }

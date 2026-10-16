@@ -248,6 +248,16 @@ describe('the studio (InputPrepStudio)', () => {
     expect(screen.getByTestId('prep-audio-note')).not.toBeNull()
     expect(screen.queryByTestId('prep-crop-preview')).toBeNull()
   })
+
+  it('AUDIO RESTAGE SEATS NO TRANSFORM RAIL (the declared-surface mirror, image-3d wave-2: the rail rendered crop/scale knobs the declaration hides and compose silently dropped)', () => {
+    render(h(InputPrepStudio, owner({ params: { source: 'x.wav', media_type: 'audio' } })))
+    expect(screen.queryByTestId('prep-rail')).toBeNull()
+    expect(screen.queryByTestId('prep-scale-scale_width')).toBeNull()
+    // the image arm keeps the full rail
+    render(h(InputPrepStudio, owner({ params: { source: 'x.png', media_type: 'image' } })))
+    expect(screen.getByTestId('prep-rail')).not.toBeNull()
+    expect(screen.getByTestId('prep-scale-scale_width')).not.toBeNull()
+  })
 })
 
 describe('the adapter (src/client/index.ts)', () => {

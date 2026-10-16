@@ -280,25 +280,12 @@ const ARGUED_FLOOR_DROPS: Record<string, {
   reviewBy: string,
   reason: string,
 }> = {
-  // THE SQUARE-GRAMMAR SWAP DOORS (2026-11-06, the coverage-sweep
-  // wave): CallCard's chip-row onEdit arms (the mods lane's listing
-  // swap and upload swap, chipOfListing's verbatim else) are the
-  // 187eaf607-era square-grammar doors the wire-picker re-wiring
-  // left behind — every live listing pick now commits through the
-  // provider's own door, so the three branch arms carry no firing
-  // gesture. The same sweep walled the arms that DO fire (the mods
-  // chip listing swap, the file swap, both refusal modes) — the
-  // other three metrics climbed (99.39/98.38/100); only branches
-  // falls to the measured 96.44. Owed: either the provider threads
-  // chip picks back through onEdit (the arms live again) or the
-  // dead arms come out; the row re-pins at the climbed face then.
-  '**/packages/video/h3-timeline/src/ui/studio/CallCard.tsx': {
-    from: { statements: 97.35, branches: 96.81, functions: 98.27, lines: 96.63 },
-    to: { statements: 99.39, branches: 96.44, functions: 98.38, lines: 100 },
-    roadmapHeading: "the CallCard square-grammar swap doors are unwired",
-    reviewBy: "2026-12-06",
-    reason: "the three uncovered branch arms are swap doors the wire-picker re-wiring orphaned; the firing arms around them were walled in the same sweep and every other metric climbed",
-  },
+  // (2026-11-06, walls-meta wave-2) the CallCard square-grammar
+  // hand entry that lived here was DEAD CODE — the REGEN spread
+  // below overwrote the key, and its lowercase roadmap heading
+  // could never satisfy the wall's case-sensitive includes. The
+  // regen entry owns the key; the square-grammar debt stays
+  // documented in dev_docs/ROADMAP.md under its own heading.
   // EMPTY (2026-10-18, the H-flap cure): the PoseViewer3D entry left
   // with the ratchet-back — the row now sits ABOVE its argued `from`
   // face (47.93/50.27/36.36/50.65), so the cleanup arm demanded this
