@@ -8306,6 +8306,21 @@ window.__ModuleLoader__.load({
 		function fieldsOf(spec) {
 			return fieldsOfEnvelope(spec.schema, resolveFamilyKey(spec));
 		}
+		/** THE MOD-BAG KEYS (the per-model law's truth seat, operator
+		*  2026-10-16: "MODS (LIKE LORAS) ARE PER MODEL"): the envelope
+		*  root's ARRAY-node names — mod currency, however the field's
+		*  wtype presents. Presentation types lie (a bare lora bag projects
+		*  'loras', a mod list projects 'image_list'); the NODE is the
+		*  truth. Nulls ride modelSwitchPatch's cross-model arm: the bag
+		*  dies with its model, never seeds the arrival. */
+		function bagKeysOf(spec) {
+			const env = spec.schema;
+			if (env == null) return /* @__PURE__ */ new Set();
+			const dict = env.refs[env.uid]?.dict ?? {};
+			const out = /* @__PURE__ */ new Set();
+			for (const [name, id] of Object.entries(dict)) if (env.refs[id]?.type === "array") out.add(name);
+			return out;
+		}
 		/** THE LAYERED RESOLUTION — the engine's compose cascade mirrored
 		* client-side (stroke 34 — the card-recipe layer is dead): schema
 		* defaults <- model defaults <- SERVED STAMPS <- user. The form
@@ -8812,6 +8827,7 @@ window.__ModuleLoader__.load({
 				const vocab = /* @__PURE__ */ new Set();
 				for (const r of spec.variants ?? []) for (const k of Object.keys(r.sampler_envelope ?? {})) vocab.add(k);
 				for (const k of vocab) if (!(k in patch)) patch[k] = null;
+				for (const k of bagKeysOf(spec)) if (!(k in patch)) patch[k] = null;
 			} else if (seededVariant !== void 0) reconcilePick(patch, spec, seededVariant, held);
 			patch["model"] = model;
 			return patch;
@@ -8885,6 +8901,10 @@ window.__ModuleLoader__.load({
 					if (typeof v2 === "string" && v2 !== "") active[g2] = v2;
 				}
 				if (!composingRows(spec, g, active).some((r) => r.id === v || (r.quant ?? "") === v)) delete out[k];
+			}
+			const heldModel = typeof held["model"] === "string" ? held["model"] : "";
+			if (heldModel !== "" && heldModel !== spec.model) {
+				for (const k of Object.keys(out)) if (Array.isArray(out[k])) delete out[k];
 			}
 			return out;
 		}

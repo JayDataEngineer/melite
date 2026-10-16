@@ -357,17 +357,43 @@ test('axisPickPatch: a below-axis with nothing composing rests empty (never a fo
   expect(axisPickPatch(spec, hd)).toEqual({ variant: 'r-hd', quant: '' })
 })
 
-test('modelSwitchPatch: the same family keeps its coordinates; a switch clears every axis', () => {
+test('modelSwitchPatch: the same family keeps its coordinates; a switch clears every axis AND the mod bag (mods are per model)', () => {
   const spec = doc()
-  // same family: the re-point match seats (SD), the chain seats (FP8)
+  // same family: the re-point match seats (SD), the chain seats (FP8),
+  // and the lora bag rides untouched — same model, its own mods stay
   expect(modelSwitchPatch(spec, 'krea-2')).toEqual({ model: 'krea-2', variant: 'r-sd', quant: 'q-fp8' })
   // a re-pointed route is still a SWITCH (routes are not models):
-  // EVERY axis clears — the drill refetches the HD family's own spec
-  expect(modelSwitchPatch(spec, 'krea-2-hd')).toEqual({ model: 'krea-2-hd', variant: '', quant: '' })
-  // a foreign family: EVERY axis clears (this spec's rows are another family's)
-  expect(modelSwitchPatch(spec, 'other')).toEqual({ model: 'other', variant: '', quant: '' })
+  // EVERY axis clears AND the mod bag dies with its model — the drill
+  // refetches the HD family's own spec, the departed bag never rides
+  expect(modelSwitchPatch(spec, 'krea-2-hd')).toEqual({ model: 'krea-2-hd', variant: '', quant: '', loras: null })
+  // a foreign family: EVERY axis clears, the bag dies (this spec's
+  // rows AND its lora field are another family's currency)
+  expect(modelSwitchPatch(spec, 'other')).toEqual({ model: 'other', variant: '', quant: '', loras: null })
   // no re-point union for the empty model: first-composing rows seat
+  // (crossSpec false against itself — the bag law rides the switch
+  // arms only, never the reseed)
   expect(modelSwitchPatch(spec, '')).toEqual({ model: '', steps: 40, variant: 'r-hd', quant: 'q-fp8' })
+})
+
+test('THE MOD BAG LAW (operator 2026-10-16: "MODS (LIKE LORAS) ARE PER MODEL. IF I SWITCH MODEL, KEEPING THE LORA ON MAKES ZERO SENSE")', () => {
+  const spec = doc()
+  const bag = [{ name: 'style.safetensors', strength: 0.8 }]
+  // THE SEED'S FACE: a held doc whose model is not this spec's model
+  // carries a FOREIGN bag — it drops; the same model keeps its own
+  // (one argument: toHaveProperty(key, value) is a value match — a
+  // second arg here would be the always-true disjunction the canon's
+  // ACCURACY axis names)
+  const foreign = seedUser(spec, { model: 'other', loras: bag, steps: 30 })
+  expect(foreign).not.toHaveProperty('loras')
+  expect(foreign['steps']).toBe(30)
+  const own = seedUser(spec, { model: 'krea-2', loras: bag, steps: 30 })
+  expect(own['loras']).toEqual(bag)
+  // THE SWITCH'S FACE: the patch nulls the departing spec's array
+  // fields (nulls DELETE at the write — the bag never survives a
+  // cross-model switch, even onto a family that boards the same
+  // mod kind)
+  const patch = modelSwitchPatch(spec, 'other')
+  expect(patch['loras']).toBeNull()
 })
 
 test('THE MODEL-SWITCH JOURNEY: a departed family\'s axis ids are ghosts — the arrival seed drops them (the 2026-10-16 lock)', () => {

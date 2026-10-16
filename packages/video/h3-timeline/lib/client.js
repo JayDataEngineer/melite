@@ -3307,12 +3307,25 @@ window.__ModuleLoader__.load({
 		*  no generation loss); a source that cannot decode (CORS-blocked,
 		*  dead URL, a test env without Image) also returns verbatim — the
 		*  fit is a courtesy the commit never depends on.
+		*  (2026-10-16, THE AUTORIZE CURE — operator: "YOU DID NOT FIX THE
+		*  AUTORIZE ON THE KEYFRAME"): the old data:-only gate starved the
+		*  PICKER arms — From media and From flow commit URLs, the fit never
+		*  ran, and the engine COVER-CROPPED every off-aspect pick (chopped
+		*  fingers) while the file-drop arm alone fitted. The rider now
+		*  decodes EVERY browser-renderable source — data:, http(s), and
+		*  rooted estate paths — and only bare artifact NAMES ride verbatim
+		*  (no origin, no decode: the engine resolves them, and a decode
+		*  attempt would hang a loaderless source forever).
+		*  crossOrigin anonymous keeps the canvas drawable for cross-origin
+		*  artifacts; a tainted/undecodable source still falls to the
+		*  verbatim catch (the courtesy law).
 		*  @returns the fitted data: URL, or src unchanged. */
 		const fitImageToAspect = async (src, tw, th) => {
-			if (tw <= 0 || th <= 0 || !src.startsWith("data:")) return src;
+			if (tw <= 0 || th <= 0 || !/^(data:|https?:|\/)/.test(src)) return src;
 			try {
 				const img = await new Promise((resolve, reject) => {
 					const el = new Image();
+					el.crossOrigin = "anonymous";
 					el.onload = () => {
 						resolve(el);
 					};
@@ -4487,37 +4500,11 @@ window.__ModuleLoader__.load({
 		function modsNotMediaLine(entry) {
 			return `${entry} is not media — drop an image, video, or audio file (the system bakes the pack); pre-baked .safetensors stems ride the engine listing`;
 		}
-		/** (D2) The mod lane's thumb door — the same law DeclaredChip
-		*  rides: the estate glyph opens the DSH ImageLightbox. One spelling
-		*  for the lane's own seat (the declared chip owns its own). */
-		function ModChipThumb({ chip, slot }) {
-			const [open, setOpen] = (0, react.useState)(false);
-			const label = studioCopy.uploadChipLabel(slot + 1);
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
-				type: "button",
-				variant: "ghost",
-				className: studio_module_css_default.declaredThumbBtn,
-				"aria-label": studioCopy.imagePreviewAria(label),
-				onClick: () => {
-					setOpen(true);
-				},
-				children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("img", {
-					src: chip,
-					alt: label,
-					className: studio_module_css_default.declaredThumb
-				})
-			}), open ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.ImageLightbox, {
-				src: chip,
-				alt: label,
-				labels: {
-					dialog: studioCopy.imagePreviewDialog,
-					close: studioCopy.imagePreviewClose
-				},
-				onClose: () => {
-					setOpen(false);
-				}
-			}) : null] });
-		}
+		/** (DEAD 2026-10-16, the square-grammar cure: the chip that floated
+		*  its own thumbnail OVER the square is gone — a committed image
+		*  renders INSIDE its SourceRow square like every input lane, and
+		*  the square's own face owns the lightbox. ModChipThumb deleted,
+		*  never revived.) */
 		/** THE MODS LANE (2026-10-24, the operator's compound report: "at
 		*  layer B, i do not see a refmod spot") — reusable reference-mod
 		*  packs. THE ANY-MEDIA LAW (operator, 2026-11-06): the seat takes
@@ -4552,6 +4539,7 @@ window.__ModuleLoader__.load({
 				label: stem,
 				url: `${stem}.safetensors`
 			}));
+			const chipUrl = /* @__PURE__ */ new Map();
 			const chipOfListing = (v) => {
 				const byUrl = candidates.find((c) => c.url === v);
 				if (byUrl !== void 0) return byUrl.url;
@@ -4565,7 +4553,7 @@ window.__ModuleLoader__.load({
 				}
 				return true;
 			};
-			const commitUpload = async (f) => {
+			const commitUpload = async (f, at) => {
 				const fam = f.type.startsWith("image/") ? "image" : f.type.startsWith("video/") ? "video" : f.type.startsWith("audio/") ? "audio" : null;
 				if (fam === null) {
 					setFileError(modsNotMediaLine(f.name));
@@ -4579,7 +4567,7 @@ window.__ModuleLoader__.load({
 				try {
 					const data = await (0, _melite_card_base_client.readAsDataURL)(f);
 					setFileError(null);
-					setChips([...chips, data]);
+					setChips(at === null ? [...chips, data] : chips.map((x, idx) => idx === at ? data : x));
 				} catch {
 					setFileError("could not read that file");
 				}
@@ -4617,31 +4605,24 @@ window.__ModuleLoader__.load({
 								url: path,
 								kind: "mod"
 							}, `declared-${path}`)),
-							chips.map((chip, ci) => /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
-								className: studio_module_css_default.declaredChip,
-								"data-testid": "tl-call-mod-chip",
-								title: studioCopy.modChipTitle(chip),
-								children: [
-									(0, _melite_card_base_client.isImageUrl)(chip) ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)(ModChipThumb, {
-										chip,
-										slot: ci
-									}) : null,
-									/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-										className: studio_module_css_default.declaredName,
-										children: chip.startsWith("data:") ? studioCopy.uploadChipLabel(ci + 1) : declaredShortName(chip)
-									}),
-									/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
-										type: "button",
-										variant: "ghost",
-										className: studio_module_css_default.declaredTag,
-										"data-testid": "tl-call-mod-strip",
-										onClick: () => setChips(chips.filter((_, x) => x !== ci)),
-										title: studioCopy.removePack,
-										"aria-label": studioCopy.removePack,
-										children: "×"
-									})
-								]
-							}, `${chip}-${ci}`)),
+							chips.map((chip, ci) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.SourceRow, {
+								label: chip.startsWith("data:") ? studioCopy.uploadChipLabel(ci + 1) : declaredShortName(chip),
+								kind: "file",
+								accept: "image/*,video/*,audio/*",
+								value: displaySource(chip, chipUrl),
+								onEdit: (v) => {
+									if (v === "") setChips(chips.filter((_, x) => x !== ci));
+									else if (commitListingChip(v)) {
+										setFileError(null);
+										setChips(chips.map((x, idx) => idx === ci ? chipOfListing(v) : x));
+									}
+								},
+								candidates,
+								loadMedia: _melite_card_base_client.fetchMediaLibrary,
+								onFile: (f) => {
+									commitUpload(f, ci);
+								}
+							}, `modchip-${ci}`)),
 							/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.SourceRow, {
 								label: `+ ${label.toLowerCase()}`,
 								ariaLabel: `+ ${label.toLowerCase()}`,
@@ -4657,7 +4638,7 @@ window.__ModuleLoader__.load({
 									}
 								},
 								onFile: (f) => {
-									commitUpload(f);
+									commitUpload(f, null);
 								}
 							})
 						]

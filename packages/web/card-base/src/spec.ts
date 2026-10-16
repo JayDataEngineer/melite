@@ -517,6 +517,25 @@ export function fieldsOf(spec: FormSpecDoc): SpecField[] {
   return fieldsOfEnvelope(spec.schema, resolveFamilyKey(spec))
 }
 
+/** THE MOD-BAG KEYS (the per-model law's truth seat, operator
+ *  2026-10-16: "MODS (LIKE LORAS) ARE PER MODEL"): the envelope
+ *  root's ARRAY-node names — mod currency, however the field's
+ *  wtype presents. Presentation types lie (a bare lora bag projects
+ *  'loras', a mod list projects 'image_list'); the NODE is the
+ *  truth. Nulls ride modelSwitchPatch's cross-model arm: the bag
+ *  dies with its model, never seeds the arrival. */
+function bagKeysOf(spec: FormSpecDoc): Set<string> {
+  const env = spec.schema
+  if (env == null) return new Set()
+  const root = env.refs[env.uid]
+  const dict = root?.dict ?? {}
+  const out = new Set<string>()
+  for (const [name, id] of Object.entries(dict)) {
+    if (env.refs[id]?.type === 'array') out.add(name)
+  }
+  return out
+}
+
 /** THE LAYERED RESOLUTION — the engine's compose cascade mirrored
  * client-side (stroke 34 — the card-recipe layer is dead): schema
  * defaults <- model defaults <- SERVED STAMPS <- user. The form
@@ -1270,6 +1289,19 @@ export function modelSwitchPatch(spec: FormSpecDoc, model: string, held?: SpecVa
     for (const k of vocab) {
       if (!(k in patch)) patch[k] = null
     }
+    // THE MOD BAG DIES WITH ITS MODEL (operator, 2026-10-16: "MODS
+    // (LIKE LORAS) ARE PER MODEL. IF I SWITCH MODEL, KEEPING THE
+    // LORA ON MAKES ZERO SENSE"): the departing spec's ARRAY-node
+    // fields are mod currency (the bag law — user arrays are mod
+    // picks: loras, ref_mods), picked FOR the departed model's
+    // weights. A cross-model switch nulls them — the arrival model
+    // starts clean, its own bag its own. Unconditional: even a
+    // family that boards the same mod KIND never inherits another
+    // model's picks. The NODE is the truth, never the presentation
+    // type (an image_list mod and a bare lora bag are both bags).
+    for (const k of bagKeysOf(spec)) {
+      if (!(k in patch)) patch[k] = null
+    }
   } else if (seededVariant !== undefined) {
     reconcilePick(patch, spec, seededVariant, held)
   }
@@ -1368,6 +1400,21 @@ export function seedUser(spec: FormSpecDoc, held: SpecValues): SpecValues {
       if (typeof v2 === 'string' && v2 !== '') active[g2] = v2
     }
     if (!composingRows(spec, g, active).some((r) => r.id === v || (r.quant ?? '') === v)) delete out[k]
+  }
+  // THE MOD BAG DIES WITH ITS MODEL (operator, 2026-10-16: "MODS
+  // (LIKE LORAS) ARE PER MODEL"): a held ARRAY is mod currency (the
+  // bag law — user arrays are mod picks: loras, ref_mods), picked
+  // for the model that held it. When the held doc's model is not
+  // THIS spec's model — the ghost's own entry: a failed switch left
+  // the departed family's state under the arrival's spec — the bag
+  // drops at the seed instead of riding into a compose that either
+  // refuses every later write or silently mis-feeds the new weights.
+  // Same model: the bag is that model's own and stays.
+  const heldModel = typeof held['model'] === 'string' ? held['model'] as string : ''
+  if (heldModel !== '' && heldModel !== spec.model) {
+    for (const k of Object.keys(out)) {
+      if (Array.isArray(out[k])) delete out[k]
+    }
   }
   return out
 }
