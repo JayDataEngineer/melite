@@ -372,6 +372,48 @@ describe("ONE CLOCK, BOTH ARMS (2026-10-16 — the single-call burn: 'it works w
       WINDOW_MODEL, gu, "run_steps_unstated",
     );
     expect(schedSteps(gu.toJSON() as Doc)).toEqual([4]);
+    // THE THIRD SHAPE (journey audit 72b1d88a finding 1, the
+    // second-burn rule): the k-marked frozen multi-call doc renders
+    // window k on the doc surface — its row is calls[k-1]. Before
+    // the cure the row's knobs and span died unread and the bag
+    // stomped a knob-pinned 6; unwalled only because no studio
+    // gesture authors the shape (the agent plane does).
+    const gk = new GraphBuilder();
+    instantiateAction(
+      film,
+      h3schema({
+        variant: undefined, k: 2,
+        calls: [
+          { text: "a slow push in", start_frame: 0, end_frame: 90 },
+          { text: "the crowd turns", start_frame: 90, end_frame: 175, knobs: { steps: 6 } },
+        ],
+        loras: [{ name: "distill-8.safetensors", strength: 0.6, steps: 4 }], seed: 1,
+      }),
+      WINDOW_MODEL, gk, "run_steps_kmarked",
+    );
+    expect(schedSteps(gk.toJSON() as Doc)).toEqual([6], "the frozen window's OWN knob steps wins over the bag");
+    // the inverse-cheat guard: no knob steps on the row → the bag's
+    // 4 applies (the marriage's lawful arm holds on this shape too)
+    const gki = new GraphBuilder();
+    instantiateAction(
+      film,
+      h3schema({
+        variant: undefined, k: 2,
+        calls: [
+          { text: "a slow push in", start_frame: 0, end_frame: 90 },
+          { text: "the crowd turns", start_frame: 90, end_frame: 175 },
+        ],
+        loras: [{ name: "distill-8.safetensors", strength: 0.6, steps: 4 }], seed: 1,
+      }),
+      WINDOW_MODEL, gki, "run_steps_kmarked_unstated",
+    );
+    expect(schedSteps(gki.toJSON() as Doc)).toEqual([4]);
+    // and the row's SPAN owns the window length (the lift runs for
+    // the frozen window's row, same as the sole call): window 2's
+    // 90→180 = 90 frames
+    const gens = Object.values(gk.toJSON() as Doc)
+      .filter((n) => /ImageToVideo|ReferenceToVideo/.test(n.class_type));
+    expect(gens[0]!.inputs.length).toBe(90);
   });
 });
 

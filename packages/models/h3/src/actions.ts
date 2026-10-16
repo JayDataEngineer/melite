@@ -1995,10 +1995,23 @@ export const film: ComfyActionSpec<Record<string, unknown>, H3Facts> = {
     // mapping so the lift carries the mapped anchor/end-anchor seats
     // onto the doc surface — the single-window shape's byte-identical
     // endpoint probe rides this order.)
-    {
-      const row = Array.isArray(p.calls) && p.calls.length === 1
-        ? (p.calls[0] as Record<string, unknown>)
+    // ONE STANZA LAW, ALL ARMS (journey audit 72b1d88a finding 1,
+    // 2026-10-16 — the second-burn rule binds): the k-marked frozen
+    // shape (p.k set, calls > 1) renders window k on the DOC surface
+    // — its row is calls[p.k - 1] (1-based, the film loop's own
+    // window${k} naming). Before this arm the row's span, text,
+    // refs and knobs died unread on every frozen multi-window doc,
+    // and the lora bag stomped a knob-pinned steps: the split-brain
+    // twin of the sole-call lift, unwalled only because no studio
+    // gesture authors it — the agent plane and hand-built docs do.
+    const stanzaRow = Array.isArray(p.calls) && p.calls.length === 1
+      ? (p.calls[0] as Record<string, unknown>)
+      : Array.isArray(p.calls) && p.calls.length > 1
+        && typeof p.k === 'number' && Number.isInteger(p.k) && p.k >= 1 && p.k <= p.calls.length
+        ? (p.calls[p.k - 1] as Record<string, unknown>)
         : null
+    {
+      const row = stanzaRow
       if (row !== null) {
         // FRAMES ARE LAYER B (operator 2026-10-16: "NUMBER OF FRAMES
         // IS ALWAYS LAYER B"): the single call's span OWNS the window
@@ -2136,8 +2149,13 @@ export const film: ComfyActionSpec<Record<string, unknown>, H3Facts> = {
     if (Array.isArray(p.loras)) {
       const rows = p.loras as Array<Record<string, unknown>>
       const applied = rows.map((r) => r.steps).filter((v): v is number => typeof v === 'number' && Number.isFinite(v))
-      const singleKnobs = docCalls !== null && (docCalls as unknown[]).length === 1
-        ? (((docCalls as Array<Record<string, unknown>>)[0]!.knobs ?? {}) as Record<string, unknown>)
+      // THE MARRIAGE'S ROW FACE: the sole call's knobs — and, since
+      // the k-marked cure (journey audit 72b1d88a), the FROZEN
+      // window's own row knobs too. One consult, both shapes: the
+      // row the window renders is the row whose steps are the
+      // user's word.
+      const singleKnobs = stanzaRow !== null
+        ? ((stanzaRow.knobs ?? {}) as Record<string, unknown>)
         : {}
       if (applied.length > 0 && p.__steps_pinned !== true && singleKnobs.steps === undefined) {
         p.steps = Math.max(...applied)
