@@ -48,9 +48,7 @@ function strip(over?: Record<string, unknown>) {
     <StudioStripPane
       calls={[{ n: 1 }, { n: 2 }] as never}
       refAudiosBlocked={false}
-      totalFrames={168}
       fps={24}
-      seconds="7.0"
       barPrompts={[P1, P2] as never}
       barLanes={[K1] as never}
       barAudioClips={[CLIP]}
@@ -487,12 +485,33 @@ describe("the keyframes lane's add door (the lane-add parity law)", () => {
 })
 
 describe("chrome (counts + fps + tracks + stem)", () => {
-  it("one call reads singular; many plural", () => {
+  it("one call reads singular; many plural (the meta rides the BAR's truth: barTotal/fps)", () => {
     const h1 = strip()
-    assert.ok(screen.getByText("Timeline").parentElement!.textContent!.includes("2 calls · 168 fr · 24 fps · 7.0s"))
+    assert.ok(screen.getByText("Timeline").parentElement!.textContent!.includes("2 calls · 200 fr · 24 fps · 8.33s"))
     h1.els.unmount()
     strip({ calls: [{ n: 1 }] as never })
-    assert.ok(screen.getByText("Timeline").parentElement!.textContent!.includes("1 call · 168 fr"))
+    assert.ok(screen.getByText("Timeline").parentElement!.textContent!.includes("1 call · 200 fr"))
+  })
+
+  it("D3 CONFORMANCE (operator 2026-11-06: 'calls bar only goes to 5.5s vs film Final cut 9.06s'): a film map owns the meta — the plan's numbers never show", () => {
+    // the film: 162 frames at its own fps (the 'Final cut 9.06s' shape
+    // is 162/17.88 — any film fps proves the law); the plan: 168/24.
+    // barTotal rides 162 here because the DERIVED seam upstream
+    // (useDerivedView: barTotal = filmMap.totalFrames ?? …) feeds it
+    // so — its own wall judges that seam.
+    const h1 = strip({ filmMap: { fps: 30, totalFrames: 162 } as never, barTotal: 162 })
+    const meta = screen.getByText("Timeline").parentElement!.textContent!
+    assert.ok(meta.includes("162 fr"), `the film's frames own the meta: ${meta}`)
+    assert.ok(meta.includes("30 fps"), `the film's fps owns the meta: ${meta}`)
+    assert.ok(meta.includes("5.40s"), `the seconds derive barTotal/barFps: ${meta}`)
+    assert.ok(!meta.includes("168 fr"), "the plan's frames never show beside the film's bar")
+    assert.ok(!meta.includes("7.0s"), "the plan's seconds never show beside the film's bar")
+    h1.els.unmount()
+    // no map: the bar falls to the plan's own frames — one spelling
+    const h2 = strip()
+    assert.ok(screen.getByText("Timeline").parentElement!.textContent!.includes("200 fr · 24 fps · 8.33s"),
+      "without a map the meta still rides the BAR's total (barTotal), never a second truth")
+    h2.els.unmount()
   })
 
   it("film fps wins when mapped; the doc fps otherwise", () => {
@@ -608,16 +627,30 @@ describe("drag gestures (every door maps film→doc)", () => {
     assert.deepEqual(rec.promptResize, [["p2", 4242, 4242], ["p2", 4242, 4242]])
   })
 
-  it("the tail-pull grows the envelope by exactly its overshoot", () => {
-    const { rec } = strip({ docFromFilm: ((g: number) => g) as never })
+  it("the tail-pull rides the INVERSE map (D3's ghost, 2026-11-06): a mapped pull never writes a raw film delta", () => {
+    // (re-pinned 2026-11-06: the old arm pinned the linear delta
+    // (filmEdge+1 − filmTotal + docTotal) as the law — with a scaled
+    // window that authored GHOST doc frames, and the next run
+    // re-scaled the overshoot: the video demorphed past the pull.)
+    // The law: the doc write IS docFromFilm(newTotal), the map's own
+    // inverse — proven here on a NON-identity map.
+    const inv = (g: number): number => Math.round((g - 100) / 1.25) + 80
+    const { rec } = strip({ docFromFilm: inv as never })
     const edgeR = document.body.querySelector('[data-prompt-clip="p2"] [data-prompt-edge="r"]')!
     drag(edgeR, 100, 2000)
     assert.equal(rec.extend.length, 1)
     assert.equal(rec.promptResize.length, 1)
     const e = (rec.promptResize[0]! as unknown[])[2] as number
     assert.ok(e > 200)
-    // the tenant's envelope math: (film edge + 1) − film total + doc total
-    assert.equal((rec.extend[0]! as unknown[])[0], e + 1 - 200 + 168)
+    // e is the DOC edge (the resize rides docFromFilm at the pane's
+    // own boundary); the bar's onExtend arrives in FILM frames — the
+    // forward edge F satisfies inv(F) = e, so the envelope law is
+    // extend === inv(F + 1), derived through the map's own round-trip
+    const F = (e - 80) * 1.25 + 100
+    assert.equal((rec.extend[0]! as unknown[])[0], inv(F + 1),
+      "the doc envelope grows by the map's own inverse — never a raw delta")
+    assert.notEqual((rec.extend[0]! as unknown[])[0], F + 1,
+      "and never the raw film frames either: the map is scaled")
   })
 
   it("clip click selects; click-away deselects", () => {

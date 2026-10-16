@@ -45,7 +45,7 @@ const loadAudioMedia = async (_kind: string, signal: AbortSignal) => {
 }
 
 export function StudioStripPane({
-  calls, totalFrames, fps, seconds,
+  calls, fps,
   barPrompts, barLanes, barAudioClips, barTotal, frameIdx,
   callPreviews, selectedBarId, filmMap,
   handleBarFrame, handleScrubStart, handleScrubEnd,
@@ -57,9 +57,7 @@ export function StudioStripPane({
   setLayerAKey, artifactIndex, docFromFilm, keyframes, addKeyframeWithImage, enterKfView, enterAudioView,
 }: {
   calls: DocCall[]
-  totalFrames: number
   fps: number
-  seconds: string
   barPrompts: TimelinePrompt[]
   barLanes: TimelineKeyframe[]
   barAudioClips: Array<{ id: string; name: string; start_frame: number; dur_frames: number; gain?: number; class?: "dialogue" | "sfx" | "music"; text?: string }>
@@ -259,12 +257,20 @@ export function StudioStripPane({
   // same law's wording (studioCopy.gapRefusal).
   const gapPin = keyframes.some((k) => pinDropVerdict(calls, k.frame) === null)
   const refusalFace = laneErr ?? (gapPin ? studioCopy.gapRefusal : null)
+  // (D3, operator 2026-11-06: "calls bar only goes to 5.5s vs film
+  // 'Final cut 9.06s · frame 145/162'") — the meta line rides the
+  // SAME truth the bar axis below rides: the FILM's frames + fps
+  // when a map exists, the plan's otherwise. The plan spelling
+  // (totalFrames/fps/seconds) is the DOC header's own — here it lied
+  // beside the film's own bar.
+  const barFps = filmMap?.fps ?? fps
+  const barSeconds = (barTotal / barFps).toFixed(2)
   return (
   <PaneShell>
     <PaneHeader
       title={studioCopy.timelineTitle}
       meta={
-        studioCopy.stripMeta({ calls: calls.length, frames: totalFrames, fps, seconds })
+        studioCopy.stripMeta({ calls: calls.length, frames: barTotal, fps: barFps, seconds: barSeconds })
       }
       hint={
         <>
@@ -301,7 +307,7 @@ export function StudioStripPane({
       keyframes={kfChips}
       frameIdx={frameIdx}
       totalFrames={barTotal}
-      fps={filmMap?.fps ?? fps}
+      fps={barFps}
       initialSeconds={10}
       onFrameChange={handleBarFrame}
       onScrubStart={handleScrubStart}
@@ -316,7 +322,13 @@ export function StudioStripPane({
       onPromptMove={(id, s, e) => handlePromptMove(id, docFromFilm(s), docFromFilm(e))}
       onPromptResize={(id, s, e) => handlePromptResize(id, docFromFilm(s), docFromFilm(e))}
       onPromptDelete={handlePromptDelete}
-      onExtend={(newTotal) => handleExtend(newTotal - barTotal + totalFrames)}
+      // (D3's ghost, 2026-11-06) the tail pull arrives in FILM
+      // frames; the doc write rides the INVERSE map — never a raw
+      // linear delta. With a scaled window (film 162 ↔ doc 132) the
+      // delta path added FILM frames to the DOC total, the next run
+      // re-scaled the overshoot, and the film demorphed past the
+      // pull — a ghost tail no one authored.
+      onExtend={(newTotal) => handleExtend(docFromFilm(newTotal))}
       // (operator 2026-11-05: "THERE IS NO TIMELINE ROW FOR THE
       // KEYFRAMES") — the lanes ride ALWAYS: a fresh doc's empty
       // keyframe lane is the PICK SURFACE (double-click pins); a

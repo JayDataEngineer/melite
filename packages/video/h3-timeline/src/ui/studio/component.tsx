@@ -404,9 +404,7 @@ export function VideoTimelineStudio(owner: StageViewOwnerProps) {
       bottom={
           <StudioStripPane
             calls={calls}
-            totalFrames={totalFrames}
             fps={fps}
-            seconds={seconds}
             barPrompts={derived.barPrompts}
             barLanes={derived.barLanes}
             barAudioClips={derived.barAudioClips}

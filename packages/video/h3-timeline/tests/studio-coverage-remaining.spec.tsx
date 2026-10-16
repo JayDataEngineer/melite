@@ -73,9 +73,7 @@ const ARTIFACTS = new Map([
 function makeStripProps(rec: StripRecord, over: Partial<StripProps> = {}): StripProps {
   const props: StripProps = {
     calls: [{ text: "one", start_frame: 0, end_frame: 96 }],
-    totalFrames: 96,
     fps: 24,
-    seconds: "4.0s",
     barPrompts: [],
     barLanes: [],
     barAudioClips: [],

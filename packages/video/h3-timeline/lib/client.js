@@ -3624,7 +3624,7 @@ window.__ModuleLoader__.load({
 		const loadAudioMedia = async (_kind, signal) => {
 			return (await (0, _melite_card_base_client.fetchMediaLibrary)("all", signal)).filter((r) => AUDIO_ROW_RE.test(r.url) || AUDIO_ROW_RE.test(r.name));
 		};
-		function StudioStripPane({ calls, totalFrames, fps, seconds, barPrompts, barLanes, barAudioClips, barTotal, frameIdx, callPreviews, selectedBarId, filmMap, handleBarFrame, handleScrubStart, handleScrubEnd, handleKeyframeAdd, handleKeyframeMove, handleKeyframeDelete, handlePromptUpdate, handlePromptMove, handlePromptResize, handlePromptDelete, handleExtend, addCallAt, handleTimelineSelect, layerA, refAudiosBlocked, addAudioClip, takeAudioFile, moveAudioClip, deleteAudioClip, updateAudioClip, setLayerAKey, artifactIndex, docFromFilm, keyframes, addKeyframeWithImage, enterKfView, enterAudioView }) {
+		function StudioStripPane({ calls, fps, barPrompts, barLanes, barAudioClips, barTotal, frameIdx, callPreviews, selectedBarId, filmMap, handleBarFrame, handleScrubStart, handleScrubEnd, handleKeyframeAdd, handleKeyframeMove, handleKeyframeDelete, handlePromptUpdate, handlePromptMove, handlePromptResize, handlePromptDelete, handleExtend, addCallAt, handleTimelineSelect, layerA, refAudiosBlocked, addAudioClip, takeAudioFile, moveAudioClip, deleteAudioClip, updateAudioClip, setLayerAKey, artifactIndex, docFromFilm, keyframes, addKeyframeWithImage, enterKfView, enterAudioView }) {
 			const pickLane = (0, react.useRef)("music");
 			const [laneErr, setLaneErr] = (0, react.useState)(null);
 			const laneField = (lane) => ({
@@ -3727,13 +3727,15 @@ window.__ModuleLoader__.load({
 			});
 			const gapPin = keyframes.some((k) => pinDropVerdict(calls, k.frame) === null);
 			const refusalFace = laneErr ?? (gapPin ? studioCopy.gapRefusal : null);
+			const barFps = filmMap?.fps ?? fps;
+			const barSeconds = (barTotal / barFps).toFixed(2);
 			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(_melite_card_base_client.PaneShell, { children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.PaneHeader, {
 				title: studioCopy.timelineTitle,
 				meta: studioCopy.stripMeta({
 					calls: calls.length,
-					frames: totalFrames,
-					fps,
-					seconds
+					frames: barTotal,
+					fps: barFps,
+					seconds: barSeconds
 				}),
 				hint: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [studioCopy.stripHint, /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
 					variant: "ghost",
@@ -3770,7 +3772,7 @@ window.__ModuleLoader__.load({
 						keyframes: kfChips,
 						frameIdx,
 						totalFrames: barTotal,
-						fps: filmMap?.fps ?? fps,
+						fps: barFps,
 						initialSeconds: 10,
 						onFrameChange: handleBarFrame,
 						onScrubStart: handleScrubStart,
@@ -3783,7 +3785,7 @@ window.__ModuleLoader__.load({
 						onPromptMove: (id, s, e) => handlePromptMove(id, docFromFilm(s), docFromFilm(e)),
 						onPromptResize: (id, s, e) => handlePromptResize(id, docFromFilm(s), docFromFilm(e)),
 						onPromptDelete: handlePromptDelete,
-						onExtend: (newTotal) => handleExtend(newTotal - barTotal + totalFrames),
+						onExtend: (newTotal) => handleExtend(docFromFilm(newTotal)),
 						tracks: VIDEO_TIMELINE_TRACKS.map((t) => ({ ...t })),
 						packed: true,
 						promptsLabel: studioCopy.callsLabel,
@@ -15326,9 +15328,7 @@ window.__ModuleLoader__.load({
 				}),
 				bottom: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(StudioStripPane, {
 					calls,
-					totalFrames,
 					fps,
-					seconds,
 					barPrompts: derived.barPrompts,
 					barLanes: derived.barLanes,
 					barAudioClips: derived.barAudioClips,
