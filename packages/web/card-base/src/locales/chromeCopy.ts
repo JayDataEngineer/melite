@@ -51,6 +51,11 @@ export const chromeCopy = {
   notDownloadedSuffix: ' — not downloaded on this machine',
   /** Refused axis row: the invalid id leads, the axis + holder follow. */
   invalidAxisNote: (p: { id: string, axis: string, holder: string }): string => p.id + ' — invalid ' + p.axis + ' for ' + p.holder,
+  /** Refused-coord repair note (axis-unification P0#3): the one-pick
+   *  cure is a verb — the repair button's lead-in sentence. */
+  axisRepairNote: 'Not an offered coordinate of the held matrix — the nearest current cell is one click away:',
+  /** Refused-coord repair verb: the nearest current cell's face rides in. */
+  axisRepairVerb: (p: { face: string }): string => 'Write ' + p.face,
   /** Recipe picker's resting placeholder (nothing held). */
   recipePlaceholder: '-- recipe --',
   /** Recipe picker's custom face (a held stamp no row matches). */

@@ -1,0 +1,188 @@
+// resolver-defaults-door-stamp.spec.ts — THE DOOR-DEPTH
+// resolver_defaults STAMP WALL (axis-unification P1#5, audit
+// dev_docs/audits/journey/axis-unification-2026-11-06.md item 5).
+//
+// The lesion: 2862e0ef2 (the Override Law) and d25765431 (the pick
+// reconciles) pinned the CLIENT clamp only. Nobody pinned the DOOR's
+// stamp — the served resolved body carrying the picked variant's
+// resolver_defaults (anima turbo: steps 8, cfg 1) over the family
+// defaults (steps 52, cfg 4). The operator's burn felt exactly this
+// seam: the switch did not re-stamp, and every wall stayed green
+// because no arm judged the door's own merge.
+//
+// The pinned invariant, one sentence: AFTER A VARIANT PICK, THE
+// SERVED RESOLVED BODY CARRIES THE VARIANT'S resolver_defaults FOR
+// EVERY ABSENT SURFACE KEY — the family defaults never win, the
+// caller's stated values always win, and the stamp dies with the
+// declaration that feeds it.
+//
+// Seats, each its own firing arm (the split-brain lesson):
+//   1. THE DECLARATION (depth): the booted facts row declares turbo
+//      resolver_defaults {steps: 8, cfg: 1} — derived off the REAL
+//      boot (prime + loadCardDefs + loadFacts' live deriveRow), and
+//      distinct from the family defaults the same row carries.
+//   2. THE FEED: selectCardVariant (R1, the pure coordinate math)
+//      returns resolverDefaults exactly as the row declares them —
+//      the object stampCardOverlay merges.
+//   3. THE MERGE (unit): stampCardOverlay lands the variant's
+//      resolver_defaults OVER the family defaults for absent keys.
+//      Toggling the merge loop reds THIS arm (and only it).
+//   4. THE DOOR (end-to-end): prepareCardParams — one spelling with
+//      the run — composes a pick's body whose unstated steps/cfg
+//      ARE the variant's 8/1, never the family's 52/4. A stated
+//      body rides verbatim (caller agency — stamps are absent-key
+//      seeds, not overrides).
+//   5. THE BURN, DOOR-SIDE (control): the pre-wave-31 quant
+//      spelling "int8" refuses at the real door naming the known
+//      cells (int8_convrot, bf16); the repaired coordinate
+//      (int8_convrot) composes — the P0#3 repair verb's write is
+//      exactly what the door admits.
+//   6. THE DATA-SOURCE TOGGLE (in-wall firing proof): the same
+//      prepareCardParams seat fed a facts table whose turbo
+//      declaration is stripped composes the FAMILY's 52/4 — arm 4's
+//      truth dies with the declaration, so the wall's green rides
+//      the live resolver_defaults, never a frozen literal.
+//
+// The merge-line toggle itself (stampCardOverlay's resolver_defaults
+// loop lives in estate-queue/src/cardsVariant.ts — another hand's
+// file) is owed to that owner per the §5 protocol; arm 3 is the arm
+// that reds under it, arm 6 is the in-wall proof this suite can
+// fire on its own path.
+//
+// Run: npx vitest run tests/walls/ts/suites/resolver-defaults-door-stamp.spec.ts
+import { describe, expect, it, beforeAll } from "vitest";
+import { Context } from "@deepseek-ai/cordis";
+import { mkdtempSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { CardRegistryService } from "../../../../packages/harness/estate-queue/src/cardsRegistry.ts";
+import { prepareCardParams } from "../../../../packages/harness/estate-queue/src/cardsCompose.ts";
+import { selectCardVariant, stampCardOverlay } from "../../../../packages/harness/estate-queue/src/cardsVariant.ts";
+import type { ModelFactsRow } from "../../../../packages/harness/estate-queue/src/cardsFacts.ts";
+import type { CardDeclRow } from "../../../../packages/harness/estate-queue/src/cardsFacts.ts";
+
+let svc: CardRegistryService;
+let facts: Record<string, ModelFactsRow>;
+
+beforeAll(async () => {
+  const ctx = new Context();
+  (ctx as unknown as { queue: unknown }).queue = {
+    stateRoot: mkdtempSync(join(tmpdir(), "resolver-defaults-stamp-")),
+    stateRoots: [] as string[],
+  };
+  svc = new CardRegistryService(ctx);
+  await svc.prime();
+  facts = svc.modelFacts() as Record<string, ModelFactsRow>;
+}, 90_000);
+
+/** The anima boot row + its turbo variant, derived off the REAL
+ *  boot — never a hand copy (the DEPTH axis). */
+function animaRow(): ModelFactsRow {
+  const row = facts["anima"];
+  expect(row, "the booted facts serve an anima row").toBeTruthy();
+  return row;
+}
+function turboOf(row: ModelFactsRow): ModelFactsRow["variants"][number] {
+  const turbo = (row.variants ?? []).find((v) => v.id === "turbo");
+  expect(turbo, "the anima row serves the turbo variant").toBeTruthy();
+  return turbo!;
+}
+
+describe("THE DOOR-DEPTH resolver_defaults STAMP (axis-unification P1#5)", () => {
+  it("THE DECLARATION: the booted anima row declares turbo resolver_defaults {steps: 8, cfg: 1}, distinct from the family defaults (52 / 4)", () => {
+    const row = animaRow();
+    const turbo = turboOf(row);
+    // the named seat the audit pins (anima turbo, the distilled lane)
+    expect(turbo.resolver_defaults).toEqual({ steps: 8, cfg: 1 });
+    // THE DISCRIMINATOR: the family defaults differ on BOTH knobs —
+    // an arm asserting 8/1 can never pass on the family's copy
+    expect(row.defaults["steps"]).toBe(52);
+    expect(row.defaults["cfg"]).toBe(4);
+    // the turbo cells carry the wave-31 spellings (the repair verb's
+    // known-cells list)
+    const quants = (turbo.cells ?? []).map((c) => c.quant).sort();
+    expect(quants).toEqual(["bf16", "int8_convrot"]);
+  });
+
+  it("THE FEED: selectCardVariant returns resolverDefaults exactly as the row declares them — the object the stamp merge reads", () => {
+    const row = animaRow();
+    const sel = selectCardVariant("anima", row, { model: "anima", variant: "turbo" }, "wall-feed");
+    expect(sel.variantId).toBe("turbo");
+    expect(sel.resolverDefaults).toEqual({ steps: 8, cfg: 1 });
+  });
+
+  it("THE MERGE (unit): stampCardOverlay lands the variant's resolver_defaults OVER the family defaults for absent keys", () => {
+    const row = animaRow();
+    const sel = selectCardVariant("anima", row, { model: "anima", variant: "turbo" }, "wall-merge");
+    const decl: CardDeclRow = svc.cardDecls(facts)[row.card]!;
+    expect(decl, "the anima row's card declares a compose face").toBeTruthy();
+    const out = stampCardOverlay(
+      { model: "anima", variant: "turbo", prompt: "a cat" },
+      row,
+      decl,
+      sel,
+      "wall-merge",
+      "anima",
+    );
+    // THE VARIANT WINS: 8/1, never the family's 52/4
+    expect(out["steps"]).toBe(8);
+    expect(out["cfg"]).toBe(1);
+  });
+
+  it("THE DOOR: prepareCardParams composes a turbo pick whose unstated steps/cfg ARE the variant's 8/1 — and a stated body rides verbatim (caller agency)", () => {
+    // the pick: variant stated, knobs silent — the stamp lands
+    const composed = prepareCardParams(svc, { model: "anima", variant: "turbo", prompt: "a cat" }, "anima", "wall-stamp");
+    const params = composed.params as Record<string, unknown>;
+    expect(params["steps"]).toBe(8);
+    expect(params["cfg"]).toBe(1);
+    // never the family defaults painted over the variant's marriage
+    expect(params["steps"]).not.toBe(52);
+    expect(params["cfg"]).not.toBe(4);
+    // CALLER AGENCY: a stated body keeps its own numbers (the stamp
+    // seeds ABSENT keys only — never an override)
+    const stated = prepareCardParams(svc, { model: "anima", variant: "turbo", prompt: "a cat", steps: 12, cfg: 3 }, "anima", "wall-agency");
+    const statedParams = stated.params as Record<string, unknown>;
+    expect(statedParams["steps"]).toBe(12);
+    expect(statedParams["cfg"]).toBe(3);
+  });
+
+  it("THE BURN, DOOR-SIDE (control): the pre-wave-31 quant spelling refuses at the real door naming the known cells; the repaired coordinate composes", async () => {
+    const { unknownQuantVoice } = await import("@melite/contracts/laneRelations");
+    // the stale doc (the operator's burn), composed at the door
+    let refused = "";
+    try {
+      prepareCardParams(svc, { model: "anima", variant: "turbo", quant: "int8", prompt: "a cat" }, "anima", "wall-burn");
+      refused = "";
+    } catch (e) {
+      refused = e instanceof Error ? e.message : String(e);
+    }
+    expect(refused).not.toBe("");
+    expect(refused).toContain(unknownQuantVoice("int8", "anima", "turbo", ["int8_convrot", "bf16"]));
+    // THE REPAIRED COORDINATE (the P0#3 verb's write) composes clean
+    const repaired = prepareCardParams(svc, { model: "anima", variant: "turbo", quant: "int8_convrot", prompt: "a cat" }, "anima", "wall-repaired");
+    const params = repaired.params as Record<string, unknown>;
+    expect(params["steps"]).toBe(8);
+    expect(params["cfg"]).toBe(1);
+  });
+
+  it("THE DATA-SOURCE TOGGLE (in-wall firing proof): strip the turbo declaration → the same door composes the FAMILY's 52/4 — the wall's green rides the live declaration", () => {
+    const stripped: Record<string, ModelFactsRow> = structuredClone(facts);
+    const row = stripped["anima"]!;
+    const turbo = (row.variants ?? []).find((v) => v.id === "turbo")!;
+    turbo.resolver_defaults = {};
+    // the same seat, the same body — the stamp's SOURCE gone
+    const composed = prepareCardParams(
+      svc,
+      { model: "anima", variant: "turbo", prompt: "a cat" },
+      "anima",
+      "wall-toggle",
+      stripped,
+    );
+    const params = composed.params as Record<string, unknown>;
+    // the family defaults ride — arm 4's truth (8/1) is dead with
+    // the declaration: the wall reds exactly when the stamp's data
+    // source dies
+    expect(params["steps"]).toBe(52);
+    expect(params["cfg"]).toBe(4);
+  });
+});

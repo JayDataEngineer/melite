@@ -1,6 +1,6 @@
 /** axes.tsx — extracted from form.tsx (hour 15, the godfile split; the
  * operator's DRY audit law: one seam, one small file, one wall). */
-import { createElement as h, useEffect, useState } from 'react'
+import { createElement as h, Fragment, useEffect, useState } from 'react'
 import type { ChangeEvent as ReactChangeEvent, ReactElement } from 'react'
 import { type FormSpecDoc, type SpecValues, type FormVariantRow, activeRecipeId, activeRowId, axisGroups, axisKey, axisPickPatch, composingRows, modelChoices, modelSwitchPatch, resolveValue, rowsFor, titleCaseId } from './spec.ts'
 import { chromeCopy } from './locales/chromeCopy.ts'
@@ -293,18 +293,51 @@ export function ModelAxes({ spec, value, user, pickHeld = user, onSet, onPick, o
         label: titleCaseId(v.label) + (typeof v.hint === 'string' && v.hint !== '' ? ` — ${v.hint}` : ''),
       })),
     ]
-    return h('label', { key: g, className: css.specField },
-      h('span', { className: css.specFieldKey }, label),
-      h(AxisMenuSelect, {
-        label,
-        value: active[g]!,
-        rows: axisRows,
-        markers: { 'data-axis': g, ...(refusedId !== undefined ? { 'data-refused': g } : {}) },
-        onPick: (id: string) => {
-          const row = rows.find((v) => v.id === id)
-          if (row !== undefined) pick(row)
-        },
-      }))
+    // THE REPAIR VERB (axis-unification P0#3, audit
+    // dev_docs/audits/journey/axis-unification-2026-11-06.md item 3):
+    // the refused coord rendered AS ITSELF with the grounded rows
+    // "one pick away" — a manual fix for an automatic break (the
+    // pre-wave-31 rename 376c13a4c left every saved doc carrying the
+    // dead spelling — quant "int8" under anima — and nothing
+    // re-stamps it). The one-pick repair becomes A VERB: the button
+    // writes the NEAREST CURRENT CELL — the first composing row, the
+    // same face the seed law lands on (the known-cells list the
+    // door's voice computes, derived here at the seat) — through the
+    // ATOMIC PICK (axisPickPatch: the row's stamp + the below-axis
+    // reseed), so the composed doc passes the mirror judge.
+    // ARGUED RAW SEAT (S6e/S7j, the inline prose-verb class): DSH's
+    // own settings-form types its .reset/.helpButton verbs as raw
+    // <button> + module css (ui-primitives settings-form
+    // fields.tsx:71-76, 83-90).
+    const nearest = rows[0]
+    // the repair hint sits OUTSIDE the field label (a sibling, the
+    // download-prompt's seat): a control inside a <label> takes the
+    // label's whole text as its accessible name — the verb must
+    // speak for itself.
+    return h(Fragment, { key: g },
+      h('label', { className: css.specField },
+        h('span', { className: css.specFieldKey }, label),
+        h(AxisMenuSelect, {
+          label,
+          value: active[g]!,
+          rows: axisRows,
+          markers: { 'data-axis': g, ...(refusedId !== undefined ? { 'data-refused': g } : {}) },
+          onPick: (id: string) => {
+            const row = rows.find((v) => v.id === id)
+            if (row !== undefined) pick(row)
+          },
+        })),
+      refusedId !== undefined && nearest !== undefined
+        ? h('div', { className: css.specHint, 'data-axis-repair': g },
+            chromeCopy.axisRepairNote,
+            ' ',
+            h('button', {
+              type: 'button',
+              className: css.specLinkBtn,
+              'data-axis-repair-btn': g,
+              onClick: () => { pick(nearest) },
+            }, chromeCopy.axisRepairVerb({ face: titleCaseId(nearest.label) })))
+        : null)
   }
   // THE MODEL+VARIANT PAIR (the pass-along law, enforced): Model
   // and Variant ride ONE row — a dedicated 1fr 1fr pair that never

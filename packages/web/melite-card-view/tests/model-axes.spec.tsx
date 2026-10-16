@@ -24,8 +24,10 @@ import { unbindEstateRemote } from '@melite/card-base/client'
 import {
   activeVariantId,
   axisPickPatch,
+  composeValidate,
   modelChoices,
   quantRowsFor,
+  resolveValue,
   titleCaseId,
   schemaEnvelope,
   seedAxisValues,
@@ -33,8 +35,10 @@ import {
   CardForm,
   variantRows,
   type FormSpecDoc,
+  type FormVariantRow,
   type SpecValues,
 } from '@melite/card-base/client'
+import { DECL as animaDecl } from '../../../models/anima/src/index.ts'
 
 // THE MENU-SELECT DRIVERS (S7e): the spec axes ride the DSH Menu —
 // open the trigger, click the menuitem row. axisFace reads the
@@ -1344,4 +1348,136 @@ test('titleCaseId titles machine ids and leaves titled prose alone', () => {
   expect(titleCaseId('Turbo')).toBe('Turbo')
   expect(titleCaseId('INT8 ConvRot')).toBe('INT8 ConvRot')
   expect(titleCaseId('')).toBe('')
+})
+
+// ── AXIS UNIFICATION (P0#3 + P1#5, audit
+//    dev_docs/audits/journey/axis-unification-2026-11-06.md) ────────
+// The REAL anima DECL expanded through the discovery serialization's
+// shape (variantRow + specVariants' cell expansion — mirrored
+// verbatim from melite-tools/src/discovery.ts, the switching-sweep's
+// flagged P3 idiom until item 2's one-serializer lands). A stage
+// authored before wave 31 (376c13a4c) carries the DEAD quant
+// spelling "int8"; the current matrix serves int8_convrot + bf16 —
+// the operator's exact burn, recorded in the audit's verdict.
+const ANIMA: FormSpecDoc = (() => {
+  const rows: FormVariantRow[] = []
+  for (const v of animaDecl.variants ?? []) {
+    if (v.hide_from_dropdown === true) continue
+    // variantRow: the served defaults are resolver ∪ wire (the full
+    // stamp a pick lands — discovery.ts:208)
+    rows.push({
+      id: v.id,
+      label: v.label,
+      group: v.group,
+      defaults: { ...(v.resolver_defaults ?? {}), ...(v.wire_defaults ?? {}) },
+      route: v.route ?? '',
+      hint: v.hint ?? null,
+      engine: animaDecl.engine ?? '',
+      sampler_envelope: v.sampler_envelope ?? null,
+      quant: null,
+      vram_peak_gb: null,
+      owner: '',
+    })
+    for (const c of v.cells ?? []) {
+      if (c.hide_from_dropdown === true || !c.quant || !c.route) continue
+      const id = rows.some((r) => r.id === c.quant) ? `${v.id}__${c.quant}` : c.quant
+      rows.push({
+        id,
+        label: c.label || c.quant,
+        group: 'Quant',
+        defaults: c.resolver_defaults ?? {},
+        route: c.route,
+        hint: null,
+        engine: animaDecl.engine ?? '',
+        quant: c.quant,
+        vram_peak_gb: c.vram_peak_gb ?? null,
+        owner: v.id,
+      })
+    }
+  }
+  return {
+    form: 'image-gen',
+    schema: schemaEnvelope({
+      prompt: { type: 'string', meta: { description: 'Prompt', extra: { wtype: 'textarea', group: 'prompt' } } },
+      steps: { type: 'number', meta: { description: 'Steps', default: 52, extra: { group: 'sampling' } } },
+      cfg: { type: 'number', meta: { description: 'CFG', default: 4, step: 0.1, extra: { group: 'sampling' } } },
+    }),
+    model: animaDecl.id,
+    features: {
+      variant_groups: {
+        Variant: { label: 'Variant' },
+        Quant: { label: 'Quant' },
+        Recipe: { label: 'Recipe', default: 'default' },
+      },
+    },
+    variants: rows,
+  }
+})()
+
+test('AXIS-UNIFICATION P0#3 — THE REFUSED-COORD REPAIR VERB: a pre-wave-31 doc (quant "int8") renders the affordance; the click writes int8_convrot; the composed doc passes the mirror judge', async () => {
+  // THE SAVED DOC (the burn): authored before 376c13a4c's rename,
+  // held verbatim by the drill's ride — the run refuses it.
+  const held: SpecValues = { model: 'anima', variant: 'turbo', quant: 'int8', prompt: 'a lighthouse' }
+  // THE JUDGE BITES (the control — never an always-green wall): the
+  // stale doc refuses with the door's own voice, known cells named.
+  const before = composeValidate(ANIMA, held)
+  expect(before.length).toBe(1)
+  expect(before[0]!.message).toContain('unknown quant "int8"')
+  expect(before[0]!.message).toContain('"turbo"')
+  expect(before[0]!.message).toContain('int8_convrot')
+  expect(before[0]!.message).toContain('bf16')
+  const patches: Array<Record<string, unknown>> = []
+  const comp = createElement(function Host() {
+    const [user, setUser] = useState<SpecValues>(held)
+    return createElement(CardForm, {
+      spec: ANIMA,
+      user,
+      onSet: (name: string, v: unknown) => { setUser((m) => ({ ...m, [name]: v })) },
+      onPick: (patch: Record<string, unknown>) => { patches.push(patch); setUser((m) => ({ ...m, ...patch })) },
+    })
+  })
+  render(comp)
+  // the refused coord renders AS ITSELF (the standing law)
+  const quant = await screen.findByLabelText('Quant')
+  expect(axisFace('Quant')).toContain('Int8 — invalid')
+  expect(quant.getAttribute('data-refused')).toBe('Quant')
+  // THE VERB: the repair affordance rides the refused row, naming
+  // the nearest current cell (turbo's first composing cell)
+  expect(screen.getByText('Not an offered coordinate of the held matrix — the nearest current cell is one click away:')
+    .getAttribute('data-axis-repair')).toBe('Quant')
+  fireEvent.click(screen.getByRole('button', { name: 'Write INT8 ConvRot' }))
+  // THE ATOMIC PICK lands the cell coordinate the door reads — the
+  // row's own stamp (axisStampOf), never the composite catalog id
+  await waitFor(() => { expect(patches[0]?.['quant']).toBe('int8_convrot') })
+  // THE COMPOSE-GREEN: the repaired doc passes the mirror judge —
+  // the run would compose where the burn was refused
+  expect(composeValidate(ANIMA, { ...held, ...patches[0] })).toEqual([])
+})
+
+test('AXIS-UNIFICATION P1#5 (the form half) — a turbo pick stamps the variant\'s resolver_defaults (steps 8, cfg 1) and the form shows them; a grounded matrix renders NO repair chrome', async () => {
+  const state = { user: { model: 'anima', prompt: 'a lighthouse' } as SpecValues }
+  const onSet = (name: string, v: unknown): void => { state.user = { ...state.user, [name]: v } }
+  // THE ATOMIC PICK SEAT (required by construction)
+  const onPick = (patch: Record<string, unknown>): void => { state.user = { ...state.user, ...patch } }
+  render(createElement(CardForm, { spec: ANIMA, user: state.user, onSet, onPick }))
+  // grounded rest: base + its first cell — no refusal, no repair
+  await screen.findByLabelText('Model')
+  expect(screen.queryByText(/nearest current cell/)).toBe(null)
+  // THE PICK: turbo's served row carries the variant's
+  // resolver_defaults as its defaults (discovery.ts:208) — the pick
+  // stamps them and the quant chain re-seeds to turbo's first cell
+  await pickAxisRow('Variant', /^Turbo/)
+  await waitFor(() => {
+    expect(state.user['variant']).toBe('turbo')
+    expect(state.user['steps']).toBe(8)
+    expect(state.user['cfg']).toBe(1)
+    expect(state.user['quant']).toBe('int8_convrot')
+  })
+  // THE FORM SHOWS IT: the resolved layer — exactly what the screen
+  // renders per render (the one-truth press) — carries the stamps
+  const resolved = resolveValue(ANIMA, state.user)
+  expect(resolved['steps']).toBe(8)
+  expect(resolved['cfg']).toBe(1)
+  // and the stamped whole composes clean
+  expect(composeValidate(ANIMA, resolved)).toEqual([])
 })

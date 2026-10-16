@@ -387,7 +387,13 @@ const INLINE_SVG_PIN = new Set([
  *  helpButton idiom); the mod add-square + the two media tile
  *  strips (the S6g tile-face class; PresentedFileCard.tsx:40); the
  *  source pick row + the two wire-picker rows (the row-face class;
- *  ChangedFiles.tsx:83). */
+ *  ChangedFiles.tsx:83). card-base 15→16 (2026-11-06, axis-unification
+ *  P0#3): the refused-coord REPAIR VERB joins the two .specLinkBtn
+ *  prose verbs — the third seat of the SAME S6e class (a verb inside
+ *  a hint sentence, raw <button> + module css; fields.tsx:71-90):
+ *  axes.tsx's refused-coord row gains the one-click "Write <nearest
+ *  cell>" verb that re-stamps a pre-wave-31 dead axis spelling
+ *  (quant "int8" → int8_convrot) through the atomic pick. */
 const HAND_ROLLED_CHROME_PIN: Record<string, number> = {
   'packages/motion/motion/src/ui': 2,
   // (Sahar R6 re-pin, 2026-11-06) 2 → 1: RailBackButton rides the
@@ -396,7 +402,7 @@ const HAND_ROLLED_CHROME_PIN: Record<string, number> = {
   // ships no textarea atom).
   'packages/video/h3-timeline/src/ui': 1,
   'packages/image/mask-studio/src/ui': 0,
-  'packages/web/card-base/src': 15,
+  'packages/web/card-base/src': 16,
   'packages/web/melite-card-view/src': 8,
   'packages/web/melite-card-deck/src': 2,
   'packages/web/melite-run-wire/src': 0,
