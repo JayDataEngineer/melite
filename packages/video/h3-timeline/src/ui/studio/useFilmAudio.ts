@@ -181,10 +181,22 @@ export function useFilmAudio(args: {
   }, [])
 
   const deleteAudioClip = useCallback((clipId: string) => {
-    setLayerA((prev) => ({
-      ...prev,
-      audio_clips: (prev.audio_clips ?? []).filter((c) => c.id !== clipId),
-    }))
+    // THE STEM RESURRECTION (journey audit 645981ec AUDIO-1,
+    // 2026-10-16): a doc carrying a legacy audio_stem rehydrates it
+    // as a clip whenever audio_clips is EMPTY (docHydrate's
+    // stem-to-clip arm) — so deleting the LAST clip while the stem
+    // rode resurrected it on every reopen and the next run replayed
+    // it. Deletion that authors an EMPTY clips list must also end
+    // the stem: that emptiness is the exact state its conversion
+    // keys on. (The whole-lane detach keeps its own door — this is
+    // the per-clip face of the same law.)
+    setLayerA((prev) => {
+      const clips = (prev.audio_clips ?? []).filter((c) => c.id !== clipId)
+      if (clips.length === 0 && prev.audio_stem !== undefined) {
+        return { ...prev, audio_clips: clips, audio_stem: undefined }
+      }
+      return { ...prev, audio_clips: clips }
+    })
   }, [])
 
   /** Patch a clip's lane/text (the inspector's pen): only the

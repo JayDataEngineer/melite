@@ -16,7 +16,7 @@ import { useState } from "react"
 import { useFilmAudio } from "../src/ui/studio/useFilmAudio.ts"
 import type { CardStage } from "@melite/contracts"
 import type { LayerA } from "../src/ui/studio/docModel.ts"
-import { hydrateLayerA } from "../src/ui/studio/docHydrate.ts"
+import { hydrateLayerA, serializeLayerA } from "../src/ui/studio/docHydrate.ts"
 
 afterEach(() => { vi.unstubAllGlobals() })
 
@@ -312,6 +312,36 @@ describe("moveAudioClip / deleteAudioClip", () => {
     act(() => { r2.current.deleteAudioClip("a") })
     assert.deepEqual(r2.current.layerA.audio_clips, [])
     expect(result.current.layerA.audio_clips!.length).toBe(1)
+  })
+
+  it("THE STEM RESURRECTION (2026-10-16, audit 645981ec AUDIO-1): deleting the LAST clip ends the stem too — a reopen never replays a deleted clip", () => {
+    // the resurrection chain, exactly as the burn ran it: a doc with
+    // a legacy stem and its converted clip deletes that clip → the
+    // stem stayed → serialize rode it → the next hydrate
+    // re-converted it as a clip at frame 0 → the run replayed the
+    // deleted audio.
+    const stemDoc = hydrateLayerA({ audio_stem: "legacy-voice.wav", fps: 24, seed: 1 })
+    assert.equal(stemDoc.audio_clips!.length, 1) // hydrate converted the stem
+    const { result } = harness({ layerA: stemDoc })
+    act(() => { result.current.deleteAudioClip(result.current.layerA.audio_clips![0]!.id) })
+    // THE LAW: the clips list is empty AND the stem is ENDED in the
+    // same write — the SAVED doc can never re-author the clip
+    assert.deepEqual(result.current.layerA.audio_clips, [])
+    assert.equal(result.current.layerA.audio_stem, undefined)
+    const saved = serializeLayerA(result.current.layerA)
+    expect("audio_stem" in saved).toBe(false)
+    const reopened = hydrateLayerA(saved)
+    assert.equal(reopened.audio_clips, undefined) // the reopen proof
+    // and the non-last delete keeps the stem: a doc with authored
+    // clips alongside the legacy stem keeps the lane's truth intact
+    const multiDoc = { ...hydrateLayerA({ fps: 24, seed: 1 }), audio_stem: "legacy-voice.wav", audio_clips: [
+      { id: "a", name: "a", src: "data:x", start_frame: 10, dur_frames: 48 },
+      { id: "b", name: "b", src: "data:y", start_frame: 60, dur_frames: 48 },
+    ] } as LayerA
+    const { result: r2 } = harness({ layerA: multiDoc })
+    act(() => { r2.current.deleteAudioClip("a") })
+    assert.equal(r2.current.layerA.audio_stem, "legacy-voice.wav")
+    assert.deepEqual(r2.current.layerA.audio_clips!.map((c) => c.id), ["b"])
   })
 })
 
