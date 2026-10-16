@@ -119,7 +119,7 @@ export const t2i: ComfyActionSpec<T2IParams, T2IFacts> = {
       refs.forEach((ref, i) => {
         const loaded: TensorRef = isSpell(ref)
           ? ref
-          : g.node("LoadImage", { image: ref, upload: "image" }).out(0);
+          : g.node("LoadImage", { image: ref }).out(0);
         encInputs[`images.image_${1 + i}`] = loaded;
       });
     }

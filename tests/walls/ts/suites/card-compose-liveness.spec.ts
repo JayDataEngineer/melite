@@ -38,7 +38,7 @@ import "../../../helpers/boot-models.ts";
 import { loadCardDefs } from "@melite/comfyui-cordis";
 import { GraphBuilder } from "@melite/comfyui-card-kit/graph";
 import { loadFacts } from "@melite/comfyui-card-kit/facts";
-import { getModel, registryIds, registryModel } from "../../../../packages/engines/comfyui-cordis/src/models/models.ts";
+import { getModel, registryIds, registryModel, modelIds } from "../../../../packages/engines/comfyui-cordis/src/models/models.ts";
 
 const FACTS_PATH = join(
   dirname(fileURLToPath(import.meta.url)),
@@ -279,6 +279,148 @@ describe("every facts row composes its card alive (the dead-card wall)", () => {
       [],
       `DEAD CARDS — these compose refused or compose phantom nodes (every one is a run that dies on the lane): ${dead.join(" | ")}`,
     );
+  });
+
+  it("THE KEY JUDGE (motion-journey CURE-6): every input key a card composes onto a fixture-declared class is declared by that class — the registry flows' law, extended to the card plane", async () => {
+    // The registry flows have judged keys since E-M8
+    // (registry-flow-wiring.spec.ts); the CARD plane judged classes
+    // only — a typo'd widget key on a family action composed green
+    // and died at the engine. The tracked key fixture is the floor
+    // (the same {r, o} min doc, live-parity-guarded in the registry
+    // wall); classes it does not carry are census-named here and
+    // stay judged at class level by the arm above.
+    const keyDoc = JSON.parse(
+      readFileSync(new URL("../../fixtures/object_info.min.json", import.meta.url), "utf8"),
+    ) as Record<string, { r?: string[]; o?: string[] }>;
+    const declaredOf = (ct: string): Set<string> | null => {
+      const d = keyDoc[ct];
+      if (d === undefined) return null;
+      return new Set([...(d.r ?? []), ...(d.o ?? [])]);
+    };
+    const defs = await loadCardDefs();
+    const offenders: string[] = [];
+    // THE ACTION UNIVERSE, DERIVED (no hand import list — the rot
+    // class): the booted registry carries every family DECL, and
+    // DECL.actions is the validated atom roster. Each action's
+    // build runs through the same probe loop as the cards.
+    const actionSpecs: Array<{ modelId: string; name: string; spec: { build(args: never): unknown; params?: Array<{ name: string }> } }> = [];
+    for (const id of modelIds()) {
+      const decl = getModel(id) as { actions?: Array<{ name?: string } & Record<string, unknown>> };
+      for (const a of decl.actions ?? []) {
+        const spec = a as unknown as { build(args: never): unknown; params?: Array<{ name: string }> };
+        if (typeof spec?.build === "function") actionSpecs.push({ modelId: id, name: String(a["name"] ?? a["id"] ?? id), spec });
+      }
+    }
+    // the CENSUS inverts (LAW 4 axis 1): the fixture is a CURATED
+    // subset, so an uncapped uncurated tail is honest — the rot to
+    // catch is a fixture row NO card composes (a stale {r,o} entry
+    // judging nothing, vacuously green).
+    const seenClasses = new Set<string>();
+    for (const [modelId, row] of pairs) {
+      const def = defs.get(row.card)!;
+      const model = facts.models[modelId]!;
+      const doc: Record<string, unknown> = {};
+      const filled = new Set<string>();
+      let composed: Graph | null = null;
+      for (let round = 0; round < 14 && composed === null; round++) {
+        try {
+          const g = new GraphBuilder();
+          def.compose(def.schema({ ...doc }), model, g, "key-judge-probe");
+          composed = g.toJSON() as Graph;
+        } catch (err) {
+          const named = namedMulti(err instanceof Error ? err.message : String(err));
+          const fresh = named.filter((n) => !filled.has(n));
+          if (fresh.length === 0) break;
+          for (const name of fresh) { filled.add(name); doc[name] = fillFor(name); }
+        }
+      }
+      if (composed === null) continue;
+      for (const [nid, node] of Object.entries(composed)) {
+        const ct = (node as NodeShape).class_type;
+        if (typeof ct !== "string") continue;
+        const declared = declaredOf(ct);
+        seenClasses.add(ct);
+        if (declared === null) continue;
+        const inputs = (node as { inputs?: Record<string, unknown> }).inputs ?? {};
+        for (const key of Object.keys(inputs)) {
+          if (declared.has(key)) continue;
+          const prefix = key.split(".")[0] ?? key;
+          if (key.includes(".") && declared.has(prefix)) continue;
+          offenders.push(`${modelId} / ${row.card}: node ${nid} ${ct}.${key} is not declared by the key fixture — a typo'd widget key that dies at the engine`);
+        }
+      }
+    }
+    // THE ACTION SWEEP: same judge, the atom specs' own graphs
+    for (const { modelId, name, spec } of actionSpecs) {
+      // PRE-SEED the spec's OWN declared params (build's prose
+      // refusals — fit's "needs a BONE" — do not name the param in
+      // the machine shape, so the probe loop alone cannot satisfy
+      // them; the spec declares its vocabulary and the seed rides
+      // it: kimodo's preview_glb composes the bake arm, fit's bone
+      // composes the row).
+      const probe: Record<string, unknown> = {};
+      for (const prm of spec.params ?? []) probe[prm.name] = fillFor(prm.name);
+      // THE GUARD-OPENERS, NAMED AND COUNTED (the E-M8 law: an
+      // unnumbered excuse is a hole; a numbered one is a census):
+      // specs read lane-internal keys their declared params do not
+      // carry, and guarded branches (kimodo's bake arm) compose
+      // only under them. Each opener here names the fixture row it
+      // exists to judge.
+      const GUARD_OPENERS: Record<string, Record<string, string>> = {
+        // kimodo's compose: the bake arm guards on p.preview_glb
+        compose: { preview_glb: "probe/rig.glb" },
+      };
+      // the generic facts probe: lane-input parsers requireText their
+      // resolved paths (kimodo's model_path); every opener key rides
+      // every parse and a parser that refuses more than it knows
+      // degrades to the empty shape (the build then either composes
+      // without facts or refuses by name — both honest outcomes).
+      const FACTS_PROBE: Record<string, string> = { model_path: "probe/model.safetensors" };
+      const model = getModel(modelId);
+      const openerKey = (spec as { id?: string }).id ?? "";
+      if (GUARD_OPENERS[openerKey] !== undefined) Object.assign(probe, GUARD_OPENERS[openerKey]);
+      const filled = new Set<string>(Object.keys(probe));
+      let composed: Graph | null = null;
+      for (let round = 0; round < 14 && composed === null; round++) {
+        try {
+          const g = new GraphBuilder();
+          // the facts face: actions parse their lane facts through their own
+          // declared parser (fit's seat.facts({}); kimodo's reads
+          // model_path from the row) — the probe hands the parser
+          // the booted model row, falling to the empty shape.
+          const factsFn = (spec as unknown as { facts?: (x: unknown) => unknown }).facts;
+          let factsArg: unknown = {};
+          if (factsFn !== undefined) {
+            try { factsArg = factsFn({ ...FACTS_PROBE }) ?? {}; } catch { factsArg = {}; }
+          }
+          spec.build({ p: probe, facts: factsArg, g, model, runId: "key-judge-action" } as never);
+          composed = g.toJSON() as Graph;
+        } catch (err) {
+          const named = namedMulti(err instanceof Error ? err.message : String(err));
+          const fresh = named.filter((n) => !filled.has(n));
+          if (fresh.length === 0) break;
+          for (const n of fresh) { filled.add(n); probe[n] = fillFor(n); }
+        }
+      }
+      if (composed === null) continue;
+      for (const [nid, node] of Object.entries(composed)) {
+        const ct = (node as NodeShape).class_type;
+        if (typeof ct !== "string") continue;
+        const declared = declaredOf(ct);
+        seenClasses.add(ct);
+        if (declared === null) continue;
+        const inputs = (node as { inputs?: Record<string, unknown> }).inputs ?? {};
+        for (const key of Object.keys(inputs)) {
+          if (declared.has(key)) continue;
+          const prefix = key.split(".")[0] ?? key;
+          if (key.includes(".") && declared.has(prefix)) continue;
+          offenders.push(`${modelId} action ${name}: node ${nid} ${ct}.${key} is not declared by the key fixture — a typo'd widget key that dies at the engine`);
+        }
+      }
+    }
+    assert.deepEqual(offenders, [], "CARD KEY DRIFT:\n" + offenders.join("\n"));
+    const unjudged = Object.keys(keyDoc).filter((ct) => !seenClasses.has(ct));
+    assert.deepEqual(unjudged, [], "key fixture rows no card composes (vacuous judges — prune or extend the composed universe):\n" + unjudged.join(", "));
   });
 
   it("the rejection path: phantom classes and param-less refusals are named, never swallowed", () => {

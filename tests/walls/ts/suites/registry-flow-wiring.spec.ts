@@ -148,7 +148,12 @@ describe("the registry-flow wiring wall (the hand-authored graphs, judged)", () 
     console.log(`registry-flow wiring wall: ${names.length} flows, ${nodes} nodes judged against the snapshot (${familyNodes} composed from family actions)`)
     // E-M8: the censuses are EXACT (a floor let a fixture or a
     // graph shrink silently — the wall would judge less and say green).
-    expect(Object.keys(doc).length, "the tracked fixture carries the flow classes (exact)").toBe(14);
+    // 12 since the key-judge extension (motion-journey CURE-6,
+    // 2026-11-06): +RaySomaxBake (kimodo's bake arm, guarded on
+    // preview_glb), -AnnyGroundBody/-AnnySelectPerson/
+    // -MultiHMR2ImageToAnny (python-era corpses with no composer
+    // left in the tree — vacuous fixture rows judge nothing).
+    expect(Object.keys(doc).length, "the tracked fixture carries the flow classes (exact)").toBe(12);
     // the CUT roster's census (2026-10-13: five 3D/rig rows
     // retired; body-to-somax stays — the motion studio drives it)
     // + character-factory (2026-10-09: lift→rig→motion, audit 012)

@@ -71,12 +71,12 @@ export const edit = {
         const refs = list.slice(1);
         const image = isSpell(anchor)
             ? anchor
-            : g.node("LoadImage", { image: anchor, upload: "image" }).out(0);
+            : g.node("LoadImage", { image: anchor }).out(0);
         // Each stated ref loads ahead of the encodes (creation order IS
         // node-id order); blank refs contribute no input at all. A
         // spelled ref rides verbatim — same wired-tensor law as the
         // anchor; a file keeps its LoadImage.
-        const loaded = refs.map((s) => isSpell(s) ? s : g.node("LoadImage", { image: s, upload: "image" }).out(0));
+        const loaded = refs.map((s) => isSpell(s) ? s : g.node("LoadImage", { image: s }).out(0));
         // THE REGION ROW (one merge — the gate's own merge twin): the
         // bag merges UNDER flat params (explicit flat keys win). One
         // region per run; the region arm below reads this row.

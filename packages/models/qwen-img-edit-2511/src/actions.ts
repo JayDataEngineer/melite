@@ -103,9 +103,9 @@ export const edit: ComfyActionSpec<EditParams, EditFacts> = {
     const refs = list.slice(1);
     const image: TensorRef = isSpell(anchor)
       ? anchor
-      : g.node("LoadImage", { image: anchor, upload: "image" }).out(0);
+      : g.node("LoadImage", { image: anchor }).out(0);
     const loaded: TensorRef[] = refs.map((s) =>
-      isSpell(s) ? s : g.node("LoadImage", { image: s, upload: "image" }).out(0));
+      isSpell(s) ? s : g.node("LoadImage", { image: s }).out(0));
     // THE REGION ROW (one merge — the gate's own merge twin): the
     // bag merges UNDER flat params (explicit flat keys win). One
     // region per run; every region arm below reads this row.
