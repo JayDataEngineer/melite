@@ -23,7 +23,17 @@ export const DECL = {
     "studio": {
         "tenant": "motion/motion",
         "owns_params": false,
-        "writes": [],
+        // THE BG BRICK CURE (journey wave-2, 2026-10-16 machine date): the
+        // studio persists motion_bg_image into stage.params (its own
+        // onSave merge-patch), and the compose door refused every
+        // bg-carrying stage — "unknown param(s) on the motion card:
+        // motion_bg_image" — because no surface declared it. The cited
+        // strip home (compile.ts _KNOWN_NON_SIG_PARAMS) was purged with
+        // the Python estate 2026-09-05. writes is the declaration: the
+        // key admits at the door; the graph builder consumes none of it
+        // (UI-only — it never rides the wire; the card.spec hop-5 arm
+        // pins that half).
+        "writes": ["motion_bg_image"],
         "kind": "custom",
         "size": "normal",
         "layout": "studio"

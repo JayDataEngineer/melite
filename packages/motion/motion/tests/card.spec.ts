@@ -98,6 +98,24 @@ describe("the motion compose gate", () => {
     assert.ok(!graph["RaySomaxBake.0"], "no preview without preview_glb");
   });
 
+  it("THE BG BRICK CURE (hop 5): motion_bg_image composes and NEVER rides the graph (UI-only by consumption)", () => {
+    // The studio persists the bg into stage.params; the door admits
+    // it through the kimodo DECL's studio.writes; the graph builder
+    // consumes none of it — the serialized graph carries no trace.
+    // (The estate door's admission half is walled estate-side in
+    // cards-admission-matrix T5; this arm pins the wire half.)
+    const g = new GraphBuilder();
+    def.compose(
+      def.schema({ ...FLOORS, prompt: "waves", motion_bg_image: "data:image/png;base64,AAAA" }),
+      kimodo, g, "r_bg",
+    );
+    const graph = g.toJSON();
+    assert.equal(JSON.stringify(graph).includes("motion_bg_image"), false,
+      "the bg param is UI-only — no node input carries it");
+    assert.equal(JSON.stringify(graph).includes("AAAA"), false,
+      "the bg payload never leaks into any serialized value");
+  });
+
   it("preview_glb skins the motion (the somax bake rides)", () => {
     const g = new GraphBuilder();
     def.compose(

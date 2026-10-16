@@ -160,19 +160,20 @@ describe("T1 — every DECL.mods entry is consumed (the incident shape)", () => 
   });
 });
 
-describe("T2 — the gate's verdict per key (the real admissionRefusal)", () => {
-  /** keys no surface declares — the foreign battery (guarded below). */
-  const FOREIGN = ["frobnicate", "promptt", "lorasX", "stepsX"];
-  function verdict(card: string, fam: string, key: string, facts: Record<string, ModelFactsRow>): { admitted: boolean; error: string } {
-    const lifted = liftCardParams({ model: fam, [key]: 1 });
-    try {
-      admissionRefusal(svc, card, fam, lifted, "admission", facts);
-      return { admitted: true, error: "" };
-    } catch (e) {
-      if (!(e instanceof CardArmError)) throw e;
-      return { admitted: !/unknown param|admission is the declared surface/.test(e.message), error: e.message };
-    }
+/** keys no surface declares — the foreign battery (guarded below). */
+const FOREIGN = ["frobnicate", "promptt", "lorasX", "stepsX"];
+function verdict(card: string, fam: string, key: string, facts: Record<string, ModelFactsRow>): { admitted: boolean; error: string } {
+  const lifted = liftCardParams({ model: fam, [key]: 1 });
+  try {
+    admissionRefusal(svc, card, fam, lifted, "admission", facts);
+    return { admitted: true, error: "" };
+  } catch (e) {
+    if (!(e instanceof CardArmError)) throw e;
+    return { admitted: !/unknown param|admission is the declared surface/.test(e.message), error: e.message };
   }
+}
+
+describe("T2 — the gate's verdict per key (the real admissionRefusal)", () => {
   it("boarded fields admit; pack ids refuse with the hint; strangers refuse named", () => {
     const facts = svc.modelFacts();
     const decls = deriveDecls(cardDefsNow() ?? new Map(), facts);
@@ -230,6 +231,51 @@ describe("T2 — the gate's verdict per key (the real admissionRefusal)", () => 
       }
     }
     expect(failures).toEqual([]);
+  });
+});
+
+describe("T5 — every family's studio writes admit (the bg-brick class)", () => {
+  // THE INCIDENT (journey wave-2, motion audit): the motion studio
+  // persists motion_bg_image into stage.params through its own
+  // onSave merge-patch, and the compose door refused every
+  // bg-carrying stage — "unknown param(s) on the motion card:
+  // motion_bg_image" — because NO surface declared it. The code's
+  // own comment cited a strip law (compile.ts
+  // _KNOWN_NON_SIG_PARAMS) purged with the Python estate. This
+  // tier holds the CLASS: whatever a family's DECL declares in
+  // studio.writes admits on every card that boards the family
+  // (the emit side persists it; the admit side must take it).
+  it("the incident cell: kimodo declares the bg write and it admits on the motion card", () => {
+    const facts = svc.modelFacts();
+    const writes = facts["kimodo"]?.studio?.writes;
+    expect(Array.isArray(writes) && writes.includes("motion_bg_image"),
+      "the kimodo DECL must declare the studio's persisted UI-only write (the bg brick)").toBe(true);
+  });
+
+  it("every declared write admits on every boarding card (derived universe, no frozen keys)", () => {
+    const facts = svc.modelFacts();
+    const decls = deriveDecls(cardDefsNow() ?? new Map(), facts);
+    const failures: string[] = [];
+    let cells = 0;
+    for (const { card, families } of matrixRows()) {
+      for (const fam of families) {
+        const writes = facts[fam]?.studio?.writes;
+        if (!Array.isArray(writes)) continue;
+        for (const w of writes) {
+          if (typeof w !== "string") continue;
+          cells += 1;
+          const v = verdict(card, fam, w, facts);
+          if (!v.admitted) failures.push(`${card} × ${fam}: declared write '${w}' refused at admission (${v.error})`);
+        }
+      }
+    }
+    expect(cells, "no family declares studio writes — the tier went vacuous").toBeGreaterThan(0);
+    expect(failures).toEqual([]);
+    // and the write is not a knob: the derivation must have unioned
+    // it into admits (cardsFacts), never the schema plane
+    const motionDecl = decls["motion"];
+    expect(motionDecl?.admits.includes("motion_bg_image"),
+      "the cardsFacts projection unions studio.writes into admits").toBe(true);
   });
 });
 

@@ -95,7 +95,12 @@ export function registerCard(ctx, comfy) {
             // outside separated|regular|nocfg), fills defaults, passes
             // undeclared keys through inert. The composer's reads below
             // are reads of the GATED doc.
-            const doc = gatedResolve('motion', schemaFn, ['model'], p);
+            // THE BG BRICK CURE (journey wave-2): the studio persists
+            // motion_bg_image into stage.params; it rides here as a
+            // declared rider (UI-only — no ACTION_BINDINGS read consumes
+            // it, so it never reaches the serialized graph; the card.spec
+            // hop-5 arm pins that half).
+            const doc = gatedResolve('motion', schemaFn, ['model', 'motion_bg_image'], p);
             if (!doc.prompt || !doc.prompt.trim()) {
                 throw new Error("required param 'prompt' missing on the motion card — the motion lane generates FROM a text prompt");
             }
