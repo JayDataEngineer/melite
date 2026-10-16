@@ -1348,6 +1348,27 @@ export function seedAxisValues(spec: FormSpecDoc, held: SpecValues): SpecValues 
 export function seedUser(spec: FormSpecDoc, held: SpecValues): SpecValues {
   const out: SpecValues = { ...held, ...seedAxisValues(spec, held) }
   if (!fieldsOf(spec).some((f) => f.name === 'recipe')) delete out['recipe']
+  // THE GHOST DROP (2026-10-16, the model-switch lock): a held axis
+  // value that names no row of THIS spec's composing chain is a
+  // departed family's ghost — krea-2's quant int8 riding anima's
+  // cell-less turbo through a refused write, refusing every later
+  // edit at the compose gate ('the write never left the studio')
+  // while the studio shows the new family. The pass-along law
+  // protects USER WORDS; a departed family's row id is not one.
+  // Axes walk in order and the chain reads the LIVE map, so a ghost
+  // variant also unseats the quant that composed only under it.
+  for (const g of axisGroups(spec)) {
+    const k = axisKey(g)
+    const v = out[k]
+    if (typeof v !== 'string' || v === '') continue
+    const active: Record<string, string | undefined> = {}
+    for (const g2 of axisGroups(spec)) {
+      if (g2 === g) continue
+      const v2 = out[axisKey(g2)]
+      if (typeof v2 === 'string' && v2 !== '') active[g2] = v2
+    }
+    if (!composingRows(spec, g, active).some((r) => r.id === v || (r.quant ?? '') === v)) delete out[k]
+  }
   return out
 }
 

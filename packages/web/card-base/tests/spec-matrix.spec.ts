@@ -370,6 +370,47 @@ test('modelSwitchPatch: the same family keeps its coordinates; a switch clears e
   expect(modelSwitchPatch(spec, '')).toEqual({ model: '', steps: 40, variant: 'r-hd', quant: 'q-fp8' })
 })
 
+test('THE MODEL-SWITCH JOURNEY: a departed family\'s axis ids are ghosts — the arrival seed drops them (the 2026-10-16 lock)', () => {
+  // THE OPERATOR'S JOURNEY, replayed end to end: krea-2 held (turbo
+  // + int8 cell) → switch to anima whose turbo declares NO quant
+  // cells → the switch's own write refused at the door (rev moved,
+  // half-state) → the stage reopens holding the ghost — quant int8
+  // rides the seed VERBATIM (the pass-along law) → every later edit
+  // refuses at the compose gate: 'unknown quant "int8" for model
+  // "anima" variant "turbo" (the variant declares no cells) — the
+  // write never left the studio'. The pass-along law protects USER
+  // WORDS; a departed family's row id is not one. The ghost drop in
+  // seedUser is the cure; THIS arm is the journey proof — the seeded
+  // arrival state must compose clean, not merely look clean.
+  const kreaDoc: FormSpecDoc = {
+    ...doc(),
+    variants: [
+      V('turbo', 'Variant', { defaults: {} }),
+      V('int8', 'Quant', { quant: 'int8', owner: 'turbo' }),
+    ],
+  } as unknown as FormSpecDoc
+  const animaDoc: FormSpecDoc = {
+    ...doc(),
+    model: 'anima',
+    variants: [
+      V('turbo', 'Variant', { defaults: {} }),
+      // anima's turbo declares NO quant cells — no Quant row composes
+    ],
+  } as unknown as FormSpecDoc
+  // the ghost state: krea's coordinates held under anima's model
+  const held: SpecValues = { model: 'anima', variant: 'turbo', quant: 'int8' }
+  const seeded = seedUser(animaDoc, held)
+  // THE DROP: the departed family's quant id rides no composing row
+  expect(seeded).not.toHaveProperty('quant')
+  // THE JOURNEY'S END: the seeded state composes clean — no gate
+  // refusal, no lock (the same judge the drill's write path rides)
+  expect(composeValidate(animaDoc, seeded)).toEqual([])
+  // the SAME held state against krea's own spec keeps its cell —
+  // the drop judges the ARRIVAL spec, never the departed one
+  const sameFamily = seedUser(kreaDoc, held)
+  expect(sameFamily['quant']).toBe('int8')
+})
+
 test('modelSwitchPatch: a matched row overlay rides — except its model re-point (never the user layer)', () => {
   const spec: FormSpecDoc = {
     form: 'x',

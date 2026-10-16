@@ -8874,6 +8874,18 @@ window.__ModuleLoader__.load({
 				...seedAxisValues(spec, held)
 			};
 			if (!fieldsOf(spec).some((f) => f.name === "recipe")) delete out["recipe"];
+			for (const g of axisGroups(spec)) {
+				const k = axisKey(g);
+				const v = out[k];
+				if (typeof v !== "string" || v === "") continue;
+				const active = {};
+				for (const g2 of axisGroups(spec)) {
+					if (g2 === g) continue;
+					const v2 = out[axisKey(g2)];
+					if (typeof v2 === "string" && v2 !== "") active[g2] = v2;
+				}
+				if (!composingRows(spec, g, active).some((r) => r.id === v || (r.quant ?? "") === v)) delete out[k];
+			}
 			return out;
 		}
 		/** THE MODEL-REKEY RESEAT (order d, operator 2026-11-06: "model-switch
