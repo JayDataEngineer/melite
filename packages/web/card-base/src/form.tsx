@@ -48,7 +48,7 @@ export { useFormSpec } from './use-form-spec.ts'
 export { useSquareProvider, type SquareHost, type SquareWire, type FieldAtomClaim, type SourceRowProps } from './square-provider.tsx'
 export { SourceRow, TriStateAtom, SpecSliderAtom, SpecAtom } from './atoms.tsx'
 export { SeedDice, SpecFieldRow, OverlayKnob } from './rows.tsx'
-export { SpecPanel, type SpecPanelRow, type SpecPanelSection } from './spec-panel.tsx'
+export { SpecPanel, panelSectionsOf, type SpecPanelRow, type SpecPanelSection } from './spec-panel.tsx'
 export { PackPrompt, ModelAxes, RecipePills } from './axes.tsx'
 
 /** THE CARD FORM (the constructor's surface half) — the emission's

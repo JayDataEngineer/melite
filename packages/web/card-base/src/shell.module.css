@@ -31,11 +31,19 @@
  * the SHELL so every studio tenant (img-to-mesh, mask-studio,
  * motion, h3, ideogram) inherits it from one site. The rail
  * scrolling also collapses the outer detail scroll — no second
- * scrollbar cutting anything. */
+ * scrollbar cutting anything.
+ *
+ * THE CLASS BELT (the motion-params journey audit, 2026-10-16): the
+ * h3 tenant cured its rail's horizontal scrollbar 2026-09-22 with
+ * overflow-x: clip and the cure never crossed the genre boundary —
+ * motion burned the same way a month later. The belt lives HERE, the
+ * one shell site: a future min-content regression is a clipped face,
+ * never a horizontal wheel on the params rail. */
 .shell > *:first-child {
   grid-column: 1;
   grid-row: 1;
   overflow-y: auto;
+  overflow-x: clip;
   min-height: 0;
   padding-right: 10px;
   scrollbar-gutter: stable;

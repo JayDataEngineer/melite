@@ -12788,6 +12788,27 @@ window.__ModuleLoader__.load({
 		//#region src/spec-panel.tsx
 		/** spec-panel.tsx — extracted from form.tsx (hour 15, the godfile split; the
 		* operator's DRY audit law: one seam, one small file, one wall). */
+		/** THE DERIVED SECTIONS (the motion-params journey audit's class
+		* cure, 2026-10-16 — dev_docs/audits/journey/motion-params-dry-2026-10-16.md
+		* F3: the hand-typed sections list is the killed h3 shape, burn #2).
+		* The served spec's own fields group and order themselves: the host
+		* names the groups it seats (with each group's title/testid chrome),
+		* the DECLARATION supplies the rows in declared order. A group with
+		* no served rows renders nothing; a served row whose group the host
+		* did not name stays unseated (the host owns its partition — the
+		* seat-parity census judges that partition both directions). This
+		* replaces every `sections={[...]}` hand list: a declared knob can
+		* never again drop out of the panel behind a list nobody remembered
+		* to extend (the cfg_type class). */
+		function panelSectionsOf(spec, named) {
+			if (spec == null) return [];
+			const fields = fieldsOf(spec);
+			return Object.entries(named).map(([group, chrome]) => ({
+				title: chrome.title,
+				...chrome.testid !== void 0 ? { testid: chrome.testid } : {},
+				rows: fields.filter((f) => f.group === group).sort((a, b) => (a.order ?? Number.MAX_SAFE_INTEGER) - (b.order ?? Number.MAX_SAFE_INTEGER)).map((f) => ({ name: f.name }))
+			})).filter((sec) => sec.rows.length > 0);
+		}
 		/** THE DYNAMIC PARAMETER PANEL (2026-09-17, the operator's shared-
 		* component law): sections of the SERVED form-spec's rows at their
 		* wire names — ONE mechanism every card seats, never a per-card
@@ -14476,8 +14497,8 @@ window.__ModuleLoader__.load({
 		}
 		//#endregion
 		//#region \0dsh-css:packages/web/card-base/src/shell.module.css.mjs
-		const css$2 = "._6zZDNa_shell{grid-template-rows:minmax(0,1fr) auto;grid-template-columns:minmax(280px,330px) minmax(0,1fr);height:100%;min-height:0;display:grid}@media (width<=640px){._6zZDNa_shell{grid-template-rows:none;grid-template-columns:1fr}._6zZDNa_shell>:first-child{max-height:none;overflow-y:visible}}._6zZDNa_shell>:first-child{scrollbar-gutter:stable;grid-area:1/1;min-height:0;padding-right:10px;overflow-y:auto}._6zZDNa_shell>:nth-child(2){grid-area:1/2;min-height:0;overflow-y:auto}._6zZDNa_shell>:nth-child(3){grid-area:2/1/auto/-1;min-height:0;max-height:none;overflow:visible}._6zZDNa_errorLine{flex-direction:column;grid-column:1/-1;gap:4px;display:flex}._6zZDNa_errorRow{border:1px solid color-mix(in srgb, var(--dsw-alias-danger,#dc2626) 40%, transparent);background:color-mix(in srgb, var(--dsw-alias-danger,#dc2626) 10%, transparent);color:var(--dsw-alias-danger,#dc2626);overflow-wrap:break-word;white-space:pre-wrap;border-radius:4px;margin:0;padding:6px 8px;font-family:ui-monospace,monospace;font-size:9px;line-height:1.4}._6zZDNa_errorIcon{vertical-align:-2px;width:12px;height:12px;margin-right:4px;display:inline}._6zZDNa_railSection{border:1px solid var(--dsw-alias-border,#e2e4e9);border-radius:8px;padding:8px 12px}._6zZDNa_railHead{justify-content:space-between;align-items:center;gap:8px;margin-bottom:6px;display:flex}._6zZDNa_railTitle{text-transform:uppercase;letter-spacing:.14em;color:var(--dsw-alias-label-tertiary);margin:0;font-size:10px;font-weight:600}";
-		const tagId$2 = "@melite/card-base/shell.module.css@85d4e6fe";
+		const css$2 = "._6zZDNa_shell{grid-template-rows:minmax(0,1fr) auto;grid-template-columns:minmax(280px,330px) minmax(0,1fr);height:100%;min-height:0;display:grid}@media (width<=640px){._6zZDNa_shell{grid-template-rows:none;grid-template-columns:1fr}._6zZDNa_shell>:first-child{max-height:none;overflow-y:visible}}._6zZDNa_shell>:first-child{scrollbar-gutter:stable;grid-area:1/1;min-height:0;padding-right:10px;overflow:clip auto}._6zZDNa_shell>:nth-child(2){grid-area:1/2;min-height:0;overflow-y:auto}._6zZDNa_shell>:nth-child(3){grid-area:2/1/auto/-1;min-height:0;max-height:none;overflow:visible}._6zZDNa_errorLine{flex-direction:column;grid-column:1/-1;gap:4px;display:flex}._6zZDNa_errorRow{border:1px solid color-mix(in srgb, var(--dsw-alias-danger,#dc2626) 40%, transparent);background:color-mix(in srgb, var(--dsw-alias-danger,#dc2626) 10%, transparent);color:var(--dsw-alias-danger,#dc2626);overflow-wrap:break-word;white-space:pre-wrap;border-radius:4px;margin:0;padding:6px 8px;font-family:ui-monospace,monospace;font-size:9px;line-height:1.4}._6zZDNa_errorIcon{vertical-align:-2px;width:12px;height:12px;margin-right:4px;display:inline}._6zZDNa_railSection{border:1px solid var(--dsw-alias-border,#e2e4e9);border-radius:8px;padding:8px 12px}._6zZDNa_railHead{justify-content:space-between;align-items:center;gap:8px;margin-bottom:6px;display:flex}._6zZDNa_railTitle{text-transform:uppercase;letter-spacing:.14em;color:var(--dsw-alias-label-tertiary);margin:0;font-size:10px;font-weight:600}";
+		const tagId$2 = "@melite/card-base/shell.module.css@fb8e057c";
 		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId$2) + "]") === null) {
 			const tag = document.createElement("style");
 			tag.dataset.plugin = "@melite/card-base";
@@ -15968,6 +15989,7 @@ window.__ModuleLoader__.load({
 		exports.name = name;
 		exports.offeredVariantOf = offeredVariantOf;
 		exports.optionKeyOf = optionKeyOf;
+		exports.panelSectionsOf = panelSectionsOf;
 		exports.parseAssetDrop = parseAssetDrop;
 		exports.parseCapabilityDrop = parseCapabilityDrop;
 		exports.parseNumericInput = parseNumericInput;

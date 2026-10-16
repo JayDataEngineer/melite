@@ -46,7 +46,7 @@ export { useFormSpec } from "./use-form-spec.js";
 export { useSquareProvider } from "./square-provider.js";
 export { SourceRow, TriStateAtom, SpecSliderAtom, SpecAtom } from "./atoms.js";
 export { SeedDice, SpecFieldRow, OverlayKnob } from "./rows.js";
-export { SpecPanel } from "./spec-panel.js";
+export { SpecPanel, panelSectionsOf } from "./spec-panel.js";
 export { PackPrompt, ModelAxes, RecipePills } from "./axes.js";
 /** THE CARD FORM (the constructor's surface half) — the emission's
  *  fields walked off the schema envelope, grouped, visible-when

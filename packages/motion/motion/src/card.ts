@@ -14,7 +14,7 @@ import { callableSchema, gatedResolve } from '@melite/comfyui-card-kit/admission
 
 export const schema = z.object({
   prompt: z.string().description("Prompt").extra('extra', bag({ order: 0, group: "prompt", columns: 1, tooltip: "What the body DOES — verb-first, one continuous action per segment. Multi-segment: separate with | and pair with motion_prompts.", required: true, wtype: 'textarea', })),
-  seed: z.number().description("Seed").step(1).extra('extra', bag(seedExtra({ order: 1, group: 'prompt', width: 1, tooltip: 'Same seed + prompt = same motion take.' }))),
+  seed: z.number().description("Seed").step(1).extra('extra', bag(seedExtra({ order: 1, group: 'general', width: 1, tooltip: 'Same seed + prompt = same motion take.' }))),
   duration_sec: z.number().description("Duration (s)").min(1).max(10).step(0.5).extra('extra', bag({ order: 0, group: "generation", width: 1, tooltip: "Length of one generated motion segment. Upstream caps a single prompt at 10 s; a longer clip is motion_prompts segments." })),
   diffusion_steps: z.number().description("Diffusion steps").min(10).max(200).step(1).extra('extra', bag({ order: 1, group: "generation", width: 1, tooltip: "More steps = smoother arcs; 25 is the calibrated default.", wtype: 'number' })),
   num_samples: z.number().description("Samples").min(1).max(4).step(1).extra('extra', bag({ order: 2, group: "generation", width: 1, tooltip: "Takes per prompt (each becomes its own NPZ).", wtype: 'number' })),

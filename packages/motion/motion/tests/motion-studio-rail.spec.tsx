@@ -115,17 +115,33 @@ describe('RULE B: the generic parameter form rides the rail', () => {
   test("the schema's params render through the shared SpecPanel — the served spec's rows at their wire names", async () => {
     stubLoads()
     mountEditor()
-    // the panel's sections land with their chrome + rows
+    // the panel's sections land with their chrome + rows. The served
+    // doc IS the declaration (the motion-params journey audit): the
+    // fixture derives the envelope from the registered schema, so the
+    // rows arrive with the real fetch's async — wait for a row face,
+    // not just the section chrome.
     await vi.waitFor(() => {
       if (!document.body.querySelector('[data-testid="mo-gen-panel"]')) throw new Error('no gen panel')
-    }, { timeout: 10000 })
+      if (document.body.querySelector('[aria-label="Duration (s)"]') === null
+          && document.body.querySelector('[data-refused="duration_sec"]') === null) {
+        throw new Error('no gen rows yet')
+      }
+    }, { timeout: 20000 })
     expect(document.body.querySelector('[data-testid="mo-guide-panel"]')).toBeTruthy()
     expect(document.body.querySelector('[data-testid="mo-clock-panel"]')).toBeTruthy()
     // the rows are the SERVED spec's, at the wire names (labels are
-    // the schema's own descriptions — never hand-rolled rows)
-    expect(document.body.querySelector('[aria-label="Diffusion steps"]')).toBeTruthy()
-    expect(document.body.querySelector('[aria-label="CFG weight A"]')).toBeTruthy()
-    expect(document.body.querySelector('[aria-label="Seed"]')).toBeTruthy()
+    // the schema's own descriptions — never hand-rolled rows). The
+    // SEAT is the row: the atom's labeled face, or the row gate's own
+    // refusal marker on a stage with no user layer (value states are
+    // the value walls' subject — same law the seat census pins).
+    const expectSeat = (name: string, label: string) => {
+      const seat = document.body.querySelector(`[aria-label^="${label}"]`)
+        ?? document.body.querySelector(`[data-refused="${name}"]`)
+      expect(seat, `${name} has no rail seat`).toBeTruthy()
+    }
+    expectSeat('diffusion_steps', 'Diffusion steps')
+    expectSeat('cfg_weight_a', 'CFG weight A')
+    expectSeat('seed', 'Seed')
   })
 
   test('an edit writes the declared key through onSave — the override seam (one vocabulary with the timeline)', async () => {

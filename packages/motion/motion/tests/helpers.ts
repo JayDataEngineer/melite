@@ -58,6 +58,28 @@ export function jsonResponse(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } })
 }
 
+/** THE SERVED DOC IS THE DECLARATION (the motion-params journey
+ *  audit, 2026-10-16): the form-spec fixture derives from the
+ *  REGISTERED motion card schema — the door serves schemastery's own
+ *  toJSON (uid + refs), so the test envelope is the same
+ *  serialization the real lane serves. A declared knob therefore
+ *  reaches the rail whether or not any hand list remembers it — the
+ *  exact seam that hid cfg_type for the card's whole history while
+ *  the old fixture mirrored the omission. */
+let motionEnvelope: Promise<unknown> | null = null
+function motionFormEnvelope(): Promise<unknown> {
+  motionEnvelope ??= (async () => {
+    const { loadCardDefs } = await import('@melite/comfyui-cordis')
+    const def = (await loadCardDefs()).get('motion')
+    if (def === undefined) {
+      throw new Error('the motion card def never registered — the form-spec fixture serves the DECLARATION, never a hand copy')
+    }
+    return (def.schema as { toJSON(): unknown }).toJSON()
+  })()
+  return motionEnvelope
+}
+
+
 /** Skin always serves; motion serves only when the stage has a result.
  *  Body/flow lanes opt in per test: bodies maps a URL substring to the
  *  served bytes ('glb' = the rigless mesh) or an HTTP status. */
@@ -72,24 +94,20 @@ export function stubLoads(opts: {
   vi.stubGlobal('fetch', async (input: unknown, init?: RequestInit) => {
     const u = typeof input === 'string' ? input : (input as Request).url ?? String(input)
     // RULE B: the kimodo form-spec door — the rail's SpecPanel fetches
-    // the card family's served schema (the minimal envelope: the
-    // generation/guidance/clock rows the panel seats).
+    // the card family's served schema. THE SERVED DOC IS THE
+    // DECLARATION (the motion-params journey audit's split-brain cure,
+    // 2026-10-16): the envelope derives from the REGISTERED motion
+    // card schema — never a hand-copied row list, the third copy of
+    // the truth that let cfg_type drop out of the rail for its whole
+    // history while the fixture mirrored the omission.
     if (u.includes('/v1/form-spec')) {
-      return new Response(JSON.stringify({
+      return jsonResponse({
         form: 'motion',
-        schema: schemaEnvelope({
-          duration_sec: { type: 'number', meta: { description: 'Duration (s)', default: 5, min: 1, max: 10, step: 0.5 } },
-          diffusion_steps: { type: 'number', meta: { description: 'Diffusion steps', default: 25, min: 10, max: 200, step: 1 } },
-          num_samples: { type: 'number', meta: { description: 'Samples', default: 1, min: 1, max: 4, step: 1 } },
-          num_transition_frames: { type: 'number', meta: { description: 'Transition frames', default: 10, min: 0, max: 60, step: 1 } },
-          cfg_weight_a: { type: 'number', meta: { description: 'CFG weight A', default: 2.5, min: 0, max: 15, step: 0.5 } },
-          cfg_weight_b: { type: 'number', meta: { description: 'CFG weight B', default: 5, min: 0, max: 15, step: 0.5 } },
-          seed: { type: 'number', meta: { description: 'Seed', default: 42, step: 1 } },
-        }),
+        schema: await motionFormEnvelope(),
         variants: [],
         inputs: [],
         features: { modifiers: [], variant_groups: {} },
-      }), { headers: { 'content-type': 'application/json' } })
+      })
     }
     if (u.includes(SKIN_URL)) {
       if (opts.skinStatus) return new Response('bad', { status: opts.skinStatus })

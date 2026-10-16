@@ -5,6 +5,31 @@ import { fieldVisible, fieldsOf, resolveFamilyKey } from "./spec.js";
 import css from './card.module.css';
 import { useFormSpec } from "./use-form-spec.js";
 import { SpecFieldRow } from "./rows.js";
+/** THE DERIVED SECTIONS (the motion-params journey audit's class
+ * cure, 2026-10-16 — dev_docs/audits/journey/motion-params-dry-2026-10-16.md
+ * F3: the hand-typed sections list is the killed h3 shape, burn #2).
+ * The served spec's own fields group and order themselves: the host
+ * names the groups it seats (with each group's title/testid chrome),
+ * the DECLARATION supplies the rows in declared order. A group with
+ * no served rows renders nothing; a served row whose group the host
+ * did not name stays unseated (the host owns its partition — the
+ * seat-parity census judges that partition both directions). This
+ * replaces every `sections={[...]}` hand list: a declared knob can
+ * never again drop out of the panel behind a list nobody remembered
+ * to extend (the cfg_type class). */
+export function panelSectionsOf(spec, named) {
+    if (spec == null)
+        return [];
+    const fields = fieldsOf(spec);
+    return Object.entries(named).map(([group, chrome]) => ({
+        title: chrome.title,
+        ...(chrome.testid !== undefined ? { testid: chrome.testid } : {}),
+        rows: fields
+            .filter((f) => f.group === group)
+            .sort((a, b) => (a.order ?? Number.MAX_SAFE_INTEGER) - (b.order ?? Number.MAX_SAFE_INTEGER))
+            .map((f) => ({ name: f.name })),
+    })).filter((sec) => sec.rows.length > 0);
+}
 /** THE DYNAMIC PARAMETER PANEL (2026-09-17, the operator's shared-
  * component law): sections of the SERVED form-spec's rows at their
  * wire names — ONE mechanism every card seats, never a per-card

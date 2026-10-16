@@ -13,7 +13,7 @@ import { EyeAlt as Eye, EyeOff, ImagePlus, Move, PersonStanding, RotateCcw, Targ
 import {
   Button, IconCloseOutlineRegular, IconDownloadOutlineRegular, IconLinkOutlineRegular, IconRefreshOutlineRegular,
 } from '@deepseek-ai/dsh-client-ui-primitives'
-import { SectionLabel, SpecPanel } from "@melite/card-base/client"
+import { SectionLabel, SpecPanel, panelSectionsOf } from "@melite/card-base/client"
 import { InputSquare, MESH_SQUARE_ACCEPT, isMeshUrl } from '@melite/card-base/client'
 import type { CardStage } from "@melite/contracts"
 import type { MotionNpz } from "@melite/formats"
@@ -183,33 +183,30 @@ className={cn(s.railBtn, editMode ? s.railBtnEditActive : s.railBtnIdle)}
      guidance, clock) through the shared SpecPanel. The timeline's
      document seam writes the same keys; this is the override
      surface the form law requires (never a hand-rolled row). */}
+ {/* RULE B: the generic form — the schema's own params through the
+     shared SpecPanel. The sections DERIVE from the served spec
+     (panelSectionsOf — the motion-params journey audit's class cure:
+     the hand-typed rows list was the killed h3 shape and dropped
+     cfg_type for the card's whole history); the host names the
+     groups it seats. The timeline's document seam writes the same
+     keys; this is the override surface the form law requires (never
+     a hand-rolled row). The railPanel wrapper spans the tool grid's
+     two columns — the panel is not a half-width track (the
+     scrollbar cure). */}
+ <div className={s.railPanel} data-testid="mo-rail-panel">
  <SpecPanel
    model="kimodo"
    spec={kimodoSpec}
    error={kimodoError}
    values={paramValues}
    onEdit={onParamEdit}
-   sections={[
-     {
-       title: motionCopy.sectionGeneration,
-       testid: "mo-gen-panel",
-       rows: [
-         { name: "duration_sec" }, { name: "diffusion_steps" },
-         { name: "num_samples" }, { name: "num_transition_frames" },
-       ],
-     },
-     {
-       title: motionCopy.sectionGuidance,
-       testid: "mo-guide-panel",
-       rows: [{ name: "cfg_weight_a" }, { name: "cfg_weight_b" }],
-     },
-     {
-       title: motionCopy.sectionClock,
-       testid: "mo-clock-panel",
-       rows: [{ name: "seed" }],
-     },
-   ]}
+   sections={panelSectionsOf(kimodoSpec, {
+     generation: { title: motionCopy.sectionGeneration, testid: "mo-gen-panel" },
+     guidance: { title: motionCopy.sectionGuidance, testid: "mo-guide-panel" },
+     general: { title: motionCopy.sectionClock, testid: "mo-clock-panel" },
+   })}
  />
+ </div>
  <SectionLabel className={s.railGroupLabelMt}>{motionCopy.outputGroup}</SectionLabel>
  <Tip
  tip={!effectiveNpz

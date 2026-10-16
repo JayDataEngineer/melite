@@ -21,6 +21,17 @@
   padding: 10px 12px;
 }
 
+/* THE PARAMS PANEL SPANS THE RAIL (the motion-params journey audit's
+   scrollbar cure, 2026-10-16): SpecPanel is NOT a row of the
+   tool-button grid — auto-placement put it in ONE ~120px half-track
+   while the slider row's min-content needs ~180px, and the overflow
+   became the rail's horizontal scrollbar. Full width + shrinkable:
+   the h3 tenant's min-width:0 cure at the seat. */
+.railPanel {
+  grid-column: 1 / -1;
+  min-width: 0;
+}
+
 
 .railGroupLabelMt {
   grid-column: span 2;
