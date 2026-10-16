@@ -233,7 +233,8 @@ describe("the start law at the playhead (mid-cue offset, skip-past-end)", () => 
     // 0 < 10 so it STARTS at 0. Only the PAST cue is skipped.
     expect(RecCtx.sources.length).toBe(2)
     const nowSrc = RecCtx.sources[0]!
-    expect(nowSrc.startArgs[0]![1]).toBe(5, "the playhead sits 5s into the 'now' cue — source starts at offset 5")
+    // the playhead sits 5s into the 'now' cue — source starts at offset 5
+    expect(nowSrc.startArgs[0]![1]).toBe(5)
   })
 })
 
