@@ -13,7 +13,7 @@ import { assertGraphGolden } from "../../../../tests/helpers/graph-golden.ts";
 import { join } from "node:path";
 import type { ModelFacts } from "@melite/comfyui-card-kit/facts";
 import { DECL } from "../src/index.ts";
-import { compose, parseAnnyFacts } from "../src/actions.ts";
+import { compose, parseAnnyFacts, estimate_photo } from "../src/actions.ts";
 
 // The REAL resolved shape the service hands compose: the family row
 // with the DECL's own lane_inputs (the registry owns lane truth).
@@ -46,6 +46,21 @@ const viewsOf = (g: GraphBuilder): Array<Record<string, unknown>> =>
   Object.values(g.toJSON() as Record<string, { class_type: string; inputs: Record<string, unknown> }>).filter(
     (n) => n.class_type === "SaveImage",
   );
+
+describe("the estimator chain — estimate_photo (models-hop56 wave-2 item 5: the flow e2e becomes a receipt, not the only judge)", () => {
+  it("the photo→body compose pins the estimator chain at its named nodes: LoadImage the stated photo, Sam3dBodyImageToAnny the fixed person index", () => {
+    const action = new GraphBuilder({})
+    instantiateAction(estimate_photo, { photo: "/models/photos/subject.png" }, FACTS, action, "probe-estimate")
+    const graph = action.toJSON() as Record<string, { class_type: string; inputs?: Record<string, unknown> }>
+    const load = Object.values(graph).find((n) => n.class_type === "LoadImage")
+    assert.ok(load, "LoadImage present (the stated photo's loader)")
+    assert.strictEqual(load.inputs?.image, "/models/photos/subject.png", "the stated photo rides the loader verbatim")
+    const sam = Object.values(graph).find((n) => n.class_type === "Sam3dBodyImageToAnny")
+    assert.ok(sam, "Sam3dBodyImageToAnny present (the estimator engine)")
+    assert.strictEqual(sam.inputs?.person_index, 0, "person_index FIXED at the loudest detection (0) — the chip knob never a bench surface")
+    assert.ok(Array.isArray(sam.inputs?.image), "the estimator consumes the loader's OUTPUT handle (the graph edge), never a path literal")
+  })
+})
 
 describe("the anny compose action — byte-stability (the compatibility law)", () => {
   it("the composed prompt is the committed golden (an attached GLB renders as-is)", () => {
