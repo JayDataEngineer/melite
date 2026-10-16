@@ -623,8 +623,11 @@ describe("the single-window doors", () => {
       def.schema({ calls: [SHOT()], loras: [{ name: "plain.safetensors", strength: 0.5 }] }),
       model, g2, "run_lora_plain",
     );
-    assert.equal(scoped(graphOf(g2), "", "BasicScheduler")[0]![1].inputs.steps, 12);
-    expect(scoped(graphOf(g2), "", "BasicScheduler")[0]![1].inputs.steps).toBe(12);
+    assert.equal(scoped(graphOf(g2), "", "BasicScheduler")[0]![1].inputs.steps, 6);
+    // 6 = the walk's regolded default (2026-10-16 upstream-parity
+    // audit: the 12 carried no receipt and matched neither his v7=6
+    // nor v9=8; the engine kernel's own tooltip calibrates 6)
+    expect(scoped(graphOf(g2), "", "BasicScheduler")[0]![1].inputs.steps).toBe(6);
   });
 
   // ── L3 (007-H3-LoRA-PLANE L3): ONE STEPS LAW for both window

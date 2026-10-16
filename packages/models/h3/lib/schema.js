@@ -132,7 +132,7 @@ export const paramSchema = z.object({
     // hardcoded 24 in both render arms played a 90-frame window at
     // 3.75s under a 5.6s bar.
     fps: z.number().description("Playback fps (Layer A — the project clock; rides the output container)").min(1).max(120).default(24).extra('extra', bag({ hidden: true })),
-    steps: z.number().description("Steps").min(4).max(30).default(12).extra('extra', samplingExtra('steps', { tooltip: "12 for draft; 30 standard; a boarded distill lora applies its own steps (edit them on the lora entry)" })),
+    steps: z.number().description("Steps").min(4).max(30).default(6).extra('extra', samplingExtra('steps', { tooltip: "6 for draft — the engine kernel's own calibrated count (its H3SLAAttention tooltip: use 6 steps rather than lowering sparsity; PARITY-pinned with plaguekind v7 — the 12 carried no receipt and matched neither his v7=6 nor v9=8; regolded by the 2026-10-16 upstream-parity audit); 30 standard; a boarded distill lora applies its own steps (edit them on the lora entry)" })),
     // THE SECOND-PASS MASTER (2026-09-22, operator: "Second Pass also
     // needs an on/off switch, it is very unclear if it is on or off"):
     // one boolean heads the tab. Off (default) = the whole post chain

@@ -420,6 +420,52 @@ describe("ONE CLOCK, BOTH ARMS (2026-10-16 — the single-call burn: 'it works w
 describe("the refmod seat (audit 010/R1, 2026-10-18)", () => {
   const BAG = [{ name: "distill-8.safetensors", strength: 0.6, steps: 8 }];
 
+  it("THE BOOLEAN FLIP (2026-10-16, upstream parity F1): H3SLAAttention.reference_protection rides BOOLEAN on the wire — both poles, never the enum string", () => {
+    // The upstream input turned BOOLEAN (verified LIVE at the engine
+    // door — optional.reference_protection: ["BOOLEAN", ...]) while
+    // our schema served the three-string enum: every DEFAULT
+    // compose fed 'Heavy Enforcement' into the boolean input, a
+    // phase-1 refusal with the card dead on lane and every suite
+    // green (no wall fixture carried H3SLAAttention — this arm is
+    // that fixture). The UI vocabulary stays the enum; the compose
+    // translates at the node seat: only 'Off' is false. (The bag
+    // rides without a steps override — this spec's catalog mock
+    // removes the absent-bag default row BY DESIGN (the loud
+    // refusal arm above), and the steps arm below must see the
+    // WALK's default, never a bag marriage.)
+    const NO_STEPS_BAG = [{ name: "distill-8.safetensors", strength: 0.6 }];
+    const slaInput = (doc: Record<string, unknown>): unknown => {
+      const g = new GraphBuilder();
+      instantiateAction(film, h3schema(doc), WINDOW_MODEL, g, "run_sla_bool");
+      const node = Object.values(g.toJSON() as Doc).find((n) => n.class_type === "H3SLAAttention");
+      if (node === undefined) throw new Error("H3SLAAttention did not compose");
+      return node.inputs.reference_protection;
+    };
+    // unstated: the walk fills the declared default 'Heavy
+    // Enforcement' — the wire speaks TRUE
+    expect(slaInput({ variant: "t4_open", length: 124, prompt: "p", seed: 42, loras: NO_STEPS_BAG })).toBe(true);
+    // explicit Off — the only false
+    expect(slaInput({ variant: "t4_open", length: 124, prompt: "p", seed: 42, loras: NO_STEPS_BAG, sla_reference_protection: "Off" })).toBe(false);
+    // Light protects (the engine's own tooltip: ON (Light))
+    expect(slaInput({ variant: "t4_open", length: 124, prompt: "p", seed: 42, loras: NO_STEPS_BAG, sla_reference_protection: "Light" })).toBe(true);
+    // AND the type itself — a string on this input is the burn
+    const val = slaInput({ variant: "t4_open", length: 124, prompt: "p", seed: 42, loras: NO_STEPS_BAG });
+    expect(typeof val).toBe("boolean");
+    // THE STEPS REGOLD rides the same receipt: the walk's declared
+    // default is the engine kernel's calibrated 6 (the parity
+    // audit's unreceipted-drift finding; bag-less steps docs
+    // compose 6 — the bag above carries NO steps row, so nothing
+    // marries over the walk default)
+    const g6 = new GraphBuilder();
+    instantiateAction(
+      film,
+      h3schema({ variant: "t4_open", length: 124, prompt: "p", seed: 42, loras: NO_STEPS_BAG }),
+      WINDOW_MODEL, g6, "run_steps_regold",
+    );
+    const sched = Object.values(g6.toJSON() as Doc).find((n) => n.class_type === "BasicScheduler");
+    expect(sched!.inputs.steps).toBe(6);
+  });
+
   it("ref_mods compose the loader→apply chain, stems out, wired into the guider's conditioning", () => {
     const g = new GraphBuilder();
     instantiateAction(

@@ -716,7 +716,19 @@ function renderH3Window(p, g, facts, model) {
         dense_backend: p.sla_dense_backend,
         disable_fp16_accum: p.sla_disable_fp16_accum,
         stabilize_motion: stabilize,
-        reference_protection: p.sla_reference_protection,
+        // THE BOOLEAN FLIP (2026-10-16, upstream parity F1 — PARITY's
+        // predicted drift, verified LIVE at the engine door): the
+        // upstream input turned BOOLEAN (its own tooltip: 'ON (Light)
+        // uses fixed 0.85 reference sparsity...') while our schema row
+        // still served the three-string enum — every default compose
+        // (the walk fills 'Heavy Enforcement') fed a STRING into the
+        // boolean input: phase-1 refusal, card dead on lane, every
+        // suite green (no wall fixture carried H3SLAAttention). The
+        // UI vocabulary STAYS the richer enum (saved docs ride
+        // verbatim); the compose translates at the node seat — the
+        // engine's binary is the truth the wire must speak. Only 'Off'
+        // is false; Light and Heavy Enforcement both protect.
+        reference_protection: p.sla_reference_protection !== 'Off',
     }).out();
     const chunked = g.node('MiniMaxChunkFeedForward', {
         model: g.node('MiniMaxLowVRAMAttention', { model: sla, head_chunks: 4 }).out(),

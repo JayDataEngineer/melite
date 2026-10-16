@@ -70,10 +70,12 @@ describe("the knob fold with a served form-spec", () => {
     // the DisclosureRow law (pattern campaign S2): closed folds hold
     // NO hidden DOM — open the knob row before reading its fields
     fireEvent.click(screen.getByText(studioCopy.knobsHead))
-    // the fold owns the SERVED steps row (schema default 12 ghosts the blank)
+    // the fold owns the SERVED steps row (the regolded schema
+    // default 6 ghosts the blank — 2026-10-16 upstream-parity
+    // audit; the 12 carried no receipt)
     const steps = await screen.findByLabelText("Call 0 knob: steps") as HTMLInputElement
-    assert.equal(steps.placeholder, "12")
-    expect(steps.placeholder).toBe("12")
+    assert.equal(steps.placeholder, "6")
+    expect(steps.placeholder).toBe("6")
     vi.unstubAllGlobals()
   })
 })

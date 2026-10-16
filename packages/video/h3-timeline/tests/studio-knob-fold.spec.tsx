@@ -29,7 +29,10 @@ describe("the fold's schema truth (the envelope walk carries the defaults)", () 
       const f = fields[knob]
       assert.ok(f !== undefined, `${knob}: the served walk must carry the field`)
     }
-    assert.equal(fields["steps"]!.default, 12)
+    // 6 = the regolded walk default (2026-10-16 upstream-parity
+    // audit: the 12 carried no receipt; the engine kernel's own
+    // tooltip calibrates 6, PARITY pinned 6)
+    assert.equal(fields["steps"]!.default, 6)
     assert.equal(fields["sampler_name"]!.default, "euler")
     assert.equal(fields["sharpen_enabled"]!.default, false)
   })
@@ -42,8 +45,8 @@ describe("THE COMPOSED-CALL PARITY LAW: the face shows what the gate sends", () 
     render(h(OverlayKnob, { name: "steps", field: fields["steps"], value: undefined, onEdit: () => {} }))
     const num = screen.getByLabelText(fields["steps"]!.label) as HTMLInputElement
     assert.equal(num.placeholder, String(gate.steps))
-    assert.equal(num.placeholder, "12")
-    assert.ok(num.title.includes("12"), `title must name the composed default, got: ${num.title}`)
+    assert.equal(num.placeholder, "6")
+    assert.ok(num.title.includes("6"), `title must name the composed default, got: ${num.title}`)
     cleanup()
   })
 
