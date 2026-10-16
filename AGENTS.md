@@ -166,6 +166,16 @@ Canon seats:
 * Toggle-proofs are performed only by hands that are off the
   target files (the §5 protocol): read-only auditors during live
   edits, hands-on proofs after the files settle.
+* `dev_docs/THE_JOURNEY_LAW.md` — the burn-cycle audit guide
+  (operator 2026-10-16, from the h3-card archaeology): the standing
+  self-audit every cure-claiming change runs before landing. It adds
+  the fifth canon axis JOURNEY — a wall's firing arm must ride the
+  hops the operator's burn crosses (UI seat → saved doc → run params
+  → compose door → serialized graph → engine → served lane), at or
+  downstream of the hop where the burn is felt. The h3 card burned a
+  month under all-green suites whose walls certified only the cure's
+  own depth (12-pattern catalog + pre-claim checklist + sha receipts
+  in the guide).
 
 # AGENTS MD BASE
 

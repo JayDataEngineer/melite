@@ -32,8 +32,9 @@ export const studioCopy = {
    *  2026-11-06) — the bucket names its own currency so the seat
    *  explains itself at a glance. */
   refModsHint: "any media rides — images, videos, audio (the system bakes the pack); pre-baked .safetensors stems ride the engine listing",
-  /** The mods chip strip's hover action. */
-  removePack: "remove this pack",
+  // (2026-10-16) removePack died with the strip Button — the square
+  // grammar's SourceRow owns the detach (onEdit("")); a verb that no
+  // longer exists carries no label. Census re-pin: 102 → 101.
   /** The mods path door's placeholder (the wire's example path). */
   /** The mods path door's accessible name. */
   /** The anchor slot's square caption (the bus's slot 1). */

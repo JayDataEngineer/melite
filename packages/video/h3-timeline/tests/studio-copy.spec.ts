@@ -137,7 +137,13 @@ describe("SOURCE — the copy dictionary owns the static faces", () => {
     // input image square died with the SourceRow grammar; the rows
     // are pick icons now). kfRowPickAria rides as a function, outside
     // this count by construction.
-    assert.equal(ids.length, 102, `the dictionary holds 102 copy ids (found ${ids.length}) — re-pin this wall when copy is added or removed`)
+    assert.equal(ids.length, 101, `the dictionary holds 101 copy ids (found ${ids.length}) — re-pin this wall when copy is added or removed`)
+    // RE-PIN 2026-10-16 (the square-grammar residue): 102 → 101.
+    // removePack died with the strip Button (187eaf607 deleted the
+    // verb; SourceRow's onEdit("") owns the detach) — a fossil id
+    // consumed by no seat redded the every-entry-consumed arm at
+    // HEAD. The census law stands: a dead id is removed, never left
+    // as locale theater.
     // THE NON-EMPTY VALUE (the 2026-11-04 docs-plane finding F2):
     // the id regex alone matches `foo: ""` — an empty-string value
     // would sail green through every other face. Each entry's

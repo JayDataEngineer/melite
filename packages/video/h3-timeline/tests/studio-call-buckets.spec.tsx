@@ -232,11 +232,18 @@ describe("SOURCE — the slice-4 cures ride their atoms (the card's one grammar)
   it("F8 — every verb in the card rides DSH Button (the mod chip's strip verb was the lone raw <button>)", () => {
     const code = card.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "")
     assert.equal((code.match(/<button/g) ?? []).length, 0, "zero raw button elements — one verb grammar")
-    // The strip verb's element, bracketed by its own tag pair.
-    const at = card.indexOf("tl-call-mod-strip")
+    // RE-PIN 2026-10-16 (the square-grammar residue): the strip verb
+    // DIED with the floating chip (187eaf607 — SourceRow's onEdit("")
+    // owns the detach), so the tl-call-mod-strip testid this arm
+    // sliced no longer exists and indexOf(-1) fed the block judges
+    // garbage — the arm redded at HEAD while the law held. The law
+    // (every verb rides Button, ghost variant, dict-owned aria) now
+    // judges a LIVE verb: the call's delete button.
+    const at = card.indexOf("handlePromptDelete(`call-${i}`)")
+    assert.ok(at > 0, "the delete verb exists at the call head")
     const block = card.slice(card.lastIndexOf("<Button", at), card.indexOf("</Button>", at))
-    assert.ok(block.includes('variant="ghost"'), "the strip verb rides the ghost variant like its siblings")
-    assert.ok(block.includes("aria-label={studioCopy.removePack}"), "the strip verb carries the dict's aria-label")
+    assert.ok(block.includes('variant="ghost"'), "the delete verb rides the ghost variant like its siblings")
+    assert.ok(block.includes("aria-label={studioCopy.deleteCallAria(i)}"), "the delete verb carries the dict's aria-label")
   })
 
   it("F-B2 — the over-word is dictionary-owned (no over-tail literal survives at the seats)", () => {
@@ -254,7 +261,11 @@ describe("SOURCE — the slice-4 cures ride their atoms (the card's one grammar)
     assert.ok(mods.includes("loadMedia={fetchMediaLibrary}"), "the estate media door boards (any media kind is legal currency)")
     assert.ok(mods.includes('accept="image/*,video/*,audio/*"'), "the OS picker hints EVERY media family (the any-media law)")
     assert.ok(mods.includes("modsNotMediaLine(f.name)"), "a non-media file refuses at the gesture with the seat's own face")
-    assert.ok(mods.includes("commitUpload(f)"), "a media file commits through the read arm (the system bakes the pack)")
+    // RE-PIN 2026-10-16: the read arm's signature carries the slot
+    // index now (commitUpload(f, ci) / commitUpload(f, null)) — the
+    // old exact-string pin redded on the evolved spelling while the
+    // law (a media file commits through the read arm) held
+    assert.ok(mods.includes("void commitUpload(f, ci)") && mods.includes("void commitUpload(f, null)"), "a media file commits through the read arm at every square (the system bakes the pack)")
     assert.ok(!mods.includes("modsSuffixLine"), "the .safetensors suffix law is DEAD — any media boards")
     assert.ok(!mods.includes("tl-call-mod-form"), "the manual path form is DEAD — one square, one grammar")
   })

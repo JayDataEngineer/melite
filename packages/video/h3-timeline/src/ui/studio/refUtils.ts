@@ -171,16 +171,29 @@ export const fitImageToAspect = async (src: string, tw: number, th: number): Pro
   // paths. A bare name is engine currency — verbatim, never a decode.
   if (tw <= 0 || th <= 0 || !/^(data:|https?:|\/)/.test(src)) return src
   try {
-    const img = await new Promise<HTMLImageElement>((resolve, reject) => {
-      const el = new Image()
-      // (the autorize cure) anonymous keeps the canvas drawable for
-      // cross-origin artifact urls — a tainted toDataURL throws into
-      // the verbatim catch, never a silent half-fit
-      el.crossOrigin = "anonymous"
-      el.onload = () => { resolve(el) }
-      el.onerror = () => { reject(new Error("decode failed")) }
-      el.src = src
-    })
+    // (the courtesy law, made true 2026-10-16) the comment has always
+    // promised "the fit is a courtesy the commit never depends on" —
+    // but a decode that never settles (a stalled loader, a jsdom env
+    // that fires neither onload nor onerror for rooted paths) parked
+    // the commit forever: the estate pick arm wrote NOTHING (the
+    // studio-call-cards wall's red at HEAD). The decode races a
+    // 700ms courtesy window (under the UI's own 1s settle budget — a slower decode rides verbatim); a loss rides verbatim, same as the
+    // tainted/undecodable catch.
+    const img = await Promise.race([
+      new Promise<HTMLImageElement>((resolve, reject) => {
+        const el = new Image()
+        // (the autorize cure) anonymous keeps the canvas drawable for
+        // cross-origin artifact urls — a tainted toDataURL throws into
+        // the verbatim catch, never a silent half-fit
+        el.crossOrigin = "anonymous"
+        el.onload = () => { resolve(el) }
+        el.onerror = () => { reject(new Error("decode failed")) }
+        el.src = src
+      }),
+      new Promise<never>((_, reject) => {
+        setTimeout(() => { reject(new Error("decode stalled")) }, 700)
+      }),
+    ])
     const sw = img.naturalWidth
     const sh = img.naturalHeight
     if (sw <= 0 || sh <= 0) return src
