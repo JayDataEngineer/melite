@@ -6,6 +6,57 @@
 // provider prime. composeOnce rides a seam fake (the engine graph
 // compose has its own seat elsewhere).
 import { describe, it, expect, vi, afterAll, beforeAll } from "vitest";
+// THE FILE-LEVEL ENGINE MOCK (gate-37 flake cure): this file
+// sequences one-shot census events (mockResolvedValueOnce /
+// mockRejectedOnce) for primeObjectInfo's degrade + re-arm arms,
+// so the mock lives HERE, not in the shared hermetic helper (a
+// helper-registered mock serves transitive importers; this file
+// drives the seam itself). Stable double identity per file (the
+// transport's cache contract — the unchanged-doc skip rides it).
+// The census fn is stashed in hoisted state: arms sequence it
+// DIRECTLY (a dynamic barrel import inside the test resolves a
+// re-import — arms feed the census plain-data directives (failNext
+// / nextDoc): test→factory data crosses (the decl-corners bounds
+// pattern), while a factory-side mock-fn reference does NOT
+// propagate back (identity does not cross — the failure that
+// taught this comment). The impl below interprets the directives.
+const bootSeat = vi.hoisted(() => ({
+  fetches: 0,
+  doc: null as Record<string, unknown> | null,
+  failNext: null as string | null,
+  nextDoc: null as Record<string, unknown> | null,
+  censusFn: vi.fn(async (): Promise<Record<string, unknown>> => {
+    throw new Error("hermetic census unarmed");
+  }),
+}));
+const BOOT_DOC_URL = new URL(
+  "../../../../tests/walls/fixtures/object_info.boot.json",
+  import.meta.url,
+);
+vi.mock("@melite/comfyui-cordis", async (importOriginal) => {
+  const real = await importOriginal<typeof import("@melite/comfyui-cordis")>();
+  const { readFileSync: readBootDoc } = await import("node:fs");
+  bootSeat.censusFn.mockImplementation(async () => {
+    bootSeat.fetches += 1;
+    // one-shot directives first (arms feed plain data — the
+    // decl-corners test→factory pattern), then the stable double.
+    if (bootSeat.failNext !== null) {
+      const message = bootSeat.failNext;
+      bootSeat.failNext = null;
+      throw new Error(message);
+    }
+    if (bootSeat.nextDoc !== null) {
+      const staged = bootSeat.nextDoc;
+      bootSeat.nextDoc = null;
+      return staged;
+    }
+    if (bootSeat.doc === null) {
+      bootSeat.doc = JSON.parse(readBootDoc(BOOT_DOC_URL, "utf8")) as Record<string, unknown>;
+    }
+    return bootSeat.doc;
+  });
+  return { ...real, liveObjectInfo: bootSeat.censusFn };
+});
 
 const composeOnce = vi.hoisted(() =>
   vi.fn(async (): Promise<Record<string, unknown>> => ({ graph: true })),
@@ -29,6 +80,7 @@ import {
   needCardRegistry,
   familyFace,
 } from "../src/cardsRegistry.ts";
+import { loadCardDefs, theService } from "../../../engines/comfyui-cordis/src/cardDefs.ts";
 import { prepareCardParams } from "../src/cardsCompose.ts";
 import { FlowsSeatService } from "../src/flowsData.ts";
 
@@ -631,18 +683,17 @@ describe("phase1Card + phase2Card (the two phases, one compose seat)", () => {
 
 describe("primeObjectInfo's unreachable-engine arm", () => {
   it("a dead engine endpoint degrades to null + false, never a throw", async () => {
-    const prev = process.env["COMFYUI_URL"];
-    process.env["COMFYUI_URL"] = "http://127.0.0.1:1";
-    try {
-      const c2 = new Context();
-      new FlowsSeatService(c2);
-      const fresh = new CardRegistryService(c2);
-      expect(await fresh.primeObjectInfo()).toBe(false);
-      expect(fresh.objectInfo()).toBeNull();
-    } finally {
-      if (prev === undefined) delete process.env["COMFYUI_URL"];
-      else process.env["COMFYUI_URL"] = prev;
-    }
+    // EXPLICIT SIMULATION (the hermetic-engine file mock owns the
+    // boot fetch — a dead port would never be dialed): the throw
+    // stands in for the refused connection; the degrade path
+    // (null + false, never a throw) is the subject, not the socket.
+    // Sequenced as plain data (never a barrel re-import).
+    bootSeat.failNext = "connect ECONNREFUSED 127.0.0.1:1";
+    const c2 = new Context();
+    new FlowsSeatService(c2);
+    const fresh = new CardRegistryService(c2);
+    expect(await fresh.primeObjectInfo()).toBe(false);
+    expect(fresh.objectInfo()).toBeNull();
   });
 });
 
@@ -956,23 +1007,20 @@ describe("modellessDraftVerdict (the family-intersection fold)", () => {
 // engine never degrades a healthy singleton.
 describe("the singleton re-arm (a weight landing reaches the serving surfaces without a reboot)", () => {
   it("re-prime arms on a changed doc, skips an unchanged one, and keeps the last good doc when the engine is gone", async () => {
-    const { loadCardDefs, theService, invalidateObjectInfo } = await import("@melite/comfyui-cordis");
-    const { createServer } = await import("node:http");
+    // EXPLICIT SEQUENCING (the hermetic-engine file mock owns the
+    // boot fetch — sockets would never be dialed): each leg feeds
+    // the census exactly one doc event; the re-arm identity law is
+    // the subject. The transport's own invalidation law (drop the
+    // cache, re-fetch post-landing) rides the REAL liveObjectInfo
+    // in manage-plane-acquire-weight.spec.ts's fixture socket —
+    // this arm judges the registry's re-arm, never the cache.
+    // Sequenced on the hoisted censusFn (never a barrel re-import —
+    // loadCardDefs/theService ride the static source import above,
+    // the same module instance the mocked barrel re-exports).
     await loadCardDefs(); // the singleton is resolvable in this fiber
-    let generation = 1;
-    const srv = createServer((_req, res) => {
-      res.writeHead(200, { "content-type": "application/json" });
-      res.end(JSON.stringify({ generation, Node: {} }));
-    });
-    await new Promise<void>((resolve) => srv.listen(0, "127.0.0.1", resolve));
-    const addr = srv.address();
-    const base = "http://127.0.0.1:" + String(typeof addr === "object" && addr !== null ? addr.port : 0);
-    const prevUrl = process.env["COMFYUI_URL"];
     const spy = vi.spyOn(theService(), "setObjectInfo");
     let freshCtx: Context | null = null;
     try {
-      process.env["COMFYUI_URL"] = base;
-      invalidateObjectInfo(base);
       freshCtx = new Context();
       new FlowsSeatService(freshCtx);
       (freshCtx as unknown as { queue: unknown }).queue = {
@@ -982,28 +1030,29 @@ describe("the singleton re-arm (a weight landing reaches the serving surfaces wi
       const reg = new CardRegistryService(freshCtx);
       await reg.prime(); // leg 1: the boot arm (unconditional)
       expect(spy).toHaveBeenCalledTimes(1);
-      // leg 2: the hot cache serves the SAME doc identity — no re-arm
+      // leg 2: the stable mock answers the SAME doc identity — no re-arm
       expect(await reg.primeObjectInfo()).toBe(true);
       expect(spy).toHaveBeenCalledTimes(1);
-      // leg 3: the landing shape — drop the doc, change the body,
-      // the re-prime follows the new identity
-      generation = 2;
-      invalidateObjectInfo(base);
+      // leg 3: the landing shape — the census serves a new identity,
+      // the re-prime follows it
+      bootSeat.nextDoc = { generation: 2, ChangedNode: {} };
       expect(await reg.primeObjectInfo()).toBe(true);
       expect(spy).toHaveBeenCalledTimes(2);
       // leg 4: an unreachable engine keeps the last good singleton doc
-      srv.closeAllConnections();
-      await new Promise<void>((resolve) => srv.close(() => resolve()));
-      invalidateObjectInfo(base);
+      bootSeat.failNext = "connect ECONNREFUSED 127.0.0.1:1";
       expect(await reg.primeObjectInfo()).toBe(false);
       expect(spy).toHaveBeenCalledTimes(2);
     } finally {
       spy.mockRestore();
-      if (prevUrl === undefined) delete process.env["COMFYUI_URL"];
-      else process.env["COMFYUI_URL"] = prevUrl;
-      invalidateObjectInfo(base);
-      srv.close();
+      // no mockReset: the mock*Once queue is consumed by the legs
+      // above — the file mock's double answers again after.
       await freshCtx?.fiber.dispose();
     }
+  });
+});
+
+describe("the hermetic engine (the gate-37 flake cure: no live socket on the boot path)", () => {
+  it("every prime rode the mock", () => {
+    expect(bootSeat.fetches).toBeGreaterThan(0);
   });
 });

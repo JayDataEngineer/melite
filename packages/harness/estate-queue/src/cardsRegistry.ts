@@ -475,11 +475,20 @@ export class CardRegistryService extends Service {
 
   /** Prime the live node-definitions doc off the engine (/object_info
    *  via the SDK, cached per process). Never throws: false = the
-   *  engine is unreachable and the doc stays null (the compose gate
-   *  refuses CLOSED on that; the serving surfaces degrade). */
-  async primeObjectInfo(): Promise<boolean> {
+   *  engine is unreachable (or the census outruns the bound) and
+   *  the doc stays null (the compose gate refuses CLOSED on that;
+   *  the serving surfaces degrade).
+   *
+   *  THE PRIME BOUND (the gate-37 flake cure, 2026-11-07): the boot
+   *  census is the ONLY unbounded fetch on the estate boot path —
+   *  no signal, no boundMs — so a wedged engine hangs every boot
+   *  behind it forever (the 15s settle polls red first, but the
+   *  hang is the production wound). 60s is 300× the quiet 0.2s
+   *  fetch and past every loaded-but-alive observation; past it
+   *  the prime degrades instead of hanging. */
+  async primeObjectInfo(boundMs: number = 60_000): Promise<boolean> {
     try {
-      this.oi = await liveObjectInfo(resolveEngineBaseUrl());
+      this.oi = await liveObjectInfo(resolveEngineBaseUrl(), undefined, boundMs);
       this.armWiringFromDoc(this.oi);
       this.armSingletonFromDoc(this.oi);
       return true;

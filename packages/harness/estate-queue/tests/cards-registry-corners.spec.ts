@@ -4,6 +4,7 @@
 // (the run door's voice, never the write seat's), the validate
 // seat's non-string model address, and the prepare refusal riding
 // the validate door's Refusal shape.
+import { assertHermeticPrime } from "../../../../tests/helpers/hermetic-engine.ts";
 import { afterAll, beforeAll, describe, it, expect } from "vitest";
 import { installLaneStoreOverlay, restoreLaneStoreOverlay } from "../../../../tests/helpers/lane-store-overlay.ts";
 import { Context } from "@deepseek-ai/cordis";
@@ -88,6 +89,12 @@ const FIXTURE_FLOW: RegistryFlow = {
   tool: null,
   skillRefs: [],
 };
+
+describe("the hermetic engine (the gate-37 flake cure: no live socket on the boot path)", () => {
+  it("the prime rode the mock — the primed doc IS the boot double", () => {
+    assertHermeticPrime(svc.objectInfo());
+  });
+});
 
 describe("the flow-rider census (an unknown card that names a flow)", () => {
   let dispose: () => void;

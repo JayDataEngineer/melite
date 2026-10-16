@@ -11,6 +11,7 @@
 // 200 with a body.
 //
 // Run: npx vitest run tests/walls/ts/suites/load-skill-roundtrip.spec.ts
+import { assertHermeticRode } from "../../../helpers/hermetic-engine.ts";
 import "../../../helpers/boot-models.ts";
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -168,5 +169,11 @@ describe("the id namespace law: load-advertised ids round-trip through the read 
     }
     assert.equal(advertised, EXPECTED_FLOW_SKILLS,
       `exactly ${String(EXPECTED_FLOW_SKILLS)} flow skill ids advertised — nothing to pin, nothing to lose`);
+  });
+});
+
+describe("the hermetic engine (the gate-37 flake cure: no live socket on the boot path)", () => {
+  it("every prime rode the mock", () => {
+    assertHermeticRode();
   });
 });

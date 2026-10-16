@@ -5,6 +5,7 @@
 // planes ride lookup=all|cards|flows, search filters (q tokens ALL
 // match; tags ALL match), rows are LIVE (the flows registry + the
 // primed card defs — never a frozen blob).
+import { assertHermeticRode } from "../../../helpers/hermetic-engine.ts";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -258,4 +259,8 @@ test("THE BENCH-SEEDER BAN — no spec seeds the repo's bench tree without isola
   // MUTATION KILLED: a walk that scanned nothing would pass vacuously
   assert.ok(scanned > 300, `the spec scan must cover the estate (scanned ${scanned})`);
   assert.deepEqual(offenders, [], `specs seeding the repo bench tree without isolation:\n${offenders.join("\n")}`);
+});
+
+test("the hermetic engine (the gate-37 flake cure): every prime rode the mock", () => {
+  assertHermeticRode();
 });

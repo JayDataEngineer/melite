@@ -6,6 +6,7 @@
 // are the guard, never a verdict string), and a familyless card
 // address skips lane presence exactly as the run press composes it.
 // The specs describe what each seat does, not that it is safe.
+import { assertHermeticRode } from "../../../../tests/helpers/hermetic-engine.ts";
 import { describe, it, expect, beforeAll, afterAll, vi } from "vitest";
 
 const composeOnce = vi.hoisted(() =>
@@ -113,5 +114,11 @@ describe("the familyless lane-presence skip", () => {
     // id still board-refuses (cards-lane-law's teeth arm).
     expect(svc.admitStageModel("rig", "rig").ok).toBe(true);
     expect(svc.admitStageModel("rig", "sam2.1_hiera_large.pt").ok).toBe(false);
+  });
+});
+
+describe("the hermetic engine (the gate-37 flake cure: no live socket on the boot path)", () => {
+  it("every prime rode the mock", () => {
+    assertHermeticRode();
   });
 });

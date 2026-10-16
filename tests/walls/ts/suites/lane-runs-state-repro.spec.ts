@@ -34,6 +34,7 @@
 // the fibers do — the second critique caught the header claiming
 // disposal while the code dropped the array), every sandbox
 // removed in afterEach.
+import { assertHermeticRode } from "../../../helpers/hermetic-engine.ts";
 import "../../../helpers/boot-models.ts";
 import { cpSync, existsSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -363,5 +364,11 @@ describe("the false-death hunt's four laws", () => {
       "a present lock with a dead holder is a dead lane, not a restart");
     // a judged run CLEARS the ledger — the tolerance is consecutive.
     writeSkipLedger(0);
+  });
+});
+
+describe("the hermetic engine (the gate-37 flake cure: no live socket on the boot path)", () => {
+  it("every prime rode the mock", () => {
+    assertHermeticRode();
   });
 });

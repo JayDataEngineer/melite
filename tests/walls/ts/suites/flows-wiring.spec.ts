@@ -14,6 +14,7 @@
 //
 // Run: npx vitest run tests/walls/ts/suites/flows-wiring.spec.ts
 
+import { assertHermeticRode } from "../../../helpers/hermetic-engine.ts";
 import "../../../helpers/boot-models.ts";
 import { describe, it, beforeAll } from "vitest";
 import assert from "node:assert/strict";
@@ -140,5 +141,11 @@ describe("the flow-registry wiring wall (the live door's own construction, over 
       /input "text": expected kind "image" contradicts card "tts" \(the card declares "text"\)/,
       "the refusal names the card, the port, and the card's own kind",
     );
+  });
+});
+
+describe("the hermetic engine (the gate-37 flake cure: no live socket on the boot path)", () => {
+  it("every prime rode the mock", () => {
+    assertHermeticRode();
   });
 });

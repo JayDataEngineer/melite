@@ -17,6 +17,7 @@
 // of the tts families, the cross-family switch, the teeth of the
 // refusal that must SURVIVE the cure, and the same-lane patch that
 // must judge exactly as it always did.
+import { assertHermeticRode } from "../../../../tests/helpers/hermetic-engine.ts";
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -505,5 +506,11 @@ describe("THE DESIGNED FLOOR census (the T3 follow-up, 2026-11-06) — the resol
     const params = liftCardParams(stampCardOverlay({}, synthetic, decl, sel, "census", "synthetic"));
     expect("tone" in params).toBe(true); // the rider rides — the census would name it unpinned
     expect("text" in params).toBe(false); // unstated + no default — the floor stamps nothing
+  });
+});
+
+describe("the hermetic engine (the gate-37 flake cure: no live socket on the boot path)", () => {
+  it("every prime rode the mock", () => {
+    assertHermeticRode();
   });
 });

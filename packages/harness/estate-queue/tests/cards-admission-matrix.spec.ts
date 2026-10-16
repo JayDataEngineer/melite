@@ -35,6 +35,7 @@
 //
 // SIMPLE, no mocks: the real boot (loadCardDefs — flavors register
 // LOUD), the real registry seat, the real facts file.
+import { assertHermeticRode } from "../../../../tests/helpers/hermetic-engine.ts";
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -283,5 +284,11 @@ describe("T4 — every boarded pack id has a lane fate", () => {
       }
     }
     expect([...fateless]).toEqual([]);
+  });
+});
+
+describe("the hermetic engine (the gate-37 flake cure: no live socket on the boot path)", () => {
+  it("every prime rode the mock", () => {
+    assertHermeticRode();
   });
 });

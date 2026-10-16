@@ -14,6 +14,7 @@
 //
 // Run: npx vitest run tests/walls/ts/suites/estate-composition.spec.ts
 // (or the whole gate: pnpm run test)
+import { assertHermeticRode } from "../../../helpers/hermetic-engine.ts";
 import "../../../helpers/boot-models.ts";
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -219,3 +220,9 @@ describe("the estate bundle composes", () => {
     await fresh.fiber.dispose();
   }, 30000);
 }, 30000);
+
+describe("the hermetic engine (the gate-37 flake cure: no live socket on the boot path)", () => {
+  it("every prime rode the mock", () => {
+    assertHermeticRode();
+  });
+});

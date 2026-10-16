@@ -12,6 +12,7 @@
       "@deepseek-ai/dsh-storage-domain": ["packages/estate/drafts/node_modules/@deepseek-ai/dsh-storage-domain"],
       "@deepseek-ai/dsh-storage-json": ["packages/estate/drafts/node_modules/@deepseek-ai/dsh-storage-json"],
       "@deepseek-ai/dsh-typert-protocol": ["packages/estate/drafts/node_modules/@deepseek-ai/dsh-typert-protocol"],
+      "@melite/comfyui-cordis": ["packages/engines/comfyui-cordis/src/index.ts"],
       // the e2e tier judges the SOURCE face: comfyui-cordis src
       // imports @melite/engine-contract, and without this row it resolves
       // the lib face — the F3 brand is nominal, so lib-EngineRef

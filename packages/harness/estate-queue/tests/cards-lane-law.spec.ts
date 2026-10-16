@@ -15,6 +15,7 @@
 // nothing the model did not declare — and the model may declare
 // nothing the card cannot carry. The words live at
 // @melite/contracts/laneRelations; these walls pin the judgment.
+import { assertHermeticRode } from "../../../../tests/helpers/hermetic-engine.ts";
 import { mkdtempSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -1943,5 +1944,11 @@ describe("THE SWITCH WEDGES (operator 2026-11-05 — REAL registry, REAL 2511/21
     // as some other lane's (its refusal, if any, is the admission's
     // own voice, exactly as before this seat changed)
     expect(migrated).toBe(next);
+  });
+});
+
+describe("the hermetic engine (the gate-37 flake cure: no live socket on the boot path)", () => {
+  it("every prime rode the mock", () => {
+    assertHermeticRode();
   });
 });

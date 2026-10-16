@@ -32,6 +32,7 @@
 // board naming nothing is drift the next boot inherits.
 //
 // Run: npx vitest run tests/walls/ts/suites/family-coverage.spec.ts
+import { assertHermeticRode } from "../../../helpers/hermetic-engine.ts";
 import { describe, expect, it } from "vitest";
 import { execFileSync } from "node:child_process";
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
@@ -324,5 +325,11 @@ describe("family-coverage (every family is reachable through the card plane)", (
     // pass vacuously — twelve skill-leaf seats ship today.
     expect(walked, "the engine skill walk must find the skill-leaf seats").toBeGreaterThanOrEqual(10);
     expect(orphans, `skill leaves serving dead families:\n${orphans.join("\n")}`).toEqual([]);
+  });
+});
+
+describe("the hermetic engine (the gate-37 flake cure: no live socket on the boot path)", () => {
+  it("every prime rode the mock", () => {
+    assertHermeticRode();
   });
 });

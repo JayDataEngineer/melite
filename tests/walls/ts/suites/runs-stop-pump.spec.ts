@@ -16,6 +16,7 @@
 // A regression that strands the row (a settle that never fires, a
 // mirror that skips the stopped word, a pump that renders the queued
 // stop anyway) goes RED here.
+import { assertHermeticRode } from "../../../helpers/hermetic-engine.ts";
 import { createServer, type Server, type IncomingMessage } from "node:http";
 import { mkdtempSync, mkdirSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -242,3 +243,7 @@ test("W11 THE STOP-PUMP CONTRACTS: the running stop converges its draft row thro
     base.close();
   }
 }, 90000);
+
+test("the hermetic engine (the gate-37 flake cure): every prime rode the mock", () => {
+  assertHermeticRode();
+});

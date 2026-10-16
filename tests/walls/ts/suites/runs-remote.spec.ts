@@ -4,6 +4,7 @@
 // storage, drafts, runs — over one mkdtemp state root. NO comfyui
 // seat on purpose: the pump's engine seam must settle the run
 // FAILED with the loud miswire text (never a silent accept).
+import { assertHermeticRode } from "../../../helpers/hermetic-engine.ts";
 import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, existsSync, readdirSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -1441,4 +1442,8 @@ test("the runtime service's onRunChange seats the seam (the service wiring, not 
   } finally {
     await fiber.dispose();
   }
+});
+
+test("the hermetic engine (the gate-37 flake cure): every prime rode the mock", () => {
+  assertHermeticRode();
 });

@@ -9,6 +9,7 @@
 // mounts, exactly like a lane restart after any composed session.
 //
 // It is a REPRO first: run it and read the failure's own voice.
+import { assertHermeticRode } from "../../../helpers/hermetic-engine.ts";
 import { bundleSeats } from "../../helpers/bundle-seats.ts";
 const REPO = new URL("../../../../", import.meta.url).pathname.replace(/\/$/, "");
 import "../../../helpers/boot-models.ts";
@@ -145,4 +146,10 @@ describe("the estate bundle boots with a live bench doc present", () => {
     const row = JSON.parse(rf(seedPath, "utf8")) as { record?: { doc?: { stages?: unknown[] } } };
     expect((row.record?.doc?.stages ?? []).length, "and it still carries its stage").toBe(1);
   }, 60_000);
+});
+
+describe("the hermetic engine (the gate-37 flake cure: no live socket on the boot path)", () => {
+  it("every prime rode the mock", () => {
+    assertHermeticRode();
+  });
 });

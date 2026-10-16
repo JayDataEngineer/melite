@@ -18,11 +18,21 @@ import { FlowsSeatService } from "../src/flowsData.ts";
 const declState = vi.hoisted(() => ({
   ttsBounds: null as Record<string, { min?: number; max?: number }> | null,
   primitiveConflictsRow: false,
+  // the hermetic engine (gate-37 flake cure): a second barrel mock
+  // would fight this file's own getModel override, so the boot
+  // double rides HERE — same seam, same integrity number.
+  hermeticFetches: 0,
 }));
+
+const BOOT_DOC_URL = new URL(
+  "../../../../tests/walls/fixtures/object_info.boot.json",
+  import.meta.url,
+);
 
 vi.mock("@melite/comfyui-cordis", async (importOriginal) => {
   const real =
     await importOriginal<typeof import("@melite/comfyui-cordis")>();
+  const { readFileSync: readBootDoc } = await import("node:fs");
   return {
     ...real,
     getModel: (id: string) => {
@@ -42,6 +52,10 @@ vi.mock("@melite/comfyui-cordis", async (importOriginal) => {
         };
       }
       return base;
+    },
+    liveObjectInfo: async () => {
+      declState.hermeticFetches += 1;
+      return JSON.parse(readBootDoc(BOOT_DOC_URL, "utf8")) as Record<string, unknown>;
     },
   };
 });
@@ -140,5 +154,11 @@ describe("the no-bounds break (one declaring family without spans stands the law
   it("a family without bounds breaks the intersection — no span judges the draft", () => {
     const verdict = svc.admitStageRelations("tts", { speed: 999, text: "speak" });
     expect(verdict).toEqual({ ok: true });
+  });
+});
+
+describe("the hermetic engine (the gate-37 flake cure: no live socket on the boot path)", () => {
+  it("every prime rode the file's own mock", () => {
+    expect(declState.hermeticFetches).toBeGreaterThan(0);
   });
 });

@@ -9,6 +9,7 @@
 // HERE, not at the operator's screen.
 //
 // Run: npx vitest run tests/walls/ts/suites/tool-output.spec.ts
+import { assertHermeticRode } from "../../../helpers/hermetic-engine.ts";
 import "../../../helpers/boot-models.ts";
 import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -408,4 +409,10 @@ afterAll(() => {
   // the race-cure seam dies with the spec — never leaks the
   // isolated root into sibling files on this worker
   delete process.env["MELITE_BENCH_STORAGE"];
+});
+
+describe("the hermetic engine (the gate-37 flake cure: no live socket on the boot path)", () => {
+  it("every prime rode the mock", () => {
+    assertHermeticRode();
+  });
 });

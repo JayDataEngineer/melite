@@ -12,6 +12,7 @@
 // copies (one cordis realpath across every anchor). Failures assert
 // through remoteErrorOf + code — discrimination is never instanceof
 // (the protocol's own law).
+import { assertHermeticRode } from "../../../helpers/hermetic-engine.ts";
 import { test, onTestFinished } from "vitest";
 import assert from "node:assert/strict";
 import { mkdtempSync, mkdirSync, writeFileSync, utimesSync, rmSync } from "node:fs";
@@ -848,3 +849,7 @@ test("the bench survives a dispose + re-boot on one root", async () => {
   await second.fiber.dispose();
 });
 
+
+test("the hermetic engine (the gate-37 flake cure): every prime rode the mock", () => {
+  assertHermeticRode();
+});

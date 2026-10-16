@@ -33,6 +33,7 @@
 // admit), never a frozen list; the vocabulary is the facts file's
 // own engine answer with its documented floors (the dead-card
 // wall's spelling, one home).
+import { assertHermeticRode } from "../../../helpers/hermetic-engine.ts";
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, dirname } from "node:path";
@@ -294,5 +295,11 @@ describe("THE OFFERED-CELLS CONTRACT — no bad variants, no bad quants, no bad 
       }
     }
     expect(bad, "offered cells that cannot compose (dead clicks the green suites were passing)").toEqual([]);
+  });
+});
+
+describe("the hermetic engine (the gate-37 flake cure: no live socket on the boot path)", () => {
+  it("every prime rode the mock", () => {
+    assertHermeticRode();
   });
 });

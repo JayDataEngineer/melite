@@ -25,6 +25,7 @@
 // the census only ever grows rows, never exemptions.
 //
 // Run: npx vitest run tests/walls/ts/suites/recipe-rows.spec.ts
+import { assertHermeticRode } from "../../../helpers/hermetic-engine.ts";
 import "../../../helpers/boot-models.ts";
 import { describe, it } from "vitest";
 import assert from "node:assert/strict";
@@ -326,5 +327,11 @@ const ACTION_CARDS_WITHOUT_ENVELOPE: string[] = [];
     });
     assert.ok(!dead.ok, "a dead key is refused");
     assert.match(dead.ok ? "" : String(dead.error), /not_a_param|unknown param/);
+  });
+});
+
+describe("the hermetic engine (the gate-37 flake cure: no live socket on the boot path)", () => {
+  it("every prime rode the mock", () => {
+    assertHermeticRode();
   });
 });
