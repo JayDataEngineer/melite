@@ -287,6 +287,7 @@ export function MotionCardEditor({
     keptEdit, editedDeformedB64,
     editableJointsRef,
     setEditableJoints, setKeptEdit, setEditedDeformedB64,
+    stageId: stage.id,
   })
 
   const { toggleEdit, handleJointMove, displayJointsM, handleRepose } = usePoseEditing({

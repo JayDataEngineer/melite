@@ -69,6 +69,49 @@ describe('timeline (prompts + keyframes)', () => {
     }
   }
 
+  test('STAGE-SCOPED UNDO (CURE-5): a snapshot captured on stage A never restores onto stage B', async () => {
+    // THE LESION (motion-journey wave-2): the undo stacks lived in
+    // refs with no stage scope — capture on A, switch stages, undo
+    // restored A's prompts/keyframes/payloads onto B's doc. The
+    // cure resets both stacks on stage.id change DURING RENDER (the
+    // useMotionDoc law); this arm is its firing proof.
+    stubLoads({ motionT: 4 })
+    const onSaveA = vi.fn()
+    const stageA = mkStage({ id: 'm1', params: {} })
+    const stageB = mkStage({ id: 'm2', params: {} })
+    const container = document.createElement('div')
+    document.body.appendChild(container)
+    const root = createRoot(container)
+    mounted.push(root)
+    const editorFor = (st: typeof stageA, save: ReturnType<typeof vi.fn>) =>
+      h(MotionCardEditor, { stage: { ...st, result: { artifacts: { motion_npz: MOTION_URL } } }, onSave: save, runCompiledGeneration } as never)
+    root.render(editorFor(stageA, onSaveA))
+    await waitForText('30 fps · 4f')
+    await paused({ onSave: onSaveA })
+    // capture on A: pin one keyframe (a pushUndo gesture) — the
+    // working pin test's own gesture shape
+    stubScrollerRect()
+    const lane = document.body.querySelector('[data-lane="fullbody"]') as HTMLElement
+    fireEvent.doubleClick(lane, { clientX: 4, button: 0 })
+    await vi.waitFor(() => {
+      const call = onSaveA.mock.calls.find(([prm]) => (prm as Record<string, unknown>).motion_constraints)
+      if (!call) throw new Error('no A pin yet')
+    }, { timeout: 15000 })
+    // settle A's persists before the switch (the pin writes twice:
+    // the keyframe, then the constraints follow-up)
+    await new Promise((r) => setTimeout(r, 400))
+    // switch stages on the SAME editor instance
+    const onSaveB = vi.fn()
+    root.render(editorFor(stageB, onSaveB))
+    await vi.waitFor(() => {
+      if (!document.body.querySelector('[data-testid="motion-timeline-scroll"]')) throw new Error('B not mounted')
+    }, { timeout: 10000 })
+    // Ctrl+Z on B: the A-era stack must be EMPTY — a no-op, never A's restore
+    fireEvent.keyDown(document.body, { key: 'z', ctrlKey: true })
+    await new Promise((r) => setTimeout(r, 250))
+    expect(onSaveB.mock.calls.length).toBe(0, 'undo on stage B wrote nothing — the A-era stack was cleared on the switch')
+  })
+
   test('lane double-click pins a keyframe and persists it', async () => {
     const { onSave } = await mountedWithRun()
     stubScrollerRect()

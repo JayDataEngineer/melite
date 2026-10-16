@@ -50,9 +50,22 @@ export function useMotionUndoStack({
   keptEdit, editedDeformedB64,
   editableJointsRef,
   setEditableJoints, setKeptEdit, setEditedDeformedB64,
-}: MotionUndoStackArgs) {
+  stageId,
+}: MotionUndoStackArgs & { stageId: string }) {
   const undoStack = useRef<AuthoringSnapshot[]>([])
   const redoStack = useRef<AuthoringSnapshot[]>([])
+  // STAGE-SCOPED UNDO (motion-journey CURE-5, 2026-11-06): a
+  // snapshot captured on stage A restored onto stage B's doc is a
+  // cross-stage corruption wearing an undo button. The stacks reset
+  // on stage.id change DURING RENDER — the useMotionDoc:83-88 law
+  // (an effect reset lets stage B's FIRST undo reach stage A's
+  // still-live stack).
+  const scopeRef = useRef(stageId)
+  if (scopeRef.current !== stageId) {
+    scopeRef.current = stageId
+    undoStack.current = []
+    redoStack.current = []
+  }
   const [undoVersion, setUndoVersion] = useState(0)
   const captureDocRef = useRef(captureDoc)
   const restoreDocRef = useRef(restoreDoc)
