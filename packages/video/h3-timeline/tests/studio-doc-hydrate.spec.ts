@@ -595,3 +595,90 @@ describe("the stem→clip conversion and the sr_switch serialize law (R3, 2026-1
     assert.equal(a.loras![0]!.strength, undefined)
   })
 })
+
+// ── THE WHOLE-DOC DEEP EQUALITY (G1, timeline-plane wave-2) ─────────────
+// The layer-A roundtrip's law, judged at DOC depth: serialize∘hydrate
+// on an already-saved doc is the IDENTITY — every stated value survives
+// verbatim, no key gains or loses, zero hand enumeration. The old walls
+// judged name depth (the contract wall) and sampled values only, so a
+// mutating normalizer (a trim, a coercion, a reorder) rode any key
+// nobody enumerated. The fixture states every pole the serializer can
+// emit — including the false-pole booleans and the true-gated masters —
+// so the identity is judged across the whole wire vocabulary at once.
+describe("the layerA whole-doc roundtrip identity (G1)", () => {
+  // A maximally-populated SAVED doc (the wire form, every key legal):
+  // defaults stated explicitly, true-gated masters ON, the false-pole
+  // riders OFF, the mod bag + positioned clips + all four ref lanes +
+  // trims populated.
+  const SAVED_DOC: Record<string, unknown> = {
+    fps: 24,
+    seed: 42,
+    shift_video: 3.1,
+    shift_audio: 0.4,
+    steps: 20,
+    denoise: 0.85,
+    width: 832,
+    height: 480,
+    length: 121,
+    sampler_name: "euler",
+    sched_name: "beta",
+    sla_enabled: false,
+    sla_protect_audio: true,
+    sla_stabilize_motion: true,
+    sla_disable_fp16_accum: false,
+    sla_sparsity: 0.9,
+    sla_block_size: "64",
+    sla_min_seq_len: 3,
+    sla_dense_last_steps: 2,
+    sla_reference_protection: "Light",
+    sla_dense_backend: "auto",
+    sla_dense_steps: "1-3,5",
+    attention_backend: "comfy kitchen attention",
+    sharpen_enabled: false,
+    sharpen_method: "rcas",
+    sharpen_strength: 0.5,
+    sharpen_radius: 2,
+    sharpen_threshold: 0.1,
+    sharpen_iterations: 3,
+    interpolate_enabled: false,
+    interp_model: "rife47.pth",
+    interp_multiplier: 2,
+    sr_switch: true,
+    sr_model: "seedvr2_ema_3b_fp16.safetensors",
+    sr_resolution: 1080,
+    second_pass_enabled: true,
+    refine_lora: "/eng/models/loras/refine.safetensors",
+    refine_strength: 0.35,
+    refine_steps: 8,
+    ref_image_size: "match",
+    loras: [{ id: "h3_lightx2v_turbo", strength: 0.6, steps: 4 }],
+    variant: "base",
+    model: "minimax_h3",
+    audio_stem: "/audio/theme.flac",
+    audio_clips: [{ id: "c1", name: "n", src: "theme", start_frame: 0, dur_frames: 96 }],
+    ref_images: ["https://u/a.png", "https://u/b.png"],
+    ref_videos: ["https://u/v.mp4"],
+    ref_audios: ["https://u/s1.mp3"],
+    ref_mods: ["/eng/models/refmods/flux_stem.safetensors"],
+    ref_video_trims: [{ start_time: 0, duration: 5 }],
+    duck_depth_db: -12,
+  }
+
+  it("serialize(hydrate(D)) deep-equals D — every stated value survives, no key gains or loses", () => {
+    assert.deepStrictEqual(serializeLayerA(hydrateLayerA(SAVED_DOC)), SAVED_DOC)
+  })
+
+  it("the identity is idempotent — a second roundtrip moves nothing", () => {
+    const once = serializeLayerA(hydrateLayerA(SAVED_DOC))
+    assert.deepStrictEqual(serializeLayerA(hydrateLayerA(once)), once)
+  })
+
+  it("the state-form roundtrip is value-faithful on every key the state carries", () => {
+    // hydrate(serialize(x)) restores x on every key x carries — the
+    // reverse direction. serialize skips undefined/"" (absent =
+    // inherit, the family default), so the judge is per stated key.
+    const state = hydrateLayerA(SAVED_DOC)
+    const back = hydrateLayerA(serializeLayerA(state))
+    assert.deepStrictEqual(back, state)
+  })
+})

@@ -15,11 +15,10 @@ import type { TimelineStore } from "./timelineStoreTypes.ts"
 export function createUiSlice(
   set: SetState<TimelineStore>,
   get: GetState<TimelineStore>,
-): Pick<TimelineStore, "setViewport" | "setStoryboardStatusFilter" | "setTimeFormat" | "setPlayback" | "setDrag" | "setSelectedSegment" | "setSelectedAudioCue" | "copySelectedSegmentParams" | "pasteParamsToSegment" | "pasteParamsToSelected" | "selectSegmentRange" | "toggleSegmentInSelection" | "clearMultiSelection" | "selectAllSegments" | "markInAtPlayhead" | "markOutAtPlayhead" | "markSelectionFromPlayhead" | "setInOutPoints" | "clearInOutPoints" | "addMarker" | "removeMarker" | "updateMarker" | "clearMarkers" | "reset"> {
+): Pick<TimelineStore, "setViewport" | "setStoryboardStatusFilter" | "setPlayback" | "setDrag" | "setSelectedSegment" | "setSelectedAudioCue" | "copySelectedSegmentParams" | "pasteParamsToSegment" | "pasteParamsToSelected" | "selectSegmentRange" | "toggleSegmentInSelection" | "clearMultiSelection" | "selectAllSegments" | "markInAtPlayhead" | "markOutAtPlayhead" | "markSelectionFromPlayhead" | "setInOutPoints" | "clearInOutPoints" | "addMarker" | "removeMarker" | "updateMarker" | "clearMarkers" | "reset"> {
   return {
   setViewport: (patch) => set((s) => ({ viewport: { ...s.viewport, ...patch } })),
   setStoryboardStatusFilter: (status) => set({ storyboardStatusFilter: status }),
-  setTimeFormat: (fmt) => set({ timeFormat: fmt }),
   setPlayback: (patch) => set((s) => ({ playback: { ...s.playback, ...patch } })),
   setDrag: (patch) => set((s) => ({ drag: { ...s.drag, ...patch } })),
   // G8: Single-select clears the multi-select set — this is the "plain
@@ -191,7 +190,6 @@ export function createUiSlice(
       audioCues: [],
       audioTracks: [],
       viewport: { ...DEFAULT_VIEWPORT },
-      timeFormat: 'seconds',
       playback: { ...DEFAULT_PLAYBACK },
       drag: { ...DEFAULT_DRAG },
       selectedSegmentId: null,

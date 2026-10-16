@@ -13,8 +13,6 @@ export interface TimelineStore {
   addAudioTrack: (label?: string) => AudioTrackDef
   removeAudioTrack: (id: string) => void
   viewport: TimelineViewport
-  /** G10: Display time format — 'seconds' (default) or 'frames'. */
-  timeFormat: 'seconds' | 'frames'
   playback: PlaybackState
   drag: DragState
   selectedSegmentId: string | null
@@ -136,7 +134,6 @@ export interface TimelineStore {
   /** E3.11: Set the storyboard status filter. Pass null to clear. */
   setStoryboardStatusFilter: (status: SegmentStatus | null) => void
   /** G10: Toggle between 'seconds' and 'frames' display. */
-  setTimeFormat: (fmt: 'seconds' | 'frames') => void
   setPlayback: (patch: Partial<PlaybackState>) => void
   setDrag: (patch: Partial<DragState>) => void
   setSelectedSegment: (id: string | null) => void

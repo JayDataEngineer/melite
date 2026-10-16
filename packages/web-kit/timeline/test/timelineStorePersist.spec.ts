@@ -165,7 +165,6 @@ describe("empty history bounds", () => {
     assert.deepEqual(S().audioCues, []);
     assert.deepEqual(S().audioTracks, []);
     assert.deepEqual(S().viewport, { scrollX: 0, pixelsPerSecond: 60, canvasWidth: 1200, canvasHeight: 400 });
-    assert.equal(S().timeFormat, "seconds");
     assert.deepEqual(S().playback, { isPlaying: false, currentTime: 0, totalDuration: 5, loopRegion: false });
     assert.equal(S().initialized, false);
   });

@@ -48,14 +48,44 @@ describe("resolvePickVerdictDoc — the pick judges truth-in-hand", () => {
     assert.equal(verdict.custom_knob, 3)
   })
 
-  it("a user unset (undefined) keeps the candidate's unset semantics", () => {
+  it("a user unset (undefined) inherits the held row — the DOOR'S spelling, not the spread's (G3, timeline wave-2)", () => {
+    // The old arm pinned the disease as law ("keeps the candidate's
+    // unset semantics"): a materialized undefined overwrote held, so
+    // after any axis-unset the pick judged `steps: undefined` where
+    // the run composes serializeLayerA's held 20. A materialized
+    // undefined is the unset gesture, not a statement — the base
+    // rides; deletion is the frame's explicit null only.
     const verdict = resolvePickVerdictDoc(
       { width: 1344 },
       { width: undefined },
       {},
     )
-    assert.ok("width" in verdict)
-    assert.equal(verdict.width, undefined)
+    assert.equal(verdict.width, 1344)
+  })
+
+  it("THE G3 UNSET-THEN-PICK CHAIN: unset an axis, pick, the verdict judges the base's held value", () => {
+    // The exact report scenario: the pick commit mints materialized
+    // undefineds (RunRecipeEngine's axisUnset keys), so a NEXT pick's
+    // layerA carries `steps: undefined` beside the persisted
+    // `steps: 20`. The verdict must see the 20 the door composes —
+    // never the undefined the door never composes.
+    const layerAAfterUnset = { steps: undefined, denoise: 0.7 } as Record<string, unknown>
+    const held = { steps: 20, denoise: 0.5, width: 832 } as Record<string, unknown>
+    const verdict = resolvePickVerdictDoc(held, layerAAfterUnset, {})
+    assert.equal(verdict.steps, 20, "the unset axis rides the held value")
+    assert.equal(verdict.denoise, 0.7, "the stated sibling still wins")
+    assert.equal(verdict.width, 832, "held-only keys ride")
+  })
+
+  it("deletion stays the frame's explicit null (the unset cure never eats it)", () => {
+    const verdict = resolvePickVerdictDoc(
+      { width: 800, seed: 7 },
+      { width: undefined, denoise: 0.6 },
+      { seed: null },
+    )
+    assert.equal(verdict.width, 800, "user unset inherits")
+    assert.ok(!("seed" in verdict), "a null frame stamp still deletes")
+    assert.equal(verdict.denoise, 0.6)
   })
 
   it("the user layer composes whole (every stated key reaches the verdict)", () => {

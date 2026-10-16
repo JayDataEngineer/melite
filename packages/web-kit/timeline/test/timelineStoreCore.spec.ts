@@ -221,6 +221,34 @@ afterEach(async () => {
 });
 
 // ── initialize / load migration (null catalog: every model resets) ─────────
+
+// G7 (timeline-plane wave-2): the display-format seat is DELETED, not
+// walled — the 'frames' toggle had a store row, a setter, and a unit
+// arm while NO renderer consumed it anywhere (grep: store files only):
+// the frames display the toggle promised never existed, the class-(iv)
+// dead surface. The tombstone census proves the deletion holds: no key
+// of the store face ever carries a display-format row again (a
+// re-added toggle with no renderer re-delights this census), and no
+// persisted snapshot resurrects one.
+describe("the display-format seat stays deleted (G7 tombstone)", () => {
+  it("no key of the live store face matches the display-format vocabulary", () => {
+    const fmtKeys = Object.keys(S()).filter((k) => /timeformat/i.test(k));
+    assert.deepEqual(fmtKeys, []);
+  });
+
+  it("a persisted snapshot carrying the dead row boots without it (no resurrection)", async () => {
+    localStorage.setItem(
+      LS_KEY,
+      JSON.stringify({ state: { timeFormat: "frames", segments: [] }, version: 1 }),
+    );
+    S().reset();
+    await cleanReset();
+    await S().initialize();
+    const fmtKeys = Object.keys(S()).filter((k) => /timeformat/i.test(k));
+    assert.deepEqual(fmtKeys, []);
+  });
+});
+
 describe("initialize with no persisted state", () => {
   it("boots empty on fresh storage, then early-returns while initialized", async () => {
     await cleanReset();
@@ -941,8 +969,6 @@ describe("relay, anchors, and setters", () => {
     assert.equal(S().playback.isPlaying, true);
     S().setDrag({ isDragging: true, mouseX: 9 });
     assert.equal(S().drag.isDragging, true);
-    S().setTimeFormat("frames");
-    assert.equal(S().timeFormat, "frames");
     S().setStoryboardStatusFilter("ready");
     assert.equal(S().storyboardStatusFilter, "ready");
     S().setStoryboardStatusFilter(null);
@@ -1173,11 +1199,9 @@ describe("undo/redo", () => {
   });
   it("reset restores defaults and clears persisted state", async () => {
     S().addSegment();
-    S().setTimeFormat("frames");
     S().reset();
     assert.deepEqual(S().segments, []);
     assert.deepEqual(S().audioCues, []);
-    assert.equal(S().timeFormat, "seconds");
     assert.equal(S().initialized, false);
     assert.equal(lsData.has(LS_KEY), false);
     await flushPersist();

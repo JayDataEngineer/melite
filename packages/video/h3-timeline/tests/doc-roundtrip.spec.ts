@@ -57,7 +57,11 @@ const full: DocCall[] = [
   },
   {
     text: "second shot, cut hard",
-    start_frame: 39, end_frame: 90,
+    // ON-GRID by the authoring law (docGrid): a CUT span is 22+17k —
+    // 56 = 22+17x2. The whole-doc deep-equality arm below rides this
+    // fixture, so the hydrate's lawful off-grid heal stays a no-op
+    // and the arm judges VALUE faithfulness, not the heal.
+    start_frame: 39, end_frame: 95,
     transition: "cut",
   },
 ]
@@ -164,6 +168,16 @@ describe("the persistence roundtrip (close/reopen never drops a field)", () => {
     assert.equal(knobs["sampler_name"], "euler")
     assert.equal(knobs["shift_video"], 3.1)
   })
+
+  test("THE WHOLE-DOC DEEP EQUALITY (G1, timeline wave-2): hydrate(serialize(doc)) deep-equals the doc — every field, zero hand enumeration", () => {
+    // The hand-enumerated asserts above pass while a MUTATING
+    // normalizer (number↔string coercion, array reorder, a trim
+    // eating a trailing space) rides any key nobody enumerated —
+    // G1's exact lesson. The whole-doc deepStrictEqual judges every
+    // field of the rich fixture at once; a new authorable field that
+    // mutates in roundtrip reds here without a hand-added assert.
+    assert.deepStrictEqual(roundtrip(full), full)
+  })
 })
 
 // THE KEYFRAMES CHANNEL (the keyframe lane's companion arm, slice 2 —
@@ -197,5 +211,18 @@ describe("the keyframes channel roundtrip (pins never drop on close/reopen)", ()
       assert.deepEqual(Object.keys(row).sort(), ["frame", "image"],
         "a stale kind/source spelling on the wire is the drop-in-waiting")
     }
+  })
+
+  test("THE WHOLE-DOC DEEP EQUALITY (G1): the roundtrip is value-faithful under the sorted-write law", () => {
+    // The channel's lawful normalization is the SORT (the door owns
+    // frame order); past that law every pin's bytes must survive —
+    // deepStrictEqual against the sorted expectation, zero
+    // per-field hand enumeration.
+    const back = hydrateKeyframes(serializeKeyframes(authored))
+    assert.deepStrictEqual(back, [
+      { image: "data:image/png;base64,AA", frame: 0 },
+      { image: "https://u/mid.png", frame: 45 },
+      { image: "https://u/end.png", frame: 89 },
+    ])
   })
 })

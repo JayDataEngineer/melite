@@ -3918,16 +3918,25 @@ window.__ModuleLoader__.load({
 		* construction), so it composes over the held row WHOLE: no stale
 		* value can refuse a legal pick (nothing unstated reaches the
 		* gate), and the commit writes the shown value it already has (no
-		* rebase — nothing to rebase). Spread semantics are the
-		* candidate's own (an undefined still overwrites — the unset
-		* signal, unchanged).
+		* rebase — nothing to rebase).
+		*
+		* G3 (timeline-plane wave-2): the unset signal is the DOOR'S
+		* spelling, not the spread's — a materialized undefined in the
+		* shown layer is the unset gesture, not a statement, so the held
+		* value rides (serializeLayerA's `v !== undefined` skip,
+		* docHydrate.ts:312). The plain spread let an undefined overwrite
+		* held: after any axis-unset the pick judged `steps: undefined`
+		* where the run composes the held 20 — the 94aaa9b74 class at the
+		* studio's own seat. Deletion stays the frame's explicit null.
 		*/
 		/** The pick verdict's document: held (persisted truth) under user
-		*  (the shown layerA, serialized — sparse: unstated keys absent)
-		*  under frame (the pick's stamps — null deletes, the candidate
-		*  law). */
+		*  (the shown layerA, serialized — sparse: unstated keys absent,
+		*  materialized undefineds dropped as unset) under frame (the
+		*  pick's stamps — null deletes, the candidate law). */
 		function resolvePickVerdictDoc(held, user, frame) {
-			return (0, _melite_card_base_client.composeCandidateDoc)(held, user, frame);
+			const stated = {};
+			for (const k of Object.keys(user)) if (user[k] !== void 0) stated[k] = user[k];
+			return (0, _melite_card_base_client.composeCandidateDoc)(held, stated, frame);
 		}
 		//#endregion
 		//#region src/ui/studio/RunRecipeEngine.tsx

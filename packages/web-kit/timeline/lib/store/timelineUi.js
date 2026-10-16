@@ -8,7 +8,6 @@ export function createUiSlice(set, get) {
     return {
         setViewport: (patch) => set((s) => ({ viewport: { ...s.viewport, ...patch } })),
         setStoryboardStatusFilter: (status) => set({ storyboardStatusFilter: status }),
-        setTimeFormat: (fmt) => set({ timeFormat: fmt }),
         setPlayback: (patch) => set((s) => ({ playback: { ...s.playback, ...patch } })),
         setDrag: (patch) => set((s) => ({ drag: { ...s.drag, ...patch } })),
         // G8: Single-select clears the multi-select set — this is the "plain
@@ -181,7 +180,6 @@ export function createUiSlice(set, get) {
                 audioCues: [],
                 audioTracks: [],
                 viewport: { ...DEFAULT_VIEWPORT },
-                timeFormat: 'seconds',
                 playback: { ...DEFAULT_PLAYBACK },
                 drag: { ...DEFAULT_DRAG },
                 selectedSegmentId: null,

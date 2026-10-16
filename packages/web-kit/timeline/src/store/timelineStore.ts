@@ -34,7 +34,6 @@ export const useTimelineStore = create<TimelineStore>((set, get) => ({
   audioCues: [],
   audioTracks: [],
   viewport: { ...DEFAULT_VIEWPORT },
-  timeFormat: 'seconds',
   playback: { ...DEFAULT_PLAYBACK },
   drag: { ...DEFAULT_DRAG },
   selectedSegmentId: null,
