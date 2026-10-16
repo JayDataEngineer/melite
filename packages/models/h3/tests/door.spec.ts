@@ -526,6 +526,78 @@ describe("the refmod seat (audit 010/R1, 2026-10-18)", () => {
     expect(sched!.inputs.steps).toBe(6);
   });
 
+  // THE VALUE SWEEP (layera-globals audit #2, 2026-10-16 — the
+  // hop-5 blindness): nine sla knobs, four sharpen leaves, the interp
+  // pair, and ref_image_size had real read seats but NO test in the
+  // repo asserted a single one at its node input — the compose could
+  // silently drop or mangle any of them with every suite green. One
+  // real-door sweep: populate each knob, assert the value at the
+  // named node input (the two-clocks wall's pattern).
+  it("THE VALUE SWEEP: every hop-5-blind knob lands at its named node input with the stated value", () => {
+    const SWEEP_BAG = [{ name: "distill-8.safetensors", strength: 0.6 }];
+    // ROW A (t4r): the nine SLA knobs + ref_image_size — H3SLAAttention
+    // mounts on both family arms; ref_image_size rides the r2v node
+    const ga = new GraphBuilder();
+    instantiateAction(
+      film,
+      h3schema({
+        variant: undefined,
+        calls: [{ text: "the courier steps in", start_frame: 0, end_frame: 90, image: "anchor.png" }],
+        loras: SWEEP_BAG, seed: 42,
+        sla_sparsity: 0.9, sla_block_size: "64", sla_min_seq_len: 7680,
+        sla_dense_last_steps: 4, sla_protect_audio: false,
+        sla_dense_steps: "1-3", sla_dense_backend: "pytorch",
+        sla_disable_fp16_accum: true, sla_stabilize_motion: true,
+        ref_image_size: "match",
+      }),
+      WINDOW_MODEL, ga, "run_sweep_t4r",
+    );
+    const docA = ga.toJSON() as Doc;
+    const sla = Object.values(docA).find((n) => n.class_type === "H3SLAAttention");
+    expect(sla, "H3SLAAttention composes on the t4r arm").toBeDefined();
+    expect(sla!.inputs.sparsity_ratio).toBe(0.9);
+    expect(sla!.inputs.block_size).toBe("64");
+    expect(sla!.inputs.min_seq_len).toBe(7680);
+    expect(sla!.inputs.dense_last_steps).toBe(4);
+    expect(sla!.inputs.protect_audio).toBe(false);
+    expect(sla!.inputs.dense_steps).toBe("1-3");
+    expect(sla!.inputs.dense_backend).toBe("pytorch");
+    expect(sla!.inputs.disable_fp16_accum).toBe(true);
+    // stated TRUE over the t4r arm's false fallback — the stated
+    // value is the user's word, never the fallback's coincidence
+    expect(sla!.inputs.stabilize_motion).toBe(true);
+    const r2v = Object.values(docA).find((n) => n.class_type === "MiniMaxH3ReferenceToVideo");
+    expect(r2v, "the r2v node composes on the t4r arm").toBeDefined();
+    expect(r2v!.inputs.ref_image_size).toBe("match");
+    // ROW B (non-t4r, master on): the four sharpen leaves ride the
+    // ImageSharpenKJ method dict; the interp pair rides its own seats
+    const gb = new GraphBuilder();
+    instantiateAction(
+      film,
+      h3schema({
+        variant: "t4_open", length: 124, prompt: "p", seed: 42,
+        loras: SWEEP_BAG, second_pass_enabled: true,
+        sharpen_enabled: true, sharpen_method: "adaptive_usm", sharpen_strength: 0.4,
+        sharpen_radius: 2.5, sharpen_threshold: 0.9, sharpen_iterations: 2,
+        interpolate_enabled: true, interp_model: "rife47.pth", interp_multiplier: 3,
+      }),
+      WINDOW_MODEL, gb, "run_sweep_post",
+    );
+    const docB = gb.toJSON() as Doc;
+    const sharp = Object.values(docB).find((n) => n.class_type === "ImageSharpenKJ");
+    expect(sharp, "the sharpen leaf composes under the master").toBeDefined();
+    const method = sharp!.inputs.method as Record<string, unknown>;
+    expect(method.method).toBe("adaptive_usm");
+    expect(method.strength).toBe(0.4);
+    expect(method.radius).toBe(2.5);
+    expect(method.threshold).toBe(0.9);
+    expect(method.iterations).toBe(2);
+    const interpLoader = Object.values(docB).find((n) => n.class_type === "FrameInterpolationModelLoader");
+    expect(interpLoader!.inputs.model_name).toBe("rife47.pth");
+    const interp = Object.values(docB).find((n) => n.class_type === "FrameInterpolate");
+    expect(interp!.inputs.multiplier).toBe(3);
+  });
+
   it("ref_mods compose the loader→apply chain, stems out, wired into the guider's conditioning", () => {
     const g = new GraphBuilder();
     instantiateAction(
