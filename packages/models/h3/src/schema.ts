@@ -281,7 +281,16 @@ export const paramSchema = z.object({
   // default-less blank row on the form is a lie.
   k: z.number().description("Window index (film vocabulary)").step(1).extra('extra', bag({ hidden: true })),
   noise_seed: z.number().description("Per-window noise seed").step(1).extra('extra', bag({ hidden: true })),
-  fps_seconds: z.number().description("Clip seconds (fps rail)").min(1).max(60).default(10).extra('extra', bag({ order: null, wtype: 'number', tooltip: "The clip's duration in seconds (the fps rail's duration primitive)." })),
+  // NO STALE fps_seconds (2026-10-16, the operator's law — "NO
+  // STALE ANYWHERE"): this row is INTERNAL (the declared surface's
+  // own words) and derives from the window's generation length at
+  // compose, every compose. The old .default(10) seeded every
+  // unstated doc with a 10-second clock that outlived every span
+  // drag — the operator's burn: a 5-second span on the bar rendered
+  // 10 seconds of mush. No default, no user face: hidden; the
+  // compose owns the derivation (render loop restates it
+  // unconditionally from the actual window length).
+  fps_seconds: z.number().description("Clip seconds (fps rail — internal, derived from the window length at compose)").min(1).max(60).extra('extra', bag({ hidden: true })),
   // THE LEGACY ALIASES (renderer-era spellings of the mod switches)
   // — gate-admitted for old drafts, never user surface: the MODS
   // own the switches (the operator's law), one face each.

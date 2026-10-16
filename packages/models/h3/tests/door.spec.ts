@@ -110,6 +110,77 @@ describe("the film build's single-window arms (no calls wrapper)", () => {
   });
 });
 
+describe("the two-clocks law (2026-10-16 — 'the timeline bar says 5 seconds, the result is 10 seconds of mush')", () => {
+  const BAG = [{ name: "distill-8.safetensors", strength: 0.6, steps: 8 }];
+
+  it("a stale pinned fps_seconds never outlives the span — the render clock derives from the bar, every compose", () => {
+    const g = new GraphBuilder();
+    instantiateAction(
+      film,
+      {
+        variant: "t4_chain",
+        calls: [
+          { text: "a slow push in", start_frame: 0, end_frame: 124, image: "anchor.png", knobs: { fps_seconds: 10 } },
+          { text: "the crowd turns", start_frame: 124, end_frame: 243, image: "turn.png", knobs: { fps_seconds: 10 } },
+        ],
+        loras: BAG, seed: 42,
+      },
+      WINDOW_MODEL, g, "run_stale_clock",
+    );
+    const doc = g.toJSON() as Record<string, { class_type: string, inputs: Record<string, unknown> }>;
+    // THE RENDER CLOCK, judged where it feeds the generation: every
+    // ComfyMathExpression's values.a is a PrimitiveFloat link — its
+    // value must state the span's own seconds (124f first window
+    // = 5.167s; carried 119f + 22f seam = 141f = 5.875s),
+    // never the stale 10s pin the knob carried
+    const exprs = Object.entries(doc).filter(([, n]) => n.class_type === "ComfyMathExpression");
+    expect(exprs.length, "one expression per window").toBe(2);
+    for (const [, n] of exprs) {
+      const link = n.inputs["values.a"] as [string, number];
+      const feed = doc[String(link[0])];
+      expect(feed.class_type).toBe("PrimitiveFloat");
+      expect([5.167, 5.875]).toContain(feed.inputs.value);
+    }
+    // NO STALE CLOCK NODE EXISTS AT ALL — a 10-second PrimitiveFloat
+    // anywhere in the film is the operator's mush, refused at zero GPU
+    const stale = Object.values(doc).filter(
+      (n) => n.class_type === "PrimitiveFloat" && n.inputs.value === 10,
+    );
+    expect(stale).toEqual([]);
+  });
+
+  it("an UNSTATED fps_seconds never seeds the old schema default — the derivation owns the row for knob-less docs too", () => {
+    // THE SECOND TOOTH, its own firing arm: the old schema row
+    // carried .default(10) — every knob-less doc seeded a 10-second
+    // clock the render obeyed (the operator's uniform-10s mush under
+    // a 5-second bar). The default is dead and the compose derives
+    // the row from the actual window length — this arm composes the
+    // same film with NO fps_seconds knob anywhere and judges the
+    // same render clock.
+    const g = new GraphBuilder();
+    instantiateAction(
+      film,
+      {
+        variant: "t4_chain",
+        calls: [
+          { text: "a slow push in", start_frame: 0, end_frame: 124, image: "anchor.png" },
+          { text: "the crowd turns", start_frame: 124, end_frame: 243, image: "turn.png" },
+        ],
+        loras: BAG, seed: 42,
+      },
+      WINDOW_MODEL, g, "run_unstated_clock",
+    );
+    const doc = g.toJSON() as Record<string, { class_type: string, inputs: Record<string, unknown> }>;
+    const exprs = Object.entries(doc).filter(([, n]) => n.class_type === "ComfyMathExpression");
+    expect(exprs.length).toBe(2);
+    const feeds = exprs.map(([, n]) => {
+      const link = n.inputs["values.a"] as [string, number];
+      return doc[String(link[0])]!.inputs.value;
+    });
+    expect(feeds).toEqual([5.167, 5.875]);
+  });
+});
+
 describe("the refmod seat (audit 010/R1, 2026-10-18)", () => {
   const BAG = [{ name: "distill-8.safetensors", strength: 0.6, steps: 8 }];
 

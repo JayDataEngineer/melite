@@ -490,10 +490,20 @@ function renderH3Film(
       // (The snap itself is filmMix's spanStanzaFrames — the ONE
       // law the render loop and the film manifest share; the old
       // inline 22+17k twin died here.)
-      if (knobs.fps_seconds === undefined) {
-        stanza.fps_seconds = Math.round(((stanza.length as number) / 24) * 1000) / 1000
-      }
     }
+    // NO STALE fps_seconds (2026-10-16, the operator's law — "NO
+    // STALE ANYWHERE"): the row is INTERNAL (the declared surface's
+    // own words — the per-window rows k, noise_seed, fps_seconds are
+    // internal), and the old restatement skipped DEFINED knobs, so a
+    // pin stated by an older span outlived every later drag — the
+    // render clock (fps_seconds) and the bar clock (the span) then
+    // disagreed forever: a 5-second span on the bar rendered a
+    // 10-second mush. The compose OWNS internal rows unconditionally
+    // — fps_seconds derives from the window's actual generation
+    // length every compose (the span rider's snapped frames, else
+    // the user-pinned length). No pin survives. No fallback. No
+    // silent disagreement.
+    stanza.fps_seconds = Math.round(((stanza.length as number) / 24) * 1000) / 1000
     // THE GRID GATE (§26): a knob-pinned length bypassed the snap
     // above — validate, never trust. Refuses at compose (zero GPU)
     // with the span, the nearest legal length, and the proven

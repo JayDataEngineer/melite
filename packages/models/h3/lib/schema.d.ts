@@ -1,5 +1,5 @@
 import z from '@deepseek-ai/schemastery';
-import { normalizeDeclaredRefs } from './timelineContract.js';
+import { normalizeDeclaredRefs } from './timelineContract.ts';
 export declare const FAMILIES: readonly ["t4r", "t4_open", "t4_chain"];
 export type Family = (typeof FAMILIES)[number];
 export declare const wireList: typeof normalizeDeclaredRefs;
@@ -61,7 +61,7 @@ export declare const paramSchema: z<Schemastery.ObjectS<NoInfer<{
     sharpen_iterations: z<number, number, "plain">;
     k: z<number, number, "plain">;
     noise_seed: z<number, number, "plain">;
-    fps_seconds: z<number, number, "defined">;
+    fps_seconds: z<number, number, "plain">;
     interp_switch: z<boolean, boolean, "plain">;
     sharpen_switch: z<boolean, boolean, "plain">;
     sla_switch: z<boolean, boolean, "plain">;
@@ -122,7 +122,7 @@ export declare const paramSchema: z<Schemastery.ObjectS<NoInfer<{
     sharpen_iterations: z<number, number, "plain">;
     k: z<number, number, "plain">;
     noise_seed: z<number, number, "plain">;
-    fps_seconds: z<number, number, "defined">;
+    fps_seconds: z<number, number, "plain">;
     interp_switch: z<boolean, boolean, "plain">;
     sharpen_switch: z<boolean, boolean, "plain">;
     sla_switch: z<boolean, boolean, "plain">;
@@ -195,7 +195,7 @@ export declare const carrier: z<Schemastery.ObjectS<NoInfer<{
     sharpen_iterations: z<number, number, "plain">;
     k: z<number, number, "plain">;
     noise_seed: z<number, number, "plain">;
-    fps_seconds: z<number, number, "defined">;
+    fps_seconds: z<number, number, "plain">;
     interp_switch: z<boolean, boolean, "plain">;
     sharpen_switch: z<boolean, boolean, "plain">;
     sla_switch: z<boolean, boolean, "plain">;
@@ -256,7 +256,7 @@ export declare const carrier: z<Schemastery.ObjectS<NoInfer<{
     sharpen_iterations: z<number, number, "plain">;
     k: z<number, number, "plain">;
     noise_seed: z<number, number, "plain">;
-    fps_seconds: z<number, number, "defined">;
+    fps_seconds: z<number, number, "plain">;
     interp_switch: z<boolean, boolean, "plain">;
     sharpen_switch: z<boolean, boolean, "plain">;
     sla_switch: z<boolean, boolean, "plain">;
