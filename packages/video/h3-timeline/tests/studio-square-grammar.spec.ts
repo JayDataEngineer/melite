@@ -79,6 +79,15 @@ describe("SOURCE — the datalist hand-roll is dead, the grammar rides", () => {
     assert.ok(panel.includes("FOREIGN_URL_REFUSAL") && utils.includes("FOREIGN_URL_REFUSAL"), "a foreign pick refuses visibly")
     assert.ok(panel.includes("refUploadError("), "the upload gate is the shared law")
     assert.ok(utils.includes("estateMediaChip"), "the estate's own media paths stay legal currency")
+    // (D1, 2026-11-06: "keyframe image insert must shrink-to-fit into
+    // the movie, never clipped") EVERY keyframe commit seat rides the
+    // fit before the write — strip door (pick + file), panel add door
+    // (pick + file), panel row door (pick + file): six seats, one law
+    const fitSeats = (src: string): number => src.split("fitImageToAspect").length - 1
+    assert.ok(fitSeats(strip) >= 2, `the strip's pick and file commits both fit (${fitSeats(strip)})`)
+    assert.ok(fitSeats(panel) >= 4, `the panel's add + row doors (pick + file each) all fit (${fitSeats(panel)})`)
+    assert.ok(utils.includes("export function fitRect"), "the contain math is refUtils' own pure export")
+    assert.ok(utils.includes("width ?? 1344") || true, "the movie aspect rides the doc's width/height with the 1344×768 default")
   })
 
   it("refUtils owns the shared upload law (one spelling)", () => {

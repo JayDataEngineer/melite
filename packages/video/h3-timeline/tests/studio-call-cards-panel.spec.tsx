@@ -215,6 +215,8 @@ describe("THE STANDALONE KEYFRAMES SUBVIEW (defect B, operator 2026-11-06: its o
     fireEvent.click(await screen.findByText("up · still-a"))
     fireEvent.click(screen.getByLabelText("Delete keyframe 1"))
     assert.deepEqual(seen.moves, [], "moves ride the lane drag, never a typed number")
+    // (D1) the source write rides the fit's promise chain — await it
+    await waitFor(() => { assert.equal(seen.sources.length, 1) })
     assert.deepEqual(seen.sources, [[0, "still-a"]])
     assert.deepEqual(seen.deleted, ["kf-1"])
     h.unmount()

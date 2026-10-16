@@ -343,6 +343,9 @@ describe("the keyframes lane's add door (the lane-add parity law)", () => {
     fireEvent.click(await screen.findByRole("menuitem", { name: "From flow" }))
     const row = (await screen.findAllByTestId("source-pick-row")).find((r) => r.textContent!.includes("shot.png"))!
     fireEvent.click(row)
+    // (D1) the commit rides the fit's promise chain (verbatim in a
+    // no-decode env, fitted in the browser) — await the write
+    await waitFor(() => { assert.equal(rec.kfWithImage.length, 1) })
     // docFromFilm is the fixture's constant (4242) — the commit pins
     // at the CURRENT PLAYHEAD, the same frame a double-click pins;
     // the artifact row commits in its canonical label spelling

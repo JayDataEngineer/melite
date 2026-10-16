@@ -128,3 +128,56 @@ export function classifyImageSrc(src: string, byUrl: Map<string, string>): { ima
   if (name !== undefined) return { image: name }
   return { refusal: FOREIGN_URL_REFUSAL }
 }
+
+/** (D1, operator 2026-11-06: "keyframe image insert must shrink-to-fit
+ *  into the movie, never clipped") THE CONTAIN MATH — pure, one
+ *  spelling, judged on its own: scale a (sw,sh) source DOWN to fit a
+ *  (tw,th) target (never up), centered, transparent pad on the
+ *  mismatch axis. The engine composites the pin into the film; an
+ *  off-aspect pin gets COVER-cropped there — this fit letterboxes it
+ *  client-side so nothing is ever clipped.
+ *  @returns the draw rect (dx,dy,dw,dh) on the tw×th canvas. */
+export function fitRect(
+  sw: number, sh: number, tw: number, th: number,
+): { dx: number; dy: number; dw: number; dh: number } {
+  // shrink-to-fit: the contain scale, capped at 1 (never upscale)
+  const scale = Math.min(tw / sw, th / sh, 1)
+  const dw = sw * scale
+  const dh = sh * scale
+  return { dx: (tw - dw) / 2, dy: (th - dh) / 2, dw, dh }
+}
+
+/** (D1) THE CANVAS RIDER — the browser face of the same law: decode
+ *  the source, draw it via fitRect onto a tw×th canvas, return the
+ *  PNG data: URL. SAME-ASPECT sources return VERBATIM (no re-encode,
+ *  no generation loss); a source that cannot decode (CORS-blocked,
+ *  dead URL, a test env without Image) also returns verbatim — the
+ *  fit is a courtesy the commit never depends on.
+ *  @returns the fitted data: URL, or src unchanged. */
+export const fitImageToAspect = async (src: string, tw: number, th: number): Promise<string> => {
+  if (tw <= 0 || th <= 0 || !src.startsWith("data:")) return src
+  try {
+    const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+      const el = new Image()
+      el.onload = () => { resolve(el) }
+      el.onerror = () => { reject(new Error("decode failed")) }
+      el.src = src
+    })
+    const sw = img.naturalWidth
+    const sh = img.naturalHeight
+    if (sw <= 0 || sh <= 0) return src
+    // same aspect within a half-pixel at the target scale: verbatim
+    const ratioDelta = Math.abs(sw / sh - tw / th)
+    if (ratioDelta < (tw / th) * 0.005) return src
+    const canvas = document.createElement("canvas")
+    canvas.width = tw
+    canvas.height = th
+    const ctx = canvas.getContext("2d")
+    if (ctx === null) return src
+    const r = fitRect(sw, sh, tw, th)
+    ctx.drawImage(img, r.dx, r.dy, r.dw, r.dh)
+    return canvas.toDataURL("image/png")
+  } catch {
+    return src
+  }
+}

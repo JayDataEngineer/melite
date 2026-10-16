@@ -14,7 +14,7 @@ import { MotionTimelineBar } from "@melite-plugin/timeline/ui/timeline"
 import type { TimelineKeyframe, TimelinePrompt } from "@melite-plugin/timeline/ui/timeline"
 import { useSquareProvider, readAsDataURL, fetchMediaLibrary, PaneHeader, PaneShell } from '@melite/card-base/client'
 import type { SpecField } from '@melite/card-base/client'
-import { refUploadError, REF_READ_ERROR, FOREIGN_URL_REFUSAL, estateMediaChip, classifyImageSrc, loadImageMedia, IMAGE_ROW_RE } from './refUtils.ts'
+import { refUploadError, REF_READ_ERROR, FOREIGN_URL_REFUSAL, estateMediaChip, classifyImageSrc, fitImageToAspect, loadImageMedia, IMAGE_ROW_RE } from './refUtils.ts'
 import s from "./studio.module.css"
 import { VIDEO_TIMELINE_TRACKS } from "./docModel.ts"
 import type { DocCall, DocKeyframe, LayerA, SetLayerAKey } from "./docModel.ts"
@@ -196,7 +196,10 @@ export function StudioStripPane({
       const got = classifyImageSrc(v, artifactIndex.byUrl)
       if ("refusal" in got) { setKfErr(got.refusal); return }
       setKfErr(null)
-      addKeyframeWithImage(got.image, docFromFilm(frameIdx))
+      // (D1) shrink-to-fit into the movie's aspect before the pin
+      // lands — the engine would cover-crop an off-aspect insert
+      void fitImageToAspect(got.image, layerA.width ?? 1344, layerA.height ?? 768)
+        .then((fitted) => { addKeyframeWithImage(fitted, docFromFilm(frameIdx)) })
     },
     {
       // From flow: the run's own artifacts, image rows only.
@@ -214,7 +217,10 @@ export function StudioStripPane({
         const refusal = refUploadError(file, "image")
         if (refusal !== null) { setKfErr(refusal); return }
         readAsDataURL(file).then(
-          (data) => { addKeyframeWithImage(data, docFromFilm(frameIdx)) },
+          (data) => {
+            void fitImageToAspect(data, layerA.width ?? 1344, layerA.height ?? 768)
+              .then((fitted) => { addKeyframeWithImage(fitted, docFromFilm(frameIdx)) })
+          },
           () => { setKfErr(REF_READ_ERROR) },
         )
       },

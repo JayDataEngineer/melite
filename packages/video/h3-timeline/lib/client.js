@@ -3267,6 +3267,61 @@ window.__ModuleLoader__.load({
 			if (name !== void 0) return { image: name };
 			return { refusal: FOREIGN_URL_REFUSAL };
 		}
+		/** (D1, operator 2026-11-06: "keyframe image insert must shrink-to-fit
+		*  into the movie, never clipped") THE CONTAIN MATH — pure, one
+		*  spelling, judged on its own: scale a (sw,sh) source DOWN to fit a
+		*  (tw,th) target (never up), centered, transparent pad on the
+		*  mismatch axis. The engine composites the pin into the film; an
+		*  off-aspect pin gets COVER-cropped there — this fit letterboxes it
+		*  client-side so nothing is ever clipped.
+		*  @returns the draw rect (dx,dy,dw,dh) on the tw×th canvas. */
+		function fitRect(sw, sh, tw, th) {
+			const scale = Math.min(tw / sw, th / sh, 1);
+			const dw = sw * scale;
+			const dh = sh * scale;
+			return {
+				dx: (tw - dw) / 2,
+				dy: (th - dh) / 2,
+				dw,
+				dh
+			};
+		}
+		/** (D1) THE CANVAS RIDER — the browser face of the same law: decode
+		*  the source, draw it via fitRect onto a tw×th canvas, return the
+		*  PNG data: URL. SAME-ASPECT sources return VERBATIM (no re-encode,
+		*  no generation loss); a source that cannot decode (CORS-blocked,
+		*  dead URL, a test env without Image) also returns verbatim — the
+		*  fit is a courtesy the commit never depends on.
+		*  @returns the fitted data: URL, or src unchanged. */
+		const fitImageToAspect = async (src, tw, th) => {
+			if (tw <= 0 || th <= 0 || !src.startsWith("data:")) return src;
+			try {
+				const img = await new Promise((resolve, reject) => {
+					const el = new Image();
+					el.onload = () => {
+						resolve(el);
+					};
+					el.onerror = () => {
+						reject(/* @__PURE__ */ new Error("decode failed"));
+					};
+					el.src = src;
+				});
+				const sw = img.naturalWidth;
+				const sh = img.naturalHeight;
+				if (sw <= 0 || sh <= 0) return src;
+				if (Math.abs(sw / sh - tw / th) < tw / th * .005) return src;
+				const canvas = document.createElement("canvas");
+				canvas.width = tw;
+				canvas.height = th;
+				const ctx = canvas.getContext("2d");
+				if (ctx === null) return src;
+				const r = fitRect(sw, sh, tw, th);
+				ctx.drawImage(img, r.dx, r.dy, r.dw, r.dh);
+				return canvas.toDataURL("image/png");
+			} catch {
+				return src;
+			}
+		};
 		studioCopy.knobSteps, studioCopy.knobDenoise, studioCopy.knobSampler, studioCopy.knobScheduler, studioCopy.knobShiftVideo, studioCopy.knobShiftAudio, studioCopy.knobSlaSparsity, studioCopy.knobSlaBlockSize, studioCopy.knobSlaMinSeqLen, studioCopy.knobSlaDenseLastSteps, studioCopy.knobSlaProtectAudio, studioCopy.knobSlaStabilizeMotion, studioCopy.knobSlaRefProtection, studioCopy.knobSlaDenseBackend, studioCopy.knobSlaDenseSteps, studioCopy.knobSlaFullPrecAccum, studioCopy.knobSharpen, studioCopy.knobSharpenMethod, studioCopy.knobSharpenStrength, studioCopy.knobSharpenRadius, studioCopy.knobSharpenNoiseGate, studioCopy.knobSharpenIterations, studioCopy.knobInterpolate, studioCopy.knobInterpModel, studioCopy.knobInterpMultiplier, studioCopy.knobWindowLength;
 		/**
 		* Convert a legacy audio_stem artifact name into a positioned clip at
@@ -3622,7 +3677,9 @@ window.__ModuleLoader__.load({
 					return;
 				}
 				setKfErr(null);
-				addKeyframeWithImage(got.image, docFromFilm(frameIdx));
+				fitImageToAspect(got.image, layerA.width ?? 1344, layerA.height ?? 768).then((fitted) => {
+					addKeyframeWithImage(fitted, docFromFilm(frameIdx));
+				});
 			}, {
 				candidates: Array.from(artifactIndex.byUrl.entries()).filter(([url]) => IMAGE_ROW_RE.test(url)).map(([url, name2]) => ({
 					id: url,
@@ -3639,7 +3696,9 @@ window.__ModuleLoader__.load({
 						return;
 					}
 					(0, _melite_card_base_client.readAsDataURL)(file).then((data) => {
-						addKeyframeWithImage(data, docFromFilm(frameIdx));
+						fitImageToAspect(data, layerA.width ?? 1344, layerA.height ?? 768).then((fitted) => {
+							addKeyframeWithImage(fitted, docFromFilm(frameIdx));
+						});
 					}, () => {
 						setKfErr(REF_READ_ERROR);
 					});
@@ -4784,7 +4843,9 @@ window.__ModuleLoader__.load({
 					return;
 				}
 				setKfAddError(null);
-				addKeyframeWithImage(got.image, playheadDocFrame);
+				fitImageToAspect(got.image, deps.layerA?.width ?? 1344, deps.layerA?.height ?? 768).then((fitted) => {
+					addKeyframeWithImage(fitted, playheadDocFrame);
+				});
 			}, {
 				candidates: flowRows,
 				loadMedia: loadImageMedia,
@@ -4797,7 +4858,8 @@ window.__ModuleLoader__.load({
 					}
 					(async () => {
 						try {
-							addKeyframeWithImage(await (0, _melite_card_base_client.readAsDataURL)(file), playheadDocFrame);
+							const raw = await (0, _melite_card_base_client.readAsDataURL)(file);
+							addKeyframeWithImage(await fitImageToAspect(raw, deps.layerA?.width ?? 1344, deps.layerA?.height ?? 768), playheadDocFrame);
 							setKfAddError(null);
 						} catch {
 							setKfAddError(REF_READ_ERROR);
@@ -4813,8 +4875,10 @@ window.__ModuleLoader__.load({
 					setKfUploadError(i, got.refusal);
 					return;
 				}
-				setKeyframeImage(i, got.image);
-				setKfUploadError(i, null);
+				fitImageToAspect(got.image, deps.layerA?.width ?? 1344, deps.layerA?.height ?? 768).then((fitted) => {
+					setKeyframeImage(i, fitted);
+					setKfUploadError(i, null);
+				});
 			}, {
 				candidates: flowRows,
 				loadMedia: loadImageMedia,
@@ -4828,7 +4892,8 @@ window.__ModuleLoader__.load({
 					}
 					(async () => {
 						try {
-							setKeyframeImage(i, await (0, _melite_card_base_client.readAsDataURL)(file));
+							const raw = await (0, _melite_card_base_client.readAsDataURL)(file);
+							setKeyframeImage(i, await fitImageToAspect(raw, deps.layerA?.width ?? 1344, deps.layerA?.height ?? 768));
 							setKfUploadError(i, null);
 						} catch {
 							setKfUploadError(i, REF_READ_ERROR);

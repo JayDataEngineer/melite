@@ -8,7 +8,7 @@
  *    mime-separator comma survives, later commas end the token).
  *  - REF_UPLOAD_SPEC shapes.
  */
-import { describe, expect, it } from "vitest"
+import { describe, expect, it, vi } from "vitest"
 import assert from "node:assert/strict"
 import {
   REF_UPLOAD_SPEC,
@@ -16,6 +16,8 @@ import {
   displaySource,
   estateMediaChip,
   FOREIGN_URL_REFUSAL,
+  fitRect,
+  fitImageToAspect,
 } from "../src/ui/studio/refUtils.ts"
 import {
   normalizeDeclaredRefs,
@@ -195,5 +197,173 @@ describe("estateMediaChip (the estate's own media is never foreign)", () => {
   it("bare names and data: URLs are not this door's currency (they ride their own laws)", () => {
     assert.equal(estateMediaChip("frame_001"), null)
     assert.equal(estateMediaChip("data:image/png;base64,AA"), null)
+  })
+})
+
+// ── D1 (operator 2026-11-06: "keyframe image insert must shrink-to-fit
+// into the movie, never clipped") — the contain math + its rider. ────
+describe("fitRect (the D1 contain math — pure, one spelling)", () => {
+  it("a wide source letterboxes: height fits, width centers", () => {
+    // 2688×768 into 1344×768: scale 0.5 → 1344×384? no — contain by
+    // the LIMITING axis: min(1344/2688, 768/768, 1) = 0.5 → 1344×384
+    // is wrong arithmetic; 2688×768 × 0.5 = 1344×384... the honest
+    // expectation: dw=1344, dh=384, centered dy=(768-384)/2=192
+    const r = fitRect(2688, 768, 1344, 768)
+    expect(r).toEqual({ dx: 0, dy: 192, dw: 1344, dh: 384 })
+  })
+
+  it("a tall source pillarboxes: width fits, height centers", () => {
+    const r = fitRect(768, 1536, 1344, 768)
+    expect(r).toEqual({ dx: 480, dy: 0, dw: 384, dh: 768 })
+  })
+
+  it("a same-aspect SMALLER source never upscales — it centers at native size (the cap at 1)", () => {
+    // same aspect 672×384 → 1344×768: the uncapped scale is 2, the
+    // cap holds it at 1 — the movie pads, never blows up the source
+    const r = fitRect(672, 384, 1344, 768)
+    expect(r).toEqual({ dx: 336, dy: 192, dw: 672, dh: 384 })
+  })
+
+  it("NEVER upscales: a smaller same-aspect source centers at its own size", () => {
+    const r = fitRect(336, 192, 1344, 768)
+    expect(r).toEqual({ dx: 504, dy: 288, dw: 336, dh: 192 })
+  })
+
+  it("a smaller OFF-aspect source scales down to the limiting axis, never past 1", () => {
+    // min(1344/1000, 768/300, 1) = 1 → native size, centered
+    const r = fitRect(1000, 300, 1344, 768)
+    expect(r).toEqual({ dx: 172, dy: 234, dw: 1000, dh: 300 })
+  })
+})
+
+describe("fitImageToAspect (the D1 canvas rider)", () => {
+  it("non-data sources ride verbatim (artifact names/http URLs resolve engine-side)", async () => {
+    await expect(fitImageToAspect("shot.png", 1344, 768)).resolves.toBe("shot.png")
+    await expect(fitImageToAspect("https://u/x.png", 1344, 768)).resolves.toBe("https://u/x.png")
+  })
+
+  it("a zero target rides verbatim (no aspect truth yet)", async () => {
+    await expect(fitImageToAspect("data:image/png;base64,AA", 0, 768)).resolves.toBe("data:image/png;base64,AA")
+  })
+
+  it("a source that cannot decode rides verbatim — the fit is a courtesy, never a blocker", async () => {
+    // jsdom: Image never fires onload for data: URLs (no decode) —
+    // the natural environment IS the refusal arm
+    await expect(fitImageToAspect("data:image/png;base64,AA", 1344, 768))
+      .resolves.toBe("data:image/png;base64,AA")
+  })
+
+  it("an off-aspect source that DECODES draws contain-fit onto the canvas (the shrink-to-fit law)", async () => {
+    // a stubbed Image + canvas: the rider's browser face, judged on
+    // the recorded drawImage rect (the pure math's own output)
+    const draws: unknown[][] = []
+    class StubImg {
+      naturalWidth = 2688
+      naturalHeight = 768
+      set src(_v: string) {
+        queueMicrotask(() => { this.onload?.() })
+      }
+      onload: (() => void) | null = null
+      onerror: (() => void) | null = null
+    }
+    const origImg = globalThis.Image
+    const origCreate = document.createElement.bind(document)
+    vi.stubGlobal("Image", StubImg as unknown as typeof Image)
+    const spy = vi.spyOn(document, "createElement").mockImplementation((tag: string) => {
+      if (tag === "canvas") {
+        const c = {
+          width: 0, height: 0,
+          getContext: () => ({ drawImage: (...a: unknown[]) => { draws.push(a) } }),
+          toDataURL: () => "data:image/png;base64,FITTED",
+        }
+        return c as unknown as HTMLCanvasElement
+      }
+      return origCreate(tag)
+    })
+    try {
+      const out = await fitImageToAspect("data:image/png;base64,AA", 1344, 768)
+      expect(out).toBe("data:image/png;base64,FITTED")
+      expect(draws.length).toBe(1)
+      // the recorded rect IS fitRect(2688,768 → 1344,768)
+      expect(draws[0]!.slice(1)).toEqual([0, 192, 1344, 384])
+    } finally {
+      spy.mockRestore()
+      vi.unstubAllGlobals()
+      void origImg
+    }
+  })
+
+  it("a decode FAILURE rejects into the verbatim catch — the reject arrow is live", async () => {
+    class StubImgErr {
+      set src(_v: string) { queueMicrotask(() => { this.onerror?.() }) }
+      onload: (() => void) | null = null
+      onerror: (() => void) | null = null
+    }
+    vi.stubGlobal("Image", StubImgErr as unknown as typeof Image)
+    try {
+      await expect(fitImageToAspect("data:image/png;base64,AA", 1344, 768))
+        .resolves.toBe("data:image/png;base64,AA")
+    } finally {
+      vi.unstubAllGlobals()
+    }
+  })
+
+  it("a decoded source with ZERO natural dims rides verbatim (the 0×0 guard)", async () => {
+    class StubImgZero {
+      naturalWidth = 0
+      naturalHeight = 0
+      set src(_v: string) { queueMicrotask(() => { this.onload?.() }) }
+      onload: (() => void) | null = null
+      onerror: (() => void) | null = null
+    }
+    vi.stubGlobal("Image", StubImgZero as unknown as typeof Image)
+    try {
+      await expect(fitImageToAspect("data:image/png;base64,AA", 1344, 768))
+        .resolves.toBe("data:image/png;base64,AA")
+    } finally {
+      vi.unstubAllGlobals()
+    }
+  })
+
+  it("a canvas with a NULL 2d context rides verbatim (the ctx guard)", async () => {
+    class StubImgTall {
+      naturalWidth = 768
+      naturalHeight = 1536
+      set src(_v: string) { queueMicrotask(() => { this.onload?.() }) }
+      onload: (() => void) | null = null
+      onerror: (() => void) | null = null
+    }
+    const origCreate = document.createElement.bind(document)
+    vi.stubGlobal("Image", StubImgTall as unknown as typeof Image)
+    const spy = vi.spyOn(document, "createElement").mockImplementation((tag: string) => {
+      if (tag === "canvas") {
+        return { width: 0, height: 0, getContext: () => null } as unknown as HTMLCanvasElement
+      }
+      return origCreate(tag)
+    })
+    try {
+      await expect(fitImageToAspect("data:image/png;base64,AA", 1344, 768))
+        .resolves.toBe("data:image/png;base64,AA")
+    } finally {
+      spy.mockRestore()
+      vi.unstubAllGlobals()
+    }
+  })
+
+  it("a same-aspect source that decodes rides VERBATIM — no re-encode, no generation loss", async () => {
+    class StubImg {
+      naturalWidth = 672
+      naturalHeight = 384
+      set src(_v: string) { queueMicrotask(() => { this.onload?.() }) }
+      onload: (() => void) | null = null
+      onerror: (() => void) | null = null
+    }
+    vi.stubGlobal("Image", StubImg as unknown as typeof Image)
+    try {
+      await expect(fitImageToAspect("data:image/png;base64,AA", 1344, 768))
+        .resolves.toBe("data:image/png;base64,AA")
+    } finally {
+      vi.unstubAllGlobals()
+    }
   })
 })

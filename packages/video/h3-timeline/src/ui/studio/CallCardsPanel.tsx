@@ -20,7 +20,7 @@ import { readAsDataURL, Upload, useSquareProvider } from '@melite/card-base/clie
 import s from "./studio.module.css"
 import type { CallRefs, DocCall, DocKeyframe, LayerA } from "./docModel.ts"
 import { CallCard } from "./CallCard.tsx"
-import { FOREIGN_URL_REFUSAL, REF_READ_ERROR, refUploadError, classifyImageSrc, loadImageMedia } from "./refUtils.ts"
+import { FOREIGN_URL_REFUSAL, REF_READ_ERROR, refUploadError, classifyImageSrc, fitImageToAspect, loadImageMedia } from "./refUtils.ts"
 import type { LinkArtifact } from "./refUtils.ts"
 import type { TimelineSelection } from "./useViewSelection.ts"
 import { useRef, useState } from "react"
@@ -150,7 +150,10 @@ export function CallCardsPanel({
       const got = classifyImageSrc(v, deps.artifactIndex.byUrl)
       if ("refusal" in got) { setKfAddError(got.refusal); return }
       setKfAddError(null)
-      addKeyframeWithImage(got.image, playheadDocFrame)
+      // (D1) shrink-to-fit into the movie's aspect before the pin
+      // lands — the engine would cover-crop an off-aspect insert
+      void fitImageToAspect(got.image, deps.layerA?.width ?? 1344, deps.layerA?.height ?? 768)
+        .then((fitted) => { addKeyframeWithImage(fitted, playheadDocFrame) })
     },
     {
       candidates: flowRows,
@@ -161,7 +164,11 @@ export function CallCardsPanel({
         if (err !== null) { setKfAddError(err); return }
         void (async () => {
           try {
-            addKeyframeWithImage(await readAsDataURL(file), playheadDocFrame)
+            const raw = await readAsDataURL(file)
+            addKeyframeWithImage(
+              await fitImageToAspect(raw, deps.layerA?.width ?? 1344, deps.layerA?.height ?? 768),
+              playheadDocFrame,
+            )
             setKfAddError(null)
           } catch {
             setKfAddError(REF_READ_ERROR)
@@ -179,8 +186,9 @@ export function CallCardsPanel({
       const i = pickRow.current
       const got = classifyImageSrc(v, deps.artifactIndex.byUrl)
       if ("refusal" in got) { setKfUploadError(i, got.refusal); return }
-      setKeyframeImage(i, got.image)
-      setKfUploadError(i, null)
+      // (D1) a row swap is an insert into the movie — same fit law
+      void fitImageToAspect(got.image, deps.layerA?.width ?? 1344, deps.layerA?.height ?? 768)
+        .then((fitted) => { setKeyframeImage(i, fitted); setKfUploadError(i, null) })
     },
     {
       candidates: flowRows,
@@ -192,7 +200,8 @@ export function CallCardsPanel({
         if (err !== null) { setKfUploadError(i, err); return }
         void (async () => {
           try {
-            setKeyframeImage(i, await readAsDataURL(file))
+            const raw = await readAsDataURL(file)
+            setKeyframeImage(i, await fitImageToAspect(raw, deps.layerA?.width ?? 1344, deps.layerA?.height ?? 768))
             setKfUploadError(i, null)
           } catch {
             setKfUploadError(i, REF_READ_ERROR)
