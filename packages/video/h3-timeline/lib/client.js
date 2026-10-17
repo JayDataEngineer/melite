@@ -6014,6 +6014,10 @@ window.__ModuleLoader__.load({
 			const cured = { ...layer };
 			for (const k of T4_ONLY_KEYS) cured[k] = void 0;
 			const payload = serializeLayerA(cured, structBase);
+			for (const k of T4_ONLY_KEYS) {
+				const carried = structBase[k];
+				if (carried !== void 0 && carried !== null) payload[k] = null;
+			}
 			if (canonicalJson(payload) === canonicalJson(serializeLayerA(layer, structBase))) return null;
 			return payload;
 		}

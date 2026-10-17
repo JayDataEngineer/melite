@@ -11619,7 +11619,6 @@ window.__ModuleLoader__.load({
 				setBgImage
 			]);
 			const handleBgFile = (0, react.useCallback)((file) => {
-				if (!file) return;
 				(0, _melite_card_base_client.readAsDataURL)(file).then(setBg);
 			}, [setBg]);
 			const attachBody = (0, react.useCallback)((url) => {
@@ -17428,7 +17427,6 @@ window.__ModuleLoader__.load({
 			const [exportOpen, setExportOpen] = (0, react.useState)(false);
 			const [stageRect, setStageRect] = (0, react.useState)(DEFAULT_STAGE_RECT);
 			const threeCtxRef = (0, react.useRef)(null);
-			const bgInputRef = (0, react.useRef)(null);
 			const [bgImage, setBgImage] = (0, react.useState)(null);
 			const [bgDragOver, setBgDragOver] = (0, react.useState)(false);
 			const restNpz = (0, react.useMemo)(() => {
@@ -17623,7 +17621,6 @@ window.__ModuleLoader__.load({
 					exportOpen,
 					setExportOpen,
 					bgImage,
-					bgInputRef,
 					handleBgFile,
 					setBg,
 					bodySrc,
