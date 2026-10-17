@@ -504,7 +504,26 @@ describe('timeline (prompts + keyframes)', () => {
     // 'no extend toast yet' at 6G while standalone stayed green).
     await vi.waitFor(() => {
       const toasted = useToastStore.getState().toasts.some((t) => t.message.includes('Timeline extended to'))
-      if (!toasted) throw new Error('no extend toast yet')
+      if (!toasted) {
+        // THE LOST-PULL CURE (2026-11-06, gates B+C receipts): under the
+        // full pool the single dispatched trio can land on a node the
+        // mount has since replaced — the store never changes and no
+        // budget fixes a lost event (this arm red at 30s twice with the
+        // wave-2 budget cure already in place). A failed check RE-PULLS
+        // the current tree's last edge: a delivered pull toasts
+        // synchronously (the store set sits inside the handler), so at
+        // most one extend toast ever exists and the count assertion
+        // below stays exact; the component's 1s toast throttle covers a
+        // re-delivered pull.
+        const clipsN = [...document.body.querySelectorAll('[data-prompt-clip]')] as HTMLElement[]
+        const edgeN = clipsN[clipsN.length - 1]?.querySelector('[data-prompt-edge="r"]') as HTMLElement | null
+        if (edgeN) {
+          fireEvent.pointerDown(edgeN, { clientX: 30, button: 0 })
+          fireEvent.pointerMove(window, { clientX: 1030 })
+          fireEvent.pointerUp(window, { clientX: 1030 })
+        }
+        throw new Error('no extend toast yet')
+      }
     }, { timeout: 30000 })
     // THE FLAKE CURE (flake-slowness-wave2 class 5, 2026-11-06): a
     // 10s real-timer rAF-poll budget on this arm reds under gate

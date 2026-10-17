@@ -127,7 +127,10 @@ const spellSites = (graph: Record<string, unknown>): Array<{ node: string; slot:
 };
 
 describe("a wire between REAL composed cards resolves to a node that EXISTS", () => {
-  it("the producing card declares a channel AND composes exactly one producer", () => {
+  // the same spawn budget its siblings carry: a REAL compose spawns the
+  // CLI (idle ~1s; under the full battery's import/transform storm the
+  // spawn tail crossed the 30s default — gate C, 2026-11-06).
+  it("the producing card declares a channel AND composes exactly one producer", { timeout: 90_000 }, () => {
     const channels = declaredOutputs("image-gen");
     assert.deepEqual(channels, ["default"], "image-gen declares its image channel (derived from source)");
     const graph = compose("image-gen", "z-image", { prompt: "a harbour at dusk" });
