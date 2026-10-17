@@ -11,10 +11,15 @@ import {
   laneBlank,
   laneStaleCarry,
   laneTogetherClosure,
+  marriedKnobValues,
+  resolveCellRow,
+  resolveVariantRow,
   samplerEnvelopeCure,
   unknownQuantVoice,
   unknownVariantVoice,
+  variantMatrixFromFlatRows,
   type LaneRelations,
+  type MarriageKindInput,
   type SamplerEnvelope,
 } from "../src/laneRelations.ts";
 
@@ -443,5 +448,169 @@ describe("laneStaleCarry (the taken-set law — SIMPLE: literal sets, no registr
     assert.deepEqual(laneStaleCarry(["steps", "loras"], ["steps"], { steps: 20 }), []);
     assert.deepEqual(laneStaleCarry(null, ["steps"], { steps: 20, loras: [{ id: "x" }] }), []);
     assert.deepEqual(laneStaleCarry(["steps", "loras"], null, { steps: 20, loras: [{ id: "x" }] }), []);
+  });
+});
+
+describe("marriedKnobValues (the one marriage math — D6's R5 seat rides it, the film's law)", () => {
+  const kind: MarriageKindInput = {
+    param_key: "loras",
+    marries: { steps: "max" },
+    options: [
+      { value: "distill4", defaults: { steps: 4 } },
+      { value: "distill8", defaults: { steps: 8 } },
+    ],
+  };
+
+  it("a stated row knob wins over the catalog default; the bag aggregates by max", () => {
+    assert.deepEqual(
+      marriedKnobValues(kind, [{ id: "distill4" }, { id: "distill8", steps: 6 }]),
+      { steps: 6 },
+    );
+    assert.deepEqual(
+      marriedKnobValues(kind, [{ id: "distill4" }, { id: "distill8" }]),
+      { steps: 8 },
+    );
+  });
+
+  it("a bag id the catalog does not serve contributes nothing (no invented refusal)", () => {
+    assert.deepEqual(marriedKnobValues(kind, [{ id: "ghost" }]), {});
+  });
+
+  it("non-object rows, blank bags, and marriage-less kinds contribute nothing", () => {
+    assert.deepEqual(marriedKnobValues(kind, []), {});
+    assert.deepEqual(marriedKnobValues(kind, [null, 7, "x"]), {});
+    assert.deepEqual(marriedKnobValues({ param_key: "loras" }, [{ id: "distill8" }]), {});
+  });
+});
+
+describe("THE ONE RESOLVER (D6 2026-10-17: five seats of the (model × variant × quant) coordinate, one law)", () => {
+  // A 3×2 matrix with every shape the seats hand over: a visible
+  // base with two sized cells, a hidden turbo lane, a Recipe row
+  // (pool-excluded, search-included), and a namespaced cell id.
+  const matrix = [
+    {
+      id: "base",
+      route: "m-base",
+      group: "Variant",
+      cells: [
+        { quant: "int8", route: "m-base-int8" },
+        { quant: "fp16", route: "m-base-fp16", hide_from_dropdown: true },
+      ],
+    },
+    { id: "turbo", route: "m-turbo", group: "Variant", hide_from_dropdown: true, cells: [{ quant: "int8", route: "m-turbo-int8" }] },
+    { id: "raw", route: "m-raw", group: "Variant", cells: [{ quant: "int8", route: "m-raw-int8" }] },
+    { id: "recipe-x", group: "Recipe", cells: [] },
+  ];
+
+  it("DECLARED scope: null is the only unstated mark — first declared wins; the empty string misses loudly", () => {
+    assert.equal(resolveVariantRow(matrix, null, "", "declared").status, "resolved");
+    assert.equal(
+      (resolveVariantRow(matrix, null, "", "declared") as { variant: { id: string } }).variant.id,
+      "base",
+    );
+    const empty = resolveVariantRow(matrix, "", "", "declared");
+    assert.deepEqual(empty, { status: "missing", stated: "", known: ["base", "turbo", "raw", "recipe-x"] });
+  });
+
+  it("DECLARED scope: id-only match, no hiding, no pool — the engine's face", () => {
+    assert.equal(
+      (resolveVariantRow(matrix, "recipe-x", "", "declared") as { variant: { id: string } }).variant.id,
+      "recipe-x",
+    );
+    assert.equal(resolveVariantRow(matrix, "m-base", "", "declared").status, "missing");
+    assert.equal(resolveVariantRow(matrix, "turbo", "", "declared").status, "resolved");
+  });
+
+  it("OFFERED scope: the stated search runs over the WHOLE matrix by id or route; a hidden hit is its own status", () => {
+    assert.equal(
+      (resolveVariantRow(matrix, "recipe-x", "", "offered") as { variant: { id: string } }).variant.id,
+      "recipe-x",
+    );
+    assert.equal(
+      (resolveVariantRow(matrix, "m-turbo", "", "offered") as { variant: { id: string } }).variant.id,
+      "turbo",
+    );
+    assert.equal(resolveVariantRow(matrix, "turbo", "", "offered").status, "hidden");
+    assert.deepEqual(resolveVariantRow(matrix, "nope", "", "offered"), {
+      status: "missing",
+      stated: "nope",
+      known: ["base", "turbo", "raw", "recipe-x"],
+    });
+  });
+
+  it("OFFERED scope, unstated: the address claims by variant route, then by a VISIBLE cell route, then pool[0] (Recipe excluded)", () => {
+    assert.equal(
+      (resolveVariantRow(matrix, null, "m-raw", "offered") as { variant: { id: string } }).variant.id,
+      "raw",
+    );
+    assert.equal(
+      (resolveVariantRow(matrix, null, "m-base-int8", "offered") as { variant: { id: string } }).variant.id,
+      "base",
+    );
+    assert.equal(
+      (resolveVariantRow(matrix, null, "", "offered") as { variant: { id: string } }).variant.id,
+      "base",
+    );
+    // a HIDDEN lane's address is never claimed — the pool is
+    // offered-only; the door refuses that address at its own seat,
+    // before it ever resolves (its suite pins the voice).
+    assert.equal(
+      (resolveVariantRow(matrix, null, "m-turbo", "offered") as { variant: { id: string } }).variant.id,
+      "base",
+    );
+  });
+
+  it("OFFERED scope: an all-hidden matrix is pool-empty (the door refuses it BEFORE the stated search)", () => {
+    const allHidden = [{ id: "x", group: "Variant", hide_from_dropdown: true, cells: [] }];
+    assert.equal(resolveVariantRow(allHidden, null, "", "offered").status, "pool-empty");
+  });
+
+  it("cells: the stated quant matches the VALUE (never a row id); the empty string is stated (the false-admit cure)", () => {
+    const base = (resolveVariantRow(matrix, "base", "", "offered") as { variant: (typeof matrix)[number] }).variant;
+    const hit = resolveCellRow(base, "int8", "", "offered");
+    assert.deepEqual(hit, { status: "resolved", cell: base.cells[0], quant: "int8" });
+    assert.deepEqual(resolveCellRow(base, "", "", "offered"), {
+      status: "missing",
+      stated: "",
+      known: ["int8"],
+    });
+    // the hidden fp16 cell is not searched in the offered face…
+    assert.deepEqual(resolveCellRow(base, "fp16", "", "offered"), {
+      status: "missing",
+      stated: "fp16",
+      known: ["int8"],
+    });
+    // …and is searched in the declared face (the engine reads the DECL verbatim).
+    assert.equal(resolveCellRow(base, "fp16", "", "declared").status, "resolved");
+  });
+
+  it("cells, unstated: the address's own cell claim wins, else the first VISIBLE cell; a cell-less variant resolves the honest empty", () => {
+    const base = (resolveVariantRow(matrix, "base", "", "offered") as { variant: (typeof matrix)[number] }).variant;
+    const claimed = resolveCellRow(base, null, "m-base-fp16", "offered");
+    // the claim names a HIDDEN cell — the offered face never claims it; first visible wins
+    assert.deepEqual(claimed, { status: "resolved", cell: base.cells[0], quant: "int8" });
+    const bare = resolveCellRow({ id: "r", cells: [] }, null, "", "offered");
+    assert.deepEqual(bare, { status: "resolved", cell: null, quant: "" });
+    assert.equal(resolveCellRow(undefined, "int8", "m", "offered").status, "missing");
+  });
+
+  it("THE FLAT-MATRIX FOLD: Quant rows re-nest into their owner keyed by quant VALUE; orphans drop; members ride verbatim", () => {
+    const flat = [
+      { id: "v1", group: "Variant", sampler_envelope: { steps: [1, 2] } },
+      { id: "v1__int8", group: "Quant", owner: "v1", quant: "int8", params: { x: 1 } },
+      { id: "v1__fp16", group: "Quant", owner: "ghost", quant: "fp16" },
+    ];
+    const folded = variantMatrixFromFlatRows(flat);
+    assert.equal(folded.length, 1);
+    assert.equal(folded[0]?.id, "v1");
+    assert.equal(folded[0]?.cells?.length, 1);
+    assert.equal(folded[0]?.cells?.[0]?.quant, "int8");
+    assert.equal((folded[0]?.cells?.[0] as { params?: { x: number } }).params?.x, 1);
+    assert.deepEqual(folded[0]?.sampler_envelope, { steps: [1, 2] });
+    // and the folded matrix resolves exactly like a nested one
+    assert.equal(
+      (resolveVariantRow(folded, "v1", "", "offered") as { variant: { id: string } }).variant.id,
+      "v1",
+    );
   });
 });

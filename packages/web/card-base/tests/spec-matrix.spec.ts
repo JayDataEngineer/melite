@@ -640,11 +640,16 @@ function gateDoc(): FormSpecDoc {
   } as unknown as FormSpecDoc
 }
 
-test('composeValidate: an off-pool variant refuses naming the door pool (Recipe excluded)', () => {
+test('composeValidate: an off-pool variant refuses naming the whole matrix (the door\'s honest law — D6)', () => {
+  // the resolver consolidation (D6, 2026-10-17): the mirror and the
+  // door call ONE resolver, so the miss voice names the matrix's own
+  // ids — Recipe rows included, exactly the door's pinned voice
+  // ('known: recipe, base, turbo'). The pre-consolidation mirror
+  // hid Recipe from the list; that was the divergence, not the law.
   const out = composeValidate(gateDoc(), { variant: 'nope' })
   expect(out.length).toBe(1)
   expect(out[0]?.message).toBe(
-    'card_compose: unknown variant "nope" for model "krea-2" (known: r-hd, r-sd, r-empty, r-env)',
+    'card_compose: unknown variant "nope" for model "krea-2" (known: r-hd, r-sd, r-empty, recipe-x, r-env)',
   )
 })
 
@@ -680,7 +685,7 @@ test('composeValidate: a doc whose model is null refuses the variant with an emp
   const out = composeValidate({ ...gateDoc(), model: null } as unknown as FormSpecDoc, { variant: 'nope' })
   expect(out.length).toBe(1)
   expect(out[0]?.message).toBe(
-    'card_compose: unknown variant "nope" for model "" (known: r-hd, r-sd, r-empty, r-env)',
+    'card_compose: unknown variant "nope" for model "" (known: r-hd, r-sd, r-empty, recipe-x, r-env)',
   )
 })
 

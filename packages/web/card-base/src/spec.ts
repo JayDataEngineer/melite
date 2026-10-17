@@ -114,9 +114,13 @@ import {
   laneBoundsOf,
   laneSurfaceOf,
   judgeSamplerEnvelope,
+  marriedKnobValues,
+  resolveCellRow,
+  resolveVariantRow,
   samplerEnvelopeCure,
   unknownQuantVoice,
   unknownVariantVoice,
+  variantMatrixFromFlatRows,
   type LaneBounds,
   type LaneRelations,
   type LaneViolation,
@@ -578,38 +582,24 @@ export function resolveValue(spec: FormSpecDoc, user: SpecValues, base?: SpecVal
     if (v === null || v === undefined) continue
     out[k] = v
   }
-  // THE MARRIAGE MIRROR (#36, the recipes rework — compose card.ts's
-  // own layering verbatim: "a call's own knobs > the lora entry's
-  // steps > this steps row"): when a served kind declares a knob
-  // marriage and a counting bag rides, the knob is the BAG's —
-  // stated on the row first, else the catalog row's default, Math.max
-  // across the bag ("8 on a 4-step distill is fine, 4 on an 8-step
-  // is undercooked"). The film already runs this law server-side
-  // (the service resolves bag ids against the family catalog); the
-  // face shows what the film runs — Steps reads 8 with the plaguekind
-  // turbo riding, 4 with dareties, NEVER the neutral 12. A bag id
-  // the catalog does not serve contributes nothing HERE (the mod
-  // plane and the compose door refuse unknown ids loudly — the
-  // resolver never invents a refusal of its own).
+  // THE MARRIAGE MIRROR (#36, the recipes rework): when a served kind
+  // declares a knob marriage and a counting bag rides, the knob is the
+  // BAG's — stated on the row first, else the catalog row's default,
+  // Math.max across the bag ("8 on a 4-step distill is fine, 4 on an
+  // 8-step is undercooked"). The film runs this law server-side (the
+  // service resolves bag ids against the family catalog); the face
+  // shows what the film runs — Steps reads 8 with the plaguekind
+  // turbo riding, 4 with dareties, NEVER the neutral 12 — THROUGH THE
+  // SHARED MATH (D6 2026-10-17: marriedKnobValues in @melite/contracts
+  // beside the lane voices; the display cascade keeps no private copy
+  // of the judgment). A bag id the catalog does not serve contributes
+  // nothing HERE (the mod plane and the compose door refuse unknown
+  // ids loudly — the resolver never invents a refusal of its own).
   for (const kind of spec.features?.modifiers ?? []) {
-    if (kind.marries === undefined) continue
     const bag = out[kind.param_key]
     if (!Array.isArray(bag) || bag.length === 0) continue
-    const catalog = new Map((kind.options ?? []).map((o) => [o.value, o]))
-    for (const knob of Object.keys(kind.marries)) {
-      const counts: number[] = []
-      for (const row of bag as Array<Record<string, unknown>>) {
-        const stated = row?.[knob]
-        if (typeof stated === 'number' && Number.isFinite(stated)) {
-          counts.push(stated)
-          continue
-        }
-        const id = typeof row?.['id'] === 'string' ? row['id'] : undefined
-        const fromCatalog = id === undefined ? undefined
-          : (catalog.get(id)?.defaults as Record<string, unknown> | undefined)?.[knob]
-        if (typeof fromCatalog === 'number' && Number.isFinite(fromCatalog)) counts.push(fromCatalog)
-      }
-      if (counts.length > 0) out[knob] = Math.max(...counts)
+    for (const [knob, v] of Object.entries(marriedKnobValues(kind, bag))) {
+      out[knob] = v
     }
   }
   return out
@@ -1579,8 +1569,12 @@ export function seedRecipeStamp(spec: FormSpecDoc, seeds: SpecValues): SpecValue
 // THE MIRROR DISCIPLINE: exactly the door's clauses, no stricter, no
 // looser. A client gate stricter than the door refuses writes the
 // estate would admit (a new lie); looser lets the door be the first
-// line again (the old lie). When the door's law changes, this mirror
-// changes WITH it — pinned by the mirror wall.
+// line again (the old lie). Since the resolver consolidation (D6,
+// 2026-10-17) the discipline is STRUCTURAL — the clauses ARE the
+// door's: offeredVariantOf/composeValidate delegate the
+// pool/variant/cell walk to the same @melite/contracts resolver the
+// door calls, so a door-law change lands once and this gate rides
+// it (the mirror wall still pins the behavior).
 //   clause 1 (marriage): a stated variant must be an offered
 //     Variant-row id of this spec (the door: selectVariant's
 //     unknown-variant refusal);
@@ -1600,33 +1594,45 @@ export function seedRecipeStamp(spec: FormSpecDoc, seeds: SpecValues): SpecValue
 //   declares nothing; a doc whose model points at another family is
 //   judged by THAT family's spec, not this one.
 
-/** The door's offered-variant pool (selectVariant mirrored):
- *  non-Recipe/non-Quant rows, else every non-Quant row when the
- *  family configures none — the discovery-expanded Quant CELLS
- *  never carry an envelope to judge against. */
-function variantPool(all: readonly FormVariantRow[]): FormVariantRow[] {
-  const configured = all.filter((r) => r.group !== 'Recipe' && r.group !== 'Quant')
-  return configured.length > 0 ? configured : all.filter((r) => r.group !== 'Quant')
-}
+/** THE MIRROR'S COORDINATE SEAT (D6 2026-10-17 — the resolver
+ *  consolidation): offeredVariantOf and composeValidate no longer
+ *  hand-roll the pool/variant/cell walk; they fold the served flat
+ *  rows (variantMatrixFromFlatRows) and delegate to the ONE resolver
+ *  in @melite/contracts — the same calls the estate door
+ *  (cardsVariant.ts selectCardVariant) makes over its nested facts
+ *  matrix. The MIRROR DISCIPLINE above is no longer a hand
+ *  discipline: the clauses cannot drift because there is one
+ *  spelling. The seat keeps only what its surface owns: the
+ *  model-mismatch skip, the 'card_compose:' frame, and clause 3's
+ *  marriage clause decoration. */
+
+/** THE AXES' UNCHOSEN MARK (the client doc plane, D6): the axes'
+ *  resting doc carries '' for coordinates the user has not picked
+ *  (the empty-selection law — seedUser drops them, the run flush
+ *  deletes the key before the wire). The ONE resolver's stated law
+ *  is the WIRE's ('' = stated garbage — the door's false-admit
+ *  cure, `unknown quant ""`); the mirror translates its plane
+ *  before the call: '' reads as unstated on the client doc, and the
+ *  wire never sees it. */
+const unchosenToUnstated = (v: unknown): unknown => (v === '' ? null : v)
 
 /** The door's variant resolution, ONE spelling (the dragbar clamp,
  *  2026-10-13): the stated variant matched by id OR route over the
- *  offered pool, else pool[0] — the row whose sampler_envelope the
+ *  matrix, else pool[0] — the row whose sampler_envelope the
  *  judge and the form's dragbar clamps BOTH read. Undefined only
- *  when the pool itself is empty or the stated id matches no row
- *  (the miss voice is composeValidate's own).
+ *  when the pool itself is empty (an all-Recipe matrix) or the
+ *  stated id misses the matrix (the miss voice is composeValidate's
+ *  own). A hidden row cannot occur on a served matrix; if a caller
+ *  hands one, the row resolves exactly as the pre-consolidation
+ *  pool read it (hide flags were never the mirror's pool law).
  *  @param all the spec's full variants array, cells included.
  *  @param doc the resolved display doc (the held variant key). */
 export function offeredVariantOf(
   all: readonly FormVariantRow[],
   doc: Readonly<Record<string, unknown>>,
 ): FormVariantRow | undefined {
-  const pool = variantPool(all)
-  const rawVariant = doc['variant']
-  if (typeof rawVariant === 'string' && rawVariant !== '') {
-    return pool.find((r) => r.id === rawVariant || r.route === rawVariant)
-  }
-  return pool[0]
+  const r = resolveVariantRow(variantMatrixFromFlatRows(all), unchosenToUnstated(doc['variant']), '', 'offered')
+  return r.status === 'resolved' || r.status === 'hidden' ? r.variant : undefined
 }
 
 export interface ComposeViolation {
@@ -1649,70 +1655,66 @@ export function composeValidate(
   }
   const out: ComposeViolation[] = []
   const all = spec.variants ?? []
-  // THE DOOR'S POOL, mirrored (selectVariant): offered non-Recipe
-  // rows — the served list mixes the discovery-expanded Quant CELLS
-  // into the same array, and the door's facts row never sees those;
-  // an all-Recipe family falls back to the whole offered list (the
-  // door's own configured.length gate).
-  const pool = variantPool(all)
+  // THE DOOR'S POOL + STATED SEARCH, DELEGATED (the resolver
+  // consolidation): the fold re-nests the served flat rows and the
+  // shared resolver resolves the stated variant exactly as the door
+  // resolves the body's — the stated search over the whole matrix,
+  // the unstated one through pool[0], the miss speaking the matrix's
+  // own ids.
+  const matrix = variantMatrixFromFlatRows(all)
   const rawVariant = doc['variant']
-  let offered: FormVariantRow | undefined
-  if (typeof rawVariant === 'string' && rawVariant !== '') {
-    // the door matches id OR route (selectVariant: v.id === x ||
-    // v.route === x) — a route-spelled variant is LEGAL at the door
-    // and must be legal here.
-    offered = pool.find((r) => r.id === rawVariant || r.route === rawVariant)
-    if (offered === undefined) {
-      out.push({
-        message: 'card_compose: ' + unknownVariantVoice(rawVariant, spec.model ?? '', pool.map((r) => r.id)),
-      })
-      return out
-    }
-  } else {
-    // THE DOOR'S DEFAULT (selectVariant: variant = pool[0]) — the
-    // second live break (2026-09-29, 'unknown quant "raw__int8"'):
-    // the gate SKIPPED the quant clause when variant was unstated,
-    // while the door resolves pool[0] and REFUSES the quant against
-    // it. An unstated variant is never a skip — it is a resolution,
-    // exactly the door's.
-    offered = pool[0]
-  }
-  if (offered !== undefined) {
-    // clause 2 — the stated quant must be a cell of THIS variant
-    const rawQuant = doc['quant']
-    if (typeof rawQuant === 'string' && rawQuant !== '') {
-      const cells = all.filter(
-        (r) => r.group === 'Quant' && r.owner === offered.id,
-      )
-      if (!cells.some((c) => c.quant === rawQuant)) {
-        out.push({
-          message: 'card_compose: ' + unknownQuantVoice(rawQuant, spec.model ?? '', offered.id, cells.map((c) => c.quant).filter((q): q is string => typeof q === 'string')),
-        })
-      }
-    }
-    // clause 3 — the envelope, against the RESOLVED variant (the
-    // stated one, else the door's pool[0] — never the still-held
-    // one: the half-switch's whole failure was the door judging
-    // raw's cfg against turbo's envelope). The door judges the RAW
-    // body BEFORE the overlay stamps (stampCardOverlay calls
-    // envelopeRefusal first) — so only EXPLICIT numeric knobs count,
-    // never composed defaults.
-    // THE ONE JUDGE (the voice audit, 2026-10-11): the body
-    // composes in @melite/contracts — the door's envelopeRefusal
-    // asks the same judge, so the mirror and the door can no
-    // longer spell two truths. The client's frame stays phase-less
-    // (the press-side lint never knows the door's phase); the
-    // door adds the marriage clause + lane-read tail it owns.
-    const off = judgeSamplerEnvelope(doc, offered.sampler_envelope ?? null, {
-      id: offered.id,
-      route: offered.route,
+  const vres = resolveVariantRow(matrix, unchosenToUnstated(rawVariant), '', 'offered')
+  if (vres.status === 'missing') {
+    out.push({
+      message: 'card_compose: ' + unknownVariantVoice(vres.stated, spec.model ?? '', vres.known),
     })
-    if (off !== null) {
+    return out
+  }
+  if (vres.status === 'pool-empty') {
+    // An all-Recipe matrix has no variant to judge against — the
+    // pre-consolidation pool[0]-undefined skip, verbatim.
+    return out
+  }
+  // Only 'resolved' | 'hidden' remain — both carry the row. A served
+  // matrix never carries hidden rows; a handed one judges exactly as
+  // the pre-consolidation pool read it (hide flags were never the
+  // mirror's pool law).
+  const offered = vres.variant
+  // clause 2 — the stated quant must be a cell of THIS variant
+  // (the resolver judges the quant VALUE against the folded cells —
+  // the row id is the address, the coordinate is the value, D2's
+  // plane).
+  const rawQuant = doc['quant']
+  if (typeof rawQuant === 'string' && rawQuant !== '') {
+    const qres = resolveCellRow(offered, rawQuant, '', 'offered')
+    if (qres.status === 'missing') {
       out.push({
-        message: 'card_compose: ' + off.voice
-          + '. ' + samplerEnvelopeCure(),
+        message: 'card_compose: ' + unknownQuantVoice(qres.stated, spec.model ?? '', offered.id, qres.known),
       })
     }
+  }
+  // clause 3 — the envelope, against the RESOLVED variant (the
+  // stated one, else the door's pool[0] — never the still-held
+  // one: the half-switch's whole failure was the door judging
+  // raw's cfg against turbo's envelope). The door judges the RAW
+  // body BEFORE the overlay stamps (stampCardOverlay calls
+  // envelopeRefusal first) — so only EXPLICIT numeric knobs count,
+  // never composed defaults.
+  // THE ONE JUDGE (the voice audit, 2026-10-11): the body
+  // composes in @melite/contracts — the door's envelopeRefusal
+  // asks the same judge, so the mirror and the door can no
+  // longer spell two truths. The client's frame stays phase-less
+  // (the press-side lint never knows the door's phase); the
+  // door adds the marriage clause + lane-read tail it owns.
+  const off = judgeSamplerEnvelope(doc, offered.sampler_envelope ?? null, {
+    id: offered.id,
+    route: offered.route,
+  })
+  if (off !== null) {
+    out.push({
+      message: 'card_compose: ' + off.voice
+        + '. ' + samplerEnvelopeCure(),
+    })
   }
   return out
 }

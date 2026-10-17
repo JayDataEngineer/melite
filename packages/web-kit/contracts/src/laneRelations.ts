@@ -872,3 +872,320 @@ export function laneContractsFor (
   }
   return out
 }
+
+/** The marriage aggregation's inputs, structurally — the served
+ *  modifier kind's members the math reads (formSpec's ModifierKind
+ *  carries these verbatim; nothing narrower is invented).
+ *  @see marriedKnobValues */
+export interface MarriageKindInput {
+  /** The bag field the kind counts (the loras array's param key). */
+  param_key: string
+  /** THE MARRIAGE DECLARATION: knob → aggregation ('max' — the only
+   *  spelling compose layers). */
+  marries?: Record<string, 'max'>
+  /** The pack's catalog rows: a bag row names one by `id`; its
+   *  declared knob defaults are the row's contribution. */
+  options?: ReadonlyArray<{ value: unknown, defaults?: Record<string, unknown> }>
+}
+
+/** THE MARRIED-KNOB AGGREGATION (#36, the recipes rework — compose
+ *  card.ts's own layering verbatim: "a call's own knobs > the lora
+ *  entry's steps > this steps row"): when a served kind declares a
+ *  knob marriage and a counting bag rides, the knob is the BAG's —
+ *  stated on the row first, else the catalog row's default,
+ *  Math.max across the bag ("8 on a 4-step distill is fine, 4 on an
+ *  8-step is undercooked"). THE ONE SPELLING (axis-unification item
+ *  6, D6 — the resolver-consolidation home, beside the voices): the
+ *  face's resolver (card-base resolveValue) displays through this
+ *  math instead of a private copy, so the display and the compose
+ *  layering cannot drift. A bag id the catalog does not serve
+ *  contributes nothing (the mod plane and the compose door refuse
+ *  unknown ids loudly — the display never invents a refusal of its
+ *  own). PURE, no I/O.
+ *
+ *  @param kind the served modifier kind (marries + catalog options).
+ *  @param bag the doc's riding array for the kind's param_key —
+ *  entries may be any shape; non-object rows contribute nothing.
+ *  @returns the knob → married value map, only knobs with at least
+ *  one finite count; absent keys are untouched by the caller. */
+export function marriedKnobValues (
+  kind: MarriageKindInput,
+  bag: readonly unknown[],
+): Record<string, number> {
+  const out: Record<string, number> = {}
+  if (kind.marries === undefined) return out
+  const catalog = new Map((kind.options ?? []).map((o) => [o.value, o]))
+  for (const knob of Object.keys(kind.marries)) {
+    const counts: number[] = []
+    for (const row of bag) {
+      if (row === null || typeof row !== 'object') continue
+      const stated = (row as Record<string, unknown>)[knob]
+      if (typeof stated === 'number' && Number.isFinite(stated)) {
+        counts.push(stated)
+        continue
+      }
+      const id = (row as Record<string, unknown>)['id']
+      const fromCatalog = typeof id === 'string'
+        ? (catalog.get(id)?.defaults as Record<string, unknown> | undefined)?.[knob]
+        : undefined
+      if (typeof fromCatalog === 'number' && Number.isFinite(fromCatalog)) counts.push(fromCatalog)
+    }
+    if (counts.length > 0) out[knob] = Math.max(...counts)
+  }
+  return out
+}
+
+// ── THE ONE VARIANT-CELL RESOLVER (axis-unification item 6 — the
+//    P2 consolidation, D6 2026-10-17) ─────────────────────────────
+// Five resolvers judged the same (model × variant × quant) coordinate
+// with four shapes and three voices; the walls fed both sides from the
+// same mirror and the seams between copies had no judge. This module
+// now owns the coordinate law; the seats delegate and keep only their
+// seat-bound decoration (the frame prefix, the phase, the address
+// visibility refusals). The scope split is the honest one:
+//   'declared' — the DECL walk's face (the engine resolver R1): every
+//     declared row is searchable, id-only matching, first-declared
+//     default, hide flags are data — never a pool.
+//   'offered'  — the wire face (the door R2, the mirror R3): hidden
+//     rows are not offered, Recipe rows never seed a default, the
+//     compose address claims its own lane when the caller states
+//     nothing.
+// The refusal DATA (stated value + the caller's own matrix's ids) is
+// computed here; the VOICE stays at the seat that frames it (the
+// shared voices above, R1's prose — walled separately).
+
+/** The minimal variant row the resolver reads — the DECL's variant,
+ *  the facts row's variant, and the flat-matrix fold all carry this.
+ *  Members ride `unknown` because the seats' shapes type them
+ *  differently (string | null | absent); the resolver normalizes. */
+export interface ResolverVariantRow {
+  id: string
+  route?: unknown
+  group?: unknown
+  hide_from_dropdown?: unknown
+  cells?: readonly ResolverCellRow[]
+}
+
+/** The minimal cell row: the DECL cell, the facts cell, or a folded
+ *  flat Quant row (quant coordinate + route + visibility). */
+export interface ResolverCellRow {
+  quant?: unknown
+  route?: unknown
+  hide_from_dropdown?: unknown
+}
+
+/** Which face the caller resolves for.
+ *  - `'declared'`: the engine's coordinate law (id-only match, no
+ *    visibility filtering, first-declared default).
+ *  - `'offered'`: the wire's law (id-or-route, hidden rows not
+ *    offered, Recipe excluded from the default pool, the address
+ *    claims its lane). */
+export type ResolverScope = 'declared' | 'offered'
+
+/** One variant-axis miss: the stated value, its kind, and the ids of
+ *  the matrix the caller handed (the honest known list — the caller's
+ *  own projection, never a DECL fact the caller cannot see). */
+export type VariantRowResolution<V extends ResolverVariantRow> =
+  | { readonly status: 'resolved'; readonly variant: V }
+  | { readonly status: 'hidden'; readonly variant: V }
+  | { readonly status: 'missing'; readonly stated: string; readonly known: readonly string[] }
+  | { readonly status: 'pool-empty'; readonly known: readonly string[] }
+
+/** One quant-axis miss over the resolved variant's cells. */
+export type CellRowResolution<C extends ResolverCellRow> =
+  | { readonly status: 'resolved'; readonly cell: C | null; readonly quant: string }
+  | { readonly status: 'missing'; readonly stated: string; readonly known: readonly string[] }
+
+/** THE STATED MARK (both scopes): a string — INCLUDING the empty
+ *  string — is a stated coordinate (the door's false-admit cure pins
+ *  the empty selection's LOUD refusal: `unknown quant ""`, the
+ *  operator's exact face); only null/undefined are the unstated
+ *  mark. Non-string values read as unstated here — the seats that
+ *  must name the type guard before calling. */
+const statedOf = (stated: unknown): string | null =>
+  typeof stated === 'string' ? stated : null
+
+const visibleRows = <V extends ResolverVariantRow>(variants: readonly V[]): V[] =>
+  variants.filter((v) => v.hide_from_dropdown !== true)
+
+const visibleCells = <C extends ResolverCellRow>(cells: readonly C[]): C[] =>
+  cells.filter((c) => c.hide_from_dropdown !== true)
+
+const knownIds = <V extends ResolverVariantRow>(variants: readonly V[]): string[] =>
+  variants.map((v) => v.id)
+
+const knownQuants = <C extends ResolverCellRow>(cells: readonly C[]): string[] =>
+  cells.map((c) => (typeof c.quant === 'string' ? c.quant : ''))
+
+/** THE DEFAULT POOL (the wire face): offered rows minus the Recipe
+ *  group; an all-Recipe family falls back to every offered row (the
+ *  recipe-only family still resolves — the door's own
+ *  configured.length gate). Exported for the seat that must refuse
+ *  an all-hidden family BEFORE its stated search (the door's early
+ *  check, order-pinned by its suite) — the pool itself has one
+ *  spelling here. */
+export function offeredPool<V extends ResolverVariantRow> (variants: readonly V[]): V[] {
+  const offered = visibleRows(variants)
+  const configured = offered.filter((v) => v.group !== 'Recipe')
+  return configured.length > 0 ? configured : offered
+}
+
+/** THE VARIANT COORDINATE, one law per scope. Stated coordinates
+ *  search the matrix the caller handed (its ids are the honest known
+ *  list on a miss); unstated coordinates resolve through the scope's
+ *  default (declared: first row; offered: the address claim, then
+ *  the pool's first row).
+ *
+ *  @param variants the caller's variant matrix — DECL rows, facts
+ *  rows, or the flat-matrix fold.
+ *  @param stated the body's `variant` value verbatim: a string —
+ *  including the empty string — is stated (the false-admit cure's
+ *  loud refusal); null/undefined (and non-strings) are unstated.
+ *  @param address the compose address (the family/route key the run
+ *  addresses); '' when the seat has none — no claim is made.
+ *  @param scope the face the caller resolves for. */
+export function resolveVariantRow<V extends ResolverVariantRow> (
+  variants: readonly V[],
+  stated: unknown,
+  address: string,
+  scope: ResolverScope,
+): VariantRowResolution<V> {
+  if (scope === 'declared') {
+    // THE ENGINE'S UNSTATED MARK IS NULL (the DECL walk: first
+    // declared = the default); ANY other value — the empty string
+    // included — is a stated coordinate and must miss loudly.
+    if (stated === null || stated === undefined) {
+      return { status: 'resolved', variant: variants[0] }
+    }
+    const want = typeof stated === 'string' ? stated : ''
+    const hit = variants.find((v) => v.id === want)
+    if (hit === undefined) {
+      return { status: 'missing', stated: want, known: knownIds(variants) }
+    }
+    return { status: 'resolved', variant: hit }
+  }
+  const want = statedOf(stated)
+  if (want !== null) {
+    // THE STATED SEARCH runs over the whole handed matrix — a hidden
+    // hit is a distinct status (the door spells its not-offered
+    // voice; a served matrix never carries hidden rows, so the
+    // mirror cannot produce this status), and a miss speaks the
+    // caller's own ids. The empty string is stated here (the
+    // false-admit cure): it matches nothing and misses loudly.
+    const hit = variants.find((v) => v.id === want || v.route === want)
+    if (hit === undefined) {
+      return { status: 'missing', stated: want, known: knownIds(variants) }
+    }
+    if (hit.hide_from_dropdown === true) return { status: 'hidden', variant: hit }
+    return { status: 'resolved', variant: hit }
+  }
+  const pool = offeredPool(variants)
+  if (pool.length === 0) return { status: 'pool-empty', known: knownIds(variants) }
+  if (address !== '') {
+    // THE ADDRESS CLAIMS THE VARIANT (operator 2026-10-12, the
+    // offered-cells wall's first firing): a doc pinned to a route
+    // that names a VARIANT-level lane ('krea-2-raw',
+    // 'z-image-base-int8') must compose THAT lane, never pool[0]'s
+    // silent neighbor. The address's cell claim only searches the
+    // chosen variant's cells — without this claim a route-addressed
+    // draft landed pool[0] + cells[0] and composed the wrong weights
+    // while every surface stayed green (variant switching "not
+    // working" under an all-green suite).
+    const claimed = pool.find((v) => v.route === address
+      || visibleCells(v.cells ?? []).some((c) => c.route !== '' && c.route === address))
+    if (claimed !== undefined) return { status: 'resolved', variant: claimed }
+  }
+  return { status: 'resolved', variant: pool[0] }
+}
+
+/** THE QUANT COORDINATE, one law per scope, over the RESOLVED
+ *  variant's cells. Stated coordinates match the quant VALUE (never
+ *  the flat row id — the axisStampOf vocabulary); unstated ones
+ *  claim the address's cell, else the first (visible) cell. A
+ *  variant with no cells resolves `cell: null, quant: ''` — the
+ *  honest empty, the caller's voice names the sync break when it
+ *  must.
+ *
+ *  @param variant the resolved variant row (its cells are searched).
+ *  @param stated the body's `quant` value verbatim: a string —
+ *  including '' — is stated; null/undefined and non-strings are
+ *  unstated.
+ *  @param address the compose address; '' makes no claim.
+ *  @param scope the face the caller resolves for. */
+export function resolveCellRow<C extends ResolverCellRow> (
+  variant: ResolverVariantRow | undefined,
+  stated: unknown,
+  address: string,
+  scope: ResolverScope,
+): CellRowResolution<C> {
+  const cells = (variant?.cells ?? []) as C[]
+  const searched = scope === 'declared' ? cells : visibleCells(cells)
+  const want = statedOf(stated)
+  if (want !== null) {
+    // The empty string is stated here too — the false-admit cure's
+    // `unknown quant ""` voice rides this arm.
+    const hit = searched.find((c) => c.quant === want)
+    if (hit === undefined) {
+      return { status: 'missing', stated: want, known: knownQuants(searched) }
+    }
+    return { status: 'resolved', cell: hit, quant: want }
+  }
+  const claimed = address !== ''
+    ? searched.find((c) => c.route !== '' && c.route === address)
+    : undefined
+  const cell = claimed ?? searched[0] ?? null
+  return {
+    status: 'resolved',
+    cell,
+    quant: cell !== null && typeof cell.quant === 'string' ? cell.quant : '',
+  }
+}
+
+/** A served flat-variant row as the fold reads it — the FormSpecDoc
+ *  `variants` members (Variant rows + the serializer's expanded Quant
+ *  cell rows with `owner` backrefs). Structural: the fold keeps the
+ *  original row's every member, so the folded variant still serves as
+ *  the wire row (the dragbar's envelope read, the pick verbs). */
+export interface FlatVariantRowInput {
+  id: unknown
+  group?: unknown
+  route?: unknown
+  quant?: unknown
+  owner?: unknown
+  hide_from_dropdown?: unknown
+}
+
+/** THE FLAT-MATRIX FOLD (the mirror's P2 face of the one resolver):
+ *  the served spec flattens cells into `group: 'Quant'` rows with
+ *  `owner` backrefs; the resolver reads the nested matrix. This fold
+ *  re-nests the wire rows — Variant/Recipe rows stay (a stated Recipe
+ *  id searches like at the door; the POOL still excludes it from
+ *  defaults), each row's cells become the Quant rows it OWNS, keyed
+ *  by the quant COORDINATE (never the namespaced row id — D2's stamp
+ *  plane: the address is the row's, the value is the cell's). Orphan
+ *  Quant rows (no owner match) drop — the judge could never reach
+ *  them either. The original members ride the spread verbatim.
+ *
+ *  @param rows the served spec's variants array (or any flat matrix).
+ *  @returns the nested matrix: every non-Quant row with its folded
+ *  cells attached. */
+export function variantMatrixFromFlatRows<R extends FlatVariantRowInput> (
+  rows: readonly R[],
+): Array<R & { cells: ResolverCellRow[] }> {
+  return rows
+    .filter((r) => r.group !== 'Quant')
+    .map((r) => ({
+      ...r,
+      cells: rows
+        .filter((c) => c.group === 'Quant' && c.owner === r.id)
+        .map((c) => ({
+          // every member rides (params, weights, the row's own
+          // vocabulary) — the fold re-nests, it never projects a copy
+          ...c,
+          id: typeof c.id === 'string' ? c.id : '',
+          quant: typeof c.quant === 'string' ? c.quant : '',
+          route: typeof c.route === 'string' ? c.route : '',
+          ...(c.hide_from_dropdown === true ? { hide_from_dropdown: true as const } : {}),
+        })),
+    }))
+}

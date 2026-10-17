@@ -4,7 +4,14 @@
 import type { CardDeclRow, ModelFactsRow, VariantCellRow, ResolvedVariantRow } from "./cardsFacts.ts";
 import { samplerEnvelopeCure } from "@melite/contracts/laneRelations";
 import { EnvelopeRefusal, phaseRefusal } from "./cardsArmError.ts";
-import { judgeSamplerEnvelope, unknownQuantVoice, unknownVariantVoice } from "@melite/contracts/laneRelations";
+import {
+  judgeSamplerEnvelope,
+  offeredPool,
+  resolveCellRow,
+  resolveVariantRow,
+  unknownQuantVoice,
+  unknownVariantVoice,
+} from "@melite/contracts/laneRelations";
 import { CARD_ENVELOPE_KEYS } from "./cardsRegistry.ts";
 import { cardAdmits } from "./cardsFacts.ts";
 import { theService, owningAtom } from "@melite/comfyui-cordis";
@@ -53,16 +60,17 @@ function normalizeEnvelope(
   return steps === undefined && cfg === undefined ? null : { steps, cfg };
 }
 
-function knownVariantIds(row: ModelFactsRow): string[] {
-  return (row.variants ?? []).map((v) => v.id);
-}
-
-/** Select the matrix cell (R1 wire contract): explicit body
- *  variant/quant keys win when stated (matched against facts
- *  variant id/route + cell quant); unstated coordinates fall to
- *  the FIRST non-Recipe variant / first cell (Model.resolve —
- *  the family default). Unknown coordinates refuse LOUD (never a
- *  silent neighbor cell). */
+/** Select the matrix cell (the ONE RESOLVER's wire seat — D6
+ *  2026-10-17: the coordinate law is `resolveVariantRow` +
+ *  `resolveCellRow` in @melite/contracts, shared with the client
+ *  mirror; this seat keeps only its own decoration — the phase
+ *  frame, the hidden-address refusals, the type guards, the legacy
+ *  'native' fold, and the selection's facts-row extraction):
+ *  explicit body variant/quant keys win when stated (matched against
+ *  facts variant id/route + cell quant); unstated coordinates fall
+ *  to the address claim, else the first non-Recipe variant / first
+ *  cell (Model.resolve — the family default). Unknown coordinates
+ *  refuse LOUD (never a silent neighbor cell). */
 export function selectCardVariant(
   mid: string,
   famRow: ModelFactsRow,
@@ -70,7 +78,6 @@ export function selectCardVariant(
   phase: string,
 ): VariantSelection {
   const variants: ResolvedVariantRow[] = famRow.variants ?? [];
-  const offered: ResolvedVariantRow[] = variants.filter((v) => v.hide_from_dropdown !== true);
   const hiddenRoute = variants.find((v) => v.hide_from_dropdown === true && (
     v.route === mid || v.id === mid || (v.cells ?? []).some((c) => c.route === mid)
   ));
@@ -84,49 +91,41 @@ export function selectCardVariant(
         " is not offered (the variant route is hidden from the dropdown)",
     );
   }
-  const configured: ResolvedVariantRow[] = offered.filter((v) => v.group !== "Recipe");
-  const pool: ResolvedVariantRow[] = configured.length > 0 ? configured : offered;
-  if (pool.length === 0 && variants.length > 0) {
+  // THE DOOR'S EARLY ALL-HIDDEN REFUSAL (order-pinned by its suite:
+  // before the stated search — an all-hidden family refuses its
+  // address, never its stated coordinate). The pool itself is the
+  // resolver's one spelling (offeredPool).
+  if (offeredPool(variants).length === 0 && variants.length > 0) {
     throw phaseRefusal(phase, "model " + JSON.stringify(mid) + " has no offered variants");
   }
   const rawVariant: unknown = body["variant"];
   const rawQuant: unknown = body["quant"];
-  let variant: ResolvedVariantRow | undefined;
-  if (rawVariant === undefined || rawVariant === null) {
-    // THE ADDRESS CLAIMS THE VARIANT (operator 2026-10-12, the
-    // offered-cells wall's first firing): a doc pinned to a route
-    // that names a VARIANT-level lane ('krea-2-raw',
-    // 'z-image-base-int8') must compose THAT lane, never pool[0]'s
-    // silent neighbor. The address's cell claim below only searches
-    // the chosen variant's cells — without this claim a
-    // route-addressed draft landed pool[0] + cells[0] and composed
-    // the wrong weights while every surface stayed green (variant
-    // switching "not working" under an all-green suite).
-    variant = pool.find((v) =>
-      v.route === mid
-      || (v.cells ?? []).some((c) => c.hide_from_dropdown !== true && c.route !== "" && c.route === mid)
-    ) ?? pool[0];
-  } else {
-    if (typeof rawVariant !== "string") {
-      throw phaseRefusal(
-        phase,
-        "variant must be a string (got " +
-          (Array.isArray(rawVariant) ? "list" : typeof rawVariant) + ")",
-      );
-    }
-    const requested = variants.find((v) => v.id === rawVariant || v.route === rawVariant);
-    if (requested?.hide_from_dropdown === true) {
-      throw phaseRefusal(
-        phase,
-        "variant " + JSON.stringify(rawVariant) +
-          " is not offered for model " + JSON.stringify(mid),
-      );
-    }
-    variant = offered.find((v) => v.id === rawVariant || v.route === rawVariant);
-    if (variant === undefined) {
-      throw phaseRefusal(phase, unknownVariantVoice(rawVariant, mid, knownVariantIds(famRow)));
-    }
+  if (rawVariant !== undefined && rawVariant !== null && typeof rawVariant !== "string") {
+    throw phaseRefusal(
+      phase,
+      "variant must be a string (got " +
+        (Array.isArray(rawVariant) ? "list" : typeof rawVariant) + ")",
+    );
   }
+  // THE STATED/UNSTATED VARIANT ARM (the resolver's offered face):
+  // the stated search runs over the whole handed matrix (a hidden hit
+  // is the door's not-offered refusal, a miss speaks the matrix's own
+  // ids); the unstated coordinate is the address claim, else pool[0].
+  const vres = resolveVariantRow(variants, rawVariant, mid, "offered");
+  if (vres.status === "missing") {
+    throw phaseRefusal(phase, unknownVariantVoice(vres.stated, mid, vres.known));
+  }
+  if (vres.status === "hidden") {
+    throw phaseRefusal(
+      phase,
+      "variant " + JSON.stringify(rawVariant) +
+        " is not offered for model " + JSON.stringify(mid),
+    );
+  }
+  // 'pool-empty' is only reachable on an EMPTY matrix here (the
+  // early all-hidden throw guarded the non-empty one) — the
+  // variant-less family resolves empty coordinates.
+  const variant: ResolvedVariantRow | undefined = vres.status === "resolved" ? vres.variant : undefined;
   let quant = "";
   let cell: VariantCellRow | undefined;
   // THE LEGACY COORDINATE (the size-at-quant fold, operator
@@ -146,27 +145,24 @@ export function selectCardVariant(
           (Array.isArray(rawQuant) ? "list" : typeof rawQuant) + ")",
       );
     }
-    const cells: VariantCellRow[] = variant !== undefined
-      ? (variant.cells ?? []).filter((c) => c.hide_from_dropdown !== true)
-      : [];
-    const hit: VariantCellRow | undefined = cells.find((c) => c.quant === rawQuant);
-    if (hit === undefined) {
+    const qres = resolveCellRow<VariantCellRow>(variant, rawQuant, mid, "offered");
+    if (qres.status === "missing") {
       throw phaseRefusal(
         phase,
-        unknownQuantVoice(rawQuant, mid, variant !== undefined ? variant.id : "", cells.map((c) => c.quant)),
+        unknownQuantVoice(qres.stated, mid, variant !== undefined ? variant.id : "", qres.known),
       );
     }
-    cell = hit;
-    quant = hit.quant;
+    cell = qres.cell ?? undefined;
+    quant = qres.quant;
   } else if (variant !== undefined) {
-    const cells = (variant.cells ?? []).filter((c) => c.hide_from_dropdown !== true);
     // Unstated quant: the ADDRESS'S OWN CELL CLAIM wins (the
     // fold's coverage law — a draft pinned to 'qwen3-tts-base'
     // means the 0.6B clone; one pinned to 'qwen3-tts-voicedesign'
     // means the 1.7B persona), else the FIRST cell (Model.resolve's
     // family default — the large rung leads every ladder).
-    cell = cells.find((c) => c.route !== "" && c.route === mid) ?? cells[0];
-    if (cell !== undefined) quant = String(cell.quant ?? "");
+    const qres = resolveCellRow<VariantCellRow>(variant, null, mid, "offered");
+    cell = qres.status === "resolved" ? (qres.cell ?? undefined) : undefined;
+    quant = qres.status === "resolved" ? qres.quant : "";
   }
   return {
     variantId: variant !== undefined ? variant.id : "",
