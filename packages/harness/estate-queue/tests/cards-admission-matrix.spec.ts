@@ -439,6 +439,135 @@ describe("T7 — no bag value registered outside the run's active family compose
   });
 });
 
+// ── T8 — THE CENSUS GROUP-SCOPE (journey-closure C5, 2026-10-17:
+// the operator's motion_npz ruling, encoded): the census states its
+// group scope as an ASSERTION, never a silent skip. THE JUDGED SET —
+// the hand-typed param groups whose keys the admission door judges
+// as typed knobs. THE NOT-JUDGED SET — NAMED with its seam:
+//   chain — the DOCUMENT seam: motion_npz (kimodo) chains from the
+//     previous motion's last frame as a graph-wired data channel the
+//     flow wiring carries (flowKinds + flowOutputBindings, motion
+//     card.ts:88-93); the compose gate does not judge it as an
+//     admission;
+//   output — the INPUT SUBCARD seam (preview_glb seats through the
+//     estate input-selection square, not a panel row).
+// The non-judgment is CONDITIONED, not blanket: it holds only while
+// the group stays graph-wired — a named-not-judged key that gains a
+// hand-typed admission seat (the card's `admits` extras — the compose
+// door's BEYOND-the-schema hand surface — or the DECL's
+// studio-persisted write plane) reds. The rail seat census's panel
+// sub-scope (motion-rail-seat-census.spec.tsx) rides this statement.
+const C5_JUDGED_GROUPS = ["prompt", "general", "generation", "guidance"];
+const C5_NOT_JUDGED_SEAMS: Record<string, string> = {
+  chain: "the document seam — the flow wiring (motion card.ts:88-93)",
+  output: "the input subcard seat",
+};
+
+/** knob → DECL group, derived from the REGISTERED schema (the real
+ *  registry — never a hand list). */
+function schemaGroups(card: string): Map<string, string> {
+  const def = (cardDefsNow() ?? new Map()).get(card);
+  if (def === undefined) throw new Error(`the registry serves no '${card}' def`);
+  const json = def.schema.toJSON?.() as {
+    refs: Record<number, { type?: string; dict?: Record<string, number>; meta?: { extra?: { group?: string } } }>;
+  } | undefined;
+  const root = Object.values(json?.refs ?? {}).find((n) => n.type === "object" && n.dict !== undefined);
+  if (root?.dict === undefined) throw new Error(`the registered '${card}' schema serves no object root`);
+  const groups = new Map<string, string>();
+  for (const [knob, refId] of Object.entries(root.dict)) {
+    const group = json!.refs[refId]?.meta?.extra?.group;
+    if (typeof group === "string") groups.set(knob, group);
+  }
+  return groups;
+}
+
+describe("T8 — the census group-scope statement (C5: the motion_npz non-seat ruling)", () => {
+  it("every registry group is accounted for — judged, or named not-judged with its seam (no silent skip)", () => {
+    const knobGroups = schemaGroups("motion");
+    const groups = new Set(knobGroups.values());
+    const named = [...C5_JUDGED_GROUPS, ...Object.keys(C5_NOT_JUDGED_SEAMS)];
+    // BOTH directions: the registry never grew an unaccounted group,
+    // and the naming never rotted past a group the schema dropped.
+    expect(
+      [...groups].filter((g) => !named.includes(g)),
+      "a registry group the scope statement does not account for — rule it judged or name its seam (the silent-skip class)",
+    ).toEqual([]);
+    expect(
+      named.filter((g) => !groups.has(g)),
+      "the scope statement names a group the registered motion schema no longer declares — the naming rotted",
+    ).toEqual([]);
+    // the judged set is DERIVED, never vacuous: every judged group
+    // carries at least one declared knob
+    for (const g of C5_JUDGED_GROUPS) {
+      expect(
+        [...knobGroups.values()].includes(g),
+        `judged group '${g}' carries no declared knob — the judged set went vacuous`,
+      ).toBe(true);
+    }
+  });
+
+  it("the not-judged naming is truthful — the named channel sits in its named group and the graph wiring carries it", () => {
+    const knobGroups = schemaGroups("motion");
+    const def = (cardDefsNow() ?? new Map()).get("motion")!;
+    expect(def.boarded, "the group-scope statement rides the kimodo card").toContain("kimodo");
+    // THE KIMODO ENTRY: motion_npz is the named channel, in the named
+    // chain group
+    expect(
+      knobGroups.get("motion_npz"),
+      "motion_npz must stay in the chain group — the not-judged naming names it there",
+    ).toBe("chain");
+    // THE SEAM IS REAL: the graph wiring carries the channel both
+    // ways — the non-seat's basis, not an assumption
+    expect(
+      def.flowKinds.inputs["motion_npz"],
+      "the chain group's motion_npz loses its graph INPUT wiring — the document-seam basis is gone",
+    ).toBe("data");
+    expect(
+      def.flowKinds.outputs["motion_npz"],
+      "the chain group's motion_npz loses its graph OUTPUT wiring — the document-seam basis is gone",
+    ).toBe("data");
+    expect(
+      (def.flowOutputBindings ?? []).some((b) => b.channel === "motion_npz"),
+      "the motion_npz channel loses its flowOutputBindings row — the graph no longer carries it",
+    ).toBe(true);
+  });
+
+  it("a named-not-judged channel never gains a hand-typed admission seat (the non-seat is conditioned)", () => {
+    const knobGroups = schemaGroups("motion");
+    const channels = [...knobGroups.entries()].filter(([, g]) => g in C5_NOT_JUDGED_SEAMS).map(([k]) => k);
+    const chainKeys = [...knobGroups.entries()].filter(([, g]) => g === "chain").map(([k]) => k);
+    expect(channels, "the not-judged groups carry knobs to judge").toContain("motion_npz");
+    const failures: string[] = [];
+    // (1) the CARD's hand surface: admits extras admit BEYOND the
+    // schema — a not-judged channel must never ride them
+    for (const [card, def] of cardDefsNow() ?? new Map()) {
+      if (!def.boarded.includes("kimodo")) continue;
+      for (const key of channels) {
+        if ((def.admits ?? []).includes(key)) {
+          failures.push(
+            `${card}: '${key}' appears in the hand-typed admits surface — a named-not-judged channel gained a hand-typed admission seat (the compose gate does not judge it; the C5 non-seat ruling is violated)`,
+          );
+        }
+      }
+    }
+    // (2) the DECL's persisted-write plane: the chain stays
+    // graph-wired, never a studio-persisted hand value (preview_glb's
+    // writes row is the output group's own lawful truth-telling — the
+    // DECL documents it; T5 walls it)
+    const writes = svc.modelFacts()["kimodo"]?.studio?.writes;
+    if (Array.isArray(writes)) {
+      for (const key of chainKeys) {
+        if (writes.includes(key)) {
+          failures.push(
+            `kimodo DECL: studio.writes carries '${key}' — a graph-wired chain channel declared as a persisted hand value (the chain rides the document seam; the C5 non-seat ruling is violated)`,
+          );
+        }
+      }
+    }
+    expect(failures).toEqual([]);
+  });
+});
+
 describe("the hermetic engine (the gate-37 flake cure: no live socket on the boot path)", () => {
   it("every prime rode the mock", () => {
     assertHermeticRode();

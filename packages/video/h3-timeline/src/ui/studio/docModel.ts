@@ -488,8 +488,8 @@ export type SetLayerAKey = <K extends keyof LayerA>(k: K, v: LayerA[K]) => void
  *  plain spread would let the layer's undefined holes erase the
  *  base's seats and mis-derive the family (t4_open for a t4r doc —
  *  the exact lie the gate exists to kill). Shared by the rail's
- *  omitFields gate and the component's family-reseat heal: one
- *  merge, one truth. */
+ *  omitFields gate and the commit seam's family reseat (useShownDoc's
+ *  commit — the mount heal dissolved with B2): one merge, one truth. */
 export function mergeDocLayers(
   base: Record<string, unknown> | null | undefined,
   layer: Record<string, unknown>,

@@ -37,10 +37,17 @@
  * that grows back, and the mounted editor's tool toggles render
  * with the primitives' own variant classes.
  *
- * The chain group (motion_npz/motion_prompts/motion_constraints)
- * rides the timeline's document seam and the output group the input
- * subcard — the census scopes to the panel's own groups:
- * generation / guidance / clock.
+ * The group scope is the C5 ruling's STATED TRUTH (journey-closure
+ * C5, operator 2026-10-17), asserted estate-side in the admission
+ * matrix's T8 group-scope arms (estate-queue
+ * cards-admission-matrix.spec.ts): the panel's own groups are
+ * generation / guidance / general; the chain group
+ * (motion_npz/motion_prompts/motion_constraints) rides the document
+ * seam — motion_npz chains from the previous motion's last frame as
+ * a graph-wired data channel (flowKinds + flowOutputBindings,
+ * card.ts:88-93), not a hand-typed param seat — and the output group
+ * rides the input subcard. T8's condition arm reds if a
+ * named-not-judged channel ever gains a hand-typed admission seat.
  */
 import "../../../../tests/helpers/boot-models.ts";
 import { beforeAll, afterEach, describe, expect, it, vi } from 'vitest'
