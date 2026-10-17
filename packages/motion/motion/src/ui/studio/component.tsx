@@ -402,7 +402,9 @@ export default MotionCardEditor
  *  2026-09-07 chrome stroke: the body renders StudioShell with these
  *  seams (the live skinned motion viewport is the mesh, kind
  *  "native"; the rail carries the view/pose/output tool groups;
- *  MotionTimelineBar in a PaneShell is the bottom). */
+ *  MotionTimelineBar in a PaneShell is the bottom). Judged by
+ *  tests/studio-component-decl.spec.tsx (C4): the declared shape and
+ *  each seam's rendered face. */
 export const shellDeclaration = defineShellDeclaration({
   preview: { kind: "native" },
   bottom: { kind: "timeline" },
