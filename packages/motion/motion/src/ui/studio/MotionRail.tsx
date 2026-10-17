@@ -49,12 +49,7 @@ export interface MotionRailProps {
   exportOpen: boolean
   setExportOpen: React.Dispatch<React.SetStateAction<boolean>>
   bgImage: string | null
-  /** INERT since the bg pick rode the estate's input-selection square
-   *  (the motion-params audit F4): component.tsx still mints and passes
-   *  the ref, but the square owns the file door — the hand seat's
-   *  hidden input is gone. Deletion belongs to the component.tsx owner. */
-  bgInputRef: React.RefObject<HTMLInputElement | null>
-  handleBgFile: (file: File | null) => void
+  handleBgFile: (file: File) => void
   setBg: (url: string | null) => void
   bodySrc: string
   bodyWired: boolean

@@ -173,7 +173,6 @@ export function MotionCardEditor({
   const [exportOpen, setExportOpen] = useState(false)
   const [stageRect, setStageRect] = useState<StageRect>(DEFAULT_STAGE_RECT)
   const threeCtxRef = useRef<ThreeCtx | null>(null)
-  const bgInputRef = useRef<HTMLInputElement | null>(null)
   const [bgImage, setBgImage] = useState<string | null>(null)
   const [bgDragOver, setBgDragOver] = useState(false)
 
@@ -348,7 +347,7 @@ export function MotionCardEditor({
           kimodoSpec={kimodoSpec} kimodoError={kimodoError}
           paramValues={paramValues} onParamEdit={onParamEdit}
           exportOpen={exportOpen} setExportOpen={setExportOpen}
-          bgImage={bgImage} bgInputRef={bgInputRef} handleBgFile={handleBgFile} setBg={setBg}
+          bgImage={bgImage} handleBgFile={handleBgFile} setBg={setBg}
           bodySrc={bodySrc} bodyWired={bodyWired} bodyWiredUpstream={bodyWiredUpstream}
           bodyWiredUrl={bodyWiredUrl} handleBodyFile={handleBodyFile}
           toast={toast} attachBody={attachBody}

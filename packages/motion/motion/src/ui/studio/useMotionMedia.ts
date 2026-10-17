@@ -343,8 +343,7 @@ export function useMotionMedia({
 
   // File → data URL → persist (shared readAsDataURL — the ONE read path
   // every slot-shaped attach uses; InputCardEditor / SlotGrid / MaskStudio).
-  const handleBgFile = useCallback((file: File | null) => {
-    if (!file) return
+  const handleBgFile = useCallback((file: File) => {
     void readAsDataURL(file).then(setBg)
   }, [setBg])
 
