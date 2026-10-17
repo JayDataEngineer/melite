@@ -213,6 +213,76 @@ describe("the edit action — byte-stability (the compatibility law)", () => {
     assert.equal(sampler.inputs.LanPaint_PromptMode, "Image First", "the default prompt mode is Image First");
   });
 
+  it("the spell arm covers the input list too — a spelled anchor and reference ride verbatim, never a loader", () => {
+    // The $spell law (the kit's TensorRef doc): '$name' names a
+    // FromStage-wired input — the upstream stage's output, never a
+    // file on disk. The anchor AND the references ride the raw spell
+    // into the stock node's image1/image2 slots; ROW-4 refuses
+    // producer links in Load* file slots, so no LoadImage may build.
+    const p = { ...PARAMS, input_images: ["$image1", "$image2"] };
+    const action = new GraphBuilder({});
+    instantiateAction(edit, p, FACTS, action, "probe-input-spells");
+    const graph = action.toJSON() as Record<string, { class_type: string; inputs: Record<string, unknown> }>;
+    const nodes = Object.values(graph);
+    assert.ok(!nodes.some((n) => n.class_type === "LoadImage"), "no loader builds for a spelled list");
+    const pos = nodes.find((n) => n.class_type === "TextEncodeQwenImageEditPlus" && n.inputs.prompt === PARAMS.prompt)!;
+    assert.equal(pos.inputs.image1, "$image1", "the spelled anchor rides verbatim");
+    assert.equal(pos.inputs.image2, "$image2", "the spelled reference rides verbatim");
+    assert.ok(!("image3" in pos.inputs), "two stated images map two slots — never a padded third");
+    const encode = nodes.find((n) => n.class_type === "VAEEncode")!;
+    assert.equal(encode.inputs.pixels, "$image1", "the plain arm encodes the spelled anchor, not a re-load");
+  });
+
+  it("full_frame is the auto edit scope — the same mask composes the SAME graph, never the region detailer", () => {
+    // mask_mode's declared vocabulary (pack-fields mask_mode union):
+    // auto | crop_stitch | full_frame — full_frame declares "the mask
+    // covers the whole frame", so it must normalize onto auto at the
+    // arm choice (the kit's region arm reads the same law). A mapping
+    // that routes full_frame to the crop_stitch detailer diverges
+    // from the auto graph and this arm reads red.
+    const withMode = (mode: string): Record<string, { class_type: string; inputs: Record<string, unknown> }> => {
+      const action = new GraphBuilder({});
+      instantiateAction(edit, { ...PARAMS, input_mask: "input/region.png", mask_mode: mode }, FACTS, action, "probe-scope");
+      return action.toJSON() as never;
+    };
+    const full = withMode("full_frame");
+    assert.deepEqual(full, withMode("auto"), "full_frame composes the auto graph byte-for-byte");
+    const nodes = Object.values(full);
+    assert.ok(nodes.some((n) => n.class_type === "LanPaint_KSamplerAdvanced"), "the mask rides the lanpaint arm");
+    assert.ok(!nodes.some((n) => n.class_type === "DetailerForEach"), "full_frame never routes the region detailer");
+  });
+
+  it("a stated non-numeric knob refuses field-named — the wire's string spill is coerced, never cast", () => {
+    // numOf's refusal arm: a JSON form can spill "twenty" where the
+    // node's input wants a number; a bare cast would ride the string
+    // into the graph and the graph would lie. The knob's own name
+    // names the refusal.
+    assert.throws(
+      () => instantiateAction(
+        edit,
+        { ...PARAMS, input_mask: "input/region.png", lanpaint_num_steps: "twenty" },
+        FACTS,
+        new GraphBuilder({}),
+        "probe-non-numeric",
+      ),
+      /lanpaint_num_steps.*not a number/,
+    );
+  });
+
+  it("a stated feather 0 skips FeatherMask — the rest of the mask prep still rides", () => {
+    // The feather<=0 arm of the mask-prep chain (the grow-0 twin the
+    // spell arm already pins): a stated 0 is a REAL stated value —
+    // only the feather node skips, the loaded mask and the default
+    // grow still compose.
+    const p = { ...PARAMS, input_mask: "input/region.png", mask_feather: "0" };
+    const action = new GraphBuilder({});
+    instantiateAction(edit, p, FACTS, action, "probe-feather-0");
+    const nodes = Object.values(action.toJSON() as Record<string, { class_type: string }>);
+    assert.ok(nodes.some((n) => n.class_type === "LoadImageMask"), "the file mask still loads");
+    assert.ok(nodes.some((n) => n.class_type === "GrowMask"), "the default grow still rides");
+    assert.ok(!nodes.some((n) => n.class_type === "FeatherMask"), "a stated feather 0 skips the feather node");
+  });
+
   it("GATE S rides the declared rule: the sentinel -1 mints a concrete seed, two runs differ", () => {
     const g1 = new GraphBuilder({});
     instantiateAction(edit, { ...PARAMS, seed: -1 }, FACTS, g1, "r-a");
