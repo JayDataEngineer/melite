@@ -305,10 +305,16 @@ describe('coverage sweep (scans / convert errors / guards)', () => {
     }, { timeout: 10000 })
   }, 30000)
 
-  test('bg pick button arms the file input', async () => {
+  test('bg pick square arms the source menu — never a private pick', async () => {
     const { onSave } = await mountedNoRun()
-    fireEvent.click(getByRole(document.body, 'button', { name: 'Background' }))
-    await new Promise((r) => setTimeout(r, 300))
+    // THE ESTATE SQUARE (the motion-params audit F4): the click opens
+    // the ONE source menu (From flow / From media / From file) — the
+    // seat, not a bespoke button; an open menu writes no param.
+    fireEvent.click(getByRole(document.body, 'button', { name: 'Background source' }))
+    await vi.waitFor(() => {
+      if (!getByRole(document.body, 'menuitem', { name: 'From file' })) throw new Error('no From file row yet')
+    }, { timeout: 10000 })
+    expect(getByRole(document.body, 'menuitem', { name: 'From media' })).toBeTruthy()
     const touched = onSave.mock.calls.some(([p]) => 'motion_bg_image' in (p as Record<string, unknown>))
     expect(touched).toBe(false)
   })

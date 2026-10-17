@@ -320,7 +320,13 @@ const INLINE_SVG_PIN = new Set([
  *  the type="range" frame scrubber (MotionExportDialog :783, the
  *  kit-native slider — S7's ONE-slider-law class). The tree rides
  *  the atoms everywhere else (Button, icon set, Tip). Motion: ZERO
- *  conversion debt. S7d (2026-11-05): deck's TWO selects —
+ *  conversion debt. C2 (2026-10-17, the motion-params journey
+ *  audit F4): the bg DOOR DIED — the pick rides the estate's
+ *  input-selection square (card-base SourceRow: the square + the
+ *  From flow / From media / From file menu), so the private file
+ *  input left the tree (2→1; the shrink-only arm passed at the old
+ *  pin — re-pinned to keep the ratchet tight). The range scrubber
+ *  is the sole remaining seat. S7d (2026-11-05): deck's TWO selects —
  *  SelectField (variant/quant/switch-to-version) and the family
  *  door — ride the DSH Menu (the zoom.tsx idiom: owner open bit,
  *  Button anchor w/ aria-label, compact portal rows, check
@@ -395,7 +401,10 @@ const INLINE_SVG_PIN = new Set([
  *  cell>" verb that re-stamps a pre-wave-31 dead axis spelling
  *  (quant "int8" → int8_convrot) through the atomic pick. */
 const HAND_ROLLED_CHROME_PIN: Record<string, number> = {
-  'packages/motion/motion/src/ui': 2,
+  // (C2 re-pin, 2026-10-17) 2 → 1: the hidden type="file" bg door
+  // died — the pick rides card-base's SourceRow square (the F4 cure);
+  // the type="range" frame scrubber is the sole remaining seat.
+  'packages/motion/motion/src/ui': 1,
   // (Sahar R6 re-pin, 2026-11-06) 2 → 1: RailBackButton rides the
   // catalog's outline/sm grammar — the sole remaining raw seat is
   // CallCardPrompt's textarea (the ONE-prompt textarea; the catalog

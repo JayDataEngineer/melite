@@ -24,6 +24,19 @@
  *    promoted to the ONE shell site so every tenant inherits it
  *    (§3.12: instance-cured in one genre, never walled as a class).
  *
+ * THE BG PICK IS THE ESTATE SQUARE (F4) — the square-dsh-native
+ * 4-FACT law's motion arm: the rail seats the estate's ONE
+ * input-selection component by import, carries no private file
+ * door, no hand bg skin, and the mounted editor renders the square
+ * with the three-entry source menu and the detach verb.
+ *
+ * THE CHROME RIDES THE DSH VARIANTS (F5) — the hand state skins
+ * (.railBtn*, .stampBtn, .reposeBtn, .bgBtnIdle + the camera pill's
+ * .camBtn/.frameBtn*) are dead: a derived scan over the module css's
+ * class roster and the chrome's s.* bindings reds naming any skin
+ * that grows back, and the mounted editor's tool toggles render
+ * with the primitives' own variant classes.
+ *
  * The chain group (motion_npz/motion_prompts/motion_constraints)
  * rides the timeline's document seam and the output group the input
  * subcard — the census scopes to the panel's own groups:
@@ -35,6 +48,7 @@ import { readFileSync } from 'node:fs'
 import { loadCardDefs } from '@melite/comfyui-cordis'
 import type { CardDefinition } from '@melite/comfyui-card-kit/card-definition'
 import { resetStudio, stubLoads, mountEditor } from './helpers.ts'
+import { MOTION_URL } from './fixtures.ts'
 
 /** The groups whose knobs the rail's panel owns — SANCTIONED ids
  *  only (the group-vocabulary wall: general is the universal
@@ -157,5 +171,129 @@ describe('THE RAIL SEAT PARITY (the motion-params journey audit)', () => {
     expect(cell, 'the shell rail cell rule exists').not.toBeNull()
     expect(cell![0]).toContain('overflow-x: clip')
     expect(cell![0]).toContain('overflow-y: auto')
+  })
+})
+
+describe('THE BG PICK IS THE ESTATE SQUARE (the square-dsh-native law\u2019s motion arm — motion-params audit F4)', () => {
+  const RAIL = 'packages/motion/motion/src/ui/studio/MotionRail.tsx'
+  const CSS = 'packages/motion/motion/src/ui/studio/component.module.css'
+  const HAND_SEAT = 'the bg pick renders the hand seat (the ghost "Background" Button + the hidden type="file" input + .bgBtnIdle) \u2014 ride the estate\u2019s input-selection square (SourceRow, the motion-params journey audit F4)'
+
+  it('FACT M1 (source import): the rail seats the estate\u2019s ONE input-selection component \u2014 imported, not imitated', () => {
+    const src = readFileSync(RAIL, 'utf8')
+    expect(/import\s*\{[^}]*\bSourceRow\b[^}]*\}\s*from\s*'@melite\/card-base\/client'/.test(src), HAND_SEAT).toBe(true)
+  })
+
+  it('FACT M2 (source): the rail carries no private file door \u2014 the square grammar owns every file pick', () => {
+    const src = readFileSync(RAIL, 'utf8')
+    expect(/<input/.test(src), `${HAND_SEAT} \u2014 MotionRail renders its own <input>`).toBe(false)
+    expect(/type="file"/.test(src), `${HAND_SEAT} \u2014 a hand type="file" literal`).toBe(false)
+  })
+
+  it('FACT M3 (source): the hand skin is gone from both the tsx and the module css', () => {
+    const src = readFileSync(RAIL, 'utf8')
+    // rule selectors only — prose comments naming the dead skin are
+    // documentation, not a bound class (the census scans rules).
+    const cssSelectors = readFileSync(CSS, 'utf8').replace(/\/\*[\s\S]*?\*\//g, '')
+    expect(src.includes('bgBtnIdle'), `${HAND_SEAT} \u2014 s.bgBtnIdle still referenced`).toBe(false)
+    expect(src.includes('hiddenInput'), `${HAND_SEAT} \u2014 s.hiddenInput still referenced`).toBe(false)
+    expect(/\.bgBtnIdle/.test(cssSelectors), `${HAND_SEAT} \u2014 the .bgBtnIdle skin rule still exists`).toBe(false)
+    expect(/\.hiddenInput/.test(cssSelectors), `${HAND_SEAT} \u2014 the .hiddenInput rule still exists`).toBe(false)
+  })
+
+  it('FACT M4 (runtime render): the mounted editor renders the square with the source menu and the detach verb', async () => {
+    stubLoads()
+    mountEditor({ params: { motion_bg_image: 'https://host/bg.png' } })
+    await vi.waitFor(() => {
+      const square = document.body.querySelector('[data-motion-bg] [data-slot-square]')
+      if (square === null) throw new Error(HAND_SEAT + ' \u2014 no square rendered in [data-motion-bg]')
+      if (square.getAttribute('aria-label') !== 'Background source') {
+        throw new Error(`the bg seat is not the estate square (aria-label "${square.getAttribute('aria-label')}")`)
+      }
+      // the held face: the value renders as the square's thumbnail + detach verb
+      if (document.body.querySelector('[data-motion-bg] img') === null) throw new Error('the held bg value renders no thumbnail')
+      if (document.body.querySelector('[aria-label="Detach Background"]') === null) throw new Error('the held bg square carries no detach verb')
+    }, { timeout: 10000 })
+  })
+
+  it('FACT M5 (runtime render): the square\u2019s click opens the THREE-ENTRY source menu \u2014 never a bare OS dialog', async () => {
+    stubLoads()
+    mountEditor()
+    await vi.waitFor(() => {
+      if (document.body.querySelector('[data-motion-bg] [data-slot-square]') === null) throw new Error('no bg square rendered')
+    }, { timeout: 10000 })
+    const square = document.body.querySelector('[data-motion-bg] [data-slot-square]') as HTMLElement
+    square.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    await vi.waitFor(() => {
+      const rows = [...document.body.querySelectorAll('[role="menuitem"]')].map((m) => (m.textContent ?? '').trim())
+      for (const row of ['From flow', 'From media', 'From file']) {
+        if (!rows.includes(row)) {
+          throw new Error(`the bg square opened no source menu (${row} missing; saw ${rows.join('|') || 'none'})`)
+        }
+      }
+    }, { timeout: 10000 })
+  })
+})
+
+describe('THE CHROME RIDES THE DSH VARIANTS (the motion-params audit F5 — the skin scan)', () => {
+  const RAIL = 'packages/motion/motion/src/ui/studio/MotionRail.tsx'
+  const VIEW = 'packages/motion/motion/src/ui/studio/MotionStageView.tsx'
+  const CSS = 'packages/motion/motion/src/ui/studio/component.module.css'
+  /** The hand-skin inventory the variant map killed (the audit's five
+   *  rail families + the camera pill's reset/faces). The scan derives
+   *  the roster from these FAMILIES — a re-planted member reds named. */
+  const SKIN_VOCABULARY = /(?:railBtn|stampBtn|reposeBtn|bgBtnIdle|camBtn|frameBtn)/
+
+  /** Every class selector the module css defines — comments are
+   *  stripped first: prose naming the dead families never counts
+   *  (only rules can bind a class). */
+  function cssClassRoster(law: string): string[] {
+    const bare = law.replace(/\/\*[\s\S]*?\*\//g, '')
+    return [...bare.matchAll(/\.([a-zA-Z][\w-]*)\s*[,{]/g)].map((m) => m[1]!)
+  }
+
+  it('the module css carries no hand Button skin — the derived roster is empty', () => {
+    const roster = cssClassRoster(readFileSync(CSS, 'utf8')).filter((name) => SKIN_VOCABULARY.test(name))
+    expect(
+      roster,
+      `hand Button skins grew back in the motion chrome: ${roster.join(', ')} \u2014 the toggles/commits/pill ride the DSH variants (outline/primary/ghost, size sm); the grouping belongs to the shell, never hand CSS (the motion-params journey audit F5)`,
+    ).toEqual([])
+  })
+
+  it('the rail and the stage view bind no skin class \u2014 the variant seats carry no s.* skin', () => {
+    for (const file of [RAIL, VIEW]) {
+      const src = readFileSync(file, 'utf8')
+      const bound = [...src.matchAll(/\bs\.(\w+)\b/g)].map((m) => m[1]!).filter((name) => SKIN_VOCABULARY.test(name))
+      expect(
+        bound,
+        `${file} still binds a hand Button skin (s.${bound.join(', s.')}) \u2014 ride the DSH variants (the motion-params journey audit F5)`,
+      ).toEqual([])
+    }
+  })
+
+  it('the mounted editor\u2019s tool toggles render the primitives\u2019 own variant faces', async () => {
+    stubLoads()
+    mountEditor({ result: { artifacts: { motion_npz: MOTION_URL } } })
+    const names = ['Skeleton', 'In-place', 'Export', 'Rotate view left (45\u00b0)', 'Full body framing']
+    await vi.waitFor(() => {
+      const faces = names.map((label) => {
+        const el = document.body.querySelector(
+          `[aria-label="${label}"], [data-slot="rail-section"] [aria-label="${label}"]`,
+        ) ?? [...document.body.querySelectorAll('button')].find((b) => (b.textContent ?? '').trim() === label)
+        if (el == null) throw new Error(`the ${label} toggle never rendered`)
+        const cls = el.className
+        if (!/_ghost_|_outline_|_primary_|_toolbar_/.test(cls)) {
+          throw new Error(`the ${label} toggle renders no DSH variant face (className "${cls}") \u2014 the hand skins are gone; the primitives own the states`)
+        }
+        if (SKIN_VOCABULARY.test(cls)) {
+          throw new Error(`the ${label} toggle renders a hand skin class (className "${cls}")`)
+        }
+        return cls
+      })
+      // the pressed skeleton toggle rides primary, the idle ones outline/ghost —
+      // the faces are DISTINCT variant families, never one hand-tinted voice.
+      expect(new Set(faces.map((c) => (c.match(/_ghost_|_outline_|_primary_/) ?? ['none'])[0])).size,
+        'all tool toggles render one variant — the pressed/idle faces collapsed').toBeGreaterThan(1)
+    }, { timeout: 15000 })
   })
 })

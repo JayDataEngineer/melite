@@ -46,146 +46,24 @@
 
 .contents { display: contents; }
 
-/* Rail tool buttons — one base, state skins compose via cn(). */
-.railBtn {
+/* THE RAIL TOOL BUTTONS RIDE THE DSH PRIMITIVES' OWN FACES (the
+   motion-params audit F5): the toggles map idle→outline / pressed→
+   primary, the commit verbs (stamp / repose) primary, the discard
+   outline — size sm carries the compact studio-tool box. The five
+   hand state skins (.railBtn base+states, .stampBtn, .reposeBtn,
+   .railBtnDanger, and with C2 .bgBtnIdle) died with the mapping;
+   the census arm names any skin that grows back. */
+
+/* THE BG SQUARE ROW (the motion-params audit F4: the bg pick rides
+   the estate's input-selection square — SourceRow — never a hand
+   button): layout only, the same span-and-center the preview-body
+   square row uses; every face is the square grammar's own. */
+.bgSquareWrap {
+  grid-column: 1 / -1;
   display: flex;
-  height: 32px;
-  width: 100%;
-  align-items: center;
   justify-content: center;
-  gap: 6px;
-  border-radius: 6px;
-  border: 1px solid transparent;
-  padding: 0 6px;
-  font-size: 10px;
-  font-weight: 500;
-  transition: color 120ms ease, background-color 120ms ease, border-color 120ms ease;
+  padding: 4px 0;
 }
-
-.railBtn:disabled {
-  cursor: not-allowed;
-  opacity: 0.4;
-}
-
-.railBtnActive {
-  border-color: color-mix(in srgb, var(--dsw-alias-accent, #3b82f6) 50%, transparent);
-  background: color-mix(in srgb, var(--dsw-alias-accent, #3b82f6) 15%, transparent);
-  color: var(--dsw-alias-accent, #3b82f6);
-}
-
-.railBtnIdle {
-  border-color: color-mix(in srgb, var(--dsw-alias-border, #e2e4e9) 50%, transparent);
-  background: color-mix(in srgb, var(--dsw-alias-bg-module-platform) 30%, transparent);
-  color: var(--dsw-alias-label-secondary);
-}
-
-.railBtnIdle:hover {
-  border-color: color-mix(in srgb, var(--dsw-alias-accent, #3b82f6) 40%, transparent);
-  color: var(--dsw-alias-accent, #3b82f6);
-}
-
-/* Edit-mode ON skin — the amber active tint, on the danger token. */
-.railBtnEditActive {
-  border-color: color-mix(in srgb, var(--dsw-alias-danger, #dc2626) 60%, transparent);
-  background: color-mix(in srgb, var(--dsw-alias-danger, #dc2626) 15%, transparent);
-  color: var(--dsw-alias-danger, #dc2626);
-}
-
-/* Stamp — the amber keyframe-write button, on the danger token. */
-.stampBtn {
-  display: flex;
-  height: 32px;
-  width: 100%;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  border-radius: 6px;
-  border: 1px solid color-mix(in srgb, var(--dsw-alias-danger, #dc2626) 70%, transparent);
-  background: color-mix(in srgb, var(--dsw-alias-danger, #dc2626) 20%, transparent);
-  padding: 0 6px;
-  font-size: 10px;
-  font-weight: 600;
-  color: var(--dsw-alias-danger, #dc2626);
-  transition: color 120ms ease, background-color 120ms ease, border-color 120ms ease;
-}
-
-.stampBtn:hover {
-  background: color-mix(in srgb, var(--dsw-alias-danger, #dc2626) 30%, transparent);
-}
-
-.stampBtn:disabled { opacity: 0.5; }
-
-/* Repose — the brand chain-start button. */
-.reposeBtn {
-  display: flex;
-  height: 32px;
-  width: 100%;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  border-radius: 6px;
-  border: 1px solid color-mix(in srgb, var(--dsw-alias-accent, #3b82f6) 60%, transparent);
-  background: color-mix(in srgb, var(--dsw-alias-accent, #3b82f6) 15%, transparent);
-  padding: 0 6px;
-  font-size: 10px;
-  font-weight: 600;
-  color: var(--dsw-alias-accent, #3b82f6);
-  transition: color 120ms ease, background-color 120ms ease, border-color 120ms ease;
-}
-
-.reposeBtn:hover {
-  background: color-mix(in srgb, var(--dsw-alias-accent, #3b82f6) 25%, transparent);
-}
-
-.reposeBtn:disabled { opacity: 0.5; }
-
-/* Destructive ghost — reset-pose / clear-background. */
-.railBtnDanger {
-  display: flex;
-  height: 32px;
-  width: 100%;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  border-radius: 6px;
-  border: 1px solid color-mix(in srgb, var(--dsw-alias-border, #e2e4e9) 50%, transparent);
-  background: color-mix(in srgb, var(--dsw-alias-bg-module-platform) 30%, transparent);
-  padding: 0 6px;
-  font-size: 10px;
-  font-weight: 500;
-  color: var(--dsw-alias-label-secondary);
-  transition: color 120ms ease, background-color 120ms ease, border-color 120ms ease;
-}
-
-.railBtnDanger:hover {
-  border-color: color-mix(in srgb, var(--dsw-alias-danger, #dc2626) 50%, transparent);
-  color: var(--dsw-alias-danger, #dc2626);
-}
-
-/* Background pick — the stronger brand hover. */
-.bgBtnIdle {
-  display: flex;
-  height: 32px;
-  width: 100%;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  border-radius: 6px;
-  border: 1px solid color-mix(in srgb, var(--dsw-alias-border, #e2e4e9) 50%, transparent);
-  background: color-mix(in srgb, var(--dsw-alias-bg-module-platform) 30%, transparent);
-  padding: 0 6px;
-  font-size: 10px;
-  font-weight: 500;
-  color: var(--dsw-alias-label-secondary);
-  transition: color 120ms ease, background-color 120ms ease, border-color 120ms ease;
-}
-
-.bgBtnIdle:hover {
-  border-color: color-mix(in srgb, var(--dsw-alias-accent, #3b82f6) 50%, transparent);
-  color: var(--dsw-alias-accent, #3b82f6);
-}
-
-.hiddenInput { display: none; }
 
 /* Preview-body subcard row + convert notice (amber → danger token). */
 .bodySquareWrap {
@@ -341,22 +219,21 @@
 .veilText { font-size: 12px; }
 
 /* ── camera pill ──
- * THE IDLE-FACE CHOICE (operator volley 2026-10-24, motion item: the
- * four top-right buttons read as one gray pill): the single-pill read
- * was explicitly rejected, so the container goes TRANSPARENT and
- * BORDERLESS and each button carries its OWN bordered face in the rail
- * grammar (.railBtnIdle above: 1px border + platform tint + secondary
- * label, accent on hover). Kept-pill + raised-idle-contrast was the
- * other option; individual faces won because the pill's own border
- * was what fused the four glyphs into one control. */
+ * LAYOUT ONLY (the motion-params audit F5): the four buttons' faces
+ * are the DSH variants' own (icon verbs ghost, pressed framing
+ * primary, idle framing outline — size sm), so this class pins the
+ * row geometry and nothing else. THE IDLE-FACE CHOICE (operator
+ * volley 2026-10-24, motion item: the four top-right buttons read as
+ * one gray pill): the single-pill read was rejected — the container
+ * carries no face of its own and each button carries ITS OWN face,
+ * now the primitives' outlined one. The hand reset (.camBtn,
+ * .frameBtn, .frameBtnIdle/.frameBtnActive — the ghost/md box-leak
+ * cure of the same volley) died with the variant map: sm's own 28px
+ * box + padding is the pill face, no module surgery. */
 .camPill {
   display: flex;
   align-items: center;
   gap: 4px;
-  border-radius: 999px;
-  border: 0;
-  background: transparent;
-  box-shadow: none;
   padding: 4px;
 }
 
@@ -368,69 +245,11 @@
   display: inline-flex;
 }
 
-/* THE DSH-BUTTON RESET (the ghost/md box leak): the primitives' .button
- * base ships padding:0 14px and the default md size is 36px tall — both
- * bleed into these 28px icon boxes. Zeroed here; the deliberate idle
- * faces below re-add their OWN border/background (never the leak's). */
-.camBtn, .frameBtn {
-  padding: 0;
-  border: 0;
-  background: transparent;
-  box-sizing: border-box;
-  flex: none;
-}
-
-.camBtn {
-  display: flex;
-  height: 28px;
-  width: 28px;
-  align-items: center;
-  justify-content: center;
-  border-radius: 999px;
-  /* the rotate arrows' idle face (the rail grammar): their own 1px
-   * ring + tint, so no arrow ever reads as bare glyph on glass. */
-  border: 1px solid color-mix(in srgb, var(--dsw-alias-border, #e2e4e9) 50%, transparent);
-  background: color-mix(in srgb, var(--dsw-alias-bg-module-platform) 30%, transparent);
-  color: var(--dsw-alias-label-secondary);
-  transition: color 120ms ease, background-color 120ms ease, border-color 120ms ease;
-}
-
-.camBtn:hover {
-  background: color-mix(in srgb, var(--dsw-alias-bg-module-platform) 40%, transparent);
-  color: var(--dsw-alias-accent, #3b82f6);
-}
-
 .camDivider {
   margin: 0 2px;
   height: 16px;
   width: 1px;
   background: color-mix(in srgb, var(--dsw-alias-border, #e2e4e9) 60%, transparent);
-}
-
-.frameBtn {
-  display: flex;
-  height: 28px;
-  width: 28px;
-  align-items: center;
-  justify-content: center;
-  border-radius: 999px;
-  transition: color 120ms ease, background-color 120ms ease, border-color 120ms ease;
-}
-
-.frameBtnActive {
-  background: color-mix(in srgb, var(--dsw-alias-accent, #3b82f6) 15%, transparent);
-  color: var(--dsw-alias-accent, #3b82f6);
-}
-
-.frameBtnIdle {
-  border: 1px solid color-mix(in srgb, var(--dsw-alias-border, #e2e4e9) 50%, transparent);
-  background: color-mix(in srgb, var(--dsw-alias-bg-module-platform) 30%, transparent);
-  color: var(--dsw-alias-label-secondary);
-}
-
-.frameBtnIdle:hover {
-  background: color-mix(in srgb, var(--dsw-alias-bg-module-platform) 40%, transparent);
-  color: var(--dsw-alias-accent, #3b82f6);
 }
 
 /* ── export-frame rectangle ── */

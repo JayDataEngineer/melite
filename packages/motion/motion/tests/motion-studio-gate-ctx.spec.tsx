@@ -262,7 +262,9 @@ describe('background effect', () => {
       if (!bg || bg.isTexture !== true) throw new Error('no bg texture yet')
     }, { timeout: 10000 })
     expect(disposeSpy).not.toHaveBeenCalled()
-    fireEvent.click(railButton('Clear'))
+    // the estate square's detach verb is the clear (the bg pick rode
+    // SourceRow — the motion-params audit F4; the hand Clear died).
+    fireEvent.click(document.body.querySelector('[aria-label="Detach Background"]') as HTMLButtonElement)
     await vi.waitFor(() => {
       const bg = (ctx.scene.background as unknown as { isColor?: boolean }) ?? null
       if (!bg || bg.isColor !== true) throw new Error('no void color after clear yet')

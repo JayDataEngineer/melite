@@ -10,10 +10,10 @@
  * afterEach kills the viewer's async loop. 'Not wrapped in act'
  * warnings are tolerated noise.
  */
-import { fireEvent, getByRole, getByText, queryByText } from '@testing-library/dom'
+import { fireEvent, getByRole } from '@testing-library/dom'
 import { createElement as h } from 'react'
 import { afterEach, describe, expect, test, vi } from 'vitest'
-import { useToastStore } from '@melite/card-base/client'
+import { bindEstateRemote, unbindEstateRemote, useToastStore } from '@melite/card-base/client'
 import { waitForText } from './harness.tsx'
 import { MOTION_URL } from './fixtures.ts'
 import { resetStudio, stubLoads, mountEditor, mkStage, mounted } from './helpers.ts'
@@ -90,9 +90,11 @@ describe('background + body slot (drops / picks / wire)', () => {
       if (!call) throw new Error('bg not persisted yet')
     }, { timeout: 10000 })
     await vi.waitFor(() => {
-      if (!queryByText(document.body, 'Clear')) throw new Error('no clear yet')
+      // THE ESTATE SQUARE'S DETACH (the bg pick rode SourceRow — the
+      // motion-params audit F4): the held square's ✕ is the clear.
+      if (!document.body.querySelector('[aria-label="Detach Background"]')) throw new Error('no detach yet')
     }, { timeout: 10000 })
-    fireEvent.click(getByText(document.body, 'Clear').closest('button') as HTMLButtonElement)
+    fireEvent.click(document.body.querySelector('[aria-label="Detach Background"]') as HTMLButtonElement)
     await vi.waitFor(() => {
       const call = onSave.mock.calls.find(([p]) => (p as Record<string, unknown>).motion_bg_image === '')
       if (!call) throw new Error('bg not cleared yet')
@@ -114,13 +116,16 @@ describe('background + body slot (drops / picks / wire)', () => {
   test('background hydrates from params', async () => {
     await mountedNoRun({ motion_bg_image: 'https://host/bg.png' })
     await vi.waitFor(() => {
-      if (!queryByText(document.body, 'Clear')) throw new Error('no hydrated clear yet')
+      // the square seat's detach verb is the hydrated clear (SourceRow).
+      if (!document.body.querySelector('[aria-label="Detach Background"]')) throw new Error('no hydrated detach yet')
     }, { timeout: 10000 })
   })
 
   test('cancelled bg pick is a no-op', async () => {
     const { onSave } = await mountedNoRun()
-    const input = document.body.querySelector('input[accept="image/*"]') as HTMLInputElement
+    // the square seat's own hidden input (the one read path every
+    // slot-shaped attach shares) — a change with no files writes nothing.
+    const input = document.body.querySelector('[data-motion-bg] input[data-slot-input]') as HTMLInputElement
     fireEvent.change(input)
     await new Promise((r) => setTimeout(r, 500))
     const touched = onSave.mock.calls.some(([p]) => 'motion_bg_image' in (p as Record<string, unknown>))
@@ -163,7 +168,7 @@ describe('background + body slot (drops / picks / wire)', () => {
 
   test('bg file pick reads and persists', async () => {
     const { onSave } = await mountedNoRun()
-    const input = document.body.querySelector('input[accept="image/*"]') as HTMLInputElement
+    const input = document.body.querySelector('[data-motion-bg] input[data-slot-input]') as HTMLInputElement
     const file = new File(['png-bytes'], 'bg.png', { type: 'image/png' })
     Object.defineProperty(input, 'files', { value: [file], configurable: true })
     fireEvent.change(input)
@@ -173,6 +178,45 @@ describe('background + body slot (drops / picks / wire)', () => {
         ((p as Record<string, unknown>).motion_bg_image as string).startsWith('data:'))
       if (!call) throw new Error('bg file not persisted yet')
     }, { timeout: 10000 })
+  })
+
+  test('a From-media pick seats the estate name through the square\u2019s onEdit seam', async () => {
+    // The other value arm of the square seat: a library pick flows
+    // onEdit(<name>) — the value itself, not a detach — and persists
+    // verbatim (the file pick covers the data-URL arm). The library
+    // rides the mounted media namespace (the one-fake law: bind the
+    // honest envelope fake, never a fetch stub carrying an estate
+    // envelope); the unbind keeps the fake out of sibling tests.
+    bindEstateRemote({
+      media: {
+        list: async () => ({ ok: true, value: { items: [{ url: 'data/input/bg-from-media.png', name: 'bg-from-media.png' }] } }),
+      },
+    } as unknown as Parameters<typeof bindEstateRemote>[0])
+    try {
+      const { onSave } = await mountedNoRun()
+      fireEvent.click(getByRole(document.body, 'button', { name: 'Background source' }))
+      await vi.waitFor(() => {
+        const row = [...document.body.querySelectorAll('[role="menuitem"]')]
+          .find((m) => (m.textContent ?? '').trim() === 'From media')
+        if (row === undefined) throw new Error('no From media entry yet')
+        fireEvent.click(row)
+      }, { timeout: 10000 })
+      await vi.waitFor(() => {
+        const row = document.body.querySelector('[data-testid="source-pick-row"]')
+        if (row === null) throw new Error('the media library never listed its row')
+        fireEvent.click(row)
+      }, { timeout: 10000 })
+      await vi.waitFor(() => {
+        const call = onSave.mock.calls.find(([p]) =>
+          (p as Record<string, unknown>).motion_bg_image === 'data/input/bg-from-media.png')
+        if (!call) throw new Error('the media pick never persisted the estate name')
+        if (document.body.querySelector('[aria-label="Detach Background"]') === null) {
+          throw new Error('the picked value never rendered the held face')
+        }
+      }, { timeout: 10000 })
+    } finally {
+      unbindEstateRemote()
+    }
   })
 
   test('slot pick of a non-GLB refuses without reading', async () => {

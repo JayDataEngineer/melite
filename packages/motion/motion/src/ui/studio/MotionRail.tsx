@@ -9,12 +9,13 @@
  * destructured props). Behavior is IDENTICAL.
  */
 import type * as React from "react"
-import { EyeAlt as Eye, EyeOff, ImagePlus, Move, PersonStanding, RotateCcw, Target } from '@melite/card-base/client'
+import { EyeAlt as Eye, EyeOff, Move, PersonStanding, RotateCcw, Target } from '@melite/card-base/client'
 import {
-  Button, IconCloseOutlineRegular, IconDownloadOutlineRegular, IconLinkOutlineRegular, IconRefreshOutlineRegular,
+  Button, IconDownloadOutlineRegular, IconLinkOutlineRegular, IconRefreshOutlineRegular,
 } from '@deepseek-ai/dsh-client-ui-primitives'
 import { SectionLabel, SpecPanel, panelSectionsOf } from "@melite/card-base/client"
 import { InputSquare, MESH_SQUARE_ACCEPT, isMeshUrl } from '@melite/card-base/client'
+import { SourceRow, fetchMediaLibrary } from '@melite/card-base/client'
 import type { CardStage } from "@melite/contracts"
 import type { MotionNpz } from "@melite/formats"
 import type { TimelineKeyframe } from "@melite-plugin/timeline/ui/timeline"
@@ -48,6 +49,10 @@ export interface MotionRailProps {
   exportOpen: boolean
   setExportOpen: React.Dispatch<React.SetStateAction<boolean>>
   bgImage: string | null
+  /** INERT since the bg pick rode the estate's input-selection square
+   *  (the motion-params audit F4): component.tsx still mints and passes
+   *  the ref, but the square owns the file door — the hand seat's
+   *  hidden input is gone. Deletion belongs to the component.tsx owner. */
   bgInputRef: React.RefObject<HTMLInputElement | null>
   handleBgFile: (file: File | null) => void
   setBg: (url: string | null) => void
@@ -71,7 +76,7 @@ export function MotionRail({
   editMode, toggleEdit, fullbodyKfAtFrame, frameIdx, stampConstraintAtFrame,
   editableJoints, handleRepose, reposing, keptEdit, discardKeptEdit,
   kimodoSpec, kimodoError, paramValues, onParamEdit,
-  exportOpen, setExportOpen, bgImage, bgInputRef, handleBgFile, setBg,
+  exportOpen, setExportOpen, bgImage, handleBgFile, setBg,
   bodySrc, bodyWired, bodyWiredUpstream, bodyWiredUrl, handleBodyFile,
   toast, attachBody, onWireSlot, bodySlotIdx, onSave, stage,
   setBodyWireOpen, bodyNotice,
@@ -82,10 +87,10 @@ export function MotionRail({
  <SectionLabel>{motionCopy.viewGroup}</SectionLabel>
  <Tip tip={effectiveNpz ? "Show the joint skeleton over the mesh" : motionCopy.loadingMannequinBusy}>
  <span className={s.contents}>
- <Button variant="ghost"
+ <Button variant={showSkeleton ? "primary" : "outline"} size="sm"
  onClick={() => setShowSkeleton((s) => !s)}
  disabled={!effectiveNpz}
-className={cn(s.railBtn, showSkeleton ? s.railBtnActive : s.railBtnIdle)}
+ aria-pressed={showSkeleton}
  >
  {showSkeleton ? <Eye className={s.i14} /> : <EyeOff className={s.i14} />}
  {motionCopy.skeletonToggle}
@@ -100,11 +105,10 @@ className={cn(s.railBtn, showSkeleton ? s.railBtnActive : s.railBtnIdle)}
  : "Playing the root's travel across the stage. Toggle to pin the figure at the origin — same motion, no travel."}
  >
  <span className={s.contents}>
- <Button variant="ghost"
+ <Button variant={inPlace ? "primary" : "outline"} size="sm"
  onClick={() => setInPlace((v) => !v)}
  disabled={!effectiveNpz}
  aria-pressed={inPlace}
-className={cn(s.railBtn, inPlace ? s.railBtnActive : s.railBtnIdle)}
  >
  <Target className={s.i14} />
  {motionCopy.inPlaceToggle}
@@ -124,10 +128,10 @@ className={cn(s.railBtn, inPlace ? s.railBtnActive : s.railBtnIdle)}
  }
  >
  <span className={s.contents}>
- <Button variant="ghost"
+ <Button variant={editMode ? "primary" : "outline"} size="sm"
  onClick={toggleEdit}
  disabled={!effectiveNpz}
-className={cn(s.railBtn, editMode ? s.railBtnEditActive : s.railBtnIdle)}
+ aria-pressed={editMode}
  >
  <Move className={s.i14} />
  {editMode ? motionCopy.poseDone : motionCopy.refinePose}
@@ -142,10 +146,9 @@ className={cn(s.railBtn, editMode ? s.railBtnEditActive : s.railBtnIdle)}
  : `Write this pose into the timeline as a full-body keyframe at frame ${frameIdx + 1}`}
  >
  <span className={s.contents}>
- <Button variant="ghost"
+ <Button variant="primary" size="sm"
  onClick={stampConstraintAtFrame}
  disabled={!editableJoints}
- className={s.stampBtn}
  >
  <Target className={s.i14} />
  {motionCopy.stamp}
@@ -154,10 +157,9 @@ className={cn(s.railBtn, editMode ? s.railBtnEditActive : s.railBtnIdle)}
  </Tip>
  <Tip tip="Chain the edited pose as the starting point — kimodo conditions the next generation on it. Hit Run when ready.">
  <span className={s.contents}>
- <Button variant="ghost"
+ <Button variant="primary" size="sm"
  onClick={handleRepose}
  disabled={reposing || !editableJoints}
- className={s.reposeBtn}
  >
  <IconRefreshOutlineRegular className={reposing ? s.spinIcon : s.i14} />
  {reposing ? motionCopy.reposing : motionCopy.repose}
@@ -168,9 +170,8 @@ className={cn(s.railBtn, editMode ? s.railBtnEditActive : s.railBtnIdle)}
  )}
  {!editMode && keptEdit && keptEdit.frame === frameIdx && (
  <Tip tip="Discard the refined pose at this frame — revert to the raw motion">
- <Button variant="ghost"
+ <Button variant="outline" size="sm"
  onClick={discardKeptEdit}
- className={s.railBtnDanger}
  >
  <RotateCcw className={s.i14} />
  {motionCopy.resetPose}
@@ -216,49 +217,36 @@ className={cn(s.railBtn, editMode ? s.railBtnEditActive : s.railBtnIdle)}
  : "Frame a shot with the stage rectangle — no run needed; exports mesh / openpose / depth at the typed pixel size"}
  >
  <span className={s.contents}>
- <Button variant="ghost"
+ <Button variant={exportOpen ? "primary" : "outline"} size="sm"
  onClick={() => setExportOpen((o) => !o)}
  disabled={!effectiveNpz}
  aria-pressed={exportOpen}
-className={cn(s.railBtn, exportOpen ? s.railBtnActive : s.railBtnIdle)}
  >
  <IconDownloadOutlineRegular className={s.i14} />
  {motionCopy.railExport}
  </Button>
  </span>
  </Tip>
- <Tip
- tip={bgImage
- ? "Replace the background image behind the mannequin (or drop an asset/file on the stage)"
- : "Set a background image behind the mannequin — click to pick, or drop an asset/file on the stage"}
- >
- <Button variant="ghost"
- onClick={() => bgInputRef.current?.click()}
- className={s.bgBtnIdle}
- >
- <ImagePlus className={s.i14} />
- {motionCopy.background}
- </Button>
- </Tip>
- {bgImage && (
- <Tip tip={motionCopy.clearBgAria}>
- <Button variant="ghost"
- onClick={() => setBg(null)}
- aria-label={motionCopy.clearBgAria}
- className={s.railBtnDanger}
- >
- <IconCloseOutlineRegular className={s.i14} />
- {motionCopy.clearBgButton}
- </Button>
- </Tip>
- )}
- <input
- ref={bgInputRef}
- type="file"
- accept="image/*"
- className={s.hiddenInput}
- onChange={(e) => handleBgFile(e.target.files?.[0] ?? null)}
+ {/* THE BG PICK IS THE ESTATE SQUARE (the motion-params journey
+     audit F4): ONE input-selection face — SourceRow's square + the
+     three-entry source menu (From flow / From media / From file)
+     and the picker modal — never a restyled button over a private
+     hidden file input. motion's file law rides the wire's onFile
+     seam (data-URL persist through readAsDataURL, the ONE read
+     path — the semantics the SquareWire.onFile seam exists to
+     keep); the square's X detaches (onEdit('')); the stage drop
+     (type-dispatched GLB-to-body / image-to-bg) still teaches the
+     multi-source pattern beside it. */}
+ <div className={s.bgSquareWrap} data-motion-bg>
+ <SourceRow
+  label={motionCopy.background}
+  kind="image"
+  value={bgImage}
+  onEdit={(v) => setBg(v === "" ? null : v)}
+  onFile={handleBgFile}
+  loadMedia={fetchMediaLibrary}
  />
+ </div>
  {/* Preview body (2026-08-15 character import) — an INPUT SUBCARD, the
      same square the image inputs render (the user directive: "that has
      to be an input subcard just like the image input has subcards").

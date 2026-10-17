@@ -199,36 +199,33 @@ className={cn(s.stageFrame, bgDragOver && s.stageFrameDrag)}
  <ViewportAnchor dock="top-right" className={s.ovCam}>
  <div className={s.camPill}>
  <Tip tip={motionCopy.rotateLeft}>
- {/* size="sm" (the 28px pill-box law, operator volley 2026-10-24,
-  * motion item): the primitives' default md is a 36px control whose
-  * padding:0 14px base bled into these 28px icon boxes and fused
-  * them into one gray pill — sm seats the 28px height, the module's
-  * reset zeroes the padding. All four pill buttons ride sm. */}
+ {/* THE PRIMITIVES' OWN FACES (the motion-params audit F5, and the
+  * 28px pill-box law, operator volley 2026-10-24): all four pill
+  * buttons ride size="sm" (28px) and the variant map — icon verbs
+  * ghost, the pressed framing primary, the idle framing outline.
+  * No module reset: sm's own box is the pill face. */}
  <Button variant="ghost" size="sm"
  onClick={() => setCameraView(stepAzimuth(cameraView, -1))}
  aria-label={motionCopy.rotateLeft}
- className={s.camBtn}
  >
  <RotateCcw className={s.i14} />
  </Button>
  </Tip>
  <span className={s.camDivider} />
  <Tip tip={motionCopy.framingFull}>
- <Button variant="ghost" size="sm"
+ <Button variant={framing === "full" ? "primary" : "outline"} size="sm"
  onClick={() => setFraming("full")}
  aria-label={motionCopy.framingFull}
  aria-pressed={framing === "full"}
-className={cn(s.frameBtn, framing === "full" ? s.frameBtnActive : s.frameBtnIdle)}
  >
  <PersonStanding className={s.i14} />
  </Button>
  </Tip>
  <Tip tip="Upper half framing — closer, chest-height camera at the same angle">
- <Button variant="ghost" size="sm"
+ <Button variant={framing === "upper" ? "primary" : "outline"} size="sm"
  onClick={() => setFraming("upper")}
  aria-label={motionCopy.framingUpper}
  aria-pressed={framing === "upper"}
-className={cn(s.frameBtn, framing === "upper" ? s.frameBtnActive : s.frameBtnIdle)}
  >
  <IconUserOutlineRegular className={s.i14} />
  </Button>
@@ -237,7 +234,6 @@ className={cn(s.frameBtn, framing === "upper" ? s.frameBtnActive : s.frameBtnIdl
  <Button variant="ghost" size="sm"
  onClick={() => setCameraView(stepAzimuth(cameraView, 1))}
  aria-label={motionCopy.rotateRight}
- className={s.camBtn}
  >
  <RotateCw className={s.i14} />
  </Button>

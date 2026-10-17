@@ -137,10 +137,6 @@ export const motionCopy = {
   outputGroup: "Output",
   /** Rail toggle: the export panel. */
   railExport: "Export",
-  /** Clear-background action (tip + aria share the face). */
-  clearBgAria: "Clear the background image",
-  /** Clear-background button face. */
-  clearBgButton: "Clear",
   /** Rail group label: the preview-body input subcard. */
   previewBody: "Preview body",
   /** Wire-button aria name for the preview-body slot. */
