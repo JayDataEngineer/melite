@@ -512,7 +512,10 @@ describe("THE COMMITTED LIB (an emitted import Node can actually resolve)", () =
   // demands. Deliberate adds, same-change as the DECL.mods law.
   // 582 (2026-11-06): input-prep's committed lib joined the tree
   // (the ANNY-style crop studio, operator defect 3).
-  const LIB_CENSUS_PIN = 582;
+  // 585 (2026-10-17): E8 moved compose-probe into cordis scripts/
+  // (one home, two runners — the faces-law finding) and added the
+  // boot-address-set pair; the build plane emits their .js/.d.ts/.map.
+  const LIB_CENSUS_PIN = 585;
   const specRe = /(?:from\s*|import\(\s*)(["'])(\.[^"']*)\1/g;
 
   it("the census is exact (a deletion OR a lowered floor reds — the count is pinned, not floored)", () => {

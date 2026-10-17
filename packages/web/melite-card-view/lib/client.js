@@ -6047,7 +6047,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 1449,
+						"line": 1499,
 						"column": 9
 					}
 				},
@@ -6085,7 +6085,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 1472,
+						"line": 1522,
 						"column": 9
 					}
 				},
@@ -6114,7 +6114,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 1380,
+						"line": 1430,
 						"column": 9
 					}
 				},
@@ -6143,7 +6143,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 1275,
+						"line": 1325,
 						"column": 9
 					}
 				},
@@ -6181,7 +6181,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 1510,
+						"line": 1560,
 						"column": 9
 					}
 				},
@@ -6219,7 +6219,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 1439,
+						"line": 1489,
 						"column": 9
 					}
 				},
@@ -6257,7 +6257,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 1459,
+						"line": 1509,
 						"column": 9
 					}
 				},
@@ -6295,7 +6295,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 1493,
+						"line": 1543,
 						"column": 9
 					}
 				},
@@ -6333,7 +6333,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 1482,
+						"line": 1532,
 						"column": 9
 					}
 				},
@@ -6362,7 +6362,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 1293,
+						"line": 1343,
 						"column": 10
 					}
 				},
@@ -6400,7 +6400,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 1542,
+						"line": 1592,
 						"column": 9
 					}
 				},
@@ -6438,7 +6438,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 1526,
+						"line": 1576,
 						"column": 9
 					}
 				},
@@ -6467,7 +6467,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 599,
+						"line": 649,
 						"column": 9
 					}
 				},
@@ -6487,7 +6487,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 593,
+						"line": 643,
 						"column": 9
 					}
 				},
@@ -6548,7 +6548,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 686,
+						"line": 736,
 						"column": 9
 					}
 				}
@@ -13456,7 +13456,190 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			}
 			return out;
 		}
-		var RELATION_WORDS, quote, UNSTATED_REQUIRED_STEM;
+		/** THE MARRIED-KNOB AGGREGATION (#36, the recipes rework — compose
+		*  card.ts's own layering verbatim: "a call's own knobs > the lora
+		*  entry's steps > this steps row"): when a served kind declares a
+		*  knob marriage and a counting bag rides, the knob is the BAG's —
+		*  stated on the row first, else the catalog row's default,
+		*  Math.max across the bag ("8 on a 4-step distill is fine, 4 on an
+		*  8-step is undercooked"). THE ONE SPELLING (axis-unification item
+		*  6, D6 — the resolver-consolidation home, beside the voices): the
+		*  face's resolver (card-base resolveValue) displays through this
+		*  math instead of a private copy, so the display and the compose
+		*  layering cannot drift. A bag id the catalog does not serve
+		*  contributes nothing (the mod plane and the compose door refuse
+		*  unknown ids loudly — the display never invents a refusal of its
+		*  own). PURE, no I/O.
+		*
+		*  @param kind the served modifier kind (marries + catalog options).
+		*  @param bag the doc's riding array for the kind's param_key —
+		*  entries may be any shape; non-object rows contribute nothing.
+		*  @returns the knob → married value map, only knobs with at least
+		*  one finite count; absent keys are untouched by the caller. */
+		function marriedKnobValues(kind, bag) {
+			const out = {};
+			if (kind.marries === void 0) return out;
+			const catalog = new Map((kind.options ?? []).map((o) => [o.value, o]));
+			for (const knob of Object.keys(kind.marries)) {
+				const counts = [];
+				for (const row of bag) {
+					if (row === null || typeof row !== "object") continue;
+					const stated = row[knob];
+					if (typeof stated === "number" && Number.isFinite(stated)) {
+						counts.push(stated);
+						continue;
+					}
+					const id = row["id"];
+					const fromCatalog = typeof id === "string" ? catalog.get(id)?.defaults?.[knob] : void 0;
+					if (typeof fromCatalog === "number" && Number.isFinite(fromCatalog)) counts.push(fromCatalog);
+				}
+				if (counts.length > 0) out[knob] = Math.max(...counts);
+			}
+			return out;
+		}
+		/** THE DEFAULT POOL (the wire face): offered rows minus the Recipe
+		*  group; an all-Recipe family falls back to every offered row (the
+		*  recipe-only family still resolves — the door's own
+		*  configured.length gate). Exported for the seat that must refuse
+		*  an all-hidden family BEFORE its stated search (the door's early
+		*  check, order-pinned by its suite) — the pool itself has one
+		*  spelling here. */
+		function offeredPool(variants) {
+			const offered = visibleRows(variants);
+			const configured = offered.filter((v) => v.group !== "Recipe");
+			return configured.length > 0 ? configured : offered;
+		}
+		/** THE VARIANT COORDINATE, one law per scope. Stated coordinates
+		*  search the matrix the caller handed (its ids are the honest known
+		*  list on a miss); unstated coordinates resolve through the scope's
+		*  default (declared: first row; offered: the address claim, then
+		*  the pool's first row).
+		*
+		*  @param variants the caller's variant matrix — DECL rows, facts
+		*  rows, or the flat-matrix fold.
+		*  @param stated the body's `variant` value verbatim: a string —
+		*  including the empty string — is stated (the false-admit cure's
+		*  loud refusal); null/undefined (and non-strings) are unstated.
+		*  @param address the compose address (the family/route key the run
+		*  addresses); '' when the seat has none — no claim is made.
+		*  @param scope the face the caller resolves for. */
+		function resolveVariantRow(variants, stated, address, scope) {
+			if (scope === "declared") {
+				if (stated === null || stated === void 0) return {
+					status: "resolved",
+					variant: variants[0]
+				};
+				const want = typeof stated === "string" ? stated : "";
+				const hit = variants.find((v) => v.id === want);
+				if (hit === void 0) return {
+					status: "missing",
+					stated: want,
+					known: knownIds(variants)
+				};
+				return {
+					status: "resolved",
+					variant: hit
+				};
+			}
+			const want = statedOf(stated);
+			if (want !== null) {
+				const hit = variants.find((v) => v.id === want || v.route === want);
+				if (hit === void 0) return {
+					status: "missing",
+					stated: want,
+					known: knownIds(variants)
+				};
+				if (hit.hide_from_dropdown === true) return {
+					status: "hidden",
+					variant: hit
+				};
+				return {
+					status: "resolved",
+					variant: hit
+				};
+			}
+			const pool = offeredPool(variants);
+			if (pool.length === 0) return {
+				status: "pool-empty",
+				known: knownIds(variants)
+			};
+			if (address !== "") {
+				const claimed = pool.find((v) => v.route === address || visibleCells(v.cells ?? []).some((c) => c.route !== "" && c.route === address));
+				if (claimed !== void 0) return {
+					status: "resolved",
+					variant: claimed
+				};
+			}
+			return {
+				status: "resolved",
+				variant: pool[0]
+			};
+		}
+		/** THE QUANT COORDINATE, one law per scope, over the RESOLVED
+		*  variant's cells. Stated coordinates match the quant VALUE (never
+		*  the flat row id — the axisStampOf vocabulary); unstated ones
+		*  claim the address's cell, else the first (visible) cell. A
+		*  variant with no cells resolves `cell: null, quant: ''` — the
+		*  honest empty, the caller's voice names the sync break when it
+		*  must.
+		*
+		*  @param variant the resolved variant row (its cells are searched).
+		*  @param stated the body's `quant` value verbatim: a string —
+		*  including '' — is stated; null/undefined and non-strings are
+		*  unstated.
+		*  @param address the compose address; '' makes no claim.
+		*  @param scope the face the caller resolves for. */
+		function resolveCellRow(variant, stated, address, scope) {
+			const cells = variant?.cells ?? [];
+			const searched = scope === "declared" ? cells : visibleCells(cells);
+			const want = statedOf(stated);
+			if (want !== null) {
+				const hit = searched.find((c) => c.quant === want);
+				if (hit === void 0) return {
+					status: "missing",
+					stated: want,
+					known: knownQuants(searched)
+				};
+				return {
+					status: "resolved",
+					cell: hit,
+					quant: want
+				};
+			}
+			const cell = (address !== "" ? searched.find((c) => c.route !== "" && c.route === address) : void 0) ?? searched[0] ?? null;
+			return {
+				status: "resolved",
+				cell,
+				quant: cell !== null && typeof cell.quant === "string" ? cell.quant : ""
+			};
+		}
+		/** THE FLAT-MATRIX FOLD (the mirror's P2 face of the one resolver):
+		*  the served spec flattens cells into `group: 'Quant'` rows with
+		*  `owner` backrefs; the resolver reads the nested matrix. This fold
+		*  re-nests the wire rows — Variant/Recipe rows stay (a stated Recipe
+		*  id searches like at the door; the POOL still excludes it from
+		*  defaults), each row's cells become the Quant rows it OWNS, keyed
+		*  by the quant COORDINATE (never the namespaced row id — D2's stamp
+		*  plane: the address is the row's, the value is the cell's). Orphan
+		*  Quant rows (no owner match) drop — the judge could never reach
+		*  them either. The original members ride the spread verbatim.
+		*
+		*  @param rows the served spec's variants array (or any flat matrix).
+		*  @returns the nested matrix: every non-Quant row with its folded
+		*  cells attached. */
+		function variantMatrixFromFlatRows(rows) {
+			return rows.filter((r) => r.group !== "Quant").map((r) => ({
+				...r,
+				cells: rows.filter((c) => c.group === "Quant" && c.owner === r.id).map((c) => ({
+					...c,
+					id: typeof c.id === "string" ? c.id : "",
+					quant: typeof c.quant === "string" ? c.quant : "",
+					route: typeof c.route === "string" ? c.route : "",
+					...c.hide_from_dropdown === true ? { hide_from_dropdown: true } : {}
+				}))
+			}));
+		}
+		var RELATION_WORDS, quote, UNSTATED_REQUIRED_STEM, statedOf, visibleRows, visibleCells, knownIds, knownQuants;
 		var init_laneRelations = __esmMin((() => {
 			RELATION_WORDS = {
 				requires: true,
@@ -13468,6 +13651,11 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			};
 			quote = (fields) => fields.map((f) => "'" + f + "'").join(" + ");
 			UNSTATED_REQUIRED_STEM = "this lane requires ";
+			statedOf = (stated) => typeof stated === "string" ? stated : null;
+			visibleRows = (variants) => variants.filter((v) => v.hide_from_dropdown !== true);
+			visibleCells = (cells) => cells.filter((c) => c.hide_from_dropdown !== true);
+			knownIds = (variants) => variants.map((v) => v.id);
+			knownQuants = (cells) => cells.map((c) => typeof c.quant === "string" ? c.quant : "");
 		}));
 		//#endregion
 		//#region ../../web-kit/contracts/lib/FlowTypes.js
@@ -14140,6 +14328,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			loraIdOf: () => loraIdOf,
 			loraLabel: () => loraLabel,
 			loraStrengthBoundsOf: () => loraStrengthBoundsOf,
+			marriedKnobValues: () => marriedKnobValues,
 			modifiersFeatureOf: () => modifiersFeatureOf,
 			moveItem: () => moveItem,
 			newControlnetEntry: () => newControlnetEntry,
@@ -14149,8 +14338,11 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			normalizeBenchStages: () => normalizeBenchStages,
 			normalizeLoraEntry: () => normalizeLoraEntry,
 			normalizeSegmentStatus: () => normalizeSegmentStatus,
+			offeredPool: () => offeredPool,
 			projectStageView: () => projectStageView,
 			projectUpstreamStages: () => projectUpstreamStages,
+			resolveCellRow: () => resolveCellRow,
+			resolveVariantRow: () => resolveVariantRow,
 			rootsManifest: () => rootsManifest,
 			runMediaPrefixOf: () => runMediaPrefixOf,
 			runTailOf: () => runTailOf,
@@ -14165,7 +14357,8 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			subcardId: () => subcardId,
 			subcardsFromParams: () => subcardsFromParams,
 			unknownQuantVoice: () => unknownQuantVoice,
-			unknownVariantVoice: () => unknownVariantVoice
+			unknownVariantVoice: () => unknownVariantVoice,
+			variantMatrixFromFlatRows: () => variantMatrixFromFlatRows
 		});
 		var init_lib$1 = __esmMin((() => {
 			init_extraKeys();
