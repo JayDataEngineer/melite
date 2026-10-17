@@ -580,6 +580,57 @@ export class ComfyUIService extends Service {
     return direct
   }
 
+  /** THE VALUE PLANE's family-of-a-value read (journey-closure D5,
+   *  2026-10-17): the families a mod VALUE is registered to,
+   *  derived from the live flavor registrations — the real DECL
+   *  mods trees' compositions (each family's own mods/<pack>.ts),
+   *  never a hand list. A row belongs to the families whose OWN
+   *  rows carry the id; the runtime-catalog union (modCatalog's
+   *  shared arm) re-serves other families' rows but never re-homes
+   *  them. */
+  private valueFamilies(pack: string, id: string): readonly string[] {
+    const owned = new Set<string>()
+    for (const m of this.flavors) {
+      if (m.pack !== pack) continue
+      if ((m.rows ?? []).some((r) => r.id === id)) {
+        for (const f of m.families) owned.add(f)
+      }
+    }
+    return [...owned].sort()
+  }
+
+  /** THE VALUE-PLANE REFUSAL (journey-closure D5, 2026-10-17): a
+   *  bag VALUE registered outside the run's active family never
+   *  composes — the door refuses it named (value + its registered
+   *  family + the run's family), the unknown-* voice's family
+   *  clause. The tile (the bag KEY) is card-wide legal by
+   *  admission; the VALUE is judged HERE, where the run's family is
+   *  known and the compose catalog's boarded-families fallback
+   *  (modCatalogForCompose — load-bearing for routed composes)
+   *  would otherwise absorb a foreign pick silently (the Krea2-tile
+   *  class: image-gen boards krea-2 first, so an anima run's
+   *  row-less catalog fell through to krea-2's rows and stacked
+   *  them). ONE OWNER, the DOOR: the client's modelSwitchPatch
+   *  MOD-CURRENCY clause stays the gesture-hop mirror — it nulls
+   *  bags only on a cross-spec SWITCH gesture; the model-key
+   *  re-point path and hand-authored payloads never cross it (the
+   *  B5/D3 pattern: the door refuses loud, the client mirrors one
+   *  hop earlier). */
+  private assertValueFamily(pack: string, id: string, runFamily: string, cardId: string): void {
+    const owned = this.valueFamilies(pack, id)
+    // the 'none' naming is defensive-unreached today: catalog rows
+    // come only from flavor rows, so a FOUND row always has an owner;
+    // a future catalog source that serves rows without flavor
+    // ownership reaches it.
+    if (owned.includes(runFamily)) return
+    const noun = pack === 'loras' ? 'lora id' : `${pack} type`
+    throw new ComposeRefusal('foreign-family-value',
+      `card '${cardId}' names ${noun} '${id}' registered to family ` +
+      `'${owned.join(', ') || 'none'}', not the run's family '${runFamily}' — ` +
+      `a value picked for another family's weights composes poison here; ` +
+      `pick from the '${runFamily}' catalog, never carry the tile across a switch`)
+  }
+
   /** The verbs mounted on a card (SubActionMods of its boarded
    *  families — knobs NEVER on the card surface). */
   cardVerbs(cardId: string): VerbRegistration[] {
@@ -795,6 +846,13 @@ export class ComfyUIService extends Service {
     const model = this.facts.models[modelId]
     if (!model) throw new ComposeRefusal('no-model-facts', `model '${modelId}' has no facts row (rows assemble in facts.ts from the registry roster + card slices in packages/engines/comfyui/data/model-facts.json)`)
     if (model.card !== cardId) throw new ComposeRefusal('card-mismatch', `model '${modelId}' facts name card '${model.card}', not '${cardId}'`)
+    // THE VALUE PLANE'S FAMILY (journey-closure D5, 2026-10-17):
+    // the run's ACTIVE family — the facts row's ladder owner (a
+    // route address composes under its family; the atom is its own
+    // owner). The value clauses below judge against THIS, never the
+    // raw address: a routed compose must keep resolving its own
+    // family's rows through the fallback.
+    const runFamily: string = model.family ?? modelId
 
     // THE ONE param cascade (stroke 34 — the card-recipe layer is
     // DEAD, recipes are family macros now): schema defaults ←
@@ -870,6 +928,10 @@ export class ComfyUIService extends Service {
         if (row === undefined) {
           throw new ComposeRefusal('unknown-lora', `card '${cardId}' names lora id '${id}' with no '${modelId}' flavor row (registered: ${cat.rows.map((r) => r.id).join(', ') || 'none'}) — pick from the served catalog, never hand-spell`)
         }
+        // THE VALUE PLANE (D5): the row was found — by THIS family's
+        // own flavor, or by the boarded fallback (another family's).
+        // Only the first composes.
+        this.assertValueFamily('loras', id, runFamily, cardId)
         const resolved = row.steps === undefined ? undefined : (steps ?? row.steps)
         // THE ROW DOMAIN (007 L4): steps_min/steps_max are SERVICE
         // law, not leaf-only — a recipe (or hand payload) may state
@@ -907,6 +969,9 @@ export class ComfyUIService extends Service {
       if (row === undefined) {
         throw new ComposeRefusal('unknown-refine-lora', `card '${cardId}' names refine_lora '${refineId}' with no '${modelId}' flavor row (registered: ${refineCat.rows.map((r) => r.id).join(', ') || 'none'}) — pick from the served catalog, never hand-spell`)
       }
+      // THE VALUE PLANE (D5), the refine half: the closing pass is
+      // the same family-scoped plane — a foreign row never rides it.
+      this.assertValueFamily('loras', refineId, runFamily, cardId)
       const statedStrength = typeof merged.refine_strength === 'number' ? merged.refine_strength as number : undefined
       const statedSteps = typeof merged.refine_steps === 'number' ? merged.refine_steps as number : undefined
       const steps = statedSteps ?? row.steps
@@ -935,8 +1000,13 @@ export class ComfyUIService extends Service {
     // run.
     if (Array.isArray(merged.controlnets)) {
       const cat = this.modCatalogForCompose('controlnet', modelId, def.boarded)
-      merged.controlnets = (merged.controlnets as Array<Record<string, unknown>>).map((e) =>
-        resolveControlNetEntry(e, cat.rows, cardId, modelId))
+      merged.controlnets = (merged.controlnets as Array<Record<string, unknown>>).map((e) => {
+        const resolved = resolveControlNetEntry(e, cat.rows, cardId, modelId)
+        // THE VALUE PLANE (D5), the controlnet half: the resolved
+        // row's type is family truth the same way a lora id is.
+        this.assertValueFamily('controlnet', resolved.type, runFamily, cardId)
+        return resolved
+      })
     }
 
     // EXTENSION LAW gate: family slice wins when present (the

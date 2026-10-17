@@ -43,9 +43,10 @@ import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { Context } from "@deepseek-ai/cordis";
 import { CardRegistryService, CardArmError } from "../src/cardsRegistry.ts";
 import { admissionRefusal } from "../src/cardsCompose.ts";
+import { factsPath } from "../src/cardsFacts.ts";
 import { liftCardParams } from "../src/cardsVariant.ts";
 import { deriveDecls, type ModelFactsRow } from "../src/cardsFacts.ts";
-import { loadCardDefs, theService, owningAtom, cardDefsNow } from "@melite/comfyui-cordis";
+import { loadCardDefs, theService, owningAtom, cardDefsNow, EngineContext, ComfyUIService, composeCards, composeModPlane, loadFacts, ComposeRefusal } from "@melite/comfyui-cordis";
 import { PACK_FATE } from "@melite/comfyui-card-kit/guard";
 import { installLaneStoreOverlay, restoreLaneStoreOverlay } from "../../../../tests/helpers/lane-store-overlay.ts";
 import { FlowsSeatService } from "../src/flowsData.ts";
@@ -330,6 +331,111 @@ describe("T4 — every boarded pack id has a lane fate", () => {
       }
     }
     expect([...fateless]).toEqual([]);
+  });
+});
+
+// ── T6 — THE FAMILY ADMISSION (journey-closure B5, 2026-10-17):
+// the registry's admitStageFamily seat against the REAL h3 def —
+// the clause the bench write doors (familyAdmissionOf) serve. The
+// verdict voice is the run door's own (def.schema's t4r gate), so
+// this matrix cell and the compose walk share one truth (the
+// mirror discipline; the family-side walls live in h3-timeline's
+// card.spec.ts, the door-side in drafts' bench-family-admission).
+describe("T6 — the family admission against the REAL defs (B5)", () => {
+  const KEYFRAME_DOC = {
+    keyframes: [{ image: "webp/run1/pin-0.png", frame: 0 }],
+    steps: 20,
+  };
+
+  it("a Final-Cut stamp on a keyframe doc refuses with the run door's own voice", () => {
+    const verdict = svc.admitStageFamily("h3-timeline", {
+      ...KEYFRAME_DOC, second_pass_enabled: true, sr_switch: true,
+    });
+    expect(verdict.ok).toBe(false);
+    expect(verdict.ok ? "" : verdict.error).toBe(
+      "card 'h3-timeline' refused params: h3_window(t4r): unsanctioned inject keys: second_pass_enabled, sr_switch",
+    );
+  });
+
+  it("a clean keyframe doc and a t4_open stamped doc pass; a non-family card is a no-op", () => {
+    expect(svc.admitStageFamily("h3-timeline", KEYFRAME_DOC)).toEqual({ ok: true });
+    expect(svc.admitStageFamily("h3-timeline", { steps: 20, sr_switch: true })).toEqual({ ok: true });
+    expect(svc.admitStageFamily("image-gen", { whatever: "unjudged" })).toEqual({ ok: true });
+  });
+});
+
+// ── T7 — THE VALUE PLANE (journey-closure D5, 2026-10-17): T1-T6
+// judge the bag KEY (the tile: card-wide legal — the loras-boarding
+// cure). The VALUE is family truth. The burn (anima-turbo-quant-burn
+// F5): a krea-2-era pick carried on an anima run rode
+// modCatalogForCompose's boarded-families fallback — image-gen
+// boards krea-2 FIRST, and the run family's own row-less catalog
+// fell through to krea-2's rows — and stacked silently ("silently
+// absorbed by composeModPlane or unjudged — poison either way").
+// ONE OWNER, the DOOR: the engine compose refuses a bag value
+// registered outside the run's active family, named (value +
+// registered family + run family); the client's modelSwitchPatch
+// MOD-CURRENCY clause stays the gesture-hop mirror (B5/D3 pattern:
+// the door refuses loud, the client nulls one hop earlier), never
+// this law's judge — it does not see the re-point path or a
+// hand-authored payload. Both cells ride the REAL engine door
+// (hop 4 — the compose every Run press ends at: fresh service, the
+// real card set, the real mod plane, the real facts), never a hand
+// catalog; object_info stays unarmed so the wiring wall stands down
+// (the hermetic doc carries no lora-loader class) — the value plane
+// is judged BEFORE any graph walk.
+async function d5Door(): Promise<ComfyUIService> {
+  const ctx = new EngineContext();
+  await ctx.plugin({ apply(c: EngineContext): void { new ComfyUIService(c); } });
+  await composeCards(ctx);
+  await composeModPlane(ctx);
+  ctx.comfyui.setFacts(loadFacts(factsPath(), svc.readsSync()));
+  return ctx.comfyui as ComfyUIService;
+}
+
+describe("T7 — no bag value registered outside the run's active family composes (D5)", () => {
+  it("the burn cell: a krea-2 realism lora on an anima run refuses at the door, named", async () => {
+    const comfy = await d5Door();
+    let verdict = "composed GREEN (no refusal) — the foreign value silently absorbed";
+    let code = "";
+    try {
+      comfy.compose("image-gen", "anima", {
+        prompt: "a cat",
+        loras: [{ id: "krea2_realism_lora", strength: 0.7 }],
+      }, "d5_value_plane_burn");
+    } catch (e) {
+      verdict = e instanceof Error ? e.message : String(e);
+      code = e instanceof ComposeRefusal ? e.code : "";
+    }
+    expect(code, "the door's own value-plane code, not an incidental wall").toBe("foreign-family-value");
+    expect(verdict).toContain("krea2_realism_lora");
+    expect(verdict).toContain("'krea-2'");
+    expect(verdict).toContain("'anima'");
+  });
+
+  it("the satisfied cell: an anima-family value on an anima run composes green", async () => {
+    const comfy = await d5Door();
+    // THE ANIMA VALUE registers through the same door every family's
+    // mods/loras.ts uses (registerFlavor — the DECL mods matrix's
+    // runtime seam; the family seeds carry no first-party rows, user
+    // files and first-party adapters land here alike)
+    const dispose = comfy.registerFlavor({
+      pack: "loras", families: ["anima"],
+      rows: [{ id: "anima_d5_green", filename: "anima/d5-green-probe.safetensors", source_url: "https://example.invalid/d5-green", label: "D5 green probe", default_strength: 0.6 }],
+    });
+    try {
+      const graph = comfy.compose("image-gen", "anima", {
+        prompt: "a cat",
+        loras: [{ id: "anima_d5_green", strength: 0.6 }],
+      }, "d5_value_plane_green") as Record<string, { class_type: string; inputs: Record<string, unknown> }>;
+      // THE WIRE RECEIPT: the anima value's own filename stacked —
+      // the compose is not merely unrefused, the right weights ride
+      const stacks = Object.values(graph).filter((n) => n.class_type === "LoraLoaderModelOnly");
+      expect(stacks.length).toBeGreaterThan(0);
+      expect(stacks.some((n) => n.inputs["lora_name"] === "anima/d5-green-probe.safetensors")).toBe(true);
+    } finally {
+      dispose();
+    }
   });
 });
 
