@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'
+import { parse } from 'yaml'
 import { judgeStaged } from '../../../../tools/staged-trash-gate.mjs'
 
 // THE STAGED-TRASH GATE (operator 2026-11-05) — the wall for the
@@ -52,13 +53,24 @@ describe('THE STAGED-TRASH GATE (the tree-hygiene wall)', () => {
     expect(judgeStaged(['packages/web/card-base/src/form.tsx', 'tests/walls/ts/suites/staged-trash-gate.spec.ts', 'lefthook.yml'])).toEqual([])
   })
 
-  it('WIRING: the pre-commit carries the trash job (the hook fires with the fleet)', () => {
+  it('WIRING: the hook carries the trash job as a parsed run directive (the hook fires with the fleet)', () => {
     // The F-L4 lesson (2026-09-28, restumbled here 2026-11-05): a
     // bare includes() is blinded by COMMENT mentions — the first
     // toggle proof swapped the run: line and this arm stayed green
-    // off the job's explanatory comment. The arm judges the RUN
-    // DIRECTIVE itself.
-    const hook = readFileSync(join(ROOT, 'lefthook.yml'), 'utf8')
-    expect(hook).toMatch(/run:\s*node tools\/staged-trash-gate\.mjs/)
+    // off the job's explanatory comment. The raw-text regex had the
+    // same hole one layer down: a COMMENTED-OUT `# run: ...` line
+    // matches it too. The arm parses the hook and judges ACTIVE job
+    // entries' run values — a commented-out job parses into nothing,
+    // and the toggle proof is the job entry's own removal.
+    const hook = parse(readFileSync(join(ROOT, 'lefthook.yml'), 'utf8')) as Record<
+      string,
+      { jobs?: Array<{ run?: string }> } | undefined
+    >
+    const runs: string[] = Object.values(hook ?? {})
+      .flatMap((stage) => (Array.isArray(stage?.jobs) ? stage.jobs : []))
+      .map((job) => String(job?.run ?? ''))
+      .filter((run) => run.length > 0)
+    expect(runs.length).toBeGreaterThan(0) // the hook is not an empty shell
+    expect(runs.some((run) => run.includes('node tools/staged-trash-gate.mjs'))).toBe(true)
   })
 })
