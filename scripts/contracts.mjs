@@ -77,7 +77,6 @@ function regenerate() {
     '(AGENTS.md LAW 4, the two-tier contract tracking). Never edit the',
     'generated block by hand — curate between the marks, rows via the CLI.',
     '',
-    '<!-- INVARIANTS:BEGIN -->',
   ]
   const lines = []
   for (const tier of TIERS) {
@@ -90,10 +89,14 @@ function regenerate() {
     }
   }
   lines.push('', '<!-- INVARIANTS:END -->', '')
-  const body = header.concat(lines).join('\n')
+  // The BEGIN/END marks ride the BLOCK, not the header: the replace branch
+  // splices the block between the marks, so a header-borne BEGIN would be
+  // consumed by the first replace (no BEGIN → every later regenerate takes
+  // the append path and stacks a full copy — the 18-heading drift).
+  const block = ['<!-- INVARIANTS:BEGIN -->', ...lines].join('\n')
   const next = MARK.test(open)
-    ? open.replace(MARK, body)
-    : (open === '' ? body : open.replace(/\n*$/, '\n\n') + body + '\n')
+    ? open.replace(MARK, block)
+    : (open === '' ? header.concat(['<!-- INVARIANTS:BEGIN -->'], lines).join('\n') : open.replace(/\n*$/, '\n\n') + header.concat(['<!-- INVARIANTS:BEGIN -->'], lines).join('\n') + '\n')
   writeFileSync(INVARIANTS, next)
   console.log(`contract: INVARIANTS.md regenerated (${rows.length} active rows)`)
 }
