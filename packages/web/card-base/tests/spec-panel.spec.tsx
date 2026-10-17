@@ -236,4 +236,34 @@ describe('THE DERIVED SECTIONS (panelSectionsOf: the served rows group and order
     expect(screen.queryByText('Stray')).toBeNull()
     expect(screen.getByText('Leaf')).not.toBeNull()
   })
+
+  test('A NEGATIVE ORDER HINT SORTS TOO, AND THE ORDERLESS ROW STILL SEATS LAST (a hint below zero walks ahead of the hintless row; the derivation floors the hintless after EVERY hinted row)', async () => {
+    // sub's hint sits BELOW the walk's own floor (order ?? 0), so
+    // fieldsOf hands the orderless row mid-group — the derivation's
+    // sort (order ?? MAX_SAFE_INTEGER) must still seat it after every
+    // hinted row; its walk seat never leaks through
+    const doc = {
+      form: 'any-card',
+      schema: schemaEnvelope({
+        sub: { type: 'number', meta: { description: 'Sub', default: 1, extra: { group: 'engine', order: -10 } } },
+        free: { type: 'number', meta: { description: 'Free', default: 2, extra: { group: 'engine' } } },
+        mid: { type: 'number', meta: { description: 'Mid', default: 3, extra: { group: 'engine', order: 10 } } },
+      }),
+      variants: [],
+    } as never
+    const sections = panelSectionsOf(doc, { engine: { title: 'Engine', testid: 'p-engine' } })
+    expect(sections[0].rows.map((r) => r.name)).toEqual(['sub', 'mid', 'free'])
+    // THE REAL WIRE: the derived order renders — the hintless row last
+    // even though the walk handed it mid-group
+    render(h(SpecPanel, {
+      model: 'any-card', spec: doc, sections: sections as never,
+      values: {}, onEdit: () => {},
+    }))
+    expect(await screen.findByText('Sub')).not.toBeNull()
+    const engine = document.querySelector('[data-testid="p-engine"]')
+    if (engine === null) throw new Error('engine group testid not rendered')
+    const text = engine.textContent ?? ''
+    expect(text.indexOf('Sub')).toBeLessThan(text.indexOf('Mid'))
+    expect(text.indexOf('Mid')).toBeLessThan(text.indexOf('Free'))
+  })
 })
