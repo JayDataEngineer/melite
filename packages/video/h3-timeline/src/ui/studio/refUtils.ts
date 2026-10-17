@@ -212,3 +212,84 @@ export const fitImageToAspect = async (src: string, tw: number, th: number): Pro
     return src
   }
 }
+
+/** (E7, KF-A(1), keyframes-audio journey audit — plan row 84) THE
+ *  KEYFRAME PIN'S COMMIT SPINE: classifyImageSrc judges the currency,
+ *  then the fit runs on the committed value BEFORE the pin lands —
+ *  one spelling for the pick arms' two-step (classify → fit) so the
+ *  fit law cannot be reordered out of any door.
+ *
+ *  THE NAME ARM'S FIT STORY: a byUrl-resolved artifact NAME is engine
+ *  currency that cannot decode client-side (fitImageToAspect rides it
+ *  verbatim), so an off-aspect pick landing on that arm used to commit
+ *  an unfittable bare name — the engine cover-cropped it and no client
+ *  arm could ever fit it again. Here the fit runs on the SERVABLE URL
+ *  the pick arrived as, and a real fit canonicalizes the commit to its
+ *  fitted data: URL — the unfittable bare name dies at this seam.
+ *  Where the fit rides verbatim (same-aspect, decode loss, no decode
+ *  env) the name IS the commit: the courtesy law — the commit never
+ *  depends on the fit.
+ *  @param src the picked source, any spelling.
+ *  @param byUrl the artifact index's servable url → ctx-key name map.
+ *  @param tw the film's target width.
+ *  @param th the film's target height.
+ *  @returns the image value to commit (fitted where the fit is real),
+ *  or the refusal's words. */
+export const commitKeyframePinImage = async (
+  src: string,
+  byUrl: Map<string, string>,
+  tw: number,
+  th: number,
+): Promise<{ image: string } | { refusal: string }> => {
+  const got = classifyImageSrc(src, byUrl)
+  if ("refusal" in got) return got
+  const fitted = await fitImageToAspect(got.image, tw, th)
+  if (fitted !== got.image) return { image: fitted }
+  // fires only on the byUrl→NAME arm: the media arms commit data: or
+  // a canonical chip (estateMediaChip !== null) whose fit already ran.
+  if (got.image !== src && estateMediaChip(src) === null) {
+    const urlFit = await fitImageToAspect(src, tw, th)
+    if (urlFit !== src) return { image: urlFit }
+  }
+  return got
+}
+
+/** (E7, KF-A(2), keyframes-audio journey audit — plan row 85) THE
+ *  REOPEN/REFIT SEAM: the fit law applied to a PERSISTED pin, not
+ *  only to a pick. A saved off-aspect pin (a pre-fit doc, a name
+ *  commit, a legacy spelling) used to re-render unfitted forever —
+ *  the only cure was re-picking. Every persisted spelling rides the
+ *  same law here:
+ *  — data: and rooted/origin-qualified estate media fit directly; a
+ *    legacy spelling heals to its canonical chip even when the fit
+ *    rides verbatim (nothing stored ever breaks — benchStage);
+ *  — a bare artifact NAME resolves through the index's name → url map
+ *    and fits off the servable URL: a real fit hands back the fitted
+ *    data: URL (the doc heals off the unfittable name), an
+ *    unresolvable or non-fitting name rides verbatim (engine
+ *    currency; the courtesy law);
+ *  — "" stays "" (the imageless pin is KF-C's own law, not this
+ *    seam's).
+ *  @param image the persisted pin source, any spelling.
+ *  @param byName the artifact index's ctx-key name → servable url map.
+ *  @param tw the film's target width.
+ *  @param th the film's target height.
+ *  @returns the refit value to re-render (and write back), or the
+ *  input verbatim when no fit is real. */
+export const refitKeyframePinImage = async (
+  image: string,
+  byName: Map<string, string>,
+  tw: number,
+  th: number,
+): Promise<string> => {
+  if (image === "") return ""
+  const canonical = estateMediaChip(image) ?? image
+  const fitted = await fitImageToAspect(canonical, tw, th)
+  if (fitted !== canonical) return fitted
+  if (canonical !== image) return canonical
+  const url = byName.get(image)
+  if (url === undefined || url === image) return image
+  const source = estateMediaChip(url) ?? url
+  const nameFit = await fitImageToAspect(source, tw, th)
+  return nameFit !== source ? nameFit : image
+}

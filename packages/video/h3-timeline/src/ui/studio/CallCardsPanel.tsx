@@ -20,7 +20,8 @@ import { readAsDataURL, Upload, useSquareProvider } from '@melite/card-base/clie
 import s from "./studio.module.css"
 import type { CallRefs, DocCall, DocKeyframe, LayerA, GuideKind } from "./docModel.ts"
 import { CallCard } from "./CallCard.tsx"
-import { FOREIGN_URL_REFUSAL, REF_READ_ERROR, refUploadError, classifyImageSrc, fitImageToAspect, loadImageMedia } from "./refUtils.ts"
+import { FOREIGN_URL_REFUSAL, REF_READ_ERROR, refUploadError, commitKeyframePinImage, fitImageToAspect, loadImageMedia } from "./refUtils.ts"
+
 import type { LinkArtifact } from "./refUtils.ts"
 import type { TimelineSelection } from "./useViewSelection.ts"
 import { useRef, useState } from "react"
@@ -137,23 +138,25 @@ export function CallCardsPanel({
     label: `${o.title} · ${o.name}`,
     url: deps.artifactIndex.byName.get(o.name) ?? "",
   }))
-  /** The shared commit spine: estate media canonical, the run's own
-   *  artifact URLs, data: chips ride verbatim — foreign URLs refuse.
-   *  @returns the image value to commit, or null when refused (the
-   *  refusal's words ride the caller's error seat). */
+  /** Both pick doors ride refUtils' commitKeyframePinImage — the
+   *  judge + the fit in one seat (E7, KF-A(1): the name arm's fit).
+   *  The refusal's words ride the door's own error seat. */
   // ── THE ADD DOOR (beside the subview's title — the audio-lane
   // grammar: an upload icon that opens the three-entry picker; the
   // pin lands at the PLAYHEAD with its image in one write). ────────
   const { square: kfAddSquare, wireMenu: kfAddMenu } = useSquareProvider(
     (_name, v) => {
       if (typeof v !== "string" || v === "") return
-      const got = classifyImageSrc(v, deps.artifactIndex.byUrl)
-      if ("refusal" in got) { setKfAddError(got.refusal); return }
-      setKfAddError(null)
-      // (D1) shrink-to-fit into the movie's aspect before the pin
-      // lands — the engine would cover-crop an off-aspect insert
-      void fitImageToAspect(got.image, deps.layerA?.width ?? 1344, deps.layerA?.height ?? 768)
-        .then((fitted) => { addKeyframeWithImage(fitted, playheadDocFrame) })
+      // (E7, KF-A(1)) the ONE commit spine: the judge + the fit in one
+      // seat — an off-aspect pick landing on the byUrl→NAME arm fits
+      // the servable URL and commits the fitted data:, never an
+      // unfittable bare name (the engine would cover-crop it).
+      void commitKeyframePinImage(v, deps.artifactIndex.byUrl, deps.layerA?.width ?? 1344, deps.layerA?.height ?? 768)
+        .then((got) => {
+          if ("refusal" in got) { setKfAddError(got.refusal); return }
+          setKfAddError(null)
+          addKeyframeWithImage(got.image, playheadDocFrame)
+        })
     },
     {
       candidates: flowRows,
@@ -184,11 +187,14 @@ export function CallCardsPanel({
     (_name, v) => {
       if (typeof v !== "string" || v === "") return
       const i = pickRow.current
-      const got = classifyImageSrc(v, deps.artifactIndex.byUrl)
-      if ("refusal" in got) { setKfUploadError(i, got.refusal); return }
-      // (D1) a row swap is an insert into the movie — same fit law
-      void fitImageToAspect(got.image, deps.layerA?.width ?? 1344, deps.layerA?.height ?? 768)
-        .then((fitted) => { setKeyframeImage(i, fitted); setKfUploadError(i, null) })
+      // (E7, KF-A(1)) the row swap rides the same commit spine as the
+      // add door — one fit law, the name arm included.
+      void commitKeyframePinImage(v, deps.artifactIndex.byUrl, deps.layerA?.width ?? 1344, deps.layerA?.height ?? 768)
+        .then((got) => {
+          if ("refusal" in got) { setKfUploadError(i, got.refusal); return }
+          setKeyframeImage(i, got.image)
+          setKfUploadError(i, null)
+        })
     },
     {
       candidates: flowRows,

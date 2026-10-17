@@ -18,6 +18,9 @@ import {
   FOREIGN_URL_REFUSAL,
   fitRect,
   fitImageToAspect,
+  classifyImageSrc,
+  commitKeyframePinImage,
+  refitKeyframePinImage,
 } from "../src/ui/studio/refUtils.ts"
 import {
   normalizeDeclaredRefs,
@@ -237,12 +240,15 @@ describe("fitRect (the D1 contain math — pure, one spelling)", () => {
 })
 
 describe("fitImageToAspect (the D1 canvas rider)", () => {
-  it("THE AUTORIZE CURE (operator 2026-10-16: 'YOU DID NOT FIX THE AUTORIZE ON THE KEYFRAME'): an http URL that decodes fits like a data: chip", async () => {
-    // THE PICKER ARMS' LAW: From media and From flow commit URLs —
-    // the old data:-only gate starved them, the fit never ran, and
-    // the engine COVER-CROPPED every off-aspect pick. The rider
-    // decodes EVERY renderable source; the stubbed Image carries the
-    // picker arm's own spelling (an estate http URL).
+  it("THE AUTORIZE SEAM (E7, KF-B — plan row 86): the wall rides the classifyImageSrc→fit seam on the spelling a picker arm actually commits", async () => {
+    // THE TWIN-WALL CURE: the old AUTORIZE arm fed the fitter an
+    // origin-qualified legacy spelling (`https://estate/v1/assets/
+    // runs/pin.png`) that NO picker arm ever commits — the wall stayed
+    // green while the seam the operator's gesture crosses could
+    // reorder freely. The real arms commit rooted `/melite-media/...`
+    // (classifyImageSrc canonicalizes the From-media pick's live
+    // browser-absolutized shape) or data:. Both ride the FULL seam
+    // here: the judge's canonical commit, then the fit's contain rect.
     const draws: unknown[][] = []
     class StubImg {
       naturalWidth = 2688
@@ -266,10 +272,27 @@ describe("fitImageToAspect (the D1 canvas rider)", () => {
     })
     try {
       vi.stubGlobal("Image", StubImg as unknown as typeof Image)
-      const out = await fitImageToAspect("https://estate/v1/assets/runs/pin.png", 1344, 768)
+      // the judge half: the From-media pick's live shape commits the
+      // ROOTED canonical chip — never the origin, never the legacy prefix
+      const got = classifyImageSrc("http://127.0.0.1:3080/melite-media/runs/r1/pin.png", new Map())
+      expect(got).toEqual({ image: "/melite-media/runs/r1/pin.png" })
+      // the fit half: the committed spelling fits like the file arm
+      const out = await fitImageToAspect(got.image, 1344, 768)
       expect(out).toBe("data:image/png;base64,FITTED")
       expect(draws.length).toBe(1)
       expect(draws[0]!.slice(1), "the same contain rect as the file arm").toEqual([0, 192, 1344, 384])
+      // the whole spine end-to-end on the same pick (the doors' one call)
+      draws.length = 0
+      await expect(commitKeyframePinImage("http://127.0.0.1:3080/melite-media/runs/r1/pin.png", new Map(), 1344, 768))
+        .resolves.toEqual({ image: "data:image/png;base64,FITTED" })
+      expect(draws.length).toBe(1)
+      // the data: chip arm rides the same seam verdict
+      draws.length = 0
+      const chip = classifyImageSrc("data:image/png;base64,AA", new Map())
+      expect(chip).toEqual({ image: "data:image/png;base64,AA" })
+      await expect(commitKeyframePinImage("data:image/png;base64,AA", new Map(), 1344, 768))
+        .resolves.toEqual({ image: "data:image/png;base64,FITTED" })
+      expect(draws.length).toBe(1)
     } finally {
       spy.mockRestore()
       vi.unstubAllGlobals()
@@ -402,6 +425,205 @@ describe("fitImageToAspect (the D1 canvas rider)", () => {
         .resolves.toBe("data:image/png;base64,AA")
     } finally {
       vi.unstubAllGlobals()
+    }
+  })
+})
+
+// ── E7 — THE FIT'S STATE ARMS (keyframes-audio plan rows 84-85):
+// the fit law covers what the doc CARRIES, not only what a picker
+// commits. The stubs below reuse the D1 rider's own decode-shape
+// (queueMicrotask onload / onerror) — no real decode, no timer waits. ──
+
+/** Stub the decode to an (nw, nh) source and the canvas to a recorder.
+ *  @returns the restore fn plus the recorded draw rects. */
+function stubFitDecode(nw: number, nh: number): { restore: () => void; draws: unknown[][] } {
+  const draws: unknown[][] = []
+  class StubImg {
+    naturalWidth = nw
+    naturalHeight = nh
+    set src(_v: string) { queueMicrotask(() => { this.onload?.() }) }
+    onload: (() => void) | null = null
+    onerror: (() => void) | null = null
+  }
+  const origCreate = document.createElement.bind(document)
+  const spy = vi.spyOn(document, "createElement").mockImplementation((tag: string) => {
+    if (tag === "canvas") {
+      const c = {
+        width: 0, height: 0,
+        getContext: () => ({ drawImage: (...a: unknown[]) => { draws.push(a) } }),
+        toDataURL: () => "data:image/png;base64,FITTED",
+      }
+      return c as unknown as HTMLCanvasElement
+    }
+    return origCreate(tag)
+  })
+  vi.stubGlobal("Image", StubImg as unknown as typeof Image)
+  return {
+    draws,
+    restore: () => { spy.mockRestore(); vi.unstubAllGlobals() },
+  }
+}
+
+/** Stub the decode to FAIL (onerror — the immediate refusal arm).
+ *  @returns the restore fn. */
+function stubFitDecodeFailure(): () => void {
+  class StubImgErr {
+    set src(_v: string) { queueMicrotask(() => { this.onerror?.() }) }
+    onload: (() => void) | null = null
+    onerror: (() => void) | null = null
+  }
+  vi.stubGlobal("Image", StubImgErr as unknown as typeof Image)
+  return () => { vi.unstubAllGlobals() }
+}
+
+describe("commitKeyframePinImage (E7, KF-A(1) — the name arm's fit story)", () => {
+  const byUrl = new Map([["https://engine:8188/view?filename=pin.png", "video_w1_main"]])
+  const ENGINE_URL = "https://engine:8188/view?filename=pin.png"
+
+  it("an off-aspect run-artifact URL pick commits the FITTED data: — never the unfittable bare name", async () => {
+    // KF-A(1): the byUrl→NAME arm used to commit the bare name; the
+    // fit gate skips names, the engine cover-cropped the pin, and no
+    // client arm could ever fit it again. The spine fits the servable
+    // URL the pick arrived as and the name dies at the commit seam.
+    const stub = stubFitDecode(2688, 768)
+    try {
+      await expect(commitKeyframePinImage(ENGINE_URL, byUrl, 1344, 768))
+        .resolves.toEqual({ image: "data:image/png;base64,FITTED" })
+      expect(stub.draws.length).toBe(1)
+      expect(stub.draws[0]!.slice(1)).toEqual([0, 192, 1344, 384])
+    } finally {
+      stub.restore()
+    }
+  })
+
+  it("a same-aspect URL pick commits the NAME — the courtesy law (the commit never depends on the fit)", async () => {
+    const stub = stubFitDecode(672, 384)
+    try {
+      await expect(commitKeyframePinImage(ENGINE_URL, byUrl, 1344, 768))
+        .resolves.toEqual({ image: "video_w1_main" })
+      expect(stub.draws.length).toBe(0)
+    } finally {
+      stub.restore()
+    }
+  })
+
+  it("a decode FAILURE on the name arm rides the name verbatim", async () => {
+    const restore = stubFitDecodeFailure()
+    try {
+      await expect(commitKeyframePinImage(ENGINE_URL, byUrl, 1344, 768))
+        .resolves.toEqual({ image: "video_w1_main" })
+    } finally {
+      restore()
+    }
+  })
+
+  it("an estate-media pick commits the CANONICAL rooted chip — the legacy origin-qualified spelling dies at this seam", async () => {
+    // the J2 canonicalize-at-commit law, judged at the pin's own seam
+    const stub = stubFitDecode(672, 384)
+    try {
+      await expect(commitKeyframePinImage("http://host/v1/assets/runs/r1/x.jpg", new Map(), 1344, 768))
+        .resolves.toEqual({ image: "/melite-media/runs/r1/x.jpg" })
+    } finally {
+      stub.restore()
+    }
+  })
+
+  it("a foreign URL refuses before any decode — the M1 law keeps its teeth", async () => {
+    await expect(commitKeyframePinImage("https://example.org/pic.png", new Map(), 1344, 768))
+      .resolves.toEqual({ refusal: FOREIGN_URL_REFUSAL })
+  })
+})
+
+describe("refitKeyframePinImage (E7, KF-A(2) — the reopen/refit seam)", () => {
+  const byName = new Map([["video_w1_main", "https://engine:8188/view?filename=pin.png"]])
+
+  it("a saved off-aspect data: pin REOPENS FITTED — the fit law applies on reopen, not only on pick", async () => {
+    const stub = stubFitDecode(2688, 768)
+    try {
+      await expect(refitKeyframePinImage("data:image/png;base64,AA", byName, 1344, 768))
+        .resolves.toBe("data:image/png;base64,FITTED")
+      expect(stub.draws[0]!.slice(1)).toEqual([0, 192, 1344, 384])
+    } finally {
+      stub.restore()
+    }
+  })
+
+  it("a saved off-aspect rooted pin refits through the same law", async () => {
+    const stub = stubFitDecode(768, 1536)
+    try {
+      await expect(refitKeyframePinImage("/melite-media/runs/r1/pin.png", byName, 1344, 768))
+        .resolves.toBe("data:image/png;base64,FITTED")
+      expect(stub.draws[0]!.slice(1)).toEqual([480, 0, 384, 768])
+    } finally {
+      stub.restore()
+    }
+  })
+
+  it("a saved same-aspect pin rides VERBATIM — no re-encode, no generation loss", async () => {
+    const stub = stubFitDecode(672, 384)
+    try {
+      await expect(refitKeyframePinImage("data:image/png;base64,AA", byName, 1344, 768))
+        .resolves.toBe("data:image/png;base64,AA")
+      await expect(refitKeyframePinImage("/melite-media/runs/r1/pin.png", byName, 1344, 768))
+        .resolves.toBe("/melite-media/runs/r1/pin.png")
+      expect(stub.draws.length).toBe(0)
+    } finally {
+      stub.restore()
+    }
+  })
+
+  it("a saved LEGACY origin-qualified spelling heals to the canonical rooted chip (nothing stored ever breaks)", async () => {
+    const stub = stubFitDecode(672, 384)
+    try {
+      await expect(refitKeyframePinImage("https://estate/v1/assets/runs/r1/pin.png", byName, 1344, 768))
+        .resolves.toBe("/melite-media/runs/r1/pin.png")
+    } finally {
+      stub.restore()
+    }
+  })
+
+  it("a saved bare NAME refits OFF the servable URL its index resolves — the doc heals off the unfittable name", async () => {
+    const stub = stubFitDecode(2688, 768)
+    try {
+      await expect(refitKeyframePinImage("video_w1_main", byName, 1344, 768))
+        .resolves.toBe("data:image/png;base64,FITTED")
+      expect(stub.draws[0]!.slice(1)).toEqual([0, 192, 1344, 384])
+    } finally {
+      stub.restore()
+    }
+  })
+
+  it("a saved bare NAME with a same-aspect url rides the name verbatim (engine currency, the courtesy law)", async () => {
+    const stub = stubFitDecode(672, 384)
+    try {
+      await expect(refitKeyframePinImage("video_w1_main", byName, 1344, 768))
+        .resolves.toBe("video_w1_main")
+    } finally {
+      stub.restore()
+    }
+  })
+
+  it("an unresolvable saved name rides verbatim — never a refusal at reopen", async () => {
+    const restore = stubFitDecodeFailure()
+    try {
+      await expect(refitKeyframePinImage("ghost-name.png", new Map(), 1344, 768))
+        .resolves.toBe("ghost-name.png")
+    } finally {
+      restore()
+    }
+  })
+
+  it("the imageless pin rides \"\" — KF-C's own law, never this seam's input", async () => {
+    await expect(refitKeyframePinImage("", byName, 1344, 768)).resolves.toBe("")
+  })
+
+  it("a saved source that cannot decode rides verbatim — the fit is a courtesy, never a blocker", async () => {
+    const restore = stubFitDecodeFailure()
+    try {
+      await expect(refitKeyframePinImage("data:image/png;base64,AA", byName, 1344, 768))
+        .resolves.toBe("data:image/png;base64,AA")
+    } finally {
+      restore()
     }
   })
 })

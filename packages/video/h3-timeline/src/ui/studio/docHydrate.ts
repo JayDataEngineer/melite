@@ -62,7 +62,18 @@ function hydrateAudioClips(value: unknown): DocAudioClip[] | undefined {
       )
       continue
     }
-    if (parsed === undefined) continue
+    if (parsed === undefined) {
+      // (E7, keyframes-audio plan row 89, 2026-11-06) the parser's one
+      // silent skip is the CONTENTLESS row — src-less and without any
+      // position/identity marker (parseFilmMixClips' own row law). The
+      // drop still names itself here: HIGH-4's law above is every
+      // dropped clip row is NAMED, and a row the doc carried just left
+      // the timeline (the film composes without it).
+      console.warn(
+        `VideoTimelineStudio: audio_clips[${index}] carries no src and no position — not a clip row; dropped.`,
+      )
+      continue
+    }
     const id = typeof row.id === 'string' && row.id.trim() !== '' ? row.id.trim() : `aclip-${index}`
     const fallbackName = parsed.src.startsWith('data:') ? `clip-${index}` : parsed.src.split('/').pop()!
     const name = typeof row.name === 'string' && row.name.trim() !== '' ? row.name.trim() : fallbackName
