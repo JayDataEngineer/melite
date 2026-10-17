@@ -351,7 +351,7 @@ describe("loadFacts (the DECL-projection arms)", () => {
       facts.models["frozen-claim"], undefined,
       "the exporter rule derives nothing beside a frozen row",
     );
-    assert.equal(facts.owners["frozen-claim"], "frozen-owner", "the claim still resolves to its owner");
+    assert.equal(facts.owners!["frozen-claim"], "frozen-owner", "the claim still resolves to its owner");
   });
 
   it("an exporter-derived row whose owner's card slice is missing serves an empty contract", () => {
