@@ -416,6 +416,47 @@ describe("THE UNDOED BENCH IS WIRE-JUDGED WHOLE (the bench audit's gaps 4 + 5)",
 });
 });
 
+// ── §4 DEBT 0: THE UNDO WALK NEVER LANDS A SECOND ROW UNDER ONE ID ──
+
+describe("the standing-id survivor law at undo (CONTRACTS §4 debt 0, the s_0-twice burn)", () => {
+  test("an undo walking to an old un-reverted remove whose id already stands refuses — never a duplicate row", async () => {
+    // The 2026-10-26 night's LIVE burn (revs 126-127): the log still
+    // held un-reverted agent removes from the earlier purge era while
+    // the stage's id had re-entered the bench since. Two probe undos
+    // applied the old inverse and landed s_0 TWICE (repaired at the
+    // store, rev 128). The add door refuses this state
+    // (bench/duplicate-stage) and the load dedupe forbids it (the
+    // identity audit's A3) — the repair door must not launder it
+    // back. Census FIRST, so the toggle-out red shows the s_0-twice
+    // shape itself, not just the missing refusal.
+    const drafts = await boot();
+    await seed(drafts, "d7-standing", {
+      // the standing s_0 is the row the bench holds NOW — the
+      // purge-era inverse's stale snapshot of the same id
+      stages: [
+        { id: "s_0", card: "card-a", params: {} },
+        { id: "keep", card: "card-a", params: {} },
+      ],
+      bench: {
+        rev: 1,
+        log: [
+          entry(1, "remove_stage", "agent", {
+            stage: "s_0",
+            row: { id: "s_0", card: "card-a", params: {} },
+          }),
+        ],
+      },
+    });
+    const refused = await codeOf(undoBench(drafts, "d7-standing", { n: 1, expect_rev: 1 }));
+    const ids = (getBench(drafts, "d7-standing").stages as Array<{ id: string }>).map((x) => x.id);
+    assert.deepEqual(ids, ["s_0", "keep"], "the standing row keeps the bench, exactly once — got: " + JSON.stringify(ids));
+    assert.equal(new Set(ids).size, ids.length, "ids stay unique post-undo");
+    assert.match(refused, /^bench\/duplicate-stage\|/, "the undo refuses by name: " + refused);
+    // The refused write wrote nothing: no undo entry, rev unmoved.
+    assert.equal(getBench(drafts, "d7-standing").rev, 1, "the refusal landed no entry");
+  });
+});
+
 // ── THE UNDO WALK'S OWN TOLERANCES (the log is data): an inverse is
 //    a payload the log recorded, never a promise — the walks judge
 //    what the entries carry and degrade loudly-free on junk. ────────

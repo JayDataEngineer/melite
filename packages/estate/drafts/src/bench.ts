@@ -2263,6 +2263,33 @@ export async function undoBench(
       if (Array.isArray(r["history"])) r["history"] = trailDedupe(r["history"] as unknown[]);
     }
     const restored = stagesOf(undoDoc);
+    // THE STANDING-ID REFUSAL (CONTRACTS §4 debt 0 — the 2026-10-26
+    // s_0-twice burn, revs 126-127): an inverse that inserts (remove's
+    // row, group's spill, a future arm) whose id ALREADY STANDS on
+    // the post-undo bench would land a second row under one id — the
+    // exact state the add door refuses (bench/duplicate-stage) and
+    // the load dedupe forbids (the identity audit's A3: stageRow
+    // answers the first row, so the second row's wiring names a stage
+    // the bench answers with someone else's body). Judged on the
+    // RESULT, so a duplicate one target creates and a later target
+    // removes is not refused — only a landing state is. The refusal
+    // aborts the undo whole (the copy-on-judge swap never runs): the
+    // standing row — in the burn, the operator's own re-added work —
+    // keeps the bench, and the log's stale inverse is refused by
+    // name instead of silently overwriting it.
+    const walkedIds: Set<string> = new Set();
+    for (const r of restored) {
+      const id: string = String(r["id"] ?? "");
+      if (id !== "" && walkedIds.has(id)) {
+        throw new RemoteError(
+          "bench/duplicate-stage",
+          "undo would land a second row under id " + id +
+            " — the standing row keeps the bench",
+          { session, stage: id },
+        );
+      }
+      walkedIds.add(id);
+    }
     admitWiringList(
       restored,
       session,
