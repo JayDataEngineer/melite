@@ -183,6 +183,14 @@ const TYPECHECK_LANE_FILES = [
 const TYPECHECK_LANE = ['node', 'node_modules/vitest/dist/cli.js',
   'run', '--config', 'vitest.config.ts', '--project', 'typecheck-lane']
 
+/** THE WALLS POOL (flake-slowness-wave2 C5, 2026-11-07): the rest of
+ *  the walls tier rides its own vitest project (isolate:false,
+ *  maxWorkers:4) as a THIRD concurrent lane, mirroring the
+ *  typecheck-lane split. Same coverage law as the lane: no
+ *  --coverage here — coverage invocations stay serial, always. */
+const WALLS_POOL = ['node', 'node_modules/vitest/dist/cli.js',
+  'run', '--config', 'vitest.config.ts', '--project', 'walls']
+
 /** One lane's final exit after its own walker verdict (the retry
  *  semantics are per-lane: contention in the main run says nothing
  *  about the lane's lib plane, and vice versa). */
@@ -218,21 +226,27 @@ async function main() {
   if (pre.refused) process.exit(3)
 
   // A vitest run whose own paths do not name the typecheck lane
-  // splits: main (excluding the two suites) + the lane, concurrent.
+  // splits: main (excluding the two suites and the walls tier) +
+  // the lane + the walls pool, all concurrent.
   const argvText = argv.join(' ')
   const isLaneItself = TYPECHECK_LANE_FILES.some((f) => argvText.includes(f))
   const isVitestRun = /vitest/.test(argv[0] ?? '') && argvText.includes('run')
   if (isVitestRun && !isLaneItself) {
     const mainArgv = [...argv]
     mainArgv.push('--project', '!typecheck-lane')
-    console.error('[run-walker-safe] typecheck lane splits out: main excludes typecheck-gate + models-lib-sync; the lane runs concurrently (no coverage on the lane — coverage stays serial)\n')
-    const [mainR, laneR] = await Promise.all([runLane(mainArgv), runLane(TYPECHECK_LANE)])
-    for (const r of [mainR, laneR]) {
+    mainArgv.push('--project', '!walls')
+    console.error('[run-walker-safe] gate splits three ways: main excludes the typecheck lane + the walls pool; the lane and the pool run concurrently (no coverage on either — coverage stays serial)\n')
+    const [mainR, laneR, wallsR] = await Promise.all([
+      runLane(mainArgv), runLane(TYPECHECK_LANE), runLane(WALLS_POOL),
+    ])
+    for (const r of [mainR, laneR, wallsR]) {
       if (r !== null && typeof r === 'object' && r.signal !== undefined) {
         process.kill(process.pid, r.signal)
       }
     }
-    const code = mainR === 0 && laneR === 0 ? 0 : (mainR !== 0 ? mainR : laneR)
+    const code = mainR === 0 && laneR === 0 && wallsR === 0
+      ? 0
+      : (mainR !== 0 ? mainR : (laneR !== 0 ? laneR : wallsR))
     process.exit(typeof code === 'number' ? code : 1)
   }
 

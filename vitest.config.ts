@@ -238,12 +238,14 @@ export default defineConfig({
           exclude: [
             ...DOM_SPEC_TREES,
             ...DECK_SPEC_TREES,
-            // the typecheck lane's two tsc suites (E5: moved out of the
-            // include above — plain rows here exclude exactly these two
-            // files from the node lane and reach coverage.exclude as
-            // literal, non-negated globs that claim only themselves)
-            'tests/walls/ts/suites/typecheck-gate.spec.ts',
-            'tests/walls/ts/suites/models-lib-sync.spec.ts',
+            // the walls tier moved to its own pool project (C5,
+            // 2026-11-07): one plain tree row excludes it from the
+            // node lane and reaches coverage.exclude as a literal,
+            // non-negated glob that claims exactly the tree (the E5
+            // negation law below). The typecheck pair ride inside
+            // the tree row; their 2026-10-17 named rows retire with
+            // the tier's move.
+            'tests/walls/ts/suites/**/*.spec.ts',
             '**/*.e2e.ts',
             '**/*.expected.e2e.ts',
             '**/*.snapshot.ts',
@@ -278,6 +280,74 @@ export default defineConfig({
           include: [
             'tests/walls/ts/suites/typecheck-gate.spec.ts',
             'tests/walls/ts/suites/models-lib-sync.spec.ts',
+          ],
+        },
+      },
+      {
+        // THE WALLS POOL (flake-slowness-wave2 C5, 2026-11-07): the
+        // rest of the walls tier (estate, gates, wiring, census,
+        // contract rows) leaves the node project for its own project
+        // so the walker can run it as a THIRD concurrent lane.
+        // maxWorkers caps the fan-out at 4: the suites are
+        // spawn-heavy on a 24-core host already shared with the main
+        // gate and the typecheck lane.
+        // ISOLATION STAYS ON (empirical, 2026-11-07): a first cut
+        // ran isolate:false and flaked 5 tests across 4 files on the
+        // very first full pool pass (mod-liveness.spec.ts:415 — a
+        // mid-flight engines read answered the post-drop doc), then
+        // passed clean on the immediate rerun. The 2026-11-07 survey
+        // found zero env-mutating suites, so the bleed is module-
+        // level singleton state (registries, caches, stubs) shared
+        // across the ~32 files each reused worker carries — timing-
+        // dependent, not nameable per-suite today. Per-file fork
+        // isolation is what the tier had in the node project; the
+        // pool keeps it and still wins the split (the tier stops
+        // competing with the 500-file main pool and the lane).
+        // THE ISOLATION-SURVEY RULE: a suite may ride this pool only
+        // while it never mutates its worker — no process.env writes,
+        // no process.chdir, no globalThis writes, no process.exit,
+        // no @vitest-environment pragma. The 2026-11-07 survey
+        // (grep over tests/walls/ts/suites for those classes) found
+        // zero offenders: the only env reads are
+        // MELITE_TIER_DELEGATED (typecheck-gate.spec.ts:129,
+        // wiring-roots.spec.ts:91). The excluded-by-name slot below
+        // is where the first offender is re-homed — named here and
+        // moved to an isolated include, exactly as the typecheck
+        // pair was — never left in the pool.
+        plugins: [standardDecoratorPlugin()],
+        ...BOOT_BUDGET,
+        resolve: {
+          alias: { ...resolutionFacade() },
+        },
+        test: {
+          testTimeout: BOOT_BUDGET.testTimeout,
+          hookTimeout: BOOT_BUDGET.hookTimeout,
+          name: 'walls',
+          globalSetup: [TMP_SWEEP],
+          environment: 'node',
+          pool: 'forks',
+          execArgv: vitestExecArgv,
+          setupFiles: [PROXY_SETUP],
+          // THE ONE-ROW LAW (see the node project above): the walls'
+          // wiring/census suites reach the card-base ROOT whose chrome
+          // face imports the primitives' .module.css — same inline or
+          // node's raw require dies on the css extension.
+          server: {
+            deps: {
+              inline: [/@deepseek-ai\/dsh-client-ui-primitives/],
+            },
+          },
+          maxWorkers: 4,
+          include: ['tests/walls/ts/suites/**/*.spec.ts'],
+          exclude: [
+            // the typecheck lane's two full-estate tsc suites — the
+            // lane project above owns them (a file matching two
+            // projects' includes runs twice)
+            'tests/walls/ts/suites/typecheck-gate.spec.ts',
+            'tests/walls/ts/suites/models-lib-sync.spec.ts',
+            // THE ENV-SPAWNER SLOT — empty today (survey above):
+            // the first worker-mutating suite is named here and
+            // re-homed to an isolated include.
           ],
         },
       },
