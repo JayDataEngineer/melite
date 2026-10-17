@@ -1,0 +1,3 @@
+{"type":"header","format":"v0","sessionId":"h3-strip-kf-commit","profile":"melite-test"}
+{"type":"user","text":"Pin the run's wide banner onto the keyframe lane at frame 45 — it is a 2688x768 banner and the film frame is 1344x768, so fit it before it lands; nothing may get cropped."}
+{"type":"assistant","text":"Pinned: the banner rode the strip lane's add door From flow and was fitted to the film frame first — the pin at frame 45 saves the fitted image, never the bare name."}
