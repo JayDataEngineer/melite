@@ -83,6 +83,21 @@ describe("estate-lib-sync (the estate's served tsc lib is the fresh emit of its 
           "--declarationMap", "false",
         ], { stdio: ["ignore", "ignore", "pipe"] });
         const drift = compareEmitted(relative(PACKAGES, pkgDir), "tsconfig.build.json", out, join(pkgDir, "lib"));
+        // THE GENERATOR-ARTIFACT CLASS (2026-11-06, the drafts face
+        // separation): a package with scripts/typert.mjs commits
+        // lib/typert.*.js|.d.ts written by the DSH typert generator —
+        // sanctioned served artifacts that are NOT emits of src (the
+        // generator's own law: "artifacts committed under lib/ exactly
+        // as DSH packages commit theirs"; the web faces import
+        // TYPERT_REMOTE from exactly this plane). The tsc comparison
+        // cannot judge generated code — without the skip the class
+        // flags forever; the generator's run law owns the plane's
+        // freshness (build-plane runs the script after every build).
+        if (existsSync(join(pkgDir, "scripts", "typert.mjs"))) {
+          const generated = (f: string): boolean => /(^|\/)typert\.[^/]*\.(js|d\.ts)$/.test(f);
+          drift.stale = drift.stale.filter((f) => !generated(f.split(" (")[0]!));
+          drift.unemitted = drift.unemitted.filter((f) => !generated(f.split(" (")[0]!));
+        }
         if (drift.stale.length > 0 || drift.unemitted.length > 0) drifts.push(drift);
       } finally {
         rmSync(out, { recursive: true, force: true });
