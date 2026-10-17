@@ -7,10 +7,23 @@
 // upload walk rewrites it after every seat); a malformed graph or
 // inputs row refuses — the wall never stands down on the one shape
 // it exists to judge.
+//
+// THE COMPLETENESS GRAMMAR (B7, the h3 inject-keys burn's
+// §CURES-OWED 5): the wall also walks the DECLARED side back — no
+// composed node ships a declared-required input without an edge,
+// and every optional-XOR pair in the either-or table is satisfied.
+// The arms at the bottom ride the REAL boot fixture doc and the
+// REAL h3 film compose (the production builder shape: primed with
+// the doc's own defaults) — the RefModExtract class's wall.
 import { describe, it } from "vitest";
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { Context } from "@deepseek-ai/cordis";
 import { ComposeRefusal } from "@melite/comfyui-card-kit/errors";
+import { GraphBuilder, deriveDefaults } from "@melite/comfyui-card-kit/graph";
+import { instantiateAction } from "@melite/comfyui-card-kit";
+import type { ModelFacts } from "@melite/comfyui-card-kit/facts";
+import { film } from "@melite/models-h3/actions";
 import { cascadeInit } from "../src/models/models.ts";
 import { ComfyUIService } from "../src/service.ts";
 
@@ -106,7 +119,12 @@ describe("THE VALUE GATE (the audit's T2)", () => {
       () => assertWiringAgainst(nodes, inputs, "c1", ks({ cfg: 100.5 })),
       (e: unknown) => e instanceof ComposeRefusal && e.code === "bad-value" && /above its declared max 100/.test(e.message),
     );
-    assertWiringAgainst(nodes, inputs, "c1", ks({ cfg: 7.5, seed: 42, sampler_name: "euler" }));
+    // the satisfied case wires every required input (the reverse
+    // arm demands the declared-required set ride the row)
+    assertWiringAgainst(nodes, inputs, "c1", ks({
+      cfg: 7.5, seed: 42, sampler_name: "euler",
+      model: ["3", 0], latent_image: ["2", 0],
+    }));
   });
 
   it("an enum member passes and a huge enum is named by count with the remainder counted", () => {
@@ -208,8 +226,12 @@ describe("THE VALUE GATE (the audit's T2)", () => {
 
   it("a STAGED-ARTIFACT reference never judges against the enum (the upload walk rewrites it after every seat)", () => {
     const { nodes, inputs } = armed();
+    // the upload key rides the row (the estate's own LoadImage rows
+    // wire it — the forward pass carries it as a widget-serialization
+    // key; the reverse arm demands the declared-required set, and the
+    // real doc declares both image and upload required)
     const loader = (image: string): unknown =>
-      ({ "1": { class_type: "LoadImage", inputs: { image } } });
+      ({ "1": { class_type: "LoadImage", inputs: { image, upload: "image" } } });
     // the audit's carve-out proof: none of these are server names yet —
     // each is rewritten to one AFTER the walk seats, so the enum waits
     assertWiringAgainst(nodes, inputs, "c1", loader("r2.png"));
@@ -253,7 +275,12 @@ describe("THE VALUE GATE (the audit's T2)", () => {
 
   it("a connection reference array never judges (the value is another node's output)", () => {
     const { nodes, inputs } = armed();
-    assertWiringAgainst(nodes, inputs, "c1", ks({ model: ["3", 0], latent_image: ["2", 0] }));
+    // the full required set rides (the reverse arm demands it); the
+    // connection arrays never reach the value gate
+    assertWiringAgainst(nodes, inputs, "c1", ks({
+      model: ["3", 0], latent_image: ["2", 0],
+      seed: 1, cfg: 7, sampler_name: "euler",
+    }));
   });
 
   it("a $-prefixed MERGE-SEAM SPELL never judges (the run seat walks pre-splice rows)", () => {
@@ -332,9 +359,21 @@ describe("the malformed-shape refusals (the audit's two fail-opens, closed)", ()
     );
   });
 
-  it("an ABSENT inputs row stands down (nothing wired, nothing to judge)", () => {
+  it("an ABSENT inputs row judges by the reverse arm: a class with declared requireds refuses; a class with none stands down", () => {
     const { nodes, inputs } = armed();
-    assertWiringAgainst(nodes, inputs, "c1", { "1": { class_type: "KSampler" } });
+    // KSampler declares required inputs — no inputs row is every
+    // required input missing at once (B7's completeness grammar)
+    assert.throws(
+      () => assertWiringAgainst(nodes, inputs, "c1", { "1": { class_type: "KSampler" } }),
+      (e: unknown) => e instanceof ComposeRefusal && e.code === "missing-required"
+        && /node '1' \(KSampler\) without its declared-required input/.test(e.message),
+    );
+    // a class declaring only optionals stands down on an absent row
+    // (nothing required, nothing owed)
+    const optOnly = deriveWiringDoc({
+      Chill: { input: { optional: { pad: ["STRING", { default: "" }] } } },
+    });
+    assertWiringAgainst(optOnly.nodes, optOnly.inputs, "c1", { "1": { class_type: "Chill" } });
   });
 
   it("unarmed (no doc) the wall stands down for every shape — the standing law", () => {
@@ -464,3 +503,168 @@ describe("the census degrades (a declaration the doc barely shapes)", () => {
     );
   });
 });
+
+// ── THE COMPLETENESS GRAMMAR (B7 — the h3 inject-keys burn's
+//  §CURES-OWED 5 / the timeline-calls burn's §CURES-OWED 6, coverage
+//  rows 5/14/17): the wall walks the DECLARED side back. The arms
+//  ride the REAL boot fixture doc (tests/walls/fixtures/
+//  object_info.boot.json — read, never edited) and the REAL h3 film
+//  compose through the production builder shape (GraphBuilder primed
+//  with deriveDefaults(bootDoc) — the card-plane service's own
+//  pinDefaults law). The class under wall: MiniMaxH3RefModExtract.
+describe("THE COMPLETENESS GRAMMAR (B7: the reverse arm + the either-or table)", () => {
+  const bootDoc = JSON.parse(
+    readFileSync("tests/walls/fixtures/object_info.boot.json", "utf8"),
+  ) as Record<string, unknown>;
+
+  const armedBoot = () => deriveWiringDoc(bootDoc);
+
+  /** A MiniMaxH3RefModExtract row with the authored keys only (the
+   *  name/mode/concept_type/save the h3 builder writes) — every other
+   *  required input left to the arm's judgment. */
+  const extract = (inputs: Record<string, unknown>): unknown =>
+    ({ "9": { class_type: "MiniMaxH3RefModExtract", inputs } });
+
+  /** The class's required row as the PRIMED builder autofills it:
+   *  each declared-required input carries the default its
+   *  declaration states (combo-legal by construction). */
+  const autofilledExtractRow = (): Record<string, unknown> => {
+    const req = ((bootDoc.MiniMaxH3RefModExtract as Record<string, any>).input ?? {}).required ?? {};
+    const row: Record<string, unknown> = {};
+    for (const [key, specv] of Object.entries(req)) {
+      const detail = Array.isArray(specv)
+        ? specv.slice(1).find((part) => part && typeof part === "object")
+        : undefined;
+      row[key] = (detail as { default?: unknown } | undefined)?.default;
+    }
+    return row;
+  };
+
+  /** The window driver's model row — the interpreter's own contract
+   *  (the facts door + seed mint; the production path's shape). */
+  const WINDOW_MODEL: ModelFacts = {
+    id: "h3",
+    card: "h3-timeline",
+    defaults: {},
+    lane_inputs: { unet: "minimax_h3_hybrid_fl2va_ref2va_b30-49-int8.safetensors" },
+    variants: [],
+    variant_groups: [],
+    outputs: [],
+  };
+
+  /** The REAL film compose through the PRODUCTION builder: the
+   *  primed GraphBuilder autofills the declared defaults exactly as
+   *  the card-plane service does (its pinDefaults). */
+  const composeFilm = (): ReturnType<GraphBuilder["toJSON"]> => {
+    const g = new GraphBuilder(deriveDefaults(bootDoc));
+    instantiateAction(
+      film,
+      {
+        variant: "t4_open", length: 124, prompt: "a slow push in", seed: 42,
+        loras: [{ name: "distill-8.safetensors", strength: 0.6, steps: 8 }],
+        ref_mods: ["/melite-media/runs/hero/vanellope.png"],
+      },
+      WINDOW_MODEL, g, "b7_class_wall",
+    );
+    return g.toJSON();
+  };
+
+  const extractRowOf = (graph: Record<string, { class_type: string; inputs: Record<string, unknown> }>) => {
+    const found = Object.entries(graph).find(([, n]) => n.class_type === "MiniMaxH3RefModExtract");
+    assert.ok(found, "the film compose builds the RefModExtract creator node");
+    return found;
+  };
+
+  it("(a) THE REVERSE ARM: a built node lacking a declared-required edge refuses, naming the node and the input", () => {
+    const { nodes, inputs } = armedBoot();
+    // the authored row alone: 13 of the class's 15 required inputs
+    // are missing — the arm refuses on the first, naming node '9'
+    assert.throws(
+      () => assertWiringAgainst(nodes, inputs, "h3-timeline", extract({
+        name: "vanellope", mode: "Compressed Reference",
+      })),
+      (e: unknown) => e instanceof ComposeRefusal && e.code === "missing-required"
+        && /node '9' \(MiniMaxH3RefModExtract\) without its declared-required input '(background_retention|concept_type|description|identity|latent_frames|max_tokens|merge|motion_only|multiplier|pool_h|pool_w|ref_resolution)'/.test(e.message)
+        && /required input is missing/.test(e.message),
+    );
+    // a controlled doc names the exact input: KSampler minus its
+    // model edge refuses naming 'model'
+    const { nodes: kn, inputs: ki } = armed();
+    assert.throws(
+      () => assertWiringAgainst(kn, ki, "c1", { "1": { class_type: "KSampler", inputs: { seed: 1 } } }),
+      (e: unknown) => e instanceof ComposeRefusal && e.code === "missing-required"
+        && /without its declared-required input 'model'/.test(e.message),
+    );
+  });
+
+  it("(a) the reverse arm reads the dotted base: a sub-widget key carries its declared input's edge", () => {
+    const { nodes, inputs } = armedBoot();
+    // refs_image is declared optional; a dotted grown-slot key
+    // (refs_image.ref_image_0) satisfies the base's presence the way
+    // the forward pass reads it — no missing-required false refusal.
+    // The either-or pair rides wired, so the dotted base is this
+    // arm's only variable.
+    const full = autofilledExtractRow();
+    full["refs_image.ref_image_0"] = ["1", 0];
+    full.vae = ["5", 0];
+    assertWiringAgainst(nodes, inputs, "h3-timeline", extract(full));
+  });
+
+  it("(b) THE EITHER-OR ARM: a RefModExtract with neither av_encoder nor vae refuses with the engine's own voice", () => {
+    const { nodes, inputs } = armedBoot();
+    const full = autofilledExtractRow();
+    // every required input rides; the pair is absent — the reverse
+    // arm passes, the either-or arm speaks the pack's execute law
+    // (vendor/ComfyUI-MiniMaxH3Mod/nodes.py:1768)
+    assert.throws(
+      () => assertWiringAgainst(nodes, inputs, "h3-timeline", extract(full)),
+      (e: unknown) => e instanceof ComposeRefusal && e.code === "missing-required"
+        && /with neither 'av_encoder' nor 'vae'/.test(e.message)
+        && /connect an av_encoder \(MiniMax-H3 VAE loader\) or a standard VAE\./.test(e.message),
+    );
+    // EITHER half satisfies the pair — the law is at-least-one
+    assertWiringAgainst(nodes, inputs, "h3-timeline", extract({ ...full, vae: ["5", 0] }));
+    assertWiringAgainst(nodes, inputs, "h3-timeline", extract({ ...full, av_encoder: ["5", 0] }));
+    // and a node the table does not name is judged by nothing here
+    const { nodes: kn, inputs: ki } = armed();
+    assertWiringAgainst(kn, ki, "c1", ks({
+      model: ["3", 0], latent_image: ["2", 0], seed: 1, cfg: 7, sampler_name: "euler",
+    }));
+  });
+
+  it("(c) THE SATISFIED CASE composes green: the REAL film graph, built through the production builder, walks the real doc — and its vae edge is the living proof", () => {
+    const { nodes, inputs } = armedBoot();
+    const graph = composeFilm();
+    const [id, row] = extractRowOf(graph);
+    // the primed builder autofilled the declared defaults (the
+    // production shape) and the VAE EDGE rode the compose
+    assert.deepEqual(row.inputs.vae, expectVaeEdge(graph, id), "the extract's vae edge rides the family VAE loader");
+    // the wall greens the whole film graph as the estate composes it
+    assertWiringAgainst(nodes, inputs, "h3-timeline", graph);
+    // THE HERMETIC TOGGLE: the same composed row minus the vae edge —
+    // exactly the 2026-11-06 burn's shape — reds AT COMPOSE with the
+    // engine's voice. (The live file toggle's verbatim capture lives
+    // in dev_docs/audits/journey/b7-wiring-completeness-2026-10-17.md.)
+    delete row.inputs.vae;
+    assert.throws(
+      () => assertWiringAgainst(nodes, inputs, "h3-timeline", graph),
+      (e: unknown) => e instanceof ComposeRefusal && e.code === "missing-required"
+        && new RegExp(`node '${id}' \\(MiniMaxH3RefModExtract\\) with neither 'av_encoder' nor 'vae'`).test(e.message)
+        && /connect an av_encoder \(MiniMax-H3 VAE loader\) or a standard VAE\./.test(e.message),
+    );
+  });
+});
+
+/** The graph id of the VAELoader the film lane pins to the family's
+ *  video VAE — the edge the extract's vae input must carry. */
+function expectVaeEdge(
+  graph: Record<string, { class_type: string; inputs: Record<string, unknown> }>,
+  extractId: string,
+): unknown {
+  void extractId;
+  const loader = Object.entries(graph).find(([, n]) =>
+    n.class_type === "VAELoader"
+    && String(n.inputs.vae_name ?? "").includes("minimax_h3_video_vae"));
+  assert.ok(loader, "the family's H3 video VAE loader composes");
+  return [loader[0], 0];
+}
