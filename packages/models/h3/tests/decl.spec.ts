@@ -52,7 +52,8 @@ describe("the h3 model plugin (the ONE H3 family — timeline + single-shot + ke
     const root = json.refs[String(json.uid)];
     assert.ok(root?.dict, "the carrier serializes its field map");
     for (const seat of ["image", "last_frame"]) {
-      const node = json.refs[String(root.dict![seat]!)];
+      const node: { dict?: Record<string, number>; meta?: { extra?: { wtype?: string } } } | undefined =
+        json.refs[String(root.dict![seat]!)];
       assert.equal(node?.meta?.extra?.wtype, "image", `the served envelope renders '${seat}' as the media face`);
     }
     // and the family's lane surface still names both seats (the

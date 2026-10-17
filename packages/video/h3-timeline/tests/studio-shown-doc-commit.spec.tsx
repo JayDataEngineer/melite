@@ -198,7 +198,7 @@ describe("B2 — the flip writer (the commit unstamps the residue in the same ge
     const p = s.sent[s.sent.length - 1]!
     // the surviving call rides whole (the grid snap is serializeCalls'
     // own law, walled in doc-calls; the guide survives it)
-    expect(p.calls.length).toBe(1)
+    expect((p.calls as Array<{ image?: string }>).length).toBe(1)
     expect((p.calls as Array<{ image?: string }>)[0]!.image).toBe("anchor.png")
     expect(p.sr_switch).toBeNull()
     expect(p.second_pass_enabled).toBeNull()
