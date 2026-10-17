@@ -1,0 +1,35 @@
+{
+ "derived_at": "2026-10-17T06:12:45.831Z",
+ "tool": "scripts/regen-node-vocab.mjs --boot",
+ "source": {
+  "path": "data/tmp/object_info_prod.json",
+  "sha256": "c8cc8645e2c4882709a5b3b4c87e9a8dc1276b83e8c1cd89c5d1259227752c8a",
+  "mtime_ms": 1792217392561.6277,
+  "class_count": 1658,
+  "origin": "capture"
+ },
+ "bootstrap_seed": {
+  "path": "tests/walls/fixtures/object_info.boot.bootstrap.json",
+  "sha256": "82752fba588b6ef688a97c3a3d8ab9e2f2d4798d9b0f29cdd5399ca8f7d342e5",
+  "rows": 51
+ },
+ "derivation": {
+  "facts_path": "packages/engines/comfyui-cordis/data/model-facts.json",
+  "addressed_class_count": 95,
+  "bootstrap_class_count": 51,
+  "fixture_class_count": 146,
+  "rows_probed": 28,
+  "refused_rows": 0
+ },
+ "delta": {
+  "added": [
+   "MiniMaxH3MotionContext",
+   "MiniMaxH3MotionContextLoadLatent",
+   "MiniMaxH3MotionContextSaveLatent",
+   "MiniMaxH3MotionContextTrim"
+  ],
+  "pruned": [],
+  "updated": [],
+  "reordered_keys": 0
+ }
+}

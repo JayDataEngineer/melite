@@ -31,6 +31,7 @@
 // must register before the barrel's first evaluation, so this import
 // precedes boot-models.
 import { assertHermeticRode } from "../../../helpers/hermetic-engine.ts";
+import { fillFor as probeFillFor, namedMulti, namedParam } from "../../../../packages/engines/comfyui-cordis/scripts/compose-probe.ts";
 import { describe, it, beforeAll } from "vitest";
 import assert from "node:assert/strict";
 import { dirname, join } from "node:path";
@@ -70,95 +71,16 @@ const FACTS_PATH = join(
 type NodeShape = { class_type?: unknown };
 type Graph = Record<string, NodeShape>;
 
-/** The probe fills, keyed by the refusing param's own name. Each
- *  value is chosen to be bounds-legal across the tree's numeric
- *  fields (512 inside every resolution bound, 4 inside steps/cfg
- *  bounds, -1 the seed convention); a field whose legal range
- *  EXCLUDES its probe reds the wall — that is a bounds worth
- *  seeing, and the cure is a row here with the field's name. */
-const PROBE_NUMBERS: Record<string, number> = {
-  width: 512, height: 512,
-  seed: -1,
-  steps: 4,
-  cfg: 4.5,
-  // anny's floorless numerics (2026-11-02, the dual-floor cure):
-  // the schema defaults left these keys — the family cascade owns
-  // the floors, so the RAW compose this probe drives refuses on
-  // them by name. The values are anny's own family calibration,
-  // inside the declared bounds.
-  resolution: 768,
-  framing: 1.2,
-  focal_length: 50,
-  samples: 64,
-};
-const PROBE_STRINGS: Record<string, string> = {};
-// A gate that STATS the path ("is not a file on this estate") needs
-// a file that exists — the facts file is the one this wall already
-// holds open. resolution rides the closed variant table (1024 is a
-// member on every mesh lane).
-const ESTATE_FILE_PROBE = FACTS_PATH;
-PROBE_STRINGS.input_image = ESTATE_FILE_PROBE;
-// (size-enum probes are not hand rows: the extraction above reads
-// the members out of each card's own refusal)
-/** The probe asset, by the param's own media suffix — the compose
- *  gates read these as strings (a staged path), never arrays. */
-const ASSET_SUFFIX: Array<[RegExp, string]> = [
-  [/audio|voice|speech/i, "probe.wav"],
-  [/video|frames/i, "probe.mp4"],
-  [/glb|mesh|rig/i, "probe.glb"],
-  [/image|mask|img|pic|photo/i, "probe.png"],
-];
-
-/** The probe doc for one refusing param, by its name's shape:
- *  SINGULAR media names ride one path string (what a compose gate
- *  reads); plural/list names ride one-element arrays. */
-function fillFor(name: string): unknown {
-  if (name in PROBE_NUMBERS) return PROBE_NUMBERS[name];
-  if (PROBE_STRINGS[name] !== undefined) return PROBE_STRINGS[name];
-  const listShape = /(s|_list|_images|_inputs|_masks)$/i.test(name);
-  const suffix = ASSET_SUFFIX.find(([re]) => re.test(name));
-  if (suffix) return listShape ? [suffix[1]] : suffix[1];
-  if (/^(is|has|use|enable|show|allow|double|crop)/i.test(name)) return false;
-  if (/^(num|count|max|min|batch|frames|dur|quality|strength|denoise|shift|temp)/i.test(name)) return 1;
-  return "the liveness probe";
-}
-
-/** The missing-param name a refusal names, if it names one. Reads
- *  the card tier's own voices: the gated resolve ("required param
- *  'x' missing"), the schema walk (field paths), and the compose
- *  gates ("required param ... on the ... card"). */
-function namedParam(message: string): string | null {
-  const patterns = [
-    /params '([^']+)'/,
-    /fields '([^']+)'/,
-    /param '([A-Za-z_][\w-]*)'/,
-    /'([A-Za-z_][\w-]*)' (?:is )?(?:missing|required)/,
-    /(?:missing|required)[\w ]*'([A-Za-z_][\w-]*)'/i,
-    /field '([A-Za-z_][\w-]*)'/,
-    /([A-Za-z_][\w-]*) = undefined/,
-  ];
-  for (const re of patterns) {
-    const m = re.exec(message);
-    if (m) return m[1] as string;
-  }
-  return null;
-}
-
-/** Every param name a refusal lists (a gate may demand several —
- *  'ref_audio' + 'ref_text' ride together). */
-function namedMulti(message: string): string[] {
-  const names = new Set<string>();
-  for (const m of message.matchAll(/'([A-Za-z_][\w-]*)'/g)) names.add(m[1]);
-  const first = namedParam(message);
-  if (first) names.add(first);
-  const undef = /([A-Za-z_][\w-]*) = undefined/.exec(message);
-  if (undef) names.add(undef[1] as string);
-  const bare = /([A-Za-z_][\w-]*) undefined is not/.exec(message);
-  if (bare) names.add(bare[1] as string);
-  // the schema walk's path voice: $.field expected "x" | "y"
-  for (const m of message.matchAll(/\$\.([A-Za-z_][\w-]*)/g)) names.add(m[1]);
-  return [...names].filter((n) => !["random", "int", "undefined", "required"].includes(n));
-}
+// THE PROBE VOCABULARY, one home (packages/engines/comfyui-cordis/
+// scripts/compose-probe.ts — this wall's fill tables and refusal
+// parsers, extracted 2026-10-17 so the boot-fixture derivation probes
+// under the SAME law; E8. The home is the cordis package because the
+// derivation script rides the package's own emit-face program — a
+// script may not import across rootDir).
+// The estate file probe rides the facts file this wall already holds
+// open: a gate that STATS the path ("is not a file on this estate")
+// gets a real file.
+const fillFor = (name: string): unknown => probeFillFor(name, FACTS_PATH);
 
 /** THE STUDIO-EMIT GREP (CURE-1's emit depth): the computed
  *  `[MOTION_*_PARAM]` keys inside every onSave(...) payload of one
