@@ -298,13 +298,46 @@ test.describe('journey-closure E2 — the browser-tier arms (the live lane)', ()
     await expect(page.locator(KF_REFUSAL_FACE), 'no door refusal rode the flip').toHaveCount(0)
 
     // THE REOPEN: a real reload, a real tab re-open, a real drill
-    // re-open — the commit survived the roundtrip.
+    // re-open — the commit survived the roundtrip. THE SHELL HAS NO
+    // SESSION URL (the served client bundle holds zero history-API
+    // calls; session selection is in-memory): a reload auto-restores
+    // the last-ACTIVE session, which on a shared lane can be ANOTHER
+    // session's face — the right sidebar this arm drove never mounts
+    // there and the expand seat never renders (the 2026-10-17 red).
+    // Re-entry is therefore the arm's OWN tree row, clicked by the
+    // mint's captured key: the sessions tree renders every session as
+    // role=treeitem with data-row-key="session:<id>", and the bench
+    // session key IS that id verbatim (benchSessionOf admits a
+    // well-formed sessionId unchanged — benchStage.ts:371). A CLICK,
+    // never a re-mint: each mint is a real model turn.
     await page.reload({ waitUntil: 'domcontentloaded' })
     await dismissOnboarding(page)
     await waitForEstate(page)
-    await page.locator('[data-sidebar-right-expand]').first().click({ timeout: 10_000 })
-    await page.waitForTimeout(3_000)
-    await page.getByRole('button', { name: /Media Flow/ }).first().click({ timeout: 10_000 })
+    const ownRow = page.locator(`[data-row-key="session:${sessionKey}"]`)
+    await expect(ownRow, 'the arm\'s own session row renders in the tree after reload').toBeVisible({ timeout: 30_000 })
+    await ownRow.click({ timeout: 15_000 })
+    // The sidebar re-enters exactly as openCardsWithBench enters it,
+    // with one tolerance the reopen owns: the sidebar's expanded state
+    // survives the reload client-side, so the reopened face may render
+    // the tab row already — and never the collapse-state expand seat.
+    // The seat hop is tried and skipped when the face is already
+    // expanded; the tab hop matches BOTH faces — the collapsed rail's
+    // guide pill renders role=button, the expanded strip's tab renders
+    // role=tab with the close affordance in its accessible name
+    // ("Media Flow Close"). Which face greets the reopen is the
+    // survived expanded state, not the test's choice (the 2026-10-17
+    // ride-3 red: the role=button-only locator timed out against an
+    // already-expanded, already-selected Media Flow tab).
+    const expand = page.locator('[data-sidebar-right-expand]').first()
+    await expect(expand, 'the right sidebar offers its expand seat (or is already expanded)')
+      .toBeVisible({ timeout: 15_000 }).catch(() => {})
+    if (await expand.isVisible().catch(() => false)) {
+      await expand.click({ timeout: 10_000 })
+      await page.waitForTimeout(3_000)
+    }
+    await page.getByRole('button', { name: /Media Flow/ })
+      .or(page.getByRole('tab', { name: /Media Flow/ }))
+      .first().click({ timeout: 20_000 })
     await page.waitForTimeout(5_000)
     await openDrill(page, stageId, 'the reopened arm stage')
     await expect(page.locator('[data-testid="h3-studio-tenant"]')).toBeVisible({ timeout: 30_000 })
