@@ -22,6 +22,10 @@ const surface: readonly DeclaredSurface[] = [{
     // the LIST-typed lane: h3/qwen-img-edit declare ref_images and
     // friends as image_list (models/h3/src/actions.ts:1359)
     { name: "ref_images", type: "image_list" },
+    // the SCALAR media seat (D8, the NO-DROP law's write half):
+    // h3's image + last_frame declare "image" — the write plane
+    // must judge it the admission media gate's own shape.
+    { name: "image", type: "image" },
   ],
 }];
 
@@ -108,6 +112,25 @@ describe("validateWriteRowsAgainstActions (the declared-plane door)", () => {
       { where: "defaults", values: { ref_images: ["a.png", "b.png"] } },
     ], surface);
     assert.deepEqual(checked, ["defaults:ref_images"]);
+  });
+
+  // THE SCALAR MEDIA SEAT (D8, the NO-DROP law's write half): an
+  // image-typed row admits the media path (a string at the wire)
+  // and refuses every other tier — the write face agreeing with the
+  // admission media gate (the schema walk refuses a non-path at
+  // compose; here the door refuses a non-string before the stamp).
+  it("a media path on a scalar image param passes the door", () => {
+    const checked = validateWriteRowsAgainstActions("probe", [
+      { where: "defaults", values: { image: "data/input/shot-a.png" } },
+    ], surface);
+    assert.deepEqual(checked, ["defaults:image"]);
+  });
+
+  it("a non-string on a scalar image param refuses with both types", () => {
+    throwsDoor(
+      [{ where: "defaults", values: { image: 7 } }],
+      /probe defaults: 'image' declares image but carries number/,
+    );
   });
 
   it("reserved row coordinates, mod-plane keys, and null stamps skip", () => {

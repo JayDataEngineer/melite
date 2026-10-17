@@ -18,12 +18,48 @@
 import { describe, it } from "vitest";
 import assert from "node:assert/strict";
 import { DECL, family } from "../src/index.ts";
+import { film } from "../src/actions.ts";
+import { paramSchema } from "../src/schema.ts";
 
 describe("the h3 model plugin (the ONE H3 family — timeline + single-shot + keyframe)", () => {
   it("is a plugin: named family export, inject ['models'], apply registers", () => {
     assert.equal(family.name, "family-h3");
     assert.deepEqual(family.inject, ["models"]);
     assert.equal(typeof family.apply, "function");
+  });
+
+  it("THE SCALAR MEDIA SEATS (D8, the NO-DROP law's write half): the film action's image + last_frame declare type 'image' — never plain string", () => {
+    // run-899a8448's shape: the seats declared "string", the declared
+    // plane offered freehand text for a media seat, and the UI wrote a
+    // stage name into one — the reference never became a node. The
+    // declared plane must name the media tier; the carrier schema's
+    // own wtype: 'image' rows (schema.ts) are the same truth on the
+    // serve plane, and the declared-plane door judges the tier.
+    const rows = new Map(film.params.map((p) => [p.name, p.type] as const));
+    assert.equal(rows.get("image"), "image", "the first-frame anchor is a media seat");
+    assert.equal(rows.get("last_frame"), "image", "the end anchor is a media seat");
+    // the list seats stay the list tier — the union's two media
+    // spellings stay distinct (scalar vs stack)
+    assert.equal(rows.get("ref_images"), "image_list");
+    // THE PLANES AGREE (the debt's done-line): the declared plane's
+    // "image" rows and the serve plane's wtype: 'image' rows name the
+    // same two seats — toJSON() is the serialization the estate
+    // serves, the envelope the form walker reads for the media face.
+    const json = paramSchema.toJSON() as unknown as {
+      uid: number
+      refs: Record<string, { dict?: Record<string, number>; meta?: { extra?: { wtype?: string } } }>
+    };
+    const root = json.refs[String(json.uid)];
+    assert.ok(root?.dict, "the carrier serializes its field map");
+    for (const seat of ["image", "last_frame"]) {
+      const node = json.refs[String(root.dict![seat]!)];
+      assert.equal(node?.meta?.extra?.wtype, "image", `the served envelope renders '${seat}' as the media face`);
+    }
+    // and the family's lane surface still names both seats (the
+    // name list is the serve claim; the action rows are the tier)
+    for (const seat of ["image", "last_frame"]) {
+      assert.ok((DECL.params ?? []).includes(seat), `the lane surface names '${seat}'`);
+    }
   });
 
   it("MODEL names the checkpoint — the family id carries NO lane flavor (anima isn't anima-generate)", () => {

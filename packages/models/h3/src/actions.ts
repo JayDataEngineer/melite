@@ -1952,8 +1952,15 @@ export const film: ComfyActionSpec<Record<string, unknown>, H3Facts> = {
     // An agent that trusted this row got 'unknown-param' at the door.
     // The compose still reads p.prompt (the lift's write); the
     // ADVERTISED surface is what changed.
-    { name: "image", type: "string" },
-    { name: "last_frame", type: "string" },
+    // THE SCALAR MEDIA SEATS (the NO-DROP law's write half, D8 /
+    // CONTRACTS §4 debt 16 — run-899a8448's burn: the seats declared
+    // plain "string", so the declared plane offered freehand text for
+    // a media seat and the UI wrote a stage name into one). They are
+    // IMAGE seats: a media path at the wire, the form's picker +
+    // upload face — the carrier schema's own `wtype: 'image'` rows
+    // (schema.ts) are the same truth on the serve plane.
+    { name: "image", type: "image" },
+    { name: "last_frame", type: "image" },
     { name: "ref_images", type: "image_list" },
     { name: "ref_videos", type: "image_list" },
     { name: "ref_audios", type: "image_list" },

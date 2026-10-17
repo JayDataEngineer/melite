@@ -812,7 +812,10 @@ export interface DeclaredAction {
   readonly outputs: ReadonlyArray<{ readonly name: string; readonly kind: string }>;
   readonly params: ReadonlyArray<{
     readonly name: string;
-    readonly type: "number" | "string" | "boolean" | "enum" | "image_list";
+    // "image" = the SCALAR media seat (the NO-DROP law's write
+    // half, CONTRACTS §4 debt 16): a media path at the wire, the
+    // form's picker + upload face — never freehand text.
+    readonly type: "number" | "string" | "boolean" | "enum" | "image" | "image_list";
     readonly bounds?: readonly [number, number];
     readonly options?: readonly string[];
     readonly rule?: string;

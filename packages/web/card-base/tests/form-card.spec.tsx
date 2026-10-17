@@ -822,3 +822,71 @@ test('omitFields: absent (or undefined) the form renders every declared field', 
   expect(screen.getByText('Turbo')).not.toBeNull()
   expect(screen.getByText('Cfg')).not.toBeNull()
 })
+
+// ── THE MEDIA-SEAT FACE (D8, the NO-DROP law's write half) ────────
+// CONTRACTS §4 debt 16 / run-899a8448: the h3 image + last_frame
+// seats declared plain "string" in the kit's param union, so the
+// generic editor offered freehand text for a media seat and the
+// operator's UI wrote a stage name where a media path belongs. The
+// write face's law: a media-typed row (the served envelope's
+// wtype: 'image' — the REAL serialization path, never a client-side
+// name special case) renders the square — picker + upload — on both
+// seats (the input rail AND the param group), and its picker asks
+// the media door for the IMAGE kind. Toggle for the red-proof:
+// re-type the row plain string (drop the wtype) → the walker derives
+// 'text' → freehand renders → this arm reds.
+test('THE MEDIA-SEAT FACE: an image-typed row renders NO freehand input — rail seat and group seat alike — and its picker sources media only', async () => {
+  const refs: Record<number, Ref> = {
+    0: { type: 'object', dict: { img: 1, last_frame: 2, prompt: 3 } },
+    1: { type: 'string', meta: { description: 'Image', tooltip: 'first frame', extra: { wtype: 'image' } } },
+    2: { type: 'string', meta: { description: 'Last frame', tooltip: 'end anchor', extra: { wtype: 'image' } } },
+    3: { type: 'string', meta: { description: 'Prompt' } },
+  }
+  const spec = {
+    form: 'form_video_director',
+    model: 'h3',
+    schema: { uid: 0, refs },
+    // img rides the declared input signature (the rail seat);
+    // last_frame rides NO edge — the param group's slot cell (the
+    // h3 shape on a card whose rail is suppressed).
+    inputs: [{ name: 'img', kind: 'image' }],
+    packs: [],
+  } as unknown as FormSpecDoc
+  const mediaKinds: string[] = []
+  const loadMedia = async (kind: string, _signal: AbortSignal): Promise<Array<{ url: string; name: string }>> => {
+    mediaKinds.push(kind)
+    return [{ url: 'data/input/shot-a.png', name: 'shot-a.png' }]
+  }
+  render(h(CardForm, {
+    spec, user: {}, onSet: vi.fn(), onPick: vi.fn(),
+    wire: {
+      // a TEXT-stage flow row: if the media modal ever listed the
+      // flow wire raw, this label would leak into the media seat's
+      // candidates — the arm reads it as the failure
+      candidates: [{ id: 'text-stage', label: 'text-stage', url: 'doc://text-stage' }],
+      loadMedia,
+    },
+  }))
+  // THE CONTROL: a text row still renders the freehand input — the
+  // assertions below are judging the media rows, not a vacuous DOM.
+  expect(screen.getByLabelText('Prompt')).not.toBeNull()
+  // NO FREEHAND on either media seat — no <input> answers the row's
+  // label; the square's source button does.
+  expect(document.querySelector('input[aria-label="Image"]')).toBeNull()
+  expect(document.querySelector('input[aria-label="Last frame"]')).toBeNull()
+  expect(screen.getByRole('button', { name: 'Image source' })).not.toBeNull()
+  expect(screen.getByRole('button', { name: 'Last frame source' })).not.toBeNull()
+  // THE GROUP SEAT'S PICKER: the media door is asked for the IMAGE
+  // kind (the admission media gate's own filter), and the modal
+  // lists the media rows ONLY — the text-stage flow row never leaks in.
+  fireEvent.click(screen.getByRole('button', { name: 'Last frame source' }))
+  fireEvent.click(screen.getByRole('menuitem', { name: 'From media' }))
+  expect(await screen.findByText('shot-a.png')).not.toBeNull()
+  expect(screen.queryByText('text-stage')).toBeNull()
+  expect(mediaKinds).toEqual(['image'])
+  // THE RAIL SEAT asks the same door the same way.
+  fireEvent.click(screen.getByRole('button', { name: 'Image source' }))
+  fireEvent.click(screen.getByRole('menuitem', { name: 'From media' }))
+  expect(await screen.findByText('shot-a.png')).not.toBeNull()
+  expect(mediaKinds).toEqual(['image', 'image'])
+})

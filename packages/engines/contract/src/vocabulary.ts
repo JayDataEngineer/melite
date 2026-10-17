@@ -25,10 +25,14 @@ export interface PortSpec<K extends string = string> {
  *  random, and the one minter resolves it so every node sharing the
  *  seed shares the minted value. A variant preset pinning a param
  *  the surface does not offer, or a value outside the envelope,
- *  refuses at the family door. */
+ *  refuses at the family door. `"image"` is the SCALAR media seat —
+ *  the value is a media path (a string at the wire), the form face
+ *  is the picker + upload square, never freehand text (the NO-DROP
+ *  law's write half: run-899a8448 typed a stage name into a media
+ *  seat that declared as plain string). */
 export interface ParamSpec {
   readonly name: string;
-  readonly type: "number" | "string" | "boolean" | "enum" | "image_list";
+  readonly type: "number" | "string" | "boolean" | "enum" | "image" | "image_list";
   readonly bounds?: readonly [number, number];
   readonly options?: readonly string[];
   readonly rule?: "seed-sentinel";
