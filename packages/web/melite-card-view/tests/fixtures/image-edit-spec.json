@@ -77,17 +77,17 @@
   "loader_info": null,
   "mod_schemas": {
     "loras": {
-      "uid": 3492,
+      "uid": 3503,
       "refs": {
-        "3480": {
+        "3491": {
           "type": "string",
           "meta": {}
         },
-        "3481": {
+        "3492": {
           "type": "number",
           "meta": {}
         },
-        "3487": {
+        "3498": {
           "type": "number",
           "meta": {
             "min": 1,
@@ -103,18 +103,18 @@
             }
           }
         },
-        "3488": {
+        "3499": {
           "type": "object",
           "meta": {
             "default": {}
           },
           "dict": {
-            "name": 3480,
-            "strength": 3481,
-            "steps": 3487
+            "name": 3491,
+            "strength": 3492,
+            "steps": 3498
           }
         },
-        "3491": {
+        "3502": {
           "type": "array",
           "meta": {
             "default": [],
@@ -127,23 +127,23 @@
               "order": 0
             }
           },
-          "inner": 3488
+          "inner": 3499
         },
-        "3492": {
+        "3503": {
           "type": "object",
           "meta": {
             "default": {}
           },
           "dict": {
-            "loras": 3491
+            "loras": 3502
           }
         }
       }
     },
     "mask": {
-      "uid": 3720,
+      "uid": 3731,
       "refs": {
-        "3654": {
+        "3665": {
           "type": "any",
           "meta": {
             "description": "Region Mask",
@@ -156,7 +156,7 @@
             }
           }
         },
-        "3658": {
+        "3669": {
           "type": "string",
           "meta": {
             "role": "path",
@@ -172,22 +172,22 @@
             "description": "Region Mask"
           }
         },
-        "3659": {
+        "3670": {
           "type": "const",
           "meta": {},
           "value": "auto"
         },
-        "3660": {
+        "3671": {
           "type": "const",
           "meta": {},
           "value": "crop_stitch"
         },
-        "3661": {
+        "3672": {
           "type": "const",
           "meta": {},
           "value": "full_frame"
         },
-        "3665": {
+        "3676": {
           "type": "union",
           "meta": {
             "default": "crop_stitch",
@@ -212,32 +212,32 @@
             }
           },
           "list": [
-            3659,
-            3660,
-            3661
+            3670,
+            3671,
+            3672
           ]
         },
-        "3666": {
+        "3677": {
           "type": "const",
           "meta": {},
           "value": "off"
         },
-        "3667": {
+        "3678": {
           "type": "const",
           "meta": {},
           "value": "person"
         },
-        "3668": {
+        "3679": {
           "type": "const",
           "meta": {},
           "value": "face"
         },
-        "3669": {
+        "3680": {
           "type": "const",
           "meta": {},
           "value": "hand"
         },
-        "3673": {
+        "3684": {
           "type": "union",
           "meta": {
             "default": "off",
@@ -258,13 +258,13 @@
             }
           },
           "list": [
-            3666,
-            3667,
-            3668,
-            3669
+            3677,
+            3678,
+            3679,
+            3680
           ]
         },
-        "3680": {
+        "3691": {
           "type": "number",
           "meta": {
             "min": 0,
@@ -282,7 +282,7 @@
             }
           }
         },
-        "3687": {
+        "3698": {
           "type": "number",
           "meta": {
             "min": -32,
@@ -300,7 +300,7 @@
             }
           }
         },
-        "3694": {
+        "3705": {
           "type": "number",
           "meta": {
             "min": 0,
@@ -318,7 +318,7 @@
             }
           }
         },
-        "3701": {
+        "3712": {
           "type": "number",
           "meta": {
             "min": 0,
@@ -336,7 +336,7 @@
             }
           }
         },
-        "3705": {
+        "3716": {
           "type": "boolean",
           "meta": {
             "default": false,
@@ -351,7 +351,7 @@
             }
           }
         },
-        "3712": {
+        "3723": {
           "type": "number",
           "meta": {
             "min": 64,
@@ -369,7 +369,7 @@
             }
           }
         },
-        "3719": {
+        "3730": {
           "type": "number",
           "meta": {
             "min": 0.05,
@@ -387,23 +387,23 @@
             }
           }
         },
-        "3720": {
+        "3731": {
           "type": "object",
           "meta": {
             "default": {}
           },
           "dict": {
-            "mask": 3654,
-            "input_mask": 3658,
-            "mask_mode": 3665,
-            "mask_detector": 3673,
-            "mask_context_pad": 3680,
-            "mask_grow": 3687,
-            "mask_feather": 3694,
-            "mask_threshold": 3701,
-            "mask_invert": 3705,
-            "mask_detail_size": 3712,
-            "mask_denoise": 3719
+            "mask": 3665,
+            "input_mask": 3669,
+            "mask_mode": 3676,
+            "mask_detector": 3684,
+            "mask_context_pad": 3691,
+            "mask_grow": 3698,
+            "mask_feather": 3705,
+            "mask_threshold": 3712,
+            "mask_invert": 3716,
+            "mask_detail_size": 3723,
+            "mask_denoise": 3730
           }
         }
       }
@@ -414,7 +414,7 @@
     "default": "image"
   },
   "schema": {
-    "uid": 3368,
+    "uid": 3379,
     "refs": {
       "339": {
         "type": "const",
@@ -686,11 +686,11 @@
         "meta": {},
         "value": "simple"
       },
-      "3300": {
+      "3311": {
         "type": "string",
         "meta": {}
       },
-      "3304": {
+      "3315": {
         "type": "array",
         "meta": {
           "default": [],
@@ -706,9 +706,9 @@
             "tooltip": "Ordered input images — the FIRST is the image being edited; the rest are references the prompt can cite as <image2>, <image3>… in order. Capacity follows the boarded model; more than it admits refuses loudly."
           }
         },
-        "inner": 3300
+        "inner": 3311
       },
-      "3308": {
+      "3319": {
         "type": "string",
         "meta": {
           "role": "path",
@@ -718,7 +718,7 @@
           "description": "Input Image"
         }
       },
-      "3312": {
+      "3323": {
         "type": "string",
         "meta": {
           "role": "path",
@@ -728,7 +728,7 @@
           "description": "Image 2"
         }
       },
-      "3316": {
+      "3327": {
         "type": "string",
         "meta": {
           "role": "path",
@@ -738,11 +738,11 @@
           "description": "Image 3"
         }
       },
-      "3317": {
+      "3328": {
         "type": "string",
         "meta": {}
       },
-      "3320": {
+      "3331": {
         "type": "array",
         "meta": {
           "default": [],
@@ -751,9 +751,9 @@
             "hidden": true
           }
         },
-        "inner": 3317
+        "inner": 3328
       },
-      "3324": {
+      "3335": {
         "type": "string",
         "meta": {
           "role": "path",
@@ -763,7 +763,7 @@
           "description": "Region Mask"
         }
       },
-      "3327": {
+      "3338": {
         "type": "string",
         "meta": {
           "description": "Prompt",
@@ -778,7 +778,7 @@
           }
         }
       },
-      "3330": {
+      "3341": {
         "type": "string",
         "meta": {
           "description": "Negative Prompt",
@@ -791,7 +791,7 @@
           }
         }
       },
-      "3333": {
+      "3344": {
         "type": "number",
         "meta": {
           "description": "Width",
@@ -807,7 +807,7 @@
           }
         }
       },
-      "3336": {
+      "3347": {
         "type": "number",
         "meta": {
           "description": "Height",
@@ -823,7 +823,7 @@
           }
         }
       },
-      "3340": {
+      "3351": {
         "type": "boolean",
         "meta": {
           "description": "Match Input Resolution",
@@ -838,7 +838,7 @@
           }
         }
       },
-      "3345": {
+      "3356": {
         "type": "number",
         "meta": {
           "description": "Seed",
@@ -852,7 +852,7 @@
           }
         }
       },
-      "3351": {
+      "3362": {
         "type": "number",
         "meta": {
           "description": "Steps",
@@ -869,7 +869,7 @@
           }
         }
       },
-      "3357": {
+      "3368": {
         "type": "number",
         "meta": {
           "description": "Guidance Scale",
@@ -886,7 +886,7 @@
           }
         }
       },
-      "3359": {
+      "3370": {
         "type": "union",
         "meta": {
           "description": "Sampler",
@@ -947,7 +947,7 @@
           383
         ]
       },
-      "3361": {
+      "3372": {
         "type": "union",
         "meta": {
           "description": "Scheduler",
@@ -972,7 +972,7 @@
           393
         ]
       },
-      "3364": {
+      "3375": {
         "type": "boolean",
         "meta": {
           "description": "Use Stock Nodes",
@@ -985,7 +985,7 @@
           }
         }
       },
-      "3367": {
+      "3378": {
         "type": "boolean",
         "meta": {
           "description": "Double Reference",
@@ -998,30 +998,30 @@
           }
         }
       },
-      "3368": {
+      "3379": {
         "type": "object",
         "meta": {
           "default": {}
         },
         "dict": {
-          "input_images": 3304,
-          "image1": 3308,
-          "image2": 3312,
-          "image3": 3316,
-          "reference_images": 3320,
-          "input_mask": 3324,
-          "prompt": 3327,
-          "negative_prompt": 3330,
-          "width": 3333,
-          "height": 3336,
-          "match_input_resolution": 3340,
-          "seed": 3345,
-          "steps": 3351,
-          "cfg": 3357,
-          "sampler": 3359,
-          "scheduler": 3361,
-          "use_stock_nodes": 3364,
-          "double_reference": 3367
+          "input_images": 3315,
+          "image1": 3319,
+          "image2": 3323,
+          "image3": 3327,
+          "reference_images": 3331,
+          "input_mask": 3335,
+          "prompt": 3338,
+          "negative_prompt": 3341,
+          "width": 3344,
+          "height": 3347,
+          "match_input_resolution": 3351,
+          "seed": 3356,
+          "steps": 3362,
+          "cfg": 3368,
+          "sampler": 3370,
+          "scheduler": 3372,
+          "use_stock_nodes": 3375,
+          "double_reference": 3378
         }
       }
     }
