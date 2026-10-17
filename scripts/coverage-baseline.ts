@@ -322,7 +322,9 @@ export const COVERAGE_BASELINE: Record<string, {
   // (the bin is the imperative surface), so its one statement
   // measures 0 until an in-tree consumer lands.
   '**/packages/harness/provisioner/src/index.ts': { statements: 0, branches: 100, functions: 100, lines: 0 },
-  '**/packages/harness/melite-tools/src/discovery.ts': { statements: 99.69, branches: 99.17, functions: 100, lines: 100 },
+  // 2026-11-06 follow-up regen: the deletion cure (28edf55c9) retired the
+  // one dead statement/branch pair; the full gate re-measured 100x4.
+  '**/packages/harness/melite-tools/src/discovery.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/harness/melite-tools/src/doors.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/harness/melite-tools/src/enhance-agent.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   // F-1 (2026-11-05): the typed-lane rewrite re-measured this row.
@@ -741,7 +743,9 @@ export const COVERAGE_BASELINE: Record<string, {
   '**/packages/web/melite-card-view/src/client/run-rescue-core.ts': { statements: 96.34, branches: 97.74, functions: 91.66, lines: 100.00 },
   '**/packages/web/melite-card-view/src/client/run-rescue.tsx': { statements: 98.92, branches: 98.93, functions: 100.00, lines: 100.00 },
   '**/packages/web/melite-card-view/src/client/sortable-tile.tsx': { statements: 100, branches: 100, functions: 100, lines: 100 },
-  '**/packages/web/melite-card-view/src/client/stage-drill.tsx': { statements: 99.18, branches: 98.78, functions: 100, lines: 100 },
+  // 2026-11-06 follow-up regen: the disposition (af120dcb9) deleted the
+  // null guard and cited the two defense arms; the file measures 100x4.
+  '**/packages/web/melite-card-view/src/client/stage-drill.tsx': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/web/melite-card-view/src/client/stage-run.ts': { statements: 95.29, branches: 95.65, functions: 100, lines: 95.83 },
   '**/packages/web/melite-card-view/src/client/types.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/web/melite-card-view/src/client/zoomPromotion.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },

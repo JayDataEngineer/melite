@@ -314,7 +314,11 @@ const ARGUED_FLOOR_DROPS: Record<string, {
     '**/packages/models/h3/src/actions.ts',
     '**/packages/web-kit/contracts/src/modifierSubcards.ts',
     '**/packages/web/melite-card-deck/src/client/lora-section.tsx',
-    '**/packages/web/melite-card-view/src/client/stage-drill.tsx',
+    // stage-drill.tsx left this list 2026-11-06 (wave 33): the
+    // disposition (af120dcb9) deleted the dead null guard and cited
+    // the two defense arms with ignore pragmas — the row climbed
+    // back to its argued from face (100x4), so the cleanup arm
+    // demanded its removal in the same landing.
     '**/packages/web/melite-estate/src/index.ts',
     '**/packages/web/melite-estate/src/provisioning.ts',
   ].map((key) => [key, {
@@ -412,7 +416,10 @@ const ARGUED_FLOOR_DROPS: Record<string, {
     '**/packages/estate/media/src/index.ts',
     '**/packages/harness/estate-queue/src/runsList.ts',
     '**/packages/harness/estate-queue/src/runsValidateArms.ts',
-    '**/packages/harness/melite-tools/src/discovery.ts',
+    // discovery.ts left this list 2026-11-06 (wave 33): the deletion
+    // cure (28edf55c9) retired the one dead statement/branch pair —
+    // the row climbed back to its argued from face (100x4), so the
+    // cleanup arm demanded its removal in the same landing.
     '**/packages/harness/melite-tools/src/index.ts',
     '**/packages/image/image-edit/src/card.ts',
     '**/packages/models/h3/src/actions.ts',
