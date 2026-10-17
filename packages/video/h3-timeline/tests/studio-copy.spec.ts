@@ -137,7 +137,12 @@ describe("SOURCE — the copy dictionary owns the static faces", () => {
     // input image square died with the SourceRow grammar; the rows
     // are pick icons now). kfRowPickAria rides as a function, outside
     // this count by construction.
-    assert.equal(ids.length, 101, `the dictionary holds 101 copy ids (found ${ids.length}) — re-pin this wall when copy is added or removed`)
+    // RE-PIN 2026-11-06 (C6, the imageless pin): 101 → 102. +1 flat id
+    // = keyframePendingHint (the pending chip's drop-hint law); its
+    // sibling faces keyframePendingAria/keyframePendingReadout ride as
+    // functions, outside this count by construction. All three are
+    // consumed by the strip's chip mapping (the pending branch).
+    assert.equal(ids.length, 102, `the dictionary holds 102 copy ids (found ${ids.length}) — re-pin this wall when copy is added or removed`)
     // RE-PIN 2026-10-16 (the square-grammar residue): 102 → 101.
     // removePack died with the strip Button (187eaf607 deleted the
     // verb; SourceRow's onEdit("") owns the detach) — a fossil id

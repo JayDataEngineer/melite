@@ -196,6 +196,17 @@ export const studioCopy = {
   /** The strip refusal when a pin lands outside every window (F-B6;
    *  the plan door's own refusal, surfaced). */
   gapRefusal: "that frame is outside every call window — pins ride inside a window",
+  /** (C6, the imageless pin) a PENDING pin's chip faces — the
+   *  double-click authors the frame first; the image rides only
+   *  through the picker doors. Until it does, the chip NAMES its
+   *  state on every face: the row the card cannot compose never
+   *  looks settled (the run door's "image is required" refusal is
+   *  the loud backstop). */
+  keyframePendingAria: (frame: number): string => `Image pin at frame ${frame} — PENDING: no image yet (the run refuses it)`,
+  /** A pending pin's visible readout — the frame plus the state word. */
+  keyframePendingReadout: (frame: number): string => `${frame} · pending`,
+  /** The pending chip's drop hint / tooltip law — the repair and the backstop. */
+  keyframePendingHint: "no image yet — pick one in the keyframes editor; the run door refuses an imageless pin",
   /** The keyframe lanes' hint when no pins exist (F11; strip prop). */
   keyframeLaneHint: "double-click a lane to pin an image at that frame",
   /** The strip's empty-calls hint (F11; strip prop, was a raw literal). */
@@ -262,9 +273,11 @@ export const studioCopy = {
   /** The document readout (calls, seconds, guides, knobbed calls). */
   docReadout: (args: { calls: number; seconds: string; guides: number; knobs: number }): string =>
     `${args.calls} call${args.calls === 1 ? "" : "s"} · ${args.seconds}s · ${args.guides} guide${args.guides === 1 ? "" : "s"}${args.knobs > 0 ? ` · ${args.knobs} call${args.knobs === 1 ? "" : "s"} with knobs` : ""}`,
-  /** The unwired-keyframes warning. */
+  /** The unwired-keyframes warning (C6: the studio's gate face names
+   *  the PENDING state before the run — the door's refusal is the
+   *  backstop, named here). */
   unwiredWarning: (count: number): string =>
-    `${count} keyframe source${count === 1 ? "" : "s"} unwired — wire them below or the run door names them as TODOs.`,
+    `${count} keyframe source${count === 1 ? "" : "s"} unwired — the pin${count === 1 ? " is" : "s are"} PENDING until an image rides; wire them below or the run door refuses loud ("image is required")`,
   /** The run fold's head. */
   runParametersTitle: "Run parameters",
   /** The run fold's layer note. */

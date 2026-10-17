@@ -241,13 +241,27 @@ export function StudioStripPane({
   const kfChips = barLanes.map((k, i) => {
     const docFrame = keyframes[i]?.frame
     const verdict = typeof docFrame === "number" ? pinDropVerdict(calls, docFrame) : null
+    // (C6, the imageless pin) the double-click's write lands PENDING —
+    // the frame rides first, the image only through the picker doors.
+    // ONE judge, the gate's own spelling (useFilmSync's unwired walk):
+    // blank = no image. A pending chip names its state on every face
+    // (aria, readout, drop hint) and carries no thumb — the row the
+    // card cannot compose never looks settled; the compose door's
+    // "image is required" refusal stays the backstop at the run.
+    const pending = typeof docFrame === "number" && keyframes[i]!.image.trim() === ""
     return {
       ...k,
-      ariaLabel: typeof docFrame === "number" ? studioCopy.keyframeLaneChipAria(docFrame) : undefined,
-      readout: typeof docFrame === "number" ? studioCopy.keyframeFrameReadout(docFrame) : undefined,
-      dropHint: verdict === null
-        ? undefined
-        : verdict === "snap" ? studioCopy.dropSnapHint : studioCopy.dropInteriorHint,
+      ariaLabel: pending
+        ? studioCopy.keyframePendingAria(docFrame)
+        : typeof docFrame === "number" ? studioCopy.keyframeLaneChipAria(docFrame) : undefined,
+      readout: pending
+        ? studioCopy.keyframePendingReadout(docFrame)
+        : typeof docFrame === "number" ? studioCopy.keyframeFrameReadout(docFrame) : undefined,
+      dropHint: pending
+        ? studioCopy.keyframePendingHint
+        : verdict === null
+          ? undefined
+          : verdict === "snap" ? studioCopy.dropSnapHint : studioCopy.dropInteriorHint,
     }
   })
   // THE GAP REFUSAL SURFACED (slice 3): a pin outside every call window

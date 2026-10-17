@@ -34,6 +34,16 @@ export function useBeatMutations(
     return id
   }
 
+  // (C6, the imageless pin — NAMED-PENDING ruling) the double-click's
+  // ONE writer: the pin lands at the clicked frame with image:"" —
+  // the PENDING author (the picker doors' atomic verb is
+  // addKeyframeWithImage below; the bar's synchronous
+  // onKeyframeAdd contract binds the diamond immediately, the
+  // picker's commit rides an async fit and pins at the playhead —
+  // a different gesture, one owner each). The pending state is
+  // named at hop 1 (the chip's faces in StudioStripPane.kfChips +
+  // the shell's unwiredWarning gate); the plan door's
+  // "image is required" refusal stays the backstop at the run.
   const handleKeyframeAdd = (trackId: string, frame: number): string => {
     // Return the index-derived uuid of the slot the new keyframe will
     // occupy (the bar binds the diamond to it immediately).
