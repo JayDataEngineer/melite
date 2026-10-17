@@ -262,6 +262,27 @@ describe('PATH + ALLOWLIST LAW', () => {
     expect(gate.pathExcluded('packages/x/src/authored.ts')).toBe(false)
   })
 
+  it("the typecheck tier's synthesized .tsconfig.test.<pid>.json never scans (the 2026-11-06 gate-B race: judging the tier's scratch config raced its rmSync)", () => {
+    const dir = mkdtempSync(join(tmpdir(), 'melite-profanity-synth-'))
+    try {
+      // present AND profane: the exclusion decides, not the words.
+      // A skipped file is never listed by the walk, so the tier's
+      // finally-rm can no longer land between listing and reading —
+      // the exclusion IS the race cure for the known writer.
+      // (scanPaths additionally tolerates an ENOENT on a walked file
+      // for unknown concurrent deleters; node snapshots builtin named
+      // imports at link time, so that belt is proven by a manually
+      // staged race, not mockable in-process — receipt:
+      // dev_docs/audits/contracts/profanity-gate-race-2026-11-06.md.)
+      writeFileSync(join(dir, '.tsconfig.test.424242.json'), JSON.stringify({ note: DE }, null, 2) + '\n')
+      writeFileSync(join(dir, 'real.md'), `carried: ${EN}\n`)
+      const bundle = gate.buildMatchers()
+      expect(gate.scanPaths(dir, [dir], bundle).map((h) => h.file)).toEqual(['real.md'])
+    } finally {
+      rmSync(dir, { recursive: true, force: true })
+    }
+  })
+
   it('the allowlist is word-level and every entry names a dated reason', () => {
     for (const a of gate.ALLOWLIST) {
       expect(a.word.length).toBeGreaterThan(0)

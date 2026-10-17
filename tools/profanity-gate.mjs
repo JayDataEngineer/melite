@@ -278,10 +278,20 @@ export function pathExcluded (path, { repoMode = true } = {}) {
 
 const isText = (p) => TEXT_EXTS.has(extname(p).toLowerCase())
 
+// The typecheck wall synthesizes .tsconfig.test.<pid>.json in each
+// package dir for its per-package tsc pass and rmSyncs it in a
+// finally (scripts/typecheck-tests.mjs:84). Generated debris that
+// mirrors its package's own tsconfig — never an authored face — and
+// judging it races the delete: the walk lists it, the tier's finally
+// removes it, the read ENOENTs (the 2026-11-06 gate-B red, "authored
+// faces are dirty" on a file no author wrote).
+const SYNTHESIZED_CONFIG_RE = /^\.tsconfig\.test\.\d+\.json$/
+
 function collectFiles (absDir, rel, out) {
   for (const ent of readdirSync(absDir, { withFileTypes: true })) {
     const r = rel ? `${rel}/${ent.name}` : ent.name
     if (pathExcluded(r)) continue
+    if (SYNTHESIZED_CONFIG_RE.test(ent.name)) continue
     const abs = join(absDir, ent.name)
     if (ent.isDirectory()) collectFiles(abs, r, out)
     // isFile only: symlinks (pnpm's links into node_modules) are not
@@ -318,7 +328,18 @@ export function scanPaths (root, paths, matchers = buildMatchers()) {
       if (isText(judged) && !pathExcluded(judged)) files = [abs]
     }
     for (const f of files) {
-      for (const h of scanText(readFileSync(f, 'utf8'), matchers)) {
+      // A concurrent tier may delete a walked file before this read
+      // (the finally-rm above is one writer) — a file gone between
+      // the walk and the read is transient debris, not an authored
+      // face; only a present-but-unreadable file still throws.
+      let text
+      try {
+        text = readFileSync(f, 'utf8')
+      } catch (err) {
+        if (err.code === 'ENOENT') continue
+        throw err
+      }
+      for (const h of scanText(text, matchers)) {
         hits.push({ file: relOf(f), ...h })
       }
     }
