@@ -9,8 +9,8 @@
 // thinner panel; a host-handed doc skips the fetch (one door hit).
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react'
 import { createElement as h } from 'react'
-import { afterEach, expect, test, vi } from 'vitest'
-import { SpecPanel, schemaEnvelope } from '../src/index.ts'
+import { afterEach, describe, expect, test, vi } from 'vitest'
+import { SpecPanel, panelSectionsOf, schemaEnvelope } from '../src/index.ts'
 
 afterEach(cleanup)
 
@@ -177,4 +177,63 @@ test('THE MODEL GUARD (the base seeds the serving family into the grammar — a 
   panel({ plain: 1 }, { model: 'fam-a-1536-int8', sections: guardSections as never })
   await screen.findByText('Bespoke A')
   expect(screen.queryByText('Bespoke B')).toBeNull()
+})
+
+// ── THE DERIVED SECTIONS (panelSectionsOf — the motion-params DRY
+// cure's own wall, dev_docs/audits/journey/motion-params-dry-2026-10-16
+// F3): the served rows group and order THEMSELVES; the host names only
+// the groups' chrome. The suite had never called the derivation — these
+// arms ride the REAL wire (the host-handed doc door, MotionRail's exact
+// consumer shape: derive, then render the derived sections). ─────────
+describe('THE DERIVED SECTIONS (panelSectionsOf: the served rows group and order themselves)', () => {
+  test('A NULL DOC DERIVES NOTHING — no sections, never a crash', () => {
+    // the refused door hands no doc: the derivation is empty and the
+    // panel renders no groups (its own null arm) — never a throw
+    expect(panelSectionsOf(null, { Engine: { title: 'Engine', testid: 'p-engine' } })).toEqual([])
+    expect(panelSectionsOf(undefined, { Engine: { title: 'Engine' } })).toEqual([])
+  })
+
+  test('THE SERVED ROWS GROUP AND ORDER THEMSELVES (the declared order hint sorts, orderless last; chrome testids ride; empty groups drop; unnamed groups stay unseated)', async () => {
+    // float is declared FIRST so fieldsOf's own walk (order ?? 0)
+    // sorts it ahead — the derivation's sort (order ?? MAX_SAFE_INTEGER)
+    // must move it last, or the panel renders the envelope walk's order.
+    const doc = {
+      form: 'any-card',
+      schema: schemaEnvelope({
+        float: { type: 'number', meta: { description: 'Float', default: 3, extra: { group: 'engine' } } },
+        early: { type: 'number', meta: { description: 'Early', default: 1, extra: { group: 'engine', order: 10 } } },
+        late: { type: 'number', meta: { description: 'Late', default: 2, extra: { group: 'engine', order: 20 } } },
+        leaf: { type: 'number', meta: { description: 'Leaf', default: 4, extra: { group: 'leaves' } } },
+        stray: { type: 'number', meta: { description: 'Stray', default: 5, extra: { group: 'nowhere' } } },
+      }),
+      variants: [],
+    } as never
+    const sections = panelSectionsOf(doc, {
+      engine: { title: 'Engine', testid: 'p-engine' },
+      leaves: { title: 'Leaves' },
+      hollow: { title: 'Hollow' },
+    })
+    // the host's partition: a named group with zero served rows drops;
+    // a served row whose group the host never named stays unseated
+    expect(sections.map((s) => s.title)).toEqual(['Engine', 'Leaves'])
+    expect(sections[0]).toMatchObject({ title: 'Engine', testid: 'p-engine' })
+    expect(sections[1]).not.toHaveProperty('testid')
+    expect(sections[0].rows.map((r) => r.name)).toEqual(['early', 'late', 'float'])
+    // THE REAL WIRE: the derived sections render through the
+    // host-handed-doc door — sorted rows at wire names, the testid
+    // chrome carried, the hollow group and the stray row never mounted
+    render(h(SpecPanel, {
+      model: 'any-card', spec: doc, sections: sections as never,
+      values: {}, onEdit: () => {},
+    }))
+    expect(await screen.findByText('Early')).not.toBeNull()
+    const engine = document.querySelector('[data-testid="p-engine"]')
+    if (engine === null) throw new Error('engine group testid not rendered')
+    const text = engine.textContent ?? ''
+    expect(text.indexOf('Early')).toBeLessThan(text.indexOf('Late'))
+    expect(text.indexOf('Late')).toBeLessThan(text.indexOf('Float'))
+    expect(screen.queryByText('Hollow')).toBeNull()
+    expect(screen.queryByText('Stray')).toBeNull()
+    expect(screen.getByText('Leaf')).not.toBeNull()
+  })
 })

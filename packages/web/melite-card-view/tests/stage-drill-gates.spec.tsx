@@ -976,3 +976,437 @@ describe("the walk's one identity (dedupWalkSet rides the canonical seat)", () =
     expect(walked).toHaveLength(1);
   });
 });
+
+// ── THE RE-POINT SEAM (the ONE switch semantics at the write seat,
+// journey/axis-unification-2026-11-06 cure 4): every frame that moves
+// the model key re-derives through modelSwitchPatch before the wire —
+// via the schema-level knob (onSet), via the Model rail (onPick), and
+// the engine stage's verbatim pass (stroke 66: a brain route is a
+// plain field, never a family re-key). The suite had never driven any
+// of the three seats. ──────────────────────────────────────────────
+
+/** The knob-face fixture (the semantic-model seat): the model knob
+ *  lists WIRE spellings — 'fam-b-1536-int8' is a composed key, the
+ *  re-point's real re-key shape. The dual bag (schema array node +
+ *  features.modifiers) exercises both bag walks; the junk cfg rides
+ *  the departing envelope vocabulary. */
+function knobDoc(): Record<string, unknown> {
+  return {
+    form: 'image-gen', genre: 'image', engine: 'comfyui', model: 'fam-a',
+    schema: schemaEnvelope({
+      prompt: { type: 'string', meta: { description: 'Prompt', extra: { wtype: 'textarea' } } },
+      model: { consts: ['fam-a', 'fam-b-1536-int8'], meta: { description: 'Serving family', default: 'fam-a', extra: { wtype: 'select' } } },
+      cfg: { type: 'number', meta: { description: 'Cfg', default: 3.5 } },
+      loras: { type: 'array', meta: { description: 'Loras', default: [] } },
+    }),
+    variants: [
+      { id: 'turbo', label: 'Turbo', group: 'Variant', defaults: {}, route: 'turbo',
+        sampler_envelope: { steps: [1, 50], cfg: [1, 2] } },
+    ],
+    features: { modifiers: [{ param_key: 'loras' }, { param_key: 'ref_mods' }] },
+  };
+}
+
+/** The base doc the door serves for the composed key (the walk law:
+ *  a composed key serves its base family). */
+function famBBaseDoc(): Record<string, unknown> {
+  return {
+    form: 'image-gen', genre: 'image', engine: 'comfyui', model: 'fam-b',
+    schema: schemaEnvelope({
+      prompt: { type: 'string', meta: { description: 'Prompt', extra: { wtype: 'textarea' } } },
+      cfg: { type: 'number', meta: { description: 'Cfg', default: 4.5 } },
+      loras: { type: 'array', meta: { description: 'Loras', default: [] } },
+    }),
+    variants: [
+      { id: 'fast', label: 'Fast', group: 'Variant', defaults: {}, route: 'fast',
+        sampler_envelope: { steps: [1, 30], cfg: [1, 10] } },
+    ],
+    features: { modifiers: [{ param_key: 'loras' }] },
+  };
+}
+
+/** The brain-route fixture (stroke 66): a CARDLESS engine stage's doc
+ *  — families render the Model rail; a rail pick here must ride the
+ *  re-point verb's engine-stage arm (the frame passes verbatim). */
+function brainDoc(model: string): Record<string, unknown> {
+  return {
+    form: 'image-gen', genre: 'image', engine: 'comfyui', model,
+    schema: schemaEnvelope({
+      prompt: { type: 'string', meta: { description: 'Prompt', extra: { wtype: 'textarea' } } },
+      cfg: { type: 'number', meta: { description: 'Cfg', default: 3.5 } },
+      loras: { type: 'array', meta: { description: 'Loras', default: [] } },
+    }),
+    variants: [
+      { id: 'turbo', label: 'Turbo', group: 'Variant', defaults: {}, route: 'turbo',
+        sampler_envelope: { steps: [1, 50], cfg: [1, 2] } },
+    ],
+    families: [{ id: 'comfyui', present: true }, { id: 'other-brain', present: true }],
+    features: { modifiers: [{ param_key: 'loras' }] },
+  };
+}
+
+const servedFamilies: string[] = [];
+
+/** The spec-door stub for the re-point arms: every family key serves
+ *  its own doc; the composed key walks to its base (the door's own
+ *  walk law); every unstubbed door fails loud. */
+function stubSpecDocs(): void {
+  servedFamilies.length = 0;
+  vi.stubGlobal("fetch", async (url: unknown): Promise<Response> => {
+    const path = String(url);
+    if (path.includes("/v1/form-spec")) {
+      const key = path.split("model=")[1] ?? "";
+      servedFamilies.push(key);
+      const doc = key.startsWith("fam-b") ? famBBaseDoc()
+        : key.startsWith("other-brain") ? brainDoc("other-brain")
+        : key.startsWith("comfyui") ? brainDoc("comfyui")
+        : knobDoc();
+      return new Response(JSON.stringify(doc), { status: 200, headers: { "content-type": "application/json" } });
+    }
+    if (path.includes("/v1/forms")) {
+      return new Response(JSON.stringify({ "image-gen": { outputs: { default: "image" } } }), { status: 200, headers: { "content-type": "application/json" } });
+    }
+    if (path.includes("/v1/model-catalog")) {
+      return new Response(JSON.stringify({ cards: {} }), { status: 200, headers: { "content-type": "application/json" } });
+    }
+    throw new Error("unexpected door on the fetch lane: " + path);
+  });
+}
+
+function patchParamsOf(calls_: Array<Record<string, unknown>>): Array<Record<string, unknown>> {
+  return calls_.map((c) => ((c["patch"] as Record<string, unknown>)?.["params"] ?? {}) as Record<string, unknown>);
+}
+
+describe("the re-point seam (one switch semantics at the drill's write seat)", () => {
+  test("a composed-key knob pick re-points through the switch law: ONE atomic write carrying the departing vocabulary and both bag walks as nulls", async () => {
+    stubSpecDocs();
+    fakes?.unmount();
+    fakes = mountEstateFakes({});
+    render(h(StageDrill, drillProps(stage({ model: "fam-a", variant: "turbo", cfg: 99, loras: ["stuck"], ref_mods: ["stuck2"] })) as never));
+    await screen.findByLabelText("Prompt", {}, { timeout: 4000 });
+    const knob = await screen.findByLabelText("Serving family", {}, { timeout: 4000 });
+    fireEvent.click(knob);
+    fireEvent.click(screen.getByRole("menuitem", { name: "Fam B 1536 Int8" }));
+    await waitFor(() => {
+      const frame = patchParamsOf(patchCalls()).find((p) => p["model"] === "fam-b-1536-int8");
+      if (frame === undefined) throw new Error("re-point write not landed; patches: " + JSON.stringify(patchCalls()));
+      // THE SWITCH LAW at the write seam: the departing envelope
+      // vocabulary dies, and BOTH bag walks null in the SAME frame —
+      // the schema-node bag (bagKeysOf sees loras) and the served
+      // kind's feature-only bag (the mod-currency clause's ref_mods)
+      expect(frame["cfg"]).toBeNull();
+      expect(frame["steps"]).toBeNull();
+      expect(frame["loras"]).toBeNull();
+      expect(frame["ref_mods"]).toBeNull();
+      expect(frame["variant"]).toBeNull();
+    }, { timeout: 8000 });
+    await awaitWriteSettled();
+    expect(writeFace()).toBe(null);
+  });
+
+  test("a same-model knob set is NOT a re-point: the ordinary per-key write, no switch nulls", async () => {
+    stubSpecDocs();
+    fakes?.unmount();
+    fakes = mountEstateFakes({});
+    render(h(StageDrill, drillProps(stage({ model: "fam-a" })) as never));
+    await screen.findByLabelText("Prompt", {}, { timeout: 4000 });
+    const knob = await screen.findByLabelText("Serving family", {}, { timeout: 4000 });
+    fireEvent.click(knob);
+    fireEvent.click(screen.getByRole("menuitem", { name: "Fam A" }));
+    await waitFor(() => {
+      const frames = patchParamsOf(patchCalls()).filter((p) => p["model"] === "fam-a");
+      if (frames.length === 0) throw new Error("same-model write not landed");
+      // the re-point never fired: the write carries ONLY the key set
+      expect(Object.keys(frames[frames.length - 1])).toEqual(["model"]);
+    }, { timeout: 8000 });
+    await awaitWriteSettled();
+    expect(writeFace()).toBe(null);
+  });
+
+  test("an engine stage's rail pick never re-derives: the frame rides verbatim (a brain route is a plain field, never a family re-key)", async () => {
+    stubSpecDocs();
+    fakes?.unmount();
+    fakes = mountEstateFakes({});
+    render(h(StageDrill, drillProps({ id: "s_0", engine: "comfyui", params: {} } as unknown as BenchStageView) as never));
+    await screen.findByLabelText("Prompt", {}, { timeout: 4000 });
+    const rail = await screen.findByLabelText("Model", {}, { timeout: 4000 });
+    fireEvent.click(rail);
+    fireEvent.click(screen.getByRole("menuitem", { name: "Other Brain" }));
+    await waitFor(() => {
+      const frame = patchParamsOf(patchCalls()).find((p) => p["model"] === "other-brain");
+      if (frame === undefined) throw new Error("rail pick write not landed; patches: " + JSON.stringify(patchCalls()));
+      // the rail's own switch frame, undoubled by the drill: the
+      // engine stage's re-point arm passes the frame through untouched
+      expect(frame["variant"]).toBeNull();
+      expect(frame["cfg"]).toBeNull();
+      expect(frame["loras"]).toBeNull();
+    }, { timeout: 8000 });
+    // STROKE 66's spec half: the brain route never re-specs — the
+    // drill's fetch family stays the engine id, never the picked key
+    expect(servedFamilies.length).toBeGreaterThan(0);
+    expect(servedFamilies.every((k) => k === "comfyui")).toBe(true);
+    await awaitWriteSettled();
+    expect(writeFace()).toBe(null);
+  });
+});
+
+// ── THE RE-POINT WRITE'S SETTLE FACES (the 2026-11-02 one-voice law
+// at the seat the switch cure added): both promise halves × both
+// alive-guard arms, each with its OWN firing arm (the split-brain
+// lesson). ─────────────────────────────────────────────────────────
+describe("the re-point write's settle faces (each half's own guard)", () => {
+  const stageB: BenchStageView = { id: "s_1", card: "image-gen", engine: "comfyui", params: { model: "krea-2" } };
+
+  async function openKnobDrill(estate?: EstateOpts): Promise<ReturnType<typeof render>> {
+    stubSpecDocs();
+    fakes?.unmount();
+    fakes = mountEstateFakes(estate);
+    return render(h(StageDrill, drillProps(stage({ model: "fam-a" })) as never));
+  }
+
+  async function pickFamB(): Promise<void> {
+    const knob = await screen.findByLabelText("Serving family", {}, { timeout: 4000 });
+    fireEvent.click(knob);
+    fireEvent.click(screen.getByRole("menuitem", { name: "Fam B 1536 Int8" }));
+  }
+
+  test("a clean re-point settling over a stale failed key speaks the row's voice (the then-half, no re-target)", async () => {
+    await openKnobDrill({ patchFailures: [{ reason: "prompt busy" }] });
+    await screen.findByLabelText("Prompt", {}, { timeout: 4000 });
+    // the residue lands first: the typed prompt's write fails, the key
+    // stays failed in the ledger
+    await typePrompt("a red cube");
+    await waitFor(() => {
+      expect(stageWriteState("bench-p", "s_0").failedKeys).toContain("prompt");
+    }, { timeout: 8000 });
+    // the re-point lands CLEAN — its settle reads the ROW, and the row
+    // still holds the prompt failure: the face speaks the row's voice
+    await pickFamB();
+    await waitFor(() => {
+      const face = writeFace();
+      if (face === null || !face.includes("unlanded keys: prompt")) {
+        throw new Error("row voice not up yet; face: " + face);
+      }
+    }, { timeout: 8000 });
+  });
+
+  test("a clean re-point settling after a re-target stands down (the then-half's guard)", async () => {
+    let gateCalls = 0;
+    let release: (() => void) | undefined;
+    const gate = (): Promise<void> => {
+      gateCalls += 1;
+      if (gateCalls === 1) return Promise.resolve();
+      return new Promise<void>((resolve) => { release = resolve; });
+    };
+    const view = await openKnobDrill({ patchGate: gate, patchFailures: [{ reason: "prompt busy" }] });
+    await screen.findByLabelText("Prompt", {}, { timeout: 4000 });
+    await typePrompt("a red cube");
+    await waitFor(() => {
+      expect(stageWriteState("bench-p", "s_0").failedKeys).toContain("prompt");
+    }, { timeout: 8000 });
+    await pickFamB(); // the re-point write parks at the door
+    view.rerender(h(StageDrill, drillProps(stageB) as never));
+    release?.();
+    await waitFor(() => {
+      if (stageWriteState("bench-p", "s_0").pending !== 0) throw new Error("re-point still parked");
+    }, { timeout: 8000 });
+    // the guard held: the s_0 residue never voiced onto the s_1 view
+    expect(writeFace()).toBe(null);
+  });
+
+  test("a re-point the door rejects speaks the row's voice (the refusal half, no re-target)", async () => {
+    let release: (() => void) | undefined;
+    const gate = (): Promise<void> => new Promise<void>((resolve) => { release = resolve; });
+    await openKnobDrill({ patchGate: gate, patchFailures: [{ reason: "model busy" }] });
+    await screen.findByLabelText("Prompt", {}, { timeout: 4000 });
+    await pickFamB(); // the re-point write parks, then refuses
+    release?.();
+    await waitFor(() => {
+      const face = writeFace();
+      if (face === null || !face.includes("unlanded keys:") || !face.includes("model")) {
+        throw new Error("refusal voice not up yet; face: " + face);
+      }
+    }, { timeout: 8000 });
+  });
+
+  test("a re-point rejection settling after a re-target stands down (the refusal half's guard)", async () => {
+    let release: (() => void) | undefined;
+    const gate = (): Promise<void> => new Promise<void>((resolve) => { release = resolve; });
+    const view = await openKnobDrill({ patchGate: gate, patchFailures: [{ reason: "model busy" }] });
+    await screen.findByLabelText("Prompt", {}, { timeout: 4000 });
+    await pickFamB();
+    view.rerender(h(StageDrill, drillProps(stageB) as never));
+    release?.();
+    await waitFor(() => {
+      if (stageWriteState("bench-p", "s_0").pending !== 0) throw new Error("re-point still parked");
+    }, { timeout: 8000 });
+    // the guard held; the row keeps its memory (the next settle re-voices)
+    expect(writeFace()).toBe(null);
+    expect(stageWriteState("bench-p", "s_0").failedKeys).toContain("model");
+  });
+});
+
+// ── THE ENHANCE FLIGHT'S ABORT ARM: the drill's unmount aborts the
+// ✦ controller; a door answer that arrives after the abort is
+// discarded BEFORE the sweep — no write, no ghost, no crash. ────────
+describe("the enhance flight abandoned mid-flight", () => {
+  test("a door answer landing after the unmount abort writes nothing", async () => {
+    stubFetch();
+    fakes?.unmount();
+    fakes = mountEstateFakes({});
+    const binds: Array<() => Promise<void> | void> = [];
+    const view = render(h(StageDrill, drillProps(stage({ model: "krea-2", prompt: "a red cube" }), (v) => { binds.push(v); }) as never));
+    await screen.findByLabelText("Prompt", {}, { timeout: 4000 });
+    expect(binds.length).toBeGreaterThan(0);
+    void binds[binds.length - 1](); // the ✦ verb: the fetch parks at the deferred door
+    await waitFor(() => {
+      if (resolveEnhance === null) throw new Error("enhance flight not parked yet");
+    }, { timeout: 8000 });
+    view.unmount(); // THE UNMOUNT ABORT (the flight's own controller)
+    resolveEnhance?.({ results: { prompt: { positive: "P2" } } }, 200);
+    await awaitWriteSettled();
+    // the answered door produced NOTHING: the aborted flight's
+    // response is discarded before the sweep ever composes a write
+    const swept = patchParamsOf(patchCalls()).some((p) => p["prompt"] === "P2");
+    expect(swept).toBe(false);
+  });
+});
+
+// ── THE DRILL'S PREVIEW FACES THROUGH THE DECLARED OUTPUT (the
+// tagger seat + the walk's run identity): the seat click reads the
+// served doc's own kind and the history rows' run_ids. ──────────────
+
+/** The preview-wire mount (the one-fake law): the bench rides the
+ *  bound namespaces, fetch answers only the /v1 discovery doors plus
+ *  the artifact body the face under test fetches. */
+function stubPreviewWire(opts: { doc: Record<string, unknown>; stage: Record<string, unknown>; body?: string }): CardsBenchValue {
+  const bench: CardsBenchValue = {
+    kind: "bench", draftId: "bench-face", rev: 1, sessionKey: "face",
+    stages: [opts.stage as unknown as BenchStageView], log: [],
+  };
+  mountEstateFakes({
+    benchDoc: { draft_id: "bench-face", rev: 1, stages: [opts.stage], log: [] },
+    runDocs: [],
+  });
+  const outputs = (opts.doc as { outputs?: Record<string, string> }).outputs ?? { default: "image" };
+  vi.stubGlobal("fetch", async (url: unknown): Promise<Response> => {
+    const path = String(url);
+    if (path.includes("/v1/form-spec")) {
+      return new Response(JSON.stringify(opts.doc), { status: 200, headers: { "content-type": "application/json" } });
+    }
+    if (path.includes("/v1/forms")) {
+      return new Response(JSON.stringify({ [String(opts.doc["form"])]: { outputs } }), { status: 200, headers: { "content-type": "application/json" } });
+    }
+    if (path.includes("/v1/model-catalog")) {
+      return new Response(JSON.stringify({ cards: {} }), { status: 200, headers: { "content-type": "application/json" } });
+    }
+    if (opts.body !== undefined && path === "/out/caption.txt") {
+      return new Response(opts.body, { status: 200 });
+    }
+    throw new Error("unexpected door on the fetch lane: " + path);
+  });
+  return bench;
+}
+
+function mountTab(bench: CardsBenchValue): void {
+  const noop = (): void => {};
+  render(h(CardsTab, {
+    useTabInfo: () => ({ tab: {
+      kind: "sidebar.right.pane.tab", contentId: undefined,
+      navigation: { address: "dsh-resource://cards/bench" },
+      actions: { openResource: noop },
+    } }),
+    useResource: () => ({ status: "live" as const, value: bench }),
+  }));
+}
+
+describe("the drill's preview faces through the declared output", () => {
+  test("a declared text output previews its WORDS (the tagger seat: TextStagePreview, never a dead tile)", async () => {
+    const bench = stubPreviewWire({
+      doc: {
+        form: "tagger", genre: "image", engine: "comfyui",
+        schema: schemaEnvelope({
+          prompt: { type: "string", meta: { description: "Prompt", extra: { wtype: "textarea" } } },
+        }),
+        outputs: { default: "text" },
+      },
+      stage: {
+        id: "s_0", card: "tagger", title: "the stage", engine: "comfyui", params: {},
+        runStatus: "done",
+        result: { artifacts: { caption: "/out/caption.txt" } },
+      },
+      body: "the caption words",
+    });
+    mountTab(bench);
+    const user = userEvent.setup();
+    const tile = document.querySelector('button[class*="tileInner"]') as HTMLElement;
+    await user.click(tile);
+    await screen.findByText("Prompt", {}, { timeout: 4000 });
+    await waitFor(() => {
+      expect(document.querySelector('[data-testid="stage-preview-text"]')).not.toBeNull();
+    }, { timeout: 4000 });
+    await waitFor(() => {
+      const body = document.querySelector('[data-testid="stage-preview-text-body"]');
+      if (body === null) throw new Error("text body not landed yet");
+      expect(body.textContent).toBe("the caption words");
+    }, { timeout: 4000 });
+    // the kind switch routed by the DECLARED output: the image face
+    // never mounted for a text card
+    expect(document.querySelector('[data-testid="stage-preview-image"]')).toBeNull();
+  });
+
+  test("the walk builds at open with the run identity: one seat per run_id, first spelling wins", async () => {
+    const bench = stubPreviewWire({
+      doc: {
+        form: "image-gen", genre: "image", engine: "comfyui",
+        schema: schemaEnvelope({
+          prompt: { type: "string", meta: { description: "Prompt", extra: { wtype: "textarea" } } },
+        }),
+      },
+      stage: {
+        id: "s_0", card: "image-gen", title: "the stage", engine: "comfyui", params: {},
+        runStatus: "done",
+        result: { run_id: "r0", artifacts: { output: "/media/hero.png" } },
+        history: [
+          { run_id: "r1", artifacts: { output: "/media/walk.png" } },
+          { run_id: "r1", artifacts: { output: "/infer-gallery/artifact?path=%2Fmedia%2Fwalk.png" } },
+        ],
+      },
+    });
+    mountTab(bench);
+    const user = userEvent.setup();
+    const tile = document.querySelector('button[class*="tileInner"]') as HTMLElement;
+    await user.click(tile);
+    await screen.findByText("Prompt", {}, { timeout: 4000 });
+    const seat = await screen.findByTestId("stage-preview-seat", {}, { timeout: 4000 });
+    fireEvent.click(seat);
+    // the lightbox is the LAST img in the seat's document order — the
+    // walk's face is read there, never off the preview's own imgs
+    const boxImg = (): HTMLImageElement | null => {
+      const all = document.querySelectorAll("img");
+      return all.length > 0 ? all[all.length - 1] as HTMLImageElement : null;
+    };
+    // the walk opened at the hero
+    await waitFor(() => {
+      const img = boxImg();
+      if (img === null || (img.getAttribute("alt") ?? "") !== "hero.png") throw new Error("the walk did not open at the hero");
+    }, { timeout: 4000 });
+    // the walk's archived seat: the run's FIRST spelling
+    fireEvent.click(screen.getByTestId("drill-next"));
+    await waitFor(() => {
+      const img = boxImg();
+      if (img === null || (img.getAttribute("alt") ?? "") !== "walk.png") throw new Error("the walk never reached the archived seat");
+      expect(img.getAttribute("src")).toBe("/media/walk.png");
+    }, { timeout: 4000 });
+    // the walk's END holds: the twin spelling never seats
+    fireEvent.click(screen.getByTestId("drill-next"));
+    await waitFor(() => {
+      const img = boxImg();
+      if (img === null || (img.getAttribute("alt") ?? "") !== "walk.png") throw new Error("the walk left the line");
+      expect(img.getAttribute("src")).toBe("/media/walk.png");
+    }, { timeout: 4000 });
+    for (const i of Array.from(document.querySelectorAll("img"))) {
+      expect((i.getAttribute("src") ?? "").includes("infer-gallery")).toBe(false);
+    }
+  });
+});
