@@ -527,7 +527,7 @@ describe("T8 — the census group-scope statement (C5: the motion_npz non-seat r
       "the chain group's motion_npz loses its graph OUTPUT wiring — the document-seam basis is gone",
     ).toBe("data");
     expect(
-      (def.flowOutputBindings ?? []).some((b) => b.channel === "motion_npz"),
+      (def.flowOutputBindings ?? []).some((b: { channel: string }) => b.channel === "motion_npz"),
       "the motion_npz channel loses its flowOutputBindings row — the graph no longer carries it",
     ).toBe(true);
   });

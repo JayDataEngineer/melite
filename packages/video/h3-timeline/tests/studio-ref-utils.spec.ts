@@ -276,9 +276,9 @@ describe("fitImageToAspect (the D1 canvas rider)", () => {
       // ROOTED canonical chip — never the origin, never the legacy prefix
       const got = classifyImageSrc("http://127.0.0.1:3080/melite-media/runs/r1/pin.png", new Map())
       expect(got).toEqual({ image: "/melite-media/runs/r1/pin.png" })
-      const chip = "image" in got ? got.image : ""
+      const chipUrl = "image" in got ? got.image : ""
       // the fit half: the committed spelling fits like the file arm
-      const out = await fitImageToAspect(chip, 1344, 768)
+      const out = await fitImageToAspect(chipUrl, 1344, 768)
       expect(out).toBe("data:image/png;base64,FITTED")
       expect(draws.length).toBe(1)
       expect(draws[0]!.slice(1), "the same contain rect as the file arm").toEqual([0, 192, 1344, 384])

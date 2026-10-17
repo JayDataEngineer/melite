@@ -431,7 +431,12 @@ const PINS: Record<string, number> = {
   // the docModel.ts:376 seed prompt (S-A2, document data, never
   // presentation copy), and the docModel.ts:409 trackColor rgb
   // template (S-A3, a style value the walker's arm B over-collects).
-  'packages/video/h3-timeline/src/ui': 4,
+  // Re-pinned 4 -> 5 (2026-10-17, B5's pick gate): RunRecipeEngine's
+  // onPick face pushes the door's verbatim clause as an arm-A `message`
+  // property ("card_compose: " + family) — the wire-refusal-voice
+  // triage class (wire.ts:84 ×2, estate-remote.ts:216, the spec.ts
+  // triad), not presentation copy.
+  'packages/video/h3-timeline/src/ui': 5,
   'packages/image/mask-studio/src/ui': 0,
   // card-base: 36 (the S7j/class-4 merge, argued above) + 6 from the
   // D1 .ts arms — all arm A `message` properties in .ts: the wire
