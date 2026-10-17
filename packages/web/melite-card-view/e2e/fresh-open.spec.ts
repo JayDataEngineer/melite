@@ -17,6 +17,7 @@ import { expect, test } from '@playwright/test'
 import { collectPageErrors, expectNoPageErrors, openAConversation, openCardsWithBench, readBenchRow, settle, STUDIO_URL } from './tour.ts'
 
 test.skip(!STUDIO_URL, 'E2E_STUDIO_URL (token-authenticated shell URL) is not set — the browser-plane wall needs a live host')
+test.skip(process.env.MELITE_E2E_AI !== '1', 'THE MINT IS AN ACTUAL AI CALL — one real model turn per ride (tokens burned, keyed lane required); opt in with MELITE_E2E_AI=1')
 
 /** The tab's red faces, by the STABLE seats only: the zoom strip's
  *  run-error and the drill's write face are testids (the browser

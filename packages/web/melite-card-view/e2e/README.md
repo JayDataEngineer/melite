@@ -146,6 +146,27 @@ krea-2's variant envelopes served on the wire the browser reads
 plus the variant-axis reseed on every model switch (the stale
 variant cure) and the model-switch refetch receipt.
 
+## THE AI OPT-IN (the mint is a real model turn)
+
+`tour.ts`'s `openAConversation` — the mint every browser-plane spec
+rides — types a composer message and sends it: that is
+`/api/session/prompt` to the lane's REAL model. One model turn per
+mint, tokens burned, a keyed live lane required. These specs are
+ACTUAL-AI-CALL tests, opt-in only (operator order 2026-10-17):
+
+- Every minting spec self-skips unless `MELITE_E2E_AI=1` is set.
+- The mint spine itself refuses loud (never silently) if a caller
+  reaches it without the opt-in.
+- Default runs (`pnpm run test:web:browser`, the seeded-bench specs
+  like `chip-contrast`) stay free of mints — they never open a
+  conversation. Note the seeded-bench claim above predates the mint
+  specs: seeding-by-script holds for the read-only specs; the minting
+  specs create their own conversations, which is exactly the AI call.
+
+```sh
+MELITE_E2E_AI=1 E2E_STUDIO_URL='…' pnpm --filter @melite-plugin/dsh-card-view exec playwright test
+```
+
 ## Run
 
 ```sh
@@ -155,6 +176,8 @@ E2E_STUDIO_URL='http://127.0.0.1:3907/?token=<TOKEN>' \
   pnpm --filter @melite-plugin/dsh-card-view exec playwright test
 ```
 
-Self-skips without `E2E_STUDIO_URL` (the repo's keyless-gate law).
+Self-skips without `E2E_STUDIO_URL` (the repo's keyless-gate law);
+minting specs additionally self-skip without `MELITE_E2E_AI=1` (see
+THE AI OPT-IN above).
 The spec is read-only against the bench — the stage is seeded once
 by the script, never by the spec itself.

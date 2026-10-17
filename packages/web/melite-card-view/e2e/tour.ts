@@ -35,6 +35,14 @@ import { expect, type Page } from '@playwright/test'
 
 export const STUDIO_URL = process.env.E2E_STUDIO_URL ?? ''
 
+/** THE AI OPT-IN (operator order 2026-10-17): openAConversation's
+ *  mint is an ACTUAL AI CALL — the typed composer message rides
+ *  /api/session/prompt to the lane's real model, one model turn per
+ *  mint, tokens burned, a keyed live lane required. Every minting
+ *  spec self-skips unless MELITE_E2E_AI=1 opts in; this spine refuses
+ *  loud (never silently) if a caller reaches it anyway. */
+export const AI_OPT_IN = process.env.MELITE_E2E_AI === '1'
+
 /** The composer the mint types into: the reachability probe that
  *  PROVES the masking dialogs are gone. A locator RESOLVING is not
  *  reachability — under a mask Playwright reports the intercepting
@@ -183,6 +191,13 @@ export async function settle(page: Page): Promise<void> {
  *  conversation's id — the returned key is always the conversation
  *  the tab is about to show, never a guess off host history. */
 export async function openAConversation(page: Page): Promise<{ opened: boolean; sessionKey: string }> {
+  if (!AI_OPT_IN) {
+    throw new Error(
+      'THE MINT IS AN ACTUAL AI CALL — the composer send rides /api/session/prompt to the lane\'s real model '
+      + '(one model turn per mint, tokens burned, a keyed live lane required). Opt in with MELITE_E2E_AI=1; '
+      + 'minting specs self-skip without it — reaching this spine uninvited is a spec bug, never a silent skip.',
+    )
+  }
   const seat = page.locator('[data-sidebar-right-expand]').first()
   // THE MINT'S OWN KEY: the composer's first send is a
   // session/prompt REQUEST whose args carry the conversation's

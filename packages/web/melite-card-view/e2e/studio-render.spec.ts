@@ -30,6 +30,7 @@ import { expect, test, type Page } from '@playwright/test'
 import { collectPageErrors, expectNoPageErrors, openAConversation, openCardsWithBench, settle, STUDIO_URL } from './tour.ts'
 
 test.skip(!STUDIO_URL, 'E2E_STUDIO_URL (token-authenticated shell URL) is not set — the browser-plane wall needs a live host with the seeded bench')
+test.skip(process.env.MELITE_E2E_AI !== '1', 'THE MINT IS AN ACTUAL AI CALL — one real model turn per ride (tokens burned, keyed lane required); opt in with MELITE_E2E_AI=1')
 
 test('the h3-timeline bench card opens the VideoTimelineStudio, not the generic form', async ({ page }) => {
   // THE LEDGER IS THE SPINE'S (tour.ts), not a hand-rolled copy per

@@ -15,6 +15,7 @@ import {
 } from './tour.ts'
 
 test.skip(!STUDIO_URL, 'E2E_STUDIO_URL (token-authenticated shell URL) is not set — the browser-plane wall needs a live host')
+test.skip(process.env.MELITE_E2E_AI !== '1', 'THE MINT IS AN ACTUAL AI CALL — one real model turn per ride (tokens burned, keyed lane required); opt in with MELITE_E2E_AI=1')
 
 /** The catalog row the sweep drives: a card and the model families
  *  it boards (the variations). */

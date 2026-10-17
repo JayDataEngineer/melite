@@ -41,6 +41,7 @@ const RUNS_ROOT = process.env.E2E_RUNS_ROOT ?? ''
 const PLANT_GUARD = 'E2E_STUDIO_URL plus E2E_RUNS_ROOT (the lane\'s scratch runs root) are not both set — the ghost wall plants run dirs and refuses to guess where the lane keeps them'
 
 test.skip(!STUDIO_URL || RUNS_ROOT === '', PLANT_GUARD)
+test.skip(process.env.MELITE_E2E_AI !== '1', 'THE MINT IS AN ACTUAL AI CALL — one real model turn per ride (tokens burned, keyed lane required); opt in with MELITE_E2E_AI=1')
 
 const SEED_PNG = new URL('./rail-overflow.png', import.meta.url)
 

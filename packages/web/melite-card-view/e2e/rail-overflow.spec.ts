@@ -1,6 +1,8 @@
 import { expect, test } from '@playwright/test'
 import { openAConversation, openCardsWithBench, seedBenchH3, settle } from './tour'
 
+test.skip(process.env.MELITE_E2E_AI !== '1', 'THE MINT IS AN ACTUAL AI CALL — one real model turn per ride (tokens burned, keyed lane required); opt in with MELITE_E2E_AI=1')
+
 /**
  * THE OVERFLOW HUNT (operator 2026-09-23, the too-wide rail): instead
  * of theorizing about which element forces the params column past its

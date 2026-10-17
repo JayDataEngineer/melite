@@ -24,6 +24,7 @@ import { expect, test } from '@playwright/test'
 import { STUDIO_URL, collectPageErrors, expectNoPageErrors, openAConversation, settle } from './tour.ts'
 
 test.skip(!STUDIO_URL, 'E2E_STUDIO_URL (token-authenticated shell URL) is not set — the restore wall drives the live host’s own gesture')
+test.skip(process.env.MELITE_E2E_AI !== '1', 'THE MINT IS AN ACTUAL AI CALL — one real model turn per ride (tokens burned, keyed lane required); opt in with MELITE_E2E_AI=1')
 
 test('the wand-restored image run paints the tile, never the kind face', async ({ page }) => {
   const errors = collectPageErrors(page)

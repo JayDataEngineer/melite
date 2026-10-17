@@ -21,6 +21,7 @@ import { expect, test } from '@playwright/test'
 import { collectPageErrors, expectNoPageErrors, openAConversation, openCardsWithBench, readBenchRow, settle, STUDIO_URL } from './tour.ts'
 
 test.skip(!STUDIO_URL, 'E2E_STUDIO_URL (token-authenticated shell URL) is not set — the browser-plane wall needs a live host')
+test.skip(process.env.MELITE_E2E_AI !== '1', 'THE MINT IS AN ACTUAL AI CALL — one real model turn per ride (tokens burned, keyed lane required); opt in with MELITE_E2E_AI=1')
 
 test('a typed prompt RIDES the bench row (the lane can never say "prompt is not stated")', async ({ page }) => {
   // THE SHARED LEDGER, not a local copy: the boot-race pending frames
