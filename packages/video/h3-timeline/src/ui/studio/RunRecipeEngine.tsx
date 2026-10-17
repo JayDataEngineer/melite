@@ -23,7 +23,7 @@
  * injects own geometry, one surface).
  */
 import { CardForm, ControlRow, SectionLabel, SpecAtom, useResolvedForm, type SquareWire } from "@melite/card-base/client"
-import { axisPickPatch, axisUnset, composeValidate } from '@melite/card-base/client'
+import { axisUnset, composeValidate } from '@melite/card-base/client'
 import { resolvePickVerdictDoc } from "./pickVerdict.ts"
 import { fetchMediaLibrary } from '@melite/card-base/client'
 import { type Dispatch, type SetStateAction, useMemo, useState } from "react"
@@ -33,6 +33,7 @@ import { FILM_ONLY_KEYS, T4_ONLY_KEYS, deriveWindowFamily } from "@melite/models
 import type { LayerA, SetLayerAKey } from "./docModel.ts"
 import { mergeDocLayers } from "./docModel.ts"
 import { parseSpecNumber } from "./docGrid.ts"
+import { omitT4RecipeRow } from "./omitT4Recipe.ts"
 import { studioCopy } from "./studioCopy.ts"
 
 /** Layer A rail: Recipe (clock) + Engine (H3 sampling) + geometry. */
@@ -121,18 +122,12 @@ export function RunRecipeEngine({
   // intersects the family-dead keys is not offered on that lane.
   // (spec !== null in the guard narrows the const binding — the
   // gate is only ever handed to CardForm inside the spec'd render,
-  // so it can never deref a null it would never judge)
+  // so it can never deref a null it would never judge). The row
+  // judgment itself lives in omitT4Recipe.ts, ONE spelling the
+  // contract wall drives against the served spec + the DECL's own
+  // rows (the J4 negative control).
   const omitT4Recipe = family === "t4r" && spec !== null
-    ? (row: unknown): boolean => {
-        const stamp = axisPickPatch(spec, row as never, {})
-        // the ROW gate judges the same dead vocabulary the field
-        // gate omits (t4r: T4_ONLY ∪ FILM_ONLY; the film-only keys
-        // are legal on a chain, so only the t4r lane consults them
-        // here — a t4r doc cannot honor either set)
-        return Object.keys(stamp).some((k) =>
-          (T4_ONLY_KEYS as readonly string[]).includes(k)
-          || (FILM_ONLY_KEYS as readonly string[]).includes(k))
-      }
+    ? (row: unknown): boolean => omitT4RecipeRow(spec, row)
     : undefined
   const wire: SquareWire = {
     candidates: refArtifacts.map((a) => ({ id: a.name, label: a.name, url: a.url })),

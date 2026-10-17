@@ -487,6 +487,9 @@ export const COVERAGE_BASELINE: Record<string, {
   '**/packages/video/h3-timeline/src/ui/studio/docGrid.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/video/h3-timeline/src/ui/studio/docHydrate.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/video/h3-timeline/src/ui/studio/docModel.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
+  // (row 2026-10-17: omitT4Recipe landed with the B1 emit-law round —
+  // the J4 negative control drives both branches at the served spec)
+  '**/packages/video/h3-timeline/src/ui/studio/omitT4Recipe.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   // (row 2026-11-01: docPatch landed with the rail-law round)
   '**/packages/video/h3-timeline/src/ui/studio/docPatch.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/video/h3-timeline/src/ui/studio/pendingOps.ts': { statements: 100, branches: 97.29, functions: 100, lines: 100 },

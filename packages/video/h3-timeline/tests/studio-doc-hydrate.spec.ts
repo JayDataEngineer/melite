@@ -610,6 +610,16 @@ describe("the layerA whole-doc roundtrip identity (G1)", () => {
   // defaults stated explicitly, true-gated masters ON, the false-pole
   // riders OFF, the mod bag + positioned clips + all four ref lanes +
   // trims populated.
+  // FAMILY-CONDITIONAL (B1, journey-closure 2026-11-06): the ref lanes
+  // derive t4r, where the family-aware emit law OMITS every T4_ONLY
+  // member — so the identity is judged on the FILM lane (a t4_chain
+  // base: two text calls), where every key the fixture states is
+  // legal. The t4r lane's omission is the contract wall's B1 arm, not
+  // this identity's. The tests pass a film base (two text calls) as
+  // the delete-ride base — the family seat every real save carries.
+  const CHAIN_BASE: Record<string, unknown> = {
+    calls: [{ start_frame: 0, end_frame: 90 }, { start_frame: 90, end_frame: 180 }],
+  }
   const SAVED_DOC: Record<string, unknown> = {
     fps: 24,
     seed: 42,
@@ -665,12 +675,12 @@ describe("the layerA whole-doc roundtrip identity (G1)", () => {
   }
 
   it("serialize(hydrate(D)) deep-equals D — every stated value survives, no key gains or loses", () => {
-    assert.deepStrictEqual(serializeLayerA(hydrateLayerA(SAVED_DOC)), SAVED_DOC)
+    assert.deepStrictEqual(serializeLayerA(hydrateLayerA(SAVED_DOC), CHAIN_BASE), SAVED_DOC)
   })
 
   it("the identity is idempotent — a second roundtrip moves nothing", () => {
-    const once = serializeLayerA(hydrateLayerA(SAVED_DOC))
-    assert.deepStrictEqual(serializeLayerA(hydrateLayerA(once)), once)
+    const once = serializeLayerA(hydrateLayerA(SAVED_DOC), CHAIN_BASE)
+    assert.deepStrictEqual(serializeLayerA(hydrateLayerA(once), CHAIN_BASE), once)
   })
 
   it("the state-form roundtrip is value-faithful on every key the state carries", () => {
@@ -678,7 +688,7 @@ describe("the layerA whole-doc roundtrip identity (G1)", () => {
     // reverse direction. serialize skips undefined/"" (absent =
     // inherit, the family default), so the judge is per stated key.
     const state = hydrateLayerA(SAVED_DOC)
-    const back = hydrateLayerA(serializeLayerA(state))
+    const back = hydrateLayerA(serializeLayerA(state, CHAIN_BASE))
     assert.deepStrictEqual(back, state)
   })
 })

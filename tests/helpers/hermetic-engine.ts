@@ -53,10 +53,20 @@
  *    second barrel registration would fight this helper's.
  */
 import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import { deepEqual, ok } from 'node:assert/strict'
 import { vi } from 'vitest'
 
-const DOC_URL = new URL('../walls/fixtures/object_info.boot.json', import.meta.url)
+// The dom lane's global URL is happy-dom's: `new URL(rel, a file://
+// base)` resolves to an http: URL there, and node:fs refuses any
+// non-file scheme (ERR_INVALID_URL_SCHEME) — the boot double could
+// never load in a dom-lane spec. import.meta.url stays a plain
+// file:// STRING in every lane, so the fixture anchors by string
+// arithmetic, never through the environment's URL class.
+const DOC_PATH = resolve(
+  decodeURIComponent(import.meta.url).slice('file://'.length, import.meta.url.lastIndexOf('/') + 1),
+  '../walls/fixtures/object_info.boot.json',
+)
 
 const seat = vi.hoisted(() => ({ fetches: 0, doc: null as Record<string, unknown> | null }))
 
@@ -66,7 +76,7 @@ function loadBootDoc(): Record<string, unknown> {
   // unchanged-doc skip rides identity, and a fresh parse per call
   // would re-arm every prime and lie about the law).
   if (seat.doc === null) {
-    seat.doc = JSON.parse(readFileSync(DOC_URL, 'utf8')) as Record<string, unknown>
+    seat.doc = JSON.parse(readFileSync(DOC_PATH, 'utf8')) as Record<string, unknown>
   }
   return seat.doc
 }

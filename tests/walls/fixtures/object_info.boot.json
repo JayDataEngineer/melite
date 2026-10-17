@@ -6690,5 +6690,3507 @@
   "output_node": false,
   "python_module": "custom_nodes.comfyui-videohelpersuite",
   "search_aliases": []
+ },
+ "BasicGuider": {
+  "input": {
+   "required": {
+    "model": [
+     "MODEL",
+     {}
+    ],
+    "conditioning": [
+     "CONDITIONING",
+     {}
+    ]
+   }
+  },
+  "input_order": {
+   "required": [
+    "model",
+    "conditioning"
+   ]
+  },
+  "is_input_list": false,
+  "output": [
+   "GUIDER"
+  ],
+  "output_is_list": [
+   false
+  ],
+  "output_name": [
+   "GUIDER"
+  ],
+  "output_tooltips": [
+   null
+  ],
+  "output_matchtypes": null,
+  "name": "BasicGuider",
+  "display_name": "Basic Guider",
+  "description": "",
+  "python_module": "comfy_extras.nodes_custom_sampler",
+  "category": "model/sampling/guiders",
+  "output_node": false,
+  "deprecated": false,
+  "experimental": false,
+  "dev_only": false,
+  "api_node": false,
+  "price_badge": null,
+  "search_aliases": null,
+  "essentials_category": null,
+  "has_intermediate_output": false
+ },
+ "BasicScheduler": {
+  "input": {
+   "required": {
+    "model": [
+     "MODEL",
+     {}
+    ],
+    "scheduler": [
+     "COMBO",
+     {
+      "multiselect": false,
+      "options": [
+       "simple",
+       "sgm_uniform",
+       "karras",
+       "exponential",
+       "ddim_uniform",
+       "beta",
+       "normal",
+       "linear_quadratic",
+       "kl_optimal"
+      ]
+     }
+    ],
+    "steps": [
+     "INT",
+     {
+      "default": 20,
+      "min": 1,
+      "max": 10000
+     }
+    ],
+    "denoise": [
+     "FLOAT",
+     {
+      "default": 1,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+     }
+    ]
+   }
+  },
+  "input_order": {
+   "required": [
+    "model",
+    "scheduler",
+    "steps",
+    "denoise"
+   ]
+  },
+  "is_input_list": false,
+  "output": [
+   "SIGMAS"
+  ],
+  "output_is_list": [
+   false
+  ],
+  "output_name": [
+   "SIGMAS"
+  ],
+  "output_tooltips": [
+   null
+  ],
+  "output_matchtypes": null,
+  "name": "BasicScheduler",
+  "display_name": null,
+  "description": "",
+  "python_module": "comfy_extras.nodes_custom_sampler",
+  "category": "model/sampling/schedulers",
+  "output_node": false,
+  "deprecated": false,
+  "experimental": false,
+  "dev_only": false,
+  "api_node": false,
+  "price_badge": null,
+  "search_aliases": null,
+  "essentials_category": null,
+  "has_intermediate_output": false
+ },
+ "ComfyMathExpression": {
+  "input": {
+   "required": {
+    "expression": [
+     "STRING",
+     {
+      "default": "a + b",
+      "multiline": true
+     }
+    ],
+    "values": [
+     "COMFY_AUTOGROW_V3",
+     {
+      "template": {
+       "input": {
+        "required": {
+         "value": [
+          "FLOAT,INT,BOOLEAN",
+          {}
+         ]
+        }
+       },
+       "names": [
+        "a",
+        "b",
+        "c",
+        "d",
+        "e",
+        "f",
+        "g",
+        "h",
+        "i",
+        "j",
+        "k",
+        "l",
+        "m",
+        "n",
+        "o",
+        "p",
+        "q",
+        "r",
+        "s",
+        "t",
+        "u",
+        "v",
+        "w",
+        "x",
+        "y",
+        "z"
+       ],
+       "min": 1
+      }
+     }
+    ]
+   }
+  },
+  "input_order": {
+   "required": [
+    "expression",
+    "values"
+   ]
+  },
+  "is_input_list": false,
+  "output": [
+   "FLOAT",
+   "INT",
+   "BOOLEAN"
+  ],
+  "output_is_list": [
+   false,
+   false,
+   false
+  ],
+  "output_name": [
+   "FLOAT",
+   "INT",
+   "BOOL"
+  ],
+  "output_tooltips": [
+   null,
+   null,
+   null
+  ],
+  "output_matchtypes": null,
+  "name": "ComfyMathExpression",
+  "display_name": "Math Expression",
+  "description": "",
+  "python_module": "comfy_extras.nodes_math",
+  "category": "utilities",
+  "output_node": false,
+  "deprecated": false,
+  "experimental": false,
+  "dev_only": false,
+  "api_node": false,
+  "price_badge": null,
+  "search_aliases": [
+   "math",
+   "expression",
+   "formula",
+   "calculate",
+   "calculator",
+   "eval"
+  ],
+  "essentials_category": null,
+  "has_intermediate_output": false
+ },
+ "ComfySwitchNode": {
+  "input": {
+   "required": {
+    "switch": [
+     "BOOLEAN",
+     {}
+    ]
+   },
+   "optional": {
+    "on_false": [
+     "COMFY_MATCHTYPE_V3",
+     {
+      "lazy": true,
+      "template": {
+       "template_id": "switch",
+       "allowed_types": "*"
+      }
+     }
+    ],
+    "on_true": [
+     "COMFY_MATCHTYPE_V3",
+     {
+      "lazy": true,
+      "template": {
+       "template_id": "switch",
+       "allowed_types": "*"
+      }
+     }
+    ]
+   }
+  },
+  "input_order": {
+   "required": [
+    "switch"
+   ],
+   "optional": [
+    "on_false",
+    "on_true"
+   ]
+  },
+  "is_input_list": false,
+  "output": [
+   "COMFY_MATCHTYPE_V3"
+  ],
+  "output_is_list": [
+   false
+  ],
+  "output_name": [
+   "output"
+  ],
+  "output_tooltips": [
+   null
+  ],
+  "output_matchtypes": [
+   "switch"
+  ],
+  "name": "ComfySwitchNode",
+  "display_name": "If/Else Switch",
+  "description": "",
+  "python_module": "comfy_extras.nodes_logic",
+  "category": "utilities/logic",
+  "output_node": false,
+  "deprecated": false,
+  "experimental": true,
+  "dev_only": false,
+  "api_node": false,
+  "price_badge": null,
+  "search_aliases": [
+   "if",
+   "then",
+   "switch",
+   "conditional",
+   "branch"
+  ],
+  "essentials_category": null,
+  "has_intermediate_output": false
+ },
+ "FrameInterpolate": {
+  "input": {
+   "required": {
+    "interp_model": [
+     "INTERP_MODEL",
+     {}
+    ],
+    "images": [
+     "IMAGE",
+     {}
+    ],
+    "multiplier": [
+     "INT",
+     {
+      "default": 2,
+      "min": 2,
+      "max": 16
+     }
+    ]
+   }
+  },
+  "input_order": {
+   "required": [
+    "interp_model",
+    "images",
+    "multiplier"
+   ]
+  },
+  "is_input_list": false,
+  "output": [
+   "IMAGE"
+  ],
+  "output_is_list": [
+   false
+  ],
+  "output_name": [
+   "IMAGE"
+  ],
+  "output_tooltips": [
+   null
+  ],
+  "output_matchtypes": null,
+  "name": "FrameInterpolate",
+  "display_name": "Run Frame Interpolation Model",
+  "description": "",
+  "python_module": "comfy_extras.nodes_frame_interpolation",
+  "category": "video",
+  "output_node": false,
+  "deprecated": false,
+  "experimental": false,
+  "dev_only": false,
+  "api_node": false,
+  "price_badge": null,
+  "search_aliases": [
+   "rife",
+   "film",
+   "frame interpolation",
+   "slow motion",
+   "interpolate frames",
+   "vfi"
+  ],
+  "essentials_category": null,
+  "has_intermediate_output": false
+ },
+ "FrameInterpolationModelLoader": {
+  "input": {
+   "required": {
+    "model_name": [
+     "COMBO",
+     {
+      "tooltip": "Select a frame interpolation model to load. Models must be placed in the 'frame_interpolation' folder.",
+      "multiselect": false,
+      "options": [
+       "film_net_fp16.safetensors",
+       "rife47.pth"
+      ]
+     }
+    ]
+   }
+  },
+  "input_order": {
+   "required": [
+    "model_name"
+   ]
+  },
+  "is_input_list": false,
+  "output": [
+   "INTERP_MODEL"
+  ],
+  "output_is_list": [
+   false
+  ],
+  "output_name": [
+   "INTERP_MODEL"
+  ],
+  "output_tooltips": [
+   null
+  ],
+  "output_matchtypes": null,
+  "name": "FrameInterpolationModelLoader",
+  "display_name": "Load Frame Interpolation Model",
+  "description": "",
+  "python_module": "comfy_extras.nodes_frame_interpolation",
+  "category": "model/loaders",
+  "output_node": false,
+  "deprecated": false,
+  "experimental": false,
+  "dev_only": false,
+  "api_node": false,
+  "price_badge": null,
+  "search_aliases": null,
+  "essentials_category": null,
+  "has_intermediate_output": false
+ },
+ "GetVideoComponents": {
+  "input": {
+   "required": {
+    "video": [
+     "VIDEO",
+     {
+      "tooltip": "The video to extract components from."
+     }
+    ]
+   }
+  },
+  "input_order": {
+   "required": [
+    "video"
+   ]
+  },
+  "is_input_list": false,
+  "output": [
+   "IMAGE",
+   "AUDIO",
+   "FLOAT",
+   "COMBO",
+   "COMBO"
+  ],
+  "output_is_list": [
+   false,
+   false,
+   false,
+   false,
+   false
+  ],
+  "output_name": [
+   "images",
+   "audio",
+   "fps",
+   "bit_depth",
+   "color_space"
+  ],
+  "output_tooltips": [
+   null,
+   null,
+   null,
+   null,
+   null
+  ],
+  "output_matchtypes": null,
+  "name": "GetVideoComponents",
+  "display_name": "Get Video Components",
+  "description": "Extracts video frames, audio, frame rate, bit depth, and color space.",
+  "python_module": "comfy_extras.nodes_video",
+  "category": "video",
+  "output_node": false,
+  "deprecated": false,
+  "experimental": false,
+  "dev_only": false,
+  "api_node": false,
+  "price_badge": null,
+  "search_aliases": [
+   "extract frames",
+   "split video",
+   "video to images",
+   "demux"
+  ],
+  "essentials_category": null,
+  "has_intermediate_output": false
+ },
+ "H3AdaLNLoRAFix": {
+  "input": {
+   "required": {
+    "model": [
+     "MODEL",
+     {
+      "tooltip": "MODEL, after the LoRA loader(s)."
+     }
+    ],
+    "mode": [
+     "COMBO",
+     {
+      "tooltip": "port: rebase the AdaLN weights onto the basis the model actually uses - quiet log, and the timestep modulation is restored. strip: just drop the incompatible weights - quiet log, output identical to having no fix at all. off: passthrough, leaves the errors in place.",
+      "default": "port",
+      "multiselect": false,
+      "options": [
+       "port",
+       "strip",
+       "off"
+      ]
+     }
+    ]
+   }
+  },
+  "input_order": {
+   "required": [
+    "model",
+    "mode"
+   ]
+  },
+  "is_input_list": false,
+  "output": [
+   "MODEL"
+  ],
+  "output_is_list": [
+   false
+  ],
+  "output_name": [
+   "MODEL"
+  ],
+  "output_tooltips": [
+   null
+  ],
+  "output_matchtypes": null,
+  "name": "H3AdaLNLoRAFix",
+  "display_name": "H3 AdaLN LoRA Fix",
+  "description": "Rebases dense MiniMax-H3 LoRA AdaLN weights onto a pruned (curve-form) checkpoint, so they are applied instead of being skipped with 51 'ERROR lora ... adaln_proj' lines. Place it after your LoRA loader. Works in both directions: dense LoRA on a pruned base, or curve-form LoRA on a full one.",
+  "python_module": "custom_nodes.Comfyui-PlagueKind-Nodes",
+  "category": "PlagueKind/model_patches/minimax",
+  "output_node": false,
+  "deprecated": false,
+  "experimental": false,
+  "dev_only": false,
+  "api_node": false,
+  "price_badge": null,
+  "search_aliases": null,
+  "essentials_category": null,
+  "has_intermediate_output": false
+ },
+ "H3SLAAttention": {
+  "input": {
+   "required": {
+    "model": [
+     "MODEL",
+     {
+      "tooltip": "MODEL,"
+     }
+    ],
+    "sparsity_ratio": [
+     "FLOAT",
+     {
+      "tooltip": "Fraction of key blocks skipped. 0.85 is the shipped default and what the SLA turbo LoRA was distilled against; 0.90 is the value validated here and is ~15% faster. Sparsity did NOT turn out to drive the speech artefacts on H3 -- step count did, so use 6 steps rather than lowering this. Break-even is about 0.60 -- below that this kernel is SLOWER than dense attention, so a low value is a loss, not a safe fallback. If a LoRA cannot take 0.7+, this node has nothing to offer it. 0.0 disables sparsity without removing the node.",
+      "default": 0.9,
+      "min": 0,
+      "max": 0.95,
+      "step": 0.05,
+      "round": false
+     }
+    ],
+    "block_size": [
+     "COMBO",
+     {
+      "tooltip": "How many sequence tokens share one key selection. Unrelated to the model's 128-wide heads. This matters far more for audio than video: H3 packs audio at 80 rows per second, so a 128-row block forces 1.6 s of audio down one attention pattern, while the same 128 rows are only 3% of a video frame. Speech came out robotic at 128 and clean at 64, for about 2% more time -- halving the block doubles the block count, so the attention work is identical and only the routing gets finer. Use 128 only if you generate without meaningful audio. Coming down to 32 has increased the quality even further for marginal slowdown ",
+      "default": "32",
+      "multiselect": false,
+      "options": [
+       "32",
+       "64",
+       "128"
+      ]
+     }
+    ]
+   },
+   "optional": {
+    "min_seq_len": [
+     "INT",
+     {
+      "tooltip": "Sequences shorter than this stay dense. Guards two things: the short text-refiner attention, which must never be sparsified, and low-resolution or short clips, where block selection would cost more than it saves. Lower it only if you know your sequence is long enough to benefit.",
+      "default": 8192,
+      "min": 0,
+      "max": 1000000,
+      "step": 1024
+     }
+    ],
+    "dense_last_steps": [
+     "INT",
+     {
+      "tooltip": "Run the last N sampling steps at full attention. 0 matches the turbo LoRA's original distillation setup exactly. 1 costs a little speed and can recover fine detail, since the final step's error is the one you actually see. Stacks with dense_steps below rather than replacing it.",
+      "default": 1,
+      "min": 0,
+      "max": 8
+     }
+    ],
+    "protect_audio": [
+     "BOOLEAN",
+     {
+      "tooltip": "Always attend blocks overlapping actual language tokens, target audio, and audio-reference segments. Visual-reference blocks are controlled separately. Disable only for turbo-style uniform sparsity; testing found partial or unprotected audio unstable for very little speed gain.",
+      "default": true,
+      "label_on": "protect",
+      "label_off": "uniform (turbo parity)"
+     }
+    ],
+    "enabled": [
+     "BOOLEAN",
+     {
+      "tooltip": "Turn off to pass the model straight through, for a like-for-like speed baseline without rewiring.",
+      "default": true,
+      "label_on": "sparse",
+      "label_off": "dense (bypass)"
+     }
+    ],
+    "dense_steps": [
+     "STRING",
+     {
+      "tooltip": "Explicit 0-based step indices to force dense, on top of dense_last_steps -- e.g. '0,1' or '0-2'. Early steps set global composition and prompt adherence, so keeping just those exact and sparsifying the rest can fix prompt-following regressions without paying for full attention on every step. Blank = none.",
+      "default": "0",
+      "multiline": false
+     }
+    ],
+    "dense_backend": [
+     "COMBO",
+     {
+      "tooltip": "Attention kernel used on every dense fall-through (short sequences, dense_last_steps, dense_steps). 'comfy_kitchen' (default, Comfy Kitchen int8) is fast enough on the handful of dense steps this node runs to be worth its precision tradeoff there. 'pytorch' pins the plain reference kernel instead if you want zero quantization anywhere in the dense path, at real cost to dense-step speed -- dense steps are the ones this node already decided must be exact, so that's the safest choice if you're chasing maximum quality over speed there. The 'sage:*' modes match an existing sage-attention kernel dropdown one-for-one -- 'sage:auto' lets the sageattention package pick; the rest pin a specific kernel + pv_accum_dtype: fp16_cuda uses fp32 accum (safest), fp8_cuda uses fp32+fp32 (safest of the fp8 pair), fp8_cuda++ uses fp32+fp16 (faster, more overflow-prone -- try this first if fp8_cuda works but you want more speed). Needs the sageattention package installed; falls back to whatever's already active with a logged warning if it isn't, or if a specific kernel is missing from your installed version. 'auto' restores the old behaviour of using whatever backend is already active globally. The sparse path is unaffected by this setting either way -- it never goes through backend selection at all.",
+      "default": "comfy_kitchen",
+      "multiselect": false,
+      "options": [
+       "pytorch",
+       "comfy_kitchen",
+       "sage:auto",
+       "sage:qk_int8_pv_fp16_cuda",
+       "sage:qk_int8_pv_fp16_triton",
+       "sage:qk_int8_pv_fp8_cuda",
+       "sage:qk_int8_pv_fp8_cuda++",
+       "auto"
+      ]
+     }
+    ],
+    "disable_fp16_accum": [
+     "BOOLEAN",
+     {
+      "tooltip": "Force off the fp16/bf16 reduced-precision matmul reduction path for this model's sampling run, regardless of the global --fast fp16_accumulation flag. Measured to cost quality on H3 with no throughput gain. Turn off only to A/B against the global flag.",
+      "default": true,
+      "label_on": "disabled (recommended)",
+      "label_off": "follow --fast"
+     }
+    ],
+    "stabilize_motion": [
+     "BOOLEAN",
+     {
+      "tooltip": "Bias each layer's block selection toward what it picked last step, so a near-tie between two blocks doesn't flip for no reason and show up as a faint double-exposure on fast motion. Only target-video query rows are stabilized; text and audio choices remain step-local. It is a fix for that one specific symptom, not a general quality dial. - Uses more Vram ",
+      "default": false,
+      "label_on": "on",
+      "label_off": "off"
+     }
+    ],
+    "reference_protection": [
+     "BOOLEAN",
+     {
+      "display_name": "Protect Vid/Ref",
+      "tooltip": "Protect Image/Video Reference. ON (Light) uses fixed 0.85 reference sparsity and guarantees the best-scoring 15% of each visual-reference range. OFF adds no special quota; references still participate in ordinary top-k.Default Off preserves the precise audio patch's fastest behaviour.",
+      "default": false,
+      "label_on": "Light",
+      "label_off": "Off"
+     }
+    ]
+   }
+  },
+  "input_order": {
+   "required": [
+    "model",
+    "sparsity_ratio",
+    "block_size"
+   ],
+   "optional": [
+    "min_seq_len",
+    "dense_last_steps",
+    "protect_audio",
+    "enabled",
+    "dense_steps",
+    "dense_backend",
+    "disable_fp16_accum",
+    "stabilize_motion",
+    "reference_protection"
+   ]
+  },
+  "is_input_list": false,
+  "output": [
+   "MODEL"
+  ],
+  "output_is_list": [
+   false
+  ],
+  "output_name": [
+   "MODEL"
+  ],
+  "output_tooltips": [
+   null
+  ],
+  "output_matchtypes": null,
+  "name": "H3SLAAttention",
+  "display_name": "H3 SLA Attention",
+  "description": "Block-sparse attention for MiniMax-H3, matching the inference sequences benefit most, so the gain grows with resolution and duration; short ones fall back to dense automatically.",
+  "python_module": "custom_nodes.Comfyui-PlagueKind-Nodes",
+  "category": "PlagueKind/model_patches/minimax",
+  "output_node": false,
+  "deprecated": false,
+  "experimental": false,
+  "dev_only": false,
+  "api_node": false,
+  "price_badge": null,
+  "search_aliases": null,
+  "essentials_category": null,
+  "has_intermediate_output": false
+ },
+ "ImageSharpenKJ": {
+  "input": {
+   "required": {
+    "image": [
+     "COMFY_MATCHTYPE_V3",
+     {
+      "template": {
+       "template_id": "img_or_mask",
+       "allowed_types": "IMAGE,MASK"
+      }
+     }
+    ],
+    "method": [
+     "COMFY_DYNAMICCOMBO_V3",
+     {
+      "options": [
+       {
+        "key": "rcas",
+        "inputs": {
+         "required": {
+          "strength": [
+           "FLOAT",
+           {
+            "tooltip": "0 = no sharpening, 1 = full RCAS sharpening.",
+            "default": 0.8,
+            "min": 0,
+            "max": 1,
+            "step": 0.01
+           }
+          ]
+         }
+        }
+       },
+       {
+        "key": "adaptive_usm",
+        "inputs": {
+         "required": {
+          "strength": [
+           "FLOAT",
+           {
+            "tooltip": "Sharpening multiplier. Values above 1.0 give aggressive sharpening.",
+            "default": 0.5,
+            "min": 0,
+            "max": 3,
+            "step": 0.01
+           }
+          ],
+          "radius": [
+           "FLOAT",
+           {
+            "tooltip": "Gaussian blur sigma for the unsharp mask. Larger = enhances coarser detail.",
+            "default": 1,
+            "min": 0.5,
+            "max": 5,
+            "step": 0.1
+           }
+          ],
+          "threshold": [
+           "FLOAT",
+           {
+            "tooltip": "Noise gate. Higher = only sharpen areas with more texture/detail. 0 = sharpen everything.",
+            "default": 0.05,
+            "min": 0,
+            "max": 1,
+            "step": 0.01
+           }
+          ]
+         }
+        }
+       },
+       {
+        "key": "high_pass",
+        "inputs": {
+         "required": {
+          "strength": [
+           "FLOAT",
+           {
+            "tooltip": "Blend factor for high-frequency detail. Values above 1.0 give a punchier effect.",
+            "default": 0.5,
+            "min": 0,
+            "max": 3,
+            "step": 0.01
+           }
+          ],
+          "radius": [
+           "FLOAT",
+           {
+            "tooltip": "Gaussian blur sigma defining the frequency cutoff. Larger = enhances coarser detail.",
+            "default": 1,
+            "min": 0.5,
+            "max": 5,
+            "step": 0.1
+           }
+          ]
+         }
+        }
+       },
+       {
+        "key": "deconvolution",
+        "inputs": {
+         "required": {
+          "strength": [
+           "FLOAT",
+           {
+            "tooltip": "Blend between original (0) and fully deconvolved (1).",
+            "default": 0.5,
+            "min": 0,
+            "max": 1,
+            "step": 0.01
+           }
+          ],
+          "radius": [
+           "FLOAT",
+           {
+            "tooltip": "Sigma of the assumed Gaussian blur to reverse.",
+            "default": 1,
+            "min": 0.5,
+            "max": 5,
+            "step": 0.1
+           }
+          ],
+          "iterations": [
+           "INT",
+           {
+            "tooltip": "Richardson-Lucy iterations. More = sharper but slower, diminishing returns past ~20.",
+            "default": 10,
+            "min": 1,
+            "max": 100,
+            "step": 1
+           }
+          ]
+         }
+        }
+       }
+      ]
+     }
+    ]
+   }
+  },
+  "input_order": {
+   "required": [
+    "image",
+    "method"
+   ]
+  },
+  "is_input_list": false,
+  "output": [
+   "COMFY_MATCHTYPE_V3"
+  ],
+  "output_is_list": [
+   false
+  ],
+  "output_name": [
+   "output"
+  ],
+  "output_tooltips": [
+   null
+  ],
+  "output_matchtypes": [
+   "img_or_mask"
+  ],
+  "name": "ImageSharpenKJ",
+  "display_name": "Image Sharpen KJ",
+  "description": "GPU-accelerated image sharpening with multiple methods.\n\n**RCAS** \u2014 AMD's Robust Contrast-Adaptive Sharpening (from FSR).\nSingle 5-tap cross filter that adapts to local contrast.\nMinimal artifacts, good for general use with little tuning.\n\n**Adaptive USM** \u2014 Unsharp mask with local variance modulation.\nSharpens detail-rich areas more, flat/noisy areas less.\nMore controllable than RCAS via radius and threshold parameters.\n\n**High-Pass** \u2014 Extracts high-frequency detail and blends it back.\nGives a \"clarity\" enhancement feel. Uses radius to control detail scale.\n\n**Deconvolution** \u2014 Richardson-Lucy iterative deconvolution.\nCan recover actual lost detail from blur, not just enhance edges.\nUses radius as the estimated blur kernel and iterations to control convergence.",
+  "python_module": "custom_nodes.ComfyUI-KJNodes",
+  "category": "KJNodes/image",
+  "output_node": false,
+  "deprecated": false,
+  "experimental": false,
+  "dev_only": false,
+  "api_node": false,
+  "price_badge": null,
+  "search_aliases": [
+   "sharpen",
+   "unsharp mask",
+   "deconvolution",
+   "cas",
+   "rcas",
+   "high-pass",
+   "postprocessing"
+  ],
+  "essentials_category": null,
+  "has_intermediate_output": false
+ },
+ "KSamplerSelect": {
+  "input": {
+   "required": {
+    "sampler_name": [
+     "COMBO",
+     {
+      "multiselect": false,
+      "options": [
+       "euler",
+       "euler_cfg_pp",
+       "euler_ancestral",
+       "euler_ancestral_cfg_pp",
+       "heun",
+       "heunpp2",
+       "exp_heun_2_x0",
+       "exp_heun_2_x0_sde",
+       "dpm_2",
+       "dpm_2_ancestral",
+       "lms",
+       "dpm_fast",
+       "dpm_adaptive",
+       "dpmpp_2s_ancestral",
+       "dpmpp_2s_ancestral_cfg_pp",
+       "dpmpp_sde",
+       "dpmpp_sde_gpu",
+       "dpmpp_2m",
+       "dpmpp_2m_cfg_pp",
+       "dpmpp_2m_sde",
+       "dpmpp_2m_sde_gpu",
+       "dpmpp_2m_sde_heun",
+       "dpmpp_2m_sde_heun_gpu",
+       "dpmpp_3m_sde",
+       "dpmpp_3m_sde_gpu",
+       "ddpm",
+       "lcm",
+       "ipndm",
+       "ipndm_v",
+       "deis",
+       "cfgpp_ud10_ab",
+       "res_multistep",
+       "res_multistep_cfg_pp",
+       "res_multistep_ancestral",
+       "res_multistep_ancestral_cfg_pp",
+       "gradient_estimation",
+       "gradient_estimation_cfg_pp",
+       "er_sde",
+       "seeds_2",
+       "seeds_3",
+       "sa_solver",
+       "sa_solver_pece",
+       "ddim",
+       "uni_pc",
+       "uni_pc_bh2"
+      ]
+     }
+    ]
+   }
+  },
+  "input_order": {
+   "required": [
+    "sampler_name"
+   ]
+  },
+  "is_input_list": false,
+  "output": [
+   "SAMPLER"
+  ],
+  "output_is_list": [
+   false
+  ],
+  "output_name": [
+   "SAMPLER"
+  ],
+  "output_tooltips": [
+   null
+  ],
+  "output_matchtypes": null,
+  "name": "KSamplerSelect",
+  "display_name": null,
+  "description": "",
+  "python_module": "comfy_extras.nodes_custom_sampler",
+  "category": "model/sampling/samplers",
+  "output_node": false,
+  "deprecated": false,
+  "experimental": false,
+  "dev_only": false,
+  "api_node": false,
+  "price_badge": null,
+  "search_aliases": null,
+  "essentials_category": null,
+  "has_intermediate_output": false
+ },
+ "LoadImageMask": {
+  "input": {
+   "required": {
+    "image": [
+     [
+      "36039_fd673969123f.jpg",
+      "example.png"
+     ],
+     {
+      "image_upload": true
+     }
+    ],
+    "channel": [
+     [
+      "alpha",
+      "red",
+      "green",
+      "blue"
+     ]
+    ]
+   }
+  },
+  "input_order": {
+   "required": [
+    "image",
+    "channel"
+   ]
+  },
+  "is_input_list": false,
+  "output": [
+   "MASK"
+  ],
+  "output_is_list": [
+   false
+  ],
+  "output_name": [
+   "MASK"
+  ],
+  "name": "LoadImageMask",
+  "display_name": "Load Image (as Mask)",
+  "description": "",
+  "python_module": "nodes",
+  "category": "image",
+  "output_node": false,
+  "has_intermediate_output": false,
+  "search_aliases": [
+   "import mask",
+   "alpha mask",
+   "channel mask"
+  ],
+  "essentials_category": "Image Tools"
+ },
+ "LoadVideo": {
+  "input": {
+   "required": {
+    "file": [
+     "COMBO",
+     {
+      "multiselect": false,
+      "options": [],
+      "video_upload": true
+     }
+    ]
+   }
+  },
+  "input_order": {
+   "required": [
+    "file"
+   ]
+  },
+  "is_input_list": false,
+  "output": [
+   "VIDEO"
+  ],
+  "output_is_list": [
+   false
+  ],
+  "output_name": [
+   "VIDEO"
+  ],
+  "output_tooltips": [
+   null
+  ],
+  "output_matchtypes": null,
+  "name": "LoadVideo",
+  "display_name": "Load Video",
+  "description": "",
+  "python_module": "comfy_extras.nodes_video",
+  "category": "video",
+  "output_node": false,
+  "deprecated": false,
+  "experimental": false,
+  "dev_only": false,
+  "api_node": false,
+  "price_badge": null,
+  "search_aliases": [
+   "import video",
+   "open video",
+   "video file"
+  ],
+  "essentials_category": "Basics",
+  "has_intermediate_output": true
+ },
+ "MeliteConcatVideos": {
+  "input": {
+   "required": {
+    "videos": [
+     "STRING",
+     {
+      "default": "",
+      "multiline": false,
+      "tooltip": "Comma list of output-dir SaveVideo prefixes, in film order"
+     }
+    ],
+    "after": [
+     "STRING",
+     {
+      "tooltip": "The MeliteUnload boundary token \u2014 proof every save completed"
+     }
+    ]
+   }
+  },
+  "input_order": {
+   "required": [
+    "videos",
+    "after"
+   ]
+  },
+  "is_input_list": false,
+  "output": [
+   "IMAGE",
+   "AUDIO",
+   "FLOAT"
+  ],
+  "output_is_list": [
+   false,
+   false,
+   false
+  ],
+  "output_name": [
+   "images",
+   "audio",
+   "fps"
+  ],
+  "name": "MeliteConcatVideos",
+  "display_name": "\ud83c\udfac Melite Concat Videos (file tail)",
+  "description": "",
+  "python_module": "custom_nodes.melite-utility-nodes",
+  "category": "melite/film",
+  "output_node": false,
+  "has_intermediate_output": false,
+  "search_aliases": []
+ },
+ "MeliteUnload": {
+  "input": {
+   "required": {
+    "video": [
+     "VIDEO"
+    ],
+    "unload_models": [
+     "BOOLEAN",
+     {
+      "default": false
+     }
+    ]
+   },
+   "optional": {
+    "after": [
+     "STRING",
+     {
+      "tooltip": "A PRIOR boundary's token \u2014 chains the boundaries so the final token provably waits for EVERY window save (pure ordering; never read)"
+     }
+    ]
+   }
+  },
+  "input_order": {
+   "required": [
+    "video",
+    "unload_models"
+   ],
+   "optional": [
+    "after"
+   ]
+  },
+  "is_input_list": false,
+  "output": [
+   "STRING"
+  ],
+  "output_is_list": [
+   false
+  ],
+  "output_name": [
+   "after"
+  ],
+  "name": "MeliteUnload",
+  "display_name": "\ud83c\udfac Melite Unload (film boundary)",
+  "description": "",
+  "python_module": "custom_nodes.melite-utility-nodes",
+  "category": "melite/film",
+  "output_node": false,
+  "has_intermediate_output": false,
+  "search_aliases": []
+ },
+ "MiniMaxChunkFeedForward": {
+  "input": {
+   "required": {
+    "model": [
+     "MODEL",
+     {}
+    ],
+    "chunks": [
+     "INT",
+     {
+      "tooltip": "Number of chunks to split the feedforward tokens into. More chunks = lower peak VRAM, slightly more overhead.",
+      "default": 2,
+      "min": 1,
+      "max": 64,
+      "step": 1
+     }
+    ],
+    "seq_threshold": [
+     "INT",
+     {
+      "tooltip": "Only chunk when the packed token count exceeds this (skips tiny sequences).",
+      "default": 4096,
+      "min": 256,
+      "max": 262144,
+      "step": 256
+     }
+    ]
+   }
+  },
+  "input_order": {
+   "required": [
+    "model",
+    "chunks",
+    "seq_threshold"
+   ]
+  },
+  "is_input_list": false,
+  "output": [
+   "MODEL"
+  ],
+  "output_is_list": [
+   false
+  ],
+  "output_name": [
+   "model"
+  ],
+  "output_tooltips": [
+   null
+  ],
+  "output_matchtypes": null,
+  "name": "MiniMaxChunkFeedForward",
+  "display_name": "MiniMax H3 Chunk FeedForward",
+  "description": "Chunks the MiniMax H3 feedforward (SwiGLU) over the packed token dim to reduce peak VRAM usage. Each chunk still goes through ComfyUI's fused INT8 kernel when the model is quantized, and since activations are quantized per-token the output matches the unchunked model.",
+  "python_module": "custom_nodes.ComfyUI-KJNodes",
+  "category": "KJNodes/experimental",
+  "output_node": false,
+  "deprecated": false,
+  "experimental": true,
+  "dev_only": false,
+  "api_node": false,
+  "price_badge": null,
+  "search_aliases": null,
+  "essentials_category": null,
+  "has_intermediate_output": false
+ },
+ "MiniMaxH3AddGuide": {
+  "input": {
+   "required": {
+    "positive": [
+     "CONDITIONING",
+     {}
+    ],
+    "latent": [
+     "LATENT",
+     {}
+    ],
+    "frame_idx": [
+     "INT",
+     {
+      "tooltip": "Frame index to anchor the image or the clip's first frame at. Negative values are counted from the end of the video.",
+      "default": 0,
+      "min": -9999,
+      "max": 9999
+     }
+    ]
+   },
+   "optional": {
+    "vae": [
+     "VAE",
+     {
+      "tooltip": "Video VAE, needed when an image is connected."
+     }
+    ],
+    "audio_vae": [
+     "VAE",
+     {
+      "tooltip": "Audio VAE, needed when an audio is connected."
+     }
+    ],
+    "image": [
+     "IMAGE",
+     {
+      "tooltip": "Image or video frames to anchor. Multi-frame batches are anchored as a clip and cropped down to the model's valid clip lengths: 5, 22, 39... (17k + 5) frames. Batches shorter than 5 frames use only the first image."
+     }
+    ],
+    "audio": [
+     "AUDIO",
+     {
+      "tooltip": "Soundtrack to anchor starting at the same frame index, cropped to the video's remaining duration."
+     }
+    ]
+   }
+  },
+  "input_order": {
+   "required": [
+    "positive",
+    "latent",
+    "frame_idx"
+   ],
+   "optional": [
+    "vae",
+    "audio_vae",
+    "image",
+    "audio"
+   ]
+  },
+  "is_input_list": false,
+  "output": [
+   "CONDITIONING"
+  ],
+  "output_is_list": [
+   false
+  ],
+  "output_name": [
+   "positive"
+  ],
+  "output_tooltips": [
+   null
+  ],
+  "output_matchtypes": null,
+  "name": "MiniMaxH3AddGuide",
+  "display_name": "Add Guide for MiniMax H3",
+  "description": "Anchor an image, a short clip, audio, or a clip with its soundtrack at any frame of a MiniMax H3 video. Chain several nodes to anchor several frames.",
+  "python_module": "comfy_extras.nodes_minimax_h3",
+  "category": "model/conditioning/minimax",
+  "output_node": false,
+  "deprecated": false,
+  "experimental": false,
+  "dev_only": false,
+  "api_node": false,
+  "price_badge": null,
+  "search_aliases": null,
+  "essentials_category": null,
+  "has_intermediate_output": false
+ },
+ "MiniMaxH3FiniteLatentContinuation": {
+  "input": {
+   "required": {
+    "positive": [
+     "CONDITIONING",
+     {}
+    ],
+    "target_latent": [
+     "LATENT",
+     {}
+    ],
+    "iteration": [
+     "INT",
+     {
+      "forceInput": true
+     }
+    ],
+    "overlap_frames": [
+     "INT",
+     {
+      "default": 22,
+      "min": 0,
+      "max": 3592
+     }
+    ],
+    "continue_audio_latent": [
+     "BOOLEAN",
+     {
+      "default": true
+     }
+    ],
+    "model": [
+     "MODEL",
+     {}
+    ],
+    "sigmas": [
+     "SIGMAS",
+     {}
+    ]
+   },
+   "optional": {
+    "previous_latent": [
+     "LATENT",
+     {}
+    ],
+    "previous_images": [
+     "IMAGE",
+     {}
+    ],
+    "vae": [
+     "VAE",
+     {}
+    ],
+    "audio_vae": [
+     "VAE",
+     {}
+    ]
+   }
+  },
+  "input_order": {
+   "required": [
+    "positive",
+    "target_latent",
+    "iteration",
+    "overlap_frames",
+    "continue_audio_latent",
+    "model",
+    "sigmas"
+   ],
+   "optional": [
+    "previous_latent",
+    "previous_images",
+    "vae",
+    "audio_vae"
+   ]
+  },
+  "is_input_list": false,
+  "output": [
+   "CONDITIONING",
+   "LATENT",
+   "INT",
+   "MODEL"
+  ],
+  "output_is_list": [
+   false,
+   false,
+   false,
+   false
+  ],
+  "output_name": [
+   "positive",
+   "Target Latent",
+   "Actual Overlap Frames",
+   "Sampling Model"
+  ],
+  "output_tooltips": [
+   null,
+   null,
+   null,
+   null
+  ],
+  "output_matchtypes": null,
+  "name": "MiniMaxH3FiniteLatentContinuation",
+  "display_name": "MiniMax H3 Finite Latent Continuation (Internal)",
+  "description": "",
+  "python_module": "custom_nodes.comfyui-minimax-h3-timeline-director",
+  "category": "MiniMax H3/Internal",
+  "output_node": false,
+  "deprecated": false,
+  "experimental": false,
+  "dev_only": true,
+  "api_node": false,
+  "price_badge": null,
+  "search_aliases": null,
+  "essentials_category": null,
+  "has_intermediate_output": false
+ },
+ "MiniMaxH3FiniteSegmentFinalize": {
+  "input": {
+   "required": {
+    "sampled_latent": [
+     "LATENT",
+     {}
+    ],
+    "images": [
+     "IMAGE",
+     {}
+    ],
+    "iteration": [
+     "INT",
+     {
+      "forceInput": true
+     }
+    ],
+    "overlap_frames": [
+     "INT",
+     {
+      "default": 22,
+      "min": 0,
+      "max": 3592
+     }
+    ],
+    "trim_audio_head": [
+     "BOOLEAN",
+     {
+      "default": true
+     }
+    ]
+   },
+   "optional": {
+    "audio": [
+     "AUDIO",
+     {}
+    ],
+    "accumulated_images": [
+     "IMAGE",
+     {}
+    ]
+   }
+  },
+  "input_order": {
+   "required": [
+    "sampled_latent",
+    "images",
+    "iteration",
+    "overlap_frames",
+    "trim_audio_head"
+   ],
+   "optional": [
+    "audio",
+    "accumulated_images"
+   ]
+  },
+  "is_input_list": false,
+  "output": [
+   "LATENT",
+   "IMAGE",
+   "AUDIO"
+  ],
+  "output_is_list": [
+   false,
+   false,
+   false
+  ],
+  "output_name": [
+   "Complete Latent",
+   "Deduplicated Frames",
+   "Deduplicated Audio"
+  ],
+  "output_tooltips": [
+   null,
+   null,
+   null
+  ],
+  "output_matchtypes": null,
+  "name": "MiniMaxH3FiniteSegmentFinalize",
+  "display_name": "MiniMax H3 Finite Segment Finalize (Internal)",
+  "description": "",
+  "python_module": "custom_nodes.comfyui-minimax-h3-timeline-director",
+  "category": "MiniMax H3/Internal",
+  "output_node": false,
+  "deprecated": false,
+  "experimental": false,
+  "dev_only": true,
+  "api_node": false,
+  "price_badge": null,
+  "search_aliases": null,
+  "essentials_category": null,
+  "has_intermediate_output": false
+ },
+ "MiniMaxH3FunControlNetApply": {
+  "input": {
+   "required": {
+    "model": [
+     "MODEL",
+     {}
+    ],
+    "model_patch": [
+     "MODEL_PATCH",
+     {}
+    ],
+    "vae": [
+     "VAE",
+     {}
+    ],
+    "strength": [
+     "FLOAT",
+     {
+      "default": 1,
+      "min": 0,
+      "max": 10,
+      "step": 0.01
+     }
+    ],
+    "start_percent": [
+     "FLOAT",
+     {
+      "advanced": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "step": 0.001
+     }
+    ],
+    "end_percent": [
+     "FLOAT",
+     {
+      "advanced": true,
+      "default": 1,
+      "min": 0,
+      "max": 1,
+      "step": 0.001
+     }
+    ]
+   },
+   "optional": {
+    "control_video": [
+     "IMAGE",
+     {}
+    ],
+    "mask": [
+     "MASK",
+     {
+      "tooltip": "1 marks the regions to regenerate."
+     }
+    ],
+    "source_video": [
+     "IMAGE",
+     {
+      "tooltip": "Video behind the mask; only read when a mask is given."
+     }
+    ]
+   }
+  },
+  "input_order": {
+   "required": [
+    "model",
+    "model_patch",
+    "vae",
+    "strength",
+    "start_percent",
+    "end_percent"
+   ],
+   "optional": [
+    "control_video",
+    "mask",
+    "source_video"
+   ]
+  },
+  "is_input_list": false,
+  "output": [
+   "MODEL"
+  ],
+  "output_is_list": [
+   false
+  ],
+  "output_name": [
+   "MODEL"
+  ],
+  "output_tooltips": [
+   null
+  ],
+  "output_matchtypes": null,
+  "name": "MiniMaxH3FunControlNetApply",
+  "display_name": "Apply MiniMax H3 Fun ControlNet",
+  "description": "Apply a MiniMax H3 Fun ControlNet to a text-to-video model as a model patch.",
+  "python_module": "comfy_extras.nodes_minimax_h3",
+  "category": "model/patch/minimax",
+  "output_node": false,
+  "deprecated": false,
+  "experimental": false,
+  "dev_only": false,
+  "api_node": false,
+  "price_badge": null,
+  "search_aliases": [
+   "minimax controlnet",
+   "h3 controlnet",
+   "video inpaint controlnet"
+  ],
+  "essentials_category": null,
+  "has_intermediate_output": false
+ },
+ "MiniMaxH3ReferenceToVideo": {
+  "input": {
+   "required": {
+    "clip": [
+     "CLIP",
+     {}
+    ],
+    "prompt": [
+     "STRING",
+     {
+      "multiline": true,
+      "dynamicPrompts": true
+     }
+    ],
+    "width": [
+     "INT",
+     {
+      "default": 1344,
+      "min": 32,
+      "max": 16384,
+      "step": 32
+     }
+    ],
+    "height": [
+     "INT",
+     {
+      "default": 768,
+      "min": 32,
+      "max": 16384,
+      "step": 32
+     }
+    ],
+    "length": [
+     "INT",
+     {
+      "tooltip": "Frame count at 24 fps, (124 = ~5s, trained range is ~124-362)",
+      "default": 124,
+      "min": 5,
+      "max": 3600,
+      "step": 17
+     }
+    ],
+    "ref_image_size": [
+     "COMBO",
+     {
+      "tooltip": "Reference image sizing. 'match' scales each ref (down only, keeping aspect) to the generation's pixel area; 'max' uses the reference pipeline's 2048px short edge for best identity fidelity. Reference tokens ride through every sampling step, so 'max' can be several times slower.",
+      "default": "match",
+      "multiselect": false,
+      "options": [
+       "match",
+       "max"
+      ]
+     }
+    ]
+   },
+   "optional": {
+    "vae": [
+     "VAE",
+     {
+      "tooltip": "Video VAE. Without it reference images/videos only condition the text encoder."
+     }
+    ],
+    "audio_vae": [
+     "VAE",
+     {
+      "tooltip": "Audio VAE. Without it reference audio only conditions the text encoder."
+     }
+    ],
+    "ref_images": [
+     "COMFY_AUTOGROW_V3",
+     {
+      "template": {
+       "input": {
+        "required": {
+         "ref_image": [
+          "IMAGE",
+          {
+           "tooltip": "Reference image (downscaled to 2048 short edge if larger, never upscaled)"
+          }
+         ]
+        }
+       },
+       "prefix": "ref_image_",
+       "min": 0,
+       "max": 9
+      }
+     }
+    ],
+    "ref_videos": [
+     "COMFY_AUTOGROW_V3",
+     {
+      "template": {
+       "input": {
+        "required": {
+         "ref_video": [
+          "IMAGE",
+          {
+           "tooltip": "Reference video frames at 24 fps (2-15s)"
+          }
+         ]
+        }
+       },
+       "prefix": "ref_video_",
+       "min": 0,
+       "max": 3
+      }
+     }
+    ],
+    "ref_video_audios": [
+     "COMFY_AUTOGROW_V3",
+     {
+      "template": {
+       "input": {
+        "required": {
+         "ref_video_audio": [
+          "AUDIO",
+          {
+           "tooltip": "Soundtrack of the same-numbered reference video"
+          }
+         ]
+        }
+       },
+       "prefix": "ref_video_audio_",
+       "min": 0,
+       "max": 3
+      }
+     }
+    ],
+    "ref_audios": [
+     "COMFY_AUTOGROW_V3",
+     {
+      "template": {
+       "input": {
+        "required": {
+         "ref_audio": [
+          "AUDIO",
+          {
+           "tooltip": "Standalone reference audio"
+          }
+         ]
+        }
+       },
+       "prefix": "ref_audio_",
+       "min": 0,
+       "max": 3
+      }
+     }
+    ]
+   }
+  },
+  "input_order": {
+   "required": [
+    "clip",
+    "prompt",
+    "width",
+    "height",
+    "length",
+    "ref_image_size"
+   ],
+   "optional": [
+    "vae",
+    "audio_vae",
+    "ref_images",
+    "ref_videos",
+    "ref_video_audios",
+    "ref_audios"
+   ]
+  },
+  "is_input_list": false,
+  "output": [
+   "CONDITIONING",
+   "LATENT"
+  ],
+  "output_is_list": [
+   false,
+   false
+  ],
+  "output_name": [
+   "positive",
+   "LATENT"
+  ],
+  "output_tooltips": [
+   null,
+   null
+  ],
+  "output_matchtypes": null,
+  "name": "MiniMaxH3ReferenceToVideo",
+  "display_name": "MiniMax H3 Reference to Video",
+  "description": "<Picture i> / <Video k> / <Audio j> reference conditioning for MiniMax H3. Use the same tags when prompting.",
+  "python_module": "comfy_extras.nodes_minimax_h3",
+  "category": "model/conditioning/minimax",
+  "output_node": false,
+  "deprecated": false,
+  "experimental": false,
+  "dev_only": false,
+  "api_node": false,
+  "price_badge": null,
+  "search_aliases": null,
+  "essentials_category": null,
+  "has_intermediate_output": false
+ },
+ "MiniMaxH3SigmaShift": {
+  "input": {
+   "required": {
+    "model": [
+     "MODEL",
+     {}
+    ],
+    "shift_video": [
+     "FLOAT",
+     {
+      "default": 12,
+      "min": 0.01,
+      "max": 100,
+      "step": 0.01
+     }
+    ],
+    "shift_audio": [
+     "FLOAT",
+     {
+      "default": 3,
+      "min": 0.01,
+      "max": 100,
+      "step": 0.01
+     }
+    ]
+   }
+  },
+  "input_order": {
+   "required": [
+    "model",
+    "shift_video",
+    "shift_audio"
+   ]
+  },
+  "is_input_list": false,
+  "output": [
+   "MODEL"
+  ],
+  "output_is_list": [
+   false
+  ],
+  "output_name": [
+   "MODEL"
+  ],
+  "output_tooltips": [
+   null
+  ],
+  "output_matchtypes": null,
+  "name": "MiniMaxH3SigmaShift",
+  "display_name": "ModelSamplingMiniMaxH3",
+  "description": "Set the video/audio flow shifts.",
+  "python_module": "comfy_extras.nodes_minimax_h3",
+  "category": "model/patch/minimax",
+  "output_node": false,
+  "deprecated": false,
+  "experimental": false,
+  "dev_only": false,
+  "api_node": false,
+  "price_badge": null,
+  "search_aliases": [
+   "sigma shift",
+   "minimax shift"
+  ],
+  "essentials_category": null,
+  "has_intermediate_output": false
+ },
+ "MiniMaxLowVRAMAttention": {
+  "input": {
+   "required": {
+    "model": [
+     "MODEL",
+     {}
+    ],
+    "head_chunks": [
+     "INT",
+     {
+      "tooltip": "Number of head groups to split the attention call into. Kernel-internal transients scale down with this; heads are independent so the result is unchanged.",
+      "default": 4,
+      "min": 1,
+      "max": 56,
+      "step": 1
+     }
+    ]
+   }
+  },
+  "input_order": {
+   "required": [
+    "model",
+    "head_chunks"
+   ]
+  },
+  "is_input_list": false,
+  "output": [
+   "MODEL"
+  ],
+  "output_is_list": [
+   false
+  ],
+  "output_name": [
+   "model"
+  ],
+  "output_tooltips": [
+   null
+  ],
+  "output_matchtypes": null,
+  "name": "MiniMaxLowVRAMAttention",
+  "display_name": "MiniMax H3 Low VRAM Attention",
+  "description": "Reduces peak VRAM of the MiniMax H3 attention without changing the math. Splits the attention call into head groups so the kernel's internal transients (int8 q/k copies, fp32 accumulator) shrink by the chunk count while the fused qkv buffer is alive, and frees the qkv buffer / normed block input as soon as they're consumed. Output is identical to the unpatched model.",
+  "python_module": "custom_nodes.ComfyUI-KJNodes",
+  "category": "KJNodes/experimental",
+  "output_node": false,
+  "deprecated": false,
+  "experimental": true,
+  "dev_only": false,
+  "api_node": false,
+  "price_badge": null,
+  "search_aliases": null,
+  "essentials_category": null,
+  "has_intermediate_output": false
+ },
+ "ModelAttentionBackend": {
+  "input": {
+   "required": {
+    "model": [
+     "MODEL",
+     {
+      "tooltip": "The model to patch."
+     }
+    ],
+    "attention": [
+     "COMBO",
+     {
+      "display_name": "backend",
+      "tooltip": "The dense attention backend. Comfy Kitchen attention uses quantized INT8 attention and is available only on Nvidia and AMD GPUs.",
+      "default": "pytorch attention",
+      "multiselect": false,
+      "options": [
+       "pytorch attention",
+       "comfy kitchen attention"
+      ]
+     }
+    ]
+   }
+  },
+  "input_order": {
+   "required": [
+    "model",
+    "attention"
+   ]
+  },
+  "is_input_list": false,
+  "output": [
+   "MODEL"
+  ],
+  "output_is_list": [
+   false
+  ],
+  "output_name": [
+   "model"
+  ],
+  "output_tooltips": [
+   "The model with the selected attention backend."
+  ],
+  "output_matchtypes": null,
+  "name": "ModelAttentionBackend",
+  "display_name": "Model Attention Backend",
+  "description": "Selects the dense attention implementation for the model. When used with Block Sparse Attention, this backend is used whenever sparse attention is inactive or unsupported.",
+  "python_module": "comfy_extras.nodes_model_advanced",
+  "category": "model/patch",
+  "output_node": false,
+  "deprecated": false,
+  "experimental": true,
+  "dev_only": false,
+  "api_node": false,
+  "price_badge": null,
+  "search_aliases": [
+   "comfy kitchen",
+   "attention",
+   "pytorch",
+   "kitchen attention"
+  ],
+  "essentials_category": null,
+  "has_intermediate_output": false
+ },
+ "ModelPatchLoader": {
+  "input": {
+   "required": {
+    "name": [
+     [
+      "z-image-fun-union-2.1/Z-Image-Turbo-Fun-Controlnet-Union-2.1-2602-8steps.safetensors"
+     ]
+    ]
+   }
+  },
+  "input_order": {
+   "required": [
+    "name"
+   ]
+  },
+  "is_input_list": false,
+  "output": [
+   "MODEL_PATCH"
+  ],
+  "output_is_list": [
+   false
+  ],
+  "output_name": [
+   "MODEL_PATCH"
+  ],
+  "name": "ModelPatchLoader",
+  "display_name": "Load Model Patch",
+  "description": "",
+  "python_module": "comfy_extras.nodes_model_patch",
+  "category": "model/loaders",
+  "output_node": false,
+  "has_intermediate_output": false,
+  "experimental": true,
+  "search_aliases": []
+ },
+ "ModelPreviewOverrideKJ": {
+  "input": {
+   "required": {
+    "model": [
+     "MODEL",
+     {
+      "tooltip": "Model to attach the preview override to."
+     }
+    ],
+    "max_resolution": [
+     "INT",
+     {
+      "tooltip": "Max preview side in pixels for the live widget. 0 = full sampler resolution (no downscale).",
+      "default": 1024,
+      "min": 0,
+      "max": 8192,
+      "step": 8
+     }
+    ],
+    "jpeg_quality": [
+     "INT",
+     {
+      "tooltip": "JPEG quality for the live preview transport.",
+      "default": 80,
+      "min": 30,
+      "max": 100,
+      "step": 1
+     }
+    ],
+    "suppress_default_preview": [
+     "BOOLEAN",
+     {
+      "tooltip": "Suppress the standard sampler-node preview overlay while sampling, so only this node's frame updates. Progress bar still advances normally.",
+      "default": true
+     }
+    ],
+    "preview_frames": [
+     "INT",
+     {
+      "tooltip": "Frames to sample from each video step's latent for animated preview. 1 = single frame (current behavior, fastest). >1 = animated WebP playing back at preview_fps. Only applies to video models (5D latents); ignored for image models.",
+      "default": 1,
+      "min": 1,
+      "max": 1024,
+      "step": 1
+     }
+    ],
+    "preview_fps": [
+     "INT",
+     {
+      "tooltip": "Playback FPS for the animated WebP preview. Ignored when preview_frames=1.",
+      "default": 12,
+      "min": 1,
+      "max": 60,
+      "step": 1
+     }
+    ]
+   },
+   "optional": {
+    "vae": [
+     "VAE",
+     {
+      "tooltip": "Optional LTX VAE for true-RGB previews. TAEHV-LTX = fast tiny decode (VAE pinned to GPU). Any other LTX VAE = full-quality decode via vae.decode() \u2014 MUCH slower per step."
+     }
+    ],
+    "tiny_vae": [
+     "COMBO",
+     {
+      "tooltip": "Tiny VAE decoder from models/vae_approx for true-RGB previews. Overrides Latent2RGB and the 'vae' input.",
+      "default": "none",
+      "multiselect": false,
+      "options": [
+       "none",
+       "taeh3.safetensors"
+      ]
+     }
+    ]
+   },
+   "hidden": {
+    "unique_id": [
+     "UNIQUE_ID"
+    ]
+   }
+  },
+  "input_order": {
+   "required": [
+    "model",
+    "max_resolution",
+    "jpeg_quality",
+    "suppress_default_preview",
+    "preview_frames",
+    "preview_fps"
+   ],
+   "optional": [
+    "vae",
+    "tiny_vae"
+   ],
+   "hidden": [
+    "unique_id"
+   ]
+  },
+  "is_input_list": false,
+  "output": [
+   "MODEL"
+  ],
+  "output_is_list": [
+   false
+  ],
+  "output_name": [
+   "MODEL"
+  ],
+  "output_tooltips": [
+   "Model with preview override attached."
+  ],
+  "output_matchtypes": null,
+  "name": "ModelPreviewOverrideKJ",
+  "display_name": "Model Preview Override",
+  "description": "Adds a dedicated live-preview frame on this node, with overridable max resolution. Default ComfyUI preview caps at 512px; this node sends its own preview straight to a DOM widget on the node so pixel-space models (Chroma Radiance, ZImage, HiDream-O1, \u2026) can be previewed at full sampler resolution.",
+  "python_module": "custom_nodes.ComfyUI-KJNodes",
+  "category": "KJNodes/sampling",
+  "output_node": false,
+  "deprecated": false,
+  "experimental": true,
+  "dev_only": false,
+  "api_node": false,
+  "price_badge": null,
+  "search_aliases": null,
+  "essentials_category": null,
+  "has_intermediate_output": false
+ },
+ "PlagueKindBundleIn": {
+  "input": {
+   "required": {},
+   "optional": {
+    "input_1": [
+     "*",
+     {}
+    ],
+    "input_2": [
+     "*",
+     {}
+    ],
+    "input_3": [
+     "*",
+     {}
+    ],
+    "input_4": [
+     "*",
+     {}
+    ],
+    "input_5": [
+     "*",
+     {}
+    ],
+    "input_6": [
+     "*",
+     {}
+    ],
+    "input_7": [
+     "*",
+     {}
+    ],
+    "input_8": [
+     "*",
+     {}
+    ],
+    "input_9": [
+     "*",
+     {}
+    ],
+    "input_10": [
+     "*",
+     {}
+    ],
+    "input_11": [
+     "*",
+     {}
+    ],
+    "input_12": [
+     "*",
+     {}
+    ],
+    "input_13": [
+     "*",
+     {}
+    ],
+    "input_14": [
+     "*",
+     {}
+    ],
+    "input_15": [
+     "*",
+     {}
+    ],
+    "input_16": [
+     "*",
+     {}
+    ],
+    "input_17": [
+     "*",
+     {}
+    ],
+    "input_18": [
+     "*",
+     {}
+    ],
+    "input_19": [
+     "*",
+     {}
+    ],
+    "input_20": [
+     "*",
+     {}
+    ]
+   }
+  },
+  "input_order": {
+   "required": [],
+   "optional": [
+    "input_1",
+    "input_2",
+    "input_3",
+    "input_4",
+    "input_5",
+    "input_6",
+    "input_7",
+    "input_8",
+    "input_9",
+    "input_10",
+    "input_11",
+    "input_12",
+    "input_13",
+    "input_14",
+    "input_15",
+    "input_16",
+    "input_17",
+    "input_18",
+    "input_19",
+    "input_20"
+   ]
+  },
+  "is_input_list": false,
+  "output": [
+   "BUNDLE"
+  ],
+  "output_is_list": [
+   false
+  ],
+  "output_name": [
+   "bundle"
+  ],
+  "name": "PlagueKindBundleIn",
+  "display_name": "Bundle In (PlagueKind)",
+  "description": "",
+  "python_module": "custom_nodes.Comfyui-PlagueKind-Nodes",
+  "category": "PlagueKind/utils",
+  "output_node": false,
+  "has_intermediate_output": false,
+  "search_aliases": []
+ },
+ "PlagueKindBundleOut": {
+  "input": {
+   "required": {
+    "bundle": [
+     "BUNDLE",
+     {}
+    ]
+   }
+  },
+  "input_order": {
+   "required": [
+    "bundle"
+   ]
+  },
+  "is_input_list": false,
+  "output": [
+   "*",
+   "*",
+   "*",
+   "*",
+   "*",
+   "*",
+   "*",
+   "*",
+   "*",
+   "*",
+   "*",
+   "*",
+   "*",
+   "*",
+   "*",
+   "*",
+   "*",
+   "*",
+   "*",
+   "*"
+  ],
+  "output_is_list": [
+   false,
+   false,
+   false,
+   false,
+   false,
+   false,
+   false,
+   false,
+   false,
+   false,
+   false,
+   false,
+   false,
+   false,
+   false,
+   false,
+   false,
+   false,
+   false,
+   false
+  ],
+  "output_name": [
+   "output_1",
+   "output_2",
+   "output_3",
+   "output_4",
+   "output_5",
+   "output_6",
+   "output_7",
+   "output_8",
+   "output_9",
+   "output_10",
+   "output_11",
+   "output_12",
+   "output_13",
+   "output_14",
+   "output_15",
+   "output_16",
+   "output_17",
+   "output_18",
+   "output_19",
+   "output_20"
+  ],
+  "name": "PlagueKindBundleOut",
+  "display_name": "Bundle Out (PlagueKind)",
+  "description": "",
+  "python_module": "custom_nodes.Comfyui-PlagueKind-Nodes",
+  "category": "PlagueKind/utils",
+  "output_node": false,
+  "has_intermediate_output": false,
+  "search_aliases": []
+ },
+ "PrimitiveBoolean": {
+  "input": {
+   "required": {
+    "value": [
+     "BOOLEAN",
+     {}
+    ]
+   }
+  },
+  "input_order": {
+   "required": [
+    "value"
+   ]
+  },
+  "is_input_list": false,
+  "output": [
+   "BOOLEAN"
+  ],
+  "output_is_list": [
+   false
+  ],
+  "output_name": [
+   "BOOLEAN"
+  ],
+  "output_tooltips": [
+   null
+  ],
+  "output_matchtypes": null,
+  "name": "PrimitiveBoolean",
+  "display_name": "Boolean",
+  "description": "",
+  "python_module": "comfy_extras.nodes_primitive",
+  "category": "utilities/primitive",
+  "output_node": false,
+  "deprecated": false,
+  "experimental": false,
+  "dev_only": false,
+  "api_node": false,
+  "price_badge": null,
+  "search_aliases": null,
+  "essentials_category": null,
+  "has_intermediate_output": false
+ },
+ "PrimitiveFloat": {
+  "input": {
+   "required": {
+    "value": [
+     "FLOAT",
+     {
+      "min": -9223372036854776000,
+      "max": 9223372036854776000,
+      "step": 0.1
+     }
+    ]
+   }
+  },
+  "input_order": {
+   "required": [
+    "value"
+   ]
+  },
+  "is_input_list": false,
+  "output": [
+   "FLOAT"
+  ],
+  "output_is_list": [
+   false
+  ],
+  "output_name": [
+   "FLOAT"
+  ],
+  "output_tooltips": [
+   null
+  ],
+  "output_matchtypes": null,
+  "name": "PrimitiveFloat",
+  "display_name": "Float",
+  "description": "",
+  "python_module": "comfy_extras.nodes_primitive",
+  "category": "utilities/primitive",
+  "output_node": false,
+  "deprecated": false,
+  "experimental": false,
+  "dev_only": false,
+  "api_node": false,
+  "price_badge": null,
+  "search_aliases": null,
+  "essentials_category": null,
+  "has_intermediate_output": false
+ },
+ "RandomNoise": {
+  "input": {
+   "required": {
+    "noise_seed": [
+     "INT",
+     {
+      "default": 0,
+      "min": 0,
+      "max": 18446744073709552000,
+      "control_after_generate": true
+     }
+    ]
+   }
+  },
+  "input_order": {
+   "required": [
+    "noise_seed"
+   ]
+  },
+  "is_input_list": false,
+  "output": [
+   "NOISE"
+  ],
+  "output_is_list": [
+   false
+  ],
+  "output_name": [
+   "NOISE"
+  ],
+  "output_tooltips": [
+   null
+  ],
+  "output_matchtypes": null,
+  "name": "RandomNoise",
+  "display_name": null,
+  "description": "",
+  "python_module": "comfy_extras.nodes_custom_sampler",
+  "category": "model/sampling/noise",
+  "output_node": false,
+  "deprecated": false,
+  "experimental": false,
+  "dev_only": false,
+  "api_node": false,
+  "price_badge": null,
+  "search_aliases": null,
+  "essentials_category": null,
+  "has_intermediate_output": false
+ },
+ "SamplerCustomAdvanced": {
+  "input": {
+   "required": {
+    "noise": [
+     "NOISE",
+     {}
+    ],
+    "guider": [
+     "GUIDER",
+     {}
+    ],
+    "sampler": [
+     "SAMPLER",
+     {}
+    ],
+    "sigmas": [
+     "SIGMAS",
+     {}
+    ],
+    "latent_image": [
+     "LATENT",
+     {}
+    ]
+   }
+  },
+  "input_order": {
+   "required": [
+    "noise",
+    "guider",
+    "sampler",
+    "sigmas",
+    "latent_image"
+   ]
+  },
+  "is_input_list": false,
+  "output": [
+   "LATENT",
+   "LATENT"
+  ],
+  "output_is_list": [
+   false,
+   false
+  ],
+  "output_name": [
+   "output",
+   "denoised_output"
+  ],
+  "output_tooltips": [
+   null,
+   null
+  ],
+  "output_matchtypes": null,
+  "name": "SamplerCustomAdvanced",
+  "display_name": null,
+  "description": "",
+  "python_module": "comfy_extras.nodes_custom_sampler",
+  "category": "model/sampling/custom",
+  "output_node": false,
+  "deprecated": false,
+  "experimental": false,
+  "dev_only": false,
+  "api_node": false,
+  "price_badge": null,
+  "search_aliases": null,
+  "essentials_category": null,
+  "has_intermediate_output": false
+ },
+ "SamplerER_SDE": {
+  "input": {
+   "required": {
+    "solver_type": [
+     "COMBO",
+     {
+      "multiselect": false,
+      "options": [
+       "ER-SDE",
+       "Reverse-time SDE",
+       "ODE"
+      ]
+     }
+    ],
+    "max_stage": [
+     "INT",
+     {
+      "advanced": true,
+      "default": 3,
+      "min": 1,
+      "max": 3
+     }
+    ],
+    "eta": [
+     "FLOAT",
+     {
+      "tooltip": "Stochastic strength of SDEs.\nWhen eta=0, they reduce to deterministic ODE.\nLarge eta may cause invalid outputs. If this occurs, try decreasing this value.",
+      "advanced": true,
+      "default": 1,
+      "min": 0,
+      "max": 10,
+      "step": 0.01,
+      "round": false
+     }
+    ],
+    "s_noise": [
+     "FLOAT",
+     {
+      "advanced": true,
+      "default": 1,
+      "min": 0,
+      "max": 100,
+      "step": 0.01,
+      "round": false
+     }
+    ]
+   }
+  },
+  "input_order": {
+   "required": [
+    "solver_type",
+    "max_stage",
+    "eta",
+    "s_noise"
+   ]
+  },
+  "is_input_list": false,
+  "output": [
+   "SAMPLER"
+  ],
+  "output_is_list": [
+   false
+  ],
+  "output_name": [
+   "SAMPLER"
+  ],
+  "output_tooltips": [
+   null
+  ],
+  "output_matchtypes": null,
+  "name": "SamplerER_SDE",
+  "display_name": null,
+  "description": "",
+  "python_module": "comfy_extras.nodes_custom_sampler",
+  "category": "model/sampling/samplers",
+  "output_node": false,
+  "deprecated": false,
+  "experimental": false,
+  "dev_only": false,
+  "api_node": false,
+  "price_badge": null,
+  "search_aliases": null,
+  "essentials_category": null,
+  "has_intermediate_output": false
+ },
+ "SeedVR2VideoUpscaler": {
+  "input": {
+   "required": {
+    "image": [
+     "IMAGE",
+     {
+      "tooltip": "Input video frames as image batch.\nAccepts both RGB (3-channel) and RGBA (4-channel) formats.\nOutput format will match input format."
+     }
+    ],
+    "dit": [
+     "SEEDVR2_DIT",
+     {
+      "tooltip": "DiT model configuration from SeedVR2 (Down)Load DiT Model node"
+     }
+    ],
+    "vae": [
+     "SEEDVR2_VAE",
+     {
+      "tooltip": "VAE model configuration from SeedVR2 (Down)Load VAE Model node"
+     }
+    ],
+    "seed": [
+     "INT",
+     {
+      "tooltip": "Random seed for reproducible generation (default: 42).\nSame seed with same inputs produces identical output.",
+      "default": 42,
+      "min": 0,
+      "max": 4294967295,
+      "step": 1
+     }
+    ],
+    "resolution": [
+     "INT",
+     {
+      "tooltip": "Target resolution for the shortest edge in pixels (default: 1080).\nAutomatically maintains aspect ratio of input.\nEven values required for optimal processing.",
+      "default": 1080,
+      "min": 16,
+      "max": 16384,
+      "step": 2
+     }
+    ],
+    "max_resolution": [
+     "INT",
+     {
+      "tooltip": "Maximum resolution limit for any dimension (default: 0, no limit).\nIf any edge exceeds this after applying resolution,\nboth dimensions are scaled down proportionally.\nUseful to prevent excessive VRAM usage on extreme aspect ratios.",
+      "default": 0,
+      "min": 0,
+      "max": 16384,
+      "step": 2
+     }
+    ],
+    "batch_size": [
+     "INT",
+     {
+      "tooltip": "Number of frames processed together per batch (default: 5).\nMust follow pattern 4n+1: 1, 5, 9, 13, 17, 21, ...\n\n\u2022 Higher values: Better temporal consistency and faster processing\n\u2022 Lower values: Reduced VRAM usage\n\nIdeally match to shot length for best quality.",
+      "default": 5,
+      "min": 1,
+      "max": 16384,
+      "step": 4
+     }
+    ],
+    "uniform_batch_size": [
+     "BOOLEAN",
+     {
+      "tooltip": "Pad final batch to match batch_size (default: False).\nPrevents temporal artifacts caused by small final batch.\nAdd extra compute but recommended for optimal quality.",
+      "default": false
+     }
+    ],
+    "color_correction": [
+     "COMBO",
+     {
+      "tooltip": "Corrects color shifts in upscaled output to match original input (default: lab).\nThe upscaling process may alter colors; this applies color grading to restore them.\n\n\u2022 lab: Perceptual color matching with detail preservation (recommended)\n\u2022 wavelet: Frequency-based natural colors, preserves fine details\n\u2022 wavelet_adaptive: Wavelet base with targeted saturation correction\n\u2022 hsv: Hue-conditional saturation matching\n\u2022 adain: Statistical style transfer approach\n\u2022 none: No color correction applied",
+      "default": "lab",
+      "multiselect": false,
+      "options": [
+       "lab",
+       "wavelet",
+       "wavelet_adaptive",
+       "hsv",
+       "adain",
+       "none"
+      ]
+     }
+    ]
+   },
+   "optional": {
+    "temporal_overlap": [
+     "INT",
+     {
+      "tooltip": "Overlapping frames between consecutive batches (default: 0, disabled).\nImproves temporal consistency across batch boundaries through blending.\nValues 1-4 work well for most content.",
+      "default": 0,
+      "min": 0,
+      "max": 16,
+      "step": 1
+     }
+    ],
+    "prepend_frames": [
+     "INT",
+     {
+      "tooltip": "Number of frames to prepend (reversed from start) before processing (default: 0).\nHelps reduce artifacts at video beginning.\nPrepended frames are automatically removed from final output.",
+      "default": 0,
+      "min": 0,
+      "max": 32,
+      "step": 1
+     }
+    ],
+    "input_noise_scale": [
+     "FLOAT",
+     {
+      "tooltip": "Input noise injection scale (default: 0.0, disabled).\nAdds controlled variation to input images before encoding.\nRange: 0.0 (no noise) to 1.0 (maximum noise).\nCan help with certain types of artifacts.",
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "step": 0.001
+     }
+    ],
+    "latent_noise_scale": [
+     "FLOAT",
+     {
+      "tooltip": "Latent space noise injection scale (default: 0.0, disabled).\nAdds controlled variation during the diffusion process.\nRange: 0.0 (no noise) to 1.0 (maximum noise).\nCan soften details if input_noise_scale doesn't help.",
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "step": 0.001
+     }
+    ],
+    "offload_device": [
+     "COMBO",
+     {
+      "tooltip": "Device for storing intermediate tensors between processing phases (default: cpu).\n\u2022 'none': Keep all tensors on inference device (fastest but highest VRAM usage)\n\u2022 'cpu': Offload to system RAM (recommended for long videos, slower transfers)\n\u2022 'cuda:X': Offload to another GPU (good balance if available, faster than CPU)",
+      "default": "cpu",
+      "multiselect": false,
+      "options": [
+       "none",
+       "cpu",
+       "cuda:0"
+      ]
+     }
+    ],
+    "enable_debug": [
+     "BOOLEAN",
+     {
+      "tooltip": "Enable detailed debug logging (default: False).\nShows memory usage, timing information, and processing details.\nUseful for troubleshooting errors and performance issues.",
+      "default": false
+     }
+    ]
+   }
+  },
+  "input_order": {
+   "required": [
+    "image",
+    "dit",
+    "vae",
+    "seed",
+    "resolution",
+    "max_resolution",
+    "batch_size",
+    "uniform_batch_size",
+    "color_correction"
+   ],
+   "optional": [
+    "temporal_overlap",
+    "prepend_frames",
+    "input_noise_scale",
+    "latent_noise_scale",
+    "offload_device",
+    "enable_debug"
+   ]
+  },
+  "is_input_list": false,
+  "output": [
+   "IMAGE"
+  ],
+  "output_is_list": [
+   false
+  ],
+  "output_name": [
+   "IMAGE"
+  ],
+  "output_tooltips": [
+   "Upscaled video frames with color correction applied. Format (RGB/RGBA) matches input. Range [0, 1] normalized for ComfyUI compatibility."
+  ],
+  "output_matchtypes": null,
+  "name": "SeedVR2VideoUpscaler",
+  "display_name": "SeedVR2 Video Upscaler (v2.5.24)",
+  "description": "SeedVR2 main upscaling node: processes video frames using DiT and VAE models with diffusion-based enhancement. Handles RGB/RGBA formats, maintains temporal consistency across frames, applies color correction, and manages VRAM through intelligent tensor offloading. \n\nRequires DiT and VAE model configurations.",
+  "python_module": "custom_nodes.seedvr2_videoupscaler",
+  "category": "SEEDVR2",
+  "output_node": false,
+  "deprecated": false,
+  "experimental": false,
+  "dev_only": false,
+  "api_node": false,
+  "price_badge": null,
+  "search_aliases": null,
+  "essentials_category": null,
+  "has_intermediate_output": false
+ },
+ "UnifiedResizeImageMask": {
+  "input": {
+   "required": {
+    "scale_mode": [
+     [
+      "Dimensions (W \u00d7 H)",
+      "Multiplier",
+      "Longer Side",
+      "Shorter Side",
+      "Total Pixels (MP)"
+     ]
+    ],
+    "aspect_ratio": [
+     [
+      "Auto (Input Image)",
+      "1:1 (Square)",
+      "2:3 (Portrait Photo)",
+      "3:2 (Photo)",
+      "3:4 (Portrait Standard)",
+      "4:3 (Standard)",
+      "9:16 (Portrait Widescreen)",
+      "16:9 (Widescreen)",
+      "21:9 (Ultrawide)"
+     ]
+    ],
+    "long_side_target": [
+     "FLOAT",
+     {
+      "default": 1024,
+      "min": 1,
+      "max": 16384
+     }
+    ],
+    "short_side_target": [
+     "FLOAT",
+     {
+      "default": 768,
+      "min": 1,
+      "max": 16384
+     }
+    ],
+    "width": [
+     "FLOAT",
+     {
+      "default": 1024,
+      "min": 1,
+      "max": 16384
+     }
+    ],
+    "height": [
+     "FLOAT",
+     {
+      "default": 1024,
+      "min": 1,
+      "max": 16384
+     }
+    ],
+    "multiplier": [
+     "FLOAT",
+     {
+      "default": 1,
+      "min": 0.01,
+      "max": 100,
+      "step": 0.01,
+      "round": 0.01
+     }
+    ],
+    "megapixels": [
+     "FLOAT",
+     {
+      "default": 1,
+      "min": 0.01,
+      "max": 100,
+      "step": 0.01,
+      "round": 0.01
+     }
+    ],
+    "upscale_method": [
+     [
+      "nearest-exact",
+      "bilinear",
+      "area",
+      "bicubic",
+      "lanczos"
+     ]
+    ],
+    "crop": [
+     [
+      "disabled",
+      "center"
+     ]
+    ],
+    "divisible_by": [
+     "FLOAT",
+     {
+      "default": 32,
+      "min": 1,
+      "max": 512
+     }
+    ],
+    "maintain_aspect": [
+     "BOOLEAN",
+     {
+      "default": true
+     }
+    ]
+   },
+   "optional": {
+    "image": [
+     "IMAGE"
+    ],
+    "mask": [
+     "MASK"
+    ]
+   }
+  },
+  "input_order": {
+   "required": [
+    "scale_mode",
+    "aspect_ratio",
+    "long_side_target",
+    "short_side_target",
+    "width",
+    "height",
+    "multiplier",
+    "megapixels",
+    "upscale_method",
+    "crop",
+    "divisible_by",
+    "maintain_aspect"
+   ],
+   "optional": [
+    "image",
+    "mask"
+   ]
+  },
+  "is_input_list": false,
+  "output": [
+   "IMAGE",
+   "MASK",
+   "INT",
+   "INT"
+  ],
+  "output_is_list": [
+   false,
+   false,
+   false,
+   false
+  ],
+  "output_name": [
+   "image",
+   "mask",
+   "width",
+   "height"
+  ],
+  "name": "UnifiedResizeImageMask",
+  "display_name": "Unified Resize Image / Mask",
+  "description": "",
+  "python_module": "custom_nodes.Comfyui-PlagueKind-Nodes",
+  "category": "PlagueKind/image",
+  "output_node": false,
+  "has_intermediate_output": false,
+  "search_aliases": []
+ },
+ "VAEDecodeAudio": {
+  "input": {
+   "required": {
+    "samples": [
+     "LATENT",
+     {}
+    ],
+    "vae": [
+     "VAE",
+     {}
+    ]
+   }
+  },
+  "input_order": {
+   "required": [
+    "samples",
+    "vae"
+   ]
+  },
+  "is_input_list": false,
+  "output": [
+   "AUDIO"
+  ],
+  "output_is_list": [
+   false
+  ],
+  "output_name": [
+   "AUDIO"
+  ],
+  "output_tooltips": [
+   null
+  ],
+  "output_matchtypes": null,
+  "name": "VAEDecodeAudio",
+  "display_name": "VAE Decode Audio",
+  "description": "",
+  "python_module": "comfy_extras.nodes_audio",
+  "category": "model/latent",
+  "output_node": false,
+  "deprecated": false,
+  "experimental": false,
+  "dev_only": false,
+  "api_node": false,
+  "price_badge": null,
+  "search_aliases": [
+   "latent to audio"
+  ],
+  "essentials_category": null,
+  "has_intermediate_output": false
+ },
+ "Video Slice": {
+  "input": {
+   "required": {
+    "video": [
+     "VIDEO",
+     {}
+    ],
+    "start_time": [
+     "FLOAT",
+     {
+      "tooltip": "Start time in seconds",
+      "default": 0,
+      "min": -100000,
+      "max": 100000,
+      "step": 0.001
+     }
+    ],
+    "duration": [
+     "FLOAT",
+     {
+      "tooltip": "Duration in seconds, or 0 for unlimited duration",
+      "default": 0,
+      "min": 0,
+      "step": 0.001
+     }
+    ],
+    "strict_duration": [
+     "BOOLEAN",
+     {
+      "tooltip": "If True, when the specified duration is not possible, an error will be raised.",
+      "default": false
+     }
+    ]
+   }
+  },
+  "input_order": {
+   "required": [
+    "video",
+    "start_time",
+    "duration",
+    "strict_duration"
+   ]
+  },
+  "is_input_list": false,
+  "output": [
+   "VIDEO"
+  ],
+  "output_is_list": [
+   false
+  ],
+  "output_name": [
+   "VIDEO"
+  ],
+  "output_tooltips": [
+   null
+  ],
+  "output_matchtypes": null,
+  "name": "Video Slice",
+  "display_name": "Trim Video",
+  "description": "",
+  "python_module": "comfy_extras.nodes_video",
+  "category": "video",
+  "output_node": false,
+  "deprecated": false,
+  "experimental": false,
+  "dev_only": false,
+  "api_node": false,
+  "price_badge": null,
+  "search_aliases": [
+   "trim video duration",
+   "skip first frames",
+   "frame load cap",
+   "start time"
+  ],
+  "essentials_category": "Video Tools",
+  "has_intermediate_output": false
+ },
+ "MiniMaxH3MotionContext": {
+  "input": {
+   "required": {
+    "conditioning": [
+     "CONDITIONING"
+    ],
+    "vae": [
+     "VAE"
+    ],
+    "latent": [
+     "LATENT"
+    ],
+    "context_length": [
+     [
+      "22",
+      "5",
+      "39",
+      "56"
+     ],
+     {
+      "default": "22",
+      "tooltip": "Frames of the previous clip's picture to carry over. Only these lengths are whole numbers of latent steps, so only these are offered. 5 is just barely fluid, 22 is nearly seamless. Longer windows pin more motion but come off the front of the delivered clip, so 56 spends 2.3 seconds of the render on frames you throw away."
+     }
+    ],
+    "audio_context_length": [
+     "INT",
+     {
+      "default": 24,
+      "min": 0,
+      "max": 240,
+      "tooltip": "Frames of tail audio to pin, independent of the picture window. 0 follows it. The window is END-aligned with the pinned video, so this only controls how far back the sound reaches. Multiples of 3 land exactly on the 40 Hz audio grid and multiples of 24 are whole seconds: 24 pins the last second. Off-grid values are widened to the nearest whole step."
+     }
+    ]
+   },
+   "optional": {
+    "context_frames": [
+     "IMAGE",
+     {
+      "tooltip": "Decoded frames of the previous clip. Used when no context_latent is wired. When one is, the picture comes from it instead and this is ignored."
+     }
+    ],
+    "context_latent": [
+     "LATENT",
+     {
+      "tooltip": "Previous clip's SAMPLER OUTPUT latent (the same one you wire into the decode nodes). Supplies both picture and sound, sliced straight out, skipping the decode and re-encode that cost a little quality at every link of a chain. Must be the same resolution as the clip being generated."
+     }
+    ],
+    "audio_vae": [
+     "VAE",
+     {
+      "tooltip": "H3 audio VAE. Supply with context_audio to carry the previous clip's tail sound across the join. Not needed when context_latent is wired."
+     }
+    ],
+    "context_audio": [
+     "AUDIO",
+     {
+      "tooltip": "Audio of the previous clip. The tail matching the pinned frames is encoded and pinned alongside them. Ignored when context_latent is wired."
+     }
+    ]
+   }
+  },
+  "input_order": {
+   "required": [
+    "conditioning",
+    "vae",
+    "latent",
+    "context_length",
+    "audio_context_length"
+   ],
+   "optional": [
+    "context_frames",
+    "context_latent",
+    "audio_vae",
+    "context_audio"
+   ]
+  },
+  "is_input_list": false,
+  "output": [
+   "CONDITIONING",
+   "INT"
+  ],
+  "output_is_list": [
+   false,
+   false
+  ],
+  "output_name": [
+   "conditioning",
+   "trim_frames"
+  ],
+  "name": "MiniMaxH3MotionContext",
+  "display_name": "H3 Motion Context",
+  "description": "Pin a run of consecutive frames from a previous clip as never-denoised conditioning rows, so the model reads real motion instead of guessing it from a single still. With context_latent wired, both picture and sound are sliced from the previous clip's latent, skipping the decode and re-encode that cost a little quality at every link. A last_frame anchor on the incoming conditioning is kept and pinned alongside the head.",
+  "python_module": "custom_nodes.comfyui-h3-motion-context",
+  "category": "conditioning/minimax",
+  "output_node": false,
+  "has_intermediate_output": false,
+  "search_aliases": []
+ },
+ "MiniMaxH3MotionContextLoadLatent": {
+  "input": {
+   "required": {
+    "latent_path": [
+     "STRING",
+     {
+      "default": "h3_context",
+      "tooltip": "A saved latent file, or a folder (relative paths resolve against the ComfyUI output directory). Pointing at a specific FILE always loads that file when clip_index is greater than 0, ignoring the index. clip_index 0 never reads a file."
+     }
+    ],
+    "clip_index": [
+     "INT",
+     {
+      "default": 0,
+      "min": 0,
+      "max": 9999,
+      "step": 1,
+      "tooltip": "The clip to CONTINUE FROM: that clip's slot is loaded. First clip: 0 here and 1 on the Save node (nothing is loaded). Clip 2 from clip 1: 1 here and 2 on the Save node."
+     }
+    ]
+   }
+  },
+  "input_order": {
+   "required": [
+    "latent_path",
+    "clip_index"
+   ]
+  },
+  "is_input_list": false,
+  "output": [
+   "LATENT"
+  ],
+  "output_is_list": [
+   false
+  ],
+  "output_name": [
+   "LATENT"
+  ],
+  "name": "MiniMaxH3MotionContextLoadLatent",
+  "display_name": "H3 Motion Context Load Latent",
+  "description": "Load a latent saved by H3 Motion Context Save Latent, for the context_latent input only.",
+  "python_module": "custom_nodes.comfyui-h3-motion-context",
+  "category": "conditioning/minimax",
+  "output_node": false,
+  "has_intermediate_output": false,
+  "search_aliases": []
+ },
+ "MiniMaxH3MotionContextSaveLatent": {
+  "input": {
+   "required": {
+    "latent": [
+     "LATENT",
+     {
+      "tooltip": "The sampler's output latent (the same one you wire into the decode nodes)."
+     }
+    ],
+    "filename_prefix": [
+     "STRING",
+     {
+      "default": "h3_context/clip",
+      "tooltip": "Saved under the ComfyUI output folder. The default keeps all chain latents in one folder so the Load node can always pick the newest."
+     }
+    ],
+    "clip_index": [
+     "INT",
+     {
+      "default": 1,
+      "min": 0,
+      "max": 9999,
+      "step": 1,
+      "tooltip": "Which clip of the chain THIS is. Saves to that clip's fixed slot, so a re-roll overwrites its own reject instead of stacking new files. First clip: 1 here and 0 on the Load node. Clip 2: 2 here and 1 on the Load node. 0 = old behaviour, a new numbered file every run (numbers count runs, not clips)."
+     }
+    ]
+   }
+  },
+  "input_order": {
+   "required": [
+    "latent",
+    "filename_prefix",
+    "clip_index"
+   ]
+  },
+  "is_input_list": false,
+  "output": [
+   "STRING"
+  ],
+  "output_is_list": [
+   false
+  ],
+  "output_name": [
+   "latent_path"
+  ],
+  "name": "MiniMaxH3MotionContextSaveLatent",
+  "display_name": "H3 Motion Context Save Latent",
+  "description": "Save the sampler's AV latent so the next run's Motion Context node can pin audio from it via the matching Load node.",
+  "python_module": "custom_nodes.comfyui-h3-motion-context",
+  "category": "conditioning/minimax",
+  "output_node": true,
+  "has_intermediate_output": false,
+  "search_aliases": []
+ },
+ "MiniMaxH3MotionContextTrim": {
+  "input": {
+   "required": {
+    "images": [
+     "IMAGE"
+    ],
+    "trim_frames": [
+     "INT",
+     {
+      "default": 0,
+      "min": 0,
+      "max": 4096
+     }
+    ]
+   },
+   "optional": {
+    "audio": [
+     "AUDIO",
+     {
+      "tooltip": "Decoded audio for the same clip. Trimmed by the matching duration so sound stays locked to picture. Leave unwired for silent clips."
+     }
+    ],
+    "fps": [
+     "FLOAT",
+     {
+      "default": 24,
+      "min": 1,
+      "max": 240,
+      "step": 0.001,
+      "tooltip": "Frame rate used to convert the trim into an audio duration. Must match what you feed Create Video."
+     }
+    ],
+    "match_tail": [
+     "BOOLEAN",
+     {
+      "default": true,
+      "tooltip": "Make the audio duration equal frames/fps exactly, trimming a long tail or padding a short one with silence. H3 rounds its audio grid to the nearest step, so each clip carries about 8ms too much or too little sound, which accumulates at every join in a chain."
+     }
+    ]
+   }
+  },
+  "input_order": {
+   "required": [
+    "images",
+    "trim_frames"
+   ],
+   "optional": [
+    "audio",
+    "fps",
+    "match_tail"
+   ]
+  },
+  "is_input_list": false,
+  "output": [
+   "IMAGE",
+   "AUDIO"
+  ],
+  "output_is_list": [
+   false,
+   false
+  ],
+  "output_name": [
+   "images",
+   "audio"
+  ],
+  "name": "MiniMaxH3MotionContextTrim",
+  "display_name": "H3 Motion Context Trim",
+  "description": "Remove the leading pinned frames from a decoded H3 clip, trimming picture and sound by the same duration.",
+  "python_module": "custom_nodes.comfyui-h3-motion-context",
+  "category": "conditioning/minimax",
+  "output_node": false,
+  "has_intermediate_output": false,
+  "search_aliases": []
  }
 }

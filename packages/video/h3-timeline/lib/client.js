@@ -3939,6 +3939,34 @@ window.__ModuleLoader__.load({
 			return (0, _melite_card_base_client.composeCandidateDoc)(held, stated, frame);
 		}
 		//#endregion
+		//#region src/ui/studio/omitT4Recipe.ts
+		/**
+		* THE ROW GATE (2026-10-16, the Final Cut brick — audit 0be61df8
+		* F1): the field gate stops serving the t4r-dead KNOBS, but the
+		* recipe PILLS need their own judge — h3's Final Cut row stamps
+		* sr_switch, a one-call guided doc derives t4r, and the walk refuses
+		* the stamp ('unsanctioned inject keys: sr_switch'): the pick would
+		* land, and every later run would brick. Judged on the ROW'S OWN
+		* stamp (never a hand id list): a recipe whose pick stamp intersects
+		* the family-dead keys is not offered on that lane. The lane
+		* condition (t4r) stays at the caller — this is the row judgment
+		* only, so the contract wall can drive the served spec + the DECL's
+		* own rows through it (the J4 negative control).
+		*
+		* @param spec the served form spec (the same doc the pick composes
+		*   against at the compose gate); `null` never omits — the caller's
+		*   spec-null render hands the gate to CardForm only when spec'd.
+		* @param row the recipe row (a FormVariantRow from the DECL).
+		* @returns true when the row's stamp intersects T4_ONLY ∪ FILM_ONLY
+		*   (the film-only keys are legal on a chain, so only the t4r lane
+		*   consults this gate — a t4r doc cannot honor either set).
+		*/
+		function omitT4RecipeRow(spec, row) {
+			if (spec === null) return false;
+			const stamp = (0, _melite_card_base_client.axisPickPatch)(spec, row, {});
+			return Object.keys(stamp).some((k) => T4_ONLY_KEYS.includes(k) || FILM_ONLY_KEYS.includes(k));
+		}
+		//#endregion
 		//#region src/ui/studio/RunRecipeEngine.tsx
 		/**
 		* RunRecipeEngine — the Layer A rail.
@@ -3969,10 +3997,7 @@ window.__ModuleLoader__.load({
 			const { spec, edit, resolved } = (0, _melite_card_base_client.useResolvedForm)("h3-timeline", layerA, setLayerAKey, base);
 			const family = (0, react.useMemo)(() => deriveWindowFamily(mergeDocLayers(base, layerA)), [base, layerA]);
 			const omitT4 = family === "t4r" ? (name) => T4_ONLY_KEYS.includes(name) || FILM_ONLY_KEYS.includes(name) : family === "t4_chain" ? void 0 : (name) => FILM_ONLY_KEYS.includes(name);
-			const omitT4Recipe = family === "t4r" && spec !== null ? (row) => {
-				const stamp = (0, _melite_card_base_client.axisPickPatch)(spec, row, {});
-				return Object.keys(stamp).some((k) => T4_ONLY_KEYS.includes(k) || FILM_ONLY_KEYS.includes(k));
-			} : void 0;
+			const omitT4Recipe = family === "t4r" && spec !== null ? (row) => omitT4RecipeRow(spec, row) : void 0;
 			const wire = {
 				candidates: refArtifacts.map((a) => ({
 					id: a.name,
@@ -5445,6 +5470,9 @@ window.__ModuleLoader__.load({
 				const cleared = (v) => v === void 0 || v === "" || v === false || Array.isArray(v) && v.length === 0;
 				const state = a;
 				for (const k of Object.keys(base)) if (LAYERA_KEY_UNIVERSE.has(k) && !(k in out) && base[k] !== void 0 && base[k] !== null && cleared(state[k])) out[k] = null;
+			}
+			if (deriveWindowFamily(mergeDocLayers(base, a)) === "t4r") {
+				for (const k of T4_ONLY_KEYS) if (out[k] !== null) delete out[k];
 			}
 			return out;
 		}
@@ -8278,15 +8306,23 @@ window.__ModuleLoader__.load({
 		}
 		/** The variant rail's unknown-quant refusal body — same contract as
 		*  {@link unknownVariantVoice}: one spelling, frame at the caller.
+		*  THE HONEST VOICE (the axis-unification cure, 2026-11-06 — the
+		*  operator's anima burn: the served matrix carried zero Quant rows
+		*  while the DECL declared two, and the old empty tail asserted the
+		*  DECL's absence, which the caller's matrix cannot see). An empty
+		*  `known` is a statement about the CALLER'S PROJECTION — the served
+		*  matrix it was handed — so the tail names the projection and the
+		*  sync break, never a DECL fact; the DECL's own cells, when the
+		*  projection carries them, ride the known list.
 		*
 		* @param stated the quant the caller stated, verbatim.
 		* @param model the model id the cells belong to.
 		* @param variant the variant whose cells were searched.
 		* @param known the variant's offered quants, door order; empty
-		*  yields the declares-no-cells tail.
+		*  yields the projection-break tail.
 		* @returns the refusal body, frame-free. */
 		function unknownQuantVoice(stated, model, variant, known) {
-			return "unknown quant " + JSON.stringify(stated) + " for model " + JSON.stringify(model) + " variant " + JSON.stringify(variant) + (known.length > 0 ? " (known: " + known.join(", ") + ")" : " (the variant declares no cells)");
+			return "unknown quant " + JSON.stringify(stated) + " for model " + JSON.stringify(model) + " variant " + JSON.stringify(variant) + (known.length > 0 ? " (known: " + known.join(", ") + ")" : " (the served matrix declares no cells for this variant — DECL/projection sync break)");
 		}
 		/** THE ROUTE ENVELOPE GATE'S ONE JUDGE (the voice audit, 2026-10-11:
 		*  six hand-mirrored spellings, two frames): a stated numeric

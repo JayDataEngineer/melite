@@ -12,8 +12,8 @@
  * never ride the wire.
  */
 import type { DocAudioClip, LayerA } from "./docModel.ts"
-import { LEGACY_LAYERA_KEY, stemToClip } from "./docModel.ts"
-import { normalizeDeclaredRefs } from '@melite/models-h3/timelineContract'
+import { LEGACY_LAYERA_KEY, mergeDocLayers, stemToClip } from "./docModel.ts"
+import { deriveWindowFamily, normalizeDeclaredRefs, T4_ONLY_KEYS } from '@melite/models-h3/timelineContract'
 import { parseFilmMixClips } from '@melite/models-h3/filmMix'
 
 /** Card-level ref lists hydrate to arrays; absent/empty stays absent
@@ -393,6 +393,21 @@ export function serializeLayerA(a: LayerA, base?: Record<string, unknown>): Reco
         out[k] = null
       }
     }
+  }
+  // THE FAMILY-AWARE EMIT LAW (B1, journey-closure 2026-11-06): the
+  // doc's derived family (base + this state, defined-wins — the same
+  // merge the rail's omitFields gate and the reseat heal read) owns
+  // the lane. A derived-t4r doc OMITS every T4_ONLY member: the
+  // always-emit booleans, the true-gated stamps, every state-derived
+  // value — new T4 states die here, never composed, never refused.
+  // ONE OWNER PER KEY: the serializer states nothing, and a
+  // base-carried stamp the state explicitly cleared still rides the
+  // merge-patch null ONCE (out[k] === null survives below) — the
+  // bench's null-delete settles it and the key is gone. Never both
+  // (no value beside its own delete), never neither (no stranded
+  // stamp the walk would refuse).
+  if (deriveWindowFamily(mergeDocLayers(base, a as unknown as Record<string, unknown>)) === "t4r") {
+    for (const k of T4_ONLY_KEYS) if (out[k] !== null) delete out[k]
   }
   return out
 }
