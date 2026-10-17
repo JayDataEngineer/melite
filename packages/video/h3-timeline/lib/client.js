@@ -3409,6 +3409,40 @@ window.__ModuleLoader__.load({
 			}
 			return got;
 		};
+		/** (E7, KF-A(2), keyframes-audio journey audit — plan row 85) THE
+		*  REOPEN/REFIT SEAM: the fit law applied to a PERSISTED pin, not
+		*  only to a pick. A saved off-aspect pin (a pre-fit doc, a name
+		*  commit, a legacy spelling) used to re-render unfitted forever —
+		*  the only cure was re-picking. Every persisted spelling rides the
+		*  same law here:
+		*  — data: and rooted/origin-qualified estate media fit directly; a
+		*    legacy spelling heals to its canonical chip even when the fit
+		*    rides verbatim (nothing stored ever breaks — benchStage);
+		*  — a bare artifact NAME resolves through the index's name → url map
+		*    and fits off the servable URL: a real fit hands back the fitted
+		*    data: URL (the doc heals off the unfittable name), an
+		*    unresolvable or non-fitting name rides verbatim (engine
+		*    currency; the courtesy law);
+		*  — "" stays "" (the imageless pin is KF-C's own law, not this
+		*    seam's).
+		*  @param image the persisted pin source, any spelling.
+		*  @param byName the artifact index's ctx-key name → servable url map.
+		*  @param tw the film's target width.
+		*  @param th the film's target height.
+		*  @returns the refit value to re-render (and write back), or the
+		*  input verbatim when no fit is real. */
+		const refitKeyframePinImage = async (image, byName, tw, th) => {
+			if (image === "") return "";
+			const canonical = estateMediaChip(image) ?? image;
+			const fitted = await fitImageToAspect(canonical, tw, th);
+			if (fitted !== canonical) return fitted;
+			if (canonical !== image) return canonical;
+			const url = byName.get(image);
+			if (url === void 0 || url === image) return image;
+			const source = estateMediaChip(url) ?? url;
+			const nameFit = await fitImageToAspect(source, tw, th);
+			return nameFit !== source ? nameFit : image;
+		};
 		studioCopy.knobSteps, studioCopy.knobDenoise, studioCopy.knobSampler, studioCopy.knobScheduler, studioCopy.knobShiftVideo, studioCopy.knobShiftAudio, studioCopy.knobSlaSparsity, studioCopy.knobSlaBlockSize, studioCopy.knobSlaMinSeqLen, studioCopy.knobSlaDenseLastSteps, studioCopy.knobSlaProtectAudio, studioCopy.knobSlaStabilizeMotion, studioCopy.knobSlaRefProtection, studioCopy.knobSlaDenseBackend, studioCopy.knobSlaDenseSteps, studioCopy.knobSlaFullPrecAccum, studioCopy.knobSharpen, studioCopy.knobSharpenMethod, studioCopy.knobSharpenStrength, studioCopy.knobSharpenRadius, studioCopy.knobSharpenNoiseGate, studioCopy.knobSharpenIterations, studioCopy.knobInterpolate, studioCopy.knobInterpModel, studioCopy.knobInterpMultiplier, studioCopy.knobWindowLength;
 		/**
 		* Convert a legacy audio_stem artifact name into a positioned clip at
@@ -15318,6 +15352,73 @@ window.__ModuleLoader__.load({
 			};
 		}
 		//#endregion
+		//#region src/ui/studio/useReopenRefit.ts
+		/**
+		* (E7, KF-A(2), keyframes-audio journey audit — plan row 85) THE
+		* REOPEN-REFIT PRODUCT SEAT: refitKeyframePinImage (refUtils.ts — the
+		* reopen/refit seam) carried wall arms but no product caller, so a
+		* persisted off-aspect pin (a pre-fit doc, a name commit, a legacy
+		* spelling) re-rendered unfitted forever. This hook seats the seam in
+		* the studio: whenever the doc's pins or the film's target size land,
+		* every non-empty pin rides the refit once; pins whose refit differs
+		* are written back in ONE updateKeyframes.
+		*/
+		/** Re-fit every persisted keyframe pin image through the refit seam
+		*  and commit the differing pins back to the doc.
+		*  @param keyframes the doc's pins (the effect re-runs when this
+		*  array's identity changes).
+		*  @param byName the artifact index's name → servable url map (bare
+		*  artifact names resolve through it; unchanged identity skips no
+		*  pass — the seam itself is cheap on already-fitted pins).
+		*  @param tw the film's target width (undefined rides the 1344
+		*  default the pin-commit seam uses).
+		*  @param th the film's target height (undefined rides the 768
+		*  default).
+		*  @param updateKeyframes the doc writer the commit lands through. */
+		function useReopenRefit(keyframes, byName, tw, th, updateKeyframes) {
+			const latest = (0, react.useRef)({
+				keyframes,
+				byName,
+				updateKeyframes
+			});
+			latest.current = {
+				keyframes,
+				byName,
+				updateKeyframes
+			};
+			(0, react.useEffect)(() => {
+				let live = true;
+				(async () => {
+					const pins = keyframes.filter((k) => k.image !== "");
+					const refits = await Promise.all(pins.map((k) => refitKeyframePinImage(k.image, byName, tw ?? 1344, th ?? 768)));
+					if (!live) return;
+					const changed = /* @__PURE__ */ new Map();
+					for (let i = 0; i < pins.length; i++) {
+						const refit = refits[i];
+						if (refit !== void 0 && refit !== pins[i].image) changed.set(pins[i].frame, refit);
+					}
+					if (changed.size === 0) return;
+					const now = latest.current.keyframes;
+					if (!now.some((pin) => changed.get(pin.frame) !== void 0 && changed.get(pin.frame) !== pin.image)) return;
+					latest.current.updateKeyframes(now.map((pin) => {
+						const refit = changed.get(pin.frame);
+						return refit !== void 0 && refit !== pin.image ? {
+							...pin,
+							image: refit
+						} : pin;
+					}));
+				})();
+				return () => {
+					live = false;
+				};
+			}, [
+				keyframes,
+				tw,
+				th,
+				byName
+			]);
+		}
+		//#endregion
 		//#region src/ui/studio/useDerivedView.ts
 		/**
 		* h3-timeline studio split (2026-09-06) — PURE MOVE from
@@ -15616,6 +15717,7 @@ window.__ModuleLoader__.load({
 			const enh = useEnhance();
 			const mut = useCallMutations(doc.updateCalls, fps);
 			const kf = useBeatMutations(keyframes, doc.updateKeyframes);
+			useReopenRefit(keyframes, audio.artifactIndex.byName, layerA.width, layerA.height, doc.updateKeyframes);
 			const derived = useDerivedView({
 				upstreams,
 				stage,

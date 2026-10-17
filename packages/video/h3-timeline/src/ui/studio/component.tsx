@@ -92,6 +92,7 @@ import { usePromptMutations } from "./usePromptMutations.ts"
 import { useEnhance } from "./useEnhance.ts"
 import { useCallMutations } from "./useCallMutations.ts"
 import { useBeatMutations } from "./useBeatMutations.ts"
+import { useReopenRefit } from "./useReopenRefit.ts"
 import { useDerivedView } from "./useDerivedView.ts"
 import { projectH3StageViewProps } from "./projection.ts"
 import { studioCopy } from "./studioCopy.ts"
@@ -214,6 +215,9 @@ export function VideoTimelineStudio(owner: StageViewOwnerProps) {
   const enh = useEnhance()
   const mut = useCallMutations(doc.updateCalls, fps)
   const kf = useBeatMutations(keyframes, doc.updateKeyframes)
+  // THE REOPEN-REFIT SEAT (E7, KF-A(2)): persisted pins ride the refit
+  // seam once per doc/target-size landing (useReopenRefit owns the law).
+  useReopenRefit(keyframes, audio.artifactIndex.byName, layerA.width, layerA.height, doc.updateKeyframes)
   // THE FAMILY RESEAT'S ONE OWNER (B2, journey-closure 2026-11-06):
   // the D8 mount heal (useFamilyReseatHeal, deleted) dissolved into
   // the commit seam — useShownDoc's commit unstamps the T4_ONLY

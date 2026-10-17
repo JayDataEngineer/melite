@@ -14,6 +14,7 @@ import { createElement } from "react"
 import {
   VideoTimelineStudio, shellDeclaration,
 } from "../src/ui/studio/component.tsx"
+import { LOADED_WAIT } from "../../../../tests/helpers/loaded-wait.ts"
 
 // THE OWNER MOUNT (the one-truth currency, 2026-10-27): the tenant
 // speaks StageViewOwnerProps — params ride row.params, writes ride
@@ -379,5 +380,81 @@ describe("the film axis (the player's own duration)", () => {
       bottom: { kind: "timeline" },
       params: { slots: [] },
     })
+  })
+})
+
+// ── E7 KF-A(2) ADOPTION (journey-closure): refitKeyframePinImage's
+// product seat lives IN the tenant — a persisted off-aspect pin heals
+// to its fitted data: through ONE commit on reopen, and a pin with
+// nothing to fit commits nothing. ──
+
+/** Stub the decode + canvas exactly as the seam spec's stubFitDecode
+ *  (studio-ref-utils.spec.ts): every decode answers 2688×768, the
+ *  canvas answers the fitted data: URL. @returns the restore fn. */
+function stubFitDecode2688x768(): () => void {
+  class StubImg {
+    naturalWidth = 2688
+    naturalHeight = 768
+    set src(_v: string) { queueMicrotask(() => { this.onload?.() }) }
+    onload: (() => void) | null = null
+    onerror: (() => void) | null = null
+  }
+  const origCreate = document.createElement.bind(document)
+  const spy = vi.spyOn(document, "createElement").mockImplementation((tag: string) => {
+    if (tag === "canvas") {
+      const c = {
+        width: 0, height: 0,
+        getContext: () => ({ drawImage: () => {} }),
+        toDataURL: () => "data:image/png;base64,FITTED",
+      }
+      return c as unknown as HTMLCanvasElement
+    }
+    return origCreate(tag)
+  })
+  vi.stubGlobal("Image", StubImg as unknown as typeof Image)
+  return () => { spy.mockRestore(); vi.unstubAllGlobals() }
+}
+
+const keyframePatches = (saved: Record<string, unknown>[]): Record<string, unknown>[] =>
+  saved.filter((p) => Array.isArray(p["keyframes"]))
+
+describe("the reopen-refit seat (E7, KF-A(2) — the refit seam's product caller)", () => {
+  it("a saved off-aspect pin heals to the FITTED data: in ONE commit on reopen", async () => {
+    const restore = stubFitDecode2688x768()
+    let h: ReturnType<typeof studio> | undefined
+    try {
+      h = studio({
+        calls: [{ text: "solo", start_frame: 0, end_frame: 48 }],
+        keyframes: [{ image: "data:image/png;base64,AA", frame: 10 }],
+        fps: 24,
+      })
+      await vi.waitFor(() => {
+        const healed = keyframePatches(h!.saved).some((p) =>
+          (p["keyframes"] as Array<{ image: string; frame: number }>)
+            .some((k) => k.frame === 10 && k.image === "data:image/png;base64,FITTED"))
+        assert.ok(healed, `the healed pin rides a keyframes patch (${JSON.stringify(h!.saved)})`)
+      }, { timeout: LOADED_WAIT() })
+      // settle: the healed doc's own re-pass writes nothing — ONE commit
+      await new Promise((r) => setTimeout(r, 50))
+      assert.equal(keyframePatches(h.saved).length, 1)
+    } finally {
+      h?.els.unmount()
+      restore()
+    }
+  })
+
+  it("an unresolvable bare-name pin stays still — no commit at reopen", async () => {
+    let h: ReturnType<typeof studio> | undefined
+    try {
+      h = studio({
+        calls: [{ text: "solo", start_frame: 0, end_frame: 48 }],
+        keyframes: [{ image: "video_missing", frame: 10 }],
+        fps: 24,
+      })
+      await new Promise((r) => setTimeout(r, 100))
+      assert.equal(keyframePatches(h.saved).length, 0)
+    } finally {
+      h?.els.unmount()
+    }
   })
 })
