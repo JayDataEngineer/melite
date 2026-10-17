@@ -14,6 +14,7 @@
  * timeline, toasts, stores) is the real editor, mounted with the standard
  * no-act pattern (vi.waitFor / waitForText polls, resetStudio() after).
  */
+import { LOADED_WAIT } from '../../../../tests/helpers/loaded-wait.ts';
 import { fireEvent, getByText, queryByText } from '@testing-library/dom'
 import { afterEach, describe, expect, test, vi } from 'vitest'
 import * as THREE from '@melite/three-client/client'
@@ -157,7 +158,7 @@ describe('thumbnail capture', () => {
     await vi.waitFor(() => {
       const t = thumbs()['thumb-cap']
       if (typeof t !== 'string' || !t.startsWith('data:')) throw new Error('no thumbnail yet')
-    }, { timeout: 20000 })
+    }, { timeout: LOADED_WAIT() * 2 / 3 })
   }, 60000)
 
   test('a null canvas blob captures nothing', async () => {
@@ -166,7 +167,7 @@ describe('thumbnail capture', () => {
     await mountedRun('thumb-null')
     await vi.waitFor(() => {
       if (!document.body.querySelector('[aria-label="Pause (Space)"]')) throw new Error('not playing yet')
-    }, { timeout: 20000 })
+    }, { timeout: LOADED_WAIT() * 2 / 3 })
     await new Promise((r) => setTimeout(r, 1500))
     expect(thumbs()['thumb-null']).toBeUndefined()
   }, 60000)
@@ -177,7 +178,7 @@ describe('thumbnail capture', () => {
     await mountedRun('thumb-tiny')
     await vi.waitFor(() => {
       if (!document.body.querySelector('[aria-label="Pause (Space)"]')) throw new Error('not playing yet')
-    }, { timeout: 20000 })
+    }, { timeout: LOADED_WAIT() * 2 / 3 })
     await new Promise((r) => setTimeout(r, 1500))
     expect(thumbs()['thumb-tiny']).toBeUndefined()
   }, 60000)
@@ -189,7 +190,7 @@ describe('thumbnail capture', () => {
     await mountedRun('thumb-short')
     await vi.waitFor(() => {
       if (!document.body.querySelector('[aria-label="Pause (Space)"]')) throw new Error('not playing yet')
-    }, { timeout: 20000 })
+    }, { timeout: LOADED_WAIT() * 2 / 3 })
     await new Promise((r) => setTimeout(r, 1500))
     expect(thumbs()['thumb-short']).toBeUndefined()
   }, 60000)
@@ -201,7 +202,7 @@ describe('thumbnail capture', () => {
     await mountedRun('thumb-fail')
     await vi.waitFor(() => {
       if (!document.body.querySelector('[aria-label="Pause (Space)"]')) throw new Error('not playing yet')
-    }, { timeout: 20000 })
+    }, { timeout: LOADED_WAIT() * 2 / 3 })
     await new Promise((r) => setTimeout(r, 1500))
     expect(thumbs()['thumb-fail']).toBeUndefined()
   }, 60000)
@@ -225,10 +226,10 @@ describe('thumbnail capture', () => {
     await waitForText('30 fps · 600f')
     await vi.waitFor(() => {
       if (typeof thumbs()['thumb-once'] !== 'string') throw new Error('no thumbnail yet')
-    }, { timeout: 20000 })
+    }, { timeout: LOADED_WAIT() * 2 / 3 })
     await vi.waitFor(() => {
       if (!document.body.querySelector('[aria-label="Pause (Space)"]')) throw new Error('not playing yet')
-    }, { timeout: 60000 })
+    }, { timeout: LOADED_WAIT() * 2 })
     await new Promise((r) => setTimeout(r, 1500))
     expect(reads).toBe(1)
   }, 90000)

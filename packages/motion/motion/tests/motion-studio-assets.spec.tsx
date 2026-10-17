@@ -10,6 +10,7 @@
  * afterEach kills the viewer's async loop. 'Not wrapped in act'
  * warnings are tolerated noise.
  */
+import { LOADED_WAIT } from '../../../../tests/helpers/loaded-wait.ts';
 import { fireEvent, getByRole } from '@testing-library/dom'
 import { createElement as h } from 'react'
 import { afterEach, describe, expect, test, vi } from 'vitest'
@@ -68,7 +69,7 @@ describe('background + body slot (drops / picks / wire)', () => {
     await vi.waitFor(() => {
       const fell = useToastStore.getState().toasts.some((t) => t.message.includes('Preview body not loaded'))
       if (!fell) throw new Error('no body fallback toast yet')
-    }, { timeout: 20000 })
+    }, { timeout: LOADED_WAIT() * 2 / 3 })
   }, 30000)
 
   test('stage drop of an image sets the background, clear removes it', async () => {
@@ -132,13 +133,13 @@ describe('background + body slot (drops / picks / wire)', () => {
     expect(touched).toBe(false)
   })
 
-  test('slot asset-drop of a GLB attaches, detach clears', { timeout: 90000 }, async () => {
+  test('slot asset-drop of a GLB attaches, detach clears', { timeout: LOADED_WAIT() * 3 }, async () => {
     await mountedNoRun()
     fireEvent.drop(slotSquare(), { dataTransfer: assetTransfer('https://host/slot.glb') })
     await vi.waitFor(() => {
       if (!document.body.querySelector('[aria-label="Detach preview_glb"]')) throw new Error('no detach yet')
       // stroke 83: the GLB drop path stalls past 10s under full-suite parallel load (the fetch rides the shared dom loop); 30s still tripped under the 2026-09-17 full gate — 90s keeps the evidence point load-robust
-    }, { timeout: 90000 })
+    }, { timeout: LOADED_WAIT() * 3 })
     fireEvent.click(document.body.querySelector('[aria-label="Detach preview_glb"]') as HTMLButtonElement)
     await vi.waitFor(() => {
       if (document.body.querySelector('[aria-label="Detach preview_glb"]')) throw new Error('detach did not clear yet')
@@ -163,7 +164,7 @@ describe('background + body slot (drops / picks / wire)', () => {
     await vi.waitFor(() => {
       const fell = useToastStore.getState().toasts.some((t) => t.message.includes('Preview body not loaded'))
       if (!fell) throw new Error('no attach fallback toast yet')
-    }, { timeout: 20000 })
+    }, { timeout: LOADED_WAIT() * 2 / 3 })
   }, 30000)
 
   test('bg file pick reads and persists', async () => {
@@ -324,10 +325,10 @@ describe('background + body slot (drops / picks / wire)', () => {
     await vi.waitFor(() => {
       const fell = useToastStore.getState().toasts.some((t) => t.message.includes('Preview body not loaded'))
       if (!fell) throw new Error('no wired fallback toast yet')
-    }, { timeout: 20000 })
+    }, { timeout: LOADED_WAIT() * 2 / 3 })
   }, 30000)
 
-  test('wired detach unwires the slot', { timeout: 90000 }, async () => {
+  test('wired detach unwires the slot', { timeout: LOADED_WAIT() * 3 }, async () => {
     const onWireSlot = vi.fn()
     const { onSave } = await mountedWired(
       ['up1'],
@@ -337,7 +338,7 @@ describe('background + body slot (drops / picks / wire)', () => {
     await vi.waitFor(() => {
       if (!document.body.querySelector('[aria-label="Detach preview_glb"]')) throw new Error('no detach yet')
       // stroke 83: the GLB drop path stalls past 10s under full-suite parallel load (the fetch rides the shared dom loop); 30s still tripped under the 2026-09-17 full gate — 90s keeps the evidence point load-robust
-    }, { timeout: 90000 })
+    }, { timeout: LOADED_WAIT() * 3 })
     fireEvent.click(document.body.querySelector('[aria-label="Detach preview_glb"]') as HTMLButtonElement)
     expect(onWireSlot).toHaveBeenCalledWith('preview_glb', null, null)
     expect(onSave.mock.calls.some(([p]) => (p as Record<string, unknown>).preview_glb === null)).toBe(true)
@@ -372,7 +373,7 @@ describe('preview body (attach / convert / fall back)', () => {
     await vi.waitFor(() => {
       const failed = useToastStore.getState().toasts.some((t) => t.message.includes('SOMAX conversion failed'))
       if (!failed) throw new Error('no convert-failure toast yet')
-    }, { timeout: 20000 })
+    }, { timeout: LOADED_WAIT() * 2 / 3 })
     // the notice names the dead rigged asset; the stage never empties
     await waitForText('previewing on the neutral mannequin')
     expect(document.body.textContent).toContain('No motion yet')
@@ -395,7 +396,7 @@ describe('preview body (attach / convert / fall back)', () => {
     )
     await vi.waitFor(() => {
       expect(runCompiledGeneration).toHaveBeenCalledTimes(1)
-    }, { timeout: 20000 })
+    }, { timeout: LOADED_WAIT() * 2 / 3 })
     expect(runCompiledGeneration.mock.calls[0]?.[0]).toEqual({
       flow: 'body-to-somax',
       glb: 'https://host/bare.glb',
@@ -410,7 +411,7 @@ describe('preview body (attach / convert / fall back)', () => {
     await vi.waitFor(() => {
       const failed = useToastStore.getState().toasts.some((t) => t.message.includes('SOMAX conversion failed'))
       if (!failed) throw new Error('no convert-failure toast yet')
-    }, { timeout: 20000 })
+    }, { timeout: LOADED_WAIT() * 2 / 3 })
     await waitForText('generate failed')
   }, 30000)
 
@@ -421,7 +422,7 @@ describe('preview body (attach / convert / fall back)', () => {
     await vi.waitFor(() => {
       const failed = useToastStore.getState().toasts.some((t) => t.message.includes('brick blew up'))
       if (!failed) throw new Error('no run-error toast yet')
-    }, { timeout: 20000 })
+    }, { timeout: LOADED_WAIT() * 2 / 3 })
   }, 30000)
 
   test('an unfetchable body falls back without touching the queue', async () => {
@@ -438,7 +439,7 @@ describe('preview body (attach / convert / fall back)', () => {
     await vi.waitFor(() => {
       const fell = useToastStore.getState().toasts.some((t) => t.message.includes('Preview body not loaded'))
       if (!fell) throw new Error('no fallback toast yet')
-    }, { timeout: 20000 })
+    }, { timeout: LOADED_WAIT() * 2 / 3 })
     expect(seen.some((u) => u.includes('/v1/flows/'))).toBe(false)
   }, 30000)
 })

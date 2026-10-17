@@ -10,6 +10,7 @@
  * afterEach kills the viewer's async loop. 'Not wrapped in act'
  * warnings are tolerated noise.
  */
+import { LOADED_WAIT } from '../../../../tests/helpers/loaded-wait.ts';
 import { fireEvent } from '@testing-library/dom'
 import { afterEach, describe, expect, test, vi } from 'vitest'
 import { useToastStore } from '@melite/card-base/client'
@@ -52,7 +53,7 @@ describe('no-run state (the rest pose)', () => {
     await vi.waitFor(() => {
       const failed = useToastStore.getState().toasts.some((t) => t.message.includes('SOMAX conversion failed'))
       if (!failed) throw new Error('no convert toast yet')
-    }, { timeout: 20000 })
+    }, { timeout: LOADED_WAIT() * 2 / 3 })
     // With the skin dead there is no rest pose either (effectiveNpz
     // null) — a keyframe lane explains the stage is not live. Only
     // reachable here: every later test has a cached live skin.

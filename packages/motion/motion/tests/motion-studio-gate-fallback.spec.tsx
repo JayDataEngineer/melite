@@ -9,6 +9,7 @@
  * lives in motion-studio-gate-tails.spec.tsx under the same pattern.)
  * Standard no-act mounting (vi.waitFor polls, resetStudio() after).
  */
+import { LOADED_WAIT } from '../../../../tests/helpers/loaded-wait.ts';
 import { afterEach, describe, expect, test, vi } from 'vitest'
 import { useToastStore } from '@melite/card-base/client'
 import { mounted, resetStudio, stubLoads, mountEditor } from './helpers.ts'
@@ -52,7 +53,7 @@ describe('media: direct-fallback cancellation (cold skin cache)', () => {
     await vi.waitFor(() => {
       const fell = useToastStore.getState().toasts.some((t) => t.message.includes('Preview body not loaded'))
       if (!fell) throw new Error('no fallback toast yet')
-    }, { timeout: 20000 })
+    }, { timeout: LOADED_WAIT() * 2 / 3 })
     unmountAll()
     release(new Response('bad', { status: 404 }))
     await new Promise((r) => setTimeout(r, 800))
@@ -76,7 +77,7 @@ describe('media: direct-fallback cancellation (cold skin cache)', () => {
     await vi.waitFor(() => {
       const fell = useToastStore.getState().toasts.some((t) => t.message.includes('Preview body not loaded'))
       if (!fell) throw new Error('no fallback toast yet')
-    }, { timeout: 20000 })
+    }, { timeout: LOADED_WAIT() * 2 / 3 })
     unmountAll()
     const { skinResponse } = await import('./fixtures.ts')
     release(skinResponse())

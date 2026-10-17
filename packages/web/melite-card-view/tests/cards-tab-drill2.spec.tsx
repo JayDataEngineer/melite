@@ -7,6 +7,7 @@
 // the Error-voiced run patch, the throwing remove/ungroup, the
 // tri-state unset, and the preview-owner arms (video/audio kinds,
 // string runStatus, absent history snapshots, historyStrip opt-out).
+import { LOADED_WAIT } from "../../../../tests/helpers/loaded-wait.ts";
 import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, test, vi } from "vitest";
@@ -256,17 +257,17 @@ describe("the family arms — undefined engine and the model re-key", () => {
     expect((document.querySelector("textarea") as HTMLTextAreaElement).value).toBe("keep me");
   });
 
-  test("an Error-voiced spec failure renders its own words", { timeout: 30000 }, async () => {
+  test("an Error-voiced spec failure renders its own words", { timeout: LOADED_WAIT() }, async () => {
     doors.formSpec = "reject-error";
     mountBench([{ id: "s_0", card: "image-gen", engine: "comfyui", params: {} }]);
     doors.formSpec = "reject-error";
     const user = userEvent.setup();
     await user.click(firstTile());
     // thrown fetch verb's settlement: 15s/30s (flake-slowness-wave2)
-    expect(await screen.findByText("door down", {}, { timeout: 15000 })).toBeTruthy();
+    expect(await screen.findByText("door down", {}, { timeout: LOADED_WAIT() * 0.5 })).toBeTruthy();
   });
 
-  test("a HEALED spec door retires the latched error — never a dead form forever (F-5)", { timeout: 30000 }, async () => {
+  test("a HEALED spec door retires the latched error — never a dead form forever (F-5)", { timeout: LOADED_WAIT() }, async () => {
     doors.specFamilies = true;
     mountBench([{ id: "s_0", card: "image-gen", engine: "comfyui", params: {} }]);
     doors.specFamilies = true;
@@ -286,7 +287,7 @@ describe("the family arms — undefined engine and the model re-key", () => {
     await user.click(within(axes).getByLabelText("Model"));
     await user.click(screen.getByRole("menuitem", { name: "Tts" }));
     // thrown fetch verb's settlement: 15s/30s (flake-slowness-wave2)
-    expect(await screen.findByText("door down", {}, { timeout: 15000 })).toBeTruthy();
+    expect(await screen.findByText("door down", {}, { timeout: LOADED_WAIT() * 0.5 })).toBeTruthy();
     doors.formSpec = "ok";
     await user.click(within(document.querySelector('[data-model-axes="1"]') as HTMLElement).getByLabelText("Model"));
     await user.click(screen.getByRole("menuitem", { name: "Image Gen" }));
@@ -432,7 +433,7 @@ describe("the run's quiet arms — no edits, and the Error-voiced patch", () => 
     expect(flush).toEqual({ prompt: "p!" });
   });
 
-  test("an undelivered run patch voices the door's own words", { timeout: 30000 }, async () => {
+  test("an undelivered run patch voices the door's own words", { timeout: LOADED_WAIT() }, async () => {
     // the old frame's {rev: 2} (no delivered key) is the door's
     // undelivered arm — the harness serves patchFailures verbatim.
     mountBench(
@@ -448,7 +449,7 @@ describe("the run's quiet arms — no edits, and the Error-voiced patch", () => 
     await user.type(area, "x");
     fireEvent.click(within(zoomCard()).getByRole("button", { name: "Run stage" }));
     // refused run patch's settlement: 15s/30s (flake-slowness-wave2)
-    expect(await screen.findByText(/undelivered/, {}, { timeout: 15000 })).toBeTruthy();
+    expect(await screen.findByText(/undelivered/, {}, { timeout: LOADED_WAIT() * 0.5 })).toBeTruthy();
     expect(calls().some((p) => p.method === "runs/start")).toBe(false);
   });
 });
@@ -484,10 +485,10 @@ describe("the throwing owners — remove and ungroup fall back loud", () => {
     // old 4s/5s pairing failed once in the full-suite run (green in
     // isolation three times over), which is the flake class the audit
     // named — a fixed budget sized for an idle box.
-    expect(await screen.findByText("remove failed", {}, { timeout: 15000 })).toBeTruthy();
+    expect(await screen.findByText("remove failed", {}, { timeout: LOADED_WAIT() * 0.5 })).toBeTruthy();
   }, 30_000);
 
-  test("a throwing ungroup voices the fallback (never a throw past the gesture)", { timeout: 30000 }, async () => {
+  test("a throwing ungroup voices the fallback (never a throw past the gesture)", { timeout: LOADED_WAIT() }, async () => {
     // THE FLAKE CURE (flake-slowness-wave2 class 1, 2026-11-06): a
     // fixed 4s real-timer findBy budget on a thrown-verb settlement
     // arm reds whenever coverage instrumentation (or 23-fork CPU
@@ -503,7 +504,7 @@ describe("the throwing owners — remove and ungroup fall back loud", () => {
     const user = userEvent.setup();
     await user.click(firstTile());
     fireEvent.click(await screen.findByText("Ungroup", {}, { timeout: 4000 }));
-    expect(await screen.findByText("ungroup failed", {}, { timeout: 15000 })).toBeTruthy();
+    expect(await screen.findByText("ungroup failed", {}, { timeout: LOADED_WAIT() * 0.5 })).toBeTruthy();
   });
 
   test("a non-array children value drills as an empty compound (never a throw)", async () => {

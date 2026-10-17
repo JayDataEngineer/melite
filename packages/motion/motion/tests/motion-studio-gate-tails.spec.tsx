@@ -13,6 +13,7 @@
  * MOUNT PATTERN: NO act() anywhere — render outside act, vi.waitFor /
  * waitForText polls, resetStudio() in afterEach.
  */
+import { LOADED_WAIT } from '../../../../tests/helpers/loaded-wait.ts';
 import { fireEvent, getByTestId, getByText, queryByText } from '@testing-library/dom'
 import { afterEach, describe, expect, test, vi } from 'vitest'
 import * as THREE from '@melite/three-client/client'
@@ -111,7 +112,7 @@ describe('media: convert-fallback cancellation (cold skin cache)', () => {
     await vi.waitFor(() => {
       const failed = useToastStore.getState().toasts.some((t) => t.message.includes('SOMAX conversion failed'))
       if (!failed) throw new Error('no convert toast yet')
-    }, { timeout: 20000 })
+    }, { timeout: LOADED_WAIT() * 2 / 3 })
     unmountAll()
     release(new Response('bad', { status: 404 }))
     await new Promise((r) => setTimeout(r, 800))
@@ -134,7 +135,7 @@ describe('media: convert-fallback cancellation (cold skin cache)', () => {
     await vi.waitFor(() => {
       const failed = useToastStore.getState().toasts.some((t) => t.message.includes('SOMAX conversion failed'))
       if (!failed) throw new Error('no convert toast yet')
-    }, { timeout: 20000 })
+    }, { timeout: LOADED_WAIT() * 2 / 3 })
     unmountAll()
     const { skinResponse } = await import('./fixtures.ts')
     release(skinResponse())
@@ -249,7 +250,7 @@ describe('media: character import + convert', () => {
     await waitForText('30 fps · 4f')
     await vi.waitFor(() => {
       if (!document.body.querySelector('[aria-label="Pause (Space)"]')) throw new Error('not playing yet')
-    }, { timeout: 20000 })
+    }, { timeout: LOADED_WAIT() * 2 / 3 })
     const fell = useToastStore.getState().toasts.filter((t) =>
       t.message.includes('Preview body not loaded') || t.message.includes('SOMAX conversion'))
     expect(fell).toEqual([])
@@ -309,7 +310,7 @@ describe('media: character import + convert', () => {
     await vi.waitFor(() => {
       const ok = useToastStore.getState().toasts.some((t) => t.message.includes('Body converted to SOMAX rig'))
       if (!ok) throw new Error('no convert success toast yet')
-    }, { timeout: 30000 })
+    }, { timeout: LOADED_WAIT() })
     await waitForText('30 fps · 4f')
   }, 60000)
 
@@ -324,7 +325,7 @@ describe('media: character import + convert', () => {
     mountEditor({ params: { preview_glb: 'https://host/bare.glb' } })
     await vi.waitFor(() => {
       if (!document.body.textContent?.includes('converting through the queue')) throw new Error('no notice yet')
-    }, { timeout: 20000 })
+    }, { timeout: LOADED_WAIT() * 2 / 3 })
     unmountAll()
     release(new Response(glb.slice(0)))
     await new Promise((r) => setTimeout(r, 800))
@@ -343,7 +344,7 @@ describe('media: character import + convert', () => {
     mountEditor({ params: { preview_glb: 'https://host/bare.glb' } })
     await vi.waitFor(() => {
       if (!document.body.textContent?.includes('converting through the queue')) throw new Error('no notice yet')
-    }, { timeout: 20000 })
+    }, { timeout: LOADED_WAIT() * 2 / 3 })
     await vi.waitFor(() => {
       if (!seen.some((u) => u.includes('/v1/flows/start'))) throw new Error('start not hit yet')
     }, { timeout: 10000 })
@@ -364,7 +365,7 @@ describe('media: character import + convert', () => {
     await vi.waitFor(() => {
       const hit = useToastStore.getState().toasts.some((t) => t.message.includes('queue-string-blowup'))
       if (!hit) throw new Error('no raw convert toast yet')
-    }, { timeout: 20000 })
+    }, { timeout: LOADED_WAIT() * 2 / 3 })
   }, 30000)
 
   test('a body that throws off-Error falls back with the default message', async () => {
@@ -378,7 +379,7 @@ describe('media: character import + convert', () => {
       const fell = useToastStore.getState().toasts.some((t) =>
         t.message.includes('Preview body not loaded') && t.message.includes('Failed to load character GLB'))
       if (!fell) throw new Error('no default fallback toast yet')
-    }, { timeout: 20000 })
+    }, { timeout: LOADED_WAIT() * 2 / 3 })
   }, 30000)
 
 })
@@ -395,7 +396,7 @@ describe('media: motion load races', () => {
     mountEditor({ result: { artifacts: { motion_npz: MOTION_URL } } })
     await vi.waitFor(() => {
       if (!seen.some((u) => u.includes(MOTION_URL))) throw new Error('motion fetch not started yet')
-    }, { timeout: 20000 })
+    }, { timeout: LOADED_WAIT() * 2 / 3 })
     unmountAll()
     const { motionResponse } = await import('./fixtures.ts')
     release(await motionResponse(4, 30))
@@ -438,7 +439,7 @@ describe('media: motion load races', () => {
     mountEditor({ result: { artifacts: { motion_npz: MOTION_URL } } })
     await vi.waitFor(() => {
       if (!seen.some((u) => u.includes(MOTION_URL))) throw new Error('motion fetch not started yet')
-    }, { timeout: 20000 })
+    }, { timeout: LOADED_WAIT() * 2 / 3 })
     unmountAll()
     release(new Response('bad', { status: 500 }))
     await new Promise((r) => setTimeout(r, 800))
@@ -469,12 +470,12 @@ describe('stage + undo + authoring tails', () => {
     fireEvent.click(railButton('Refine pose'))
     await vi.waitFor(() => {
       getByText(document.body, 'Done')
-    }, { timeout: 20000 })
+    }, { timeout: LOADED_WAIT() * 2 / 3 })
     const frame = document.body.querySelector('[data-slot="viewport-frame"]') as HTMLElement
     fireEvent.drop(frame, { dataTransfer: assetTransfer('https://host/bare.glb') })
     await vi.waitFor(() => {
       if (!document.body.textContent?.includes('converting through the queue')) throw new Error('no notice yet')
-    }, { timeout: 20000 })
+    }, { timeout: LOADED_WAIT() * 2 / 3 })
     await vi.waitFor(() => {
       if (!seen.some((u) => u.includes('/v1/flows/drafts'))) throw new Error('drafts not hit yet')
     }, { timeout: 10000 })
@@ -524,10 +525,10 @@ describe('stage + undo + authoring tails', () => {
         fireEvent.click(railButton('Refine pose'))
         throw new Error('edit not entered yet')
       }
-    }, { timeout: 60000 })
+    }, { timeout: LOADED_WAIT() * 2 })
     await vi.waitFor(() => {
       if (railButton('Repose').disabled) throw new Error('joints not landed yet — Repose still disabled')
-    }, { timeout: 60000 })
+    }, { timeout: LOADED_WAIT() * 2 })
     // THE KEYDOWN RETRY (coverage-load flake, 2026-09-24): under the
     // full-gate's v8 instrumentation the editor's key handler can
     // attach AFTER the Repose-enabled observation — a single
@@ -537,11 +538,11 @@ describe('stage + undo + authoring tails', () => {
     await vi.waitFor(() => {
       fireEvent.keyDown(document.body, { key: 'z', ctrlKey: true })
       if (!railButton('Repose').disabled) throw new Error('undo not landed yet — joints still live')
-    }, { timeout: 30000 })
+    }, { timeout: LOADED_WAIT() })
     fireEvent.click(railButton('Done'))
     await vi.waitFor(() => {
       getByText(document.body, 'Refine pose')
-    }, { timeout: 30000 })
+    }, { timeout: LOADED_WAIT() })
     expect(queryByText(document.body, 'Reset pose')).toBeNull()
   }, 120000)
 
@@ -551,7 +552,7 @@ describe('stage + undo + authoring tails', () => {
     await waitForText('30 fps · 4f')
     await vi.waitFor(() => {
       if (!document.body.querySelector('[aria-label="Pause (Space)"]')) throw new Error('not playing yet')
-    }, { timeout: 20000 })
+    }, { timeout: LOADED_WAIT() * 2 / 3 })
     onSave.mockClear()
     onSave.mockImplementation((p?: unknown) => {
       if (p && typeof p === 'object' && 'prev_motion_artifact' in (p as Record<string, unknown>)) {
@@ -642,7 +643,7 @@ describe('stage + undo + authoring tails', () => {
       if (document.body.querySelectorAll('[data-prompt-clip]').length !== 82) {
         throw new Error('clips not carved yet')
       }
-    }, { timeout: 20000 })
+    }, { timeout: LOADED_WAIT() * 2 / 3 })
     // every carve pushed (the stack shifted past eighty, dropping the seed
     // snapshot) — eighty undos land on the 2-clip snapshot, which only the
     // capped stack can produce (an uncapped stack would land on 1).
@@ -676,7 +677,7 @@ describe('stage + undo + authoring tails', () => {
     await vi.waitFor(() => {
       const after = (document.body.querySelectorAll('[data-prompt-clip]')[1] as HTMLElement).style.left
       if (after === before) throw new Error('left did not move yet')
-    }, { timeout: 30000 })
+    }, { timeout: LOADED_WAIT() })
     // both cards survive the move (the untouched one rode the `: p` arm).
     expect(document.body.querySelectorAll('[data-prompt-clip]').length).toBe(2)
   }, 60000)

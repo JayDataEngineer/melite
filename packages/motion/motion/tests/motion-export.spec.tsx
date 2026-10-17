@@ -7,6 +7,7 @@
  * canvas 2d + Image + anchor-click + object-URL are platform fakes,
  * downloads assert through the captured anchor attrs. No module mocks.
  */
+import { LOADED_WAIT } from '../../../../tests/helpers/loaded-wait.ts';
 import { fireEvent, getByLabelText, getByRole, getByText, queryByText } from '@testing-library/dom'
 import { afterEach, describe, expect, test, vi } from 'vitest'
 import { createElement as h, type ReactElement } from 'react'
@@ -34,7 +35,7 @@ afterEach(async () => {
   // dangles forever by design and can never mutate post-teardown).
   await vi.waitFor(() => {
     expect(document.body.textContent).not.toContain('Exporting…')
-  }, { timeout: 15000 })
+  }, { timeout: LOADED_WAIT() * 0.5 })
   FakeImage.mode = 'load'
   await cleanup19()
   vi.unstubAllGlobals()
@@ -722,7 +723,7 @@ describe('single-view exports', () => {
     ref.current = null
     await vi.waitFor(() => {
       expect(useToastStore.getState().toasts.some((t) => t.message.startsWith('Export failed:'))).toBe(true)
-    }, { timeout: 15000 })
+    }, { timeout: LOADED_WAIT() * 0.5 })
     expect(downloads).toHaveLength(1)
     await cleanup19()
   }
@@ -771,7 +772,7 @@ describe('batch + downloads', () => {
     })
     await vi.waitFor(() => {
       expect(downloads).toHaveLength(8)
-    }, { timeout: 15000 })
+    }, { timeout: LOADED_WAIT() * 0.5 })
     expect(downloads.map((d) => d.download)).toEqual(
       ['0', '45', '90', '135', '180', '225', '270', '315'].map((a) => `${a}_mesh.png`),
     )
@@ -799,7 +800,7 @@ describe('batch + downloads', () => {
     })
     await vi.waitFor(() => {
       expect(downloads).toHaveLength(8)
-    }, { timeout: 15000 })
+    }, { timeout: LOADED_WAIT() * 0.5 })
     expect(downloads[0]!.download).toBe('0_openpose.png')
     expect(downloads[7]!.download).toBe('315_openpose.png')
   })

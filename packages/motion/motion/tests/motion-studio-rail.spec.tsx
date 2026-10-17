@@ -10,6 +10,7 @@
  * afterEach kills the viewer's async loop. 'Not wrapped in act'
  * warnings are tolerated noise.
  */
+import { LOADED_WAIT } from '../../../../tests/helpers/loaded-wait.ts';
 import { fireEvent, getByRole, getByText } from '@testing-library/dom'
 import { afterEach, describe, expect, test, vi } from 'vitest'
 import { waitForText } from './harness.tsx'
@@ -95,13 +96,13 @@ describe('rail (view + transport)', () => {
         fireEvent.keyDown(document.body, { code: 'Space' })
         throw new Error('not paused yet')
       }
-    }, { timeout: 20000 })
+    }, { timeout: LOADED_WAIT() * 2 / 3 })
     await vi.waitFor(() => {
       if (!document.body.querySelector('[aria-label="Pause (Space)"]')) {
         fireEvent.keyDown(document.body, { code: 'Space' })
         throw new Error('not resumed yet')
       }
-    }, { timeout: 20000 })
+    }, { timeout: LOADED_WAIT() * 2 / 3 })
   })
 })
 
@@ -126,7 +127,7 @@ describe('RULE B: the generic parameter form rides the rail', () => {
           && document.body.querySelector('[data-refused="duration_sec"]') === null) {
         throw new Error('no gen rows yet')
       }
-    }, { timeout: 20000 })
+    }, { timeout: LOADED_WAIT() * 2 / 3 })
     expect(document.body.querySelector('[data-testid="mo-guide-panel"]')).toBeTruthy()
     expect(document.body.querySelector('[data-testid="mo-clock-panel"]')).toBeTruthy()
     // the rows are the SERVED spec's, at the wire names (labels are

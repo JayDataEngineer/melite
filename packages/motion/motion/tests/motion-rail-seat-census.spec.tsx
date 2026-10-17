@@ -49,6 +49,7 @@
  * rides the input subcard. T8's condition arm reds if a
  * named-not-judged channel ever gains a hand-typed admission seat.
  */
+import { LOADED_WAIT } from '../../../../tests/helpers/loaded-wait.ts';
 import "../../../../tests/helpers/boot-models.ts";
 import { beforeAll, afterEach, describe, expect, it, vi } from 'vitest'
 import { readFileSync } from 'node:fs'
@@ -301,6 +302,6 @@ describe('THE CHROME RIDES THE DSH VARIANTS (the motion-params audit F5 — the 
       // the faces are DISTINCT variant families, never one hand-tinted voice.
       expect(new Set(faces.map((c) => (c.match(/_ghost_|_outline_|_primary_/) ?? ['none'])[0])).size,
         'all tool toggles render one variant — the pressed/idle faces collapsed').toBeGreaterThan(1)
-    }, { timeout: 15000 })
+    }, { timeout: LOADED_WAIT() * 0.5 })
   })
 })

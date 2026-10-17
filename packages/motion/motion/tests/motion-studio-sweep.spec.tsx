@@ -10,6 +10,7 @@
  * afterEach kills the viewer's async loop. 'Not wrapped in act'
  * warnings are tolerated noise.
  */
+import { LOADED_WAIT } from '../../../../tests/helpers/loaded-wait.ts';
 import { fireEvent, getByRole, getByText, queryByText } from '@testing-library/dom'
 import { afterEach, describe, expect, test, vi } from 'vitest'
 import { useToastStore } from '@melite/card-base/client'
@@ -152,7 +153,7 @@ describe('coverage sweep (scans / convert errors / guards)', () => {
     await vi.waitFor(() => {
       const failed = useToastStore.getState().toasts.some((t) => t.message.includes('SOMAX conversion failed'))
       if (!failed) throw new Error('no slow-convert toast yet')
-    }, { timeout: 25000 })
+    }, { timeout: LOADED_WAIT() * 5 / 6 })
   }, 40000)
 
   test('a typed duration seeds the envelope', async () => {
@@ -184,7 +185,7 @@ describe('coverage sweep (scans / convert errors / guards)', () => {
     await vi.waitFor(() => {
       const failed = useToastStore.getState().toasts.some((t) => t.message.includes('generate failed: HTTP 500'))
       if (!failed) throw new Error('no empty-refusal toast yet')
-    }, { timeout: 20000 })
+    }, { timeout: LOADED_WAIT() * 2 / 3 })
   }, 30000)
 
   test('a kept refine re-enters from the payload', async () => {
@@ -225,7 +226,7 @@ describe('coverage sweep (scans / convert errors / guards)', () => {
     await vi.waitFor(() => {
       const failed = useToastStore.getState().toasts.some((t) => t.message.includes('generate failed: HTTP 500'))
       if (!failed) throw new Error('no refused toast yet')
-    }, { timeout: 20000 })
+    }, { timeout: LOADED_WAIT() * 2 / 3 })
   }, 30000)
 
   test('a non-JSON queue answer fails loud', async () => {
@@ -235,7 +236,7 @@ describe('coverage sweep (scans / convert errors / guards)', () => {
     await vi.waitFor(() => {
       const failed = useToastStore.getState().toasts.some((t) => t.message.includes('non-JSON body'))
       if (!failed) throw new Error('no non-JSON toast yet')
-    }, { timeout: 20000 })
+    }, { timeout: LOADED_WAIT() * 2 / 3 })
   }, 30000)
 
   test('a run_id-less queue answer fails loud', async () => {
@@ -245,7 +246,7 @@ describe('coverage sweep (scans / convert errors / guards)', () => {
     await vi.waitFor(() => {
       const failed = useToastStore.getState().toasts.some((t) => t.message.includes('no run_id'))
       if (!failed) throw new Error('no run_id toast yet')
-    }, { timeout: 20000 })
+    }, { timeout: LOADED_WAIT() * 2 / 3 })
   }, 30000)
 
   test('a refused draft compose fails loud', async () => {
@@ -255,7 +256,7 @@ describe('coverage sweep (scans / convert errors / guards)', () => {
     await vi.waitFor(() => {
       const failed = useToastStore.getState().toasts.some((t) => t.message.includes('card compose refused'))
       if (!failed) throw new Error('no compose toast yet')
-    }, { timeout: 20000 })
+    }, { timeout: LOADED_WAIT() * 2 / 3 })
   }, 30000)
 
   test('a vanished run fails loud', async () => {
@@ -265,7 +266,7 @@ describe('coverage sweep (scans / convert errors / guards)', () => {
     await vi.waitFor(() => {
       const failed = useToastStore.getState().toasts.some((t) => t.message.includes('is gone'))
       if (!failed) throw new Error('no gone toast yet')
-    }, { timeout: 20000 })
+    }, { timeout: LOADED_WAIT() * 2 / 3 })
   }, 30000)
 
   test('a rigless run result fails loud', async () => {
@@ -275,7 +276,7 @@ describe('coverage sweep (scans / convert errors / guards)', () => {
     await vi.waitFor(() => {
       const failed = useToastStore.getState().toasts.some((t) => t.message.includes('produced no rigged GLB'))
       if (!failed) throw new Error('no noglb toast yet')
-    }, { timeout: 20000 })
+    }, { timeout: LOADED_WAIT() * 2 / 3 })
   }, 30000)
 
 
@@ -294,7 +295,7 @@ describe('coverage sweep (scans / convert errors / guards)', () => {
     await vi.waitFor(() => {
       const fell = useToastStore.getState().toasts.some((t) => t.message.includes('Preview body not loaded'))
       if (!fell) throw new Error('no drop-body toast yet')
-    }, { timeout: 20000 })
+    }, { timeout: LOADED_WAIT() * 2 / 3 })
     const png = new File(['png-bytes'], 'drop.png', { type: 'image/png' })
     fireEvent.drop(target, { dataTransfer: { types: ['Files'], getData: () => '', files: [png] } })
     await vi.waitFor(() => {
@@ -451,7 +452,7 @@ describe('coverage sweep (scans / convert errors / guards)', () => {
     await vi.waitFor(() => {
       const fell = useToastStore.getState().toasts.some((t) => t.message.includes('Preview body not loaded'))
       if (!fell) throw new Error('no square-body toast yet')
-    }, { timeout: 20000 })
+    }, { timeout: LOADED_WAIT() * 2 / 3 })
   })
 
   test('stage drag-over parades the drop veil', async () => {

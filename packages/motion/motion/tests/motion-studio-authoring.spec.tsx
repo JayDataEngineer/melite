@@ -10,6 +10,7 @@
  * afterEach kills the viewer's async loop. 'Not wrapped in act'
  * warnings are tolerated noise.
  */
+import { LOADED_WAIT } from '../../../../tests/helpers/loaded-wait.ts';
 import { fireEvent, getByRole, getByText, queryByText } from '@testing-library/dom'
 import { afterEach, describe, expect, test, vi } from 'vitest'
 import { createElement as h } from 'react'
@@ -96,7 +97,7 @@ describe('timeline (prompts + keyframes)', () => {
     await vi.waitFor(() => {
       const call = onSaveA.mock.calls.find(([prm]) => (prm as Record<string, unknown>).motion_constraints)
       if (!call) throw new Error('no A pin yet')
-    }, { timeout: 15000 })
+    }, { timeout: LOADED_WAIT() * 0.5 })
     // settle A's persists before the switch (the pin writes twice:
     // the keyframe, then the constraints follow-up)
     await new Promise((r) => setTimeout(r, 400))
@@ -396,7 +397,7 @@ describe('timeline (prompts + keyframes)', () => {
   // with real waits. A strict in-test RETRY is NOT viable: paired
   // down/up re-fires read as double-clicks and flip the clip into
   // edit mode, killing later gestures.
-  test('prompt body drag slides the card', { timeout: 90000 }, async () => {
+  test('prompt body drag slides the card', { timeout: LOADED_WAIT() * 3 }, async () => {
     await mountedWithRun()
     await vi.waitFor(() => {
       if (!document.body.querySelector('[data-prompt-clip]')) throw new Error('no seeded clip yet')
@@ -412,7 +413,7 @@ describe('timeline (prompts + keyframes)', () => {
     await vi.waitFor(() => {
       const after = (document.body.querySelector('[data-prompt-clip]') as HTMLElement).style.left
       if (after === before) throw new Error('left did not move yet')
-    }, { timeout: 90000 })
+    }, { timeout: LOADED_WAIT() * 3 })
   })
 
   // THE RESCALE GUARD (hour 15 flake root-cause): the envelope settle
@@ -421,7 +422,7 @@ describe('timeline (prompts + keyframes)', () => {
   // snapped a dragged card back to frame 0 after the drag committed. The
   // effect's own doc comment promises "only re-seed when the user hasn't
   // authored anything"; this pins that law against a LATE settle.
-  test('a late envelope settle never erases an authored drag (the rescale guard)', { timeout: 40000 }, async () => {
+  test('a late envelope settle never erases an authored drag (the rescale guard)', { timeout: LOADED_WAIT() * 4 / 3 }, async () => {
     stubLoads() // the standard door stubs (drafts, requestIdleCallback, …)
     let releaseNpz!: () => void
     const npzGate = new Promise<void>((res) => { releaseNpz = res })
@@ -480,7 +481,7 @@ describe('timeline (prompts + keyframes)', () => {
     expect(after.style.left).not.toBe('0px')
   })
 
-  test('pulling the last edge past the end extends the timeline', { timeout: 45000 }, async () => {
+  test('pulling the last edge past the end extends the timeline', { timeout: LOADED_WAIT() * 1.5 }, async () => {
     const { onSave } = await mountedWithRun()
     await vi.waitFor(() => {
       if (!document.body.querySelector('[data-prompt-clip]')) throw new Error('no seeded clip yet')
@@ -524,7 +525,7 @@ describe('timeline (prompts + keyframes)', () => {
         }
         throw new Error('no extend toast yet')
       }
-    }, { timeout: 30000 })
+    }, { timeout: LOADED_WAIT() })
     // THE FLAKE CURE (flake-slowness-wave2 class 5, 2026-11-06): a
     // 10s real-timer rAF-poll budget on this arm reds under gate
     // load (gate22: the typecheck lane's concurrent tsc passes now

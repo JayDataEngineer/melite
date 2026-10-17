@@ -5,6 +5,7 @@
 // mounts (the drill rides the zoom), estate verbs on
 // mountEstateFakes, fetch answering ONLY the /v1 discovery doors +
 // the enhance tool.
+import { LOADED_WAIT } from "../../../../tests/helpers/loaded-wait.ts";
 import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, test, vi } from "vitest";
@@ -180,7 +181,7 @@ describe("the authoring contract — a typed field RIDES the row", () => {
     }, { timeout: 4000 });
   });
 
-  test("a DEAD WRITE shows its face on the form the moment the door answers (the audit's silent branch)", { timeout: 30000 }, async () => {
+  test("a DEAD WRITE shows its face on the form the moment the door answers (the audit's silent branch)", { timeout: LOADED_WAIT() }, async () => {
     // THE WRITE-SEAT AUDIT'S SILENT-DEAD-WRITE FINDING (2026-10-10):
     // the ordinary authoring branch swallowed its failures
     // (`.catch(() => {})`), so a typed edit whose write died surfaced
@@ -202,7 +203,7 @@ describe("the authoring contract — a typed field RIDES the row", () => {
     // macrotask — a 4s real-timer poll starves under coverage's ±40%
     // settlement swing; every settlement poll on a failure verb rides
     // the siblings' 15s/30s pairing.
-    const face = await screen.findByTestId("stage-write-face", {}, { timeout: 15000 });
+    const face = await screen.findByTestId("stage-write-face", {}, { timeout: LOADED_WAIT() * 0.5 });
     expect(face.textContent).toContain("THE WRITE DID NOT LAND");
     expect(face.textContent).toContain("bench/stale-window");
     expect(face.textContent).toContain("studio shows your edit");
@@ -231,7 +232,7 @@ describe("the authoring contract — a typed field RIDES the row", () => {
 });
 
 describe("the slot flush's foreign voice — a down wire still names the face", () => {
-  test("a foreign slot-write throw voices its own words (never a throw past the pick)", { timeout: 30000 }, async () => {
+  test("a foreign slot-write throw voices its own words (never a throw past the pick)", { timeout: LOADED_WAIT() }, async () => {
     doors.formsTable = "fail";
     doors.specFields = "prompt-image";
     mountBench([
@@ -259,13 +260,13 @@ describe("the slot flush's foreign voice — a down wire still names the face", 
     // THE THROWN-VERB SETTLEMENT LAW (flake-slowness-wave2): gate23
     // reded this arm solo under --coverage at the old 4s budget — the
     // C1 raise missed it. 15s/30s, the remove/ungroup siblings' law.
-    expect(await screen.findByText(/kablam/, {}, { timeout: 15000 })).toBeTruthy();
+    expect(await screen.findByText(/kablam/, {}, { timeout: LOADED_WAIT() * 0.5 })).toBeTruthy();
     expect(calls().some((p) => p.method === "drafts/patch")).toBe(true);
   });
 });
 
 describe("the slot flush's REFUSED write — the third face speaks the write voice (W9)", () => {
-  test("a refused slot-write voices 'THE WRITE DID NOT LAND' naming the unlanded key (one voice with the other arms)", { timeout: 30000 }, async () => {
+  test("a refused slot-write voices 'THE WRITE DID NOT LAND' naming the unlanded key (one voice with the other arms)", { timeout: LOADED_WAIT() }, async () => {
     mountBench([
       { id: "s_0", card: "image-gen", engine: "comfyui", params: {} },
       { id: "s_1", card: "image-gen", engine: "comfyui", params: {}, result: { url: "/b.png" } },
@@ -290,7 +291,7 @@ describe("the slot flush's REFUSED write — the third face speaks the write voi
       /THE WRITE DID NOT LAND[\s\S]*bench\/stale-window[\s\S]*unlanded keys: input_image/,
       {},
       // the refused write's settlement (thrown-verb law, 15s/30s)
-      { timeout: 15000 },
+      { timeout: LOADED_WAIT() * 0.5 },
     );
   });
 });
@@ -361,7 +362,7 @@ describe("the owners' foreign voices — remove and ungroup fall back loud", () 
     expect(calls().some((call) => call.method === "drafts/patch")).toBe(false)
   })
 
-  test("wire surfaces an Error refusal with its message (the ONE voice: the row's face)", { timeout: 30000 }, async () => {
+  test("wire surfaces an Error refusal with its message (the ONE voice: the row's face)", { timeout: LOADED_WAIT() }, async () => {
     const owner = await openWireOwner([
       { id: "s_0", card: "image-gen", engine: "comfyui", params: {} },
       { id: "s_1", card: "image-gen", engine: "comfyui", params: {}, result: { url: "/source.png" } },
@@ -373,13 +374,13 @@ describe("the owners' foreign voices — remove and ungroup fall back loud", () 
     // the throw as the row's lastError before the rejection reaches
     // this catch, so the row owns the words the face shows.
     // Thrown-verb settlement: 15s/30s (flake-slowness-wave2).
-    const face = await screen.findByTestId("stage-write-face", {}, { timeout: 15000 });
+    const face = await screen.findByTestId("stage-write-face", {}, { timeout: LOADED_WAIT() * 0.5 });
     expect(face.textContent).toContain("THE WRITE DID NOT LAND");
     expect(face.textContent).toContain("wire down");
     expect(face.textContent).toContain("unlanded keys: input_image");
   })
 
-  test("wire gives a foreign refusal its own words (the row carries the verbatim string)", { timeout: 30000 }, async () => {
+  test("wire gives a foreign refusal its own words (the row carries the verbatim string)", { timeout: LOADED_WAIT() }, async () => {
     const owner = await openWireOwner([
       { id: "s_0", card: "image-gen", engine: "comfyui", params: {} },
       { id: "s_1", card: "image-gen", engine: "comfyui", params: {}, result: { url: "/source.png" } },
@@ -389,13 +390,13 @@ describe("the owners' foreign voices — remove and ungroup fall back loud", () 
     // INSIDE the one voice — the row recorded 'foreign' as the
     // write's lastError; the face derives from the row.
     // Thrown-verb settlement: 15s/30s (flake-slowness-wave2).
-    const face = await screen.findByTestId("stage-write-face", {}, { timeout: 15000 });
+    const face = await screen.findByTestId("stage-write-face", {}, { timeout: LOADED_WAIT() * 0.5 });
     expect(face.textContent).toContain("THE WRITE DID NOT LAND");
     expect(face.textContent).toContain("foreign");
     expect(face.textContent).toContain("unlanded keys: input_image");
   })
 
-  test("a foreign remove throw voices its own words (never a throw past the gesture)", { timeout: 30000 }, async () => {
+  test("a foreign remove throw voices its own words (never a throw past the gesture)", { timeout: LOADED_WAIT() }, async () => {
     mountClaimed(
       [{ id: "s_0", card: "image-gen", engine: "comfyui", params: {} }],
       (owner) => h("button", {
@@ -411,7 +412,7 @@ describe("the owners' foreign voices — remove and ungroup fall back loud", () 
     // settlement under coverage instrumentation swings ±40%; the
     // ungroup sibling below already rides 15s — this arm never got
     // it. Same cure, same shape.
-    expect(await screen.findByText("kablam", {}, { timeout: 15000 })).toBeTruthy();
+    expect(await screen.findByText("kablam", {}, { timeout: LOADED_WAIT() * 0.5 })).toBeTruthy();
   });
 
   test("a foreign ungroup throw voices its own words (never a throw past the gesture)", async () => {
@@ -427,6 +428,6 @@ describe("the owners' foreign voices — remove and ungroup fall back loud", () 
     // full-suite parallel load the click's promise can outlive a 4s
     // polling window while the assertion itself is unaffected; the
     // wider window is load headroom, not a weaker claim)
-    expect(await screen.findByText("kablam", {}, { timeout: 15000 })).toBeTruthy();
+    expect(await screen.findByText("kablam", {}, { timeout: LOADED_WAIT() * 0.5 })).toBeTruthy();
   });
 });

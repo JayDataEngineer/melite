@@ -8,6 +8,7 @@
 // draft view's noop surface. CardsTab mounted whole (the
 // preview-dispatch harness); fetch stubbed whole per door with
 // deferred form-spec / forms-table for the race tests.
+import { LOADED_WAIT } from "../../../../tests/helpers/loaded-wait.ts";
 import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, test, vi } from "vitest";
@@ -453,7 +454,7 @@ describe("the group compound — members, ungroup, and its honesty", () => {
     // a 5s test; this arm then measured 15.5s in a full pre-push run —
     // fixed budgets sized for an idle box starve under the whole dom
     // suite's workers). 25s stays inside the 30s test budget.
-    expect(await screen.findByText("stale rev", {}, { timeout: 25000 })).toBeTruthy();
+    expect(await screen.findByText("stale rev", {}, { timeout: LOADED_WAIT() * 5 / 6 })).toBeTruthy();
     expect(screen.getByText("Ungroup")).toBeTruthy();
   }, 30_000);
 });
