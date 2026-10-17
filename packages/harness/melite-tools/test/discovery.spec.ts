@@ -21,15 +21,19 @@ import { loadCardDefs, theService } from '@melite/comfyui-cordis'
  *  undeclared (the F5 law) — so the manifest arm can be judged on a
  *  card whose families declare nothing, a shape the production tree
  *  no longer carries. */
-const mockFlags = vi.hoisted(() => ({ stripParamless: false }))
+const mockFlags = vi.hoisted(() => ({ stripParamless: false, throwFam: null as string | null }))
 vi.mock('@melite/comfyui-cordis', async (importOriginal) => {
   const orig = await importOriginal<typeof import('@melite/comfyui-cordis')>()
   return {
     ...orig,
-    getModel: (id: string) =>
-      mockFlags.stripParamless && ['pixal3d', 'trellis2-native', 'transfer-rig'].includes(id)
+    getModel: (id: string) => {
+      if (mockFlags.throwFam !== null && id === mockFlags.throwFam) {
+        throw new Error(`models: no DECL named '${id}' (the unbootable-family arm)`)
+      }
+      return mockFlags.stripParamless && ['pixal3d', 'trellis2-native', 'transfer-rig'].includes(id)
         ? ({ id } as never)
-        : orig.getModel(id),
+        : orig.getModel(id)
+    },
   }
 })
 
@@ -53,6 +57,7 @@ import {
   resolveSpecKey,
   resolveSpecKeyForTool,
   specBody,
+  specVariants,
 } from '../src/discovery.ts'
 
 /** THE TRANSIENT-GENRE RACE (stroke 83): enhance-recipes.spec
@@ -1075,5 +1080,70 @@ describe('the agent contract carries the lane contract', () => {
     const lanes = create['lanes'] as Record<string, unknown> | undefined
     expect(lanes, 'the create card serves lanes for its declaring families').toBeDefined()
     expect(Object.keys(lanes ?? {}).sort()).toEqual(['anima', 'flux-klein', 'krea-2', 'qwen-img-21', 'z-image'])
+  })
+
+  test('a boarded family whose DECL cannot resolve serves no lane key — the manifest never breaks', async () => {
+    // The lane walk probes each boarded family's DECL through
+    // getModel; a family the models table cannot resolve is the
+    // catch arm's shape (the cold-table state). The manifest must
+    // degrade by lane OMISSION — never a broken row — while the
+    // healthy families' lanes keep serving. The throw is scoped to
+    // one family for the length of the call (the stripParamless
+    // toggle's own pattern); the healthy five-key face right above
+    // is the control this arm is judged against.
+    mockFlags.throwFam = 'anima'
+    let create: Record<string, unknown>
+    try {
+      const tools = await cardToolsArm() as Array<Record<string, unknown>>
+      create = tools.find((t) => t['name'] === 'image-gen') as Record<string, unknown>
+    } finally {
+      mockFlags.throwFam = null
+    }
+    if (create === undefined) throw new Error('the image-gen manifest serves')
+    expect(create['params_schema'], 'the row serves past the unresolvable lane').toBeDefined()
+    const lanes = create['lanes'] as Record<string, unknown> | undefined
+    expect(lanes, 'the surviving declaring families keep their lanes').toBeDefined()
+    expect(Object.keys(lanes ?? {}).sort()).toEqual(['flux-klein', 'krea-2', 'qwen-img-21', 'z-image'])
+  })
+})
+
+describe('specVariants (the served projection of the one walk)', () => {
+  test('a routeless family serves its lane whole, and its head claim as an alias with a null hint', () => {
+    // The routeless family shape (the D4 pool-parity cure's own
+    // unit face): no variant or cell carries a route, the key IS
+    // the service, so the variant row and its cell serve the
+    // family's own row; and since no row routes the family id, the
+    // head claim fires — the alias row stamps nothing (empty
+    // defaults, the lane is already the lane) and a hint-less lane
+    // serves null (the all-ten-keys law), never undefined.
+    const decl = {
+      id: 'zz-spec-fam',
+      variants: [
+        {
+          id: 'solo',
+          label: 'Solo',
+          group: 'Variant',
+          cells: [{ quant: 'q8', label: 'Q8' }],
+        },
+      ],
+      variant_groups: [],
+    } as never
+    const rows = specVariants(decl, 'zz-spec-fam', 'zz-spec-fam')
+    assert.deepEqual(
+      rows.map((r) => [r.id, r.group]),
+      [['solo', 'Variant'], ['q8', 'Quant'], ['solo__head', 'Variant']],
+      'the variant, its routeless cell, and the head alias serve in walk order',
+    )
+    const head = rows[2]!
+    assert.equal(head.route, 'zz-spec-fam', 'the family id is an address even when no row routes it')
+    assert.equal(head.hint, null, 'a hint-less lane serves null — the all-ten-keys law')
+    assert.deepEqual(head.defaults, {}, 'the alias stamps nothing')
+    assert.equal(head.quant, null)
+    assert.equal(head.owner, '', 'the alias owns no lane')
+    // the routeless cell serves the family's own row (key === service)
+    const quant = rows[1]!
+    assert.equal(quant.route, '', 'the routeless cell IS the family lane')
+    assert.equal(quant.owner, 'solo')
+    assert.equal(quant.quant, 'q8')
   })
 })

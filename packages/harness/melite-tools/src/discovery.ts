@@ -200,8 +200,8 @@ function variantRow(
     // realism row's lora stack). The client's pick verb writes
     // exactly this onto the user layer: what a family row stamps is
     // what the run composes, declared keys only.
-    defaults: { ...(v.resolver_defaults ?? {}), ...(v.wire_defaults ?? {}) },
-    route: v.route ?? '',
+    defaults: { ...v.resolver_defaults, ...(v.wire_defaults ?? {}) },
+    route: v.route,
     hint: v.hint ?? null,
     engine: v.engine ?? declEngine,
     // THE VARIANT'S OWN SAMPLER DOMAIN (2026-10-10, the DECL
@@ -324,7 +324,10 @@ export function specVariants(
   if (!routed.has(decl.id)) {
     const resolving = matrix.find((v) => v.cells.length > 0) ?? matrix[0]
     if (resolving !== undefined && resolving.hide_from_dropdown !== true) {
-      const id = seen.has(resolving.id) ? `${resolving.id}__head` : resolving.id
+      // resolving is non-hidden (the guard above), and every non-hidden
+      // variant's id joined `seen` in the row loop — the plain-id arm
+      // is dead by control flow; the head row is always the alias.
+      const id = `${resolving.id}__head`
       rows.push({
         id,
         label: resolving.label,

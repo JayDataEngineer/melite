@@ -9,7 +9,12 @@ import assert from "node:assert/strict";
 import { mkdtempSync, writeFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { loadFacts, requireText } from "../src/facts.ts";
+import {
+  loadFacts,
+  parseDiffusionLaneFacts,
+  parseEditCap,
+  requireText,
+} from "../src/facts.ts";
 
 // TMP NOTE (stroke 13): this tree mints at MODULE scope (before any
 // test exists — onTestFinished can't own it); the global sweep
@@ -202,5 +207,173 @@ describe("requireText (the facts door's one string extractor)", () => {
         new RegExp("^Error: fam act: lane_inputs\\.unet = " + shown + " — a non-empty string is required$"),
       );
     }
+  });
+});
+
+describe("parseDiffusionLaneFacts (the diffusion-lane facts core's shared gates)", () => {
+  const gate = { key: "latent_node", node: "EmptySD3LatentImage" } as const;
+  const lane = {
+    unet: "u.safetensors",
+    text_encoder: "t.safetensors",
+    vae: "v.safetensors",
+    clip_type: "qwen_image",
+    latent_node: "EmptySD3LatentImage",
+    sampling_shift: 0.5,
+  };
+
+  it("parses the four model slots and carries the gated node literal + the declared shift", () => {
+    assert.deepEqual(parseDiffusionLaneFacts(lane, "fam act", gate), {
+      unet: "u.safetensors",
+      text_encoder: "t.safetensors",
+      vae: "v.safetensors",
+      clip_type: "qwen_image",
+      node: "EmptySD3LatentImage",
+      sampling_shift: 0.5,
+    });
+  });
+
+  it("refuses a node literal outside the whitelist, naming the literal the action builds on", () => {
+    assert.throws(
+      () => parseDiffusionLaneFacts({ ...lane, latent_node: "EmptyLatentImage" }, "fam act", gate),
+      /^Error: fam act: lane_inputs\.latent_node = "EmptyLatentImage" — the action builds on EmptySD3LatentImage$/,
+    );
+  });
+
+  it("refuses a present-but-non-number sampling_shift", () => {
+    assert.throws(
+      () => parseDiffusionLaneFacts({ ...lane, sampling_shift: "4" }, "fam act", gate),
+      /^Error: fam act: lane_inputs\.sampling_shift = "4" — a number is required$/,
+    );
+  });
+
+  it("shift: false (the edit doors) skips the shift check — the core carries no shift key", () => {
+    const facts = parseDiffusionLaneFacts({ ...lane, sampling_shift: undefined }, "fam act", gate, false);
+    assert.equal("sampling_shift" in facts, false, "an edit core carries no shift key");
+    assert.equal(facts.node, "EmptySD3LatentImage");
+  });
+});
+
+describe("parseEditCap (the edit door's max_images floor)", () => {
+  it("floors a fractional cap to the integer count", () => {
+    assert.equal(parseEditCap({ max_images: 2.7 }, "fam act"), 2);
+  });
+  it("refuses an absent, non-number, non-finite, or sub-1 cap with the door's own label", () => {
+    const cases: [Record<string, unknown>, string][] = [
+      [{}, "undefined"],
+      [{ max_images: "16" }, '"16"'],
+      [{ max_images: Number.POSITIVE_INFINITY }, "null"],
+      [{ max_images: 0 }, "0"],
+    ];
+    for (const [raw, shown] of cases) {
+      assert.throws(
+        () => parseEditCap(raw, "fam act"),
+        new RegExp("^Error: fam act: lane_inputs\\.max_images = " + shown + " — a number ≥ 1 is required$"),
+      );
+    }
+  });
+});
+
+describe("loadFacts (the DECL-projection arms)", () => {
+  // A dedicated slice: the shared fixtures above never declare the
+  // per-variant projection members (hidden flag, relations, bounds),
+  // and the frozen-owner face of the exporter rule needs its own
+  // registry. Same seam as every arm here: synthetic reads, tmp slice.
+  const projDecl = {
+    defaults: {},
+    lane_inputs: {},
+    variants: [
+      {
+        id: "hidden", group: "g", label: "Hidden", route: "std",
+        hide_from_dropdown: true,
+        relations: { at_most_one: [["a", "b"]] },
+        bounds: { steps: { min: 4, max: 8 } },
+        cells: [{ quant: "q8", label: "Q", route: "std", hide_from_dropdown: true, artifact: null }],
+      },
+      {
+        id: "nullrel", group: "g", label: "NullRel", route: "nullrel",
+        relations: null,
+        bounds: null,
+        cells: [{ quant: "fp16", label: "F", route: "nullrel", artifact: null }],
+      },
+    ],
+  };
+  const projReads = {
+    registryIds: (): string[] => ["proj-model"],
+    registryModel: (id: string): unknown => (id === "proj-model" ? { variants: [{ route: "proj-model" }] } : {}),
+    getModel: (id: string): unknown => (id === "proj-model" ? projDecl : {}),
+  };
+  const projPath = join(tmp, "proj.json");
+  writeFileSync(projPath, JSON.stringify({ rows: { "proj-model": { card: "proj-card" } }, cards: { "proj-card": {} } }));
+  const projRow = loadFacts(projPath, projReads).models["proj-model"]!;
+
+  it("a hidden DECL variant rides with its flag — the projections judge it, never the loader", () => {
+    const hidden = projRow.variants[0]!;
+    assert.equal(hidden.id, "hidden");
+    assert.equal(hidden.hide_from_dropdown, true, "the variant's flag rides verbatim");
+    assert.equal(hidden.cells[0]!.hide_from_dropdown, true, "the cell's flag rides verbatim");
+  });
+
+  it("variant relations and bounds ride where declared, cloned out of the registry's live DECL", () => {
+    const declared = projRow.variants[0]!;
+    assert.deepEqual(declared.relations, { at_most_one: [["a", "b"]] });
+    assert.notEqual(
+      declared.relations, projDecl.variants[0]!.relations,
+      "a frozen snapshot, never an alias into the live DECL object",
+    );
+    assert.deepEqual(declared.bounds, { steps: { min: 4, max: 8 } });
+  });
+
+  it("a variant's null relations/bounds ride ABSENT (present-only-where-declared)", () => {
+    const nullish = projRow.variants[1]!;
+    assert.equal(nullish.id, "nullrel");
+    assert.equal("relations" in nullish, false, "null ≡ undeclared — the key stays off the row");
+    assert.equal("bounds" in nullish, false, "null ≡ undeclared — the key stays off the row");
+  });
+
+  it("a FROZEN family's claimed addresses stay absent — frozen IS the serving decision", () => {
+    const frozenReads = {
+      registryIds: (): string[] => ["frozen-owner"],
+      registryModel: (id: string): unknown =>
+        id === "frozen-owner" ? { variants: [{ route: "frozen-claim" }] } : {},
+      getModel: (id: string): unknown => (id === "frozen-owner" ? { defaults: {}, lane_inputs: {} } : {}),
+    };
+    const frozenPath = join(tmp, "frozen-owner.json");
+    writeFileSync(frozenPath, JSON.stringify({
+      rows: {
+        "frozen-owner": {
+          frozen: { id: "frozen-owner", card: "c", defaults: {}, lane_inputs: {}, variants: [], variant_groups: [], outputs: [] },
+        },
+      },
+    }));
+    const facts = loadFacts(frozenPath, frozenReads);
+    assert.equal(facts.models["frozen-owner"]!.card, "c", "the frozen row rides verbatim");
+    assert.equal(
+      facts.models["frozen-claim"], undefined,
+      "the exporter rule derives nothing beside a frozen row",
+    );
+    assert.equal(facts.owners["frozen-claim"], "frozen-owner", "the claim still resolves to its owner");
+  });
+
+  it("an exporter-derived row whose owner's card slice is missing serves an empty contract", () => {
+    // The derivation fills over the hand roster even when the owner's
+    // CARD slice is absent — the row serves with an empty outputs
+    // contract and no requires (the slice is the card's own debt, the
+    // address still resolves).
+    const slicelessReads = {
+      registryIds: (): string[] => ["sliceless-owner"],
+      registryModel: (id: string): unknown =>
+        id === "sliceless-owner" ? { variants: [{ route: "claimed-addr" }] } : {},
+      getModel: (id: string): unknown => (id === "sliceless-owner" ? { defaults: {}, lane_inputs: {} } : {}),
+    };
+    const slicelessPath = join(tmp, "sliceless.json");
+    writeFileSync(slicelessPath, JSON.stringify({
+      rows: { "sliceless-owner": { card: "no-such-card" } },
+    }));
+    const facts = loadFacts(slicelessPath, slicelessReads);
+    const row = facts.models["claimed-addr"];
+    assert.ok(row, "the claimed address still derives its row");
+    assert.deepEqual(row.outputs, [], "the missing card slice serves an empty outputs contract");
+    assert.equal(row.requires_by_family, undefined, "no requires ride without a card slice");
+    assert.equal(row.card, "no-such-card", "the owner's card attribution rides verbatim");
   });
 });
