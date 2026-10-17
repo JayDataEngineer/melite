@@ -58,9 +58,15 @@ export declare class ModelsService extends Service {
      *  registryModel. */
     getModel(id: string): ModelDecl;
     /** The variant coordinate (first declared = the family default,
-     *  the matrix law). */
+     *  the matrix law) — THE ONE RESOLVER's declared face (D6
+     *  2026-10-17): the coordinate walk is shared with the estate door
+     *  and the client mirror; this seat keeps only its ModelError
+     *  prose. Null is the unstated mark (first declared); any stated
+     *  id — the empty string included — must match or refuse loud. */
     variantOf(decl: ModelDecl, variant: string | null): DeclVariantRow;
-    /** The quant coordinate (first declared = the variant default). */
+    /** The quant coordinate (first declared = the variant default) —
+     *  the resolver's declared face over the DECL's own cells, the
+     *  stated match by quant VALUE. */
     cellOf(variantRow: DeclVariantRow, quant: string | null): CellRow | null;
     /** THE CASCADE on the inherency primitive: family = base, the
      *  resolving variant = the INTERCEPT (its resolver_defaults dict

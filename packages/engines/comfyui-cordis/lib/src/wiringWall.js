@@ -53,6 +53,20 @@
 // the engine). A malformed graph, node row, or inputs row refuses
 // here; the wall never stands down on the one shape it exists to
 // judge.
+//
+// THE COMPLETENESS GRAMMAR (B7, 2026-10-17 — the h3 inject-keys
+// burn's §CURES-OWED 5): the loop above judged only what IS wired;
+// the wall now walks the DECLARED side back too. One line: no
+// composed node ships a declared-required input without an edge, and
+// every optional-XOR pair in the either-or table is satisfied. The
+// reverse arm mirrors the engine's own prompt validation
+// (required_input_missing — probed live at v0.40.0: a declared
+// default never fills a missing key at the engine); the either-or
+// table mirrors WIDGET_SERIALIZATION_KEYS' hand discipline for the
+// pairs /object_info cannot declare (the RefModExtract av_encoder
+// XOR vae, the pack's execute law at nodes.py:1768 — the burn whose
+// extract shipped with neither edge and passed every judge that
+// existed).
 import { Service } from '@deepseek-ai/cordis';
 import { UPLOAD_EXTS } from "./comfyui-upload.js";
 import { ComposeRefusal } from '@melite/comfyui-card-kit/errors';
@@ -280,14 +294,21 @@ export function assertWiringAgainst(nodes, declaredInputs, cardId, graph) {
         if (declared === undefined)
             continue; // names-only doc: the input gate waits
         const inputs = row.inputs;
-        if (inputs === undefined)
-            continue; // nothing wired: nothing to judge
+        if (inputs === undefined) {
+            // THE REVERSE ARM sees the absent row too (B7): a node whose
+            // class declares required inputs cannot ship no inputs row at
+            // all — that is every required input missing at once. A class
+            // declaring none (optionals only) still stands down here.
+            assertRequiredEdges(cardId, id, ct, declared, EMPTY_WIRED);
+            continue;
+        }
         // A present-but-malformed inputs row REFUSES (the audit's
         // second fail-open): a node's inputs are a key→value object.
         if (inputs === null || typeof inputs !== 'object' || Array.isArray(inputs)) {
             throw new ComposeRefusal('malformed-graph', `card '${cardId}' wired node '${id}' (${ct}) with a non-object inputs row — a node's inputs are a key-to-value object (refused at the wiring wall, never at the engine)`);
         }
-        for (const [key, value] of Object.entries(inputs)) {
+        const wired = inputs;
+        for (const [key, value] of Object.entries(wired)) {
             const spec = declared.get(key);
             if (spec !== undefined) {
                 judgeValue(cardId, id, ct, key, value, spec);
@@ -316,6 +337,12 @@ export function assertWiringAgainst(nodes, declaredInputs, cardId, graph) {
                 continue;
             throw new ComposeRefusal('unknown-input', `card '${cardId}' wired '${ct}.${key}' (as '${id}') — the node declares no such input (${[...declared].sort().join(', ')}); the card's compose is stale against the engine build`);
         }
+        // THE REVERSE ARM and THE EITHER-OR ARM run after the forward
+        // pass — the wired keys judge first, so an undeclared key still
+        // refuses as unknown-input before the completeness grammar
+        // speaks (the h3 door's bare-ref_image_1 red-proof order).
+        assertRequiredEdges(cardId, id, ct, declared, wired);
+        assertEitherOrRows(cardId, id, ct, wired);
     }
 }
 /** The widget-serialization keys ComfyUI accepts on the wire but
@@ -332,4 +359,55 @@ const WIDGET_SERIALIZATION_KEYS = new Set([
     'model_options',
     'lora_ui',
 ]);
+/** The wired-keys view of a node with no inputs row at all (the
+ *  reverse arm's absent-row seat — nothing wired, everything owed). */
+const EMPTY_WIRED = {};
+const EITHER_OR_ROWS = new Map([
+    ['MiniMaxH3RefModExtract', [
+            {
+                pair: ['av_encoder', 'vae'],
+                voice: 'MiniMaxH3RefModExtract: connect an av_encoder (MiniMax-H3 VAE loader) or a standard VAE.',
+            },
+        ]],
+]);
+/** THE REVERSE ARM (the completeness grammar, B7): every built node's
+ *  /object_info-declared REQUIRED inputs must carry an edge — appear
+ *  in the node's inputs row. The forward loop above judges what IS
+ *  wired; this arm judges what is OWED. The engine's own prompt
+ *  validation is the law's depth: `required_input_missing` refuses a
+ *  prompt whose node omits ANY declared-required input, defaulted or
+ *  not (probed live against v0.40.0 — a declared default never fills
+ *  a missing key at the engine), so the wall refuses exactly what the
+ *  engine would refuse, HERE, naming the node and the input. The
+ *  estate's compose builder carries its half: GraphBuilder autofills
+ *  the declared defaults from the same doc (the card-plane service's
+ *  pinDefaults), so a lawful compose row always carries them; a row
+ *  that ships short is a stale compose. Runs before the either-or
+ *  pass (completeness first, then the pair table). */
+function assertRequiredEdges(cardId, id, ct, declared, wired) {
+    // a dotted sub-widget key ('values.a') carries its declared base
+    // input's edge — the same base-segment law the forward pass reads
+    const bases = new Set(Object.keys(wired).map((key) => key.split('.')[0]));
+    for (const [key, spec] of declared) {
+        if (!spec.required)
+            continue;
+        if (Object.hasOwn(wired, key) || bases.has(key))
+            continue;
+        throw new ComposeRefusal('missing-required', `card '${cardId}' built node '${id}' (${ct}) without its declared-required input '${key}' — /object_info declares it required and the engine refuses the prompt without it (required input is missing); the card's compose is stale against the engine build`);
+    }
+}
+/** THE EITHER-OR ARM (B7): every row in EITHER_OR_ROWS must find at
+ *  least one of its pair wired on the node. A node the table does not
+ *  name is judged by nothing here. */
+function assertEitherOrRows(cardId, id, ct, wired) {
+    const rows = EITHER_OR_ROWS.get(ct);
+    if (rows === undefined)
+        return;
+    for (const { pair, voice } of rows) {
+        const [a, b] = pair;
+        if (Object.hasOwn(wired, a) || Object.hasOwn(wired, b))
+            continue;
+        throw new ComposeRefusal('missing-required', `card '${cardId}' built node '${id}' (${ct}) with neither '${a}' nor '${b}' — the engine refuses the prompt: ${voice}`);
+    }
+}
 //# sourceMappingURL=wiringWall.js.map

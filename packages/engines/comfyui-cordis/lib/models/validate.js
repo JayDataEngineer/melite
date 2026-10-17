@@ -241,6 +241,18 @@ export function validateWriteRowsAgainstActions(declId, rows, actions) {
                     throw new ModelError(`${declId} ${row.where}: '${key}' declares ${spec.type} but carries ${typeof value}`);
                 }
             }
+            else if (spec.type === "image") {
+                // THE SCALAR MEDIA SEAT (the NO-DROP law's write half,
+                // CONTRACTS §4 debt 16): the value is a media path — a
+                // string at the wire — so the door admits strings and
+                // refuses every other tier, exactly the admission media
+                // gate's own shape (the schema walk refuses a non-path
+                // string at compose; here the write plane refuses a
+                // non-string before one is ever stamped).
+                if (typeof value !== "string") {
+                    throw new ModelError(`${declId} ${row.where}: '${key}' declares image but carries ${typeof value}`);
+                }
+            }
             else if (typeof value !== "boolean") {
                 throw new ModelError(`${declId} ${row.where}: '${key}' declares boolean but carries ${typeof value}`);
             }

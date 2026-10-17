@@ -1961,7 +1961,190 @@ window.__ModuleLoader__.load({
 			}
 			return out;
 		}
-		var RELATION_WORDS, quote, UNSTATED_REQUIRED_STEM;
+		/** THE MARRIED-KNOB AGGREGATION (#36, the recipes rework — compose
+		*  card.ts's own layering verbatim: "a call's own knobs > the lora
+		*  entry's steps > this steps row"): when a served kind declares a
+		*  knob marriage and a counting bag rides, the knob is the BAG's —
+		*  stated on the row first, else the catalog row's default,
+		*  Math.max across the bag ("8 on a 4-step distill is fine, 4 on an
+		*  8-step is undercooked"). THE ONE SPELLING (axis-unification item
+		*  6, D6 — the resolver-consolidation home, beside the voices): the
+		*  face's resolver (card-base resolveValue) displays through this
+		*  math instead of a private copy, so the display and the compose
+		*  layering cannot drift. A bag id the catalog does not serve
+		*  contributes nothing (the mod plane and the compose door refuse
+		*  unknown ids loudly — the display never invents a refusal of its
+		*  own). PURE, no I/O.
+		*
+		*  @param kind the served modifier kind (marries + catalog options).
+		*  @param bag the doc's riding array for the kind's param_key —
+		*  entries may be any shape; non-object rows contribute nothing.
+		*  @returns the knob → married value map, only knobs with at least
+		*  one finite count; absent keys are untouched by the caller. */
+		function marriedKnobValues(kind, bag) {
+			const out = {};
+			if (kind.marries === void 0) return out;
+			const catalog = new Map((kind.options ?? []).map((o) => [o.value, o]));
+			for (const knob of Object.keys(kind.marries)) {
+				const counts = [];
+				for (const row of bag) {
+					if (row === null || typeof row !== "object") continue;
+					const stated = row[knob];
+					if (typeof stated === "number" && Number.isFinite(stated)) {
+						counts.push(stated);
+						continue;
+					}
+					const id = row["id"];
+					const fromCatalog = typeof id === "string" ? catalog.get(id)?.defaults?.[knob] : void 0;
+					if (typeof fromCatalog === "number" && Number.isFinite(fromCatalog)) counts.push(fromCatalog);
+				}
+				if (counts.length > 0) out[knob] = Math.max(...counts);
+			}
+			return out;
+		}
+		/** THE DEFAULT POOL (the wire face): offered rows minus the Recipe
+		*  group; an all-Recipe family falls back to every offered row (the
+		*  recipe-only family still resolves — the door's own
+		*  configured.length gate). Exported for the seat that must refuse
+		*  an all-hidden family BEFORE its stated search (the door's early
+		*  check, order-pinned by its suite) — the pool itself has one
+		*  spelling here. */
+		function offeredPool(variants) {
+			const offered = visibleRows(variants);
+			const configured = offered.filter((v) => v.group !== "Recipe");
+			return configured.length > 0 ? configured : offered;
+		}
+		/** THE VARIANT COORDINATE, one law per scope. Stated coordinates
+		*  search the matrix the caller handed (its ids are the honest known
+		*  list on a miss); unstated coordinates resolve through the scope's
+		*  default (declared: first row; offered: the address claim, then
+		*  the pool's first row).
+		*
+		*  @param variants the caller's variant matrix — DECL rows, facts
+		*  rows, or the flat-matrix fold.
+		*  @param stated the body's `variant` value verbatim: a string —
+		*  including the empty string — is stated (the false-admit cure's
+		*  loud refusal); null/undefined (and non-strings) are unstated.
+		*  @param address the compose address (the family/route key the run
+		*  addresses); '' when the seat has none — no claim is made.
+		*  @param scope the face the caller resolves for. */
+		function resolveVariantRow(variants, stated, address, scope) {
+			if (scope === "declared") {
+				if (stated === null || stated === void 0) return {
+					status: "resolved",
+					variant: variants[0]
+				};
+				const want = typeof stated === "string" ? stated : "";
+				const hit = variants.find((v) => v.id === want);
+				if (hit === void 0) return {
+					status: "missing",
+					stated: want,
+					known: knownIds(variants)
+				};
+				return {
+					status: "resolved",
+					variant: hit
+				};
+			}
+			const want = statedOf(stated);
+			if (want !== null) {
+				const hit = variants.find((v) => v.id === want || v.route === want);
+				if (hit === void 0) return {
+					status: "missing",
+					stated: want,
+					known: knownIds(variants)
+				};
+				if (hit.hide_from_dropdown === true) return {
+					status: "hidden",
+					variant: hit
+				};
+				return {
+					status: "resolved",
+					variant: hit
+				};
+			}
+			const pool = offeredPool(variants);
+			if (pool.length === 0) return {
+				status: "pool-empty",
+				known: knownIds(variants)
+			};
+			if (address !== "") {
+				const claimed = pool.find((v) => v.route === address || visibleCells(v.cells ?? []).some((c) => c.route !== "" && c.route === address));
+				if (claimed !== void 0) return {
+					status: "resolved",
+					variant: claimed
+				};
+			}
+			return {
+				status: "resolved",
+				variant: pool[0]
+			};
+		}
+		/** THE QUANT COORDINATE, one law per scope, over the RESOLVED
+		*  variant's cells. Stated coordinates match the quant VALUE (never
+		*  the flat row id — the axisStampOf vocabulary); unstated ones
+		*  claim the address's cell, else the first (visible) cell. A
+		*  variant with no cells resolves `cell: null, quant: ''` — the
+		*  honest empty, the caller's voice names the sync break when it
+		*  must.
+		*
+		*  @param variant the resolved variant row (its cells are searched).
+		*  @param stated the body's `quant` value verbatim: a string —
+		*  including '' — is stated; null/undefined and non-strings are
+		*  unstated.
+		*  @param address the compose address; '' makes no claim.
+		*  @param scope the face the caller resolves for. */
+		function resolveCellRow(variant, stated, address, scope) {
+			const cells = variant?.cells ?? [];
+			const searched = scope === "declared" ? cells : visibleCells(cells);
+			const want = statedOf(stated);
+			if (want !== null) {
+				const hit = searched.find((c) => c.quant === want);
+				if (hit === void 0) return {
+					status: "missing",
+					stated: want,
+					known: knownQuants(searched)
+				};
+				return {
+					status: "resolved",
+					cell: hit,
+					quant: want
+				};
+			}
+			const cell = (address !== "" ? searched.find((c) => c.route !== "" && c.route === address) : void 0) ?? searched[0] ?? null;
+			return {
+				status: "resolved",
+				cell,
+				quant: cell !== null && typeof cell.quant === "string" ? cell.quant : ""
+			};
+		}
+		/** THE FLAT-MATRIX FOLD (the mirror's P2 face of the one resolver):
+		*  the served spec flattens cells into `group: 'Quant'` rows with
+		*  `owner` backrefs; the resolver reads the nested matrix. This fold
+		*  re-nests the wire rows — Variant/Recipe rows stay (a stated Recipe
+		*  id searches like at the door; the POOL still excludes it from
+		*  defaults), each row's cells become the Quant rows it OWNS, keyed
+		*  by the quant COORDINATE (never the namespaced row id — D2's stamp
+		*  plane: the address is the row's, the value is the cell's). Orphan
+		*  Quant rows (no owner match) drop — the judge could never reach
+		*  them either. The original members ride the spread verbatim.
+		*
+		*  @param rows the served spec's variants array (or any flat matrix).
+		*  @returns the nested matrix: every non-Quant row with its folded
+		*  cells attached. */
+		function variantMatrixFromFlatRows(rows) {
+			return rows.filter((r) => r.group !== "Quant").map((r) => ({
+				...r,
+				cells: rows.filter((c) => c.group === "Quant" && c.owner === r.id).map((c) => ({
+					...c,
+					id: typeof c.id === "string" ? c.id : "",
+					quant: typeof c.quant === "string" ? c.quant : "",
+					route: typeof c.route === "string" ? c.route : "",
+					...c.hide_from_dropdown === true ? { hide_from_dropdown: true } : {}
+				}))
+			}));
+		}
+		var RELATION_WORDS, quote, UNSTATED_REQUIRED_STEM, statedOf, visibleRows, visibleCells, knownIds, knownQuants;
 		var init_laneRelations = __esmMin((() => {
 			RELATION_WORDS = {
 				requires: true,
@@ -1973,6 +2156,11 @@ window.__ModuleLoader__.load({
 			};
 			quote = (fields) => fields.map((f) => "'" + f + "'").join(" + ");
 			UNSTATED_REQUIRED_STEM = "this lane requires ";
+			statedOf = (stated) => typeof stated === "string" ? stated : null;
+			visibleRows = (variants) => variants.filter((v) => v.hide_from_dropdown !== true);
+			visibleCells = (cells) => cells.filter((c) => c.hide_from_dropdown !== true);
+			knownIds = (variants) => variants.map((v) => v.id);
+			knownQuants = (cells) => cells.map((c) => typeof c.quant === "string" ? c.quant : "");
 		}));
 		//#endregion
 		//#region ../../web-kit/contracts/lib/FlowTypes.js
@@ -3113,6 +3301,7 @@ window.__ModuleLoader__.load({
 			loraIdOf: () => loraIdOf,
 			loraLabel: () => loraLabel,
 			loraStrengthBoundsOf: () => loraStrengthBoundsOf,
+			marriedKnobValues: () => marriedKnobValues,
 			modifiersFeatureOf: () => modifiersFeatureOf,
 			moveItem: () => moveItem,
 			newControlnetEntry: () => newControlnetEntry,
@@ -3122,8 +3311,11 @@ window.__ModuleLoader__.load({
 			normalizeBenchStages: () => normalizeBenchStages,
 			normalizeLoraEntry: () => normalizeLoraEntry,
 			normalizeSegmentStatus: () => normalizeSegmentStatus,
+			offeredPool: () => offeredPool,
 			projectStageView: () => projectStageView$1,
 			projectUpstreamStages: () => projectUpstreamStages$1,
+			resolveCellRow: () => resolveCellRow,
+			resolveVariantRow: () => resolveVariantRow,
 			rootsManifest: () => rootsManifest,
 			runMediaPrefixOf: () => runMediaPrefixOf,
 			runTailOf: () => runTailOf,
@@ -3138,7 +3330,8 @@ window.__ModuleLoader__.load({
 			subcardId: () => subcardId,
 			subcardsFromParams: () => subcardsFromParams,
 			unknownQuantVoice: () => unknownQuantVoice,
-			unknownVariantVoice: () => unknownVariantVoice
+			unknownVariantVoice: () => unknownVariantVoice,
+			variantMatrixFromFlatRows: () => variantMatrixFromFlatRows
 		});
 		var init_lib$1 = __esmMin((() => {
 			init_extraKeys();
@@ -9752,8 +9945,8 @@ window.__ModuleLoader__.load({
 		}
 		//#endregion
 		//#region \0dsh-css:packages/motion/motion/src/ui/studio/component.module.css.mjs
-		const css$3 = "@keyframes ihGs4q_motionSpin{to{transform:rotate(360deg)}}.ihGs4q_shellPad{gap:8px;padding:12px 16px}.ihGs4q_railGrid{border-bottom:1px solid color-mix(in srgb, var(--dsw-alias-border,#e2e4e9) 45%, transparent);grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;padding:10px 12px;display:grid}.ihGs4q_railPanel{grid-column:1/-1;min-width:0}.ihGs4q_railGroupLabelMt{text-transform:uppercase;letter-spacing:.14em;color:color-mix(in srgb, var(--dsw-alias-label-secondary) 40%, transparent);grid-column:span 2;margin-top:4px;padding:0 4px 2px;font-size:9px;font-weight:600}.ihGs4q_contents{display:contents}.ihGs4q_railBtn{border:1px solid #0000;border-radius:6px;justify-content:center;align-items:center;gap:6px;width:100%;height:32px;padding:0 6px;font-size:10px;font-weight:500;transition:color .12s,background-color .12s,border-color .12s;display:flex}.ihGs4q_railBtn:disabled{cursor:not-allowed;opacity:.4}.ihGs4q_railBtnActive{border-color:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 50%, transparent);background:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 15%, transparent);color:var(--dsw-alias-accent,#3b82f6)}.ihGs4q_railBtnIdle{border-color:color-mix(in srgb, var(--dsw-alias-border,#e2e4e9) 50%, transparent);background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 30%, transparent);color:var(--dsw-alias-label-secondary)}.ihGs4q_railBtnIdle:hover{border-color:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 40%, transparent);color:var(--dsw-alias-accent,#3b82f6)}.ihGs4q_railBtnEditActive{border-color:color-mix(in srgb, var(--dsw-alias-danger,#dc2626) 60%, transparent);background:color-mix(in srgb, var(--dsw-alias-danger,#dc2626) 15%, transparent);color:var(--dsw-alias-danger,#dc2626)}.ihGs4q_stampBtn{border:1px solid color-mix(in srgb, var(--dsw-alias-danger,#dc2626) 70%, transparent);background:color-mix(in srgb, var(--dsw-alias-danger,#dc2626) 20%, transparent);width:100%;height:32px;color:var(--dsw-alias-danger,#dc2626);border-radius:6px;justify-content:center;align-items:center;gap:6px;padding:0 6px;font-size:10px;font-weight:600;transition:color .12s,background-color .12s,border-color .12s;display:flex}.ihGs4q_stampBtn:hover{background:color-mix(in srgb, var(--dsw-alias-danger,#dc2626) 30%, transparent)}.ihGs4q_stampBtn:disabled{opacity:.5}.ihGs4q_reposeBtn{border:1px solid color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 60%, transparent);background:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 15%, transparent);width:100%;height:32px;color:var(--dsw-alias-accent,#3b82f6);border-radius:6px;justify-content:center;align-items:center;gap:6px;padding:0 6px;font-size:10px;font-weight:600;transition:color .12s,background-color .12s,border-color .12s;display:flex}.ihGs4q_reposeBtn:hover{background:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 25%, transparent)}.ihGs4q_reposeBtn:disabled{opacity:.5}.ihGs4q_railBtnDanger{border:1px solid color-mix(in srgb, var(--dsw-alias-border,#e2e4e9) 50%, transparent);background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 30%, transparent);width:100%;height:32px;color:var(--dsw-alias-label-secondary);border-radius:6px;justify-content:center;align-items:center;gap:6px;padding:0 6px;font-size:10px;font-weight:500;transition:color .12s,background-color .12s,border-color .12s;display:flex}.ihGs4q_railBtnDanger:hover{border-color:color-mix(in srgb, var(--dsw-alias-danger,#dc2626) 50%, transparent);color:var(--dsw-alias-danger,#dc2626)}.ihGs4q_bgBtnIdle{border:1px solid color-mix(in srgb, var(--dsw-alias-border,#e2e4e9) 50%, transparent);background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 30%, transparent);width:100%;height:32px;color:var(--dsw-alias-label-secondary);border-radius:6px;justify-content:center;align-items:center;gap:6px;padding:0 6px;font-size:10px;font-weight:500;transition:color .12s,background-color .12s,border-color .12s;display:flex}.ihGs4q_bgBtnIdle:hover{border-color:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 50%, transparent);color:var(--dsw-alias-accent,#3b82f6)}.ihGs4q_hiddenInput{display:none}.ihGs4q_bodySquareWrap{grid-column:span 2;justify-content:center;padding:4px 0;display:flex}.ihGs4q_bodyNotice{border:1px solid color-mix(in srgb, var(--dsw-alias-danger,#dc2626) 40%, transparent);background:color-mix(in srgb, var(--dsw-alias-danger,#dc2626) 10%, transparent);color:var(--dsw-alias-danger,#dc2626);border-radius:4px;grid-column:span 2;padding:4px 6px;font-size:9px;line-height:1.6}.ihGs4q_bodyEmptyIcon{width:20px;height:20px;color:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 60%, transparent)}.ihGs4q_wireBtn{background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 90%, transparent);border-radius:4px;justify-content:center;align-items:center;width:20px;height:20px;display:flex}.ihGs4q_wireBtn:hover,.ihGs4q_wireBtnOn{color:var(--dsw-alias-accent,#3b82f6)}.ihGs4q_wireBtnOff{color:color-mix(in srgb, var(--dsw-alias-label-secondary) 70%, transparent)}.ihGs4q_centerRow{flex:1;gap:8px;min-height:0;display:flex}.ihGs4q_stageFrame{min-width:0;transition:color .12s,background-color .12s,border-color .12s}.ihGs4q_stageFrameDrag{border-color:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 80%, transparent);box-shadow:0 0 0 2px color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 40%, transparent)}.ihGs4q_ovBg{z-index:0}.ihGs4q_ovCam{z-index:30}.ihGs4q_ovDrop{pointer-events:none;z-index:20}.ihGs4q_ovRect{pointer-events:none;z-index:40}.ihGs4q_bgImg{pointer-events:none;object-fit:cover;width:100%;height:100%}.ihGs4q_dropVeil{background:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 10%, transparent);backdrop-filter:blur(1px);justify-content:center;align-items:center;width:100%;height:100%;display:flex}.ihGs4q_dropVeilLabel{background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 80%, transparent);color:var(--dsw-alias-accent,#3b82f6);border-radius:6px;padding:6px 12px;font-size:11px;font-weight:500}.ihGs4q_stageLoading{height:100%;color:color-mix(in srgb, var(--dsw-alias-label-secondary) 60%, transparent);flex-direction:column;justify-content:center;align-items:center;gap:8px;display:flex}.ihGs4q_skelAvatar{border-radius:999px;width:96px;height:96px}.ihGs4q_skelAvatarSm{border-radius:999px;width:80px;height:80px}.ihGs4q_skelLine{width:112px;height:12px}.ihGs4q_stageVeil{background:color-mix(in srgb, var(--melite-stage-bg) 60%, transparent);width:100%;height:100%;color:color-mix(in srgb, var(--dsw-alias-label-secondary) 70%, transparent);flex-direction:column;justify-content:center;align-items:center;gap:8px;display:flex}.ihGs4q_warnIcon{width:24px;height:24px;color:color-mix(in srgb, var(--dsw-alias-danger,#dc2626) 70%, transparent)}.ihGs4q_veilText{font-size:12px}.ihGs4q_camPill{box-shadow:none;background:0 0;border:0;border-radius:999px;align-items:center;gap:4px;padding:4px;display:flex}.ihGs4q_camPill>span{flex:none;display:inline-flex}.ihGs4q_camBtn,.ihGs4q_frameBtn{box-sizing:border-box;background:0 0;border:0;flex:none;padding:0}.ihGs4q_camBtn{border:1px solid color-mix(in srgb, var(--dsw-alias-border,#e2e4e9) 50%, transparent);background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 30%, transparent);width:28px;height:28px;color:var(--dsw-alias-label-secondary);border-radius:999px;justify-content:center;align-items:center;transition:color .12s,background-color .12s,border-color .12s;display:flex}.ihGs4q_camBtn:hover{background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 40%, transparent);color:var(--dsw-alias-accent,#3b82f6)}.ihGs4q_camDivider{background:color-mix(in srgb, var(--dsw-alias-border,#e2e4e9) 60%, transparent);width:1px;height:16px;margin:0 2px}.ihGs4q_frameBtn{border-radius:999px;justify-content:center;align-items:center;width:28px;height:28px;transition:color .12s,background-color .12s,border-color .12s;display:flex}.ihGs4q_frameBtnActive{background:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 15%, transparent);color:var(--dsw-alias-accent,#3b82f6)}.ihGs4q_frameBtnIdle{border:1px solid color-mix(in srgb, var(--dsw-alias-border,#e2e4e9) 50%, transparent);background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 30%, transparent);color:var(--dsw-alias-label-secondary)}.ihGs4q_frameBtnIdle:hover{background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 40%, transparent);color:var(--dsw-alias-accent,#3b82f6)}.ihGs4q_exportRect{pointer-events:auto;cursor:move;touch-action:none;border:2px solid var(--dsw-alias-accent,#3b82f6);position:absolute}.ihGs4q_cornerHandle{background:var(--dsw-alias-accent,#3b82f6);border:2px solid #fff;border-radius:999px;width:12px;height:12px;position:absolute}.ihGs4q_cornerNW{cursor:nwse-resize;top:-6px;left:-6px}.ihGs4q_cornerNE{cursor:nesw-resize;top:-6px;right:-6px}.ihGs4q_cornerSW{cursor:nesw-resize;bottom:-6px;left:-6px}.ihGs4q_cornerSE{cursor:nwse-resize;bottom:-6px;right:-6px}.ihGs4q_crossV{pointer-events:none;background:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 60%, transparent);width:1px;height:12px;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)}.ihGs4q_crossH{pointer-events:none;background:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 60%, transparent);width:12px;height:1px;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)}.ihGs4q_rectHint{border:1px solid color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 30%, transparent);background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 80%, transparent);color:var(--dsw-alias-accent,#3b82f6);backdrop-filter:blur(4px);border-radius:999px;padding:4px 12px;font-size:10px;box-shadow:0 8px 28px -12px #00000073}.ihGs4q_timelineShell{border-color:color-mix(in srgb, var(--dsw-alias-border,#e2e4e9) 40%, transparent);border-radius:8px}.ihGs4q_transportHead{border-color:color-mix(in srgb, var(--dsw-alias-border,#e2e4e9) 40%, transparent);background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 20%, transparent);flex-wrap:wrap;padding:6px 12px}.ihGs4q_playBtn{width:32px;height:32px;color:var(--dsw-alias-label-primary);background:#ffffff1a;border-radius:999px;flex-shrink:0;justify-content:center;align-items:center;transition:color .12s,background-color .12s,border-color .12s;display:flex}.ihGs4q_playBtn:hover{background:#fff3}.ihGs4q_playBtn:disabled{cursor:not-allowed;opacity:.4}.ihGs4q_playIcon{width:14px;height:14px;margin-left:2px}.ihGs4q_timeWrap{flex-shrink:0;font-size:11px}.ihGs4q_timeText{font-variant-numeric:tabular-nums;color:color-mix(in srgb, var(--dsw-alias-label-primary) 80%, transparent);font-family:ui-monospace,monospace}.ihGs4q_noMotion{color:color-mix(in srgb, var(--dsw-alias-label-secondary) 60%, transparent);align-items:center;gap:4px;display:flex}.ihGs4q_fpsChip{color:color-mix(in srgb, var(--dsw-alias-label-primary) 60%, transparent);background:#ffffff1a;border-radius:4px;flex-shrink:0;padding:2px 6px;font-family:ui-monospace,monospace;font-size:10px;display:none}@media (width>=640px){.ihGs4q_fpsChip{display:block}}.ihGs4q_hintWrap{align-items:center;gap:8px;display:flex}.ihGs4q_hintTitle{text-transform:uppercase;letter-spacing:.025em;color:color-mix(in srgb, var(--dsw-alias-label-secondary) 70%, transparent);flex-shrink:0;font-size:10px;font-weight:600}.ihGs4q_addCardBtn{border:1px solid color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 60%, transparent);background:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 15%, transparent);color:var(--dsw-alias-accent,#3b82f6);border-radius:999px;align-items:center;gap:4px;padding:2px 10px;font-size:10px;font-weight:600;transition:color .12s,background-color .12s,border-color .12s;display:flex}.ihGs4q_addCardBtn:hover{background:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 25%, transparent)}.ihGs4q_addCardBtn:disabled{cursor:not-allowed;opacity:.4}.ihGs4q_timelineEmpty{color:color-mix(in srgb, var(--dsw-alias-label-secondary) 60%, transparent);justify-content:center;align-items:center;gap:6px;padding:24px 12px;font-size:11px;display:flex}.ihGs4q_editHintBar{background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 20%, transparent);color:color-mix(in srgb, var(--dsw-alias-label-secondary) 60%, transparent);flex-shrink:0;align-items:flex-start;gap:8px;padding:8px 12px;font-size:10px;display:flex}.ihGs4q_editHintIcon{width:12px;height:12px;color:color-mix(in srgb, var(--dsw-alias-danger,#dc2626) 70%, transparent);flex-shrink:0;margin-top:2px}.ihGs4q_editHintStrong{color:color-mix(in srgb, var(--dsw-alias-label-secondary) 80%, transparent)}.ihGs4q_i12{width:12px;height:12px}.ihGs4q_i14{width:14px;height:14px}.ihGs4q_spinIcon{width:14px;height:14px;animation:1s linear infinite ihGs4q_motionSpin}";
-		const tagId$3 = "@melite/motion-motion/component.module.css@65e30384";
+		const css$3 = "@keyframes ihGs4q_motionSpin{to{transform:rotate(360deg)}}.ihGs4q_shellPad{gap:8px;padding:12px 16px}.ihGs4q_railGrid{border-bottom:1px solid color-mix(in srgb, var(--dsw-alias-border,#e2e4e9) 45%, transparent);grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;padding:10px 12px;display:grid}.ihGs4q_railPanel{grid-column:1/-1;min-width:0}.ihGs4q_railGroupLabelMt{text-transform:uppercase;letter-spacing:.14em;color:color-mix(in srgb, var(--dsw-alias-label-secondary) 40%, transparent);grid-column:span 2;margin-top:4px;padding:0 4px 2px;font-size:9px;font-weight:600}.ihGs4q_contents{display:contents}.ihGs4q_bgSquareWrap{grid-column:1/-1;justify-content:center;padding:4px 0;display:flex}.ihGs4q_bodySquareWrap{grid-column:span 2;justify-content:center;padding:4px 0;display:flex}.ihGs4q_bodyNotice{border:1px solid color-mix(in srgb, var(--dsw-alias-danger,#dc2626) 40%, transparent);background:color-mix(in srgb, var(--dsw-alias-danger,#dc2626) 10%, transparent);color:var(--dsw-alias-danger,#dc2626);border-radius:4px;grid-column:span 2;padding:4px 6px;font-size:9px;line-height:1.6}.ihGs4q_bodyEmptyIcon{width:20px;height:20px;color:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 60%, transparent)}.ihGs4q_wireBtn{background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 90%, transparent);border-radius:4px;justify-content:center;align-items:center;width:20px;height:20px;display:flex}.ihGs4q_wireBtn:hover,.ihGs4q_wireBtnOn{color:var(--dsw-alias-accent,#3b82f6)}.ihGs4q_wireBtnOff{color:color-mix(in srgb, var(--dsw-alias-label-secondary) 70%, transparent)}.ihGs4q_centerRow{flex:1;gap:8px;min-height:0;display:flex}.ihGs4q_stageFrame{min-width:0;transition:color .12s,background-color .12s,border-color .12s}.ihGs4q_stageFrameDrag{border-color:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 80%, transparent);box-shadow:0 0 0 2px color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 40%, transparent)}.ihGs4q_ovBg{z-index:0}.ihGs4q_ovCam{z-index:30}.ihGs4q_ovDrop{pointer-events:none;z-index:20}.ihGs4q_ovRect{pointer-events:none;z-index:40}.ihGs4q_bgImg{pointer-events:none;object-fit:cover;width:100%;height:100%}.ihGs4q_dropVeil{background:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 10%, transparent);backdrop-filter:blur(1px);justify-content:center;align-items:center;width:100%;height:100%;display:flex}.ihGs4q_dropVeilLabel{background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 80%, transparent);color:var(--dsw-alias-accent,#3b82f6);border-radius:6px;padding:6px 12px;font-size:11px;font-weight:500}.ihGs4q_stageLoading{height:100%;color:color-mix(in srgb, var(--dsw-alias-label-secondary) 60%, transparent);flex-direction:column;justify-content:center;align-items:center;gap:8px;display:flex}.ihGs4q_skelAvatar{border-radius:999px;width:96px;height:96px}.ihGs4q_skelAvatarSm{border-radius:999px;width:80px;height:80px}.ihGs4q_skelLine{width:112px;height:12px}.ihGs4q_stageVeil{background:color-mix(in srgb, var(--melite-stage-bg) 60%, transparent);width:100%;height:100%;color:color-mix(in srgb, var(--dsw-alias-label-secondary) 70%, transparent);flex-direction:column;justify-content:center;align-items:center;gap:8px;display:flex}.ihGs4q_warnIcon{width:24px;height:24px;color:color-mix(in srgb, var(--dsw-alias-danger,#dc2626) 70%, transparent)}.ihGs4q_veilText{font-size:12px}.ihGs4q_camPill{align-items:center;gap:4px;padding:4px;display:flex}.ihGs4q_camPill>span{flex:none;display:inline-flex}.ihGs4q_camDivider{background:color-mix(in srgb, var(--dsw-alias-border,#e2e4e9) 60%, transparent);width:1px;height:16px;margin:0 2px}.ihGs4q_exportRect{pointer-events:auto;cursor:move;touch-action:none;border:2px solid var(--dsw-alias-accent,#3b82f6);position:absolute}.ihGs4q_cornerHandle{background:var(--dsw-alias-accent,#3b82f6);border:2px solid #fff;border-radius:999px;width:12px;height:12px;position:absolute}.ihGs4q_cornerNW{cursor:nwse-resize;top:-6px;left:-6px}.ihGs4q_cornerNE{cursor:nesw-resize;top:-6px;right:-6px}.ihGs4q_cornerSW{cursor:nesw-resize;bottom:-6px;left:-6px}.ihGs4q_cornerSE{cursor:nwse-resize;bottom:-6px;right:-6px}.ihGs4q_crossV{pointer-events:none;background:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 60%, transparent);width:1px;height:12px;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)}.ihGs4q_crossH{pointer-events:none;background:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 60%, transparent);width:12px;height:1px;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)}.ihGs4q_rectHint{border:1px solid color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 30%, transparent);background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 80%, transparent);color:var(--dsw-alias-accent,#3b82f6);backdrop-filter:blur(4px);border-radius:999px;padding:4px 12px;font-size:10px;box-shadow:0 8px 28px -12px #00000073}.ihGs4q_timelineShell{border-color:color-mix(in srgb, var(--dsw-alias-border,#e2e4e9) 40%, transparent);border-radius:8px}.ihGs4q_transportHead{border-color:color-mix(in srgb, var(--dsw-alias-border,#e2e4e9) 40%, transparent);background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 20%, transparent);flex-wrap:wrap;padding:6px 12px}.ihGs4q_playBtn{width:32px;height:32px;color:var(--dsw-alias-label-primary);background:#ffffff1a;border-radius:999px;flex-shrink:0;justify-content:center;align-items:center;transition:color .12s,background-color .12s,border-color .12s;display:flex}.ihGs4q_playBtn:hover{background:#fff3}.ihGs4q_playBtn:disabled{cursor:not-allowed;opacity:.4}.ihGs4q_playIcon{width:14px;height:14px;margin-left:2px}.ihGs4q_timeWrap{flex-shrink:0;font-size:11px}.ihGs4q_timeText{font-variant-numeric:tabular-nums;color:color-mix(in srgb, var(--dsw-alias-label-primary) 80%, transparent);font-family:ui-monospace,monospace}.ihGs4q_noMotion{color:color-mix(in srgb, var(--dsw-alias-label-secondary) 60%, transparent);align-items:center;gap:4px;display:flex}.ihGs4q_fpsChip{color:color-mix(in srgb, var(--dsw-alias-label-primary) 60%, transparent);background:#ffffff1a;border-radius:4px;flex-shrink:0;padding:2px 6px;font-family:ui-monospace,monospace;font-size:10px;display:none}@media (width>=640px){.ihGs4q_fpsChip{display:block}}.ihGs4q_hintWrap{align-items:center;gap:8px;display:flex}.ihGs4q_hintTitle{text-transform:uppercase;letter-spacing:.025em;color:color-mix(in srgb, var(--dsw-alias-label-secondary) 70%, transparent);flex-shrink:0;font-size:10px;font-weight:600}.ihGs4q_addCardBtn{border:1px solid color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 60%, transparent);background:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 15%, transparent);color:var(--dsw-alias-accent,#3b82f6);border-radius:999px;align-items:center;gap:4px;padding:2px 10px;font-size:10px;font-weight:600;transition:color .12s,background-color .12s,border-color .12s;display:flex}.ihGs4q_addCardBtn:hover{background:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 25%, transparent)}.ihGs4q_addCardBtn:disabled{cursor:not-allowed;opacity:.4}.ihGs4q_timelineEmpty{color:color-mix(in srgb, var(--dsw-alias-label-secondary) 60%, transparent);justify-content:center;align-items:center;gap:6px;padding:24px 12px;font-size:11px;display:flex}.ihGs4q_editHintBar{background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 20%, transparent);color:color-mix(in srgb, var(--dsw-alias-label-secondary) 60%, transparent);flex-shrink:0;align-items:flex-start;gap:8px;padding:8px 12px;font-size:10px;display:flex}.ihGs4q_editHintIcon{width:12px;height:12px;color:color-mix(in srgb, var(--dsw-alias-danger,#dc2626) 70%, transparent);flex-shrink:0;margin-top:2px}.ihGs4q_editHintStrong{color:color-mix(in srgb, var(--dsw-alias-label-secondary) 80%, transparent)}.ihGs4q_i12{width:12px;height:12px}.ihGs4q_i14{width:14px;height:14px}.ihGs4q_spinIcon{width:14px;height:14px;animation:1s linear infinite ihGs4q_motionSpin}";
+		const tagId$3 = "@melite/motion-motion/component.module.css@f2e7bed9";
 		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId$3) + "]") === null) {
 			const tag = document.createElement("style");
 			tag.dataset.plugin = "@melite/motion-motion";
@@ -9763,12 +9956,11 @@ window.__ModuleLoader__.load({
 		}
 		var component_module_css_default = {
 			"addCardBtn": "ihGs4q_addCardBtn",
-			"bgBtnIdle": "ihGs4q_bgBtnIdle",
 			"bgImg": "ihGs4q_bgImg",
+			"bgSquareWrap": "ihGs4q_bgSquareWrap",
 			"bodyEmptyIcon": "ihGs4q_bodyEmptyIcon",
 			"bodyNotice": "ihGs4q_bodyNotice",
 			"bodySquareWrap": "ihGs4q_bodySquareWrap",
-			"camBtn": "ihGs4q_camBtn",
 			"camDivider": "ihGs4q_camDivider",
 			"camPill": "ihGs4q_camPill",
 			"centerRow": "ihGs4q_centerRow",
@@ -9787,10 +9979,6 @@ window.__ModuleLoader__.load({
 			"editHintStrong": "ihGs4q_editHintStrong",
 			"exportRect": "ihGs4q_exportRect",
 			"fpsChip": "ihGs4q_fpsChip",
-			"frameBtn": "ihGs4q_frameBtn",
-			"frameBtnActive": "ihGs4q_frameBtnActive",
-			"frameBtnIdle": "ihGs4q_frameBtnIdle",
-			"hiddenInput": "ihGs4q_hiddenInput",
 			"hintTitle": "ihGs4q_hintTitle",
 			"hintWrap": "ihGs4q_hintWrap",
 			"i12": "ihGs4q_i12",
@@ -9803,16 +9991,10 @@ window.__ModuleLoader__.load({
 			"ovRect": "ihGs4q_ovRect",
 			"playBtn": "ihGs4q_playBtn",
 			"playIcon": "ihGs4q_playIcon",
-			"railBtn": "ihGs4q_railBtn",
-			"railBtnActive": "ihGs4q_railBtnActive",
-			"railBtnDanger": "ihGs4q_railBtnDanger",
-			"railBtnEditActive": "ihGs4q_railBtnEditActive",
-			"railBtnIdle": "ihGs4q_railBtnIdle",
 			"railGrid": "ihGs4q_railGrid",
 			"railGroupLabelMt": "ihGs4q_railGroupLabelMt",
 			"railPanel": "ihGs4q_railPanel",
 			"rectHint": "ihGs4q_rectHint",
-			"reposeBtn": "ihGs4q_reposeBtn",
 			"shellPad": "ihGs4q_shellPad",
 			"skelAvatar": "ihGs4q_skelAvatar",
 			"skelAvatarSm": "ihGs4q_skelAvatarSm",
@@ -9822,7 +10004,6 @@ window.__ModuleLoader__.load({
 			"stageFrameDrag": "ihGs4q_stageFrameDrag",
 			"stageLoading": "ihGs4q_stageLoading",
 			"stageVeil": "ihGs4q_stageVeil",
-			"stampBtn": "ihGs4q_stampBtn",
 			"timeText": "ihGs4q_timeText",
 			"timeWrap": "ihGs4q_timeWrap",
 			"timelineEmpty": "ihGs4q_timelineEmpty",
@@ -9974,10 +10155,6 @@ window.__ModuleLoader__.load({
 			outputGroup: "Output",
 			/** Rail toggle: the export panel. */
 			railExport: "Export",
-			/** Clear-background action (tip + aria share the face). */
-			clearBgAria: "Clear the background image",
-			/** Clear-background button face. */
-			clearBgButton: "Clear",
 			/** Rail group label: the preview-body input subcard. */
 			previewBody: "Preview body",
 			/** Wire-button aria name for the preview-body slot. */
@@ -13994,7 +14171,7 @@ window.__ModuleLoader__.load({
 		}
 		//#endregion
 		//#region src/ui/studio/MotionRail.tsx
-		function MotionRail({ effectiveNpz, showSkeleton, setShowSkeleton, inPlace, setInPlace, editMode, toggleEdit, fullbodyKfAtFrame, frameIdx, stampConstraintAtFrame, editableJoints, handleRepose, reposing, keptEdit, discardKeptEdit, kimodoSpec, kimodoError, paramValues, onParamEdit, exportOpen, setExportOpen, bgImage, bgInputRef, handleBgFile, setBg, bodySrc, bodyWired, bodyWiredUpstream, bodyWiredUrl, handleBodyFile, toast, attachBody, onWireSlot, bodySlotIdx, onSave, stage, setBodyWireOpen, bodyNotice }) {
+		function MotionRail({ effectiveNpz, showSkeleton, setShowSkeleton, inPlace, setInPlace, editMode, toggleEdit, fullbodyKfAtFrame, frameIdx, stampConstraintAtFrame, editableJoints, handleRepose, reposing, keptEdit, discardKeptEdit, kimodoSpec, kimodoError, paramValues, onParamEdit, exportOpen, setExportOpen, bgImage, handleBgFile, setBg, bodySrc, bodyWired, bodyWiredUpstream, bodyWiredUrl, handleBodyFile, toast, attachBody, onWireSlot, bodySlotIdx, onSave, stage, setBodyWireOpen, bodyNotice }) {
 			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 				className: component_module_css_default.railGrid,
 				children: [
@@ -14004,10 +14181,11 @@ window.__ModuleLoader__.load({
 						children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 							className: component_module_css_default.contents,
 							children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(_deepseek_ai_dsh_client_ui_primitives.Button, {
-								variant: "ghost",
+								variant: showSkeleton ? "primary" : "outline",
+								size: "sm",
 								onClick: () => setShowSkeleton((s) => !s),
 								disabled: !effectiveNpz,
-								className: (0, _melite_card_base_client.cn)(component_module_css_default.railBtn, showSkeleton ? component_module_css_default.railBtnActive : component_module_css_default.railBtnIdle),
+								"aria-pressed": showSkeleton,
 								children: [showSkeleton ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.EyeAlt, { className: component_module_css_default.i14 }) : /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.EyeOff, { className: component_module_css_default.i14 }), motionCopy.skeletonToggle]
 							})
 						})
@@ -14017,11 +14195,11 @@ window.__ModuleLoader__.load({
 						children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 							className: component_module_css_default.contents,
 							children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(_deepseek_ai_dsh_client_ui_primitives.Button, {
-								variant: "ghost",
+								variant: inPlace ? "primary" : "outline",
+								size: "sm",
 								onClick: () => setInPlace((v) => !v),
 								disabled: !effectiveNpz,
 								"aria-pressed": inPlace,
-								className: (0, _melite_card_base_client.cn)(component_module_css_default.railBtn, inPlace ? component_module_css_default.railBtnActive : component_module_css_default.railBtnIdle),
 								children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.Target, { className: component_module_css_default.i14 }), motionCopy.inPlaceToggle]
 							})
 						})
@@ -14035,10 +14213,11 @@ window.__ModuleLoader__.load({
 						children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 							className: component_module_css_default.contents,
 							children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(_deepseek_ai_dsh_client_ui_primitives.Button, {
-								variant: "ghost",
+								variant: editMode ? "primary" : "outline",
+								size: "sm",
 								onClick: toggleEdit,
 								disabled: !effectiveNpz,
-								className: (0, _melite_card_base_client.cn)(component_module_css_default.railBtn, editMode ? component_module_css_default.railBtnEditActive : component_module_css_default.railBtnIdle),
+								"aria-pressed": editMode,
 								children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.Move, { className: component_module_css_default.i14 }), editMode ? motionCopy.poseDone : motionCopy.refinePose]
 							})
 						})
@@ -14048,10 +14227,10 @@ window.__ModuleLoader__.load({
 						children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 							className: component_module_css_default.contents,
 							children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(_deepseek_ai_dsh_client_ui_primitives.Button, {
-								variant: "ghost",
+								variant: "primary",
+								size: "sm",
 								onClick: stampConstraintAtFrame,
 								disabled: !editableJoints,
-								className: component_module_css_default.stampBtn,
 								children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.Target, { className: component_module_css_default.i14 }), motionCopy.stamp]
 							})
 						})
@@ -14060,10 +14239,10 @@ window.__ModuleLoader__.load({
 						children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 							className: component_module_css_default.contents,
 							children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(_deepseek_ai_dsh_client_ui_primitives.Button, {
-								variant: "ghost",
+								variant: "primary",
+								size: "sm",
 								onClick: handleRepose,
 								disabled: reposing || !editableJoints,
-								className: component_module_css_default.reposeBtn,
 								children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.IconRefreshOutlineRegular, { className: reposing ? component_module_css_default.spinIcon : component_module_css_default.i14 }), reposing ? motionCopy.reposing : motionCopy.repose]
 							})
 						})
@@ -14071,9 +14250,9 @@ window.__ModuleLoader__.load({
 					!editMode && keptEdit && keptEdit.frame === frameIdx && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.Tip, {
 						tip: "Discard the refined pose at this frame — revert to the raw motion",
 						children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(_deepseek_ai_dsh_client_ui_primitives.Button, {
-							variant: "ghost",
+							variant: "outline",
+							size: "sm",
 							onClick: discardKeptEdit,
-							className: component_module_css_default.railBtnDanger,
 							children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.RotateCcw, { className: component_module_css_default.i14 }), motionCopy.resetPose]
 						})
 					}),
@@ -14111,40 +14290,26 @@ window.__ModuleLoader__.load({
 						children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 							className: component_module_css_default.contents,
 							children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(_deepseek_ai_dsh_client_ui_primitives.Button, {
-								variant: "ghost",
+								variant: exportOpen ? "primary" : "outline",
+								size: "sm",
 								onClick: () => setExportOpen((o) => !o),
 								disabled: !effectiveNpz,
 								"aria-pressed": exportOpen,
-								className: (0, _melite_card_base_client.cn)(component_module_css_default.railBtn, exportOpen ? component_module_css_default.railBtnActive : component_module_css_default.railBtnIdle),
 								children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.IconDownloadOutlineRegular, { className: component_module_css_default.i14 }), motionCopy.railExport]
 							})
 						})
 					}),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.Tip, {
-						tip: bgImage ? "Replace the background image behind the mannequin (or drop an asset/file on the stage)" : "Set a background image behind the mannequin — click to pick, or drop an asset/file on the stage",
-						children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(_deepseek_ai_dsh_client_ui_primitives.Button, {
-							variant: "ghost",
-							onClick: () => bgInputRef.current?.click(),
-							className: component_module_css_default.bgBtnIdle,
-							children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.ImagePlus, { className: component_module_css_default.i14 }), motionCopy.background]
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+						className: component_module_css_default.bgSquareWrap,
+						"data-motion-bg": true,
+						children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.SourceRow, {
+							label: motionCopy.background,
+							kind: "image",
+							value: bgImage,
+							onEdit: (v) => setBg(v === "" ? null : v),
+							onFile: handleBgFile,
+							loadMedia: _melite_card_base_client.fetchMediaLibrary
 						})
-					}),
-					bgImage && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.Tip, {
-						tip: motionCopy.clearBgAria,
-						children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(_deepseek_ai_dsh_client_ui_primitives.Button, {
-							variant: "ghost",
-							onClick: () => setBg(null),
-							"aria-label": motionCopy.clearBgAria,
-							className: component_module_css_default.railBtnDanger,
-							children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.IconCloseOutlineRegular, { className: component_module_css_default.i14 }), motionCopy.clearBgButton]
-						})
-					}),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("input", {
-						ref: bgInputRef,
-						type: "file",
-						accept: "image/*",
-						className: component_module_css_default.hiddenInput,
-						onChange: (e) => handleBgFile(e.target.files?.[0] ?? null)
 					}),
 					/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.SectionLabel, {
 						className: component_module_css_default.railGroupLabelMt,
@@ -16919,7 +17084,6 @@ window.__ModuleLoader__.load({
 											size: "sm",
 											onClick: () => setCameraView(stepAzimuth(cameraView, -1)),
 											"aria-label": motionCopy.rotateLeft,
-											className: component_module_css_default.camBtn,
 											children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.RotateCcw, { className: component_module_css_default.i14 })
 										})
 									}),
@@ -16927,24 +17091,22 @@ window.__ModuleLoader__.load({
 									/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.Tip, {
 										tip: motionCopy.framingFull,
 										children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
-											variant: "ghost",
+											variant: framing === "full" ? "primary" : "outline",
 											size: "sm",
 											onClick: () => setFraming("full"),
 											"aria-label": motionCopy.framingFull,
 											"aria-pressed": framing === "full",
-											className: (0, _melite_card_base_client.cn)(component_module_css_default.frameBtn, framing === "full" ? component_module_css_default.frameBtnActive : component_module_css_default.frameBtnIdle),
 											children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.PersonStanding, { className: component_module_css_default.i14 })
 										})
 									}),
 									/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.Tip, {
 										tip: "Upper half framing — closer, chest-height camera at the same angle",
 										children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
-											variant: "ghost",
+											variant: framing === "upper" ? "primary" : "outline",
 											size: "sm",
 											onClick: () => setFraming("upper"),
 											"aria-label": motionCopy.framingUpper,
 											"aria-pressed": framing === "upper",
-											className: (0, _melite_card_base_client.cn)(component_module_css_default.frameBtn, framing === "upper" ? component_module_css_default.frameBtnActive : component_module_css_default.frameBtnIdle),
 											children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.IconUserOutlineRegular, { className: component_module_css_default.i14 })
 										})
 									}),
@@ -16955,7 +17117,6 @@ window.__ModuleLoader__.load({
 											size: "sm",
 											onClick: () => setCameraView(stepAzimuth(cameraView, 1)),
 											"aria-label": motionCopy.rotateRight,
-											className: component_module_css_default.camBtn,
 											children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.RotateCw, { className: component_module_css_default.i14 })
 										})
 									})

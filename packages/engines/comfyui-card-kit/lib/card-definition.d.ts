@@ -201,5 +201,28 @@ export interface CardDefinition {
      *  stem + extension). Generic mechanism, card-owned data — the
      *  engine-film lead is the precedent. Absent = engine order. */
     primaryFile?: string;
+    /** THE FAMILY ADMISSION (journey-closure B5, 2026-10-17 — hop 3's
+     *  first judge, the write doors' arm of the walk): a
+     *  family-conditional card declares the clause its compose schema
+     *  refuses over a DERIVED family. The bench write doors (the
+     *  drafts admission the registry serves) ask it on the MERGED
+     *  params view — the params the next run would compose — and
+     *  refuse loud with the returned voice (the run door's own
+     *  clause, one hop earlier). Optional: a card without a family
+     *  contract declares nothing and every view passes (the no-op
+     *  law). The clause rides the card's own contract module (h3:
+     *  @melite/models-h3/timelineContract — the same spelling the
+     *  compose schema's walk enforces), never a copy.
+     *
+     *  A JUDGE, NOT A GUARD (the operator's no-blocker ruling,
+     *  CONTRACTS.md §4-17): the refusal speaks at the write door and
+     *  the write does not land; it never blocks the stored bench
+     *  state — loads, reads and restored rows keep their own law. */
+    admitFamily?(params: Record<string, unknown>): {
+        ok: true;
+    } | {
+        ok: false;
+        error: string;
+    };
 }
 //# sourceMappingURL=card-definition.d.ts.map

@@ -1,6 +1,6 @@
 import { samplerEnvelopeCure } from "@melite/contracts/laneRelations";
 import { EnvelopeRefusal, phaseRefusal } from "./cardsArmError.js";
-import { judgeSamplerEnvelope, unknownQuantVoice, unknownVariantVoice } from "@melite/contracts/laneRelations";
+import { judgeSamplerEnvelope, offeredPool, resolveCellRow, resolveVariantRow, unknownQuantVoice, unknownVariantVoice, } from "@melite/contracts/laneRelations";
 import { CARD_ENVELOPE_KEYS } from "./cardsRegistry.js";
 import { cardAdmits } from "./cardsFacts.js";
 import { theService, owningAtom } from "@melite/comfyui-cordis";
@@ -21,60 +21,54 @@ function normalizeEnvelope(raw) {
     const cfg = bound(r.cfg);
     return steps === undefined && cfg === undefined ? null : { steps, cfg };
 }
-function knownVariantIds(row) {
-    return (row.variants ?? []).map((v) => v.id);
-}
-/** Select the matrix cell (R1 wire contract): explicit body
- *  variant/quant keys win when stated (matched against facts
- *  variant id/route + cell quant); unstated coordinates fall to
- *  the FIRST non-Recipe variant / first cell (Model.resolve —
- *  the family default). Unknown coordinates refuse LOUD (never a
- *  silent neighbor cell). */
+/** Select the matrix cell (the ONE RESOLVER's wire seat — D6
+ *  2026-10-17: the coordinate law is `resolveVariantRow` +
+ *  `resolveCellRow` in @melite/contracts, shared with the client
+ *  mirror; this seat keeps only its own decoration — the phase
+ *  frame, the hidden-address refusals, the type guards, the legacy
+ *  'native' fold, and the selection's facts-row extraction):
+ *  explicit body variant/quant keys win when stated (matched against
+ *  facts variant id/route + cell quant); unstated coordinates fall
+ *  to the address claim, else the first non-Recipe variant / first
+ *  cell (Model.resolve — the family default). Unknown coordinates
+ *  refuse LOUD (never a silent neighbor cell). */
 export function selectCardVariant(mid, famRow, body, phase) {
     const variants = famRow.variants ?? [];
-    const offered = variants.filter((v) => v.hide_from_dropdown !== true);
     const hiddenRoute = variants.find((v) => v.hide_from_dropdown === true && (v.route === mid || v.id === mid || (v.cells ?? []).some((c) => c.route === mid)));
     const hiddenCellRoute = variants.some((v) => (v.cells ?? []).some((c) => c.hide_from_dropdown === true && c.route === mid));
     if (hiddenRoute !== undefined || hiddenCellRoute) {
         throw phaseRefusal(phase, "model " + JSON.stringify(mid) +
             " is not offered (the variant route is hidden from the dropdown)");
     }
-    const configured = offered.filter((v) => v.group !== "Recipe");
-    const pool = configured.length > 0 ? configured : offered;
-    if (pool.length === 0 && variants.length > 0) {
+    // THE DOOR'S EARLY ALL-HIDDEN REFUSAL (order-pinned by its suite:
+    // before the stated search — an all-hidden family refuses its
+    // address, never its stated coordinate). The pool itself is the
+    // resolver's one spelling (offeredPool).
+    if (offeredPool(variants).length === 0 && variants.length > 0) {
         throw phaseRefusal(phase, "model " + JSON.stringify(mid) + " has no offered variants");
     }
     const rawVariant = body["variant"];
     const rawQuant = body["quant"];
-    let variant;
-    if (rawVariant === undefined || rawVariant === null) {
-        // THE ADDRESS CLAIMS THE VARIANT (operator 2026-10-12, the
-        // offered-cells wall's first firing): a doc pinned to a route
-        // that names a VARIANT-level lane ('krea-2-raw',
-        // 'z-image-base-int8') must compose THAT lane, never pool[0]'s
-        // silent neighbor. The address's cell claim below only searches
-        // the chosen variant's cells — without this claim a
-        // route-addressed draft landed pool[0] + cells[0] and composed
-        // the wrong weights while every surface stayed green (variant
-        // switching "not working" under an all-green suite).
-        variant = pool.find((v) => v.route === mid
-            || (v.cells ?? []).some((c) => c.hide_from_dropdown !== true && c.route !== "" && c.route === mid)) ?? pool[0];
+    if (rawVariant !== undefined && rawVariant !== null && typeof rawVariant !== "string") {
+        throw phaseRefusal(phase, "variant must be a string (got " +
+            (Array.isArray(rawVariant) ? "list" : typeof rawVariant) + ")");
     }
-    else {
-        if (typeof rawVariant !== "string") {
-            throw phaseRefusal(phase, "variant must be a string (got " +
-                (Array.isArray(rawVariant) ? "list" : typeof rawVariant) + ")");
-        }
-        const requested = variants.find((v) => v.id === rawVariant || v.route === rawVariant);
-        if (requested?.hide_from_dropdown === true) {
-            throw phaseRefusal(phase, "variant " + JSON.stringify(rawVariant) +
-                " is not offered for model " + JSON.stringify(mid));
-        }
-        variant = offered.find((v) => v.id === rawVariant || v.route === rawVariant);
-        if (variant === undefined) {
-            throw phaseRefusal(phase, unknownVariantVoice(rawVariant, mid, knownVariantIds(famRow)));
-        }
+    // THE STATED/UNSTATED VARIANT ARM (the resolver's offered face):
+    // the stated search runs over the whole handed matrix (a hidden hit
+    // is the door's not-offered refusal, a miss speaks the matrix's own
+    // ids); the unstated coordinate is the address claim, else pool[0].
+    const vres = resolveVariantRow(variants, rawVariant, mid, "offered");
+    if (vres.status === "missing") {
+        throw phaseRefusal(phase, unknownVariantVoice(vres.stated, mid, vres.known));
     }
+    if (vres.status === "hidden") {
+        throw phaseRefusal(phase, "variant " + JSON.stringify(rawVariant) +
+            " is not offered for model " + JSON.stringify(mid));
+    }
+    // 'pool-empty' is only reachable on an EMPTY matrix here (the
+    // early all-hidden throw guarded the non-empty one) — the
+    // variant-less family resolves empty coordinates.
+    const variant = vres.status === "resolved" ? vres.variant : undefined;
     let quant = "";
     let cell;
     // THE LEGACY COORDINATE (the size-at-quant fold, operator
@@ -91,26 +85,22 @@ export function selectCardVariant(mid, famRow, body, phase) {
             throw phaseRefusal(phase, "quant must be a string (got " +
                 (Array.isArray(rawQuant) ? "list" : typeof rawQuant) + ")");
         }
-        const cells = variant !== undefined
-            ? (variant.cells ?? []).filter((c) => c.hide_from_dropdown !== true)
-            : [];
-        const hit = cells.find((c) => c.quant === rawQuant);
-        if (hit === undefined) {
-            throw phaseRefusal(phase, unknownQuantVoice(rawQuant, mid, variant !== undefined ? variant.id : "", cells.map((c) => c.quant)));
+        const qres = resolveCellRow(variant, rawQuant, mid, "offered");
+        if (qres.status === "missing") {
+            throw phaseRefusal(phase, unknownQuantVoice(qres.stated, mid, variant !== undefined ? variant.id : "", qres.known));
         }
-        cell = hit;
-        quant = hit.quant;
+        cell = qres.cell ?? undefined;
+        quant = qres.quant;
     }
     else if (variant !== undefined) {
-        const cells = (variant.cells ?? []).filter((c) => c.hide_from_dropdown !== true);
         // Unstated quant: the ADDRESS'S OWN CELL CLAIM wins (the
         // fold's coverage law — a draft pinned to 'qwen3-tts-base'
         // means the 0.6B clone; one pinned to 'qwen3-tts-voicedesign'
         // means the 1.7B persona), else the FIRST cell (Model.resolve's
         // family default — the large rung leads every ladder).
-        cell = cells.find((c) => c.route !== "" && c.route === mid) ?? cells[0];
-        if (cell !== undefined)
-            quant = String(cell.quant ?? "");
+        const qres = resolveCellRow(variant, null, mid, "offered");
+        cell = qres.status === "resolved" ? (qres.cell ?? undefined) : undefined;
+        quant = qres.status === "resolved" ? qres.quant : "";
     }
     return {
         variantId: variant !== undefined ? variant.id : "",
@@ -156,6 +146,64 @@ function envelopeRefusal(body, sel, phase) {
         ". " + samplerEnvelopeCure() +
         " (Read the family lane: melite_skill_read model:<family>.)", "card_compose");
 }
+/** THE ONE-SWITCH LAW, BAG HALF — the variant voice for a carried
+ *  mod row the arrival family does not serve. One shape with
+ *  unknownQuantVoice (the shared lane voices): the stated row, the
+ *  lane it landed on, the rows the lane serves; the tail names the
+ *  law, not a silent fix. The client half of this law nulls the bag
+ *  at the gesture (card-base spec.ts modelSwitchPatch's cross-model
+ *  arm); this voice is the door's half for re-points no gesture
+ *  covers. */
+function unknownBagRowVoice(pack, id, fam, sel, known) {
+    return "unknown " + pack + " row " + JSON.stringify(id) +
+        " for model " + JSON.stringify(fam) +
+        " variant " + JSON.stringify(sel.variantId) +
+        (known.length > 0
+            ? " (known: " + known.join(", ") + ")"
+            : " (the family serves no rows)") +
+        " — mods are per model: the bag was picked for another model's weights and refuses here rather than ride to the engine" +
+        " (Read the family lane: melite_skill_read model:" + fam + ".)";
+}
+/** THE CROSS-MODEL CARRY JUDGE, BAG HALF (journey-closure §D3 — the
+ *  axis-unification audit's estate-lane residue, 071f8c7a1's
+ *  recorded finding): a doc whose model key was re-pointed without a
+ *  gesture (the card's semantic-model knob, a tool face patch, an
+ *  agent write, a stage copy) arrives here with bag values still
+ *  stamped under the departed family. Every absorbed pack's array
+ *  field the body carries is mod currency picked for SOME model's
+ *  weights; each option-mode entry ({id,…}) must name a row of the
+ *  arrival atom's OWN catalog, else it refuses loud — foreign values
+ *  never reach the engine. Reads the arrival family's DIRECT catalog
+ *  (modCatalog on the route→atom fold, the same fold the stamp
+ *  surface scopes) — never the compose walk's boarded-family
+ *  fallback (service.ts modCatalogForCompose), whose fallback serves
+ *  another boarded family's rows when the arrival family serves
+ *  none: exactly the cross-model absorption this judge refuses.
+ *  Filename entries ({name,…}) ride untouched — the card-authoring
+ *  lane, the service door's own boundary. @param bags the absorbed
+ *  packs' array-typed field names, collected in the fold below;
+ *  empty when the fold degraded (card defs not booted in this
+ *  fiber) — the judge degrades with it, the pre-judge shape. */
+function bagRefusal(body, bags, atom, sel, phase, fam) {
+    for (const bag of bags) {
+        const carried = body[bag.key];
+        if (!Array.isArray(carried))
+            continue;
+        const known = theService().modCatalog(bag.pack, atom).rows.map((r) => r.id);
+        for (const entry of carried) {
+            if (entry === null || typeof entry !== "object")
+                continue;
+            const row = entry;
+            if (typeof row.name === "string" && row.name !== "")
+                continue;
+            if (typeof row.id !== "string" || row.id === "")
+                continue;
+            if (known.includes(row.id))
+                continue;
+            throw phaseRefusal(phase, unknownBagRowVoice(bag.pack, row.id, fam, sel, known));
+        }
+    }
+}
 export function stampCardOverlay(body, famRow, decl, sel, phase, fam) {
     envelopeRefusal(body, sel, phase);
     const stamps = { ...(famRow.defaults ?? {}) };
@@ -168,22 +216,37 @@ export function stampCardOverlay(body, famRow, decl, sel, phase, fam) {
     // three seats; the atom rides in (owningAtom(fam), the same fold
     // admissionRefusal judges).
     const modNames = new Set();
+    // THE BAG FIELDS (the carry judge's walk, one fold two products):
+    // each absorbed pack's array-typed field is mod currency (the bag
+    // law) — collected beside the knob names so the judge reads the
+    // SAME route→atom fold the stamp surface scopes.
+    const bagFields = [];
+    let envelopeAtom = "";
     try {
         // THE ROUTE→ATOM FOLD (same fold admissionRefusal judges): the
         // owning atom scopes the absorbed surface; a not-booted models
         // service degrades the whole fold to knobs+admits.
-        const envelopeAtom = owningAtom(fam);
+        envelopeAtom = owningAtom(fam);
         for (const a of theService().cardModFields(famRow.card)) {
             if (!a.families.includes(envelopeAtom))
                 continue;
-            for (const n of Object.keys(a.fields.dict ?? {}))
+            for (const [n, node] of Object.entries(a.fields.dict ?? {})) {
                 modNames.add(n);
+                if (node?.type === "array") {
+                    bagFields.push({ pack: a.pack, key: n });
+                }
+            }
         }
     }
     catch (modFoldError) {
         // modFoldError: card defs not booted in this fiber — the stamp
-        // gate degrades to knobs+admits, the pre-Y-S2 surface.
+        // gate degrades to knobs+admits, the pre-Y-S2 surface (and the
+        // carry judge degrades with it: bagFields stays empty).
     }
+    // THE CARRY JUDGE, BAG HALF — before the stamps walk and the
+    // compose walk: the departure-blind door judges the carry against
+    // the arrival family's own catalog (bagRefusal's contract).
+    bagRefusal(body, bagFields, envelopeAtom, sel, phase, fam);
     const onSurface = (k) => cardAdmits(decl, modNames, k);
     const out = { ...body };
     for (const [k, v] of Object.entries(stamps)) {

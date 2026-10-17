@@ -185,8 +185,10 @@ function capQuant(quant) {
  *  old `primary` form dropped EVERY cell of a non-first-boarded
  *  family — image-gen boards krea-2 first, so the served anima spec
  *  carried zero Quant rows while the DECL declared two, and the
- *  mirror refused with a voice that blamed the DECL). Routeless
- *  cells are unaddressable, never offered. Variant rows serve whole
+ *  mirror refused with a voice that blamed the DECL). A routeless
+ *  cell serves its own family's row — the variant row IS its lane
+ *  (the D4 pool-parity cure, 2026-10-17); routed cells serve by
+ *  addressability. Variant rows serve whole
  *  (all ten keys, always) regardless of route. Exported as the one
  *  serializer the walls ride (the switching sweep; the sync wall's
  *  P2 face is formSpecArm, this door's own body). */
@@ -212,12 +214,20 @@ export function specVariants(decl, key, service) {
                 // stamped composite id is the live break the door caught).
                 throw new Error(`${decl.id}/${v.id}: a cell needs a quant (refused at the spec's birth — an axis row without its coordinate must never serve)`);
             }
-            if (!c.route)
+            // THE ROUTELESS CELL'S OWN LANE (the D4 pool-parity cure,
+            // 2026-10-17 — the integrator's ruling on the pool-parity
+            // finding): a cell without a route has no lane address — the
+            // variant row IS its lane (the pixal3d 1024 precedent) — so it
+            // serves the family's own row (key === service) and never a
+            // foreign route lane's. Routed cells keep the burn cure's
+            // addressability filter below. One law, two shapes.
+            if (!c.route) {
+                if (key !== service)
+                    continue;
+            }
+            else if (key !== service && c.route !== key && c.route !== service) {
                 continue;
-            // THE FAMILY'S OWN CELLS ALWAYS SERVE (the burn cure): scoping
-            // bites on ROUTE keys only — see this function's doc.
-            if (key !== service && c.route !== key && c.route !== service)
-                continue;
+            }
             const id = seen.has(c.quant) ? `${v.id}__${c.quant}` : c.quant;
             seen.add(id);
             rows.push({

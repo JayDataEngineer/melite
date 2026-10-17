@@ -595,6 +595,17 @@ window.__ModuleLoader__.load({
 			/** The strip refusal when a pin lands outside every window (F-B6;
 			*  the plan door's own refusal, surfaced). */
 			gapRefusal: "that frame is outside every call window — pins ride inside a window",
+			/** (C6, the imageless pin) a PENDING pin's chip faces — the
+			*  double-click authors the frame first; the image rides only
+			*  through the picker doors. Until it does, the chip NAMES its
+			*  state on every face: the row the card cannot compose never
+			*  looks settled (the run door's "image is required" refusal is
+			*  the loud backstop). */
+			keyframePendingAria: (frame) => `Image pin at frame ${frame} — PENDING: no image yet (the run refuses it)`,
+			/** A pending pin's visible readout — the frame plus the state word. */
+			keyframePendingReadout: (frame) => `${frame} · pending`,
+			/** The pending chip's drop hint / tooltip law — the repair and the backstop. */
+			keyframePendingHint: "no image yet — pick one in the keyframes editor; the run door refuses an imageless pin",
 			/** The keyframe lanes' hint when no pins exist (F11; strip prop). */
 			keyframeLaneHint: "double-click a lane to pin an image at that frame",
 			/** The strip's empty-calls hint (F11; strip prop, was a raw literal). */
@@ -658,8 +669,10 @@ window.__ModuleLoader__.load({
 			callsLabel: "Calls",
 			/** The document readout (calls, seconds, guides, knobbed calls). */
 			docReadout: (args) => `${args.calls} call${args.calls === 1 ? "" : "s"} · ${args.seconds}s · ${args.guides} guide${args.guides === 1 ? "" : "s"}${args.knobs > 0 ? ` · ${args.knobs} call${args.knobs === 1 ? "" : "s"} with knobs` : ""}`,
-			/** The unwired-keyframes warning. */
-			unwiredWarning: (count) => `${count} keyframe source${count === 1 ? "" : "s"} unwired — wire them below or the run door names them as TODOs.`,
+			/** The unwired-keyframes warning (C6: the studio's gate face names
+			*  the PENDING state before the run — the door's refusal is the
+			*  backstop, named here). */
+			unwiredWarning: (count) => `${count} keyframe source${count === 1 ? "" : "s"} unwired — the pin${count === 1 ? " is" : "s are"} PENDING until an image rides; wire them below or the run door refuses loud ("image is required")`,
 			/** The run fold's head. */
 			runParametersTitle: "Run parameters",
 			/** The run fold's layer note. */
@@ -796,13 +809,17 @@ window.__ModuleLoader__.load({
 			"attention_backend"
 		];
 		/** The knobs only the FILM shape can honor (2026-10-16, audit
-		*  3f0b7c1a ui-truth-gap #4). `duck_depth_db` is read in exactly one
-		*  place — computeFilmMix's manifest, inside the multi-window film
-		*  boundary (actions.ts) — so on a single-window doc (t4_open, t4r)
-		*  the row rendered, persisted and composed into NO node: the
-		*  operator set a duck depth the mix desk never saw. The studio's
-		*  served surface omits these unless the doc derives t4_chain (the
-		*  same one-spelling family derivation the t4r gate uses). */
+		*  3f0b7c1a ui-truth-gap #4; the walk leg closed B6,
+		*  timeline-calls-burn §CURES-OWED 5). `duck_depth_db` is read in
+		*  exactly one place — computeFilmMix's manifest, inside the
+		*  multi-window film boundary (actions.ts) — so on a single-window doc
+		*  (t4_open, t4r) the row rendered, persisted and composed into NO
+		*  node: the operator set a duck depth the mix desk never saw. TWO
+		*  judges read THIS set (one home): the schema walk refuses it loud
+		*  on a non-film family (`film-only inject keys`, the t4r gate's
+		*  sibling), and the studio's served surface omits it unless the doc
+		*  derives t4_chain (the same one-spelling family derivation the t4r
+		*  gate uses). */
 		const FILM_ONLY_KEYS = ["duck_depth_db"];
 		/** (2026-11-06, the family-reseat cure) the doc-level window family
 		*  derivation, ONE spelling for every door that needs the family
@@ -3359,6 +3376,39 @@ window.__ModuleLoader__.load({
 				return src;
 			}
 		};
+		/** (E7, KF-A(1), keyframes-audio journey audit — plan row 84) THE
+		*  KEYFRAME PIN'S COMMIT SPINE: classifyImageSrc judges the currency,
+		*  then the fit runs on the committed value BEFORE the pin lands —
+		*  one spelling for the pick arms' two-step (classify → fit) so the
+		*  fit law cannot be reordered out of any door.
+		*
+		*  THE NAME ARM'S FIT STORY: a byUrl-resolved artifact NAME is engine
+		*  currency that cannot decode client-side (fitImageToAspect rides it
+		*  verbatim), so an off-aspect pick landing on that arm used to commit
+		*  an unfittable bare name — the engine cover-cropped it and no client
+		*  arm could ever fit it again. Here the fit runs on the SERVABLE URL
+		*  the pick arrived as, and a real fit canonicalizes the commit to its
+		*  fitted data: URL — the unfittable bare name dies at this seam.
+		*  Where the fit rides verbatim (same-aspect, decode loss, no decode
+		*  env) the name IS the commit: the courtesy law — the commit never
+		*  depends on the fit.
+		*  @param src the picked source, any spelling.
+		*  @param byUrl the artifact index's servable url → ctx-key name map.
+		*  @param tw the film's target width.
+		*  @param th the film's target height.
+		*  @returns the image value to commit (fitted where the fit is real),
+		*  or the refusal's words. */
+		const commitKeyframePinImage = async (src, byUrl, tw, th) => {
+			const got = classifyImageSrc(src, byUrl);
+			if ("refusal" in got) return got;
+			const fitted = await fitImageToAspect(got.image, tw, th);
+			if (fitted !== got.image) return { image: fitted };
+			if (got.image !== src && estateMediaChip(src) === null) {
+				const urlFit = await fitImageToAspect(src, tw, th);
+				if (urlFit !== src) return { image: urlFit };
+			}
+			return got;
+		};
 		studioCopy.knobSteps, studioCopy.knobDenoise, studioCopy.knobSampler, studioCopy.knobScheduler, studioCopy.knobShiftVideo, studioCopy.knobShiftAudio, studioCopy.knobSlaSparsity, studioCopy.knobSlaBlockSize, studioCopy.knobSlaMinSeqLen, studioCopy.knobSlaDenseLastSteps, studioCopy.knobSlaProtectAudio, studioCopy.knobSlaStabilizeMotion, studioCopy.knobSlaRefProtection, studioCopy.knobSlaDenseBackend, studioCopy.knobSlaDenseSteps, studioCopy.knobSlaFullPrecAccum, studioCopy.knobSharpen, studioCopy.knobSharpenMethod, studioCopy.knobSharpenStrength, studioCopy.knobSharpenRadius, studioCopy.knobSharpenNoiseGate, studioCopy.knobSharpenIterations, studioCopy.knobInterpolate, studioCopy.knobInterpModel, studioCopy.knobInterpMultiplier, studioCopy.knobWindowLength;
 		/**
 		* Convert a legacy audio_stem artifact name into a positioned clip at
@@ -3445,8 +3495,8 @@ window.__ModuleLoader__.load({
 		*  plain spread would let the layer's undefined holes erase the
 		*  base's seats and mis-derive the family (t4_open for a t4r doc —
 		*  the exact lie the gate exists to kill). Shared by the rail's
-		*  omitFields gate and the component's family-reseat heal: one
-		*  merge, one truth. */
+		*  omitFields gate and the commit seam's family reseat (useShownDoc's
+		*  commit — the mount heal dissolved with B2): one merge, one truth. */
 		function mergeDocLayers(base, layer) {
 			const out = { ...base ?? {} };
 			for (const [k, v] of Object.entries(layer)) if (v !== void 0 && v !== "") out[k] = v;
@@ -3713,14 +3763,13 @@ window.__ModuleLoader__.load({
 			};
 			const { square: kfAddSquare, wireMenu: kfAddMenu } = (0, _melite_card_base_client.useSquareProvider)((_name, v) => {
 				if (typeof v !== "string" || v === "") return;
-				const got = classifyImageSrc(v, artifactIndex.byUrl);
-				if ("refusal" in got) {
-					setKfErr(got.refusal);
-					return;
-				}
-				setKfErr(null);
-				fitImageToAspect(got.image, layerA.width ?? 1344, layerA.height ?? 768).then((fitted) => {
-					addKeyframeWithImage(fitted, docFromFilm(frameIdx));
+				commitKeyframePinImage(v, artifactIndex.byUrl, layerA.width ?? 1344, layerA.height ?? 768).then((got) => {
+					if ("refusal" in got) {
+						setKfErr(got.refusal);
+						return;
+					}
+					setKfErr(null);
+					addKeyframeWithImage(got.image, docFromFilm(frameIdx));
 				});
 			}, {
 				candidates: Array.from(artifactIndex.byUrl.entries()).filter(([url]) => IMAGE_ROW_RE.test(url)).map(([url, name2]) => ({
@@ -3752,11 +3801,12 @@ window.__ModuleLoader__.load({
 			const kfChips = barLanes.map((k, i) => {
 				const docFrame = keyframes[i]?.frame;
 				const verdict = typeof docFrame === "number" ? pinDropVerdict(calls, docFrame) : null;
+				const pending = typeof docFrame === "number" && keyframes[i].image.trim() === "";
 				return {
 					...k,
-					ariaLabel: typeof docFrame === "number" ? studioCopy.keyframeLaneChipAria(docFrame) : void 0,
-					readout: typeof docFrame === "number" ? studioCopy.keyframeFrameReadout(docFrame) : void 0,
-					dropHint: verdict === null ? void 0 : verdict === "snap" ? studioCopy.dropSnapHint : studioCopy.dropInteriorHint
+					ariaLabel: pending ? studioCopy.keyframePendingAria(docFrame) : typeof docFrame === "number" ? studioCopy.keyframeLaneChipAria(docFrame) : void 0,
+					readout: pending ? studioCopy.keyframePendingReadout(docFrame) : typeof docFrame === "number" ? studioCopy.keyframeFrameReadout(docFrame) : void 0,
+					dropHint: pending ? studioCopy.keyframePendingHint : verdict === null ? void 0 : verdict === "snap" ? studioCopy.dropSnapHint : studioCopy.dropInteriorHint
 				};
 			});
 			const gapPin = keyframes.some((k) => pinDropVerdict(calls, k.frame) === null);
@@ -3938,6 +3988,51 @@ window.__ModuleLoader__.load({
 			for (const k of Object.keys(user)) if (user[k] !== void 0) stated[k] = user[k];
 			return (0, _melite_card_base_client.composeCandidateDoc)(held, stated, frame);
 		}
+		/** THE FAMILY CLAUSE (journey-closure B5 — hop 3's first judge, the
+		*  pick gate's arm of the walk): the candidate doc is judged through
+		*  the SAME clause the run door's walk enforces — deriveWindowFamily
+		*  over the candidate, and on a derived-t4r doc every STATED
+		*  T4_ONLY key refuses with the walk's own voice. ONE OWNER (the
+		*  mirror discipline's ruling, recorded for the journey audit): the
+		*  clause lives HERE, not in card-base's composeValidate, because
+		*  the clause must ride the REAL walk — @melite/models-h3/
+		*  timelineContract — and card-base's mirror seam is @melite/
+		*  contracts (the floor's shared judges, laneRelations); the h3
+		*  family walk is the DECL's own law, not a floor law, so the
+		*  generic gate would need either a web→models dependency (a
+		*  layering inversion) or a second spelling of the walk in the
+		*  floor (the two-vocabulary disease). This package already rides
+		*  the contract everywhere the family is judged (docHydrate's B1
+		*  emit law, RunRecipeEngine's rail gate, the reseat heal) — the
+		*  pick gate joins them on the same import, and the bench door's
+		*  admitFamily face (card.ts) rides the same contract, so pick
+		*  gate, patch door and walk cannot spell two truths.
+		*
+		*  THE SIBLING OWNERS (what this judge is NOT): B1's emit law
+		*  (docHydrate.ts serializeLayerA) owns the SAVE — on a derived-t4r
+		*  doc it omits every T4_ONLY member and rides a base-carried
+		*  stamp's delete-null once; the walk owns the RUN. This judge owns
+		*  the PICK VERDICT — the composition truth (held row under shown
+		*  state under the pick), the doc the door would judge. A
+		*  base-carried stamp the state still holds rides every seat of
+		*  that composition (the serializer states nothing about it — B1's
+		*  one-owner-per-key law), so a refusal here is exactly the run
+		*  door's verdict, one hop earlier; the emit law's omission of a
+		*  state-stated key is the save's own gesture and never re-lands a
+		*  value the walk would see. A null-valued key does not refuse: the
+		*  null is the wire's delete spelling (composeCandidateDoc drops a
+		*  frame null; the bench's merge-patch deletes it) — the run never
+		*  composes it.
+		*
+		*  @param doc the pick verdict's candidate doc
+		*  @returns the door's own refusal voice, or null when the candidate
+		*  composes on its derived lane */
+		function pickFamilyRefusal(doc) {
+			if (deriveWindowFamily(doc) !== "t4r") return null;
+			const stated = Object.keys(doc).filter((k) => T4_ONLY_KEYS.includes(k) && doc[k] !== null).sort();
+			if (stated.length === 0) return null;
+			return "card 'h3-timeline' refused params: h3_window(t4r): unsanctioned inject keys: " + stated.join(", ");
+		}
 		//#endregion
 		//#region src/ui/studio/omitT4Recipe.ts
 		/**
@@ -4046,6 +4141,8 @@ window.__ModuleLoader__.load({
 					onPick: (patch) => {
 						const candidate = resolvePickVerdictDoc(base ?? {}, layerA, patch);
 						const violations = (0, _melite_card_base_client.composeValidate)(spec, candidate);
+						const family = pickFamilyRefusal(candidate);
+						if (family !== null) violations.push({ message: "card_compose: " + family });
 						if (violations.length > 0) {
 							setGateFace("THE COMPOSE GATE REFUSED — " + violations[0].message + " — the write never left the studio. Fix the stated value, or pick a different route.");
 							return;
@@ -4952,20 +5049,18 @@ window.__ModuleLoader__.load({
 				label: `${o.title} · ${o.name}`,
 				url: deps.artifactIndex.byName.get(o.name) ?? ""
 			}));
-			/** The shared commit spine: estate media canonical, the run's own
-			*  artifact URLs, data: chips ride verbatim — foreign URLs refuse.
-			*  @returns the image value to commit, or null when refused (the
-			*  refusal's words ride the caller's error seat). */
+			/** Both pick doors ride refUtils' commitKeyframePinImage — the
+			*  judge + the fit in one seat (E7, KF-A(1): the name arm's fit).
+			*  The refusal's words ride the door's own error seat. */
 			const { square: kfAddSquare, wireMenu: kfAddMenu } = (0, _melite_card_base_client.useSquareProvider)((_name, v) => {
 				if (typeof v !== "string" || v === "") return;
-				const got = classifyImageSrc(v, deps.artifactIndex.byUrl);
-				if ("refusal" in got) {
-					setKfAddError(got.refusal);
-					return;
-				}
-				setKfAddError(null);
-				fitImageToAspect(got.image, deps.layerA?.width ?? 1344, deps.layerA?.height ?? 768).then((fitted) => {
-					addKeyframeWithImage(fitted, playheadDocFrame);
+				commitKeyframePinImage(v, deps.artifactIndex.byUrl, deps.layerA?.width ?? 1344, deps.layerA?.height ?? 768).then((got) => {
+					if ("refusal" in got) {
+						setKfAddError(got.refusal);
+						return;
+					}
+					setKfAddError(null);
+					addKeyframeWithImage(got.image, playheadDocFrame);
 				});
 			}, {
 				candidates: flowRows,
@@ -4991,13 +5086,12 @@ window.__ModuleLoader__.load({
 			const { square: kfRowSquare, wireMenu: kfRowMenu } = (0, _melite_card_base_client.useSquareProvider)((_name, v) => {
 				if (typeof v !== "string" || v === "") return;
 				const i = pickRow.current;
-				const got = classifyImageSrc(v, deps.artifactIndex.byUrl);
-				if ("refusal" in got) {
-					setKfUploadError(i, got.refusal);
-					return;
-				}
-				fitImageToAspect(got.image, deps.layerA?.width ?? 1344, deps.layerA?.height ?? 768).then((fitted) => {
-					setKeyframeImage(i, fitted);
+				commitKeyframePinImage(v, deps.artifactIndex.byUrl, deps.layerA?.width ?? 1344, deps.layerA?.height ?? 768).then((got) => {
+					if ("refusal" in got) {
+						setKfUploadError(i, got.refusal);
+						return;
+					}
+					setKeyframeImage(i, got.image);
 					setKfUploadError(i, null);
 				});
 			}, {
@@ -5200,7 +5294,10 @@ window.__ModuleLoader__.load({
 					console.warn(`VideoTimelineStudio: audio_clips[${index}] failed to hydrate (${String(e).slice(0, 120)}) — dropped; the film composes without this clip.`);
 					continue;
 				}
-				if (parsed === void 0) continue;
+				if (parsed === void 0) {
+					console.warn(`VideoTimelineStudio: audio_clips[${index}] carries no src and no position — not a clip row; dropped.`);
+					continue;
+				}
 				const id = typeof row.id === "string" && row.id.trim() !== "" ? row.id.trim() : `aclip-${index}`;
 				const fallbackName = parsed.src.startsWith("data:") ? `clip-${index}` : parsed.src.split("/").pop();
 				const name = typeof row.name === "string" && row.name.trim() !== "" ? row.name.trim() : fallbackName;
@@ -5872,11 +5969,53 @@ window.__ModuleLoader__.load({
 		* and useDocEffects' three persist arms (moved to the gesture).
 		* The view-sync thirds (playhead clamp, selection scroll/guard)
 		* live in useStudioViewSync — no save, no guards.
+		*
+		* THE FLIP WRITER (B2, journey-closure 2026-11-06): commit is
+		* family-aware — the D8 reseat's ONE owner (useFamilyReseatHeal is
+		* deleted with this change, its mount effect dissolved into the
+		* gesture). Any commit whose post-gesture doc derives t4r unstamps
+		* the T4_ONLY residue in the SAME onSave: the serializer's delete
+		* ride nulls each base-carried stamp (B1's one-owner law — the
+		* serializer omits the value side, the commit carries the delete
+		* side) and the appended layer-A op clears the shown poles. See the
+		* commit body for the full contract.
 		*/
 		function channelPayload(channel, value) {
 			if (channel === "calls") return { calls: value };
 			if (channel === "keyframes") return { keyframes: value };
 			return value;
+		}
+		/** THE FLIP WRITER's unstating payload (B2, journey-closure
+		* 2026-11-06): the layer with every T4_ONLY member unstated,
+		* serialized against the post-gesture base — the door record whose
+		* canonical digest differs from the layer's own serialization
+		* exactly when a base-carried stamp gains its delete-ride null (B1's
+		* gate deletes the value side; only the unstated state can ride the
+		* null). The base is the RAW params under the gesture's structural
+		* planes (calls/keyframes view arrays overlaid) — never the full
+		* shown view: the delete ride reads base KEYS, and the hydrate's own
+		* false poles (sharpen_enabled: false on a doc that never carried
+		* the key) would read as stamps and null themselves — phantom
+		* deletes. The gate still sees the gesture's planes: serializeLayerA
+		* derives the family over mergeDocLayers(base, a), and `calls`/
+		* `keyframes` — overlaid here — plus the layer's own ref surface (in
+		* `a`) give it the post-gesture truth; serialized against the raw
+		* params alone the always-emit poles would ride false in the SAME
+		* onSave and the saved doc would refuse on them (the flip arm's
+		* verdict).
+		*
+		* @param layer the post-gesture layer A (shown state, gesture included)
+		* @param structBase the persisted raw under the gesture's calls/keyframes
+		* @returns the unstated plane's door record, or null when the
+		*  unstating states nothing (no base stamps; the hydrate's false
+		*  poles serialize identically) — the no-churn law, the gesture
+		*  rides alone */
+		function unstatedLayerA(layer, structBase) {
+			const cured = { ...layer };
+			for (const k of T4_ONLY_KEYS) cured[k] = void 0;
+			const payload = serializeLayerA(cured, structBase);
+			if (canonicalJson(payload) === canonicalJson(serializeLayerA(layer, structBase))) return null;
+			return payload;
 		}
 		function useShownDoc(stage, onSave) {
 			const projected = (0, react.useMemo)(() => projectDoc(stage.params), [canonicalJson(stage.params)]);
@@ -5929,10 +6068,25 @@ window.__ModuleLoader__.load({
 				setOps(opsRef.current);
 			}
 			const commit = (channel, serialize, getShown) => (u) => {
-				const prev = getShown(overlayDoc(projectedRef.current, liveOps(projectedRef.current, opsRef.current)));
-				const payload = serialize(typeof u === "function" ? u(prev) : u);
+				const shownBefore = overlayDoc(projectedRef.current, liveOps(projectedRef.current, opsRef.current));
+				const prev = getShown(shownBefore);
+				const next = typeof u === "function" ? u(prev) : u;
+				let payload = serialize(next);
 				if (canonicalJson(payload) === canonicalJson(serialize(prev))) return;
-				const answer = onSave(channelPayload(channel, payload));
+				const layerNow = channel === "layerA" ? next : shownBefore.layerA;
+				const gesturePlanes = {
+					calls: channel === "calls" ? next : shownBefore.calls,
+					keyframes: channel === "keyframes" ? next : shownBefore.keyframes
+				};
+				const reseat = deriveWindowFamily(mergeDocLayers(baseRef.current, {
+					...layerNow,
+					...gesturePlanes
+				})) === "t4r" ? unstatedLayerA(layerNow, mergeDocLayers(baseRef.current, gesturePlanes)) : null;
+				if (reseat !== null && channel === "layerA") payload = reseat;
+				const answer = onSave({
+					...channelPayload(channel, payload),
+					...reseat !== null && channel !== "layerA" ? reseat : {}
+				});
 				if (answer === false) return;
 				const op = {
 					channel,
@@ -5940,13 +6094,28 @@ window.__ModuleLoader__.load({
 					seq: seqRef.current++
 				};
 				const seq = op.seq;
-				opsRef.current = [...opsRef.current.filter((o) => o.channel !== channel), op];
+				const reseatOp = reseat !== null && channel !== "layerA" ? {
+					channel: "layerA",
+					value: reseat,
+					seq: seqRef.current++
+				} : void 0;
+				const reseatSeq = reseatOp?.seq;
+				let kept = opsRef.current.filter((o) => o.channel !== channel);
+				if (reseatOp !== void 0) kept = kept.filter((o) => o.channel !== "layerA");
+				opsRef.current = reseatOp !== void 0 ? [
+					...kept,
+					op,
+					reseatOp
+				] : [...kept, op];
 				setOps(opsRef.current);
-				if (answer instanceof Promise) answer.then((landed) => {
-					if (landed === false) dropOp(seq);
-				}, () => {
-					dropOp(seq);
-				});
+				if (answer instanceof Promise) {
+					const seqs = reseatSeq === void 0 ? [seq] : [seq, reseatSeq];
+					answer.then((landed) => {
+						if (landed === false) for (const s of seqs) dropOp(s);
+					}, () => {
+						for (const s of seqs) dropOp(s);
+					});
+				}
 			};
 			const updateCalls = (0, react.useMemo)(() => commit("calls", serializeCalls, (d) => d.calls), [onSave]);
 			const updateKeyframes = (0, react.useMemo)(() => commit("keyframes", serializeKeyframes, (d) => d.keyframes), [onSave]);
@@ -8438,7 +8607,190 @@ window.__ModuleLoader__.load({
 			}
 			return out;
 		}
-		var RELATION_WORDS, quote, UNSTATED_REQUIRED_STEM;
+		/** THE MARRIED-KNOB AGGREGATION (#36, the recipes rework — compose
+		*  card.ts's own layering verbatim: "a call's own knobs > the lora
+		*  entry's steps > this steps row"): when a served kind declares a
+		*  knob marriage and a counting bag rides, the knob is the BAG's —
+		*  stated on the row first, else the catalog row's default,
+		*  Math.max across the bag ("8 on a 4-step distill is fine, 4 on an
+		*  8-step is undercooked"). THE ONE SPELLING (axis-unification item
+		*  6, D6 — the resolver-consolidation home, beside the voices): the
+		*  face's resolver (card-base resolveValue) displays through this
+		*  math instead of a private copy, so the display and the compose
+		*  layering cannot drift. A bag id the catalog does not serve
+		*  contributes nothing (the mod plane and the compose door refuse
+		*  unknown ids loudly — the display never invents a refusal of its
+		*  own). PURE, no I/O.
+		*
+		*  @param kind the served modifier kind (marries + catalog options).
+		*  @param bag the doc's riding array for the kind's param_key —
+		*  entries may be any shape; non-object rows contribute nothing.
+		*  @returns the knob → married value map, only knobs with at least
+		*  one finite count; absent keys are untouched by the caller. */
+		function marriedKnobValues(kind, bag) {
+			const out = {};
+			if (kind.marries === void 0) return out;
+			const catalog = new Map((kind.options ?? []).map((o) => [o.value, o]));
+			for (const knob of Object.keys(kind.marries)) {
+				const counts = [];
+				for (const row of bag) {
+					if (row === null || typeof row !== "object") continue;
+					const stated = row[knob];
+					if (typeof stated === "number" && Number.isFinite(stated)) {
+						counts.push(stated);
+						continue;
+					}
+					const id = row["id"];
+					const fromCatalog = typeof id === "string" ? catalog.get(id)?.defaults?.[knob] : void 0;
+					if (typeof fromCatalog === "number" && Number.isFinite(fromCatalog)) counts.push(fromCatalog);
+				}
+				if (counts.length > 0) out[knob] = Math.max(...counts);
+			}
+			return out;
+		}
+		/** THE DEFAULT POOL (the wire face): offered rows minus the Recipe
+		*  group; an all-Recipe family falls back to every offered row (the
+		*  recipe-only family still resolves — the door's own
+		*  configured.length gate). Exported for the seat that must refuse
+		*  an all-hidden family BEFORE its stated search (the door's early
+		*  check, order-pinned by its suite) — the pool itself has one
+		*  spelling here. */
+		function offeredPool(variants) {
+			const offered = visibleRows(variants);
+			const configured = offered.filter((v) => v.group !== "Recipe");
+			return configured.length > 0 ? configured : offered;
+		}
+		/** THE VARIANT COORDINATE, one law per scope. Stated coordinates
+		*  search the matrix the caller handed (its ids are the honest known
+		*  list on a miss); unstated coordinates resolve through the scope's
+		*  default (declared: first row; offered: the address claim, then
+		*  the pool's first row).
+		*
+		*  @param variants the caller's variant matrix — DECL rows, facts
+		*  rows, or the flat-matrix fold.
+		*  @param stated the body's `variant` value verbatim: a string —
+		*  including the empty string — is stated (the false-admit cure's
+		*  loud refusal); null/undefined (and non-strings) are unstated.
+		*  @param address the compose address (the family/route key the run
+		*  addresses); '' when the seat has none — no claim is made.
+		*  @param scope the face the caller resolves for. */
+		function resolveVariantRow(variants, stated, address, scope) {
+			if (scope === "declared") {
+				if (stated === null || stated === void 0) return {
+					status: "resolved",
+					variant: variants[0]
+				};
+				const want = typeof stated === "string" ? stated : "";
+				const hit = variants.find((v) => v.id === want);
+				if (hit === void 0) return {
+					status: "missing",
+					stated: want,
+					known: knownIds(variants)
+				};
+				return {
+					status: "resolved",
+					variant: hit
+				};
+			}
+			const want = statedOf(stated);
+			if (want !== null) {
+				const hit = variants.find((v) => v.id === want || v.route === want);
+				if (hit === void 0) return {
+					status: "missing",
+					stated: want,
+					known: knownIds(variants)
+				};
+				if (hit.hide_from_dropdown === true) return {
+					status: "hidden",
+					variant: hit
+				};
+				return {
+					status: "resolved",
+					variant: hit
+				};
+			}
+			const pool = offeredPool(variants);
+			if (pool.length === 0) return {
+				status: "pool-empty",
+				known: knownIds(variants)
+			};
+			if (address !== "") {
+				const claimed = pool.find((v) => v.route === address || visibleCells(v.cells ?? []).some((c) => c.route !== "" && c.route === address));
+				if (claimed !== void 0) return {
+					status: "resolved",
+					variant: claimed
+				};
+			}
+			return {
+				status: "resolved",
+				variant: pool[0]
+			};
+		}
+		/** THE QUANT COORDINATE, one law per scope, over the RESOLVED
+		*  variant's cells. Stated coordinates match the quant VALUE (never
+		*  the flat row id — the axisStampOf vocabulary); unstated ones
+		*  claim the address's cell, else the first (visible) cell. A
+		*  variant with no cells resolves `cell: null, quant: ''` — the
+		*  honest empty, the caller's voice names the sync break when it
+		*  must.
+		*
+		*  @param variant the resolved variant row (its cells are searched).
+		*  @param stated the body's `quant` value verbatim: a string —
+		*  including '' — is stated; null/undefined and non-strings are
+		*  unstated.
+		*  @param address the compose address; '' makes no claim.
+		*  @param scope the face the caller resolves for. */
+		function resolveCellRow(variant, stated, address, scope) {
+			const cells = variant?.cells ?? [];
+			const searched = scope === "declared" ? cells : visibleCells(cells);
+			const want = statedOf(stated);
+			if (want !== null) {
+				const hit = searched.find((c) => c.quant === want);
+				if (hit === void 0) return {
+					status: "missing",
+					stated: want,
+					known: knownQuants(searched)
+				};
+				return {
+					status: "resolved",
+					cell: hit,
+					quant: want
+				};
+			}
+			const cell = (address !== "" ? searched.find((c) => c.route !== "" && c.route === address) : void 0) ?? searched[0] ?? null;
+			return {
+				status: "resolved",
+				cell,
+				quant: cell !== null && typeof cell.quant === "string" ? cell.quant : ""
+			};
+		}
+		/** THE FLAT-MATRIX FOLD (the mirror's P2 face of the one resolver):
+		*  the served spec flattens cells into `group: 'Quant'` rows with
+		*  `owner` backrefs; the resolver reads the nested matrix. This fold
+		*  re-nests the wire rows — Variant/Recipe rows stay (a stated Recipe
+		*  id searches like at the door; the POOL still excludes it from
+		*  defaults), each row's cells become the Quant rows it OWNS, keyed
+		*  by the quant COORDINATE (never the namespaced row id — D2's stamp
+		*  plane: the address is the row's, the value is the cell's). Orphan
+		*  Quant rows (no owner match) drop — the judge could never reach
+		*  them either. The original members ride the spread verbatim.
+		*
+		*  @param rows the served spec's variants array (or any flat matrix).
+		*  @returns the nested matrix: every non-Quant row with its folded
+		*  cells attached. */
+		function variantMatrixFromFlatRows(rows) {
+			return rows.filter((r) => r.group !== "Quant").map((r) => ({
+				...r,
+				cells: rows.filter((c) => c.group === "Quant" && c.owner === r.id).map((c) => ({
+					...c,
+					id: typeof c.id === "string" ? c.id : "",
+					quant: typeof c.quant === "string" ? c.quant : "",
+					route: typeof c.route === "string" ? c.route : "",
+					...c.hide_from_dropdown === true ? { hide_from_dropdown: true } : {}
+				}))
+			}));
+		}
+		var RELATION_WORDS, quote, UNSTATED_REQUIRED_STEM, statedOf, visibleRows, visibleCells, knownIds, knownQuants;
 		var init_laneRelations = __esmMin((() => {
 			RELATION_WORDS = {
 				requires: true,
@@ -8450,6 +8802,11 @@ window.__ModuleLoader__.load({
 			};
 			quote = (fields) => fields.map((f) => "'" + f + "'").join(" + ");
 			UNSTATED_REQUIRED_STEM = "this lane requires ";
+			statedOf = (stated) => typeof stated === "string" ? stated : null;
+			visibleRows = (variants) => variants.filter((v) => v.hide_from_dropdown !== true);
+			visibleCells = (cells) => cells.filter((c) => c.hide_from_dropdown !== true);
+			knownIds = (variants) => variants.map((v) => v.id);
+			knownQuants = (cells) => cells.map((c) => typeof c.quant === "string" ? c.quant : "");
 		}));
 		//#endregion
 		//#region ../../web-kit/contracts/lib/FlowTypes.js
@@ -9576,6 +9933,7 @@ window.__ModuleLoader__.load({
 			loraIdOf: () => loraIdOf,
 			loraLabel: () => loraLabel,
 			loraStrengthBoundsOf: () => loraStrengthBoundsOf,
+			marriedKnobValues: () => marriedKnobValues,
 			modifiersFeatureOf: () => modifiersFeatureOf,
 			moveItem: () => moveItem,
 			newControlnetEntry: () => newControlnetEntry,
@@ -9585,8 +9943,11 @@ window.__ModuleLoader__.load({
 			normalizeBenchStages: () => normalizeBenchStages,
 			normalizeLoraEntry: () => normalizeLoraEntry,
 			normalizeSegmentStatus: () => normalizeSegmentStatus,
+			offeredPool: () => offeredPool,
 			projectStageView: () => projectStageView,
 			projectUpstreamStages: () => projectUpstreamStages,
+			resolveCellRow: () => resolveCellRow,
+			resolveVariantRow: () => resolveVariantRow,
 			rootsManifest: () => rootsManifest,
 			runMediaPrefixOf: () => runMediaPrefixOf,
 			runTailOf: () => runTailOf,
@@ -9601,7 +9962,8 @@ window.__ModuleLoader__.load({
 			subcardId: () => subcardId,
 			subcardsFromParams: () => subcardsFromParams,
 			unknownQuantVoice: () => unknownQuantVoice,
-			unknownVariantVoice: () => unknownVariantVoice
+			unknownVariantVoice: () => unknownVariantVoice,
+			variantMatrixFromFlatRows: () => variantMatrixFromFlatRows
 		});
 		var init_lib$1 = __esmMin((() => {
 			init_extraKeys();
@@ -15159,59 +15521,6 @@ window.__ModuleLoader__.load({
 			};
 		}
 		//#endregion
-		//#region src/ui/studio/useFamilyReseatHeal.ts
-		/**
-		* useFamilyReseatHeal — the family-reseat heal (D8, 2026-11-06).
-		*
-		* THE LIVE BRICK: a film legally stamped sr_switch (Final Cut on a
-		* multi-call doc) lost a call, derived t4r, and EVERY compose
-		* refused "h3_window(t4r): unsanctioned inject keys: sr_switch"
-		* while the rail kept serving the dead switches — a family edit
-		* left the card uncomposable ("physically impossible" by the
-		* operator's own reading, and he was right: no knob WRITE happened
-		* between the last green compose and the first red one; the FAMILY
-		* moved under a legal stamp).
-		*
-		* THE LAW: the t4r lane wires NO post chain (the renderer's own
-		* truth — the graph goes straight to CreateVideo), so the walk
-		* refuses the twelve T4_ONLY knobs on a doc that derived t4r.
-		* When the shown doc derives t4r, any T4_ONLY key the layer still
-		* carries is recipe/switch residue on a lane that cannot honor it
-		* — ONE write unstated them (serializeLayerA omits each key and
-		* its delete ride nulls a base-carried stamp, so the next compose
-		* reads the doc clean). The rail's omitFields gate keeps NEW
-		* writes off the dead lane; this heal clears the stranded ones.
-		* Inert-value tolerant: false/""/null ride absent from the
-		* serializer already — unstating them would be churn, not cure.
-		*/
-		/**
-		* @param base the stage's settled params (calls/keyframes/ref
-		*  surface live here — the same seats the walk reads; null is the
-		*  spine's absent-params spelling, owned HERE never at a caller)
-		* @param layerA the shown Layer A (the T4 residue's home)
-		* @param updateLayerA the whole-layer setter (useShownDoc's verb —
-		*  the heal's ONE write rides the same commit seam as every edit)
-		*/
-		function useFamilyReseatHeal(base, layerA, updateLayerA) {
-			(0, react.useEffect)(() => {
-				if (deriveWindowFamily(mergeDocLayers(base, layerA)) !== "t4r") return;
-				const residue = T4_ONLY_KEYS.filter((k) => {
-					const v = layerA[k];
-					return v !== void 0 && v !== null && v !== false && v !== "";
-				});
-				if (residue.length === 0) return;
-				updateLayerA((prev) => {
-					const next = { ...prev };
-					for (const k of residue) next[k] = void 0;
-					return next;
-				});
-			}, [
-				base,
-				layerA,
-				updateLayerA
-			]);
-		}
-		//#endregion
 		//#region src/ui/studio/component.tsx
 		let readManageLane;
 		/** Seat the studio's manage lane (the client entry's apply calls
@@ -15303,7 +15612,6 @@ window.__ModuleLoader__.load({
 			const enh = useEnhance();
 			const mut = useCallMutations(doc.updateCalls, fps);
 			const kf = useBeatMutations(keyframes, doc.updateKeyframes);
-			useFamilyReseatHeal(stage.params, layerA, doc.updateLayerA);
 			const derived = useDerivedView({
 				upstreams,
 				stage,

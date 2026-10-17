@@ -48,7 +48,7 @@ interface DeclaresActions {
         }>;
         readonly params: ReadonlyArray<{
             readonly name: string;
-            readonly type: "number" | "string" | "boolean" | "enum" | "image_list";
+            readonly type: "number" | "string" | "boolean" | "enum" | "image" | "image_list";
             readonly bounds?: readonly [number, number];
             readonly options?: readonly string[];
             readonly rule?: string;

@@ -52,6 +52,15 @@ const CardDefinitionSchema = z.object({
     flowKinds: z.any(),
     flowOutputBindings: z.any(),
     primaryFile: z.string(),
+    // THE FAMILY ADMISSION (journey-closure B5, 2026-10-17 — the
+    // CardDefinition.admitFamily face, hop 3's first judge): the
+    // card's own family clause (h3-timeline's t4r inject-keys walk)
+    // the bench write doors judge the merged view with. z.any() like
+    // its sibling function arms: the value is the typed judge, its
+    // verdict walled family-side (h3 card.spec vs def.schema) and
+    // door-side (the drafts family-admission suite) — the envelope
+    // only admits the key's existence.
+    admitFamily: z.any(),
 });
 /** The registerCard envelope gate: strict resolve, then the
  * drift test (a carried key the resolve stripped is a key the

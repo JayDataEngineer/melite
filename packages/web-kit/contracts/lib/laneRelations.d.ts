@@ -364,4 +364,162 @@ export declare function laneContractOf(decl: LaneContractDecl): LaneContractRow;
  *  omitted (legacy families judge nothing; serving an empty row
  *  would only cost the agent tokens). */
 export declare function laneContractsFor(familyIds: Iterable<string>, declOf: (family: string) => LaneContractDecl | undefined): Record<string, LaneContractRow>;
+/** The marriage aggregation's inputs, structurally — the served
+ *  modifier kind's members the math reads (formSpec's ModifierKind
+ *  carries these verbatim; nothing narrower is invented).
+ *  @see marriedKnobValues */
+export interface MarriageKindInput {
+    /** The bag field the kind counts (the loras array's param key). */
+    param_key: string;
+    /** THE MARRIAGE DECLARATION: knob → aggregation ('max' — the only
+     *  spelling compose layers). */
+    marries?: Record<string, 'max'>;
+    /** The pack's catalog rows: a bag row names one by `id`; its
+     *  declared knob defaults are the row's contribution. */
+    options?: ReadonlyArray<{
+        value: unknown;
+        defaults?: Record<string, unknown>;
+    }>;
+}
+/** THE MARRIED-KNOB AGGREGATION (#36, the recipes rework — compose
+ *  card.ts's own layering verbatim: "a call's own knobs > the lora
+ *  entry's steps > this steps row"): when a served kind declares a
+ *  knob marriage and a counting bag rides, the knob is the BAG's —
+ *  stated on the row first, else the catalog row's default,
+ *  Math.max across the bag ("8 on a 4-step distill is fine, 4 on an
+ *  8-step is undercooked"). THE ONE SPELLING (axis-unification item
+ *  6, D6 — the resolver-consolidation home, beside the voices): the
+ *  face's resolver (card-base resolveValue) displays through this
+ *  math instead of a private copy, so the display and the compose
+ *  layering cannot drift. A bag id the catalog does not serve
+ *  contributes nothing (the mod plane and the compose door refuse
+ *  unknown ids loudly — the display never invents a refusal of its
+ *  own). PURE, no I/O.
+ *
+ *  @param kind the served modifier kind (marries + catalog options).
+ *  @param bag the doc's riding array for the kind's param_key —
+ *  entries may be any shape; non-object rows contribute nothing.
+ *  @returns the knob → married value map, only knobs with at least
+ *  one finite count; absent keys are untouched by the caller. */
+export declare function marriedKnobValues(kind: MarriageKindInput, bag: readonly unknown[]): Record<string, number>;
+/** The minimal variant row the resolver reads — the DECL's variant,
+ *  the facts row's variant, and the flat-matrix fold all carry this.
+ *  Members ride `unknown` because the seats' shapes type them
+ *  differently (string | null | absent); the resolver normalizes. */
+export interface ResolverVariantRow {
+    id: string;
+    route?: unknown;
+    group?: unknown;
+    hide_from_dropdown?: unknown;
+    cells?: readonly ResolverCellRow[];
+}
+/** The minimal cell row: the DECL cell, the facts cell, or a folded
+ *  flat Quant row (quant coordinate + route + visibility). */
+export interface ResolverCellRow {
+    quant?: unknown;
+    route?: unknown;
+    hide_from_dropdown?: unknown;
+}
+/** Which face the caller resolves for.
+ *  - `'declared'`: the engine's coordinate law (id-only match, no
+ *    visibility filtering, first-declared default).
+ *  - `'offered'`: the wire's law (id-or-route, hidden rows not
+ *    offered, Recipe excluded from the default pool, the address
+ *    claims its lane). */
+export type ResolverScope = 'declared' | 'offered';
+/** One variant-axis miss: the stated value, its kind, and the ids of
+ *  the matrix the caller handed (the honest known list — the caller's
+ *  own projection, never a DECL fact the caller cannot see). */
+export type VariantRowResolution<V extends ResolverVariantRow> = {
+    readonly status: 'resolved';
+    readonly variant: V;
+} | {
+    readonly status: 'hidden';
+    readonly variant: V;
+} | {
+    readonly status: 'missing';
+    readonly stated: string;
+    readonly known: readonly string[];
+} | {
+    readonly status: 'pool-empty';
+    readonly known: readonly string[];
+};
+/** One quant-axis miss over the resolved variant's cells. */
+export type CellRowResolution<C extends ResolverCellRow> = {
+    readonly status: 'resolved';
+    readonly cell: C | null;
+    readonly quant: string;
+} | {
+    readonly status: 'missing';
+    readonly stated: string;
+    readonly known: readonly string[];
+};
+/** THE DEFAULT POOL (the wire face): offered rows minus the Recipe
+ *  group; an all-Recipe family falls back to every offered row (the
+ *  recipe-only family still resolves — the door's own
+ *  configured.length gate). Exported for the seat that must refuse
+ *  an all-hidden family BEFORE its stated search (the door's early
+ *  check, order-pinned by its suite) — the pool itself has one
+ *  spelling here. */
+export declare function offeredPool<V extends ResolverVariantRow>(variants: readonly V[]): V[];
+/** THE VARIANT COORDINATE, one law per scope. Stated coordinates
+ *  search the matrix the caller handed (its ids are the honest known
+ *  list on a miss); unstated coordinates resolve through the scope's
+ *  default (declared: first row; offered: the address claim, then
+ *  the pool's first row).
+ *
+ *  @param variants the caller's variant matrix — DECL rows, facts
+ *  rows, or the flat-matrix fold.
+ *  @param stated the body's `variant` value verbatim: a string —
+ *  including the empty string — is stated (the false-admit cure's
+ *  loud refusal); null/undefined (and non-strings) are unstated.
+ *  @param address the compose address (the family/route key the run
+ *  addresses); '' when the seat has none — no claim is made.
+ *  @param scope the face the caller resolves for. */
+export declare function resolveVariantRow<V extends ResolverVariantRow>(variants: readonly V[], stated: unknown, address: string, scope: ResolverScope): VariantRowResolution<V>;
+/** THE QUANT COORDINATE, one law per scope, over the RESOLVED
+ *  variant's cells. Stated coordinates match the quant VALUE (never
+ *  the flat row id — the axisStampOf vocabulary); unstated ones
+ *  claim the address's cell, else the first (visible) cell. A
+ *  variant with no cells resolves `cell: null, quant: ''` — the
+ *  honest empty, the caller's voice names the sync break when it
+ *  must.
+ *
+ *  @param variant the resolved variant row (its cells are searched).
+ *  @param stated the body's `quant` value verbatim: a string —
+ *  including '' — is stated; null/undefined and non-strings are
+ *  unstated.
+ *  @param address the compose address; '' makes no claim.
+ *  @param scope the face the caller resolves for. */
+export declare function resolveCellRow<C extends ResolverCellRow>(variant: ResolverVariantRow | undefined, stated: unknown, address: string, scope: ResolverScope): CellRowResolution<C>;
+/** A served flat-variant row as the fold reads it — the FormSpecDoc
+ *  `variants` members (Variant rows + the serializer's expanded Quant
+ *  cell rows with `owner` backrefs). Structural: the fold keeps the
+ *  original row's every member, so the folded variant still serves as
+ *  the wire row (the dragbar's envelope read, the pick verbs). */
+export interface FlatVariantRowInput {
+    id: unknown;
+    group?: unknown;
+    route?: unknown;
+    quant?: unknown;
+    owner?: unknown;
+    hide_from_dropdown?: unknown;
+}
+/** THE FLAT-MATRIX FOLD (the mirror's P2 face of the one resolver):
+ *  the served spec flattens cells into `group: 'Quant'` rows with
+ *  `owner` backrefs; the resolver reads the nested matrix. This fold
+ *  re-nests the wire rows — Variant/Recipe rows stay (a stated Recipe
+ *  id searches like at the door; the POOL still excludes it from
+ *  defaults), each row's cells become the Quant rows it OWNS, keyed
+ *  by the quant COORDINATE (never the namespaced row id — D2's stamp
+ *  plane: the address is the row's, the value is the cell's). Orphan
+ *  Quant rows (no owner match) drop — the judge could never reach
+ *  them either. The original members ride the spread verbatim.
+ *
+ *  @param rows the served spec's variants array (or any flat matrix).
+ *  @returns the nested matrix: every non-Quant row with its folded
+ *  cells attached. */
+export declare function variantMatrixFromFlatRows<R extends FlatVariantRowInput>(rows: readonly R[]): Array<R & {
+    cells: ResolverCellRow[];
+}>;
 //# sourceMappingURL=laneRelations.d.ts.map

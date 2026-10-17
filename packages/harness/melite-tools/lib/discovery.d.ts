@@ -57,8 +57,10 @@ export declare function resolveSpecKeyForTool(key: string, defs: Map<string, Car
  *  old `primary` form dropped EVERY cell of a non-first-boarded
  *  family — image-gen boards krea-2 first, so the served anima spec
  *  carried zero Quant rows while the DECL declared two, and the
- *  mirror refused with a voice that blamed the DECL). Routeless
- *  cells are unaddressable, never offered. Variant rows serve whole
+ *  mirror refused with a voice that blamed the DECL). A routeless
+ *  cell serves its own family's row — the variant row IS its lane
+ *  (the D4 pool-parity cure, 2026-10-17); routed cells serve by
+ *  addressability. Variant rows serve whole
  *  (all ten keys, always) regardless of route. Exported as the one
  *  serializer the walls ride (the switching sweep; the sync wall's
  *  P2 face is formSpecArm, this door's own body). */

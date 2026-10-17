@@ -26,6 +26,15 @@ declare module "@deepseek-ai/dsh-typert-protocol" {
         "bench/lane-refusal": {
             readonly card: string;
         };
+        /** THE FAMILY REFUSAL (journey-closure B5, 2026-10-17 — hop 3's
+         *  first judge): the card's own family clause (the walk the run
+         *  door enforces — h3's t4r inject keys) refused the MERGED view
+         *  at write time, in the run door's own voice, one hop earlier
+         *  than the run press. Declared beside its sibling so typed
+         *  clients and codecs carry the shape. */
+        "bench/family-refusal": {
+            readonly card: string;
+        };
         /** The CAS law: expect_rev missing, or the bench moved under the
          *  caller — current_rev is the rev to re-read from. */
         "bench/cas-conflict": {

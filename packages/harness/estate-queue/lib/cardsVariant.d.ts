@@ -21,12 +21,17 @@ export interface VariantSelection {
      *  distilled lane's marriage is not agency territory. */
     readonly samplerEnvelope: Readonly<Record<"steps" | "cfg", EnvelopeBound | undefined>> | null;
 }
-/** Select the matrix cell (R1 wire contract): explicit body
- *  variant/quant keys win when stated (matched against facts
- *  variant id/route + cell quant); unstated coordinates fall to
- *  the FIRST non-Recipe variant / first cell (Model.resolve —
- *  the family default). Unknown coordinates refuse LOUD (never a
- *  silent neighbor cell). */
+/** Select the matrix cell (the ONE RESOLVER's wire seat — D6
+ *  2026-10-17: the coordinate law is `resolveVariantRow` +
+ *  `resolveCellRow` in @melite/contracts, shared with the client
+ *  mirror; this seat keeps only its own decoration — the phase
+ *  frame, the hidden-address refusals, the type guards, the legacy
+ *  'native' fold, and the selection's facts-row extraction):
+ *  explicit body variant/quant keys win when stated (matched against
+ *  facts variant id/route + cell quant); unstated coordinates fall
+ *  to the address claim, else the first non-Recipe variant / first
+ *  cell (Model.resolve — the family default). Unknown coordinates
+ *  refuse LOUD (never a silent neighbor cell). */
 export declare function selectCardVariant(mid: string, famRow: ModelFactsRow, body: Record<string, unknown>, phase: string): VariantSelection;
 export declare function stampCardOverlay(body: Record<string, unknown>, famRow: ModelFactsRow, decl: CardDeclRow, sel: VariantSelection, phase: string, fam: string): Record<string, unknown>;
 /** The card-compose lift (card_compose_body 363-372): the run body

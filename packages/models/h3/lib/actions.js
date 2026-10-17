@@ -1408,10 +1408,17 @@ function renderH3Window(p, g, facts, model) {
             // Audio mods are their own extractor (AUDIO in, one mod out);
             // one node per entry, voice-grade defaults, saved for reuse
             // (a data: upload chip names the generic 'audio_mod').
+            // budget_policy + concept_type are REQUIRED bare combos in the
+            // engine's /object_info — no declared default, so no primed
+            // builder autofills them (the B7 wall refuses at compose) — the
+            // graph states the pack's own signature defaults
+            // (vendor/ComfyUI-MiniMaxH3Mod/nodes.py:2143: budget_policy
+            // 'error', concept_type 'voice').
             applyMods(g.node('MiniMaxH3RefModAudioExtract', {
                 audio: g.node('LoadAudio', { audio: src }).out(),
                 audio_vae: vaeAudio,
                 name: src.startsWith('data:') ? 'audio_mod' : src.split(/[\\/]/).pop()?.replace(/\.[^.]+$/, '') ?? 'audio_mod',
+                budget_policy: 'error', concept_type: 'voice',
                 save: true,
             }).out(0));
         }
@@ -1803,8 +1810,15 @@ export const film = {
         // An agent that trusted this row got 'unknown-param' at the door.
         // The compose still reads p.prompt (the lift's write); the
         // ADVERTISED surface is what changed.
-        { name: "image", type: "string" },
-        { name: "last_frame", type: "string" },
+        // THE SCALAR MEDIA SEATS (the NO-DROP law's write half, D8 /
+        // CONTRACTS §4 debt 16 — run-899a8448's burn: the seats declared
+        // plain "string", so the declared plane offered freehand text for
+        // a media seat and the UI wrote a stage name into one). They are
+        // IMAGE seats: a media path at the wire, the form's picker +
+        // upload face — the carrier schema's own `wtype: 'image'` rows
+        // (schema.ts) are the same truth on the serve plane.
+        { name: "image", type: "image" },
+        { name: "last_frame", type: "image" },
         { name: "ref_images", type: "image_list" },
         { name: "ref_videos", type: "image_list" },
         { name: "ref_audios", type: "image_list" },

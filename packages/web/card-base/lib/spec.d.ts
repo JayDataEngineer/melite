@@ -345,7 +345,8 @@ export declare function modelSwitchPatch(spec: FormSpecDoc, model: string, held?
 export declare function axisUnset(name: string, v: unknown, spec: FormSpecDoc | null): boolean;
 /** Seed the axis keys for a fresh stage (the catalog's first-declared
  *  law: each axis defaults to its FIRST composing row). Held values
- *  win (a reopened stage never re-seeds). */
+ *  win (a reopened stage never re-seeds). The key a re-seed WRITES is
+ *  the value the DOOR reads (axisStampOf) — never the flat row id. */
 export declare function seedAxisValues(spec: FormSpecDoc, held: SpecValues): SpecValues;
 /** Seed a stage's USER layer from its held params (the bench's
  * stage.params — the only migration seam). Presence-based, per the
@@ -394,10 +395,13 @@ export declare function reseatEnvelopeKeys(spec: FormSpecDoc, seeded: SpecValues
 export declare function seedRecipeStamp(spec: FormSpecDoc, seeds: SpecValues): SpecValues;
 /** The door's variant resolution, ONE spelling (the dragbar clamp,
  *  2026-10-13): the stated variant matched by id OR route over the
- *  offered pool, else pool[0] — the row whose sampler_envelope the
+ *  matrix, else pool[0] — the row whose sampler_envelope the
  *  judge and the form's dragbar clamps BOTH read. Undefined only
- *  when the pool itself is empty or the stated id matches no row
- *  (the miss voice is composeValidate's own).
+ *  when the pool itself is empty (an all-Recipe matrix) or the
+ *  stated id misses the matrix (the miss voice is composeValidate's
+ *  own). A hidden row cannot occur on a served matrix; if a caller
+ *  hands one, the row resolves exactly as the pre-consolidation
+ *  pool read it (hide flags were never the mirror's pool law).
  *  @param all the spec's full variants array, cells included.
  *  @param doc the resolved display doc (the held variant key). */
 export declare function offeredVariantOf(all: readonly FormVariantRow[], doc: Readonly<Record<string, unknown>>): FormVariantRow | undefined;

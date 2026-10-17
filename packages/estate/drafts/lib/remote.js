@@ -259,21 +259,54 @@ export function laneMigrationOf(ctx) {
         return undefined;
     return reg.laneMigrate.bind(reg);
 }
+/** THE FAMILY ADMISSION SEAT (journey-closure B5, 2026-10-17 — hop
+ *  3's first judge): the registry judges the card's OWN family
+ *  clause (CardDefinition.admitFamily — the same clause the run
+ *  door's compose walk enforces, riding the card's contract module)
+ *  over the merged stage params. A Final-Cut stamp on a keyframe doc
+ *  refuses at the write door with the run door's own voice
+ *  (bench/family-refusal) instead of green-lighting to the run
+ *  press — the patch door's "the params the NEXT run would compose"
+ *  claim, made true for family-conditional cards. The SAME restore
+ *  carve the lane admission rides (the server-set marker, never a
+ *  caller's claim): the archive loads, the run teaches. Returns
+ *  undefined when the registry seat offers no family seam
+ *  (registry-less lanes, pre-B5 registries). Exported for the wall,
+ *  the laneAdmissionOf precedent. */
+export function familyAdmissionOf(ctx) {
+    const reg = resolverOf(ctx);
+    if (reg === null || reg.admitStageFamily === undefined)
+        return undefined;
+    return (card, params, provenance) => {
+        if (provenance === RESTORED_PROVENANCE || provenance === RESTORED_WIRE_SPELLING) {
+            return; // the archive loads; the run teaches
+        }
+        const verdict = reg.admitStageFamily(card, params);
+        if (!verdict.ok) {
+            throw new RemoteError("bench/family-refusal", verdict.error, { card });
+        }
+    };
+}
 /** THE BENCH-WRITE ADMISSION, COMPOSED (2026-10-10): the model
  *  admission (board + repair law) THEN the lane admission (the
- *  DECL's surface + relation words — fix shape 3). The pair is what
- *  every params-bearing bench write walks (ensure/patch/add/load);
- *  either refusing refuses the write in its own voice. */
+ *  DECL's surface + relation words — fix shape 3) THEN the family
+ *  admission (B5 — the card's own family-conditional walk clause
+ *  over the merged view, the run door's voice one hop earlier).
+ *  The trio is what every params-bearing bench write walks
+ *  (ensure/patch/add/load); any judge refusing refuses the write in
+ *  its own voice. Each seat is optional; absent seats drop out. */
 export function benchAdmissionOf(ctx) {
     const modelAdmit = admissionOf(ctx);
     const laneAdmit = laneAdmissionOf(ctx);
-    if (modelAdmit === undefined)
-        return laneAdmit ?? undefined;
-    if (laneAdmit === undefined)
-        return modelAdmit;
+    const familyAdmit = familyAdmissionOf(ctx);
+    const judges = [modelAdmit, laneAdmit, familyAdmit].filter((j) => j !== undefined);
+    if (judges.length === 0)
+        return undefined;
+    if (judges.length === 1)
+        return judges[0];
     return (card, params, provenance) => {
-        modelAdmit(card, params, provenance);
-        laneAdmit(card, params, provenance);
+        for (const judge of judges)
+            judge(card, params, provenance);
     };
 }
 /** Attach the served `resolved` map per stage (prepareCardParams'

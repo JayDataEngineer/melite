@@ -705,6 +705,21 @@ export async function patchBench(drafts, session, body, admit, migrate) {
         // FOREVER, so a human actively editing a pre-law row never met
         // today's law. A patch is a live compose act; it judges with
         // the DECL the next run will compose from.
+        // THE REAL WALK, NOT DICT MEMBERSHIP (journey-closure B5,
+        // 2026-10-17): the injected admission carries the family judge
+        // (remote.ts familyAdmissionOf → the registry's
+        // admitStageFamily → the card's own CardDefinition.admitFamily
+        // clause — h3-timeline's t4r inject-keys walk). For a
+        // family-conditional card this seat now judges exactly what the
+        // run door's walk judges on this merged view — a Final-Cut
+        // stamp on a keyframe doc refuses HERE with the run door's own
+        // voice (bench/family-refusal), one hop earlier — instead of
+        // the dict-membership pass that green-lit it to the run press.
+        // A JUDGE, NOT A GUARD (the operator's no-blocker ruling,
+        // CONTRACTS.md §4-17): the verdict refuses the write; the
+        // stored state, the loads and the restore carve keep their own
+        // law. Cards with no family contract pass untouched (the
+        // optional face absent = no-op).
         // THE STORED ROW IS THE JUDGED ROW (the bench audit's gap 3,
         // 2026-10-10): the door judged the stripped view and stored the
         // raw one, so a doc written by patch held a self-naming model
@@ -1662,6 +1677,29 @@ export async function undoBench(drafts, session, body, admit) {
                 r["history"] = trailDedupe(r["history"]);
         }
         const restored = stagesOf(undoDoc);
+        // THE STANDING-ID REFUSAL (CONTRACTS §4 debt 0 — the 2026-10-26
+        // s_0-twice burn, revs 126-127): an inverse that inserts (remove's
+        // row, group's spill, a future arm) whose id ALREADY STANDS on
+        // the post-undo bench would land a second row under one id — the
+        // exact state the add door refuses (bench/duplicate-stage) and
+        // the load dedupe forbids (the identity audit's A3: stageRow
+        // answers the first row, so the second row's wiring names a stage
+        // the bench answers with someone else's body). Judged on the
+        // RESULT, so a duplicate one target creates and a later target
+        // removes is not refused — only a landing state is. The refusal
+        // aborts the undo whole (the copy-on-judge swap never runs): the
+        // standing row — in the burn, the operator's own re-added work —
+        // keeps the bench, and the log's stale inverse is refused by
+        // name instead of silently overwriting it.
+        const walkedIds = new Set();
+        for (const r of restored) {
+            const id = String(r["id"] ?? "");
+            if (id !== "" && walkedIds.has(id)) {
+                throw new RemoteError("bench/duplicate-stage", "undo would land a second row under id " + id +
+                    " — the standing row keeps the bench", { session, stage: id });
+            }
+            walkedIds.add(id);
+        }
         admitWiringList(restored, session, toleratedByRow(restored.filter((r) => baseIds.has(String(r["id"] ?? ""))), baseIds));
     })();
     loaded.doc = undoDoc;

@@ -27,6 +27,7 @@ import { loadEndpointConfig, packageRoot, resolveRepoRoot } from "../comfyui.js"
 import { join } from "node:path";
 import { ModelError, EngineFacts, ModelDecl as ModelDeclSchema, DeclVariantRow as VariantRowSchema, ParamRelationWords as ParamRelationWordsSchema, } from '@melite/comfyui-card-kit/model-contract';
 import { planeRefusals } from '@melite/contracts/planes';
+import { resolveCellRow, resolveVariantRow } from '@melite/contracts/laneRelations';
 import { validateWriteRowsAgainstActions } from "./validate.js";
 import Schema from "@deepseek-ai/schemastery";
 import { buildCatalog } from "./catalogEmission.js";
@@ -681,25 +682,33 @@ export class ModelsService extends Service {
         throw new ModelError(`unknown model '${id}' (registered: ${this.modelIds().slice(0, 12).join(", ")}…)`);
     }
     /** The variant coordinate (first declared = the family default,
-     *  the matrix law). */
+     *  the matrix law) — THE ONE RESOLVER's declared face (D6
+     *  2026-10-17): the coordinate walk is shared with the estate door
+     *  and the client mirror; this seat keeps only its ModelError
+     *  prose. Null is the unstated mark (first declared); any stated
+     *  id — the empty string included — must match or refuse loud. */
     variantOf(decl, variant) {
-        if (variant === null)
-            return decl.variants[0];
-        const hit = decl.variants.find((v) => v.id === variant);
-        if (hit === undefined) {
-            throw new ModelError(`model '${decl.id}' has no variant '${variant}' (declared: ${decl.variants.map((v) => v.id).join(", ")})`);
+        const res = resolveVariantRow(decl.variants, variant, "", "declared");
+        if (res.status === "resolved")
+            return res.variant;
+        if (res.status === "missing") {
+            throw new ModelError(`model '${decl.id}' has no variant '${res.stated}' (declared: ${res.known.join(", ")})`);
         }
-        return hit;
+        // pool-empty = a DECL with zero variants on the unstated arm —
+        // the pre-consolidation walk silently returned undefined here;
+        // a misshapen DECL refuses loud instead (misconfiguration fails
+        // at the earliest resolvable point).
+        throw new ModelError(`model '${decl.id}' declares no variants`);
     }
-    /** The quant coordinate (first declared = the variant default). */
+    /** The quant coordinate (first declared = the variant default) —
+     *  the resolver's declared face over the DECL's own cells, the
+     *  stated match by quant VALUE. */
     cellOf(variantRow, quant) {
-        if (quant === null)
-            return variantRow.cells[0] ?? null;
-        const hit = variantRow.cells.find((c) => c.quant === quant);
-        if (hit === undefined) {
-            throw new ModelError(`variant '${variantRow.id}' has no quant '${quant}' (declared: ${variantRow.cells.map((c) => c.quant).join(", ")})`);
+        const res = resolveCellRow(variantRow, quant, "", "declared");
+        if (res.status === "missing") {
+            throw new ModelError(`variant '${variantRow.id}' has no quant '${res.stated}' (declared: ${res.known.join(", ")})`);
         }
-        return hit;
+        return res.cell;
     }
     /** THE CASCADE on the inherency primitive: family = base, the
      *  resolving variant = the INTERCEPT (its resolver_defaults dict

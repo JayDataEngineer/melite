@@ -171,6 +171,33 @@ export declare class ComfyUIService extends Service {
         rows: readonly LoraRowDecl[];
         shared: boolean;
     };
+    /** THE VALUE PLANE's family-of-a-value read (journey-closure D5,
+     *  2026-10-17): the families a mod VALUE is registered to,
+     *  derived from the live flavor registrations — the real DECL
+     *  mods trees' compositions (each family's own mods/<pack>.ts),
+     *  never a hand list. A row belongs to the families whose OWN
+     *  rows carry the id; the runtime-catalog union (modCatalog's
+     *  shared arm) re-serves other families' rows but never re-homes
+     *  them. */
+    private valueFamilies;
+    /** THE VALUE-PLANE REFUSAL (journey-closure D5, 2026-10-17): a
+     *  bag VALUE registered outside the run's active family never
+     *  composes — the door refuses it named (value + its registered
+     *  family + the run's family), the unknown-* voice's family
+     *  clause. The tile (the bag KEY) is card-wide legal by
+     *  admission; the VALUE is judged HERE, where the run's family is
+     *  known and the compose catalog's boarded-families fallback
+     *  (modCatalogForCompose — load-bearing for routed composes)
+     *  would otherwise absorb a foreign pick silently (the Krea2-tile
+     *  class: image-gen boards krea-2 first, so an anima run's
+     *  row-less catalog fell through to krea-2's rows and stacked
+     *  them). ONE OWNER, the DOOR: the client's modelSwitchPatch
+     *  MOD-CURRENCY clause stays the gesture-hop mirror — it nulls
+     *  bags only on a cross-spec SWITCH gesture; the model-key
+     *  re-point path and hand-authored payloads never cross it (the
+     *  B5/D3 pattern: the door refuses loud, the client mirrors one
+     *  hop earlier). */
+    private assertValueFamily;
     /** The verbs mounted on a card (SubActionMods of its boarded
      *  families — knobs NEVER on the card surface). */
     cardVerbs(cardId: string): VerbRegistration[];

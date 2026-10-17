@@ -71,6 +71,13 @@ export function registerCard(ctx, comfy) {
             // 2026-10-09): the character the motion skins onto is a REAL
             // wire seat — a prior motion stage's animated_glb (mesh)
             // chains straight in (motion → motion re-skinning).
+            // THE NON-SEAT RULING (journey-closure C5, operator
+            // 2026-10-17): motion_npz chains from the previous motion's
+            // last frame — a graph-wired data channel, not a hand-typed
+            // param seat; the compose gate does not judge it as an
+            // admission (census group-scope statement names it:
+            // cards-admission-matrix.spec.ts T8 — its condition arm reds
+            // if motion_npz ever gains a hand-typed admission seat).
             inputs: { prompt: 'text', motion_npz: 'data', preview_glb: 'mesh' },
             outputs: { motion_npz: 'data', animated_glb: 'mesh' },
             requiresModel: false,

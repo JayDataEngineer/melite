@@ -152,6 +152,15 @@ export const DECL = {
     // THE LANE SURFACE (the z-image precedent): exactly the knobs the
     // motion card serves — the prompt, the sampling tail, and the
     // motion-segment inputs.
+    // THE NON-SEAT ROW (journey-closure C5, operator 2026-10-17): the
+    // motion_npz row states what the compose action READS; the VALUE's
+    // home is the graph wiring — motion_npz chains from the previous
+    // motion's last frame as a graph-wired data channel (the motion
+    // card's flowKinds + flowOutputBindings, card.ts:88-93), not a
+    // hand-typed param seat. The admission census's group-scope
+    // statement names it not-judged on that seam
+    // (cards-admission-matrix.spec.ts T8; its condition arm reds if
+    // the channel ever gains a hand-typed admission seat).
     "params": [
         "prompt", "seed",
         "duration_sec", "diffusion_steps",

@@ -559,8 +559,30 @@ export function schema(v) {
     const bad = (keys) => keys.filter((kk) => explicit.has(kk)).sort();
     if (variant === 't4r') {
         const b = bad(T4_ONLY_KEYS);
-        if (b.length)
-            throw new Error(`h3_window(t4r): unsanctioned inject keys: ${b.join(', ')}`);
+        if (b.length) {
+            // (B8, journey-closure 2026-10-17 — h3-inject-keys-burn
+            // §CURES-OWED 6 / timeline-calls-burn §CURES-OWED 7) THE
+            // HONEST-VOICE RIDER, per the cured unknownQuantVoice precedent
+            // (web-kit/contracts laneRelations: a refusal names the SEAM
+            // and the repair, not just the fact). The spine
+            // `h3_window(t4r): unsanctioned inject keys: <keys>` stays
+            // byte-identical — the B5 admission clause and the pick verdict
+            // quote it verbatim, the walls grep it — the tail only extends
+            // it. The writer: the keys were staged lawfully on the doc's
+            // Layer-A plane (the serializer's emit dialects or a recipe
+            // stamp) and the guide seats re-derived t4r under them. The
+            // repair is one gesture: a stating commit through the studio
+            // re-derives the family and unstamps the residue in the same
+            // save (the B2 flip writer), or the named keys null-delete at
+            // the bench patch door. The film-only sibling below keeps its
+            // own voice — its writer is a stale duck row, not this emit
+            // (follow-up, not this scope).
+            throw new Error(`h3_window(t4r): unsanctioned inject keys: ${b.join(', ')}`
+                + ` — the studio's Layer-A emit carries lane-dead post keys (the family re-derived t4r under a legal stamp);`
+                + ` the repair is one gesture: restate the doc through the studio`
+                + ` (the commit re-derives the family and unstamps the residue)`
+                + ` or null the named keys at the patch door`);
+        }
     }
     // (B6, timeline-calls-burn §CURES-OWED 5 / ui-truth-gap #4's walk
     // leg) THE FILM-ONLY GATE, the t4r gate's sibling: FILM_ONLY_KEYS
