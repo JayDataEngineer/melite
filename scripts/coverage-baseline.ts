@@ -468,7 +468,9 @@ export const COVERAGE_BASELINE: Record<string, {
   // door (Sahar R2, order b); scoped probe over the component +
   // call-cards suites measures 100×4)
   '**/packages/video/h3-timeline/src/ui/studio/RailBackButton.tsx': { statements: 100, branches: 100, functions: 100, lines: 100 },
-  '**/packages/video/h3-timeline/src/ui/studio/useFamilyReseatHeal.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
+  // (B2, journey-closure 2026-11-06) useFamilyReseatHeal.ts DELETED —
+  // the D8 mount heal dissolved into the commit seam (useShownDoc.ts),
+  // its row dies with the file (one row per gated file).
   // (2026-11-06) the square-grammar sweep: the mods chip-row swap
   // arms (listing/upload/chipOfListing's verbatim else) are doors
   // the wire-picker re-wiring orphaned — branches argued to the

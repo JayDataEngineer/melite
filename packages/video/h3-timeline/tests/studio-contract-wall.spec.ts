@@ -19,9 +19,12 @@
 import { assertHermeticRode } from "../../../../tests/helpers/hermetic-engine.ts"
 import "../../../../tests/helpers/boot-models.ts"
 import { describe, expect, it, beforeAll, afterAll } from "vitest"
+import { act, renderHook } from "@testing-library/react"
+import type { CardStage } from "@melite/contracts"
 import { carrier, BOARDED, VARIANT_ADDRESSES } from "../src/card.ts"
 import { emitParamsSpec } from "@melite/comfyui-card-kit/params-emit"
 import { serializeLayerA, hydrateLayerA } from "../src/ui/studio/docHydrate.ts"
+import { useShownDoc } from "../src/ui/studio/useShownDoc.ts"
 import { CALL_KNOB_KEYS, mergeDocLayers } from "../src/ui/studio/docModel.ts"
 import { film } from "@melite/models-h3/actions"
 import { schema as h3schemaFn } from "@melite/models-h3/schema"
@@ -455,6 +458,75 @@ describe("the studio contract wall (Layer A writes only card truth)", () => {
         `${family}: the studio's own settled emit refuses at the real door`,
       ).resolves.toBeDefined()
     }
+  })
+
+  // THE FLIP WRITER ARM (B2, journey-closure 2026-11-06 — the commit
+  // seam's own hop, walled at [2]→[4]). ONE LINE: "a pin added to a
+  // Final-Cut-stamped doc commits a composing saved doc in the same
+  // gesture." The gesture rides the REAL commit seam (useShownDoc —
+  // the D8 reseat's one owner; the mount heal dissolved into it):
+  // the commit derives the family over the post-gesture doc, sees
+  // t4r, and unstamps the T4_ONLY residue in the SAME onSave — the
+  // serializer's delete ride nulls each base stamp (B1's one-owner
+  // law: the serializer omits the value side, the commit carries the
+  // delete side). The settled doc composes through the REAL walk.
+  // THE HONEST EDGE — never green: the doc a run reads before the
+  // reseat half settles (the pin landed, the stamps still standing —
+  // the strand the toggled-out world saves) refuses loud with the
+  // operator's verbatim brick. The cure makes the GESTURE legal; it
+  // never silences the door.
+  it("the flip writer: a pin added to a Final-Cut-stamped doc commits a composing saved doc in the same gesture; the pre-settle strand still refuses loud", async () => {
+    expect(svc, "the estate boot rode — the flip arm runs against the real registry").toBeDefined()
+    // the base: a compose-legal t4_open doc legally carrying the
+    // Final Cut post stamps (the bounds mirror the R2 arm's probe —
+    // junk geometry would refuse on bounds, not on family)
+    const base: Record<string, unknown> = {
+      seed: 7, width: 768, height: 448, steps: 12,
+      second_pass_enabled: true, sr_switch: true,
+      calls: [{ text: "the harbour holds its breath", start_frame: 0, end_frame: 90 }],
+    }
+    expect(deriveWindowFamily(base)).toBe("t4_open")
+    // THE PIN, pre-reseat: base + the keyframe pin derives t4r with
+    // the stamps standing — the strand a run reads before the
+    // reseat settles. It refuses loud (the walk's own voice).
+    const strand = { ...base, keyframes: [{ image: "anchor.png", frame: 0 }] }
+    expect(deriveWindowFamily(strand)).toBe("t4r")
+    await expect(
+      svc.phase1Card({ ...strand, card: "h3-timeline", model: "h3" }, "h3"),
+      "the pre-settle strand must refuse loud — silencing this is the dishonest cure",
+    ).rejects.toThrow(/unsanctioned inject keys/)
+    // THE FLIP GESTURE through the real commit seam: add the keyframe
+    // pin (only the DOOR is a spy — the seat is live)
+    const sent: Array<Record<string, unknown>> = []
+    const mounted = renderHook(
+      ({ stage }) => useShownDoc(stage, (p) => { sent.push(p) }),
+      { initialProps: { stage: { id: "s-b2-flip", params: base } as unknown as CardStage } },
+    )
+    act(() => {
+      mounted.result.current.updateKeyframes((prev) => [...prev, { image: "anchor.png", frame: 0 }])
+    })
+    expect(sent.length, "the flip gesture sent exactly one door write").toBe(1)
+    const payload = sent[0]!
+    // the SAME gesture carried the stamps' deletes (the merge-patch
+    // nulls) beside the pin — the reseat in the same onSave
+    expect(payload.keyframes).toEqual([{ image: "anchor.png", frame: 0 }])
+    expect(payload.sr_switch, "the flip's write must null the base stamp (the commit-seam reseat)").toBeNull()
+    expect(payload.second_pass_enabled).toBeNull()
+    // THE BENCH SETTLEMENT (the merge-patch law, per key null deletes)
+    const settled: Record<string, unknown> = { ...base }
+    for (const [k, v] of Object.entries(payload)) {
+      if (v === null) delete settled[k]
+      else settled[k] = v
+    }
+    expect(deriveWindowFamily(settled)).toBe("t4r")
+    for (const k of T4_ONLY_KEYS as readonly string[]) {
+      expect(k in settled, `B2: "${k}" survived the flip settlement — the saved doc would refuse`).toBe(false)
+    }
+    // THE SAVED DOC COMPOSES: the settlement rides the real door
+    await expect(
+      svc.phase1Card({ ...settled, card: "h3-timeline", model: "h3" }, "h3"),
+      "the flip's settled saved doc refuses at the real door — the commit-seam reseat did not land",
+    ).resolves.toBeDefined()
   })
 
   // THE FINAL CUT BRICK (2026-10-16, journey audit 0be61df8 F1 —

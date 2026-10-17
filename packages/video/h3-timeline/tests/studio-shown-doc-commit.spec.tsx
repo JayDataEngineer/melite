@@ -34,6 +34,8 @@ function seat(params: Record<string, unknown>) {
     sent,
     layerA: () => mounted.result.current.layerA,
     setLayerAKey: mounted.result.current.setLayerAKey,
+    updateCalls: mounted.result.current.updateCalls,
+    updateKeyframes: mounted.result.current.updateKeyframes,
     /** Simulate the durable settle: the refresh carries the merged doc. */
     settle: (next: Record<string, unknown>) => mounted.rerender({ stage: stageOf(next) }),
   }
@@ -134,5 +136,147 @@ describe("the no-op law at the real seat", () => {
     const before = s.sent.length
     act(() => { s.setLayerAKey("seed", 7) })
     expect(s.sent.length).toBe(before)
+  })
+})
+
+// B2 — THE FLIP WRITER (journey-closure 2026-11-06): the commit seam
+// is the D8 reseat's ONE owner (useFamilyReseatHeal dissolved into
+// it). Every arm here rides the real hook: only the door is a spy;
+// the seat (project → overlay → derive → serialize → unstating →
+// send → op append → retraction) is live. Each arm reds when the
+// commit-seam reseat is toggled out — the flip arms then save the
+// stamped doc unchanged and the walk refuses it.
+describe("B2 — the flip writer (the commit unstamps the residue in the same gesture)", () => {
+  // the Final-Cut-stamped t4_open doc: one text call (no guide), the
+  // post stamps legal on that lane — the flip arm's exact base
+  const stampedOpen = {
+    calls: [{ text: "a", start_frame: 0, end_frame: 48 }],
+    seed: 7, sr_switch: true, second_pass_enabled: true,
+  }
+
+  it("THE FLIP: a pin added to a stamped doc rides the keyframes AND the stamps' deletes in ONE write", () => {
+    const s = seat(stampedOpen)
+    act(() => { s.updateKeyframes((prev) => [...prev, { image: "anchor.png", frame: 0 }]) })
+    expect(s.sent.length).toBe(1)
+    const p = s.sent[0]!
+    // the gesture's own plane rides
+    expect(p.keyframes).toEqual([{ image: "anchor.png", frame: 0 }])
+    // the reseat: both base stamps ride their merge-patch null — the
+    // saved doc reads clean at the bench (the delete is the null)
+    expect(p.sr_switch).toBeNull()
+    expect(p.second_pass_enabled).toBeNull()
+    // the shown layer cleared in the SAME gesture (the reseat op is
+    // live): the dead rail reads OFF, never a stated-value lie
+    expect(s.layerA().sr_switch).toBe(false)
+    expect(s.layerA().second_pass_enabled).toBe(false)
+  })
+
+  it("the layerA-channel flip unstamps inside its own single write (ref_images stated on a stamped doc)", () => {
+    const s = seat(stampedOpen)
+    act(() => { s.setLayerAKey("ref_images", ["runs/r1/anchor.png"]) })
+    expect(s.sent.length).toBe(1)
+    const p = s.sent[0]!
+    expect(p.ref_images).toEqual(["runs/r1/anchor.png"])
+    expect(p.sr_switch).toBeNull()
+    expect(p.second_pass_enabled).toBeNull()
+    expect(s.layerA().sr_switch).toBe(false)
+  })
+
+  it("the burn's own gesture: a call deleted from a stamped two-call film unstamps in the same write", () => {
+    // the D8 brick verbatim: the film legally carried its stamps on
+    // t4_chain; deleting the second call derives t4r (the remaining
+    // call guides) — the deletion's OWN onSave carries the deletes
+    const s = seat({
+      calls: [
+        { text: "a", start_frame: 0, end_frame: 48, image: "anchor.png" },
+        { text: "b", start_frame: 48, end_frame: 96 },
+      ],
+      seed: 7, sr_switch: true, second_pass_enabled: true,
+    })
+    expect(s.layerA().sr_switch).toBe(true)
+    act(() => { s.updateCalls((prev) => prev.slice(0, 1)) })
+    const p = s.sent[s.sent.length - 1]!
+    // the surviving call rides whole (the grid snap is serializeCalls'
+    // own law, walled in doc-calls; the guide survives it)
+    expect(p.calls.length).toBe(1)
+    expect((p.calls as Array<{ image?: string }>)[0]!.image).toBe("anchor.png")
+    expect(p.sr_switch).toBeNull()
+    expect(p.second_pass_enabled).toBeNull()
+    expect(s.layerA().sr_switch).toBe(false)
+  })
+
+  it("a non-t4r commit never touches the post rail (t4_chain keeps its stamps)", () => {
+    const s = seat({
+      calls: [
+        { text: "a", start_frame: 0, end_frame: 48 },
+        { text: "b", start_frame: 48, end_frame: 96 },
+      ],
+      seed: 7, sr_switch: true, second_pass_enabled: true,
+    })
+    act(() => { s.setLayerAKey("seed", 9) })
+    const p = s.sent[s.sent.length - 1]!
+    expect(p.seed).toBe(9)
+    // the stamps ride AS VALUES — the lane honors them; no delete
+    expect(p.sr_switch).toBe(true)
+    expect(p.second_pass_enabled).toBe(true)
+  })
+
+  it("the no-churn law: a commit on a clean t4r doc states nothing beyond the gesture", () => {
+    // a guided call derives t4r; the base never stamped — the
+    // unstating is output-invariant, so no residue keys ride
+    const s = seat({ calls: [{ text: "a", start_frame: 0, end_frame: 48, image: "anchor.png" }], seed: 7 })
+    act(() => { s.setLayerAKey("seed", 9) })
+    const p = s.sent[s.sent.length - 1]!
+    expect(Object.keys(p).sort()).toEqual(["seed", "sla_disable_fp16_accum", "sla_protect_audio", "sla_stabilize_motion"])
+    expect(Object.values(p).every((v) => v !== null)).toBe(true)
+  })
+
+  it("THE HONEST EDGE: the P7 refusal refuses the WHOLE gesture — the stamps stay standing, nothing overlays", () => {
+    const mounted = renderHook(
+      ({ stage }) => useShownDoc(stage, () => false),
+      { initialProps: { stage: stageOf(stampedOpen) } },
+    )
+    act(() => { mounted.result.current.updateKeyframes((prev) => [...prev, { image: "anchor.png", frame: 0 }]) })
+    // the door was called and answered false: neither the pin nor the
+    // deletes ride the overlay — the studio shows the bench's truth
+    expect(mounted.result.current.keyframes.length).toBe(0)
+    expect(mounted.result.current.layerA.sr_switch).toBe(true)
+  })
+
+  it("the P8 late false retracts BOTH ops (the flip's pin and its reseat)", async () => {
+    let answer: Promise<boolean> = Promise.resolve(false)
+    const mounted = renderHook(
+      ({ stage }) => useShownDoc(stage, () => answer),
+      { initialProps: { stage: stageOf(stampedOpen) } },
+    )
+    await act(async () => {
+      mounted.result.current.updateKeyframes((prev) => [...prev, { image: "anchor.png", frame: 0 }])
+    })
+    // both ops retracted: the pin is gone AND the stamps read ON again
+    expect(mounted.result.current.keyframes.length).toBe(0)
+    expect(mounted.result.current.layerA.sr_switch).toBe(true)
+    // the rejection arm retracts the same way (a door that throws
+    // refused louder than false)
+    answer = Promise.reject(new Error("refused"))
+    await act(async () => {
+      mounted.result.current.updateKeyframes((prev) => [...prev, { image: "anchor.png", frame: 0 }])
+    })
+    expect(mounted.result.current.keyframes.length).toBe(0)
+    expect(mounted.result.current.layerA.sr_switch).toBe(true)
+  })
+
+  it("a live layerA op is superseded by the flip's reseat op — the edit survives, the stamp dies", () => {
+    const s = seat(stampedOpen)
+    act(() => { s.setLayerAKey("fps", 30) })
+    expect(s.layerA().fps).toBe(30)
+    expect(s.layerA().sr_switch).toBe(true)
+    // the pin flips the one-call doc to t4r: the reseat op (max seq)
+    // wins the layer plane carrying the fps edit WITH the unstating
+    act(() => { s.updateKeyframes((prev) => [...prev, { image: "anchor.png", frame: 0 }]) })
+    expect(s.layerA().fps).toBe(30)
+    expect(s.layerA().sr_switch).toBe(false)
+    // the reseat's door record carries the edit AND the delete
+    const layerWrite = s.sent.find((p) => p.fps === 30 && p.sr_switch === null)
+    expect(layerWrite).toBeDefined()
   })
 })

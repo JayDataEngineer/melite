@@ -93,7 +93,6 @@ import { useEnhance } from "./useEnhance.ts"
 import { useCallMutations } from "./useCallMutations.ts"
 import { useBeatMutations } from "./useBeatMutations.ts"
 import { useDerivedView } from "./useDerivedView.ts"
-import { useFamilyReseatHeal } from "./useFamilyReseatHeal.ts"
 import { projectH3StageViewProps } from "./projection.ts"
 import { studioCopy } from "./studioCopy.ts"
 
@@ -215,18 +214,10 @@ export function VideoTimelineStudio(owner: StageViewOwnerProps) {
   const enh = useEnhance()
   const mut = useCallMutations(doc.updateCalls, fps)
   const kf = useBeatMutations(keyframes, doc.updateKeyframes)
-  // THE FAMILY-RESEAT HEAL (D8, 2026-11-06): a doc whose derived
-  // family moved to t4r (a film lost a call / gained a guide)
-  // unstated the T4_ONLY post keys it still carries — the walk
-  // refuses them on that lane and every compose would brick. The
-  // law's home: useFamilyReseatHeal (its own spec owns the arms).
-  useFamilyReseatHeal(
-    // raw (null included): the hook's merge owns the null law —
-    // one branch, one owner (its spec drives every arm)
-    stage.params,
-    layerA,
-    doc.updateLayerA,
-  )
+  // THE FAMILY RESEAT'S ONE OWNER (B2, journey-closure 2026-11-06):
+  // the D8 mount heal (useFamilyReseatHeal, deleted) dissolved into
+  // the commit seam — useShownDoc's commit unstamps the T4_ONLY
+  // residue in the same onSave that flips the family to t4r.
   const derived = useDerivedView({
     upstreams, stage, calls, layerA, keyframes,
     filmMap: audio.filmMap, filmFromDoc: audio.filmFromDoc, selected, fps, totalFrames,

@@ -16,11 +16,23 @@
  * and useDocEffects' three persist arms (moved to the gesture).
  * The view-sync thirds (playhead clamp, selection scroll/guard)
  * live in useStudioViewSync — no save, no guards.
+ *
+ * THE FLIP WRITER (B2, journey-closure 2026-11-06): commit is
+ * family-aware — the D8 reseat's ONE owner (useFamilyReseatHeal is
+ * deleted with this change, its mount effect dissolved into the
+ * gesture). Any commit whose post-gesture doc derives t4r unstamps
+ * the T4_ONLY residue in the SAME onSave: the serializer's delete
+ * ride nulls each base-carried stamp (B1's one-owner law — the
+ * serializer omits the value side, the commit carries the delete
+ * side) and the appended layer-A op clears the shown poles. See the
+ * commit body for the full contract.
  */
 import { useEffect, useMemo, useRef, useState } from "react"
 import type { Dispatch, SetStateAction } from "react"
 import type { CardStage } from "@melite/contracts"
+import { T4_ONLY_KEYS, deriveWindowFamily } from "@melite/models-h3/timelineContract"
 import type { DocCall, DocKeyframe, LayerA } from "./docModel.ts"
+import { mergeDocLayers } from "./docModel.ts"
 import { serializeLayerA } from "./docHydrate.ts"
 import { serializeCalls, serializeKeyframes, corruptCallsField } from "./docCalls.ts"
 import {
@@ -35,6 +47,39 @@ function channelPayload(channel: OpChannel, value: unknown): Record<string, unkn
   if (channel === "calls") return { calls: value }
   if (channel === "keyframes") return { keyframes: value }
   return value as Record<string, unknown>
+}
+
+/** THE FLIP WRITER's unstating payload (B2, journey-closure
+ * 2026-11-06): the layer with every T4_ONLY member unstated,
+ * serialized against the post-gesture base — the door record whose
+ * canonical digest differs from the layer's own serialization
+ * exactly when a base-carried stamp gains its delete-ride null (B1's
+ * gate deletes the value side; only the unstated state can ride the
+ * null). The base is the RAW params under the gesture's structural
+ * planes (calls/keyframes view arrays overlaid) — never the full
+ * shown view: the delete ride reads base KEYS, and the hydrate's own
+ * false poles (sharpen_enabled: false on a doc that never carried
+ * the key) would read as stamps and null themselves — phantom
+ * deletes. The gate still sees the gesture's planes: serializeLayerA
+ * derives the family over mergeDocLayers(base, a), and `calls`/
+ * `keyframes` — overlaid here — plus the layer's own ref surface (in
+ * `a`) give it the post-gesture truth; serialized against the raw
+ * params alone the always-emit poles would ride false in the SAME
+ * onSave and the saved doc would refuse on them (the flip arm's
+ * verdict).
+ *
+ * @param layer the post-gesture layer A (shown state, gesture included)
+ * @param structBase the persisted raw under the gesture's calls/keyframes
+ * @returns the unstated plane's door record, or null when the
+ *  unstating states nothing (no base stamps; the hydrate's false
+ *  poles serialize identically) — the no-churn law, the gesture
+ *  rides alone */
+function unstatedLayerA(layer: LayerA, structBase: Record<string, unknown>): Record<string, unknown> | null {
+  const cured = { ...(layer as unknown as Record<string, unknown>) }
+  for (const k of T4_ONLY_KEYS) cured[k] = undefined
+  const payload = serializeLayerA(cured as unknown as LayerA, structBase)
+  if (canonicalJson(payload) === canonicalJson(serializeLayerA(layer, structBase))) return null
+  return payload
 }
 
 export function useShownDoc(
@@ -137,19 +182,69 @@ export function useShownDoc(
     serialize: (v: V) => unknown,
     getShown: (doc: ProjectedDoc) => V,
   ): Dispatch<SetStateAction<V>> => (u) => {
-    const prev = getShown(overlayDoc(projectedRef.current, liveOps(projectedRef.current, opsRef.current)))
+    const shownBefore = overlayDoc(projectedRef.current, liveOps(projectedRef.current, opsRef.current))
+    const prev = getShown(shownBefore)
     const next = typeof u === "function" ? (u as (p: V) => V)(prev) : u
-    const payload = serialize(next)
+    let payload = serialize(next)
     // THE NO-OP LAW (the mirror's `return prev` arms, by value):
     // an update that states nothing sends nothing, appends nothing.
     // Canonical digest (A1) — key order is not a statement.
     if (canonicalJson(payload) === canonicalJson(serialize(prev))) return
+    // THE FLIP WRITER (B2, journey-closure 2026-11-06 — the D8
+    // reseat's ONE owner; useFamilyReseatHeal dissolved here): the
+    // family is re-derived over the POST-GESTURE doc — the base
+    // under the gesture's planes and every live op (mergeDocLayers,
+    // defined-wins, the one spelling the walk reads) — and a
+    // derived-t4r result unstamps the T4_ONLY residue in the SAME
+    // onSave. serializeLayerA's delete ride nulls each base-carried
+    // stamp (B1's one-owner law: the serializer omits the value
+    // side, this gesture carries the delete side); the layer-A op
+    // appended below clears the shown poles, so the dead rail reads
+    // OFF the moment the gesture lands. The unstating serializes
+    // against the raw params under the gesture's structural planes —
+    // the gate sees the planes without the hydrate's false poles
+    // reading as stamps (see unstatedLayerA). A calls/keyframes
+    // commit whose unstating is real rides the whole layer-A plane
+    // as its second op (the door's own granularity); a layer-A
+    // commit folds the unstating into its own single write. The
+    // reseat fires only when the unstating CHANGES the payload
+    // (unstatedLayerA's canonical no-churn law): a doc the base
+    // never stamped states nothing extra. A strand that arrives
+    // between gestures (a stamped legacy doc at mount, a settlement
+    // that raced this write) has no writer until the next stating
+    // gesture and refuses loud at the door — the honest edge the
+    // contract wall's flip arm pins.
+    const layerNow = (channel === "layerA" ? next : shownBefore.layerA) as LayerA
+    const gesturePlanes = {
+      calls: channel === "calls" ? (next as DocCall[]) : shownBefore.calls,
+      keyframes: channel === "keyframes" ? (next as DocKeyframe[]) : shownBefore.keyframes,
+    }
+    // the family trigger: the base under the gesture's planes AND the
+    // shown layer (the ref surface rides the layer plane — the walk
+    // reads it from the merge)
+    const reseat = deriveWindowFamily(mergeDocLayers(baseRef.current, {
+      ...(layerNow as unknown as Record<string, unknown>),
+      ...gesturePlanes,
+    })) === "t4r" ? unstatedLayerA(layerNow, mergeDocLayers(baseRef.current, gesturePlanes)) : null
+    if (reseat !== null && channel === "layerA") payload = reseat
     // P7: a door that answers `false` refused the statement — the
-    // op never rides (no overlay of a write the bench lacks).
-    const answer = onSave(channelPayload(channel, payload))
+    // op never rides (no overlay of a write the bench lacks), and
+    // the reseat's deletes never ride without the gesture that
+    // earned them.
+    const answer = onSave({
+      ...channelPayload(channel, payload),
+      ...(reseat !== null && channel !== "layerA" ? reseat : {}),
+    })
     if (answer === false) return
     const op: PendingOp = { channel, value: payload, seq: seqRef.current++ }
     const seq = op.seq
+    // The reseat's second plane rides its own layer-A op; it
+    // supersedes any live layer-A op, whose stated content it
+    // carries (it serialized from the shown layer that op wins in).
+    const reseatOp: PendingOp | undefined = reseat !== null && channel !== "layerA"
+      ? { channel: "layerA", value: reseat, seq: seqRef.current++ }
+      : undefined
+    const reseatSeq = reseatOp?.seq
     // THE ANCESTOR PRUNE (P8, 2026-10-15, the ghost cure, half one):
     // latest-per-channel wins the overlay, and the superseded ops are
     // DROPPED with the successor — a failed op a later gesture already
@@ -157,16 +252,20 @@ export function useShownDoc(
     // the dead value (never contained by the doc) would otherwise sit
     // max-seq live forever, masking every later settlement — the
     // permanent one-gesture-behind ghost.
-    opsRef.current = [...opsRef.current.filter((o) => o.channel !== channel), op]
+    let kept = opsRef.current.filter((o) => o.channel !== channel)
+    if (reseatOp !== undefined) kept = kept.filter((o) => o.channel !== "layerA")
+    opsRef.current = reseatOp !== undefined ? [...kept, op, reseatOp] : [...kept, op]
     setOps(opsRef.current)
     // THE ASYNC RETRACTION (P8, half two): the fence's late answer —
-    // a refused coalesced write retracts exactly the op it carried.
-    // A rejection retracts too (a door that throws refused louder
-    // than false). Anything else keeps the op for the doc to retire.
+    // a refused coalesced write retracts exactly the ops it carried,
+    // the reseat's op with the gesture's own. A rejection retracts
+    // too (a door that throws refused louder than false). Anything
+    // else keeps the ops for the doc to retire.
     if (answer instanceof Promise) {
+      const seqs = reseatSeq === undefined ? [seq] : [seq, reseatSeq]
       void answer.then(
-        (landed) => { if (landed === false) dropOp(seq) },
-        () => { dropOp(seq) },
+        (landed) => { if (landed === false) for (const s of seqs) dropOp(s) },
+        () => { for (const s of seqs) dropOp(s) },
       )
     }
   }

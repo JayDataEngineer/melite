@@ -192,7 +192,8 @@ describe("the schema gate arms", () => {
   // stamped sr_switch lost a call, derived t4r, and every compose
   // refused). The walk keeps refusing the post rail on the guided
   // lane — LOUD, naming the key — while the rail's family gate and
-  // the reseat heal (useFamilyReseatHeal) keep the UI from ever
+  // the commit seam's flip writer (useShownDoc — B2's one owner,
+  // the mount heal dissolved into it) keep the UI from ever
   // WRITING one there. The refusal is the last line, not the first.
   it("t4r openers refuse the second-pass rail by its live spelling — sr_switch", () => {
     assert.throws(
