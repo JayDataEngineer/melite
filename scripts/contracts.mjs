@@ -18,7 +18,7 @@
  *  (schema in AGENTS.md LAW 4); receipts at
  *  dev_docs/contracts/receipts/<date>-<contract>.md.
  */
-import { readFileSync, writeFileSync, existsSync, readdirSync } from 'node:fs'
+import { readFileSync, writeFileSync, appendFileSync, existsSync, readdirSync } from 'node:fs'
 import { join, basename } from 'node:path'
 import { argv, exit, cwd } from 'node:process'
 import YAML from 'yaml'
@@ -103,7 +103,7 @@ function recordProof(opts) {
   const date = new Date().toISOString().slice(0, 10)
   // receipt_ref may be store-rooted (dev_docs/contracts/...) or
   // contracts-rooted (the migration carries both spellings)
-  const rawName = row.receipt_ref ?? `${date}-${opts.id.toLowerCase()}.md`
+  const rawName = row.receipt_ref ?? `receipts/${date}-${opts.id.toLowerCase()}.md`
   const receiptName = rawName.startsWith('dev_docs/') ? rawName.slice('dev_docs/contracts/'.length) : rawName
   const receiptPath = join(CONTRACTS, receiptName)
   const entry = [
@@ -121,7 +121,8 @@ function recordProof(opts) {
     'Append via `pnpm contract record-proof` — never read to code against.',
     '',
   ].join('\n')
-  writeFileSync(receiptPath, head + entry + '\n')
+  if (existsSync(receiptPath)) appendFileSync(receiptPath, entry + '\n')
+  else writeFileSync(receiptPath, head + entry + '\n')
   const rows = tierRows(row.tier)
   const target = rows.find((r) => r.id === opts.id)
   target.receipt_ref = receiptName
