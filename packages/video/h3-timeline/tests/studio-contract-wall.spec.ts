@@ -479,10 +479,16 @@ describe("the studio contract wall (Layer A writes only card truth)", () => {
     expect(svc, "the estate boot rode — the flip arm runs against the real registry").toBeDefined()
     // the base: a compose-legal t4_open doc legally carrying the
     // Final Cut post stamps (the bounds mirror the R2 arm's probe —
-    // junk geometry would refuse on bounds, not on family)
+    // junk geometry would refuse on bounds, not on family) — AND the
+    // two always-emit poles the studio's own first save writes into
+    // the stored base (serializeLayerA emits sharpen_enabled/
+    // interpolate_enabled unconditionally; E2's real-roundtrip ride
+    // proved the wall's copy without them judged a shape the real
+    // bench never holds — THE JOURNEY/DEPTH class)
     const base: Record<string, unknown> = {
       seed: 7, width: 768, height: 448, steps: 12,
       second_pass_enabled: true, sr_switch: true,
+      sharpen_enabled: false, interpolate_enabled: false,
       calls: [{ text: "the harbour holds its breath", start_frame: 0, end_frame: 90 }],
     }
     expect(deriveWindowFamily(base)).toBe("t4_open")

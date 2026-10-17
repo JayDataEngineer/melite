@@ -77,7 +77,22 @@ function channelPayload(channel: OpChannel, value: unknown): Record<string, unkn
 function unstatedLayerA(layer: LayerA, structBase: Record<string, unknown>): Record<string, unknown> | null {
   const cured = { ...(layer as unknown as Record<string, unknown>) }
   for (const k of T4_ONLY_KEYS) cured[k] = undefined
-  const payload = serializeLayerA(cured as unknown as LayerA, structBase)
+  const payload = serializeLayerA(cured as unknown as LayerA, structBase) as Record<string, unknown>
+  // THE ALWAYS-EMIT POLES' SETTLEMENT (E2's real-roundtrip finding,
+  // 2026-10-17): sharpen_enabled/interpolate_enabled re-emit false
+  // from the serializer's first line (docHydrate's always-emit arm)
+  // and the family block deletes them in BOTH serializations — the
+  // digest gate below can never see their unstating, so on a base
+  // that carries the poles (the studio's own first-save shape) the
+  // flip gesture stated no delete and the saved doc kept a T4_ONLY
+  // member the walk refuses. The unstated plane states its own
+  // deletes: every base-carried T4_ONLY member rides the null here,
+  // whatever emit shape the serializer gave it — B1's one-owner law
+  // holds (the serializer omits; this seam carries the delete side).
+  for (const k of T4_ONLY_KEYS) {
+    const carried = structBase[k]
+    if (carried !== undefined && carried !== null) payload[k] = null
+  }
   if (canonicalJson(payload) === canonicalJson(serializeLayerA(layer, structBase))) return null
   return payload
 }
