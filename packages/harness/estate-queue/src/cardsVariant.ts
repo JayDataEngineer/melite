@@ -221,6 +221,75 @@ function envelopeRefusal(
   );
 }
 
+/** THE ONE-SWITCH LAW, BAG HALF — the variant voice for a carried
+ *  mod row the arrival family does not serve. One shape with
+ *  unknownQuantVoice (the shared lane voices): the stated row, the
+ *  lane it landed on, the rows the lane serves; the tail names the
+ *  law, not a silent fix. The client half of this law nulls the bag
+ *  at the gesture (card-base spec.ts modelSwitchPatch's cross-model
+ *  arm); this voice is the door's half for re-points no gesture
+ *  covers. */
+function unknownBagRowVoice(
+  pack: string,
+  id: string,
+  fam: string,
+  sel: VariantSelection,
+  known: readonly string[],
+): string {
+  return "unknown " + pack + " row " + JSON.stringify(id) +
+    " for model " + JSON.stringify(fam) +
+    " variant " + JSON.stringify(sel.variantId) +
+    (known.length > 0
+      ? " (known: " + known.join(", ") + ")"
+      : " (the family serves no rows)") +
+    " — mods are per model: the bag was picked for another model's weights and refuses here rather than ride to the engine" +
+    " (Read the family lane: melite_skill_read model:" + fam + ".)";
+}
+
+/** THE CROSS-MODEL CARRY JUDGE, BAG HALF (journey-closure §D3 — the
+ *  axis-unification audit's estate-lane residue, 071f8c7a1's
+ *  recorded finding): a doc whose model key was re-pointed without a
+ *  gesture (the card's semantic-model knob, a tool face patch, an
+ *  agent write, a stage copy) arrives here with bag values still
+ *  stamped under the departed family. Every absorbed pack's array
+ *  field the body carries is mod currency picked for SOME model's
+ *  weights; each option-mode entry ({id,…}) must name a row of the
+ *  arrival atom's OWN catalog, else it refuses loud — foreign values
+ *  never reach the engine. Reads the arrival family's DIRECT catalog
+ *  (modCatalog on the route→atom fold, the same fold the stamp
+ *  surface scopes) — never the compose walk's boarded-family
+ *  fallback (service.ts modCatalogForCompose), whose fallback serves
+ *  another boarded family's rows when the arrival family serves
+ *  none: exactly the cross-model absorption this judge refuses.
+ *  Filename entries ({name,…}) ride untouched — the card-authoring
+ *  lane, the service door's own boundary. @param bags the absorbed
+ *  packs' array-typed field names, collected in the fold below;
+ *  empty when the fold degraded (card defs not booted in this
+ *  fiber) — the judge degrades with it, the pre-judge shape. */
+function bagRefusal(
+  body: Record<string, unknown>,
+  bags: ReadonlyArray<{ readonly pack: string; readonly key: string }>,
+  atom: string,
+  sel: VariantSelection,
+  phase: string,
+  fam: string,
+): void {
+  for (const bag of bags) {
+    const carried: unknown = body[bag.key];
+    if (!Array.isArray(carried)) continue;
+    const known: readonly string[] =
+      theService().modCatalog(bag.pack, atom).rows.map((r) => r.id);
+    for (const entry of carried) {
+      if (entry === null || typeof entry !== "object") continue;
+      const row = entry as { name?: unknown; id?: unknown };
+      if (typeof row.name === "string" && row.name !== "") continue;
+      if (typeof row.id !== "string" || row.id === "") continue;
+      if (known.includes(row.id)) continue;
+      throw phaseRefusal(phase, unknownBagRowVoice(bag.pack, row.id, fam, sel, known));
+    }
+  }
+}
+
 export function stampCardOverlay(
   body: Record<string, unknown>,
   famRow: ModelFactsRow,
@@ -239,19 +308,35 @@ export function stampCardOverlay(
   // three seats; the atom rides in (owningAtom(fam), the same fold
   // admissionRefusal judges).
   const modNames = new Set<string>();
+  // THE BAG FIELDS (the carry judge's walk, one fold two products):
+  // each absorbed pack's array-typed field is mod currency (the bag
+  // law) — collected beside the knob names so the judge reads the
+  // SAME route→atom fold the stamp surface scopes.
+  const bagFields: Array<{ readonly pack: string; readonly key: string }> = [];
+  let envelopeAtom = "";
   try {
     // THE ROUTE→ATOM FOLD (same fold admissionRefusal judges): the
     // owning atom scopes the absorbed surface; a not-booted models
     // service degrades the whole fold to knobs+admits.
-    const envelopeAtom: string = owningAtom(fam);
+    envelopeAtom = owningAtom(fam);
     for (const a of theService().cardModFields(famRow.card)) {
       if (!a.families.includes(envelopeAtom)) continue;
-      for (const n of Object.keys(a.fields.dict ?? {})) modNames.add(n);
+      for (const [n, node] of Object.entries(a.fields.dict ?? {})) {
+        modNames.add(n);
+        if ((node as { type?: unknown } | undefined)?.type === "array") {
+          bagFields.push({ pack: a.pack, key: n });
+        }
+      }
     }
   } catch (modFoldError) {
     // modFoldError: card defs not booted in this fiber — the stamp
-    // gate degrades to knobs+admits, the pre-Y-S2 surface.
+    // gate degrades to knobs+admits, the pre-Y-S2 surface (and the
+    // carry judge degrades with it: bagFields stays empty).
   }
+  // THE CARRY JUDGE, BAG HALF — before the stamps walk and the
+  // compose walk: the departure-blind door judges the carry against
+  // the arrival family's own catalog (bagRefusal's contract).
+  bagRefusal(body, bagFields, envelopeAtom, sel, phase, fam);
   const onSurface = (k: string): boolean => cardAdmits(decl, modNames, k);
   const out: Record<string, unknown> = { ...body };
   for (const [k, v] of Object.entries(stamps)) {
