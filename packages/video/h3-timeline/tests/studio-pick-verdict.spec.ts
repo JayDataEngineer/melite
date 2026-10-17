@@ -6,7 +6,7 @@
  */
 import { describe, it } from "vitest"
 import assert from "node:assert/strict"
-import { resolvePickVerdictDoc } from "../src/ui/studio/pickVerdict.ts"
+import { pickFamilyRefusal, resolvePickVerdictDoc } from "../src/ui/studio/pickVerdict.ts"
 
 describe("resolvePickVerdictDoc — the pick judges truth-in-hand", () => {
   it("absent user keys yield to the held row (the sparse shown layer)", () => {
@@ -91,5 +91,95 @@ describe("resolvePickVerdictDoc — the pick judges truth-in-hand", () => {
   it("the user layer composes whole (every stated key reaches the verdict)", () => {
     const verdict = resolvePickVerdictDoc({ a: 1 }, { b: 2, c: 3 }, {})
     assert.deepEqual(verdict, { a: 1, b: 2, c: 3 })
+  })
+})
+
+// ── THE FAMILY CLAUSE (journey-closure B5 — hop 3's first judge) ────
+// The pick gate judges resolvePickVerdictDoc's candidate through the
+// SAME clause the run door's walk enforces (deriveWindowFamily +
+// T4_ONLY_KEYS, @melite/models-h3/timelineContract — ONE spelling;
+// the one-owner ruling lives on pickFamilyRefusal). Pre-fix state
+// (audits/journey/b5-pick-patch-family-clause-2026-10-17.md): both
+// faces green-lit a Final-Cut-stamped keyframe doc while the walk
+// refused it verbatim at the run press.
+describe("pickFamilyRefusal — the pick gate judges the candidate through the walk", () => {
+  const KEYFRAME_DOC = {
+    keyframes: [{ image: "webp/run1/pin-0.png", frame: 0 }],
+    steps: 20,
+  }
+
+  it("a Final-Cut stamp on a keyframe doc refuses with the run door's own voice", () => {
+    // the burn: Final Cut saved pre-keyframe (the stamp's own
+    // wire_defaults — second_pass_enabled + sr_switch), the doc
+    // gained a pin, the family re-derived t4r under the stamp
+    assert.equal(
+      pickFamilyRefusal({ ...KEYFRAME_DOC, second_pass_enabled: true, sr_switch: true }),
+      "card 'h3-timeline' refused params: h3_window(t4r): unsanctioned inject keys: second_pass_enabled, sr_switch",
+    )
+  })
+
+  it("the four-key doc refuses naming every key, sorted — the door refusal's verbatim key set", () => {
+    assert.equal(
+      pickFamilyRefusal({
+        ...KEYFRAME_DOC,
+        interpolate_enabled: true,
+        interp_model: "film_net_fp16.safetensors",
+        interp_multiplier: 2,
+        sharpen_enabled: true,
+      }),
+      "card 'h3-timeline' refused params: h3_window(t4r): unsanctioned inject keys: "
+      + "interp_model, interp_multiplier, interpolate_enabled, sharpen_enabled",
+    )
+  })
+
+  it("the reference surface derives t4r too — a stamp over ref_images refuses", () => {
+    assert.match(
+      pickFamilyRefusal({ ...KEYFRAME_DOC, ref_images: "webp/ref.png", sr_switch: true }) ?? "",
+      /unsanctioned inject keys: sr_switch/,
+    )
+  })
+
+  it("a clean t4r doc (keyframes, no post keys) composes on its lane", () => {
+    assert.equal(pickFamilyRefusal(KEYFRAME_DOC), null)
+  })
+
+  it("the same four keys on a t4_open doc compose — the family honors them there", () => {
+    assert.equal(
+      pickFamilyRefusal({ interpolate_enabled: true, interp_model: "m", interp_multiplier: 2, sharpen_enabled: true }),
+      null,
+    )
+  })
+
+  it("the same keys on a t4_chain film compose (multi-call = the film lane)", () => {
+    assert.equal(
+      pickFamilyRefusal({
+        calls: [
+          { text: "a", start_frame: 0, end_frame: 90 },
+          { text: "b", start_frame: 90, end_frame: 180 },
+        ],
+        sr_switch: true,
+        second_pass_enabled: true,
+      }),
+      null,
+    )
+  })
+
+  it("a null-valued key does not refuse — the wire's delete spelling (the merge-patch deletes it before the walk sees it)", () => {
+    assert.equal(pickFamilyRefusal({ ...KEYFRAME_DOC, sr_switch: null }), null)
+  })
+
+  it("THE PICK VERDICT, END TO END: the candidate resolvePickVerdictDoc composes is the doc the clause judges", () => {
+    // held row: the Final-Cut-stamped keyframe doc (drill/agent
+    // writes). The pick: an ordinary Draft re-pick. The verdict doc
+    // — what the run would compose — refuses BEFORE the write.
+    const candidate = resolvePickVerdictDoc(
+      { ...KEYFRAME_DOC, second_pass_enabled: true, sr_switch: true },
+      {},
+      { width: 768, height: 448 },
+    )
+    assert.match(
+      pickFamilyRefusal(candidate) ?? "",
+      /h3_window\(t4r\): unsanctioned inject keys: second_pass_enabled, sr_switch/,
+    )
   })
 })

@@ -24,7 +24,7 @@
  */
 import { CardForm, ControlRow, SectionLabel, SpecAtom, useResolvedForm, type SquareWire } from "@melite/card-base/client"
 import { axisUnset, composeValidate } from '@melite/card-base/client'
-import { resolvePickVerdictDoc } from "./pickVerdict.ts"
+import { resolvePickVerdictDoc, pickFamilyRefusal } from "./pickVerdict.ts"
 import { fetchMediaLibrary } from '@melite/card-base/client'
 import { type Dispatch, type SetStateAction, useMemo, useState } from "react"
 import s from "./studio.module.css"
@@ -219,6 +219,17 @@ export function RunRecipeEngine({
               patch,
             )
             const violations = composeValidate(spec, candidate)
+            // THE FAMILY CLAUSE (B5 — hop 3's first judge): the same
+            // candidate judged through the walk's family clause
+            // (pickVerdict.ts owns it; the one-owner ruling lives
+            // there). The verdict doc is what the run composes — a
+            // Final-Cut stamp on a keyframe doc refuses HERE, in the
+            // door's own voice, before the write and before the run
+            // press. The client frame stays phase-less (the door adds
+            // the phase prefix); the gate face speaks the clause
+            // verbatim like every other refused pick.
+            const family = pickFamilyRefusal(candidate)
+            if (family !== null) violations.push({ message: "card_compose: " + family })
             if (violations.length > 0) {
               setGateFace(
                 'THE COMPOSE GATE REFUSED — ' + violations[0].message

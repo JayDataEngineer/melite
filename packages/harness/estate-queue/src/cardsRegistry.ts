@@ -802,6 +802,32 @@ export class CardRegistryService extends Service {
     return verdict === null ? { ok: true } : { ok: false, error: verdict };
   }
 
+  /** THE FAMILY ADMISSION (journey-closure B5, 2026-10-17 — hop 3's
+   *  first judge, the write doors' arm of the walk): the card's own
+   *  family clause (CardDefinition.admitFamily — h3-timeline
+   *  declares the t4r inject-keys clause its compose walk enforces)
+   *  judges the MERGED params view — the params the next run would
+   *  compose — and the refusal speaks the run door's own voice one
+   *  hop earlier. Where the model and lane admissions judge
+   *  dict membership (board, surface, relation words), THIS judge
+   *  runs the family-conditional walk the run door runs, so the
+   *  patch door's "the params the NEXT run would compose" claim is
+   *  true for family-conditional cards. A card with no definition,
+   *  or with no family contract (the optional face absent), passes —
+   *  the clause is a no-op for every card that declares no family
+   *  walk. A JUDGE, NOT A GUARD (the operator's no-blocker ruling,
+   *  CONTRACTS.md §4-17): the verdict refuses the WRITE at the
+   *  write door; the stored bench state keeps its own law (loads,
+   *  reads, and the restore carve are the drafts side's to honor). */
+  admitStageFamily(
+    card: string,
+    params: Record<string, unknown>,
+  ): { ok: true } | { ok: false; error: string } {
+    const def: CardDefinition | undefined = this.defsSync().get(card);
+    if (def === undefined || def.admitFamily === undefined) return { ok: true };
+    return def.admitFamily(params);
+  }
+
   /** THE LANE MIGRATION (operator 2026-10-12, the stuck-switch
    *  incident — live on :3088): a write that CHANGES the resolved
    *  lane (the variant axis, the model axis, or both) is a

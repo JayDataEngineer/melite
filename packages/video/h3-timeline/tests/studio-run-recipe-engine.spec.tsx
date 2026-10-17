@@ -502,6 +502,43 @@ describe("THE COMPOSE GATE at the studio rail (law C — the schema is never thr
     assert.equal(screen.queryByRole("alert"), null, "no refusal face on a legal pick")
     cleanup()
   })
+
+  it("THE FAMILY CLAUSE (B5, hop 3's first judge): a Final-Cut stamp on a keyframe doc refuses at the pick gate in the run door's own voice — before the write and before the run press", async () => {
+    serve()
+    // THE BURN: Final Cut saved pre-keyframe (its own wire_defaults —
+    // second_pass_enabled + sr_switch), the doc gained a pin, the
+    // family re-derived t4r under the stamp. Pre-B5 the gate
+    // green-lit every pick over this doc and the run press was the
+    // first judge; now ANY pick (an ordinary Draft re-pick) composes
+    // the stamped verdict and refuses HERE.
+    const { doc } = engine(
+      { fps: 24, steps: 20 },
+      {
+        base: {
+          keyframes: [{ image: "webp/run1/pin-0.png", frame: 0 }],
+          second_pass_enabled: true,
+          sr_switch: true,
+          width: 800,
+          height: 600,
+        } as never,
+      },
+    )
+    const pick = await screen.findByLabelText("Recipe")
+    fireEvent.click(pick)
+    fireEvent.click(screen.getByRole("menuitem", { name: /Draft 02MP/ }))
+    // a refused pick never touches layerA (the atomic pick law): the
+    // held layer is exactly what it was — no width/height stamp, no
+    // menu residue (the base's 800/600 live in the base, never layerA)
+    assert.deepEqual(doc(), { fps: 24, steps: 20 })
+    const face = await screen.findByRole("alert")
+    assert.match(face.textContent ?? "", /THE COMPOSE GATE REFUSED/)
+    assert.match(
+      face.textContent ?? "",
+      /card 'h3-timeline' refused params: h3_window\(t4r\): unsanctioned inject keys: second_pass_enabled, sr_switch/,
+      "the gate speaks the run door's clause verbatim",
+    )
+    cleanup()
+  })
 })
 
 // THE PICK JUDGES TRUTH-IN-HAND (the collapse — the operator's

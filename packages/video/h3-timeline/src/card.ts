@@ -39,6 +39,7 @@ import { assertOverlayGated } from '@melite/models-h3'
 import type { ModelFacts } from '@melite/comfyui-card-kit/facts'
 
 export { assertCarriedSpanGrid, assertGridLength, assertSpanGrid, gridSnap } from '@melite/models-h3/timelineContract'
+import { deriveWindowFamily, T4_ONLY_KEYS } from '@melite/models-h3/timelineContract'
 export { carrier, JSON_ARRAY_PARAMS, schema } from '@melite/models-h3/schema'
 
 // THE CARRIER'S CALLABLE FACE — ONE cast serving the compose strict
@@ -200,6 +201,31 @@ export function registerCard(ctx: Context, comfy: ComfyUIServiceFace): void {
     // the emitter carrier (this card's schema is the hand-written
     // normalizer — params_schema walks the declared object's .dict)
     schemaCarrier: paramSchema,
+    // THE FAMILY ADMISSION (B5 — the write doors' arm of the walk):
+    // the EXACT clause the compose schema's walk enforces at the run
+    // door (schema.ts's t4r gate), stated on the card so the bench
+    // write doors can speak it one hop earlier — a Final-Cut stamp
+    // on a keyframe doc refuses at the patch door in the run door's
+    // own voice instead of green-lighting to the run press. ONE
+    // SPELLING: deriveWindowFamily + T4_ONLY_KEYS ride the same
+    // contract module the walk, the studio rail, the B1 emit law and
+    // the pick gate (pickVerdict.ts) judge with — no copy, no drift.
+    // Explicit keys mirror the walk verbatim (Object.keys — a
+    // null-valued key is explicit to the walk too; the bench doors'
+    // merge-patch deletes nulls upstream, so the view this face
+    // judges is null-free in practice). A JUDGE, NOT A GUARD (the
+    // operator's no-blocker ruling): the verdict speaks at the write
+    // door; the stored state keeps its own law.
+    admitFamily(params) {
+      if (deriveWindowFamily(params) !== "t4r") return { ok: true }
+      const explicit = new Set(Object.keys(params))
+      const bad = T4_ONLY_KEYS.filter((k) => explicit.has(k)).sort()
+      if (bad.length === 0) return { ok: true }
+      return {
+        ok: false,
+        error: `card 'h3-timeline' refused params: h3_window(t4r): unsanctioned inject keys: ${bad.join(", ")}`,
+      }
+    },
     compose(p, model, g, runId) {
       // THE SCHEMA GATE (the music/sfx/tts admission precedent — the
       // schemaCarrier equivalent: this card is WRAPPED, so the served

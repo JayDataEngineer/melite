@@ -45,6 +45,15 @@ declare module "@deepseek-ai/dsh-typert-protocol" {
     "bench/lane-refusal": {
       readonly card: string;
     };
+    /** THE FAMILY REFUSAL (journey-closure B5, 2026-10-17 — hop 3's
+     *  first judge): the card's own family clause (the walk the run
+     *  door enforces — h3's t4r inject keys) refused the MERGED view
+     *  at write time, in the run door's own voice, one hop earlier
+     *  than the run press. Declared beside its sibling so typed
+     *  clients and codecs carry the shape. */
+    "bench/family-refusal": {
+      readonly card: string;
+    };
     /** The CAS law: expect_rev missing, or the bench moved under the
      *  caller — current_rev is the rev to re-read from. */
     "bench/cas-conflict": {
@@ -983,6 +992,21 @@ export async function patchBench(
     // FOREVER, so a human actively editing a pre-law row never met
     // today's law. A patch is a live compose act; it judges with
     // the DECL the next run will compose from.
+    // THE REAL WALK, NOT DICT MEMBERSHIP (journey-closure B5,
+    // 2026-10-17): the injected admission carries the family judge
+    // (remote.ts familyAdmissionOf → the registry's
+    // admitStageFamily → the card's own CardDefinition.admitFamily
+    // clause — h3-timeline's t4r inject-keys walk). For a
+    // family-conditional card this seat now judges exactly what the
+    // run door's walk judges on this merged view — a Final-Cut
+    // stamp on a keyframe doc refuses HERE with the run door's own
+    // voice (bench/family-refusal), one hop earlier — instead of
+    // the dict-membership pass that green-lit it to the run press.
+    // A JUDGE, NOT A GUARD (the operator's no-blocker ruling,
+    // CONTRACTS.md §4-17): the verdict refuses the write; the
+    // stored state, the loads and the restore carve keep their own
+    // law. Cards with no family contract pass untouched (the
+    // optional face absent = no-op).
     // THE STORED ROW IS THE JUDGED ROW (the bench audit's gap 3,
     // 2026-10-10): the door judged the stripped view and stored the
     // raw one, so a doc written by patch held a self-naming model
