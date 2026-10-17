@@ -112,12 +112,15 @@ function projectServed(r: FormVariantRow): SyncRow {
 
 /** THE SPELLLED PROJECTION: P1 (the door-facts row) → the flat served
  *  shape, the law the serializer must satisfy — non-hidden variants
- *  serve whole; their non-hidden ROUTED cells serve as Quant rows
- *  owned by the variant (a family's own cells ALWAYS serve — the
- *  boarded[0] gate may scope only foreign lanes, the burn's cure);
- *  composite ids only on collision (the seen set); the head-claim
- *  alias serves when no row routes the family id (the resolving rule:
- *  first variant with cells, else the first row). */
+ *  serve whole; their non-hidden cells serve as Quant rows owned by the
+ *  variant (a family's own cells ALWAYS serve — the boarded[0] gate may
+ *  scope only foreign lanes, the burn's cure); a ROUTELESS cell serves
+ *  its own family row — the variant row IS its lane (the D4 pool-parity
+ *  cure, 2026-10-17; this wall walks family-keyed rows only, so the
+ *  route lane's shape never applies here); composite ids only on
+ *  collision (the seen set); the head-claim alias serves when no row
+ *  routes the family id (the resolving rule: first variant with cells,
+ *  else the first row). */
 function expectedServedRows(fam: string, row: ModelFacts): SyncRow[] {
   const rows: SyncRow[] = []
   const seen = new Set<string>()
@@ -138,7 +141,6 @@ function expectedServedRows(fam: string, row: ModelFacts): SyncRow[] {
     for (const c of v.cells) {
       if (c.hide_from_dropdown === true) continue
       if (!c.quant) continue
-      if (!c.route) continue
       const id = seen.has(c.quant) ? `${v.id}__${c.quant}` : c.quant
       seen.add(id)
       rows.push({

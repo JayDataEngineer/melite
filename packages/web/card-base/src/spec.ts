@@ -1305,8 +1305,12 @@ export function modelSwitchPatch(spec: FormSpecDoc, model: string, held?: SpecVa
     })
     const row = match ?? composing[0]
     if (g === 'Variant' && seededVariant === undefined) seededVariant = row
-    // THE USER PLANE SPEAKS THE CARD'S VOCABULARY (model = family,
-    // variant/quant = row ids): a row's re-point stamp (model:
+    // THE USER PLANE SPEAKS THE CARD'S VOCABULARY (model = family;
+    // the axis keys speak the DOOR's vocabulary — axisStampOf, the
+    // STAMP PLANE law D2 2026-11-06: a duplicate cell id's served
+    // row id is the serializer's namespaced presentation
+    // ('turbo__int8_convrot'), never the raw coordinate the door's
+    // clause 2 judges): a row's re-point stamp (model:
     // krea-2-raw) is the DECL's compose business — the server
     // resolves it into the run's params. It NEVER lands in the user
     // layer, so the Model rail never shows routes and a reopened
@@ -1316,7 +1320,7 @@ export function modelSwitchPatch(spec: FormSpecDoc, model: string, held?: SpecVa
       if (k === 'model') continue
       patch[k] = v
     }
-    patch[axisKey(g)] = row.id
+    patch[axisKey(g)] = axisStampOf(row)
     active[g] = row.id
   }
   if (crossSpec) {
@@ -1367,7 +1371,8 @@ export function axisUnset(name: string, v: unknown, spec: FormSpecDoc | null): b
 
 /** Seed the axis keys for a fresh stage (the catalog's first-declared
  *  law: each axis defaults to its FIRST composing row). Held values
- *  win (a reopened stage never re-seeds). */
+ *  win (a reopened stage never re-seeds). The key a re-seed WRITES is
+ *  the value the DOOR reads (axisStampOf) — never the flat row id. */
 export function seedAxisValues(spec: FormSpecDoc, held: SpecValues): SpecValues {
   const out: SpecValues = {}
   const groups = axisGroups(spec)
@@ -1377,13 +1382,34 @@ export function seedAxisValues(spec: FormSpecDoc, held: SpecValues): SpecValues 
     const heldKey = typeof held[axisKey(g)] === 'string' ? held[axisKey(g)] as string : ''
     const rows = rowsFor(spec, g)
     const heldRow = rows.find((x) => x.id === heldKey)
+    // THE STAMP PLANE (D2, 2026-11-06): the chain (`active`) walks ROW
+    // IDS, but the key the seed writes is the value the DOOR reads
+    // (axisStampOf — the cell quant for Quant, the row id for every
+    // other group). A duplicate cell id's served row id is the
+    // serializer's NAMESPACED catalog spelling ('turbo__int8_convrot'
+    // — presentation, keeping the form's select options unique),
+    // while composeValidate clause 2 and the estate door
+    // (cardsVariant.ts selectCardVariant, c.quant === rawQuant) judge
+    // the RAW coordinate — the old row-id stamp made a ghost-dropped
+    // reopen whose held variant is a LATER variant refuse at the run
+    // ('unknown quant "turbo__int8_convrot"'). Held keys echo
+    // verbatim (the pass-along law; the ghost drop in seedUser is
+    // the only deletion seat — it never rewrites either).
+    let write: string
     if (heldRow !== undefined) {
       active[g] = heldRow.id
+      write = heldRow.id
     } else {
       // first COMPOSING row (the chain law); when nothing composes the
       // axis rests empty — never a non-composing row
       const composing = composingRows(spec, g, active)
-      active[g] = composing.length > 0 ? composing[0].id : ''
+      if (composing.length > 0) {
+        active[g] = composing[0].id
+        write = axisStampOf(composing[0])
+      } else {
+        active[g] = ''
+        write = ''
+      }
     }
     // THE EMPTY-SELECTION LAW's form half (2026-10-10, the
     // operator's live bench: a stage born with quant:"" that the
@@ -1393,7 +1419,7 @@ export function seedAxisValues(spec: FormSpecDoc, held: SpecValues): SpecValues 
     // "" value was a form's unchosen control written as a value —
     // the form rendering never changes (an axisKey the values lack
     // reads as '' on the form side; the seed is params).
-    if (active[g] !== "") out[axisKey(g)] = active[g]
+    if (write !== "") out[axisKey(g)] = write
   }
   const heldModel = held['model']
   if (typeof heldModel !== 'string' || heldModel === '') {

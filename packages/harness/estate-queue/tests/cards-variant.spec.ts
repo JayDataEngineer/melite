@@ -398,3 +398,23 @@ describe("THE ROUTE ENVELOPE (compose-side guard)", () => {
     }
   });
 });
+
+describe("stampCardOverlay — the carry judge degrades with the fold (§D3)", () => {
+  it("an unbooted fiber judges no bags: a foreign mod row passes the stamp gate silently — the booted-door verdict is the walls suite's", () => {
+    const envSel = selectCardVariant("m", row(), {}, "1");
+    // the models service is not booted in this fiber: the route→atom
+    // fold degrades to knobs+admits and the carry judge's bagFields
+    // stay empty — the foreign row rides the stamp seam here, and the
+    // DOOR verdict (the booted fold, the family's own catalog) is
+    // tests/walls/ts/suites/estate-rescope-door.spec.ts's arms
+    const carried = stampCardOverlay(
+      { loras: [{ id: "krea2_realism_lora", strength: 0.8 }] },
+      row(),
+      decl({ schemaNames: [] }),
+      envSel,
+      "1",
+      FAM,
+    );
+    expect(carried["loras"]).toEqual([{ id: "krea2_realism_lora", strength: 0.8 }]);
+  });
+});
