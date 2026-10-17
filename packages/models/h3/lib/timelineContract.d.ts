@@ -65,13 +65,17 @@ export declare const DOC_FPS_DEFAULT: 24;
  *  gate, the row gate and the reseat heal judge them together. */
 export declare const T4_ONLY_KEYS: readonly ["sharpen_switch", "sharpen_method", "sharpen_strength", "sharpen_radius", "sharpen_threshold", "sharpen_iterations", "interp_switch", "interp_multiplier", "interp_model", "sr_switch", "sr_model", "sr_resolution", "second_pass_enabled", "sharpen_enabled", "interpolate_enabled", "attention_backend"];
 /** The knobs only the FILM shape can honor (2026-10-16, audit
- *  3f0b7c1a ui-truth-gap #4). `duck_depth_db` is read in exactly one
- *  place — computeFilmMix's manifest, inside the multi-window film
- *  boundary (actions.ts) — so on a single-window doc (t4_open, t4r)
- *  the row rendered, persisted and composed into NO node: the
- *  operator set a duck depth the mix desk never saw. The studio's
- *  served surface omits these unless the doc derives t4_chain (the
- *  same one-spelling family derivation the t4r gate uses). */
+ *  3f0b7c1a ui-truth-gap #4; the walk leg closed B6,
+ *  timeline-calls-burn §CURES-OWED 5). `duck_depth_db` is read in
+ *  exactly one place — computeFilmMix's manifest, inside the
+ *  multi-window film boundary (actions.ts) — so on a single-window doc
+ *  (t4_open, t4r) the row rendered, persisted and composed into NO
+ *  node: the operator set a duck depth the mix desk never saw. TWO
+ *  judges read THIS set (one home): the schema walk refuses it loud
+ *  on a non-film family (`film-only inject keys`, the t4r gate's
+ *  sibling), and the studio's served surface omits it unless the doc
+ *  derives t4_chain (the same one-spelling family derivation the t4r
+ *  gate uses). */
 export declare const FILM_ONLY_KEYS: readonly ["duck_depth_db"];
 /** (2026-11-06, the family-reseat cure) the doc-level window family
  *  derivation, ONE spelling for every door that needs the family

@@ -1183,3 +1183,49 @@ describe("the per-call mods seat (the operator's compound report, 2026-10-24)", 
     expect(bagImages.variant).toBe("t4_open");
   });
 });
+
+// (B6, timeline-calls-burn §CURES-OWED 5 / ui-truth-gap #4's walk
+// leg) THE FILM-ONLY GATE'S DOOR: duck_depth_db is read in exactly
+// one seat — computeFilmMix's manifest, inside the multi-window film
+// tail (actions.ts) — so a single-window doc (t4_open, t4r) stating
+// one composed it into NO node. The walk refuses it loud now, the
+// t4r gate's sibling clause, judging the SAME contract set the
+// studio rail omits (timelineContract.ts, one home). Derived
+// families throughout — the arms ride the derivation, never a stated
+// variant, so additive fixture growth cannot strand them.
+describe("the walk's film-only gate (duck_depth_db)", () => {
+  it("a single-window doc carrying duck_depth_db refuses with the film-only voice (derived t4_open)", () => {
+    expect(() => h3schema({
+      prompt: "a slow push in",
+      duck_depth_db: -20,
+      calls: [{ text: "a slow push in", start_frame: 0, end_frame: 90 }],
+    })).toThrow(/h3_window\(t4_open\): film-only inject keys: duck_depth_db/);
+  });
+
+  it("the same refusal on the guided single-window lane (derived t4r — the t4r gate's set does not cover it)", () => {
+    expect(() => h3schema({
+      prompt: "a slow push in",
+      ref_images: ["ref1.png"],
+      duck_depth_db: -20,
+    })).toThrow(/h3_window\(t4r\): film-only inject keys: duck_depth_db/);
+  });
+
+  it("a t4_chain film carries duck_depth_db legally — the mix desk composes the stated depth", () => {
+    const g = new GraphBuilder();
+    const walked = h3schema({
+      loras: [{ name: "distill-8.safetensors", strength: 0.6 }], seed: 7,
+      duck_depth_db: -20,
+      calls: [
+        { text: "first", start_frame: 0, end_frame: 90 },
+        { text: "second", start_frame: 90, end_frame: 175 },
+      ],
+      audio_clips: [{ src: "/a/line.flac", start_frame: 0, dur_frames: 64, text: "Run." }],
+    });
+    expect(walked.variant).toBe("t4_chain");
+    expect(walked.duck_depth_db).toBe(-20);
+    instantiateAction(film, walked, WINDOW_MODEL, g, "run_b6_film_duck");
+    const mix = Object.values(g.toJSON() as Doc).find((n) => n.class_type === "MeliteFilmAudioMix");
+    expect(mix, "the film mix composes on the clips arm").toBeDefined();
+    expect(mix!.inputs.duck_db).toBe(-20);
+  });
+});

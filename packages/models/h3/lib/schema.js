@@ -9,7 +9,7 @@ import { vocabulary } from '@melite/comfyui-card-kit/vocab';
 import { samplingExtra } from '@melite/comfyui-card-kit/fields';
 import { bag } from '@melite/contracts/extraKeys';
 import { coerceWireArrays } from '@melite/comfyui-card-kit';
-import { CALL_KEYS, GRID_BASE_FRAMES, GRID_MAX_FRAMES, GRID_STEP_FRAMES, REF_CAPS, T4_ONLY_KEYS, assertGridLength, assertSpanGrid, deriveWindowFamily, isMediaRef, normalizeDeclaredRefs, transitionOverlap } from "./timelineContract.js";
+import { CALL_KEYS, FILM_ONLY_KEYS, GRID_BASE_FRAMES, GRID_MAX_FRAMES, GRID_STEP_FRAMES, REF_CAPS, T4_ONLY_KEYS, assertGridLength, assertSpanGrid, deriveWindowFamily, isMediaRef, normalizeDeclaredRefs, transitionOverlap } from "./timelineContract.js";
 // the window families this renderer builds (three shapes:
 // t4r opener / t4_open window / t4_chain window).
 export const FAMILIES = ['t4r', 't4_open', 't4_chain'];
@@ -561,6 +561,20 @@ export function schema(v) {
         const b = bad(T4_ONLY_KEYS);
         if (b.length)
             throw new Error(`h3_window(t4r): unsanctioned inject keys: ${b.join(', ')}`);
+    }
+    // (B6, timeline-calls-burn §CURES-OWED 5 / ui-truth-gap #4's walk
+    // leg) THE FILM-ONLY GATE, the t4r gate's sibling: FILM_ONLY_KEYS
+    // are read in exactly one seat — computeFilmMix's manifest, inside
+    // the multi-window film tail (actions.ts) — so a single-window doc
+    // (t4r, t4_open) stating one composed it into NO node: the operator
+    // set a duck depth the mix desk never saw. The studio rail's omit
+    // law (RunRecipeEngine.tsx) judges the SAME contract set — one
+    // home, timelineContract.ts — so a row either door refuses is
+    // refused at both.
+    if (variant !== 't4_chain') {
+        const b = bad(FILM_ONLY_KEYS);
+        if (b.length)
+            throw new Error(`h3_window(${variant}): film-only inject keys: ${b.join(', ')}`);
     }
     // THE STEPS-PIN STAMP (007-H3-LoRA-PLANE L3): whether the caller
     // pinned steps is a fact only this walk owns (the raw keys —
