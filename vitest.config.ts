@@ -1,4 +1,5 @@
 import path from 'node:path'
+import { tmpdir } from 'node:os'
 import { realpathSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { defineConfig } from 'vitest/config'
@@ -220,12 +221,29 @@ export default defineConfig({
             // their own project below — the walker runs that lane
             // CONCURRENTLY with the main gate (CLI --exclude cannot
             // override a project include; the split lives here).
-            '!tests/walls/ts/suites/typecheck-gate.spec.ts',
-            '!tests/walls/ts/suites/models-lib-sync.spec.ts',
+            // THE ROWS LIVE IN exclude, NOT as `!` negations here (E5,
+            // 2026-10-17): vitest 4 splices every project's test
+            // `include` array verbatim into coverage.exclude (dist
+            // chunks/coverage.DM_a_rWm.js, "Add hard-coded default
+            // coverage exclusions... cannot be overridden by user
+            // config"), and picomatch's ignore there reads a leading
+            // `!` as a pattern NEGATION — each row then claims every
+            // path that is not its literal target. With the negations
+            // in include, coverage.exclude claimed all 500+ src files,
+            // every coverage run collected ZERO rows, the per-file
+            // floors judged the empty map vacuously green, and the
+            // gate exited 0 at 0%. Audit:
+            // dev_docs/audits/journey/e5-coverage-pool-merge-2026-10-17.md
           ],
           exclude: [
             ...DOM_SPEC_TREES,
             ...DECK_SPEC_TREES,
+            // the typecheck lane's two tsc suites (E5: moved out of the
+            // include above — plain rows here exclude exactly these two
+            // files from the node lane and reach coverage.exclude as
+            // literal, non-negated globs that claim only themselves)
+            'tests/walls/ts/suites/typecheck-gate.spec.ts',
+            'tests/walls/ts/suites/models-lib-sync.spec.ts',
             '**/*.e2e.ts',
             '**/*.expected.e2e.ts',
             '**/*.snapshot.ts',
@@ -671,9 +689,43 @@ export default defineConfig({
         perFile: true,
         ...COVERAGE_BASELINE,
       },
+      // THE COVERAGE RUN ISOLATION (E5, 2026-10-17 — the vitest.config
+      // typecheck-lane comment's "second deletes the first's tmp tree
+      // mid-merge" disease, gate17/gate18): vitest 4 stages every run's
+      // raw v8 records in <coverage.reportsDirectory>/.tmp — one FIXED,
+      // unsalted path (only --shard salts it) — rm -rf's the WHOLE
+      // reportsDirectory at run start (coverage.clean) and the tmp tree
+      // after the merge. Two concurrent coverage runs therefore clobber
+      // same-named coverage-N.json records and delete each other's tmp
+      // trees mid-merge. THE CURE IS ISOLATION, NOT SERIALIZATION: every
+      // coverage run stages in its own tmp.melite-coverage-* scratch
+      // under tmpdir() (pid + timestamp; the walker's /tmp preflight
+      // prunes the tmp.* class after a day, and the global sweep's two
+      // fence classes — melite-run-* owner-marked roots and the suite
+      // prefixes — do not claim it) unless the caller pins the canonical
+      // shared tree — the full gate pins it (package.json test:coverage
+      // exports MELITE_COVERAGE_SHARED=1) so coverage-summary.json and
+      // html land where the ratchet and the empty-table tripwire
+      // (scripts/coverage-rows-tripwire.mjs, chained after the gate)
+      // read them.
+      reportsDirectory: process.env.MELITE_COVERAGE_SHARED === '1'
+        ? 'coverage'
+        : path.join(tmpdir(), `tmp.melite-coverage-${process.pid}-${Date.now().toString(36)}`),
+      // THE REPORT IS NOT HOSTAGE TO A RED TEST (E5: the baseline
+      // header's "skips the report on multi-package runs" face —
+      // vitest's reportOnFailure default false returns from
+      // reportCoverage before writing anything when ANY test fails,
+      // taking the summary the ratchet reads with it). The gate's exit
+      // stays honest — failing tests fail it — but the coverage table
+      // is always left for the ratchet and the tripwire to judge.
+      reportOnFailure: true,
+      // json-summary rides every run so the exit face is machine-
+      // readable: the tripwire judges the table and refuses a run that
+      // collected no rows (an empty map passes every per-file floor
+      // vacuously — vitest's checkThresholds iterates coverageMap.files()).
       reporter: process.env.CI
-        ? ['text', uncoveredLocationsReporter]
-        : ['text', 'html', uncoveredLocationsReporter],
+        ? ['text', 'json-summary', uncoveredLocationsReporter]
+        : ['text', 'html', 'json-summary', uncoveredLocationsReporter],
     },
   },
 })

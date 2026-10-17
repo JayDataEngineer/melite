@@ -5,10 +5,21 @@
 // semanticModelKnob, models/families/contract) died with the move; the
 // nine kit rows carry the MAX of two scoped measured faces (the kit's
 // own suite + the cordis suite; json-summary, 2026-10-31). The
-// FULL-POOL json-summary run is broken at this HEAD (the vitest 4 pool
-// merge drops 507/563 files to 0 and skips the report on multi-package
-// runs) — the pool-scoped regeneration is OWED when the merge is
-// fixed; these rows hold the scoped faces with their provenance.
+// FULL-POOL json-summary run that was broken at the 2026-10-31 HEAD is
+// CURED (journey E5, 2026-10-17, audit
+// dev_docs/audits/journey/e5-coverage-pool-merge-2026-10-17.md): the
+// "vitest 4 pool merge" was not a pool bug — vitest 4 splices every
+// project's test `include` verbatim into coverage.exclude, and the
+// typecheck-lane split's two `!`-prefixed rows negated against every
+// file there, so every coverage run collected ZERO rows and the
+// per-file floors judged the empty map vacuously green. The negations
+// became plain exclude rows, coverage runs stage in per-process
+// tmp.melite-coverage-* scratch trees (run isolation — two concurrent
+// runs no longer share coverage/.tmp), json-summary rides every run,
+// and the gate chains scripts/coverage-rows-tripwire.mjs so an empty
+// table is a LOUD refusal, never a silent 0% pass. The rows below
+// hold the scoped faces with their provenance until a full-pool
+// regeneration re-pins them.
 // Regenerated 2026-10-23: 45 rows re-pinned at the stable measured
 // faces (three same-tree runs agreed; five load-jitter rows pinned at
 // their failing face) — the argued transitions and the sweep window

@@ -33,7 +33,8 @@
     "packages/engines/comfyui-cordis": {
       "entry": [
         "src/index.ts",
-        "src/dump-registry.ts"
+        "src/dump-registry.ts",
+        "scripts/boot-address-set-probe.ts"
       ]
     }
   }

@@ -682,3 +682,62 @@ function assert(condition: boolean, message: string): void {
 
 import { execFileSync } from "node:child_process";
 import { readdirSync } from "node:fs";
+import { emptyTableVerdict } from "../../../../scripts/coverage-rows-tripwire.mjs";
+
+// THE COVERAGE EMPTY-TABLE TRIPWIRE (journey E5, 2026-10-17): a
+// coverage run that collects NO rows passes every per-file floor
+// vacuously — vitest's checkThresholds iterates coverageMap.files(),
+// so an empty map is zero errors and exit 0. Five gates died green
+// exactly that way: the `!`-prefixed include rows of the typecheck
+// lane split were spliced verbatim into coverage.exclude (vitest 4
+// "cannot be overridden by user config"), where picomatch's ignore
+// reads a leading `!` as a negation that claims every file NOT
+// matching the two literal specs — i.e. every src file. The tripwire
+// (scripts/coverage-rows-tripwire.mjs, chained after the gate in
+// package.json's test:coverage) refuses the lying faces; these arms
+// hold it to its own law and hold the config to the no-negation rule.
+// Registry: gates-coverage-rows-tripwire.
+describe("THE COVERAGE EMPTY-TABLE TRIPWIRE (no rows is a loud failure, never a silent 0% pass)", () => {
+  it("refuses the missing-summary face — a run that skipped its report", () => {
+    const verdict = emptyTableVerdict(false, null);
+    expect(verdict.ok).toBe(false);
+    expect(verdict.refused).toMatch(/coverage collection produced no rows — the gate is lying/);
+  });
+
+  it("refuses the zero-rows face and the all-zero-total face — collection ran, remap dead", () => {
+    const noRows = emptyTableVerdict(true, {});
+    expect(noRows.ok).toBe(false);
+    expect(noRows.refused).toMatch(/zero file rows/);
+    const dead = emptyTableVerdict(true, {
+      total: { statements: { pct: 0 }, branches: { pct: 0 }, functions: { pct: 0 }, lines: { pct: 0 } },
+      "**/x/src/a.ts": { statements: { pct: 0 }, branches: { pct: 0 }, functions: { pct: 0 }, lines: { pct: 0 } },
+    });
+    expect(dead.ok).toBe(false);
+    expect(dead.refused).toMatch(/0x4/);
+  });
+
+  it("accepts a real table face — covered totals pass, a single legal 0x4 row does not refuse", () => {
+    const real = emptyTableVerdict(true, {
+      total: { statements: { pct: 41.2 }, branches: { pct: 30 }, functions: { pct: 55 }, lines: { pct: 41.9 } },
+      "**/x/src/a.ts": { statements: { pct: 100 }, branches: { pct: 100 }, functions: { pct: 100 }, lines: { pct: 100 } },
+      "**/y/src/b.ts": { statements: { pct: 0 }, branches: { pct: 0 }, functions: { pct: 0 }, lines: { pct: 0 } },
+    });
+    expect(real.ok).toBe(true);
+    expect(real.refused).toBeNull();
+  });
+
+  it("the gate wires the tripwire and the config carries no `!` include row — the root cause's own row", () => {
+    const pkg = JSON.parse(readFileSync(join(ROOT, "package.json"), "utf8")) as { scripts: Record<string, string> };
+    expect(pkg.scripts["test:coverage"], "the gate must chain the tripwire after vitest").toContain("coverage-rows-tripwire.mjs");
+    expect(pkg.scripts["test:coverage"], "the gate must pin the canonical shared reportsDirectory").toContain("MELITE_COVERAGE_SHARED=1");
+    const config = readFileSync(join(ROOT, "vitest.config.ts"), "utf8");
+    expect(config, "every coverage run must leave the machine-readable table the tripwire reads").toContain("'json-summary'");
+    expect(config).toContain("MELITE_COVERAGE_SHARED");
+    // a red test must not take the summary with it (reportOnFailure
+    // default false skips the report the ratchet reads)
+    expect(config).toContain("reportOnFailure: true");
+    // vitest 4 splices every project's test `include` verbatim into
+    // coverage.exclude; a `!` row there negates against EVERY file.
+    expect(/include:\s*\[[^\]]*'[!]/.test(config), "a `!`-prefixed include row would zero every coverage run again").toBe(false);
+  });
+});
