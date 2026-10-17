@@ -373,15 +373,19 @@ describe("the keyframes lane's add door (the lane-add parity law)", () => {
   it("a FOREIGN media URL picked at the door refuses on the strip's error face — the wire never hears it", async () => {
     const { els, rec } = strip()
     // an http(s) URL outside this run's artifacts — the same law the
-    // audio door and the call-card buckets ride (classifyImageSrc):
-    // feed the picker a foreign media row through the estate door
+    // audio door and the call-card buckets ride (the refUtils commit
+    // spine's judge): feed the picker a foreign media row through the
+    // estate door
     bindEstateRemote({ media: { list: async () => ({ ok: true, value: { items: [{ url: "https://lib/foreign.png", name: "foreign.png" }] } }) } } as never)
     fireEvent.click(document.body.querySelector('[data-track-upload="image"]')!)
     fireEvent.click(await screen.findByRole("menuitem", { name: "From media" }))
     const row = (await screen.findAllByTestId("source-pick-row")).find((r) => r.textContent!.includes("foreign.png"))!
     fireEvent.click(row)
+    // (D9) the door rides the ONE commit spine — the refusal lands
+    // after the spine resolves (the panel's own E7 microtask shape)
+    await screen.findByTestId("tl-strip-kf-error")
     assert.deepEqual(rec.kfWithImage, [], "a URL outside this run's artifacts never commits")
-    assert.ok(screen.getByTestId("tl-strip-kf-error").textContent!.length > 0,
+    assert.ok(screen.getByTestId("tl-strip-kf-error").textContent!.includes("not in this run's artifacts"),
       "the refusal lands on the strip's own error face")
     unbindEstateRemote()
     els.unmount()
@@ -478,7 +482,7 @@ describe("the keyframes lane's add door (the lane-add parity law)", () => {
 
   it("the source-plane wall: the strip's kf door rides the estate provider (the same grammar every door rides)", () => {
     assert.ok(paneSrc.includes("addKeyframeWithImage"), "the atomic pin+image verb is fed by the strip's door")
-    assert.ok(paneSrc.includes("classifyImageSrc"), "ONE commit judge: refUtils' classifier, never a hand-roll")
+    assert.ok(paneSrc.includes("commitKeyframePinImage"), "ONE commit spine: refUtils' judge+fit, never a hand-roll (D9 — the doors' one identity)")
     assert.ok(paneSrc.includes("loadImageMedia"), "the image loader rides the door (module-scope, the dep law)")
     assert.ok(paneSrc.includes("enterKfView"), "the subview door stays too (two doors, one verb)")
   })

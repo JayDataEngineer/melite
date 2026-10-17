@@ -69,12 +69,19 @@ describe("SOURCE — the datalist hand-roll is dead, the grammar rides", () => {
     // loader twins are DELETED from the panel: refUtils owns them and
     // BOTH doors (subview + strip lane head) import the one spelling.
     assert.ok(!panel.includes("<SourceRow"), "no SourceRow square survives in the panel")
-    assert.ok(panel.includes("classifyImageSrc("), "the commit judge is refUtils' classifier (never a hand-roll)")
+    // (D9, 2026-10-17) the commit judge grew into the ONE SPINE: E7
+    // moved the panel's pick doors onto commitKeyframePinImage (the
+    // judge + the fit in one seat); D9 landed the strip lane head's
+    // adoption — BOTH doors import the one spine, never a hand-roll
+    // (the same source through either door stamps ONE identity).
+    assert.ok(panel.includes("commitKeyframePinImage("), "the panel's pick doors ride refUtils' one commit spine (never a hand-roll)")
     assert.ok(panel.includes("loadImageMedia"), "the image loader is refUtils' module-scope export")
     assert.ok(!panel.includes("const classifyImage"), "the panel's local classifier twin is DEAD")
     assert.ok(!panel.includes("const loadImageMedia"), "the panel's local loader twin is DEAD")
-    assert.ok(strip.includes("classifyImageSrc("), "the strip's lane door judges identically — one spelling")
-    assert.ok(utils.includes("export function classifyImageSrc"), "refUtils is the owner")
+    assert.ok(strip.includes("commitKeyframePinImage("), "the strip's lane door rides the same spine — one spelling, one identity (D9)")
+    assert.ok(!strip.includes("classifyImageSrc("), "the strip's pre-spine pair is DEAD (the bare name cannot ride)")
+    assert.ok(utils.includes("export function classifyImageSrc"), "refUtils is the owner (the judge half)")
+    assert.ok(utils.includes("export const commitKeyframePinImage"), "refUtils is the owner (the spine)")
     assert.ok(utils.includes("byUrl.get"), "the URL→NAME honesty rides the artifact index")
     assert.ok(panel.includes("FOREIGN_URL_REFUSAL") && utils.includes("FOREIGN_URL_REFUSAL"), "a foreign pick refuses visibly")
     assert.ok(panel.includes("refUploadError("), "the upload gate is the shared law")
@@ -82,10 +89,14 @@ describe("SOURCE — the datalist hand-roll is dead, the grammar rides", () => {
     // (D1, 2026-11-06: "keyframe image insert must shrink-to-fit into
     // the movie, never clipped") EVERY keyframe commit seat rides the
     // fit before the write — strip door (pick + file), panel add door
-    // (pick + file), panel row door (pick + file): six seats, one law
+    // (pick + file), panel row door (pick + file): six seats, one law.
+    // (D9) the three PICK seats fit inside the spine (refUtils owns
+    // the fit call); the three FILE seats ride fitImageToAspect at
+    // the door — the census judges each half on its own carrier.
     const fitSeats = (src: string): number => src.split("fitImageToAspect").length - 1
-    assert.ok(fitSeats(strip) >= 2, `the strip's pick and file commits both fit (${fitSeats(strip)})`)
-    assert.ok(fitSeats(panel) >= 4, `the panel's add + row doors (pick + file each) all fit (${fitSeats(panel)})`)
+    assert.ok(fitSeats(utils) >= 3, `refUtils' spine + refit carry the pick seats' fits (${fitSeats(utils)})`)
+    assert.ok(fitSeats(strip) >= 2, `the strip's file seat fits at the door + the spine import (${fitSeats(strip)})`)
+    assert.ok(fitSeats(panel) >= 3, `the panel's import + two file seats fit (${fitSeats(panel)})`)
     assert.ok(utils.includes("export function fitRect"), "the contain math is refUtils' own pure export")
     assert.ok(utils.includes("width ?? 1344") || true, "the movie aspect rides the doc's width/height with the 1344×768 default")
   })

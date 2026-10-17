@@ -14,7 +14,7 @@ import { MotionTimelineBar } from "@melite-plugin/timeline/ui/timeline"
 import type { TimelineKeyframe, TimelinePrompt } from "@melite-plugin/timeline/ui/timeline"
 import { useSquareProvider, readAsDataURL, fetchMediaLibrary, PaneHeader, PaneShell } from '@melite/card-base/client'
 import type { SpecField } from '@melite/card-base/client'
-import { refUploadError, REF_READ_ERROR, FOREIGN_URL_REFUSAL, estateMediaChip, classifyImageSrc, fitImageToAspect, loadImageMedia, IMAGE_ROW_RE } from './refUtils.ts'
+import { refUploadError, REF_READ_ERROR, FOREIGN_URL_REFUSAL, estateMediaChip, commitKeyframePinImage, fitImageToAspect, loadImageMedia, IMAGE_ROW_RE } from './refUtils.ts'
 import s from "./studio.module.css"
 import { VIDEO_TIMELINE_TRACKS } from "./docModel.ts"
 import type { DocCall, DocKeyframe, LayerA, SetLayerAKey } from "./docModel.ts"
@@ -178,26 +178,30 @@ export function StudioStripPane({
   // 2026-11-06) ─────────────────────────────────────────────────
   // The keyframes lane row's upload icon — the SAME grammar the
   // audio lane heads ride (useSquareProvider's three-entry picker).
-  // The commit is the ATOMIC pin+image law: classifyImageSrc judges
-  // the currency (estate media canonical / the run's artifacts /
-  // data: chips ride; foreign URLs refuse on the strip's error
-  // face), then ONE write pins the image at the CURRENT PLAYHEAD
+  // The commit is the ATOMIC pin+image law at the CURRENT PLAYHEAD
   // (docFromFilm(frameIdx) — the same frame a double-click pins).
-  // ONE spelling for the judge: refUtils' classifyImageSrc, the
-  // same spine the rail subview's add door rides.
+  // (D9, the keyframe-image identity) ONE spelling for the whole
+  // commit — refUtils' commitKeyframePinImage, the judge AND the fit
+  // in one seat: the same source dropped through either keyframe door
+  // (this lane head or the rail subview's pickers) stamps the SAME
+  // identity into the doc — the name arm's fitted data:, never the
+  // unfittable bare name.
   const [kfErr, setKfErr] = useState<string | null>(null)
   const kfAddField: SpecField =
     { name: "kf:add", label: studioCopy.imageGuideLane, type: "file" }
   const { square: kfAddSquare, wireMenu: kfAddMenu } = useSquareProvider(
     (_name, v) => {
       if (typeof v !== "string" || v === "") return
-      const got = classifyImageSrc(v, artifactIndex.byUrl)
-      if ("refusal" in got) { setKfErr(got.refusal); return }
-      setKfErr(null)
-      // (D1) shrink-to-fit into the movie's aspect before the pin
-      // lands — the engine would cover-crop an off-aspect insert
-      void fitImageToAspect(got.image, layerA.width ?? 1344, layerA.height ?? 768)
-        .then((fitted) => { addKeyframeWithImage(fitted, docFromFilm(frameIdx)) })
+      // (D9) the ONE commit spine — the judge + the fit in one seat,
+      // the same value the rail subview's doors stamp. The refusal
+      // lands after the spine resolves (one microtask — the panel's
+      // own E7 shape).
+      void commitKeyframePinImage(v, artifactIndex.byUrl, layerA.width ?? 1344, layerA.height ?? 768)
+        .then((got) => {
+          if ("refusal" in got) { setKfErr(got.refusal); return }
+          setKfErr(null)
+          addKeyframeWithImage(got.image, docFromFilm(frameIdx))
+        })
     },
     {
       // From flow: the run's own artifacts, image rows only.
