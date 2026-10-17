@@ -1150,6 +1150,141 @@ describe("the re-point seam (one switch semantics at the drill's write seat)", (
   });
 });
 
+// ── THE ENGINE DOC'S OWN MODEL FIELD (the agent brain's seat): a
+// cardless engine stage serves a doc whose schema declares a free
+// `model` field (agentParams' "Brain route" — the one engine-side
+// exception to the naming law). Typing it fires onSet('model', v)
+// with NO card on the stage: the re-point arm's guard reads the
+// absent card and falls through to the plain write. ────────────────
+
+/** The agent-mirrored doc (agentFormDoc's shape): the schema `model`
+ *  field is free text — no consts, so no select menu and no rail
+ *  (families are empty); `model: 'agent'` is the doc's identity, the
+ *  door's engine arm serving it verbatim. */
+function agentDoc(): Record<string, unknown> {
+  return {
+    form: 'agent', genre: 'agent', engine: 'agent', model: 'agent',
+    schema: schemaEnvelope({
+      prompt: { type: 'string', meta: { description: 'Prompt', extra: { wtype: 'textarea' } } },
+      model: { type: 'string', meta: { description: 'Brain route' } },
+    }),
+    families: [], variants: [],
+    features: { modifiers: [] },
+  };
+}
+
+describe("the engine doc's own model field (the re-point arm's absent-card fall-through)", () => {
+  test("typing a brain route writes the one key verbatim: the guard reads the absent card and falls through — no switch nulls, no re-spec", async () => {
+    servedFamilies.length = 0;
+    vi.stubGlobal("fetch", async (url: unknown): Promise<Response> => {
+      const path = String(url);
+      if (path.includes("/v1/form-spec")) {
+        const key = path.split("model=")[1] ?? "";
+        servedFamilies.push(key);
+        if (key !== "agent") throw new Error("the agent stage never specs another family: " + key);
+        return new Response(JSON.stringify(agentDoc()), { status: 200, headers: { "content-type": "application/json" } });
+      }
+      if (path.includes("/v1/forms")) {
+        return new Response(JSON.stringify({ "agent": { outputs: { default: "text" } } }), { status: 200, headers: { "content-type": "application/json" } });
+      }
+      if (path.includes("/v1/model-catalog")) {
+        return new Response(JSON.stringify({ cards: {} }), { status: 200, headers: { "content-type": "application/json" } });
+      }
+      throw new Error("unexpected door on the fetch lane: " + path);
+    });
+    fakes?.unmount();
+    fakes = mountEstateFakes({});
+    render(h(StageDrill, drillProps({ id: "s_0", engine: "agent", params: {} } as unknown as BenchStageView) as never));
+    await screen.findByLabelText("Prompt", {}, { timeout: 4000 });
+    const route = await screen.findByLabelText("Brain route", {}, { timeout: 4000 });
+    const user = userEvent.setup();
+    await user.type(route, "deepseek-v3");
+    await waitFor(() => {
+      const frames = patchParamsOf(patchCalls()).filter((p) => p["model"] === "deepseek-v3");
+      if (frames.length === 0) throw new Error("brain route write not landed; patches: " + JSON.stringify(patchCalls()));
+      // THE PLAIN FIELD FACE (stroke 66): every keystroke frame rides
+      // the single key verbatim — the re-point arm never fired, so no
+      // switch-law nulls ride along (a brain route is not a re-key)
+      for (const frame of frames) expect(Object.keys(frame)).toEqual(["model"]);
+    }, { timeout: 8000 });
+    // STROKE 66's onSet half: the route never re-specs AS THE PICKED
+    // KEY — the cardless family resolves to the engine id every time
+    // (the re-arrival after the write refetches the engine's own doc)
+    expect(servedFamilies.length).toBeGreaterThan(0);
+    expect(servedFamilies.every((k) => k === "agent")).toBe(true);
+    await awaitWriteSettled();
+    expect(writeFace()).toBe(null);
+  });
+});
+
+// ── THE MODEL-LESS CARD ALIAS (the door's other honest shape): a
+// card whose board carries no model serves `model: null` (discovery's
+// specBody emits `res.model ?? null` on the boarded[0]-empty arm).
+// The re-point guard reads that null as "no held model" — the alias
+// owns no vocabulary, so the switch law collapses to the one-key
+// write. ─────────────────────────────────────────────────────────────
+
+/** The alias doc (agentDoc's shape with the door's null identity):
+ *  the schema `model` field is free text and families are empty, so
+ *  no rail seats it — typing fires the drill's own onSet. */
+function routelessDoc(): Record<string, unknown> {
+  return {
+    form: 'agent', genre: 'agent', engine: 'agent', model: null,
+    schema: schemaEnvelope({
+      prompt: { type: 'string', meta: { description: 'Prompt', extra: { wtype: 'textarea' } } },
+      model: { type: 'string', meta: { description: 'Brain route' } },
+    }),
+    families: [], variants: [],
+    features: { modifiers: [] },
+  };
+}
+
+describe("the model-less card alias (the re-point guard reads the null held model)", () => {
+  test("typing a brain route on a cardless-board alias re-points through the switch law: the null model falls through to the one-key write", async () => {
+    servedFamilies.length = 0;
+    vi.stubGlobal("fetch", async (url: unknown): Promise<Response> => {
+      const path = String(url);
+      if (path.includes("/v1/form-spec")) {
+        const key = path.split("model=")[1] ?? "";
+        servedFamilies.push(key);
+        if (key !== "agent-canvas" && key !== "deepseek-v3") throw new Error("the alias stage never specs another family: " + key);
+        return new Response(JSON.stringify(routelessDoc()), { status: 200, headers: { "content-type": "application/json" } });
+      }
+      if (path.includes("/v1/forms")) {
+        return new Response(JSON.stringify({ "agent-canvas": { outputs: { default: "text" } }, "deepseek-v3": { outputs: { default: "text" } } }), { status: 200, headers: { "content-type": "application/json" } });
+      }
+      if (path.includes("/v1/model-catalog")) {
+        return new Response(JSON.stringify({ cards: {} }), { status: 200, headers: { "content-type": "application/json" } });
+      }
+      throw new Error("unexpected door on the fetch lane: " + path);
+    });
+    fakes?.unmount();
+    fakes = mountEstateFakes({});
+    render(h(StageDrill, drillProps({ id: "s_0", card: "agent-canvas", engine: "agent", params: {} } as unknown as BenchStageView) as never));
+    await screen.findByLabelText("Prompt", {}, { timeout: 4000 });
+    const route = await screen.findByLabelText("Brain route", {}, { timeout: 4000 });
+    const user = userEvent.setup();
+    await user.type(route, "deepseek-v3");
+    await waitFor(() => {
+      const frames = patchParamsOf(patchCalls()).filter((p) => p["model"] === "deepseek-v3");
+      if (frames.length === 0) throw new Error("alias route write not landed; patches: " + JSON.stringify(patchCalls()));
+      // THE ALIAS SWITCH FACE: the guard fired (card rides, null held
+      // model ≠ the typed route) but the alias doc owns no departing
+      // vocabulary — the switch patch contributes nothing, so every
+      // frame still carries the single key verbatim
+      for (const frame of frames) expect(Object.keys(frame)).toEqual(["model"]);
+    }, { timeout: 8000 });
+    // THE PER-MODEL RE-ARRIVAL: the mount spec'd under the card alias
+    // (family = the card id, params seed no model); the write re-keys
+    // the drill's own family to the typed route and the spec door is
+    // re-asked under THAT key
+    expect(servedFamilies[0]).toBe("agent-canvas");
+    expect(servedFamilies).toContain("deepseek-v3");
+    await awaitWriteSettled();
+    expect(writeFace()).toBe(null);
+  });
+});
+
 // ── THE RE-POINT WRITE'S SETTLE FACES (the 2026-11-02 one-voice law
 // at the seat the switch cure added): both promise halves × both
 // alive-guard arms, each with its OWN firing arm (the split-brain
