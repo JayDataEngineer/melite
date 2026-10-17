@@ -1541,10 +1541,17 @@ function renderH3Window(
       // Audio mods are their own extractor (AUDIO in, one mod out);
       // one node per entry, voice-grade defaults, saved for reuse
       // (a data: upload chip names the generic 'audio_mod').
+      // budget_policy + concept_type are REQUIRED bare combos in the
+      // engine's /object_info — no declared default, so no primed
+      // builder autofills them (the B7 wall refuses at compose) — the
+      // graph states the pack's own signature defaults
+      // (vendor/ComfyUI-MiniMaxH3Mod/nodes.py:2143: budget_policy
+      // 'error', concept_type 'voice').
       applyMods(g.node('MiniMaxH3RefModAudioExtract', {
         audio: g.node('LoadAudio', { audio: src }).out(),
         audio_vae: vaeAudio,
         name: src.startsWith('data:') ? 'audio_mod' : src.split(/[\\/]/).pop()?.replace(/\.[^.]+$/, '') ?? 'audio_mod',
+        budget_policy: 'error', concept_type: 'voice',
         save: true,
       }).out(0))
     }

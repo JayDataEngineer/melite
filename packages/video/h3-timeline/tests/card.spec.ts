@@ -324,3 +324,101 @@ describe("THE EVERY-ADDRESS WALL — every served address composes through the f
     );
   });
 });
+
+// ── THE FAMILY ADMISSION (journey-closure B5 — the write doors' arm
+// of the walk) ──────────────────────────────────────────────────────
+// The card's own CardDefinition.admitFamily face states the EXACT
+// clause the compose walk enforces at the run door (schema.ts's t4r
+// gate, deriveWindowFamily + T4_ONLY_KEYS — one contract module, no
+// copy). The registry serves it to the bench write doors
+// (admitStageFamily → remote.ts familyAdmissionOf), so a Final-Cut
+// stamp on a keyframe doc refuses at the patch door in the run
+// door's own voice, one hop earlier. THE ONE-OWNER RULING (client
+// twin in pickVerdict.ts): the clause lives family-side because it
+// must ride the REAL walk's own exports; card-base's mirror seam is
+// the contracts floor and the walk is not a floor law.
+describe("the family admission — CardDefinition.admitFamily (B5)", () => {
+  const KEYFRAME_DOC = {
+    keyframes: [{ image: "webp/run1/pin-0.png", frame: 0 }],
+    steps: 20,
+  };
+
+  it("a Final-Cut stamp on a keyframe doc refuses with the run door's own voice", () => {
+    assert.deepEqual(
+      def.admitFamily!({ ...KEYFRAME_DOC, second_pass_enabled: true, sr_switch: true }),
+      {
+        ok: false,
+        error: "card 'h3-timeline' refused params: h3_window(t4r): unsanctioned inject keys: second_pass_enabled, sr_switch",
+      },
+    );
+  });
+
+  it("the four-key keyframe doc refuses naming every stated key, sorted", () => {
+    const verdict = def.admitFamily!({
+      ...KEYFRAME_DOC,
+      interpolate_enabled: true,
+      interp_model: "film_net_fp16.safetensors",
+      interp_multiplier: 2,
+      sharpen_enabled: true,
+    });
+    assert.equal(verdict.ok, false);
+    assert.match(
+      verdict.ok ? "" : verdict.error,
+      /h3_window\(t4r\): unsanctioned inject keys: interp_model, interp_multiplier, interpolate_enabled, sharpen_enabled/,
+    );
+  });
+
+  it("a clean keyframe doc (t4r, no post keys) passes", () => {
+    assert.deepEqual(def.admitFamily!(KEYFRAME_DOC), { ok: true });
+  });
+
+  it("the same stamps on a t4_open doc pass (the family honors them there)", () => {
+    assert.deepEqual(
+      def.admitFamily!({ steps: 20, second_pass_enabled: true, sr_switch: true }),
+      { ok: true },
+    );
+  });
+
+  it("the same stamps on a t4_chain film pass (multi-call = the film lane)", () => {
+    assert.deepEqual(
+      def.admitFamily!({
+        calls: [
+          { text: "a", start_frame: 0, end_frame: 90 },
+          { text: "b", start_frame: 90, end_frame: 180 },
+        ],
+        sr_switch: true,
+        second_pass_enabled: true,
+      }),
+      { ok: true },
+    );
+  });
+
+  it("the clause AGREES with the walk: every doc the admission refuses, the run door's walk refuses verbatim", () => {
+    // the mirror discipline's own arm — the face judges the same
+    // truth the walk judges (the walk here is the REAL schema()):
+    const stamped = { ...KEYFRAME_DOC, second_pass_enabled: true, sr_switch: true };
+    const verdict = def.admitFamily!(stamped);
+    assert.equal(verdict.ok, false);
+    // the walk throws its BARE clause + the honest tail (B8: the run
+    // door's refusal names the writer and the one-gesture repair);
+    // the service phase wraps `card '<id>' refused params:` around
+    // it — the admission's error carries the WRAPPED voice (what the
+    // write doors say), and its bare clause must ride the walk's
+    // message VERBATIM as the prefix (the spine is one truth; the
+    // run door alone extends it with the honest tail)
+    const bare = verdict.ok ? "" : verdict.error.slice("card 'h3-timeline' refused params: ".length);
+    assert.throws(
+      () => def.schema!(stamped),
+      (e: unknown) => e instanceof Error && verdict.ok === false && e.message.startsWith(bare),
+    );
+    assert.match(verdict.error, /^card 'h3-timeline' refused params: h3_window\(t4r\): unsanctioned inject keys: /);
+    const film = {
+      calls: [SHOT(), SHOT({ text: "then a turn", start_frame: 56, end_frame: 124 })],
+      length: 124,
+      sr_switch: true,
+    };
+    assert.deepEqual(def.admitFamily!(film), { ok: true });
+    // and the walk composes it (no refusal the admission missed):
+    def.schema!(film);
+  });
+});

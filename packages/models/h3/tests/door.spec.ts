@@ -8,7 +8,7 @@ import { film, parseH3Facts } from "../src/actions.ts";
 import { schema as h3schema } from "../src/schema.ts";
 import { DOC_FPS_DEFAULT } from "../src/timelineContract.ts";
 import { stanzaSecs } from "../src/filmMix.ts";
-import { GraphBuilder } from "@melite/comfyui-card-kit/graph";
+import { GraphBuilder, deriveDefaults } from "@melite/comfyui-card-kit/graph";
 import { assertWiringAgainst, deriveWiringDoc } from "@melite/comfyui-cordis/comfyui-wiring";
 import { instantiateAction } from "@melite/comfyui-card-kit";
 import type { ModelFacts } from "@melite/comfyui-card-kit/facts";
@@ -724,7 +724,15 @@ describe("the refmod seat (audit 010/R1, 2026-10-18)", () => {
   });
 
   it("ANY MEDIA composes the creator chain — the system bakes the pack (operator, 2026-11-06)", () => {
-    const g = new GraphBuilder();
+    // THE PRODUCTION BUILDER SHAPE (B7's arm (c) wiring-wall.spec.ts:559):
+    // primed with the boot fixture's declared defaults — an unprimed
+    // builder ships the extract row without its 11 defaulted
+    // requireds, and the completeness wall correctly refuses
+    // (missing-required) at the declared-input sweep below.
+    const fixture = JSON.parse(
+      readFileSync(new URL("../../../../tests/walls/fixtures/object_info.boot.json", import.meta.url), "utf8"),
+    ) as Record<string, unknown>;
+    const g = new GraphBuilder(deriveDefaults(fixture));
     instantiateAction(
       film,
       {
@@ -785,9 +793,6 @@ describe("the refmod seat (audit 010/R1, 2026-10-18)", () => {
     const subgraph = Object.fromEntries(
       entries.filter(([, n]) => refModFamily.has(n.class_type)).map(([id, n]) => [id, n]),
     );
-    const fixture = JSON.parse(
-      readFileSync(new URL("../../../../tests/walls/fixtures/object_info.boot.json", import.meta.url), "utf8"),
-    ) as Record<string, unknown>;
     const doc = deriveWiringDoc(Object.fromEntries(
       Object.entries(fixture).filter(([name]) => refModFamily.has(name)),
     ));
@@ -827,7 +832,12 @@ describe("the refmod seat (audit 010/R1, 2026-10-18)", () => {
   });
 
   it("audio media rides its own extractor (MiniMaxH3RefModAudioExtract) on the audio VAE", () => {
-    const g = new GraphBuilder();
+    // THE PRODUCTION BUILDER SHAPE (B7's arm (c) on the audio lane):
+    // primed with the boot fixture's declared defaults.
+    const fixture = JSON.parse(
+      readFileSync(new URL("../../../../tests/walls/fixtures/object_info.boot.json", import.meta.url), "utf8"),
+    ) as Record<string, unknown>;
+    const g = new GraphBuilder(deriveDefaults(fixture));
     instantiateAction(
       film,
       {
@@ -842,6 +852,14 @@ describe("the refmod seat (audit 010/R1, 2026-10-18)", () => {
     expect(audioExtract, "the audio extractor composes").toBeDefined();
     expect(audioExtract![1].inputs.name).toBe("kid");
     expect(audioExtract![1].inputs.save).toBe(true);
+    // THE DECLARED DEFAULTS, STATED (the 2026-10-17 live finding):
+    // budget_policy + concept_type are required bare combos — the
+    // fixture declares no default, so the primed builder autofills
+    // nothing and the row must carry the pack signature's own values
+    // (vendor/ComfyUI-MiniMaxH3Mod/nodes.py:2143) or the wall below
+    // refuses at compose.
+    expect(audioExtract![1].inputs.budget_policy).toBe("error");
+    expect(audioExtract![1].inputs.concept_type).toBe("voice");
     const loadAudio = entries.find(([, n]) => n.class_type === "LoadAudio")!;
     expect(loadAudio![1].inputs.audio).toBe("/melite-media/runs/voice/kid.wav");
     expect(audioExtract![1].inputs.audio).toEqual([loadAudio![0], 0]);
@@ -852,6 +870,38 @@ describe("the refmod seat (audit 010/R1, 2026-10-18)", () => {
     expect(audioVae, "the audio VAE loader composes").toBeDefined();
     expect(audioExtract![1].inputs.audio_vae).toEqual([audioVae![0], 0]);
     expect(apply![1].inputs.mods).toEqual([audioExtract![0], 0]);
+  });
+
+  it("THE (c)-SHAPE ARM: the primed audio-mod compose walks the boot fixture's declared-required grammar green", () => {
+    // The same production builder shape as the arm above, its OWN
+    // firing path (each invariant rides its own arm — the split-brain
+    // lesson). The red-proof toggle (budget_policy wired out of
+    // actions.ts) reds HERE with the wall's own voice; the verbatim
+    // capture lives in dev_docs/audits/journey/b7-followups-2026-10-17.md.
+    const fixture = JSON.parse(
+      readFileSync(new URL("../../../../tests/walls/fixtures/object_info.boot.json", import.meta.url), "utf8"),
+    ) as Record<string, unknown>;
+    const g = new GraphBuilder(deriveDefaults(fixture));
+    instantiateAction(
+      film,
+      {
+        variant: "t4_open", length: 124, prompt: "a slow push in", seed: 42,
+        loras: BAG, ref_mods: ["/melite-media/runs/voice/kid.wav"],
+      },
+      WINDOW_MODEL, g, "run_refmod_audio_wall",
+    );
+    const entries = Object.entries(g.toJSON()) as Array<[string, { class_type: string, inputs: Record<string, unknown> }]>;
+    const refModFamily = new Set([
+      "MiniMaxH3RefModExtract", "MiniMaxH3RefModsLoader",
+      "MiniMaxH3RefModApply", "MiniMaxH3RefModAudioExtract",
+    ]);
+    const doc = deriveWiringDoc(Object.fromEntries(
+      Object.entries(fixture).filter(([name]) => refModFamily.has(name)),
+    ));
+    const subgraph = Object.fromEntries(
+      entries.filter(([, n]) => refModFamily.has(n.class_type)).map(([id, n]) => [id, n]),
+    );
+    expect(() => assertWiringAgainst(doc.nodes, doc.inputs, "h3-timeline", subgraph)).not.toThrow();
   });
 
   it("mixed currency chains: stems (loader) then media (creator) through two Applies", () => {
@@ -1227,5 +1277,66 @@ describe("the walk's film-only gate (duck_depth_db)", () => {
     const mix = Object.values(g.toJSON() as Doc).find((n) => n.class_type === "MeliteFilmAudioMix");
     expect(mix, "the film mix composes on the clips arm").toBeDefined();
     expect(mix!.inputs.duck_db).toBe(-20);
+  });
+});
+
+// (B8, journey-closure 2026-10-17 — h3-inject-keys-burn §CURES-OWED 6
+// / timeline-calls-burn §CURES-OWED 7) THE HONEST-VOICE RIDER'S DOOR:
+// the t4r refusal names the writer and the one-gesture repair, in the
+// axis-unification voice (unknownQuantVoice — the refusal names the
+// SEAM, not just the fact). The machine spine
+// `h3_window(t4r): unsanctioned inject keys: <keys>` survives
+// byte-identical as the PREFIX — the write doors quote it verbatim —
+// the tail only extends it. Derived family throughout: the guide seat
+// flips the lane, the stamps rode lawfully (the burn's own shape).
+describe("the t4r gate's honest voice (B8)", () => {
+  const STAMPED_GUIDE = {
+    prompt: "a slow push in",
+    ref_images: ["ref1.png"],
+    second_pass_enabled: true,
+    sr_switch: true,
+  };
+  // The honest matcher: spine + writer + repair, one predicate —
+  // both arms judge through it, so a voice regression cannot pass
+  // one arm while the other stays green.
+  const honest = (voice: string): boolean =>
+    voice.startsWith("h3_window(t4r): unsanctioned inject keys: second_pass_enabled, sr_switch")
+    && voice.includes("the studio's Layer-A emit carries lane-dead post keys")
+    && voice.includes("the family re-derived t4r under a legal stamp")
+    && voice.includes("restate the doc through the studio")
+    && voice.includes("null the named keys at the patch door");
+  const refusedVoice = (): string => {
+    try {
+      h3schema({ ...STAMPED_GUIDE });
+    } catch (e) {
+      return (e as Error).message;
+    }
+    throw new Error("the stamped guide doc must refuse");
+  };
+
+  it("a stamped guide doc refuses with the full honest voice — spine, writer, repair", () => {
+    const voice = refusedVoice();
+    // the byte pin: the walk's exact voice (the spine survives as the
+    // verbatim prefix; the tail names the writer and the repair):
+    expect(voice).toBe(
+      "h3_window(t4r): unsanctioned inject keys: second_pass_enabled, sr_switch"
+      + " — the studio's Layer-A emit carries lane-dead post keys (the family re-derived t4r under a legal stamp);"
+      + " the repair is one gesture: restate the doc through the studio"
+      + " (the commit re-derives the family and unstamps the residue)"
+      + " or null the named keys at the patch door",
+    );
+    expect(honest(voice)).toBe(true);
+  });
+
+  it("the bare key list (the pre-fix voice) fails the honest matcher — the voice regression reds", () => {
+    const voice = refusedVoice();
+    // the pre-B8 spelling, sliced off the live voice: the spine alone
+    // (the bare list the walk threw before the rider):
+    const bare = voice.slice(0, voice.indexOf(" — the studio's"));
+    expect(bare).toBe("h3_window(t4r): unsanctioned inject keys: second_pass_enabled, sr_switch");
+    // the matcher rejects it — the bare spelling names no seam and no
+    // repair. A voice reverted to this spelling loses the seam phrase
+    // the live message carries, and both arms red (the toggle's red).
+    expect(honest(bare)).toBe(false);
   });
 });
