@@ -13324,15 +13324,23 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		}
 		/** The variant rail's unknown-quant refusal body — same contract as
 		*  {@link unknownVariantVoice}: one spelling, frame at the caller.
+		*  THE HONEST VOICE (the axis-unification cure, 2026-11-06 — the
+		*  operator's anima burn: the served matrix carried zero Quant rows
+		*  while the DECL declared two, and the old empty tail asserted the
+		*  DECL's absence, which the caller's matrix cannot see). An empty
+		*  `known` is a statement about the CALLER'S PROJECTION — the served
+		*  matrix it was handed — so the tail names the projection and the
+		*  sync break, never a DECL fact; the DECL's own cells, when the
+		*  projection carries them, ride the known list.
 		*
 		* @param stated the quant the caller stated, verbatim.
 		* @param model the model id the cells belong to.
 		* @param variant the variant whose cells were searched.
 		* @param known the variant's offered quants, door order; empty
-		*  yields the declares-no-cells tail.
+		*  yields the projection-break tail.
 		* @returns the refusal body, frame-free. */
 		function unknownQuantVoice(stated, model, variant, known) {
-			return "unknown quant " + JSON.stringify(stated) + " for model " + JSON.stringify(model) + " variant " + JSON.stringify(variant) + (known.length > 0 ? " (known: " + known.join(", ") + ")" : " (the variant declares no cells)");
+			return "unknown quant " + JSON.stringify(stated) + " for model " + JSON.stringify(model) + " variant " + JSON.stringify(variant) + (known.length > 0 ? " (known: " + known.join(", ") + ")" : " (the served matrix declares no cells for this variant — DECL/projection sync break)");
 		}
 		/** THE ROUTE ENVELOPE GATE'S ONE JUDGE (the voice audit, 2026-10-11:
 		*  six hand-mirrored spellings, two frames): a stated numeric
@@ -21386,6 +21394,18 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		*  it. The studio still shows the edit (the same hopeful-overlay
 		*  semantics the door-refusal always had), but NO frame leaves and
 		*  the bench never receives a doc it would refuse. */
+		/** THE MOD-BAG KEYS THE SERVED KINDS NAME (the re-point rescope's
+		*  mod-currency clause, 2026-11-06): the DECL's mod bags ride
+		*  features.modifiers' param_key — the card schema never declares
+		*  them (image-gen serves one array node, reference_images), so the
+		*  bag law's schema walk (bagKeysOf, card-base) cannot see them. A
+		*  cross-model switch nulls these too: mods are per model, "if I
+		*  switch model, keeping the lora on makes zero sense" (operator,
+		*  2026-10-16). */
+		function modBagKeys(doc) {
+			if (doc === null) return [];
+			return (doc.features?.modifiers ?? []).map((k) => k.param_key);
+		}
 		function composeGateRefusal(spec, held, user, frame) {
 			if (spec === null) return null;
 			const first = (0, _melite_card_base_client.composeValidate)(spec, (0, _melite_card_base_client.composeCandidateDoc)(held ?? {}, user, frame))[0];
@@ -21435,6 +21455,8 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			}, []);
 			const userRef = (0, react.useRef)(user);
 			userRef.current = user;
+			const specRef = (0, react.useRef)(null);
+			specRef.current = spec;
 			(0, react.useEffect)(() => {
 				let alive = true;
 				const freshOpen = lastStageRef.current !== stage.id;
@@ -21449,9 +21471,21 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					if (!alive) return;
 					setError(null);
 					setSpec(doc);
-					const seeded = (0, _melite_card_base_client.seedUser)(doc, freshOpen ? held : userRef.current);
-					setUser(freshOpen ? seeded : (0, _melite_card_base_client.reseatEnvelopeKeys)(doc, seeded));
 					const seedSource = freshOpen ? held : userRef.current;
+					const fromModel = typeof seedSource["model"] === "string" ? seedSource["model"] : "";
+					const departing = specRef.current;
+					const arrival = typeof doc.model === "string" ? doc.model : "";
+					const rekey = !freshOpen && fromModel !== "" && arrival !== "" && fromModel !== arrival;
+					let rescope = {};
+					if (rekey && departing !== null && departing.model === fromModel) {
+						rescope = (0, _melite_card_base_client.modelSwitchPatch)(departing, arrival, seedSource);
+						for (const k of modBagKeys(departing)) if (!(k in rescope)) rescope[k] = null;
+					}
+					const seeded = (0, _melite_card_base_client.seedUser)(doc, {
+						...seedSource,
+						...rescope
+					});
+					setUser(freshOpen ? seeded : (0, _melite_card_base_client.reseatEnvelopeKeys)(doc, seeded));
 					for (const k of Object.keys(seedSource)) if (!(k in seeded)) droppedRef.current.add(k);
 					if (freshOpen) {
 						setWriteFace(null);
@@ -21499,7 +21533,54 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				candidates,
 				others
 			]);
+			const rePointFrame = (frame) => {
+				const m = frame["model"];
+				if (spec === null || String(stage.card ?? "") === "") return frame;
+				if (typeof m !== "string" || m === "" || m === (spec.model ?? "")) return frame;
+				const out = {
+					...(0, _melite_card_base_client.modelSwitchPatch)(spec, m, (0, _melite_card_base_client.composeCandidateDoc)(held, user, {})),
+					...frame
+				};
+				for (const k of modBagKeys(spec)) if (!(k in out)) out[k] = null;
+				return out;
+			};
 			const onSet = (0, react.useCallback)((name, v) => {
+				if (name === "model" && spec !== null && String(stage.card ?? "") !== "" && typeof v === "string" && v !== "" && v !== (spec.model ?? "")) {
+					const rescoped = rePointFrame({ [name]: v });
+					const landedM = {};
+					const nullsM = {};
+					for (const [k, kv] of Object.entries(rescoped)) if ((0, _melite_card_base_client.axisUnset)(k, kv, spec)) nullsM[k] = null;
+					else landedM[k] = kv;
+					for (const k of Object.keys(landedM)) touchedRef.current.add(k);
+					for (const k of Object.keys(nullsM)) touchedRef.current.add(k);
+					setUser((m) => {
+						const next = { ...m };
+						for (const k of Object.keys(nullsM)) delete next[k];
+						return {
+							...next,
+							...landedM
+						};
+					});
+					const frameM = {
+						...landedM,
+						...nullsM
+					};
+					const refusedM = composeGateRefusal(spec, stage.params, user, frameM);
+					if (refusedM !== null) {
+						setWriteFace(refusedM);
+						return;
+					}
+					const settleDraftId = bench.draftId;
+					const settleStageId = stage.id;
+					patchStageParams(settleDraftId, settleStageId, frameM, bench.rev).then(() => {
+						if (lastStageRef.current !== settleStageId) return;
+						setWriteFace(stageWriteState(settleDraftId, settleStageId).failedKeys.length > 0 ? unlandedWriteVoice(settleDraftId, settleStageId) : null);
+					}, () => {
+						if (lastStageRef.current !== settleStageId) return;
+						setWriteFace(unlandedWriteVoice(settleDraftId, settleStageId));
+					});
+					return;
+				}
 				if ((0, _melite_card_base_client.axisUnset)(name, v, spec)) {
 					touchedRef.current.add(name);
 					setUser((m) => {
@@ -21567,9 +21648,10 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				stage.id
 			]);
 			const onPick = (0, react.useCallback)((patch) => {
+				const rescoped = rePointFrame(patch);
 				const landed = {};
 				const nulls = {};
-				for (const [k, v] of Object.entries(patch)) if ((0, _melite_card_base_client.axisUnset)(k, v, spec)) nulls[k] = null;
+				for (const [k, v] of Object.entries(rescoped)) if ((0, _melite_card_base_client.axisUnset)(k, v, spec)) nulls[k] = null;
 				else landed[k] = v;
 				setUser((m) => {
 					const next = { ...m };

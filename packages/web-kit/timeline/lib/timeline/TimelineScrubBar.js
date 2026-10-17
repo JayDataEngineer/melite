@@ -56,7 +56,12 @@ export function TimelineScrubBar({ current, duration, onSeek, onTogglePlay, play
         return m > 0 ? m + ":" + String(Math.floor(s % 60)).padStart(2, "0") : s.toFixed(1) + timelineCopy.secondsUnit;
     };
     return (_jsxs("div", { className: styles.scrubBar, "data-testid": tid ?? "timeline-scrub-bar", "data-dragging": dragging ? "true" : undefined, children: [onTogglePlay !== undefined
-                ? (_jsx(Button, { variant: "ghost", size: "sm", className: styles.scrubToggle, "aria-label": playing ? timelineCopy.scrubPauseAria : timelineCopy.scrubPlayAria, onClick: onTogglePlay, "data-testid": "timeline-scrub-toggle", children: playing ? "❚❚" : "▶" }))
+                ? (
+                // DSH Button (law 1: the sibling timeline bars already
+                // ride it; this raw button was the last hand-rolled one).
+                // Ghost/sm is the sibling zoom control's own shape, and the
+                // scrubToggle class keeps the seam's flex sizing.
+                _jsx(Button, { variant: "ghost", size: "sm", className: styles.scrubToggle, "aria-label": playing ? timelineCopy.scrubPauseAria : timelineCopy.scrubPlayAria, onClick: onTogglePlay, "data-testid": "timeline-scrub-toggle", children: playing ? "❚❚" : "▶" }))
                 : null, _jsxs("div", { ref: trackRef, className: styles.scrubTrack, "data-testid": "timeline-scrub-track", role: "slider", "aria-label": timelineCopy.scrubAria, "aria-valuemin": 0, "aria-valuemax": Math.max(0, duration), "aria-valuenow": Math.max(0, current), "aria-valuetext": timelineCopy.scrubValuetext({ current: fmt(current), duration: fmt(duration) }), onPointerDown: onPointerDown, onPointerMove: onPointerMove, onPointerUp: endDrag, onPointerCancel: endDrag, children: [_jsx("div", { className: styles.scrubFill, style: { width: (pct * 100).toFixed(3) + "%" } }), _jsx("div", { className: styles.scrubHead, style: { left: (pct * 100).toFixed(3) + "%" } })] }), _jsxs("span", { className: styles.scrubReadout, "data-testid": "timeline-scrub-readout", children: [fmt(current), " / ", fmt(duration), fps !== undefined && fps > 0
                         ? timelineCopy.scrubFramesSuffix({ frame: Math.round(current * fps), total: Math.round(duration * fps) })
                         : null] })] }));
