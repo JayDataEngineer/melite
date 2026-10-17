@@ -179,6 +179,10 @@ function main() {
     const rows = tierRows(row.tier)
     const target = rows.find((r) => r.id === id)
     target.wall = { ...(target.wall ?? {}), spec: spec.length === 1 ? spec[0] : spec }
+    // optional arms correction: a wall that grows or reshapes its arms
+    // updates the row's arms description here, never by hand-editing
+    // the YAML (same deterministic-writer law as the spec itself)
+    if (rest.includes('--arms')) target.wall.arms = arg('arms')
     writeTier(row.tier, rows)
     regenerate()
     console.log(`contract: ${id} wall -> ${spec.join(', ')}`)
