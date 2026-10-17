@@ -24,7 +24,7 @@ import { existsSync, readdirSync, mkdtempSync, rmSync, readFileSync } from "node
 import { dirname, join, relative } from "node:path";
 import { tmpdir } from "node:os";
 import { fileURLToPath } from "node:url";
-import { compareEmitted, type LibDrift } from "./models-lib-sync.spec.ts";
+import { compareEmitted, type LibDrift } from "../lib/models-lib-sync-judge.ts";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "../../../..");
 const PACKAGES = join(ROOT, "packages");
