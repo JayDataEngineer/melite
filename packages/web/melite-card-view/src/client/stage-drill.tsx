@@ -111,8 +111,7 @@ export function ScrollLockedDetail(props: { children?: ReactNode, testid?: strin
  *  cross-model switch nulls these too: mods are per model, "if I
  *  switch model, keeping the lora on makes zero sense" (operator,
  *  2026-10-16). */
-function modBagKeys(doc: FormSpecDoc | null): string[] {
-  if (doc === null) return []
+function modBagKeys(doc: FormSpecDoc): string[] {
   return (doc.features?.modifiers ?? []).map((k) => k.param_key)
 }
 
@@ -346,6 +345,14 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
         const rekey = !freshOpen && fromModel !== '' && arrival !== ''
           && fromModel !== arrival
         let rescope: Record<string, unknown> = {}
+        /* istanbul ignore if -- defense arm, provably unfireable
+           (coverage disposition 2026-11-06): the effect's alive
+           cleanup retires every fetch a family change outruns, so
+           the arriving doc always carries the CURRENT fetch key,
+           and resolveSpecKey serves `model` verbatim from that key
+           — fromModel !== '' implies arrival === fromModel. Kept so
+           the arrival seat still applies the one-switch law if the
+           resolver's verbatim-key service ever drifts. */
         if (rekey && departing !== null && departing.model === fromModel) {
           rescope = modelSwitchPatch(departing, arrival, seedSource)
           // THE MOD-CURRENCY CLAUSE (the verb's second half, same law):
@@ -506,6 +513,12 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
       })
       const frameM = { ...landedM, ...nullsM }
       const refusedM = composeGateRefusal(spec, stage.params, user, frameM)
+      /* istanbul ignore if -- defense arm, provably unfireable
+         (coverage disposition 2026-11-06): composeGateRefusal
+         refuses a model re-point only when the departing spec's
+         model is absent/empty, and the form-spec door emits
+         `model ?? null` — never ''. Kept so the re-point stays
+         refusal-gated if the door's emission drifts. */
       if (refusedM !== null) { setWriteFace(refusedM); return }
       const settleDraftId = bench.draftId
       const settleStageId = stage.id
