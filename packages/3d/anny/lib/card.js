@@ -14,6 +14,18 @@ const PHENOTYPE_DIMS = [
 ];
 const schema = z.object({
     body_glb: z.string().role('path').description("Body GLB").extra('extra', bag({ order: 0, group: "body", columns: 1, tooltip: "Optional — attach a rigged body GLB to render as-is. Empty bakes the body FROM the identity sliders (parametric end-to-end; the neutral body is the all-defaults bake). Photo→body estimation is the 'Estimate body from photo' verb.", wtype: 'mesh' })),
+    // (l) THE IMAGE FACE (operator 2026-11-08, ERRORS.md:100): the
+    // MakeHuman/photo slot IS the estimator's card face — a non-empty
+    // image makes the body THE ESTIMATE (LoadImage →
+    // Sam3dBodyImageToAnny, the exact chain the hmr-estimate verb
+    // drives), by ONE stated precedence: image > glb > parametric
+    // bake (compose owns it, stated once). THE SUBACTIONMOD
+    // AMENDMENT, declared here at the seat: the verb's knobs stay the
+    // verb's (person_index stays FIXED at 0 in compose — only the
+    // IMAGE joins the card surface); wtype 'image' rides the
+    // constructor's auto-square law (form.tsx's emitted-image fields
+    // mount THE ONE SQUARE, no call site wiring).
+    body_image: z.string().role('path').description("Body photo").extra('extra', bag({ order: 1, group: "body", columns: 1, tooltip: "Optional — a body photo (MakeHuman/Facebook-style). A stated photo becomes the body via SAM-3D-Body estimation, overriding an attached GLB; empty falls to the GLB, then the identity sliders. The person picker stays on the 'Estimate body from photo' verb.", wtype: 'image' })),
     ...Object.fromEntries(PHENOTYPE_DIMS.map((dim, i) => [dim,
         z.number().description(dim.charAt(0).toUpperCase() + dim.slice(1)).min(0).max(1)
             .extra('extra', bag({ order: i, group: "identity", width: 1, wtype: 'slider', columns: 2, tooltip: `Identity dim ${i + 1}/11 — ${dim} (0..1, neutral 0.5; served by the poser's identity space).` })),
@@ -68,7 +80,10 @@ export function apply(ctx) {
         // the base form's switchable parameter submenu. The card owns
         // its schema; the CONSTRUCTOR owns the surface.
         flowKinds: {
-            inputs: { body_glb: 'mesh' },
+            // (l) the image face rides beside the mesh attach — the runs
+            // registry's validation path admits image inputs through the
+            // media lane (the estimator's LoadImage reads a photo path)
+            inputs: { body_glb: 'mesh', body_image: 'image' },
             outputs: { default: 'image' },
             requiresModel: false,
         },

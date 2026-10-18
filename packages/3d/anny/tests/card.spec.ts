@@ -135,8 +135,58 @@ describe("the anny compose gate", () => {
       DUMMY_MODEL, g, "r1",
     );
     const graph = g.toJSON();
-    assert.equal(Object.keys(graph).find((k) => k.startsWith("LoadImage")), undefined, "no image ingest on this card");
     assert.equal(Object.keys(graph).find((k) => k.startsWith("RaySAMSegmentHairClothing")), undefined, "the SAM sprite node is gone");
+    // THE (l) AMENDMENT (operator 2026-11-08, ERRORS.md:100 — "a slot
+    // for input in the ANNY CARD"): with NO photo stated the card
+    // still ingests no image — the estimator's LoadImage mounts ONLY
+    // on a stated body_image (the arms below).
+    assert.equal(Object.keys(graph).find((k) => k.startsWith("LoadImage")), undefined, "no image ingest without a stated photo");
+  });
+
+  // ── (l) THE IMAGE FACE (operator 2026-11-08, ERRORS.md:100): the
+  // MakeHuman/photo slot IS the estimator's card face — non-empty
+  // image → the body IS the estimate (LoadImage → Sam3dBodyImageToAnny,
+  // the exact chain the hmr-estimate verb drives), resolved by ONE
+  // stated precedence: image > glb > parametric bake. person_index
+  // stays FIXED at 0 — the verb keeps its picker chip (SubActionMod
+  // law holds; only the IMAGE joins the card surface). ────────────
+
+  it("(l) a stated body_image IS the body: the estimator chain mounts, person_index FIXED at 0, no bake, no attach", () => {
+    const g = new GraphBuilder();
+    def.compose(def.schema({ ...FLOORS, body_image: "/photos/person.png" } as Record<string, unknown>), DUMMY_MODEL, g, "r1");
+    const graph = g.toJSON();
+    const load = graph["LoadImage.0"];
+    assert.ok(load, "the photo rides a LoadImage ingest");
+    assert.equal(load.inputs.image, "/photos/person.png", "the stated photo rides verbatim");
+    const est = graph["Sam3dBodyImageToAnny.0"];
+    assert.ok(est, "the SAM-3D-Body estimator grounds the anny body");
+    assert.equal(est.inputs.person_index, 0, "person_index stays FIXED at the loudest detection — the verb owns the picker");
+    assert.ok(graph["CompositeCharacter.0"], "the composite node rides the estimated body path");
+    assert.equal(graph["PrimitiveString.0"], undefined, "no attach arm under a stated image");
+    assert.equal(graph["AnnyParamsToGlb.0"], undefined, "no bake arm under a stated image");
+  });
+
+  it("(l) precedence is stated ONCE and ordered: image > glb > bake — both stated rides the estimate, the GLB waits", () => {
+    const g = new GraphBuilder();
+    def.compose(
+      def.schema({ ...FLOORS, body_image: "/photos/person.png", body_glb: "/m/anny-base-body.glb" } as Record<string, unknown>),
+      DUMMY_MODEL, g, "r1",
+    );
+    const graph = g.toJSON();
+    assert.ok(graph["LoadImage.0"], "the stated image wins the body seat");
+    assert.equal(graph["PrimitiveString.0"], undefined, "the GLB does not ride beside the estimate");
+    assert.equal(graph["AnnyParamsToGlb.0"], undefined, "the bake never fires under a stated image");
+  });
+
+  it("(l) whitespace image is emptiness: the fall runs glb > bake, never a phantom ingest", () => {
+    const g1 = new GraphBuilder();
+    def.compose(def.schema({ ...FLOORS, body_image: "   ", body_glb: "/m/body.glb" } as Record<string, unknown>), DUMMY_MODEL, g1, "r1");
+    const withGlb = g1.toJSON();
+    assert.equal(withGlb["LoadImage.0"], undefined, "whitespace image mounts no ingest");
+    assert.ok(withGlb["PrimitiveString.0"], "the GLB arm takes the seat");
+    const g2 = new GraphBuilder();
+    def.compose(def.schema({ ...FLOORS, body_image: "   " } as Record<string, unknown>), DUMMY_MODEL, g2, "r1");
+    assert.ok(g2.toJSON()["AnnyParamsToGlb.0"], "empty image + empty GLB still bakes from the sliders (stroke 89's never-required law holds)");
   });
 
   it("finalize is the anny strip (identity on the empty strip table)", () => {
@@ -177,8 +227,8 @@ describe("the anny compose gate", () => {
     assert.deepEqual(doc.local_changes, {}, "the authored dialect always carries the required object");
   });
 
-  it("declares the mesh input and a representative turnaround image output", () => {
-    assert.deepEqual(def.flowKinds.inputs, { body_glb: "mesh" });
+  it("declares the mesh input, the (l) image input, and a representative turnaround image output", () => {
+    assert.deepEqual(def.flowKinds.inputs, { body_glb: "mesh", body_image: "image" });
     assert.deepEqual(def.flowKinds.outputs, { default: "image" });
     const g = new GraphBuilder();
     def.compose(def.schema({ ...FLOORS }), DUMMY_MODEL, g, "flow");
@@ -190,6 +240,24 @@ describe("the anny compose gate", () => {
 
   it("the served preview claim names the identity model (the live arms derive client-side)", () => {
     assert.deepEqual(def.preview, { figure: { identityModel: "anny" } });
+  });
+
+  it("(l) the served body_image row is the image face: group body, wtype image — the constructor's auto-square law rides it", async () => {
+    const { theService } = await import("@melite/comfyui-cordis");
+    await loadCardDefs();
+    const live = theService().formSchemas("anny", "anny")!;
+    const env = live.schema as {
+      refs: Record<string | number, { type?: string; dict?: Record<string, unknown>; meta?: { extra?: { group?: string, wtype?: string } } }>;
+      uid: number;
+    };
+    const root = env.refs[env.uid];
+    const dict = (root?.dict ?? {}) as Record<string, unknown>;
+    const refId = dict.body_image;
+    assert.ok(typeof refId === "number", "body_image rides the served envelope (a dict ref)");
+    const row = env.refs[refId];
+    assert.ok(row, "the dict ref resolves to its schema row");
+    assert.equal(row.meta?.extra?.group, "body", "beside body_glb in the body group");
+    assert.equal(row.meta?.extra?.wtype, "image", "the image wtype — form.tsx's emitted-image law auto-mounts THE ONE SQUARE, no call site wiring");
   });
 });
 

@@ -25,6 +25,16 @@ describe("the anny model plugin (the whole model, one package)", () => {
     const ids = DECL.variants.map((v) => v.id);
     assert.equal(new Set(ids).size, ids.length, "variant ids unique");
   });
+
+  // (l) THE LANE SURFACE (operator 2026-11-08, ERRORS.md:100): the
+  // photo slot rides the declared params beside the GLB attach — the
+  // image face the compose estimator arm reads. The row set is
+  // pinned at its head (body_glb + body_image) so a dropped or
+  // renamed input slot is a deliberate edit, never drift.
+  it("declares the body input slots — the GLB attach and the (l) photo face", () => {
+    assert.equal(DECL.params[0], "body_glb", "the GLB attach seats first (the schema's order 0)");
+    assert.equal(DECL.params[1], "body_image", "the photo face seats beside it (the estimator's card arm)");
+  });
 });
 
 // THE VERBATIM CONTENT LAW: every declared provision row's digest, url

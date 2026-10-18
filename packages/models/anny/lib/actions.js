@@ -35,6 +35,12 @@ export const compose = {
     // the transparent enum is the card's background vocabulary.
     params: [
         { name: "body_glb", type: "string" },
+        // (l) THE IMAGE FACE (operator 2026-11-08, ERRORS.md:100): the
+        // photo slot beside the GLB attach — compose's estimator arm
+        // reads it (the chain the hmr-estimate verb drives). The
+        // SubActionMod amendment declared at the card seat: ONLY the
+        // image joins the surface; person_index stays FIXED at 0 here.
+        { name: "body_image", type: "string" },
         { name: "gender", type: "number", bounds: [0, 1] },
         { name: "age", type: "number", bounds: [0, 1] },
         { name: "muscle", type: "number", bounds: [0, 1] },
@@ -55,11 +61,17 @@ export const compose = {
     ],
     facts: parseAnnyFacts,
     build({ p, g }) {
-        // THE BODY, three arms — a GLB is NEVER required (stroke 89):
-        // 1. an attached GLB renders as-is;
-        // 2. empty → the identity sliders BAKE the body
+        // THE BODY, four arms — a GLB is NEVER required (stroke 89):
+        // 1. (l) a stated photo IS the body: the estimator chain the
+        //    hmr-estimate verb drives (LoadImage → Sam3dBodyImageToAnny,
+        //    person_index FIXED at 0 — the verb owns the picker);
+        // 2. an attached GLB renders as-is;
+        // 3. empty → the identity sliders BAKE the body
         //    (AnnyParamsToGlb: params_json → glb_path — parametric
         //    end-to-end; untouched sliders = the neutral bake).
+        // THE PRECEDENCE, stated ONCE here (image > glb > bake) —
+        // whitespace is emptiness in both input slots, never a refusal.
+        const photo = String(p.body_image ?? '').trim();
         const body = String(p.body_glb ?? '').trim();
         // THE MORPHS (stroke 90): sparse local_changes — only NON-ZERO
         // entries ride the wire (absent = the engine's own 0; the pin
@@ -70,15 +82,20 @@ export const compose = {
             if (Number.isFinite(v) && v !== ANNY_MORPH_DEFAULT)
                 localChanges[label] = v;
         }
-        const bodyPath = body !== ''
-            ? g.node('PrimitiveString', { value: body }).out()
-            : g.node('AnnyParamsToGlb', {
-                params_json: JSON.stringify({
-                    dialect: 'authored',
-                    phenotype: PHENOTYPE_DIMS.map((dim) => Number(p[dim] ?? 0.5)),
-                    local_changes: localChanges,
-                }),
-            }).out();
+        const bodyPath = photo !== ''
+            ? g.node('Sam3dBodyImageToAnny', {
+                image: g.node('LoadImage', { image: photo }).out(0),
+                person_index: 0,
+            }).out(0)
+            : body !== ''
+                ? g.node('PrimitiveString', { value: body }).out()
+                : g.node('AnnyParamsToGlb', {
+                    params_json: JSON.stringify({
+                        dialect: 'authored',
+                        phenotype: PHENOTYPE_DIMS.map((dim) => Number(p[dim] ?? 0.5)),
+                        local_changes: localChanges,
+                    }),
+                }).out();
         const glbPath = g.node('CompositeCharacter', { body_glb_path: bodyPath }).out();
         return renderGLBViews(g, glbPath, {
             resolution: positive('resolution', p.resolution),

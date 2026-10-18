@@ -78,11 +78,14 @@ export const DECL = {
     // instead of dying untyped at the engine.
     "lane_homes": { "model_path": "sams" },
     // THE LANE SURFACE (the z-image precedent): exactly the knobs the
-    // anny card serves — the GLB attach, the 11 identity sliders, the
+    // anny card serves — the GLB attach, the (l) photo face (operator
+    // 2026-11-08, ERRORS.md:100: the image slot beside the GLB —
+    // compose's estimator arm reads it), the 11 identity sliders, the
     // 254 poser morphs (the shared vocabulary owner; the vocab wall
     // pins set-equality with the door pin), and the render tail.
     "params": [
         "body_glb",
+        "body_image",
         "gender", "age", "muscle", "weight", "height", "proportions",
         "cupsize", "firmness", "african", "asian", "caucasian",
         ...ANNY_MORPH_LABELS,
