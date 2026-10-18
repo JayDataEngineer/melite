@@ -15,7 +15,7 @@ describe("the z-image model plugin", () => {
     assert.equal(family.name, "family-z-image");
     assert.deepEqual(family.inject, ["models"]);
     assert.equal(typeof family.apply, "function");
-    assert.deepEqual(DECL.mods, ["loras", "controlnet", "ip_adapter"]);
+    assert.deepEqual(DECL.mods, ["mask", "loras", "controlnet", "ip_adapter"]);
     assert.equal(inject.join(","), "comfyui");
     assert.equal(typeof apply, "function");
     assert.equal(ZIMAGE_ROWS.length, 7, "the seven Turbo adapters on disk");

@@ -12,7 +12,7 @@ describe("the anima model plugin", () => {
     assert.equal(family.name, "family-anima");
     assert.deepEqual(family.inject, ["models"]);
     assert.equal(typeof family.apply, "function");
-    assert.deepEqual(DECL.mods, ["loras"], "anima boards the loras pack");
+    assert.deepEqual(DECL.mods, ["mask", "loras"], "anima boards the mask + loras packs (the MASK ORDER + the loras truth)");
   });
 
   it("carries its defaults (the er_sde sampler is the anima tell)", () => {

@@ -20,7 +20,7 @@ const laneInputs = DECL.lane_inputs;
 assert.ok(laneInputs, "the anima DECL declares lane_inputs");
 // THE LORAS REFUSAL (2026-11-06 8153a8a37): anima boards the loras
 // pack — DECL.mods declares it and first-party adapter seeds ride.
-assert.deepEqual(DECL.mods, ["loras"], "anima boards the loras pack");
+assert.deepEqual(DECL.mods, ["mask", "loras"], "anima boards the mask + loras packs (the MASK ORDER + the loras truth)");
 const FACTS: ModelFacts = {
   id: DECL.id,
   card: "image-gen",

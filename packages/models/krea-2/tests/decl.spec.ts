@@ -51,7 +51,7 @@ describe("the krea-2 model plugin (the whole model, one package)", () => {
   });
 
   it("carries its mods boarding — loras — and the flavor data itself", () => {
-    assert.deepEqual(DECL.mods, ["loras"]);
+    assert.deepEqual(DECL.mods, ["mask", "loras"]);
     assert.equal(inject.join(","), "comfyui");
     assert.equal(typeof apply, "function");
     assert.equal(KREA_ROWS.length, 12, "the Raw-variant training set");
