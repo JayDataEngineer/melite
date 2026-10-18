@@ -93,4 +93,26 @@ describe("the graph-receipt chip (the purge P1's run face)", () => {
     expect(container.textContent).not.toContain("graph ✓");
     expect(container.textContent).not.toContain("graph ✕");
   });
+
+  test("engine ref: the quiet chip carries the engine-minted prompt_id beside the node count", async () => {
+    mountChip(runValue({ graphReceipt: receipt({ prompt_id: "receipt-prompt-0001" }) }));
+    expect(await screen.findByText("graph ✓ 2n · #receipt-prompt-0001", {}, { timeout: 5000 })).toBeTruthy();
+  });
+
+  test("engine ref: the loud chip carries the prompt_id beside the dropped names", async () => {
+    mountChip(runValue({
+      graphReceipt: receipt({
+        verdict: "partial",
+        carried: ["guidance", "prompt"],
+        dropped: ["orphan_ash", "orphan_zed"],
+        prompt_id: "receipt-prompt-0001",
+      }),
+    }));
+    expect(await screen.findByText("graph ✕ dropped orphan_ash, orphan_zed · #receipt-prompt-0001", {}, { timeout: 5000 })).toBeTruthy();
+  });
+
+  test("no prompt_id: no dangling separator (the legacy faces stay byte-identical)", async () => {
+    mountChip(runValue({ graphReceipt: receipt() }));
+    expect(await screen.findByText("graph ✓ 2n", {}, { timeout: 5000 })).toBeTruthy();
+  });
 });

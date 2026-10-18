@@ -15,9 +15,6 @@
  * sentences, the restore report, the progress percents) likewise ride
  * the seat — the dictionary would only rename them, not own them.
  */
-/** The typed dictionary. Keys are stable copy ids; parameterized
- *  entries are functions with typed params (the call renders the exact
- *  string the literal spelled — one character unchanged). */
 export declare const chromeCopy: {
     /** Brand badge on the flow-cards header (both planes). */
     readonly brand: "melite";
@@ -256,15 +253,21 @@ export declare const chromeCopy: {
     }) => string;
     /** Run view's graph-receipt chip on the complete face (the silent
      *  UI-drop purge's P1): every stated scalar rode the composed
-     *  graph — the node count is data. */
+     *  graph — the node count is data. The engine-minted prompt_id
+     *  (GAP B: the receipt carried it, no face rendered it) rides as
+     *  an EngineRef suffix wherever the estate stamped one — absent
+     *  prompt_id leaves the legacy face byte-identical. */
     readonly graphReceiptCarried: (p: {
         nodes: number;
+        promptId?: string;
     }) => string;
     /** Run view's graph-receipt chip on the partial face: the composed
      *  graph dropped doc scalars — the names are data (the estate's
-     *  sorted receipt, joined by the seat). */
+     *  sorted receipt, joined by the seat). The EngineRef suffix rides
+     *  here too (both faces name the queued engine call). */
     readonly graphReceiptDropped: (p: {
         dropped: string[];
+        promptId?: string;
     }) => string;
     /** Weight stuck face's retry verb (re-rides the acquire_weight door). */
     readonly retryDownload: "Retry the download";

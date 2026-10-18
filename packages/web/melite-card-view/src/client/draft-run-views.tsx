@@ -172,11 +172,15 @@ export function RunView({ run, sessionKey, onBack, onRestored, onStop }: {
   // wordings ride chromeCopy (locale-owned); the chip renders only
   // where the estate stamped a receipt (card-composed runs — inline
   // runs stamp none, and the face stays silent, never a phantom).
+  // GAP B (the recon's second gap): the stamped prompt_id — the
+  // engine-minted EngineRef — rides both faces as the EngineRef
+  // suffix wherever present (the receipt carried it, no face
+  // rendered it — now the chip does).
   const receiptChip = run.graphReceipt === undefined ? null : h(Pill, {
     className: run.graphReceipt.verdict === 'complete' ? css.graphReceiptOk : css.graphReceiptPartial,
   }, run.graphReceipt.verdict === 'complete'
-    ? chromeCopy.graphReceiptCarried({ nodes: run.graphReceipt.nodes })
-    : chromeCopy.graphReceiptDropped({ dropped: run.graphReceipt.dropped }))
+    ? chromeCopy.graphReceiptCarried({ nodes: run.graphReceipt.nodes, promptId: run.graphReceipt.prompt_id })
+    : chromeCopy.graphReceiptDropped({ dropped: run.graphReceipt.dropped, promptId: run.graphReceipt.prompt_id }))
   return h('section', { className: css.runView, 'data-run-status': run.status },
     h('header', { className: css.runHead },
       h('span', { className: css.runId }, run.runId),

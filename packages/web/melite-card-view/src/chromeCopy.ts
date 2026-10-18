@@ -19,6 +19,13 @@
 /** The typed dictionary. Keys are stable copy ids; parameterized
  *  entries are functions with typed params (the call renders the exact
  *  string the literal spelled — one character unchanged). */
+/** The EngineRef suffix for the graph-receipt chip faces (one home
+ *  for both faces — the separator and the # mark live here, never
+ *  in the client): a stamped prompt_id rides as ` · #<id>`, an
+ *  absent one leaves the legacy face byte-identical. */
+function engineRefSuffix(promptId: string | undefined): string {
+  return promptId !== undefined && promptId !== "" ? " · #" + promptId : "";
+}
 // v8 ignore next -- exercised key-by-key by the copy census wall (every entry consumed at its seats)
 export const chromeCopy = {
   /** Brand badge on the flow-cards header (both planes). */
@@ -227,12 +234,18 @@ export const chromeCopy = {
     'Stuck — the download is no longer progressing: the engine last reported state "' + p.state + '" at ' + String(p.bytes) + '/' + String(p.total) + ' bytes. Retry the fetch or delete the stuck operation.',
   /** Run view's graph-receipt chip on the complete face (the silent
    *  UI-drop purge's P1): every stated scalar rode the composed
-   *  graph — the node count is data. */
-  graphReceiptCarried: (p: { nodes: number }): string => 'graph ✓ ' + String(p.nodes) + 'n',
+   *  graph — the node count is data. The engine-minted prompt_id
+   *  (GAP B: the receipt carried it, no face rendered it) rides as
+   *  an EngineRef suffix wherever the estate stamped one — absent
+   *  prompt_id leaves the legacy face byte-identical. */
+  graphReceiptCarried: (p: { nodes: number; promptId?: string }): string =>
+    'graph ✓ ' + String(p.nodes) + 'n' + engineRefSuffix(p.promptId),
   /** Run view's graph-receipt chip on the partial face: the composed
    *  graph dropped doc scalars — the names are data (the estate's
-   *  sorted receipt, joined by the seat). */
-  graphReceiptDropped: (p: { dropped: string[] }): string => 'graph ✕ dropped ' + p.dropped.join(', '),
+   *  sorted receipt, joined by the seat). The EngineRef suffix rides
+   *  here too (both faces name the queued engine call). */
+  graphReceiptDropped: (p: { dropped: string[]; promptId?: string }): string =>
+    'graph ✕ dropped ' + p.dropped.join(', ') + engineRefSuffix(p.promptId),
   /** Weight stuck face's retry verb (re-rides the acquire_weight door). */
   retryDownload: 'Retry the download',
   /** Weight stuck face's delete verb (the discard rides the manage seat). */
