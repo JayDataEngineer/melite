@@ -68,6 +68,7 @@ import { getModel, registryIds, registryModel } from "../../../engines/comfyui-c
 // temporarily swapped row is the compose step itself, corrupted.
 import { ACTION_BINDINGS } from "../src/card.ts";
 import { DECL as music3Decl } from "@melite/models-music3";
+import { DECL as yue2Decl } from "@melite/models-yue2";
 // THE DOOR (arms 2c/4c/5) and the FLOW ROW (arm 3) — source-relative,
 // the walls-suite import shape (cards-lane-law precedent). The
 // `import type {}` rides for the Context.queue augmentation the
@@ -651,6 +652,64 @@ describe("ARM 6 — the stated numerics ride VERBATIM to their consumers (durati
     assertNumAtConsumer(graph, "KSampler", "seed", 4242, "seed (door)");
   });
 
+  it("F-2 (auditor finding on the music-numerics verdict): the music3 door ALSO pins encode-seed + latent-seconds (the SD-6 pin's two missing seats)", async () => {
+    const body = {
+      model: "music3", prompt: PROMPT, lyrics: LYRICS,
+      duration: 77, guidance_scale: 2.5, n_diffusion_steps: 64, lm_cfg_scale: 3.5, seed: 4242,
+    };
+    const p1 = await door.phase1Card(body, "music3");
+    const ran = await door.phase2Card(p1, `${RUN_DOOR}_f2_encode_latent`);
+    const graph = ran.graph as Graph;
+    assertNumAtConsumer(graph, MUSIC3_TEXT_ENCODE, "seed", 4242, "seed (door encode)");
+    assertNumAtConsumer(graph, "EmptyMiniMaxMusic3LatentAudio", "seconds", 77, "duration (door latent)");
+  });
+
+  it("F-5 (seed mint at the door, auditor finding on the music-numerics verdict): omitting seed mints ONE shared non-negative integer at both music3 consumers (GATE S — mintSeed once, every node sharing the seed reads the same mint)", async () => {
+    // THE AUDIT'S PROBE, NOW A WALL ARM (the verdict §F-5: the
+    // door-seat mint was witnessed by the auditor's scratch probe
+    // only — this arm moves the witness into the wall). No seed
+    // stated: the -1 sentinel mints at render, and BOTH consumers
+    // (encode + sampler) must read THE SAME mint — two dice would
+    // voice the lyrics in one world and sample another.
+    const body = {
+      model: "music3", prompt: PROMPT, lyrics: LYRICS,
+      duration: 77, guidance_scale: 2.5, n_diffusion_steps: 64, lm_cfg_scale: 3.5,
+    };
+    const p1 = await door.phase1Card(body, "music3");
+    const ran = await door.phase2Card(p1, `${RUN_DOOR}_f5_seed_mint`);
+    const graph = ran.graph as Graph;
+    const enc = nodesOf(graph, MUSIC3_TEXT_ENCODE);
+    assert.equal(enc.length, 1, "the omitted-seed draft composes its encode consumer");
+    const sam = nodesOf(graph, "KSampler");
+    assert.equal(sam.length, 1, "the omitted-seed draft composes its sampler consumer");
+    const eSeed = enc[0]!.inputs["seed"];
+    const sSeed = sam[0]!.inputs["seed"];
+    assert.ok(Number.isInteger(eSeed) && (eSeed as number) >= 0,
+      `the minted encode seed is a non-negative integer (saw ${JSON.stringify(eSeed)}) — the sentinel must mint, never pass -1 through`);
+    assert.equal(sSeed, eSeed,
+      `ONE shared mint: sampler seed (${JSON.stringify(sSeed)}) must equal encode seed (${JSON.stringify(eSeed)}) — two dice voice different worlds`);
+  });
+
+  it("yue2 THROUGH THE DOOR: the served graph carries the stated numerics at the consumers (auditor F-1 on the dead-knobs verdict — the surviving knobs ride the door after the D1/D2 cure)", async () => {
+    // THE POST-CURE DOOR: guidance/lm_cfg no longer ride yue2
+    // (they refuse loud — the dead-knobs wall's D3/D4), so the
+    // door-stated draft carries ONLY the surviving knobs
+    // (duration/steps/seed) — and the served graph must carry them
+    // at the same consumers the card path pins above.
+    const body = {
+      model: "yue2", prompt: PROMPT, lyrics: LYRICS, mode: "melody",
+      duration: 77, n_diffusion_steps: 64, seed: 4242,
+    };
+    const p1 = await door.phase1Card(body, "yue2");
+    const ran = await door.phase2Card(p1, `${RUN_DOOR}_numerics_yue2`);
+    const graph = ran.graph as Graph;
+    assertNumAtConsumer(graph, YUE2_MUSIC, "max_duration", 77, "duration (yue2 door)");
+    assertNumAtConsumer(graph, "KSampler", "steps", 64, "steps (yue2 door)");
+    assertNumAtConsumer(graph, "KSampler", "seed", 4242, "seed (yue2 door)");
+    assertNumAtConsumer(graph, YUE2_ABC, "seed", 4242, "seed (yue2 ABC door)");
+    assertNumAtConsumer(graph, YUE2_MUSIC, "seed", 4242, "seed (yue2 music door)");
+  });
+
   // THE CORRUPTION TWINS (ARM 4's law extended to numbers): a stated
   // numeric corrupted mid-compose MUST red the arms above — else the
   // numerics are presence pins, not value pins.
@@ -686,6 +745,28 @@ describe("ARM 6 — the stated numerics ride VERBATIM to their consumers (durati
       );
     } finally {
       ACTION_BINDINGS[music3Decl.id] = original;
+    }
+  });
+
+  it("4f: the same corruption THROUGH THE YUE2 DOOR reds the F-1 pin (the yue2 door pin is a value pin, not a presence pin)", async () => {
+    const original = ACTION_BINDINGS[yue2Decl.id]!;
+    ACTION_BINDINGS[yue2Decl.id] =
+      (p, model, g, runId) => original({ ...p, n_diffusion_steps: 32 }, model, g, runId);
+    try {
+      await assert.rejects(
+        (async () => {
+          const p1 = await door.phase1Card({
+            model: "yue2", prompt: PROMPT, lyrics: LYRICS, mode: "melody",
+            duration: 77, n_diffusion_steps: 64, seed: 4242,
+          }, "yue2");
+          const ran = await door.phase2Card(p1, `${RUN_DOOR}_numerics_yue2_corrupt`);
+          assertNumAtConsumer(ran.graph as Graph, "KSampler", "steps", 64, "steps (yue2 door)");
+        }),
+        /VALUE ARM|did not carry the stated number/,
+        "the yue2 door numerics pin passed on a corrupted compose — it is a presence pin, not a value pin",
+      );
+    } finally {
+      ACTION_BINDINGS[yue2Decl.id] = original;
     }
   });
 });
