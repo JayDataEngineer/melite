@@ -47,18 +47,15 @@ export const DECL: ModelDecl = {
     "scheduler": "simple"
   },
   "genre": "image",
-  // MASK-C (the image-gen region gap — deliberate no-board): no
-  // 'mask' — the klein edit story is ReferenceLatent references,
-  // not masks (the operator ruling keeps references off the gen
-  // card too), and no klein edit family shares these weights.
-  // Serving the mask surface would promise what no lane builds; a
-  // stated mask refuses LOUD at admission like every undeclared
-  // key. THE LORAS BOARDING (operator 2026-11-06: every family
-  // applies LoRAs): boards 'loras' — the fired lane fires on every
-  // boarding atom; no first-party rows yet, so user filename rows
-  // pass through and unknown ids refuse at compose naming the
-  // empty registry.
+  // THE MASK BOARDING (operator order 2026-11-07: the MASK mod
+  // serves on EVERY img-gen model — the MASK-C no-board is
+  // superseded): boards 'mask' as the bare flavor (mods/mask.ts,
+  // composed in cordis cardDefs) — the region vocabulary serves
+  // on the card (crop_stitch, the Impact pattern); auto+mask
+  // still refuses LOUD at admission (no lane builds it), the
+  // gate's voice teaching crop_stitch — never a silent plain run.
   "mods": [
+    "mask",
     "loras"
   ],
   // THE LICENCE ROW (corrected 2026-10-22 by BFL's own sources — the

@@ -1,19 +1,15 @@
 import type {} from '@melite/comfyui-card-kit/service-faces'
-// families/image/qwen-img-edit-21/mods/mask.ts — QWEN 2.1'S MASK
-// BOARDING (attached 2026-09-22, the operator's lane call: "2511 is
-// the legacy model… 2.1 is the new Qwen edit model"): bare flavor —
-// fields inherited from the mask pack contract. On this lane the
-// region rides crop_stitch (the generic region detailer); auto+mask
-// still refuses field-named (the lanpaint sampler is 2511's flavor —
-// the gate's voice teaches crop_stitch).
-import type { Context } from '@melite/comfyui-card-kit/card-definition'
+// families/image/qwen-img-edit-21/mods/mask.ts — QWEN 2.1 EDIT'S MASK BOARDING: the SHARED bare-flavor
+// primitive (card-kit bareFlavor) parameterized by pack + family —
+// attached 2026-09-22 (the operator's lane call): now one call of
+// the shared primitive. The pack contract owns the fields (the region vocabulary:
+// the square mask input, 1:1 with the other input boxes); the gen
+// plane builds no region arm, so auto+mask refuses LOUD at
+// admission — the refused-fate honesty, never a silent plain run.
+import { bareFlavor } from '@melite/comfyui-card-kit/bare-flavor'
 
+const flavor = bareFlavor('mask', ['qwen-img-edit-21'])
 
-export const inject = ['comfyui']
+export const inject = flavor.inject
 
-export function apply(ctx: Context): void {
-  ctx.effect(() => ctx.comfyui.registerFlavor({
-    pack: 'mask',
-    families: ['qwen-img-edit-21'],
-  }))
-}
+export const apply = flavor.apply

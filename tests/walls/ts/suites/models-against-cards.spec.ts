@@ -54,7 +54,11 @@ import { describe, it } from "vitest";
 // 51 -> 59 (2026-10-16, the anima three checkpoints): base keeps
 // route anima; turbo + aesthetic add variant routes and all three
 // add int8/bf16 cell routes (8 new served addresses).
-const SERVED_ADDR_CENSUS = 59
+// 59 -> 60 (2026-10-17, the Singularity checkpoint): the h3 timeline
+// lane's second checkpoint takes its own variant route address
+// (h3-singularity; the krea-2 raw-lane precedent — two lanes, one
+// family, distinct route addresses per lane).
+const SERVED_ADDR_CENSUS = 60
 // 24 -> 25 (2026-10-22, audit 006/U1): flux-klein claims its own
 // atom (the family's routes resolve to its declared owners)
 // 25 -> 24 (2026-10-13, the autoremesher excision — the pack the owner removed from the system)
@@ -702,7 +706,9 @@ describe("models against cards (the cross-validation, resurrected)", () => {
     // 70 -> 68 (2026-10-31, the template-fidelity cure): birefnet left
     // pixal3d + trellis2-native — the mask bridge is not in the
     // official template lane, so its provision row is gone per family.
-    const PROVISION_ROW_COUNT = 68;
+    // 68 -> 69 (2026-10-17, the Singularity checkpoint row): the h3
+    // timeline lane's second checkpoint adds its pinned provision.
+    const PROVISION_ROW_COUNT = 69;
     const declarers: string[] = [];
     let judged = 0;
     for (const id of registryIds()) {
@@ -753,8 +759,13 @@ describe("models against cards (the cross-validation, resurrected)", () => {
   // DECL is the toggle that proves this arm (watch it red); a
   // family starting or stopping a mask boarding MOVES this census
   // deliberately.
-  it("mask declarers are the named set (the region contract boards the 2.1 checkpoint + the edit lanes)", () => {
-    const MASK_DECLARERS = ["qwen-img-21", "qwen-img-edit-21", "qwen-img-edit-2511"];
+  it("mask declarers are the named set (THE MASK ORDER: every img-gen family + the edit lanes board the region contract)", () => {
+    // THE MASK ORDER (operator 2026-11-07): the MASK mod serves on
+    // EVERY img-gen model — the 2.1-only MASK-C roster is history.
+    const MASK_DECLARERS = [
+      "anima", "flux-klein", "krea-2", "qwen-img-21",
+      "qwen-img-edit-21", "qwen-img-edit-2511", "z-image",
+    ];
     const declarers: string[] = [];
     for (const id of registryIds()) {
       const mods = ((registryModel(id) as { mods?: Array<string | { pack: string }> }).mods ?? [])

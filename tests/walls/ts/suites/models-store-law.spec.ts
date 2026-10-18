@@ -127,6 +127,10 @@ describe("THE MODELS-STORE LAW — real artifacts, no unnamed bytes", () => {
       // landed the same sweep, clearing the floor the wall's own
       // law names.
       "packages/models/seedvr2-ema/src/index.ts: SEEDVR2/seedvr2_ema_3b_fp8_e4m3fn.safetensors",
+      // 2026-10-17 (h3 checkpoint axis): the Singularity fine-tune
+      // row declares its 20.9 GB int8 prune — provisioned as a
+      // bench experiment, not yet fetched.
+      "packages/models/h3/src/index.ts: diffusion_models/Minimax-h3_Singularity_ref2va_Pruned_v1.3_int8.safetensors",
     ].sort();
     expect(missing.sort(), "provisions rows with no artifact at the declared path (new rows = silent DECL loss; rows gone from the floor = downloads landed, update the floor)").toEqual(OWED_FLOOR);
     expect(wrongSize, "artifacts whose bytes disagree with the DECL").toEqual([]);

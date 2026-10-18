@@ -27,16 +27,15 @@ export const DECL = {
         { "name": "cfg", "class": "variant" },
         { "name": "prompt", "class": "user" }
     ],
-    // MASK-C (the image-gen region gap — deliberate no-board): no
-    // 'mask' — the anime T2I lane takes no region input upstream and
-    // no edit lane shares these weights. Serving the mask surface
-    // would promise what no lane builds; a stated mask refuses LOUD
-    // at admission like every undeclared key. THE LORAS BOARDING
-    // (operator 2026-11-06: every family applies LoRAs): boards
-    // 'loras' — the pack's fired lane fires on every boarding atom;
-    // no first-party rows yet, so user filename rows pass through
-    // and unknown ids refuse at compose naming the empty registry.
+    // THE MASK BOARDING (operator order 2026-11-07: the MASK mod
+    // serves on EVERY img-gen model — the MASK-C no-board is
+    // superseded): boards 'mask' as the bare flavor (mods/mask.ts,
+    // composed in cordis cardDefs) — the region vocabulary serves
+    // on the card (crop_stitch, the Impact pattern); auto+mask
+    // still refuses LOUD at admission (no lane builds it), the
+    // gate's voice teaching crop_stitch — never a silent plain run.
     "mods": [
+        "mask",
         "loras"
     ],
     // THE THREE CHECKPOINTS (operator 2026-10-16: Base v1.0,

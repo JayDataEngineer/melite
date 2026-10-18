@@ -206,6 +206,15 @@ export const composeModPlane = async (ctx) => {
         // envelope (the lane builds no region arm; stated masks refuse
         // LOUD at admission).
         ['@melite/models-qwen-img-21/mods/mask', 'qwen-img-21 mask'],
+        // THE MASK ORDER (operator 2026-11-07: the MASK mod serves on
+        // EVERY img-gen model — MASK-C's per-family no-boards are
+        // superseded): the region vocabulary rides every gen card, the
+        // crop_stitch detailer composes, auto+mask refuses LOUD (no
+        // lane builds it).
+        ['@melite/models-anima/mods/mask', 'anima mask'],
+        ['@melite/models-flux-klein/mods/mask', 'flux-klein mask'],
+        ['@melite/models-krea-2/mods/mask', 'krea-2 mask'],
+        ['@melite/models-z-image/mods/mask', 'z-image mask'],
     ];
     for (const [specifier, label] of packagedFlavors) {
         await pluginPackage(ctx, specifier, 'packaged flavor', label);

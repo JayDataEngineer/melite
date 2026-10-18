@@ -46,6 +46,10 @@
       "types": "./lib/mods/guard.d.ts",
       "default": "./lib/mods/guard.js"
     },
+    "./bare-flavor": {
+      "types": "./lib/mods/bare-flavor.d.ts",
+      "default": "./lib/mods/bare-flavor.js"
+    },
     "./package.json": "./package.json",
     "./card-definition": {
       "types": "./lib/card-definition.d.ts",

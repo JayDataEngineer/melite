@@ -351,8 +351,14 @@ test("the correction stroke: a flavor disposal retracts the mutation", async () 
   const retract = svc.registerFlavor({ pack: "mask", families: ["krea-2"] });
   assert.ok(svc.flavorRegistrations().some((f) => f.pack === "mask" && f.families.includes("krea-2")));
   retract();
+  // THE MASK ORDER (2026-11-07): krea-2's OWN mask flavor now rides
+  // the real boot, so the retraction is judged as a DELTA — the
+  // count returns to the boot's own baseline (the synthetic
+  // registration vanishes; the family's own boarding remains).
+  const baseline = svc.flavorRegistrations().filter((f) => f.pack === "mask" && f.families.includes("krea-2")).length;
+  assert.equal(baseline, 1, "the family's own mask flavor rides the boot");
   const after = svc.flavorRegistrations().filter((f) => f.pack === "mask" && f.families.includes("krea-2"));
-  assert.equal(after.length, 0, "fiber dispose retracts its flavor");
+  assert.equal(after.length, baseline, "fiber dispose retracts its flavor (back to the boot baseline)");
   assert.ok(svc.cardModFields("image-gen").some((a) => a.pack === "loras"));
 });
 
@@ -617,31 +623,32 @@ test("the verb mirror: every mounted verb is boarded by its families' DECLs", as
   }
 });
 
-test("MASK-C (the image-gen region gap): the 2.1 checkpoint boards mask on the gen card; stated masks still refuse loud", async () => {
-  // THE CURE: qwen-img-21 boards 'mask' — the SAME physical
-  // checkpoint qwen-img-edit-21 details regions with (the 2.1
-  // weights carry the estate's region story: the crop_stitch
-  // detailer + the Impact detectors). The gen card serves the
-  // region vocabulary for the one image-gen family whose weights
-  // can answer it.
+test("THE MASK ORDER (operator 2026-11-07): every img-gen family boards mask; stated masks still refuse loud on the gen plane", async () => {
+  // THE ORDER: the MASK mod serves on EVERY img-gen model — MASK-C's
+  // per-family no-boards (the pure-t2i verdicts) are superseded. The
+  // region vocabulary rides every gen card (the crop_stitch
+  // detailer, the Impact pattern); the gen plane still builds no
+  // region arm, so a stated mask refuses LOUD at admission — the
+  // refused-fate honesty survives the wider boarding.
   const modsOf = (id: string): string[] =>
     ((registryModel(id).mods ?? []) as readonly (string | { pack: string })[])
       .map((m) => (typeof m === "string" ? m : m.pack));
   assert.ok(modsOf("qwen-img-21").includes("mask"),
-    "qwen-img-21 boards 'mask' (MASK-C: the region contract rides the 2.1 checkpoint on both cards)");
-  // the flavor half of the interlock: a mask flavor scopes the
-  // cured family (boarding without it refuses at boot — the toggle
-  // that proves this arm renames
-  // packages/models/qwen-img-21/mods/mask.ts away and watches red).
+    "qwen-img-21 boards 'mask' (the first cure — the region contract rode the 2.1 checkpoint on both cards)");
+  // the flavor half of the interlock: a mask flavor scopes each
+  // boarding family (boarding without it refuses at boot — the
+  // toggle that proves this arm renames a family's mods/mask.ts
+  // away and watches red).
   assert.ok(svc.flavorRegistrations().some((f) => f.pack === "mask" && f.families.includes("qwen-img-21")),
     "a 'mask' flavor scopes qwen-img-21 (the boarding's flavor file)");
-  // the deliberate no-boards: the pure-t2i families board no mask —
-  // their upstream lanes take no region input and no edit lane
-  // shares their weights (each DECL comments its verdict, never a
-  // silent skip).
-  for (const fam of ["krea-2", "z-image", "flux-klein", "anima"]) {
-    assert.ok(!modsOf(fam).includes("mask"),
-      `${fam} boards no 'mask' (MASK-C: pure-t2i, no region input upstream, no edit sibling — the DECL comments the verdict)`);
+  // THE ORDER'S REACH: the four pure-t2i families board too — each
+  // with its own bare flavor (the DECL comments carry the operator
+  // order; the superseded MASK-C verdicts are history, not law).
+  for (const fam of ["anima", "flux-klein", "krea-2", "z-image"]) {
+    assert.ok(modsOf(fam).includes("mask"),
+      `${fam} boards 'mask' (the MASK ORDER: every img-gen family carries the region vocabulary)`);
+    assert.ok(svc.flavorRegistrations().some((f) => f.pack === "mask" && f.families.includes(fam)),
+      `a 'mask' flavor scopes ${fam} (the boarding's flavor file)`);
   }
   // THE PLANE-LOCAL FATE (the refused-fate honesty): no image-gen
   // lane builds a region arm (compose untouched), so a stated mask

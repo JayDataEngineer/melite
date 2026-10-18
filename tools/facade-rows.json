@@ -83,6 +83,9 @@
   "@melite/comfyui-card-kit/guard": [
     "./packages/engines/comfyui-card-kit/src/mods/guard.ts"
   ],
+  "@melite/comfyui-card-kit/bare-flavor": [
+    "./packages/engines/comfyui-card-kit/src/mods/bare-flavor.ts"
+  ],
   "@melite/comfyui-card-kit/card-definition": [
     "./packages/engines/comfyui-card-kit/src/card-definition.ts"
   ],
@@ -320,6 +323,9 @@
   "@melite/models-anima/mods/loras": [
     "./packages/models/anima/mods/loras.ts"
   ],
+  "@melite/models-anima/mods/mask": [
+    "./packages/models/anima/mods/mask.ts"
+  ],
   "@melite/models-anny": [
     "./packages/models/anny/src/index.ts"
   ],
@@ -343,6 +349,9 @@
   ],
   "@melite/models-flux-klein/mods/loras": [
     "./packages/models/flux-klein/mods/loras.ts"
+  ],
+  "@melite/models-flux-klein/mods/mask": [
+    "./packages/models/flux-klein/mods/mask.ts"
   ],
   "@melite/models-gem-soma": [
     "./packages/models/gem-soma/src/index.ts"
@@ -382,6 +391,9 @@
   ],
   "@melite/models-krea-2/mods/loras": [
     "./packages/models/krea-2/mods/loras.ts"
+  ],
+  "@melite/models-krea-2/mods/mask": [
+    "./packages/models/krea-2/mods/mask.ts"
   ],
   "@melite/models-mask": [
     "./packages/models/mask/src/index.ts"
@@ -460,6 +472,9 @@
   ],
   "@melite/models-z-image/mods/loras": [
     "./packages/models/z-image/mods/loras.ts"
+  ],
+  "@melite/models-z-image/mods/mask": [
+    "./packages/models/z-image/mods/mask.ts"
   ],
   "@melite/models-z-image/mods/controlnet": [
     "./packages/models/z-image/mods/controlnet.ts"

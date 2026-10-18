@@ -238,6 +238,10 @@ describe("the resurrected model registry (families/variants/cells/links)", () =>
   "flux-klein",
   "flux-klein-base",
   "h3",
+  // 2026-10-17, the Singularity checkpoint: the h3 timeline lane's
+  // second checkpoint rides the same untyped carve (its weights'
+  // origin is the pinned provision row), under its own route address.
+  "h3-singularity",
   "h3-timeline",
   "input",
   "joycaption",
@@ -439,7 +443,10 @@ describe("the resurrected model registry (families/variants/cells/links)", () =>
     // folds never carried cells, so only five serving rows die.
     // 57 -> 59 (2026-10-16, the anima three checkpoints): the f32
     // standard row dies, base/turbo/aesthetic serve (-1 +3).
-    assert.equal(variants, 59); // +2: fit + skin's Standard rows (stroke 4 — the unoffered verb families each declare one)
+    // 59 -> 60 (2026-10-17, the Singularity checkpoint row): the h3
+    // timeline lane serves the community fine-tune beside the hybrid
+    // — a checkpoint axis on ONE lane, not a re-served model.
+    assert.equal(variants, 60); // +2: fit + skin's Standard rows (stroke 4 — the unoffered verb families each declare one)
     // 85 -> 84 (2026-10-13, the autoremesher excision): the family's
     // one cell left with the pack the owner removed.
     // 84 -> 86 (2026-10-23): the turbo cells join (turbo_int8_convrot + turbo_bf16).
@@ -456,6 +463,8 @@ describe("the resurrected model registry (families/variants/cells/links)", () =>
     // retirements.
     // 65 -> 70 (2026-10-16, the anima three checkpoints): the one
     // f32 cell dies, six int8/bf16 cells serve (-1 +6).
-    assert.equal(cells, 70);
+    // 70 -> 71 (2026-10-17): the Singularity int8 pruned cell joins
+    // the h3 timeline lane.
+    assert.equal(cells, 71);
   });
 });

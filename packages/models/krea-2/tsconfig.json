@@ -18,6 +18,10 @@
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "paths": {
+        "@melite/models-anima/mods/mask": ["./../anima/mods/mask.ts"],
+        "@melite/models-flux-klein/mods/mask": ["./../flux-klein/mods/mask.ts"],
+        "@melite/models-krea-2/mods/mask": ["./mods/mask.ts"],
+        "@melite/models-z-image/mods/mask": ["./../z-image/mods/mask.ts"],
         "@melite/audio-sfx/card": ["./../../audio/sfx/src/card.ts"],
         "@melite/image-image-gen/card": ["./../../image/image-gen/src/card.ts"],
         "@melite/image-input-prep/card": ["./../../image/input-prep/src/card.ts"],
@@ -97,6 +101,7 @@
         "@melite/comfyui-card-kit/vocab": ["./../../engines/comfyui-card-kit/src/vocab.ts"],
         "@melite/comfyui-card-kit/paramRows": ["./../../engines/comfyui-card-kit/src/paramRows.ts"],
         "@melite/comfyui-card-kit/morphs": ["./../../engines/comfyui-card-kit/src/morphs.ts"],
+        "@melite/comfyui-card-kit/bare-flavor": ["./../../engines/comfyui-card-kit/src/mods/bare-flavor.ts"],
         "@melite/comfyui-card-kit/guard": ["./../../engines/comfyui-card-kit/src/mods/guard.ts"],
         "@melite/comfyui-cordis": ["./../../engines/comfyui-cordis/src/index.ts"],
         "@melite/comfyui-cordis/catalog-registry": ["./../../engines/comfyui-cordis/src/entries/catalog-registry.ts"],

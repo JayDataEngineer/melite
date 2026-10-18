@@ -2,6 +2,11 @@
   "compilerOptions": {
     "noEmitOnError": true,
     "paths": {
+        "@melite/comfyui-card-kit/bare-flavor": ["./../../engines/comfyui-card-kit/src/mods/bare-flavor.ts"],
+        "@melite/models-anima/mods/mask": ["./../../models/anima/mods/mask.ts"],
+        "@melite/models-flux-klein/mods/mask": ["./../../models/flux-klein/mods/mask.ts"],
+        "@melite/models-krea-2/mods/mask": ["./../../models/krea-2/mods/mask.ts"],
+        "@melite/models-z-image/mods/mask": ["./../../models/z-image/mods/mask.ts"],
         "@melite/audio-sfx/card": ["./../../audio/sfx/src/card.ts"],
         "@melite/image-image-gen/card": ["./../../image/image-gen/src/card.ts"],
         "@melite/image-input-prep/card": ["./../../image/input-prep/src/card.ts"],

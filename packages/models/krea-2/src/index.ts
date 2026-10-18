@@ -39,22 +39,16 @@ export const DECL: ModelDecl = {
     { "name": "prompt", "class": "user" }
   ],
   "mods": [
+    "mask",
     "loras"
   ],
-  // MASK-C (the image-gen region gap — deliberate no-board): no
-  // 'mask' — upstream's Krea-1 templates are T2I-only (the turbo
-  // distilled + raw lanes take no region input) and no edit lane
-  // shares these weights. Serving the surface would promise what no
-  // lane builds; a stated mask refuses LOUD at admission like every
-  // undeclared key.
-  // THE ARTIFACT FATE (2026-10-17, model-families audit fix 7).
-  // These cell artifacts ARE provision rows via the union law.
-  // Their source_url is a download declaration.
-  // It is not a plain source link.
-  // The estate provisions them through provisionsByFamily.
-  // The liveness gate probes them.
-  // The mods/ loras fate is the opposite.
-  // Those rows are operator-supplied and never fetched.
+  // THE MASK BOARDING (operator order 2026-11-07: the MASK mod
+  // serves on EVERY img-gen model — the MASK-C no-board is
+  // superseded): boards 'mask' as the bare flavor (mods/mask.ts,
+  // composed in cordis cardDefs) — the region vocabulary serves
+  // on the card (crop_stitch, the Impact pattern); auto+mask
+  // still refuses LOUD at admission (no lane builds it), the
+  // gate's voice teaching crop_stitch — never a silent plain run.
   "variants": [
     {
       "id": "turbo",

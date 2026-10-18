@@ -13,6 +13,10 @@
     "./mods/loras": {
       "types": "./lib/mods/loras.d.ts",
       "default": "./lib/mods/loras.js"
+    },
+    "./mods/mask": {
+      "types": "./lib/mods/mask.d.ts",
+      "default": "./lib/mods/mask.js"
     }
   },
   "dependencies": {
