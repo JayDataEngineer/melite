@@ -828,6 +828,28 @@ export class CardRegistryService extends Service {
     return def.admitFamily(params);
   }
 
+  /** THE FAMILY RESEAT (the ERROR g/h cure, 2026-11-08 — the
+   *  settlement seat the walls pre-registered): the card's own
+   *  reseat face (CardDefinition.reseatFamily — h3-timeline's
+   *  reseatFamilyDead spine) drops the family-dead carry a flipped
+   *  arrival strands, BEFORE the write doors judge and store — the
+   *  lane-migration law's own spelling (stale carry drops, the row
+   *  that lands is the row the next run composes) for the family
+   *  axis: a keyframe pin flipping t4_open→t4r under carried post
+   *  stamps lands the stamps' DELETE, never a stored doc refusing
+   *  later. The judge keeps its teeth for AUTHORED poison (a doc
+   *  assembled family-dead with no flip still refuses at
+   *  admitStageFamily — this seat only settles the flip's own
+   *  strand). Null when the card declares no reseat face. */
+  reseatStageFamily(
+    card: string,
+    params: Record<string, unknown>,
+  ): { params: Record<string, unknown>; dropped: readonly string[] } | null {
+    const def: CardDefinition | undefined = this.defsSync().get(card);
+    if (def === undefined || def.reseatFamily === undefined) return null;
+    return def.reseatFamily(params);
+  }
+
   /** THE LANE MIGRATION (operator 2026-10-12, the stuck-switch
    *  incident — live on :3088): a write that CHANGES the resolved
    *  lane (the variant axis, the model axis, or both) is a

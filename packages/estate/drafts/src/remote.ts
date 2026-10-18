@@ -30,6 +30,7 @@ import {
   setBenchChangeSeam,
   type BenchChangeSeam,
   type LaneMigration,
+  type FamilyReseat,
   getBench,
   groupBench,
   patchBench,
@@ -298,6 +299,16 @@ interface StageResolver {
     params: Record<string, unknown>,
     priorParams: Record<string, unknown>,
   ): Record<string, unknown>;
+  /** THE FAMILY RESEAT (the ERROR g/h cure, 2026-11-08): the
+   *  registry drops the family-dead carry a flipped arrival strands
+   *  (CardDefinition.reseatFamily — h3's reseatFamilyDead spine)
+   *  BEFORE the admission judges and the row stores — the
+   *  lane-migration law's spelling on the family axis. Optional: a
+   *  registry without the seam keeps the pre-cure law. */
+  reseatStageFamily?(
+    card: string,
+    params: Record<string, unknown>,
+  ): { params: Record<string, unknown>; dropped: readonly string[] } | null;
   /** THE SCHEMA-MASTER REPAIR (2026-09-24): the registry's longest
    *  boarded-family dash-prefix repair for era model ids. Nullable —
    *  no match means no repair, the original refusal stands. */
@@ -464,6 +475,20 @@ export function laneMigrationOf(
   const reg = resolverOf(ctx);
   if (reg === null || reg.laneMigrate === undefined) return undefined;
   return reg.laneMigrate.bind(reg);
+}
+
+/** THE FAMILY RESEAT SEAT (the ERROR g/h cure, 2026-11-08): the
+ *  registry's reseat face bound for the bench doors — the flip's
+ *  own writer, applied BEFORE the strip, the admission, and the
+ *  store (the laneMigrationOf precedent). Undefined when the
+ *  registry seat offers no reseat seam. Exported for the wall, the
+ *  familyAdmissionOf precedent. */
+export function familyReseatOf(
+  ctx: Context,
+): FamilyReseat | undefined {
+  const reg = resolverOf(ctx);
+  if (reg === null || reg.reseatStageFamily === undefined) return undefined;
+  return reg.reseatStageFamily.bind(reg);
 }
 
 /** THE FAMILY ADMISSION SEAT (journey-closure B5, 2026-10-17 — hop
@@ -1624,7 +1649,7 @@ export class BenchRemoteService extends TypertRemoteService {
     signal.throwIfAborted();
     return withBenchWrite(benchDraftIdOf(session), async () => {
       const drafts: Domain<DraftsDomainSpec> = await this.open(signal);
-      const row = await patchBench(drafts, session, doc, benchAdmissionOf(this.ctx), laneMigrationOf(this.ctx));
+      const row = await patchBench(drafts, session, doc, benchAdmissionOf(this.ctx), laneMigrationOf(this.ctx), familyReseatOf(this.ctx));
       notifyBenchChange(session);
       return row;
     });

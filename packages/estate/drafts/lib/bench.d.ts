@@ -196,6 +196,12 @@ export interface BenchPatchRow {
     readonly rev: number;
     readonly stage: string;
     readonly patched: readonly string[];
+    /** THE FAMILY RESEAT'S RECEIPT (the ERROR g/h cure, 2026-11-08):
+     *  the family-dead keys the settlement dropped off the merged view
+     *  (the flip's own strand — the arrival flipped the derived family
+     *  under carried stamps). Empty/absent when nothing dropped. The
+     *  drop rides the row so it SPEAKS — never a silent strip. */
+    readonly dropped?: readonly string[];
 }
 /** patch — params merge with CAS + log. THE ONE OUTCOME DOOR
  *  (the telemetry law's other half, 2026-10-08): run outcomes ride
@@ -206,7 +212,7 @@ export interface BenchPatchRow {
  *  a landing here destroyed the previous result with no supersede —
  *  under the old every-write-bumps law, so every outcome here also
  *  ticked the rev. Outcomes refuse with the redirect voice. */
-export declare function patchBench(drafts: Domain<DraftsDomainSpec>, session: string, body: Record<string, unknown>, admit?: StageAdmission, migrate?: LaneMigration): Promise<BenchPatchRow>;
+export declare function patchBench(drafts: Domain<DraftsDomainSpec>, session: string, body: Record<string, unknown>, admit?: StageAdmission, migrate?: LaneMigration, reseat?: FamilyReseat): Promise<BenchPatchRow>;
 /** The stage row: the arm's answer (stage id + rev). */
 export interface BenchStageRow {
     readonly draft_id: string;
@@ -238,6 +244,17 @@ export type StageAdmission = (card: string, params: Record<string, unknown>, pro
  *  (prior and next) and owns the drop; registry-less lanes pass the
  *  view through untouched. */
 export type LaneMigration = (card: string, params: Record<string, unknown>, priorParams: Record<string, unknown>) => Record<string, unknown>;
+/** THE FAMILY RESEAT SEAT (the ERROR g/h cure, 2026-11-08): given
+ *  the stage's card and the MERGED params view, returns the
+ *  reseated view plus the family-dead keys the settlement dropped
+ *  (the flip's own strand), or null when the card declares no
+ *  reseat face (every card but the family-conditional ones) — the
+ *  domain stays pure, the registry owns the law (the admission
+ *  trio's injection pattern). */
+export type FamilyReseat = (card: string, params: Record<string, unknown>) => {
+    params: Record<string, unknown>;
+    dropped: readonly string[];
+} | null;
 /** The judged view of a row's params — the view the doc will HOLD
  *  (2026-10-10, the write-seat audit's row 7): normalizeBenchStage
  *  strips a self-naming model at store, so every admission seat

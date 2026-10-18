@@ -99,6 +99,66 @@ export const T4_ONLY_KEYS = [
  *  gate uses). */
 export const FILM_ONLY_KEYS = ['duck_depth_db'] as const
 
+/** THE FAMILY-LAW DATA (the ERROR g/h cure, 2026-11-08): the
+ *  family-conditional key law in the SERVED spelling — the shape
+ *  FormSpecDoc.familyLaw carries so the GENERIC seats (the
+ *  composeValidate gate, the studio rail's omit) can judge the
+ *  family WITHOUT importing this module. The lanes spell
+ *  deriveWindowFamily's own derivation as data (minCalls →
+ *  t4_chain, guideKeys → t4r, the trailing lane is the
+ *  fallthrough); deadKeys names the keys whose PRESENCE each lane
+ *  refuses. ONE OWNER: this const IS the law — the served spec
+ *  carries it verbatim and the contract wall pins the data to the
+ *  module's behavior (the probe-cell arm), so a data copy cannot
+ *  drift from the walk. Guide keys mirror the derivation's own
+ *  seats: `guideKeys` reads the doc level (the keyframe pin
+ *  channel, the last_frame string, the ref surface — presence,
+ *  never count: a non-empty-after-trim string or a non-empty array),
+ *  `callGuideKeys` reads inside each calls row (the per-call guide
+ *  fields the derivation's hasGuide arm names). The evaluator's
+ *  presence grammar mirrors normalizeDeclaredRefs's counting law
+ *  closely enough that the probe arm pins the agreement on the
+ *  blank/empty edges (a whitespace ref_images is ZERO refs on both
+ *  spellings). */
+export const FAMILY_LAW = {
+  lanes: [
+    { lane: 't4_chain', minCalls: 2 },
+    {
+      lane: 't4r',
+      guideKeys: ['keyframes', 'last_frame', 'ref_images', 'ref_videos', 'ref_audios'],
+      callGuideKeys: ['image', 'ref_images', 'ref_image', 'image_name'],
+    },
+    { lane: 't4_open' },
+  ],
+  deadKeys: { t4r: T4_ONLY_KEYS },
+} as const
+
+/** THE FAMILY-RESEAT SPINE (the ERROR g/h cure, 2026-11-08): the ONE
+ *  reseat spelling for the settlement seam — the seat that lands an
+ *  arrival whose family FLIPPED under carried stamps (the emit's
+ *  legal t4_open era settling under a keyframe pin; the bench
+ *  merge-patch landing a non-studio flip). Drops every PRESENT
+ *  family-dead key and names them — the settlement lands the row
+ *  the next run composes (the lane-migration law's own spelling:
+ *  stale carry drops before the store, never a stored doc refusing
+ *  later). The caller owns the voice (the drafts patch row, the
+ *  studio's unstating op); this spine owns the MATH. A doc whose
+ *  family honors the keys rides unchanged (dropped: []). */
+export function reseatFamilyDead(doc: Record<string, unknown>): {
+  doc: Record<string, unknown>
+  dropped: string[]
+} {
+  if (deriveWindowFamily(doc) !== 't4r') return { doc, dropped: [] }
+  const explicit = Object.keys(doc)
+  const dropped = (T4_ONLY_KEYS as readonly string[])
+    .filter((k) => explicit.includes(k))
+    .sort()
+  if (dropped.length === 0) return { doc, dropped }
+  const reseated: Record<string, unknown> = { ...doc }
+  for (const k of dropped) delete reseated[k]
+  return { doc: reseated, dropped }
+}
+
 /** (2026-11-06, the family-reseat cure) the doc-level window family
  *  derivation, ONE spelling for every door that needs the family
  *  BEFORE the walk refuses: the walk derives the composed doc's

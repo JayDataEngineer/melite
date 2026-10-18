@@ -230,4 +230,20 @@ export interface CardDefinition {
   admitFamily?(
     params: Record<string, unknown>,
   ): { ok: true } | { ok: false; error: string }
+  /** THE FAMILY RESEAT (the ERROR g/h cure, 2026-11-08 — the
+   *  settlement seam the pre-validation walls pre-registered): the
+   *  family flip's own writer. When an ARRIVAL flips the derived
+   *  family (a keyframe pin over a carried-stamp doc), the carried
+   *  family-dead keys drop HERE — before the write doors judge and
+   *  store — so the row that lands is the row the next run composes
+   *  (the lane-migration law's spelling, on the family axis; never a
+   *  stored doc refusing later). The judge above keeps its teeth for
+   *  AUTHORED poison: this face settles the FLIP's strand only, and
+   *  the dropped set rides the write row so the drop speaks. Returns
+   *  the reseated params + the dropped key names (an empty dropped
+   *  set = the doc rode unchanged); optional — a card without a
+   *  family contract declares nothing. */
+  reseatFamily?(
+    params: Record<string, unknown>,
+  ): { params: Record<string, unknown>; dropped: readonly string[] } | null
 }

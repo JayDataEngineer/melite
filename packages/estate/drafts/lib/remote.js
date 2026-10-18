@@ -259,6 +259,18 @@ export function laneMigrationOf(ctx) {
         return undefined;
     return reg.laneMigrate.bind(reg);
 }
+/** THE FAMILY RESEAT SEAT (the ERROR g/h cure, 2026-11-08): the
+ *  registry's reseat face bound for the bench doors — the flip's
+ *  own writer, applied BEFORE the strip, the admission, and the
+ *  store (the laneMigrationOf precedent). Undefined when the
+ *  registry seat offers no reseat seam. Exported for the wall, the
+ *  familyAdmissionOf precedent. */
+export function familyReseatOf(ctx) {
+    const reg = resolverOf(ctx);
+    if (reg === null || reg.reseatStageFamily === undefined)
+        return undefined;
+    return reg.reseatStageFamily.bind(reg);
+}
 /** THE FAMILY ADMISSION SEAT (journey-closure B5, 2026-10-17 — hop
  *  3's first judge): the registry judges the card's OWN family
  *  clause (CardDefinition.admitFamily — the same clause the run
@@ -1284,7 +1296,7 @@ let BenchRemoteService = (() => {
             signal.throwIfAborted();
             return withBenchWrite(benchDraftIdOf(session), async () => {
                 const drafts = await this.open(signal);
-                const row = await patchBench(drafts, session, doc, benchAdmissionOf(this.ctx), laneMigrationOf(this.ctx));
+                const row = await patchBench(drafts, session, doc, benchAdmissionOf(this.ctx), laneMigrationOf(this.ctx), familyReseatOf(this.ctx));
                 notifyBenchChange(session);
                 return row;
             });

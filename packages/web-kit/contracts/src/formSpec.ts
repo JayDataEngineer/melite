@@ -326,6 +326,33 @@ export interface FormSpecDoc {
    *  absent surface as unknown: no nulling, no refusal — never a
    *  guess). */
   params?: ReadonlyArray<string>
+  /** THE FAMILY-CONDITIONAL KEY LAW (the ERROR g/h cure, 2026-11-08):
+   *  the DECL's window-family law in the SERVED spelling — lanes
+   *  derived from the doc's own shape (ordered; first match wins, the
+   *  trailing lane is the fallthrough) and the keys whose PRESENCE
+   *  each lane refuses. The generic seats judge it WITHOUT importing
+   *  the family's module: the client compose gate (composeValidate)
+   *  refuses a family-dead key at the GESTURE in the lane's own
+   *  voice, and the studio rail omits a whole field GROUP once the
+   *  lane refuses any member of it (presence a pure function of the
+   *  lane — never of a stale stated gate). Served verbatim off the
+   *  DECL's familyLaw; the contract wall pins the data to the
+   *  family's own derivation module. Absent = no family clause (the
+   *  generic seats no-op). */
+  familyLaw?: {
+    lanes: ReadonlyArray<{
+      lane: string
+      /** the lane qualifies when calls.length >= minCalls */
+      minCalls?: number
+      /** doc-level keys whose presence (non-empty string / non-empty
+       *  array / other non-null value) qualifies the lane */
+      guideKeys?: ReadonlyArray<string>
+      /** keys checked INSIDE each calls row the same way */
+      callGuideKeys?: ReadonlyArray<string>
+    }>
+    /** lane → the keys whose presence that lane refuses */
+    deadKeys: Record<string, ReadonlyArray<string>>
+  }
   /** THE INPUT EDGES — declared on every card (flowKinds.inputs),
    *  each joined with the schema's required fact. */
   inputs?: InputEdge[]

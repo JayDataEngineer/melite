@@ -812,6 +812,14 @@ export const ModelDecl: z<ModelDecl> = z.object({
    *  binds the card to it (the claim law: the card may claim
    *  nothing the model did not declare). */
   params: z.array(z.string().pattern(FIELD_NAME_RE)).required(false),
+  /** THE FAMILY-CONDITIONAL KEY LAW (the ERROR g/h cure, 2026-11-08):
+   *  the served spelling of the family's window-family law — served
+   *  verbatim on the form-spec doc. The schema row is deliberately
+   *  LOOSE (z.any): the data is DECLARED FROM the family's own
+   *  contract module (h3's FAMILY_LAW), the contract wall pins the
+   *  served copy to the module's derivation, and a strict row here
+   *  would only re-spell the module's shape. */
+  familyLaw: z.any().required(false),
   /** The family-wide relation words (judged on EVERY lane, in
    *  addition to each variant's own). */
   relations: ParamRelationWords.required(false),
@@ -937,6 +945,24 @@ export interface ModelDecl {
    *  form's lane filter and the bench door's surface judgment both
    *  read it (family base ∪ variant additions). */
   params?: string[];
+  /** THE FAMILY-CONDITIONAL KEY LAW (the ERROR g/h cure, 2026-11-08):
+   *  the family's window-family law in the SERVED spelling — served
+   *  verbatim on the form-spec doc (FormSpecDoc.familyLaw) so the
+   *  generic seats (the client compose gate, the studio rail's omit)
+   *  judge the family-conditional refusals without importing the
+   *  family's module. Declared FROM the family's own contract module
+   *  (h3's FAMILY_LAW) — one owner; the contract wall pins the
+   *  served data to the module's derivation. Absent = the card
+   *  carries no family clause. */
+  familyLaw?: {
+    lanes: ReadonlyArray<{
+      lane: string;
+      minCalls?: number;
+      guideKeys?: ReadonlyArray<string>;
+      callGuideKeys?: ReadonlyArray<string>;
+    }>;
+    deadKeys: Record<string, ReadonlyArray<string>>;
+  };
   /** The family-wide relation words (judged on every lane). */
   relations?: ParamRelationWords;
   /** The family's declared graph actions (the atom vocabulary):

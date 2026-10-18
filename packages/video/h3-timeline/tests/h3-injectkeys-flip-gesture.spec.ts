@@ -199,20 +199,32 @@ describe("THE FLIP-GESTURE ARM (ERROR g — the flip reseats or refuses AT THE G
     ).rejects.toThrow(REFUSAL_SPINE)
   })
 
-  it("THE WALK AGREES WITH THE GATE'S SILENCE (the red's receipt): every product the gate passed, the real walk refuses with the operator's spine", () => {
+  it("THE GATE AND THE WALK AGREE (the red's receipt, recut with the cure): the gate's family clause names exactly the four the walk refuses — one law, two seats", () => {
     const { base, user } = stampedHolding()
     const frame: Record<string, unknown> = {
       ...modelSwitchPatch(spec, "h3-singularity", composeCandidateDoc(base, user, {})),
     }
     const product = composeCandidateDoc(base, user, frame)
+    // THE GATE (the cure's clause): the family clause names the four,
+    // field-named, in the lane's own voice — the gesture refuses
+    // BEFORE the wire (this was the red: the gate passed the poisoned
+    // product verbatim).
     const gateViolations = composeValidate(spec, product)
-    expect(gateViolations, "the gate's judge (composeValidate) passed the poisoned product — the pre-validation gap, verbatim").toEqual([])
+    const named = gateViolations
+      .map((v) => /field '([^']+)' fires nothing on the t4r lane/.exec(v.message)?.[1] ?? "")
+      .filter((k) => k !== "")
+      .sort()
+    expect(named, "the gate's family clause names exactly the burn's four").toEqual([...FOUR].sort())
+    // THE WALK (the arrival lane's own law): the same four, the
+    // operator's spine — the client gate and the estate walk speak
+    // ONE law from two seats.
     let refused: string | null = null
     try {
       h3schemaFn(product)
     } catch (e) {
       refused = e instanceof Error ? e.message : String(e)
     }
-    expect(refused, "the real walk must refuse the product the gate shipped (the walk is the arrival lane's own law, schema.ts:573-601)").toMatch(REFUSAL_SPINE)
+    expect(refused, "the walk refuses the same product with the operator's spine").toMatch(REFUSAL_SPINE)
+    expect(refused, "the walk names exactly the burn's four").toMatch(/unsanctioned inject keys: interpolate_enabled, second_pass_enabled, sharpen_enabled, sr_switch/)
   })
 })

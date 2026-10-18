@@ -392,6 +392,14 @@ export const ModelDecl = z.object({
      *  binds the card to it (the claim law: the card may claim
      *  nothing the model did not declare). */
     params: z.array(z.string().pattern(FIELD_NAME_RE)).required(false),
+    /** THE FAMILY-CONDITIONAL KEY LAW (the ERROR g/h cure, 2026-11-08):
+     *  the served spelling of the family's window-family law — served
+     *  verbatim on the form-spec doc. The schema row is deliberately
+     *  LOOSE (z.any): the data is DECLARED FROM the family's own
+     *  contract module (h3's FAMILY_LAW), the contract wall pins the
+     *  served copy to the module's derivation, and a strict row here
+     *  would only re-spell the module's shape. */
+    familyLaw: z.any().required(false),
     /** The family-wide relation words (judged on EVERY lane, in
      *  addition to each variant's own). */
     relations: ParamRelationWords.required(false),

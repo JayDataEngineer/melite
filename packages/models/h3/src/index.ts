@@ -23,6 +23,7 @@
 import type { Plugin } from "@deepseek-ai/cordis";
 import { ModelsServiceFace } from '@melite/comfyui-card-kit/service-faces'
 import type { ModelDecl } from '@melite/comfyui-card-kit/model-contract'
+import { FAMILY_LAW } from "./timelineContract.ts"
 import { film } from "./actions.ts";
 
 export const DECL: ModelDecl = {
@@ -259,6 +260,15 @@ export const DECL: ModelDecl = {
   // is gone — calls own their text; the schema dropped it in
   // schema.ts and this surface drops it with it, else the claim law
   // names a dead declaration the card cannot carry).
+  // THE FAMILY LAW (the ERROR g/h cure, 2026-11-08): the
+  // window-family key law in the served spelling, verbatim off the
+  // contract module (one owner — FAMILY_LAW IS the law the walk
+  // enforces; the served copy cannot drift, the contract wall pins
+  // the agreement). The generic seats (composeValidate's family
+  // clause, the studio rail's group omit) judge the t4r refusals
+  // from this data at the gesture and at the render, one hop before
+  // the door.
+  "familyLaw": FAMILY_LAW,
   "params": [
     "image", "last_frame",
     "ref_images", "ref_videos", "ref_video_trims", "ref_audios", "ref_mods",

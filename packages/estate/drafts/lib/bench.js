@@ -643,7 +643,7 @@ const PATCH_KEYS = ["stage", "params", "result", "runStatus", "expect_rev", "aut
  *  a landing here destroyed the previous result with no supersede —
  *  under the old every-write-bumps law, so every outcome here also
  *  ticked the rev. Outcomes refuse with the redirect voice. */
-export async function patchBench(drafts, session, body, admit, migrate) {
+export async function patchBench(drafts, session, body, admit, migrate, reseat) {
     refuseUnknown(body, PATCH_KEYS);
     if ("result" in body || "runStatus" in body) {
         throw new RemoteError("bench/bad-body", "run outcomes ride the drafts/patch door (result/runStatus refused on the bench verb — it authors params only)", {});
@@ -663,6 +663,9 @@ export async function patchBench(drafts, session, body, admit, migrate) {
         : "agent";
     const before = {};
     const added = [];
+    // THE FAMILY RESEAT'S RECEIPT, hoisted (the row below rides it; the
+    // reseat itself runs inside the params arm above).
+    let reseatDropped;
     const paramsIn = wireParams(body["params"]);
     if (paramsIn !== undefined) {
         if (!isRecord(paramsIn)) {
@@ -745,7 +748,26 @@ export async function patchBench(drafts, session, body, admit, migrate) {
         const migrated = migrate !== undefined && isRecord(st["params"])
             ? migrate(typeof st["card"] === "string" ? st["card"] : "", cur, st["params"])
             : cur;
-        const stored = strippedForAdmission(typeof st["card"] === "string" ? st["card"] : "", migrated);
+        // THE FAMILY RESEAT (the ERROR g/h cure, 2026-11-08): the flip's
+        // own writer, BEFORE the strip, the admission, and the store —
+        // the lane-migration law's own spelling on the family axis. An
+        // arrival that flips the derived family (a keyframe pin over a
+        // carried-stamp doc) strands the stamps it carried from the old
+        // lane; the reseat drops them here so the row that lands is the
+        // row the next run composes (one view, every seat) — never a
+        // stored doc refusing later. The judge keeps its teeth: a doc
+        // ASSEMBLED family-dead with no reseatable strand (the reseat
+        // already ran; keys still standing) still refuses at
+        // admitStage below. The undo contract is the migration's own:
+        // undoing the patch restores the patched keys, not the dropped
+        // carry — the author re-picks on the lane they land on.
+        const reseated = reseat !== undefined && typeof st["card"] === "string"
+            ? reseat(st["card"], migrated)
+            : null;
+        if (reseated !== null && reseated.dropped.length > 0)
+            reseatDropped = reseated.dropped;
+        const view = reseated === null ? migrated : reseated.params;
+        const stored = strippedForAdmission(typeof st["card"] === "string" ? st["card"] : "", view);
         // THE COMPOUND IS JUDGED BY ITS MEMBERS HERE TOO (the walls
         // audit, 2026-09-28, found this LIVE: patching a stage that
         // belongs to a compound judged the COMPOUND ROW as a whole, and
@@ -791,6 +813,7 @@ export async function patchBench(drafts, session, body, admit, migrate) {
         rev: newRev,
         stage: stageId,
         patched: Object.keys(paramsIn).sort(),
+        ...(reseatDropped !== undefined ? { dropped: reseatDropped } : {}),
     };
 }
 const ADD_KEYS = ["id", "card", "engine", "params", "inputs", "outputs", "expected", "expect_rev", "author"];

@@ -1698,6 +1698,44 @@ export interface ComposeViolation {
   message: string
 }
 
+/** THE FAMILY-CLAUSE PRESENCE GRAMMAR (spec.ts, the family clause):
+ *  a stated key counts, null/undefined never does, strings when
+ *  non-empty after trim, arrays when non-empty, any other value
+ *  always. Mirrors the estate walk's explicit-key law and
+ *  normalizeDeclaredRefs's wire-literal counting at the presence
+ *  grain (a whitespace ref string is ZERO refs on both spellings). */
+function familyKeyPresent(v: unknown): boolean {
+  if (v === null || v === undefined) return false
+  if (typeof v === 'string') return v.trim() !== ''
+  if (Array.isArray(v)) return v.length > 0
+  return true
+}
+
+/** THE FAMILY-LANE DERIVATION, generic over the served familyLaw
+ *  data (the DECL's own law, pinned to the family's derivation
+ *  module by the contract wall): lanes in declared order, first
+ *  match wins — minCalls against the calls length, guideKeys at the
+ *  doc level, callGuideKeys inside each calls row; a lane with no
+ *  qualifiers is the fallthrough (h3's t4_open). No match = the
+ *  last declared lane. */
+function deriveFamilyLane(
+  law: NonNullable<FormSpecDoc['familyLaw']>,
+  doc: SpecValues,
+): string {
+  const calls: unknown[] = Array.isArray(doc['calls']) ? doc['calls'] as unknown[] : []
+  for (const lane of law.lanes) {
+    if (lane.minCalls === undefined && lane.guideKeys === undefined && lane.callGuideKeys === undefined) {
+      return lane.lane
+    }
+    if (lane.minCalls !== undefined && calls.length >= lane.minCalls) return lane.lane
+    if (lane.guideKeys?.some((k) => familyKeyPresent(doc[k]))) return lane.lane
+    if (lane.callGuideKeys?.some((k) => calls.some(
+      (c) => familyKeyPresent((c as Record<string, unknown> | null)?.[k]),
+    ))) return lane.lane
+  }
+  return law.lanes[law.lanes.length - 1]?.lane ?? ''
+}
+
 export function composeValidate(
   spec: FormSpecDoc | null,
   doc: SpecValues,
@@ -1706,9 +1744,17 @@ export function composeValidate(
   const heldModel = doc['model']
   if (typeof heldModel === 'string' && heldModel !== '' && spec.model !== undefined
     && spec.model !== '' && heldModel !== spec.model) {
-    // this spec is not the law-holder for that doc — the door will
-    // read the doc's own family spec (the drill refetches per model)
-    return []
+    // THE SPEC'S OWN RE-POINTS ARE ITS LAW (the family-clause cure,
+    // 2026-11-08): a checkpoint-axis variant re-points the MODEL key
+    // at its route (h3's singularity row: model 'h3-singularity' on
+    // the h3 spec) — the switch patch stamps it, and the door reads
+    // the same family spec for every variant of the family. A held
+    // model one of THIS spec's own rows stamps is this spec's law;
+    // anything else is another family's doc (the drill refetches per
+    // family) and the door will read its spec.
+    const own = (spec.variants ?? []).some((r) =>
+      r.route === heldModel || r.id === heldModel || r.defaults?.['model'] === heldModel)
+    if (!own) return []
   }
   const out: ComposeViolation[] = []
   // THE MIRROR CLAUSE (the drill null-set cure, 2026-11-08 — the
@@ -1730,6 +1776,29 @@ export function composeValidate(
       out.push({
         message: 'card_compose: field \'' + k + '\' fires nothing on this lane — the served surface (' + (spec.model ?? '') + ') does not declare it; the estate admission gate refuses the same key field-named at the write door.',
       })
+    }
+  }
+  // THE FAMILY CLAUSE (the ERROR g/h cure, 2026-11-08): a family-
+  // conditional card (familyLaw served off the DECL) derives the
+  // doc's lane from the doc's OWN shape and refuses the keys that
+  // lane refuses — the gesture gate speaks the walk's refusal BEFORE
+  // the wire (the estate's admitFamily/walk judge the same explicit
+  // presence at the write/run doors; where the mirror clause above
+  // names keys NO surface owns, this one names keys the DERIVED
+  // lane refuses). Presence grammar mirrors the walk: a stated key
+  // counts, null/absent never does, strings when non-empty after
+  // trim, arrays when non-empty (the ref surface's wire spelling).
+  if (spec.familyLaw !== undefined) {
+    const lane = deriveFamilyLane(spec.familyLaw, doc)
+    const dead = spec.familyLaw.deadKeys[lane]
+    if (dead !== undefined) {
+      const deadSet = new Set<string>(dead)
+      for (const k of Object.keys(doc)) {
+        if (k === 'model' || !familyKeyPresent(doc[k]) || !deadSet.has(k)) continue
+        out.push({
+          message: 'card_compose: field \'' + k + '\' fires nothing on the ' + lane + ' lane — the lane refuses it (unsanctioned inject keys); the estate walk refuses the same key at the door.',
+        })
+      }
     }
   }
   const all = spec.variants ?? []

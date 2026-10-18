@@ -932,6 +932,15 @@ export function specBody(
     // admission's field-named voice, mirrored client-side. Absent
     // when the DECL is unreachable (the legacy surface-less shape).
     params: decl?.params,
+    // THE FAMILY-CONDITIONAL KEY LAW (the ERROR g/h cure, 2026-11-08):
+    // served verbatim off the DECL (h3's FAMILY_LAW) so the client
+    // compose gate refuses a family-dead key at the gesture and the
+    // studio rail omits a dead group — the walk's own law, one hop
+    // earlier. Absent when the DECL declares no family law.
+    // family-conditional: the key rides only when the DECL declares
+    // the law (the envelope census arms pin the shape; the wire's
+    // JSON.stringify was already dropping the undefined).
+    ...(decl?.familyLaw !== undefined ? { familyLaw: decl.familyLaw } : {}),
     outputs: def.flowKinds.outputs,
     // THE CARD'S OWN SERIALIZED SCHEMA — the served form's SSOT.
     schema: servedEnvelope(schemas.schema, res.card),

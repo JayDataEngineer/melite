@@ -9461,10 +9461,41 @@ window.__ModuleLoader__.load({
 			const r = resolveVariantRow(variantMatrixFromFlatRows(all), unchosenToUnstated(doc["variant"]), "", "offered");
 			return r.status === "resolved" || r.status === "hidden" ? r.variant : void 0;
 		}
+		/** THE FAMILY-CLAUSE PRESENCE GRAMMAR (spec.ts, the family clause):
+		*  a stated key counts, null/undefined never does, strings when
+		*  non-empty after trim, arrays when non-empty, any other value
+		*  always. Mirrors the estate walk's explicit-key law and
+		*  normalizeDeclaredRefs's wire-literal counting at the presence
+		*  grain (a whitespace ref string is ZERO refs on both spellings). */
+		function familyKeyPresent(v) {
+			if (v === null || v === void 0) return false;
+			if (typeof v === "string") return v.trim() !== "";
+			if (Array.isArray(v)) return v.length > 0;
+			return true;
+		}
+		/** THE FAMILY-LANE DERIVATION, generic over the served familyLaw
+		*  data (the DECL's own law, pinned to the family's derivation
+		*  module by the contract wall): lanes in declared order, first
+		*  match wins — minCalls against the calls length, guideKeys at the
+		*  doc level, callGuideKeys inside each calls row; a lane with no
+		*  qualifiers is the fallthrough (h3's t4_open). No match = the
+		*  last declared lane. */
+		function deriveFamilyLane(law, doc) {
+			const calls = Array.isArray(doc["calls"]) ? doc["calls"] : [];
+			for (const lane of law.lanes) {
+				if (lane.minCalls === void 0 && lane.guideKeys === void 0 && lane.callGuideKeys === void 0) return lane.lane;
+				if (lane.minCalls !== void 0 && calls.length >= lane.minCalls) return lane.lane;
+				if (lane.guideKeys?.some((k) => familyKeyPresent(doc[k]))) return lane.lane;
+				if (lane.callGuideKeys?.some((k) => calls.some((c) => familyKeyPresent(c?.[k])))) return lane.lane;
+			}
+			return law.lanes[law.lanes.length - 1]?.lane ?? "";
+		}
 		function composeValidate(spec, doc) {
 			if (spec === null) return [];
 			const heldModel = doc["model"];
-			if (typeof heldModel === "string" && heldModel !== "" && spec.model !== void 0 && spec.model !== "" && heldModel !== spec.model) return [];
+			if (typeof heldModel === "string" && heldModel !== "" && spec.model !== void 0 && spec.model !== "" && heldModel !== spec.model) {
+				if (!(spec.variants ?? []).some((r) => r.route === heldModel || r.id === heldModel || r.defaults?.["model"] === heldModel)) return [];
+			}
 			const out = [];
 			if (Array.isArray(spec.params)) {
 				const declared = new Set(spec.params);
@@ -9473,6 +9504,17 @@ window.__ModuleLoader__.load({
 				for (const k of Object.keys(doc)) {
 					if (k === "model" || declared.has(k)) continue;
 					out.push({ message: "card_compose: field '" + k + "' fires nothing on this lane — the served surface (" + (spec.model ?? "") + ") does not declare it; the estate admission gate refuses the same key field-named at the write door." });
+				}
+			}
+			if (spec.familyLaw !== void 0) {
+				const lane = deriveFamilyLane(spec.familyLaw, doc);
+				const dead = spec.familyLaw.deadKeys[lane];
+				if (dead !== void 0) {
+					const deadSet = new Set(dead);
+					for (const k of Object.keys(doc)) {
+						if (k === "model" || !familyKeyPresent(doc[k]) || !deadSet.has(k)) continue;
+						out.push({ message: "card_compose: field '" + k + "' fires nothing on the " + lane + " lane — the lane refuses it (unsanctioned inject keys); the estate walk refuses the same key at the door." });
+					}
 				}
 			}
 			const matrix = variantMatrixFromFlatRows(spec.variants ?? []);

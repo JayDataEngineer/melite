@@ -449,7 +449,15 @@ const PINS: Record<string, number> = {
   // lane") spelled verbatim so the mirror and the admission gate
   // cannot drift; localizing it would fork the door's identity per
   // locale (the wire.ts data-site argument, class 1).
-  'packages/web/card-base/src': 45,
+  // RE-PIN 45→48 (2026-11-08, the inject-keys pre-validation cure):
+  // +3 fragments of the composeValidate FAMILY CLAUSE (spec.ts:1799) —
+  // the t4r lane's own field-named refusal voice ("fires nothing on
+  // the t4r lane — the lane refuses it (unsanctioned inject keys); the
+  // estate walk refuses the same key at the door") spelled verbatim so
+  // the gesture's gate and the estate walk speak one law; same class
+  // as the mirror clause above (the wire.ts data-site argument,
+  // class 1 — the voice IS the door's identity).
+  'packages/web/card-base/src': 48,
   // card-view: 13 — the D1 dictionary moves landed (the cards-tab
   // title/guide trio + the mention title now ride chromeCopy), so the
   // residue is two DEBT classes, every seat computed law-voiceing:

@@ -5719,7 +5719,8 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			"session": string().readonly(),
 			"rev": number().readonly(),
 			"stage": string().readonly(),
-			"patched": array(string()).readonly()
+			"patched": array(string()).readonly(),
+			"dropped": union([_undefined(), array(string())]).readonly().optional()
 		});
 		let _melite_estate_drafts_bench_remove_stage_parameter_0$schema$value;
 		const _melite_estate_drafts_bench_remove_stage_parameter_0$schema = () => _melite_estate_drafts_bench_remove_stage_parameter_0$schema$value ??= string();
@@ -6047,7 +6048,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 1499,
+						"line": 1524,
 						"column": 9
 					}
 				},
@@ -6085,7 +6086,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 1522,
+						"line": 1547,
 						"column": 9
 					}
 				},
@@ -6114,7 +6115,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 1430,
+						"line": 1455,
 						"column": 9
 					}
 				},
@@ -6143,7 +6144,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 1325,
+						"line": 1350,
 						"column": 9
 					}
 				},
@@ -6181,7 +6182,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 1560,
+						"line": 1585,
 						"column": 9
 					}
 				},
@@ -6219,7 +6220,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 1489,
+						"line": 1514,
 						"column": 9
 					}
 				},
@@ -6257,7 +6258,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 1509,
+						"line": 1534,
 						"column": 9
 					}
 				},
@@ -6295,7 +6296,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 1543,
+						"line": 1568,
 						"column": 9
 					}
 				},
@@ -6333,7 +6334,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 1532,
+						"line": 1557,
 						"column": 9
 					}
 				},
@@ -6362,7 +6363,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 1343,
+						"line": 1368,
 						"column": 10
 					}
 				},
@@ -6400,7 +6401,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 1592,
+						"line": 1617,
 						"column": 9
 					}
 				},
@@ -6438,7 +6439,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 1576,
+						"line": 1601,
 						"column": 9
 					}
 				},
@@ -6467,7 +6468,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 649,
+						"line": 674,
 						"column": 9
 					}
 				},
@@ -6487,7 +6488,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 643,
+						"line": 668,
 						"column": 9
 					}
 				},
@@ -6548,7 +6549,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 736,
+						"line": 761,
 						"column": 9
 					}
 				}

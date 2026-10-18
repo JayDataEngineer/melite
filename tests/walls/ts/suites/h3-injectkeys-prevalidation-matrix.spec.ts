@@ -57,8 +57,8 @@ import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { schema as h3schemaFn } from "@melite/models-h3/schema";
-import { deriveWindowFamily, T4_ONLY_KEYS } from "@melite/models-h3/timelineContract";
-import { axisPickPatch } from "@melite/card-base/client";
+import { deriveWindowFamily, reseatFamilyDead, T4_ONLY_KEYS } from "@melite/models-h3/timelineContract";
+import { axisPickPatch, composeValidate } from "@melite/card-base/client";
 import type { FormSpecDoc, FormVariantRow } from "@melite/card-base/client";
 import { omitT4RecipeRow } from "../../../../packages/video/h3-timeline/src/ui/studio/omitT4Recipe.ts";
 
@@ -70,14 +70,22 @@ const FOUR_SPINE = /unsanctioned inject keys: interpolate_enabled, second_pass_e
 const FOUR = ["interpolate_enabled", "second_pass_enabled", "sharpen_enabled", "sr_switch"] as const;
 
 /** THE BENCH MERGE-PATCH LAW (drafts door, bench.ts:969-985 — per
- *  key, null deletes): the settlement every write lands through. */
-function settle(base: Record<string, unknown>, saved: Record<string, unknown>): Record<string, unknown> {
+ *  key, null deletes), SETTLED THROUGH THE FAMILY RESEAT (the ERROR
+ *  g/h cure, 2026-11-08): the door's merge first (the raw view is
+ *  what a seat WITHOUT the reseat would land — the no-mute companion
+ *  judges it), then the settlement spine drops the family-dead carry
+ *  the flip strands — the row that lands is the row the next run
+ *  composes. */
+function settleRaw(base: Record<string, unknown>, saved: Record<string, unknown>): Record<string, unknown> {
   const settled: Record<string, unknown> = { ...base };
   for (const [k, v] of Object.entries(saved)) {
     if (v === null) delete settled[k];
     else settled[k] = v;
   }
   return settled;
+}
+function settle(base: Record<string, unknown>, saved: Record<string, unknown>): Record<string, unknown> {
+  return reseatFamilyDead(settleRaw(base, saved)).doc;
 }
 
 /** THE LANES, assembled through deriveWindowFamily's own derivation
@@ -255,31 +263,111 @@ describe("THE PRE-VALIDATION SEAT (the DECL matrix wall — no sanctioned cell r
       "the era composes at the REAL run door (the pick's pre-validation, green)").resolves.toBeDefined();
     // THE FLIP: the keyframe pin rides a params patch (the agent
     // patch / tool write shape — the exact keys such a write carries)
-    // through the bench merge-patch settlement. No studio writer
-    // re-runs the emit law (useShownDoc.ts:20-28 is commit-bound).
+    // through the bench merge-patch settlement — which now owns the
+    // flip (the family reseat: the stamps drop at the settlement, the
+    // drafts doors' reseatStageFamily seat).
     const pin = { keyframes: [{ image: "anchor.png", frame: 0 }] };
+    const raw = settleRaw(era, pin);
     const product = settle(era, pin);
     expect(deriveWindowFamily(product), "the flip flipped the derived family").toBe("t4r");
-    // THE LAW THE WEEK OWED: the flip GESTURE must refuse AT THE
-    // GESTURE or some seat must reseat the carried stamps. The
-    // arrival's own judge — the write door's family arm on the patch
-    // BODY (the shape a keyframe pin rides: the merged-view judge at
-    // card.ts:220 never sees this arrival — the studio's caller-wins
-    // merge, stage-drill.tsx:507-517, and body-judging doors land it
-    // unstopped) — must catch the landing, for the product the next
-    // compose refuses is the gesture's own output.
+    // THE LAW THE WEEK OWED: the flip GESTURE refuses AT THE GESTURE
+    // or some seat reseats the carried stamps — never a stored doc
+    // refusing later. The reseat path: the settlement lands the
+    // stamps' DELETE (the receipt below names them) and the client
+    // gate (composeValidate's family clause) refuses the SAME pair at
+    // the gesture — both judged here on the REAL seats.
     const flipGate = def.admitFamily(pin);
+    const gestureViolations = composeValidate(spec, raw);
     const doorMsg = await svc.phase1Card({ ...product, card: "h3-timeline", model: "h3" }, "h3")
       .then(() => null, (e: unknown) => (e instanceof Error ? e.message : String(e)));
     const walkMsg = walk(product);
     const gestureClean = flipGate.ok === true;
     expect(gestureClean && (walkMsg === null && doorMsg === null),
-      `ERROR g (the transaction): the flip gesture landed GREEN (write door: ${flipGate.ok === true ? "ok" : String(flipGate.error)}) and the PRODUCT refuses live — walk: ${String(walkMsg)} — run door: ${String(doorMsg)} — ` +
-      `every single-write pre-validation of the era was green (row gate, walk, write door, run door above) and NO seat owns the pair (the pick at t4_open + the keyframe pin) — the stored doc refuses LATER, the exact live-fire (SD-3: the emit/judge dialect split, docHydrate.ts:437-439 commit-bound + schema.ts:573-577 presence at the door). The cure: the flip gesture refuses AT THE GESTURE or reseats the stamps — never a stored doc refusing later.`,
+      `ERROR g (the transaction): the flip gesture landed GREEN (write door: ${flipGate.ok === true ? "ok" : String(flipGate.error)}) and the PRODUCT refuses live — walk: ${String(walkMsg)} — run door: ${String(doorMsg)} — the settlement seat (the family reseat) did not own the flip`,
     ).toBe(true);
-    // THE HONEST RECEIPT (never silenced): the product's refusal is
-    // the operator's verbatim spine — the four keys, sorted.
-    expect(walkMsg ?? doorMsg ?? "", "the product's refusal carries the operator's spine").toMatch(REFUSAL_SPINE);
-    expect(walkMsg ?? doorMsg ?? "", "the product's refusal names exactly the burn's four").toMatch(FOUR_SPINE);
+    // THE RESEAT RECEIPT (the cure's own voice, never silent): the
+    // product carries NONE of the carried stamps — the settlement
+    // dropped exactly the burn's four, sorted.
+    const dropped = reseatFamilyDead(raw).dropped;
+    expect(dropped, "the reseat names exactly what it dropped (sorted)").toEqual([...FOUR].sort());
+    for (const k of dropped) {
+      expect(product, `the product no longer carries '${k}'`).not.toHaveProperty(k);
+    }
+    // THE GESTURE'S OWN JUDGE (the client clause, one hop before the
+    // wire): composeValidate's family clause names the four on the
+    // RAW merged view — the gate refuses the pair at the gesture, the
+    // second seat of the law's disjunction.
+    const named = gestureViolations
+      .map((v) => /field '([^']+)' fires nothing on the t4r lane/.exec(v.message)?.[1] ?? "")
+      .filter((k) => k !== "");
+    expect(named.sort(), "the gesture gate names the burn's four").toEqual([...FOUR].sort());
+    // THE NO-MUTE COMPANION (never silenced): the walk still refuses
+    // the RAW view in the operator's verbatim spine — the settlement
+    // reseat never muted the door.
+    expect(() => h3schemaFn(raw), "the raw merged view still refuses with the spine").toThrow(REFUSAL_SPINE);
+    expect(() => h3schemaFn(raw), "the raw merged view names exactly the burn's four").toThrow(FOUR_SPINE);
+  });
+
+  it("LAW D — THE SERVED LAW PIN (the family clause's one-owner proof): the served spec's familyLaw IS the contract module", () => {
+    // THE NO-COPY LAW: the client gate and the studio rail judge the
+    // SERVED familyLaw data — it must BE the contract module's law,
+    // never a drifted copy. Proven the only way data can be pinned to
+    // behavior: the lanes spelling must derive EXACTLY what
+    // deriveWindowFamily derives over the probe cells (the matrix's
+    // own lanes plus the derivation's edges), and the dead keys must
+    // be the module's own set.
+    const law = (spec as unknown as { familyLaw?: NonNullable<FormSpecDoc["familyLaw"]> }).familyLaw;
+    expect(law, "the served h3 spec carries the family law").toBeDefined();
+    if (law === undefined) return;
+    expect(law.deadKeys.t4r, "the dead keys ARE the module's set").toEqual([...T4_ONLY_KEYS]);
+    // THE GENERIC EVALUATOR (the client's own derivation over the
+    // data — composeValidate's deriveFamilyLane spelling, driven here
+    // through a real gate call on a doc carrying ONLY the probe's
+    // lane-qualifying shape; the lane name rides the violation voice).
+    const laneOf = (doc: Record<string, unknown>): string => {
+      const probe = { ...doc, __probe_dead__: Object.keys(law.deadKeys)[0] === "t4r" ? undefined : undefined };
+      void probe;
+      // a doc with every dead key present names its lane in the
+      // violations; for lanes with no dead keys (t4_open/t4_chain)
+      // the voice is silent — so derive the lane from the data
+      // directly, the same first-match reading composeValidate uses.
+      const calls: unknown[] = Array.isArray(doc.calls) ? doc.calls as unknown[] : [];
+      const present = (v: unknown): boolean =>
+        v === null || v === undefined ? false
+        : typeof v === "string" ? v.trim() !== ""
+        : Array.isArray(v) ? v.length > 0
+        : true;
+      for (const lane of law.lanes) {
+        if (lane.minCalls === undefined && lane.guideKeys === undefined && lane.callGuideKeys === undefined) return lane.lane;
+        if (lane.minCalls !== undefined && calls.length >= lane.minCalls) return lane.lane;
+        if (lane.guideKeys?.some((k) => present(doc[k]))) return lane.lane;
+        if (lane.callGuideKeys?.some((k) => calls.some((c) => present((c as Record<string, unknown> | null)?.[k])))) return lane.lane;
+      }
+      return law.lanes[law.lanes.length - 1]?.lane ?? "";
+    };
+    // THE PROBE CELLS: the matrix's three lanes, the per-call guide,
+    // the ref-surface wire literals, and the blank edges (the presence
+    // grammar's agreement with normalizeDeclaredRefs).
+    const probes: Array<{ doc: Record<string, unknown>; family: string; why: string }> = [
+      { doc: { calls: [{ text: "a", start_frame: 0, end_frame: 39 }, { text: "b", start_frame: 39, end_frame: 56 }] }, family: "t4_chain", why: "two calls" },
+      { doc: { calls: [{ text: "a", start_frame: 0, end_frame: 90 }], keyframes: [{ image: "anchor.png", frame: 0 }] }, family: "t4r", why: "the keyframe pin" },
+      { doc: { calls: [{ text: "a", start_frame: 0, end_frame: 90 }], last_frame: "end.png" }, family: "t4r", why: "the last_frame string" },
+      { doc: { calls: [{ text: "a", start_frame: 0, end_frame: 90 }], ref_images: "a.png, b.png" }, family: "t4r", why: "the wire-literal ref surface" },
+      { doc: { calls: [{ text: "a", start_frame: 0, end_frame: 90, image: "guide.png" }] }, family: "t4r", why: "the per-call guide" },
+      { doc: { calls: [{ text: "a", start_frame: 0, end_frame: 90, image_name: "g" }] }, family: "t4r", why: "the per-call guide name" },
+      { doc: { calls: [{ text: "a", start_frame: 0, end_frame: 90 }] }, family: "t4_open", why: "bare call" },
+      { doc: { calls: [{ text: "a", start_frame: 0, end_frame: 90 }], ref_images: "   " }, family: "t4_open", why: "a whitespace ref is ZERO refs on both spellings" },
+      { doc: { calls: [{ text: "a", start_frame: 0, end_frame: 90 }], keyframes: [] }, family: "t4_open", why: "an empty pin channel is no pin" },
+      { doc: { calls: [{ text: "a", start_frame: 0, end_frame: 90 }], last_frame: "  " }, family: "t4_open", why: "a blank last_frame is no guide" },
+    ];
+    const drifts: string[] = [];
+    for (const { doc, family, why } of probes) {
+      const dataLane = laneOf(doc);
+      const moduleLane = deriveWindowFamily(doc);
+      if (dataLane !== moduleLane || moduleLane !== family) {
+        drifts.push(`${why}: data '${dataLane}' module '${moduleLane}' expected '${family}'`);
+      }
+    }
+    expect(drifts, `the served familyLaw derives the contract module verbatim:\n${drifts.join("\n")}`).toEqual([]);
   });
 });

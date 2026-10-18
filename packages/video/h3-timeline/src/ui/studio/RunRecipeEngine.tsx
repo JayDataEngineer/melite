@@ -33,7 +33,7 @@ import { FILM_ONLY_KEYS, T4_ONLY_KEYS, deriveWindowFamily } from "@melite/models
 import type { LayerA, SetLayerAKey } from "./docModel.ts"
 import { mergeDocLayers } from "./docModel.ts"
 import { parseSpecNumber } from "./docGrid.ts"
-import { omitT4RecipeRow } from "./omitT4Recipe.ts"
+import { omitT4GateDead, omitT4RecipeRow } from "./omitT4Recipe.ts"
 import { studioCopy } from "./studioCopy.ts"
 
 /** Layer A rail: Recipe (clock) + Engine (H3 sampling) + geometry. */
@@ -104,10 +104,18 @@ export function RunRecipeEngine({
   // film boundary, so a single-window doc composes it into no node).
   // One predicate, one derivation (the same family spelling the walk
   // and the reseat heal read) — a row the run cannot honor is never
-  // served.
+  // served. THE GATE-DEAD ARM (the ERROR h cure, 2026-11-08): a
+  // field whose visible_when NAMES a family-dead key omits with the
+  // key — the refine_* trio rode visible_when second_pass_enabled
+  // while surviving the name filter, so the Second Pass tab
+  // resurrected on the STALE stated gate as an orphan face (the
+  // master row T4_ONLY-omitted, no off switch). Presence is a pure
+  // function of the lane (omitT4GateDead, one spelling with the row
+  // gate in omitT4Recipe.ts).
   const omitDead = family === "t4r"
     ? (name: string): boolean => (T4_ONLY_KEYS as readonly string[]).includes(name)
       || (FILM_ONLY_KEYS as readonly string[]).includes(name)
+      || omitT4GateDead(spec, name)
     : family === "t4_chain"
       ? undefined
       : (name: string): boolean => (FILM_ONLY_KEYS as readonly string[]).includes(name)

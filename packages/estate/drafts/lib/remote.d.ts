@@ -2,7 +2,7 @@ import type { Context } from "@deepseek-ai/cordis";
 import { TypertRemoteService } from "@deepseek-ai/dsh-typert-protocol";
 import { STAGE_PATCH_KEYS, type StagePatchKey } from "@melite/contracts/benchStage";
 export { STAGE_PATCH_KEYS, type StagePatchKey };
-import { type LaneMigration } from "./bench.js";
+import { type LaneMigration, type FamilyReseat } from "./bench.js";
 import type { BenchEnsureRow, BenchGetRow, BenchPatchRow, BenchReorderRow, BenchRewireRow, BenchClearRow, BenchStageRow, BenchUndoRow } from "./bench.js";
 export type { BenchEnsureRow, BenchGetRow, BenchPatchRow, BenchReorderRow, BenchRewireRow, BenchStageRow, BenchUndoRow, } from "./bench.js";
 /** Endpoint `drafts/patch` answer — the old door's delivered envelope:
@@ -202,6 +202,13 @@ export declare function laneAdmissionOf(ctx: Context): ((card: string, params: R
  *  pre-migration law stands there). Exported for the wall, the
  *  laneAdmissionOf precedent. */
 export declare function laneMigrationOf(ctx: Context): LaneMigration | undefined;
+/** THE FAMILY RESEAT SEAT (the ERROR g/h cure, 2026-11-08): the
+ *  registry's reseat face bound for the bench doors — the flip's
+ *  own writer, applied BEFORE the strip, the admission, and the
+ *  store (the laneMigrationOf precedent). Undefined when the
+ *  registry seat offers no reseat seam. Exported for the wall, the
+ *  familyAdmissionOf precedent. */
+export declare function familyReseatOf(ctx: Context): FamilyReseat | undefined;
 /** THE FAMILY ADMISSION SEAT (journey-closure B5, 2026-10-17 — hop
  *  3's first judge): the registry judges the card's OWN family
  *  clause (CardDefinition.admitFamily — the same clause the run

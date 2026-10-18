@@ -909,6 +909,12 @@ export interface BenchPatchRow {
   readonly rev: number;
   readonly stage: string;
   readonly patched: readonly string[];
+  /** THE FAMILY RESEAT'S RECEIPT (the ERROR g/h cure, 2026-11-08):
+   *  the family-dead keys the settlement dropped off the merged view
+   *  (the flip's own strand — the arrival flipped the derived family
+   *  under carried stamps). Empty/absent when nothing dropped. The
+   *  drop rides the row so it SPEAKS — never a silent strip. */
+  readonly dropped?: readonly string[];
 }
 
 /** patch — params merge with CAS + log. THE ONE OUTCOME DOOR
@@ -926,6 +932,7 @@ export async function patchBench(
   body: Record<string, unknown>,
   admit?: StageAdmission,
   migrate?: LaneMigration,
+  reseat?: FamilyReseat,
 ): Promise<BenchPatchRow> {
   refuseUnknown(body, PATCH_KEYS);
   if ("result" in body || "runStatus" in body) {
@@ -954,6 +961,9 @@ export async function patchBench(
     : "agent";
   const before: Record<string, unknown> = {};
   const added: string[] = [];
+  // THE FAMILY RESEAT'S RECEIPT, hoisted (the row below rides it; the
+  // reseat itself runs inside the params arm above).
+  let reseatDropped: readonly string[] | undefined;
   const paramsIn: unknown = wireParams(body["params"]);
   if (paramsIn !== undefined) {
     if (!isRecord(paramsIn)) {
@@ -1037,9 +1047,27 @@ export async function patchBench(
             st["params"] as Record<string, unknown>,
           )
         : cur;
+    // THE FAMILY RESEAT (the ERROR g/h cure, 2026-11-08): the flip's
+    // own writer, BEFORE the strip, the admission, and the store —
+    // the lane-migration law's own spelling on the family axis. An
+    // arrival that flips the derived family (a keyframe pin over a
+    // carried-stamp doc) strands the stamps it carried from the old
+    // lane; the reseat drops them here so the row that lands is the
+    // row the next run composes (one view, every seat) — never a
+    // stored doc refusing later. The judge keeps its teeth: a doc
+    // ASSEMBLED family-dead with no reseatable strand (the reseat
+    // already ran; keys still standing) still refuses at
+    // admitStage below. The undo contract is the migration's own:
+    // undoing the patch restores the patched keys, not the dropped
+    // carry — the author re-picks on the lane they land on.
+    const reseated = reseat !== undefined && typeof st["card"] === "string"
+      ? reseat(st["card"] as string, migrated)
+      : null;
+    if (reseated !== null && reseated.dropped.length > 0) reseatDropped = reseated.dropped;
+    const view: Record<string, unknown> = reseated === null ? migrated : reseated.params;
     const stored = strippedForAdmission(
       typeof st["card"] === "string" ? (st["card"] as string) : "",
-      migrated,
+      view,
     );
     // THE COMPOUND IS JUDGED BY ITS MEMBERS HERE TOO (the walls
     // audit, 2026-09-28, found this LIVE: patching a stage that
@@ -1095,6 +1123,7 @@ export async function patchBench(
     rev: newRev,
     stage: stageId,
     patched: Object.keys(paramsIn).sort(),
+    ...(reseatDropped !== undefined ? { dropped: reseatDropped } : {}),
   };
 }
 
@@ -1141,6 +1170,18 @@ export type LaneMigration = (
   params: Record<string, unknown>,
   priorParams: Record<string, unknown>,
 ) => Record<string, unknown>;
+
+/** THE FAMILY RESEAT SEAT (the ERROR g/h cure, 2026-11-08): given
+ *  the stage's card and the MERGED params view, returns the
+ *  reseated view plus the family-dead keys the settlement dropped
+ *  (the flip's own strand), or null when the card declares no
+ *  reseat face (every card but the family-conditional ones) — the
+ *  domain stays pure, the registry owns the law (the admission
+ *  trio's injection pattern). */
+export type FamilyReseat = (
+  card: string,
+  params: Record<string, unknown>,
+) => { params: Record<string, unknown>; dropped: readonly string[] } | null;
 
 
 /** THE WIRE UNWRAP AT THE STORE SEAT (attempt-035's Probe B

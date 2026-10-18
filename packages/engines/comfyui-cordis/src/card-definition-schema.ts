@@ -63,6 +63,15 @@ const CardDefinitionSchema = z.object({
   // door-side (the drafts family-admission suite) — the envelope
   // only admits the key's existence.
   admitFamily: z.any(),
+  // THE FAMILY RESEAT (the inject-keys ERROR g cure, 2026-11-08 — the
+  // CardDefinition.reseatFamily face, the write door's pre-store
+  // strip): the card drops its own window-family dead keys at the
+  // bench patch seat, the receipt (the dropped list) carried on the
+  // bench row. z.any() like its sibling function arms: the value is
+  // the typed judge, its verdict walled family-side (the h3
+  // injectkeys walls) and door-side (the drafts patch door) — the
+  // envelope only admits the key's existence.
+  reseatFamily: z.any(),
 });
 
 /** The registerCard envelope gate: strict resolve, then the

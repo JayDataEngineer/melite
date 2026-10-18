@@ -1,3 +1,4 @@
+import { FAMILY_LAW } from "./timelineContract.js";
 import { film } from "./actions.js";
 export const DECL = {
     "id": "h3",
@@ -233,6 +234,15 @@ export const DECL = {
     // is gone — calls own their text; the schema dropped it in
     // schema.ts and this surface drops it with it, else the claim law
     // names a dead declaration the card cannot carry).
+    // THE FAMILY LAW (the ERROR g/h cure, 2026-11-08): the
+    // window-family key law in the served spelling, verbatim off the
+    // contract module (one owner — FAMILY_LAW IS the law the walk
+    // enforces; the served copy cannot drift, the contract wall pins
+    // the agreement). The generic seats (composeValidate's family
+    // clause, the studio rail's group omit) judge the t4r refusals
+    // from this data at the gesture and at the render, one hop before
+    // the door.
+    "familyLaw": FAMILY_LAW,
     "params": [
         "image", "last_frame",
         "ref_images", "ref_videos", "ref_video_trims", "ref_audios", "ref_mods",

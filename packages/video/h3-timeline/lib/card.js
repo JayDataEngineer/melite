@@ -5,7 +5,7 @@ import { declaredAction, instantiateAction } from '@melite/comfyui-card-kit';
 import { finalizeH3 } from '@melite/models-h3';
 import { assertOverlayGated } from '@melite/models-h3';
 export { assertCarriedSpanGrid, assertGridLength, assertSpanGrid, gridSnap } from '@melite/models-h3/timelineContract';
-import { deriveWindowFamily, T4_ONLY_KEYS } from '@melite/models-h3/timelineContract';
+import { deriveWindowFamily, reseatFamilyDead, T4_ONLY_KEYS } from '@melite/models-h3/timelineContract';
 export { carrier, JSON_ARRAY_PARAMS, schema } from '@melite/models-h3/schema';
 // THE CARRIER'S CALLABLE FACE — ONE cast serving the compose strict
 // resolve's judge: schemastery schemas are callable (Schema.resolve)
@@ -184,6 +184,17 @@ export function registerCard(ctx, comfy) {
                 ok: false,
                 error: `card 'h3-timeline' refused params: h3_window(t4r): unsanctioned inject keys: ${bad.join(", ")}`,
             };
+        },
+        // THE FAMILY RESEAT (the ERROR g/h cure, 2026-11-08): the flip's
+        // own writer — an arrival that flips t4_open→t4r under carried
+        // post stamps lands the stamps' DELETE at the settlement (the
+        // drafts doors ask this face before the judge and the store), so
+        // the write never lands a doc the walk refuses. One spelling:
+        // reseatFamilyDead rides the same contract module the judge and
+        // the walk read.
+        reseatFamily(params) {
+            const r = reseatFamilyDead(params);
+            return { params: r.doc, dropped: r.dropped };
         },
         compose(p, model, g, runId) {
             // THE SCHEMA GATE (the music/sfx/tts admission precedent — the
