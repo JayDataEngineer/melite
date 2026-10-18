@@ -138,6 +138,10 @@ export const COVERAGE_BASELINE: Record<string, {
   '**/packages/engines/comfyui-card-kit/src/model-contract.ts': { statements: 66.66, branches: 0, functions: 16.66, lines: 70 },
   '**/packages/engines/comfyui-card-kit/src/lanes-image.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/engines/comfyui-card-kit/src/mods/guard.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
+  // 2026-11-07 MASK ORDER: the shared bare-flavor boarding primitive —
+  // the seven families' mods/mask.ts re-export its plugin; the cordis
+  // cardDefs boot sweep exercises both arms of apply.
+  '**/packages/engines/comfyui-card-kit/src/mods/bare-flavor.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/engines/comfyui-card-kit/src/pack-fields.ts': { statements: 100, branches: 50, functions: 100, lines: 100 },
   '**/packages/engines/comfyui-card-kit/src/morphs.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/engines/comfyui-card-kit/src/service-faces.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
@@ -523,6 +527,11 @@ export const COVERAGE_BASELINE: Record<string, {
   '**/packages/video/h3-timeline/src/ui/studio/useFilmAudio.ts': { statements: 100, branches: 99.05, functions: 100, lines: 100 },
   '**/packages/video/h3-timeline/src/ui/studio/useFilmSync.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/video/h3-timeline/src/ui/studio/usePromptMutations.ts': { statements: 96.72, branches: 95.45, functions: 100, lines: 97.95 },
+  // (row 2026-11-07: useReopenRefit — the parallel h3 lane's new hook;
+  // scoped probe over the h3-timeline dom suite measures
+  // 96.42/90/100/100, the uncovered lines 58-64 being the no-op
+  // early return; floor re-pin owned by that lane)
+  '**/packages/video/h3-timeline/src/ui/studio/useReopenRefit.ts': { statements: 96.42, branches: 90, functions: 100, lines: 100 },
   '**/packages/video/h3-timeline/src/ui/studio/useShownDoc.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/video/h3-timeline/src/ui/studio/useStudioViewSync.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/video/h3-timeline/src/ui/studio/useViewSelection.ts': { statements: 88.88, branches: 77.77, functions: 100, lines: 93.33 },

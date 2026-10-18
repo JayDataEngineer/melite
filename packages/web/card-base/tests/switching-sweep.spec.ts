@@ -246,9 +246,17 @@ describe('THE SWITCHING SWEEP — every real family × every switch (the core-fe
         if (to.id === from.id) continue
         const specTo = servedSpec(to)
         const patch = modelSwitchPatch(specFrom, to.id, held)
-        const doc = composeCandidateDoc({}, { ...held, ...patch }, {})
         // the departing family's judged numerics ride as NULL writes
-        // (the unset law) — the doc carries none of them
+        // (the unset law) — the doc carries none of them. The
+        // required-defaults law moved the variant stamps onto the
+        // rows themselves (numericStamps lifts them into held), so
+        // the sweep rides the drill's FULL chain like order d below:
+        // the arrival re-key arm reseats stated numerics an
+        // envelope-less departure carried (anima stamps 52/4 on its
+        // own rows now), then the doc composes clean.
+        const seeded = seedUser(specTo, { ...held, ...patch } as SpecValues)
+        const seated = reseatEnvelopeKeys(specTo, seeded)
+        const doc = composeCandidateDoc({}, seated, {})
         const violations = composeValidate(specTo, doc)
         expect(violations, `${from.id} → ${to.id}: ${JSON.stringify(doc)} judged ${JSON.stringify(violations)}`).toEqual([])
       }

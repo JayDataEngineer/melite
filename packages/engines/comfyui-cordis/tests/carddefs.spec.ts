@@ -152,14 +152,28 @@ describe("loadCardDefs (the registry boot)", () => {
     // the recipe↔weights law: every downloaded basename must be
     // loaded by a lane_input row, or registration refuses — the
     // atom table spells both probe names
+    // the declared-plane door judges every write row against the
+    // actions' own params — the probe declares exactly the pair its
+    // variants state (functions the clone dropped, rebuilt here)
+    probe["actions"] = [{
+      id: "probe-a",
+      inputs: [],
+      outputs: [],
+      params: [
+        { name: "steps", type: "number", bounds: [1, 100] },
+        { name: "cfg", type: "number", bounds: [1, 20] },
+      ],
+      facts: () => ({}),
+      build: () => ({}),
+    }];
     probe["lane_inputs"] = { unet: "dup.safetensors", vae: "a?b.safetensors" };
     probe["variants"] = [
-              { id: "v1", label: "", description: "", hint: "", group: "Variant", route: "", engine: "", order: 0, resolver_defaults: {}, lane_inputs: {}, wire_defaults: null,
+              { id: "v1", label: "", description: "", hint: "", group: "Variant", route: "", engine: "", order: 0, resolver_defaults: { steps: 8, cfg: 1 }, lane_inputs: {}, wire_defaults: null,
                 cells: [{ quant: "int8", label: "", source: null, description: "", route: "", engine: "", vram_peak_gb: 0, resolver_defaults: {}, hide_from_dropdown: false, artifact: null }] },
               // two cells sharing url+dest_sub — the dedupe arm (distinct
               // tiers per the canon's one-variant-one-tier law; the
               // shared artifact still unions once)
-              { id: "v2", label: "", description: "", hint: "", group: "Variant", route: "", engine: "", order: 1, resolver_defaults: {}, lane_inputs: {}, wire_defaults: null,
+              { id: "v2", label: "", description: "", hint: "", group: "Variant", route: "", engine: "", order: 1, resolver_defaults: { steps: 8, cfg: 1 }, lane_inputs: {}, wire_defaults: null,
                 cells: [
                   { quant: "int8", label: "", source: null, description: "", route: "", engine: "", vram_peak_gb: 0, resolver_defaults: {}, hide_from_dropdown: false,
                     artifact: { source_url: "https://host/dup.safetensors", dest_sub: "unet" } },
@@ -170,7 +184,7 @@ describe("loadCardDefs (the registry boot)", () => {
               // registerable (the segment ends .safetensors, and the
               // lane truth loads the raw name) and the union's
               // basename cut lands name "a"
-              { id: "v3", label: "", description: "", hint: "", group: "Variant", route: "", engine: "", order: 2, resolver_defaults: {}, lane_inputs: {}, wire_defaults: null,
+              { id: "v3", label: "", description: "", hint: "", group: "Variant", route: "", engine: "", order: 2, resolver_defaults: { steps: 8, cfg: 1 }, lane_inputs: {}, wire_defaults: null,
                 cells: [
                   { quant: "int8", label: "", source: null, description: "", route: "", engine: "", vram_peak_gb: 0, resolver_defaults: {}, hide_from_dropdown: false,
                     artifact: { source_url: "https://host/a?b.safetensors", dest_sub: "unet" } },

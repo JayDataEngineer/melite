@@ -227,13 +227,28 @@ describe("lanePresenceRefusal (the gate)", () => {
       ...(probe["lane_inputs"] as Record<string, unknown>),
       checkpoint: "probe.bin",
     };
+    // the declared-plane door judges every write row against the
+    // actions' own params — the probe declares exactly the pair its
+    // variants state (functions the clone dropped, rebuilt here)
+    probe["actions"] = [{
+      id: "probe-a",
+      inputs: [],
+      outputs: [],
+      params: [
+        { name: "steps", type: "number", bounds: [1, 100] },
+        { name: "cfg", type: "number", bounds: [1, 20] },
+      ],
+      facts: () => ({}),
+      build: () => ({}),
+    }];
     // actions are dropped for the clone (functions do not survive
     // structuredClone), so the variants ride fresh and routeless —
-    // no resolver_defaults to validate against a missing surface,
-    // no cell artifact for the recipe↔weights law to spell
+    // the required-defaults door wants the variant-class pair stated
+    // on the variant itself, no cell artifact for the recipe↔weights
+    // law to spell
     probe["variants"] = [
       { id: "v", label: "V", description: "", hint: "", group: "Variant", route: "", engine: "", order: 0,
-        resolver_defaults: {}, lane_inputs: {}, wire_defaults: null,
+        resolver_defaults: { steps: 8, cfg: 1 }, lane_inputs: {}, wire_defaults: null,
         cells: [{ quant: "bf16", label: "BF16", source: null, description: "", route: "", engine: "", vram_peak_gb: 0, resolver_defaults: {}, hide_from_dropdown: false, artifact: null }] },
     ];
     const off = svc.registerFamily(probe as never);

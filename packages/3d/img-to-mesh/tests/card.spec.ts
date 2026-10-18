@@ -143,10 +143,11 @@ describe("the family-scoped surface and output bindings", () => {
     for (const row of [pixal, trellis]) {
       const variants = row.variants.filter((variant) => variant.hide_from_dropdown !== true);
       assert.deepEqual(variants.filter((variant) => variant.group === "Variant").map((variant) => variant.id), ["1024"]);
-      // {} through this door — the kit's facts assembly normalizes
-      // resolver_defaults ?? {}, so the EMPTY object is the no-stamp
-      // state (the family defaults row owns resolution).
-      assert.deepEqual(row.variants.find((variant) => variant.id === "1024")?.resolver_defaults, {});
+      // { steps: 12, cfg: 7.5 } through this door — the
+      // required-defaults law moved the family defaults row's face
+      // onto the variant itself: the family can never substitute,
+      // the served variant states its own pair.
+      assert.deepEqual(row.variants.find((variant) => variant.id === "1024")?.resolver_defaults, { steps: 12, cfg: 7.5 });
       assert.equal(row.variants.find((variant) => variant.id === "1536"), undefined,
         "the 1536 route is retired — quality's recipe stamp is the only 1536 door");
       assert.equal(row.variants.find((variant) => variant.id === "512"), undefined,

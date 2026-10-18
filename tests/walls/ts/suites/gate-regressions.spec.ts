@@ -515,7 +515,12 @@ describe("THE COMMITTED LIB (an emitted import Node can actually resolve)", () =
   // 585 (2026-10-17): E8 moved compose-probe into cordis scripts/
   // (one home, two runners — the faces-law finding) and added the
   // boot-address-set pair; the build plane emits their .js/.d.ts/.map.
-  const LIB_CENSUS_PIN = 585;
+  // 590 (2026-11-07): THE MASK ORDER — the boarding ships tracked
+  // mods .js for five families that never carried a mods face
+  // (anima, flux-klein, krea-2, z-image: lib/mods/mask.js each) plus
+  // card-kit's shared primitive (lib/mods/bare-flavor.js); the three
+  // qwen families already had a mods face (collapsed re-exports).
+  const LIB_CENSUS_PIN = 590;
   const specRe = /(?:from\s*|import\(\s*)(["'])(\.[^"']*)\1/g;
 
   it("the census is exact (a deletion OR a lowered floor reds — the count is pinned, not floored)", () => {

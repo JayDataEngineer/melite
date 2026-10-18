@@ -1,4 +1,4 @@
-import type { BoundLayout, EndpointConfig } from "./provision-config.ts";
+import type { BoundLayout, EndpointConfig } from "./provision-config.js";
 export declare function probe(url: string, path: string, timeoutMs?: number): {
     status: number;
     text: string;

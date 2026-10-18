@@ -114,9 +114,9 @@
   "loader_info": null,
   "mod_schemas": {
     "lanpaint": {
-      "uid": 3662,
+      "uid": 3670,
       "refs": {
-        "3581": {
+        "3589": {
           "type": "string",
           "meta": {
             "role": "path",
@@ -132,7 +132,7 @@
             "description": "Image 1"
           }
         },
-        "3585": {
+        "3593": {
           "type": "boolean",
           "meta": {
             "default": false,
@@ -145,7 +145,7 @@
             }
           }
         },
-        "3592": {
+        "3600": {
           "type": "number",
           "meta": {
             "min": 1,
@@ -162,7 +162,7 @@
             }
           }
         },
-        "3599": {
+        "3607": {
           "type": "number",
           "meta": {
             "min": 0.1,
@@ -179,7 +179,7 @@
             }
           }
         },
-        "3606": {
+        "3614": {
           "type": "number",
           "meta": {
             "min": 0,
@@ -196,7 +196,7 @@
             }
           }
         },
-        "3613": {
+        "3621": {
           "type": "number",
           "meta": {
             "min": 0,
@@ -213,7 +213,7 @@
             }
           }
         },
-        "3620": {
+        "3628": {
           "type": "number",
           "meta": {
             "min": 0,
@@ -230,17 +230,17 @@
             }
           }
         },
-        "3621": {
+        "3629": {
           "type": "const",
           "meta": {},
           "value": "negative"
         },
-        "3622": {
+        "3630": {
           "type": "const",
           "meta": {},
           "value": "positive"
         },
-        "3626": {
+        "3634": {
           "type": "union",
           "meta": {
             "default": "negative",
@@ -258,11 +258,11 @@
             }
           },
           "list": [
-            3621,
-            3622
+            3629,
+            3630
           ]
         },
-        "3633": {
+        "3641": {
           "type": "number",
           "meta": {
             "min": 0,
@@ -279,7 +279,7 @@
             }
           }
         },
-        "3640": {
+        "3648": {
           "type": "number",
           "meta": {
             "min": 0,
@@ -296,7 +296,7 @@
             }
           }
         },
-        "3647": {
+        "3655": {
           "type": "number",
           "meta": {
             "min": 0,
@@ -313,7 +313,7 @@
             }
           }
         },
-        "3654": {
+        "3662": {
           "type": "number",
           "meta": {
             "min": 0,
@@ -330,7 +330,7 @@
             }
           }
         },
-        "3661": {
+        "3669": {
           "type": "number",
           "meta": {
             "min": 0,
@@ -347,41 +347,41 @@
             }
           }
         },
-        "3662": {
+        "3670": {
           "type": "object",
           "meta": {
             "default": {}
           },
           "dict": {
-            "image1": 3581,
-            "lanpaint_enabled": 3585,
-            "lanpaint_num_steps": 3592,
-            "lanpaint_step_size": 3599,
-            "lanpaint_lambda": 3606,
-            "lanpaint_beta": 3613,
-            "lanpaint_friction": 3620,
-            "lanpaint_prompt_mode": 3626,
-            "outpaint_top": 3633,
-            "outpaint_right": 3640,
-            "outpaint_bottom": 3647,
-            "outpaint_left": 3654,
-            "outpaint_overlap": 3661
+            "image1": 3589,
+            "lanpaint_enabled": 3593,
+            "lanpaint_num_steps": 3600,
+            "lanpaint_step_size": 3607,
+            "lanpaint_lambda": 3614,
+            "lanpaint_beta": 3621,
+            "lanpaint_friction": 3628,
+            "lanpaint_prompt_mode": 3634,
+            "outpaint_top": 3641,
+            "outpaint_right": 3648,
+            "outpaint_bottom": 3655,
+            "outpaint_left": 3662,
+            "outpaint_overlap": 3669
           }
         }
       }
     },
     "loras": {
-      "uid": 3503,
+      "uid": 3511,
       "refs": {
-        "3491": {
+        "3499": {
           "type": "string",
           "meta": {}
         },
-        "3492": {
+        "3500": {
           "type": "number",
           "meta": {}
         },
-        "3498": {
+        "3506": {
           "type": "number",
           "meta": {
             "min": 1,
@@ -397,18 +397,18 @@
             }
           }
         },
-        "3499": {
+        "3507": {
           "type": "object",
           "meta": {
             "default": {}
           },
           "dict": {
-            "name": 3491,
-            "strength": 3492,
-            "steps": 3498
+            "name": 3499,
+            "strength": 3500,
+            "steps": 3506
           }
         },
-        "3502": {
+        "3510": {
           "type": "array",
           "meta": {
             "default": [],
@@ -421,23 +421,23 @@
               "order": 0
             }
           },
-          "inner": 3499
+          "inner": 3507
         },
-        "3503": {
+        "3511": {
           "type": "object",
           "meta": {
             "default": {}
           },
           "dict": {
-            "loras": 3502
+            "loras": 3510
           }
         }
       }
     },
     "mask": {
-      "uid": 3731,
+      "uid": 3739,
       "refs": {
-        "3665": {
+        "3673": {
           "type": "any",
           "meta": {
             "description": "Region Mask",
@@ -450,7 +450,7 @@
             }
           }
         },
-        "3669": {
+        "3677": {
           "type": "string",
           "meta": {
             "role": "path",
@@ -466,22 +466,22 @@
             "description": "Region Mask"
           }
         },
-        "3670": {
+        "3678": {
           "type": "const",
           "meta": {},
           "value": "auto"
         },
-        "3671": {
+        "3679": {
           "type": "const",
           "meta": {},
           "value": "crop_stitch"
         },
-        "3672": {
+        "3680": {
           "type": "const",
           "meta": {},
           "value": "full_frame"
         },
-        "3676": {
+        "3684": {
           "type": "union",
           "meta": {
             "default": "crop_stitch",
@@ -506,32 +506,32 @@
             }
           },
           "list": [
-            3670,
-            3671,
-            3672
+            3678,
+            3679,
+            3680
           ]
         },
-        "3677": {
+        "3685": {
           "type": "const",
           "meta": {},
           "value": "off"
         },
-        "3678": {
+        "3686": {
           "type": "const",
           "meta": {},
           "value": "person"
         },
-        "3679": {
+        "3687": {
           "type": "const",
           "meta": {},
           "value": "face"
         },
-        "3680": {
+        "3688": {
           "type": "const",
           "meta": {},
           "value": "hand"
         },
-        "3684": {
+        "3692": {
           "type": "union",
           "meta": {
             "default": "off",
@@ -552,13 +552,13 @@
             }
           },
           "list": [
-            3677,
-            3678,
-            3679,
-            3680
+            3685,
+            3686,
+            3687,
+            3688
           ]
         },
-        "3691": {
+        "3699": {
           "type": "number",
           "meta": {
             "min": 0,
@@ -576,7 +576,7 @@
             }
           }
         },
-        "3698": {
+        "3706": {
           "type": "number",
           "meta": {
             "min": -32,
@@ -594,7 +594,7 @@
             }
           }
         },
-        "3705": {
+        "3713": {
           "type": "number",
           "meta": {
             "min": 0,
@@ -612,7 +612,7 @@
             }
           }
         },
-        "3712": {
+        "3720": {
           "type": "number",
           "meta": {
             "min": 0,
@@ -630,7 +630,7 @@
             }
           }
         },
-        "3716": {
+        "3724": {
           "type": "boolean",
           "meta": {
             "default": false,
@@ -645,7 +645,7 @@
             }
           }
         },
-        "3723": {
+        "3731": {
           "type": "number",
           "meta": {
             "min": 64,
@@ -663,7 +663,7 @@
             }
           }
         },
-        "3730": {
+        "3738": {
           "type": "number",
           "meta": {
             "min": 0.05,
@@ -681,23 +681,23 @@
             }
           }
         },
-        "3731": {
+        "3739": {
           "type": "object",
           "meta": {
             "default": {}
           },
           "dict": {
-            "mask": 3665,
-            "input_mask": 3669,
-            "mask_mode": 3676,
-            "mask_detector": 3684,
-            "mask_context_pad": 3691,
-            "mask_grow": 3698,
-            "mask_feather": 3705,
-            "mask_threshold": 3712,
-            "mask_invert": 3716,
-            "mask_detail_size": 3723,
-            "mask_denoise": 3730
+            "mask": 3673,
+            "input_mask": 3677,
+            "mask_mode": 3684,
+            "mask_detector": 3692,
+            "mask_context_pad": 3699,
+            "mask_grow": 3706,
+            "mask_feather": 3713,
+            "mask_threshold": 3720,
+            "mask_invert": 3724,
+            "mask_detail_size": 3731,
+            "mask_denoise": 3738
           }
         }
       }
@@ -708,283 +708,283 @@
     "default": "image"
   },
   "schema": {
-    "uid": 3379,
+    "uid": 3387,
     "refs": {
-      "339": {
+      "347": {
         "type": "const",
         "meta": {},
         "value": "cfgpp_ud10_ab"
       },
-      "340": {
+      "348": {
         "type": "const",
         "meta": {},
         "value": "ddim"
       },
-      "341": {
+      "349": {
         "type": "const",
         "meta": {},
         "value": "ddpm"
       },
-      "342": {
+      "350": {
         "type": "const",
         "meta": {},
         "value": "deis"
       },
-      "343": {
+      "351": {
         "type": "const",
         "meta": {},
         "value": "dpm_2"
       },
-      "344": {
+      "352": {
         "type": "const",
         "meta": {},
         "value": "dpm_2_ancestral"
       },
-      "345": {
+      "353": {
         "type": "const",
         "meta": {},
         "value": "dpm_adaptive"
       },
-      "346": {
+      "354": {
         "type": "const",
         "meta": {},
         "value": "dpm_fast"
       },
-      "347": {
+      "355": {
         "type": "const",
         "meta": {},
         "value": "dpmpp_2m"
       },
-      "348": {
+      "356": {
         "type": "const",
         "meta": {},
         "value": "dpmpp_2m_cfg_pp"
       },
-      "349": {
+      "357": {
         "type": "const",
         "meta": {},
         "value": "dpmpp_2m_sde"
       },
-      "350": {
+      "358": {
         "type": "const",
         "meta": {},
         "value": "dpmpp_2m_sde_gpu"
       },
-      "351": {
+      "359": {
         "type": "const",
         "meta": {},
         "value": "dpmpp_2m_sde_heun"
       },
-      "352": {
+      "360": {
         "type": "const",
         "meta": {},
         "value": "dpmpp_2m_sde_heun_gpu"
       },
-      "353": {
+      "361": {
         "type": "const",
         "meta": {},
         "value": "dpmpp_2s_ancestral"
       },
-      "354": {
+      "362": {
         "type": "const",
         "meta": {},
         "value": "dpmpp_2s_ancestral_cfg_pp"
       },
-      "355": {
+      "363": {
         "type": "const",
         "meta": {},
         "value": "dpmpp_3m_sde"
       },
-      "356": {
+      "364": {
         "type": "const",
         "meta": {},
         "value": "dpmpp_3m_sde_gpu"
       },
-      "357": {
+      "365": {
         "type": "const",
         "meta": {},
         "value": "dpmpp_sde"
       },
-      "358": {
+      "366": {
         "type": "const",
         "meta": {},
         "value": "dpmpp_sde_gpu"
       },
-      "359": {
+      "367": {
         "type": "const",
         "meta": {},
         "value": "er_sde"
       },
-      "360": {
+      "368": {
         "type": "const",
         "meta": {},
         "value": "euler"
       },
-      "361": {
+      "369": {
         "type": "const",
         "meta": {},
         "value": "euler_ancestral"
       },
-      "362": {
+      "370": {
         "type": "const",
         "meta": {},
         "value": "euler_ancestral_cfg_pp"
       },
-      "363": {
+      "371": {
         "type": "const",
         "meta": {},
         "value": "euler_cfg_pp"
       },
-      "364": {
+      "372": {
         "type": "const",
         "meta": {},
         "value": "exp_heun_2_x0"
       },
-      "365": {
+      "373": {
         "type": "const",
         "meta": {},
         "value": "exp_heun_2_x0_sde"
       },
-      "366": {
+      "374": {
         "type": "const",
         "meta": {},
         "value": "gradient_estimation"
       },
-      "367": {
+      "375": {
         "type": "const",
         "meta": {},
         "value": "gradient_estimation_cfg_pp"
       },
-      "368": {
+      "376": {
         "type": "const",
         "meta": {},
         "value": "heun"
       },
-      "369": {
+      "377": {
         "type": "const",
         "meta": {},
         "value": "heunpp2"
       },
-      "370": {
+      "378": {
         "type": "const",
         "meta": {},
         "value": "ipndm"
       },
-      "371": {
+      "379": {
         "type": "const",
         "meta": {},
         "value": "ipndm_v"
       },
-      "372": {
+      "380": {
         "type": "const",
         "meta": {},
         "value": "lcm"
       },
-      "373": {
+      "381": {
         "type": "const",
         "meta": {},
         "value": "lms"
       },
-      "374": {
+      "382": {
         "type": "const",
         "meta": {},
         "value": "res_multistep"
       },
-      "375": {
+      "383": {
         "type": "const",
         "meta": {},
         "value": "res_multistep_ancestral"
       },
-      "376": {
+      "384": {
         "type": "const",
         "meta": {},
         "value": "res_multistep_ancestral_cfg_pp"
       },
-      "377": {
+      "385": {
         "type": "const",
         "meta": {},
         "value": "res_multistep_cfg_pp"
       },
-      "378": {
+      "386": {
         "type": "const",
         "meta": {},
         "value": "sa_solver"
       },
-      "379": {
+      "387": {
         "type": "const",
         "meta": {},
         "value": "sa_solver_pece"
       },
-      "380": {
+      "388": {
         "type": "const",
         "meta": {},
         "value": "seeds_2"
       },
-      "381": {
+      "389": {
         "type": "const",
         "meta": {},
         "value": "seeds_3"
       },
-      "382": {
+      "390": {
         "type": "const",
         "meta": {},
         "value": "uni_pc"
       },
-      "383": {
+      "391": {
         "type": "const",
         "meta": {},
         "value": "uni_pc_bh2"
       },
-      "385": {
+      "393": {
         "type": "const",
         "meta": {},
         "value": "beta"
       },
-      "386": {
+      "394": {
         "type": "const",
         "meta": {},
         "value": "ddim_uniform"
       },
-      "387": {
+      "395": {
         "type": "const",
         "meta": {},
         "value": "exponential"
       },
-      "388": {
+      "396": {
         "type": "const",
         "meta": {},
         "value": "karras"
       },
-      "389": {
+      "397": {
         "type": "const",
         "meta": {},
         "value": "kl_optimal"
       },
-      "390": {
+      "398": {
         "type": "const",
         "meta": {},
         "value": "linear_quadratic"
       },
-      "391": {
+      "399": {
         "type": "const",
         "meta": {},
         "value": "normal"
       },
-      "392": {
+      "400": {
         "type": "const",
         "meta": {},
         "value": "sgm_uniform"
       },
-      "393": {
+      "401": {
         "type": "const",
         "meta": {},
         "value": "simple"
       },
-      "3311": {
+      "3319": {
         "type": "string",
         "meta": {}
       },
-      "3315": {
+      "3323": {
         "type": "array",
         "meta": {
           "default": [],
@@ -1001,9 +1001,9 @@
           },
           "max_stack": 3
         },
-        "inner": 3311
+        "inner": 3319
       },
-      "3319": {
+      "3327": {
         "type": "string",
         "meta": {
           "role": "path",
@@ -1013,7 +1013,7 @@
           "description": "Input Image"
         }
       },
-      "3323": {
+      "3331": {
         "type": "string",
         "meta": {
           "role": "path",
@@ -1023,7 +1023,7 @@
           "description": "Image 2"
         }
       },
-      "3327": {
+      "3335": {
         "type": "string",
         "meta": {
           "role": "path",
@@ -1033,11 +1033,11 @@
           "description": "Image 3"
         }
       },
-      "3328": {
+      "3336": {
         "type": "string",
         "meta": {}
       },
-      "3331": {
+      "3339": {
         "type": "array",
         "meta": {
           "default": [],
@@ -1046,9 +1046,9 @@
             "hidden": true
           }
         },
-        "inner": 3328
+        "inner": 3336
       },
-      "3335": {
+      "3343": {
         "type": "string",
         "meta": {
           "role": "path",
@@ -1058,7 +1058,7 @@
           "description": "Region Mask"
         }
       },
-      "3338": {
+      "3346": {
         "type": "string",
         "meta": {
           "description": "Prompt",
@@ -1073,7 +1073,7 @@
           }
         }
       },
-      "3341": {
+      "3349": {
         "type": "string",
         "meta": {
           "description": "Negative Prompt",
@@ -1086,7 +1086,7 @@
           }
         }
       },
-      "3344": {
+      "3352": {
         "type": "number",
         "meta": {
           "description": "Width",
@@ -1102,7 +1102,7 @@
           }
         }
       },
-      "3347": {
+      "3355": {
         "type": "number",
         "meta": {
           "description": "Height",
@@ -1118,7 +1118,7 @@
           }
         }
       },
-      "3351": {
+      "3359": {
         "type": "boolean",
         "meta": {
           "description": "Match Input Resolution",
@@ -1133,7 +1133,7 @@
           }
         }
       },
-      "3356": {
+      "3364": {
         "type": "number",
         "meta": {
           "description": "Seed",
@@ -1147,7 +1147,7 @@
           }
         }
       },
-      "3362": {
+      "3370": {
         "type": "number",
         "meta": {
           "description": "Steps",
@@ -1164,7 +1164,7 @@
           }
         }
       },
-      "3368": {
+      "3376": {
         "type": "number",
         "meta": {
           "description": "Guidance Scale",
@@ -1181,7 +1181,7 @@
           }
         }
       },
-      "3370": {
+      "3378": {
         "type": "union",
         "meta": {
           "description": "Sampler",
@@ -1195,14 +1195,6 @@
           }
         },
         "list": [
-          339,
-          340,
-          341,
-          342,
-          343,
-          344,
-          345,
-          346,
           347,
           348,
           349,
@@ -1239,10 +1231,18 @@
           380,
           381,
           382,
-          383
+          383,
+          384,
+          385,
+          386,
+          387,
+          388,
+          389,
+          390,
+          391
         ]
       },
-      "3372": {
+      "3380": {
         "type": "union",
         "meta": {
           "description": "Scheduler",
@@ -1256,18 +1256,18 @@
           }
         },
         "list": [
-          385,
-          386,
-          387,
-          388,
-          389,
-          390,
-          391,
-          392,
-          393
+          393,
+          394,
+          395,
+          396,
+          397,
+          398,
+          399,
+          400,
+          401
         ]
       },
-      "3375": {
+      "3383": {
         "type": "boolean",
         "meta": {
           "description": "Use Stock Nodes",
@@ -1280,7 +1280,7 @@
           }
         }
       },
-      "3378": {
+      "3386": {
         "type": "boolean",
         "meta": {
           "description": "Double Reference",
@@ -1293,30 +1293,30 @@
           }
         }
       },
-      "3379": {
+      "3387": {
         "type": "object",
         "meta": {
           "default": {}
         },
         "dict": {
-          "input_images": 3315,
-          "image1": 3319,
-          "image2": 3323,
-          "image3": 3327,
-          "reference_images": 3331,
-          "input_mask": 3335,
-          "prompt": 3338,
-          "negative_prompt": 3341,
-          "width": 3344,
-          "height": 3347,
-          "match_input_resolution": 3351,
-          "seed": 3356,
-          "steps": 3362,
-          "cfg": 3368,
-          "sampler": 3370,
-          "scheduler": 3372,
-          "use_stock_nodes": 3375,
-          "double_reference": 3378
+          "input_images": 3323,
+          "image1": 3327,
+          "image2": 3331,
+          "image3": 3335,
+          "reference_images": 3339,
+          "input_mask": 3343,
+          "prompt": 3346,
+          "negative_prompt": 3349,
+          "width": 3352,
+          "height": 3355,
+          "match_input_resolution": 3359,
+          "seed": 3364,
+          "steps": 3370,
+          "cfg": 3376,
+          "sampler": 3378,
+          "scheduler": 3380,
+          "use_stock_nodes": 3383,
+          "double_reference": 3386
         }
       }
     }
@@ -1388,7 +1388,7 @@
         "double_reference": true
       },
       "route": "",
-      "hint": "Double-reference ON — the card schema's own identity knob (encode the input twice for stronger identity preservation); this family's own default is false. Steps/CFG stay on the Variant routes (Lightning 4-step / Standard 20-step cfg 2.5) — never duplicated here. PLANE TRUTH (agent-debt F-4, 2026-09-22): the TS compose plane refuses double_reference=true LOUD — it builds the stock plain-edit graph only. Selecting this variant GUARANTEES a refusal; do not plan runs around it until the double-encode lane exists.",
+      "hint": "Double-reference ON — the card schema's own identity knob (encode the input twice for stronger identity preservation); this family's own default is false. PLANE TRUTH (agent-debt F-4, 2026-09-22): the TS compose plane refuses double_reference=true LOUD — it builds the stock plain-edit graph only. Selecting this variant GUARANTEES a refusal; do not plan runs around it until the double-encode lane exists.",
       "engine": "comfyui",
       "sampler_envelope": null,
       "quant": null,
