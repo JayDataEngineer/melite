@@ -298,6 +298,26 @@ describe('timeline (prompts + keyframes)', () => {
     if (timecode() !== '00:00:02') throw new Error(`the ruler body scrubbed to ${timecode() ?? '??'}`)
   })
 
+  test('F-2 RULER SINGLE-CLICK SEEKS (tenant integration — the bar seat reaches useTimelineAuthoring)', async () => {
+    // THE JOURNEY AUDIT'S F-2 (ruler-click-seek verdict): the motion
+    // tenant's TRUE ROOT (MotionTimelineSection onFrameChange →
+    // handleTimelineFrameChange = setFrameIdx + setPlaying(false))
+    // was read-verified but no suite executed click→seek at tenant
+    // depth. This arm single-clicks the REAL ruler in the REAL
+    // tenant: the playhead must jump to the clicked frame (clientX
+    // 16 → frame 2, the scrub spec's own scale precedent) while the
+    // press+move scrub law above still holds on the ruler body.
+    await paused(await mountedWithRun())
+    stubScrollerRect()
+    const timecode = () =>
+      document.body.querySelector('[data-testid="motion-timeline-timecode"]')?.textContent
+    if (timecode() !== '00:00:00') throw new Error(`not parked at zero (saw ${timecode() ?? '??'}) — the seek below would pass vacuously`)
+    fireEvent.click(document.body.querySelector('[data-testid="motion-timeline-ruler"]') as HTMLElement, { clientX: 16 })
+    await vi.waitFor(() => {
+      if (timecode() !== '00:00:02') throw new Error('ruler click did not seek yet')
+    }, { timeout: 10000 })
+  })
+
   test('prompt double-click edits and commits text', async () => {
     await mountedWithRun()
     await vi.waitFor(() => {

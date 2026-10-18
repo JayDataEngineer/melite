@@ -48,7 +48,7 @@
 // they red until the null set and the merge order carry the law
 // themselves.
 import { describe, expect, test } from 'vitest'
-import { composeCandidateDoc, composeValidate, mergeSwitchFrame, modelSwitchPatch, seedUser,
+import { axisGroups, axisKey, composeCandidateDoc, composeValidate, mergeSwitchFrame, modelSwitchPatch, seedUser,
   type FormSpecDoc, type SpecValues } from '../../card-base/src/spec.ts'
 import { specVariants } from '../../../../packages/harness/melite-tools/src/discovery.ts'
 import { DECL as qwenImgEdit21 } from '../../../models/qwen-img-edit-21/src/index.ts'
@@ -193,8 +193,36 @@ describe('the drill null-set arms (ERRORS h; study §6; purge P4) — the switch
     expect(failures, `the arrival holding rides the departed pair:\n  ${failures.join('\n  ')}`).toEqual([])
   })
 
-  test('THE PIN THAT STANDS — the arrival lane’s own words: the pair is 2511’s edit-tuning seat and NOT on the 21 surface (the DECL is the truth home)', () => {
-    // The DECL-side fact the whole file leans on, pinned so a surface
+  test('ARM 4 — the gesture-time 3-arg seats refuse to guess (DRILL (a) remainder): arrival unknown → axes clear, bag dies, the params surface waits for the settle', () => {
+    // THE TWO SEATS THAT STAY 3-ARG (stage-drill.tsx rePointFrame +
+    // card-base axes.tsx:273 Model rail): at gesture time the arrival
+    // SPEC DOC does not exist yet — the re-point IS what triggers its
+    // fetch — so the verb cannot judge the departed-minus-arrival
+    // surface and MUST NOT (a wrong null deletes a shared word's user
+    // intent). The pinned law: the 3-arg form still clears the axes
+    // (crossSpec), still nulls the departing envelope vocabulary and
+    // the mod bag — but carries NO params-surface verdicts. The
+    // settle seat (stage-drill.tsx:386, 4-arg with the fetched doc)
+    // owns the surface nulls (ARM 1), and the arrival-window fence
+    // owns the gesture→settle round trip — that interplay is the
+    // complete DRILL (a), and this arm is why the gesture seats are
+    // 3-arg BY LAW rather than by omission.
+    const patch = modelSwitchPatch(FROM_SPEC, TO_DECL.id, burnedHolding())
+    const failures: string[] = []
+    if (patch.model !== TO_DECL.id) failures.push(`model: the patch does not re-point at '${TO_DECL.id}'`)
+    for (const g of axisGroups(FROM_SPEC)) {
+      const k = axisKey(g)
+      if (patch[k] !== '') failures.push(`axis '${k}': a cross-family switch must CLEAR the departing axis (saw ${JSON.stringify(patch[k])}) — the arrival's rows seed fresh at spec-land`)
+    }
+    for (const k of BURNED_PAIR) {
+      if (k in patch) {
+        failures.push(`'${k}': the arrival-unknown verb rendered a params-surface verdict (${JSON.stringify(patch[k])}) — with no arrival surface the verb must refuse to guess (spec.ts: the null loop is arrival-gated); the settle seat owns this null (ARM 1)`)
+      }
+    }
+    expect(failures, `the gesture-time verb guesses or keeps:\n  ${failures.join('\n  ')}`).toEqual([])
+  })
+
+  test('THE PIN THAT STANDS — the arrival lane’s own words: the pair is 2511’s edit-tuning seat and NOT on the 21 surface (the DECL is the truth home)', () => {    // The DECL-side fact the whole file leans on, pinned so a surface
     // change re-pins the arms deliberately (the purge §2.1 rows).
     expect((FROM_DECL.params ?? [])).toEqual(expect.arrayContaining([...BURNED_PAIR]))
     expect(TO_DECL.params ?? []).not.toContain('double_reference')

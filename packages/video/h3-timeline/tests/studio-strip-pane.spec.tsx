@@ -616,6 +616,25 @@ describe("drag gestures (every door maps film→doc)", () => {
     assert.deepEqual(rec.bar, [[40]])
   })
 
+  it("a ruler single-click seeks its frame (F-2 tenant integration — the bar's onFrameChange reaches the tenant's handleBarFrame; the click-away seat stays silent)", () => {
+    // THE JOURNEY AUDIT'S F-2 (ruler-click-seek verdict): the TRUE
+    // ROOT (bar onFrameChange → handleBarFrame → setFrameIdx +
+    // filmRef.seekTo) was read-verified but no suite executed
+    // click→seek at tenant depth — the chrome wall stops at the
+    // bar boundary. This arm clicks the REAL ruler inside the REAL
+    // tenant: the tenant's frame handler must fire with the
+    // clicked frame (the bar's real film frame for clientX 60 under
+    // the stubbed 800px rect: 18 — the seek door is RAW by design,
+    // docFromFilm rides the doc-WRITING doors only (cf. the
+    // keyframe-click arm's [[40]]: the playhead is session/film
+    // state, never a doc write). Any unwiring → [] → red; any
+    // remap → mismatch → red.
+    const { rec } = strip()
+    fireEvent.click(screen.getByTestId("motion-timeline-ruler"), { clientX: 60 })
+    assert.deepEqual(rec.bar, [[18]])
+    assert.deepEqual(rec.select, [])
+  })
+
   it("prompt body drag moves (start AND end ride the map)", () => {
     const { rec } = strip()
     drag(document.body.querySelector('[data-prompt-clip="p1"]')!, 100, 130)
