@@ -319,8 +319,17 @@ const ARGUED_FLOOR_DROPS: Record<string, {
     // the two defense arms with ignore pragmas — the row climbed
     // back to its argued from face (100x4), so the cleanup arm
     // demanded its removal in the same landing.
-    '**/packages/web/melite-estate/src/index.ts',
-    '**/packages/web/melite-estate/src/provisioning.ts',
+    // melite-estate/src/index.ts left this list 2026-11-07 (the
+    // full-gate-triple ratchet regen): the committed row sat at its
+    // clean-era face (100/98/100/100) and the regeneration re-measured
+    // branches at 100 across three same-tree runs — the row climbed
+    // back above its argued from face (100/98.33/100/100), so the
+    // cleanup arm demanded its removal in the same landing.
+    // melite-estate/src/provisioning.ts left this list 2026-11-07
+    // (the full-gate-triple ratchet regen): the regeneration
+    // re-measured the row at 100x4 — above its argued from face
+    // (99.39/100/97.67/99.28) — so the cleanup arm demanded its
+    // removal in the same landing.
   ].map((key) => [key, {
     from: POISONED_ERA_FLOORS[key]!,
     to: REGENERATED_CLEAN_ERA_FLOORS[key]!,
@@ -341,53 +350,17 @@ const ARGUED_FLOOR_DROPS: Record<string, {
   // dev_docs/audits/coverage-gate-cure-2026-10-22.md); this entry is
   // the CURRENT bounded transition from the committed row.
   ...Object.fromEntries([
-    '**/packages/engines/comfyui-cordis/src/comfyui-execute.ts',
-    '**/packages/engines/comfyui-cordis/src/comfyui-transport.ts',
-    '**/packages/engines/comfyui-cordis/src/comfyui-upload.ts',
-    '**/packages/engines/comfyui-cordis/src/userLoras.ts',
-    '**/packages/estate/models/src/index.ts',
-    '**/packages/estate/provisioning/src/artifact-writer.ts',
-    '**/packages/estate/provisioning/src/operation-store.ts',
-    '**/packages/estate/provisioning/src/service.ts',
-    '**/packages/estate/runs/src/index.ts',
-    '**/packages/harness/estate-queue/src/bench.ts',
-    '**/packages/harness/estate-queue/src/cardsDangling.ts',
-    '**/packages/harness/estate-queue/src/cardsLanes.ts',
-    '**/packages/harness/estate-queue/src/cardsVariant.ts',
-    '**/packages/harness/estate-queue/src/flowsData.ts',
-    '**/packages/harness/estate-queue/src/managePlane.ts',
-    '**/packages/harness/estate-queue/src/runsExecute.ts',
-    '**/packages/harness/estate-queue/src/runsRefusalVoices.ts',
-    '**/packages/harness/estate-queue/src/runsSourceEcho.ts',
-    '**/packages/harness/estate-queue/src/runsStart.ts',
-    '**/packages/harness/estate-queue/src/runsValidateStages.ts',
-    '**/packages/harness/estate-queue/src/service.ts',
-    '**/packages/harness/melite-tools/src/tools/comfy-manage.ts',
-    '**/packages/image/image-gen/src/card.ts',
-    '**/packages/image/upscale-tools/src/card.ts',
-    '**/packages/models/qwen-img-21/src/actions.ts',
+  // The landed-debt list emptied here 2026-11-07 (the
+  // full-gate-triple ratchet regen): the regeneration re-pinned all
+  // 43 rows at their freshly measured faces — every one at or above
+  // its argued from face — so the cleanup arm demanded the whole
+  // set's removal in the same landing. The 2026-10-23 arguments are
+  // spent: a future drop re-argues here with fresh evidence or
+  // proves the deleted lines.
     // useMotionUndoStack left this list 2026-11-06 (wave 32): the
     // undo-stack spec's own-laws arms lifted the row to 100x4 —
     // back above this entry's from face (98.71/96.87/100/100), so
     // the cleanup arm demanded its removal in the same landing.
-    '**/packages/web-kit/catalog/src/enhance.ts',
-    '**/packages/web-kit/catalog/src/familyParamContract.ts',
-    '**/packages/web-kit/catalog/src/modelCatalog.ts',
-    '**/packages/web-kit/catalog/src/tagMap.ts',
-    '**/packages/web-kit/catalog/src/waveform-peaks.ts',
-    '**/packages/web-kit/formats/src/glbLoad.ts',
-    '**/packages/web-kit/timeline/src/store/timelinePersistence.ts',
-    '**/packages/web-kit/timeline/src/timeline/FilmPlayer.tsx',
-    '**/packages/web/card-base/src/estate-remote.ts',
-    '**/packages/web/infer-gallery/src/client/bench-load.ts',
-    '**/packages/web/infer-gallery/src/client/useFeed.ts',
-    '**/packages/web/infer-gallery/src/client/waitState.ts',
-    '**/packages/web/melite-card-view/src/client/bench-view.tsx',
-    '**/packages/web/melite-card-view/src/client/card-drill.tsx',
-    '**/packages/web/melite-card-view/src/client/cards-resource.ts',
-    '**/packages/web/melite-card-view/src/client/cards-tab-body.tsx',
-    '**/packages/web/melite-card-view/src/client/run-rescue-core.ts',
-    '**/packages/web/melite-card-view/src/client/run-rescue.tsx',
   ].map((key) => [key, {
     from: LANDED_DEBT_OLD_FLOORS[key]!,
     to: LANDED_DEBT_NEW_FLOORS[key]!,
@@ -407,12 +380,16 @@ const ARGUED_FLOOR_DROPS: Record<string, {
   // (their history stays as receipts).
   ...Object.fromEntries([
     '**/packages/audio/tts/src/card.ts',
-    '**/packages/engines/comfyui-card-kit/src/facts.ts',
-    '**/packages/engines/comfyui-card-kit/src/fields.ts',
-    '**/packages/engines/comfyui-card-kit/src/lanes-3d.ts',
+    // Seven rows left this list 2026-11-07 (the full-gate-triple
+    // ratchet regen): card-kit facts/fields/lanes-3d, cordis
+    // models/service, h3 schema, studio useViewSelection and
+    // card-labels all re-measured at or above their argued from
+    // faces (five of them from==to no-op entries whose committed row
+    // already sat at the argued face, unmasked once the landed-debt
+    // list emptied), so the cleanup arm demanded their removal in
+    // the same landing.
     '**/packages/engines/comfyui-card-kit/src/tts-segments.ts',
     '**/packages/engines/comfyui-cordis/src/models/census.ts',
-    '**/packages/engines/comfyui-cordis/src/models/service.ts',
     '**/packages/estate/media/src/index.ts',
     '**/packages/harness/estate-queue/src/runsList.ts',
     '**/packages/harness/estate-queue/src/runsValidateArms.ts',
@@ -423,7 +400,6 @@ const ARGUED_FLOOR_DROPS: Record<string, {
     '**/packages/harness/melite-tools/src/index.ts',
     '**/packages/image/image-edit/src/card.ts',
     '**/packages/models/h3/src/actions.ts',
-    '**/packages/models/h3/src/schema.ts',
     // both motion studio hooks left this list 2026-11-06 (wave
     // 32): motion-undo-stack.spec.tsx (the drag guard, ctrl+y + the
     // never-hijack input guard, the clone fence) lifted
@@ -443,14 +419,12 @@ const ARGUED_FLOOR_DROPS: Record<string, {
     '**/packages/video/h3-timeline/src/ui/studio/useDerivedView.ts',
     '**/packages/video/h3-timeline/src/ui/studio/useFilmAudio.ts',
     '**/packages/video/h3-timeline/src/ui/studio/usePromptMutations.ts',
-    '**/packages/video/h3-timeline/src/ui/studio/useViewSelection.ts',
     '**/packages/web-kit/catalog/src/catalogContract.ts',
     '**/packages/web/card-base/src/axes.tsx',
     '**/packages/web/card-base/src/mods.tsx',
     '**/packages/web/card-base/src/preview.tsx',
     '**/packages/web/infer-gallery/src/drilldown.tsx',
-    '**/packages/web/melite-card-deck/src/client/lora-section.tsx',
-    '**/packages/web/melite-card-view/src/client/card-labels.ts'
+    '**/packages/web/melite-card-deck/src/client/lora-section.tsx'
   ].map((key) => [key, {
     from: REGEN_2026_11_06_OLD_FLOORS[key]!,
     to: REGEN_2026_11_06_NEW_FLOORS[key]!,
