@@ -104,6 +104,16 @@ const REGISTERED_DIVERGENCES: ReadonlyArray<{
   // the dict's mode seat is yue2-scoped at the face (visible_when:
   // model=yue2) but serves family-blind in the frozen form_spec.
   { card: "music", family: "music3", knob: "mode", cure: FACE_FILTER_CURE },
+  // THE YUE2 DEAD-KNOB CURE (2026-11-08, purge P2 D1/D2 — the music3
+  // mode precedent's second seating): yue2's DECL dropped
+  // guidance_scale + lm_cfg_scale (KSampler cfg is the lane's fixed
+  // 1; neither YuE2 node takes the input) and the compose action
+  // refuses a stated non-default legacy draft loud naming the knob;
+  // the dict keeps both seats music3-scoped at the face
+  // (visible_when: model=music3) but serves family-blind in the
+  // frozen form_spec. Same frozen form_spec contract as UNITY-4.
+  { card: "music", family: "yue2", knob: "guidance_scale", cure: FACE_FILTER_CURE },
+  { card: "music", family: "yue2", knob: "lm_cfg_scale", cure: FACE_FILTER_CURE },
 ];
 
 /** The declaration-coverage ratchet: every family boarding a card

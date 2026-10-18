@@ -55,6 +55,29 @@ export const compose: ComfyActionSpec<Yue2Params, Yue2Facts> = {
   ],
   facts: parseYue2Facts,
   build({ p, facts, g, runId }) {
+    // THE DEAD-KNOB REFUSAL (value-arm cure, 2026-11-08 — the music3
+    // mode precedent, music3/actions.ts: the DECL surface drops the
+    // knob, the build refuses the legacy draft). guidance_scale +
+    // lm_cfg_scale are the MiniMax lane's vocabulary (KSampler cfg +
+    // MiniMaxMusic3TextEncode cfg_scale) — the yue2 DECL serves
+    // neither (index.ts params), YuE2GenerateABC/YuE2GenerateMusic
+    // declare no such input, and KSampler cfg is the lane's fixed 1.
+    // A stated non-default used to cross every gate and die unread
+    // at compose — the SD-1 wedge (authored-on-music3, switched to
+    // yue2). Refuse loud in the knob's own voice; the schema
+    // default 1.7 rides (the stated default IS the unstated
+    // compose), and an absent knob (direct action callers) rides.
+    for (const [knob, lane] of [["guidance_scale", "KSampler cfg"], ["lm_cfg_scale", "the lyric-encoder guidance"]] as const) {
+      const v = p[knob] as unknown;
+      if (v !== undefined && v !== 1.7) {
+        throw new Error(
+          `yue2 compose: ${knob} '${String(v)}' fires nothing on this lane — ` +
+            `${knob} is the MiniMax lane's vocabulary (${lane}); ` +
+            "the YuE2 nodes read style+lyrics+mode only, KSampler cfg is the lane's fixed 1. " +
+            "Drop it, or switch lane (model=music3) to steer the MiniMax guidance",
+        );
+      }
+    }
     const seed = p.seed as number;
     const ckpt = g.node("CheckpointLoaderSimple", { ckpt_name: facts.checkpoint });
     const style = p.prompt as string;
