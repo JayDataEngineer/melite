@@ -27,6 +27,7 @@ import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/re
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { RunRescue } from '../src/client/run-rescue.tsx'
+import { chromeCopy } from '../src/chromeCopy.ts'
 
 const wire = vi.hoisted(() => ({ postManageAction: vi.fn() }))
 vi.mock('@melite/card-base/client', async (importOriginal) => ({
@@ -239,5 +240,49 @@ describe('CLASS 5 — NO RE-POP: a cancelled/deleted download must not re-appear
     expect(screen.queryByTestId('weight-popup'),
       'the popup RE-POPPED: a fresh mount of the same run error re-opened the modal with no new engine event — nothing remembers the dismissal (ERRORS.md m: an endless popup that re-pops over and over)',
     ).toBeNull()
+  })
+})
+
+describe('CLASS 6 — CEILING EXPIRY (SD-8b, FALSE-READY #2): a poll ceiling expiring non-terminal is a stuck flight, never a landing', () => {
+  it('ARM 9 — bytes advancing every poll rides the FULL ceiling; the expiry lands the stuck face, never Weight ready, and Run refuses loud', async () => {
+    // THE UNFROZEN STALL: unlike CLASS 2 (bytes frozen → the stall
+    // watch ends the flight early), this flight LOOKS healthy — the
+    // engine advances bytes every poll — but never reaches terminal
+    // within the 150-poll ceiling. The pre-cure lie declared the
+    // download done at expiry. The law: ceiling expiry IS the stuck
+    // truth — the stuck face serves, no completion claim renders, and
+    // the Run door (the stuck face's own trapdoor) refuses LOUD: the
+    // press fires onRun ZERO times.
+    const onRun = vi.fn()
+    vi.useFakeTimers()
+    let n = 0
+    wire.postManageAction
+      .mockResolvedValueOnce(reply('acquiring', PARTIAL, TOTAL))
+      .mockImplementation(() => {
+        n += 1
+        return Promise.resolve(reply('acquiring', PARTIAL + n * 1_000, TOTAL))
+      })
+    render(<RunRescue error={MISS} stages={STAGES} onRun={onRun} />)
+    // ARM 8's dismissal memory is module state and this miss is the
+    // same key — the face may mount dismissed (inline offer) or open
+    // (full popup) depending on what ran before; both roads reach the
+    // download press through the dismissal's own re-open door.
+    const closer = screen.queryByRole('button', { name: 'Close weight popup' })
+    if (closer !== null) fireEvent.click(closer)
+    fireEvent.click(screen.getByRole('button', { name: 'Download weight' }))
+    fireEvent.click(screen.getByTestId('weight-download'))
+    // the whole ceiling: 150 polls × 400ms — driven, not waited out
+    await vi.advanceTimersByTimeAsync(62_000)
+    expect(screen.queryByText('Weight ready'),
+      "the poll ceiling expired non-terminal and the face declared the download complete ('Weight ready') — FALSE-READY #2: a ceiling is not an engine terminal report",
+    ).toBeNull()
+    expect(screen.getByText('Weight stuck'),
+      "the expired ceiling served neither the success face nor the stuck face — the flight ended into no named truth",
+    ).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: 'Run again' }))
+    expect(onRun).not.toHaveBeenCalled()
+    expect(screen.getByText(chromeCopy.stuckRunRefusal),
+      "the expired ceiling's Run press neither refused in its own voice nor stayed silent — a run on an incomplete weight must refuse LOUD, never fire",
+    ).toBeTruthy()
   })
 })
