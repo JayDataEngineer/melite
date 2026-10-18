@@ -37,6 +37,20 @@
  *       rewrite runs BEFORE POST /prompt mints the id, so the
  *       earliest estate seat that can see it is the execute
  *       outcome; settle's sidecar rewrite carries it to disk).
+ *   e — THE REAL-BUILD TOGGLE: the REAL music3 DECL through the
+ *       real door (phase1Card+phase2Card, hermetic boot) receipts
+ *       its admitted body — control verdict partial with dropped
+ *       ["model"] ONLY (the routing residue: the admitted body
+ *       carries model but no graph input spells the bare family
+ *       id — named here, never hidden), every stated scalar
+ *       carried; the carriage twin (caption present-but-unwired)
+ *       names prompt in dropped. The audit's specified toggle —
+ *       delete `caption: p.prompt` at music3 actions — reds this
+ *       arm LOUDER than the twin: a phase-1 missing-required
+ *       refusal naming caption, before any receipt is judged (the
+ *       true-absent drop is refusal-gated, the unwired drop is
+ *       receipt-gated — the arm's closing comment carries the
+ *       verbatim refusal and the presence-keying wart).
  *
  * THE RED-PROOF (registry row runs-graph-receipt): neutralize the
  * stamp in registerCompiledRun (runsStart.ts — `run.graphReceipt =
@@ -48,6 +62,15 @@
  *
  * Run: npx vitest run tests/walls/ts/suites/runs-graph-receipt.spec.ts
  */
+// THE HERMETIC ENGINE, FIRST IMPORT (the boot-models first-import
+// law — the ARM-e door composes through the real CardRegistryService
+// and prime() fetches /object_info: the mock registers before any
+// estate barrel evaluates, so arms a–d's fetch-free rig is
+// unaffected and ARM e never dials a live engine).
+import "../../../helpers/hermetic-engine.ts";
+// THE MODELS BOOT, SECOND (the per-file boot brick — the served
+// families table the card defs resolve through).
+import "../../../helpers/boot-models.ts";
 import { describe, it } from "vitest";
 import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -58,6 +81,17 @@ import { Context, Service } from "@deepseek-ai/cordis";
 import { RemoteError } from "@deepseek-ai/dsh-typert-protocol";
 import { ComfyUIHostService } from "@melite/comfyui-cordis";
 import type { EngineJson, FlowResult, MergeRow } from "@melite/comfyui-cordis";
+// ARM-e imports (the real-door seat — the music wall's proven shape):
+// the door, the admission coercion the card arm receipts, the receipt
+// spine itself, the card's action bindings (the corruption seam), the
+// music3 DECL, and the lane overlay the hermetic gate reads.
+import { CardRegistryService } from "../../../../packages/harness/estate-queue/src/cardsRegistry.ts";
+import { coerceSnapshotBody } from "../../../../packages/harness/estate-queue/src/runsValidateStages.ts";
+import { graphReceiptOf } from "../../../../packages/harness/estate-queue/src/queueSidecar.ts";
+import type { GraphReceiptPair } from "../../../../packages/harness/estate-queue/src/queueSidecar.ts";
+import { ACTION_BINDINGS } from "../../../../packages/audio/music/src/card.ts";
+import { DECL as music3Decl } from "@melite/models-music3";
+import { installLaneStoreOverlay, restoreLaneStoreOverlay } from "../../../helpers/lane-store-overlay.ts";
 import { FlowsSeatService } from "../../../../packages/harness/estate-queue/src/flowsData.ts";
 import { RunsRuntimeService } from "../../../../packages/harness/estate-queue/src/runsRegistry.ts";
 import { outRootFor } from "../../../../packages/harness/estate-queue/src/queueLock.ts";
@@ -228,6 +262,50 @@ const settleWait = async (core: QueueCore, runId: string): Promise<RunRecord> =>
 
 // ── THE ARMS ─────────────────────────────────────────────────────
 
+/** ARM-e rig: the REAL music3 door (the music wall's proven hermetic
+ *  seat — prime through the mocked liveObjectInfo, the lane overlay
+ *  materializing the DECLared weights) + the card arm's OWN
+ *  admission coercion, receipted by the receipt spine. `corrupt`
+ *  rewrites the build inputs the way the audit's toggle does by
+ *  hand (identity = control; a prompt swap = the caption twin). */
+const realMusicReceipt = async (
+  corrupt: (p: Record<string, unknown>) => Record<string, unknown>,
+): Promise<GraphReceiptPair> => {
+  const MARKER = "ARM-E marker ZZQ-P1-7741 the courier steps in";
+  const ctx = new Context();
+  new FlowsSeatService(ctx);
+  const state = mkdtempSync(join(tmpdir(), "runs-graph-receipt-arme-"));
+  onTestFinished(() => rmSync(state, { recursive: true, force: true }));
+  (ctx as unknown as { queue: unknown }).queue = { stateRoot: state, stateRoots: [state] };
+  const door = new CardRegistryService(ctx);
+  await door.prime();
+  installLaneStoreOverlay();
+  try {
+    const body = {
+      model: "music3",
+      prompt: MARKER,
+      lyrics: "[verse]\nZZQ-LYRIC-7741 tonight",
+      duration: 77,
+      guidance_scale: 2.5,
+      n_diffusion_steps: 64,
+      lm_cfg_scale: 3.5,
+      seed: 4242,
+    };
+    const admitted = coerceSnapshotBody(door.defsSync().get("music")!, body);
+    const original = ACTION_BINDINGS[music3Decl.id]!;
+    ACTION_BINDINGS[music3Decl.id] = (p, model, g, runId) => original(corrupt(p), model, g, runId);
+    try {
+      const p1 = await door.phase1Card(body, "music3");
+      const ran = await door.phase2Card(p1, "receipt_arm_e");
+      return graphReceiptOf(admitted, { workflow: (ran as { graph: unknown }).graph });
+    } finally {
+      ACTION_BINDINGS[music3Decl.id] = original;
+    }
+  } finally {
+    restoreLaneStoreOverlay();
+  }
+};
+
 describe("runs-graph-receipt (the served-graph receipt, purge P1)", () => {
   it("ARM a — THE RECEIPT IS STAMPED: the composed run's sidecar carries graph_receipt, verdict complete, dropped empty, nodes > 0, populated names the doc scalars", async () => {
     const { sidecar } = await runBench({ prompt: "the courier steps in", steps: 12, guidance: 3.5 });
@@ -289,5 +367,51 @@ describe("runs-graph-receipt (the served-graph receipt, purge P1)", () => {
       "receipt-prompt-0001",
       "the engine-minted prompt_id rides the receipt after the execute outcome (the settle rewrite carries it to disk): " + JSON.stringify(receipt),
     );
+  });
+
+  it("ARM e — THE REAL-BUILD TOGGLE: the real music3 door carries the stated prompt (control); the unwired caption names prompt in dropped (carriage twin); the truly-absent caption refuses loud naming caption (toggle face, documented below)", async () => {
+    // THE AUDIT'S SPECIFIED TOGGLE (P1 recon gap A): arm (b)
+    // synthesizes its drop through a fake compose — this arm drives
+    // the REAL music3 DECL through the REAL door (phase1Card +
+    // phase2Card, hermetic boot: the music wall's proven rig) and
+    // receipts the SAME admitted body the card arm judges
+    // (coerceSnapshotBody — runsRegistry.ts:1473). The marker prompt
+    // carries a sentinel so the BY-VALUE diff cannot collide.
+    const control = await realMusicReceipt((p) => p);
+    assert.ok(control.nodes > 0, "the real door composed a non-empty graph");
+    assert.equal(control.verdict, "partial", "control verdict: " + JSON.stringify(control));
+    assert.deepEqual(control.dropped, ["model"],
+      "control drops ONLY the routing residue (the admitted body carries model but no graph input spells the bare family id — named, never hidden): " + JSON.stringify(control));
+    assert.deepEqual(control.carried,
+      ["duration", "guidance_scale", "lm_cfg_scale", "lyrics", "n_diffusion_steps", "prompt", "seed"],
+      "every stated scalar rode, the marker prompt among them: " + JSON.stringify(control));
+    // THE CORRUPTION TWIN: the build's caption key toggled out (the
+    // audit's toggle — delete `caption: p.prompt` at music3 actions)
+    // must name prompt in dropped while everything else still rides.
+    const twin = await realMusicReceipt((p) => ({ ...p, prompt: "ZZQ-CORRUPTED-CAPTION — the compose never saw the marker" }));
+    assert.equal(twin.verdict, "partial", "twin verdict: " + JSON.stringify(twin));
+    assert.deepEqual(twin.dropped, ["model", "prompt"],
+      "the caption-dropped compose names prompt in dropped, SORTED beside the residue: " + JSON.stringify(twin));
+    assert.ok((twin.populated as string[]).includes("prompt"), "prompt stays populated (stated non-empty) — the twin judges carriage, never presence");
+    // THE TRUE-ABSENCE FACE (proven by the audit's source toggle,
+    // not by a twin — and the twin attempt below is WHY): deleting
+    // `caption: p.prompt` at music3 actions reds this arm with a
+    // phase-1 REFUSAL before any receipt is judged (verbatim toggle
+    // red-output, recorded on the registry row's receipt):
+    //   "card_compose phase 1: missing-required: card 'music' built
+    //    node 'MiniMaxMusic3TextEncode.0' (MiniMaxMusic3TextEncode)
+    //    without its declared-required input 'caption'".
+    // A binding-level twin CANNOT replicate it: `delete q.prompt`
+    // feeds the action caption: undefined, and the required gate is
+    // presence-keyed (the key rides with an undefined value) — the
+    // compose RESOLVES and the receipt judges it as unwired
+    // carriage (prompt dropped), the carriage twin's face above. So
+    // the true-absent drop is refusal-gated (loud, field-named)
+    // while the present-but-unwired drop is receipt-gated (partial,
+    // field-named) — both faces named, neither silent. (A
+    // delete-then-rejects assertion was tried here and FAILED
+    // honest with "Missing expected rejection" — the gate's
+    // presence-keying is documented, not pinned: a wart for a
+    // future gate-tightening row, not this wall's law to enshrine.)
   });
 });
