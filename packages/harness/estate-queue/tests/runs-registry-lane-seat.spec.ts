@@ -81,7 +81,8 @@ describe("the runs door through the lane's models seat", () => {
     // sweep); FAMILY_PKGS is the load table the provider mounts
     // and the transactional gate pins familyCount to it, so the seat
     // equals the census by construction.
-    assert.equal(seat.allDecls().length, 30, "the booted table, not a bare service (the FAMILY_PKGS census)");
+    // 30 -> 31 (2026-11-07, the operator's drop): moss-image joins FAMILY_PKGS.
+    assert.equal(seat.allDecls().length, 31, "the booted table, not a bare service (the FAMILY_PKGS census)");
     const err = await remote(() =>
       svc.start({ draft_id: "d1", test: false, flow: "fit-seat" }, new AbortController().signal),
     );

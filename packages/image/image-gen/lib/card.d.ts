@@ -12,7 +12,7 @@ import type { SemanticModelEntry } from '@melite/comfyui-card-kit/semanticModelK
  *  plugin; a rename breaks at tsc, never silently at the
  *  not-boarded refusal. The model-knob enum, the tool default, and
  *  the registry row all derive from this array. */
-export declare const BOARDED: readonly [string, string, string, string, string];
+export declare const BOARDED: readonly [string, string, string, string, string, string];
 /** The served style enum (the semantic model knob): entries derived
  *  from the same five DECLs — labels are their own copy, values
  *  are stable family:variant:cell addresses, routes resolve

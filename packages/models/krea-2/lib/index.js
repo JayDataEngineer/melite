@@ -116,6 +116,123 @@ export const DECL = {
                 }
             ]
         },
+        // THE KROMA LANES (operator drop, 2026-11-07): lodestones' Kroma
+        // — the Krea-2 checkpoint fine-tuned with Chroma's OPD distill.
+        // Two lanes, one family, distinct route addresses per lane (the
+        // h3-singularity law): the turbo lane rides the OPD-distilled
+        // weights (8 steps at flow shift 1.15 — the distill's own
+        // sampling marriage; a stated negative composes but buys nothing
+        // on distilled weights, so the honest run is clean), the base
+        // lane keeps negatives fully functional at CFG 3.5-5. Both lanes
+        // declare the shift per-variant (the merged lane_inputs feed the
+        // t2i action's ModelSamplingAuraFlow arm — the family's 0 is the
+        // present-and-inert spelling, 1.15 is the live arm).
+        {
+            "id": "kroma",
+            "label": "Kroma",
+            "hint": "Kroma Turbo — the Chroma-OPD distilled Krea-2: 8 steps at shift 1.15, run it clean (negatives do nothing on the distill). INT8 ConvRot DEFAULT.",
+            "group": "Variant",
+            "route": "kroma",
+            "order": 2,
+            "sampler_envelope": {
+                "steps": [4, 8],
+                "cfg": [1, 2]
+            },
+            "resolver_defaults": {
+                "model": "kroma",
+                // The kroma face declared, never inherited (the
+                // variant-sampler-defaults law): 8 / 1 — the distilled
+                // marriage, same cascade as the turbo route.
+                "steps": 8,
+                "cfg": 1
+            },
+            "lane_inputs": {
+                "sampling_shift": 1.15
+            },
+            // The anima per-quant law: the int8 convrot and the bf16 are
+            // DIFFERENT files, so each cell names its own unet and its own
+            // route address — the lane's unet spelling follows the cell,
+            // never the variant.
+            "cells": [
+                {
+                    "quant": "int8",
+                    "label": "INT8 ConvRot",
+                    "route": "kroma-int8",
+                    "lane_inputs": {
+                        "unet": "kroma-v0.3.1-turbo-opd-int8-convrot.safetensors"
+                    },
+                    "artifact": {
+                        "source_url": "https://huggingface.co/silveroxides/Kroma-Quant/resolve/main/kroma-v0.3.1-turbo-opd-int8-convrot.safetensors",
+                        "size_bytes": 14135109816,
+                        "sha256": "36afdaeeea578ea577ae151fb2f9b58836b2a0538acf1cede74244cdbb5cfdd4",
+                        "dest_root": "COMFYUI_ROOT",
+                        "dest_sub": "diffusion_models",
+                        "size_hint_gb": 14.2
+                    }
+                },
+                {
+                    "quant": "bf16",
+                    "label": "BF16",
+                    "route": "kroma-bf16",
+                    "lane_inputs": {
+                        "unet": "kroma-v0.3.1-turbo-opd.safetensors"
+                    },
+                    "artifact": {
+                        "source_url": "https://huggingface.co/lodestones/Kroma/resolve/main/kroma-v0.3.1-turbo-opd.safetensors",
+                        "size_bytes": 26283332880,
+                        "sha256": "3cfb5bc847c804ea8e8f894677f7e16ebe4c9ff0f978896cc5e7eb1e64fc7d82",
+                        "dest_root": "COMFYUI_ROOT",
+                        "dest_sub": "diffusion_models",
+                        "size_hint_gb": 26.3
+                    }
+                }
+            ]
+        },
+        {
+            "id": "kroma-base",
+            "label": "Kroma Base",
+            "hint": "Kroma base checkpoint — 25-35 steps at CFG 3.5-5, negatives fully functional. The dtype-mapped BF16 tier (upstream's fp32 original is a 51GB impracticality).",
+            "group": "Variant",
+            "route": "kroma-base",
+            "order": 3,
+            "sampler_envelope": {
+                "steps": [25, 35],
+                "cfg": [3.5, 5]
+            },
+            "resolver_defaults": {
+                "model": "kroma-base",
+                // The base face declared, never inherited: 28 / 4 — the
+                // non-distilled marriage, mid-envelope.
+                "steps": 28,
+                "cfg": 4
+            },
+            "lane_inputs": {
+                "sampling_shift": 1.15
+            },
+            "cells": [
+                {
+                    "quant": "bf16",
+                    "label": "BF16 (dtype-mapped)",
+                    // THE BASE TIER'S ONE CELL (the single-cell house pattern —
+                    // krea-2 turbo/raw, the klein tiers): no int8 quant exists
+                    // upstream for v0.3-base; the fp32 original (51GB) is not a
+                    // servable artifact. silveroxides' dtype-mapped bf16 IS the
+                    // base — the file's own spelling is kept verbatim.
+                    "route": "kroma-base",
+                    "lane_inputs": {
+                        "unet": "kroma-v0.3-base-dtype-mapped.safetensors"
+                    },
+                    "artifact": {
+                        "source_url": "https://huggingface.co/silveroxides/Kroma-Quant/resolve/main/kroma-v0.3-base-dtype-mapped.safetensors",
+                        "size_bytes": 26284337464,
+                        "sha256": "83a275d770d7b730b341aab35a1001ff22f12aa6e80310843299751b42f6f81b",
+                        "dest_root": "COMFYUI_ROOT",
+                        "dest_sub": "diffusion_models",
+                        "size_hint_gb": 26.3
+                    }
+                }
+            ]
+        },
         {
             "id": "realism",
             "label": "Realism",
@@ -170,7 +287,7 @@ export const DECL = {
         {
             "id": "Variant",
             "label": "Variant",
-            "tooltip": "Base checkpoint — Turbo (8-step distilled, fast/photorealistic) or Raw (52-step base, for LoRA training).",
+            "tooltip": "Base checkpoint — Turbo (8-step distilled, fast/photorealistic), Raw (52-step base, for LoRA training), or the Kroma lanes (the Chroma-OPD fine-tune: Turbo distilled 8-step, or Base with working negatives).",
         },
         {
             "id": "Quant",

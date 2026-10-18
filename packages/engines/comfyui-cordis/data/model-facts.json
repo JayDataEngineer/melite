@@ -351,6 +351,9 @@
     "krea-2": {
       "card": "image-gen"
     },
+    "moss-image": {
+      "card": "image-gen"
+    },
     "moss-sfx": {
       "card": "sfx"
     },

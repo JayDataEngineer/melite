@@ -338,6 +338,14 @@ export default defineConfig({
             },
           },
           maxWorkers: 4,
+          // ITS OWN GROUP (vitest 4 groupSpecs): two projects at the
+          // same sequence.groupOrder may not differ in maxWorkers —
+          // this pool's cap of 4 vs the default elsewhere refused
+          // every unfiltered `vitest run` (the battery's fleet seat)
+          // at the scheduler, before any test imported. Group 1
+          // orders the pool after group 0 in that run; per-project
+          // processes (`--project walls`) compare nothing.
+          sequence: { groupOrder: 1 },
           include: ['tests/walls/ts/suites/**/*.spec.ts'],
           exclude: [
             // the typecheck lane's two full-estate tsc suites — the

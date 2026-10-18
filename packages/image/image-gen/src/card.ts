@@ -25,6 +25,7 @@ import { DECL as zImageDecl } from '@melite/models-z-image'
 import { DECL as animaDecl } from '@melite/models-anima'
 import { DECL as qwenImg21Decl } from '@melite/models-qwen-img-21'
 import { DECL as fluxKleinDecl } from '@melite/models-flux-klein'
+import { DECL as mossImageDecl } from '@melite/models-moss-image'
 import { semanticModelEntries } from '@melite/comfyui-card-kit/semanticModelKnob'
 import type { SemanticModelEntry } from '@melite/comfyui-card-kit/semanticModelKnob'
 import { bag } from '@melite/contracts/extraKeys'
@@ -36,7 +37,7 @@ import { bag } from '@melite/contracts/extraKeys'
  *  plugin; a rename breaks at tsc, never silently at the
  *  not-boarded refusal. The model-knob enum, the tool default, and
  *  the registry row all derive from this array. */
-export const BOARDED = [krea2Decl.id, zImageDecl.id, animaDecl.id, qwenImg21Decl.id, fluxKleinDecl.id] as const
+export const BOARDED = [krea2Decl.id, zImageDecl.id, animaDecl.id, qwenImg21Decl.id, fluxKleinDecl.id, mossImageDecl.id] as const
 
 /** The served style enum (the semantic model knob): entries derived
  *  from the same five DECLs — labels are their own copy, values
@@ -44,7 +45,7 @@ export const BOARDED = [krea2Decl.id, zImageDecl.id, animaDecl.id, qwenImg21Decl
  *  estate-side. One source: the tool face serves THIS, never a
  *  second hand-written list. */
 export const SEMANTIC_MODELS: readonly SemanticModelEntry[] = semanticModelEntries([
-  krea2Decl, zImageDecl, animaDecl, qwenImg21Decl, fluxKleinDecl,
+  krea2Decl, zImageDecl, animaDecl, qwenImg21Decl, fluxKleinDecl, mossImageDecl,
 ])
 
 /** The action bindings (the atom vocabulary, stroke-1 pilot): a
@@ -90,6 +91,9 @@ export const ACTION_BINDINGS: Record<string, (p: Record<string, unknown>, model:
   },
   [fluxKleinDecl.id]: (p, model, g, runId) => {
     instantiateAction(declaredAction(fluxKleinDecl, 't2i'), p, model, g, runId)
+  },
+  [mossImageDecl.id]: (p, model, g, runId) => {
+    instantiateAction(declaredAction(mossImageDecl, 't2i'), p, model, g, runId)
   },
 }
 
@@ -200,7 +204,7 @@ export function registerCard(ctx: Context, comfy: ComfyUIServiceFace): void {
       }
       else {
         throw new Error(
-          `no declared action for family '${String(model.family ?? model.id)}' on the image-gen card — every boarded family (krea-2, z-image, anima, qwen-img-21, flux-klein) composes its own declared segment; this address owns none`)
+          `no declared action for family '${String(model.family ?? model.id)}' on the image-gen card — every boarded family (krea-2, z-image, anima, qwen-img-21, flux-klein, moss-image) composes its own declared segment; this address owns none`)
       }
     },
     finalize: finalizeImageGen,

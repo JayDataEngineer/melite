@@ -47,6 +47,8 @@
     "contract": "node scripts/contracts.mjs",
     "lint": "node tools/arch-lint.ts",
     "test:docs": "node tools/check-package-readmes.mjs",
+    "docs:dev": "pnpm --filter @melite/docs run dev",
+    "docs:build": "pnpm --filter @melite/docs run build",
     "provision": "node --experimental-strip-types --no-warnings packages/engines/comfyui-cordis/scripts/provision.ts",
     "release:mint": "node tools/release-artifacts.mjs mint",
     "release:rehearse": "node tools/release-rehearsal.mjs",

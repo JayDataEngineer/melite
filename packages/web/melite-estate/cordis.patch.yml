@@ -67,6 +67,8 @@
       name: '@melite/models-krea-2'
     - id: family-mask
       name: '@melite/models-mask'
+    - id: family-moss-image
+      name: '@melite/models-moss-image'
     - id: family-qwen-img-21
       name: '@melite/models-qwen-img-21'
     - id: family-qwen-img-edit-21

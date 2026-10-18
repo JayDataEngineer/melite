@@ -416,6 +416,8 @@ export const COVERAGE_BASELINE: Record<string, {
   '**/packages/models/florence2/src/index.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/models/flux-klein/src/actions.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/models/flux-klein/src/index.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
+  '**/packages/models/moss-image/src/actions.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
+  '**/packages/models/moss-image/src/index.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/models/gem-soma/src/actions.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/models/gem-soma/src/index.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/models/h3/src/actions.ts': { statements: 98.31, branches: 95.35, functions: 100, lines: 100 },

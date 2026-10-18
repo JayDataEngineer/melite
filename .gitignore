@@ -104,6 +104,13 @@ plugins/web/editor/public/vendor/build/
 # preview/ would leak — dir rule makes the intent explicit.
 plugins/web/dsh/skins/**/preview/
 
+# === Docs site (the VitePress projection's disposable trees — the
+# canonical sources live in docs/ and README.md and stay tracked;
+# scripts/project-docs.mjs owns the generated tree) ===
+website/.generated/
+website/.cache/
+website/.dist/
+
 # === session scratch (kept on disk, out of git) ===
 # Root-anchored: the bare `drafts/` rule accidentally ignored the
 # packages/estate/drafts PACKAGE (its src went unversioned through

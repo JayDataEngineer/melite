@@ -1,5 +1,11 @@
 # inference.cpp
 
+[![License: AGPL v3](https://img.shields.io/badge/License-AGPL%20v3-blue.svg)](LICENSE)
+[![docs](https://img.shields.io/github/actions/workflow/status/OWNER/REPO/docs.yml?branch=main&label=docs)](https://github.com/OWNER/REPO/actions/workflows/docs.yml)
+[![tests](https://img.shields.io/github/actions/workflow/status/OWNER/REPO/tests.yml?branch=main&label=tests)](https://github.com/OWNER/REPO/actions/workflows/tests.yml)
+[![Release](https://img.shields.io/github/v/release/OWNER/REPO)](https://github.com/OWNER/REPO/releases)
+<!-- OWNER/REPO above is a placeholder: one find-replace when the public remote lands. -->
+
 Melite is an agent media-creation kit. Users and agents compose cards on a
 shared bench; the estate validates the card, queues one run, calls ComfyUI or
 another engine, and serves the resulting artifacts. A card can contain
@@ -247,6 +253,17 @@ checkout is available.
 | `vendor/cordis_plugins/` | pinned Cordis platform packages |
 | `references/` | read-only study material; the DSH reference checkout is external |
 | `dev_docs/` | developer-local material (untracked): working plan, ledger, audits, runbooks |
+
+## Documentation
+
+The public documentation site is a VitePress projection of this
+repository's Markdown — canonical sources live in [`docs/`](docs/) and
+this README; `website/docs.mjs` is the explicit public allowlist and
+`scripts/project-docs.mjs` the projector. The site builds and publishes
+to GitHub Pages by [`.github/workflows/docs.yml`](.github/workflows/docs.yml).
+Develop locally with `pnpm run docs:dev`; build with `pnpm run docs:build`
+(local preview builds set `DOCS_REPO_SLUG=<owner>/<repo>` so out-of-manifest
+links project to GitHub URLs).
 
 ## Documentation rules
 

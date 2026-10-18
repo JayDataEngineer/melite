@@ -398,6 +398,15 @@
   "@melite/models-mask": [
     "./packages/models/mask/src/index.ts"
   ],
+  "@melite/models-moss-image": [
+    "./packages/models/moss-image/src/index.ts"
+  ],
+  "@melite/models-moss-image/mods/loras": [
+    "./packages/models/moss-image/mods/loras.ts"
+  ],
+  "@melite/models-moss-image/mods/mask": [
+    "./packages/models/moss-image/mods/mask.ts"
+  ],
   "@melite/models-moss-sfx": [
     "./packages/models/moss-sfx/src/index.ts"
   ],

@@ -1,7 +1,7 @@
 {
   "tag": "v0.1.5-pre-alpha",
   "version": "0.1.5-pre-alpha",
-  "count": 76,
+  "count": 77,
   "names": [
     "@melite-plugin/dsh-card-deck",
     "@melite-plugin/dsh-card-view",
@@ -59,6 +59,7 @@
     "@melite/models-kimodo",
     "@melite/models-krea-2",
     "@melite/models-mask",
+    "@melite/models-moss-image",
     "@melite/models-moss-sfx",
     "@melite/models-music3",
     "@melite/models-pixal3d",

@@ -238,6 +238,10 @@ describe("the resurrected model registry (families/variants/cells/links)", () =>
   "flux-klein",
   "flux-klein-base",
   "h3",
+  // 2026-10-17, the Singularity checkpoint: the h3 timeline lane's
+  // second checkpoint rides the same untyped carve (its weights'
+  // origin is the pinned provision row), under its own route address.
+  "h3-singularity",
   "h3-timeline",
   "input",
   "joycaption",
@@ -245,6 +249,15 @@ describe("the resurrected model registry (families/variants/cells/links)", () =>
   "kimodo",
   "krea-2",
   "krea-2-raw",
+  // 2026-11-07, the operator's drop: the two Kroma lanes' variant +
+  // cell routes and moss-image's variant + bf16 cell route ride the
+  // same untyped carve (the weights' origin is the cell artifacts).
+  "kroma",
+  "kroma-base",
+  "kroma-bf16",
+  "kroma-int8",
+  "moss-image",
+  "moss-image-bf16",
   "moss-sfx",
   "pixal3d",
   "pixal3d-bf16",
@@ -321,6 +334,10 @@ describe("the resurrected model registry (families/variants/cells/links)", () =>
       "flux-klein",
       "h3",
       "krea-2",
+      // 2026-11-07, the operator's drop: moss-image boards mask +
+      // the loras pack (the every-image-family law — the klein-style
+      // seed, rows land with the first adapter).
+      "moss-image",
       "qwen-img-21",
       "qwen-img-edit-21",
       "qwen-img-edit-2511",
@@ -439,7 +456,13 @@ describe("the resurrected model registry (families/variants/cells/links)", () =>
     // folds never carried cells, so only five serving rows die.
     // 57 -> 59 (2026-10-16, the anima three checkpoints): the f32
     // standard row dies, base/turbo/aesthetic serve (-1 +3).
-    assert.equal(variants, 59); // +2: fit + skin's Standard rows (stroke 4 — the unoffered verb families each declare one)
+    // 59 -> 60 (2026-10-17, the Singularity checkpoint row): the h3
+    // timeline lane serves the community fine-tune beside the hybrid
+    // — a checkpoint axis on ONE lane, not a re-served model.
+    // 60 -> 63 (2026-11-07, the operator's drop): krea-2 serves the
+    // two Kroma lanes beside turbo/raw, and moss-image lands with its
+    // one sft lane.
+    assert.equal(variants, 63); // +2: fit + skin's Standard rows (stroke 4 — the unoffered verb families each declare one)
     // 85 -> 84 (2026-10-13, the autoremesher excision): the family's
     // one cell left with the pack the owner removed.
     // 84 -> 86 (2026-10-23): the turbo cells join (turbo_int8_convrot + turbo_bf16).
@@ -456,6 +479,11 @@ describe("the resurrected model registry (families/variants/cells/links)", () =>
     // retirements.
     // 65 -> 70 (2026-10-16, the anima three checkpoints): the one
     // f32 cell dies, six int8/bf16 cells serve (-1 +6).
-    assert.equal(cells, 70);
+    // 70 -> 71 (2026-10-17): the Singularity int8 pruned cell joins
+    // the h3 timeline lane.
+    // 71 -> 76 (2026-11-07, the operator's drop): kroma's two turbo
+    // quants + kroma-base's dtype-mapped cell (3) and moss-image's
+    // int8 + bf16 pair (2) join.
+    assert.equal(cells, 76);
   });
 });

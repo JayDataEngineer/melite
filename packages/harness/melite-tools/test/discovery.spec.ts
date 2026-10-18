@@ -1071,7 +1071,8 @@ describe('the agent contract carries the lane contract', () => {
     }
     if (undeclaring === undefined) throw new Error('the img-to-mesh manifest serves')
     expect(undeclaring['lanes'], 'a card whose families declare nothing says so by absence').toBeUndefined()
-    // image-gen's five families declare their params since c8ea293f
+    // image-gen's six families declare their params since c8ea293f
+    // (moss-image joins 2026-11-07)
     // (the DECL is the face one truth) — the manifest gate serves the
     // lane contract for every declaring family, never a hand row.
     const tools = await cardToolsArm() as Array<Record<string, unknown>>
@@ -1079,7 +1080,7 @@ describe('the agent contract carries the lane contract', () => {
     if (create === undefined) throw new Error('the image-gen manifest serves')
     const lanes = create['lanes'] as Record<string, unknown> | undefined
     expect(lanes, 'the create card serves lanes for its declaring families').toBeDefined()
-    expect(Object.keys(lanes ?? {}).sort()).toEqual(['anima', 'flux-klein', 'krea-2', 'qwen-img-21', 'z-image'])
+    expect(Object.keys(lanes ?? {}).sort()).toEqual(['anima', 'flux-klein', 'krea-2', 'moss-image', 'qwen-img-21', 'z-image'])
   })
 
   test('a boarded family whose DECL cannot resolve serves no lane key — the manifest never breaks', async () => {
@@ -1103,7 +1104,7 @@ describe('the agent contract carries the lane contract', () => {
     expect(create['params_schema'], 'the row serves past the unresolvable lane').toBeDefined()
     const lanes = create['lanes'] as Record<string, unknown> | undefined
     expect(lanes, 'the surviving declaring families keep their lanes').toBeDefined()
-    expect(Object.keys(lanes ?? {}).sort()).toEqual(['flux-klein', 'krea-2', 'qwen-img-21', 'z-image'])
+    expect(Object.keys(lanes ?? {}).sort()).toEqual(['flux-klein', 'krea-2', 'moss-image', 'qwen-img-21', 'z-image'])
   })
 })
 

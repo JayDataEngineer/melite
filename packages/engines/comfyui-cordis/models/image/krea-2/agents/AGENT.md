@@ -12,7 +12,7 @@ the brief says stylized, not photoreal.
 
 ## The variant rail (THE LAW — never fight it)
 
-TWO checkpoints, each owning its sampler marriage. Pick the route,
+FOUR checkpoints, each owning its sampler marriage. Pick the route,
 let it marry; never hand-stamp steps/cfg against a distilled lane.
 
 - **turbo** (DEFAULT): the 8-step distilled checkpoint. Family
@@ -24,6 +24,15 @@ let it marry; never hand-stamp steps/cfg against a distilled lane.
   marries steps 52, cfg 3.5 (resolver_defaults); declared envelope
   steps [30, 60] / cfg [2, 6]. Use it when a lora demands its
   training base or the brief wants the full schedule.
+- **kroma**: the Chroma-OPD distilled Krea-2 fine-tune. Its route
+  marries steps 8, cfg 1; declared envelope steps [4, 8] / cfg
+  [1, 2]; flow shift 1.15 rides the lane. The distill trained
+  without negatives — run it clean; a stated negative buys nothing.
+  INT8 ConvRot is the default quant, BF16 the fidelity tier.
+- **kroma-base**: the Kroma base checkpoint (negatives fully
+  functional). Its route marries steps 28, cfg 4; declared envelope
+  steps [25, 35] / cfg [3.5, 5]; flow shift 1.15. The dtype-mapped
+  BF16 tier (upstream's fp32 original is a 51GB impracticality).
 
 ## The loras (raw-trained; fire on both routes via the bag)
 

@@ -54,7 +54,17 @@ import { describe, it } from "vitest";
 // 51 -> 59 (2026-10-16, the anima three checkpoints): base keeps
 // route anima; turbo + aesthetic add variant routes and all three
 // add int8/bf16 cell routes (8 new served addresses).
-const SERVED_ADDR_CENSUS = 59
+// 59 -> 60 (2026-10-17, the Singularity checkpoint): the h3 timeline
+// lane's second checkpoint takes its own variant route address
+// (h3-singularity; the krea-2 raw-lane precedent — two lanes, one
+// family, distinct route addresses per lane).
+// 60 -> 66 (2026-11-07, the operator's drop): krea-2 serves the two
+// Kroma lanes (variant route kroma + the int8/bf16 cell routes
+// kroma-int8/kroma-bf16, and kroma-base whose single cell shares its
+// route) and moss-image lands (variant route moss-image + the bf16
+// cell route moss-image-bf16; the int8 cell shares the variant
+// route).
+const SERVED_ADDR_CENSUS = 66
 // 24 -> 25 (2026-10-22, audit 006/U1): flux-klein claims its own
 // atom (the family's routes resolve to its declared owners)
 // 25 -> 24 (2026-10-13, the autoremesher excision — the pack the owner removed from the system)
@@ -63,7 +73,10 @@ const SERVED_ADDR_CENSUS = 59
 // five addresses survive as qwen3-tts cell routes (the FOLD LAW),
 // so the served-address census is unmoved at 67 while the owner
 // census drops one)
-const OWNER_ATOM_CENSUS = 23
+// 23 -> 24 (2026-11-07, the operator's drop): moss-image claims its
+// own atom (the kroma lanes ride the krea-2 atom — variants, not
+// families).
+const OWNER_ATOM_CENSUS = 24
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -669,7 +682,8 @@ describe("models against cards (the cross-validation, resurrected)", () => {
     // Every real DECL provision row declares its size.
     // A row omitting size_bytes refuses here.
     // The declaring split is
-    // EXACT both ways: 18 families declare provisions, and the served
+    // EXACT both ways: 19 families declare provisions (2026-11-07: moss-image
+    // joins), and the served
     // side of the split is this arm's own census below (declarers∩
     // served, every declarer serves) — the provisioner-catalog carve
     // is enumerated here, not deferred.
@@ -677,7 +691,7 @@ describe("models against cards (the cross-validation, resurrected)", () => {
     // mirrored skin npz row — its lane loads the file kimodo's
     // receipt minted) and 60 -> 61 rows.
     const PROVISION_DECLARERS = ["anima", "anny", "flux-klein", "h3", "joytag", "kimodo",
-      "krea-2", "mask-select", "music3", "pixal3d", "qwen-img-21", "qwen-img-edit-21",
+      "krea-2", "mask-select", "moss-image", "music3", "pixal3d", "qwen-img-21", "qwen-img-edit-21",
       "qwen-img-edit-2511", "seedvr2-ema", "transfer-rig",
       "trellis2-native", "yue2", "z-image"];
     // the rows those families declare, exactly (D-M12: a floor let a
@@ -702,7 +716,13 @@ describe("models against cards (the cross-validation, resurrected)", () => {
     // 70 -> 68 (2026-10-31, the template-fidelity cure): birefnet left
     // pixal3d + trellis2-native — the mask bridge is not in the
     // official template lane, so its provision row is gone per family.
-    const PROVISION_ROW_COUNT = 68;
+    // 68 -> 69 (2026-10-17, the Singularity checkpoint row): the h3
+    // timeline lane's second checkpoint adds its pinned provision.
+    // 69 -> 71 (2026-11-07, the operator's drop): moss-image
+    // provisions the shared split files — the qwen3.5_9b tokenizer +
+    // the flux2 vae (byte-identical to flux-klein's row: same digest,
+    // one download serves both lanes).
+    const PROVISION_ROW_COUNT = 71;
     const declarers: string[] = [];
     let judged = 0;
     for (const id of registryIds()) {
@@ -757,7 +777,7 @@ describe("models against cards (the cross-validation, resurrected)", () => {
     // THE MASK ORDER (operator 2026-11-07): the MASK mod serves on
     // EVERY img-gen model — the 2.1-only MASK-C roster is history.
     const MASK_DECLARERS = [
-      "anima", "flux-klein", "krea-2", "qwen-img-21",
+      "anima", "flux-klein", "krea-2", "moss-image", "qwen-img-21",
       "qwen-img-edit-21", "qwen-img-edit-2511", "z-image",
     ];
     const declarers: string[] = [];
@@ -828,7 +848,7 @@ describe("models against cards (the cross-validation, resurrected)", () => {
     // 21 -> 14, 17 -> 10 (2026-10-12, the operator's five-family
     // kill): ace-step's 4 and moss's 3 per-cell gguf artifacts and
     // their 7 distinct upstream urls die with the families.
-    const ARTIFACT_ROW_COUNT = 21 - 7 + 5; // +2 (2026-10-23, the operator's turbo call): the qwen 2.1 turbo cells // +2 (2026-10-24, THE 2.1 MATRIX RESHAPE): the edit lane's turbo cells join with the fold // +5 (2026-10-16, the anima three checkpoints): three Bedovyy convrot + two official bf16
+    const ARTIFACT_ROW_COUNT = 21 - 7 + 5 + 5; // +2 (2026-10-23, the operator's turbo call): the qwen 2.1 turbo cells // +2 (2026-10-24, THE 2.1 MATRIX RESHAPE): the edit lane's turbo cells join with the fold // +5 (2026-10-16, the anima three checkpoints): three Bedovyy convrot + two official bf16 // +5 (2026-11-07, the operator's drop): kroma's two turbo quants + kroma-base's dtype-mapped cell, and moss-image's int8 + bf16 pair
     const artifacts: Array<{ id: string; url: string }> = [];
     for (const id of registryIds()) {
       const decl = registryModel(id) as { variants?: Array<{ cells?: Array<{ artifact?: unknown }> }> };
@@ -863,8 +883,8 @@ describe("models against cards (the cross-validation, resurrected)", () => {
     // base/turbo/aesthetic ride five per-cell downloads (three
     // Bedovyy convrot + two official bf16; base bf16 stays a
     // provisions row).
-    assert.deepEqual(ARTIFACT_DECLARERS, ["anima", "flux-klein", "krea-2", "qwen-img-21", "qwen-img-edit-21", "qwen-img-edit-2511"],
-      `the artifact declarers are the named 6 (saw ${ARTIFACT_DECLARERS.join(", ")}) — a family starting or stopping its cell-artifact channel is a deliberate edit`);
+    assert.deepEqual(ARTIFACT_DECLARERS, ["anima", "flux-klein", "krea-2", "moss-image", "qwen-img-21", "qwen-img-edit-21", "qwen-img-edit-2511"],
+      `the artifact declarers are the named 7 (saw ${ARTIFACT_DECLARERS.join(", ")}) — a family starting or stopping its cell-artifact channel is a deliberate edit`);
     assert.equal(artifacts.length, ARTIFACT_ROW_COUNT,
       `the variant-cell artifact rows are exactly ${String(ARTIFACT_ROW_COUNT)} (saw ${String(artifacts.length)}) — a cell appearing or leaving is a deliberate edit`);
     // deduped by url the same way the union walk dedupes —
@@ -884,7 +904,11 @@ describe("models against cards (the cross-validation, resurrected)", () => {
     assert.deepEqual(roster, {
       "anima": 5,
       "flux-klein": 2,
-      "krea-2": 2,
+      // 2026-11-07, the operator's drop: krea-2's five cells (turbo +
+      // raw int8s + kroma's two turbo quants + the base tier),
+      // moss-image's two quants.
+      "krea-2": 5,
+      "moss-image": 2,
       "qwen-img-21": 4,
       "qwen-img-edit-21": 4,
       "qwen-img-edit-2511": 2,
@@ -1559,7 +1583,12 @@ describe("THE TWO-HOMES BOUNDS-SYNC WALL (card schema == action ParamSpec, every
     // "enum", options: [...SCALE_MODEL_OPTIONS]` — the one-truth
     // roster on both planes); offenders stay empty, only this pin
     // lagged.
-    assert.equal(pairs, 655, "the shared-name pair census changed — update this pin deliberately");
+    // 655 -> 664 (2026-11-07, the operator's drop): the image-gen
+    // card boards moss-image — its t2i surface's nine shared names
+    // (prompt, negative_prompt, width, height, seed, steps, cfg,
+    // sampler, scheduler) join on the one new address; offenders
+    // stay empty.
+    assert.equal(pairs, 664, "the shared-name pair census changed — update this pin deliberately");
     assert.deepEqual(offenders, [], `two-homes drift (card schema vs action ParamSpec):\n${offenders.join("\n")}`);
   });
 });

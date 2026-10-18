@@ -185,6 +185,7 @@ export const composeModPlane = async (ctx) => {
         ['@melite/models-qwen-img-21/mods/loras', 'qwen-img-21 loras'],
         ['@melite/models-anima/mods/loras', 'anima loras'],
         ['@melite/models-flux-klein/mods/loras', 'flux-klein loras'],
+        ['@melite/models-moss-image/mods/loras', 'moss-image loras'],
         ['@melite/models-qwen-img-edit-21/mods/loras', 'qwen-img-edit-21 loras'],
         ['@melite/models-z-image/mods/controlnet', 'z-image controlnet'],
         ['@melite/models-z-image/mods/ip_adapter', 'z-image ip_adapter'],
@@ -214,6 +215,7 @@ export const composeModPlane = async (ctx) => {
         ['@melite/models-anima/mods/mask', 'anima mask'],
         ['@melite/models-flux-klein/mods/mask', 'flux-klein mask'],
         ['@melite/models-krea-2/mods/mask', 'krea-2 mask'],
+        ['@melite/models-moss-image/mods/mask', 'moss-image mask'],
         ['@melite/models-z-image/mods/mask', 'z-image mask'],
     ];
     for (const [specifier, label] of packagedFlavors) {

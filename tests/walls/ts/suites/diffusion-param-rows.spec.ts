@@ -31,6 +31,7 @@ import { t2i as krea2T2I } from "../../../../packages/models/krea-2/src/actions.
 import { edit as edit21 } from "../../../../packages/models/qwen-img-edit-21/src/actions.ts";
 import { edit as edit2511 } from "../../../../packages/models/qwen-img-edit-2511/src/actions.ts";
 import { t2i as fluxKleinT2I } from "../../../../packages/models/flux-klein/src/actions.ts";
+import { t2i as mossImageT2I } from "../../../../packages/models/moss-image/src/actions.ts";
 
 /** The text-to-image surface: the factory's defaults, in full. */
 const T2I_ROWS = diffusionParamRows();
@@ -74,13 +75,14 @@ const ADOPTERS = readdirSync(modelsDir).filter((f) => {
 
 describe("the shared diffusion param surface (one home)", () => {
   it("every tree adopter is asserted by name here (the census is the tree, not this file)", () => {
-    const asserted = new Set(["qwen-img-21", "z-image", "anima", "krea-2", "qwen-img-edit-21", "qwen-img-edit-2511", "flux-klein"]);
+    const asserted = new Set(["qwen-img-21", "z-image", "anima", "krea-2", "qwen-img-edit-21", "qwen-img-edit-2511", "flux-klein", "moss-image"]);
     assert.deepEqual(
       ADOPTERS.filter((f) => !asserted.has(f)),
       [],
       "a family spreads diffusionParamRows() but has no named assertion in this wall — add its expectations",
     );
-    assert.deepEqual(ADOPTERS.length, 7, "the adopter census changed — update this pin and the named assertions together");
+    // 7 -> 8 (2026-11-07, the operator's drop): moss-image spreads the factory.
+    assert.deepEqual(ADOPTERS.length, 8, "the adopter census changed — update this pin and the named assertions together");
   });
 
   it("the five text-to-image families declare the factory's rows, not a hand copy", () => {
@@ -90,6 +92,7 @@ describe("the shared diffusion param surface (one home)", () => {
       ["anima", animaT2I, []],
       ["krea-2", krea2T2I, []],
       ["flux-klein", fluxKleinT2I, QWEN21_OWN_TAIL],
+      ["moss-image", mossImageT2I, []],
     ] as const) {
       assert.deepEqual(
         action.params,

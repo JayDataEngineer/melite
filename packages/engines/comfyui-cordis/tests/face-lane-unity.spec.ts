@@ -80,10 +80,11 @@ const REGISTERED_DIVERGENCES: ReadonlyArray<{
   // gate (a stated list refuses on every other family — the
   // encoder lane owns the port), but the shared schema dict serves
   // the knob on every boarding family so the frozen form_spec
-  // field order holds. These four DECLs deliberately declare no
+  // field order holds. These five DECLs deliberately declare no
   // reference port (flux-klein's lane-surface comment names the
-  // law). Cure rides UNITY-1's face filter.
-  ...["krea-2", "z-image", "anima", "flux-klein"].map((family) => ({
+  // law; moss-image joins 2026-11-07 with the klein shape). Cure
+  // rides UNITY-1's face filter.
+  ...["krea-2", "z-image", "anima", "flux-klein", "moss-image"].map((family) => ({
     card: "image-gen",
     family,
     knob: "reference_images",

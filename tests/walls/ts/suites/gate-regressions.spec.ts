@@ -520,7 +520,12 @@ describe("THE COMMITTED LIB (an emitted import Node can actually resolve)", () =
   // (anima, flux-klein, krea-2, z-image: lib/mods/mask.js each) plus
   // card-kit's shared primitive (lib/mods/bare-flavor.js); the three
   // qwen families already had a mods face (collapsed re-exports).
-  const LIB_CENSUS_PIN = 590;
+  // 594 (2026-11-07): THE MOSS BOARDING — the moss-image family's
+  // first tracked lib face ships four .js (index, actions, mods/mask,
+  // mods/loras); the kroma variant rows ride krea-2's existing
+  // index.js (no new file). Deliberate adds, same-change as the
+  // moss-image DECL.
+  const LIB_CENSUS_PIN = 594;
   const specRe = /(?:from\s*|import\(\s*)(["'])(\.[^"']*)\1/g;
 
   it("the census is exact (a deletion OR a lowered floor reds — the count is pinned, not floored)", () => {

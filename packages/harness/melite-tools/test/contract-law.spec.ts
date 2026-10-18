@@ -327,7 +327,7 @@ describe('THE ESTATE CONTRACT LAWS (every card × family × mod, three faces)', 
     }))), 'the legal twin registers').not.toThrow()
   })
 
-  test('LAW 12 — THE ONE-LANE TRUTH: h3 serves exactly its own address; retired fold spellings refuse LOUD', () => {
+  test('LAW 12 — THE OWN-ADDRESS TRUTH: h3 serves exactly its declared checkpoint lanes; retired fold spellings refuse LOUD', () => {
     // THE FOLDED-LANES REWORK (2026-11-02, operator directive: "1
     // model, 1 variant, 1 quant, and 3 recipes… Default is the
     // standard"): the folded migration routes (h3-fl2va, h3-ref2va,
@@ -343,13 +343,21 @@ describe('THE ESTATE CONTRACT LAWS (every card × family × mod, three faces)', 
     // selection-tolerance catch). Old drafts naming a retired
     // address now take the CLEAN unknown-model refusal at the run
     // door — the accepted end state of a deliberate lane death.
+    // SCOPE NOTE (2026-10-17, operator clarification): the 2026-11-02
+    // ruling was a DE-DUP cleanup — fold spellings that composed the
+    // SAME weights under six addresses — not a cap of one checkpoint
+    // per lane. A second DISTINCT checkpoint (the Singularity prune,
+    // h3-singularity) joins the family under its own route address,
+    // the krea-2 raw-lane precedent: two lanes, one card. The served
+    // set is still exact — what the DECL declares, nothing else.
     const arm = arms.find((a) => a.card === 'h3-timeline' && a.family === 'h3')
     expect(arm, 'the sweep serves h3-timeline × h3').toBeDefined()
     const served = new Set(
       (arm!.doc.variants ?? []).map((r) => r.route ?? '').filter((r) => r !== ''),
     )
-    expect([...served].sort(), 'the family head plus its ONE lane serve — nothing else').toEqual(['h3', 'h3-timeline'])
+    expect([...served].sort(), 'the family head plus its TWO checkpoint lanes serve — nothing else').toEqual(['h3', 'h3-singularity', 'h3-timeline'])
     expect(() => getModel('h3-timeline'), 'the lane address derives').not.toThrow()
+    expect(() => getModel('h3-singularity'), 'the second checkpoint lane derives').not.toThrow()
     expect(() => getModel('h3'), 'the family id derives (the auto-head law)').not.toThrow()
     for (const retired of ['h3-fl2va', 'h3-ref2va', 'h3-keyframe', 'h3-timeline-ref']) {
       expect(served.has(retired), `the retired fold spelling '${retired}' must not serve`).toBe(false)

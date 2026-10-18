@@ -36,6 +36,7 @@
     "@melite/models-anima": "workspace:*",
     "@melite/models-flux-klein": "workspace:*",
     "@melite/models-krea-2": "workspace:*",
+    "@melite/models-moss-image": "workspace:*",
     "@melite/models-qwen-img-21": "workspace:*",
     "@melite/models-z-image": "workspace:*"
   },

@@ -47,6 +47,7 @@ packages:
   # is self-contained. The wall that pins this:
   # tests/walls/ts/suites/typert-artifact-law.spec.ts.
   - '!packages/vendor/typert-protocol'
+  - 'website' # THE PUBLIC DOCS SITE (VitePress projection of docs/ per the DSH website law): site chrome only — it ships no code the estate imports, so knip ignores it (knip.json ignoreWorkspaces)
 
 allowBuilds:
   '@parcel/watcher': true

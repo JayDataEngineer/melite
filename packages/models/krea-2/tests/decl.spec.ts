@@ -25,12 +25,12 @@ describe("the krea-2 model plugin (the whole model, one package)", () => {
     assert.equal(typeof family.apply, "function");
   });
 
-  it("carries its variants — turbo, raw, realism — with routes and resolver defaults", () => {
+  it("carries its variants — turbo, raw, kroma, kroma-base, realism — with routes and resolver defaults", () => {
     const ids = DECL.variants.map((v) => v.id);
     // (Rule A, 2026-09-18) the Recipe axis carries the functional
     // lora presets — turbo-distill joins the PRE-EXISTING realism
     // row (the strength-less idiom: the flavor's default 0.7)
-    assert.deepEqual(ids, ["turbo", "raw", "realism", "default", "turbo-distill"]);
+    assert.deepEqual(ids, ["turbo", "raw", "kroma", "kroma-base", "realism", "default", "turbo-distill"]);
     const raw = DECL.variants.find((v) => v.id === "raw")!;
     const rd = raw.resolver_defaults ?? {};
     assert.equal(raw.route, "krea-2-raw");
@@ -38,13 +38,41 @@ describe("the krea-2 model plugin (the whole model, one package)", () => {
     assert.equal(rd["steps"], 52);
   });
 
+  it("carries the kroma lanes — the Chroma-OPD fine-tune, distinct routes per lane, shift declared per-variant", () => {
+    // (operator drop, 2026-11-07) two lanes, one family, distinct
+    // route addresses per lane (the h3-singularity law); the
+    // required-defaults law: every Variant row declares its own
+    // steps+cfg in resolver_defaults.
+    const kroma = DECL.variants.find((v) => v.id === "kroma")!;
+    assert.equal(kroma.route, "kroma");
+    assert.deepEqual(kroma.resolver_defaults, { model: "kroma", steps: 8, cfg: 1 });
+    assert.equal((kroma.lane_inputs as Record<string, unknown>)["sampling_shift"], 1.15,
+      "the distilled lane rides the live ModelSamplingAuraFlow arm, never the family's inert 0");
+    const kromaBase = DECL.variants.find((v) => v.id === "kroma-base")!;
+    assert.equal(kromaBase.route, "kroma-base");
+    assert.deepEqual(kromaBase.resolver_defaults, { model: "kroma-base", steps: 28, cfg: 4 });
+    assert.equal((kromaBase.lane_inputs as Record<string, unknown>)["sampling_shift"], 1.15);
+    // the per-quant cell law: each cell names its own unet file and
+    // its own route address (anima precedent)
+    const cellFiles = kroma.cells.map((c) =>
+      [c.route, (c.lane_inputs as Record<string, unknown>)["unet"]]);
+    assert.deepEqual(cellFiles, [
+      ["kroma-int8", "kroma-v0.3.1-turbo-opd-int8-convrot.safetensors"],
+      ["kroma-bf16", "kroma-v0.3.1-turbo-opd.safetensors"],
+    ]);
+    assert.deepEqual(
+      [kromaBase.cells[0].route, (kromaBase.cells[0].lane_inputs as Record<string, unknown>)["unet"]],
+      ["kroma-base", "kroma-v0.3-base-dtype-mapped.safetensors"]);
+  });
+
   it("carries its quant cells — every one with its HF link, sha256, size", () => {
     const cells = DECL.variants.flatMap((v) => v.cells);
-    assert.equal(cells.length, 2, "turbo + raw, one int8 cell each");
+    // 2 -> 5 (2026-11-07, the kroma lanes): the two Kroma turbo quants
+    // + the base tier's dtype-mapped cell join turbo + raw.
+    assert.equal(cells.length, 5, "turbo + raw, one int8 cell each; kroma, two quants; kroma-base, one");
     for (const c of cells) {
       assert.ok(c.artifact!.source_url.startsWith("https://huggingface.co/"), "no link, no cell");
       assert.match(c.artifact!.sha256!, /^[0-9a-f]{64}$/);
-      assert.equal(c.artifact!.size_bytes, 13492686496);
       assert.equal(c.artifact!.dest_root, "COMFYUI_ROOT");
       assert.equal(c.artifact!.dest_sub, "diffusion_models");
     }
@@ -101,6 +129,11 @@ const CELL_ARTIFACT_PINS: ReadonlyArray<
 > = [
   ["turbo", "int8", "https://huggingface.co/Comfy-Org/Krea-2/resolve/main/diffusion_models/krea2_turbo_int8_convrot.safetensors", "8e4eeda70dd5037ab1ba2bef6b417f9f901e26093117cf397f741fc1fdaaf3f1", 13492686496, "COMFYUI_ROOT", "diffusion_models"],
   ["raw", "int8", "https://huggingface.co/Comfy-Org/Krea-2/resolve/main/diffusion_models/krea2_raw_int8_convrot.safetensors", "5585a4a38c4bcfb6fde2d480a4aa6edf7f665721ebde56d30662c35a45f5fa5c", 13492686496, "COMFYUI_ROOT", "diffusion_models"],
+  // 2026-11-07, the kroma lanes: the pins below are the HF-API lfs
+  // oids (sha256) + byte sizes, verbatim.
+  ["kroma", "int8", "https://huggingface.co/silveroxides/Kroma-Quant/resolve/main/kroma-v0.3.1-turbo-opd-int8-convrot.safetensors", "36afdaeeea578ea577ae151fb2f9b58836b2a0538acf1cede74244cdbb5cfdd4", 14135109816, "COMFYUI_ROOT", "diffusion_models"],
+  ["kroma", "bf16", "https://huggingface.co/lodestones/Kroma/resolve/main/kroma-v0.3.1-turbo-opd.safetensors", "3cfb5bc847c804ea8e8f894677f7e16ebe4c9ff0f978896cc5e7eb1e64fc7d82", 26283332880, "COMFYUI_ROOT", "diffusion_models"],
+  ["kroma-base", "bf16", "https://huggingface.co/silveroxides/Kroma-Quant/resolve/main/kroma-v0.3-base-dtype-mapped.safetensors", "83a275d770d7b730b341aab35a1001ff22f12aa6e80310843299751b42f6f81b", 26284337464, "COMFYUI_ROOT", "diffusion_models"],
 ];
 
 describe("the declared cell artifacts are pinned verbatim", () => {

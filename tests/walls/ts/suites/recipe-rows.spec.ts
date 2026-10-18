@@ -154,7 +154,9 @@ describe("the recipe schema-master (Rule A/B/C — semantic validation over the 
     // [qwen3-tts, qwen3-tts-voicedesign,
     // qwen3-tts-voicedesign-design, qwen3-tts-voicedesign-base,
     // qwen3-tts-base] are card-carried Recipe declarers: +3).
-    assert.equal(checked, 20, `the law reaches the table, exactly (checked ${String(checked)})`);
+    // 20 -> 21 (2026-11-07, the operator's drop): moss-image joins
+    // card-carried with the quick-iter stamp.
+    assert.equal(checked, 21, `the law reaches the table, exactly (checked ${String(checked)})`);
   });
 
   it("DEBT RETIRED: the 15-family census resolutions hold (stamps stamp, scoped stay scoped)", async (): Promise<void> => {

@@ -206,7 +206,14 @@ describe("the models plane feeds the compose/flows plane (A2)", () => {
     // 51 -> 59 (2026-10-16, the anima three checkpoints): base keeps
     // route anima; turbo + aesthetic variant routes and all three
     // int8/bf16 cell routes join the roster.
-    assert.equal(total, 59, `the facts roster is 59 rows (saw ${String(total)}) — a new family route is a deliberate edit`);
+    // 59 -> 60 (2026-10-17, the Singularity checkpoint): the h3
+    // timeline lane's second checkpoint takes its own variant route
+    // address (h3-singularity; two lanes, one family, distinct route
+    // addresses per lane).
+    // 60 -> 66 (2026-11-07, the operator's drop): krea-2 serves the
+    // two Kroma lanes (kroma + kroma-int8/kroma-bf16 cells +
+    // kroma-base) and moss-image lands (moss-image + moss-image-bf16).
+    assert.equal(total, 66, `the facts roster is 66 rows (saw ${String(total)}) — a new family route is a deliberate edit`);
   });
 });
 
@@ -267,7 +274,7 @@ describe("the facts FILE is pinned against the registry (E-C2)", () => {
   // 29 -> 28 (2026-11-02): the h3-keyframe row left WITH its route
   // (the 2026-10-27 fold lesson — a stale facts row false-admits a
   // dead family through the selection-tolerance catch).
-  const FACTS_ROW_CENSUS = 28; // -1 (2026-10-13, the autoremesher excision — the pack the owner removed from the system)
+  const FACTS_ROW_CENSUS = 29; // -1 (2026-10-13, the autoremesher excision); +1 (2026-11-07, the operator's drop — moss-image's card-owned row joins)
 
   it("the frozen roster is exact, and the frozen-variant escape hatch census is named", async (): Promise<void> => {
     await loadCardDefs();

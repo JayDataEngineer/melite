@@ -13,7 +13,8 @@
     "**/dist/**"
   ],
   "ignoreWorkspaces": [
-    "vendor/*"
+    "vendor/*",
+    "website"
   ],
   "ignoreBinaries": [
     "python3",

@@ -93,6 +93,7 @@
     "@melite/models-kimodo": "workspace:*",
     "@melite/models-krea-2": "workspace:*",
     "@melite/models-mask": "workspace:*",
+    "@melite/models-moss-image": "workspace:*",
     "@melite/models-moss-sfx": "workspace:*",
     "@melite/models-music3": "workspace:*",
     "@melite/models-pixal3d": "workspace:*",

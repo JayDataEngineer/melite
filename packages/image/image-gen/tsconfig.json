@@ -18,6 +18,8 @@
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "paths": {
+        "@melite/models-moss-image/mods/loras": ["./../../models/moss-image/mods/loras.ts"],
+        "@melite/models-moss-image/mods/mask": ["./../../models/moss-image/mods/mask.ts"],
         "@melite/comfyui-card-kit/bare-flavor": ["./../../engines/comfyui-card-kit/src/mods/bare-flavor.ts"],
         "@melite/models-anima/mods/mask": ["./../../models/anima/mods/mask.ts"],
         "@melite/models-flux-klein/mods/mask": ["./../../models/flux-klein/mods/mask.ts"],
@@ -172,6 +174,7 @@
         "@melite/models-krea-2": ["./../../models/krea-2/src/index.ts"],
         "@melite/models-krea-2/mods/loras": ["./../../models/krea-2/mods/loras.ts"],
         "@melite/models-mask": ["./../../models/mask/src/index.ts"],
+        "@melite/models-moss-image": ["./../../models/moss-image/src/index.ts"],
         "@melite/models-moss-sfx": ["./../../models/moss-sfx/src/index.ts"],
         "@melite/models-music3": ["./../../models/music3/src/index.ts"],
         "@melite/models-pixal3d": ["./../../models/pixal3d/src/index.ts"],

@@ -208,6 +208,7 @@ describe("GATE S: the seed sentinel mints at render", () => {
         "kimodo/src/actions.ts",
         "krea-2/src/actions.ts",
         "mask/src/actions.ts",
+        "moss-image/src/actions.ts",
         "moss-sfx/src/actions.ts",
         "music3/src/actions.ts",
         "pixal3d/src/actions.ts",

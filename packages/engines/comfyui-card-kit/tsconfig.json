@@ -14,6 +14,9 @@
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "paths": {
+        "@melite/models-moss-image": ["./../../models/moss-image/src/index.ts"],
+        "@melite/models-moss-image/mods/loras": ["./../../models/moss-image/mods/loras.ts"],
+        "@melite/models-moss-image/mods/mask": ["./../../models/moss-image/mods/mask.ts"],
         "@melite/comfyui-card-kit/bare-flavor": ["./src/mods/bare-flavor.ts"],
         "@melite/models-anima/mods/mask": ["./../../models/anima/mods/mask.ts"],
         "@melite/models-flux-klein/mods/mask": ["./../../models/flux-klein/mods/mask.ts"],

@@ -18,6 +18,9 @@
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "paths": {
+        "@melite/models-moss-image": ["./../moss-image/src/index.ts"],
+        "@melite/models-moss-image/mods/loras": ["./../moss-image/mods/loras.ts"],
+        "@melite/models-moss-image/mods/mask": ["./../moss-image/mods/mask.ts"],
         "@melite/models-anima/mods/mask": ["./../anima/mods/mask.ts"],
         "@melite/models-flux-klein/mods/mask": ["./mods/mask.ts"],
         "@melite/models-krea-2/mods/mask": ["./../krea-2/mods/mask.ts"],

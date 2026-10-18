@@ -51,7 +51,9 @@ const stackRows = (graph: Graph): Array<Array<Record<string, unknown>>> =>
 // while the truth burns). Import the served rows; never retype them.
 import { H3_LORA_ROWS } from "@melite/models-h3/mods/loras";
 const turbo = H3_LORA_ROWS.find((r) => r.id === "h3_lightx2v_turbo")!;
-const dmad = H3_LORA_ROWS.find((r) => r.id === "h3_dmad_4step")!
+// the DECL's birth row (2026-11-07: the LightX2V Turbo 8-Step v1.0
+// replaced the bytedance DMAD 4-step as the trio's bag)
+const birth = H3_LORA_ROWS.find((r) => r.id === "h3_turbo8_v1")!
 
 describe("THE MOD-BAG PIPELINE (studio bag → service door → loader stack)", () => {
   let svc: ComfyUIService;
@@ -112,11 +114,11 @@ describe("THE MOD-BAG PIPELINE (studio bag → service door → loader stack)", 
     }
     // THE DECL-BOUND RECEIPT (tautology sweep 2026-10-16: the old arm
     // narrated "a REAL filename" but tested only non-empty-string — a
-    // placeholder passed): the default row is the DECL's own dmad
+    // placeholder passed): the default row is the DECL's own birth
     // filename, derived — the wall rots no more hand-copies
     assert.ok(
-      rows.some((r) => r.lora === dmad.filename),
-      `the default row is the DECL's dmad filename (${dmad.filename})`,
+      rows.some((r) => r.lora === birth.filename),
+      `the default row is the DECL's turbo8 filename (${birth.filename})`,
     );
   });
 
