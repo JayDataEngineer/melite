@@ -92,7 +92,7 @@ describe("SOURCE — the copy dictionary owns the static faces", () => {
     }
   })
 
-  it("CENSUS — the dictionary is non-empty, every entry consumed, count pinned at 102", () => {
+  it("CENSUS — the dictionary is non-empty, every entry consumed, count pinned at 101", () => {
     // THE CENSUS (the 2026-11-02 docs-plane finding H5): a
     // dictionary nobody reads is a locale theater — every entry
     // must be consumed by at least one presentation seat (a dead
