@@ -29,9 +29,13 @@
 // face, flowsRegistryRows.ts:322-367). Arms that hold green are
 // marked `// ALREADY GREEN` with the audit verdict they carry — the
 // missing piece there was the WALL (this file now is it), not the
-// carriage. Each arm's comment names the hop it witnesses and the
-// burn it kills. NO SOURCE FILE IS FIXED HERE — tests first; the
-// cure lands against these reds.
+// carriage. ARM 6 (2026-11-08, SD-6's numerics) is the same class:
+// stated duration/steps/guidance/lm_cfg/seed rode correctly but NO
+// pin witnessed them at the consumer — the wall IS the deliverable,
+// and its 4d/4e corruption twins are its red-proof (they corrupt and
+// require the arm's own matcher to fire). Each arm's comment names
+// the hop it witnesses and the burn it kills. NO SOURCE FILE IS
+// FIXED HERE — tests first; the cure lands against these reds.
 //
 // Run: npx vitest run packages/audio/music/tests/value-roundtrip.spec.ts
 
@@ -118,6 +122,39 @@ function nodesOf(graph: Graph, cls: string): Array<{ id: string; inputs: Record<
     }
   }
   return out;
+}
+
+/**
+ * THE NUMERIC LAW (P2's judge for numbers): the stated number rides
+ * the composed graph VERBATIM at the named consumer input of the
+ * named node class. Same voice as the string law above, numeric
+ * equality.
+ */
+function assertNumAtConsumer(
+  graph: Graph,
+  cls: string,
+  input: string,
+  stated: number,
+  what: string,
+): string {
+  const nodes = nodesOf(graph, cls);
+  assert.ok(nodes.length > 0,
+    `${what}: no node of class '${cls}' in the composed graph — the DECL-wired consumer never composed (hop [5])`);
+  for (const node of nodes) {
+    const saw = node.inputs[input];
+    if (saw === stated) return node.id;
+    assert.fail(
+      `${what.toUpperCase()} VALUE ARM (hop [5], the consumer's input): node '${node.id}' (${cls}) input ` +
+      `'${input}' did not carry the stated number verbatim — ` +
+      (saw === undefined
+        ? "the input is absent entirely"
+        : typeof saw === "number"
+          ? `expected ${stated}, saw ${saw}`
+          : `expected a number, saw ${typeof saw}`) +
+      ` — the stated number never reached the engine's consumer (THE SILENT UI DROP, ERRORS.md bottom)`,
+    );
+  }
+  return ""; // unreachable — every loop arm above either returns or fails
 }
 
 /** THE VALUE LAW (P2's judge): the stated value rides the composed
@@ -547,3 +584,119 @@ describe("ARM 5 — the estate run door composes the stated prompt into the serv
     assertValueAtConsumer(graph, YUE2_MUSIC, "style", PROMPT, "prompt (door, yue2/music)");
   });
 });
+
+// ── ARM 6 — THE STATED-NUMERICS ARM (SD-6's through-door pin) ───────
+// P2's round-trip law for numbers: the audit's SD-6 names duration /
+// steps / guidance / lm_cfg the UNWITNESSED knobs — "through-door
+// value pins for stated duration/steps/guidance/lm_cfg/mode do not
+// exist" (mode since pinned by arm 2c's refusal). A stated steps=64
+// silently composing as the default 30 greens every suite today —
+// the operator's "NO PARAMETER IS CONFIRMED TO WORK" verbatim. These
+// arms state NON-DEFAULT numerics (duration 77 ≠ 30, guidance 2.5 ≠
+// 1.7, steps 64 ≠ 30, lm_cfg 3.5 ≠ 1.7, seed 4242) and re-read them
+// at the DECL-wired consumer inputs, card path AND door path. Hop
+// [4]→[5] card-level, hops [3]→[5] through the door.
+describe("ARM 6 — the stated numerics ride VERBATIM to their consumers (duration/steps/guidance/lm_cfg/seed)", () => {
+  // The music3 DECL's wiring (packages/models/music3/src/actions.ts):
+  // max_duration + cfg_scale on MiniMaxMusic3TextEncode, seconds on
+  // EmptyMiniMaxMusic3LatentAudio, steps + cfg + seed on KSampler.
+  it("music3 card path: duration/steps/guidance/lm_cfg/seed land at their named inputs", () => {
+    const graph = composeCard({
+      prompt: PROMPT, lyrics: LYRICS, mode: "full",
+      duration: 77, guidance_scale: 2.5, n_diffusion_steps: 64, lm_cfg_scale: 3.5, seed: 4242,
+    }, music3, RUN_CARD);
+    assertNumAtConsumer(graph, MUSIC3_TEXT_ENCODE, "max_duration", 77, "duration (music3 encode)");
+    assertNumAtConsumer(graph, MUSIC3_TEXT_ENCODE, "cfg_scale", 3.5, "lm_cfg (music3 encode)");
+    assertNumAtConsumer(graph, "EmptyMiniMaxMusic3LatentAudio", "seconds", 77, "duration (music3 latent)");
+    assertNumAtConsumer(graph, "KSampler", "steps", 64, "steps (music3 sampler)");
+    assertNumAtConsumer(graph, "KSampler", "cfg", 2.5, "guidance (music3 sampler)");
+    assertNumAtConsumer(graph, "KSampler", "seed", 4242, "seed (music3 sampler)");
+    assertNumAtConsumer(graph, MUSIC3_TEXT_ENCODE, "seed", 4242, "seed (music3 encode)");
+  });
+
+  // The yue2 DECL's wiring (packages/models/yue2/src/actions.ts):
+  // max_duration on YuE2GenerateMusic, steps + seed on KSampler
+  // (guidance lives AR-side — KSampler cfg is the DECL's fixed 1).
+  it("yue2 card path: duration/steps/seed land at their named inputs", () => {
+    const graph = composeCard({
+      prompt: PROMPT, lyrics: LYRICS, mode: "melody",
+      duration: 77, n_diffusion_steps: 64, seed: 4242,
+    }, yue2, RUN_CARD);
+    assertNumAtConsumer(graph, YUE2_MUSIC, "max_duration", 77, "duration (yue2 music)");
+    assertNumAtConsumer(graph, "KSampler", "steps", 64, "steps (yue2 sampler)");
+    assertNumAtConsumer(graph, "KSampler", "seed", 4242, "seed (yue2 sampler)");
+    assertNumAtConsumer(graph, YUE2_ABC, "seed", 4242, "seed (yue2 ABC)");
+    assertNumAtConsumer(graph, YUE2_MUSIC, "seed", 4242, "seed (yue2 music)");
+  });
+
+  it("music3 THROUGH THE DOOR: the served graph carries the stated numerics at the consumers (the SD-6 pin)", async () => {
+    const body = {
+      model: "music3", prompt: PROMPT, lyrics: LYRICS,
+      duration: 77, guidance_scale: 2.5, n_diffusion_steps: 64, lm_cfg_scale: 3.5, seed: 4242,
+    };
+    const p1 = await door.phase1Card(body, "music3");
+    const ran = await door.phase2Card(p1, `${RUN_DOOR}_numerics`);
+    const graph = ran.graph as Graph;
+    assertNumAtConsumer(graph, MUSIC3_TEXT_ENCODE, "max_duration", 77, "duration (door)");
+    assertNumAtConsumer(graph, MUSIC3_TEXT_ENCODE, "cfg_scale", 3.5, "lm_cfg (door)");
+    assertNumAtConsumer(graph, "KSampler", "steps", 64, "steps (door)");
+    assertNumAtConsumer(graph, "KSampler", "cfg", 2.5, "guidance (door)");
+    assertNumAtConsumer(graph, "KSampler", "seed", 4242, "seed (door)");
+  });
+
+  // THE CORRUPTION TWINS (ARM 4's law extended to numbers): a stated
+  // numeric corrupted mid-compose MUST red the arms above — else the
+  // numerics are presence pins, not value pins.
+  it("4d: halving the steps inside compose reds the music3 numerics arm", () => {
+    corruptingForNumerics(
+      (p) => ({ ...p, n_diffusion_steps: 32 }), // THE DROP CLASS: stated 64 → composed 32
+      () => {
+        const graph = composeCard({
+          prompt: PROMPT, lyrics: LYRICS, mode: "full",
+          duration: 77, guidance_scale: 2.5, n_diffusion_steps: 64, lm_cfg_scale: 3.5, seed: 4242,
+        }, music3, RUN_CARD);
+        assertNumAtConsumer(graph, "KSampler", "steps", 64, "steps (music3 sampler)");
+      },
+    );
+  });
+
+  it("4e: the same corruption THROUGH THE DOOR reds the SD-6 pin", async () => {
+    const original = ACTION_BINDINGS[music3Decl.id]!;
+    ACTION_BINDINGS[music3Decl.id] =
+      (p, model, g, runId) => original({ ...p, n_diffusion_steps: 32 }, model, g, runId);
+    try {
+      await assert.rejects(
+        (async () => {
+          const p1 = await door.phase1Card({
+            model: "music3", prompt: PROMPT, lyrics: LYRICS,
+            duration: 77, guidance_scale: 2.5, n_diffusion_steps: 64, lm_cfg_scale: 3.5, seed: 4242,
+          }, "music3");
+          const ran = await door.phase2Card(p1, `${RUN_DOOR}_numerics_corrupt`);
+          assertNumAtConsumer(ran.graph as Graph, "KSampler", "steps", 64, "steps (door)");
+        }),
+        /VALUE ARM|did not carry the stated number/,
+        "the door numerics pin passed on a corrupted compose — it is a presence pin, not a value pin",
+      );
+    } finally {
+      ACTION_BINDINGS[music3Decl.id] = original;
+    }
+  });
+});
+
+/** ARM 4's corrupting seat for numbers (the music3 family): corrupt
+ *  the stated numerics inside the compose dispatch and require the
+ *  numeric arm's own matcher to fire. Restored in finally — no
+ *  source file is touched. */
+function corruptingForNumerics(
+  corrupt: (p: Record<string, unknown>) => Record<string, unknown>,
+  ride: () => void,
+): void {
+  const original = ACTION_BINDINGS[music3Decl.id]!;
+  ACTION_BINDINGS[music3Decl.id] = (p, model, g, runId) => original(corrupt({ ...p }), model, g, runId);
+  try {
+    assert.throws(ride, /VALUE ARM|did not carry the stated number/,
+      "the arm PASSED on a corrupted compose — it is a presence arm, not a value arm; fix the arm, not the code");
+  } finally {
+    ACTION_BINDINGS[music3Decl.id] = original;
+  }
+}
