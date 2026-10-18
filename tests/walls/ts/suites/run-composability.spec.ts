@@ -42,7 +42,7 @@ import { Context } from "@deepseek-ai/cordis";
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { CardRegistryService, CardArmError } from "../../../../packages/harness/estate-queue/src/cardsRegistry.ts";
+import { CardRegistryService, CardArmError, type PreparedCard } from "../../../../packages/harness/estate-queue/src/cardsRegistry.ts";
 import { prepareCardParams } from "../../../../packages/harness/estate-queue/src/cardsCompose.ts";
 import { EnvelopeRefusal } from "../../../../packages/harness/estate-queue/src/cardsArmError.ts";
 import { judgeSamplerEnvelope } from "@melite/contracts/laneRelations";
@@ -100,6 +100,34 @@ function numericStamps(values: Record<string, unknown>): Record<string, number> 
     if (typeof v === "number" && Number.isFinite(v)) out[k] = v;
   }
   return out;
+}
+
+/** The mirror's spec, derived from the SAME facts rows the door
+ *  reads: the variants carry their stamps (family defaults under
+ *  resolver defaults) and their declared envelopes. This is the
+ *  FormSpecDoc shape the client judges (composeValidate,
+ *  offeredVariantOf) and the pick chain (axisPickPatch) walk. */
+function mirrorSpec(row: ModelFactsRow): FormSpecDoc {
+  const variants = (row.variants ?? []).map((v): FormVariantRow => ({
+    id: v.id,
+    group: v.group,
+    route: v.route,
+    defaults: { ...row.defaults, ...v.resolver_defaults },
+    ...(v.sampler_envelope !== undefined && v.sampler_envelope !== null
+      ? { sampler_envelope: v.sampler_envelope as FormVariantRow["sampler_envelope"] }
+      : {}),
+  }));
+  return { variants } as unknown as FormSpecDoc;
+}
+
+/** The mirror's Variant row for an id — the shape the real pick seat
+ *  receives (the served row carries its declared defaults; the raw
+ *  facts row does not, and handing the pick chain one of those is a
+ *  harness lie, not a client face). */
+function mirrorVariantRow(spec: FormSpecDoc, id: string): FormVariantRow {
+  const row = (spec.variants ?? []).find((r) => r.id === id && r.group === "Variant");
+  if (row === undefined) throw new Error(`no Variant row for ${id}`);
+  return row;
 }
 
 describe("THE RUN-SIDE COMPOSABILITY WALL (the cure's own lane)", () => {
@@ -169,24 +197,6 @@ describe("THE RUN-SIDE COMPOSABILITY WALL (the cure's own lane)", () => {
 });
 
 describe("THE COMPOSE-EQUIVALENCE CORPUS (the mirror and the door agree on identical inputs)", () => {
-  /** The mirror's spec, derived from the SAME facts rows the door
-   *  reads: the variants carry their stamps (family defaults under
-   *  resolver defaults) and their declared envelopes. This is the
-   *  FormSpecDoc shape the client judges (composeValidate,
-   *  offeredVariantOf) and the pick chain (axisPickPatch) walk. */
-  function mirrorSpec(row: ModelFactsRow): FormSpecDoc {
-    const variants = (row.variants ?? []).map((v): FormVariantRow => ({
-      id: v.id,
-      group: v.group,
-      route: v.route,
-      defaults: { ...row.defaults, ...v.resolver_defaults },
-      ...(v.sampler_envelope !== undefined && v.sampler_envelope !== null
-        ? { sampler_envelope: v.sampler_envelope as FormVariantRow["sampler_envelope"] }
-        : {}),
-    }));
-    return { variants } as unknown as FormSpecDoc;
-  }
-
   it("per envelope family, every sibling pick: the mirror's verdict == the door's verdict on the same landed doc", () => {
     const disagreements: string[] = [];
     let cells = 0;
@@ -201,7 +211,7 @@ describe("THE COMPOSE-EQUIVALENCE CORPUS (the mirror and the door agree on ident
           // THE STUDIO FACE: the pick patches with the SHOWN doc as
           // held (the pickHeld law), lands, and the mirror judges
           // the composed doc.
-          const patch = axisPickPatch(spec, to, { ...base });
+          const patch = axisPickPatch(spec, mirrorVariantRow(spec, to.id), { ...base });
           const doc = composeCandidateDoc(base, {}, patch as Record<string, unknown>);
           const violations = composeValidate(spec, doc);
           // THE DOOR FACE: the same landed state rides the run seat.
@@ -229,5 +239,64 @@ describe("THE COMPOSE-EQUIVALENCE CORPUS (the mirror and the door agree on ident
     }
     expect(cells, "no corpus cells — the wall went vacuous").toBeGreaterThan(0);
     expect(disagreements).toEqual([]);
+  });
+});
+
+describe("THE SWITCH-SEED LAW (follow-up (1), 2026-11-07: a switch seeds the TARGET's declared steps/cfg)", () => {
+  it("per envelope family, every sibling pick: the landed doc and the run's composed params carry the target variant's declared face, never the departed variant's ride", () => {
+    // The burn (operator, follow-up (1)): a stage switched from a
+    // turbo lane kept the turbo-era steps/cfg — the base variant
+    // rendered at the distill's depth. The cure is the pick chain's
+    // declared-stamps overlay (spec.ts axisPickPatch) over the
+    // required-defaults DECL faces (64b619f23); this arm binds BOTH
+    // planes to the target face: the client's landed doc (the mirror)
+    // and the run's composed params (the door, prepareCardParams).
+    // The law binds only DECLARED knobs — a variant that declares no
+    // steps owes no seed.
+    const failures: string[] = [];
+    let cells = 0;
+    for (const { fam, row } of envelopeFamilies()) {
+      const spec = mirrorSpec(row);
+      const variants = variantRows(row);
+      for (const from of variants) {
+        const base: SpecValues = { variant: from.id, ...numericStamps({ ...row.defaults, ...from.resolver_defaults }) } as SpecValues;
+        for (const to of variants) {
+          if (to.id === from.id) continue;
+          const toFace = numericStamps({ ...row.defaults, ...to.resolver_defaults });
+          // THE MIRROR FACE: the pick patches with the SHOWN doc as
+          // held (the pickHeld law) — the same call the drill's
+          // Variant select makes, on the served row's shape.
+          const patch = axisPickPatch(spec, mirrorVariantRow(spec, to.id), { ...base });
+          const doc = composeCandidateDoc(base, {}, patch as Record<string, unknown>);
+          // THE DOOR FACE: the landed state rides the real run seat.
+          const body: Record<string, unknown> = { model: fam, variant: to.id };
+          for (const [k, v] of Object.entries(doc)) {
+            if (k === "variant" || k === "model") continue;
+            if (v === null || v === undefined) continue;
+            body[k] = v;
+          }
+          let prepared: PreparedCard | null = null;
+          try {
+            prepared = prepareCardParams(svc, body, fam, "wall-switch-seed");
+          } catch (err) {
+            if (!(err instanceof EnvelopeRefusal || err instanceof CardArmError)) throw err;
+            // the door's refusal is its own honest voice (the corpus
+            // judges the agreement); the seed law binds the mirror here
+          }
+          for (const key of ["steps", "cfg"] as const) {
+            if (typeof toFace[key] !== "number") continue;
+            cells += 1;
+            if (doc[key] !== toFace[key]) {
+              failures.push(`${fam} ${from.id}->${to.id}: the landed doc carries ${key}=${JSON.stringify(doc[key])}, the target declares ${String(toFace[key])} — the pick rides the departed face instead of seeding`);
+            }
+            if (prepared !== null && prepared.params[key] !== toFace[key]) {
+              failures.push(`${fam} ${from.id}->${to.id}: the run's composed params carry ${key}=${JSON.stringify(prepared.params[key])}, the target declares ${String(toFace[key])} — the door rides instead of seeding`);
+            }
+          }
+        }
+      }
+    }
+    expect(cells, "no switch cells — the wall went vacuous").toBeGreaterThan(0);
+    expect(failures).toEqual([]);
   });
 });
