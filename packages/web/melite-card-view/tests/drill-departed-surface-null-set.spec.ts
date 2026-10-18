@@ -222,6 +222,23 @@ describe('the drill null-set arms (ERRORS h; study §6; purge P4) — the switch
     expect(failures, `the gesture-time verb guesses or keeps:\n  ${failures.join('\n  ')}`).toEqual([])
   })
 
+  test('ARM 5 (THE REMAINDER) — the unnamed-arrival mirror stays silent (the stage-drill arrival floor at the mirror: arrival !== "")', () => {
+    // (h2) REMAINDER: stage-drill.tsx:374 carries `arrival !== ''`
+    // (an unnamed arrival must never clobber the user's model) but
+    // the mirror clause judged the doc against WHATEVER surface the
+    // spec carried — including an unnamed one, voicing violations
+    // that name the empty lane ('the served surface (' + '' + ')
+    // does not declare it'). The mirror refuses to guess until the
+    // arrival names itself: a spec with params but model '' yields
+    // NO mirror violations (the family clause above keeps its own
+    // humility — this floor is the mirror's).
+    const unnamed = { ...TO_SPEC, model: '' }
+    const rawDoc = { ...burnedHolding(), model: TO_DECL.id }
+    const violations = composeValidate(unnamed, rawDoc)
+    const mirrorHits = violations.filter((v) => v.message.includes('does not declare it'))
+    expect(mirrorHits, `the unnamed-arrival mirror voiced the empty lane instead of staying silent — an arrival that has not named itself must never clobber the doc's voice`).toEqual([])
+  })
+
   test('THE PIN THAT STANDS — the arrival lane’s own words: the pair is 2511’s edit-tuning seat and NOT on the 21 surface (the DECL is the truth home)', () => {    // The DECL-side fact the whole file leans on, pinned so a surface
     // change re-pins the arms deliberately (the purge §2.1 rows).
     expect((FROM_DECL.params ?? [])).toEqual(expect.arrayContaining([...BURNED_PAIR]))

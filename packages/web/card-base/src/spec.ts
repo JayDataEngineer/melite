@@ -1766,8 +1766,11 @@ export function composeValidate(
   // BEFORE the wire. Judged only when the served doc carries the
   // declared surface (`params` — absent on legacy carriers: never a
   // guess); `model` and the axis keys are the transport's own words,
-  // never doc surface.
-  if (Array.isArray(spec.params)) {
+  // never doc surface. THE ARRIVAL FLOOR ((h2) remainder, the
+  // stage-drill `arrival !== ''` floor at the mirror): an arrival that
+  // has not named itself (model '') must never clobber the doc's
+  // voice — the mirror refuses to guess until the surface is named.
+  if (Array.isArray(spec.params) && spec.model !== '') {
     const declared = new Set<string>(spec.params)
     for (const g of axisGroups(spec)) declared.add(axisKey(g))
     declared.add('model')

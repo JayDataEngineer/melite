@@ -9497,7 +9497,7 @@ window.__ModuleLoader__.load({
 				if (!(spec.variants ?? []).some((r) => r.route === heldModel || r.id === heldModel || r.defaults?.["model"] === heldModel)) return [];
 			}
 			const out = [];
-			if (Array.isArray(spec.params)) {
+			if (Array.isArray(spec.params) && spec.model !== "") {
 				const declared = new Set(spec.params);
 				for (const g of axisGroups(spec)) declared.add(axisKey(g));
 				declared.add("model");

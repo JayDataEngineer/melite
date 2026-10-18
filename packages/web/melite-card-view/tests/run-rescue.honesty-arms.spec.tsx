@@ -18,8 +18,11 @@
 // arms refuse. Hop [6]→[1]: the engine's report is the input, the
 // consumer face is the judged output.
 //
-// RED TODAY BY CONSTRUCTION (no src fixes in this change): the arms
-// pin the owed law. Each red names the dishonest face it caught.
+// GREEN SINCE 821475e43 (the P5 rescue-honesty landing: ACQUIRE_TERMINAL
+// drop, stall watchdog, acquiredDetailOf, the stuck face + dismissal
+// memory): all 8 arms fire on today's tree. The wall now GUARDS the
+// law — each red names the dishonest face it caught. Registry row
+// cards-run-rescue-honesty (receipted, toggle-proven).
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
