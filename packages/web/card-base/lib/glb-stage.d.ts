@@ -1,9 +1,24 @@
 import { createElement as h } from 'react';
 import * as THREE from '@melite/three-client/client';
+import { type FormSpecDoc, type SpecValues } from './spec.ts';
 /** One stage asset — the old Stage contract's live subset (the four
  *  fields consumers set: id/url/name + the placement override; the
  *  drop-raycast position stays caller-computed). */
 export declare function meshAssetUrl(value: string): string;
+/** Pure: the served schema's MESH-KIND fields × the resolved values
+ *  → attached stage assets (the (j) law's derivation, mirroring
+ *  compose: a non-empty mesh input renders as-is, the run composes
+ *  it). Whitespace IS emptiness (anny's own compose law — whitespace
+ *  bakes parametric, so the preview must too); a value already
+ *  riding a URL passes VERBATIM through meshAssetUrl (a picked stage
+ *  output). null when no mesh field holds a value (the parametric
+ *  figure / empty hint keeps the seat). Declaration order (the
+ *  envelope walk's own). */
+export declare function attachedMeshOf(spec: FormSpecDoc | null, value: SpecValues): Array<{
+    id: string;
+    url: string;
+    name: string;
+}> | null;
 export interface StageAsset {
     /** unique id (caller-supplied — run id + artifact name is fine) */
     id: string;

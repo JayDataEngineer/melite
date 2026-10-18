@@ -12,7 +12,8 @@ import { createElement as h } from 'react'
 import { afterEach, expect, test, vi } from 'vitest'
 import * as THREE from '@melite/three-client/client'
 
-import { autoFitToHeight, GlbStagePreview, meshAssetUrl } from '../src/glb-stage.tsx'
+import { autoFitToHeight, attachedMeshOf, GlbStagePreview, meshAssetUrl } from '../src/glb-stage.tsx'
+import { schemaEnvelope, type FormSpecDoc } from '../src/spec.ts'
 
 afterEach(() => { cleanup(); vi.restoreAllMocks() })
 
@@ -82,6 +83,45 @@ test('meshAssetUrl: estate input paths use the input asset door', () => {
   expect(meshAssetUrl('data/input/donor.glb')).toBe('/v1/assets/inputs/donor.glb')
   expect(meshAssetUrl('data/input/donor.gltf')).toBe('/v1/assets/inputs/donor.gltf')
   expect(meshAssetUrl('/melite-media/runs/r1/mesh.glb')).toBe('/melite-media/runs/r1/mesh.glb')
+})
+
+/** THE ATTACHED-MESH DERIVATION (the (j) law's pure half): the
+ *  served schema's mesh-kind fields × the resolved values → stage
+ *  assets through the input asset door. Whitespace IS emptiness
+ *  (anny's own compose law — whitespace bakes parametric, so the
+ *  preview must too); non-mesh string fields never ride; a URL
+ *  already rooted passes verbatim (a picked stage output). */
+test('attachedMeshOf: mesh-kind fields with held values become stage assets through the input door', () => {
+  const doc: FormSpecDoc = {
+    form: 'anny',
+    schema: schemaEnvelope({
+      prompt: { type: 'string', meta: { description: 'Prompt', extra: { wtype: 'textarea' } } },
+      body_glb: { type: 'string', meta: { description: 'Body GLB', extra: { wtype: 'mesh', group: 'body' } } },
+      donor_glb: { type: 'string', meta: { description: 'Donor', extra: { wtype: 'mesh', group: 'body' } } },
+      notes: { type: 'string', meta: { description: 'Notes', extra: { wtype: 'text' } } },
+    }),
+  }
+  // held estate path → the input asset door; basename is the name
+  expect(attachedMeshOf(doc, { body_glb: 'data/input/donor.glb' })).toEqual([
+    { id: 'body_glb', url: '/v1/assets/inputs/donor.glb', name: 'donor.glb' },
+  ])
+  // whitespace IS emptiness — the parametric figure keeps the seat
+  expect(attachedMeshOf(doc, { body_glb: '   ' })).toBeNull()
+  // empty / absent / non-mesh values never ride
+  expect(attachedMeshOf(doc, { body_glb: '' })).toBeNull()
+  expect(attachedMeshOf(doc, {})).toBeNull()
+  expect(attachedMeshOf(doc, { notes: 'data/input/x.glb' })).toBeNull()
+  // a picked stage output (already a rooted URL) passes verbatim
+  expect(attachedMeshOf(doc, { body_glb: '/melite-media/runs/r1/mesh.glb' })).toEqual([
+    { id: 'body_glb', url: '/melite-media/runs/r1/mesh.glb', name: 'mesh.glb' },
+  ])
+  // two held mesh fields → two assets, declaration order
+  expect(attachedMeshOf(doc, { body_glb: 'data/input/a.glb', donor_glb: 'data/input/b.glb' })).toEqual([
+    { id: 'body_glb', url: '/v1/assets/inputs/a.glb', name: 'a.glb' },
+    { id: 'donor_glb', url: '/v1/assets/inputs/b.glb', name: 'b.glb' },
+  ])
+  // no spec in hand → no attached arm (never a guess)
+  expect(attachedMeshOf(null, { body_glb: 'data/input/a.glb' })).toBeNull()
 })
 
 test('autoFitToHeight: an empty root never scales (no largest dimension — no divide, no throw)', () => {

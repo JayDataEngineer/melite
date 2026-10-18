@@ -10914,6 +10914,30 @@ window.__ModuleLoader__.load({
 			const match = /^data\/input\/([^?#]+)$/i.exec(value);
 			return match === null ? value : `/v1/assets/inputs/${encodeURIComponent(match[1] ?? "")}`;
 		}
+		/** Pure: the served schema's MESH-KIND fields × the resolved values
+		*  → attached stage assets (the (j) law's derivation, mirroring
+		*  compose: a non-empty mesh input renders as-is, the run composes
+		*  it). Whitespace IS emptiness (anny's own compose law — whitespace
+		*  bakes parametric, so the preview must too); a value already
+		*  riding a URL passes VERBATIM through meshAssetUrl (a picked stage
+		*  output). null when no mesh field holds a value (the parametric
+		*  figure / empty hint keeps the seat). Declaration order (the
+		*  envelope walk's own). */
+		function attachedMeshOf(spec, value) {
+			if (spec === null) return null;
+			const out = [];
+			for (const f of fieldsOf(spec)) {
+				if (f.type !== "mesh") continue;
+				const v = value[f.name];
+				if (typeof v !== "string" || v.trim() === "") continue;
+				out.push({
+					id: f.name,
+					url: meshAssetUrl(v),
+					name: v.split("/").pop()
+				});
+			}
+			return out.length > 0 ? out : null;
+		}
 		/** Normalize a loaded scene to a known viewing size — the fit law:
 		*  center X/Z, scale the largest dimension to targetHeight, feet on
 		*  y=0, mutating the root in place. The ALGORITHM lives in
@@ -16312,6 +16336,15 @@ window.__ModuleLoader__.load({
 		*  (stroke 90): a card-declared preview.figure replaces the empty
 		*  tombstone with the native figure (the /poser bind mesh) — the
 		*  studio-viewport capability on the form card; run outputs still
+		*  take the stage the moment they exist. THE ATTACHED MESH (the
+		*  (j) law, 2026-11-08): the preview shows the body THE RUN WOULD
+		*  BAKE — a held mesh-kind input (anny's body_glb) renders as-is
+		*  through the input asset door and wins over the parametric
+		*  figure (a native figure under an attached GLB would preview a
+		*  body the run never bakes — compose renders the GLB as-is). The
+		*  2026-09-06 order's edge holds: NEVER the low-poly anny-base-body
+		*  EXPORT substituting the native figure — a USER-ATTACHED GLB is
+		*  the compose-truth arm, a different artifact. Run outputs still
 		*  take the stage the moment they exist. */
 		function MeshStagePreview(props) {
 			const { hero, rest, viewingHistory, note, picked, promote, returnToCurrent } = useHistoryHero(props);
@@ -16325,6 +16358,13 @@ window.__ModuleLoader__.load({
 			}) : null, active.length > 0 ? (0, react.createElement)(GlbStagePreview, {
 				assets: active.map((a, i) => ({
 					id: `${props.stageId}:${a.name || i}`,
+					url: a.url,
+					name: a.name
+				})),
+				emptyHint: isLiveRunStatus(props.runStatus) ? "rendering… the mesh lands here" : "No render yet — run lands the mesh here"
+			}) : props.attachedMesh !== void 0 ? (0, react.createElement)(GlbStagePreview, {
+				assets: props.attachedMesh.map((a) => ({
+					id: `${props.stageId}:attached:${a.id}`,
 					url: a.url,
 					name: a.name
 				})),
@@ -16497,6 +16537,7 @@ window.__ModuleLoader__.load({
 		exports.applyWireframe = applyWireframe;
 		exports.armEstateRemoteLazyBind = armEstateRemoteLazyBind;
 		exports.assertFormSpecDoc = assertFormSpecDoc;
+		exports.attachedMeshOf = attachedMeshOf;
 		exports.autoFitToHeight = autoFitToHeight;
 		exports.axisGroups = axisGroups;
 		exports.axisKey = axisKey;

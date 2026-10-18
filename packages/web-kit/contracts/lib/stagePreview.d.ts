@@ -92,5 +92,20 @@ export interface PreviewOwnerProps {
         framing?: number | null;
         focalLength?: number | null;
     };
+    /** THE ATTACHED MESH (the (j) law, 2026-11-08): the held
+     *  mesh-kind inputs the run would compose (anny's body_glb) —
+     *  the preview shows the body THE RUN WOULD BAKE, so an attached
+     *  GLB renders as-is through the input asset door and the
+     *  parametric figure retires (a native figure under an attached
+     *  GLB would preview a body the run never bakes). Derived
+     *  CLIENT-SIDE from the served schema's mesh-kind fields × the
+     *  resolved values (whitespace IS emptiness — anny's own compose
+     *  law); one asset per non-empty mesh field, declaration order.
+     *  Run artifacts still take the stage the moment they land. */
+    attachedMesh?: Array<{
+        id: string;
+        url: string;
+        name: string;
+    }>;
 }
 //# sourceMappingURL=stagePreview.d.ts.map

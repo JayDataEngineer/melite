@@ -32,6 +32,7 @@ import { rejectionVoice } from "./rejection-voice.js";
 import { chromeCopy } from "./locales/chromeCopy.js";
 import { Box } from "./icons.js";
 import { EmptyState } from "./layout.js";
+import { fieldsOf } from "./spec.js";
 import s from './preview.module.css';
 let draco = null;
 function loader() {
@@ -52,6 +53,30 @@ export function meshAssetUrl(value) {
     // M4): a mesh named "my scan.glb" produced a URL with a literal
     // space — the run composes, the preview 404s.
     return match === null ? value : `/v1/assets/inputs/${encodeURIComponent(match[1] ?? '')}`;
+}
+/** Pure: the served schema's MESH-KIND fields × the resolved values
+ *  → attached stage assets (the (j) law's derivation, mirroring
+ *  compose: a non-empty mesh input renders as-is, the run composes
+ *  it). Whitespace IS emptiness (anny's own compose law — whitespace
+ *  bakes parametric, so the preview must too); a value already
+ *  riding a URL passes VERBATIM through meshAssetUrl (a picked stage
+ *  output). null when no mesh field holds a value (the parametric
+ *  figure / empty hint keeps the seat). Declaration order (the
+ *  envelope walk's own). */
+export function attachedMeshOf(spec, value) {
+    if (spec === null)
+        return null;
+    const out = [];
+    for (const f of fieldsOf(spec)) {
+        if (f.type !== 'mesh')
+            continue;
+        const v = value[f.name];
+        if (typeof v !== 'string' || v.trim() === '')
+            continue;
+        // pop() is total on a non-empty split (>= 1 segment)
+        out.push({ id: f.name, url: meshAssetUrl(v), name: v.split('/').pop() });
+    }
+    return out.length > 0 ? out : null;
 }
 /** Normalize a loaded scene to a known viewing size — the fit law:
  *  center X/Z, scale the largest dimension to targetHeight, feet on

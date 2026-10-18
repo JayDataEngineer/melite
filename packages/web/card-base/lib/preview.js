@@ -462,6 +462,15 @@ export function TextStagePreview(props) {
  *  (stroke 90): a card-declared preview.figure replaces the empty
  *  tombstone with the native figure (the /poser bind mesh) — the
  *  studio-viewport capability on the form card; run outputs still
+ *  take the stage the moment they exist. THE ATTACHED MESH (the
+ *  (j) law, 2026-11-08): the preview shows the body THE RUN WOULD
+ *  BAKE — a held mesh-kind input (anny's body_glb) renders as-is
+ *  through the input asset door and wins over the parametric
+ *  figure (a native figure under an attached GLB would preview a
+ *  body the run never bakes — compose renders the GLB as-is). The
+ *  2026-09-06 order's edge holds: NEVER the low-poly anny-base-body
+ *  EXPORT substituting the native figure — a USER-ATTACHED GLB is
+ *  the compose-truth arm, a different artifact. Run outputs still
  *  take the stage the moment they exist. */
 export function MeshStagePreview(props) {
     const { hero, rest, viewingHistory, note, picked, promote, returnToCurrent } = useHistoryHero(props);
@@ -471,24 +480,29 @@ export function MeshStagePreview(props) {
             assets: active.map((a, i) => ({ id: `${props.stageId}:${a.name || i}`, url: a.url, name: a.name })),
             emptyHint: isLiveRunStatus(props.runStatus) ? 'rendering… the mesh lands here' : 'No render yet — run lands the mesh here',
         })
-        : props.figure !== undefined
-            ? h(PoserFigureStage, {
-                identityModel: props.figure.identityModel,
-                identityCoeffs: props.figure.identityCoeffs,
-                localChanges: props.figure.localChanges,
-                framing: props.figure.framing,
-                focalLength: props.figure.focalLength,
-                label: `poser-figure:${props.stageId}`,
-            })
-            : h(GlbStagePreview, {
-                assets: [],
+        : props.attachedMesh !== undefined
+            ? h(GlbStagePreview, {
+                assets: props.attachedMesh.map((a) => ({ id: `${props.stageId}:attached:${a.id}`, url: a.url, name: a.name })),
                 emptyHint: isLiveRunStatus(props.runStatus) ? 'rendering… the mesh lands here' : 'No render yet — run lands the mesh here',
-            }), HistoryStrip(props, promote, 'stage-output-history', picked));
+            })
+            : props.figure !== undefined
+                ? h(PoserFigureStage, {
+                    identityModel: props.figure.identityModel,
+                    identityCoeffs: props.figure.identityCoeffs,
+                    localChanges: props.figure.localChanges,
+                    framing: props.figure.framing,
+                    focalLength: props.figure.focalLength,
+                    label: `poser-figure:${props.stageId}`,
+                })
+                : h(GlbStagePreview, {
+                    assets: [],
+                    emptyHint: isLiveRunStatus(props.runStatus) ? 'rendering… the mesh lands here' : 'No render yet — run lands the mesh here',
+                }), HistoryStrip(props, promote, 'stage-output-history', picked));
 }
 /** THE MESH PREVIEW — the raw-three multi-asset stage (the substrate
  *  law: NO @react-three in any client bundle). Reached through the
  *  `/client` door like every other seam in this row. */
-export { GlbStagePreview, autoFitToHeight, applyWireframe, applyWeightsHeat, skeletonHelperFor, heatColor, slotLabelOf, turntableTick, TURNTABLE_SPEED } from "./glb-stage.js";
+export { GlbStagePreview, attachedMeshOf, autoFitToHeight, applyWireframe, applyWeightsHeat, skeletonHelperFor, heatColor, slotLabelOf, turntableTick, TURNTABLE_SPEED } from "./glb-stage.js";
 export { ReportView } from "./report-view.js";
 export { PoserFigureStage, figureGeometry, figureCoeffsOf, figureLocalChangesOf, figureCameraOf, figureShapeSig } from "./poser-figure.js";
 export { ViewportFrame, ViewportAnchor, ReferenceImageBadge } from "./viewportChrome.js";

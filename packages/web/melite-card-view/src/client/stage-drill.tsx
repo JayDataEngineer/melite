@@ -25,7 +25,7 @@ import { paramsDiffKeys, previewArtifactsFor, previewReportsFor, primaryKindFor 
 import { removeStageWire, ungroupStageWire } from './add-stage.ts'
 import type { CardsBenchValue, BenchStageView } from './cards-resource.ts'
 import { freshStageRow } from './cards-resource.ts'
-import { AudioStagePreview, ImageStagePreview, MeshStagePreview, ReportView, TextStagePreview, VideoStagePreview, figureCoeffsOf, figureLocalChangesOf, figureCameraOf } from '@melite/card-base/client'
+import { AudioStagePreview, ImageStagePreview, MeshStagePreview, ReportView, TextStagePreview, VideoStagePreview, attachedMeshOf, figureCoeffsOf, figureLocalChangesOf, figureCameraOf } from '@melite/card-base/client'
 import { CardZoomOverlay } from './zoom.tsx'
 import { loadFormsEdgeMeta } from './forms-edge-meta.ts'
 import { rejectionVoice } from './rejection-voice.ts'
@@ -1339,6 +1339,17 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
             },
           }
         : {}),
+      // THE ATTACHED MESH (the (j) law, 2026-11-08 — ERRORS.md:89
+      // "BODY GLB does not do what it is supposed to do on the anny
+      // card, that is become the anny model preview"): the served
+      // schema's mesh-kind fields × the resolved values → stage
+      // assets (whitespace IS emptiness — anny's own compose law).
+      // The preview shows the body THE RUN WOULD BAKE: an attached
+      // GLB renders as-is through the input asset door, and the
+      // parametric figure retires inside MeshStagePreview (compose
+      // mirrors this exactly — a non-empty body_glb renders the GLB
+      // as-is, only the empty path bakes AnnyParamsToGlb).
+      ...(attachedMeshOf(spec, value) !== null ? { attachedMesh: attachedMeshOf(spec, value)! } : {}),
     }
     // THE SEAM'S PREVIEW FACE: a claimed timeline + a landed video
     // rides the shared FilmPlayer (handle-wired) instead of the
@@ -1365,7 +1376,11 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
     // viewport: it owns the stage while NO artifacts exist; the
     // run's own kind takes over the moment one does (run outputs
     // take the stage once they exist — every kind, not only mesh).
-    if (owner.figure !== undefined && artifacts.length === 0) {
+    // THE ATTACHED MESH rides the same pre-run seat (the (j) law):
+    // a held mesh-kind input owns the stage through MeshStagePreview
+    // — its attached arm renders the GLB as-is and retires the
+    // figure inside — with the identical takeover law.
+    if ((owner.figure !== undefined || owner.attachedMesh !== undefined) && artifacts.length === 0) {
       return renderPreview(owner, h(MeshStagePreview, owner))
     }
     return renderPreview(owner, fallback)

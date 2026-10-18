@@ -61,12 +61,21 @@ export declare function TextStagePreview(props: PreviewOwnerProps): ReturnType<t
  *  (stroke 90): a card-declared preview.figure replaces the empty
  *  tombstone with the native figure (the /poser bind mesh) — the
  *  studio-viewport capability on the form card; run outputs still
+ *  take the stage the moment they exist. THE ATTACHED MESH (the
+ *  (j) law, 2026-11-08): the preview shows the body THE RUN WOULD
+ *  BAKE — a held mesh-kind input (anny's body_glb) renders as-is
+ *  through the input asset door and wins over the parametric
+ *  figure (a native figure under an attached GLB would preview a
+ *  body the run never bakes — compose renders the GLB as-is). The
+ *  2026-09-06 order's edge holds: NEVER the low-poly anny-base-body
+ *  EXPORT substituting the native figure — a USER-ATTACHED GLB is
+ *  the compose-truth arm, a different artifact. Run outputs still
  *  take the stage the moment they exist. */
 export declare function MeshStagePreview(props: PreviewOwnerProps): ReturnType<typeof h>;
 /** THE MESH PREVIEW — the raw-three multi-asset stage (the substrate
  *  law: NO @react-three in any client bundle). Reached through the
  *  `/client` door like every other seam in this row. */
-export { GlbStagePreview, autoFitToHeight, applyWireframe, applyWeightsHeat, skeletonHelperFor, heatColor, slotLabelOf, turntableTick, TURNTABLE_SPEED, type StageAsset, type StageLayers } from './glb-stage.tsx';
+export { GlbStagePreview, attachedMeshOf, autoFitToHeight, applyWireframe, applyWeightsHeat, skeletonHelperFor, heatColor, slotLabelOf, turntableTick, TURNTABLE_SPEED, type StageAsset, type StageLayers } from './glb-stage.tsx';
 export { ReportView } from './report-view.tsx';
 export { PoserFigureStage, figureGeometry, figureCoeffsOf, figureLocalChangesOf, figureCameraOf, figureShapeSig, type PoserMeshDoc } from './poser-figure.tsx';
 export { ViewportFrame, ViewportAnchor, ReferenceImageBadge } from './viewportChrome.tsx';
