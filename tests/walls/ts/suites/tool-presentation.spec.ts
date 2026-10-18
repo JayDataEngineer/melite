@@ -197,6 +197,11 @@ describe("presentCall disclosure composition", () => {
   it("every card is generic with a non-empty title and a vocabulary kind", () => {
     for (const [name, def] of ALL) {
       const view = def.presentCall!({ ["probe_" + name]: true });
+      // (§7 P7 single-resolve): the probe object rides the gate's
+      // schema face — tools with required params refuse it
+      // (undefined), all-optional tools render. Both are the ONE
+      // seat's outputs; a throw or a non-generic card is neither.
+      if (view === undefined) continue;
       assert.equal(view?.card, "generic", `${name} card`);
       assert.ok(view?.title && view.title.length > 0, `${name} title`);
       // F-L2: `kind === undefined ||` excused a MISSING kind — the
@@ -212,7 +217,10 @@ describe("presentCall disclosure composition", () => {
     assert.match(byName.get("melite_flow")!.presentCall!({ card: "c9", model: "m9" })!.title, /c9/);
     assert.match(byName.get("melite_flow")!.presentCall!({ flow: "f9" })!.title, /f9/);
     assert.match(
-      byName.get("melite_flow")!.presentCall!({ stages: [{}, {}, {}] })!.title,
+      // (§7 P7: schema-valid adhoc stages — the gate passes them to
+      // the presenter; the pre-purge `{}` items were refused by the
+      // gate and only rendered through the deleted second seat.)
+      byName.get("melite_flow")!.presentCall!({ stages: [{ id: "a", engine: "e" }, { id: "b", engine: "e" }, { id: "c", engine: "e" }] })!.title,
       /adhoc \(3 stages\)/,
     );
     assert.match(byName.get("run_status")!.presentCall!({ runId: "r42" })!.title, /r42/);
@@ -231,15 +239,38 @@ describe("presentCall disclosure composition", () => {
     );
   });
 
-  it("junk args never throw (streaming + replay safety)", () => {
-    const junks: unknown[] = [null, undefined, 42, "x", [], true, { nested: { deep: [null] } }];
+  it("junk args never throw, and the gate owns the invalid face (streaming + replay safety)", () => {
+    // (§7 P7 single-resolve — THE seat arm): non-object args are
+    // refused by defineTool's gate (undefined) on EVERY tool. The
+    // pre-purge re-attach rendered the generic card for all of
+    // these: the old wall red against the cure (organic red at
+    // /tmp/pv-organic-red.txt — actual undefined, expected
+    // 'generic'), and restoring any one re-attach reds THIS arm
+    // (toggle red at /tmp/pv-toggle-red.txt — melite_load renders
+    // a view for null).
+    const refused: unknown[] = [null, undefined, 42, "x", [], true];
     for (const [name, def] of ALL) {
-      for (const junk of junks) {
+      for (const junk of refused) {
         let view;
         assert.doesNotThrow(() => {
           view = def.presentCall!(junk);
         }, `${name} threw on ${JSON.stringify(junk)}`);
-        assert.equal((view as { card?: unknown } | undefined)?.card, "generic", name);
+        assert.equal(view, undefined, `${name} renders a view for ${JSON.stringify(junk)} — the gate must own the face`);
+      }
+    }
+    // Object args ride the gate's schema face (host-owned): tools
+    // with required params refuse them, all-optional tools render
+    // the generic card. Either is the one seat's output — never a
+    // throw, never a non-generic card.
+    const objects: unknown[] = [{ nested: { deep: [null] } }];
+    for (const [name, def] of ALL) {
+      for (const junk of objects) {
+        let view;
+        assert.doesNotThrow(() => {
+          view = def.presentCall!(junk);
+        }, `${name} threw on ${JSON.stringify(junk)}`);
+        if (view === undefined) continue;
+        assert.equal((view as { card?: unknown }).card, "generic", `${name} non-generic card for object junk`);
       }
     }
   });

@@ -78,11 +78,13 @@ describe('melite_construct presentCall — the Bench card', () => {
     assert.equal(tool.presentCall!({ verb: 'read' })?.title, 'Bench read')
   })
 
-  test('junk verbs/stages fall back', () => {
+  test('junk verbs/stages ride the gate (single seat — no re-attached fallback)', () => {
     const tool = meliteConstruct(stubEstate())
+    // (§7 P7: {} is schema-valid (verb optional) so it renders; a
+    // mistyped verb or a non-object is refused by the gate.)
     assert.equal(tool.presentCall!({})?.title, 'Bench ?')
-    assert.equal(tool.presentCall!(null)?.title, 'Bench ?')
-    assert.equal(tool.presentCall!({ verb: 7, stage: '', card: '' })?.title, 'Bench ?')
+    assert.equal(tool.presentCall!(null), undefined)
+    assert.equal(tool.presentCall!({ verb: 7, stage: '', card: '' }), undefined)
   })
 })
 

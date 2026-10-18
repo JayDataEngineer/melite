@@ -36,15 +36,17 @@ function stubEstate(): Estate {
 const exec = fakeExec(AbortSignal.timeout(2000))
 
 describe('melite_skill_read presentCall — the streaming tile', () => {
-  test('names the skill; junk renders generic (the re-attached presenter)', () => {
+  test('names the skill; the gate owns the junk face (single seat)', () => {
     const tool = skillRead(stubEstate())
     // The tile always answers the generic card — narrow the
     // ToolCallView union to read its rawInput.
     assert.equal(tool.presentCall!({ id: 'run-recovery' } as never)!.title, 'Read skill run-recovery')
     assert.equal((tool.presentCall!({ id: 'run-recovery' } as never)! as GenericCallView).rawInput, 'run-recovery')
-    assert.equal(tool.presentCall!({} as never)!.title, 'Read skill ?')
-    assert.equal(tool.presentCall!(null as never)!.title, 'Read skill ?')
-    assert.equal(tool.presentCall!('x' as never)!.title, 'Read skill ?')
+    // (§7 P7: id is required — junk is refused by the gate, never
+    // rendered by a second seat.)
+    assert.equal(tool.presentCall!({} as never), undefined)
+    assert.equal(tool.presentCall!(null as never), undefined)
+    assert.equal(tool.presentCall!('x' as never), undefined)
   })
 })
 

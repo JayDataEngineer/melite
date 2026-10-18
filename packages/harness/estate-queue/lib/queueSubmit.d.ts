@@ -24,9 +24,19 @@ export declare function unknownDraftRefusal(draftId: string): QueueRefusal;
  * ("One list now" — its header already claimed it); queue re-exports
  * for barrel consumers. */
 export { draftIdOk } from "@melite/estate-drafts";
-export { RETIRED_RUNNER_KNOBS, RETIRED_CARRY_KEYS, DOOR_KEYS, } from "./vocab.js";
+export { RETIRED_RUNNER_KNOBS, RETIRED_CARRY_KEYS, DOOR_KEYS, } from "./vocab.ts";
 /** The strict-body gate (_strict_body 248-276). */
 export declare function strictBodyCheck(body: Record<string, unknown>): QueueRefusal | null;
+/** THE TEST-FLAG RESOLVE SEAT (purge §7 P7 F-1, single-resolve): the
+ *  door's ONE place where the test envelope default is decided —
+ *  absent/null means false (a chat tool's start doc may carry
+ *  test:null, an LLM serializer emits nulls for omitted booleans —
+ *  the live lane receipt 2026-09-12 where a drifted bare read
+ *  refused legal calls). No caller hides its own `?? false`: the
+ *  walk routes ONLY through here, and the walled value (absent/null
+ *  proceeds, non-bool refuses) is pinned at
+ *  tests/walls/ts/suites/run-door-single-resolve.spec.ts F-1b. */
+export declare function resolveTestFlag(body: Record<string, unknown>): unknown;
 /** THE SHARED ENVELOPE STRUCTURE (one-envelope law, the twin-walker
  *  cure 2026-10-22): the four structural faces BOTH submit faces
  *  run, in byte-identical order — non-object body, non-bool test

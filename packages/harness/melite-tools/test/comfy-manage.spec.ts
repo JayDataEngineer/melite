@@ -89,11 +89,12 @@ describe('comfy_manage presentCall — the ComfyUI card', () => {
     assert.equal(view?.rawInput, 'status')
   })
 
-  test('junk actions fall back to ?', () => {
+  test('junk actions are refused by the gate (single seat — no re-attached fallback)', () => {
     const tool = comfyManage(stubEstate())
-    assert.equal(tool.presentCall!({})?.title, 'ComfyUI ?')
-    assert.equal(tool.presentCall!(null)?.title, 'ComfyUI ?')
-    assert.equal(tool.presentCall!('junk')?.title, 'ComfyUI ?')
+    // (§7 P7: action is required — the gate owns the invalid face.)
+    assert.equal(tool.presentCall!({}), undefined)
+    assert.equal(tool.presentCall!(null), undefined)
+    assert.equal(tool.presentCall!('junk'), undefined)
   })
 })
 

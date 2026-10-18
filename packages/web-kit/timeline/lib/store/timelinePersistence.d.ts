@@ -4,7 +4,7 @@
  * timelineStore.ts; pure move, no logic changes).
  */
 import type { AudioCue, AudioTrackDef, ConsistencyAnchor, TimelineSegment } from "@melite/contracts";
-import type { TimelineStore } from "./timelineStoreTypes.js";
+import type { TimelineStore } from "./timelineStoreTypes.ts";
 export declare function persistTimeline(segments: TimelineSegment[], audioCues: AudioCue[], audioTracks: AudioTrackDef[], relayVideoUrl: string | null, relaySegmentIds: string[], relayAssetId: string | null, globalConsistencyAnchor: ConsistencyAnchor | null): Promise<void>;
 export declare function loadPersistedTimeline(): Promise<{
     segments: TimelineSegment[];

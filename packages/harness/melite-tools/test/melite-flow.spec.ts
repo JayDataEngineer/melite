@@ -1066,20 +1066,23 @@ describe('melite_flow guards — the exactly-one law + the wrapper gate', () => 
 })
 
 describe('melite_flow presentCall/render/meta — the faces', () => {
-  test('presentCall names card | flow | adhoc | ? (junk renders generic)', () => {
+  test('presentCall names card | flow | adhoc | ? (the gate owns the junk face)', () => {
     const tool = meliteFlow(fakeEstate({}).estate)
-    const pc = (a: unknown) => tool.presentCall!(a as never)! // the faces never return undefined for these args
-    assert.equal(pc({ card: 'image-gen' }).title, 'Run image-gen')
-    assert.equal(pc({ card: '', flow: 'foo' }).title, 'Run foo')
-    assert.equal(pc({ flow: 'foo' }).title, 'Run foo')
-    assert.equal(pc({ card: 5, flow: 'f' }).title, 'Run f')
-    assert.equal(pc({ stages: [1, 2] }).title, 'Run adhoc (2 stages)')
-    assert.equal(pc({}).title, 'Run ?')
-    assert.equal(pc({ card: '', flow: '', stages: 'x' }).title, 'Run ?')
-    assert.equal(pc(undefined).title, 'Run ?')
-    assert.equal(pc(null).title, 'Run ?')
-    assert.equal(pc('x').title, 'Run ?')
-    assert.equal(pc({ card: 'c' }).card, 'generic')
+    // (§7 P7: the faces render only schema-valid args — mistyped or
+    // non-object args are refused by the gate, never rendered by a
+    // second seat. {} is schema-valid (all top-level optional).)
+    const pc = (a: unknown) => tool.presentCall!(a as never)
+    assert.equal(pc({ card: 'image-gen' })!.title, 'Run image-gen')
+    assert.equal(pc({ card: '', flow: 'foo' })!.title, 'Run foo')
+    assert.equal(pc({ flow: 'foo' })!.title, 'Run foo')
+    assert.equal(pc({ card: 5, flow: 'f' }), undefined)
+    assert.equal(pc({ stages: [1, 2] }), undefined)
+    assert.equal(pc({})!.title, 'Run ?')
+    assert.equal(pc({ card: '', flow: '', stages: 'x' }), undefined)
+    assert.equal(pc(undefined), undefined)
+    assert.equal(pc(null), undefined)
+    assert.equal(pc('x'), undefined)
+    assert.equal(pc({ card: 'c' })!.card, 'generic')
   })
 
   test('render tolerates sparse values (the legacy replay path)', () => {

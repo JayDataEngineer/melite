@@ -287,7 +287,7 @@ describe('melite_view execute — the observe arm', () => {
 })
 
 describe('melite_view presentCall — the streaming tile', () => {
-  test('echoes the args; junk renders generic', () => {
+  test('echoes the args; the gate owns the junk face (single seat)', () => {
     const { ctx } = fakeCtx()
     const tool = meliteView(ctx)
     // The tile always answers the generic card — narrow the
@@ -296,11 +296,10 @@ describe('melite_view presentCall — the streaming tile', () => {
       (tool.presentCall!({ run_id: 'run-abc123-hero', artifact: 'gen_1' } as never)! as GenericCallView).rawInput,
       { run_id: 'run-abc123-hero', artifact: 'gen_1' },
     )
-    assert.deepEqual(
-      (tool.presentCall!({} as never)! as GenericCallView).rawInput,
-      { run_id: undefined, artifact: undefined },
-    )
-    assert.equal(tool.presentCall!(null as never)!.title, 'View run artifact')
+    // (§7 P7: run_id is required — {} and null are refused by the
+    // gate, never rendered by a second seat.)
+    assert.equal(tool.presentCall!({} as never), undefined)
+    assert.equal(tool.presentCall!(null as never), undefined)
   })
 
   test('the tool is concurrency-safe (independent views may batch)', () => {

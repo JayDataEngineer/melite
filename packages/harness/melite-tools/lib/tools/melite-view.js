@@ -905,7 +905,9 @@ export function meliteView(ctx, render = defaultMediaSheetRender) {
             return value;
         },
     });
-    def.presentCall = presentCall;
+    // (§7 P7: the presenter rides defineTool validation — no second,
+    // ungated seat over the gate. The tool-presentation wall pins the
+    // gated face.)
     return def;
 }
 //# sourceMappingURL=melite-view.js.map

@@ -224,7 +224,15 @@ export function planResurrect(
   for (const name of names.sort()) {
     if (!name.startsWith("run-")) continue;
     const text: string | null = readSidecar(name);
-    if (text === null) continue;
+    if (text === null) {
+      // (purge §7 P7 SR — the reconcile surface): an unreadable
+      // sidecar orphans (the ROW 28 road — the operator's reconcile
+      // surface lists it), never `continue`s into invisibility. A
+      // run-* row refused here is a run-* row the operator can see.
+      // Walled at tests/walls/ts/suites/run-door-single-resolve.spec.ts SR.
+      orphans.push(name);
+      continue;
+    }
     let doc: unknown = null;
     try {
       doc = JSON.parse(text);

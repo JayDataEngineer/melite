@@ -1,4 +1,4 @@
-export { RETIRED_RUNNER_KNOBS, RETIRED_CARRY_KEYS, DOOR_KEYS } from "./vocab.js";
+export { RETIRED_RUNNER_KNOBS, RETIRED_CARRY_KEYS, DOOR_KEYS } from "./vocab.ts";
 import { STAGE_PATCH_KEYS } from "@melite/contracts/benchStage";
 export { STAGE_PATCH_KEYS };
 /** flow_inline top-level keys (the served shape). */
@@ -91,7 +91,9 @@ export type FlowsStartEnvelope = {
     kind: "malformed-draft";
     draftId: string;
 };
-/** Structure-gate one start doc (draft lookup stays in the door). */
+/** Structure-gate one start doc (draft lookup stays in the door).
+ *  The test-flag default rides the single seat (resolveTestFlag in
+ *  ./queueSubmit.ts — purge §7 P7 F-1): no twin `??` here. */
 export declare function checkFlowsStartEnvelope(doc: unknown): FlowsStartEnvelope;
 /** The flow_inline top-structure verdict. */
 export type FlowInlineTop = {

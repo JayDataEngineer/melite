@@ -61,6 +61,7 @@ import z from "@deepseek-ai/schemastery";
 // ./vocab.ts — re-exported here for the gates' callers.
 export { RETIRED_RUNNER_KNOBS, RETIRED_CARRY_KEYS, DOOR_KEYS } from "./vocab.js";
 import { RETIRED_RUNNER_KNOBS, RETIRED_CARRY_KEYS, DOOR_KEYS } from "./vocab.js";
+import { resolveTestFlag } from "./queueSubmit.js";
 import { WIRE_STAGE_KEYS, STAGE_PATCH_KEYS } from "@melite/contracts/benchStage";
 export { STAGE_PATCH_KEYS };
 /** flow_inline top-level keys (the served shape). */
@@ -212,11 +213,13 @@ export const UPLOADS_VOICE = {
     "bad-filename": "uploads: filename is required",
     "bad-data": "uploads: data must be a FileReader data: URL",
 };
-/** Structure-gate one start doc (draft lookup stays in the door). */
+/** Structure-gate one start doc (draft lookup stays in the door).
+ *  The test-flag default rides the single seat (resolveTestFlag in
+ *  ./queueSubmit.ts — purge §7 P7 F-1): no twin `??` here. */
 export function checkFlowsStartEnvelope(doc) {
     if (!isRecord(doc))
         return { kind: "not-object", doc };
-    const testFlag = doc["test"] ?? false;
+    const testFlag = resolveTestFlag(doc);
     if (!isBoolField(testFlag))
         return { kind: "bad-test", testFlag };
     const draftId = doc["draft_id"];

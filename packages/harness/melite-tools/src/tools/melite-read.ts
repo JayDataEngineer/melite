@@ -299,6 +299,8 @@ export function meliteRead(ctx: { get(name: string): unknown }): ToolDefinition 
       return await readRunText(seat, a.run_id as string, typeof a.path === 'string' ? a.path : '')
     },
   })
-  def.presentCall = presentCall
+  // (§7 P7: the presenter rides defineTool validation — no second,
+  // ungated seat over the gate. The tool-presentation wall pins the
+  // gated face.)
   return def
 }

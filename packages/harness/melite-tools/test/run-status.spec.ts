@@ -43,15 +43,17 @@ function stubEstate(): Estate {
 const exec = fakeExec(AbortSignal.timeout(2000))
 
 describe('run_status presentCall — the streaming tile', () => {
-  test('titles the run; junk renders generic (the re-attached presenter)', () => {
+  test('titles the run; the gate owns the junk face (single seat)', () => {
     const tool = runStatus(stubEstate())
     // The tile always answers the generic card (pinned below) — narrow
     // the ToolCallView union to read its rawInput.
     assert.equal(tool.presentCall!({ runId: 'r1' } as never)!.title, 'Run status: r1')
     assert.equal((tool.presentCall!({ runId: 'r1' } as never)! as GenericCallView).rawInput, 'r1')
-    assert.equal(tool.presentCall!({} as never)!.title, 'Run status: ?')
-    assert.equal(tool.presentCall!(null as never)!.title, 'Run status: ?')
-    assert.equal(tool.presentCall!('x' as never)!.title, 'Run status: ?')
+    // (§7 P7: runId is required — junk is refused by the gate, never
+    // rendered by a second seat.)
+    assert.equal(tool.presentCall!({} as never), undefined)
+    assert.equal(tool.presentCall!(null as never), undefined)
+    assert.equal(tool.presentCall!('x' as never), undefined)
     assert.equal(tool.presentCall!({ runId: 'r1' } as never)!.card, 'generic')
   })
 })

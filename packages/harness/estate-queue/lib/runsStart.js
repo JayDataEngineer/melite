@@ -184,7 +184,12 @@ export function compileFlowInline(inline, knownEngines = [CARD_PLANE_ENGINE]) {
                 " (extra=forbid at the door)", "invalid_request");
         }
         if (checked.kind === "bad-id") {
-            const sid = String(checked.st["id"] ?? "");
+            // (purge §7 P7 F-2 — the absence voice): a MISSING id must not
+            // render as an invented empty string (present-but-empty). Only
+            // the absent leg substitutes; an illegal-but-present id rides
+            // verbatim. Walled at
+            // tests/walls/ts/suites/run-door-single-resolve.spec.ts F-2.
+            const sid = String(checked.st["id"] ?? "<absent>");
             return refusal(400, "stage id " + JSON.stringify(sid) + " is not a legal identifier", "invalid_request");
         }
         const st = checked.st;

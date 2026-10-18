@@ -712,11 +712,8 @@ export function meliteConstruct(
       }
     },
   })
-  // Re-attach the unconditional presenter over defineTool's
-  // soft-validation gate (junk/invalid args during streaming +
-  // replay still render the generic view, never throw — the
-  // tool-presentation wall pins this; same re-attach as every
-  // other melite face).
-  def.presentCall = presentCall
+  // (§7 P7: the presenter rides defineTool validation — no second,
+  // ungated seat over the gate. The tool-presentation wall pins the
+  // gated face.)
   return def as unknown as ToolDefinition
 }

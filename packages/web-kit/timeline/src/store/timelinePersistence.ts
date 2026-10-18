@@ -254,6 +254,14 @@ export async function loadPersistedTimeline(): Promise<{
       // judges: an id outside its (possibly empty) model table
       // resets. No hardcoded id lists, no legacy remap tables.
       if (_cat && (typeof clone.params.model !== 'string' || !_cat.models || !_cat.models[clone.params.model])) {
+        // (purge §7 P7 F-3 — the restore voice): the catalog-miss
+        // reset is a lane change with no voice. Name the segment id,
+        // the persisted id, and the reset target — the R-S9 quarantine
+        // precedent above. Walled at
+        // tests/walls/ts/suites/run-door-single-resolve.spec.ts F-3.
+        // (The cold case — !_cat — stays silent-by-law R-E2: no loaded
+        // catalog is no authority, riding untouched.)
+        console.warn(`[Timeline] Segment ${JSON.stringify(clone.id)} carries model ${JSON.stringify(clone.params.model)} — outside the loaded catalog, resetting to ${JSON.stringify(D.model)}`)
         clone.params.model = D.model
       }
       // Lip-sync fields (Phase 11) — backfill for old persisted segments

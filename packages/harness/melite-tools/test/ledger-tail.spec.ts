@@ -38,7 +38,7 @@ function stubEstate(): Estate {
 const exec = fakeExec(AbortSignal.timeout(2000))
 
 describe('ledger_tail presentCall — the streaming tile', () => {
-  test('echoes the filters; junk renders generic (the re-attached presenter)', () => {
+  test('echoes the filters; the gate owns the junk face (single seat)', () => {
     const tool = ledgerTail(stubEstate())
     // The tile always answers the generic card (pinned below) — narrow
     // the ToolCallView union to read its rawInput.
@@ -46,9 +46,11 @@ describe('ledger_tail presentCall — the streaming tile', () => {
       (tool.presentCall!({ limit: 5, event: 'run.' } as never)! as GenericCallView).rawInput,
       { limit: 5, event: 'run.' },
     )
+    // (§7 P7: all params optional — {} renders; non-objects are
+    // refused by the gate, never rendered by a second seat.)
     assert.deepEqual((tool.presentCall!({} as never)! as GenericCallView).rawInput, { limit: undefined, event: undefined })
-    assert.deepEqual((tool.presentCall!(null as never)! as GenericCallView).rawInput, { limit: undefined, event: undefined })
-    assert.deepEqual((tool.presentCall!('x' as never)! as GenericCallView).rawInput, { limit: undefined, event: undefined })
+    assert.equal(tool.presentCall!(null as never), undefined)
+    assert.equal(tool.presentCall!('x' as never), undefined)
     assert.equal(tool.presentCall!({} as never)!.title, 'Ledger tail')
   })
 })

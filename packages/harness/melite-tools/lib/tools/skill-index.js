@@ -17,15 +17,14 @@ import { defineTool } from '@deepseek-ai/dsh-tools';
 import { jsonClean } from "../json-clean.js";
 const INDEX_TIMEOUT_MS = 15_000;
 export function skillIndex(estate) {
-    // PRESENTATION ADAPTATION (tool-presentation wall + conversion
-    // invariance — presentCall output must not change): defineTool
-    // soft-gates presentCall behind arg validation (invalid → undefined),
-    // but the raw face always returned the tool's own generic card, and
-    // the wall pins that (junk/invalid args during streaming + replay
-    // still render the generic view, never throw). The presenter is
-    // shared: it rides the definition AND is re-attached over the gate
-    // below. execute validation (ToolArgsError/INVALID_ARGS) is
-    // unaffected.
+    // PRESENTATION SEAT (§7 P7, the tool-presentation wall — one
+    // seat for the invalid face): the presenter rides defineTool
+    // validation, and defineTool's soft gate OWNS invalid args
+    // (invalid → undefined, never throw). The pre-purge re-attach over
+    // that gate (a second, ungated seat rendering the generic card for
+    // junk) is deleted — conversion invariance (presentCall output must
+    // not change) now reads against the gated face. execute validation
+    // (ToolArgsError/INVALID_ARGS) is unaffected.
     const presentCall = () => {
         return { card: 'generic', title: 'Skill index', kind: 'search' };
     };
@@ -120,9 +119,9 @@ export function skillIndex(estate) {
             return jsonClean({ count: cards.length + flowCount, cards, flows: { count: flowCount, ids: flows.ids ?? [] } });
         },
     });
-    // Re-attach the unconditional presenter over defineTool's
-    // soft-validation gate (see the adaptation above).
-    def.presentCall = presentCall;
+    // (§7 P7: the presenter rides defineTool validation — no second,
+    // ungated seat over the gate. The tool-presentation wall pins the
+    // gated face.)
     return def;
 }
 //# sourceMappingURL=skill-index.js.map

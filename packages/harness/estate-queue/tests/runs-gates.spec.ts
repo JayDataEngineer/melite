@@ -134,6 +134,11 @@ describe("checkFlowsStartEnvelope (verdict order)", () => {
     const out = checkFlowsStartEnvelope({ draft_id: "not a draft id!!" });
     assert.deepEqual(out, { kind: "malformed-draft", draftId: "not a draft id!!" });
   });
+  it("an explicit null test flag rides the absent default (ONE LAW — resolveTestFlag)", () => {
+    assert.deepEqual(checkFlowsStartEnvelope({ draft_id: "d-01", test: null }), {
+      kind: "ok", body: { draft_id: "d-01", test: null }, testFlag: false,
+    });
+  });
   it("a clean envelope rides ok (test defaults false)", () => {
     assert.deepEqual(checkFlowsStartEnvelope({ draft_id: "d-01" }), {
       kind: "ok", body: { draft_id: "d-01" }, testFlag: false,

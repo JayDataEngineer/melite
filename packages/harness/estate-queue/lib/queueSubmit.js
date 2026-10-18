@@ -93,6 +93,20 @@ export function strictBodyCheck(body) {
     }
     return null;
 }
+/** THE TEST-FLAG RESOLVE SEAT (purge §7 P7 F-1, single-resolve): the
+ *  door's ONE place where the test envelope default is decided —
+ *  absent/null means false (a chat tool's start doc may carry
+ *  test:null, an LLM serializer emits nulls for omitted booleans —
+ *  the live lane receipt 2026-09-12 where a drifted bare read
+ *  refused legal calls). No caller hides its own `?? false`: the
+ *  walk routes ONLY through here, and the walled value (absent/null
+ *  proceeds, non-bool refuses) is pinned at
+ *  tests/walls/ts/suites/run-door-single-resolve.spec.ts F-1b. */
+export function resolveTestFlag(body) {
+    if (!("test" in body) || body["test"] === null)
+        return false;
+    return body["test"];
+}
 /** THE SHARED ENVELOPE STRUCTURE (one-envelope law, the twin-walker
  *  cure 2026-10-22): the four structural faces BOTH submit faces
  *  run, in byte-identical order — non-object body, non-bool test
@@ -111,7 +125,7 @@ export function submitEnvelopeStructuralRefusal(doc) {
         return envelopeRefusal("not-object", doc);
     }
     const body = doc;
-    const testFlag = body["test"] ?? false;
+    const testFlag = resolveTestFlag(body);
     if (typeof testFlag !== "boolean") {
         return envelopeRefusal("bad-test", doc, { testFlag });
     }

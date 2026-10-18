@@ -52,11 +52,13 @@ describe('melite_load presentCall — the Load card', () => {
     assert.equal(view?.kind, 'search')
   })
 
-  test('junk names fall back to ?', () => {
+  test('junk names are refused by the gate (single seat — no re-attached fallback)', () => {
     const tool = meliteLoad(stubEstate())
-    assert.equal(tool.presentCall!({})?.title, 'Load ?')
-    assert.equal(tool.presentCall!({ name: '' })?.title, 'Load ?')
-    assert.equal(tool.presentCall!(null)?.title, 'Load ?')
+    // (§7 P7: name/inference_type are required — the gate owns the
+    // invalid face.)
+    assert.equal(tool.presentCall!({}), undefined)
+    assert.equal(tool.presentCall!({ name: '' }), undefined)
+    assert.equal(tool.presentCall!(null), undefined)
   })
 })
 

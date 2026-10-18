@@ -166,9 +166,10 @@ describe('melite_read — the read arm', () => {
     assert.deepEqual(view.rawInput, { run_id: 'run-ab12cd-side', path: '_flow.json' })
     // no path → the listing arm's own card
     assert.deepEqual((tool.presentCall!({ run_id: 'run-ab12cd-side' })! as GenericCallView).rawInput, { run_id: 'run-ab12cd-side' })
-    assert.equal(tool.presentCall!({})!.title, 'Read run file ?')
-    // junk args render the generic card, never a throw
-    assert.equal(tool.presentCall!(null)!.title, 'Read run file ?')
+    // (§7 P7: run_id is required — {} and null are refused by the
+    // gate, never rendered by a second seat, never a throw)
+    assert.equal(tool.presentCall!({}), undefined)
+    assert.equal(tool.presentCall!(null), undefined)
     // the tool declares itself concurrency-safe for VALID args (the
     // wrapper soft-gates: invalid args read as exclusive, never parallel)
     assert.equal(tool.isConcurrencySafe!({ run_id: 'run-ab12cd-side' }), true)

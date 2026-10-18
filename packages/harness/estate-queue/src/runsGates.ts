@@ -64,6 +64,7 @@ import z from "@deepseek-ai/schemastery";
 // ./vocab.ts — re-exported here for the gates' callers.
 export { RETIRED_RUNNER_KNOBS, RETIRED_CARRY_KEYS, DOOR_KEYS } from "./vocab.ts";
 import { RETIRED_RUNNER_KNOBS, RETIRED_CARRY_KEYS, DOOR_KEYS } from "./vocab.ts";
+import { resolveTestFlag } from "./queueSubmit.ts";
 import { WIRE_STAGE_KEYS, STAGE_PATCH_KEYS } from "@melite/contracts/benchStage";
 export { STAGE_PATCH_KEYS };
 
@@ -281,10 +282,12 @@ export type FlowsStartEnvelope =
   | { kind: "missing-draft" }
   | { kind: "malformed-draft"; draftId: string };
 
-/** Structure-gate one start doc (draft lookup stays in the door). */
+/** Structure-gate one start doc (draft lookup stays in the door).
+ *  The test-flag default rides the single seat (resolveTestFlag in
+ *  ./queueSubmit.ts — purge §7 P7 F-1): no twin `??` here. */
 export function checkFlowsStartEnvelope(doc: unknown): FlowsStartEnvelope {
   if (!isRecord(doc)) return { kind: "not-object", doc };
-  const testFlag: unknown = doc["test"] ?? false;
+  const testFlag: unknown = resolveTestFlag(doc);
   if (!isBoolField(testFlag)) return { kind: "bad-test", testFlag };
   const draftId: unknown = doc["draft_id"];
   if (typeof draftId !== "string" || draftId === "") return { kind: "missing-draft" };

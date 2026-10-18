@@ -1,1 +1,1 @@
-{"version":3,"file":"ledger-tail.d.ts","sourceRoot":"","sources":["../../src/tools/ledger-tail.ts"],"names":[],"mappings":"AAWA,OAAO,KAAK,EAAa,cAAc,EAAE,MAAM,aAAa,CAAA;AAC5D,OAAO,KAAK,EAAE,MAAM,EAAE,MAAM,cAAc,CAAA;AAqB1C,wBAAgB,UAAU,CAAC,MAAM,EAAE,MAAM,GAAG,cAAc,CA2IzD"}
+{"version":3,"file":"ledger-tail.d.ts","sourceRoot":"","sources":["../../src/tools/ledger-tail.ts"],"names":[],"mappings":"AAWA,OAAO,KAAK,EAAa,cAAc,EAAE,MAAM,aAAa,CAAA;AAC5D,OAAO,KAAK,EAAE,MAAM,EAAE,MAAM,cAAc,CAAA;AAqB1C,wBAAgB,UAAU,CAAC,MAAM,EAAE,MAAM,GAAG,cAAc,CA0IzD"}

@@ -1133,6 +1133,8 @@ export function meliteView(
       return value as unknown as { runId: string, url: string, image: Record<string, JsonValue> } & Record<string, JsonValue>
     },
   })
-  def.presentCall = presentCall
+  // (§7 P7: the presenter rides defineTool validation — no second,
+  // ungated seat over the gate. The tool-presentation wall pins the
+  // gated face.)
   return def
 }

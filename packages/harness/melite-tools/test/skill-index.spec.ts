@@ -45,7 +45,12 @@ function stubEstate(): Estate {
 describe('melite_skill_index — the static face', () => {
   test('the scan has one static face', () => {
     const tool = skillIndex(stubEstate())
-    assert.deepEqual(tool.presentCall!(undefined as never), { card: 'generic', title: 'Skill index', kind: 'search' }) // the face takes no args at runtime; the type demands one
+    // (§7 P7: the face takes no args at runtime — but arg validation
+    // still owns the seat: a non-object is refused by the gate (the
+    // pre-purge re-attach rendered for it). {} renders (vacuously
+    // valid); the type demands one arg at the call site.
+    assert.deepEqual(tool.presentCall!({} as never), { card: 'generic', title: 'Skill index', kind: 'search' })
+    assert.equal(tool.presentCall!(undefined as never), undefined)
   })
 })
 

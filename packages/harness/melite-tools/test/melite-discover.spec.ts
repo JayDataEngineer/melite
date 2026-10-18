@@ -69,10 +69,11 @@ describe('melite_discover presentCall — the Discover card', () => {
     assert.equal(tool.presentCall!({ tags: 'x' })?.title, 'Discover: x')
   })
 
-  test('junk args still render the generic card', () => {
+  test('junk args ride the gate (single seat — no re-attached fallback)', () => {
     const tool = meliteDiscover(stubEstate(), () => {})
+    // (§7 P7: all params optional — {} renders; null is refused.)
     assert.equal(tool.presentCall!({})?.title, 'Discover')
-    assert.equal(tool.presentCall!(null)?.title, 'Discover')
+    assert.equal(tool.presentCall!(null), undefined)
   })
 })
 
