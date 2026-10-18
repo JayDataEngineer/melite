@@ -381,6 +381,11 @@ describe('live door arms', () => {
       'model_defaults',
       'outputs',
       'packs',
+      // THE DECLARED SURFACE (the drill null-set cure, 2026-11-08):
+      // the served body carries the DECL's param names — the wire
+      // field the switch verbs read to null the departed surface and
+      // the compose mirror reads to refuse a key no lane declares.
+      'params',
       'schema',
       'service',
       'size',

@@ -713,6 +713,44 @@ describe("scrub (the cap owns the gesture; seek pairs the interaction state)", (
     assert.deepEqual(rec.scrubStart, [], "no interaction state from the bar's middle")
     assert.deepEqual(rec.bar, [], "no seek from the bar's middle")
   })
+
+  // THE LINE ITSELF (operator item b, verbatim: "when I click and drag
+  // the LINE part, nothing should happen — it should only drag when I
+  // grab the white ball on top"). The line div carries NO pointer
+  // wiring and its css.playhead class is pointer-events:none — in the
+  // browser a press on the line NEVER TARGETS IT, it targets whatever
+  // sits beneath (empty track space: no scrub seat exists there — the
+  // lanes' pointerdowns are clip drags only). jsdom can't honor the
+  // css hit-test, so the arm pins the wiring directly: the line has no
+  // handler of its own, the css rule is read from the built timeline
+  // module, and a dispatched press on the line opens no session.
+  it("the playhead LINE is pointer-dead: no handler, a pointer-dead css rule, and a press on it opens no scrub session", async () => {
+    const { rec } = strip()
+    const line = screen.getByTestId("motion-timeline-playhead") as HTMLElement
+    const cap = screen.getByTestId("motion-timeline-playhead-cap") as HTMLElement
+    // React wires JSX handlers as fiber props, never DOM properties —
+    // read the __reactProps$ key (the one React sets on every host node).
+    const propsOf = (el: HTMLElement): Record<string, unknown> => {
+      const key = Object.keys(el).find((k) => k.startsWith("__reactProps$"))
+      return key ? (el as unknown as Record<string, unknown>)[key] as Record<string, unknown> : {}
+    }
+    assert.equal(propsOf(line).onPointerDown, undefined, "the line element carries no pointerdown wiring")
+    assert.equal(typeof propsOf(cap).onPointerDown, "function", "the cap is wired — the asymmetry is the law")
+    // the css rule, from the real built timeline module css (not a copy)
+    const { readFileSync } = await import("node:fs")
+    const { join } = await import("node:path")
+    // the suite always runs from the repo root (the walker's cwd law)
+    const css = readFileSync(join(process.cwd(), "packages", "web-kit", "timeline", "lib", "timeline", "timeline.module.css"), "utf8")
+    const playheadClass = line.className.split(" ").find((c) => c.includes("playhead") && !c.includes("Cap"))
+    assert.ok(playheadClass, "the line rides the playhead css module class")
+    // the built css keeps original module names — pin the rule itself
+    assert.match(css, /\.playhead\s*\{[^}]*pointer-events:\s*none/, "the playhead line's css rule is pointer-events:none — the browser never targets the line")
+    fireEvent.pointerDown(line, { button: 0, clientX: 60 })
+    fireEvent.pointerMove(document.body, { clientX: 120 })
+    fireEvent.pointerUp(document.body, { clientX: 120 })
+    assert.deepEqual(rec.scrubStart, [], "a press on the line opens no scrub session")
+    assert.deepEqual(rec.bar, [], "a line drag seeks nothing")
+  })
 })
 
 describe("the Music row (drops land positioned; foreign writes nothing)", () => {

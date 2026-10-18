@@ -131,6 +131,12 @@ export interface ProvisioningConfig {
   /** THE DISK ADMISSION SEAM (audit I-S4): free bytes for one path —
    *  the admission gate reads it once per plan; tests stub it. */
   readonly diskFree?: (path: string) => Promise<number>;
+  /** THE ACQUIRE STALL BUDGET (ERRORS.md k2): how long a direct fetch
+   *  may land no bytes before the stall watchdog fails it — the
+   *  deployment-varying face of ACQUIRE_STALL_TIMEOUT_MS (a lossy
+   *  link wants a wider window; the default is the tightest bound the
+   *  stuck-acquire contract allows). Validated: a positive integer. */
+  readonly acquireStallTimeoutMs?: number;
 }
 
 export type ProvisioningServiceDefinition = {
@@ -179,6 +185,13 @@ export type ProvisioningServiceDefinition = {
    *  idle (the same posture as the missing progressOf and
    *  startWeightAcquire seats). */
   inflightAcquires?(): readonly string[];
+  /** THE RESCUE EVICT SEAT (optional so older fakes satisfy the
+   *  type): removes one SETTLED acquire row — the ledger entry, the
+   *  by-ref pointer, the stored operation — so a wedged fetch's row
+   *  is clearable and a later progressOf answers null (the manage
+   *  plane's acquire_discard; ERRORS.md k2's "no delete"). The
+   *  service refuses a still-locked id loud. */
+  discardAcquire?(operationId: string): void;
 };
 
 export type ProvisioningPorts = {

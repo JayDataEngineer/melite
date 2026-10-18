@@ -704,6 +704,24 @@
     }
   },
   "model": "qwen-img-edit-2511",
+  "params": [
+    "input_images",
+    "image1",
+    "image2",
+    "image3",
+    "reference_images",
+    "input_mask",
+    "prompt",
+    "negative_prompt",
+    "match_input_resolution",
+    "seed",
+    "steps",
+    "cfg",
+    "sampler",
+    "scheduler",
+    "use_stock_nodes",
+    "double_reference"
+  ],
   "outputs": {
     "default": "image"
   },
@@ -1091,14 +1109,8 @@
         "meta": {
           "description": "Width",
           "extra": {
-            "order": 0,
-            "group": "resolution",
-            "columns": 3,
-            "width": 1,
-            "zone": "params",
-            "wtype": "number",
-            "visible_when": "match_input_resolution=false",
-            "tooltip": "Custom target resolution — the 2.1 lane edits at target size (both axes together, never one alone). Shown only while Match Input Resolution is off."
+            "hidden": true,
+            "tooltip": "Retained for legacy drafts only — neither edit lane takes a stated size anymore (the latent law, 2026-11-08): both edit at the source’s own frame, and a stated axis refuses field-named. Clear it and re-run."
           }
         }
       },
@@ -1107,14 +1119,8 @@
         "meta": {
           "description": "Height",
           "extra": {
-            "order": 1,
-            "group": "resolution",
-            "columns": 3,
-            "width": 1,
-            "zone": "params",
-            "wtype": "number",
-            "visible_when": "match_input_resolution=false",
-            "tooltip": "Custom target resolution — the 2.1 lane edits at target size (both axes together, never one alone). Shown only while Match Input Resolution is off."
+            "hidden": true,
+            "tooltip": "Retained for legacy drafts only — neither edit lane takes a stated size anymore (the latent law, 2026-11-08): both edit at the source’s own frame, and a stated axis refuses field-named. Clear it and re-run."
           }
         }
       },
@@ -1129,7 +1135,7 @@
             "columns": 3,
             "width": 1,
             "zone": "params",
-            "tooltip": "When on (default), the output matches the first input image’s resolution — no need to type Width/Height. Turn off to use a custom Width/Height."
+            "tooltip": "Retained for draft compatibility — it switches nothing: both edit lanes edit at the source’s own frame (the 2.1 lane samples the encoder’s own latent; 2511 encodes the source)."
           }
         }
       },
@@ -1323,108 +1329,7 @@
   },
   "service": "qwen-img-edit-2511",
   "size": null,
-  "variants": [
-    {
-      "id": "lightning",
-      "label": "Lightning",
-      "group": "Variant",
-      "defaults": {
-        "steps": 4,
-        "cfg": 1
-      },
-      "route": "qwen-img-edit-2511-lightning4",
-      "hint": "4-step distilled lightx2v checkpoint — fast. Swaps BOTH the recipe (steps 4, cfg 1) AND the unet (the recipe↔weights law — never one without the other). Requires provisioning: the FP8 Lightning file is NOT on this box by default; without it the engine validation refuses LOUD (the honest face) — the standard weights are what ship.",
-      "engine": "comfyui",
-      "sampler_envelope": null,
-      "quant": null,
-      "vram_peak_gb": null,
-      "owner": ""
-    },
-    {
-      "id": "lightning4",
-      "label": "FP8 Lightning",
-      "group": "Quant",
-      "defaults": {},
-      "route": "qwen-img-edit-2511-lightning4",
-      "hint": null,
-      "engine": "comfyui",
-      "quant": "lightning4",
-      "vram_peak_gb": 20,
-      "owner": "lightning"
-    },
-    {
-      "id": "standard",
-      "label": "Standard",
-      "group": "Variant",
-      "defaults": {
-        "steps": 20,
-        "cfg": 2.5
-      },
-      "route": "qwen-img-edit-2511",
-      "hint": "20 steps, cfg 2.5 — the INT8 ConvRot merge (DEFAULT: the weights this box ships, the recipe the family defaults stamp).",
-      "engine": "comfyui",
-      "sampler_envelope": null,
-      "quant": null,
-      "vram_peak_gb": null,
-      "owner": ""
-    },
-    {
-      "id": "int8",
-      "label": "INT8 ConvRot",
-      "group": "Quant",
-      "defaults": {},
-      "route": "qwen-img-edit-2511-int8",
-      "hint": null,
-      "engine": "comfyui",
-      "quant": "int8",
-      "vram_peak_gb": 20,
-      "owner": "standard"
-    },
-    {
-      "id": "strong-identity",
-      "label": "Strong Identity",
-      "group": "Recipe",
-      "defaults": {
-        "double_reference": true
-      },
-      "route": "",
-      "hint": "Double-reference ON — the card schema's own identity knob (encode the input twice for stronger identity preservation); this family's own default is false. PLANE TRUTH (agent-debt F-4, 2026-09-22): the TS compose plane refuses double_reference=true LOUD — it builds the stock plain-edit graph only. Selecting this variant GUARANTEES a refusal; do not plan runs around it until the double-encode lane exists.",
-      "engine": "comfyui",
-      "sampler_envelope": null,
-      "quant": null,
-      "vram_peak_gb": null,
-      "owner": ""
-    },
-    {
-      "id": "upstream-solvers",
-      "label": "Upstream Solvers",
-      "group": "Recipe",
-      "defaults": {
-        "sampler": "euler",
-        "scheduler": "simple"
-      },
-      "route": "",
-      "hint": "Sampler euler + scheduler simple — this family's own DECL defaults, both members of the card's sampler/scheduler vocabularies.",
-      "engine": "comfyui",
-      "sampler_envelope": null,
-      "quant": null,
-      "vram_peak_gb": null,
-      "owner": ""
-    },
-    {
-      "id": "default",
-      "label": "Default",
-      "group": "Recipe",
-      "defaults": {},
-      "route": "",
-      "hint": "The family default — no extra stamps; a fresh card lands here.",
-      "engine": "comfyui",
-      "sampler_envelope": null,
-      "quant": null,
-      "vram_peak_gb": null,
-      "owner": ""
-    }
-  ],
+  "variants": [],
   "lanes": {
     "base": [
       "input_images",
@@ -1464,6 +1369,12 @@
           "cure": "an edit needs the image being edited — the ordered input_images list, or a legacy image1/image2/image3/reference_images anchor"
         }
       ]
+    },
+    "bounds": {
+      "steps": {
+        "min": 1,
+        "max": 50
+      }
     },
     "variants": {}
   },

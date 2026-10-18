@@ -217,6 +217,26 @@ export const chromeCopy = {
   missingInstall: (p: { what: string }): string => 'Missing ' + p.what + ' — install through the manage seat?',
   /** Rescue missing-weight note (what the run lacked). */
   missingDownload: (p: { what: string }): string => 'Missing ' + p.what + ' — download through the manage seat?',
+  /** Weight popup title when the acquisition ended STUCK (frozen
+   *  bytes across polls or an expired poll ceiling) — never the
+   *  ready face (the purge P5 rescue honesty, ERRORS k2/m). */
+  weightStuck: 'Weight stuck',
+  /** Weight stuck face's note: the engine's last truth leads (state
+   *  + bytes/total), and the two honest exits are named. */
+  stuckNote: (p: { state: string, bytes: number, total: number }): string =>
+    'Stuck — the download is no longer progressing: the engine last reported state "' + p.state + '" at ' + String(p.bytes) + '/' + String(p.total) + ' bytes. Retry the fetch or delete the stuck operation.',
+  /** Weight stuck face's retry verb (re-rides the acquire_weight door). */
+  retryDownload: 'Retry the download',
+  /** Weight stuck face's delete verb (the discard rides the manage seat). */
+  deleteStuck: 'Delete stuck operation',
+  /** The stuck face's run refusal — a run press on an incomplete
+   *  weight is refused loudly, never fired silently (the purge P5). */
+  stuckRunRefusal: 'The weight is not complete — the run stays refused until the fetch lands (retry) or the stuck operation is deleted.',
+  /** Weight tracker line when the engine declared no total (a DECL
+   *  row without size seeds 0): the voice says so — no dead
+   *  0-of-0 meter dressed as 0% (the purge P5's total=0 face). */
+  undeclaredTotal: (p: { bytes: string, total: string }): string =>
+    p.bytes + '/' + p.total + ' bytes — total undeclared (the engine reported no size)',
 } as const
 
 /** The dictionary's key union — the typed seat's domain. */

@@ -63,11 +63,15 @@ const CODEGEN_FACADE: Record<string, string> = {
 }
 
 describe('vitest tier wiring', () => {
-  it('finds the six tier configs (root partition + five tiers)', () => {
+  it('finds the seven tier configs (root partition + six tiers)', () => {
     assert.deepEqual(
       [...CONFIG_FILES].sort(),
       [
         'vitest.bench.config.ts',
+        // the coldstart tier (59fc746e9 — the opt-in scratch-engine
+        // battery); the tier landed without re-pinning this wall and
+        // the pin red until this recut.
+        'vitest.coldstart.config.ts',
         'vitest.config.ts',
         'vitest.e2e.config.ts',
         'vitest.expected.config.ts',

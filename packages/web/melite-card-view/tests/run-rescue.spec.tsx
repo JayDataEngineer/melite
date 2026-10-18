@@ -91,7 +91,10 @@ test('a bare filename with no provision bearing renders nothing (RISK-2)', () =>
 })
 
 test('a model miss on a model-less card provisions the CARD (the card-id fallback — the mask SAM2 law)', async () => {
-  wire.postManageAction.mockResolvedValue({ ok: true, detail: 'downloaded: sam2.1_hiera_large.pt', data: { operation_id: 'op-mask', state: 'active', bytes: 9, total: 9 } })
+  // state 'installed' — the genuinely terminal word (the unmocked-
+  // success move: 'active' is the engine's live state, never a
+  // landing; run-rescue-acquire-terminal.spec.ts is the wall)
+  wire.postManageAction.mockResolvedValue({ ok: true, detail: 'downloaded: sam2.1_hiera_large.pt', data: { operation_id: 'op-mask', state: 'installed', bytes: 9, total: 9 } })
   render(
     <RunRescue error="card 'mask' needs weight 'sam2.1_hiera_large.pt' — not found in sams" stages={[{ card: 'mask', params: { input_image: '/m/p.png' } }]} onRun={() => {}} />,
   )
@@ -103,7 +106,7 @@ test('a model miss on a model-less card provisions the CARD (the card-id fallbac
 })
 
 test('a model miss with a family provisions the family (the DECL owns the URL)', async () => {
-  wire.postManageAction.mockResolvedValue({ ok: true, detail: 'downloaded: 2', data: { operation_id: 'op-fam', state: 'active', bytes: 2, total: 2 } })
+  wire.postManageAction.mockResolvedValue({ ok: true, detail: 'downloaded: 2', data: { operation_id: 'op-fam', state: 'installed', bytes: 2, total: 2 } })
   render(
     <RunRescue error="flow needs weight 'x.safetensors' — not found in loras/h3" stages={STAGES} onRun={() => {}} />,
   )
@@ -114,7 +117,7 @@ test('a model miss with a family provisions the family (the DECL owns the URL)',
 })
 
 test('the current missing-weight target is the declared model, not the fetch source', async () => {
-  wire.postManageAction.mockResolvedValue({ ok: true, detail: 'installed', data: { operation_id: 'op-t', state: 'active', bytes: 3, total: 3 } })
+  wire.postManageAction.mockResolvedValue({ ok: true, detail: 'installed', data: { operation_id: 'op-t', state: 'installed', bytes: 3, total: 3 } })
   render(
     <RunRescue
       error="card 'mask' needs weight 'sams/sam2.1_hiera_large.pt' — absent on the models tree; fetch declared-source (provision_model model=mask)"
@@ -131,7 +134,7 @@ test('the current missing-weight target is the declared model, not the fetch sou
 test('the Download press opens a live bytes/total tracker that polls the same door', async () => {
   wire.postManageAction
     .mockResolvedValueOnce({ ok: true, detail: 'acquiring x', data: { operation_id: 'op-live', state: 'acquiring', bytes: 1, total: 4 } })
-    .mockResolvedValue({ ok: true, detail: 'acquiring x', data: { operation_id: 'op-live', state: 'active', bytes: 4, total: 4 } })
+    .mockResolvedValue({ ok: true, detail: 'acquiring x', data: { operation_id: 'op-live', state: 'installed', bytes: 4, total: 4 } })
   render(
     <RunRescue error="flow needs weight 'x.safetensors' — not found in loras/h3" stages={STAGES} onRun={() => {}} />,
   )
@@ -227,7 +230,7 @@ test('an installed poll with no detail voices the acquired bytes and the restart
 
 test('the Weight-ready popup closes to nothing (the run face owns the next move)', async () => {
   wire.postManageAction
-    .mockResolvedValueOnce({ ok: true, detail: 'downloaded: 2', data: { operation_id: 'op-d', state: 'active', bytes: 2, total: 2 } })
+    .mockResolvedValueOnce({ ok: true, detail: 'downloaded: 2', data: { operation_id: 'op-d', state: 'installed', bytes: 2, total: 2 } })
   const { container } = render(
     <RunRescue error="flow needs weight 'x.safetensors' — not found in loras/h3" stages={STAGES} onRun={() => {}} />,
   )

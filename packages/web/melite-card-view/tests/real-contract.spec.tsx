@@ -65,22 +65,25 @@ describe('THE REAL image-edit CONTRACT drives the real form', () => {
     const prompt = byName.get('prompt')
     expect(prompt!.type).toBe('textarea')
     expect(prompt!.required).toBe(true)
-    // width/height ride the resolution group. TWO AXES, TWO HOMES
-    // (fix shape 2 + the match toggle, 2026-10-13): the FAMILY
-    // scoping rides the DECL params surface (spec.lanes) — never a
-    // visible_when, a guard there would be a second declaration
-    // drifting beside the first. The card-authored
-    // match_input_resolution toggle is the ONE intra-card display
-    // axis that rides visible_when: width/height hide while the
-    // toggle (default true) is on.
-    const width = byName.get('width')
-    expect(width!.visible_when).toBe('match_input_resolution=false')
-    expect(width!.group).toBe('resolution')
-    // the DECL surfaces serve: 2.1 owns the resolution pair,
-    // 2511's surface excludes it (source-resolution lane).
-    expect(REAL21.lanes?.base).toContain('width')
-    expect(REAL21.lanes?.base).toContain('height')
-    expect(REAL21.lanes?.bounds?.width).toEqual({ min: 256, max: 1536 })
+    // width/height are GONE FROM THE SERVED SURFACE (the stated-size
+    // law, 59fc746e9 — the empty-form burn recut: no DECL lane takes
+    // width/height, the serve carries NO geometry — never an empty
+    // field, never a ghost 1024; the size word is the user's stated
+    // word, refused field-named at both seats when off-lane). The
+    // old pin demanded the match-toggle pair with its visible_when —
+    // the wall rode the STALE fixture green until the weld refresh
+    // exposed it. The declared size word now lives nowhere.
+    expect(byName.has('width')).toBe(false)
+    expect(byName.has('height')).toBe(false)
+    // the match toggle SURVIVES (it rides lanes.base — the card's
+    // own display axis); only the geometry pair died.
+    expect(byName.has('match_input_resolution')).toBe(true)
+    // the DECL surfaces serve: 2.1's lane words keep the solver span
+    // (the stated-size wall's own bound), and carry NO geometry.
+    expect(REAL21.lanes?.base).not.toContain('width')
+    expect(REAL21.lanes?.base).not.toContain('height')
+    expect(REAL21.lanes?.bounds?.width).toBeUndefined()
+    expect(REAL21.lanes?.bounds).toEqual({ steps: { min: 1, max: 50 } })
     // the 2511 doc is the sibling fixture (seated above)
     expect(REAL2511.lanes?.base?.includes('width')).toBe(false)
     expect(REAL2511.lanes?.base?.includes('use_stock_nodes')).toBe(true)
@@ -112,20 +115,23 @@ describe('THE REAL image-edit CONTRACT drives the real form', () => {
     expect(await screen.findByText('Input Images')).toBeTruthy()
     expect(screen.getByText('0 / 16')).toBeTruthy()
     expect(screen.getByLabelText('Add Input Images source')).toBeTruthy()
-    // THE VISIBILITY GRAMMAR (real envelope, real interpreter): the
-    // match toggle (2026-10-13) seats ON by default — width/height
-    // HIDE (visible_when 'match_input_resolution=false' through the
-    // real interpreter, the resolution group's own submenu tab);
-    // flip it off and the custom pair seats at the default 1024.
-    // The pick re-serves the 2511 doc and they vanish again (2511
-    // edits at source resolution — the lane, not the toggle).
+    // THE NO-GEOMETRY RENDER (the stated-size law, 59fc746e9): the
+    // resolution group still seats (the match toggle is the card's
+    // own display axis and survives), but flipping it reveals
+    // NOTHING — the width/height pair is gone from the surface
+    // entirely (the size word is stated, never defaulted into the
+    // form). The old arm rode the stale fixture: it flipped the
+    // toggle and expected the pair at 1024. The pick re-serves the
+    // 2511 doc and the input stack + model axis carry.
     fireEvent.click(screen.getByRole('tab', { name: 'Resolution' }))
     const match = screen.getByRole('switch', { name: 'Match Input Resolution' })
     expect(match.getAttribute('aria-checked')).toBe('true')
     expect(screen.queryByLabelText('Width')).toBeNull()
     expect(screen.queryByLabelText('Height')).toBeNull()
     fireEvent.click(match)
-    expect((screen.getByLabelText('Width') as HTMLInputElement).value).toBe('1024')
+    expect(match.getAttribute('aria-checked')).toBe('false')
+    expect(screen.queryByLabelText('Width')).toBeNull()
+    expect(screen.queryByLabelText('Height')).toBeNull()
     expect(screen.getByLabelText('Model')).toBeTruthy()
     act(() => { setHost!({ spec: REAL2511, user: { model: 'qwen-img-edit-2511', prompt: 'a cat' } }) })
     expect(screen.queryByLabelText('Width')).toBeNull()

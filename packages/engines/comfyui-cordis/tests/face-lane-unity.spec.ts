@@ -90,6 +90,20 @@ const REGISTERED_DIVERGENCES: ReadonlyArray<{
     knob: "reference_images",
     cure: FACE_FILTER_CURE,
   })),
+  // THE STATED-SIZE LAW (2026-11-08): the 21 lane's DECL dropped
+  // width/height (both edit lanes edit at the source's own frame; a
+  // stated axis refuses field-named). The dict keeps the two hidden
+  // legacy seats (hidden: true, the tooltip names the law) so legacy
+  // drafts deserialize; the UI never renders them. Same frozen
+  // form_spec contract as the reference seat above; the face filter
+  // (UNITY-1, landed in card-base form.tsx) owns the visible face.
+  { card: "image-edit", family: "qwen-img-edit-21", knob: "width", cure: FACE_FILTER_CURE },
+  { card: "image-edit", family: "qwen-img-edit-21", knob: "height", cure: FACE_FILTER_CURE },
+  // THE MUSIC MODE CURE (2026-11-08): music3's DECL dropped mode (the
+  // door refuses non-"full" loudly — music3 has no symbolic planner);
+  // the dict's mode seat is yue2-scoped at the face (visible_when:
+  // model=yue2) but serves family-blind in the frozen form_spec.
+  { card: "music", family: "music3", knob: "mode", cure: FACE_FILTER_CURE },
 ];
 
 /** The declaration-coverage ratchet: every family boarding a card

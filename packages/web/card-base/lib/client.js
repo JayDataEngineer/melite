@@ -9210,7 +9210,7 @@ window.__ModuleLoader__.load({
 		*  new family's seed re-derives on spec-land, never the departed
 		*  family's 52 riding under a 4-step distill). The caller writes
 		*  every key through onEdit. PURE. */
-		function modelSwitchPatch(spec, model, held) {
+		function modelSwitchPatch(spec, model, held, arrival) {
 			const patch = { model };
 			const groups = axisGroups(spec);
 			const active = {};
@@ -9239,9 +9239,37 @@ window.__ModuleLoader__.load({
 				for (const r of spec.variants ?? []) for (const k of Object.keys(r.sampler_envelope ?? {})) vocab.add(k);
 				for (const k of vocab) if (!(k in patch)) patch[k] = null;
 				for (const k of bagKeysOf(spec)) if (!(k in patch)) patch[k] = null;
+				if (Array.isArray(spec.params) && arrival !== void 0 && Array.isArray(arrival.params)) {
+					const arrivalWords = new Set(arrival.params);
+					const axisWords = new Set(axisGroups(spec).map((g) => axisKey(g)));
+					for (const k of spec.params) {
+						if (k === "model" || axisWords.has(k) || arrivalWords.has(k)) continue;
+						if (!(k in patch)) patch[k] = null;
+					}
+				}
 			} else if (seededVariant !== void 0) reconcilePick(patch, spec, seededVariant, held);
 			patch["model"] = model;
 			return patch;
+		}
+		/** THE SWITCH-FRAME MERGE, ONE HOME (the drill null-set cure,
+		*  2026-11-08 — the P4 merge-order half): a caller's frame merges
+		*  UNDER a switch patch, but the patch's NULL verdicts — the
+		*  departed-surface keys the verb deleted — BEAT the frame: an
+		*  incoming frame that re-plants a departed stamp (a recipe re-point
+		*  carrying the departed recipe key) dies here, and every other
+		*  frame key keeps the caller-wins law. The single spelling both the
+		*  drill's per-key seam and the walls ride; re-implementing the
+		*  spread locally is how the caller-wins order silently grew.
+		*  @param patch the switch verb's patch (its nulls are verdicts).
+		*  @param frame the caller's own keys — they win except under a null
+		*  verdict. */
+		function mergeSwitchFrame(patch, frame) {
+			const out = {
+				...patch,
+				...frame
+			};
+			for (const [k, v] of Object.entries(patch)) if (v === null) out[k] = null;
+			return out;
 		}
 		/** THE EMPTY-SELECTION LAW's authoring decision (2026-10-10, the
 		*  operator's live bench: a stage carrying quant:"" — born when a
@@ -9335,6 +9363,10 @@ window.__ModuleLoader__.load({
 					console.warn(`card-base: seedUser dropped held mod bag '${k}' — picked for model "${heldModel}", this stage's spec is "${spec.model}" (mods are per model).`);
 					delete out[k];
 				}
+			}
+			for (const k of Object.keys(out)) if (out[k] === null) {
+				console.warn(`card-base: seedUser consumed the unset mark on held '${k}' — a null user value is the switch verbs' delete marker; the holding drops the key.`);
+				delete out[k];
 			}
 			return out;
 		}
@@ -9434,6 +9466,15 @@ window.__ModuleLoader__.load({
 			const heldModel = doc["model"];
 			if (typeof heldModel === "string" && heldModel !== "" && spec.model !== void 0 && spec.model !== "" && heldModel !== spec.model) return [];
 			const out = [];
+			if (Array.isArray(spec.params)) {
+				const declared = new Set(spec.params);
+				for (const g of axisGroups(spec)) declared.add(axisKey(g));
+				declared.add("model");
+				for (const k of Object.keys(doc)) {
+					if (k === "model" || declared.has(k)) continue;
+					out.push({ message: "card_compose: field '" + k + "' fires nothing on this lane — the served surface (" + (spec.model ?? "") + ") does not declare it; the estate admission gate refuses the same key field-named at the write door." });
+				}
+			}
 			const matrix = variantMatrixFromFlatRows(spec.variants ?? []);
 			const rawVariant = doc["variant"];
 			const vres = resolveVariantRow(matrix, unchosenToUnstated(rawVariant), "", "offered");
@@ -16372,6 +16413,7 @@ window.__ModuleLoader__.load({
 		exports.laneViolations = laneViolations;
 		exports.makeLabelSprite = makeLabelSprite;
 		exports.manageRemote = manageRemote;
+		exports.mergeSwitchFrame = mergeSwitchFrame;
 		exports.mintViewportId = mintViewportId;
 		exports.modOwnedFields = modOwnedFields;
 		exports.modelChoices = modelChoices;

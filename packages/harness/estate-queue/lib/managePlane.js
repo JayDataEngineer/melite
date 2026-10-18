@@ -17,7 +17,7 @@ import { join } from "node:path";
 import { ComfyError, endpointConfigPath, invalidateObjectInfo, liveObjectInfo, loadEndpointConfig, resolveEngineBaseUrl, } from "@melite/comfyui-cordis";
 import { writeJsonAtomic } from "./queueLock.js";
 import { installUserLora, installUserLoraBytes, loraNamesFromObjectInfo, readUserLoraRows, refmodNamesFromObjectInfo, resolveEngineLorasDir, unboardedRows, userLorasPath, } from "@melite/comfyui-cordis/user-loras";
-import { AcquireBusyError } from "@melite/estate-provisioning";
+import { AcquireBusyError, LIVE_ACQUIRE_STATES } from "@melite/estate-provisioning";
 import { ManagerApiError, managerGet, managerPost, planeUnavailable } from "./managerRail.js";
 import { probeEndpoint, activeRuns, managerSecurity, engineQueueView } from "./manageProbe.js";
 import { base, mapManagerRefused, mapRail, railMs, estateOnly, awaitQueueDrained, systemctl, guardLifecycle } from "./manageOps.js";
@@ -40,6 +40,13 @@ export const ACTIONS = [
     "download_model",
     "provision_model",
     "acquire_weight",
+    // THE RESCUE VERBS (ERRORS.md k2 + the purge plan's P5 rescue
+    // honesty): a settled-failed acquire is retryable — a fresh fetch
+    // on the dead row's ref, the dead row's truth kept — and the dead
+    // row is discardable — evicted, so a later poll 404s. The k2 burn's
+    // own words, "no retry, no delete, just stuck", die here.
+    "acquire_retry",
+    "acquire_discard",
     "restart",
     "stop",
     "launch",
@@ -1168,6 +1175,102 @@ async function hAcquireWeight(req, ctx) {
         next_action: "acquire_weight",
     });
 }
+// ── THE RESCUE VERBS (k2: "no retry, no delete, just stuck") ────────
+// The acquire door's own ledger judges both: a row whose fetch
+// stopped progressing (the service's stall budget settles it FAILED)
+// must leave the operator one press to re-fetch and one press to
+// clear the wedge.
+/** The shared live-refusal for both rescue verbs: a settled operation
+ *  passes; a live one (the provisioning contract's LIVE_ACQUIRE_STATES
+ *  — one spelling with the run gate's in-flight voice) answers 409
+ *  pointing back at the poll.
+ * @param req the verb's request (names the verb in the voice).
+ * @param progress the polled ledger row.
+ * @returns void.
+ * @throws Refused 409 when the row is still in flight. */
+function settledAcquireOrRefuse(req, progress) {
+    if (LIVE_ACQUIRE_STATES.has(progress.state)) {
+        throw new Refused(409, "acquire_weight " + progress.operationId + " is still in flight (" + progress.state + ", "
+            + String(progress.bytes) + "/" + String(progress.total) + " bytes) — poll acquire_weight operation_id="
+            + progress.operationId + "; " + req.action + " is for a settled operation");
+    }
+}
+/** acquire_retry — a fresh fetch on a settled-failed row's ref. The
+ *  dead row's truth stays (the face keeps its why); the answer's
+ *  operation_id is the FRESH fetch (never a resurrect of the dead
+ *  row). A live row refuses 409; a landed row refuses 409 (the
+ *  weights are on the store — nothing to retry); an unknown id 404s. */
+async function hAcquireRetry(req, ctx) {
+    need(req, "operation_id");
+    estateOnly(req, ctx.endpoint());
+    const provisioner = provisioningOf(ctx);
+    if (typeof provisioner.progressOf !== "function" || typeof provisioner.startWeightAcquire !== "function") {
+        throw unavailable("acquire_retry is not configured on this lane");
+    }
+    const progress = provisioner.progressOf(req.operation_id);
+    if (progress === null || progress === undefined) {
+        throw notFound("unknown acquire_weight operation: " + req.operation_id);
+    }
+    settledAcquireOrRefuse(req, progress);
+    if (progress.state === "installed" || progress.state === "restart_required" || progress.state === "active") {
+        throw new Refused(409, "acquire_weight " + progress.operationId + " already landed (" + progress.state
+            + ") — the weights are on the store, nothing to retry");
+    }
+    const startAcquire = provisioner.startWeightAcquire;
+    let operationId;
+    try {
+        operationId = await withManageTimeout(req, ctx, async () => await startAcquire.call(provisioner, progress.ref));
+    }
+    catch (error) {
+        // THE BUSY MAP (audit I-S4): the same wait-not-failure face the
+        // start arm answers — a plane at its cap is a retry_after, and
+        // the dead row stays exactly as it was
+        if (error instanceof AcquireBusyError) {
+            return [429, {
+                    action: req.action,
+                    ok: false,
+                    state: "busy",
+                    status: 429,
+                    detail: error.message,
+                    next_action: "acquire_weight",
+                    retry_after_ms: error.retryAfterMs,
+                }];
+        }
+        throw error;
+    }
+    return ok(req.action, "retrying " + progress.operationId + " (" + progress.state + ") as a fresh fetch — poll acquire_weight operation_id="
+        + operationId + " (the dead row's truth is kept)", {
+        operation_id: operationId,
+        operationId,
+        state: "acquiring",
+        retried_operation_id: progress.operationId,
+        next_action: "acquire_weight",
+    });
+}
+/** acquire_discard — a settled acquire row is evicted (ledger entry,
+ *  by-ref pointer, stored row) so the wedge is clearable and a later
+ *  acquire_weight poll answers 404. A live row refuses 409; an
+ *  unknown id 404s. */
+async function hAcquireDiscard(req, ctx) {
+    need(req, "operation_id");
+    estateOnly(req, ctx.endpoint());
+    const provisioner = provisioningOf(ctx);
+    if (typeof provisioner.progressOf !== "function" || typeof provisioner.discardAcquire !== "function") {
+        throw unavailable("acquire_discard is not configured on this lane");
+    }
+    const progress = provisioner.progressOf(req.operation_id);
+    if (progress === null || progress === undefined) {
+        throw notFound("unknown acquire_weight operation: " + req.operation_id);
+    }
+    settledAcquireOrRefuse(req, progress);
+    provisioner.discardAcquire(req.operation_id);
+    ctx.rearmWeights?.();
+    return ok(req.action, "discarded acquire_weight " + progress.operationId + " (" + progress.state + ") — a later poll answers 404", {
+        operation_id: progress.operationId,
+        state: progress.state,
+        next_action: "status",
+    });
+}
 async function hRestart(req, ctx) {
     guardLifecycle(req, ctx);
     const cfg = ctx.endpoint();
@@ -1734,6 +1837,8 @@ const HANDLERS = {
     download_model: hDownloadModel,
     provision_model: hProvisionModel,
     acquire_weight: hAcquireWeight,
+    acquire_retry: hAcquireRetry,
+    acquire_discard: hAcquireDiscard,
     restart: hRestart,
     stop: hStop,
     launch: hLaunch,

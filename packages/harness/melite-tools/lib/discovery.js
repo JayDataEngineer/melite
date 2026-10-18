@@ -808,6 +808,14 @@ export function specBody(svc, defs, res) {
         // the card id as the model and the run door refused the card's
         // own id against its empty board (the mask run refusal).
         model: res.model ?? null,
+        // THE FAMILY'S DECLARED SURFACE (the no-silent-drop law's client
+        // face, 2026-11-08): the DECL's own param names, served so the
+        // client switch verbs can null a departed family's own knobs
+        // (declared-here, not-declared-there) and the client compose
+        // mirror can refuse a doc key no surface owns — the estate
+        // admission's field-named voice, mirrored client-side. Absent
+        // when the DECL is unreachable (the legacy surface-less shape).
+        params: decl?.params,
         outputs: def.flowKinds.outputs,
         // THE CARD'S OWN SERIALIZED SCHEMA — the served form's SSOT.
         schema: servedEnvelope(schemas.schema, res.card),

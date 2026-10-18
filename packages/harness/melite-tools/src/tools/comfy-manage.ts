@@ -51,6 +51,11 @@ const ACTIONS = [
   'list_extensions', 'snapshot_list',
   'install_extension', 'install_extension_url',
   'download_model', 'provision_model', 'acquire_weight',
+  // the acquire-rescue verbs (the download-honesty cure, 2026-11-08):
+  // the manage LANE answers both (managePlane ACTIONS rows); the
+  // tool seat's client-side enum mirrors them so an agent-driven
+  // acquire_retry/acquire_discard is not 422'd at this seat.
+  'acquire_retry', 'acquire_discard',
   'restart', 'stop', 'launch', 'update', 'switch_version', 'free',
   'snapshot_save', 'snapshot_restore',
   'lora_list', 'lora_install',

@@ -17,6 +17,24 @@ const MAX_SETTLED_ACQUIRES = 500;
 /** THE DISK ADMISSION RESERVE: a plan is admitted only when the store
  *  root keeps this much free AFTER the plan's declared bytes land. */
 const DISK_FLOOR_BYTES = 1024 * 1024 * 1024;
+/** THE ACQUIRE STALL BUDGET (ERRORS.md k2: "it gets stuck, then it's
+ *  permanently stuck at whatever percent"): a direct fetch that lands
+ *  no bytes for this long is STUCK — the stall watchdog aborts the
+ *  stream and the operation settles FAILED with the stuck voice at
+ *  the bytes it froze at (state 'verifying' at 39% must die, never
+ *  ride forever). The budget bounds the FREEZE, never the download:
+ *  any landed byte re-arms it, so a slow multi-GB fetch rides as long
+ *  as it moves. The failed row keeps its truth (bytes + why) and the
+ *  state machine re-admits the ref (failed → acquiring), so a retry
+ *  is a fresh fetch, never a resurrect (weight-acquire-stuck.spec.ts
+ *  ARM 5). 1000ms is the tightest bound that contract's own settle
+ *  window (its 1.5s failed-poll budget) permits; the deployment face
+ *  is ProvisioningConfig.acquireStallTimeoutMs. */
+export const ACQUIRE_STALL_TIMEOUT_MS = 1_000;
+/** The stall watchdog's check cadence: a stall is detected within one
+ *  tick past the budget (the part-reaper's periodic-sweep pattern,
+ *  scaled from PART_REAP_INTERVAL_MS to the budget's size). */
+const ACQUIRE_STALL_TICK_MS = 100;
 import { resourceKey, sameResourceRef, } from "./contracts.js";
 class ItemRefusal extends Error {
     outcome;
@@ -344,6 +362,36 @@ function countedSource(source, onBytes) {
     }
     return generate();
 }
+// ── THE PROCESS SEAT (the models seat's namespace pattern —
+// comfyui-cordis models/service.ts armModelsSeat/disarmModelsSeat):
+// the estate mounts ONE provisioning service per process; in-process
+// readers that cannot reach the cordis context (the run gate's
+// lane-presence miss in estate-queue cardsLanes) read the armed
+// seat's operation ledger directly. The constructor arms, the dispose
+// disarms — only the arming holder succeeds, so a stale disposer
+// never unseats a newer arm.
+let liveSeat;
+/** Arm the process seat with one live service.
+ * @param service the mounting ProvisioningService.
+ * @returns void. */
+export function armProvisioningSeat(service) {
+    liveSeat = service;
+}
+/** Disarm the process seat — a no-op unless this service still holds it.
+ * @param service the service whose dispose is running.
+ * @returns void. */
+export function disarmProvisioningSeat(service) {
+    if (liveSeat === service)
+        liveSeat = undefined;
+}
+/** The live seat, undefined when no provisioning service is mounted in
+ *  this process — a reader without a seat carries no in-flight truth
+ *  and answers so, never a fabricated operation.
+ * @returns the armed ProvisioningService or undefined.
+ * */
+export function provisioningSeat() {
+    return liveSeat;
+}
 export class ProvisioningService extends Service {
     declaration;
     writer;
@@ -377,6 +425,15 @@ export class ProvisioningService extends Service {
     pendingMints = new Map();
     weightProgressByRef = new Map();
     diskFree;
+    /** THE STALL BUDGET'S VALIDATED FACE (the constructor's read of
+     *  ProvisioningConfig.acquireStallTimeoutMs, defaulting to
+     *  ACQUIRE_STALL_TIMEOUT_MS). */
+    acquireStallTimeoutMs;
+    /** THE STALL VOICE SEAT: the watchdog's refusal per operation,
+     *  consumed once by the item loop — the abort the refusal rode
+     *  would otherwise read as a cancellation at refusalFor, and a
+     *  stalled fetch is a FAILURE, never an operator's cancel. */
+    stallRefusals = new Map();
     constructor(ctx, config) {
         super(ctx, "provisioning");
         if (config === undefined || config.declaration === undefined) {
@@ -393,7 +450,17 @@ export class ProvisioningService extends Service {
         this.diskFree = config.diskFree ?? statFsFree;
         this.writeGuard = config.writeGuard ?? (() => true);
         this.operationIdFactory = config.operationIdFactory ?? newOperationId;
+        // THE STALL BUDGET'S CONFIG FACE (validated, never silently
+        // defaulted — the manager-client's positiveInteger law): a
+        // misconfigured budget fails loud at construction.
+        const stallMs = config.acquireStallTimeoutMs ?? ACQUIRE_STALL_TIMEOUT_MS;
+        if (!Number.isInteger(stallMs) || stallMs <= 0) {
+            throw new Error("acquireStallTimeoutMs must be a positive integer (milliseconds)");
+        }
+        this.acquireStallTimeoutMs = stallMs;
+        armProvisioningSeat(this);
         this.ctx.effect(() => async () => {
+            disarmProvisioningSeat(this);
             const operations = [...this.locks.values()];
             for (const operation of operations)
                 operation.controller.abort();
@@ -622,6 +689,7 @@ export class ProvisioningService extends Service {
             });
             this.weightProgressByRef.set(key, id);
             void this.runWithId(ref, id, async (operationId, operationSignal) => await this.executeEnsure(ref, options, operationId, operationSignal)).then((result) => {
+                this.stallRefusals.delete(id);
                 const current = this.weightProgress.get(id);
                 if (current !== undefined) {
                     const landed = current.total > 0 &&
@@ -637,6 +705,7 @@ export class ProvisioningService extends Service {
                 }
                 this.evictSettledAcquires();
             }).catch((error) => {
+                this.stallRefusals.delete(id);
                 const current = this.weightProgress.get(id);
                 if (current !== undefined) {
                     this.weightProgress.set(id, {
@@ -992,6 +1061,11 @@ export class ProvisioningService extends Service {
         }
         const items = [];
         let cancelled = false;
+        // THE STALL VOICE (the watchdog's word): set when this operation's
+        // item failure IS the stall — carried onto the result so both the
+        // ledger row and the settle faces name the freeze, never a bare
+        // "cancelled".
+        let stallVoice;
         for (const item of plan.items) {
             if (signal.aborted) {
                 cancelled = true;
@@ -1003,17 +1077,30 @@ export class ProvisioningService extends Service {
                 items.push(await this.acquirePlanItem(ref, item, operationId, signal));
             }
             catch (error) {
-                const refusal = refusalFor(error, signal);
-                if (refusal.outcome === "cancelled")
+                // the stall refusal wins over refusalFor: the watchdog aborts
+                // the stream it fails, and that abort must not re-read the
+                // failure as the operator's cancel
+                const stall = this.takeStallRefusal(operationId);
+                const refusal = stall ?? refusalFor(error, signal);
+                if (stall !== undefined)
+                    stallVoice = stall.message;
+                if (stall === undefined && refusal.outcome === "cancelled")
                     cancelled = true;
                 items.push(itemFailure(item, refusal));
             }
         }
         let outcome = aggregateOutcome(items);
-        if (cancelled || signal.aborted)
+        if (stallVoice !== undefined) {
+            // the watchdog's abort is the stall's own teardown, not an
+            // operator's cancel — the aggregate (failed) stands
+        }
+        else if (cancelled || signal.aborted) {
             outcome = "cancelled";
+        }
         const operationState = outcome === "cancelled" ? "failed" : aggregateState(items);
         let result = makeResult(ref, operationId, outcome, operationState, items);
+        if (stallVoice !== undefined)
+            result = { ...result, detail: stallVoice };
         if (options.activate === true || options.activateIfIdle === true) {
             if (ref.kind === "extension" && (outcome === "active" || outcome === "restart_required")) {
                 result = await this.activateExtension(ref, plan, operationId, signal, {
@@ -1134,11 +1221,17 @@ export class ProvisioningService extends Service {
                 throw new ItemRefusal("blocked", "artifact/fetch-unavailable", "direct model acquisition requires a configured artifact fetcher");
             }
             this.move(ref, operationId, "verifying");
-            const response = await this.fetcher(item.url, signal);
-            if (response.status !== 200 || response.body === null) {
-                throw new ItemRefusal("failed", "artifact/fetch-refused", `direct fetch of ${item.url} answered status ${String(response.status)}${response.body === null ? " with no body" : ""}`);
-            }
+            // THE STALL WATCHDOG'S WINDOW (ERRORS.md k2): arms over the
+            // whole direct fetch — the headers wait and the counted byte
+            // stream — and disarms on every exit, so a fetch that freezes
+            // settles FAILED inside the stall budget instead of holding the
+            // plane (and the operator's popup) forever.
+            const stopStallWatch = this.armStallWatch(operationId, ref);
             try {
+                const response = await this.fetcher(item.url, signal);
+                if (response.status !== 200 || response.body === null) {
+                    throw new ItemRefusal("failed", "artifact/fetch-refused", `direct fetch of ${item.url} answered status ${String(response.status)}${response.body === null ? " with no body" : ""}`);
+                }
                 // THE F9 COUNTED WRITE (the tracker's numerator): the ledger
                 // entry must exist before the first chunk lands (a background
                 // start seeded it with the plan total; a blocking ensure
@@ -1165,6 +1258,9 @@ export class ProvisioningService extends Service {
                     throw new ItemRefusal("failed", "artifact/" + error.code, error.message);
                 }
                 throw error;
+            }
+            finally {
+                stopStallWatch();
             }
         }
         if (this.manager?.installModel === undefined) {
@@ -1310,6 +1406,16 @@ export class ProvisioningService extends Service {
             };
         }
         this.move(ref, operationId, result.operationState, result.items);
+        // THE F9 DETAIL MIRROR (the stall's voice): a result that carries
+        // a why (failureResult, blockedResult, the stall's stuck voice)
+        // mirrors it onto the live ledger row, so the tracker's poll and
+        // the settle face read the same truth.
+        if (result.detail !== undefined) {
+            const entry = this.weightProgress.get(operationId);
+            if (entry !== undefined && entry.detail !== result.detail) {
+                this.weightProgress.set(operationId, { ...entry, detail: result.detail });
+            }
+        }
         this.persist(record);
         this.evictSettledAcquires();
         return result;
@@ -1414,6 +1520,65 @@ export class ProvisioningService extends Service {
             this.weightProgress.set(operationId, { ...entry, total });
         }
     }
+    /** THE STALL WATCHDOG (ERRORS.md k2 — "it gets stuck, then it's
+     *  permanently stuck"): watches one operation's landed bytes at
+     *  ACQUIRE_STALL_TICK_MS cadence over the direct arm's whole window
+     *  (the headers wait AND the byte stream — a fetch that never
+     *  answers and a stream that freezes are the same stuck shape). No
+     *  byte change across acquireStallTimeoutMs fires it: the watchdog
+     *  aborts the operation's stream (tearing the wedged wire down) and
+     *  seats the stuck refusal, whose voice the item loop consumes so
+     *  the operation settles FAILED — at the frozen bytes, with the
+     *  why — instead of riding 'verifying' forever. A watchdog that
+     *  never fires costs one interval per live fetch; every exit path
+     *  disarms via the returned closure.
+     *
+     * @param operationId the operation whose ledger the watchdog reads.
+     * @param ref the operation's resource key (its lock, for the abort).
+     * @returns the disarm closure (idempotent). */
+    armStallWatch(operationId, ref) {
+        const key = resourceKey(ref);
+        let lastBytes = -1;
+        let changedAt = Date.now();
+        let fired = false;
+        const timer = setInterval(() => {
+            if (fired)
+                return;
+            // a teardown already under way (the dispose abort) is not a
+            // stall — the cancellation voice owns that operation
+            if (this.locks.get(key)?.controller.signal.aborted === true)
+                return;
+            const bytes = this.weightProgress.get(operationId)?.bytes ?? 0;
+            if (bytes !== lastBytes) {
+                lastBytes = bytes;
+                changedAt = Date.now();
+                return;
+            }
+            if (Date.now() - changedAt < this.acquireStallTimeoutMs)
+                return;
+            fired = true;
+            clearInterval(timer);
+            this.stallRefusals.set(operationId, new ItemRefusal("failed", "artifact/stalled", "the fetch stalled: no bytes landed in " + String(this.acquireStallTimeoutMs) +
+                "ms (stuck at " + String(bytes) + " bytes) — retry the acquire"));
+            this.locks.get(key)?.controller.abort();
+        }, ACQUIRE_STALL_TICK_MS);
+        return () => {
+            fired = true;
+            clearInterval(timer);
+        };
+    }
+    /** THE STALL VOICE READ (consumed once): the watchdog's refusal for
+     *  one operation, undefined when it never fired. Consumption clears
+     *  the seat — a refusal names ONE failure, never a later one.
+     *
+     * @param operationId the failing operation.
+     * @returns the stuck refusal, or undefined. */
+    takeStallRefusal(operationId) {
+        const refusal = this.stallRefusals.get(operationId);
+        if (refusal !== undefined)
+            this.stallRefusals.delete(operationId);
+        return refusal;
+    }
     /** THE REGISTRY-GROWTH LAW (audit I-S4): terminal acquire rows are
      *  evicted oldest-first past MAX_SETTLED_ACQUIRES in BOTH maps —
      *  the ByRef pointer drops with its id, never dangles — and the
@@ -1446,6 +1611,37 @@ export class ProvisioningService extends Service {
                 });
             }
             excess -= 1;
+        }
+    }
+    /** THE RESCUE EVICT (acquire_discard — ERRORS.md k2's "no delete"):
+     *  removes one SETTLED acquire row everywhere it lives — the ledger
+     *  entry, every by-ref pointer, and the stored operation (tombstoned
+     *  first, the same chain evictSettledAcquires rides, so a save still
+     *  in flight cannot resurrect it) — so a wedged fetch's row is
+     *  clearable and a later progressOf answers null (the manage door's
+     *  poll then 404s). A still-locked id refuses loud: discarding a
+     *  live fetch would orphan it and dangle its by-ref pointer.
+     *
+     * @param operationId the settled acquire row to remove.
+     * @returns void.
+     * @throws when the id still holds its fetch lock. */
+    discardAcquire(operationId) {
+        if ([...this.locks.values()].some((lock) => lock.id === operationId)) {
+            throw new Error("acquire " + operationId + " is still in flight — poll it or wait for it to settle before discarding");
+        }
+        if (!this.weightProgress.has(operationId))
+            return;
+        this.weightProgress.delete(operationId);
+        for (const [refKey, id] of this.weightProgressByRef) {
+            if (id === operationId)
+                this.weightProgressByRef.delete(refKey);
+        }
+        const store = this.operationStore;
+        if (store?.remove !== undefined) {
+            this.storeRemoved.add(operationId);
+            this.enqueueStoreWrite(operationId, () => store.remove(operationId), (failure) => {
+                this.ctx.logger.error(new Error(`acquire discard failed to remove stored operation ${operationId}: ${failure.message}`, { cause: failure }));
+            });
         }
     }
     /** THE STORE WRITE CHAIN (verify R5): the store writes are

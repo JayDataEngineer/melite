@@ -1,3 +1,3 @@
-export * from "./contracts.ts";
-export * from "./ports.ts";
+export * from "./contracts.js";
+export * from "./ports.js";
 //# sourceMappingURL=types.d.ts.map

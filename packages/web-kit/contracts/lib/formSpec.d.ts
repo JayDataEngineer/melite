@@ -321,6 +321,17 @@ export interface FormSpecDoc {
      *  Variant rows + Quant cells, flattened. Empty when the family
      *  declares no matrix. */
     variants?: FormVariantRow[];
+    /** THE FAMILY'S DECLARED SURFACE (the no-silent-drop law's client
+     *  face, 2026-11-08): the DECL's param names — every wire key this
+     *  family admits. The switch verbs null a departed family's own
+     *  knobs with it (a cross-family pick needs BOTH families' surfaces
+     *  to separate departed words from shared ones), and the client
+     *  compose mirror refuses a doc key no declared surface owns — the
+     *  field-named refusal the estate admission gate voices, mirrored.
+     *  Absent on carriers that predate the field (the verbs treat an
+     *  absent surface as unknown: no nulling, no refusal — never a
+     *  guess). */
+    params?: ReadonlyArray<string>;
     /** THE INPUT EDGES — declared on every card (flowKinds.inputs),
      *  each joined with the schema's required fact. */
     inputs?: InputEdge[];

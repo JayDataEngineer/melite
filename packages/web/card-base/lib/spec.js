@@ -1196,7 +1196,7 @@ function reconcilePick(patch, spec, row, held) {
  *  new family's seed re-derives on spec-land, never the departed
  *  family's 52 riding under a 4-step distill). The caller writes
  *  every key through onEdit. PURE. */
-export function modelSwitchPatch(spec, model, held) {
+export function modelSwitchPatch(spec, model, held, arrival) {
     const patch = { model };
     const groups = axisGroups(spec);
     const active = {};
@@ -1277,12 +1277,54 @@ export function modelSwitchPatch(spec, model, held) {
             if (!(k in patch))
                 patch[k] = null;
         }
+        // THE DEPARTED SURFACE DIES WITH ITS MODEL (the drill null-set
+        // cure, 2026-11-08 — ERRORS item h / B8: 2511's double_reference
+        // rode a 21 arrival until the run door refused it field-named):
+        // a key the DEPARTED family declares that the ARRIVAL does not
+        // declare is the departed family's own knob — it nulls in the
+        // patch ("absent is not the unset law's null"), the seed consumes
+        // the mark, and the write lands clean. BOTH surfaces must be
+        // known (the served docs carry `params` — the DECL's own words):
+        // with either surface unknown the verb refuses to guess (a wrong
+        // null deletes a shared word's user intent; a missing null rides
+        // the estate laneMigrate's own union-fallback drop). Shared words
+        // (steps, prompt, the axes) never null — the pass-along law.
+        if (Array.isArray(spec.params) && arrival !== undefined && Array.isArray(arrival.params)) {
+            const arrivalWords = new Set(arrival.params);
+            const axisWords = new Set(axisGroups(spec).map((g) => axisKey(g)));
+            for (const k of spec.params) {
+                if (k === 'model' || axisWords.has(k) || arrivalWords.has(k))
+                    continue;
+                if (!(k in patch))
+                    patch[k] = null;
+            }
+        }
     }
     else if (seededVariant !== undefined) {
         reconcilePick(patch, spec, seededVariant, held);
     }
     patch['model'] = model;
     return patch;
+}
+/** THE SWITCH-FRAME MERGE, ONE HOME (the drill null-set cure,
+ *  2026-11-08 — the P4 merge-order half): a caller's frame merges
+ *  UNDER a switch patch, but the patch's NULL verdicts — the
+ *  departed-surface keys the verb deleted — BEAT the frame: an
+ *  incoming frame that re-plants a departed stamp (a recipe re-point
+ *  carrying the departed recipe key) dies here, and every other
+ *  frame key keeps the caller-wins law. The single spelling both the
+ *  drill's per-key seam and the walls ride; re-implementing the
+ *  spread locally is how the caller-wins order silently grew.
+ *  @param patch the switch verb's patch (its nulls are verdicts).
+ *  @param frame the caller's own keys — they win except under a null
+ *  verdict. */
+export function mergeSwitchFrame(patch, frame) {
+    const out = { ...patch, ...frame };
+    for (const [k, v] of Object.entries(patch)) {
+        if (v === null)
+            out[k] = null;
+    }
+    return out;
 }
 /** THE EMPTY-SELECTION LAW's authoring decision (2026-10-10, the
  *  operator's live bench: a stage carrying quant:"" — born when a
@@ -1436,6 +1478,21 @@ export function seedUser(spec, held) {
             }
         }
     }
+    // THE UNSET MARK IS CONSUMED AT THE SEED (2026-11-08, the drill
+    // null-set cure): a NULL user value is the switch verbs' delete
+    // marker (the departed-surface nulls ride the patch as nulls —
+    // "absent is not the unset law's null"), and the seed is where the
+    // mark fires: the holding the arrival spec seeds NEVER carries the
+    // key, exactly like a key the verb deleted. A null that survived
+    // the seed would ride compose as an unstated-but-present key — the
+    // merge-patch null's work done twice, or worse, refused field-named
+    // by a door that reads presence, not value.
+    for (const k of Object.keys(out)) {
+        if (out[k] === null) {
+            console.warn(`card-base: seedUser consumed the unset mark on held '${k}' — a null user value is the switch verbs' delete marker; the holding drops the key.`);
+            delete out[k];
+        }
+    }
     return out;
 }
 /** THE MODEL-REKEY RESEAT (order d, operator 2026-11-06: "model-switch
@@ -1582,6 +1639,29 @@ export function composeValidate(spec, doc) {
         return [];
     }
     const out = [];
+    // THE MIRROR CLAUSE (the drill null-set cure, 2026-11-08 — the
+    // all-green fraud face): a doc key NO declared surface owns is the
+    // departed family's own knob riding the arrival — the estate
+    // admission gate refuses it FIELD-NAMED ("field 'double_reference'
+    // fires nothing on this lane"), while this mirror greened the doc
+    // and every suite stayed green. The mirror speaks the door's voice
+    // BEFORE the wire. Judged only when the served doc carries the
+    // declared surface (`params` — absent on legacy carriers: never a
+    // guess); `model` and the axis keys are the transport's own words,
+    // never doc surface.
+    if (Array.isArray(spec.params)) {
+        const declared = new Set(spec.params);
+        for (const g of axisGroups(spec))
+            declared.add(axisKey(g));
+        declared.add('model');
+        for (const k of Object.keys(doc)) {
+            if (k === 'model' || declared.has(k))
+                continue;
+            out.push({
+                message: 'card_compose: field \'' + k + '\' fires nothing on this lane — the served surface (' + (spec.model ?? '') + ') does not declare it; the estate admission gate refuses the same key field-named at the write door.',
+            });
+        }
+    }
     const all = spec.variants ?? [];
     // THE DOOR'S POOL + STATED SEARCH, DELEGATED (the resolver
     // consolidation): the fold re-nests the served flat rows and the

@@ -7,9 +7,7 @@
     "steps": 25,
     "sampler": "euler",
     "scheduler": "simple",
-    "cfg": 1,
-    "width": 1024,
-    "height": 1024
+    "cfg": 1
   },
   "engine": "comfyui",
   "enhance_prompt": null,
@@ -36,7 +34,17 @@
         "cardinality": "list",
         "entry": "option",
         "option_key": "id",
-        "options": []
+        "options": [
+          {
+            "value": "qwen21_consistency",
+            "label": "Consistency (drift lock)",
+            "tooltip": "Keeps the edit on the original's frame — restyles and recolours stop drifting off the picture. Holds the EXISTING pose: switch it off for movement edits and big removals.",
+            "defaults": {
+              "strength": 1
+            },
+            "model": "qwen-img-edit-21/qwen-image-2.1-consistency.safetensors"
+          }
+        ]
       }
     ],
     "variant_groups": {
@@ -410,6 +418,22 @@
     }
   },
   "model": "qwen-img-edit-21",
+  "params": [
+    "input_images",
+    "image1",
+    "image2",
+    "image3",
+    "reference_images",
+    "input_mask",
+    "prompt",
+    "negative_prompt",
+    "match_input_resolution",
+    "seed",
+    "steps",
+    "cfg",
+    "sampler",
+    "scheduler"
+  ],
   "outputs": {
     "default": "image"
   },
@@ -796,14 +820,8 @@
         "meta": {
           "description": "Width",
           "extra": {
-            "order": 0,
-            "group": "resolution",
-            "columns": 3,
-            "width": 1,
-            "zone": "params",
-            "wtype": "number",
-            "visible_when": "match_input_resolution=false",
-            "tooltip": "Custom target resolution — the 2.1 lane edits at target size (both axes together, never one alone). Shown only while Match Input Resolution is off."
+            "hidden": true,
+            "tooltip": "Retained for legacy drafts only — neither edit lane takes a stated size anymore (the latent law, 2026-11-08): both edit at the source’s own frame, and a stated axis refuses field-named. Clear it and re-run."
           }
         }
       },
@@ -812,14 +830,8 @@
         "meta": {
           "description": "Height",
           "extra": {
-            "order": 1,
-            "group": "resolution",
-            "columns": 3,
-            "width": 1,
-            "zone": "params",
-            "wtype": "number",
-            "visible_when": "match_input_resolution=false",
-            "tooltip": "Custom target resolution — the 2.1 lane edits at target size (both axes together, never one alone). Shown only while Match Input Resolution is off."
+            "hidden": true,
+            "tooltip": "Retained for legacy drafts only — neither edit lane takes a stated size anymore (the latent law, 2026-11-08): both edit at the source’s own frame, and a stated axis refuses field-named. Clear it and re-run."
           }
         }
       },
@@ -834,7 +846,7 @@
             "columns": 3,
             "width": 1,
             "zone": "params",
-            "tooltip": "When on (default), the output matches the first input image’s resolution — no need to type Width/Height. Turn off to use a custom Width/Height."
+            "tooltip": "Retained for draft compatibility — it switches nothing: both edit lanes edit at the source’s own frame (the 2.1 lane samples the encoder’s own latent; 2511 encodes the source)."
           }
         }
       },
@@ -1117,7 +1129,26 @@
         "prompt": "Remove the background, and output a PNG image"
       },
       "route": "",
-      "hint": "The official one-click — the Comfy-Org background-removal template's canned prompt verbatim (the 2.1 base renders the subject on transparency; solver/cfg/steps ride the family defaults, which are the template's own values).",
+      "hint": "The official one-click — the Comfy-Org background-removal template's canned prompt verbatim (the 2.1 base renders the subject on transparency; the RGBA decode lands the alpha on disk; solver/cfg/steps ride the family defaults, which are the template's own values).",
+      "engine": "comfyui",
+      "sampler_envelope": null,
+      "quant": null,
+      "vram_peak_gb": null,
+      "owner": ""
+    },
+    {
+      "id": "drift-lock",
+      "label": "Drift Lock",
+      "group": "Recipe",
+      "defaults": {
+        "loras": [
+          {
+            "id": "qwen21_consistency"
+          }
+        ]
+      },
+      "route": "",
+      "hint": "The Consistency LoRA at strength 1 (the catalog's first-party row): restyle and recolour edits hold the original's frame — measured drift drops from ~24 px to ~1.6 px on held-out runs. It holds the EXISTING pose: switch it off for movement edits and big removals.",
       "engine": "comfyui",
       "sampler_envelope": null,
       "quant": null,
@@ -1164,8 +1195,6 @@
       "input_mask",
       "prompt",
       "negative_prompt",
-      "width",
-      "height",
       "match_input_resolution",
       "seed",
       "steps",
@@ -1174,15 +1203,6 @@
       "scheduler"
     ],
     "relations": {
-      "together": [
-        {
-          "fields": [
-            "width",
-            "height"
-          ],
-          "cure": "an EmptyLatentImage takes both axes — state width and height together, or neither (the lane's own 1024s)"
-        }
-      ],
       "required": [
         {
           "fields": [
@@ -1204,13 +1224,9 @@
       ]
     },
     "bounds": {
-      "width": {
-        "min": 256,
-        "max": 1536
-      },
-      "height": {
-        "min": 256,
-        "max": 1536
+      "steps": {
+        "min": 1,
+        "max": 50
       }
     },
     "variants": {}

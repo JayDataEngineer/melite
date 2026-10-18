@@ -2104,7 +2104,23 @@ export const film = {
                 p.steps = Math.max(...applied);
             }
         }
-        return renderH3Window(p, g, facts, model).savePassthrough;
+        // THE POST-MARRIAGE RE-WALK (the single-window face's arm of the
+        // film loop's per-window walk — ERROR d, the ~100 burn): the
+        // marriage lands the bag's stated count AFTER the card's one
+        // walk, and without this judgment the mutated count rode into
+        // the returned graph unjudged (the G6 TOCTOU — the estate's
+        // faces let 100 in, the served bound packs.ts:34 is
+        // min(1).max(100), the recipe row declares no steps domain). It
+        // sits AFTER the render's own hand-checked seats so their pinned
+        // voices fire first (the loader cap, the trim-entry shape); the
+        // marriage's mutation is the only delta this re-check can add —
+        // card.ts walked the same doc pre-marriage, so every other
+        // refusal here was already refused upstream. The film loop
+        // judges its stanza post-marriage; this face closes the same
+        // TOCTOU — one schema, one voice.
+        const handles = renderH3Window(p, g, facts, model);
+        assertOverlayGated(p, 'h3-timeline single-window knobs');
+        return handles.savePassthrough;
     },
 };
 //# sourceMappingURL=actions.js.map

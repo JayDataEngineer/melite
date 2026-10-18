@@ -1,7 +1,21 @@
 import { Service } from "@deepseek-ai/cordis";
 import type { Context, Plugin } from "@deepseek-ai/cordis";
-import { type ActivateOptions, type EnsureOptions, type ExternalProvisionRequest, type ProvisionOperation, type ProvisionPlan, type ProvisionResult, type ProvisionState, type ResourceRef, type ResourceStatus, type WeightAcquireProgress } from "./contracts.ts";
-import type { ProvisioningConfig, ProvisioningServiceDefinition } from "./ports.ts";
+/** THE ACQUIRE STALL BUDGET (ERRORS.md k2: "it gets stuck, then it's
+ *  permanently stuck at whatever percent"): a direct fetch that lands
+ *  no bytes for this long is STUCK — the stall watchdog aborts the
+ *  stream and the operation settles FAILED with the stuck voice at
+ *  the bytes it froze at (state 'verifying' at 39% must die, never
+ *  ride forever). The budget bounds the FREEZE, never the download:
+ *  any landed byte re-arms it, so a slow multi-GB fetch rides as long
+ *  as it moves. The failed row keeps its truth (bytes + why) and the
+ *  state machine re-admits the ref (failed → acquiring), so a retry
+ *  is a fresh fetch, never a resurrect (weight-acquire-stuck.spec.ts
+ *  ARM 5). 1000ms is the tightest bound that contract's own settle
+ *  window (its 1.5s failed-poll budget) permits; the deployment face
+ *  is ProvisioningConfig.acquireStallTimeoutMs. */
+export declare const ACQUIRE_STALL_TIMEOUT_MS = 1000;
+import { type ActivateOptions, type EnsureOptions, type ExternalProvisionRequest, type ProvisionOperation, type ProvisionPlan, type ProvisionResult, type ProvisionState, type ResourceRef, type ResourceStatus, type WeightAcquireProgress } from "./contracts.js";
+import type { ProvisioningConfig, ProvisioningServiceDefinition } from "./ports.js";
 /** THE BUSY REFUSAL (audit I-S4): startWeightAcquire throws this when
  *  the plane already runs its concurrency cap of fetches. The door
  *  maps it to a 429 with retry_after_ms — a busy plane is a wait, not
@@ -10,6 +24,20 @@ export declare class AcquireBusyError extends Error {
     readonly retryAfterMs = 5000;
     constructor(message: string);
 }
+/** Arm the process seat with one live service.
+ * @param service the mounting ProvisioningService.
+ * @returns void. */
+export declare function armProvisioningSeat(service: ProvisioningService): void;
+/** Disarm the process seat — a no-op unless this service still holds it.
+ * @param service the service whose dispose is running.
+ * @returns void. */
+export declare function disarmProvisioningSeat(service: ProvisioningService): void;
+/** The live seat, undefined when no provisioning service is mounted in
+ *  this process — a reader without a seat carries no in-flight truth
+ *  and answers so, never a fabricated operation.
+ * @returns the armed ProvisioningService or undefined.
+ * */
+export declare function provisioningSeat(): ProvisioningService | undefined;
 export declare class ProvisioningService extends Service implements ProvisioningServiceDefinition {
     private readonly declaration;
     private readonly writer;
@@ -43,6 +71,15 @@ export declare class ProvisioningService extends Service implements Provisioning
     private readonly pendingMints;
     private readonly weightProgressByRef;
     private readonly diskFree;
+    /** THE STALL BUDGET'S VALIDATED FACE (the constructor's read of
+     *  ProvisioningConfig.acquireStallTimeoutMs, defaulting to
+     *  ACQUIRE_STALL_TIMEOUT_MS). */
+    private readonly acquireStallTimeoutMs;
+    /** THE STALL VOICE SEAT: the watchdog's refusal per operation,
+     *  consumed once by the item loop — the abort the refusal rode
+     *  would otherwise read as a cancellation at refusalFor, and a
+     *  stalled fetch is a FAILURE, never an operator's cancel. */
+    private readonly stallRefusals;
     constructor(ctx: Context, config: ProvisioningConfig);
     /** THE REHYDRATE SEED (audit E3): one stored row joins the live
      *  ledger. A row still mid-flight belongs to a fetch that died
@@ -135,6 +172,30 @@ export declare class ProvisioningService extends Service implements Provisioning
      *  live entry when the blocking path is the first writer, and never
      *  shrinks a background start's plan total. */
     private ensureProgress;
+    /** THE STALL WATCHDOG (ERRORS.md k2 — "it gets stuck, then it's
+     *  permanently stuck"): watches one operation's landed bytes at
+     *  ACQUIRE_STALL_TICK_MS cadence over the direct arm's whole window
+     *  (the headers wait AND the byte stream — a fetch that never
+     *  answers and a stream that freezes are the same stuck shape). No
+     *  byte change across acquireStallTimeoutMs fires it: the watchdog
+     *  aborts the operation's stream (tearing the wedged wire down) and
+     *  seats the stuck refusal, whose voice the item loop consumes so
+     *  the operation settles FAILED — at the frozen bytes, with the
+     *  why — instead of riding 'verifying' forever. A watchdog that
+     *  never fires costs one interval per live fetch; every exit path
+     *  disarms via the returned closure.
+     *
+     * @param operationId the operation whose ledger the watchdog reads.
+     * @param ref the operation's resource key (its lock, for the abort).
+     * @returns the disarm closure (idempotent). */
+    private armStallWatch;
+    /** THE STALL VOICE READ (consumed once): the watchdog's refusal for
+     *  one operation, undefined when it never fired. Consumption clears
+     *  the seat — a refusal names ONE failure, never a later one.
+     *
+     * @param operationId the failing operation.
+     * @returns the stuck refusal, or undefined. */
+    private takeStallRefusal;
     /** THE REGISTRY-GROWTH LAW (audit I-S4): terminal acquire rows are
      *  evicted oldest-first past MAX_SETTLED_ACQUIRES in BOTH maps —
      *  the ByRef pointer drops with its id, never dangles — and the
@@ -142,6 +203,19 @@ export declare class ProvisioningService extends Service implements Provisioning
      *  growing (the runs plane's MAX_SETTLED_RUNS, mirrored). Live
      *  ("acquiring") rows are never candidates. */
     private evictSettledAcquires;
+    /** THE RESCUE EVICT (acquire_discard — ERRORS.md k2's "no delete"):
+     *  removes one SETTLED acquire row everywhere it lives — the ledger
+     *  entry, every by-ref pointer, and the stored operation (tombstoned
+     *  first, the same chain evictSettledAcquires rides, so a save still
+     *  in flight cannot resurrect it) — so a wedged fetch's row is
+     *  clearable and a later progressOf answers null (the manage door's
+     *  poll then 404s). A still-locked id refuses loud: discarding a
+     *  live fetch would orphan it and dangle its by-ref pointer.
+     *
+     * @param operationId the settled acquire row to remove.
+     * @returns void.
+     * @throws when the id still holds its fetch lock. */
+    discardAcquire(operationId: string): void;
     /** THE STORE WRITE CHAIN (verify R5): the store writes are
      *  fire-and-forget, so an in-flight save could land after the
      *  same id's eviction remove and resurrect a settled row. Writes

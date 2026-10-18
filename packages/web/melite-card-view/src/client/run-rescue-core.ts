@@ -128,9 +128,12 @@ export interface WeightAcquireState {
   detail?: string
 }
 
-/** Terminal acquire_weight states (the tracker stops polling). */
+/** Terminal acquire_weight states (the tracker stops polling).
+ *  'active' is NOT here: it is the service's LIVE state (the manage
+ *  plane re-arms on it), never completion — a poll saying 'active'
+ *  is not a landing (ERRORS k2/m, the purge P5 rescue honesty). */
 export const ACQUIRE_TERMINAL: ReadonlySet<string> = new Set([
-  'active', 'installed', 'restart_required', 'failed', 'blocked',
+  'installed', 'restart_required', 'failed', 'blocked',
 ])
 
 function weightStateOf(reply: { data?: unknown, detail?: string }): WeightAcquireState {
@@ -182,6 +185,18 @@ export async function acquireWeightPoll(operationId: string, signal?: AbortSigna
   return weightStateOf(reply)
 }
 
+/** THE ACQUIRED VOICE (one home for the success line): the landed
+ *  byte count over the DECL total. A report with no declared total
+ *  (a DECL row without size_bytes seeds 0) voices the undeclared
+ *  size — never the dead "0/0 bytes" success (the purge P5's
+ *  total=0 face). */
+export function acquiredDetailOf(target: string, current: { bytes: number, total: number }): string {
+  if (!(current.total > 0)) {
+    return target + ' acquired — the engine reported no declared total (size unknown; verify the file on disk)'
+  }
+  return target + ' acquired (' + String(current.bytes) + '/' + String(current.total) + ' bytes)'
+}
+
 /** Offer one rescue through the manage seat. Names only — the
  * server owns every URL (the declaration law above). The target
  * is the model family OR the card id (model-less tool cards carry
@@ -189,7 +204,9 @@ export async function acquireWeightPoll(operationId: string, signal?: AbortSigna
  * door resolves both, as provision_model did before it). The model
  * arm rides acquire_weight (ONE door with the popup tracker and the
  * agent seat); the extension arm keeps install_extension. Resolves
- * with the reply's detail line, refuses with its own name. */
+ * with the reply's detail line, refuses with its own name, and
+ * refuses STUCK when the ceiling expires non-terminal (the stuck
+ * burn, ERRORS k2/m). */
 export async function runRescueCall(rescue: Rescue, target: string, signal?: AbortSignal): Promise<RescueResult> {
   const provisionTarget = rescue.kind === 'model' && rescue.target !== undefined && rescue.target !== ''
     ? rescue.target
@@ -222,12 +239,20 @@ export async function runRescueCall(rescue: Rescue, target: string, signal?: Abo
     if (signal?.aborted === true) throw signal.reason ?? new Error('aborted')
     current = await acquireWeightPoll(current.operationId, signal)
   }
+  // THE CEILING IS A FAILURE (the stuck burn, ERRORS k2/m): a fetch
+  // still non-terminal after the whole poll ceiling is a STUCK
+  // operation — bytes frozen is stuck, never success. The throw
+  // voices the last engine truth (state + bytes/total) so the face
+  // can offer Retry/Delete on it.
+  if (!ACQUIRE_TERMINAL.has(current.state)) {
+    throw new Error('weight acquisition stuck — no longer progressing: the engine last reported state "' + current.state + '" at ' + String(current.bytes) + '/' + String(current.total) + ' bytes across the full 150-poll ceiling; retry the fetch or delete the stuck operation')
+  }
   const restartRequired = current.state === 'restart_required' || current.state === 'installed'
   if (current.state === 'failed' || current.state === 'blocked') {
     throw new Error(current.detail ?? 'weight acquisition ' + current.state)
   }
   return {
-    detail: current.detail ?? provisionTarget + ' acquired (' + String(current.bytes) + '/' + String(current.total) + ' bytes)',
+    detail: current.detail ?? acquiredDetailOf(provisionTarget, current),
     restartRequired,
   }
 }

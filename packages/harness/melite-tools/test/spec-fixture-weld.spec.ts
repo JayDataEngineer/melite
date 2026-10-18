@@ -69,7 +69,15 @@ describe('THE CONTRACT WELD: the served image-edit doc is the GUI fixture (drift
     expect(doc!['schema']).toBeTruthy()
     expect((doc!['mod_schemas'] as Record<string, unknown>)['mask']).toBeTruthy()
     expect(Array.isArray(doc!['inputs'])).toBe(true)
-    expect((doc!['model_defaults'] as Record<string, unknown>)['width']).toBe(1024)
+    // THE NO-GEOMETRY LAW (the stated-size recut, 59fc746e9 — the
+    // empty-form burn: the serve carries NO width/height, never an
+    // empty field, never a ghost 1024; the old pin demanded
+    // model_defaults.width = 1024 and red under the new law). The
+    // declared size word is the STATED-SIZE wall's own: the lane
+    // refuses geometry field-named at both seats.
+    const defaults = (doc!['model_defaults'] ?? {}) as Record<string, unknown>
+    expect(Object.keys(defaults)).not.toContain('width')
+    expect(Object.keys(defaults)).not.toContain('height')
   })
 
   test('the fixtures match the fresh serves (refresh with DSH_SNAPSHOT=refresh)', async () => {

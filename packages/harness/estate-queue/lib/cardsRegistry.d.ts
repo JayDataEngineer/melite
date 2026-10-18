@@ -2,12 +2,12 @@ import { Service } from "@deepseek-ai/cordis";
 import type { Context } from "@deepseek-ai/cordis";
 import type { FactsReads } from "@melite/comfyui-cordis";
 import type { CardDefinition } from '@melite/comfyui-card-kit/card-definition';
-import { RUNS_ERROR_CODES } from "./runsErrorCodes.ts";
-export { CardArmError } from "./cardsArmError.ts";
-import type { CardDeclRow, ModelFactsRow } from "./cardsFacts.ts";
-export { selectCardVariant, stampCardOverlay, liftCardParams } from "./cardsVariant.ts";
-export type { VariantSelection } from "./cardsVariant.ts";
-export type { CardDeclRow, ModelFactsRow, VariantCellRow, ResolvedVariantRow } from "./cardsFacts.ts";
+import { RUNS_ERROR_CODES } from "./runsErrorCodes.js";
+export { CardArmError } from "./cardsArmError.js";
+import type { CardDeclRow, ModelFactsRow } from "./cardsFacts.js";
+export { selectCardVariant, stampCardOverlay, liftCardParams } from "./cardsVariant.js";
+export type { VariantSelection } from "./cardsVariant.js";
+export type { CardDeclRow, ModelFactsRow, VariantCellRow, ResolvedVariantRow } from "./cardsFacts.js";
 /** The card-envelope keys: SELECT the graph, never ride it.
  *
  *  THE ROW COORDINATES ARE THE CONTRACT'S (the operator's live

@@ -30,6 +30,24 @@ export const compose = {
     ],
     facts: parseMusicFacts,
     build({ p, facts, g, runId }) {
+        // THE DEAD-KNOB REFUSAL (value-arm cure, 2026-11-08): mode is the
+        // YuE2 ABC-planning vocabulary (card.ts mode tooltip; the YuE2
+        // nodes read it) — the MiniMax lane plans no symbolic score and
+        // MiniMaxMusic3TextEncode declares no mode input (the engine
+        // node's schema: clip, caption, lyrics, seed, max_duration,
+        // cfg_scale, top_k). A stated non-default mode used to cross
+        // every gate and die unread at compose — the silent drop the
+        // value arms pre-registered. Refuse loud in the knob's own
+        // voice; "full" rides because the card schema's walk fills it as
+        // the stated default (the stated default IS the unstated
+        // compose), and an absent mode (direct action callers) rides.
+        const mode = p.mode;
+        if (mode !== undefined && mode !== "full") {
+            throw new Error(`music3 compose: mode '${String(mode)}' fires nothing on this lane — ` +
+                "mode is the YuE2 ABC-planning vocabulary (full/melody drive YuE2's symbolic score); " +
+                "the MiniMax lane's engine node reads caption+lyrics only, no mode input. " +
+                "Drop mode, or switch lane (model=yue2) to plan a score");
+        }
         const seed = p.seed;
         const unet = g.node("UNETLoader", { unet_name: facts.unet, weight_dtype: "default" }).out();
         const clip = g.node("CLIPLoader", { clip_name: facts.text_encoder, model_options: "default", type: facts.clip_type }).out();

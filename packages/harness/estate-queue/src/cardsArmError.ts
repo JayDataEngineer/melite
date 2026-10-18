@@ -23,6 +23,21 @@ export interface LaneInputMiss {
   readonly kind: "model" | "extension";
 }
 
+/** THE IN-FLIGHT ACQUISITION ROW (ERRORS.md k2, NEVER-RUN-ON-
+ *  INCOMPLETE): the structured truth a lane-presence miss carries when
+ *  the missing file is LANDING right now — the popup keys its face on
+ *  these fields, never on prose, and the fresh-fetch hint is absent by
+ *  law (a fetch already runs; offering another re-pops the loop). */
+export interface AcquireInFlightDetails {
+  readonly acquire_in_flight: true;
+  /** The live acquire's operation id (the poll key). */
+  readonly operation_id: string;
+  /** Real landed bytes at the refusal moment. */
+  readonly bytes: number;
+  /** The DECL's declared total (0 when no row declares one). */
+  readonly total: number;
+}
+
 export class CardArmError extends Error {
   readonly status: number;
   /** The refusal's envelope code — ALWAYS a RUNS_ERROR_CODES key
@@ -37,6 +52,10 @@ export class CardArmError extends Error {
   /** The structured lane-miss evidence — set only by the
    *  lane_input_missing throw site (cardsLanes.lanePresenceMiss). */
   readonly lane?: LaneInputMiss;
+  /** The structured in-flight-acquisition evidence — set only by the
+   *  lane_input_missing throw site's in-flight arm, beside (never
+   *  instead of) the lane miss itself. */
+  readonly details?: AcquireInFlightDetails;
   constructor(
     status: number,
     message: string,
@@ -45,6 +64,7 @@ export class CardArmError extends Error {
     expected?: string,
     got?: string,
     lane?: LaneInputMiss,
+    details?: AcquireInFlightDetails,
   ) {
     super(message);
     this.status = status;
@@ -53,6 +73,7 @@ export class CardArmError extends Error {
     if (expected !== undefined) this.expected = expected;
     if (got !== undefined) this.got = got;
     if (lane !== undefined) this.lane = lane;
+    if (details !== undefined) this.details = details;
   }
 }
 

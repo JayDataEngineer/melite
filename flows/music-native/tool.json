@@ -4,13 +4,17 @@
   "kind": "flow",
   "model": "music-native",
   "stage_title": "Music Native",
-  "description": "Music from one prompt line: MiniMax Music 3 through the music card — prompt in, audio out. WHAT it produces: the generated audio artifact. HOW it runs: the single music card stage composes through the card plane, so the {flow:} door submits ONE merged run (validate then start); the compose_music POST tool runs the same row in one call; the {model:} door or the bench drives the music card directly. Knobs: prompt (required) — what to play; duration (optional, default 120) — seconds of music, 5..360, overlaid onto the stage.",
+  "description": "Music from one prompt line: MiniMax Music 3 through the music card — prompt in, audio out. WHAT it produces: the generated audio artifact. HOW it runs: the single music card stage composes through the card plane, so the {flow:} door submits ONE merged run (validate then start); the compose_music POST tool runs the same row in one call; the {model:} door or the bench drives the music card directly. Knobs: prompt (required) — what to play; lyrics (optional) — verse-form lyrics sung by the music, omit for instrumental, overlaid onto the stage; duration (optional, default 120) — seconds of music, 5..360, overlaid onto the stage.",
   "params_schema": {
     "type": "object",
     "properties": {
       "prompt": {
         "type": "string",
         "description": "Required. What to play."
+      },
+      "lyrics": {
+        "type": "string",
+        "description": "Optional. Verse-form lyrics for the song to sing; omit for instrumental."
       },
       "duration": {
         "type": "integer",

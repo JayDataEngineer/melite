@@ -140,10 +140,15 @@ export const DECL: ModelDecl = {
     ],
   },
 
-  // THE LANE SURFACE (the z-image precedent): exactly the knobs the
-  // music card serves.
+  // THE LANE SURFACE (the z-image precedent): exactly the knobs this
+  // lane fires. Mode left the surface (2026-11-08, the value-arm
+  // cure): mode is the YuE2 ABC-planning vocabulary — this lane's
+  // engine node declares no mode input — so the DECL stops serving
+  // it and the write doors refuse a stated mode in the field's
+  // voice; the compose action refuses what a legacy draft still
+  // carries (actions.ts build).
   "params": [
-    "prompt", "lyrics", "duration", "mode",
+    "prompt", "lyrics", "duration",
     "guidance_scale", "n_diffusion_steps", "lm_cfg_scale", "seed",
   ],
 

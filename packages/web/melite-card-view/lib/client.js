@@ -8614,9 +8614,11 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				target: family
 			};
 		}
-		/** Terminal acquire_weight states (the tracker stops polling). */
+		/** Terminal acquire_weight states (the tracker stops polling).
+		*  'active' is NOT here: it is the service's LIVE state (the manage
+		*  plane re-arms on it), never completion — a poll saying 'active'
+		*  is not a landing (ERRORS k2/m, the purge P5 rescue honesty). */
 		const ACQUIRE_TERMINAL = /* @__PURE__ */ new Set([
-			"active",
 			"installed",
 			"restart_required",
 			"failed",
@@ -8661,6 +8663,15 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			if (!reply.ok) throw new Error(reply.detail ?? "manage refused");
 			return weightStateOf(reply);
 		}
+		/** THE ACQUIRED VOICE (one home for the success line): the landed
+		*  byte count over the DECL total. A report with no declared total
+		*  (a DECL row without size_bytes seeds 0) voices the undeclared
+		*  size — never the dead "0/0 bytes" success (the purge P5's
+		*  total=0 face). */
+		function acquiredDetailOf(target, current) {
+			if (!(current.total > 0)) return target + " acquired — the engine reported no declared total (size unknown; verify the file on disk)";
+			return target + " acquired (" + String(current.bytes) + "/" + String(current.total) + " bytes)";
+		}
 		/** Offer one rescue through the manage seat. Names only — the
 		* server owns every URL (the declaration law above). The target
 		* is the model family OR the card id (model-less tool cards carry
@@ -8668,7 +8679,9 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		* door resolves both, as provision_model did before it). The model
 		* arm rides acquire_weight (ONE door with the popup tracker and the
 		* agent seat); the extension arm keeps install_extension. Resolves
-		* with the reply's detail line, refuses with its own name. */
+		* with the reply's detail line, refuses with its own name, and
+		* refuses STUCK when the ceiling expires non-terminal (the stuck
+		* burn, ERRORS k2/m). */
 		async function runRescueCall(rescue, target, signal) {
 			const provisionTarget = rescue.kind === "model" && rescue.target !== void 0 && rescue.target !== "" ? rescue.target : target;
 			if (rescue.kind === "extension") {
@@ -8693,10 +8706,11 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				if (signal?.aborted === true) throw signal.reason ?? /* @__PURE__ */ new Error("aborted");
 				current = await acquireWeightPoll(current.operationId, signal);
 			}
+			if (!ACQUIRE_TERMINAL.has(current.state)) throw new Error("weight acquisition stuck — no longer progressing: the engine last reported state \"" + current.state + "\" at " + String(current.bytes) + "/" + String(current.total) + " bytes across the full 150-poll ceiling; retry the fetch or delete the stuck operation");
 			const restartRequired = current.state === "restart_required" || current.state === "installed";
 			if (current.state === "failed" || current.state === "blocked") throw new Error(current.detail ?? "weight acquisition " + current.state);
 			return {
-				detail: current.detail ?? provisionTarget + " acquired (" + String(current.bytes) + "/" + String(current.total) + " bytes)",
+				detail: current.detail ?? acquiredDetailOf(provisionTarget, current),
 				restartRequired
 			};
 		}
@@ -8966,7 +8980,25 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			/** Rescue missing-extension note (what the run lacked). */
 			missingInstall: (p) => "Missing " + p.what + " — install through the manage seat?",
 			/** Rescue missing-weight note (what the run lacked). */
-			missingDownload: (p) => "Missing " + p.what + " — download through the manage seat?"
+			missingDownload: (p) => "Missing " + p.what + " — download through the manage seat?",
+			/** Weight popup title when the acquisition ended STUCK (frozen
+			*  bytes across polls or an expired poll ceiling) — never the
+			*  ready face (the purge P5 rescue honesty, ERRORS k2/m). */
+			weightStuck: "Weight stuck",
+			/** Weight stuck face's note: the engine's last truth leads (state
+			*  + bytes/total), and the two honest exits are named. */
+			stuckNote: (p) => "Stuck — the download is no longer progressing: the engine last reported state \"" + p.state + "\" at " + String(p.bytes) + "/" + String(p.total) + " bytes. Retry the fetch or delete the stuck operation.",
+			/** Weight stuck face's retry verb (re-rides the acquire_weight door). */
+			retryDownload: "Retry the download",
+			/** Weight stuck face's delete verb (the discard rides the manage seat). */
+			deleteStuck: "Delete stuck operation",
+			/** The stuck face's run refusal — a run press on an incomplete
+			*  weight is refused loudly, never fired silently (the purge P5). */
+			stuckRunRefusal: "The weight is not complete — the run stays refused until the fetch lands (retry) or the stuck operation is deleted.",
+			/** Weight tracker line when the engine declared no total (a DECL
+			*  row without size seeds 0): the voice says so — no dead
+			*  0-of-0 meter dressed as 0% (the purge P5's total=0 face). */
+			undeclaredTotal: (p) => p.bytes + "/" + p.total + " bytes — total undeclared (the engine reported no size)"
 		};
 		//#endregion
 		//#region src/client/run-rescue.tsx
@@ -8985,6 +9017,15 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		* callers); the tracker polls the SAME action with the operation id.
 		* The re-run rides the caller's own onRun (never an automatic
 		* re-fire).
+		*
+		* THE HONESTY LAWS (the purge P5 rescue honesty, ERRORS k2/m):
+		* completion is judged off engine truth — 'active' polls keep the
+		* tracker on the door (never the ready face); bytes frozen across
+		* polls, or a ceiling expiring non-terminal, land the STUCK face
+		* (Retry + Delete/discard, a run press refused loudly); a report
+		* with no declared total voices the undeclared size (no dead 0/0
+		* meter). A dismissal of a failed/stuck popup outlives the mount
+		* (the dismissal memory) — the tab's remounts never re-pop it.
 		*/
 		function progressPercent(bytes, total) {
 			if (!(total > 0) || !(bytes >= 0)) return 0;
@@ -8993,18 +9034,30 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		/** THE TRACKER FACES (the popup's download ledger): the live
 		*  bytes/total line plus the meter fill, rendered both mid-flight
 		*  and on the done face — the terminal count stays visible, never
-		*  unmounting at completion. Null when no fetch has started. */
+		*  unmounting at completion. Null when no fetch has started.
+		*  THE UNDECLARED-TOTAL FACE (the purge P5): a report with no
+		*  declared total (a DECL row without size seeds 0) renders no
+		*  progress measure — no 0-of-0 meter dressed as 0%, no 0-valued
+		*  maximum the engine never reported; the voice says the size is
+		*  undeclared and the meter stays an unmeasured track (no role, no
+		*  bounds) so the face keeps its place. */
 		function trackerFaces(acquire) {
 			if (acquire === null) return [];
-			const pct = progressPercent(acquire.bytes, acquire.total);
+			const undeclared = !(acquire.total > 0);
+			const pct = undeclared ? 0 : progressPercent(acquire.bytes, acquire.total);
 			return [(0, react.createElement)("p", {
 				"data-testid": "weight-progress",
 				className: card_module_css_default.rescueNote
-			}, String(acquire.bytes) + "/" + String(acquire.total) + " bytes (" + String(pct) + "%)"), (0, react.createElement)("div", {
-				role: "progressbar",
-				"aria-valuemin": 0,
-				"aria-valuemax": acquire.total,
-				"aria-valuenow": acquire.bytes,
+			}, undeclared ? chromeCopy.undeclaredTotal({
+				bytes: String(acquire.bytes),
+				total: String(acquire.total)
+			}) : String(acquire.bytes) + "/" + String(acquire.total) + " bytes (" + String(pct) + "%)"), (0, react.createElement)("div", {
+				...undeclared ? {} : {
+					role: "progressbar",
+					"aria-valuemin": 0,
+					"aria-valuemax": acquire.total,
+					"aria-valuenow": acquire.bytes
+				},
 				"data-testid": "weight-meter",
 				style: {
 					height: "8px",
@@ -9017,20 +9070,37 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				style: {
 					display: "block",
 					height: "100%",
-					width: String(pct) + "%",
-					background: "currentColor"
+					width: undeclared ? "100%" : String(pct) + "%",
+					background: "currentColor",
+					...undeclared ? { opacity: .35 } : {}
 				}
 			}))];
 		}
+		/** THE DISMISSAL MEMORY (the re-pop cure, ERRORS m): the popup's
+		*  dismissal outlives the mount — the tab's error-strip retire/re-arm
+		*  remounts this face with the same miss, and a mount-local flag
+		*  re-popped the modal over and over with no new engine event. Keyed
+		*  by the miss identity (the rescue's own file/target or pack). A
+		*  dismissal is RECORDED only when the acquire ended failed or stuck
+		*  — the re-pop burn; a live flight's close or a landed download's
+		*  close stays mount-local (the miss is stale or the operator is
+		*  mid-look). Cleared when the operator re-offers (the inline press)
+		*  or starts a new fetch (the acquire state changed). */
+		const dismissedMisses = /* @__PURE__ */ new Set();
+		function dismissalKeyOf(rescue) {
+			return rescue.kind === "model" ? "model:" + rescue.file + "@" + (rescue.target ?? "") : "extension:" + rescue.pack;
+		}
 		function RunRescue({ error, stages, onRun, rescue: structured }) {
 			const rescue = structured ?? parseRescue(error);
+			const dismissalKey = rescue === null ? "" : dismissalKeyOf(rescue);
 			const [busy, setBusy] = (0, react.useState)(false);
 			const [done, setDone] = (0, react.useState)(null);
 			const [restarting, setRestarting] = (0, react.useState)(false);
 			const [restarted, setRestarted] = (0, react.useState)(false);
 			const [note, setNote] = (0, react.useState)(null);
 			const [acquire, setAcquire] = (0, react.useState)(null);
-			const [dismissed, setDismissed] = (0, react.useState)(false);
+			const [stuck, setStuck] = (0, react.useState)(null);
+			const [dismissed, setDismissed] = (0, react.useState)(() => dismissedMisses.has(dismissalKey));
 			const downloadAbort = (0, react.useRef)(null);
 			(0, react.useEffect)(() => () => {
 				downloadAbort.current?.abort();
@@ -9104,8 +9174,11 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				}, trackerFaces(acquire), doneFace(done)));
 			}
 			const download = () => {
+				dismissedMisses.delete(dismissalKey);
 				setBusy(true);
 				setNote(null);
+				setStuck(null);
+				setAcquire(null);
 				downloadAbort.current?.abort();
 				downloadAbort.current = new AbortController();
 				const signal = downloadAbort.current.signal;
@@ -9114,19 +9187,28 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 						const first = await acquireWeightStart(target, rescue.file, signal);
 						setAcquire(first);
 						let current = first;
+						let lastSeenBytes = first.bytes;
+						let frozenPolls = 0;
 						for (let attempt = 0; !ACQUIRE_TERMINAL.has(current.state) && attempt < 150; attempt += 1) {
-							await (0, _melite_card_base_client.abortableSleep)(400, signal);
+							if (await (0, _melite_card_base_client.abortableSleep)(400, signal) === "abort") return;
 							if (signal.aborted) return;
 							current = await acquireWeightPoll(current.operationId, signal);
 							setAcquire({ ...current });
+							frozenPolls = current.total > 0 && current.bytes < current.total && current.bytes === lastSeenBytes ? frozenPolls + 1 : 0;
+							lastSeenBytes = current.bytes;
+							if (frozenPolls >= 2) break;
 						}
 						setBusy(false);
+						if (!ACQUIRE_TERMINAL.has(current.state)) {
+							setStuck({ ...current });
+							return;
+						}
 						if (current.state === "failed" || current.state === "blocked") {
 							setNote(current.detail ?? "weight acquisition " + current.state);
 							return;
 						}
 						setDone({
-							detail: current.detail ?? target + " acquired (" + String(current.bytes) + "/" + String(current.total) + " bytes)",
+							detail: current.detail ?? acquiredDetailOf(target, current),
 							restartRequired: current.state === "restart_required" || current.state === "installed"
 						});
 					} catch (e) {
@@ -9143,28 +9225,55 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				disabled: target === "",
 				title: target === "" ? chromeCopy.noProvisionTarget : chromeCopy.downloadViaManage,
 				onClick: () => {
+					dismissedMisses.delete(dismissalKey);
 					setDismissed(false);
 				}
 			}, chromeCopy.downloadWeight));
+			const dismissPopup = () => {
+				if (stuck !== null || acquire !== null && (acquire.state === "failed" || acquire.state === "blocked")) dismissedMisses.add(dismissalKey);
+				downloadAbort.current?.abort();
+				setAcquire(null);
+				setDismissed(true);
+			};
 			return (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Modal, {
 				open: true,
-				onClose: () => {
-					downloadAbort.current?.abort();
-					setDismissed(true);
-				},
-				title: chromeCopy.missingWeight,
+				onClose: dismissPopup,
+				title: stuck !== null ? chromeCopy.weightStuck : chromeCopy.missingWeight,
 				closeLabel: chromeCopy.closeWeightPopup
 			}, (0, react.createElement)("div", {
 				"data-testid": "weight-popup",
 				className: card_module_css_default.rescue
-			}, (0, react.createElement)("p", { className: card_module_css_default.rescueNote }, chromeCopy.missingDownload({ what })), (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+			}, stuck !== null ? (0, react.createElement)("p", { className: card_module_css_default.rescueNote }, chromeCopy.stuckNote({
+				state: stuck.state,
+				bytes: stuck.bytes,
+				total: stuck.total
+			})) : (0, react.createElement)("p", { className: card_module_css_default.rescueNote }, chromeCopy.missingDownload({ what })), (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Button, {
 				size: "sm",
 				variant: "primary",
 				"data-testid": "weight-download",
 				disabled: busy || target === "",
 				title: target === "" ? chromeCopy.noProvisionTarget : chromeCopy.downloadViaManage,
 				onClick: download
-			}, busy ? acquire === null ? chromeCopy.startingWord : chromeCopy.downloadingWord : chromeCopy.downloadWord), ...trackerFaces(acquire), downloading ? (0, react.createElement)("p", { className: card_module_css_default.rescueNote }, chromeCopy.downloadingLive) : null, note !== null ? (0, react.createElement)("p", { className: card_module_css_default.rescueErr }, note) : null));
+			}, busy ? acquire === null ? chromeCopy.startingWord : chromeCopy.downloadingWord : chromeCopy.downloadWord), ...trackerFaces(acquire), stuck === null && downloading ? (0, react.createElement)("p", { className: card_module_css_default.rescueNote }, chromeCopy.downloadingLive) : null, stuck !== null ? (0, react.createElement)("div", null, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+				size: "sm",
+				onClick: download
+			}, chromeCopy.retryDownload), (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+				size: "sm",
+				onClick: () => {
+					const operationId = stuck.operationId;
+					setStuck(null);
+					setAcquire(null);
+					setNote(null);
+					(0, _melite_card_base_client.postManageAction)("acquire_discard", { operation_id: operationId }).catch((e) => {
+						setNote((0, _melite_card_base_client.rejectionVoice)(e));
+					});
+				}
+			}, chromeCopy.deleteStuck), (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+				size: "sm",
+				onClick: () => {
+					setNote(chromeCopy.stuckRunRefusal);
+				}
+			}, chromeCopy.runAgain)) : null, note !== null ? (0, react.createElement)("p", { className: card_module_css_default.rescueErr }, note) : null));
 		}
 		//#endregion
 		//#region src/client/card-drill.tsx
@@ -21746,12 +21855,9 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				const m = frame["model"];
 				if (spec === null || String(stage.card ?? "") === "") return frame;
 				if (typeof m !== "string" || m === "" || m === (spec.model ?? "")) return frame;
-				const out = {
-					...(0, _melite_card_base_client.modelSwitchPatch)(spec, m, (0, _melite_card_base_client.composeCandidateDoc)(held, user, {})),
-					...frame
-				};
-				for (const k of modBagKeys(spec)) if (!(k in out)) out[k] = null;
-				return out;
+				const merged = (0, _melite_card_base_client.mergeSwitchFrame)((0, _melite_card_base_client.modelSwitchPatch)(spec, m, (0, _melite_card_base_client.composeCandidateDoc)(held, user, {})), frame);
+				for (const k of modBagKeys(spec)) if (!(k in merged)) merged[k] = null;
+				return merged;
 			};
 			const onSet = (0, react.useCallback)((name, v) => {
 				if (name === "model" && spec !== null && String(stage.card ?? "") !== "" && typeof v === "string" && v !== "" && v !== (spec.model ?? "")) {

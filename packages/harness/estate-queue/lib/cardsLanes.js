@@ -2,6 +2,7 @@
 // Extracted from cardsRegistry: which families have a live lane on
 // disk (the packs the compose arm refuses without).
 import { checkModelPresent, getModel, loadEndpointConfig } from "@melite/comfyui-cordis";
+import { LIVE_ACQUIRE_STATES, provisioningSeat } from "@melite/estate-provisioning";
 import { CardArmError } from "./cardsArmError.js";
 // ── THE LANE PRESENCE GATE (2026-09-13, the one-pattern law) ───────
 // The operator's alarm: "If Img Gen works and Img Edit doesn't,
@@ -153,12 +154,65 @@ export function laneFilesStatus(decl, check = (folder, name) => checkModelPresen
         return null;
     return firstLaneMiss(decl, check) === null;
 }
+/** THE IN-FLIGHT READ (the run gate's seat query — the provisioning
+ *  service's operation read, wired through the process seat the way
+ *  the models seat's namespace arms the models table): the LIVE
+ *  acquire row for one family, null when no seat is mounted in this
+ *  process, no acquisition runs for the family, or the row already
+ *  settled (a settled row is the rescue verbs' story — the idle miss's
+ *  own voice stands for it, and its fresh-fetch hint is then true).
+ *  The read keys the family ref the acquire door itself starts
+ *  (owner family, no variant/quant), so the gate sees exactly the
+ *  operation the manage seat's Download press minted. */
+function acquireInFlight(fam) {
+    const progress = provisioningSeat()?.progressOfRef({ kind: "model", owner: "family", id: fam }) ?? null;
+    if (progress === null)
+        return null;
+    return LIVE_ACQUIRE_STATES.has(progress.state) ? progress : null;
+}
+/** The live fraction's one voice: a percent of the DECL's own total,
+ *  or the undeclared-total word when no row declared a size (a
+ *  fraction of nothing is a lie). */
+function inFlightFraction(progress) {
+    if (progress.total <= 0)
+        return "total undeclared";
+    return String(Math.floor((progress.bytes * 100) / progress.total)) + "%";
+}
 export function lanePresenceMiss(fam) {
     const decl = getModel(fam);
     const miss = firstLaneMiss(decl, (folder, name) => checkModelPresent("models/" + folder, name));
     if (miss === null)
         return null;
     const prov = (decl.provisions ?? []).find((p) => p.name === miss.name);
+    // THE IN-FLIGHT LEG (ERRORS.md k2 — NEVER-RUN-ON-INCOMPLETE): a
+    // miss whose file is landing RIGHT NOW is not the idle story. The
+    // refusal voices the acquisition (the operation and its live
+    // fraction, real landed bytes over the DECL total), carries the
+    // structured row beside the lane miss, and DROPS the fresh-fetch
+    // hint — "fetch it: <url>" while a fetch runs is what re-pops the
+    // download loop the burn names.
+    const inFlight = acquireInFlight(fam);
+    if (inFlight !== null) {
+        return new CardArmError(400, "lane presence: family '" + fam + "' declares " + miss.key + " '" + miss.name +
+            "' — acquisition in flight (" + inFlightFraction(inFlight) + "): operation " +
+            inFlight.operationId + ", " + String(inFlight.bytes) + "/" + String(inFlight.total) +
+            " bytes landed — the run refuses until the weight is on the store", "lane_input_missing", undefined, undefined, undefined, 
+        // the lane miss stands WITHOUT its fetchUrl (no fresh-fetch
+        // hint): the popup keys its face on fields and finds no
+        // download offer to double-press
+        {
+            family: fam,
+            slot: miss.key,
+            missing: miss.name,
+            folders: miss.folders,
+            kind: "model",
+        }, {
+            acquire_in_flight: true,
+            operation_id: inFlight.operationId,
+            bytes: inFlight.bytes,
+            total: inFlight.total,
+        });
+    }
     return new CardArmError(400, "lane presence: family '" + fam + "' declares " + miss.key + " '" + miss.name +
         "' but no store copy exists (folders checked: " + miss.folders.join(", ") + ")" +
         (prov !== undefined ? " — fetch it: " + prov.url : ""), "lane_input_missing", undefined, undefined, undefined, 

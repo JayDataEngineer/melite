@@ -12,7 +12,11 @@ export class CardArmError extends Error {
     /** The structured lane-miss evidence — set only by the
      *  lane_input_missing throw site (cardsLanes.lanePresenceMiss). */
     lane;
-    constructor(status, message, code, loc, expected, got, lane) {
+    /** The structured in-flight-acquisition evidence — set only by the
+     *  lane_input_missing throw site's in-flight arm, beside (never
+     *  instead of) the lane miss itself. */
+    details;
+    constructor(status, message, code, loc, expected, got, lane, details) {
         super(message);
         this.status = status;
         this.code = code;
@@ -24,6 +28,8 @@ export class CardArmError extends Error {
             this.got = got;
         if (lane !== undefined)
             this.lane = lane;
+        if (details !== undefined)
+            this.details = details;
     }
 }
 /** The variant rail's own refusal (sampler_envelope) — a subclass

@@ -9,6 +9,16 @@ export const PROVISION_STATES = [
     "failed",
     "blocked",
 ];
+/** THE LIVE ACQUIRE STATES — the states that name a fetch still
+ *  holding its plane slot (one spelling for every reader that must
+ *  tell a landing download from a settled row: the manage plane's
+ *  rescue verbs refuse live ids, the run gate's lane-presence voice
+ *  reports the live fraction). A settled row — landed, failed,
+ *  blocked — is never in this set. */
+export const LIVE_ACQUIRE_STATES = new Set([
+    "acquiring",
+    "verifying",
+]);
 export const PROVISION_OUTCOMES = [
     "active",
     "restart_required",

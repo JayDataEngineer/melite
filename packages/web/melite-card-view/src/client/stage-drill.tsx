@@ -8,7 +8,7 @@ import { CardDrill } from './card-drill.tsx'
 import { MediaDrilldown, type MediaDrilldownItem } from '@melite-plugin/dsh-gallery/drilldown'
 import type { StageViewOwnerProps } from './types.ts'
 import { coerceFieldEdit, fetchFormSpec, fieldsOf, resolveValue, seedUser, reseatEnvelopeKeys, CardForm, type FormSpecDoc, type SpecValues } from '@melite/card-base/client'
-import { axisUnset, axisGroups, axisKey, composeCandidateDoc, composeValidate, modelSwitchPatch } from '@melite/card-base/client'
+import { axisUnset, axisGroups, axisKey, composeCandidateDoc, composeValidate, mergeSwitchFrame, modelSwitchPatch } from '@melite/card-base/client'
 import { forgetStageWrites, reconcileStageWriteFailures, refuseForUnlandedWrite, scheduleStageParam } from './draft.ts'
 import { canonicalOutputUrl, trailDedupe } from '@melite/estate-drafts/trail'
 import { postManageAction } from '@melite/card-base/client'
@@ -508,12 +508,20 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
     const m = frame['model']
     if (spec === null || String(stage.card ?? '') === '') return frame
     if (typeof m !== 'string' || m === '' || m === (spec.model ?? '')) return frame
-    const out: Record<string, unknown> = {
-      ...modelSwitchPatch(spec, m, composeCandidateDoc(held, user, {})),
-      ...frame,
-    }
-    for (const k of modBagKeys(spec)) if (!(k in out)) out[k] = null
-    return out
+    // THE MERGE IS ONE HOME (the drill null-set cure, 2026-11-08):
+    // mergeSwitchFrame — the caller's frame wins EXCEPT under the
+    // patch's null verdicts (a departed-surface key a frame re-plants
+    // dies; every other frame key keeps caller-wins).
+    const merged = mergeSwitchFrame(
+      modelSwitchPatch(spec, m, composeCandidateDoc(held, user, {})),
+      frame,
+    )
+    // the served-features modifiers are the drill's own completion
+    // seat (modBagKeys above): the schema walk cannot see them, so
+    // the verb's bag block never carries them — completed here, only
+    // where neither the patch nor the frame already owns the key.
+    for (const k of modBagKeys(spec)) if (!(k in merged)) merged[k] = null
+    return merged
   }
   const onSet = useCallback((name: string, v: unknown): void => {
     // THE MODEL RE-POINT IS AN ATOMIC, RESCOPED WRITE (the re-point

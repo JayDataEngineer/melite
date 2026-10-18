@@ -330,6 +330,13 @@ export const MUSIC_NATIVE: RegistryFlow = {
       cardIo: { default: "audio" },
       params: {
         prompt: "$prompt",
+        // THE LYRICS SEAT (value-arm cure, 2026-11-08): "" is the
+        // instrumental default — the card bakes an absent/empty lyric
+        // as "" (MiniMax's instrumental convention), never an absent
+        // ref, so the seat stays a plain literal (a "$lyrics" spell
+        // would refuse unresolved on instrumental calls) and the
+        // stated lyric rides the declared overlay.
+        lyrics: "",
         model: "music3",
         duration: 120,
         seed: -1,
@@ -342,7 +349,7 @@ export const MUSIC_NATIVE: RegistryFlow = {
     version: 1,
     description:
       "Music generation in one call (MiniMax Music 3 via the music card) — " +
-      "prompt in, audio out.",
+      "prompt in, audio out; state lyrics for sung verses (omit for instrumental).",
     properties: {
       prompt: {
         ptype: "string",
@@ -362,9 +369,22 @@ export const MUSIC_NATIVE: RegistryFlow = {
         maximum: 360,
         enum: null,
       },
+      lyrics: {
+        ptype: "string",
+        description:
+          "song lyrics (verse-form text sung by the music); omit for instrumental",
+        default: null,
+        hasDefault: false,
+        minimum: null,
+        maximum: null,
+        enum: null,
+      },
     },
     required: ["prompt"],
-    overlays: [{ param: "duration", stage: "music", path: ["duration"], choices: null }],
+    overlays: [
+      { param: "duration", stage: "music", path: ["duration"], choices: null },
+      { param: "lyrics", stage: "music", path: ["lyrics"], choices: null },
+    ],
   },
   skillRefs: [],
 };

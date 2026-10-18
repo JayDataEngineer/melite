@@ -331,7 +331,20 @@ export declare function axisPickPatch(spec: FormSpecDoc, row: FormVariantRow, he
  *  new family's seed re-derives on spec-land, never the departed
  *  family's 52 riding under a 4-step distill). The caller writes
  *  every key through onEdit. PURE. */
-export declare function modelSwitchPatch(spec: FormSpecDoc, model: string, held?: SpecValues): SpecValues;
+export declare function modelSwitchPatch(spec: FormSpecDoc, model: string, held?: SpecValues, arrival?: FormSpecDoc): SpecValues;
+/** THE SWITCH-FRAME MERGE, ONE HOME (the drill null-set cure,
+ *  2026-11-08 — the P4 merge-order half): a caller's frame merges
+ *  UNDER a switch patch, but the patch's NULL verdicts — the
+ *  departed-surface keys the verb deleted — BEAT the frame: an
+ *  incoming frame that re-plants a departed stamp (a recipe re-point
+ *  carrying the departed recipe key) dies here, and every other
+ *  frame key keeps the caller-wins law. The single spelling both the
+ *  drill's per-key seam and the walls ride; re-implementing the
+ *  spread locally is how the caller-wins order silently grew.
+ *  @param patch the switch verb's patch (its nulls are verdicts).
+ *  @param frame the caller's own keys — they win except under a null
+ *  verdict. */
+export declare function mergeSwitchFrame(patch: SpecValues, frame: Record<string, unknown>): Record<string, unknown>;
 /** THE EMPTY-SELECTION LAW's authoring decision (2026-10-10, the
  *  operator's live bench: a stage carrying quant:"" — born when a
  *  model switch CLEARED the axis to '' — which the RUN door refused:

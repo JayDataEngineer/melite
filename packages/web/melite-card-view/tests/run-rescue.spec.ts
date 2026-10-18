@@ -197,6 +197,15 @@ describe('terminalRunStageErrorOf (the run wire shape — the runface-error cure
 })
 
 describe('runRescueCall (names only, the one wire)', () => {
+  // THE UNMOCKED-SUCCESS MOVE (the download-honesty cure, 2026-11-08):
+  // the model-arm fixtures below once answered the wire with
+  // state:'active' and expected a RESOLVED acquire — 'active' sat in
+  // ACQUIRE_TERMINAL, so the mock itself declared a non-terminal
+  // engine report a completion (run-rescue-acquire-terminal.spec.ts
+  // ARM 1 is the wall that refused it). Every such fixture now
+  // answers with the genuinely terminal word 'installed'; the
+  // restartRequired:true it carries is the standing law for a landed
+  // weight (restart_required || installed).
   beforeEach(() => {
     vi.resetModules()
     vi.restoreAllMocks()
@@ -211,28 +220,28 @@ describe('runRescueCall (names only, the one wire)', () => {
   })
 
   it('a model rescue posts acquire_weight with the FAMILY id (never a URL)', async () => {
-    const spy = vi.fn().mockResolvedValue({ ok: true, detail: 'downloaded: 2', data: { operation_id: 'op-1', state: 'active', bytes: 2, total: 2 } })
+    const spy = vi.fn().mockResolvedValue({ ok: true, detail: 'downloaded: 2', data: { operation_id: 'op-1', state: 'installed', bytes: 2, total: 2 } })
     vi.doMock('@melite/card-base/client', () => ({ postManageAction: spy }))
     const { runRescueCall: call } = await import('../src/client/run-rescue-core.ts')
-    await expect(call({ kind: 'model', file: 'x.safetensors' }, 'h3-timeline')).resolves.toEqual({ detail: 'downloaded: 2', restartRequired: false })
+    await expect(call({ kind: 'model', file: 'x.safetensors' }, 'h3-timeline')).resolves.toEqual({ detail: 'downloaded: 2', restartRequired: true })
     expect(spy).toHaveBeenCalledWith('acquire_weight', { model: 'h3-timeline', file: 'x.safetensors' })
   })
 
   it('uses an explicit model target over the stage fallback', async () => {
-    const spy = vi.fn().mockResolvedValue({ ok: true, detail: 'installed', data: { operation_id: 'op-2', state: 'active', bytes: 5, total: 5 } })
+    const spy = vi.fn().mockResolvedValue({ ok: true, detail: 'installed', data: { operation_id: 'op-2', state: 'installed', bytes: 5, total: 5 } })
     vi.doMock('@melite/card-base/client', () => ({ postManageAction: spy }))
     const { runRescueCall: call } = await import('../src/client/run-rescue-core.ts')
-    await expect(call({ kind: 'model', file: 'x.bin', target: 'mask' }, 'family')).resolves.toEqual({ detail: 'installed', restartRequired: false })
+    await expect(call({ kind: 'model', file: 'x.bin', target: 'mask' }, 'family')).resolves.toEqual({ detail: 'installed', restartRequired: true })
     expect(spy).toHaveBeenCalledWith('acquire_weight', { model: 'mask', file: 'x.bin' })
   })
 
   it('a model start that is still acquiring polls the SAME door by operation id', async () => {
     const spy = vi.fn()
       .mockResolvedValueOnce({ ok: true, detail: 'acquiring x', data: { operation_id: 'op-poll', state: 'acquiring', bytes: 1, total: 4 } })
-      .mockResolvedValueOnce({ ok: true, detail: 'acquiring x', data: { operation_id: 'op-poll', state: 'active', bytes: 4, total: 4 } })
+      .mockResolvedValueOnce({ ok: true, detail: 'acquiring x', data: { operation_id: 'op-poll', state: 'installed', bytes: 4, total: 4 } })
     vi.doMock('@melite/card-base/client', () => ({ postManageAction: spy }))
     const { runRescueCall: call } = await import('../src/client/run-rescue-core.ts')
-    await expect(call({ kind: 'model', file: 'x.safetensors' }, 'fam')).resolves.toEqual({ detail: 'acquiring x', restartRequired: false })
+    await expect(call({ kind: 'model', file: 'x.safetensors' }, 'fam')).resolves.toEqual({ detail: 'acquiring x', restartRequired: true })
     expect(spy).toHaveBeenNthCalledWith(1, 'acquire_weight', { model: 'fam', file: 'x.safetensors' })
     expect(spy).toHaveBeenNthCalledWith(2, 'acquire_weight', { operation_id: 'op-poll' })
   })
@@ -265,11 +274,11 @@ describe('runRescueCall (names only, the one wire)', () => {
     vi.doMock('@melite/card-base/client', () => ({
       postManageAction: vi.fn()
         .mockResolvedValueOnce({ ok: true })
-        .mockResolvedValueOnce({ ok: true, data: { operation_id: 'op-d', state: 'active', bytes: 7, total: 7 } }),
+        .mockResolvedValueOnce({ ok: true, data: { operation_id: 'op-d', state: 'installed', bytes: 7, total: 7 } }),
     }))
     const { runRescueCall: call } = await import('../src/client/run-rescue-core.ts')
     await expect(call({ kind: 'extension', pack: 'P' }, '')).resolves.toEqual({ detail: 'P installed', restartRequired: false })
-    await expect(call({ kind: 'model', file: 'x.safetensors' }, 'fam')).resolves.toEqual({ detail: 'fam acquired (7/7 bytes)', restartRequired: false })
+    await expect(call({ kind: 'model', file: 'x.safetensors' }, 'fam')).resolves.toEqual({ detail: 'fam acquired (7/7 bytes)', restartRequired: true })
   })
 
   it('a detail-less refusal still names itself', async () => {
@@ -307,18 +316,18 @@ describe('runRescueCall (names only, the one wire)', () => {
   it('a camelCase operationId and an absent state still track (the parser falls back, never invents)', async () => {
     const spy = vi.fn()
       .mockResolvedValueOnce({ ok: true, data: { operationId: 'op-camel' } })
-      .mockResolvedValueOnce({ ok: true, data: { operation_id: 'op-camel', state: 'active', bytes: 3, total: 3 } })
+      .mockResolvedValueOnce({ ok: true, data: { operation_id: 'op-camel', state: 'installed', bytes: 3, total: 3 } })
     vi.doMock('@melite/card-base/client', () => ({ postManageAction: spy }))
     const { runRescueCall: call } = await import('../src/client/run-rescue-core.ts')
-    await expect(call({ kind: 'model', file: 'x.safetensors' }, 'fam')).resolves.toEqual({ detail: 'fam acquired (3/3 bytes)', restartRequired: false })
+    await expect(call({ kind: 'model', file: 'x.safetensors' }, 'fam')).resolves.toEqual({ detail: 'fam acquired (3/3 bytes)', restartRequired: true })
     expect(spy).toHaveBeenNthCalledWith(2, 'acquire_weight', { operation_id: 'op-camel' })
   })
 
   it('a model rescue with an empty file posts the family alone (no empty file key)', async () => {
-    const spy = vi.fn().mockResolvedValue({ ok: true, detail: 'installed', data: { operation_id: 'op-nf', state: 'active' } })
+    const spy = vi.fn().mockResolvedValue({ ok: true, detail: 'installed', data: { operation_id: 'op-nf', state: 'installed' } })
     vi.doMock('@melite/card-base/client', () => ({ postManageAction: spy }))
     const { runRescueCall: call, acquireWeightStart: start } = await import('../src/client/run-rescue-core.ts')
-    await expect(call({ kind: 'model', file: '' }, 'fam')).resolves.toEqual({ detail: 'installed', restartRequired: false })
+    await expect(call({ kind: 'model', file: '' }, 'fam')).resolves.toEqual({ detail: 'installed', restartRequired: true })
     expect(spy).toHaveBeenCalledWith('acquire_weight', { model: 'fam' })
     // the exported seam alone: no file argument, no file key on the wire
     await expect(start('fam')).resolves.toEqual(expect.objectContaining({ operationId: 'op-nf' }))

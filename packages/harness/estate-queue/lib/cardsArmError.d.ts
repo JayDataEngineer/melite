@@ -1,4 +1,4 @@
-import { RUNS_ERROR_CODES } from "./runsErrorCodes.ts";
+import { RUNS_ERROR_CODES } from "./runsErrorCodes.js";
 /** The structured lane-miss evidence a lane_input_missing refusal
  *  carries beside its prose (the missing-model popup's payload,
  *  operator 2026-10-22): the wire code names the class, these fields
@@ -18,6 +18,20 @@ export interface LaneInputMiss {
     /** The artifact class the popup's action keys on. */
     readonly kind: "model" | "extension";
 }
+/** THE IN-FLIGHT ACQUISITION ROW (ERRORS.md k2, NEVER-RUN-ON-
+ *  INCOMPLETE): the structured truth a lane-presence miss carries when
+ *  the missing file is LANDING right now — the popup keys its face on
+ *  these fields, never on prose, and the fresh-fetch hint is absent by
+ *  law (a fetch already runs; offering another re-pops the loop). */
+export interface AcquireInFlightDetails {
+    readonly acquire_in_flight: true;
+    /** The live acquire's operation id (the poll key). */
+    readonly operation_id: string;
+    /** Real landed bytes at the refusal moment. */
+    readonly bytes: number;
+    /** The DECL's declared total (0 when no row declares one). */
+    readonly total: number;
+}
 export declare class CardArmError extends Error {
     readonly status: number;
     /** The refusal's envelope code — ALWAYS a RUNS_ERROR_CODES key
@@ -32,7 +46,11 @@ export declare class CardArmError extends Error {
     /** The structured lane-miss evidence — set only by the
      *  lane_input_missing throw site (cardsLanes.lanePresenceMiss). */
     readonly lane?: LaneInputMiss;
-    constructor(status: number, message: string, code: keyof typeof RUNS_ERROR_CODES, loc?: string, expected?: string, got?: string, lane?: LaneInputMiss);
+    /** The structured in-flight-acquisition evidence — set only by the
+     *  lane_input_missing throw site's in-flight arm, beside (never
+     *  instead of) the lane miss itself. */
+    readonly details?: AcquireInFlightDetails;
+    constructor(status: number, message: string, code: keyof typeof RUNS_ERROR_CODES, loc?: string, expected?: string, got?: string, lane?: LaneInputMiss, details?: AcquireInFlightDetails);
 }
 /** The variant rail's own refusal (sampler_envelope) — a subclass
  *  so the WRITE seat can tell a DECL-own word from a selection

@@ -443,7 +443,13 @@ const PINS: Record<string, number> = {
   // refusal voices wire.ts:84 ×2 and estate-remote.ts:216, and the
   // spec.ts:1339/1361/1384 compose-refusal triad. The form/preview/
   // studio .tsx residue is unchanged.
-  'packages/web/card-base/src': 42,
+  // RE-PIN 42→45 (2026-11-08, the drill null-set cure): +3 arm A
+  // segments of the composeValidate MIRROR CLAUSE (spec.ts:1731) —
+  // the door's own field-named refusal voice ("fires nothing on this
+  // lane") spelled verbatim so the mirror and the admission gate
+  // cannot drift; localizing it would fork the door's identity per
+  // locale (the wire.ts data-site argument, class 1).
+  'packages/web/card-base/src': 45,
   // card-view: 13 — the D1 dictionary moves landed (the cards-tab
   // title/guide trio + the mention title now ride chromeCopy), so the
   // residue is two DEBT classes, every seat computed law-voiceing:
@@ -451,7 +457,11 @@ const PINS: Record<string, number> = {
   // resource rows' stream/failure frames) and draft.ts:517-520
   // unlandedWriteVoice ×5 (arm B string returns — the write-gate's
   // voice assembly). Dictionary convergence stays CONTRACTS §4.
-  'packages/web/melite-card-view/src': 13,
+  // RE-PIN 13→15 (2026-11-08, the P5 rescue-honesty cure): +2 arm B
+  // string returns in run-rescue-core.ts:195/:197 — the
+  // acquiredDetailOf ONE-HOME success voice (the "no declared total"
+  // honesty face); one assembly seat, the tracker's own words.
+  'packages/web/melite-card-view/src': 15,
   // deck: 2 — the register() title/guideDescription positions now ride
   // assetsCopy (D2's proof seat: a literal at those arguments fires
   // this wall). Residue: index.ts:41 + :50 `message` embed notices
