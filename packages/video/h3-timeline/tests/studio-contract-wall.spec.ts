@@ -23,7 +23,7 @@ import { act, renderHook } from "@testing-library/react"
 import type { CardStage } from "@melite/contracts"
 import { carrier, BOARDED, VARIANT_ADDRESSES } from "../src/card.ts"
 import { emitParamsSpec } from "@melite/comfyui-card-kit/params-emit"
-import { serializeLayerA, hydrateLayerA } from "../src/ui/studio/docHydrate.ts"
+import { serializeLayerA, hydrateLayerA, LAYERA_KEY_UNIVERSE } from "../src/ui/studio/docHydrate.ts"
 import { useShownDoc } from "../src/ui/studio/useShownDoc.ts"
 import { CALL_KNOB_KEYS, mergeDocLayers } from "../src/ui/studio/docModel.ts"
 import { film } from "@melite/models-h3/actions"
@@ -310,6 +310,36 @@ describe("the studio contract wall (Layer A writes only card truth)", () => {
     const on = { ...hydrateLayerA({ seed: 1 } as never), second_pass_enabled: true }
     const savedOn = serializeLayerA(on, base)
     expect(savedOn.second_pass_enabled).toBe(true)
+  })
+
+  // AUDIT A4 (journey-closure 2026-11-07): the DELETE RIDE universe
+  // and the emitter are ONE derivation now — the serializer's emit
+  // loop list IS the universe's core (docHydrate LAYERA_EMIT_LOOP_KEYS
+  // spread into LAYERA_KEY_UNIVERSE). Before the cure `length` was
+  // emitted by the loop but missing from the hand universe: a
+  // base-carried length survived every save, never deletable, and no
+  // arm walked the join. This arm walks it: every key the serializer
+  // can emit, once cleared, deletes its base-carried value.
+  it("THE DELETE-RIDE UNIVERSE covers every emitter key (A4): emitted-then-cleared deletes its base value — including length, the historical lesion", () => {
+    expect(LAYERA_KEY_UNIVERSE.has("length"), "length (display-owned, compose-read) rides the delete universe").toBe(true)
+    // the sweep state carries length (agent-authored, display-owned —
+    // no control authors it, the hydrate seat keeps it alive)
+    const populated = { ...populatedMax(), length: 96 }
+    const emitted = serializeLayerA(hydrateLayerA(populated as never))
+    expect(emitted.length, "the sweep's own state emits length").toBe(96)
+    for (const key of Object.keys(emitted)) {
+      const value = (emitted as Record<string, unknown>)[key]
+      if (value === undefined) continue
+      const cleared = { ...(populated as Record<string, unknown>) }
+      delete cleared[key]
+      const fresh = serializeLayerA(hydrateLayerA(cleared as never))
+      if (key in fresh) continue // always-emit keys are unclearable by law (the pin-equals-default class)
+      const deleted = serializeLayerA(hydrateLayerA(cleared as never), { [key]: value })
+      expect(
+        deleted[key],
+        `emitted key "${key}" cleared never deleted its base-carried value — the universe drifted from the emitter (the A4 lesion)`,
+      ).toBe(null)
+    }
   })
 
   // THE FAMILY-AWARE EMIT LAW (B1, journey-closure 2026-11-06): the

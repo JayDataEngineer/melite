@@ -69,23 +69,42 @@ describe("the h3 model plugin (the ONE H3 family — timeline + single-shot + ke
     assert.ok(!DECL.label.includes("Timeline"), "the multi-window lane is a VARIANT, never a second model");
   });
 
-  it("ONE VARIANT — the timeline lane (operator 2026-11-02: 1 model, 1 variant, 1 quant, 3 recipes)", () => {
+  it("TWO CHECKPOINT ROWS on the ONE timeline lane (operator 2026-10-17: the Singularity variant beside the hybrid)", () => {
+    // The 2026-11-02 one-variant ruling was a DE-DUP: the same model
+    // was re-served across variant rows and the display sprawled. A
+    // checkpoint axis — two DIFFERENT checkpoints on one lane — is
+    // the krea-2 matrix shape, not that sprawl (the operator's
+    // clarification, 2026-10-17).
     const variantRows = DECL.variants.filter((v) => v.group !== "Recipe");
-    assert.equal(variantRows.length, 1, "exactly one non-recipe variant row");
+    assert.equal(variantRows.length, 2, "the hybrid beside the Singularity checkpoint row — two checkpoints, still one lane");
     const ids = DECL.variants.map((v) => v.id);
     assert.equal(new Set(ids).size, ids.length, "variant ids unique");
     const byId = new Map(DECL.variants.map((v) => [v.id, v]));
     // the timeline lane — its route IS the pre-correction family
     // address (the one surviving address)
     assert.equal(byId.get("timeline")?.route, "h3-timeline");
+    // the singularity row rides its OWN lane address (the krea-2
+    // raw-lane precedent: two offered variants never share a route —
+    // the address claim takes pool order, so a shared spelling
+    // leaves the second lane unreachable); its lane_inputs override
+    // swaps the unet per-variant while the family default view stays
+    // the hybrid
+    assert.equal(byId.get("singularity")?.route, "h3-singularity");
+    const singularityLane = (byId.get("singularity")?.lane_inputs ?? {}) as Record<string, string>;
+    assert.equal(singularityLane["unet"], "Minimax-h3_Singularity_ref2va_Pruned_v1.3_int8.safetensors", "the singularity row's per-variant unet override");
+    const familyLane = (DECL.lane_inputs ?? {}) as Record<string, string>;
+    assert.equal(familyLane["unet"], "minimax_h3_hybrid_fl2va_ref2va_b30-49-int8.safetensors", "the family default view stays the hybrid");
+    // and the two rows name DIFFERENT checkpoints — the de-dup law
+    // still holds (never the same weights under two rows)
+    assert.notEqual(singularityLane["unet"], familyLane["unet"], "the checkpoint axis is two artifacts, not one model served twice");
     // the folded single-shot/keyframe routes retired with the recipe
     // rework — none survives as a variant row
     for (const gone of ["fl2va", "fl2va-turbo", "ref2va", "ref2va-turbo", "keyframe", "timeline-ref2va"]) {
-      assert.equal(byId.has(gone), false, `the folded variant '${gone}' retired (one lane, three recipes)`);
+      assert.equal(byId.has(gone), false, `the folded variant '${gone}' retired (a checkpoint row is not a lane row)`);
     }
   });
 
-  it("the ONE variant carries NO resolver_defaults — the carrier schema's own floors are the lane's geometry", () => {
+  it("the timeline variant carries NO resolver_defaults; the Singularity row stamps exactly {model} (audit A2, 2026-11-07)", () => {
     // The folded lanes' resolver_defaults (single-shot 1344×768/124f,
     // keyframe 768×448/56f) retired with their rows (2026-11-02):
     // geometry lives on ONE seat — the carrier schema's defaults —
@@ -94,6 +113,13 @@ describe("the h3 model plugin (the ONE H3 family — timeline + single-shot + ke
     const timeline = byId.get("timeline");
     assert.ok(timeline, "the timeline variant serves");
     assert.equal(timeline?.resolver_defaults, undefined, "no second geometry seat on the surviving variant");
+    // THE SINGULARITY CHECKPOINT ROW (audit A2): its ONE stamp is the
+    // per-variant model re-point — nothing else (no geometry, no
+    // sampling), so the deep-equal refuses a smuggled extra key.
+    const singularity = byId.get("singularity");
+    assert.ok(singularity, "the Singularity checkpoint row serves");
+    assert.deepEqual(singularity?.resolver_defaults, { model: "h3-singularity" },
+      "the checkpoint row's served default IS its own lane address, and only that");
   });
 
   it("the provisions union — the single-shot weights ride the ONE family", () => {
@@ -101,6 +127,7 @@ describe("the h3 model plugin (the ONE H3 family — timeline + single-shot + ke
     assert.ok(names.has("minimax_h3_fl2va_pruned_int8_convrot.safetensors"), "the single-shot FL2VA UNET rides");
     assert.ok(names.has("minimax_h3_ref2va_pruned_int8_convrot.safetensors"), "the single-shot Ref2VA UNET rides");
     assert.ok(names.has("minimax_h3_hybrid_fl2va_ref2va_b30-49-int8.safetensors"), "the timeline hybrid UNET stays");
+    assert.ok(names.has("Minimax-h3_Singularity_ref2va_Pruned_v1.3_int8.safetensors"), "the singularity checkpoint rides");
   });
 
   it("the loras mod stays family-level — the bag serves every lane", () => {
@@ -108,19 +135,19 @@ describe("the h3 model plugin (the ONE H3 family — timeline + single-shot + ke
     assert.deepEqual(packs, ["loras"], "the distill adapters ride all variants (the turbo lanes ARE single-shot lanes)");
   });
 
-  it("THE RECIPE TRIO (operator 2026-11-02: draft / standard / final, all riding the ByteDance 4-step lora; default = standard)", () => {
+  it("THE RECIPE TRIO (operator 2026-11-02: draft / standard / final, all riding one distill lora; 2026-11-07: the bag is the LightX2V Turbo 8-Step v1.0; default = standard)", () => {
     const recipes = DECL.variants.filter((v) => v.group === "Recipe");
     assert.equal(recipes.length, 3, "exactly three recipe rows — 1 model, 1 variant, 1 quant, 3 recipes");
     assert.equal(recipes[0]?.id, "standard", "first-declared law: the birth stamp takes the first composing recipe row (the standard IS the default)");
     const wire = recipes[0]?.wire_defaults as Record<string, unknown>;
-    // SELECTION ONLY: the id — strength 1 and the married 4-step
+    // SELECTION ONLY: the id — strength 1 and the married 8-step
     // count ride from the flavor catalog row at compose.
-    assert.deepEqual(wire?.["loras"], [{ id: "h3_dmad_4step" }], "the ByteDance DMAD 4-step bag row");
+    assert.deepEqual(wire?.["loras"], [{ id: "h3_turbo8_v1" }], "the LightX2V Turbo 8-Step v1.0 bag row");
     // DRY (one value, one owner): standard stamps NO geometry — the
     // carrier schema's own 1344×768 floor IS the calibrated point.
     assert.ok(!("width" in (wire ?? {})), "standard stamps no width — the carrier floor 1344 owns it");
     assert.ok(!("height" in (wire ?? {})), "standard stamps no height — the carrier floor 768 owns it");
-    assert.ok(!("steps" in (wire ?? {})), "steps UNSTATED — the lora row owns its married 4 (no hard pin)");
+    assert.ok(!("steps" in (wire ?? {})), "steps UNSTATED — the lora row owns its married 8 (no hard pin)");
     assert.ok(!("strength" in ((wire?.["loras"] as Array<Record<string, unknown>>)?.[0] ?? {})), "strength UNSTATED — the flavor's own default_strength 1 rides");
     // the group default names the first row
     const group = (DECL.variant_groups ?? []).find((g) => g.id === "Recipe");
@@ -130,7 +157,7 @@ describe("the h3 model plugin (the ONE H3 family — timeline + single-shot + ke
     // good for the draft recipe) — the same bag, draft geometry.
     const draft = recipes.find((r) => r.id === "draft")!;
     assert.ok(draft, "the draft row serves");
-    assert.deepEqual((draft.wire_defaults as Record<string, unknown>)?.["loras"], [{ id: "h3_dmad_4step" }], "draft rides the same ByteDance bag");
+    assert.deepEqual((draft.wire_defaults as Record<string, unknown>)?.["loras"], [{ id: "h3_turbo8_v1" }], "draft rides the same turbo bag");
     assert.equal((draft.wire_defaults as Record<string, unknown>)?.["width"], 768, "draft geometry: low-res");
     assert.equal((draft.wire_defaults as Record<string, unknown>)?.["height"], 448, "draft geometry: low-res");
     assert.ok(!("steps" in (draft.wire_defaults ?? {})), "draft steps UNSTATED — the marriage law");
@@ -140,7 +167,7 @@ describe("the h3 model plugin (the ONE H3 family — timeline + single-shot + ke
     const final = recipes.find((r) => r.id === "final")!;
     assert.ok(final, "the final row serves");
     const fw = final.wire_defaults as Record<string, unknown>;
-    assert.deepEqual(fw?.["loras"], [{ id: "h3_dmad_4step" }], "final rides the same ByteDance bag");
+    assert.deepEqual(fw?.["loras"], [{ id: "h3_turbo8_v1" }], "final rides the same turbo bag");
     assert.equal(fw?.["second_pass_enabled"], true, "the second-pass master switch rides");
     assert.equal(fw?.["sr_switch"], true, "the SeedVR2 super-res switch rides");
     assert.ok(!("sr_resolution" in fw), "sr_resolution UNSTATED — the knob's own 1080 floor owns it");
@@ -151,8 +178,8 @@ describe("the h3 model plugin (the ONE H3 family — timeline + single-shot + ke
     const li = (DECL.lane_inputs ?? {}) as Record<string, string>;
     assert.equal(
       li["loras"],
-      "dmad_minimax_h3_4step_lora_critic_comfyui.safetensors",
-      "the ByteDance default lora is the family's declared loras lane file",
+      "minimax_h3_fl2v_turbo_8step_v1.0_comfyui_bf16.safetensors",
+      "the LightX2V Turbo 8-Step v1.0 default is the family's declared loras lane file",
     );
     const prov = (DECL.provisions ?? []).find((p) => p.name === li["loras"]);
     assert.ok(prov, "the lane file has a provision row — the gate's fetch hint resolves");
@@ -169,6 +196,7 @@ const PROVISION_PINS: ReadonlyArray<
 > = [
   ["minimax_h3_hybrid_fl2va_ref2va_b30-49-int8.safetensors", "64f57f77ed85df04f7c0989ab84a5c3c110fb43a40dbc9badfe8ab2d5baafbca", "https://huggingface.co/smhfacct/Minimax-H3-fl2va-ref2va-hybrid-models/resolve/main/minimax_h3_hybrid_fl2va_ref2va_b30-49-int8.safetensors", 20970379632],
   ["minimax_h3_hybrid_fl2va_ref2va_b25-49-int8.safetensors", "a629cfea8d89a071b140c6e1935dc9a23e72de6badc18975a2bb9e6d1423d76d", "https://huggingface.co/smhfacct/Minimax-H3-fl2va-ref2va-hybrid-models/resolve/main/minimax_h3_hybrid_fl2va_ref2va_b25-49-int8.safetensors", 20970379632],
+  ["Minimax-h3_Singularity_ref2va_Pruned_v1.3_int8.safetensors", "412a7b126595a958964193f3b42513d7cf2df4196ef04223a0f05e3622949cce", "https://huggingface.co/WarmBloodAban/Minimax-h3_Singularity/resolve/main/Minimax-h3_Singularity_ref2va_Pruned_v1.3_int8.safetensors", 20967647456],
   ["minimax_h3_fl2va_pruned_int8_convrot.safetensors", "e889202c41dafb67b10d67b97f0d8541508036a6090af23425a5c2615d03c47a", "https://huggingface.co/Comfy-Org/MiniMax-H3/resolve/main/diffusion_models/minimax_h3_fl2va_pruned_int8_convrot.safetensors", 20970379616],
   ["minimax_h3_ref2va_pruned_int8_convrot.safetensors", "9255f52b6677845ad238f20dfaafa94727053694127ab7f255c048f0f9365779", "https://huggingface.co/Comfy-Org/MiniMax-H3/resolve/main/diffusion_models/minimax_h3_ref2va_pruned_int8_convrot.safetensors", 20970379616],
   ["qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors", "35a88d51044231fe332301d7a62aa81e3f2cba62febeb446e2c1e3e0ef76f2c6", "https://huggingface.co/Comfy-Org/MiniMax-H3/resolve/main/text_encoders/qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors", 15687142551],

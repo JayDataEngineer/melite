@@ -6,9 +6,10 @@ import { H3_LORA_ROWS } from '@melite/models-h3/mods/loras';
 import { SAMPLER_OPTIONS, SCHEDULER_OPTIONS } from '@melite/comfyui-card-kit/vocab';
 import { computeFilmMix, parseFilmMixClips, stanzaSecs } from "./filmMix.js";
 import { GRID_REMAINDER, GRID_STEP_FRAMES, IMAGE_BUS_SLOTS, REF_CAPS, assertGridLength, assertSpanGrid, imageReferenceCap, isMediaRef, DOC_FPS_DEFAULT, spanStanzaFrames, transitionOverlap, } from "./timelineContract.js";
-// THE ABSENT-BAG DEFAULT (h3-a, 2026-10-12; re-pointed 2026-10-11 to
-// the ByteDance DMAD row — operator: "the one from bytedance" is the
-// default): the DMAD 4-step row, built from the family lora
+// THE ABSENT-BAG DEFAULT (h3-a, 2026-10-12; bytedance DMAD row
+// 2026-10-11 → the LightX2V Turbo 8-Step v1.0 row 2026-11-07 —
+// operator: the card's default lora is the 8-step light tricks): the
+// h3_turbo8_v1 row, built from the family lora
 // CATALOG (mods/loras.ts — the one owner of every lora filename and
 // default strength; the value was restated as a literal here, which
 // is how a catalog edit would have silently missed the default).
@@ -16,9 +17,9 @@ import { GRID_REMAINDER, GRID_STEP_FRAMES, IMAGE_BUS_SLOTS, REF_CAPS, assertGrid
 // str (default_strength), plus the four fixed mode flags. A missing
 // catalog row refuses at load — the default would have no source.
 const loraStackDefault = () => {
-    const row = H3_LORA_ROWS.find((r) => r.id === 'h3_dmad_4step');
+    const row = H3_LORA_ROWS.find((r) => r.id === 'h3_turbo8_v1');
     if (row === undefined) {
-        throw new Error("h3 action: the lora catalog has no 'h3_dmad_4step' row — the absent-bag default has no source; fix the catalog row id");
+        throw new Error("h3 action: the lora catalog has no 'h3_turbo8_v1' row — the absent-bag default has no source; fix the catalog row id");
     }
     return JSON.stringify([{ on: true, lora: row.filename, str: row.default_strength, v: 1, a: 1, t: 1 }]);
 };

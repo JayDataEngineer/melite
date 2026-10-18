@@ -75,10 +75,11 @@ export const BOARDED: string[] = [h3Decl.id]
 
 // THE VARIANT ROUTES (the TTS fold's VARIANT_ADDRESSES pattern):
 // agents pick no matrix variant — the tool's closed model enum
-// offers the lane's own compose address (h3-timeline; the folded
+// offers each Variant-group lane's own compose address (the krea-2
+// raw-lane precedent: two lanes, one card). The folded
 // single-shot/keyframe routes retired 2026-11-02 with the recipe
-// rework — one lane, three recipes).
-export const VARIANT_ADDRESSES: string[] = ['h3-timeline']
+// rework; h3-singularity joined 2026-10-17 as the checkpoint axis.
+export const VARIANT_ADDRESSES: string[] = ['h3-timeline', 'h3-singularity']
 
 /** THE FAMILY ACTION BINDING (the atom vocabulary's video stroke):
  *  the h3 family's declared film action composes the whole lane-true

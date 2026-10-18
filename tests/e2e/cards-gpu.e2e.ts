@@ -444,7 +444,7 @@ describe.skipIf(!ENGINE_FREE)('cards-gpu: film and motion (the remaining h3 + ki
         model: 'h3', width: 768, height: 448, steps: 8,
         calls: [{ text: 'a red cube slides slowly across a white table', start_frame: 0, end_frame: 90, image: anchor }],
       }, 'h3 draft_02mp')
-      assert.ok(nodesWith(s, /dmad_minimax_h3_4step/).length >= 1, 'the absent-bag DMAD default rides')
+      assert.ok(nodesWith(s, /minimax_h3_fl2v_turbo_8step_v1\.0/).length >= 1, 'the absent-bag turbo default rides')
       const sched = byClass(s, 'BasicScheduler')
       assert.ok(sched.length >= 1, 'the scheduler runs')
       assert.equal(sched[0]![1].inputs?.steps, 8, 'the tier pill stamps 8 steps')
@@ -459,7 +459,7 @@ describe.skipIf(!ENGINE_FREE)('cards-gpu: film and motion (the remaining h3 + ki
         model: 'h3', width: 1344, height: 768, steps: 30,
         calls: [{ text: 'a red cube slides slowly across a white table', start_frame: 0, end_frame: 90, image: anchor }],
       }, 'h3 final_hd')
-      assert.ok(nodesWith(s, /dmad_minimax_h3_4step/).length >= 1, 'the absent-bag DMAD default rides')
+      assert.ok(nodesWith(s, /minimax_h3_fl2v_turbo_8step_v1\.0/).length >= 1, 'the absent-bag turbo default rides')
       const sched = byClass(s, 'BasicScheduler')
       assert.ok(sched.length >= 1, 'the scheduler runs')
       assert.equal(sched[0]![1].inputs?.steps, 30, 'the tier pill stamps 30 steps')

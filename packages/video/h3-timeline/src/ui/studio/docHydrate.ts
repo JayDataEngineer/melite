@@ -285,24 +285,44 @@ export function hydrateLayerA(rawDoc: Record<string, unknown> | undefined): Laye
  * state is now cleared — the door's own delete. Keys whose state
  * exists but the serializer gates (sr_* under a false switch) ride
  * nothing and delete nothing: their state survives a refresh. */
-/** The layer-A serializer's whole key universe — the loop list plus
- * every special-cased emission. The DELETE RIDE gates on this set:
- * a base key outside the universe (calls, keyframes, document —
- * other doc planes) never deletes, whatever the state says. */
-const LAYERA_KEY_UNIVERSE: ReadonlySet<string> = new Set([
-  "seed", "fps", "variant", "shift_video", "shift_audio", "steps", "denoise", "width", "height",
+/** The layer-A serializer's emit loop — every key serialized when
+ *  state exists (the `for` list in serializeLayerA below). Hoisted
+ *  so the DELETE RIDE universe DERIVES from it: the loop and the
+ *  universe cannot drift (audit A4, 2026-11-07: `length` was emitted
+ *  here but the hand universe missed it — a base-carried length
+ *  survived every save, never deletable). */
+const LAYERA_EMIT_LOOP_KEYS = [
+  "fps", "variant", "shift_video", "shift_audio", "steps", "denoise", "width", "height", "length",
   "sampler_name", "sched_name",
-  "sla_sparsity", "sla_block_size", "sla_min_seq_len", "sla_dense_last_steps",
-  "sla_reference_protection", "sla_dense_backend", "sla_dense_steps", "sla_enabled",
-  "sla_protect_audio", "sla_stabilize_motion", "sla_disable_fp16_accum",
-  "attention_backend",
-  "sharpen_enabled", "sharpen_method", "sharpen_strength",
+  "sla_sparsity", "sla_block_size",
+  "sla_min_seq_len", "sla_dense_last_steps",
+  "sla_reference_protection", "sla_dense_backend",
+  "sla_dense_steps",
+  "sharpen_method", "sharpen_strength",
   "sharpen_radius", "sharpen_threshold", "sharpen_iterations",
-  "interpolate_enabled", "interp_model", "interp_multiplier",
-  "sr_switch", "sr_model", "sr_resolution", "ref_image_size", "model", "audio_stem",
+  "interp_model", "interp_multiplier",
+  "attention_backend",
+  "duck_depth_db",
+  "ref_image_size", "model", "audio_stem",
+] as const
+
+/** The layer-A serializer's whole key universe — DERIVED: the emit
+ *  loop above plus every special-cased emission (the always-emit
+ *  out literal, the pin-equals-default booleans, the conditional
+ *  riders). The DELETE RIDE gates on this set: a base key outside
+ *  the universe (calls, keyframes, document — other doc planes)
+ *  never deletes, whatever the state says. */
+export const LAYERA_KEY_UNIVERSE: ReadonlySet<string> = new Set([
+  ...LAYERA_EMIT_LOOP_KEYS,
+  // the always-emit literal + the pin-equals-default booleans
+  "seed", "sla_protect_audio", "sla_stabilize_motion", "sla_disable_fp16_accum",
+  "sharpen_enabled", "interpolate_enabled",
+  // the true-gated switch riders + their stamps
+  "sr_switch", "sr_model", "sr_resolution",
   "second_pass_enabled", "refine_lora", "refine_strength", "refine_steps",
-  "loras", "audio_clips", "ref_images", "ref_videos", "ref_audios", "ref_mods",
-  "ref_video_trims", "duck_depth_db",
+  // the false-gated master + the present-when-non-empty riders
+  "sla_enabled", "loras", "audio_clips",
+  "ref_images", "ref_videos", "ref_audios", "ref_mods", "ref_video_trims",
 ])
 
 export function serializeLayerA(a: LayerA, base?: Record<string, unknown>): Record<string, unknown> {
@@ -316,18 +336,7 @@ export function serializeLayerA(a: LayerA, base?: Record<string, unknown>): Reco
     sharpen_enabled: a.sharpen_enabled === true,
     interpolate_enabled: a.interpolate_enabled === true,
   }
-  for (const k of ["fps", "variant", "shift_video", "shift_audio", "steps", "denoise", "width", "height", "length",
-                   "sampler_name", "sched_name",
-                   "sla_sparsity", "sla_block_size",
-                   "sla_min_seq_len", "sla_dense_last_steps",
-                   "sla_reference_protection", "sla_dense_backend",
-                   "sla_dense_steps",
-                   "sharpen_method", "sharpen_strength",
-                   "sharpen_radius", "sharpen_threshold", "sharpen_iterations",
-                   "interp_model", "interp_multiplier",
-                   "attention_backend",
-                   "duck_depth_db",
-                   "ref_image_size", "model", "audio_stem"] as const) {
+  for (const k of LAYERA_EMIT_LOOP_KEYS) {
     const v = (a as unknown as Record<string, unknown>)[k]
     if (v !== undefined && v !== "") out[k] = v
   }
@@ -396,11 +405,19 @@ export function serializeLayerA(a: LayerA, base?: Record<string, unknown>): Reco
     // unaffected (sla_enabled emits its false directly; the
     // pin-equals-default booleans emit their value unconditionally
     // — neither arm reaches this branch).
-    const cleared = (v: unknown): boolean =>
-      v === undefined || v === "" || v === false || (Array.isArray(v) && v.length === 0)
+    // THE DEFAULT-POLE LAW (audit A4's sweep, 2026-11-07): a key
+    // whose DEFAULT pole is a VALUE — sla_enabled, absent = on —
+    // clears at that pole, not at undefined: the state's true emits
+    // nothing, so a base-carried false could otherwise survive every
+    // save with the studio showing ON (the ON-pole mirror of the
+    // OFF-pole burn above).
+    const cleared = (k: string, v: unknown): boolean =>
+      k === "sla_enabled"
+        ? v === undefined || v === true
+        : v === undefined || v === "" || v === false || (Array.isArray(v) && v.length === 0)
     const state = a as unknown as Record<string, unknown>
     for (const k of Object.keys(base)) {
-      if (LAYERA_KEY_UNIVERSE.has(k) && !(k in out) && base[k] !== undefined && base[k] !== null && cleared(state[k])) {
+      if (LAYERA_KEY_UNIVERSE.has(k) && !(k in out) && base[k] !== undefined && base[k] !== null && cleared(k, state[k])) {
         out[k] = null
       }
     }

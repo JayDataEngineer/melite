@@ -688,7 +688,7 @@ describe("the single-window doors", () => {
       return graphOf(g)
     }
 
-    it("every real recipe row's stamp composes through the real door (the bag marriage lands 4 steps)", () => {
+    it("every real recipe row's stamp composes through the real door (the bag marriage lands the turbo's 8 steps)", () => {
       const rows = recipes()
       assert.ok(rows.length >= 3, "the DECL serves Standard/Draft/Final Cut")
       for (const row of rows) {
@@ -698,8 +698,8 @@ describe("the single-window doors", () => {
         const out = composeDoc({ calls: [SHOT()], ...patch })
         const sched = scoped(out, "", "BasicScheduler")[0]
         assert.ok(sched !== undefined, `${row.id}: the scheduler composes`)
-        assert.equal(sched![1].inputs.steps, 4,
-          `${row.id}: the DMAD bag marries its 4 steps`)
+        assert.equal(sched![1].inputs.steps, 8,
+          `${row.id}: the turbo bag marries its 8 steps`)
       }
     })
 

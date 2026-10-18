@@ -162,6 +162,25 @@ describe("computeFilmMix — the owner map (filmStart + (start−docStart), no c
     assert.equal(m.filmSec, 4.458);
   });
 
+  it("THE PLACEMENTS CLOCK (audit A1, 2026-11-07): a 16fps doc books clip seats and durations at the 16-clock — the same clock the windows spoke", () => {
+    // the same geometry as the 2-window arm, cut at the DOC CLOCK 16:
+    // windowSecs are the fps-cut windows (stanzaSecs(…, 16)), the
+    // placements must join them at 16 — a /24 here drifted every seat
+    // against its own window (AUDIO-2's placements half).
+    const m = computeFilmMix({
+      spans: [SPAN(0, 56), SPAN(56, 124)],
+      clips: [d1, m1, s1],
+      windowSecs: [56 / 16, 73 / 16],
+      fps: 16,
+    });
+    assert.deepEqual(m.placements.map((p) => p.filmSec), [0.625, 0, 3.75],
+      "dialogue 10/16, music 0, sfx at its 16-clock film seat 3.5 + 4/16");
+    assert.deepEqual(m.placements.map((p) => p.durSec), [2.5, 7.75, 1.875],
+      "durations divide by the doc clock: 40/16, 124/16, 30/16");
+    assert.ok(m.duckSpanString.includes("3.75:5.625"), "the sfx duck spans its 16-clock seat");
+    assert.ok(!m.duckSpanString.includes("3.667"), "the phantom 24-clock seat (3.5 + 4/24) appears nowhere");
+  });
+
   it("the duck matrix: the film track carries all conditioned spans, the music bus only the voice spans", () => {
     const m = computeFilmMix({
       spans: [SPAN(0, 56), SPAN(56, 124)],

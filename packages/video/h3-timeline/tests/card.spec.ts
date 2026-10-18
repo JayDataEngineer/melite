@@ -271,8 +271,8 @@ describe("the h3-timeline compose gate", () => {
   it("THE ONE-MODEL LAW (roadmap §8): the card boards ONE family; the dead families' addresses ride the tool enum as variant routes", async () => {
     const { BOARDED, VARIANT_ADDRESSES } = await import("../src/card.ts");
     assert.deepEqual(BOARDED, ["h3"], "one H3 row in the Model dropdown — the checkpoint id, never a lane (survivor-id correction 2026-09-22: anima isn't anima-generate)");
-    assert.deepEqual(VARIANT_ADDRESSES, ["h3-timeline"],
-      "one lane, three recipes (operator 2026-11-02): the folded single-shot/keyframe addresses retired with the recipe rework — old drafts naming them refuse LOUD at the run door",
+    assert.deepEqual(VARIANT_ADDRESSES, ["h3-timeline", "h3-singularity"],
+      "two checkpoint lanes, one card (the krea-2 raw-lane precedent, 2026-10-17): the folded single-shot/keyframe addresses stay retired with the recipe rework — old drafts naming them refuse LOUD at the run door",
     );
   });
 });
@@ -289,15 +289,17 @@ describe("the h3-timeline compose gate", () => {
 describe("THE EVERY-ADDRESS WALL — every served address composes through the family action", () => {
   const rows = Object.values(facts.models).filter((m) => m.card === "h3-timeline");
 
-  it("the card serves its variant address (the wall's own footing)", () => {
-    // ONE address since the 2026-11-02 recipe rework (one lane,
-    // three recipes): the served set is exactly {h3-timeline} —
-    // still ≥1 so the loop below proves routing, never zero-green.
+  it("the card serves its variant addresses (the wall's own footing)", () => {
+    // TWO lanes since the Singularity checkpoint joined (2026-10-17;
+    // the krea-2 raw-lane precedent — one card, one family, distinct
+    // route addresses per lane): the served set is exactly
+    // {h3, h3-singularity, h3-timeline} — still ≥1 so the loop below
+    // proves routing, never zero-green.
     assert.ok(rows.length >= 1, `expected the served h3-timeline addresses, found ${String(rows.length)}`);
     assert.deepEqual(
       rows.map((r) => r.id).sort(),
-      ["h3", "h3-timeline"],
-      "the family head plus its ONE lane (the folded single-shot/keyframe addresses retired)",
+      ["h3", "h3-singularity", "h3-timeline"],
+      "the family head plus its TWO lanes (the folded single-shot/keyframe addresses retired)",
     );
   });
 

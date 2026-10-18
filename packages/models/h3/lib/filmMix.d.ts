@@ -3,7 +3,7 @@ export type FilmMixClipClass = 'dialogue' | 'sfx' | 'music';
 /** One clip row — the card's audio_clips shape, post-parse. */
 export interface FilmMixClip {
     readonly src: string;
-    /** doc-anchored start (frames @24fps — the stamp, studio lanes, and tool face all speak doc). */
+    /** doc-anchored start (frames at the DOC CLOCK — the stamp, studio lanes, and tool face all speak doc). */
     readonly start: number;
     /** duration (frames; 0 = overlay-only, unsized). */
     readonly dur: number;

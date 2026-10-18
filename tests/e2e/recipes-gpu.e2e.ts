@@ -261,19 +261,19 @@ describe.skipIf(!ENGINE_FREE)('the recipe law on the GPU (with live ComfyUI)', (
 
       // THE PILL PAYLOAD VERBATIM (draft, operator 2026-11-02: "for
       // low resolution, that is good for the draft recipe"): the
-      // same ByteDance SELECTION + the draft geometry stamps.
+      // same turbo SELECTION + the draft geometry stamps.
       const s = await runCard(w, {
         model: 'h3',
         prompt: 'a red cube slides slowly across a white table',
         image: anchor, width: 768, height: 448,
-        loras: [{ id: 'h3_dmad_4step' }],
+        loras: [{ id: 'h3_turbo8_v1' }],
       }, 'h3 draft')
       const ltx = nodesWith(s, /LTX_lora_loader/)
       assert.ok(ltx.length >= 1, 'the RUN workflow carries the LTX lora loader')
       const inputs = (ltx[0]![1] as { inputs: Record<string, unknown> }).inputs
       const stack = JSON.parse(String(inputs['stack_data'])) as Array<{ lora?: string, str?: number, on?: boolean }>
-      const row = stack.find((r) => r['on'] === true && String(r['lora'] ?? '').includes('dmad_minimax_h3_4step'))
-      assert.ok(row !== undefined, 'the stack carries the resolved ByteDance DMAD 4-step ON')
+      const row = stack.find((r) => r['on'] === true && String(r['lora'] ?? '').includes('minimax_h3_fl2v_turbo_8step_v1.0'))
+      assert.ok(row !== undefined, 'the stack carries the resolved LightX2V Turbo 8-Step ON')
       assert.equal(row!['str'], 1, 'the strength is the catalog-declared 1')
       assert.equal(firstBytes(s).length > 1024, true, 'the video artifact is real bytes')
     } finally {
@@ -282,7 +282,7 @@ describe.skipIf(!ENGINE_FREE)('the recipe law on the GPU (with live ComfyUI)', (
     }
   }, 600_000)
 
-  it.skipIf(!ENGINE_FREE || !weightsPresent('h3-timeline'))('h3-timeline standard: the default composes the ByteDance DMAD 4-step at the calibrated floor and RUNS', async () => {
+  it.skipIf(!ENGINE_FREE || !weightsPresent('h3-timeline'))('h3-timeline standard: the default composes the LightX2V Turbo 8-Step at the calibrated floor and RUNS', async () => {
     const w = await bootWorld('recipes-h3-standard-')
     try {
       // THE ANCHOR: a real upload through ComfyUI's own upload door
@@ -302,22 +302,22 @@ describe.skipIf(!ENGINE_FREE)('the recipe law on the GPU (with live ComfyUI)', (
       const anchor = upBody['name'] ?? 'e2e_anchor.png'
 
       // THE BIRTH PAYLOAD VERBATIM (standard, the 2026-11-02 trio's
-      // default): the ByteDance SELECTION ONLY, NO geometry stamps —
-      // the carrier schema's own 1344×768 floor rides (the DMAD
-      // calibrated point; the low-quality burn was the old birth
-      // stamp forcing 768×448 on every fresh card).
+      // default; 2026-11-07 the bag is the turbo): SELECTION ONLY, NO
+      // geometry stamps — the carrier schema's own 1344×768 floor
+      // rides (the low-quality burn was the old birth stamp forcing
+      // 768×448 on every fresh card).
       const s = await runCard(w, {
         model: 'h3',
         prompt: 'a red cube slides slowly across a white table',
         image: anchor,
-        loras: [{ id: 'h3_dmad_4step' }],
+        loras: [{ id: 'h3_turbo8_v1' }],
       }, 'h3 standard')
       const ltx = nodesWith(s, /LTX_lora_loader/)
       assert.ok(ltx.length >= 1, 'the RUN workflow carries the LTX lora loader')
       const inputs = (ltx[0]![1] as { inputs: Record<string, unknown> }).inputs
       const stack = JSON.parse(String(inputs['stack_data'])) as Array<{ lora?: string, str?: number, on?: boolean }>
-      const row = stack.find((r) => r['on'] === true && String(r['lora'] ?? '').includes('dmad_minimax_h3_4step'))
-      assert.ok(row !== undefined, 'the stack carries the resolved ByteDance DMAD 4-step ON')
+      const row = stack.find((r) => r['on'] === true && String(r['lora'] ?? '').includes('minimax_h3_fl2v_turbo_8step_v1.0'))
+      assert.ok(row !== undefined, 'the stack carries the resolved LightX2V Turbo 8-Step ON')
       assert.equal(row!['str'], 1, 'the strength is the catalog-declared 1')
       assert.equal(firstBytes(s).length > 1024, true, 'the video artifact is real bytes')
     } finally {
@@ -344,14 +344,14 @@ describe.skipIf(!ENGINE_FREE)('the recipe law on the GPU (with live ComfyUI)', (
       const anchor = upBody['name'] ?? 'e2e_anchor.png'
 
       // THE FINAL-CUT PAYLOAD VERBATIM (final, 2026-11-02): the same
-      // ByteDance bag plus the second-pass rail — the master switch
+      // turbo bag plus the second-pass rail — the master switch
       // and the SeedVR2 super-res switch. sr_resolution stays
       // unstated (the knob's own 1080 floor owns it).
       const s = await runCard(w, {
         model: 'h3',
         prompt: 'a red cube slides slowly across a white table',
         image: anchor,
-        loras: [{ id: 'h3_dmad_4step' }],
+        loras: [{ id: 'h3_turbo8_v1' }],
         second_pass_enabled: true,
         sr_switch: true,
       }, 'h3 final')
@@ -359,8 +359,8 @@ describe.skipIf(!ENGINE_FREE)('the recipe law on the GPU (with live ComfyUI)', (
       assert.ok(ltx.length >= 1, 'the RUN workflow carries the LTX lora loader')
       const inputs = (ltx[0]![1] as { inputs: Record<string, unknown> }).inputs
       const stack = JSON.parse(String(inputs['stack_data'])) as Array<{ lora?: string, str?: number, on?: boolean }>
-      const row = stack.find((r) => r['on'] === true && String(r['lora'] ?? '').includes('dmad_minimax_h3_4step'))
-      assert.ok(row !== undefined, 'the stack carries the resolved ByteDance DMAD 4-step ON')
+      const row = stack.find((r) => r['on'] === true && String(r['lora'] ?? '').includes('minimax_h3_fl2v_turbo_8step_v1.0'))
+      assert.ok(row !== undefined, 'the stack carries the resolved LightX2V Turbo 8-Step ON')
       assert.ok(nodesWith(s, /SeedVR2/).length >= 1, 'the SeedVR2 super-res rail rides the finished film')
       assert.equal(firstBytes(s).length > 1024, true, 'the video artifact is real bytes')
     } finally {

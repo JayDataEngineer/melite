@@ -3,13 +3,16 @@
 // IS CORE. NEVER HARDCODED. The LORAS should not be on cards, the
 // MOD SYSTEM SHOULD"). THE CATALOG (operator, 2026-09-20: "LORAs
 // should be more up to the users end — add multiple loras and let
-// the user choose"): seven distill/accel adapters, USER-PICKED —
+// the user choose"): eleven distill/accel adapters, USER-PICKED —
 // the studio's Modifiers section serves these rows as options, the
 // bag takes multiple entries. THE DEFAULT (operator 2026-10-11, "the
-// one from bytedance"): the DMAD row is the one stamp — the DECL's
-// birth recipe (standard, the first Recipe row) puts it on every
-// fresh card and the absent-bag compose default resolves it; every
-// other row stays pick-only.
+// one from bytedance" → 2026-11-07, "the card's default lora → the
+// 8-step light tricks"): the h3_turbo8_v1 row (Comfy-Org's Turbo
+// 8-Step v1.0 — the 8-step series tops out at v1.0 upstream; the
+// v1.1/v1.2 tags exist only on the 4-step line) is the one stamp —
+// the DECL's birth recipe (standard, the first Recipe row) puts it
+// on every fresh card and the absent-bag compose default resolves
+// it; every other row (the DMAD 4-step included) stays pick-only.
 // STRENGTH EVIDENCE: the three Comfy-Org lightx2v turbos load at
 // 1.0 in Comfy-Org's own t2v/i2v/r2v templates (LoraLoaderModelOnly
 // strength 1); the two Kijai Acc rows follow the estate's

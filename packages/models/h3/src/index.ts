@@ -98,7 +98,7 @@ export const DECL: ModelDecl = {
   "variants": [
     {
       "id": "timeline",
-      "label": "Standard",
+      "label": "minimax_h3_hybrid_fl2va_ref2va_b30-49-int8",
       "hint": "The multi-window timeline — hybrid FL2VA/Ref2VA windows, SLA sparse attention, the film path.",
       "group": "Variant",
       "route": "h3-timeline",
@@ -111,52 +111,87 @@ export const DECL: ModelDecl = {
         }
       ]
     },
-    // THE BYTEDANCE DEFAULT (operator, 2026-10-11: "get the one from
-    // bytedance" — the DMAD 4-step distill, ByteDance/TAMU, the
-    // catalog's h3_dmad_4step row; "Default needs to be a 4 step
-    // LORA"). REWORKED 2026-11-02 per the operator directive ("1
-    // model, 1 variant, 1 quant, and 3 recipes… Default is the
-    // standard"): the recipe trio Draft / Standard / Final Cut, ALL
-    // THREE riding the ByteDance lora — selection only; the catalog
-    // row owns strength 1 and the married 4-step count. `standard`
-    // is FIRST in the Recipe group ON PURPOSE: the birth stamp takes
-    // the first composing Recipe row (card-base seedRecipeStamp —
-    // the first-declared law; the Recipe axis itself YIELDS, never
-    // seeds a key), so every fresh h3-timeline card is born at the
-    // DMAD calibrated point — the lora ALWAYS shows up on the
-    // default card. Geometry is NOT stamped here (the DRY law, one
-    // value one owner): the carrier schema's own 1344×768 floor IS
-    // the standard geometry — the DMAD rows' calibrated operating
-    // point (arXiv:2610.02188; ZhengmingYu/DMAD renders 1344×768,
-    // 362 frames on 8 GB-class GPUs). The payload mirrors a hand
-    // pick exactly (declared keys only): SELECTION ONLY (#36).
-    // STEPS IS UNSTATED BY DESIGN — the row owns its married 4;
-    // stamping steps would hard-pin what the bag resolves. The
-    // file's door is the lane gate (lane_inputs loras + the
-    // provision row below): absent on disk, the run refuses with
+    // THE SINGULARITY CHECKPOINT ROW (operator, 2026-10-17: "ship
+    // this as a 'variant' … place this new one beside it" — the
+    // 2026-11-02 one-variant ruling is superseded): the community
+    // fine-tune rides the SAME timeline card as a checkpoint-axis
+    // row on its OWN variant lane address (the krea-2 raw-lane
+    // precedent — two offered variants never share a route address:
+    // the address claim takes pool order, so a shared spelling
+    // leaves the second lane unreachable and offered-cells red; the
+    // first-declared variant's lane_inputs stay the family default
+    // view, this row overrides the unet per-variant, and its
+    // resolver_defaults.model re-points the lane's own served
+    // default). NOT a lane revival: the folded single-shot routes
+    // stay retired. First+last-frame adherence is UNPROVEN on this
+    // checkpoint (ref2va-lineage fine-tune) — the bench audition
+    // decides before any default moves, and no vram_peak is claimed
+    // until it is measured.
+    {
+      "id": "singularity",
+      "label": "Minimax-h3_Singularity_ref2va_Pruned_v1.3_int8",
+      "hint": "The community Singularity fine-tune (ref2va lineage) — HDR/action tuning; the first+last-frame pass is unproven here, audition before any default.",
+      "group": "Variant",
+      "route": "h3-singularity",
+      "resolver_defaults": { "model": "h3-singularity" },
+      "lane_inputs": {
+        "unet": "Minimax-h3_Singularity_ref2va_Pruned_v1.3_int8.safetensors",
+      },
+      "cells": [
+        {
+          "quant": "int8",
+          "label": "INT8 Pruned",
+          "route": "h3-singularity",
+        }
+      ]
+    },
+    // THE LIGHTX2V TURBO DEFAULT (operator, 2026-11-07: the card's
+    // default lora → the 8-step light tricks). Upstream naming fact:
+    // the 8-step series tops out at v1.0 — the v1.1/v1.2 tags exist
+    // only on the 4-step line — so the artifact is the Comfy-Org
+    // `minimax_h3_fl2v_turbo_8step_v1.0_comfyui_bf16.safetensors`
+    // (catalog row h3_turbo8_v1, provisioned below with its sha).
+    // History: the bytedance DMAD 4-step order (2026-10-11) and the
+    // recipe-trio rework (2026-11-02, "1 model, 1 variant, 1 quant,
+    // and 3 recipes… Default is the standard") both carried forward —
+    // the trio Draft / Standard / Final Cut still rides ONE lora,
+    // selection only, and `standard` stays FIRST in the Recipe group
+    // ON PURPOSE: the birth stamp takes the first composing Recipe
+    // row (card-base seedRecipeStamp — the first-declared law; the
+    // Recipe axis itself YIELDS, never seeds a key), so every fresh
+    // h3-timeline card is born with the lora on. Geometry is NOT
+    // stamped here (the DRY law, one value one owner): the carrier
+    // schema's own 1344×768 floor IS the standard geometry. The
+    // payload mirrors a hand pick exactly (declared keys only):
+    // SELECTION ONLY (#36). STEPS IS UNSTATED BY DESIGN — the row
+    // owns its married 8 (the marriage law: the bag resolves unstated
+    // steps, so the default run takes the turbo's full count, not a
+    // departed lora's 4); stamping steps would hard-pin what the bag
+    // resolves. The file's door is the lane gate (lane_inputs loras +
+    // the provision row below): absent on disk, the run refuses with
     // the fetch hint — the web popup's install button and the agent
     // seat both ride that one refusal.
     {
       "id": "standard",
       "label": "Standard",
-      "hint": "The default — the ByteDance DMAD 4-step distill at the calibrated 1344×768. Steps derive from the lora marriage (4).",
+      "hint": "The default — the LightX2V Turbo 8-Step v1.0 distill at the calibrated 1344×768. Steps derive from the lora marriage (8).",
       "group": "Recipe",
       "wire_defaults": {
-        "loras": [{ "id": "h3_dmad_4step" }],
+        "loras": [{ "id": "h3_turbo8_v1" }],
       },
       "cells": [],
     },
     // DRAFT (operator, this session: "for low resolution, that is
     // good for the draft recipe"): the fast iteration tier — the
-    // same ByteDance bag at draft geometry 768×448. Steps stay
+    // same turbo bag at draft geometry 768×448. Steps stay
     // unstated (the marriage law).
     {
       "id": "draft",
       "label": "Draft",
-      "hint": "Fast iteration — the same ByteDance 4-step bag at draft geometry (768×448). Steps derive from the lora marriage (4).",
+      "hint": "Fast iteration — the same LightX2V Turbo 8-step bag at draft geometry (768×448). Steps derive from the lora marriage (8).",
       "group": "Recipe",
       "wire_defaults": {
-        "loras": [{ "id": "h3_dmad_4step" }],
+        "loras": [{ "id": "h3_turbo8_v1" }],
         "width": 768,
         "height": 448,
       },
@@ -172,10 +207,10 @@ export const DECL: ModelDecl = {
     {
       "id": "final",
       "label": "Final Cut",
-      "hint": "The finishing pass — the 4-step bag plus the second-pass rail: sharpen + SeedVR2 super-res at 1080. Interpolation stays an explicit pick.",
+      "hint": "The finishing pass — the 8-step bag plus the second-pass rail: sharpen + SeedVR2 super-res at 1080. Interpolation stays an explicit pick.",
       "group": "Recipe",
       "wire_defaults": {
-        "loras": [{ "id": "h3_dmad_4step" }],
+        "loras": [{ "id": "h3_turbo8_v1" }],
         "second_pass_enabled": true,
         "sr_switch": true,
       },
@@ -208,13 +243,14 @@ export const DECL: ModelDecl = {
   // members), and the card still reads none of them directly.
   "lane_inputs": {
     "unet": "minimax_h3_hybrid_fl2va_ref2va_b30-49-int8.safetensors",
-    // THE DEFAULT BAG'S FILE (operator, 2026-10-11: the ByteDance
-    // lora is the default, and a run without the file refuses through
-    // the lane gate — the web popup's install button and the agent
-    // seat both key on that one refusal; "that is how it works").
+    // THE DEFAULT BAG'S FILE (operator, 2026-10-11 the bytedance
+    // order → 2026-11-07 the LightX2V turbo 8-step default: a run
+    // without the file refuses through the lane gate — the web
+    // popup's install button and the agent seat both key on that one
+    // refusal; "that is how it works").
     // BARE NAME: the gate probes the provision row's own folder
     // (loras/h3) as its last leg; the row below is the fetch truth.
-    "loras": "dmad_minimax_h3_4step_lora_critic_comfyui.safetensors",
+    "loras": "minimax_h3_fl2v_turbo_8step_v1.0_comfyui_bf16.safetensors",
   },
   // THE LANE SURFACE (the z-image precedent): exactly the knobs the
   // h3-timeline card serves — the window inputs, the shared render
@@ -258,6 +294,18 @@ export const DECL: ModelDecl = {
       "folder": "diffusion_models",
       "sha256": "a629cfea8d89a071b140c6e1935dc9a23e72de6badc18975a2bb9e6d1423d76d",
       "size_bytes": 20970379632
+    },
+    // THE SINGULARITY CHECKPOINT (the variant row above): digest and
+    // byte size read verbatim from the HF tree API (xet lfs oid),
+    // 2026-10-17. The pruned int8 over the full 34 GB int8 and the
+    // w4a8: like-for-like with the hybrid's footprint, and the w4a8
+    // quant scheme is unverified against the stock UNETLoader.
+    {
+      "name": "Minimax-h3_Singularity_ref2va_Pruned_v1.3_int8.safetensors",
+      "url": "https://huggingface.co/WarmBloodAban/Minimax-h3_Singularity/resolve/main/Minimax-h3_Singularity_ref2va_Pruned_v1.3_int8.safetensors",
+      "folder": "diffusion_models",
+      "sha256": "412a7b126595a958964193f3b42513d7cf2df4196ef04223a0f05e3622949cce",
+      "size_bytes": 20967647456
     },
     // THE FOLDED SINGLE-SHOT WEIGHTS (roadmap §8 — inherited from
     // the dead h3 family verbatim: the fl2va/ref2va lanes load

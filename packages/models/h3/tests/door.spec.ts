@@ -13,13 +13,12 @@ import { assertWiringAgainst, deriveWiringDoc } from "@melite/comfyui-cordis/com
 import { instantiateAction } from "@melite/comfyui-card-kit";
 import type { ModelFacts } from "@melite/comfyui-card-kit/facts";
 
-// THE DMAD-LESS CATALOG (the absent-bag default's load refusal):
-// the default stack derives from the family's own lora catalog, so
-// a catalog that lost the DMAD row must refuse loud. The filter
+// THE DEFAULT-LESS CATALOG (the absent-bag default's load refusal):
+// a catalog that lost the turbo8 row must refuse loud. The filter
 // keeps every other row — only the default's source is gone.
 vi.mock("@melite/models-h3/mods/loras", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@melite/models-h3/mods/loras")>();
-  return { ...actual, H3_LORA_ROWS: actual.H3_LORA_ROWS.filter((r) => r.id !== "h3_dmad_4step") };
+  return { ...actual, H3_LORA_ROWS: actual.H3_LORA_ROWS.filter((r) => r.id !== "h3_turbo8_v1") };
 });
 
 // The window driver's model row — the interpreter's own contract
@@ -112,7 +111,7 @@ describe("the film build's single-window arms (no calls wrapper)", () => {
       film,
       { variant: "t4_open", length: 124, prompt: "a slow push in", seed: 42 },
       WINDOW_MODEL, g, "run_no_turbo",
-    )).toThrow(/the lora catalog has no 'h3_dmad_4step' row/);
+    )).toThrow(/the lora catalog has no 'h3_turbo8_v1' row/);
   });
 
   it("a calls-less window marries the bag's steps (no call knobs to consult, the doc face reads the bag)", () => {

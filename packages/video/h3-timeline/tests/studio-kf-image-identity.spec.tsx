@@ -40,7 +40,7 @@ import type { ModelFacts } from "@melite/comfyui-card-kit/facts"
 
 vi.mock("@melite/models-h3/mods/loras", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@melite/models-h3/mods/loras")>();
-  return { ...actual, H3_LORA_ROWS: actual.H3_LORA_ROWS.filter((r) => r.id !== "h3_dmad_4step") };
+  return { ...actual, H3_LORA_ROWS: actual.H3_LORA_ROWS.filter((r) => r.id !== "h3_turbo8_v1") };
 });
 
 // ── the shared decode stub (E7's own shape: queueMicrotask onload —

@@ -25,7 +25,7 @@ export type FilmMixClipClass = 'dialogue' | 'sfx' | 'music'
 /** One clip row — the card's audio_clips shape, post-parse. */
 export interface FilmMixClip {
   readonly src: string
-  /** doc-anchored start (frames @24fps — the stamp, studio lanes, and tool face all speak doc). */
+  /** doc-anchored start (frames at the DOC CLOCK — the stamp, studio lanes, and tool face all speak doc). */
   readonly start: number
   /** duration (frames; 0 = overlay-only, unsized). */
   readonly dur: number
@@ -231,18 +231,21 @@ export function computeFilmMix(input: FilmMixInput): FilmMixManifest {
       conditioned.add(ci)
     }
   })
-  // PLACEMENTS: doc frame → film seat through the owner map.
+  // PLACEMENTS: doc frame → film seat through the owner map — the
+  // SAME doc clock the windows spoke (AUDIO-2's placements half: the
+  // /24 literal here outlived the window cure and drifted every clip
+  // seat against its own fps-cut window).
   const placements: FilmMixPlacement[] = clips.map((clip, ci) => {
     let owner = 0
     for (let w = 0; w < spans.length; w++) {
       if (clip.start >= spans[w]!.start) owner = w
     }
-    const filmSeat = Math.max(0, filmStarts[owner]! + (clip.start - spans[owner]!.start) / 24)
+    const filmSeat = Math.max(0, filmStarts[owner]! + (clip.start - spans[owner]!.start) / fps)
     return {
       clip: ci,
       cls: clip.cls,
       filmSec: round3(filmSeat),
-      durSec: clip.dur > 0 ? round3(clip.dur / 24) : 0,
+      durSec: clip.dur > 0 ? round3(clip.dur / fps) : 0,
     }
   })
   // THE DUCK MATRIX (D-M-E): the film's generated audio yields

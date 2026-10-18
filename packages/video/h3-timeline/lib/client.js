@@ -5478,12 +5478,13 @@ window.__ModuleLoader__.load({
 		* state is now cleared — the door's own delete. Keys whose state
 		* exists but the serializer gates (sr_* under a false switch) ride
 		* nothing and delete nothing: their state survives a refresh. */
-		/** The layer-A serializer's whole key universe — the loop list plus
-		* every special-cased emission. The DELETE RIDE gates on this set:
-		* a base key outside the universe (calls, keyframes, document —
-		* other doc planes) never deletes, whatever the state says. */
-		const LAYERA_KEY_UNIVERSE = /* @__PURE__ */ new Set([
-			"seed",
+		/** The layer-A serializer's emit loop — every key serialized when
+		*  state exists (the `for` list in serializeLayerA below). Hoisted
+		*  so the DELETE RIDE universe DERIVES from it: the loop and the
+		*  universe cannot drift (audit A4, 2026-11-07: `length` was emitted
+		*  here but the hand universe missed it — a base-carried length
+		*  survived every save, never deletable). */
+		const LAYERA_EMIT_LOOP_KEYS = [
 			"fps",
 			"variant",
 			"shift_video",
@@ -5492,6 +5493,7 @@ window.__ModuleLoader__.load({
 			"denoise",
 			"width",
 			"height",
+			"length",
 			"sampler_name",
 			"sched_name",
 			"sla_sparsity",
@@ -5501,38 +5503,48 @@ window.__ModuleLoader__.load({
 			"sla_reference_protection",
 			"sla_dense_backend",
 			"sla_dense_steps",
-			"sla_enabled",
-			"sla_protect_audio",
-			"sla_stabilize_motion",
-			"sla_disable_fp16_accum",
-			"attention_backend",
-			"sharpen_enabled",
 			"sharpen_method",
 			"sharpen_strength",
 			"sharpen_radius",
 			"sharpen_threshold",
 			"sharpen_iterations",
-			"interpolate_enabled",
 			"interp_model",
 			"interp_multiplier",
+			"attention_backend",
+			"duck_depth_db",
+			"ref_image_size",
+			"model",
+			"audio_stem"
+		];
+		/** The layer-A serializer's whole key universe — DERIVED: the emit
+		*  loop above plus every special-cased emission (the always-emit
+		*  out literal, the pin-equals-default booleans, the conditional
+		*  riders). The DELETE RIDE gates on this set: a base key outside
+		*  the universe (calls, keyframes, document — other doc planes)
+		*  never deletes, whatever the state says. */
+		const LAYERA_KEY_UNIVERSE = /* @__PURE__ */ new Set([
+			...LAYERA_EMIT_LOOP_KEYS,
+			"seed",
+			"sla_protect_audio",
+			"sla_stabilize_motion",
+			"sla_disable_fp16_accum",
+			"sharpen_enabled",
+			"interpolate_enabled",
 			"sr_switch",
 			"sr_model",
 			"sr_resolution",
-			"ref_image_size",
-			"model",
-			"audio_stem",
 			"second_pass_enabled",
 			"refine_lora",
 			"refine_strength",
 			"refine_steps",
+			"sla_enabled",
 			"loras",
 			"audio_clips",
 			"ref_images",
 			"ref_videos",
 			"ref_audios",
 			"ref_mods",
-			"ref_video_trims",
-			"duck_depth_db"
+			"ref_video_trims"
 		]);
 		function serializeLayerA(a, base) {
 			const out = {
@@ -5543,38 +5555,7 @@ window.__ModuleLoader__.load({
 				sharpen_enabled: a.sharpen_enabled === true,
 				interpolate_enabled: a.interpolate_enabled === true
 			};
-			for (const k of [
-				"fps",
-				"variant",
-				"shift_video",
-				"shift_audio",
-				"steps",
-				"denoise",
-				"width",
-				"height",
-				"length",
-				"sampler_name",
-				"sched_name",
-				"sla_sparsity",
-				"sla_block_size",
-				"sla_min_seq_len",
-				"sla_dense_last_steps",
-				"sla_reference_protection",
-				"sla_dense_backend",
-				"sla_dense_steps",
-				"sharpen_method",
-				"sharpen_strength",
-				"sharpen_radius",
-				"sharpen_threshold",
-				"sharpen_iterations",
-				"interp_model",
-				"interp_multiplier",
-				"attention_backend",
-				"duck_depth_db",
-				"ref_image_size",
-				"model",
-				"audio_stem"
-			]) {
+			for (const k of LAYERA_EMIT_LOOP_KEYS) {
 				const v = a[k];
 				if (v !== void 0 && v !== "") out[k] = v;
 			}
@@ -5598,9 +5579,9 @@ window.__ModuleLoader__.load({
 			if (a.ref_mods?.length) out.ref_mods = a.ref_mods;
 			if (a.ref_video_trims !== void 0 && a.ref_video_trims.length > 0) out.ref_video_trims = a.ref_video_trims;
 			if (base !== void 0) {
-				const cleared = (v) => v === void 0 || v === "" || v === false || Array.isArray(v) && v.length === 0;
+				const cleared = (k, v) => k === "sla_enabled" ? v === void 0 || v === true : v === void 0 || v === "" || v === false || Array.isArray(v) && v.length === 0;
 				const state = a;
-				for (const k of Object.keys(base)) if (LAYERA_KEY_UNIVERSE.has(k) && !(k in out) && base[k] !== void 0 && base[k] !== null && cleared(state[k])) out[k] = null;
+				for (const k of Object.keys(base)) if (LAYERA_KEY_UNIVERSE.has(k) && !(k in out) && base[k] !== void 0 && base[k] !== null && cleared(k, state[k])) out[k] = null;
 			}
 			if (deriveWindowFamily(mergeDocLayers(base, a)) === "t4r") {
 				for (const k of T4_ONLY_KEYS) if (out[k] !== null) delete out[k];
