@@ -38,8 +38,6 @@ const PARAMS = {
   prompt: "make the hallway blue",
   negative_prompt: "blur",
   input_images: ["input/anchor.png"],
-  width: 1280,
-  height: 768,
   seed: 7,
   steps: 25,
   cfg: 1,
@@ -59,19 +57,29 @@ describe("the edit action — byte-stability (the compatibility law)", () => {
     const nodes = Object.values(action.toJSON() as Record<string, { class_type?: string }>);
     assert.ok(nodes.some((n) => n.class_type === "QwenImage21Cache"), "the cache-wrapped model rides");
     assert.ok(nodes.some((n) => n.class_type === "TextEncodeQwenImage21"), "the 2.1 encoder rides");
-    assert.ok(nodes.some((n) => n.class_type === "EmptyLatentImage"), "the target-resolution latent rides");
+    assert.ok(!nodes.some((n) => n.class_type === "EmptyLatentImage"), "no stated-size latent rides — the latent law (2026-11-08)");
   });
 
-  it("THE STATED-SIZE WALL (models-hop56 wave-2): the plain arm's latent bakes at the stated width/height", () => {
-    const p = { ...PARAMS, width: 832, height: 1216 };
+  it("THE ENCODER-LATENT WALL (the latent law, 2026-11-08): KSampler samples the encoder's own third output", () => {
     const action = new GraphBuilder({});
-    instantiateAction(edit, p, FACTS, action, "probe-size");
-    const latent = Object.values(action.toJSON() as Record<string, { class_type?: string; inputs?: Record<string, unknown> }>).find(
-      (n) => n.class_type === "EmptyLatentImage",
+    instantiateAction(edit, PARAMS, FACTS, action, "probe-size");
+    const graph = action.toJSON() as Record<string, { class_type?: string; inputs?: Record<string, unknown> }>;
+    const sampler = Object.values(graph).find((n) => n.class_type === "KSampler");
+    assert.ok(sampler, "the plain arm samples");
+    // the latent is the encoder's own anchor-sized output ("any
+    // other size shifts the edit", the node's law); a stated
+    // width/height refuses (the never-lie arms) — nothing here wires
+    // a target size.
+    assert.match(String(sampler!.inputs?.latent_image), /^TextEncodeQwenImage21/, "the latent is the encoder's own");
+    const enc = Object.values(graph).find((n) => n.class_type === "TextEncodeQwenImage21");
+    assert.equal(enc!.inputs?.resolution, 0, "the reference budget is 0 — each reference at its own size (the node's law)");
+  });
+
+  it("THE NEVER-LIE GUARD (the latent law): a stated width/height refuses field-named on a direct action call", () => {
+    assert.throws(
+      () => instantiateAction(edit, { ...PARAMS, width: 832, height: 1216 }, FACTS, new GraphBuilder({}), "probe-neverlie"),
+      (err: unknown): boolean => err instanceof Error && err.message.includes("no edit lane takes a stated size"),
     );
-    assert.ok(latent, "the target-resolution latent rides");
-    assert.strictEqual(latent!.inputs?.width, 832, "the stated width bakes");
-    assert.strictEqual(latent!.inputs?.height, 1216, "the stated height bakes");
   });
 
   it("the golden holds with stated references — the autogrow keys map contiguously", () => {
@@ -96,8 +104,6 @@ describe("the edit action — byte-stability (the compatibility law)", () => {
   it("the golden holds on the crop_stitch arm (the region detailer tail)", () => {
     const p = {
       ...PARAMS,
-      width: undefined,
-      height: undefined,
       mask: [{ mask_mode: "crop_stitch", input_mask: "input/region.png", mask_denoise: 0.4 }],
     };
     const action = new GraphBuilder({});
@@ -152,8 +158,6 @@ describe("the edit action — byte-stability (the compatibility law)", () => {
   it("the golden holds when a flat key WINS over the bag (explicit flat keys override the region row)", () => {
     const p = {
       ...PARAMS,
-      width: undefined,
-      height: undefined,
       input_mask: "input/flat-mask.png",
       mask: [{ mask_mode: "crop_stitch", input_mask: "input/bag-mask.png", mask_denoise: 0.4 }],
     };

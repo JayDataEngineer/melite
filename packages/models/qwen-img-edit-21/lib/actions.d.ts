@@ -25,7 +25,8 @@ export declare function parseEditFacts(raw: LaneInputsFacts): EditFacts;
  *  stack → text pair → per-slot LoadImage anchors →
  *  QwenImage21Cache + TextEncodeQwenImage21 (pos+neg from one node,
  *  refs on the images.image_N autogrow slots) → EITHER the region
- *  detailer tail (mask_mode crop_stitch) OR EmptyLatentImage at
- *  target resolution → KSampler → decode + save under <run>/edit. */
+ *  detailer tail (mask_mode crop_stitch) OR KSampler on the
+ *  encoder's own anchor-sized latent → decode + save under
+ *  <run>/edit. */
 export declare const edit: ComfyActionSpec<EditParams, EditFacts>;
 //# sourceMappingURL=actions.d.ts.map

@@ -854,34 +854,52 @@ export class CardRegistryService extends Service {
     params: Record<string, unknown>,
     priorParams: Record<string, unknown>,
   ): Record<string, unknown> {
-    // one seat's tolerance, both sides: any selection/prepare fault
-    // on either view is the ADMISSION's voice, never this seat's —
-    // an unresolvable state passes through untouched and refuses
+    // one seat's tolerance on the NEXT view: a selection/prepare
+    // fault there is the ADMISSION's voice, never this seat's — an
+    // unresolvable next state passes through untouched and refuses
     // (or tolerates) exactly as it did before this seat existed.
     let prepNext: PreparedCard;
-    let prepPrior: PreparedCard | null = null;
     try {
       const midNext: unknown = params["model"];
       if (typeof midNext !== "string" || midNext === "") return params;
       prepNext = prepareCardParams(this, params, midNext, "admission");
-      // THE MODEL-LESS PRIOR (operator 2026-11-05, the 2511→21
-      // wedge): a stage whose family is spec-implied never states
-      // `model`, so no prior lane resolves — the old seat returned
-      // here and the write refused downstream (the variant's
-      // declared surface names nothing the prior lane's words
-      // explain). The carry is still identifiable without the prior
-      // lane (any member SOME lane declares that the next lane does
-      // not take), so the seat continues to the union fallback
-      // below; a member NO lane declares stays authored and still
-      // refuses.
+    } catch {
+      return params;
+    }
+    const facts: Record<string, ModelFactsRow> = this.modelFacts();
+    // THE MODEL-LESS PRIOR (operator 2026-11-05, the 2511→21
+    // wedge): a stage whose family is spec-implied never states
+    // `model`, so no prior lane resolves — the old seat returned
+    // here and the write refused downstream (the variant's
+    // declared surface names nothing the prior lane's words
+    // explain). The carry is still identifiable without the prior
+    // lane (any member SOME lane declares that the next lane does
+    // not take), so the seat continues to the union fallback
+    // below; a member NO lane declares stays authored and still
+    // refuses.
+    // THE KNOWN-BUT-HIDDEN PRIOR (the 2511 soft-retire,
+    // 2026-11-08): a prior addressing a family the facts still
+    // know but no dropdown offers throws the hidden-address
+    // refusal out of prepareCardParams — standing aside would
+    // strand the switch (stale 2511-only carry survives and
+    // refuses downstream: the stuck-switch injury this seat
+    // exists to prevent). The prior lane's words stay DECLARED,
+    // so the seat falls through to the same union fallback: a
+    // union member the next lane does not take drops, a member of
+    // nothing stays authored and still refuses. A prior whose
+    // family the facts do not know at all (a card-addressed
+    // Run-press prior, a fully retired mid) is the tolerance
+    // law's own shape — the seat stands aside exactly as before.
+    let prepPrior: PreparedCard | null = null;
+    try {
       const midPrior: unknown = priorParams["model"];
       if (typeof midPrior === "string" && midPrior !== "") {
         prepPrior = prepareCardParams(this, priorParams, midPrior, "admission");
       }
     } catch {
-      return params;
+      const midPrior: unknown = priorParams["model"];
+      if (typeof midPrior !== "string" || midPrior === "" || facts[midPrior] === undefined) return params;
     }
-    const facts: Record<string, ModelFactsRow> = this.modelFacts();
     const famNext: ModelFactsRow | undefined = facts[prepNext.fam];
     if (famNext === undefined) return params;
     const famPrior: ModelFactsRow | undefined = prepPrior !== null ? facts[prepPrior.fam] : undefined;

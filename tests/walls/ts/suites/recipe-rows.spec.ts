@@ -283,14 +283,15 @@ const ACTION_CARDS_WITHOUT_ENVELOPE: string[] = [];
     // from MUSIC3 (the TTS lane) and then judged the IMAGE lanes'
     // admissions — two different paths, so the derivation proved
     // nothing about what was judged. The judged lanes' OWN scalars
-    // are derived now: the image-edit row's width/height bounds come
-    // from image-edit's envelope, and the dead-key refusal from the
-    // image-gen envelope.
+    // are derived now: the image-edit row's steps bounds come from
+    // image-edit's envelope, and the dead-key refusal from the
+    // image-gen envelope. (The width/height scalars retired with the
+    // latent law, 2026-11-08 — no edit lane takes a stated size.)
     const editCaller = carried.get("qwen-img-edit-21");
     assert.ok(editCaller !== undefined, "qwen-img-edit-21 is card-carried");
     const editScalars = declaredScalars(editCaller!, "qwen-img-edit-21");
-    const width = editScalars.get("width");
-    assert.ok(width !== undefined, "width is a declared scalar on the JUDGED lane's own card");
+    const steps = editScalars.get("steps");
+    assert.ok(steps !== undefined, "steps is a declared scalar on the JUDGED lane's own card");
     const genCaller = carried.get("krea-2");
     assert.ok(genCaller !== undefined, "krea-2 is card-carried");
     const genScalars = declaredScalars(genCaller!, "krea-2");
@@ -307,8 +308,7 @@ const ACTION_CARDS_WITHOUT_ENVELOPE: string[] = [];
       model: "qwen-img-edit-21",
       prompt: "make it night",
       image1: "x.png",
-      width: 1024,
-      height: 1024,
+      steps: 25,
     });
     assert.ok(lawful.ok, "the lawful body admits (the refusals below are not vacuous)");
     // LAW C's teeth: outside the DECL's own domain → refused, named
@@ -316,11 +316,10 @@ const ACTION_CARDS_WITHOUT_ENVELOPE: string[] = [];
       model: "qwen-img-edit-21",
       prompt: "make it night",
       image1: "x.png",
-      width: -50,
-      height: 512,
+      steps: 99,
     });
     assert.ok(!over.ok, "an out-of-domain stamp is refused");
-    assert.match(over.ok ? "" : String(over.error), /256–1536|outside this lane's range/);
+    assert.match(over.ok ? "" : String(over.error), /1–50|outside this lane's range/);
     // LAW B's teeth: a key the card never declared → refused, named
     const dead = registry.admitStageRelations("image-gen", {
       model: "krea-2",

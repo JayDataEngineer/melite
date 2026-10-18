@@ -150,10 +150,10 @@ describe("the edit action — byte-stability (the compatibility law)", () => {
     assert.equal(unet.inputs?.unet_name, "qwen_image_edit_2511_fp8_e4m3fn_scaled_lightning_comfyui_4steps_v1.0.safetensors");
   });
 
-  it("the never-lie guard keeps width/height 2.1-only — stated here they refuse field-named", () => {
+  it("the never-lie guard keeps stated sizes off the 2511 lane (no lane takes a stated size — the latent law)", () => {
     assert.throws(
       () => instantiateAction(edit, { ...PARAMS, width: 1024 }, FACTS, new GraphBuilder({}), "probe-w"),
-      /'width'\/'height' fire on the image-edit card only on the Qwen Image 2\.1 lane/,
+      /no edit lane takes a stated size/,
     );
   });
 

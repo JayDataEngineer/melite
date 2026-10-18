@@ -66,6 +66,21 @@ function repoIdentity(url: string): string {
     .toLowerCase();
 }
 
+/** Manager serves `aux_id` WITHOUT the host prefix — `ltdrdata/ComfyUI-Impact-Pack`,
+ * not `github.com/ltdrdata/ComfyUI-Impact-Pack` (the cold-start tier caught this
+ * live: the host-bearing canonical form never matched the bare row, so every
+ * git-door pin refused as unverifiable on a real engine). Both forms are
+ * accepted: a row whose aux_id is a full URL still matches via repoIdentity. */
+function bareIdentity(url: string): string {
+  return url
+    .replace(/\.git$/u, "")
+    .replace(/@.*$/u, "")
+    .replace(/^git\+/u, "")
+    .replace(/^(?:https?:\/\/|git@)[^/]*\//iu, "")
+    .replace(/\/+$/u, "")
+    .toLowerCase();
+}
+
 /** Conservative floor rate for declared model downloads: the queue
  *  budget grants at least this many bytes per second of wall time
  *  (residential HF pulls measure ~3 MiB/s; 1 MiB/s leaves slack). */
@@ -356,15 +371,29 @@ export class ComfyUiManagerProvider implements ManagerPort {
    *  reports no such pack. Matched by repo identity, never by the
    *  installed directory name (Manager derives that from the url). */
   private async landedVer(url: string, signal?: AbortSignal): Promise<string | null> {
-    const rows = await this.client.getJson<InstalledExtensionRow[]>("/customnode/installed", {
+    const answer = await this.client.getJson<unknown>("/customnode/installed", {
       ...(signal === undefined ? {} : { signal }),
     });
     // A WIRE boundary (Manager's own answer), so the shape IS checked
     // here rather than trusted — and both refusals below are tested.
-    if (!Array.isArray(rows)) return null;
+    // Manager serves TWO shapes for this route: an array of rows, and
+    // a map keyed by installed directory name whose values are the
+    // same rows (the cold-start tier caught the map live: the pinned
+    // Manager answers the map, so an array-only read verified nothing
+    // and every git-door pin refused as unverifiable). `ver` rides a
+    // trailing newline on the wire — trimmed before any comparison.
+    const rows: readonly InstalledExtensionRow[] = Array.isArray(answer)
+      ? answer.filter((row): row is InstalledExtensionRow => typeof row === "object" && row !== null)
+      : typeof answer === "object" && answer !== null
+        ? Object.entries(answer as Record<string, unknown>)
+          .filter((entry) => typeof entry[1] === "object" && entry[1] !== null)
+          .map(([name, row]) => ({ name, ...(row as InstalledExtensionRow) }))
+        : [];
     const want = repoIdentity(url);
+    const wantBare = bareIdentity(url);
     for (const row of rows) {
-      if (repoIdentity(row.aux_id ?? "") === want) return row.ver ?? null;
+      const rowId = repoIdentity(row.aux_id ?? "");
+      if (rowId === want || rowId === wantBare) return row.ver === undefined ? null : row.ver.trim();
     }
     return null;
   }

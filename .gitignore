@@ -237,3 +237,8 @@ data/runtime/real-install-tarballs/
 # the mint packs fresh, publish reads from disk).
 /dist/
 *.tsbuildinfo
+
+# === Coldstart tier scratch cores (the opt-in provision tier's
+# disposable engines; COLDSTART_KEEP_SCRATCH=1 keeps them for
+# debugging only — never landed) ===
+data/runtime/coldstart-*/

@@ -567,8 +567,36 @@ describe("THE CLAIM LAW (the card claims nothing the model did not declare)", ()
     // model-less card unit has no declaring family to bind). THE FOLD
     // (2026-10-26): the union binds family ∪ variant ∪ CELL surfaces
     // (the size-at-quant cell axis declares params of its own).
+    // THE HIDDEN-LEGACY CARVE (the latent law, 2026-11-08): a schema
+    // key the card's own face marks hidden:true (the toJSON refs
+    // projection — the same read the card's own spec pins) is a
+    // legacy validate-then-refuse alias, not an offered knob: exempt
+    // from the union bind, and collected into the roster below. The
+    // roster is PINNED — a new hidden-but-undeclared key reds here
+    // until a deliberate edit reviews it (a hidden key that ADMITS
+    // would be a phantom offer; the stated-size wall holds the
+    // refusal half for the two entries below).
     const facts = svc.modelFacts();
     const decls = svc.cardDecls();
+    const defs =
+      ((svc as unknown as { defsSync?: () => Map<string, { schema?: unknown; schemaCarrier?: unknown }> }).defsSync?.() ??
+        new Map());
+    const hiddenOf = (card: string): Set<string> => {
+      const out = new Set<string>();
+      const def = defs.get(card);
+      const carrier = (def?.schemaCarrier ?? def?.schema) as unknown as
+        | { toJSON?: () => { refs: Record<number, { type?: string; dict?: Record<string, number>; meta?: { extra?: { hidden?: boolean } } }> } }
+        | undefined;
+      const json = carrier?.toJSON?.();
+      if (!json) return out;
+      const root = Object.values(json.refs).find((n) => n.type === "object" && n.dict !== undefined);
+      if (!root?.dict) return out;
+      for (const [name, refId] of Object.entries(root.dict)) {
+        if (json.refs[refId]?.meta?.extra?.hidden === true) out.add(name);
+      }
+      return out;
+    };
+    const exempted: string[] = [];
     let judged = 0;
     for (const [card, declRow] of Object.entries(decls)) {
       const boarded: readonly string[] =
@@ -587,7 +615,13 @@ describe("THE CLAIM LAW (the card claims nothing the model did not declare)", ()
         ]) union.add(name);
         for (const name of modFieldsOf(card, fam)) union.add(name);
       }
+      const hidden = hiddenOf(card);
       for (const name of declRow.schemaNames) {
+        if (union.has(name)) continue;
+        if (hidden.has(name)) {
+          exempted.push(`${card}:${name}`);
+          continue;
+        }
         expect(
           union.has(name),
           `card ${card} claims '${name}' but no boarded family declares it`,
@@ -595,6 +629,11 @@ describe("THE CLAIM LAW (the card claims nothing the model did not declare)", ()
       }
     }
     expect(judged, "at least one card binds against declaring families (else this wall is vacuous)").toBeGreaterThan(0);
+    // THE EXEMPT ROSTER (deliberate edits touch THIS list): the
+    // latent law retired width/height off both edit DECL surfaces
+    // while the card keeps them hidden for legacy drafts (they
+    // validate, then refuse field-named — the stated-size wall).
+    expect(exempted.sort()).toEqual(["image-edit:height", "image-edit:width"]);
   });
 
   it("relation words name only carriable fields (no dead grammar)", () => {
@@ -1319,30 +1358,29 @@ describe("THE REQUIRED WORD ON A REAL LANE", () => {
     expect(body).toMatch(/\.sort\(\)/);
   });
 
-  it("a DESIGNED sibling disagreement empties the word — the intersection is never a union (image-edit, pinned 2026-10-10)", () => {
-    // qwen-img-edit-21 declares together: [width, height] (its lane
-    // carries the pair); qwen-img-edit-2511's surface carries NEITHER
-    // field (it edits at source resolution — the fields are not a
-    // slower path there, they are a lane the family does not have).
-    // The member-keyed intersection of the together rows is therefore
-    // EMPTY BY DESIGN, and a model-less image-edit row holding
-    // width-without-height ADMITS — as long as the AGREEING words
-    // (prompt, the anchor) are satisfied. A union would false-refuse
-    // the width state in a voice no boarded family speaks — the pin
-    // holds the intersection, not the louder law.
+  it("the sibling disagreement is DEAD — the word is gone, and the named lane refuses what the unnamed draft holds (image-edit, latent law 2026-11-08)", async () => {
+    // The old pin judged the `together: [width, height]` intersection:
+    // NEITHER lane owns a stated size anymore, so there is no
+    // together row to intersect — the relation is retired from both
+    // DECLs. What remains is the seat boundary: the write seat
+    // judges NAMED lanes, and a model-less draft names none (its
+    // legacy size rides the stored row under the migration law —
+    // old drafts keep loading); naming the lane refuses
+    // field-named, at the write seat AND at the run seat.
     const base = { prompt: "make it warmer", image1: "x.png" };
     const row = svc.admitStageRelations("image-edit", { ...base, width: 1024 });
     expect(row.ok).toBe(true);
-    // The FAMILY row admits for a different, pinned reason: the
-    // family's declared defaults complete the pair at the stamp
-    // (width AND height default 1024), so `together` is SATISFIED,
-    // not skipped — the word and the defaults are one concert. If
-    // the defaults ever leave the DECL, this admit flips to the
-    // word's refusal; if the intersection ever becomes a union, the
-    // row above flips. Both directions are deliberate edits, and
-    // this pin makes them touch a test.
     const fam = svc.admitStageRelations("image-edit", { ...base, model: "qwen-img-edit-21", width: 1024 });
-    expect(fam.ok).toBe(true);
+    expect(fam.ok).toBe(false);
+    if (!fam.ok) expect(fam.error).toContain("fires nothing on this lane");
+    // the downstream pin that keeps the model-less admit honest: the
+    // same state refuses at the RUN seat the moment the lane is
+    // named — and the run seat voices the FIX (the compose door's
+    // never-lie guard: no edit lane takes a stated size, clear them
+    // and re-run), not the surface echo.
+    await expect(
+      svc.phase1Card({ ...base, width: 1024 }, "qwen-img-edit-21"),
+    ).rejects.toThrow("no edit lane takes a stated size anymore");
   });
 
   it("the edit compose law is a DECL now — prompt-less and anchor-less drafts refuse at the RUN seat (the GAP-7 shape, killed)", async () => {
@@ -1450,8 +1488,15 @@ describe("THE REQUIRED WORD ON A REAL LANE", () => {
   });
 });
 
-describe("THE RANGE RULE WALL (the 2.1 width burn — the model owns the floor)", () => {
-  it("a stated width below the declared floor refuses AT WRITE TIME, in the field's voice", () => {
+describe("THE STATED-SIZE WALL (the latent law, 2026-11-08 — no edit lane takes a stated size)", () => {
+  // The range rule died with the law it guarded: NEITHER lane owns
+  // width/height anymore (the 2.1 lane samples the encoder's own
+  // latent; 2511 encodes the source), so the surface owns no size at
+  // all and ANY stated axis refuses field-named at the write seat —
+  // below the old floor, above the old ceiling, AND inside the old
+  // range. The old arms below are kept as the probes (same values)
+  // with the law's new voice: a regression to range language reds.
+  it("a stated width below the OLD floor refuses AT WRITE TIME, in the surface's voice", () => {
     const verdict = svc.admitStageRelations("image-edit", {
       model: "qwen-img-edit-21",
       prompt: "make it night",
@@ -1462,13 +1507,12 @@ describe("THE RANGE RULE WALL (the 2.1 width burn — the model owns the floor)"
     expect(verdict.ok).toBe(false);
     if (!verdict.ok) {
       expect(verdict.error).toContain("'width'");
-      expect(verdict.error).toContain("-50");
-      expect(verdict.error).toContain("256");
-      expect(verdict.error).toContain("outside this lane's range");
+      expect(verdict.error).toContain("fires nothing on this lane");
+      expect(verdict.error).toContain("drop it or switch lane");
     }
   });
 
-  it("a stated width above the declared ceiling refuses the same way (1536, not 4096)", () => {
+  it("a stated width above the OLD ceiling refuses the same way (1536, not 4096)", () => {
     const verdict = svc.admitStageRelations("image-edit", {
       model: "qwen-img-edit-21",
       prompt: "make it night",
@@ -1479,12 +1523,11 @@ describe("THE RANGE RULE WALL (the 2.1 width burn — the model owns the floor)"
     expect(verdict.ok).toBe(false);
     if (!verdict.ok) {
       expect(verdict.error).toContain("'width'");
-      expect(verdict.error).toContain("4096");
-      expect(verdict.error).toContain("1536");
+      expect(verdict.error).toContain("fires nothing on this lane");
     }
   });
 
-  it("the in-range pair admits (the burn was NOT a law against stating resolution)", () => {
+  it("the in-range pair refuses TOO (the latent law has no range — the surface owns no size at all)", () => {
     const verdict = svc.admitStageRelations("image-edit", {
       model: "qwen-img-edit-21",
       prompt: "make it night",
@@ -1492,39 +1535,49 @@ describe("THE RANGE RULE WALL (the 2.1 width burn — the model owns the floor)"
       width: 1328,
       height: 1328,
     });
-    expect(verdict.ok).toBe(true);
+    expect(verdict.ok).toBe(false);
+    if (!verdict.ok) {
+      expect(verdict.error).toContain("'width'");
+      expect(verdict.error).toContain("fires nothing on this lane");
+    }
   });
 
-  it("a lone axis COMPLETES from the family default at the lifted bench seat (the together word guards the raw form state)", () => {
-    // The bench judges the LIFTED state (resolve → overlay → lift):
-    // width stated, height absent → the DECL's own height:1024
-    // default rides, the pair completes, the admission is honest.
-    // The together word still binds the FORM's inline gate, which
-    // sees the raw authored state pre-overlay (card-base spec.ts,
-    // judgeLaneRelations on unlifted values) — one declaration,
-    // two true seats.
+  it("a lone axis refuses (no completion — there is nothing to complete TO)", () => {
     const verdict = svc.admitStageRelations("image-edit", {
       model: "qwen-img-edit-21",
       prompt: "make it night",
       image1: "x.png",
       width: 1328,
     });
-    expect(verdict.ok).toBe(true);
+    expect(verdict.ok).toBe(false);
+    if (!verdict.ok) {
+      expect(verdict.error).toContain("'width'");
+      expect(verdict.error).toContain("fires nothing on this lane");
+    }
   });
 
-  it("a stated size on 2511 refuses on the SURFACE (source-resolution lane owns no size)", () => {
+  it("a stated size on 2511 diverts at the write seat and refuses at the RUN door (the soft-retire posture)", () => {
+    // THE DIVERSION (pinned deliberately — nobody "fixes" the
+    // tolerance): a 2511-addressed state throws the hidden-address
+    // refusal inside prepareCardParams, and the write seat's
+    // selection-tolerance admits it (ok:true) so old drafts keep
+    // their addresses. The RUN door voices the refusal loud.
     const verdict = svc.admitStageRelations("image-edit", {
       model: "qwen-img-edit-2511",
       prompt: "make it night",
+      image1: "x.png",
       width: 1024,
       height: 1024,
     });
-    expect(verdict.ok).toBe(false);
-    if (!verdict.ok) {
-      // the surface voice: the field fires nothing on this lane
-      expect(verdict.error).toContain("fires nothing on this lane");
-      expect(verdict.error).toContain("width");
-    }
+    expect(verdict).toEqual({ ok: true });
+    expect(() =>
+      prepareCardParams(
+        svc,
+        { model: "qwen-img-edit-2511", prompt: "make it night", image1: "x.png", width: 1024, height: 1024 },
+        "qwen-img-edit-2511",
+        "run",
+      ),
+    ).toThrow("is not offered (the variant route is hidden from the dropdown)");
   });
 
   it("2511's own tuning pair admits (the tuning knobs are ITS surface)", () => {
@@ -1568,7 +1621,7 @@ describe("THE OVERLAP LAW (schema ∩ lane — no path admits a both-violating s
       prompt: "x",
       image1: "x.png",
       steps: 999,   // the card schema's own ceiling (1..50)
-      width: -50,   // the lane's own floor (256..1536)
+      width: -50,   // no lane takes a stated size (the latent law — the value is incidental, the surface refuses any axis)
       height: 1024,
     });
     expect(verdict.ok, "the lane seat refuses the state outright").toBe(false);
@@ -1582,13 +1635,14 @@ describe("THE OVERLAP LAW (schema ∩ lane — no path admits a both-violating s
   });
 
   it("a lane-legal state inside the schema's domain admits at both seats", async () => {
+    // Lane-legal means NO stated size (the latent law): the lane's
+    // surface owns no axis, so the legal state carries steps inside
+    // the schema's domain and leaves geometry to the source frame.
     const verdict = await svc.admitStageRelations("image-edit", {
       model: "qwen-img-edit-21",
       prompt: "x",
       image1: "x.png",
       steps: 20,
-      width: 1328,
-      height: 1328,
     });
     expect(verdict.ok).toBe(true);
   });

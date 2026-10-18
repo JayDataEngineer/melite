@@ -5,7 +5,7 @@
 // segment factory composes the 2.1 edit lane — QwenImage21Cache (the
 // reference-prefix KV cache around the base unet) +
 // TextEncodeQwenImage21 on the anchor images through its image_N
-// autogrow slots → EmptyLatentImage at target resolution → KSampler
+// autogrow slots → KSampler on the ENCODER'S OWN anchor-sized latent
 // → decode/save under <run>/edit — byte-identical to the legacy
 // imageEdit 2.1 arm (proven in tests/action.spec.ts). Creation order
 // IS node-id order (the recipe law). The params doc stays the card's
@@ -54,8 +54,9 @@ export function parseEditFacts(raw: LaneInputsFacts): EditFacts {
  *  stack → text pair → per-slot LoadImage anchors →
  *  QwenImage21Cache + TextEncodeQwenImage21 (pos+neg from one node,
  *  refs on the images.image_N autogrow slots) → EITHER the region
- *  detailer tail (mask_mode crop_stitch) OR EmptyLatentImage at
- *  target resolution → KSampler → decode + save under <run>/edit. */
+ *  detailer tail (mask_mode crop_stitch) OR KSampler on the
+ *  encoder's own anchor-sized latent → decode + save under
+ *  <run>/edit. */
 export const edit: ComfyActionSpec<EditParams, EditFacts> = {
   id: "edit",
   inputs: [],
@@ -79,6 +80,15 @@ export const edit: ComfyActionSpec<EditParams, EditFacts> = {
   ],
   facts: parseEditFacts,
   build({ p, facts, model, g, runId }) {
+    // THE NEVER-LIE GUARD (the latent law, 2026-11-08): no edit lane
+    // takes a stated size anymore — this lane samples the encoder's
+    // own anchor-sized latent ("any other size shifts the edit", the
+    // node's law), so a stated width/height would wire to nothing.
+    // A stated knob that does nothing is a lying stack. Refuse
+    // field-named, symmetric with the 2511 lane's guard.
+    if (p.width !== undefined || p.height !== undefined) {
+      throw new Error("'width'/'height' fire on the image-edit card but no edit lane takes a stated size (the latent law, 2026-11-08): this lane samples the encoder's own anchor-sized latent and the 2511 lane encodes the source outright — clear them and re-run");
+    }
     const seed = p.seed as number;
     let unet: OutputHandle = g.node("UNETLoader", { unet_name: facts.unet, weight_dtype: "default" }).out();
     unet = stackLoras(g, unet, fireLoras(model, p));
@@ -126,14 +136,12 @@ export const edit: ComfyActionSpec<EditParams, EditFacts> = {
     const maskPath = ((merged.input_mask ?? "") as string).trim();
     const mode = (merged.mask_mode ?? "auto") as string;
     const cropStitch = (mode === "full_frame" ? "auto" : mode) === "crop_stitch";
-    // The 2.1 base has NO separate edit weights: the edit rides
+    // THE 2.1 BASE has NO separate edit weights: the edit rides
     // QwenImage21Cache (the reference-prefix KV cache wrapped
     // around the SAME unet) + TextEncodeQwenImage21 conditioned on
-    // the anchor images through its own image_N autogrow slots,
-    // sampled on an EmptyLatentImage at the TARGET resolution (the
-    // official template graph). vae rides the encoder's optional
-    // input (reference latents splice); one encoder node emits
-    // pos+neg.
+    // the anchor images through its own image_N autogrow slots.
+    // vae rides the encoder's optional input (reference latents
+    // splice); one encoder node emits pos+neg.
     const cached = g.node("QwenImage21Cache", { model: unet, device: "auto", dtype: "default" }).out();
     // THE AUTOGROW KEYS (the live v0.37 law, proven on the engine:
     // execute(clip, prompt, negative_prompt, vae, resolution,
@@ -148,8 +156,14 @@ export const edit: ComfyActionSpec<EditParams, EditFacts> = {
     loaded.forEach((ref, i) => {
       images21[`images.image_${2 + i}`] = ref;
     });
+    // THE REFERENCE BUDGET (resolution 0): "keeps each reference at
+    // its own size, rounded to a multiple of 32" (the node's own
+    // object_info tooltip). The official template ships the 1024
+    // pixel-budget default; this lane edits the anchor's native
+    // frame — the budget's rescale would shrink large sources
+    // silently, and the DECL carries no override knob by design.
     const enc21 = g.node("TextEncodeQwenImage21", {
-      clip, vae, prompt: p.prompt, negative_prompt: p.negative_prompt ?? "", resolution: 1024,
+      clip, vae, prompt: p.prompt, negative_prompt: p.negative_prompt ?? "", resolution: 0,
       ...images21,
     });
     // THE REGION DETAILER: the SAME generic arm as the 2511 tail,
@@ -166,11 +180,16 @@ export const edit: ComfyActionSpec<EditParams, EditFacts> = {
         positive: enc21.out(0), negative: enc21.out(1), seed,
       }, runId).out();
     }
-    const latent21 = g.node("EmptyLatentImage", {
-      batch_size: 1,
-      width: ((p.width as number | undefined) ?? 1024),
-      height: ((p.height as number | undefined) ?? 1024),
-    });
+    // THE ENCODER'S LATENT (the latent law, 2026-11-08): KSampler
+    // samples enc21's own third output — "Empty latent on the first
+    // reference image's size, to match with sampling as any other
+    // size shifts the edit" (the node's object_info law; the
+    // official template wires the same arm as its switch default).
+    // The retired EmptyLatentImage-at-target-size sampled a FOREIGN
+    // geometry: the probe pinned the anchor's exact size while the
+    // encoder processed references at its resolution budget — the
+    // mismatch IS the zoom/shift class this removes. There is no
+    // stated size anymore: the output IS the anchor's frame.
     const sampled21 = g.node("KSampler", {
       seed,
       steps: p.steps,
@@ -178,11 +197,18 @@ export const edit: ComfyActionSpec<EditParams, EditFacts> = {
       sampler_name: laneSampler(p),
       scheduler: laneScheduler(p),
       denoise: 1.0,
-      latent_image: latent21.out(),
+      latent_image: enc21.out(2),
       model: cached,
       positive: enc21.out(0),
       negative: enc21.out(1),
     });
+    // THE ALPHA TAIL (why nothing sits between decode and save):
+    // the 2.1 VAE decodes RGBA ("Qwen Image 2.1 VAE … RGBA",
+    // engine sd.py VAE detection) and SaveImage's fromarray keeps a
+    // 4-channel tensor RGBA on disk — the transparent PNG lands
+    // whole, verified on this engine's own outputs. The official
+    // background-removal template saves the plain decode too; no
+    // SplitImageWithAlpha belongs here.
     return decodeSave(g, sampled21.out(), vae, `${runId}/edit`).out();
   },
 };

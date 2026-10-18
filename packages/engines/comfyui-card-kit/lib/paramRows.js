@@ -13,14 +13,16 @@
 //
 // BOUNDS ARE PARAMETERS, NOT CONSTANTS: the edit families
 // legitimately declare a tighter envelope (steps [1,50], cfg
-// [0.1,10]) than text-to-image ([1,100] / [1,20]), and the edit
-// families declare width/height UNBOUNDED (the served door judges
-// them, the engine takes the engine's own). A family passes what
-// differs and inherits the rest; it never re-types a row.
+// [0.1,10]) than text-to-image ([1,100] / [1,20]), and since the
+// latent law (2026-11-08) they RETIRE the size pair outright
+// (`size: false` — both edit lanes edit at the source's own frame).
+// A family passes what differs and inherits the rest; it never
+// re-types a row.
 import { SAMPLER_OPTIONS, SCHEDULER_OPTIONS } from "./vocab.js";
 /**
- * The nine-row diffusion param surface, in served order: the prompt
- * pair, the size pair, the managed seed, the sampler knobs.
+ * The diffusion param surface, in served order: the prompt pair, the
+ * size pair (unless retired), the managed seed, the sampler knobs —
+ * nine rows, or seven under `size: false`.
  * @param bounds the family's narrowing; omitted keys take the defaults above
  * @returns the declared rows, fresh objects per call (a family may spread them into its own surface)
  */
@@ -28,14 +30,13 @@ export function diffusionParamRows(bounds = {}) {
     const steps = bounds.steps ?? [1, 100];
     const cfg = bounds.cfg ?? [1, 20];
     const size = bounds.size === undefined ? [256, 2048] : bounds.size;
-    const sized = (name) => (size === null
-        ? { name, type: "number" }
-        : { name, type: "number", bounds: size });
+    const sizeRows = size === false
+        ? []
+        : ["width", "height"].map((name) => size === null ? { name, type: "number" } : { name, type: "number", bounds: size });
     return [
         { name: "prompt", type: "string" },
         { name: "negative_prompt", type: "string" },
-        sized("width"),
-        sized("height"),
+        ...sizeRows,
         { name: "seed", type: "number", rule: "seed-sentinel" },
         { name: "steps", type: "number", bounds: steps },
         { name: "cfg", type: "number", bounds: cfg },
@@ -43,10 +44,13 @@ export function diffusionParamRows(bounds = {}) {
         { name: "scheduler", type: "enum", options: SCHEDULER_OPTIONS },
     ];
 }
-/** The narrowing the two image-edit families declare (steps [1,50], cfg [0.1,10], size unbounded). */
+/** The narrowing the two image-edit families declare (steps [1,50],
+ *  cfg [0.1,10]; the size pair RETIRED — the latent law, 2026-11-08:
+ *  both edit lanes edit at the source's own frame, so no declared
+ *  size row may ride the surface). */
 export const EDIT_DIFFUSION_BOUNDS = {
     steps: [1, 50],
     cfg: [0.1, 10],
-    size: null,
+    size: false,
 };
 //# sourceMappingURL=paramRows.js.map

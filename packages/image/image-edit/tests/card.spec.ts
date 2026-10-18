@@ -11,8 +11,6 @@ import assert from "node:assert/strict";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { loadCardDefs, theService } from "@melite/comfyui-cordis";
-import { tmpdir } from "node:os";
-import { writeFileSync, rmSync } from "node:fs";
 import { BOARDED } from "../src/card.ts";
 import { GraphBuilder } from "@melite/comfyui-card-kit/graph";
 import { loadFacts } from "@melite/comfyui-card-kit/facts";
@@ -52,35 +50,6 @@ beforeAll(async () => {
   model = facts.models["qwen-img-edit-2511"]!;
   assert.ok(model, "the qwen-img-edit-2511 facts row serves");
 });
-
-let anchorSeq = 0;
-
-// A compose-time JPEG anchor: the given header bytes padded past
-// the probe's segment walk (the walk reads at most the first 256
-// bytes; padding keeps short headers from ending the walk early).
-const writeAnchor = (bytes: number[], pad = true): string => {
-  anchorSeq += 1;
-  const anchorPath = join(tmpdir(), `melite-f8-anchor-${Date.now()}-${anchorSeq}.jpg`);
-  const body = Buffer.from(bytes);
-  writeFileSync(anchorPath, pad ? Buffer.concat([body, Buffer.alloc(Math.max(0, 64 - body.length))]) : body);
-  return anchorPath;
-};
-
-// A minimal SOF frame header for 1344x768 (marker + length +
-// precision + height + width — the only bytes the probe reads).
-const SOF_1344x768 = (marker: number): number[] =>
-  [0xff, marker, 0x00, 0x0b, 0x08, 0x03, 0x00, 0x05, 0x40];
-
-// The 2.1 target latent's geometry for an anchor file — the
-// inheritance (or the lane fallback) made visible.
-const latentGeometry = (anchorPath: string): { width: unknown; height: unknown } => {
-  const model21 = facts.models["qwen-img-edit-21"]!;
-  assert.ok(model21, "the qwen-img-edit-21 facts row serves");
-  const g = new GraphBuilder();
-  def.compose({ prompt: "make it night", image1: anchorPath, steps: 25, cfg: 1 }, model21, g, `r_probe_${anchorSeq}`);
-  const graph = g.toJSON() as Record<string, { inputs: Record<string, unknown> }>;
-  return { width: graph["EmptyLatentImage.0"]?.inputs.width, height: graph["EmptyLatentImage.0"]?.inputs.height };
-};
 
 describe("the image-edit compose gate", () => {
   it("a missing prompt refuses (WHAT to change, not the whole image)", () => {
@@ -133,66 +102,37 @@ describe("the image-edit compose gate", () => {
     assert.equal(BOARDED[1], "qwen-img-edit-2511", "2511 is the BACKUP");
   });
 
-  // THE SOURCE-GEOMETRY INHERITANCE (finding 8 + the match
-  // toggle, 2026-10-13): Match Input Resolution is ON by default —
-  // a 1344x768 source comes back 1344x768 with no typing (the probe
-  // reads the ANCHOR's own header: PNG IHDR / JPEG SOF, and the hit
-  // OVERRIDES any Width/Height — the toggle wins, so cascade 1024s
-  // never starve it). Turn it OFF for a custom pair verbatim.
-  // Unprobeable anchors (missing file, spell) keep the lane
-  // fallback, never a new refusal.
-  it("THE SOURCE-GEOMETRY INHERITANCE: omitted axes inherit the anchor's own geometry on the 2.1 lane", () => {
+  // THE LATENT LAW AT THE CARD (2026-11-08): neither lane takes a
+  // stated size anymore. The compose face carries NO geometry
+  // override — the 2.1 lane samples the encoder's own anchor-sized
+  // latent, 2511 encodes the source outright — and a stated
+  // Width/Height refuses field-named on BOTH lanes (the never-lie
+  // guards), never silently ignores.
+  it("THE LATENT LAW AT THE CARD: no lane takes a stated size — the pair refuses field-named, and the clean compose carries no stated-size latent", () => {
     const model21 = facts.models["qwen-img-edit-21"]!;
     assert.ok(model21, "the qwen-img-edit-21 facts row serves");
-    // A compose-time anchor: real header bytes (PNG signature +
-    // IHDR width 1344 height 768 — the probe reads only the head).
-    const png = Buffer.alloc(33)
-    Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]).copy(png, 0)
-    png.writeUInt32BE(13, 8) // IHDR chunk length
-    png.write("IHDR", 12, "ascii")
-    png.writeUInt32BE(1344, 16)
-    png.writeUInt32BE(768, 20)
-    const anchorPath = join(tmpdir(), "melite-f8-source-" + Date.now() + ".png")
-    writeFileSync(anchorPath, png)
-    try {
-      const g = new GraphBuilder()
-      def.compose({ prompt: "make it night", image1: anchorPath, steps: 25, cfg: 1 }, model21, g, "r_f8")
-      const graph = g.toJSON() as Record<string, { inputs: Record<string, unknown> }>;
-      assert.equal(graph["EmptyLatentImage.0"]?.inputs.width, 1344, "width inherits the source's own")
-      assert.equal(graph["EmptyLatentImage.0"]?.inputs.height, 768, "height inherits the source's own")
-
-      // THE MATCH TOGGLE (default ON): a stated pair is OVERRIDDEN
-      // by the anchor geometry while the toggle is on — no typing
-      // needed, and a stale custom size never silently wins.
-      const gMatch = new GraphBuilder()
-      def.compose({ prompt: "make it night", image1: anchorPath, width: 512, height: 512, steps: 25, cfg: 1 }, model21, gMatch, "r_f8match")
-      const matched = gMatch.toJSON() as Record<string, { inputs: Record<string, unknown> }>;
-      assert.equal(matched["EmptyLatentImage.0"]?.inputs.width, 1344, "match ON (default) overrides the stated pair")
-      assert.equal(matched["EmptyLatentImage.0"]?.inputs.height, 768)
-
-      // MATCH OFF: the stated pair rides verbatim.
-      const gStated = new GraphBuilder()
-      def.compose({ prompt: "make it night", image1: anchorPath, width: 512, height: 512, match_input_resolution: false, steps: 25, cfg: 1 }, model21, gStated, "r_f8b")
-      const stated = gStated.toJSON() as Record<string, { inputs: Record<string, unknown> }>;
-      assert.equal(stated["EmptyLatentImage.0"]?.inputs.width, 512)
-      assert.equal(stated["EmptyLatentImage.0"]?.inputs.height, 512)
-
-      // MATCH OFF + omitted axes: the lane fallback stands (no probe).
-      const gOffBlind = new GraphBuilder()
-      def.compose({ prompt: "make it night", image1: anchorPath, match_input_resolution: false, steps: 25, cfg: 1 }, model21, gOffBlind, "r_f8off")
-      const offBlind = gOffBlind.toJSON() as Record<string, { inputs: Record<string, unknown> }>;
-      assert.equal(offBlind["EmptyLatentImage.0"]?.inputs.width, 1024, "match OFF never probes — the lane fallback stands")
-      assert.equal(offBlind["EmptyLatentImage.0"]?.inputs.height, 1024)
-
-      // UNPROBEABLE anchor (no such file): the lane fallback stands — no new refusal.
-      const gBlind = new GraphBuilder()
-      def.compose({ prompt: "make it night", image1: "/m/not-on-disk.png", steps: 25, cfg: 1 }, model21, gBlind, "r_f8c")
-      const blind = gBlind.toJSON() as Record<string, { inputs: Record<string, unknown> }>;
-      assert.equal(blind["EmptyLatentImage.0"]?.inputs.width, 1024, "the lane fallback covers unprobeable anchors")
-      assert.equal(blind["EmptyLatentImage.0"]?.inputs.height, 1024)
-    } finally {
-      rmSync(anchorPath, { force: true })
-    }
+    // A stated pair refuses on the 2.1 lane…
+    assert.throws(
+      () => def.compose({ prompt: "make it night", image1: "/m/i.png", width: 512, height: 512, steps: 25, cfg: 1 }, model21, new GraphBuilder(), "r_size21"),
+      /no edit lane takes a stated size/,
+      "the 2.1 lane refuses the stated pair field-named",
+    );
+    // …and on the 2511 lane (the same never-lie voice).
+    assert.throws(
+      () => def.compose(def.schema({ prompt: "dress the mannequin", image1: "/m/anchor.png", width: 512, height: 512 }), model, new GraphBuilder(), "r_size2511"),
+      /no edit lane takes a stated size/,
+      "the 2511 lane refuses the stated pair field-named",
+    );
+    // The clean compose builds NO stated-size latent on the 2.1
+    // lane: its KSampler rides the encoder's own third output.
+    const g = new GraphBuilder();
+    def.compose({ prompt: "make it night", image1: "/m/i.png", steps: 25, cfg: 1 }, model21, g, "r_latent21");
+    const graph = g.toJSON() as Record<string, { class_type: string; inputs: Record<string, unknown> }>;
+    assert.ok(!Object.values(graph).some((n) => n.class_type === "EmptyLatentImage"), "no EmptyLatentImage — the encoder's latent is the geometry");
+    const sampler = Object.values(graph).find((n) => n.class_type === "KSampler");
+    assert.match(String(sampler?.inputs?.latent_image ?? ""), /^TextEncodeQwenImage21/, "the latent wire is the encoder's own");
+    const enc = Object.values(graph).find((n) => n.class_type === "TextEncodeQwenImage21");
+    assert.equal(enc?.inputs?.resolution, 0, "the reference budget is 0 — each reference at its own size");
   });
 
   // THE MATCH DEFAULT (the no-typing convenience): the schema default
@@ -222,91 +162,6 @@ describe("the image-edit compose gate", () => {
     assert.ok(Object.values(gOff.toJSON() as Record<string, unknown>).length > 0, "match OFF is admitted too — a no-op either way");
   });
 
-  // THE JPEG MARKER ARMS (finding 8's probe walks marker segments
-  // to the first SOF0/SOF2 frame header — APP segments carry a
-  // length, filler bytes and standalone markers carry none). Each
-  // arm below pins one walk shape against the 2.1 target latent:
-  // inherited geometry when a frame header lands, the lane fallback
-  // otherwise — never a new refusal on an unprobeable anchor.
-  it("THE JPEG SOF0 ARM: a baseline-JPEG anchor inherits its frame geometry on the 2.1 lane", () => {
-    const anchorPath = writeAnchor([0xff, 0xd8, ...SOF_1344x768(0xc0)])
-    try {
-      assert.deepEqual(latentGeometry(anchorPath), { width: 1344, height: 768 }, "SOF0 width/height ride the target latent")
-    } finally {
-      rmSync(anchorPath, { force: true })
-    }
-  });
-
-  it("THE JPEG SOF2 ARM: a progressive-JPEG anchor inherits the same way (the C2 disjunct)", () => {
-    const anchorPath = writeAnchor([0xff, 0xd8, ...SOF_1344x768(0xc2)])
-    try {
-      assert.deepEqual(latentGeometry(anchorPath), { width: 1344, height: 768 }, "SOF2 is the same frame header, progressive scan")
-    } finally {
-      rmSync(anchorPath, { force: true })
-    }
-  });
-
-  it("THE JPEG SKIP ARMS: APP segments, filler bytes and standalone markers walk past to the frame header", () => {
-    // SOI + APP0 (length-prefixed) + a stray filler byte + an
-    // embedded SOI + an RST0 standalone + SOF0 — every skip shape
-    // in one header, the frame geometry still lands.
-    const anchorPath = writeAnchor([
-      0xff, 0xd8,
-      0xff, 0xe0, 0x00, 0x10, ...new Array<number>(14).fill(0),
-      0x00,
-      0xff, 0xd8,
-      0xff, 0xd0,
-      ...SOF_1344x768(0xc0),
-    ])
-    try {
-      assert.deepEqual(latentGeometry(anchorPath), { width: 1344, height: 768 }, "skipped segments never hide the frame header")
-    } finally {
-      rmSync(anchorPath, { force: true })
-    }
-  });
-
-  it("THE ZERO-FRAME ARM: a zero-dimension JPEG header keeps the lane fallback (never a 0-wide latent)", () => {
-    const anchorPath = writeAnchor([0xff, 0xd8, 0xff, 0xc0, 0x00, 0x0b, 0x08, 0x00, 0x00, 0x00, 0x00])
-    try {
-      assert.deepEqual(latentGeometry(anchorPath), { width: 1024, height: 1024 }, "a 0x0 frame header is no geometry")
-    } finally {
-      rmSync(anchorPath, { force: true })
-    }
-  });
-
-  it("THE ZERO-PNG ARM: a zero-dimension IHDR keeps the lane fallback", () => {
-    const png = Buffer.alloc(33)
-    Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]).copy(png, 0)
-    png.writeUInt32BE(13, 8)
-    png.write("IHDR", 12, "ascii")
-    png.writeUInt32BE(0, 16)
-    png.writeUInt32BE(0, 20)
-    const anchorPath = join(tmpdir(), "melite-f8-zero-png-" + Date.now() + ".png")
-    writeFileSync(anchorPath, png)
-    try {
-      assert.deepEqual(latentGeometry(anchorPath), { width: 1024, height: 1024 }, "a 0x0 IHDR is no geometry")
-    } finally {
-      rmSync(anchorPath, { force: true })
-    }
-  });
-
-  it("THE NON-IMAGE ARM: a long non-image anchor keeps the lane fallback (signature mismatch, never a refusal)", () => {
-    const anchorPath = writeAnchor(new Array<number>(32).fill(0))
-    try {
-      assert.deepEqual(latentGeometry(anchorPath), { width: 1024, height: 1024 }, "neither signature matches — the fallback stands")
-    } finally {
-      rmSync(anchorPath, { force: true })
-    }
-  });
-
-  it("THE TRUNCATED ARM: a bare SOI keeps the lane fallback (the walk never runs past the head)", () => {
-    const anchorPath = writeAnchor([0xff, 0xd8], false)
-    try {
-      assert.deepEqual(latentGeometry(anchorPath), { width: 1024, height: 1024 }, "no segment to walk — the fallback stands")
-    } finally {
-      rmSync(anchorPath, { force: true })
-    }
-  });
   it("the edit-scope field names whole-image and masked-region choices", () => {
     const pack = theService().cardModFields("image-edit").find((row) => row.pack === "mask");
     assert.ok(pack, "the image-edit mask pack is absorbed");
@@ -776,7 +631,7 @@ describe("the image-edit compose gate", () => {
 });
 
 describe("the lane-bespoke leaves (the DECL surface — fix shape 2's successor)", () => {
-  it("THE LEAVES RIDE THEIR DECL SURFACE: width/height are 2.1's params, use_stock_nodes/double_reference are 2511's — the card carries NO model guard; references are ONE unguarded stack", () => {
+  it("THE LEAVES RIDE THEIR DECL SURFACE: no lane owns a stated size (the latent law), use_stock_nodes/double_reference are 2511's — the card carries NO model guard; references are ONE unguarded stack", () => {
     // the carrier dance (same as formSchemas: schemaCarrier ?? schema)
     const carrier = (def.schemaCarrier ?? def.schema) as unknown as { toJSON(): { refs: Record<number, { type?: string; dict?: Record<string, number>; meta?: { extra?: { visible_when?: string; max_stack?: number; hidden?: boolean; zone?: string } } }> } };
     const json = carrier.toJSON();
@@ -795,21 +650,29 @@ describe("the lane-bespoke leaves (the DECL surface — fix shape 2's successor)
     for (const name of ["match_input_resolution", "use_stock_nodes", "double_reference"]) {
       assert.equal(leaf(name), undefined, `${name} carries no model guard — its family is its DECL params surface`);
     }
-    // the ONE sibling-value guard: width/height HIDE while Match
-    // Input Resolution is on — the toggle owns the size, nothing to
-    // type. The tool face keeps the pair stateable (flip the toggle
-    // off); the form just never shows a row the toggle ignores.
-    assert.equal(leaf("width"), "match_input_resolution=false", "width hides while the match toggle is on");
-    assert.equal(leaf("height"), "match_input_resolution=false", "height hides while the match toggle is on");
-    // the DECL surfaces themselves (the one truth): 2.1 owns the
-    // resolution pair (and rides them together); 2511 owns the
-    // edit-tuning pair and refuses a stated size by ABSENCE. The
-    // match toggle is SHARED (both lanes admit it; 2511 holds it as
-    // a no-op — it always edits at source resolution).
+    // WIDTH/HEIGHT (retired by the latent law, 2026-11-08): the pair
+    // rides HIDDEN like the image2/image3 aliases — declared for
+    // legacy drafts, never a form row, never a tool param (a face row
+    // would offer a knob every lane refuses field-named). No
+    // visible_when guard: there is no toggle state that makes a dead
+    // knob usable.
+    const face = (name: string): { hidden?: boolean } | undefined => {
+      const refId = root!.dict![name];
+      if (refId === undefined) return undefined;
+      return json.refs[refId]?.meta?.extra;
+    };
+    for (const axis of ["width", "height"]) {
+      assert.equal(face(axis)?.hidden, true, `${axis} rides hidden:true — legacy drafts validate, the face never offers it`);
+    }
+    // the DECL surfaces themselves (the one truth): NEITHER lane owns
+    // a stated size anymore (the latent law — the 2.1 lane samples
+    // the encoder's own latent, 2511 encodes the source); 2511 owns
+    // the edit-tuning pair. The match toggle is SHARED (both lanes
+    // admit it as a declared no-op).
     const decl21 = facts.models["qwen-img-edit-21"]!;
     const decl2511 = facts.models["qwen-img-edit-2511"]!;
     const surf = (m: { params?: string[] }): ReadonlySet<string> => new Set(m.params ?? []);
-    assert.ok(surf(decl21).has("width") && surf(decl21).has("height"), "2.1's surface owns the resolution pair");
+    assert.ok(!surf(decl21).has("width") && !surf(decl21).has("height"), "2.1's surface excludes a stated size (the latent law)");
     assert.ok(!surf(decl2511).has("width") && !surf(decl2511).has("height"), "2511's surface excludes a stated size (source-resolution lane)");
     assert.ok(surf(decl21).has("match_input_resolution") && surf(decl2511).has("match_input_resolution"), "both lanes admit the match toggle (2511 as a no-op)");
     assert.ok(surf(decl2511).has("use_stock_nodes") && surf(decl2511).has("double_reference"), "2511's surface owns the edit-tuning pair");

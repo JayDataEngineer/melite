@@ -27,37 +27,52 @@ describe("the qwen-img-edit-21 model plugin (the cached-reference edit lane of t
   it("carries the 2.1 EDIT lane contract: the same base weights + the encoder branch key (NO separate edit checkpoint exists)", () => {
     assert.equal((DECL.lane_inputs ?? {} as Record<string, unknown>).text_encode_node, "TextEncodeQwenImage21");
     assert.equal((DECL.lane_inputs ?? {} as Record<string, unknown>).unet, "qwen_image_2.1_int8_convrot.safetensors", "the edit rides the SAME base unet as t2i — the cache wraps it in-graph");
-    // the edit samples at target resolution, never VAEEncode-of-source
-    // (the 2511 lane) — the ACTION owns that class (EmptyLatentImage
-    // at target resolution, its own facts door), so the row declares
-    // no latent member.
+    // the edit samples the ENCODER'S OWN latent (its third output),
+    // never a stated-size EmptyLatentImage and never
+    // VAEEncode-of-source (the 2511 lane) — the row declares no
+    // latent member; the ACTION owns that class.
     assert.equal((DECL.lane_inputs ?? {} as Record<string, unknown>).latent_node, undefined);
     assert.equal((DECL.defaults ?? {} as Record<string, unknown>).steps, 25);
     assert.equal((DECL.defaults ?? {} as Record<string, unknown>).cfg, 1);
   });
 
-  it("declares the target resolution — THE EMPTY-FORM BURN (2026-10-09): width/height default 1024, the owner is the DECL, never a lane hardcode", () => {
-    // The operator's catch: the image-edit card showed EMPTY Width and
-    // Height while image-gen showed 1024 — because this DECL stated no
-    // resolution and the LANE silently hardcoded `?? 1024`
-    // (lanes-image.ts) where the cascade could never see it. The
-    // RANGE RULE: whoever owns the default owns the floor — the model
-    // owns target resolution. Lose this row and the form starves
-    // again; the stampCardOverlay wall (cards-registry) refuses with it.
+  it("declares NO stated size — the latent law (2026-11-08): the encoder's own anchor-sized latent is the geometry", () => {
+    // The empty-form burn's cure (2026-10-09, width/height default
+    // 1024) is SUPERSEDED: the lane now samples the encoder's own
+    // third output ("Empty latent on the first reference image's
+    // size … any other size shifts the edit" — the node's own law),
+    // so a stated target size has no seat and the DECL carries
+    // neither the pair nor their bounds. A regression that
+    // re-declares them re-opens the drift class the probe pinned:
+    // the EmptyLatent baked the anchor's header size while the
+    // encoder processed references at its resolution budget.
     const d = DECL.defaults ?? {} as Record<string, unknown>;
-    assert.equal(d.width, 1024, "width defaults to 1024 (the lane's own truth, declared where the cascade reads it)");
-    assert.equal(d.height, 1024, "height defaults to 1024");
+    assert.equal(d.width, undefined, "width has no default — the lane takes no stated size");
+    assert.equal(d.height, undefined, "height has no default — the lane takes no stated size");
+    assert.ok(!(DECL.params ?? []).includes("width"), "width is off the surface");
+    assert.ok(!(DECL.params ?? []).includes("height"), "height is off the surface");
+    assert.ok((DECL.params ?? []).includes("match_input_resolution"), "the match toggle stays admitted — the declared no-op, draft compatibility");
+    // THE SOLVER SPAN (the latent law's sibling, 2026-11-08): no
+    // stated-size domain exists on this lane, but steps keeps the
+    // edit narrowing's [1,50] — the write door judges a live domain,
+    // never an empty bounds map. A regression that re-adds a
+    // width/height domain re-opens the drift class.
+    assert.deepEqual(DECL.bounds, { steps: { min: 1, max: 50 } }, "bounds carries ONLY the solver span");
   });
 
-  it("provisions the shared weights: encoder + vae from the one 2.1 repo", () => {
+  it("provisions the shared weights: encoder + vae from the one 2.1 repo, the lora from its author's", () => {
     const provs = DECL.provisions ?? [];
     // 2026-10-12 ghost-debt: 2 -> 3, the bf16 lane's TE joined the
-    // table (the int8 default + the bf16 tier both downloadable)
-    assert.equal(provs.length, 3);
-    for (const p of provs) {
+    // table. 2026-11-08: 3 -> 4, the Consistency LoRA (the drift-lock
+    // recipe's file) — its repo is the AUTHOR's, not Comfy-Org's.
+    assert.equal(provs.length, 4);
+    for (const p of provs.slice(0, 3)) {
       assert.ok(p.url.startsWith("https://huggingface.co/Comfy-Org/Qwen-Image-2.1/"));
       assert.match(p.sha256 ?? "", /^[0-9a-f]{64}$/);
     }
+    const lora = provs[3]!;
+    assert.ok(lora.url.startsWith("https://huggingface.co/ausboss/Qwen-Image-2.1-Consistency-LoRA/"));
+    assert.equal(lora.folder, "loras/qwen-img-edit-21", "the lora lands in the lane's own loras subfolder");
   });
 
   it("boards the official background-removal one-click: the template's canned prompt VERBATIM, selection-only (the scoping law)", () => {
@@ -84,6 +99,7 @@ const PROVISION_PINS: ReadonlyArray<
   ["qwen3vl_8b_bf16.safetensors", "68bdc82bc1b66851162ae656225e7e2068166b603db19bd5d5a3b90eb12669a9", "https://huggingface.co/Comfy-Org/Qwen-Image-2.1/resolve/main/text_encoders/qwen3vl_8b_bf16.safetensors", 17534334616],
   ["qwen3vl_8b_int8_convrot.safetensors", "8bfd0f6e12abf2d2d697ecc888e5e90b0d6741d6708f05799f53afa560452e8f", "https://huggingface.co/Comfy-Org/Qwen-Image-2.1/resolve/main/text_encoders/qwen3vl_8b_int8_convrot.safetensors", 9350798360],
   ["qwen_image_2.1_vae_bf16.safetensors", "bb21f7473051e1ac368515dd3f2e15cd44d7a11748ee8823e1ddca3e4876b7c9", "https://huggingface.co/Comfy-Org/Qwen-Image-2.1/resolve/main/vae/qwen_image_2.1_vae_bf16.safetensors", 675509688],
+  ["qwen-image-2.1-consistency.safetensors", "4f44ada1be2189cc23b3d010f9603543403f48454e2f76842a3d30109b20bd63", "https://huggingface.co/ausboss/Qwen-Image-2.1-Consistency-LoRA/resolve/main/qwen-image-2.1-consistency.safetensors", 159436496],
 ];
 
 describe("the declared provisions are pinned verbatim", () => {

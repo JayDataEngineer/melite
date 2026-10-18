@@ -409,15 +409,23 @@ describe("models against cards (the cross-validation, resurrected)", () => {
     // family declares it — the starving array above stayed empty).
     assert.equal(walked, 467,
       `the census walked the estate's fields (${String(walked)} — a re-zoned or re-typed field set MOVES this number; growth is argued here, loss means the census emptied an arm)`);
-    assert.equal(judged, 8,
+    // judged 8 -> 6 (2026-11-08, the latent law): the image-edit
+    // card's width/height leave the params zone (hidden compatibility
+    // keys — the alias precedent) as the edit lanes retire the stated
+    // size, so the numeric judge sees two fewer params-zone numbers.
+    assert.equal(judged, 6,
       `the census JUDGED the estate's numeric params fields (${String(judged)} of ${String(walked)} walked — re-typing them out of the judge MOVES this number down; a new judged knob moves it up and is argued here)`);
-    // exact: the 2 skips are qwen-img-edit-2511's declared
+    // exact: the skips were qwen-img-edit-2511's declared
     // resolution rows (width/height are not its params — it
-    // declares its own), the surface-successor precedent. GROWTH
-    // means a family emptied its params surface, and every skip is
-    // a knob the starving law no longer judges.
-    assert.equal(surfaceSkips, 2,
-      `surface-successor skips are 2 today — qwen-img-edit-2511's width/height (saw ${String(surfaceSkips)}: growth means a family emptied its params surface, and every skip is a knob the starving law no longer judges)`);
+    // declares its own), the surface-successor precedent.
+    // 2 -> 0 (2026-11-08, the latent law): the card's width/height
+    // left the params zone entirely (hidden compatibility keys —
+    // the alias precedent), so the pair exits at the zone filter
+    // upstream of the family loop and the skip class empties.
+    // GROWTH means a family emptied its params surface, and every
+    // skip is a knob the starving law no longer judges.
+    assert.equal(surfaceSkips, 0,
+      `surface-successor skips are 0 today — the latent law moved the retired pair out of the params zone (saw ${String(surfaceSkips)}: growth means a family emptied its params surface, and every skip is a knob the starving law no longer judges)`);
     assert.deepEqual(handWritten, HAND_WRITTEN_CARRIERS,
       `the hand-written-carrier exemption is pinned (seen ${handWritten.join(", ") || "—"} vs the named ${HAND_WRITTEN_CARRIERS.join(", ") || "—"} — a card that rewrites itself out of the census must be argued in this list)`);
   });
@@ -722,7 +730,10 @@ describe("models against cards (the cross-validation, resurrected)", () => {
     // provisions the shared split files — the qwen3.5_9b tokenizer +
     // the flux2 vae (byte-identical to flux-klein's row: same digest,
     // one download serves both lanes).
-    const PROVISION_ROW_COUNT = 71;
+    // 71 -> 72 (2026-11-08, the drift lock): qwen-img-edit-21's
+    // consistency LoRA joins (the AusBoss row, sha256 + size pinned
+    // in the DECL) — the Δ4 drift-lock recipe's own download.
+    const PROVISION_ROW_COUNT = 72;
     const declarers: string[] = [];
     let judged = 0;
     for (const id of registryIds()) {
@@ -1408,14 +1419,17 @@ describe("THE BOUNDS-SANITY WALL (every declared numeric row is real, surfaced, 
     }
     assert.deepEqual(offenders, [], offenders.join("\n"));
     // gap b (the audit, 2026-09-28): floors became the EXACT
-    // census — qwen-img-edit-21 is the estate's SOLE declarer: one
-    // family layer, 2 rows (width/height), judged once per ROUTE
-    // id the loop walks (3 ids: the family + its two flat routes —
-    // the same decl seen three times, which is why the count is 3).
-    // Its death is no longer a green pass.
-    assert.equal(judgedFamilies, 6,
-      `the bounds census is EXACT: qwen-img-edit-21's row judged over its 6 ids (saw ${String(judgedFamilies)} — the sole declarer dying must not pass green)`);
-    assert.equal(judged, 12,
+    // census. 2026-11-08, THE LATENT LAW: the resolution bounds
+    // retired — no edit lane takes a stated size, so the size rows
+    // left both DECLs. The SOLVER span returned the same day
+    // (steps [1,50] on both edit lanes — KSampler steps beyond the
+    // edit narrowing is the washed-out-edit burn), so the census
+    // judges 9 ids: qwen-img-edit-21 (family + 2 flat routes) and
+    // qwen-img-edit-2511 (family + 5 variants), one row each. A
+    // row appearing or leaving moves the numbers and argues here.
+    assert.equal(judgedFamilies, 9,
+      `the bounds census is EXACT: both edit lanes' solver span over their 9 route ids (saw ${String(judgedFamilies)})`);
+    assert.equal(judged, 9,
       `the bounds row census is exact (saw ${String(judged)} — a schema change that empties a bounds table is a deliberate edit, never silent)`);
   });
 
@@ -1423,18 +1437,20 @@ describe("THE BOUNDS-SANITY WALL (every declared numeric row is real, surfaced, 
     // the census above pins the DATA; this arm pins the WIRING —
     // the consumers (laneBoundsOf + judgeLaneBounds, the registry's
     // judge at cardsRegistry.ts) were referenced by no wall. The
-    // sole declarer's live rows are driven through the REAL judge:
-    // an in-span value passes, each endpoint's violation refuses
-    // IN THE FIELD'S VOICE, and the variant layer TIGHTENS the
-    // family row (per-endpoint merge — the nearer layer wins).
+    // edit lanes' live solver rows are driven through the REAL
+    // judge: an in-span value passes, each endpoint's violation
+    // refuses IN THE FIELD'S VOICE; the MERGE consumer composes a
+    // variant layer over the family row per-endpoint (the nearer
+    // layer wins — no estate variant carries bounds today, so the
+    // merge drives over a synthetic layer shaped like a DECL
+    // variant).
     const { judgeLaneBounds, laneBoundsOf } = await import(
       "../../../../packages/web-kit/contracts/src/laneRelations.ts"
     );
     const decl = registryModel("qwen-img-edit-21") as {
       bounds?: Record<string, { min?: number; max?: number }>;
-      variants?: { id: string; bounds?: Record<string, { min?: number; max?: number }> }[];
     };
-    assert.ok(decl.bounds !== undefined, "qwen-img-edit-21 lost its family bounds — the sole declarer (see the census above)");
+    assert.ok(decl.bounds !== undefined, "qwen-img-edit-21 lost its solver span — the write door's domain judge starves (see the census above)");
     const field = Object.keys(decl.bounds)[0]!;
     const row = decl.bounds[field]!;
     // the full judge contract on the family row
@@ -1452,16 +1468,19 @@ describe("THE BOUNDS-SANITY WALL (every declared numeric row is real, surfaced, 
     // the MERGE consumer: a variant with bounds composes over the
     // family row per-endpoint (a variant ceiling tightens without
     // dropping the family floor)
-    const variantWithBounds = (decl.variants ?? []).find((v) => v.bounds !== undefined);
-    if (variantWithBounds !== undefined) {
-      const merged = laneBoundsOf(decl.bounds ?? {}, variantWithBounds.bounds ?? {});
-      assert.ok(merged !== null, "the merge consumer returned null over two live rows");
-      for (const [name, vrow] of Object.entries(variantWithBounds.bounds ?? {})) {
-        const m = merged![name]!;
-        assert.equal(m.min ?? vrow.min ?? decl.bounds?.[name]?.min, m.min,
-          `variant ${variantWithBounds.id}/${name}: the merged floor is the per-endpoint law (variant states, family holds)`);
-      }
-    }
+    // the MERGE consumer: a variant layer composes over the family
+    // row per-endpoint (a variant ceiling tightens without dropping
+    // the family floor). No estate variant carries bounds today, so
+    // the merge drives over a synthetic DECL-shaped layer — the
+    // consumer is a pure function of its two rows.
+    const variantLayer = { id: "tightened", bounds: { [field]: { min: 4, max: 20 } } };
+    const merged = laneBoundsOf(decl.bounds ?? {}, variantLayer.bounds);
+    assert.ok(merged !== null, "the merge consumer returned null over two live rows");
+    const m = merged![field]!;
+    assert.equal(m.min, 4, `variant ${variantLayer.id}/${field}: the merged floor is the variant's (the nearer layer wins)`);
+    assert.equal(m.max, 20, `variant ${variantLayer.id}/${field}: the merged ceiling is the variant's (the nearer layer wins)`);
+    const untouched = laneBoundsOf(decl.bounds ?? {}, {});
+    assert.deepEqual(untouched, decl.bounds ?? {}, "a bounds-less variant leaves the family row untouched");
   });
 });
 
@@ -1588,7 +1607,12 @@ describe("THE TWO-HOMES BOUNDS-SYNC WALL (card schema == action ParamSpec, every
     // (prompt, negative_prompt, width, height, seed, steps, cfg,
     // sampler, scheduler) join on the one new address; offenders
     // stay empty.
-    assert.equal(pairs, 664, "the shared-name pair census changed — update this pin deliberately");
+    // 664 -> 660 (2026-11-08, the latent law): the size pair leaves
+    // BOTH edit actions' ParamSpecs (neither lane takes a stated
+    // size) — four pairs depart the image-edit card's join; the card
+    // keeps the keys as hidden legacy-draft compatibility, so the
+    // pairs die with the action side. Offenders stay empty.
+    assert.equal(pairs, 660, "the shared-name pair census changed — update this pin deliberately");
     assert.deepEqual(offenders, [], `two-homes drift (card schema vs action ParamSpec):\n${offenders.join("\n")}`);
   });
 });

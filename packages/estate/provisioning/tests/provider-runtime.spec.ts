@@ -633,6 +633,57 @@ describe("ManagerPort provider", () => {
     expect(result.detail).toContain("abc1234def5678");
   });
 
+  // THE COLD-START TIER'S FIND (2026-11-08): the pinned Manager serves
+  // /customnode/installed as a MAP keyed by installed directory name —
+  // an array-only read returned "no landed commit" for every git-door
+  // install and refused the pin as unverifiable on a cold engine. Both
+  // wire shapes must verify, and the newline Manager appends to `ver`
+  // must not break the sha comparison.
+  test("a map-shaped installed answer verifies the pin the same as an array", async () => {
+    const client = new ComfyUiManagerHttpClient({
+      baseUrl: "http://127.0.0.1:8188",
+      fetch: async (input: string | URL | Request): Promise<Response> => {
+        const url = String(input);
+        if (url.endsWith("/customnode/installed")) {
+          return json({
+            "example-pack": { aux_id: "https://github.com/example/pack", ver: "abc1234def5678" },
+            "other-pack": { aux_id: "https://github.com/example/other", ver: "8.28.3" },
+          });
+        }
+        return json({ ok: true });
+      },
+    });
+    const provider = new ComfyUiManagerProvider(client);
+    const result = await provider.install({
+      id: "example-pack",
+      url: "https://github.com/example/pack.git",
+      ref: "abc1234",
+    });
+    expect(result.installed).toBe(true);
+    expect(result.detail).toContain("abc1234def5678");
+  });
+
+  test("a ver with Manager's trailing newline still verifies the pin", async () => {
+    const client = new ComfyUiManagerHttpClient({
+      baseUrl: "http://127.0.0.1:8188",
+      fetch: async (input: string | URL | Request): Promise<Response> => {
+        const url = String(input);
+        if (url.endsWith("/customnode/installed")) {
+          return json([{ aux_id: "https://github.com/example/pack", ver: "abc1234def5678\n" }]);
+        }
+        return json({ ok: true });
+      },
+    });
+    const provider = new ComfyUiManagerProvider(client);
+    const result = await provider.install({
+      id: "example-pack",
+      url: "https://github.com/example/pack.git",
+      ref: "abc1234",
+    });
+    expect(result.installed).toBe(true);
+    expect(result.detail).toContain("abc1234def5678");
+  });
+
   test("a landed commit that is not the declared pin refuses head-mismatch", async () => {
     const client = new ComfyUiManagerHttpClient({
       baseUrl: "http://127.0.0.1:8188",

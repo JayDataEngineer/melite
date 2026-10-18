@@ -120,6 +120,17 @@ const CENSUS_SKIP_ROSTER: readonly string[] = [
     "pixal3d-bf16", "pixal3d-int8",
     "trellis2-native-bf16", "trellis2-native-int8",
   ].flatMap((fam) => ["1024", "fast", "quality", "standard"].map((lane) => fam + "/" + lane)),
+  // qwen-img-edit-2511 (the soft-retire, 2026-11-08): all five
+  // variants carry hide_from_dropdown, so every lane's selection
+  // throws and no 2511 lane composes — same never-compose posture
+  // as the 3D families above. Un-retiring a variant (re-offering a
+  // lane) reds here until the pin shrinks.
+  ...["qwen-img-edit-2511-int8", "qwen-img-edit-2511-lightning4"].flatMap((fam) =>
+    ["default", "standard", "strong-identity", "upstream-solvers"].map((lane) => fam + "/" + lane),
+  ),
+  ...["default", "lightning", "standard", "strong-identity", "upstream-solvers"].map(
+    (lane) => "qwen-img-edit-2511/" + lane,
+  ),
 ];
 
 const LARGE = "qwen3-tts-voicedesign";

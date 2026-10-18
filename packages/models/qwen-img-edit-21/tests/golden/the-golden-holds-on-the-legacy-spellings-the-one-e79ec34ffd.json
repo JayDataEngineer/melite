@@ -55,7 +55,7 @@
       ],
       "prompt": "make the hallway blue",
       "negative_prompt": "blur",
-      "resolution": 1024,
+      "resolution": 0,
       "images.image_1": [
         "LoadImage.0",
         0
@@ -64,14 +64,6 @@
         "LoadImage.1",
         0
       ]
-    }
-  },
-  "EmptyLatentImage.0": {
-    "class_type": "EmptyLatentImage",
-    "inputs": {
-      "batch_size": 1,
-      "width": 1280,
-      "height": 768
     }
   },
   "KSampler.0": {
@@ -84,8 +76,8 @@
       "scheduler": "simple",
       "denoise": 1,
       "latent_image": [
-        "EmptyLatentImage.0",
-        0
+        "TextEncodeQwenImage21.0",
+        2
       ],
       "model": [
         "QwenImage21Cache.0",

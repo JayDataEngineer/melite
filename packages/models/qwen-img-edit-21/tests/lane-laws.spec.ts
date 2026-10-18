@@ -46,7 +46,7 @@ const FACTS_2511 = {
 } as unknown as ModelFacts;
 
 const PARAMS_T2I = {
-  prompt: "a quiet hallway", negative_prompt: "blur", width: 1280, height: 768,
+  prompt: "a quiet hallway", negative_prompt: "blur",
   seed: 7, steps: 25, cfg: 1, sampler: "euler", scheduler: "simple",
 };
 
@@ -54,10 +54,10 @@ const graphOf = (g: GraphBuilder): Record<string, { class_type: string; inputs: 
   g.toJSON() as never;
 
 describe("the 2.1 edit lane (imageEdit on a text_encode_node=TextEncodeQwenImage21 model)", () => {
-  it("emits the cached-reference graph: QwenImage21Cache around the SAME unet, anchors through the encoder's image_N slots, target-resolution EmptyLatentImage — and NEVER the 2511 VAEEncode-of-source", () => {
+  it("emits the cached-reference graph: QwenImage21Cache around the SAME unet, anchors through the encoder's image_N slots, KSampler on the ENCODER'S OWN latent — and NEVER the 2511 VAEEncode-of-source", () => {
     const g = new GraphBuilder({});
     instantiateAction(edit,
-      { prompt: "make it dusk", negative_prompt: "", image1: "in.png", image2: "ref.png", image3: "", width: 1024, height: 1024, seed: 3, steps: 25, cfg: 1, sampler: "euler", scheduler: "simple" },
+      { prompt: "make it dusk", negative_prompt: "", image1: "in.png", image2: "ref.png", image3: "", seed: 3, steps: 25, cfg: 1, sampler: "euler", scheduler: "simple" },
       FACTS_21, g, "probeedit21",
     );
     const nodes: Array<{ class_type: string; inputs: Record<string, unknown> }> = Object.values(graphOf(g));
@@ -79,9 +79,13 @@ describe("the 2.1 edit lane (imageEdit on a text_encode_node=TextEncodeQwenImage
     assert.ok(enc.inputs['images.image_2'], "the stated second slot rides image_2");
     assert.equal(enc.inputs['images.image_3'], undefined, "a blank third slot contributes NO input at all (stable)");
     assert.ok(enc.inputs.vae, "the encoder's optional vae rides (reference latents splice)");
-    // target-resolution latent, never VAEEncode of the source
+    // the encoder's own latent, never VAEEncode of the source and
+    // never a stated-size EmptyLatentImage (the latent law)
     assert.equal(byClass("VAEEncode").length, 0, "the 2.1 edit NEVER VAEEncodes the source (the 2511 lane's move)");
-    assert.equal(byClass("EmptyLatentImage")[0].inputs.width, 1024);
+    assert.equal(byClass("EmptyLatentImage").length, 0, "no stated-size latent — KSampler rides the encoder's third output");
+    assert.equal((sampler.inputs.latent_image as string[])[0],
+      Object.keys(graphOf(g)).find((id) => graphOf(g)[id]?.class_type === "TextEncodeQwenImage21"),
+      "the latent wire is the encoder's");
     const save = byClass("SaveImage")[0];
     assert.equal(save.inputs.filename_prefix, "probeedit21/edit");
   });
@@ -92,7 +96,7 @@ describe("the 2.1 edit lane — full autogrow coverage (both optional slots stat
   it("image2 AND image3 stated: both ride the encoder's image_2/image_3 slots", () => {
     const g = new GraphBuilder({});
     instantiateAction(edit,
-      { prompt: "swap the sky", negative_prompt: "artifacts", image1: "in.png", image2: "ref2.png", image3: "ref3.png", width: 768, height: 1280, seed: 9, steps: 25, cfg: 1, sampler: "euler", scheduler: "simple" },
+      { prompt: "swap the sky", negative_prompt: "artifacts", image1: "in.png", image2: "ref2.png", image3: "ref3.png", seed: 9, steps: 25, cfg: 1, sampler: "euler", scheduler: "simple" },
       FACTS_21, g, "probe21both",
     );
     const graph = graphOf(g) as Record<string, { class_type: string; inputs: Record<string, unknown> }>;
@@ -102,15 +106,15 @@ describe("the 2.1 edit lane — full autogrow coverage (both optional slots stat
     assert.ok(enc!.inputs['images.image_2'], "second slot on image_2");
     assert.ok(enc!.inputs['images.image_3'], "third slot on image_3");
     assert.equal(enc!.inputs.negative_prompt, "artifacts");
-    const latent = Object.values(graph).find((n) => n.class_type === "EmptyLatentImage");
-    assert.equal(latent!.inputs.width, 768);
-    assert.equal(latent!.inputs.height, 1280);
+    const sampler = Object.values(graph).find((n) => n.class_type === "KSampler");
+    assert.match(String(sampler!.inputs?.latent_image), /^TextEncodeQwenImage21/,
+      "the latent is the encoder's own — stated sizes refuse (the never-lie arms), the clean compose never carries one");
   });
 });
 
 
 describe("the 2.1 edit lane — the bare-doc arm (every ?? fallback walked)", () => {
-  it("edit without width/height/negative_prompt: target latent falls to 1024 square, negative empty", () => {
+  it("edit with no negative_prompt: the encoder's latent samples, negative empty", () => {
     const g = new GraphBuilder({});
     instantiateAction(edit,
       { prompt: "bare edit", image1: "in.png", seed: 4, steps: 25, cfg: 1, sampler: "euler", scheduler: "simple" },
@@ -119,9 +123,9 @@ describe("the 2.1 edit lane — the bare-doc arm (every ?? fallback walked)", ()
     const graph = graphOf(g) as Record<string, { class_type: string; inputs: Record<string, unknown> }>;
     const enc = Object.values(graph).find((n) => n.class_type === "TextEncodeQwenImage21");
     assert.equal(enc!.inputs.negative_prompt, "");
-    const latent = Object.values(graph).find((n) => n.class_type === "EmptyLatentImage");
-    assert.equal(latent!.inputs.width, 1024);
-    assert.equal(latent!.inputs.height, 1024);
+    assert.equal(enc!.inputs.resolution, 0, "the reference budget is 0 — native reference size");
+    const sampler = Object.values(graph).find((n) => n.class_type === "KSampler");
+    assert.match(String(sampler!.inputs?.latent_image), /^TextEncodeQwenImage21/, "the encoder's own latent rides");
   });
 });
 
@@ -129,7 +133,7 @@ describe("the 2.1 edit lane — unstated solver arms (the || lane defaults)", ()
   it("sampler/scheduler absent: the lane defaults euler/simple ride (never empty strings)", () => {
     const g = new GraphBuilder({});
     instantiateAction(edit,
-      { prompt: "no solver stated", image1: "in.png", width: 640, height: 640, seed: 5, steps: 25, cfg: 1 },
+      { prompt: "no solver stated", image1: "in.png", seed: 5, steps: 25, cfg: 1 },
       FACTS_21, g, "probe21nosolver",
     );
     const graph = graphOf(g) as Record<string, { class_type: string; inputs: Record<string, unknown> }>;
@@ -141,7 +145,7 @@ describe("the 2.1 edit lane — unstated solver arms (the || lane defaults)", ()
 
 
 describe("the 2.1 edit lane — the reference stack (upstream: the node opens image inputs as filled, up to 16)", () => {
-  const SOLVER = { width: 1024, height: 1024, seed: 3, steps: 25, cfg: 1, sampler: "euler", scheduler: "simple" };
+  const SOLVER = { seed: 3, steps: 25, cfg: 1, sampler: "euler", scheduler: "simple" };
   const encOf = (g: GraphBuilder) => {
     const graph = graphOf(g) as Record<string, { class_type: string; inputs: Record<string, unknown> }>;
     const enc = Object.values(graph).find((n) => n.class_type === "TextEncodeQwenImage21");
@@ -271,7 +275,7 @@ describe("the 2.1 edit lane — the reference stack (upstream: the node opens im
 
 
 describe("the 2.1 edit lane — the lanpaint region never lies", () => {
-  const SOLVER21 = { width: 1024, height: 1024, seed: 3, steps: 25, cfg: 1, sampler: "euler", scheduler: "simple" };
+  const SOLVER21 = { seed: 3, steps: 25, cfg: 1, sampler: "euler", scheduler: "simple" };
   const SOLVER2511 = { seed: 3, steps: 20, cfg: 2.5, sampler: "euler", scheduler: "simple" };
   it("full_frame and auto share the 2.1 whole-image graph", () => {
     const auto = new GraphBuilder({});
@@ -363,14 +367,24 @@ describe("the 2.1 edit lane — the lanpaint region never lies", () => {
     assert.equal(byClass("VAEEncode").length, 0, "this lane never encodes the source");
     assert.equal(byClass("VAEDecode").length, 0, "no decode under an IMAGE output");
   });
-  it("width/height on a 2.1 crop_stitch run refuse field-named (the detailer owns the crop size — a stated value would wire to nothing)", () => {
+  it("width/height stated on ANY 2.1 run refuse at the firing gate field-named (no lane takes a stated size — the latent law)", () => {
     assert.throws(
       () => refuseImageEditFiring(
         { prompt: "x", image1: "in.png", seed: 3, steps: 25, cfg: 1, sampler: "euler", scheduler: "simple", mask_mode: "crop_stitch", mask_detector: "face", width: 1024, height: 1024 },
         FACTS_21,
       ),
       (err: unknown): boolean =>
-        err instanceof Error && err.message.includes("'width' fires") && err.message.includes("clear them"),
+        err instanceof Error && err.message.includes("'width' fires") && err.message.includes("no edit lane takes a stated size"),
+    );
+    // the plain arm refuses the same way — the gate's law is
+    // mode-universal, not a detailer-scoped special case
+    assert.throws(
+      () => refuseImageEditFiring(
+        { prompt: "x", image1: "in.png", seed: 3, steps: 25, cfg: 1, sampler: "euler", scheduler: "simple", width: 1024, height: 1024 },
+        FACTS_21,
+      ),
+      (err: unknown): boolean =>
+        err instanceof Error && err.message.includes("'width' fires") && err.message.includes("no edit lane takes a stated size"),
     );
   });
 });

@@ -37,8 +37,7 @@ describe("the qwen-img-edit-2511 model plugin (the whole model, one package)", (
     assert.equal(DECL.defaults!.cfg, 2.5, "the standard recipe's guidance");
   });
 
-  it("the lightning variant swaps BOTH the recipe and the unet — never one without the other", () => {
-    const lightning = DECL.variants.find((v) => v.id === "lightning")!;
+  it("the lightning variant swaps BOTH the recipe and the unet — never one without the other", () => {    const lightning = DECL.variants.find((v) => v.id === "lightning")!;
     assert.ok(lightning, "the lightning variant exists");
     assert.deepEqual(lightning.resolver_defaults, { steps: 4, cfg: 1 });
     assert.equal(
@@ -51,6 +50,27 @@ describe("the qwen-img-edit-2511 model plugin (the whole model, one package)", (
     // UNETLoader, which reads diffusion_models (checkpoints was the
     // old, unloadable dest)
     assert.equal(lightning.cells[0]!.artifact!.dest_sub, "diffusion_models");
+  });
+
+  // THE SOFT-RETIRE (the survivor arc, 2026-11-08): the 2.1 lane won
+  // — every 2511 variant rides hidden from the dropdown. A variant
+  // that drops the flag is re-offered silently; this arm reds on any
+  // offered variant. The rows stay DECLARED (old drafts keep their
+  // addresses; the estate-queue door refuses hidden addresses loud,
+  // never a silent neighbor cell).
+  it("every variant is soft-retired — hidden from the dropdown, still declared", () => {
+    assert.deepEqual(
+      DECL.variants.map((v) => v.id),
+      ["lightning", "standard", "strong-identity", "upstream-solvers", "default"],
+      "the five retired variants, no more, no fewer",
+    );
+    for (const v of DECL.variants) {
+      assert.equal(
+        (v as { hide_from_dropdown?: boolean }).hide_from_dropdown,
+        true,
+        `variant ${v.id} is re-offered — the soft-retire reds`,
+      );
+    }
   });
 });
 

@@ -709,7 +709,9 @@ describe("THE PARAM-BOUNDS PARITY WALL — the card's schema and the action's ro
 
   it("the edit narrowing and the t2i defaults are the bounds the walls pin (the values, not a range)", () => {
     const bounds = (b: DiffusionParamBounds): unknown => b;
-    assert.deepEqual(bounds(EDIT_DIFFUSION_BOUNDS), { steps: [1, 50], cfg: [0.1, 10], size: null });
+    // the latent law (2026-11-08): the edit narrowing RETIRES the
+    // size pair outright — neither edit lane takes a stated size
+    assert.deepEqual(bounds(EDIT_DIFFUSION_BOUNDS), { steps: [1, 50], cfg: [0.1, 10], size: false });
     const stepRow = diffusionParamRows().find((r) => r.name === "steps");
     const cfgRow = diffusionParamRows().find((r) => r.name === "cfg");
     assert.deepEqual(stepRow?.bounds, [1, 100]);
@@ -717,6 +719,6 @@ describe("THE PARAM-BOUNDS PARITY WALL — the card's schema and the action's ro
     const widthRow = diffusionParamRows().find((r) => r.name === "width");
     assert.deepEqual(widthRow?.bounds, [256, 2048]);
     const editWidth = diffusionParamRows(EDIT_DIFFUSION_BOUNDS).find((r) => r.name === "width");
-    assert.equal(editWidth?.bounds, undefined, "the edit families declare width/height UNBOUNDED (size: null)");
+    assert.equal(editWidth, undefined, "the edit families RETIRE the size pair (size: false — the latent law)");
   });
 });

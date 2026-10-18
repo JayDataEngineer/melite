@@ -49,7 +49,7 @@
       ],
       "prompt": "make the hallway blue",
       "negative_prompt": "blur",
-      "resolution": 1024,
+      "resolution": 0,
       "images.image_1": [
         "LoadImage.0",
         0

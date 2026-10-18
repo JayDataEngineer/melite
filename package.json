@@ -63,6 +63,7 @@
     "test:typecheck": "env -u MELITE_MCP_ENGINES -u MELITE_AGENT_ROUTE node node_modules/vitest/dist/cli.js run --config vitest.config.ts --project typecheck-lane",
     "test:coverage": "env -u MELITE_MCP_ENGINES -u MELITE_AGENT_ROUTE MELITE_COVERAGE_SHARED=1 node scripts/run-walker-safe.mjs vitest run --coverage && node scripts/coverage-rows-tripwire.mjs",
     "test:e2e": "vitest run --config vitest.e2e.config.ts",
+    "test:coldstart": "env -u MELITE_MCP_ENGINES -u MELITE_AGENT_ROUTE vitest run --config vitest.coldstart.config.ts",
     "test:e2e:studio": "bash scripts/e2e-studio-lane.sh",
     "test:e2e:gpu": "bash scripts/e2e-gpu-lane.sh",
     "test:expected": "env -u MELITE_MCP_ENGINES -u MELITE_AGENT_ROUTE vitest run --config vitest.expected.config.ts",

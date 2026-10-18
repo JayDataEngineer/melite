@@ -34,7 +34,7 @@ describe("the 2511 edit lane — the never-lie guard and the lanpaint arm", () =
   // the lane's own solver spelling (the 2.1 wall's constant, restored at
   // the lane's new home so the case states a complete doc)
   const SOLVER2511 = { seed: 3, steps: 20, cfg: 2.5, sampler: "euler", scheduler: "simple" };
-  it("THE NEVER-LIE GUARD: width/height stated on the 2511 lane refuses field-named (they wire to nothing there)", () => {
+  it("THE NEVER-LIE GUARD: width/height stated on the 2511 lane refuses field-named (no lane takes a stated size — the latent law)", () => {
     const g = new GraphBuilder({});
     assert.throws(
       () => instantiateAction(edit,
@@ -42,7 +42,7 @@ describe("the 2511 edit lane — the never-lie guard and the lanpaint arm", () =
         FACTS, g, "probe-never-lie",
       ),
       (err: unknown): boolean =>
-        err instanceof Error && err.message.includes("'width'/'height' fire on the image-edit card only on the Qwen Image 2.1 lane"),
+        err instanceof Error && err.message.includes("no edit lane takes a stated size"),
     );
   });
   it("the same mask on the 2511 lane still fires the lanpaint arm (the refusal is lane-scoped, never global)", () => {

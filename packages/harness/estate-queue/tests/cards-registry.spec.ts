@@ -429,7 +429,7 @@ describe("resolveStageParams (the resolved-serve degrade)", () => {
     const mid = Object.keys(facts)[0] as string;
     expect(svc.resolveStageParams({ model: mid })).not.toBeNull();
   });
-  it("THE EMPTY-FORM BURN (2026-10-09): a qwen-img-edit-21 stage SERVES width/height 1024 — the form's servedBase carries them, never empty fields", () => {
+  it("THE EMPTY-FORM BURN, recut (latent law 2026-11-08): a qwen-img-edit-21 stage serves NO geometry — never an empty field, never a ghost 1024", () => {
     // The operator's catch: the image-edit card's Width and Height
     // rendered EMPTY (image-gen showed 1024) because the 2.1 DECL
     // declared no resolution and only the LANE knew `?? 1024`. The
@@ -439,12 +439,19 @@ describe("resolveStageParams (the resolved-serve degrade)", () => {
     // DECL row, lose this wall, lose the build.
     const resolved = svc.resolveStageParams({ model: "qwen-img-edit-21", prompt: "brighten the anchor" });
     expect(resolved).not.toBeNull();
-    expect((resolved as Record<string, unknown>).width).toBe(1024);
-    expect((resolved as Record<string, unknown>).height).toBe(1024);
-    // the user's explicit value never yields to the stamp
-    const own = svc.resolveStageParams({ model: "qwen-img-edit-21", prompt: "x", width: 768, height: 1024 }) as Record<string, unknown>;
-    expect(own.width).toBe(768);
-    expect(own.height).toBe(1024);
+    // THE EMPTY-FORM BURN, recut by the latent law (2026-11-08): the
+    // original burn was EMPTY fields (no DECL resolution, only the
+    // lane knew `?? 1024`). The latent law retired the axes outright
+    // (both lanes edit at the source's own frame; width/height ride
+    // hidden faces), so the honest serve is NO geometry keys at all —
+    // an empty field AND a ghost stamped 1024 are both lies now; the
+    // form renders the match toggle's note instead. This pin is the
+    // resurrect wall: a stamped width/height here reds it.
+    expect(resolved as Record<string, unknown>).not.toHaveProperty("width");
+    expect(resolved as Record<string, unknown>).not.toHaveProperty("height");
+    // a LEGAL member still rides the serve untouched (the degrade is
+    // geometry-only — nothing else dropped)
+    expect((resolved as Record<string, unknown>).prompt).toBe("brighten the anchor");
   });
 });
 

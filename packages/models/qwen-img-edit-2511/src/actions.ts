@@ -131,13 +131,14 @@ export const edit: ComfyActionSpec<EditParams, EditFacts> = {
     const maskPath = ((merged.input_mask ?? "") as string).trim();
     const mode = (merged.mask_mode ?? "auto") as string;
     const cropStitch = (mode === "full_frame" ? "auto" : mode) === "crop_stitch";
-    // THE NEVER-LIE GUARD (the firing law): width/height are the
-    // 2.1 lane's target-resolution knobs — stated on the 2511 lane
-    // they would wire to nothing (the 2511 edit rides the source's
-    // own resolution through VAEEncode), and a stated knob that
-    // does nothing is a lying stack. Refuse field-named.
+    // THE NEVER-LIE GUARD (the firing law + the latent law,
+    // 2026-11-08): no edit lane takes a stated size anymore — this
+    // lane rides the source's own resolution through VAEEncode, and
+    // the 2.1 lane samples the encoder's own anchor-sized latent. A
+    // stated knob that does nothing is a lying stack. Refuse
+    // field-named, symmetric with the 2.1 lane's guard.
     if (p.width !== undefined || p.height !== undefined) {
-      throw new Error("'width'/'height' fire on the image-edit card only on the Qwen Image 2.1 lane (target-resolution edit) — the 2511 lane edits at the source's own resolution; clear them or switch the model lane");
+      throw new Error("'width'/'height' fire on the image-edit card but no edit lane takes a stated size (the latent law, 2026-11-08): the 2511 lane edits at the source's own resolution and the 2.1 lane samples the encoder's own anchor-sized latent — clear them and re-run");
     }
     // THE NODE-SHAPE ASSERT (not a second cap — a lying-DECL
     // guard): this lane builds the stock TextEncodeQwenImageEditPlus

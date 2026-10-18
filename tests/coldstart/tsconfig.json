@@ -1,0 +1,26 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "lib": ["ES2022"],
+    "strict": true,
+    "noEmit": true,
+    "skipLibCheck": true,
+    "types": ["node"],
+    "isolatedModules": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "baseUrl": ".",
+    "paths": {
+      "@deepseek-ai/cordis": ["../../packages/estate/drafts/node_modules/@deepseek-ai/cordis"],
+      "@melite/comfyui-card-kit/impact": ["../../packages/engines/comfyui-card-kit/src/impact.ts"],
+      "@melite/comfyui-card-kit/model-contract": ["../../packages/engines/comfyui-card-kit/src/model-contract.ts"],
+      "@melite/comfyui-cordis/provisioning-manifest": ["../../packages/engines/comfyui-cordis/scripts/provision-extensions-manifest.ts"],
+      "@melite/estate-provisioning": ["../../packages/estate/provisioning/src/index.ts"],
+      "@melite/models-qwen-img-edit-21": ["../../packages/models/qwen-img-edit-21/src/index.ts"]
+    }
+  },
+  "include": ["harness.ts", "*.spec.ts"]
+}

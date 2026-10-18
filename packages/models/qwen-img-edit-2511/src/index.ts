@@ -109,6 +109,13 @@ export const DECL: ModelDecl = {
       },
     ],
   },
+  // THE SOLVER SPAN (the latent law's sibling, 2026-11-08): no
+  // stated-size domain exists on this lane, but steps keeps the edit
+  // narrowing's [1,50] — the write door judges a live domain on both
+  // edit lanes, never one.
+  "bounds": {
+    "steps": { "min": 1, "max": 50 },
+  },
   // THE PROVISION TRUTH (2026-09-13, the silent-failure cure): the
   // family declared lane_inputs files but NO downloadable rows — the
   // manage rail could not name where the text encoder lives, and the
@@ -140,6 +147,10 @@ export const DECL: ModelDecl = {
       "group": "Variant",
       "route": "qwen-img-edit-2511-lightning4",
       "order": 0,
+      // SOFT-RETIRED (2026-11-08, the survivor arc): the 2.1 lane
+      // won — this variant is addressable (old drafts re-run) but no
+      // longer offered in the dropdown.
+      "hide_from_dropdown": true,
       // THE WEIGHTS SWAP (recipe↔weights law): this variant's
       // stamps ride its OWN unet, merged over the family's
       // lane_inputs by the variant rail.
@@ -174,6 +185,9 @@ export const DECL: ModelDecl = {
       "group": "Variant",
       "route": "qwen-img-edit-2511",
       "order": 1,
+      // SOFT-RETIRED (2026-11-08, the survivor arc): addressable,
+      // not offered — see lightning above.
+      "hide_from_dropdown": true,
       "resolver_defaults": {
         "steps": 20,
         "cfg": 2.5
@@ -202,6 +216,9 @@ export const DECL: ModelDecl = {
       "group": "Recipe",
       "wire_defaults": { "double_reference": true },
       "cells": [],
+      // SOFT-RETIRED (2026-11-08, the survivor arc): addressable,
+      // not offered — see lightning above.
+      "hide_from_dropdown": true,
     },
     {
       "id": "upstream-solvers",
@@ -210,6 +227,9 @@ export const DECL: ModelDecl = {
       "group": "Recipe",
       "wire_defaults": { "sampler": "euler", "scheduler": "simple" },
       "cells": [],
+      // SOFT-RETIRED (2026-11-08, the survivor arc): addressable,
+      // not offered — see lightning above.
+      "hide_from_dropdown": true,
     },
     {
       "id": "default",
@@ -217,6 +237,9 @@ export const DECL: ModelDecl = {
       "hint": "The family default — no extra stamps; a fresh card lands here.",
       "group": "Recipe",
       "cells": [],
+      // SOFT-RETIRED (2026-11-08, the survivor arc): addressable,
+      // not offered — see lightning above.
+      "hide_from_dropdown": true,
     }
   ],
   "variant_groups": [

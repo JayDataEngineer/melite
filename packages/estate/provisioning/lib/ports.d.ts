@@ -1,5 +1,5 @@
-import type { ActivateOptions, EnsureOptions, ExternalOptions, ProvisionOperation, ProvisionPlan, ProvisionResult, ProvisionState, ResourceRef, ResourceStatus } from "./contracts.js";
-import type { ArtifactInput, ArtifactInspection, ArtifactInspectionRequest, ArtifactWriterPort, VerifiedArtifactRequest, VerifiedArtifactResult } from "./artifact-writer.js";
+import type { ActivateOptions, EnsureOptions, ExternalOptions, ProvisionOperation, ProvisionPlan, ProvisionResult, ProvisionState, ResourceRef, ResourceStatus } from "./contracts.ts";
+import type { ArtifactInput, ArtifactInspection, ArtifactInspectionRequest, ArtifactWriterPort, VerifiedArtifactRequest, VerifiedArtifactResult } from "./artifact-writer.ts";
 export interface ArtifactResponse {
     readonly status: number;
     readonly body: ArtifactInput | null;
@@ -97,18 +97,18 @@ export type ProvisioningServiceDefinition = {
     plan(ref: ResourceRef): Promise<ProvisionPlan>;
     ensure(ref: ResourceRef, options?: EnsureOptions, signal?: AbortSignal): Promise<ProvisionResult>;
     activate(ref: ResourceRef, options?: ActivateOptions, signal?: AbortSignal): Promise<ProvisionResult>;
-    acquireExternal(request: import("./contracts.js").ExternalProvisionRequest, options?: ExternalOptions, signal?: AbortSignal): Promise<ProvisionResult>;
+    acquireExternal(request: import("./contracts.ts").ExternalProvisionRequest, options?: ExternalOptions, signal?: AbortSignal): Promise<ProvisionResult>;
     reconcile(ref?: ResourceRef, signal?: AbortSignal): Promise<ResourceStatus[]>;
     stateOf(ref: ResourceRef): ProvisionState;
     operationOf(ref: ResourceRef): ProvisionOperation | undefined;
     /** THE TRUST RE-VERIFY (optional so older fakes satisfy the type):
      *  re-stats a served operation's recorded model paths before the
      *  status merge trusts the row (audit I-S6). */
-    verifyOperation?(operation: import("./contracts.js").ProvisionOperation, signal?: AbortSignal): Promise<import("./contracts.js").ProvisionOperation>;
+    verifyOperation?(operation: import("./contracts.ts").ProvisionOperation, signal?: AbortSignal): Promise<import("./contracts.ts").ProvisionOperation>;
     isLocked(ref: ResourceRef): boolean;
     /** THE F9 PROGRESS SEAT (optional so older fakes still satisfy
      *  the type): the live byte count for one weight fetch. */
-    progressOf?(operationId: string): import("./contracts.js").WeightAcquireProgress | null;
+    progressOf?(operationId: string): import("./contracts.ts").WeightAcquireProgress | null;
     /** THE F9 START SEAT (optional, same reason): starts the fetch
      *  for one ref in the background and returns its operation id
      *  WITHOUT awaiting the landing — the tracker polls progressOf.

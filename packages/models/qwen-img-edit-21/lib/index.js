@@ -3,24 +3,19 @@ export const DECL = {
     "id": "qwen-img-edit-21",
     "form": "form_edit",
     "label": "Qwen Image Edit 2.1",
-    "description": "Instruction-driven image editing on the Qwen-Image-2.1 base — the reference-cached lane: the SAME 2.1 checkpoint as text-to-image (no separate edit weights), wrapped in QwenImage21Cache with the anchor images spliced through TextEncodeQwenImage21's own vision path, sampled at target resolution. The sibling family qwen-img-21 serves the t2i lane on the image-gen card.",
+    "description": "Instruction-driven image editing on the Qwen-Image-2.1 base — the reference-cached lane: the SAME 2.1 checkpoint as text-to-image (no separate edit weights), wrapped in QwenImage21Cache with the anchor images spliced through TextEncodeQwenImage21's own vision path, sampled on the encoder's own anchor-sized latent (any other size shifts the edit — the node's own law). The sibling family qwen-img-21 serves the t2i lane on the image-gen card.",
     "engine": "comfyui",
     "defaults": {
         "steps": 25,
         "sampler": "euler",
         "scheduler": "simple",
-        "cfg": 1,
-        // THE TARGET RESOLUTION (the 2026-10-09 empty-form fix): the 2.1
-        // edit lane samples an EmptyLatentImage at target size — the
-        // values ARE the model's (the RANGE RULE: whoever owns the
-        // default owns the floor). Until now the DECL stated none and
-        // the LANE hardcoded `?? 1024` silently (lanes-image.ts) — the
-        // form showed empty Width/Height because the cascade had
-        // nothing to overlay. Declared here, the card's resolution
-        // group fills from the cascade; the lane's fallback arm now
-        // covers only direct (non-card) lane callers.
-        "width": 1024,
-        "height": 1024
+        "cfg": 1
+        // THE GEOMETRY IS THE ANCHOR'S OWN (the latent law, 2026-11-08):
+        // this lane samples the encoder's own anchor-sized latent, so a
+        // stated target size has no seat — width/height LEFT the surface
+        // (the 2026-10-09 empty-form cure declared them here; the cure's
+        // premise — the EmptyLatentImage target — is retired with the
+        // node that needed it).
     },
     "genre": "image",
     // THE REQUIRED DEFAULTS (operator contract 2026-11-07): every
@@ -41,13 +36,14 @@ export const DECL = {
     // surface (input_images, prompt, negative_prompt, the sampling
     // block) plus the card's VALIDATION-ONLY aliases (image1/2/3,
     // reference_images, input_mask — hidden carriers, but a wire key
-    // the lane admits, so the surface owns them) and THIS lane's
-    // target resolution pair — the 2.1 edit lane samples an
-    // EmptyLatentImage at stated size, so width/height are 2.1's —
-    // plus the card-owned match toggle (ON by default: output matches
-    // the anchor; OFF: the custom pair rides). The toggle is admitted
-    // on BOTH edit lanes (the 2511 lane holds it as a no-op — it
-    // always edits at source resolution).
+    // the lane admits, so the surface owns them). width/height are
+    // NOT here (2026-11-08): the lane samples the encoder's own
+    // anchor-sized latent — the output IS the anchor's frame, a
+    // stated size has no seat, and a draft that states one refuses
+    // field-named at the write door. match_input_resolution stays
+    // admitted as the declared no-op it now is on BOTH edit lanes
+    // (the 2511 precedent): the toggle is retained for draft
+    // compatibility and switches nothing.
     // use_stock_nodes/double_reference are 2511's edit-tuning pair
     // and are NOT here: with a declared surface the bench-write door
     // refuses them on this family in the field's voice.
@@ -60,8 +56,6 @@ export const DECL = {
         "input_mask",
         "prompt",
         "negative_prompt",
-        "width",
-        "height",
         "match_input_resolution",
         "seed",
         "steps",
@@ -69,18 +63,7 @@ export const DECL = {
         "sampler",
         "scheduler",
     ],
-    // THE RESOLUTION PAIR RIDES TOGETHER: an EmptyLatentImage takes a
-    // width AND a height — a lone axis is half a size (the card's old
-    // tooltip said "target resolution"; the law says both or neither,
-    // never one). Judged at bench-write and rendered inline in the
-    // form, in the field's voice.
     "relations": {
-        "together": [
-            {
-                "fields": ["width", "height"],
-                "cure": "an EmptyLatentImage takes both axes — state width and height together, or neither (the lane's own 1024s)",
-            },
-        ],
         // THE COMPOSE LAW, STATED (2026-10-10, the DECL audit's row 2 —
         // the GAP-7 shape one card over): compose has refused a
         // prompt-less edit since the merge, imperatively, while the
@@ -105,19 +88,15 @@ export const DECL = {
             },
         ],
     },
-    // THE RANGE RULE MADE LAW (the width burn, 2026-10-10): whoever
-    // owns the default owns the floor — this family owns the edit
-    // resolution (1024s declared above), and until now the domain
-    // lived NOWHERE: the card schema states no min/max for the pair,
-    // so width -50 admitted at every door and the engine produced
-    // garbage. Declared here, judged at bench-write in the same
-    // voice as the relation words (the declaration, not the form).
-    // 256–1536: the practical domain of the 2.1 checkpoint (the
-    // official edit templates sample 1024/1328; a 4-megapixel edit
-    // is outside the trained envelope).
+    // THE RANGE RULE (the width burn's cure, 2026-10-10, rewritten by
+    // the latent law 2026-11-08): the resolution span RETIRED — the
+    // lane samples the encoder's own anchor-sized latent, no stated
+    // numeric left to bound. The SOLVER span stays: steps rides the
+    // edit narrowing's [1,50] (KSampler steps beyond the envelope is
+    // the old washed-out-edit burn), so the write door keeps a live
+    // domain to judge.
     "bounds": {
-        "width": { "min": 256, "max": 1536 },
-        "height": { "min": 256, "max": 1536 },
+        "steps": { "min": 1, "max": 50 },
     },
     // THE MASK BOARDING (2026-09-22, the operator's lane call: "2511
     // is the legacy model… 2.1 is the new Qwen edit model"): the mask
@@ -127,9 +106,11 @@ export const DECL = {
     // 2511's flavor — that sampler does not board here). THE LORAS
     // BOARDING (operator 2026-11-06: every family applies LoRAs):
     // boards 'loras' beside 'mask' — the fired lane fires on every
-    // boarding atom; no first-party rows yet, so user filename rows
+    // boarding atom. FIRST-PARTY ROW (2026-11-08): the Consistency
+    // LoRA (qwen21_consistency, the drift-lock recipe stamps it) —
+    // the drift evidence is its own row; user filename rows still
     // pass through and unknown ids refuse at compose naming the
-    // empty registry. The flavor seed in mods/loras.ts lands with
+    // registry. The flavor seed in mods/loras.ts lands with
     // this declaration.
     "mods": [
         "mask",
@@ -161,6 +142,13 @@ export const DECL = {
             "folder": "vae",
             "sha256": "bb21f7473051e1ac368515dd3f2e15cd44d7a11748ee8823e1ddca3e4876b7c9",
             "size_bytes": 675509688
+        },
+        {
+            "name": "qwen-image-2.1-consistency.safetensors",
+            "url": "https://huggingface.co/ausboss/Qwen-Image-2.1-Consistency-LoRA/resolve/main/qwen-image-2.1-consistency.safetensors",
+            "folder": "loras/qwen-img-edit-21",
+            "sha256": "4f44ada1be2189cc23b3d010f9603543403f48454e2f76842a3d30109b20bd63",
+            "size_bytes": 159436496
         }
     ],
     // THE 2.1 MATRIX ON THE EDIT LANE (the variant-axis law,
@@ -264,9 +252,17 @@ export const DECL = {
         {
             "id": "remove-background",
             "label": "Remove Background",
-            "hint": "The official one-click — the Comfy-Org background-removal template's canned prompt verbatim (the 2.1 base renders the subject on transparency; solver/cfg/steps ride the family defaults, which are the template's own values).",
+            "hint": "The official one-click — the Comfy-Org background-removal template's canned prompt verbatim (the 2.1 base renders the subject on transparency; the RGBA decode lands the alpha on disk; solver/cfg/steps ride the family defaults, which are the template's own values).",
             "group": "Recipe",
             "wire_defaults": { "prompt": "Remove the background, and output a PNG image" },
+            "cells": [],
+        },
+        {
+            "id": "drift-lock",
+            "label": "Drift Lock",
+            "hint": "The Consistency LoRA at strength 1 (the catalog's first-party row): restyle and recolour edits hold the original's frame — measured drift drops from ~24 px to ~1.6 px on held-out runs. It holds the EXISTING pose: switch it off for movement edits and big removals.",
+            "group": "Recipe",
+            "wire_defaults": { "loras": [{ "id": "qwen21_consistency" }] },
             "cells": [],
         },
         {

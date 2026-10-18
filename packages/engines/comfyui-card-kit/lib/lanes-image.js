@@ -193,10 +193,12 @@ export function refuseImageEditFiring(p, model) {
     // unchecked unknown slipping through the comparison.
     const lanpaintLane = laneStringOf(model?.lane_inputs ?? {}, 'text_encode_node') !== 'TextEncodeQwenImage21';
     fire('input_mask', maskStated && effectiveMode === 'auto' && !lanpaintLane, 'the lanpaint arm rides the 2511 lane only — for a region on this lane state mask_mode crop_stitch (the region detailer), or switch the model lane');
-    // width/height are the plain 2.1 edit's TARGET-resolution knobs;
-    // the detailer path builds no EmptyLatentImage (DetailerForEach
-    // sizes each crop itself) — a stated value would wire to nothing.
-    fire('width', effectiveMode === 'crop_stitch' && !lanpaintLane && (p.width !== undefined || p.height !== undefined), "the region detailer reworks the source's own pixels at the crop's own size — width/height ride the plain 2.1 edit's target resolution only; clear them");
+    // width/height ride NO edit lane anymore (the latent law,
+    // 2026-11-08): the 2.1 lane samples the encoder's own anchor-sized
+    // latent, 2511 encodes the source outright, and the detailer sizes
+    // each crop itself — a stated value wires to nothing on every arm
+    // of either lane.
+    fire('width', p.width !== undefined || p.height !== undefined, "no edit lane takes a stated size anymore — the latent law (2026-11-08): both lanes edit at the source's own frame; clear them and re-run");
     fire('lanpaint_enabled', p.lanpaint_enabled === true && !maskStated, 'force LanPaint with no region stated — state input_mask (the region to regenerate)');
     fire('lanpaint_beta', (p.lanpaint_beta ?? 0.5) !== 0.5, 'retired upstream — scraed/LanPaint fixes Beta 1.0, the pack knob wires to no input; back it to 0.5 or order a pack change');
     fire('lanpaint_friction', (p.lanpaint_friction ?? 0.5) !== 0.5, 'retired upstream — scraed/LanPaint fixes Friction 15, the pack knob wires to no input; back it to 0.5 or order a pack change');
