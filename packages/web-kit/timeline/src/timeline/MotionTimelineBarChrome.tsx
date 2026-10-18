@@ -12,6 +12,7 @@ import { AUDIO_CARDS_H, AUDIO_H, GUTTER_W, LANE_H, RULER_H, ZOOM_STEP, fmtTimeco
 import { Tip } from "@melite/card-base/client"
 import css from "./timeline.module.css"
 import type * as React from "react"
+import { useState } from "react"
 import type { TimelineTrack } from "./viser-timeline/types.ts"
 import type { AudioLayer, TimelineBeat } from "./MotionTimelineBar.tsx"
 import { timelineCopy } from "../timelineCopy.ts"
@@ -266,22 +267,34 @@ export interface TimelineRulerProps {
   frameToPx: (f: number) => number
   frameAt: (clientX: number) => number | null
   onPromptAdd?: (frame: number) => void
+  /** P6 GESTURE RECEIPT (purge §7 P6): the single-click seek seat — the
+   *  tenant's playhead-move callback (the scrub drag's onFrameChange).
+   *  Absent = the chrome faces the reason instead (the voice below). */
+  onSeekFrame?: (frame: number) => void
 }
 
 /** The ruler: ticks + sticky timecode. NOT a scrub surface (operator
  *  2026-11: the scrub gesture belongs to the playhead CAP alone — the
  *  white circle at the top of the line — never the bar's middle); its
- *  one gesture left is the double-click ADD (bar line 947). */
+ *  gestures are the double-click ADD (bar line 947) and the
+ *  single-click SEEK (P6: a click on the time line moves the playhead —
+ *  a jump, never a drag — or faces why not). */
 export function TimelineRuler(props: TimelineRulerProps) {
   const {
     ticks, stepSec, fps, frameIdx, barBg,
-    frameToPx, frameAt, onPromptAdd,
+    frameToPx, frameAt, onPromptAdd, onSeekFrame,
   } = props
+  // THE CLICK RECEIPT (P6's voice): every ruler click announces where
+  // the playhead went — or why it didn't. A seek that announces
+  // itself is still a receipt.
+  const [clickVoice, setClickVoice] = useState("")
   return (
     <>
       {/* Ruler — double-click ADDS a clip at that frame (the additive
           gesture's always-computable home — the calls row's clips own
-          their own double-click for editing). Scrubbing is the cap's. */}
+          their own double-click for editing). Single-click SEEKS (the
+          NLE parity: click the time line, the playhead jumps — the
+          tenant resolves through onSeekFrame). Scrubbing is the cap's. */}
       <Tip
         tip={
           onPromptAdd
@@ -293,6 +306,22 @@ export function TimelineRuler(props: TimelineRulerProps) {
           data-testid="motion-timeline-ruler"
           className={css.ruler}
           style={{ height: RULER_H }}
+          onClick={(e) => {
+            // P6 SINGLE-CLICK SEEK: the NLE parity — click the time
+            // line and the playhead jumps to that frame (a jump, never
+            // a drag; the drag session is never entered, so the scrub
+            // law holds). The tenant resolves through onSeekFrame; when
+            // no seat is wired the chrome faces the reason instead of
+            // voiding (P6's either half).
+            const f = frameAt(e.clientX)
+            if (f == null) return
+            if (onSeekFrame) {
+              onSeekFrame(f)
+              setClickVoice(`playhead ${fmtTimecode(f, fps)}`)
+            } else {
+              setClickVoice("ruler click seeks when the tenant wires the seek seat — drag the playhead cap to scrub")
+            }
+          }}
           onDoubleClick={(e) => {
             if (!onPromptAdd) return
             // UNclamped (the tail-pull precedent): a double-click
@@ -301,6 +330,17 @@ export function TimelineRuler(props: TimelineRulerProps) {
             if (f != null) onPromptAdd(f)
           }}
         >
+        {/* THE CLICK RECEIPT (P6's voice, aria-live): what the last
+            ruler click did — the seek's own announcement, or the faced
+            reason. Empty until the first click (no noise). */}
+        <span
+          data-testid="motion-timeline-click-voice"
+          aria-live="polite"
+          className={css.timecode}
+          style={{ display: clickVoice ? undefined : "none" }}
+        >
+          {clickVoice}
+        </span>
         {ticks.map((s) => (
           <div key={s} className={css.tick} style={{ left: frameToPx(s * fps) }}>
             <div className={css.tickLine} />

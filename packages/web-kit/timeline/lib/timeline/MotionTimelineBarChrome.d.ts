@@ -57,11 +57,17 @@ export interface TimelineRulerProps {
     frameToPx: (f: number) => number;
     frameAt: (clientX: number) => number | null;
     onPromptAdd?: (frame: number) => void;
+    /** P6 GESTURE RECEIPT (purge §7 P6): the single-click seek seat — the
+     *  tenant's playhead-move callback (the scrub drag's onFrameChange).
+     *  Absent = the chrome faces the reason instead (the voice below). */
+    onSeekFrame?: (frame: number) => void;
 }
 /** The ruler: ticks + sticky timecode. NOT a scrub surface (operator
  *  2026-11: the scrub gesture belongs to the playhead CAP alone — the
  *  white circle at the top of the line — never the bar's middle); its
- *  one gesture left is the double-click ADD (bar line 947). */
+ *  gestures are the double-click ADD (bar line 947) and the
+ *  single-click SEEK (P6: a click on the time line moves the playhead —
+ *  a jump, never a drag — or faces why not). */
 export declare function TimelineRuler(props: TimelineRulerProps): React.JSX.Element;
 export interface TimelinePlayheadProps {
     frameIdx: number;

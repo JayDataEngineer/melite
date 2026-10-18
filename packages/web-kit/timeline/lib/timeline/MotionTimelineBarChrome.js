@@ -11,6 +11,7 @@ import { Button, IconCloseOutlineRegular } from '@deepseek-ai/dsh-client-ui-prim
 import { AUDIO_CARDS_H, AUDIO_H, GUTTER_W, LANE_H, RULER_H, ZOOM_STEP, fmtTimecode, rgb } from "./MotionTimelineBarLayout.js";
 import { Tip } from "@melite/card-base/client";
 import css from "./timeline.module.css";
+import { useState } from "react";
 import { timelineCopy } from "../timelineCopy.js";
 /** The pinned label gutter (bar line 820): the zoom cluster + lane
  *  heads. The Fit pin reads the live scale — the body is the bar's. */
@@ -60,12 +61,35 @@ export function TimelineContent(props) {
 /** The ruler: ticks + sticky timecode. NOT a scrub surface (operator
  *  2026-11: the scrub gesture belongs to the playhead CAP alone — the
  *  white circle at the top of the line — never the bar's middle); its
- *  one gesture left is the double-click ADD (bar line 947). */
+ *  gestures are the double-click ADD (bar line 947) and the
+ *  single-click SEEK (P6: a click on the time line moves the playhead —
+ *  a jump, never a drag — or faces why not). */
 export function TimelineRuler(props) {
-    const { ticks, stepSec, fps, frameIdx, barBg, frameToPx, frameAt, onPromptAdd, } = props;
+    const { ticks, stepSec, fps, frameIdx, barBg, frameToPx, frameAt, onPromptAdd, onSeekFrame, } = props;
+    // THE CLICK RECEIPT (P6's voice): every ruler click announces where
+    // the playhead went — or why it didn't. A seek that announces
+    // itself is still a receipt.
+    const [clickVoice, setClickVoice] = useState("");
     return (_jsx(_Fragment, { children: _jsx(Tip, { tip: onPromptAdd
                 ? "Drag the playhead cap to scrub — double-click here to add a call at that frame"
-                : "Drag the playhead cap to scrub", children: _jsxs("div", { "data-testid": "motion-timeline-ruler", className: css.ruler, style: { height: RULER_H }, onDoubleClick: (e) => {
+                : "Drag the playhead cap to scrub", children: _jsxs("div", { "data-testid": "motion-timeline-ruler", className: css.ruler, style: { height: RULER_H }, onClick: (e) => {
+                    // P6 SINGLE-CLICK SEEK: the NLE parity — click the time
+                    // line and the playhead jumps to that frame (a jump, never
+                    // a drag; the drag session is never entered, so the scrub
+                    // law holds). The tenant resolves through onSeekFrame; when
+                    // no seat is wired the chrome faces the reason instead of
+                    // voiding (P6's either half).
+                    const f = frameAt(e.clientX);
+                    if (f == null)
+                        return;
+                    if (onSeekFrame) {
+                        onSeekFrame(f);
+                        setClickVoice(`playhead ${fmtTimecode(f, fps)}`);
+                    }
+                    else {
+                        setClickVoice("ruler click seeks when the tenant wires the seek seat — drag the playhead cap to scrub");
+                    }
+                }, onDoubleClick: (e) => {
                     if (!onPromptAdd)
                         return;
                     // UNclamped (the tail-pull precedent): a double-click
@@ -73,7 +97,7 @@ export function TimelineRuler(props) {
                     const f = frameAt(e.clientX);
                     if (f != null)
                         onPromptAdd(f);
-                }, children: [ticks.map((s) => (_jsxs("div", { className: css.tick, style: { left: frameToPx(s * fps) }, children: [_jsx("div", { className: css.tickLine }), _jsx("span", { className: css.tickLabel, children: timelineCopy.tickSeconds({ value: stepSec < 1 ? s.toFixed(1) : String(s) }) })] }, s))), _jsx("span", { "data-testid": "motion-timeline-timecode", className: css.timecode, style: { background: barBg, boxShadow: "2px 0 6px -2px color-mix(in srgb, var(--dsw-alias-bg-base) 80%, transparent)" }, children: fmtTimecode(frameIdx, fps) })] }) }) }));
+                }, children: [_jsx("span", { "data-testid": "motion-timeline-click-voice", "aria-live": "polite", className: css.timecode, style: { display: clickVoice ? undefined : "none" }, children: clickVoice }), ticks.map((s) => (_jsxs("div", { className: css.tick, style: { left: frameToPx(s * fps) }, children: [_jsx("div", { className: css.tickLine }), _jsx("span", { className: css.tickLabel, children: timelineCopy.tickSeconds({ value: stepSec < 1 ? s.toFixed(1) : String(s) }) })] }, s))), _jsx("span", { "data-testid": "motion-timeline-timecode", className: css.timecode, style: { background: barBg, boxShadow: "2px 0 6px -2px color-mix(in srgb, var(--dsw-alias-bg-base) 80%, transparent)" }, children: fmtTimecode(frameIdx, fps) })] }) }) }));
 }
 /** The playhead, spanning every row (bar line 1517). The cap at its
  *  top is THE scrub handle (operator 2026-11: the gesture lives on

@@ -388,6 +388,7 @@ export function MotionTimelineBar({
         <TimelineRuler
           ticks={ticks} stepSec={stepSec} fps={fps} frameIdx={frameIdx} barBg={barBg}
           frameToPx={scale.frameToPx} frameAt={scale.frameAt} onPromptAdd={onPromptAdd}
+          onSeekFrame={onFrameChange}
         />
         <TimelinePromptsLane
           prompts={prompts} fps={fps} promptsHeight={promptsHeight} emptyPromptsHint={emptyPromptsHint}
