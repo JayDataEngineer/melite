@@ -486,6 +486,7 @@ export const family: Plugin = {
 
 export { finalizeH3, H3_T4_STRIP } from "./finalize.ts"
 export { assertOverlayGated } from "./actions.ts"
+export { serveWindowSpec, type WindowSpecProjection } from "./windowSpec.ts"
 
 // The Loader-row face: DSH loads plugin rows by bare specifier and
 // unwraps `exports.default ?? exports` (vendor/cordis_plugins/loader

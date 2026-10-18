@@ -458,6 +458,7 @@ export const family = {
 };
 export { finalizeH3, H3_T4_STRIP } from "./finalize.js";
 export { assertOverlayGated } from "./actions.js";
+export { serveWindowSpec } from "./windowSpec.js";
 // The Loader-row face: DSH loads plugin rows by bare specifier and
 // unwraps `exports.default ?? exports` (vendor/cordis_plugins/loader
 // unwrapExports) — the default export IS the row-loadable plugin. The
