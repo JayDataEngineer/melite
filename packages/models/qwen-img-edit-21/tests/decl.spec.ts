@@ -122,8 +122,11 @@ describe("the declared cell artifacts are pinned verbatim", () => {
     assert.deepEqual(variantRows.map((v) => v.id), ["base", "turbo"],
       "two axis tokens, Base first (the family default — the matrix law)");
     const turbo = variantRows.find((v) => v.id === "turbo")!;
-    assert.deepEqual(turbo.resolver_defaults, { steps: 8 },
-      "turbo: the 8-step marriage rides the route, never the base defaults");
+    // THE REQUIRED DEFAULTS (operator contract 2026-11-07): the FULL
+    // face rides the route — steps AND cfg declared, never a silent
+    // ride on the family defaults (the turbo hazard the law names).
+    assert.deepEqual(turbo.resolver_defaults, { steps: 8, cfg: 1 },
+      "turbo: the full 8/1 pair rides the route, never the base defaults");
     const atomUnet = String((DECL.lane_inputs ?? {}).unet);
     for (const v of variantRows) {
       assert.deepEqual(v.cells.map((c) => c.quant), ["int8_convrot", "bf16"],

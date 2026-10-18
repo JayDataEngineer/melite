@@ -110,10 +110,13 @@ describe("the declared cell artifacts are pinned verbatim", () => {
     assert.deepEqual(variantRows.map((v) => v.id), ["base", "turbo"],
       "two axis tokens, Base first (the family default — the matrix law)");
     const turbo = variantRows.find((v) => v.id === "turbo")!;
-    assert.deepEqual(turbo.resolver_defaults, { steps: 8 },
-      "turbo: the 8-step marriage rides the route, never the base defaults");
-    assert.equal(variantRows.find((v) => v.id === "base")!.resolver_defaults, undefined,
-      "base: no route stamps — the family defaults (25 steps) rule");
+    // THE REQUIRED DEFAULTS (operator contract 2026-11-07): the FULL
+    // face rides the route — steps AND cfg declared, never a silent
+    // ride on the family defaults (the turbo hazard the law names).
+    assert.deepEqual(turbo.resolver_defaults, { steps: 8, cfg: 1 },
+      "turbo: the full 8/1 pair rides the route, never the base defaults");
+    assert.deepEqual(variantRows.find((v) => v.id === "base")!.resolver_defaults, { steps: 25, cfg: 1 },
+      "base: the family's own 25/1 face DECLARED on the row (the required-defaults law — never a silent ride)");
     // the atom's own unet is the int8 tier (the official template
     // pick); a cell that loads a DIFFERENT file must spell it.
     const atomUnet = String((DECL.lane_inputs ?? {}).unet);

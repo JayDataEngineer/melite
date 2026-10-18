@@ -504,6 +504,17 @@ describe("the required-defaults door (operator contract 2026-11-07)", () => {
       /synth-a: required_defaults declares 'steps' twice/,
     );
   });
+
+  it("an empty-name row refuses — a nameless default binds nothing (the door's own voice)", () => {
+    assert.throws(
+      () => fresh().registerFamily(clone({
+        id: "synth-a",
+        required_defaults: [{ name: "", class: "variant" }],
+        variants: [variant({ id: "v1", resolver_defaults: { steps: 8, cfg: 1 } })],
+      })),
+      /synth-a: a required_defaults row needs a name/,
+    );
+  });
 });
 
 describe("registerFamily (the route index)", () => {

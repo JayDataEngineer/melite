@@ -165,13 +165,17 @@ describe("img-to-mesh official-template fidelity (the default-workflow contract)
           `${fam.id}: a defaults-driven compose samples the every-GPU geometry tier (quality's 1536 is an explicit pick)`);
       });
 
-      it("the surviving lane stamps NO tier (one value, one owner — the family defaults row owns resolution)", () => {
+      it("the surviving lane declares the sampler pair, never a resolution tier (one value, one owner)", () => {
         const variants = (fam.DECL as { variants?: Array<{ id: string; group?: string; resolver_defaults?: Record<string, unknown> }> }).variants ?? [];
         const lanes = variants.filter((v) => v.group !== "Recipe");
         assert.equal(lanes.length, 1, `${fam.id}: exactly one variant lane (the 1024 row; the 1536/512 routes retired with the trio)`);
         assert.equal(lanes[0]?.id, "1024");
-        assert.equal(lanes[0]?.resolver_defaults, undefined,
-          `${fam.id}: the lane carries no resolver stamp — resolution seats once, in the family defaults`);
+        // THE REQUIRED DEFAULTS (operator contract 2026-11-07): the
+        // lane's OWN face is the sampler pair; resolution still
+        // seats once, in the family defaults (a tier stamp here
+        // would re-own it).
+        assert.deepEqual(lanes[0]?.resolver_defaults, { steps: 12, cfg: 7.5 },
+          `${fam.id}: the lane declares the official sampler pair and NO resolution tier — resolution seats once, in the family defaults`);
         const quality = variants.find((v) => v.id === "quality");
         assert.equal((quality?.wire_defaults as Record<string, unknown>)?.["resolution"], "1536",
           `${fam.id}: only the quality recipe restates resolution (a patch-only pick over the floor)`);

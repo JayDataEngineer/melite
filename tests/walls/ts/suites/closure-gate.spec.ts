@@ -250,6 +250,10 @@ describe("THE CLOSURE GATE — every detail under a contract", () => {
       "variants", "variant_groups", "outputs",
       // optional declarations, present only where the owner declares
       "accepts", "studio", "requires_by_family", "mods",
+      // THE REQUIRED DEFAULTS manifest (operator contract
+      // 2026-11-07) — read by the census arm of the door-stamp wall
+      // (resolver-defaults-door-stamp.spec.ts arm 7)
+      "required_defaults",
     ]);
     for (const key of carriedSet) {
       expect(owned.has(key), `the facts row carries '${key}', which no reader owns — a write-only column`).toBe(true);

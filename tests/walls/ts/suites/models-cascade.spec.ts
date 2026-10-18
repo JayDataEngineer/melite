@@ -82,7 +82,10 @@ describe("the defaults cascade is the cordis primitive (A3)", () => {
       () => svc.registerFamily({
         ...svc.getModel("z-image"),
         id: "typo-variant",
-        variants: [{ id: "v", label: "V", group: "Variant", cells: [], parmas: ["prompt"] }],
+        // the variant SATISFIES the required-defaults door (the
+        // predicates outrun the schema leg by wall law) so the
+        // nested extra: forbid stays the refusal on trial
+        variants: [{ id: "v", label: "V", group: "Variant", cells: [], resolver_defaults: { steps: 8, cfg: 1 }, parmas: ["prompt"] }],
       } as never),
       /parmas|unknown key/,
       "a variant-level typo refuses by name, not silently",
@@ -114,6 +117,7 @@ describe("the defaults cascade is the cordis primitive (A3)", () => {
         id: "typo-variant-relation",
         variants: [{
           id: "v", label: "V", group: "Variant", cells: [],
+          resolver_defaults: { steps: 8, cfg: 1 },
           relations: { requiers: [{ field: "prompt", needs: ["steps"] }] },
         }],
       } as never),
@@ -126,6 +130,7 @@ describe("the defaults cascade is the cordis primitive (A3)", () => {
       id: "legal-variant-relation",
       variants: [{
         id: "v", label: "V", group: "Variant", cells: [],
+        resolver_defaults: { steps: 8, cfg: 1 },
         relations: { required: [{ fields: ["prompt"] }] },
       }],
     } as never);
