@@ -84,8 +84,15 @@ export declare class ProvisioningService extends Service implements Provisioning
     /** THE REHYDRATE SEED (audit E3): one stored row joins the live
      *  ledger. A row still mid-flight belongs to a fetch that died
      *  with the old process — it rehydrates as failed with the
-     *  restart named, never as a frozen acquiring bar; terminal rows
-     *  stay out (operationOf answers them). */
+     *  restart named, never as a frozen acquiring bar. A stored
+     *  TERMINAL row (finishedAt set) rejoins as-stored — its state,
+     *  ref, and why survive (P5 F2: the verbs must survive the seat
+     *  restarting) — with the byte counters zeroed: the frozen count
+     *  died with the old process and the ledger never claims bytes
+     *  it has not re-statted. The rejoined row is an ordinary
+     *  terminal entry: retry reads its ref, discard evicts it, and
+     *  evictSettledAcquires caps it oldest-first like any settled
+     *  row. A row neither mid-flight nor finished stays out. */
     private rehydrateProgress;
     stateOf(ref: ResourceRef): ProvisionState;
     operationOf(ref: ResourceRef): ProvisionOperation | undefined;

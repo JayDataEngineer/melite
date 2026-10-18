@@ -252,8 +252,8 @@ describe("verified artifact writer", () => {
   });
 });
 
-describe("the progress rehydrate (audit E3)", () => {
-  test("a stored in-flight acquire joins the ledger as failed-with-restart-detail; terminal rows stay out", async () => {
+describe("the progress rehydrate (audit E3, P5 F2 new law)", () => {
+  test("a stored in-flight acquire joins the ledger as failed-with-restart-detail; a stored terminal row rejoins as-stored", async () => {
     const store = root();
     const dead = operationRow({
       operationId: "op-dead",
@@ -276,7 +276,14 @@ describe("the progress rehydrate (audit E3)", () => {
     assert.equal(row.state, "failed", "the dead fetch never rehydrates as a live bar");
     assert.match(row.detail ?? "", /seat restarted/);
     assert.match(row.detail ?? "", /fetching checkpoints/);
-    assert.equal(service.progressOf("op-done"), null, "terminal rows stay in operationOf's court");
+    // P5 F2 NEW LAW (un-pins the E3 "terminal rows stay out" arm):
+    // a stored terminal row rejoins the live ledger as-stored, so
+    // the verbs keep working across restarts — the old null
+    // assertion below asserted the burn, not the contract.
+    const done = service.progressOf("op-done");
+    assert.ok(done !== null, "a stored terminal row rejoins the live ledger after restart");
+    assert.equal(done.state, "active", "the rejoined row keeps its stored state");
+    assert.equal(done.operationId, "op-done");
     assert.equal(service.progressOf("op-never"), null);
     assert.equal(service.progressOfRef(dead.ref)?.operationId, "op-dead", "the ref read routes to the rehydrated row");
   });

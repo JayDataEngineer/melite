@@ -68,6 +68,17 @@ function copyRef(ref) {
         ...(ref.quant === undefined ? {} : { quant: ref.quant }),
     };
 }
+/** THE BOOT-SEED RECENCY (P5 F2): the by-ref pointer answers the
+ *  latest stored row for a ref — best-effort by the row's own
+ *  clock (finishedAt, else startedAt); an unstamped row sorts
+ *  before any stamped one. */
+function recencyOf(operation) {
+    if (operation.finishedAt !== undefined)
+        return operation.finishedAt;
+    if (operation.startedAt !== undefined)
+        return operation.startedAt;
+    return 0;
+}
 function copyItem(item) {
     return {
         key: item.key,
@@ -491,7 +502,15 @@ export class ProvisioningService extends Service {
         if (store?.list !== undefined) {
             this.ctx.effect(() => {
                 void store.list().then((operations) => {
-                    for (const operation of operations)
+                    // POINTER RECENCY, SCOPED TO THE BOOT SEED (P5 F2): two
+                    // stored rows can share one ref (acquire, then retry, then
+                    // restart) — the by-ref pointer must answer the LATEST row,
+                    // not whichever the store lists last. Oldest seeds first so
+                    // the latest wins the pointer; live starts after boot
+                    // overwrite it through the normal path. Best-effort by
+                    // (finishedAt ?? startedAt); an unstamped row seeds first.
+                    const seed = [...operations].sort((a, b) => recencyOf(a) - recencyOf(b));
+                    for (const operation of seed)
                         this.rehydrateProgress(operation);
                 }).catch((error) => {
                     // a poisoned row or an unreadable store degrades to an
@@ -505,8 +524,15 @@ export class ProvisioningService extends Service {
     /** THE REHYDRATE SEED (audit E3): one stored row joins the live
      *  ledger. A row still mid-flight belongs to a fetch that died
      *  with the old process — it rehydrates as failed with the
-     *  restart named, never as a frozen acquiring bar; terminal rows
-     *  stay out (operationOf answers them). */
+     *  restart named, never as a frozen acquiring bar. A stored
+     *  TERMINAL row (finishedAt set) rejoins as-stored — its state,
+     *  ref, and why survive (P5 F2: the verbs must survive the seat
+     *  restarting) — with the byte counters zeroed: the frozen count
+     *  died with the old process and the ledger never claims bytes
+     *  it has not re-statted. The rejoined row is an ordinary
+     *  terminal entry: retry reads its ref, discard evicts it, and
+     *  evictSettledAcquires caps it oldest-first like any settled
+     *  row. A row neither mid-flight nor finished stays out. */
     rehydrateProgress(operation) {
         if (this.weightProgress.has(operation.operationId))
             return;
@@ -518,8 +544,20 @@ export class ProvisioningService extends Service {
             return;
         const inFlight = operation.finishedAt === undefined &&
             (operation.state === "acquiring" || operation.state === "verifying");
-        if (!inFlight)
+        if (!inFlight) {
+            if (operation.finishedAt === undefined)
+                return;
+            this.weightProgress.set(operation.operationId, {
+                operationId: operation.operationId,
+                ref: copyRef(operation.ref),
+                state: operation.state,
+                bytes: 0,
+                total: 0,
+                detail: operation.detail,
+            });
+            this.weightProgressByRef.set(resourceKey(operation.ref), operation.operationId);
             return;
+        }
         const detail = operation.detail === undefined
             ? "the seat restarted before this fetch landed — start it again"
             : `${operation.detail} — the seat restarted before the fetch landed`;
