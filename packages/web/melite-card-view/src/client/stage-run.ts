@@ -8,7 +8,7 @@ import { statusOrPendingOf } from '@melite/contracts/stageView'
 import { defaultFamilyForCard } from '@melite-plugin/melite-run-wire'
 import { startCardRun, startFlowInlineRun, type StartOutcome } from '@melite/card-base/client'
 import type { CardsBenchValue, BenchStageView } from './cards-resource.ts'
-import { freshStageRow, observeRunOutcome } from './cards-resource.ts'
+import { freshStageRow, readStageRow, observeRunOutcome } from './cards-resource.ts'
 import { refuseForUnlandedWrite } from './draft.ts'
 import { rejectionVoice } from './rejection-voice.ts'
 
@@ -58,9 +58,18 @@ export async function runCardStage(
   // client's render snapshot (the row as it stood at open) and the
   // patch the drill just awaited lives only estate-side. Without this
   // read-back every param typed between open and Run is dropped (the
-  // music prompt refusal). A failed read composes the held row — the
-  // door refuses honestly rather than lying with a fallback fetch.
-  const src = await freshStageRow(draftId, row.id) ?? row
+  // music prompt refusal). A FAILED READ refuses (P7-C1) — composing
+  // the held row would run the open-time snapshot over the flushed
+  // truth silently. A row ABSENT from a successful read composes the
+  // held row (the fresh-drop law, walled by the door contract: the
+  // bench never saw the drop, the held params are the only truth).
+  // The residual — a row deleted elsewhere between flush and read —
+  // is indistinguishable here and stays open (ROADMAP watch-list).
+  const read = await readStageRow(draftId, row.id)
+  if (read.status === 'unreadable') {
+    return { refused: `the bench row for stage "${row.id}" is unreadable — running would compose the open-time row, not the bench's stated state` }
+  }
+  const src = read.status === 'ready' ? read.row : row
   const params = typeof src.params === 'object' && src.params !== null && !Array.isArray(src.params)
     ? src.params as Record<string, unknown>
     : {}

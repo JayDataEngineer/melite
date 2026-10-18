@@ -15,6 +15,7 @@ import {
   fetchBench,
   freshStageRow,
   readDraft,
+  readStageRow,
   restoreRunToBench,
 } from "../src/client/cards-resource.ts";
 import type { CardsRunValue } from "../src/client/cards-resource.ts";
@@ -493,7 +494,7 @@ describe("freshStageRow — the drill's fresh read (null when gone, never a thro
     }
   });
 
-  test("a missing row reads null (the caller composes its held row)", async () => {
+  test("a missing row reads null (the drill composes its held row — the fresh-drop law; the RUN door instead refuses on unreadable, cards-tab.spec.ts P7-C1)", async () => {
     const fakes = mountEstateFakes({
       draftStages: [{ id: "s_0" }],
     });
@@ -530,6 +531,43 @@ describe("freshStageRow — the drill's fresh read (null when gone, never a thro
     });
     try {
       await expect(freshStageRow("d_1", "s_0")).resolves.toBeNull();
+    } finally {
+      fakes.unmount();
+    }
+  });
+
+  // P7-C2 — the null contract's two halves ride distinct statuses on
+  // readStageRow (the RUN door's refused reason); freshStageRow keeps
+  // the bare null for the drill's call sites. Cross-links:
+  // cards-tab.spec.ts P7-C1 (failed read refuses / absent composes).
+  test("readStageRow names the unreadable half (a dead door is not a gone row)", async () => {
+    const fakes = mountEstateFakes({
+      refusals: [{ method: "drafts/get", message: "admission: nope" }],
+    });
+    try {
+      await expect(readStageRow("d_1", "s_0")).resolves.toEqual({ status: "unreadable" });
+    } finally {
+      fakes.unmount();
+    }
+  });
+
+  test("readStageRow names the gone half (a missing row is not an unreadable bench)", async () => {
+    const fakes = mountEstateFakes({
+      draftStages: [{ id: "s_0" }],
+    });
+    try {
+      await expect(readStageRow("d_1", "s_9")).resolves.toEqual({ status: "gone" });
+    } finally {
+      fakes.unmount();
+    }
+  });
+
+  test("readStageRow carries the estate row on the ready half", async () => {
+    const fakes = mountEstateFakes({
+      draftStages: [{ id: "s_0", runStatus: "running" }],
+    });
+    try {
+      await expect(readStageRow("d_1", "s_0")).resolves.toMatchObject({ status: "ready", row: { id: "s_0" } });
     } finally {
       fakes.unmount();
     }

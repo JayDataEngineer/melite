@@ -10015,28 +10015,25 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				lastFrame: void 0
 			};
 		}
-		/**
-		* Normalize a `drafts/get` doc into the draft-stage value. The row
-		* shape is the bench's own (DraftRecord stages carry id/card/params/
-		* result extras verbatim); the defensive filter keeps rows with a
-		* string id, mirroring readBench — the door's wire is untyped at this
-		* seam and a malformed row must not break the whole view.
-		*/
-		/** THE FRESH-READ LAW (2026-09-13 incident): the run composes the
-		*  ESTATE's row — read back AFTER the drill's patch — never the
-		*  client's stale render row. The drill patches the bench, then Run
-		*  reads; composing the clicked-open row object drops every param
-		*  typed between open and Run (the music prompt refusal: typed, Run,
-		*  compose saw nothing). Returns null when the estate read fails or
-		*  the row is gone — the caller composes its held row and the door
-		*  refuses honestly. */
-		async function freshStageRow(draftId, stageId, signal) {
+		async function readStageRow(draftId, stageId, signal) {
 			try {
 				const doc = await (0, _melite_card_base_client.unwrapRemote)((0, _melite_card_base_client.estateRemote)().drafts.get(draftId, signal), "drafts/get");
-				return deriveCardForRow(Array.isArray(doc["stages"]) ? doc["stages"].filter((s) => typeof s === "object" && s !== null && typeof s["id"] === "string") : [], typeof doc["intent"] === "string" ? doc["intent"] : "").find((s) => s.id === stageId) ?? null;
+				const row = deriveCardForRow(Array.isArray(doc["stages"]) ? doc["stages"].filter((s) => typeof s === "object" && s !== null && typeof s["id"] === "string") : [], typeof doc["intent"] === "string" ? doc["intent"] : "").find((s) => s.id === stageId) ?? null;
+				return row === null ? { status: "gone" } : {
+					status: "ready",
+					row
+				};
 			} catch {
-				return null;
+				return { status: "unreadable" };
 			}
+		}
+		/** The drill's fresh read (the null contract — null when gone, never
+		*  a throw). The RUN door must NOT use this: it needs the reason
+		*  (readStageRow above) — composing the held row on a failed read
+		*  is the silent stale-run seat. */
+		async function freshStageRow(draftId, stageId, signal) {
+			const read = await readStageRow(draftId, stageId, signal);
+			return read.status === "ready" ? read.row : null;
 		}
 		function readDraft(draftId, stageId, doc) {
 			const stages = Array.isArray(doc["stages"]) ? doc["stages"].filter((s) => typeof s === "object" && s !== null && typeof s["id"] === "string") : [];
@@ -11497,7 +11494,9 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			if (typeof row.card !== "string" || row.card === "") return { refused: "this stage names no card — nothing to compose" };
 			const gate = await refuseForUnlandedWrite(draftId, row.id);
 			if (gate !== null) return { refused: gate };
-			const src = await freshStageRow(draftId, row.id) ?? row;
+			const read = await readStageRow(draftId, row.id);
+			if (read.status === "unreadable") return { refused: `the bench row for stage "${row.id}" is unreadable — running would compose the open-time row, not the bench's stated state` };
+			const src = read.status === "ready" ? read.row : row;
 			const params = typeof src.params === "object" && src.params !== null && !Array.isArray(src.params) ? src.params : {};
 			const card = typeof src.card === "string" && src.card !== "" ? src.card : "";
 			if (card === "") return { refused: "this stage names no card — nothing to compose" };

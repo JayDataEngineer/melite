@@ -976,14 +976,18 @@ export function readRun(runId: string, doc: Record<string, unknown>): CardsRunVa
  *  client's stale render row. The drill patches the bench, then Run
  *  reads; composing the clicked-open row object drops every param
  *  typed between open and Run (the music prompt refusal: typed, Run,
- *  compose saw nothing). Returns null when the estate read fails or
- *  the row is gone — the caller composes its held row and the door
- *  refuses honestly. */
-export async function freshStageRow(
+ *  compose saw nothing). The read's three outcomes ride the status —
+ *  a failed read is NOT a gone row (P7-C1: collapsing both into null
+ *  composed the held snapshot and ran it silently). */
+export type StageRowRead =
+  | { status: 'ready', row: BenchStageView }
+  | { status: 'gone' }
+  | { status: 'unreadable' }
+export async function readStageRow(
   draftId: string,
   stageId: string,
   signal?: AbortSignal,
-): Promise<BenchStageView | null> {
+): Promise<StageRowRead> {
   try {
     const doc = await unwrapRemote(estateRemote().drafts.get(draftId, signal), 'drafts/get') as unknown as Record<string, unknown>
     const stages = Array.isArray(doc['stages'])
@@ -994,12 +998,25 @@ export async function freshStageRow(
     // press reads — it must carry the identity the tile rendered,
     // or the stage refuses to run with "names no card".
     const intent = typeof doc['intent'] === 'string' ? (doc['intent'] as string) : ''
-    return deriveCardForRow(stages, intent).find((s) => s.id === stageId) ?? null
+    const row = deriveCardForRow(stages, intent).find((s) => s.id === stageId) ?? null
+    return row === null ? { status: 'gone' } : { status: 'ready', row }
   } catch {
     // the hold read is best-effort: an unreadable bench doc renders
     // the empty arm and the next fetch retries, never a thrown face
-    return null
+    return { status: 'unreadable' }
   }
+}
+/** The drill's fresh read (the null contract — null when gone, never
+ *  a throw). The RUN door must NOT use this: it needs the reason
+ *  (readStageRow above) — composing the held row on a failed read
+ *  is the silent stale-run seat. */
+export async function freshStageRow(
+  draftId: string,
+  stageId: string,
+  signal?: AbortSignal,
+): Promise<BenchStageView | null> {
+  const read = await readStageRow(draftId, stageId, signal)
+  return read.status === 'ready' ? read.row : null
 }
 
 export function readDraft(draftId: string, stageId: string, doc: Record<string, unknown>): CardsDraftValue {

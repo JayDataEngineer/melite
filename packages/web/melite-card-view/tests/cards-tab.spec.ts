@@ -262,6 +262,59 @@ describe("runCardStage / runBenchSequential — the door contract", () => {
     expect(calls).toEqual([]);
   });
 
+  // P7-C1 — THE UNREADABLE-ROW REFUSAL (purge P7: the stale-held-row
+  // run seat). The fresh-read law (stage-run.ts) composes the
+  // ESTATE's row — but `?? row` collapses a FAILED read into "compose
+  // the open-time snapshot" and the run fires on it silently (the
+  // music-prompt-drop shape on the read-failure path). A failed
+  // fresh read must REFUSE naming the unread row — never compose
+  // held params. The arm below reds while the fallback lives.
+  test("a failed bench read refuses naming the unread row (never composes the held snapshot)", async () => {
+    const { calls } = mountFakes({
+      throws: [{ method: "drafts/get", message: "boom: the bench is unreachable" }],
+      startDocs: [{ run_id: "run-9", status: "queued", queue_position: 0 }],
+    });
+    stubCatalogFetch({ cards: { "img-to-mesh": { families: ["trellis2-native"] } } });
+    resetCardFamiliesCache();
+    const res = await runCardStage("bench-main", stage({
+      id: "s_9", card: "img-to-mesh",
+      params: { input_image: "drop.png", resolution: "1024" },
+    }));
+    // the door TRIED the estate read (the attempt is the law's
+    // witness) and refused — no runs/start carries held params.
+    expect(calls.map((c) => c.method)).toEqual(["drafts/get"]);
+    expect(res).toEqual({ refused: 'the bench row for stage "s_9" is unreadable — running would compose the open-time row, not the bench\'s stated state' });
+  });
+
+  // P7-C1 absent-row leg — THE FRESH-DROP LAW (the door contract's
+  // standing shape, re-pinned here so the refusal above cannot widen
+  // to it): a successful read that answers WITHOUT the row composes
+  // the held row — the bench never saw the drop, the held params are
+  // the only truth. The residual (a row deleted elsewhere between
+  // flush and read) is indistinguishable at this door and stays open.
+  test("a bench row absent from the estate answer composes the held row (the fresh-drop law)", async () => {
+    const { calls } = mountFakes({
+      draftStages: [{ id: "s_0", card: "image-gen", params: {} }],
+      startDocs: [{ run_id: "run-9", status: "queued", queue_position: 0 }],
+    });
+    stubCatalogFetch({ cards: { "img-to-mesh": { families: ["trellis2-native"] } } });
+    resetCardFamiliesCache();
+    const res = await runCardStage("bench-main", stage({
+      id: "s_9", card: "img-to-mesh",
+      params: { input_image: "drop.png", resolution: "1024" },
+    }));
+    expect(res).toEqual({ runId: "run-9" });
+    expect(calls.map((c) => c.method)).toEqual(["drafts/get", "runs/start"]);
+    expect(calls[1]?.args).toEqual({ doc: {
+      input_image: "drop.png",
+      resolution: "1024",
+      model: "trellis2-native",
+      draft_id: "bench-main",
+      test: false,
+      press_key: expect.any(String),
+    } });
+  });
+
   test("a compose refusal rides the estate's own text, never a throw", async () => {
     mountFakes({
       refusals: [{ method: "runs/start", message: "required param 'input_image' missing on the trellis2-native card — the 3D lift is image-conditioned (no text prompt rides this lane)" }],
