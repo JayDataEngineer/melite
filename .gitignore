@@ -111,6 +111,12 @@ website/.generated/
 website/.cache/
 website/.dist/
 
+# === Developer-local material (AGENTS.md: the working plan, the
+# conformance ledger, the roadmap, runbooks, audits — untracked,
+# present on development machines only; the ignore keeps `git status`
+# clean while the tree stays on disk) ===
+dev_docs/
+
 # === session scratch (kept on disk, out of git) ===
 # Root-anchored: the bare `drafts/` rule accidentally ignored the
 # packages/estate/drafts PACKAGE (its src went unversioned through

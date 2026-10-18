@@ -1,0 +1,13 @@
+{
+  "name": "@melite/docs",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node ../scripts/project-docs.mjs && vitepress dev",
+    "build": "node ../scripts/project-docs.mjs && vitepress build",
+    "preview": "vitepress preview"
+  },
+  "devDependencies": {
+    "vitepress": "^1.6.4"
+  }
+}
