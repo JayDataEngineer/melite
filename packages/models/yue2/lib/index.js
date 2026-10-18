@@ -104,10 +104,17 @@ export const DECL = {
         ],
     },
     // THE LANE SURFACE (the z-image precedent): exactly the knobs the
-    // music card serves.
+    // music card serves. guidance_scale + lm_cfg_scale are NOT served
+    // here (the D1/D2 cure, 2026-11-08 — the music3 mode precedent):
+    // the MiniMax lane's vocabulary, unread on the YuE2 lane (KSampler
+    // cfg is the lane's fixed 1, neither YuE2 node takes the input).
+    // Dropping them from the surface makes the compose door refuse a
+    // legacy draft stating them (unknown-param refusal, layer 1);
+    // actions.ts refuses them at the card path (layer 2). The card
+    // schema keeps them (music3's seat) with visible_when music3.
     "params": [
         "prompt", "lyrics", "duration", "mode",
-        "guidance_scale", "n_diffusion_steps", "lm_cfg_scale", "seed",
+        "n_diffusion_steps", "seed",
     ],
     // THE DECLARED ACTIONS (the atom vocabulary, stroke 3):
     // the compose action the music card binds (the YuE2-3B lane).

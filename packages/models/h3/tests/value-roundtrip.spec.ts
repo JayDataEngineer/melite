@@ -45,6 +45,7 @@ import { loadFacts } from "@melite/comfyui-card-kit/facts";
 import type { ModelFacts } from "@melite/comfyui-card-kit/facts";
 import type { CardDefinition } from "@melite/comfyui-card-kit/card-definition";
 import { getModel, registryIds, registryModel } from "../../../engines/comfyui-cordis/src/models/models.ts";
+import { H3_LORA_ROWS } from "@melite/models-h3/mods/loras";
 
 const FACTS_PATH = join(
   dirname(fileURLToPath(import.meta.url)),
@@ -211,5 +212,145 @@ describe("the h3 sampler knobs ride VERBATIM to their consumers (purge P2 value 
       /STEPS VALUE ARM/,
       "the arm PASSED on a wrong steps value — it is a presence arm, not a value arm; fix the arm, not the code",
     );
+  });
+
+  it("ARM 4 — second_pass_enabled + refine seats mount the T3 refine rider (TWO SamplerCustomAdvanced; the LTX stack carries the catalog file + stated strength; the rider scheduler carries the stated steps)", async () => {
+    // THE REFINE BURN (round-48 probe): the schema serves
+    // refine_lora/_strength/_steps and the film params row carries
+    // them, but NOTHING assembled p.refine — the rider never mounted
+    // and the plain pass rendered under stating seats. A stated
+    // refine MUST reach its three consumers: the LTX stack_data
+    // (file + strength), the rider scheduler (steps), and the
+    // second sampler itself.
+    const graph = await composeH3({
+      length: 56,
+      calls: [SHOT()],
+      seed: SEED,
+      second_pass_enabled: true,
+      refine_lora: "h3_taomate_3step",
+      refine_strength: 0.9,
+      refine_steps: 5,
+    }, "h3_value_arm4");
+    const samplers = Object.entries(graph).filter(([, n]) => n.class_type === "SamplerCustomAdvanced");
+    assert.equal(samplers.length, 2,
+      `the stated refine mounts the rider pass (expected TWO SamplerCustomAdvanced, saw ${samplers.length}) — the seats stated but the plain pass rendered`);
+    const ltx = Object.entries(graph).filter(([, n]) => n.class_type === "LTX_lora_loader");
+    assert.ok(ltx.length >= 2, "the rider owns its OWN loader (the primary stack never changes)");
+    const rider = ltx.find(([, n]) =>
+      typeof n.inputs.stack_data === "string" && (n.inputs.stack_data as string).includes("taomate"));
+    assert.ok(rider, "the rider loader's stack carries the resolved catalog file");
+    const stack = JSON.parse(rider![1].inputs.stack_data as string) as Array<{ lora: string; str: number }>;
+    assert.equal(stack[0]!.str, 0.9, "the rider stack carries the STATED strength");
+    const riderSched = Object.entries(graph).filter(([, n]) =>
+      n.class_type === "BasicScheduler" && n.inputs.steps === 5 && n.inputs.denoise === 1.0);
+    assert.ok(riderSched.length >= 1, "the rider scheduler carries the STATED steps at full denoise");
+  });
+
+  it("ARM 5 (master-off guard) — refine seats WITHOUT second_pass_enabled compose the plain pass (exactly ONE SamplerCustomAdvanced)", async () => {
+    // THE GUARD the cure must not break: legacy docs carry refine
+    // leaves with no master (actions.ts:1677-1680) and render the
+    // plain pass, byte-stable. The master is the only door.
+    const graph = await composeH3({
+      length: 56,
+      calls: [SHOT()],
+      seed: SEED,
+      refine_lora: "h3_taomate_3step",
+      refine_strength: 0.9,
+      refine_steps: 5,
+    }, "h3_value_arm5");
+    const samplers = Object.entries(graph).filter(([, n]) => n.class_type === "SamplerCustomAdvanced");
+    assert.equal(samplers.length, 1,
+      `master off must render the plain pass (expected ONE SamplerCustomAdvanced, saw ${samplers.length})`);
+  });
+
+  it("ARM 6 — a bogus refine_lora id refuses LOUD naming the knob (the compose door refuses hand-spelled ids)", async () => {
+    // THE PROMISED REFUSAL (schema.ts:211 — LORAS ARE ONLY MODS, the
+    // compose door refuses unknown ids loud): a hand-spelled id must
+    // never compose clean. The round-48 probe composed it clean —
+    // this arm is the red-proof of the missing refusal.
+    await assert.rejects(
+      composeH3({
+        length: 56,
+        calls: [SHOT()],
+        seed: SEED,
+        second_pass_enabled: true,
+        refine_lora: "no_such_refiner",
+      }, "h3_value_arm6"),
+      /refine_lora/,
+      "a hand-spelled refine id composed clean — the promised loud refusal is missing",
+    );
+  });
+
+  it("ARM 7 — unstated refine overrides default from the catalog row (taomate 0.7 @ 3 steps)", async () => {
+    // ONE OWNER PER KNOB (schema.ts:207-208): refine_lora picks the
+    // instrument; strength/steps default FROM THE ROW. Stating only
+    // the id must ride the row's operating point.
+    const graph = await composeH3({
+      length: 56,
+      calls: [SHOT()],
+      seed: SEED,
+      second_pass_enabled: true,
+      refine_lora: "h3_taomate_3step",
+    }, "h3_value_arm7");
+    const samplers = Object.entries(graph).filter(([, n]) => n.class_type === "SamplerCustomAdvanced");
+    assert.equal(samplers.length, 2, "the id alone mounts the rider (row defaults fill strength/steps)");
+    const ltx = Object.entries(graph).filter(([, n]) => n.class_type === "LTX_lora_loader");
+    const rider = ltx.find(([, n]) =>
+      typeof n.inputs.stack_data === "string" && (n.inputs.stack_data as string).includes("taomate"));
+    assert.ok(rider, "the rider loader's stack carries the resolved catalog file");
+    const stack = JSON.parse(rider![1].inputs.stack_data as string) as Array<{ lora: string; str: number }>;
+    assert.equal(stack[0]!.str, 0.7, "unstated strength defaults from the row (taomate 0.7)");
+    const riderSched = Object.entries(graph).filter(([, n]) =>
+      n.class_type === "BasicScheduler" && n.inputs.steps === 3 && n.inputs.denoise === 1.0);
+    assert.ok(riderSched.length >= 1, "unstated steps default from the row (taomate 3)");
+  });
+
+  it("ARM 8 — a stated refine_steps outside the ROW's declared domain refuses LOUD naming the domain (the re-homed row-domain law, F2)", async () => {
+    // THE RE-HOMED LAW (F2 — one owner, one voice): the service's
+    // refine-steps-range refusal moves to the compose door (the only
+    // assembler). The turbo row declares [4,8]: 9 rides admission
+    // (the schema's max is 10) but violates the row; 2 rides
+    // admission (the schema's min is 1) but violates the row. Both
+    // must refuse naming the domain — and an in-domain count must
+    // still ride (the control pins the cure against over-refusal).
+    const doc = (steps: number, runId: string) => ({
+      length: 56,
+      calls: [SHOT()],
+      seed: SEED,
+      second_pass_enabled: true,
+      refine_lora: "h3_lightx2v_turbo",
+      refine_steps: steps,
+    });
+    await assert.rejects(
+      composeH3(doc(9, "h3_value_arm8hi"), "h3_value_arm8hi"),
+      /declared domain \[4, 8\]/,
+      "an above-domain refine count composed clean — the row-domain law is missing at the door",
+    );
+    await assert.rejects(
+      composeH3(doc(2, "h3_value_arm8lo"), "h3_value_arm8lo"),
+      /declared domain \[4, 8\]/,
+      "a below-domain refine count composed clean — the row-domain law is missing at the door",
+    );
+    const graph = await composeH3(doc(6, "h3_value_arm8ok"), "h3_value_arm8ok");
+    const riderSched = Object.entries(graph).filter(([, n]) =>
+      n.class_type === "BasicScheduler" && n.inputs.steps === 6 && n.inputs.denoise === 1.0);
+    assert.ok(riderSched.length >= 1, "an in-domain refine count still rides the rider scheduler");
+  });
+
+  it("ARM 9 — every served loras row declares default_strength and steps (the door's ?? never falls through)", async () => {
+    // THE VACUITY LOCK (F2): resolveRefineSeat's `?? row.X`
+    // fallbacks are reachable ONLY through a row missing the field —
+    // all eleven rows declare both, so the door carries NO
+    // steps-required / strength-fallback branches (dead code is
+    // refused HERE, never grown in the door). A future stepless or
+    // strengthless row reds THIS arm first, forcing the door branch
+    // WITH its own firing arm.
+    assert.ok(H3_LORA_ROWS.length > 0, "the served loras table is non-empty");
+    for (const row of H3_LORA_ROWS) {
+      assert.equal(typeof row.default_strength, "number",
+        `row '${row.id}' declares no default_strength — the door's strength ?? falls through; add the field or the door branch with its arm`);
+      assert.ok(Number.isInteger(row.steps),
+        `row '${row.id}' declares no integer steps — the door's steps ?? falls through; add the field or the door branch with its arm`);
+    }
   });
 });

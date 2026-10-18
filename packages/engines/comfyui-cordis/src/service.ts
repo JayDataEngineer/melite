@@ -949,45 +949,14 @@ export class ComfyUIService extends Service {
       })
     }
 
-    // ── THE T3 REFINE RIDER RESOLUTION (roadmap item 2) — the
-    // SAME law as the loras bag above: refine_lora is a catalog
-    // id resolved against the SAME served rows (never a
-    // hand-spelled filename); unknown ids refuse LOUD. Strength
-    // and steps default from the ROW (the row is the family's
-    // truth — taomate: 0.7 @ 3); explicit refine_strength /
-    // refine_steps override. A row that declares no step count
-    // AND no explicit refine_steps REFUSES — the closing pass
-    // needs a count, and none is invented silently. The resolved
-    // row rides params as `refine` (compose mounts the second
-    // sampler only when it is present; absent = the window cache
-    // keys stay untouched — existing films keep their hits).
-    const refineId = typeof merged.refine_lora === 'string' && (merged.refine_lora as string) !== ''
-      ? merged.refine_lora as string : undefined
-    if (refineId !== undefined) {
-      const refineCat = this.modCatalogForCompose('loras', modelId, def.boarded)
-      const row = refineCat.rows.find((r) => r.id === refineId)
-      if (row === undefined) {
-        throw new ComposeRefusal('unknown-refine-lora', `card '${cardId}' names refine_lora '${refineId}' with no '${modelId}' flavor row (registered: ${refineCat.rows.map((r) => r.id).join(', ') || 'none'}) — pick from the served catalog, never hand-spell`)
-      }
-      // THE VALUE PLANE (D5), the refine half: the closing pass is
-      // the same family-scoped plane — a foreign row never rides it.
-      this.assertValueFamily('loras', refineId, runFamily, cardId)
-      const statedStrength = typeof merged.refine_strength === 'number' ? merged.refine_strength as number : undefined
-      const statedSteps = typeof merged.refine_steps === 'number' ? merged.refine_steps as number : undefined
-      const steps = statedSteps ?? row.steps
-      if (steps === undefined) {
-        throw new ComposeRefusal('refine-steps', `refine_lora '${refineId}' declares no step count and refine_steps is unset — the closing pass needs a count (pin refine_steps or pick a row that declares one)`)
-      }
-      // THE ROW DOMAIN (007 L4, the refine half): a stated
-      // refine_steps outside the row's declared domain refuses LOUD
-      // with the domain named — same law as the bag above.
-      if ((row.steps_min !== undefined && steps < row.steps_min) || (row.steps_max !== undefined && steps > row.steps_max)) {
-        throw new ComposeRefusal('refine-steps-range', `card '${cardId}' refine_lora '${refineId}' steps = ${steps} is outside the row's declared domain [${row.steps_min ?? '…'}, ${row.steps_max ?? '…'}] (row default ${row.steps}) — pick a count inside the domain`)
-      }
-      merged.refine = { name: row.filename, strength: statedStrength ?? row.default_strength ?? 1.0, steps }
-    } else {
-      delete merged.refine
-    }
+    // THE REFINE SEATS (purge F2, 2026-11-08 — one owner, one
+    // voice): the service assembles NO `refine` key — the refine
+    // seats (refine_lora / _strength / _steps) pass through to the
+    // card door untouched, and the door (h3's resolveRefineSeat)
+    // resolves the row, enforces the domain, and mounts the rider.
+    // A stale `refine` key (pre-F2 films) is deleted, never honored:
+    // two assemblers was the split brain; the door is the one owner.
+    delete merged.refine
 
     // CONTROLNET WIRE RESOLUTION (the z-image restoration — the
     // type/model split, the LoRA law above): the leaf emits

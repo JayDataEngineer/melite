@@ -1010,14 +1010,13 @@ describe("compose (the model path)", () => {
       (e: unknown) => e instanceof ComposeRefusal && e.code === "lora-steps-range" && /declared domain \[4, 8\]/.test(e.message),
       "below the min refuses with the domain named",
     );
-    assert.throws(
-      () => svc.compose("card1", "fam1", { refine_lora: "turbo48", refine_steps: 30 }, "l4e"),
-      (e: unknown) => e instanceof ComposeRefusal && e.code === "refine-steps-range" && /declared domain \[4, 8\]/.test(e.message),
-      "the refine half obeys the same domain",
-    );
+    // (purge F2: the l4e/l4f refine-half arms are DELETED with the
+    // service's T3 block — the domain law they pinned now fires at
+    // the card door, walled by the h3 value wall's ARM 8. The bag
+    // above keeps its own four arms; the refine seats below carry
+    // the single-owner arm.)
     svc.compose("card1", "fam1", { refine_lora: "turbo48", refine_steps: 6 }, "l4f");
-    assert.deepEqual(seen[2]!["refine"], { name: "t48.safetensors", strength: 1.0, steps: 6 },
-      "an in-domain refine count resolves");
+    assert.ok(!("refine" in seen[2]!), "the refine seats pass through — no assembled `refine` key");
   });
 
   // ── THE T3 REFINE RIDER RESOLUTION (roadmap item 2): the same
@@ -1025,7 +1024,12 @@ describe("compose (the model path)", () => {
   // row seeds strength+steps, caller overrides win, unknown ids
   // and count-less rows refuse LOUD, and an unset rider leaves
   // params clean (the cache keys of existing films never move). ──
-  it("the refine rider resolves (row seeds, caller wins, count-less refuses, unset stays absent)", async () => {
+  // ── THE REFINE SINGLE-OWNER LAW (purge F2, 2026-11-08): the card's
+  // compose door (h3's resolveRefineSeat) is the ONLY refine assembler —
+  // the service passes the refine seats through untouched and assembles
+  // NO `refine` key of its own. Any `refine` key in the composed params
+  // is a second owner: this arm reds until the service's T3 block dies. ──
+  it("refine seats pass through untouched (the service assembles no refine key — the compose door is the single owner)", async () => {
     const seen: Record<string, unknown>[] = [];
     const svc = await bootModel({ compose: (params) => { seen.push({ ...params }); } });
     svc.registerPack({ pack: "loras", fields: fields({}) });
@@ -1034,37 +1038,22 @@ describe("compose (the model path)", () => {
       families: ["fam1"],
       rows: [
         { id: "taomate", filename: "taomate.safetensors", source_url: "https://h/t", default_strength: 0.7, steps: 3 },
-        { id: "bare", filename: "bare.safetensors", source_url: "https://h/b" },
       ],
     });
-    svc.compose("card1", "fam1", { refine_lora: "taomate" }, "f1");
-    assert.deepEqual(seen[0]!["refine"], { name: "taomate.safetensors", strength: 0.7, steps: 3 }, "the row's marriage seeds the rider (taomate: 0.7 @ 3)");
-    svc.compose("card1", "fam1", { refine_lora: "taomate", refine_strength: 1.0, refine_steps: 4 }, "f2");
-    assert.deepEqual(seen[1]!["refine"], { name: "taomate.safetensors", strength: 1.0, steps: 4 }, "the caller's overrides win");
-    assert.throws(
-      () => svc.compose("card1", "fam1", { refine_lora: "ghost" }, "f3"),
-      (e: unknown) => e instanceof ComposeRefusal && e.code === "unknown-refine-lora" && /no 'fam1' flavor row/.test(e.message),
-    );
-    assert.throws(
-      () => svc.compose("card1", "fam1", { refine_lora: "bare" }, "f4"),
-      (e: unknown) => e instanceof ComposeRefusal && e.code === "refine-steps" && /needs a count/.test(e.message),
-      "a count-less row with no explicit steps refuses (no silent count)",
-    );
-    svc.compose("card1", "fam1", { refine_lora: "bare", refine_steps: 2 }, "f5");
-    assert.deepEqual(seen[2]!["refine"], { name: "bare.safetensors", strength: 1.0, steps: 2 }, "explicit steps rescue a count-less row");
-    svc.compose("card1", "fam1", {}, "f6");
-    assert.ok(!("refine" in seen[3]!), "unset rider serializes nothing");
+    svc.compose("card1", "fam1", { refine_lora: "taomate", refine_strength: 1.0, refine_steps: 4 }, "f1");
+    assert.equal(seen[0]!["refine_lora"], "taomate", "the stated seat rides through to the card door");
+    assert.equal(seen[0]!["refine_steps"], 4, "the stated count rides through to the card door");
+    assert.ok(!("refine" in seen[0]!), "the service assembles no `refine` key — the compose door owns the assembly");
   });
-
-  it("a rowless refine catalog says 'registered: none' (never a dangling list)", async () => {
-    const svc = await bootModel({ compose: () => {} });
-    svc.registerPack({ pack: "loras", fields: fields({}) });
-    svc.registerFlavor({ pack: "loras", families: ["fam1"], rows: [] });
-    assert.throws(
-      () => svc.compose("card1", "fam1", { refine_lora: "ghost" }, "f1"),
-      (e: unknown) => e instanceof ComposeRefusal && e.code === "unknown-refine-lora" && /\(registered: none\)/.test(e.message),
-    );
-  });
+  // (purge F2: the two tests below are DELETED with the service's T3
+  // block — "the refine rider resolves" pinned the deleted assembler
+  // (row seeds / overrides / unknown-id + count-less refusals) and
+  // "a rowless refine catalog" pinned its unknown-id voice. The laws
+  // they guarded did not die: unknown-id refuses at the card door
+  // (h3 value wall ARM 6), the domain refuses at the card door (ARM
+  // 8), the count-less branch is vacuous on complete rows (ARM 9
+  // locks the 11/11), and the single-owner arm above guards the
+  // deletion itself.)
 
   it("hand-authored weight rows honor the weight (strength-first, never silent full)", async () => {
     const seen: Record<string, unknown>[] = [];

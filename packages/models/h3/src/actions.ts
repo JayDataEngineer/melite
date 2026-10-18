@@ -65,6 +65,46 @@ const loraStackDefault = (): string => {
   }
   return JSON.stringify([{ on: true, lora: row.filename, str: row.default_strength, v: 1, a: 1, t: 1 }])
 }
+// THE REFINE-SEAT ASSEMBLY (purge P2 h3 hop-5, 2026-11-08 — the
+// refine seats were served-but-dead: the schema admits refine_lora /
+// _strength / _steps and the film params row carries them, but
+// nothing built the rider's {name, strength, steps} object, so the
+// T3 rider never mounted and the plain pass rendered under stating
+// seats). The assembly lives HERE — inside renderH3Window, the
+// single choke point both the film loop and the single-window face
+// call — so neither face can mount the rider without it (the G6
+// two-face law). Unknown ids refuse LOUD naming refine_lora (the
+// schema's LORAS-ARE-ONLY-MODS promise); master-off or empty id =
+// no rider (the legacy byte-stable plain pass).
+function resolveRefineSeat(p: Record<string, unknown>): { name: string; strength: number; steps: number } | undefined {
+  if (p.second_pass_enabled !== true) return undefined
+  const id = p.refine_lora
+  if (typeof id !== "string" || id === "") return undefined
+  const row = H3_LORA_ROWS.find((r) => r.id === id)
+  if (row === undefined) {
+    throw new Error(`h3 action: refine_lora '${id}' names no served loras row — pick from the flavor catalog, never a hand-spelled id (the compose door refuses unknown ids loud)`)
+  }
+  // THE ROW DOMAIN (purge F2 re-home, 2026-11-08 — the service's
+  // refine-steps-range law moves here, its only assembler: a stated
+  // count outside the named row's declared [min, max] refuses LOUD
+  // naming the domain. The door carries NO steps-required or
+  // strength-fallback branches: every served row declares steps +
+  // default_strength (the wall's ARM 9 locks the 11/11), so those
+  // branches would be dead code refusing coverage. The table is an
+  // `as const` union where only domain rows carry steps_min/max, so
+  // the bounds read through `in`-narrowing (no cast, no table touch).
+  const steps = ((p.refine_steps as number | undefined) ?? row.steps)
+  const lo = ('steps_min' in row) ? row.steps_min : undefined
+  const hi = ('steps_max' in row) ? row.steps_max : undefined
+  if ((lo !== undefined && steps < lo) || (hi !== undefined && steps > hi)) {
+    throw new Error(`h3 action: refine_steps ${steps} for refine_lora '${id}' falls outside the row's declared domain [${lo ?? '…'}, ${hi ?? '…'}] — pick a count the instrument serves, never force one (the compose door enforces the row domain)`)
+  }
+  return {
+    name: row.filename,
+    strength: (p.refine_strength as number | undefined) ?? row.default_strength,
+    steps,
+  }
+}
 // His 17k+5 grid, in-graph (ComfyMathExpression): snap latent steps to 2 mod 5
 // (the card's own principles row: "Length snaps to the 17k+5 frame grid
 // at 24fps" — the principles). The seconds→frames multiplier is the
@@ -1644,8 +1684,10 @@ function renderH3Window(
   // primary stack above NEVER changes), full-denoise short
   // schedule from the same noise seed, riding the doc's own
   // sampler/scheduler (the rider owns NO solver of its own — one
-  // owner per knob). Mounted ONLY when the service resolved a
-  // refine row; absent = the graph renders exactly as before.
+  // owner per knob). Mounted ONLY when resolveRefineSeat above
+  // assembles the rider (the door's single owner — the engine
+  // service carries no refine assembly of its own); absent = the
+  // graph renders exactly as before.
   // The TaoMate refiner thread's mechanics: pass A full, pass B
   // closes. The rider sits UPSTREAM of decode AND of the film's
   // seam handles — the chained texture is the refined one.
@@ -1654,7 +1696,7 @@ function renderH3Window(
   // refine each AND it with their own switch (legacy docs with
   // leaves set but no master render the plain pass, byte-stable).
   const secondPassOn = p.second_pass_enabled === true
-  const refine = secondPassOn ? (p.refine as { name: string, strength: number, steps: number } | undefined) : undefined
+  const refine = resolveRefineSeat(p)
   if (refine !== undefined) {
     const refineModel = g.node('LTX_lora_loader', {
       model: sigmaModel, mode: 'minimax',
