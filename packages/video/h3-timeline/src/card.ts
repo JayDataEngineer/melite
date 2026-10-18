@@ -46,9 +46,9 @@ export { carrier, JSON_ARRAY_PARAMS, schema } from '@melite/models-h3/schema'
 // resolve's judge: schemastery schemas are callable (Schema.resolve)
 // but carry a typed data parameter, while the card seam takes
 // unknown. The full `schema()` normalizer CANNOT run here (its t4r
-// admission judges Object.keys(raw) as explicit injects, and the
-// merged carrier doc's walked defaults would read as injects), so
-// the strict resolve walks the carrier `paramSchema` — same
+// admission judges stated-and-valued keys as explicit injects, and
+// the merged carrier doc's walked defaults would read as injects),
+// so the strict resolve walks the carrier `paramSchema` — same
 // carrier the schemaCarrier registration hands the door.
 const schemaFn = callableSchema(paramSchema)
 
@@ -211,15 +211,16 @@ export function registerCard(ctx: Context, comfy: ComfyUIServiceFace): void {
     // SPELLING: deriveWindowFamily + T4_ONLY_KEYS ride the same
     // contract module the walk, the studio rail, the B1 emit law and
     // the pick gate (pickVerdict.ts) judge with — no copy, no drift.
-    // Explicit keys mirror the walk verbatim (Object.keys — a
-    // null-valued key is explicit to the walk too; the bench doors'
-    // merge-patch deletes nulls upstream, so the view this face
-    // judges is null-free in practice). A JUDGE, NOT A GUARD (the
+    // Explicit keys mirror the walk verbatim (stated-and-valued —
+    // THE ONE NULL LAW: schema.ts:531 reads null as UNSTATED, and so
+    // does this face; the bench doors' merge-patch deletes nulls
+    // upstream, so the view this face judges is null-free in
+    // practice, and a null that arrives anyway is unstated too). A JUDGE, NOT A GUARD (the
     // operator's no-blocker ruling): the verdict speaks at the write
     // door; the stored state keeps its own law.
     admitFamily(params) {
       if (deriveWindowFamily(params) !== "t4r") return { ok: true }
-      const explicit = new Set(Object.keys(params))
+      const explicit = new Set(Object.keys(params).filter((k) => params[k] !== null))
       const bad = T4_ONLY_KEYS.filter((k) => explicit.has(k)).sort()
       if (bad.length === 0) return { ok: true }
       return {

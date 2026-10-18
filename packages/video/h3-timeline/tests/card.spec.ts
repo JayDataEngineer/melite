@@ -423,4 +423,23 @@ describe("the family admission — CardDefinition.admitFamily (B5)", () => {
     // and the walk composes it (no refusal the admission missed):
     def.schema!(film);
   });
+
+  it("null-carried dead keys are UNSTATED at the write door (THE ONE NULL LAW reaches admitFamily)", () => {
+    // the rejourney's §3.8: admitFamily's Object.keys presence grammar
+    // counted null-carried keys as stated while the gate (familyLaw)
+    // and the walk (schema.ts:531 stated-and-valued explicit) read
+    // null absent — the same doc the write door refused with the F1
+    // spine, the run door admitted clean. null ≡ absent at every
+    // arrival door, no exceptions.
+    assert.deepEqual(
+      def.admitFamily!({
+        ...KEYFRAME_DOC,
+        interpolate_enabled: null,
+        second_pass_enabled: null,
+        sharpen_enabled: null,
+        sr_switch: null,
+      }),
+      { ok: true },
+    );
+  });
 });
