@@ -1827,7 +1827,7 @@ export const film = {
         { name: "duck_depth_db", type: "number", bounds: [-48, 0] },
         { name: "seed", type: "number", rule: "seed-sentinel" },
         { name: "width", type: "number", bounds: [448, 1344] },
-        { name: "height", type: "number", bounds: [448, 768] },
+        { name: "height", type: "number", bounds: [448, 1344] },
         { name: "length", type: "number", bounds: [22, 362] },
         { name: "steps", type: "number", bounds: [4, 30] },
         { name: "second_pass_enabled", type: "boolean" },

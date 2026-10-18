@@ -102,8 +102,8 @@ export const paramSchema = z.object({
     // dialogue, shallower when the generated voice should hold.
     duck_depth_db: z.number().description("Duck depth (dB)").min(-48).max(0).step(1).default(-14).extra('extra', bag({ order: null, wtype: 'number', columns: 2, width: 1, tooltip: "How far the generated voice ducks under a dialogue clip (−14 is the mix-desk default)." })),
     seed: z.number().description("Seed").step(1).default(42).extra('extra', bag({ order: null, columns: 2, width: 1, tooltip: "Same seed across re-rolls = same world texture" })),
-    width: z.number().description("Width").min(448).max(1344).step(64).default(1344).extra('extra', bag({ order: null, wtype: 'number', columns: 2, width: 1 })),
-    height: z.number().description("Height").min(448).max(768).step(64).default(768).extra('extra', bag({ order: null, wtype: 'number', columns: 2, width: 1 })),
+    width: z.number().description("Width").min(448).max(1344).step(32).default(1344).extra('extra', bag({ order: null, wtype: 'number', columns: 2, width: 1 })),
+    height: z.number().description("Height").min(448).max(1344).step(32).default(768).extra('extra', bag({ order: null, wtype: 'number', columns: 2, width: 1 })),
     // length (the grid-law fix, 2026-09-13): the row's old validators
     // (min 21, step 5) contradicted the card's own declared law — the
     // 17k+5 frame grid (identity principle + tooltip: 56/90/124/362).

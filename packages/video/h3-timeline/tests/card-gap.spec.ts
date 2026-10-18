@@ -1,4 +1,5 @@
 // @melite/video-h3-timeline — card gate + renderer gap rows (2026-09-19).
+// @contract cards-h3-portrait-geometry
 //
 // DRIVES (through the registered card's own doors — def.schema for the
 // gate, def.compose for the renderer): the wire-boolean coercion, the
@@ -1128,6 +1129,39 @@ describe("the overlays cannot go around Schemaster", () => {
     );
     const json = JSON.stringify(graphOf(g));
     assert.ok(!json.includes("bogus_knob"), "the unknown key never lands on a node input");
+  });
+
+  // THE PORTRAIT LAW (operator 2026-11-08: "THE SIZE IS STILL THE
+  // SAME" — the (a) burn: the h3 window admitted only width 448–1344
+  // × height 448–768 on a 64 grid, so every 9:16 portrait reel the
+  // operator asked for refused at the compose door while the engine
+  // accepts the geometry. The envelope is width 448–1344 × height
+  // 448–1344 on a 32 grid — the reels the operator actually cuts
+  // compose, and the graph carries the geometry verbatim).
+  it("PORTRAIT: a 576x1024 (9:16) lift composes and the geometry rides the graph verbatim", () => {
+    const g = new GraphBuilder();
+    def.compose(
+      def.schema({ calls: [{ text: "a push in", start_frame: 0, end_frame: 90, knobs: { width: 576, height: 1024 } }] }),
+      model, g, "run_lift_portrait",
+    );
+    const out = graphOf(g);
+    const r2v = ofClass(out, "MiniMaxH3ReferenceToVideo");
+    assert.ok(r2v.length > 0, "the lifted image-anchor window renders the r2v lane");
+    assert.equal(r2v[0]![1].inputs.width, 576);
+    assert.equal(r2v[0]![1].inputs.height, 1024);
+  });
+
+  it("PORTRAIT: a 32-step width (480) rides the lift (the 64 grid refused the operator's reels)", () => {
+    const g = new GraphBuilder();
+    def.compose(
+      def.schema({ calls: [{ text: "a push in", start_frame: 0, end_frame: 90, knobs: { width: 480, height: 832 } }] }),
+      model, g, "run_lift_32step",
+    );
+    const out = graphOf(g);
+    const r2v = ofClass(out, "MiniMaxH3ReferenceToVideo");
+    assert.ok(r2v.length > 0, "the lifted image-anchor window renders the r2v lane");
+    assert.equal(r2v[0]![1].inputs.width, 480);
+    assert.equal(r2v[0]![1].inputs.height, 832);
   });
 
   it("T6: a doc-level typo REFUSES unknown-param (the entry doc is admitted, not merged silent)", () => {
