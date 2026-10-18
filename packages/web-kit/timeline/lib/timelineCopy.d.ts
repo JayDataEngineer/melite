@@ -131,6 +131,12 @@ export declare const timelineCopy: {
         track: string;
         frame: number;
     }) => string;
+    /** (SD-8 lane parity, 2026-11-08) the kf head row's hover voice —
+     *  the audio heads carry bed/drop titles; the kf head names its own
+     *  pin verb. */
+    readonly kfLaneTitle: (p: {
+        track: string;
+    }) => string;
     /** A keyframe delete button's accessible name. */
     readonly deleteKeyframeAria: (p: {
         track: string;

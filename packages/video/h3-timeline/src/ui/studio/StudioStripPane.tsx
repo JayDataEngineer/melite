@@ -376,6 +376,12 @@ export function StudioStripPane({
       // their clips as SMALL CALL CARDS — accent gradient, class glyph
       // (mic / note / bolt), name + span — at the cards lane height.
       audioClipCards
+      // (SD-8 lane parity, 2026-11-08, operator item c) the keyframes
+      // lane rides the SAME card height + tint the audio lanes carry —
+      // the one kf lane reads as the D-M-E rows' peer, not a
+      // second-class whisper row. Opt-in per tenant; the motion card's
+      // six tracks keep their 24px blocks.
+      kfLaneCards
       audioLayers={[
         { id: "dialogue", label: studioCopy.laneDialogue, icon: "mic", accent: "#22d3ee",
           onUpload: refAudiosBlocked ? undefined : openLanePicker("dialogue"),

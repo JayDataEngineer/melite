@@ -101,6 +101,10 @@ export const timelineCopy = {
     // ── Keyframes ────────────────────────────────────────────────────────
     /** A keyframe pin's accessible name. */
     keyframeAria: (p) => `${p.track} keyframe at frame ${p.frame}`,
+    /** (SD-8 lane parity, 2026-11-08) the kf head row's hover voice —
+     *  the audio heads carry bed/drop titles; the kf head names its own
+     *  pin verb. */
+    kfLaneTitle: (p) => `Double-click the lane to pin a ${p.track} constraint at the playhead`,
     /** A keyframe delete button's accessible name. */
     deleteKeyframeAria: (p) => `Delete ${p.track} keyframe at frame ${p.frame}`,
     // ── The scrub bar (the form card's bottom seam) ──────────────────────

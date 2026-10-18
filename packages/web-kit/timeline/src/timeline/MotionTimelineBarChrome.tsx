@@ -16,6 +16,7 @@ import { useState } from "react"
 import type { TimelineTrack } from "./viser-timeline/types.ts"
 import type { AudioLayer, TimelineBeat } from "./MotionTimelineBar.tsx"
 import { timelineCopy } from "../timelineCopy.ts"
+import { LaneHead } from "./LaneHead.tsx"
 
 export interface TimelineGutterScale {
   zoom: (factor: number) => void
@@ -48,6 +49,10 @@ export interface TimelineGutterProps {
   onTrackAdd?: (trackUuid: string, anchor: HTMLButtonElement) => void
   /** (2026-09-22, the D-M-E card law) cards-mode heads match the lanes. */
   audioClipCards?: boolean
+  /** (SD-8 lane parity, 2026-11-08) the kf heads ride the audio
+   *  heads' card height (44) when the tenant opts in — the
+   *  audioClipCards precedent; absent → the 24px block, byte-identical. */
+  kfLaneCards?: boolean
   tracks: TimelineTrack[]
 }
 
@@ -57,7 +62,7 @@ export function TimelineGutter(props: TimelineGutterProps) {
   const {
     scale, scrollRef, frameIdx, promptsHeight, promptsLabel,
     beats, beatsLabel, beatsHeight, audioLayers, onAudioDetach, tracks, audioClipCards,
-    onTrackAdd,
+    onTrackAdd, kfLaneCards,
   } = props
   const {
     zoom, anchorRef, frameToPx, setPpf, setBasePpf, fitPpf, effPpf, basePpf,
@@ -108,21 +113,19 @@ export function TimelineGutter(props: TimelineGutterProps) {
           </Button>
           </Tip>
         </div>
-        <div
-          className={css.laneHead}
-          style={{ height: promptsHeight }}
-        >
-          <Film aria-hidden />
-          <span className={css.gutterLabel}>{promptsLabel}</span>
-        </div>
+        <LaneHead
+          variant="prompts"
+          glyph={<Film aria-hidden />}
+          label={promptsLabel}
+          height={promptsHeight}
+        />
         {beats && (
-          <div
-            className={css.laneHeadBeats}
-            style={{ height: beatsHeight }}
-          >
-            <ListMusic aria-hidden />
-            <span className={css.gutterLabel}>{beatsLabel}</span>
-          </div>
+          <LaneHead
+            variant="beats"
+            glyph={<ListMusic aria-hidden />}
+            label={beatsLabel}
+            height={beatsHeight}
+          />
         )}
         {audioLayers?.map((L) => {
           // (2026-09-22, the D-M-E card law) the lane's OWN glyph +
@@ -130,24 +133,18 @@ export function TimelineGutter(props: TimelineGutterProps) {
           // accent tints the glyph so the gutter reads like the clips.
           const Glyph = L.icon === "mic" ? Mic : L.icon === "zap" ? Zap : Music
           return (
-          <div
+          <LaneHead
             key={L.id}
-            className={css.audioHead}
-            data-audio-icon={L.icon ?? "music"}
-            style={{
-              height: audioClipCards ? AUDIO_CARDS_H : AUDIO_H,
-              ...(L.accent ? { color: L.accent } : {}),
-            }}
+            variant="audio"
+            iconAttr={L.icon ?? "music"}
+            glyph={<Glyph aria-hidden />}
+            label={L.label}
+            accent={L.accent}
+            height={audioClipCards ? AUDIO_CARDS_H : AUDIO_H}
             title={L.stem
               ? timelineCopy.audioBedTitle({ stem: L.stem })
               : timelineCopy.audioDropTitle}
-          >
-            <Glyph aria-hidden />
-            <span className={css.gutterLabelDim}>{L.label}</span>
-            {/* (2026-09-22, the lane-picker law) the add door beside the
-                title — the host opens its source picker (From flow /
-                From media / From file) anchored at THIS button. */}
-            {L.onUpload && (
+            door={L.onUpload && (
               <Button variant="ghost" size="sm"
                 data-audio-upload={L.id}
                 aria-label={timelineCopy.addClipAria({ label: L.label })}
@@ -158,10 +155,7 @@ export function TimelineGutter(props: TimelineGutterProps) {
                 <Upload aria-hidden />
               </Button>
             )}
-            {/* (2026-09-02) detach shows for CLIPS too — the NLE Music
-                row's clips are the primary content now; a clips-only
-                layer had no way to clear the whole row at once. */}
-            {(L.stem || (L.clips?.length ?? 0) > 0) && onAudioDetach && (
+            detach={(L.stem || (L.clips?.length ?? 0) > 0) && onAudioDetach && (
               <Button variant="ghost" size="sm"
                 onClick={() => onAudioDetach(L.id)}
                 aria-label={timelineCopy.detachAria({ label: L.label })}
@@ -170,30 +164,18 @@ export function TimelineGutter(props: TimelineGutterProps) {
                 <IconCloseOutlineRegular />
               </Button>
             )}
-          </div>
+          />
           )
         })}
         {tracks.map((t) => (
-          <div
+          <LaneHead
             key={t.uuid}
-            className={css.laneRow}
-            style={{ height: LANE_H }}
-          >
-            <span
-              className={css.laneDot}
-              style={{ background: rgb(t.color ?? [176, 180, 186]) }}
-              aria-hidden
-            />
-            <span className={css.laneName}>{t.name}</span>
-            {/* (2026-11-06, the lane-add parity law) the track head's
-                add door — the audio heads' own grammar verbatim (ghost
-                sm + Upload, anchored at this button). The date marks
-                the operator's live order: "WHERE IS MY UP ARROW ICON
-                FOR THE KEYFRAMES? THE AUDIO INPUTS HAVE THEM" — the
-                defect-B-era ruling (door in the rail subview only) is
-                superseded; BOTH doors live now (the subview keeps its
-                editor door, the lane head gains the add verb). */}
-            {onTrackAdd && (
+            variant="kf"
+            dotColor={rgb(t.color ?? [176, 180, 186])}
+            label={t.name}
+            height={kfLaneCards ? AUDIO_CARDS_H : LANE_H}
+            title={timelineCopy.kfLaneTitle({ track: t.name })}
+            door={onTrackAdd && (
               <Button variant="ghost" size="sm"
                 data-track-upload={t.uuid}
                 aria-label={timelineCopy.addTrackAria({ track: t.name })}
@@ -204,7 +186,7 @@ export function TimelineGutter(props: TimelineGutterProps) {
                 <Upload aria-hidden />
               </Button>
             )}
-          </div>
+          />
         ))}
       </div>
     </>

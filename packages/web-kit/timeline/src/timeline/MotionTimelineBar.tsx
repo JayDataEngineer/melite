@@ -229,6 +229,12 @@ export interface MotionTimelineBarProps {
    * lanes — instead of the 26px blocks. Opt-in; absent → byte-identical
    * blocks (the motion tenant never changes). */
   audioClipCards?: boolean
+  /** (SD-8 lane parity, 2026-11-08, the audioClipCards precedent) the
+   * keyframe lanes ride the audio lanes' card height (44) + the 3%
+   * lane tint, and their heads mirror the body — instead of the 24px
+   * blocks. Opt-in; absent → byte-identical 24px blocks (the motion
+   * tenant's six kf tracks never change). */
+  kfLaneCards?: boolean
   /** ── STYLING SEAM (2026-09-07, the shadcn rule): the bar is a
    *  shared component and takes className/style like every other
    *  primitive — the tenant's shell (border, rounding) rides the
@@ -302,6 +308,8 @@ export { useTimelineDragSession } from "./MotionTimelineBarDrag.ts"
 export type { Drag, TimelineDragSessionOpts } from "./MotionTimelineBarDrag.ts"
 export { TimelineContent, TimelineGutter, TimelinePlayhead, TimelineRuler } from "./MotionTimelineBarChrome.tsx"
 export type { TimelineContentProps, TimelineGutterProps, TimelineGutterScale, TimelinePlayheadProps, TimelineRulerProps } from "./MotionTimelineBarChrome.tsx"
+export { LaneHead } from "./LaneHead.tsx"
+export type { LaneHeadProps } from "./LaneHead.tsx"
 export { TimelineAudioLanes, TimelineBeatsLane, TimelineKeyframeLanes, TimelinePromptsLane } from "./MotionTimelineBarLanes.tsx"
 export type { TimelineAudioLanesProps, TimelineBeatsLaneProps, TimelineKeyframeLanesProps, TimelinePromptsLaneProps } from "./MotionTimelineBarLanes.tsx"
 
@@ -348,6 +356,7 @@ export function MotionTimelineBar({
   onAudioDetach,
   onTrackAdd,
   audioClipCards = false,
+  kfLaneCards = false,
   className,
   style,
   theme,
@@ -379,7 +388,7 @@ export function MotionTimelineBar({
         promptsHeight={promptsHeight} promptsLabel={promptsLabel}
         beats={beats} beatsLabel={beatsLabel} beatsHeight={beatsHeight}
         audioLayers={audioLayers} onAudioDetach={onAudioDetach} tracks={tracks} audioClipCards={audioClipCards}
-        onTrackAdd={onTrackAdd}
+        onTrackAdd={onTrackAdd} kfLaneCards={kfLaneCards}
       />
       <TimelineContent
         scrollRef={scrollRef} contentW={scale.contentW}
@@ -411,7 +420,7 @@ export function MotionTimelineBar({
           onAudioLaneActivate={onAudioLaneActivate}
         />
         <TimelineKeyframeLanes
-          tracks={tracks} keyframes={keyframes} laneHint={laneHint} dragId={drag.dragId}
+          tracks={tracks} keyframes={keyframes} laneHint={laneHint} dragId={drag.dragId} kfLaneCards={kfLaneCards}
           frameToPx={scale.frameToPx} xToFrame={scale.xToFrame} startDrag={drag.startDrag}
           onKeyframeAdd={onKeyframeAdd} onKeyframeDelete={onKeyframeDelete}
         />

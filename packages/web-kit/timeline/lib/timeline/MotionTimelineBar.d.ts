@@ -154,6 +154,12 @@ export interface MotionTimelineBarProps {
      * lanes — instead of the 26px blocks. Opt-in; absent → byte-identical
      * blocks (the motion tenant never changes). */
     audioClipCards?: boolean;
+    /** (SD-8 lane parity, 2026-11-08, the audioClipCards precedent) the
+     * keyframe lanes ride the audio lanes' card height (44) + the 3%
+     * lane tint, and their heads mirror the body — instead of the 24px
+     * blocks. Opt-in; absent → byte-identical 24px blocks (the motion
+     * tenant's six kf tracks never change). */
+    kfLaneCards?: boolean;
     /** ── STYLING SEAM (2026-09-07, the shadcn rule): the bar is a
      *  shared component and takes className/style like every other
      *  primitive — the tenant's shell (border, rounding) rides the
@@ -220,7 +226,9 @@ export { useTimelineDragSession } from "./MotionTimelineBarDrag.js";
 export type { Drag, TimelineDragSessionOpts } from "./MotionTimelineBarDrag.js";
 export { TimelineContent, TimelineGutter, TimelinePlayhead, TimelineRuler } from "./MotionTimelineBarChrome.js";
 export type { TimelineContentProps, TimelineGutterProps, TimelineGutterScale, TimelinePlayheadProps, TimelineRulerProps } from "./MotionTimelineBarChrome.js";
+export { LaneHead } from "./LaneHead.js";
+export type { LaneHeadProps } from "./LaneHead.js";
 export { TimelineAudioLanes, TimelineBeatsLane, TimelineKeyframeLanes, TimelinePromptsLane } from "./MotionTimelineBarLanes.js";
 export type { TimelineAudioLanesProps, TimelineBeatsLaneProps, TimelineKeyframeLanesProps, TimelinePromptsLaneProps } from "./MotionTimelineBarLanes.js";
-export declare function MotionTimelineBar({ prompts, keyframes, frameIdx, onFrameChange, onScrubStart, onScrubEnd, totalFrames, fps, initialSeconds, onKeyframeAdd, onKeyframeMove, onKeyframeDelete, onPromptUpdate, onPromptMove, onPromptResize, onPromptDelete, onExtend, tracks, promptsLabel, laneHint, packed, emptyPromptsHint, promptsHeight, beats, beatsLabel, beatsHeight, beatsHint, onBeatAdd, onPromptAdd, previews, selectedId, onSelect, audioLayers, onAudioDrop, onAudioDropAt, onAudioFileDrop, onAudioClipMove, onAudioClipDelete, onAudioLaneActivate, onAudioDetach, onTrackAdd, audioClipCards, className, style, theme, }: MotionTimelineBarProps): import("react").JSX.Element;
+export declare function MotionTimelineBar({ prompts, keyframes, frameIdx, onFrameChange, onScrubStart, onScrubEnd, totalFrames, fps, initialSeconds, onKeyframeAdd, onKeyframeMove, onKeyframeDelete, onPromptUpdate, onPromptMove, onPromptResize, onPromptDelete, onExtend, tracks, promptsLabel, laneHint, packed, emptyPromptsHint, promptsHeight, beats, beatsLabel, beatsHeight, beatsHint, onBeatAdd, onPromptAdd, previews, selectedId, onSelect, audioLayers, onAudioDrop, onAudioDropAt, onAudioFileDrop, onAudioClipMove, onAudioClipDelete, onAudioLaneActivate, onAudioDetach, onTrackAdd, audioClipCards, kfLaneCards, className, style, theme, }: MotionTimelineBarProps): import("react").JSX.Element;
 //# sourceMappingURL=MotionTimelineBar.d.ts.map

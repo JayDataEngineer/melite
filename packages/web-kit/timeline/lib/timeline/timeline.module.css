@@ -72,7 +72,14 @@
   color: var(--dsw-alias-brand-primary);
 }
 
-.laneHead {
+/* THE ONE LANE HEAD SHELL (SD-8 lane parity, 2026-11-08): the four
+   bespoke head grammars (.laneHead/.laneHeadBeats/.audioHead/
+   .laneRow) were near-byte-identical boxes — one class now, variants
+   via [data-lane-head]. LaneHead.tsx is the only writer. The old
+   heads' bg-layer-1 wash rode the gutter's own background, so the
+   shell carries it for every variant (the audio head's transparent
+   box sat on the same gutter paint). */
+.laneHeadShell {
   display: flex;
   align-items: center;
   gap: 6px;
@@ -80,48 +87,22 @@
   border-bottom: 1px solid var(--dsw-alias-border-l1);
   background: var(--dsw-alias-bg-layer-1);
 }
-.laneHeadBeats {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 0 8px;
-  border-bottom: 1px solid var(--dsw-alias-border-l1);
-  background: var(--dsw-alias-bg-layer-1);
+.laneHeadShell:last-child {
+  border-bottom: 0;
 }
-.laneHead > svg,
-.laneHeadBeats > svg {
+.laneHeadShell > svg {
   flex: none;
   width: 14px;
   height: 14px;
   color: var(--dsw-alias-brand-primary);
 }
-.laneHeadBeats > svg {
-  color: var(--dsw-alias-brand-primary);
-}
-
-.gutterLabel {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-size: 10px;
-  font-weight: 500;
-  color: var(--dsw-alias-label-tertiary);
-}
-
-.audioHead {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 0 8px;
-  border-bottom: 1px solid var(--dsw-alias-border-l1);
-}
-.audioHead > svg {
-  flex: none;
+.laneHeadShell[data-lane-head="audio"] > svg {
   width: 12px;
   height: 12px;
   color: var(--dsw-alias-state-business-primary);
 }
-.gutterLabelDim {
+
+.gutterLabel {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -178,28 +159,13 @@
   height: 10px;
 }
 
-.laneRow {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 0 8px;
-  border-bottom: 1px solid var(--dsw-alias-border-l1);
-}
-.laneRow:last-child {
-  border-bottom: 0;
-}
+/* (SD-8) the kf head's identity dot — the glyph slot's variant for
+   the track rows (LaneHead's dotColor slot). */
 .laneDot {
   flex: none;
   width: 6px;
   height: 6px;
   border-radius: 9999px;
-}
-.laneName {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-size: 10px;
-  color: var(--dsw-alias-label-tertiary);
 }
 
 /* ── Scrollable content ────────────────────────────────────────────── */
@@ -807,14 +773,28 @@
 .kfLane:last-child {
   border-bottom: 0;
 }
-.laneHint {
+/* (SD-8 lane parity, 2026-11-08) the opted-in lane's wash — the same
+   3% business tint the audio lanes carry; keyed on the attr so the
+   opt-out lane stays byte-identical. */
+.kfLane[data-kf-cards="true"] {
+  background: color-mix(in srgb, var(--dsw-alias-state-business-primary) 3%, transparent);
+}
+/* (SD-8 lane parity, 2026-11-08) the empty kf lane's drop well — the
+   audio lanes' .audioDrop grammar (dashed, centered hint), tinted by
+   the lane's own track color (inline border-color) instead of the
+   audio lanes' business accent. Pointer-dead: the lane owns the
+   double-click pin. */
+.kfDropWell {
   position: absolute;
-  inset: 0;
+  left: 4px;
+  right: 4px;
+  top: 2px;
+  bottom: 2px;
   display: flex;
   align-items: center;
-  padding-left: 12px;
-  font-size: 10px;
-  color: var(--dsw-alias-label-tertiary);
+  justify-content: center;
+  border-radius: 4px;
+  border: 1px dashed color-mix(in srgb, var(--dsw-alias-label-tertiary) 25%, transparent);
   pointer-events: none;
 }
 .kfWrap {

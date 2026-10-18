@@ -610,6 +610,10 @@ export interface TimelineKeyframeLanesProps {
   keyframes: TimelineKeyframe[]
   laneHint: string
   dragId: string | null
+  /** (SD-8 lane parity, 2026-11-08) the card-height opt-in — the body
+   *  half of the gutter head's kfLaneCards (the audioClipCards
+   *  precedent). Absent → the 24px block, byte-identical. */
+  kfLaneCards?: boolean
   frameToPx: (f: number) => number
   xToFrame: (clientX: number) => number | null
   startDrag: (e: React.PointerEvent, d: Drag) => void
@@ -620,12 +624,12 @@ export interface TimelineKeyframeLanesProps {
 /** Keyframe lanes: pin, drag, hover-X delete (bar line 1443). */
 export function TimelineKeyframeLanes(props: TimelineKeyframeLanesProps) {
   const {
-    tracks, keyframes, laneHint, dragId,
+    tracks, keyframes, laneHint, dragId, kfLaneCards,
     frameToPx, xToFrame, startDrag, onKeyframeAdd, onKeyframeDelete,
   } = props
   return (
     <>
-      {tracks.map((track, ti) => {
+      {tracks.map((track) => {
         const kfs = keyframes.filter((k) => k.track_id === track.uuid)
         const color = rgb(track.color ?? [176, 180, 186])
         return (
@@ -633,15 +637,32 @@ export function TimelineKeyframeLanes(props: TimelineKeyframeLanesProps) {
             key={track.uuid}
             data-lane={track.uuid}
             className={css.kfLane}
-            style={{ height: LANE_H }}
+            style={{
+              height: kfLaneCards ? AUDIO_CARDS_H : LANE_H,
+              // (SD-8 lane parity, 2026-11-08) the opted-in lane's 3%
+              // tint rides the [data-kf-cards] CSS rule — the audio
+              // lanes carry the same wash; the attr keeps the opt-out
+              // byte-identical and gives the walls their grammar hook.
+            }}
+            data-kf-cards={kfLaneCards ? "true" : "false"}
             onDoubleClick={(e) => {
               const f = xToFrame(e.clientX)
               if (f != null) onKeyframeAdd(track.uuid, f)
             }}
           >
-            {keyframes.length === 0 && ti === 0 && (
-              <span className={css.laneHint}>
-                {laneHint}
+            {/* (SD-8) EVERY empty lane carries its own drop well — the
+                audio lanes' grammar (dashed well + hint). The old face
+                was ONE plain hint on the FIRST track only, keyed on the
+                GLOBAL keyframes.length: a populated first track silenced
+                every other empty lane's affordance. The well names the
+                pin verb and tints with the track's own color. */}
+            {kfs.length === 0 && (
+              <span
+                data-testid="kf-drop-well"
+                className={css.kfDropWell}
+                style={{ borderColor: `color-mix(in srgb, ${color} 30%, transparent)` }}
+              >
+                <span className={css.dropHint}>{laneHint}</span>
               </span>
             )}
             {kfs.map((kf) => {

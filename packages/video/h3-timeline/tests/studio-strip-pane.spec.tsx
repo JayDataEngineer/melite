@@ -324,6 +324,53 @@ describe("the keyframes lane's add door (the lane-add parity law)", () => {
     els.unmount()
   })
 
+  // ── SD-8 LANE PARITY (operator item c, 2026-11-08: the kf bar's
+  // format is "not shared with the audio sort of bar") — the tenant
+  // face: the kf lane speaks the dialogue/music/sfx rows' language.
+  // The kit half (shared shell, derived heights, per-track wells,
+  // opt-out byte-identity) lives in web-kit timelineLaneParity. ──
+  describe("the keyframes lane speaks the audio lanes' language (SD-8 lane parity)", () => {
+    it("THE KEYFRAMES LANE SPEAKS THE AUDIO LANES' LANGUAGE — same head shell, same data grammar, a title voice", () => {
+      const { els } = strip()
+      const kfHead = document.body.querySelector('[data-lane-head="kf"]')
+      assert.ok(kfHead, "the kf head rides the shared LaneHead shell")
+      const audioHead = document.body.querySelector('[data-lane-head="audio"]')
+      assert.ok(audioHead, "the audio heads ride the same shell")
+      assert.equal(
+        kfHead!.className, audioHead!.className,
+        "one class on every gutter head — no bespoke kf grammar survives")
+      assert.ok(
+        (kfHead as HTMLElement).title.includes("Double-click"),
+        "the kf head carries the pin-law title voice like the audio heads' bed/drop voice")
+      // the height grammar: opted-in card height, mirrored by the body
+      const kfBody = document.body.querySelector('[data-lane="image"]') as HTMLElement
+      assert.ok(kfBody, "the kf lane body rides")
+      assert.equal(kfBody.getAttribute("data-kf-cards"), "true",
+        "the tenant opts into the card-height lane (the audioClipCards precedent)")
+      assert.equal(kfBody.style.height, "44px", "the kf lane rides the audio lanes' card height")
+      // jsdom does not cascade module CSS nor round-trip color-mix
+      // through inline styles — the tint grammar is pinned at its home
+      // (the kit's module rule, keyed on the attr this lane carries)
+      const kitCss = readFileSync(resolve(__dirname, "../../../web-kit/timeline/src/timeline/timeline.module.css"), "utf-8")
+      const wash = kitCss.match(/\.kfLane\[data-kf-cards="true"\]\s*{([^}]*)}/)
+      assert.ok(wash, "the kit module carries the opted-in lane's wash rule, keyed on the data attr the lane rides")
+      assert.ok(wash![1].includes("color-mix") && wash![1].includes("3%"),
+        "the wash is the audio lanes' 3% color-mix grammar")
+      els.unmount()
+    })
+
+    it("THE KEYFRAMES LANE'S EMPTY FACE IS A WELL, NOT A WHISPER — the dashed drop-well grammar the audio lanes carry, naming the double-click-to-pin verb", () => {
+      // barLanes is the pane's derived-view seam (the chip arms use it
+      // above) — empty view = the empty lane's well face
+      const { els } = strip({ barLanes: [] as never })
+      const well = document.body.querySelector('[data-lane="image"] [data-testid="kf-drop-well"]')
+      assert.ok(well, "the empty kf lane renders its own dashed well")
+      assert.ok(well!.textContent!.includes(studioCopy.keyframeLaneHint),
+        "the well names the pin verb (the tenant's own laneHint copy rides inside the well)")
+      els.unmount()
+    })
+  })
+
   it("the door opens the estate's picker — the three-entry source grammar, image rows", async () => {
     const { els } = strip()
     fireEvent.click(document.body.querySelector('[data-track-upload="image"]')!)

@@ -63,6 +63,10 @@ export interface TimelineKeyframeLanesProps {
     keyframes: TimelineKeyframe[];
     laneHint: string;
     dragId: string | null;
+    /** (SD-8 lane parity, 2026-11-08) the card-height opt-in — the body
+     *  half of the gutter head's kfLaneCards (the audioClipCards
+     *  precedent). Absent → the 24px block, byte-identical. */
+    kfLaneCards?: boolean;
     frameToPx: (f: number) => number;
     xToFrame: (clientX: number) => number | null;
     startDrag: (e: React.PointerEvent, d: Drag) => void;

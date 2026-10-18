@@ -34,6 +34,10 @@ export interface TimelineGutterProps {
     onTrackAdd?: (trackUuid: string, anchor: HTMLButtonElement) => void;
     /** (2026-09-22, the D-M-E card law) cards-mode heads match the lanes. */
     audioClipCards?: boolean;
+    /** (SD-8 lane parity, 2026-11-08) the kf heads ride the audio
+     *  heads' card height (44) when the tenant opts in — the
+     *  audioClipCards precedent; absent → the 24px block, byte-identical. */
+    kfLaneCards?: boolean;
     tracks: TimelineTrack[];
 }
 /** The pinned label gutter (bar line 820): the zoom cluster + lane

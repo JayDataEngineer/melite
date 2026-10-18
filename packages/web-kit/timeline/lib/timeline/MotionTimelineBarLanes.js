@@ -232,15 +232,21 @@ export function TimelineAudioLanes(props) {
 }
 /** Keyframe lanes: pin, drag, hover-X delete (bar line 1443). */
 export function TimelineKeyframeLanes(props) {
-    const { tracks, keyframes, laneHint, dragId, frameToPx, xToFrame, startDrag, onKeyframeAdd, onKeyframeDelete, } = props;
-    return (_jsx(_Fragment, { children: tracks.map((track, ti) => {
+    const { tracks, keyframes, laneHint, dragId, kfLaneCards, frameToPx, xToFrame, startDrag, onKeyframeAdd, onKeyframeDelete, } = props;
+    return (_jsx(_Fragment, { children: tracks.map((track) => {
             const kfs = keyframes.filter((k) => k.track_id === track.uuid);
             const color = rgb(track.color ?? [176, 180, 186]);
-            return (_jsxs("div", { "data-lane": track.uuid, className: css.kfLane, style: { height: LANE_H }, onDoubleClick: (e) => {
+            return (_jsxs("div", { "data-lane": track.uuid, className: css.kfLane, style: {
+                    height: kfLaneCards ? AUDIO_CARDS_H : LANE_H,
+                    // (SD-8 lane parity, 2026-11-08) the opted-in lane's 3%
+                    // tint rides the [data-kf-cards] CSS rule — the audio
+                    // lanes carry the same wash; the attr keeps the opt-out
+                    // byte-identical and gives the walls their grammar hook.
+                }, "data-kf-cards": kfLaneCards ? "true" : "false", onDoubleClick: (e) => {
                     const f = xToFrame(e.clientX);
                     if (f != null)
                         onKeyframeAdd(track.uuid, f);
-                }, children: [keyframes.length === 0 && ti === 0 && (_jsx("span", { className: css.laneHint, children: laneHint })), kfs.map((kf) => {
+                }, children: [kfs.length === 0 && (_jsx("span", { "data-testid": "kf-drop-well", className: css.kfDropWell, style: { borderColor: `color-mix(in srgb, ${color} 30%, transparent)` }, children: _jsx("span", { className: css.dropHint, children: laneHint }) })), kfs.map((kf) => {
                         const isMoving = dragId === kf.uuid;
                         return (_jsxs("div", { className: css.kfWrap, style: { left: frameToPx(kf.frame) }, "data-drop-hint": kf.dropHint, children: [_jsx(Tip, { tip: `${track.name} constraint @ frame ${kf.frame} — drag to move, click to jump, hover ✕ to delete${kf.dropHint ? `\n\n${kf.dropHint}` : ""}`, children: _jsx(Button, { variant: "ghost", size: "sm", "data-kf": kf.uuid, "aria-label": kf.ariaLabel ?? timelineCopy.keyframeAria({ track: track.name, frame: kf.frame }), onPointerDown: (e) => startDrag(e, {
                                             kind: "kf",
