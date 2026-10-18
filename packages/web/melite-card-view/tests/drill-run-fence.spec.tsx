@@ -28,16 +28,21 @@ afterEach(() => {
   resetStageWrites();
 });
 
-function stubFetch(): void {
+function stubFetch(holdFormSpec?: { release: () => void }): void {
   vi.stubGlobal("fetch", async (url: unknown): Promise<Response> => {
     const path = String(url);
     if (path.includes("/v1/form-spec")) {
-      return new Response(JSON.stringify({
-        form: "image-gen", genre: "image", engine: "comfyui",
-        schema: schemaEnvelope({
-          prompt: { type: "string", meta: { description: "Prompt", extra: { wtype: "textarea" } } },
-        }),
-      }), { status: 200, headers: { "content-type": "application/json" } });
+      if (holdFormSpec !== undefined) {
+        // the arrival window held OPEN: the settle never lands until
+        // the arm releases it, so the fence's voice is on the face
+        // to stay (the settle's own setError(null) never runs)
+        return new Promise<Response>((resolve) => {
+          holdFormSpec.release = () => {
+            resolve(formSpecResponse());
+          };
+        });
+      }
+      return formSpecResponse();
     }
     if (path.includes("/v1/forms")) {
       return new Response(JSON.stringify({}), { status: 200, headers: { "content-type": "application/json" } });
@@ -49,6 +54,15 @@ function stubFetch(): void {
   });
 }
 
+function formSpecResponse(): Response {
+  return new Response(JSON.stringify({
+    form: "image-gen", genre: "image", engine: "comfyui",
+    schema: schemaEnvelope({
+      prompt: { type: "string", meta: { description: "Prompt", extra: { wtype: "textarea" } } },
+    }),
+  }), { status: 200, headers: { "content-type": "application/json" } });
+}
+
 const STAGE = {
   id: "s_0", card: "image-gen", engine: "comfyui",
   params: { prompt: "x" }, runStatus: "",
@@ -58,11 +72,14 @@ const BENCH: CardsBenchValue = {
   kind: "bench", draftId: "bench-p", sessionKey: "p", rev: 1, log: [], stages: [STAGE],
 };
 
-function mountDrill(opts?: { refusals?: Array<{ method: string; message: string; code?: string }> }): {
+function mountDrill(opts?: { refusals?: Array<{ method: string; message: string; code?: string }>; holdFormSpec?: boolean }): {
   runs: number[];
   bound: () => void;
+  releaseFormSpec: () => void;
 } {
-  stubFetch();
+  const hold = opts?.holdFormSpec === true ? { release: (): void => {} } : undefined;
+  stubFetch(hold);
+  const releaseFormSpec = (): void => { hold?.release(); };
   mountEstateFakes({
     benchDoc: { draft_id: "bench-p", rev: 1, log: [], stages: [STAGE] },
     draftStages: [STAGE as unknown as Record<string, unknown>],
@@ -86,7 +103,7 @@ function mountDrill(opts?: { refusals?: Array<{ method: string; message: string;
     renderStageView: (_owner, fallback) => h("div", null, fallback),
     bindRun: (r: () => void) => { bound = r; },
   }));
-  return { runs, bound: () => bound() };
+  return { runs, bound: () => bound(), releaseFormSpec };
 }
 
 describe("the drill's run fence (Cure 4)", () => {
@@ -130,12 +147,52 @@ describe("the drill's run fence (Cure 4)", () => {
     );
   });
 
-  test("the positive control: a quiet ledger presses through to onRun", async () => {
+  // POSITIVE CONTROL, RECUT 2026-11-08 to ride UNDER the arrival-
+  // window fence (P4 remainder): a press while the spec settles
+  // fires NOTHING by law (W1 in stage-drill-gates pins the re-point
+  // case; the arm below pins the INITIAL open) — so the quiet-
+  // ledger proof must wait for the form to land (the fence lifts
+  // with the settle, never a latch) and THEN press. The old control
+  // pressed at t=0 and expected the start — that judged the PRE-P4
+  // behavior where the initial fetch was not fenced.
+  test("the positive control: a quiet ledger presses through to onRun once the form lands", async () => {
     const { runs, bound } = mountDrill();
+    // the arrival window closes with the settle — the Prompt label
+    // renders only after setSpec, and the pending ref clears BEFORE
+    // setSpec in the same settle, so this wait is the fence-lifted
+    // proof
+    await waitFor(() => {
+      expect(document.querySelector("textarea")).not.toBeNull();
+    });
     bound();
     await waitFor(() => {
       expect(runs).toEqual([1]);
     });
     expect(document.body.textContent).not.toMatch(/WRITE DID NOT LAND/);
+    expect(document.body.textContent).not.toMatch(/still settling/);
+  });
+
+  // THE INITIAL-OPEN HALF of the arrival-window fence (the P4
+  // remainder's own drill seat — W1 in stage-drill-gates walls the
+  // family re-point case; this walls the FIRST open): a press before
+  // the arrival spec settles voices the pending family, fires
+  // nothing, and the same press after the settle presses through —
+  // the fence stands down at the settle, never latches.
+  test("a press during the initial spec settle fences loud, then presses through once the form lands", async () => {
+    const { runs, bound, releaseFormSpec } = mountDrill({ holdFormSpec: true });
+    bound();
+    await waitFor(() => {
+      expect(document.body.textContent).toMatch(/still settling/);
+    });
+    expect(runs).toStrictEqual([]);
+    releaseFormSpec();
+    await waitFor(() => {
+      expect(document.querySelector("textarea")).not.toBeNull();
+    });
+    expect(document.body.textContent).not.toMatch(/still settling/);
+    bound();
+    await waitFor(() => {
+      expect(runs).toEqual([1]);
+    });
   });
 });

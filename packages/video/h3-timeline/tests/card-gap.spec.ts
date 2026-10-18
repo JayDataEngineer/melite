@@ -869,29 +869,39 @@ describe("the single-window doors", () => {
     assert.equal(rows.filter((r) => r.on === true).length, 0, "ZERO loras ride — the DMAD solo never resurrects over an explicit []");
   });
 
-  // ── THE T3 REFINE RIDER (roadmap item 2): the service-resolved
-  // refine row mounts a CLOSING pass — the refiner on its OWN
-  // loader (primary stack untouched), short full-denoise schedule
-  // from the row's marriage, riding the doc's own solver. Absent
-  // row = absent rider (one sampler, the graph exactly as before). ──
-  it("the refine rider mounts a closing pass (own loader, the row's marriage, the doc's solver)", () => {
+  // ── THE T3 REFINE RIDER (roadmap item 2, RECUT to the P2 seat
+  // law 2026-11-08): the rider assembles from the SCHEMA SEATS —
+  // second_pass_enabled + refine_lora (a CATALOG ID, resolved
+  // against the served flavor rows by resolveRefineSeat inside
+  // renderH3Window, the single choke point both the film loop and
+  // the single-window face call). The old arm composed the PRE-F2
+  // door-injected `refine: {name, strength, steps}` object — a
+  // hand-spelled filename key the service now DELETES on sight
+  // (service.ts's stale-key law) and nothing reads: the wall judged
+  // a dead contract and went red when the seats became the only
+  // door. This arm now pins the CARD-level film face of the same
+  // law value-roundtrip's ARM 4/5 pin at the action face: stated
+  // seats → the rider on its OWN loader (primary stack untouched)
+  // at the ROW's marriage (taomate 0.7 @ 3), riding the doc's own
+  // solver. Absent seats = absent rider. ──
+  it("the refine seats mount a closing pass (own loader, the row's marriage, the doc's solver)", () => {
     const g = new GraphBuilder();
     def.compose(
-      { ...def.schema({ calls: [SHOT()], second_pass_enabled: true }), refine: { name: "taomate.safetensors", strength: 0.7, steps: 3 } },
+      def.schema({ calls: [SHOT()], second_pass_enabled: true, refine_lora: "h3_taomate_3step" }),
       model, g, "run_refine",
     );
     const stacks = ofClass(graphOf(g), "LTX_lora_loader");
     const refineStack = stacks.find(([, n]) => String((n.inputs as Record<string, unknown>).stack_data).includes("taomate"));
-    assert.ok(refineStack !== undefined, "the rider's own loader carries the refiner row");
+    assert.ok(refineStack !== undefined, "the rider's own loader carries the catalog row's file");
     const rows = JSON.parse(String(refineStack![1].inputs.stack_data)) as Array<{ on?: boolean, lora?: string, str?: number }>;
     assert.equal(rows.filter((r) => r.on === true).length, 1, "ONE refiner row on the rider's loader");
-    assert.equal(rows[0]!.str, 0.7, "at the row's 0.7");
+    assert.equal(rows[0]!.str, 0.7, "at the row's default 0.7");
     const scheds = scoped(graphOf(g), "", "BasicScheduler");
     assert.ok(scheds.some(([, n]) => n.inputs.steps === 3 && n.inputs.denoise === 1.0), "the closing schedule: the row's 3 steps, full denoise");
     assert.equal(scoped(graphOf(g), "", "SamplerCustomAdvanced").length, 2, "pass A + pass B");
   });
 
-  it("no refine row, no rider (one sampler, the graph exactly as before)", () => {
+  it("no refine seats, no rider (one sampler, the graph exactly as before)", () => {
     const g = new GraphBuilder();
     def.compose(def.schema({ calls: [SHOT()] }), model, g, "run_norefine");
     assert.equal(scoped(graphOf(g), "", "SamplerCustomAdvanced").length, 1, "pass A only");
