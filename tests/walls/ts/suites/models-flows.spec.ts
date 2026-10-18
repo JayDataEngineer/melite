@@ -206,11 +206,7 @@ describe("the models plane feeds the compose/flows plane (A2)", () => {
     // 51 -> 59 (2026-10-16, the anima three checkpoints): base keeps
     // route anima; turbo + aesthetic variant routes and all three
     // int8/bf16 cell routes join the roster.
-    // 59 -> 60 (2026-10-17, the Singularity checkpoint): the h3
-    // timeline lane's second checkpoint takes its own variant route
-    // address (h3-singularity; two lanes, one family, distinct route
-    // addresses per lane).
-    assert.equal(total, 60, `the facts roster is 60 rows (saw ${String(total)}) — a new family route is a deliberate edit`);
+    assert.equal(total, 59, `the facts roster is 59 rows (saw ${String(total)}) — a new family route is a deliberate edit`);
   });
 });
 

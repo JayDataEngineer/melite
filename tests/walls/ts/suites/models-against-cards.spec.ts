@@ -54,11 +54,7 @@ import { describe, it } from "vitest";
 // 51 -> 59 (2026-10-16, the anima three checkpoints): base keeps
 // route anima; turbo + aesthetic add variant routes and all three
 // add int8/bf16 cell routes (8 new served addresses).
-// 59 -> 60 (2026-10-17, the Singularity checkpoint): the h3 timeline
-// lane's second checkpoint takes its own variant route address
-// (h3-singularity; the krea-2 raw-lane precedent — two lanes, one
-// family, distinct route addresses per lane).
-const SERVED_ADDR_CENSUS = 60
+const SERVED_ADDR_CENSUS = 59
 // 24 -> 25 (2026-10-22, audit 006/U1): flux-klein claims its own
 // atom (the family's routes resolve to its declared owners)
 // 25 -> 24 (2026-10-13, the autoremesher excision — the pack the owner removed from the system)
@@ -706,9 +702,7 @@ describe("models against cards (the cross-validation, resurrected)", () => {
     // 70 -> 68 (2026-10-31, the template-fidelity cure): birefnet left
     // pixal3d + trellis2-native — the mask bridge is not in the
     // official template lane, so its provision row is gone per family.
-    // 68 -> 69 (2026-10-17, the Singularity checkpoint row): the h3
-    // timeline lane's second checkpoint adds its pinned provision.
-    const PROVISION_ROW_COUNT = 69;
+    const PROVISION_ROW_COUNT = 68;
     const declarers: string[] = [];
     let judged = 0;
     for (const id of registryIds()) {
@@ -748,17 +742,17 @@ describe("models against cards (the cross-validation, resurrected)", () => {
       `every provision declarer also SERVES (saw ${servingDeclarers.join(", ")}) — a declarer going dark, or the declaring/serving split reopening, is a deliberate edit`);
   });
 
-  // THE MASK DECLARERS CENSUS (MASK-C, the image-gen region gap):
-  // the region contract boards the 2.1 CHECKPOINT (the gen lane
-  // shares the exact weights the mask-boarded edit lane details
-  // regions with) plus the two edit lanes — and nothing else. The
-  // pure-t2i families (krea-2, z-image, flux-klein, anima) carry no
-  // mask boarding: their upstream lanes take no region input and no
-  // edit lane shares their weights, so serving the surface would
-  // promise what no lane builds. Dropping 'mask' from the cured
-  // DECL is the toggle that proves this arm (watch it red); a
-  // family starting or stopping a mask boarding MOVES this census
-  // deliberately.
+  // THE MASK DECLARERS CENSUS (superseded MASK-C's seat): MASK-C
+  // boarded the region contract on the 2.1 checkpoint + the two edit
+  // lanes only, arguing the pure-t2i families' upstream lanes take no
+  // region input. THE MASK ORDER (operator 2026-11-07) overruled
+  // that: the MASK mod serves on EVERY img-gen model — the generic
+  // bareFlavor primitive boards all seven families, and the gen
+  // planes stay honest by refusing a stated input_mask loud (the
+  // interlock's own arm). The census below is the order's standing
+  // wall: a family starting or stopping a mask boarding MOVES it
+  // deliberately; deleting a family's mods/mask.ts is the toggle
+  // that proves the arm (watch it red).
   it("mask declarers are the named set (THE MASK ORDER: every img-gen family + the edit lanes board the region contract)", () => {
     // THE MASK ORDER (operator 2026-11-07): the MASK mod serves on
     // EVERY img-gen model — the 2.1-only MASK-C roster is history.
