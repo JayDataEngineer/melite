@@ -48,6 +48,51 @@ export function seatedMcpServers(c) {
 /** The wire prefix of an mcp tool name (the executor composes the
  *  same string — one spelling, here). */
 const MCP_WIRE_PREFIX = 'mcp__';
+/** The prefix of an opted-in MCP engine id (the engines contract's
+ *  own vocabulary: `mcp:<server>` — packages/engines/contract's
+ *  ENGINE ID GRAMMAR; the seat's engineIdOk refuses a bare `mcp:`
+ *  at registration, so it never reaches this census). */
+const MCP_ENGINE_PREFIX = 'mcp:';
+/** The raw opt-in read: the 'engines' seat's ids (null when the seat
+ *  is absent, its ids face is not a function, or the read is not an
+ *  array — the caller folds nothing on null). */
+function probeMcpEngines(c) {
+    const seat = c.get('engines');
+    if (seat == null || typeof seat.ids !== 'function')
+        return null;
+    const listed = seat.ids();
+    if (!Array.isArray(listed))
+        return null;
+    return listed
+        .filter((id) => typeof id === 'string' && id.startsWith(MCP_ENGINE_PREFIX))
+        .map((id) => id.slice(MCP_ENGINE_PREFIX.length))
+        .sort();
+}
+/** The OPTED-IN MCP servers (the estate's own engines seat: the
+ *  config's mcpEngines field seats ids 'mcp:<server>' — the
+ *  2026-10-12 operator law makes the MCP card EXPERIMENTAL OPT-IN,
+ *  so /v1/forms + /v1/model-catalog fold the card on the estate's
+ *  opt-in, NEVER on the ambient tools census: the operator's DSH
+ *  lane always carries harness mcp__<server>__<tool> schemas, and
+ *  ambient presence is not intent (error j2,
+ *  dev_docs/ERRORS.md:86). The card's TILES (the MCPs plus-box —
+ *  mcpToolsOf) and the per-server form-spec docs ride the ambient
+ *  seatedMcpServers still: the spawned subagent is a DSH harness
+ *  spawn, ambient servers are what it can actually be granted — only
+ *  the card's PRESENCE is opt-in. The probe never propagates: a
+ *  throw from get() or ids() folds nothing (the doors 200 with no
+ *  card rather than 500 on a half-mounted seat). */
+export function seatedMcpEngines(c) {
+    try {
+        return probeMcpEngines(c) ?? [];
+    }
+    catch {
+        // The opt-in probe never fails the discovery doors (get()
+        // throwing on an unmounted lane, ids() throwing on a half-mounted
+        // seat): absence folds nothing — error j2.
+        return [];
+    }
+}
 /** One server's tool rows (the LIVE census for its form's options:
  *  bare tool names — the executor composes mcp__<server>__<tool>
  *  on the wire). */
@@ -716,10 +761,14 @@ export function apply(c, config = {}) {
                         return void cardToolsArm().then(ok, (e) => fail(500, { error: `discovery door: ${e instanceof Error ? e.message : String(e)}` }));
                     }
                     if (method === 'GET' && path === '/v1/model-catalog') {
-                        return void modelCatalogArm(seatedMcpServers(c)).then(ok, (e) => fail(500, { error: `discovery door: ${e instanceof Error ? e.message : String(e)}` }));
+                        // THE OPT-IN FOLD (error j2): the catalog row folds on the
+                        // estate's engines opt-in, never the ambient tools census.
+                        return void modelCatalogArm(seatedMcpEngines(c)).then(ok, (e) => fail(500, { error: `discovery door: ${e instanceof Error ? e.message : String(e)}` }));
                     }
                     if (method === 'GET' && path === '/v1/forms') {
-                        return void formsArm(seatedMcpServers(c)).then(ok, (e) => fail(500, { error: `discovery door: ${e instanceof Error ? e.message : String(e)}` }));
+                        // THE OPT-IN FOLD (error j2): same law as the catalog row
+                        // above — one census, two doors.
+                        return void formsArm(seatedMcpEngines(c)).then(ok, (e) => fail(500, { error: `discovery door: ${e instanceof Error ? e.message : String(e)}` }));
                     }
                     if (method === 'GET' && path === '/v1/kinds') {
                         return void kindsDoorArm().then(ok, (e) => fail(500, { error: `discovery door: ${e instanceof Error ? e.message : String(e)}` }));

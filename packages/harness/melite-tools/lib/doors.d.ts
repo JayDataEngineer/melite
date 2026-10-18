@@ -25,6 +25,21 @@ export declare const DEFAULT_ENHANCE_PREFERENCE = "muse-spark-1.3-contributor";
  *  server; sorted for deterministic serving). Empty when none are
  *  seated — the census IS the truth, never a config copy. */
 export declare function seatedMcpServers(c: CtxView): string[];
+/** The OPTED-IN MCP servers (the estate's own engines seat: the
+ *  config's mcpEngines field seats ids 'mcp:<server>' — the
+ *  2026-10-12 operator law makes the MCP card EXPERIMENTAL OPT-IN,
+ *  so /v1/forms + /v1/model-catalog fold the card on the estate's
+ *  opt-in, NEVER on the ambient tools census: the operator's DSH
+ *  lane always carries harness mcp__<server>__<tool> schemas, and
+ *  ambient presence is not intent (error j2,
+ *  dev_docs/ERRORS.md:86). The card's TILES (the MCPs plus-box —
+ *  mcpToolsOf) and the per-server form-spec docs ride the ambient
+ *  seatedMcpServers still: the spawned subagent is a DSH harness
+ *  spawn, ambient servers are what it can actually be granted — only
+ *  the card's PRESENCE is opt-in. The probe never propagates: a
+ *  throw from get() or ids() folds nothing (the doors 200 with no
+ *  card rather than 500 on a half-mounted seat). */
+export declare function seatedMcpEngines(c: CtxView): string[];
 /** One server's tool rows (the LIVE census for its form's options:
  *  bare tool names — the executor composes mcp__<server>__<tool>
  *  on the wire). */

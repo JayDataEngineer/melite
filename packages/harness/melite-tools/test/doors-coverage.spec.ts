@@ -19,7 +19,7 @@ vi.mock('@melite/estate-queue', () => ({
   disclosureRoot: () => '/tmp',
 }))
 
-import { apply } from '../src/doors.ts'
+import { apply, seatedMcpEngines } from '../src/doors.ts'
 
 function boot(): Array<{ path: string; handler: (req: unknown, res: unknown) => void }> {
   const routes: Array<{ path: string; handler: (req: unknown, res: unknown) => void }> = []
@@ -71,5 +71,52 @@ describe('doors skill census defensive arms', () => {
     expect(result.status).toBe(200)
     const options = (((result.body['features'] as { modifiers: Array<{ param_key: string; fields?: Array<{ options?: Array<{ value: string }> }> }> }).modifiers.find((row) => row.param_key === 'skills'))?.fields?.[0]?.options ?? [])
     expect(options.map((row) => row.value)).toEqual(['model:family-live', 'card:card-live'])
+  })
+})
+
+// THE MCP CARD'S OPT-IN CENSUS (error j2, dev_docs/ERRORS.md:86) —
+// seatedMcpEngines reads the estate's OWN engines seat (the config's
+// mcpEngines field), never the ambient tools census: ambient
+// presence is not operator intent (the 2026-10-12 EXPERIMENTAL
+// OPT-IN law). Absence and a hostile seat fold NOTHING — the probe
+// never propagates a throw into the discovery doors.
+describe('seatedMcpEngines (the MCP card opt-in census)', () => {
+  /** A minimal CtxView face for the probe: seatedMcpEngines touches
+   *  `get` and nothing else. */
+  function ctxOf(get: (name: string) => unknown): Parameters<typeof seatedMcpEngines>[0] {
+    return { get } as Parameters<typeof seatedMcpEngines>[0]
+  }
+
+  test('an unmounted engines seat folds nothing ([] )', () => {
+    expect(seatedMcpEngines(ctxOf(() => undefined))).toEqual([])
+  })
+
+  test('a null seat folds nothing ([] )', () => {
+    expect(seatedMcpEngines(ctxOf(() => null))).toEqual([])
+  })
+
+  test('a seat whose ids face is not a function folds nothing ([] )', () => {
+    expect(seatedMcpEngines(ctxOf(() => ({ ids: 'not-a-function' })))).toEqual([])
+  })
+
+  test('mcp:-prefixed ids are stripped and sorted; foreign ids are dropped', () => {
+    expect(seatedMcpEngines(ctxOf(() => ({ ids: () => ['comfyui', 'mcp:blender'] })))).toEqual(['blender'])
+    expect(seatedMcpEngines(ctxOf(() => ({ ids: () => ['mcp:unity', 'mcp:blender'] })))).toEqual(['blender', 'unity'])
+    expect(seatedMcpEngines(ctxOf(() => ({ ids: () => [] })))).toEqual([])
+    expect(seatedMcpEngines(ctxOf(() => ({ ids: () => ['mcp:blender', 42] })))).toEqual(['blender'])
+  })
+
+  test('an ids() throw does NOT propagate — the doors fold nothing, never a 500', () => {
+    const boom = ctxOf(() => ({ ids: () => { throw new Error('seat down') } }))
+    expect(seatedMcpEngines(boom)).toEqual([])
+  })
+
+  test('a THROWING get probe does NOT propagate either', () => {
+    expect(seatedMcpEngines(ctxOf(() => { throw new Error('no such service') }))).toEqual([])
+  })
+
+  test('a non-array ids() return folds nothing ([] )', () => {
+    expect(seatedMcpEngines(ctxOf(() => ({ ids: () => 'blender' })))).toEqual([])
+    expect(seatedMcpEngines(ctxOf(() => ({ ids: () => ({ length: 1 }) })))).toEqual([])
   })
 })

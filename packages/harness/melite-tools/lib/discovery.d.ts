@@ -139,14 +139,15 @@ export declare function cardToolsArm(): Promise<unknown[]>;
  * section — ONE surface; a row only here is invisible, a row only
  * there was). */
 export declare function catalogSection(defs: Map<string, CardDefinition>, mcpServers?: readonly string[]): Record<string, unknown>;
-/** /v1/model-catalog — the live catalog section (the seated MCP
- * servers fold LIVE — the door passes the tools-seat census, the
- * same read formsArm rides; empty seats fold nothing). */
+/** /v1/model-catalog — the live catalog section (the OPTED-IN MCP
+ * servers fold LIVE — the door passes the engines-seat opt-in census
+ * (error j2: ambient tools presence is not intent), the same read
+ * formsArm rides; an un-opted lane folds nothing). */
 export declare function modelCatalogArm(mcpServers?: readonly string[]): Promise<Record<string, unknown>>;
 /** /v1/forms — the forms table (card rows + the GENERIC MCP row:
  *  ONE engine-served row, id 'mcp' — the subagent-spawn card; the
- *  surface the cards tab lists; the census is the caller's LIVE
- *  fold, never static). */
+ *  surface the cards tab lists; the census is the caller's OPT-IN
+ *  fold (error j2), never static and never ambient). */
 export declare function formsWithEngines(cardRows: Record<string, unknown>, mcpServers: readonly string[]): Record<string, unknown>;
 /** /v1/forms — the forms table. */
 export declare function formsArm(mcpServers?: readonly string[]): Promise<Record<string, unknown>>;

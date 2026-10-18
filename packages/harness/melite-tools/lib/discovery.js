@@ -1133,8 +1133,9 @@ export function catalogSection(defs, mcpServers = []) {
     // 'mcp' (the AGENT card doc: MCPs/Skills/Inputs plus-boxes + the
     // Task brief; the servers to provide are the MCP tiles' OWN live
     // census, never a picker row or rail per server). The census is
-    // the caller's LIVE fold (never static), so no seats = no row and
-    // the tree stays seat-free.
+    // the caller's OPT-IN fold (error j2: the door passes the
+    // engines-seat opt-in, never the ambient tools census), so no
+    // opt-in = no row and the tree stays seat-free.
     if (mcpServers.length > 0) {
         cards['mcp'] = {
             id: 'mcp',
@@ -1157,20 +1158,21 @@ export function catalogSection(defs, mcpServers = []) {
     };
 }
 // ── door arms (the HTTP-facing surface doors.ts mounts) ──────────
-/** /v1/model-catalog — the live catalog section (the seated MCP
- * servers fold LIVE — the door passes the tools-seat census, the
- * same read formsArm rides; empty seats fold nothing). */
+/** /v1/model-catalog — the live catalog section (the OPTED-IN MCP
+ * servers fold LIVE — the door passes the engines-seat opt-in census
+ * (error j2: ambient tools presence is not intent), the same read
+ * formsArm rides; an un-opted lane folds nothing). */
 export async function modelCatalogArm(mcpServers = []) {
     return catalogSection(await loadCardDefs(), mcpServers);
 }
 /** /v1/forms — the forms table (card rows + the GENERIC MCP row:
  *  ONE engine-served row, id 'mcp' — the subagent-spawn card; the
- *  surface the cards tab lists; the census is the caller's LIVE
- *  fold, never static). */
+ *  surface the cards tab lists; the census is the caller's OPT-IN
+ *  fold (error j2), never static and never ambient). */
 export function formsWithEngines(cardRows, mcpServers) {
     const out = { ...cardRows };
     // ONE row (the generic card's own meta; the same fold
-    // catalogSection serves — no seats = no row). The row covers
+    // catalogSection serves — no opt-in = no row). The row covers
     // ITSELF (the bare key 'mcp' — the agent card doc): every seated
     // server is a TILE inside the card's MCPs plus-box, never a
     // service row of its own.

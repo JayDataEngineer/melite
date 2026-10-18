@@ -85,6 +85,10 @@ function fakeHost(opts?: {
   /** the browser carrier's own verdict: 403 untrusted, 401
    *  unauthenticated, undefined admits (the auth-gate arms) */
   connectionRejection?: number
+  /** the engines contract's ids face: the estate config's mcpEngines
+   *  field seats ids 'mcp:<server>' here — the MCP card's OPT-IN
+   *  signal (error j2); undefined leaves the seat unmounted. */
+  engines?: string[]
 }): { host: unknown; routes: Route[]; labels: string[] } {
   const routes: Route[] = []
   const labels: string[] = []
@@ -112,6 +116,10 @@ function fakeHost(opts?: {
     get: (serviceName: string) => {
       if (opts?.getThrows) throw new Error('no such service')
       if (serviceName === 'agentDefaultModel') return opts?.defaultModel
+      // the engines seat (the MCP card's opt-in signal — error j2)
+      if (serviceName === 'engines' && opts?.engines !== undefined) {
+        return { ids: () => [...opts.engines!] }
+      }
       // the DSH browser carrier (the /v1 auth gate probes for it)
       if (serviceName === 'connection' && opts?.connectionRejection !== undefined) {
         // the stub READS the argument the way the real seam does: the
@@ -608,14 +616,23 @@ describe('doors apply', () => {
 
 describe('catalog route', () => {
   test('THE GENERIC MCP CARD (2026-09-21, the operator\'s law: "ALWAYS spawn a completely standalone DSH subagent — the configuration is the MCP tools to provide, the inputs, and the prompts"): ONE row id mcp serving the AGENT card face; per-server direct-call specs still serve (the subagent/flow lane); no per-server ROWS', async () => {
-    const h = fakeHost({ schemas: [
-      { name: 'melite_discover', description: 'discover things' },
-      { name: 'mcp__blender__scene_info', description: 'Scene contents' },
-      { name: 'mcp__blender__render', description: 'Render the viewport' },
-    ] })
+    // THE OPT-IN SEAT (error j2): the forms/catalog fold keys on the
+    // estate's engines seat (the config's mcpEngines field — the
+    // 2026-10-12 EXPERIMENTAL OPT-IN law), never on the ambient
+    // tools census below alone. The form-spec tiles + per-server docs
+    // below still ride AMBIENT (the DSH-harness-spawn exception).
+    const h = fakeHost({
+      engines: ['comfyui', 'mcp:blender'],
+      schemas: [
+        { name: 'melite_discover', description: 'discover things' },
+        { name: 'mcp__blender__scene_info', description: 'Scene contents' },
+        { name: 'mcp__blender__render', description: 'Render the viewport' },
+      ],
+    })
     apply(h.host as never)
-    // the forms table: ONE generic row serves, covering ITSELF (the
-    // bare key 'mcp' — every seated server is a TILE inside the
+    // the forms table: ONE generic row serves (the OPT-IN folds it —
+    // error j2), covering ITSELF (the bare key 'mcp' — every seated
+    // server is a TILE inside the
     // card's MCPs plus-box, never a service row); the per-server
     // rows are GONE and the CLI-era card rows stay retired
     const forms = await call(h.routes, '/v1', { method: 'GET', url: 'http://localhost/v1/forms' })
@@ -647,7 +664,7 @@ describe('catalog route', () => {
     assert.deepEqual(kinds.map((k) => k['param_key']), ['mcps', 'skills', 'inputs'])
     const mcps = kinds[0]!
     const opts = (mcps['fields'] as Array<{ options: Array<{ value: string }> }>)[0]!.options
-    assert.deepEqual(opts.map((o) => o.value), ['blender'], 'the MCPs tile census is the LIVE seated servers')
+    assert.deepEqual(opts.map((o) => o.value), ['blender'], 'the MCPs tile census is the LIVE ambient servers (the opt-in folds the card, the tiles follow the harness)')
     const schema = JSON.stringify(doc['schema'])
     assert.match(schema, /task/, 'the brief is a schema field (the prompt spot)')
     assert.equal(schema.includes('"model"'), false, 'no model field on the card face (the boot route serves the spawn)')
@@ -674,9 +691,10 @@ describe('catalog route', () => {
     const absent = await call(h.routes, '/v1', { method: 'GET', url: 'http://localhost/v1/form-spec?model=mcp:unity' })
     assert.equal(absent.status, 404)
     assert.match(String((absent.body as { error: string }).error), /does not resolve/)
-    // TWO seated servers: the MCPs tile census carries BOTH (the
-    // dropdown is interchangeable — unity rides beside blender) and
-    // the per-server direct-call spec serves for each
+    // TWO ambient server schemas: the MCPs tile census carries BOTH
+    // (the dropdown is interchangeable — unity rides beside blender;
+    // the tiles stay ambient under the error-j2 exception) and the
+    // per-server direct-call spec serves for each
     const h2 = fakeHost({ schemas: [
       { name: 'melite_discover', description: 'discover things' },
       { name: 'mcp__blender__scene_info', description: 'Scene contents' },
@@ -693,6 +711,9 @@ describe('catalog route', () => {
   })
 
   test('NO SEATED SERVERS = no mcp row at all (the census is the truth, never static)', async () => {
+    // No opt-in AND no ambient schemas: the fold is absent on both
+    // planes (the opt-in folds the row — error j2 — and these schemas
+    // carry no mcp__ wires for the ambient tiles/docs either).
     const h = fakeHost({ schemas: [
       { name: 'melite_discover', description: 'discover things' },
     ] })
@@ -1592,18 +1613,24 @@ describe('/v1 prefix discovery arms', () => {
   })
 
   test('the GENERIC MCP card is VISIBLE in the catalog fold (ONE row; never a row per server)', async () => {
-    // ONE seated server (the tools-seat census) → ONE cards row id
-    // 'mcp' in /v1/model-catalog — the picker reads THIS section, so
-    // the row must fold here exactly as /v1/forms folds it (a row
-    // on forms alone was invisible). The card face is SELF-CONTAINED
-    // at the bare key 'mcp' (the agent card doc — the spawn), so
-    // the row carries NO families: every seated server is a TILE in
-    // the card's MCPs plus-box census, never a picker row or rail.
-    const seated = boot({ schemas: [
-      { name: 'melite_discover' },
-      { name: 'mcp__blender__scene_add_cube', description: 'add a cube' },
-      { name: 'mcp__blender__render_frame' },
-    ] })
+    // ONE OPTED-IN server (the estate's engines seat — the config's
+    // mcpEngines field, the 2026-10-12 EXPERIMENTAL OPT-IN law) → ONE
+    // cards row id 'mcp' in /v1/model-catalog — the picker reads THIS
+    // section, so the row must fold here exactly as /v1/forms folds
+    // it (a row on forms alone was invisible). The card face is
+    // SELF-CONTAINED at the bare key 'mcp' (the agent card doc — the
+    // spawn), so the row carries NO families: every seated server is
+    // a TILE in the card's MCPs plus-box census, never a picker row
+    // or rail. The ambient tools census (error j2) folds NOTHING —
+    // the dedicated arm below owns that refusal.
+    const seated = boot({
+      engines: ['comfyui', 'mcp:blender'],
+      schemas: [
+        { name: 'melite_discover' },
+        { name: 'mcp__blender__scene_add_cube', description: 'add a cube' },
+        { name: 'mcp__blender__render_frame' },
+      ],
+    })
     const r = await call(seated.routes, '/v1', { method: 'GET', url: 'http://localhost/v1/model-catalog' })
     assert.equal(r.status, 200)
     const cards = (r.body as { cards: Record<string, Record<string, unknown>> }).cards
@@ -1616,23 +1643,73 @@ describe('/v1 prefix discovery arms', () => {
     // the same fold on /v1/forms (parity — one census, two doors)
     const f = await call(seated.routes, '/v1', { method: 'GET', url: 'http://localhost/v1/forms' })
     assert.ok(((f.body as Record<string, unknown>)['mcp']) !== undefined)
-    // TWO seated servers still fold ONE row — the card's MCPs tile
+    // TWO opted-in servers still fold ONE row — the card's MCPs tile
     // census carries both (never a row or family per server)
-    const two = boot({ schemas: [
-      { name: 'melite_discover' },
-      { name: 'mcp__blender__render_frame' },
-      { name: 'mcp__unity__build' },
-    ] })
+    const two = boot({
+      engines: ['mcp:blender', 'mcp:unity'],
+      schemas: [
+        { name: 'melite_discover' },
+        { name: 'mcp__blender__render_frame' },
+        { name: 'mcp__unity__build' },
+      ],
+    })
     const r2 = await call(two.routes, '/v1', { method: 'GET', url: 'http://localhost/v1/model-catalog' })
     const cards2 = (r2.body as { cards: Record<string, Record<string, unknown>> }).cards
     assert.deepEqual(cards2['mcp']!['families'], [])
     assert.equal(Object.keys(cards2).filter((k) => k.startsWith('mcp:')).length, 0, 'never a per-server cards row')
-    // NO seats → NO row (the census is the truth; the tree goldens
+    // NO opt-in → NO row (the census is the truth; the tree goldens
     // stay seat-free)
     const bare = await call(boot({}).routes, '/v1', { method: 'GET', url: 'http://localhost/v1/model-catalog' })
     const bareCards = (bare.body as { cards: Record<string, unknown> }).cards
     assert.equal(bareCards['mcp'], undefined)
     assert.equal(Object.keys(bareCards).filter((k) => k.startsWith('mcp')).length, 0)
+  })
+
+  test('THE MCP CARD FOLDS ON OPT-IN ONLY (error j2): ambient tools fold NOTHING — the seated mcp engines fold the card', async () => {
+    // dev_docs/ERRORS.md:86 — "There is a fucking MCP card I do not
+    // want showing up." The operator's DSH lane ALWAYS carries
+    // harness mcp__<server>__<tool> schemas in the tools census
+    // (ambient presence), and ambient presence is not operator
+    // intent: the card's PRESENCE keys on the estate's own engines
+    // seat alone (the config's mcpEngines field — the 2026-10-12
+    // EXPERIMENTAL OPT-IN law, melite-estate's melite-engine-mcp-row
+    // seats nothing by default). The card's TILES census (the MCPs
+    // plus-box on /v1/form-spec) stays ambient — the spawned subagent
+    // is a DSH harness spawn, ambient servers are what it can be
+    // granted; only the card's PRESENCE is opt-in.
+    const ambient = boot({ schemas: [
+      { name: 'melite_discover' },
+      { name: 'mcp__blender__scene_info', description: 'Scene contents' },
+    ] })
+    const f = await call(ambient.routes, '/v1', { method: 'GET', url: 'http://localhost/v1/forms' })
+    assert.equal(f.status, 200)
+    assert.equal((f.body as Record<string, unknown>)['mcp'], undefined,
+      'ambient mcp servers fold NO forms row (error j2)')
+    const cat = await call(ambient.routes, '/v1', { method: 'GET', url: 'http://localhost/v1/model-catalog' })
+    assert.equal(cat.status, 200)
+    assert.equal((cat.body as { cards: Record<string, unknown> }).cards['mcp'], undefined,
+      'ambient mcp servers fold NO catalog card (error j2)')
+    // THE OPT-IN ALONE folds it — the engines seat with no ambient
+    // mcp schemas still serves the card (the fold keys on operator
+    // intent, never on harness census breadth)
+    const opted = boot({ engines: ['comfyui', 'mcp:blender'] })
+    const optF = await call(opted.routes, '/v1', { method: 'GET', url: 'http://localhost/v1/forms' })
+    assert.equal(optF.status, 200)
+    const orows = optF.body as Record<string, Record<string, unknown>>
+    assert.equal(Object.keys(orows).filter((k) => k === 'mcp').length, 1,
+      'the opt-in folds exactly ONE forms row')
+    assert.equal(orows['mcp']!['label'], 'MCP (experimental)')
+    const optCat = await call(opted.routes, '/v1', { method: 'GET', url: 'http://localhost/v1/model-catalog' })
+    assert.equal((optCat.body as { cards: Record<string, unknown> }).cards['mcp']!['label'], 'MCP (experimental)')
+    // the TILES census stays ambient (the exception): the form-spec
+    // agent doc lists the ambient server even with no opt-in — the
+    // spawned subagent is a DSH harness spawn
+    const tiles = await call(ambient.routes, '/v1', { method: 'GET', url: 'http://localhost/v1/form-spec?model=agent' })
+    assert.equal(tiles.status, 200)
+    const kinds = ((tiles.body as Record<string, unknown>)['features']) as { modifiers: Array<Record<string, unknown>> }
+    const tileOpts = ((kinds.modifiers[0]!['fields'] as Array<{ options: Array<{ value: string }> }>)[0]!.options)
+    assert.deepEqual(tileOpts.map((o) => o.value), ['blender'],
+      'the MCPs tile census stays ambient (the spawn rides the harness census)')
   })
 
   test('form-spec serves a key, 400s without one, 404s unknown', async () => {

@@ -287,6 +287,24 @@ describe('live door arms', () => {
     assert.equal(typeof table['tts']!['order'], 'number')
   })
 
+  test('THE MCP CARD FOLDS ON OPT-IN ONLY (error j2, dev_docs/ERRORS.md:86)', async () => {
+    // The operator error: "There is a fucking MCP card I do not want
+    // showing up." The fold parameter is the OPT-IN census (the
+    // estate's own engines seat: the config's mcpEngines field seats
+    // ids 'mcp:<server>' — the 2026-10-12 EXPERIMENTAL OPT-IN law),
+    // NEVER the ambient tools census: the operator's DSH lane always
+    // carries harness mcp__<server>__<tool> schemas, and ambient
+    // presence is not operator intent. No opt-in → no row; an opt-in
+    // folds exactly ONE self-covering row (every seated server is a
+    // TILE inside the card's MCPs plus-box, never a row per server).
+    const unopted = (await formsArm()) as Record<string, Record<string, unknown>>
+    assert.equal('mcp' in unopted, false, 'no opt-in, no mcp row (error j2)')
+    const opted = (await formsArm(['blender'])) as Record<string, Record<string, unknown>>
+    assert.equal(Object.keys(opted).filter((k) => k === 'mcp').length, 1, 'ONE row on opt-in')
+    assert.equal(opted['mcp']!['label'], 'MCP (experimental)')
+    assert.equal(opted['mcp:blender'], undefined, 'never a row per server (the tiles ride the card)')
+  })
+
   test('cardToolsArm serves one manifest per card, model-first', async () => {
     const tools = (await cardToolsArm()) as Array<Record<string, unknown>>
     const defs = await loadCardDefs()
