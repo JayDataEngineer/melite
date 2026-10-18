@@ -652,6 +652,14 @@ export class ProvisioningService extends Service implements ProvisioningServiceD
     return this.locks.has(resourceKey(ref));
   }
 
+  /** THE STALL BUDGET'S READ FACE (P5 F1's wall seat): the validated
+   *  budget the watchdog enforces — the composition's pass-through
+   *  lands here, and the deployment wall reads it back. Never the
+   *  constant: an operator-tuned window answers tuned. */
+  stallBudgetMs(): number {
+    return this.acquireStallTimeoutMs;
+  }
+
   /** THE F9 PROGRESS READ (the tracker's poll): a copy of the live
    *  byte ledger for one operation id, null when unknown. Bytes are
    *  counted as the fetcher stream lands — real landed bytes, never

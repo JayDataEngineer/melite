@@ -91,11 +91,18 @@ export interface ProvisioningCompositionConfig {
   /** The weights store root. Unset: derived from the checkout's
    *  tracked configs at apply (loadStoreRoot). */
   storeRoot?: string;
+  /** THE ACQUIRE STALL BUDGET (ERRORS.md k2, P5 F1): how long a direct
+   *  fetch may land no bytes before the stall watchdog fails it — the
+   *  deployment-varying face of ACQUIRE_STALL_TIMEOUT_MS (a lossy link
+   *  wants a wider window). Unset: the service default owns the bound.
+   *  Validated downstream (positive integer, fails loud at boot). */
+  acquireStallTimeoutMs?: number;
 }
 
 /** The validator twin of {@link ProvisioningCompositionConfig}. */
 export const ProvisioningCompositionConfig = Schema.object({
   storeRoot: Schema.string(),
+  acquireStallTimeoutMs: Schema.number(),
 });
 
 function configuredStoreRoot(config: ProvisioningCompositionConfig): string | undefined {
@@ -519,6 +526,10 @@ function provisioningConfig(ctx: Context, config: ProvisioningCompositionConfig 
     lifecycle: lifecyclePort(ctx),
     operationStore: new FileOperationStore(operationRoot),
     writeGuard: () => stringValue(loadEndpointConfig()["provision"]) === "managed",
+    // P5 F1 (the deployment face): the operator's stall window rides
+    // the composition Config into the service — unset stays unset so
+    // the service default (the stuck-acquire contract's bound) owns it.
+    ...(config.acquireStallTimeoutMs === undefined ? {} : { acquireStallTimeoutMs: config.acquireStallTimeoutMs }),
   };
 }
 

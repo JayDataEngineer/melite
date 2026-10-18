@@ -42,6 +42,7 @@ function endpointUrl() {
 /** The validator twin of {@link ProvisioningCompositionConfig}. */
 export const ProvisioningCompositionConfig = Schema.object({
     storeRoot: Schema.string(),
+    acquireStallTimeoutMs: Schema.number(),
 });
 function configuredStoreRoot(config) {
     const cfg = loadEndpointConfig();
@@ -434,6 +435,10 @@ function provisioningConfig(ctx, config = {}) {
         lifecycle: lifecyclePort(ctx),
         operationStore: new FileOperationStore(operationRoot),
         writeGuard: () => stringValue(loadEndpointConfig()["provision"]) === "managed",
+        // P5 F1 (the deployment face): the operator's stall window rides
+        // the composition Config into the service — unset stays unset so
+        // the service default (the stuck-acquire contract's bound) owns it.
+        ...(config.acquireStallTimeoutMs === undefined ? {} : { acquireStallTimeoutMs: config.acquireStallTimeoutMs }),
     };
 }
 export const provisioningComposition = {

@@ -25,12 +25,20 @@ export interface ProvisioningCompositionConfig {
     /** The weights store root. Unset: derived from the checkout's
      *  tracked configs at apply (loadStoreRoot). */
     storeRoot?: string;
+    /** THE ACQUIRE STALL BUDGET (ERRORS.md k2, P5 F1): how long a direct
+     *  fetch may land no bytes before the stall watchdog fails it — the
+     *  deployment-varying face of ACQUIRE_STALL_TIMEOUT_MS (a lossy link
+     *  wants a wider window). Unset: the service default owns the bound.
+     *  Validated downstream (positive integer, fails loud at boot). */
+    acquireStallTimeoutMs?: number;
 }
 /** The validator twin of {@link ProvisioningCompositionConfig}. */
 export declare const ProvisioningCompositionConfig: Schema<Schemastery.ObjectS<NoInfer<{
     storeRoot: Schema<string, string, "plain">;
+    acquireStallTimeoutMs: Schema<number, number, "plain">;
 }>>, Schemastery.ObjectT<NoInfer<{
     storeRoot: Schema<string, string, "plain">;
+    acquireStallTimeoutMs: Schema<number, number, "plain">;
 }>>, "plain">;
 /** THE IDLE DIAL (the direct arm's byte source): a fetch whose
  *  abort clock REARMS on every flowing chunk and clears when the
