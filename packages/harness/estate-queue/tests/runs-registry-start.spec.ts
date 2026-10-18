@@ -311,6 +311,36 @@ describe("start inline arm", () => {
     assert.equal(got["draft_id"], "d1");
   });
 
+  it("THE TEST CARRIAGE (journey F-1c follow-up): start({test:true}) carries the flag to the row, and the row's dir root names test-output/", async () => {
+    // The gap-between-walls the F-1c journey audit named: the walker
+    // resolves testFlag (wall-judged) and the door forwards it — but
+    // NO judge covered the carriage edge walker→row (:1486/:1892) or
+    // the row→dir derivation the registry itself rides at artifact/
+    // sidecar faces (outRootFor(stateRoot, run.testFlag)). The law:
+    // a test-flagged press registers with row.testFlag true and the
+    // dir root is <state>/test-output/; an unflagged press stays
+    // output/ (the false-side control).
+    const s = seat();
+    const on = await s.svc.start(inlineBody({ test: true }), sig());
+    const onRow = await settleWait(s, on.run_id);
+    assert.equal(onRow.testFlag, true, "the walker's true flag never reached the row — the carriage edge (:1486/:1892) dropped it");
+    const { outRootFor } = await import("../src/queue.ts");
+    const stateRoot = (s.svc as unknown as { ctx: { queue: { stateRoot: string } } }).ctx.queue.stateRoot;
+    assert.match(
+      outRootFor(stateRoot, onRow.testFlag),
+      /test-output$/,
+      "a test-flagged row's dir root is not test-output — the flag resolved but the row's artifacts would land beside real runs",
+    );
+    const off = await s.svc.start(inlineBody(), sig());
+    const offRow = await settleWait(s, off.run_id);
+    assert.equal(offRow.testFlag, false);
+    assert.match(
+      outRootFor(stateRoot, offRow.testFlag),
+      /output$/,
+      "the unflagged control must stay under plain output/",
+    );
+  });
+
   it("concurrent starts both queue (the reentrancy guard holds the pump)", async () => {
     const s = seat();
     const [a, b] = await Promise.all([s.svc.start(inlineBody(), sig()), s.svc.start(inlineBody(), sig())]);

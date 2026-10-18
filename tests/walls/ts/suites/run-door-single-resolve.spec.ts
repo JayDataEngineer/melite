@@ -31,8 +31,8 @@ afterEach(() => {
 });
 
 describe("run-door single resolve + strict resurrect (purge §7 P7)", () => {
-  // ARM F-1a — the resolve seat (queueSubmit.ts:195 + the
-  // checkFlowsStartEnvelope twin at runsGates.ts:287 — the "ONE LAW"
+  // ARM F-1a — the resolve seat (queueSubmit.ts:186 + the
+  // checkFlowsStartEnvelope twin at runsGates.ts:288 — the "ONE LAW"
   // twin walker). The absent/null test-flag leg must ride a NAMED
   // resolve — any inline `??` on ["test"] is the hidden default the
   // purge kills. Reds while either hides it; greens when the single
@@ -64,6 +64,24 @@ describe("run-door single resolve + strict resurrect (purge §7 P7)", () => {
       assert.ok(
         !/\.test\s*===\s*true/.test(src),
         `${f} hides the test-flag resolve as === true in dot syntax — route through the named resolve`,
+      );
+      // (journey F-1c follow-up, 2026-11-08: the SPELLING bar is
+      // whack-a-mole — the auditor's evade family (?? true,
+      // Boolean(body.test), !!body.test, ternary, loose ==) all
+      // pass it. THE ACCESS BAR ENDS THE CLASS: outside the seat
+      // function itself, the envelope object may not read the test
+      // key at all — the named resolve is the only reader.)
+      const seatFree = src.replace(
+        /export function resolveTestFlag[\s\S]*?\n\}/,
+        "<the seat>",
+      );
+      assert.ok(
+        !/\b(body|doc)\s*(\?\.\s*test\b|\.\s*test\b|\[\s*["']test["']\s*\])/.test(seatFree),
+        `${f} reads the test key off the envelope outside the named resolve — the access bar allows exactly one reader (resolveTestFlag)`,
+      );
+      assert.ok(
+        !/["']test["']\s+in\s+(body|doc)/.test(seatFree),
+        `${f} probes the test key's presence outside the named resolve`,
       );
     }
   });
