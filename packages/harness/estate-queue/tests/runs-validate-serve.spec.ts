@@ -116,6 +116,14 @@ describe("toGraph (the output projection)", () => {
     const f = flowOf([buildStageRow(0, stage({ id: "m", engine: "mcp:blender", outputs: {}, card_io: {} }))]);
     expect(toGraph(f)[0]?.outputs).toEqual([{ name: "default", kind: "image" }]);
   });
+  it("an unknown engine refuses in the lattice's voice (never a TypeError on a missed guarantee)", () => {
+    // P7 latent, serve door: toGraph reads the table only because
+    // validateEngines refused unknowns upstream. If that guarantee
+    // ever misses, the seat refuses LOUD with the lattice's own
+    // words — the old spelling crashed on row.def of undefined.
+    const f = flowOf([buildStageRow(0, stage({ id: "u", engine: "nope", outputs: {}, card_io: {} }))]);
+    expect(() => toGraph(f)).toThrow(/no engine plugin for type "nope"/);
+  });
 });
 
 describe("dollarTokens (the $channel walk)", () => {

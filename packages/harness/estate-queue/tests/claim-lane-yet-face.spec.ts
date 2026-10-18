@@ -24,8 +24,11 @@ class FakeEngine extends ComfyUIHostService {
   constructor(ctx: Context) {
     super(ctx as unknown as never, {});
   }
-  override executeFlow(): Promise<FlowResult> {
-    return Promise.resolve({ stages: {}, promptId: "p" });
+  override executeFlow(rows: MergeRow[]): Promise<FlowResult> {
+    return Promise.resolve({
+      stages: Object.fromEntries(rows.map((r) => [r.stageId, { outputs: {}, artifacts: [] }])),
+      promptId: "p",
+    });
   }
 }
 

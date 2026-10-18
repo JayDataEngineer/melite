@@ -475,8 +475,23 @@ export type SettleFn = (run: RunRecord) => void | Promise<void>;
       // the harvest below; settle's sidecar rewrite carries it to
       // disk.
       stampReceiptPromptId(run, result.promptId);
+      // THE MISSING-STAGE REFUSAL (P7 B1): the engine answered for a
+      // submitted stage id or it did not — there is no empty success.
+      // Judge the whole harvest BEFORE touching a stage row, so one
+      // missing id fails every running stage instead of leaving the
+      // answered stages completed beside it.
+      const missingStageIds = run.stages
+        .map((stage) => stage.id)
+        .filter((id) => result.stages[id] === undefined);
+      if (missingStageIds.length > 0) {
+        throw new Error(
+          "runs/missing-stage-result: the engine result has no row for " +
+            missingStageIds.map((id) => `stage "${id}"`).join(", ") +
+            " — a submitted stage with no result fails, never settles completed/empty",
+        );
+      }
       for (const stage of run.stages) {
-        const row = result.stages[stage.id] ?? { outputs: {}, artifacts: [] };
+        const row = result.stages[stage.id];
         const arts: string[] = row.artifacts.filter(
           (a: string): boolean => a !== "",
         );

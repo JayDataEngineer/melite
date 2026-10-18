@@ -525,7 +525,10 @@ describe("THE COMMITTED LIB (an emitted import Node can actually resolve)", () =
   // mods/loras); the kroma variant rows ride krea-2's existing
   // index.js (no new file). Deliberate adds, same-change as the
   // moss-image DECL.
-  const LIB_CENSUS_PIN = 594;
+  // 595 (2026-11-08): THE WINDOW-SPEC EMIT — slice 0's h3 window
+  // projection seam ships lib/windowSpec.js (+ map) without its
+  // repin; the emit is the landed face, the pin follows deliberately.
+  const LIB_CENSUS_PIN = 595;
   const specRe = /(?:from\s*|import\(\s*)(["'])(\.[^"']*)\1/g;
 
   it("the census is exact (a deletion OR a lowered floor reds — the count is pinned, not floored)", () => {

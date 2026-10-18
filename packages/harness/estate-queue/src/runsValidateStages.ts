@@ -2,15 +2,14 @@
 // runsValidate.ts (pure move, zero logic changes): strict-body admission,
 // stage rows, wires, the card gate, kinds, engines, flow_from_body.
 import { coerceWireArrays, coerceWireNumbers, unwrapItemArrays } from '@melite/comfyui-card-kit'
-import { engineIdOk } from "@melite/engine-contract";
 import type { CardDefinition } from '@melite/comfyui-card-kit/card-definition';
 import { checkStrictBody } from "./runsGates.ts";
 import {
-  ENGINE_TABLE,
   FLOW_ID_RE,
   INLINE_TOP_SORTED,
   STAGE_KEYS_SORTED,
   FlowError,
+  engineDefaultOutput,
   needCardRegistry,
 } from "./runsValidateShared.ts";
 import type {
@@ -523,11 +522,8 @@ export function validateEngines(
           ")",
       );
     }
-    const row: { plugin: string; def: string } | undefined =
-      st.engine.startsWith("mcp:") && engineIdOk(st.engine)
-        ? { plugin: "mcp-client", def: "image" }
-        : ENGINE_TABLE[st.engine];
-    if (row === undefined) {
+    const def: string | undefined = engineDefaultOutput(st.engine);
+    if (def === undefined) {
       throw new FlowError(
         "flow " +
           JSON.stringify(flow.id) +
@@ -540,7 +536,7 @@ export function validateEngines(
           " (no engine plugin declares it)",
       );
     }
-    engineDefaults[st.engine] = row.def;
+    engineDefaults[st.engine] = def;
   }
   kindsOk(flow.id, flow.stages, engineDefaults, cards);
   return flow;

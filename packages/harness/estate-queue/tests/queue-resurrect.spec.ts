@@ -106,8 +106,14 @@ describe("sidecarList + artifactStrings", () => {
     expect(() => sidecarList({ a: 1 })).toThrow(/unlistable sidecar value/);
   });
   it("artifact names filter to non-empty strings", () => {
-    expect(artifactStrings(["a.png", "", 7, null, "b.png"])).toEqual(["a.png", "b.png"]);
+    expect(artifactStrings(["a.png", "", "b.png"])).toEqual(["a.png", "b.png"]);
     expect(artifactStrings(undefined)).toEqual([]);
+  });
+  it("a mistyped artifact entry takes the raise road (never a silent trim)", () => {
+    // P7 B4: ["a.png", 7] used to revive as ["a.png"] — the revived
+    // run's artifact list was short with nothing explaining it.
+    expect(() => artifactStrings(["a.png", 7])).toThrow(/unlistable sidecar artifact entry/);
+    expect(() => artifactStrings(["a.png", null])).toThrow(/unlistable sidecar artifact entry/);
   });
 });
 
@@ -167,6 +173,9 @@ describe("durableRecordUsable", () => {
     }), "{}", true)).toBe(false);
     expect(durableRecordUsable(sidecar({ skipped_stages: 7 }), "{}", true)).toBe(false);
     expect(durableRecordUsable(sidecar({ artifacts: { a: 1 } }), "{}", true)).toBe(false);
+    // P7 B4, entry-level: a mistyped entry orphans the record —
+    // the revived run never comes back short an artifact, unvoiced.
+    expect(durableRecordUsable(sidecar({ artifacts: ["a.png", 7] }), "{}", true)).toBe(false);
   });
 });
 
@@ -261,5 +270,19 @@ describe("planResurrect", () => {
     const plan = planResurrect(root, undefined, undefined, () => true);
     expect(plan.order).toEqual(["run-b", "run-a"]);
     expect(plan.orphans).toEqual(["run-c", "run-d"]);
+  });
+
+  it("P7 B4, plan-depth: a record with a mistyped artifact entry orphans (never orders short)", () => {
+    // the entry-level composition the unit arms name: mistyped entry
+    // -> durableRecordUsable false -> plan.orphans, excluded from
+    // order, so boot replay never revives it trimmed.
+    const { root, out } = mk();
+    writeFileSync(join(out, "run-a", "_flow.json"), sidecar({ artifacts: ["a.png", 7], created_at: 1 }));
+    writeFileSync(join(out, "run-a", "_request.json"), "{}");
+    writeFileSync(join(out, "run-b", "_flow.json"), sidecar({ created_at: 2 }));
+    writeFileSync(join(out, "run-b", "_request.json"), "{}");
+    const plan = planResurrect(root, undefined, undefined, () => true);
+    expect(plan.order).toEqual(["run-b"]);
+    expect(plan.orphans).toEqual(["run-a"]);
   });
 });

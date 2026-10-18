@@ -288,8 +288,8 @@ describe('live door arms', () => {
   })
 
   test('THE MCP CARD FOLDS ON OPT-IN ONLY (error j2, dev_docs/ERRORS.md:86)', async () => {
-    // The operator error: "There is a fucking MCP card I do not want
-    // showing up." The fold parameter is the OPT-IN census (the
+    // The operator error (ERRORS.md:86, the unwanted-MCP-card report).
+    // The fold parameter is the OPT-IN census (the
     // estate's own engines seat: the config's mcpEngines field seats
     // ids 'mcp:<server>' — the 2026-10-12 EXPERIMENTAL OPT-IN law),
     // NEVER the ambient tools census: the operator's DSH lane always

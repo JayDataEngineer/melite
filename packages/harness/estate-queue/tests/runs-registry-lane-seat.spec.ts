@@ -133,7 +133,10 @@ describe("the runs door through the lane's models seat", () => {
         initials: Record<string, EngineJson>,
       ): Promise<FlowResult> {
         seen.push(initials);
-        return Promise.resolve({ stages: {}, promptId: "p" });
+        return Promise.resolve({
+          stages: Object.fromEntries(rows.map((r) => [r.stageId, { outputs: {}, artifacts: [] }])),
+          promptId: "p",
+        });
       }
     }
     new CaptureEngine(ctx);

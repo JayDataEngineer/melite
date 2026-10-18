@@ -2,6 +2,7 @@
 // zero logic changes): closed vocabularies, flow-domain types, FlowError,
 // and the card-registry face.
 import { WIRE_STAGE_KEYS } from "@melite/contracts/benchStage";
+import { engineIdOk } from "@melite/engine-contract";
 import { INLINE_TOP_KEYS } from "./runsGates.ts";
 import type { CardDefinition } from '@melite/comfyui-card-kit/card-definition';
 
@@ -41,6 +42,19 @@ export const ENGINE_TABLE: Record<string, { plugin: string; def: string }> = {
   // run dir).
   agent: { plugin: "agent", def: "text" },
 };
+
+/** THE ENGINE TABLE'S DEFAULT READ (P7 latent): the lattice's own
+ *  rule, owned once — mcp:<server> grammar ids read the mcp-client
+ *  row ("image"), table rows read their def, anything else reads
+ *  undefined (unknown: no fill — the caller's door refuses, never
+ *  guesses). Both doors derive from this one read (validate's
+ *  lattice below, start's empty-outputs fill): a future grammar id
+ *  absent from the table makes BOTH refuse instead of splitting
+ *  validate-refuses/start-accepts. */
+export function engineDefaultOutput(engine: string): string | undefined {
+  if (engine.startsWith("mcp:") && engineIdOk(engine)) return "image";
+  return ENGINE_TABLE[engine]?.def;
+}
 
 // ── closed vocabularies (Kind / SkipWhen order) ──────
 export const KIND_VOCAB: readonly string[] = [

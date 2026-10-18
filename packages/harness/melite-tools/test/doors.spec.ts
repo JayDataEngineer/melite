@@ -1666,8 +1666,7 @@ describe('/v1 prefix discovery arms', () => {
   })
 
   test('THE MCP CARD FOLDS ON OPT-IN ONLY (error j2): ambient tools fold NOTHING — the seated mcp engines fold the card', async () => {
-    // dev_docs/ERRORS.md:86 — "There is a fucking MCP card I do not
-    // want showing up." The operator's DSH lane ALWAYS carries
+    // dev_docs/ERRORS.md:86 — the unwanted-MCP-card report. The operator's DSH lane ALWAYS carries
     // harness mcp__<server>__<tool> schemas in the tools census
     // (ambient presence), and ambient presence is not operator
     // intent: the card's PRESENCE keys on the estate's own engines
@@ -1700,7 +1699,7 @@ describe('/v1 prefix discovery arms', () => {
       'the opt-in folds exactly ONE forms row')
     assert.equal(orows['mcp']!['label'], 'MCP (experimental)')
     const optCat = await call(opted.routes, '/v1', { method: 'GET', url: 'http://localhost/v1/model-catalog' })
-    assert.equal((optCat.body as { cards: Record<string, unknown> }).cards['mcp']!['label'], 'MCP (experimental)')
+    assert.equal((optCat.body as { cards: Record<string, Record<string, unknown>> }).cards['mcp']!['label'], 'MCP (experimental)')
     // the TILES census stays ambient (the exception): the form-spec
     // agent doc lists the ambient server even with no opt-in — the
     // spawned subagent is a DSH harness spawn

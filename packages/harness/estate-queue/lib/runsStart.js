@@ -22,7 +22,7 @@ import { FLOW_INLINE_TOP_VOICE, INLINE_TOP_KEYS, STAGE_KEYS, checkFlowInlineTop,
 import { appendLedger, graphReceiptFoldOf, outRootFor, refusal, sidecarDoc, sidecarStageOf, variantOfBodies, writeJsonAtomic } from "./queue.js";
 import { lifecycleInFlight } from "./lifecycleLatch.js";
 import { toRemoteError } from "./runsRefusalVoices.js";
-import { ENGINE_TABLE } from "./runsValidateShared.js";
+import { engineDefaultOutput } from "./runsValidateShared.js";
 import { rootsManifest } from "./rootsManifest.js";
 // the envelope-refusal SSOT lives in queueSubmit.ts (beside
 // walkSubmitEnvelope, the one walker the registry delegates to) —
@@ -274,19 +274,53 @@ export function compileFlowInline(inline, knownEngines = [CARD_PLANE_ENGINE]) {
         const params = typeof st["params"] === "object" && st["params"] !== null && !Array.isArray(st["params"])
             ? st["params"]
             : {};
-        // THE ENGINE TABLE'S OWN DEFAULT (audit S-S6, 2026-10-22):
-        // validate's lattice treats an EMPTY outputs map as stageless
-        // and judges the stage by the engine's table def (craft->image,
-        // agent->text); start's flat "image" bound a different kind than
-        // the lattice judged. One fill law, both doors: empty-or-absent
-        // outputs take the table's default channel.
+        // THE NESTED CONTAINER rides the same law (P7 B2): params is the
+        // stage's own object, but params.output_nodes is the
+        // artifact-binding surface — a malformed value is refused here,
+        // not dropped into {}. Absent stays legal (the fill below).
+        const rawNodes = params["output_nodes"];
+        if (rawNodes !== undefined &&
+            (typeof rawNodes !== "object" || rawNodes === null || Array.isArray(rawNodes))) {
+            return refusal(400, "flow_inline stage " + JSON.stringify(sid) + ": params.output_nodes" +
+                " must be an object (got " +
+                (rawNodes === null ? "null" : Array.isArray(rawNodes) ? "array" : typeof rawNodes) +
+                "); a shape that cannot be read is refused here, not dropped — a dropped " +
+                "output_nodes makes the run register without it", "invalid_request");
+        }
+        // THE ENGINE TABLE'S OWN DEFAULT (audit S-S6, 2026-10-22; P7
+        // latent: one read, both doors): validate's lattice treats an
+        // EMPTY outputs map as stageless and judges the stage by the
+        // engine's table def (craft->image, agent->text) — start's old
+        // flat "image" bound a different kind than the lattice judged,
+        // by coincidence agreeing on every reachable engine. The fill
+        // now reads engineDefaultOutput (the lattice's own rule: mcp leg
+        // + table). The undefined leg is the future-split guard: the
+        // engine gate above admits only grammatical, registered ids, so
+        // no reachable engine reads it — a grammar id the table has not
+        // learned yet refuses HERE, in the door's voice, instead of
+        // validating-refuse/start-accepting.
         const declaredOutputs = st["outputs"];
         const outputsDeclared = typeof declaredOutputs === "object" && declaredOutputs !== null &&
             !Array.isArray(declaredOutputs) &&
             Object.keys(declaredOutputs).length > 0;
-        const outputs = outputsDeclared
-            ? declaredOutputs
-            : { default: ENGINE_TABLE[engine] !== undefined ? ENGINE_TABLE[engine].def : "image" };
+        let outputs;
+        if (outputsDeclared) {
+            outputs = declaredOutputs;
+        }
+        else {
+            const kind = engineDefaultOutput(engine);
+            /* v8 ignore next -- the engine gate above admits only grammatical,
+               registered ids (all table- or mcp-leg-covered); the undefined
+               leg is the future-split guard, unreachable until the grammar
+               grows a table-unknown id. */
+            if (kind === undefined) {
+                return refusal(400, "flow_inline stage " + JSON.stringify(sid) + ": engine " +
+                    JSON.stringify(engine) +
+                    " has no default output kind — the engine table names no row for it" +
+                    " (a grammar id the table has not learned yet); name it in the table", "invalid_request");
+            }
+            outputs = { default: kind };
+        }
         const expected = typeof st["expected"] === "object" && st["expected"] !== null && !Array.isArray(st["expected"])
             ? st["expected"]
             : {};
@@ -486,7 +520,31 @@ export async function registerCompiledRun(args) {
         const benchStages = Array.isArray(door.benchDoc["stages"])
             ? door.benchDoc["stages"]
             : undefined;
-        if (benchStages !== undefined && benchStages.length > 0) {
+        if (benchStages === undefined &&
+            "stages" in door.benchDoc &&
+            door.benchDoc["stages"] !== undefined) {
+            // THE MALFORMED-STAGES VOICE (P7 B3): a benchDoc carrying a
+            // stages key that is not a stage list skipped the whole
+            // snapshot with NO voice — restore then reconstructed from
+            // the LIVE bench, unvoiced. The read-failure path warns
+            // (runsRegistry N-S3); the malformed leg rides the same
+            // shape: what was skipped and what restore falls back to.
+            // Absent/empty stages keep their pinned silence (an empty
+            // bench stamps nothing; a rev-only doc carries no list) — and
+            // a present-but-undefined stages reads as absent: the door's
+            // coercion spread materializes `stages: undefined` for a
+            // stages-less draft, and JSON drops that key on the sidecar
+            // anyway, so voicing it would warn every stages-less bench
+            // run for the spread's own artifact.
+            const rawStages = door.benchDoc["stages"];
+            run.warnings = [
+                ...(run.warnings ?? []),
+                "bench snapshot: bench stages is not a usable stage list (got " +
+                    (rawStages === null ? "null" : Array.isArray(rawStages) ? "array" : typeof rawStages) +
+                    ") — only the card snapshot rode; restore reconstructs from the live bench",
+            ];
+        }
+        else if (benchStages !== undefined && benchStages.length > 0) {
             // THE PROVENANCE HEAD (2026-09-25, the maker's fabrication
             // finding): card-mode runs MINT their bench (the CARD BIRTH
             // law wants a doc-backed draft) while a studio user HAND-

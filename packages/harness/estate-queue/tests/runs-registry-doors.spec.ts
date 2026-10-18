@@ -242,7 +242,10 @@ class FakeEngine extends ComfyUIHostService {
     inputNames: Record<string, Record<string, string>>,
     initials: Record<string, EngineJson>,
     opts: { shouldStop?: () => boolean; report?: (updates: Record<string, EngineJson>) => void },
-  ) => Promise<FlowResult> = async () => ({ stages: {}, promptId: "p" });
+  ) => Promise<FlowResult> = async (rows) => ({
+    stages: Object.fromEntries(rows.map((r) => [r.stageId, { outputs: {}, artifacts: [] }])),
+    promptId: "p",
+  });
   constructor(ctx: Context) {
     super(ctx as unknown as never, {});
   }
@@ -396,7 +399,7 @@ describe("press idempotency (audit N-E1)", () => {
     const gate = new Promise<void>((r) => {
       release = r;
     });
-    engineSeat(s).onFlow = () => gate.then(() => ({ stages: {}, promptId: "p" }));
+    engineSeat(s).onFlow = (rows) => gate.then(() => ({ stages: Object.fromEntries(rows.map((r) => [r.stageId, { outputs: {}, artifacts: [] }])), promptId: "p" }));
     const first = await s.svc.start(inlineBody({ press_key: "press-held-key" }), sig());
     for (let i = 0; i < 70; i++) {
       await s.svc.start(inlineBody({ press_key: "press-noise-" + String(i).padStart(3, "0") }), sig());
@@ -418,7 +421,7 @@ describe("press idempotency (audit N-E1)", () => {
     const gate = new Promise<void>((r) => {
       release = r;
     });
-    engineSeat(s).onFlow = () => gate.then(() => ({ stages: {}, promptId: "p" }));
+    engineSeat(s).onFlow = (rows) => gate.then(() => ({ stages: Object.fromEntries(rows.map((r) => [r.stageId, { outputs: {}, artifacts: [] }])), promptId: "p" }));
     const [a, b] = await Promise.all([
       s.svc.start(inlineBody({ press_key: "press-race-key" }), sig()),
       s.svc.start(inlineBody({ press_key: "press-race-key" }), sig()),
@@ -526,7 +529,7 @@ describe("press idempotency (audit N-E1)", () => {
     const gate = new Promise<void>((r) => {
       release = r;
     });
-    engineSeat(s).onFlow = () => gate.then(() => ({ stages: {}, promptId: "p" }));
+    engineSeat(s).onFlow = (rows) => gate.then(() => ({ stages: Object.fromEntries(rows.map((r) => [r.stageId, { outputs: {}, artifacts: [] }])), promptId: "p" }));
     const minter = s.svc.start(inlineBody({ press_key: "press-abort-key" }), sig());
     await flush();
     const twinCaller = new AbortController();
@@ -549,7 +552,7 @@ describe("press idempotency (audit N-E1)", () => {
     const gate = new Promise<void>((r) => {
       release = r;
     });
-    engineSeat(s).onFlow = () => gate.then(() => ({ stages: {}, promptId: "p" }));
+    engineSeat(s).onFlow = (rows) => gate.then(() => ({ stages: Object.fromEntries(rows.map((r) => [r.stageId, { outputs: {}, artifacts: [] }])), promptId: "p" }));
     const bodyWith = (prompt: string): Record<string, unknown> => ({
       draft_id: "d1",
       test: false,
@@ -1808,6 +1811,11 @@ describe("film admission warn (F-6b)", () => {
     width: 1344,
     height: 768,
   });
+  // The drafts doc rides the STAGES-LESS shape ({}): the door's
+  // benchDoc spread materializes `stages: undefined` onto it, and the
+  // malformed-stages voice (P7 B3) reads present-undefined as the
+  // absent shape it echoes — silent. A genuinely malformed list
+  // still warns; the runs-start wall pins both legs.
   const filmSeat = (): Seat => seat({
     phase1Card: (async (): Promise<unknown> => ({ card: "h3-timeline", skeleton: "s" })) as never,
     phase2Card: (async (): Promise<unknown> => ({ graph: {} })) as never,
@@ -1934,6 +1942,9 @@ describe("film admission warn (F-6b)", () => {
   it("non-film cards never warn (the calls shape is the film lane's)", async () => {
     stubMem(0.8 * GIB, 24.5 * GIB);
     try {
+      // the stages-less drafts shape — see filmSeat (the
+      // malformed-stages voice reads the door's materialized
+      // `stages: undefined` as absent, silent)
       const s = seat({
         phase1Card: (async (): Promise<unknown> => ({ card: "tts", skeleton: "s" })) as never,
         phase2Card: (async (): Promise<unknown> => ({ graph: {} })) as never,
@@ -2003,7 +2014,7 @@ describe("the multi-stage boundary (2026-09-25 — curated lane lifts the length
     engine.onFlow = async (rows, _dir, inputNames): Promise<FlowResult> => {
       seenRows = rows;
       seenNames = inputNames;
-      return { stages: {}, promptId: "p2" };
+      return { stages: Object.fromEntries(rows.map((r) => [r.stageId, { outputs: {}, artifacts: [] }])), promptId: "p2" };
     };
     const r = (await s.svc.start(
       inlineBody({
@@ -2067,7 +2078,7 @@ describe("the multi-stage boundary (2026-09-25 — curated lane lifts the length
     const seenRowCount = (): number => (seenRows === null ? 0 : seenRows.length);
     engine.onFlow = async (rows): Promise<FlowResult> => {
       seenRows = rows;
-      return { stages: {}, promptId: "p1" };
+      return { stages: Object.fromEntries(rows.map((r) => [r.stageId, { outputs: {}, artifacts: [] }])), promptId: "p1" };
     };
     const r = (await s.svc.start(
       { draft_id: "d1", test: false, flow: "image-upscale" },
@@ -2115,7 +2126,7 @@ describe("the multi-stage boundary (2026-09-25 — curated lane lifts the length
       };
       engine.onFlow = async (rows): Promise<FlowResult> => {
         for (const r of rows) seen.push({ outputNodes: r.outputNodes, outputs: r.outputs });
-        return { stages: {}, promptId: "p1" };
+        return { stages: Object.fromEntries(rows.map((r) => [r.stageId, { outputs: {}, artifacts: [] }])), promptId: "p1" };
       };
       const glbPath = join(tmpdir(), `receipt-gate-${Date.now()}-${process.pid}.glb`);
       writeFileSync(glbPath, "glb");
@@ -2190,7 +2201,10 @@ describe("the multi-stage boundary (2026-09-25 — curated lane lifts the length
         ids: (): string[] => ["comfyui"],
         resolve: (): { executor: FakeEngine } => ({ executor: engine }),
       };
-      engine.onFlow = async (): Promise<FlowResult> => ({ stages: {}, promptId: "p1" });
+      engine.onFlow = async (rows): Promise<FlowResult> => ({
+        stages: Object.fromEntries(rows.map((r) => [r.stageId, { outputs: {}, artifacts: [] }])),
+        promptId: "p1",
+      });
       return { s, bodies };
     };
     const phase1SeesBodies = (admits: Record<string, readonly string[]>) =>
@@ -2856,7 +2870,10 @@ describe("the parity judge (audits F-S4/S5)", () => {
       ids: (): string[] => ["comfyui"],
       resolve: (): { executor: FakeEngine } => ({ executor: engine }),
     };
-    engine.onFlow = async (): Promise<FlowResult> => ({ stages: {}, promptId: "pb" });
+    engine.onFlow = async (rows): Promise<FlowResult> => ({
+      stages: Object.fromEntries(rows.map((r) => [r.stageId, { outputs: {}, artifacts: [] }])),
+      promptId: "pb",
+    });
     // the doc carries its own inline workflow (a params-less stage
     // fails at the engine's compose — not this wall's subject)
     const ans = await s.svc.start(inlineBody({ flow_inline: { id: "x", stages: [{ id: "s", engine: "comfyui", params: WF }] } }), sig());

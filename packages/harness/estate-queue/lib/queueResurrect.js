@@ -88,11 +88,22 @@ export function sidecarList(value) {
         return [...src];
     throw new Error("unlistable sidecar value");
 }
-/** artifact names: the sidecar list filtered to non-empty strings. */
+/** artifact names: non-empty strings ride; a mistyped entry takes
+ *  the raise road (the caller orphans the record — the revived run
+ *  never comes back short an artifact, unvoiced). Empty strings
+ *  still filter: the writer's own harvest never emits them
+ *  (runsExecute drops ""), so "" is absent, not a mistype. */
 export function artifactStrings(value) {
-    return sidecarList(value)
-        .filter((a) => typeof a === "string" && a !== "")
-        .map((a) => a);
+    const names = [];
+    for (const entry of sidecarList(value)) {
+        if (entry === "")
+            continue;
+        if (typeof entry !== "string") {
+            throw new Error("unlistable sidecar artifact entry");
+        }
+        names.push(entry);
+    }
+    return names;
 }
 /** created_at coerce: finite numbers ride; numeric strings parse;
  *  everything else rides 0 and never throws (boot order for

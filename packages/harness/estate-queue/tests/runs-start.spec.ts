@@ -14,6 +14,7 @@ import {
   selectSubmitDoor,
   unknownDraftRefusal,
 } from "../src/runsStart.ts";
+import { ENGINE_TABLE } from "../src/runsValidateShared.ts";
 import type { CompiledStage } from "../src/runsStart.ts";
 import { newRunId } from "../src/queueCore.ts";
 import type { RunRecord } from "../src/runsTypes.ts";
@@ -214,13 +215,14 @@ describe("compileFlowInline", () => {
     assert.deepEqual(filled.stages[0]!.expected, {});
     assert.deepEqual(filled.stages[0]!.outputNodes, {});
     assert.deepEqual(filled.stages[0]!.inputNames, {});
-    // output_nodes INSIDE params is still a tolerant cell (a nested
-    // field, not a stage coordinate) — the ban above covers the
-    // stage-level keys only, and this arm keeps that honest.
+    // params.output_nodes rides the container law too (P7 B2): a
+    // malformed nested value refuses, never drops into {}.
     const badNodes = compileFlowInline(
       doc([stage({ params: { output_nodes: ["x"] } })]),
-    ) as { stages: CompiledStage[] };
-    assert.deepEqual(badNodes.stages[0]!.outputNodes, {});
+    ) as unknown as { status: number; payload: { error: string; code: string } };
+    assert.equal(badNodes.status, 400);
+    assert.equal(badNodes.payload.code, "invalid_request");
+    assert.match(badNodes.payload.error, /params\.output_nodes must be an object \(got array\)/);
   });
 
   // THE SILENCE WAS PINNED HERE (the coverage audit, HIGH finding #2).
@@ -256,6 +258,33 @@ describe("compileFlowInline", () => {
     it("outputs and expected refuse on the same law", () => {
       assert.match(refused({ outputs: ["y"] }), /outputs must be an object/);
       assert.match(refused({ expected: 5 }), /expected must be an object \(got number\)/);
+    });
+    it("params.output_nodes: a string refuses, naming the nested container", () => {
+      assert.match(
+        refused({ params: { output_nodes: "main" } }),
+        /params\.output_nodes must be an object \(got string\)/,
+      );
+    });
+    it("the empty-outputs fill equals the lattice's read for the derived engine roster (the P7 latent lock)", () => {
+      // The derived roster: every ENGINE_TABLE key + the mcp grammar
+      // arm. Start's fill and validate's engineDefaults must read the
+      // SAME row — today they agree by coincidence (two spellings of
+      // the mcp leg: the table-miss literal here, the mcp-client row
+      // in the lattice). The cure makes it one shared read; this arm
+      // reds the moment either door drifts from the other.
+      const roster = [...Object.keys(ENGINE_TABLE), "mcp:blender", "mcp:ghost-9_x"];
+      const known = [...roster, "comfyui"];
+      for (const engine of roster) {
+        const out = compileFlowInline(
+          doc([stage({ id: "s", engine, outputs: {} })]),
+          known,
+        ) as unknown as { stages: CompiledStage[] };
+        const filled = out.stages[0]?.outputs as Record<string, unknown>;
+        const want = engine.startsWith("mcp:")
+          ? "image"
+          : (ENGINE_TABLE[engine] as { def: string } | undefined)?.def;
+        assert.equal(filled["default"], want, `engine ${engine}`);
+      }
     });
     it("a malformed BINDING refuses: a number where a wire belongs", () => {
       assert.match(refused({ inputs: { junk: 5 } }), /input "junk" is neither \{stage, output\} nor \{initial\}/);
@@ -450,6 +479,58 @@ describe("registerCompiledRun", () => {
       stages: [{ id: "s", card: "c", provenance: "restored" }],
       intent: "the beach flow",
     });
+  });
+
+  it("a benchDoc with unusable stages stamps a warning (the snapshot never silently skips)", async () => {
+    // P7 B3: a benchDoc whose stages is not a usable stage list
+    // skipped the whole snapshot with NO voice — restore then
+    // reconstructed from the LIVE bench, unvoiced. The row must
+    // carry the skip's voice the way the read-failure path does.
+    const root = tmp();
+    const { run } = await mustRegister({
+      compiled: compiled([one]),
+      testFlag: false,
+      draftId: "d1",
+      stateRoot: root,
+      enqueue: () => 3,
+      door: {
+        runId: "run-badstages" as RunId,
+        pipeline: "m",
+        cardId: "c",
+        requestBody: { model: "m" },
+        benchDoc: { stages: "nope", intent: "the beach flow" },
+      },
+    });
+    assert.equal(run.benchSnapshot, undefined);
+    assert.ok(
+      (run.warnings ?? []).some((w) => w.includes("bench snapshot") && w.includes("stages")),
+      "the skipped snapshot's voice rides the row: " + JSON.stringify(run.warnings ?? []),
+    );
+  });
+
+  it("a present-but-undefined stages reads as absent (the door's spread materializes the key)", async () => {
+    // P7 B3 follow-up: the door's benchDoc coercion spread stamps
+    // `stages: undefined` onto stages-less drafts — a key that JSON
+    // drops on the sidecar anyway. Voicing it would warn every
+    // stages-less bench run for the spread's own artifact, so the
+    // voice reads present-undefined as the absent shape it echoes.
+    const root = tmp();
+    const { run } = await mustRegister({
+      compiled: compiled([one]),
+      testFlag: false,
+      draftId: "d1",
+      stateRoot: root,
+      enqueue: () => 3,
+      door: {
+        runId: "run-undefinedstages" as RunId,
+        pipeline: "m",
+        cardId: "c",
+        requestBody: { model: "m" },
+        benchDoc: { stages: undefined, intent: "a rev-only echo" },
+      },
+    });
+    assert.equal(run.benchSnapshot, undefined);
+    assert.deepEqual(run.warnings ?? [], []);
   });
 
   it("THE PROVENANCE HEAD (2026-09-25): a bench with a log rides its head on the snapshot; a log-less doc rides no fabricated label", async () => {

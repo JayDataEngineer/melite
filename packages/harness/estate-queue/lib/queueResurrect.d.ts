@@ -27,7 +27,11 @@ export declare function graphRowsUsable(graph: unknown): boolean;
  *  anything else throws (the raise road: plan + build agree on the
  *  skip, never throw out). */
 export declare function sidecarList(value: unknown): unknown[];
-/** artifact names: the sidecar list filtered to non-empty strings. */
+/** artifact names: non-empty strings ride; a mistyped entry takes
+ *  the raise road (the caller orphans the record — the revived run
+ *  never comes back short an artifact, unvoiced). Empty strings
+ *  still filter: the writer's own harvest never emits them
+ *  (runsExecute drops ""), so "" is absent, not a mistype. */
 export declare function artifactStrings(value: unknown): string[];
 /** created_at coerce: finite numbers ride; numeric strings parse;
  *  everything else rides 0 and never throws (boot order for

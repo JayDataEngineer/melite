@@ -176,23 +176,25 @@ const rig = (doc: SynthDoc): Rig => {
 };
 
 /** The engine seat (the doors-spec FakeEngine shape): one prompt id
- *  minted per run, the stages settle clean. */
+ *  minted per run, every submitted row settles clean — the result
+ *  echoes the submitted stage ids (the P7 B1 law: a submitted stage
+ *  with no result row fails the run, so the stub answers every row). */
 class ReceiptEngine extends ComfyUIHostService {
   promptId = "receipt-prompt-0001";
   constructor(ctx: Context) {
     super(ctx as unknown as never, {});
   }
   override executeFlow(
-    _rows: MergeRow[],
+    rows: MergeRow[],
     _runDir: string,
     _inputNames: Record<string, Record<string, string>>,
     _initials: Record<string, EngineJson>,
     _opts: { shouldStop?: () => boolean; report?: (u: Record<string, EngineJson>) => void } = {},
   ): Promise<FlowResult> {
     return Promise.resolve({
-      stages: {
-        receipt_skel: { outputs: {}, artifacts: [] },
-      },
+      stages: Object.fromEntries(
+        rows.map((row) => [row.stageId, { outputs: {}, artifacts: [] }]),
+      ),
       promptId: this.promptId,
     });
   }

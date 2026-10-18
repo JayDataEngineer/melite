@@ -113,7 +113,7 @@ class GatedEngine extends ComfyUIHostService {
     super(ctx as unknown as never, {});
   }
   override executeFlow(
-    _rows: MergeRow[],
+    rows: MergeRow[],
     runDir: string,
     _inputNames: Record<string, Record<string, string>>,
     _initials: Record<string, EngineJson>,
@@ -126,7 +126,12 @@ class GatedEngine extends ComfyUIHostService {
     return new Promise<FlowResult>((resolve) => {
       this.resolvers.set(runId, () => {
         this.inFlight -= 1;
-        resolve({ stages: {}, promptId: "p-" + runId });
+        resolve({
+          stages: Object.fromEntries(
+            rows.map((r) => [r.stageId, { outputs: {}, artifacts: [] }]),
+          ),
+          promptId: "p-" + runId,
+        });
       });
     });
   }

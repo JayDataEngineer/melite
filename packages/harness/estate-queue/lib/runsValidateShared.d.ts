@@ -16,6 +16,15 @@ export declare const ENGINE_TABLE: Record<string, {
     plugin: string;
     def: string;
 }>;
+/** THE ENGINE TABLE'S DEFAULT READ (P7 latent): the lattice's own
+ *  rule, owned once — mcp:<server> grammar ids read the mcp-client
+ *  row ("image"), table rows read their def, anything else reads
+ *  undefined (unknown: no fill — the caller's door refuses, never
+ *  guesses). Both doors derive from this one read (validate's
+ *  lattice below, start's empty-outputs fill): a future grammar id
+ *  absent from the table makes BOTH refuse instead of splitting
+ *  validate-refuses/start-accepts. */
+export declare function engineDefaultOutput(engine: string): string | undefined;
 export declare const KIND_VOCAB: readonly string[];
 export declare const SKIP_VOCAB: readonly string[];
 export declare const INLINE_TOP_SORTED: readonly string[];

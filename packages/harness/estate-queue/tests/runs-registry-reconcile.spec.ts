@@ -121,7 +121,10 @@ class FakeEngine extends ComfyUIHostService {
     inputNames: Record<string, Record<string, string>>,
     initials: Record<string, EngineJson>,
     opts: { shouldStop?: () => boolean; report?: (updates: Record<string, EngineJson>) => void },
-  ) => Promise<FlowResult> = async () => ({ stages: {}, promptId: "p" });
+  ) => Promise<FlowResult> = async (rows) => ({
+    stages: Object.fromEntries(rows.map((r) => [r.stageId, { outputs: {}, artifacts: [] }])),
+    promptId: "p",
+  });
   constructor(ctx: Context) {
     super(ctx as unknown as never, {});
   }

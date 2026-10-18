@@ -128,7 +128,12 @@ class FakeEngine extends ComfyUIHostService {
     inputNames: Record<string, Record<string, string>>,
     initials: Record<string, EngineJson>,
     opts: { shouldStop?: () => boolean; report?: (updates: Record<string, EngineJson>) => void },
-  ) => Promise<FlowResult> = async () => ({ stages: {}, promptId: "p" });
+  ) => Promise<FlowResult> = async (rows) => ({
+    stages: Object.fromEntries(
+      rows.map((r) => [r.stageId, { outputs: {}, artifacts: [] }]),
+    ),
+    promptId: "p",
+  });
   constructor(ctx: Context) {
     super(ctx as unknown as never, {});
   }
@@ -351,7 +356,13 @@ describe("pump + engine", () => {
     assert.ok(!("activity" in stage) && !("progress" in stage));
   });
 
-  it("missing stage rows default (the empty harvest completes)", async () => {
+  // THE MISSING-STAGE REFUSAL (P7 B1): the old law — the empty
+  // harvest completes — is dead by operator mandate. The engine
+  // answered for a submitted stage id or it did not: a FlowResult
+  // with no row for a submitted stage fails the run naming the
+  // missing id, never settles completed/empty (the walls tier
+  // judges the same law: tests/walls/ts/suites/runs-missing-stage.spec.ts).
+  it("missing stage rows fail the run (the empty harvest no longer completes)", async () => {
     const s = seat();
     const engine = engineSeat(s);
     engine.onFlow = async (_rows, _dir, _inputs, _initials, opts) => {
@@ -359,8 +370,17 @@ describe("pump + engine", () => {
       return { stages: {}, promptId: "p" };
     };
     const row = await settleWait(s, (await s.svc.start(wfBody(), sig())).run_id);
-    assert.equal(row.status, "completed");
-    assert.deepEqual(row.artifacts, []);
+    assert.equal(row.status, "failed");
+    assert.match(row.error, /runs\/missing-stage-result/);
+    assert.match(row.error, /stage "s"/);
+    assert.equal(
+      (row.stages[0] as unknown as Record<string, unknown>)["status"],
+      "failed",
+    );
+    assert.match(
+      String((row.stages[0] as unknown as Record<string, unknown>)["error"]),
+      /stage "s"/,
+    );
   });
 
   // THE CLAIM-RELEASE LAW (the commission wedge landing, 2026-10-03):
@@ -480,7 +500,11 @@ describe("pump + engine", () => {
     const engine = engineSeat(s);
     engine.stopFails = true;
     let release!: (v: FlowResult) => void;
-    engine.onFlow = () => new Promise((res) => void (release = res));
+    let echo: MergeRow[] = [];
+    engine.onFlow = (rows) => {
+      echo = rows;
+      return new Promise<FlowResult>((res) => void (release = res));
+    };
     const ans = await s.svc.start(wfBody(), sig());
     await waitRunning(s, ans.run_id);
     assert.deepEqual(await s.svc.stop(ans.run_id, sig()), {
@@ -495,7 +519,12 @@ describe("pump + engine", () => {
       if (i === 199) throw new Error("stop never reached the engine " + ans.run_id);
       await new Promise((r) => setTimeout(r, 10));
     }
-    release({ stages: {}, promptId: "p" });
+    release({
+      stages: Object.fromEntries(
+        echo.map((r) => [r.stageId, { outputs: {}, artifacts: [] }]),
+      ),
+      promptId: "p",
+    });
     const row = await settleWait(s, ans.run_id);
     assert.equal(row.status, "stopped");
     assert.equal((s.core.runs.get(ans.run_id) as RunRecord).stopFlag, true);

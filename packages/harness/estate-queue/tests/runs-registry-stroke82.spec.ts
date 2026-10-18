@@ -13,7 +13,7 @@ import { ComfyUIHostService } from "@melite/comfyui-cordis";
 import type { FlowResult, MergeRow, EngineJson } from "@melite/comfyui-cordis";
 import { RunsRuntimeService } from "../src/runsRegistry.ts";
 import { EnginesService } from "@melite/engine-contract";
-import type { EngineRunOutcome, EngineRef } from "@melite/engine-contract";
+import type { EngineRunOutcome, EngineRef, EngineStageRow } from "@melite/engine-contract";
 import { QueueCore } from "../src/queue.ts";
 import { CardArmError } from "../src/cardsRegistry.ts";
 import type { RunRecord } from "../src/runsTypes.ts";
@@ -116,7 +116,12 @@ class FakeEngine extends ComfyUIHostService {
     inputNames: Record<string, Record<string, string>>,
     initials: Record<string, EngineJson>,
     opts: { shouldStop?: () => boolean; report?: (updates: Record<string, EngineJson>) => void },
-  ) => Promise<FlowResult> = async () => ({ stages: {}, promptId: "p" });
+  ) => Promise<FlowResult> = async (rows) => ({
+    stages: Object.fromEntries(
+      rows.map((r) => [r.stageId, { outputs: {}, artifacts: [] }]),
+    ),
+    promptId: "p",
+  });
   constructor(ctx: Context) {
     super(ctx as unknown as never, {});
   }
@@ -289,9 +294,14 @@ describe("stroke-82 initials threading", () => {
     const s = seat();
     const engine = engineSeat(s);
     let seen: unknown = "unreached";
-    engine.onFlow = async (_rows, _dir, _inputs, initials) => {
+    engine.onFlow = async (rows, _dir, _inputs, initials) => {
       seen = initials;
-      return { stages: {}, promptId: "p" };
+      return {
+        stages: Object.fromEntries(
+          rows.map((r) => [r.stageId, { outputs: {}, artifacts: [] }]),
+        ),
+        promptId: "p",
+      };
     };
     const row = await settleWait(s, (await s.svc.start(wfBody82(), sig())).run_id);
     assert.equal(row.status, "completed");
@@ -316,10 +326,13 @@ describe("stroke-83 stopping stamp", () => {
     let entered = false;
     engines.register("comfyui", {
       executor: {
-        executeStages: async (): Promise<EngineRunOutcome> => {
+        executeStages: async (rows: readonly EngineStageRow[]): Promise<EngineRunOutcome> => {
           entered = true;
           await gate;
-          return { stages: [], engineRef: "p" as EngineRef };
+          return {
+            stages: rows.map((r) => ({ stageId: r.stageId, outputs: {}, artifacts: [] })),
+            engineRef: "p" as EngineRef,
+          };
         },
       },
     });
@@ -367,10 +380,13 @@ describe("stroke-82 seat-path arms", () => {
 
   it("a stop mid-execution converges stopped with an empty error", async () => {
     const s = seat();
-    let release!: (v: { stages: never[] }) => void;
+    let echo: readonly EngineStageRow[] = [];
+    let release!: (v: EngineRunOutcome) => void;
     mountSeat82(s, {
-      executeStages: (): Promise<{ stages: never[] }> =>
-        new Promise((res) => void (release = res)),
+      executeStages: (rows: readonly EngineStageRow[]): Promise<EngineRunOutcome> => {
+        echo = rows;
+        return new Promise((res) => void (release = res));
+      },
     });
     const ans = await s.svc.start(inlineBody(), sig());
     await waitRunning82(s, ans.run_id);
@@ -378,7 +394,10 @@ describe("stroke-82 seat-path arms", () => {
       run_id: ans.run_id,
       status: "stopping",
     });
-    release({ stages: [] });
+    release({
+      stages: echo.map((r) => ({ stageId: r.stageId, outputs: {}, artifacts: [] })),
+      engineRef: "p" as EngineRef,
+    });
     const row = await settleWait(s, ans.run_id);
     assert.equal(row.status, "stopped");
     assert.equal(row.error, "");
@@ -437,13 +456,21 @@ describe("stroke-82 FIFO serialization", () => {
     let releaseA!: (v: FlowResult) => void;
     let calls = 0;
     let aId = "";
+    let echoA: MergeRow[] = [];
     engine.onFlow = (rows, runDir, _inputs, _initials, _opts) => {
-      void rows;
       calls += 1;
       started.push(runDir);
-      if (calls === 1) return new Promise<FlowResult>((res) => void (releaseA = res));
+      if (calls === 1) {
+        echoA = rows;
+        return new Promise<FlowResult>((res) => void (releaseA = res));
+      }
       seenAStatusAtBStart = (s.core.runs.get(aId) as RunRecord).status;
-      return Promise.resolve({ stages: {}, promptId: "p" });
+      return Promise.resolve({
+        stages: Object.fromEntries(
+          rows.map((r) => [r.stageId, { outputs: {}, artifacts: [] }]),
+        ),
+        promptId: "p",
+      });
     };
     aId = (await s.svc.start(wfBody82(), sig())).run_id;
     await waitRunning82(s, aId);
@@ -452,7 +479,12 @@ describe("stroke-82 FIFO serialization", () => {
     assert.equal((s.core.runs.get(bId) as RunRecord).status, "queued");
     assert.equal(s.core.queuePosition(bId), 0);
     assert.equal((s.core.runs.get(aId) as RunRecord).status, "running");
-    releaseA({ stages: {}, promptId: "p" });
+    releaseA({
+      stages: Object.fromEntries(
+        echoA.map((r) => [r.stageId, { outputs: {}, artifacts: [] }]),
+      ),
+      promptId: "p",
+    });
     assert.equal((await settleWait(s, aId)).status, "completed");
     assert.equal((await settleWait(s, bId)).status, "completed");
     assert.equal(started.length, 2);
@@ -472,7 +504,10 @@ describe("stroke-82 ghost-head strand", () => {
     const engines = new EnginesService(ctx);
     engines.register("comfyui", {
       executor: {
-        executeStages: async () => ({ stages: [], engineRef: "p" as EngineRef }),
+        executeStages: async (rows: readonly EngineStageRow[]) => ({
+          stages: rows.map((r) => ({ stageId: r.stageId, outputs: {}, artifacts: [] })),
+          engineRef: "p" as EngineRef,
+        }),
       },
     });
     const ghost = "run-ghost";
@@ -541,10 +576,15 @@ describe("stroke-82 cheap pins", () => {
     let entered = false;
     let releaseExec: (() => void) | null = null;
     const execGate = new Promise<void>((rel): void => { releaseExec = rel; });
-    engine.onFlow = async () => {
+    engine.onFlow = async (rows) => {
       entered = true;
       await execGate;
-      return { stages: {}, promptId: "p" };
+      return {
+        stages: Object.fromEntries(
+          rows.map((r) => [r.stageId, { outputs: {}, artifacts: [] }]),
+        ),
+        promptId: "p",
+      };
     };
     const ans = await s.svc.start(wfBody82(), sig());
     await waitRunning82(s, ans.run_id);

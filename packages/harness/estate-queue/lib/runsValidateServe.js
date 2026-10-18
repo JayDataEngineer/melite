@@ -1,8 +1,7 @@
 // runsValidateServe.ts — the shared compile-serve tail split from
 // runsValidate.ts (pure move, zero logic changes): branch prune, to_graph,
 // the $channel gate, cost preview, and the inline/named serve arms.
-import { engineIdOk } from "@melite/engine-contract";
-import { ENGINE_TABLE, FlowError } from "./runsValidateShared.js";
+import { FlowError, engineDefaultOutput } from "./runsValidateShared.js";
 import { edgeRef } from "./runsValidateInline.js";
 import { flowFromBody, kindsOk, wiresResolve } from "./runsValidateStages.js";
 import { batchRows, sweepWorkflows } from "./runsValidateSweeps.js";
@@ -81,14 +80,25 @@ export function toGraph(flow) {
                 outputs.push({ ...o });
         }
         else {
-            // validateEngines already refused unknown engines and the
-            // table carries a default for every known one — the
-            // try/except-unknown shape of to_graph collapses to the table.
-            // validateEngines refused unknown engines upstream — the hit is proven.
-            const row = st.engine.startsWith("mcp:") && engineIdOk(st.engine)
-                ? { plugin: "mcp-client", def: "image" }
-                : ENGINE_TABLE[st.engine];
-            outputs.push({ name: "default", kind: row.def });
+            // THE SHARED DEFAULT READ (P7 latent): validateEngines refused
+            // unknown engines upstream, so this hit is proven — but the
+            // rule (mcp leg + table) is still read here, not retyped, so
+            // the day the table grows this seat cannot disagree. The
+            // undefined leg is the defense-in-depth voice for a guarantee
+            // missed, in the lattice's own words.
+            const def = engineDefaultOutput(st.engine);
+            if (def === undefined) {
+                throw new FlowError("flow " +
+                    JSON.stringify(flow.id) +
+                    " stage " +
+                    JSON.stringify(st.id) +
+                    ": engine " +
+                    JSON.stringify(st.engine) +
+                    " — no engine plugin for type " +
+                    JSON.stringify(st.engine) +
+                    " (no engine plugin declares it)");
+            }
+            outputs.push({ name: "default", kind: def });
         }
         return {
             id: st.id,

@@ -2,9 +2,8 @@
 // runsValidate.ts (pure move, zero logic changes): strict-body admission,
 // stage rows, wires, the card gate, kinds, engines, flow_from_body.
 import { coerceWireArrays, coerceWireNumbers, unwrapItemArrays } from '@melite/comfyui-card-kit';
-import { engineIdOk } from "@melite/engine-contract";
 import { checkStrictBody } from "./runsGates.js";
-import { ENGINE_TABLE, FLOW_ID_RE, INLINE_TOP_SORTED, STAGE_KEYS_SORTED, FlowError, needCardRegistry, } from "./runsValidateShared.js";
+import { FLOW_ID_RE, INLINE_TOP_SORTED, STAGE_KEYS_SORTED, FlowError, engineDefaultOutput, needCardRegistry, } from "./runsValidateShared.js";
 import { edgeRef, inlineEdge, inlineKind, inlineSkip } from "./runsValidateInline.js";
 import { coerceRecord, minLengthRefusal } from "./runsValidateRefusals.js";
 // ── strict body ──────
@@ -455,10 +454,8 @@ knownEngines) {
                     : knownEngines.slice().sort().join(", ")) +
                 ")");
         }
-        const row = st.engine.startsWith("mcp:") && engineIdOk(st.engine)
-            ? { plugin: "mcp-client", def: "image" }
-            : ENGINE_TABLE[st.engine];
-        if (row === undefined) {
+        const def = engineDefaultOutput(st.engine);
+        if (def === undefined) {
             throw new FlowError("flow " +
                 JSON.stringify(flow.id) +
                 " stage " +
@@ -469,7 +466,7 @@ knownEngines) {
                 JSON.stringify(st.engine) +
                 " (no engine plugin declares it)");
         }
-        engineDefaults[st.engine] = row.def;
+        engineDefaults[st.engine] = def;
     }
     kindsOk(flow.id, flow.stages, engineDefaults, cards);
     return flow;
