@@ -1481,6 +1481,73 @@ describe("the arrival window (the gesture→settle one-round-trip gap, P4 remain
     expect(writeFace()).toBe(null);
     expect(runs).toBe(1);
   });
+
+  test("W3 — a model-less arrival never clobbers the user's model with '' (the B8 floor): no silent ride, the refusal names the departed knob", async () => {
+    // THE FLOOR'S PROMISE (stage-drill.tsx:374, `arrival !== ''`): the
+    // rescope patch CARRIES model:arrival, so an arrival doc that
+    // names no model must never seed the holding — the user's model
+    // would read '' and the run would fire under no family. The
+    // schema faces here are EQUAL (the DRILL-a shape: the pair is in
+    // both docs' schemas, only the `params` surfaces differ), so the
+    // schema-fields drop cannot clean the pair and the skipped
+    // rescope nulls nothing either. The only lawful outcomes are a
+    // clean start (impossible — nothing nulled the pair) or a LOUD
+    // refusal naming the departed knob. A start under the pair, or
+    // a model:'' write, is the silent burn this arm exists to catch.
+    const { servedByModel, FROM, TO } = windowDocs();
+    const { [TO]: toDoc, ...restDocs } = servedByModel;
+    const { model: _dropped, ...modelLessTo } = toDoc as Record<string, unknown>;
+    const { fetched, releaseArrival } = stubDeferredWindow({ ...restDocs, [TO]: modelLessTo }, FROM, TO);
+    fakes?.unmount();
+    let runs = 0;
+    let bound: () => void = () => { throw new Error("bindRun never fired"); };
+    fakes = mountEstateFakes({});
+    const stageA = stage({ model: FROM, double_reference: true, use_stock_nodes: true, prompt: "keep the handwriting" });
+    (stageA as { card: string }).card = "image-edit";
+    render(h(StageDrill, {
+      stage: stageA,
+      bench: { kind: "bench", draftId: "bench-p", rev: 1, log: [], stages: [stageA], sessionKey: "main" },
+      running: false,
+      onRun: () => { runs += 1; }, onStop: () => {}, onClose: () => {}, onRemoved: () => {},
+      onPatchParams: () => {},
+      renderStageView: (_o: unknown, fallback: unknown) => fallback,
+      bindRun: (r: () => void) => { bound = r; },
+    } as never));
+    await screen.findByLabelText("Prompt", {}, { timeout: 4000 });
+    const knob = await screen.findByLabelText("Serving family", {}, { timeout: 4000 });
+    fireEvent.click(knob);
+    const items = screen.getAllByRole("menuitem");
+    const target = items.find((el) => {
+      const t = el.textContent ?? "";
+      return t.includes("21") && !t.includes("2511");
+    });
+    if (target === undefined) throw new Error("no 21 menuitem; items: " + items.map((el) => el.textContent).join(" | "));
+    fireEvent.click(target);
+    await waitFor(() => {
+      if (!fetched.some((k) => k === TO)) throw new Error("arrival fetch not started; fetched: " + JSON.stringify(fetched));
+    }, { timeout: 8000 });
+    // the model-less arrival lands — the rescope floor skips (no
+    // model to carry), the B8 schema drop skips (faces equal).
+    releaseArrival();
+    await awaitWriteSettled();
+    const landedModel = patchParamsOf(patchCalls()).find((p) => p["model"] === TO);
+    if (landedModel === undefined) throw new Error("re-point write not landed after settle");
+    // THE POST-SETTLE PRESS: the pair was nulled nowhere, so the
+    // run must NOT fire under it — and no write may ever carry
+    // model:'' (the floor). The compose gate refuses the candidate
+    // against the served `params` surface, naming the knob.
+    bound();
+    await awaitWriteSettled();
+    expect(runs).toBe(0);
+    for (const p of patchParamsOf(patchCalls())) {
+      expect(p["model"] ?? TO).not.toBe("");
+    }
+    const strips = await screen.findAllByText(/double_reference/, {}, { timeout: 8000 });
+    expect(strips.length).toBeGreaterThan(0);
+    // the run strip carries the gate's field-named refusal (a second
+    // face, the form banner, carries the same voice — both loud).
+    expect(strips.some((el) => (el as HTMLElement).className?.match(/runError/))).toBe(true);
+  });
 });
 
   test("a same-model knob set is NOT a re-point: the ordinary per-key write, no switch nulls", async () => {
