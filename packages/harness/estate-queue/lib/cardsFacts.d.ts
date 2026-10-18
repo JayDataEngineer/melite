@@ -61,6 +61,13 @@ export interface ModelFactsRow {
         min?: number;
         max?: number;
     }>>;
+    /** THE REQUIRED DEFAULTS (operator contract 2026-11-07): the
+     *  DECL's classed manifest (user / variant / mod), present only
+     *  where the family declares one. */
+    readonly required_defaults?: readonly {
+        readonly name: string;
+        readonly class: "user" | "variant" | "mod";
+    }[];
     /** The assembly-studio declaration (hand-owned model-facts.json
      *  carries it; the projection unions its writes into admits). */
     readonly studio?: {

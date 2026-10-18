@@ -1,5 +1,5 @@
-import type { GraphBuilder } from './graph.js';
-import type { DeclVariantRow } from './model-contract.js';
+import type { GraphBuilder } from './graph.ts';
+import type { DeclVariantRow, RequiredDefaultRow } from './model-contract.ts';
 /** The registry reads derivation renders through — injected, never
  *  imported (this module is evaluation-cycle-clean: models.ts runs
  *  its top-level boot, so any static edge back into it deadlocks
@@ -126,6 +126,10 @@ export interface ModelFacts {
         min?: number;
         max?: number;
     }>;
+    /** THE REQUIRED DEFAULTS (operator contract 2026-11-07): the
+     * DECL's classed manifest (user / variant / mod), present only
+     * where the family declares one. */
+    required_defaults?: RequiredDefaultRow[];
     /** Compose splice SSOT rows (card field → NodeClass.idx.input). */
     /** Variant matrix rows + per-cell weight coordinates. */
     variants: ModelVariantFacts[];

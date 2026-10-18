@@ -15,6 +15,13 @@ export const DECL = {
         "variant": "customvoice"
     },
     "genre": "audio",
+    // THE REQUIRED DEFAULTS (operator contract 2026-11-07): the
+    // user-provided seat(s) — the compose caller provides them. No
+    // variant-class rows: this family's served face exposes no
+    // steps+cfg pair (the census's surface-derived carve).
+    "required_defaults": [
+        { "name": "text", "class": "user" }
+    ],
     // HAND-PLACED WEIGHTS (the union of the two dead atoms' rows —
     // the FOLD LAW): every tree this family's lanes load is stated
     // here so no lane silently claims the estate fetches it. The two

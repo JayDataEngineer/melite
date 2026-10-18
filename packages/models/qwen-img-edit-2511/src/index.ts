@@ -38,6 +38,18 @@ export const DECL: ModelDecl = {
     "double_reference": false
   },
   "genre": "image",
+  // THE REQUIRED DEFAULTS (operator contract 2026-11-07): every
+  // variant row declares its own steps+cfg in resolver_defaults —
+  // the family defaults can never substitute for a variant's face
+  // (the standard 20/2.5 is the family's DEFAULT, never a recipe
+  // row's silent ride). input_images + prompt are the user-provided
+  // seats (the edit lane edits what the caller brings).
+  "required_defaults": [
+    { "name": "steps", "class": "variant" },
+    { "name": "cfg", "class": "variant" },
+    { "name": "input_images", "class": "user" },
+    { "name": "prompt", "class": "user" }
+  ],
   // THE LANE SURFACE (fix shapes 1+2): the dedicated edit
   // checkpoint lane edits at SOURCE resolution — the VAEEncode of
   // the input IS the latent, so a stated width/height is not a
@@ -186,7 +198,7 @@ export const DECL: ModelDecl = {
     {
       "id": "strong-identity",
       "label": "Strong Identity",
-      "hint": "Double-reference ON — the card schema's own identity knob (encode the input twice for stronger identity preservation); this family's own default is false. Steps/CFG stay on the Variant routes (Lightning 4-step / Standard 20-step cfg 2.5) — never duplicated here. PLANE TRUTH (agent-debt F-4, 2026-09-22): the TS compose plane refuses double_reference=true LOUD — it builds the stock plain-edit graph only. Selecting this variant GUARANTEES a refusal; do not plan runs around it until the double-encode lane exists.",
+      "hint": "Double-reference ON — the card schema's own identity knob (encode the input twice for stronger identity preservation); this family's own default is false. PLANE TRUTH (agent-debt F-4, 2026-09-22): the TS compose plane refuses double_reference=true LOUD — it builds the stock plain-edit graph only. Selecting this variant GUARANTEES a refusal; do not plan runs around it until the double-encode lane exists.",
       "group": "Recipe",
       "wire_defaults": { "double_reference": true },
       "cells": [],

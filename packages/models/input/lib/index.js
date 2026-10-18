@@ -6,6 +6,13 @@ export const DECL = {
     "description": "Source intake: attach an image or audio file (upload, asset drop, prior run) — staged, optionally transformed, emitted as a media artifact for downstream cards to wire.",
     "engine": "comfyui",
     "genre": "image",
+    // THE REQUIRED DEFAULTS (operator contract 2026-11-07): the
+    // user-provided seat(s) — the compose caller provides them. No
+    // variant-class rows: this family's served face exposes no
+    // steps+cfg pair (the census's surface-derived carve).
+    "required_defaults": [
+        { "name": "source", "class": "user" }
+    ],
     "variants": [
         {
             "id": "standard",

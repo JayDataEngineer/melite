@@ -2,6 +2,6 @@ import type { Plugin } from "@deepseek-ai/cordis";
 import type { ModelDecl } from '@melite/comfyui-card-kit/model-contract';
 export declare const DECL: ModelDecl;
 export declare const family: Plugin;
-export { upscale, parseUpscaleFacts, type UpscaleFacts, type UpscaleParams } from "./actions.js";
+export { upscale, parseUpscaleFacts, type UpscaleFacts, type UpscaleParams } from "./actions.ts";
 export { family as default };
 //# sourceMappingURL=index.d.ts.map

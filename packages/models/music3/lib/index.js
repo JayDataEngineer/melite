@@ -11,6 +11,15 @@ export const DECL = {
         "note": ""
     },
     "genre": "audio",
+    // THE REQUIRED DEFAULTS (operator contract 2026-11-07): The
+    // user-provided seats (prompt, lyrics) — the compose caller
+    // provides them. No variant-class rows: this family's served
+    // face exposes no steps+cfg pair (the census's surface-derived
+    // carve).
+    "required_defaults": [
+        { "name": "prompt", "class": "user" },
+        { "name": "lyrics", "class": "user" }
+    ],
     "variants": [
         {
             "id": "standard",

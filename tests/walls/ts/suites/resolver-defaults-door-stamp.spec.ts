@@ -42,6 +42,17 @@
 //      declaration is stripped composes the FAMILY's 52/4 — arm 4's
 //      truth dies with the declaration, so the wall's green rides
 //      the live resolver_defaults, never a frozen literal.
+//   7. THE REQUIRED-DEFAULTS CENSUS (operator contract 2026-11-07,
+//      surface-derived): every family whose SERVED card face exposes
+//      steps AND cfg declares both variant-class in its
+//      required_defaults manifest, and EVERY variant row carries its
+//      own numbers — the family defaults can never substitute (the
+//      registration gate in comfyui-cordis validateDecl is the boot
+//      door; this arm re-derives the law estate-wide off the real
+//      boot). x-families scoping keeps non-sampling lanes (the
+//      rig-copy family on the shared img-to-mesh card) outside the
+//      law; the h3 timeline face exposes steps without cfg and rides
+//      the same carve.
 //
 // The merge-line toggle itself (stampCardOverlay's resolver_defaults
 // loop lives in estate-queue/src/cardsVariant.ts — another hand's
@@ -58,6 +69,7 @@ import { join } from "node:path";
 import { CardRegistryService } from "../../../../packages/harness/estate-queue/src/cardsRegistry.ts";
 import { prepareCardParams } from "../../../../packages/harness/estate-queue/src/cardsCompose.ts";
 import { selectCardVariant, stampCardOverlay } from "../../../../packages/harness/estate-queue/src/cardsVariant.ts";
+import { emitParamsSchema } from "../../../../packages/engines/comfyui-card-kit/src/params-emit.ts";
 import type { ModelFactsRow } from "../../../../packages/harness/estate-queue/src/cardsFacts.ts";
 import type { CardDeclRow } from "../../../../packages/harness/estate-queue/src/cardsFacts.ts";
 
@@ -184,5 +196,72 @@ describe("THE DOOR-DEPTH resolver_defaults STAMP (axis-unification P1#5)", () =>
     // source dies
     expect(params["steps"]).toBe(52);
     expect(params["cfg"]).toBe(4);
+  });
+
+  it("THE REQUIRED-DEFAULTS CENSUS (the steps+cfg law, surface-derived): every family whose SERVED face exposes steps AND cfg declares both variant-class, and every variant row carries its own numbers — the family defaults can never substitute", () => {
+    const defs = svc.defsSync();
+    let lawFamilies = 0;
+    let lawVariants = 0;
+    for (const [fam, row] of Object.entries(facts)) {
+      if ((row.family ?? fam) !== fam) continue; // family rows only (routes derive)
+      const def = defs.get(row.card);
+      expect(def, `${fam}: the booted card '${row.card}' exists`).toBeTruthy();
+      const carrier = (def as { schemaCarrier?: unknown }).schemaCarrier ?? (def as { schema?: unknown }).schema;
+      // THE SERVED FACE (the SSOT emitter the form-spec door rides),
+      // scoped to THIS family: an x-families row the family is not
+      // in is not its surface — the shared img-to-mesh card scopes
+      // steps/cfg to pixal3d/trellis2-native, so the rig-copy lane
+      // (transfer-rig, which never samples) stays outside the law.
+      const served = emitParamsSchema(carrier as never, [fam]).properties ?? {};
+      const visible = (knob: string): boolean => {
+        const node = served[knob] as { "x-families"?: unknown } | undefined;
+        if (node === undefined) return false;
+        const xf = node["x-families"];
+        return xf === undefined || (Array.isArray(xf) && xf.includes(fam));
+      };
+      // THE USER CLASS NAMES REAL KNOBS (every family, triggered or
+      // not): a user-class row documents what the compose caller
+      // provides — a name the family's served face does not serve
+      // is drift (the claim law).
+      for (const m of row.required_defaults ?? []) {
+        if (m.class !== "user") continue;
+        expect(visible(m.name), `${fam}: user-class required default '${m.name}' names no knob on the ${row.card} card's served face`).toBe(true);
+      }
+      if (!visible("steps") || !visible("cfg")) continue;
+      lawFamilies++;
+      // THE MANIFEST DECLARES THE LAW: the census reads the booted
+      // row's projected manifest, so a stripped declaration dies
+      // here with the data source (never a hand copy).
+      const manifest = row.required_defaults ?? [];
+      for (const knob of ["steps", "cfg"] as const) {
+        const rrow = manifest.find((m) => m.name === knob);
+        expect(rrow, `${fam}: required_defaults must declare '${knob}' — the served face exposes it (operator contract 2026-11-07)`).toBeTruthy();
+        expect(rrow!.class, `${fam}: '${knob}' is variant-class (the model x variant setup provides it)`).toBe("variant");
+      }
+      // THE LAW'S TEETH: every variant row carries its OWN numbers —
+      // never a silent ride on the family defaults (the turbo-steps-
+      // on-a-base-model hazard, estate-wide). Recipes are stamp
+      // macros (plane canon L1): no resolver face, outside the law.
+      for (const v of row.variants ?? []) {
+        if (v.group === "Recipe") continue;
+        for (const knob of ["steps", "cfg"] as const) {
+          const stated = (v.resolver_defaults ?? {})[knob];
+          expect(
+            typeof stated === "number" && Number.isNaN(stated) === false,
+            `${fam}/${v.id}: variant-class required default '${knob}' must be a declared number in the variant's own resolver_defaults (got ${JSON.stringify(stated ?? null)})`,
+          ).toBe(true);
+        }
+        lawVariants++;
+      }
+    }
+    // THE ROSTER PIN (2026-11-07): nine families are inside the law
+    // — the five image-gen faces (anima, flux-klein, krea-2,
+    // qwen-img-21, z-image), the two edit faces (qwen-img-edit-21,
+    // qwen-img-edit-2511), and the two 3d samplers (pixal3d,
+    // trellis2-native). A tenth steps+cfg face REDS HERE until its
+    // family declares the law — the census grows by declaration,
+    // never by a silent neighbor.
+    expect(lawFamilies).toBe(9);
+    expect(lawVariants).toBeGreaterThan(0);
   });
 });

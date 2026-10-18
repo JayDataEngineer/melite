@@ -72,6 +72,17 @@ export const DECL: ModelDecl = {
     "id": "apache-2.0",
     "commercial_use": true
   },
+  // THE REQUIRED DEFAULTS (operator contract 2026-11-07): every
+  // variant row declares its own steps+cfg in resolver_defaults —
+  // the family defaults can never substitute for a variant's face
+  // (the distilled 4/1 is the family's DEFAULT, never a row's
+  // silent ride; the author-base recipe's 50/4 door face is its
+  // own declaration). prompt is the user-provided seat.
+  "required_defaults": [
+    { "name": "steps", "class": "variant" },
+    { "name": "cfg", "class": "variant" },
+    { "name": "prompt", "class": "user" }
+  ],
   // THE PROVISION TRUTH (the silent-failure cure, 2511's law): the
   // shared lane weights carry their provision — the flux2 tokenizer
   // (qwen_3_4b) and the flux2 VAE from the same Comfy-Org split
@@ -106,7 +117,14 @@ export const DECL: ModelDecl = {
         "cfg": [1, 2]
       },
       "resolver_defaults": {
-        "model": "flux-klein"
+        "model": "flux-klein",
+        // The distilled face declared, never inherited (the
+        // variant-sampler-defaults law): BFL pins this tier fixed
+        // (guidance 1.0, num_steps 4, fixed_params) — the family
+        // defaults mirror it for the fresh card, this row owns it for
+        // the variant.
+        "steps": 4,
+        "cfg": 1
       },
       "cells": [
         {

@@ -28,6 +28,16 @@ export const DECL: ModelDecl = {
     "cfg": 1
   },
   "genre": "image",
+  // THE REQUIRED DEFAULTS (operator contract 2026-11-07): every
+  // variant row declares its own steps+cfg in resolver_defaults —
+  // the family defaults can never substitute for a variant's face
+  // (the turbo 8/1 is the family's DEFAULT, never a recipe row's
+  // silent ride). prompt is the user-provided seat.
+  "required_defaults": [
+    { "name": "steps", "class": "variant" },
+    { "name": "cfg", "class": "variant" },
+    { "name": "prompt", "class": "user" }
+  ],
   "mods": [
     "loras"
   ],
@@ -58,7 +68,11 @@ export const DECL: ModelDecl = {
         "cfg": [1, 2]
       },
       "resolver_defaults": {
-        "model": "krea-2"
+        "model": "krea-2",
+        // The turbo face declared, never inherited (the variant-sampler-defaults
+        // law): 8 / 1 — the distilled marriage the family defaults mirror.
+        "steps": 8,
+        "cfg": 1
       },
       "cells": [
         {

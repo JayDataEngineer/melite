@@ -30,6 +30,15 @@ export const DECL: ModelDecl = {
     "note": "The official Comfy-Org release (template audio_yue2_text2music); int8 convrot is the template's own quant pick. The bf16 cell and the SheetSage2 cover encoder stay unboarded until a cover lane exists."
   },
   "genre": "audio",
+  // THE REQUIRED DEFAULTS (operator contract 2026-11-07): The
+  // user-provided seats (prompt, lyrics) — the compose caller
+  // provides them. No variant-class rows: this family's served
+  // face exposes no steps+cfg pair (the census's surface-derived
+  // carve).
+  "required_defaults": [
+    { "name": "prompt", "class": "user" },
+    { "name": "lyrics", "class": "user" }
+  ],
   "variants": [
     {
       "id": "standard",

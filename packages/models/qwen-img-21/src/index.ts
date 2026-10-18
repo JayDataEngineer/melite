@@ -38,6 +38,16 @@ export const DECL: ModelDecl = {
     "cfg": 1
   },
   "genre": "image",
+  // THE REQUIRED DEFAULTS (operator contract 2026-11-07): every
+  // variant row declares its own steps+cfg in resolver_defaults —
+  // the family defaults can never substitute for a variant's face
+  // (the base 25/1 is the family's DEFAULT, never a recipe row's
+  // silent ride). prompt is the user-provided seat.
+  "required_defaults": [
+    { "name": "steps", "class": "variant" },
+    { "name": "cfg", "class": "variant" },
+    { "name": "prompt", "class": "user" }
+  ],
   // MASK-C (the image-gen region gap): boards 'mask' — the 2.1
   // checkpoint IS the estate's region story (the same weights the
   // mask-boarded edit lane details with: crop_stitch + the Impact
@@ -100,6 +110,9 @@ export const DECL: ModelDecl = {
       "group": "Variant",
       "route": "qwen-img-21",
       "order": 0,
+      // The base face declared, never inherited (the variant-sampler-defaults
+      // law): 25 / 1 — the official template's own count, the family mirror.
+      "resolver_defaults": { "steps": 25, "cfg": 1 },
       "cells": [
         {
           "quant": "int8_convrot",
@@ -142,7 +155,9 @@ export const DECL: ModelDecl = {
       "group": "Variant",
       "route": "qwen-img-21-turbo",
       "order": 1,
-      "resolver_defaults": { "steps": 8 },
+      // cfg declared beside steps — the pair is the law, half a face
+      // inherits nothing (the variant-sampler-defaults law).
+      "resolver_defaults": { "steps": 8, "cfg": 1 },
       "cells": [
         {
           "quant": "int8_convrot",

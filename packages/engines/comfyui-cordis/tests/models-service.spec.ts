@@ -41,7 +41,7 @@ const clone = (over: Record<string, unknown> = {}): ModelDecl => {
   // write row against the declared actions, and a doorless clone
   // declares no surface (krea's real defaults are judged by krea's
   // real actions at the family's own registration).
-  const { actions: _door, defaults: _defaults, ...base } = KREA;
+  const { actions: _door, defaults: _defaults, required_defaults: _required, ...base } = KREA;
   return structuredClone({ ...base, variants: [{ ...variant() }], ...over }) as unknown as ModelDecl;
 };
 
@@ -427,6 +427,82 @@ describe("registerFamily (the metaclass gates)", () => {
     assert.deepEqual(svc.registryIds(), ["synth-a", "synth-b"]);
     assert.equal(svc.familyCount(), 2);
     assert.deepEqual(svc.allDecls().map((d) => d.id), ["synth-a", "synth-b"]);
+  });
+});
+
+describe("the required-defaults door (operator contract 2026-11-07)", () => {
+  it("a variant-class row binds EVERY variant row to declare the value — the silent ride refuses naming family/variant/param", () => {
+    assert.throws(
+      () => fresh().registerFamily(clone({
+        id: "synth-a",
+        required_defaults: [{ name: "steps", class: "variant" }],
+        variants: [
+          variant({ id: "declared", resolver_defaults: { steps: 8, cfg: 1 } }),
+          variant({ id: "rider", resolver_defaults: {} }),
+        ],
+      })),
+      /synth-a\/rider: variant-class required default 'steps' is not declared in the variant's own resolver_defaults/,
+    );
+  });
+
+  it("a satisfied manifest registers; the family defaults never substitute for a variant's face", () => {
+    const svc = fresh();
+    // the resolver stamps are write rows — the doorless clone attaches a
+    // synthetic surface first (the declared-plane door must pass for the
+    // required-defaults door's own case to be the one on trial)
+    const d = clone({
+      id: "synth-a",
+      required_defaults: [
+        { name: "steps", class: "variant" },
+        { name: "cfg", class: "variant" },
+      ],
+      variants: [variant({ id: "v1", resolver_defaults: { steps: 8, cfg: 1 } })],
+    });
+    d.actions = [surf(["steps", "cfg"])];
+    svc.registerFamily(d);
+    assert.ok(svc.registryIds().includes("synth-a"));
+  });
+
+  it("a null stamp does not satisfy (null is the UNSET marker at the merge)", () => {
+    assert.throws(
+      () => fresh().registerFamily(clone({
+        id: "synth-a",
+        required_defaults: [{ name: "cfg", class: "variant" }],
+        variants: [variant({ id: "v1", resolver_defaults: { cfg: null } })],
+      })),
+      /synth-a\/v1: variant-class required default 'cfg' is not declared/,
+    );
+  });
+
+  it("a mod-class row binds the family to board the mods that carry it (the override is model-tied)", () => {
+    assert.throws(
+      () => fresh().registerFamily(clone({
+        id: "synth-a", mods: [],
+        required_defaults: [{ name: "loras", class: "mod" }],
+      })),
+      /synth-a: mod-class required default 'loras' but the family boards no mods/,
+    );
+    const svc = fresh();
+    svc.registerFamily(clone({
+      id: "synth-a",
+      required_defaults: [{ name: "loras", class: "mod" }],
+      mods: ["loras"],
+    }));
+    assert.ok(svc.registryIds().includes("synth-a"));
+  });
+
+  it("a duplicated row refuses — one row per default, never emphasis", () => {
+    assert.throws(
+      () => fresh().registerFamily(clone({
+        id: "synth-a",
+        required_defaults: [
+          { name: "steps", class: "variant" },
+          { name: "steps", class: "user" },
+        ],
+        variants: [variant({ id: "v1", resolver_defaults: { steps: 8, cfg: 1 } })],
+      })),
+      /synth-a: required_defaults declares 'steps' twice/,
+    );
   });
 });
 

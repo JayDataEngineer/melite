@@ -23,6 +23,13 @@ export const DECL: ModelDecl = {
     "remove_tag": ""
   },
   "genre": "image",
+  // THE REQUIRED DEFAULTS (operator contract 2026-11-07): the
+  // user-provided seat(s) — the compose caller provides them. No
+  // variant-class rows: this family's served face exposes no
+  // steps+cfg pair (the census's surface-derived carve).
+  "required_defaults": [
+    { "name": "input_image", "class": "user" }
+  ],
   // THE §4c RECEIPT (2026-10-12): the weights the pack loads — the
   // audit's ghost "model.safetensors (fancyfeast/joytag)" closed as
   // a provisions row: the estate store copy minted the sha (366 MB),

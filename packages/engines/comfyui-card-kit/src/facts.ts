@@ -10,7 +10,7 @@
 // row roster and extension_node_types.
 
 import type { GraphBuilder } from './graph.ts'
-import type { DeclVariantRow } from './model-contract.ts'
+import type { DeclVariantRow, RequiredDefaultRow } from './model-contract.ts'
 import { readFileSync } from 'node:fs'
 
 /** The registry reads derivation renders through — injected, never
@@ -202,6 +202,10 @@ export interface ModelFacts {
    * variant's own row — the RANGE RULE: whoever owns the default
    * owns the floor). Present only where declared. */
   bounds?: Record<string, { min?: number; max?: number }>
+  /** THE REQUIRED DEFAULTS (operator contract 2026-11-07): the
+   * DECL's classed manifest (user / variant / mod), present only
+   * where the family declares one. */
+  required_defaults?: RequiredDefaultRow[]
   /** Compose splice SSOT rows (card field → NodeClass.idx.input). */
   /** Variant matrix rows + per-cell weight coordinates. */
   variants: ModelVariantFacts[]
@@ -530,11 +534,18 @@ function deriveRow(
     variant_groups: ((d.variant_groups ?? []) as VariantGroupFacts[]),
     outputs,
   }
-  // THE BASE SURFACE + FAMILY RELATIONS (2026-10-10, the fix
-  // shape): verbatim, present-only-where-declared.
+  /** THE BASE SURFACE + FAMILY RELATIONS (2026-10-10, the fix
+   * shape): verbatim, present-only-where-declared. */
   if (Array.isArray(d.params)) row.params = [...(d.params as string[])]
   if (d.relations !== undefined && d.relations !== null) {
     row.relations = structuredCloneRelations(d.relations)
+  }
+  // THE REQUIRED DEFAULTS (operator contract 2026-11-07): the
+  // classed manifest rides the derived row verbatim (frozen
+  // snapshot — JSON-cloned out of the registry's live DECL, the
+  // bounds carry's shape), present-only-where-declared.
+  if (d.required_defaults !== undefined && d.required_defaults !== null) {
+    row.required_defaults = JSON.parse(JSON.stringify(d.required_defaults)) as RequiredDefaultRow[]
   }
   // THE BASE BOUNDS (the RANGE RULE's carry): per-field numeric
   // domains, verbatim, present-only-where-declared.

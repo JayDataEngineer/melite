@@ -67,6 +67,15 @@ export const DECL: ModelDecl = {
     "layout": "studio"
   },
   "genre": "3d",
+  // THE REQUIRED DEFAULTS (operator contract 2026-11-07): every
+  // variant row declares its own steps+cfg in resolver_defaults —
+  // the family defaults can never substitute for a variant's face.
+  // input_image is the user-provided seat.
+  "required_defaults": [
+    { "name": "steps", "class": "variant" },
+    { "name": "cfg", "class": "variant" },
+    { "name": "input_image", "class": "user" }
+  ],
   "variants": [
     {
       "id": "1024",
@@ -74,8 +83,12 @@ export const DECL: ModelDecl = {
       "hint": "Standard resolution — the fast tier",
       "group": "Variant",
       "route": "trellis2-native",
-      // no resolver_defaults — the family defaults row owns
-      // resolution (one value, one owner); this row IS the lane
+      // Resolution stays family-owned (one value, one owner — this row
+      // IS the lane), but the SAMPLER pair is declared here (the
+      // variant-sampler-defaults law): 12 / 7.5 — the official
+      // image-to-3d template's own steps + cfg (operator 2026-11-02
+      // standard-tier ruling).
+      "resolver_defaults": { "steps": 12, "cfg": 7.5 },
       "order": 0,
       "cells": [
         {

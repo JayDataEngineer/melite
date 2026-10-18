@@ -17,6 +17,16 @@ export const DECL = {
         "cfg": 4
     },
     "genre": "image",
+    // THE REQUIRED DEFAULTS (operator contract 2026-11-07): every
+    // variant row declares its own steps+cfg in resolver_defaults —
+    // the family defaults can never substitute for a variant's face
+    // (a silent ride is how a base pick composes turbo-era numbers).
+    // prompt is the user-provided seat.
+    "required_defaults": [
+        { "name": "steps", "class": "variant" },
+        { "name": "cfg", "class": "variant" },
+        { "name": "prompt", "class": "user" }
+    ],
     // MASK-C (the image-gen region gap — deliberate no-board): no
     // 'mask' — the anime T2I lane takes no region input upstream and
     // no edit lane shares these weights. Serving the mask surface
@@ -48,6 +58,9 @@ export const DECL = {
             "group": "Variant",
             "route": "anima",
             "order": 0,
+            // The base face declared, never inherited (the variant-sampler-defaults
+            // law): 52 / 4 — the family defaults' own prescription, now owned here.
+            "resolver_defaults": { "steps": 52, "cfg": 4 },
             "cells": [
                 {
                     "quant": "int8_convrot",
@@ -129,6 +142,9 @@ export const DECL = {
             "group": "Variant",
             "route": "anima-aesthetic",
             "order": 2,
+            // The aesthetic face declared, never inherited: the base sampler
+            // prescription (52 / 4) — the fine-tune retunes style, not the sampler.
+            "resolver_defaults": { "steps": 52, "cfg": 4 },
             "cells": [
                 {
                     "quant": "int8_convrot",

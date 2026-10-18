@@ -18,6 +18,13 @@ export const DECL: ModelDecl = {
   "description": "MOSS-SFX v2 sound-effect generation — describe the SOUND not the scene",
   "engine": "comfyui",
   "genre": "audio",
+  // THE REQUIRED DEFAULTS (operator contract 2026-11-07): the
+  // user-provided seat(s) — the compose caller provides them. No
+  // variant-class rows: this family's served face exposes no
+  // steps+cfg pair (the census's surface-derived carve).
+  "required_defaults": [
+    { "name": "prompt", "class": "user" }
+  ],
   // HAND-PLACED WEIGHTS: the MOSS-SoundEffect v2 source tree (the
   // checkpoint + its code layout, upstream's src distribution) has
   // no per-file download URL a provisions row could name — the

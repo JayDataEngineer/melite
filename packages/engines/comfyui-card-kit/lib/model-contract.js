@@ -269,6 +269,10 @@ export function assertSchemaAcceptsMinimalRows() {
         // escape the hand-table era allowed.
         ["StudioRow", StudioRow, { tenant: "t" }],
         ["LicenceRow", LicenceRow, { id: "apache-2.0", commercial_use: true }],
+        // THE REQUIRED DEFAULTS (operator contract 2026-11-07): both
+        // keys are REQUIRED — a row without a name or a class is no
+        // row (the minimal MEANINGFUL row states the pair).
+        ["RequiredDefaultRow", RequiredDefaultRow, { name: "steps", class: "variant" }],
     ];
     // SELF-ENUMERATION (A-M15): every export of THIS module that is a
     // schemastery object (carries .dict) must sit in the table above —
@@ -313,6 +317,10 @@ export const LicenceRow = z.object({
     id: z.string(),
     commercial_use: z.boolean(),
 });
+export const RequiredDefaultRow = z.object({
+    name: z.string(),
+    class: z.union([z.const("user"), z.const("variant"), z.const("mod")]),
+});
 // THE MAIN DECLARATION'S TYPE IS ITS SCHEMA'S (2026-10-10, the
 // design audit's Q1 — the first-ranked change). This row was the one
 // the file left UN-ANNOTATED, with a comment confessing that the
@@ -338,6 +346,12 @@ export const ModelDecl = z.object({
     source: z.union([SourceRow, z.const(null)]).required(false),
     studio: z.union([StudioRow, z.const(null)]).required(false),
     licence: z.union([LicenceRow, z.const(null)]).required(false),
+    // THE REQUIRED DEFAULTS (operator contract 2026-11-07): the
+    // manifest of what each lane needs, classed user/variant/mod —
+    // present only where the family declares one (the absent-equals-
+    // empty law); the registration gate (comfyui-cordis validateDecl)
+    // enforces the variant/mod classes.
+    required_defaults: z.array(RequiredDefaultRow).required(false),
     // string = pack name; object = pack + the knob marriage (the
     // ModPackMarriage const above owns the shape and its law).
     mods: z.array(z.union([z.string(), ModPackMarriage])).default([]),

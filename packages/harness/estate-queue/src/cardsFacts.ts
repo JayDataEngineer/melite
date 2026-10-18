@@ -70,6 +70,13 @@ export interface ModelFactsRow {
   /** The family-wide numeric bounds (per-field replaced by a
    *  variant's own row). Present only where declared. */
   readonly bounds?: Readonly<Record<string, { min?: number; max?: number }>>;
+  /** THE REQUIRED DEFAULTS (operator contract 2026-11-07): the
+   *  DECL's classed manifest (user / variant / mod), present only
+   *  where the family declares one. */
+  readonly required_defaults?: readonly {
+    readonly name: string;
+    readonly class: "user" | "variant" | "mod";
+  }[];
   /** The assembly-studio declaration (hand-owned model-facts.json
    *  carries it; the projection unions its writes into admits). */
   readonly studio?: { readonly writes?: readonly unknown[] };

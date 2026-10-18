@@ -2,6 +2,6 @@ import type { Plugin } from "@deepseek-ai/cordis";
 import type { ModelDecl } from '@melite/comfyui-card-kit/model-contract';
 export declare const DECL: ModelDecl;
 export declare const family: Plugin;
-export { compose, parseMusicFacts, type MusicFacts, type MusicParams } from "./actions.js";
+export { compose, parseMusicFacts, type MusicFacts, type MusicParams } from "./actions.ts";
 export { family as default };
 //# sourceMappingURL=index.d.ts.map

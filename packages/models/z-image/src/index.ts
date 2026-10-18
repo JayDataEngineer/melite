@@ -29,6 +29,16 @@ export const DECL: ModelDecl = {
     "negative_prompt": null
   },
   "genre": "image",
+  // THE REQUIRED DEFAULTS (operator contract 2026-11-07): every
+  // variant row declares its own steps+cfg in resolver_defaults —
+  // the family defaults can never substitute for a variant's face
+  // (the turbo 8/1 is the family's DEFAULT, never a recipe row's
+  // silent ride). prompt is the user-provided seat.
+  "required_defaults": [
+    { "name": "steps", "class": "variant" },
+    { "name": "cfg", "class": "variant" },
+    { "name": "prompt", "class": "user" }
+  ],
   "mods": ["loras", "controlnet", "ip_adapter"],
   // MASK-C (the image-gen region gap — deliberate no-board): no
   // 'mask' — upstream's Z-Image templates are T2I + conditioning
@@ -40,10 +50,13 @@ export const DECL: ModelDecl = {
     {
       "id": "turbo",
       "label": "Turbo",
-      "hint": "8-step distilled — fast (DEFAULT)",
+      "hint": "8-step distilled — fast (DEFAULT). Official truth: res_multistep + simple, shift 3, cfg 1 (cfg 1 is NOT an official base mode — the distillation IS the mode).",
       "group": "Variant",
       "route": "z-image",
       "order": 0,
+      // The turbo face declared, never inherited (the variant-sampler-defaults
+      // law): 8 / 1 — the official turbo template's own pair.
+      "resolver_defaults": { "steps": 8, "cfg": 1 },
       "cells": [
         {
           "quant": "int8",
@@ -56,10 +69,14 @@ export const DECL: ModelDecl = {
     {
       "id": "base",
       "label": "Base",
-      "hint": "The full base model - no distillation; more steps, top quality.",
+      "hint": "The full base model - no distillation; more steps, top quality. Official truth: 25 steps, cfg 4 (card range 3.0–5.0; real negative path — cfg 1 is turbo-only).",
       "group": "Variant",
       "route": "z-image-base",
       "order": 1,
+      // The base face declared, never inherited (the variant-sampler-defaults
+      // law): 25 / 4 — the official base template's own pair, NOT the
+      // family turbo mirror.
+      "resolver_defaults": { "steps": 25, "cfg": 4 },
       "cells": [
         {
           "quant": "int8",

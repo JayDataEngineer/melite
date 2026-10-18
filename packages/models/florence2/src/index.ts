@@ -22,6 +22,13 @@ export const DECL: ModelDecl = {
     "caption_task": "more_detailed_caption"
   },
   "genre": "image",
+  // THE REQUIRED DEFAULTS (operator contract 2026-11-07): the
+  // user-provided seat(s) — the compose caller provides them. No
+  // variant-class rows: this family's served face exposes no
+  // steps+cfg pair (the census's surface-derived carve).
+  "required_defaults": [
+    { "name": "input_image", "class": "user" }
+  ],
   // THE WEIGHTS RAIL (2026-09-22 — same law as wd14): one variant
   // per live DownloadAndLoadFlorence2Model `model` name
   // (live-pinned off the engine's object_info); PromptGen-v2.0

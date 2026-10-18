@@ -14,6 +14,13 @@ export const DECL = {
         "trailing_comma": false
     },
     "genre": "image",
+    // THE REQUIRED DEFAULTS (operator contract 2026-11-07): the
+    // user-provided seat(s) — the compose caller provides them. No
+    // variant-class rows: this family's served face exposes no
+    // steps+cfg pair (the census's surface-derived carve).
+    "required_defaults": [
+        { "name": "input_image", "class": "user" }
+    ],
     // THE WEIGHTS RAIL (2026-09-22 — the variant rail IS the
     // checkpoint picker; the tagger schema declares no weights knob):
     // one variant per live WD14Tagger|pysssss `model` name

@@ -367,6 +367,26 @@ export interface LicenceRow {
     commercial_use: boolean;
 }
 export declare const LicenceRow: z<LicenceRow>;
+/** One required-defaults row (operator contract 2026-11-07): the
+ *  family declares the defaults its lanes need, classed by WHO
+ *  provides them —
+ *  - "user": the compose caller provides it (a prompt, a reference
+ *    image) — the manifest documents the demand; the census judges
+ *    the name against the served card face.
+ *  - "variant": the model x variant setup MUST provide it — every
+ *    variant row declares the value in its own resolver_defaults;
+ *    the family defaults can never substitute (a variant without
+ *    the declaration rides the family's numbers invisibly, and a
+ *    model switch inherits the PRIOR model's steps — the hazard
+ *    the class kills). Refuses at registration.
+ *  - "mod": the mod plane provides it as a model-tied override
+ *    (drops when models are switched) — the family must board the
+ *    mods that carry it. Refuses at registration. */
+export interface RequiredDefaultRow {
+    name: string;
+    class: "user" | "variant" | "mod";
+}
+export declare const RequiredDefaultRow: z<RequiredDefaultRow>;
 export declare const ModelDecl: z<ModelDecl>;
 /** A declared action, ERASED for the DECL seam (the atom
  *  vocabulary, stroke 0): the DECL carries the doors; the registry
@@ -432,6 +452,11 @@ export interface ModelDecl {
     /** The family's licence row — absent = the family declares no
      *  licence fact (the operator owns that decision). */
     licence?: LicenceRow | null;
+    /** THE REQUIRED DEFAULTS (operator contract 2026-11-07): what each
+     *  lane needs, classed by who provides it — user / variant / mod
+     *  (RequiredDefaultRow owns the classes). Absent = the family
+     *  requires nothing beyond its declared face. */
+    required_defaults?: RequiredDefaultRow[];
     /** Absent = boards nothing (the z-image shape). String = pack
      *  name; object = pack + the knob marriage declaration (the
      *  zod grammar above owns the shape). */

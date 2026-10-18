@@ -240,12 +240,19 @@ function deriveRow(reads, address, card, outputs, requires, owners) {
         variant_groups: (d.variant_groups ?? []),
         outputs,
     };
-    // THE BASE SURFACE + FAMILY RELATIONS (2026-10-10, the fix
-    // shape): verbatim, present-only-where-declared.
+    /** THE BASE SURFACE + FAMILY RELATIONS (2026-10-10, the fix
+     * shape): verbatim, present-only-where-declared. */
     if (Array.isArray(d.params))
         row.params = [...d.params];
     if (d.relations !== undefined && d.relations !== null) {
         row.relations = structuredCloneRelations(d.relations);
+    }
+    // THE REQUIRED DEFAULTS (operator contract 2026-11-07): the
+    // classed manifest rides the derived row verbatim (frozen
+    // snapshot — JSON-cloned out of the registry's live DECL, the
+    // bounds carry's shape), present-only-where-declared.
+    if (d.required_defaults !== undefined && d.required_defaults !== null) {
+        row.required_defaults = JSON.parse(JSON.stringify(d.required_defaults));
     }
     // THE BASE BOUNDS (the RANGE RULE's carry): per-field numeric
     // domains, verbatim, present-only-where-declared.

@@ -197,6 +197,49 @@ function validateDecl(decl) {
             }
         }
     }
+    // THE REQUIRED-DEFAULTS LAW (operator contract 2026-11-07): a
+    // variant-class row binds EVERY variant row to declare the value
+    // in its own resolver_defaults — the family defaults can never
+    // substitute (the silent ride is the hazard: a pick composed the
+    // family's numbers with no declaration of its own, and a model
+    // switch inherited the PRIOR model's turbo-era steps). A
+    // mod-class row binds the family to board the mods that carry it
+    // (the override is model-tied: it drops when models are
+    // switched). A violation refuses HERE, at registration, naming
+    // family/variant/param — never at first compose.
+    const required = decl.required_defaults ?? [];
+    const seenRequired = new Set();
+    for (const row of required) {
+        if (row.name === "") {
+            throw new ModelError(`${decl.id}: a required_defaults row needs a name`);
+        }
+        if (seenRequired.has(row.name)) {
+            throw new ModelError(`${decl.id}: required_defaults declares '${row.name}' twice (one row per default — the dup is drift, not emphasis)`);
+        }
+        seenRequired.add(row.name);
+        if (row.class === "variant") {
+            for (const v of decl.variants) {
+                // Recipes are stamp macros, not lanes (plane canon L1): they
+                // carry no resolver_defaults and never will — the compose
+                // face belongs to the Variant plane, so the census rides
+                // variant rows only.
+                if (v.group === "Recipe") {
+                    continue;
+                }
+                const stated = (v.resolver_defaults ?? {})[row.name];
+                if (stated === undefined || stated === null) {
+                    throw new ModelError(`${decl.id}/${v.id}: variant-class required default '${row.name}' is not declared in the variant's own resolver_defaults ` +
+                        `(the required-defaults law — the family defaults can never substitute; state the value on every variant)`);
+                }
+            }
+        }
+        else if (row.class === "mod") {
+            if ((decl.mods ?? []).length === 0) {
+                throw new ModelError(`${decl.id}: mod-class required default '${row.name}' but the family boards no mods ` +
+                    `(the mod plane is the only provider of a mod-class default, and it rides the family's own mods declaration)`);
+            }
+        }
+    }
     // THE ENGINE FACTS DOOR (the complexity floor's stroke 1): the
     // typed lane_inputs. A member the EngineFacts schema does not
     // know refuses HERE, at boot, on the family row and every

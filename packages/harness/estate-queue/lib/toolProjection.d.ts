@@ -1,4 +1,4 @@
-import type { ManifestRow } from "./skillPlane.js";
+import type { ManifestRow } from "./skillPlane.ts";
 import type { CardDefinition } from '@melite/comfyui-card-kit/card-definition';
 /** Py-era card dir names (underscores) -> registry ids (hyphens).
  *  The three dirs predate the registry; the mapping is closed (a
