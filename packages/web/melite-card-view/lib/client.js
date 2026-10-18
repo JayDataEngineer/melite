@@ -21850,21 +21850,11 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					setError(null);
 					setSpec(doc);
 					const seedSource = freshOpen ? held : userRef.current;
-					const fromModel = typeof seedSource["model"] === "string" ? seedSource["model"] : "";
 					const departing = specRef.current;
 					const arrival = typeof doc.model === "string" ? doc.model : "";
-					const rekey = !freshOpen && fromModel !== "" && arrival !== "" && fromModel !== arrival;
 					let rescope = {};
-					/* istanbul ignore if -- defense arm, provably unfireable
-					(coverage disposition 2026-11-06): the effect's alive
-					cleanup retires every fetch a family change outruns, so
-					the arriving doc always carries the CURRENT fetch key,
-					and resolveSpecKey serves `model` verbatim from that key
-					— fromModel !== '' implies arrival === fromModel. Kept so
-					the arrival seat still applies the one-switch law if the
-					resolver's verbatim-key service ever drifts. */
-					if (rekey && departing !== null && departing.model === fromModel) {
-						rescope = (0, _melite_card_base_client.modelSwitchPatch)(departing, arrival, seedSource);
+					if (!freshOpen && departing !== null && arrival !== "" && departing.model !== arrival) {
+						rescope = (0, _melite_card_base_client.modelSwitchPatch)(departing, arrival, seedSource, doc);
 						for (const k of modBagKeys(departing)) if (!(k in rescope)) rescope[k] = null;
 					}
 					const seeded = (0, _melite_card_base_client.seedUser)(doc, {

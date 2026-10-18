@@ -339,22 +339,37 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
         // nothing and its stated numerics still re-seat at the
         // arrival seed.
         const seedSource = freshOpen ? held : userRef.current
-        const fromModel = typeof seedSource['model'] === 'string' ? seedSource['model'] as string : ''
         const departing = specRef.current
         const arrival = typeof doc.model === 'string' ? doc.model : ''
-        const rekey = !freshOpen && fromModel !== '' && arrival !== ''
-          && fromModel !== arrival
+        // THE GUARD IS THE DOCS (one switch semantics — the B8 drop
+        // below proves the spelling): the fired question is whether a
+        // DIFFERENT family's spec just landed over the holding this
+        // drill seeded. Never the model-key bookkeeping: the fetch
+        // followed the user's re-pointed key, so that key already
+        // equals the arrival (comparing them is provably dead — the old
+        // gate never fired, and the departed pair rode). departing is
+        // the spec the holding was seeded under (specRef trails the
+        // setSpec below by exactly one arrival, so a same-spec refetch
+        // compares equal and skips — the pass-along law holds; a rapid
+        // A→B→A where the middle setSpec has not committed also
+        // compares equal and correctly skips). arrival !== '' because
+        // the patch CARRIES model:arrival (the drop below carries no
+        // model key, so its guard needs no such floor) — an unnamed
+        // arrival must never clobber the user's model with ''.
         let rescope: Record<string, unknown> = {}
-        /* istanbul ignore if -- defense arm, provably unfireable
-           (coverage disposition 2026-11-06): the effect's alive
-           cleanup retires every fetch a family change outruns, so
-           the arriving doc always carries the CURRENT fetch key,
-           and resolveSpecKey serves `model` verbatim from that key
-           — fromModel !== '' implies arrival === fromModel. Kept so
-           the arrival seat still applies the one-switch law if the
-           resolver's verbatim-key service ever drifts. */
-        if (rekey && departing !== null && departing.model === fromModel) {
-          rescope = modelSwitchPatch(departing, arrival, seedSource)
+        if (!freshOpen && departing !== null && arrival !== '' && departing.model !== arrival) {
+          // THE ARRIVAL RIDES (DRILL a, the purge's P4 — finding 3's
+          // face): `doc` IS the arrival spec (just fetched), so the
+          // departed-surface null-set engages here — a key the
+          // departing family declares that the arrival does not
+          // nulls in the patch even when both schemas project it
+          // (per-card schema faces are equal; the `params` surfaces
+          // are the truth that differs). The seed consumes the null,
+          // the drop ledger nulls the bench key at the flush — the
+          // run door never meets the pair field-named. Without the
+          // arrival the verb refuses to guess (its humility law) and
+          // the seat behaves exactly as before.
+          rescope = modelSwitchPatch(departing, arrival, seedSource, doc)
           // THE MOD-CURRENCY CLAUSE (the verb's second half, same law):
           // the departing kinds' bags die with their model even though
           // the served schema never names them (modBagKeys above).

@@ -12,6 +12,8 @@ import { within } from "@testing-library/react";
 import { afterEach, describe, expect, test, vi } from "vitest";
 import { createElement as h } from "react";
 import { mountEstateFakes, type EstateFakes } from "./estate-harness.ts";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { unbindEstateRemote, schemaEnvelope } from '@melite/card-base/client';
 import { resetStageWrites, stageWriteState } from "../src/client/draft.ts";
 import { StageDrill, dedupWalkSet } from "../src/client/stage-drill.tsx";
@@ -1154,6 +1156,133 @@ describe("the re-point seam (one switch semantics at the drill's write seat)", (
       const sync = patchParamsOf(patchCalls()).find((p) => "double_reference" in p);
       if (sync === undefined) throw new Error("run-flush null not landed; patches: " + JSON.stringify(patchCalls()));
       expect(sync["double_reference"]).toBeNull();
+      expect(sync).not.toHaveProperty("prompt");
+    }, { timeout: 8000 });
+    await awaitWriteSettled();
+    expect(writeFace()).toBe(null);
+    expect(runs).toBe(1);
+  });
+
+  test("a params-only departed knob dies at the rescope when the schemas agree (DRILL a — the purge's P4: the seat passes its arrival)", async () => {
+    // THE FINDING-3 FACE (journey 2026-11-08-drill-departed-surface-null-set
+    // §NOT COVERED finding 3): BOTH served schemas declare the departed knob
+    // (the card schema is per-card; hiding is lane-side), so the schema-fields
+    // drop (stage-drill.tsx:384) SKIPS it — the faces are equal. Only the
+    // declared-surface null-set (modelSwitchPatch's 4th arg) can clean it,
+    // and the rescope (:357) is the seat that HOLDS the arrival doc. The
+    // 3-arg call leaves the pair riding the user map and the run door
+    // refuses it field-named live (ERRORS item h, the operator's burn).
+    // Fixtures: schema faces EQUAL on both docs (the real 2511/21 shape),
+    // declared `params` surfaces DERIVED from the DECL files themselves
+    // (text-parse, zero engine-graph imports in this env — the verb wall
+    // in drill-departed-surface-null-set.spec.ts already proves the verb
+    // against the live DECL modules; this arm proves the SEAT passes its
+    // arrival doc).
+    const paramsOf = (id: string): string[] => {
+      // repo-root anchored (vitest runs with cwd at the root; import.meta
+      // URLs are vite-rewritten and do not resolve to disk here).
+      const text = readFileSync(join(process.cwd(), "packages", "models", id, "src", "index.ts"), "utf8");
+      const m = text.match(/"params": \[([\s\S]*?)\]/);
+      if (m === null) throw new Error(`no params array parsed from ${id}/src/index.ts`);
+      const out = [...m[1].matchAll(/"([^"]+)"/g)].map((g) => g[1]);
+      if (out.length === 0) throw new Error(`empty params parsed from ${id}/src/index.ts`);
+      return out;
+    };
+    const FROM = "qwen-img-edit-2511";
+    const TO = "qwen-img-edit-21";
+    const fromParams = paramsOf(FROM);
+    const toParams = paramsOf(TO);
+    // THE DERIVED FLOOR (never vacuously green): the burn's pair is the
+    // params-surface difference of the two DECLs.
+    for (const k of ["double_reference", "use_stock_nodes"]) {
+      expect(fromParams, `${FROM} params must declare ${k}`).toContain(k);
+      expect(toParams, `${TO} params must not declare ${k}`).not.toContain(k);
+    }
+    const servedDoc = (id: string, params: string[]): Record<string, unknown> => ({
+      form: "image-edit", genre: "image", engine: "comfyui", model: id,
+      // EQUAL faces: both schemas declare the departed knobs (finding 3).
+      schema: schemaEnvelope({
+        prompt: { type: "string", meta: { description: "Prompt", extra: { wtype: "textarea" } } },
+        model: { consts: [FROM, TO], meta: { description: "Serving family", default: id, extra: { wtype: "select" } } },
+        double_reference: { type: "boolean", meta: { description: "Double reference", default: false } },
+        use_stock_nodes: { type: "boolean", meta: { description: "Use stock nodes", default: false } },
+      }),
+      // scaffolding rows (the judged surfaces are schema faces + params,
+      // never the matrix): one Variant row per doc routing at its model.
+      variants: [
+        { id: "v", label: "V", group: "Variant", defaults: { model: id }, route: id },
+      ],
+      params,
+      families: [{ id: FROM, present: true }, { id: TO, present: true }],
+    });
+    const servedByModel: Record<string, Record<string, unknown>> = {
+      [FROM]: servedDoc(FROM, fromParams),
+      [TO]: servedDoc(TO, toParams),
+    };
+    const fetched: string[] = [];
+    vi.stubGlobal("fetch", async (url: unknown): Promise<Response> => {
+      const path = String(url);
+      if (path.includes("/v1/form-spec")) {
+        const key = path.split("model=")[1] ?? "";
+        fetched.push(key);
+        const doc = servedByModel[key];
+        if (doc === undefined) throw new Error("unexpected family on the fetch lane: " + key);
+        return new Response(JSON.stringify(doc), { status: 200, headers: { "content-type": "application/json" } });
+      }
+      if (path.includes("/v1/forms")) {
+        return new Response(JSON.stringify({ "image-edit": { outputs: { default: "image" } } }), { status: 200, headers: { "content-type": "application/json" } });
+      }
+      if (path.includes("/v1/model-catalog")) {
+        return new Response(JSON.stringify({ cards: {} }), { status: 200, headers: { "content-type": "application/json" } });
+      }
+      throw new Error("unexpected door on the fetch lane: " + path);
+    });
+    fakes?.unmount();
+    let runs = 0;
+    let bound: () => void = () => { throw new Error("bindRun never fired"); };
+    fakes = mountEstateFakes({});
+    const stageA = stage({ model: FROM, double_reference: true, use_stock_nodes: true, prompt: "keep the handwriting" });
+    (stageA as { card: string }).card = "image-edit";
+    render(h(StageDrill, {
+      stage: stageA,
+      bench: { kind: "bench", draftId: "bench-p", rev: 1, log: [], stages: [stageA], sessionKey: "main" },
+      running: false,
+      onRun: () => { runs += 1; }, onStop: () => {}, onClose: () => {}, onRemoved: () => {},
+      onPatchParams: () => {},
+      renderStageView: (_o: unknown, fallback: unknown) => fallback,
+      bindRun: (r: () => void) => { bound = r; },
+    } as never));
+    await screen.findByLabelText("Prompt", {}, { timeout: 4000 });
+    const knob = await screen.findByLabelText("Serving family", {}, { timeout: 4000 });
+    fireEvent.click(knob);
+    const items = screen.getAllByRole("menuitem");
+    const target = items.find((el) => {
+      const t = el.textContent ?? "";
+      return t.includes("21") && !t.includes("2511");
+    });
+    if (target === undefined) throw new Error("no 21 menuitem; items: " + items.map((el) => el.textContent).join(" | "));
+    fireEvent.click(target);
+    // the re-point write landed (the gesture's own 3-arg frame — the pair
+    // still rides it; the rescope's 4-arg verdict is what cleans the seat)
+    await waitFor(() => {
+      const frame = patchParamsOf(patchCalls()).find((p) => p["model"] === TO);
+      if (frame === undefined) throw new Error("re-point write not landed; patches: " + JSON.stringify(patchCalls()));
+    }, { timeout: 8000 });
+    // the arrival spec fetched and the rescope settled over it
+    await waitFor(() => {
+      if (!fetched.some((k) => k === TO)) throw new Error("arrival spec not fetched yet; fetched: " + JSON.stringify(fetched));
+    }, { timeout: 8000 });
+    await awaitWriteSettled();
+    // THE RESCOPE'S VERDICT AT THE FLUSH: the seed drop nulls the departed
+    // pair on the bench (not the schema-fields drop — the faces are equal,
+    // it skips), and the start fires (the state is CLEAN — the run door's
+    // field-named refusal of the live burn is impossible).
+    bound();
+    await waitFor(() => {
+      const sync = patchParamsOf(patchCalls()).find((p) => "double_reference" in p);
+      if (sync === undefined) throw new Error("run-flush null not landed; patches: " + JSON.stringify(patchCalls()));
+      expect(sync["double_reference"]).toBeNull();
+      expect(sync["use_stock_nodes"]).toBeNull();
       expect(sync).not.toHaveProperty("prompt");
     }, { timeout: 8000 });
     await awaitWriteSettled();
