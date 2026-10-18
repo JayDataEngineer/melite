@@ -11,6 +11,7 @@ import {
   isTerminalRun,
   listArtifactMediaUrl,
   listRowMediaUrl,
+  readGraphReceipt,
   readRunStatus,
   resetCardFamiliesCache,
   toRunMediaUrl,
@@ -110,5 +111,57 @@ describe('the url laws (pure)', () => {
     expect(listArtifactMediaUrl('')).toBeNull()
     expect(listArtifactMediaUrl('/rooted/x.png')).toBe('/rooted/x.png')
     expect(listArtifactMediaUrl('https://cdn/x.png')).toBe('https://cdn/x.png')
+  })
+})
+
+describe('the graph-receipt fold (readGraphReceipt, the purge P1)', () => {
+  const completeDoc = {
+    nodes: 2,
+    populated: ['guidance', 'prompt'],
+    carried: ['guidance', 'prompt'],
+    dropped: [],
+    verdict: 'complete',
+    stages: [
+      { stage: 's_0', nodes: 2, populated: ['guidance', 'prompt'], carried: ['guidance', 'prompt'], dropped: [], verdict: 'complete' },
+    ],
+  }
+
+  it('a well-formed receipt rides verbatim (run rollup + per-stage rows)', () => {
+    const row = readRunStatus('r1', { status: 'completed', stages: [], graph_receipt: completeDoc })
+    expect(row.graph_receipt).toEqual(completeDoc)
+  })
+
+  it('the execute stamp rides: a string prompt_id is carried', () => {
+    const row = readRunStatus('r1', {
+      status: 'completed', stages: [], graph_receipt: { ...completeDoc, prompt_id: 'p-1' },
+    })
+    expect(row.graph_receipt?.prompt_id).toBe('p-1')
+  })
+
+  it('absent stays absent (inline runs stamp no receipt — never a phantom key)', () => {
+    const row = readRunStatus('r1', { status: 'completed', stages: [] })
+    expect(row.graph_receipt).toBeUndefined()
+    expect('graph_receipt' in row).toBe(false)
+  })
+
+  it('malformed is absent, never a throw (a broken receipt is no receipt)', () => {
+    // verdict outside the vocabulary
+    expect(readGraphReceipt({ ...completeDoc, verdict: 'lost' })).toBeUndefined()
+    // dropped with a non-string entry
+    expect(readGraphReceipt({ ...completeDoc, dropped: ['ok', 42] })).toBeUndefined()
+    // a stage row missing its verdict
+    expect(readGraphReceipt({
+      ...completeDoc,
+      stages: [{ stage: 's_0', nodes: 2, populated: [], carried: [], dropped: [] }],
+    })).toBeUndefined()
+    // a non-string prompt_id poisons the shape
+    expect(readGraphReceipt({ ...completeDoc, prompt_id: 42 })).toBeUndefined()
+    // not an object at all
+    expect(readGraphReceipt('graph_receipt')).toBeUndefined()
+    expect(readGraphReceipt(null)).toBeUndefined()
+    // and through the row fold: the status still reads, the receipt drops
+    const row = readRunStatus('r1', { status: 'completed', stages: [], graph_receipt: { verdict: 'lost' } })
+    expect(row.status).toBe('completed')
+    expect(row.graph_receipt).toBeUndefined()
   })
 })

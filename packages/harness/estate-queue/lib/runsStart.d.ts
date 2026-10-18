@@ -1,6 +1,6 @@
 import type { EngineJson } from "@melite/comfyui-cordis";
 import type { FlowStageRow } from "./runsValidateShared.js";
-import type { QueueRefusal } from "./queue.js";
+import type { GraphReceiptStageRow, QueueRefusal } from "./queue.js";
 export { envelopeRefusal, unknownDraftRefusal } from "./queueSubmit.js";
 import type { RunId } from "./queueCore.js";
 import type { RunRecord } from "./runsTypes.js";
@@ -155,6 +155,15 @@ export declare function registerCompiledRun(args: {
         /** The flow arm's {stageId: fam} ledger for the same probe (the
          *  stage rows stay schema-clean). */
         stageFams?: Record<string, string>;
+        /** THE GRAPH-RECEIPT LEDGER (the silent UI-drop purge's P1):
+         *  the per-stage queue-time doc→graph evidence rows, keyed by
+         *  stage id. The flow/bench arms fill it through
+         *  composeCardStageRow's receiptsOut; the card arm stamps its
+         *  own single-stage row. Stamped on the run as the folded
+         *  run-level receipt (per-stage rows inside), beside
+         *  compose_echo — card-composed runs ride it; inline runs carry
+         *  none (nothing composed). */
+        graphReceipts?: Record<string, GraphReceiptStageRow>;
     };
 }): Promise<{
     run: RunRecord;

@@ -60,6 +60,34 @@ export interface RunStageStatus {
   result_outputs?: Record<string, unknown>
 }
 
+/** One stage's queue-time doc→graph evidence (the served-graph
+ *  receipt's per-stage row, the silent UI-drop purge's P1): which of
+ *  the stage's doc scalars the composed graph carries, which it
+ *  dropped. Verdict 'complete' carries dropped []. */
+export interface GraphReceiptStageRow {
+  stage: string
+  nodes: number
+  populated: string[]
+  carried: string[]
+  dropped: string[]
+  verdict: 'complete' | 'partial'
+}
+
+/** The run-level graph receipt (the sidecar's `graph_receipt`,
+ *  served on the live status row beside it): the per-stage rows
+ *  folded, the folder's own verdict over them. `prompt_id` is the
+ *  execute stamp (the engine-minted id, folded at the outcome —
+ *  absent on rows read before the run executed). */
+export interface GraphReceipt {
+  nodes: number
+  populated: string[]
+  carried: string[]
+  dropped: string[]
+  verdict: 'complete' | 'partial'
+  stages: GraphReceiptStageRow[]
+  prompt_id?: string
+}
+
 /** The runs/status row, normalized once. */
 export interface RunStatusRow {
   runId: string
@@ -69,6 +97,12 @@ export interface RunStatusRow {
   /** The run-level failure text (the same channel the stages carry;
    *  the observer's fallback when no single stage owns the reason). */
   error?: string
+  /** The queue-time doc→graph evidence (the silent UI-drop purge's
+   *  P1) — carried verbatim after the defensive fold below. Absent
+   *  on runs that composed nothing (inline envelopes stamp none)
+   *  and on rows whose receipt is malformed (a broken receipt is no
+   *  receipt — the status word keeps the row's only refusal). */
+  graph_receipt?: GraphReceipt
 }
 
 // THE TERMINAL VOCABULARY IS THE CONTRACT'S (2026-10-13, the card-UI
@@ -94,6 +128,62 @@ export function toRunMediaUrl(runId: string, url: string): string {
       + url.split('/').map((seg) => encodeURIComponent(seg)).join('/')
   }
   return url
+}
+
+/** Fold the served `graph_receipt` face (the silent UI-drop
+ *  purge's P1): the queue-time doc→graph evidence rides the live
+ *  row beside the sidecar, same spelling. DEFENSIVE: a malformed
+ *  receipt is ABSENT (never a throw — the status word keeps the
+ *  row's only refusal; the receipt is evidence, and a broken
+ *  receipt is no receipt). Every list must be all strings, every
+ *  stage row well-formed, the verdict inside the vocabulary —
+ *  anything else folds to undefined. */
+export function readGraphReceipt(value: unknown): GraphReceipt | undefined {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) return undefined
+  const doc = value as Record<string, unknown>
+  const verdict = doc['verdict']
+  if (verdict !== 'complete' && verdict !== 'partial') return undefined
+  if (typeof doc['nodes'] !== 'number') return undefined
+  const lists: Record<string, string[]> = {}
+  for (const key of ['populated', 'carried', 'dropped']) {
+    const raw: unknown = doc[key]
+    if (!Array.isArray(raw) || !raw.every((entry): entry is string => typeof entry === 'string')) return undefined
+    lists[key] = [...raw]
+  }
+  const rawStages: unknown = doc['stages']
+  if (!Array.isArray(rawStages)) return undefined
+  const stages: GraphReceiptStageRow[] = []
+  for (const raw of rawStages) {
+    if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) return undefined
+    const row = raw as Record<string, unknown>
+    if (typeof row['stage'] !== 'string' || typeof row['nodes'] !== 'number') return undefined
+    if (row['verdict'] !== 'complete' && row['verdict'] !== 'partial') return undefined
+    const rowLists: Record<string, string[]> = {}
+    for (const key of ['populated', 'carried', 'dropped']) {
+      const rawList: unknown = row[key]
+      if (!Array.isArray(rawList) || !rawList.every((entry): entry is string => typeof entry === 'string')) return undefined
+      rowLists[key] = [...rawList]
+    }
+    stages.push({
+      stage: row['stage'] as string,
+      nodes: row['nodes'] as number,
+      populated: rowLists['populated'] as string[],
+      carried: rowLists['carried'] as string[],
+      dropped: rowLists['dropped'] as string[],
+      verdict: row['verdict'] as 'complete' | 'partial',
+    })
+  }
+  const stamped: unknown = doc['prompt_id']
+  if (stamped !== undefined && typeof stamped !== 'string') return undefined
+  return {
+    nodes: doc['nodes'] as number,
+    populated: lists['populated'] as string[],
+    carried: lists['carried'] as string[],
+    dropped: lists['dropped'] as string[],
+    verdict,
+    stages,
+    ...(typeof stamped === 'string' && stamped !== '' ? { prompt_id: stamped } : {}),
+  }
 }
 
 /** Normalize a runs/status doc: stage rows distilled, bare run-
@@ -140,6 +230,9 @@ export function readRunStatus(runId: string, doc: Record<string, unknown>): RunS
       `runs/status ${runId}: run-level status ${JSON.stringify(status)} is outside the vocabulary`,
     )
   }
+  // THE GRAPH RECEIPT (the silent UI-drop purge's P1): folded
+  // defensively — a malformed receipt rides absent, never a throw.
+  const receipt = readGraphReceipt(doc['graph_receipt'])
   return {
     runId,
     status,
@@ -148,6 +241,7 @@ export function readRunStatus(runId: string, doc: Record<string, unknown>): RunS
       : null,
     stages,
     ...(typeof doc['error'] === 'string' && doc['error'] !== '' ? { error: doc['error'] as string } : {}),
+    ...(receipt !== undefined ? { graph_receipt: receipt } : {}),
   }
 }
 

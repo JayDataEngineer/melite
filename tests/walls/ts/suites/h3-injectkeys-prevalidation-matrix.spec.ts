@@ -370,4 +370,32 @@ describe("THE PRE-VALIDATION SEAT (the DECL matrix wall — no sanctioned cell r
     }
     expect(drifts, `the served familyLaw derives the contract module verbatim:\n${drifts.join("\n")}`).toEqual([]);
   });
+
+  it("LAW E — THE NULL LAW (the journey FAIL reopens the cure, 2026-11-08): gate≡walk on null, no second grammar — an explicit null on a dead key is UNSTATED at both seats", async () => {
+    // THE PLATFORM'S ONE NULL LAW (the drill null-set precedent +
+    // the 21 lane's journey-PASSed null→200): null is the switch
+    // verbs' delete mark (modelSwitchPatch null verdicts,
+    // mergeSwitchFrame, seedUser consume it) — an arrival door that
+    // reads null as stated re-opens the exact gap ERROR g burned
+    // through (a gate that promises [] while the walk refuses 400).
+    // Today the gate reads null absent (familyKeyPresent) while the
+    // walk's `explicit` (schema.ts:531) counts every Object key —
+    // this arm reds on the walk half until the walk aligns.
+    const recipeRows = rowsOf("Recipe");
+    const finalRow = recipeRows.find((r) => r.id === "final");
+    const open = LANES[0]!;
+    const era = cell(open.assemble, null, finalRow ?? null, BOOLEAN_AXES[0]!.state);
+    const pin = { keyframes: [{ image: "anchor.png", frame: 0 }] };
+    const nulled = { ...settle(era, pin), ...Object.fromEntries(FOUR.map((k) => [k, null])) };
+    expect(deriveWindowFamily(nulled), "the null-carried doc is still t4r").toBe("t4r");
+    // THE GATE HALF (already green — pinned so the grammar cannot
+    // drift the other way): a null-carried dead key is unstated.
+    const named = composeValidate(spec, nulled)
+      .map((v) => /field '([^']+)' fires nothing on the t4r lane/.exec(v.message)?.[1] ?? "")
+      .filter((k) => k !== "");
+    expect(named, "the gate reads null-carried dead keys as unstated").toEqual([]);
+    // THE WALK HALF (red until the cure): the same doc must compose.
+    expect(walk(nulled), "the walk reads null-carried dead keys as unstated — ONE null law").toBeNull();
+    expect(() => h3schemaFn(nulled), "the walk's spine stays silent on null-carried dead keys").not.toThrow();
+  });
 });

@@ -196,6 +196,9 @@ function sidecarFacesOf(run) {
         // THE COMPOSE ECHO rides every rewrite too (a disk row keeps
         // what the engine received at start).
         composeEcho: run.composeEcho,
+        // THE SERVED-GRAPH RECEIPT rides every rewrite too (a disk row
+        // keeps the queue-time evidence — ordered beside the echo).
+        graphReceipt: run.graphReceipt,
         // THE SOURCE ECHO rides every rewrite too (a disk row keeps the
         // files that created the run).
         sourceEcho: run.sourceEcho,

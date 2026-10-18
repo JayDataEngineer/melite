@@ -222,6 +222,14 @@ export const chromeCopy = {
     /** Weight stuck face's note: the engine's last truth leads (state
      *  + bytes/total), and the two honest exits are named. */
     stuckNote: (p) => 'Stuck — the download is no longer progressing: the engine last reported state "' + p.state + '" at ' + String(p.bytes) + '/' + String(p.total) + ' bytes. Retry the fetch or delete the stuck operation.',
+    /** Run view's graph-receipt chip on the complete face (the silent
+     *  UI-drop purge's P1): every stated scalar rode the composed
+     *  graph — the node count is data. */
+    graphReceiptCarried: (p) => 'graph ✓ ' + String(p.nodes) + 'n',
+    /** Run view's graph-receipt chip on the partial face: the composed
+     *  graph dropped doc scalars — the names are data (the estate's
+     *  sorted receipt, joined by the seat). */
+    graphReceiptDropped: (p) => 'graph ✕ dropped ' + p.dropped.join(', '),
     /** Weight stuck face's retry verb (re-rides the acquire_weight door). */
     retryDownload: 'Retry the download',
     /** Weight stuck face's delete verb (the discard rides the manage seat). */

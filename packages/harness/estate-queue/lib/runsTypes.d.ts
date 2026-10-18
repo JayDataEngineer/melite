@@ -1,5 +1,5 @@
 import type { EngineJson } from "@melite/comfyui-cordis";
-import type { GraphRow } from "./queue.js";
+import type { GraphReceipt, GraphRow } from "./queue.js";
 import type { RunId } from "./queueCore.js";
 /** Stage statuses — the run worker's vocabulary (inherited from the retired oracle). */
 export type RunStatus = "queued" | "running" | "completed" | "failed" | "stopped" | "stopping";
@@ -165,6 +165,15 @@ export interface RunRecord {
         calls: number;
         benchRev: number | null;
     };
+    /** THE SERVED-GRAPH RECEIPT (the silent UI-drop purge's P1):
+     *  the queue-time doc→graph evidence — which doc scalars the
+     *  composed graph carries, which it dropped, per stage. Stamped
+     *  at registration; the claim and settle sidecar rewrites carry
+     *  it; the execute outcome fold stamps the engine's prompt_id.
+     *  Card-composed runs stamp a rollup; inline runs stamp nothing
+     *  (the receipt judges the card compose, never the verbatim
+     *  inline envelope). */
+    graphReceipt?: GraphReceipt;
     /** THE SOURCE ECHO (the source-echo law, 2026-09-23): the FILES
      *  the run was created from — every /melite-media/runs/ URL in
      *  the compiled stage params resolved to disk at registration

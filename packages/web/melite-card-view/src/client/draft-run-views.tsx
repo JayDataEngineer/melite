@@ -165,10 +165,23 @@ export function RunView({ run, sessionKey, onBack, onRestored, onStop }: {
       setRestoring(false)
     })
   }, [run, onRestored, sessionKey])
+  // THE GRAPH-RECEIPT CHIP (the silent UI-drop purge's P1): the
+  // queue-time doc→graph evidence rides the run face beside the
+  // status — the quiet face (complete) counts the composed nodes,
+  // the loud face (partial) names the dropped doc scalars. Both
+  // wordings ride chromeCopy (locale-owned); the chip renders only
+  // where the estate stamped a receipt (card-composed runs — inline
+  // runs stamp none, and the face stays silent, never a phantom).
+  const receiptChip = run.graphReceipt === undefined ? null : h(Pill, {
+    className: run.graphReceipt.verdict === 'complete' ? css.graphReceiptOk : css.graphReceiptPartial,
+  }, run.graphReceipt.verdict === 'complete'
+    ? chromeCopy.graphReceiptCarried({ nodes: run.graphReceipt.nodes })
+    : chromeCopy.graphReceiptDropped({ dropped: run.graphReceipt.dropped }))
   return h('section', { className: css.runView, 'data-run-status': run.status },
     h('header', { className: css.runHead },
       h('span', { className: css.runId }, run.runId),
       h('span', { className: css.runStatus }, titleCaseId(run.status)),
+      receiptChip,
     ),
     shownStageError !== null
       ? h('p', { className: css.runError, 'data-testid': 'run-stage-error' }, shownStageError,

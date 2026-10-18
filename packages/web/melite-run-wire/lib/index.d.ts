@@ -59,6 +59,32 @@ export interface RunStageStatus {
     activity?: string;
     result_outputs?: Record<string, unknown>;
 }
+/** One stage's queue-time doc→graph evidence (the served-graph
+ *  receipt's per-stage row, the silent UI-drop purge's P1): which of
+ *  the stage's doc scalars the composed graph carries, which it
+ *  dropped. Verdict 'complete' carries dropped []. */
+export interface GraphReceiptStageRow {
+    stage: string;
+    nodes: number;
+    populated: string[];
+    carried: string[];
+    dropped: string[];
+    verdict: 'complete' | 'partial';
+}
+/** The run-level graph receipt (the sidecar's `graph_receipt`,
+ *  served on the live status row beside it): the per-stage rows
+ *  folded, the folder's own verdict over them. `prompt_id` is the
+ *  execute stamp (the engine-minted id, folded at the outcome —
+ *  absent on rows read before the run executed). */
+export interface GraphReceipt {
+    nodes: number;
+    populated: string[];
+    carried: string[];
+    dropped: string[];
+    verdict: 'complete' | 'partial';
+    stages: GraphReceiptStageRow[];
+    prompt_id?: string;
+}
 /** The runs/status row, normalized once. */
 export interface RunStatusRow {
     runId: string;
@@ -68,6 +94,12 @@ export interface RunStatusRow {
     /** The run-level failure text (the same channel the stages carry;
      *  the observer's fallback when no single stage owns the reason). */
     error?: string;
+    /** The queue-time doc→graph evidence (the silent UI-drop purge's
+     *  P1) — carried verbatim after the defensive fold below. Absent
+     *  on runs that composed nothing (inline envelopes stamp none)
+     *  and on rows whose receipt is malformed (a broken receipt is no
+     *  receipt — the status word keeps the row's only refusal). */
+    graph_receipt?: GraphReceipt;
 }
 export { isTerminalStatus as isTerminalRun, TERMINAL_RUN_STATUSES, RUN_STATUS_WORDS } from '@melite/contracts/stageView';
 /** The ONE media-url rewrite (readRunStatus + the file-era list
@@ -75,6 +107,15 @@ export { isTerminalStatus as isTerminalRun, TERMINAL_RUN_STATUSES, RUN_STATUS_WO
  *  media route (/melite-media/runs/<runId>/<rel>); urls that already
  *  carry a scheme or lead with / pass verbatim (never double-encoded). */
 export declare function toRunMediaUrl(runId: string, url: string): string;
+/** Fold the served `graph_receipt` face (the silent UI-drop
+ *  purge's P1): the queue-time doc→graph evidence rides the live
+ *  row beside the sidecar, same spelling. DEFENSIVE: a malformed
+ *  receipt is ABSENT (never a throw — the status word keeps the
+ *  row's only refusal; the receipt is evidence, and a broken
+ *  receipt is no receipt). Every list must be all strings, every
+ *  stage row well-formed, the verdict inside the vocabulary —
+ *  anything else folds to undefined. */
+export declare function readGraphReceipt(value: unknown): GraphReceipt | undefined;
 /** Normalize a runs/status doc: stage rows distilled, bare run-
  *  relative urls rewritten onto the estate's media route (absolute
  *  and leading-/ urls pass verbatim — the one rewrite, never two). */

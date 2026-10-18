@@ -528,7 +528,19 @@ export function schema(v: unknown): Record<string, unknown> {
   // one (deriveWindowFamily returns exactly the three members), so
   // `includes(variant)` could never be false — the guard was
   // uncoverable code the per-file gate kept paying for.
-  const explicit = new Set(Object.keys(raw))
+  // THE ONE NULL LAW (the journey-FAIL reopen, 2026-11-08): null
+  // is UNSTATED at every arrival door — the switch verbs' delete
+  // mark (modelSwitchPatch null verdicts, mergeSwitchFrame,
+  // seedUser), the drill null-set precedent, the 21 lane's
+  // journey-PASSed null→200. An arrival door that reads explicit
+  // null as stated re-opens ERROR g's gap (the gate promises []
+  // while the walk refuses 400). So `explicit` is stated-and-
+  // valued: a null-carried key never counts as stated — at the
+  // dead-key gates AND the same `bad` reader's film-only sibling
+  // below. (The merge already drops nulls; the schema never sees
+  // a null it must type-check — unstated keys ride their honest
+  // defaults.)
+  const explicit = new Set(Object.keys(raw).filter((k) => (raw as Record<string, unknown>)[k] !== null))
   // NO SILENT RESOLUTION LAW (2026-09-20): shift_video's declared
   // default(8) is THE owner. The old nulling — "an omitted key
   // normalizes back to null so the body resolves the family's

@@ -11829,6 +11829,69 @@ window.__ModuleLoader__.load({
 			if (!/^(https?:\/\/|\/)/.test(url)) return RUN_MEDIA_PREFIX + "/" + encodeURIComponent(runId) + "/" + url.split("/").map((seg) => encodeURIComponent(seg)).join("/");
 			return url;
 		}
+		/** Fold the served `graph_receipt` face (the silent UI-drop
+		*  purge's P1): the queue-time doc→graph evidence rides the live
+		*  row beside the sidecar, same spelling. DEFENSIVE: a malformed
+		*  receipt is ABSENT (never a throw — the status word keeps the
+		*  row's only refusal; the receipt is evidence, and a broken
+		*  receipt is no receipt). Every list must be all strings, every
+		*  stage row well-formed, the verdict inside the vocabulary —
+		*  anything else folds to undefined. */
+		function readGraphReceipt(value) {
+			if (typeof value !== "object" || value === null || Array.isArray(value)) return void 0;
+			const doc = value;
+			const verdict = doc["verdict"];
+			if (verdict !== "complete" && verdict !== "partial") return void 0;
+			if (typeof doc["nodes"] !== "number") return void 0;
+			const lists = {};
+			for (const key of [
+				"populated",
+				"carried",
+				"dropped"
+			]) {
+				const raw = doc[key];
+				if (!Array.isArray(raw) || !raw.every((entry) => typeof entry === "string")) return void 0;
+				lists[key] = [...raw];
+			}
+			const rawStages = doc["stages"];
+			if (!Array.isArray(rawStages)) return void 0;
+			const stages = [];
+			for (const raw of rawStages) {
+				if (typeof raw !== "object" || raw === null || Array.isArray(raw)) return void 0;
+				const row = raw;
+				if (typeof row["stage"] !== "string" || typeof row["nodes"] !== "number") return void 0;
+				if (row["verdict"] !== "complete" && row["verdict"] !== "partial") return void 0;
+				const rowLists = {};
+				for (const key of [
+					"populated",
+					"carried",
+					"dropped"
+				]) {
+					const rawList = row[key];
+					if (!Array.isArray(rawList) || !rawList.every((entry) => typeof entry === "string")) return void 0;
+					rowLists[key] = [...rawList];
+				}
+				stages.push({
+					stage: row["stage"],
+					nodes: row["nodes"],
+					populated: rowLists["populated"],
+					carried: rowLists["carried"],
+					dropped: rowLists["dropped"],
+					verdict: row["verdict"]
+				});
+			}
+			const stamped = doc["prompt_id"];
+			if (stamped !== void 0 && typeof stamped !== "string") return void 0;
+			return {
+				nodes: doc["nodes"],
+				populated: lists["populated"],
+				carried: lists["carried"],
+				dropped: lists["dropped"],
+				verdict,
+				stages,
+				...typeof stamped === "string" && stamped !== "" ? { prompt_id: stamped } : {}
+			};
+		}
 		/** Normalize a runs/status doc: stage rows distilled, bare run-
 		*  relative urls rewritten onto the estate's media route (absolute
 		*  and leading-/ urls pass verbatim — the one rewrite, never two). */
@@ -11843,12 +11906,14 @@ window.__ModuleLoader__.load({
 			}
 			const status = doc["status"];
 			if (typeof status !== "string" || !RUN_STATUS_WORDS.has(status.toLowerCase())) throw new Error(`runs/status ${runId}: run-level status ${JSON.stringify(status)} is outside the vocabulary`);
+			const receipt = readGraphReceipt(doc["graph_receipt"]);
 			return {
 				runId,
 				status,
 				draftId: typeof doc["draft_id"] === "string" && doc["draft_id"] !== "" ? doc["draft_id"] : null,
 				stages,
-				...typeof doc["error"] === "string" && doc["error"] !== "" ? { error: doc["error"] } : {}
+				...typeof doc["error"] === "string" && doc["error"] !== "" ? { error: doc["error"] } : {},
+				...receipt !== void 0 ? { graph_receipt: receipt } : {}
 			};
 		}
 		/** The list row's served artifact url onto the media route. The

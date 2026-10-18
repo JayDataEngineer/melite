@@ -67,6 +67,22 @@ describe("readRun — the draft key rides the value", () => {
     expect(readRun("r1", { status: "completed", stages: [] }).draftId).toBeNull();
     expect(readRun("r1", { status: "completed", draft_id: "", stages: [] }).draftId).toBeNull();
   });
+  test("the graph receipt rides the value (the purge P1 — the run face's chip reads this)", () => {
+    const receipt = {
+      nodes: 2,
+      populated: ["guidance", "prompt"],
+      carried: ["guidance", "prompt"],
+      dropped: [],
+      verdict: "complete",
+      stages: [
+        { stage: "s_0", nodes: 2, populated: ["guidance", "prompt"], carried: ["guidance", "prompt"], dropped: [], verdict: "complete" },
+      ],
+    };
+    const v = readRun("r1", { status: "completed", draft_id: "bench-main", stages: [], graph_receipt: receipt });
+    expect(v.graphReceipt).toEqual(receipt);
+    // absent stays absent — inline runs stamp none, the face stays silent
+    expect(readRun("r1", { status: "completed", stages: [] }).graphReceipt).toBeUndefined();
+  });
 });
 
 // ── restore wire ──────────────────────────────────────────────

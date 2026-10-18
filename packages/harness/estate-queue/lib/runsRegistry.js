@@ -29,6 +29,7 @@ import { loadEndpointConfig } from "@melite/comfyui-cordis";
 import { fetchEngineMem, filmLoadOf, filmMemoryWarn } from "./filmMemoryWarn.js";
 import { searchedVoice } from "./rootsManifest.js";
 import { newRunId, outRootFor, pipelineOf, strictBodyCheck, planResurrect, bootSweep, appendLedger, refusal, walkSubmitEnvelope } from "./queue.js";
+import { graphReceiptOf, graphReceiptStageOf } from "./queueSidecar.js";
 import { cardRefusal, toRemoteError, refusePreview } from "./runsRefusalVoices.js";
 import { lifecycleInFlight } from "./lifecycleLatch.js";
 import { lanePresenceRefusal } from "./cardsLanes.js";
@@ -585,7 +586,15 @@ export class RunsRuntimeService extends Service {
      *  composed stage's family lands here, keyed by stage id — the
      *  run-level map the pump re-probes at claim. The stage row
      *  itself stays schema-clean (extra=forbid at the wire door). */
-    famsOut) {
+    famsOut, 
+    /** THE GRAPH-RECEIPT LEDGER (the silent UI-drop purge's P1):
+     *  the composed stage's queue-time doc→graph evidence lands
+     *  here, keyed by stage id (the per-stage rows inside the
+     *  run-level `graph_receipt`). The receipt judges the row's OWN
+     *  `params` (the doc verbatim, pre-stamp) against the composed
+     *  graph. The stage row itself stays schema-clean (extra=forbid
+     *  at the wire door) — same law as the fams ledger. */
+    receiptsOut) {
         const cards = this.ctx.cardRegistry;
         const params = (typeof row["params"] === "object" && row["params"] !== null && !Array.isArray(row["params"]))
             ? { ...row["params"] }
@@ -620,6 +629,17 @@ export class RunsRuntimeService extends Service {
         try {
             p1 = await cards.phase1Card({ ...params, card }, mid);
             composed = await cards.phase2Card(p1, runId);
+            // THE GRAPH RECEIPT (the silent UI-drop purge's P1): the
+            // stage's compose just landed — receipt the doc (the row's
+            // OWN params, verbatim: the routing-key stamp above rides
+            // only the compose copy, never the judged doc) against the
+            // composed graph. EVIDENCE, never a refusal.
+            if (receiptsOut !== undefined) {
+                const docParams = typeof row["params"] === "object" && row["params"] !== null && !Array.isArray(row["params"])
+                    ? row["params"]
+                    : {};
+                receiptsOut[id] = graphReceiptStageOf(id, graphReceiptOf(docParams, { workflow: composed.graph }));
+            }
         }
         catch (e) {
             if (e instanceof CardArmError) {
@@ -764,7 +784,10 @@ export class RunsRuntimeService extends Service {
     async composeRegistryFlowStages(inlineDoc, runId, 
     /** THE CLAIM-TIME RE-PROBE'S LEDGER (audit 2026-10-22): filled
      *  with {stageId: fam} for every composed card stage. */
-    stageFams) {
+    stageFams, 
+    /** THE GRAPH-RECEIPT LEDGER (P1): filled with {stageId: row}
+     *  for every composed card stage (composeCardStageRow's seat). */
+    receiptsOut) {
         const rows = inlineDoc["stages"];
         // registryFlowToInline always projects an array of object rows, so
         // the non-array answer needs no second shape (the compile-time
@@ -780,7 +803,7 @@ export class RunsRuntimeService extends Service {
             const id = typeof row["id"] === "string" && row["id"] !== "" ? row["id"] : "s_" + String(i);
             out.push(card === ""
                 ? { ...row }
-                : await this.composeCardStageRow(row, id, runId, "flow stage ", stageFams));
+                : await this.composeCardStageRow(row, id, runId, "flow stage ", stageFams, receiptsOut));
         }
         return { ...inlineDoc, stages: out };
     }
@@ -790,7 +813,10 @@ export class RunsRuntimeService extends Service {
      *  family vanished before the pump's claim re-probe — the most
      *  common multi-stage path rode an empty ledger and a mid-wait
      *  prune died engine-side instead of with the lane voice. */
-    famsOut) {
+    famsOut, 
+    /** THE GRAPH-RECEIPT LEDGER (P1): filled with {stageId: row}
+     *  for every composed card stage (composeCardStageRow's seat). */
+    receiptsOut) {
         // the sole caller arrives gated on benchWiring(...).cross being
         // non-empty, and benchWiring answers [] unless stages is an
         // array — the non-array fallback here was a dead leg, pruned
@@ -808,7 +834,7 @@ export class RunsRuntimeService extends Service {
                 throw new RemoteError("runs/invalid-request", "bench stage " + JSON.stringify(id) +
                     " names no card — the bench run composes card stages; an mcp/flow stage belongs in a flow, not the bench", { loc: "stages" });
             }
-            out.push(await this.composeCardStageRow(row, id, runId, "bench stage ", famsOut));
+            out.push(await this.composeCardStageRow(row, id, runId, "bench stage ", famsOut, receiptsOut));
         }
         /* v8 ignore next 4 -- this bench is only composed when
          * benchWiring found a CROSS wire, and benchWiring reaches wires
@@ -950,6 +976,11 @@ export class RunsRuntimeService extends Service {
         // bench-composed arm feed it; the single-card run alone rides
         // its fam key).
         let flowStageFams = {};
+        // THE GRAPH-RECEIPT LEDGER (the silent UI-drop purge's P1):
+        // start()'s arm scope owns it — the registerCompiledRun door
+        // folds it after the arms close (bench + flow arms feed it; the
+        // single-card run stamps its own row on its own door).
+        let flowStageReceipts = {};
         // THE BENCH SNAPSHOT (stroke 45d, the operator's question: "the
         // FULL workflow, or just the card that ran?"): the run is born
         // from the bench doc (CARD BIRTH LAW — draft_id = the bench);
@@ -1070,12 +1101,17 @@ export class RunsRuntimeService extends Service {
                 // the compose and the registration take it — one derivation,
                 // and a wall drives the pair.
                 const benchFams = {};
-                const composed = await this.composeBenchStages(benchDoc, runId, benchFams);
+                // THE GRAPH-RECEIPT LEDGER (P1): the bench rows' per-stage
+                // queue-time evidence rides the same function-scope ledger
+                // as the fams (the seat the registration door reads).
+                const benchReceipts = {};
+                const composed = await this.composeBenchStages(benchDoc, runId, benchFams, benchReceipts);
                 // the bench-composed stages' families reach the same claim
                 // re-probe ledger the flow arm feeds (S-S4): the empty-ledger
                 // carve-out below is the card-single path alone, never this
                 // one.
                 flowStageFams = benchFams;
+                flowStageReceipts = benchReceipts;
                 const rest = { ...body };
                 delete rest["model"];
                 delete rest["card"];
@@ -1267,6 +1303,16 @@ export class RunsRuntimeService extends Service {
                 outputNodes: composed.outputNodes,
                 inputNames: {},
             };
+            // THE CARD ARM'S ADMITTED BODY (hoisted, P1): the snapshot
+            // law coerces here — the sidecar's requestBody AND the graph
+            // receipt judge the SAME admitted doc (the task's doc seat:
+            // run.cardSnapshot.params, the run door's admitted request
+            // body), never two derivations.
+            const cardRequestBody = coerceSnapshotBody(cards.defsSync().get(p1.card), body);
+            // THE GRAPH-RECEIPT ROW (the silent UI-drop purge's P1): the
+            // single card stage's queue-time evidence — the admitted body
+            // against the composed graph, keyed by the card stage's own id.
+            const cardReceiptRow = graphReceiptStageOf(skeleton, graphReceiptOf(cardRequestBody, { workflow: composed.graph }));
             const reg = await registerCompiledRun({
                 compiled: { stages: [cardStage] },
                 testFlag: checked.testFlag,
@@ -1292,7 +1338,10 @@ export class RunsRuntimeService extends Service {
                     // family the compose seat runs), not dsh's stringly
                     // encoding — the raw body above still feeds phase-1/2,
                     // which own their own coercion.
-                    requestBody: coerceSnapshotBody(cards.defsSync().get(p1.card), body),
+                    requestBody: cardRequestBody,
+                    // THE GRAPH-RECEIPT ROW (P1): the single stage's evidence
+                    // rides the same door the flow arms' ledger rides.
+                    graphReceipts: { [skeleton]: cardReceiptRow },
                     // the bench snapshot rides the same law per stage: each
                     // row's params coerce through its OWN card's carrier
                     // (unknown cards verbatim), on a COPY — the remote's doc
@@ -1484,8 +1533,15 @@ export class RunsRuntimeService extends Service {
             // bench runs, and the compiler only ever sees compiled stages.
             if (inlineStagesNameCards(inlineDoc)) {
                 const stageFams = {};
-                inlineDoc = await this.composeRegistryFlowStages(inlineDoc, runId, stageFams);
+                // THE GRAPH-RECEIPT LEDGER (P1): the flow rows' per-stage
+                // evidence — assigned to the FUNCTION-scope ledger (the
+                // block-scoped flowStageFams twin above is a dead shadow its
+                // own arm never feeds to the door; the receipt does not
+                // repeat that law).
+                const stageReceipts = {};
+                inlineDoc = await this.composeRegistryFlowStages(inlineDoc, runId, stageFams, stageReceipts);
                 flowStageFams = stageFams;
+                flowStageReceipts = stageReceipts;
                 console.log("[runs] the flow " + name +
                     " composes its card stages through the card plane (" +
                     inlineDoc["stages"].length + " stages)");
@@ -1678,6 +1734,11 @@ export class RunsRuntimeService extends Service {
                 // rows — extra=forbid at the wire door) for the pump's
                 // claim-time gate re-run.
                 ...(Object.keys(flowStageFams).length > 0 ? { stageFams: flowStageFams } : {}),
+                // THE GRAPH-RECEIPT LEDGER (P1): the per-stage queue-time
+                // evidence rows ride the row the same way (not the stage
+                // rows — extra=forbid at the wire door) — registerCompiledRun
+                // folds them into the run-level `graph_receipt`.
+                ...(Object.keys(flowStageReceipts).length > 0 ? { graphReceipts: flowStageReceipts } : {}),
             },
         });
         // THE SOURCE-ECHO REFUSAL (same law on the inline door).
@@ -1829,6 +1890,12 @@ export class RunsRuntimeService extends Service {
             // THE SOURCE ECHO, SERVED (same law: the run's sources ride
             // the live row too — additive, same spelling as the sidecar).
             ...(run.sourceEcho !== undefined ? { source_echo: run.sourceEcho } : {}),
+            // THE GRAPH RECEIPT, SERVED (the silent UI-drop purge's P1,
+            // same law: the queue-time doc→graph evidence rides the live
+            // row too — additive, same spelling as the sidecar; the disk
+            // fallback spreads the sidecar row, which carries it).
+            // Absent on inline runs (no card composed).
+            ...(run.graphReceipt !== undefined ? { graph_receipt: run.graphReceipt } : {}),
             // THE EXPORT NAME, SERVED (023's self-critique #4/#6: the
             // design lane's mint rides the live row too — additive,
             // same spelling as the sidecar; absent on non-export runs.

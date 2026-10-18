@@ -18,7 +18,7 @@ import {
   sidecarStageOf,
   variantOfBodies,
 } from "./queue.ts";
-import type { GraphRow } from "./queue.ts";
+import type { GraphReceipt, GraphRow } from "./queue.ts";
 import type { SidecarStage } from "./queueSidecar.ts";
 import type { RunId } from "./queueCore.ts";
 
@@ -192,6 +192,15 @@ export interface RunRecord {
    *  the run record itself, not by inference. Non-film runs (no
    *  calls) stamp nothing. */
   composeEcho?: { seam: string; calls: number; benchRev: number | null };
+  /** THE SERVED-GRAPH RECEIPT (the silent UI-drop purge's P1):
+   *  the queue-time doc→graph evidence — which doc scalars the
+   *  composed graph carries, which it dropped, per stage. Stamped
+   *  at registration; the claim and settle sidecar rewrites carry
+   *  it; the execute outcome fold stamps the engine's prompt_id.
+   *  Card-composed runs stamp a rollup; inline runs stamp nothing
+   *  (the receipt judges the card compose, never the verbatim
+   *  inline envelope). */
+  graphReceipt?: GraphReceipt;
   /** THE SOURCE ECHO (the source-echo law, 2026-09-23): the FILES
    *  the run was created from — every /melite-media/runs/ URL in
    *  the compiled stage params resolved to disk at registration
@@ -369,6 +378,10 @@ function sidecarFacesOf(run: RunRecord): {
   benchSnapshot: unknown;
   warnings: string[] | undefined;
   composeEcho: { seam: string; calls: number; benchRev: number | null } | undefined;
+  /** THE SERVED-GRAPH RECEIPT (P1): rides every rewrite — a disk
+   *  row keeps the queue-time evidence (and, after settlement,
+   *  the execute-stamped prompt_id). */
+  graphReceipt: GraphReceipt | undefined;
   sourceEcho: { refs: Array<{ url: string; file: string }> } | undefined;
   /** THE REPLAY VERDICT (D11): stamped at settle — a disk row keeps
    *  what the executor's tap witnessed. */
@@ -397,6 +410,9 @@ function sidecarFacesOf(run: RunRecord): {
     // THE COMPOSE ECHO rides every rewrite too (a disk row keeps
     // what the engine received at start).
     composeEcho: run.composeEcho,
+    // THE SERVED-GRAPH RECEIPT rides every rewrite too (a disk row
+    // keeps the queue-time evidence — ordered beside the echo).
+    graphReceipt: run.graphReceipt,
     // THE SOURCE ECHO rides every rewrite too (a disk row keeps the
     // files that created the run).
     sourceEcho: run.sourceEcho,

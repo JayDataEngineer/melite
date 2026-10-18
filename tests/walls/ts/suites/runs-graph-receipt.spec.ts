@@ -1,0 +1,291 @@
+/**
+ * runs-graph-receipt.spec.ts — THE SERVED-GRAPH RECEIPT WALL (the
+ * silent UI-drop purge's P1, dev_docs/audits/
+ * ui-engine-fidelity-purge-2026-11-08.md §7).
+ *
+ * THE WALL, one line: "every run's _flow.json carries a
+ * `graph_receipt` — the queue-time evidence of which doc scalars the
+ * composed graph actually carries — and the run view shows the
+ * verdict."
+ *
+ * THE BURN IT GUARDS (the purge's entering wound): a knob the UI
+ * showed, the doc saved, and the compose silently dropped — every
+ * seat between was green because no seat judged the DOC→GRAPH hop.
+ * The receipt is EVIDENCE, never a refusal: the compose gate owns
+ * refusals; a dropped key is a receipt fact (verdict 'partial',
+ * dropped names it) that the operator's run tile and the P0 census
+ * consume.
+ *
+ * THE ARMS:
+ *   a — THE RECEIPT IS STAMPED: a real compose through the estate
+ *       queue harness (the draft door → composeBenchStages →
+ *       composeCardStageRow → registerCompiledRun) with a synth card
+ *       def whose compose emits a graph carrying every declared
+ *       scalar → _flow.json's graph_receipt.verdict === 'complete',
+ *       dropped [], nodes > 0, populated names the doc scalars
+ *       sorted. (RED TODAY: the key does not exist — the
+ *       pre-registered red of the seated cure.)
+ *   b — THE DROP IS NAMED: a doc scalar the synth compose does NOT
+ *       carry → verdict 'partial', dropped names it SORTED.
+ *   c — THE BAGS ARE OUT OF SCOPE BY LAW: an array doc key and an
+ *       object doc key appear in NEITHER populated nor dropped (the
+ *       v1 scope line — the bag/class planes have lawful transforms;
+ *       v1 receipts the scalar plane).
+ *   d — THE EXECUTE STAMP: after the pump has claimed and executed,
+ *       the settled receipt carries prompt_id — the engine-minted
+ *       EngineRef, stamped at the execute outcome fold (the claim
+ *       rewrite runs BEFORE POST /prompt mints the id, so the
+ *       earliest estate seat that can see it is the execute
+ *       outcome; settle's sidecar rewrite carries it to disk).
+ *
+ * THE RED-PROOF (registry row runs-graph-receipt): neutralize the
+ * stamp in registerCompiledRun (runsStart.ts — `run.graphReceipt =
+ * graphReceiptFoldOf(rows)`, the toggle named on the row) → arm (a)
+ * reds with the missing-key face (all four arms fail — b/c/d ride
+ * the stamped receipt); restore → green. (The sidecarDocFor line is
+ * NOT the toggle: the claim/settle rewrites re-carry the in-memory
+ * receipt, so only the stamp kills the key end to end.)
+ *
+ * Run: npx vitest run tests/walls/ts/suites/runs-graph-receipt.spec.ts
+ */
+import { describe, it } from "vitest";
+import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { onTestFinished } from "vitest";
+import assert from "node:assert/strict";
+import { Context, Service } from "@deepseek-ai/cordis";
+import { RemoteError } from "@deepseek-ai/dsh-typert-protocol";
+import { ComfyUIHostService } from "@melite/comfyui-cordis";
+import type { EngineJson, FlowResult, MergeRow } from "@melite/comfyui-cordis";
+import { FlowsSeatService } from "../../../../packages/harness/estate-queue/src/flowsData.ts";
+import { RunsRuntimeService } from "../../../../packages/harness/estate-queue/src/runsRegistry.ts";
+import { outRootFor } from "../../../../packages/harness/estate-queue/src/queueLock.ts";
+import { QueueCore } from "../../../../packages/harness/estate-queue/src/queueCore.ts";
+import type { RunRecord } from "../../../../packages/harness/estate-queue/src/runsTypes.ts";
+
+// ── THE RIG (the runs-registry-doors harness shape: a real
+// RunsRuntimeService over a real QueueCore, the card registry a
+// structural fake whose synth compose emits a graph carrying the
+// doc scalars the arms declare, the engine a cordis-mounted
+// ComfyUIHostService subclass — the same dispatch needComfyUI
+// resolves on the lane). No HTTP rig, no live engine socket. ──
+
+/** The synth graph the fake compose emits: node "1" carries the
+ *  doc scalars at input seats; node "2" is the save. `carry` names
+ *  WHICH doc keys this boot's compose carries — arm (b) drops one
+ *  by not listing it. */
+interface SynthDoc {
+  prompt: string;
+  steps: number;
+  guidance: number;
+  /** Extra SCALAR doc entries the synth compose deliberately does
+   *  not carry — arm (b)'s dropped keys. */
+  orphans?: Record<string, string | number | boolean>;
+}
+
+const synthGraphOf = (doc: SynthDoc): Record<string, unknown> => {
+  const inputs: Record<string, unknown> = {
+    text: doc.prompt,
+    steps: doc.steps,
+    guidance: doc.guidance,
+  };
+  return {
+    "1": { class_type: "ReceiptEncode", inputs },
+    "2": { class_type: "ReceiptSave", inputs: { images: ["1", 0] } },
+  };
+};
+
+interface Rig {
+  svc: RunsRuntimeService;
+  core: QueueCore;
+  state: string;
+}
+
+const rig = (doc: SynthDoc): Rig => {
+  const state = mkdtempSync(join(tmpdir(), "runs-graph-receipt-"));
+  onTestFinished(() => rmSync(state, { recursive: true, force: true }));
+  const ctx = new Context();
+  new FlowsSeatService(ctx);
+  const core = new QueueCore();
+  (ctx as unknown as { queue: unknown }).queue = {
+    core,
+    stateRoot: state,
+    stateRoots: [state],
+  };
+  // the bench doc the draft door reads (draftsRemote fake — the
+  // doors-spec pattern): one card stage whose params ARE the doc.
+  const benchDoc = {
+    draft_id: "d1",
+    status: "draft",
+    createdAt: 1700000000000,
+    intent: "receipt bench",
+    stages: [
+      {
+        id: "s_0",
+        card: "receipt-card",
+        engine: "comfyui",
+        params: {
+          prompt: doc.prompt,
+          steps: doc.steps,
+          guidance: doc.guidance,
+          ...(doc.orphans ?? []),
+          // the BAG PLANE (arm c): an array key and an object key —
+          // the v1 receipt never receipts them either way.
+          ref_images: ["a.png"],
+          blend: { mode: "x" },
+        },
+        inputs: [],
+      },
+    ],
+  };
+  (ctx as unknown as { draftsRemote: unknown }).draftsRemote = {
+    get: async (id: string): Promise<unknown> => {
+      if (id === "d1") return benchDoc;
+      throw new RemoteError("draft/not-found", "no doc", { draftId: id });
+    },
+  };
+  // THE SYNTH DEF (the runs-registry-doors card fake shape): phase 1
+  // admits the body verbatim (family-less — the lane presence gate
+  // never fires), phase 2 emits the synth graph.
+  (ctx as unknown as { cardRegistry: unknown }).cardRegistry = {
+    objectInfo: (): unknown => null,
+    defsSync: (): unknown => new Map(),
+    primeObjectInfo: async (): Promise<boolean> => true,
+    phase1Card: async (body: Record<string, unknown>) => ({
+      mid: "receipt-model",
+      fam: "",
+      modelId: "receipt-model",
+      card: "receipt-card",
+      skeleton: "receipt-skel",
+      decl: { spells: [] },
+      params: body,
+      familyless: true,
+      spell: null,
+    }),
+    phase2Card: async () => ({
+      graph: synthGraphOf(doc),
+      skeleton: "receipt-skel",
+      spell: null,
+      outputs: { default: "image" },
+      outputNodes: { default: "2" },
+    }),
+  };
+  const svc = new RunsRuntimeService(ctx as unknown as Context);
+  return { svc, core, state };
+};
+
+/** The engine seat (the doors-spec FakeEngine shape): one prompt id
+ *  minted per run, the stages settle clean. */
+class ReceiptEngine extends ComfyUIHostService {
+  promptId = "receipt-prompt-0001";
+  constructor(ctx: Context) {
+    super(ctx as unknown as never, {});
+  }
+  override executeFlow(
+    _rows: MergeRow[],
+    _runDir: string,
+    _inputNames: Record<string, Record<string, string>>,
+    _initials: Record<string, EngineJson>,
+    _opts: { shouldStop?: () => boolean; report?: (u: Record<string, EngineJson>) => void } = {},
+  ): Promise<FlowResult> {
+    return Promise.resolve({
+      stages: {
+        receipt_skel: { outputs: {}, artifacts: [] },
+      },
+      promptId: this.promptId,
+    });
+  }
+}
+
+/** Drive the bench door: {test, draft_id} over a bench doc → the
+ *  bench run composes, registers, the pump runs it, settle lands. */
+const runBench = async (doc: SynthDoc): Promise<{ run: RunRecord; sidecar: Record<string, unknown>; state: string }> => {
+  const { svc, core, state } = rig(doc);
+  new ReceiptEngine(ctxOf(svc));
+  const sig = new AbortController().signal;
+  const answer = (await svc.start({ test: true, draft_id: "d1" }, sig)) as { run_id: string };
+  const run = await settleWait(core, answer.run_id);
+  assert.equal(run.status, "completed", "the run settles completed: " + String(run.error));
+  const dir = join(outRootFor(state, true), answer.run_id);
+  const sidecar = JSON.parse(readFileSync(join(dir, "_flow.json"), "utf8")) as Record<string, unknown>;
+  return { run, sidecar, state };
+};
+
+const ctxOf = (svc: RunsRuntimeService): Context =>
+  (svc as unknown as { ctx: Context }).ctx;
+
+const settleWait = async (core: QueueCore, runId: string): Promise<RunRecord> => {
+  for (let i = 0; i < 500; i++) {
+    const row = core.runs.get(runId) as RunRecord | undefined;
+    if (row !== undefined && (row.status === "completed" || row.status === "failed")) return row;
+    await new Promise((r) => setTimeout(r, 10));
+  }
+  throw new Error("pump never settled " + runId);
+};
+
+// ── THE ARMS ─────────────────────────────────────────────────────
+
+describe("runs-graph-receipt (the served-graph receipt, purge P1)", () => {
+  it("ARM a — THE RECEIPT IS STAMPED: the composed run's sidecar carries graph_receipt, verdict complete, dropped empty, nodes > 0, populated names the doc scalars", async () => {
+    const { sidecar } = await runBench({ prompt: "the courier steps in", steps: 12, guidance: 3.5 });
+    const receipt = sidecar["graph_receipt"] as Record<string, unknown> | undefined;
+    assert.ok(receipt !== undefined, "THE PRE-REGISTERED RED (the cure is seated): _flow.json carries no graph_receipt key — the queue-time doc→graph evidence does not exist");
+    assert.equal(receipt["verdict"], "complete", "every declared scalar rode: " + JSON.stringify(receipt));
+    assert.deepEqual(receipt["dropped"], [], "nothing dropped");
+    assert.ok(typeof receipt["nodes"] === "number" && (receipt["nodes"] as number) > 0, "the node count is stamped");
+    assert.deepEqual(receipt["populated"], ["guidance", "prompt", "steps"], "populated names the doc scalars, sorted");
+    assert.deepEqual(receipt["carried"], ["guidance", "prompt", "steps"], "carried mirrors populated on the complete face");
+    // THE PER-STAGE ROWS (the [{stage, ...receipt}] shape)
+    const stages = receipt["stages"] as Array<Record<string, unknown>>;
+    assert.ok(Array.isArray(stages) && stages.length === 1, "one stage row");
+    assert.equal(stages[0]!["stage"], "s_0", "the row names the bench stage id");
+    assert.equal(stages[0]!["verdict"], "complete");
+  });
+
+  it("ARM b — THE DROP IS NAMED: a scalar the compose ignores lands in dropped, sorted, verdict partial — the honesty face", async () => {
+    const { sidecar } = await runBench({
+      prompt: "the courier steps in",
+      steps: 12,
+      guidance: 3.5,
+      // spelled so the SORT is provable, not just the presence
+      orphans: { orphan_zed: 42, orphan_ash: "scar" },
+    });
+    const receipt = sidecar["graph_receipt"] as Record<string, unknown>;
+    assert.ok(receipt !== undefined, "the receipt exists (arm a's cure)");
+    assert.equal(receipt["verdict"], "partial", "a dropped scalar is a receipt fact: " + JSON.stringify(receipt));
+    assert.deepEqual(receipt["dropped"], ["orphan_ash", "orphan_zed"], "dropped names the ignored scalars, SORTED");
+    assert.deepEqual(
+      receipt["carried"],
+      ["guidance", "prompt", "steps"],
+      "carried keeps the scalars the graph took",
+    );
+    assert.deepEqual(
+      (receipt["populated"] as string[]).sort(),
+      ["guidance", "orphan_ash", "orphan_zed", "prompt", "steps"],
+      "populated is every declared scalar; carried/dropped partition it",
+    );
+  });
+
+  it("ARM c — THE BAGS ARE OUT OF SCOPE BY LAW: array and object doc keys ride NEITHER populated NOR dropped", async () => {
+    const { sidecar } = await runBench({ prompt: "the courier steps in", steps: 12, guidance: 3.5 });
+    const receipt = sidecar["graph_receipt"] as Record<string, unknown>;
+    const populated = receipt["populated"] as string[];
+    const dropped = receipt["dropped"] as string[];
+    for (const bag of ["ref_images", "blend"]) {
+      assert.ok(!populated.includes(bag), bag + " is not receipted as populated (the v1 scalar-plane scope)");
+      assert.ok(!dropped.includes(bag), bag + " is not receipted as dropped (the bag plane's transforms are not v1 drops)");
+    }
+  });
+
+  it("ARM d — THE EXECUTE STAMP: after the pump claimed and ran, the settled receipt carries the engine's prompt_id", async () => {
+    const { sidecar } = await runBench({ prompt: "the courier steps in", steps: 12, guidance: 3.5 });
+    const receipt = sidecar["graph_receipt"] as Record<string, unknown>;
+    assert.ok(receipt !== undefined, "the receipt exists (arm a's cure)");
+    assert.equal(
+      receipt["prompt_id"],
+      "receipt-prompt-0001",
+      "the engine-minted prompt_id rides the receipt after the execute outcome (the settle rewrite carries it to disk): " + JSON.stringify(receipt),
+    );
+  });
+});

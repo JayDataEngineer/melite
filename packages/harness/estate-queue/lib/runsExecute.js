@@ -384,6 +384,7 @@ export async function runOne(run, ctx, settle) {
                 // THE REPLAY VERDICT (D11): forwarded, never re-derived —
                 // the executor's seated tap is the only witness.
                 replaySuspect: outcome.replaySuspect,
+                promptId: String(outcome.engineRef),
             };
         }
         else {
@@ -402,6 +403,13 @@ export async function runOne(run, ctx, settle) {
                 stateRoots: ctx.queue.stateRoots,
             }), ctx.queue.executeCeilMs, "the engine submit");
         }
+        // THE PROMPT STAMP (P1): the executed prompt's id folds onto
+        // the receipt here — the seat path carried it on the merged
+        // result from outcome.engineRef, the legacy path reads
+        // FlowResult.promptId (the SAME POST /prompt answer), before
+        // the harvest below; settle's sidecar rewrite carries it to
+        // disk.
+        stampReceiptPromptId(run, result.promptId);
         for (const stage of run.stages) {
             const row = result.stages[stage.id] ?? { outputs: {}, artifacts: [] };
             const arts = row.artifacts.filter((a) => a !== "");
@@ -490,5 +498,22 @@ export function runEngine(run) {
     const engine = first?.["engine"];
     // the card plane engine is the contract value (one owner per token)
     return typeof engine === "string" && engine !== "" ? engine : CARD_PLANE_ENGINE;
+}
+/** THE GRAPH-RECEIPT PROMPT STAMP (the silent UI-drop purge's P1):
+ *  the receipt is stamped at QUEUE time, but the engine mints the
+ *  prompt_id at POST /prompt — inside the execute — so the claim
+ *  rewrite (which runs BEFORE the submit) cannot carry it. The
+ *  earliest estate seat that CAN see it is the execute outcome:
+ *  the seat path's engineRef (comfyui-engine's brand) and the
+ *  legacy path's FlowResult.promptId (the same POST /prompt
+ *  answer). The stamp folds here, before settle — settle's sidecar
+ *  rewrite carries `graph_receipt.prompt_id` to disk. Runs with no
+ *  receipt (inline envelopes) stamp nothing. */
+function stampReceiptPromptId(run, promptId) {
+    if (run.graphReceipt === undefined)
+        return;
+    if (typeof promptId !== "string" || promptId === "")
+        return;
+    run.graphReceipt = { ...run.graphReceipt, prompt_id: promptId };
 }
 //# sourceMappingURL=runsExecute.js.map

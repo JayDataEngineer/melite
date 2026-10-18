@@ -392,7 +392,7 @@ export type SettleFn = (run: RunRecord) => void | Promise<void>;
         live.report();
       };
       const shouldStop = (): boolean => run.stopFlag;
-      let result: { stages: Record<string, MergeStageResult>; replaySuspect?: boolean };
+      let result: { stages: Record<string, MergeStageResult>; replaySuspect?: boolean; promptId?: string };
       if (seatExecutor !== null) {
         // The seat path: engine-agnostic rows — the adapter splices
         // (its splice refusal lands in this same catch: the run
@@ -442,6 +442,7 @@ export type SettleFn = (run: RunRecord) => void | Promise<void>;
           // THE REPLAY VERDICT (D11): forwarded, never re-derived —
           // the executor's seated tap is the only witness.
           replaySuspect: outcome.replaySuspect,
+          promptId: String(outcome.engineRef),
         };
       } else {
         const engine = needComfyUI(ctx as unknown as EngineCtx, "runsRemote worker");
@@ -467,6 +468,13 @@ export type SettleFn = (run: RunRecord) => void | Promise<void>;
           "the engine submit",
         );
       }
+      // THE PROMPT STAMP (P1): the executed prompt's id folds onto
+      // the receipt here — the seat path carried it on the merged
+      // result from outcome.engineRef, the legacy path reads
+      // FlowResult.promptId (the SAME POST /prompt answer), before
+      // the harvest below; settle's sidecar rewrite carries it to
+      // disk.
+      stampReceiptPromptId(run, result.promptId);
       for (const stage of run.stages) {
         const row = result.stages[stage.id] ?? { outputs: {}, artifacts: [] };
         const arts: string[] = row.artifacts.filter(
@@ -565,3 +573,19 @@ export function runEngine(run: RunRecord): string {
     // the card plane engine is the contract value (one owner per token)
     return typeof engine === "string" && engine !== "" ? engine : CARD_PLANE_ENGINE;
   }
+
+/** THE GRAPH-RECEIPT PROMPT STAMP (the silent UI-drop purge's P1):
+ *  the receipt is stamped at QUEUE time, but the engine mints the
+ *  prompt_id at POST /prompt — inside the execute — so the claim
+ *  rewrite (which runs BEFORE the submit) cannot carry it. The
+ *  earliest estate seat that CAN see it is the execute outcome:
+ *  the seat path's engineRef (comfyui-engine's brand) and the
+ *  legacy path's FlowResult.promptId (the same POST /prompt
+ *  answer). The stamp folds here, before settle — settle's sidecar
+ *  rewrite carries `graph_receipt.prompt_id` to disk. Runs with no
+ *  receipt (inline envelopes) stamp nothing. */
+function stampReceiptPromptId(run: RunRecord, promptId: unknown): void {
+  if (run.graphReceipt === undefined) return;
+  if (typeof promptId !== "string" || promptId === "") return;
+  run.graphReceipt = { ...run.graphReceipt, prompt_id: promptId };
+}

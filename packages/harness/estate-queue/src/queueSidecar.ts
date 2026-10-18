@@ -80,6 +80,151 @@ export function sidecarStageOf(stage: {
   return out;
 }
 
+/** THE SERVED-GRAPH RECEIPT (the silent UI-drop purge's P1,
+ *  dev_docs/audits/ui-engine-fidelity-purge-2026-11-08.md §7):
+ *  the queue-time evidence of which doc scalars the composed graph
+ *  actually carries — the DOC→GRAPH hop's witness, where every
+ *  prior seat was green while a knob died silently.
+ *
+ *  v1 is the SCALAR plane, by law: every doc key whose value is a
+ *  primitive (string non-empty after trim, finite number, boolean)
+ *  is searched, by EXACT value, across every node's every input
+ *  entry (one walk, a Set of primitive input values — link pairs
+ *  `[node, slot]` and nested dicts are not input entries, so they
+ *  never match). Arrays/objects/null are OUT of v1 scope, in
+ *  NEITHER direction: the bag/class planes have lawful transforms
+ *  (id→wire renames, per-window post maps, output binding renames)
+ *  a raw name-diff would false-red on — v1 receipts the scalar
+ *  plane and SAYS SO in arm (c)'s wall.
+ *
+ *  NO refusal rides here — the receipt is EVIDENCE, never a gate:
+ *  the compose gate owns refusals; a dropped key is a receipt fact
+ *  (the P0 census consumes it). */
+export interface GraphReceiptPair {
+  /** Workflow key count — the composed graph's node budget. */
+  readonly nodes: number;
+  /** Every judged doc key (scalar-valued), sorted. */
+  readonly populated: readonly string[];
+  /** The judged keys found in the graph, sorted. */
+  readonly carried: readonly string[];
+  /** The judged keys NOT found in the graph, sorted — the honesty face. */
+  readonly dropped: readonly string[];
+  readonly verdict: "complete" | "partial";
+}
+
+/** One stage's queue-time doc→graph evidence row. */
+export interface GraphReceiptStageRow extends GraphReceiptPair {
+  readonly stage: string;
+}
+
+/** The run-level fold of the per-stage rows (what `_flow.json`
+ *  carries as `graph_receipt`, beside `compose_echo`). */
+export interface GraphReceipt extends GraphReceiptPair {
+  /** Per-stage rows, in registration order. */
+  readonly stages: readonly GraphReceiptStageRow[];
+  /** THE ENGINE'S PROMPT ID — minted ENGINE-SIDE at POST /prompt,
+   *  so it CANNOT exist at queue time. The execute outcome fold
+   *  stamps it (runsExecute's runOne, beside the harvested
+   *  result_outputs.prompt_id), and settle's sidecar rewrite
+   *  carries it to disk. Absent until the run has submitted. */
+  readonly prompt_id?: string;
+}
+
+/** A v1-judged scalar: the receipt's scope gate. */
+function receiptScalarOf(value: unknown): string | number | boolean | undefined {
+  if (typeof value === "string") return value.trim() !== "" ? value : undefined;
+  if (typeof value === "number") return Number.isFinite(value) ? value : undefined;
+  if (typeof value === "boolean") return value;
+  return undefined;
+}
+
+/** THE RECEIPT SPINE: receipt one doc against one composed
+ *  workflow (the `{workflow, output_nodes}` envelope the card walk
+ *  yields — only `workflow`'s node inputs are judged).
+ *  @param params the run door's admitted doc params (the snapshot's
+ *    own row — bench stage row params, or the card arm's admitted
+ *    request body)
+ *  @param composed the card walk's composed envelope
+ *  @returns the pair — node count, populated/carried/dropped
+ *    (sorted), verdict `complete` iff nothing dropped */
+export function graphReceiptOf(
+  params: Record<string, unknown>,
+  composed: { readonly workflow: unknown },
+): GraphReceiptPair {
+  const carried = new Set<string | number | boolean>();
+  let nodes = 0;
+  const workflow = composed.workflow;
+  if (workflow !== null && typeof workflow === "object" && !Array.isArray(workflow)) {
+    for (const node of Object.values(workflow as Record<string, unknown>)) {
+      if (node === null || typeof node !== "object" || Array.isArray(node)) continue;
+      nodes += 1;
+      const inputs: unknown = (node as { inputs?: unknown }).inputs;
+      if (inputs === null || typeof inputs !== "object" || Array.isArray(inputs)) continue;
+      for (const v of Object.values(inputs as Record<string, unknown>)) {
+        if (typeof v === "string" || typeof v === "number" || typeof v === "boolean") carried.add(v);
+      }
+    }
+  }
+  const populated: string[] = [];
+  const found: string[] = [];
+  const missed: string[] = [];
+  for (const [key, value] of Object.entries(params)) {
+    const scalar = receiptScalarOf(value);
+    if (scalar === undefined) continue;
+    populated.push(key);
+    (carried.has(scalar) ? found : missed).push(key);
+  }
+  populated.sort();
+  found.sort();
+  missed.sort();
+  return {
+    nodes,
+    populated,
+    carried: found,
+    dropped: missed,
+    verdict: missed.length === 0 ? "complete" : "partial",
+  };
+}
+
+/** Name one stage's pair with its stage id (the per-stage rows
+ *  inside the run-level `graph_receipt`). */
+export function graphReceiptStageOf(stage: string, pair: GraphReceiptPair): GraphReceiptStageRow {
+  return {
+    stage,
+    nodes: pair.nodes,
+    populated: [...pair.populated],
+    carried: [...pair.carried],
+    dropped: [...pair.dropped],
+    verdict: pair.verdict,
+  };
+}
+
+/** Fold per-stage rows into the run-level receipt (nodes SUM —
+ *  the run's graph key space; populated/carried/dropped the
+ *  sorted union; verdict `complete` iff every stage is). */
+export function graphReceiptFoldOf(rows: readonly GraphReceiptStageRow[], promptId?: string): GraphReceipt {
+  const union = (pick: (r: GraphReceiptStageRow) => readonly string[]): string[] => {
+    const s = new Set<string>();
+    for (const r of rows) for (const k of pick(r)) s.add(k);
+    return [...s].sort();
+  };
+  let nodes = 0;
+  let complete = true;
+  for (const r of rows) {
+    nodes += r.nodes;
+    if (r.verdict !== "complete") complete = false;
+  }
+  return {
+    nodes,
+    populated: union((r) => r.populated),
+    carried: union((r) => r.carried),
+    dropped: union((r) => r.dropped),
+    verdict: complete ? "complete" : "partial",
+    stages: rows.map((r) => graphReceiptStageOf(r.stage, r)),
+    ...(promptId !== undefined && promptId !== "" ? { prompt_id: promptId } : {}),
+  };
+}
+
 /** THE VARIANT LIFT (commission 033's self-critique #5, 2026-09-24):
  *  the first non-empty `variant` string across the submitted bodies —
  *  the LANE the run rode (voicedesign vs customvoice on the same
@@ -132,6 +277,13 @@ export function sidecarDoc(args: {
    *  Absent on non-film runs (no calls). The status row spells it
    *  `compose_echo` too. */
   composeEcho?: { seam: string; calls: number; benchRev: number | null };
+  /** THE SERVED-GRAPH RECEIPT (the silent UI-drop purge's P1):
+   *  the queue-time doc→graph evidence, run-level fold with its
+   *  per-stage rows inside. The status row spells it
+   *  `graph_receipt` too. Absent when the run composed no card
+   *  stage (the receipt judges the card compose, never the
+   *  verbatim inline envelope). */
+  graphReceipt?: GraphReceipt;
   /** THE SOURCE ECHO (the source-echo law, 2026-09-23): the files
    *  the run was created from, resolved at registration. The
    *  status row spells it `source_echo` too. Absent on sourceless
@@ -199,6 +351,7 @@ export function sidecarDoc(args: {
     ...(args.benchSnapshot !== undefined ? { bench_snapshot: args.benchSnapshot } : {}),
     ...(args.warnings !== undefined && args.warnings.length > 0 ? { warnings: [...args.warnings] } : {}),
     ...(args.composeEcho !== undefined ? { compose_echo: args.composeEcho } : {}),
+    ...(args.graphReceipt !== undefined ? { graph_receipt: args.graphReceipt } : {}),
     ...(args.sourceEcho !== undefined ? { source_echo: args.sourceEcho } : {}),
   };
 }

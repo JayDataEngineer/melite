@@ -141,8 +141,8 @@ export interface CardsBenchValue {
 /** One run stage as the status door serves it — the run-wire
  *  package's row (re-exported: this module's public face is stable
  *  for the studio and the tests). */
-export type { RunStageStatus } from '@melite-plugin/melite-run-wire'
-import type { RunStageStatus } from '@melite-plugin/melite-run-wire'
+export type { GraphReceipt, RunStageStatus } from '@melite-plugin/melite-run-wire'
+import type { GraphReceipt, RunStageStatus } from '@melite-plugin/melite-run-wire'
 
 /** `dsh-resource://cards/run/<runId>` — the hydrated status merged with
  *  every later events frame (last frame kept for the view). draftId is
@@ -157,6 +157,12 @@ export interface CardsRunValue {
   /** The run-level failure text (the runs seat's own stamp) — a failed
    *  run's tile can name WHY, never a silent 'failed' dot. */
   error?: string
+  /** THE SERVED-GRAPH RECEIPT (the silent UI-drop purge's P1): the
+   *  queue-time doc→graph evidence the status door serves beside the
+   *  sidecar — the run face's verdict chip reads THIS (carried at
+   *  hydrate; the live frames merge over the spread, so the receipt
+   *  survives the poll). Absent where the estate stamped none. */
+  graphReceipt?: GraphReceipt
   lastFrame: FlowEventFrame | undefined
 }
 
@@ -950,6 +956,10 @@ export function readRun(runId: string, doc: Record<string, unknown>): CardsRunVa
     draftId: row.draftId,
     stages: row.stages,
     ...(row.error !== undefined ? { error: row.error } : {}),
+    // THE GRAPH RECEIPT (P1): the wire row's folded face rides the
+    // run value under the client's spelling (camel — the row keeps
+    // the estate's snake beside the sidecar).
+    ...(row.graph_receipt !== undefined ? { graphReceipt: row.graph_receipt } : {}),
     lastFrame: undefined,
   }
 }

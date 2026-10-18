@@ -33,6 +33,104 @@ export function sidecarStageOf(stage) {
         out.merged = true;
     return out;
 }
+/** A v1-judged scalar: the receipt's scope gate. */
+function receiptScalarOf(value) {
+    if (typeof value === "string")
+        return value.trim() !== "" ? value : undefined;
+    if (typeof value === "number")
+        return Number.isFinite(value) ? value : undefined;
+    if (typeof value === "boolean")
+        return value;
+    return undefined;
+}
+/** THE RECEIPT SPINE: receipt one doc against one composed
+ *  workflow (the `{workflow, output_nodes}` envelope the card walk
+ *  yields — only `workflow`'s node inputs are judged).
+ *  @param params the run door's admitted doc params (the snapshot's
+ *    own row — bench stage row params, or the card arm's admitted
+ *    request body)
+ *  @param composed the card walk's composed envelope
+ *  @returns the pair — node count, populated/carried/dropped
+ *    (sorted), verdict `complete` iff nothing dropped */
+export function graphReceiptOf(params, composed) {
+    const carried = new Set();
+    let nodes = 0;
+    const workflow = composed.workflow;
+    if (workflow !== null && typeof workflow === "object" && !Array.isArray(workflow)) {
+        for (const node of Object.values(workflow)) {
+            if (node === null || typeof node !== "object" || Array.isArray(node))
+                continue;
+            nodes += 1;
+            const inputs = node.inputs;
+            if (inputs === null || typeof inputs !== "object" || Array.isArray(inputs))
+                continue;
+            for (const v of Object.values(inputs)) {
+                if (typeof v === "string" || typeof v === "number" || typeof v === "boolean")
+                    carried.add(v);
+            }
+        }
+    }
+    const populated = [];
+    const found = [];
+    const missed = [];
+    for (const [key, value] of Object.entries(params)) {
+        const scalar = receiptScalarOf(value);
+        if (scalar === undefined)
+            continue;
+        populated.push(key);
+        (carried.has(scalar) ? found : missed).push(key);
+    }
+    populated.sort();
+    found.sort();
+    missed.sort();
+    return {
+        nodes,
+        populated,
+        carried: found,
+        dropped: missed,
+        verdict: missed.length === 0 ? "complete" : "partial",
+    };
+}
+/** Name one stage's pair with its stage id (the per-stage rows
+ *  inside the run-level `graph_receipt`). */
+export function graphReceiptStageOf(stage, pair) {
+    return {
+        stage,
+        nodes: pair.nodes,
+        populated: [...pair.populated],
+        carried: [...pair.carried],
+        dropped: [...pair.dropped],
+        verdict: pair.verdict,
+    };
+}
+/** Fold per-stage rows into the run-level receipt (nodes SUM —
+ *  the run's graph key space; populated/carried/dropped the
+ *  sorted union; verdict `complete` iff every stage is). */
+export function graphReceiptFoldOf(rows, promptId) {
+    const union = (pick) => {
+        const s = new Set();
+        for (const r of rows)
+            for (const k of pick(r))
+                s.add(k);
+        return [...s].sort();
+    };
+    let nodes = 0;
+    let complete = true;
+    for (const r of rows) {
+        nodes += r.nodes;
+        if (r.verdict !== "complete")
+            complete = false;
+    }
+    return {
+        nodes,
+        populated: union((r) => r.populated),
+        carried: union((r) => r.carried),
+        dropped: union((r) => r.dropped),
+        verdict: complete ? "complete" : "partial",
+        stages: rows.map((r) => graphReceiptStageOf(r.stage, r)),
+        ...(promptId !== undefined && promptId !== "" ? { prompt_id: promptId } : {}),
+    };
+}
 /** THE VARIANT LIFT (commission 033's self-critique #5, 2026-09-24):
  *  the first non-empty `variant` string across the submitted bodies —
  *  the LANE the run rode (voicedesign vs customvoice on the same
@@ -97,6 +195,7 @@ export function sidecarDoc(args) {
         ...(args.benchSnapshot !== undefined ? { bench_snapshot: args.benchSnapshot } : {}),
         ...(args.warnings !== undefined && args.warnings.length > 0 ? { warnings: [...args.warnings] } : {}),
         ...(args.composeEcho !== undefined ? { compose_echo: args.composeEcho } : {}),
+        ...(args.graphReceipt !== undefined ? { graph_receipt: args.graphReceipt } : {}),
         ...(args.sourceEcho !== undefined ? { source_echo: args.sourceEcho } : {}),
     };
 }

@@ -350,6 +350,28 @@
   padding: 0 8px;
 }
 .runActions { display: flex; gap: 8px; }
+/* THE GRAPH-RECEIPT CHIP (the silent UI-drop purge's P1 — the
+ * queue-time doc→graph evidence, shown on the run face beside the
+ * status): the quiet face (complete — every stated scalar rode the
+ * composed graph) tints success; the loud face (partial — dropped
+ * keys named on the chip) warns amber. Token-only (the color law:
+ * the token IS the value, no literal fallbacks). */
+.graphReceiptOk {
+  border: 0.5px solid var(--dsw-alias-state-success-primary);
+  border-radius: 999px;
+  corner-shape: round;
+  color: var(--dsw-alias-state-success-primary);
+  font-size: 11px;
+  padding: 0 8px;
+}
+.graphReceiptPartial {
+  border: 0.5px solid var(--dsw-alias-state-warn-primary);
+  border-radius: 999px;
+  corner-shape: round;
+  color: var(--dsw-alias-state-warn-primary);
+  font-size: 11px;
+  padding: 0 8px;
+}
 /* THE RUN NOTE (the flow-sidebar scroll cure's missing-rule half —
  * the sibling .failed/.missing/.loading law verbatim):
  * draft-run-views binds css.restoreNote for the restore/stop voice

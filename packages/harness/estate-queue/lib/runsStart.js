@@ -19,7 +19,7 @@ import { join } from "node:path";
 import { FlowError } from "./runsValidateShared.js";
 import { AGENT_ENGINE_ID, CRAFT_ENGINE_ID, COMFYUI_ENGINE_ID, engineIdOk, } from "@melite/engine-contract";
 import { FLOW_INLINE_TOP_VOICE, INLINE_TOP_KEYS, STAGE_KEYS, checkFlowInlineTop, checkFlowStage, } from "./runsGates.js";
-import { appendLedger, outRootFor, refusal, sidecarDoc, sidecarStageOf, variantOfBodies, writeJsonAtomic } from "./queue.js";
+import { appendLedger, graphReceiptFoldOf, outRootFor, refusal, sidecarDoc, sidecarStageOf, variantOfBodies, writeJsonAtomic } from "./queue.js";
 import { lifecycleInFlight } from "./lifecycleLatch.js";
 import { toRemoteError } from "./runsRefusalVoices.js";
 import { ENGINE_TABLE } from "./runsValidateShared.js";
@@ -584,6 +584,30 @@ export async function registerCompiledRun(args) {
         run.variant = regVariant;
         console.log(`[variant] run=${runId} draft=${draftId} variant=${regVariant}`);
     }
+    // THE GRAPH-RECEIPT STAMP (the silent UI-drop purge's P1 — the
+    // seated cure): the per-stage rows the compose ledgers folded into
+    // the run-level receipt — "which stated scalars did the composed
+    // graphs actually carry" — beside compose_echo: the run record +
+    // the console + the queued ledger row. EVIDENCE, never a refusal:
+    // a dropped key is a receipt fact (the P0 census consumes it).
+    // Card-composed runs ride it; inline runs carry no rows (nothing
+    // composed) and stamp nothing. Rows fold in COMPILED stage order
+    // (registration order, never ledger key order).
+    if (door.graphReceipts !== undefined && Object.keys(door.graphReceipts).length > 0) {
+        const rows = [];
+        for (const st of compiled.stages) {
+            const row = door.graphReceipts[st.id];
+            if (row !== undefined)
+                rows.push(row);
+        }
+        if (rows.length > 0) {
+            run.graphReceipt = graphReceiptFoldOf(rows);
+            const receipt = run.graphReceipt;
+            console.log(`[graph-receipt] run=${runId} draft=${draftId} stages=${rows.length} nodes=${receipt.nodes} ` +
+                `carried=${receipt.carried.length} dropped=${receipt.dropped.length} verdict=${receipt.verdict}` +
+                (receipt.dropped.length > 0 ? ` dropped=[${receipt.dropped.join(",")}]` : ""));
+        }
+    }
     await writeJsonAtomic(join(dir, "_request.json"), requestBody);
     await writeJsonAtomic(join(dir, "_flow.json"), sidecarDocFor(run));
     // THE LATCH RE-CHECK (round-18 registry audit R18L-01, 2026-10-10):
@@ -618,6 +642,18 @@ export async function registerCompiledRun(args) {
             calls: echoCalls.length,
             bench_rev: benchRev,
             sources: sources.length,
+            // THE GRAPH-RECEIPT RIDES THE QUEUED ROW TOO (the [graph-receipt]
+            // console line's durable twin — compact triad, the full receipt
+            // lives on the sidecar).
+            ...(run.graphReceipt !== undefined
+                ? {
+                    graph_receipt: {
+                        nodes: run.graphReceipt.nodes,
+                        verdict: run.graphReceipt.verdict,
+                        dropped: [...run.graphReceipt.dropped],
+                    },
+                }
+                : {}),
         });
     }
     else {
@@ -627,6 +663,16 @@ export async function registerCompiledRun(args) {
             pipeline: run.pipeline,
             ...(regVariant !== undefined ? { variant: regVariant } : {}),
             sources: sources.length,
+            // THE GRAPH-RECEIPT RIDES THE QUEUED ROW TOO (same law).
+            ...(run.graphReceipt !== undefined
+                ? {
+                    graph_receipt: {
+                        nodes: run.graphReceipt.nodes,
+                        verdict: run.graphReceipt.verdict,
+                        dropped: [...run.graphReceipt.dropped],
+                    },
+                }
+                : {}),
         });
     }
     const queuePosition = enqueue(run);
@@ -656,6 +702,9 @@ function sidecarDocFor(run) {
         // THE COMPOSE ECHO: what the engine received rides the queued
         // sidecar too (the wand/restore reads disk, not memory).
         composeEcho: run.composeEcho,
+        // THE GRAPH RECEIPT: the queue-time doc→graph evidence rides the
+        // queued sidecar too (same law — no card-composed run, no key).
+        graphReceipt: run.graphReceipt,
         // THE SOURCE ECHO: the files that created the run ride the
         // queued sidecar too.
         sourceEcho: run.sourceEcho,
