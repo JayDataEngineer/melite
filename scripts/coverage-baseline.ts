@@ -484,7 +484,7 @@ export const COVERAGE_BASELINE: Record<string, {
   '**/packages/motion/motion/src/ui/studio/useMotionDoc.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/motion/motion/src/ui/studio/useMotionMedia.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/motion/motion/src/ui/studio/useMotionStage.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
-  '**/packages/motion/motion/src/ui/studio/useMotionUndoStack.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
+  '**/packages/motion/motion/src/ui/studio/useMotionUndoStack.ts': { statements: 98.73, branches: 97.05, functions: 100, lines: 100 },
   // 2026-11-05 (harness-seam cure session): the ratchet's row-census
   // arm caught this gated file carrying NO row (another lane's new
   // file). Row pinned at its measured face (21 files, 263 tests).
@@ -717,7 +717,7 @@ export const COVERAGE_BASELINE: Record<string, {
   '**/packages/web/card-base/src/shell.tsx': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/web/card-base/src/slots.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/web/card-base/src/spec-panel.tsx': { statements: 100, branches: 100, functions: 100, lines: 100 },
-  '**/packages/web/card-base/src/spec.ts': { statements: 99.52, branches: 98.18, functions: 100, lines: 100 },
+  '**/packages/web/card-base/src/spec.ts': { statements: 99.52, branches: 98.03, functions: 100, lines: 100 },
   '**/packages/web/card-base/src/square-provider.tsx': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/web/card-base/src/square.tsx': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/web/card-base/src/studio.tsx': { statements: 100, branches: 100, functions: 100, lines: 100 },

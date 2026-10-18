@@ -13,6 +13,10 @@
  *   toward zero). A wall outside the registry is a law nobody
  *   tracks; the allowlist makes the gap a NAMED debt, never a
  *   silent one.
+ * Arm 4 — THE PACKAGE HEADER MAP (journey audit A5, 2026-11-07):
+ *   every `// @contract <id>` header in a package suite names a
+ *   registry row id. The enforcement seat for the package-suite
+ *   convention — the header cannot name a law nobody tracks.
  */
 import { describe, expect, it } from 'vitest'
 import { readFileSync, existsSync, readdirSync } from 'node:fs'
@@ -89,6 +93,38 @@ describe('THE REGISTRY WALL (every law accounted, every account true)', () => {
     // cannot name ghosts
     for (const name of allow) {
       expect(existsSync(join(dir, name)), `UNREGISTERED.yaml names ${name}: no such suite`).toBe(true)
+    }
+  })
+
+  it('every @contract header in a package suite maps to a registry row — a declared law with no row is a lie (arm 4, journey audit A5 2026-11-07)', () => {
+    // THE HEADER SPELLING: a line `// @contract <id>` (the id is the
+    // registry row's id, any tier). Package suites declare it the day
+    // they carry a law worth tracking; this arm fires the moment one
+    // names an id the registry does not carry. Today zero headers
+    // exist — the arm is the enforcement SEAT for the convention,
+    // landing before the first header, not after the first drift.
+    // The accounting debt itself (the package-local suites that name
+    // no row at all — the seat-rowing wave) is ROADMAP-owed.
+    const ids = new Set(rows().map((r) => String(r.id)))
+    expect(ids.size, 'the registry carries rows to map to').toBeGreaterThan(0)
+    const declared: Array<{ file: string; id: string }> = []
+    const walk = (dir: string): void => {
+      for (const e of readdirSync(dir, { withFileTypes: true })) {
+        const p = join(dir, e.name)
+        if (e.isDirectory()) {
+          if (e.name === 'node_modules' || e.name === 'lib' || e.name === 'dist') continue
+          walk(p)
+        } else if (/\.spec\.(ts|tsx)$/.test(e.name)) {
+          const text = readFileSync(p, 'utf8')
+          for (const m of text.matchAll(/\/\/\s*@contract\s+([a-z0-9-]+)/g)) {
+            declared.push({ file: p.slice(ROOT.length + 1), id: m[1]! })
+          }
+        }
+      }
+    }
+    walk(join(ROOT, 'packages'))
+    for (const d of declared) {
+      expect(ids.has(d.id), `@contract ${d.id} in ${d.file}: no registry row carries that id`).toBe(true)
     }
   })
 })

@@ -53,6 +53,18 @@
 //      rig-copy family on the shared img-to-mesh card) outside the
 //      law; the h3 timeline face exposes steps without cfg and rides
 //      the same carve.
+//   8. THE CHECKPOINT RE-POINT (journey audit A2, 2026-11-07): the
+//      h3 Singularity row's resolver_defaults is exactly
+//      {model: "h3-singularity"} — a per-variant lane-address stamp,
+//      not a sampling knob — and the booted facts DERIVE a row for
+//      the "h3-singularity" address whose served default IS the
+//      re-point (facts.ts deriveRow over the registry's merged
+//      view). The model key never rides the compose stamp: the card's
+//      params carry no model key — the lane IS the model — so the
+//      absent-keys-only merge arms (3/4) stay the steps/cfg judges
+//      and the address view is this row's door. The discriminator:
+//      the timeline row carries NO resolver_defaults, so an arm
+//      asserting the model key can never pass on the family copy.
 //
 // The merge-line toggle itself (stampCardOverlay's resolver_defaults
 // loop lives in estate-queue/src/cardsVariant.ts — another hand's
@@ -254,14 +266,82 @@ describe("THE DOOR-DEPTH resolver_defaults STAMP (axis-unification P1#5)", () =>
         lawVariants++;
       }
     }
-    // THE ROSTER PIN (2026-11-07): nine families are inside the law
+    // THE ROSTER PIN (2026-11-07): ten families are inside the law
     // — the five image-gen faces (anima, flux-klein, krea-2,
     // qwen-img-21, z-image), the two edit faces (qwen-img-edit-21,
-    // qwen-img-edit-2511), and the two 3d samplers (pixal3d,
-    // trellis2-native). A tenth steps+cfg face REDS HERE until its
-    // family declares the law — the census grows by declaration,
-    // never by a silent neighbor.
-    expect(lawFamilies).toBe(9);
+    // qwen-img-edit-2511), the two 3d samplers (pixal3d,
+    // trellis2-native), and moss-image (2026-11-07, the operator's
+    // drop — the family declared the law at birth, steps+cfg
+    // variant-class + the prompt user seat). An eleventh steps+cfg
+    // face REDS HERE until its family declares the law — the census
+    // grows by declaration, never by a silent neighbor.
+    expect(lawFamilies).toBe(10);
     expect(lawVariants).toBeGreaterThan(0);
+  });
+});
+
+describe("THE CHECKPOINT RE-POINT (journey audit A2, 2026-11-07): the h3 Singularity row stamps its own lane address through the same absent-keys-only merge", () => {
+  function h3Row(): ModelFactsRow {
+    const row = facts["h3"];
+    expect(row, "the booted facts serve an h3 row").toBeTruthy();
+    return row;
+  }
+  function singularityOf(row: ModelFactsRow): ModelFactsRow["variants"][number] {
+    const singularity = (row.variants ?? []).find((v) => v.id === "singularity");
+    expect(singularity, "the h3 row serves the Singularity checkpoint variant").toBeTruthy();
+    return singularity!;
+  }
+
+  it("THE DECLARATION: the Singularity row's resolver_defaults is exactly {model: 'h3-singularity'} — the timeline row carries none (the discriminator)", () => {
+    const row = h3Row();
+    const singularity = singularityOf(row);
+    // the ONE stamp is the per-variant model re-point — a deep-equal,
+    // so a smuggled extra key (geometry, sampling) reds
+    expect(singularity.resolver_defaults).toEqual({ model: "h3-singularity" });
+    // THE DISCRIMINATOR: the timeline row carries NO resolver_defaults
+    // — an arm asserting the model key can never pass on the family copy
+    const timeline = (row.variants ?? []).find((v) => v.id === "timeline");
+    expect(timeline, "the timeline variant serves").toBeTruthy();
+    expect(timeline!.resolver_defaults ?? {}).toEqual({});
+    // and the family default view never names the singularity lane
+    expect(row.defaults?.["model"]).not.toBe("h3-singularity");
+  });
+
+  it("THE FEED: selectCardVariant returns the Singularity row's {model} verbatim — the object the stamp merge reads", () => {
+    const row = h3Row();
+    const sel = selectCardVariant("h3", row, { model: "h3", variant: "singularity" }, "wall-feed-singularity");
+    expect(sel.variantId).toBe("singularity");
+    expect(sel.resolverDefaults).toEqual({ model: "h3-singularity" });
+  });
+
+  it("THE ADDRESS VIEW (door-depth): the booted facts derive a row FOR the 'h3-singularity' address whose served default IS the re-point — never a frozen literal", () => {
+    // loadFacts derives one row per claimed address through the
+    // registry's own merged view: the variant's resolver_defaults.model
+    // lands as the lane's defaults.model (facts.ts deriveRow →
+    // service.ts merged defaults). This arm rides that REAL
+    // derivation — toggling the DECL's stamp reds the re-boot.
+    const addr = facts["h3-singularity"] as
+      | { family?: string; card?: string; defaults?: Record<string, unknown> }
+      | undefined;
+    expect(addr, "the singularity lane's own facts row derives (the route the DECL claims is addressable)").toBeTruthy();
+    expect(addr!.family).toBe("h3");
+    expect(addr!.card).toBe("h3-timeline");
+    expect(addr!.defaults).toEqual({ model: "h3-singularity" });
+    // THE JOIN: the view's served default IS the variant row's
+    // declaration — two seats, one truth, both live
+    const row = h3Row();
+    expect(addr!.defaults).toEqual(singularityOf(row).resolver_defaults);
+    // the family address's view never carries the re-point
+    expect(h3Row().defaults?.["model"]).not.toBe("h3-singularity");
+  });
+
+  it("THE DOOR (addressability): the re-pointed lane composes end-to-end at its own address, and the compose body never needs a model stamp (model rides the lane, not a param)", () => {
+    // the checkpoint lane composes clean at its own address
+    const composed = prepareCardParams(svc, { model: "h3-singularity", prompt: "a cat" }, "h3", "wall-door-singularity");
+    expect((composed.params as Record<string, unknown>)["prompt"]).toBe("a cat");
+    // the timeline pick (the family default view) composes too —
+    // two lanes, one card, no shared spelling
+    const plain = prepareCardParams(svc, { model: "h3", prompt: "a cat" }, "h3", "wall-door-plain");
+    expect((plain.params as Record<string, unknown>)["prompt"]).toBe("a cat");
   });
 });
