@@ -1290,6 +1290,199 @@ describe("the re-point seam (one switch semantics at the drill's write seat)", (
     expect(runs).toBe(1);
   });
 
+describe("the arrival window (the gesture→settle one-round-trip gap, P4 remainder)", () => {
+  // THE BURN: the re-point gesture fires the arrival fetch, but the
+  // press does not know a newer spec is coming — run pressed while
+  // the arrival fetch pends judges the flush against the STALE
+  // (departing) spec and fires the start under it: 2511's
+  // double_reference/use_stock_nodes ride the run and the door
+  // refuses field-named (ERRORS h live). The rescope gate (DRILL a
+  // above) owns the settle; THIS wall owns the window: a press
+  // inside it must fence LOUD (no start, a named voice), and the
+  // same press after the settle must start clean (the fence lifts
+  // with the spec — never a latch). Fixtures ride the DRILL-a
+  // 2511→21 pair: equal schema faces, params surfaces derived from
+  // the live DECL files.
+  function windowDocs(): { servedByModel: Record<string, Record<string, unknown>>; FROM: string; TO: string } {
+    const paramsOf = (id: string): string[] => {
+      const text = readFileSync(join(process.cwd(), "packages", "models", id, "src", "index.ts"), "utf8");
+      const m = text.match(/"params": \[([\s\S]*?)\]/);
+      if (m === null) throw new Error(`no params array parsed from ${id}/src/index.ts`);
+      const out = [...m[1].matchAll(/"([^"]+)"/g)].map((g) => g[1]);
+      if (out.length === 0) throw new Error(`empty params parsed from ${id}/src/index.ts`);
+      return out;
+    };
+    const FROM = "qwen-img-edit-2511";
+    const TO = "qwen-img-edit-21";
+    const fromParams = paramsOf(FROM);
+    const toParams = paramsOf(TO);
+    for (const k of ["double_reference", "use_stock_nodes"]) {
+      expect(fromParams, `${FROM} params must declare ${k}`).toContain(k);
+      expect(toParams, `${TO} params must not declare ${k}`).not.toContain(k);
+    }
+    const servedDoc = (id: string, params: string[]): Record<string, unknown> => ({
+      form: "image-edit", genre: "image", engine: "comfyui", model: id,
+      schema: schemaEnvelope({
+        prompt: { type: "string", meta: { description: "Prompt", extra: { wtype: "textarea" } } },
+        model: { consts: [FROM, TO], meta: { description: "Serving family", default: id, extra: { wtype: "select" } } },
+        double_reference: { type: "boolean", meta: { description: "Double reference", default: false } },
+        use_stock_nodes: { type: "boolean", meta: { description: "Use stock nodes", default: false } },
+      }),
+      variants: [
+        { id: "v", label: "V", group: "Variant", defaults: { model: id }, route: id },
+      ],
+      params,
+      families: [{ id: FROM, present: true }, { id: TO, present: true }],
+    });
+    return {
+      servedByModel: { [FROM]: servedDoc(FROM, fromParams), [TO]: servedDoc(TO, toParams) },
+      FROM,
+      TO,
+    };
+  }
+
+  /** The deferred lane: the departing doc resolves at once; the
+   *  arrival doc stays pending until releaseArrival runs — the
+   *  one-round-trip window held open for the press. */
+  function stubDeferredWindow(
+    servedByModel: Record<string, Record<string, unknown>>,
+    FROM: string,
+    TO: string,
+  ): { fetched: string[]; releaseArrival: () => void } {
+    const fetched: string[] = [];
+    let releaseArrival: () => void = () => { throw new Error("arrival fetch never started"); };
+    const arrivalGate = new Promise<Response>((resolve) => {
+      releaseArrival = () => resolve(new Response(JSON.stringify(servedByModel[TO]), {
+        status: 200, headers: { "content-type": "application/json" },
+      }));
+    });
+    vi.stubGlobal("fetch", (url: unknown): Promise<Response> => {
+      const path = String(url);
+      if (path.includes("/v1/form-spec")) {
+        const key = path.split("model=")[1] ?? "";
+        fetched.push(key);
+        if (key === TO) return arrivalGate;
+        const doc = servedByModel[key];
+        if (doc === undefined) throw new Error("unexpected family on the fetch lane: " + key);
+        return Promise.resolve(new Response(JSON.stringify(doc), {
+          status: 200, headers: { "content-type": "application/json" },
+        }));
+      }
+      if (path.includes("/v1/forms")) {
+        return Promise.resolve(new Response(JSON.stringify({
+          "image-edit": { outputs: { default: "image" } },
+        }), { status: 200, headers: { "content-type": "application/json" } }));
+      }
+      if (path.includes("/v1/model-catalog")) {
+        return Promise.resolve(new Response(JSON.stringify({ cards: {} }), {
+          status: 200, headers: { "content-type": "application/json" },
+        }));
+      }
+      throw new Error("unexpected door on the fetch lane: " + path);
+    });
+    return { fetched, releaseArrival: () => releaseArrival() };
+  }
+
+  test("W1 — a run pressed while the arrival spec is still settling fences loud: no start under the stale spec", async () => {
+    const { servedByModel, FROM, TO } = windowDocs();
+    const { fetched } = stubDeferredWindow(servedByModel, FROM, TO);
+    fakes?.unmount();
+    let runs = 0;
+    let bound: () => void = () => { throw new Error("bindRun never fired"); };
+    fakes = mountEstateFakes({});
+    const stageA = stage({ model: FROM, double_reference: true, use_stock_nodes: true, prompt: "keep the handwriting" });
+    (stageA as { card: string }).card = "image-edit";
+    render(h(StageDrill, {
+      stage: stageA,
+      bench: { kind: "bench", draftId: "bench-p", rev: 1, log: [], stages: [stageA], sessionKey: "main" },
+      running: false,
+      onRun: () => { runs += 1; }, onStop: () => {}, onClose: () => {}, onRemoved: () => {},
+      onPatchParams: () => {},
+      renderStageView: (_o: unknown, fallback: unknown) => fallback,
+      bindRun: (r: () => void) => { bound = r; },
+    } as never));
+    await screen.findByLabelText("Prompt", {}, { timeout: 4000 });
+    const knob = await screen.findByLabelText("Serving family", {}, { timeout: 4000 });
+    fireEvent.click(knob);
+    const items = screen.getAllByRole("menuitem");
+    const target = items.find((el) => {
+      const t = el.textContent ?? "";
+      return t.includes("21") && !t.includes("2511");
+    });
+    if (target === undefined) throw new Error("no 21 menuitem; items: " + items.map((el) => el.textContent).join(" | "));
+    fireEvent.click(target);
+    // the re-point write landed AND the arrival fetch started — but
+    // the arrival doc has NOT settled (the gate holds its promise).
+    await waitFor(() => {
+      const frame = patchParamsOf(patchCalls()).find((p) => p["model"] === TO);
+      if (frame === undefined) throw new Error("re-point write not landed; patches: " + JSON.stringify(patchCalls()));
+      if (!fetched.some((k) => k === TO)) throw new Error("arrival fetch not started; fetched: " + JSON.stringify(fetched));
+    }, { timeout: 8000 });
+    await awaitWriteSettled();
+    // THE WINDOW PRESS: the start must NOT fire under the stale
+    // spec — the seat fences with the settling voice instead. The
+    // fast leg names the burn (the start fired); the voice leg
+    // names the cure (the fence spoke).
+    bound();
+    await new Promise((r) => { setTimeout(r, 500); });
+    expect(runs).toBe(0);
+    const strip = await screen.findByText(/settl/i, {}, { timeout: 8000 });
+    expect(strip.className).toMatch(/runError/);
+  });
+
+  test("W2 — the same press after the arrival settles starts clean (the fence lifts with the spec)", async () => {
+    const { servedByModel, FROM, TO } = windowDocs();
+    const { fetched, releaseArrival } = stubDeferredWindow(servedByModel, FROM, TO);
+    fakes?.unmount();
+    let runs = 0;
+    let bound: () => void = () => { throw new Error("bindRun never fired"); };
+    fakes = mountEstateFakes({});
+    const stageA = stage({ model: FROM, double_reference: true, use_stock_nodes: true, prompt: "keep the handwriting" });
+    (stageA as { card: string }).card = "image-edit";
+    render(h(StageDrill, {
+      stage: stageA,
+      bench: { kind: "bench", draftId: "bench-p", rev: 1, log: [], stages: [stageA], sessionKey: "main" },
+      running: false,
+      onRun: () => { runs += 1; }, onStop: () => {}, onClose: () => {}, onRemoved: () => {},
+      onPatchParams: () => {},
+      renderStageView: (_o: unknown, fallback: unknown) => fallback,
+      bindRun: (r: () => void) => { bound = r; },
+    } as never));
+    await screen.findByLabelText("Prompt", {}, { timeout: 4000 });
+    const knob = await screen.findByLabelText("Serving family", {}, { timeout: 4000 });
+    fireEvent.click(knob);
+    const items = screen.getAllByRole("menuitem");
+    const target = items.find((el) => {
+      const t = el.textContent ?? "";
+      return t.includes("21") && !t.includes("2511");
+    });
+    if (target === undefined) throw new Error("no 21 menuitem; items: " + items.map((el) => el.textContent).join(" | "));
+    fireEvent.click(target);
+    await waitFor(() => {
+      if (!fetched.some((k) => k === TO)) throw new Error("arrival fetch not started; fetched: " + JSON.stringify(fetched));
+    }, { timeout: 8000 });
+    // the arrival lands — the rescope settles over the real doc.
+    releaseArrival();
+    await awaitWriteSettled();
+    await waitFor(() => {
+      const frame = patchParamsOf(patchCalls()).find((p) => p["model"] === TO);
+      if (frame === undefined) throw new Error("re-point write not landed after settle");
+    }, { timeout: 8000 });
+    // THE POST-SETTLE PRESS: the fence is gone — the flush nulls the
+    // departed pair and the start fires exactly once.
+    bound();
+    await waitFor(() => {
+      const sync = patchParamsOf(patchCalls()).find((p) => "double_reference" in p);
+      if (sync === undefined) throw new Error("run-flush null not landed; patches: " + JSON.stringify(patchCalls()));
+      expect(sync["double_reference"]).toBeNull();
+      expect(sync["use_stock_nodes"]).toBeNull();
+    }, { timeout: 8000 });
+    await awaitWriteSettled();
+    expect(writeFace()).toBe(null);
+    expect(runs).toBe(1);
+  });
+});
+
   test("a same-model knob set is NOT a re-point: the ordinary per-key write, no switch nulls", async () => {
     stubSpecDocs();
     fakes?.unmount();

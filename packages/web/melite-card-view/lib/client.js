@@ -21835,6 +21835,8 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			userRef.current = user;
 			const specRef = (0, react.useRef)(null);
 			specRef.current = spec;
+			const specFetchSeqRef = (0, react.useRef)(0);
+			const pendingSpecRef = (0, react.useRef)(null);
 			(0, react.useEffect)(() => {
 				let alive = true;
 				const freshOpen = lastStageRef.current !== stage.id;
@@ -21845,8 +21847,14 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					setLoaded(true);
 					return;
 				}
+				const fetchSeq = specFetchSeqRef.current += 1;
+				pendingSpecRef.current = {
+					family,
+					seq: fetchSeq
+				};
 				(0, _melite_card_base_client.fetchFormSpec)(family).then((doc) => {
 					if (!alive) return;
+					if (pendingSpecRef.current?.seq === fetchSeq) pendingSpecRef.current = null;
 					setError(null);
 					setSpec(doc);
 					const seedSource = freshOpen ? held : userRef.current;
@@ -21881,6 +21889,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					reportSurface(doc.size === "huge" ? "huge" : "");
 				}).catch((e) => {
 					if (!alive) return;
+					if (pendingSpecRef.current?.seq === fetchSeq) pendingSpecRef.current = null;
 					setError((0, _melite_card_base_client.rejectionVoice)(e));
 					setLoaded(true);
 				});
@@ -22235,6 +22244,11 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			const run = async () => {
 				setError(null);
 				try {
+					const pending = pendingSpecRef.current;
+					if (pending !== null) {
+						setError(`the ${pending.family} spec is still settling — press Run again once the form lands`);
+						return;
+					}
 					const patch = {};
 					const userKeys = new Set(Object.keys(user));
 					const heldKeys = new Set(Object.keys(held));

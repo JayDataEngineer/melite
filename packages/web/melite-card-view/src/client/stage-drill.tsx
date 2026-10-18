@@ -289,6 +289,17 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
   // fetch on every spec write.
   const specRef = useRef<FormSpecDoc | null>(null)
   specRef.current = spec
+  // THE PENDING SPEC (P4 remainder — the arrival window, 2026-11-08):
+  // the re-point gesture fires the arrival fetch, but the press does
+  // not know a newer spec is coming — a run pressed inside the
+  // gesture→settle round trip judged the flush against the STALE
+  // spec and fired the start under it (2511's departed pair rode the
+  // run). The seat tracks the in-flight fetch: the press fences
+  // while an answer is owed, and the fence lifts with the settle —
+  // never a latch (every settle path clears its own seq; a wedged
+  // fetch is the error face's story, not a hung press).
+  const specFetchSeqRef = useRef(0)
+  const pendingSpecRef = useRef<{ family: string; seq: number } | null>(null)
   useEffect(() => {
     let alive = true
     const freshOpen = lastStageRef.current !== stage.id
@@ -303,9 +314,12 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
       ? (modelKey !== '' ? modelKey : cardId)
       : String(stage.engine ?? '')
     if (family === '') { setLoaded(true); return }
+    const fetchSeq = (specFetchSeqRef.current += 1)
+    pendingSpecRef.current = { family, seq: fetchSeq }
     fetchFormSpec(family)
       .then((doc) => {
         if (!alive) return
+        if (pendingSpecRef.current?.seq === fetchSeq) pendingSpecRef.current = null
         // ERROR-IS-NOT-A-LATCH, drill half (the law audit's F-5): a
         // successful (re)fetch retires the 'form-spec unavailable'
         // claim — the spec door healed through any hand, and the
@@ -448,6 +462,11 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
       })
       .catch((e: unknown) => {
         if (!alive) return
+        // the failure retires the pending — the error face voices
+        // the outage, and the press must never latch on a fetch that
+        // already answered (never an arrival-window fence over a
+        // settled failure).
+        if (pendingSpecRef.current?.seq === fetchSeq) pendingSpecRef.current = null
         setError(rejectionVoice(e))
         setLoaded(true)
       })
@@ -1012,6 +1031,20 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
   const run = async (): Promise<void> => {
     setError(null)
     try {
+      // THE ARRIVAL-WINDOW FENCE (P4 remainder — the gesture→settle
+      // one-round-trip gap, 2026-11-08): a press while the arrival
+      // spec is still settling judges NOTHING and fires NOTHING —
+      // the flush against the stale spec is the burn (the departed
+      // pair rides the run). The fence voices the pending family and
+      // stands down at the settle; the operator presses Run again
+      // once the form lands. First, before any flush work: a
+      // half-landed patch under the old spec is exactly what the
+      // window must never write.
+      const pending = pendingSpecRef.current
+      if (pending !== null) {
+        setError(`the ${pending.family} spec is still settling — press Run again once the form lands`)
+        return
+      }
       // THE USER LAYER RIDES VERBATIM (the parameter audit): the
       // explicit map's TOUCHED domain — params, axis keys, macro
       // stamps — presence IS the truth the engine composes. THE
