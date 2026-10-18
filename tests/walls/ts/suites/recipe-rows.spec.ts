@@ -159,6 +159,34 @@ describe("the recipe schema-master (Rule A/B/C — semantic validation over the 
     assert.equal(checked, 21, `the law reaches the table, exactly (checked ${String(checked)})`);
   });
 
+  it("LAW K (k cure, 2026-11-08): every card-carrying Recipe family DECLARES its group default, and the default names an existing Recipe row (the initial-recipe law — DECL-declared, never row-order-emergent; the birth stamp reads this declaration)", async (): Promise<void> => {
+    // THE ONE LAW'S DECL SIDE: the served variant_groups.Recipe.default
+    // (groupContract serves it verbatim) is the ONLY initial-recipe
+    // owner — seedRecipeStamp stamps the DECLARED row and an
+    // undeclared family starts blank. A default naming no row is a
+    // silent blank wearing a declaration — refused here.
+    await loadCardDefs();
+    const carried = cardCarriedFamilies();
+    let checked = 0;
+    for (const id of modelIds()) {
+      const f = getModel(id);
+      const groupRow = (f.variant_groups ?? []).find((g: unknown) =>
+        typeof g !== "string" && (g as { id?: string }).id === "Recipe") as { id?: string; default?: string } | undefined;
+      if (groupRow === undefined) continue;
+      const caller = carried.get(id);
+      if (caller === undefined) continue; // route-only: no card renders pills
+      checked += 1;
+      const declared = groupRow.default;
+      assert.ok(typeof declared === "string" && declared !== "",
+        `${id}: declares the Recipe group (card ${caller}) but NO group default — the initial recipe is row-order-emergent (the k burn); declare variant_groups.Recipe.default (absent must be a CHOICE, never an omission)`);
+      const rowIds = (f.variants ?? []).filter((v: VariantRow) => v.group === "Recipe").map((v: VariantRow) => v.id);
+      assert.ok(rowIds.includes(declared as string),
+        `${id}: the declared Recipe default '${String(declared)}' names no Recipe row (rows: ${rowIds.join(", ")}) — a declaration to nowhere is a silent blank wearing a face`);
+    }
+    // the same 21-family census as LAW A
+    assert.equal(checked, 21, `the k law reaches the same table (checked ${String(checked)})`);
+  });
+
   it("DEBT RETIRED: the 15-family census resolutions hold (stamps stamp, scoped stay scoped)", async (): Promise<void> => {
     await loadCardDefs();
     // 16 -> 15 (2026-10-13, the autoremesher excision): the family's

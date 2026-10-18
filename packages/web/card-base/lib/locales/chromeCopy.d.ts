@@ -68,10 +68,15 @@ export declare const chromeCopy: {
     readonly axisRepairVerb: (p: {
         face: string;
     }) => string;
-    /** Recipe picker's resting placeholder (nothing held). */
+    /** Recipe picker's resting placeholder (nothing held, or a
+     *  hand-edited layer no row matches — the placeholder re-serves,
+     *  never a lie; the custom face retired with the k blank row:
+     *  the menu's blank is now a selectable WRITE, not a marker). */
     readonly recipePlaceholder: "-- recipe --";
-    /** Recipe picker's custom face (a held stamp no row matches). */
-    readonly recipeCustomFace: "-- custom --";
+    /** Recipe menu's selectable blank row (k, 2026-11-08): picking it
+     *  unstates the active recipe's stamps — the blank is a WRITE,
+     *  distinct from the resting placeholder face. */
+    readonly recipeBlankRow: "Blank — no recipe";
     /** Download's queued receipt. */
     readonly downloadQueuedNote: "Download queued ✓ (run when it lands)";
     /** Download's failure note. */

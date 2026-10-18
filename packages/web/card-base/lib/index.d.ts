@@ -34,27 +34,27 @@
  * keep the subpaths (exports resolve them normally); they avoid
  * this barrel's css faces, which node cannot execute.
  */
-export * from './abortable.js';
-export * from './spec.js';
-export * from './rejection-voice.js';
-export * from './layout.js';
-export { WirePickerModal, type WirePickerModalProps } from './wirePicker.js';
-export * from './mods.js';
-export * from './owners.js';
-export * from './slots.js';
-export * from './wire.js';
-export * from './square.js';
-export * from './form.js';
-export * from './use-resolved.js';
-export * from './stage3d.js';
-export * from './studio.js';
-export * from './icons.js';
-export * from './chrome.js';
-export * from './toast.js';
-export * from './preview.js';
-export * from './estate-remote.js';
-export * from './cards-address.js';
-export * from './runs-policy.js';
-export * from './media-library.js';
-export * from './shell.js';
+export * from './abortable.ts';
+export * from './spec.ts';
+export * from './rejection-voice.ts';
+export * from './layout.tsx';
+export { WirePickerModal, type WirePickerModalProps } from './wirePicker.tsx';
+export * from './mods.tsx';
+export * from './owners.ts';
+export * from './slots.ts';
+export * from './wire.ts';
+export * from './square.tsx';
+export * from './form.tsx';
+export * from './use-resolved.ts';
+export * from './stage3d.ts';
+export * from './studio.tsx';
+export * from './icons.tsx';
+export * from './chrome.ts';
+export * from './toast.tsx';
+export * from './preview.tsx';
+export * from './estate-remote.ts';
+export * from './cards-address.ts';
+export * from './runs-policy.ts';
+export * from './media-library.ts';
+export * from './shell.tsx';
 //# sourceMappingURL=index.d.ts.map

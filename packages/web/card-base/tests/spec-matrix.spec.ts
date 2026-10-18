@@ -731,7 +731,7 @@ test('seedRecipeStamp: no Recipe rows — the seeds ride untouched', () => {
   expect(seedRecipeStamp({ form: 'x' } as FormSpecDoc, seeds)).toBe(seeds)
 })
 
-test('seedRecipeStamp: the first composing recipe stamps its payload — model re-point and seeded axes never ride', () => {
+test('seedRecipeStamp: the DECLARED default recipe stamps its payload — model re-point and seeded axes never ride', () => {
   const d = doc()
   d.variants = [
     ...(d.variants ?? []).filter((v) => v.group !== 'Recipe'),
@@ -741,6 +741,7 @@ test('seedRecipeStamp: the first composing recipe stamps its payload — model r
     }),
     V('draft', 'Recipe', { label: 'Draft', defaults: {} }),
   ]
+  d.features = { ...d.features, variant_groups: { ...(d.features?.variant_groups ?? {}), Recipe: { label: 'Recipe', default: 'standard' } } }
   // a stated-empty axis key is not active (the empty-selection law)
   const out = seedRecipeStamp(d, { variant: '', quant: 'q-fp8', model: 'krea-2' })
   expect(out).toMatchObject({ quant: 'q-fp8', model: 'krea-2', steps: 4, loras: [{ id: 'h3_dmad_4step' }] })
@@ -748,6 +749,37 @@ test('seedRecipeStamp: the first composing recipe stamps its payload — model r
   // a non-string seed layer passes through to the same stamp
   const out2 = seedRecipeStamp(d, { quant: 'q-fp8' })
   expect(out2).toMatchObject({ steps: 4 })
+})
+
+test('seedRecipeStamp: the initial recipe is DECL-DECLARED, never row-order-emergent (k, 2026-11-08 — the declared row stamps even when NOT first; no declaration = blank)', () => {
+  // THE ONE LAW (ERRORS.md (k) cure): a card's first-render recipe
+  // is a DECLARED fact — the family names its default Recipe row on
+  // the variant_groups contract (features.variant_groups.Recipe.default,
+  // served from the DECL by groupContract), the birth stamp takes
+  // the DECLARED row, and an undeclared family starts BLANK. The
+  // old emergent first-row law is dead: row order is presentation,
+  // never state.
+  const d = doc()
+  d.variants = [
+    ...(d.variants ?? []).filter((v) => v.group !== 'Recipe'),
+    V('draft', 'Recipe', { label: 'Draft', defaults: { steps: 4 } }),
+    V('standard', 'Recipe', {
+      label: 'Standard',
+      defaults: { steps: 8, loras: [{ id: 'h3_turbo8_v1' }] },
+    }),
+  ]
+  d.features = { ...d.features, variant_groups: { ...(d.features?.variant_groups ?? {}), Recipe: { label: 'Recipe', default: 'standard' } } }
+  // the DECLARED row stamps — even though draft declares first
+  const out = seedRecipeStamp(d, { variant: '', quant: 'q-fp8' })
+  expect(out).toMatchObject({ steps: 8, loras: [{ id: 'h3_turbo8_v1' }] })
+  expect(out['steps']).toBe(8)
+  // no declaration → BLANK: the row exists, the stamp does not ride
+  const undeclared = doc()
+  undeclared.variants = [
+    ...(undeclared.variants ?? []).filter((v) => v.group !== 'Recipe'),
+    V('only', 'Recipe', { label: 'Only', defaults: { steps: 4 } }),
+  ]
+  expect(seedRecipeStamp(undeclared, { quant: 'q-fp8' })).toEqual({ quant: 'q-fp8' })
 })
 
 // ── THE DEPARTED-PRESET RESEAT (D4, 2026-11-06 — the four-time

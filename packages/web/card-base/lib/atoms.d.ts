@@ -2,8 +2,8 @@
  * operator's DRY audit law: one seam, one small file, one wall). */
 import { createElement as h } from 'react';
 import type { ReactElement } from 'react';
-import { type SpecField } from './spec.js';
-import { type SourceRowProps, type SquareHost } from './square-provider.js';
+import { type SpecField } from './spec.ts';
+import { type SourceRowProps, type SquareHost } from './square-provider.tsx';
 export declare function SourceRow(props: SourceRowProps): ReturnType<typeof h>;
 /** THE DSH MENU SELECT for one spec field (the axes idiom,
  *  promoted): owner-held open bit, trigger Button rendered in place
@@ -19,6 +19,12 @@ export declare function SpecMenuSelect(props: {
     markers?: Record<string, string>;
     disabled?: boolean;
     title?: string;
+    /** THE TRIGGER'S FACE OVERRIDE (k, 2026-11-08): when the seat's
+     *  resting face is its own voice (a placeholder / custom marker)
+     *  distinct from the menu's selectable rows — the menu row and
+     *  the trigger face are two faces, never forced to share one row
+     *  label. Absent: the current row's own label (the default face). */
+    face?: string;
     onPick(id: string): void;
 }): ReactElement;
 /** THE TRI-STATE ATOM (hour 15, stroke C): inherit / on / off —

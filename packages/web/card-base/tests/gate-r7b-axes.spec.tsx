@@ -74,17 +74,33 @@ test('RECIPE: a change to an unoffered id writes nothing (never a pick from thin
   expect(onPick).not.toHaveBeenCalled()
 })
 
-test('RECIPE: re-picking the placeholder writes nothing (the empty-select skip)', () => {
-  // axes.tsx:300 — onChange with '' takes the skip arm: the
-  // placeholder is a face, never a stamp.
+test('RECIPE BLANK WRITE (k, 2026-11-08): picking the blank row with a recipe held applies the active row\'s departure (null-set — the blank is a WRITE, never a persisted recipe key)', () => {
+  // THE BURN (ERRORS.md (k)): once a recipe stamps, no seat returns
+  // the card to no-recipe — the blank was a face with no write. The
+  // cure: the menu\'s blank row carries the D4 departure verb — every
+  // key the ACTIVE row stamps that the held layer still carries at
+  // the stamp value unstated (null deletes at compose); a hand-edited
+  // value is the user\'s word and stands. Pinned here on the held
+  // stamp { steps: 50 } (recipe-x\'s own payload): the blank pick
+  // writes { steps: null } — and NEVER a `recipe` key.
+  const onPick = vi.fn()
+  render(h(RecipePills, { spec: doc(), values: { steps: 50 }, onPick }))
+  fireEvent.click(screen.getByLabelText('Recipe'))
+  fireEvent.click(screen.getByRole('menuitem', { name: /Blank/ }))
+  expect(onPick).toHaveBeenCalledTimes(1)
+  expect(onPick).toHaveBeenCalledWith({ steps: null })
+  const patch = onPick.mock.calls[0]![0] as Record<string, unknown>
+  expect('recipe' in patch).toBe(false)
+})
+
+test('RECIPE BLANK IDEMPOTENCE: re-picking blank with NOTHING held writes nothing (the departure of nothing is nothing)', () => {
+  // axes.tsx\'s empty-select skip, restated under the blank-write law:
+  // with no active recipe there is no departure to apply — the blank
+  // pick stays a no-op (the placeholder is a face, never a stamp).
   const onPick = vi.fn()
   render(h(RecipePills, { spec: doc(), values: {}, onPick }))
   fireEvent.click(screen.getByLabelText('Recipe'))
-  fireEvent.click(screen.getByRole('menuitem', { name: /the macro/ }))
-  expect(onPick).toHaveBeenCalledWith({ steps: 50 })
-  onPick.mockClear()
-  fireEvent.click(screen.getByLabelText('Recipe'))
-  fireEvent.click(screen.getByRole('menuitem', { name: '-- recipe --' }))
+  fireEvent.click(screen.getByRole('menuitem', { name: /Blank/ }))
   expect(onPick).not.toHaveBeenCalled()
 })
 
@@ -108,6 +124,9 @@ test('RECIPE ROW GATE (2026-10-16, the Final Cut brick — audit 0be61df8 F1): a
   // the gated row is structurally absent; its lawful sibling remains
   expect(screen.queryByRole('menuitem', { name: /t4r-dead stamp/ })).toBeNull()
   expect(screen.queryByRole('menuitem', { name: /the macro/ })).not.toBeNull()
-  fireEvent.click(screen.getByRole('menuitem', { name: '-- recipe --' }))
+  // (k, 2026-11-08) the blank row keeps its no-op with nothing held —
+  // the menu voice is the selectable blank, the write law is pinned
+  // by the BLANK WRITE arm above.
+  fireEvent.click(screen.getByRole('menuitem', { name: /Blank/ }))
   expect(onPick).not.toHaveBeenCalled()
 })

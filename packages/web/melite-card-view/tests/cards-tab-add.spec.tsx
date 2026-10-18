@@ -91,6 +91,13 @@ function stubDoors(estateOpts: Parameters<typeof mountEstateFakes>[0] = {}): voi
               { id: "r-default", label: "Default", group: "Recipe", defaults: {}, route: "" },
             ] : []),
           ],
+          // (k, 2026-11-08) the served shape's declaration half: the
+          // birth stamp reads features.variant_groups.Recipe.default
+          // (groupContract serves it from the DECL) — the initial
+          // recipe is DECLARED, never first-row-emergent.
+          ...(doors.specRecipe === true ? {
+            features: { variant_groups: { Recipe: { label: "Recipe", default: "r-turbo" } } },
+          } : {}),
         } : {}),
         schema: schemaEnvelope({
           prompt: { type: "string", meta: { description: "Prompt", extra: { wtype: "textarea" } } },
@@ -231,8 +238,10 @@ describe("the pick faces — family, spec, and seed", () => {
     const params = doc["params"] as Record<string, unknown>;
     // the axis seed is intact underneath the stamp
     expect(params["variant"]).toBe("v-img");
-    // the first Recipe row's payload stamped the birth (declared
-    // keys only) — the model re-point never lands in the user layer
+    // the DECLARED default Recipe row's payload stamped the birth
+    // (declared keys only) — the model re-point never lands in the
+    // user layer; (k, 2026-11-08) the declaration, not row order,
+    // owns the initial recipe
     expect(params["loras"]).toEqual([{ id: "lora-turbo4" }]);
     expect(params["width"]).toBe(768);
     expect(params).not.toHaveProperty("model");

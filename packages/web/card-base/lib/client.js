@@ -8271,10 +8271,15 @@ window.__ModuleLoader__.load({
 			axisRepairNote: "Not an offered coordinate of the held matrix — the nearest current cell is one click away:",
 			/** Refused-coord repair verb: the nearest current cell's face rides in. */
 			axisRepairVerb: (p) => "Write " + p.face,
-			/** Recipe picker's resting placeholder (nothing held). */
+			/** Recipe picker's resting placeholder (nothing held, or a
+			*  hand-edited layer no row matches — the placeholder re-serves,
+			*  never a lie; the custom face retired with the k blank row:
+			*  the menu's blank is now a selectable WRITE, not a marker). */
 			recipePlaceholder: "-- recipe --",
-			/** Recipe picker's custom face (a held stamp no row matches). */
-			recipeCustomFace: "-- custom --",
+			/** Recipe menu's selectable blank row (k, 2026-11-08): picking it
+			*  unstates the active recipe's stamps — the blank is a WRITE,
+			*  distinct from the resting placeholder face. */
+			recipeBlankRow: "Blank — no recipe",
 			/** Download's queued receipt. */
 			downloadQueuedNote: "Download queued ✓ (run when it lands)",
 			/** Download's failure note. */
@@ -9397,26 +9402,34 @@ window.__ModuleLoader__.load({
 			};
 		}
 		/** THE RECIPE BIRTH-STAMP (D12, 2026-10-23, the operator's "Default
-		*  needs to be a 4 step LORA"): a fresh card is born stamped with
-		*  the first composing Recipe row's payload. The axis seed writes
-		*  axis KEYS only (seedAxisValues — and the Recipe group YIELDS,
-		*  never an axis), and compose never applies recipe wire_defaults
-		*  server-side (the card carries recipe as a rider); without this,
-		*  a payload-carrying default recipe would compose unstamped. The
-		*  stamp mirrors the pick verb (axisPickPatch minus the re-point:
-		*  the `model` route resolves server-side, never lands in the user
-		*  layer) for keys the seed does not hold — seeded axes win, so a
-		*  DECL-authored axis key inside a payload can never corrupt the
-		*  chain. The bag rides the USER layer on purpose (resolveValue
-		*  skips base/model arrays — a resolver-stamped bag would compose
-		*  invisible). PURE — the caller owns the write (the add door). */
+		*  needs to be a 4 step LORA"; k 2026-11-08 — the initial-recipe
+		*  law): a fresh card is born stamped with the DECLARED default
+		*  Recipe row's payload — `features.variant_groups.Recipe.default`
+		*  (served from the DECL's variant_groups by groupContract), never
+		*  the first row by declaration order (row order is presentation;
+		*  the old first-composing law was row-order-emergent state). No
+		*  declaration, or a declaration naming no composing row → BLANK:
+		*  nothing stamps. The axis seed writes axis KEYS only
+		*  (seedAxisValues — and the Recipe group YIELDS, never an axis),
+		*  and compose never applies recipe wire_defaults server-side (the
+		*  card carries recipe as a rider); without this, a payload-carrying
+		*  default recipe would compose unstamped. The stamp mirrors the
+		*  pick verb (axisPickPatch minus the re-point: the `model` route
+		*  resolves server-side, never lands in the user layer) for keys
+		*  the seed does not hold — seeded axes win, so a DECL-authored
+		*  axis key inside a payload can never corrupt the chain. The bag
+		*  rides the USER layer on purpose (resolveValue skips base/model
+		*  arrays — a resolver-stamped bag would compose invisible). PURE —
+		*  the caller owns the write (the add door). */
 		function seedRecipeStamp(spec, seeds) {
 			const active = {};
 			for (const g of axisGroups(spec)) {
 				const held = seeds[axisKey(g)];
 				if (typeof held === "string" && held !== "") active[g] = held;
 			}
-			const row = composingRows(spec, "Recipe", active)[0];
+			const declared = spec.features?.["variant_groups"]?.["Recipe"]?.["default"];
+			if (typeof declared !== "string" || declared === "") return seeds;
+			const row = composingRows(spec, "Recipe", active).find((r) => r.id === declared);
 			if (row === void 0) return seeds;
 			const out = { ...seeds };
 			for (const [k, v] of Object.entries(row.defaults)) {
@@ -9425,6 +9438,23 @@ window.__ModuleLoader__.load({
 				out[k] = v;
 			}
 			return out;
+		}
+		/** THE BLANK RECIPE WRITE (k, 2026-11-08): picking "no recipe" is a
+		*  real write, not a face. Every key the ACTIVE row stamps that the
+		*  held layer still carries at the stamp value unstated (null
+		*  deletes at compose) — the D4 departed-preset law applied to a
+		*  departure-to-nothing: a key the user hand-edited away from the
+		*  stamp is the user's word and stands (deepEqualJson, the F3 fix —
+		*  `===` never matched an array bag). NEVER a persisted `recipe`
+		*  key (the dead card-recipe layer; the compose door refuses the
+		*  undeclared param). PURE — the caller owns the write. */
+		function recipeDeparturePatch(row, held) {
+			const patch = {};
+			for (const [k, v] of Object.entries(row.defaults)) {
+				if (k === "model") continue;
+				if (held !== void 0 && deepEqualJson(held[k], v)) patch[k] = null;
+			}
+			return patch;
 		}
 		/** THE MIRROR'S COORDINATE SEAT (D6 2026-10-17 — the resolver
 		*  consolidation): offeredVariantOf and composeValidate no longer
@@ -12516,11 +12546,11 @@ window.__ModuleLoader__.load({
 					"aria-label": props.label,
 					...props.markers ?? {},
 					...props.disabled === true ? { disabled: true } : {},
-					...props.title !== void 0 || current !== void 0 ? { title: props.title ?? current?.label } : {},
+					...props.title !== void 0 || current !== void 0 || props.face !== void 0 ? { title: props.title ?? props.face ?? current?.label } : {},
 					onClick: () => {
 						setOpen(!open);
 					}
-				}, (0, react.createElement)("span", { className: card_module_css_default.specSelectText }, current?.label ?? ""))
+				}, (0, react.createElement)("span", { className: card_module_css_default.specSelectText }, props.face ?? current?.label ?? ""))
 			});
 		}
 		/** THE TRI-STATE ATOM (hour 15, stroke C): inherit / on / off —
@@ -13246,9 +13276,15 @@ window.__ModuleLoader__.load({
 				if (row === void 0) return;
 				onPick(axisPickPatch(spec, row, values));
 			};
+			const pickBlank = () => {
+				if (active === void 0) return;
+				const row = pillRows.find((r) => r.id === active);
+				if (row === void 0) return;
+				onPick(recipeDeparturePatch(row, values));
+			};
 			const recipeRows = [{
 				id: "",
-				label: active === void 0 ? chromeCopy.recipePlaceholder : chromeCopy.recipeCustomFace
+				label: chromeCopy.recipeBlankRow
 			}, ...pillRows.map((r) => ({
 				id: r.id,
 				label: titleCaseId(r.label) + (typeof r.hint === "string" && r.hint !== "" ? ` — ${r.hint}` : "")
@@ -13257,9 +13293,11 @@ window.__ModuleLoader__.load({
 				label: chromeCopy.recipeLabel,
 				value: active ?? "",
 				rows: recipeRows,
+				face: active === void 0 ? chromeCopy.recipePlaceholder : void 0,
 				markers: { "data-recipe-select": "1" },
 				onPick: (id) => {
-					if (id !== "") pick(id);
+					if (id === "") pickBlank();
+					else pick(id);
 				}
 			}));
 		}
@@ -16539,6 +16577,7 @@ window.__ModuleLoader__.load({
 		exports.probeRunGone = probeRunGone;
 		exports.quantRowsFor = quantRowsFor;
 		exports.readAsDataURL = readAsDataURL;
+		exports.recipeDeparturePatch = recipeDeparturePatch;
 		exports.rejectionVoice = rejectionVoice;
 		exports.releaseViewport = releaseViewport;
 		exports.removeToast = removeToast;

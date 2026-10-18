@@ -392,20 +392,36 @@ export declare function seedUser(spec: FormSpecDoc, held: SpecValues): SpecValue
  *  PURE — the caller owns the write. */
 export declare function reseatEnvelopeKeys(spec: FormSpecDoc, seeded: SpecValues): SpecValues;
 /** THE RECIPE BIRTH-STAMP (D12, 2026-10-23, the operator's "Default
- *  needs to be a 4 step LORA"): a fresh card is born stamped with
- *  the first composing Recipe row's payload. The axis seed writes
- *  axis KEYS only (seedAxisValues — and the Recipe group YIELDS,
- *  never an axis), and compose never applies recipe wire_defaults
- *  server-side (the card carries recipe as a rider); without this,
- *  a payload-carrying default recipe would compose unstamped. The
- *  stamp mirrors the pick verb (axisPickPatch minus the re-point:
- *  the `model` route resolves server-side, never lands in the user
- *  layer) for keys the seed does not hold — seeded axes win, so a
- *  DECL-authored axis key inside a payload can never corrupt the
- *  chain. The bag rides the USER layer on purpose (resolveValue
- *  skips base/model arrays — a resolver-stamped bag would compose
- *  invisible). PURE — the caller owns the write (the add door). */
+ *  needs to be a 4 step LORA"; k 2026-11-08 — the initial-recipe
+ *  law): a fresh card is born stamped with the DECLARED default
+ *  Recipe row's payload — `features.variant_groups.Recipe.default`
+ *  (served from the DECL's variant_groups by groupContract), never
+ *  the first row by declaration order (row order is presentation;
+ *  the old first-composing law was row-order-emergent state). No
+ *  declaration, or a declaration naming no composing row → BLANK:
+ *  nothing stamps. The axis seed writes axis KEYS only
+ *  (seedAxisValues — and the Recipe group YIELDS, never an axis),
+ *  and compose never applies recipe wire_defaults server-side (the
+ *  card carries recipe as a rider); without this, a payload-carrying
+ *  default recipe would compose unstamped. The stamp mirrors the
+ *  pick verb (axisPickPatch minus the re-point: the `model` route
+ *  resolves server-side, never lands in the user layer) for keys
+ *  the seed does not hold — seeded axes win, so a DECL-authored
+ *  axis key inside a payload can never corrupt the chain. The bag
+ *  rides the USER layer on purpose (resolveValue skips base/model
+ *  arrays — a resolver-stamped bag would compose invisible). PURE —
+ *  the caller owns the write (the add door). */
 export declare function seedRecipeStamp(spec: FormSpecDoc, seeds: SpecValues): SpecValues;
+/** THE BLANK RECIPE WRITE (k, 2026-11-08): picking "no recipe" is a
+ *  real write, not a face. Every key the ACTIVE row stamps that the
+ *  held layer still carries at the stamp value unstated (null
+ *  deletes at compose) — the D4 departed-preset law applied to a
+ *  departure-to-nothing: a key the user hand-edited away from the
+ *  stamp is the user's word and stands (deepEqualJson, the F3 fix —
+ *  `===` never matched an array bag). NEVER a persisted `recipe`
+ *  key (the dead card-recipe layer; the compose door refuses the
+ *  undeclared param). PURE — the caller owns the write. */
+export declare function recipeDeparturePatch(row: FormVariantRow, held?: SpecValues): SpecValues;
 /** The door's variant resolution, ONE spelling (the dragbar clamp,
  *  2026-10-13): the stated variant matched by id OR route over the
  *  matrix, else pool[0] — the row whose sampler_envelope the

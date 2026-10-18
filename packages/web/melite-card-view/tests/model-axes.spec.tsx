@@ -757,7 +757,7 @@ test('RULE A: a stamp that is ENTIRELY mod-owned STILL renders its pill — the 
   expect(recipeTrigger(container)).not.toBeNull()
   fireEvent.click(recipeTrigger(container))
   const ids = screen.getAllByRole('menuitem').map((row) => (row.textContent ?? '').trim())
-  expect(ids).toEqual(['-- recipe --', 'Realism — the realism one-click', 'Quick — the quick knob stamp', 'Cine — the cine stamp']) // placeholder + stamps; default renders nothing
+  expect(ids).toEqual(['Blank — no recipe', 'Realism — the realism one-click', 'Quick — the quick knob stamp', 'Cine — the cine stamp']) // (k, 2026-11-08) the blank row is a selectable WRITE (departure); the TRIGGER keeps the '-- recipe --' resting face
   fireEvent.click(screen.getByRole('menuitem', { name: /Realism/ }))
   await waitFor(() => { expect(state.user['loras']).toEqual([{ id: 'krea2_realism_lora' }]) })
 })
@@ -1199,7 +1199,7 @@ test('SEAT: the pills render UNDER THE MODEL SECTION — the lora row\'s pill in
   expect(select).not.toBeNull()
   fireEvent.click(select)
   const ids = screen.getAllByRole('menuitem').map((row) => (row.textContent ?? '').trim())
-  expect(ids).toEqual(['-- recipe --', 'Realism — the realism one-click', 'Quick — the quick knob stamp']) // realism + quick carry the seat
+  expect(ids).toEqual(['Blank — no recipe', 'Realism — the realism one-click', 'Quick — the quick knob stamp']) // realism + quick carry the seat; the blank row rides (k)
   fireEvent.click(screen.getByLabelText('Recipe')) // close: the owner bit toggles
   // THE SEAT: inside the model axes section (under Model, Variant,
   // Quant — never a sampling-group row at the bottom)

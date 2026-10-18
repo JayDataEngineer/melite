@@ -91,6 +91,12 @@ export function SpecMenuSelect(props: {
   markers?: Record<string, string>
   disabled?: boolean
   title?: string
+  /** THE TRIGGER'S FACE OVERRIDE (k, 2026-11-08): when the seat's
+   *  resting face is its own voice (a placeholder / custom marker)
+   *  distinct from the menu's selectable rows — the menu row and
+   *  the trigger face are two faces, never forced to share one row
+   *  label. Absent: the current row's own label (the default face). */
+  face?: string
   onPick(id: string): void
 }): ReactElement {
   const [open, setOpen] = useState(false)
@@ -113,8 +119,8 @@ export function SpecMenuSelect(props: {
       ...(props.disabled === true ? { disabled: true } : {}),
       // (operator 2026-11-05) the anchor's hover title falls back
       // to the current row's own label — a titled face, never mute.
-      ...(props.title !== undefined || current !== undefined
-        ? { title: props.title ?? current?.label }
+      ...(props.title !== undefined || current !== undefined || props.face !== undefined
+        ? { title: props.title ?? props.face ?? current?.label }
         : {}),
       onClick: () => { setOpen(!open) },
     },
@@ -128,7 +134,7 @@ export function SpecMenuSelect(props: {
     // made the bug "sometimes". A flex ITEM with min-width:0 +
     // overflow:hidden clamps regardless of which stylesheet lands
     // last; the full text stays on the title (the 2026-11-05 face).
-    h('span', { className: css.specSelectText }, current?.label ?? '')),
+    h('span', { className: css.specSelectText }, props.face ?? current?.label ?? '')),
   })
 }
 

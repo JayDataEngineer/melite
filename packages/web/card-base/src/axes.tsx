@@ -2,7 +2,7 @@
  * operator's DRY audit law: one seam, one small file, one wall). */
 import { createElement as h, Fragment, useEffect, useState } from 'react'
 import type { ChangeEvent as ReactChangeEvent, ReactElement } from 'react'
-import { type FormSpecDoc, type SpecValues, type FormVariantRow, activeRecipeId, activeRowId, axisGroups, axisKey, axisPickPatch, composingRows, modelChoices, modelSwitchPatch, resolveValue, rowsFor, titleCaseId } from './spec.ts'
+import { type FormSpecDoc, type SpecValues, type FormVariantRow, activeRecipeId, activeRowId, axisGroups, axisKey, axisPickPatch, composingRows, modelChoices, modelSwitchPatch, recipeDeparturePatch, resolveValue, rowsFor, titleCaseId } from './spec.ts'
 import { chromeCopy } from './locales/chromeCopy.ts'
 import css from './card.module.css'
 import { SpecMenuSelect } from './atoms.tsx'
@@ -17,6 +17,7 @@ function AxisMenuSelect(props: {
   value: string
   rows: ReadonlyArray<{ id: string, label: string }>
   markers?: Record<string, string>
+  face?: string
   onPick(id: string): void
 }): ReactElement {
   // S7h: the idiom's ONE seam — atoms' SpecMenuSelect (same DOM,
@@ -442,8 +443,18 @@ export function RecipePills({ spec, onPick, values, omitRow }: {
     // stamp-only (reconciled keys never create a pill from nothing)
     onPick(axisPickPatch(spec, row, values))
   }
+  // THE BLANK WRITE (k, 2026-11-08): picking "no recipe" applies the
+  // ACTIVE row's departure (the D4 null-set law — stamp deletion,
+  // never a persisted recipe key). With nothing held there is no
+  // departure to apply — the blank pick stays a no-op.
+  const pickBlank = (): void => {
+    if (active === undefined) return
+    const row = pillRows.find((r) => r.id === active)
+    if (row === undefined) return
+    onPick(recipeDeparturePatch(row, values))
+  }
   const recipeRows: Array<{ id: string, label: string }> = [
-    { id: '', label: active === undefined ? chromeCopy.recipePlaceholder : chromeCopy.recipeCustomFace },
+    { id: '', label: chromeCopy.recipeBlankRow },
     ...pillRows.map((r) => ({
       id: r.id,
       label: titleCaseId(r.label) + (typeof r.hint === 'string' && r.hint !== '' ? ` — ${r.hint}` : ''),
@@ -455,8 +466,13 @@ export function RecipePills({ spec, onPick, values, omitRow }: {
       label: chromeCopy.recipeLabel,
       value: active ?? '',
       rows: recipeRows,
+      // the TRIGGER keeps its own resting face: with no grounded row
+      // (nothing held, or a hand-edited layer no row matches) the
+      // placeholder re-serves — never a lie (form-axes' DROPDOWN
+      // law); the menu's blank row is a SECOND, selectable voice.
+      face: active === undefined ? chromeCopy.recipePlaceholder : undefined,
       markers: { 'data-recipe-select': '1' },
-      onPick: (id: string) => { if (id !== '') pick(id) },
+      onPick: (id: string) => { if (id === '') pickBlank(); else pick(id) },
     }),
   )
 }
