@@ -1,0 +1,17 @@
+#!/bin/sh
+# THE SERVE-FRESHNESS PRE-COMMIT (2026-11-08): the 2026-10-24 stale-serve
+# outage class has a wall (client-bundle-freshness) that only fires when a
+# session runs the walls tier — the 2026-11-08 P4 cure (a5da22c6c) landed
+# with the card-view bundle 2.5h behind src and no gate ran. This hook runs
+# the fast mtime walls at every landing, so a cure can never commit with a
+# serve plane behind it. Byte-equality (estate-lib-sync) stays in the full
+# gate — it is a 14s emit-and-compare, not a landing gate.
+env -u MELITE_MCP_ENGINES -u MELITE_AGENT_ROUTE \
+  npx vitest run tests/walls/ts/suites/client-bundle-freshness.spec.ts \
+  || {
+    echo ""
+    echo "COMMIT REFUSED: a served client bundle predates its own src."
+    echo "Rebuild (tsdown BEFORE tsc): cd <pkg> && ./node_modules/.bin/tsdown && pnpm build"
+    echo "Then restart the estate: systemctl --user restart dsh-melite-test.service"
+    exit 1
+  }

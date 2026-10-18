@@ -21685,6 +21685,15 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 						...seedSource,
 						...rescope
 					});
+					if (!freshOpen && departing !== null && departing.model !== arrival) {
+						const arrivalFields = new Set((0, _melite_card_base_client.fieldsOf)(doc).map((f) => f.name));
+						const axisKeys = new Set((0, _melite_card_base_client.axisGroups)(departing).map((g) => (0, _melite_card_base_client.axisKey)(g)));
+						for (const f of (0, _melite_card_base_client.fieldsOf)(departing)) {
+							if (f.name === "model" || axisKeys.has(f.name) || arrivalFields.has(f.name)) continue;
+							if (f.name in rescope) continue;
+							delete seeded[f.name];
+						}
+					}
 					setUser(freshOpen ? seeded : (0, _melite_card_base_client.reseatEnvelopeKeys)(doc, seeded));
 					for (const k of Object.keys(seedSource)) if (!(k in seeded)) droppedRef.current.add(k);
 					if (freshOpen) {
@@ -22060,7 +22069,10 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					for (const k of heldKeys) if (!userKeys.has(k) && (touchedRef.current.has(k) || droppedRef.current.has(k))) patch[k] = null;
 					const sameAsHeld = Object.keys(patch).length > 0 && Object.entries(patch).every(([k, v]) => heldKeys.has(k) && Object.is(held[k], v));
 					if (Object.keys(patch).length > 0 && !sameAsHeld) {
-						const refused = composeGateRefusal(spec, held, user, {});
+						const baseAfterSync = { ...held };
+						for (const [k, v] of Object.entries(patch)) if (v === null) delete baseAfterSync[k];
+						else baseAfterSync[k] = v;
+						const refused = composeGateRefusal(spec, baseAfterSync, user, {});
 						if (refused !== null) {
 							setError(refused);
 							return;
