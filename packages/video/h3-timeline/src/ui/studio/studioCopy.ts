@@ -28,13 +28,12 @@ export const studioCopy = {
   refAudios: "Audios",
   /** Ref-mods lane label (engine-side packs). */
   refMods: "Ref mods",
-  /** (2026-11-05, "WHAT IS A REFMOD PACK?"; the any-media law
-   *  2026-11-06) — the bucket names its own currency so the seat
-   *  explains itself at a glance. */
-  refModsHint: "any media rides — images, videos, audio (the system bakes the pack); pre-baked .safetensors stems ride the engine listing",
-  // (2026-10-16) removePack died with the strip Button — the square
-  // grammar's SourceRow owns the detach (onEdit("")); a verb that no
-  // longer exists carries no label. Census re-pin: 102 → 101.
+  // refModsHint died 2026-11-08 (ERRORS e): it was plan text — "any
+  // media rides — images, videos, audio (the system bakes the pack);
+  // pre-baked .safetensors stems ride the engine listing" — under the
+  // Ref mods label. The bucket's square grammar names its own
+  // currency; the operator: people will know that already or not
+  // care. Census re-pin: 102 → 101 (studio-copy census arm).
   /** The mods path door's placeholder (the wire's example path). */
   /** The mods path door's accessible name. */
   /** The anchor slot's square caption (the bus's slot 1). */

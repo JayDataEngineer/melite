@@ -142,7 +142,11 @@ describe("SOURCE — the copy dictionary owns the static faces", () => {
     // sibling faces keyframePendingAria/keyframePendingReadout ride as
     // functions, outside this count by construction. All three are
     // consumed by the strip's chip mapping (the pending branch).
-    assert.equal(ids.length, 102, `the dictionary holds 102 copy ids (found ${ids.length}) — re-pin this wall when copy is added or removed`)
+    // RE-PIN 2026-11-08 (ERRORS e, the plan-text deletion): 102 → 101.
+    // −1 refModsHint — the operator deleted the mods bucket's plan-text
+    // line ("It is plan text… people will know that already or not
+    // care"), reversing the 2026-11-05 naming law it landed under.
+    assert.equal(ids.length, 101, `the dictionary holds 101 copy ids (found ${ids.length}) — re-pin this wall when copy is added or removed`)
     // RE-PIN 2026-10-16 (the square-grammar residue): 102 → 101.
     // removePack died with the strip Button (187eaf607 deleted the
     // verb; SourceRow's onEdit("") owns the detach) — a fossil id

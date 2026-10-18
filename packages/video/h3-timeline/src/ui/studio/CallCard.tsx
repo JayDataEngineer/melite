@@ -515,12 +515,6 @@ function ModsBucket({
       >
         {label}
       </SectionLabel>
-      {/* (2026-11-05, "WHAT IS A REFMOD PACK? WHERE IS THE INPUT?")
-          — the bucket names its currency; the input IS the square
-          row below (the + glyph — same grammar as every bucket). */}
-      <span className={s.laneHint} data-testid="tl-call-mods-hint">
-        {studioCopy.refModsHint}
-      </span>
       <div className={s.chips}>
         {!overrides && declared.map((path) => (
           <DeclaredChip key={`declared-${path}`} url={path} kind="mod" />

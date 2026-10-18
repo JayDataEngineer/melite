@@ -437,10 +437,6 @@ window.__ModuleLoader__.load({
 			refAudios: "Audios",
 			/** Ref-mods lane label (engine-side packs). */
 			refMods: "Ref mods",
-			/** (2026-11-05, "WHAT IS A REFMOD PACK?"; the any-media law
-			*  2026-11-06) — the bucket names its own currency so the seat
-			*  explains itself at a glance. */
-			refModsHint: "any media rides — images, videos, audio (the system bakes the pack); pre-baked .safetensors stems ride the engine listing",
 			/** The mods path door's placeholder (the wire's example path). */
 			/** The mods path door's accessible name. */
 			/** The anchor slot's square caption (the bus's slot 1). */
@@ -1942,36 +1938,57 @@ window.__ModuleLoader__.load({
 		/** The ruler: ticks + sticky timecode. NOT a scrub surface (operator
 		*  2026-11: the scrub gesture belongs to the playhead CAP alone — the
 		*  white circle at the top of the line — never the bar's middle); its
-		*  one gesture left is the double-click ADD (bar line 947). */
+		*  gestures are the double-click ADD (bar line 947) and the
+		*  single-click SEEK (P6: a click on the time line moves the playhead —
+		*  a jump, never a drag — or faces why not). */
 		function TimelineRuler(props) {
-			const { ticks, stepSec, fps, frameIdx, barBg, frameToPx, frameAt, onPromptAdd } = props;
+			const { ticks, stepSec, fps, frameIdx, barBg, frameToPx, frameAt, onPromptAdd, onSeekFrame } = props;
+			const [clickVoice, setClickVoice] = (0, react.useState)("");
 			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(react_jsx_runtime.Fragment, { children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.Tip, {
 				tip: onPromptAdd ? "Drag the playhead cap to scrub — double-click here to add a call at that frame" : "Drag the playhead cap to scrub",
 				children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 					"data-testid": "motion-timeline-ruler",
 					className: timeline_module_css_default.ruler,
 					style: { height: 28 },
+					onClick: (e) => {
+						const f = frameAt(e.clientX);
+						if (f == null) return;
+						if (onSeekFrame) {
+							onSeekFrame(f);
+							setClickVoice(`playhead ${fmtTimecode(f, fps)}`);
+						} else setClickVoice("ruler click seeks when the tenant wires the seek seat — drag the playhead cap to scrub");
+					},
 					onDoubleClick: (e) => {
 						if (!onPromptAdd) return;
 						const f = frameAt(e.clientX);
 						if (f != null) onPromptAdd(f);
 					},
-					children: [ticks.map((s) => /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-						className: timeline_module_css_default.tick,
-						style: { left: frameToPx(s * fps) },
-						children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", { className: timeline_module_css_default.tickLine }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-							className: timeline_module_css_default.tickLabel,
-							children: timelineCopy.tickSeconds({ value: stepSec < 1 ? s.toFixed(1) : String(s) })
-						})]
-					}, s)), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-						"data-testid": "motion-timeline-timecode",
-						className: timeline_module_css_default.timecode,
-						style: {
-							background: barBg,
-							boxShadow: "2px 0 6px -2px color-mix(in srgb, var(--dsw-alias-bg-base) 80%, transparent)"
-						},
-						children: fmtTimecode(frameIdx, fps)
-					})]
+					children: [
+						/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+							"data-testid": "motion-timeline-click-voice",
+							"aria-live": "polite",
+							className: timeline_module_css_default.timecode,
+							style: { display: clickVoice ? void 0 : "none" },
+							children: clickVoice
+						}),
+						ticks.map((s) => /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+							className: timeline_module_css_default.tick,
+							style: { left: frameToPx(s * fps) },
+							children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", { className: timeline_module_css_default.tickLine }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+								className: timeline_module_css_default.tickLabel,
+								children: timelineCopy.tickSeconds({ value: stepSec < 1 ? s.toFixed(1) : String(s) })
+							})]
+						}, s)),
+						/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+							"data-testid": "motion-timeline-timecode",
+							className: timeline_module_css_default.timecode,
+							style: {
+								background: barBg,
+								boxShadow: "2px 0 6px -2px color-mix(in srgb, var(--dsw-alias-bg-base) 80%, transparent)"
+							},
+							children: fmtTimecode(frameIdx, fps)
+						})
+					]
 				})
 			}) });
 		}
@@ -2704,7 +2721,8 @@ window.__ModuleLoader__.load({
 							barBg,
 							frameToPx: scale.frameToPx,
 							frameAt: scale.frameAt,
-							onPromptAdd
+							onPromptAdd,
+							onSeekFrame: onFrameChange
 						}),
 						/* @__PURE__ */ (0, react_jsx_runtime.jsx)(TimelinePromptsLane, {
 							prompts,
@@ -4808,11 +4826,6 @@ window.__ModuleLoader__.load({
 							testId: "tl-call-mods-count"
 						}),
 						children: label
-					}),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-						className: studio_module_css_default.laneHint,
-						"data-testid": "tl-call-mods-hint",
-						children: studioCopy.refModsHint
 					}),
 					/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 						className: studio_module_css_default.chips,

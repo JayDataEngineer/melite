@@ -379,10 +379,10 @@ describe("one label per bucket", () => {
     assert.ok(document.querySelector('[data-source-row="+ image"] [data-slot-square]'), "the add face is the square")
   })
 
-  it("the mods bucket names its own currency (operator 2026-11-05: 'WHAT IS A REFMOD PACK?')", () => {
+  it("the mods bucket carries NO plan text (ERRORS e, 2026-11-08: 'It is plan text… people will know that already or not care' — reverses the 2026-11-05 naming law)", () => {
     card()
     const hint = document.querySelector('[data-testid="tl-call-mods-hint"]')
-    assert.ok(hint, "the hint renders")
-    assert.match(hint!.textContent!, /safetensors/)
+    assert.equal(hint, null, "the refModsHint plan-text line still renders under the Ref mods label — the operator deleted it (ERRORS e); the bucket's square grammar names its own currency")
+    assert.ok(!document.body.textContent!.includes('any media rides'), "the plan text rides verbatim somewhere in the card face")
   })
 })
