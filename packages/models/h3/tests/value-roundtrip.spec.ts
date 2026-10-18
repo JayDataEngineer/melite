@@ -353,4 +353,74 @@ describe("the h3 sampler knobs ride VERBATIM to their consumers (purge P2 value 
         `row '${row.id}' declares no integer steps — the door's steps ?? falls through; add the field or the door branch with its arm`);
     }
   });
+
+  // ── SD-2 master/leaf either-or (the purge audit's stated-seat class,
+  // UI purge 2026-11-08): the sharpen leaves state per-leaf, the
+  // master gate owns the verdict. The witness pins the drop AS
+  // DESIGNED: the stated value always rides the graph's grouped dict
+  // with its named switch beside it — never a silent value-vanish. ──
+  const sharpenParts = (graph: Record<string, { class_type: string; inputs: Record<string, unknown> }>) => {
+    const sharpenEntry = Object.entries(graph).find(([, n]) => n.class_type === "ImageSharpenKJ");
+    assert.ok(sharpenEntry, "the post chain builds the sharpen node (the grouped dict's home)");
+    const sharpenId = sharpenEntry![0];
+    const sw = Object.entries(graph).find(([, n]) =>
+      n.class_type === "ComfySwitchNode" && JSON.stringify(n.inputs.on_true ?? "").includes(sharpenId));
+    assert.ok(sw, "a switch routes the sharpened branch (the master gate's verdict home)");
+    return { dict: sharpenEntry![1].inputs.method, sw: sw![1].inputs.switch };
+  };
+
+  it("ARM 10 (SD-2 master/leaf, gate ON) — a stated sharpen leaf reaches the grouped dict and the switch routes the sharpened branch", async () => {
+    const graph = await composeH3({
+      length: 56,
+      calls: [SHOT()],
+      seed: SEED,
+      second_pass_enabled: true,
+      sharpen_enabled: true,
+      sharpen_strength: 0.65,
+    }, "h3_value_arm10");
+    const { dict, sw } = sharpenParts(graph);
+    assert.ok(JSON.stringify(dict).includes("0.65"),
+      `the stated leaf rides the grouped dict (saw ${JSON.stringify(dict)})`);
+    assert.equal(sw, true, "the master gate routes the sharpened branch (on_true) when enabled");
+  });
+
+  it("ARM 11 (SD-2 master/leaf, gate OFF) — the stated leaf still rides the graph dict (the drop is the DESIGNED switch, named in the graph — never a silent value-vanish) while the switch routes the plain pass", async () => {
+    // THE DOCUMENTED GATE (actions.ts MASTER GATE, 2026-09-22):
+    // legacy docs with leaves set but no master render the plain
+    // pass. The purge class is only silent if the stated value ALSO
+    // vanishes — it does not: the leaf loop reads every stated leaf
+    // into the dict, and the switch carries the verdict beside it.
+    const graph = await composeH3({
+      length: 56,
+      calls: [SHOT()],
+      seed: SEED,
+      sharpen_strength: 0.65,
+    }, "h3_value_arm11");
+    const { dict, sw } = sharpenParts(graph);
+    assert.ok(JSON.stringify(dict).includes("0.65"),
+      `the stated leaf rides the grouped dict even gate-off (saw ${JSON.stringify(dict)})`);
+    assert.equal(sw, false, "the master gate routes the plain pass without the gate (the designed verdict, named in the graph)");
+  });
+
+  it("ARM 12 (SD-2 master/leaf, master ON + sub-gate OFF) — a second-pass doc WITHOUT the sharpen arm routes the plain pass while the stated leaf still rides the dict", async () => {
+    // THE SUB-GATE'S OWN ARM: second_pass_enabled is the master,
+    // sharpen_enabled is the sharpen arm's switch WITHIN it. The
+    // operator case: the second pass runs (interp / sr) with
+    // sharpening off — the arm must not fire. Masking note: with the
+    // master off the sub-gate is unobservable (the && short-circuits
+    // false), so THIS arm is the only judge of the sharpen_enabled
+    // term — toggle it out and the switch asserts true here.
+    const graph = await composeH3({
+      length: 56,
+      calls: [SHOT()],
+      seed: SEED,
+      second_pass_enabled: true,
+      sharpen_enabled: false,
+      sharpen_strength: 0.65,
+    }, "h3_value_arm12");
+    const { dict, sw } = sharpenParts(graph);
+    assert.ok(JSON.stringify(dict).includes("0.65"),
+      `the stated leaf rides the grouped dict even arm-off (saw ${JSON.stringify(dict)})`);
+    assert.equal(sw, false, "the sharpen sub-gate stays closed without sharpen_enabled (the master alone must not sharpen)");
+  });
 });

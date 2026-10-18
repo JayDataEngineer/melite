@@ -134,6 +134,40 @@ describe("the h3 film action oracle (the interlock)", () => {
     );
   });
 
+  it("SD-2 (lift overwrite) — a knobbed call's knobs win its OWN window while the doc level owns every knobless window (the stanza's last-wins law, one seam, real values)", () => {
+    // THE STANZA LAW (actions.ts per-window stanza `{ ...p, ...knobs }`):
+    // every call renders its window from the doc level OVERLAID by
+    // that call's own knobs — the call's row IS the window. Judged
+    // through a TWO-call doc so the single-call lift (card.ts, a
+    // pre-pass that only runs on one-call docs) is OUT of the path:
+    // the stanza is the only width-priority seam in play, and a
+    // single flip of its spread order reds this arm (window2 falls
+    // to the doc's 512×640) while window1 stays green — proving the
+    // red is the priority flip, never a width wipe.
+    const graph = oneWay({
+      width: 512, height: 640,
+      calls: [
+        SHOT({ text: "window one plain" }),
+        SHOT({ text: "window two knobbed", start_frame: 56, end_frame: 124, knobs: { width: 768, height: 448 } }),
+      ],
+      length: 124,
+    });
+    const widthOf = (scope: string) => {
+      const entry = Object.entries(graph).find(([id, n]) =>
+        id.startsWith(`${scope}_`) && n.class_type === "MiniMaxH3ReferenceToVideo");
+      assert.ok(entry, `the ${scope} window composes its own r2v lane`);
+      return entry![1].inputs;
+    };
+    const w1 = widthOf("window1");
+    assert.equal(w1.width, 512, `the doc level owns the knobless window's width (saw ${String(w1.width)})`);
+    assert.equal(w1.height, 640, `the doc level owns the knobless window's height (saw ${String(w1.height)})`);
+    const w2 = widthOf("window2");
+    assert.equal(w2.width, 768,
+      `the call's knobs win their own window's width (saw ${String(w2.width)} — the doc's 512 rode: the stanza's last-wins broke)`);
+    assert.equal(w2.height, 448,
+      `the call's knobs win their own window's height (saw ${String(w2.height)})`);
+  });
+
   it("the lora-steps arm (single window + a steps-carrying lora bag) composes through the declared action", () => {
     const graph = oneWay({
       calls: [SHOT({ text: "the drone shot holds on the bridge" })],
