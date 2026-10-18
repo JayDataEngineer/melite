@@ -998,6 +998,7 @@ function knobDoc(): Record<string, unknown> {
       model: { consts: ['fam-a', 'fam-b-1536-int8'], meta: { description: 'Serving family', default: 'fam-a', extra: { wtype: 'select' } } },
       cfg: { type: 'number', meta: { description: 'Cfg', default: 3.5 } },
       loras: { type: 'array', meta: { description: 'Loras', default: [] } },
+      double_reference: { type: 'boolean', meta: { description: 'Double reference', default: false } },
     }),
     variants: [
       { id: 'turbo', label: 'Turbo', group: 'Variant', defaults: {}, route: 'turbo',
@@ -1102,6 +1103,62 @@ describe("the re-point seam (one switch semantics at the drill's write seat)", (
     }, { timeout: 8000 });
     await awaitWriteSettled();
     expect(writeFace()).toBe(null);
+  });
+
+  test("a departed SCALAR the arrival never declares dies with its model (B8's cure — the purge's P4): the seed drops it, the run flush nulls the bench key, shared words ride", async () => {
+    // The live injury (operator 2026-11-08, item h): a 2511 recipe
+    // holding double_reference, the model switched to 21 — the
+    // departed knob rode the arrival holding (the arrival form does
+    // not render it) and the door refused field-named LIVE. The cure
+    // deletes every departed schema field the arrival's schema does
+    // not declare from the SEED (the one seat that sees both
+    // schemas), so the seed-drop ledger nulls the bench key at the
+    // run flush — the drop's domain half, the dead-recipe-layer
+    // machinery. Shared words (prompt) never drop.
+    stubSpecDocs();
+    fakes?.unmount();
+    let runs = 0;
+    let bound: () => void = () => { throw new Error("bindRun never fired"); };
+    fakes = mountEstateFakes({});
+    const stageA = stage({ model: "fam-a", variant: "turbo", double_reference: true, prompt: "keep me" });
+    render(h(StageDrill, {
+      stage: stageA,
+      bench: { kind: "bench", draftId: "bench-p", rev: 1, log: [], stages: [stageA], sessionKey: "main" },
+      running: false,
+      onRun: () => { runs += 1; }, onStop: () => {}, onClose: () => {}, onRemoved: () => {},
+      onPatchParams: () => {},
+      renderStageView: (_o: unknown, fallback: unknown) => fallback,
+      bindRun: (r: () => void) => { bound = r; },
+    } as never));
+    await screen.findByLabelText("Prompt", {}, { timeout: 4000 });
+    const knob = await screen.findByLabelText("Serving family", {}, { timeout: 4000 });
+    fireEvent.click(knob);
+    fireEvent.click(screen.getByRole("menuitem", { name: "Fam B 1536 Int8" }));
+    // the re-point write landed (the switch law's own frame), the
+    // arrival spec fetched, the seed dropped the departed scalar
+    await waitFor(() => {
+      const frame = patchParamsOf(patchCalls()).find((p) => p["model"] === "fam-b-1536-int8");
+      if (frame === undefined) throw new Error("re-point write not landed; patches: " + JSON.stringify(patchCalls()));
+      // THE PASS-ALONG HALF at the switch frame: a SHARED word never
+      // rides the null set — the departed-scalar drop is the seed's
+      // verdict, not the switch frame's
+      expect(frame).not.toHaveProperty("prompt");
+    }, { timeout: 8000 });
+    await awaitWriteSettled();
+    // THE DROP'S DOMAIN HALF: pressing Run syncs the doc — the seed
+    // drop nulls the departed key on the bench (JSON Merge Patch:
+    // null deletes), and the start fires (the state is CLEAN — the
+    // old live banner is impossible).
+    bound();
+    await waitFor(() => {
+      const sync = patchParamsOf(patchCalls()).find((p) => "double_reference" in p);
+      if (sync === undefined) throw new Error("run-flush null not landed; patches: " + JSON.stringify(patchCalls()));
+      expect(sync["double_reference"]).toBeNull();
+      expect(sync).not.toHaveProperty("prompt");
+    }, { timeout: 8000 });
+    await awaitWriteSettled();
+    expect(writeFace()).toBe(null);
+    expect(runs).toBe(1);
   });
 
   test("a same-model knob set is NOT a re-point: the ordinary per-key write, no switch nulls", async () => {

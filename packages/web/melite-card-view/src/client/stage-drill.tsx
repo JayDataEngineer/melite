@@ -8,7 +8,7 @@ import { CardDrill } from './card-drill.tsx'
 import { MediaDrilldown, type MediaDrilldownItem } from '@melite-plugin/dsh-gallery/drilldown'
 import type { StageViewOwnerProps } from './types.ts'
 import { coerceFieldEdit, fetchFormSpec, fieldsOf, resolveValue, seedUser, reseatEnvelopeKeys, CardForm, type FormSpecDoc, type SpecValues } from '@melite/card-base/client'
-import { axisUnset, composeCandidateDoc, composeValidate, modelSwitchPatch } from '@melite/card-base/client'
+import { axisUnset, axisGroups, axisKey, composeCandidateDoc, composeValidate, modelSwitchPatch } from '@melite/card-base/client'
 import { forgetStageWrites, reconcileStageWriteFailures, refuseForUnlandedWrite, scheduleStageParam } from './draft.ts'
 import { canonicalOutputUrl, trailDedupe } from '@melite/estate-drafts/trail'
 import { postManageAction } from '@melite/card-base/client'
@@ -361,6 +361,35 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
           for (const k of modBagKeys(departing)) if (!(k in rescope)) rescope[k] = null
         }
         const seeded = seedUser(doc, { ...seedSource, ...rescope })
+        // THE DEPARTED SCALAR DIES WITH ITS MODEL (B8's cure — the
+        // ui-engine-fidelity purge's P4, 2026-11-08): a departed
+        // schema field the ARRIVAL's schema does not declare is the
+        // departed family's own knob (2511's double_reference/
+        // use_stock_nodes riding a 21 arrival) — it is DELETED from
+        // the seed exactly like the dead recipe layer, so the
+        // seed-drop ledger nulls the bench key at the run flush (the
+        // drop's domain half) and the arrival holding never carries a
+        // field its form cannot render. This seat is the only one
+        // that knows BOTH schemas (the seed verb sees one spec).
+        // THE GUARD IS THE DOCS, never the model-key bookkeeping: a
+        // composed key serves its BASE doc (the walk law), so the
+        // user's re-pointed key never equals doc.model — the fired
+        // question is whether a DIFFERENT family's spec just landed
+        // over a holding this drill seeded (never on a fresh open:
+        // the birth doc IS the family). Shared words (prompt, steps)
+        // never drop — the pass-along law; axis keys never drop here
+        // (the switch law and seedUser's ghost drop own them, with
+        // their own voices); keys the patch's rescope explicitly
+        // carries are its verdicts, never dropped.
+        if (!freshOpen && departing !== null && departing.model !== arrival) {
+          const arrivalFields = new Set(fieldsOf(doc).map((f) => f.name))
+          const axisKeys = new Set(axisGroups(departing).map((g) => axisKey(g)))
+          for (const f of fieldsOf(departing)) {
+            if (f.name === 'model' || axisKeys.has(f.name) || arrivalFields.has(f.name)) continue
+            if (f.name in rescope) continue
+            delete seeded[f.name]
+          }
+        }
         // THE RE-KEY RESEAT (order d, 2026-11-06): only the model-pick
         // re-key arm reconciles — an envelope-less departure nulls no
         // vocabulary in modelSwitchPatch, so stated envelope-bound
@@ -993,10 +1022,25 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
       const sameAsHeld = Object.keys(patch).length > 0
         && Object.entries(patch).every(([k, v]) => heldKeys.has(k) && Object.is(held[k], v))
       if (Object.keys(patch).length > 0 && !sameAsHeld) {
+        // THE GATE JUDGES THE DOC THE PRESS LANDS (the post-sync
+        // base — the purge's P4 root, 2026-11-08): the flush's own
+        // nulls apply to the base BEFORE the gate judges. Judging
+        // the PRE-sync base refused states this very press deletes —
+        // the live B8 banner (a departed key the seed dropped, the
+        // flush about to null it, the gate refusing the ghost
+        // anyway). JSON Merge Patch semantics on the base: null
+        // deletes, values write; the touched writes are already the
+        // user overlay's verdicts, applied here too so the judged
+        // candidate is exactly the doc that reaches the bench.
+        const baseAfterSync: Record<string, unknown> = { ...held }
+        for (const [k, v] of Object.entries(patch)) {
+          if (v === null) delete baseAfterSync[k]
+          else baseAfterSync[k] = v
+        }
         // THE COMPOSE GATE AT THE RUN SEAT: the full-doc sync is a
         // write like any other — an invalid candidate refuses HERE,
         // in the studio, before anything reaches the engine.
-        const refused = composeGateRefusal(spec, held, user, {})
+        const refused = composeGateRefusal(spec, baseAfterSync, user, {})
         if (refused !== null) { setError(refused); return }
         try {
           await patchStageParams(bench.draftId, stage.id, patch, bench.rev)
