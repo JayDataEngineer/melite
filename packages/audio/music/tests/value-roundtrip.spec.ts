@@ -17,16 +17,18 @@
 // exact `def.compose` the run door's composeOnce dispatches to:
 // estate-queue/src/cardsCompose.ts:126 → ComfyUIService.compose →
 // def.compose). The through-door arms ride phase1Card + phase2Card
-// (estate-queue/src/cardsRegistry.ts:1641/:1732 — the same walk the
+// (estate-queue/src/cardsRegistry.ts:1663/:1754 — the same walk the
 // runs {model:} door and the validate seat serve), hermetically
 // booted (the tracked boot double carries the music classes —
 // tests/walls/fixtures/object_info.boot.json, unlike the min fixture
 // the walls' KEY JUDGE reads, which carries none: audit D5).
 //
-// PRE-REGISTERED REDS (the deliverable): the arms the audit names
-// UNWITNESSED red on today's tree — B2-mode (D1: `mode` is a dead
-// knob on music3), B2-lyrics (D2: lyrics are unwireable on the flow
-// face, flowsRegistryRows.ts:322-367). Arms that hold green are
+// PRE-REGISTERED REDS (the deliverable — CURED 2026-11-08 in 821475e43,
+// which landed the mode+lyrics cures BEFORE this wall: the arms below
+// went green first-run over the cured tree, and now witness the cure):
+// B2-mode (was D1: `mode` a dead knob on music3), B2-lyrics (was D2:
+// lyrics unwireable on the flow face, flowsRegistryRows.ts seats
+// :336/:372-375/:386). Arms that hold green are
 // marked `// ALREADY GREEN` with the audit verdict they carry — the
 // missing piece there was the WALL (this file now is it), not the
 // carriage. ARM 6 (2026-11-08, SD-6's numerics) is the same class:
@@ -282,20 +284,22 @@ describe("ARM 1 — the stated prompt rides VERBATIM to the text-encode consumer
   // on the OTHER seats (arms 2/3).
 });
 
-// ── ARM 2 — THE MODE KNOB ARM (B2-mode; the audit's D1) ────────────
+// ── ARM 2 — THE MODE KNOB ARM (B2-mode; the audit's D1, CURED 821475e43) ─
 // Hop [4]→[5] (+ hop [3]→[4] through the door in the door twin). The
-// DECL truth: BOTH music DECLs declare `mode` a served param
-// (music3/index.ts:146, yue2/index.ts:129); the yue2 action READS it
-// (yue2 actions.ts:51,62,67-77 — the ABC planner node + the mode
-// inputs); the music3 action's params row OMITS it
-// (music3/src/actions.ts:48-56) and its build never reads it. The
-// card schema admits mode on every model (visible_when is a UI render
-// hint — admission.ts:48-67 gates on the schema dict, never
-// visible_when), so a draft that states mode at music3 — e.g.
-// authored on yue2, then the model switched (the SD-1 scalar-switch
-// wedge) — is ADMITTED, HIDDEN, and UNREAD. The class law a stated
-// knob owes: fire at a consumer, or refuse LOUD naming the knob (the
-// B4 voice). Silence is the burn.
+// DECL truth WAS: BOTH music DECLs declared `mode` a served param;
+// the yue2 action READ it (yue2 actions.ts planner node + mode
+// inputs) while the music3 action's params row OMITTED it and its
+// build never read it. The card schema admitted mode on every model
+// (visible_when is a UI render hint), so a draft stating mode at
+// music3 — e.g. authored on yue2, then the model switched (the SD-1
+// scalar-switch wedge) — was ADMITTED, HIDDEN, and UNREAD. The class
+// law a stated knob owes: fire at a consumer, or refuse LOUD naming
+// the knob (the B4 voice). Silence was the burn.
+// THE CURE (821475e43, both layers): the music3 DECL dropped mode
+// from params (index.ts:145-152 — the door refuses a stated mode in
+// the field's voice, layer 1) and the compose action refuses a legacy
+// draft still carrying non-'full' mode loud naming the knob
+// (actions.ts:59-78, layer 2).
 describe("ARM 2 — the stated mode answers at its consumer or refuses loud (B2-mode, D1)", () => {
   it("yue2: mode melody states the mode at BOTH consumers; mode off composes no planner", () => {
     // ALREADY GREEN (the audit's yue2 build wall holds — §2.2: mode is
@@ -318,7 +322,7 @@ describe("ARM 2 — the stated mode answers at its consumer or refuses loud (B2-
     assert.deepEqual(statedDefault, unstated, "the default stated === the default unstated (no diff noise)");
   });
 
-  it("music3: a stated NON-default mode FIRES (the graph answers) or REFUSES LOUD naming 'mode' — never silence (RED TODAY: D1)", () => {
+  it("music3: a stated NON-default mode FIRES (the graph answers) or REFUSES LOUD naming 'mode' — never silence (CURED 2026-11-08 in 821475e43: was D1)", () => {
     const unstated = composeCard({ prompt: PROMPT, lyrics: LYRICS, seed: 11 }, music3, RUN_CARD);
     let refused: Error | null = null;
     let stated: Graph | null = null;
@@ -340,10 +344,10 @@ describe("ARM 2 — the stated mode answers at its consumer or refuses loud (B2-
     assert.notDeepEqual(
       stated, unstated,
       "MODE VALUE ARM (hop [5]): mode 'off' stated ≠ default 'full' composed a graph IDENTICAL to the " +
-      "unstated compose — the knob is admitted, hidden, and UNREAD on music3 " +
-      "(the audit's D1: music3/src/actions.ts:48-56 omits mode from the action params row and the build " +
-      "never reads it; the DECL still serves it, music3/src/index.ts:146 — a stated knob silently no-ops, " +
-      "THE BURN CLASS). The cure: refuse loud naming 'mode', or wire it — never silence.",
+      "unstated compose — the knob WAS admitted, hidden, and UNREAD on music3 " +
+      "(the audit's D1, CURED 821475e43: actions.ts:59-78 refuses non-'full' loud naming " +
+      "mode, and the DECL dropped it from params, index.ts:145-152 — a stated knob silently " +
+      "no-op'd, THE BURN CLASS). The cure: refuse loud naming 'mode', or wire it — never silence.",
     );
   });
 
@@ -388,16 +392,19 @@ describe("ARM 2 — the stated mode answers at its consumer or refuses loud (B2-
   });
 });
 
-// ── ARM 3 — THE LYRICS ARM (B2-lyrics; the audit's D2) ─────────────
-// The flow face: the audit's SD-4 — lyrics are absent from the
+// ── ARM 3 — THE LYRICS ARM (B2-lyrics; the audit's D2, CURED 821475e43) ─
+// The flow face: the audit's SD-4 — lyrics WERE absent from the
 // MUSIC_NATIVE row's stage inputs+params, from the compose_music tool
-// properties, and from the overlays (flowsRegistryRows.ts:322-367),
-// while the card ITSELF declares lyrics a flow input
+// properties, and from the overlays, while the card ITSELF declares
+// lyrics a flow input
 // (card.ts:77 flowKinds.inputs = {prompt: 'text', lyrics: 'text'})
-// and the DECLs list lyrics a served param. A caller that states
-// lyrics on the flow face has NO seat: the value is unwireable, and
-// the composed graph rides lyrics "" — INSTRUMENTAL — with no error
+// and the DECLs list lyrics a served param. A caller that stated
+// lyrics on the flow face had NO seat: the value was unwireable, and
+// the composed graph rode lyrics "" — INSTRUMENTAL — with no error
 // anywhere. THE BURN'S OWN SHAPE: stated in, silently different out.
+// THE CURE (821475e43): the lyrics seat rides flowsRegistryRows.ts —
+// the stage params literal (:336), the compose_music tool property
+// (:372-375), and the overlay stamp (:386).
 describe("ARM 3 — stated lyrics reach the graph on the flow face (B2-lyrics, D2)", () => {
   // The truth roster, derived (never hand-listed): the keys the card
   // itself declares flow-carryable (def.flowKinds.inputs) must each
@@ -406,7 +413,7 @@ describe("ARM 3 — stated lyrics reach the graph on the flow face (B2-lyrics, D
   // the row's tool properties, or stamped by an overlay. Any declared
   // flow input missing from all three seats is UNWIREABLE: no caller
   // shape can carry it to the compose.
-  it("every flow input the card declares is statable on the music-native flow row (RED TODAY: lyrics)", () => {
+  it("every flow input the card declares is statable on the music-native flow row (CURED 821475e43: was RED — lyrics)", () => {
     const row = MUSIC_NATIVE.stages.find((s) => s.id === "music")!;
     assert.ok(row !== undefined && row.card === "music", "the registry serves the music card stage");
     const declared = Object.keys(def.flowKinds.inputs);
@@ -420,15 +427,15 @@ describe("ARM 3 — stated lyrics reach the graph on the flow face (B2-lyrics, D
     const unwireable = declared.filter((k) => !statable.has(k));
     assert.deepEqual(
       unwireable, [],
-      "FLOW-SURFACE VALUE ARM (hop [1]/[3] — SD-4): the card declares these flow inputs, and the " +
-      "music-native row gives them NO seat — not in stage params, not in tool properties, not in the " +
-      "overlays (flowsRegistryRows.ts:322-367): " + JSON.stringify(unwireable) +
-      ". A caller stating them is silently unwired — lyrics ride \"\" (instrumental) with no error. " +
-      "The cure wires the row (params/inputs + tool property + overlay).",
+      "FLOW-SURFACE VALUE ARM (hop [1]/[3] — SD-4, CURED 821475e43): the card declares these flow inputs, and the " +
+      "music-native row used to give them NO seat — not in stage params, not in tool properties, not in the " +
+      "overlays (was flowsRegistryRows.ts:322-367; now params :336, tool property :372-375, overlay :386): " + JSON.stringify(unwireable) +
+      ". A caller stating them WAS silently unwired — lyrics rode \"\" (instrumental) with no error. " +
+      "The cure wired the row (params/inputs + tool property + overlay).",
     );
   });
 
-  it("the stated lyrics, sent the way the doors carry them, land at the text-encode's lyrics input (RED TODAY)", () => {
+  it("the stated lyrics, sent the way the doors carry them, land at the text-encode's lyrics input (CURED 821475e43: was RED TODAY)", () => {
     // THE DOOR'S OWN DERIVATION, from the real row: the stage params
     // map is what the compose receives — $initials substituted (the
     // spell law, runsStart's ghost sweep / rewriteSpells seat) and
