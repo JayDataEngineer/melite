@@ -222,7 +222,8 @@ describe("planResurrect", () => {
       () => true,
     );
     expect(plan.order).toEqual(["run-d"]);
-    expect(plan.orphans).toEqual(["run-a", "run-b"]);
+    // (§7 P7 SR: run-e's unreadable sidecar orphans — never vanishes.)
+    expect(plan.orphans).toEqual(["run-a", "run-b", "run-e"]);
   });
 
   it("a record whose request is missing orphans; a stale draft orphans; a clean record rides", () => {
@@ -243,7 +244,8 @@ describe("planResurrect", () => {
       (draftId: string) => draftId === "d1",
     );
     expect(plan.order).toEqual(["run-b"]);
-    expect(plan.orphans).toEqual(["run-a"]);
+    // (§7 P7 SR: run-a (no request) + run-c/d/e (no sidecar) orphan.)
+    expect(plan.orphans).toEqual(["run-a", "run-c", "run-d", "run-e"]);
   });
 
   it("the LOUD default draftExists probe throws (the drafts domain owns existence)", () => {
@@ -266,10 +268,11 @@ describe("planResurrect", () => {
     writeFileSync(join(out, "run-d", "_request.json"), "{}");
     // run-d: non-string draft_id tolls the false arm -> orphan
     // run-e: an empty run dir (no sidecar at all) -> the default
-    // readSidecar catch tolls null -> skipped from both lists
+    // readSidecar catch tolls null -> orphans (§7 P7 SR: never
+    // vanishes from both lists).
     const plan = planResurrect(root, undefined, undefined, () => true);
     expect(plan.order).toEqual(["run-b", "run-a"]);
-    expect(plan.orphans).toEqual(["run-c", "run-d"]);
+    expect(plan.orphans).toEqual(["run-c", "run-d", "run-e"]);
   });
 
   it("P7 B4, plan-depth: a record with a mistyped artifact entry orphans (never orders short)", () => {
@@ -283,6 +286,7 @@ describe("planResurrect", () => {
     writeFileSync(join(out, "run-b", "_request.json"), "{}");
     const plan = planResurrect(root, undefined, undefined, () => true);
     expect(plan.order).toEqual(["run-b"]);
-    expect(plan.orphans).toEqual(["run-a"]);
+    // (§7 P7 SR: run-a (mistyped entry) + run-c/d/e (no sidecar) orphan.)
+    expect(plan.orphans).toEqual(["run-a", "run-c", "run-d", "run-e"]);
   });
 });

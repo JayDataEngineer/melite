@@ -53,6 +53,18 @@ describe("run-door single resolve + strict resurrect (purge §7 P7)", () => {
         !/\.test\s*\?\?\s*false/.test(src),
         `${f} hides the test-flag default in dot syntax — route through the named resolve`,
       );
+      // (repair 2026-11-08: walkSubmitEnvelope carried a THIRD
+      // spelling — body["test"] === true — behaviorally equal on
+      // the validated domain but a second unnamed resolve of the
+      // same flag; the === true class is barred too.)
+      assert.ok(
+        !/\[["']test["']\]\s*===\s*true/.test(src),
+        `${f} hides the test-flag resolve as === true — route through the named resolve`,
+      );
+      assert.ok(
+        !/\.test\s*===\s*true/.test(src),
+        `${f} hides the test-flag resolve as === true in dot syntax — route through the named resolve`,
+      );
     }
   });
 

@@ -200,6 +200,9 @@ export async function walkSubmitEnvelope(doc, draftExists) {
     if (!(await draftExists(draftId))) {
         return { kind: "refusal", refusal: unknownDraftRefusal(draftId) };
     }
-    return { kind: "ok", body, testFlag: body["test"] === true, draftId };
+    // (one-seat law §7 P7 F-1: the flag resolves ONLY through the
+    // named seat — the structural face above already refused
+    // non-bool, so the seat's unknown is boolean on this domain.)
+    return { kind: "ok", body, testFlag: resolveTestFlag(body), draftId };
 }
 //# sourceMappingURL=queueSubmit.js.map
