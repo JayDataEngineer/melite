@@ -3,7 +3,7 @@
   "license": "SSPL-1.0",
   "type": "module",
   "dependencies": {
-    "@deepseek-ai/dsh-util-values": "0.2.0-rc.1"
+    "@deepseek-ai/dsh-util-values": "0.2.1-rc.2"
   },
   "exports": {
     ".": {

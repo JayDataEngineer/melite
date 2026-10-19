@@ -24,19 +24,19 @@
     }
   },
   "devDependencies": {
-    "@deepseek-ai/cordis": "^4.0.4",
+    "@deepseek-ai/cordis": "^4.0.5",
     "@types/node": "^22.20.0",
     "tsdown": "^0.22.14",
     "typescript": "^5.9.3"
   },
   "dependencies": {
-    "@deepseek-ai/dsh-attachment": "0.2.0-rc.1",
-    "@deepseek-ai/dsh-llm": "0.2.0-rc.1",
-    "@deepseek-ai/dsh-timeout": "0.2.0-rc.1",
-    "@deepseek-ai/dsh-tools": "0.2.0-rc.1",
-    "@deepseek-ai/dsh-typert-protocol": "0.2.0-rc.1",
-    "@deepseek-ai/dsh-util-values": "0.2.0-rc.1",
-    "@deepseek-ai/schemastery": "^3.18.4",
+    "@deepseek-ai/dsh-attachment": "0.2.1-rc.2",
+    "@deepseek-ai/dsh-llm": "0.2.1-rc.2",
+    "@deepseek-ai/dsh-timeout": "0.2.1-rc.2",
+    "@deepseek-ai/dsh-tools": "0.2.1-rc.2",
+    "@deepseek-ai/dsh-typert-protocol": "0.2.1-rc.2",
+    "@deepseek-ai/dsh-util-values": "0.2.1-rc.2",
+    "@deepseek-ai/schemastery": "^3.18.5",
     "@melite/audio-music": "workspace:*",
     "@melite/audio-tts": "workspace:*",
     "@melite/card-base": "workspace:*",
@@ -57,8 +57,8 @@
     "unrun": "^0.3.1"
   },
   "peerDependencies": {
-    "@deepseek-ai/cordis": "^4.0.4",
-    "@deepseek-ai/dsh": ">=0.2.0-rc.1 <0.3.0"
+    "@deepseek-ai/cordis": "^4.0.5",
+    "@deepseek-ai/dsh": ">=0.2.1-rc.2 <0.3.0"
   },
   "files": [
     "lib/index.js",

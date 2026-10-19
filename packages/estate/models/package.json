@@ -10,13 +10,13 @@
     "@melite/comfyui-cordis": "workspace:*",
     "@melite/contracts": "workspace:*",
     "@melite/estate-provisioning": "workspace:*",
-    "@deepseek-ai/schemastery": "^3.18.4",
+    "@deepseek-ai/schemastery": "^3.18.5",
     "@melite/comfyui-card-kit": "workspace:*"
   },
   "devDependencies": {
-    "@deepseek-ai/cordis": "^4.0.4",
-    "@deepseek-ai/dsh-host-webserver": "0.2.0-rc.1",
-    "@deepseek-ai/dsh-typert-protocol": "0.2.0-rc.1",
+    "@deepseek-ai/cordis": "^4.0.5",
+    "@deepseek-ai/dsh-host-webserver": "0.2.1-rc.2",
+    "@deepseek-ai/dsh-typert-protocol": "0.2.1-rc.2",
     "@types/node": "^22.20.0",
     "typescript": "~5.7.2"
   },
@@ -28,7 +28,7 @@
     "./package.json": "./package.json"
   },
   "peerDependencies": {
-    "@deepseek-ai/cordis": "^4.0.4"
+    "@deepseek-ai/cordis": "^4.0.5"
   },
   "files": [
     "lib/index.js",

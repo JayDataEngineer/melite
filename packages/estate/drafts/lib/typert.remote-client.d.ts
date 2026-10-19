@@ -2,7 +2,8 @@
 import type {
   RemoteResult,
   RemoteStreamHandle,
-  TypertRemoteContribution,
+  TypertRemoteInfo,
+  TypertRemoteMethod,
 } from '@deepseek-ai/dsh-typert-protocol'
 import type { BenchClearRow, BenchDoc, BenchEnsureRow, BenchGetRow, BenchPatchRow, BenchReorderRow, BenchRewireRow, BenchStageRow, BenchUndoRow, DraftGetRow, DraftListResult, DraftPatchRow, DraftStagePatch } from '@melite/estate-drafts/types'
 
@@ -49,6 +50,22 @@ declare module '@deepseek-ai/dsh-typert-protocol' {
   }
 }
 
-export declare const TYPERT_REMOTE: TypertRemoteContribution
+export declare const TYPERT_REMOTE: TypertRemoteInfo<{
+  readonly 'bench/add-stage': TypertRemoteMethod<{ readonly 'sessionKey': string; readonly 'doc': BenchDoc }, BenchStageRow>
+  readonly 'bench/clear': TypertRemoteMethod<{ readonly 'sessionKey': string; readonly 'doc': BenchDoc }, BenchClearRow>
+  readonly 'bench/ensure': TypertRemoteMethod<{ readonly 'doc': BenchDoc }, BenchEnsureRow>
+  readonly 'bench/get': TypertRemoteMethod<{ readonly 'sessionKey': string }, BenchGetRow>
+  readonly 'bench/group': TypertRemoteMethod<{ readonly 'sessionKey': string; readonly 'doc': BenchDoc }, BenchStageRow>
+  readonly 'bench/patch': TypertRemoteMethod<{ readonly 'sessionKey': string; readonly 'doc': BenchDoc }, BenchPatchRow>
+  readonly 'bench/remove-stage': TypertRemoteMethod<{ readonly 'sessionKey': string; readonly 'doc': BenchDoc }, BenchStageRow>
+  readonly 'bench/reorder': TypertRemoteMethod<{ readonly 'sessionKey': string; readonly 'doc': BenchDoc }, BenchReorderRow>
+  readonly 'bench/rewire': TypertRemoteMethod<{ readonly 'sessionKey': string; readonly 'doc': BenchDoc }, BenchRewireRow>
+  readonly 'bench/subscribe': TypertRemoteMethod<{ readonly 'sessionKey': string }, BenchGetRow, 'stream'>
+  readonly 'bench/undo': TypertRemoteMethod<{ readonly 'sessionKey': string; readonly 'doc': BenchDoc }, BenchUndoRow>
+  readonly 'bench/ungroup': TypertRemoteMethod<{ readonly 'sessionKey': string; readonly 'doc': BenchDoc }, BenchStageRow>
+  readonly 'drafts/get': TypertRemoteMethod<{ readonly 'draftId': string }, DraftGetRow>
+  readonly 'drafts/list': TypertRemoteMethod<{  }, DraftListResult>
+  readonly 'drafts/patch': TypertRemoteMethod<{ readonly 'draftId': string; readonly 'stageId': string; readonly 'patch': DraftStagePatch; readonly 'expectRev': number | null }, DraftPatchRow>
+}>
 export default TYPERT_REMOTE
 //# sourceMappingURL=typert.remote-client.d.ts.map

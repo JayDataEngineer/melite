@@ -23,14 +23,14 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "@deepseek-ai/dsh-atomic-write": "0.2.0-rc.1",
-    "@deepseek-ai/dsh-subprocess": "0.2.0-rc.1",
-    "@deepseek-ai/dsh-timeout": "0.2.0-rc.1"
+    "@deepseek-ai/dsh-atomic-write": "0.2.1-rc.2",
+    "@deepseek-ai/dsh-subprocess": "0.2.1-rc.2",
+    "@deepseek-ai/dsh-timeout": "0.2.1-rc.2"
   },
   "devDependencies": {
     "@types/node": "^22.20.0",
     "typescript": "^5.9.3",
-    "@deepseek-ai/cordis": "^4.0.4"
+    "@deepseek-ai/cordis": "^4.0.5"
   },
   "engines": {
     "node": ">=22"
@@ -41,6 +41,6 @@
     "lib/**/*.d.ts"
   ],
   "peerDependencies": {
-    "@deepseek-ai/cordis": "^4.0.4"
+    "@deepseek-ai/cordis": "^4.0.5"
   }
 }

@@ -28,7 +28,7 @@
   "license": "MIT",
   "peerDependencies": {
     "@deepseek-ai/cordis-plugin-loader": "workspace:*",
-    "@deepseek-ai/cordis": "^4.0.2"
+    "@deepseek-ai/cordis": "^4.0.5"
   },
   "private": true,
   "devDependencies": {

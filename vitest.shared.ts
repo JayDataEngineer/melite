@@ -162,6 +162,10 @@ export const RUNTIME_LIB_ALIAS: Record<string, string> = {
   '@deepseek-ai/dsh-storage-json': path.join(DRAFTS_DEPS, 'dsh-storage-json/lib/index.js'),
   '@deepseek-ai/dsh-storage-domain': path.join(DRAFTS_DEPS, 'dsh-storage-domain/lib/index.js'),
   '@deepseek-ai/dsh-typert-protocol': path.join(DRAFTS_DEPS, 'dsh-typert-protocol/lib/index.js'),
+  // the rc.2 generated remote clients import this subpath; the bare
+  // row above would swallow it as a prefix, so the subpath anchors
+  // first (the facade's longest-first law).
+  '@deepseek-ai/dsh-typert-protocol/remote-info': path.join(DRAFTS_DEPS, 'dsh-typert-protocol/lib/types/remote-info.js'),
   '@deepseek-ai/cordis-plugin-timer': path.join(QUEUE_DEPS, 'cordis-plugin-timer/lib/index.js'),
   // THE PHANTOM-KEY WALL's comparison primitive: the card-base-anchored
   // copy — the exact deepEqualJson own-key-count semantics the recipe

@@ -31,7 +31,7 @@
     "typescript": "^5.9.3"
   },
   "dependencies": {
-    "@deepseek-ai/dsh-llm-pi-ai": "0.2.0-rc.1",
+    "@deepseek-ai/dsh-llm-pi-ai": "0.2.1-rc.2",
     "@melite-plugin/dsh-card-deck": "workspace:*",
     "@melite-plugin/dsh-card-view": "workspace:*",
     "@melite-plugin/dsh-gallery": "workspace:*",
@@ -47,6 +47,6 @@
     }
   },
   "peerDependencies": {
-    "@deepseek-ai/dsh": ">=0.2.0-rc.1 <0.3.0"
+    "@deepseek-ai/dsh": ">=0.2.1-rc.2 <0.3.0"
   }
 }

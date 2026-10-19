@@ -111,8 +111,14 @@ describe("the typert artifact law — generation face, runtime face, one law", (
       }
       // MUTATION KILLED: the stale 0.1.7-rc.2 vocabulary (`schema:`
       // codec fields the 0.2.0-rc.1 registry cannot read) — the text
-      // gate kills any regenerated-then-reverted artifact.
-      const text = readFileSync(fileURLToPath(artifactUrl), "utf8");
+      // gate kills any regenerated-then-reverted artifact. The rc.2
+      // generator's only legal "schema:" faces are the jsonSchemaError
+      // message prose ("typert tool schema: …"), stripped first; any
+      // other occurrence is the retired codec field.
+      const text = readFileSync(fileURLToPath(artifactUrl), "utf8").replaceAll(
+        "typert tool schema: ",
+        "",
+      );
       expect(text.includes("schema:"), `estate/${name} artifact carries the stale schema: codec vocabulary`).toBe(false);
     });
   }

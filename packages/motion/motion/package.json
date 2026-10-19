@@ -25,10 +25,10 @@
     "typecheck": "tsc --noEmit -p tsconfig.host.json && tsc --noEmit -p tsconfig.client.json"
   },
   "dependencies": {
-    "@deepseek-ai/dsh-client-ui-primitives": "0.2.0-rc.1",
-    "@deepseek-ai/dsh-client-ui-renderer": "0.2.0-rc.1",
-    "@deepseek-ai/dsh-tools": "0.2.0-rc.1",
-    "@deepseek-ai/schemastery": "^3.18.4",
+    "@deepseek-ai/dsh-client-ui-primitives": "0.2.1-rc.2",
+    "@deepseek-ai/dsh-client-ui-renderer": "0.2.1-rc.2",
+    "@deepseek-ai/dsh-tools": "0.2.1-rc.2",
+    "@deepseek-ai/schemastery": "^3.18.5",
     "@melite-plugin/motion": "workspace:*",
     "@melite-plugin/timeline": "workspace:*",
     "@melite/card-base": "workspace:*",
@@ -50,7 +50,7 @@
     "@types/three": "^0.184.1",
     "tsdown": "^0.22.14",
     "typescript": "~6.0.3",
-    "@deepseek-ai/cordis": "^4.0.4"
+    "@deepseek-ai/cordis": "^4.0.5"
   },
   "name": "@melite/motion-motion",
   "description": "the motion card (the motion lane) — one card one package: card.ts host face + ui/ studio + agents/ context",
@@ -68,8 +68,8 @@
   },
   "sideEffects": true,
   "peerDependencies": {
-    "@deepseek-ai/dsh": ">=0.2.0-rc.1 <0.3.0",
-    "@deepseek-ai/cordis": "^4.0.4"
+    "@deepseek-ai/dsh": ">=0.2.1-rc.2 <0.3.0",
+    "@deepseek-ai/cordis": "^4.0.5"
   },
   "files": [
     "lib/index.js",

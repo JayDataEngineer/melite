@@ -31,7 +31,7 @@
   "devDependencies": {
     "@types/node": "^22.20.0",
     "typescript": "^5.9.3",
-    "@deepseek-ai/cordis": "^4.0.4"
+    "@deepseek-ai/cordis": "^4.0.5"
   },
   "files": [
     "lib/index.js",
@@ -39,6 +39,6 @@
     "lib/**/*.d.ts"
   ],
   "peerDependencies": {
-    "@deepseek-ai/cordis": "^4.0.4"
+    "@deepseek-ai/cordis": "^4.0.5"
   }
 }

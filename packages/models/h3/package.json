@@ -32,14 +32,14 @@
     }
   },
   "dependencies": {
-    "@deepseek-ai/schemastery": "^3.18.4",
+    "@deepseek-ai/schemastery": "^3.18.5",
     "@melite/comfyui-card-kit": "workspace:*",
     "@melite/contracts": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^22.20.0",
     "typescript": "^5.9.3",
-    "@deepseek-ai/cordis": "^4.0.4",
+    "@deepseek-ai/cordis": "^4.0.5",
     "@deepseek-ai/cosmokit": "~1.8.5"
   },
   "scripts": {
@@ -52,7 +52,7 @@
     "lib/**/*.d.ts"
   ],
   "peerDependencies": {
-    "@deepseek-ai/cordis": "^4.0.4",
+    "@deepseek-ai/cordis": "^4.0.5",
     "@deepseek-ai/cosmokit": "~1.8.5"
   }
 }

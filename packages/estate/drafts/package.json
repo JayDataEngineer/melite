@@ -40,19 +40,19 @@
     }
   },
   "dependencies": {
-    "@deepseek-ai/dsh-storage": "0.2.0-rc.1",
-    "@deepseek-ai/dsh-storage-domain": "0.2.0-rc.1",
-    "@deepseek-ai/dsh-storage-json": "0.2.0-rc.1",
-    "@deepseek-ai/dsh-typert-protocol": "0.2.0-rc.1",
+    "@deepseek-ai/dsh-storage": "0.2.1-rc.2",
+    "@deepseek-ai/dsh-storage-domain": "0.2.1-rc.2",
+    "@deepseek-ai/dsh-storage-json": "0.2.1-rc.2",
+    "@deepseek-ai/dsh-typert-protocol": "0.2.1-rc.2",
     "@melite/comfyui-card-kit": "workspace:*",
     "@melite/contracts": "workspace:*",
-    "zod": "4.5.4"
+    "zod": "4.4.3"
   },
   "devDependencies": {
-    "@deepseek-ai/dsh-typert-generator": "0.2.0-rc.1",
+    "@deepseek-ai/dsh-typert-generator": "0.2.1-rc.2",
     "@types/node": "^22.20.0",
     "typescript": "^5.9.3",
-    "@deepseek-ai/cordis": "^4.0.4"
+    "@deepseek-ai/cordis": "^4.0.5"
   },
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
@@ -60,6 +60,6 @@
     "typecheck": "tsc --noEmit"
   },
   "peerDependencies": {
-    "@deepseek-ai/cordis": "^4.0.4"
+    "@deepseek-ai/cordis": "^4.0.5"
   }
 }

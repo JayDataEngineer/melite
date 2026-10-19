@@ -2,7 +2,8 @@
 import type {
   RemoteResult,
   RemoteStreamHandle,
-  TypertRemoteContribution,
+  TypertRemoteInfo,
+  TypertRemoteMethod,
 } from '@deepseek-ai/dsh-typert-protocol'
 import type { RunRow, RunStartDoc } from '@melite/estate-runs/types'
 
@@ -28,6 +29,13 @@ declare module '@deepseek-ai/dsh-typert-protocol' {
   }
 }
 
-export declare const TYPERT_REMOTE: TypertRemoteContribution
+export declare const TYPERT_REMOTE: TypertRemoteInfo<{
+  readonly 'runs/list': TypertRemoteMethod<{ readonly 'rawLimit': string }, { count: number; runs: RunRow[]; }>
+  readonly 'runs/start': TypertRemoteMethod<{ readonly 'doc': RunStartDoc }, { run_id: string; status: string; queue_position: number; }>
+  readonly 'runs/status': TypertRemoteMethod<{ readonly 'runId': string }, RunRow>
+  readonly 'runs/stop': TypertRemoteMethod<{ readonly 'runId': string }, RunRow>
+  readonly 'runs/subscribe': TypertRemoteMethod<{ readonly 'runId': string }, RunRow, 'stream'>
+  readonly 'runs/validate': TypertRemoteMethod<{ readonly 'doc': RunStartDoc }, RunRow>
+}>
 export default TYPERT_REMOTE
 //# sourceMappingURL=typert.remote-client.d.ts.map
