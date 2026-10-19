@@ -1,4 +1,5 @@
 // @vitest-environment happy-dom
+// @contract cards-drill-departed-surface-arrival
 // stage-drill-gates.spec.tsx — the drill's compose-gate and
 // write-face seats (the batch-14 burn-down): the axis-unset
 // authoring law, the atomic pick's gate and both promise halves,

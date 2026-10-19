@@ -1,3 +1,4 @@
+// @contract cards-drill-departed-surface-arrival
 // drill-departed-surface-null-set.spec.ts — THE DRILL NULL-SET ARMS
 // (2026-11-08) — the verb seats behind ERRORS.md item h / B8
 // ("2511 → recipe click → back to 21 strands double_reference — THE
