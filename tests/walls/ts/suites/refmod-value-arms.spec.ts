@@ -396,4 +396,28 @@ describe("the steps honesty wall (ERRORS d — the ~100 sampling-steps burn; pur
     assert.ok(CATALOG_MAX_STEPS > 0 && CATALOG_MAX_STEPS <= 8,
       `the committed catalog's married span tops at ${String(CATALOG_MAX_STEPS)} — the lane's declared ceiling; a row that raises it re-pins this arm deliberately (the catalog is the one owner, mods/loras.ts)`);
   });
+
+  it("ARM 12 — every committed distill row declares its step DOMAIN: the leaf's dial bounds itself to the row's own span, so a foreign count refuses at EDIT — never at the run door (the operator's prevalidation law)", async () => {
+    // ERRORS d remainder + the operator's own demand (ERRORS g: "we
+    // spend a week building the system so this would be pre-validated
+    // and show reds before we ever got into the app"). The bag leaf's
+    // steps entry dials the generic envelope 1..100 (packs.ts:34)
+    // whenever the row declares no domain — a typed 100 passed the
+    // edit, rode the marriage, and died at the re-walk AFTER the run
+    // press (ARMs 9/10: honest, but post-hoc). discovery.ts:586-599
+    // already serves steps_min/steps_max per row and the leaf
+    // self-bounds to them ("RANGE FACTS: the leaf's dial bounds
+    // itself to them") — the ONE owner is the catalog: every distill
+    // row declares its domain, the fixed point when the adapter has
+    // a single designed count.
+    for (const row of H3_LORA_ROWS) {
+      if (row.steps === undefined) continue
+      assert.ok(typeof row.steps_min === "number" && typeof row.steps_max === "number",
+        `${row.id}: declares its step domain (steps_min/steps_max) — a singular adapter declares its fixed point; an unbounded row dials the generic 1..100 envelope and the foreign count only dies at the run door`);
+      assert.ok(row.steps_min >= 1 && row.steps_max <= 30,
+        `${row.id}: domain [${String(row.steps_min)},${String(row.steps_max)}] sits inside the lane's declared solver ceiling (schema.ts:141 max 30)`);
+      assert.ok(row.steps_min <= row.steps && row.steps <= row.steps_max,
+        `${row.id}: the married default ${String(row.steps)} sits inside the row's own domain`);
+    }
+  });
 });

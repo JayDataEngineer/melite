@@ -229,7 +229,10 @@ describe("the h3 sampler knobs ride VERBATIM to their consumers (purge P2 value 
       second_pass_enabled: true,
       refine_lora: "h3_taomate_3step",
       refine_strength: 0.9,
-      refine_steps: 5,
+      // the row's OWN count (its declared domain [3,3] — value-arms
+      // ARM 12): 5 was stateable only while the row declared nothing;
+      // the row-domain law now refuses it at compose, as designed.
+      refine_steps: 3,
     }, "h3_value_arm4");
     const samplers = Object.entries(graph).filter(([, n]) => n.class_type === "SamplerCustomAdvanced");
     assert.equal(samplers.length, 2,
@@ -242,8 +245,8 @@ describe("the h3 sampler knobs ride VERBATIM to their consumers (purge P2 value 
     const stack = JSON.parse(rider![1].inputs.stack_data as string) as Array<{ lora: string; str: number }>;
     assert.equal(stack[0]!.str, 0.9, "the rider stack carries the STATED strength");
     const riderSched = Object.entries(graph).filter(([, n]) =>
-      n.class_type === "BasicScheduler" && n.inputs.steps === 5 && n.inputs.denoise === 1.0);
-    assert.ok(riderSched.length >= 1, "the rider scheduler carries the STATED steps at full denoise");
+      n.class_type === "BasicScheduler" && n.inputs.steps === 3 && n.inputs.denoise === 1.0);
+    assert.ok(riderSched.length >= 1, "the rider scheduler carries the STATED steps (the row's own count) at full denoise");
   });
 
   it("ARM 5 (master-off guard) — refine seats WITHOUT second_pass_enabled compose the plain pass (exactly ONE SamplerCustomAdvanced)", async () => {
@@ -256,7 +259,7 @@ describe("the h3 sampler knobs ride VERBATIM to their consumers (purge P2 value 
       seed: SEED,
       refine_lora: "h3_taomate_3step",
       refine_strength: 0.9,
-      refine_steps: 5,
+      refine_steps: 3,
     }, "h3_value_arm5");
     const samplers = Object.entries(graph).filter(([, n]) => n.class_type === "SamplerCustomAdvanced");
     assert.equal(samplers.length, 1,
