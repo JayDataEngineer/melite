@@ -85,6 +85,10 @@ import type { FactsFile, FactsReads } from "@melite/comfyui-cordis";
 import type { CardDefinition } from '@melite/comfyui-card-kit/card-definition';
 import { DOOR_KEYS } from "./runsGates.ts";
 import type { FlowsSeatService } from "./flowsData.ts";
+// (type-only: loads ./service's Context augmentation — `queue` — that
+// stateRoots()'s `this.ctx.queue` deref relies on; without it a
+// program reaching this file without service.ts sees a bare Context)
+import type { QueueService } from "./service.ts";
 import { CardArmError, EnvelopeRefusal, phaseRefusal, phaseRefusalCode } from "./cardsArmError.ts";
 import { RUNS_ERROR_CODES } from "./runsErrorCodes.ts";
 export { CardArmError } from "./cardsArmError.ts";
