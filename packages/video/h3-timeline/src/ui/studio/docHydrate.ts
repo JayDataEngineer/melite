@@ -216,9 +216,18 @@ export function hydrateLayerA(rawDoc: Record<string, unknown> | undefined): Laye
           // override on every save (R2, 2026-10-27).
           .map((r) => {
             const steps = typeof r.steps === "number" && Number.isFinite(r.steps) ? r.steps : undefined
+            const strength = typeof r.strength === "number" && Number.isFinite(r.strength) ? r.strength : undefined
             return {
               id: r.id as string,
-              strength: typeof r.strength === "number" ? r.strength : undefined,
+              // THE PHANTOM-KEY LAW (ERROR d, 2026-10-19): `strength`
+              // rides only when stated — a materialized undefined is an
+              // OWN KEY deepEqualJson counts (keys.length 2 ≠ 1), so the
+              // hydrated bag never deep-matched the recipe stamp and the
+              // recipe face read "-- recipe --" at birth AND after the
+              // writing pick (the same invisible-state-decides-a-face rot
+              // the (m) parity cure killed at the seat). Mirrors the
+              // steps rider below — one shape, the wire's own.
+              ...(strength !== undefined ? { strength } : {}),
               // the key rides only when stated (a row that never
               // claimed a count carries no steps key — the service's
               // step-claiming distinction reads absence as catalog).
