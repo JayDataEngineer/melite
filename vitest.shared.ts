@@ -163,6 +163,10 @@ export const RUNTIME_LIB_ALIAS: Record<string, string> = {
   '@deepseek-ai/dsh-storage-domain': path.join(DRAFTS_DEPS, 'dsh-storage-domain/lib/index.js'),
   '@deepseek-ai/dsh-typert-protocol': path.join(DRAFTS_DEPS, 'dsh-typert-protocol/lib/index.js'),
   '@deepseek-ai/cordis-plugin-timer': path.join(QUEUE_DEPS, 'cordis-plugin-timer/lib/index.js'),
+  // THE PHANTOM-KEY WALL's comparison primitive: the card-base-anchored
+  // copy — the exact deepEqualJson own-key-count semantics the recipe
+  // seam runs (card-base hosts the kit and the counting seam).
+  '@deepseek-ai/dsh-util-values': path.join(import.meta.dirname, 'packages/web/card-base/node_modules/@deepseek-ai/dsh-util-values/lib/index.js'),
 }
 
 /**
