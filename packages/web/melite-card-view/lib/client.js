@@ -55,6 +55,162 @@ window.__ModuleLoader__.load({
 		let _deepseek_ai_dsh_client_store = require("@deepseek-ai/dsh-client-store");
 		let _melite_three_client_client = require("@melite/three-client/client");
 		_melite_three_client_client = __toESM(_melite_three_client_client, 1);
+		//#region ../../../@deepseek-ai/dsh-typert-protocol/lib/types/remote-info.js
+		/** Lazy assembly of generated Remote definitions using caller-supplied Zod; no runtime imports. */
+		/**
+		* Retain one generated definition per endpoint without constructing parsers or projections.
+		* The class instance builds its shared descriptor/method index on first access;
+		* input schemas and JSON Schema projections are cached only when requested.
+		* @param spec - compiler-produced method facts and Zod factories.
+		* @param zod - the generated artifact's Zod runtime for named-input parsers.
+		* @returns a lazy, mountable info instance with no registration or transport effects.
+		*/
+		function createTypertRemoteInfo(spec, zod) {
+			return new RemoteInfo(spec, zod);
+		}
+		var RemoteInfo = class {
+			spec;
+			zod;
+			index;
+			constructor(spec, zod) {
+				this.spec = spec;
+				this.zod = zod;
+			}
+			get package() {
+				return this.spec.package;
+			}
+			get descriptors() {
+				return this.resolve().descriptors;
+			}
+			get methods() {
+				return this.resolve().methods;
+			}
+			resolve() {
+				if (this.index !== void 0) return this.index;
+				const zod = this.zod;
+				const descriptors = [];
+				const methods = Object.create(null);
+				for (const [endpoint, definition] of Object.entries(this.spec.methods)) {
+					const separator = endpoint.indexOf("/");
+					const namespace = endpoint.slice(0, separator);
+					const method = endpoint.slice(separator + 1);
+					const parameters = definition.parameters.map((parameter) => ({
+						...parameter,
+						wire: parameter.wire ?? parameter.name
+					}));
+					const descriptor = {
+						...definition,
+						id: `${this.spec.package}#${endpoint}`,
+						namespace,
+						method,
+						parameters,
+						result: definition.result.description === void 0 ? definition.result : new ResultValue(definition.result)
+					};
+					if (definition.invocation.kind === "direct") {
+						const inputs = [];
+						methods[endpoint] = Object.assign(descriptor, {
+							input(options) {
+								const strict = options?.strict === true;
+								return inputs[strict ? 1 : 0] ??= new NamedInput(parameters, strict, zod);
+							},
+							invoke(remote, input, signal) {
+								const named = input;
+								const values = parameters.map((parameter) => named[parameter.wire]);
+								if (definition.cancellation !== void 0) values.push(signal);
+								const receiver = Reflect.get(remote, namespace);
+								return Reflect.get(receiver, method).apply(receiver, values);
+							}
+						});
+					}
+					descriptors.push(descriptor);
+				}
+				return this.index = {
+					descriptors,
+					methods
+				};
+			}
+		};
+		function optional(parameter) {
+			return parameter.source === "json" && parameter.acceptsUndefined === true;
+		}
+		var NamedInput = class {
+			parameters;
+			strict;
+			zod;
+			schema;
+			projection;
+			constructor(parameters, strict, zod) {
+				this.parameters = parameters;
+				this.strict = strict;
+				this.zod = zod;
+			}
+			codec(parameter) {
+				return this.strict ? parameter.strictCodec : parameter.codec;
+			}
+			create = () => this.schema ??= this.zod.strictObject(Object.fromEntries(this.parameters.map((parameter) => {
+				const value = this.codec(parameter).create();
+				return [parameter.wire, optional(parameter) ? value.optional() : value.nonoptional()];
+			})));
+			get jsonSchema() {
+				return this.project().jsonSchema;
+			}
+			get jsonSchemaError() {
+				return this.project().jsonSchemaError;
+			}
+			project() {
+				if (this.projection !== void 0) return this.projection;
+				const unavailable = this.parameters.find((parameter) => this.codec(parameter).jsonSchema === void 0);
+				if (unavailable !== void 0) return this.projection = { jsonSchemaError: this.codec(unavailable).jsonSchemaError ?? `No JSON Schema for parameter ${unavailable.wire}` };
+				return this.projection = { jsonSchema: {
+					type: "object",
+					properties: Object.fromEntries(this.parameters.map((parameter) => [parameter.wire, {
+						...this.codec(parameter).jsonSchema,
+						...parameter.description === void 0 ? {} : { description: parameter.description }
+					}])),
+					required: this.parameters.filter((parameter) => !optional(parameter)).map((parameter) => parameter.wire),
+					additionalProperties: false
+				} };
+			}
+		};
+		var ResultValue = class {
+			spec;
+			projection;
+			constructor(spec) {
+				this.spec = spec;
+			}
+			get mode() {
+				return this.spec.mode;
+			}
+			get typeSymbol() {
+				return this.spec.typeSymbol;
+			}
+			get create() {
+				return this.spec.create;
+			}
+			get decode() {
+				return this.spec.decode;
+			}
+			get encode() {
+				return this.spec.encode;
+			}
+			get description() {
+				return this.spec.description;
+			}
+			get jsonSchemaError() {
+				return this.spec.jsonSchemaError;
+			}
+			get jsonSchema() {
+				if (this.projection === void 0) {
+					const schema = this.spec.jsonSchema;
+					this.projection = { value: schema === void 0 ? void 0 : {
+						...schema,
+						description: this.spec.description
+					} };
+				}
+				return this.projection.value;
+			}
+		};
+		//#endregion
 		//#region ../../estate/drafts/lib/typert.remote-client.js
 		let JsonValueRemoteCodec$schema$value$1;
 		const JsonValueRemoteCodec$schema$1 = () => JsonValueRemoteCodec$schema$value$1 ??= zod.z.union([
@@ -362,7 +518,7 @@ window.__ModuleLoader__.load({
 			"rev": zod.z.number().readonly(),
 			"stage": zod.z.string().readonly(),
 			"patched": zod.z.array(zod.z.string()).readonly(),
-			"dropped": zod.z.union([zod.z.undefined(), zod.z.array(zod.z.string())]).readonly().optional()
+			"dropped": zod.z.union([zod.z.undefined(), zod.z.array(zod.z.string())]).readonly().optional().describe("THE FAMILY RESEAT'S RECEIPT (the ERROR g/h cure, 2026-11-08): the family-dead keys the settlement dropped off the merged view (the flip's own strand — the arrival flipped the derived family under carried stamps). Empty/absent when nothing dropped. The drop rides the row so it SPEAKS — never a silent strip.")
 		});
 		let _melite_estate_drafts_bench_remove_stage_parameter_0$schema$value;
 		const _melite_estate_drafts_bench_remove_stage_parameter_0$schema = () => _melite_estate_drafts_bench_remove_stage_parameter_0$schema$value ??= zod.z.string();
@@ -653,40 +809,417 @@ window.__ModuleLoader__.load({
 			"patched": zod.z.union([zod.z.undefined(), zod.z.array(zod.z.string())]).optional(),
 			"rev": zod.z.union([zod.z.undefined(), zod.z.number()]).optional()
 		});
-		const TYPERT_REMOTE$3 = {
+		let closed$JsonValueRemoteCodec$schema$value$1;
+		const closed$JsonValueRemoteCodec$schema$1 = () => closed$JsonValueRemoteCodec$schema$value$1 ??= zod.z.union([
+			zod.z.literal(null),
+			zod.z.string(),
+			zod.z.number(),
+			zod.z.literal(false),
+			zod.z.literal(true),
+			zod.z.array(zod.z.lazy(() => closed$JsonValueRemoteCodec$schema$1())),
+			zod.z.record(zod.z.string(), zod.z.lazy(() => closed$JsonValueRemoteCodec$schema$1())).readonly()
+		]);
+		let closed$JsonValueRemoteCodec$schema2$value$1;
+		const closed$JsonValueRemoteCodec$schema2$1 = () => closed$JsonValueRemoteCodec$schema2$value$1 ??= zod.z.union([
+			zod.z.literal(null),
+			zod.z.string(),
+			zod.z.number(),
+			zod.z.literal(false),
+			zod.z.literal(true),
+			zod.z.array(zod.z.lazy(() => closed$JsonValueRemoteCodec$schema2$1())),
+			zod.z.record(zod.z.string(), zod.z.lazy(() => closed$JsonValueRemoteCodec$schema2$1())).readonly()
+		]);
+		let closed$JsonValueRemoteCodec$schema3$value;
+		const closed$JsonValueRemoteCodec$schema3 = () => closed$JsonValueRemoteCodec$schema3$value ??= zod.z.union([
+			zod.z.literal(null),
+			zod.z.string(),
+			zod.z.number(),
+			zod.z.literal(false),
+			zod.z.literal(true),
+			zod.z.array(zod.z.lazy(() => closed$JsonValueRemoteCodec$schema3())),
+			zod.z.record(zod.z.string(), zod.z.lazy(() => closed$JsonValueRemoteCodec$schema3())).readonly()
+		]);
+		let closed$JsonValueRemoteCodec$schema4$value;
+		const closed$JsonValueRemoteCodec$schema4 = () => closed$JsonValueRemoteCodec$schema4$value ??= zod.z.union([
+			zod.z.literal(null),
+			zod.z.string(),
+			zod.z.number(),
+			zod.z.literal(false),
+			zod.z.literal(true),
+			zod.z.array(zod.z.lazy(() => closed$JsonValueRemoteCodec$schema4())),
+			zod.z.record(zod.z.string(), zod.z.lazy(() => closed$JsonValueRemoteCodec$schema4())).readonly()
+		]);
+		let closed$JsonValueRemoteCodec$schema5$value;
+		const closed$JsonValueRemoteCodec$schema5 = () => closed$JsonValueRemoteCodec$schema5$value ??= zod.z.union([
+			zod.z.literal(null),
+			zod.z.string(),
+			zod.z.number(),
+			zod.z.literal(false),
+			zod.z.literal(true),
+			zod.z.array(zod.z.lazy(() => closed$JsonValueRemoteCodec$schema5())),
+			zod.z.record(zod.z.string(), zod.z.lazy(() => closed$JsonValueRemoteCodec$schema5())).readonly()
+		]);
+		let closed$JsonValueRemoteCodec$schema6$value;
+		const closed$JsonValueRemoteCodec$schema6 = () => closed$JsonValueRemoteCodec$schema6$value ??= zod.z.union([
+			zod.z.literal(null),
+			zod.z.string(),
+			zod.z.number(),
+			zod.z.literal(false),
+			zod.z.literal(true),
+			zod.z.array(zod.z.lazy(() => closed$JsonValueRemoteCodec$schema6())),
+			zod.z.record(zod.z.string(), zod.z.lazy(() => closed$JsonValueRemoteCodec$schema6())).readonly()
+		]);
+		let closed$JsonValueRemoteCodec$schema7$value;
+		const closed$JsonValueRemoteCodec$schema7 = () => closed$JsonValueRemoteCodec$schema7$value ??= zod.z.union([
+			zod.z.literal(null),
+			zod.z.string(),
+			zod.z.number(),
+			zod.z.literal(false),
+			zod.z.literal(true),
+			zod.z.array(zod.z.lazy(() => closed$JsonValueRemoteCodec$schema7())),
+			zod.z.record(zod.z.string(), zod.z.lazy(() => closed$JsonValueRemoteCodec$schema7())).readonly()
+		]);
+		let closed$JsonValueRemoteCodec$schema8$value;
+		const closed$JsonValueRemoteCodec$schema8 = () => closed$JsonValueRemoteCodec$schema8$value ??= zod.z.union([
+			zod.z.literal(null),
+			zod.z.string(),
+			zod.z.number(),
+			zod.z.literal(false),
+			zod.z.literal(true),
+			zod.z.array(zod.z.lazy(() => closed$JsonValueRemoteCodec$schema8())),
+			zod.z.record(zod.z.string(), zod.z.lazy(() => closed$JsonValueRemoteCodec$schema8())).readonly()
+		]);
+		let closed$JsonValueRemoteCodec$schema9$value;
+		const closed$JsonValueRemoteCodec$schema9 = () => closed$JsonValueRemoteCodec$schema9$value ??= zod.z.union([
+			zod.z.literal(null),
+			zod.z.string(),
+			zod.z.number(),
+			zod.z.literal(false),
+			zod.z.literal(true),
+			zod.z.array(zod.z.lazy(() => closed$JsonValueRemoteCodec$schema9())),
+			zod.z.record(zod.z.string(), zod.z.lazy(() => closed$JsonValueRemoteCodec$schema9())).readonly()
+		]);
+		let closed$JsonValueRemoteCodec$schema10$value;
+		const closed$JsonValueRemoteCodec$schema10 = () => closed$JsonValueRemoteCodec$schema10$value ??= zod.z.union([
+			zod.z.literal(null),
+			zod.z.string(),
+			zod.z.number(),
+			zod.z.literal(false),
+			zod.z.literal(true),
+			zod.z.array(zod.z.lazy(() => closed$JsonValueRemoteCodec$schema10())),
+			zod.z.record(zod.z.string(), zod.z.lazy(() => closed$JsonValueRemoteCodec$schema10())).readonly()
+		]);
+		let closed$JsonValueRemoteCodec$schema11$value;
+		const closed$JsonValueRemoteCodec$schema11 = () => closed$JsonValueRemoteCodec$schema11$value ??= zod.z.union([
+			zod.z.literal(null),
+			zod.z.string(),
+			zod.z.number(),
+			zod.z.literal(false),
+			zod.z.literal(true),
+			zod.z.array(zod.z.lazy(() => closed$JsonValueRemoteCodec$schema11())),
+			zod.z.record(zod.z.string(), zod.z.lazy(() => closed$JsonValueRemoteCodec$schema11())).readonly()
+		]);
+		let _melite_estate_drafts_bench_add_stage_parameter_0_strict$schema$value;
+		const _melite_estate_drafts_bench_add_stage_parameter_0_strict$schema = () => _melite_estate_drafts_bench_add_stage_parameter_0_strict$schema$value ??= zod.z.string();
+		let _melite_estate_drafts_bench_add_stage_parameter_1_strict$schema$value;
+		const _melite_estate_drafts_bench_add_stage_parameter_1_strict$schema = () => _melite_estate_drafts_bench_add_stage_parameter_1_strict$schema$value ??= zod.z.record(zod.z.string(), zod.z.union([
+			zod.z.literal(null),
+			zod.z.string(),
+			zod.z.number(),
+			zod.z.literal(false),
+			zod.z.literal(true),
+			zod.z.array(zod.z.lazy(() => closed$JsonValueRemoteCodec$schema3())),
+			zod.z.record(zod.z.string(), zod.z.lazy(() => closed$JsonValueRemoteCodec$schema3())).readonly()
+		])).readonly();
+		let _melite_estate_drafts_bench_clear_parameter_0_strict$schema$value;
+		const _melite_estate_drafts_bench_clear_parameter_0_strict$schema = () => _melite_estate_drafts_bench_clear_parameter_0_strict$schema$value ??= zod.z.string();
+		let _melite_estate_drafts_bench_clear_parameter_1_strict$schema$value;
+		const _melite_estate_drafts_bench_clear_parameter_1_strict$schema = () => _melite_estate_drafts_bench_clear_parameter_1_strict$schema$value ??= zod.z.record(zod.z.string(), zod.z.union([
+			zod.z.literal(null),
+			zod.z.string(),
+			zod.z.number(),
+			zod.z.literal(false),
+			zod.z.literal(true),
+			zod.z.array(zod.z.lazy(() => closed$JsonValueRemoteCodec$schema5())),
+			zod.z.record(zod.z.string(), zod.z.lazy(() => closed$JsonValueRemoteCodec$schema5())).readonly()
+		])).readonly();
+		let _melite_estate_drafts_bench_ensure_parameter_0_strict$schema$value;
+		const _melite_estate_drafts_bench_ensure_parameter_0_strict$schema = () => _melite_estate_drafts_bench_ensure_parameter_0_strict$schema$value ??= zod.z.record(zod.z.string(), zod.z.union([
+			zod.z.literal(null),
+			zod.z.string(),
+			zod.z.number(),
+			zod.z.literal(false),
+			zod.z.literal(true),
+			zod.z.array(zod.z.lazy(() => closed$JsonValueRemoteCodec$schema$1())),
+			zod.z.record(zod.z.string(), zod.z.lazy(() => closed$JsonValueRemoteCodec$schema$1())).readonly()
+		])).readonly();
+		let _melite_estate_drafts_bench_get_parameter_0_strict$schema$value;
+		const _melite_estate_drafts_bench_get_parameter_0_strict$schema = () => _melite_estate_drafts_bench_get_parameter_0_strict$schema$value ??= zod.z.string();
+		let _melite_estate_drafts_bench_group_parameter_0_strict$schema$value;
+		const _melite_estate_drafts_bench_group_parameter_0_strict$schema = () => _melite_estate_drafts_bench_group_parameter_0_strict$schema$value ??= zod.z.string();
+		let _melite_estate_drafts_bench_group_parameter_1_strict$schema$value;
+		const _melite_estate_drafts_bench_group_parameter_1_strict$schema = () => _melite_estate_drafts_bench_group_parameter_1_strict$schema$value ??= zod.z.record(zod.z.string(), zod.z.union([
+			zod.z.literal(null),
+			zod.z.string(),
+			zod.z.number(),
+			zod.z.literal(false),
+			zod.z.literal(true),
+			zod.z.array(zod.z.lazy(() => closed$JsonValueRemoteCodec$schema8())),
+			zod.z.record(zod.z.string(), zod.z.lazy(() => closed$JsonValueRemoteCodec$schema8())).readonly()
+		])).readonly();
+		let _melite_estate_drafts_bench_patch_parameter_0_strict$schema$value;
+		const _melite_estate_drafts_bench_patch_parameter_0_strict$schema = () => _melite_estate_drafts_bench_patch_parameter_0_strict$schema$value ??= zod.z.string();
+		let _melite_estate_drafts_bench_patch_parameter_1_strict$schema$value;
+		const _melite_estate_drafts_bench_patch_parameter_1_strict$schema = () => _melite_estate_drafts_bench_patch_parameter_1_strict$schema$value ??= zod.z.record(zod.z.string(), zod.z.union([
+			zod.z.literal(null),
+			zod.z.string(),
+			zod.z.number(),
+			zod.z.literal(false),
+			zod.z.literal(true),
+			zod.z.array(zod.z.lazy(() => closed$JsonValueRemoteCodec$schema2$1())),
+			zod.z.record(zod.z.string(), zod.z.lazy(() => closed$JsonValueRemoteCodec$schema2$1())).readonly()
+		])).readonly();
+		let _melite_estate_drafts_bench_remove_stage_parameter_0_strict$schema$value;
+		const _melite_estate_drafts_bench_remove_stage_parameter_0_strict$schema = () => _melite_estate_drafts_bench_remove_stage_parameter_0_strict$schema$value ??= zod.z.string();
+		let _melite_estate_drafts_bench_remove_stage_parameter_1_strict$schema$value;
+		const _melite_estate_drafts_bench_remove_stage_parameter_1_strict$schema = () => _melite_estate_drafts_bench_remove_stage_parameter_1_strict$schema$value ??= zod.z.record(zod.z.string(), zod.z.union([
+			zod.z.literal(null),
+			zod.z.string(),
+			zod.z.number(),
+			zod.z.literal(false),
+			zod.z.literal(true),
+			zod.z.array(zod.z.lazy(() => closed$JsonValueRemoteCodec$schema4())),
+			zod.z.record(zod.z.string(), zod.z.lazy(() => closed$JsonValueRemoteCodec$schema4())).readonly()
+		])).readonly();
+		let _melite_estate_drafts_bench_reorder_parameter_0_strict$schema$value;
+		const _melite_estate_drafts_bench_reorder_parameter_0_strict$schema = () => _melite_estate_drafts_bench_reorder_parameter_0_strict$schema$value ??= zod.z.string();
+		let _melite_estate_drafts_bench_reorder_parameter_1_strict$schema$value;
+		const _melite_estate_drafts_bench_reorder_parameter_1_strict$schema = () => _melite_estate_drafts_bench_reorder_parameter_1_strict$schema$value ??= zod.z.record(zod.z.string(), zod.z.union([
+			zod.z.literal(null),
+			zod.z.string(),
+			zod.z.number(),
+			zod.z.literal(false),
+			zod.z.literal(true),
+			zod.z.array(zod.z.lazy(() => closed$JsonValueRemoteCodec$schema7())),
+			zod.z.record(zod.z.string(), zod.z.lazy(() => closed$JsonValueRemoteCodec$schema7())).readonly()
+		])).readonly();
+		let _melite_estate_drafts_bench_rewire_parameter_0_strict$schema$value;
+		const _melite_estate_drafts_bench_rewire_parameter_0_strict$schema = () => _melite_estate_drafts_bench_rewire_parameter_0_strict$schema$value ??= zod.z.string();
+		let _melite_estate_drafts_bench_rewire_parameter_1_strict$schema$value;
+		const _melite_estate_drafts_bench_rewire_parameter_1_strict$schema = () => _melite_estate_drafts_bench_rewire_parameter_1_strict$schema$value ??= zod.z.record(zod.z.string(), zod.z.union([
+			zod.z.literal(null),
+			zod.z.string(),
+			zod.z.number(),
+			zod.z.literal(false),
+			zod.z.literal(true),
+			zod.z.array(zod.z.lazy(() => closed$JsonValueRemoteCodec$schema6())),
+			zod.z.record(zod.z.string(), zod.z.lazy(() => closed$JsonValueRemoteCodec$schema6())).readonly()
+		])).readonly();
+		let _melite_estate_drafts_bench_subscribe_parameter_0_strict$schema$value;
+		const _melite_estate_drafts_bench_subscribe_parameter_0_strict$schema = () => _melite_estate_drafts_bench_subscribe_parameter_0_strict$schema$value ??= zod.z.string();
+		let _melite_estate_drafts_bench_undo_parameter_0_strict$schema$value;
+		const _melite_estate_drafts_bench_undo_parameter_0_strict$schema = () => _melite_estate_drafts_bench_undo_parameter_0_strict$schema$value ??= zod.z.string();
+		let _melite_estate_drafts_bench_undo_parameter_1_strict$schema$value;
+		const _melite_estate_drafts_bench_undo_parameter_1_strict$schema = () => _melite_estate_drafts_bench_undo_parameter_1_strict$schema$value ??= zod.z.record(zod.z.string(), zod.z.union([
+			zod.z.literal(null),
+			zod.z.string(),
+			zod.z.number(),
+			zod.z.literal(false),
+			zod.z.literal(true),
+			zod.z.array(zod.z.lazy(() => closed$JsonValueRemoteCodec$schema10())),
+			zod.z.record(zod.z.string(), zod.z.lazy(() => closed$JsonValueRemoteCodec$schema10())).readonly()
+		])).readonly();
+		let _melite_estate_drafts_bench_ungroup_parameter_0_strict$schema$value;
+		const _melite_estate_drafts_bench_ungroup_parameter_0_strict$schema = () => _melite_estate_drafts_bench_ungroup_parameter_0_strict$schema$value ??= zod.z.string();
+		let _melite_estate_drafts_bench_ungroup_parameter_1_strict$schema$value;
+		const _melite_estate_drafts_bench_ungroup_parameter_1_strict$schema = () => _melite_estate_drafts_bench_ungroup_parameter_1_strict$schema$value ??= zod.z.record(zod.z.string(), zod.z.union([
+			zod.z.literal(null),
+			zod.z.string(),
+			zod.z.number(),
+			zod.z.literal(false),
+			zod.z.literal(true),
+			zod.z.array(zod.z.lazy(() => closed$JsonValueRemoteCodec$schema9())),
+			zod.z.record(zod.z.string(), zod.z.lazy(() => closed$JsonValueRemoteCodec$schema9())).readonly()
+		])).readonly();
+		let _melite_estate_drafts_drafts_get_parameter_0_strict$schema$value;
+		const _melite_estate_drafts_drafts_get_parameter_0_strict$schema = () => _melite_estate_drafts_drafts_get_parameter_0_strict$schema$value ??= zod.z.string();
+		let _melite_estate_drafts_drafts_patch_parameter_0_strict$schema$value;
+		const _melite_estate_drafts_drafts_patch_parameter_0_strict$schema = () => _melite_estate_drafts_drafts_patch_parameter_0_strict$schema$value ??= zod.z.string();
+		let _melite_estate_drafts_drafts_patch_parameter_1_strict$schema$value;
+		const _melite_estate_drafts_drafts_patch_parameter_1_strict$schema = () => _melite_estate_drafts_drafts_patch_parameter_1_strict$schema$value ??= zod.z.string();
+		let _melite_estate_drafts_drafts_patch_parameter_2_strict$schema$value;
+		const _melite_estate_drafts_drafts_patch_parameter_2_strict$schema = () => _melite_estate_drafts_drafts_patch_parameter_2_strict$schema$value ??= zod.z.strictObject({
+			"params": zod.z.union([
+				zod.z.undefined(),
+				zod.z.literal(null),
+				zod.z.string(),
+				zod.z.number(),
+				zod.z.literal(false),
+				zod.z.literal(true),
+				zod.z.array(zod.z.union([
+					zod.z.literal(null),
+					zod.z.string(),
+					zod.z.number(),
+					zod.z.literal(false),
+					zod.z.literal(true),
+					zod.z.array(zod.z.lazy(() => closed$JsonValueRemoteCodec$schema11())),
+					zod.z.record(zod.z.string(), zod.z.lazy(() => closed$JsonValueRemoteCodec$schema11())).readonly()
+				])),
+				zod.z.record(zod.z.string(), zod.z.lazy(() => closed$JsonValueRemoteCodec$schema11())).readonly()
+			]).optional(),
+			"result": zod.z.union([
+				zod.z.undefined(),
+				zod.z.literal(null),
+				zod.z.string(),
+				zod.z.number(),
+				zod.z.literal(false),
+				zod.z.literal(true),
+				zod.z.array(zod.z.union([
+					zod.z.literal(null),
+					zod.z.string(),
+					zod.z.number(),
+					zod.z.literal(false),
+					zod.z.literal(true),
+					zod.z.array(zod.z.lazy(() => closed$JsonValueRemoteCodec$schema11())),
+					zod.z.record(zod.z.string(), zod.z.lazy(() => closed$JsonValueRemoteCodec$schema11())).readonly()
+				])),
+				zod.z.record(zod.z.string(), zod.z.lazy(() => closed$JsonValueRemoteCodec$schema11())).readonly()
+			]).optional(),
+			"runStatus": zod.z.union([
+				zod.z.undefined(),
+				zod.z.literal(null),
+				zod.z.string(),
+				zod.z.number(),
+				zod.z.literal(false),
+				zod.z.literal(true),
+				zod.z.array(zod.z.union([
+					zod.z.literal(null),
+					zod.z.string(),
+					zod.z.number(),
+					zod.z.literal(false),
+					zod.z.literal(true),
+					zod.z.array(zod.z.lazy(() => closed$JsonValueRemoteCodec$schema11())),
+					zod.z.record(zod.z.string(), zod.z.lazy(() => closed$JsonValueRemoteCodec$schema11())).readonly()
+				])),
+				zod.z.record(zod.z.string(), zod.z.lazy(() => closed$JsonValueRemoteCodec$schema11())).readonly()
+			]).optional(),
+			"health": zod.z.union([
+				zod.z.undefined(),
+				zod.z.literal(null),
+				zod.z.string(),
+				zod.z.number(),
+				zod.z.literal(false),
+				zod.z.literal(true),
+				zod.z.array(zod.z.union([
+					zod.z.literal(null),
+					zod.z.string(),
+					zod.z.number(),
+					zod.z.literal(false),
+					zod.z.literal(true),
+					zod.z.array(zod.z.lazy(() => closed$JsonValueRemoteCodec$schema11())),
+					zod.z.record(zod.z.string(), zod.z.lazy(() => closed$JsonValueRemoteCodec$schema11())).readonly()
+				])),
+				zod.z.record(zod.z.string(), zod.z.lazy(() => closed$JsonValueRemoteCodec$schema11())).readonly()
+			]).optional(),
+			"inputs": zod.z.union([
+				zod.z.undefined(),
+				zod.z.literal(null),
+				zod.z.string(),
+				zod.z.number(),
+				zod.z.literal(false),
+				zod.z.literal(true),
+				zod.z.array(zod.z.union([
+					zod.z.literal(null),
+					zod.z.string(),
+					zod.z.number(),
+					zod.z.literal(false),
+					zod.z.literal(true),
+					zod.z.array(zod.z.lazy(() => closed$JsonValueRemoteCodec$schema11())),
+					zod.z.record(zod.z.string(), zod.z.lazy(() => closed$JsonValueRemoteCodec$schema11())).readonly()
+				])),
+				zod.z.record(zod.z.string(), zod.z.lazy(() => closed$JsonValueRemoteCodec$schema11())).readonly()
+			]).optional(),
+			"inputOutputs": zod.z.union([
+				zod.z.undefined(),
+				zod.z.literal(null),
+				zod.z.string(),
+				zod.z.number(),
+				zod.z.literal(false),
+				zod.z.literal(true),
+				zod.z.array(zod.z.union([
+					zod.z.literal(null),
+					zod.z.string(),
+					zod.z.number(),
+					zod.z.literal(false),
+					zod.z.literal(true),
+					zod.z.array(zod.z.lazy(() => closed$JsonValueRemoteCodec$schema11())),
+					zod.z.record(zod.z.string(), zod.z.lazy(() => closed$JsonValueRemoteCodec$schema11())).readonly()
+				])),
+				zod.z.record(zod.z.string(), zod.z.lazy(() => closed$JsonValueRemoteCodec$schema11())).readonly()
+			]).optional()
+		});
+		let _melite_estate_drafts_drafts_patch_parameter_3_strict$schema$value;
+		const _melite_estate_drafts_drafts_patch_parameter_3_strict$schema = () => _melite_estate_drafts_drafts_patch_parameter_3_strict$schema$value ??= zod.z.union([zod.z.literal(null), zod.z.number()]);
+		const TYPERT_REMOTE$3 = createTypertRemoteInfo({
 			package: "@melite/estate-drafts",
-			descriptors: [
-				{
-					id: "@melite/estate-drafts#bench/add-stage",
+			methods: {
+				"bench/add-stage": {
 					service: "benchRemote",
-					namespace: "bench",
-					method: "add-stage",
+					description: "Endpoint `bench/add-stage` — append a card stage.",
 					implementation: "remoteExportAddStage",
 					invocation: { kind: "direct" },
 					parameters: [{
 						name: "sessionKey",
-						wire: "sessionKey",
 						source: "json",
 						codec: {
 							mode: "strict",
 							typeSymbol: "@melite/estate-drafts#bench/add-stage:sessionKey",
-							create: _melite_estate_drafts_bench_add_stage_parameter_0$schema
+							create: _melite_estate_drafts_bench_add_stage_parameter_0$schema,
+							jsonSchema: { "type": "string" }
+						},
+						strictCodec: {
+							mode: "strict",
+							typeSymbol: "@melite/estate-drafts#bench/add-stage:sessionKey",
+							create: _melite_estate_drafts_bench_add_stage_parameter_0_strict$schema,
+							jsonSchema: { "type": "string" }
 						}
 					}, {
 						name: "doc",
-						wire: "doc",
 						source: "json",
 						codec: {
 							mode: "strict",
 							typeSymbol: "@melite/estate-drafts/types#BenchDoc",
-							create: _melite_estate_drafts_bench_add_stage_parameter_1$schema
+							create: _melite_estate_drafts_bench_add_stage_parameter_1$schema,
+							jsonSchemaError: "typert tool schema: recursive selected type requires a supported JSON value declaration"
+						},
+						strictCodec: {
+							mode: "strict",
+							typeSymbol: "@melite/estate-drafts/types#BenchDoc",
+							create: _melite_estate_drafts_bench_add_stage_parameter_1_strict$schema,
+							jsonSchemaError: "typert tool schema: recursive selected type requires a supported JSON value declaration"
 						}
 					}],
 					cancellation: { parameter: "signal" },
 					result: {
 						mode: "strict",
 						typeSymbol: "@melite/estate-drafts/types#BenchStageRow",
-						create: _melite_estate_drafts_bench_add_stage_result$schema
+						create: _melite_estate_drafts_bench_add_stage_result$schema,
+						jsonSchema: {
+							"type": "object",
+							"properties": {
+								"draft_id": { "type": "string" },
+								"session": { "type": "string" },
+								"rev": { "type": "number" },
+								"stage": { "type": "string" }
+							},
+							"required": [
+								"draft_id",
+								"session",
+								"rev",
+								"stage"
+							],
+							"additionalProperties": true
+						}
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
@@ -694,37 +1227,63 @@ window.__ModuleLoader__.load({
 						"column": 9
 					}
 				},
-				{
-					id: "@melite/estate-drafts#bench/clear",
+				"bench/clear": {
 					service: "benchRemote",
-					namespace: "bench",
-					method: "clear",
+					description: "Endpoint `bench/clear` — THE OPERATOR'S CLEAR ALL (2026-10-10, \"there is no clear all\"): every stage out in one verb, one log entry, undoable whole. The nuclear seat for a bench that is itself the wound.",
 					implementation: "remoteExportClear",
 					invocation: { kind: "direct" },
 					parameters: [{
 						name: "sessionKey",
-						wire: "sessionKey",
 						source: "json",
 						codec: {
 							mode: "strict",
 							typeSymbol: "@melite/estate-drafts#bench/clear:sessionKey",
-							create: _melite_estate_drafts_bench_clear_parameter_0$schema
+							create: _melite_estate_drafts_bench_clear_parameter_0$schema,
+							jsonSchema: { "type": "string" }
+						},
+						strictCodec: {
+							mode: "strict",
+							typeSymbol: "@melite/estate-drafts#bench/clear:sessionKey",
+							create: _melite_estate_drafts_bench_clear_parameter_0_strict$schema,
+							jsonSchema: { "type": "string" }
 						}
 					}, {
 						name: "doc",
-						wire: "doc",
 						source: "json",
 						codec: {
 							mode: "strict",
 							typeSymbol: "@melite/estate-drafts/types#BenchDoc",
-							create: _melite_estate_drafts_bench_clear_parameter_1$schema
+							create: _melite_estate_drafts_bench_clear_parameter_1$schema,
+							jsonSchemaError: "typert tool schema: recursive selected type requires a supported JSON value declaration"
+						},
+						strictCodec: {
+							mode: "strict",
+							typeSymbol: "@melite/estate-drafts/types#BenchDoc",
+							create: _melite_estate_drafts_bench_clear_parameter_1_strict$schema,
+							jsonSchemaError: "typert tool schema: recursive selected type requires a supported JSON value declaration"
 						}
 					}],
 					cancellation: { parameter: "signal" },
 					result: {
 						mode: "strict",
 						typeSymbol: "@melite/estate-drafts/types#BenchClearRow",
-						create: _melite_estate_drafts_bench_clear_result$schema
+						create: _melite_estate_drafts_bench_clear_result$schema,
+						jsonSchema: {
+							"type": "object",
+							"properties": {
+								"draft_id": { "type": "string" },
+								"session": { "type": "string" },
+								"rev": { "type": "number" },
+								"cleared": { "type": "number" }
+							},
+							"required": [
+								"draft_id",
+								"session",
+								"rev",
+								"cleared"
+							],
+							"additionalProperties": true
+						}
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
@@ -732,28 +1291,33 @@ window.__ModuleLoader__.load({
 						"column": 9
 					}
 				},
-				{
-					id: "@melite/estate-drafts#bench/ensure",
+				"bench/ensure": {
 					service: "benchRemote",
-					namespace: "bench",
-					method: "ensure",
+					description: "Endpoint `bench/ensure` — birth or load (the only creating arm).",
 					implementation: "remoteExportEnsure",
 					invocation: { kind: "direct" },
 					parameters: [{
 						name: "doc",
-						wire: "doc",
 						source: "json",
 						codec: {
 							mode: "strict",
 							typeSymbol: "@melite/estate-drafts/types#BenchDoc",
-							create: _melite_estate_drafts_bench_ensure_parameter_0$schema
+							create: _melite_estate_drafts_bench_ensure_parameter_0$schema,
+							jsonSchemaError: "typert tool schema: recursive selected type requires a supported JSON value declaration"
+						},
+						strictCodec: {
+							mode: "strict",
+							typeSymbol: "@melite/estate-drafts/types#BenchDoc",
+							create: _melite_estate_drafts_bench_ensure_parameter_0_strict$schema,
+							jsonSchemaError: "typert tool schema: recursive selected type requires a supported JSON value declaration"
 						}
 					}],
 					cancellation: { parameter: "signal" },
 					result: {
 						mode: "strict",
 						typeSymbol: "@melite/estate-drafts/types#BenchEnsureRow",
-						create: _melite_estate_drafts_bench_ensure_result$schema
+						create: _melite_estate_drafts_bench_ensure_result$schema,
+						jsonSchemaError: "typert tool schema: recursive selected type requires a supported JSON value declaration"
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
@@ -761,28 +1325,33 @@ window.__ModuleLoader__.load({
 						"column": 9
 					}
 				},
-				{
-					id: "@melite/estate-drafts#bench/get",
+				"bench/get": {
 					service: "benchRemote",
-					namespace: "bench",
-					method: "get",
+					description: "Endpoint `bench/get` — one session's bench block as the row.",
 					implementation: "remoteExportGet",
 					invocation: { kind: "direct" },
 					parameters: [{
 						name: "sessionKey",
-						wire: "sessionKey",
 						source: "json",
 						codec: {
 							mode: "strict",
 							typeSymbol: "@melite/estate-drafts#bench/get:sessionKey",
-							create: _melite_estate_drafts_bench_get_parameter_0$schema
+							create: _melite_estate_drafts_bench_get_parameter_0$schema,
+							jsonSchema: { "type": "string" }
+						},
+						strictCodec: {
+							mode: "strict",
+							typeSymbol: "@melite/estate-drafts#bench/get:sessionKey",
+							create: _melite_estate_drafts_bench_get_parameter_0_strict$schema,
+							jsonSchema: { "type": "string" }
 						}
 					}],
 					cancellation: { parameter: "signal" },
 					result: {
 						mode: "strict",
 						typeSymbol: "@melite/estate-drafts/types#BenchGetRow",
-						create: _melite_estate_drafts_bench_get_result$schema
+						create: _melite_estate_drafts_bench_get_result$schema,
+						jsonSchemaError: "typert tool schema: recursive selected type requires a supported JSON value declaration"
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
@@ -790,37 +1359,63 @@ window.__ModuleLoader__.load({
 						"column": 9
 					}
 				},
-				{
-					id: "@melite/estate-drafts#bench/group",
+				"bench/group": {
 					service: "benchRemote",
-					namespace: "bench",
-					method: "group",
+					description: "Endpoint `bench/group` — collapse 2+ stages into a compound row (the Group Cards sub-view's door, 2026-09-11).",
 					implementation: "remoteExportGroup",
 					invocation: { kind: "direct" },
 					parameters: [{
 						name: "sessionKey",
-						wire: "sessionKey",
 						source: "json",
 						codec: {
 							mode: "strict",
 							typeSymbol: "@melite/estate-drafts#bench/group:sessionKey",
-							create: _melite_estate_drafts_bench_group_parameter_0$schema
+							create: _melite_estate_drafts_bench_group_parameter_0$schema,
+							jsonSchema: { "type": "string" }
+						},
+						strictCodec: {
+							mode: "strict",
+							typeSymbol: "@melite/estate-drafts#bench/group:sessionKey",
+							create: _melite_estate_drafts_bench_group_parameter_0_strict$schema,
+							jsonSchema: { "type": "string" }
 						}
 					}, {
 						name: "doc",
-						wire: "doc",
 						source: "json",
 						codec: {
 							mode: "strict",
 							typeSymbol: "@melite/estate-drafts/types#BenchDoc",
-							create: _melite_estate_drafts_bench_group_parameter_1$schema
+							create: _melite_estate_drafts_bench_group_parameter_1$schema,
+							jsonSchemaError: "typert tool schema: recursive selected type requires a supported JSON value declaration"
+						},
+						strictCodec: {
+							mode: "strict",
+							typeSymbol: "@melite/estate-drafts/types#BenchDoc",
+							create: _melite_estate_drafts_bench_group_parameter_1_strict$schema,
+							jsonSchemaError: "typert tool schema: recursive selected type requires a supported JSON value declaration"
 						}
 					}],
 					cancellation: { parameter: "signal" },
 					result: {
 						mode: "strict",
 						typeSymbol: "@melite/estate-drafts/types#BenchStageRow",
-						create: _melite_estate_drafts_bench_group_result$schema
+						create: _melite_estate_drafts_bench_group_result$schema,
+						jsonSchema: {
+							"type": "object",
+							"properties": {
+								"draft_id": { "type": "string" },
+								"session": { "type": "string" },
+								"rev": { "type": "number" },
+								"stage": { "type": "string" }
+							},
+							"required": [
+								"draft_id",
+								"session",
+								"rev",
+								"stage"
+							],
+							"additionalProperties": true
+						}
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
@@ -828,37 +1423,73 @@ window.__ModuleLoader__.load({
 						"column": 9
 					}
 				},
-				{
-					id: "@melite/estate-drafts#bench/patch",
+				"bench/patch": {
 					service: "benchRemote",
-					namespace: "bench",
-					method: "patch",
+					description: "Endpoint `bench/patch` — params merge (+result/runStatus) with CAS + log.",
 					implementation: "remoteExportPatch",
 					invocation: { kind: "direct" },
 					parameters: [{
 						name: "sessionKey",
-						wire: "sessionKey",
 						source: "json",
 						codec: {
 							mode: "strict",
 							typeSymbol: "@melite/estate-drafts#bench/patch:sessionKey",
-							create: _melite_estate_drafts_bench_patch_parameter_0$schema
+							create: _melite_estate_drafts_bench_patch_parameter_0$schema,
+							jsonSchema: { "type": "string" }
+						},
+						strictCodec: {
+							mode: "strict",
+							typeSymbol: "@melite/estate-drafts#bench/patch:sessionKey",
+							create: _melite_estate_drafts_bench_patch_parameter_0_strict$schema,
+							jsonSchema: { "type": "string" }
 						}
 					}, {
 						name: "doc",
-						wire: "doc",
 						source: "json",
 						codec: {
 							mode: "strict",
 							typeSymbol: "@melite/estate-drafts/types#BenchDoc",
-							create: _melite_estate_drafts_bench_patch_parameter_1$schema
+							create: _melite_estate_drafts_bench_patch_parameter_1$schema,
+							jsonSchemaError: "typert tool schema: recursive selected type requires a supported JSON value declaration"
+						},
+						strictCodec: {
+							mode: "strict",
+							typeSymbol: "@melite/estate-drafts/types#BenchDoc",
+							create: _melite_estate_drafts_bench_patch_parameter_1_strict$schema,
+							jsonSchemaError: "typert tool schema: recursive selected type requires a supported JSON value declaration"
 						}
 					}],
 					cancellation: { parameter: "signal" },
 					result: {
 						mode: "strict",
 						typeSymbol: "@melite/estate-drafts/types#BenchPatchRow",
-						create: _melite_estate_drafts_bench_patch_result$schema
+						create: _melite_estate_drafts_bench_patch_result$schema,
+						jsonSchema: {
+							"type": "object",
+							"properties": {
+								"draft_id": { "type": "string" },
+								"session": { "type": "string" },
+								"rev": { "type": "number" },
+								"stage": { "type": "string" },
+								"patched": {
+									"type": "array",
+									"items": { "type": "string" }
+								},
+								"dropped": {
+									"type": "array",
+									"items": { "type": "string" },
+									"description": "THE FAMILY RESEAT'S RECEIPT (the ERROR g/h cure, 2026-11-08): the family-dead keys the settlement dropped off the merged view (the flip's own strand — the arrival flipped the derived family under carried stamps). Empty/absent when nothing dropped. The drop rides the row so it SPEAKS — never a silent strip."
+								}
+							},
+							"required": [
+								"draft_id",
+								"session",
+								"rev",
+								"stage",
+								"patched"
+							],
+							"additionalProperties": true
+						}
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
@@ -866,37 +1497,63 @@ window.__ModuleLoader__.load({
 						"column": 9
 					}
 				},
-				{
-					id: "@melite/estate-drafts#bench/remove-stage",
+				"bench/remove-stage": {
 					service: "benchRemote",
-					namespace: "bench",
-					method: "remove-stage",
+					description: "Endpoint `bench/remove-stage` — splice one stage out.",
 					implementation: "remoteExportRemoveStage",
 					invocation: { kind: "direct" },
 					parameters: [{
 						name: "sessionKey",
-						wire: "sessionKey",
 						source: "json",
 						codec: {
 							mode: "strict",
 							typeSymbol: "@melite/estate-drafts#bench/remove-stage:sessionKey",
-							create: _melite_estate_drafts_bench_remove_stage_parameter_0$schema
+							create: _melite_estate_drafts_bench_remove_stage_parameter_0$schema,
+							jsonSchema: { "type": "string" }
+						},
+						strictCodec: {
+							mode: "strict",
+							typeSymbol: "@melite/estate-drafts#bench/remove-stage:sessionKey",
+							create: _melite_estate_drafts_bench_remove_stage_parameter_0_strict$schema,
+							jsonSchema: { "type": "string" }
 						}
 					}, {
 						name: "doc",
-						wire: "doc",
 						source: "json",
 						codec: {
 							mode: "strict",
 							typeSymbol: "@melite/estate-drafts/types#BenchDoc",
-							create: _melite_estate_drafts_bench_remove_stage_parameter_1$schema
+							create: _melite_estate_drafts_bench_remove_stage_parameter_1$schema,
+							jsonSchemaError: "typert tool schema: recursive selected type requires a supported JSON value declaration"
+						},
+						strictCodec: {
+							mode: "strict",
+							typeSymbol: "@melite/estate-drafts/types#BenchDoc",
+							create: _melite_estate_drafts_bench_remove_stage_parameter_1_strict$schema,
+							jsonSchemaError: "typert tool schema: recursive selected type requires a supported JSON value declaration"
 						}
 					}],
 					cancellation: { parameter: "signal" },
 					result: {
 						mode: "strict",
 						typeSymbol: "@melite/estate-drafts/types#BenchStageRow",
-						create: _melite_estate_drafts_bench_remove_stage_result$schema
+						create: _melite_estate_drafts_bench_remove_stage_result$schema,
+						jsonSchema: {
+							"type": "object",
+							"properties": {
+								"draft_id": { "type": "string" },
+								"session": { "type": "string" },
+								"rev": { "type": "number" },
+								"stage": { "type": "string" }
+							},
+							"required": [
+								"draft_id",
+								"session",
+								"rev",
+								"stage"
+							],
+							"additionalProperties": true
+						}
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
@@ -904,37 +1561,67 @@ window.__ModuleLoader__.load({
 						"column": 9
 					}
 				},
-				{
-					id: "@melite/estate-drafts#bench/reorder",
+				"bench/reorder": {
 					service: "benchRemote",
-					namespace: "bench",
-					method: "reorder",
+					description: "Endpoint `bench/reorder` — move one stage to a new index (the drag-reorder door, 2026-09-11).",
 					implementation: "remoteExportReorder",
 					invocation: { kind: "direct" },
 					parameters: [{
 						name: "sessionKey",
-						wire: "sessionKey",
 						source: "json",
 						codec: {
 							mode: "strict",
 							typeSymbol: "@melite/estate-drafts#bench/reorder:sessionKey",
-							create: _melite_estate_drafts_bench_reorder_parameter_0$schema
+							create: _melite_estate_drafts_bench_reorder_parameter_0$schema,
+							jsonSchema: { "type": "string" }
+						},
+						strictCodec: {
+							mode: "strict",
+							typeSymbol: "@melite/estate-drafts#bench/reorder:sessionKey",
+							create: _melite_estate_drafts_bench_reorder_parameter_0_strict$schema,
+							jsonSchema: { "type": "string" }
 						}
 					}, {
 						name: "doc",
-						wire: "doc",
 						source: "json",
 						codec: {
 							mode: "strict",
 							typeSymbol: "@melite/estate-drafts/types#BenchDoc",
-							create: _melite_estate_drafts_bench_reorder_parameter_1$schema
+							create: _melite_estate_drafts_bench_reorder_parameter_1$schema,
+							jsonSchemaError: "typert tool schema: recursive selected type requires a supported JSON value declaration"
+						},
+						strictCodec: {
+							mode: "strict",
+							typeSymbol: "@melite/estate-drafts/types#BenchDoc",
+							create: _melite_estate_drafts_bench_reorder_parameter_1_strict$schema,
+							jsonSchemaError: "typert tool schema: recursive selected type requires a supported JSON value declaration"
 						}
 					}],
 					cancellation: { parameter: "signal" },
 					result: {
 						mode: "strict",
 						typeSymbol: "@melite/estate-drafts/types#BenchReorderRow",
-						create: _melite_estate_drafts_bench_reorder_result$schema
+						create: _melite_estate_drafts_bench_reorder_result$schema,
+						jsonSchema: {
+							"type": "object",
+							"properties": {
+								"draft_id": { "type": "string" },
+								"session": { "type": "string" },
+								"rev": { "type": "number" },
+								"stage": { "type": "string" },
+								"from": { "type": "number" },
+								"to": { "type": "number" }
+							},
+							"required": [
+								"draft_id",
+								"session",
+								"rev",
+								"stage",
+								"from",
+								"to"
+							],
+							"additionalProperties": true
+						}
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
@@ -942,37 +1629,65 @@ window.__ModuleLoader__.load({
 						"column": 9
 					}
 				},
-				{
-					id: "@melite/estate-drafts#bench/rewire",
+				"bench/rewire": {
 					service: "benchRemote",
-					namespace: "bench",
-					method: "rewire",
+					description: "Endpoint `bench/rewire` — set or clear one input binding.",
 					implementation: "remoteExportRewire",
 					invocation: { kind: "direct" },
 					parameters: [{
 						name: "sessionKey",
-						wire: "sessionKey",
 						source: "json",
 						codec: {
 							mode: "strict",
 							typeSymbol: "@melite/estate-drafts#bench/rewire:sessionKey",
-							create: _melite_estate_drafts_bench_rewire_parameter_0$schema
+							create: _melite_estate_drafts_bench_rewire_parameter_0$schema,
+							jsonSchema: { "type": "string" }
+						},
+						strictCodec: {
+							mode: "strict",
+							typeSymbol: "@melite/estate-drafts#bench/rewire:sessionKey",
+							create: _melite_estate_drafts_bench_rewire_parameter_0_strict$schema,
+							jsonSchema: { "type": "string" }
 						}
 					}, {
 						name: "doc",
-						wire: "doc",
 						source: "json",
 						codec: {
 							mode: "strict",
 							typeSymbol: "@melite/estate-drafts/types#BenchDoc",
-							create: _melite_estate_drafts_bench_rewire_parameter_1$schema
+							create: _melite_estate_drafts_bench_rewire_parameter_1$schema,
+							jsonSchemaError: "typert tool schema: recursive selected type requires a supported JSON value declaration"
+						},
+						strictCodec: {
+							mode: "strict",
+							typeSymbol: "@melite/estate-drafts/types#BenchDoc",
+							create: _melite_estate_drafts_bench_rewire_parameter_1_strict$schema,
+							jsonSchemaError: "typert tool schema: recursive selected type requires a supported JSON value declaration"
 						}
 					}],
 					cancellation: { parameter: "signal" },
 					result: {
 						mode: "strict",
 						typeSymbol: "@melite/estate-drafts/types#BenchRewireRow",
-						create: _melite_estate_drafts_bench_rewire_result$schema
+						create: _melite_estate_drafts_bench_rewire_result$schema,
+						jsonSchema: {
+							"type": "object",
+							"properties": {
+								"draft_id": { "type": "string" },
+								"session": { "type": "string" },
+								"rev": { "type": "number" },
+								"stage": { "type": "string" },
+								"input": { "type": "string" }
+							},
+							"required": [
+								"draft_id",
+								"session",
+								"rev",
+								"stage",
+								"input"
+							],
+							"additionalProperties": true
+						}
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
@@ -980,28 +1695,33 @@ window.__ModuleLoader__.load({
 						"column": 9
 					}
 				},
-				{
-					id: "@melite/estate-drafts#bench/subscribe",
+				"bench/subscribe": {
 					service: "benchRemote",
-					namespace: "bench",
-					method: "subscribe",
+					description: "Endpoint `bench/subscribe` — THE PUSH SOURCE (the collapse plan's stream arm, 2026-09-12): the session's doc on open, then a fresh doc after EVERY write that touches the session (the change events the write arms fire). Stream mode rides the typert logical-stream carrier — the in-process mux carries it today; the browser's resource provider consumes rev drift until the host's HTTP stream face lands, then swaps its source here with zero consumer changes. Abort ends the stream; a write's listener fault never breaks the stream (the next write re-wakes it).",
 					mode: "stream",
 					invocation: { kind: "direct" },
 					parameters: [{
 						name: "sessionKey",
-						wire: "sessionKey",
 						source: "json",
 						codec: {
 							mode: "strict",
 							typeSymbol: "@melite/estate-drafts#bench/subscribe:sessionKey",
-							create: _melite_estate_drafts_bench_subscribe_parameter_0$schema
+							create: _melite_estate_drafts_bench_subscribe_parameter_0$schema,
+							jsonSchema: { "type": "string" }
+						},
+						strictCodec: {
+							mode: "strict",
+							typeSymbol: "@melite/estate-drafts#bench/subscribe:sessionKey",
+							create: _melite_estate_drafts_bench_subscribe_parameter_0_strict$schema,
+							jsonSchema: { "type": "string" }
 						}
 					}],
 					cancellation: { parameter: "signal" },
 					result: {
 						mode: "strict",
 						typeSymbol: "@melite/estate-drafts/types#BenchGetRow",
-						create: _melite_estate_drafts_bench_subscribe_result$schema
+						create: _melite_estate_drafts_bench_subscribe_result$schema,
+						jsonSchemaError: "typert tool schema: recursive selected type requires a supported JSON value declaration"
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
@@ -1009,37 +1729,48 @@ window.__ModuleLoader__.load({
 						"column": 10
 					}
 				},
-				{
-					id: "@melite/estate-drafts#bench/undo",
+				"bench/undo": {
 					service: "benchRemote",
-					namespace: "bench",
-					method: "undo",
+					description: "Endpoint `bench/undo` — walk the log tail, apply inverses.",
 					implementation: "remoteExportUndo",
 					invocation: { kind: "direct" },
 					parameters: [{
 						name: "sessionKey",
-						wire: "sessionKey",
 						source: "json",
 						codec: {
 							mode: "strict",
 							typeSymbol: "@melite/estate-drafts#bench/undo:sessionKey",
-							create: _melite_estate_drafts_bench_undo_parameter_0$schema
+							create: _melite_estate_drafts_bench_undo_parameter_0$schema,
+							jsonSchema: { "type": "string" }
+						},
+						strictCodec: {
+							mode: "strict",
+							typeSymbol: "@melite/estate-drafts#bench/undo:sessionKey",
+							create: _melite_estate_drafts_bench_undo_parameter_0_strict$schema,
+							jsonSchema: { "type": "string" }
 						}
 					}, {
 						name: "doc",
-						wire: "doc",
 						source: "json",
 						codec: {
 							mode: "strict",
 							typeSymbol: "@melite/estate-drafts/types#BenchDoc",
-							create: _melite_estate_drafts_bench_undo_parameter_1$schema
+							create: _melite_estate_drafts_bench_undo_parameter_1$schema,
+							jsonSchemaError: "typert tool schema: recursive selected type requires a supported JSON value declaration"
+						},
+						strictCodec: {
+							mode: "strict",
+							typeSymbol: "@melite/estate-drafts/types#BenchDoc",
+							create: _melite_estate_drafts_bench_undo_parameter_1_strict$schema,
+							jsonSchemaError: "typert tool schema: recursive selected type requires a supported JSON value declaration"
 						}
 					}],
 					cancellation: { parameter: "signal" },
 					result: {
 						mode: "strict",
 						typeSymbol: "@melite/estate-drafts/types#BenchUndoRow",
-						create: _melite_estate_drafts_bench_undo_result$schema
+						create: _melite_estate_drafts_bench_undo_result$schema,
+						jsonSchemaError: "typert tool schema: recursive selected type requires a supported JSON value declaration"
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
@@ -1047,37 +1778,63 @@ window.__ModuleLoader__.load({
 						"column": 9
 					}
 				},
-				{
-					id: "@melite/estate-drafts#bench/ungroup",
+				"bench/ungroup": {
 					service: "benchRemote",
-					namespace: "bench",
-					method: "ungroup",
+					description: "Endpoint `bench/ungroup` — spill a compound's children back.",
 					implementation: "remoteExportUngroup",
 					invocation: { kind: "direct" },
 					parameters: [{
 						name: "sessionKey",
-						wire: "sessionKey",
 						source: "json",
 						codec: {
 							mode: "strict",
 							typeSymbol: "@melite/estate-drafts#bench/ungroup:sessionKey",
-							create: _melite_estate_drafts_bench_ungroup_parameter_0$schema
+							create: _melite_estate_drafts_bench_ungroup_parameter_0$schema,
+							jsonSchema: { "type": "string" }
+						},
+						strictCodec: {
+							mode: "strict",
+							typeSymbol: "@melite/estate-drafts#bench/ungroup:sessionKey",
+							create: _melite_estate_drafts_bench_ungroup_parameter_0_strict$schema,
+							jsonSchema: { "type": "string" }
 						}
 					}, {
 						name: "doc",
-						wire: "doc",
 						source: "json",
 						codec: {
 							mode: "strict",
 							typeSymbol: "@melite/estate-drafts/types#BenchDoc",
-							create: _melite_estate_drafts_bench_ungroup_parameter_1$schema
+							create: _melite_estate_drafts_bench_ungroup_parameter_1$schema,
+							jsonSchemaError: "typert tool schema: recursive selected type requires a supported JSON value declaration"
+						},
+						strictCodec: {
+							mode: "strict",
+							typeSymbol: "@melite/estate-drafts/types#BenchDoc",
+							create: _melite_estate_drafts_bench_ungroup_parameter_1_strict$schema,
+							jsonSchemaError: "typert tool schema: recursive selected type requires a supported JSON value declaration"
 						}
 					}],
 					cancellation: { parameter: "signal" },
 					result: {
 						mode: "strict",
 						typeSymbol: "@melite/estate-drafts/types#BenchStageRow",
-						create: _melite_estate_drafts_bench_ungroup_result$schema
+						create: _melite_estate_drafts_bench_ungroup_result$schema,
+						jsonSchema: {
+							"type": "object",
+							"properties": {
+								"draft_id": { "type": "string" },
+								"session": { "type": "string" },
+								"rev": { "type": "number" },
+								"stage": { "type": "string" }
+							},
+							"required": [
+								"draft_id",
+								"session",
+								"rev",
+								"stage"
+							],
+							"additionalProperties": true
+						}
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
@@ -1085,28 +1842,33 @@ window.__ModuleLoader__.load({
 						"column": 9
 					}
 				},
-				{
-					id: "@melite/estate-drafts#drafts/get",
+				"drafts/get": {
 					service: "draftsRemote",
-					namespace: "drafts",
-					method: "get",
+					description: "Endpoint `drafts/get` — one doc by id.",
 					implementation: "remoteExportGet",
 					invocation: { kind: "direct" },
 					parameters: [{
 						name: "draftId",
-						wire: "draftId",
 						source: "json",
 						codec: {
 							mode: "strict",
 							typeSymbol: "@melite/estate-drafts#drafts/get:draftId",
-							create: _melite_estate_drafts_drafts_get_parameter_0$schema
+							create: _melite_estate_drafts_drafts_get_parameter_0$schema,
+							jsonSchema: { "type": "string" }
+						},
+						strictCodec: {
+							mode: "strict",
+							typeSymbol: "@melite/estate-drafts#drafts/get:draftId",
+							create: _melite_estate_drafts_drafts_get_parameter_0_strict$schema,
+							jsonSchema: { "type": "string" }
 						}
 					}],
 					cancellation: { parameter: "signal" },
 					result: {
 						mode: "strict",
 						typeSymbol: "@melite/estate-drafts/types#DraftGetRow",
-						create: _melite_estate_drafts_drafts_get_result$schema
+						create: _melite_estate_drafts_drafts_get_result$schema,
+						jsonSchemaError: "typert tool schema: recursive selected type requires a supported JSON value declaration"
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
@@ -1114,11 +1876,9 @@ window.__ModuleLoader__.load({
 						"column": 9
 					}
 				},
-				{
-					id: "@melite/estate-drafts#drafts/list",
+				"drafts/list": {
 					service: "draftsRemote",
-					namespace: "drafts",
-					method: "list",
+					description: "Endpoint `drafts/list` — the domain index, recency DESC.",
 					implementation: "remoteExportList",
 					invocation: { kind: "direct" },
 					parameters: [],
@@ -1126,7 +1886,32 @@ window.__ModuleLoader__.load({
 					result: {
 						mode: "strict",
 						typeSymbol: "@melite/estate-drafts/types#DraftListResult",
-						create: _melite_estate_drafts_drafts_list_result$schema
+						create: _melite_estate_drafts_drafts_list_result$schema,
+						jsonSchema: {
+							"type": "object",
+							"properties": {
+								"count": { "type": "number" },
+								"drafts": {
+									"type": "array",
+									"items": {
+										"type": "object",
+										"properties": {
+											"draft_id": { "type": "string" },
+											"model": { "type": "string" },
+											"name": { "type": "string" }
+										},
+										"required": [
+											"draft_id",
+											"model",
+											"name"
+										],
+										"additionalProperties": true
+									}
+								}
+							},
+							"required": ["count", "drafts"],
+							"additionalProperties": true
+						}
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
@@ -1134,52 +1919,80 @@ window.__ModuleLoader__.load({
 						"column": 9
 					}
 				},
-				{
-					id: "@melite/estate-drafts#drafts/patch",
+				"drafts/patch": {
 					service: "draftsRemote",
-					namespace: "drafts",
-					method: "patch",
+					description: "Endpoint `drafts/patch` — the stage patch door, REBORN on the domain (2026-09-11; the gateway-era PATCH /v1/flows/drafts/:id/ stages/:sid died with the app and stroke L left the client door a throwing stub). Semantics VERBATIM from the old door (hDraftStagePatch, the retired gateway drafts door): admission on the fixed key set (STAGE_PATCH_KEYS: params | result | runStatus | inputs | inputOutputs — unknown keys refuse with the door's voice), params merge PER-KEY into the stage's existing params (never replace), the domain write bumps the recency column, and the answer is the delivered envelope. THE SHARED STATE DOOR: the agent (bench verbs) and the user (the card drilldowns) author the SAME domain records through it — one truth, two authors. THE LAYERED-PARAMS LAW (2026-09-14, the parameter audit): the params map is the stage's USER layer — a key's PRESENCE is the override mark (never its value). Two additions make the door speak it: (1) JSON Merge Patch semantics for params — a null value DELETES the key (the reset/unset path; RFC 7386's convention, the wire form of the settings system's unset path op); (2) the door JOINS the bench CAS law — every write bumps bench.rev and appends a kind:'patch' log entry, and expectRev (nullable) fences the write: a bench that moved refuses loud with bench/cas-conflict carrying current_rev, never merges under the earlier author.",
 					implementation: "remoteExportPatch",
 					invocation: { kind: "direct" },
 					parameters: [
 						{
 							name: "draftId",
-							wire: "draftId",
 							source: "json",
 							codec: {
 								mode: "strict",
 								typeSymbol: "@melite/estate-drafts#drafts/patch:draftId",
-								create: _melite_estate_drafts_drafts_patch_parameter_0$schema
+								create: _melite_estate_drafts_drafts_patch_parameter_0$schema,
+								jsonSchema: { "type": "string" }
+							},
+							strictCodec: {
+								mode: "strict",
+								typeSymbol: "@melite/estate-drafts#drafts/patch:draftId",
+								create: _melite_estate_drafts_drafts_patch_parameter_0_strict$schema,
+								jsonSchema: { "type": "string" }
 							}
 						},
 						{
 							name: "stageId",
-							wire: "stageId",
 							source: "json",
 							codec: {
 								mode: "strict",
 								typeSymbol: "@melite/estate-drafts#drafts/patch:stageId",
-								create: _melite_estate_drafts_drafts_patch_parameter_1$schema
+								create: _melite_estate_drafts_drafts_patch_parameter_1$schema,
+								jsonSchema: { "type": "string" }
+							},
+							strictCodec: {
+								mode: "strict",
+								typeSymbol: "@melite/estate-drafts#drafts/patch:stageId",
+								create: _melite_estate_drafts_drafts_patch_parameter_1_strict$schema,
+								jsonSchema: { "type": "string" }
 							}
 						},
 						{
 							name: "patch",
-							wire: "patch",
 							source: "json",
 							codec: {
 								mode: "strict",
 								typeSymbol: "@melite/estate-drafts/types#DraftStagePatch",
-								create: _melite_estate_drafts_drafts_patch_parameter_2$schema
+								create: _melite_estate_drafts_drafts_patch_parameter_2$schema,
+								jsonSchemaError: "typert tool schema: recursive selected type requires a supported JSON value declaration"
+							},
+							strictCodec: {
+								mode: "strict",
+								typeSymbol: "@melite/estate-drafts/types#DraftStagePatch",
+								create: _melite_estate_drafts_drafts_patch_parameter_2_strict$schema,
+								jsonSchemaError: "typert tool schema: recursive selected type requires a supported JSON value declaration"
 							}
 						},
 						{
 							name: "expectRev",
-							wire: "expectRev",
 							source: "json",
 							codec: {
 								mode: "strict",
 								typeSymbol: "@melite/estate-drafts#drafts/patch:expectRev",
-								create: _melite_estate_drafts_drafts_patch_parameter_3$schema
+								create: _melite_estate_drafts_drafts_patch_parameter_3$schema,
+								jsonSchema: { "oneOf": [{
+									"type": "null",
+									"const": null
+								}, { "type": "number" }] }
+							},
+							strictCodec: {
+								mode: "strict",
+								typeSymbol: "@melite/estate-drafts#drafts/patch:expectRev",
+								create: _melite_estate_drafts_drafts_patch_parameter_3_strict$schema,
+								jsonSchema: { "oneOf": [{
+									"type": "null",
+									"const": null
+								}, { "type": "number" }] }
 							}
 						}
 					],
@@ -1187,7 +2000,27 @@ window.__ModuleLoader__.load({
 					result: {
 						mode: "strict",
 						typeSymbol: "@melite/estate-drafts/types#DraftPatchRow",
-						create: _melite_estate_drafts_drafts_patch_result$schema
+						create: _melite_estate_drafts_drafts_patch_result$schema,
+						jsonSchema: {
+							"type": "object",
+							"properties": {
+								"draftId": { "type": "string" },
+								"stageId": { "type": "string" },
+								"delivered": { "type": "boolean" },
+								"reason": { "type": "string" },
+								"patched": {
+									"type": "array",
+									"items": { "type": "string" }
+								},
+								"rev": { "type": "number" }
+							},
+							"required": [
+								"draftId",
+								"stageId",
+								"delivered"
+							],
+							"additionalProperties": true
+						}
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
@@ -1195,8 +2028,8 @@ window.__ModuleLoader__.load({
 						"column": 9
 					}
 				}
-			]
-		};
+			}
+		}, zod.z);
 		//#endregion
 		//#region ../../estate/runs/lib/typert.remote-client.js
 		let JsonValueRemoteCodec$schema$value;
@@ -1356,31 +2189,84 @@ window.__ModuleLoader__.load({
 			zod.z.array(zod.z.lazy(() => JsonValueRemoteCodec$schema4())),
 			zod.z.record(zod.z.string(), zod.z.lazy(() => JsonValueRemoteCodec$schema4())).readonly()
 		])).readonly();
-		const TYPERT_REMOTE$2 = {
+		let closed$JsonValueRemoteCodec$schema$value;
+		const closed$JsonValueRemoteCodec$schema = () => closed$JsonValueRemoteCodec$schema$value ??= zod.z.union([
+			zod.z.literal(null),
+			zod.z.string(),
+			zod.z.number(),
+			zod.z.literal(false),
+			zod.z.literal(true),
+			zod.z.array(zod.z.lazy(() => closed$JsonValueRemoteCodec$schema())),
+			zod.z.record(zod.z.string(), zod.z.lazy(() => closed$JsonValueRemoteCodec$schema())).readonly()
+		]);
+		let closed$JsonValueRemoteCodec$schema2$value;
+		const closed$JsonValueRemoteCodec$schema2 = () => closed$JsonValueRemoteCodec$schema2$value ??= zod.z.union([
+			zod.z.literal(null),
+			zod.z.string(),
+			zod.z.number(),
+			zod.z.literal(false),
+			zod.z.literal(true),
+			zod.z.array(zod.z.lazy(() => closed$JsonValueRemoteCodec$schema2())),
+			zod.z.record(zod.z.string(), zod.z.lazy(() => closed$JsonValueRemoteCodec$schema2())).readonly()
+		]);
+		let _melite_estate_runs_runs_list_parameter_0_strict$schema$value;
+		const _melite_estate_runs_runs_list_parameter_0_strict$schema = () => _melite_estate_runs_runs_list_parameter_0_strict$schema$value ??= zod.z.string();
+		let _melite_estate_runs_runs_start_parameter_0_strict$schema$value;
+		const _melite_estate_runs_runs_start_parameter_0_strict$schema = () => _melite_estate_runs_runs_start_parameter_0_strict$schema$value ??= zod.z.record(zod.z.string(), zod.z.union([
+			zod.z.literal(null),
+			zod.z.string(),
+			zod.z.number(),
+			zod.z.literal(false),
+			zod.z.literal(true),
+			zod.z.array(zod.z.lazy(() => closed$JsonValueRemoteCodec$schema2())),
+			zod.z.record(zod.z.string(), zod.z.lazy(() => closed$JsonValueRemoteCodec$schema2())).readonly()
+		])).readonly();
+		let _melite_estate_runs_runs_status_parameter_0_strict$schema$value;
+		const _melite_estate_runs_runs_status_parameter_0_strict$schema = () => _melite_estate_runs_runs_status_parameter_0_strict$schema$value ??= zod.z.string();
+		let _melite_estate_runs_runs_stop_parameter_0_strict$schema$value;
+		const _melite_estate_runs_runs_stop_parameter_0_strict$schema = () => _melite_estate_runs_runs_stop_parameter_0_strict$schema$value ??= zod.z.string();
+		let _melite_estate_runs_runs_subscribe_parameter_0_strict$schema$value;
+		const _melite_estate_runs_runs_subscribe_parameter_0_strict$schema = () => _melite_estate_runs_runs_subscribe_parameter_0_strict$schema$value ??= zod.z.string();
+		let _melite_estate_runs_runs_validate_parameter_0_strict$schema$value;
+		const _melite_estate_runs_runs_validate_parameter_0_strict$schema = () => _melite_estate_runs_runs_validate_parameter_0_strict$schema$value ??= zod.z.record(zod.z.string(), zod.z.union([
+			zod.z.literal(null),
+			zod.z.string(),
+			zod.z.number(),
+			zod.z.literal(false),
+			zod.z.literal(true),
+			zod.z.array(zod.z.lazy(() => closed$JsonValueRemoteCodec$schema())),
+			zod.z.record(zod.z.string(), zod.z.lazy(() => closed$JsonValueRemoteCodec$schema())).readonly()
+		])).readonly();
+		const TYPERT_REMOTE$2 = createTypertRemoteInfo({
 			package: "@melite/estate-runs",
-			descriptors: [
-				{
-					id: "@melite/estate-runs#runs/list",
+			methods: {
+				"runs/list": {
 					service: "runsRemote",
-					namespace: "runs",
-					method: "list",
+					description: "Endpoint `runs/list` — the restore-port envelope (registry seat; the raw limit string keeps int() semantics).",
 					implementation: "remoteExportList",
 					invocation: { kind: "direct" },
 					parameters: [{
 						name: "rawLimit",
-						wire: "rawLimit",
 						source: "json",
 						codec: {
 							mode: "strict",
 							typeSymbol: "@melite/estate-runs#runs/list:rawLimit",
-							create: _melite_estate_runs_runs_list_parameter_0$schema
+							create: _melite_estate_runs_runs_list_parameter_0$schema,
+							jsonSchema: { "type": "string" }
+						},
+						strictCodec: {
+							mode: "strict",
+							typeSymbol: "@melite/estate-runs#runs/list:rawLimit",
+							create: _melite_estate_runs_runs_list_parameter_0_strict$schema,
+							jsonSchema: { "type": "string" }
 						}
 					}],
 					cancellation: { parameter: "signal" },
 					result: {
 						mode: "strict",
 						typeSymbol: "@melite/estate-runs#runs/list:result",
-						create: _melite_estate_runs_runs_list_result$schema
+						create: _melite_estate_runs_runs_list_result$schema,
+						jsonSchemaError: "typert tool schema: recursive selected type requires a supported JSON value declaration"
 					},
 					sourceLocation: {
 						"file": "packages/estate/runs/src/index.ts",
@@ -1388,28 +2274,46 @@ window.__ModuleLoader__.load({
 						"column": 9
 					}
 				},
-				{
-					id: "@melite/estate-runs#runs/start",
+				"runs/start": {
 					service: "runsRemote",
-					namespace: "runs",
-					method: "start",
+					description: "Endpoint `runs/start` — the submit chain (registry seat).",
 					implementation: "remoteExportStart",
 					invocation: { kind: "direct" },
 					parameters: [{
 						name: "doc",
-						wire: "doc",
 						source: "json",
 						codec: {
 							mode: "strict",
 							typeSymbol: "@melite/estate-runs/types#RunStartDoc",
-							create: _melite_estate_runs_runs_start_parameter_0$schema
+							create: _melite_estate_runs_runs_start_parameter_0$schema,
+							jsonSchemaError: "typert tool schema: recursive selected type requires a supported JSON value declaration"
+						},
+						strictCodec: {
+							mode: "strict",
+							typeSymbol: "@melite/estate-runs/types#RunStartDoc",
+							create: _melite_estate_runs_runs_start_parameter_0_strict$schema,
+							jsonSchemaError: "typert tool schema: recursive selected type requires a supported JSON value declaration"
 						}
 					}],
 					cancellation: { parameter: "signal" },
 					result: {
 						mode: "strict",
 						typeSymbol: "@melite/estate-runs#runs/start:result",
-						create: _melite_estate_runs_runs_start_result$schema
+						create: _melite_estate_runs_runs_start_result$schema,
+						jsonSchema: {
+							"type": "object",
+							"properties": {
+								"run_id": { "type": "string" },
+								"status": { "type": "string" },
+								"queue_position": { "type": "number" }
+							},
+							"required": [
+								"run_id",
+								"status",
+								"queue_position"
+							],
+							"additionalProperties": true
+						}
 					},
 					sourceLocation: {
 						"file": "packages/estate/runs/src/index.ts",
@@ -1417,28 +2321,33 @@ window.__ModuleLoader__.load({
 						"column": 9
 					}
 				},
-				{
-					id: "@melite/estate-runs#runs/status",
+				"runs/status": {
 					service: "runsRemote",
-					namespace: "runs",
-					method: "status",
+					description: "Endpoint `runs/status` — the live row (registry seat).",
 					implementation: "remoteExportStatus",
 					invocation: { kind: "direct" },
 					parameters: [{
 						name: "runId",
-						wire: "runId",
 						source: "json",
 						codec: {
 							mode: "strict",
 							typeSymbol: "@melite/estate-runs#runs/status:runId",
-							create: _melite_estate_runs_runs_status_parameter_0$schema
+							create: _melite_estate_runs_runs_status_parameter_0$schema,
+							jsonSchema: { "type": "string" }
+						},
+						strictCodec: {
+							mode: "strict",
+							typeSymbol: "@melite/estate-runs#runs/status:runId",
+							create: _melite_estate_runs_runs_status_parameter_0_strict$schema,
+							jsonSchema: { "type": "string" }
 						}
 					}],
 					cancellation: { parameter: "signal" },
 					result: {
 						mode: "strict",
 						typeSymbol: "@melite/estate-runs/types#RunRow",
-						create: _melite_estate_runs_runs_status_result$schema
+						create: _melite_estate_runs_runs_status_result$schema,
+						jsonSchemaError: "typert tool schema: recursive selected type requires a supported JSON value declaration"
 					},
 					sourceLocation: {
 						"file": "packages/estate/runs/src/index.ts",
@@ -1446,28 +2355,33 @@ window.__ModuleLoader__.load({
 						"column": 9
 					}
 				},
-				{
-					id: "@melite/estate-runs#runs/stop",
+				"runs/stop": {
 					service: "runsRemote",
-					namespace: "runs",
-					method: "stop",
+					description: "Endpoint `runs/stop` — the flag + interrupt (registry seat).",
 					implementation: "remoteExportStop",
 					invocation: { kind: "direct" },
 					parameters: [{
 						name: "runId",
-						wire: "runId",
 						source: "json",
 						codec: {
 							mode: "strict",
 							typeSymbol: "@melite/estate-runs#runs/stop:runId",
-							create: _melite_estate_runs_runs_stop_parameter_0$schema
+							create: _melite_estate_runs_runs_stop_parameter_0$schema,
+							jsonSchema: { "type": "string" }
+						},
+						strictCodec: {
+							mode: "strict",
+							typeSymbol: "@melite/estate-runs#runs/stop:runId",
+							create: _melite_estate_runs_runs_stop_parameter_0_strict$schema,
+							jsonSchema: { "type": "string" }
 						}
 					}],
 					cancellation: { parameter: "signal" },
 					result: {
 						mode: "strict",
 						typeSymbol: "@melite/estate-runs/types#RunRow",
-						create: _melite_estate_runs_runs_stop_result$schema
+						create: _melite_estate_runs_runs_stop_result$schema,
+						jsonSchemaError: "typert tool schema: recursive selected type requires a supported JSON value declaration"
 					},
 					sourceLocation: {
 						"file": "packages/estate/runs/src/index.ts",
@@ -1475,28 +2389,33 @@ window.__ModuleLoader__.load({
 						"column": 9
 					}
 				},
-				{
-					id: "@melite/estate-runs#runs/subscribe",
+				"runs/subscribe": {
 					service: "runsRemote",
-					namespace: "runs",
-					method: "subscribe",
+					description: "Endpoint `runs/subscribe` — THE PUSH SOURCE for the live row (1.8, the hand-roll audit's last poll, 2026-10-12): the row on open, then a fresh row after every registry write that moves the run — the change events the write spine fires (the claim, the settle, the artifacts harvest, the stop press). Stream mode rides the typert logical-stream carrier — the same-origin mux the bench tail rides. Abort ends the stream clean; a listener's fault never breaks it (the seam's wrapper guards).",
 					mode: "stream",
 					invocation: { kind: "direct" },
 					parameters: [{
 						name: "runId",
-						wire: "runId",
 						source: "json",
 						codec: {
 							mode: "strict",
 							typeSymbol: "@melite/estate-runs#runs/subscribe:runId",
-							create: _melite_estate_runs_runs_subscribe_parameter_0$schema
+							create: _melite_estate_runs_runs_subscribe_parameter_0$schema,
+							jsonSchema: { "type": "string" }
+						},
+						strictCodec: {
+							mode: "strict",
+							typeSymbol: "@melite/estate-runs#runs/subscribe:runId",
+							create: _melite_estate_runs_runs_subscribe_parameter_0_strict$schema,
+							jsonSchema: { "type": "string" }
 						}
 					}],
 					cancellation: { parameter: "signal" },
 					result: {
 						mode: "strict",
 						typeSymbol: "@melite/estate-runs/types#RunRow",
-						create: _melite_estate_runs_runs_subscribe_result$schema
+						create: _melite_estate_runs_runs_subscribe_result$schema,
+						jsonSchemaError: "typert tool schema: recursive selected type requires a supported JSON value declaration"
 					},
 					sourceLocation: {
 						"file": "packages/estate/runs/src/index.ts",
@@ -1504,28 +2423,33 @@ window.__ModuleLoader__.load({
 						"column": 10
 					}
 				},
-				{
-					id: "@melite/estate-runs#runs/validate",
+				"runs/validate": {
 					service: "runsRemote",
-					namespace: "runs",
-					method: "validate",
+					description: "Endpoint `runs/validate` — the pure compile (registry seat).",
 					implementation: "remoteExportValidate",
 					invocation: { kind: "direct" },
 					parameters: [{
 						name: "doc",
-						wire: "doc",
 						source: "json",
 						codec: {
 							mode: "strict",
 							typeSymbol: "@melite/estate-runs/types#RunStartDoc",
-							create: _melite_estate_runs_runs_validate_parameter_0$schema
+							create: _melite_estate_runs_runs_validate_parameter_0$schema,
+							jsonSchemaError: "typert tool schema: recursive selected type requires a supported JSON value declaration"
+						},
+						strictCodec: {
+							mode: "strict",
+							typeSymbol: "@melite/estate-runs/types#RunStartDoc",
+							create: _melite_estate_runs_runs_validate_parameter_0_strict$schema,
+							jsonSchemaError: "typert tool schema: recursive selected type requires a supported JSON value declaration"
 						}
 					}],
 					cancellation: { parameter: "signal" },
 					result: {
 						mode: "strict",
 						typeSymbol: "@melite/estate-runs/types#RunRow",
-						create: _melite_estate_runs_runs_validate_result$schema
+						create: _melite_estate_runs_runs_validate_result$schema,
+						jsonSchemaError: "typert tool schema: recursive selected type requires a supported JSON value declaration"
 					},
 					sourceLocation: {
 						"file": "packages/estate/runs/src/index.ts",
@@ -1533,8 +2457,8 @@ window.__ModuleLoader__.load({
 						"column": 9
 					}
 				}
-			]
-		};
+			}
+		}, zod.z);
 		//#endregion
 		//#region ../../estate/media/lib/typert.remote-client.js
 		let _melite_estate_media_media_list_parameter_0$schema$value;
@@ -1547,41 +2471,79 @@ window.__ModuleLoader__.load({
 				"name": zod.z.string().readonly(),
 				"kind": zod.z.string().readonly(),
 				"runId": zod.z.string().readonly(),
-				"served_from": zod.z.string().readonly()
+				"served_from": zod.z.string().readonly().describe("§23 CROSS-ROOTS: the state root that served this row (own root first; first-root-wins on run-id collisions).")
 			}))
 		});
-		const TYPERT_REMOTE$1 = {
+		let _melite_estate_media_media_list_parameter_0_strict$schema$value;
+		const _melite_estate_media_media_list_parameter_0_strict$schema = () => _melite_estate_media_media_list_parameter_0_strict$schema$value ??= zod.z.string();
+		const TYPERT_REMOTE$1 = createTypertRemoteInfo({
 			package: "@melite/estate-media",
-			descriptors: [{
-				id: "@melite/estate-media#media/list",
+			methods: { "media/list": {
 				service: "mediaRemote",
-				namespace: "media",
-				method: "list",
+				description: "Endpoint `media/list` — the source row's From media arm.",
 				implementation: "remoteExportList",
 				invocation: { kind: "direct" },
 				parameters: [{
 					name: "kind",
-					wire: "kind",
 					source: "json",
 					codec: {
 						mode: "strict",
 						typeSymbol: "@melite/estate-media#media/list:kind",
-						create: _melite_estate_media_media_list_parameter_0$schema
+						create: _melite_estate_media_media_list_parameter_0$schema,
+						jsonSchema: { "type": "string" }
+					},
+					strictCodec: {
+						mode: "strict",
+						typeSymbol: "@melite/estate-media#media/list:kind",
+						create: _melite_estate_media_media_list_parameter_0_strict$schema,
+						jsonSchema: { "type": "string" }
 					}
 				}],
 				cancellation: { parameter: "signal" },
 				result: {
 					mode: "strict",
 					typeSymbol: "@melite/estate-media#media/list:result",
-					create: _melite_estate_media_media_list_result$schema
+					create: _melite_estate_media_media_list_result$schema,
+					jsonSchema: {
+						"type": "object",
+						"properties": {
+							"count": { "type": "number" },
+							"items": {
+								"type": "array",
+								"items": {
+									"type": "object",
+									"properties": {
+										"url": { "type": "string" },
+										"name": { "type": "string" },
+										"kind": { "type": "string" },
+										"runId": { "type": "string" },
+										"served_from": {
+											"type": "string",
+											"description": "§23 CROSS-ROOTS: the state root that served this row (own root first; first-root-wins on run-id collisions)."
+										}
+									},
+									"required": [
+										"url",
+										"name",
+										"kind",
+										"runId",
+										"served_from"
+									],
+									"additionalProperties": true
+								}
+							}
+						},
+						"required": ["count", "items"],
+						"additionalProperties": true
+					}
 				},
 				sourceLocation: {
 					"file": "packages/estate/media/src/index.ts",
 					"line": 543,
 					"column": 9
 				}
-			}]
-		};
+			} }
+		}, zod.z);
 		//#endregion
 		//#region ../../estate/manage/lib/typert.remote-client.js
 		let ManageJsonValueRemoteCodec$schema$value;
@@ -1684,38 +2646,71 @@ window.__ModuleLoader__.load({
 				zod.z.literal(true)
 			]).readonly().optional()
 		});
-		const TYPERT_REMOTE = {
+		let closed$ManageJsonValueRemoteCodec$schema$value;
+		const closed$ManageJsonValueRemoteCodec$schema = () => closed$ManageJsonValueRemoteCodec$schema$value ??= zod.z.union([
+			zod.z.literal(null),
+			zod.z.string(),
+			zod.z.number(),
+			zod.z.literal(false),
+			zod.z.literal(true),
+			zod.z.array(zod.z.lazy(() => closed$ManageJsonValueRemoteCodec$schema())),
+			zod.z.record(zod.z.string(), zod.z.lazy(() => closed$ManageJsonValueRemoteCodec$schema())).readonly()
+		]);
+		let _melite_estate_manage_manage_act_parameter_0_strict$schema$value;
+		const _melite_estate_manage_manage_act_parameter_0_strict$schema = () => _melite_estate_manage_manage_act_parameter_0_strict$schema$value ??= zod.z.object({ "action": zod.z.union([
+			zod.z.intersection(zod.z.string(), zod.z.literal(null)),
+			zod.z.string(),
+			zod.z.intersection(zod.z.string(), zod.z.number()),
+			zod.z.intersection(zod.z.string(), zod.z.literal(false)),
+			zod.z.intersection(zod.z.string(), zod.z.literal(true)),
+			zod.z.intersection(zod.z.string(), zod.z.array(zod.z.lazy(() => closed$ManageJsonValueRemoteCodec$schema()))),
+			zod.z.intersection(zod.z.string(), zod.z.record(zod.z.string(), zod.z.lazy(() => closed$ManageJsonValueRemoteCodec$schema())).readonly())
+		]).readonly() }).catchall(zod.z.union([
+			zod.z.literal(null),
+			zod.z.string(),
+			zod.z.number(),
+			zod.z.literal(false),
+			zod.z.literal(true),
+			zod.z.array(zod.z.lazy(() => closed$ManageJsonValueRemoteCodec$schema())),
+			zod.z.record(zod.z.string(), zod.z.lazy(() => closed$ManageJsonValueRemoteCodec$schema())).readonly()
+		]));
+		const TYPERT_REMOTE = createTypertRemoteInfo({
 			package: "@melite/estate-manage",
-			descriptors: [{
-				id: "@melite/estate-manage#manage/act",
+			methods: { "manage/act": {
 				service: "manageRemote",
-				namespace: "manage",
-				method: "act",
+				description: "Endpoint `manage/act` — the whole management plane (the action rides the doc; the seat dispatches).",
 				implementation: "remoteExportAct",
 				invocation: { kind: "direct" },
 				parameters: [{
 					name: "doc",
-					wire: "doc",
 					source: "json",
 					codec: {
 						mode: "strict",
 						typeSymbol: "@melite/estate-manage/types#ManageActDoc",
-						create: _melite_estate_manage_manage_act_parameter_0$schema
+						create: _melite_estate_manage_manage_act_parameter_0$schema,
+						jsonSchemaError: "typert tool schema: recursive selected type requires a supported JSON value declaration"
+					},
+					strictCodec: {
+						mode: "strict",
+						typeSymbol: "@melite/estate-manage/types#ManageActDoc",
+						create: _melite_estate_manage_manage_act_parameter_0_strict$schema,
+						jsonSchemaError: "typert tool schema: recursive selected type requires a supported JSON value declaration"
 					}
 				}],
 				cancellation: { parameter: "signal" },
 				result: {
 					mode: "strict",
 					typeSymbol: "@melite/estate-manage/types#ManageEnvelopeRow",
-					create: _melite_estate_manage_manage_act_result$schema
+					create: _melite_estate_manage_manage_act_result$schema,
+					jsonSchemaError: "typert tool schema: recursive selected type requires a supported JSON value declaration"
 				},
 				sourceLocation: {
 					"file": "packages/estate/manage/src/index.ts",
 					"line": 57,
 					"column": 9
 				}
-			}]
-		};
+			} }
+		}, zod.z);
 		//#endregion
 		//#region \0dsh-css:packages/web/melite-card-view/src/client/card.module.css.mjs
 		const css$3 = ".qMfk9G_card{flex-direction:column;min-width:0;margin:4px 0;font-size:12px;line-height:1.45;display:flex}.qMfk9G_load{color:var(--dsw-alias-label-secondary);padding:2px 0}.qMfk9G_head{align-items:center;gap:8px;min-width:0;display:flex}.qMfk9G_model{text-overflow:ellipsis;white-space:nowrap;min-width:0;font-weight:600;overflow:hidden}.qMfk9G_state{corner-shape:round;border-radius:999px;flex:none;margin-left:auto;padding:1px 8px}.qMfk9G_state[data-state=completed]{color:var(--dsw-alias-state-success-primary)}.qMfk9G_state[data-state=running],.qMfk9G_state[data-state=queued],.qMfk9G_state[data-state=pending],.qMfk9G_state[data-state=starting],.qMfk9G_state[data-state=draft]{color:var(--dsw-alias-state-warn-primary)}.qMfk9G_state[data-state=failed],.qMfk9G_state[data-state=error],.qMfk9G_state[data-state=stopped],.qMfk9G_state[data-state=interrupted]{color:var(--dsw-alias-state-error-primary)}.qMfk9G_media{corner-shape:round;color:var(--dsw-alias-label-secondary);cursor:pointer;font:inherit;background:0 0;border:0;border-radius:999px;flex:none;margin:-2px 0 -2px auto;padding:1px 6px}.qMfk9G_media:hover{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-primary)}.qMfk9G_media:focus-visible{outline:1px solid var(--dsw-alias-state-business-primary);outline-offset:-1px}.qMfk9G_prompt{color:var(--dsw-alias-label-secondary);-webkit-line-clamp:2;-webkit-box-orient:vertical;display:-webkit-box;overflow:hidden}.qMfk9G_row{color:inherit;cursor:pointer;font:inherit;text-align:left;background:0 0;border:none;border-radius:6px;align-items:center;gap:8px;width:100%;min-width:0;padding:4px 6px;display:flex}.qMfk9G_row:hover{background:var(--dsw-alias-interactive-bg-hover)}.qMfk9G_row:focus-visible{outline:1px solid var(--dsw-alias-state-business-primary);outline-offset:-1px}.qMfk9G_thumb{object-fit:cover;border-radius:4px;flex:none;width:34px;height:34px}.qMfk9G_rowTitle{text-overflow:ellipsis;white-space:nowrap;flex:none;max-width:40%;font-weight:600;overflow:hidden}.qMfk9G_drill{width:92vw;max-width:min(860px,92vw)}.qMfk9G_paramsCol,.qMfk9G_params{flex-direction:column;gap:8px;min-width:0;display:flex}.qMfk9G_field{flex-direction:column;gap:3px;min-width:0;display:flex}.qMfk9G_fieldKey{color:var(--dsw-alias-label-secondary);font-size:11px}.qMfk9G_outputs{flex-direction:column;align-items:center;gap:10px;min-width:0;display:flex}.qMfk9G_reportList{flex-direction:column;gap:8px;width:100%;min-width:0;display:flex}.qMfk9G_outputImg{object-fit:contain;border-radius:8px;max-width:100%;max-height:46vh}.qMfk9G_runRow{justify-content:flex-end;align-items:center;gap:10px;width:100%;display:flex}.qMfk9G_runError{color:var(--dsw-alias-state-error-primary);overflow-wrap:anywhere;margin:0;font-size:11px}.qMfk9G_rowWrap{flex-direction:column;display:flex;position:relative}.qMfk9G_errorDismiss{color:var(--dsw-alias-state-error-primary);position:absolute;top:2px;right:2px}.qMfk9G_flowLink{flex:none;margin-left:auto;text-decoration:underline}.qMfk9G_failed,.qMfk9G_missing{color:var(--dsw-alias-state-error-primary);overflow-wrap:anywhere;margin:0;font-size:11px}.qMfk9G_loading{color:var(--dsw-alias-label-secondary);overflow-wrap:anywhere;margin:0;padding:2px 0;font-size:11px}.qMfk9G_rowError{color:var(--dsw-alias-state-error-primary);overflow-wrap:anywhere;flex-basis:100%;font-size:11px;display:block}.qMfk9G_drillRunRow{background:var(--dsw-alias-bg-base);border-top:1px solid var(--dsw-alias-border-l2);z-index:1;justify-content:flex-end;align-items:center;gap:8px;margin-top:8px;padding:10px 0 4px;display:flex;position:sticky;bottom:0}.qMfk9G_drillProgress{color:var(--dsw-alias-label-secondary);font-variant-numeric:tabular-nums;align-items:center;gap:6px;font-size:11px;display:inline-flex}.qMfk9G_drillProgress>svg{animation:1s linear infinite qMfk9G_tileSpinTurn}.qMfk9G_state[data-state=legacy]{color:var(--dsw-alias-label-secondary)}.qMfk9G_cardsBench{overflow-anchor:none;flex-direction:column;flex:1;gap:8px;min-width:0;min-height:0;padding:0 14px 18px;display:flex;overflow-y:auto}.qMfk9G_benchHead{z-index:1;background:var(--dsw-alias-bg-base);justify-content:space-between;align-items:center;gap:8px;padding-top:12px;display:flex;position:sticky;top:0}.qMfk9G_revTag{color:var(--dsw-alias-label-secondary);font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:11px}.qMfk9G_runView{overflow-anchor:none;flex-direction:column;flex:1;gap:8px;min-width:0;min-height:0;display:flex;overflow-y:auto}.qMfk9G_runHead{z-index:1;background:var(--dsw-alias-bg-base);align-items:baseline;gap:8px;padding-top:12px;display:flex;position:sticky;top:0}.qMfk9G_runId{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;font-weight:600}.qMfk9G_runStatus{border:.5px solid var(--dsw-alias-border-l2);corner-shape:round;color:var(--dsw-alias-label-secondary);border-radius:999px;padding:0 8px;font-size:11px}.qMfk9G_runActions{gap:8px;display:flex}.qMfk9G_graphReceiptOk{border:.5px solid var(--dsw-alias-state-success-primary);corner-shape:round;color:var(--dsw-alias-state-success-primary);border-radius:999px;padding:0 8px;font-size:11px}.qMfk9G_graphReceiptPartial{border:.5px solid var(--dsw-alias-state-warn-primary);corner-shape:round;color:var(--dsw-alias-state-warn-primary);border-radius:999px;padding:0 8px;font-size:11px}.qMfk9G_restoreNote{color:var(--dsw-alias-label-secondary);overflow-wrap:anywhere;margin:0;font-size:11px}.qMfk9G_mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;overflow-x:auto}.qMfk9G_tileGrid{grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;margin:0;padding:0;list-style:none;display:grid}.qMfk9G_tile{margin:0;padding:0;display:block}.qMfk9G_tileInner{border:.5px solid var(--dsw-alias-border-l2);cursor:pointer;transition:border-color var(--ds-transition-duration) var(--ds-ease-in-out), background-color var(--ds-transition-duration) var(--ds-ease-in-out);font:inherit;text-align:left;background:0 0;border-radius:10px;flex-direction:column;align-items:stretch;width:100%;padding:0;display:flex;overflow:hidden}.qMfk9G_tileInner:hover{border-color:var(--dsw-alias-state-business-primary);background:var(--dsw-alias-interactive-bg-hover)}.qMfk9G_tilePreview{aspect-ratio:1;flex:1;width:100%;min-height:0;margin:0;display:block;position:relative}.qMfk9G_tileImg,.qMfk9G_tileImgLink{width:100%;height:100%;display:block}.qMfk9G_tileImg{object-fit:cover}.qMfk9G_tileVideoImg{object-fit:contain;width:100%;height:100%;display:block}.qMfk9G_audioBars{box-sizing:border-box;justify-content:center;align-items:flex-end;gap:2px;width:100%;height:100%;padding:18% 12%;display:flex}.qMfk9G_audioBar{background:var(--dsw-alias-state-business-primary);opacity:.85;border-radius:1px;flex:1;max-width:6px}.qMfk9G_kindFace{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-secondary);flex-direction:column;justify-content:center;align-items:center;gap:4px;width:100%;height:100%;display:flex}.qMfk9G_kindInitial{font-size:28px;font-weight:700;line-height:1}.qMfk9G_kindName{text-overflow:ellipsis;white-space:nowrap;padding:0 6px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:10px;overflow:hidden}.qMfk9G_tileDot{position:absolute;bottom:6px;right:6px}.qMfk9G_tileIconBtn{background:color-mix(in srgb, var(--dsw-alias-bg-base) 72%, transparent);border:1px solid var(--dsw-alias-border-l2);color:var(--dsw-alias-label-secondary);cursor:pointer;opacity:0;height:24px;transition:opacity var(--ds-transition-duration) var(--ds-ease-in-out), color var(--ds-transition-duration) var(--ds-ease-in-out);z-index:2;border-radius:999px;justify-content:center;align-items:center;width:24px;padding:0;display:inline-flex;position:absolute}.qMfk9G_tileIconBtn:hover{border-color:var(--dsw-alias-border-l4);color:var(--dsw-alias-label-primary)}.qMfk9G_tileInner:hover .qMfk9G_tileIconBtn,.qMfk9G_tileIconBtn:focus-visible{opacity:1}.qMfk9G_tileIconBtn:disabled{cursor:default}.qMfk9G_tileTrash{color:var(--dsw-alias-label-tertiary);top:6px;right:6px}.qMfk9G_tileTrash:hover{color:var(--dsw-alias-state-error-primary)}.qMfk9G_tileRunBtn{color:var(--dsw-alias-label-secondary);bottom:6px;right:6px}.qMfk9G_tileRunBtn:hover{color:var(--dsw-alias-brand-primary)}.qMfk9G_tileSpin{color:var(--dsw-alias-brand-primary);z-index:2;align-items:center;display:inline-flex;position:absolute;bottom:6px;left:6px}.qMfk9G_tileSpin>svg{animation:1s linear infinite qMfk9G_tileSpinTurn}.qMfk9G_tilePct{font-variant-numeric:tabular-nums;margin-left:4px;font-size:11px}@keyframes qMfk9G_tileSpinTurn{to{transform:rotate(360deg)}}.qMfk9G_tileCaption{border-top:.5px solid var(--dsw-alias-border-l2);flex-direction:column;flex:none;gap:2px;padding:6px 8px;display:flex}.qMfk9G_tileTitle{text-overflow:ellipsis;white-space:nowrap;font-size:12px;font-weight:600;line-height:20px;overflow:hidden}.qMfk9G_tileMeta{color:var(--dsw-alias-label-secondary);align-items:center;gap:6px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:10px;line-height:17px;display:flex;overflow:hidden}.qMfk9G_tilePrompt{text-overflow:ellipsis;white-space:nowrap;flex:1;overflow:hidden}.qMfk9G_tileAdd .qMfk9G_tileInner{border-style:dashed}.qMfk9G_addFace{color:var(--dsw-alias-label-secondary);justify-content:center;align-items:center;font-size:34px;font-weight:300;display:flex}.qMfk9G_picker{flex-direction:column;gap:10px;max-height:60vh;margin-top:-6px;display:flex;overflow-y:auto}.qMfk9G_pickerGenre{flex-direction:column;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:6px;display:grid}.qMfk9G_pickerGenreTitle{letter-spacing:.08em;text-transform:uppercase;color:var(--dsw-alias-label-primary);grid-column:1/-1;margin:12px 0 10px;font-size:15px;font-weight:700}.qMfk9G_drill [class*=_title_]{font-size:18px;font-weight:800}.qMfk9G_pickerCardLabel{font-size:12px;font-weight:500}.qMfk9G_pickerCard{box-sizing:border-box;border:.5px solid var(--dsw-alias-border-l2);width:100%;min-height:44px;color:inherit;cursor:pointer;font:inherit;text-align:left;background:0 0;border-radius:8px;justify-content:flex-start;align-items:baseline;gap:8px;width:100%;padding:8px 10px;display:flex}.qMfk9G_pickerCard:hover{background:var(--dsw-alias-interactive-bg-hover);border-color:var(--dsw-alias-state-business-primary)}.qMfk9G_pickerCardLabel{white-space:nowrap;font-size:13px;font-weight:600}.qMfk9G_tileShared{display:block;position:relative}.qMfk9G_zoomOverlay{background:var(--dsw-alias-bg-overlay);z-index:80;flex-direction:column;display:flex;position:fixed;inset:0}.qMfk9G_zoomScroll{flex:1;min-height:0;overflow-y:auto}.qMfk9G_zoomInner{box-sizing:border-box;justify-content:center;align-items:center;width:100%;max-width:100%;min-height:100%;margin:0 auto;padding:24px;display:flex}.qMfk9G_tileDragOver{outline:2px dashed var(--dsw-alias-brand-primary);outline-offset:-2px}.qMfk9G_zoomCard{background:var(--dsw-alias-bg-layer-1);box-shadow:0 0 0 .5px color-mix(in srgb, var(--dsw-alias-label-primary) 16%, transparent), 0 3px 8px 0 color-mix(in srgb, var(--dsw-alias-label-primary) 3%, transparent), 0 0 16px 0 color-mix(in srgb, var(--dsw-alias-label-primary) 2%, transparent);color:var(--dsw-alias-label-primary);border:0;border-radius:14px;flex-direction:column;min-height:320px;max-height:86vh;animation:.18s cubic-bezier(.2,.9,.3,1) qMfk9G_zoom-in;display:flex;overflow:hidden}@keyframes qMfk9G_zoom-in{0%{opacity:0;transform:scale(.92)}}.qMfk9G_zoomBar{border-bottom:.5px solid var(--dsw-alias-border-l2);flex:none;justify-content:space-between;align-items:center;gap:8px;padding:10px 14px;display:flex}.qMfk9G_zoomWebhook{color:var(--dsw-alias-label-secondary);align-items:center;gap:8px;width:100%;min-height:0;padding:2px 0;font-size:12px;display:flex}.qMfk9G_zoomMeter{background:var(--dsw-alias-border-l2);border-radius:999px;flex:auto;height:3px;overflow:hidden}.qMfk9G_zoomMeterFill{background:var(--dsw-alias-fill-brand-primary);height:100%;transition:width .24s;display:block}.qMfk9G_zoomTitle{flex:auto;font-size:13px;font-weight:600;line-height:20px}.qMfk9G_zoomDetail{overflow-anchor:none;min-height:0;padding:14px;display:block;overflow-y:auto}.qMfk9G_zoomBody{flex-direction:column;flex:1;min-height:0;display:flex;overflow:hidden}.qMfk9G_tabScroll{overflow-anchor:none;flex-direction:column;flex:1;min-width:0;height:100%;min-height:0;display:flex;overflow-y:auto}.qMfk9G_zoomSkeleton{flex-direction:column;flex:1;gap:10px;min-height:0;padding:16px;display:flex}.qMfk9G_skLine{will-change:background-position;background:linear-gradient(90deg, transparent 40%, var(--dsw-alias-interactive-bg-hover) 50%, transparent 60%);background-color:var(--dsw-alias-interactive-bg-hover);background-size:200% 100%;border-radius:6px;height:12px;animation:1s linear infinite both qMfk9G_zoomShimmer}.qMfk9G_skWide{width:60%}.qMfk9G_skShort{flex:1;height:28px}.qMfk9G_skBlock{border-radius:10px;height:120px}.qMfk9G_skRow{gap:10px;display:flex}@keyframes qMfk9G_zoomShimmer{0%{background-position:150% 0}to{background-position:-100% 0}}@keyframes qMfk9G_tilePop{0%{opacity:0;transform:scale(.96)translateY(6px)}60%{opacity:1;transform:scale(1.015)translateY(0)}to{opacity:1;transform:scale(1)translateY(0)}}.qMfk9G_tileEnter{animation:.26s cubic-bezier(.2,.8,.3,1) both qMfk9G_tilePop}.qMfk9G_tileDragging{opacity:.55;z-index:2}.qMfk9G_wiredMark{color:var(--dsw-alias-state-business-primary);font-size:10px}.qMfk9G_capOver{background:var(--dsw-alias-interactive-bg-hover);outline:1px dashed var(--dsw-alias-state-business-primary);outline-offset:4px}.qMfk9G_dangerVerb{color:var(--dsw-alias-state-error-primary);border-color:var(--dsw-alias-state-error-primary)}.qMfk9G_groupBar{align-items:center;gap:8px;display:flex}.qMfk9G_checkCircle{border:1.5px solid var(--dsw-alias-label-secondary);corner-shape:round;color:var(--dsw-alias-bg-module);z-index:3;border-radius:999px;justify-content:center;align-items:center;width:20px;height:20px;font-size:11px;display:flex;position:absolute;top:8px;left:8px}.qMfk9G_checkOn{background:var(--dsw-alias-state-business-primary);border-color:var(--dsw-alias-state-business-primary)}[data-selected=on]{outline:2px solid var(--dsw-alias-state-business-primary);outline-offset:2px}.qMfk9G_groupNote{color:var(--dsw-alias-label-secondary);margin:0 0 10px;font-size:12px;line-height:20px}.qMfk9G_memberList{margin:0 0 12px;padding:0;list-style:none}.qMfk9G_memberRow{border-bottom:1px solid var(--dsw-alias-interactive-bg-hover);align-items:baseline;gap:8px;padding:6px 2px;display:flex}.qMfk9G_memberIdx{color:var(--dsw-alias-label-secondary);font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:11px}.qMfk9G_memberName{font-size:13px}@media (prefers-reduced-motion:reduce){.qMfk9G_tileEnter,.qMfk9G_skLine,.qMfk9G_skBlock{animation-duration:.01ms;animation-iteration-count:1}}@media (width<=900px){.qMfk9G_studioSplit{grid-template-columns:1fr}}.qMfk9G_outputsPreview{flex-direction:column;flex:1;min-width:280px;min-height:220px;display:flex;overflow:hidden}.qMfk9G_outputsHint{color:var(--dsw-alias-label-dimmed);border:1px dashed var(--dsw-alias-border-l2);border-radius:6px;flex:1;justify-content:center;align-items:center;font-size:11px;display:flex}.qMfk9G_previewClickable{cursor:pointer}.qMfk9G_previewClickable:focus-visible{outline:2px solid var(--dsw-alias-state-business-primary);outline-offset:2px}.qMfk9G_enhanceRow{flex:none;align-items:center;gap:8px;padding:2px 0;display:flex}.qMfk9G_enhanceNote{color:var(--dsw-alias-text-tertiary);font-size:12px}.qMfk9G_rescue{border:1px solid var(--dsw-alias-border-secondary);border-radius:6px;flex-wrap:wrap;align-items:center;gap:8px;padding:6px 8px;display:flex}.qMfk9G_rescueNote{color:var(--dsh-alias-text-secondary,var(--dsw-alias-text-secondary));overflow-wrap:anywhere;margin:0;font-size:12px}.qMfk9G_rescueErr{color:var(--dsw-alias-state-error-primary);overflow-wrap:anywhere;margin:0;font-size:11px}";
@@ -3670,6 +4665,15 @@ window.__ModuleLoader__.load({
 			*  named key through the bench door. Composed with the field name
 			*  at the render seat ("Unstamp 'double_reference'"). */
 			unstampWord: "Unstamp",
+			/** THE STAGE-VIEW LOAD REFUSAL (2026-11-09, the fallback
+			*  extermination): a card whose served spec declares a studio
+			*  (FormSpecDoc.stage_view) must never wear the generic form when
+			*  the lane's module table lacks the plugin — the dispatch's miss
+			*  renders THIS voice instead (there is no such thing as a
+			*  fallback, only suppressed errors). */
+			stageViewRefusal: (p) => "The '" + p.card + "' studio failed to load — this lane has no '" + p.plugin + "' bundle mounted.",
+			/** The refusal's fix line: the mount is a build fact, not a UI toggle. */
+			stageViewRefusalFix: "Rebuild the web bases and reload this lane (the studio's mount row is missing or its bundle is stale). The generic form is suppressed on purpose: it would edit the studio's params with different rules.",
 			/** Run view's cancel verb (danger face — the live run stops). */
 			cancelRunWord: "Cancel run",
 			/** Run view's cancel in-flight face. */
@@ -8630,6 +9634,12 @@ window.__ModuleLoader__.load({
 		var init_modifierFaces = __esmMin((() => {}));
 		//#endregion
 		//#region ../../../@deepseek-ai/dsh-util-values/lib/index.js
+		function isWhitespace(c) {
+			return c === " " || c === "\n" || c === "\r" || c === "	";
+		}
+		function isHex(c) {
+			return c >= "0" && c <= "9" || c >= "a" && c <= "f" || c >= "A" && c <= "F";
+		}
 		/** Duplicate-install-safe JSON and immutable-value helpers. @module @deepseek-ai/dsh-util-values */
 		/**
 		* Mark an unreachable closed-union branch.
@@ -8641,7 +9651,616 @@ window.__ModuleLoader__.load({
 			const rendered = JSON.stringify(value) ?? String(value);
 			throw new Error(`unreachable variant${context ? ` in ${context}` : ""}: ${rendered}`);
 		}
-		var init_lib$2 = __esmMin((() => {}));
+		var SIMPLE_ESCAPES, CONTENT_ESCAPE;
+		var init_lib$2 = __esmMin((() => {
+			SIMPLE_ESCAPES = {
+				"\"": "\"",
+				"\\": "\\",
+				"/": "/",
+				b: "\b",
+				f: "\f",
+				n: "\n",
+				r: "\r",
+				t: "	"
+			};
+			CONTENT_ESCAPE = /[\\\u0000-\u001f]/u;
+			(class PartialArguments {
+				/** The view of a call with no arguments available. */
+				static EMPTY = PartialArguments.fromObject({});
+				/**
+				* View finished argument text without scanning it until a reader asks.
+				* @param text - the complete argument JSON text.
+				* @returns a sealed view.
+				*/
+				static fromText(text) {
+					const view = new PartialArguments();
+					view.append(text);
+					view.sealed = true;
+					return view;
+				}
+				/**
+				* View an already parsed argument payload, such as a PTC dispatch object.
+				* @param value - the parsed argument value.
+				* @returns a sealed view; a non-object payload has no fields.
+				*/
+				static fromObject(value) {
+					const view = new PartialArguments();
+					view.object = typeof value === "object" && value !== null && !Array.isArray(value) ? value : {};
+					view.sealed = true;
+					return view;
+				}
+				/**
+				* The source: text so far or a parsed object, plus whether it can still grow.
+				* These are the only enumerable fields, so two views over the same source
+				* compare equal structurally however far each has been read.
+				*/
+				chunks = [];
+				object;
+				sealed = false;
+				#ends = [];
+				#size = 0;
+				#consumed = 0;
+				#mode = "root";
+				#escape = false;
+				#keyStart = 0;
+				#keyEscaped = false;
+				#key = "";
+				#current = null;
+				#nestedEnds = [];
+				#nestedInString = false;
+				#invalidAt;
+				#invalidValue = false;
+				#entries = /* @__PURE__ */ new Map();
+				#order = [];
+				#reads = /* @__PURE__ */ new Map();
+				/** Whether this view rejects further appends; does not scan text or register reads. */
+				get isSealed() {
+					return this.sealed;
+				}
+				/** Whether indexing or a content read found invalid JSON; unread value contents are not validated. */
+				get invalid() {
+					this.scan();
+					return this.#mode === "invalid" || this.#invalidValue;
+				}
+				/**
+				* Retain streamed argument text without scanning or comparing observed answers.
+				* @param fragment - the text following every fragment appended before.
+				*/
+				append(fragment) {
+					if (this.sealed) throw new Error("PartialArguments: cannot append to a sealed view");
+					if (fragment.length === 0) return;
+					this.chunks.push(fragment);
+					this.#size += fragment.length;
+					this.#ends.push(this.#size);
+				}
+				/**
+				* Reconcile a streamed prefix with authoritative complete text without joining the fragments.
+				* @param text - the final argument text, which replaces missing or conflicting deltas.
+				* @returns this view sealed with its caches retained when every character matches; otherwise a new sealed view.
+				*/
+				settle(text) {
+					if (this.object !== void 0 || text.length !== this.#size) return PartialArguments.fromText(text);
+					let offset = 0;
+					for (const chunk of this.chunks) {
+						if (!text.startsWith(chunk, offset)) return PartialArguments.fromText(text);
+						offset += chunk.length;
+					}
+					this.chunks = text.length === 0 ? [] : [text];
+					this.#ends = text.length === 0 ? [] : [text.length];
+					this.sealed = true;
+					return this;
+				}
+				/**
+				* Compare observed answers and advance their publication baseline. Unread views remain unscanned.
+				* @returns whether any observed answer changed since its first read or the preceding refresh.
+				*/
+				refresh() {
+					if (this.#reads.size === 0) return false;
+					this.scan();
+					let changed = false;
+					let completions = false;
+					for (const read of this.#reads.values()) {
+						if (read.completion) {
+							completions = true;
+							continue;
+						}
+						changed = this.refreshRead(read) || changed;
+					}
+					if (completions) {
+						for (const read of this.#reads.values()) if (read.completion) changed = this.refreshRead(read) || changed;
+					}
+					if (this.sealed) this.#reads.clear();
+					return changed;
+				}
+				refreshRead(read) {
+					const now = read.answer();
+					if (Object.is(now, read.last)) return false;
+					read.last = now;
+					return true;
+				}
+				/**
+				* Check whether no further fields can arrive.
+				* @returns whether the outer object closed, indexing failed, or the view is sealed; unread values are not validated.
+				*/
+				closed() {
+					return this.remember("closed", "", () => this.closedNow());
+				}
+				/**
+				* List discovered fields in first-appearance order.
+				* @returns top-level keys seen so far, in first-appearance order.
+				*/
+				keys() {
+					return this.remember("keys", "", () => this.keysNow(), (keys) => keys.length);
+				}
+				/**
+				* Check whether a top-level field has appeared.
+				* @param key - argument name.
+				* @returns whether the field has appeared (a string opened or another value began).
+				*/
+				has(key) {
+					return this.remember("has", key, () => this.hasNow(key));
+				}
+				/**
+				* Check whether a field's closing delimiter has arrived, without validating its contents.
+				* @param key - argument name.
+				* @returns whether its delimiter arrived and no content reader has reported an error for this value.
+				*/
+				complete(key) {
+					return this.remember("complete", key, () => this.completeNow(key));
+				}
+				/**
+				* Read string length without materializing its text.
+				* @param key - argument name.
+				* @param options - change granularity for a streaming string.
+				* @returns decoded UTF-16 length of the string field so far; undefined when absent or not a string.
+				*/
+				stringLength(key, options) {
+					const step = Math.max(1, Math.floor(options?.step ?? 1));
+					const offset = options?.offset ?? 0;
+					return this.remember(`length:${step}:${offset}`, key, () => this.lengthNow(key), (length) => length === void 0 ? void 0 : Math.ceil((length + offset) / step));
+				}
+				/**
+				* Check a string against a decoded UTF-16 length limit without materializing it.
+				* @param key - argument name.
+				* @param maxLength - decoded UTF-16 limit, floored to at least zero.
+				* @returns whether the string is longer than the limit; false when absent or not a string.
+				*/
+				stringExceeds(key, maxLength) {
+					const limit = Math.max(0, Math.floor(maxLength));
+					return this.remember(`exceeds:${limit}`, key, () => (this.lengthNow(key, limit + 1) ?? 0) > limit);
+				}
+				/**
+				* Read a decoded string, including a streaming prefix.
+				* @param key - argument name.
+				* @returns the string field's decoded text so far; undefined when absent or not a string.
+				*/
+				text(key) {
+					return this.remember("text", key, () => this.textNow(key));
+				}
+				/**
+				* Read at most the first decoded UTF-16 units of a string.
+				* @param key - argument name.
+				* @param maxLength - maximum decoded UTF-16 length, floored to at least one.
+				* @returns the bounded string prefix; undefined when absent or not a string.
+				*/
+				textPrefix(key, maxLength) {
+					const limit = Math.max(1, Math.floor(maxLength));
+					return this.remember(`prefix:${limit}`, key, () => this.textPrefixNow(key, limit));
+				}
+				/**
+				* Read a completed non-string argument.
+				* @param key - argument name.
+				* @returns the parsed non-string value once it closed; undefined while open, absent, or a string.
+				*/
+				value(key) {
+					return this.remember("value", key, () => this.valueNow(key));
+				}
+				/** Answer a question and, on a streaming view, remember it for change detection. */
+				remember(kind, key, read, comparison) {
+					this.scan();
+					const result = read();
+					if (!this.sealed) {
+						const id = `${kind}/${key}`;
+						if (!this.#reads.has(id)) this.#reads.set(id, {
+							completion: kind === "complete",
+							answer: comparison === void 0 ? read : () => comparison(read()),
+							last: comparison === void 0 ? result : comparison(result)
+						});
+					}
+					return result;
+				}
+				closedNow() {
+					return this.sealed || this.#mode === "closed" || this.#mode === "invalid";
+				}
+				keysNow() {
+					return this.object === void 0 ? this.#order : Object.keys(this.object);
+				}
+				hasNow(key) {
+					return this.object === void 0 ? this.#entries.has(key) : Object.hasOwn(this.object, key);
+				}
+				completeNow(key) {
+					if (this.object !== void 0) return Object.hasOwn(this.object, key);
+					const entry = this.#entries.get(key);
+					return entry !== void 0 && entry.end >= 0 && (entry.kind === "string" ? entry.invalidAt === void 0 : !entry.invalid);
+				}
+				lengthNow(key, limit = Number.POSITIVE_INFINITY) {
+					if (this.object !== void 0) {
+						const field = Object.hasOwn(this.object, key) ? this.object[key] : void 0;
+						return typeof field === "string" ? field.length : void 0;
+					}
+					const entry = this.#entries.get(key);
+					if (entry?.kind !== "string") return void 0;
+					if (entry.text !== void 0 && entry.text.at === entry.end) return entry.text.length;
+					const read = entry.length ??= {
+						at: entry.start,
+						length: 0,
+						text: ""
+					};
+					this.readString(entry, read, limit, false);
+					return read.length;
+				}
+				textNow(key) {
+					if (this.object !== void 0) {
+						const field = Object.hasOwn(this.object, key) ? this.object[key] : void 0;
+						return typeof field === "string" ? field : void 0;
+					}
+					const entry = this.#entries.get(key);
+					if (entry?.kind !== "string") return void 0;
+					if (entry.text === void 0 && entry.end >= 0 && entry.needsDecoding && entry.invalidAt === void 0) {
+						let text;
+						try {
+							text = JSON.parse(`"${this.slice(entry.start, entry.end)}"`);
+						} catch (_error) {}
+						if (text !== void 0) entry.text = {
+							at: entry.end,
+							length: text.length,
+							text
+						};
+					}
+					const read = entry.text ??= {
+						at: entry.start,
+						length: 0,
+						text: ""
+					};
+					this.readString(entry, read, Number.POSITIVE_INFINITY, true);
+					return read.text;
+				}
+				textPrefixNow(key, maxLength) {
+					if (this.object !== void 0) {
+						const field = Object.hasOwn(this.object, key) ? this.object[key] : void 0;
+						return typeof field === "string" ? field.slice(0, maxLength) : void 0;
+					}
+					const entry = this.#entries.get(key);
+					if (entry?.kind !== "string") return void 0;
+					const prefixes = entry.prefixes ??= /* @__PURE__ */ new Map();
+					let read = prefixes.get(maxLength);
+					if (read === void 0) {
+						read = {
+							at: entry.start,
+							length: 0,
+							text: ""
+						};
+						prefixes.set(maxLength, read);
+					}
+					this.readString(entry, read, maxLength, true);
+					return read.text;
+				}
+				valueNow(key) {
+					if (this.object !== void 0) {
+						if (!Object.hasOwn(this.object, key)) return void 0;
+						const field = this.object[key];
+						return typeof field === "string" ? void 0 : field;
+					}
+					const entry = this.#entries.get(key);
+					if (entry?.kind !== "value" || entry.end < 0 || entry.invalid) return void 0;
+					if (entry.parsed === void 0) try {
+						entry.parsed = JSON.parse(this.slice(entry.start, entry.end));
+					} catch (_error) {
+						entry.invalid = true;
+						this.#invalidValue = true;
+					}
+					return entry.parsed;
+				}
+				chunkAt(at) {
+					let low = 0;
+					let high = this.#ends.length;
+					while (low < high) {
+						const mid = low + high >>> 1;
+						if (this.#ends[mid] <= at) low = mid + 1;
+						else high = mid;
+					}
+					return low;
+				}
+				/** Materialize only a requested range, never the cumulative source. */
+				slice(start, end) {
+					if (start >= end) return "";
+					const first = this.chunkAt(start);
+					const last = this.chunkAt(end - 1);
+					const base = first === 0 ? 0 : this.#ends[first - 1];
+					if (first === last) return this.chunks[first].slice(start - base, end - base);
+					const parts = [this.chunks[first].slice(start - base)];
+					for (let i = first + 1; i < last; i++) parts.push(this.chunks[i]);
+					parts.push(this.chunks[last].slice(0, end - this.#ends[last - 1]));
+					return parts.join("");
+				}
+				readString(entry, read, limit, materialize) {
+					const end = Math.min(entry.end < 0 ? this.#consumed : entry.end, entry.invalidAt ?? Number.POSITIVE_INFINITY, this.#invalidAt ?? Number.POSITIVE_INFINITY);
+					if (!entry.needsDecoding) {
+						const length = Math.min(end - read.at, limit - read.length);
+						if (length <= 0) return;
+						if (materialize) read.text += this.slice(read.at, read.at + length);
+						read.at += length;
+						read.length += length;
+						return;
+					}
+					let chunkIndex = this.chunkAt(read.at);
+					while (read.at < end && read.length < limit) {
+						const base = chunkIndex === 0 ? 0 : this.#ends[chunkIndex - 1];
+						const chunk = this.chunks[chunkIndex];
+						const remaining = chunk.slice(read.at - base, Math.min(chunk.length, end - base));
+						const boundary = remaining.search(CONTENT_ESCAPE);
+						const length = Math.min(boundary < 0 ? remaining.length : boundary, limit - read.length);
+						if (length > 0) {
+							if (materialize) read.text += remaining.slice(0, length);
+							read.at += length;
+							read.length += length;
+							if (read.at === base + chunk.length) chunkIndex++;
+							continue;
+						}
+						const type = remaining.length > 1 ? remaining[1] : read.at + 1 < end ? this.chunks[chunkIndex + 1][0] : void 0;
+						let decoded;
+						let width = 2;
+						if (remaining[0] === "\\" && type === void 0 && entry.end < 0) return;
+						if (remaining[0] === "\\" && type === "u") {
+							const hex = this.slice(read.at + 2, Math.min(end, read.at + 6));
+							let valid = true;
+							for (let i = 0; i < hex.length; i++) if (!isHex(hex[i])) valid = false;
+							if (valid) {
+								if (hex.length < 4 && entry.end < 0) return;
+								if (hex.length === 4) decoded = String.fromCharCode(Number.parseInt(hex, 16));
+							}
+							width = 6;
+						} else if (remaining[0] === "\\" && type !== void 0) decoded = SIMPLE_ESCAPES[type];
+						if (decoded === void 0) {
+							entry.invalidAt = read.at;
+							this.#invalidValue = true;
+							return;
+						}
+						if (materialize) read.text += decoded;
+						read.length++;
+						read.at += width;
+						while (chunkIndex < this.chunks.length && read.at >= this.#ends[chunkIndex]) chunkIndex++;
+					}
+				}
+				/** Locate new field ranges without decoding or parsing their contents. */
+				scan() {
+					if (this.object !== void 0 || this.#consumed === this.#size) return;
+					for (let i = this.chunkAt(this.#consumed); i < this.chunks.length && this.#invalidAt === void 0; i++) {
+						const pending = this.chunks[i];
+						const base = i === 0 ? 0 : this.#ends[i - 1];
+						for (let index = this.#consumed - base; index < pending.length && this.#mode !== "invalid"; index++) {
+							if (this.#mode === "string" || this.#mode === "nested" && this.#nestedInString) {
+								const end = this.stringBoundary(pending, index);
+								this.#consumed += end - index;
+								index = end;
+								if (index === pending.length) break;
+							}
+							this.step(pending[index], this.#consumed);
+							this.#consumed++;
+						}
+					}
+				}
+				/** Only raw quotes and their preceding backslash runs can terminate a string. */
+				stringBoundary(fragment, start) {
+					let at = start;
+					while (true) {
+						const quote = fragment.indexOf("\"", at);
+						const end = quote < 0 ? fragment.length : quote;
+						if (this.#mode === "string") {
+							const entry = this.#current;
+							if (!entry.needsDecoding && CONTENT_ESCAPE.test(fragment.slice(at, end))) entry.needsDecoding = true;
+						}
+						let slashStart = end;
+						while (slashStart > at && fragment[slashStart - 1] === "\\") slashStart--;
+						const escaped = (end - slashStart) % 2 === 1 !== (slashStart === at && this.#escape);
+						this.#escape = quote < 0 && escaped;
+						if (quote < 0 || !escaped) return end;
+						at = quote + 1;
+					}
+				}
+				step(c, at) {
+					switch (this.#mode) {
+						case "root":
+							if (isWhitespace(c)) return;
+							if (c === "{") {
+								this.#mode = "key-or-end";
+								return;
+							}
+							this.fail();
+							return;
+						case "key-or-end":
+							if (isWhitespace(c)) return;
+							if (c === "}") {
+								this.#mode = "closed";
+								return;
+							}
+							if (c === "\"") {
+								this.beginKey(at);
+								return;
+							}
+							this.fail();
+							return;
+						case "key-only":
+							if (isWhitespace(c)) return;
+							if (c === "\"") {
+								this.beginKey(at);
+								return;
+							}
+							this.fail();
+							return;
+						case "key":
+							this.stepKey(c, at);
+							return;
+						case "colon":
+							if (isWhitespace(c)) return;
+							if (c === ":") {
+								this.#mode = "value";
+								return;
+							}
+							this.fail();
+							return;
+						case "value":
+							this.beginValue(c, at);
+							return;
+						case "string": {
+							const entry = this.#current;
+							entry.end = at;
+							this.#current = null;
+							this.#mode = "comma-or-end";
+							return;
+						}
+						case "scalar":
+							this.stepScalar(c, at);
+							return;
+						case "nested":
+							this.stepNested(c, at);
+							return;
+						case "comma-or-end":
+							if (isWhitespace(c)) return;
+							if (c === ",") {
+								this.#mode = "key-only";
+								return;
+							}
+							if (c === "}") {
+								this.#mode = "closed";
+								return;
+							}
+							this.fail();
+							return;
+						case "closed":
+							if (isWhitespace(c)) return;
+							this.fail();
+							return;
+						/* v8 ignore next 2 -- scan() stops stepping once the view is invalid. */
+						case "invalid": return;
+						/* v8 ignore next 2 -- Every scanner mode has a handler above. */
+						default: assertNever(this.#mode);
+					}
+				}
+				fail() {
+					this.#invalidAt = this.#consumed;
+					this.#mode = "invalid";
+					this.#current = null;
+				}
+				beginKey(at) {
+					this.#mode = "key";
+					this.#keyStart = at + 1;
+					this.#keyEscaped = false;
+					this.#escape = false;
+				}
+				stepKey(c, at) {
+					if (c < " ") {
+						this.fail();
+						return;
+					}
+					if (this.#escape) {
+						this.#escape = false;
+						return;
+					}
+					if (c === "\\") {
+						this.#escape = true;
+						this.#keyEscaped = true;
+						return;
+					}
+					if (c !== "\"") return;
+					const raw = this.slice(this.#keyStart, at);
+					if (this.#keyEscaped) try {
+						this.#key = JSON.parse(`"${raw}"`);
+					} catch (_error) {
+						this.fail();
+						return;
+					}
+					else this.#key = raw;
+					this.#mode = "colon";
+				}
+				open(entry) {
+					if (!this.#entries.has(this.#key)) this.#order.push(this.#key);
+					this.#entries.set(this.#key, entry);
+					this.#current = entry;
+				}
+				beginValue(c, at) {
+					if (isWhitespace(c)) return;
+					if (c === "\"") {
+						this.open({
+							kind: "string",
+							start: at + 1,
+							end: -1,
+							needsDecoding: false,
+							invalidAt: void 0,
+							length: void 0,
+							text: void 0,
+							prefixes: void 0
+						});
+						this.#escape = false;
+						this.#mode = "string";
+						return;
+					}
+					if (c === "}" || c === "," || c === ":" || c === "]") {
+						this.fail();
+						return;
+					}
+					this.open({
+						kind: "value",
+						start: at,
+						end: -1,
+						parsed: void 0,
+						invalid: false
+					});
+					if (c === "{" || c === "[") {
+						this.#mode = "nested";
+						this.#nestedEnds = [c === "{" ? "}" : "]"];
+						this.#nestedInString = false;
+						this.#escape = false;
+						return;
+					}
+					this.#mode = "scalar";
+				}
+				stepScalar(c, at) {
+					if (c !== "," && c !== "}" && !isWhitespace(c)) return;
+					this.closeValue(at);
+					this.#mode = c === "," ? "key-only" : c === "}" ? "closed" : "comma-or-end";
+				}
+				stepNested(c, at) {
+					if (this.#nestedInString) {
+						this.#nestedInString = false;
+						return;
+					}
+					if (c === "\"") {
+						this.#nestedInString = true;
+						return;
+					}
+					if (c === "{" || c === "[") {
+						this.#nestedEnds.push(c === "{" ? "}" : "]");
+						return;
+					}
+					if (c === "}" || c === "]") {
+						if (this.#nestedEnds.pop() !== c) {
+							this.fail();
+							return;
+						}
+						if (this.#nestedEnds.length === 0) {
+							this.closeValue(at + 1);
+							this.#mode = "comma-or-end";
+						}
+					}
+				}
+				closeValue(end) {
+					const entry = this.#current;
+					entry.end = end;
+					this.#current = null;
+				}
+			});
+		}));
 		//#endregion
 		//#region ../../web-kit/contracts/lib/modifierSubcards.js
 		/** Stable drag id. Both entry kinds key by `id` (the lora entry's id IS
@@ -17234,6 +18853,14 @@ window.__ModuleLoader__.load({
 			}));
 			const currentStageIndex = bench.stages.findIndex((candidate) => candidate.id === stage.id);
 			const priorStageIds = currentStageIndex < 0 ? [] : bench.stages.slice(0, currentStageIndex).map((candidate) => candidate.id);
+			const declaredStudio = typeof spec?.stage_view === "string" && spec.stage_view !== "" ? spec.stage_view : null;
+			const missFace = declaredStudio === null ? genericDetail() : (0, react.createElement)("div", {
+				className: card_module_css_default.drillRunRow,
+				"data-testid": "stage-view-load-refusal"
+			}, (0, react.createElement)("div", { className: card_module_css_default.runError }, chromeCopy.stageViewRefusal({
+				card: String(stage.card ?? ""),
+				plugin: declaredStudio
+			}), (0, react.createElement)("div", null, chromeCopy.stageViewRefusalFix)));
 			return renderStageView({
 				stageId: stage.id,
 				hasUnsettledWrites: () => {
@@ -17281,7 +18908,7 @@ window.__ModuleLoader__.load({
 					inputSlots: (spec?.inputs ?? []).map((input) => input.name)
 				},
 				priorStageIds
-			}, genericDetail());
+			}, missFace);
 		}
 		//#endregion
 		//#region src/client/add-card-door.tsx

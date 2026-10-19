@@ -74,7 +74,10 @@ export const cardPackages = [
     // family's tenant binding WAS this card; nothing else consumed
     // it). No historical row survives it — the frozen identity ring
     // is DELETED (2026-09-18): identity is native on the defs.
-    '@melite/image-input-prep',
+    // (the CARD subpath — the dual-face law: the package's root face
+    // is the composition marker the web row mounts; the def rides
+    // ./card here, the engine plane's registry seat)
+    '@melite/image-input-prep/card',
     // RETIRED 2026-09-16 (operator order, stroke 87): 3d-skin + 3d-fit —
     // DCC surgery masquerading as cards. Verified at source: skin's
     // GLB attach refuses un-UV'd meshes (NO unwrap — it packs noise

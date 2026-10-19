@@ -196,6 +196,16 @@ export const chromeCopy = {
    *  named key through the bench door. Composed with the field name
    *  at the render seat ("Unstamp 'double_reference'"). */
   unstampWord: 'Unstamp',
+  /** THE STAGE-VIEW LOAD REFUSAL (2026-11-09, the fallback
+   *  extermination): a card whose served spec declares a studio
+   *  (FormSpecDoc.stage_view) must never wear the generic form when
+   *  the lane's module table lacks the plugin — the dispatch's miss
+   *  renders THIS voice instead (there is no such thing as a
+   *  fallback, only suppressed errors). */
+  stageViewRefusal: (p: { card: string; plugin: string }): string =>
+    "The '" + p.card + "' studio failed to load — this lane has no '" + p.plugin + "' bundle mounted.",
+  /** The refusal's fix line: the mount is a build fact, not a UI toggle. */
+  stageViewRefusalFix: 'Rebuild the web bases and reload this lane (the studio\'s mount row is missing or its bundle is stale). The generic form is suppressed on purpose: it would edit the studio\'s params with different rules.',
   /** Run view's cancel verb (danger face — the live run stops). */
   cancelRunWord: 'Cancel run',
   /** Run view's cancel in-flight face. */

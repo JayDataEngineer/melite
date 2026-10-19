@@ -200,7 +200,7 @@ const PROFILE_BASES = {
   'melite-test': ['@deepseek-ai/dsh-base', '@deepseek-ai/dsh-web-app', '@melite/harness-provisioner',
     '@melite/harness-tools', '@melite-plugin/dsh-estate', '@melite/card-base', '@melite/three-client',
     '@melite-plugin/dsh-card-view', '@melite-plugin/dsh-card-deck', '@melite-plugin/dsh-gallery',
-    '@melite/video-h3-timeline', '@melite/motion-motion'],
+    '@melite/video-h3-timeline', '@melite/motion-motion', '@melite/image-input-prep'],
   // headless = the agent server: one-shot task runner + the tools
   // plane (harness-tools self-registers its melite-tools row; the
   // renderer disables the web-plane doors row in this mount).

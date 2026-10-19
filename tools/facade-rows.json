@@ -282,7 +282,7 @@
     "./packages/image/image-gen/src/tool.ts"
   ],
   "@melite/image-input-prep": [
-    "./packages/image/input-prep/src/card.ts"
+    "./packages/image/input-prep/src/index.ts"
   ],
   "@melite/image-input-prep/client": [
     "./packages/image/input-prep/src/client/index.ts"

@@ -273,6 +273,14 @@ export interface FormSpecDoc {
     } | null;
     /** The card's served contract row (null when none). */
     contract?: unknown;
+    /** THE CARD'S STUDIO DECLARATION (2026-11-09, the fallback
+     *  extermination): the card package registers a cards.stage.view
+     *  takeover — the estate derives this from the package tree. The
+     *  drill's dispatch must render the loud load refusal when the
+     *  lane's module table lacks this plugin, never the generic form
+     *  (a suppressed error, not a fallback). Absent/null = the card
+     *  has no studio; the generic form IS the designed seat. */
+    stage_view?: string | null;
     form: string;
     genre?: string;
     engine?: string;

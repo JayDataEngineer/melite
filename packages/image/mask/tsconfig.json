@@ -146,7 +146,7 @@
         "@melite/image-image-edit/tool": ["./../image-edit/src/tool.ts"],
         "@melite/image-image-gen": ["./../image-gen/src/index.ts"],
         "@melite/image-image-gen/wire": ["./../image-gen/src/wire.ts"],
-        "@melite/image-input-prep": ["./../input-prep/src/card.ts"],
+        "@melite/image-input-prep": ["./../input-prep/src/index.ts"],
         "@melite/image-mask": ["./src/index.ts"],
         "@melite/image-mask/card": ["./src/card.ts"],
         "@melite/image-tagger": ["./../tagger/src/card.ts"],

@@ -18,6 +18,7 @@ import { laneContractOf as sharedLaneContractOf } from '@melite/contracts/laneRe
 import { buildCatalog, CARD_KINDS, emitParamsSchema, enhanceRecipeFor, getModel, isServedFamily, liveScanOrder, modelsBooted, owningAtom, registryModel, loadCardDefs, modelIds, theService, emitModifierKinds, declaredDefaults, } from '@melite/comfyui-cordis';
 import { deriveVariants } from '@melite/comfyui-card-kit/facts';
 import { faceStamp } from "./faceStamp.js";
+import { stageViewDeclaration } from "./stageViewPlane.js";
 /** The boarded map (family -> the card that boards it, first-seen).
  *  Exported for the flow tool's bench pass (the card-id alias
  *  resolution rides the SAME table form-spec serves — one truth). */
@@ -816,6 +817,13 @@ export function specBody(svc, defs, res) {
         // admission's field-named voice, mirrored client-side. Absent
         // when the DECL is unreachable (the legacy surface-less shape).
         params: decl?.params,
+        // THE CARD'S STUDIO DECLARATION (2026-11-09, the fallback
+        // extermination): derived from the card package's own client
+        // index (stageViewPlane — the mount census's tree truth), served
+        // so the drill's dispatch refuses LOUD on a slot miss instead of
+        // silently re-expressing the studio's params as the generic form.
+        // Null = the card registers no studio (the form IS its seat).
+        stage_view: stageViewDeclaration(res.card) ?? null,
         // THE FAMILY-CONDITIONAL KEY LAW (the ERROR g/h cure, 2026-11-08):
         // served verbatim off the DECL (h3's FAMILY_LAW) so the client
         // compose gate refuses a family-dead key at the gesture and the

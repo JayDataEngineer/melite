@@ -133,7 +133,7 @@
         "@melite/image-image-edit/tool": ["./../../image/image-edit/src/tool.ts"],
         "@melite/image-image-gen": ["./../../image/image-gen/src/index.ts"],
         "@melite/image-image-gen/wire": ["./../../image/image-gen/src/wire.ts"],
-        "@melite/image-input-prep": ["./../../image/input-prep/src/card.ts"],
+        "@melite/image-input-prep": ["./../../image/input-prep/src/index.ts"],
         "@melite/image-mask": ["./../../image/mask/src/index.ts"],
         "@melite/image-mask/card": ["./../../image/mask/src/card.ts"],
         "@melite/image-tagger": ["./../../image/tagger/src/card.ts"],

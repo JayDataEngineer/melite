@@ -87,7 +87,7 @@
         "@melite-plugin/dsh-card-view/client": ["./../../web/melite-card-view/src/client/index.ts"],
         "@melite/3d-anny": ["./../../3d/anny/src/index.ts"],
         "@melite/3d-anny/card": ["./../../3d/anny/src/card.ts"],
-        "@melite/image-input-prep": ["./src/card.ts"],
+        "@melite/image-input-prep": ["./src/index.ts"],
         "@melite/image-input-prep/card": ["./src/card.ts"],
         "@melite/3d-rig": ["./../../3d/rig/src/index.ts"],
         "@melite/3d-rig/card": ["./../../3d/rig/src/card.ts"],

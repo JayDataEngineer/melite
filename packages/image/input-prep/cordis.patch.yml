@@ -1,0 +1,3 @@
+- insert:
+    - id: input-prep-studio
+      name: '@melite/image-input-prep'

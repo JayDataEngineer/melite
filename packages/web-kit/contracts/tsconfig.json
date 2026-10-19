@@ -78,7 +78,7 @@
         "@melite/image-image-edit": ["./../../image/image-edit/src/index.ts"],
         "@melite/image-image-edit/card": ["./../../image/image-edit/src/card.ts"],
         "@melite/image-image-edit/tool": ["./../../image/image-edit/src/tool.ts"],
-        "@melite/image-input-prep": ["./../../image/input-prep/src/card.ts"],
+        "@melite/image-input-prep": ["./../../image/input-prep/src/index.ts"],
         "@melite/image-tagger": ["./../../image/tagger/src/card.ts"],
         "@melite/image-upscale-tools": ["./../../image/upscale-tools/src/card.ts"],
         "@melite/contracts": ["./src/index.ts"],

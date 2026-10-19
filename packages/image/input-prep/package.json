@@ -6,8 +6,8 @@
   "description": "the input-prep card (the image lane) \u2014 one card one package: card.ts host face + the ANNY-style crop/scale studio (src/ui/studio, registered on cards.stage.view by ./client)",
   "exports": {
     ".": {
-      "types": "./lib/card.d.ts",
-      "default": "./lib/card.js"
+      "types": "./lib/index.d.ts",
+      "default": "./lib/index.js"
     },
     "./package.json": "./package.json",
     "./client": "./lib/client.js",
@@ -22,7 +22,7 @@
     "bundle": "tsdown"
   },
   "dependencies": {
-    "@deepseek-ai/schemastery": "^3.18.4",
+    "@deepseek-ai/schemastery": "^3.18.5",
     "@melite/comfyui-card-kit": "workspace:*",
     "@melite/contracts": "workspace:*",
     "@melite/models-input": "workspace:*",
@@ -32,7 +32,7 @@
   "devDependencies": {
     "@types/node": "^22.20.0",
     "typescript": "^5.9.3",
-    "@deepseek-ai/cordis": "^4.0.4",
+    "@deepseek-ai/cordis": "^4.0.5",
     "@types/react": "^19.1.0",
     "@testing-library/react": "*",
     "@testing-library/jest-dom": "*",
@@ -42,10 +42,12 @@
   "files": [
     "lib/card.js",
     "lib/**/*.js",
-    "lib/**/*.d.ts"
+    "lib/**/*.d.ts",
+    "cordis.patch.yml"
   ],
   "peerDependencies": {
-    "@deepseek-ai/cordis": "^4.0.4"
+    "@deepseek-ai/cordis": "^4.0.5",
+    "@deepseek-ai/dsh": ">=0.2.1-rc.2 <0.3.0"
   },
   "dsh": {
     "client": {
@@ -53,6 +55,9 @@
       "external": [
         "@melite/card-base/client"
       ]
+    },
+    "bundle": {
+      "patch": "./cordis.patch.yml"
     }
   }
 }

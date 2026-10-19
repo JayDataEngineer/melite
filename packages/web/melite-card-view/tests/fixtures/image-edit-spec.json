@@ -434,6 +434,7 @@
     "sampler",
     "scheduler"
   ],
+  "stage_view": null,
   "outputs": {
     "default": "image"
   },

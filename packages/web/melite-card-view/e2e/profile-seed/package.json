@@ -78,6 +78,7 @@
         "@melite/harness-tools",
         "@melite/motion-motion",
         "@melite/video-h3-timeline",
+        "@melite/image-input-prep",
         "@melite-plugin/dsh-card-view",
         "@melite-plugin/dsh-card-deck",
         "@melite-plugin/dsh-gallery"

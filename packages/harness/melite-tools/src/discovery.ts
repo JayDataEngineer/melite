@@ -40,6 +40,7 @@ import { deriveVariants, type MatrixVariant } from '@melite/comfyui-card-kit/fac
 import { agentFormDoc } from '@melite/engine-agent'
 import type { ExtraBag } from '@melite/contracts/extraKeys'
 import { faceStamp } from './faceStamp.ts'
+import { stageViewDeclaration } from './stageViewPlane.ts'
 import type {
   FormSpecDoc,
   ModifierKind,
@@ -932,6 +933,13 @@ export function specBody(
     // admission's field-named voice, mirrored client-side. Absent
     // when the DECL is unreachable (the legacy surface-less shape).
     params: decl?.params,
+    // THE CARD'S STUDIO DECLARATION (2026-11-09, the fallback
+    // extermination): derived from the card package's own client
+    // index (stageViewPlane — the mount census's tree truth), served
+    // so the drill's dispatch refuses LOUD on a slot miss instead of
+    // silently re-expressing the studio's params as the generic form.
+    // Null = the card registers no studio (the form IS its seat).
+    stage_view: stageViewDeclaration(res.card) ?? null,
     // THE FAMILY-CONDITIONAL KEY LAW (the ERROR g/h cure, 2026-11-08):
     // served verbatim off the DECL (h3's FAMILY_LAW) so the client
     // compose gate refuses a family-dead key at the gesture and the

@@ -407,6 +407,10 @@ describe('live door arms', () => {
       'schema',
       'service',
       'size',
+      // THE STUDIO CLAIM (the fallback purge, 2026-11-09): the served
+      // doc names the package whose client bundle mounts the card
+      // studio — null when nothing claims it.
+      'stage_view',
       'variants',
     ])
     // THE ENVELOPE (the parameter audit): the schema is the card's
@@ -763,6 +767,25 @@ describe('live door arms', () => {
     const gen = await formSpecSweep('image-gen')
     assert.ok(gen !== null)
     assert.equal(gen['preview'], undefined, 'absent claim = strip ON (the default, no key served)')
+  })
+
+  // ── THE STAGE-VIEW DECLARATION (2026-11-09, the fallback
+  // extermination): the served doc carries the card package's studio
+  // claim, derived from the tree (stageViewPlane) — the drill's
+  // loud-refusal law reads THIS; a derivation break would silently
+  // downgrade every declared card back to the generic form. ──
+  test('the served form-spec declares the studio claim (input-prep + h3 declare; a bare card serves null)', async () => {
+    const prep = await formSpecSweep('input-prep')
+    assert.ok(prep !== null)
+    assert.equal(prep.stage_view, '@melite/image-input-prep',
+      "the burned card's doc must declare its studio — the dispatch's refusal is dead weight without it")
+    const h3 = await formSpecSweep('h3')
+    assert.ok(h3 !== null)
+    assert.equal(h3.stage_view, '@melite/video-h3-timeline')
+    const bare = await formSpecSweep('image-gen')
+    assert.ok(bare !== null)
+    assert.equal(bare.stage_view ?? null, null,
+      'no registration → the generic form is the designed seat, never a refusal')
   })
 
   // ── STEPS APPLIED (2026-09-18, the operator's plaguekind law): a

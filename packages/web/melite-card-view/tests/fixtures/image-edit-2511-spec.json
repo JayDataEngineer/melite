@@ -722,6 +722,7 @@
     "use_stock_nodes",
     "double_reference"
   ],
+  "stage_view": null,
   "outputs": {
     "default": "image"
   },

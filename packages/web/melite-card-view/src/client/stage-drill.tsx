@@ -1660,6 +1660,19 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
   const priorStageIds = currentStageIndex < 0
     ? []
     : bench.stages.slice(0, currentStageIndex).map((candidate) => candidate.id)
+  // THE STAGE-VIEW MOUNT LAW (2026-11-09, the fallback extermination,
+  // operator: "THERE IS NO SUCH THING AS A FALLBACK, ONLY SUPPRESSED
+  // ERRORS"): the second argument here is what the dispatch renders
+  // on a slot miss. A card whose served spec declares a studio
+  // (stage_view) gets the LOUD load refusal as that miss face — the
+  // same detection the `?? fallback` used to silently eat, now
+  // spoken, with the generic form gone. No declaration → the generic
+  // form IS the designed seat (most cards have no studio).
+  const declaredStudio = typeof spec?.stage_view === 'string' && spec.stage_view !== '' ? spec.stage_view : null
+  const missFace = declaredStudio === null ? genericDetail() : h('div', { className: css.drillRunRow, 'data-testid': 'stage-view-load-refusal' },
+    h('div', { className: css.runError },
+      chromeCopy.stageViewRefusal({ card: String(stage.card ?? ''), plugin: declaredStudio }),
+      h('div', null, chromeCopy.stageViewRefusalFix)))
   return renderStageView({
     stageId: stage.id,
     hasUnsettledWrites: (): boolean => {
@@ -1713,5 +1726,5 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
       inputSlots: (spec?.inputs ?? []).map((input) => input.name),
     },
     priorStageIds,
-  }, genericDetail())
+  }, missFace)
 }
