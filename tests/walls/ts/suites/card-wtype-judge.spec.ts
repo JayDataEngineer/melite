@@ -86,7 +86,10 @@ const CARD_ROSTER = 14;
 // 466 -> 467 (2026-11-08, the model choice): input-prep's scale_model
 // select — the standard upscale-model vocabulary (union of consts →
 // select, the lawful mapping's first rule).
-const FIELD_ROSTER = 467;
+// 467 -> 468 (2026-11-08, (l) 1905dedc0): the anny card's body_image
+// — a string field with wtype image (the estimator's card face; the
+// constructor's auto-square law mounts the input square).
+const FIELD_ROSTER = 468;
 
 interface DictField {
   readonly type?: string;

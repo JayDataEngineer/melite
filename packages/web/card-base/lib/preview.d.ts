@@ -13,7 +13,7 @@
  */
 import { createElement as h } from 'react';
 import type { PreviewOwnerProps } from '@melite/contracts';
-export { resetPickCellsForTests } from './pick-store.ts';
+export { resetPickCellsForTests } from './pick-store.js';
 /** THE HISTORY HERO (stroke 40 + the output-component stroke): one
  * hook, three faces — the hero artifact, the REST of whatever set
  * the hero belongs to (the current run's other outputs, or a picked
@@ -69,15 +69,21 @@ export declare function TextStagePreview(props: PreviewOwnerProps): ReturnType<t
  *  body the run never bakes — compose renders the GLB as-is). The
  *  2026-09-06 order's edge holds: NEVER the low-poly anny-base-body
  *  EXPORT substituting the native figure — a USER-ATTACHED GLB is
- *  the compose-truth arm, a different artifact. Run outputs still
- *  take the stage the moment they exist. */
+ *  the compose-truth arm, a different artifact. THE ATTACHED IMAGE
+ *  (the (l) law): a held image-kind input (anny's body_image) IS
+ *  the pre-run face — compose's precedence is image > glb >
+ *  parametric (a stated photo bakes the estimate), so the photo
+ *  renders through the same input asset door and BOTH the attached
+ *  GLB and the figure retire under it (either would preview a body
+ *  the run will not bake). Run outputs still take the stage the
+ *  moment they exist. */
 export declare function MeshStagePreview(props: PreviewOwnerProps): ReturnType<typeof h>;
 /** THE MESH PREVIEW — the raw-three multi-asset stage (the substrate
  *  law: NO @react-three in any client bundle). Reached through the
  *  `/client` door like every other seam in this row. */
-export { GlbStagePreview, attachedMeshOf, autoFitToHeight, applyWireframe, applyWeightsHeat, skeletonHelperFor, heatColor, slotLabelOf, turntableTick, TURNTABLE_SPEED, type StageAsset, type StageLayers } from './glb-stage.tsx';
-export { ReportView } from './report-view.tsx';
-export { PoserFigureStage, figureGeometry, figureCoeffsOf, figureLocalChangesOf, figureCameraOf, figureShapeSig, type PoserMeshDoc } from './poser-figure.tsx';
-export { ViewportFrame, ViewportAnchor, ReferenceImageBadge } from './viewportChrome.tsx';
-export type { ViewportFrameProps, ViewportAnchorProps, ReferenceImageBadgeProps, ViewportAnchorDock } from './viewportChrome.tsx';
+export { GlbStagePreview, attachedMeshOf, attachedImageOf, autoFitToHeight, applyWireframe, applyWeightsHeat, skeletonHelperFor, heatColor, slotLabelOf, turntableTick, TURNTABLE_SPEED, type StageAsset, type StageLayers } from './glb-stage.js';
+export { ReportView } from './report-view.js';
+export { PoserFigureStage, figureGeometry, figureCoeffsOf, figureLocalChangesOf, figureCameraOf, figureShapeSig, type PoserMeshDoc } from './poser-figure.js';
+export { ViewportFrame, ViewportAnchor, ReferenceImageBadge } from './viewportChrome.js';
+export type { ViewportFrameProps, ViewportAnchorProps, ReferenceImageBadgeProps, ViewportAnchorDock } from './viewportChrome.js';
 //# sourceMappingURL=preview.d.ts.map

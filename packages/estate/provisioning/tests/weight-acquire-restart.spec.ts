@@ -139,7 +139,7 @@ describe("the restart keeps the ledger (P5 F2: the verbs must survive the seat r
         return p !== null && (p.state === "failed" || p.state === "blocked") ? p : null;
       }, 10_000);
       assert.ok(failed !== null, "the stall fixture must settle FAILED before the restart");
-      assert.equal(failed.state, "failed");
+      assert.equal(failed!.state, "failed");
       // the terminal row must reach the disk before the process
       // "dies" — the persist chain is fire-and-forget, so bound it.
       const stored = await pollLedger(() => new FileOperationStore(root).load(id), 5_000);
@@ -153,10 +153,10 @@ describe("the restart keeps the ledger (P5 F2: the verbs must survive the seat r
         const serviceB = new ProvisioningService(ctxB, stalledConfig(root));
         const rejoined = await pollLedger(() => serviceB.progressOf(id), 2_000);
         assert.ok(rejoined !== null, "a stored FAILED row must rejoin the live ledger after restart");
-        expect(rejoined.state).toBe("failed");
-        expect(rejoined.operationId).toBe(id);
-        expect(rejoined.ref).toEqual(ref());
-        assert.match(String(rejoined.detail ?? ""), /stuck|stalled|no longer progressing|timed? ?out/i);
+        expect(rejoined!.state).toBe("failed");
+        expect(rejoined!.operationId).toBe(id);
+        expect(rejoined!.ref).toEqual(ref());
+        assert.match(String(rejoined!.detail ?? ""), /stuck|stalled|no longer progressing|timed? ?out/i);
       } finally {
         await ctxB.fiber.dispose();
       }

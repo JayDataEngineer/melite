@@ -50,16 +50,18 @@ function stubWire(opts: {
   artifacts?: Record<string, string>
   runStatus?: string
   meshInputs?: Record<string, string>
+  imageInputs?: Record<string, string>
 }): { bench: CardsBenchValue, glbDoor: string[] } {
   const artifacts = opts.artifacts ?? {}
   const meshInputs = opts.meshInputs ?? {}
+  const imageInputs = opts.imageInputs ?? {}
   const glbDoor: string[] = []
   // PRE-RUN = NO runStatus key at all (a fresh stage carries none;
   // 'pending' is a LIVE-run word — isLiveRunStatus reads it as
   // 'rendering…', which is not the never-run face).
   const stageRow = {
     id: 's_0', card: opts.card, title: 'the stage', engine: 'comfyui',
-    params: meshInputs,
+    params: { ...meshInputs, ...imageInputs },
     ...(opts.runStatus !== undefined ? { runStatus: opts.runStatus } : {}),
     ...(Object.keys(artifacts).length > 0 ? { result: { artifacts } } : {}),
   }
@@ -92,6 +94,9 @@ function stubWire(opts: {
           ...Object.fromEntries(Object.keys(meshInputs).map((name) => [name,
             { type: 'string', meta: { description: name, extra: { wtype: 'mesh', group: 'body' } } },
           ])),
+          ...Object.fromEntries(Object.keys(imageInputs).map((name) => [name,
+            { type: 'string', meta: { description: name, extra: { wtype: 'image', group: 'body' } } },
+          ])),
         }),
         outputs: opts.outputs,
         // THE CARD-DECLARED FIGURE (anny's real declaration shape —
@@ -102,11 +107,15 @@ function stubWire(opts: {
     if (path.includes('/v1/model-catalog')) {
       return new Response(JSON.stringify({ cards: {} }), { status: 200, headers: { 'content-type': 'application/json' } })
     }
-    // THE INPUT ASSET DOOR (doors.ts's own serve arm): the attached
-    // GLB's bytes. A minimal valid GLB (one triangle mesh — the
-    // same craft law as glb-stage-load.spec) so the loader walks the
-    // real parse; headless WebGL still refuses the mount, but the
-    // FETCH and the canvas shell are this wall's pins.
+    // the image face's byte door: the same /v1/assets/inputs lane
+    // serves the stated photo (the door's grammar is name-based,
+    // never kind-based) — a tiny PNG so the <img> decodes. Checked
+    // BEFORE the GLB arm (the path grammar overlaps; the suffix
+    // decides the bytes)
+    if (path.includes('/v1/assets/inputs/') && path.includes('.png')) {
+      glbDoor.push(path)
+      return new Response(craftPng(), { status: 200, headers: { 'content-type': 'image/png' } })
+    }
     if (path.includes('/v1/assets/inputs/')) {
       glbDoor.push(path)
       return new Response(craftGlb(), { status: 200, headers: { 'content-type': 'model/gltf-binary' } })
@@ -115,6 +124,17 @@ function stubWire(opts: {
   }
   vi.stubGlobal('fetch', impl)
   return { bench, glbDoor }
+}
+
+/** A minimal 1×1 transparent PNG — the image face's decodable bytes
+ *  (test files own their fakes; the b64 is the canonical 1×1). */
+function craftPng(): ArrayBuffer {
+  const b64 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=='
+  const bin = atob(b64)
+  const out = new ArrayBuffer(bin.length)
+  const bytes = new Uint8Array(out)
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i)
+  return out
 }
 
 /** A minimal valid GLB: one node → one mesh of one triangle
@@ -278,6 +298,82 @@ test('a whitespace-only attached GLB is emptiness — the native figure keeps th
   }, { timeout: 4000 })
   expect(document.querySelector('[data-testid="stage-preview-glb"]')).toBeNull()
   expect(glbDoor.length).toBe(0)
+})
+
+/** THE (l) IMAGE FACE AT THE PREVIEW HOP (the journey's re-opener,
+ *  k-j-l-batched-2026-11-08): the preview mirrors compose's ONE
+ *  stated precedence — image > glb > parametric. A stated body photo
+ *  IS the pre-run face (the input the user attached, through the
+ *  same input asset door); the attached GLB NEVER mounts under it
+ *  (the run bakes the ESTIMATE — showing the GLB would preview a
+ *  body the run will not bake, the exact lie class this purge
+ *  hunts), and the figure retires under it too. The arms:
+ *  BOTH-STATED (the firing arm — image wins over a held GLB),
+ *  IMAGE-ALONE (image wins over the figure), WHITESPACE-IMAGE (the
+ *  fall returns to the GLB — whitespace is emptiness). */
+test('(l) BOTH stated: the photo owns the pre-run face — the attached GLB never mounts (the preview mirrors compose image > glb)', async () => {
+  const { bench, glbDoor } = stubWire({
+    card: 'anny', outputs: { default: 'image' }, figure: { identityModel: 'anny' },
+    meshInputs: { body_glb: 'data/input/donor.glb' },
+    imageInputs: { body_image: 'data/input/person.png' },
+  })
+  const user = userEvent.setup()
+  mountTab(bench)
+  await user.click(tileButton())
+  expect(await screen.findByText('Prompt', {}, { timeout: 4000 })).toBeTruthy()
+  // THE IMAGE FACE mounts — the stated photo's own bytes through
+  // the input door (the mesh stage's image arm)
+  const img = await waitFor(() => {
+    const el = document.querySelector('[data-testid="stage-preview-input-image"]') as HTMLImageElement | null
+    expect(el).not.toBeNull()
+    return el!
+  }, { timeout: 4000 })
+  expect(img.getAttribute('src') ?? '', 'the img carries the door URL of the stated photo').toContain('/v1/assets/inputs/person.png')
+  // THE GLB NEVER MOUNTS: no viewport, no mesh load — the estimate
+  // outranks the attach and the preview says so
+  expect(document.querySelector('[data-viewport="glb-stage"]')).toBeNull()
+  await new Promise((r) => setTimeout(r, 300))
+  expect(glbDoor.some((u) => u.includes('donor.glb')), 'the displaced GLB never loads').toBe(false)
+  // the figure retires under the image too (image > glb > figure —
+  // the run bakes the estimate, never the parametric body)
+  expect(document.querySelector('[data-viewport^="poser-figure"]')).toBeNull()
+})
+
+test('(l) the photo alone owns the pre-run face — the figure retires (image > figure)', async () => {
+  const { bench } = stubWire({
+    card: 'anny', outputs: { default: 'image' }, figure: { identityModel: 'anny' },
+    imageInputs: { body_image: 'data/input/person.png' },
+  })
+  const user = userEvent.setup()
+  mountTab(bench)
+  await user.click(tileButton())
+  expect(await screen.findByText('Prompt', {}, { timeout: 4000 })).toBeTruthy()
+  await waitFor(() => {
+    expect(document.querySelector('[data-testid="stage-preview-input-image"]')).not.toBeNull()
+  }, { timeout: 4000 })
+  expect(document.querySelector('[data-viewport^="poser-figure"]')).toBeNull()
+  expect(document.querySelector('[data-viewport="glb-stage"]')).toBeNull()
+})
+
+test('(l) a whitespace photo is emptiness — the attached GLB keeps the pre-run face (the fall, not a phantom)', async () => {
+  const { bench, glbDoor } = stubWire({
+    card: 'anny', outputs: { default: 'image' }, figure: { identityModel: 'anny' },
+    meshInputs: { body_glb: 'data/input/donor.glb' },
+    imageInputs: { body_image: '   ' },
+  })
+  const user = userEvent.setup()
+  mountTab(bench)
+  await user.click(tileButton())
+  expect(await screen.findByText('Prompt', {}, { timeout: 4000 })).toBeTruthy()
+  // no image arm mounts — whitespace IS emptiness at the preview
+  // hop exactly as at compose
+  await waitFor(() => {
+    expect(document.querySelector('[data-testid="stage-preview-input-image"]')).toBeNull()
+    expect(document.querySelector('[data-viewport="glb-stage"]')).not.toBeNull()
+  }, { timeout: 4000 })
+  await waitFor(() => {
+    expect(glbDoor.some((u) => u.includes('/v1/assets/inputs/donor.glb'))).toBe(true)
+  }, { timeout: 4000 })
 })
 
 /** THE NO-FIGURE SEAM: the attached arm owns the pre-run stage even

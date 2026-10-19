@@ -528,7 +528,9 @@ describe("THE COMMITTED LIB (an emitted import Node can actually resolve)", () =
   // 595 (2026-11-08): THE WINDOW-SPEC EMIT — slice 0's h3 window
   // projection seam ships lib/windowSpec.js (+ map) without its
   // repin; the emit is the landed face, the pin follows deliberately.
-  const LIB_CENSUS_PIN = 595;
+  // 596 (2026-11-08, (j) 77a468115): card-base's glb-stage.js — the
+  // attached-mesh preview face — entered the tracked lib tree.
+  const LIB_CENSUS_PIN = 596;
   const specRe = /(?:from\s*|import\(\s*)(["'])(\.[^"']*)\1/g;
 
   it("the census is exact (a deletion OR a lowered floor reds — the count is pinned, not floored)", () => {

@@ -346,7 +346,7 @@ export function RecipePills({ spec, onPick, values, omitRow }) {
     // ACTIVE row's departure (the D4 null-set law — stamp deletion,
     // never a persisted recipe key). With nothing held there is no
     // departure to apply — the blank pick stays a no-op.
-    const pickBlank = () => {
+    const pickNoRecipe = () => {
         if (active === undefined)
             return;
         const row = pillRows.find((r) => r.id === active);
@@ -372,7 +372,7 @@ export function RecipePills({ spec, onPick, values, omitRow }) {
         face: active === undefined ? chromeCopy.recipePlaceholder : undefined,
         markers: { 'data-recipe-select': '1' },
         onPick: (id) => { if (id === '')
-            pickBlank();
+            pickNoRecipe();
         else
             pick(id); },
     }));

@@ -447,7 +447,7 @@ export function RecipePills({ spec, onPick, values, omitRow }: {
   // ACTIVE row's departure (the D4 null-set law — stamp deletion,
   // never a persisted recipe key). With nothing held there is no
   // departure to apply — the blank pick stays a no-op.
-  const pickBlank = (): void => {
+  const pickNoRecipe = (): void => {
     if (active === undefined) return
     const row = pillRows.find((r) => r.id === active)
     if (row === undefined) return
@@ -472,7 +472,7 @@ export function RecipePills({ spec, onPick, values, omitRow }: {
       // law); the menu's blank row is a SECOND, selectable voice.
       face: active === undefined ? chromeCopy.recipePlaceholder : undefined,
       markers: { 'data-recipe-select': '1' },
-      onPick: (id: string) => { if (id === '') pickBlank(); else pick(id) },
+      onPick: (id: string) => { if (id === '') pickNoRecipe(); else pick(id) },
     }),
   )
 }

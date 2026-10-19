@@ -25,7 +25,7 @@ import { paramsDiffKeys, previewArtifactsFor, previewReportsFor, primaryKindFor 
 import { removeStageWire, ungroupStageWire } from './add-stage.ts'
 import type { CardsBenchValue, BenchStageView } from './cards-resource.ts'
 import { freshStageRow } from './cards-resource.ts'
-import { AudioStagePreview, ImageStagePreview, MeshStagePreview, ReportView, TextStagePreview, VideoStagePreview, attachedMeshOf, figureCoeffsOf, figureLocalChangesOf, figureCameraOf } from '@melite/card-base/client'
+import { AudioStagePreview, ImageStagePreview, MeshStagePreview, ReportView, TextStagePreview, VideoStagePreview, attachedImageOf, attachedMeshOf, figureCoeffsOf, figureLocalChangesOf, figureCameraOf } from '@melite/card-base/client'
 import { CardZoomOverlay } from './zoom.tsx'
 import { loadFormsEdgeMeta } from './forms-edge-meta.ts'
 import { rejectionVoice } from './rejection-voice.ts'
@@ -1350,6 +1350,18 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
       // mirrors this exactly — a non-empty body_glb renders the GLB
       // as-is, only the empty path bakes AnnyParamsToGlb).
       ...(attachedMeshOf(spec, value) !== null ? { attachedMesh: attachedMeshOf(spec, value)! } : {}),
+      // THE ATTACHED IMAGE (the (l) law, 2026-11-08 — the journey's
+      // re-opener, k-j-l-batched: "both stated → compose bakes the
+      // estimate while the preview shows the GLB"): compose's ONE
+      // stated precedence is image > glb > parametric (anny
+      // actions.ts — a stated photo rides Sam3dBodyImageToAnny, the
+      // GLB waits), so the FIRST non-empty image-kind input IS the
+      // pre-run face here too — the photo renders through the input
+      // asset door and the attached GLB + figure retire under it
+      // inside MeshStagePreview. Whitespace IS emptiness (the fall
+      // returns to the mesh arm). ONE derivation, mirrored — never
+      // a drifting copy.
+      ...(attachedImageOf(spec, value) !== null ? { attachedImage: attachedImageOf(spec, value)! } : {}),
     }
     // THE SEAM'S PREVIEW FACE: a claimed timeline + a landed video
     // rides the shared FilmPlayer (handle-wired) instead of the
@@ -1379,8 +1391,10 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
     // THE ATTACHED MESH rides the same pre-run seat (the (j) law):
     // a held mesh-kind input owns the stage through MeshStagePreview
     // — its attached arm renders the GLB as-is and retires the
-    // figure inside — with the identical takeover law.
-    if ((owner.figure !== undefined || owner.attachedMesh !== undefined) && artifacts.length === 0) {
+    // figure inside — with the identical takeover law. THE ATTACHED
+    // IMAGE (the (l) law) rides it too: a held image-kind input
+    // owns the seat over both (compose's image > glb > parametric).
+    if ((owner.figure !== undefined || owner.attachedMesh !== undefined || owner.attachedImage !== undefined) && artifacts.length === 0) {
       return renderPreview(owner, h(MeshStagePreview, owner))
     }
     return renderPreview(owner, fallback)

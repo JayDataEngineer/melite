@@ -107,5 +107,22 @@ export interface PreviewOwnerProps {
         url: string;
         name: string;
     }>;
+    /** THE ATTACHED IMAGE (the (l) law, 2026-11-08): the held
+     *  image-kind input the run would compose (anny's body_image) —
+     *  compose's ONE stated precedence is image > glb > parametric,
+     *  so a stated photo IS the pre-run face (the estimate the run
+     *  will bake, shown in the preview), and both the attached GLB
+     *  and the parametric figure retire under it (showing either
+     *  would preview a body the run will not bake). Derived
+     *  CLIENT-SIDE from the served schema's image-kind fields × the
+     *  resolved values, FIRST non-empty field wins (whitespace IS
+     *  emptiness — anny's own compose law); the url rides the same
+     *  input asset door (the door's grammar is name-based, never
+     *  kind-based). Run artifacts still take the stage the moment
+     *  they land. */
+    attachedImage?: {
+        id: string;
+        url: string;
+    };
 }
 //# sourceMappingURL=stagePreview.d.ts.map

@@ -48,10 +48,15 @@ function renderRulerLine() {
   const scrollRef = createRef<HTMLDivElement>()
   const suppressClickRef = { current: false }
   render(
-    h(
-      TimelineContent,
-      { scrollRef, contentW: 800, suppressClickRef, onSelect },
-      h(TimelineRuler, {
+    // children rides IN the props object: the component's own
+    // interface declares it required, and createElement's rest-arg
+    // overload does not satisfy a required children member
+    h(TimelineContent, {
+      scrollRef,
+      contentW: 800,
+      suppressClickRef,
+      onSelect,
+      children: h(TimelineRuler, {
         ticks: [0, 5, 10],
         stepSec: 5,
         fps: 24,
@@ -61,7 +66,7 @@ function renderRulerLine() {
         frameAt: () => 42,
         onSeekFrame,
       }),
-    ),
+    }),
   )
   return { onSelect, onSeekFrame }
 }

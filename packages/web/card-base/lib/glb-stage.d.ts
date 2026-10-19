@@ -1,6 +1,6 @@
 import { createElement as h } from 'react';
 import * as THREE from '@melite/three-client/client';
-import { type FormSpecDoc, type SpecValues } from './spec.ts';
+import { type FormSpecDoc, type SpecValues } from './spec.js';
 /** One stage asset — the old Stage contract's live subset (the four
  *  fields consumers set: id/url/name + the placement override; the
  *  drop-raycast position stays caller-computed). */
@@ -19,6 +19,19 @@ export declare function attachedMeshOf(spec: FormSpecDoc | null, value: SpecValu
     url: string;
     name: string;
 }> | null;
+/** Pure: the served schema's IMAGE-KIND fields × the resolved values
+ *  → the (l) law's pre-run photo face (mirroring compose's ONE
+ *  stated precedence — image > glb > parametric: a stated photo is
+ *  the estimate the run will bake, so it IS the pre-run face). The
+ *  FIRST non-empty image field wins (compose reads one person
+ *  reference — person_index 0; a second photo field would be a
+ *  different card's own law to state). Whitespace IS emptiness (the
+ *  same compose law as attachedMeshOf — the fall returns to the
+ *  mesh/figure arms). null when no image field holds a value. */
+export declare function attachedImageOf(spec: FormSpecDoc | null, value: SpecValues): {
+    id: string;
+    url: string;
+} | null;
 export interface StageAsset {
     /** unique id (caller-supplied — run id + artifact name is fine) */
     id: string;

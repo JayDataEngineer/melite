@@ -32,8 +32,10 @@ describe("the anny model plugin (the whole model, one package)", () => {
   // pinned at its head (body_glb + body_image) so a dropped or
   // renamed input slot is a deliberate edit, never drift.
   it("declares the body input slots — the GLB attach and the (l) photo face", () => {
-    assert.equal(DECL.params[0], "body_glb", "the GLB attach seats first (the schema's order 0)");
-    assert.equal(DECL.params[1], "body_image", "the photo face seats beside it (the estimator's card arm)");
+    const params = DECL.params ?? []
+    assert.ok(params.length >= 2, "the lane surface carries at least the two body slots");
+    assert.equal(params[0], "body_glb", "the GLB attach seats first (the schema's order 0)");
+    assert.equal(params[1], "body_image", "the photo face seats beside it (the estimator's card arm)");
   });
 });
 

@@ -158,10 +158,10 @@ describe("the h3 film action oracle (the interlock)", () => {
       assert.ok(entry, `the ${scope} window composes its own r2v lane`);
       return entry![1].inputs;
     };
-    const w1 = widthOf("window1");
+    const w1 = widthOf("window1")!;
     assert.equal(w1.width, 512, `the doc level owns the knobless window's width (saw ${String(w1.width)})`);
     assert.equal(w1.height, 640, `the doc level owns the knobless window's height (saw ${String(w1.height)})`);
-    const w2 = widthOf("window2");
+    const w2 = widthOf("window2")!;
     assert.equal(w2.width, 768,
       `the call's knobs win their own window's width (saw ${String(w2.width)} — the doc's 512 rode: the stanza's last-wins broke)`);
     assert.equal(w2.height, 448,

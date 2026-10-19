@@ -702,6 +702,16 @@ export const COVERAGE_BASELINE: Record<string, {
   '**/packages/web/card-base/src/client/index.ts': { statements: 100, branches: 100, functions: 80, lines: 100 },
   '**/packages/web/card-base/src/estate-remote.ts': { statements: 100.00, branches: 100, functions: 100.00, lines: 100.00 },
   '**/packages/web/card-base/src/form.tsx': { statements: 100, branches: 99.57, functions: 100, lines: 100 },
+  // windowSpec.ts (the window-parity seam, another hand's landing):
+  // the remainder the landing hand owed — measured 0 today; the row
+  // exists so the ratchet counts the gated file (never a silent
+  // rowless pass).
+  '**/packages/models/h3/src/windowSpec.ts': { statements: 0, branches: 0, functions: 0, lines: 0 },
+  // LaneHead.tsx (the lane-parity (c) landing, 61d2eaf71): the shared
+  // lane-head shell — same tracked-debt pin as its neighbors above;
+  // the parity walls drive it; re-pin UP at the next full-pool
+  // regeneration.
+  '**/packages/web-kit/timeline/src/timeline/LaneHead.tsx': { statements: 0, branches: 0, functions: 0, lines: 0 },
   '**/packages/web/card-base/src/host.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/web/card-base/src/icons.tsx': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/web/card-base/src/index.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },

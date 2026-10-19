@@ -470,39 +470,56 @@ export function TextStagePreview(props) {
  *  body the run never bakes — compose renders the GLB as-is). The
  *  2026-09-06 order's edge holds: NEVER the low-poly anny-base-body
  *  EXPORT substituting the native figure — a USER-ATTACHED GLB is
- *  the compose-truth arm, a different artifact. Run outputs still
- *  take the stage the moment they exist. */
+ *  the compose-truth arm, a different artifact. THE ATTACHED IMAGE
+ *  (the (l) law): a held image-kind input (anny's body_image) IS
+ *  the pre-run face — compose's precedence is image > glb >
+ *  parametric (a stated photo bakes the estimate), so the photo
+ *  renders through the same input asset door and BOTH the attached
+ *  GLB and the figure retire under it (either would preview a body
+ *  the run will not bake). Run outputs still take the stage the
+ *  moment they exist. */
 export function MeshStagePreview(props) {
     const { hero, rest, viewingHistory, note, picked, promote, returnToCurrent } = useHistoryHero(props);
     const active = hero === undefined ? [] : [hero, ...rest];
+    const meshEmptyHint = isLiveRunStatus(props.runStatus) ? 'rendering… the mesh lands here' : 'No render yet — run lands the mesh here';
     return h('div', { className: s.stagePreview, 'data-testid': 'stage-preview-mesh' }, viewingHistory ? h(StaleBadge, { note, onReturn: returnToCurrent }) : null, active.length > 0
         ? h(GlbStagePreview, {
             assets: active.map((a, i) => ({ id: `${props.stageId}:${a.name || i}`, url: a.url, name: a.name })),
-            emptyHint: isLiveRunStatus(props.runStatus) ? 'rendering… the mesh lands here' : 'No render yet — run lands the mesh here',
+            emptyHint: meshEmptyHint,
         })
-        : props.attachedMesh !== undefined
-            ? h(GlbStagePreview, {
-                assets: props.attachedMesh.map((a) => ({ id: `${props.stageId}:attached:${a.id}`, url: a.url, name: a.name })),
-                emptyHint: isLiveRunStatus(props.runStatus) ? 'rendering… the mesh lands here' : 'No render yet — run lands the mesh here',
+        : props.attachedImage !== undefined
+            // THE (l) PHOTO FACE: a plain <img> — no WebGL seat for
+            // bytes the browser already decodes; alt carries the held
+            // file's own name (the estate path's last segment)
+            ? h('img', {
+                src: props.attachedImage.url,
+                alt: props.attachedImage.url.split('/').pop() ?? 'attached image',
+                className: s.heroImg,
+                'data-testid': 'stage-preview-input-image',
             })
-            : props.figure !== undefined
-                ? h(PoserFigureStage, {
-                    identityModel: props.figure.identityModel,
-                    identityCoeffs: props.figure.identityCoeffs,
-                    localChanges: props.figure.localChanges,
-                    framing: props.figure.framing,
-                    focalLength: props.figure.focalLength,
-                    label: `poser-figure:${props.stageId}`,
+            : props.attachedMesh !== undefined
+                ? h(GlbStagePreview, {
+                    assets: props.attachedMesh.map((a) => ({ id: `${props.stageId}:attached:${a.id}`, url: a.url, name: a.name })),
+                    emptyHint: meshEmptyHint,
                 })
-                : h(GlbStagePreview, {
-                    assets: [],
-                    emptyHint: isLiveRunStatus(props.runStatus) ? 'rendering… the mesh lands here' : 'No render yet — run lands the mesh here',
-                }), HistoryStrip(props, promote, 'stage-output-history', picked));
+                : props.figure !== undefined
+                    ? h(PoserFigureStage, {
+                        identityModel: props.figure.identityModel,
+                        identityCoeffs: props.figure.identityCoeffs,
+                        localChanges: props.figure.localChanges,
+                        framing: props.figure.framing,
+                        focalLength: props.figure.focalLength,
+                        label: `poser-figure:${props.stageId}`,
+                    })
+                    : h(GlbStagePreview, {
+                        assets: [],
+                        emptyHint: meshEmptyHint,
+                    }), HistoryStrip(props, promote, 'stage-output-history', picked));
 }
 /** THE MESH PREVIEW — the raw-three multi-asset stage (the substrate
  *  law: NO @react-three in any client bundle). Reached through the
  *  `/client` door like every other seam in this row. */
-export { GlbStagePreview, attachedMeshOf, autoFitToHeight, applyWireframe, applyWeightsHeat, skeletonHelperFor, heatColor, slotLabelOf, turntableTick, TURNTABLE_SPEED } from "./glb-stage.js";
+export { GlbStagePreview, attachedMeshOf, attachedImageOf, autoFitToHeight, applyWireframe, applyWeightsHeat, skeletonHelperFor, heatColor, slotLabelOf, turntableTick, TURNTABLE_SPEED } from "./glb-stage.js";
 export { ReportView } from "./report-view.js";
 export { PoserFigureStage, figureGeometry, figureCoeffsOf, figureLocalChangesOf, figureCameraOf, figureShapeSig } from "./poser-figure.js";
 export { ViewportFrame, ViewportAnchor, ReferenceImageBadge } from "./viewportChrome.js";

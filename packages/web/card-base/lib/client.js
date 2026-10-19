@@ -10938,6 +10938,28 @@ window.__ModuleLoader__.load({
 			}
 			return out.length > 0 ? out : null;
 		}
+		/** Pure: the served schema's IMAGE-KIND fields × the resolved values
+		*  → the (l) law's pre-run photo face (mirroring compose's ONE
+		*  stated precedence — image > glb > parametric: a stated photo is
+		*  the estimate the run will bake, so it IS the pre-run face). The
+		*  FIRST non-empty image field wins (compose reads one person
+		*  reference — person_index 0; a second photo field would be a
+		*  different card's own law to state). Whitespace IS emptiness (the
+		*  same compose law as attachedMeshOf — the fall returns to the
+		*  mesh/figure arms). null when no image field holds a value. */
+		function attachedImageOf(spec, value) {
+			if (spec === null) return null;
+			for (const f of fieldsOf(spec)) {
+				if (f.type !== "image") continue;
+				const v = value[f.name];
+				if (typeof v !== "string" || v.trim() === "") continue;
+				return {
+					id: f.name,
+					url: meshAssetUrl(v)
+				};
+			}
+			return null;
+		}
 		/** Normalize a loaded scene to a known viewing size — the fit law:
 		*  center X/Z, scale the largest dimension to targetHeight, feet on
 		*  y=0, mutating the root in place. The ALGORITHM lives in
@@ -13300,7 +13322,7 @@ window.__ModuleLoader__.load({
 				if (row === void 0) return;
 				onPick(axisPickPatch(spec, row, values));
 			};
-			const pickBlank = () => {
+			const pickNoRecipe = () => {
 				if (active === void 0) return;
 				const row = pillRows.find((r) => r.id === active);
 				if (row === void 0) return;
@@ -13320,7 +13342,7 @@ window.__ModuleLoader__.load({
 				face: active === void 0 ? chromeCopy.recipePlaceholder : void 0,
 				markers: { "data-recipe-select": "1" },
 				onPick: (id) => {
-					if (id === "") pickBlank();
+					if (id === "") pickNoRecipe();
 					else pick(id);
 				}
 			}));
@@ -16344,11 +16366,18 @@ window.__ModuleLoader__.load({
 		*  body the run never bakes — compose renders the GLB as-is). The
 		*  2026-09-06 order's edge holds: NEVER the low-poly anny-base-body
 		*  EXPORT substituting the native figure — a USER-ATTACHED GLB is
-		*  the compose-truth arm, a different artifact. Run outputs still
-		*  take the stage the moment they exist. */
+		*  the compose-truth arm, a different artifact. THE ATTACHED IMAGE
+		*  (the (l) law): a held image-kind input (anny's body_image) IS
+		*  the pre-run face — compose's precedence is image > glb >
+		*  parametric (a stated photo bakes the estimate), so the photo
+		*  renders through the same input asset door and BOTH the attached
+		*  GLB and the figure retire under it (either would preview a body
+		*  the run will not bake). Run outputs still take the stage the
+		*  moment they exist. */
 		function MeshStagePreview(props) {
 			const { hero, rest, viewingHistory, note, picked, promote, returnToCurrent } = useHistoryHero(props);
 			const active = hero === void 0 ? [] : [hero, ...rest];
+			const meshEmptyHint = isLiveRunStatus(props.runStatus) ? "rendering… the mesh lands here" : "No render yet — run lands the mesh here";
 			return (0, react.createElement)("div", {
 				className: preview_module_css_default.stagePreview,
 				"data-testid": "stage-preview-mesh"
@@ -16361,14 +16390,19 @@ window.__ModuleLoader__.load({
 					url: a.url,
 					name: a.name
 				})),
-				emptyHint: isLiveRunStatus(props.runStatus) ? "rendering… the mesh lands here" : "No render yet — run lands the mesh here"
+				emptyHint: meshEmptyHint
+			}) : props.attachedImage !== void 0 ? (0, react.createElement)("img", {
+				src: props.attachedImage.url,
+				alt: props.attachedImage.url.split("/").pop() ?? "attached image",
+				className: preview_module_css_default.heroImg,
+				"data-testid": "stage-preview-input-image"
 			}) : props.attachedMesh !== void 0 ? (0, react.createElement)(GlbStagePreview, {
 				assets: props.attachedMesh.map((a) => ({
 					id: `${props.stageId}:attached:${a.id}`,
 					url: a.url,
 					name: a.name
 				})),
-				emptyHint: isLiveRunStatus(props.runStatus) ? "rendering… the mesh lands here" : "No render yet — run lands the mesh here"
+				emptyHint: meshEmptyHint
 			}) : props.figure !== void 0 ? (0, react.createElement)(PoserFigureStage, {
 				identityModel: props.figure.identityModel,
 				identityCoeffs: props.figure.identityCoeffs,
@@ -16378,7 +16412,7 @@ window.__ModuleLoader__.load({
 				label: `poser-figure:${props.stageId}`
 			}) : (0, react.createElement)(GlbStagePreview, {
 				assets: [],
-				emptyHint: isLiveRunStatus(props.runStatus) ? "rendering… the mesh lands here" : "No render yet — run lands the mesh here"
+				emptyHint: meshEmptyHint
 			}), HistoryStrip(props, promote, "stage-output-history", picked));
 		}
 		//#endregion
@@ -16537,6 +16571,7 @@ window.__ModuleLoader__.load({
 		exports.applyWireframe = applyWireframe;
 		exports.armEstateRemoteLazyBind = armEstateRemoteLazyBind;
 		exports.assertFormSpecDoc = assertFormSpecDoc;
+		exports.attachedImageOf = attachedImageOf;
 		exports.attachedMeshOf = attachedMeshOf;
 		exports.autoFitToHeight = autoFitToHeight;
 		exports.axisGroups = axisGroups;

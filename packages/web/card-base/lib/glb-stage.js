@@ -78,6 +78,28 @@ export function attachedMeshOf(spec, value) {
     }
     return out.length > 0 ? out : null;
 }
+/** Pure: the served schema's IMAGE-KIND fields × the resolved values
+ *  → the (l) law's pre-run photo face (mirroring compose's ONE
+ *  stated precedence — image > glb > parametric: a stated photo is
+ *  the estimate the run will bake, so it IS the pre-run face). The
+ *  FIRST non-empty image field wins (compose reads one person
+ *  reference — person_index 0; a second photo field would be a
+ *  different card's own law to state). Whitespace IS emptiness (the
+ *  same compose law as attachedMeshOf — the fall returns to the
+ *  mesh/figure arms). null when no image field holds a value. */
+export function attachedImageOf(spec, value) {
+    if (spec === null)
+        return null;
+    for (const f of fieldsOf(spec)) {
+        if (f.type !== 'image')
+            continue;
+        const v = value[f.name];
+        if (typeof v !== 'string' || v.trim() === '')
+            continue;
+        return { id: f.name, url: meshAssetUrl(v) };
+    }
+    return null;
+}
 /** Normalize a loaded scene to a known viewing size — the fit law:
  *  center X/Z, scale the largest dimension to targetHeight, feet on
  *  y=0, mutating the root in place. The ALGORITHM lives in
