@@ -25,9 +25,9 @@
 import '../helpers/boot-models.ts'
 import { describe, it } from 'vitest'
 import assert from 'node:assert/strict'
-import { existsSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { ENGINE_FREE } from './engine-gate.ts'
+import { ENGINE_FREE, ENGINE_HOST, ENGINE_PORT } from './engine-gate.ts'
 import {
   type World,
   byClass,
@@ -463,6 +463,60 @@ describe.skipIf(!ENGINE_FREE)('cards-gpu: film and motion (the remaining h3 + ki
       const sched = byClass(s, 'BasicScheduler')
       assert.ok(sched.length >= 1, 'the scheduler runs')
       assert.equal(sched[0]![1].inputs?.steps, 30, 'the tier pill stamps 30 steps')
+      assert.ok(firstBytes(s).length > 1024, 'the film artifact carries real bytes')
+    })
+  }, 900_000)
+
+  it.skipIf(!weightsPresent('h3-timeline'))('h3 THE HOP-[6] BAKE WITNESS: the stated refmod dials ride the REAL run — the engine\'s own history record carries mode/pool/identity/save verbatim (study §7 item 1, the f closer)', async () => {
+    await withWorld('cards-gpu-h3-bake', async (w) => {
+      const anchor = stageAnchorPng('cards-gpu-h3-bake')
+      const s = await runCard(w, {
+        model: 'h3', width: 768, height: 448, steps: 8,
+        // THE STATED BAKE AT NON-DEFAULT POLES: every dial moved off
+        // its declared default (mode Full Reference, pool 32, identity
+        // 1000, save false) — engine defaults could never satisfy
+        // these assertions; only the declared-param wire can.
+        refmod_mode: 'Full Reference',
+        refmod_pool: 32,
+        refmod_identity: 1000,
+        refmod_save: false,
+        // THE REFMOD IMAGE (the (f) burn's own subject): the mod seat
+        // takes the anchor as a run-level ref_mods entry — the media
+        // the extract bakes, not the t4r guide lane.
+        ref_mods: [anchor],
+        calls: [{ text: 'a red cube slides slowly across a white table', start_frame: 0, end_frame: 90 }],
+      }, 'h3 bake witness')
+      // THE APPLY BIND (compose arm re-proven on silicon): the baked
+      // mod passes through MiniMaxH3RefModApply into the guider.
+      assert.ok(byClass(s, 'MiniMaxH3RefModApply').length >= 1, 'the refmod apply node binds')
+      // THE ENGINE'S OWN RECORD: the sidecar stage row stamps the
+      // engine-minted prompt_id (P1); the engine's /history/<id> is
+      // the EXECUTED graph — what the engine accepted, not what we
+      // claim we sent. The extract's inputs there are the witness.
+      const flow = JSON.parse(readFileSync(join(s.runDir, '_flow.json'), 'utf8')) as {
+        graph_receipt?: { prompt_id?: string }
+      }
+      const promptId = flow.graph_receipt?.prompt_id ?? ''
+      assert.ok(promptId !== '', 'the settled sidecar stamps the engine prompt_id')
+      interface HistEntry {
+        prompt?: [unknown, unknown, Record<string, { class_type?: string, inputs?: Record<string, unknown> }>]
+        outputs?: Record<string, unknown>
+      }
+      const res = await fetch(`http://${ENGINE_HOST}:${ENGINE_PORT}/history/${promptId}`)
+      assert.ok(res.ok, 'the engine history answers for the run: ' + String(res.status))
+      const body = (await res.json()) as Record<string, HistEntry>
+      const entry = body[promptId]
+      assert.ok(entry, 'the engine history carries the prompt entry')
+      const executed = entry.prompt?.[2] ?? {}
+      const extract = Object.entries(executed).filter(([, r]) => r.class_type === 'MiniMaxH3RefModExtract')
+      assert.ok(extract.length >= 1, 'the executed graph bakes the refmod mod')
+      const inputs = extract[0]![1].inputs ?? {}
+      assert.equal(inputs['mode'], 'Full Reference', 'the engine accepted the stated mode')
+      assert.equal(inputs['pool_h'], 32, 'the engine accepted the stated pool_h')
+      assert.equal(inputs['pool_w'], 32, 'the engine accepted the stated pool_w')
+      assert.equal(inputs['identity'], 1000, 'the engine accepted the stated identity (refinement steps)')
+      assert.equal(inputs['save'], false, 'the engine accepted the stated save pole')
+      assert.ok(Object.keys(entry.outputs ?? {}).length >= 1, 'the engine produced outputs for the run')
       assert.ok(firstBytes(s).length > 1024, 'the film artifact carries real bytes')
     })
   }, 900_000)
