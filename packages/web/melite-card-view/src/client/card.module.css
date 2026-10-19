@@ -277,7 +277,7 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
-  padding: 12px 14px 18px;
+  padding: 0 14px 18px;
   /* THE PANEL OWNS ITS SCROLL (operator volley 2026-10-24, items
    * d+j — the flow-sidebar cure: the tab seat (.tabScroll) scrolls
    * the tab, but the bench panel scrolls its OWN axis. flex:1 1 0%
@@ -286,7 +286,13 @@
    * stays put; min-width:0 keeps a wide grid from forcing the pane
    * wider. overflow-anchor:none is .tabScroll's own anti-pull law:
    * a save/reload refusal landing at the panel's top must not remap
-   * the user's position mid-run. */
+   * the user's position mid-run.
+   * NO TOP PADDING — THE PINNED-HEADER BAND LAW (2026-10-19): a
+   * padded scroll container strands a band above its sticky header's
+   * pinned rest — the header pins at the content-box top, the padding
+   * strip never paints the header, and scrolling content shows
+   * through it (the tab-title gap). The top spacing lives on the
+   * anchored headers themselves. */
   flex: 1 1 0%;
   min-height: 0;
   min-width: 0;
@@ -302,7 +308,11 @@
   /* THE ANCHORED HEADER (the d+j cure's second half): the rev +
    * buttons stay pinned while the grid scrolls beneath — sticky
    * over the panel's own scroll, on a solid base so tiles slide
-   * under opaquely (the drillRunRow sticky-foot precedent). */
+   * under opaquely (the drillRunRow sticky-foot precedent).
+   * THE PINNED-HEADER BAND LAW (2026-10-19): the top spacing is
+   * INSIDE the painted pin — the header's own box starts at the
+   * scrollport top, so nothing scrolls through a strip above it. */
+  padding-top: 12px;
   position: sticky;
   top: 0;
   z-index: 1;
@@ -334,7 +344,10 @@
   display: flex;
   gap: 8px;
   /* THE ANCHORED HEADER (.benchHead's own law): run id + status stay
-   * pinned while the stage list scrolls beneath. */
+   * pinned while the stage list scrolls beneath.
+   * THE PINNED-HEADER BAND LAW (2026-10-19): the top spacing is
+   * INSIDE the painted pin, never on the scroll container. */
+  padding-top: 12px;
   position: sticky;
   top: 0;
   z-index: 1;

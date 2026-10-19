@@ -5508,9 +5508,10 @@ window.__ModuleLoader__.load({
 				ref_image_size: raw?.ref_image_size === "match" || raw?.ref_image_size === "max" ? raw.ref_image_size : void 0,
 				loras: Array.isArray(raw?.loras) ? raw.loras.filter((r) => !!r && typeof r.id === "string").map((r) => {
 					const steps = typeof r.steps === "number" && Number.isFinite(r.steps) ? r.steps : void 0;
+					const strength = typeof r.strength === "number" && Number.isFinite(r.strength) ? r.strength : void 0;
 					return {
 						id: r.id,
-						strength: typeof r.strength === "number" ? r.strength : void 0,
+						...strength !== void 0 ? { strength } : {},
 						...steps !== void 0 ? { steps } : {}
 					};
 				}) : void 0,
