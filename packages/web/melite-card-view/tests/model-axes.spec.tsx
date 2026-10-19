@@ -18,7 +18,7 @@
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, expect, test, vi } from 'vitest'
-import { createElement, useState } from 'react'
+import { createElement, useState, type ReactElement } from 'react'
 import { unbindEstateRemote } from '@melite/card-base/client'
 
 import {
@@ -31,6 +31,7 @@ import {
   titleCaseId,
   schemaEnvelope,
   seedAxisValues,
+  seedRecipeStamp,
   seedUser,
   CardForm,
   variantRows,
@@ -734,6 +735,140 @@ const PILLS: FormSpecDoc = {
     { id: 'default', label: 'Default', group: 'Recipe', defaults: {}, route: '', hint: 'no extra stamps' },
   ],
 }
+
+// ── THE SERVED-ENVELOPE WALL (2026-11-08, the combinations-sweep
+//    live catch): the served krea-2 matrix carries sampler_envelope
+//    on its Variant rows, and the envelope reconcile seeds steps/cfg
+//    into EVERY Recipe row's pick patch — including the stamp-less
+//    `default`. The pill filter judged the RECONCILED patch, so the
+//    row the law calls display metadata rendered live in the menu,
+//    and picking it wrote seeds no row could ever show active (the
+//    face stayed '-- recipe --' — a pick that does not land). The
+//    wall rides the SERVED shape (envelopes on), never the
+//    envelope-less unit shape that greened while the truth burned.
+const ENVELOPED: FormSpecDoc = {
+  form: 'image-gen-shape',
+  schema: schemaEnvelope({
+    prompt: { type: 'string', meta: { description: 'Prompt', extra: { wtype: 'textarea', group: 'prompt' } } },
+    steps: { type: 'number', meta: { description: 'Steps', default: 8, extra: { group: 'sampling' } } },
+    cfg: { type: 'number', meta: { description: 'CFG', default: 1.5, step: 0.1, extra: { group: 'sampling' } } },
+  }),
+  model: 'krea-2',
+  // the SERVED family truth (models/krea-2 DECL "defaults"): the
+  // envelope reconcile seeds from these when the doc carries
+  // nothing — the live ride that lit the stamp-less row
+  model_defaults: { scheduler: 'normal', width: 1024, height: 1024, steps: 8, sampler: 'euler', cfg: 1 },
+  features: {
+    variant_groups: {
+      Variant: { label: 'Variant' },
+      Recipe: { label: 'Recipe', tooltip: 'One-click recipes — patch-only rows that stamp picks onto the draft.', default: 'default' },
+    },
+    modifiers: [{ kind: 'lora', label: 'LoRAs', param_key: 'loras', cardinality: 'list' }],
+  },
+  variants: [
+    // the SERVED turbo row (models/krea-2 DECL): the envelope the
+    // live menu reconciles against
+    { id: 'turbo', label: 'Turbo', group: 'Variant', defaults: { model: 'krea-2' }, route: 'krea-2', hint: '8-step distilled', sampler_envelope: { steps: [4, 8], cfg: [1, 2] } },
+    { id: 'realism', label: 'Realism', group: 'Recipe', defaults: { loras: [{ id: 'krea2_realism_lora' }] }, route: '', hint: 'the realism one-click' },
+    // the stamp-less family default — display metadata, NO pill,
+    // even with the envelope on
+    { id: 'default', label: 'Default', group: 'Recipe', defaults: {}, route: '', hint: 'The family default — no extra stamps; a fresh card lands here.' },
+  ],
+}
+
+test('ENVELOPED MENU: the stamp-less default renders NO row under the served envelope — a row that stamps nothing is not offered', async () => {
+  const state = { user: seedUser(ENVELOPED, {}) as SpecValues }
+  const onSet = (name: string, v: unknown): void => { state.user = { ...state.user, [name]: v } }
+  const onPick = (patch: Record<string, unknown>): void => { state.user = { ...state.user, ...patch } }
+  const { container } = render(createElement(CardForm, {
+    spec: ENVELOPED,
+    user: state.user,
+    onSet,
+    onPick,
+  }))
+  expect(recipeTrigger(container)).not.toBeNull()
+  fireEvent.click(recipeTrigger(container))
+  const ids = screen.getAllByRole('menuitem').map((row) => (row.textContent ?? '').trim())
+  expect(ids).toEqual(['Blank — no recipe', 'Realism — the realism one-click']) // the stamp-less default renders nothing (the (k) law holds under the served envelope)
+})
+
+// ── THE RECIPE→RECIPE SWITCH WALL (2026-11-08, the
+//    combinations-sweep live catch on image-edit): the drill held the
+//    family defaults (sampler euler + scheduler simple — the face
+//    derived Upstream Solvers, never picked), the user picked Remove
+//    Background (a stamped row — the canned prompt), the prompt LANDED
+//    in the Prompt box, but the trigger face fell to '-- recipe --'
+//    (no row active — a pick that wrote yet shows nothing). The wall
+//    rides the SERVED 2.1 shape (Variant rows with NO sampler_envelope
+//    — the reconcile stays out of this family's way) through the
+//    DRILL's host law (nulls delete from the user map — stage-drill's
+//    onPick split, never held as null), asserting the pick's own
+//    hop: face carries the picked row.
+const QWEN21EDIT: FormSpecDoc = {
+  form: 'form_edit',
+  schema: schemaEnvelope({
+    prompt: { type: 'string', meta: { description: 'Prompt', extra: { wtype: 'textarea', group: 'prompt' } } },
+    sampler: { type: 'string', meta: { description: 'Sampler', extra: { wtype: 'select', group: 'sampling' } } },
+    scheduler: { type: 'string', meta: { description: 'Scheduler', extra: { wtype: 'select', group: 'sampling' } } },
+    steps: { type: 'number', meta: { description: 'Steps', default: 25, extra: { group: 'sampling' } } },
+    cfg: { type: 'number', meta: { description: 'CFG', default: 1, extra: { group: 'sampling' } } },
+  }),
+  model: 'qwen-img-edit-21',
+  model_defaults: { steps: 25, sampler: 'euler', scheduler: 'simple', cfg: 1 },
+  features: {
+    variant_groups: {
+      Variant: { label: 'Variant' },
+      Recipe: { label: 'Recipe', tooltip: 'One-click recipes.', default: 'default' },
+    },
+  },
+  variants: [
+    // NO sampler_envelope on this family's Variant rows (models/qwen-img-edit-21
+    // DECL) — faithful: the reconcile never fires here
+    { id: 'base', label: 'Base', group: 'Variant', defaults: { model: 'qwen-img-edit-21' }, route: 'qwen-img-edit-21', hint: 'the 2.1 base' },
+    { id: 'remove-background', label: 'Remove Background', group: 'Recipe', defaults: { prompt: 'Remove the background, and output a PNG image' }, route: '', hint: 'the official one-click' },
+    { id: 'drift-lock', label: 'Drift Lock', group: 'Recipe', defaults: { loras: [{ id: 'qwen21_consistency' }] }, route: '', hint: 'the consistency LoRA' },
+    { id: 'upstream-solvers', label: 'Upstream Solvers', group: 'Recipe', defaults: { sampler: 'euler', scheduler: 'simple' }, route: '', hint: 'the family defaults' },
+    { id: 'default', label: 'Default', group: 'Recipe', defaults: {}, route: '', hint: 'The family default — no extra stamps; a fresh card lands here.' },
+  ],
+}
+
+/** The drill's host law in miniature (stage-drill onPick's split):
+ *  landed keys merge, nulls DELETE from the user map (never held as
+ *  null) — the state the face derives from. */
+function DrillHost({ spec, initial }: { spec: FormSpecDoc, initial: SpecValues }): ReactElement {
+  const [user, setUser] = useState<SpecValues>(initial)
+  const onSet = (name: string, v: unknown): void => { setUser((m) => ({ ...m, [name]: v })) }
+  const onPick = (patch: Record<string, unknown>): void => {
+    setUser((m) => {
+      const next: SpecValues = { ...m }
+      for (const [k, v] of Object.entries(patch)) {
+        if (v === null) delete next[k]
+        else next[k] = v
+      }
+      return next
+    })
+  }
+  return createElement(CardForm, { spec, user, onSet, onPick })
+}
+
+test('RECIPE SWITCH: picking a stamped row over derived family defaults lands the face on the picked row', async () => {
+  // the live-observed pre-state (the sweep screenshot proves it):
+  // the drill held the family defaults, the face derived Upstream
+  const birth = seedRecipeStamp(QWEN21EDIT, seedUser(QWEN21EDIT, {}))
+  const initial = { ...birth, sampler: 'euler', scheduler: 'simple' } as SpecValues
+  const { container } = render(createElement(DrillHost, { spec: QWEN21EDIT, initial }))
+  expect(recipeTrigger(container)?.textContent ?? '').toContain('Upstream Solvers') // the derived face, never picked
+  // the user's burn 1:1 — open the menu, pick the stamped row
+  fireEvent.click(recipeTrigger(container))
+  const ids = screen.getAllByRole('menuitem').map((row) => (row.textContent ?? '').trim())
+  expect(ids).toEqual(['Blank — no recipe', 'Remove Background — the official one-click', 'Drift Lock — the consistency LoRA', 'Upstream Solvers — the family defaults']) // the stamp-less default renders nothing (the own-stamp gate, this family's shape too)
+  fireEvent.click(screen.getByRole('menuitem', { name: /Remove Background/ }))
+  // the pick WROTE (the prompt box carries the canned verb) AND the
+  // face carries the picked row (a write the face does not show is a
+  // silent drop — the sweep's live catch)
+  await waitFor(() => { expect((screen.getByRole('textbox', { name: 'Prompt' }) as HTMLInputElement).value).toBe('Remove the background, and output a PNG image') })
+  await waitFor(() => { expect(recipeTrigger(container)?.textContent ?? '').toContain('Remove Background') }, { timeout: 4_000 })
+})
 
 test('RULE A: a stamp that is ENTIRELY mod-owned STILL renders its pill — the lora bag IS the preset (the menu stays its editor)', async () => {
   // (2026-09-18, the recipe law — AMENDS the stroke-38 drop: the

@@ -310,6 +310,17 @@ export declare function axisStampOf(row: FormVariantRow): string;
 /** The durable param key an axis rides (the group's id, lowercased —
  *  'variant', 'quant', 'recipe', 'precision'). */
 export declare function axisKey(group: string): string;
+/** THE ROW'S OWN STAMP (the pill-offer law, 2026-11-08 — the
+ *  combinations-sweep live catch): what the row ITSELF writes — its
+ *  defaults minus the model re-point (the transport's word, never the
+ *  user layer's) minus the durable axis key when the group rides no
+ *  axis (the vocabulary guard's mirror). The envelope reconcile is
+ *  the NEW choice's truth, never the row's voice — judging the
+ *  reconciled pick patch offers stamp-less rows under a served
+ *  envelope (Default rendered live, picked, and no row could ever
+ *  show active — the face stayed '-- recipe --'). The menu offers
+ *  exactly the rows whose own stamp is non-empty. PURE. */
+export declare function ownStampOf(spec: FormSpecDoc, row: FormVariantRow): SpecValues;
 /** A pick's full value patch — the old onPick law: the row's
  *  `defaults` overlay rides (model re-point + every resolver default),
  *  plus the durable axis keys themselves so a reopened stage restores

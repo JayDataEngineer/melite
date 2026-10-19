@@ -142,4 +142,44 @@ describe('the family currency — the ONE door\'s judgments', () => {
     expect(await fetchCardCatalogRows()).toEqual({ fresh: { label: 'Fresh' } })
     expect(calls).toBe(2)
   })
+
+  it('an HTTP refusal surfaces the door\'s own error word; the status-only fall names the code', async () => {
+    // the served plane answered 503 WITH an error body — the throw
+    // carries the body's word (the estate's own vocabulary, never a
+    // generic wrapper)
+    globalThis.fetch = vi.fn(async (): Promise<Response> =>
+      new Response(JSON.stringify({ error: 'engine/offline' }), { status: 503 }))
+    await expect(fetchCardFamilies()).rejects.toThrow(/engine\/offline/)
+    resetCardFamiliesCache()
+    // the same status with NO error word — the fall names the door
+    // and the code (never a bare TypeError from a lost body)
+    globalThis.fetch = vi.fn(async (): Promise<Response> => new Response('', { status: 502 }))
+    await expect(fetchCardFamilies()).rejects.toThrow(/\/v1\/model-catalog: HTTP 502/)
+  })
+
+  it('a card the catalog does not carry defaults to ITSELF (never a phantom first family)', async () => {
+    globalThis.fetch = vi.fn(async (): Promise<Response> =>
+      new Response(JSON.stringify({ cards: { known: { families: ['fam-first', 'fam-second'] } } }), { status: 200 }))
+    // the carried card's FIRST family is the default (the arrival
+    // order is the catalog's own)
+    expect(await defaultFamilyForCard('known')).toBe('fam-first')
+    // the absent card falls to its own id — the card exists even
+    // when the catalog row does not (a family-less card IS its own
+    // family; never a phantom, never a throw)
+    expect(await defaultFamilyForCard('unknown-card')).toBe('unknown-card')
+  })
+
+  it('the ROW reader skips junk rows silently (the catalog-ROWS loop is its own distiller)', async () => {
+    // fetchCardCatalogRows is a SECOND reader beside the families
+    // distiller — its own row-skip arm (a non-object row drops,
+    // never a throw, and the healthy rows still ride)
+    globalThis.fetch = vi.fn(async (): Promise<Response> =>
+      new Response(JSON.stringify({ cards: { junk: 42, nullish: null, good: { label: 'Good' } } }), { status: 200 }))
+    expect(await fetchCardCatalogRows()).toEqual({ good: { label: 'Good' } })
+    // a body with NO cards table at all (the guard's false path): an
+    // empty row set, never a throw, never a phantom row
+    resetCardFamiliesCache()
+    globalThis.fetch = vi.fn(async (): Promise<Response> => new Response(JSON.stringify({ ok: true }), { status: 200 }))
+    expect(await fetchCardCatalogRows()).toEqual({})
+  })
 })

@@ -164,4 +164,32 @@ describe('the graph-receipt fold (readGraphReceipt, the purge P1)', () => {
     expect(row.status).toBe('completed')
     expect(row.graph_receipt).toBeUndefined()
   })
+
+  it('the rejection lattice is total (every early-refuse arm names its own malformed shape)', () => {
+    // an ARRAY is not a receipt object (the typeof-object pass admits
+    // arrays — the Array.isArray refuse is its own arm)
+    expect(readGraphReceipt([])).toBeUndefined()
+    // a non-number nodes count (the rollup's own gate, never a stage's)
+    expect(readGraphReceipt({ ...completeDoc, nodes: '2' })).toBeUndefined()
+    // a top-level list that is not an array at all (the !Array.isArray
+    // clause — the 42-entry arm above covers only the .every refuse)
+    expect(readGraphReceipt({ ...completeDoc, populated: 'guidance' })).toBeUndefined()
+    // stages not an array (a naked object row is not a list of rows)
+    expect(readGraphReceipt({ ...completeDoc, stages: { stage: 's_0' } })).toBeUndefined()
+    // a stage row that is not an object (the list carried, its entry junk)
+    expect(readGraphReceipt({ ...completeDoc, stages: ['s_0'] })).toBeUndefined()
+    // the null entry and the nested-array entry (the same refuse's
+    // remaining clauses — the lattice is total)
+    expect(readGraphReceipt({ ...completeDoc, stages: [null] })).toBeUndefined()
+    expect(readGraphReceipt({ ...completeDoc, stages: [[]] })).toBeUndefined()
+    // an OBJECT row that never names its stage/nodes (the row-shape
+    // gate one clause past the object gate — { } is an object)
+    expect(readGraphReceipt({ ...completeDoc, stages: [{}] })).toBeUndefined()
+    expect(readGraphReceipt({ ...completeDoc, stages: [{ stage: 's_0', nodes: '2' }] })).toBeUndefined()
+    // a stage row's own list gate (same lattice, one level down)
+    expect(readGraphReceipt({
+      ...completeDoc,
+      stages: [{ stage: 's_0', nodes: 2, populated: {}, carried: [], dropped: [], verdict: 'complete' }],
+    })).toBeUndefined()
+  })
 })

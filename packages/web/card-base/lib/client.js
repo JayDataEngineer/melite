@@ -9101,6 +9101,25 @@ window.__ModuleLoader__.load({
 		function axisKey(group) {
 			return group.toLowerCase();
 		}
+		/** THE ROW'S OWN STAMP (the pill-offer law, 2026-11-08 — the
+		*  combinations-sweep live catch): what the row ITSELF writes — its
+		*  defaults minus the model re-point (the transport's word, never the
+		*  user layer's) minus the durable axis key when the group rides no
+		*  axis (the vocabulary guard's mirror). The envelope reconcile is
+		*  the NEW choice's truth, never the row's voice — judging the
+		*  reconciled pick patch offers stamp-less rows under a served
+		*  envelope (Default rendered live, picked, and no row could ever
+		*  show active — the face stayed '-- recipe --'). The menu offers
+		*  exactly the rows whose own stamp is non-empty. PURE. */
+		function ownStampOf(spec, row) {
+			const stamp = {};
+			for (const [k, v] of Object.entries(row.defaults)) {
+				if (k === "model") continue;
+				stamp[k] = v;
+			}
+			if (axisGroups(spec).includes(row.group)) stamp[axisKey(row.group)] = axisStampOf(row);
+			return stamp;
+		}
 		/** A pick's full value patch — the old onPick law: the row's
 		*  `defaults` overlay rides (model re-point + every resolver default),
 		*  plus the durable axis keys themselves so a reopened stage restores
@@ -13174,8 +13193,6 @@ window.__ModuleLoader__.load({
 			const pick = (row) => {
 				onPick(axisPickPatch(spec, row, pickHeld));
 			};
-			const knobStamp = (r) => axisPickPatch(spec, r, pickHeld);
-			rowsFor(spec, "Recipe").filter((r) => Object.keys(knobStamp(r)).length > 0);
 			const heldModelRaw = value["model"];
 			const heldModel = typeof heldModelRaw === "string" && heldModelRaw !== "" ? heldModelRaw : void 0;
 			const knownModel = (m) => models.includes(m) || (spec.families ?? []).some((f) => f.id === m);
@@ -13293,7 +13310,7 @@ window.__ModuleLoader__.load({
 			}, dlState === "idle" ? chromeCopy.downloadVerb({ face: heldFam.label ?? titleCaseId(heldFam.id) }) : dlState === "busy" ? chromeCopy.requestingWord : dlState === "queued" ? chromeCopy.downloadQueuedNote : chromeCopy.downloadFailedNote)) : null, restGroups.map((g) => axisField(g)), (0, react.createElement)(RecipePills, {
 				spec,
 				onPick,
-				values: value,
+				values: pickHeld ?? value,
 				omitRow: omitRecipeRow
 			}));
 		}
@@ -13314,7 +13331,7 @@ window.__ModuleLoader__.load({
 		* dropdown -- CardForm under the axes, a studio beside its model
 		* route. Never a second implementation. */
 		function RecipePills({ spec, onPick, values, omitRow }) {
-			const pillRows = rowsFor(spec, "Recipe").filter((r) => Object.keys(axisPickPatch(spec, r)).length > 0).filter((r) => omitRow === void 0 || !omitRow(r));
+			const pillRows = rowsFor(spec, "Recipe").filter((r) => Object.keys(ownStampOf(spec, r)).length > 0).filter((r) => omitRow === void 0 || !omitRow(r));
 			if (pillRows.length === 0) return null;
 			const active = values !== void 0 ? activeRecipeId(spec, values) : void 0;
 			const pick = (id) => {
@@ -16643,6 +16660,7 @@ window.__ModuleLoader__.load({
 		exports.name = name;
 		exports.offeredVariantOf = offeredVariantOf;
 		exports.optionKeyOf = optionKeyOf;
+		exports.ownStampOf = ownStampOf;
 		exports.panelSectionsOf = panelSectionsOf;
 		exports.parseAssetDrop = parseAssetDrop;
 		exports.parseCapabilityDrop = parseCapabilityDrop;

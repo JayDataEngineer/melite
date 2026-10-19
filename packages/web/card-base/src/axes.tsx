@@ -2,7 +2,7 @@
  * operator's DRY audit law: one seam, one small file, one wall). */
 import { createElement as h, Fragment, useEffect, useState } from 'react'
 import type { ChangeEvent as ReactChangeEvent, ReactElement } from 'react'
-import { type FormSpecDoc, type SpecValues, type FormVariantRow, activeRecipeId, activeRowId, axisGroups, axisKey, axisPickPatch, composingRows, modelChoices, modelSwitchPatch, recipeDeparturePatch, resolveValue, rowsFor, titleCaseId } from './spec.ts'
+import { type FormSpecDoc, type SpecValues, type FormVariantRow, activeRecipeId, activeRowId, axisGroups, axisKey, axisPickPatch, composingRows, modelChoices, modelSwitchPatch, ownStampOf, recipeDeparturePatch, resolveValue, rowsFor, titleCaseId } from './spec.ts'
 import { chromeCopy } from './locales/chromeCopy.ts'
 import css from './card.module.css'
 import { SpecMenuSelect } from './atoms.tsx'
@@ -150,21 +150,11 @@ export function ModelAxes({ spec, value, user, pickHeld = user, onSet, onPick, o
   const pick = (row: FormVariantRow): void => {
     onPick(axisPickPatch(spec, row, pickHeld))
   }
-  // RULE A — THE RECIPE LAW (operator, 2026-09-18: "All Cards must
-  // have Recipies… This *includes* LORAs being setup this way"):
-  // a recipe pill stamps its FULL declared payload — mod-owned keys
-  // INCLUDED. The lora bag IS the preset; a row whose payload is
-  // entirely the bag stamps exactly that. (This AMENDS stroke 38's
-  // drop rule, whose letter made lora-only recipes render no pill
-  // at all — the exact gap the operator named. The Modifiers menu
-  // stays the bag's EDITOR; the recipe is its PRESET. Stroke 38's
-  // own law survives where it was actually pointed: the LORA is
-  // still never standalone — it rides the mod system's bag, its
-  // rows resolved by the mod plane, never a bespoke card field.)
-  // the recipe stamp shares the pick-reconcile seam (operator
-  // 2026-11-05: the auto-switch is a SHARED feature with recipes)
-  const knobStamp = (r: FormVariantRow): SpecValues => axisPickPatch(spec, r, pickHeld)
-  const pillRows = rowsFor(spec, 'Recipe').filter((r) => Object.keys(knobStamp(r)).length > 0)
+  // (RULE A lives in RecipePills below — the dropdown's ONE seat.
+  // The rail's old knobStamp/pillRows twin died with the 2026-11-08
+  // own-stamp gate: a second filter is a second implementation, and
+  // its reconciled-patch spelling offered stamp-less rows under a
+  // served envelope.)
   // ── THE NO-FALLBACK LAW (operator, hour 26: "NO. MORE.
   //    FALLBACKS.") ───────────────────────────────────────────────
   // A HELD value that cannot be honored is an ERROR and renders AS
@@ -388,7 +378,21 @@ export function ModelAxes({ spec, value, user, pickHeld = user, onSet, onPick, o
       : null,
     // the axes below the pair (Quant, …) keep the grid's flow.
     restGroups.map((g) => axisField(g)),
-    h(RecipePills, { spec, onPick, values: value, omitRow: omitRecipeRow }),
+    // THE FACE JUDGES THE DOC THE PICK JUDGES (2026-11-08, the
+    // combinations-sweep live catch on image-edit): the pick derives
+    // its departed-key nulls against pickHeld (base under user — the
+    // composability cure's truth), but the face re-derived against
+    // the RESOLVED value — where the departed keys can never be
+    // absent (schema/model defaults + the served base resurrect
+    // them). The re-derivation re-fired the departed null-set
+    // against ever-present keys, so EVERY candidate's recomputed
+    // patch failed its holds check and a just-picked stamped row
+    // showed '-- recipe --' (a write the face does not show is a
+    // silent drop). The face rides pickHeld — the same doc, the
+    // same nulls, the same verdict. Hosts that serve no pickHeld
+    // keep the legacy resolved face (their pick judges
+    // undefined-held there too — one seam, never two).
+    h(RecipePills, { spec, onPick, values: pickHeld ?? value, omitRow: omitRecipeRow }),
   )
 }
 
@@ -430,7 +434,10 @@ export function RecipePills({ spec, onPick, values, omitRow }: {
   omitRow?: (row: FormVariantRow) => boolean
 }): ReactElement | null {
   const pillRows = rowsFor(spec, 'Recipe')
-    .filter((r) => Object.keys(axisPickPatch(spec, r)).length > 0)
+    // THE OWN-STAMP GATE (2026-11-08): a row is offered when its OWN
+    // stamp is non-empty — judging the reconciled pick patch offers
+    // stamp-less rows under a served envelope (the sweep live catch).
+    .filter((r) => Object.keys(ownStampOf(spec, r)).length > 0)
     .filter((r) => omitRow === undefined || !omitRow(r))
 
   if (pillRows.length === 0) return null

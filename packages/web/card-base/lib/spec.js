@@ -1019,6 +1019,30 @@ export function axisStampOf(row) {
 export function axisKey(group) {
     return group.toLowerCase();
 }
+/** THE ROW'S OWN STAMP (the pill-offer law, 2026-11-08 — the
+ *  combinations-sweep live catch): what the row ITSELF writes — its
+ *  defaults minus the model re-point (the transport's word, never the
+ *  user layer's) minus the durable axis key when the group rides no
+ *  axis (the vocabulary guard's mirror). The envelope reconcile is
+ *  the NEW choice's truth, never the row's voice — judging the
+ *  reconciled pick patch offers stamp-less rows under a served
+ *  envelope (Default rendered live, picked, and no row could ever
+ *  show active — the face stayed '-- recipe --'). The menu offers
+ *  exactly the rows whose own stamp is non-empty. PURE. */
+export function ownStampOf(spec, row) {
+    const stamp = {};
+    for (const [k, v] of Object.entries(row.defaults)) {
+        if (k === 'model')
+            continue;
+        stamp[k] = v;
+    }
+    // THE VOCABULARY MIRROR (axisPickPatch's guard, same spelling): the
+    // durable key stamps only when the group rides as an axis — a
+    // Recipe stamp never gains the dead `recipe` key here either.
+    if (axisGroups(spec).includes(row.group))
+        stamp[axisKey(row.group)] = axisStampOf(row);
+    return stamp;
+}
 /** A pick's full value patch — the old onPick law: the row's
  *  `defaults` overlay rides (model re-point + every resolver default),
  *  plus the durable axis keys themselves so a reopened stage restores

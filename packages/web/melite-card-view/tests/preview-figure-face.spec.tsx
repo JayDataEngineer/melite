@@ -376,6 +376,39 @@ test('(l) a whitespace photo is emptiness — the attached GLB keeps the pre-run
   }, { timeout: 4000 })
 })
 
+/** THE SIBLING SEAM (the journey re-run's C2 — attachedImageOf is a
+ *  SHARED derivation: every card declaring a wtype 'image' field
+ *  gained the pre-run photo face the day (l) landed, named or not).
+ *  img-to-mesh is the unambiguous sibling: ONE image field
+ *  (input_image — the source photo the run conditions on), declared
+ *  output kind mesh. Before (l) its held-photo drill showed the
+ *  mesh tombstone (no mesh input held, no figure claim — the exact
+ *  (j)-class dead face); now the photo IS the pre-run face (the
+ *  run composes FROM it — the preview shows the body the run would
+ *  bake). NOT-COVERED until walled: h3's TWO image anchors
+ *  (image/last_frame — compose consumes both; first-non-empty is
+ *  the stated face), mask's payload, the pack input-group image
+ *  rows — named in the registry row cards-attached-mesh-preview. */
+test('(l) the sibling seam: img-to-mesh holding its source photo shows the photo pre-run (the shared derivation, judged beyond anny)', async () => {
+  const { bench } = stubWire({
+    card: 'img-to-mesh', outputs: { default: 'mesh' },
+    imageInputs: { input_image: 'data/input/scan-photo.png' },
+  })
+  const user = userEvent.setup()
+  mountTab(bench)
+  await user.click(tileButton())
+  expect(await screen.findByText('Prompt', {}, { timeout: 4000 })).toBeTruthy()
+  const img = await waitFor(() => {
+    const el = document.querySelector('[data-testid="stage-preview-input-image"]') as HTMLImageElement | null
+    expect(el).not.toBeNull()
+    return el!
+  }, { timeout: 4000 })
+  expect(img.getAttribute('src') ?? '').toContain('/v1/assets/inputs/scan-photo.png')
+  // the mesh tombstone never mounts (the dead face the sibling had
+  // before the shared derivation existed)
+  expect(screen.queryByText('No render yet — run lands the mesh here')).toBeNull()
+})
+
 /** THE NO-FIGURE SEAM: the attached arm owns the pre-run stage even
  *  when the card declares NO figure (a mesh-holding card whose
  *  declared kind is image). The figure override alone would leave
@@ -426,4 +459,36 @@ test('with artifacts the declared kind takes the stage over the attached GLB', a
   expect(document.querySelector('[data-testid="stage-preview-mesh"]')).toBeNull()
   expect(document.querySelector('[data-testid="stage-preview-glb"]')).toBeNull()
   expect(document.querySelector('[data-viewport^="poser-figure"]')).toBeNull()
+})
+
+/** THE (l) TAKEOVER (the journey re-run's C1 — the edge was STATED on
+ *  the contract member and the registry row but never JUDGED): a
+ *  held photo is a PRE-RUN seat exactly like the attached GLB — the
+ *  moment a run artifact lands, the declared kind takes the stage
+ *  and the photo retires (an input never competes with a real
+ *  output). Both-stated here: the image AND the GLB both held, so
+ *  the arm judges the top of the precedence falling to the
+ *  artifact, not just the mesh arm's takeover. */
+test('(l) with artifacts the declared kind takes the stage over the held photo (the input never competes with an output)', async () => {
+  const { bench, glbDoor } = stubWire({
+    card: 'anny', outputs: { default: 'image' }, figure: { identityModel: 'anny' },
+    meshInputs: { body_glb: 'data/input/donor.glb' },
+    imageInputs: { body_image: 'data/input/person.png' },
+    artifacts: { body: '/out/turnaround.png' }, runStatus: 'done',
+  })
+  const user = userEvent.setup()
+  mountTab(bench)
+  await user.click(tileButton())
+  expect(await screen.findByText('Prompt', {}, { timeout: 4000 })).toBeTruthy()
+  // the declared kind's own hero owns the stage
+  await waitFor(() => {
+    expect(document.querySelector('[data-testid="stage-preview-image-hero"]')).not.toBeNull()
+  }, { timeout: 4000 })
+  // the photo face NEVER mounts — the artifact outranks every input
+  expect(document.querySelector('[data-testid="stage-preview-input-image"]')).toBeNull()
+  // the displaced GLB viewport stays retired too, and nothing loaded
+  // through the input door
+  expect(document.querySelector('[data-viewport="glb-stage"]')).toBeNull()
+  await new Promise((r) => setTimeout(r, 300))
+  expect(glbDoor.length).toBe(0)
 })
