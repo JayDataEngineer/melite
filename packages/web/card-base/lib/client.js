@@ -9552,7 +9552,10 @@ window.__ModuleLoader__.load({
 				declared.add("model");
 				for (const k of Object.keys(doc)) {
 					if (k === "model" || declared.has(k)) continue;
-					out.push({ message: "card_compose: field '" + k + "' fires nothing on this lane — the served surface (" + (spec.model ?? "") + ") does not declare it; the estate admission gate refuses the same key field-named at the write door." });
+					out.push({
+						message: "card_compose: field '" + k + "' fires nothing on this lane — the served surface (" + (spec.model ?? "") + ") does not declare it; the estate admission gate refuses the same key field-named at the write door.",
+						field: k
+					});
 				}
 			}
 			if (spec.familyLaw !== void 0) {
@@ -9562,7 +9565,10 @@ window.__ModuleLoader__.load({
 					const deadSet = new Set(dead);
 					for (const k of Object.keys(doc)) {
 						if (k === "model" || !familyKeyPresent(doc[k]) || !deadSet.has(k)) continue;
-						out.push({ message: "card_compose: field '" + k + "' fires nothing on the " + lane + " lane — the lane refuses it (unsanctioned inject keys); the estate walk refuses the same key at the door." });
+						out.push({
+							message: "card_compose: field '" + k + "' fires nothing on the " + lane + " lane — the lane refuses it (unsanctioned inject keys); the estate walk refuses the same key at the door.",
+							field: k
+						});
 					}
 				}
 			}

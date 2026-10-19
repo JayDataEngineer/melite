@@ -469,7 +469,16 @@ const PINS: Record<string, number> = {
   // string returns in run-rescue-core.ts:195/:197 — the
   // acquiredDetailOf ONE-HOME success voice (the "no declared total"
   // honesty face); one assembly seat, the tracker's own words.
-  'packages/web/melite-card-view/src': 15,
+  // RE-PIN 15→17 (2026-11-09, the SD-7 unstamp cure): +2 string
+  // returns in stage-drill.tsx:123-124 — gateRefusalVoice's
+  // COMPOSE-GATE refusal voice ("THE COMPOSE GATE REFUSED — / — the
+  // write never left the studio…"), the string-contract helper's own
+  // words; the same class as card-base's compose-refusal triad (the
+  // wire.ts data-site argument, class 1 — the voice IS the door's
+  // identity; localizing would fork the drill's identity per locale).
+  // The affordance verb itself rides chromeCopy (unstampWord), never
+  // a raw literal.
+  'packages/web/melite-card-view/src': 17,
   // deck: 2 — the register() title/guideDescription positions now ride
   // assetsCopy (D2's proof seat: a literal at those arguments fires
   // this wall). Residue: index.ts:41 + :50 `message` embed notices

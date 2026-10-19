@@ -449,6 +449,12 @@ export interface ComposeViolation {
     /** the door's own voice — the same message the estate would send,
      *  prefixed by the gate that caught it (BEFORE the wire). */
     message: string;
+    /** the named field when the producer knows it exactly (the mirror
+     *  and family clauses name keys the surface does not own) — the
+     *  drill's banner rides it to the field's unstamp affordance (SD-7:
+     *  a banner that names a field the form does not render must let
+     *  the words ACT, never refuse without cure). */
+    field?: string;
 }
 export declare function composeValidate(spec: FormSpecDoc | null, doc: SpecValues): ComposeViolation[];
 /** Compose the CANDIDATE doc the door would judge: the bench row's

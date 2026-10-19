@@ -1745,6 +1745,12 @@ export interface ComposeViolation {
   /** the door's own voice — the same message the estate would send,
    *  prefixed by the gate that caught it (BEFORE the wire). */
   message: string
+  /** the named field when the producer knows it exactly (the mirror
+   *  and family clauses name keys the surface does not own) — the
+   *  drill's banner rides it to the field's unstamp affordance (SD-7:
+   *  a banner that names a field the form does not render must let
+   *  the words ACT, never refuse without cure). */
+  field?: string
 }
 
 /** THE FAMILY-CLAUSE PRESENCE GRAMMAR (spec.ts, the family clause):
@@ -1827,6 +1833,7 @@ export function composeValidate(
       if (k === 'model' || declared.has(k)) continue
       out.push({
         message: 'card_compose: field \'' + k + '\' fires nothing on this lane — the served surface (' + (spec.model ?? '') + ') does not declare it; the estate admission gate refuses the same key field-named at the write door.',
+        field: k,
       })
     }
   }
@@ -1849,6 +1856,7 @@ export function composeValidate(
         if (k === 'model' || !familyKeyPresent(doc[k]) || !deadSet.has(k)) continue
         out.push({
           message: 'card_compose: field \'' + k + '\' fires nothing on the ' + lane + ' lane — the lane refuses it (unsanctioned inject keys); the estate walk refuses the same key at the door.',
+          field: k,
         })
       }
     }

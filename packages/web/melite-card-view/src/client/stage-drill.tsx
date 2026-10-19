@@ -9,6 +9,7 @@ import { MediaDrilldown, type MediaDrilldownItem } from '@melite-plugin/dsh-gall
 import type { StageViewOwnerProps } from './types.ts'
 import { coerceFieldEdit, fetchFormSpec, fieldsOf, resolveValue, seedUser, reseatEnvelopeKeys, CardForm, type FormSpecDoc, type SpecValues } from '@melite/card-base/client'
 import { axisUnset, axisGroups, axisKey, composeCandidateDoc, composeValidate, mergeSwitchFrame, modelSwitchPatch } from '@melite/card-base/client'
+import type { ComposeViolation } from '@melite/card-base/client'
 import { forgetStageWrites, reconcileStageWriteFailures, refuseForUnlandedWrite, scheduleStageParam } from './draft.ts'
 import { canonicalOutputUrl, trailDedupe } from '@melite/estate-drafts/trail'
 import { postManageAction } from '@melite/card-base/client'
@@ -115,18 +116,37 @@ function modBagKeys(doc: FormSpecDoc): string[] {
   return (doc.features?.modifiers ?? []).map((k) => k.param_key)
 }
 
+/** The one refusal template — composeGateRefusal derives from it (the
+ *  string contract the other seats keep) and the press seat rides the
+ *  violation's structured field beside the same words. */
+function gateRefusalVoice(v: ComposeViolation): string {
+  return 'THE COMPOSE GATE REFUSED — ' + v.message
+    + ' — the write never left the studio. Fix the stated value, or pick a different route.'
+}
+
 function composeGateRefusal(
   spec: FormSpecDoc | null,
   held: Record<string, unknown> | undefined,
   user: SpecValues,
   frame: Record<string, unknown>,
 ): string | null {
+  const v = composeGateViolation(spec, held, user, frame)
+  return v === null ? null : gateRefusalVoice(v)
+}
+
+/** THE GATE'S STRUCTURED HALF (SD-7, the refusal-without-cure cure):
+ *  the refusal's named field, when the producing clause knows it —
+ *  the mirror and family clauses name keys NO rendered control owns,
+ *  so the banner must let the words act (the field's unstamp). */
+function composeGateViolation(
+  spec: FormSpecDoc | null,
+  held: Record<string, unknown> | undefined,
+  user: SpecValues,
+  frame: Record<string, unknown>,
+): ComposeViolation | null {
   if (spec === null) return null
   const violations = composeValidate(spec, composeCandidateDoc(held ?? {}, user, frame))
-  const first = violations[0]
-  if (first === undefined) return null
-  return 'THE COMPOSE GATE REFUSED — ' + first.message
-    + ' — the write never left the studio. Fix the stated value, or pick a different route.'
+  return violations[0] ?? null
 }
 
 export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRemoved, onResync, onPatchParams, renderStageView, renderPreview, onSurface, runId, canRemove, bindRun, bindEnhance }: {
@@ -208,6 +228,11 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
   const [enhancing, setEnhancing] = useState(false)
   const [enhanceNote, setEnhanceNote] = useState<{ err: boolean, text: string } | null>(null)
   const [error, setError] = useState<string | null>(null)
+  // THE BANNER'S ACTABLE FIELD (SD-7): the gate refusal's named field
+  // — present only while the banner's words are the gate's own; the
+  // unstamp affordance rides it (a banner that names a field the form
+  // does not render must let the words act, never refuse without cure).
+  const [gateField, setGateField] = useState<string | null>(null)
   // THE LEDGER FACE (the write-seat audit's silent-dead-write finding,
   // 2026-10-10): the ordinary authoring branch used to swallow its
   // write failures (`.catch(() => {})`) — a typed edit whose write
@@ -467,7 +492,7 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
         // already answered (never an arrival-window fence over a
         // settled failure).
         if (pendingSpecRef.current?.seq === fetchSeq) pendingSpecRef.current = null
-        setError(rejectionVoice(e))
+        setGateField(null); setError(rejectionVoice(e))
         setLoaded(true)
       })
     return () => { alive = false }
@@ -851,6 +876,37 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
         })
     }
   }, [spec, user, bench.draftId, bench.rev, stage.id])
+  // THE BANNER'S WORDS ACT (SD-7, the refusal-without-cure cure): the
+  // gate refusal names a field the form does not render (the departed
+  // family's own knob, an inject key the derived lane refuses) — the
+  // banner's unstamp delivers the switch verb's own verdict from the
+  // banner: one click writes the named key's null through the bench
+  // door (JSON Merge Patch deletes the bench key) and retires the face.
+  const onUnstamp = useCallback((name: string): void => {
+    touchedRef.current.add(name)
+    setUser((m) => {
+      if (!Object.prototype.hasOwnProperty.call(m, name)) return m
+      const next: SpecValues = {}
+      for (const [k, v] of Object.entries(m)) if (k !== name) next[k] = v
+      return next
+    })
+    setGateField(null)
+    setError(null)
+    // the WRITE FACE too: the trailing write's gate voiced the same
+    // field-named refusal on its own face — its subject just left the
+    // bench, so the words retire with it (a later refusal re-voices).
+    setWriteFace((cur) => (cur !== null && cur.includes("'" + name + "'") ? null : cur))
+    const settleDraftId = bench.draftId
+    const settleStageId = stage.id
+    void patchStageParams(settleDraftId, settleStageId, { [name]: null }, bench.rev)
+      .catch(() => {
+        // the same one-voice law as onUnset's slot half: the unstamp's
+        // door failure speaks the ledger row's face (alive-guarded —
+        // a re-target orphans the answer).
+        if (lastStageRef.current !== settleStageId) return
+        setWriteFace(unlandedWriteVoice(settleDraftId, settleStageId))
+      })
+  }, [bench.draftId, bench.rev, stage.id])
   // THE RESOLVED VALUE — derived per render (never state): exactly
   // what a Run composes, what the prompt tile and the enhance sweep
   // read, what the form shows. THE SERVED BASE (hour-26 stroke 15,
@@ -1042,7 +1098,7 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
       // window must never write.
       const pending = pendingSpecRef.current
       if (pending !== null) {
-        setError(`the ${pending.family} spec is still settling — press Run again once the form lands`)
+        setGateField(null); setError(`the ${pending.family} spec is still settling — press Run again once the form lands`)
         return
       }
       // THE USER LAYER RIDES VERBATIM (the parameter audit): the
@@ -1095,9 +1151,15 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
         }
         // THE COMPOSE GATE AT THE RUN SEAT: the full-doc sync is a
         // write like any other — an invalid candidate refuses HERE,
-        // in the studio, before anything reaches the engine.
-        const refused = composeGateRefusal(spec, baseAfterSync, user, {})
-        if (refused !== null) { setError(refused); return }
+        // in the studio, before anything reaches the engine. The
+        // refusal's named field rides the banner as the unstamp
+        // affordance (SD-7): the words act, not just name.
+        const violation = composeGateViolation(spec, baseAfterSync, user, {})
+        if (violation !== null) {
+          setError(gateRefusalVoice(violation))
+          setGateField(violation.field ?? null)
+          return
+        }
         try {
           await patchStageParams(bench.draftId, stage.id, patch, bench.rev)
         } catch {
@@ -1107,7 +1169,7 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
           // fence refuses on), never a bare rejection string the row
           // never heard of. The resync pulls the fresh rev so the
           // next press re-tries against the doc that actually landed.
-          setError(unlandedWriteVoice(bench.draftId, stage.id))
+          setGateField(null); setError(unlandedWriteVoice(bench.draftId, stage.id))
           onResync?.()
           return
         }
@@ -1123,7 +1185,7 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
       // onRun prop may be any host's verb, and a bare start must be
       // unexpressible from this seat.
       const fence = await refuseForUnlandedWrite(bench.draftId, stage.id)
-      if (fence !== null) { setError(fence); return }
+      if (fence !== null) { setGateField(null); setError(fence); return }
       onRun()
     } catch (e: unknown) {
       // The write's own throw never reaches here (the sync's inner
@@ -1131,7 +1193,7 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
       // non-write failures of the press — the fence's ledger read
       // and the host's onRun verb — where the bare reason is the
       // whole story and no row exists to voice it.
-      setError(rejectionVoice(e))
+      setGateField(null); setError(rejectionVoice(e))
       onResync?.()
     }
   }
@@ -1163,7 +1225,7 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
       forgetStageWrites(bench.draftId, [stage.id])
       onRemoved()
     } catch (e: unknown) {
-      setError(rejectionVoice(e))
+      setGateField(null); setError(rejectionVoice(e))
       setRemoving(false)
       // THE RESYNC LAW: a final refusal (even post-rebase) means this
       // drill's bench view is stale truth — re-read so the next
@@ -1185,7 +1247,7 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
         await ungroupStageWire({ stage: stage.id, expect_rev: bench.rev }, bench.sessionKey)
         onRemoved()
       } catch (e: unknown) {
-        setError(rejectionVoice(e))
+        setGateField(null); setError(rejectionVoice(e))
         setRemoving(false)
         onResync?.()
       }
@@ -1489,11 +1551,16 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
         // The write face hides only: the ledger row keeps its memory,
         // so the next settle re-voices a still-unlanded key.
         error !== null ? h('div', { className: css.drillRunRow },
-          h('span', { className: css.runError }, error,
+          h('span', { className: css.runError, 'data-testid': 'stage-error-strip' }, error,
+            gateField !== null ? h(Button, {
+              size: 'sm', variant: 'ghost',
+              'aria-label': chromeCopy.unstampWord + " '" + gateField + "'",
+              onClick: () => { onUnstamp(gateField) },
+            }, chromeCopy.unstampWord + " '" + gateField + "'") : null,
             h(Button, {
               size: 'sm', variant: 'ghost', className: css.errorDismiss,
               'aria-label': chromeCopy.dismissError,
-              onClick: () => { setError(null) },
+              onClick: () => { setGateField(null); setError(null) },
             }, h(IconCloseOutlineRegular, { size: 12 }))),
         ) : null,
         writeFace !== null ? h('div', { className: css.drillRunRow },

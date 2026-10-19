@@ -188,6 +188,12 @@ export const chromeCopy = {
      *  closing the face retires it). No hover title: hover text rides
      *  the estate Tip, never a native title (the tip canon). */
     dismissError: 'Dismiss error',
+    /** The gate-refusal banner's unstamp verb (SD-7, the
+     *  refusal-without-cure cure): the banner names a field the form
+     *  does not render, so the words must ACT — one click unstamps the
+     *  named key through the bench door. Composed with the field name
+     *  at the render seat ("Unstamp 'double_reference'"). */
+    unstampWord: 'Unstamp',
     /** Run view's cancel verb (danger face — the live run stops). */
     cancelRunWord: 'Cancel run',
     /** Run view's cancel in-flight face. */

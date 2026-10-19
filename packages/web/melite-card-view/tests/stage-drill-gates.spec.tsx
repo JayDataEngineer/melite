@@ -59,12 +59,12 @@ function axisSpecDoc(): Record<string, unknown> {
   };
 }
 
-function stubFetch(): void {
+function stubFetch(specDoc: Record<string, unknown> = axisSpecDoc()): void {
   const impl = globalThis.fetch;
   vi.stubGlobal("fetch", async (url: unknown, init?: RequestInit): Promise<Response> => {
     const path = String(url);
     if (path.includes("/v1/form-spec")) {
-      return new Response(JSON.stringify(axisSpecDoc()), {
+      return new Response(JSON.stringify(specDoc), {
         status: 200, headers: { "content-type": "application/json" },
       });
     }
@@ -90,8 +90,8 @@ function stubFetch(): void {
   });
 }
 
-function mountBench(stages: BenchStageView[], estate?: EstateOpts): void {
-  stubFetch();
+function mountBench(stages: BenchStageView[], estate?: EstateOpts, specDoc?: Record<string, unknown>): void {
+  stubFetch(specDoc);
   fakes?.unmount();
   fakes = mountEstateFakes({
     benchDoc: {
@@ -162,6 +162,13 @@ async function pressRun(): Promise<void> {
 
 function writeFace(): string | null {
   return document.querySelector('[data-testid="stage-write-face"]')?.textContent ?? null;
+}
+
+/** The error strip's own face (the gate-refusal banner — the write
+ *  face carries the SAME template for its own gate, so the strip is
+ *  judged by its testid, never by body text). */
+function errorStrip(): string | null {
+  return document.querySelector('[data-testid="stage-error-strip"]')?.textContent ?? null;
 }
 
 function patchCalls(): Array<Record<string, unknown>> {
@@ -663,6 +670,242 @@ describe("the unset's refused write and the run seat's refused sync — both spe
     expect(strip.textContent).toMatch(/unlanded keys: [^\n]*\bprompt\b/);
     expect(writeFace()).toBe(null);
     expect(runs).toBe(0);
+  });
+
+  test("a gate refusal naming a field the form does not render carries the field's UNSTAMP affordance — one click unstamps the ghost through the bench door (SD-7: the banner's words ACT)", async () => {
+    // THE B8 CLASS, THE LAST MILE (the refusal-without-cure burn):
+    // the mirror clause refuses the departed key FIELD-NAMED, but the
+    // arrival form renders no control for a field its surface does
+    // not declare — the banner named a ghost the operator could not
+    // touch. The cure: the banner carries the named field's own
+    // unstamp — one click writes the key's null through the bench
+    // door (JSON Merge Patch delete), the switch verb's own verdict
+    // delivered from the banner's words.
+    const doc = axisSpecDoc();
+    doc.params = ["prompt", "variant", "input_image"];
+    mountBench([stage({ model: "krea-2", double_reference: true })], undefined, doc);
+    await openDrill();
+    await typePrompt("a red cube");
+    await pressRun();
+    await waitFor(() => {
+      if ((errorStrip() ?? '').includes("'double_reference' fires nothing") === false) {
+        throw new Error("gate banner not voiced yet");
+      }
+    }, { timeout: 8000 });
+    const unstamp = await screen.findByRole("button", { name: "Unstamp 'double_reference'" }, { timeout: 4000 });
+    fireEvent.click(unstamp);
+    await waitFor(() => {
+      const del = patchCalls().some((c) => {
+        const params = (c["patch"] as Record<string, unknown>)?.["params"] as Record<string, unknown> | undefined;
+        return params?.["double_reference"] === null;
+      });
+      if (!del) throw new Error("the unstamp's null write never issued; calls: " + JSON.stringify(patchCalls()));
+    }, { timeout: 8000 });
+    // THE BANNER RETIRES WITH ITS GHOST (both faces): the error strip
+    // AND the write face carried the same field-named words — the
+    // trailing write's gate voices the departed key on its own face —
+    // and the act retires each (a later refusal re-voices on its own).
+    await waitFor(() => {
+      if ((errorStrip() ?? '').includes("'double_reference' fires nothing")) {
+        throw new Error("the error strip outlived its unstamp");
+      }
+    }, { timeout: 8000 });
+    await waitFor(() => {
+      if ((writeFace() ?? '').includes("'double_reference' fires nothing")) {
+        throw new Error("the write face outlived its unstamp");
+      }
+    }, { timeout: 8000 });
+  });
+
+  test("the unstamp's door failure speaks the ledger row's face — the act is a write like any other", async () => {
+    // SD-7's unstamp rides the same one-voice law as every write half:
+    // a rejecting door speaks the row's unlanded face (never a raw
+    // dialect), and the strip still retires on the act — the click's
+    // verdict is the door's, the row keeps the failure's memory.
+    const doc = axisSpecDoc();
+    doc.params = ["prompt", "variant", "input_image"];
+    mountBench([stage({ model: "krea-2", double_reference: true })], { throws: [{ method: "drafts/patch" }] }, doc);
+    await openDrill();
+    await typePrompt("a red cube");
+    await pressRun();
+    await waitFor(() => {
+      if ((errorStrip() ?? '').includes("'double_reference' fires nothing") === false) {
+        throw new Error("gate banner not voiced yet");
+      }
+    }, { timeout: 8000 });
+    const unstamp = await screen.findByRole("button", { name: "Unstamp 'double_reference'" }, { timeout: 4000 });
+    fireEvent.click(unstamp);
+    await waitFor(() => {
+      const face = writeFace();
+      if (face === null || !face.includes("THE WRITE DID NOT LAND")) {
+        throw new Error("unlanded face not voiced yet; face: " + face);
+      }
+    }, { timeout: 8000 });
+    expect(writeFace()).toContain("double_reference");
+    expect(errorStrip()).toBe(null);
+  });
+
+  test("the re-press after an unstamp starts clean — the flush re-nulls the dropped ghost and the gate judges it gone", async () => {
+    // The journey's last visible hop: the unstamp is not just a face
+    // edit — the NEXT press lands the delete through the flush (the
+    // touched null rides, the gate judges the keyless candidate) and
+    // the run STARTS. One arm, the whole hop chain closed.
+    const doc = axisSpecDoc();
+    doc.params = ["prompt", "variant", "input_image"];
+    mountBench([stage({ model: "krea-2", double_reference: true })], undefined, doc);
+    await openDrill();
+    await typePrompt("a red cube");
+    await pressRun();
+    await waitFor(() => {
+      if ((errorStrip() ?? '').includes("'double_reference' fires nothing") === false) {
+        throw new Error("gate banner not voiced yet");
+      }
+    }, { timeout: 8000 });
+    const unstamp = await screen.findByRole("button", { name: "Unstamp 'double_reference'" }, { timeout: 4000 });
+    fireEvent.click(unstamp);
+    await waitFor(() => {
+      const del = patchCalls().some((c) => {
+        const params = (c["patch"] as Record<string, unknown>)?.["params"] as Record<string, unknown> | undefined;
+        return params?.["double_reference"] === null;
+      });
+      if (!del) throw new Error("the unstamp's null write never issued");
+    }, { timeout: 8000 });
+    await pressRun();
+    // the flush re-nulled the dropped ghost (touchedRef keeps it) and
+    // the gate passed: the press landed its write and STARTED the run.
+    await waitFor(() => {
+      const flushNull = patchCalls().some((c) => {
+        const patch = c["patch"] as Record<string, unknown> | undefined;
+        const params = patch?.["params"] as Record<string, unknown> | undefined;
+        return params?.["double_reference"] === null && params?.["prompt"] === "a red cube";
+      });
+      if (!flushNull) throw new Error("the press's flush never carried the re-null; patches: " + JSON.stringify(patchCalls()));
+      if (!calls().some((c) => c.method === "runs/start")) throw new Error("the run never started");
+    }, { timeout: 8000 });
+    expect(errorStrip()).toBe(null);
+  });
+
+  test("an already-unstated key still unstamps the bench — the delete is the act (idempotent at the door)", async () => {
+    // The banner can outlive its key's user-map entry: the operator
+    // fixes the named key the rendered way (the axis-unset deletes it
+    // and lands the null; the settle retires the write face's words)
+    // while the strip keeps the press's refusal. The Unstamp still
+    // fires the bench delete — the act is unconditional, the user-map
+    // half just skips an absent key.
+    const doc = axisSpecDoc();
+    doc.familyLaw = { lanes: [{ lane: "t4_open" }], deadKeys: { t4_open: ["variant"] } };
+    mountBench([stage({ model: "krea-2", variant: "raw" })], undefined, doc);
+    await openDrill();
+    const select = await screen.findByLabelText("Variant", {}, { timeout: 4000 });
+    fireEvent.click(select);
+    fireEvent.click(screen.getByRole("menuitem", { name: "Turbo" }));
+    await waitFor(() => {
+      if ((writeFace() ?? "").includes("'variant' fires nothing") === false) {
+        throw new Error("write-face refusal not voiced yet; face: " + writeFace());
+      }
+    }, { timeout: 8000 });
+    await pressRun();
+    await waitFor(() => {
+      if ((errorStrip() ?? "").includes("'variant' fires nothing") === false) {
+        throw new Error("gate banner not voiced yet");
+      }
+    }, { timeout: 8000 });
+    const field = await screen.findByLabelText("Variant override", {}, { timeout: 4000 });
+    fireEvent.change(field, { target: { value: "" } });
+    // the axis-unset's null rides the trailing write's debounce — wait
+    // for the LANDED null before judging the face
+    await waitFor(() => {
+      const del = patchCalls().some((c) => {
+        const params = (c["patch"] as Record<string, unknown>)?.["params"] as Record<string, unknown> | undefined;
+        return params?.["variant"] === null;
+      });
+      if (!del) throw new Error("the clear's null write never issued; patches: " + JSON.stringify(patchCalls()));
+    }, { timeout: 8000 });
+    await awaitWriteSettled();
+    expect(writeFace()).toBe(null);
+    const unstamp = await screen.findByRole("button", { name: "Unstamp 'variant'" }, { timeout: 4000 });
+    fireEvent.click(unstamp);
+    await waitFor(() => {
+      const dels = patchCalls().filter((c) => {
+        const params = (c["patch"] as Record<string, unknown>)?.["params"] as Record<string, unknown> | undefined;
+        return params?.["variant"] === null;
+      });
+      if (dels.length < 2) throw new Error("the unstamp never re-deleted the bench key; patches: " + JSON.stringify(patchCalls()));
+    }, { timeout: 8000 });
+    expect(errorStrip()).toBe(null);
+  });
+
+  test("the unstamp's failure answer is alive-guarded — a re-target orphans it (the row keeps the memory)", async () => {
+    // The unstamp is a write like any other: its door answer holds the
+    // settle-captures-stageId law. The write parks at the gate, the
+    // SAME SEAT re-targets (the run-view seat: one instance, no stage
+    // key), the door then rejects — the ledger row for the OLD stage
+    // keeps the failure, and the guard holds the voice off the new
+    // seat. The press verb rides the captured bindRun (the host's own
+    // seam), never a zoom bar.
+    let release: (() => void) | undefined;
+    const gate = (): Promise<void> => new Promise<void>((resolve) => { release = resolve; });
+    const doc = axisSpecDoc();
+    doc.params = ["prompt", "variant", "input_image"];
+    stubFetch(doc);
+    fakes?.unmount();
+    fakes = mountEstateFakes({ patchGate: gate, throws: [{ method: "drafts/patch" }] });
+    let runVerb: (() => void) | undefined;
+    const bind = (r: () => void): void => { runVerb = r; };
+    const stageB: BenchStageView = { id: "s_1", card: "image-gen", engine: "comfyui", params: { model: "krea-2" } };
+    const view = render(h(StageDrill, { ...drillProps(stage({ model: "krea-2", double_reference: true })), bindRun: bind } as never));
+    await screen.findByLabelText("Prompt", {}, { timeout: 4000 });
+    await typePrompt("a red cube");
+    runVerb!();
+    await waitFor(() => {
+      if ((errorStrip() ?? "").includes("'double_reference' fires nothing") === false) {
+        throw new Error("gate banner not voiced yet");
+      }
+    }, { timeout: 8000 });
+    const unstamp = await screen.findByRole("button", { name: "Unstamp 'double_reference'" }, { timeout: 4000 });
+    fireEvent.click(unstamp);
+    await waitFor(() => { expect(patchCalls().length).toBe(1); }, { timeout: 8000 });
+    // the re-target while the unstamp is parked at the door
+    view.rerender(h(StageDrill, { ...drillProps(stageB), bindRun: bind } as never));
+    await screen.findByLabelText("Prompt", {}, { timeout: 4000 });
+    release?.();
+    await waitFor(() => {
+      if (stageWriteState("bench-p", "s_0").pending !== 0) throw new Error("unstamp still parked");
+    }, { timeout: 8000 });
+    // the row keeps the failure for s_0's return; the new seat is clean
+    expect(stageWriteState("bench-p", "s_0").failedKeys).toContain("double_reference");
+    expect(writeFace()).toBe(null);
+  });
+
+  test("the family clause's field-named refusal unstamps the same way (the h3 inject-keys class: one click per named key, the walk's own verdict)", async () => {
+    // THE SD-7 TWIN (the h3 walk voice names the repair): the family
+    // clause mirrors the walk's per-key refusal — a stated inject key
+    // on the derived lane refuses FIELD-NAMED before the wire — and
+    // the same unstamp affordance delivers the repair: the named key
+    // unstamps through the bench door, one click per named key.
+    const doc = axisSpecDoc();
+    doc.familyLaw = {
+      lanes: [{ lane: "t4_open" }],
+      deadKeys: { t4_open: ["interpolate_enabled", "second_pass_enabled"] },
+    };
+    mountBench([stage({ model: "krea-2", interpolate_enabled: true })], undefined, doc);
+    await openDrill();
+    await typePrompt("a red cube");
+    await pressRun();
+    await waitFor(() => {
+      if (!document.body.textContent!.includes("'interpolate_enabled' fires nothing on the t4_open lane")) {
+        throw new Error("family-clause banner not voiced yet");
+      }
+    }, { timeout: 8000 });
+    const unstamp = await screen.findByRole("button", { name: "Unstamp 'interpolate_enabled'" }, { timeout: 4000 });
+    fireEvent.click(unstamp);
+    await waitFor(() => {
+      const del = patchCalls().some((c) => {
+        const params = (c["patch"] as Record<string, unknown>)?.["params"] as Record<string, unknown> | undefined;
+        return params?.["interpolate_enabled"] === null;
+      });
+      if (!del) throw new Error("the unstamp's null write never issued");
+    }, { timeout: 8000 });
   });
 
   test("a NON-write failure of the press (the host run verb throwing) voices the bare reason and resyncs", async () => {
