@@ -115,4 +115,30 @@ describe("the graph-receipt chip (the purge P1's run face)", () => {
     mountChip(runValue({ graphReceipt: receipt() }));
     expect(await screen.findByText("graph ✓ 2n", {}, { timeout: 5000 })).toBeTruthy();
   });
+
+  test("bake: the price chip renders the receipt's bake record verbatim (study §7 item 2)", async () => {
+    mountChip(runValue({
+      graphReceipt: receipt({
+        bake: {
+          source: "baked",
+          mode: "Full Reference",
+          pool: 32,
+          refinement_steps: 1000,
+          save: false,
+          visual_refs: 1,
+          windows: 2,
+          price: "bake: 1000 refinement steps × 1 ref × 2 windows",
+        },
+      }),
+    }));
+    expect(await screen.findByText("graph ✓ 2n", {}, { timeout: 5000 })).toBeTruthy();
+    const bake = await screen.findByText("bake · bake: 1000 refinement steps × 1 ref × 2 windows", {}, { timeout: 5000 });
+    expect(bake.textContent).toContain("1000 refinement steps");
+  });
+
+  test("no bake: no bake chip (a non-refmod run renders the legacy face alone — never a phantom bake)", async () => {
+    mountChip(runValue({ graphReceipt: receipt() }));
+    expect(await screen.findByText("graph ✓ 2n", {}, { timeout: 5000 })).toBeTruthy();
+    expect(screen.queryByText(/bake · /)).toBeNull();
+  });
 });

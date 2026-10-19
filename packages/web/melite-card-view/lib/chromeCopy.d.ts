@@ -269,6 +269,12 @@ export declare const chromeCopy: {
         dropped: string[];
         promptId?: string;
     }) => string;
+    /** Run view's bake chip (study §7 item 2 — the run voice prices the
+     *  bake): the receipt's price string is data composed from the
+     *  graph's own extract node; the seat renders it verbatim. */
+    readonly bakeReceipt: (p: {
+        price: string;
+    }) => string;
     /** Weight stuck face's retry verb (re-rides the acquire_weight door). */
     readonly retryDownload: "Retry the download";
     /** Weight stuck face's delete verb (the discard rides the manage seat). */

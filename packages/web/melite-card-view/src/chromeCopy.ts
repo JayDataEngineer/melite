@@ -246,6 +246,11 @@ export const chromeCopy = {
    *  here too (both faces name the queued engine call). */
   graphReceiptDropped: (p: { dropped: string[]; promptId?: string }): string =>
     'graph ✕ dropped ' + p.dropped.join(', ') + engineRefSuffix(p.promptId),
+  /** Run view's bake chip (study §7 item 2 — the run voice prices the
+   *  bake): the receipt's price string is data composed from the
+   *  graph's own extract node; the seat renders it verbatim. */
+  bakeReceipt: (p: { price: string }): string =>
+    'bake · ' + p.price,
   /** Weight stuck face's retry verb (re-rides the acquire_weight door). */
   retryDownload: 'Retry the download',
   /** Weight stuck face's delete verb (the discard rides the manage seat). */

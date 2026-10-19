@@ -181,11 +181,18 @@ export function RunView({ run, sessionKey, onBack, onRestored, onStop }: {
   }, run.graphReceipt.verdict === 'complete'
     ? chromeCopy.graphReceiptCarried({ nodes: run.graphReceipt.nodes, promptId: run.graphReceipt.prompt_id })
     : chromeCopy.graphReceiptDropped({ dropped: run.graphReceipt.dropped, promptId: run.graphReceipt.prompt_id }))
+  // THE BAKE CHIP (study §7 item 2 — the run voice prices the bake):
+  // present iff the composed graph bakes/loads a refmod mod; absent
+  // otherwise — a non-refmod run renders byte-identical to before.
+  const bakeChip = run.graphReceipt?.bake === undefined ? null : h(Pill, {
+    className: css.graphReceiptOk,
+  }, chromeCopy.bakeReceipt({ price: run.graphReceipt.bake.price }))
   return h('section', { className: css.runView, 'data-run-status': run.status },
     h('header', { className: css.runHead },
       h('span', { className: css.runId }, run.runId),
       h('span', { className: css.runStatus }, titleCaseId(run.status)),
       receiptChip,
+      bakeChip,
     ),
     shownStageError !== null
       ? h('p', { className: css.runError, 'data-testid': 'run-stage-error' }, shownStageError,

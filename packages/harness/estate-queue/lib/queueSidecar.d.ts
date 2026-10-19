@@ -62,6 +62,32 @@ export interface GraphReceiptPair {
     /** The judged keys NOT found in the graph, sorted — the honesty face. */
     readonly dropped: readonly string[];
     readonly verdict: "complete" | "partial";
+    /** THE BAKE'S RECORD (study §7 item 2, the run voice): present
+     *  iff the composed graph bakes or loads a refmod mod — read off
+     *  the graph's own nodes (the extract/loader inputs VERBATIM),
+     *  never off the doc, so the record cannot disagree with what
+     *  the engine will actually run. Absent when no seat exists. */
+    readonly bake?: GraphReceiptBake;
+}
+/** The refmod bake's receipt: the graph-stated dials, the baked
+ *  media count, the film's window count (one SamplerCustomAdvanced
+ *  per window — the DiT pass set), and the run-voice price. */
+export interface GraphReceiptBake {
+    /** "baked" = media bakes at run time (MiniMaxH3RefModExtract);
+     *  "stems" = pre-baked .safetensors packs load (MiniMaxH3RefModsLoader). */
+    readonly source: "baked" | "stems";
+    readonly mode?: string;
+    readonly pool?: number;
+    readonly refinement_steps?: number;
+    readonly save?: boolean;
+    /** refs_image.* + refs_video.* slots the extract stacks. */
+    readonly visual_refs?: number;
+    /** loader mod_N slots ≠ "(none)". */
+    readonly stems?: number;
+    /** One SamplerCustomAdvanced per film window. */
+    readonly windows: number;
+    /** "bake: <steps> refinement steps × <refs> ref(s) × <windows> windows" */
+    readonly price: string;
 }
 /** One stage's queue-time doc→graph evidence row. */
 export interface GraphReceiptStageRow extends GraphReceiptPair {

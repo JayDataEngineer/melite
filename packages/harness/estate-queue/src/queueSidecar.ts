@@ -110,6 +110,33 @@ export interface GraphReceiptPair {
   /** The judged keys NOT found in the graph, sorted — the honesty face. */
   readonly dropped: readonly string[];
   readonly verdict: "complete" | "partial";
+  /** THE BAKE'S RECORD (study §7 item 2, the run voice): present
+   *  iff the composed graph bakes or loads a refmod mod — read off
+   *  the graph's own nodes (the extract/loader inputs VERBATIM),
+   *  never off the doc, so the record cannot disagree with what
+   *  the engine will actually run. Absent when no seat exists. */
+  readonly bake?: GraphReceiptBake;
+}
+
+/** The refmod bake's receipt: the graph-stated dials, the baked
+ *  media count, the film's window count (one SamplerCustomAdvanced
+ *  per window — the DiT pass set), and the run-voice price. */
+export interface GraphReceiptBake {
+  /** "baked" = media bakes at run time (MiniMaxH3RefModExtract);
+   *  "stems" = pre-baked .safetensors packs load (MiniMaxH3RefModsLoader). */
+  readonly source: "baked" | "stems";
+  readonly mode?: string;
+  readonly pool?: number;
+  readonly refinement_steps?: number;
+  readonly save?: boolean;
+  /** refs_image.* + refs_video.* slots the extract stacks. */
+  readonly visual_refs?: number;
+  /** loader mod_N slots ≠ "(none)". */
+  readonly stems?: number;
+  /** One SamplerCustomAdvanced per film window. */
+  readonly windows: number;
+  /** "bake: <steps> refinement steps × <refs> ref(s) × <windows> windows" */
+  readonly price: string;
 }
 
 /** One stage's queue-time doc→graph evidence row. */
@@ -153,17 +180,62 @@ export function graphReceiptOf(
 ): GraphReceiptPair {
   const carried = new Set<string | number | boolean>();
   let nodes = 0;
+  let windows = 0;
+  let bake: GraphReceiptBake | undefined;
   const workflow = composed.workflow;
   if (workflow !== null && typeof workflow === "object" && !Array.isArray(workflow)) {
     for (const node of Object.values(workflow as Record<string, unknown>)) {
       if (node === null || typeof node !== "object" || Array.isArray(node)) continue;
       nodes += 1;
+      const cls = (node as { class_type?: unknown }).class_type;
+      if (cls === "SamplerCustomAdvanced") windows += 1;
       const inputs: unknown = (node as { inputs?: unknown }).inputs;
       if (inputs === null || typeof inputs !== "object" || Array.isArray(inputs)) continue;
       for (const v of Object.values(inputs as Record<string, unknown>)) {
         if (typeof v === "string" || typeof v === "number" || typeof v === "boolean") carried.add(v);
       }
+      // THE BAKE RECORD (study §7 item 2): read off the graph's own
+      // seat nodes — the extract's declared dials verbatim, the
+      // ref count from its autogrow slots, the price string the run
+      // voice renders. One bake per graph; the visual seat wins
+      // over a stems-only loader (the per-call replace law).
+      if (cls === "MiniMaxH3RefModExtract" || cls === "MiniMaxH3RefModsLoader") {
+        const inp = inputs as Record<string, unknown>;
+        if (cls === "MiniMaxH3RefModExtract") {
+          const visualRefs = Object.keys(inp).filter((k) => k.startsWith("refs_image.") || k.startsWith("refs_video.")).length;
+          bake = {
+            source: "baked",
+            ...(typeof inp["mode"] === "string" ? { mode: inp["mode"] } : {}),
+            ...(typeof inp["pool_h"] === "number" ? { pool: inp["pool_h"] } : {}),
+            ...(typeof inp["identity"] === "number" ? { refinement_steps: inp["identity"] } : {}),
+            ...(typeof inp["save"] === "boolean" ? { save: inp["save"] } : {}),
+            visual_refs: visualRefs,
+            windows,
+            price: "",
+          };
+        } else {
+          const stems = Object.entries(inp).filter(([k, v]) => /^mod_\d+$/.test(k) && v !== "(none)").length;
+          bake = { source: "stems", stems, windows, price: "" };
+        }
+      }
     }
+  }
+  if (bake !== undefined) {
+    const windows_ = windows;
+    bake = bake.source === "baked"
+      ? {
+          ...bake,
+          windows: windows_,
+          price: "bake: " + String(bake.refinement_steps ?? "?") + " refinement steps × "
+            + String(bake.visual_refs ?? 0) + (bake.visual_refs === 1 ? " ref × " : " refs × ")
+            + String(windows_) + (windows_ === 1 ? " window" : " windows"),
+        }
+      : {
+          ...bake,
+          windows: windows_,
+          price: "bake: " + String(bake.stems ?? 0) + (bake.stems === 1 ? " stem × " : " stems × ")
+            + String(windows_) + (windows_ === 1 ? " window" : " windows"),
+        };
   }
   const populated: string[] = [];
   const found: string[] = [];
@@ -183,6 +255,7 @@ export function graphReceiptOf(
     carried: found,
     dropped: missed,
     verdict: missed.length === 0 ? "complete" : "partial",
+    ...(bake !== undefined ? { bake } : {}),
   };
 }
 
@@ -196,6 +269,7 @@ export function graphReceiptStageOf(stage: string, pair: GraphReceiptPair): Grap
     carried: [...pair.carried],
     dropped: [...pair.dropped],
     verdict: pair.verdict,
+    ...(pair.bake !== undefined ? { bake: pair.bake } : {}),
   };
 }
 
@@ -221,6 +295,12 @@ export function graphReceiptFoldOf(rows: readonly GraphReceiptStageRow[], prompt
     dropped: union((r) => r.dropped),
     verdict: complete ? "complete" : "partial",
     stages: rows.map((r) => graphReceiptStageOf(r.stage, r)),
+    // THE BAKE rides the fold: the first stage that carries one
+    // (the card run's single stage; a multi-stage flow receipts the
+    // first bake seat it composes).
+    ...(rows.find((r) => r.bake !== undefined)?.bake !== undefined
+      ? { bake: rows.find((r) => r.bake !== undefined)!.bake }
+      : {}),
     ...(promptId !== undefined && promptId !== "" ? { prompt_id: promptId } : {}),
   };
 }

@@ -55,12 +55,17 @@ function receiptScalarOf(value) {
 export function graphReceiptOf(params, composed) {
     const carried = new Set();
     let nodes = 0;
+    let windows = 0;
+    let bake;
     const workflow = composed.workflow;
     if (workflow !== null && typeof workflow === "object" && !Array.isArray(workflow)) {
         for (const node of Object.values(workflow)) {
             if (node === null || typeof node !== "object" || Array.isArray(node))
                 continue;
             nodes += 1;
+            const cls = node.class_type;
+            if (cls === "SamplerCustomAdvanced")
+                windows += 1;
             const inputs = node.inputs;
             if (inputs === null || typeof inputs !== "object" || Array.isArray(inputs))
                 continue;
@@ -68,7 +73,49 @@ export function graphReceiptOf(params, composed) {
                 if (typeof v === "string" || typeof v === "number" || typeof v === "boolean")
                     carried.add(v);
             }
+            // THE BAKE RECORD (study §7 item 2): read off the graph's own
+            // seat nodes — the extract's declared dials verbatim, the
+            // ref count from its autogrow slots, the price string the run
+            // voice renders. One bake per graph; the visual seat wins
+            // over a stems-only loader (the per-call replace law).
+            if (cls === "MiniMaxH3RefModExtract" || cls === "MiniMaxH3RefModsLoader") {
+                const inp = inputs;
+                if (cls === "MiniMaxH3RefModExtract") {
+                    const visualRefs = Object.keys(inp).filter((k) => k.startsWith("refs_image.") || k.startsWith("refs_video.")).length;
+                    bake = {
+                        source: "baked",
+                        ...(typeof inp["mode"] === "string" ? { mode: inp["mode"] } : {}),
+                        ...(typeof inp["pool_h"] === "number" ? { pool: inp["pool_h"] } : {}),
+                        ...(typeof inp["identity"] === "number" ? { refinement_steps: inp["identity"] } : {}),
+                        ...(typeof inp["save"] === "boolean" ? { save: inp["save"] } : {}),
+                        visual_refs: visualRefs,
+                        windows,
+                        price: "",
+                    };
+                }
+                else {
+                    const stems = Object.entries(inp).filter(([k, v]) => /^mod_\d+$/.test(k) && v !== "(none)").length;
+                    bake = { source: "stems", stems, windows, price: "" };
+                }
+            }
         }
+    }
+    if (bake !== undefined) {
+        const windows_ = windows;
+        bake = bake.source === "baked"
+            ? {
+                ...bake,
+                windows: windows_,
+                price: "bake: " + String(bake.refinement_steps ?? "?") + " refinement steps × "
+                    + String(bake.visual_refs ?? 0) + (bake.visual_refs === 1 ? " ref × " : " refs × ")
+                    + String(windows_) + (windows_ === 1 ? " window" : " windows"),
+            }
+            : {
+                ...bake,
+                windows: windows_,
+                price: "bake: " + String(bake.stems ?? 0) + (bake.stems === 1 ? " stem × " : " stems × ")
+                    + String(windows_) + (windows_ === 1 ? " window" : " windows"),
+            };
     }
     const populated = [];
     const found = [];
@@ -89,6 +136,7 @@ export function graphReceiptOf(params, composed) {
         carried: found,
         dropped: missed,
         verdict: missed.length === 0 ? "complete" : "partial",
+        ...(bake !== undefined ? { bake } : {}),
     };
 }
 /** Name one stage's pair with its stage id (the per-stage rows
@@ -101,6 +149,7 @@ export function graphReceiptStageOf(stage, pair) {
         carried: [...pair.carried],
         dropped: [...pair.dropped],
         verdict: pair.verdict,
+        ...(pair.bake !== undefined ? { bake: pair.bake } : {}),
     };
 }
 /** Fold per-stage rows into the run-level receipt (nodes SUM —
@@ -128,6 +177,12 @@ export function graphReceiptFoldOf(rows, promptId) {
         dropped: union((r) => r.dropped),
         verdict: complete ? "complete" : "partial",
         stages: rows.map((r) => graphReceiptStageOf(r.stage, r)),
+        // THE BAKE rides the fold: the first stage that carries one
+        // (the card run's single stage; a multi-stage flow receipts the
+        // first bake seat it composes).
+        ...(rows.find((r) => r.bake !== undefined)?.bake !== undefined
+            ? { bake: rows.find((r) => r.bake !== undefined).bake }
+            : {}),
         ...(promptId !== undefined && promptId !== "" ? { prompt_id: promptId } : {}),
     };
 }

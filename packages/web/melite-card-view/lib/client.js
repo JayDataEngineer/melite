@@ -9075,6 +9075,10 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			*  sorted receipt, joined by the seat). The EngineRef suffix rides
 			*  here too (both faces name the queued engine call). */
 			graphReceiptDropped: (p) => "graph ✕ dropped " + p.dropped.join(", ") + engineRefSuffix(p.promptId),
+			/** Run view's bake chip (study §7 item 2 — the run voice prices the
+			*  bake): the receipt's price string is data composed from the
+			*  graph's own extract node; the seat renders it verbatim. */
+			bakeReceipt: (p) => "bake · " + p.price,
 			/** Weight stuck face's retry verb (re-rides the acquire_weight door). */
 			retryDownload: "Retry the download",
 			/** Weight stuck face's delete verb (the discard rides the manage seat). */
@@ -23298,10 +23302,11 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				dropped: run.graphReceipt.dropped,
 				promptId: run.graphReceipt.prompt_id
 			}));
+			const bakeChip = run.graphReceipt?.bake === void 0 ? null : (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Pill, { className: card_module_css_default.graphReceiptOk }, chromeCopy.bakeReceipt({ price: run.graphReceipt.bake.price }));
 			return (0, react.createElement)("section", {
 				className: card_module_css_default.runView,
 				"data-run-status": run.status
-			}, (0, react.createElement)("header", { className: card_module_css_default.runHead }, (0, react.createElement)("span", { className: card_module_css_default.runId }, run.runId), (0, react.createElement)("span", { className: card_module_css_default.runStatus }, (0, _melite_card_base_client.titleCaseId)(run.status)), receiptChip), shownStageError !== null ? (0, react.createElement)("p", {
+			}, (0, react.createElement)("header", { className: card_module_css_default.runHead }, (0, react.createElement)("span", { className: card_module_css_default.runId }, run.runId), (0, react.createElement)("span", { className: card_module_css_default.runStatus }, (0, _melite_card_base_client.titleCaseId)(run.status)), receiptChip, bakeChip), shownStageError !== null ? (0, react.createElement)("p", {
 				className: card_module_css_default.runError,
 				"data-testid": "run-stage-error"
 			}, shownStageError, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Button, {

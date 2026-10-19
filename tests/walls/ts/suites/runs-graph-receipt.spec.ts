@@ -90,7 +90,9 @@ import { coerceSnapshotBody } from "../../../../packages/harness/estate-queue/sr
 import { graphReceiptOf } from "../../../../packages/harness/estate-queue/src/queueSidecar.ts";
 import type { GraphReceiptPair } from "../../../../packages/harness/estate-queue/src/queueSidecar.ts";
 import { ACTION_BINDINGS } from "../../../../packages/audio/music/src/card.ts";
+import { ACTION_BINDINGS as H3_BINDINGS } from "../../../../packages/video/h3-timeline/src/card.ts";
 import { DECL as music3Decl } from "@melite/models-music3";
+import { DECL as h3Decl } from "@melite/models-h3";
 import { installLaneStoreOverlay, restoreLaneStoreOverlay } from "../../../helpers/lane-store-overlay.ts";
 import { FlowsSeatService } from "../../../../packages/harness/estate-queue/src/flowsData.ts";
 import { RunsRuntimeService } from "../../../../packages/harness/estate-queue/src/runsRegistry.ts";
@@ -413,5 +415,108 @@ describe("runs-graph-receipt (the served-graph receipt, purge P1)", () => {
     // honest with "Missing expected rejection" — the gate's
     // presence-keying is documented, not pinned: a wart for a
     // future gate-tightening row, not this wall's law to enshrine.)
+  });
+
+  // ── THE BAKE'S PRICE RIG (arm f's h3 twin of the arm-e rig): the
+  // REAL h3 door, the stated bake dials at NON-DEFAULT poles, the
+  // refmod image as a run-level ref_mods entry. `corrupt` rewrites
+  // the build inputs the way a receipt-side toggle would (identity:
+  // pass-through = control).
+  const realH3Receipt = async (
+    corrupt: (p: Record<string, unknown>) => Record<string, unknown>,
+  ): Promise<GraphReceiptPair> => {
+    const ctx = new Context();
+    new FlowsSeatService(ctx);
+    const state = mkdtempSync(join(tmpdir(), "runs-graph-receipt-armf-"));
+    onTestFinished(() => rmSync(state, { recursive: true, force: true }));
+    (ctx as unknown as { queue: unknown }).queue = { stateRoot: state, stateRoots: [state] };
+    const door = new CardRegistryService(ctx);
+    await door.prime();
+    installLaneStoreOverlay();
+    try {
+      const body = {
+        model: "h3",
+        width: 768, height: 448, steps: 8,
+        refmod_mode: "Full Reference",
+        refmod_pool: 32,
+        refmod_identity: 1000,
+        refmod_save: false,
+        ref_mods: ["refs/refmod_identity.png"],
+        calls: [
+          { text: "a slow push in", start_frame: 0, end_frame: 56 },
+          { text: "then a turn", start_frame: 56, end_frame: 124 },
+        ],
+        length: 124,
+      };
+      const admitted = coerceSnapshotBody(door.defsSync().get("h3-timeline")!, body);
+      const original = H3_BINDINGS[h3Decl.id]!;
+      H3_BINDINGS[h3Decl.id] = (p, model, g, runId) => original(corrupt(p), model, g, runId);
+      try {
+        const p1 = await door.phase1Card(body, "h3");
+        const ran = await door.phase2Card(p1, "receipt_arm_f");
+        return graphReceiptOf(admitted, { workflow: (ran as { graph: unknown }).graph });
+      } finally {
+        H3_BINDINGS[h3Decl.id] = original;
+      }
+    } finally {
+      restoreLaneStoreOverlay();
+    }
+  };
+
+  it("ARM f — THE BAKE'S PRICE: the receipt carries the bake record from the COMPOSED GRAPH — mode/pool/refinement-steps/save verbatim, the visual-ref count, the window count, and the run-voice price string (study §7 item 2)", async () => {
+    // THE PRE-REGISTERED RED (the cure is the receipt-side bake
+    // detection): today the receipt pairs carry no bake record —
+    // the arm reads `bake` and refuses its absence.
+    const control = await realH3Receipt((p) => p);
+    assert.ok(control.nodes > 0, "the real h3 door composed a non-empty graph");
+    const bake = control.bake;
+    assert.ok(bake !== undefined, "THE PRE-REGISTERED RED (the cure is seated): the receipt carries no bake record — " + JSON.stringify(control));
+    assert.equal(bake.mode, "Full Reference", "the bake mode is the stated pole, read off the extract node: " + JSON.stringify(bake));
+    assert.equal(bake.pool, 32, "the pool is the stated pole");
+    assert.equal(bake.refinement_steps, 1000, "the refinement steps (identity) are the stated pole");
+    assert.equal(bake.save, false, "the save pole rides");
+    assert.equal(bake.visual_refs, 1, "one visual ref baked");
+    assert.ok(bake.windows >= 1, "the window count derives from the graph (" + String(bake.windows) + ")");
+    assert.equal(
+      bake.price,
+      "bake: 1000 refinement steps × 1 ref × " + String(bake.windows) + " windows",
+      "the run voice prices the bake: " + bake.price,
+    );
+    // THE CORRUPTION TWIN: a dial the compose never saw (pool
+    // rewritten to 8 under the receipt) is a RECEIPT fact — the
+    // bake record reads the GRAPH, never the doc, so the twin's
+    // pool reads 8 and the price follows. The bake record cannot
+    // lie about what the graph states.
+    const twin = await realH3Receipt((p) => ({ ...p, refmod_pool: 8 }));
+    assert.ok(twin.bake !== undefined, "the twin composes and receipts the bake");
+    assert.equal(twin.bake.pool, 8, "the twin's bake reads the graph's pool, not the doc's: " + JSON.stringify(twin.bake));
+    assert.equal(twin.bake.mode, "Full Reference", "the untouched dial still rides verbatim");
+  });
+
+  it("ARM g — NO PHANTOM BAKE: an h3 compose with no refmod seat carries NO bake record — the receipt never invents a bake the graph does not contain", async () => {
+    const ctx = new Context();
+    new FlowsSeatService(ctx);
+    const state = mkdtempSync(join(tmpdir(), "runs-graph-receipt-armg-"));
+    onTestFinished(() => rmSync(state, { recursive: true, force: true }));
+    (ctx as unknown as { queue: unknown }).queue = { stateRoot: state, stateRoots: [state] };
+    const door = new CardRegistryService(ctx);
+    await door.prime();
+    installLaneStoreOverlay();
+    try {
+      const body = {
+        model: "h3",
+        width: 768, height: 448, steps: 8,
+        calls: [{ text: "a slow push in", start_frame: 0, end_frame: 56 }],
+        length: 56,
+      };
+      const admitted = coerceSnapshotBody(door.defsSync().get("h3-timeline")!, body);
+      const p1 = await door.phase1Card(body, "h3");
+      const ran = await door.phase2Card(p1, "receipt_arm_g");
+      const receipt = graphReceiptOf(admitted, { workflow: (ran as { graph: unknown }).graph });
+      assert.ok(receipt.nodes > 0, "the bare film composes");
+      assert.equal(receipt.bake, undefined, "no refmod seat in the graph, no bake in the receipt: " + JSON.stringify(receipt.bake));
+    } finally {
+      restoreLaneStoreOverlay();
+    }
   });
 });

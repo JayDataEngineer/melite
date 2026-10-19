@@ -70,6 +70,22 @@ export interface GraphReceiptStageRow {
     carried: string[];
     dropped: string[];
     verdict: 'complete' | 'partial';
+    /** The refmod bake's record (present iff the graph bakes/loads a mod). */
+    bake?: GraphReceiptBake;
+}
+/** The refmod bake's receipt (study §7 item 2 — the bake is priced,
+ *  never silent): the graph-stated dials verbatim, the baked media
+ *  count, the film's window count, and the run-voice price string. */
+export interface GraphReceiptBake {
+    source: 'baked' | 'stems';
+    mode?: string;
+    pool?: number;
+    refinement_steps?: number;
+    save?: boolean;
+    visual_refs?: number;
+    stems?: number;
+    windows: number;
+    price: string;
 }
 /** The run-level graph receipt (the sidecar's `graph_receipt`,
  *  served on the live status row beside it): the per-stage rows
@@ -84,6 +100,8 @@ export interface GraphReceipt {
     verdict: 'complete' | 'partial';
     stages: GraphReceiptStageRow[];
     prompt_id?: string;
+    /** The first stage's bake record (the card run's single stage). */
+    bake?: GraphReceiptBake;
 }
 /** The runs/status row, normalized once. */
 export interface RunStatusRow {
