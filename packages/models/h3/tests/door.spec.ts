@@ -1058,7 +1058,7 @@ describe("the per-call mods seat (the operator's compound report, 2026-10-24)", 
     expect(loader![1].inputs.mod_2).toBe("(none)");
   });
 
-  it("the canon's replace arm: a stated call lane rides INSTEAD of the declared lane; absent inherits", () => {
+  it("the merge law (G7 2026-11-08): a stated call lane rides WITH the declared lane — declared entries first; absent inherits", () => {
     const g = new GraphBuilder();
     instantiateAction(
       film,
@@ -1067,13 +1067,14 @@ describe("the per-call mods seat (the operator's compound report, 2026-10-24)", 
         ref_mods: ["refmods/run_level.safetensors"],
         calls: [{ text: "the courier steps into the lantern glow", start_frame: 0, end_frame: 90, refs: { mods: "refmods/call_pack.safetensors" } }],
       },
-      WINDOW_MODEL, g, "run_call_mods_replace",
+      WINDOW_MODEL, g, "run_call_mods_merge",
     );
     const loader = loaderOf(g);
     expect(loader, "the loader composes").toBeDefined();
-    // REPLACE: the call's lane rides, run_level does NOT append
-    expect(loader![1].inputs.mod_1).toBe("call_pack");
-    expect(loader![1].inputs.mod_2).toBe("(none)");
+    // MERGE: the declared seat never silently drops — the declared
+    // entry rides slot 1, the call's own rides slot 2.
+    expect(loader![1].inputs.mod_1).toBe("run_level");
+    expect(loader![1].inputs.mod_2).toBe("call_pack");
   });
 
   it("the canon's replace arm, images lane: a stated call lane rides INSTEAD of the declared lane (film path)", () => {
@@ -1157,7 +1158,7 @@ describe("the per-call mods seat (the operator's compound report, 2026-10-24)", 
     expect(loader![1].inputs.mod_1).toBe("run_level");
   });
 
-  it("the cap guards the EFFECTIVE list: 9 stated call mods refuse loud; 8 declared + 1 call mod do not (replace)", () => {
+  it("the cap guards the UNION (G7): 9 stated call mods refuse loud; 8 declared + 1 call mod refuses too — the merged list is what's capped", () => {
     const over = new GraphBuilder();
     expect(() => instantiateAction(
       film,
@@ -1168,22 +1169,19 @@ describe("the per-call mods seat (the operator's compound report, 2026-10-24)", 
       WINDOW_MODEL, over, "run_call_mods_over",
     )).toThrow(/ref_mods exceeds the loader's 8 slots \(saw 9\)/);
 
-    // REPLACE, not merge: the call's one mod rides INSTEAD of the
-    // declared eight — the effective list is one, the door stays open.
-    const inherit = new GraphBuilder();
-    instantiateAction(
+    // THE UNION IS WHAT'S CAPPED (the merge law): declared eight +
+    // call one = a nine-entry merged list — over the loader's slots,
+    // the door refuses LOUD (never a truncated tail composing).
+    const union = new GraphBuilder();
+    expect(() => instantiateAction(
       film,
       {
         variant: "t4_open", length: 90, prompt: "a slow push in", seed: 42, loras: BAG,
         ref_mods: Array.from({ length: 8 }, (_, i) => `run_${String(i)}.safetensors`),
         calls: [{ text: "the courier steps into the lantern glow", start_frame: 0, end_frame: 90, refs: { mods: "refmods/call_pack.safetensors" } }],
       },
-      WINDOW_MODEL, inherit, "run_call_mods_replace_under_cap",
-    );
-    const loader = loaderOf(inherit);
-    expect(loader).toBeDefined();
-    expect(loader![1].inputs.mod_1).toBe("call_pack");
-    expect(loader![1].inputs.mod_2).toBe("(none)");
+      WINDOW_MODEL, union, "run_call_mods_union_over_cap",
+    )).toThrow(/ref_mods exceeds the loader's 8 slots \(saw 9\)/);
   });
 
   it("per-call ANY MEDIA boards: the bag seat carries media through the creator chain too", () => {

@@ -48,11 +48,13 @@ function refsTailLine(info: { count: number; cap: number; over: boolean; overrid
   if (info.declaredCount > 0) return `${info.count} of ${info.cap} — the card defaults (add a chip to override)`
   return `${info.count} of ${info.cap}`
 }
-/** The mods lane's count-tail hover (loader slots / card mods). */
+/** The mods lane's count-tail hover (loader slots / card mods). The
+ *  MERGE LAW's word (2026-11-08, G7): a stated call lane rides WITH
+ *  the card mods — the count is the union, never a replacement. */
 function modsTailLine(info: { count: number; cap: number; over: boolean; overrides: boolean; declaredCount: number }) {
   if (info.over) return `${info.count} claimed — the loader holds ${info.cap} slots (the compose refuses the overflow loud)`
-  if (info.overrides) return `${info.count} of ${info.cap} — this call overrides the card mods`
-  if (info.declaredCount > 0) return `${info.count} of ${info.cap} — the card mods (add a path to override)`
+  if (info.overrides) return `${info.count} of ${info.cap} — the card mods + this call's (merged)`
+  if (info.declaredCount > 0) return `${info.count} of ${info.cap} — the card mods (add a path to add this call's own)`
   return `${info.count} of ${info.cap}`
 }
 /** The mods lane's CLOSED-UPLOAD REFUSAL (the 2026-10-24 engine-side
@@ -79,7 +81,7 @@ function DeclaredChip({ url, kind }: { url: string; kind: "image" | "video" | "a
     <span
       className={s.declaredChip}
       data-testid="tl-declared-ref"
-      title={studioCopy.declaredChipTitle(url)}
+      title={kind === "mod" ? studioCopy.modDeclaredChipTitle(url) : studioCopy.declaredChipTitle(url)}
     >
       {/* (D2, operator 2026-11-06: "REF MODs must preview an IMAGE
           via the DSH primitive") — the thumb is the estate's own
@@ -353,7 +355,7 @@ function RefsBucket({
  * @param title the hover title (the seat's own law wording).
  * @param testId the count face's testid. */
 function BusCount({
-  total, cap, over, overWord = studioCopy.overCapTail, pinned = false, overrides = false, title, testId,
+  total, cap, over, overWord = studioCopy.overCapTail, pinned = false, overrides = false, overridesWord = studioCopy.countOverridesTail, title, testId,
 }: {
   total: number
   cap: number
@@ -361,6 +363,9 @@ function BusCount({
   overWord?: string
   pinned?: boolean
   overrides?: boolean
+  /** The tail word when `overrides` — the refs bus lanes keep the
+   *  replace word; the mods bucket passes the merge law's word. */
+  overridesWord?: string
   title: string
   testId?: string
 }) {
@@ -370,7 +375,7 @@ function BusCount({
       title={title}
       data-testid={testId}
     >
-      {total}/{cap}{over ? ` ${overWord}` : ""}{pinned ? studioCopy.countPinnedTail : ""}{overrides ? studioCopy.countOverridesTail : ""}
+      {total}/{cap}{over ? ` ${overWord}` : ""}{pinned ? studioCopy.countPinnedTail : ""}{overrides ? overridesWord : ""}
     </span>
   )
 }
@@ -426,11 +431,12 @@ function ModsBucket({
 }) {
   const [fileError, setFileError] = useState<string | null>(null)
   const chips = splitRefList(value)
-  // THE CANON IN THE VIEW (the compose's override law, mirrored):
-  // a stated call lane rides INSTEAD of the declared mods; absent
-  // inherits. The tail names the arm.
+  // THE CANON IN THE VIEW (the compose's merge law, mirrored — G7
+  // 2026-11-08): a stated call lane rides WITH the declared mods;
+  // the count is the union (declared first, deduped by value, the
+  // compose's own order). The tail names the arm.
   const overrides = chips.length > 0
-  const bus = overrides ? chips : declared
+  const bus = [...declared, ...chips.filter((c) => !declared.includes(c))]
   const over = bus.length > cap
   const setChips = (next: string[]): void => onChange(next.length ? next.join(", ") : "")
   // THE DOOR'S CANDIDATE SET (listing → candidates): the PRE-BAKED
@@ -508,6 +514,7 @@ function ModsBucket({
             cap={cap}
             over={over}
             overrides={overrides}
+            overridesWord={studioCopy.countMergedTail}
             title={modsTailLine({ count: bus.length, cap, over, overrides, declaredCount: declared.length })}
             testId="tl-call-mods-count"
           />
@@ -516,7 +523,7 @@ function ModsBucket({
         {label}
       </SectionLabel>
       <div className={s.chips}>
-        {!overrides && declared.map((path) => (
+        {declared.map((path) => (
           <DeclaredChip key={`declared-${path}`} url={path} kind="mod" />
         ))}
         {/* THE SQUARE GRAMMAR (operator 2026-10-16: "THE REFMOD IS

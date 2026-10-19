@@ -1324,14 +1324,23 @@ function renderH3Window(p, g, facts, model) {
     // REFMOD IS NOT REFERENCE (operator, 2026-11-06): the mod seat is
     // its own concept — identity/style/voice packs riding the ref2va
     // conditioning of every DiT block — never a fourth reference lane.
-    // THE PER-CALL MODS SEAT (2026-10-24): a call's refs.mods REPLACE
-    // the run-level list — the canon's refs-lane arm (a stated call
-    // lane rides INSTEAD of the declared lane; absent inherits).
-    // Comma strings (the UI wire form) and arrays (the agent form)
-    // both resolve through wireList; the cap check below guards the
-    // EFFECTIVE list.
+    // THE PER-CALL MODS SEAT — THE MERGE LAW (2026-11-08, study §2b /
+    // G7: the old either/or REPLACED the declared list whenever a
+    // window stated its own — a stated seat silently dropped, the
+    // purge's kill class): the two spellings of the seat — the
+    // run-level `ref_mods` (declared, rides EVERY window) and the
+    // window's `refs.mods` (the per-call bag) — MERGE: declared
+    // entries first, then the window's own not already present
+    // (deduped by trimmed value), so a stated pack never drops and a
+    // double-stated pack never double-spends a loader slot. Comma
+    // strings (the UI wire form) and arrays (the agent form) both
+    // resolve through wireList; the cap check below guards the UNION.
+    // (The refs-lane REPLACE canon governs the image/video/audio BUS
+    // lanes only — REFMOD IS NOT REFERENCE.)
     const bagMods = wireList(rb0.mods);
-    const refModsAll = bagMods.length > 0 ? bagMods : wireList(p.ref_mods);
+    const declaredMods = wireList(p.ref_mods);
+    const seenMods = new Set(declaredMods.map((m) => m.trim()));
+    const refModsAll = [...declaredMods, ...bagMods.filter((m) => !seenMods.has(m.trim()))];
     if (refModsAll.length > 0) {
         if (refModsAll.length > REF_CAPS.refmods) {
             throw new Error(`[h3-timeline] ref_mods exceeds the loader's ${String(REF_CAPS.refmods)} slots (saw ${String(refModsAll.length)})`);

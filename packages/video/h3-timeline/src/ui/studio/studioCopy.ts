@@ -74,11 +74,16 @@ export const studioCopy = {
   pinnedStanddown: "pinned window — this input stands down",
   /** The bus-count tail's pinned dot. */
   countPinnedTail: " · pinned",
-  /** The bus-count tail's override dot. */
+  /** The bus-count tail's override dot (the refs bus lanes' replace law). */
   countOverridesTail: " · overrides",
+  /** The bus-count tail's merge dot (the mods seat's merge law, G7 2026-11-08: the call's chips ride WITH the card mods). */
+  countMergedTail: " · merged",
   /** The declared chip's hover law (card-level defaults ride until a stated lane replaces them). */
   declaredChipTitle: (url: string): string =>
     `card-level default — rides this window while the call states no chips of its own (a stated lane replaces it; edit via the card params)\n${url}`,
+  /** The mods bucket's declared chip hover (the merge law: the card mods ride every window; a call's chips merge with them). */
+  modDeclaredChipTitle: (url: string): string =>
+    `card-level mod — rides every window; a call's own chips merge with it (the compose dedupes by value)\n${url}`,
   /** The mod chip's hover law (the any-media seat: media bakes, stems reuse). */
   modChipTitle: (chip: string): string =>
     `refmod seat — media bakes into a pack at the run (the system handles the conversion); .safetensors stems reuse the engine's loader\n${chip}`,

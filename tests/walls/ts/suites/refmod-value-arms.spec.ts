@@ -268,11 +268,14 @@ describe("the refmod image reaches the composed graph at its consumer node (ERRO
     assert.ok(apply, "the Apply binds the loader's pack");
   });
 
-  it("ARM 5 — the override canon, witnessed both sides: a stated call lane REPLACES the declared lane (the display tail's word and the graph agree)", async () => {
-    // The canon (actions.ts:1424-1426 + the ModsBucket's override
-    // face): a stated call lane rides INSTEAD of the declared lane.
-    // The wall judges the CONSEQUENCE the display promises: the
-    // declared image's chain must not mount beside the call's.
+  it("ARM 5 — the merge canon, witnessed both sides: a stated call lane MERGES with the declared lane (the display tail's word and the graph agree)", async () => {
+    // The canon (study §2b, the G7 cure — the either/or's replace law
+    // silently dropped the declared seat whenever a window stated its
+    // own; the ModsBucket's merged face mirrors this): a stated call
+    // lane rides WITH the declared lane. The wall judges the
+    // CONSEQUENCE the display promises: both chains mount in the
+    // stated window, the declared entries first, and the unstated
+    // window inherits the declared lane alone.
     const doc = {
       ...FILM_DOC,
       ref_mods: [REFMOD_IMAGE_B],
@@ -282,15 +285,25 @@ describe("the refmod image reaches the composed graph at its consumer node (ERRO
       ],
     };
     const graph = await composeH3(doc);
-    const w1 = Object.fromEntries(Object.entries(graph).filter(([id]) => id.startsWith("window1_"))) as Graph;
-    const { creators } = refmodChainOf(w1);
-    const images = creators
-      .filter((c) => c.node.class_type === EXTRACT_CLASS)
-      .map((c) => edgeSource(w1, c.node.inputs["refs_image.ref_image_0"]))
-      .filter((e) => e !== null)
-      .map((e) => e.node.inputs["image"]);
-    assert.deepEqual(images, [REFMOD_IMAGE],
-      "the stated call lane replaces the declared lane — exactly one visual pack chain, the call's own value");
+    // THE EXTRACT'S SLOT MAP: the merged list feeds ONE extract —
+    // each image takes its own refs_image.ref_image_N slot in merge
+    // order (the per-creator ref_image_0 read is the single-seat
+    // reader; the merge law needs every slot).
+    const imagesOf = (win: string): unknown[] => {
+      const scoped = Object.fromEntries(Object.entries(graph).filter(([id]) => id.startsWith(win))) as Graph;
+      return refmodChainOf(scoped).creators
+        .filter((c) => c.node.class_type === EXTRACT_CLASS)
+        .flatMap((c) => Object.keys(c.node.inputs)
+          .filter((k) => k.startsWith("refs_image."))
+          .sort()
+          .map((k) => edgeSource(scoped, c.node.inputs[k]))
+          .filter((e) => e !== null)
+          .map((e) => e.node.inputs["image"]));
+    };
+    assert.deepEqual(imagesOf("window1_"), [REFMOD_IMAGE_B, REFMOD_IMAGE],
+      "the stated call lane merges with the declared lane — both chains mount, the declared entries first");
+    assert.deepEqual(imagesOf("window2_"), [REFMOD_IMAGE_B],
+      "the unstated window inherits the declared lane — a call's entries never leak sideways");
   });
 
   it("ARM 6 — the cap refuses LOUD, never truncates (the seat's own door voices; cap derived from REF_CAPS)", async () => {
@@ -473,5 +486,97 @@ describe("the bake is STATED, never a silent engine default (study §5; the purg
       assert.equal(bake.inputs["identity"], 0, "the stated refinement steps ride verbatim (0 = pooling alone, the fast face)");
       assert.equal(bake.inputs["save"], false, "the stated save rides verbatim (bake, inject, discard)");
     }
+  });
+});
+
+describe("the two mods seats MERGE (study §2b, G7: the either/or never silently drops a stated seat)", () => {
+  // THE PRE-REGISTERED RED (the first run IS the receipt): on the
+  // either/or (actions.ts, `bagMods.length > 0 ? bagMods :
+  // wireList(p.ref_mods)`) ARM 5 reds (the declared chain vanished
+  // from the stated window) and ARM 15 reds (the declared image's
+  // creator never mounts beside the call's stem). ARM 17 reds too —
+  // the union walked past the cap un-checked. The cure is the merge:
+  // declared entries first, then the window's own, deduped by
+  // trimmed value; the cap judges the UNION.
+
+  it("ARM 15 — the both-seats doc: a declared image AND a call-level stem mount TOGETHER — two creators, two Applies, both heard", async () => {
+    const doc = {
+      ...FILM_DOC,
+      ref_mods: [REFMOD_IMAGE],
+      calls: [
+        SHOT({ refs: { mods: REFMOD_STEM } }),
+        SHOT({ text: "then a turn", start_frame: 56, end_frame: 124 }),
+      ],
+    };
+    const graph = await composeH3(doc);
+    const w1 = Object.fromEntries(Object.entries(graph).filter(([id]) => id.startsWith("window1_"))) as Graph;
+    const { creators, applies, guiders } = refmodChainOf(w1);
+    const extract = creators.find((c) => c.node.class_type === EXTRACT_CLASS);
+    const loader = creators.find((c) => c.node.class_type === LOADER_CLASS);
+    assert.ok(extract, "the declared image's creator mounts — a stated call seat never drops it (the either/or's burn)");
+    assert.ok(loader, "the call's stem creator mounts beside it");
+    const imgEdge = edgeSource(w1, extract!.node.inputs["refs_image.ref_image_0"]);
+    assert.ok(imgEdge !== null && imgEdge.node.inputs["image"] === REFMOD_IMAGE,
+      "the declared image is the value at its node");
+    assert.equal(loader!.node.inputs["mod_1"], REFMOD_STEM.slice(0, -".safetensors".length),
+      "the call's stem is the value at its node");
+    for (const creator of [extract!, loader!]) {
+      const apply = applies.find((a) => {
+        const e = edgeSource(w1, a.node.inputs["mods"]);
+        return e !== null && e.id === creator.id;
+      });
+      assert.ok(apply, `an Apply binds the ${creator.node.class_type} pack (the chain appends one Apply per source)`);
+    }
+    assert.ok(guiders.length > 0, "the window's guider exists");
+    // the chain is sequential — the guider consumes the LAST Apply
+    const lastMods = guiders
+      .map((g) => edgeSource(w1, g.node.inputs["conditioning"]))
+      .filter((e) => e !== null && e.node.class_type === APPLY_CLASS);
+    assert.ok(lastMods.length > 0, "the guider's conditioning rides an Apply — the packs are heard");
+    // the unstated window: the declared lane alone, no sideways leak
+    const w2 = Object.fromEntries(Object.entries(graph).filter(([id]) => id.startsWith("window2_"))) as Graph;
+    const w2chain = refmodChainOf(w2);
+    assert.equal(w2chain.creators.filter((c) => c.node.class_type === LOADER_CLASS).length, 0,
+      "the call's stem never leaks to the unstated window");
+    const w2Extract = w2chain.creators.find((c) => c.node.class_type === EXTRACT_CLASS);
+    assert.ok(w2Extract, "the declared image rides the unstated window (the inherit arm)");
+  });
+
+  it("ARM 16 — dedup: the same entry stated on BOTH seats mounts ONCE (no double spend of a loader slot)", async () => {
+    const doc = {
+      ...FILM_DOC,
+      ref_mods: [REFMOD_IMAGE],
+      calls: [
+        SHOT({ refs: { mods: REFMOD_IMAGE } }),
+        SHOT({ text: "then a turn", start_frame: 56, end_frame: 124 }),
+      ],
+    };
+    const graph = await composeH3(doc);
+    const w1 = Object.fromEntries(Object.entries(graph).filter(([id]) => id.startsWith("window1_"))) as Graph;
+    const { creators } = refmodChainOf(w1);
+    const images = creators
+      .filter((c) => c.node.class_type === EXTRACT_CLASS)
+      .map((c) => edgeSource(w1, c.node.inputs["refs_image.ref_image_0"]))
+      .filter((e) => e !== null)
+      .map((e) => e.node.inputs["image"]);
+    assert.deepEqual(images, [REFMOD_IMAGE],
+      "one value stated twice mounts one chain — the merge dedupes by value");
+  });
+
+  it("ARM 17 — the cap judges the UNION: declared at the cap plus one call entry refuses LOUD, never truncates", async () => {
+    // The schema walk bounds the DECLARED list ($.ref_mods maxItems =
+    // REF_CAPS.refmods) so declared-at-cap passes hop 3's first gate;
+    // the call entry pushes the UNION past the loader's slots — the
+    // seam's own hand check must catch the merged list.
+    const atCap = Array.from({ length: REF_CAPS.refmods }, (_, i) => `refs/refmod_${i}.png`);
+    await assert.rejects(
+      () => composeH3({
+        ...FILM_DOC,
+        ref_mods: atCap,
+        calls: [SHOT({ refs: { mods: "flux_stem.safetensors" } }), SHOT({ text: "then a turn", start_frame: 56, end_frame: 124 })],
+      }),
+      (err: unknown) => err instanceof Error && /ref_mods/.test(err.message),
+      "the merged list over the loader's slots refuses named at the seam — never a truncated tail composing",
+    );
   });
 });

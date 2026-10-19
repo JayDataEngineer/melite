@@ -342,10 +342,12 @@ export interface LayerA {
   ref_images?: string[]
   ref_videos?: string[]
   ref_audios?: string[]
-  /** Card-level ref_mods (the declared mods surface — the canon's
-   * REPLACE arm, the same law as the three bus lanes above: a
-   * stanza's own mods lane REPLACES it per lane, an absent stanza
-   * lane inherits it). Display-owned like its siblings: the studio
+  /** Card-level ref_mods (the declared mods surface — the MERGE law,
+   * G7 2026-11-08: a stanza's own mods lane MERGES with it per
+   * window — declared entries first, deduped by trimmed value, the
+   * loader cap loud on the union; an absent stanza lane inherits it
+   * whole. NOT the bus lanes' replace law — REFMOD IS NOT
+   * REFERENCE). Display-owned like its siblings: the studio
    * renders them as card-level chips; the agent path authors them. */
   ref_mods?: string[]
   /** Per-video trims, index-paired with ref_videos (entry i slices

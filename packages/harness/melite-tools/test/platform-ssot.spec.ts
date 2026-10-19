@@ -84,13 +84,13 @@ const parseSeatedTable = (assetsDir: string): string[] => {
 
 /** Upstream-main words the SEATED shell has not shipped. The mirror
  *  may run ahead by exactly this set; a word joins the tracked list
- *  only after the seated-table tooth sees it in the shipped bytes. */
-const PENDING_SHELL_WORDS: readonly string[] = [
-  // gained upstream after the 0.2.0-rc.2 publish; externalizing either
-  // today reproduces the 2026-10-16 card-view boot death
-  'zod',
-  '@tanstack/react-virtual',
-]
+ *  only after the seated-table tooth sees it in the shipped bytes.
+ *  EMPTY since 2026-11-08: `zod` + `@tanstack/react-virtual` were
+ *  seen answered from the seated loader's frozen table (the seated
+ *  shipped frontend's own seed-table literal) and joined the tracked
+ *  PLATFORM_MODULES. A future upstream-ahead word re-fills this
+ *  ledger, never the tracked list directly. */
+const PENDING_SHELL_WORDS: readonly string[] = []
 
 /** Walk every workspace package (packages/<group>/<name> and
  *  packages/<name>) and yield its bundle + declared row externals when
@@ -122,9 +122,15 @@ function* committedClientBundles(): Generator<{ pkg: string; bundle: string; row
 }
 
 describe('PLATFORM_MODULES (web-platform.ts vs the DSH SSOT)', () => {
-  test('the tracked census: nine entries, exact order (an accidental edit is red with no reference needed)', () => {
+  test('the tracked census: eleven entries, exact order (an accidental edit is red with no reference needed)', () => {
+    // RE-PIN 2026-11-08: 9 → 11. The seated shell's shipped frontend
+    // now seeds `zod` + `@tanstack/react-virtual` (the seated-table
+    // tooth reded; the promotion path the ledger's own law names) —
+    // both join in the SSOT mirror's order, and PENDING_SHELL_WORDS
+    // retires to empty above.
     assert.deepEqual(parsePlatformModules(MELITE_PLATFORM), [
       'react', 'react/jsx-runtime', 'react-dom', 'react-dom/client', '@deepseek-ai/cordis',
+      'zod', '@tanstack/react-virtual',
       '@deepseek-ai/dsh-client-store',
       '@deepseek-ai/dsh-client-ui-slots',
       '@deepseek-ai/dsh-client-ui-primitives',

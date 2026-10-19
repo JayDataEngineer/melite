@@ -477,10 +477,14 @@ window.__ModuleLoader__.load({
 			pinnedStanddown: "pinned window — this input stands down",
 			/** The bus-count tail's pinned dot. */
 			countPinnedTail: " · pinned",
-			/** The bus-count tail's override dot. */
+			/** The bus-count tail's override dot (the refs bus lanes' replace law). */
 			countOverridesTail: " · overrides",
+			/** The bus-count tail's merge dot (the mods seat's merge law, G7 2026-11-08: the call's chips ride WITH the card mods). */
+			countMergedTail: " · merged",
 			/** The declared chip's hover law (card-level defaults ride until a stated lane replaces them). */
 			declaredChipTitle: (url) => `card-level default — rides this window while the call states no chips of its own (a stated lane replaces it; edit via the card params)\n${url}`,
+			/** The mods bucket's declared chip hover (the merge law: the card mods ride every window; a call's chips merge with them). */
+			modDeclaredChipTitle: (url) => `card-level mod — rides every window; a call's own chips merge with it (the compose dedupes by value)\n${url}`,
 			/** The mod chip's hover law (the any-media seat: media bakes, stems reuse). */
 			modChipTitle: (chip) => `refmod seat — media bakes into a pack at the run (the system handles the conversion); .safetensors stems reuse the engine's loader\n${chip}`,
 			/** The call head shared by the focused card and the compact row (one face, two seats). */
@@ -4513,11 +4517,13 @@ window.__ModuleLoader__.load({
 			if (info.declaredCount > 0) return `${info.count} of ${info.cap} — the card defaults (add a chip to override)`;
 			return `${info.count} of ${info.cap}`;
 		}
-		/** The mods lane's count-tail hover (loader slots / card mods). */
+		/** The mods lane's count-tail hover (loader slots / card mods). The
+		*  MERGE LAW's word (2026-11-08, G7): a stated call lane rides WITH
+		*  the card mods — the count is the union, never a replacement. */
 		function modsTailLine(info) {
 			if (info.over) return `${info.count} claimed — the loader holds ${info.cap} slots (the compose refuses the overflow loud)`;
-			if (info.overrides) return `${info.count} of ${info.cap} — this call overrides the card mods`;
-			if (info.declaredCount > 0) return `${info.count} of ${info.cap} — the card mods (add a path to override)`;
+			if (info.overrides) return `${info.count} of ${info.cap} — the card mods + this call's (merged)`;
+			if (info.declaredCount > 0) return `${info.count} of ${info.cap} — the card mods (add a path to add this call's own)`;
 			return `${info.count} of ${info.cap}`;
 		}
 		/** The mods lane's CLOSED-UPLOAD REFUSAL (the 2026-10-24 engine-side
@@ -4542,7 +4548,7 @@ window.__ModuleLoader__.load({
 			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
 				className: studio_module_css_default.declaredChip,
 				"data-testid": "tl-declared-ref",
-				title: studioCopy.declaredChipTitle(url),
+				title: kind === "mod" ? studioCopy.modDeclaredChipTitle(url) : studioCopy.declaredChipTitle(url),
 				children: [
 					(0, _melite_card_base_client.isImageUrl)(url) ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
 						type: "button",
@@ -4743,7 +4749,7 @@ window.__ModuleLoader__.load({
 		* @param overrides a stated lane replaces the declared defaults.
 		* @param title the hover title (the seat's own law wording).
 		* @param testId the count face's testid. */
-		function BusCount({ total, cap, over, overWord = studioCopy.overCapTail, pinned = false, overrides = false, title, testId }) {
+		function BusCount({ total, cap, over, overWord = studioCopy.overCapTail, pinned = false, overrides = false, overridesWord = studioCopy.countOverridesTail, title, testId }) {
 			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
 				className: over || pinned ? studio_module_css_default.refCountOver : void 0,
 				title,
@@ -4754,7 +4760,7 @@ window.__ModuleLoader__.load({
 					cap,
 					over ? ` ${overWord}` : "",
 					pinned ? studioCopy.countPinnedTail : "",
-					overrides ? studioCopy.countOverridesTail : ""
+					overrides ? overridesWord : ""
 				]
 			});
 		}
@@ -4792,7 +4798,7 @@ window.__ModuleLoader__.load({
 			const [fileError, setFileError] = (0, react.useState)(null);
 			const chips = splitRefList(value);
 			const overrides = chips.length > 0;
-			const bus = overrides ? chips : declared;
+			const bus = [...declared, ...chips.filter((c) => !declared.includes(c))];
 			const over = bus.length > cap;
 			const setChips = (next) => onChange(next.length ? next.join(", ") : "");
 			const held = new Set(chips.map((chip) => {
@@ -4847,6 +4853,7 @@ window.__ModuleLoader__.load({
 							cap,
 							over,
 							overrides,
+							overridesWord: studioCopy.countMergedTail,
 							title: modsTailLine({
 								count: bus.length,
 								cap,
@@ -4861,7 +4868,7 @@ window.__ModuleLoader__.load({
 					/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 						className: studio_module_css_default.chips,
 						children: [
-							!overrides && declared.map((path) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)(DeclaredChip, {
+							declared.map((path) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)(DeclaredChip, {
 								url: path,
 								kind: "mod"
 							}, `declared-${path}`)),

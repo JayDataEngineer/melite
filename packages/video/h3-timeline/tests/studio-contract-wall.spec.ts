@@ -69,10 +69,12 @@ const SURFACE = new Set(Object.keys(emitParamsSpec(carrier as never, [...BOARDED
 
 /** Non-knob carriers the card admits OUTSIDE the params schema — the
  * mod plane (params.loras, resolved against the family catalog at
- * compose), the NLE audio clips (stitch consumes), and the audio
- * stem (legacy round-trip only). Each is a deliberate admission,
- * listed once here, never a wildcard. */
-const ADMITS = new Set(["loras", "audio_clips", "audio_stem"])
+ * compose), the NLE audio clips (stitch consumes), the audio
+ * stem (legacy round-trip only), and the clock (fps, R2
+ * 2026-10-27: a card doc key — card.ts's own list owns it, a STATED
+ * clock round-trips, an absent one never pins). Each is a deliberate
+ * admission, listed once here, never a wildcard. */
+const ADMITS = new Set(["loras", "audio_clips", "audio_stem", "fps"])
 
 const LAYER_A_ALL_KEYS: string[] = [
   "seed", "shift_video", "shift_audio", "steps", "denoise", "width", "height",
@@ -140,6 +142,14 @@ function populatedMax(): Record<string, unknown> {
     else populated[key] = 1
   }
   populated.sr_resolution = 1080
+  // THE UNIVERSE MEMBERS OUTSIDE THE DECLARED LIST (the universe
+  // arm): fps and length ride the emit loop but no declared key
+  // list carries them — the fixture states them so the writer walk
+  // judges their emission. `variant` stays UNSTATED by design: it
+  // is the walk's own derivation (the family arms are its writer
+  // test), and stating it would mute deriveWindowFamily below.
+  populated.fps = 24
+  populated.length = 68
   return populated
 }
 
@@ -241,6 +251,27 @@ describe("the studio contract wall (Layer A writes only card truth)", () => {
     expect(out.ref_images).toEqual(["https://u/d.png"])
     expect(out.ref_videos).toEqual(["https://u/d.png"])
     expect(out.ref_audios).toEqual(["https://u/d.png"])
+  })
+
+  it("the maximal fixture populates the WHOLE serializer universe (every universe member owns a writer test)", () => {
+    // The study's mechanical wall (refmod-deep-study §3, the
+    // DELETE-RIDE universe): the exact-strength half above walks the
+    // POPULATED keys — a universe key missing from the fixture would
+    // silently own no writer test. The universe is DERIVED (emit loop
+    // + named riders), so this arm pins the fixture to it: a key
+    // entering LAYERA_KEY_UNIVERSE without a populatedMax row (and
+    // thus without a writer walk) reds HERE, by name.
+    const populated = populatedMax()
+    // THE ONE LAWFUL SKIP: `variant` is the walk's own derivation —
+    // hydrate computes it from the doc's lanes (the family arms in
+    // this file are its writer test). Stating it would mute
+    // deriveWindowFamily, so the fixture must never carry it.
+    const DERIVED_UNIVERSE_KEYS: ReadonlySet<string> = new Set(["variant"])
+    const missing = [...LAYERA_KEY_UNIVERSE].filter((k) => !(k in populated) && !DERIVED_UNIVERSE_KEYS.has(k))
+    expect(
+      missing,
+      `universe keys with no writer fixture — populate them in populatedMax (or move them out of the universe): ${missing.join(", ")}`,
+    ).toEqual([])
   })
 
   it("every CALL_KNOB_KEYS entry sits on the declared surface (the per-call stanza is card truth too)", () => {

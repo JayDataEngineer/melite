@@ -30,9 +30,18 @@
  * @module @deepseek-ai/dsh-client-web/src/platform
  */
 
-/** The module specifiers the shell shares into the frozen module table. */
+/** The module specifiers the shell shares into the frozen module table.
+ *
+ * 2026-11-08: the seated shell's shipped frontend now seeds `zod` and
+ * `@tanstack/react-virtual` (the seated-table tooth reded; both words
+ * answered from the loader's frozen table) — the ledgered promotion
+ * path ran: PENDING_SHELL_WORDS retired, the words joined here. The
+ * seated release the lanes boot is what this list mirrors, never
+ * upstream main alone. NOTE: this array body stays quote-only — the
+ * census parser reads quoted spans, so no apostrophes inside. */
 export const PLATFORM_MODULES = [
   'react', 'react/jsx-runtime', 'react-dom', 'react-dom/client', '@deepseek-ai/cordis',
+  'zod', '@tanstack/react-virtual',
   '@deepseek-ai/dsh-client-store',
   '@deepseek-ai/dsh-client-ui-slots',
   '@deepseek-ai/dsh-client-ui-primitives',

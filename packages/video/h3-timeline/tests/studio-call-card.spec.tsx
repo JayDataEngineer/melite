@@ -590,7 +590,7 @@ describe("THE LAYER A/B CANON (2026-10-24): a stated call lane REPLACES the decl
     h.unmount()
   })
 
-  it("THE MODS LANE override arm: a stated lane replaces the declared packs — the count names the override", () => {
+  it("THE MODS LANE merge arm: a stated lane rides WITH the declared packs — both render, the count names the union", () => {
     const h = render(
       <CallCard
         c={{ ...BASE, refs: { mods: "refmods/mine.safetensors" } }}
@@ -598,10 +598,11 @@ describe("THE LAYER A/B CANON (2026-10-24): a stated call lane REPLACES the decl
         deps={deps({ layerA: { fps: 24, seed: 42, ref_mods: ["refmods/declared.safetensors"] } }).d}
       />,
     )
-    assert.equal(h.container.querySelectorAll('[data-testid="tl-declared-ref"]').length, 0,
-      "the stated lane replaces — the declared chip does not render")
-    assert.ok(screen.getByTestId("tl-call-mods-count").textContent!.includes("1/8"))
-    assert.ok(screen.getByTestId("tl-call-mods-count").textContent!.includes("overrides"))
+    assert.equal(h.container.querySelectorAll('[data-testid="tl-declared-ref"]').length, 1,
+      "the merge law: the declared chip renders — a stated call seat never hides the declared packs")
+    assert.ok(screen.getByTestId("tl-call-mods-count").textContent!.includes("2/8"),
+      "the count is the union (declared + this call's), the merged face of the compose")
+    assert.ok(screen.getByTestId("tl-call-mods-count").textContent!.includes("merged"))
     h.unmount()
   })
 

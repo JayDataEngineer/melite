@@ -92,7 +92,7 @@ describe("SOURCE — the copy dictionary owns the static faces", () => {
     }
   })
 
-  it("CENSUS — the dictionary is non-empty, every entry consumed, count pinned at 101", () => {
+  it("CENSUS — the dictionary is non-empty, every entry consumed, count pinned at 102", () => {
     // THE CENSUS (the 2026-11-02 docs-plane finding H5): a
     // dictionary nobody reads is a locale theater — every entry
     // must be consumed by at least one presentation seat (a dead
@@ -146,7 +146,11 @@ describe("SOURCE — the copy dictionary owns the static faces", () => {
     // −1 refModsHint — the operator deleted the mods bucket's plan-text
     // line ("It is plan text… people will know that already or not
     // care"), reversing the 2026-11-05 naming law it landed under.
-    assert.equal(ids.length, 101, `the dictionary holds 101 copy ids (found ${ids.length}) — re-pin this wall when copy is added or removed`)
+    // RE-PIN 2026-11-08 (G7, the merge law's word): 101 → 102. +1 flat
+    // id = countMergedTail (the mods bucket's " · merged" count dot);
+    // its sibling face modDeclaredChipTitle rides as a function,
+    // outside this count by construction.
+    assert.equal(ids.length, 102, `the dictionary holds 102 copy ids (found ${ids.length}) — re-pin this wall when copy is added or removed`)
     // RE-PIN 2026-10-16 (the square-grammar residue): 102 → 101.
     // removePack died with the strip Button (187eaf607 deleted the
     // verb; SourceRow's onEdit("") owns the detach) — a fossil id
