@@ -116,7 +116,20 @@ export function parseInputSpec(spec, required) {
                 }
             }
             const bound = (k) => typeof detail?.[k] === 'number' ? detail[k] : undefined;
-            return { required, type: head, min: bound('min'), max: bound('max') };
+            // THE AUTOGROW FLOOR (the 2026-11-09 qwen-img-21 burn): the
+            // engine's variable-entry inputs declare their own minimum
+            // entry count in template.min — the wall reads the engine's
+            // floor, never a stricter one of its own invention. The key
+            // rides only when the declaration states it (a spec that says
+            // nothing carries nothing).
+            const template = head === 'COMFY_AUTOGROW_V3'
+                && typeof detail?.template === 'object' && detail.template !== null
+                ? detail.template
+                : undefined;
+            const autogrowMin = typeof template?.min === 'number' ? template.min : undefined;
+            return autogrowMin === undefined
+                ? { required, type: head, min: bound('min'), max: bound('max') }
+                : { required, type: head, min: bound('min'), max: bound('max'), autogrowMin };
         }
     }
     return { required };
@@ -390,6 +403,13 @@ function assertRequiredEdges(cardId, id, ct, declared, wired) {
     const bases = new Set(Object.keys(wired).map((key) => key.split('.')[0]));
     for (const [key, spec] of declared) {
         if (!spec.required)
+            continue;
+        // A ZERO-ENTRY AUTOGROW IS LEGAL (the engine's own template
+        // floor, 2026-11-09): an input declared COMFY_AUTOGROW_V3 with
+        // template.min 0 — TextEncodeQwenImage21.images on the live
+        // build — is satisfied by absence; the engine accepts the prompt
+        // and this wall never states a law the engine does not.
+        if (spec.autogrowMin === 0)
             continue;
         if (Object.hasOwn(wired, key) || bases.has(key))
             continue;

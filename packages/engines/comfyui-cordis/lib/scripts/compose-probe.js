@@ -43,12 +43,15 @@ const PROBE_NUMBERS = {
  *  member on every mesh lane). */
 const ESTATE_FILE_PARAM = "input_image";
 /** The probe asset, by the param's own media suffix — the compose
- *  gates read these as strings (a staged path), never arrays. */
+ *  gates read these as strings (a staged path), never arrays.
+ *  `source` rides the same table (input-prep's staged-media seat:
+ *  a required path-role param the run path stages as an upload —
+ *  the value judge's carve-out reads the upload tail). */
 const ASSET_SUFFIX = [
     [/audio|voice|speech/i, "probe.wav"],
     [/video|frames/i, "probe.mp4"],
     [/glb|mesh|rig/i, "probe.glb"],
-    [/image|mask|img|pic|photo/i, "probe.png"],
+    [/image|mask|img|pic|photo|^source$/i, "probe.png"],
 ];
 /**
  * The probe doc for one refusing param, by its name's shape:

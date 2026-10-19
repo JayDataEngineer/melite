@@ -85,6 +85,11 @@ export interface WiringInputSpec {
   readonly enum?: ReadonlyArray<string | number | boolean>
   readonly min?: number
   readonly max?: number
+  /** The engine's own entry floor for a COMFY_AUTOGROW_V3 input
+   *  (`template.min`): 0 means a fully ABSENT input is legal at the
+   *  engine (the zero-entry autogrow — TextEncodeQwenImage21.images
+   *  on the 2026-11-09 build); 1+ keeps absence a refusal. */
+  readonly autogrowMin?: number
 }
 
 /** The engine's declared-node census, derived from /object_info:
@@ -144,7 +149,20 @@ export function parseInputSpec(spec: unknown, required: boolean): WiringInputSpe
       }
       const bound = (k: string): number | undefined =>
         typeof detail?.[k] === 'number' ? (detail[k] as number) : undefined
-      return { required, type: head, min: bound('min'), max: bound('max') }
+      // THE AUTOGROW FLOOR (the 2026-11-09 qwen-img-21 burn): the
+      // engine's variable-entry inputs declare their own minimum
+      // entry count in template.min — the wall reads the engine's
+      // floor, never a stricter one of its own invention. The key
+      // rides only when the declaration states it (a spec that says
+      // nothing carries nothing).
+      const template = head === 'COMFY_AUTOGROW_V3'
+        && typeof detail?.template === 'object' && detail.template !== null
+        ? detail.template as Record<string, unknown>
+        : undefined
+      const autogrowMin = typeof template?.min === 'number' ? template.min : undefined
+      return autogrowMin === undefined
+        ? { required, type: head, min: bound('min'), max: bound('max') }
+        : { required, type: head, min: bound('min'), max: bound('max'), autogrowMin }
     }
   }
   return { required }
@@ -499,6 +517,12 @@ function assertRequiredEdges(
   const bases = new Set(Object.keys(wired).map((key) => key.split('.')[0]))
   for (const [key, spec] of declared) {
     if (!spec.required) continue
+    // A ZERO-ENTRY AUTOGROW IS LEGAL (the engine's own template
+    // floor, 2026-11-09): an input declared COMFY_AUTOGROW_V3 with
+    // template.min 0 — TextEncodeQwenImage21.images on the live
+    // build — is satisfied by absence; the engine accepts the prompt
+    // and this wall never states a law the engine does not.
+    if (spec.autogrowMin === 0) continue
     if (Object.hasOwn(wired, key) || bases.has(key)) continue
     throw new ComposeRefusal('missing-required',
       `card '${cardId}' built node '${id}' (${ct}) without its declared-required input '${key}' — /object_info declares it required and the engine refuses the prompt without it (required input is missing); the card's compose is stale against the engine build`)

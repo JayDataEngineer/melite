@@ -1144,6 +1144,7 @@
      [
       "clip_l.safetensors",
       "minimax_music3_text_encoder_pruned_int8_convrot.safetensors",
+      "qwen3.5_9b_int8_convrot.safetensors",
       "qwen3vl_32b_minimax_h3_int8_convrot.safetensors",
       "qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors",
       "qwen3vl_4b_fp8_scaled.safetensors",
@@ -4590,6 +4591,7 @@
       "krea-2/krea2_turbo_lora_rank_64_bf16.safetensors",
       "krea-2/krea2_vintagetarot.safetensors",
       "krea-2/krea2filterbypass3.safetensors",
+      "qwen-img-edit-21/qwen-image-2.1-consistency.safetensors",
       "qwen/Qwen-Image-Edit-2511-Lightning-4steps-V1.0-bf16.safetensors",
       "qwen/qwen-image-edit-2511-multiple-angles-lora.safetensors",
       "qwen/qwen-image-edit-plus-nsfw-lora.safetensors",
@@ -4807,21 +4809,31 @@
       "36039_fd673969123f.jpg",
       "SaveImage.0_edit_00001__37e8ff902419.png",
       "SaveImage.0_edit_00001__41b018ade25b.png",
+      "SaveImage.0_edit_00001__4d51beb2cc98.png",
       "SaveImage.0_edit_00001__4fac0a3e2013.png",
+      "SaveImage.0_edit_00001__597ba5b4769f.png",
+      "SaveImage.0_edit_00001__5ea2de6b0a4e.png",
       "SaveImage.0_edit_00001__699850493269.png",
       "SaveImage.0_edit_00001__ba84b265f65d.png",
+      "SaveImage.0_edit_00001__f57d1713bfb3.png",
       "SaveImage.0_gen_00001__09689fe61e7a.png",
       "SaveImage.0_gen_00001__2193b347e808.png",
       "SaveImage.0_gen_00001__4efbfe6341d0.png",
+      "SaveImage.0_gen_00001__62b97ce19787.png",
+      "SaveImage.0_gen_00001__85379519f4df.png",
       "SaveImage.0_gen_00001__c0aa96997f3e.png",
       "SaveImage.0_gen_00001__e2a6713311a9.png",
+      "SaveImage.0_input_prep_00001__abe3b0054abe.png",
       "SaveImage.0_instance_00001__ffe7e1274cdf.png",
       "SaveImage.1_detect_boxes_00001__e1ba45bbc14e.png",
+      "bake-variance-probe-anchor_e79e0539a052.png",
+      "cards-gpu-h3-bake-anchor_e79e0539a052.png",
       "cards-gpu-h3-dare-anchor_e79e0539a052.png",
       "cards-gpu-h3-draft-anchor_e79e0539a052.png",
       "cards-gpu-h3-hd-anchor_e79e0539a052.png",
       "cards-gpu-seedvr2-anchor_e79e0539a052.png",
       "character_img_00009__fb3e000684f8.png",
+      "download (2)_c47310e743c1.png",
       "e2e_anchor (1).png",
       "e2e_anchor.png",
       "example.png",
@@ -4830,10 +4842,12 @@
       "melite-data-5bd1165a72f97550_fd9660a4273a.png",
       "melite-data-5f814b766a662ba3_fd9660a4273a.png",
       "melite-data-a54444dc3c33aa3f_6002e3c934d8.png",
+      "melite-data-b25d7e2155a224ec_72844f29c4a6.png",
       "melite-data-d04dce8f14c03ce1_6002e3c934d8.png",
       "melite-data-d51c0532d60a18db_6002e3c934d8.png",
       "melite-data-f89cdad5ffb1023f_5600aecdb168.jpg",
-      "sss_b8f4d80c061c.webp"
+      "sss_b8f4d80c061c.webp",
+      "stage_mesh_42053183f429.png"
      ],
      {
       "image_upload": true
@@ -4894,21 +4908,31 @@
       "36039_fd673969123f.jpg",
       "SaveImage.0_edit_00001__37e8ff902419.png",
       "SaveImage.0_edit_00001__41b018ade25b.png",
+      "SaveImage.0_edit_00001__4d51beb2cc98.png",
       "SaveImage.0_edit_00001__4fac0a3e2013.png",
+      "SaveImage.0_edit_00001__597ba5b4769f.png",
+      "SaveImage.0_edit_00001__5ea2de6b0a4e.png",
       "SaveImage.0_edit_00001__699850493269.png",
       "SaveImage.0_edit_00001__ba84b265f65d.png",
+      "SaveImage.0_edit_00001__f57d1713bfb3.png",
       "SaveImage.0_gen_00001__09689fe61e7a.png",
       "SaveImage.0_gen_00001__2193b347e808.png",
       "SaveImage.0_gen_00001__4efbfe6341d0.png",
+      "SaveImage.0_gen_00001__62b97ce19787.png",
+      "SaveImage.0_gen_00001__85379519f4df.png",
       "SaveImage.0_gen_00001__c0aa96997f3e.png",
       "SaveImage.0_gen_00001__e2a6713311a9.png",
+      "SaveImage.0_input_prep_00001__abe3b0054abe.png",
       "SaveImage.0_instance_00001__ffe7e1274cdf.png",
       "SaveImage.1_detect_boxes_00001__e1ba45bbc14e.png",
+      "bake-variance-probe-anchor_e79e0539a052.png",
+      "cards-gpu-h3-bake-anchor_e79e0539a052.png",
       "cards-gpu-h3-dare-anchor_e79e0539a052.png",
       "cards-gpu-h3-draft-anchor_e79e0539a052.png",
       "cards-gpu-h3-hd-anchor_e79e0539a052.png",
       "cards-gpu-seedvr2-anchor_e79e0539a052.png",
       "character_img_00009__fb3e000684f8.png",
+      "download (2)_c47310e743c1.png",
       "e2e_anchor (1).png",
       "e2e_anchor.png",
       "example.png",
@@ -4917,10 +4941,12 @@
       "melite-data-5bd1165a72f97550_fd9660a4273a.png",
       "melite-data-5f814b766a662ba3_fd9660a4273a.png",
       "melite-data-a54444dc3c33aa3f_6002e3c934d8.png",
+      "melite-data-b25d7e2155a224ec_72844f29c4a6.png",
       "melite-data-d04dce8f14c03ce1_6002e3c934d8.png",
       "melite-data-d51c0532d60a18db_6002e3c934d8.png",
       "melite-data-f89cdad5ffb1023f_5600aecdb168.jpg",
-      "sss_b8f4d80c061c.webp"
+      "sss_b8f4d80c061c.webp",
+      "stage_mesh_42053183f429.png"
      ],
      {
       "image_upload": true
@@ -5047,6 +5073,7 @@
       "krea-2/krea2_turbo_lora_rank_64_bf16.safetensors",
       "krea-2/krea2_vintagetarot.safetensors",
       "krea-2/krea2filterbypass3.safetensors",
+      "qwen-img-edit-21/qwen-image-2.1-consistency.safetensors",
       "qwen/Qwen-Image-Edit-2511-Lightning-4steps-V1.0-bf16.safetensors",
       "qwen/qwen-image-edit-2511-multiple-angles-lora.safetensors",
       "qwen/qwen-image-edit-plus-nsfw-lora.safetensors",
@@ -7422,6 +7449,8 @@
     "mod_1": [
      [
       "(none)",
+      "SaveImage.0_edit_00001_",
+      "bake-variance-probe-anchor",
       "vanellope_example"
      ],
      {
@@ -7431,6 +7460,8 @@
     "mod_2": [
      [
       "(none)",
+      "SaveImage.0_edit_00001_",
+      "bake-variance-probe-anchor",
       "vanellope_example"
      ],
      {
@@ -7440,6 +7471,8 @@
     "mod_3": [
      [
       "(none)",
+      "SaveImage.0_edit_00001_",
+      "bake-variance-probe-anchor",
       "vanellope_example"
      ],
      {
@@ -7449,6 +7482,8 @@
     "mod_4": [
      [
       "(none)",
+      "SaveImage.0_edit_00001_",
+      "bake-variance-probe-anchor",
       "vanellope_example"
      ],
      {
@@ -7458,6 +7493,8 @@
     "mod_5": [
      [
       "(none)",
+      "SaveImage.0_edit_00001_",
+      "bake-variance-probe-anchor",
       "vanellope_example"
      ],
      {
@@ -7467,6 +7504,8 @@
     "mod_6": [
      [
       "(none)",
+      "SaveImage.0_edit_00001_",
+      "bake-variance-probe-anchor",
       "vanellope_example"
      ],
      {
@@ -7476,6 +7515,8 @@
     "mod_7": [
      [
       "(none)",
+      "SaveImage.0_edit_00001_",
+      "bake-variance-probe-anchor",
       "vanellope_example"
      ],
      {
@@ -7485,6 +7526,8 @@
     "mod_8": [
      [
       "(none)",
+      "SaveImage.0_edit_00001_",
+      "bake-variance-probe-anchor",
       "vanellope_example"
      ],
      {
@@ -12232,6 +12275,7 @@
       "minimax_h3_latent_upscaler_3d_bf16.safetensors",
       "minimax_h3_ref2va_pruned_int8_convrot.safetensors",
       "minimax_music3_dit_int8_convrot.safetensors",
+      "moss_image_sft_int8_convrot.safetensors",
       "pixal3d_int8_convrot.safetensors",
       "qwen_image_2.1_int8_convrot.safetensors",
       "qwen_image_2.1_turbo_bf16.safetensors",

@@ -53,6 +53,12 @@ export const upscale = {
             max_resolution: p.max_resolution,
             batch_size: p.batch_size,
             uniform_batch_size: true,
+            // the engine declares color_correction REQUIRED (a combo over
+            // lab/wavelet/wavelet_adaptive/hsv/adain/none, default lab) —
+            // the h3 sr arm wires the same default (actions.ts:1828); an
+            // unwired required input is a run the engine refuses (the
+            // value judge caught this compose stale, 2026-11-09).
+            color_correction: "lab",
         }).out();
         return g.node("SaveImage", { images: up, filename_prefix: `${runId}/gen` }).out();
     },

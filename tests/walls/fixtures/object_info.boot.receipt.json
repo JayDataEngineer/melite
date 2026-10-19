@@ -1,12 +1,12 @@
 {
- "derived_at": "2026-10-17T06:12:45.831Z",
+ "derived_at": "2026-10-19T23:19:08.039Z",
  "tool": "scripts/regen-node-vocab.mjs --boot",
  "source": {
   "path": "data/tmp/object_info_prod.json",
-  "sha256": "c8cc8645e2c4882709a5b3b4c87e9a8dc1276b83e8c1cd89c5d1259227752c8a",
-  "mtime_ms": 1792217392561.6277,
+  "sha256": "0ec92b7d8ef45e16b8ec9b2402f7ef6018fe0741bb56e9539eef409347d409a0",
+  "mtime_ms": 1792451947816.0535,
   "class_count": 1658,
-  "origin": "capture"
+  "origin": "live"
  },
  "bootstrap_seed": {
   "path": "tests/walls/fixtures/object_info.boot.bootstrap.json",
@@ -18,18 +18,21 @@
   "addressed_class_count": 95,
   "bootstrap_class_count": 51,
   "fixture_class_count": 146,
-  "rows_probed": 28,
+  "rows_probed": 29,
   "refused_rows": 0
  },
  "delta": {
-  "added": [
-   "MiniMaxH3MotionContext",
-   "MiniMaxH3MotionContextLoadLatent",
-   "MiniMaxH3MotionContextSaveLatent",
-   "MiniMaxH3MotionContextTrim"
-  ],
+  "added": [],
   "pruned": [],
-  "updated": [],
+  "updated": [
+   "CLIPLoader",
+   "LTX_lora_loader",
+   "LoadImage",
+   "LoadImageMask",
+   "LoraLoader",
+   "MiniMaxH3RefModsLoader",
+   "UNETLoader"
+  ],
   "reordered_keys": 0
  }
 }

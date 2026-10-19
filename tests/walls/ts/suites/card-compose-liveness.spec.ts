@@ -45,6 +45,8 @@ import { tmpdir } from "node:os";
 import "../../../helpers/boot-models.ts";
 import { Context } from "@deepseek-ai/cordis";
 import { loadCardDefs } from "@melite/comfyui-cordis";
+import { ComposeRefusal } from "@melite/comfyui-card-kit/errors";
+import { assertWiringAgainst, deriveWiringDoc } from "../../../../packages/engines/comfyui-cordis/src/wiringWall.ts";
 import { GraphBuilder } from "@melite/comfyui-card-kit/graph";
 import { loadFacts } from "@melite/comfyui-card-kit/facts";
 import { getModel, registryIds, registryModel, modelIds } from "../../../../packages/engines/comfyui-cordis/src/models/models.ts";
@@ -71,16 +73,52 @@ const FACTS_PATH = join(
 type NodeShape = { class_type?: unknown };
 type Graph = Record<string, NodeShape>;
 
+// THE RECORDED ENGINE BUILD for the value judge (read, never edited;
+// the same law as the wiring-wall spec's boot doc): the census
+// deriveWiringDoc reads is this fixture's own CLIPLoader.type enum —
+// 29 values, no "moss_image" — exactly what the live engine served
+// the operator's burn.
+const BOOT_FIXTURE_PATH = join(
+  dirname(fileURLToPath(import.meta.url)),
+  "..", "..", "fixtures", "object_info.boot.json",
+);
+
 // THE PROBE VOCABULARY, one home (packages/engines/comfyui-cordis/
 // scripts/compose-probe.ts — this wall's fill tables and refusal
 // parsers, extracted 2026-10-17 so the boot-fixture derivation probes
 // under the SAME law; E8. The home is the cordis package because the
 // derivation script rides the package's own emit-face program — a
 // script may not import across rootDir).
-// The estate file probe rides the facts file this wall already holds
-// open: a gate that STATS the path ("is not a file on this estate")
-// gets a real file.
-const fillFor = (name: string): unknown => probeFillFor(name, FACTS_PATH);
+// The estate file probe rides a REAL IMAGE the repo carries
+// (tests/integration/assets/source.png): a gate that STATS the path
+// ("is not a file on this estate") gets a real file, and the VALUE
+// JUDGE's staged-artifact carve-out reads its upload tail (the .json
+// facts file fed the graph a non-stageable path the run path's own
+// ext gate would refuse — a probe artifact, never a card finding).
+const ESTATE_FILE = join(
+  dirname(fileURLToPath(import.meta.url)),
+  "..", "..", "..", "integration", "assets", "source.png",
+);
+const fillFor = (name: string): unknown => probeFillFor(name, ESTATE_FILE);
+
+/** Whether the family's DECL declares this artifact downloadable —
+ *  the provisioner's own contract (the operator's law, 2026-11-09:
+ *  "if a model is not on disk, that is not a red unless our
+ *  auto-provisioner sucks"). A wired FILENAME absent from the
+ *  engine's folder enum is PROVISIONING STATE while the DECL
+ *  carries it (a url tail or a provision name in
+ *  packages/models/<family>/src/index.ts — the download prompt can
+ *  offer it); with no declared source the estate dead-ends instead
+ *  of offering the download — THAT miss is the red. Non-filename
+ *  literals (mode pickers like CLIPLoader.type) never pass: those
+ *  are engine-build vocabulary, not folder state. */
+function declaredProvision(modelId: string, filename: string): boolean {
+  if (!/\.(safetensors|sft|gguf|bin|pth|onnx|engine|npz|ckpt)$/i.test(filename)) return false;
+  const decl = join(process.cwd(), "packages", "models", modelId, "src", "index.ts");
+  if (!existsSync(decl)) return false;
+  const text = readFileSync(decl, "utf8");
+  return text.includes(`/${filename}"`) || text.includes(`"${filename}"`);
+}
 
 /** THE STUDIO-EMIT GREP (CURE-1's emit depth): the computed
  *  `[MOTION_*_PARAM]` keys inside every onSave(...) payload of one
@@ -148,6 +186,53 @@ export function unknownNodeClasses(graph: Graph, vocabulary: ReadonlySet<string>
     }
   }
   return [...unknown];
+}
+
+/** THE PROBE COMPOSE (one loop, two judges): compose one facts row's
+ *  card against its model with probe params — fields the schema
+ *  defaults cover fill themselves; each refusal names its missing
+ *  param and the loop fills it by shape (bounds-legal numbers,
+ *  probe text, probe asset lists; a card-vocabulary refusal's first
+ *  quoted member is legal by the card's own law). Returns the built
+ *  graph, or the refusal text when the card is dead (error "" means
+ *  the probe rounds ran out with fresh names still coming — the
+ *  caller's skip voice, never a silent pass). */
+function composeProbedRow(
+  def: { compose: (doc: unknown, model: unknown, g: GraphBuilder, seat: string) => void; schema: (doc: unknown) => unknown },
+  model: unknown,
+): { graph: Graph | null; error: string } {
+  const doc: Record<string, unknown> = {};
+  const filled = new Set<string>();
+  for (let round = 0; round < 14; round++) {
+    try {
+      const g = new GraphBuilder();
+      def.compose(def.schema({ ...doc }), model, g, "liveness-probe");
+      const graph = g.toJSON() as Graph;
+      if (graph && typeof graph === "object" && Object.keys(graph).length > 0) {
+        return { graph, error: "" };
+      }
+      return { graph: null, error: "compose produced an EMPTY graph" };
+    } catch (err) {
+      const lastError = err instanceof Error ? err.message : String(err);
+      const named = namedMulti(lastError);
+      // A closed enum overwrites even an already-filled name: the
+      // first refusal may come unquoted ("not one of 1024|1536")
+      // and strand a wrong probe; the quoted restatement is the
+      // card's own correction.
+      const enumOffer = /expected "([^"]+)"/.exec(lastError);
+      const fresh = enumOffer
+        ? named
+        : named.filter((n) => !filled.has(n));
+      if (fresh.length === 0) {
+        return { graph: null, error: lastError };
+      }
+      for (const name of fresh) {
+        filled.add(name);
+        doc[name] = enumOffer ? (enumOffer[1] as string) : fillFor(name);
+      }
+    }
+  }
+  return { graph: null, error: "" };
 }
 
 describe("every facts row composes its card alive (the dead-card wall)", () => {
@@ -224,47 +309,14 @@ describe("every facts row composes its card alive (the dead-card wall)", () => {
     for (const [modelId, row] of pairs) {
       const def = defs.get(row.card)!;
       const model = facts.models[modelId]!;
-      const doc: Record<string, unknown> = {};
-      const filled = new Set<string>();
-      let composed: Graph | null = null;
-      let lastError = "";
-      // THE PROBE LOOP: compose, read the refusal's named param, fill,
-      // retry. A refusal that names nothing new is the dead card.
-      for (let round = 0; round < 14 && composed === null; round++) {
-        try {
-          const g = new GraphBuilder();
-          def.compose(def.schema({ ...doc }), model, g, "liveness-probe");
-          const graph = g.toJSON() as Graph;
-          assert.ok(
-            graph && typeof graph === "object" && Object.keys(graph).length > 0,
-            `${modelId} / ${row.card}: compose produced an EMPTY graph`,
-          );
-          composed = graph;
-        } catch (err) {
-          lastError = err instanceof Error ? err.message : String(err);
-          const named = namedMulti(lastError);
-          // A closed enum overwrites even an already-filled name: the
-          // first refusal may come unquoted ("not one of 1024|1536")
-          // and strand a wrong probe; the quoted restatement is the
-          // card's own correction.
-          const enumOffer = /expected "([^"]+)"/.exec(lastError);
-          const fresh = enumOffer
-            ? named
-            : named.filter((n) => !filled.has(n));
-          if (fresh.length === 0) {
-            dead.push(`${modelId} / ${row.card}: ${lastError}`);
-            break;
-          }
-          for (const name of fresh) {
-            filled.add(name);
-            // The enum members ride the refusal ("expected "1024" |
-            // "1536""); the first member is legal by construction.
-            doc[name] = enumOffer ? (enumOffer[1] as string) : fillFor(name);
-          }
+      const composed = composeProbedRow(def, model);
+      if (composed.graph === null) {
+        if (composed.error !== "") {
+          dead.push(`${modelId} / ${row.card}: ${composed.error}`);
         }
+        continue;
       }
-      if (composed === null) continue;
-      const unknown = unknownNodeClasses(composed, vocabulary);
+      const unknown = unknownNodeClasses(composed.graph, vocabulary);
       if (unknown.length) {
         dead.push(`${modelId} / ${row.card}: composes node classes the engine does not own: ${unknown.join(", ")}`);
       }
@@ -274,6 +326,85 @@ describe("every facts row composes its card alive (the dead-card wall)", () => {
       [],
       `DEAD CARDS — these compose refused or compose phantom nodes (every one is a run that dies on the lane): ${dead.join(" | ")}`,
     );
+  });
+
+  it("THE VALUE JUDGE (the 2026-11-09 stale-compose burn): every literal a composed graph wires into an enum-typed input is a member of the engine build's own enum — the LIVE wiring gate's judgment fired HERE, at the test tier, so a card stale against the engine build reds the suite and NEVER the operator's run", async () => {
+    // THE BURN this arm was born red on: the operator pressed Run on
+    // image-gen/moss-image and the LIVE gate answered
+    // card_compose phase 1: bad-value: card 'image-gen' wired
+    // 'CLIPLoader.type' = "moss_image" — the input allows 29 values
+    // (…); the card's compose is stale against the engine build.
+    // The live judgment existed; NO test-tier seat ran it over every
+    // family's compose, so the suite stayed green while the card was
+    // stale. This arm IS that seat: the same judgeValue loop
+    // (assertWiringAgainst) over the same engine census
+    // (deriveWiringDoc of the recorded boot fixture), driven across
+    // EVERY facts row's composed graph.
+    const defs = await loadCardDefs();
+    const bootDoc = JSON.parse(readFileSync(BOOT_FIXTURE_PATH, "utf8")) as Record<string, unknown>;
+    const { nodes, inputs } = deriveWiringDoc(bootDoc);
+    const stale: string[] = [];
+    for (const [modelId, row] of pairs) {
+      const def = defs.get(row.card)!;
+      const model = facts.models[modelId]!;
+      const composed = composeProbedRow(def, model);
+      if (composed.graph === null) continue; // the dead-card arm owns the refusal voice
+      try {
+        assertWiringAgainst(nodes, inputs, row.card, composed.graph);
+      } catch (err) {
+        // unknown-node is the CLASS arm's own voice (the vocabulary
+        // floors own it); this arm reports wired-VALUE findings.
+        if (err instanceof ComposeRefusal && (err.code === "unknown-node" || err.code === "malformed-graph")) continue;
+        const message = err instanceof Error ? err.message : String(err);
+        // THE PROVISIONER LAW (operator 2026-11-09: "if a model is
+        // not on disk, that is not a red unless our auto-provisioner
+        // sucks"): a FILENAME the engine's folder enum lacks is
+        // provisioning state while the family's DECL declares it
+        // downloadable — the download prompt owns the miss. With no
+        // declared source the provisioner is blind and the miss
+        // stays red below.
+        const wired = /wired '[^']+' = "([^"]*)"/.exec(message)?.[1];
+        if (wired !== undefined && declaredProvision(modelId, wired)) continue;
+        stale.push(`${modelId} / ${row.card}: ${message}`);
+      }
+    }
+
+    // ── THE ADJUDICATION — the standing findings this sweep was born
+    // red on (2026-11-09). A row is a DISPOSITION, never a silence:
+    // every row re-verifies its reason each run and REDS when the
+    // reason breaks, and a row whose finding disappeared REDS for
+    // deletion (an adjudication that outlives its truth is drift).
+    // Any NEW stale value no row owns reds unadjudicated. ──
+    const clipTypes = ((bootDoc.CLIPLoader as { input: { required: { type: [string[]] } } }).input.required.type[0]);
+    const adjudicated: Array<{ row: RegExp; reason: string; holds: () => string | null }> = [
+      {
+        // the operator's own burn (2026-11-09): moss-image wires the
+        // PR #17095 spelling this engine build does not carry.
+        row: /^moss-image \/ image-gen: .*CLIPLoader\.type.*moss_image/,
+        reason: "the engine build predates upstream PR #17095 — its CLIPLoader.type enum carries 29 values, none moss_image",
+        holds: () => clipTypes.includes("moss_image")
+          ? "the engine build now carries moss_image — the finding is cured; delete this row"
+          : null,
+      },
+      // (the qwen-img-21 images finding NEVER sat here: its root was
+      // the wiring wall judging an autogrow input by a law the
+      // engine never stated — TextEncodeQwenImage21.images declares
+      // template.min 0 and the zero-entry compose is legal. Cured at
+      // wiringWall's parse/assertRequiredEdges with the AUTOGROW
+      // LAW arm, wiring-wall.spec.ts (d); the sweep now judges that
+      // row green, E2-6's disposition rewritten.)
+    ];
+    const unowned = stale.filter((s) => !adjudicated.some((a) => a.row.test(s)));
+    const orphaned = adjudicated.filter((a) => !stale.some((s) => a.row.test(s)));
+    const broken = adjudicated
+      .map((a) => ({ a, err: a.holds() }))
+      .filter((x): x is { a: typeof adjudicated[number]; err: string } => x.err !== null);
+    assert.deepEqual(unowned, [],
+      `STALE COMPOSE, UNADJUDICATED — the engine build refuses these wired values at run time (each would fire LIVE on the operator instead of redning this suite — fix the card's compose/lane_inputs to the engine's enum, declare the artifact in the family's DECL, or regen the boot fixture against a genuinely newer engine build): ${unowned.join(" | ")}`);
+    assert.deepEqual(orphaned.map((a) => a.reason), [],
+      `ADJUDICATION ORPHANS — these rows' findings no longer occur (the cure landed); delete the row: ${orphaned.map((a) => a.reason).join(" | ")}`);
+    assert.deepEqual(broken.map((x) => x.err), [],
+      `ADJUDICATION DRIFT — these rows' stated reasons no longer hold: ${broken.map((x) => x.err).join(" | ")}`);
   });
 
   it("THE KEY JUDGE (motion-journey CURE-6): every input key a card composes onto a fixture-declared class is declared by that class — the registry flows' law, extended to the card plane", async () => {

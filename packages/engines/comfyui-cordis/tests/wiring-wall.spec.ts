@@ -60,6 +60,30 @@ const DOC = {
       optional: { noop: ["STRING", { default: "" }] },
     },
   },
+  // THE AUTOGROW SHAPE (the 2026-11-09 qwen-img-21 burn): the engine
+  // declares variable-entry inputs as COMFY_AUTOGROW_V3 with a
+  // template whose `min` is the ENGINE'S OWN floor — min 0 means a
+  // zero-entry (fully absent) input is legal at the engine, exactly
+  // like TextEncodeQwenImage21.images on the live build.
+  QwenAutogrowEncoder: {
+    input: {
+      required: {
+        clip: ["CLIP", {}],
+        prompt: ["STRING", { default: "" }],
+        images: ["COMFY_AUTOGROW_V3", { template: { input: { required: { image: ["IMAGE", {}] } }, min: 0, names: ["image_1"] }, tooltip: "refs" }],
+      },
+    },
+  },
+  // the min-1 autogrow stays strict: ComfyMathExpression.values (the
+  // fixture's own census) refuses when nothing is wired.
+  MathAutogrow: {
+    input: {
+      required: {
+        expression: ["STRING", { default: "" }],
+        values: ["COMFY_AUTOGROW_V3", { template: { input: { required: { value: ["FLOAT", {}] } }, min: 1, names: ["a"] }, tooltip: "vals" }],
+      },
+    },
+  },
 };
 
 function armed() {
@@ -652,6 +676,41 @@ describe("THE COMPLETENESS GRAMMAR (B7: the reverse arm + the either-or table)",
         && new RegExp(`node '${id}' \\(MiniMaxH3RefModExtract\\) with neither 'av_encoder' nor 'vae'`).test(e.message)
         && /connect an av_encoder \(MiniMax-H3 VAE loader\) or a standard VAE\./.test(e.message),
     );
+  });
+
+  it("(d) THE AUTOGROW LAW (the 2026-11-09 qwen-img-21 burn): a COMFY_AUTOGROW_V3 input whose template declares min 0 is satisfied by ABSENCE — the engine's own zero-entry validation — and a min-1 autogrow still refuses unnamed", () => {
+    // THE BURN: the operator's engine rebuild declared
+    // TextEncodeQwenImage21.images as COMFY_AUTOGROW_V3 (template
+    // min 0) and every pure-t2i qwen-img-21 compose REFUSED LIVE at
+    // this wall — 'built node without its declared-required input
+    // images' — while the ENGINE accepts the absent key (its own
+    // template floor is zero entries). The wall judged a law the
+    // engine never stated; this arm pins the engine's own floor.
+    const { nodes, inputs } = armed();
+    // min 0 + absent: LEGAL — the zero-entry autogrow is the engine's
+    // own pure-t2i shape (born red: the wall refused this exact row)
+    assertWiringAgainst(nodes, inputs, "image-gen", {
+      "1": { class_type: "QwenAutogrowEncoder", inputs: { clip: ["2", 0], prompt: "a cat" } },
+    });
+    // min 0 + dotted entries: still legal (the reference arm's shape)
+    assertWiringAgainst(nodes, inputs, "image-gen", {
+      "1": { class_type: "QwenAutogrowEncoder", inputs: { clip: ["2", 0], prompt: "a cat", "images.image_1": ["3", 0] } },
+    });
+    // min 1 + absent: REFUSES naming the input (ComfyMathExpression's
+    // own floor — the strictness never loosens past the engine's)
+    assert.throws(
+      () => assertWiringAgainst(nodes, inputs, "image-gen", {
+        "1": { class_type: "MathAutogrow", inputs: { expression: "a" } },
+      }),
+      (e: unknown) => e instanceof ComposeRefusal && e.code === "missing-required"
+        && /without its declared-required input 'values'/.test(e.message),
+    );
+    // THE REAL BURN ROW against the REAL boot doc: the engine's own
+    // TextEncodeQwenImage21 with no images keys walks green
+    const boot = armedBoot();
+    assertWiringAgainst(boot.nodes, boot.inputs, "image-gen", {
+      "1": { class_type: "TextEncodeQwenImage21", inputs: { clip: ["2", 0], prompt: "a cat", negative_prompt: "", resolution: 1024 } },
+    });
   });
 });
 

@@ -12,6 +12,11 @@ export interface WiringInputSpec {
     readonly enum?: ReadonlyArray<string | number | boolean>;
     readonly min?: number;
     readonly max?: number;
+    /** The engine's own entry floor for a COMFY_AUTOGROW_V3 input
+     *  (`template.min`): 0 means a fully ABSENT input is legal at the
+     *  engine (the zero-entry autogrow — TextEncodeQwenImage21.images
+     *  on the 2026-11-09 build); 1+ keeps absence a refusal. */
+    readonly autogrowMin?: number;
 }
 /** The engine's declared-node census, derived from /object_info:
  *  node names and, per node, its DECLARED inputs (required ∪
