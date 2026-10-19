@@ -427,3 +427,236 @@ describe("the h3 sampler knobs ride VERBATIM to their consumers (purge P2 value 
     assert.equal(sw, false, "the sharpen sub-gate stays closed without sharpen_enabled (the master alone must not sharpen)");
   });
 });
+
+// ── THE P0 WITNESS EXTENSION (purge §7, round 80): the class VALUE
+// pins for the census's remaining h3 hop-[5] cells. Every arm composes
+// through the SAME door (composeH3 above) and pins the stated value at
+// the consumer the actions file wires — the consumer map was probed
+// off real composed graphs, never guessed (each class's node/input
+// names were dumped from a live compose before the arm froze them).
+// Stated values are NON-defaults: a default-echoing arm proves nothing
+// (the CONTROL arm above is the harness's own sane-proof).
+describe("the h3 class knobs ride VERBATIM to their consumers (P0 witness extension, hop [4]→[5])", () => {
+  /** Resolve the ComfySwitchNode that switches ON to the named class —
+   *  the switch-value pin rides TOPOLOGY (which node feeds on_true),
+   *  never node order (ids are minted, not contracted). */
+  function switchCarrying(graph: Graph, onTrueClass: string): { id: string; switch: unknown } {
+    for (const [id, n] of Object.entries(graph)) {
+      if (n.class_type !== "ComfySwitchNode") continue;
+      const onTrue = n.inputs.on_true as unknown;
+      if (Array.isArray(onTrue) && typeof onTrue[0] === "string") {
+        const upstream = graph[onTrue[0]];
+        if (upstream?.class_type === onTrueClass) return { id, switch: n.inputs.switch };
+      }
+    }
+    assert.fail(
+      `SWITCH ARM (hop [5]): no ComfySwitchNode switches on a '${onTrueClass}' output — the class's switch never composed (the knob's on/off never reaches the engine)`,
+    );
+  }
+
+  it("ARM 13 — the shape + clock pins: width/height/length/ref_image_size at the ReferenceToVideo head, fps at the container (single window) and the window clock nodes (film), the derived seconds on the clock, noise_seed at RandomNoise", async () => {
+    const graph = await composeH3({
+      length: 124, width: 512, height: 480, fps: 30, noise_seed: 909,
+      ref_image_size: "720x1280",
+      calls: [SHOT({ start_frame: 0, end_frame: 124 })],
+    }, "h3_value_arm13");
+    assertValueAtConsumer(graph, "MiniMaxH3ReferenceToVideo", "width", 512, "width");
+    assertValueAtConsumer(graph, "MiniMaxH3ReferenceToVideo", "height", 480, "height");
+    assertValueAtConsumer(graph, "MiniMaxH3ReferenceToVideo", "length", 124, "length");
+    assertValueAtConsumer(graph, "MiniMaxH3ReferenceToVideo", "ref_image_size", "720x1280", "ref_image_size");
+    // SINGLE WINDOW: fps rides the container's fps input verbatim (the
+    // interp compensation multiplies it only when interp mounts).
+    assertValueAtConsumer(graph, "CreateVideo", "fps", 30, "fps (the container clock)");
+    assertValueAtConsumer(graph, "RandomNoise", "noise_seed", 909, "noise_seed");
+    // THE FILM PATH: the t4r OPENER carries the clock — fps lands on
+    // the per-window clock node and the DERIVED seconds on its own
+    // (the no-stale law derives fps_seconds from THIS window's
+    // length/fps — window1 = 56/16). The opener composes TWO clock
+    // nodes (fps + seconds); the pin reads BOTH values off the
+    // window's clock set.
+    const film = await composeH3({
+      length: 124, fps: 16, ref_images: ["data/input/ref1.png"],
+      calls: [SHOT(), SHOT({ text: "then a turn", start_frame: 56, end_frame: 124 })],
+    }, "h3_value_arm13b");
+    const clockValues = Object.entries(film)
+      .filter(([id, n]) => n.class_type === "PrimitiveFloat" && id.startsWith("window1_"))
+      .map(([, n]) => n.inputs.value).sort((a, b) => Number(a) - Number(b));
+    assert.deepEqual(
+      clockValues,
+      [Math.round((56 / 16) * 1000) / 1000, 16],
+      `the window clock set must carry the stated fps AND the derived seconds (saw ${JSON.stringify(clockValues)})`,
+    );
+  });
+
+  it("ARM 14 — shift_video + shift_audio verbatim at MiniMaxH3SigmaShift", async () => {
+    const graph = await composeH3({
+      length: 56, shift_video: 11.5, shift_audio: 4.5,
+      calls: [SHOT()],
+    }, "h3_value_arm14");
+    assertValueAtConsumer(graph, "MiniMaxH3SigmaShift", "shift_video", 11.5, "shift_video");
+    assertValueAtConsumer(graph, "MiniMaxH3SigmaShift", "shift_audio", 4.5, "shift_audio");
+  });
+
+  it("ARM 15 — every stated sla_* rides H3SLAAttention verbatim + sla_enabled owns the attention switch", async () => {
+    const graph = await composeH3({
+      length: 56,
+      sla_sparsity: 0.85, sla_block_size: "64", sla_min_seq_len: 1024,
+      sla_dense_last_steps: 3, sla_dense_steps: "0,1", sla_dense_backend: "pytorch",
+      sla_reference_protection: "Light", sla_protect_audio: false,
+      sla_stabilize_motion: false, sla_disable_fp16_accum: false, sla_enabled: true,
+      calls: [SHOT()],
+    }, "h3_value_arm15");
+    assertValueAtConsumer(graph, "H3SLAAttention", "sparsity_ratio", 0.85, "sla_sparsity");
+    assertValueAtConsumer(graph, "H3SLAAttention", "block_size", "64", "sla_block_size");
+    assertValueAtConsumer(graph, "H3SLAAttention", "min_seq_len", 1024, "sla_min_seq_len");
+    assertValueAtConsumer(graph, "H3SLAAttention", "dense_last_steps", 3, "sla_dense_last_steps");
+    assertValueAtConsumer(graph, "H3SLAAttention", "dense_steps", "0,1", "sla_dense_steps");
+    assertValueAtConsumer(graph, "H3SLAAttention", "dense_backend", "pytorch", "sla_dense_backend");
+    assertValueAtConsumer(graph, "H3SLAAttention", "protect_audio", false, "sla_protect_audio");
+    assertValueAtConsumer(graph, "H3SLAAttention", "stabilize_motion", false, "sla_stabilize_motion");
+    assertValueAtConsumer(graph, "H3SLAAttention", "disable_fp16_accum", false, "sla_disable_fp16_accum");
+    // reference_protection is the enum → boolean fold ('Off' means it):
+    // 'Light' composes TRUE at the kernel input — and the fold is
+    // liveness-separated from a hardcoded true by the 'Off' leg below
+    // (the default 'Heavy Enforcement' also folds true, so only the
+    // false leg convicts a wiring that forgot the enum).
+    assertValueAtConsumer(graph, "H3SLAAttention", "reference_protection", true, "sla_reference_protection (Light)");
+    const off = await composeH3({
+      length: 56,
+      sla_enabled: true, sla_reference_protection: "Off",
+      calls: [SHOT()],
+    }, "h3_value_arm15_off");
+    assertValueAtConsumer(off, "H3SLAAttention", "reference_protection", false, "sla_reference_protection (Off)");
+    assert.equal(switchCarrying(graph, "H3SLAAttention").switch, true, "sla_enabled owns the attention switch");
+  });
+
+  it("ARM 16 — attention_backend verbatim at ModelAttentionBackend (the non-SLA arm's backend)", async () => {
+    const graph = await composeH3({
+      length: 56, attention_backend: "pytorch attention",
+      calls: [SHOT()],
+    }, "h3_value_arm16");
+    assertValueAtConsumer(graph, "ModelAttentionBackend", "attention", "pytorch attention", "attention_backend");
+  });
+
+  it("ARM 17 — the interp + sr seats verbatim (model/multiplier at the FILM pair, resolution/DiT model at the SeedVR2 pair), both switches on under the master", async () => {
+    const graph = await composeH3({
+      length: 56,
+      second_pass_enabled: true,
+      interpolate_enabled: true, interp_model: "rife47.pth", interp_multiplier: 4,
+      sr_switch: true, sr_model: "seedvr2_ema_3b_fp8_e4m3fn.safetensors", sr_resolution: 1440,
+      calls: [SHOT()],
+    }, "h3_value_arm17");
+    assertValueAtConsumer(graph, "FrameInterpolationModelLoader", "model_name", "rife47.pth", "interp_model");
+    assertValueAtConsumer(graph, "FrameInterpolate", "multiplier", 4, "interp_multiplier");
+    assertValueAtConsumer(graph, "SeedVR2LoadDiTModel", "model", "seedvr2_ema_3b_fp8_e4m3fn.safetensors", "sr_model");
+    assertValueAtConsumer(graph, "SeedVR2VideoUpscaler", "resolution", 1440, "sr_resolution");
+    assert.equal(switchCarrying(graph, "FrameInterpolate").switch, true, "interpolate_enabled owns the interp switch");
+    assert.equal(switchCarrying(graph, "SeedVR2VideoUpscaler").switch, true, "sr_switch owns the super-res switch");
+  });
+
+  it("ARM 18 — the five sharpen leaves verbatim in the ImageSharpenKJ method dict + sharpen_enabled owns the sharpen switch", async () => {
+    const graph = await composeH3({
+      length: 56,
+      second_pass_enabled: true, sharpen_enabled: true,
+      sharpen_method: "adaptive_usm", sharpen_strength: 0.55,
+      sharpen_radius: 2.5, sharpen_threshold: 0.15, sharpen_iterations: 7,
+      calls: [SHOT()],
+    }, "h3_value_arm18");
+    const sharpen = Object.values(graph).find((n) => n.class_type === "ImageSharpenKJ");
+    assert.ok(sharpen, "the sharpen node composed (hop [5])");
+    const method = sharpen.inputs.method as Record<string, unknown>;
+    assert.deepEqual(
+      { method: method.method, strength: method.strength, radius: method.radius, threshold: method.threshold, iterations: method.iterations },
+      { method: "adaptive_usm", strength: 0.55, radius: 2.5, threshold: 0.15, iterations: 7 },
+      "the stated sharpen leaves ride the grouped dict verbatim",
+    );
+    assert.equal(switchCarrying(graph, "ImageSharpenKJ").switch, true, "sharpen_enabled owns the sharpen switch");
+  });
+
+  it("ARM 19 — the media lanes reach their load/trim consumers: first frame + last_frame + ref_images at LoadImage, ref_videos at LoadVideo, the stated trim at Video Slice, ref_audios at LoadAudio", async () => {
+    const graph = await composeH3({
+      length: 56,
+      image: "data/input/first.png", last_frame: "data/input/last.png",
+      ref_images: ["data/input/ref1.png", "data/input/ref2.png"],
+      ref_videos: ["data/input/motion.mp4"],
+      ref_video_trims: [{ start_time: 1.5, duration: 2.5 }],
+      ref_audios: ["data/input/voice.wav"],
+      calls: [SHOT()],
+    }, "h3_value_arm19");
+    const loads = Object.values(graph).filter((n) => n.class_type === "LoadImage");
+    for (const stated of ["data/input/first.png", "data/input/last.png", "data/input/ref1.png", "data/input/ref2.png"]) {
+      assert.ok(loads.some((n) => n.inputs.image === stated),
+        `IMAGE LANE VALUE ARM: no LoadImage carries '${stated}' — the stated media never reached the graph`);
+    }
+    assertValueAtConsumer(graph, "LoadVideo", "file", "data/input/motion.mp4", "ref_videos");
+    assertValueAtConsumer(graph, "Video Slice", "start_time", 1.5, "ref_video_trims start");
+    assertValueAtConsumer(graph, "Video Slice", "duration", 2.5, "ref_video_trims duration");
+    assertValueAtConsumer(graph, "LoadAudio", "audio", "data/input/voice.wav", "ref_audios");
+  });
+
+  it("ARM 20 — the refmod dials verbatim at the bake head: mode/pool/identity/save ride MiniMaxH3RefModExtract", async () => {
+    const graph = await composeH3({
+      length: 56, ref_mods: ["data/input/pack.png"],
+      refmod_mode: "Full Reference", refmod_pool: 24, refmod_identity: 700, refmod_save: false,
+      calls: [SHOT()],
+    }, "h3_value_arm20");
+    assertValueAtConsumer(graph, "MiniMaxH3RefModExtract", "mode", "Full Reference", "refmod_mode");
+    // THE POOL IS SQUARE AT THE KERNEL: the single dial composes BOTH
+    // edges (pool_h AND pool_w) — pin both, never one.
+    assertValueAtConsumer(graph, "MiniMaxH3RefModExtract", "pool_h", 24, "refmod_pool (h)");
+    assertValueAtConsumer(graph, "MiniMaxH3RefModExtract", "pool_w", 24, "refmod_pool (w)");
+    assertValueAtConsumer(graph, "MiniMaxH3RefModExtract", "identity", 700, "refmod_identity");
+    assertValueAtConsumer(graph, "MiniMaxH3RefModExtract", "save", false, "refmod_save");
+  });
+
+  it("ARM 21 — the k pin: a two-window film's window ordinal reaches the graph as the save naming (w1 AND w2)", async () => {
+    const graph = await composeH3({
+      length: 124,
+      calls: [SHOT(), SHOT({ text: "then a turn", start_frame: 56, end_frame: 124 })],
+    }, "h3_value_arm21");
+    const prefixes = Object.values(graph)
+      .filter((n) => n.class_type === "SaveVideo")
+      .map((n) => n.inputs.filename_prefix);
+    for (const w of ["h3_t4_w1", "h3_t4_w2"]) {
+      assert.ok(prefixes.includes(w), `WINDOW ORDINAL VALUE ARM: no SaveVideo names '${w}' (saw ${JSON.stringify(prefixes)}) — the window index never reached the engine's save face`);
+    }
+  });
+
+  it("ARM 22 — duck_depth_db verbatim at the film mix (duck_db) + the image_name alias reaches LoadImage", async () => {
+    // THE FILM HALF: the mix is the film tail (two windows) — the
+    // stated duck depth lands at its duck_db input.
+    const film = await composeH3({
+      length: 124, duck_depth_db: -22,
+      audio_clips: [{ src: "data/input/take.wav", start_frame: 0, dur_frames: 24, text: "hello there" }],
+      calls: [SHOT(), SHOT({ text: "then a turn", start_frame: 56, end_frame: 124 })],
+    }, "h3_value_arm22");
+    assertValueAtConsumer(film, "MeliteFilmAudioMix", "duck_db", -22, "duck_depth_db");
+    // THE ALIAS HALF: the call-level alias is the compose's documented
+    // guide read (actions.ts — call.image ?? call.ref_image ??
+    // call.image_name); the alias must reach LoadImage exactly like the
+    // face's First frame spelling does.
+    const alias = await composeH3({
+      length: 56,
+      calls: [SHOT({ image_name: "data/input/alias.png" })],
+    }, "h3_value_arm22b");
+    const loads = Object.values(alias).filter((n) => n.class_type === "LoadImage");
+    assert.ok(loads.some((n) => n.inputs.image === "data/input/alias.png"),
+      "GUIDE ALIAS VALUE ARM: no LoadImage carries the image_name alias — the alias died between seat and graph");
+  });
+
+  it("ARM 23 — the legacy switch aliases are retired dead law: a stated interp_switch never rides the interp switch (the primary owns it)", async () => {
+    // THE RETIREMENT PIN (actions.ts, the one-owner note): the old
+    // renderer-era aliases (interp_switch / sharpen_switch /
+    // sla_switch) are gate-admitted for old drafts but the wiring
+    // reads ONLY the primaries. A stated alias must NOT flip its
+    // switch — if it ever does, this arm reds (the alias grew a
+    // second owner behind the primary's back).
+    const graph = await composeH3({
+      length: 56,
+      second_pass_enabled: true, interp_switch: true,
+      calls: [SHOT()],
+    }, "h3_value_arm23");
+    assert.equal(switchCarrying(graph, "FrameInterpolate").switch, false,
+      "the stated legacy interp_switch flipped the interp switch — the alias rode behind the primary's back");
+  });
+});
