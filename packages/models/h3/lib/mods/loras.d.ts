@@ -8,6 +8,8 @@ export declare const H3_LORA_ROWS: readonly [{
     readonly category: "distill";
     readonly default_strength: 0.8;
     readonly steps: 4;
+    readonly steps_min: 4;
+    readonly steps_max: 4;
 }, {
     readonly id: "h3_lightx2v_turbo";
     readonly filename: "h3/minimax_h3_fl2v_lightx2v_turbo_4to8step_v0.1-v1.0_768p_v4_step600_dareties.safetensors";
@@ -26,6 +28,8 @@ export declare const H3_LORA_ROWS: readonly [{
     readonly category: "distill";
     readonly default_strength: 1;
     readonly steps: 4;
+    readonly steps_min: 4;
+    readonly steps_max: 4;
 }, {
     readonly id: "h3_turbo8_v1";
     readonly filename: "h3/minimax_h3_fl2v_turbo_8step_v1.0_comfyui_bf16.safetensors";
@@ -34,6 +38,8 @@ export declare const H3_LORA_ROWS: readonly [{
     readonly category: "distill";
     readonly default_strength: 1;
     readonly steps: 8;
+    readonly steps_min: 8;
+    readonly steps_max: 8;
 }, {
     readonly id: "h3_ref2v_turbo4";
     readonly filename: "h3/minimax_h3_ref2v_turbo_4step_v0.1_comfyui_bf16.safetensors";
@@ -42,6 +48,8 @@ export declare const H3_LORA_ROWS: readonly [{
     readonly category: "distill";
     readonly default_strength: 1;
     readonly steps: 4;
+    readonly steps_min: 4;
+    readonly steps_max: 4;
 }, {
     readonly id: "h3_acc8_fl2va";
     readonly filename: "h3/MiniMax-H3-FL2VA-Acc-8Step_pruned_comfy.safetensors";
@@ -50,6 +58,8 @@ export declare const H3_LORA_ROWS: readonly [{
     readonly category: "distill";
     readonly default_strength: 1;
     readonly steps: 8;
+    readonly steps_min: 8;
+    readonly steps_max: 8;
 }, {
     readonly id: "h3_acc8_ref2va";
     readonly filename: "h3/MiniMax-H3-Ref2VA-Acc-8Step_pruned_comfy.safetensors";
@@ -58,6 +68,8 @@ export declare const H3_LORA_ROWS: readonly [{
     readonly category: "distill";
     readonly default_strength: 1;
     readonly steps: 8;
+    readonly steps_min: 8;
+    readonly steps_max: 8;
 }, {
     readonly id: "h3_larryvrh_v4_ema";
     readonly filename: "h3/minimax_h3_turbo_v4_step600_ema.safetensors";
@@ -86,6 +98,8 @@ export declare const H3_LORA_ROWS: readonly [{
     readonly category: "distill";
     readonly default_strength: 1;
     readonly steps: 4;
+    readonly steps_min: 4;
+    readonly steps_max: 4;
 }, {
     readonly id: "h3_taomate_3step";
     readonly filename: "h3/minimax_h3_taomate_3step_lora_avg_rank_19_bf16.safetensors";
@@ -94,5 +108,7 @@ export declare const H3_LORA_ROWS: readonly [{
     readonly category: "distill";
     readonly default_strength: 0.7;
     readonly steps: 3;
+    readonly steps_min: 3;
+    readonly steps_max: 3;
 }];
 export declare function apply(ctx: Context): void;

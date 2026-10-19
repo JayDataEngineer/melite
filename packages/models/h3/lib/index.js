@@ -262,6 +262,11 @@ export const DECL = {
         "sla_dense_last_steps", "sla_dense_steps", "sla_dense_backend",
         "sla_reference_protection", "sla_protect_audio", "sla_stabilize_motion",
         "sla_disable_fp16_accum", "sla_switch",
+        // THE BAKE'S STATED DIALS (study §5/§7.2; value-arms ARMs 13/14)
+        // — the family's own declared surface for the RefMod extract's
+        // fidelity dials (the schema's refmod group, the film action's
+        // rows, the compose's stated inputs).
+        "refmod_mode", "refmod_pool", "refmod_identity", "refmod_save",
         "image_name",
     ],
     "provisions": [
