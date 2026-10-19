@@ -192,6 +192,16 @@ export function hydrateLayerA(rawDoc: Record<string, unknown> | undefined): Laye
     sr_model: raw?.sr_model === "seedvr2_ema_3b_fp16.safetensors" || raw?.sr_model === "seedvr2_ema_3b_fp8_e4m3fn.safetensors"
       ? raw.sr_model : undefined,
     sr_resolution: optNum("sr_resolution"),
+    // THE BAKE'S STATED DIALS (study §5/§7.2; value-arms ARMs 13/14):
+    // the RefMod extract's fidelity dials — the panel owns them, the
+    // doc carries the STATED override only (absent = the declared
+    // default the compose owns). mode is the non-default member
+    // (attention_backend's shape); pool/identity ride any stated
+    // number; save is false-gated (sla_enabled's shape — absent = on).
+    refmod_mode: raw?.refmod_mode === "Full Reference" ? "Full Reference" : undefined,
+    refmod_pool: optNum("refmod_pool"),
+    refmod_identity: optNum("refmod_identity"),
+    refmod_save: raw?.refmod_save === false ? false : undefined,
     // THE ATTENTION BACKEND (2026-10-16: caught by the contract
     // wall's new two-directional law — the pick had a schema row and
     // a compose read but NO studio seat: a UI state the doc never
@@ -329,6 +339,9 @@ export const LAYERA_KEY_UNIVERSE: ReadonlySet<string> = new Set([
   // the true-gated switch riders + their stamps
   "sr_switch", "sr_model", "sr_resolution",
   "second_pass_enabled", "refine_lora", "refine_strength", "refine_steps",
+  // the bake's stated dials (the override-gated riders + the
+  // false-gated save)
+  "refmod_mode", "refmod_pool", "refmod_identity", "refmod_save",
   // the false-gated master + the present-when-non-empty riders
   "sla_enabled", "loras", "audio_clips",
   "ref_images", "ref_videos", "ref_audios", "ref_mods", "ref_video_trims",
@@ -380,6 +393,16 @@ export function serializeLayerA(a: LayerA, base?: Record<string, unknown>): Reco
   // THE SLA MASTER SWITCH rides only when OFF (absent = on — the
   // family default; a false is the real override compose reads).
   if (a.sla_enabled === false) out.sla_enabled = false
+  // THE BAKE'S STATED DIALS (study §5/§7.2; value-arms ARMs 13/14):
+  // ride only when STATED away from the declared default (absent =
+  // the family default the compose owns) — the override-ride law of
+  // sr_switch. A flip BACK to the default pole rides the delete
+  // (the default-pole law): the emit gate refuses, the base's
+  // override clears. save is false-gated (sla_enabled's shape).
+  if (a.refmod_mode != null) out.refmod_mode = a.refmod_mode
+  if (a.refmod_pool != null) out.refmod_pool = a.refmod_pool
+  if (a.refmod_identity != null) out.refmod_identity = a.refmod_identity
+  if (a.refmod_save === false) out.refmod_save = false
   // (Layer A NLE) positioned audio clips — only when present (an empty
   // array = no clips = absent; the engine default is silence).
   if (a.audio_clips?.length) out.audio_clips = a.audio_clips

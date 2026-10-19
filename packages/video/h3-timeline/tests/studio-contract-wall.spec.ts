@@ -91,6 +91,8 @@ const LAYER_A_ALL_KEYS: string[] = [
   "ref_image_size", "model", "audio_stem", "loras", "audio_clips",
   "ref_images", "ref_videos", "ref_audios", "ref_mods",
   "ref_video_trims", "duck_depth_db",
+  // THE BAKE'S STATED DIALS (study §5/§7.2; value-arms ARMs 13/14)
+  "refmod_mode", "refmod_pool", "refmod_identity", "refmod_save",
 ]
 
 /** A maximally-populated Layer A (every value non-default, every
@@ -106,6 +108,12 @@ function populatedMax(): Record<string, unknown> {
     else if (key === "ref_images" || key === "ref_videos" || key === "ref_audios" || key === "ref_mods") populated[key] = ["https://u/d.png"]
     else if (key === "ref_video_trims") populated.ref_video_trims = [{ start_time: 0, duration: 2 }]
     else if (key === "duck_depth_db") populated.duck_depth_db = -14
+    // the bake's stated dials: the non-default members (mode Full,
+    // pool 32, identity 1000) and save's false pole (absent = on)
+    else if (key === "refmod_mode") populated[key] = "Full Reference"
+    else if (key === "refmod_pool") populated[key] = 32
+    else if (key === "refmod_identity") populated[key] = 1000
+    else if (key === "refmod_save") populated[key] = false
     else if (key === "seed") populated.seed = 7
     else if (key === "sharpen_enabled" || key === "interpolate_enabled" || key === "sr_switch" || key === "second_pass_enabled") populated[key] = true
     // pin-equals-default booleans: TRUE is the hydrated state (the

@@ -5500,6 +5500,10 @@ window.__ModuleLoader__.load({
 				sr_switch: raw?.sr_switch === true,
 				sr_model: raw?.sr_model === "seedvr2_ema_3b_fp16.safetensors" || raw?.sr_model === "seedvr2_ema_3b_fp8_e4m3fn.safetensors" ? raw.sr_model : void 0,
 				sr_resolution: optNum("sr_resolution"),
+				refmod_mode: raw?.refmod_mode === "Full Reference" ? "Full Reference" : void 0,
+				refmod_pool: optNum("refmod_pool"),
+				refmod_identity: optNum("refmod_identity"),
+				refmod_save: raw?.refmod_save === false ? false : void 0,
 				attention_backend: raw?.attention_backend === "pytorch attention" || raw?.attention_backend === "comfy kitchen attention" ? raw.attention_backend : void 0,
 				second_pass_enabled: raw?.second_pass_enabled === true,
 				refine_lora: typeof raw?.refine_lora === "string" && raw.refine_lora !== "" ? raw.refine_lora : void 0,
@@ -5612,6 +5616,10 @@ window.__ModuleLoader__.load({
 			"refine_lora",
 			"refine_strength",
 			"refine_steps",
+			"refmod_mode",
+			"refmod_pool",
+			"refmod_identity",
+			"refmod_save",
 			"sla_enabled",
 			"loras",
 			"audio_clips",
@@ -5647,6 +5655,10 @@ window.__ModuleLoader__.load({
 				if (a.refine_steps != null) out.refine_steps = a.refine_steps;
 			}
 			if (a.sla_enabled === false) out.sla_enabled = false;
+			if (a.refmod_mode != null) out.refmod_mode = a.refmod_mode;
+			if (a.refmod_pool != null) out.refmod_pool = a.refmod_pool;
+			if (a.refmod_identity != null) out.refmod_identity = a.refmod_identity;
+			if (a.refmod_save === false) out.refmod_save = false;
 			if (a.audio_clips?.length) out.audio_clips = a.audio_clips;
 			if (a.ref_images?.length) out.ref_images = a.ref_images;
 			if (a.ref_videos?.length) out.ref_videos = a.ref_videos;
