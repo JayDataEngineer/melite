@@ -868,6 +868,43 @@ test('RECIPE SWITCH: picking a stamped row over derived family defaults lands th
   // silent drop — the sweep's live catch)
   await waitFor(() => { expect((screen.getByRole('textbox', { name: 'Prompt' }) as HTMLInputElement).value).toBe('Remove the background, and output a PNG image') })
   await waitFor(() => { expect(recipeTrigger(container)?.textContent ?? '').toContain('Remove Background') }, { timeout: 4_000 })
+  // AND the round-trip back: blank applies the picked row's
+  // departure (the prompt unstated, the family defaults derived
+  // again — never a persisted recipe key)
+  fireEvent.click(recipeTrigger(container))
+  fireEvent.click(screen.getByRole('menuitem', { name: /^Blank/ }))
+  await waitFor(() => { expect(recipeTrigger(container)?.textContent ?? '').toBe('-- recipe --') }, { timeout: 4_000 })
+})
+
+/** THE OWN-STAMP UNIT LAW (the coverage gate: every branch of the
+ *  gate the wall guards fires — a guarded line no wall executes is a
+ *  second unwitnessed seam). */
+test('OWN-STAMP: the model re-point is not an own stamp; an axis row gains its durable key', async () => {
+  const { ownStampOf } = await import('@melite/card-base/client')
+  // a Recipe row carrying a model re-point (a composed row's voice)
+  // stamps everything EXCEPT the re-point
+  expect(ownStampOf(ENVELOPED, { id: 'x', label: 'X', group: 'Recipe', defaults: { model: 'm', steps: 8 }, route: '' })).toEqual({ steps: 8 })
+  // an AXIS row gains its durable key (the vocabulary mirror —
+  // axisPickPatch's guard, same spelling)
+  expect(ownStampOf(ENVELOPED, { id: 'turbo', label: 'Turbo', group: 'Variant', defaults: { steps: 8 }, route: '' })).toEqual({ steps: 8, variant: 'turbo' })
+})
+
+test('BLANK IDEMPOTENT (the (k) law): re-picking blank with nothing held writes nothing', async () => {
+  const writes: Array<Record<string, unknown>> = []
+  const Probe = (): ReactElement => {
+    const [user, setUser] = useState<SpecValues>({ model: 'qwen-img-edit-21' })
+    return createElement(CardForm, {
+      spec: QWEN21EDIT, user,
+      onSet: (name, v) => { setUser((m) => ({ ...m, [name]: v })) },
+      onPick: (patch) => { writes.push(patch); setUser((m) => ({ ...m, ...patch })) },
+    })
+  }
+  const { container } = render(createElement(Probe))
+  expect(recipeTrigger(container)?.textContent ?? '').toBe('-- recipe --')
+  fireEvent.click(recipeTrigger(container))
+  fireEvent.click(screen.getByRole('menuitem', { name: /^Blank/ }))
+  expect(writes).toEqual([]) // no departure to apply — the blank stays a no-op, never a phantom write
+  expect(recipeTrigger(container)?.textContent ?? '').toBe('-- recipe --')
 })
 
 test('RULE A: a stamp that is ENTIRELY mod-owned STILL renders its pill — the lora bag IS the preset (the menu stays its editor)', async () => {
