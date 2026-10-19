@@ -28,12 +28,12 @@ import { fireControlNets } from '@melite/comfyui-card-kit/guard'
 import type { ModBoarding } from '@melite/comfyui-card-kit/guard'
 import { saveAudio } from '@melite/comfyui-card-kit'
 import { mediaKindOf } from '@melite/contracts/mediaKinds'
-import { FAMILIES, paramSchema, wireList, H3_RECOMMENDED_SAMPLERS } from './schema.ts'
+import { FAMILIES, paramSchema, wireList, H3_RECOMMENDED_SAMPLERS } from './schema.js'
 import { H3_LORA_ROWS } from '@melite/models-h3/mods/loras'
-import type { Family } from './schema.ts'
+import type { Family } from './schema.js'
 import { SAMPLER_OPTIONS, SCHEDULER_OPTIONS } from '@melite/comfyui-card-kit/vocab'
-import { computeFilmMix, parseFilmMixClips, stanzaSecs } from './filmMix.ts'
-import type { FilmMixClip, FilmMixSpan } from './filmMix.ts'
+import { computeFilmMix, parseFilmMixClips, stanzaSecs } from './filmMix.js'
+import type { FilmMixClip, FilmMixSpan } from './filmMix.js'
 import {
   GRID_REMAINDER,
   GRID_STEP_FRAMES,
@@ -46,7 +46,7 @@ import {
   DOC_FPS_DEFAULT,
   spanStanzaFrames,
   transitionOverlap,
-} from './timelineContract.ts'
+} from './timelineContract.js'
 
 // THE ABSENT-BAG DEFAULT (h3-a, 2026-10-12; bytedance DMAD row
 // 2026-10-11 → the LightX2V Turbo 8-Step v1.0 row 2026-11-07 —
@@ -1555,9 +1555,21 @@ function renderH3Window(
       // lands in the loader's dropdown for later reuse.
       const firstVisual = (modImages[0] ?? modVideos[0]) as string
       const nameBase = firstVisual.startsWith('data:') ? 'mod' : firstVisual.split(/[\\/]/).pop()?.replace(/\.[^.]+$/, '') ?? 'mod'
+      // THE STATED BAKE (study §5/§7.2; value-arms ARMs 13/14): the
+      // fidelity dials are DECLARED params (schema.ts, the refmod
+      // group) and ride the node verbatim. Before this, pool and
+      // identity were SILENT engine defaults (nothing named them)
+      // and mode/save were pinned constants — the dials did not
+      // exist on this lane. The fallbacks are the declared defaults
+      // verbatim — one owner, the schema.
+      const bakeMode = typeof p.refmod_mode === 'string' ? p.refmod_mode : 'Compressed Reference'
+      const bakePool = typeof p.refmod_pool === 'number' && Number.isFinite(p.refmod_pool) ? p.refmod_pool : 16
+      const bakeIdentity = typeof p.refmod_identity === 'number' && Number.isFinite(p.refmod_identity) ? p.refmod_identity : 500
       const extractInputs: Record<string, string | number | boolean | OutputHandle> = {
         name: nameBase,
-        mode: 'Compressed Reference', concept_type: 'generic', save: true,
+        mode: bakeMode, concept_type: 'generic',
+        save: p.refmod_save !== false,
+        pool_h: bakePool, pool_w: bakePool, identity: bakeIdentity,
         // THE VAE EDGE (2026-11-06 live burn: 'connect an av_encoder
         // (MiniMax-H3 VAE loader) or a standard VAE' — the engine
         // refuses the extract at run time without one; both inputs
@@ -2058,6 +2070,14 @@ export const film: ComfyActionSpec<Record<string, unknown>, H3Facts> = {
     { name: "interp_switch", type: "boolean" },
     { name: "sharpen_switch", type: "boolean" },
     { name: "sla_switch", type: "boolean" },
+    // THE BAKE'S STATED DIALS (study §5/§7.2; value-arms ARMs 13/14):
+    // the RefMod extract's fidelity dials, declared on the serve plane
+    // (schema.ts, the refmod group) and stated at the node (the
+    // extract inputs). The family door judges them like every knob.
+    { name: "refmod_mode", type: "enum", options: ["Compressed Reference", "Full Reference"] },
+    { name: "refmod_pool", type: "number", bounds: [2, 64] },
+    { name: "refmod_identity", type: "number", bounds: [0, 2000] },
+    { name: "refmod_save", type: "boolean" },
     { name: "image_name", type: "string" },
   ],
   facts: parseH3Facts,

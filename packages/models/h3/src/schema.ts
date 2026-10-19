@@ -9,7 +9,7 @@ import { vocabulary } from '@melite/comfyui-card-kit/vocab'
 import { samplingExtra } from '@melite/comfyui-card-kit/fields'
 import { bag } from '@melite/contracts/extraKeys'
 import { coerceWireArrays } from '@melite/comfyui-card-kit'
-import { CALL_KEYS, FILM_ONLY_KEYS, GRID_BASE_FRAMES, GRID_MAX_FRAMES, GRID_STEP_FRAMES, REF_CAPS, T4_ONLY_KEYS, assertGridLength, assertSpanGrid, deriveWindowFamily, isMediaRef, normalizeDeclaredRefs, transitionOverlap } from './timelineContract.ts'
+import { CALL_KEYS, FILM_ONLY_KEYS, GRID_BASE_FRAMES, GRID_MAX_FRAMES, GRID_STEP_FRAMES, REF_CAPS, T4_ONLY_KEYS, assertGridLength, assertSpanGrid, deriveWindowFamily, isMediaRef, normalizeDeclaredRefs, transitionOverlap } from './timelineContract.js'
 
 // the window families this renderer builds (three shapes:
 // t4r opener / t4_open window / t4_chain window).
@@ -97,6 +97,17 @@ export const paramSchema = z.object({
   // pre-baked .safetensors stems under models/refmods/ stay legal
   // REUSE currency through the loader.
   ref_mods: z.array(z.string().role('path')).description("RefMods (reusable reference mods)").max(REF_CAPS.refmods).extra('extra', bag({ order: null, wtype: 'image_list', media: 'mod', max_stack: REF_CAPS.refmods, tooltip: "RefMods — ANY media rides (images, videos, audio): the system bakes the pack and injects it as reference tokens through all DiT blocks. Strength 1 per mod; spends no bundle-bus slot; its OWN concept — never a fourth reference lane. 8 max. Pre-baked .safetensors packs under models/refmods/ stay legal (reuse through the loader). Pack-documented limits, never silent: attributes can still mix across mods (identity, clothing, background, composition); strength blends, it never replaces outright; voice transfer does not work reliably (music references carry, speaker identity does not). A picked path commits its stem." })),
+  // THE BAKE'S STATED DIALS (study dev_docs/audits/refmod-deep-study-2026-10-19.md
+  // §5/§7.2 — the engine executed identity 500 / pool 16×16 /
+  // Compressed Reference / save-every-run as SILENT defaults while
+  // the compose stated none of them; the dials did not exist on this
+  // lane). Declared with today's values as the defaults: zero
+  // behavior change, the same bake — STATED (the value-arms wall's
+  // ARMs 13/14 judge the inputs present AND named at the node).
+  refmod_mode: vocabulary(["Compressed Reference", "Full Reference"]).description("RefMod bake mode").default("Compressed Reference").extra('extra', bag({ order: null, group: 'refmod', wtype: 'select', tooltip: "How the bake stores the reference. Compressed Reference pools the latent on the grid below — fast, blending-friendly; the pack's own docs mark pooling lossy in exactly the way that destroys facial identity. Full Reference stores the full latent (identity-critical work; more tokens per frame). The extension's training/encode modes are pack-builder modes, not the run lane." })),
+  refmod_pool: z.number().min(2).max(64).step(2).description("RefMod pool grid").default(16).extra('extra', bag({ order: null, group: 'refmod', wtype: 'number', tooltip: "Compressed mode: the pooled latent grid's long edge (even, 2–64). 16 = 64 tokens/frame (the concept sweet spot); 32 = 256 tokens; 64 = 1024, full-mode parity for identity. The grid auto-fits the source's aspect ratio around this edge." })),
+  refmod_identity: z.number().min(0).max(2000).step(50).description("RefMod refinement steps").default(500).extra('extra', bag({ order: null, group: 'refmod', wtype: 'number', tooltip: "Compressed mode: optimization steps that reduce the pooled latent's reconstruction error (0 = pooling alone). Each step is a gradient pass — THE time dial: the bake runs this many steps PER REFERENCE PER WINDOW, so a film with N windows pays N × refs × this. The engine's silent 500 default was the 'refmod is slow' burn." })),
+  refmod_save: z.boolean().description("Save baked RefMod").default(true).extra('extra', bag({ order: null, group: 'refmod', wtype: 'boolean', tooltip: "Re-write the baked pack into models/refmods/<name> every run so it lands in the loader's dropdown for reuse. Off = bake, inject, discard (no disk writes). The pack carries the stated dials in its metadata either way." })),
   // (THE BED IS GONE — operator 2026-09-22: "We have Audio Bed
   // input. We don't use that, that is a bug that is there." Film
   // music rides the D-M-E lanes' MUSIC clips, pinned per window;

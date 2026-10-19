@@ -13,8 +13,8 @@
 // would invert card-kit→family. New module, no cycle (schema/actions
 // never import back).
 import { emitParamsSchema } from "@melite/comfyui-card-kit/params-emit";
-import { film } from "./actions.ts";
-import { paramSchema } from "./schema.ts";
+import { film } from "./actions.js";
+import { paramSchema } from "./schema.js";
 
 export interface WindowSpecProjection {
   /** the carrier's own key universe (paramSchema dict), sorted. */

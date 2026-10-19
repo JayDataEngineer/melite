@@ -23,8 +23,8 @@
 import type { Plugin } from "@deepseek-ai/cordis";
 import { ModelsServiceFace } from '@melite/comfyui-card-kit/service-faces'
 import type { ModelDecl } from '@melite/comfyui-card-kit/model-contract'
-import { FAMILY_LAW } from "./timelineContract.ts"
-import { film } from "./actions.ts";
+import { FAMILY_LAW } from "./timelineContract.js"
+import { film } from "./actions.js";
 
 export const DECL: ModelDecl = {
   "id": "h3",
@@ -288,6 +288,11 @@ export const DECL: ModelDecl = {
     "sla_dense_last_steps", "sla_dense_steps", "sla_dense_backend",
     "sla_reference_protection", "sla_protect_audio", "sla_stabilize_motion",
     "sla_disable_fp16_accum", "sla_switch",
+    // THE BAKE'S STATED DIALS (study §5/§7.2; value-arms ARMs 13/14)
+    // — the family's own declared surface for the RefMod extract's
+    // fidelity dials (the schema's refmod group, the film action's
+    // rows, the compose's stated inputs).
+    "refmod_mode", "refmod_pool", "refmod_identity", "refmod_save",
     "image_name",
   ],
   "provisions": [
@@ -484,9 +489,9 @@ export const family: Plugin = {
   },
 };
 
-export { finalizeH3, H3_T4_STRIP } from "./finalize.ts"
-export { assertOverlayGated } from "./actions.ts"
-export { serveWindowSpec, type WindowSpecProjection } from "./windowSpec.ts"
+export { finalizeH3, H3_T4_STRIP } from "./finalize.js"
+export { assertOverlayGated } from "./actions.js"
+export { serveWindowSpec, type WindowSpecProjection } from "./windowSpec.js"
 
 // The Loader-row face: DSH loads plugin rows by bare specifier and
 // unwraps `exports.default ?? exports` (vendor/cordis_plugins/loader

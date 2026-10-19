@@ -57,6 +57,11 @@ const GENRE_GROUPS = new Map([
   ['tagger', 'tagger'],
   ['target', 'upscale-tools'],
   ['sla', 'h3'],
+  // THE BAKE'S OWN SURFACE (study §7.2, 2026-10-19): the RefMod
+  // extract's fidelity dials (mode/pool/identity/save) are the h3
+  // family's bake tuning — neither sampling nor reference, their own
+  // subcategory, owned by the declaring model kit.
+  ['refmod', 'h3'],
   ['chain', 'motion'], ['guidance', 'motion'], ['output', 'motion'],
 ])
 /** The DEBT register (L1–L3): spellings that violate the law today,

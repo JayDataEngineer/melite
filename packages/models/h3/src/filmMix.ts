@@ -16,9 +16,9 @@
 //
 // The two wrongs in the card's history (the +22f carry original,
 // the start/24 first correction) stay dead in one place.
-import { DOC_FPS_DEFAULT, spanOverlap, spanStanzaFrames } from './timelineContract.ts'
+import { DOC_FPS_DEFAULT, spanOverlap, spanStanzaFrames } from './timelineContract.js'
 
-export { spanOverlap, spanStanzaFrames } from './timelineContract.ts'
+export { spanOverlap, spanStanzaFrames } from './timelineContract.js'
 
 export type FilmMixClipClass = 'dialogue' | 'sfx' | 'music'
 

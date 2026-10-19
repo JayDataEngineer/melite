@@ -410,7 +410,10 @@ describe("models against cards (the cross-validation, resurrected)", () => {
     // 467 -> 468 (2026-11-08, (l) 1905dedc0): the anny card's
     // body_image — a string field, judged by the wtype judge, only
     // walked here (the enumeration is the receipt).
-    assert.equal(walked, 468,
+    // 468 -> 472 (2026-10-19, the stated bake): the h3 family's
+    // refmod group (mode/pool/identity/save) — the bake's fidelity
+    // dials declared on the serve plane, judged like every knob.
+    assert.equal(walked, 472,
       `the census walked the estate's fields (${String(walked)} — a re-zoned or re-typed field set MOVES this number; growth is argued here, loss means the census emptied an arm)`);
     // judged 8 -> 6 (2026-11-08, the latent law): the image-edit
     // card's width/height leave the params zone (hidden compatibility
@@ -1618,7 +1621,10 @@ describe("THE TWO-HOMES BOUNDS-SYNC WALL (card schema == action ParamSpec, every
     // 660 -> 661 (2026-11-08, (l) 1905dedc0): the anny card's
     // body_image joins the shared names (schema row == compose
     // ParamSpec row, both string — one new agreeing pair).
-    assert.equal(pairs, 661, "the shared-name pair census changed — update this pin deliberately");
+    // 661 -> 665 (2026-10-19, the stated bake): the h3 family's
+    // refmod group joins the shared names — mode (enum), pool and
+    // identity (number, bounds), save (boolean): four agreeing pairs.
+    assert.equal(pairs, 665, "the shared-name pair census changed — update this pin deliberately");
     assert.deepEqual(offenders, [], `two-homes drift (card schema vs action ParamSpec):\n${offenders.join("\n")}`);
   });
 });

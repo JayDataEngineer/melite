@@ -89,7 +89,11 @@ const CARD_ROSTER = 14;
 // 467 -> 468 (2026-11-08, (l) 1905dedc0): the anny card's body_image
 // — a string field with wtype image (the estimator's card face; the
 // constructor's auto-square law mounts the input square).
-const FIELD_ROSTER = 468;
+// 468 -> 472 (2026-10-19, the stated bake): the h3 family's refmod
+// group — mode (select over the pack's two store modes), pool
+// (number), identity (number), save (boolean) — the dials the engine
+// executed silently now declared on the serve plane.
+const FIELD_ROSTER = 472;
 
 interface DictField {
   readonly type?: string;

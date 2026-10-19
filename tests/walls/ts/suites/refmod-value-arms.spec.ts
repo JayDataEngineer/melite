@@ -397,8 +397,7 @@ describe("the steps honesty wall (ERRORS d — the ~100 sampling-steps burn; pur
       `the committed catalog's married span tops at ${String(CATALOG_MAX_STEPS)} — the lane's declared ceiling; a row that raises it re-pins this arm deliberately (the catalog is the one owner, mods/loras.ts)`);
   });
 
-  it("ARM 12 — every committed distill row declares its step DOMAIN: the leaf's dial bounds itself to the row's own span, so a foreign count refuses at EDIT — never at the run door (the operator's prevalidation law)", async () => {
-    // ERRORS d remainder + the operator's own demand (ERRORS g: "we
+  it("ARM 12 — every committed distill row declares its step DOMAIN: the leaf's dial bounds itself to the row's own span, so a foreign count refuses at EDIT — never at the run door (the operator's prevalidation law)", async () => {    // ERRORS d remainder + the operator's own demand (ERRORS g: "we
     // spend a week building the system so this would be pre-validated
     // and show reds before we ever got into the app"). The bag leaf's
     // steps entry dials the generic envelope 1..100 (packs.ts:34)
@@ -418,6 +417,61 @@ describe("the steps honesty wall (ERRORS d — the ~100 sampling-steps burn; pur
         `${row.id}: domain [${String(row.steps_min)},${String(row.steps_max)}] sits inside the lane's declared solver ceiling (schema.ts:141 max 30)`);
       assert.ok(row.steps_min <= row.steps && row.steps <= row.steps_max,
         `${row.id}: the married default ${String(row.steps)} sits inside the row's own domain`);
+    }
+  });
+});
+
+describe("the bake is STATED, never a silent engine default (study §5; the purge P2 law at the bake's own nodes — ERRORS f's dials)", () => {
+  /** The composed graph's MiniMaxH3RefModExtract nodes (the bakes) —
+   *  one PER WINDOW on the film face (the dispatcher composes each
+   *  stanza through the render: the N×bake cost the study §5 named —
+   *  every window's bake is judged, never just the first). */
+  function extractsOf(graph: Graph): GNode[] {
+    const rows = Object.values(graph).filter((n) => n.class_type === EXTRACT_CLASS);
+    assert.ok(rows.length >= 1, "the composed graph carries the bake (the Extract)");
+    return rows;
+  }
+
+  it("ARM 13 — the bake's fidelity knobs are STATED at the node with the DECL's declared values: mode, pool, refinement steps, save ride the inputs — absent inputs are the silent-default class the operator burned", async () => {
+    // The study's §5 table: the engine executed identity 500, pool
+    // 16×16, mode 'Compressed Reference' while the compose stated
+    // NONE of them — the dials did not exist on this lane and the
+    // bake's cost/fidelity read as engine weather. The DECL now
+    // declares the knobs (schema.ts, the refmod group) with today's
+    // values as the DECLARED defaults (zero behavior change — the
+    // same bake, stated), and the compose rides them onto the node
+    // (purge P2: every value present AND named at the node the DECL
+    // says consumes it).
+    const graph = await composeH3({ ...FILM_DOC, ref_mods: [REFMOD_IMAGE] });
+    const bakes = extractsOf(graph);
+    for (const bake of bakes) {
+      assert.equal(bake.inputs["mode"], "Compressed Reference", "the bake mode is stated (the pooled default, declared)");
+      assert.equal(bake.inputs["identity"], 500, "the refinement steps are stated (the engine's former silent default — THE time dial)");
+      assert.equal(bake.inputs["pool_h"], 16, "the pool grid's height is stated (16 = 64 tokens/frame, the former silent default)");
+      assert.equal(bake.inputs["pool_w"], 16, "the pool grid's width is stated");
+      assert.equal(bake.inputs["save"], true, "the every-run pack re-write is stated (the disk cost the operator never saw)");
+    }
+  });
+
+  it("ARM 14 — the bake dials are the operator's word: a stated pool/refinement/mode rides the node VERBATIM (the run voice carries the price)", async () => {
+    // The dials exist to be moved: identity 0 (pooling alone — the
+    // fast face), pool 32 (256 tokens), Full Reference (the
+    // identity-critical mode upstream always had and the lane never
+    // offered). Whatever is stated lands at the node verbatim.
+    const graph = await composeH3({
+      ...FILM_DOC,
+      ref_mods: [REFMOD_IMAGE],
+      refmod_mode: "Full Reference",
+      refmod_pool: 32,
+      refmod_identity: 0,
+      refmod_save: false,
+    });
+    for (const bake of extractsOf(graph)) {
+      assert.equal(bake.inputs["mode"], "Full Reference", "the stated mode rides verbatim (the identity-critical mode, finally offered)");
+      assert.equal(bake.inputs["pool_h"], 32, "the stated pool rides verbatim");
+      assert.equal(bake.inputs["pool_w"], 32, "the stated pool rides verbatim (both edges)");
+      assert.equal(bake.inputs["identity"], 0, "the stated refinement steps ride verbatim (0 = pooling alone, the fast face)");
+      assert.equal(bake.inputs["save"], false, "the stated save rides verbatim (bake, inject, discard)");
     }
   });
 });

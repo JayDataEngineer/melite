@@ -125,6 +125,7 @@ const LOCAL: { site: string; values: () => readonly string[]; reason: string }[]
   { site: "h3:sla_dense_backend", values: () => inlineVocab("models/h3/src/schema.ts", "sla_dense_backend"), reason: "the h3 family's own dense backend picker" },
   { site: "h3:sla_reference_protection", values: () => inlineVocab("models/h3/src/schema.ts", "sla_reference_protection"), reason: "the h3 family's own protection levels" },
   { site: "h3:sharpen_method", values: () => inlineVocab("models/h3/src/schema.ts", "sharpen_method"), reason: "the h3 family's own sharpener kernels" },
+  { site: "h3:refmod_mode", values: () => inlineVocab("models/h3/src/schema.ts", "refmod_mode"), reason: "the RefMod bake's own storage mode — the pack's two store modes (the extension's training/encode modes are pack-builder modes, not the run lane); no engine combo declares it" },
   // THE MODEL CHOICE (operator directive, 2026-11-08): the standard
   // ComfyUI upscale-model roster (led by the "" unstated sentinel)
   // — declared LOCAL because the LIVE engine's
@@ -256,7 +257,7 @@ describe("THE VOCAB-RAILS SUBSET WALL — every closed vocabulary is engine-join
     const byFile: Record<string, number> = {};
     for (const s of sites) byFile[s.replace(join(process.cwd(), "packages") + "/", "")] = (byFile[s.replace(join(process.cwd(), "packages") + "/", "")] ?? 0) + 1;
     expect(byFile, "the per-file site census drifted — re-point the registry's sites (a count-only match can hide a swapped file)").toEqual({
-      "models/h3/src/schema.ts": 9,
+      "models/h3/src/schema.ts": 10,
       "image/tagger/src/card.ts": 4,
       "3d/anny/src/card.ts": 1,
       "3d/rig/src/card.ts": 1,
