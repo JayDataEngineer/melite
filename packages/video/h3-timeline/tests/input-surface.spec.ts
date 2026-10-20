@@ -122,6 +122,35 @@ describe("the input surface: the schema owns the wire form", () => {
       "no bed fields on the declared surface");
   });
 
+  // THE HIDDEN-LAW (audit h3-frames-anima B1-1, 2026-10-20: the
+  // Frames row served EDITABLE as the timeline span's rival — the
+  // compose proves the span owns the window (actions.ts's span rider
+  // overrides doc length unless a per-call knob pins), so a doc-level
+  // Frames control composes a value the operator never effectively
+  // chose). THE LAW: the row NEVER serves — it stays schema-declared
+  // (the compose still reads it, CALL_KNOB_KEYS pins it per call, the
+  // studio carries it display-owned). This arm rides the REAL walk
+  // (fieldsOfEnvelope over the real schema envelope), not a census.
+  it("FRAMES NEVER SERVES (B1-1): the hidden walk drops the length row while the schema still declares it", () => {
+    const envelope = ((def.schemaCarrier ?? def.schema) as unknown as { toJSON(): unknown }).toJSON() as never;
+    const fields = fieldsOfEnvelope(envelope);
+    assert.ok(!fields.some((f) => f.name === "length"),
+      "the served face carries a length control — FRAMES ARE LAYER B, the timeline's calls own the window lengths (the span's rival must not serve)");
+    // the row STAYS DECLARED: the envelope's root dict still carries
+    // it (the compose reads p.length; the studio's round-trip seat
+    // and CALL_KNOB_KEYS depend on the declaration)
+    const root = (envelope as unknown as { uid: number; refs: Record<string, { dict?: Record<string, number> }> })
+      .refs[String((envelope as unknown as { uid: number }).uid)];
+    assert.ok(root?.dict?.["length"] !== undefined,
+      "the schema still declares length — hiding it from the face must not delete it from the truth");
+    // and the schema's own validation arm still gates a junk length
+    // (the vocabulary law: the schema enforces EVERY key the
+    // renderer reads — hidden is validation-only)
+    assert.throws(() => def.schema({ length: 23 }),
+      /length/,
+      "a off-grid length still refuses at the door — hidden never means unvalidated");
+  });
+
   it("accepts the full declared surface; the bed starts at 0 by default", () => {
     const walked = def.schema({
       last_frame: "/m/end.png",
@@ -248,10 +277,12 @@ describe("the input surface: EVERY slot declares its slot shape (the freeform-te
     // THE GRID LAW (2026-09-21, "WHY IS WIDTH AND HEIGHT ON
     // DIFFERENT VERTICAL ROWS?"): the General group declares its
     // grid — Seed rides the grid, Width + Height share a
-    // row, Frames rides the grid. A stacked General face is the
+    // row. A stacked General face is the
     // 1:1 lie the operator caught (the component was CardForm; the
-    // DECLARATIONS never carried the grid).
-    for (const gridded of ["seed", "width", "height", "length"]) {
+    // DECLARATIONS never carried the grid). Frames LEFT the list at
+    // the B1-1 cure: it no longer serves (the hidden law arm), so
+    // it owns no grid seat either.
+    for (const gridded of ["seed", "width", "height"]) {
       assert.equal(fields.find((f) => f.name === gridded)?.columns, 2, `${gridded} declares the 2-col grid`);
     }
     // THE STAR IS DEAD (2026-09-21) → THE FIELD IS DEAD (c7bc662b7,

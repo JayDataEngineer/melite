@@ -130,11 +130,14 @@ export const paramSchema = z.object({
     // ALWAYS LAYER B"): the timeline's calls own the window lengths —
     // the single-call lift derives this row from the call's span at
     // compose (a stated span outranks this default; a knob pin still
-    // outranks both — the user's own word). The row STAYS SERVED
-    // (hidden = unserved by the hidden-alias law, and CALL_KNOB_KEYS
-    // pins length per call — the studio-contract wall burns on drift
-    // here); the LAYER-A FACE never shows it as the span's rival.
-    length: z.number().description("Frames").min(GRID_BASE_FRAMES).max(GRID_MAX_FRAMES).step(GRID_STEP_FRAMES).default(56).extra('extra', bag({ order: null, columns: 2, width: 1, tooltip: "How long each clip runs. Durations snap to the engine's 17k+5 grid: 56 frames = 2.33s, 124 = 5.17s, 362 = 15s — the clip's length rounds to the nearest step.", wtype: 'number' })),
+    // outranks both — the user's own word). The row is HIDDEN on the
+    // served face (audit h3-frames-anima B1-1, 2026-10-20: it served
+    // EDITABLE as the span's rival — a doc-level Frames only owns
+    // span-less calls, which fresh cards never author); it STAYS
+    // SCHEMA-DECLARED (the compose still reads p.length, CALL_KNOB_KEYS
+    // pins length per call, and the studio carries it display-owned —
+    // the round-trip seat wall) — the Layer-A face never shows it.
+    length: z.number().description("Frames").min(GRID_BASE_FRAMES).max(GRID_MAX_FRAMES).step(GRID_STEP_FRAMES).default(56).extra('extra', bag({ hidden: true, order: null, columns: 2, width: 1, tooltip: "How long each clip runs. Durations snap to the engine's 17k+5 grid: 56 frames = 2.33s, 124 = 5.17s, 362 = 15s — the clip's length rounds to the nearest step.", wtype: 'number' })),
     // FPS IS LAYER A (operator 2026-10-16, verbatim) — the project
     // clock, ONE owner: the doc's stated fps rides into every
     // CreateVideo container so the clip's seconds equal the bar's

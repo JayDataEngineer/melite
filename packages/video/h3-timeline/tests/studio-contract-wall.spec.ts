@@ -67,6 +67,23 @@ const WINDOW_MODEL: ModelFacts = {
 
 const SURFACE = new Set(Object.keys(emitParamsSpec(carrier as never, [...BOARDED, ...VARIANT_ADDRESSES])))
 
+/** THE DECLARED SET (the B1-1 cure, 2026-10-20): every key the
+ * schema's root dict names, hidden rows included — hidden removes a
+ * row from the SERVED face (FRAMES ARE LAYER B: the timeline's span
+ * owns the window length, the row must not serve as its rival),
+ * never from the DECLARED truth: the compose still reads p.length,
+ * CALL_KNOB_KEYS still pins it per call, and the studio carries it
+ * display-owned. Serialization-emission and knob-vocabulary arms
+ * judge against DECLARED, never SURFACE alone. */
+const DECLARED = new Set(Object.keys(
+  (((carrier as unknown as { toJSON(): unknown }).toJSON() as unknown as {
+    uid: number
+    refs: Record<string, { dict?: Record<string, number> }>
+  }).refs[String(
+    ((carrier as unknown as { toJSON(): unknown }).toJSON() as unknown as { uid: number }).uid,
+  )]?.dict) ?? {},
+))
+
 /** Non-knob carriers the card admits OUTSIDE the params schema — the
  * mod plane (params.loras, resolved against the family catalog at
  * compose), the NLE audio clips (stitch consumes), the audio
@@ -182,7 +199,7 @@ describe("the studio contract wall (Layer A writes only card truth)", () => {
     expect(SURFACE.size).toBeGreaterThan(20) // the walk answered
     for (const key of LAYER_A_ALL_KEYS) {
       expect(
-        SURFACE.has(key) || ADMITS.has(key),
+        SURFACE.has(key) || DECLARED.has(key) || ADMITS.has(key),
         `serializeLayerA key "${key}" is neither declared on the card nor admitted`,
       ).toBe(true)
     }
@@ -195,7 +212,7 @@ describe("the studio contract wall (Layer A writes only card truth)", () => {
     const out = serializeLayerA(hydrateLayerA(populated))
     for (const key of Object.keys(out)) {
       expect(
-        SURFACE.has(key) || ADMITS.has(key),
+        SURFACE.has(key) || DECLARED.has(key) || ADMITS.has(key),
         `serializeLayerA emitted "${key}" — neither declared nor admitted`,
       ).toBe(true)
     }
@@ -277,7 +294,7 @@ describe("the studio contract wall (Layer A writes only card truth)", () => {
   it("every CALL_KNOB_KEYS entry sits on the declared surface (the per-call stanza is card truth too)", () => {
     for (const key of CALL_KNOB_KEYS) {
       expect(
-        SURFACE.has(key),
+        SURFACE.has(key) || DECLARED.has(key),
         `CALL_KNOB_KEYS entry "${key}" is not declared on the card`,
       ).toBe(true)
     }

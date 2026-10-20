@@ -42,6 +42,7 @@ interface SerializedNode {
   extra?: Record<string, unknown>
   refs?: Record<string, SerializedNode>
   items?: Array<{ ref?: number }>
+  uid?: number
 }
 
 /** Walk the serialized schema's object nodes and yield every field

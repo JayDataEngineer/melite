@@ -24,10 +24,21 @@ const fields: Record<string, SpecField> = {}
 for (const f of walked) fields[f.name] = f
 
 describe("the fold's schema truth (the envelope walk carries the defaults)", () => {
-  it("the walk yields every KNOB_ORDER key with the carrier's own defaults", () => {
+  it("the walk yields every KNOB_ORDER key, or the schema declares it hidden (the fallback face's own contract)", () => {
+    // THE B1-1 CURE (2026-10-20): length is schema-declared but
+    // HIDDEN — FRAMES ARE LAYER B, the span owns the window. A
+    // hidden knob rides OverlayKnob's honest fallback face (a
+    // labeled free-text row, 'inherit' when nothing composes —
+    // card-base's own law), never a served control; the pin stays
+    // expressible and the compose still reads it.
+    const declared = ((carrier as unknown as { toJSON(): unknown }).toJSON() as unknown as {
+      uid: number
+      refs: Record<string, { dict?: Record<string, number> }>
+    })
+    const rootDict = declared.refs[String(declared.uid)]?.dict ?? {}
     for (const knob of KNOB_ORDER) {
-      const f = fields[knob]
-      assert.ok(f !== undefined, `${knob}: the served walk must carry the field`)
+      assert.ok(fields[knob] !== undefined || rootDict[knob] !== undefined,
+        `${knob}: neither served nor schema-declared — the fold has no truth to show`)
     }
     // 6 = the regolded walk default (2026-10-16 upstream-parity
     // audit: the 12 carried no receipt; the engine kernel's own
