@@ -109,6 +109,18 @@ describe('parseRescue (the estate refusal shapes, nothing else)', () => {
       .toBe(null)
     expect(parseRescue('the engine refused: CUDA out of memory')).toBe(null)
   })
+
+  // THE PRESS-TIME JOIN (E2-2 Piece A audit G1 — cards-anny-runtime-
+  // presence): the ESTATE's own press-time refusal (cardsLanes
+  // runtimeRefusal, not the engine's ComfyError) must parse to the
+  // same runtime rescue — the pair walls the producer→consumer join
+  // neither side can wall alone (the estate wall pins the sentence
+  // template; this arm pins the parse). The sentence below is the
+  // template verbatim with a representative engine-rooted start.
+  it('the estate press-time runtime refusal yields the runtime and its provision command', () => {
+    expect(parseRescue("family 'anny' declares runtime 'anny-estimator' (body_image stated) but no provisioned copy exists — anny-estimator runtime not found at /home/user/tools/comfyui/data/temp. Provision it: pnpm run provision -- estimator. Or point ANNY_ESTIMATOR_ROOT at an existing runtime. If ANNY_ESTIMATOR_ROOT is set for the engine but the lane cannot see it, export it in lanes.env and restart the lane. (walk-up from /home/user/tools/comfyui/data/temp for data/runtime/anny-estimator found no copy holding estimator_chain.py, .venv/bin/python, SOMA-X/tools/mhr2soma.py)"))
+      .toEqual({ kind: 'runtime', runtime: 'anny-estimator', command: 'pnpm run provision -- estimator', env: 'ANNY_ESTIMATOR_ROOT' })
+  })
 })
 
 describe('rescueOfLaneDetails (the structured lane miss, exact at the press site)', () => {
@@ -121,6 +133,13 @@ describe('rescueOfLaneDetails (the structured lane miss, exact at the press site
     expect(rescueOfLaneDetails({ family: 'f1', missing: 't.safetensors', kind: 'model' })).toBe(null)
     expect(rescueOfLaneDetails({ family: 'f1', missing: 't.safetensors', kind: 'extension' })).toBe(null)
     expect(rescueOfLaneDetails({ family: '', missing: 't.safetensors', kind: 'model' })).toBe(null)
+    // THE RUNTIME FALLBACK CONTRACT (E2-2 Piece A audit G1): the
+    // press-time runtime details row carries no command (a provision
+    // command is not a URL, so there is no fetch_url) — the
+    // structured path yields null and the banner keys on the parsed
+    // prose instead. A future firing offer that wires the command
+    // through details changes THIS arm first.
+    expect(rescueOfLaneDetails({ family: 'anny', slot: 'body_image', missing: 'anny-estimator', folders: ['/home/user/tools/comfyui/data/temp'], kind: 'runtime' })).toBe(null)
   })
 })
 

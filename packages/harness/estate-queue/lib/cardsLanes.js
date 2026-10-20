@@ -214,20 +214,12 @@ function sentinelHit(home, sentinel) {
         return false;
     return existsSync(join(home, clean));
 }
-/** The engine's own resolution, mirrored (nodes_anny.py:885-935):
- *  the env override wins (a set override names the home outright —
- *  the managed-boot truth, where the estate launches the engine
- *  with this same env; a deliberately stated path with valid
- *  sentinels is trusted over a blind walk-up, and a stated path
- *  that fails its sentinels is the engine's own failure, not a
- *  cue to keep searching), else the first ancestor of the output
- *  dir holding the rel dir decides — a chipped first hit is the
- *  miss, never a cue to walk on. */
+/** The engine's own walk-up, mirrored (nodes_anny.py:885-935):
+ *  the first ancestor of the output dir holding the rel dir
+ *  decides — a chipped first hit is the miss, never a cue to walk
+ *  on. Walk-up only: the caller owns the env leg (below), so this
+ *  function never re-checks it. */
 function resolveRuntimeHome(outputDir, rt) {
-    const override = (process.env[rt.env] ?? "").trim();
-    if (override !== "") {
-        return rt.sentinel.every((s) => sentinelHit(override, s)) ? override : null;
-    }
     let dir = resolve(outputDir);
     for (;;) {
         const home = join(dir, ...rt.rel);
@@ -262,6 +254,17 @@ function runtimeLegMiss(decl, fam, body) {
     if (root === null)
         return null;
     const override = (process.env[rt.env] ?? "").trim();
+    // THE FAIL-OPEN TRUST (audit G2): a stated override with valid
+    // sentinels is trusted WITHOUT a walk-up — a deliberately stated
+    // path is right far more often than a blind walk is. The known
+    // split (override valid in the LANE's env but absent from the
+    // ENGINE's own env) then passes the gate and burns at the engine
+    // — but that burn is FACED (the post-hoc runtime banner voices
+    // the same provision + env), never silent. The alternative
+    // (distrusting a stated-valid path) would false-refuse managed
+    // deployments whose override points outside any walk-up tree —
+    // blocking good work is worse than facing a bad run. G3 (a
+    // lanes.env-aware probe) belongs to Piece B.
     if (override !== "") {
         if (rt.sentinel.every((s) => sentinelHit(override, s)))
             return null;
