@@ -491,6 +491,55 @@ describe('comfy_manage contract projection matrix', () => {
     assert.ok(managerOperations.includes('operation m1'))
   })
 
+  // AUDIT F2 (infra-resources-census-honesty, 2026-10-20): the tool
+  // face sliced the roster at 20 rows with no "+N more" and never
+  // surfaced census_partial — an agent reading the face would title
+  // a partial scan as the whole truth, the same honesty class the
+  // census law banned at the service and deck planes.
+  test('AUDIT F2: a roster past the display cap names its truncation, never slices silently', () => {
+    const resources = Array.from({ length: 25 }, (_, index) => ({
+      ref: { kind: 'extension', id: 'pack-' + String(index) },
+      state: 'active',
+    }))
+    const value = text({
+      ok: true,
+      action: 'status',
+      detail: 'status',
+      data: { state: 'up', resources },
+    })
+    assert.ok(value.includes('resource: extension/pack-19 · active'), 'the cap still renders its 20 rows')
+    assert.ok(!value.includes('resource: extension/pack-20 · active'), 'rows past the cap stay cut — the cap is a token budget, the honesty is the naming')
+    assert.ok(value.includes('resource: +5 more (display cap — the roster is longer than shown)'),
+      'the truncation names itself — 25 rows shown as 20 without the note is a silent lie')
+  })
+
+  test('AUDIT F2: census_partial rides the tool face — a partial scan is never titled whole', () => {
+    const value = text({
+      ok: true,
+      action: 'status',
+      detail: 'status',
+      data: {
+        state: 'up',
+        resources: [{ ref: { kind: 'extension', id: 'pack' }, state: 'unknown' }],
+        census_partial: true,
+      },
+    })
+    assert.ok(value.includes('census: partial — the scan could not check every resource or item; unknown rows are not health verdicts'),
+      'the mark that managePlane derives must ride the face an agent reads')
+
+    const whole = text({
+      ok: true,
+      action: 'status',
+      detail: 'status',
+      data: {
+        state: 'up',
+        resources: [{ ref: { kind: 'extension', id: 'pack' }, state: 'active' }],
+        census_partial: undefined,
+      },
+    })
+    assert.ok(!whole.includes('census: partial'), 'a settled roster never carries the mark')
+  })
+
   test('THE FINDING-10 SPLIT: idle-engine status renders the historical rows by name, empty actives as none', () => {
     const value = text({
       ok: true,

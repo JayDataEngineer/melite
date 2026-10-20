@@ -196,13 +196,24 @@ function statusText(data: unknown): string[] {
   if (Array.isArray(value.stale_claims) && value.stale_claims.length > 0) out.push('stale_claims (historical, never settled): ' + value.stale_claims.map(asText).join(', '))
   if (typeof value.active_runs_note === 'string') out.push('note: ' + value.active_runs_note)
   if (Array.isArray(value.resources)) {
-    for (const resource of value.resources.slice(0, 20)) {
+    // THE CENSUS HONESTY LAW AT THE TOOL FACE (audit F2,
+    // 2026-10-20): the display cap is itself a scan cut — it must
+    // name itself. An agent reading 20 of 25 rows would title the
+    // roster complete; the truncation line keeps the count honest.
+    const shown = value.resources.slice(0, 20)
+    for (const resource of shown) {
       const row = recordValue(resource)
       if (row === null) continue
       const ref = recordValue(row.ref)
       const label = ref === null ? 'resource' : [ref.kind, ref.owner, ref.id].filter((item): item is string => typeof item === 'string').join('/')
       out.push('resource: ' + label + ' · ' + asText(row.state))
     }
+    if (value.resources.length > shown.length) {
+      out.push('resource: +' + String(value.resources.length - shown.length) + ' more (display cap — the roster is longer than shown)')
+    }
+  }
+  if (value.census_partial === true) {
+    out.push('census: partial — the scan could not check every resource or item; unknown rows are not health verdicts')
   }
   const operations = Array.isArray(value.operations)
     ? value.operations
