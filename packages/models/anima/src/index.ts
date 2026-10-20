@@ -44,10 +44,12 @@ export const DECL: ModelDecl = {
   // THE MASK BOARDING (operator order 2026-11-07: the MASK mod
   // serves on EVERY img-gen model — the MASK-C no-board is
   // superseded): boards 'mask' as the bare flavor (mods/mask.ts,
-  // composed in cordis cardDefs) — the region vocabulary serves
-  // on the card (crop_stitch, the Impact pattern); auto+mask
-  // still refuses LOUD at admission (no lane builds it), the
-  // gate's voice teaching crop_stitch — never a silent plain run.
+  // composed in cordis cardDefs) — the region vocabulary is
+  // DECLARED surface on the card (the bag + fields ride admission,
+  // MASK_RIDERS); no gen lane builds a region arm yet, so a STATED
+  // region refuses LOUD at the firing gate (E2-11: never
+  // 'unknown-param' — it is a mod — and never a silent plain run;
+  // the voice teaches the image-edit lane, where regions compose).
   "mods": [
     "mask",
     "loras"

@@ -168,6 +168,61 @@ describe('THE SECOND LIVE BREAK (2026-09-29): the poisoned quant, the served sha
   })
 })
 
+describe('THE MOD-SURFACE SANCTION (E2-11 — the operator\'s burn, verbatim in the ERRORS_2 ledger)', () => {
+  // The served image-gen@krea-2 shape, mod faces verbatim: the
+  // family boards the mask + lora packs (krea-2 DECL mods), so the
+  // spec carries features.modifiers (the kind rows) and
+  // mod_schemas (the absorbed envelopes). The mirror clause's
+  // declared set must fold BOTH in — a key a card-declared mod
+  // kind owns (its param_key bag + its envelope's field names) is
+  // declared surface, exactly like a schema knob. The burn: the
+  // mask mod's write refused "field 'mask' … the served surface
+  // (krea-2) does not declare it" — a lie; the mod declares it.
+  const moddedSpec: FormSpecDoc = {
+    ...spec,
+    params: ['prompt', 'steps', 'cfg', 'sampler'],
+    features: {
+      modifiers: [
+        { kind: 'lora', label: 'LoRAs', param_key: 'loras', cardinality: 'list', entry: 'option', option_key: 'id' },
+        { kind: 'mask', label: 'Region Mask', param_key: 'mask', cardinality: 'list', max_stack: 1 },
+      ],
+    },
+    mod_schemas: {
+      mask: {
+        uid: 1,
+        refs: { 1: { type: 'object', dict: { mask: 2, input_mask: 3, mask_mode: 4, mask_detector: 5 } } },
+      },
+    },
+  }
+
+  test('the exact burn: a mask-mod bag on the doc is CLEAN at the mirror (the mod declares the key)', () => {
+    expect(composeValidate(moddedSpec, {
+      variant: 'turbo', prompt: 'a cat',
+      mask: [{ input_mask: '/v1/assets/region.png' }],
+    })).toEqual([])
+  })
+
+  test('the mod\'s flat field names are sanctioned too (input_mask, mask_mode, mask_detector)', () => {
+    expect(composeValidate(moddedSpec, {
+      variant: 'turbo', prompt: 'a cat',
+      input_mask: '/v1/assets/region.png', mask_mode: 'crop_stitch', mask_detector: 'person',
+    })).toEqual([])
+  })
+
+  test('the lora bag rides the same sanction (param_key from the modifiers row)', () => {
+    expect(composeValidate(moddedSpec, {
+      variant: 'turbo', prompt: 'a cat',
+      loras: [{ id: 'x.safetensors', strength: 0.5 }],
+    })).toEqual([])
+  })
+
+  test('the teeth stay: a key NO surface and NO mod owns still refuses, named', () => {
+    const v = composeValidate(moddedSpec, { variant: 'turbo', prompt: 'a cat', frobnicate: 1 })
+    expect(v).toHaveLength(1)
+    expect(v[0]!.field).toBe('frobnicate')
+  })
+})
+
 describe('composeCandidateDoc — composition itself (later layers win, null deletes)', () => {
   test('held row, user overlay, in-flight frame: the doc the door would judge', () => {
     expect(composeCandidateDoc(

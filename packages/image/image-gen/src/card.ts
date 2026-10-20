@@ -19,6 +19,7 @@ import { SAMPLERS, SCHEDULERS } from '@melite/comfyui-card-kit/vocab'
 import { promptPairExtra, samplingExtra, seedExtra } from '@melite/comfyui-card-kit/fields'
 import { ComfyUIServiceFace } from '@melite/comfyui-card-kit/service-faces'
 import { callableSchema, gatedResolve } from '@melite/comfyui-card-kit/admission'
+import { MASK_RIDERS } from '@melite/comfyui-card-kit/pack-fields'
 import { IMPACT_PACKS } from '@melite/comfyui-card-kit'
 import { DECL as krea2Decl } from '@melite/models-krea-2'
 import { DECL as zImageDecl } from '@melite/models-z-image'
@@ -187,7 +188,45 @@ export function registerCard(ctx: Context, comfy: ComfyUIServiceFace): void {
       // card's riders — no admits, no studio writes on the boarded
       // image families) refuses 'unknown-param', named — a typo'd
       // `promptt` never composes, never renders.
-      const doc = gatedResolve('image-gen', schemaFn, ['loras', 'model'], p)
+      // THE MOD-SURFACE SANCTION (E2-11): the mask mod is DECLARED
+      // surface on every img-gen family (the operator's 2026-11-07
+      // boarding; the estate's admission gate sanctions the same
+      // names via the absorbed-mod interlock) — the bag and its
+      // fields ride the walk verbatim, exactly like the loras bag
+      // (image-edit's own rider shape, one spelling: MASK_RIDERS).
+      const doc = gatedResolve('image-gen', schemaFn, ['loras', 'model', ...MASK_RIDERS], p)
+      // THE REGION FIRING GATE (the refused-fate honesty, E2-11):
+      // no gen lane builds a region arm yet — the DECL's own law
+      // (krea-2 mods: "refuses LOUD … never a silent plain run"). A
+      // STATED region (a bag entry, a flat input_mask, or a picked
+      // detector) refuses in the teaching voice — the mod's key is
+      // declared (never 'unknown-param'), and the plain t2i never
+      // swallows the region quietly. The walk's FILLED default
+      // (mask_mode 'crop_stitch', detector 'off') never fires: the
+      // form stamps defaults on every write.
+      const bagLen = Array.isArray(doc['mask']) ? (doc['mask'] as unknown[]).length : 0
+      const flatMask = typeof doc['input_mask'] === 'string' && doc['input_mask'].trim() !== ''
+      const detector = doc['mask_detector']
+      // the prep/detail knobs (the DetailerForEach vocabulary the
+      // operator's "impact 2 detailer wrapper" burn named): the
+      // walk fills NO defaults for rider keys — PRESENCE is a
+      // stated intent, never a form stamp (the mod leaf writes the
+      // BAG; flat knobs arrive only by authored state)
+      const flatKnobs = ['mask_mode', 'mask_context_pad', 'mask_grow', 'mask_feather',
+        'mask_threshold', 'mask_invert', 'mask_detail_size', 'mask_denoise'] as const
+      const flatStated = flatKnobs.find((k) => {
+        const v = doc[k]
+        // 'auto' is the plain lane's own word (whole-image) — it
+        // changes nothing and never fires
+        if (k === 'mask_mode') return v === 'crop_stitch'
+        return v !== undefined
+      })
+      if (bagLen > 0 || flatMask || (typeof detector === 'string' && detector !== '' && detector !== 'off') || flatStated !== undefined) {
+        const key = bagLen > 0 ? 'mask' : flatMask ? 'input_mask' : flatStated ?? 'mask_detector'
+        throw new Error(
+          `'${key}' fires on the image-gen card (no gen lane builds the region arm yet — the region vocabulary composes on the image-edit card; the gen detailer arm is owed) — refusing instead of silently plain-generating`,
+        )
+      }
       if (!doc.prompt || !(doc.prompt as string).trim()) {
         throw new Error("required param 'prompt' missing or empty on the image-gen card (what the picture IS)")
       }

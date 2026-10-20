@@ -287,6 +287,12 @@ describe("T3 — the operator's writes land whole", () => {
       model: "qwen-img-21", variant: "base", steps: 8, cfg: 1, prompt: "a cat", loras: LORAS,
     })).toEqual({ ok: true });
   });
+  it("image-gen × krea-2 + THE MASK MOD BAG lands (E2-11: the mod's bag is declared surface at the write door — the burn's verbatim voice lives in the ERRORS_2 ledger)", () => {
+    expect(svc.admitStageRelations("image-gen", {
+      model: "krea-2", variant: "turbo", prompt: "a cat",
+      mask: [{ input_mask: "/v1/assets/region.png", mask_mode: "crop_stitch" }],
+    })).toEqual({ ok: true });
+  });
   it("image-gen × anima + loras lands", () => {
     expect(svc.admitStageRelations("image-gen", {
       model: "anima", prompt: "a cat", loras: LORAS,

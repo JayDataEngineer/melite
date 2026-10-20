@@ -652,9 +652,13 @@ test("THE MASK ORDER (operator 2026-11-07): every img-gen family boards mask; st
   }
   // THE PLANE-LOCAL FATE (the refused-fate honesty): no image-gen
   // lane builds a region arm (compose untouched), so a stated mask
-  // on the gen card refuses LOUD at admission — field-named, never
-  // a silent plain run. The region story lives on the edit plane;
-  // the gen card routes nothing.
+  // on the gen card refuses LOUD — field-named, never a silent
+  // plain run. E2-11 moved the refusal's LAW, not its fate: the
+  // mask mod's keys are DECLARED surface now (MASK_RIDERS at the
+  // walk — the mod's own keys, never 'undeclared param'), and
+  // the refusal speaks at the card's own REGION FIRING GATE,
+  // teaching where the region vocabulary composes. The region
+  // story lives on the edit plane; the gen card routes nothing.
   const { GraphBuilder } = await import("../../../../packages/engines/comfyui-cordis/src/index.ts");
   const gen = svc.getCardDef("image-gen") as unknown as {
     compose: (p: unknown, m: unknown, g: unknown, r: string) => void;
@@ -662,7 +666,7 @@ test("THE MASK ORDER (operator 2026-11-07): every img-gen family boards mask; st
   assert.throws(
     () => gen.compose({ prompt: "a cat", input_mask: "region.png" }, getModel("qwen-img-21") as never, new GraphBuilder({}), "wall-mask-c"),
     (err: unknown): boolean =>
-      err instanceof Error && /undeclared param.*input_mask/.test(err.message),
-    "a stated input_mask on image-gen refuses LOUD at admission (the fate this boarding carries)",
+      err instanceof Error && /'input_mask' fires on the image-gen card.*region arm/.test(err.message),
+    "a stated input_mask on image-gen refuses LOUD at the firing gate (the fate this boarding carries)",
   );
 });

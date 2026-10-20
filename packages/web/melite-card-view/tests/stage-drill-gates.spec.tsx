@@ -59,7 +59,7 @@ function axisSpecDoc(): Record<string, unknown> {
   };
 }
 
-function stubFetch(specDoc: Record<string, unknown> = axisSpecDoc()): void {
+function stubFetch(specDoc: Record<string, unknown> = axisSpecDoc(), formsDoc?: Record<string, unknown>): void {
   const impl = globalThis.fetch;
   vi.stubGlobal("fetch", async (url: unknown, init?: RequestInit): Promise<Response> => {
     const path = String(url);
@@ -69,7 +69,7 @@ function stubFetch(specDoc: Record<string, unknown> = axisSpecDoc()): void {
       });
     }
     if (path.includes("/v1/forms")) {
-      return new Response(JSON.stringify({
+      return new Response(JSON.stringify(formsDoc ?? {
         "image-gen": { outputs: { default: "image" } },
       }), { status: 200, headers: { "content-type": "application/json" } });
     }
@@ -2263,6 +2263,98 @@ describe("the drill's preview faces through the declared output", () => {
     }, { timeout: 4000 });
     for (const i of Array.from(document.querySelectorAll("img"))) {
       expect((i.getAttribute("src") ?? "").includes("infer-gallery")).toBe(false);
+    }
+  });
+});
+
+// ── E2-11(a): THE REGION-MASK PICKER LAW ────────────────────────────
+// The operator's burn: "THIS IS NOT SHOWING MY MASK IN THE ADD REGION
+// MASK WHEN I MADE ONE WITH THE MASK NODE IN THE FLOW". The mask mod's
+// input seat is NOT a declared card input edge (image-gen declares
+// only prompt:text) — so the edge law's narrowing CANNOT apply, and
+// the picker serves the RAW artifact rows: a run MASK node's 'seg'
+// output (result.url present) IS offered, exactly like every other
+// artifact. A future "narrowing" of edge-less fields to image-kind
+// producers would drop the mask node (its declared output kind is
+// 'seg', not 'image') and re-ship the operator's burn — this wall
+// fires the day that happens. An UNRUN stage has no artifact; the
+// honest empty ("nothing to pick yet") is the true state, never a
+// filter's lie.
+describe("THE REGION-MASK PICKER (E2-11a — the mask node's artifact is offered at the mask seat)", () => {
+  test("a run mask node's 'seg' artifact lists in the mask mod's From-flow picker — no edge filter drops it", async () => {
+    stubFetch({
+      ...axisSpecDoc(),
+      features: {
+        modifiers: [
+          {
+            kind: "mask", label: "Region Mask", param_key: "mask", cardinality: "list", max_stack: 1,
+            fields: [{ name: "input_mask", type: "image", label: "Region Mask" }],
+          },
+        ],
+      },
+    }, {
+      "image-gen": { outputs: { default: "image" } },
+      "mask": { outputs: { default: "seg" } },
+    });
+    fakes?.unmount();
+    fakes = mountEstateFakes({
+      benchDoc: {
+        draft_id: "bench-p", rev: 1, log: [],
+        stages: [
+          { ...stage({ model: "krea-2" }), run_status: undefined },
+          { id: "s_mask", card: "mask", engine: "comfyui", params: {}, title: "Mask Node",
+            result: { url: "/melite-media/runs/r1/region.png" } },
+        ],
+      },
+      draftStages: [
+        stage({ model: "krea-2" }),
+        { id: "s_mask", card: "mask", engine: "comfyui", params: {}, title: "Mask Node",
+          result: { url: "/melite-media/runs/r1/region.png" } },
+      ],
+      draftBenchRev: 1,
+    });
+    const view = render(h(StageDrill, {
+      ...drillProps(stage({ model: "krea-2" })),
+      bench: {
+        kind: "bench", draftId: "bench-p", rev: 1, log: [], sessionKey: "main",
+        stages: [
+          stage({ model: "krea-2" }),
+          {
+            id: "s_mask", card: "mask", engine: "comfyui", params: {}, title: "Mask Node",
+            result: { url: "/melite-media/runs/r1/region.png" },
+          } as unknown as BenchStageView,
+        ],
+      },
+    } as never));
+    try {
+      await screen.findByLabelText("Prompt", {}, { timeout: 6000 });
+      // the mod section's add square → the kind menu → the create leaf
+      await waitFor(() => {
+        if (document.querySelector('[data-testid="cb-mods-section"]') === null) throw new Error("mods section not served");
+      }, { timeout: 4000 });
+      fireEvent.click(document.querySelector('[data-subcard-add="mod"]') as HTMLElement);
+      fireEvent.click(screen.getByRole("menuitem", { name: "Region Mask" }));
+      // the FIELD-kind leaf renders the image input as the square;
+      // its menu's From flow opens the picker
+      fireEvent.click(screen.getByRole("button", { name: "Region Mask source" }));
+      fireEvent.click(await screen.findByRole("menuitem", { name: "From flow" }, { timeout: 4000 }));
+      const rows = await screen.findAllByTestId("source-pick-row", {}, { timeout: 4000 });
+      const labels = rows.map((r) => r.textContent ?? "");
+      expect(labels.some((l) => l.includes("Mask Node"))).toBe(true);
+      // and picking it writes the region artifact into the entry's
+      // input_mask (the slot is the wire)
+      fireEvent.click(rows.find((r) => (r.textContent ?? "").includes("Mask Node"))!);
+      fireEvent.click(screen.getByRole("button", { name: "Add" }));
+      await waitFor(() => {
+        const call = patchCalls().at(-1);
+        const bag = ((call?.patch as Record<string, unknown> | undefined)?.params as Record<string, unknown> | undefined)?.mask;
+        if (!Array.isArray(bag) || bag.length !== 1
+          || (bag[0] as Record<string, unknown>)?.input_mask !== "/melite-media/runs/r1/region.png") {
+          throw new Error("the pick never landed in the mask bag: " + JSON.stringify(call));
+        }
+      }, { timeout: 6000 });
+    } finally {
+      view.unmount();
     }
   });
 });

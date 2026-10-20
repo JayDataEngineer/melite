@@ -10165,6 +10165,7 @@ window.__ModuleLoader__.load({
 				const declared = new Set(spec.params);
 				for (const g of axisGroups(spec)) declared.add(axisKey(g));
 				declared.add("model");
+				for (const k of modOwnedFields(spec)) declared.add(k);
 				for (const k of Object.keys(doc)) {
 					if (k === "model" || declared.has(k)) continue;
 					out.push({
@@ -14440,7 +14441,9 @@ window.__ModuleLoader__.load({
 				...paintFace !== void 0 ? { paintFace } : {},
 				...bboxFace !== void 0 ? { bboxFace } : {},
 				...paintReference !== void 0 ? { paintReference } : {},
-				...wire?.loadMedia !== void 0 ? { loadMedia: wire.loadMedia } : {}
+				...wire?.loadMedia !== void 0 ? { loadMedia: wire.loadMedia } : {},
+				...wire?.candidates !== void 0 ? { candidates: wire.candidates } : {},
+				...wire?.candidatesFor !== void 0 ? { candidatesFor: wire.candidatesFor } : {}
 			}) : null, own.wireMenu);
 		}
 		//#endregion
@@ -14971,7 +14974,9 @@ window.__ModuleLoader__.load({
 				paintFace: props.paintFace,
 				bboxFace: props.bboxFace,
 				paintReferenceValue: typeof props.paintReference === "string" ? String(values[props.paintReference] ?? "") : "",
-				...props.loadMedia !== void 0 ? { loadMedia: props.loadMedia } : {}
+				...props.loadMedia !== void 0 ? { loadMedia: props.loadMedia } : {},
+				...props.candidates !== void 0 ? { candidates: props.candidates } : {},
+				...props.candidatesFor !== void 0 ? { candidatesFor: props.candidatesFor } : {}
 			})) : null);
 		}
 		/** THE LEAF BODY — split so the FIELD-kind editor gets its own
@@ -15021,7 +15026,8 @@ window.__ModuleLoader__.load({
 					[name]: v
 				});
 			}, {
-				candidates: [],
+				...props.candidates !== void 0 ? { candidates: props.candidates } : { candidates: [] },
+				...props.candidatesFor !== void 0 ? { candidatesFor: props.candidatesFor } : {},
 				...props.loadMedia !== void 0 ? { loadMedia: props.loadMedia } : {}
 			});
 			return (0, react.createElement)("div", { className: card_module_css_default.modLeaf }, leafError !== null ? (0, react.createElement)("p", { className: card_module_css_default.modLeafError }, leafError) : null, isHybridKind(k) ? (0, react.createElement)("div", { className: card_module_css_default.modLeafFields }, (0, react.createElement)("div", { className: card_module_css_default.modField }, (0, react.createElement)("span", null, k.label), (0, react.createElement)(SpecMenuSelect, {

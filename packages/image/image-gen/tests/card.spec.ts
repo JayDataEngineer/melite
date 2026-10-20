@@ -88,6 +88,54 @@ describe("the image-gen compose gate", () => {
     // the rider passes: the loras bag composes (the mod plane rides)
     def.compose({ prompt: "a cat", loras: [{ name: "x.safetensors", strength: 0.5 }] }, model, new GraphBuilder(), "r_lora");
   });
+
+  it("THE MOD-SURFACE SANCTION (E2-11): the mask mod's bag + fields are admitted surface — never 'unknown-param' (the burn's verbatim voice lives in the ERRORS_2 ledger)", () => {
+    const model = facts.models[def.boarded[0]!]!;
+    // THE SANCTION, pinned at the walk: the gated doc CARRIES the
+    // mod's keys verbatim (the old walk refused 'mask' as an
+    // undeclared param — the mod's own bag, a declaration lie).
+    const doc = def.schema({ prompt: "a cat", mask: [{ input_mask: "/v1/assets/region.png" }], mask_mode: "crop_stitch" }) as Record<string, unknown>;
+    assert.deepEqual(doc.mask, [{ input_mask: "/v1/assets/region.png" }]);
+    assert.equal(doc.mask_mode, "crop_stitch");
+    // and the walk's strict gate does not refuse them at compose:
+    // (the firing arm below proves the refusal that REPLACED it)
+  });
+
+  it("THE REGION FIRING GATE (E2-11, the refused-fate honesty): a stated region refuses LOUD in the teaching voice — never a silent plain t2i", () => {
+    const model = facts.models[def.boarded[0]!]!;
+    // no gen lane builds the region arm — the DECL's own law
+    // (krea-2 mods comment: "refuses LOUD at admission … never a
+    // silent plain run"). The refusal names the mod's key and
+    // teaches where the region vocabulary composes today.
+    const fires = (e: unknown): boolean =>
+      e instanceof Error && !(e instanceof ComposeRefusal)
+      && /fires on the image-gen card/.test(String((e as Error).message))
+      && /region arm/.test(String((e as Error).message));
+    assert.throws(
+      () => def.compose({ prompt: "a cat", mask: [{ input_mask: "/v1/assets/region.png" }] }, model, new GraphBuilder(), "r_bag"),
+      fires,
+    );
+    assert.throws(
+      () => def.compose({ prompt: "a cat", input_mask: "/v1/assets/region.png" }, model, new GraphBuilder(), "r_flat"),
+      fires,
+    );
+    assert.throws(
+      () => def.compose({ prompt: "a cat", mask_detector: "person" }, model, new GraphBuilder(), "r_det"),
+      fires,
+    );
+    // THE DETAILER-KNOB HALF (the impact-2 detailer wrapper burn):
+    // a flat prep/detail knob stated OUTSIDE the bag is authored
+    // intent — the walk fills no rider defaults, presence fires.
+    assert.throws(
+      () => def.compose({ prompt: "a cat", mask_denoise: 0.8 }, model, new GraphBuilder(), "r_knob"),
+      fires,
+    );
+    // THE SILENT-DROP GUARD'S OTHER HALF: a doc with NO stated
+    // region composes the plain lane untouched (an explicit
+    // mask_mode 'auto' is the plain lane's own word — never fires).
+    def.compose(def.schema({ prompt: "a cat" }), model, new GraphBuilder(), "r_plain");
+    def.compose({ prompt: "a cat", mask_mode: "auto" }, model, new GraphBuilder(), "r_auto");
+  });
 });
 
 // ── GATE S PROOF (2026-09-20, the operator's demand: "when it is

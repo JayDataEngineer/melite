@@ -113,6 +113,15 @@ export interface ModifiersSectionProps {
   /** The host's media source (threaded from the constructor's wire)
    *  — the leaf's image inputs pick from the library like a card's. */
   loadMedia?: (kind: string, signal: AbortSignal) => Promise<Array<{ url: string; name: string }>>
+  /** THE FLOW CANDIDATES (E2-11a — the region-mask picker law): the
+   *  host bench's other stages' latest artifacts, threaded from the
+   *  constructor's wire. The leaf's From-flow picker serves THESE —
+   *  a structurally empty list ("nothing to pick yet" beside a run
+   *  mask node) is the shipped burn this seam closes. */
+  candidates?: Array<{ id: string; label: string; url: string }>
+  /** the per-field narrowing (the edge law at the host's seat — the
+   *  drill's own candidatesFor); absent = the raw rows. */
+  candidatesFor?: (f: SpecField) => Array<{ id: string; label: string; url: string }>
 }
 
 /** THE LEAF SEAT — the opened entry's identity, frozen at open
@@ -665,7 +674,9 @@ export function ModifiersSection(props: ModifiersSectionProps): ReturnType<typeo
       closeLabel: chromeCopy.leafCloseLabel,
       className: css.modLeafModal,
     },
-      h(ModLeaf, { leaf, values, hideFields: seated, onDraft: { setDraftOption, setDraftStrength, setDraftParams, setDraftSteps, draftOption, draftStrength, draftParams, draftSteps }, onError: setLeafError, onSave: saveLeaf, onDelete: deleteLeaf, leafError, paintFace: props.paintFace, bboxFace: props.bboxFace, paintReferenceValue: typeof props.paintReference === 'string' ? String(values[props.paintReference] ?? '') : '', ...(props.loadMedia !== undefined ? { loadMedia: props.loadMedia } : {}) }),
+      h(ModLeaf, { leaf, values, hideFields: seated, onDraft: { setDraftOption, setDraftStrength, setDraftParams, setDraftSteps, draftOption, draftStrength, draftParams, draftSteps }, onError: setLeafError, onSave: saveLeaf, onDelete: deleteLeaf, leafError, paintFace: props.paintFace, bboxFace: props.bboxFace, paintReferenceValue: typeof props.paintReference === 'string' ? String(values[props.paintReference] ?? '') : '', ...(props.loadMedia !== undefined ? { loadMedia: props.loadMedia } : {}),
+        ...(props.candidates !== undefined ? { candidates: props.candidates } : {}),
+        ...(props.candidatesFor !== undefined ? { candidatesFor: props.candidatesFor } : {}) }),
     ) : null,
   )
 }
@@ -702,6 +713,9 @@ function ModLeaf(props: {
   /** The host's media source — the leaf's image inputs pick from
    *  the library like a card's. */
   loadMedia?: (kind: string, signal: AbortSignal) => Promise<Array<{ url: string; name: string }>>
+  /** the flow rows + per-field narrowing (E2-11a — see the section's own props). */
+  candidates?: Array<{ id: string; label: string; url: string }>
+  candidatesFor?: (f: SpecField) => Array<{ id: string; label: string; url: string }>
 }): ReturnType<typeof h> {
   const { leaf, onDraft, onSave, onDelete, leafError } = props
   const k = leaf.kind
@@ -747,7 +761,18 @@ function ModLeaf(props: {
   // the three verbs (upload/drop/pick) exactly like a card's
   const own = useSquareProvider(
     (name: string, v: unknown) => { onDraft.setDraftParams({ ...onDraft.draftParams, [name]: v }) },
-    { candidates: [], ...(props.loadMedia !== undefined ? { loadMedia: props.loadMedia } : {}) },
+    // THE REGION-MASK PICKER LAW (E2-11a): the leaf's From-flow
+    // picker serves the HOST's rows — the bench's other stages'
+    // artifacts, narrowed by the host's own edge law when it
+    // declares one. The structurally-empty list this provider once
+    // hardcoded shipped "nothing to pick yet" beside a run mask
+    // node — the picker's honest empty is an artifact-less bench,
+    // never a seam that forgot its rows.
+    {
+      ...(props.candidates !== undefined ? { candidates: props.candidates } : { candidates: [] as Array<{ id: string; label: string; url: string }> }),
+      ...(props.candidatesFor !== undefined ? { candidatesFor: props.candidatesFor } : {}),
+      ...(props.loadMedia !== undefined ? { loadMedia: props.loadMedia } : {}),
+    },
   )
   return h('div', { className: css.modLeaf },
     leafError !== null ? h('p', { className: css.modLeafError }, leafError) : null,
