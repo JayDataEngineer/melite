@@ -20,12 +20,26 @@ export interface VerifiedArtifactRequest {
      *  ledger add — the stream already counted these bytes). Optional
      *  so older callers still satisfy the port. */
     readonly onVerifyBytes?: (bytes: number) => void;
+    /** THE RANGE RESUME OFFSET (audit download-stack-audit-2026-10-20
+     *  F7): the byte offset the incoming stream continues from — the
+     *  writer adopts the previous attempt's part (newest viable
+     *  `.part-*` sibling of the destination) by renaming it to this
+     *  operation's part and appending. Zero/absent writes a fresh part
+     *  (the 200-fallback's clean restart). The adopted prefix rides the
+     *  final full-file sha256 and the size check like every other byte:
+     *  a corrupt prefix fails the hash, the part is deleted, and the
+     *  next retry starts clean. */
+    readonly resumeFrom?: number;
 }
 export interface VerifiedArtifactResult {
     readonly path: string;
     readonly sha256: string;
     readonly sizeBytes: number;
     readonly integrity: "declared-sha256" | "operator-unverified";
+    /** The bytes adopted from a previous attempt's part (absent on a
+     *  clean start) — the direct arm seeds its ledger with this so a
+     *  resumed flight's poll reads the true offset, never 0%. */
+    readonly resumedFrom?: number;
 }
 export interface ArtifactInspectionRequest {
     readonly root: string;
@@ -41,6 +55,21 @@ export interface ArtifactInspection {
 export interface ArtifactWriterPort {
     write(request: VerifiedArtifactRequest, signal?: AbortSignal): Promise<VerifiedArtifactResult>;
     inspect?(request: ArtifactInspectionRequest, signal?: AbortSignal): Promise<ArtifactInspection>;
+    /** THE RANGE RESUME MEASURE (audit download-stack-audit-2026-10-20
+     *  F7): the previous attempt's kept part for one destination, if a
+     *  viable one exists — the direct arm reads this BEFORE the fetch
+     *  so the request can carry `Range: bytes=N-`. Optional so older
+     *  fakes satisfy the port; a writer without it never resumes. */
+    adoptablePart?(request: {
+        readonly root: string;
+        readonly relativePath: string;
+        readonly sizeBytes?: number;
+    }): Promise<AdoptablePart | null>;
+}
+/** A previous attempt's part the writer may resume from. */
+export interface AdoptablePart {
+    readonly path: string;
+    readonly sizeBytes: number;
 }
 export declare function isValidSha256(value: string): boolean;
 export declare function resolveConfinedPath(root: string, relativePath: string): string;
@@ -51,6 +80,17 @@ export declare class VerifiedArtifactWriter implements ArtifactWriterPort {
     constructor(root: string);
     write(request: VerifiedArtifactRequest, signal?: AbortSignal): Promise<VerifiedArtifactResult>;
     inspect(request: ArtifactInspectionRequest, signal?: AbortSignal): Promise<ArtifactInspection>;
+    /** THE RANGE RESUME MEASURE (audit download-stack-audit-2026-10-20
+     *  F7): the previous attempt's kept part for one destination, or
+     *  null — read BEFORE the fetch so the direct arm can ask
+     *  `Range: bytes=N-`. A pure read: nothing is renamed here; the
+     *  adoption happens inside write(), which re-runs the same scan
+     *  under the caller's lock. */
+    adoptablePart(request: {
+        readonly root: string;
+        readonly relativePath: string;
+        readonly sizeBytes?: number;
+    }): Promise<AdoptablePart | null>;
     /** The .part reaper (audit K-4, 2026-10-22): a crash mid-write
      *  orphans the `.part-<operationId>` sidecar past every in-process
      *  catch. The boot and periodic sweeps unlink the stale ones —

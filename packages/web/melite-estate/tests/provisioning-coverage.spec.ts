@@ -818,3 +818,75 @@ describe("the direct arm's idle dial (the 9.35GB cure, 2026-10-10)", () => {
     await assert.rejects(idleDialFetch(5000)(url), (error: unknown) => error instanceof Error);
   });
 });
+
+describe("the direct arm's range resume on the wire (audit download-stack-audit-2026-10-20 F7)", () => {
+  afterEach(async () => {
+    for (const server of servers.splice(0)) await new Promise<void>((resolve) => server.close(() => resolve()));
+  });
+
+  test("a resume request rides the wire as Range: bytes=N- and the 206's Content-Range total is parsed", async () => {
+    const SUFFIX = Uint8Array.of(4, 5, 6);
+    const server = createServer((req, res) => {
+      res.writeHead(206, {
+        "content-type": "application/octet-stream",
+        "content-range": "bytes 39-41/100",
+      });
+      res.end(SUFFIX);
+      void req;
+    });
+    servers.push(server);
+    const reqRange = new Promise<string | undefined>((resolve) => {
+      server.on("request", (req) => { resolve(req.headers.range); });
+    });
+    await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
+    const url = `http://127.0.0.1:${String((server.address() as { port: number }).port)}/resume.bin`;
+    const response = await idleDialFetch(5_000)(url, undefined, { rangeFrom: 39 });
+    assert.equal(await reqRange, "bytes=39-");
+    assert.equal(response.status, 206);
+    assert.equal(response.resumedFrom, 39);
+    assert.equal(response.totalBytes, 100);
+    const chunks: Buffer[] = [];
+    const reader = (response.body ?? new ReadableStream<Uint8Array>()).getReader();
+    for (;;) {
+      const chunk = await reader.read();
+      if (chunk.done) break;
+      chunks.push(Buffer.from(chunk.value));
+    }
+    assert.deepEqual(Buffer.concat(chunks), Buffer.from(SUFFIX));
+  });
+
+  test("a plain fetch carries no Range header and no resume facts", async () => {
+    const server = createServer((_req, res) => {
+      res.writeHead(200, { "content-type": "application/octet-stream" });
+      res.end(Uint8Array.of(1, 2, 3));
+    });
+    servers.push(server);
+    const reqRange = new Promise<string | undefined>((resolve) => {
+      server.on("request", (req) => { resolve(req.headers.range); });
+    });
+    await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
+    const url = `http://127.0.0.1:${String((server.address() as { port: number }).port)}/whole.bin`;
+    const response = await idleDialFetch(5_000)(url);
+    assert.equal(await reqRange, undefined);
+    assert.equal(response.status, 200);
+    assert.equal(response.resumedFrom, undefined);
+    assert.equal(response.totalBytes, undefined);
+  });
+
+  test("a 206 with an unparseable total parses the offset and leaves the total to the plan", async () => {
+    const server = createServer((_req, res) => {
+      res.writeHead(206, {
+        "content-type": "application/octet-stream",
+        "content-range": "bytes 39-41/*",
+      });
+      res.end(Uint8Array.of(4, 5, 6));
+    });
+    servers.push(server);
+    await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
+    const url = `http://127.0.0.1:${String((server.address() as { port: number }).port)}/unknown-total.bin`;
+    const response = await idleDialFetch(5_000)(url, undefined, { rangeFrom: 39 });
+    assert.equal(response.status, 206);
+    assert.equal(response.resumedFrom, 39);
+    assert.equal(response.totalBytes, undefined, "a star total falls back to the plan's declared size");
+  });
+});

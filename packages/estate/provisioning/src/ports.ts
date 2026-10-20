@@ -21,11 +21,32 @@ import type {
 export interface ArtifactResponse {
   readonly status: number;
   readonly body: ArtifactInput | null;
+  /** THE RANGE RESUME FACT (audit download-stack-audit-2026-10-20 F7):
+   *  present when the fetch resumed — the offset the wire body starts
+   *  at (a 206's `Content-Range` first byte). Absent on a whole-body
+   *  fetch. */
+  readonly resumedFrom?: number;
+  /** The host-declared total from the 206's `Content-Range`; a star
+   *  or missing total is absent and the caller falls back to the
+   *  plan's declared size. */
+  readonly totalBytes?: number;
 }
 
+export interface ArtifactFetchInit {
+  /** The offset to resume from — the fetcher sends `Range: bytes=N-`
+   *  when set. Zero/absent fetches whole. */
+  readonly rangeFrom?: number;
+}
+
+/** The direct arm's byte source. The third parameter is OPTIONAL so
+ *  older fetchers (and every existing fake) stay assignable — a
+ *  fetcher that ignores {@link ArtifactFetchInit} fetches whole, and
+ *  the service treats a 200 answer to a ranged ask as an honest
+ *  restart-from-zero. */
 export type ArtifactFetcher = (
   url: string,
   signal?: AbortSignal,
+  init?: ArtifactFetchInit,
 ) => Promise<ArtifactResponse>;
 
 export interface DeclarationPort {

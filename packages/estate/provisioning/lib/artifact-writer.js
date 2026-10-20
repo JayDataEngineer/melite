@@ -1,6 +1,6 @@
 import { createHash, randomBytes } from "node:crypto";
 import { lstat, mkdir, open, readdir, realpath, rename, rm, stat, } from "node:fs/promises";
-import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
+import { basename, dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 export class ProvisioningError extends Error {
     code;
     constructor(code, message, cause) {
@@ -124,6 +124,42 @@ async function createConfinedDirectory(root, directory) {
             throw new ProvisioningError("invalid-path", "artifact path traverses a non-directory");
         }
     }
+}
+/** THE RANGE RESUME SCAN (audit download-stack-audit-2026-10-20 F7):
+ *  the newest viable previous-attempt part for one destination — a
+ *  non-empty `.part-*` sibling strictly smaller than the declared
+ *  total (a full-size or oversized part is not a resume candidate;
+ *  it faces the reaper). Same-destination flights are serialized by
+ *  the service's per-resource operation locks, so the newest part is
+ *  the last attempt's bytes, race-free by construction.
+ */
+async function newestAdoptablePart(destination, totalBytes) {
+    const directory = dirname(destination);
+    const prefix = `${basename(destination)}.part-`;
+    let entries;
+    try {
+        entries = await readdir(directory);
+    }
+    catch {
+        return null; // a missing directory has no previous attempt
+    }
+    let newest = null;
+    for (const name of entries) {
+        if (!name.startsWith(prefix))
+            continue;
+        const path = join(directory, name);
+        const info = await stat(path).catch(() => undefined);
+        if (info === undefined || !info.isFile())
+            continue;
+        if (info.size <= 0)
+            continue;
+        if (totalBytes !== undefined && info.size >= totalBytes)
+            continue;
+        if (newest === null || info.mtimeMs > newest.mtimeMs) {
+            newest = { path, sizeBytes: info.size, mtimeMs: info.mtimeMs };
+        }
+    }
+    return newest === null ? null : { path: newest.path, sizeBytes: newest.sizeBytes };
 }
 async function preparePath(root, destination) {
     const rootPath = resolve(root);
@@ -261,12 +297,31 @@ export class VerifiedArtifactWriter {
         throwIfAborted(signal);
         const temporary = `${destination}.part-${operationId}`;
         await rm(temporary, { force: true });
+        // THE RANGE RESUME ADOPTION (audit download-stack-audit-2026-10-20
+        // F7): a resume ask renames the previous attempt's newest viable
+        // part to THIS operation's part name and opens for append — every
+        // attempt mints its own operation id, so adoption-by-rename is
+        // what moves the old bytes under the live part (and out of the
+        // scan: the reaper can never eat an adopted part, it no longer
+        // exists under the old name). A clean start (resumeFrom 0/absent)
+        // keeps the delete-and-recreate the 200-fallback needs.
+        let adopted = 0;
+        if ((request.resumeFrom ?? 0) > 0) {
+            const candidate = await newestAdoptablePart(destination, request.sizeBytes);
+            if (candidate !== null) {
+                if (candidate.path !== temporary)
+                    await rename(candidate.path, temporary);
+                adopted = candidate.sizeBytes;
+            }
+        }
         const iterator = iteratorFor(request.source);
         let handle;
         let landed = false;
-        let sizeBytes = 0;
+        let sizeBytes = adopted;
         try {
-            handle = await open(temporary, "wx", 0o600);
+            // append after an adopted prefix; exclusive-create on a clean
+            // start (the "wx" of the original law, kept for that arm)
+            handle = await open(temporary, adopted > 0 ? "a" : "wx", 0o600);
             for (;;) {
                 const chunk = await nextChunk(iterator, signal);
                 if (chunk.done)
@@ -319,13 +374,24 @@ export class VerifiedArtifactWriter {
                 sha256: finalSha256,
                 sizeBytes: finalStat.size,
                 integrity: expectedSha256 === undefined ? "operator-unverified" : "declared-sha256",
+                ...(adopted > 0 ? { resumedFrom: adopted } : {}),
             };
         }
         catch (error) {
             if (handle !== undefined) {
                 await handle.close().catch(() => undefined);
             }
-            if (!landed) {
+            // THE PART DELETION LAW (audit download-stack-audit-2026-10-20
+            // F7): only a mismatch verdict — a corrupt or mis-assembled
+            // part, judged by the full-file sha256 / size checks above —
+            // deletes the part. Every other non-landed exit (the stall
+            // watchdog's abort, a cancel, a write fault) KEEPS it for the
+            // next attempt to adopt; the kept bytes carry no trust, the
+            // next flight's full-file hash is the anchor, and a bad prefix
+            // lands right back here as a hash-mismatch deletion.
+            const mismatch = error instanceof ProvisioningError
+                && (error.code === "hash-mismatch" || error.code === "size-mismatch");
+            if (!landed && mismatch) {
                 await rm(temporary, { force: true }).catch(() => undefined);
             }
             if (error instanceof ProvisioningError)
@@ -382,6 +448,16 @@ export class VerifiedArtifactWriter {
             return { present: false, path: destination, sha256 };
         }
         return { present: true, path: destination, sha256, sizeBytes: stats.size };
+    }
+    /** THE RANGE RESUME MEASURE (audit download-stack-audit-2026-10-20
+     *  F7): the previous attempt's kept part for one destination, or
+     *  null — read BEFORE the fetch so the direct arm can ask
+     *  `Range: bytes=N-`. A pure read: nothing is renamed here; the
+     *  adoption happens inside write(), which re-runs the same scan
+     *  under the caller's lock. */
+    async adoptablePart(request) {
+        const destination = resolveConfinedPath(request.root, request.relativePath);
+        return await newestAdoptablePart(destination, request.sizeBytes);
     }
     /** The .part reaper (audit K-4, 2026-10-22): a crash mid-write
      *  orphans the `.part-<operationId>` sidecar past every in-process

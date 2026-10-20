@@ -45,9 +45,11 @@ export declare const ProvisioningCompositionConfig: Schema<Schemastery.ObjectS<N
  *  bounds IDLE, never duration — a whole-body cap aborts a healthy
  *  saturated stream mid-file (10 minutes ≈ 5.4GB at lane
  *  bandwidth), so a large weight can never land: every attempt
- *  dies, the partial is discarded, the retry restarts at zero. A
- *  stalled DECL host still cannot park its operation forever —
- *  only a source that stops flowing trips the bound. */
+ *  dies, and the retry (audit download-stack-audit-2026-10-20 F7)
+ *  asks `Range: bytes=N-` from the kept part's offset instead of
+ *  restarting at zero. A stalled DECL host still cannot park its
+ *  operation forever — only a source that stops flowing trips the
+ *  bound. */
 export declare const PROVISION_FETCH_DIAL_MS = 600000;
 /** THE IDLE DIAL (the direct arm's byte source): a fetch whose
  *  abort clock REARMS on every flowing chunk and clears when the
@@ -55,9 +57,13 @@ export declare const PROVISION_FETCH_DIAL_MS = 600000;
  *  only enforcement — the transform just pokes the clock.
  *  @param dialMs — the idle bound; a caller's own signal (when
  *  passed) wins at once and no idle timer rides. */
-export declare function idleDialFetch(dialMs: number): (url: string, signal?: AbortSignal) => Promise<{
+export declare function idleDialFetch(dialMs: number): (url: string, signal?: AbortSignal, init?: {
+    rangeFrom?: number;
+}) => Promise<{
     status: number;
     body: ReadableStream<Uint8Array> | null;
+    resumedFrom?: number;
+    totalBytes?: number;
 }>;
 /** The declaration half of the provisioning seat — the one contract
  *  door that turns a ResourceRef into its ProvisionPlan. Exported so

@@ -330,10 +330,36 @@ const INSPECT_DIAL_MS = 2_000;
  *  bounds IDLE, never duration — a whole-body cap aborts a healthy
  *  saturated stream mid-file (10 minutes ≈ 5.4GB at lane
  *  bandwidth), so a large weight can never land: every attempt
- *  dies, the partial is discarded, the retry restarts at zero. A
- *  stalled DECL host still cannot park its operation forever —
- *  only a source that stops flowing trips the bound. */
+ *  dies, and the retry (audit download-stack-audit-2026-10-20 F7)
+ *  asks `Range: bytes=N-` from the kept part's offset instead of
+ *  restarting at zero. A stalled DECL host still cannot park its
+ *  operation forever — only a source that stops flowing trips the
+ *  bound. */
 export const PROVISION_FETCH_DIAL_MS = 600_000;
+
+/** THE RESUME FACTS OF ONE REPLY (audit download-stack-audit-2026-10-20
+ *  F7): a 206 to a ranged ask names the offset it honored and may
+ *  declare the total in Content-Range (`bytes <first>-<last>/<total|
+ *  *>`) — a star or missing total carries no fact and the plan's
+ *  declared size owns the denominator upstream. Anything but a 206
+ *  carries no resume fact: a 200 to a ranged ask is the service's
+ *  honest restart-from-zero voice, not a resume. */
+function resumeFacts(init: { rangeFrom?: number } | undefined, response: Response): {
+  resumedFrom?: number,
+  totalBytes?: number,
+} {
+  if (response.status !== 206 || init?.rangeFrom === undefined) return {};
+  const contentRange = response.headers.get("content-range")?.trim() ?? "";
+  const first = /^bytes\s+(\d+)-/.exec(contentRange)?.[1];
+  const total = /\/(\d+|\*)$/.exec(contentRange)?.[1];
+  const totalBytes = total !== undefined && total !== "*" && /^\d+$/.test(total) && Number.isSafeInteger(Number(total))
+    ? Number(total)
+    : undefined;
+  return {
+    resumedFrom: first !== undefined ? Number(first) : init.rangeFrom,
+    ...(totalBytes === undefined ? {} : { totalBytes }),
+  };
+}
 
 /** THE IDLE DIAL (the direct arm's byte source): a fetch whose
  *  abort clock REARMS on every flowing chunk and clears when the
@@ -341,11 +367,24 @@ export const PROVISION_FETCH_DIAL_MS = 600_000;
  *  only enforcement — the transform just pokes the clock.
  *  @param dialMs — the idle bound; a caller's own signal (when
  *  passed) wins at once and no idle timer rides. */
-export function idleDialFetch(dialMs: number): (url: string, signal?: AbortSignal) => Promise<{ status: number, body: ReadableStream<Uint8Array> | null }> {
-  return async (url, signal) => {
+export function idleDialFetch(dialMs: number): (url: string, signal?: AbortSignal, init?: { rangeFrom?: number }) => Promise<{
+  status: number,
+  body: ReadableStream<Uint8Array> | null,
+  resumedFrom?: number,
+  totalBytes?: number,
+}> {
+  return async (url, signal, init) => {
+    // THE RANGE RESUME WIRE (audit download-stack-audit-2026-10-20
+    // F7): a resume ask rides as `Range: bytes=N-` — a 206 passes
+    // through with its Content-Range parsed into resume facts, and a
+    // host that ignores the header answers 200 for the service to
+    // voice honestly.
+    const headers = init?.rangeFrom !== undefined && init.rangeFrom > 0
+      ? { Range: `bytes=${String(init.rangeFrom)}-` }
+      : undefined;
     if (signal !== undefined) {
-      const response = await fetch(url, { signal, redirect: "follow" });
-      return { status: response.status, body: response.body };
+      const response = await fetch(url, { signal, redirect: "follow", ...(headers === undefined ? {} : { headers }) });
+      return { status: response.status, body: response.body, ...resumeFacts(init, response) };
     }
     const controller = new AbortController();
     let dial: ReturnType<typeof setTimeout> | undefined;
@@ -359,14 +398,14 @@ export function idleDialFetch(dialMs: number): (url: string, signal?: AbortSigna
     };
     rearm();
     try {
-      const response = await fetch(url, { signal: controller.signal, redirect: "follow" });
-      if (response.body === null) return { status: response.status, body: null };
+      const response = await fetch(url, { signal: controller.signal, redirect: "follow", ...(headers === undefined ? {} : { headers }) });
+      if (response.body === null) return { status: response.status, body: null, ...resumeFacts(init, response) };
       const poke = new TransformStream<Uint8Array, Uint8Array>({
         transform(chunk, controller) { rearm(); controller.enqueue(chunk); },
         flush() { clear(); },
         cancel() { clear(); },
       });
-      return { status: response.status, body: response.body.pipeThrough(poke) };
+      return { status: response.status, body: response.body.pipeThrough(poke), ...resumeFacts(init, response) };
     } catch (error) {
       clear();
       throw error;
@@ -527,12 +566,14 @@ function provisioningConfig(ctx: Context, config: ProvisioningCompositionConfig 
     declaration: declarationPort(ctx),
     ...(storeRoot === undefined ? {} : { storeRoot, artifactWriter: new VerifiedArtifactWriter(storeRoot) }),
     // THE DIRECT MODEL ARM'S BYTE SOURCE: the DECL url is the whole
-    // request — no token, no header (a token inside a url row leaks
-    // into logs and caches; the credential-store field it would ride
-    // is owed work, not a url query). Anything a gated host answers
-    // non-200 lands as a named fetch refusal. The idle dial (not a
-    // duration cap) keeps a stalled host bounded without killing a
-    // healthy long stream.
+    // request — no token, no credential header (a token inside a url
+    // row leaks into logs and caches; the credential-store field it
+    // would ride is owed work, not a url query). The one header the
+    // arm ever sends is the resume range (F7: `Range: bytes=N-` from
+    // a kept part's offset). Anything a gated host answers non-200/206
+    // lands as a named fetch refusal. The idle dial (not a duration
+    // cap) keeps a stalled host bounded without killing a healthy
+    // long stream.
     fetcher: idleDialFetch(PROVISION_FETCH_DIAL_MS),
     manager: lazyManager(ctx),
     inspector: lazyInspector(),

@@ -194,7 +194,7 @@ describe("verified artifact writer", () => {
     assert.equal(existsSync(`${destination}.part-op-atomic`), false);
   });
 
-  test("cancellation removes the partial file", async () => {
+  test("cancellation keeps the partial file (the F7 resume valve)", async () => {
     const store = root();
     const destination = join(store, "one.bin");
     const controller = new AbortController();
@@ -229,7 +229,12 @@ describe("verified artifact writer", () => {
       (error: unknown) => error instanceof ProvisioningError && error.code === "cancelled",
     );
     assert.equal(existsSync(destination), false);
-    assert.equal(existsSync(`${destination}.part-op-cancel`), false);
+    // THE F7 CURE (audit download-stack-audit-2026-10-20): a cancelled
+    // flight's landed prefix is a resume asset — the part stays and
+    // the next attempt adopts it (only a hash/size mismatch verdict
+    // deletes; the reaper owns never-adopted parts).
+    assert.equal(existsSync(`${destination}.part-op-cancel`), true);
+    assert.deepEqual(readFileSync(`${destination}.part-op-cancel`), BYTES.subarray(0, 2));
   });
 
   test("path confinement rejects traversal, absolute paths, and symlinks", async () => {

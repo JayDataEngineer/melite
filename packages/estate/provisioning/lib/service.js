@@ -1432,16 +1432,41 @@ export class ProvisioningService extends Service {
             // plane (and the operator's popup) forever.
             const stopStallWatch = this.armStallWatch(operationId, ref);
             try {
-                const response = await this.fetcher(item.url, signal);
-                if (response.status !== 200 || response.body === null) {
+                // THE RANGE RESUME MEASURE (audit download-stack-audit-2026-10-20
+                // F7): the previous attempt's kept part, sized BEFORE the fetch —
+                // a kept part turns into `Range: bytes=N-` and, on a 206, an
+                // append at N instead of a from-byte-0 re-download of the whole
+                // weight. No kept part asks for nothing.
+                const adoptable = this.writer?.adoptablePart === undefined
+                    ? null
+                    : await this.writer.adoptablePart({ root: this.writerRoot, relativePath, sizeBytes: item.sizeBytes });
+                const resumeFrom = adoptable?.sizeBytes ?? 0;
+                const response = await this.fetcher(item.url, signal, resumeFrom > 0 ? { rangeFrom: resumeFrom } : undefined);
+                if ((response.status !== 200 && response.status !== 206) || response.body === null) {
                     throw new ItemRefusal("failed", "artifact/fetch-refused", `direct fetch of ${item.url} answered status ${String(response.status)}${response.body === null ? " with no body" : ""}`);
                 }
+                // THE RESUMED FLIGHT (F7): a 206 to a ranged ask appends at the
+                // adopted offset; a 200 to the same ask means the host ignored
+                // the range — the restart from zero is said out loud, never
+                // silent while the operator's bar falls back.
+                const resumed = resumeFrom > 0 && response.status === 206;
                 // THE F9 COUNTED WRITE (the tracker's numerator): the ledger
                 // entry must exist before the first chunk lands (a background
                 // start seeded it with the plan total; a blocking ensure
                 // seeded it in executeEnsure — this keeps whichever total is
                 // already there and only fills a missing one).
                 this.ensureProgress(operationId, ref, item.sizeBytes ?? 0);
+                if (resumed) {
+                    // THE SEEDED LEDGER (never a 0% lie): the adopted prefix
+                    // counts before the first wire byte lands, so the poll
+                    // resumes at N/M instead of restarting at 0%.
+                    this.bumpProgress(operationId, resumeFrom);
+                    this.voiceDetail(operationId, "resuming at " + String(resumeFrom) + " of " +
+                        String(item.sizeBytes ?? response.totalBytes ?? 0) + " bytes");
+                }
+                else if (resumeFrom > 0) {
+                    this.voiceDetail(operationId, "the host ignored the range request — downloading from byte 0");
+                }
                 const landed = await this.writer.write({
                     root: this.writerRoot,
                     relativePath,
@@ -1449,12 +1474,9 @@ export class ProvisioningService extends Service {
                     operationId,
                     source: countedSource(response.body, (count) => this.bumpProgress(operationId, count)),
                     sizeBytes: item.sizeBytes,
-                    // the verify heartbeat: hash chunks + phase boundaries poke
-                    // the watchdog's clock (the field above) — a slow multi-GB
-                    // verify reads as flow, never as a frozen stream — and the
-                    // FIRST heartbeat carries the verify boundary to the
-                    // ledger's state word (acquiring → verifying: the honest
-                    // phase law, audit F5)
+                    // the writer re-runs the adoption scan under this arm's lock
+                    // and appends from the part it actually adopts
+                    ...(resumed ? { resumeFrom } : {}),
                     // the verify heartbeat: hash chunks + phase boundaries poke
                     // the watchdog's clock (the field above) — a slow multi-GB
                     // verify reads as flow, never as a frozen stream — and the
@@ -1763,6 +1785,16 @@ export class ProvisioningService extends Service {
             phase,
         });
     }
+    /** THE FLIGHT DETAIL VOICE (audit download-stack-audit-2026-10-20
+     *  F7): mirrors one mid-flight fact onto the ledger row's detail —
+     *  the resume offset, or the ignored-range restart. No entry, no
+     *  write; a terminal result's detail overwrites it in complete(). */
+    voiceDetail(operationId, detail) {
+        const entry = this.weightProgress.get(operationId);
+        if (entry === undefined || entry.detail === detail)
+            return;
+        this.weightProgress.set(operationId, { ...entry, detail });
+    }
     /** THE F9 ENTRY FILL (the tracker's denominator keep): creates the
      *  live entry when the blocking path is the first writer, and never
      *  shrinks a background start's plan total. */
@@ -1845,7 +1877,11 @@ export class ProvisioningService extends Service {
             this.stallRefusals.set(operationId, verifyActive
                 ? new ItemRefusal("failed", "artifact/verify-stalled", `the verify stalled: the stream landed ${String(bytes)}${total > 0 ? " of " + String(total) : ""} bytes but no verify flow for ${String(this.acquireStallTimeoutMs)}ms — the hash or land step stopped moving, retry the acquire`)
                 : new ItemRefusal("failed", "artifact/stalled", "the fetch stalled: no bytes landed in " + String(this.acquireStallTimeoutMs) +
-                    "ms (stuck at " + String(bytes) + " bytes) — retry the acquire"));
+                    "ms (stuck at " + String(bytes) + (total > 0 ? " of " + String(total) : "") + " bytes) — retry the acquire" +
+                    // THE KEPT BYTES ARE THE VOICE (F7): the stalled flight's
+                    // part survives the abort, so the retry resumes at the
+                    // frozen offset instead of re-downloading from byte 0
+                    (total > 0 ? "; the landed part is kept and the retry resumes at " + String(bytes) + " of " + String(total) : "")));
             this.locks.get(key)?.controller.abort();
         }, ACQUIRE_STALL_TICK_MS);
         return () => {

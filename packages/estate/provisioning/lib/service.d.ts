@@ -203,6 +203,11 @@ export declare class ProvisioningService extends Service implements Provisioning
      *  rides only where no record move may carry it; where a move
      *  exists the mirror carries the word and this carries the phase. */
     private voicePhase;
+    /** THE FLIGHT DETAIL VOICE (audit download-stack-audit-2026-10-20
+     *  F7): mirrors one mid-flight fact onto the ledger row's detail —
+     *  the resume offset, or the ignored-range restart. No entry, no
+     *  write; a terminal result's detail overwrites it in complete(). */
+    private voiceDetail;
     /** THE F9 ENTRY FILL (the tracker's denominator keep): creates the
      *  live entry when the blocking path is the first writer, and never
      *  shrinks a background start's plan total. */
