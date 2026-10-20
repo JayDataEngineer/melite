@@ -1027,7 +1027,34 @@ export function specBody(
     // first (cards board their atom first by the M5 law), so the
     // display row order is unchanged for folded and unfolded cards
     // alike.
-    families: [...new Set((def.boarded ?? []).map((fam) => owningAtom(fam)))].map((atom) => ({
+    families: [...new Set((def.boarded ?? []).map((fam) => owningAtom(fam)))].filter((atom) => {
+      // THE OFFERED-MODEL LAW (E2-5, 2026-11-09 — dev_docs/ERRORS_2.md:
+      // "EVEN THOUGH QWEN IMAGE EDIT 2511 IS RETIRED, NO VARIANTS, IT
+      // STILL SHOWS UP IN THE MODEL DROPDOWN"): the survivor arc's
+      // soft-retire hides every variant of a family
+      // (hide_from_dropdown); the Model axis is the OFFERED set's
+      // display face, and a family that offers zero pickable variants
+      // is a dead dropdown door — it never serves the row. NOT the
+      // no-silent-drop law's case: an absent-from-disk family with
+      // offered variants still serves (presence-marked, the download
+      // prompt owns it), and the bench door keeps every boarded
+      // address (old drafts re-run through routes, never the
+      // dropdown); only the offered row folds. THE DRAFT FACE (the
+      // same arc's other half): the doc's own resolved key is the
+      // draft's identity — an old 2511 draft keeps its row (the
+      // rail names what the draft rides), while no fresh card ever
+      // offers the retired family. An unbootable family (getModel
+      // throws) keeps its row — that refusal is the boot census's
+      // own voice, never this display fold's.
+      if (atom === key) return true
+      let fdecl: unknown
+      try {
+        fdecl = getModel(atom)
+      } catch {
+        return true
+      }
+      return specVariants(fdecl as ModelDecl, atom, atom).length > 0
+    }).map((atom) => ({
       id: atom,
       present: liveMids.has(atom),
       label: familyFace(atom),

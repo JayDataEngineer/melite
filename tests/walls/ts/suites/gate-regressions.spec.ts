@@ -530,7 +530,11 @@ describe("THE COMMITTED LIB (an emitted import Node can actually resolve)", () =
   // repin; the emit is the landed face, the pin follows deliberately.
   // 596 (2026-11-08, (j) 77a468115): card-base's glb-stage.js — the
   // attached-mesh preview face — entered the tracked lib tree.
-  const LIB_CENSUS_PIN = 596;
+  // 601 (2026-11-09): five deliberate committed lib faces — the dsh
+  // bump's typert-protocol subpaths (principal.js, remote-access.js,
+  // remote-info.js), the fallback purge's stageViewPlane.js, and
+  // input-prep's own root face index.js (the dual-face marker).
+  const LIB_CENSUS_PIN = 601;
   const specRe = /(?:from\s*|import\(\s*)(["'])(\.[^"']*)\1/g;
 
   it("the census is exact (a deletion OR a lowered floor reds — the count is pinned, not floored)", () => {

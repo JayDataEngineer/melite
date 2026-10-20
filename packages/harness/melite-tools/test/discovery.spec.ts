@@ -305,6 +305,56 @@ describe('live door arms', () => {
     assert.equal(opted['mcp:blender'], undefined, 'never a row per server (the tiles ride the card)')
   })
 
+  test('THE OFFERED-MODEL LAW (E2-5, dev_docs/ERRORS_2.md): every family row a card serves on its Model axis offers at least one pickable variant — a fully soft-retired family never serves the row', async () => {
+    // The operator burn (2026-11-09): "EVEN THOUGH QWEN IMAGE EDIT
+    // 2511 IS RETIRED, NO VARIANTS, IT STILL SHOWS UP IN THE MODEL
+    // DROPDOWN" — the survivor arc hid every one of the family's
+    // variants (hide_from_dropdown), but the Model axis still served
+    // the family row: a dead dropdown door, the UI-drop class this
+    // purge exists to kill. The law: the families face is the
+    // OFFERED set's display fold — a family whose every variant is
+    // hidden (specVariants empty at its own key) offers nothing and
+    // must not serve. The bench door keeps the boarded address (old
+    // drafts re-run); only the offered row goes.
+    const { getModel } = await import('@melite/comfyui-cordis')
+    const defs = await loadCardDefs()
+    const dead: string[] = []
+    for (const [cardId, def] of defs) {
+      if (cardId !== def.identity?.lane && (def.boarded ?? []).length === 0) continue
+      const doc = await formSpecArm(cardId)
+      if (doc === null) continue
+      const families = (doc as unknown as { families?: Array<{ id: string }> }).families ?? []
+      for (const fam of families) {
+        let decl: unknown
+        try {
+          decl = getModel(fam.id)
+        } catch {
+          continue // the unbootable-family arm's own voice, not this law's
+        }
+        const offered = specVariants(decl as never, fam.id, fam.id)
+        if (offered.length === 0) dead.push(`${cardId} serves '${fam.id}' with zero pickable variants`)
+      }
+    }
+    assert.deepEqual(dead, [], 'a Model-axis row with no pickable variant is a dead door — fold it out of the offered face')
+    // THE DRAFT FACE (the same arc's other half): a family-keyed
+    // spec (an old draft resolving its retired family) KEEPS its own
+    // row — the rail names what the draft rides; retirement folds
+    // the OFFER, never the draft's identity.
+    const draftFace = await formSpecArm('qwen-img-edit-2511')
+    const draftFamilies = ((draftFace ?? {}) as unknown as { families?: Array<{ id: string }> }).families ?? []
+    assert.ok(
+      draftFamilies.some((f) => f.id === 'qwen-img-edit-2511'),
+      'a 2511-keyed draft serves its own family row (addressable, never offered fresh)',
+    )
+    const freshFace = await formSpecArm('image-edit')
+    const freshFamilies = ((freshFace ?? {}) as unknown as { families?: Array<{ id: string }> }).families ?? []
+    assert.equal(
+      freshFamilies.some((f) => f.id === 'qwen-img-edit-2511'),
+      false,
+      'the fresh card never offers the fully retired family (E2-5)',
+    )
+  })
+
   test('cardToolsArm serves one manifest per card, model-first', async () => {
     const tools = (await cardToolsArm()) as Array<Record<string, unknown>>
     const defs = await loadCardDefs()
