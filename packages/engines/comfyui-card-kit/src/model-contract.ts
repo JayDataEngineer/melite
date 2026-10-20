@@ -836,6 +836,24 @@ export const ModelDecl: z<ModelDecl> = z.object({
   // the folder grammar and the lane_inputs key marriage at
   // registration — the axes the wire cannot spell.
   lane_homes: z.dict(z.string()).required(false),
+  // THE DECLARED TOOL RUNTIME (E2-2 Piece A, 2026-10-20): a family
+  // whose graph shells out to a provisioned tool runtime (the
+  // estimator venv, never a weight file) declares it here — the
+  // run gate's runtime leg probes it at press when the consuming
+  // param is stated, instead of the run dying at the engine. rel
+  // is the engine-tree path the engine's own walk-up resolves
+  // (nodes_anny._ESTIMATOR_ROOT_REL); sentinel names the files
+  // that must stand under it; env is the override that wins;
+  // command is the provision the refusal voices; consuming_param
+  // is the body key whose stated value routes into the runtime.
+  runtime: z.object({
+    name: z.string(),
+    env: z.string(),
+    rel: z.array(z.string()),
+    sentinel: z.array(z.string()),
+    command: z.string(),
+    consuming_param: z.string(),
+  }).required(false),
   // the interface documents all three as optional (absent ≡ false
   // to every reader), so the schema accepts their absence too
   has_agent: z.boolean().required(false),
@@ -871,6 +889,24 @@ export interface DeclaredAction {
   readonly laneIndependent?: boolean;
   readonly facts: (raw: Record<string, unknown>) => unknown;
   readonly build: (...args: never[]) => unknown;
+}
+
+/** A family's declared tool runtime (E2-2 Piece A): the provisioned
+ *  non-weight runtime a graph shells out to, probed by the run
+ *  gate's runtime leg when the consuming param is stated. Mirrors
+ *  the engine's own resolution (env override wins, else the
+ *  walk-up over rel for a dir holding every sentinel). */
+export interface DeclaredRuntime {
+  readonly name: string;
+  readonly env: string;
+  // MUTABLE arrays (the mods precedent): schemastery cannot spell
+  // readonly, and the ModelDecl schema twin must stay assignable
+  // to this interface — a readonly here breaks the Schema<ModelDecl>
+  // seat. Readers never mutate these rows.
+  readonly rel: string[];
+  readonly sentinel: string[];
+  readonly command: string;
+  readonly consuming_param: string;
 }
 
 /** The family declaration — the model.unit's data shape.
@@ -986,6 +1022,11 @@ export interface ModelDecl {
    *  pack-specific has no estate-wide folder name, and the DECL is
    *  the only place that truth can live. */
   lane_homes?: Record<string, string>;
+  /** The declared tool runtime (E2-2 Piece A): absent = the family
+   *  shells out to nothing — the run gate's runtime leg sleeps and
+   *  no wall may claim it. Present = the gate probes it at press
+   *  when the consuming param is stated. */
+  runtime?: DeclaredRuntime;
   /** The family-wide numeric bounds (per-field replaced by a
    *  variant's own row when it states one, per-endpoint within the
    *  stated field — the RANGE RULE: whoever owns the default owns

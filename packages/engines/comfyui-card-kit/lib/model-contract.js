@@ -416,6 +416,24 @@ export const ModelDecl = z.object({
     // the folder grammar and the lane_inputs key marriage at
     // registration — the axes the wire cannot spell.
     lane_homes: z.dict(z.string()).required(false),
+    // THE DECLARED TOOL RUNTIME (E2-2 Piece A, 2026-10-20): a family
+    // whose graph shells out to a provisioned tool runtime (the
+    // estimator venv, never a weight file) declares it here — the
+    // run gate's runtime leg probes it at press when the consuming
+    // param is stated, instead of the run dying at the engine. rel
+    // is the engine-tree path the engine's own walk-up resolves
+    // (nodes_anny._ESTIMATOR_ROOT_REL); sentinel names the files
+    // that must stand under it; env is the override that wins;
+    // command is the provision the refusal voices; consuming_param
+    // is the body key whose stated value routes into the runtime.
+    runtime: z.object({
+        name: z.string(),
+        env: z.string(),
+        rel: z.array(z.string()),
+        sentinel: z.array(z.string()),
+        command: z.string(),
+        consuming_param: z.string(),
+    }).required(false),
     // the interface documents all three as optional (absent ≡ false
     // to every reader), so the schema accepts their absence too
     has_agent: z.boolean().required(false),

@@ -77,6 +77,25 @@ export const DECL = {
     // pack-specific lane file lives in — the run gate probes it at press
     // instead of dying untyped at the engine.
     "lane_homes": { "model_path": "sams" },
+    // THE DECLARED TOOL RUNTIME (E2-2 Piece A, 2026-10-20): the
+    // estimator chain the photo arm shells out to — a provisioned
+    // venv + checkout, never a weight file, so no lane_inputs row
+    // can name it. The run gate's runtime leg probes it at press
+    // when body_image is stated (GLB-only runs never touch it);
+    // rel/sentinel/env mirror nodes_anny.py:885-935 exactly, and
+    // the command is the provision the refusal voices.
+    "runtime": {
+        "name": "anny-estimator",
+        "env": "ANNY_ESTIMATOR_ROOT",
+        "rel": ["data", "runtime", "anny-estimator"],
+        "sentinel": [
+            "estimator_chain.py",
+            ".venv/bin/python",
+            "SOMA-X/tools/mhr2soma.py"
+        ],
+        "command": "pnpm run provision -- estimator",
+        "consuming_param": "body_image"
+    },
     // THE LANE SURFACE (the z-image precedent): exactly the knobs the
     // anny card serves — the GLB attach, the (l) photo face (operator
     // 2026-11-08, ERRORS.md:100: the image slot beside the GLB —

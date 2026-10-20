@@ -19,8 +19,12 @@ export interface LaneInputMiss {
   readonly folders: readonly string[];
   /** The provision URL when the family declares one for the file. */
   readonly fetchUrl?: string;
-  /** The artifact class the popup's action keys on. */
-  readonly kind: "model" | "extension";
+  /** The artifact class the popup's action keys on. "runtime" is
+   *  the tool-runtime leg (E2-2 Piece A): the slot is the consuming
+   *  param, missing is the runtime name, folders are the checked
+   *  engine-tree paths, and there is no fetchUrl (the provision is
+   *  a command the banner voices from the prose, never a URL). */
+  readonly kind: "model" | "extension" | "runtime";
 }
 
 /** THE IN-FLIGHT ACQUISITION ROW (ERRORS.md k2, NEVER-RUN-ON-

@@ -37,7 +37,10 @@ function laneDetailsOf(p: Record<string, unknown>): LaneInputMissingDetails {
   const kind = p["kind"];
   if (typeof family !== "string" || typeof slot !== "string"
     || typeof missing !== "string" || !Array.isArray(folders)
-    || (kind !== "model" && kind !== "extension")) {
+    // "runtime" rides the tool-runtime leg (E2-2 Piece A): the
+    // popup's runtime banner keys on the parsed prose, and the
+    // fold carries the row through like every other refusal's.
+    || (kind !== "model" && kind !== "extension" && kind !== "runtime")) {
     throw new Error(
       "runs remote: lane_input_missing refusal lacks its structured artifact (family/slot/missing/folders/kind)",
     );

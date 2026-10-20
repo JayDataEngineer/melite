@@ -3,6 +3,8 @@
 // disk (the packs the compose arm refuses without).
 import { checkModelPresent, getModel, loadEndpointConfig } from "@melite/comfyui-cordis";
 import { LIVE_ACQUIRE_STATES, provisioningSeat } from "@melite/estate-provisioning";
+import { existsSync } from "node:fs";
+import { dirname, join, resolve } from "node:path";
 import { CardArmError } from "./cardsArmError.js";
 // ── THE LANE PRESENCE GATE (2026-09-13, the one-pattern law) ───────
 // The operator's alarm: "If Img Gen works and Img Edit doesn't,
@@ -161,6 +163,137 @@ export function laneFilesStatus(decl, check = (folder, name) => checkModelPresen
         return null;
     return firstLaneMiss(decl, check) === null;
 }
+/** THE DECLARED ENGINE ROOT (E2-2 Piece A): where the live engine
+ *  lives on this box, stated in the endpoint machine statement
+ *  (`engine_root`). The runtime walk-up must start from the
+ *  ENGINE's own output dir — probing the estate's repo tree would
+ *  green-light runs the BYO engine then burns (the repo copy the
+ *  engine never reads). No declared root = the estate cannot see
+ *  that tree, so the leg stands down (today's behavior: the
+ *  post-hoc banner stays the only face). Additive key, unknown to
+ *  every existing reader. */
+function engineRootOf() {
+    let cfg;
+    try {
+        cfg = loadEndpointConfig();
+    }
+    catch {
+        return null;
+    }
+    const raw = cfg["engine_root"];
+    if (typeof raw !== "string" || raw.trim() === "")
+        return null;
+    return raw.trim();
+}
+/** The engine's output dir: the endpoint's output_dir when stated
+ *  (absolute as-is, relative resolved under the declared engine
+ *  root — the managed "data/temp" spelling), else the ComfyUI
+ *  default (<root>/output). The walk-up only moves UP, so
+ *  starting deep is safe; starting shallow would skip the true
+ *  ancestor — this never starts shallower than the engine's own
+ *  output. */
+function engineOutputDir(root) {
+    let cfg;
+    try {
+        cfg = loadEndpointConfig();
+    }
+    catch {
+        return join(root, "output");
+    }
+    const raw = cfg["output_dir"];
+    if (typeof raw !== "string" || raw.trim() === "")
+        return join(root, "output");
+    const v = raw.trim();
+    return v.startsWith("/") ? v : join(root, v);
+}
+/** One sentinel's safe join: a sentinel escaping its home (.. or
+ *  empty) is a declaration bug — false, never a filesystem escape. */
+function sentinelHit(home, sentinel) {
+    const clean = sentinel.trim().replace(/^\/+|\/+$/gu, "");
+    if (clean === "" || clean.split("/").some((part) => part === ".."))
+        return false;
+    return existsSync(join(home, clean));
+}
+/** The engine's own resolution, mirrored (nodes_anny.py:885-935):
+ *  the env override wins (a set override names the home outright —
+ *  the managed-boot truth, where the estate launches the engine
+ *  with this same env; a deliberately stated path with valid
+ *  sentinels is trusted over a blind walk-up, and a stated path
+ *  that fails its sentinels is the engine's own failure, not a
+ *  cue to keep searching), else the first ancestor of the output
+ *  dir holding the rel dir decides — a chipped first hit is the
+ *  miss, never a cue to walk on. */
+function resolveRuntimeHome(outputDir, rt) {
+    const override = (process.env[rt.env] ?? "").trim();
+    if (override !== "") {
+        return rt.sentinel.every((s) => sentinelHit(override, s)) ? override : null;
+    }
+    let dir = resolve(outputDir);
+    for (;;) {
+        const home = join(dir, ...rt.rel);
+        if (existsSync(home)) {
+            return rt.sentinel.every((s) => sentinelHit(home, s)) ? home : null;
+        }
+        const parent = dirname(dir);
+        if (parent === dir)
+            return null;
+        dir = parent;
+    }
+}
+/** THE RUNTIME LEG (E2-2 Piece A, 2026-10-20 — the press-time
+ *  half): the DECL's runtime row, judged only when the consuming
+ *  param is stated (a GLB-only anny run never touches the
+ *  estimator — the leg sleeps) and only when the endpoint
+ *  declares its engine root. The refusal voices the ENGINE's own
+ *  sentence (name + path + Provision it + env override) so the
+ *  existing runtime banner fires on it with no new wire; the
+ *  structured artifact rides beside the prose (the fold's law).
+ *  The lanes.env hatch rides every refusal: an override the
+ *  engine sees but the lane cannot is a one-line export away,
+ *  and the refusal says so. */
+function runtimeLegMiss(decl, fam, body) {
+    const rt = decl.runtime;
+    if (rt === undefined)
+        return null;
+    const stated = body?.[rt.consuming_param];
+    if (typeof stated !== "string" || stated.trim() === "")
+        return null;
+    const root = engineRootOf();
+    if (root === null)
+        return null;
+    const override = (process.env[rt.env] ?? "").trim();
+    if (override !== "") {
+        if (rt.sentinel.every((s) => sentinelHit(override, s)))
+            return null;
+        return runtimeRefusal(fam, rt, [override]);
+    }
+    const start = engineOutputDir(root);
+    const home = resolveRuntimeHome(start, rt);
+    if (home !== null)
+        return null;
+    return runtimeRefusal(fam, rt, [start]);
+}
+/** The press-time runtime refusal: the engine-voiced sentence the
+ *  E2 parser anchors on (run-rescue-core.ts THE RUNTIME-MISS
+ *  VOICE) — `<name> runtime not found at <path>. Provision it:
+ *  <cmd>. Or point <ENV> at an existing runtime.` — plus the
+ *  lanes.env hatch. Deliberately NOT the "lane presence:" prefix:
+ *  that voice is the model leg's anchor (weight extensions), and
+ *  this sentence must fall through to the runtime arm, never be
+ *  claimed by it. */
+function runtimeRefusal(fam, rt, checked) {
+    return new CardArmError(400, "family '" + fam + "' declares runtime '" + rt.name + "' (" + rt.consuming_param + " stated) but no " +
+        "provisioned copy exists — " + rt.name + " runtime not found at " + checked[0] + ". Provision it: " +
+        rt.command + ". Or point " + rt.env + " at an existing runtime. If " + rt.env + " is set for the " +
+        "engine but the lane cannot see it, export it in lanes.env and restart the lane. (walk-up from " +
+        checked[0] + " for " + rt.rel.join("/") + " found no copy holding " + rt.sentinel.join(", ") + ")", "lane_input_missing", undefined, undefined, undefined, {
+        family: fam,
+        slot: rt.consuming_param,
+        missing: rt.name,
+        folders: [...checked],
+        kind: "runtime",
+    });
+}
 /** THE IN-FLIGHT READ (the run gate's seat query — the provisioning
  *  service's operation read, wired through the process seat the way
  *  the models seat's namespace arms the models table): the LIVE
@@ -211,7 +344,7 @@ export function lanePresenceMiss(fam, body, mid) {
     const decl = getModel(fam);
     const miss = firstLaneMiss(decl, (folder, name) => checkModelPresent("models/" + folder, name), statedVariantRow(decl, body, mid));
     if (miss === null)
-        return null;
+        return runtimeLegMiss(decl, fam, body);
     const prov = (decl.provisions ?? []).find((p) => p.name === miss.name);
     // THE IN-FLIGHT LEG (ERRORS.md k2 — NEVER-RUN-ON-INCOMPLETE): a
     // miss whose file is landing RIGHT NOW is not the idle story. The

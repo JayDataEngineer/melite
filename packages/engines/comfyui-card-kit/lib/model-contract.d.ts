@@ -420,6 +420,19 @@ export interface DeclaredAction {
     readonly facts: (raw: Record<string, unknown>) => unknown;
     readonly build: (...args: never[]) => unknown;
 }
+/** A family's declared tool runtime (E2-2 Piece A): the provisioned
+ *  non-weight runtime a graph shells out to, probed by the run
+ *  gate's runtime leg when the consuming param is stated. Mirrors
+ *  the engine's own resolution (env override wins, else the
+ *  walk-up over rel for a dir holding every sentinel). */
+export interface DeclaredRuntime {
+    readonly name: string;
+    readonly env: string;
+    readonly rel: string[];
+    readonly sentinel: string[];
+    readonly command: string;
+    readonly consuming_param: string;
+}
 /** The family declaration — the model.unit's data shape.
  *
  *  CONFORMANCE (operator order 2026-09-08 — the z-image verdict):
@@ -532,6 +545,11 @@ export interface ModelDecl {
      *  pack-specific has no estate-wide folder name, and the DECL is
      *  the only place that truth can live. */
     lane_homes?: Record<string, string>;
+    /** The declared tool runtime (E2-2 Piece A): absent = the family
+     *  shells out to nothing — the run gate's runtime leg sleeps and
+     *  no wall may claim it. Present = the gate probes it at press
+     *  when the consuming param is stated. */
+    runtime?: DeclaredRuntime;
     /** The family-wide numeric bounds (per-field replaced by a
      *  variant's own row when it states one, per-endpoint within the
      *  stated field — the RANGE RULE: whoever owns the default owns

@@ -25,7 +25,10 @@ export interface LaneInputMissingDetails extends RunsRefusalDetails {
     readonly missing: string;
     readonly folders: readonly string[];
     readonly fetch_url?: string;
-    readonly kind: "model" | "extension";
+    /** "runtime" rides the tool-runtime leg (E2-2 Piece A) — the
+     *  popup's runtime banner keys on the parsed prose, never on
+     *  this row (there is no fetch_url for a provision command). */
+    readonly kind: "model" | "extension" | "runtime";
 }
 declare module "@deepseek-ai/dsh-typert-protocol" {
     interface RemoteErrorDetailsMap {
