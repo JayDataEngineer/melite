@@ -1422,17 +1422,16 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
       // mirrors this exactly — a non-empty body_glb renders the GLB
       // as-is, only the empty path bakes AnnyParamsToGlb).
       ...(attachedMeshOf(spec, value) !== null ? { attachedMesh: attachedMeshOf(spec, value)! } : {}),
-      // THE ATTACHED IMAGE (the (l) law, 2026-11-08 — the journey's
-      // re-opener, k-j-l-batched: "both stated → compose bakes the
-      // estimate while the preview shows the GLB"): compose's ONE
-      // stated precedence is image > glb > parametric (anny
-      // actions.ts — a stated photo rides Sam3dBodyImageToAnny, the
-      // GLB waits), so the FIRST non-empty image-kind input IS the
-      // pre-run face here too — the photo renders through the input
-      // asset door and the attached GLB + figure retire under it
-      // inside MeshStagePreview. Whitespace IS emptiness (the fall
-      // returns to the mesh arm). ONE derivation, mirrored — never
-      // a drifting copy.
+      // THE ATTACHED IMAGE (the input-pin law, operator 2026-10-20,
+      // E2-1 — supersedes the (l) pre-run-face law, burn verbatim:
+      // "IT JUST PASTES THE IMAGE OVER THE ANNY PREVIEW"): the
+      // FIRST non-empty image-kind input is the estimator's INPUT,
+      // never the preview's seat — it hands MeshStagePreview its
+      // ReferenceImageBadge pin (the photo beside the stage), while
+      // the 3D seat keeps the card's own body (attached GLB > native
+      // figure) and the converted body arrives only via run
+      // artifacts. Whitespace IS emptiness (the fall returns to the
+      // mesh arm). ONE derivation, mirrored — never a drifting copy.
       ...(attachedImageOf(spec, value) !== null ? { attachedImage: attachedImageOf(spec, value)! } : {}),
     }
     // THE SEAM'S PREVIEW FACE: a claimed timeline + a landed video

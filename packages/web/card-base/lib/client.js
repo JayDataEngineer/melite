@@ -11469,8 +11469,8 @@ window.__ModuleLoader__.load({
 		}
 		//#endregion
 		//#region \0dsh-css:packages/web/card-base/src/preview.module.css.mjs
-		const css$3 = ".oHl7Va_stagePreview{flex-direction:column;flex:1;gap:8px;min-height:0;display:flex;position:relative;overflow:hidden}.oHl7Va_figureError{z-index:2;color:var(--dsw-alias-label-error);background:var(--dsw-alias-bg-solid);border:1px solid var(--dsh-alias-border-l2);border-radius:6px;padding:4px 8px;font-size:11px;position:absolute;top:8px;left:8px;right:8px}.oHl7Va_hero{object-fit:contain;background:var(--dsw-alias-bg-base);border:1px solid var(--dsh-alias-border-l2);border-radius:6px;flex:1;width:100%;min-height:0}.oHl7Va_heroImg{object-fit:contain;background:var(--dsw-alias-bg-base);border:1px solid var(--dsh-alias-border-l2);border-radius:6px;flex:none;width:auto;min-width:0;max-width:100%;height:46vh;margin:0 auto;display:block}.oHl7Va_heroAudio{flex:none;width:100%;min-height:48px;margin:auto 0}.oHl7Va_empty{color:var(--dsw-alias-label-dimmed);border:1px dashed var(--dsh-alias-border-l2);border-radius:6px;flex:1;justify-content:center;align-items:center;gap:6px;font-size:11px;display:flex}.oHl7Va_emptyGlyph{opacity:.7;flex:none;width:14px;height:14px}.oHl7Va_textSeat{flex-direction:column;flex:1;justify-content:center;gap:6px;min-height:0;display:flex}.oHl7Va_textHero{max-height:320px;color:var(--dsh-alias-text-primary);white-space:pre-wrap;word-break:break-word;text-align:left;border:1px solid var(--dsh-alias-border-l2);background:var(--dsw-alias-bg-base);border-radius:6px;flex:0 auto;margin:auto 0;padding:10px 12px;font-family:ui-monospace,monospace;font-size:11px;line-height:1.6;overflow:auto}.oHl7Va_textCopy{flex:none;align-self:flex-end}.oHl7Va_strip{flex:none;gap:6px;display:flex;overflow-x:auto}.oHl7Va_stripLink{color:var(--dsw-alias-brand-primary);white-space:nowrap;border:1px solid var(--dsh-alias-border-l2);border-radius:6px;padding:2px 6px;font-size:10px;text-decoration:none}.oHl7Va_thumbVideoBtn{box-sizing:border-box;cursor:pointer;background:0 0;border:1px solid #0000;border-radius:8px;flex-direction:column;gap:2px;width:128px;padding:2px;display:flex}.oHl7Va_thumbVideoBtn:hover{border-color:var(--dsh-alias-border-l2)}.oHl7Va_thumbVideoActive{border-color:var(--dsw-alias-brand-primary)}.oHl7Va_thumbVideo{background:var(--dsw-alias-bg-base);object-fit:contain;border-radius:6px;width:100%;height:66px;display:block}.oHl7Va_thumbVideoName{color:var(--dsw-alias-label-secondary);text-overflow:ellipsis;white-space:nowrap;font-size:10px;overflow:hidden}.oHl7Va_thumbRow{overscroll-behavior:contain;flex-wrap:wrap;flex:none;gap:6px;display:flex;overflow-x:auto}.oHl7Va_thumb{border:1px solid var(--dsh-alias-border-l2);border-radius:4px;height:48px}.oHl7Va_thumbFace{box-sizing:content-box;border:1px solid var(--dsh-alias-border-l2);width:16px;height:16px;color:var(--dsw-alias-label-secondary);background:var(--dsw-alias-bg-base);border-radius:4px;flex:none;padding:15px}.oHl7Va_historyBlock{overscroll-behavior:contain;flex-direction:column;flex:none;gap:4px;max-height:240px;padding-top:4px;display:flex;overflow-y:auto}.oHl7Va_historyTitle{color:var(--dsw-alias-label-secondary);font-size:11px}.oHl7Va_historyTile{cursor:pointer;background:0 0;border:1px solid #0000;border-radius:4px;padding:0;display:inline-flex}.oHl7Va_historyTile:hover,.oHl7Va_historyTileActive{border-color:var(--dsh-alias-border-l2)}.oHl7Va_staleBadge{flex:none;align-self:flex-start}.oHl7Va_layerRow{flex:none;gap:6px;display:flex}.oHl7Va_layerChip{flex:none}.oHl7Va_reportCard{border:1px solid var(--dsh-alias-border-l2);background:var(--dsw-alias-bg-base);text-align:left;border-radius:8px;flex-direction:column;gap:6px;padding:8px 10px;display:flex}.oHl7Va_reportHead{align-items:center;gap:6px;min-width:0;display:flex}.oHl7Va_reportStatus{letter-spacing:.04em;color:var(--dsw-alias-label-secondary);font-size:10px}.oHl7Va_reportTitle{color:var(--dsw-alias-label-primary);text-overflow:ellipsis;white-space:nowrap;font-size:11px;overflow:hidden}.oHl7Va_reportChips{flex-wrap:wrap;gap:4px;display:flex}.oHl7Va_reportChip{color:var(--dsw-alias-label-tertiary);border:1px solid var(--dsw-alias-border-l1);border-radius:6px;flex:none;padding:1px 6px;font-size:10px}.oHl7Va_reportRows{flex-direction:column;gap:2px;margin:0;display:flex}.oHl7Va_reportRow{justify-content:space-between;gap:12px;min-width:0;display:flex}.oHl7Va_reportKey{overflow-wrap:anywhere;min-width:0;color:var(--dsw-alias-label-dimmed);flex:0 auto;font-size:10px}.oHl7Va_reportVal{font-family:var(--dsw-alias-font-mono);color:var(--dsw-alias-label-secondary);overflow-wrap:anywhere;margin:0;font-size:10px}.oHl7Va_stageCanvas{touch-action:none;width:100%;height:100%;min-height:320px;max-height:46vh;display:block}.oHl7Va_heroIncoming{opacity:0;pointer-events:none;width:100%;height:100%;position:absolute;inset:0}";
-		const tagId$3 = "@melite/card-base/preview.module.css@60adfbf7";
+		const css$3 = ".oHl7Va_stagePreview{flex-direction:column;flex:1;gap:8px;min-height:0;display:flex;position:relative;overflow:hidden}.oHl7Va_inputPin{z-index:3;position:absolute;top:8px;right:8px}.oHl7Va_figureError{z-index:2;color:var(--dsw-alias-label-error);background:var(--dsw-alias-bg-solid);border:1px solid var(--dsh-alias-border-l2);border-radius:6px;padding:4px 8px;font-size:11px;position:absolute;top:8px;left:8px;right:8px}.oHl7Va_hero{object-fit:contain;background:var(--dsw-alias-bg-base);border:1px solid var(--dsh-alias-border-l2);border-radius:6px;flex:1;width:100%;min-height:0}.oHl7Va_heroImg{object-fit:contain;background:var(--dsw-alias-bg-base);border:1px solid var(--dsh-alias-border-l2);border-radius:6px;flex:none;width:auto;min-width:0;max-width:100%;height:46vh;margin:0 auto;display:block}.oHl7Va_heroAudio{flex:none;width:100%;min-height:48px;margin:auto 0}.oHl7Va_empty{color:var(--dsw-alias-label-dimmed);border:1px dashed var(--dsh-alias-border-l2);border-radius:6px;flex:1;justify-content:center;align-items:center;gap:6px;font-size:11px;display:flex}.oHl7Va_emptyGlyph{opacity:.7;flex:none;width:14px;height:14px}.oHl7Va_textSeat{flex-direction:column;flex:1;justify-content:center;gap:6px;min-height:0;display:flex}.oHl7Va_textHero{max-height:320px;color:var(--dsh-alias-text-primary);white-space:pre-wrap;word-break:break-word;text-align:left;border:1px solid var(--dsh-alias-border-l2);background:var(--dsw-alias-bg-base);border-radius:6px;flex:0 auto;margin:auto 0;padding:10px 12px;font-family:ui-monospace,monospace;font-size:11px;line-height:1.6;overflow:auto}.oHl7Va_textCopy{flex:none;align-self:flex-end}.oHl7Va_strip{flex:none;gap:6px;display:flex;overflow-x:auto}.oHl7Va_stripLink{color:var(--dsw-alias-brand-primary);white-space:nowrap;border:1px solid var(--dsh-alias-border-l2);border-radius:6px;padding:2px 6px;font-size:10px;text-decoration:none}.oHl7Va_thumbVideoBtn{box-sizing:border-box;cursor:pointer;background:0 0;border:1px solid #0000;border-radius:8px;flex-direction:column;gap:2px;width:128px;padding:2px;display:flex}.oHl7Va_thumbVideoBtn:hover{border-color:var(--dsh-alias-border-l2)}.oHl7Va_thumbVideoActive{border-color:var(--dsw-alias-brand-primary)}.oHl7Va_thumbVideo{background:var(--dsw-alias-bg-base);object-fit:contain;border-radius:6px;width:100%;height:66px;display:block}.oHl7Va_thumbVideoName{color:var(--dsw-alias-label-secondary);text-overflow:ellipsis;white-space:nowrap;font-size:10px;overflow:hidden}.oHl7Va_thumbRow{overscroll-behavior:contain;flex-wrap:wrap;flex:none;gap:6px;display:flex;overflow-x:auto}.oHl7Va_thumb{border:1px solid var(--dsh-alias-border-l2);border-radius:4px;height:48px}.oHl7Va_thumbFace{box-sizing:content-box;border:1px solid var(--dsh-alias-border-l2);width:16px;height:16px;color:var(--dsw-alias-label-secondary);background:var(--dsw-alias-bg-base);border-radius:4px;flex:none;padding:15px}.oHl7Va_historyBlock{overscroll-behavior:contain;flex-direction:column;flex:none;gap:4px;max-height:240px;padding-top:4px;display:flex;overflow-y:auto}.oHl7Va_historyTitle{color:var(--dsw-alias-label-secondary);font-size:11px}.oHl7Va_historyTile{cursor:pointer;background:0 0;border:1px solid #0000;border-radius:4px;padding:0;display:inline-flex}.oHl7Va_historyTile:hover,.oHl7Va_historyTileActive{border-color:var(--dsh-alias-border-l2)}.oHl7Va_staleBadge{flex:none;align-self:flex-start}.oHl7Va_layerRow{flex:none;gap:6px;display:flex}.oHl7Va_layerChip{flex:none}.oHl7Va_reportCard{border:1px solid var(--dsh-alias-border-l2);background:var(--dsw-alias-bg-base);text-align:left;border-radius:8px;flex-direction:column;gap:6px;padding:8px 10px;display:flex}.oHl7Va_reportHead{align-items:center;gap:6px;min-width:0;display:flex}.oHl7Va_reportStatus{letter-spacing:.04em;color:var(--dsw-alias-label-secondary);font-size:10px}.oHl7Va_reportTitle{color:var(--dsw-alias-label-primary);text-overflow:ellipsis;white-space:nowrap;font-size:11px;overflow:hidden}.oHl7Va_reportChips{flex-wrap:wrap;gap:4px;display:flex}.oHl7Va_reportChip{color:var(--dsw-alias-label-tertiary);border:1px solid var(--dsw-alias-border-l1);border-radius:6px;flex:none;padding:1px 6px;font-size:10px}.oHl7Va_reportRows{flex-direction:column;gap:2px;margin:0;display:flex}.oHl7Va_reportRow{justify-content:space-between;gap:12px;min-width:0;display:flex}.oHl7Va_reportKey{overflow-wrap:anywhere;min-width:0;color:var(--dsw-alias-label-dimmed);flex:0 auto;font-size:10px}.oHl7Va_reportVal{font-family:var(--dsw-alias-font-mono);color:var(--dsw-alias-label-secondary);overflow-wrap:anywhere;margin:0;font-size:10px}.oHl7Va_stageCanvas{touch-action:none;width:100%;height:100%;min-height:320px;max-height:46vh;display:block}.oHl7Va_heroIncoming{opacity:0;pointer-events:none;width:100%;height:100%;position:absolute;inset:0}";
+		const tagId$3 = "@melite/card-base/preview.module.css@5892dc32";
 		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId$3) + "]") === null) {
 			const tag = document.createElement("style");
 			tag.dataset.plugin = "@melite/card-base";
@@ -11490,6 +11490,7 @@ window.__ModuleLoader__.load({
 			"historyTile": "oHl7Va_historyTile",
 			"historyTileActive": "oHl7Va_historyTileActive",
 			"historyTitle": "oHl7Va_historyTitle",
+			"inputPin": "oHl7Va_inputPin",
 			"layerChip": "oHl7Va_layerChip",
 			"layerRow": "oHl7Va_layerRow",
 			"reportCard": "oHl7Va_reportCard",
@@ -11585,9 +11586,10 @@ window.__ModuleLoader__.load({
 			return out.length > 0 ? out : null;
 		}
 		/** Pure: the served schema's IMAGE-KIND fields × the resolved values
-		*  → the (l) law's pre-run photo face (mirroring compose's ONE
-		*  stated precedence — image > glb > parametric: a stated photo is
-		*  the estimate the run will bake, so it IS the pre-run face). The
+		*  → the input-pin law's photo PIN source (operator 2026-10-20, E2-1
+		*  — supersedes the (l) pre-run-face law: the stated photo is the
+		*  estimator's INPUT, never the preview's seat; it pins beside the
+		*  stage and the converted body arrives only via run artifacts). The
 		*  FIRST non-empty image field wins (compose reads one person
 		*  reference — person_index 0; a second photo field would be a
 		*  different card's own law to state). Whitespace IS emptiness (the
@@ -16400,6 +16402,85 @@ window.__ModuleLoader__.load({
 			}, "figure failed: " + failed) : null);
 		}
 		//#endregion
+		//#region \0dsh-css:packages/web/card-base/src/viewportChrome.module.css.mjs
+		const css = ".BbYg0q_frame{border:1px solid var(--dsw-alias-border,#e2e4e9);background:var(--melite-stage-bg);border-radius:8px;flex:1;min-height:340px;position:relative;overflow:hidden}.BbYg0q_dockTopRight{position:absolute;top:8px;right:8px}.BbYg0q_dockTopLeft{position:absolute;top:8px;left:8px}.BbYg0q_dockBottomRight{position:absolute;bottom:8px;right:8px}.BbYg0q_dockBottomLeft{position:absolute;bottom:8px;left:8px}.BbYg0q_dockBottomCenter{position:absolute;bottom:8px;left:50%;transform:translate(-50%)}.BbYg0q_dockBottom{position:absolute;bottom:10px;left:10px;right:10px}.BbYg0q_dockFill{position:absolute;inset:0}.BbYg0q_dockEdgeRight{position:absolute;top:0;bottom:0;right:0}.BbYg0q_dockEdgeLeft{position:absolute;top:0;bottom:0;left:0}.BbYg0q_badge{pointer-events:none;border:1px solid var(--dsw-alias-border,#e2e4e9);background:color-mix(in srgb, var(--melite-stage-bg) 90%, transparent);backdrop-filter:blur(4px);border-radius:6px;width:112px;margin:0;overflow:hidden;box-shadow:0 8px 24px #00000059}.BbYg0q_badgeImg{object-fit:contain;width:100%;height:112px}.BbYg0q_badgeCaption{text-align:center;text-transform:uppercase;letter-spacing:.12em;color:var(--dsw-alias-label-tertiary);padding:2px 6px;font-size:8px;font-weight:500}";
+		const tagId = "@melite/card-base/viewportChrome.module.css@2661997";
+		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId) + "]") === null) {
+			const tag = document.createElement("style");
+			tag.dataset.plugin = "@melite/card-base";
+			tag.dataset.pluginCss = tagId;
+			tag.textContent = css;
+			document.head.appendChild(tag);
+		}
+		var viewportChrome_module_css_default = {
+			"badge": "BbYg0q_badge",
+			"badgeCaption": "BbYg0q_badgeCaption",
+			"badgeImg": "BbYg0q_badgeImg",
+			"dockBottom": "BbYg0q_dockBottom",
+			"dockBottomCenter": "BbYg0q_dockBottomCenter",
+			"dockBottomLeft": "BbYg0q_dockBottomLeft",
+			"dockBottomRight": "BbYg0q_dockBottomRight",
+			"dockEdgeLeft": "BbYg0q_dockEdgeLeft",
+			"dockEdgeRight": "BbYg0q_dockEdgeRight",
+			"dockFill": "BbYg0q_dockFill",
+			"dockTopLeft": "BbYg0q_dockTopLeft",
+			"dockTopRight": "BbYg0q_dockTopRight",
+			"frame": "BbYg0q_frame"
+		};
+		//#endregion
+		//#region src/viewportChrome.tsx
+		function ViewportFrame({ children, label, empty, className, style, ...props }) {
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+				"data-slot": "viewport-frame",
+				"aria-label": label,
+				className: cx(viewportChrome_module_css_default.frame, className),
+				style: {
+					"--melite-stage-bg": STAGE_BACKGROUND_DARK,
+					...style
+				},
+				...props,
+				children: [children, empty]
+			});
+		}
+		const DOCK_CLASS = {
+			"top-right": viewportChrome_module_css_default.dockTopRight,
+			"top-left": viewportChrome_module_css_default.dockTopLeft,
+			"bottom-right": viewportChrome_module_css_default.dockBottomRight,
+			"bottom-left": viewportChrome_module_css_default.dockBottomLeft,
+			"bottom-center": viewportChrome_module_css_default.dockBottomCenter,
+			bottom: viewportChrome_module_css_default.dockBottom,
+			fill: viewportChrome_module_css_default.dockFill,
+			"edge-right": viewportChrome_module_css_default.dockEdgeRight,
+			"edge-left": viewportChrome_module_css_default.dockEdgeLeft
+		};
+		function ViewportAnchor({ dock = "top-right", className, ...props }) {
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+				"data-slot": "viewport-anchor",
+				"data-dock": dock,
+				className: cx(DOCK_CLASS[dock], className),
+				...props
+			});
+		}
+		function ReferenceImageBadge({ url, label, className, ...props }) {
+			if (!url) return null;
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("figure", {
+				"data-slot": "reference-image-badge",
+				"data-reference-image": true,
+				"aria-label": label,
+				className: cx(viewportChrome_module_css_default.badge, className),
+				...props,
+				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("img", {
+					src: url,
+					alt: label,
+					className: viewportChrome_module_css_default.badgeImg,
+					draggable: false
+				}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("figcaption", {
+					className: viewportChrome_module_css_default.badgeCaption,
+					children: label
+				})]
+			});
+		}
+		//#endregion
 		//#region ../../web-kit/contracts/src/stageView.ts
 		/** THE TERMINAL JUDGEMENT — the other half of the same question ("is
 		*  this run finished?"), which five seats also spelled privately with
@@ -16535,85 +16616,6 @@ window.__ModuleLoader__.load({
 				key: k,
 				className: preview_module_css_default.reportRow
 			}, (0, react.createElement)("dt", { className: preview_module_css_default.reportKey }, k), (0, react.createElement)("dd", { className: preview_module_css_default.reportVal }, String(v))))) : null);
-		}
-		//#endregion
-		//#region \0dsh-css:packages/web/card-base/src/viewportChrome.module.css.mjs
-		const css = ".BbYg0q_frame{border:1px solid var(--dsw-alias-border,#e2e4e9);background:var(--melite-stage-bg);border-radius:8px;flex:1;min-height:340px;position:relative;overflow:hidden}.BbYg0q_dockTopRight{position:absolute;top:8px;right:8px}.BbYg0q_dockTopLeft{position:absolute;top:8px;left:8px}.BbYg0q_dockBottomRight{position:absolute;bottom:8px;right:8px}.BbYg0q_dockBottomLeft{position:absolute;bottom:8px;left:8px}.BbYg0q_dockBottomCenter{position:absolute;bottom:8px;left:50%;transform:translate(-50%)}.BbYg0q_dockBottom{position:absolute;bottom:10px;left:10px;right:10px}.BbYg0q_dockFill{position:absolute;inset:0}.BbYg0q_dockEdgeRight{position:absolute;top:0;bottom:0;right:0}.BbYg0q_dockEdgeLeft{position:absolute;top:0;bottom:0;left:0}.BbYg0q_badge{pointer-events:none;border:1px solid var(--dsw-alias-border,#e2e4e9);background:color-mix(in srgb, var(--melite-stage-bg) 90%, transparent);backdrop-filter:blur(4px);border-radius:6px;width:112px;margin:0;overflow:hidden;box-shadow:0 8px 24px #00000059}.BbYg0q_badgeImg{object-fit:contain;width:100%;height:112px}.BbYg0q_badgeCaption{text-align:center;text-transform:uppercase;letter-spacing:.12em;color:var(--dsw-alias-label-tertiary);padding:2px 6px;font-size:8px;font-weight:500}";
-		const tagId = "@melite/card-base/viewportChrome.module.css@2661997";
-		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId) + "]") === null) {
-			const tag = document.createElement("style");
-			tag.dataset.plugin = "@melite/card-base";
-			tag.dataset.pluginCss = tagId;
-			tag.textContent = css;
-			document.head.appendChild(tag);
-		}
-		var viewportChrome_module_css_default = {
-			"badge": "BbYg0q_badge",
-			"badgeCaption": "BbYg0q_badgeCaption",
-			"badgeImg": "BbYg0q_badgeImg",
-			"dockBottom": "BbYg0q_dockBottom",
-			"dockBottomCenter": "BbYg0q_dockBottomCenter",
-			"dockBottomLeft": "BbYg0q_dockBottomLeft",
-			"dockBottomRight": "BbYg0q_dockBottomRight",
-			"dockEdgeLeft": "BbYg0q_dockEdgeLeft",
-			"dockEdgeRight": "BbYg0q_dockEdgeRight",
-			"dockFill": "BbYg0q_dockFill",
-			"dockTopLeft": "BbYg0q_dockTopLeft",
-			"dockTopRight": "BbYg0q_dockTopRight",
-			"frame": "BbYg0q_frame"
-		};
-		//#endregion
-		//#region src/viewportChrome.tsx
-		function ViewportFrame({ children, label, empty, className, style, ...props }) {
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-				"data-slot": "viewport-frame",
-				"aria-label": label,
-				className: cx(viewportChrome_module_css_default.frame, className),
-				style: {
-					"--melite-stage-bg": STAGE_BACKGROUND_DARK,
-					...style
-				},
-				...props,
-				children: [children, empty]
-			});
-		}
-		const DOCK_CLASS = {
-			"top-right": viewportChrome_module_css_default.dockTopRight,
-			"top-left": viewportChrome_module_css_default.dockTopLeft,
-			"bottom-right": viewportChrome_module_css_default.dockBottomRight,
-			"bottom-left": viewportChrome_module_css_default.dockBottomLeft,
-			"bottom-center": viewportChrome_module_css_default.dockBottomCenter,
-			bottom: viewportChrome_module_css_default.dockBottom,
-			fill: viewportChrome_module_css_default.dockFill,
-			"edge-right": viewportChrome_module_css_default.dockEdgeRight,
-			"edge-left": viewportChrome_module_css_default.dockEdgeLeft
-		};
-		function ViewportAnchor({ dock = "top-right", className, ...props }) {
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
-				"data-slot": "viewport-anchor",
-				"data-dock": dock,
-				className: cx(DOCK_CLASS[dock], className),
-				...props
-			});
-		}
-		function ReferenceImageBadge({ url, label, className, ...props }) {
-			if (!url) return null;
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("figure", {
-				"data-slot": "reference-image-badge",
-				"data-reference-image": true,
-				"aria-label": label,
-				className: cx(viewportChrome_module_css_default.badge, className),
-				...props,
-				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("img", {
-					src: url,
-					alt: label,
-					className: viewportChrome_module_css_default.badgeImg,
-					draggable: false
-				}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("figcaption", {
-					className: viewportChrome_module_css_default.badgeCaption,
-					children: label
-				})]
-			});
 		}
 		//#endregion
 		//#region src/preview.tsx
@@ -17034,13 +17036,17 @@ window.__ModuleLoader__.load({
 		*  2026-09-06 order's edge holds: NEVER the low-poly anny-base-body
 		*  EXPORT substituting the native figure — a USER-ATTACHED GLB is
 		*  the compose-truth arm, a different artifact. THE ATTACHED IMAGE
-		*  (the (l) law): a held image-kind input (anny's body_image) IS
-		*  the pre-run face — compose's precedence is image > glb >
-		*  parametric (a stated photo bakes the estimate), so the photo
-		*  renders through the same input asset door and BOTH the attached
-		*  GLB and the figure retire under it (either would preview a body
-		*  the run will not bake). Run outputs still take the stage the
-		*  moment they exist. */
+		*  (THE INPUT PIN LAW, operator 2026-10-20, E2-1 — supersedes the
+		*  (l) photo-face law by operator order, burn verbatim: "IT IS
+		*  SUPPOSED TO USE THE HUMAN HMR TO CONVERT THE PHOTO TO ANNY. IT
+		*  JUST PASTES THE IMAGE OVER THE ANNY PREVIEW"): the stated photo
+		*  is the estimator's INPUT, never the preview's face — the 3D seat
+		*  keeps the card's own body (artifacts > attached GLB > native
+		*  figure > empty tombstone) and the photo pins BESIDE the stage as
+		*  the ReferenceImageBadge (the 2026-09-06 source-pin pattern: the
+		*  image you lifted from never leaves the view); the converted body
+		*  arrives solely through the run-artifacts arm. Run outputs still
+		*  take the stage the moment they exist — the pin survives them. */
 		function MeshStagePreview(props) {
 			const { hero, rest, viewingHistory, note, picked, promote, returnToCurrent } = useHistoryHero(props);
 			const active = hero === void 0 ? [] : [hero, ...rest];
@@ -17051,6 +17057,10 @@ window.__ModuleLoader__.load({
 			}, viewingHistory ? (0, react.createElement)(StaleBadge, {
 				note,
 				onReturn: returnToCurrent
+			}) : null, props.attachedImage !== void 0 ? (0, react.createElement)(ReferenceImageBadge, {
+				url: props.attachedImage.url,
+				label: `Source photo · ${props.attachedImage.url.split("/").pop() ?? "attached image"}`,
+				className: preview_module_css_default.inputPin
 			}) : null, active.length > 0 ? (0, react.createElement)(GlbStagePreview, {
 				assets: active.map((a, i) => ({
 					id: `${props.stageId}:${a.name || i}`,
@@ -17058,11 +17068,6 @@ window.__ModuleLoader__.load({
 					name: a.name
 				})),
 				emptyHint: meshEmptyHint
-			}) : props.attachedImage !== void 0 ? (0, react.createElement)("img", {
-				src: props.attachedImage.url,
-				alt: props.attachedImage.url.split("/").pop() ?? "attached image",
-				className: preview_module_css_default.heroImg,
-				"data-testid": "stage-preview-input-image"
 			}) : props.attachedMesh !== void 0 ? (0, react.createElement)(GlbStagePreview, {
 				assets: props.attachedMesh.map((a) => ({
 					id: `${props.stageId}:attached:${a.id}`,

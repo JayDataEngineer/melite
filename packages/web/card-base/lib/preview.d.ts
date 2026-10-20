@@ -70,13 +70,17 @@ export declare function TextStagePreview(props: PreviewOwnerProps): ReturnType<t
  *  2026-09-06 order's edge holds: NEVER the low-poly anny-base-body
  *  EXPORT substituting the native figure — a USER-ATTACHED GLB is
  *  the compose-truth arm, a different artifact. THE ATTACHED IMAGE
- *  (the (l) law): a held image-kind input (anny's body_image) IS
- *  the pre-run face — compose's precedence is image > glb >
- *  parametric (a stated photo bakes the estimate), so the photo
- *  renders through the same input asset door and BOTH the attached
- *  GLB and the figure retire under it (either would preview a body
- *  the run will not bake). Run outputs still take the stage the
- *  moment they exist. */
+ *  (THE INPUT PIN LAW, operator 2026-10-20, E2-1 — supersedes the
+ *  (l) photo-face law by operator order, burn verbatim: "IT IS
+ *  SUPPOSED TO USE THE HUMAN HMR TO CONVERT THE PHOTO TO ANNY. IT
+ *  JUST PASTES THE IMAGE OVER THE ANNY PREVIEW"): the stated photo
+ *  is the estimator's INPUT, never the preview's face — the 3D seat
+ *  keeps the card's own body (artifacts > attached GLB > native
+ *  figure > empty tombstone) and the photo pins BESIDE the stage as
+ *  the ReferenceImageBadge (the 2026-09-06 source-pin pattern: the
+ *  image you lifted from never leaves the view); the converted body
+ *  arrives solely through the run-artifacts arm. Run outputs still
+ *  take the stage the moment they exist — the pin survives them. */
 export declare function MeshStagePreview(props: PreviewOwnerProps): ReturnType<typeof h>;
 /** THE MESH PREVIEW — the raw-three multi-asset stage (the substrate
  *  law: NO @react-three in any client bundle). Reached through the

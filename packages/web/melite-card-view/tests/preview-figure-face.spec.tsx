@@ -120,6 +120,12 @@ function stubWire(opts: {
       glbDoor.push(path)
       return new Response(craftGlb(), { status: 200, headers: { 'content-type': 'model/gltf-binary' } })
     }
+    // the mesh hero's artifact bytes (the run's converted body — the
+    // /out lane): same GLB fake, recorded under the same door
+    if (path.includes('/out/') && path.includes('.glb')) {
+      glbDoor.push(path)
+      return new Response(craftGlb(), { status: 200, headers: { 'content-type': 'model/gltf-binary' } })
+    }
     throw new Error('estate door on the fetch lane: ' + path)
   }
   vi.stubGlobal('fetch', impl)
@@ -300,18 +306,21 @@ test('a whitespace-only attached GLB is emptiness — the native figure keeps th
   expect(glbDoor.length).toBe(0)
 })
 
-/** THE (l) IMAGE FACE AT THE PREVIEW HOP (the journey's re-opener,
- *  k-j-l-batched-2026-11-08): the preview mirrors compose's ONE
- *  stated precedence — image > glb > parametric. A stated body photo
- *  IS the pre-run face (the input the user attached, through the
- *  same input asset door); the attached GLB NEVER mounts under it
- *  (the run bakes the ESTIMATE — showing the GLB would preview a
- *  body the run will not bake, the exact lie class this purge
- *  hunts), and the figure retires under it too. The arms:
- *  BOTH-STATED (the firing arm — image wins over a held GLB),
- *  IMAGE-ALONE (image wins over the figure), WHITESPACE-IMAGE (the
- *  fall returns to the GLB — whitespace is emptiness). */
-test('(l) BOTH stated: the photo owns the pre-run face — the attached GLB never mounts (the preview mirrors compose image > glb)', async () => {
+/** THE INPUT PIN LAW (operator 2026-10-20, E2-1 — supersedes the (l)
+ *  photo-face law by operator order, burn verbatim: "IT IS SUPPOSED
+ *  TO USE THE HUMAN HMR TO CONVERT THE PHOTO TO ANNY. IT JUST PASTES
+ *  THE IMAGE OVER THE ANNY PREVIEW"): the stated photo is the
+ *  estimator's INPUT, never the preview's face. The 3D seat keeps
+ *  the card's own body (artifacts > attached GLB > native figure >
+ *  empty tombstone); the photo pins BESIDE the stage (the estate's
+ *  ReferenceImageBadge — the 2026-09-06 source-pin pattern); the
+ *  converted body arrives solely through the run-artifacts arm. The
+ *  arms: BOTH-STATED (the GLB keeps the seat, the photo pins),
+ *  PHOTO-ALONE (the figure keeps the seat, the photo pins),
+ *  WHITESPACE (no pin — whitespace is emptiness), ARTIFACTS+PHOTO
+ *  (the converted body AND the source in one view), SIBLING
+ *  (img-to-mesh: the pin + the honest tombstone). */
+test('(input-pin) BOTH stated: the attached GLB keeps the 3D seat — the photo pins beside it, never pastes over it', async () => {
   const { bench, glbDoor } = stubWire({
     card: 'anny', outputs: { default: 'image' }, figure: { identityModel: 'anny' },
     meshInputs: { body_glb: 'data/input/donor.glb' },
@@ -321,25 +330,30 @@ test('(l) BOTH stated: the photo owns the pre-run face — the attached GLB neve
   mountTab(bench)
   await user.click(tileButton())
   expect(await screen.findByText('Prompt', {}, { timeout: 4000 })).toBeTruthy()
-  // THE IMAGE FACE mounts — the stated photo's own bytes through
-  // the input door (the mesh stage's image arm)
-  const img = await waitFor(() => {
-    const el = document.querySelector('[data-testid="stage-preview-input-image"]') as HTMLImageElement | null
-    expect(el).not.toBeNull()
-    return el!
+  // THE 3D SEAT KEEPS THE CARD'S OWN BODY: the attached GLB mounts —
+  // the estimate is the RUN's product; pre-run the card shows the
+  // body it holds (the operator's order: the photo CONVERTS, it does
+  // not take the stage)
+  await waitFor(() => {
+    expect(document.querySelector('[data-viewport="glb-stage"]')).not.toBeNull()
   }, { timeout: 4000 })
-  expect(img.getAttribute('src') ?? '', 'the img carries the door URL of the stated photo').toContain('/v1/assets/inputs/person.png')
-  // THE GLB NEVER MOUNTS: no viewport, no mesh load — the estimate
-  // outranks the attach and the preview says so
-  expect(document.querySelector('[data-viewport="glb-stage"]')).toBeNull()
-  await new Promise((r) => setTimeout(r, 300))
-  expect(glbDoor.some((u) => u.includes('donor.glb')), 'the displaced GLB never loads').toBe(false)
-  // the figure retires under the image too (image > glb > figure —
-  // the run bakes the estimate, never the parametric body)
+  await waitFor(() => {
+    expect(glbDoor.some((u) => u.includes('/v1/assets/inputs/donor.glb')), 'the held GLB loads').toBe(true)
+  }, { timeout: 4000 })
+  // THE PHOTO NEVER PASTES: no raw-img face at the 3D seat
+  expect(document.querySelector('[data-testid="stage-preview-input-image"]')).toBeNull()
+  // THE PIN: the photo rides the badge beside the stage
+  await waitFor(() => {
+    const badge = document.querySelector('[data-slot="reference-image-badge"]') as HTMLElement | null
+    expect(badge).not.toBeNull()
+    const img = badge?.querySelector('img')
+    expect(img?.getAttribute('src') ?? '', 'the pin carries the stated photo through the input door').toContain('/v1/assets/inputs/person.png')
+  }, { timeout: 4000 })
+  // the figure retires under the held GLB (mesh > figure — unchanged)
   expect(document.querySelector('[data-viewport^="poser-figure"]')).toBeNull()
 })
 
-test('(l) the photo alone owns the pre-run face — the figure retires (image > figure)', async () => {
+test('(input-pin) the photo alone: the native figure keeps the 3D seat — the photo pins beside it', async () => {
   const { bench } = stubWire({
     card: 'anny', outputs: { default: 'image' }, figure: { identityModel: 'anny' },
     imageInputs: { body_image: 'data/input/person.png' },
@@ -349,13 +363,18 @@ test('(l) the photo alone owns the pre-run face — the figure retires (image > 
   await user.click(tileButton())
   expect(await screen.findByText('Prompt', {}, { timeout: 4000 })).toBeTruthy()
   await waitFor(() => {
-    expect(document.querySelector('[data-testid="stage-preview-input-image"]')).not.toBeNull()
+    expect(document.querySelector('[data-viewport^="poser-figure"]')).not.toBeNull()
   }, { timeout: 4000 })
-  expect(document.querySelector('[data-viewport^="poser-figure"]')).toBeNull()
+  expect(document.querySelector('[data-testid="stage-preview-input-image"]')).toBeNull()
   expect(document.querySelector('[data-viewport="glb-stage"]')).toBeNull()
+  await waitFor(() => {
+    const badge = document.querySelector('[data-slot="reference-image-badge"]') as HTMLElement | null
+    expect(badge).not.toBeNull()
+    expect(badge?.querySelector('img')?.getAttribute('src') ?? '').toContain('/v1/assets/inputs/person.png')
+  }, { timeout: 4000 })
 })
 
-test('(l) a whitespace photo is emptiness — the attached GLB keeps the pre-run face (the fall, not a phantom)', async () => {
+test('(input-pin) a whitespace photo pins nothing — whitespace is emptiness at the pin too', async () => {
   const { bench, glbDoor } = stubWire({
     card: 'anny', outputs: { default: 'image' }, figure: { identityModel: 'anny' },
     meshInputs: { body_glb: 'data/input/donor.glb' },
@@ -365,9 +384,8 @@ test('(l) a whitespace photo is emptiness — the attached GLB keeps the pre-run
   mountTab(bench)
   await user.click(tileButton())
   expect(await screen.findByText('Prompt', {}, { timeout: 4000 })).toBeTruthy()
-  // no image arm mounts — whitespace IS emptiness at the preview
-  // hop exactly as at compose
   await waitFor(() => {
+    expect(document.querySelector('[data-slot="reference-image-badge"]')).toBeNull()
     expect(document.querySelector('[data-testid="stage-preview-input-image"]')).toBeNull()
     expect(document.querySelector('[data-viewport="glb-stage"]')).not.toBeNull()
   }, { timeout: 4000 })
@@ -376,20 +394,38 @@ test('(l) a whitespace photo is emptiness — the attached GLB keeps the pre-run
   }, { timeout: 4000 })
 })
 
-/** THE SIBLING SEAM (the journey re-run's C2 — attachedImageOf is a
- *  SHARED derivation: every card declaring a wtype 'image' field
- *  gained the pre-run photo face the day (l) landed, named or not).
- *  img-to-mesh is the unambiguous sibling: ONE image field
- *  (input_image — the source photo the run conditions on), declared
- *  output kind mesh. Before (l) its held-photo drill showed the
- *  mesh tombstone (no mesh input held, no figure claim — the exact
- *  (j)-class dead face); now the photo IS the pre-run face (the
- *  run composes FROM it — the preview shows the body the run would
- *  bake). NOT-COVERED until walled: h3's TWO image anchors
- *  (image/last_frame — compose consumes both; first-non-empty is
- *  the stated face), mask's payload, the pack input-group image
- *  rows — named in the registry row cards-attached-mesh-preview. */
-test('(l) the sibling seam: img-to-mesh holding its source photo shows the photo pre-run (the shared derivation, judged beyond anny)', async () => {
+test('(input-pin) artifacts + photo: the converted body owns the stage AND the source stays pinned (both in view)', async () => {
+  const { bench, glbDoor } = stubWire({
+    card: 'anny', outputs: { default: 'mesh' }, figure: { identityModel: 'anny' },
+    meshInputs: { body_glb: 'data/input/donor.glb' },
+    imageInputs: { body_image: 'data/input/person.png' },
+    artifacts: { body: '/out/estimator_body.glb' }, runStatus: 'done',
+  })
+  const user = userEvent.setup()
+  mountTab(bench)
+  await user.click(tileButton())
+  expect(await screen.findByText('Prompt', {}, { timeout: 4000 })).toBeTruthy()
+  // the run's converted body takes the 3D seat
+  await waitFor(() => {
+    expect(glbDoor.some((u) => u.includes('/out/estimator_body.glb')), 'the converted body loads').toBe(true)
+  }, { timeout: 4000 })
+  // AND the source photo stays pinned beside it — the Meshy pattern:
+  // the image you lifted from never leaves the view
+  await waitFor(() => {
+    const badge = document.querySelector('[data-slot="reference-image-badge"]') as HTMLElement | null
+    expect(badge).not.toBeNull()
+    expect(badge?.querySelector('img')?.getAttribute('src') ?? '').toContain('/v1/assets/inputs/person.png')
+  }, { timeout: 4000 })
+  expect(document.querySelector('[data-testid="stage-preview-input-image"]')).toBeNull()
+  await new Promise((r) => setTimeout(r, 300))
+  expect(glbDoor.some((u) => u.includes('donor.glb')), 'the displaced pre-run GLB never loads').toBe(false)
+})
+
+/** THE SIBLING SEAM (img-to-mesh — the shared derivation judged
+ *  beyond anny): the pin carries the source photo; the 3D seat is
+ *  the HONEST empty tombstone (nothing converted yet — the run lands
+ *  the mesh there), never a raw paste of the input. */
+test('(input-pin) the sibling seam: img-to-mesh pins its source photo beside the honest empty stage', async () => {
   const { bench } = stubWire({
     card: 'img-to-mesh', outputs: { default: 'mesh' },
     imageInputs: { input_image: 'data/input/scan-photo.png' },
@@ -398,15 +434,14 @@ test('(l) the sibling seam: img-to-mesh holding its source photo shows the photo
   mountTab(bench)
   await user.click(tileButton())
   expect(await screen.findByText('Prompt', {}, { timeout: 4000 })).toBeTruthy()
-  const img = await waitFor(() => {
-    const el = document.querySelector('[data-testid="stage-preview-input-image"]') as HTMLImageElement | null
-    expect(el).not.toBeNull()
-    return el!
+  await waitFor(() => {
+    const badge = document.querySelector('[data-slot="reference-image-badge"]') as HTMLElement | null
+    expect(badge).not.toBeNull()
+    expect(badge?.querySelector('img')?.getAttribute('src') ?? '').toContain('/v1/assets/inputs/scan-photo.png')
   }, { timeout: 4000 })
-  expect(img.getAttribute('src') ?? '').toContain('/v1/assets/inputs/scan-photo.png')
-  // the mesh tombstone never mounts (the dead face the sibling had
-  // before the shared derivation existed)
-  expect(screen.queryByText('No render yet — run lands the mesh here')).toBeNull()
+  // no raw paste — and the tombstone is the honest pre-run face
+  expect(document.querySelector('[data-testid="stage-preview-input-image"]')).toBeNull()
+  expect(screen.queryByText('No render yet — run lands the mesh here')).not.toBeNull()
 })
 
 /** THE NO-FIGURE SEAM: the attached arm owns the pre-run stage even
@@ -461,34 +496,39 @@ test('with artifacts the declared kind takes the stage over the attached GLB', a
   expect(document.querySelector('[data-viewport^="poser-figure"]')).toBeNull()
 })
 
-/** THE (l) TAKEOVER (the journey re-run's C1 — the edge was STATED on
- *  the contract member and the registry row but never JUDGED): a
- *  held photo is a PRE-RUN seat exactly like the attached GLB — the
- *  moment a run artifact lands, the declared kind takes the stage
- *  and the photo retires (an input never competes with a real
- *  output). Both-stated here: the image AND the GLB both held, so
- *  the arm judges the top of the precedence falling to the
- *  artifact, not just the mesh arm's takeover. */
-test('(l) with artifacts the declared kind takes the stage over the held photo (the input never competes with an output)', async () => {
+/** THE (input-pin) TAKEOVER (the journey re-run's C1, re-cut by the
+ *  input-pin law): a held photo is an INPUT, never a seat competitor
+ *  — the moment a run artifact lands, the declared kind takes the
+ *  stage AND the photo stays pinned beside it (the source never
+ *  leaves the view; an input never competes with a real output, it
+ *  annotates it). Both-stated here: the image AND the GLB both held,
+ *  so the arm judges the top of the precedence falling to the
+ *  artifact while the pin survives. */
+test('(input-pin) with artifacts the declared kind takes the stage over the held photo — and the pin survives', async () => {
   const { bench, glbDoor } = stubWire({
-    card: 'anny', outputs: { default: 'image' }, figure: { identityModel: 'anny' },
+    card: 'anny', outputs: { default: 'mesh' }, figure: { identityModel: 'anny' },
     meshInputs: { body_glb: 'data/input/donor.glb' },
     imageInputs: { body_image: 'data/input/person.png' },
-    artifacts: { body: '/out/turnaround.png' }, runStatus: 'done',
+    artifacts: { body: '/out/estimator_body.glb' }, runStatus: 'done',
   })
   const user = userEvent.setup()
   mountTab(bench)
   await user.click(tileButton())
   expect(await screen.findByText('Prompt', {}, { timeout: 4000 })).toBeTruthy()
-  // the declared kind's own hero owns the stage
+  // the run's converted body takes the 3D seat
   await waitFor(() => {
-    expect(document.querySelector('[data-testid="stage-preview-image-hero"]')).not.toBeNull()
+    expect(glbDoor.some((u) => u.includes('/out/estimator_body.glb')), 'the converted body loads').toBe(true)
   }, { timeout: 4000 })
   // the photo face NEVER mounts — the artifact outranks every input
   expect(document.querySelector('[data-testid="stage-preview-input-image"]')).toBeNull()
-  // the displaced GLB viewport stays retired too, and nothing loaded
-  // through the input door
-  expect(document.querySelector('[data-viewport="glb-stage"]')).toBeNull()
+  // AND the source photo stays pinned beside the output (both in
+  // view — the input annotates, it never competes)
+  await waitFor(() => {
+    const badge = document.querySelector('[data-slot="reference-image-badge"]') as HTMLElement | null
+    expect(badge).not.toBeNull()
+    expect(badge?.querySelector('img')?.getAttribute('src') ?? '').toContain('/v1/assets/inputs/person.png')
+  }, { timeout: 4000 })
+  // the displaced pre-run GLB stays retired
   await new Promise((r) => setTimeout(r, 300))
-  expect(glbDoor.length).toBe(0)
+  expect(glbDoor.some((u) => u.includes('donor.glb')), 'the displaced pre-run GLB never loads').toBe(false)
 })

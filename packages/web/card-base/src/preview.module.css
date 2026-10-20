@@ -12,6 +12,16 @@
    * morph-tab stroke: the body STAYS while the failure voices) */
   position: relative;
 }
+/* THE INPUT PIN (the input-pin law, E2-1 2026-10-20): the stated
+ * source photo docks top-right OVER the stage — an annotation the
+ * run's output renders beside, never a seat competitor (the badge
+ * itself carries no position; the dock is the preview's own). */
+.inputPin {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 3;
+}
 /* THE FIGURE FAILURE BANNER (the loud-refusal law, kept alive
  * without killing the body): a failed shape POST mid-drag overlays
  * this chip on the STILL-MOUNTED canvas — the last body remains

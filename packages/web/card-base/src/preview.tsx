@@ -15,6 +15,7 @@ import { createElement as h, useEffect, useState, useSyncExternalStore } from 'r
 import { Button, Pill } from '@deepseek-ai/dsh-client-ui-primitives'
 import { GlbStagePreview } from './glb-stage.tsx'
 import { PoserFigureStage } from './poser-figure.tsx'
+import { ReferenceImageBadge } from './viewportChrome.tsx'
 import { AudioLines, Box, Film, Image, Type } from './icons.tsx'
 import { EmptyState } from './layout.tsx'
 import type { PreviewArtifact, PreviewOwnerProps } from '@melite/contracts'
@@ -518,35 +519,39 @@ export function TextStagePreview(props: PreviewOwnerProps): ReturnType<typeof h>
  *  2026-09-06 order's edge holds: NEVER the low-poly anny-base-body
  *  EXPORT substituting the native figure — a USER-ATTACHED GLB is
  *  the compose-truth arm, a different artifact. THE ATTACHED IMAGE
- *  (the (l) law): a held image-kind input (anny's body_image) IS
- *  the pre-run face — compose's precedence is image > glb >
- *  parametric (a stated photo bakes the estimate), so the photo
- *  renders through the same input asset door and BOTH the attached
- *  GLB and the figure retire under it (either would preview a body
- *  the run will not bake). Run outputs still take the stage the
- *  moment they exist. */
+ *  (THE INPUT PIN LAW, operator 2026-10-20, E2-1 — supersedes the
+ *  (l) photo-face law by operator order, burn verbatim: "IT IS
+ *  SUPPOSED TO USE THE HUMAN HMR TO CONVERT THE PHOTO TO ANNY. IT
+ *  JUST PASTES THE IMAGE OVER THE ANNY PREVIEW"): the stated photo
+ *  is the estimator's INPUT, never the preview's face — the 3D seat
+ *  keeps the card's own body (artifacts > attached GLB > native
+ *  figure > empty tombstone) and the photo pins BESIDE the stage as
+ *  the ReferenceImageBadge (the 2026-09-06 source-pin pattern: the
+ *  image you lifted from never leaves the view); the converted body
+ *  arrives solely through the run-artifacts arm. Run outputs still
+ *  take the stage the moment they exist — the pin survives them. */
 export function MeshStagePreview(props: PreviewOwnerProps): ReturnType<typeof h> {
   const { hero, rest, viewingHistory, note, picked, promote, returnToCurrent } = useHistoryHero(props)
   const active = hero === undefined ? [] : [hero, ...rest]
   const meshEmptyHint = isLiveRunStatus(props.runStatus) ? 'rendering… the mesh lands here' : 'No render yet — run lands the mesh here'
   return h('div', { className: s.stagePreview, 'data-testid': 'stage-preview-mesh' },
     viewingHistory ? h(StaleBadge, { note, onReturn: returnToCurrent }) : null,
+    props.attachedImage !== undefined
+      // THE INPUT PIN: the stated photo rides the badge pinned over
+      // the stage — an annotation, never the seat (the caption names
+      // the held file's own name, the estate path's last segment)
+      ? h(ReferenceImageBadge, {
+          url: props.attachedImage.url,
+          label: `Source photo · ${props.attachedImage.url.split('/').pop() ?? 'attached image'}`,
+          className: s.inputPin,
+        })
+      : null,
     active.length > 0
       ? h(GlbStagePreview, {
           assets: active.map((a, i) => ({ id: `${props.stageId}:${a.name || i}`, url: a.url, name: a.name })),
           emptyHint: meshEmptyHint,
         })
-      : props.attachedImage !== undefined
-        // THE (l) PHOTO FACE: a plain <img> — no WebGL seat for
-        // bytes the browser already decodes; alt carries the held
-        // file's own name (the estate path's last segment)
-        ? h('img', {
-            src: props.attachedImage.url,
-            alt: props.attachedImage.url.split('/').pop() ?? 'attached image',
-            className: s.heroImg,
-            'data-testid': 'stage-preview-input-image',
-          })
-        : props.attachedMesh !== undefined
+      : props.attachedMesh !== undefined
           ? h(GlbStagePreview, {
               assets: props.attachedMesh.map((a) => ({ id: `${props.stageId}:attached:${a.id}`, url: a.url, name: a.name })),
               emptyHint: meshEmptyHint,

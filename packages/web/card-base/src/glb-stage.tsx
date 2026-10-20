@@ -83,9 +83,10 @@ export function attachedMeshOf(
 }
 
 /** Pure: the served schema's IMAGE-KIND fields × the resolved values
- *  → the (l) law's pre-run photo face (mirroring compose's ONE
- *  stated precedence — image > glb > parametric: a stated photo is
- *  the estimate the run will bake, so it IS the pre-run face). The
+ *  → the input-pin law's photo PIN source (operator 2026-10-20, E2-1
+ *  — supersedes the (l) pre-run-face law: the stated photo is the
+ *  estimator's INPUT, never the preview's seat; it pins beside the
+ *  stage and the converted body arrives only via run artifacts). The
  *  FIRST non-empty image field wins (compose reads one person
  *  reference — person_index 0; a second photo field would be a
  *  different card's own law to state). Whitespace IS emptiness (the
