@@ -12,7 +12,7 @@
  * scale rail writes the card's scale params with the resample
  * vocabulary's OWN home as the oracle (models-input, never a
  * hand-copied list); EVERY EDIT SCHEDULES its patch at edit time
- * through the slot's own door (the 2026-11-20 run-carry burn: the
+ * through the slot's own door (the 2026-10-20 run-carry burn: the
  * pill's verb was a last-bind-wins race and the losing verb dropped
  * the pick — the bench tile's Run and the sidebar's draft lane
  * carried no studio verb at all, so an optimistic edit composed the
@@ -235,7 +235,7 @@ describe('the studio (InputPrepStudio)', () => {
     })
     // the local user layer holds the crop — the rail's clear button enables
     expect((screen.getByTestId('prep-clear-crop') as HTMLButtonElement).disabled).toBe(false)
-    // THE SCHEDULE LAW (the 2026-11-20 run-carry burn): the drag's
+    // THE SCHEDULE LAW (the 2026-10-20 run-carry burn): the drag's
     // atomic commit SCHEDULES the four crop keys through the slot's
     // own door AT RELEASE — every run door (pill, bench tile,
     // sidebar draft lane, agent press) sweeps the scheduled write

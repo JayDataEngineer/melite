@@ -226,7 +226,7 @@ describe('CLASS 5 — NO RE-POP: a cancelled/deleted download must not re-appear
   })
 
   it('ARM 8 — a closed popup must not re-pop on the same run error: a fresh mount of the same miss serves the inline offer, never the modal', async () => {
-    // THE HONEST VERDICT (the one-stall-authority cure, 2026-11-20):
+    // THE HONEST VERDICT (the one-stall-authority cure, 2026-10-20):
     // the flight ends on the ENGINE's terminal word ('failed'
     // carrying its cause), never the client's own byte-freeze guess
     // — the pre-cure ARM rode the removed stall break to reach the

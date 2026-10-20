@@ -14,7 +14,7 @@
  * holds the truth, so every run door (the frame's pill, the bench
  * tile, the sidebar draft lane, an agent's press) sweeps the
  * scheduled write before it composes; no door composes a row the
- * studio no longer shows (the 2026-11-20 run-carry burn: the pill's
+ * studio no longer shows (the 2026-10-20 run-carry burn: the pill's
  * verb was a last-bind-wins race and the losing verb dropped the
  * pick). The studio binds NO run verb of its own — the drill owns
  * the pill, one writer. The crop gesture is

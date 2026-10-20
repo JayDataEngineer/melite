@@ -197,7 +197,7 @@ describe("the drill's run fence (Cure 4)", () => {
     });
   });
 
-  // THE PILL CARRIES THE SCHEDULE (2026-11-20, the input-prep
+  // THE PILL CARRIES THE SCHEDULE (2026-10-20, the input-prep
   // run-carry burn: the studio's optimistic edit rides a SCHEDULED
   // trailing write — the pill's press must sweep it to the door
   // BEFORE the start fires, or the engine composes the frozen row).

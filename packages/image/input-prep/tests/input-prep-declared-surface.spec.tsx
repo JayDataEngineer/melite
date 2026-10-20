@@ -254,7 +254,7 @@ describe('THE FLUSH IS THE VERBATIM USER LAYER (the merge behavior unchanged wit
     )))
     act(() => { fireEvent.click(screen.getByTestId('prep-clear-crop')) })
     act(() => { fireEvent.click(screen.getByTestId('prep-clear-scale')) })
-    // THE SCHEDULE LAW (the 2026-11-20 run-carry burn): each edit
+    // THE SCHEDULE LAW (the 2026-10-20 run-carry burn): each edit
     // schedules its OWN delta verbatim — the whole-user flush verb
     // is gone. The judgment rides the edits themselves: the clear
     // commits carry the card's -1 grammar for every key they unset.
