@@ -314,6 +314,67 @@ test('the census honesty marks: scan note over zero rows, the partial mark, neve
   expect(screen.queryByTestId('resources-census-partial')).toBeNull()
 })
 
+// THE RESOURCE ACTION DOORS (audit B2-4, the anima burn's
+// follow-up): acquire_retry/acquire_discard existed door-side only —
+// the fold offered no way to act on a dead row. A failed/blocked
+// resource row that carries an operation_id gets both verbs inside
+// its OPEN fold; a healthy row never does; each verb fires the real
+// manage action with the row's operation_id (the door itself refuses
+// live rows 409 and unknown ids 404 — the UI surfaces the door, it
+// never invents the verb).
+test('dead resource rows carry retry/discard doors that fire the acquire verbs', async () => {
+  const user = userEvent.setup()
+  const { calls } = stubManageSeat({
+    status: {
+      ...STATUS,
+      data: {
+        ...(STATUS.data as Record<string, unknown>),
+        resources: [
+          {
+            ref: { kind: 'model', owner: 'family', id: 'wan', variant: 'preview', quant: 'fp8' },
+            state: 'failed',
+            operation_id: 'op-dead-fetch',
+            detail: 'the fetch stalled: no bytes landed in 10000ms',
+            items: [],
+          },
+          {
+            ref: { kind: 'model', owner: 'family', id: 'zimage' },
+            state: 'active',
+            operation_id: 'op-landed',
+            items: [{ key: 'model:family:zimage', state: 'active' }],
+          },
+        ],
+      },
+    },
+    acquire_retry: { action: 'acquire_retry', ok: true, detail: 'retrying', data: { operation_id: 'op-fresh' } },
+    acquire_discard: { action: 'acquire_discard', ok: true, detail: 'discarded', data: {} },
+  })
+  render(<ComfyManagerPanel />)
+  const resources = await screen.findByTestId('resource-status')
+
+  // the closed fold mounts NO hidden DOM — open the dead row first
+  expect(within(resources).queryByTestId('resource-doors')).toBeNull()
+  await user.click(within(resources).getByText('model family/wan:preview:fp8'))
+
+  // the dead row carries both doors; the healthy row (also opened)
+  // carries none
+  const deadFold = screen.getAllByTestId('resource-fold')[0]!
+  const doors = within(deadFold).getByTestId('resource-doors')
+  expect(within(doors).getByRole('button', { name: 'Retry fetch' })).toBeTruthy()
+  expect(within(doors).getByRole('button', { name: 'Discard dead row' })).toBeTruthy()
+  await user.click(within(resources).getByText('model family/zimage'))
+  const healthyFold = screen.getAllByTestId('resource-fold')[1]!
+  expect(within(healthyFold).queryByTestId('resource-doors')).toBeNull()
+
+  // each verb fires the real manage action with the row's operation_id
+  await user.click(within(doors).getByRole('button', { name: 'Retry fetch' }))
+  await user.click(within(doors).getByRole('button', { name: 'Discard dead row' }))
+  const retried = calls.find((call) => call.action === 'acquire_retry')
+  const discarded = calls.find((call) => call.action === 'acquire_discard')
+  expect(retried?.operation_id).toBe('op-dead-fetch')
+  expect(discarded?.operation_id).toBe('op-dead-fetch')
+})
+
 test('status refresh never creates or replaces a result', async () => {
   const { calls } = stubManageSeat({ status: STATUS })
   const user = userEvent.setup()

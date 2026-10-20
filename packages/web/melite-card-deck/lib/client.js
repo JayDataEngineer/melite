@@ -326,6 +326,18 @@ window.__ModuleLoader__.load({
 			* whenever the status carries census_partial: the count is not the
 			* whole truth; Refresh re-runs the scan. */
 			censusPartialNote: "Scan incomplete — the check ran out of its status budget before every resource was verified. Counts may be partial; press Refresh to re-scan.",
+			/** THE RESOURCE ACTION DOORS (audit B2-4, the anima burn's
+			*  follow-up: the fold offered no way to act on a dead row —
+			*  acquire_retry/acquire_discard existed door-side only). Label
+			*  for the retry door on a failed/blocked row that carries an
+			*  operation_id. */
+			resourceRetryButton: "Retry fetch",
+			/** Label for the discard door on the same rows. */
+			resourceDiscardButton: "Discard dead row",
+			/** Confirm sentence for the retry door; the id rides it. */
+			resourceRetryConfirm: (p) => "Retry the failed fetch " + p.id + " as a fresh download? The dead row keeps its truth.",
+			/** Confirm sentence for the discard door; the id rides it. */
+			resourceDiscardConfirm: (p) => "Discard the failed row " + p.id + "? A later poll answers 404.",
 			/** Extensions section title. */
 			extensionsTitle: "Extensions",
 			/** Installed-packs filter field label. */
@@ -911,6 +923,8 @@ window.__ModuleLoader__.load({
 			"install_extension_url",
 			"download_model",
 			"provision_model",
+			"acquire_retry",
+			"acquire_discard",
 			"launch",
 			"restart",
 			"stop",
@@ -929,6 +943,8 @@ window.__ModuleLoader__.load({
 			search_models: assetsCopy.actionSearchModels,
 			provision_model: assetsCopy.actionProvisionModel,
 			download_model: assetsCopy.actionOpenRawModel,
+			acquire_retry: assetsCopy.resourceRetryButton,
+			acquire_discard: assetsCopy.resourceDiscardButton,
 			lora_list: assetsCopy.actionListLoras,
 			lora_install: assetsCopy.actionCopyLora,
 			snapshot_list: assetsCopy.actionReviewSnapshots,
@@ -2064,6 +2080,7 @@ window.__ModuleLoader__.load({
 								children: resources.map((resource, index) => {
 									const state = resource.state ?? assetsCopy.unknownFallback;
 									const items = resource.items ?? [];
+									const operationId = resource.operation_id;
 									const badItems = items.filter((item) => {
 										const itemState = item.state ?? assetsCopy.unknownFallback;
 										return itemState === "failed" || itemState === "blocked" || itemState === "absent" || itemState === "missing";
@@ -2093,49 +2110,71 @@ window.__ModuleLoader__.load({
 													className: assets_module_css_default.mono,
 													children: assetsCopy.operationIdValue({ id: resource.operation_id })
 												})] }),
-												children: [resource.detail !== void 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
-													className: assets_module_css_default.sub,
-													children: resource.detail
-												}), items.length > 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("ul", {
-													className: assets_module_css_default.resourceItems,
-													children: items.map((item, itemIndex) => /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("li", {
-														className: assets_module_css_default.resourceItem,
-														children: [
-															/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-																className: resourceStateClass(item.state ?? assetsCopy.unknownFallback),
-																children: item.state ?? assetsCopy.unknownFallback
-															}),
-															/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-																className: assets_module_css_default.mono,
-																children: item.key ?? item.kind ?? assetsCopy.itemFallback
-															}),
-															item.outcome !== void 0 && item.outcome !== item.state && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-																className: assets_module_css_default.sub,
-																children: item.outcome
-															}),
-															item.integrity !== void 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-																className: assets_module_css_default.sub,
-																children: item.integrity
-															}),
-															item.errorCode !== void 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-																className: assets_module_css_default.errorCode,
-																children: item.errorCode
-															}),
-															item.path !== void 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-																className: assets_module_css_default.wrapText,
-																children: item.path
-															}),
-															item.sha256 !== void 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-																className: assets_module_css_default.hash,
-																children: item.sha256
-															}),
-															item.detail !== void 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-																className: assets_module_css_default.sub,
-																children: item.detail
-															})
-														]
-													}, item.key ?? String(itemIndex)))
-												})]
+												children: [
+													resource.detail !== void 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
+														className: assets_module_css_default.sub,
+														children: resource.detail
+													}),
+													operationId !== void 0 && (state === "failed" || state === "blocked") && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+														className: assets_module_css_default.row,
+														"data-testid": "resource-doors",
+														children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+															"aria-busy": busy === "acquire_retry",
+															disabled: locked || busy !== null,
+															onClick: () => {
+																confirmRun("acquire_retry", assetsCopy.resourceRetryConfirm({ id: operationId }), { payload: { operation_id: operationId } });
+															},
+															children: assetsCopy.resourceRetryButton
+														}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+															"aria-busy": busy === "acquire_discard",
+															disabled: locked || busy !== null,
+															onClick: () => {
+																confirmRun("acquire_discard", assetsCopy.resourceDiscardConfirm({ id: operationId }), { payload: { operation_id: operationId } });
+															},
+															children: assetsCopy.resourceDiscardButton
+														})]
+													}),
+													items.length > 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("ul", {
+														className: assets_module_css_default.resourceItems,
+														children: items.map((item, itemIndex) => /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("li", {
+															className: assets_module_css_default.resourceItem,
+															children: [
+																/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+																	className: resourceStateClass(item.state ?? assetsCopy.unknownFallback),
+																	children: item.state ?? assetsCopy.unknownFallback
+																}),
+																/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+																	className: assets_module_css_default.mono,
+																	children: item.key ?? item.kind ?? assetsCopy.itemFallback
+																}),
+																item.outcome !== void 0 && item.outcome !== item.state && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+																	className: assets_module_css_default.sub,
+																	children: item.outcome
+																}),
+																item.integrity !== void 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+																	className: assets_module_css_default.sub,
+																	children: item.integrity
+																}),
+																item.errorCode !== void 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+																	className: assets_module_css_default.errorCode,
+																	children: item.errorCode
+																}),
+																item.path !== void 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+																	className: assets_module_css_default.wrapText,
+																	children: item.path
+																}),
+																item.sha256 !== void 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+																	className: assets_module_css_default.hash,
+																	children: item.sha256
+																}),
+																item.detail !== void 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+																	className: assets_module_css_default.sub,
+																	children: item.detail
+																})
+															]
+														}, item.key ?? String(itemIndex)))
+													})
+												]
 											})
 										})
 									}, resourceLabel(resource) + ":" + index);

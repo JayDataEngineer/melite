@@ -205,6 +205,7 @@ const STATUS_STALE_MS = 30_000
 const MUTATING: ReadonlySet<string> = new Set([
   'endpoint_set', 'install_extension', 'install_extension_url',
   'download_model', 'provision_model',
+  'acquire_retry', 'acquire_discard',
   'launch', 'restart', 'stop', 'update', 'switch_version', 'free',
   'snapshot_save', 'snapshot_restore',
 ])
@@ -218,6 +219,10 @@ const ACTION_LABELS: Readonly<Record<string, string>> = {
   search_models: assetsCopy.actionSearchModels,
   provision_model: assetsCopy.actionProvisionModel,
   download_model: assetsCopy.actionOpenRawModel,
+  // THE RESOURCE ACTION DOORS (audit B2-4): the result dock names
+  // the door the fold's Retry/Discard verbs fire.
+  acquire_retry: assetsCopy.resourceRetryButton,
+  acquire_discard: assetsCopy.resourceDiscardButton,
   // THE LORA DOORS (2026-09-26): the sidebar's own vocabulary now
   // carries the custom-LoRA block.
   lora_list: assetsCopy.actionListLoras,
@@ -1194,6 +1199,10 @@ export function ComfyManagerPanel(): React.ReactElement {
               {resources.map((resource, index) => {
                 const state = resource.state ?? assetsCopy.unknownFallback
                 const items = resource.items ?? []
+                // captured once: the doors' payloads need the id as
+                // a plain string, and the fold's closures lose the
+                // JSX condition's narrowing
+                const operationId = resource.operation_id
                 // the fold's own roll-up: "2/3 failed" — the item
                 // states compress like the section's (S1)
                 const badItems = items.filter((item) => {
@@ -1228,6 +1237,31 @@ export function ComfyManagerPanel(): React.ReactElement {
                         )}
                       >
                         {resource.detail !== undefined && <p className={css.sub}>{resource.detail}</p>}
+                        {/* THE RESOURCE ACTION DOORS (audit B2-4, the
+                            anima burn's follow-up: the fold offered
+                            no way to act on a dead row — the doors
+                            existed door-side only, and the operator
+                            could not act on the red. A failed or
+                            blocked row that carries an operation_id
+                            gets the acquire_retry/acquire_discard
+                            verbs; the door itself refuses anything
+                            else (a live row 409s, an unknown id
+                            404s) — the UI surfaces the door, it
+                            never invents the verb. */}
+                        {operationId !== undefined && (state === 'failed' || state === 'blocked') && (
+                          <div className={css.row} data-testid="resource-doors">
+                            <Button
+                              aria-busy={busy === 'acquire_retry'}
+                              disabled={locked || busy !== null}
+                              onClick={() => { confirmRun('acquire_retry', assetsCopy.resourceRetryConfirm({ id: operationId }), { payload: { operation_id: operationId } }) }}
+                            >{assetsCopy.resourceRetryButton}</Button>
+                            <Button
+                              aria-busy={busy === 'acquire_discard'}
+                              disabled={locked || busy !== null}
+                              onClick={() => { confirmRun('acquire_discard', assetsCopy.resourceDiscardConfirm({ id: operationId }), { payload: { operation_id: operationId } }) }}
+                            >{assetsCopy.resourceDiscardButton}</Button>
+                          </div>
+                        )}
                         {items.length > 0 && (
                           <ul className={css.resourceItems}>
                             {items.map((item, itemIndex) => (

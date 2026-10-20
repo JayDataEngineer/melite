@@ -235,6 +235,22 @@ export declare const assetsCopy: {
      * whenever the status carries census_partial: the count is not the
      * whole truth; Refresh re-runs the scan. */
     readonly censusPartialNote: "Scan incomplete — the check ran out of its status budget before every resource was verified. Counts may be partial; press Refresh to re-scan.";
+    /** THE RESOURCE ACTION DOORS (audit B2-4, the anima burn's
+     *  follow-up: the fold offered no way to act on a dead row —
+     *  acquire_retry/acquire_discard existed door-side only). Label
+     *  for the retry door on a failed/blocked row that carries an
+     *  operation_id. */
+    readonly resourceRetryButton: "Retry fetch";
+    /** Label for the discard door on the same rows. */
+    readonly resourceDiscardButton: "Discard dead row";
+    /** Confirm sentence for the retry door; the id rides it. */
+    readonly resourceRetryConfirm: (p: {
+        id: string;
+    }) => string;
+    /** Confirm sentence for the discard door; the id rides it. */
+    readonly resourceDiscardConfirm: (p: {
+        id: string;
+    }) => string;
     /** Extensions section title. */
     readonly extensionsTitle: "Extensions";
     /** Installed-packs filter field label. */
