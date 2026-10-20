@@ -168,8 +168,10 @@ export interface ModifierKind {
     scalar_key?: string;
     fields?: readonly SpecField[];
     /** Pack-level scalar rows (the controlnet strength floor — envelope
-     *  root fields OUTSIDE the bag array). The section renders these
-     *  above the tiles; they never ride the flat form (mod-owned). */
+     *  root fields OUTSIDE the bag array). THE MOD-KIND KNOB LAW
+     *  (E2-7): a leaf-bearing kind renders these inside its own leaf;
+     *  a leafless kind (cardinality 'scalar') renders them at the
+     *  section — its only face. Never the flat form (mod-owned). */
     kindFields?: readonly SpecField[];
     options?: readonly ModifierOption[];
     /** THE CATEGORY (the mods-abstraction law, stroke 78): 'standalone'
