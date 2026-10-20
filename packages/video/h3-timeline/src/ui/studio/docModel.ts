@@ -323,6 +323,11 @@ export interface LayerA {
   refine_lora?: string
   refine_strength?: number
   refine_steps?: number
+  /** The rider's denoise window (SOTA limb 1): absent = 1.0, the
+   * full-denoise taomate mechanic (byte-stable legacy); 0.30–0.35
+   * is the research's refinement window — pass 1's structure
+   * stays, the rider polishes texture. (0, 1] at the door. */
+  refine_denoise?: number
   /** R2V COMBO "match"|"max" — NOT a number (numbers fail node validation). */
   ref_image_size?: string
   /** The loras MOD BAG (the operator's law: loras are MODS, never

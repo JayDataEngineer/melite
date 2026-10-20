@@ -99,7 +99,7 @@ describe("the input surface: the schema owns the wire form", () => {
     assert.deepEqual([...secondPass].sort(), [
       "second_pass_enabled",
       "interpolate_enabled", "interp_model", "interp_multiplier",
-      "refine_lora", "refine_strength", "refine_steps",
+      "refine_lora", "refine_strength", "refine_steps", "refine_denoise",
       "sharpen_enabled", "sharpen_strength", "sharpen_method", "sharpen_radius", "sharpen_threshold", "sharpen_iterations",
       "sr_switch", "sr_resolution", "sr_model",
     ].sort(), "every post-pass field rides the second_pass group");

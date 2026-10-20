@@ -417,7 +417,11 @@ describe("models against cards (the cross-validation, resurrected)", () => {
     // 468 -> 472 (2026-10-19, the stated bake): the h3 family's
     // refmod group (mode/pool/identity/save) — the bake's fidelity
     // dials declared on the serve plane, judged like every knob.
-    assert.equal(walked, 472,
+    // 472 -> 473 (2026-10-20, the SOTA refine window): h3's
+    // refine_denoise — a numeric knob WITH the schema default(1),
+    // so the starving judge passes it (default-owned by the schema)
+    // and the walk counts it. One new knob, argued here.
+    assert.equal(walked, 473,
       `the census walked the estate's fields (${String(walked)} — a re-zoned or re-typed field set MOVES this number; growth is argued here, loss means the census emptied an arm)`);
     // judged 8 -> 6 (2026-11-08, the latent law): the image-edit
     // card's width/height leave the params zone (hidden compatibility
@@ -1632,7 +1636,11 @@ describe("THE TWO-HOMES BOUNDS-SYNC WALL (card schema == action ParamSpec, every
     // card boards its two offered lane addresses, and the wall judges
     // the h3 schema's shared names once per carried address (+108 —
     // the offenders list below stays empty, every pair agrees).
-    assert.equal(pairs, 773, "the shared-name pair census changed — update this pin deliberately");
+    // 773 -> 776 (2026-10-20, the SOTA refine window): refine_denoise
+    // joins the shared names — one agreeing pair per carried h3
+    // address (schema min 0.05 / max 1 == the action row's bounds
+    // [0.05, 1], number on both planes); offenders stay empty.
+    assert.equal(pairs, 776, "the shared-name pair census changed — update this pin deliberately");
     assert.deepEqual(offenders, [], `two-homes drift (card schema vs action ParamSpec):\n${offenders.join("\n")}`);
   });
 });

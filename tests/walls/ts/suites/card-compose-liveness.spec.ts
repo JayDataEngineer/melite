@@ -385,17 +385,10 @@ describe("every facts row composes its card alive (the dead-card wall)", () => {
     // reason breaks, and a row whose finding disappeared REDS for
     // deletion (an adjudication that outlives its truth is drift).
     // Any NEW stale value no row owns reds unadjudicated. ──
-    const clipTypes = ((bootDoc.CLIPLoader as { input: { required: { type: [string[]] } } }).input.required.type[0]);
     const adjudicated: Array<{ row: RegExp; reason: string; holds: () => string | null }> = [
-      {
-        // the operator's own burn (2026-11-09): moss-image wires the
-        // PR #17095 spelling this engine build does not carry.
-        row: /^moss-image \/ image-gen: .*CLIPLoader\.type.*moss_image/,
-        reason: "the engine build predates upstream PR #17095 — its CLIPLoader.type enum carries 29 values, none moss_image",
-        holds: () => clipTypes.includes("moss_image")
-          ? "the engine build now carries moss_image — the finding is cured; delete this row"
-          : null,
-      },
+      // (the moss-image row is GONE: the engine build regenerated
+      // with upstream PR #17095 — CLIPLoader.type carries moss_image,
+      // the finding cured, the adjudication law deleted the row.)
       // (the qwen-img-21 images finding NEVER sat here: its root was
       // the wiring wall judging an autogrow input by a law the
       // engine never stated — TextEncodeQwenImage21.images declares

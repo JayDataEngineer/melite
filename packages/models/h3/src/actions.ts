@@ -76,7 +76,7 @@ const loraStackDefault = (): string => {
 // two-face law). Unknown ids refuse LOUD naming refine_lora (the
 // schema's LORAS-ARE-ONLY-MODS promise); master-off or empty id =
 // no rider (the legacy byte-stable plain pass).
-function resolveRefineSeat(p: Record<string, unknown>): { name: string; strength: number; steps: number } | undefined {
+function resolveRefineSeat(p: Record<string, unknown>): { name: string; strength: number; steps: number; denoise: number } | undefined {
   if (p.second_pass_enabled !== true) return undefined
   const id = p.refine_lora
   if (typeof id !== "string" || id === "") return undefined
@@ -99,10 +99,22 @@ function resolveRefineSeat(p: Record<string, unknown>): { name: string; strength
   if ((lo !== undefined && steps < lo) || (hi !== undefined && steps > hi)) {
     throw new Error(`h3 action: refine_steps ${steps} for refine_lora '${id}' falls outside the row's declared domain [${lo ?? '…'}, ${hi ?? '…'}] — pick a count the instrument serves, never force one (the compose door enforces the row domain)`)
   }
+  // THE REFINE WINDOW (SOTA plan limb 1, H3_TIMELINE_RESERACH Stage
+  // 3): unstated keeps the full-denoise rider byte-stable (the
+  // TaoMate mechanic legacy graphs rode); the research's refinement
+  // window is a partial denoise (0.30–0.35 — pass 1's structure
+  // stays, the rider polishes texture). (0, 1]: 0 is a dead pass,
+  // > 1 re-noises past the terminal — both refuse loud naming the
+  // knob, never compose a broken rider.
+  const denoise = (p.refine_denoise as number | undefined) ?? 1
+  if (!(denoise > 0 && denoise <= 1)) {
+    throw new Error(`h3 action: refine_denoise ${String(p.refine_denoise)} falls outside the refinement window (0, 1] — 1 is the full-denoise taomate mechanic, 0.30–0.35 the SOTA refinement window; a dead or over-terminal rider never composes`)
+  }
   return {
     name: row.filename,
     strength: (p.refine_strength as number | undefined) ?? row.default_strength,
     steps,
+    denoise,
   }
 }
 // His 17k+5 grid, in-graph (ComfyMathExpression): snap latent steps to 2 mod 5
@@ -1726,7 +1738,10 @@ function renderH3Window(
     }).out()
     const refineSched = g.node('BasicScheduler', {
       model: refineModel, scheduler: schedName,
-      steps: refine.steps, denoise: 1.0,
+      // THE REFINE WINDOW (SOTA limb 1): 1.0 = the full-denoise
+      // TaoMate mechanic (unstated, byte-stable); a stated window
+      // (0.30–0.35) keeps pass 1's structure and polishes texture.
+      steps: refine.steps, denoise: refine.denoise,
     }).out()
     const refineGuider = g.node('BasicGuider', { model: refineModel, conditioning: cond }).out()
     const refined = g.node('SamplerCustomAdvanced', {
@@ -2058,6 +2073,9 @@ export const film: ComfyActionSpec<Record<string, unknown>, H3Facts> = {
     { name: "refine_lora", type: "string" },
     { name: "refine_strength", type: "number", bounds: [0, 2] },
     { name: "refine_steps", type: "number", bounds: [1, 10] },
+    // THE REFINE WINDOW (SOTA limb 1): (0, 1] — the resolver's own
+    // domain; 1 is the full-denoise taomate mechanic (the default)
+    { name: "refine_denoise", type: "number", bounds: [0.05, 1] },
     { name: "attention_backend", type: "enum", options: ["comfy kitchen attention", "pytorch attention"] },
     { name: "sr_switch", type: "boolean" },
     { name: "sr_resolution", type: "number", bounds: [720, 2160] },

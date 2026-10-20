@@ -37,7 +37,7 @@ export function omitT4RecipeRow(spec: FormSpecDoc | null, row: unknown): boolean
  * cannot honor, so the face would render (or hide) on STATED state
  * nobody can see or unset once the master row omits: the operator's
  * burn ("the second-pass option DISAPPEARS from the UI randomly").
- * The refine_* trio rides visible_when `second_pass_enabled`
+ * The refine_* quartet rides visible_when `second_pass_enabled`
  * (T4_ONLY) while surviving the name filter — the orphan face. One
  * rule, every gate-dead member: presence is a pure function of the
  * LANE, never of invisible state.

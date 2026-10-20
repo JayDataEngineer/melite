@@ -266,6 +266,74 @@ describe("the h3 sampler knobs ride VERBATIM to their consumers (purge P2 value 
       `master off must render the plain pass (expected ONE SamplerCustomAdvanced, saw ${samplers.length})`);
   });
 
+  // ARM 4b (the SOTA plan's refine-denoise limb, H3_TIMELINE_RESERACH
+  // Stage 3): the refine rider hardcoded denoise 1.0 — a FULL
+  // re-denoise that regenerates the window instead of refining it.
+  // The research's refinement window is a partial denoise
+  // (0.30–0.35 over 4–6 steps): the structure stays (pass 1 owns
+  // it), the rider polishes texture. The knob must reach the rider
+  // scheduler; unstated keeps 1.0 byte-stable (the TaoMate
+  // full-denoise mechanic legacy graphs rode).
+  it("ARM 4b — a stated refine_denoise reaches the rider scheduler; unstated keeps 1.0 byte-stable", async () => {
+    const graph = await composeH3({
+      length: 56,
+      calls: [SHOT()],
+      seed: SEED,
+      second_pass_enabled: true,
+      refine_lora: "h3_taomate_3step",
+      refine_strength: 0.35,
+      refine_steps: 3,
+      refine_denoise: 0.35,
+    }, "h3_value_arm4b");
+    const riderSched = Object.entries(graph).filter(([, n]) =>
+      n.class_type === "BasicScheduler" && n.inputs.steps === 3);
+    assert.ok(riderSched.length >= 1, "the rider scheduler mounted");
+    assert.equal(riderSched[0]![1].inputs.denoise, 0.35,
+      "the stated refine window reaches the rider scheduler — the SOTA partial-denoise refine (research Stage 3: 0.30–0.35)");
+
+    // the counter: UNSTATED keeps the full-denoise rider byte-stable
+    const legacy = await composeH3({
+      length: 56,
+      calls: [SHOT()],
+      seed: SEED,
+      second_pass_enabled: true,
+      refine_lora: "h3_taomate_3step",
+      refine_strength: 0.9,
+      refine_steps: 3,
+    }, "h3_value_arm4b_legacy");
+    const legacySched = Object.entries(legacy).filter(([, n]) =>
+      n.class_type === "BasicScheduler" && n.inputs.steps === 3);
+    assert.equal(legacySched[0]![1].inputs.denoise, 1.0,
+      "a doc with no refine_denoise keeps the full-denoise rider — legacy graphs stay byte-stable");
+  });
+
+  it("ARM 4c — a refine_denoise outside (0, 1] refuses LOUD naming the knob", async () => {
+    await assert.rejects(
+      composeH3({
+        length: 56,
+        calls: [SHOT()],
+        seed: SEED,
+        second_pass_enabled: true,
+        refine_lora: "h3_taomate_3step",
+        refine_denoise: 0,
+      }, "h3_value_arm4c_zero"),
+      /refine_denoise/,
+      "denoise 0 is a no-op rider — the door refuses it loud, never composes a dead pass",
+    );
+    await assert.rejects(
+      composeH3({
+        length: 56,
+        calls: [SHOT()],
+        seed: SEED,
+        second_pass_enabled: true,
+        refine_lora: "h3_taomate_3step",
+        refine_denoise: 1.5,
+      }, "h3_value_arm4c_over"),
+      /refine_denoise/,
+      "denoise above 1 re-noises past the terminal — the door refuses it loud",
+    );
+  });
+
   it("ARM 6 — a bogus refine_lora id refuses LOUD naming the knob (the compose door refuses hand-spelled ids)", async () => {
     // THE PROMISED REFUSAL (schema.ts:211 — LORAS ARE ONLY MODS, the
     // compose door refuses unknown ids loud): a hand-spelled id must

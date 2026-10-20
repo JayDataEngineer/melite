@@ -143,7 +143,7 @@ export const paramSchema = z.object({
   // SCHEMA-DECLARED (the compose still reads p.length, CALL_KNOB_KEYS
   // pins length per call, and the studio carries it display-owned —
   // the round-trip seat wall) — the Layer-A face never shows it.
-  length: z.number().description("Frames").min(GRID_BASE_FRAMES).max(GRID_MAX_FRAMES).step(GRID_STEP_FRAMES).default(56).extra('extra', bag({ hidden: true, order: null, columns: 2, width: 1, tooltip: "How long each clip runs. Durations snap to the engine's 17k+5 grid: 56 frames = 2.33s, 124 = 5.17s, 362 = 15s — the clip's length rounds to the nearest step.", wtype: 'number' })),
+  length: z.number().description("Frames").min(GRID_BASE_FRAMES).max(GRID_MAX_FRAMES).step(GRID_STEP_FRAMES).default(56).extra('extra', bag({ hidden: true, order: null, columns: 2, width: 1, tooltip: "How long each clip runs. Durations snap to the engine's 17k+5 grid: 56 frames = 2.33s, 124 = 5.17s, 362 = 15s — the clip's length rounds to the nearest step." })),
   // FPS IS LAYER A (operator 2026-10-16, verbatim) — the project
   // clock, ONE owner: the doc's stated fps rides into every
   // CreateVideo container so the clip's seconds equal the bar's
@@ -225,6 +225,12 @@ export const paramSchema = z.object({
   refine_lora: z.string().description("Refine lora").default("").extra('extra', bag({ order: null, group: 'second_pass', visible_when: "second_pass_enabled=true", wtype: 'select', optionsFrom: 'loras', tooltip: "Pick a refiner lora from your library (e.g. h3_taomate_3step). Empty = no refine pass. Strength/steps default from the row. LORAS ARE ONLY MODS — pick from the list; an unknown id is refused." })),
   refine_strength: z.number().description("Refine strength").min(0).max(2).step(0.05).extra('extra', bag({ order: null, group: 'second_pass', visible_when: "second_pass_enabled=true", wtype: 'number', tooltip: "Override the refiner row's strength. Rides only when refine_lora is set." })),
   refine_steps: z.number().description("Refine steps").min(1).max(10).step(1).extra('extra', bag({ order: null, group: 'second_pass', visible_when: "second_pass_enabled=true", wtype: 'number', tooltip: "Override the refiner row's step count (taomate: 3). Rides only when refine_lora is set." })),
+  // THE REFINE WINDOW (SOTA plan limb 1, H3_TIMELINE_RESERACH Stage
+  // 3): 1.0 regenerates the whole window (the TaoMate full-denoise
+  // mechanic, the byte-stable default); the research's refinement
+  // window is a PARTIAL denoise — 0.30–0.35 keeps pass 1's structure
+  // and polishes texture. (0, 1]; 0 is a dead pass and refuses.
+  refine_denoise: z.number().description("Refine denoise").min(0.05).max(1).step(0.05).default(1).extra('extra', bag({ order: null, group: 'second_pass', visible_when: "second_pass_enabled=true", wtype: 'number', tooltip: "The rider's denoise window. 1 = full re-denoise (the taomate mechanic, default). 0.30–0.35 = the SOTA refinement window: pass 1's structure stays, the rider polishes texture. Rides only when refine_lora is set." })),
   // ── THE ATTENTION BACKEND (roadmap item 3; the h3_attention
   // "sage/sol" folklore was FICTION — no such knob, and the engine
   // enumerates only 'pytorch attention' on ModelAttentionBackend;

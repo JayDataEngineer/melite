@@ -216,6 +216,7 @@ export function hydrateLayerA(rawDoc: Record<string, unknown> | undefined): Laye
     refine_lora: typeof raw?.refine_lora === "string" && raw.refine_lora !== "" ? raw.refine_lora : undefined,
     refine_strength: optNum("refine_strength"),
     refine_steps: optNum("refine_steps"),
+    refine_denoise: optNum("refine_denoise"),
     ref_image_size: raw?.ref_image_size === "match" || raw?.ref_image_size === "max" ? raw.ref_image_size : undefined,
     loras: Array.isArray(raw?.loras)
       ? (raw.loras as Array<Record<string, unknown>>)
@@ -338,7 +339,7 @@ export const LAYERA_KEY_UNIVERSE: ReadonlySet<string> = new Set([
   "sharpen_enabled", "interpolate_enabled",
   // the true-gated switch riders + their stamps
   "sr_switch", "sr_model", "sr_resolution",
-  "second_pass_enabled", "refine_lora", "refine_strength", "refine_steps",
+  "second_pass_enabled", "refine_lora", "refine_strength", "refine_steps", "refine_denoise",
   // the bake's stated dials (the override-gated riders + the
   // false-gated save)
   "refmod_mode", "refmod_pool", "refmod_identity", "refmod_save",
@@ -389,6 +390,9 @@ export function serializeLayerA(a: LayerA, base?: Record<string, unknown>): Reco
     if (a.refine_lora != null && a.refine_lora !== "") out.refine_lora = a.refine_lora
     if (a.refine_strength != null) out.refine_strength = a.refine_strength
     if (a.refine_steps != null) out.refine_steps = a.refine_steps
+    // the refine window — absent = 1.0 byte-stable (the rider's
+    // own ?? 1 default); stated rides verbatim
+    if (a.refine_denoise != null) out.refine_denoise = a.refine_denoise
   }
   // THE SLA MASTER SWITCH rides only when OFF (absent = on — the
   // family default; a false is the real override compose reads).

@@ -93,7 +93,11 @@ const CARD_ROSTER = 14;
 // group — mode (select over the pack's two store modes), pool
 // (number), identity (number), save (boolean) — the dials the engine
 // executed silently now declared on the serve plane.
-const FIELD_ROSTER = 472;
+// 472 -> 473 (2026-10-20, the SOTA refine window): h3's
+// refine_denoise — a number knob, wtype number agreeing with its
+// z.number shape (the (0,1] refine window; default 1 = the taomate
+// full-denoise mechanic).
+const FIELD_ROSTER = 473;
 
 interface DictField {
   readonly type?: string;

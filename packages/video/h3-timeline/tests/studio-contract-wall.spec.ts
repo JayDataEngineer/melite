@@ -96,7 +96,7 @@ const ADMITS = new Set(["loras", "audio_clips", "audio_stem", "fps"])
 const LAYER_A_ALL_KEYS: string[] = [
   "seed", "shift_video", "shift_audio", "steps", "denoise", "width", "height",
   "sampler_name", "sched_name",
-  "refine_lora", "refine_strength", "refine_steps",
+  "refine_lora", "refine_strength", "refine_steps", "refine_denoise",
   "second_pass_enabled",
   "attention_backend",
   "sla_enabled",
@@ -154,6 +154,10 @@ function populatedMax(): Record<string, unknown> {
     else if (key === "sampler_name" || key === "sched_name" || key === "model") populated[key] = "euler"
     else if (key === "audio_stem") populated[key] = "legacy-stem.wav"
     else if (key === "refine_lora") populated[key] = "h3_taomate_3step"
+    // the refine window: a NON-default 0.35 proves the wire carries
+    // the operator's stated window verbatim (1 would ride identical
+    // to the door's own default — presence by coincidence)
+    else if (key === "refine_denoise") populated[key] = 0.35
     else if (key === "attention_backend") populated[key] = "pytorch attention"
     else if (key === "sr_model") populated[key] = "seedvr2_ema_3b_fp16.safetensors"
     else populated[key] = 1
@@ -263,6 +267,7 @@ describe("the studio contract wall (Layer A writes only card truth)", () => {
     expect(openOut.refine_lora).toBe("h3_taomate_3step")
     expect(openOut.refine_strength).toBe(1)
     expect(openOut.refine_steps).toBe(1)
+    expect(openOut.refine_denoise).toBe(0.35)
     // THE DECLARED-SURFACE ROUND TRIP (2026-09-23): card-level refs
     // hydrate AND serialize back — a save never drops what the lanes show
     expect(out.ref_images).toEqual(["https://u/d.png"])

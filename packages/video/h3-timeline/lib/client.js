@@ -4840,7 +4840,7 @@ window.__ModuleLoader__.load({
 		* cannot honor, so the face would render (or hide) on STATED state
 		* nobody can see or unset once the master row omits: the operator's
 		* burn ("the second-pass option DISAPPEARS from the UI randomly").
-		* The refine_* trio rides visible_when `second_pass_enabled`
+		* The refine_* quartet rides visible_when `second_pass_enabled`
 		* (T4_ONLY) while surviving the name filter — the orphan face. One
 		* rule, every gate-dead member: presence is a pure function of the
 		* LANE, never of invisible state.
@@ -6238,6 +6238,7 @@ window.__ModuleLoader__.load({
 				refine_lora: typeof raw?.refine_lora === "string" && raw.refine_lora !== "" ? raw.refine_lora : void 0,
 				refine_strength: optNum("refine_strength"),
 				refine_steps: optNum("refine_steps"),
+				refine_denoise: optNum("refine_denoise"),
 				ref_image_size: raw?.ref_image_size === "match" || raw?.ref_image_size === "max" ? raw.ref_image_size : void 0,
 				loras: Array.isArray(raw?.loras) ? raw.loras.filter((r) => !!r && typeof r.id === "string").map((r) => {
 					const steps = typeof r.steps === "number" && Number.isFinite(r.steps) ? r.steps : void 0;
@@ -6345,6 +6346,7 @@ window.__ModuleLoader__.load({
 			"refine_lora",
 			"refine_strength",
 			"refine_steps",
+			"refine_denoise",
 			"refmod_mode",
 			"refmod_pool",
 			"refmod_identity",
@@ -6382,6 +6384,7 @@ window.__ModuleLoader__.load({
 				if (a.refine_lora != null && a.refine_lora !== "") out.refine_lora = a.refine_lora;
 				if (a.refine_strength != null) out.refine_strength = a.refine_strength;
 				if (a.refine_steps != null) out.refine_steps = a.refine_steps;
+				if (a.refine_denoise != null) out.refine_denoise = a.refine_denoise;
 			}
 			if (a.sla_enabled === false) out.sla_enabled = false;
 			if (a.refmod_mode != null) out.refmod_mode = a.refmod_mode;

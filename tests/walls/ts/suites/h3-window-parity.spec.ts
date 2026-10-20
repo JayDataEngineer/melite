@@ -36,9 +36,14 @@ describe("THE H3 WINDOW PROJECTION SEAM — carrier, served envelope, and film r
 
   it("every carrier-but-unserved key is hidden by the carrier's own law (the mechanism, not a list)", () => {
     const spec = serveWindowSpec();
+    // length: hidden by the B1-1 cure (audit h3-frames-anima,
+    // 2026-10-20) — the served Frames knob owned span-less calls only,
+    // which fresh cards never author; the timeline's calls own the
+    // window. Stays schema-declared (compose reads p.length) but the
+    // Layer-A face never serves it.
     assert.deepEqual(
       spec.carrierInternal,
-      ["fps", "fps_seconds", "image_name", "interp_switch", "k", "noise_seed", "sharpen_switch", "sla_switch"],
+      ["fps", "fps_seconds", "image_name", "interp_switch", "k", "length", "noise_seed", "sharpen_switch", "sla_switch"],
     );
     for (const k of spec.carrierInternal) {
       const field = (paramSchema.dict as Record<string, { meta?: { extra?: Record<string, unknown> } }>)[k];
@@ -66,7 +71,10 @@ describe("THE H3 WINDOW PROJECTION SEAM — carrier, served envelope, and film r
     // delete mark — never UI-set knobs) and image_name is the
     // renderer's guide-image spelling, gate-admitted for old docs
     // (carrier tooltip) while the rail's First frame owns the face.
+    // length: a wire row the compose still reads (span-less calls +
+    // CALL_KNOB_KEYS' per-call pin) — the face unserves it because
+    // the timeline's calls own the window (B1-1).
     // Family-declared wire/internal, UI-unserved by law.
-    assert.deepEqual(spec.unservedDeclared, ["image_name", "interp_switch", "sharpen_switch", "sla_switch"]);
+    assert.deepEqual(spec.unservedDeclared, ["image_name", "interp_switch", "length", "sharpen_switch", "sla_switch"]);
   });
 });

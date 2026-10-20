@@ -106,7 +106,7 @@ export function RunRecipeEngine({
   // and the reseat heal read) — a row the run cannot honor is never
   // served. THE GATE-DEAD ARM (the ERROR h cure, 2026-11-08): a
   // field whose visible_when NAMES a family-dead key omits with the
-  // key — the refine_* trio rode visible_when second_pass_enabled
+  // key — the refine_* quartet rode visible_when second_pass_enabled
   // while surviving the name filter, so the Second Pass tab
   // resurrected on the STALE stated gate as an orphan face (the
   // master row T4_ONLY-omitted, no off switch). Presence is a pure
