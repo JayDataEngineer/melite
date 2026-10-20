@@ -535,7 +535,8 @@ describe("THE LAYER A/B CANON (2026-10-24): a stated call lane REPLACES the decl
     assert.ok(screen.getByTestId("tl-call-mods-bucket"), "the bucket mounts after the audios lane")
     assert.ok(screen.getByTestId("tl-call-mods-count").textContent!.includes("1/8"))
     // the add door is the SQUARE (operator 2026-11-05: the upload
-    // square grammar): From flow lists the engine's own stems
+    // square grammar): From flow lists the engine's own stems BESIDE
+    // the run's artifacts (the from-flow union law, 2026-10-20)
     fireEvent.click(screen.getByRole("button", { name: "+ ref mods source" }))
     fireEvent.click(await screen.findByText("From flow"))
     fireEvent.click(await screen.findByText("pack_two"))
@@ -570,6 +571,46 @@ describe("THE LAYER A/B CANON (2026-10-24): a stated call lane REPLACES the decl
     } finally {
       unbindEstateRemote()
     }
+    h.unmount()
+  })
+
+  it("THE MODS LANE from-flow union arm (ERRORS_2 FROM-REF, 2026-10-20): the From-flow verb offers the run's artifacts BESIDE the engine's stems — never stems-only", async () => {
+    const { d, calls } = deps({ modsListing: ["pack_one", "pack_two"] })
+    const h = render(<CallCard c={{ ...BASE }} i={0} deps={d} />)
+    fireEvent.click(screen.getByRole("button", { name: "+ ref mods source" }))
+    fireEvent.click(await screen.findByRole("menuitem", { name: "From flow" }))
+    const rows = await screen.findAllByTestId("source-pick-row")
+    assert.equal(rows.length, 3, `stems + the run artifact ride: ${rows.map((r) => r.textContent)}`)
+    assert.ok(rows.some((r) => r.textContent!.includes("pack_one")), "stem one still rides")
+    assert.ok(rows.some((r) => r.textContent!.includes("pack_two")), "stem two still rides")
+    assert.ok(rows.some((r) => r.textContent!.includes("ra")), "the run's artifact rides the same verb")
+    fireEvent.click(rows.find((r) => r.textContent!.includes("ra"))!)
+    assert.deepEqual(calls.refs, [[0, "mods", "https://u/ra.png"]],
+      "the artifact pick commits the canonical URL the compose bakes")
+    h.unmount()
+  })
+
+  it("THE MODS LANE from-flow artifact arm (the burn verbatim): an empty stems listing still offers the run's artifact — never 'nothing to pick yet' beside a run full of media", async () => {
+    const { d, calls } = deps({ modsListing: [] })
+    const h = render(<CallCard c={{ ...BASE }} i={0} deps={d} />)
+    fireEvent.click(screen.getByRole("button", { name: "+ ref mods source" }))
+    fireEvent.click(await screen.findByRole("menuitem", { name: "From flow" }))
+    const rows = await screen.findAllByTestId("source-pick-row")
+    assert.equal(rows.length, 1, "the empty listing starves no door while the run holds media")
+    assert.ok(rows[0]!.textContent!.includes("ra"), "the run's artifact is the row")
+    fireEvent.click(rows[0]!)
+    assert.deepEqual(calls.refs, [[0, "mods", "https://u/ra.png"]],
+      "the pick commits — no foreign-URL refusal for the run's own artifact")
+    h.unmount()
+  })
+
+  it("THE MODS LANE honest-empty arm: no stems AND no run artifacts — the picker is honestly empty, never a synthetic row", async () => {
+    const { d } = deps({ modsListing: [], refArtifacts: [] })
+    const h = render(<CallCard c={{ ...BASE }} i={0} deps={d} />)
+    fireEvent.click(screen.getByRole("button", { name: "+ ref mods source" }))
+    fireEvent.click(await screen.findByRole("menuitem", { name: "From flow" }))
+    assert.ok(await screen.findByText("nothing to pick yet"))
+    assert.equal(screen.queryAllByTestId("source-pick-row").length, 0)
     h.unmount()
   })
 
@@ -731,7 +772,9 @@ describe("THE MODS SQUARE (slice 4, design §B): the add door rides the SourceRo
   })
 
   it("a committed stem leaves the picker (the no-duplicate-offer law, per stem)", async () => {
-    const { d } = deps({ modsListing: ["pack_one", "pack_two"] })
+    // (2026-10-20, the from-flow union: refArtifacts [] isolates the
+    // stem law — the union arm pins the combined face above)
+    const { d } = deps({ modsListing: ["pack_one", "pack_two"], refArtifacts: [] })
     render(<CallCard c={{ ...BASE, refs: { mods: "refmods/pack_one.safetensors" } }} i={0} deps={d} />)
     fireEvent.click(screen.getByRole("button", { name: "+ ref mods source" }))
     fireEvent.click(await screen.findByRole("menuitem", { name: "From flow" }))
@@ -741,7 +784,8 @@ describe("THE MODS SQUARE (slice 4, design §B): the add door rides the SourceRo
   })
 
   it("a chipped BARE stem (no suffix) still excludes its listing row (the stem grammar, both chip spellings)", async () => {
-    const { d } = deps({ modsListing: ["solo"] })
+    // (2026-10-20: refArtifacts [] isolates the stem grammar)
+    const { d } = deps({ modsListing: ["solo"], refArtifacts: [] })
     render(<CallCard c={{ ...BASE, refs: { mods: "solo" } }} i={0} deps={d} />)
     fireEvent.click(screen.getByRole("button", { name: "+ ref mods source" }))
     fireEvent.click(await screen.findByRole("menuitem", { name: "From flow" }))
@@ -803,7 +847,10 @@ describe("THE MODS SQUARE (slice 4, design §B): the add door rides the SourceRo
   })
 
   it("THE INTERIM DOOR (no listing): the pick face is honestly empty and the ANY-MEDIA file arm is the fallback write (the path form died 2026-11-05)", async () => {
-    const { d, calls } = deps()
+    // (2026-10-20, the from-flow union: refArtifacts [] isolates the
+    // no-listing degrade — the honest-empty arm pins the both-empty
+    // face, the union arms pin the artifact face)
+    const { d, calls } = deps({ refArtifacts: [] })
     render(<CallCard c={BASE} i={0} deps={d} />)
     fireEvent.click(screen.getByRole("button", { name: "+ ref mods source" }))
     fireEvent.click(await screen.findByRole("menuitem", { name: "From flow" }))

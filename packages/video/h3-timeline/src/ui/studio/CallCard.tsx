@@ -430,7 +430,7 @@ function modsNotMediaLine(entry: string) {
  *  form as the other lanes (the comma string), the canon's override
  *  display (stated lane replaces; absent inherits), same cap tail. */
 function ModsBucket({
-  label, cap, value, onChange, declared, listing, onDeclaredRemove,
+  label, cap, value, onChange, declared, listing, artifacts, onDeclaredRemove,
 }: {
   label: string
   cap: number
@@ -449,6 +449,15 @@ function ModsBucket({
    *  fallback is the only write — never a hand list, never a
    *  non-engine fetch. */
   listing?: readonly string[]
+  /** THE RUN'S OWN ROWS (ERRORS_2 FROM-REF, 2026-10-20): the run's
+   *  artifact index (own run ∪ upstreams, {name,url}) — the From-flow
+   *  verb offers them BESIDE the engine's stems (a populated listing
+   *  used to show stems only, an empty one "nothing to pick yet"
+   *  beside a run full of media — the burn verbatim). Absent: the
+   *  stems-only face (the honest-empty arm pins the both-empty face).
+   *  The compose already bakes both spellings (actions.ts:1564-1591),
+   *  so the offering is the only change — the wire is untouched. */
+  artifacts?: ReadonlyArray<{ name: string; url: string }>
 }) {
   const [fileError, setFileError] = useState<string | null>(null)
   const chips = splitRefList(value)
@@ -465,13 +474,25 @@ function ModsBucket({
   // excluded (the buckets' own no-duplicate-offer law), each row
   // carrying the WIRE FORM the compose consumes — the pick commits
   // `stem.safetensors`, exactly the reuse arm's loader currency.
+  // BESIDE them ride the run's own artifacts (ERRORS_2 FROM-REF):
+  // the run's media rows in the RefsBucket spelling ({id: name,
+  // label: name, url} — the pick commits the canonical URL the
+  // compose bakes), already-committed URLs excluded by exact match.
+  // Stems and artifacts never collide (different namespaces), so no
+  // dedup beyond the committed-exclusion either side.
   const held = new Set(chips.map((chip) => {
     const base = chip.split(/[\\/]/).pop() as string
     return base.endsWith(".safetensors") ? base.slice(0, -".safetensors".length) : base
   }))
-  const candidates = (listing ?? [])
-    .filter((stem) => !held.has(stem))
-    .map((stem) => ({ id: stem, label: stem, url: `${stem}.safetensors` }))
+  const heldUrls = new Set(chips)
+  const candidates = [
+    ...(listing ?? [])
+      .filter((stem) => !held.has(stem))
+      .map((stem) => ({ id: stem, label: stem, url: `${stem}.safetensors` })),
+    ...(artifacts ?? [])
+      .filter((a) => !heldUrls.has(a.url))
+      .map((a) => ({ id: a.name, label: a.name, url: a.url })),
+  ]
   // THE DISPLAY MAP (the refs canon's spelling): the mods seat holds
   // stems, data: chips, and estate-media spellings — no run-artifact
   // names — so the map rides empty and displaySource degrades
@@ -585,7 +606,8 @@ function ModsBucket({
         {/* (operator 2026-11-05: "WHY IS IT NOT AN UPLOAD SQUARE?")
             — the add face is the SQUARE grammar every input lane
             rides (SourceRow: InputSquare + the picker): the picker
-            lists the engine's own refmods stems (the listing door),
+            lists the engine's own refmods stems (the listing door)
+            BESIDE the run's own artifacts (ERRORS_2 FROM-REF),
             From media boards the estate's live media, and the file
             arm ACCEPTS ANY MEDIA (the any-media law, 2026-11-06 —
             the system handles the conversion). */}
@@ -840,6 +862,7 @@ export function CallCard({
           onChange={(v) => setCallRefs(i, "mods", v)}
           declared={normalizeDeclaredRefs(layerA?.ref_mods)}
           listing={modsListing}
+          artifacts={refArtifacts}
           onDeclaredRemove={setLayerAKey === undefined ? undefined : (path) => {
             // THE ABSENT-KEY LAW (G7's writer seat): the kept lane
             // rides; the LAST pack's detach unstamps the key — an

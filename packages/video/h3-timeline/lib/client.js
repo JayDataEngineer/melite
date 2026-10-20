@@ -5510,7 +5510,7 @@ window.__ModuleLoader__.load({
 		*  estate's live media (canonical /melite-media paths). Same wire
 		*  form as the other lanes (the comma string), the canon's override
 		*  display (stated lane replaces; absent inherits), same cap tail. */
-		function ModsBucket({ label, cap, value, onChange, declared, listing, onDeclaredRemove }) {
+		function ModsBucket({ label, cap, value, onChange, declared, listing, artifacts, onDeclaredRemove }) {
 			const [fileError, setFileError] = (0, react.useState)(null);
 			const chips = splitRefList(value);
 			const overrides = chips.length > 0;
@@ -5521,11 +5521,16 @@ window.__ModuleLoader__.load({
 				const base = chip.split(/[\\/]/).pop();
 				return base.endsWith(".safetensors") ? base.slice(0, -12) : base;
 			}));
-			const candidates = (listing ?? []).filter((stem) => !held.has(stem)).map((stem) => ({
+			const heldUrls = new Set(chips);
+			const candidates = [...(listing ?? []).filter((stem) => !held.has(stem)).map((stem) => ({
 				id: stem,
 				label: stem,
 				url: `${stem}.safetensors`
-			}));
+			})), ...(artifacts ?? []).filter((a) => !heldUrls.has(a.url)).map((a) => ({
+				id: a.name,
+				label: a.name,
+				url: a.url
+			}))];
 			const chipUrl = /* @__PURE__ */ new Map();
 			const chipOfListing = (v) => {
 				const byUrl = candidates.find((c) => c.url === v);
@@ -5802,6 +5807,7 @@ window.__ModuleLoader__.load({
 									onChange: (v) => setCallRefs(i, "mods", v),
 									declared: normalizeDeclaredRefs(layerA?.ref_mods),
 									listing: modsListing,
+									artifacts: refArtifacts,
 									onDeclaredRemove: setLayerAKey === void 0 ? void 0 : (path) => {
 										const kept = normalizeDeclaredRefs(layerA?.ref_mods).filter((p) => p !== path);
 										setLayerAKey("ref_mods", kept.length ? kept : void 0);
