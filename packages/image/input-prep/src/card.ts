@@ -175,17 +175,26 @@ export function apply(ctx: Context): void {
       const legacyScale = typeof doc['scale'] === 'object' && doc['scale'] !== null && !Array.isArray(doc['scale'])
         ? doc['scale']
         : undefined
-      const crop = legacyCrop ?? (hasCrop ? {
+      // THE DISPLAY-TRUTH LAW (audit input-prep F3,
+      // 2026-10-20): the studio seeds its user layer from the row
+      // and the run patch carries the whole layer, so an old draft
+      // with a nested crop/scale object re-sends it on EVERY run
+      // press — and legacy-first precedence composed the stale
+      // object over every fresh flat edit (display read the flat
+      // keys, the engine cropped the legacy box). Flat keys outrank
+      // the object whenever any is seated; the object only composes
+      // when NO flat key rides the doc (old drafts keep parsing).
+      const crop = hasCrop ? {
         x: cropValues[0],
         y: cropValues[1],
         width: cropValues[2],
         height: cropValues[3],
-      } : undefined)
-      const scale = legacyScale ?? (hasScale ? {
+      } : legacyCrop
+      const scale = hasScale ? {
         width: scaleWidth,
         height: scaleHeight,
         method: doc['scale_method'],
-      } : undefined)
+      } : legacyScale
       const gated = { ...doc, crop, scale }
       const bound = ACTION_BINDINGS[model.family ?? model.id]
       if (bound) bound(gated, model, g, runId)

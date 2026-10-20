@@ -234,6 +234,52 @@ describe("the input-prep compose gate", () => {
     }
   });
 
+  // AUDIT input-prep F3 (input-prep-total-verification-2026-10-20):
+  // compose preferred the legacy nested crop/scale object over fresh
+  // flat edits, forever — the studio seeds its user layer verbatim
+  // from the row, so an old draft carrying a nested object re-sends
+  // it on every run press and composes over every new box the
+  // operator drags: the display shows the new box (the flat keys),
+  // the engine crops the stale one. THE DISPLAY-TRUTH LAW: when any
+  // flat key is seated, the flat keys outrank the legacy object; the
+  // object only composes when NO flat key is seated.
+  it("AUDIT F3: flat crop and scale keys outrank the legacy objects when both ride the doc", () => {
+    const g = new GraphBuilder();
+    def.compose({
+      source: "upload.png",
+      crop: { x: 1, y: 2, width: 30, height: 20 },
+      crop_x: 10, crop_y: 20, crop_width: 100, crop_height: 150,
+      scale: { width: 10, height: 12, method: "nearest-exact" },
+      scale_width: 640, scale_height: 480,
+    }, DUMMY, g, "flat_over_legacy");
+    const graph = g.toJSON();
+    const crop = Object.values(graph).find((node) => node.class_type === "ImageCrop");
+    assert.deepEqual(
+      { x: crop?.inputs.x, y: crop?.inputs.y, width: crop?.inputs.width, height: crop?.inputs.height },
+      { x: 10, y: 20, width: 100, height: 150 },
+      "the fresh flat edit wins — a stale nested object must never compose over the box the operator sees",
+    );
+    const scale = Object.values(graph).find((node) => node.class_type === "ImageScale");
+    assert.equal(scale?.inputs.width, 640, "the flat scale target wins the same way");
+    assert.equal(scale?.inputs.height, 480);
+
+    // the counter: a doc with NO flat keys keeps the legacy object
+    // composing (old drafts keep parsing — the riders' own law)
+    const legacyOnly = new GraphBuilder();
+    def.compose({
+      source: "upload.png",
+      crop: { x: 1, y: 2, width: 30, height: 20 },
+      scale: { width: 10, height: 12, method: "nearest-exact" },
+    }, DUMMY, legacyOnly, "legacy_only");
+    const legacyGraph = legacyOnly.toJSON();
+    const legacyCrop = Object.values(legacyGraph).find((node) => node.class_type === "ImageCrop");
+    assert.deepEqual(
+      { x: legacyCrop?.inputs.x, y: legacyCrop?.inputs.y, width: legacyCrop?.inputs.width, height: legacyCrop?.inputs.height },
+      { x: 1, y: 2, width: 30, height: 20 },
+      "with no flat keys seated the legacy object still composes",
+    );
+  });
+
   it("flow output bindings select exactly the declared media channel", () => {
     const image = def.flowOutputBindings?.[0];
     const audio = def.flowOutputBindings?.[1];
