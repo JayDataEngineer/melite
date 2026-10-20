@@ -16,6 +16,7 @@ import { StageDrill } from "../src/client/stage-drill.tsx";
 import {
   resetStageWrites,
   scheduleStageParam,
+  scheduleStagePatch,
   stageWriteState,
 } from "../src/client/draft.ts";
 import { schemaEnvelope } from "@melite/card-base/client";
@@ -194,5 +195,55 @@ describe("the drill's run fence (Cure 4)", () => {
     await waitFor(() => {
       expect(runs).toEqual([1]);
     });
+  });
+
+  // THE PILL CARRIES THE SCHEDULE (2026-11-20, the input-prep
+  // run-carry burn: the studio's optimistic edit rides a SCHEDULED
+  // trailing write — the pill's press must sweep it to the door
+  // BEFORE the start fires, or the engine composes the frozen row).
+  // The studio schedules at EDIT time (its own wall judges that
+  // half); THIS arm judges the frame's half: whichever verb owns the
+  // pill, the press lands the picked value on the wire before onRun.
+  test("a press sweeps a scheduled trailing write to the wire BEFORE the start (the pill carries the studio's pick)", async () => {
+    const order: string[] = [];
+    stubFetch();
+    mountEstateFakes({
+      benchDoc: { draft_id: "bench-p", rev: 1, log: [], stages: [STAGE] },
+      draftStages: [STAGE as unknown as Record<string, unknown>],
+      draftBenchRev: 1,
+      onPatchCall: () => { order.push("patch"); },
+    });
+    const runs: number[] = [];
+    let bound: () => void = () => { throw new Error("bindRun never fired"); };
+    render(h(StageDrill, {
+      stage: STAGE,
+      bench: BENCH,
+      running: false,
+      onRun: () => { order.push("run"); runs.push(1); },
+      onStop: () => {},
+      onClose: () => {},
+      onRemoved: () => {},
+      onPatchParams: () => {},
+      renderStageView: (_owner, fallback) => h("div", null, fallback),
+      bindRun: (r: () => void) => { bound = r; },
+    }));
+    await waitFor(() => {
+      expect(document.querySelector("textarea")).not.toBeNull();
+    });
+    // the studio's optimistic pick rides the trailing coalescer —
+    // SCHEDULED, not yet sent (the whole window the old verb race
+    // dropped it in)
+    scheduleStagePatch("bench-p", "s_0", { prompt: "picked-at-edit" }).catch(() => {});
+    await bound();
+    await waitFor(() => {
+      expect(runs).toEqual([1]);
+    });
+    // ORDER: the swept write hit the wire BEFORE the start fired —
+    // red shape: the press started past the trailing window and the
+    // engine composed the frozen row
+    expect(order[0],
+      "the pill's press must sweep the scheduled write to the wire before the start — the run-carry burn (input-prep audit F1)",
+    ).toBe("patch");
+    expect(order[1]).toBe("run");
   });
 });

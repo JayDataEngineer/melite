@@ -11,9 +11,13 @@
  * MIN_DIM upscales to a blank, so the UI refuses to seat it); the
  * scale rail writes the card's scale params with the resample
  * vocabulary's OWN home as the oracle (models-input, never a
- * hand-copied list); the run verb PATCHES FIRST then starts (the
- * estate's patch-first law — the frame pill never runs past an
- * unflushed crop); the adapter registers the view under the card's
+ * hand-copied list); EVERY EDIT SCHEDULES its patch at edit time
+ * through the slot's own door (the 2026-11-20 run-carry burn: the
+ * pill's verb was a last-bind-wins race and the losing verb dropped
+ * the pick — the bench tile's Run and the sidebar's draft lane
+ * carried no studio verb at all, so an optimistic edit composed the
+ * FROZEN row; the edit itself now schedules the write and every run
+ * door sweeps it); the adapter registers the view under the card's
  * own key.
  */
 import { describe, it, expect, vi, afterEach } from 'vitest'
@@ -218,13 +222,12 @@ describe('the studio (InputPrepStudio)', () => {
     expect(img?.getAttribute('src')).toBe(IMG)
   })
 
-  it('THE DRAG COMMITS THE FOUR FLAT PARAMS: user state carries them (the run patch proves it)', () => {
+  it('THE DRAG COMMITS THE FOUR FLAT PARAMS AT RELEASE: the edit itself schedules the row write (no run press involved)', () => {
     const onPatch = vi.fn()
     const onRun = vi.fn()
-    const bindRun = vi.fn()
     render(h(InputPrepStudio, owner(
       { params: { source: IMG } },
-      { onPatch, onRun, bindRun },
+      { onPatch, onRun },
     )))
     const overlay = seatPreview(800, 600)
     act(() => {
@@ -232,33 +235,111 @@ describe('the studio (InputPrepStudio)', () => {
     })
     // the local user layer holds the crop — the rail's clear button enables
     expect((screen.getByTestId('prep-clear-crop') as HTMLButtonElement).disabled).toBe(false)
-    // RUN: the bound verb patches FIRST (the four crop keys), then runs
-    expect(bindRun).toHaveBeenCalledTimes(1)
-    const verb = bindRun.mock.calls[0][0] as () => void
-    act(() => { verb() })
-    expect(onPatch).toHaveBeenCalledTimes(1)
+    // THE SCHEDULE LAW (the 2026-11-20 run-carry burn): the drag's
+    // atomic commit SCHEDULES the four crop keys through the slot's
+    // own door AT RELEASE — every run door (pill, bench tile,
+    // sidebar draft lane, agent press) sweeps the scheduled write
+    // before it composes; no verb race can drop the pick
+    expect(onPatch, 'the edit must schedule its patch at edit time — the frozen-row compose burn').toHaveBeenCalledTimes(1)
     expect(onPatch.mock.calls[0][0]).toMatchObject({
-      source: IMG,
       crop_x: 10, crop_y: 20, crop_width: 100, crop_height: 150,
     })
-    expect(onRun).toHaveBeenCalledTimes(1)
-    // ORDER: the patch was called before the run (patch-first)
-    expect(onPatch.mock.invocationCallOrder[0]).toBeLessThan(onRun.mock.invocationCallOrder[0])
+    // an edit never starts a run by itself
+    expect(onRun).not.toHaveBeenCalled()
   })
 
-  it('CLEAR CROP SEATS THE -1 GRAMMAR (the card unset truth)', () => {
+  it('THE PICK SCHEDULES THE ROW WRITE AT PICK TIME (the tile-door carry: no studio verb exists on that door — the schedule IS the carry)', () => {
     const onPatch = vi.fn()
+    render(h(InputPrepStudio, owner({ params: {} }, { onPatch })))
+    const square = document.querySelector('[data-slot-square]') as HTMLElement
+    act(() => {
+      fireEvent.drop(square, {
+        dataTransfer: {
+          getData: (t: string) => t === ASSET_DRAG_MIME ? JSON.stringify({ url: IMG }) : '',
+          files: [],
+          types: [ASSET_DRAG_MIME],
+        },
+      })
+    })
+    expect(onPatch, 'a dropped source must reach the row WITHOUT any run press — the bench tile Run composes the scheduled write').toHaveBeenCalledTimes(1)
+    expect(onPatch.mock.calls[0][0]).toMatchObject({ source: IMG })
+    // the preview populates at once (the optimistic layer owns display)
+    expect(screen.queryByTestId('prep-empty-note')).toBeNull()
+  })
+
+  it('NO RUN VERB BINDS (single writer: the drill owns the frame pill — the last-bind-wins race is dead by construction)', () => {
     const bindRun = vi.fn()
+    render(h(InputPrepStudio, owner({ params: { source: IMG } }, { bindRun })))
+    expect(bindRun).not.toHaveBeenCalled()
+  })
+
+  it('THE RE-SEAT LAW: a row that moves while writes are UNSETTLED never wipes the operator\'s typing; a quiet row re-seats (audit F4)', () => {
+    let unsettled = false
+    const onPatch = vi.fn()
+    const view = render(h(InputPrepStudio, owner(
+      { params: { source: IMG } },
+      { onPatch, hasUnsettledWrites: () => unsettled },
+    )))
+    seatPreview(800, 600)
+    act(() => {
+      drag(screen.getByTestId('prep-crop-overlay'), [[10, 20], [110, 170]])
+    })
+    expect(onPatch).toHaveBeenCalledTimes(1)
+    // the echo arrives MID-WRITE (the bench re-rendered while our
+    // patch is still in flight): the re-seat is withheld
+    unsettled = true
+    act(() => {
+      view.rerender(h(InputPrepStudio, owner(
+        { params: { source: IMG, crop_x: 99, crop_y: 99, crop_width: 9, crop_height: 9 } },
+        { onPatch, hasUnsettledWrites: () => unsettled },
+      )))
+    })
+    expect(screen.getByTestId('prep-crop-box').textContent).toContain('100×150')
+    // the write settles, the row is quiet truth: the re-seat seats
+    unsettled = false
+    act(() => {
+      view.rerender(h(InputPrepStudio, owner(
+        { params: { source: IMG, crop_x: 99, crop_y: 99, crop_width: 9, crop_height: 9 } },
+        { onPatch, hasUnsettledWrites: () => unsettled },
+      )))
+    })
+    expect(screen.getByTestId('prep-crop-box').textContent).toContain('9×9')
+  })
+
+  it('THE ABSENT-PARAMS ROW NEVER WIPES (a row without params has ONE stable identity — audit F4)', () => {
+    const onPatch = vi.fn()
+    const rowA: Record<string, unknown> = { id: 's_0', card: 'input-prep' }
+    const rowB: Record<string, unknown> = { id: 's_0', card: 'input-prep' }
+    const view = render(h(InputPrepStudio, owner(rowA, { onPatch })))
+    const square = document.querySelector('[data-slot-square]') as HTMLElement
+    act(() => {
+      fireEvent.drop(square, {
+        dataTransfer: {
+          getData: (t: string) => t === ASSET_DRAG_MIME ? JSON.stringify({ url: IMG }) : '',
+          files: [],
+          types: [ASSET_DRAG_MIME],
+        },
+      })
+    })
+    // a re-render hands a DIFFERENT row object that still carries no
+    // params — the pick must survive (the render-derived {} loop)
+    act(() => {
+      view.rerender(h(InputPrepStudio, owner(rowB, { onPatch })))
+    })
+    const img = screen.getByTestId('prep-crop-preview').querySelector('img')
+    expect(img?.getAttribute('src')).toBe(IMG)
+  })
+
+  it('CLEAR CROP SEATS THE -1 GRAMMAR (the card unset truth, scheduled at click)', () => {
+    const onPatch = vi.fn()
     render(h(InputPrepStudio, owner(
       { params: { source: IMG, crop_x: 10, crop_y: 20, crop_width: 100, crop_height: 150 } },
-      { onPatch, bindRun },
+      { onPatch },
     )))
     seatPreview(800, 600)
     act(() => {
       fireEvent.click(screen.getByTestId('prep-clear-crop'))
     })
-    const verb = bindRun.mock.calls[0][0] as () => void
-    act(() => { verb() })
     expect(onPatch.mock.calls[0][0]).toMatchObject({
       crop_x: -1, crop_y: -1, crop_width: -1, crop_height: -1,
     })
@@ -266,10 +347,9 @@ describe('the studio (InputPrepStudio)', () => {
 
   it('THE SCALE RAIL WRITES THE CARD PARAMS: typing seats width, presets derive from the crop', () => {
     const onPatch = vi.fn()
-    const bindRun = vi.fn()
     render(h(InputPrepStudio, owner(
       { params: { source: IMG, crop_x: 10, crop_y: 20, crop_width: 100, crop_height: 150 } },
-      { onPatch, bindRun },
+      { onPatch },
     )))
     seatPreview(800, 600)
     act(() => {
@@ -284,17 +364,16 @@ describe('the studio (InputPrepStudio)', () => {
     act(() => {
       fireEvent.click(screen.getByTestId('prep-preset-2x'))
     })
-    const verb = bindRun.mock.calls[0][0] as () => void
-    act(() => { verb() })
-    expect(onPatch.mock.calls[0][0]).toMatchObject({
+    expect(onPatch.mock.calls[0][0]).toMatchObject({ scale_width: 512 })
+    expect(onPatch.mock.calls[1][0]).toMatchObject({ scale_height: 384 })
+    expect(onPatch.mock.calls[2][0]).toMatchObject({
       scale_width: 200, scale_height: 300,
     })
     // clear returns the -1 unset grammar
     act(() => {
       fireEvent.click(screen.getByTestId('prep-clear-scale'))
     })
-    act(() => { verb2Of(bindRun)() })
-    expect(onPatch.mock.calls[1][0]).toMatchObject({ scale_width: -1, scale_height: -1 })
+    expect(onPatch.mock.calls[3][0]).toMatchObject({ scale_width: -1, scale_height: -1 })
   })
 
   it('THE MODEL CHOICE IS THE UPSCALE-MODEL VOCABULARY (its own home is the oracle; "" unstated leads)', () => {
@@ -326,26 +405,20 @@ describe('the studio (InputPrepStudio)', () => {
     expect(select.value).toBe('bicubic')
   })
 
-  it('THE MODEL CHOICE RIDES THE SAVED DOC (the picked value flushes in the run patch; the sentinel unstateds)', () => {
+  it('THE MODEL CHOICE RIDES THE SAVED DOC (each choice schedules its own write; the sentinel unstateds)', () => {
     const onPatch = vi.fn()
-    const bindRun = vi.fn()
     render(h(InputPrepStudio, owner(
       { params: { source: IMG, scale_model: '4x-UltraSharp' } },
-      { onPatch, bindRun },
+      { onPatch },
     )))
-    const verb = bindRun.mock.calls[0][0] as () => void
-    act(() => { verb() })
-    expect(onPatch.mock.calls[0][0]).toMatchObject({ scale_model: '4x-UltraSharp' })
     act(() => {
       fireEvent.change(screen.getByTestId('prep-scale-model'), { target: { value: 'ESRGAN_x4' } })
     })
-    act(() => { verb2Of(bindRun)() })
-    expect(onPatch.mock.calls[1][0]).toMatchObject({ scale_model: 'ESRGAN_x4' })
+    expect(onPatch.mock.calls[0][0]).toMatchObject({ scale_model: 'ESRGAN_x4' })
     act(() => {
       fireEvent.change(screen.getByTestId('prep-scale-model'), { target: { value: '' } })
     })
-    act(() => { verb2Of(bindRun)() })
-    expect(onPatch.mock.calls[2][0]).toMatchObject({ scale_model: '' })
+    expect(onPatch.mock.calls[1][0]).toMatchObject({ scale_model: '' })
   })
 
   it('A STAGED (non-browser) SOURCE SAYS SO — no broken preview frame', () => {
@@ -435,9 +508,3 @@ describe('the adapter (src/client/index.ts)', () => {
     expect(isPreviewable('')).toBe(false)
   })
 })
-
-/** The second bindRun registration (state moved twice → two verbs;
- * the LATEST one is the live truth — the ref-dispatcher law). */
-function verb2Of(bindRun: ReturnType<typeof vi.fn>): () => void {
-  return bindRun.mock.calls[bindRun.mock.calls.length - 1][0] as () => void
-}

@@ -416,9 +416,17 @@ window.__ModuleLoader__.load({
 		* key 'input-prep' (src/client/index.ts).
 		*
 		* THE STATE LAW (the estate's own, DeclarativeStudio verbatim):
-		* edits ride LOCAL user state seeded from the frozen bench row; the
-		* run verb PATCHES FIRST then starts the run (bindRun — the frame's
-		* pill never runs past unflushed crop state). The crop gesture is
+		* edits ride LOCAL user state seeded from the frozen bench row, and
+		* EVERY EDIT SCHEDULES its patch through the slot's own door
+		* (onPatch → the bench's trailing coalescer) at edit time — the
+		* display follows the optimistic layer instantly while the ledger
+		* holds the truth, so every run door (the frame's pill, the bench
+		* tile, the sidebar draft lane, an agent's press) sweeps the
+		* scheduled write before it composes; no door composes a row the
+		* studio no longer shows (the 2026-11-20 run-carry burn: the pill's
+		* verb was a last-bind-wins race and the losing verb dropped the
+		* pick). The studio binds NO run verb of its own — the drill owns
+		* the pill, one writer. The crop gesture is
 		* the leaf's atomic commit (CropPreview fires onChange once per
 		* release); this component translates between the four flat crop
 		* params (the card's declared knobs — crop_x/y/width/height, -1 =
@@ -433,6 +441,10 @@ window.__ModuleLoader__.load({
 		* packages/models/input/src/actions.ts, the family's declared
 		* action).
 		*/
+		/** The one stable identity for a row that carries no params object
+		* (audit input-prep F4: a render-derived {} re-seats the user layer
+		* every render and wipes every pick). */
+		const EMPTY_PARAMS = {};
 		/** Read one numeric param (numbers only — anything else is unset). */
 		const num = (v) => typeof v === "number" && Number.isFinite(v) ? v : null;
 		/** The four crop params as one rect (null unless ALL four are
@@ -457,14 +469,15 @@ window.__ModuleLoader__.load({
 		* studio says so instead of rendering a broken frame). */
 		const isPreviewable = (source) => source.startsWith("data:") || source.startsWith("blob:") || source.startsWith("http://") || source.startsWith("https://") || source.startsWith("/");
 		function InputPrepStudio(props) {
-			const { row, bindRun } = props;
-			const params = typeof row["params"] === "object" && row["params"] !== null ? row["params"] : {};
+			const { row } = props;
+			const params = typeof row["params"] === "object" && row["params"] !== null ? row["params"] : EMPTY_PARAMS;
 			const [user, setUser] = (0, react.useState)(params);
+			const settledRef = (0, react.useRef)(props.hasUnsettledWrites ?? null);
+			settledRef.current = props.hasUnsettledWrites ?? null;
 			(0, react.useEffect)(() => {
+				if (settledRef.current?.() === true) return;
 				setUser(params);
 			}, [params]);
-			const userRef = (0, react.useRef)(user);
-			userRef.current = user;
 			const source = typeof user["source"] === "string" ? user["source"] : "";
 			const mediaType = user["media_type"] === "audio" ? "audio" : "image";
 			const [natural, setNatural] = (0, react.useState)(null);
@@ -474,11 +487,14 @@ window.__ModuleLoader__.load({
 			const scaleH = num(user["scale_height"]);
 			const method = typeof user["scale_method"] === "string" && SCALE_METHODS.includes(user["scale_method"]) ? user["scale_method"] : "lanczos";
 			const scaleModel = typeof user["scale_model"] === "string" && SCALE_MODEL_OPTIONS.includes(user["scale_model"]) ? user["scale_model"] : "";
+			const patchRef = (0, react.useRef)(props.onPatch);
+			patchRef.current = props.onPatch;
 			const edit = (patch) => {
 				setUser((prev) => ({
 					...prev,
 					...patch
 				}));
+				patchRef.current(patch);
 			};
 			/** The leaf's atomic commit → the four flat params. */
 			const onCropCommit = (next) => {
@@ -494,17 +510,6 @@ window.__ModuleLoader__.load({
 					crop_height: next.height
 				});
 			};
-			/** PATCH FIRST, then run (the estate's run law — the frame's pill
-			* calls this verb, never a bare onRun past unflushed state). */
-			const runRef = (0, react.useRef)(props.onRun);
-			runRef.current = props.onRun;
-			(0, react.useEffect)(() => {
-				bindRun?.(() => {
-					const patch = { ...userRef.current };
-					props.onPatch(patch);
-					runRef.current();
-				});
-			}, [bindRun, props.onPatch]);
 			/** The crop box (or the full frame when uncropped) — the base the
 			* scale presets multiply. */
 			const base = crop ?? (natural !== null ? {

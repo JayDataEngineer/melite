@@ -248,43 +248,36 @@ describe('THE FLUSH IS THE VERBATIM USER LAYER (the merge behavior unchanged wit
 
   it('the image arm: cleared knobs ride the -1 grammar — every key stays seated, no null is ever synthesized', () => {
     const onPatch = vi.fn()
-    const bindRun = vi.fn()
     render(h(InputPrepStudio, ownerWith(
       { source: IMG, media_type: 'image', crop_x: 10, crop_y: 20, crop_width: 100, crop_height: 150, ...SEATED_SCALE },
-      { onPatch, bindRun },
+      { onPatch },
     )))
     act(() => { fireEvent.click(screen.getByTestId('prep-clear-crop')) })
     act(() => { fireEvent.click(screen.getByTestId('prep-clear-scale')) })
-    const verb = bindRun.mock.calls[0][0] as () => void
-    act(() => { verb() })
-    expect(onPatch).toHaveBeenCalledTimes(1)
-    // The WHOLE patch, deep-equal — not a slice: `edit` only merges, so
-    // every key the user layer holds rides; unset rides the card's -1
-    // grammar. A deletion null (the JSON-merge loop's domain) or any
+    // THE SCHEDULE LAW (the 2026-11-20 run-carry burn): each edit
+    // schedules its OWN delta verbatim — the whole-user flush verb
+    // is gone. The judgment rides the edits themselves: the clear
+    // commits carry the card's -1 grammar for every key they unset.
+    // A deletion null (the JSON-merge loop's domain) or any
     // synthesized key reds here.
+    expect(onPatch).toHaveBeenCalledTimes(2)
     expect(onPatch.mock.calls[0][0]).toEqual({
-      source: IMG,
-      media_type: 'image',
       crop_x: -1, crop_y: -1, crop_width: -1, crop_height: -1,
-      scale_width: -1, scale_height: -1,
-      scale_method: 'bicubic',
     })
+    expect(onPatch.mock.calls[1][0]).toEqual({ scale_width: -1, scale_height: -1 })
   })
 
-  it('the audio arm: the flush is the frozen row verbatim (no rail to edit, nothing synthesized)', () => {
+  it('the audio arm: no rail edits, no synthesized writes (the frozen row is never re-asserted by a flush)', () => {
     const onPatch = vi.fn()
-    const bindRun = vi.fn()
     render(h(InputPrepStudio, ownerWith(
       { source: 'x.wav', media_type: 'audio', ...SEATED_SCALE },
-      { onPatch, bindRun },
+      { onPatch },
     )))
-    const verb = bindRun.mock.calls[0][0] as () => void
-    act(() => { verb() })
-    expect(onPatch).toHaveBeenCalledTimes(1)
-    expect(onPatch.mock.calls[0][0]).toEqual({
-      source: 'x.wav',
-      media_type: 'audio',
-      scale_width: 64, scale_height: 32, scale_method: 'bicubic',
-    })
+    // the audio arm renders no rail: no edit exists, so NOTHING
+    // schedules — the old whole-layer verb re-asserted retired keys
+    // into the admission gate; under the schedule law that class is
+    // inexpressible
+    expect(onPatch).not.toHaveBeenCalled()
+    expect(screen.getByTestId('prep-audio-note')).not.toBeNull()
   })
 })

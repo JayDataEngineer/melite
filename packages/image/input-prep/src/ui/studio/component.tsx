@@ -7,9 +7,17 @@
  * key 'input-prep' (src/client/index.ts).
  *
  * THE STATE LAW (the estate's own, DeclarativeStudio verbatim):
- * edits ride LOCAL user state seeded from the frozen bench row; the
- * run verb PATCHES FIRST then starts the run (bindRun — the frame's
- * pill never runs past unflushed crop state). The crop gesture is
+ * edits ride LOCAL user state seeded from the frozen bench row, and
+ * EVERY EDIT SCHEDULES its patch through the slot's own door
+ * (onPatch → the bench's trailing coalescer) at edit time — the
+ * display follows the optimistic layer instantly while the ledger
+ * holds the truth, so every run door (the frame's pill, the bench
+ * tile, the sidebar draft lane, an agent's press) sweeps the
+ * scheduled write before it composes; no door composes a row the
+ * studio no longer shows (the 2026-11-20 run-carry burn: the pill's
+ * verb was a last-bind-wins race and the losing verb dropped the
+ * pick). The studio binds NO run verb of its own — the drill owns
+ * the pill, one writer. The crop gesture is
  * the leaf's atomic commit (CropPreview fires onChange once per
  * release); this component translates between the four flat crop
  * params (the card's declared knobs — crop_x/y/width/height, -1 =
@@ -32,8 +40,12 @@ import { CropPreview } from './CropPreview.tsx'
 import type { CropRect, NaturalSize } from './CropPreview.tsx'
 import css from './prep.module.css'
 
-const CROP_KEYS = ['crop_x', 'crop_y', 'crop_width', 'crop_height'] as const
 const SCALE_KEYS = ['scale_width', 'scale_height'] as const
+
+/** The one stable identity for a row that carries no params object
+ * (audit input-prep F4: a render-derived {} re-seats the user layer
+ * every render and wipes every pick). */
+const EMPTY_PARAMS: Record<string, unknown> = {}
 
 /** Read one numeric param (numbers only — anything else is unset). */
 const num = (v: unknown): number | null =>
@@ -61,25 +73,36 @@ export const isPreviewable = (source: string): boolean =>
   || source.startsWith('/')
 
 export function InputPrepStudio(props: StageViewOwnerProps) {
-  const { row, bindRun } = props
+  const { row } = props
+  // THE ABSENT-PARAMS ROW (audit input-prep F4): a row without a
+  // params object must yield ONE stable identity, never a fresh {}
+  // per render — the re-seat effect keys on object identity, and a
+  // render-derived empty object loops setUser and wipes every pick.
   const params = typeof row['params'] === 'object' && row['params'] !== null
-    ? row['params'] as Record<string, unknown> : {}
+    ? row['params'] as Record<string, unknown> : EMPTY_PARAMS
 
   // THE USER LAYER: the frozen bench row verbatim (presence IS the
   // override mark; defaults derive per render — the settings law).
   // Re-seeded when the row's params OBJECT identity changes (a
-  // landed patch — ours or an agent's): optimistic edits persist
-  // until the row actually moves, then the truth re-seats.
+  // landed patch — ours or an agent's) AND the stage's writes are
+  // quiet (hasUnsettledWrites, the drill2 probe: a re-render that
+  // arrives mid-write must not wipe what the operator just typed):
+  // optimistic edits persist until the truth actually moves, then
+  // the truth re-seats.
   const [user, setUser] = useState<Record<string, unknown>>(params)
-  useEffect(() => { setUser(params) }, [params])
-  const userRef = useRef(user)
-  userRef.current = user
+  const settledRef = useRef(props.hasUnsettledWrites ?? null)
+  settledRef.current = props.hasUnsettledWrites ?? null
+  useEffect(() => {
+    if (settledRef.current?.() === true) return
+    setUser(params)
+  }, [params])
 
   // THE DISPLAY READS THE USER (the 2026-11-09 input burn: source
   // and media_type read the FROZEN row while edit() wrote the user —
   // a picked source never populated the preview until a patch
   // landed; the square, the notes, and the pane all follow the
-  // optimistic layer, the run patch carries it to the row).
+  // optimistic layer, and the edit itself schedules the patch to
+  // the row).
   const source = typeof user['source'] === 'string' ? user['source'] : ''
   const mediaType = user['media_type'] === 'audio' ? 'audio' : 'image'
 
@@ -98,8 +121,26 @@ export function InputPrepStudio(props: StageViewOwnerProps) {
     && (SCALE_MODEL_OPTIONS as readonly string[]).includes(user['scale_model'])
     ? user['scale_model'] : ''
 
+  // THE EDIT SCHEDULES (audit input-prep F1, the run-carry burn: the
+  // pill's verb was a last-bind-wins race between the drill's flush
+  // verb and this studio's patch-first verb — whichever lost dropped
+  // the pick, the bench tile's Run carried no studio verb at all,
+  // and the sidebar's draft lane passed no bindRun, so an optimistic
+  // edit composed the FROZEN row from three of four doors). THE LAW:
+  // the edit itself schedules its patch through the slot's own door
+  // (onPatch → the bench's trailing coalescer — bursts merge into
+  // one write, the display stays instant on the optimistic layer);
+  // EVERY run door — the pill, the bench tile, the sidebar, an
+  // agent's press — sweeps the scheduled write through the run gate
+  // before it composes, so no door can compose a row the studio no
+  // longer shows. The studio binds NO run verb of its own: the
+  // frame's pill owns exactly one writer (the drill's flush verb),
+  // whose fence force-sweeps this studio's scheduled patch.
+  const patchRef = useRef(props.onPatch)
+  patchRef.current = props.onPatch
   const edit = (patch: Record<string, unknown>): void => {
     setUser((prev) => ({ ...prev, ...patch }))
+    void patchRef.current(patch)
   }
 
   /** The leaf's atomic commit → the four flat params. */
@@ -108,18 +149,6 @@ export function InputPrepStudio(props: StageViewOwnerProps) {
       ? { crop_x: -1, crop_y: -1, crop_width: -1, crop_height: -1 }
       : { crop_x: next.x, crop_y: next.y, crop_width: next.width, crop_height: next.height })
   }
-
-  /** PATCH FIRST, then run (the estate's run law — the frame's pill
-   * calls this verb, never a bare onRun past unflushed state). */
-  const runRef = useRef(props.onRun)
-  runRef.current = props.onRun
-  useEffect(() => {
-    bindRun?.(() => {
-      const patch: Record<string, unknown> = { ...userRef.current }
-      void props.onPatch(patch)
-      runRef.current()
-    })
-  }, [bindRun, props.onPatch])
 
   /** The crop box (or the full frame when uncropped) — the base the
    * scale presets multiply. */
