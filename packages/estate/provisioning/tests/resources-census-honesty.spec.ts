@@ -53,24 +53,31 @@ function refOf(id: string): Extract<ResourceRef, { kind: "model" }> {
 
 /** A roster of N families, one declared item each. */
 function rosterOf(ids: readonly string[]): DeclarationPort {
-  const plans = new Map<string, ProvisionPlan>(ids.map((id) => [id, {
+  return multiItemRoster(ids.map((id) => [id, 1] as const));
+}
+
+/** A roster of families with N declared items each — the F1 shape:
+ *  the census cut lands INSIDE one family's item list. */
+function multiItemRoster(spec: readonly (readonly [id: string, itemCount: number])[]): DeclarationPort {
+  const plans = new Map<string, ProvisionPlan>(spec.map(([id, count]) => [id, {
     ref: refOf(id),
-    items: [{
+    items: Array.from({ length: count }, (_, index): ProvisionPlan["items"][number] => ({
       kind: "model",
-      key: `model:family:${id}::weight.safetensors`,
+      key: `model:family:${id}::w${index}.safetensors`,
       owner: "family",
       id,
-      name: "weight.safetensors",
+      name: `w${index}.safetensors`,
       folder: "checkpoints",
-      url: `https://example.invalid/${id}.safetensors`,
+      url: `https://example.invalid/${id}-${index}.safetensors`,
       // a declared digest seats the disk check on the artifact
       // writer's inspect — the census door the budget cut rides
       sha256: "a".repeat(64),
       sizeBytes: 1,
       required: true,
       provider: "direct",
-    }],
+    })),
   }]));
+  const ids = spec.map(([id]) => id);
   return {
     resolve: async (target: ResourceRef): Promise<ProvisionPlan> => {
       const plan = plans.get(target.id);
@@ -178,5 +185,123 @@ describe("the resources census honesty law (the anima burn)", () => {
     assert.equal(rows.length, ids.length);
     expect(rows.filter((row) => row.state === "unknown")).toHaveLength(0);
     expect(rows.filter((row) => row.state === "failed")).toHaveLength(0);
+  });
+
+  // AUDIT F1 (infra-resources-census-honesty, 2026-10-20): the abort
+  // law stopped at the REF boundary — inspect()'s item loop-top break
+  // truncated the row's item list and aggregateState invented a
+  // verdict over unchecked bytes (a 2-item family read 'active' with
+  // items 2→1; a post-plan cut read 'absent' with zero items; no
+  // 'unknown' anywhere, so census_partial never fired). The ref-level
+  // law mirrored one level down: every unchecked ITEM rides an
+  // 'unknown' item row.
+  test("AN ITEM-LEVEL CUT IS ITEM-COMPLETE AND UNKNOWN — the truncated 'active' family never returns", async () => {
+    const context = new Context();
+    contexts.push(context);
+    const service = new ProvisioningService(context, {
+      // ONE family, THREE declared items: item 0 checks, item 1
+      // hangs until the abort cuts it (the catch arm), item 2 is cut
+      // at the loop top — both F1 doors in one roster
+      declaration: multiItemRoster([["anima", 3]]),
+      artifactWriter: hangingWriter(1),
+      storeRoot: tempRoot(),
+    } satisfies ProvisioningConfig);
+
+    const controller = new AbortController();
+    const flight = service.reconcile(undefined, controller.signal);
+    await new Promise((resolve) => { setTimeout(resolve, 25) });
+    controller.abort();
+    const rows = await flight;
+
+    assert.equal(rows.length, 1);
+    const row = rows[0];
+    expect(row.items.length,
+      "the item roster stays COMPLETE — the F1 truncation (2→1 items) seeded 'active' over an unchecked byte range",
+    ).toBe(3);
+    expect(row.state,
+      "the row aggregates 'unknown' over its unchecked items — never 'active'",
+    ).toBe("unknown");
+    expect(row.items[0]?.state).toBe("active");
+    const unchecked = row.items.filter((item) => item.state === "unknown");
+    expect(unchecked.length,
+      "both cut doors ride unknown — the mid-check throw AND the loop-top cut",
+    ).toBe(2);
+    for (const item of unchecked) {
+      assert.match(item.detail ?? "", /scan incomplete/,
+        "each unchecked item names its own cause");
+    }
+  });
+
+  test("A FIRST-ITEM CUT (the plan window) NEVER ANSWERS 'absent' OVER DECLARED ITEMS", async () => {
+    const context = new Context();
+    contexts.push(context);
+    const service = new ProvisioningService(context, {
+      declaration: multiItemRoster([["anima", 2]]),
+      // hang on the FIRST check: the abort lands inside inspect(),
+      // past the ref-level check — pre-cure the item loop broke with
+      // items [] and aggregateState answered 'absent' over a
+      // declared family (the auditor's probe)
+      artifactWriter: hangingWriter(0),
+      storeRoot: tempRoot(),
+    } satisfies ProvisioningConfig);
+
+    const controller = new AbortController();
+    const flight = service.reconcile(undefined, controller.signal);
+    await new Promise((resolve) => { setTimeout(resolve, 25) });
+    controller.abort();
+    const rows = await flight;
+
+    assert.equal(rows.length, 1);
+    const row = rows[0];
+    expect(row.state,
+      "the post-plan cut answered 'absent' with zero items pre-cure — a declared family is never absent because the scan was cut",
+    ).toBe("unknown");
+    expect(row.items.length).toBe(2);
+    expect(row.items.every((item) => item.state === "unknown")).toBe(true);
+    for (const item of row.items) {
+      assert.match(item.detail ?? "", /scan incomplete/);
+    }
+    assert.match(row.detail ?? "", /scan incomplete/);
+  });
+
+  test("A REAL FAILED ITEM STANDS ITS VERDICT; THE UNCHECKED SIBLINGS STILL RIDE UNKNOWN (the masked shape census_partial must catch)", async () => {
+    const context = new Context();
+    contexts.push(context);
+    let checked = 0;
+    const writer: ArtifactWriterPort = {
+      // item 0 lands with a size mismatch — a REAL checked failure;
+      // item 1 hangs until the abort
+      inspect: async (request, signal) => {
+        checked += 1;
+        if (checked === 1) return { present: true, sizeBytes: 999, path: "/p", sha256: "a".repeat(64) };
+        await new Promise<void>((resolve, reject) => {
+          const timer = setTimeout(resolve, 30_000);
+          signal?.addEventListener("abort", () => { clearTimeout(timer); reject(new Error("aborted")) }, { once: true });
+        });
+        throw new Error("unreachable");
+      },
+      write: async () => { throw new Error("the census never writes") },
+    };
+    const service = new ProvisioningService(context, {
+      declaration: multiItemRoster([["anima", 2]]),
+      artifactWriter: writer,
+      storeRoot: tempRoot(),
+    } satisfies ProvisioningConfig);
+
+    const controller = new AbortController();
+    const flight = service.reconcile(undefined, controller.signal);
+    await new Promise((resolve) => { setTimeout(resolve, 25) });
+    controller.abort();
+    const rows = await flight;
+
+    const row = rows[0];
+    expect(row.state,
+      "the checked failure is a real verdict — the row keeps it; the partial mark (item-level census_partial, managePlane) carries the incompleteness, not a fake 'unknown'",
+    ).toBe("failed");
+    expect(row.items.length).toBe(2);
+    expect(row.items[0]?.state).toBe("failed");
+    expect(row.items[1]?.state,
+      "the unchecked sibling never absorbs the failure verdict — it rides unknown",
+    ).toBe("unknown");
   });
 });

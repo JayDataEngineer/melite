@@ -538,11 +538,14 @@ async function hStatus(req, ctx) {
     // status budget cannot sha256-census a healthy estate, and the
     // truncated list served as the whole "Declared resources" truth —
     // "1/1 failed" over files that sat byte-exact on disk). Any
-    // 'unknown' row is the scan's own artifact: the roster stays
-    // row-complete (the seat pushes unknown for every unchecked ref)
-    // and the consumer MUST mark the census partial, never title the
-    // count as the whole truth.
-    const censusPartial = resourceRows.some((row) => row.state === "unknown");
+    // 'unknown' ROW is the scan's own artifact — and so is any
+    // 'unknown' ITEM (audit F1: a failed item over unchecked siblings
+    // aggregates the row to 'failed', a real verdict that must stand,
+    // but the partial mark must still fire or the sidebar titles a
+    // partial scan as the whole truth). The mark derives from both
+    // levels: row OR item unknown.
+    const censusPartial = resourceRows.some((row) => row.state === "unknown")
+        || resourceRows.some((row) => (row.items ?? []).some((item) => item.state === "unknown"));
     const state = endpoint.reachable ? "up" : "down";
     const nextAction = nextActionFor(endpoint.reachable, normalized, routing.mode === "managed");
     const catalog = modelOptions(ctx.models);

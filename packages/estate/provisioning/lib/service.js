@@ -315,11 +315,15 @@ function itemFailure(item, refusal) {
         // cancelled check is the scan's own artifact, never a health
         // verdict — it must wear 'unknown', never 'failed' (the item
         // loop in inspect() lands here BEFORE the reconcile catch, so
-        // this seat is the one the burn's red actually rode).
+        // this seat is the one the burn's red actually rode). The
+        // cancelled voice names the scan's budget, same as the loop-top
+        // seed — one cause, one spelling.
         state: refusal.outcome === "blocked" ? "blocked" : refusal.outcome === "cancelled" ? "unknown" : "failed",
         outcome: refusal.outcome,
         errorCode: refusal.code,
-        detail: refusal.message,
+        detail: refusal.outcome === "cancelled"
+            ? "scan incomplete — the check was cut off before it could judge this item"
+            : refusal.message,
     };
 }
 function itemResult(item, state, outcome, values = {}) {
@@ -883,8 +887,25 @@ export class ProvisioningService extends Service {
         }
         const items = [];
         for (const item of plan.items) {
-            if (isAbortError(undefined, signal))
-                break;
+            if (isAbortError(undefined, signal)) {
+                // THE CENSUS HONESTY LAW, ITEM LEVEL (audit
+                // infra-resources-census-honesty F1, 2026-10-20: the abort
+                // law stopped at the REF boundary — this break truncated the
+                // row's item list and aggregateState invented a verdict over
+                // unchecked bytes: a 2-item family read 'active' with items
+                // 2→1, a post-plan cut read 'absent' with zero items, and
+                // no 'unknown' anywhere meant census_partial never fired).
+                // The ref-level law mirrored one level down: every item the
+                // scan did not check rides an 'unknown' item row — the
+                // roster stays item-complete, the aggregate lifts the row to
+                // 'unknown' (unless a checked item already failed — that
+                // verdict is real and stands, the partial mark rides the
+                // item), and no verdict is invented from silence.
+                items.push(itemResult(item, "unknown", "cancelled", {
+                    detail: "scan incomplete — this item was not checked before the status budget closed",
+                }));
+                continue;
+            }
             try {
                 items.push(await this.inspectPlanItem(item, signal));
             }

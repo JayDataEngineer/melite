@@ -837,6 +837,66 @@ describe("hStatus operations", () => {
       rmRoot();
     }
   });
+
+  // AUDIT F1 (infra-resources-census-honesty): a REAL failed item
+  // over unchecked siblings aggregates the row to 'failed' — a real
+  // verdict that must stand — but the unchecked items are still the
+  // scan's own artifact, and the mark must fire on them or the
+  // sidebar titles a partial scan as the whole truth.
+  it("marks census_partial on an unknown ITEM even when the row's own state is a real verdict", async () => {
+    mkRoot();
+    try {
+      const ref = extensionRef("pack");
+      const masked: ResourceStatus = {
+        ref,
+        state: "failed",
+        items: [
+          { key: "extension:pack", kind: "extension", state: "failed" },
+          { key: "model:family:anima::w1.safetensors", kind: "model", state: "unknown", detail: "scan incomplete — the check was cut off before it could judge this item" },
+        ],
+      };
+      route((url) => {
+        if (url.endsWith("/system_stats")) return json({ system: { comfyui_version: "9.9" }, devices: [] });
+        if (url.endsWith("/manager/version")) return json({ version: "3.0" });
+        return json({ is_processing: false, total_count: 0, done_count: 0 });
+      });
+      const ctx = CTX({
+        provisioning: {
+          ...fakeProvisioning,
+          reconcile: async (): Promise<ResourceStatus[]> => [masked],
+          operationOf: () => undefined,
+        },
+      });
+      const [, env] = await manage({ action: "status" }, ctx);
+      const data = env.data as { census_partial?: boolean };
+      assert.equal(data.census_partial, true,
+        "the masked shape — a real failed verdict over unchecked siblings — must still carry the partial mark");
+
+      // the discriminating counter: a failed row whose items are ALL
+      // checked is a whole verdict — the mark never fires on it
+      const settledFailed: ResourceStatus = {
+        ref,
+        state: "failed",
+        items: [
+          { key: "extension:pack", kind: "extension", state: "failed" },
+          { key: "model:family:anima::w1.safetensors", kind: "model", state: "failed" },
+        ],
+      };
+      const settledCtx = CTX({
+        provisioning: {
+          ...fakeProvisioning,
+          reconcile: async (): Promise<ResourceStatus[]> => [settledFailed],
+          operationOf: () => undefined,
+        },
+      });
+      const [, settledEnv] = await manage({ action: "status" }, settledCtx);
+      const settledData = settledEnv.data as { census_partial?: boolean };
+      assert.equal(settledData.census_partial, undefined,
+        "a failed row over all-checked items is a whole verdict — no mark");
+    } finally {
+      rmRoot();
+    }
+  });
 });
 
 describe("hSearch", () => {

@@ -416,7 +416,9 @@ describe.sequential("estate provisioning composition paths", () => {
     assert.equal(mounted.state.calls.filter((path) => path.startsWith("/object_info")).length, 1);
     const aborted = new AbortController();
     aborted.abort();
-    assert.equal((await mounted.ctx.provisioning.inspect({ kind: "model", owner: "family", id: "h3" }, aborted.signal)).state, "absent");
+    // CENSUS HONESTY LAW (audit F1): a pre-aborted inspect answers
+    // 'unknown', never 'absent' — no verdict from silence
+    assert.equal((await mounted.ctx.provisioning.inspect({ kind: "model", owner: "family", id: "h3" }, aborted.signal)).state, "unknown");
     const activationAbort = new AbortController();
     activationAbort.abort();
     assert.equal((await mounted.ctx.provisioning.activate({ kind: "model", owner: "family", id: "h3" }, {}, activationAbort.signal)).state, "cancelled");

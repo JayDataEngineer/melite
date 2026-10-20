@@ -375,7 +375,14 @@ describe("ProvisioningService public seams", () => {
     const aborted = makeService(basicConfig(plan(ref, [modelItem(), modelItem({ key: "two", name: "two.bin" })]))).service;
     const controller = new AbortController();
     controller.abort();
-    assert.equal((await aborted.inspect(ref, controller.signal)).state, "absent");
+    // CENSUS HONESTY LAW (audit F1): a pre-aborted inspect once
+    // answered 'absent' over a declared 2-item plan — a verdict
+    // invented from silence. It answers 'unknown' with the full
+    // item roster now.
+    const abortedStatus = await aborted.inspect(ref, controller.signal);
+    assert.equal(abortedStatus.state, "unknown");
+    assert.equal(abortedStatus.items.length, 2);
+    assert.ok(abortedStatus.items.every((item) => item.state === "unknown"));
   });
 
   test("ensure blocks writes, selects declared items, and reports empty plans", async () => {
