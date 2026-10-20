@@ -39,7 +39,7 @@
  */
 import { createElement as h } from 'react';
 import type { ReactElement } from 'react';
-import { type ModifierKind, type SpecValues } from './spec.js';
+import { type ModifierKind, type SpecField, type SpecValues } from './spec.js';
 export type { PaintCanvasFaceProps, BboxCanvasFaceProps } from '@melite/contracts';
 import type { BboxCanvasFaceProps, PaintCanvasFaceProps } from '@melite/contracts';
 export type BboxFaceComponent = (props: BboxCanvasFaceProps) => ReactElement;
@@ -81,6 +81,23 @@ export interface ModifiersSectionProps {
         url: string;
         name: string;
     }>>;
+    /** THE FLOW CANDIDATES (E2-11a — the region-mask picker law): the
+     *  host bench's other stages' latest artifacts, threaded from the
+     *  constructor's wire. The leaf's From-flow picker serves THESE —
+     *  a structurally empty list ("nothing to pick yet" beside a run
+     *  mask node) is the shipped burn this seam closes. */
+    candidates?: Array<{
+        id: string;
+        label: string;
+        url: string;
+    }>;
+    /** the per-field narrowing (the edge law at the host's seat — the
+     *  drill's own candidatesFor); absent = the raw rows. */
+    candidatesFor?: (f: SpecField) => Array<{
+        id: string;
+        label: string;
+        url: string;
+    }>;
 }
 /** THE LEAF SEAT — the opened entry's identity, frozen at open
  *  time. `index` anchors the nearest-of-duplicates tier only; the

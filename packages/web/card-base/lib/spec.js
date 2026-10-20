@@ -1754,6 +1754,18 @@ export function composeValidate(spec, doc) {
         for (const g of axisGroups(spec))
             declared.add(axisKey(g));
         declared.add('model');
+        // THE MOD-SURFACE SANCTION (E2-11, the operator's burn — its
+        // verbatim voice lives in the ERRORS_2 ledger): a key a card-declared mod kind owns — its
+        // param_key bag plus its envelope's field names — is DECLARED
+        // surface, exactly like a schema knob. The mirror refused the
+        // mask mod's own bag as "field 'mask' … the served surface
+        // does not declare it": a lie (the family boards the pack; the
+        // estate's admission gate sanctions the same names via the
+        // absorbed-mod interlock, cardsCompose.ts). Whether the plane
+        // BUILDS the mod's lane is the compose door's firing voice,
+        // never this clause's undeclared-surface voice.
+        for (const k of modOwnedFields(spec))
+            declared.add(k);
         for (const k of Object.keys(doc)) {
             if (k === 'model' || declared.has(k))
                 continue;

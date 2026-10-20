@@ -527,6 +527,13 @@ export function CardForm({ spec, user, base, onSet, onPick, onUnset, wire, squar
             ...(bboxFace !== undefined ? { bboxFace } : {}),
             ...(paintReference !== undefined ? { paintReference } : {}),
             ...(wire?.loadMedia !== undefined ? { loadMedia: wire.loadMedia } : {}),
+            // THE REGION-MASK PICKER LAW (E2-11a): the mod leaf's
+            // From-flow picker rides the SAME rows the card face's
+            // squares ride — one wire, every seat (a leaf that forgot
+            // its rows shipped "nothing to pick yet" beside a run
+            // mask node).
+            ...(wire?.candidates !== undefined ? { candidates: wire.candidates } : {}),
+            ...(wire?.candidatesFor !== undefined ? { candidatesFor: wire.candidatesFor } : {}),
         })
         : null, own.wireMenu);
 }

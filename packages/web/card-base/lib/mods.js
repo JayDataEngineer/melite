@@ -628,7 +628,9 @@ export function ModifiersSection(props) {
         title: leaf.mode === 'create' ? chromeCopy.leafCreateTitle({ kindLabel: leaf.kind.label }) : chromeCopy.leafEditTitle({ kindLabel: leaf.kind.label }),
         closeLabel: chromeCopy.leafCloseLabel,
         className: css.modLeafModal,
-    }, h(ModLeaf, { leaf, values, hideFields: seated, onDraft: { setDraftOption, setDraftStrength, setDraftParams, setDraftSteps, draftOption, draftStrength, draftParams, draftSteps }, onError: setLeafError, onSave: saveLeaf, onDelete: deleteLeaf, leafError, paintFace: props.paintFace, bboxFace: props.bboxFace, paintReferenceValue: typeof props.paintReference === 'string' ? String(values[props.paintReference] ?? '') : '', ...(props.loadMedia !== undefined ? { loadMedia: props.loadMedia } : {}) })) : null);
+    }, h(ModLeaf, { leaf, values, hideFields: seated, onDraft: { setDraftOption, setDraftStrength, setDraftParams, setDraftSteps, draftOption, draftStrength, draftParams, draftSteps }, onError: setLeafError, onSave: saveLeaf, onDelete: deleteLeaf, leafError, paintFace: props.paintFace, bboxFace: props.bboxFace, paintReferenceValue: typeof props.paintReference === 'string' ? String(values[props.paintReference] ?? '') : '', ...(props.loadMedia !== undefined ? { loadMedia: props.loadMedia } : {}),
+        ...(props.candidates !== undefined ? { candidates: props.candidates } : {}),
+        ...(props.candidatesFor !== undefined ? { candidatesFor: props.candidatesFor } : {}) })) : null);
 }
 /** THE LEAF BODY — split so the FIELD-kind editor gets its own
  *  square provider (the construction law: an image input constructs
@@ -674,7 +676,19 @@ function ModLeaf(props) {
     const leafStar = (f) => fieldRequired(f, onDraft.draftParams) ? h('span', { className: css.specRequired }, ' *') : null;
     // the FIELD-kind leaf's own provider: the mod's image inputs get
     // the three verbs (upload/drop/pick) exactly like a card's
-    const own = useSquareProvider((name, v) => { onDraft.setDraftParams({ ...onDraft.draftParams, [name]: v }); }, { candidates: [], ...(props.loadMedia !== undefined ? { loadMedia: props.loadMedia } : {}) });
+    const own = useSquareProvider((name, v) => { onDraft.setDraftParams({ ...onDraft.draftParams, [name]: v }); }, 
+    // THE REGION-MASK PICKER LAW (E2-11a): the leaf's From-flow
+    // picker serves the HOST's rows — the bench's other stages'
+    // artifacts, narrowed by the host's own edge law when it
+    // declares one. The structurally-empty list this provider once
+    // hardcoded shipped "nothing to pick yet" beside a run mask
+    // node — the picker's honest empty is an artifact-less bench,
+    // never a seam that forgot its rows.
+    {
+        ...(props.candidates !== undefined ? { candidates: props.candidates } : { candidates: [] }),
+        ...(props.candidatesFor !== undefined ? { candidatesFor: props.candidatesFor } : {}),
+        ...(props.loadMedia !== undefined ? { loadMedia: props.loadMedia } : {}),
+    });
     return h('div', { className: css.modLeaf }, leafError !== null ? h('p', { className: css.modLeafError }, leafError) : null, isHybridKind(k)
         ? h('div', { className: css.modLeafFields }, 
         // THE HYBRID LEAF (the retired subcard, 1:1): the catalog
