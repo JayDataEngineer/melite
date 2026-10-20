@@ -199,8 +199,15 @@ function statusText(data) {
     const operations = Array.isArray(value.operations)
         ? value.operations
         : manager !== null && Array.isArray(manager.operations) ? manager.operations : [];
-    for (const operation of operations.slice(0, 20))
+    // THE DISPLAY CAP NAMES ITSELF (audit V4, the resources cap's own
+    // law one list over): 20 of 25 operations rendered without a note
+    // titles the ledger complete.
+    const shownOperations = operations.slice(0, 20);
+    for (const operation of shownOperations)
         out.push(operationText(operation));
+    if (operations.length > shownOperations.length) {
+        out.push('operation: +' + String(operations.length - shownOperations.length) + ' more (display cap — the ledger is longer than shown)');
+    }
     if (typeof value.resources_detail === 'string')
         out.push('resource_status: ' + value.resources_detail);
     return out;

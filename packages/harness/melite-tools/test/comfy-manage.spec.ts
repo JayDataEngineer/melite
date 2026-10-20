@@ -540,6 +540,63 @@ describe('comfy_manage contract projection matrix', () => {
     assert.ok(!whole.includes('census: partial'), 'a settled roster never carries the mark')
   })
 
+  // AUDIT V4 (infra-census-f1-f2-verification-2026-10-20): the
+  // operations ledger sliced at 20 rows with no "+N more" — the
+  // resources cap's own honesty law, one list over.
+  test('AUDIT V4: an operations ledger past the display cap names its truncation', () => {
+    const operations = Array.from({ length: 23 }, (_, index) => ({
+      operation_id: 'op-' + String(index),
+      state: 'active',
+    }))
+    const value = text({
+      ok: true,
+      action: 'status',
+      detail: 'status',
+      data: { state: 'up', operations },
+    })
+    assert.ok(value.includes('operation op-19'), 'the cap still renders its 20 rows')
+    assert.ok(!value.includes('operation op-20'), 'rows past the cap stay cut — the naming is the honesty')
+    assert.ok(value.includes('operation: +3 more (display cap — the ledger is longer than shown)'),
+      '23 operations shown as 20 without the note is a silent lie')
+  })
+
+  // AUDIT V2 (infra-census-f1-f2-verification-2026-10-20): the
+  // status->face edge was composition-judged only — both consumer
+  // specs HAND-SET census_partial, so a one-sided rename in
+  // managePlane greened everything. This arm rides the REAL
+  // producer: dispatchManage derives census_partial from a live
+  // unknown row (nothing hand-sets the key), and the envelope's
+  // own data flows through the tool's real output.render — a
+  // rename at either seat reds it.
+  test('AUDIT V2: census_partial flows producer->face through the real seam — no hand-set key', async () => {
+    const ctx: ManageCtx = {
+      repoRoot: process.cwd(),
+      stateRoots: [],
+      comfyUnit: 'melite-comfyui.service',
+      autoProvision: false,
+      endpoint: () => ({ provision: 'managed', url: 'http://engine:8188' }),
+      models: {} as ManageCtx['models'],
+      timeout: () => () => {},
+      provisioning: {
+        reconcile: async () => [{
+          ref: { kind: 'model', owner: 'family', id: 'anima' },
+          state: 'unknown',
+          items: [],
+          detail: 'scan incomplete — this resource was not checked before the status budget closed',
+        }],
+        operationOf: () => undefined,
+      } as unknown as NonNullable<ManageCtx['provisioning']>,
+    } as unknown as ManageCtx
+    const [, envelope] = await dispatchManage({ action: 'status' }, ctx)
+    assert.equal(envelope.ok, true)
+    const data = (envelope as { data: { census_partial?: boolean; resources: unknown[] } }).data
+    assert.equal(data.census_partial, true,
+      'the REAL managePlane derived the mark from the live unknown row — nothing hand-set it')
+    const face = text({ ok: true, action: 'status', detail: 'status', data })
+    assert.ok(face.includes('census: partial'),
+      'the tool face renders the mark the producer derived — a rename at either seat reds this arm')
+  })
+
   test('THE FINDING-10 SPLIT: idle-engine status renders the historical rows by name, empty actives as none', () => {
     const value = text({
       ok: true,
