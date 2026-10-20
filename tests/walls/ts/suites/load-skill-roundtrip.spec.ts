@@ -98,7 +98,11 @@ interface SkillLine { id?: string }
 // 30 (2026-11-02): h3's keyframe-flow skill — migrated from the
 // retired h3-keyframe leaf (its craft survived its route; the
 // spellings ride the live h3 door).
-const EXPECTED_CARD_SKILLS = 30;
+// 30 -> 32 (2026-11-09, the h3-timeline board==offer cure): the
+// card boards its offered lane addresses, and each carried address
+// advertises its own skill line (both round-tripped 200 + body in
+// the arm above — the offer is real, so its skill line is real).
+const EXPECTED_CARD_SKILLS = 32;
 // 8 → 11 (2026-10-11): object-forge's skillRefs — image-gen +
 // img-to-mesh card lines and z-image's prompt-enhance ride the flow
 // bundle (card:quad-remesh resolves null — the card ships no agent

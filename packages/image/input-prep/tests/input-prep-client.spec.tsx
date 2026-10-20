@@ -351,11 +351,9 @@ describe('the studio (InputPrepStudio)', () => {
     expect(screen.getByTestId('prep-scale-model')).not.toBeNull()
   })
 
-  // THE CHROME LAW (operator 2026-11-09, verbatim: "Parameters to
-  // the fucking left, preview / edit window to the fucking right.
-  // THAT IS HOW EVERY FUCKING CARD WORKS." and "WHERE IS THE IMAGE
-  // UPLOAD SPOT? WHAT, AM I SUPPOSED TO DO MAGIC TO GET AN IMAGE TO
-  // APPEAR THERE?") — the studio forked the shell (preview first,
+  // THE CHROME LAW (operator 2026-11-09: params LEFT, preview RIGHT,
+  // upload SEATED — "THAT IS HOW EVERY CARD WORKS" and "WHERE IS THE
+  // IMAGE UPLOAD SPOT?") — the studio forked the shell (preview first,
   // rail second) and replaced the generic form without seating the
   // source square: two burns, one fork.
   describe('the chrome (the ANNY law: params LEFT, preview RIGHT, upload SEATED)', () => {

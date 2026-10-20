@@ -276,7 +276,7 @@ describe("the facts FILE is pinned against the registry (E-C2)", () => {
   // 29 -> 28 (2026-11-02): the h3-keyframe row left WITH its route
   // (the 2026-10-27 fold lesson — a stale facts row false-admits a
   // dead family through the selection-tolerance catch).
-  const FACTS_ROW_CENSUS = 29; // -1 (2026-10-13, the autoremesher excision); +1 (2026-11-07, the operator's drop — moss-image's card-owned row joins)
+  const FACTS_ROW_CENSUS = 30; // -1 (2026-10-13, the autoremesher excision); +1 (2026-11-07, the operator's drop — moss-image's card-owned row joins); +1 (2026-11-09, the h3-timeline board==offer cure — the card boards its offered h3-singularity lane address, so the compose plane's reverse arm demands its row)
 
   it("the frozen roster is exact, and the frozen-variant escape hatch census is named", async (): Promise<void> => {
     await loadCardDefs();

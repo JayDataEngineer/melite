@@ -547,8 +547,28 @@ export class ComfyUIService extends Service {
         const carrier = def.schemaCarrier ?? def.schema;
         let schema = typeof carrier.toJSON === 'function' ? carrier.toJSON() : null;
         const mods = {};
+        // THE ROUTE→ATOM FOLD (2026-11-09, the h3-timeline board==offer
+        // cure: boarding the lane addresses exposed it — the recipe wall
+        // judged h3-singularity's own stamps against a mod-less
+        // envelope — "stamps loras, the card declares no such param").
+        // Flavors register for the FAMILY ATOM; a serve at a VARIANT
+        // ROUTE address asks with its owning atom or the absorbed
+        // surface drops and every mod param reads dead (compose's
+        // cardsCompose.ts envelopeAtom arm, cardsVariant.ts, and
+        // flowsParamsOverlay.ts all ride this same fold — this serve
+        // was the lone unfold seat). Atoms pass through unchanged
+        // (owningAtom: routes.get(id)?.modelId ?? id). An unbooted
+        // models table (the service-plane unit seam) skips the fold —
+        // the gate reads the raw family, exactly as before.
+        let envelopeAtom = family;
+        try {
+            envelopeAtom = modelsService().owningAtom(family);
+        }
+        catch {
+            envelopeAtom = family;
+        }
         for (const absorbed of this.cardModFields(cardId)) {
-            if (!absorbed.families.includes(family))
+            if (!absorbed.families.includes(envelopeAtom))
                 continue;
             const c = absorbed.fields;
             mods[absorbed.pack] = typeof c.toJSON === 'function' ? c.toJSON() : null;

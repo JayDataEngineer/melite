@@ -1628,7 +1628,11 @@ describe("THE TWO-HOMES BOUNDS-SYNC WALL (card schema == action ParamSpec, every
     // 661 -> 665 (2026-10-19, the stated bake): the h3 family's
     // refmod group joins the shared names — mode (enum), pool and
     // identity (number, bounds), save (boolean): four agreeing pairs.
-    assert.equal(pairs, 665, "the shared-name pair census changed — update this pin deliberately");
+    // 665 -> 773 (2026-11-09, the h3-timeline board==offer cure): the
+    // card boards its two offered lane addresses, and the wall judges
+    // the h3 schema's shared names once per carried address (+108 —
+    // the offenders list below stays empty, every pair agrees).
+    assert.equal(pairs, 773, "the shared-name pair census changed — update this pin deliberately");
     assert.deepEqual(offenders, [], `two-homes drift (card schema vs action ParamSpec):\n${offenders.join("\n")}`);
   });
 });

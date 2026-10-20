@@ -156,7 +156,13 @@ describe("the recipe schema-master (Rule A/B/C — semantic validation over the 
     // qwen3-tts-base] are card-carried Recipe declarers: +3).
     // 20 -> 21 (2026-11-07, the operator's drop): moss-image joins
     // card-carried with the quick-iter stamp.
-    assert.equal(checked, 21, `the law reaches the table, exactly (checked ${String(checked)})`);
+    // 21 -> 23 (2026-11-09, the h3-timeline board==offer cure): the
+    // card boards its offered lane addresses (h3-timeline,
+    // h3-singularity — the tts shape), so the two lane addresses
+    // join card-carried and judge their own Recipe rows (the
+    // ROUTE→ATOM fold serves their mod plane — the loras stamp
+    // lives again).
+    assert.equal(checked, 23, `the law reaches the table, exactly (checked ${String(checked)})`);
   });
 
   it("LAW K (k cure, 2026-11-08): every card-carrying Recipe family DECLARES its group default, and the default names an existing Recipe row (the initial-recipe law — DECL-declared, never row-order-emergent; the birth stamp reads this declaration)", async (): Promise<void> => {
@@ -183,8 +189,9 @@ describe("the recipe schema-master (Rule A/B/C — semantic validation over the 
       assert.ok(rowIds.includes(declared as string),
         `${id}: the declared Recipe default '${String(declared)}' names no Recipe row (rows: ${rowIds.join(", ")}) — a declaration to nowhere is a silent blank wearing a face`);
     }
-    // the same 21-family census as LAW A
-    assert.equal(checked, 21, `the k law reaches the same table (checked ${String(checked)})`);
+    // the same 23-family census as LAW A (21 -> 23, 2026-11-09,
+    // the h3-timeline board==offer cure — see LAW A)
+    assert.equal(checked, 23, `the k law reaches the same table (checked ${String(checked)})`);
   });
 
   it("DEBT RETIRED: the 15-family census resolutions hold (stamps stamp, scoped stay scoped)", async (): Promise<void> => {

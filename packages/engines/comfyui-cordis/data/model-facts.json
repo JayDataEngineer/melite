@@ -336,6 +336,9 @@
     "h3-timeline": {
       "card": "h3-timeline"
     },
+    "h3-singularity": {
+      "card": "h3-timeline"
+    },
     "input": {
       "card": "input-prep"
     },
