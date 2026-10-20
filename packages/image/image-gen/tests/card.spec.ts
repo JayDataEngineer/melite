@@ -122,6 +122,111 @@ describe("the image-gen compose gate", () => {
     }
   });
 
+  it("THE GEN DETAILER BINDING — DETECTOR SOURCE (operator 2026-11-07, the mod SERVES): a stated mask bag with mask_mode crop_stitch + detector composes the Impact detector chain bound into the sampler", () => {
+    // the burn lane (krea-2): the detector proposes the region —
+    // provider → SegmDetectorSEGS → DetailerForEach → SaveImage —
+    // every link resolving to a composed node, the detailer riding
+    // the lane's own model/clip/vae/conditioning over the lane's own
+    // decoded frame. Seg detection on the stated region, detailer
+    // pass, stitch back — never a refusal, never a silent plain t2i.
+    const model = facts.models["krea-2"]!;
+    const g = new GraphBuilder();
+    def.compose({ prompt: "a cat", mask: [{}], mask_mode: "crop_stitch", mask_detector: "person" }, model, g, "r_detbind");
+    const graph = g.toJSON() as Record<string, { class_type: string; inputs: Record<string, unknown> }>;
+    const entries = Object.entries(graph);
+    const ofClass = (ct: string): Array<[string, { class_type: string; inputs: Record<string, unknown> }]> =>
+      entries.filter(([, n]) => n.class_type === ct);
+    // THE SOURCE: the person word rides the census-pinned segm
+    // weights (the boot fixture's own UltralyticsDetectorProvider
+    // model_name enum — no invented graph path).
+    const prov = ofClass("UltralyticsDetectorProvider");
+    assert.equal(prov.length, 1, "one detector provider mints");
+    assert.equal(prov[0]![1].inputs.model_name, "segm/person_yolov8m-seg.pt",
+      "the person detector rides the segm weights");
+    // THE SEGS: person proposes silhouette segs on the provider's
+    // SEGM slot (output 1 — the BBOX slot 0 is the face/hand shape),
+    // over the lane's own decoded frame.
+    const segm = ofClass("SegmDetectorSEGS");
+    assert.equal(segm.length, 1, "one segm detector mints");
+    assert.deepEqual(segm[0]![1].inputs.segm_detector, [prov[0]![0], 1],
+      "SegmDetectorSEGS listens on the provider's SEGM output");
+    assert.equal(ofClass("BboxDetectorSEGS").length, 0, "person never rides the bbox shape");
+    assert.equal(ofClass("LoadImageMask").length, 0, "no painted mask stated — no loader mints");
+    const decoded = ofClass("VAEDecode");
+    assert.equal(decoded.length, 1, "the lane decodes its sampled frame once");
+    assert.deepEqual(segm[0]![1].inputs.image, [decoded[0]![0], 0],
+      "detection runs on the lane's own decoded t2i frame");
+    // THE BINDING: the detailer reworks the detected segs with the
+    // lane's own model/clip/vae/conditioning — every handle a
+    // composed node, never dangling — and its output feeds the save
+    // under the gen prefix (the stitch back onto the run media).
+    const det = ofClass("DetailerForEach");
+    assert.equal(det.length, 1, "one detailer mints");
+    assert.deepEqual(det[0]![1].inputs.segs, [segm[0]![0], 0],
+      "the detailer reworks the detected segs");
+    assert.deepEqual(det[0]![1].inputs.image, [decoded[0]![0], 0],
+      "the detailer crops the lane's own decoded frame");
+    for (const k of ["model", "clip", "vae", "positive", "negative"]) {
+      const link = det[0]![1].inputs[k] as [string, number];
+      assert.ok(Array.isArray(link) && typeof link[0] === "string" && graph[link[0]] !== undefined,
+        `DetailerForEach.${k} binds a composed node, never dangles`);
+    }
+    const saved = ofClass("SaveImage");
+    assert.equal(saved.length, 1, "one save mints");
+    assert.deepEqual(saved[0]![1].inputs.images, [det[0]![0], 0],
+      "the detailer's output feeds the save");
+    assert.ok(String(saved[0]![1].inputs.filename_prefix).startsWith("r_detbind/gen"),
+      "the detailed image saves under the gen prefix");
+  });
+
+  it("THE GEN DETAILER BINDING — PAINTED SOURCE (operator 2026-11-07, the mod SERVES): a stated mask bag with mask_mode crop_stitch + painted mask composes the mask chain bound into the sampler", () => {
+    // the declared Impact slice's second seat (qwen-img-21): the
+    // painted mask converts — loader → grow → MaskToSEGS — and the
+    // SAME detailer tail reworks it over the lane's own conditioning.
+    const model = facts.models["qwen-img-21"]!;
+    const g = new GraphBuilder();
+    def.compose({ prompt: "a cat", mask: [{ input_mask: "/v1/assets/region.png" }], mask_mode: "crop_stitch" }, model, g, "r_paintbind");
+    const graph = g.toJSON() as Record<string, { class_type: string; inputs: Record<string, unknown> }>;
+    const entries = Object.entries(graph);
+    const ofClass = (ct: string): Array<[string, { class_type: string; inputs: Record<string, unknown> }]> =>
+      entries.filter(([, n]) => n.class_type === ct);
+    // THE SOURCE: the painted mask rides the disk handoff (the
+    // spell arm's merge twin — a path keeps LoadImageMask), grown
+    // by the ONE px expansion (grow 8 + context pad 64), converted
+    // combined. No detector stated — no provider mints.
+    const loader = ofClass("LoadImageMask");
+    assert.equal(loader.length, 1, "one mask loader mints");
+    assert.equal(loader[0]![1].inputs.image, "/v1/assets/region.png", "the loader reads the stated mask");
+    assert.equal(loader[0]![1].inputs.channel, "alpha", "the loader reads the alpha channel");
+    assert.equal(ofClass("UltralyticsDetectorProvider").length, 0, "no detector stated — no provider mints");
+    assert.equal(ofClass("SegmDetectorSEGS").length + ofClass("BboxDetectorSEGS").length, 0,
+      "no detector stated — no detector mints");
+    const grown = ofClass("GrowMask");
+    assert.equal(grown.length, 1, "one grow mints");
+    assert.deepEqual(grown[0]![1].inputs.mask, [loader[0]![0], 0], "grow rides the loaded mask");
+    assert.equal(grown[0]![1].inputs.expand, 72, "grow + context pad compose as ONE px expansion");
+    const segs = ofClass("MaskToSEGS");
+    assert.equal(segs.length, 1, "one MaskToSEGS mints");
+    assert.deepEqual(segs[0]![1].inputs.mask, [grown[0]![0], 0], "MaskToSEGS converts the grown mask");
+    // THE BINDING: same twin as the detector source — segs + the
+    // lane's own decoded frame + own conditioning in, save out under
+    // the gen prefix.
+    const decoded = ofClass("VAEDecode");
+    assert.equal(decoded.length, 1, "the lane decodes its sampled frame once");
+    const det = ofClass("DetailerForEach");
+    assert.equal(det.length, 1, "one detailer mints");
+    assert.deepEqual(det[0]![1].inputs.segs, [segs[0]![0], 0],
+      "the detailer reworks the converted segs");
+    assert.deepEqual(det[0]![1].inputs.image, [decoded[0]![0], 0],
+      "the detailer crops the lane's own decoded frame");
+    const saved = ofClass("SaveImage");
+    assert.equal(saved.length, 1, "one save mints");
+    assert.deepEqual(saved[0]![1].inputs.images, [det[0]![0], 0],
+      "the detailer's output feeds the save");
+    assert.ok(String(saved[0]![1].inputs.filename_prefix).startsWith("r_paintbind/gen"),
+      "the detailed image saves under the gen prefix");
+  });
+
   it("THE REGION FIRING GATE (E2-11, kept for unserved lanes): a stated region where no lane builds the arm refuses LOUD in the teaching voice — never a silent plain t2i", () => {
     const model = facts.models["anima"]!;
     assert.ok(model, "the facts serve anima (an unserved lane)");

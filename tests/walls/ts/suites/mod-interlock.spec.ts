@@ -677,3 +677,44 @@ test("THE MASK ORDER (operator 2026-11-07): every img-gen family boards mask; st
     "a stated input_mask on image-gen refuses LOUD at the firing gate (the fate this boarding carries)",
   );
 });
+
+test("THE GEN DETAILER SERVE — DETECTOR SOURCE (operator 2026-11-07, the mod SERVES): a mask bag with mask_mode crop_stitch + detector composes the Impact chain bound into the sampler on the served lane", async () => {
+  // the interlock's serve/refuse arm for the detector source: the
+  // burn lane (krea-2) proposes the region through the Impact
+  // detector chain — UltralyticsDetectorProvider (the census-pinned
+  // segm weights) → SegmDetectorSEGS on the SEGM slot → the SAME
+  // DetailerForEach tail over the lane's own decoded frame, saved
+  // under the gen prefix. A cut compose (the firing gate refusing
+  // again) reds this arm verbatim — never a silent plain run.
+  const { GraphBuilder } = await import("../../../../packages/engines/comfyui-cordis/src/index.ts");
+  const gen = svc.getCardDef("image-gen") as unknown as {
+    compose: (p: unknown, m: unknown, g: unknown, r: string) => unknown;
+  };
+  const g = new GraphBuilder({});
+  gen.compose(
+    { prompt: "a cat", mask: [{}], mask_mode: "crop_stitch", mask_detector: "person" },
+    getModel("krea-2") as never, g, "wall-mask-detector",
+  );
+  const graph = g.toJSON() as Record<string, { class_type?: string; inputs?: Record<string, unknown> }>;
+  const entries = Object.entries(graph);
+  const ofClass = (ct: string): Array<[string, { class_type?: string; inputs?: Record<string, unknown> }]> =>
+    entries.filter(([, n]) => n.class_type === ct);
+  const prov = ofClass("UltralyticsDetectorProvider");
+  assert.equal(prov.length, 1, "the detector-stated region mints the provider");
+  assert.equal(prov[0]![1].inputs?.model_name, "segm/person_yolov8m-seg.pt",
+    "the person word rides the census-pinned segm weights");
+  const segm = ofClass("SegmDetectorSEGS");
+  assert.equal(segm.length, 1, "the provider feeds SegmDetectorSEGS");
+  assert.deepEqual(segm[0]![1].inputs?.segm_detector, [prov[0]![0], 1],
+    "the detector listens on the provider's SEGM output");
+  const det = ofClass("DetailerForEach");
+  assert.equal(det.length, 1, "the detected segs ride the detailer tail");
+  assert.deepEqual(det[0]![1].inputs?.segs, [segm[0]![0], 0],
+    "the detailer reworks the detected segs (bound into the sampler)");
+  const saved = ofClass("SaveImage");
+  assert.equal(saved.length, 1, "one save mints");
+  assert.deepEqual(saved[0]![1].inputs?.images, [det[0]![0], 0],
+    "the detailer's output feeds the save (stitch back)");
+  assert.ok(String(saved[0]![1].inputs?.filename_prefix).startsWith("wall-mask-detector/gen"),
+    "the detailed image saves under the gen prefix");
+});
