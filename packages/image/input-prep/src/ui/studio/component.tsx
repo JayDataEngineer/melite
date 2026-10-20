@@ -64,8 +64,6 @@ export function InputPrepStudio(props: StageViewOwnerProps) {
   const { row, bindRun } = props
   const params = typeof row['params'] === 'object' && row['params'] !== null
     ? row['params'] as Record<string, unknown> : {}
-  const source = typeof params['source'] === 'string' ? params['source'] : ''
-  const mediaType = params['media_type'] === 'audio' ? 'audio' : 'image'
 
   // THE USER LAYER: the frozen bench row verbatim (presence IS the
   // override mark; defaults derive per render — the settings law).
@@ -76,6 +74,14 @@ export function InputPrepStudio(props: StageViewOwnerProps) {
   useEffect(() => { setUser(params) }, [params])
   const userRef = useRef(user)
   userRef.current = user
+
+  // THE DISPLAY READS THE USER (the 2026-11-09 input burn: source
+  // and media_type read the FROZEN row while edit() wrote the user —
+  // a picked source never populated the preview until a patch
+  // landed; the square, the notes, and the pane all follow the
+  // optimistic layer, the run patch carries it to the row).
+  const source = typeof user['source'] === 'string' ? user['source'] : ''
+  const mediaType = user['media_type'] === 'audio' ? 'audio' : 'image'
 
   const [natural, setNatural] = useState<NaturalSize | null>(null)
   const previewable = source !== '' && isPreviewable(source) && mediaType === 'image'

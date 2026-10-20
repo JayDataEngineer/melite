@@ -22,6 +22,7 @@ import { createElement as h } from 'react'
 import { InputPrepStudio, cropOf, isPreviewable } from '../src/ui/studio/component.tsx'
 import { CropPreview, cropIsHonorable } from '../src/ui/studio/CropPreview.tsx'
 import { apply, inject, name } from '../src/client/index.ts'
+import { ASSET_DRAG_MIME } from '@melite/card-base/client'
 import { SCALE_METHODS, SCALE_MODEL_OPTIONS, UPSCALE_MODELS, MIN_DIM } from '@melite/models-input'
 
 const IMG = 'data:image/png;base64,iVBORw0KGgo='
@@ -190,6 +191,31 @@ describe('the studio (InputPrepStudio)', () => {
     expect(img?.getAttribute('src')).toBe(IMG)
     expect(screen.getByTestId('prep-crop-box').textContent).toContain('100×150')
     expect(screen.getByTestId('prep-natural').textContent).toContain('crop 100×150 at 10,20')
+  })
+
+  it('THE PICK POPULATES THE PREVIEW (the operator burn 2026-11-09: dropping a source seats the right pane with NO row change, NO run press)', () => {
+    render(h(InputPrepStudio, owner({ params: {} })))
+    // the empty face first — the seat is unfilled, the pane says so
+    expect(screen.getByTestId('prep-empty-note')).not.toBeNull()
+    expect(screen.queryByTestId('prep-crop-preview')).toBeNull()
+    // the asset drop — the media bar's own door (ASSET_DRAG_MIME),
+    // riding the real square → provider → studio edit seam
+    const square = document.querySelector('[data-slot-square]') as HTMLElement
+    expect(square).not.toBeNull()
+    act(() => {
+      fireEvent.drop(square, {
+        dataTransfer: {
+          getData: (t: string) => t === ASSET_DRAG_MIME ? JSON.stringify({ url: IMG }) : '',
+          files: [],
+          types: [ASSET_DRAG_MIME],
+        },
+      })
+    })
+    // the picked source seats the preview pane AT ONCE — the empty
+    // note is gone, the <img> renders the picked media
+    expect(screen.queryByTestId('prep-empty-note')).toBeNull()
+    const img = screen.getByTestId('prep-crop-preview').querySelector('img')
+    expect(img?.getAttribute('src')).toBe(IMG)
   })
 
   it('THE DRAG COMMITS THE FOUR FLAT PARAMS: user state carries them (the run patch proves it)', () => {

@@ -459,14 +459,14 @@ window.__ModuleLoader__.load({
 		function InputPrepStudio(props) {
 			const { row, bindRun } = props;
 			const params = typeof row["params"] === "object" && row["params"] !== null ? row["params"] : {};
-			const source = typeof params["source"] === "string" ? params["source"] : "";
-			const mediaType = params["media_type"] === "audio" ? "audio" : "image";
 			const [user, setUser] = (0, react.useState)(params);
 			(0, react.useEffect)(() => {
 				setUser(params);
 			}, [params]);
 			const userRef = (0, react.useRef)(user);
 			userRef.current = user;
+			const source = typeof user["source"] === "string" ? user["source"] : "";
+			const mediaType = user["media_type"] === "audio" ? "audio" : "image";
 			const [natural, setNatural] = (0, react.useState)(null);
 			const previewable = source !== "" && isPreviewable(source) && mediaType === "image";
 			const crop = cropOf(user);
