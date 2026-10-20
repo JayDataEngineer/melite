@@ -51,7 +51,7 @@ function progressPercent(bytes: number, total: number): number {
  *  bounds) so the face keeps its place. The meter's aria bounds
  *  stay byte-exact (the machine truth); only the VISIBLE line is
  *  human. */
-function trackerFaces(acquire: WeightAcquireState | null, flow: { rateBps: number, etaSec: number | null } | null): Array<ReturnType<typeof h>> {
+function trackerFaces(acquire: WeightAcquireState | null, flow: { rateBps: number, etaSec: number | null } | null, hashing = false): Array<ReturnType<typeof h>> {
   if (acquire === null) return []
   const undeclared = !(acquire.total > 0)
   const pct = undeclared ? 0 : progressPercent(acquire.bytes, acquire.total)
@@ -79,8 +79,11 @@ function trackerFaces(acquire: WeightAcquireState | null, flow: { rateBps: numbe
         },
       }),
     ),
-    ...(flow !== null ? [h('p', { 'data-testid': 'weight-rate', className: css.rescueNote },
+    ...(flow !== null && !hashing ? [h('p', { 'data-testid': 'weight-rate', className: css.rescueNote },
       chromeCopy.weightRateLive({ status: formatRateLine(flow.rateBps, flow.etaSec) }),
+    )] : []),
+    ...(hashing ? [h('p', { 'data-testid': 'weight-phase', className: css.rescueNote },
+      chromeCopy.weightVerifyLive,
     )] : []),
   ]
 }
@@ -417,6 +420,13 @@ export function RunRescue({ error, stages, onRun, rescue: structured }: {
   }
 
   const downloading = acquire !== null && !isAcquireSettled(acquire)
+  // THE VERIFY-PHASE VOICE (audit download-stack-audit-2026-10-20
+  // F10, popup rows): a LIVE flight whose poll carries the hash
+  // phase (verify, or a present-file recheck) voices the phase
+  // INSTEAD of rate/ETA — the phase is the only movement a frozen
+  // byte count has. A settled row never carries it (the phase
+  // belongs to the flight, not the landing).
+  const hashing = downloading && (acquire?.phase === 'verify' || acquire?.phase === 'recheck')
 
   // A dismissed popup falls back to the inline offer (the run error
   // still carries the miss — the popup is re-openable, never lost).
@@ -492,7 +502,15 @@ export function RunRescue({ error, stages, onRun, rescue: structured }: {
   return h(Modal, {
     open: true,
     onClose: dismissPopup,
-    title: stuck !== null || failed !== null ? chromeCopy.weightStuck : chromeCopy.missingWeight,
+    // THE TERMINAL TITLES (audit download-stack-audit-2026-10-20
+    // F10, the stuck column): each terminal state wears its own
+    // word — the ceiling-expired wedge keeps "Weight stuck", the
+    // engine's failed/blocked verdict gets its own title (the
+    // cause rides the note beside it), and the live/missing face
+    // keeps "Missing weight". No title umbrellas another state.
+    title: stuck !== null
+      ? chromeCopy.weightStuck
+      : failed !== null ? chromeCopy.weightFailed : chromeCopy.missingWeight,
     closeLabel: chromeCopy.closeWeightPopup,
   },
     h('div', { 'data-testid': 'weight-popup', className: css.rescue },
@@ -510,8 +528,8 @@ export function RunRescue({ error, stages, onRun, rescue: structured }: {
         title: target === '' ? chromeCopy.noProvisionTarget : chromeCopy.downloadViaManage,
         onClick: download,
       }, busy ? (acquire === null ? chromeCopy.startingWord : chromeCopy.downloadingWord) : chromeCopy.downloadWord),
-      ...trackerFaces(acquire, downloading ? flow : null),
-      stuck === null && downloading
+      ...trackerFaces(acquire, downloading ? flow : null, hashing),
+      stuck === null && downloading && !hashing
         ? (flow !== null ? null : h('p', { className: css.rescueNote }, chromeCopy.downloadingLive))
         : null,
       stuck !== null ? exitsRow(stuck) : (failed !== null ? exitsRow(failed) : null),

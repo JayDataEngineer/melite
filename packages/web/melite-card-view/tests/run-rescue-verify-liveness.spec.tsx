@@ -120,9 +120,11 @@ test('ARM 3 — STUCK HEALS TO FAILED (F6c): the engine lands failed carrying it
     { ok: true, detail: 'failed', data: { operation_id: 'op-doom', state: 'failed', bytes: HELD_AT, total: TOTAL, detail: CAUSE } })
   await act(async () => { await vi.advanceTimersByTimeAsync(10_000) })
   await vi.waitFor(() => { expect(screen.getByText(CAUSE)).toBeTruthy() })
-  // the failed face keeps the modal title ("Weight stuck" umbrellas
-  // stuck+failed by the face's own law) — what must retire is the
-  // STUCK BODY: the ceiling-guess note yields to the engine's cause
+  // the failed face wears its OWN modal title since the terminal-
+  // titles cure (audit F10 stuck column — the one "Weight stuck"
+  // umbrella retired; weight-face-titles.spec.tsx pins the titles) —
+  // what this arm pins is the STUCK BODY: the ceiling-guess note
+  // yields to the engine's cause
   expect(screen.queryByText(/no longer progressing/i),
     "the engine judged FAILED but the stuck face hides the verdict — the operator's cause never arrives (audit F6)",
   ).toBeNull()

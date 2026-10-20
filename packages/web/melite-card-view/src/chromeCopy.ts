@@ -275,6 +275,13 @@ export const chromeCopy = {
    *  bytes across polls or an expired poll ceiling) — never the
    *  ready face (the purge P5 rescue honesty, ERRORS k2/m). */
   weightStuck: 'Weight stuck',
+  /** Weight popup title when the ENGINE judged the acquisition
+   *  failed/blocked — its own verdict word, never the stuck
+   *  umbrella (audit download-stack-audit-2026-10-20 F10, the
+   *  stuck column: one title for every terminal state read a
+   *  named failure as a wedge). The cause rides the note; the
+   *  retry door serves beside it. */
+  weightFailed: 'Weight failed',
   /** Weight stuck face's note: the engine's last truth leads
    *  (state + the human progress line — "4.8/6.8 GB (71%)", never
    *  raw byte walls), and the two honest exits are named. An empty
@@ -308,6 +315,11 @@ export const chromeCopy = {
   /** The stuck face's run refusal — a run press on an incomplete
    *  weight is refused loudly, never fired silently (the purge P5). */
   stuckRunRefusal: 'The weight is not complete — the run stays refused until the fetch lands (retry) or the stuck operation is deleted.',
+  /** Weight tracker line while the poll carries a LIVE hash phase
+   *  (verify/recheck): the phase voice replaces rate/ETA — no
+   *  average-since-start rate over a frozen bar (audit
+   *  download-stack-audit-2026-10-20 F10, the popup rows). */
+  weightVerifyLive: 'Verifying… the estate is hashing the landed bytes — the bar holds while the hash runs.',
   /** Weight tracker line when the engine declared no total (a DECL
    *  row without size seeds 0): the voice says so — no dead
    *  0-of-0 meter dressed as 0% (the purge P5's total=0 face). */

@@ -4,6 +4,7 @@
 import { checkModelPresent, getModel, loadEndpointConfig } from "@melite/comfyui-cordis";
 import { LIVE_ACQUIRE_STATES, provisioningSeat } from "@melite/estate-provisioning";
 import { engineOutputDir, engineRootOf, resolveRuntimeHome, runtimeEnvView, sentinelHit } from "./runtimeProvision.js";
+import { hashPhaseWordOf, laneVoice } from "./cardsLanesCopy.js";
 import { CardArmError } from "./cardsArmError.js";
 // ── THE LANE PRESENCE GATE (2026-09-13, the one-pattern law) ───────
 // The operator's alarm: "If Img Gen works and Img Edit doesn't,
@@ -255,11 +256,16 @@ function acquireInFlight(fam) {
 }
 /** The live fraction's one voice: a percent of the DECL's own total,
  *  or the undeclared-total word when no row declared a size (a
- *  fraction of nothing is a lie). */
+ *  fraction of nothing is a lie). THE HASH VOICE (audit
+ *  download-stack-audit-2026-10-20 F10, the run-gate row): mid-verify
+ *  the byte count sits frozen while the hash runs, so the voice joins
+ *  the phase word (the cardsLanesCopy table — never a literal here)
+ *  when the ledger row says verifying. */
 function inFlightFraction(progress) {
-    if (progress.total <= 0)
-        return "total undeclared";
-    return String(Math.floor((progress.bytes * 100) / progress.total)) + "%";
+    const fraction = progress.total <= 0
+        ? "total undeclared"
+        : String(Math.floor((progress.bytes * 100) / progress.total)) + "%";
+    return laneVoice.inFlightFraction({ fraction, phaseWord: hashPhaseWordOf(progress) });
 }
 /** THE STATED VARIANT'S ROW (the same derivation the compose
  *  stamps, over the DECL's own rows — the facts fold drops
