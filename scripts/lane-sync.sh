@@ -24,7 +24,12 @@ cd "$REPO"
 
 PROFILE="${LANE_PROFILE:-melite-test}"
 DSH_HOME="${LANE_DSH_HOME:-/home/user/.dsh-dev}"
-ROUTE="${LANE_ROUTE:-opencode-go/muse-spark-1.3-contributor}"
+# The seat is the PRIMARY brain (zai/glm-5.3-flash, same as :3080's
+# MELITE_AGENT_ROUTE). It sat on the muse FALLBACK until 2026-10-20 —
+# every lane-sync re-pin stuck the lane on muse and the rate-limit
+# "switch back" never reached it (owner report 2026-10-20). LANE_ROUTE
+# still overrides for a deliberate muse seat.
+ROUTE="${LANE_ROUTE:-zai/glm-5.3-flash}"
 WEB_PROFILE="${LANE_WEB_PROFILE:-$HOME/.dsh/profiles/web/cordis.patch.yml}"
 ROWS="dev_docs/deployment/studio-lane-rows.yml"
 BOOT_LOG="$DSH_HOME/$PROFILE-3088.log"
