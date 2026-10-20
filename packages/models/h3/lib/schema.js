@@ -640,6 +640,11 @@ export function schema(v) {
     // __iteration/__overlap precedent) — faces project the carrier's
     // declared knobs only, so no served surface changes.
     out.__steps_pinned = explicit.has('steps');
+    // THE SHIFT-PIN STAMP (SOTA limb 2, the __steps_pinned heir):
+    // whether the caller pinned shift_video is a fact only this walk
+    // owns — the married shift (the distill row's own grid) applies
+    // only to the UNSTATED doc; an explicit shift is the user's word.
+    out.__shift_pinned = explicit.has('shift_video');
     return out;
 }
 // THE TOOL-FACE EXPORTS: the carrier (paramSchema — the same object

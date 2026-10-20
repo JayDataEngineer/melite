@@ -23,6 +23,39 @@ const loraStackDefault = () => {
     }
     return JSON.stringify([{ on: true, lora: row.filename, str: row.default_strength, v: 1, a: 1, t: 1 }]);
 };
+// THE MARRIED-KNOB CONSULT (SOTA limb 2, 2026-10-20 — the steps
+// marriage's own math, one spelling for both knobs): while a
+// counting bag row rides, the married knob (steps, shift_video) is
+// the ROW'S — stated on the entry first, else the catalog row's
+// declared default, Math.max across the bag ("8 steps on a 4-step
+// distill is fine, 4 on an 8-step is undercooked"; the shift grid
+// follows the same highest-count-wins law — the 8-step member of a
+// stacked pair owns the grid). The estate's resolver stamps the
+// row's defaults onto resolved wire rows; hand-authored and
+// agent-shaped bags fall back to the catalog row BY FILENAME (the
+// wire's `name` — fictional filenames marry nothing, the
+// door-spec's walk-default law). PURE, no I/O.
+const marriedBagKnob = (p, knob) => {
+    if (!Array.isArray(p.loras))
+        return null;
+    const counts = [];
+    for (const row of p.loras) {
+        if (row === null || typeof row !== 'object')
+            continue;
+        const stated = row[knob];
+        if (typeof stated === 'number' && Number.isFinite(stated)) {
+            counts.push(stated);
+            continue;
+        }
+        const name = row['name'];
+        const fromCatalog = typeof name === 'string'
+            ? H3_LORA_ROWS.find((r) => r.filename === name)?.[knob]
+            : undefined;
+        if (typeof fromCatalog === 'number' && Number.isFinite(fromCatalog))
+            counts.push(fromCatalog);
+    }
+    return counts.length > 0 ? Math.max(...counts) : null;
+};
 // THE REFINE-SEAT ASSEMBLY (purge P2 h3 hop-5, 2026-11-08 — the
 // refine seats were served-but-dead: the schema admits refine_lora /
 // _strength / _steps and the film params row carries them, but
@@ -235,10 +268,11 @@ function renderH3Film(p, g, facts, model) {
     // default; a user-stacked pair runs at the HIGHER count — 8 steps
     // on a 4-step distill is fine, 4 on an 8-step is undercooked).
     const loraRows = Array.isArray(p.loras) ? p.loras : [];
-    const loraStepsList = loraRows
-        .map((r) => r.steps)
-        .filter((v) => typeof v === 'number' && Number.isFinite(v));
-    const loraStepsApplied = loraStepsList.length > 0 ? Math.max(...loraStepsList) : null;
+    // THE MARRIED CONSULT (one spelling — marriedBagKnob): the
+    // marriage consult goes through the shared helper so the catalog
+    // fallback (a row's unstated count read from the family table by
+    // filename) is the same math on every face.
+    const loraStepsApplied = marriedBagKnob(p, 'steps');
     calls.forEach((call, i) => {
         const k = i + 1;
         const guide = str(call.image ?? call.ref_image ?? call.image_name);
@@ -844,7 +878,16 @@ function renderH3Window(p, g, facts, model) {
     // NO SILENT RESOLUTION LAW: the walked shift_video IS the value
     // (declared default 8; the family literals retired with the
     // nulling that fed them — 8.0 and 8 serialize identically anyway)
-    const shiftVideo = p.shift_video;
+    // THE MARRIED SHIFT (SOTA limb 2, the steps marriage's heir):
+    // while a distill rides, the row's own sigma-shift grid wins over
+    // the no-distill default (the 8-step turbos run 12, the 4-step
+    // 6, native rows declare none and keep 8) — UNLESS the doc stated
+    // its own shift (the __shift_pinned stamp: an explicit value is
+    // the user's word, the marriage applies only to the unstated).
+    const marriedShift = marriedBagKnob(p, 'shift_video');
+    const shiftVideo = p.__shift_pinned === true || marriedShift === null
+        ? p.shift_video
+        : marriedShift;
     const clip = g.node('CLIPLoader', {
         clip_name: facts.clip, type: 'minimax',
         ...(isT4r ? { device: 'default' } : {}), // t4 templates OMIT it
@@ -2182,17 +2225,19 @@ export const film = {
         // never overwrites it.
         if (Array.isArray(p.loras)) {
             const rows = p.loras;
-            const applied = rows.map((r) => r.steps).filter((v) => typeof v === 'number' && Number.isFinite(v));
+            const married = marriedBagKnob(p, 'steps');
             // THE MARRIAGE'S ROW FACE: the sole call's knobs — and, since
             // the k-marked cure (journey audit 72b1d88a), the FROZEN
             // window's own row knobs too. One consult, both shapes: the
             // row the window renders is the row whose steps are the
-            // user's word.
+            // user's word. The consult rides the shared helper — the
+            // catalog fallback (a row's unstated count by filename) is
+            // the same math here as on the film loop.
             const singleKnobs = stanzaRow !== null
                 ? (stanzaRow.knobs ?? {})
                 : {};
-            if (applied.length > 0 && p.__steps_pinned !== true && singleKnobs.steps === undefined) {
-                p.steps = Math.max(...applied);
+            if (married !== null && p.__steps_pinned !== true && singleKnobs.steps === undefined) {
+                p.steps = married;
             }
         }
         // THE POST-MARRIAGE RE-WALK (the single-window face's arm of the

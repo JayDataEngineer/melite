@@ -1,6 +1,6 @@
-import { GraphBuilder, OutputHandle } from './graph.js';
-import type { NodeRef, PromptGraph, StripTable } from './graph.js';
-import { type ModelFacts } from './facts.js';
+import { GraphBuilder, OutputHandle } from './graph.ts';
+import type { NodeRef, PromptGraph, StripTable } from './graph.ts';
+import { type ModelFacts } from './facts.ts';
 /** The lane's solver, honouring an EXPLICIT choice (a cleared select
  *  is not a choice: the lane's own default answers, exactly as the
  *  DECL cascade answers elsewhere). Exported for the family actions

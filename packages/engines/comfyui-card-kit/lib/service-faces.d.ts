@@ -1,8 +1,8 @@
-import type { CardDefinition, ComposeEstate } from './card-definition.js';
-import type { PackContract } from './pack-fields.js';
-import type { FactsFile } from './facts.js';
-import type { PromptGraph } from './graph.js';
-import type { ModelDecl } from './model-contract.js';
+import type { CardDefinition, ComposeEstate } from './card-definition.ts';
+import type { PackContract } from './pack-fields.ts';
+import type { FactsFile } from './facts.ts';
+import type { PromptGraph } from './graph.ts';
+import type { ModelDecl } from './model-contract.ts';
 /** A mod's field contract: a Schemastery OBJECT schema (the
  *  dual-declaration pattern — the same z.object({...}) style the
  *  cards declare; UI meta rides .extra('extra', bag({group, zone,
@@ -44,6 +44,14 @@ export interface LoraRowDecl {
     readonly steps?: number;
     readonly steps_min?: number;
     readonly steps_max?: number;
+    /** The married sigma-shift grid (SOTA limb 2, 2026-10-20 — the
+     *  steps law's heir): a distill's shift_video is part of its
+     *  training contract (8-step LightX2V variants and ref2v tunes
+     *  run 12, 4-step fl2v tunes 6). Absent = the row declares no
+     *  shift opinion and the family schema's declared default owns.
+     *  Served into the option defaults (the client marriage mirror)
+     *  and stamped onto the resolved entry beside steps. */
+    readonly shift_video?: number;
     readonly tooltip?: string;
     readonly preprocessor?: string;
     /** ControlNet schedule capability (002 H3): 'ranged' when the

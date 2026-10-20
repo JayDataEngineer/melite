@@ -68,8 +68,13 @@ export const DECL = {
     // call knobs > lora steps > the steps row, Math.max across the
     // bag). Served on the form-spec kind so every client face
     // mirrors compose — one truth per value: the catalog row owns
-    // strength + steps; recipes reference ids ONLY.
-    "mods": [{ "pack": "loras", "marries": { "steps": "max" } }],
+    // strength + steps; recipes reference ids ONLY. THE MARRIED
+    // SHIFT (SOTA limb 2, 2026-10-20): shift_video joins the same
+    // declaration — the distill's sigma-shift grid is part of its
+    // training contract (8-step 12, 4-step 6; rows without a column
+    // keep the schema default 8), max across the bag, the doc's own
+    // stated shift never loses.
+    "mods": [{ "pack": "loras", "marries": { "steps": "max", "shift_video": "max" } }],
     "genre": "video",
     "variants": [
         {

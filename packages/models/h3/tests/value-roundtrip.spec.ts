@@ -565,6 +565,69 @@ describe("the h3 class knobs ride VERBATIM to their consumers (P0 witness extens
     assertValueAtConsumer(graph, "MiniMaxH3SigmaShift", "shift_audio", 4.5, "shift_audio");
   });
 
+  // ARM 14b-e (the SOTA plan's shift limb, H3_TIMELINE_RESERACH:
+  // the 8-step turbo route wants shift_video 12.0, the 4-step 6.0,
+  // native/default stays 8): shift_video is a MARRIED knob, the
+  // steps law's exact heir — while a distill rides, the knob is the
+  // ROW'S (stated on the entry first, else the catalog row's
+  // declared default, max across the bag); the resolved bag the
+  // estate serves carries it (the resolver stamps it beside steps),
+  // and compose falls back to the catalog row BY FILENAME so a
+  // hand-authored bag marries too. The doc's OWN stated shift is the
+  // user's word and never loses (the __shift_pinned stamp, the
+  // __steps_pinned heir).
+  it("ARM 14b — a resolved turbo8 bag marries shift 12 + steps 8 from the catalog row (the 8-step route's SOTA point)", async () => {
+    const turbo8 = H3_LORA_ROWS.find((r) => r.id === "h3_turbo8_v1")!;
+    // the RESOLVED wire shape the estate serves: filename + strength,
+    // nothing stated on the entry — the row owns its married knobs
+    const graph = await composeH3({
+      length: 56,
+      loras: [{ name: turbo8.filename, strength: 1 }],
+      calls: [SHOT()],
+    }, "h3_value_arm14b");
+    assertValueAtConsumer(graph, "MiniMaxH3SigmaShift", "shift_video", 12,
+      "the mounted 8-step distill's married shift (research: 8-step variants run shift_video 12.0)");
+    assertValueAtConsumer(graph, "BasicScheduler", "steps", 8,
+      "the mounted 8-step distill's married count (the catalog fallback — the row owns its 8, never the no-distill 6)");
+  });
+
+  it("ARM 14c — the user's stated shift never loses to the bag (the pin consult)", async () => {
+    const turbo8 = H3_LORA_ROWS.find((r) => r.id === "h3_turbo8_v1")!;
+    const graph = await composeH3({
+      length: 56, shift_video: 5,
+      loras: [{ name: turbo8.filename, strength: 1 }],
+      calls: [SHOT()],
+    }, "h3_value_arm14c");
+    assertValueAtConsumer(graph, "MiniMaxH3SigmaShift", "shift_video", 5,
+      "an explicit doc-level shift is the user's word — the marriage applies only to the unstated");
+  });
+
+  it("ARM 14d — a row that declares no shift (larryvrh v4: native/default) keeps the declared default 8", async () => {
+    const larry = H3_LORA_ROWS.find((r) => r.id === "h3_larryvrh_v4_ema")!;
+    const graph = await composeH3({
+      length: 56,
+      loras: [{ name: larry.filename, strength: 1 }],
+      calls: [SHOT()],
+    }, "h3_value_arm14d");
+    assertValueAtConsumer(graph, "MiniMaxH3SigmaShift", "shift_video", 8,
+      "larryvrh's README and the research table put him at native/default shift — the row declares none, the declared default owns");
+    assertValueAtConsumer(graph, "BasicScheduler", "steps", 6,
+      "his row's married 6 (the README's own 6–8 window, steps declared on the row)");
+  });
+
+  it("ARM 14e — the 4-step row marries its 6 (the 4-step SOTA point)", async () => {
+    const turbo4 = H3_LORA_ROWS.find((r) => r.id === "h3_turbo4_v1")!;
+    const graph = await composeH3({
+      length: 56,
+      loras: [{ name: turbo4.filename, strength: 1 }],
+      calls: [SHOT()],
+    }, "h3_value_arm14e");
+    assertValueAtConsumer(graph, "MiniMaxH3SigmaShift", "shift_video", 6,
+      "the 4-step distill's married shift (research: 4-step runs shift_video 6.0)");
+    assertValueAtConsumer(graph, "BasicScheduler", "steps", 4,
+      "the 4-step distill's married count");
+  });
+
   it("ARM 15 — every stated sla_* rides H3SLAAttention verbatim + sla_enabled owns the attention switch", async () => {
     const graph = await composeH3({
       length: 56,

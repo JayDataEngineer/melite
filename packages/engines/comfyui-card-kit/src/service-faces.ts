@@ -57,6 +57,14 @@ export interface LoraRowDecl {
   readonly steps?: number
   readonly steps_min?: number
   readonly steps_max?: number
+  /** The married sigma-shift grid (SOTA limb 2, 2026-10-20 — the
+   *  steps law's heir): a distill's shift_video is part of its
+   *  training contract (8-step LightX2V variants and ref2v tunes
+   *  run 12, 4-step fl2v tunes 6). Absent = the row declares no
+   *  shift opinion and the family schema's declared default owns.
+   *  Served into the option defaults (the client marriage mirror)
+   *  and stamped onto the resolved entry beside steps. */
+  readonly shift_video?: number
   readonly tooltip?: string
   readonly preprocessor?: string
   /** ControlNet schedule capability (002 H3): 'ranged' when the

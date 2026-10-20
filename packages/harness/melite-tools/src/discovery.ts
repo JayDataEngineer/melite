@@ -631,16 +631,20 @@ function specModifiers(
       // RANGE FACTS (the 4-to-8 correction): steps_min/steps_max
       // ride alongside when the adapter's domain is not a fixed
       // point (Turbo 4-to-8) — the leaf's dial bounds itself to
-      // them; the married default stays `steps`.
+      // them; the married default stays `steps`. THE MARRIED SHIFT
+      // (SOTA limb 2, the steps heir): shift_video rides the same
+      // defaults when the row declares its grid (8-step 12, 4-step
+      // 6) — marriedKnobValues reads it, the face mirrors compose.
       defaults:
         r.default_strength === undefined && r.default_weight === undefined && r.steps === undefined
-          && r.steps_min === undefined && r.steps_max === undefined
+          && r.steps_min === undefined && r.steps_max === undefined && r.shift_video === undefined
           ? {}
           : Object.fromEntries(Object.entries({
               [meta.scalar_key ?? 'strength']: r.default_strength ?? r.default_weight,
               steps: r.steps,
               steps_min: r.steps_min,
               steps_max: r.steps_max,
+              shift_video: r.shift_video,
             }).filter(([, v]) => v !== undefined)),
       // THE RESOLVED FACTS (the hybrid leaf stamps these onto new
       // entries so the run record carries the retired wire shape —

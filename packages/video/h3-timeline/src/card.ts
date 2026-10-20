@@ -282,15 +282,17 @@ export function registerCard(ctx: Context, comfy: ComfyUIServiceFace): void {
       // quant, refine — refine is injected by the door
       // AFTER this walk), the schema's __steps_pinned stamp (007
       // L3 — the walk's own explicit-steps fact, read by the film
-      // build's single-window marriage) and the context prefix class
-      // (ctx_* — the compat law's own list at schema.ts names it;
-      // motion_* is gone: no reader, no producer, no draft carries it).
+      // build's single-window marriage), its __shift_pinned heir
+      // (the married-shift consult, SOTA limb 2) and the context
+      // prefix class (ctx_* — the compat law's own list at
+      // schema.ts names it; motion_* is gone: no reader, no
+      // producer, no draft carries it).
       // `recipe` LEFT THIS LIST TOO (2026-10-16, audit 0be61df8 F5):
       // no reader, no producer, no admit — a doc carrying it refuses
       // loud here, which is the dead-layer law working.
       p = gatedResolve('h3-timeline', schemaFn, [
         'calls', 'audio_clips', 'keyframes', 'fps', 'audio_stem', 'document', 'loras',
-        'refs', 'variant', 'quant', 'refine', 'model', '__steps_pinned', 'ctx_*',
+        'refs', 'variant', 'quant', 'refine', 'model', '__steps_pinned', '__shift_pinned', 'ctx_*',
       ], gateInput)
       // THE SINGLE-CALL LIFT runs FIRST (the guard below reads the
       // lifted anchor): a one-call doc's row IS the window — its

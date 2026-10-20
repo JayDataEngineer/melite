@@ -875,14 +875,16 @@ describe('live door arms', () => {
     // THE MARRIAGE DECLARATION (#36, the recipes rework): the kind
     // serves the knob marriage VERBATIM from the family DECL — the
     // client resolver mirrors compose (lora steps > steps row,
-    // Math.max) so the face shows what the film runs.
-    assert.deepEqual(lora!['marries'], { steps: 'max' }, 'the loras kind declares the steps marriage (max aggregation)')
+    // Math.max) so the face shows what the film runs. THE MARRIED
+    // SHIFT (SOTA limb 2): shift_video joins — the distill's own
+    // sigma grid (8-step 12, 4-step 6; larryvrh declares none).
+    assert.deepEqual(lora!['marries'], { steps: 'max', shift_video: 'max' }, 'the loras kind declares the steps + shift marriage (max aggregation)')
     const opts = lora!.options ?? []
     const dareties = opts.find((o) => o.value === 'h3_lightx2v_dareties')
     const turbo = opts.find((o) => o.value === 'h3_lightx2v_turbo')
     assert.ok(dareties !== undefined && turbo !== undefined, 'both distill rows serve')
-    assert.deepEqual(dareties!['defaults'], { strength: 0.8, steps: 4, steps_min: 4, steps_max: 4 }, 'dareties v4: a four-step distill (fixed point, its declared domain — the value-arms ARM 12: the leaf dials the row\u2019s own span, never the generic envelope); strength 0.8 per the operator 2026-09-21 (silveroxides\u2019 documented solo range 0.6\u20130.8)')
-    assert.deepEqual(turbo!['defaults'], { strength: 0.6, steps: 8, steps_min: 4, steps_max: 8 }, 'turbo 4-8: the married default rides WITH its declared range')
+    assert.deepEqual(dareties!['defaults'], { strength: 0.8, steps: 4, steps_min: 4, steps_max: 4, shift_video: 6 }, 'dareties v4: a four-step distill (fixed point, its declared domain — the value-arms ARM 12: the leaf dials the row\u2019s own span, never the generic envelope); strength 0.8 per the operator 2026-09-21 (silveroxides\u2019 documented solo range 0.6\u20130.8); married shift 6 (the 4-step grid)')
+    assert.deepEqual(turbo!['defaults'], { strength: 0.6, steps: 8, steps_min: 4, steps_max: 8, shift_video: 12 }, 'turbo 4-8: the married default rides WITH its declared range; married shift 12 (its 8-step grid)')
     // ── THE CATALOG EXPANSION (2026-09-20, operator: "add multiple
     // loras and let the user choose"): the official lightx2v turbos
     // + the Kijai Acc adapters serve as user picks — strength 1 per
@@ -890,8 +892,8 @@ describe('live door arms', () => {
     const turbo8 = opts.find((o) => o['value'] === 'h3_turbo8_v1')
     const acc8 = opts.find((o) => o['value'] === 'h3_acc8_fl2va')
     assert.ok(turbo8 !== undefined && acc8 !== undefined, 'the expansion rows serve on the picker')
-    assert.deepEqual(turbo8!['defaults'], { strength: 1, steps: 8, steps_min: 8, steps_max: 8 }, 'official 8-step v1.0: full strength (the template operating point), its declared fixed domain — ARM 12')
-    assert.deepEqual(acc8!['defaults'], { strength: 1, steps: 8, steps_min: 8, steps_max: 8 }, 'Kijai Acc 8-Step: designed at full strength, its declared fixed domain — ARM 12')
+    assert.deepEqual(turbo8!['defaults'], { strength: 1, steps: 8, steps_min: 8, steps_max: 8, shift_video: 12 }, 'official 8-step v1.0: full strength (the template operating point), its declared fixed domain — ARM 12; married shift 12 (the 8-step SOTA point)')
+    assert.deepEqual(acc8!['defaults'], { strength: 1, steps: 8, steps_min: 8, steps_max: 8, shift_video: 12 }, 'Kijai Acc 8-Step: designed at full strength, its declared fixed domain — ARM 12; married shift 12')
     // ── THE ARENA ROWS (the 15k-vote leaderboard + authors' READMEs):
     // larryvrh #1 at 6 steps strength 1 (his README: "6–8 steps,
     // where v4 looks its best"); Parasyte #2 at the author's 1.5
@@ -901,9 +903,9 @@ describe('live door arms', () => {
     const para = opts.find((o) => o['value'] === 'h3_pk_parasyte')
     const tao = opts.find((o) => o['value'] === 'h3_taomate_3step')
     assert.ok(larry !== undefined && para !== undefined && tao !== undefined, 'the arena rows serve on the picker')
-    assert.deepEqual(larry!['defaults'], { strength: 1, steps: 6, steps_min: 4, steps_max: 8 }, 'larryvrh v4-600 EMA: the crowd #1, 6 steps per README')
-    assert.deepEqual(para!['defaults'], { strength: 1.5, steps: 8, steps_min: 6, steps_max: 8 }, 'Parasyte: the author rec — 1.5 str / 8 steps / er_sde beta57')
-    assert.deepEqual(tao!['defaults'], { strength: 0.7, steps: 3, steps_min: 3, steps_max: 3 }, 'TaoMate: the refiner operating point (0.7 over 3 closing steps), its declared fixed domain — ARM 12')
+    assert.deepEqual(larry!['defaults'], { strength: 1, steps: 6, steps_min: 4, steps_max: 8 }, 'larryvrh v4-600 EMA: the crowd #1, 6 steps per README; NO married shift — his README and the research table put him at native/default (the schema default 8 owns)')
+    assert.deepEqual(para!['defaults'], { strength: 1.5, steps: 8, steps_min: 6, steps_max: 8, shift_video: 12 }, 'Parasyte: the author rec — 1.5 str / 8 steps / 12-3 shift / er_sde beta57')
+    assert.deepEqual(tao!['defaults'], { strength: 0.7, steps: 3, steps_min: 3, steps_max: 3, shift_video: 6 }, 'TaoMate: the refiner operating point (0.7 over 3 closing steps), its declared fixed domain — ARM 12; married shift 6 (the research table\u2019s TaoMate row)')
   })
 
   test('a route-owned key serves the owning family lora catalog', async () => {
@@ -916,7 +918,7 @@ describe('live door arms', () => {
     assert.ok(options.some((option) => option.value === 'h3_lightx2v_turbo'))
     assert.deepEqual(
       options.find((option) => option['value'] === 'h3_lightx2v_turbo')!['defaults'],
-      { strength: 0.6, steps: 8, steps_min: 4, steps_max: 8 },
+      { strength: 0.6, steps: 8, steps_min: 4, steps_max: 8, shift_video: 12 },
     )
   })
 
