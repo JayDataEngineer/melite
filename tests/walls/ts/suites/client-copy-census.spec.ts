@@ -492,7 +492,18 @@ const PINS: Record<string, number> = {
   // identity; localizing would fork the drill's identity per locale).
   // The affordance verb itself rides chromeCopy (unstampWord), never
   // a raw literal.
-  'packages/web/melite-card-view/src': 17,
+  // RE-PIN 17→22 (2026-10-20, the F10 seats-slice census proof): +5
+  // arm B string returns in run-rescue-core.ts — the tracker's
+  // format helpers' own words (formatByteSize's "0 B" at :221;
+  // formatRateLine's "stalled — no bytes landing" at :248; the ETA
+  // unit trio "s left"/"min left"/"h left" at :251/:253/:254). These
+  // rode in with the human-face cure (the rate/ETA line) UNACCOUNTED
+  // — the census proof ran for the first time on the seats-voice
+  // slice and caught the drift; the slice's own diff adds ZERO
+  // literals (the stuck verdict rides chromeCopy.stuckNote, one home
+  // for both seats). Data-unit seats in the tracker's own words, the
+  // same class as the acquiredDetailOf assembly (arm B).
+  'packages/web/melite-card-view/src': 22,
   // deck: 2 — the register() title/guideDescription positions now ride
   // assetsCopy (D2's proof seat: a literal at those arguments fires
   // this wall). Residue: index.ts:41 + :50 `message` embed notices

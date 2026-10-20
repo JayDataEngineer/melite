@@ -4277,355 +4277,6 @@ window.__ModuleLoader__.load({
 		*  blocked — is never in this set. */
 		const LIVE_ACQUIRE_STATES$1 = /* @__PURE__ */ new Set(["acquiring", "verifying"]);
 		//#endregion
-		//#region src/client/run-rescue-core.ts
-		/**
-		* run-rescue-core.ts — the run-gate rescue's data half (roadmap item 4,
-		* the operator's 2026-09-20 order: hit RUN without a model or a
-		* ComfyUI extension → a popup offers the install through the
-		* manage seat, right where the run refused).
-		*
-		* THE LINKS-IN-CODE LAW (the operator, same order: "we NEVER do
-		* one-time downloads, ALL download links are KEPT IN CODE"): the
-		* client NEVER carries a URL. It passes NAMES ONLY —
-		* install_extension takes the pack id from the refusal's own text;
-		* acquire_weight takes the FAMILY id and the manage seat resolves
-		* the DECL provision rows server-side (the declaration is the one
-		* truth for what downloads from where). An ad-hoc URL has no door
-		* here, by construction.
-		*
-		* THE ONE WIRE: the install rides postManageAction (card-base's
-		* manage/act gateway door — the SAME wire the form-time prompts
-		* ride; there is no second manage client). This module is the
-		* RUN-TIME half: the form-time prompts (PackPrompt, the model
-		* offer) catch the miss BEFORE the press; this catches the miss
-		* the press itself surfaced — a pack the form could not see, a
-		* model file the presence mark believed present, an engine refusal
-		* mid-run. Same seat, same vocabulary, later gate.
-		*/
-		/** Parse a failed run's reason for a rescueable miss. The
-		* missing-extension refusal names its pack verbatim
-		* ("card 'x' requires 'PACK' …"); the lane-presence gate names its
-		* family and declared file verbatim ("lane presence: family 'x'
-		* declares <slot> '<file>' but no store copy exists …"); a model
-		* miss names a weight file in a not-found context. Anything else is
-		* not ours to fix — null (never a wrong install). */
-		function parseRescue(error) {
-			if (typeof error !== "string" || error === "") return null;
-			const ext = /card '[^']*' requires '([^']+)'/.exec(error);
-			if (ext !== null) return {
-				kind: "extension",
-				pack: ext[1]
-			};
-			const lane = /lane presence: family '([^']+)' declares \S+ '([\w.-]+\.(?:safetensors|bin|pt|pth|ckpt|gguf))' but no store copy exists/.exec(error);
-			if (lane !== null) return {
-				kind: "model",
-				file: lane[2],
-				target: lane[1]
-			};
-			const runtimeMiss = /([A-Za-z0-9_-]+) runtime not found at \S+/.exec(error);
-			if (runtimeMiss !== null) {
-				const provision = /Provision it:\s*([\s\S]+?)(?:\.\s+(?:Missing:|Or point)|$)/.exec(error);
-				if (provision !== null) {
-					const env = /Or point ([A-Z][A-Z0-9_]*) at an existing runtime/.exec(error)?.[1];
-					return {
-						kind: "runtime",
-						runtime: runtimeMiss[1],
-						command: provision[1].trim(),
-						...env === void 0 ? {} : { env }
-					};
-				}
-			}
-			const target = /provision_model\s+model=([A-Za-z0-9_-]+)(?=\s|\)|;|,|$)/i.exec(error)?.[1];
-			const weight = /needs weight '([^']+)'/i.exec(error);
-			if (weight !== null && /absent on the models tree/i.test(error)) return {
-				kind: "model",
-				file: weight[1],
-				...target === void 0 ? {} : { target }
-			};
-			const file = /([\w.-]+\.(?:safetensors|bin|pt|pth|ckpt|gguf))/.exec(error);
-			const provisionBorne = target !== void 0 || new RegExp("needs weight '" + (file?.[1] ?? "").replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "'", "i").test(error);
-			if (file !== null && provisionBorne && /not found|does not exist|no such file|missing|absent on the models tree|404/i.test(error)) return {
-				kind: "model",
-				file: file[1],
-				...target === void 0 ? {} : { target }
-			};
-			return null;
-		}
-		/** THE STRUCTURED LANE MISS (operator 2026-10-22): the runs door's
-		*  lane_input_missing details row, read into the popup's Rescue —
-		*  the exact key at the press site, no prose parsing. Null when the
-		*  record is not that row (the prose anchor in parseRescue still
-		*  covers the row-derived face). */
-		function rescueOfLaneDetails(details) {
-			if (details === void 0) return null;
-			const family = details["family"];
-			const slot = details["slot"];
-			const missing = details["missing"];
-			if (typeof family !== "string" || family === "" || typeof slot !== "string" || slot === "" || typeof missing !== "string" || missing === "" || details["kind"] !== "model") return null;
-			return {
-				kind: "model",
-				file: missing,
-				target: family
-			};
-		}
-		[...LIVE_ACQUIRE_STATES$1];
-		/** Terminal acquire_weight states — DERIVED, never listed (audit
-		*  F6b): every provision state except the unknowns (unknown/absent)
-		*  and the live flights. The k2/m and F6b burns meet here: a
-		*  verdict state (failed/blocked) settles at any byte count — the
-		*  engine judged; a landed state (installed/restart_required/
-		*  active) settles ONLY at the engine's own total (a landed word at
-		*  partial bytes is live flight, the k2/m false-ready), judged by
-		*  isAcquireSettled below. A total of 0 (a DECL with no declared
-		*  size) settles on the landed word (acquiredDetailOf voices it,
-		*  never the dead "0/0"). */
-		const ACQUIRE_TERMINAL = new Set(PROVISION_STATES.filter((state) => state !== "unknown" && state !== "absent" && !LIVE_ACQUIRE_STATES$1.has(state)));
-		/** THE COMPLETION PREDICATE (one spelling, both seats — the k2/m and
-		*  F6b burns reconciled): a verdict state (failed/blocked) is
-		*  settled at any byte count — the engine judged. A landed state
-		*  (installed/restart_required/active) settles ONLY when the bytes
-		*  reach the engine's own total; a landed word at partial bytes is
-		*  live flight (the k2/m false-ready: 'active' at 39%), and the
-		*  tracker keeps polling. A total of 0 (a DECL with no declared
-		*  size) settles on the landed word — the undeclared-total success
-		*  face (acquiredDetailOf voices it; never the dead "0/0"). */
-		function isAcquireSettled(row) {
-			if (row.state === "failed" || row.state === "blocked") return true;
-			if (!ACQUIRE_TERMINAL.has(row.state)) return false;
-			return !(row.total > 0) || row.bytes >= row.total;
-		}
-		/** THE HUMAN BYTE VOICE (operator 2026-10-20: "THE TRACKING OF
-		*  BYTES ALONE IS INEXCUSABLE" — the popup showed
-		*  "5196173399/7343591088 bytes (71%)", a wall of digits no
-		*  operator can read at a glance). Binary-base sizes with one
-		*  decimal: 7343591088 → "6.8 GB", 5196173399 → "4.8 GB".
-		*  Non-finite or negative input voices "0 B" (never NaN on the
-		*  face). */
-		function formatByteSize(bytes) {
-			if (typeof bytes !== "number" || !Number.isFinite(bytes) || bytes < 0) return "0 B";
-			if (bytes < 1024) return String(Math.floor(bytes)) + " B";
-			const units = [
-				"KB",
-				"MB",
-				"GB",
-				"TB"
-			];
-			let value = bytes / 1024;
-			let unit = 0;
-			while (value >= 1024 && unit < units.length - 1) {
-				value /= 1024;
-				unit += 1;
-			}
-			return value.toFixed(1) + " " + units[unit];
-		}
-		/** THE HUMAN PROGRESS LINE (the same burn): "4.8/6.8 GB (71%)"
-		*  — human sizes over the DECL total with the percent the bar
-		*  already carries. A total=0 row has no line (the purge P5
-		*  undeclared face owns it) — empty string, never "0/0". */
-		function formatWeightProgress(bytes, total) {
-			if (!(total > 0)) return "";
-			const pct = Math.min(100, Math.round(bytes / total * 100));
-			return formatByteSize(bytes) + "/" + formatByteSize(total) + " (" + String(pct) + "%)";
-		}
-		/** THE HUMAN RATE LINE (the same burn's second sentence — no
-		*  rate, no ETA): "247.6 MB/s · ~8 s left". Null ETA (unknown
-		*  total, stalled flight) voices the rate alone; a zero rate
-		*  voices "stalled", never "0.0 B/s" dressed as motion. */
-		function formatRateLine(bytesPerSec, etaSec) {
-			if (!(bytesPerSec > 0)) return "stalled — no bytes landing";
-			const rate = formatByteSize(bytesPerSec) + "/s";
-			if (etaSec === null || !Number.isFinite(etaSec) || etaSec < 0) return rate;
-			if (etaSec < 90) return rate + " · ~" + String(Math.max(1, Math.round(etaSec))) + " s left";
-			const mins = Math.round(etaSec / 60);
-			if (mins < 90) return rate + " · ~" + String(mins) + " min left";
-			return rate + " · ~" + String(Math.round(mins / 60)) + " h left";
-		}
-		function weightStateOf(reply) {
-			const data = typeof reply.data === "object" && reply.data !== null && !Array.isArray(reply.data) ? reply.data : {};
-			const operationId = typeof data["operation_id"] === "string" ? data["operation_id"] : typeof data["operationId"] === "string" ? data["operationId"] : "";
-			if (operationId === "") throw new Error("acquire_weight answered without an operation_id");
-			const cause = typeof data["detail"] === "string" && data["detail"] !== "" ? data["detail"] : void 0;
-			return {
-				operationId,
-				state: typeof data["state"] === "string" ? data["state"] : "acquiring",
-				bytes: typeof data["bytes"] === "number" ? data["bytes"] : 0,
-				total: typeof data["total"] === "number" ? data["total"] : 0,
-				...typeof data["phase"] === "string" && data["phase"] !== "" ? { phase: data["phase"] } : {},
-				...cause !== void 0 ? { detail: cause } : typeof reply.detail === "string" && reply.detail !== "" ? { detail: reply.detail } : {}
-			};
-		}
-		/** Start the weight fetch through the ONE acquisition door (the
-		*  same door the agent's comfy_manage acquire_weight seat rides —
-		*  one door, two callers). Names only: the model/card id plus the
-		*  missing file for DISPLAY (the DECL owns the fetch source).
-		*  Returns the operation id at once with the opening bytes/total —
-		*  the caller polls acquireWeightPoll for the live count. */
-		/** ONE acquire seat for this module (the door + the optional
-		*  teardown signal): a present signal rides as postManageAction's
-		*  third arg; an absent one keeps the two-arg seam the specs pin. */
-		async function acquireAction(payload, signal) {
-			return signal === void 0 ? (0, _melite_card_base_client.postManageAction)("acquire_weight", payload) : (0, _melite_card_base_client.postManageAction)("acquire_weight", payload, signal);
-		}
-		async function acquireWeightStart(target, file, signal) {
-			const reply = await acquireAction({
-				model: target,
-				...file === void 0 || file === "" ? {} : { file }
-			}, signal);
-			if (!reply.ok) throw new Error(reply.detail ?? "manage refused");
-			return weightStateOf(reply);
-		}
-		/** Poll one weight fetch (the tracker's read): the SAME action with
-		*  ONLY the operation id — no model, no second fetch. */
-		async function acquireWeightPoll(operationId, signal) {
-			const reply = await acquireAction({ operation_id: operationId }, signal);
-			if (!reply.ok) throw new Error(reply.detail ?? "manage refused");
-			return weightStateOf(reply);
-		}
-		/** ONE STUCK LAW, ONE SPELLING, BOTH SEATS (audit F8, 2026-10-20:
-		*  the popup's inline loop and the agent seat's runRescueCall each
-		*  carried their own poll loop with their own cadence and ceiling —
-		*  the same frozen operation was "stuck" in one seat and "in
-		*  flight" in the other. This helper is the one law: poll while the
-		*  ledger is LIVE (the engine's own watchdog owns stall truth — the
-		*  client never invents a verdict from its own clock), stop at the
-		*  first settled state, and give up after `ceiling` polls. Returns
-		*  the LAST snapshot whether settled or not — the CALLER owns the
-		*  face (the popup paints stuck/failed/done; the agent seat throws
-		*  on a non-settled return). Throws the abort reason when the
-		*  caller's signal fires mid-loop.
-		*  @param first — the opening snapshot from acquireWeightStart (the
-		*   loop never re-polls what it already has)
-		*  @param options.pollMs — the poll cadence in ms
-		*  @param options.ceiling — the max poll count past the opening
-		*   snapshot (the stuck bound: cadence x ceiling is the seat's
-		*   patience window)
-		*  @param options.signal — the caller's teardown; aborts sleep,
-		*   polls, and the loop itself
-		*  @param options.onPoll — the per-snapshot hook (the popup's rate
-		*   and ETA face) */
-		async function pollAcquireToSettled(first, options) {
-			let current = first;
-			for (let attempt = 0; !isAcquireSettled(current) && attempt < options.ceiling; attempt += 1) {
-				await abortableSleep$1(options.pollMs, options.signal);
-				if (options.signal?.aborted === true) throw options.signal.reason ?? /* @__PURE__ */ new Error("aborted");
-				current = await acquireWeightPoll(current.operationId, options.signal);
-				options.onPoll?.({ ...current });
-			}
-			return current;
-		}
-		/** The sleep that dies with the caller's signal (the poll law's own
-		*  tick): resolves normally on elapsed, throws the signal's reason
-		*  when aborted mid-sleep. */
-		function abortableSleep$1(ms, signal) {
-			return new Promise((resolve, reject) => {
-				const timer = setTimeout(resolve, ms);
-				signal?.addEventListener("abort", () => {
-					clearTimeout(timer);
-					reject(signal.reason ?? /* @__PURE__ */ new Error("aborted"));
-				}, { once: true });
-			});
-		}
-		/** THE ACQUIRED VOICE (one home for the success line): the landed
-		*  byte count over the DECL total. A report with no declared total
-		*  (a DECL row without size_bytes seeds 0) voices the undeclared
-		*  size — never the dead "0/0 bytes" success (the purge P5's
-		*  total=0 face). */
-		function acquiredDetailOf(target, current) {
-			if (!(current.total > 0)) return target + " acquired — the engine reported no declared total (size unknown; verify the file on disk)";
-			return target + " acquired (" + formatByteSize(current.bytes) + " of " + formatByteSize(current.total) + ")";
-		}
-		/** Offer one rescue through the manage seat. Names only — the
-		* server owns every URL (the declaration law above). The target
-		* is the model family OR the card id (model-less tool cards carry
-		* their own provision rows under the card id — the acquire_weight
-		* door resolves both, as provision_model did before it). The model
-		* arm rides acquire_weight (ONE door with the popup tracker and the
-		* agent seat); the extension arm keeps install_extension. Resolves
-		* with the reply's detail line, refuses with its own name, and
-		* refuses STUCK when the ceiling expires non-terminal (the stuck
-		* burn, ERRORS k2/m). */
-		async function runRescueCall(rescue, target, signal) {
-			if (rescue.kind === "runtime") {
-				const reply = signal !== void 0 ? await (0, _melite_card_base_client.postManageAction)("provision_runtime", { runtime: rescue.runtime }, signal) : await (0, _melite_card_base_client.postManageAction)("provision_runtime", { runtime: rescue.runtime });
-				if (!reply.ok) throw new Error(reply.detail ?? "manage refused");
-				return {
-					detail: reply.detail ?? rescue.runtime + " provisioned",
-					restartRequired: false
-				};
-			}
-			const provisionTarget = rescue.kind === "model" && rescue.target !== void 0 && rescue.target !== "" ? rescue.target : target;
-			if (rescue.kind === "extension") {
-				const reply = await (0, _melite_card_base_client.postManageAction)("install_extension", { nodes: [rescue.pack] });
-				if (!reply.ok) throw new Error(reply.detail ?? "manage refused");
-				const data = typeof reply.data === "object" && reply.data !== null && !Array.isArray(reply.data) ? reply.data : null;
-				const state = data !== null && typeof data["state"] === "string" ? data["state"] : "";
-				return {
-					detail: reply.detail ?? rescue.pack + " installed",
-					restartRequired: data !== null && data["restart_required"] === true || state === "restart_required"
-				};
-			}
-			const current = await pollAcquireToSettled(await acquireWeightStart(provisionTarget, rescue.file, signal), {
-				pollMs: 200,
-				ceiling: 150,
-				signal
-			});
-			if (!isAcquireSettled(current)) throw new Error("weight acquisition stuck — no longer progressing: the engine last reported state \"" + current.state + "\" at " + formatWeightProgress(current.bytes, current.total) + " across the full 150-poll ceiling; retry the fetch or delete the stuck operation");
-			const restartRequired = current.state === "restart_required" || current.state === "installed";
-			if (current.state === "failed" || current.state === "blocked") throw new Error(current.detail ?? "weight acquisition " + current.state);
-			return {
-				detail: current.detail ?? acquiredDetailOf(provisionTarget, current),
-				restartRequired
-			};
-		}
-		function terminalStageErrorOf(stages) {
-			for (const stage of stages) {
-				if (statusOrPendingOf(typeof stage.runStatus === "string" ? stage.runStatus : "") !== "error") continue;
-				if (typeof stage.result !== "object" || stage.result === null || Array.isArray(stage.result)) continue;
-				const error = Reflect.get(stage.result, "error");
-				if (typeof error === "string" && error !== "") return error;
-			}
-			return null;
-		}
-		/** THE RUN FACE'S TERMINAL VOICE (the runface-error cure,
-		*  2026-10-12): the run wire carries stage errors on a DIFFERENT
-		*  shape than drafts — `RunStageStatus { status, error }` (the
-		*  status door serves the failure text verbatim on the row; the
-		*  run-level `error` is the observer's fallback when no single
-		*  stage owns the reason) — so terminalStageErrorOf's
-		*  `{ runStatus, result.error }` read folds every run stage to
-		*  not-failed and the run face voiced nothing. Same law, run
-		*  shape: the first error-folded stage's verbatim error wins, the
-		*  run-level text is the fallback (terminalOutcomeOf's own
-		*  stage-first order in cards-resource.ts). The view-side read is
-		*  the same: an unreadable status word is not failed, and an
-		*  empty/non-string error is no voice. */
-		function terminalRunStageErrorOf(stages, runError) {
-			for (const stage of stages) {
-				if (statusOrPendingOf(typeof stage.status === "string" ? stage.status : "") !== "error") continue;
-				if (typeof stage.error === "string" && stage.error !== "") return stage.error;
-			}
-			if (typeof runError === "string" && runError !== "") return runError;
-			return null;
-		}
-		/** The first family id on a bench/draft's stage params (the model
-		* the run shot — the rescue's provision target). Null when no
-		* stage names one (the card-id fallback below gets its turn). */
-		function familyOfStages(stages) {
-			for (const s of stages) {
-				const m = s.params?.["model"];
-				if (typeof m === "string" && m !== "") return m;
-			}
-			return null;
-		}
-		/** THE CARD-ID FALLBACK (the mask SAM2 law, 2026-09-19):
-		* model-less tool cards name no family — the stage's own card id
-		* is the provision target (the manage door resolves card-owned
-		* DECL rows under it). Null when no stage names a card. */
-		function cardOfStages(stages) {
-			for (const s of stages) if (typeof s.card === "string" && s.card !== "") return s.card;
-			return null;
-		}
-		//#endregion
 		//#region src/chromeCopy.ts
 		/**
 		* chromeCopy.ts — THE OPERATOR-FACING MAINTENANCE CHROME DICTIONARY.
@@ -4953,6 +4604,389 @@ window.__ModuleLoader__.load({
 			autoModeOffDetail: "Runs wait for your Run press again — the AI only stages"
 		};
 		//#endregion
+		//#region src/client/run-rescue-core.ts
+		/**
+		* run-rescue-core.ts — the run-gate rescue's data half (roadmap item 4,
+		* the operator's 2026-09-20 order: hit RUN without a model or a
+		* ComfyUI extension → a popup offers the install through the
+		* manage seat, right where the run refused).
+		*
+		* THE LINKS-IN-CODE LAW (the operator, same order: "we NEVER do
+		* one-time downloads, ALL download links are KEPT IN CODE"): the
+		* client NEVER carries a URL. It passes NAMES ONLY —
+		* install_extension takes the pack id from the refusal's own text;
+		* acquire_weight takes the FAMILY id and the manage seat resolves
+		* the DECL provision rows server-side (the declaration is the one
+		* truth for what downloads from where). An ad-hoc URL has no door
+		* here, by construction.
+		*
+		* THE ONE WIRE: the install rides postManageAction (card-base's
+		* manage/act gateway door — the SAME wire the form-time prompts
+		* ride; there is no second manage client). This module is the
+		* RUN-TIME half: the form-time prompts (PackPrompt, the model
+		* offer) catch the miss BEFORE the press; this catches the miss
+		* the press itself surfaced — a pack the form could not see, a
+		* model file the presence mark believed present, an engine refusal
+		* mid-run. Same seat, same vocabulary, later gate.
+		*/
+		/** Parse a failed run's reason for a rescueable miss. The
+		* missing-extension refusal names its pack verbatim
+		* ("card 'x' requires 'PACK' …"); the lane-presence gate names its
+		* family and declared file verbatim ("lane presence: family 'x'
+		* declares <slot> '<file>' but no store copy exists …"); a model
+		* miss names a weight file in a not-found context. Anything else is
+		* not ours to fix — null (never a wrong install). */
+		function parseRescue(error) {
+			if (typeof error !== "string" || error === "") return null;
+			const ext = /card '[^']*' requires '([^']+)'/.exec(error);
+			if (ext !== null) return {
+				kind: "extension",
+				pack: ext[1]
+			};
+			const lane = /lane presence: family '([^']+)' declares \S+ '([\w.-]+\.(?:safetensors|bin|pt|pth|ckpt|gguf))' but no store copy exists/.exec(error);
+			if (lane !== null) return {
+				kind: "model",
+				file: lane[2],
+				target: lane[1]
+			};
+			const runtimeMiss = /([A-Za-z0-9_-]+) runtime not found at \S+/.exec(error);
+			if (runtimeMiss !== null) {
+				const provision = /Provision it:\s*([\s\S]+?)(?:\.\s+(?:Missing:|Or point)|$)/.exec(error);
+				if (provision !== null) {
+					const env = /Or point ([A-Z][A-Z0-9_]*) at an existing runtime/.exec(error)?.[1];
+					return {
+						kind: "runtime",
+						runtime: runtimeMiss[1],
+						command: provision[1].trim(),
+						...env === void 0 ? {} : { env }
+					};
+				}
+			}
+			const target = /provision_model\s+model=([A-Za-z0-9_-]+)(?=\s|\)|;|,|$)/i.exec(error)?.[1];
+			const weight = /needs weight '([^']+)'/i.exec(error);
+			if (weight !== null && /absent on the models tree/i.test(error)) return {
+				kind: "model",
+				file: weight[1],
+				...target === void 0 ? {} : { target }
+			};
+			const file = /([\w.-]+\.(?:safetensors|bin|pt|pth|ckpt|gguf))/.exec(error);
+			const provisionBorne = target !== void 0 || new RegExp("needs weight '" + (file?.[1] ?? "").replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "'", "i").test(error);
+			if (file !== null && provisionBorne && /not found|does not exist|no such file|missing|absent on the models tree|404/i.test(error)) return {
+				kind: "model",
+				file: file[1],
+				...target === void 0 ? {} : { target }
+			};
+			return null;
+		}
+		/** THE STRUCTURED LANE MISS (operator 2026-10-22): the runs door's
+		*  lane_input_missing details row, read into the popup's Rescue —
+		*  the exact key at the press site, no prose parsing. Null when the
+		*  record is not that row (the prose anchor in parseRescue still
+		*  covers the row-derived face). */
+		function rescueOfLaneDetails(details) {
+			if (details === void 0) return null;
+			const family = details["family"];
+			const slot = details["slot"];
+			const missing = details["missing"];
+			if (typeof family !== "string" || family === "" || typeof slot !== "string" || slot === "" || typeof missing !== "string" || missing === "" || details["kind"] !== "model") return null;
+			return {
+				kind: "model",
+				file: missing,
+				target: family
+			};
+		}
+		[...LIVE_ACQUIRE_STATES$1];
+		/** Terminal acquire_weight states — DERIVED, never listed (audit
+		*  F6b): every provision state except the unknowns (unknown/absent)
+		*  and the live flights. The k2/m and F6b burns meet here: a
+		*  verdict state (failed/blocked) settles at any byte count — the
+		*  engine judged; a landed state (installed/restart_required/
+		*  active) settles ONLY at the engine's own total (a landed word at
+		*  partial bytes is live flight, the k2/m false-ready), judged by
+		*  isAcquireSettled below. A total of 0 (a DECL with no declared
+		*  size) settles on the landed word (acquiredDetailOf voices it,
+		*  never the dead "0/0"). */
+		const ACQUIRE_TERMINAL = new Set(PROVISION_STATES.filter((state) => state !== "unknown" && state !== "absent" && !LIVE_ACQUIRE_STATES$1.has(state)));
+		/** THE COMPLETION PREDICATE (one spelling, both seats — the k2/m and
+		*  F6b burns reconciled): a verdict state (failed/blocked) is
+		*  settled at any byte count — the engine judged. A landed state
+		*  (installed/restart_required/active) settles ONLY when the bytes
+		*  reach the engine's own total; a landed word at partial bytes is
+		*  live flight (the k2/m false-ready: 'active' at 39%), and the
+		*  tracker keeps polling. A total of 0 (a DECL with no declared
+		*  size) settles on the landed word — the undeclared-total success
+		*  face (acquiredDetailOf voices it; never the dead "0/0"). */
+		function isAcquireSettled(row) {
+			if (row.state === "failed" || row.state === "blocked") return true;
+			if (!ACQUIRE_TERMINAL.has(row.state)) return false;
+			return !(row.total > 0) || row.bytes >= row.total;
+		}
+		/** THE HUMAN BYTE VOICE (operator 2026-10-20: "THE TRACKING OF
+		*  BYTES ALONE IS INEXCUSABLE" — the popup showed
+		*  "5196173399/7343591088 bytes (71%)", a wall of digits no
+		*  operator can read at a glance). Binary-base sizes with one
+		*  decimal: 7343591088 → "6.8 GB", 5196173399 → "4.8 GB".
+		*  Non-finite or negative input voices "0 B" (never NaN on the
+		*  face). */
+		function formatByteSize(bytes) {
+			if (typeof bytes !== "number" || !Number.isFinite(bytes) || bytes < 0) return "0 B";
+			if (bytes < 1024) return String(Math.floor(bytes)) + " B";
+			const units = [
+				"KB",
+				"MB",
+				"GB",
+				"TB"
+			];
+			let value = bytes / 1024;
+			let unit = 0;
+			while (value >= 1024 && unit < units.length - 1) {
+				value /= 1024;
+				unit += 1;
+			}
+			return value.toFixed(1) + " " + units[unit];
+		}
+		/** THE HUMAN PROGRESS LINE (the same burn): "4.8/6.8 GB (71%)"
+		*  — human sizes over the DECL total with the percent the bar
+		*  already carries. A total=0 row has no line (the purge P5
+		*  undeclared face owns it) — empty string, never "0/0". */
+		function formatWeightProgress(bytes, total) {
+			if (!(total > 0)) return "";
+			const pct = Math.min(100, Math.round(bytes / total * 100));
+			return formatByteSize(bytes) + "/" + formatByteSize(total) + " (" + String(pct) + "%)";
+		}
+		/** THE HUMAN RATE LINE (the same burn's second sentence — no
+		*  rate, no ETA): "247.6 MB/s · ~8 s left". Null ETA (unknown
+		*  total, stalled flight) voices the rate alone; a zero rate
+		*  voices "stalled", never "0.0 B/s" dressed as motion. */
+		function formatRateLine(bytesPerSec, etaSec) {
+			if (!(bytesPerSec > 0)) return "stalled — no bytes landing";
+			const rate = formatByteSize(bytesPerSec) + "/s";
+			if (etaSec === null || !Number.isFinite(etaSec) || etaSec < 0) return rate;
+			if (etaSec < 90) return rate + " · ~" + String(Math.max(1, Math.round(etaSec))) + " s left";
+			const mins = Math.round(etaSec / 60);
+			if (mins < 90) return rate + " · ~" + String(mins) + " min left";
+			return rate + " · ~" + String(Math.round(mins / 60)) + " h left";
+		}
+		function weightStateOf(reply) {
+			const data = typeof reply.data === "object" && reply.data !== null && !Array.isArray(reply.data) ? reply.data : {};
+			const operationId = typeof data["operation_id"] === "string" ? data["operation_id"] : typeof data["operationId"] === "string" ? data["operationId"] : "";
+			if (operationId === "") throw new Error("acquire_weight answered without an operation_id");
+			const cause = typeof data["detail"] === "string" && data["detail"] !== "" ? data["detail"] : void 0;
+			return {
+				operationId,
+				state: typeof data["state"] === "string" ? data["state"] : "acquiring",
+				bytes: typeof data["bytes"] === "number" ? data["bytes"] : 0,
+				total: typeof data["total"] === "number" ? data["total"] : 0,
+				...typeof data["phase"] === "string" && data["phase"] !== "" ? { phase: data["phase"] } : {},
+				...cause !== void 0 ? { detail: cause } : typeof reply.detail === "string" && reply.detail !== "" ? { detail: reply.detail } : {}
+			};
+		}
+		/** Start the weight fetch through the ONE acquisition door (the
+		*  same door the agent's comfy_manage acquire_weight seat rides —
+		*  one door, two callers). Names only: the model/card id plus the
+		*  missing file for DISPLAY (the DECL owns the fetch source).
+		*  Returns the operation id at once with the opening bytes/total —
+		*  the caller polls acquireWeightPoll for the live count. */
+		/** ONE acquire seat for this module (the door + the optional
+		*  teardown signal): a present signal rides as postManageAction's
+		*  third arg; an absent one keeps the two-arg seam the specs pin. */
+		async function acquireAction(payload, signal) {
+			return signal === void 0 ? (0, _melite_card_base_client.postManageAction)("acquire_weight", payload) : (0, _melite_card_base_client.postManageAction)("acquire_weight", payload, signal);
+		}
+		async function acquireWeightStart(target, file, signal) {
+			const reply = await acquireAction({
+				model: target,
+				...file === void 0 || file === "" ? {} : { file }
+			}, signal);
+			if (!reply.ok) throw new Error(reply.detail ?? "manage refused");
+			return weightStateOf(reply);
+		}
+		/** Poll one weight fetch (the tracker's read): the SAME action with
+		*  ONLY the operation id — no model, no second fetch. */
+		async function acquireWeightPoll(operationId, signal) {
+			const reply = await acquireAction({ operation_id: operationId }, signal);
+			if (!reply.ok) throw new Error(reply.detail ?? "manage refused");
+			return weightStateOf(reply);
+		}
+		/** THE WATCH (audit F8): counts consecutive frozen-and-silent polls
+		*  from the opening snapshot. A poll whose bytes moved or that
+		*  carries a live phase resets the count — the phase is the
+		*  exemption the 2026-10-20 burn died for (the old popup watch
+		*  tripped ~1s into every verify because nothing exempted a live
+		*  one). The 0/0 extension shape (a Manager drain owns its bytes)
+		*  counts as frozen: silence is silence at any byte count. Returns
+		*  true when the trip lands. */
+		function acquireStuckWatch(first) {
+			let frozen = 0;
+			let lastBytes = first.bytes;
+			return (snapshot) => {
+				const exempt = snapshot.phase !== void 0 || snapshot.bytes !== lastBytes;
+				lastBytes = snapshot.bytes;
+				frozen = exempt ? 0 : frozen + 1;
+				return frozen >= 15;
+			};
+		}
+		/** ONE STUCK LAW, ONE SPELLING, BOTH SEATS (audit F8, 2026-10-20:
+		*  the popup's inline loop and the agent seat's runRescueCall each
+		*  carried their own poll loop with their own cadence and ceiling —
+		*  the same frozen operation was "stuck" in one seat and "in
+		*  flight" in the other. This helper is the one law: poll while the
+		*  ledger is LIVE (the engine's own watchdog owns stall truth — the
+		*  client never invents a verdict from its own clock), stop at the
+		*  first settled state, and end the flight on ONE of the three
+		*  shared ends (`AcquireLoopEnd`): the engine's verdict, the ONE
+		*  stuck watch (frozen bytes + no live phase over STUCK_FROZEN_POLLS
+		*  — both seats ride the same watch; the caller owns the seat's own
+		*  face for it), or the ceiling backstop. Throws the abort reason
+		*  when the caller's signal fires mid-loop.
+		*  @param first — the opening snapshot from acquireWeightStart (the
+		*   loop never re-polls what it already has)
+		*  @param options.pollMs — the poll cadence in ms
+		*  @param options.ceiling — the max poll count past the opening
+		*   snapshot (the stuck bound: cadence x ceiling is the seat's
+		*   patience window)
+		*  @param options.signal — the caller's teardown; aborts sleep,
+		*   polls, and the loop itself
+		*  @param options.onPoll — the per-snapshot hook (the popup's rate
+		*   and ETA face) */
+		async function pollAcquireToSettled(first, options) {
+			const stuck = acquireStuckWatch(first);
+			let current = first;
+			for (let attempt = 0; !isAcquireSettled(current) && attempt < options.ceiling; attempt += 1) {
+				await abortableSleep$1(options.pollMs, options.signal);
+				if (options.signal?.aborted === true) throw options.signal.reason ?? /* @__PURE__ */ new Error("aborted");
+				current = await acquireWeightPoll(current.operationId, options.signal);
+				options.onPoll?.({ ...current });
+				if (!isAcquireSettled(current) && stuck(current)) return {
+					snapshot: current,
+					endedBy: "stuck"
+				};
+			}
+			return {
+				snapshot: current,
+				endedBy: isAcquireSettled(current) ? "settled" : "ceiling"
+			};
+		}
+		/** The sleep that dies with the caller's signal (the poll law's own
+		*  tick): resolves normally on elapsed, throws the signal's reason
+		*  when aborted mid-sleep. */
+		function abortableSleep$1(ms, signal) {
+			return new Promise((resolve, reject) => {
+				const timer = setTimeout(resolve, ms);
+				signal?.addEventListener("abort", () => {
+					clearTimeout(timer);
+					reject(signal.reason ?? /* @__PURE__ */ new Error("aborted"));
+				}, { once: true });
+			});
+		}
+		/** THE ACQUIRED VOICE (one home for the success line): the landed
+		*  byte count over the DECL total. A report with no declared total
+		*  (a DECL row without size_bytes seeds 0) voices the undeclared
+		*  size — never the dead "0/0 bytes" success (the purge P5's
+		*  total=0 face). */
+		function acquiredDetailOf(target, current) {
+			if (!(current.total > 0)) return target + " acquired — the engine reported no declared total (size unknown; verify the file on disk)";
+			return target + " acquired (" + formatByteSize(current.bytes) + " of " + formatByteSize(current.total) + ")";
+		}
+		/** Offer one rescue through the manage seat. Names only — the
+		* server owns every URL (the declaration law above). The target
+		* is the model family OR the card id (model-less tool cards carry
+		* their own provision rows under the card id — the acquire_weight
+		* door resolves both, as provision_model did before it). The model
+		* arm rides acquire_weight (ONE door with the popup tracker and the
+		* agent seat); the extension arm keeps install_extension. Resolves
+		* with the reply's detail line, refuses with its own name, and
+		* refuses STUCK when the ceiling expires non-terminal (the stuck
+		* burn, ERRORS k2/m). */
+		async function runRescueCall(rescue, target, signal) {
+			if (rescue.kind === "runtime") {
+				const reply = signal !== void 0 ? await (0, _melite_card_base_client.postManageAction)("provision_runtime", { runtime: rescue.runtime }, signal) : await (0, _melite_card_base_client.postManageAction)("provision_runtime", { runtime: rescue.runtime });
+				if (!reply.ok) throw new Error(reply.detail ?? "manage refused");
+				return {
+					detail: reply.detail ?? rescue.runtime + " provisioned",
+					restartRequired: false
+				};
+			}
+			const provisionTarget = rescue.kind === "model" && rescue.target !== void 0 && rescue.target !== "" ? rescue.target : target;
+			if (rescue.kind === "extension") {
+				const reply = await (0, _melite_card_base_client.postManageAction)("install_extension", { nodes: [rescue.pack] });
+				if (!reply.ok) throw new Error(reply.detail ?? "manage refused");
+				const data = typeof reply.data === "object" && reply.data !== null && !Array.isArray(reply.data) ? reply.data : null;
+				const state = data !== null && typeof data["state"] === "string" ? data["state"] : "";
+				return {
+					detail: reply.detail ?? rescue.pack + " installed",
+					restartRequired: data !== null && data["restart_required"] === true || state === "restart_required"
+				};
+			}
+			const flight = await pollAcquireToSettled(await acquireWeightStart(provisionTarget, rescue.file, signal), {
+				pollMs: 200,
+				ceiling: 150,
+				signal
+			});
+			const current = flight.snapshot;
+			if (!isAcquireSettled(current)) {
+				if (flight.endedBy === "stuck") throw new Error(chromeCopy.stuckNote({
+					state: current.state,
+					progress: formatWeightProgress(current.bytes, current.total)
+				}));
+				throw new Error("weight acquisition stuck — no longer progressing: the engine last reported state \"" + current.state + "\" at " + formatWeightProgress(current.bytes, current.total) + " across the full 150-poll ceiling; retry the fetch or delete the stuck operation");
+			}
+			const restartRequired = current.state === "restart_required" || current.state === "installed";
+			if (current.state === "failed" || current.state === "blocked") throw new Error(current.detail ?? "weight acquisition " + current.state);
+			return {
+				detail: current.detail ?? acquiredDetailOf(provisionTarget, current),
+				restartRequired
+			};
+		}
+		function terminalStageErrorOf(stages) {
+			for (const stage of stages) {
+				if (statusOrPendingOf(typeof stage.runStatus === "string" ? stage.runStatus : "") !== "error") continue;
+				if (typeof stage.result !== "object" || stage.result === null || Array.isArray(stage.result)) continue;
+				const error = Reflect.get(stage.result, "error");
+				if (typeof error === "string" && error !== "") return error;
+			}
+			return null;
+		}
+		/** THE RUN FACE'S TERMINAL VOICE (the runface-error cure,
+		*  2026-10-12): the run wire carries stage errors on a DIFFERENT
+		*  shape than drafts — `RunStageStatus { status, error }` (the
+		*  status door serves the failure text verbatim on the row; the
+		*  run-level `error` is the observer's fallback when no single
+		*  stage owns the reason) — so terminalStageErrorOf's
+		*  `{ runStatus, result.error }` read folds every run stage to
+		*  not-failed and the run face voiced nothing. Same law, run
+		*  shape: the first error-folded stage's verbatim error wins, the
+		*  run-level text is the fallback (terminalOutcomeOf's own
+		*  stage-first order in cards-resource.ts). The view-side read is
+		*  the same: an unreadable status word is not failed, and an
+		*  empty/non-string error is no voice. */
+		function terminalRunStageErrorOf(stages, runError) {
+			for (const stage of stages) {
+				if (statusOrPendingOf(typeof stage.status === "string" ? stage.status : "") !== "error") continue;
+				if (typeof stage.error === "string" && stage.error !== "") return stage.error;
+			}
+			if (typeof runError === "string" && runError !== "") return runError;
+			return null;
+		}
+		/** The first family id on a bench/draft's stage params (the model
+		* the run shot — the rescue's provision target). Null when no
+		* stage names one (the card-id fallback below gets its turn). */
+		function familyOfStages(stages) {
+			for (const s of stages) {
+				const m = s.params?.["model"];
+				if (typeof m === "string" && m !== "") return m;
+			}
+			return null;
+		}
+		/** THE CARD-ID FALLBACK (the mask SAM2 law, 2026-09-19):
+		* model-less tool cards name no family — the stage's own card id
+		* is the provision target (the manage door resolves card-owned
+		* DECL rows under it). Null when no stage names a card. */
+		function cardOfStages(stages) {
+			for (const s of stages) if (typeof s.card === "string" && s.card !== "") return s.card;
+			return null;
+		}
+		//#endregion
 		//#region src/client/run-rescue.tsx
 		/**
 		* run-rescue.tsx — the run-gate rescue's face (roadmap item 4): the
@@ -5198,7 +5232,7 @@ window.__ModuleLoader__.load({
 						setAcquire(first);
 						const t0 = Date.now();
 						const b0 = first.bytes;
-						const current = await pollAcquireToSettled(first, {
+						const flight = await pollAcquireToSettled(first, {
 							pollMs: 400,
 							ceiling: 150,
 							signal,
@@ -5214,15 +5248,16 @@ window.__ModuleLoader__.load({
 						});
 						setBusy(false);
 						setFlow(null);
-						if (!isAcquireSettled(current)) {
+						const current = flight.snapshot;
+						if (flight.endedBy !== "settled") {
 							setStuck({ ...current });
 							(async () => {
 								try {
-									const healed = await pollAcquireToSettled(current, {
+									const healed = (await pollAcquireToSettled(current, {
 										pollMs: 2e3,
 										ceiling: 150,
 										signal
-									});
+									})).snapshot;
 									if (signal.aborted) return;
 									if (!isAcquireSettled(healed)) return;
 									setStuck(null);

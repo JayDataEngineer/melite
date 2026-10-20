@@ -191,7 +191,8 @@ describe('ACQUIRE TERMINAL TRUTH (P5: completion off engine truth, never a state
       { operationId: 'op-shared', state: 'acquiring', bytes: 1_000, total: 5_000 },
       { pollMs: 1, ceiling: 50, onPoll: (snapshot) => { seen.push({ state: snapshot.state, bytes: snapshot.bytes }) } },
     )
-    expect(last.state).toBe('failed')
+    expect(last.snapshot.state).toBe('failed')
+    expect(last.endedBy, 'the engine\'s verdict is the loop\'s settled end').toBe('settled')
     expect(pollCalls(),
       'the loop stops at the first settled report — a verdict never gets re-polled',
     ).toBe(2)

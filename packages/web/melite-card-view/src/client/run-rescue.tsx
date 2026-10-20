@@ -330,21 +330,19 @@ export function RunRescue({ error, stages, onRun, rescue: structured }: {
         const t0 = Date.now()
         const b0 = first.bytes
         // ONE STALL AUTHORITY — THE ENGINE (the 100-MBps-then-stuck
-        // burn, 2026-10-20): the popup's own byte-freeze guess fired
-        // the stuck face 800ms into a WAN hiccup the engine was
-        // riding out (the direct arm seats 'verifying' for the WHOLE
-        // fetch, so a frozen ledger during a hiccup is live flight,
-        // not a stall). The engine's watchdog owns stall truth — it
-        // kills a dead stream and the state lands 'failed' carrying
-        // the cause; the client polls until a terminal state or the
-        // ceiling, NEVER inventing a verdict from its own clock.
-        // ONE STUCK LAW, ONE SPELLING, BOTH SEATS (audit F8): this
-        // loop is pollAcquireToSettled — the same live-state
-        // spelling and ceiling law the agent seat rides, this seat's
-        // own cadence, with the rate/ETA face on the per-poll hook.
+        // burn, 2026-10-20): stall truth is the engine's — its
+        // watchdog kills a dead stream and the state lands 'failed'
+        // carrying the cause. What the seat owns is the ONE STUCK
+        // WATCH both seats share (pollAcquireToSettled, audit F8 fix
+        // #7): a flight frozen AND silent (no live phase) for
+        // STUCK_FROZEN_POLLS polls lands the stuck face at watch
+        // speed — this seat's fast face, well inside the 60s
+        // ceiling — while a live-phase flight (a healthy hash, a
+        // draining queue) keeps polling. The ceiling stays the
+        // backstop for a flight the watch can never judge.
         // An aborted caller throws out of the helper; the catch
         // below owns the quiet teardown.
-        const current = await pollAcquireToSettled(first, {
+        const flight = await pollAcquireToSettled(first, {
           pollMs: 400,
           ceiling: 150,
           signal,
@@ -362,9 +360,11 @@ export function RunRescue({ error, stages, onRun, rescue: structured }: {
         })
         setBusy(false)
         setFlow(null)
-        if (!isAcquireSettled(current)) {
-          // ceiling expiry with no terminal verdict: the stuck truth,
-          // never the success face
+        const current = flight.snapshot
+        if (flight.endedBy !== 'settled') {
+          // the watch's trip (this seat's fast stuck face) and the
+          // ceiling expiry land the same stuck truth — the last
+          // engine report, never the success face
           setStuck({ ...current })
           // THE STUCK HEAL (audit F6c): the ceiling is patience, not
           // a verdict — the engine may still land the fetch (a
@@ -377,7 +377,8 @@ export function RunRescue({ error, stages, onRun, rescue: structured }: {
           // its exits.
           void (async () => {
             try {
-              const healed = await pollAcquireToSettled(current, { pollMs: 2000, ceiling: 150, signal })
+              const healedFlight = await pollAcquireToSettled(current, { pollMs: 2000, ceiling: 150, signal })
+              const healed = healedFlight.snapshot
               if (signal.aborted) return
               if (!isAcquireSettled(healed)) return
               setStuck(null)

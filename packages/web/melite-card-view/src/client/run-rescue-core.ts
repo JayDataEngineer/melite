@@ -28,6 +28,7 @@ import type { ManageJsonValue } from '@melite/estate-manage/types'
 import { statusOrPendingOf } from '@melite/contracts/stageView'
 import { LIVE_ACQUIRE_STATES as SERVER_LIVE_ACQUIRE_STATES, PROVISION_STATES } from '@melite/estate-provisioning/contracts'
 import type { AcquirePhase } from '@melite/estate-provisioning/contracts'
+import { chromeCopy } from '../chromeCopy.ts'
 
 /** What a failed run can offer to fix. `extension` names a pack id
  * (from the missing-extension refusal's own text); `model` names a
@@ -318,6 +319,46 @@ export async function acquireWeightPoll(operationId: string, signal?: AbortSigna
   return weightStateOf(reply)
 }
 
+/** ONE STUCK WATCH, ONE SPELLING, BOTH SEATS (audit F8, fix #7 — the
+ *  F10 seats slice): the patience a flight may sit FROZEN and SILENT
+ *  before the seat calls it stuck, counted in POLLS so each seat's
+ *  own cadence scales it (15 × 400ms on the popup, 15 × 200ms on the
+ *  agent seat — both well inside the 150-poll ceilings). A wedge
+ *  needs BOTH faces dead: the bytes frozen AND no live phase on the
+ *  poll (infra-acquire-phase-honesty) — a healthy multi-GB hash or a
+ *  Manager queue drain carries its phase and never trips this. */
+export const STUCK_FROZEN_POLLS = 15
+
+/** How the shared poll loop ended: `settled` (the engine judged),
+ *  `stuck` (the one stuck watch tripped — frozen bytes, no live
+ *  phase), `ceiling` (the poll ceiling expired non-terminal — the
+ *  backstop for a flight the watch can never judge). */
+export type AcquireLoopEnd = 'settled' | 'stuck' | 'ceiling'
+
+export interface AcquireLoopResult {
+  snapshot: WeightAcquireState
+  endedBy: AcquireLoopEnd
+}
+
+/** THE WATCH (audit F8): counts consecutive frozen-and-silent polls
+ *  from the opening snapshot. A poll whose bytes moved or that
+ *  carries a live phase resets the count — the phase is the
+ *  exemption the 2026-10-20 burn died for (the old popup watch
+ *  tripped ~1s into every verify because nothing exempted a live
+ *  one). The 0/0 extension shape (a Manager drain owns its bytes)
+ *  counts as frozen: silence is silence at any byte count. Returns
+ *  true when the trip lands. */
+export function acquireStuckWatch(first: WeightAcquireState): (snapshot: WeightAcquireState) => boolean {
+  let frozen = 0
+  let lastBytes = first.bytes
+  return (snapshot) => {
+    const exempt = snapshot.phase !== undefined || snapshot.bytes !== lastBytes
+    lastBytes = snapshot.bytes
+    frozen = exempt ? 0 : frozen + 1
+    return frozen >= STUCK_FROZEN_POLLS
+  }
+}
+
 /** ONE STUCK LAW, ONE SPELLING, BOTH SEATS (audit F8, 2026-10-20:
  *  the popup's inline loop and the agent seat's runRescueCall each
  *  carried their own poll loop with their own cadence and ceiling —
@@ -325,11 +366,12 @@ export async function acquireWeightPoll(operationId: string, signal?: AbortSigna
  *  flight" in the other. This helper is the one law: poll while the
  *  ledger is LIVE (the engine's own watchdog owns stall truth — the
  *  client never invents a verdict from its own clock), stop at the
- *  first settled state, and give up after `ceiling` polls. Returns
- *  the LAST snapshot whether settled or not — the CALLER owns the
- *  face (the popup paints stuck/failed/done; the agent seat throws
- *  on a non-settled return). Throws the abort reason when the
- *  caller's signal fires mid-loop.
+ *  first settled state, and end the flight on ONE of the three
+ *  shared ends (`AcquireLoopEnd`): the engine's verdict, the ONE
+ *  stuck watch (frozen bytes + no live phase over STUCK_FROZEN_POLLS
+ *  — both seats ride the same watch; the caller owns the seat's own
+ *  face for it), or the ceiling backstop. Throws the abort reason
+ *  when the caller's signal fires mid-loop.
  *  @param first — the opening snapshot from acquireWeightStart (the
  *   loop never re-polls what it already has)
  *  @param options.pollMs — the poll cadence in ms
@@ -343,15 +385,19 @@ export async function acquireWeightPoll(operationId: string, signal?: AbortSigna
 export async function pollAcquireToSettled(
   first: WeightAcquireState,
   options: { pollMs: number, ceiling: number, signal?: AbortSignal, onPoll?: (state: WeightAcquireState) => void },
-): Promise<WeightAcquireState> {
+): Promise<AcquireLoopResult> {
+  const stuck = acquireStuckWatch(first)
   let current = first
   for (let attempt = 0; !isAcquireSettled(current) && attempt < options.ceiling; attempt += 1) {
     await abortableSleep(options.pollMs, options.signal)
     if (options.signal?.aborted === true) throw options.signal.reason ?? new Error('aborted')
     current = await acquireWeightPoll(current.operationId, options.signal)
     options.onPoll?.({ ...current })
+    if (!isAcquireSettled(current) && stuck(current)) {
+      return { snapshot: current, endedBy: 'stuck' }
+    }
   }
-  return current
+  return { snapshot: current, endedBy: isAcquireSettled(current) ? 'settled' : 'ceiling' }
 }
 
 /** The sleep that dies with the caller's signal (the poll law's own
@@ -421,17 +467,24 @@ export async function runRescueCall(rescue: Rescue, target: string, signal?: Abo
   // THE MODEL ARM (F9 one-door law): start the fetch, then poll the
   // SAME door to the terminal state — ONE STUCK LAW with the popup
   // tracker (pollAcquireToSettled, audit F8): the same live-state
-  // spelling, the same ceiling-is-stuck law, this seat's own
+  // spelling, the same stuck watch and ceiling law, this seat's own
   // cadence. The signal rides the whole loop (audit L-ERROR-3,
   // 2026-10-22): an aborted caller stops paying manage calls.
   const first = await acquireWeightStart(provisionTarget, rescue.file, signal)
-  const current = await pollAcquireToSettled(first, { pollMs: 200, ceiling: 150, signal })
-  // THE CEILING IS A FAILURE (the stuck burn, ERRORS k2/m): a fetch
-  // still non-terminal after the whole poll ceiling is a STUCK
-  // operation — bytes frozen is stuck, never success. The throw
-  // voices the last engine truth (state + bytes/total) so the face
-  // can offer Retry/Delete on it.
+  const flight = await pollAcquireToSettled(first, { pollMs: 200, ceiling: 150, signal })
+  const current = flight.snapshot
+  // THE SAME STUCK VERDICT, BOTH SEATS (audit F8, fix #7): when the
+  // watch trips first, this seat throws the popup's own stuck-face
+  // sentence for the same snapshot — same words, same detail shape
+  // (chromeCopy.stuckNote) — never a ceiling-flavoured cousin. The
+  // ceiling expiry (a flight the watch can never judge — a silent
+  // server that keeps moving bytes but never settles) keeps the
+  // ceiling voice; both throw, and the face offers Retry/Delete on
+  // the thrown detail either way.
   if (!isAcquireSettled(current)) {
+    if (flight.endedBy === 'stuck') {
+      throw new Error(chromeCopy.stuckNote({ state: current.state, progress: formatWeightProgress(current.bytes, current.total) }))
+    }
     throw new Error('weight acquisition stuck — no longer progressing: the engine last reported state "' + current.state + '" at ' + formatWeightProgress(current.bytes, current.total) + ' across the full 150-poll ceiling; retry the fetch or delete the stuck operation')
   }
   const restartRequired = current.state === 'restart_required' || current.state === 'installed'

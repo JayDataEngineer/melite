@@ -162,6 +162,58 @@ describe("ManagerPort provider", () => {
     });
   });
 
+  test("the extension drain heartbeat fires once per queue status poll (audit F4: the arm's voice rides the real provider)", async () => {
+    const repository = "https://github.com/example/pack.git";
+    let queuePolls = 0;
+    const fetcher: typeof globalThis.fetch = async (input): Promise<Response> => {
+      const path = new URL(String(input)).pathname + new URL(String(input)).search;
+      if (path === "/customnode/getlist?mode=cache&skip_update=true") {
+        return json({
+          channel: "default",
+          node_packs: {
+            "comfy.org/example": {
+              id: "comfy.org/example",
+              version: "1.0.0",
+              repository,
+              files: [repository],
+              channel: "default",
+              pip: [],
+            },
+          },
+        });
+      }
+      if (path === "/customnode/versions/comfy.org%2Fexample") return json([{ version: "1.0.0" }]);
+      if (path === "/manager/queue/install" || path === "/manager/queue/start") return new Response(null, { status: 200 });
+      if (path === "/manager/queue/status") {
+        queuePolls += 1;
+        // two live polls, then drained — the hook must fire per poll
+        return json({
+          total_count: 1,
+          done_count: queuePolls <= 2 ? 0 : 1,
+          in_progress_count: queuePolls <= 2 ? 1 : 0,
+          is_processing: queuePolls <= 2,
+        });
+      }
+      return json({ error: "not found" }, 404);
+    };
+    const provider = new ComfyUiManagerProvider(
+      new ComfyUiManagerHttpClient({ baseUrl: "http://127.0.0.1:8188", fetch: fetcher }),
+      { queue: { timeoutMs: 100, pollIntervalMs: 1 } },
+    );
+    let beats = 0;
+    const result = await provider.install({
+      id: "example-pack",
+      url: repository,
+      registry: "comfy.org/example",
+      onQueueStatus: () => { beats += 1 },
+    });
+    assert.equal(result.installed, true);
+    assert.equal(queuePolls, 3);
+    assert.equal(beats, queuePolls,
+      "the drain heartbeat did not fire once per queue status poll — the extension arm's ledger voice would freeze mid-drain",
+    );
+  });
+
   test("accepts the Manager custom_nodes catalog shape", async () => {
     const repository = "https://github.com/example/legacy-pack.git";
     const fetcher: typeof globalThis.fetch = async (input): Promise<Response> => {

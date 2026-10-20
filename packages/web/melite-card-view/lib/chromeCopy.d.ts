@@ -266,14 +266,15 @@ export declare const chromeCopy: {
         what: string;
     }) => string;
     /** Rescue missing-runtime note (E2-2: what the run lacked — the
-     *  engine's own tool runtime, provisioned where the engine
-     *  lives, never through the estate). */
+     *  engine's own tool runtime, now provisionable through the estate
+     *  door). */
     readonly missingRuntime: (p: {
         runtime: string;
     }) => string;
     /** Rescue runtime face's provision voice (E2-2): the engine's own
-     *  provision command, verbatim — the command IS the offer (no
-     *  estate door provisions runtimes, so no button is faked). */
+     *  provision command, verbatim — the manual path stays named beside
+     *  the button (the command is the engine-tree spelling; the button
+     *  rides the estate's provision_runtime link door). */
     readonly runtimeProvision: (p: {
         command: string;
     }) => string;
@@ -282,12 +283,32 @@ export declare const chromeCopy: {
     readonly runtimeEnvOverride: (p: {
         env: string;
     }) => string;
+    /** Rescue runtime face's provision button (E2-2 Piece B): fires
+     *  provision_runtime with the runtime NAME — the estate links the
+     *  engine tree to the repo's healthy seed. */
+    readonly runtimeProvisionButton: "Provision runtime";
+    /** Rescue runtime face's in-flight word (an instant link, but the
+     *  press still gets its own word). */
+    readonly runtimeProvisioningWord: "Provisioning…";
+    /** Rescue runtime face's success voice (E2-2 Piece B): the miss
+     *  face retires and the re-run rides the caller's own press —
+     *  never an automatic re-fire. */
+    readonly runtimeProvisioned: (p: {
+        runtime: string;
+    }) => string;
     /** Rescue runtime face's dismiss label (the × every rescue face carries). */
     readonly closeRuntimeFace: "Close runtime notice";
     /** Weight popup title when the acquisition ended STUCK (frozen
      *  bytes across polls or an expired poll ceiling) — never the
      *  ready face (the purge P5 rescue honesty, ERRORS k2/m). */
     readonly weightStuck: "Weight stuck";
+    /** Weight popup title when the ENGINE judged the acquisition
+     *  failed/blocked — its own verdict word, never the stuck
+     *  umbrella (audit download-stack-audit-2026-10-20 F10, the
+     *  stuck column: one title for every terminal state read a
+     *  named failure as a wedge). The cause rides the note; the
+     *  retry door serves beside it. */
+    readonly weightFailed: "Weight failed";
     /** Weight stuck face's note: the engine's last truth leads
      *  (state + the human progress line — "4.8/6.8 GB (71%)", never
      *  raw byte walls), and the two honest exits are named. An empty
@@ -327,6 +348,11 @@ export declare const chromeCopy: {
     /** The stuck face's run refusal — a run press on an incomplete
      *  weight is refused loudly, never fired silently (the purge P5). */
     readonly stuckRunRefusal: "The weight is not complete — the run stays refused until the fetch lands (retry) or the stuck operation is deleted.";
+    /** Weight tracker line while the poll carries a LIVE hash phase
+     *  (verify/recheck): the phase voice replaces rate/ETA — no
+     *  average-since-start rate over a frozen bar (audit
+     *  download-stack-audit-2026-10-20 F10, the popup rows). */
+    readonly weightVerifyLive: "Verifying… the estate is hashing the landed bytes — the bar holds while the hash runs.";
     /** Weight tracker line when the engine declared no total (a DECL
      *  row without size seeds 0): the voice says so — no dead
      *  0-of-0 meter dressed as 0% (the purge P5's total=0 face). */

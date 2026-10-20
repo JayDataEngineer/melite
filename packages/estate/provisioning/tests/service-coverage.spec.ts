@@ -800,7 +800,13 @@ describe("ProvisioningService public seams", () => {
     })).service;
     const selectedResult = await extensionService.ensure(extension, { items: ["pack"] });
     assert.equal(selectedResult.items.length, 1);
-    assert.deepEqual(selected[0], {
+    // the drain heartbeat rides every manager request (audit F4) —
+    // pinned beside the shape, never inside the deep-equal (functions
+    // compare by reference)
+    const selectedRequest = selected[0] as { onQueueStatus?: unknown };
+    assert.equal(typeof selectedRequest.onQueueStatus, "function");
+    delete selectedRequest.onQueueStatus;
+    assert.deepEqual(selectedRequest, {
       id: "pack",
       url: "https://example.invalid/pack.git",
       ref: "v1",
@@ -821,7 +827,10 @@ describe("ProvisioningService public seams", () => {
       manager: manager({ install: async (request) => { minimalRequest.push(request); return { installed: true }; } }),
     })).service;
     await minimalService.ensure(extension);
-    assert.deepEqual(minimalRequest[0], { id: "minimal-manager", url: "https://example.invalid/minimal.git" });
+    const minimalHeartbeat = minimalRequest[0] as { onQueueStatus?: unknown };
+    assert.equal(typeof minimalHeartbeat.onQueueStatus, "function");
+    delete minimalHeartbeat.onQueueStatus;
+    assert.deepEqual(minimalHeartbeat, { id: "minimal-manager", url: "https://example.invalid/minimal.git" });
     const local = extensionRef("local-detail");
     const localService = makeService(basicConfig(plan(local, [extensionItem({ id: "local-detail", provider: "local", url: undefined })]), {
       inspector: inspector({ active: true }),

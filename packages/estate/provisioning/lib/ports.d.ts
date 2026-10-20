@@ -17,6 +17,11 @@ export interface ManagerInstallRequest {
     readonly registry?: string;
     readonly requirements?: readonly string[];
     readonly nodeTypes?: readonly string[];
+    /** THE DRAIN HEARTBEAT (audit F4, the extension arm): fired by the
+     *  registry-arm queue drain once per status poll — the service
+     *  re-voices the ledger's queue phase through it, so a long
+     *  extension install still reads as flight on the poll. */
+    readonly onQueueStatus?: () => void;
 }
 export interface ManagerInstallResult {
     readonly installed: boolean;

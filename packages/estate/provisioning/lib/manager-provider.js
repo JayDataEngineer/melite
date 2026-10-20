@@ -372,6 +372,10 @@ export class ComfyUiManagerProvider {
         const status = await this.client.waitForQueue({
             ...this.queue,
             ...(signal === undefined ? {} : { signal }),
+            // the extension drain's heartbeat rides to the queue — the
+            // service's hook re-voices the ledger's queue phase once per
+            // status poll (audit F4, the extension arm)
+            ...(request.onQueueStatus === undefined ? {} : { onQueueStatus: request.onQueueStatus }),
         });
         return {
             installed: true,

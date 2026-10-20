@@ -1015,6 +1015,24 @@ export class ProvisioningService extends Service {
             if (options.operatorConfirmed !== true) {
                 return this.complete(ref, operationId, this.blockedResult(ref, operationId, "external/not-confirmed", "external acquisition requires operator confirmation"));
             }
+            // THE EXTERNAL LEDGER SEED (audit F4, the F10 seats slice): the
+            // external seats' flights were invisible to the poll — no
+            // weightProgress row existed, so the queue voice below wrote to
+            // nothing and the tracker had no window on the flight at all.
+            // One row per external flight, the same seed the blocking path
+            // uses; the drain's own hook re-voices it per queue poll.
+            if (!this.weightProgress.has(operationId)) {
+                this.weightProgress.set(operationId, {
+                    operationId,
+                    ref: copyRef(ref),
+                    state: "acquiring",
+                    bytes: 0,
+                    total: request.kind === "model" ? request.sizeBytes ?? 0 : 0,
+                    // the external seat's first live flow is the Manager queue
+                    phase: "queue",
+                });
+                this.weightProgressByRef.set(resourceKey(ref), operationId);
+            }
             if (request.kind === "model") {
                 if (this.writer?.inspect === undefined) {
                     return this.complete(ref, operationId, this.blockedResult(ref, operationId, "artifact/inspect-unavailable", "external model acquisition requires the configured model store inspector"));
@@ -1035,11 +1053,11 @@ export class ProvisioningService extends Service {
                     const parts = relativePath.split("/");
                     const landedName = parts[parts.length - 1];
                     const landedFolder = parts.slice(0, -1).join("/");
-                    // the external seat drains the same Manager queue — the
-                    // same acquiring/queue voice as the declared arm. (No
-                    // per-poll hook: the declared arm is the walled flight.
-                    // the voice persists until the post-install re-check —
-                    // nothing clobbers it mid-drain.)
+                    // THE DRAIN VOICE (audit F4): the external seat drains the
+                    // same Manager queue — the same acquiring/queue voice as
+                    // the declared arm, re-voiced once per queue status poll
+                    // through the hook below (the seed above opens the word;
+                    // nothing clobbers it mid-drain except the drain itself).
                     this.move(ref, operationId, "acquiring");
                     this.voicePhase(operationId, "queue");
                     const installed = await this.manager.installModel({
@@ -1051,6 +1069,11 @@ export class ProvisioningService extends Service {
                         // T-E2: same law as the declared arm — the declared size
                         // scales the manager queue's drain budget.
                         ...(request.sizeBytes === undefined ? {} : { sizeBytes: request.sizeBytes }),
+                        // THE DRAIN HEARTBEAT (audit F4, the external seat): each
+                        // queue poll re-voices the ledger's queue phase, so the
+                        // download_model flight moves on the poll exactly like a
+                        // declared one.
+                        onQueueStatus: () => { this.voicePhase(operationId, "queue"); },
                     }, operationSignal);
                     if (!installed.installed) {
                         throw new ItemRefusal("failed", "manager/model-install-failed", installed.detail ?? "ComfyUI-Manager did not install the model");
@@ -1085,7 +1108,17 @@ export class ProvisioningService extends Service {
                 return this.complete(ref, operationId, this.blockedResult(ref, operationId, "manager/unavailable", "no ManagerPort is configured"));
             }
             try {
-                const result = await this.manager.install({ id: ref.id, url: request.url, ...(request.ref === undefined ? {} : { ref: request.ref }) }, operationSignal);
+                // THE DRAIN VOICE (audit F4, the external extension seat):
+                // the same live ledger row + queue heartbeat as every other
+                // Manager-side arm — the install_extension_url flight moves
+                // on the poll instead of sitting silent for its whole drain.
+                this.voicePhase(operationId, "queue");
+                const result = await this.manager.install({
+                    id: ref.id,
+                    url: request.url,
+                    ...(request.ref === undefined ? {} : { ref: request.ref }),
+                    onQueueStatus: () => { this.voicePhase(operationId, "queue"); },
+                }, operationSignal);
                 if (!result.installed)
                     throw new ItemRefusal("failed", "manager/install-failed", result.detail ?? "manager did not install the extension");
                 const landed = await this.verifyLanded(ref.id, operationSignal);
@@ -1293,6 +1326,11 @@ export class ProvisioningService extends Service {
             ...(item.registry === undefined ? {} : { registry: item.registry }),
             ...(item.requirements === undefined ? {} : { requirements: item.requirements }),
             ...(item.nodeTypes === undefined ? {} : { nodeTypes: item.nodeTypes }),
+            // THE DRAIN HEARTBEAT (audit F4, the extension arm): the
+            // declared extension drain re-voices the seeded ledger row's
+            // queue phase once per status poll — the flight moves on the
+            // poll instead of sitting on its opening stamp for the drain.
+            onQueueStatus: () => { this.voicePhase(operationId, "queue"); },
         };
         if (this.manager.canInstall !== undefined) {
             const canInstall = await this.manager.canInstall(request, signal);
