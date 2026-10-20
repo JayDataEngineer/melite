@@ -215,7 +215,10 @@ describe("ProvisioningService public seams", () => {
     const ref = modelRef();
     const abortError = Object.assign(new Error("cancelled"), { name: "AbortError" });
     const cases: Array<{ error: unknown; state: string; code: string }> = [
-      { error: abortError, state: "failed", code: "provisioning/cancelled" },
+      // THE CENSUS HONESTY LAW (the anima burn, 2026-10-20): the
+    // cancelled outcome wears 'unknown' — a scan artifact, never a
+    // health verdict. This row judged the old 'failed' seat.
+    { error: abortError, state: "unknown", code: "provisioning/cancelled" },
       { error: new ManagerProviderError("pin-mismatch", "manager refuses"), state: "blocked", code: "manager/pin-mismatch" },
       { error: new ProvisioningError("invalid-digest", "digest refuses"), state: "blocked", code: "invalid-digest" },
       { error: new ProvisioningError("invalid-path", "path refuses"), state: "blocked", code: "invalid-path" },
@@ -649,7 +652,12 @@ describe("ProvisioningService public seams", () => {
       declaration: declaration(plan(ref, [modelItem(), modelItem({ key: "two", name: "two.bin" })]), [ref, modelRef({ id: "two" })]),
     })).service;
     const statuses = await aborted.reconcile(undefined, controller.signal);
-    assert.equal(statuses.length, 0);
+    // THE CENSUS HONESTY LAW (the anima burn): an aborted census is
+    // ROW-COMPLETE — every declared ref rides an 'unknown' row; the
+    // old law truncated to 0 rows and the roster served as the
+    // whole truth.
+    assert.equal(statuses.length, 2);
+    assert.ok(statuses.every((row) => row.state === "unknown"));
   });
 
   test("subscriptions, transitions, persistence, and operation copies cover their optional arms", async () => {
@@ -1140,7 +1148,10 @@ describe("ProvisioningService public seams", () => {
     const fresh = modelRef({ id: "fresh" });
     const freshService = makeService(basicConfig(plan(fresh, [modelItem({ id: "fresh" })]))).service;
     const freshResult = await freshService.inspect(fresh);
-    assert.equal(freshResult.state, "absent");
+    // THE CENSUS HONESTY LAW: no inspect door exists, so the row
+    // reads 'unknown' — the old 'absent' invented a health verdict
+    // (nothing was checked, nothing was declared missing).
+    assert.equal(freshResult.state, "unknown");
     assert.equal(freshService.transitionsOf(fresh)[0], "unknown");
   });
 

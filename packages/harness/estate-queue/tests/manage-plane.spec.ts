@@ -783,6 +783,60 @@ describe("hStatus operations", () => {
       rmRoot();
     }
   });
+
+  // THE CENSUS HONESTY LAW (the anima burn, 2026-10-20: the sidebar
+  // read "Declared resources 1/1 failed — model family/anima" while
+  // every anima file sat byte-exact on disk): a roster carrying ANY
+  // 'unknown' row is a scan that could not check everything inside
+  // its status budget — the status MUST mark the census partial so
+  // the UI never titles its count as the whole truth. A settled
+  // roster MUST NOT carry the mark.
+  it("marks the status census_partial when any resource row is unknown, never on a settled roster", async () => {
+    mkRoot();
+    try {
+      const ref = extensionRef("pack");
+      const unknownRow: ResourceStatus = {
+        ref,
+        state: "unknown",
+        items: [],
+        detail: "scan incomplete — this resource was not checked before the status budget closed",
+      };
+      route((url) => {
+        if (url.endsWith("/system_stats")) return json({ system: { comfyui_version: "9.9" }, devices: [] });
+        if (url.endsWith("/manager/version")) return json({ version: "3.0" });
+        return json({ is_processing: false, total_count: 0, done_count: 0 });
+      });
+      const ctx = CTX({
+        provisioning: {
+          ...fakeProvisioning,
+          reconcile: async (): Promise<ResourceStatus[]> => [unknownRow],
+          operationOf: () => undefined,
+        },
+      });
+      const [, partial] = await manage({ action: "status" }, ctx);
+      const partialData = partial.data as { resources: Array<{ state: string }>; census_partial?: boolean };
+      assert.equal(partialData.resources.length, 1, "the unknown row rides the roster — row-complete");
+      assert.equal(partialData.census_partial, true, "the status marks the census partial");
+
+      const settled: ResourceStatus = {
+        ref,
+        state: "active",
+        items: [{ key: "extension:pack", kind: "extension", state: "active" }],
+      };
+      const wholeCtx = CTX({
+        provisioning: {
+          ...fakeProvisioning,
+          reconcile: async (): Promise<ResourceStatus[]> => [settled],
+          operationOf: () => undefined,
+        },
+      });
+      const [, whole] = await manage({ action: "status" }, wholeCtx);
+      const wholeData = whole.data as { census_partial?: boolean };
+      assert.equal(wholeData.census_partial, undefined, "a settled roster never carries the partial mark");
+    } finally {
+      rmRoot();
+    }
+  });
 });
 
 describe("hSearch", () => {

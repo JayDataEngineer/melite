@@ -202,6 +202,12 @@ export const assetsCopy = {
     noDeclaredResources: 'No declared resources reported.',
     /** Scan-wide seam note; the site feeds the live scan detail. */
     resourceScanNote: (p) => 'Resource scan: ' + p.detail,
+    /** THE CENSUS PARTIAL MARK (the anima burn, 2026-10-20: a timed-out
+     * scan served its truncated roster as the whole "Declared
+     * resources" truth — "1/1 failed" over byte-exact files). Rendered
+     * whenever the status carries census_partial: the count is not the
+     * whole truth; Refresh re-runs the scan. */
+    censusPartialNote: 'Scan incomplete — the check ran out of its status budget before every resource was verified. Counts may be partial; press Refresh to re-scan.',
     /** Extensions section title. */
     extensionsTitle: 'Extensions',
     /** Installed-packs filter field label. */

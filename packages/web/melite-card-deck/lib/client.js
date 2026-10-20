@@ -320,6 +320,12 @@ window.__ModuleLoader__.load({
 			noDeclaredResources: "No declared resources reported.",
 			/** Scan-wide seam note; the site feeds the live scan detail. */
 			resourceScanNote: (p) => "Resource scan: " + p.detail,
+			/** THE CENSUS PARTIAL MARK (the anima burn, 2026-10-20: a timed-out
+			* scan served its truncated roster as the whole "Declared
+			* resources" truth — "1/1 failed" over byte-exact files). Rendered
+			* whenever the status carries census_partial: the count is not the
+			* whole truth; Refresh re-runs the scan. */
+			censusPartialNote: "Scan incomplete — the check ran out of its status budget before every resource was verified. Counts may be partial; press Refresh to re-scan.",
 			/** Extensions section title. */
 			extensionsTitle: "Extensions",
 			/** Installed-packs filter field label. */
@@ -2015,21 +2021,32 @@ window.__ModuleLoader__.load({
 					/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("section", {
 						className: assets_module_css_default.section,
 						id: "manage-resources",
-						children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("h3", {
-							className: assets_module_css_default.sectionTitle,
-							children: [
-								assetsCopy.declaredResourcesTitle,
-								" ",
-								/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-									className: assets_module_css_default.count,
-									children: resources.length
-								})
-							]
-						}), resources.length === 0 ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
-							className: assets_module_css_default.sub,
-							children: assetsCopy.noDeclaredResources
-						}) : /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [
-							(() => {
+						children: [
+							/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("h3", {
+								className: assets_module_css_default.sectionTitle,
+								children: [
+									assetsCopy.declaredResourcesTitle,
+									" ",
+									/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+										className: assets_module_css_default.count,
+										children: resources.length
+									})
+								]
+							}),
+							status?.resources_detail !== void 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
+								className: assets_module_css_default.warningNote,
+								"data-testid": "resources-scan-note",
+								children: assetsCopy.resourceScanNote({ detail: status.resources_detail })
+							}),
+							status?.census_partial === true && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
+								className: assets_module_css_default.warningNote,
+								"data-testid": "resources-census-partial",
+								children: assetsCopy.censusPartialNote
+							}),
+							resources.length === 0 ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
+								className: assets_module_css_default.sub,
+								children: assetsCopy.noDeclaredResources
+							}) : /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [(() => {
 								const buckets = /* @__PURE__ */ new Map();
 								for (const resource of resources) {
 									const state = resource.state ?? assetsCopy.unknownFallback;
@@ -2041,13 +2058,7 @@ window.__ModuleLoader__.load({
 									"data-testid": "resource-rollup",
 									children: rollup
 								});
-							})(),
-							status?.resources_detail !== void 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
-								className: assets_module_css_default.warningNote,
-								"data-testid": "resources-scan-note",
-								children: assetsCopy.resourceScanNote({ detail: status.resources_detail })
-							}),
-							/* @__PURE__ */ (0, react_jsx_runtime.jsx)("ul", {
+							})(), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("ul", {
 								className: assets_module_css_default.resourceList,
 								"data-testid": "resource-status",
 								children: resources.map((resource, index) => {
@@ -2129,8 +2140,8 @@ window.__ModuleLoader__.load({
 										})
 									}, resourceLabel(resource) + ":" + index);
 								})
-							})
-						] })]
+							})] })
+						]
 					}),
 					/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("section", {
 						className: assets_module_css_default.section,

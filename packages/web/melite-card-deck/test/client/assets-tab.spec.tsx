@@ -245,6 +245,75 @@ test('declared resources fold closed with a roll-up line and the scan note above
   expect(await within(wan as HTMLElement).findByText('models/wan/preview/fp8/model.safetensors')).toBeTruthy()
 })
 
+// THE CENSUS HONESTY LAW (the anima burn, 2026-10-20: the sidebar
+// read "Declared resources 1/1 failed — model family/anima" while
+// every anima file sat byte-exact on disk; the burn's red was a
+// status-budget census artifact). Three render laws on the deck's
+// resources section:
+//   1. the scan seam note renders over ZERO rows (a timed-out scan
+//      painted "No declared resources reported." with the reason
+//      invisible — the old seat rendered the note only inside the
+//      non-empty branch)
+//   2. census_partial marks the section and its note names the door
+//      out (Refresh), above the rows
+//   3. a settled whole scan paints NEITHER note
+test('the census honesty marks: scan note over zero rows, the partial mark, never on a settled scan', async () => {
+  // ARM 1 — the seam note over an empty roster (B2-2)
+  stubManageSeat({
+    status: {
+      ...STATUS,
+      data: {
+        ...(STATUS.data as Record<string, unknown>),
+        resources: [],
+        resources_detail: 'the status budget closed before the scan could finish',
+      },
+    },
+  })
+  render(<ComfyManagerPanel />)
+  expect((await screen.findByTestId('resources-scan-note')).textContent).toContain('the status budget closed before the scan could finish')
+  expect(screen.getByText('No declared resources reported.')).toBeTruthy()
+  cleanup()
+
+  // ARM 2 — the census partial mark rides above the rows (B2-1)
+  stubManageSeat({
+    status: {
+      ...STATUS,
+      data: {
+        ...(STATUS.data as Record<string, unknown>),
+        census_partial: true,
+        resources: [
+          {
+            ref: { kind: 'model', owner: 'family', id: 'anima' },
+            state: 'unknown',
+            detail: 'scan incomplete — this resource was not checked before the status budget closed',
+            items: [],
+          },
+        ],
+      },
+    },
+  })
+  render(<ComfyManagerPanel />)
+  const note = await screen.findByTestId('resources-census-partial')
+  expect(note.textContent).toContain('Scan incomplete')
+  expect(note.textContent).toContain('Refresh')
+  // the partial note reads above the roster, with the section
+  const section = document.getElementById('manage-resources')!
+  const list = screen.getByTestId('resource-status')
+  expect(section.contains(note)).toBe(true)
+  expect(note.compareDocumentPosition(list) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  // the unknown row rides the roster painted neutral, never failed
+  expect(within(list).getByText('model family/anima')).toBeTruthy()
+  expect(screen.getByTestId('resource-rollup').textContent).toBe('1 unknown')
+  cleanup()
+
+  // ARM 3 — a settled whole scan paints neither note
+  stubManageSeat({ status: STATUS })
+  render(<ComfyManagerPanel />)
+  await screen.findByTestId('resource-rollup')
+  expect(screen.queryByTestId('resources-scan-note')).toBeNull()
+  expect(screen.queryByTestId('resources-census-partial')).toBeNull()
+})
+
 test('status refresh never creates or replaces a result', async () => {
   const { calls } = stubManageSeat({ status: STATUS })
   const user = userEvent.setup()

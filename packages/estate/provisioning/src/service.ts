@@ -98,15 +98,19 @@ class ItemRefusal extends Error {
 }
 
 const TRANSITIONS: Readonly<Record<ProvisionState, readonly ProvisionState[]>> = {
+  // THE CENSUS HONESTY LAW (the anima burn, 2026-10-20): every
+  // settled state may be re-marked 'unknown' — a cut re-scan of a
+  // previously-active resource must seat the unknown row, never
+  // throw on a missing edge and never keep the stale verdict.
   unknown: ["absent", "acquiring", "installed", "restart_required", "active", "failed", "blocked"],
-  absent: ["acquiring", "verifying", "installed", "restart_required", "active", "failed", "blocked"],
-  acquiring: ["verifying", "installed", "restart_required", "active", "failed", "blocked", "absent"],
-  verifying: ["installed", "restart_required", "active", "failed", "blocked", "acquiring", "absent"],
-  installed: ["acquiring", "verifying", "active", "restart_required", "failed", "blocked", "absent"],
-  restart_required: ["acquiring", "verifying", "active", "failed", "blocked", "absent"],
-  active: ["acquiring", "verifying", "absent", "restart_required", "failed", "blocked"],
-  failed: ["acquiring", "verifying", "installed", "restart_required", "active", "failed", "blocked", "absent"],
-  blocked: ["acquiring", "verifying", "installed", "restart_required", "active", "failed", "absent"],
+  absent: ["acquiring", "verifying", "installed", "restart_required", "active", "failed", "blocked", "unknown"],
+  acquiring: ["verifying", "installed", "restart_required", "active", "failed", "blocked", "absent", "unknown"],
+  verifying: ["installed", "restart_required", "active", "failed", "blocked", "acquiring", "absent", "unknown"],
+  installed: ["acquiring", "verifying", "active", "restart_required", "failed", "blocked", "absent", "unknown"],
+  restart_required: ["acquiring", "verifying", "active", "failed", "blocked", "absent", "unknown"],
+  active: ["acquiring", "verifying", "absent", "restart_required", "failed", "blocked", "unknown"],
+  failed: ["acquiring", "verifying", "installed", "restart_required", "active", "failed", "blocked", "absent", "unknown"],
+  blocked: ["acquiring", "verifying", "installed", "restart_required", "active", "failed", "absent", "unknown"],
 };
 
 function copyRef(ref: ResourceRef): ResourceRef {
@@ -302,6 +306,10 @@ function aggregateState(items: readonly ProvisionItemResult[]): ProvisionState {
   if (items.length === 0) return "absent";
   if (items.some((item) => item.state === "blocked")) return "blocked";
   if (items.some((item) => item.state === "failed")) return "failed";
+  // THE CENSUS HONESTY LAW (the anima burn): an unchecked item must
+  // lift the whole row to 'unknown' — a row that reads 'active'
+  // over an unchecked item invents a health verdict from silence.
+  if (items.some((item) => item.state === "unknown")) return "unknown";
   if (items.every((item) => item.state === "active")) return "active";
   if (items.every((item) => item.state === "restart_required")) return "restart_required";
   if (items.some((item) => item.state === "restart_required")) {
@@ -360,7 +368,12 @@ function itemFailure(item: ProvisionPlanItem, refusal: ItemRefusal): ProvisionIt
   return {
     key: item.key,
     kind: item.kind,
-    state: refusal.outcome === "blocked" ? "blocked" : "failed",
+    // THE CENSUS HONESTY LAW (the anima burn, 2026-10-20): a
+    // cancelled check is the scan's own artifact, never a health
+    // verdict — it must wear 'unknown', never 'failed' (the item
+    // loop in inspect() lands here BEFORE the reconcile catch, so
+    // this seat is the one the burn's red actually rode).
+    state: refusal.outcome === "blocked" ? "blocked" : refusal.outcome === "cancelled" ? "unknown" : "failed",
     outcome: refusal.outcome,
     errorCode: refusal.code,
     detail: refusal.message,
@@ -962,6 +975,10 @@ export class ProvisioningService extends Service implements ProvisioningServiceD
       ref: copyRef(ref),
       state,
       ...(operationId === undefined ? {} : { operationId }),
+      // THE CENSUS HONESTY LAW (the anima burn): an unknown row
+      // names its own cause at the row level — the scan's budget,
+      // never a health verdict.
+      ...(state === "unknown" ? { detail: "scan incomplete — the check was cut off before it could judge this resource" } : {}),
       items: items.map(copyItem),
     };
   }
@@ -1141,11 +1158,39 @@ export class ProvisioningService extends Service implements ProvisioningServiceD
     const refs = await this.declaration.list();
     const statuses: ResourceStatus[] = [];
     for (const item of refs) {
-      if (isAbortError(undefined, signal)) break;
+      if (isAbortError(undefined, signal)) {
+        // THE CENSUS HONESTY LAW (the anima burn, 2026-10-20: the
+        // sidebar read "Declared resources 1/1 failed — model
+        // family/anima" while every anima file sat byte-exact on
+        // disk): an aborted census NEVER truncates and NEVER fails —
+        // every ref it did not inspect rides an 'unknown' row (the
+        // scan's own artifact), so the roster stays row-complete,
+        // the consumer can mark the census partial, and no health
+        // verdict is invented from a timeout.
+        statuses.push({
+          ref: copyRef(item),
+          state: "unknown",
+          items: [],
+          detail: "scan incomplete — this resource was not checked before the status budget closed",
+        });
+        continue;
+      }
       try {
         statuses.push(await this.inspect(item, signal));
       } catch (error: unknown) {
         const refusal = refusalFor(error, signal);
+        if (refusal.outcome === "cancelled") {
+          // a mid-abort inspect throw is the SAME artifact: unknown,
+          // never 'failed' (the burn's exact shape — a cancelled
+          // check wearing the failed token)
+          statuses.push({
+            ref: copyRef(item),
+            state: "unknown",
+            items: [],
+            detail: "scan incomplete — the check was cut off before it could judge this resource",
+          });
+          continue;
+        }
         statuses.push({
           ref: copyRef(item),
           state: refusal.outcome === "blocked" ? "blocked" : "failed",

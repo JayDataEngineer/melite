@@ -116,6 +116,11 @@ interface StatusView {
   routing?: Record<string, unknown>
   resources?: ResourceView[]
   resources_detail?: string
+  /** THE CENSUS PARTIAL MARK (the anima burn, 2026-10-20): true when
+   * the scan could not check every declared resource inside its
+   * status budget — 'unknown' rows ride the roster and the section
+   * must never title its count as the whole truth. */
+  census_partial?: boolean
   operations?: unknown[]
   model_options?: ModelOption[]
   model_options_detail?: string
@@ -1150,6 +1155,23 @@ export function ComfyManagerPanel(): React.ReactElement {
 
       <section className={css.section} id="manage-resources">
         <h3 className={css.sectionTitle}>{assetsCopy.declaredResourcesTitle} <span className={css.count}>{resources.length}</span></h3>
+        {/* THE SEAM NOTE ABOVE ITS SYMPTOMS (S2 + the anima burn's
+            B2-2, 2026-10-20): the scan-wide reason renders WHENEVER
+            the status carries it — with rows, with none, partial or
+            whole. The old seat rendered it only inside the non-empty
+            branch, so a timed-out scan painted "No declared
+            resources reported." with the seam reason invisible
+            exactly when it mattered. */}
+        {status?.resources_detail !== undefined && (
+          <p className={css.warningNote} data-testid="resources-scan-note">{assetsCopy.resourceScanNote({ detail: status.resources_detail })}</p>
+        )}
+        {/* THE CENSUS PARTIAL MARK (B2-1, the anima burn): the seat
+            marks a scan that could not check every declared resource
+            — the count never reads as the whole truth over unknown
+            rows, and the note names the door out (Refresh). */}
+        {status?.census_partial === true && (
+          <p className={css.warningNote} data-testid="resources-census-partial">{assetsCopy.censusPartialNote}</p>
+        )}
         {resources.length === 0 ? (
           <p className={css.sub}>{assetsCopy.noDeclaredResources}</p>
         ) : (
@@ -1168,11 +1190,6 @@ export function ComfyManagerPanel(): React.ReactElement {
                 .join(' · ')
               return <p className={css.sub} data-testid="resource-rollup">{rollup}</p>
             })()}
-            {status?.resources_detail !== undefined && (
-              // THE SEAM NOTE ABOVE ITS SYMPTOMS (S2): the scan-wide
-              // reason reads first, never after the red wall.
-              <p className={css.warningNote} data-testid="resources-scan-note">{assetsCopy.resourceScanNote({ detail: status.resources_detail })}</p>
-            )}
             <ul className={css.resourceList} data-testid="resource-status">
               {resources.map((resource, index) => {
                 const state = resource.state ?? assetsCopy.unknownFallback

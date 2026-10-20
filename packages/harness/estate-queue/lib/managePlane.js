@@ -534,6 +534,15 @@ async function hStatus(req, ctx) {
         ...resource,
         ...(resource.operationId === undefined ? {} : { operation_id: resource.operationId }),
     }));
+    // THE CENSUS PARTIAL MARK (the anima burn, 2026-10-20: a 1.5s
+    // status budget cannot sha256-census a healthy estate, and the
+    // truncated list served as the whole "Declared resources" truth —
+    // "1/1 failed" over files that sat byte-exact on disk). Any
+    // 'unknown' row is the scan's own artifact: the roster stays
+    // row-complete (the seat pushes unknown for every unchecked ref)
+    // and the consumer MUST mark the census partial, never title the
+    // count as the whole truth.
+    const censusPartial = resourceRows.some((row) => row.state === "unknown");
     const state = endpoint.reachable ? "up" : "down";
     const nextAction = nextActionFor(endpoint.reachable, normalized, routing.mode === "managed");
     const catalog = modelOptions(ctx.models);
@@ -561,6 +570,7 @@ async function hStatus(req, ctx) {
         routing,
         auto_provision: ctx.autoProvision,
         resources: resourceRows,
+        ...(censusPartial ? { census_partial: true } : {}),
         operations,
         ...(resourcesDetail === undefined ? {} : { resources_detail: resourcesDetail }),
     };
