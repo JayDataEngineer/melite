@@ -52,9 +52,11 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import css from './card.module.css'
 import { Button, IconCloseOutlineRegular, Pill, StateDot } from '@deepseek-ai/dsh-client-ui-primitives'
+import { AudioStagePreview, ImageStagePreview, VideoStagePreview } from '@melite/card-base/client'
 import { CardDrill } from './card-drill.tsx'
 import { cardsDraftStageAddress, subscribeRunFrames } from './cards-resource.ts'
 import { STATUS_DOT } from './bench-row.ts'
+import { chatPreviewsFor } from './chat-preview.ts'
 import type { ToolCallBlockView } from './types.ts'
 import {
   cardRows, fetchDraft, paramFields, patchStageParams, refuseForUnlandedWrite, runFinished, startDraft,
@@ -311,6 +313,13 @@ export function FlowCards({ block, openSurface, openMedia }: FlowCardsProps) {
   }
 
   const rows = doc !== null ? cardRows(doc, live) : []
+  // Q3 (operator 2026-11-09) — THE FROZEN CHAT PREVIEWS: the settled
+  // stages' own artifacts render INLINE in the thread (not only the
+  // bench link). One hero per stage through the shared card-base
+  // faces, derived off the already-fetched doc — the card opens no
+  // live tail here (no hydrate, no subscribe), so the thread keeps a
+  // replay-safe snapshot while the bench owns live progress.
+  const previews = doc !== null ? chatPreviewsFor(doc.stages) : []
   const openRow = rows.find((r) => r.stageId === openStage) ?? null
   const openParams = doc?.stages.find((s) => s.id === openStage)?.params ?? {}
   // THE ROW-ERROR SILENCE (the dismissal law's chat-card half):
@@ -379,6 +388,29 @@ export function FlowCards({ block, openSurface, openMedia }: FlowCardsProps) {
               setOpenStage(row.stageId)
             }
           }} />
+        )
+      })}
+      {previews.map((preview) => {
+        // THE FROZEN OWNER: the settled stage's own artifact through
+        // the shared hero — history strip off (the thread shows the
+        // settled output, not the bench's output history), runId
+        // empty (no live run is bound in the chat card).
+        const owner = {
+          kind: preview.kind,
+          artifacts: preview.artifacts,
+          runStatus: preview.runStatus,
+          stageId: preview.stageId,
+          runId: '',
+          historyStrip: false,
+        }
+        return (
+          <div key={preview.stageId} className={css.chatPreview} data-chat-preview={preview.kind}>
+            {preview.kind === 'video'
+              ? <VideoStagePreview {...owner} />
+              : preview.kind === 'audio'
+                ? <AudioStagePreview {...owner} />
+                : <ImageStagePreview {...owner} />}
+          </div>
         )
       })}
       {openRow !== null && (

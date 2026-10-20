@@ -90,6 +90,16 @@
 .row:hover { background: var(--dsw-alias-interactive-bg-hover); }
 .row:focus-visible { outline: 1px solid var(--dsw-alias-state-business-primary); outline-offset: -1px; }
 
+/* Q3 (operator 2026-11-09) — the frozen in-chat preview seat: one
+   settled hero per stage, stacked under the rows. Layout only; every
+   color rides the inherited tokens through the shared hero. */
+.chatPreview {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  width: 100%;
+}
+
 .thumb {
   border-radius: 4px;
   flex: none;

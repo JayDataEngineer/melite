@@ -1,0 +1,16 @@
+# snapshot.yml — keyless web scenario (DSH tier 7): the CHAT PREVIEW
+# replay (operator order 2026-11-09, Q3). A recorded session owning
+# one SETTLED melite_flow call, replayed through the conversation
+# card: the tool's persisted presentationMeta {draft_id} rides the
+# settled block, the card hydrates the draft off the stubbed estate,
+# and the finished image/audio/video render INLINE (frozen — the
+# chat card opens no live tail). CI forces DSH_SNAPSHOT=replay.
+profile: melite-test
+composition: engine-tier
+headerClass: v0
+recordingPolicy: replay
+workspace:
+  facts:
+    - fresh sandbox state root per run
+    - no network (the estate lane is stubbed; no model replay needed)
+    - no PROD :3080 contact
