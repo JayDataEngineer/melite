@@ -187,17 +187,30 @@ function capQuant(quant) {
  *  family — image-gen boards krea-2 first, so the served anima spec
  *  carried zero Quant rows while the DECL declared two, and the
  *  mirror refused with a voice that blamed the DECL). A routeless
- *  cell serves its own family's row — the variant row IS its lane
- *  (the D4 pool-parity cure, 2026-10-17); routed cells serve by
- *  addressability. Variant rows serve whole
- *  (all ten keys, always) regardless of route. Exported as the one
+ *  cell follows its row — the route is the run's ROUTING stamp
+ *  (cardsCompose's resolved address), never a serve filter (the g2
+ *  lane-parity cure, 2026-10-20). Variant rows serve whole
+ *  (every key, always) regardless of route. A key naming a
+ *  hidden route serves an empty axis (the hidden-lane mirror).
+ *  Exported as the one
  *  serializer the walls ride (the switching sweep; the sync wall's
  *  P2 face is formSpecArm, this door's own body). */
-export function specVariants(decl, key, service) {
+export function specVariants(decl, key) {
     const rows = [];
     const seen = new Set();
     const declEngine = decl.engine ?? '';
     const matrix = deriveVariants(decl);
+    // THE HIDDEN-LANE MIRROR (the door's wholesale refusal, served):
+    // a key naming a hidden variant's route/id or a hidden cell's route
+    // is a soft-retired lane — selectCardVariant refuses the whole
+    // address there (cardsVariant hiddenRoute/hiddenCellRoute — "not
+    // offered"). The serve mirrors it with an empty axis: the honest
+    // shape of a lane nobody may state a coordinate at; a draft pinned
+    // to the lane refuses at the door with the same voice.
+    const hiddenLane = matrix.some((v) => v.hide_from_dropdown === true && (v.route === key || v.id === key || v.cells.some((c) => c.route === key))) ||
+        matrix.some((v) => v.cells.some((c) => c.hide_from_dropdown === true && c.route === key));
+    if (hiddenLane)
+        return rows;
     for (const v of matrix) {
         if (v.hide_from_dropdown === true)
             continue;
@@ -215,20 +228,26 @@ export function specVariants(decl, key, service) {
                 // stamped composite id is the live break the door caught).
                 throw new Error(`${decl.id}/${v.id}: a cell needs a quant (refused at the spec's birth — an axis row without its coordinate must never serve)`);
             }
-            // THE ROUTELESS CELL'S OWN LANE (the D4 pool-parity cure,
-            // 2026-10-17 — the integrator's ruling on the pool-parity
-            // finding): a cell without a route has no lane address — the
-            // variant row IS its lane (the pixal3d 1024 precedent) — so it
-            // serves the family's own row (key === service) and never a
-            // foreign route lane's. Routed cells keep the burn cure's
-            // addressability filter below. One law, two shapes.
-            if (!c.route) {
-                if (key !== service)
-                    continue;
-            }
-            else if (key !== service && c.route !== key && c.route !== service) {
-                continue;
-            }
+            // THE CELL FOLLOWS ITS ROW (the g2 lane-parity cure, 2026-10-20
+            // — "Singularity says its only quant is int8 which is 'invalid
+            // quant for h3'"): the DOOR judges the FAMILY matrix at every
+            // mid (cardsCompose: resolveCardFamily(mid), then
+            // selectCardVariant(mid, famRow, body) over the whole family
+            // row) — the mid steers only the hidden-route refusal and the
+            // unstated address claim, never a stated coordinate. The old
+            // addressability filter (routeless cells at key===service only,
+            // routed cells at their route/service keys) starved every
+            // sibling cell at every lane key — 98 lane probes red
+            // estate-wide, the h3-timeline lane the felt burn — while the
+            // door admitted them all. The serve now mirrors the door: every
+            // non-hidden cell of a served variant row serves at every
+            // served key, and `route` stays what cardsCompose resolves it
+            // as — the run's ROUTING stamp (the resolved address), never a
+            // serve filter. The D4 routeless ruling (2026-10-17) survives
+            // strengthened: a routeless cell serves everywhere its row
+            // serves (the wd14/florence2 arms hold), and the 55ef13c14
+            // class (cells DROPPED at a family key) can never reopen — this
+            // law only ever adds serves.
             const id = seen.has(c.quant) ? `${v.id}__${c.quant}` : c.quant;
             seen.add(id);
             rows.push({
@@ -838,7 +857,7 @@ export function specBody(svc, defs, res) {
         schema: servedEnvelope(schemas.schema, res.card),
         service: res.service,
         size: surface.size === 'huge' ? 'huge' : null,
-        variants: decl ? specVariants(decl, key, res.service) : [],
+        variants: decl ? specVariants(decl, key) : [],
         // THE LANE CONTRACT (2026-10-10, the YOU_ARE_A_LIAR fix shape 2
         // + 4: "cards consume: zones, order, craft recipes, compose
         // wiring — no per-model field tables" + "the form gates inline
@@ -936,7 +955,7 @@ export function specBody(svc, defs, res) {
             catch {
                 return true;
             }
-            return specVariants(fdecl, atom, atom).length > 0;
+            return specVariants(fdecl, atom).length > 0;
         }).map((atom) => ({
             id: atom,
             present: liveMids.has(atom),

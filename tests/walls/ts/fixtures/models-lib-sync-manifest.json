@@ -2,8 +2,8 @@
   "version": 1,
   "families": {
     "anima": {
-      "srcHash": "2983ba2efc8048a6596f6483cb7f3f1b77f94ef5ae1155d0a5fe3cf9fcc02634",
-      "libHash": "329dbb890d6433eb430f95087f6427445abe7d767a16a5955c86433ea8cca95c"
+      "srcHash": "b862b620f3b81e5547d7a1b9da5be0b623218eda09ed9703013a71e681e72ddf",
+      "libHash": "4af6be951557bbc09e4eb85cbb52bb7ac9459b6badf1d42ef0f655345ce1d65c"
     },
     "anny": {
       "srcHash": "bf27c12d28e252a88f71c2293c474e95a0d25040d02fe813070f281f1fba4813",
@@ -26,8 +26,8 @@
       "libHash": "15ffd9206a3291a615be2cf5c7cbc3b2be8fe2d594bf2b3f0ab28728dbff270c"
     },
     "flux-klein": {
-      "srcHash": "049f87dffd9a3bfe064e992f3c84cf4555914340f0b7499de570acb7a8fdae9c",
-      "libHash": "e29434580b4c212b8b5cb193eaac4864739b8ad7b1591a34dc22d039cfcd1637"
+      "srcHash": "18b18269d630225a6848053c51735d3be3a579f7a0a82ef40798ee3014de39a2",
+      "libHash": "73c15fad98e051a39ca68b3ddf5d7298b4c2128f0ea2a3a161c59db6bfa2b2f8"
     },
     "gem-soma": {
       "srcHash": "0f1e59a341a41ae9271e7dab78abf6f6c44e9f12a9747c2e78321fc7734ef7ea",
@@ -54,8 +54,8 @@
       "libHash": "fbad5adf07dd4ac4f6fa9254c71a69a9d557884e04008ff76d3b6b8638d3c707"
     },
     "krea-2": {
-      "srcHash": "3693ce99a54580c7630f973b3dd610a51035473876c506ddf3b0dbb25ce0a415",
-      "libHash": "9f0d3730812697a79dddbdd2428a5b6b2473d9b210345935282bf4fbe93cb228"
+      "srcHash": "3c70a9f7292116baf6a4a817fd5c6d8759c2185f5a0fc773a42e48cf1895084c",
+      "libHash": "0b2a874e9c3c19db2baff0a2d16dd5a4acc48a9373c82faae356feb0f4df542d"
     },
     "mask": {
       "srcHash": "864ed1bc1d6ba6fe7e440624ad6b08b34b0779334028669091b4e2a65e7625b4",
@@ -94,8 +94,8 @@
       "libHash": "6e611920f822ccd8fed533297156e0207de2394a3e8527ef688fa5de93928ebd"
     },
     "seedvr2-ema": {
-      "srcHash": "ef644515689c6785487e23452383ccd2a01170639c20100a614df9f95be75760",
-      "libHash": "40b4bb5cc2d0a9674e17fd7f3bf01b7ea3467ba443ae57741170e5cf15805754"
+      "srcHash": "af6aa34cd054c6eade4c98e3727700a38828f533ddd21bddb7aaf5f9484004b7",
+      "libHash": "80a97704c6ad455c657791242faae480168f083ebbc0f174a4aeaee8e74b6079"
     },
     "skin": {
       "srcHash": "7774d387ee6d07444f2814a5d463824d90e34ec3f99bdbe6a2ee3f6b8647a4c4",
@@ -122,8 +122,8 @@
       "libHash": "346241cd9e7b30719307736af9c12e36eb49b93f4cdb5dbd86e7895f863d47a7"
     },
     "z-image": {
-      "srcHash": "9381945d2c860e807f7ff94a750d014822069f24598606c88cc6c8a741c57e41",
-      "libHash": "bc47f745ac8298bb544af848323918cb21c375f511478e32101cae6d0c0c96a3"
+      "srcHash": "c699f4601ae0f0e86eeed7ef1a574a3c7bc5a72cd995dc9e23ad5e6e9e3fd358",
+      "libHash": "bba17e254434c80bb65925fcc8980e740de1fb741b5c490fa71a1e3bb3e8f3c8"
     }
   }
 }

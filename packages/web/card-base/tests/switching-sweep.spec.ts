@@ -96,7 +96,7 @@ const FAMILIES: readonly ModelDecl[] = [
  *  while the SERVE's rows shipped — the anima burn crossed exactly
  *  that gap. The rows judged here ARE the rows the door serves. */
 function servedSpec(decl: ModelDecl): FormSpecDoc {
-  return { model: decl.id, variants: specVariants(decl, decl.id, decl.id), label: null, form: decl.id }
+  return { model: decl.id, variants: specVariants(decl, decl.id), label: null, form: decl.id }
 }
 
 /** THE ONE-WALK RECEIPT (the cure's red-proof arm): the served spec

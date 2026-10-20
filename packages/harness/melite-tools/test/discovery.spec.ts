@@ -320,7 +320,12 @@ describe('live door arms', () => {
     const defs = await loadCardDefs()
     const dead: string[] = []
     for (const [cardId, def] of defs) {
-      if (cardId !== def.identity?.lane && (def.boarded ?? []).length === 0) continue
+      // THE BOARDED WALK: only cards that seat families serve a Model
+      // axis (unboarded tool cards serve no families row). The E2-5
+      // draft's `cardId !== def.identity?.lane` clause named a field
+      // the identity type never carried — dead vocabulary, dropped
+      // (the walk's effective scope was boarded-only all along).
+      if ((def.boarded ?? []).length === 0) continue
       const doc = await formSpecArm(cardId)
       if (doc === null) continue
       const families = (doc as unknown as { families?: Array<{ id: string }> }).families ?? []
@@ -331,7 +336,7 @@ describe('live door arms', () => {
         } catch {
           continue // the unbootable-family arm's own voice, not this law's
         }
-        const offered = specVariants(decl as never, fam.id, fam.id)
+        const offered = specVariants(decl as never, fam.id)
         if (offered.length === 0) dead.push(`${cardId} serves '${fam.id}' with zero pickable variants`)
       }
     }
@@ -1225,7 +1230,7 @@ describe('specVariants (the served projection of the one walk)', () => {
       ],
       variant_groups: [],
     } as never
-    const rows = specVariants(decl, 'zz-spec-fam', 'zz-spec-fam')
+    const rows = specVariants(decl, 'zz-spec-fam')
     assert.deepEqual(
       rows.map((r) => [r.id, r.group]),
       [['solo', 'Variant'], ['q8', 'Quant'], ['solo__head', 'Variant']],

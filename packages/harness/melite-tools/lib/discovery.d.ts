@@ -58,13 +58,15 @@ export declare function resolveSpecKeyForTool(key: string, defs: Map<string, Car
  *  family — image-gen boards krea-2 first, so the served anima spec
  *  carried zero Quant rows while the DECL declared two, and the
  *  mirror refused with a voice that blamed the DECL). A routeless
- *  cell serves its own family's row — the variant row IS its lane
- *  (the D4 pool-parity cure, 2026-10-17); routed cells serve by
- *  addressability. Variant rows serve whole
- *  (all ten keys, always) regardless of route. Exported as the one
+ *  cell follows its row — the route is the run's ROUTING stamp
+ *  (cardsCompose's resolved address), never a serve filter (the g2
+ *  lane-parity cure, 2026-10-20). Variant rows serve whole
+ *  (every key, always) regardless of route. A key naming a
+ *  hidden route serves an empty axis (the hidden-lane mirror).
+ *  Exported as the one
  *  serializer the walls ride (the switching sweep; the sync wall's
  *  P2 face is formSpecArm, this door's own body). */
-export declare function specVariants(decl: ModelDecl, key: string, service: string): FormVariantRow[];
+export declare function specVariants(decl: ModelDecl, key: string): FormVariantRow[];
 /** The modifier-pack table (the subcard packs). controlnet waits
  *  unboarded (the phantom-capability gate). kind/label/cardinality
  *  are UI strings with no other live source — one row per pack,

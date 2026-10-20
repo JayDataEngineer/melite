@@ -94,10 +94,13 @@ function mirrorVerdict(spec: FormSpecDoc, model: string, variant: string, quant?
 }
 
 /** The DOOR's verdict: does selectCardVariant resolve this body off
- *  the facts row? Its refusals carry the facts row's truth. */
-function doorResolves(row: ModelFacts, family: string, body: Record<string, unknown>): boolean {
+ *  the facts row? Its refusals carry the facts row's truth. `mid`
+ *  names the address the door judges (the compose passes the caller's
+ *  mid — cardsCompose.ts — so a lane address's own hidden-route
+ *  refusal fires; default the family, the family-seam arm's shape). */
+function doorResolves(row: ModelFacts, family: string, body: Record<string, unknown>, mid?: string): boolean {
   try {
-    selectCardVariant(family, row as never, body, 'd4-pool-parity')
+    selectCardVariant(mid ?? family, row as never, body, 'd4-pool-parity')
     return true
   } catch {
     return false
@@ -293,6 +296,74 @@ describe('THE POOL-PARITY EDGE — the mirror cell pool equals the facts row cel
       (flSpec?.variants ?? []).filter((r) => r.group === 'Quant').length,
       'florence2 serves its 14 routeless cells, one per variant',
     ).toBe(14)
+  })
+
+  // THE LANE-PARITY EDGE (the g2 burn, 2026-10-20 — "Singularity says
+  // its only quant is int8 which is 'invalid quant for h3'"): the
+  // family-seam arm above judges key===service only, but the studio
+  // fetches its spec at the LANE address (useFormSpec("h3-timeline"))
+  // while the DOOR judges the FAMILY matrix at every mid
+  // (cardsCompose: resolveCardFamily(mid) then selectCardVariant(mid,
+  // famRow, body) — the full family row, the mid only steering the
+  // hidden-route refusal and the unstated address claim). So THE LAW:
+  // at every served address the mirror admits exactly what the door
+  // admits there — no starve (door admits, mirror refuses), no
+  // invention (mirror admits, door refuses), no dropped axis row. The
+  // arm rides the REAL door per coordinate (never an assumption about
+  // what the door "would" do) and walks every served address of every
+  // FAMILY row (family key + every declared variant/cell route; the
+  // derived lane rows carry subsets of the same addresses).
+  it('lane parity: at every served address the mirror admits exactly what the door admits — no starve, no invention, no dropped row', async () => {
+    const findings: string[] = []
+    for (const [family, row] of Object.entries(facts)) {
+      // FAMILY ROWS ONLY: derived lane rows key their own lane mid and
+      // carry a lane-narrowed matrix — the door never judges them as
+      // truth (cardsCompose hands selectCardVariant facts[fam]). The
+      // family row's routes enumerate the whole address universe.
+      if ((row.family ?? family) !== family) continue
+      const addresses = new Set<string>([family])
+      for (const v of row.variants ?? []) {
+        if (typeof v.route === 'string' && v.route !== '') addresses.add(v.route)
+        for (const c of v.cells ?? []) {
+          if (typeof c.route === 'string' && c.route !== '') addresses.add(c.route)
+        }
+      }
+      for (const address of addresses) {
+        const spec = await formSpecArm(address)
+        if (spec === null) {
+          if (doorResolves(row, family, { variant: (row.variants ?? [])[0]?.id ?? '' }, address)) {
+            findings.push(`${address}: UNSERVED — the door resolves this address but the serve answers no spec (the lane is dead)`)
+          }
+          continue
+        }
+        const model = heldKey(spec as FormSpecDoc, address)
+        for (const v of row.variants ?? []) {
+          const doorVariant = doorResolves(row, family, { variant: v.id }, address)
+          const servedRow = (spec.variants ?? []).some((r) => r.id === v.id)
+          if (doorVariant && !servedRow) {
+            findings.push(`${address}×${v.id}: AXIS-DROP — the door resolves the variant here but the served spec offers no row for it`)
+            continue
+          }
+          if (servedRow && !doorVariant) {
+            findings.push(`${address}×${v.id}: AXIS-INVENTION — the served spec offers the row but the door refuses it at this address`)
+          }
+          for (const c of v.cells ?? []) {
+            if (typeof c.quant !== 'string' || c.quant === '' || c.quant === NATIVE_FOLD) continue
+            const doorCell = doorResolves(row, family, { variant: v.id, quant: c.quant }, address)
+            const mirror = mirrorVerdict(spec as FormSpecDoc, model, v.id, c.quant)
+            if (doorCell && !mirror.ok) {
+              findings.push(`${address}×${v.id}/${c.quant}: STARVE — ${mirror.voice}`)
+            } else if (!doorCell && mirror.ok) {
+              findings.push(`${address}×${v.id}/${c.quant}: CELL-INVENTION — the mirror admits what the door refuses at this address`)
+            }
+          }
+        }
+      }
+    }
+    expect(
+      findings,
+      `the mirror diverges from the door across the lane seam (${findings.length} findings):\n${findings.join('\n')}`,
+    ).toEqual([])
   })
 })
 

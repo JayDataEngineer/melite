@@ -79,7 +79,7 @@ import { DECL as qwenImgEdit2511 } from '../../../models/qwen-img-edit-2511/src/
  *  DECL: the wire field the form-spec door serves since the drill
  *  null-set cure). */
 function servedSpec(decl: typeof qwenImgEdit21): FormSpecDoc {
-  return { model: decl.id, variants: specVariants(decl, decl.id, decl.id), label: null, form: decl.id, params: decl.params }
+  return { model: decl.id, variants: specVariants(decl, decl.id), label: null, form: decl.id, params: decl.params }
 }
 
 const FROM_DECL = qwenImgEdit2511
