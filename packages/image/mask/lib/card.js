@@ -173,8 +173,8 @@ const MODS = [
         section: 'Bbox filter — the freetext prompt picks the targets (automated); the Region canvas below only scopes the search',
         fields: [
             { name: 'name', label: 'Export name', type: 'string', default: 'sam3', tooltip: "The saved mask's name (mask_<name>)." },
-            { name: 'prompt', label: 'Prompt', type: 'string', default: '', required_when: 'via_rtdetr!=true', tooltip: 'The SAM3 CLIP text selection — what to segment (empty + RT-DETR = the person-box lane).' },
-            { name: 'via_rtdetr', label: 'Via RT-DETR boxes', type: 'boolean', default: false, tooltip: 'Propose person boxes with RT-DETR, refine with SAM3 (the box-manifest lane — the FIRST entry anchors it).' },
+            { name: 'prompt', label: 'Prompt', type: 'string', default: '', required_when: 'via_rtdetr!=true', tooltip: 'The SAM3 CLIP text selection — what to segment (leave it empty and turn on Via RT-DETR boxes to auto-find people).' },
+            { name: 'via_rtdetr', label: 'Via RT-DETR boxes', type: 'boolean', default: false, tooltip: 'Propose person boxes with RT-DETR, refine with SAM3 (the exported box manifest reads the first entry).' },
             { name: 'refine_iterations', label: 'Refine iterations', type: 'number', default: 2, min: 0, max: 8, step: 1, tooltip: 'This selection\'s SAM3 refine rounds.' },
             // THE SAM3 THRESHOLD DEFAULT (the red-box hunt's fourth bug):
             // 0.93 was SAM2's mask confidence — on SAM3's TEXT selection
@@ -187,7 +187,7 @@ const MODS = [
             // the manifest reads the first entry that rides the lane.
             { name: 'detection_threshold', label: 'Detection threshold', type: 'number', default: 0.35, min: 0.05, max: 0.95, step: 0.05, tooltip: 'RT-DETR box confidence (this entry\'s Via-RT-DETR arm + the manifest). Lower catches more instances, noisier boxes.' },
             { name: 'max_instances', label: 'Max instances', type: 'number', default: 0, min: 0, max: 100, step: 1, tooltip: 'Cap detected instances (0 = no cap). Read the manifest first, then narrow.' },
-            { name: 'export_boxes', label: 'Export box manifest', type: 'boolean', default: false, tooltip: 'Opt-in readback: draw this entry\'s RT-DETR boxes on a manifest image beside the masks. OFF by default — a run saves ONLY what the card declares (the masks); the box lane still fires for Via RT-DETR primaries either way.' },
+            { name: 'export_boxes', label: 'Export box manifest', type: 'boolean', default: false, tooltip: 'Opt-in readback: draw this entry\'s RT-DETR boxes on a manifest image beside the masks. OFF by default — a run saves ONLY what the card declares (the masks); the box detection still runs for Via RT-DETR primaries either way.' },
             ...BBOX_FIELDS,
         ],
     },

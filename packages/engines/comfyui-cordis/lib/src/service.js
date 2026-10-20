@@ -858,7 +858,20 @@ export class ComfyUIService extends Service {
                     }
                 }
                 const strength = stated ?? row.default_strength ?? 1.0;
-                return resolved === undefined ? { name: row.filename, strength } : { name: row.filename, strength, steps: resolved };
+                // THE MARRIED SHIFT STAMP (SOTA limb 2, the steps stamp's
+                // heir): the row's own sigma-shift grid rides the resolved
+                // entry when the row declares one and the entry states
+                // none — the same stated-first law as steps, so the wire is
+                // self-describing for the run record; compose's catalog
+                // fallback reads the same column for hand-shaped bags.
+                const shiftStated = typeof e?.shift_video === 'number' && Number.isFinite(e.shift_video) ? e.shift_video : undefined;
+                const shift = shiftStated ?? row.shift_video;
+                const out = { name: row.filename, strength };
+                if (resolved !== undefined)
+                    out.steps = resolved;
+                if (shift !== undefined)
+                    out.shift_video = shift;
+                return out;
             });
         }
         // THE REFINE SEATS (purge F2, 2026-11-08 — one owner, one

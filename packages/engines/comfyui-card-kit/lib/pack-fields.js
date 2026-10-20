@@ -55,12 +55,12 @@ const ControlNetEntryFields = z.object({
     clip: z.string().default('').description('Clip')
         .extra('extra', bag({
         wtype: 'text', group: 'controlnet', zone: 'mods', order: 7, width: 2,
-        tooltip: 'Video-valued conditioning source (002 H2) — a staged clip artifact name, served to families whose apply node takes a video control source (H3 Fun-ControlNet). Still-image families refuse a clip-only entry: their lane conditions on a still image.',
+        tooltip: 'Video-valued conditioning source (002 H2) — a staged clip artifact name; only models whose apply node takes a video control source accept a clip-only entry (H3 Fun-ControlNet). Still-image models refuse it — they condition on a still image.',
     })),
     mask: z.string().default('').description('Mask')
         .extra('extra', bag({
         wtype: 'text', group: 'controlnet', zone: 'mods', order: 8, width: 2,
-        tooltip: 'Mask-shaped conditioning source (002 H4) — a staged mask artifact name (1 marks the regions to regenerate). Reachable only for families whose lane declares the mask channel; a still-image entry with neither map nor mask is drift and refuses.',
+        tooltip: 'Mask-shaped conditioning source (002 H4) — a staged mask artifact name (1 marks the regions to regenerate). Only models that declare the mask channel show this input; a still-image entry with neither map nor mask refuses at run time.',
     })),
 });
 export const ControlNetFields = z.object({
@@ -88,7 +88,7 @@ const IPAdapterEntryFields = z.object({
     image: z.string().description('Reference Image')
         .extra('extra', bag({
         wtype: 'image', group: 'ip_adapter', zone: 'mods', order: 0, width: 2,
-        tooltip: 'The reference image. The IP-Adapter lane is not executable in this plane — any stated entry refuses loud at run time.',
+        tooltip: 'The reference image. IP-Adapter cannot run on this setup — any stated entry refuses at run time.',
     })),
     kind: z.string().default('style').description('Mode')
         .extra('extra', bag({ wtype: 'text', group: 'ip_adapter', zone: 'mods', order: 1, width: 1 })),
@@ -149,7 +149,7 @@ export const MaskFields = z.object({
         // onto the card face was the deviation — erased to the
         // template, letter for letter.
         wtype: 'image', group: 'input', zone: 'inputs', order: -1, width: 1, columns: 3,
-        tooltip: 'RGBA PNG whose alpha channel marks the region. Standalone: region semantics for this lane. Alongside lanpaint: the inpaint region — present with the input images, the builder switches to the lanpaint sampler.',
+        tooltip: 'RGBA PNG whose alpha channel marks the region. On its own: the mask selects this entry\'s region. Alongside lanpaint: the inpaint region — present with the input images, the run switches to the lanpaint sampler.',
     })),
     mask_mode: z.union([z.const('auto'), z.const('crop_stitch'), z.const('full_frame')]).default('crop_stitch').description('Edit Scope')
         .extra('extra', bag({

@@ -16,7 +16,7 @@ const schema = z.object({
     // lift call never names them and a rig call names both. Bare
     // z.string() is the image-gen prompt precedent (optional at parse,
     // refused loud at compose).
-    input_image: z.string().role('path').description("Source image").extra('extra', bag({ order: 0, group: "input", columns: 1, tooltip: "One clear object, tight framing — the lane crops it to a square and conditions on it directly.", required: true, families: ['pixal3d', 'trellis2-native'], wtype: 'image', })),
+    input_image: z.string().role('path').description("Source image").extra('extra', bag({ order: 0, group: "input", columns: 1, tooltip: "One clear object, tight framing — the card crops it to a square and conditions on it directly.", required: true, families: ['pixal3d', 'trellis2-native'], wtype: 'image', })),
     rigged_glb: z.string().role('path').description("Rigged source GLB").extra('extra', bag({ order: 0, group: "input", columns: 1, tooltip: "The SOMA-rigged clean mesh — JOINTS_0/WEIGHTS_0 + armature. The rig donor.", families: ['transfer-rig'], wtype: 'mesh' })),
     target_glb: z.string().role('path').description("Target GLB").extra('extra', bag({ order: 1, group: "input", columns: 1, tooltip: "The clothed mesh — geometry + textures, no rig. Receives the rig.", families: ['transfer-rig'], wtype: 'mesh' })),
     seed: z.number().description("Seed").step(1).extra('extra', bag(seedExtra({ order: 1, group: 'input', width: 1, tooltip: 'Same seed + image = same mesh take.', families: ['pixal3d', 'trellis2-native'] }))),

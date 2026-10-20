@@ -133,7 +133,7 @@ export const schema = z.object({  // CARD-OWNED SURFACE ONLY (2026-09-08, the 1:
   // encoder's own latent; 2511 encodes the source). It stays on the
   // declared surface so old drafts that state it never refuse; the
   // crop_stitch detailer path owns the crop size either way.
-  match_input_resolution: z.boolean().description("Match Input Resolution").default(true).extra('extra', bag({ order: 2, group: 'resolution', columns: 3, width: 1, zone: 'params', tooltip: 'Retained for draft compatibility — it switches nothing: both edit lanes edit at the source\u2019s own frame (the 2.1 lane samples the encoder\u2019s own latent; 2511 encodes the source).' })),
+  match_input_resolution: z.boolean().description("Match Input Resolution").default(true).extra('extra', bag({ order: 2, group: 'resolution', columns: 3, width: 1, zone: 'params', tooltip: 'Retained for old drafts — it switches nothing: both edit models edit at the source\u2019s own frame (the 2.1 model samples the encoder\u2019s own latent; 2511 encodes the source).' })),
   seed: z.number().description("Seed").step(1).default(-1).extra('extra', bag(seedExtra({ order: 4, group: 'sampling', width: 1, zone: 'params' }))),
   // RIDE-THE-MODEL (operator catch e, 2026-09-22): steps/cfg carry
   // NO schema default — a default here is one lane's recipe served
@@ -152,7 +152,7 @@ export const schema = z.object({  // CARD-OWNED SURFACE ONLY (2026-09-08, the 1:
   // declaration owns the field list), and the bench-write door
   // refuses them on the 2.1 family in the field's voice.
   use_stock_nodes: z.boolean().description("Use Stock Nodes").extra('extra', bag({ order: 1, group: "edit_tuning", width: 1, tooltip: "When true, build_img2img_edit emits the stock Qwen-Image-Edit node graph (no DiffSynth patches, no custom ControlNet wiring). Useful for reproducing upstream behavior exactly.", zone: 'params' })),
-  double_reference: z.boolean().description("Double Reference").extra('extra', bag({ order: 2, group: "edit_tuning", width: 1, tooltip: "CURRENTLY UNBUILDABLE on this plane (agent-debt F-4, 2026-09-22): true fires a LOUD refusal — the TS plane builds the stock plain-edit graph only, never a silent plain-edit. Leave false. (When the double-encode lane exists: encode the input image twice — VAE + vision encoder — for stronger identity preservation.)", zone: 'params' })),
+  double_reference: z.boolean().description("Double Reference").extra('extra', bag({ order: 2, group: "edit_tuning", width: 1, tooltip: "Not available yet: turning this on stops the run with a clear error — the edit models build the standard single-pass edit only, never a silent plain edit. Leave it off. (Once supported: the input image is encoded twice — VAE + vision encoder — for stronger identity preservation.)", zone: 'params' })),
 })
 
 const schemaFn = callableSchema(schema)

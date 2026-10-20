@@ -24,7 +24,7 @@ const schema = z.object({
     // auto-lane knobs (KimodoExportFBX, its 'SOMAX standalone mode').
     preserve_texture: z.boolean().default(true).description("Preserve texture").extra('extra', bag({ order: 4, visible_when: 'mode=auto', tooltip: "auto mode: keep the source mesh's textures. Off strips to flat SOMA-blue for texturing later." })),
     decimate_ratio: z.number().min(0).max(1).default(0).description("Decimate ratio").extra('extra', bag({ order: 5, visible_when: 'mode=auto', tooltip: "0 = off (the rig default). Collapse-mode decimation preserves skin weights; 0.2 ≈ -70% file size." })),
-    file_format: vocabulary(['glb', 'fbx']).default('glb').description("File format").extra('extra', bag({ order: 6, visible_when: 'mode=auto', tooltip: "auto mode: glb for the web estate, fbx for the Unity import door (the node converts through headless Blender).", wtype: 'select' })),
+    file_format: vocabulary(['glb', 'fbx']).default('glb').description("File format").extra('extra', bag({ order: 6, visible_when: 'mode=auto', tooltip: "auto mode: glb for web viewing, fbx for Unity import (the conversion runs through headless Blender).", wtype: 'select' })),
     // species-lane knobs (RayCreatureRigBridge).
     height_ratio: z.number().min(0.05).max(10).default(1).description("Height ratio").extra('extra', bag({ order: 7, visible_when: 'mode=species', tooltip: "species mode: mesh height as a fraction of the creature bind-pose height." })),
     max_influences: z.number().min(1).max(8).default(3).description("Max influences").extra('extra', bag({ order: 8, visible_when: 'mode=species', tooltip: "species mode: max bone influences per vertex (nearest segments win)." })),

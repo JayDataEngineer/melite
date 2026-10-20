@@ -15,7 +15,7 @@ import { QVOICE_RIDERS } from '@melite/comfyui-card-kit/pack-fields';
 import { QVOICE_SAVE_RIDERS } from '@melite/comfyui-card-kit/pack-fields'
 
 export const schema = z.object({
-  text: z.string().description("Text to Speak").extra('extra', bag({ order: null, placeholder: "The words to speak (the script the voice performs)", tooltip: "The script the voice performs — the output's own words. NOT the reference transcript (a different input: what your reference clip says); on the VoiceDesign lane this is the design sample", required: true, wtype: 'textarea', })),
+  text: z.string().description("Text to Speak").extra('extra', bag({ order: null, placeholder: "The words to speak (the script the voice performs)", tooltip: "The script the voice performs — the output's own words. NOT the reference transcript (a different input: what your reference clip says); on the VoiceDesign model this is the design sample", required: true, wtype: 'textarea', })),
   // THE 1:1 SURFACE (operator 2026-09-23: match QwenLM/Qwen3-TTS —
   // capabilities AND models; operator 2026-10-26: the size moved to
   // QUANT): visibility keys on the VARIANT + SIZE CELL (the lane and
@@ -33,7 +33,7 @@ export const schema = z.object({
   // 0.6B-CustomVoice table row has NO instruction control — a
   // stated instruct on the small CustomVoice refuses at admission
   // below).
-  voice: vocabulary([...PRESET_SPEAKERS]).description("Preset Speaker").extra('extra', bag({ order: null, tooltip: "none = no preset — the run is PROMPT-ONLY: the model creates the voice from the text alone (upstream parity, speaker_embed=None). Otherwise one of the 9 built-in CustomVoice speakers (Ryan, Vivian, …). The other lanes take no speaker: Base clones yours, VoiceDesign designs one", wtype: 'select' })),
+  voice: vocabulary([...PRESET_SPEAKERS]).description("Preset Speaker").extra('extra', bag({ order: null, tooltip: "none = no preset — the run is PROMPT-ONLY: the model creates the voice from the text alone (upstream parity, speaker_embed=None). Otherwise one of the 9 built-in CustomVoice speakers (Ryan, Vivian, …). The other models take no speaker: Base clones yours, VoiceDesign designs one", wtype: 'select' })),
   // THE TASK-NAMED LABEL LAW (operator 2026-09-23: "they are
   // SPECIFIC TASKS, not INSTRUCT"): every instruction-ish row is
   // labeled by the TASK it performs on its lane, never the upstream
@@ -41,8 +41,8 @@ export const schema = z.object({
   //   CustomVoice → Emotion & Delivery Style (HOW the preset reads)
   //   VoiceDesign → Voice Persona & Timbre (WHO is speaking —
   //                 designs a brand-new voice from the description)
-  style_instruction: z.string().description("Emotion & Delivery Style").extra('extra', bag({ order: null, placeholder: "e.g. Speak with immense excitement, laughing slightly", tooltip: "HOW the preset speaker delivers the text — emotion, tone, pacing (excited, whisper, cheerful). The 1.7B CustomVoice lane's capability; the 0.6B has no instruction control, Base clones instead, VoiceDesign designs the speaker itself", wtype: 'textarea' })),
-  design_prompt: z.string().description("Voice Persona & Timbre").extra('extra', bag({ order: null, placeholder: "e.g. A gritty, deep male radio host in his late 50s, unhurried pace, authoritative and warm", tooltip: "WHO speaks — describe the voice itself (age, gender, texture, pitch, cadence) and the exporter designs a brand-new speaker from the description. No reference audio needed; the exported .qvoice performs any script on every qwen3-tts lane. Pairs with the Design mod's name (voice_name) — the save fires from ANY lane", wtype: 'textarea' })),
+  style_instruction: z.string().description("Emotion & Delivery Style").extra('extra', bag({ order: null, placeholder: "e.g. Speak with immense excitement, laughing slightly", tooltip: "HOW the preset speaker delivers the text — emotion, tone, pacing (excited, whisper, cheerful). A CustomVoice (1.7B) capability; the 0.6B has no instruction control, Base clones instead, VoiceDesign designs the speaker itself", wtype: 'textarea' })),
+  design_prompt: z.string().description("Voice Persona & Timbre").extra('extra', bag({ order: null, placeholder: "e.g. A gritty, deep male radio host in his late 50s, unhurried pace, authoritative and warm", tooltip: "WHO speaks — describe the voice itself (age, gender, texture, pitch, cadence) and the exporter designs a brand-new speaker from the description. No reference audio needed; the exported .qvoice performs any script on every qwen3-tts model. Pairs with the Design mod's name (voice_name) — the save fires from any model", wtype: 'textarea' })),
   // THE CLONE INPUTS (the Base variant clones from a 3-second
   // reference): reference audio + its transcript, Base only.
   // OPTIONAL (the optional-clone law, operator 2026-10-12): a run
