@@ -13887,7 +13887,7 @@ window.__ModuleLoader__.load({
 					})
 				}] : [], ...rows.map((v) => ({
 					id: v.id,
-					label: titleCaseId(v.label) + (typeof v.hint === "string" && v.hint !== "" ? ` — ${v.hint}` : "")
+					label: titleCaseId(v.label)
 				}))];
 				const nearest = rows[0];
 				return (0, react.createElement)(react.Fragment, { key: g }, (0, react.createElement)("label", { className: card_module_css_default.specField }, (0, react.createElement)("span", { className: card_module_css_default.specFieldKey }, label), (0, react.createElement)(AxisMenuSelect, {
@@ -13977,7 +13977,7 @@ window.__ModuleLoader__.load({
 				label: chromeCopy.recipeBlankRow
 			}, ...pillRows.map((r) => ({
 				id: r.id,
-				label: titleCaseId(r.label) + (typeof r.hint === "string" && r.hint !== "" ? ` — ${r.hint}` : "")
+				label: titleCaseId(r.label)
 			}))];
 			return (0, react.createElement)("label", { className: card_module_css_default.specField }, (0, react.createElement)("span", { className: card_module_css_default.specFieldKey }, chromeCopy.recipeLabel), (0, react.createElement)(AxisMenuSelect, {
 				label: chromeCopy.recipeLabel,

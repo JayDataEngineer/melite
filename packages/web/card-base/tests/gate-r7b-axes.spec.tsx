@@ -123,7 +123,9 @@ test('RECIPE ROW GATE (2026-10-16, the Final Cut brick — audit 0be61df8 F1): a
   fireEvent.click(screen.getByLabelText('Recipe'))
   // the gated row is structurally absent; its lawful sibling remains
   expect(screen.queryByRole('menuitem', { name: /t4r-dead stamp/ })).toBeNull()
-  expect(screen.queryByRole('menuitem', { name: /the macro/ })).not.toBeNull()
+  // Q2 bare name: the lawful sibling's face is the bare name (the hint
+  // prose stays in the DECL)
+  expect(screen.queryByRole('menuitem', { name: /^X$/ })).not.toBeNull()
   // (k, 2026-11-08) the blank row keeps its no-op with nothing held —
   // the menu voice is the selectable blank, the write law is pinned
   // by the BLANK WRITE arm above.

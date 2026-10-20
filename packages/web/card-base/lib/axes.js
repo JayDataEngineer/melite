@@ -218,7 +218,10 @@ export function ModelAxes({ spec, value, user, pickHeld = user, onSet, onPick, o
                 : []),
             ...rows.map((v) => ({
                 id: v.id,
-                label: titleCaseId(v.label) + (typeof v.hint === 'string' && v.hint !== '' ? ` — ${v.hint}` : ''),
+                // Q2 BARE NAMES (operator 2026-11-09): the pill reads the name
+                // — "Turbo", never "Turbo — hint". The hint prose stays in the
+                // DECL; the card's own knobs already show the parameter changes.
+                label: titleCaseId(v.label),
             })),
         ];
         // THE REPAIR VERB (axis-unification P0#3, audit
@@ -366,7 +369,9 @@ export function RecipePills({ spec, onPick, values, omitRow }) {
         { id: '', label: chromeCopy.recipeBlankRow },
         ...pillRows.map((r) => ({
             id: r.id,
-            label: titleCaseId(r.label) + (typeof r.hint === 'string' && r.hint !== '' ? ` — ${r.hint}` : ''),
+            // Q2 BARE NAMES (operator 2026-11-09): the pill reads the name —
+            // "Standard", never "Standard — hint". Same law as the axes above.
+            label: titleCaseId(r.label),
         })),
     ];
     return h('label', { className: css.specField }, h('span', { className: css.specFieldKey }, chromeCopy.recipeLabel), h(AxisMenuSelect, {

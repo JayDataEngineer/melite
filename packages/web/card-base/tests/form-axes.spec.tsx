@@ -248,7 +248,7 @@ test('MODEL: a refused download marks failed (false is a verdict, never a hang)'
 
 test('AXES: variant + quant selects compose down the chain; each pick rides ONE atomic frame', () => {
   const { onSet, onPick } = axes()
-  expect(shown('Variant')).toBe('HD — crisp')
+  expect(shown('Variant')).toBe('HD') // Q2 bare name — the 'crisp' hint stays in the DECL
   pickAxis('Variant', 'SD')
   expect(onPick).toHaveBeenCalledTimes(1)
   const vpatch = onPick.mock.calls[0]![0] as Record<string, unknown>
@@ -340,7 +340,11 @@ test('MENU SELECT: the anchor label rides its own clamp span (the dropdown pill 
   const span = trigger.querySelector('span')
   if (span === null) throw new Error('the recipe label span did not render')
   expect(span).not.toBeNull()
-  expect(span!.textContent).toBe(`Long — ${longHint}`)
+  // Q2 BARE NAMES (operator 2026-11-09: the pill reads the name, never
+  // "Name — hint" — the card's own knobs already show the parameter
+  // changes). The hint prose stays in the DECL, never in the face.
+  expect(span!.textContent).toBe('Long')
+  expect(span!.textContent).not.toContain(longHint)
   expect(trigger.textContent).toBe(span!.textContent)
   // THE RULE HALF: the clamp trio pinned verbatim from the module —
   // min-width:0 is the flex-item law that survives the cascade
@@ -401,9 +405,12 @@ test('PILLS: a knob-carrying recipe stamps on click; a mod-owned stamp rides too
   expect(axisTrigger('Recipe').getAttribute('data-recipe-select')).toBe('1')
   fireEvent.click(axisTrigger('Recipe'))
   const rows = screen.getAllByRole('menuitem').map((row) => row.textContent ?? '')
-  expect(rows.some((t) => t.includes('the macro'))).toBe(true) // recipe-x's face
+  // Q2 BARE NAMES: recipe-x's face is the bare name (the hint prose
+  // lives in the DECL, and the blank row keeps its own D4 voice).
+  expect(rows.some((t) => t === 'X')).toBe(true) // recipe-x's face
   expect(rows.some((t) => t.includes('Mods'))).toBe(true) // the mod-owned row rides (never hidden)
-  fireEvent.click(screen.getByRole('menuitem', { name: /the macro/ }))
+  expect(rows.filter((t) => t.includes('the macro')).length).toBe(0) // no hint suffix anywhere
+  fireEvent.click(screen.getByRole('menuitem', { name: /^X$/ }))
   // THE ATOMIC PICK LAW (2026-09-29): the full stamp lands as ONE
   // onPick write — the per-key onSet face is retired
   expect(onPick).toHaveBeenCalledWith({ steps: 50 })
@@ -426,10 +433,10 @@ test('DROPDOWN: the selection DERIVES from the one truth — stamped grounds, ha
   const { rerender } = render(h(ModelAxes, { spec, value: state.user, onSet, onPick }))
   const shownRecipe = (): string => shown('Recipe')
   expect(shownRecipe()).toBe('-- recipe --') // nothing held: placeholder
-  pickAxis('Recipe', /the macro/)
+  pickAxis('Recipe', /^X$/)
   expect(state.user['steps']).toBe(50) // the stamp rode
   rerender(h(ModelAxes, { spec, value: state.user, onSet, onPick }))
-  expect(shownRecipe()).toContain('the macro') // grounded on the held stamp
+  expect(shownRecipe()).toBe('X') // grounded on the held stamp — the bare name (Q2)
   state.user['steps'] = 49 // a hand edit breaks the match
   rerender(h(ModelAxes, { spec, value: state.user, onSet, onPick }))
   expect(shownRecipe()).toBe('-- recipe --') // custom: no grounded row matches — the placeholder row re-serves, never a lie
