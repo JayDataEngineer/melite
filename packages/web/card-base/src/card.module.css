@@ -177,6 +177,13 @@ select option {
   background: var(--dsw-alias-interactive-bg-hover);
   border: 0.5px solid var(--dsw-alias-border-l2);
   border-radius: 6px;
+  /* (burn 5, 2026-11-10: the single-model STATIC face is a div, not
+   * a DSH Button — the sheet's own border-box reset names only form
+   * controls, so the pill computed content-box and width:100% PLUS
+   * padding painted 17px under the Variant button on every
+   * single-family card. The pill owns its box on itself — harmless
+   * where the reset already applies.) */
+  box-sizing: border-box;
   color: inherit;
   font: inherit;
   font-size: 13px;

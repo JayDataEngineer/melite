@@ -371,6 +371,31 @@ test('MENU SELECT: the STATIC single-model face rides the same clamp span (defec
   expect(staticFace.textContent).toBe(span.textContent)
 })
 
+// THE STATIC FACE OWNS ITS BOX (operator burn 5, 2026-11-10: "when
+// there is a model dropdown, but there is only ONE model, the model
+// dropdown button stretches too far to the right, overlapping with
+// the button on the right — every time the model is only one
+// option"). The single-model face is a DIV, not a DSH Button — so the
+// sheet's own border-box reset (.specForm :where(input, textarea,
+// select, button)) never touches it, and the menu faces (Buttons)
+// hold while the static pill computes content-box: width:100% PLUS
+// 17px of padding+border, painting under the Variant button on every
+// single-family card. The cure is structural: the pill owns its box
+// model on .specSelect itself (all faces — harmless where the reset
+// already applies), never an ambient reset.
+test('MENU SELECT: the static single-model pill owns border-box (burn 5 — the pill never paints past its half)', () => {
+  axes()
+  const staticFace = screen.getByLabelText('Model') as HTMLElement
+  expect(staticFace.getAttribute('data-model-static')).toBe('1')
+  // THE RULE HALF: pinned verbatim from the module — the pill's own
+  // box, not the ambient reset (which names only form controls)
+  const css = readFileSync('packages/web/card-base/src/card.module.css', 'utf8')
+  const rules = css.match(/\.specSelect \{[^}]*\}/g) ?? []
+  const pill = rules.find((r) => r.includes('width: 100%'))
+  if (pill === undefined) throw new Error('the .specSelect pill rule did not render')
+  expect(pill).toContain('box-sizing: border-box')
+})
+
 test('AXES: a held stranger on an axis renders AS ITSELF, refused (the lane proof, held)', () => {
   axes({ value: { variant: 'nope' } })
   expect(shown('Variant')).toMatch(/^Nope — invalid variant/)
