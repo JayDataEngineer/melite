@@ -520,6 +520,13 @@ export class ProvisioningService extends Service implements ProvisioningServiceD
    *  would otherwise read as a cancellation at refusalFor, and a
    *  stalled fetch is a FAILURE, never an operator's cancel. */
   private readonly stallRefusals = new Map<string, ItemRefusal>();
+  /** THE VERIFY FLOW CLOCK (the 100%-then-FAILED burn, 2026-10-20):
+   *  last epoch ms the writer's verify heartbeat fired per operation.
+   *  Hashing a multi-GB part flows for tens of seconds with zero
+   *  stream movement — the watchdog's clock rides THIS alongside the
+   *  stream bytes, or it murders every complete download. Deleted on
+   *  the watchdog's disarm (every exit path), never a leak. */
+  private readonly verifyFlowAt = new Map<string, number>();
 
   constructor(ctx: Context, config: ProvisioningConfig) {
     super(ctx, "provisioning");
@@ -1415,6 +1422,10 @@ export class ProvisioningService extends Service implements ProvisioningServiceD
           operationId,
           source: countedSource(response.body, (count) => this.bumpProgress(operationId, count)),
           sizeBytes: item.sizeBytes,
+          // the verify heartbeat: hash chunks + phase boundaries poke
+          // the watchdog's clock (the field above) — a slow multi-GB
+          // verify reads as flow, never as a frozen stream
+          onVerifyBytes: () => { this.verifyFlowAt.set(operationId, Date.now()); },
         }, signal);
         this.move(ref, operationId, "installed");
         return itemResult(item, "active", "active", {
@@ -1724,9 +1735,12 @@ export class ProvisioningService extends Service implements ProvisioningServiceD
    *  aborts the operation's stream (tearing the wedged wire down) and
    *  seats the stuck refusal, whose voice the item loop consumes so
    *  the operation settles FAILED — at the frozen bytes, with the
-   *  why — instead of riding 'verifying' forever. A watchdog that
-   *  never fires costs one interval per live fetch; every exit path
-   *  disarms via the returned closure.
+   *  why — instead of riding 'verifying' forever. THE VERIFY OWNS
+   *  THE CLOCK (the 100%-then-FAILED burn, 2026-10-20): the writer's
+   *  verify heartbeat re-arms the same clock — a complete stream is
+   *  never a stalled stream. A watchdog that never fires costs one
+   *  interval per live fetch; every exit path disarms via the
+   *  returned closure.
    *
    * @param operationId the operation whose ledger the watchdog reads.
    * @param ref the operation's resource key (its lock, for the abort).
@@ -1741,26 +1755,50 @@ export class ProvisioningService extends Service implements ProvisioningServiceD
       // a teardown already under way (the dispose abort) is not a
       // stall — the cancellation voice owns that operation
       if (this.locks.get(key)?.controller.signal.aborted === true) return;
-      const bytes = this.weightProgress.get(operationId)?.bytes ?? 0;
+      const entry = this.weightProgress.get(operationId);
+      const bytes = entry?.bytes ?? 0;
       if (bytes !== lastBytes) {
         lastBytes = bytes;
         changedAt = Date.now();
         return;
       }
+      // the writer's heartbeat moved after the last stream byte —
+      // the stream is complete (or an item's hash is running) and
+      // the verify is flowing. Re-arm on the verify's own flow.
+      const verifyAt = this.verifyFlowAt.get(operationId) ?? 0;
+      if (verifyAt > changedAt) {
+        changedAt = verifyAt;
+        return;
+      }
       if (Date.now() - changedAt < this.acquireStallTimeoutMs) return;
       fired = true;
       clearInterval(timer);
-      this.stallRefusals.set(operationId, new ItemRefusal(
-        "failed",
-        "artifact/stalled",
-        "the fetch stalled: no bytes landed in " + String(this.acquireStallTimeoutMs) +
-          "ms (stuck at " + String(bytes) + " bytes) — retry the acquire",
-      ));
+      // THE STALLED PHASE NAMES ITSELF: a watchdog that never saw
+      // verify flow names the stream; one that saw the verify move
+      // after the last stream byte (or a stream already at its total)
+      // names the verify — the hung-disk shape. The stream it already
+      // landed is evidence, never the suspect: bytes-alone failure
+      // faces ended here.
+      const total = entry?.total ?? 0;
+      const verifyActive = verifyAt > 0 || (total > 0 && bytes >= total);
+      this.stallRefusals.set(operationId, verifyActive
+        ? new ItemRefusal(
+          "failed",
+          "artifact/verify-stalled",
+          `the verify stalled: the stream landed ${String(bytes)}${total > 0 ? " of " + String(total) : ""} bytes but no verify flow for ${String(this.acquireStallTimeoutMs)}ms — the hash or land step stopped moving, retry the acquire`,
+        )
+        : new ItemRefusal(
+          "failed",
+          "artifact/stalled",
+          "the fetch stalled: no bytes landed in " + String(this.acquireStallTimeoutMs) +
+            "ms (stuck at " + String(bytes) + " bytes) — retry the acquire",
+        ));
       this.locks.get(key)?.controller.abort();
     }, ACQUIRE_STALL_TICK_MS);
     return (): void => {
       fired = true;
       clearInterval(timer);
+      this.verifyFlowAt.delete(operationId);
     };
   }
 

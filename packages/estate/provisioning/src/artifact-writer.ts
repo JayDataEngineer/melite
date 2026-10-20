@@ -44,6 +44,15 @@ export interface VerifiedArtifactRequest {
   readonly operationId: string;
   readonly source: ArtifactInput;
   readonly sizeBytes?: number;
+  /** THE VERIFY HEARTBEAT (the 100%-then-FAILED burn, 2026-10-20):
+   *  hashing a multi-GB part takes tens of seconds with zero stream
+   *  movement — the plane's stall clock must ride the verify flow
+   *  too, or it murders every complete download. The writer calls
+   *  this per hash chunk plus once at each verify-phase boundary
+   *  (post-sync, pre-rename); the count is informational (never a
+   *  ledger add — the stream already counted these bytes). Optional
+   *  so older callers still satisfy the port. */
+  readonly onVerifyBytes?: (bytes: number) => void;
 }
 
 export interface VerifiedArtifactResult {
@@ -319,7 +328,7 @@ async function writeAll(handle: FileHandle, bytes: Uint8Array): Promise<void> {
   }
 }
 
-export async function sha256File(path: string, signal?: AbortSignal): Promise<string> {
+export async function sha256File(path: string, signal?: AbortSignal, onProgress?: (bytes: number) => void): Promise<string> {
   const handle = await open(path, "r");
   const hash = createHash("sha256");
   const buffer = Buffer.allocUnsafe(HASH_CHUNK_BYTES);
@@ -329,6 +338,7 @@ export async function sha256File(path: string, signal?: AbortSignal): Promise<st
       const result = await handle.read(buffer, 0, buffer.length, null);
       if (result.bytesRead === 0) break;
       hash.update(buffer.subarray(0, result.bytesRead));
+      onProgress?.(result.bytesRead);
     }
   } finally {
     await handle.close();
@@ -379,7 +389,11 @@ export class VerifiedArtifactWriter implements ArtifactWriterPort {
       await handle.close();
       handle = undefined;
       throwIfAborted(signal);
-      const temporarySha256 = await sha256File(temporary, signal);
+      // the fsync above can stall seconds on a loaded disk with zero
+      // stream movement — heartbeat the boundary so the plane's clock
+      // knows the verify is alive before the hash's own chunks flow
+      request.onVerifyBytes?.(0);
+      const temporarySha256 = await sha256File(temporary, signal, request.onVerifyBytes);
       if (expectedSha256 !== undefined && temporarySha256 !== expectedSha256) {
         throw new ProvisioningError(
           "hash-mismatch",
@@ -400,7 +414,7 @@ export class VerifiedArtifactWriter implements ArtifactWriterPort {
       if (finalKind !== "file") {
         throw new ProvisioningError("landing-failed", "artifact destination is not a file after landing");
       }
-      const finalSha256 = await sha256File(destination, signal);
+      const finalSha256 = await sha256File(destination, signal, request.onVerifyBytes);
       if (expectedSha256 !== undefined && finalSha256 !== expectedSha256) {
         throw new ProvisioningError("landing-failed", "artifact destination changed after landing");
       }
