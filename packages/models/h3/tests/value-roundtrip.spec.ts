@@ -287,11 +287,30 @@ describe("the h3 sampler knobs ride VERBATIM to their consumers (purge P2 value 
       refine_steps: 3,
       refine_denoise: 0.35,
     }, "h3_value_arm4b");
-    const riderSched = Object.entries(graph).filter(([, n]) =>
-      n.class_type === "BasicScheduler" && n.inputs.steps === 3);
-    assert.ok(riderSched.length >= 1, "the rider scheduler mounted");
-    assert.equal(riderSched[0]![1].inputs.denoise, 0.35,
-      "the stated refine window reaches the rider scheduler — the SOTA partial-denoise refine (research Stage 3: 0.30–0.35)");
+    // TOPOLOGY FIRST (audit 2026-10-20 debt 5 — rider identity is the
+    // EDGE, never value coincidence): the rider scheduler is the node
+    // a SamplerCustomAdvanced's sigmas input NAMES. steps===3 could
+    // match any scheduler; only the wire says which sampler owns it.
+    const edgeId = (v: unknown): string | null =>
+      Array.isArray(v) && typeof v[0] === "string" ? v[0] as string : null;
+    const schedOf = (g: typeof graph, sid: string, s: { inputs: Record<string, unknown> }): { cls: string; inputs: Record<string, unknown> } | null => {
+      const target = edgeId(s.inputs.sigmas);
+      if (target === null) throw new Error(`sampler ${sid} wired sigmas as a literal — schedulers only ride edges`);
+      const node = g[target];
+      return node === undefined ? null : { cls: node.class_type, inputs: node.inputs };
+    };
+    const samplers = Object.entries(graph).filter(([, n]) => n.class_type === "SamplerCustomAdvanced");
+    assert.equal(samplers.length, 2, "the stated refine mounts the rider pass (TWO SamplerCustomAdvanced)");
+    const riders = samplers
+      .map(([sid, s]) => schedOf(graph, sid, s))
+      .filter((sched): sched is { cls: string; inputs: Record<string, unknown> } =>
+        sched !== null && sched.cls === "BasicScheduler");
+    assert.equal(riders.length, 2, "every sampler's sigmas edge resolves to a BasicScheduler");
+    const rider = riders.find((r) => r.inputs.denoise === 0.35);
+    assert.ok(rider !== undefined,
+      "the RIDER scheduler — identified by its sampler's sigmas edge — carries the stated refine window (research Stage 3: 0.30–0.35)");
+    assert.equal(rider!.inputs.steps, 3,
+      "the edge-identified rider also carries the refine steps (the window and the count ride the same scheduler)");
 
     // the counter: UNSTATED keeps the full-denoise rider byte-stable
     const legacy = await composeH3({
@@ -303,9 +322,15 @@ describe("the h3 sampler knobs ride VERBATIM to their consumers (purge P2 value 
       refine_strength: 0.9,
       refine_steps: 3,
     }, "h3_value_arm4b_legacy");
-    const legacySched = Object.entries(legacy).filter(([, n]) =>
-      n.class_type === "BasicScheduler" && n.inputs.steps === 3);
-    assert.equal(legacySched[0]![1].inputs.denoise, 1.0,
+    const legacySamplers = Object.entries(legacy).filter(([, n]) => n.class_type === "SamplerCustomAdvanced");
+    const legacyRiders = legacySamplers
+      .map(([sid, s]) => schedOf(legacy, sid, s))
+      .filter((sched): sched is { cls: string; inputs: Record<string, unknown> } =>
+        sched !== null && sched.cls === "BasicScheduler");
+    assert.equal(legacyRiders.length, 2, "the legacy counter also wires both schedulers by edge");
+    const legacyRider = legacyRiders.find((r) => r.inputs.steps === 3);
+    assert.ok(legacyRider !== undefined, "the legacy rider scheduler exists among the edge-resolved pair");
+    assert.equal(legacyRider!.inputs.denoise, 1.0,
       "a doc with no refine_denoise keeps the full-denoise rider — legacy graphs stay byte-stable");
   });
 
