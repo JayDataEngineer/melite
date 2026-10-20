@@ -1,3 +1,4 @@
+// @contract flows-bench-unwired-spell-voice
 // runs-registry-doors.spec.ts — the runs seat, list, validate, status + stop: split from runs-registry.spec.ts
 // (pure move — zero test-content change; the queue core is real,
 // the card registry rides a structural fake).
@@ -2753,6 +2754,62 @@ describe("the bench compose's tolerances", () => {
     );
     assert.equal(err.code, "runs/invalid-request");
     assert.equal(s.core.runs.size, 0, "the junk row costs the whole flow its start");
+  });
+});
+
+describe("the bench compose's unwired-spell refusal (the $image burn, 2026-10-20)", () => {
+  it("ARM 1 — an unwired $spell in a bench stage's params REFUSES at the bench seat, naming the stage and the spell", async () => {
+    // THE BURN (verbatim class): bench stage s_1 carried image "$image"
+    // with no inputs edge feeding it; the seat composed it verbatim and a
+    // card guard misdiagnosed it (h3's stated-variant voice for an
+    // unwired image). The seat must refuse what the merge cannot resolve —
+    // in its own voice, before any compose runs.
+    const s = modelDoorSeat(
+      { SaveImage: { class_type: "SaveImage", inputs: { filename_prefix: "gen" } } },
+      {
+        stages: [
+          { id: "s_0", card: "image-gen", params: { model: "m1", prompt: "x" } },
+          {
+            id: "s_1",
+            card: "image-edit",
+            params: { input_images: ["$input_images"], image: "$image" },
+            inputs: { input_images: { stage: "s_0", output: "default" } },
+          },
+        ],
+      },
+    );
+    const err = await remote(() =>
+      s.svc.start({ draft_id: "d1", test: false, model: "m1", params: { prompt: "x" } }, sig()),
+    );
+    assert.equal(err.code, "runs/invalid-request");
+    assert.match(err.message, /bench stage "s_1"/);
+    assert.match(err.message, /\$image/);
+    assert.equal(s.core.runs.size, 0, "the unwired spell registers nothing");
+  });
+
+  it("ARM 2 — a spell the inputs bag feeds still rides (the wire, not the text, is the promise)", async () => {
+    // THE EXEMPT TWIN: every $spell here names a wired input, so the
+    // merge can resolve it — the seat must compose, never refuse.
+    const s = modelDoorSeat(
+      { SaveImage: { class_type: "SaveImage", inputs: { filename_prefix: "gen" } } },
+      {
+        stages: [
+          { id: "s_0", card: "image-gen", params: { model: "m1", prompt: "x" } },
+          {
+            id: "s_1",
+            card: "image-edit",
+            params: { input_images: ["$input_images"] },
+            inputs: { input_images: { stage: "s_0", output: "default" } },
+          },
+        ],
+      },
+    );
+    const ans = (await s.svc.start(
+      { draft_id: "d1", test: false, model: "m1", params: { prompt: "x" } },
+      sig(),
+    )) as { run_id: string };
+    assert.ok(ans.run_id !== "", "the wired spell composes — the bench ran");
+    assert.equal(s.core.runs.size, 1);
   });
 });
 
