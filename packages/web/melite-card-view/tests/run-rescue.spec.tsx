@@ -139,10 +139,10 @@ test('the Download press opens a live bytes/total tracker that polls the same do
     <RunRescue error="flow needs weight 'x.safetensors' — not found in loras/h3" stages={STAGES} onRun={() => {}} />,
   )
   await userEvent.click(screen.getByTestId('weight-download'))
-  // the opening ledger lands first (real bytes over the DECL total)
-  await waitFor(() => { expect(screen.getByTestId('weight-progress').textContent).toMatch(/1\/4 bytes/) })
+  // the opening ledger lands first (human sizes over the DECL total)
+  await waitFor(() => { expect(screen.getByTestId('weight-progress').textContent).toMatch(/1 B\/4 B \(25%\)/) })
   // the tracker polls the SAME action with ONLY the operation id
-  await waitFor(() => { expect(screen.getByTestId('weight-progress').textContent).toMatch(/4\/4 bytes/) })
+  await waitFor(() => { expect(screen.getByTestId('weight-progress').textContent).toMatch(/4 B\/4 B \(100%\)/) })
   // the download flight's controller rides as the third arg (the
   // L-ERROR-3 teardown signal)
   expect(wire.postManageAction).toHaveBeenNthCalledWith(1, 'acquire_weight', { model: 'h3-timeline', file: 'x.safetensors' }, expect.anything())
@@ -224,7 +224,7 @@ test('an installed poll with no detail voices the acquired bytes and the restart
     <RunRescue error="flow needs weight 'x.safetensors' — not found in loras/h3" stages={STAGES} onRun={() => {}} />,
   )
   await userEvent.click(screen.getByTestId('weight-download'))
-  await waitFor(() => { expect(screen.getByText(/h3-timeline acquired \(4\/4 bytes\)/)).toBeTruthy() })
+  await waitFor(() => { expect(screen.getByText(/h3-timeline acquired \(4 B of 4 B\)/)).toBeTruthy() })
   expect(screen.getByRole('button', { name: 'Restart to activate' })).toBeTruthy()
 })
 

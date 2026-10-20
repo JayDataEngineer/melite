@@ -168,6 +168,50 @@ export const ACQUIRE_TERMINAL: ReadonlySet<string> = new Set([
   'installed', 'restart_required', 'failed', 'blocked',
 ])
 
+/** THE HUMAN BYTE VOICE (operator 2026-10-20: "THE TRACKING OF
+ *  BYTES ALONE IS INEXCUSABLE" — the popup showed
+ *  "5196173399/7343591088 bytes (71%)", a wall of digits no
+ *  operator can read at a glance). Binary-base sizes with one
+ *  decimal: 7343591088 → "6.8 GB", 5196173399 → "4.8 GB".
+ *  Non-finite or negative input voices "0 B" (never NaN on the
+ *  face). */
+export function formatByteSize(bytes: number): string {
+  if (typeof bytes !== 'number' || !Number.isFinite(bytes) || bytes < 0) return '0 B'
+  if (bytes < 1024) return String(Math.floor(bytes)) + ' B'
+  const units = ['KB', 'MB', 'GB', 'TB'] as const
+  let value = bytes / 1024
+  let unit = 0
+  while (value >= 1024 && unit < units.length - 1) {
+    value /= 1024
+    unit += 1
+  }
+  return value.toFixed(1) + ' ' + units[unit]
+}
+
+/** THE HUMAN PROGRESS LINE (the same burn): "4.8/6.8 GB (71%)"
+ *  — human sizes over the DECL total with the percent the bar
+ *  already carries. A total=0 row has no line (the purge P5
+ *  undeclared face owns it) — empty string, never "0/0". */
+export function formatWeightProgress(bytes: number, total: number): string {
+  if (!(total > 0)) return ''
+  const pct = Math.min(100, Math.round((bytes / total) * 100))
+  return formatByteSize(bytes) + '/' + formatByteSize(total) + ' (' + String(pct) + '%)'
+}
+
+/** THE HUMAN RATE LINE (the same burn's second sentence — no
+ *  rate, no ETA): "247.6 MB/s · ~8 s left". Null ETA (unknown
+ *  total, stalled flight) voices the rate alone; a zero rate
+ *  voices "stalled", never "0.0 B/s" dressed as motion. */
+export function formatRateLine(bytesPerSec: number, etaSec: number | null): string {
+  if (!(bytesPerSec > 0)) return 'stalled — no bytes landing'
+  const rate = formatByteSize(bytesPerSec) + '/s'
+  if (etaSec === null || !Number.isFinite(etaSec) || etaSec < 0) return rate
+  if (etaSec < 90) return rate + ' · ~' + String(Math.max(1, Math.round(etaSec))) + ' s left'
+  const mins = Math.round(etaSec / 60)
+  if (mins < 90) return rate + ' · ~' + String(mins) + ' min left'
+  return rate + ' · ~' + String(Math.round(mins / 60)) + ' h left'
+}
+
 function weightStateOf(reply: { data?: unknown, detail?: string }): WeightAcquireState {
   const data = typeof reply.data === 'object' && reply.data !== null && !Array.isArray(reply.data)
     ? reply.data as Record<string, unknown>
@@ -176,12 +220,22 @@ function weightStateOf(reply: { data?: unknown, detail?: string }): WeightAcquir
     ? data['operation_id'] as string
     : typeof data['operationId'] === 'string' ? data['operationId'] as string : ''
   if (operationId === '') throw new Error('acquire_weight answered without an operation_id')
+  // THE CAUSE WINS (operator 2026-10-20: "FIND OUT WHY DOWNLOADS
+  // RANDOMLY CRASH" — the popup voiced the generic top-level
+  // "acquire_weight … bytes (failed)" while the engine's own cause
+  // rode data.detail, dropped on the floor). The engine's per-row
+  // cause leads; the generic poll message is the fallback.
+  const cause = typeof data['detail'] === 'string' && data['detail'] !== ''
+    ? data['detail'] as string
+    : undefined
   return {
     operationId,
     state: typeof data['state'] === 'string' ? data['state'] as string : 'acquiring',
     bytes: typeof data['bytes'] === 'number' ? data['bytes'] as number : 0,
     total: typeof data['total'] === 'number' ? data['total'] as number : 0,
-    ...(typeof reply.detail === 'string' && reply.detail !== '' ? { detail: reply.detail as string } : {}),
+    ...(cause !== undefined
+      ? { detail: cause }
+      : (typeof reply.detail === 'string' && reply.detail !== '' ? { detail: reply.detail as string } : {})),
   }
 }
 
@@ -226,7 +280,7 @@ export function acquiredDetailOf(target: string, current: { bytes: number, total
   if (!(current.total > 0)) {
     return target + ' acquired — the engine reported no declared total (size unknown; verify the file on disk)'
   }
-  return target + ' acquired (' + String(current.bytes) + '/' + String(current.total) + ' bytes)'
+  return target + ' acquired (' + formatByteSize(current.bytes) + ' of ' + formatByteSize(current.total) + ')'
 }
 
 /** Offer one rescue through the manage seat. Names only — the
@@ -285,7 +339,7 @@ export async function runRescueCall(rescue: Rescue, target: string, signal?: Abo
   // voices the last engine truth (state + bytes/total) so the face
   // can offer Retry/Delete on it.
   if (!ACQUIRE_TERMINAL.has(current.state)) {
-    throw new Error('weight acquisition stuck — no longer progressing: the engine last reported state "' + current.state + '" at ' + String(current.bytes) + '/' + String(current.total) + ' bytes across the full 150-poll ceiling; retry the fetch or delete the stuck operation')
+    throw new Error('weight acquisition stuck — no longer progressing: the engine last reported state "' + current.state + '" at ' + formatWeightProgress(current.bytes, current.total) + ' across the full 150-poll ceiling; retry the fetch or delete the stuck operation')
   }
   const restartRequired = current.state === 'restart_required' || current.state === 'installed'
   if (current.state === 'failed' || current.state === 'blocked') {

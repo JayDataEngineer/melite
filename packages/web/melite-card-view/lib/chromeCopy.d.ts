@@ -132,6 +132,13 @@ export declare const chromeCopy: {
     readonly downloadWeight: "Download weight";
     /** Weight tracker note while the download polls acquire_weight. */
     readonly downloadingLive: "Downloading… live bytes from the estate (polling acquire_weight).";
+    /** Weight tracker rate line once polls have timed the flight (the
+     *  operator's "TRACKING OF BYTES ALONE IS INEXCUSABLE" burn):
+     *  the status is the core's human rate/ETA voice ("247.6 MB/s ·
+     *  ~8 s left", or "stalled — no bytes landing"). */
+    readonly weightRateLive: (p: {
+        status: string;
+    }) => string;
     /** Tile spinner accessible name while the row runs. */
     readonly tileRunning: "running";
     /** Tile + drill percent faces' accessible name. */
@@ -281,12 +288,13 @@ export declare const chromeCopy: {
      *  bytes across polls or an expired poll ceiling) — never the
      *  ready face (the purge P5 rescue honesty, ERRORS k2/m). */
     readonly weightStuck: "Weight stuck";
-    /** Weight stuck face's note: the engine's last truth leads (state
-     *  + bytes/total), and the two honest exits are named. */
+    /** Weight stuck face's note: the engine's last truth leads
+     *  (state + the human progress line — "4.8/6.8 GB (71%)", never
+     *  raw byte walls), and the two honest exits are named. An empty
+     *  progress (no declared total) voices the undeclared size. */
     readonly stuckNote: (p: {
         state: string;
-        bytes: number;
-        total: number;
+        progress: string;
     }) => string;
     /** Run view's graph-receipt chip on the complete face (the silent
      *  UI-drop purge's P1): every stated scalar rode the composed

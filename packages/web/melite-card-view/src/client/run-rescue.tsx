@@ -27,7 +27,7 @@ import { createElement as h, useEffect, useRef, useState } from 'react'
 import { Button, IconCloseOutlineRegular, Modal } from '@deepseek-ai/dsh-client-ui-primitives'
 import { abortableSleep, postManageAction } from '@melite/card-base/client'
 import css from './card.module.css'
-import { ACQUIRE_TERMINAL, acquiredDetailOf, acquireWeightPoll, acquireWeightStart, cardOfStages, familyOfStages, parseRescue, runRescueCall, type Rescue, type RescueResult, type WeightAcquireState } from './run-rescue-core.ts'
+import { ACQUIRE_TERMINAL, acquiredDetailOf, acquireWeightPoll, acquireWeightStart, cardOfStages, familyOfStages, formatByteSize, formatRateLine, formatWeightProgress, parseRescue, runRescueCall, type Rescue, type RescueResult, type WeightAcquireState } from './run-rescue-core.ts'
 import { rejectionVoice } from './rejection-voice.ts'
 import { chromeCopy } from '../chromeCopy.ts'
 
@@ -36,26 +36,30 @@ function progressPercent(bytes: number, total: number): number {
   return Math.min(100, Math.round((bytes / total) * 100))
 }
 
-/** THE TRACKER FACES (the popup's download ledger): the live
- *  bytes/total line plus the meter fill, rendered both mid-flight
- *  and on the done face — the terminal count stays visible, never
- *  unmounting at completion. Null when no fetch has started.
+/** THE TRACKER FACES (the popup's download ledger): the HUMAN
+ *  progress line ("4.8/6.8 GB (71%)" — never raw byte walls) plus
+ *  the meter fill, rendered both mid-flight and on the done face —
+ *  the terminal count stays visible, never unmounting at
+ *  completion. A live flight additionally voices its rate + ETA on
+ *  the weight-rate line (the operator's "TRACKING OF BYTES ALONE
+ *  IS INEXCUSABLE" burn). Null when no fetch has started.
  *  THE UNDECLARED-TOTAL FACE (the purge P5): a report with no
  *  declared total (a DECL row without size seeds 0) renders no
  *  progress measure — no 0-of-0 meter dressed as 0%, no 0-valued
  *  maximum the engine never reported; the voice says the size is
  *  undeclared and the meter stays an unmeasured track (no role, no
- *  bounds) so the face keeps its place. */
-function trackerFaces(acquire: WeightAcquireState | null): Array<ReturnType<typeof h>> {
+ *  bounds) so the face keeps its place. The meter's aria bounds
+ *  stay byte-exact (the machine truth); only the VISIBLE line is
+ *  human. */
+function trackerFaces(acquire: WeightAcquireState | null, flow: { rateBps: number, etaSec: number | null } | null): Array<ReturnType<typeof h>> {
   if (acquire === null) return []
   const undeclared = !(acquire.total > 0)
   const pct = undeclared ? 0 : progressPercent(acquire.bytes, acquire.total)
+  const progress = undeclared
+    ? chromeCopy.undeclaredTotal({ bytes: formatByteSize(acquire.bytes), total: formatByteSize(acquire.total) })
+    : formatWeightProgress(acquire.bytes, acquire.total)
   return [
-    h('p', { 'data-testid': 'weight-progress', className: css.rescueNote },
-      undeclared
-        ? chromeCopy.undeclaredTotal({ bytes: String(acquire.bytes), total: String(acquire.total) })
-        : String(acquire.bytes) + '/' + String(acquire.total) + ' bytes (' + String(pct) + '%)',
-    ),
+    h('p', { 'data-testid': 'weight-progress', className: css.rescueNote }, progress),
     h('div', {
       ...(undeclared ? {} : {
         role: 'progressbar',
@@ -75,6 +79,9 @@ function trackerFaces(acquire: WeightAcquireState | null): Array<ReturnType<type
         },
       }),
     ),
+    ...(flow !== null ? [h('p', { 'data-testid': 'weight-rate', className: css.rescueNote },
+      chromeCopy.weightRateLive({ status: formatRateLine(flow.rateBps, flow.etaSec) }),
+    )] : []),
   ]
 }
 
@@ -115,6 +122,12 @@ export function RunRescue({ error, stages, onRun, rescue: structured }: {
   const [restarted, setRestarted] = useState(false)
   const [note, setNote] = useState<string | null>(null)
   const [acquire, setAcquire] = useState<WeightAcquireState | null>(null)
+  // THE FLOW TELEMETRY (operator 2026-10-20: rate + ETA belong on
+  // the popup): timed off the flight's own polls — the opening
+  // report anchors the clock, each poll re-rates it. Null until
+  // the first poll lands (the downloadingLive line covers the
+  // gap); cleared with the flight.
+  const [flow, setFlow] = useState<{ rateBps: number, etaSec: number | null } | null>(null)
   // THE STUCK TRUTH (the purge P5): the last engine report when the
   // flight ended stuck (bytes frozen across polls, or the ceiling
   // expired non-terminal) — the face offers Retry/Delete on it, and
@@ -256,7 +269,7 @@ export function RunRescue({ error, stages, onRun, rescue: structured }: {
       closeLabel: chromeCopy.closeWeightPopup,
     },
       h('div', { 'data-testid': 'weight-popup', className: css.rescue },
-        trackerFaces(acquire),
+        trackerFaces(acquire, null),
         doneFace(done),
       ),
     )
@@ -269,6 +282,7 @@ export function RunRescue({ error, stages, onRun, rescue: structured }: {
     setBusy(true)
     setNote(null)
     setStuck(null)
+    setFlow(null)
     // the tracker renders only reports of a LIVE flight
     setAcquire(null)
     downloadAbort.current?.abort()
@@ -278,6 +292,10 @@ export function RunRescue({ error, stages, onRun, rescue: structured }: {
       try {
         const first = await acquireWeightStart(target, rescue.file, signal)
         setAcquire(first)
+        // THE FLOW CLOCK: the opening report anchors the rate — each
+        // poll's delta over the wall clock voices MB/s + ETA.
+        const t0 = Date.now()
+        const b0 = first.bytes
         let current = first
         let lastSeenBytes = first.bytes
         let frozenPolls = 0
@@ -286,6 +304,14 @@ export function RunRescue({ error, stages, onRun, rescue: structured }: {
           if (signal.aborted) return
           current = await acquireWeightPoll(current.operationId, signal)
           setAcquire({ ...current })
+          const elapsedSec = (Date.now() - t0) / 1000
+          const rateBps = elapsedSec > 0 ? (current.bytes - b0) / elapsedSec : 0
+          setFlow({
+            rateBps: rateBps > 0 ? rateBps : 0,
+            etaSec: rateBps > 0 && current.total > current.bytes
+              ? (current.total - current.bytes) / rateBps
+              : null,
+          })
           // THE STALL WATCH (the stuck burn, ERRORS k2/m): the
           // engine's own bytes frozen across consecutive polls on an
           // incomplete transfer is a stuck fetch, not a slow one —
@@ -298,6 +324,7 @@ export function RunRescue({ error, stages, onRun, rescue: structured }: {
           if (frozenPolls >= 2) break
         }
         setBusy(false)
+        setFlow(null)
         if (!ACQUIRE_TERMINAL.has(current.state)) {
           // frozen polls or ceiling expiry: the stuck truth, never
           // the success face
@@ -315,6 +342,7 @@ export function RunRescue({ error, stages, onRun, rescue: structured }: {
       } catch (e: unknown) {
         if (signal.aborted) return // the close/unmount owns the face now
         setBusy(false)
+        setFlow(null)
         setNote(rejectionVoice(e))
       }
     })()
@@ -357,6 +385,7 @@ export function RunRescue({ error, stages, onRun, rescue: structured }: {
     // clears with it.
     downloadAbort.current?.abort()
     setAcquire(null)
+    setFlow(null)
     setDismissed(true)
   }
 
@@ -369,7 +398,7 @@ export function RunRescue({ error, stages, onRun, rescue: structured }: {
     h('div', { 'data-testid': 'weight-popup', className: css.rescue },
       stuck !== null
         ? h('p', { className: css.rescueNote },
-          chromeCopy.stuckNote({ state: stuck.state, bytes: stuck.bytes, total: stuck.total }))
+          chromeCopy.stuckNote({ state: stuck.state, progress: formatWeightProgress(stuck.bytes, stuck.total) }))
         : h('p', { className: css.rescueNote }, chromeCopy.missingDownload({ what })),
       h(Button, {
         size: 'sm',
@@ -379,8 +408,10 @@ export function RunRescue({ error, stages, onRun, rescue: structured }: {
         title: target === '' ? chromeCopy.noProvisionTarget : chromeCopy.downloadViaManage,
         onClick: download,
       }, busy ? (acquire === null ? chromeCopy.startingWord : chromeCopy.downloadingWord) : chromeCopy.downloadWord),
-      ...trackerFaces(acquire),
-      stuck === null && downloading ? h('p', { className: css.rescueNote }, chromeCopy.downloadingLive) : null,
+      ...trackerFaces(acquire, downloading ? flow : null),
+      stuck === null && downloading
+        ? (flow !== null ? null : h('p', { className: css.rescueNote }, chromeCopy.downloadingLive))
+        : null,
       stuck !== null ? h('div', null,
         h(Button, { size: 'sm', onClick: download }, chromeCopy.retryDownload),
         h(Button, {
@@ -393,6 +424,7 @@ export function RunRescue({ error, stages, onRun, rescue: structured }: {
             const operationId = stuck.operationId
             setStuck(null)
             setAcquire(null)
+            setFlow(null)
             setNote(null)
             postManageAction('acquire_discard', { operation_id: operationId })
               .catch((e: unknown) => { setNote(rejectionVoice(e)) })

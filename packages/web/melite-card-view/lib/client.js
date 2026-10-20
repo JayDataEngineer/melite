@@ -4358,16 +4358,63 @@ window.__ModuleLoader__.load({
 			"failed",
 			"blocked"
 		]);
+		/** THE HUMAN BYTE VOICE (operator 2026-10-20: "THE TRACKING OF
+		*  BYTES ALONE IS INEXCUSABLE" — the popup showed
+		*  "5196173399/7343591088 bytes (71%)", a wall of digits no
+		*  operator can read at a glance). Binary-base sizes with one
+		*  decimal: 7343591088 → "6.8 GB", 5196173399 → "4.8 GB".
+		*  Non-finite or negative input voices "0 B" (never NaN on the
+		*  face). */
+		function formatByteSize(bytes) {
+			if (typeof bytes !== "number" || !Number.isFinite(bytes) || bytes < 0) return "0 B";
+			if (bytes < 1024) return String(Math.floor(bytes)) + " B";
+			const units = [
+				"KB",
+				"MB",
+				"GB",
+				"TB"
+			];
+			let value = bytes / 1024;
+			let unit = 0;
+			while (value >= 1024 && unit < units.length - 1) {
+				value /= 1024;
+				unit += 1;
+			}
+			return value.toFixed(1) + " " + units[unit];
+		}
+		/** THE HUMAN PROGRESS LINE (the same burn): "4.8/6.8 GB (71%)"
+		*  — human sizes over the DECL total with the percent the bar
+		*  already carries. A total=0 row has no line (the purge P5
+		*  undeclared face owns it) — empty string, never "0/0". */
+		function formatWeightProgress(bytes, total) {
+			if (!(total > 0)) return "";
+			const pct = Math.min(100, Math.round(bytes / total * 100));
+			return formatByteSize(bytes) + "/" + formatByteSize(total) + " (" + String(pct) + "%)";
+		}
+		/** THE HUMAN RATE LINE (the same burn's second sentence — no
+		*  rate, no ETA): "247.6 MB/s · ~8 s left". Null ETA (unknown
+		*  total, stalled flight) voices the rate alone; a zero rate
+		*  voices "stalled", never "0.0 B/s" dressed as motion. */
+		function formatRateLine(bytesPerSec, etaSec) {
+			if (!(bytesPerSec > 0)) return "stalled — no bytes landing";
+			const rate = formatByteSize(bytesPerSec) + "/s";
+			if (etaSec === null || !Number.isFinite(etaSec) || etaSec < 0) return rate;
+			if (etaSec < 90) return rate + " · ~" + String(Math.max(1, Math.round(etaSec))) + " s left";
+			const mins = Math.round(etaSec / 60);
+			if (mins < 90) return rate + " · ~" + String(mins) + " min left";
+			return rate + " · ~" + String(Math.round(mins / 60)) + " h left";
+		}
 		function weightStateOf(reply) {
 			const data = typeof reply.data === "object" && reply.data !== null && !Array.isArray(reply.data) ? reply.data : {};
 			const operationId = typeof data["operation_id"] === "string" ? data["operation_id"] : typeof data["operationId"] === "string" ? data["operationId"] : "";
 			if (operationId === "") throw new Error("acquire_weight answered without an operation_id");
+			const cause = typeof data["detail"] === "string" && data["detail"] !== "" ? data["detail"] : void 0;
 			return {
 				operationId,
 				state: typeof data["state"] === "string" ? data["state"] : "acquiring",
 				bytes: typeof data["bytes"] === "number" ? data["bytes"] : 0,
 				total: typeof data["total"] === "number" ? data["total"] : 0,
-				...typeof reply.detail === "string" && reply.detail !== "" ? { detail: reply.detail } : {}
+				...cause !== void 0 ? { detail: cause } : typeof reply.detail === "string" && reply.detail !== "" ? { detail: reply.detail } : {}
 			};
 		}
 		/** Start the weight fetch through the ONE acquisition door (the
@@ -4404,7 +4451,7 @@ window.__ModuleLoader__.load({
 		*  total=0 face). */
 		function acquiredDetailOf(target, current) {
 			if (!(current.total > 0)) return target + " acquired — the engine reported no declared total (size unknown; verify the file on disk)";
-			return target + " acquired (" + String(current.bytes) + "/" + String(current.total) + " bytes)";
+			return target + " acquired (" + formatByteSize(current.bytes) + " of " + formatByteSize(current.total) + ")";
 		}
 		/** Offer one rescue through the manage seat. Names only — the
 		* server owns every URL (the declaration law above). The target
@@ -4441,7 +4488,7 @@ window.__ModuleLoader__.load({
 				if (signal?.aborted === true) throw signal.reason ?? /* @__PURE__ */ new Error("aborted");
 				current = await acquireWeightPoll(current.operationId, signal);
 			}
-			if (!ACQUIRE_TERMINAL.has(current.state)) throw new Error("weight acquisition stuck — no longer progressing: the engine last reported state \"" + current.state + "\" at " + String(current.bytes) + "/" + String(current.total) + " bytes across the full 150-poll ceiling; retry the fetch or delete the stuck operation");
+			if (!ACQUIRE_TERMINAL.has(current.state)) throw new Error("weight acquisition stuck — no longer progressing: the engine last reported state \"" + current.state + "\" at " + formatWeightProgress(current.bytes, current.total) + " across the full 150-poll ceiling; retry the fetch or delete the stuck operation");
 			const restartRequired = current.state === "restart_required" || current.state === "installed";
 			if (current.state === "failed" || current.state === "blocked") throw new Error(current.detail ?? "weight acquisition " + current.state);
 			return {
@@ -4634,6 +4681,11 @@ window.__ModuleLoader__.load({
 			downloadWeight: "Download weight",
 			/** Weight tracker note while the download polls acquire_weight. */
 			downloadingLive: "Downloading… live bytes from the estate (polling acquire_weight).",
+			/** Weight tracker rate line once polls have timed the flight (the
+			*  operator's "TRACKING OF BYTES ALONE IS INEXCUSABLE" burn):
+			*  the status is the core's human rate/ETA voice ("247.6 MB/s ·
+			*  ~8 s left", or "stalled — no bytes landing"). */
+			weightRateLive: (p) => "Downloading… " + p.status + " — live from the estate.",
 			/** Tile spinner accessible name while the row runs. */
 			tileRunning: "running",
 			/** Tile + drill percent faces' accessible name. */
@@ -4755,9 +4807,11 @@ window.__ModuleLoader__.load({
 			*  bytes across polls or an expired poll ceiling) — never the
 			*  ready face (the purge P5 rescue honesty, ERRORS k2/m). */
 			weightStuck: "Weight stuck",
-			/** Weight stuck face's note: the engine's last truth leads (state
-			*  + bytes/total), and the two honest exits are named. */
-			stuckNote: (p) => "Stuck — the download is no longer progressing: the engine last reported state \"" + p.state + "\" at " + String(p.bytes) + "/" + String(p.total) + " bytes. Retry the fetch or delete the stuck operation.",
+			/** Weight stuck face's note: the engine's last truth leads
+			*  (state + the human progress line — "4.8/6.8 GB (71%)", never
+			*  raw byte walls), and the two honest exits are named. An empty
+			*  progress (no declared total) voices the undeclared size. */
+			stuckNote: (p) => "Stuck — the download is no longer progressing: the engine last reported state \"" + p.state + "\"" + (p.progress !== "" ? " at " + p.progress : " (no declared total)") + ". Retry the fetch or delete the stuck operation.",
 			/** Run view's graph-receipt chip on the complete face (the silent
 			*  UI-drop purge's P1): every stated scalar rode the composed
 			*  graph — the node count is data. The engine-minted prompt_id
@@ -4784,7 +4838,7 @@ window.__ModuleLoader__.load({
 			/** Weight tracker line when the engine declared no total (a DECL
 			*  row without size seeds 0): the voice says so — no dead
 			*  0-of-0 meter dressed as 0% (the purge P5's total=0 face). */
-			undeclaredTotal: (p) => p.bytes + "/" + p.total + " bytes — total undeclared (the engine reported no size)",
+			undeclaredTotal: (p) => p.bytes + " downloaded — total undeclared (the engine reported no size)",
 			/** The Q1 Auto-mode popup's On row (the composer `+` popup's
 			*  label + blast-radius detail: On hands the AI the run press). */
 			autoModeOnLabel: "Auto mode on",
@@ -4824,50 +4878,63 @@ window.__ModuleLoader__.load({
 			if (!(total > 0) || !(bytes >= 0)) return 0;
 			return Math.min(100, Math.round(bytes / total * 100));
 		}
-		/** THE TRACKER FACES (the popup's download ledger): the live
-		*  bytes/total line plus the meter fill, rendered both mid-flight
-		*  and on the done face — the terminal count stays visible, never
-		*  unmounting at completion. Null when no fetch has started.
+		/** THE TRACKER FACES (the popup's download ledger): the HUMAN
+		*  progress line ("4.8/6.8 GB (71%)" — never raw byte walls) plus
+		*  the meter fill, rendered both mid-flight and on the done face —
+		*  the terminal count stays visible, never unmounting at
+		*  completion. A live flight additionally voices its rate + ETA on
+		*  the weight-rate line (the operator's "TRACKING OF BYTES ALONE
+		*  IS INEXCUSABLE" burn). Null when no fetch has started.
 		*  THE UNDECLARED-TOTAL FACE (the purge P5): a report with no
 		*  declared total (a DECL row without size seeds 0) renders no
 		*  progress measure — no 0-of-0 meter dressed as 0%, no 0-valued
 		*  maximum the engine never reported; the voice says the size is
 		*  undeclared and the meter stays an unmeasured track (no role, no
-		*  bounds) so the face keeps its place. */
-		function trackerFaces(acquire) {
+		*  bounds) so the face keeps its place. The meter's aria bounds
+		*  stay byte-exact (the machine truth); only the VISIBLE line is
+		*  human. */
+		function trackerFaces(acquire, flow) {
 			if (acquire === null) return [];
 			const undeclared = !(acquire.total > 0);
 			const pct = undeclared ? 0 : progressPercent(acquire.bytes, acquire.total);
-			return [(0, react.createElement)("p", {
-				"data-testid": "weight-progress",
-				className: card_module_css_default.rescueNote
-			}, undeclared ? chromeCopy.undeclaredTotal({
-				bytes: String(acquire.bytes),
-				total: String(acquire.total)
-			}) : String(acquire.bytes) + "/" + String(acquire.total) + " bytes (" + String(pct) + "%)"), (0, react.createElement)("div", {
-				...undeclared ? {} : {
-					role: "progressbar",
-					"aria-valuemin": 0,
-					"aria-valuemax": acquire.total,
-					"aria-valuenow": acquire.bytes
-				},
-				"data-testid": "weight-meter",
-				style: {
-					height: "8px",
-					borderRadius: "4px",
-					background: "rgba(127,127,127,.25)",
-					overflow: "hidden"
-				}
-			}, (0, react.createElement)("span", {
-				"data-testid": "weight-meter-fill",
-				style: {
-					display: "block",
-					height: "100%",
-					width: undeclared ? "100%" : String(pct) + "%",
-					background: "currentColor",
-					...undeclared ? { opacity: .35 } : {}
-				}
-			}))];
+			const progress = undeclared ? chromeCopy.undeclaredTotal({
+				bytes: formatByteSize(acquire.bytes),
+				total: formatByteSize(acquire.total)
+			}) : formatWeightProgress(acquire.bytes, acquire.total);
+			return [
+				(0, react.createElement)("p", {
+					"data-testid": "weight-progress",
+					className: card_module_css_default.rescueNote
+				}, progress),
+				(0, react.createElement)("div", {
+					...undeclared ? {} : {
+						role: "progressbar",
+						"aria-valuemin": 0,
+						"aria-valuemax": acquire.total,
+						"aria-valuenow": acquire.bytes
+					},
+					"data-testid": "weight-meter",
+					style: {
+						height: "8px",
+						borderRadius: "4px",
+						background: "rgba(127,127,127,.25)",
+						overflow: "hidden"
+					}
+				}, (0, react.createElement)("span", {
+					"data-testid": "weight-meter-fill",
+					style: {
+						display: "block",
+						height: "100%",
+						width: undeclared ? "100%" : String(pct) + "%",
+						background: "currentColor",
+						...undeclared ? { opacity: .35 } : {}
+					}
+				})),
+				...flow !== null ? [(0, react.createElement)("p", {
+					"data-testid": "weight-rate",
+					className: card_module_css_default.rescueNote
+				}, chromeCopy.weightRateLive({ status: formatRateLine(flow.rateBps, flow.etaSec) }))] : []
+			];
 		}
 		/** THE DISMISSAL MEMORY (the re-pop cure, ERRORS m): the popup's
 		*  dismissal outlives the mount — the tab's error-strip retire/re-arm
@@ -4894,6 +4961,7 @@ window.__ModuleLoader__.load({
 			const [restarted, setRestarted] = (0, react.useState)(false);
 			const [note, setNote] = (0, react.useState)(null);
 			const [acquire, setAcquire] = (0, react.useState)(null);
+			const [flow, setFlow] = (0, react.useState)(null);
 			const [stuck, setStuck] = (0, react.useState)(null);
 			const [dismissed, setDismissed] = (0, react.useState)(() => dismissedMisses.has(dismissalKey));
 			const downloadAbort = (0, react.useRef)(null);
@@ -4980,13 +5048,14 @@ window.__ModuleLoader__.load({
 				}, (0, react.createElement)("div", {
 					"data-testid": "weight-popup",
 					className: card_module_css_default.rescue
-				}, trackerFaces(acquire), doneFace(done)));
+				}, trackerFaces(acquire, null), doneFace(done)));
 			}
 			const download = () => {
 				dismissedMisses.delete(dismissalKey);
 				setBusy(true);
 				setNote(null);
 				setStuck(null);
+				setFlow(null);
 				setAcquire(null);
 				downloadAbort.current?.abort();
 				downloadAbort.current = new AbortController();
@@ -4995,6 +5064,8 @@ window.__ModuleLoader__.load({
 					try {
 						const first = await acquireWeightStart(target, rescue.file, signal);
 						setAcquire(first);
+						const t0 = Date.now();
+						const b0 = first.bytes;
 						let current = first;
 						let lastSeenBytes = first.bytes;
 						let frozenPolls = 0;
@@ -5003,11 +5074,18 @@ window.__ModuleLoader__.load({
 							if (signal.aborted) return;
 							current = await acquireWeightPoll(current.operationId, signal);
 							setAcquire({ ...current });
+							const elapsedSec = (Date.now() - t0) / 1e3;
+							const rateBps = elapsedSec > 0 ? (current.bytes - b0) / elapsedSec : 0;
+							setFlow({
+								rateBps: rateBps > 0 ? rateBps : 0,
+								etaSec: rateBps > 0 && current.total > current.bytes ? (current.total - current.bytes) / rateBps : null
+							});
 							frozenPolls = current.total > 0 && current.bytes < current.total && current.bytes === lastSeenBytes ? frozenPolls + 1 : 0;
 							lastSeenBytes = current.bytes;
 							if (frozenPolls >= 2) break;
 						}
 						setBusy(false);
+						setFlow(null);
 						if (!ACQUIRE_TERMINAL.has(current.state)) {
 							setStuck({ ...current });
 							return;
@@ -5023,6 +5101,7 @@ window.__ModuleLoader__.load({
 					} catch (e) {
 						if (signal.aborted) return;
 						setBusy(false);
+						setFlow(null);
 						setNote((0, _melite_card_base_client.rejectionVoice)(e));
 					}
 				})();
@@ -5042,6 +5121,7 @@ window.__ModuleLoader__.load({
 				if (stuck !== null || acquire !== null && (acquire.state === "failed" || acquire.state === "blocked")) dismissedMisses.add(dismissalKey);
 				downloadAbort.current?.abort();
 				setAcquire(null);
+				setFlow(null);
 				setDismissed(true);
 			};
 			return (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Modal, {
@@ -5054,8 +5134,7 @@ window.__ModuleLoader__.load({
 				className: card_module_css_default.rescue
 			}, stuck !== null ? (0, react.createElement)("p", { className: card_module_css_default.rescueNote }, chromeCopy.stuckNote({
 				state: stuck.state,
-				bytes: stuck.bytes,
-				total: stuck.total
+				progress: formatWeightProgress(stuck.bytes, stuck.total)
 			})) : (0, react.createElement)("p", { className: card_module_css_default.rescueNote }, chromeCopy.missingDownload({ what })), (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Button, {
 				size: "sm",
 				variant: "primary",
@@ -5063,7 +5142,7 @@ window.__ModuleLoader__.load({
 				disabled: busy || target === "",
 				title: target === "" ? chromeCopy.noProvisionTarget : chromeCopy.downloadViaManage,
 				onClick: download
-			}, busy ? acquire === null ? chromeCopy.startingWord : chromeCopy.downloadingWord : chromeCopy.downloadWord), ...trackerFaces(acquire), stuck === null && downloading ? (0, react.createElement)("p", { className: card_module_css_default.rescueNote }, chromeCopy.downloadingLive) : null, stuck !== null ? (0, react.createElement)("div", null, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+			}, busy ? acquire === null ? chromeCopy.startingWord : chromeCopy.downloadingWord : chromeCopy.downloadWord), ...trackerFaces(acquire, downloading ? flow : null), stuck === null && downloading ? flow !== null ? null : (0, react.createElement)("p", { className: card_module_css_default.rescueNote }, chromeCopy.downloadingLive) : null, stuck !== null ? (0, react.createElement)("div", null, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Button, {
 				size: "sm",
 				onClick: download
 			}, chromeCopy.retryDownload), (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Button, {
@@ -5072,6 +5151,7 @@ window.__ModuleLoader__.load({
 					const operationId = stuck.operationId;
 					setStuck(null);
 					setAcquire(null);
+					setFlow(null);
 					setNote(null);
 					(0, _melite_card_base_client.postManageAction)("acquire_discard", { operation_id: operationId }).catch((e) => {
 						setNote((0, _melite_card_base_client.rejectionVoice)(e));

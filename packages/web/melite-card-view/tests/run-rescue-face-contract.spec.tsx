@@ -61,8 +61,11 @@ test('F1a — the live tracker renders the fraction bar with the percent face (t
     .mockResolvedValue(reply('op-f1', 'acquiring', 2_096_567_476, 5_413_698_958))
   render(<RunRescue error={MISS} stages={STAGES} onRun={() => {}} />)
   fireEvent.click(screen.getByTestId('weight-download'))
-  await waitFor(() => { expect(screen.getByTestId('weight-progress').textContent).toMatch(/2096567476\/5413698958/) })
-  // the raw bytes never ride ALONE: the bar carries the fraction
+  // the human ledger: human sizes with the percent (the operator's
+  // verbatim "2096567476/5413698958 bytes" wall never renders again)
+  await waitFor(() => { expect(screen.getByTestId('weight-progress').textContent).toMatch(/2\.0 GB\/5\.0 GB \(39%\)/) })
+  expect(screen.getByTestId('weight-progress').textContent).not.toMatch(/2096567476\/5413698958/)
+  // the HUMAN line rides with the bar: the bar carries the fraction
   const meter = screen.getByRole('progressbar')
   expect(meter.getAttribute('aria-valuemax')).toBe('5413698958')
   expect(meter.getAttribute('aria-valuenow')).toBe('2096567476')
@@ -81,7 +84,7 @@ test('F1b — a total=0 row renders NO dead meter: the face voices the undeclare
     .mockResolvedValue(reply('op-f1b', 'acquiring', 2_096_567_476, 0))
   render(<RunRescue error={MISS} stages={STAGES} onRun={() => {}} />)
   fireEvent.click(screen.getByTestId('weight-download'))
-  await waitFor(() => { expect(screen.getByTestId('weight-progress').textContent).toMatch(/2096567476\/0/) })
+  await waitFor(() => { expect(screen.getByTestId('weight-progress').textContent).toMatch(/2\.0 GB downloaded/) })
   expect(screen.queryByRole('progressbar')).toBe(null)
   expect(document.body.textContent).toMatch(/total.{0,24}undeclared|no declared total|size unknown/i)
 })
@@ -96,8 +99,8 @@ test("F2 — a first poll answering 'active' must NOT flip the popup to Weight r
     .mockResolvedValue(reply('op-f2', 'installed', 4, 4))
   render(<RunRescue error={MISS} stages={STAGES} onRun={() => {}} />)
   fireEvent.click(screen.getByTestId('weight-download'))
-  // the 'active' answer landed and the tracker shows its bytes…
-  await waitFor(() => { expect(screen.getByTestId('weight-progress').textContent).toMatch(/2\/4/) })
+  // the 'active' answer landed and the tracker shows its human ledger…
+  await waitFor(() => { expect(screen.getByTestId('weight-progress').textContent).toMatch(/2 B\/4 B \(50%\)/) })
   // …and the popup must STILL be the tracker: no Weight ready, no
   // Run again, no "acquired" voice. Red today: the lie face renders.
   expect(screen.queryByText('Weight ready')).toBe(null)

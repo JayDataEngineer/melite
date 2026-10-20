@@ -135,6 +135,12 @@ export const chromeCopy = {
   downloadWeight: 'Download weight',
   /** Weight tracker note while the download polls acquire_weight. */
   downloadingLive: 'Downloading… live bytes from the estate (polling acquire_weight).',
+  /** Weight tracker rate line once polls have timed the flight (the
+   *  operator's "TRACKING OF BYTES ALONE IS INEXCUSABLE" burn):
+   *  the status is the core's human rate/ETA voice ("247.6 MB/s ·
+   *  ~8 s left", or "stalled — no bytes landing"). */
+  weightRateLive: (p: { status: string }): string =>
+    'Downloading… ' + p.status + ' — live from the estate.',
   /** Tile spinner accessible name while the row runs. */
   tileRunning: 'running',
   /** Tile + drill percent faces' accessible name. */
@@ -257,10 +263,13 @@ export const chromeCopy = {
    *  bytes across polls or an expired poll ceiling) — never the
    *  ready face (the purge P5 rescue honesty, ERRORS k2/m). */
   weightStuck: 'Weight stuck',
-  /** Weight stuck face's note: the engine's last truth leads (state
-   *  + bytes/total), and the two honest exits are named. */
-  stuckNote: (p: { state: string, bytes: number, total: number }): string =>
-    'Stuck — the download is no longer progressing: the engine last reported state "' + p.state + '" at ' + String(p.bytes) + '/' + String(p.total) + ' bytes. Retry the fetch or delete the stuck operation.',
+  /** Weight stuck face's note: the engine's last truth leads
+   *  (state + the human progress line — "4.8/6.8 GB (71%)", never
+   *  raw byte walls), and the two honest exits are named. An empty
+   *  progress (no declared total) voices the undeclared size. */
+  stuckNote: (p: { state: string, progress: string }): string =>
+    'Stuck — the download is no longer progressing: the engine last reported state "' + p.state + '"'
+    + (p.progress !== '' ? ' at ' + p.progress : ' (no declared total)') + '. Retry the fetch or delete the stuck operation.',
   /** Run view's graph-receipt chip on the complete face (the silent
    *  UI-drop purge's P1): every stated scalar rode the composed
    *  graph — the node count is data. The engine-minted prompt_id
@@ -291,7 +300,7 @@ export const chromeCopy = {
    *  row without size seeds 0): the voice says so — no dead
    *  0-of-0 meter dressed as 0% (the purge P5's total=0 face). */
   undeclaredTotal: (p: { bytes: string, total: string }): string =>
-    p.bytes + '/' + p.total + ' bytes — total undeclared (the engine reported no size)',
+    p.bytes + ' downloaded — total undeclared (the engine reported no size)',
   /** The Q1 Auto-mode popup's On row (the composer `+` popup's
    *  label + blast-radius detail: On hands the AI the run press). */
   autoModeOnLabel: 'Auto mode on',

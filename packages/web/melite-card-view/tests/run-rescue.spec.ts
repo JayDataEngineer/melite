@@ -299,7 +299,7 @@ describe('runRescueCall (names only, the one wire)', () => {
     }))
     const { runRescueCall: call } = await import('../src/client/run-rescue-core.ts')
     await expect(call({ kind: 'extension', pack: 'P' }, '')).resolves.toEqual({ detail: 'P installed', restartRequired: false })
-    await expect(call({ kind: 'model', file: 'x.safetensors' }, 'fam')).resolves.toEqual({ detail: 'fam acquired (7/7 bytes)', restartRequired: true })
+    await expect(call({ kind: 'model', file: 'x.safetensors' }, 'fam')).resolves.toEqual({ detail: 'fam acquired (7 B of 7 B)', restartRequired: true })
   })
 
   it('a detail-less refusal still names itself', async () => {
@@ -340,7 +340,7 @@ describe('runRescueCall (names only, the one wire)', () => {
       .mockResolvedValueOnce({ ok: true, data: { operation_id: 'op-camel', state: 'installed', bytes: 3, total: 3 } })
     vi.doMock('@melite/card-base/client', () => ({ postManageAction: spy }))
     const { runRescueCall: call } = await import('../src/client/run-rescue-core.ts')
-    await expect(call({ kind: 'model', file: 'x.safetensors' }, 'fam')).resolves.toEqual({ detail: 'fam acquired (3/3 bytes)', restartRequired: true })
+    await expect(call({ kind: 'model', file: 'x.safetensors' }, 'fam')).resolves.toEqual({ detail: 'fam acquired (3 B of 3 B)', restartRequired: true })
     expect(spy).toHaveBeenNthCalledWith(2, 'acquire_weight', { operation_id: 'op-camel' })
   })
 
