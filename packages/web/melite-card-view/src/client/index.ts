@@ -58,6 +58,7 @@ import { TYPERT_REMOTE as MEDIA_TYPERT_REMOTE } from '@melite/estate-media/remot
 import { TYPERT_REMOTE as MANAGE_TYPERT_REMOTE } from '@melite/estate-manage/remote'
 import { FlowCards } from './FlowCards.tsx'
 import { ConstructCard } from './construct-card.tsx'
+import { decorateAutoMode } from './auto-mode-decoration.ts'
 import { CARD_TOOLS, FLOW_TOOLS } from './card-tools.ts'
 import { buildChatFileMentions, meliteCardsTurnDefinition } from './card-mentions.ts'
 import { CardsTab } from './CardsTab.tsx'
@@ -285,6 +286,18 @@ export async function apply(ctx: ClientContext): Promise<void> {
     } catch (error) {
       console.error(`[melite-card-view] toolview registration failed for ${tool}:`, error)
     }
+  }
+
+  // THE AUTO-MODE MENU FACE (Q1, operator 2026-11-09: "Auto mode via
+  // the left menu button popup instead of the / tool"): the composer's
+  // + menu carries Auto mode as a decoration on the SAME /melite-runs
+  // host command — one delegation, two handles. Same failure policy
+  // (logged, never thrown) as the toolview loops above: the module
+  // itself stays silent when the composition seats no commandUi.
+  try {
+    decorateAutoMode(ctx)
+  } catch (error) {
+    console.error('[melite-card-view] auto-mode menu decoration failed:', error)
   }
 
   // THE ID VOCABULARY (task d, seam ii): the conversation engine folds

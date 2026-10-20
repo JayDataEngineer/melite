@@ -789,7 +789,7 @@ test('ENVELOPED MENU: the stamp-less default renders NO row under the served env
   expect(recipeTrigger(container)).not.toBeNull()
   fireEvent.click(recipeTrigger(container))
   const ids = screen.getAllByRole('menuitem').map((row) => (row.textContent ?? '').trim())
-  expect(ids).toEqual(['Blank — no recipe', 'Realism — the realism one-click']) // the stamp-less default renders nothing (the (k) law holds under the served envelope)
+  expect(ids).toEqual(['Blank — no recipe', 'Realism']) // the stamp-less default renders nothing (the (k) law holds under the served envelope)
 })
 
 // ── THE RECIPE→RECIPE SWITCH WALL (2026-11-08, the
@@ -861,7 +861,7 @@ test('RECIPE SWITCH: picking a stamped row over derived family defaults lands th
   // the user's burn 1:1 — open the menu, pick the stamped row
   fireEvent.click(recipeTrigger(container))
   const ids = screen.getAllByRole('menuitem').map((row) => (row.textContent ?? '').trim())
-  expect(ids).toEqual(['Blank — no recipe', 'Remove Background — the official one-click', 'Drift Lock — the consistency LoRA', 'Upstream Solvers — the family defaults']) // the stamp-less default renders nothing (the own-stamp gate, this family's shape too)
+  expect(ids).toEqual(['Blank — no recipe', 'Remove Background', 'Drift Lock', 'Upstream Solvers']) // the stamp-less default renders nothing (the own-stamp gate, this family's shape too)
   fireEvent.click(screen.getByRole('menuitem', { name: /Remove Background/ }))
   // the pick WROTE (the prompt box carries the canned verb) AND the
   // face carries the picked row (a write the face does not show is a
@@ -929,7 +929,7 @@ test('RULE A: a stamp that is ENTIRELY mod-owned STILL renders its pill — the 
   expect(recipeTrigger(container)).not.toBeNull()
   fireEvent.click(recipeTrigger(container))
   const ids = screen.getAllByRole('menuitem').map((row) => (row.textContent ?? '').trim())
-  expect(ids).toEqual(['Blank — no recipe', 'Realism — the realism one-click', 'Quick — the quick knob stamp', 'Cine — the cine stamp']) // (k, 2026-11-08) the blank row is a selectable WRITE (departure); the TRIGGER keeps the '-- recipe --' resting face
+  expect(ids).toEqual(['Blank — no recipe', 'Realism', 'Quick', 'Cine']) // (k, 2026-11-08) the blank row is a selectable WRITE (departure); the TRIGGER keeps the '-- recipe --' resting face
   fireEvent.click(screen.getByRole('menuitem', { name: /Realism/ }))
   await waitFor(() => { expect(state.user['loras']).toEqual([{ id: 'krea2_realism_lora' }]) })
 })
@@ -1371,7 +1371,7 @@ test('SEAT: the pills render UNDER THE MODEL SECTION — the lora row\'s pill in
   expect(select).not.toBeNull()
   fireEvent.click(select)
   const ids = screen.getAllByRole('menuitem').map((row) => (row.textContent ?? '').trim())
-  expect(ids).toEqual(['Blank — no recipe', 'Realism — the realism one-click', 'Quick — the quick knob stamp']) // realism + quick carry the seat; the blank row rides (k)
+  expect(ids).toEqual(['Blank — no recipe', 'Realism', 'Quick']) // realism + quick carry the seat; the blank row rides (k)
   fireEvent.click(screen.getByLabelText('Recipe')) // close: the owner bit toggles
   // THE SEAT: inside the model axes section (under Model, Variant,
   // Quant — never a sampling-group row at the bottom)

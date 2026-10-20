@@ -6974,6 +6974,64 @@ window.__ModuleLoader__.load({
 			});
 		}
 		//#endregion
+		//#region src/client/auto-mode-decoration.ts
+		/** The host command this decorates (without the leading slash). */
+		const AUTO_MODE_COMMAND = "melite-runs";
+		/**
+		* The popup's rows: On hands the AI the run press, Off hands it back
+		* to the user. The detail says what changes (who presses Run) because
+		* a bare On/Off toggle never explains its own blast radius.
+		*/
+		function autoModeOptions() {
+			return [{
+				id: "on",
+				label: "Auto mode on",
+				detail: "The AI starts runs itself — generations no longer wait for your Run press"
+			}, {
+				id: "off",
+				label: "Auto mode off",
+				detail: "Runs wait for your Run press again — the AI only stages"
+			}];
+		}
+		/**
+		* The completed slash line one option submits — the SAME line the `/`
+		* half executes, so both handles flip the one delegation.
+		* @param optionId - the picked popup option.
+		*/
+		function autoModeCommandLine(optionId) {
+			if (optionId !== "on" && optionId !== "off") throw new Error(`auto-mode: unknown option "${optionId}" (want on or off) — refusing to invent a verb`);
+			return `/${AUTO_MODE_COMMAND} ${optionId}`;
+		}
+		/**
+		* Hang the Auto-mode popup on `/melite-runs`. A client without the
+		* command seat (a composition that never mounted ui-commands) stays
+		* silent — logged, never thrown (the plugin's failure policy: an
+		* external plugin must not take the GUI boot down).
+		* @param ctx - the client root context.
+		*/
+		function decorateAutoMode(ctx) {
+			const commandUi = ctx.get("commandUi");
+			if (commandUi === void 0) return;
+			const sessions = ctx.sessions;
+			const submit = async (sessionId, optionId) => {
+				const live = sessions?.binding(sessionId)?.session;
+				if (live === void 0) throw new Error("auto-mode: this session is not materialized yet");
+				const line = autoModeCommandLine(optionId);
+				const result = await live.command(line);
+				if (!result.ok) throw new Error(`auto-mode switch failed: ${result.error?.code}: ${result.error?.message}`);
+				if (result.value?.matched !== true) throw new Error("auto-mode: the host offers no /melite-runs command");
+			};
+			ctx.effect(() => commandUi.decorate({
+				name: AUTO_MODE_COMMAND,
+				available: () => true,
+				ui: {
+					kind: "popupSelect",
+					options: async (_session) => autoModeOptions(),
+					onSelect: (option, session) => submit(session.sessionId, option.id)
+				}
+			}), "melite-card-view: auto-mode menu decoration");
+		}
+		//#endregion
 		//#region src/client/card-tools.ts
 		/**
 		* card-tools — CARD_TOOLS, the wire-name list every card seat keys on.
@@ -20311,6 +20369,11 @@ window.__ModuleLoader__.load({
 				}, ConstructCard));
 			} catch (error) {
 				console.error(`[melite-card-view] toolview registration failed for ${tool}:`, error);
+			}
+			try {
+				decorateAutoMode(ctx);
+			} catch (error) {
+				console.error("[melite-card-view] auto-mode menu decoration failed:", error);
 			}
 			try {
 				ctx.effect(() => ctx.uiConversation.events.register(meliteCardsTurnDefinition), "melite-card-view: meliteCards turn fold");
