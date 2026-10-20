@@ -367,6 +367,47 @@ describe("THE SECOND-PASS VISIBILITY ARM (ERROR h — presence is a pure functio
       `(face: "${face}")`).toMatch(/refused/i)
     expect(layer[axisKey("Variant")], "the illegal pick never landed (the atomic pick law holds through the settlement)").not.toBe(row.id)
   })
+
+  it("THE SHARED WORD (red): the Quant axis speaks ONE word across the variants — Timeline and Singularity both ride int8; a variant switch that shares the quant never mints a second quant word and never moves the doc's coordinate", async () => {
+    serve(); bind()
+    // THE SERVED SHAPE at the studio's own fetch seam: every Quant
+    // row's id IS its coordinate. The old mint (first-seen keeps the
+    // plain word, every sibling carries `variant__quant`) served a
+    // word the DOOR refuses — selectCardVariant matches the stated
+    // quant against the cell's raw coordinate, so the composite id
+    // exists nowhere in the facts row: the spec was speaking a
+    // language its own gate rejects.
+    const quants = rowsFor(served, "Quant")
+    const minted = quants.filter((r) => (r.quant ?? "") !== "" && r.id !== r.quant)
+    expect(minted.map((r) => [r.id, r.owner]), `h¹ (the shared-vocabulary law, the serve hop): the served Quant axis mints a ` +
+      `second word per variant (${JSON.stringify(minted.map((r) => [r.id, r.owner]))}) — a word the compose door refuses ` +
+      `(the door judges the cell's raw coordinate). Timeline and Singularity both ride int8: the row's id IS the ` +
+      `coordinate at every address; the variant axis carries the switch, the quant word never moves.`).toEqual([])
+    // THE JOURNEY (the operator's own two picks): a Timeline holding
+    // with quant int8 stated → the Variant pick to Singularity → the
+    // doc's quant word NEVER moves and the face follows the variant
+    // (INT8 ConvRot → INT8 Pruned — same word, different file).
+    const timelineHolding = { ...unstatedLayerA(), quant: "int8" } as unknown as LayerA
+    const mounted = mount(openBase(), timelineHolding)
+    const trigger = await screen.findByRole("button", { name: "Quant" }, { timeout: 4000 })
+    expect(trigger.textContent ?? "", "the timeline lane's quant face is the timeline cell's label").toMatch(/convrot/i)
+    await pickSingularity(served)
+    const landed = mounted.layer() as unknown as Record<string, unknown>
+    cleanup()
+    // THE REOPENED STAGE (this harness's setLayerA is a closure, not
+    // React state — the pick's truth is the landed layer, and the
+    // stage's own law is that a REOPEN restores its selects from it):
+    // remount on the landed holding — the face must follow the
+    // variant (INT8 Pruned) while the word stays the door's.
+    mount(openBase(), landed as unknown as LayerA)
+    const reopened = await screen.findByRole("button", { name: "Quant" }, { timeout: 4000 })
+    const face = reopened.textContent ?? ""
+    cleanup()
+    unbindEstateRemote(); vi.unstubAllGlobals()
+    expect(landed[axisKey("Variant")], "the variant pick landed (the journey is the operator's own two picks)").toBe("singularity")
+    expect(landed["quant"], `the doc's quant coordinate holds across the flip (got ${String(landed["quant"])})`).toBe("int8")
+    expect(face, `the singularity lane's quant face is the singularity cell's label (face: "${face}")`).toMatch(/pruned/i)
+  })
 })
 
 /** The visibility boot: the lane store overlay wants a primed

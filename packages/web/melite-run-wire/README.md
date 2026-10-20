@@ -14,7 +14,7 @@ The package root (`.`) is the only programmatic door; the manifest also declares
 - Status grammar — `RunStageStatus` and `RunStatusRow`, normalized once by `readRunStatus`: stage urls rewritten, a stage's `error`, `progress`, and `activity` passed through verbatim, and a run-level status outside `RUN_STATUS_WORDS` thrown on read.
 - Url laws — `toRunMediaUrl` (bare run-relative names ride `/melite-media/runs/<runId>/<rel>`; scheme-carrying or rooted urls pass verbatim), plus the list-row pair `listArtifactMediaUrl` and `listRowMediaUrl`, whose currency is already run-prefixed.
 - Terminal vocabulary — `isTerminalRun`, `TERMINAL_RUN_STATUSES`, and `RUN_STATUS_WORDS`, re-exports of `@melite/contracts/stageView`, the one owner.
-- Catalog door — `fetchCardFamilies` and `defaultFamilyForCard`: `GET /v1/model-catalog`, cached per session; `resetCardFamiliesCache` drops the cache.
+- Catalog door — `fetchCardFamilies` (card id → boarded families; a row with no families array carries `[]`, never a minted `[id]`) and `defaultFamilyForCard` (default family, `null` for a carried family-less card, throws for an uncarried card — never a minted self-default): `GET /v1/model-catalog`, cached per session; `resetCardFamiliesCache` drops the cache.
 
 ## Model Experience
 

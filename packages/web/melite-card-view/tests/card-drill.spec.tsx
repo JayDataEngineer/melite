@@ -822,8 +822,10 @@ test('✦ every enhance rejection renders its message — empty prompt, no model
 test('a THROWN run start renders its reason in the open drill — never silent, never stuck', async () => {
   stubWire()
   // the BENCH fixture holds no model arm, so the start resolves the
-  // default family via the catalog — kill that wire and the start
-  // THROWS (the exact unhandled path the old code died on). The
+  // default family via the catalog — kill that wire and the press
+  // REFUSES loud (a refused start and a thrown start both render —
+  // the old code died on the unhandled throw with running stuck).
+  // The
   // family cache is module state: reset it or no fetch fires.
   resetCardFamiliesCache()
   const base = globalThis.fetch

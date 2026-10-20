@@ -3473,23 +3473,37 @@ window.__ModuleLoader__.load({
 		}
 		/** The family currency (the {model:} door's model ids — the cards
 		*  section's projection): card id → its boarded families, first = the
-		*  DEFAULT family (form-spec's card-id alias law: boarded[0]). The
-		*  runs door resolves NEITHER card ids nor aliases — callers hand the
-		*  start verb the family from HERE. Rides the one reader + cache
+		*  DEFAULT family (form-spec's card-id alias law: boarded[0]). A row
+		*  with no families array carries NO family ([]) — the client half
+		*  of the minted-model kill (2026-10-12 server, this seat
+		*  2026-11-08): the old `: [id]` minted the card's own id as a
+		*  family, the same lie the server cut from cardSections. The runs
+		*  door resolves NEITHER card ids nor aliases — callers hand the
+		*  start verb the family from HERE, or the explicit card-unit alias
+		*  when the table carries none. Rides the one reader + cache
 		*  above. */
 		async function fetchCardFamilies(signal) {
 			const rows = await fetchCardCatalogRows(signal);
 			const out = {};
 			for (const [id, row] of Object.entries(rows)) {
 				const fams = row["families"];
-				out[id] = Array.isArray(fams) ? fams.filter((x) => typeof x === "string") : [id];
+				out[id] = Array.isArray(fams) ? fams.filter((x) => typeof x === "string") : [];
 			}
 			return out;
 		}
-		/** Resolve a card's DEFAULT family (boarded[0]); the card id itself
-		*  when the catalog names none (mask-studio-style self-services). */
+		/** Resolve a card's DEFAULT family (boarded[0]) — null when the
+		*  catalog carries the card with NO family (lawful family-less; the
+		*  RUN seat maps null to the card-unit address explicitly against
+		*  admitStageModel's card-unit arm). THROWS when the catalog does
+		*  not carry the card at all — the writer's old `?? cardId` minted
+		*  the card id as its own family (operator 2026-11-08: a fallback
+		*  is a hidden error), the exact pattern the minted-model kill
+		*  executed server-side. An absent row is an error, never a silent
+		*  self-default. */
 		async function defaultFamilyForCard(cardId, signal) {
-			return (await fetchCardFamilies(signal))[cardId]?.[0] ?? cardId;
+			const families = await fetchCardFamilies(signal);
+			if (!Object.prototype.hasOwnProperty.call(families, cardId)) throw new Error(`card '${cardId}' is not carried by the catalog (no /v1/model-catalog row — the run seat cannot default its family)`);
+			return families[cardId]?.[0] ?? null;
 		}
 		//#endregion
 		//#region ../../web-kit/contracts/src/stageView.ts
@@ -7238,10 +7252,15 @@ window.__ModuleLoader__.load({
 		*  params.workflow nobody emitted — the Sep 11 bench runs' "node
 		*  carries no inline workflow". The {model:} door composes the card's
 		*  arms estate-side; `model` is the card's DEFAULT FAMILY from the
-		*  catalog, and — the Run-press law, 2026-10-08 — a family-less
-		*  card rides its OWN id (defaultFamilyForCard's documented
-		*  fallback): the door's card-unit arm composes the card verbatim
-		*  (prepareCardParams' card-unit arm; no family overlay).
+		*  catalog, and — the Run-press law, 2026-10-08, re-seated 2026-11-08
+		*  when the writer's `?? cardId` mint was cut — a family-less card
+		*  rides its OWN id as the CARD-UNIT address (defaultFamilyForCard
+		*  returns null for a carried card with no family; THIS seat maps
+		*  null to the card id against admitStageModel's card-unit arm):
+		*  the door's card-unit arm composes the card verbatim
+		*  (prepareCardParams' card-unit arm; no family overlay). An
+		*  UNKNOWN card (no catalog row) refuses AT THE PRESS, naming the
+		*  miss — never a minted self-default.
 		*  THE PARAM IS THE WIRE (the two-month law): whatever the stage's
 		*  slot holds — an upload's estate path or a picked upstream output's
 		*  media-route url — rides the start doc VERBATIM; the engine stages
@@ -7258,7 +7277,17 @@ window.__ModuleLoader__.load({
 			const card = typeof src.card === "string" && src.card !== "" ? src.card : "";
 			if (card === "") return { refused: "this stage names no card — nothing to compose" };
 			const heldModel = params["model"];
-			const model = typeof heldModel === "string" && heldModel !== "" ? heldModel : await defaultFamilyForCard(card);
+			let model;
+			if (typeof heldModel === "string" && heldModel !== "") model = heldModel;
+			else {
+				let fam;
+				try {
+					fam = await defaultFamilyForCard(card);
+				} catch (e) {
+					return { refused: `the catalog carries no family for card ${JSON.stringify(card)} (${(0, _melite_card_base_client.rejectionVoice)(e)}) — the run refuses rather than mint a self-default` };
+				}
+				model = fam ?? card;
+			}
 			if (card === MCP_CARD) {
 				if ((typeof params["task"] === "string" ? params["task"].trim() : "") === "") return { refused: "write the Task first — the subagent spawns with no brief otherwise" };
 				const brain = typeof params["brain"] === "string" ? params["brain"].trim() : "";

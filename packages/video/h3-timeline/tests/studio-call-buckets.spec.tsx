@@ -13,9 +13,11 @@ import { describe, it, vi } from "vitest"
 import assert from "node:assert/strict"
 import { readFileSync } from "node:fs"
 import { join } from "node:path"
+import { useState } from "react"
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react"
 import { CallCard } from "../src/ui/studio/CallCard.tsx"
 import type { DocCall } from "../src/ui/studio/docModel.ts"
+import { studioCopy } from "../src/ui/studio/studioCopy.ts"
 import { fieldsOfEnvelope, type SpecField, bindEstateRemote, unbindEstateRemote } from "@melite/card-base/client"
 import { carrier } from "../src/card.ts"
 
@@ -384,5 +386,66 @@ describe("one label per bucket", () => {
     const hint = document.querySelector('[data-testid="tl-call-mods-hint"]')
     assert.equal(hint, null, "the refModsHint plan-text line still renders under the Ref mods label — the operator deleted it (ERRORS e); the bucket's square grammar names its own currency")
     assert.ok(!document.body.textContent!.includes('any media rides'), "the plan text rides verbatim somewhere in the card face")
+  })
+})
+
+// ── THE DECLARED MOD'S DETACH (G7's writer seat, 2026-11-09: the
+// run-level ref_mods lane was declared, hydrated, serialized,
+// composed-against — AUTHORED BY NOTHING. The merge law (2026-11-08)
+// made the declared chips render on every window's bus; a pack the
+// operator cannot remove from the studio is the silent-UI-drop class
+// at this hop — the chip composes and no control undoes it. The
+// seat: the declared chip's detach writes the DOC verb.) ──────────
+describe("the declared mod's detach (G7's writer seat — the run-level lane is authored by the studio, not just read)", () => {
+  /** A STATEFUL card: the detach writes the doc verb, the verb flows
+   *  back into the layerA prop, and the union bus recounts — the real
+   *  hop chain the operator's click crosses (a capture-only fixture
+   *  cannot witness the recount). */
+  function harness(layer0: Record<string, unknown>, writes: Array<[string, unknown]>, withWriter = true): void {
+    function Card() {
+      const [layerA, setLayerA] = useState(layer0)
+      const deps = {
+        selected: null, fps: 24, knobFields: REAL_KNOB_FIELDS,
+        callCardRefs: { current: [] },
+        artifactIndex: { byName: new Map(), byUrl: new Map() }, linkGroups: [], guideLinks: { clip: [], audio: [] },
+        refArtifacts: [],
+        handlePromptDelete: () => {}, handlePromptUpdate: () => {},
+        enhanceOne: () => {}, undoEnhance: () => {}, enhancing: {}, enhanceErr: {}, enhanceUndo: {},
+        setCallSpan: () => {}, setCallGuide: () => {}, setCallPrevSec: () => {},
+        setCallTransition: () => {},
+        setCallRefs: () => {},
+        setCallKnob: () => {},
+        layerA,
+        ...(withWriter
+          ? { setLayerAKey: (k: string, v: unknown) => { writes.push([k, v]); setLayerA((prev) => ({ ...prev, [k]: v })) } }
+          : {}),
+      }
+      return <CallCard c={{ ...CALL, refs: { mods: "local.safetensors" } as DocCall["refs"] }} i={0} deps={deps as never} />
+    }
+    render(<Card />)
+  }
+
+  it("a declared mod chip detaches through the DOC verb — the run-level ref_mods lane loses the pack and the bus recounts", () => {
+    const writes: Array<[string, unknown]> = []
+    harness({ fps: 24, width: 768, height: 448, ref_mods: ["identity.safetensors", "style.safetensors"] }, writes)
+    assert.equal(screen.getAllByTestId("tl-declared-mod-remove").length, 2, "both declared packs carry the detach verb")
+    assert.match(screen.getByTestId("tl-call-mods-count").textContent!, /\b3\//, "the union bus counts declared 2 + stated 1")
+    fireEvent.click(screen.getByRole("button", { name: studioCopy.modDeclaredRemoveTitle("identity.safetensors") }))
+    assert.deepEqual(writes, [["ref_mods", ["style.safetensors"]]], "the removal writes the doc key minus the pack")
+    assert.equal(screen.getAllByTestId("tl-declared-mod-remove").length, 1, "the detached pack leaves the bus")
+    assert.match(screen.getByTestId("tl-call-mods-count").textContent!, /\b2\//, "the union recounts to declared 1 + stated 1")
+  })
+
+  it("the LAST declared pack nulls the lane — the absent-key law (kept.length ? kept : undefined), never stated-empty", () => {
+    const writes: Array<[string, unknown]> = []
+    harness({ fps: 24, width: 768, height: 448, ref_mods: ["identity.safetensors"] }, writes)
+    fireEvent.click(screen.getByTestId("tl-declared-mod-remove"))
+    assert.deepEqual(writes, [["ref_mods", undefined]], "the emptied lane unstamps — an empty array is a stated value the compose would judge")
+  })
+
+  it("no writer threaded — no detach control renders (the honest face: a control whose press cannot write is a dead control)", () => {
+    const writes: Array<[string, unknown]> = []
+    harness({ fps: 24, width: 768, height: 448, ref_mods: ["identity.safetensors"] }, writes, false)
+    assert.equal(screen.queryByTestId("tl-declared-mod-remove"), null, "the detach never renders without the doc verb")
   })
 })

@@ -218,10 +218,10 @@ export function prepareCardParams(deps, body, mid, phase, factsArg) {
     const resolves = mid in facts || deps.resolveCardFamily(mid, facts) in facts || deps.modelMids().has(mid);
     if (!resolves) {
         // THE CARD-UNIT COMPOSE (2026-10-08 second pass — the
-        // Run-press law, the operator's wall): the bench's Run press
-        // addresses a family-less card by its OWN id — runCardStage's
-        // documented fallback, defaultFamilyForCard returning the
-        // card id when no family stands behind the card. The {model:}
+        // Run-press law, the operator's wall; writer mint cut 2026-11-08):
+        // the bench's Run press addresses a family-less card by its OWN
+        // id — stage-run maps defaultFamilyForCard's null to the card
+        // id explicitly (never a writer `?? cardId` mint). The {model:}
         // door therefore COMPOSES the card the press names (the GUI's
         // shape is the contract), params verbatim: no family row, so
         // no variant selection and no model-defaults overlay — the

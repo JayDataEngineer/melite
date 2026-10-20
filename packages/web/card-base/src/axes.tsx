@@ -197,7 +197,14 @@ export function ModelAxes({ spec, value, user, pickHeld = user, onSet, onPick, o
     const rows = rowsOf(g, active)
     // THE VOCABULARY GROUND (2026-09-29): the user layer holds the
     // DOOR's stamp (quant 'int8'), the option list speaks catalog
-    // ids ('raw__int8') — a held value grounds by EITHER face
+    // ids — a held value grounds by EITHER face. (2026-11-08, THE
+    // SHARED QUANT VOCABULARY: the serializer's mint is dead — the
+    // served Quant row's id IS its coordinate — so on served specs
+    // the two faces are one word and the grounded arm below never
+    // fires (`r.id !== heldId` is false for every row). It stays as
+    // the belt for HANDED specs carrying legacy composite ids: the
+    // held word resolves to the owning row so the face and the menu
+    // highlight stay honest — never rendered refused.)
     if (heldId !== undefined && rows.some((r) => r.id === heldId || (r.quant ?? '') === heldId)) {
       const grounded = rows.find((r) => r.quant === heldId && r.id !== heldId)
       active[g] = grounded !== undefined ? grounded.id : heldId

@@ -255,7 +255,6 @@ export function specVariants(
   key: string,
 ): FormVariantRow[] {
   const rows: FormVariantRow[] = []
-  const seen = new Set<string>()
   const declEngine = decl.engine ?? ''
   const matrix = deriveVariants(decl)
   // THE HIDDEN-LANE MIRROR (the door's wholesale refusal, served):
@@ -272,7 +271,6 @@ export function specVariants(
   for (const v of matrix) {
     if (v.hide_from_dropdown === true) continue
     rows.push(variantRow(v, declEngine))
-    seen.add(v.id)
     for (const c of v.cells) {
       if (c.hide_from_dropdown === true) continue
       if (!c.quant) {
@@ -306,8 +304,25 @@ export function specVariants(
       // serves (the wd14/florence2 arms hold), and the 55ef13c14
       // class (cells DROPPED at a family key) can never reopen — this
       // law only ever adds serves.
-      const id = seen.has(c.quant) ? `${v.id}__${c.quant}` : c.quant
-      seen.add(id)
+      // THE SHARED QUANT VOCABULARY (operator, 2026-11-08: "Both
+      // singualarity and the other combined h3 models are VARIANTS
+      // that both have the quant of int8 … the shared vocabularity
+      // never came though"): the row's id IS the cell's coordinate —
+      // the ONE word the door's clause 2 judges (cardsVariant
+      // selectCardVariant matches the stated quant against the raw
+      // c.quant), the stamp plane stamps (axisStampOf), and the user
+      // layer holds. The old mint (first-seen keeps the plain word,
+      // every sibling carries `variant__quant`) kept the FLAT served
+      // array unique, but it served a word the door REFUSES — a
+      // composite id exists nowhere in the facts row, so the spec
+      // spoke a language its own gate rejects. The vocabulary is
+      // SHARED across the family's variants: one coordinate, one
+      // word, every address. The owner chain (the variant axis)
+      // disambiguates the lane — a menu offers one variant's cells —
+      // and one variant's own cells never share a coordinate (the
+      // door could not judge them apart, so the DECL shape is
+      // illegal upstream of the serve).
+      const id = c.quant
       rows.push({
         id,
         label: c.label || capQuant(c.quant),
@@ -346,8 +361,8 @@ export function specVariants(
     const resolving = matrix.find((v) => v.cells.length > 0) ?? matrix[0]
     if (resolving !== undefined && resolving.hide_from_dropdown !== true) {
       // resolving is non-hidden (the guard above), and every non-hidden
-      // variant's id joined `seen` in the row loop — the plain-id arm
-      // is dead by control flow; the head row is always the alias.
+      // resolving is non-hidden (the guard above), so the plain-id
+      // arm is dead by control flow; the head row is always the alias.
       const id = `${resolving.id}__head`
       rows.push({
         id,

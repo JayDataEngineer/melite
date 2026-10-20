@@ -741,9 +741,10 @@ export class CardRegistryService extends Service {
     // every live def carries it — so no undefined fallback here.)
     const boarded: readonly string[] = def.boarded;
     // THE CARD-UNIT ALIAS (the minted-model regression kill,
-    // 2026-10-12): a card that boards NOTHING is its own routing
-    // key — the GUI's Run press names the card id (stage-run's
-    // defaultFamilyForCard), the compose seam lanes it on
+    // 2026-10-12, client mint cut 2026-11-08): a card that boards
+    // NOTHING is its own routing key — the GUI's Run press names the
+    // card id (stage-run maps defaultFamilyForCard's null to the card
+    // id explicitly), the compose seam lanes it on
     // modelId==='' (cardsCompose's familyless arm), and this
     // check used to refuse the very id that arm requires ("model
     // 'mask' is not offered by card 'mask'", boards: none) — every

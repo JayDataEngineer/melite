@@ -287,6 +287,25 @@ describe('live door arms', () => {
     assert.equal(typeof table['tts']!['order'], 'number')
   })
 
+  test('THE SERVED QUANT AXIS SPEAKS ONE WORD (operator, 2026-11-08: "the shared vocabularity never came though" — the h3 burn: Timeline and Singularity both ride int8)', async () => {
+    const doc = await formSpecSweep('h3') as FormSpecDoc | null
+    assert.ok(doc, 'the served h3 form-spec answers')
+    const quants = (doc.variants ?? []).filter((r) => r.group === 'Quant')
+    assert.ok(quants.length > 0, 'the h3 matrix serves Quant rows')
+    const minted = quants.filter((r) => r.id.includes('__'))
+    assert.deepEqual(
+      minted.map((r) => r.id),
+      [],
+      'the mint is dead — every served Quant row id IS its coordinate (the door-refused composite word serves nowhere)',
+    )
+    const int8s = quants.filter((r) => r.quant === 'int8')
+    assert.deepEqual(
+      int8s.map((r) => [r.id, r.owner]).sort(),
+      [['int8', 'singularity'], ['int8', 'timeline']],
+      'both variants speak the one shared int8 word — the variant axis carries the switch, the quant word never moves',
+    )
+  })
+
   test('THE MCP CARD FOLDS ON OPT-IN ONLY (error j2, dev_docs/ERRORS.md:86)', async () => {
     // The operator error (ERRORS.md:86, the unwanted-MCP-card report).
     // The fold parameter is the OPT-IN census (the
@@ -1247,5 +1266,37 @@ describe('specVariants (the served projection of the one walk)', () => {
     assert.equal(quant.route, '', 'the routeless cell IS the family lane')
     assert.equal(quant.owner, 'solo')
     assert.equal(quant.quant, 'q8')
+  })
+
+  test('THE SHARED QUANT VOCABULARY (operator, 2026-11-08: "Both singualarity and the other combined h3 models are VARIANTS that both have the quant of int8 … the shared vocabularity never came though") — one coordinate, one word, every variant', () => {
+    // The serializer once minted a second quant word per variant
+    // (first-seen keeps the plain coordinate, every sibling carries
+    // `variant__quant`) to keep the FLAT served array unique. That
+    // minted word is a word the DOOR refuses (selectCardVariant
+    // matches the stated quant against the cell's raw coordinate — a
+    // composite id exists nowhere in the facts row), served by the
+    // very spec that must speak the door's language. The vocabulary
+    // is SHARED across the family's variants: the row's id IS the
+    // coordinate, at every address; the owner chain (the variant
+    // axis) disambiguates the lane, and one variant's own cells never
+    // share a coordinate (the door could not judge them apart).
+    const decl = {
+      id: 'zz-shared-quant',
+      variants: [
+        { id: 'alpha', label: 'Alpha', group: 'Variant', cells: [{ quant: 'q8', label: 'Q8 A' }] },
+        { id: 'beta', label: 'Beta', group: 'Variant', route: 'zz-shared-beta', cells: [{ quant: 'q8', label: 'Q8 B' }] },
+      ],
+      variant_groups: [],
+    } as never
+    const rows = specVariants(decl, 'zz-shared-quant')
+    const quants = rows.filter((r) => r.group === 'Quant')
+    assert.deepEqual(
+      quants.map((r) => [r.id, r.quant, r.owner]),
+      [['q8', 'q8', 'alpha'], ['q8', 'q8', 'beta']],
+      'both variants speak the SAME word for the shared coordinate — the owner is the disambiguator, never a minted second word',
+    )
+    for (const r of quants) {
+      assert.equal(r.id.includes('__'), false, `the mint is dead — Quant row ${JSON.stringify(r.id)} carries no composite spelling`)
+    }
   })
 })

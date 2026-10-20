@@ -329,80 +329,43 @@ describe('THE SWITCHING SWEEP — every real family × every switch (the core-fe
     expect(modelSwitchPatch(specFrom, 'anima', held)['loras']).toBeUndefined()
   })
 
-  test('THE GHOST-STAMP PLANE — the ghost drop\'s re-seed stamps the DOOR\'s coordinate, never the namespaced row id (2026-11-06, D2: the BURN SHAPE arm\'s named residual, axis-unification + anima-turbo-quant-burn)', () => {
-    // THE TWO PLANES, ONE RULING: the serializer namespaces a
-    // duplicate cell id's FLAT ROW (`${variant}__${quant}` — the
-    // form's select options must stay unique) while the compose
-    // door's clause 2 judges the RAW coordinate over the facts row's
-    // DECL-walk cells (cardsVariant.ts selectCardVariant:
-    // `cells.find((c) => c.quant === rawQuant)` — a namespaced
-    // coordinate exists nowhere in the facts row). THE STAMP WRITES
-    // THE RAW COORDINATE and the door's clause stays STRICT: the raw
-    // coordinate is never ambiguous at the door (the clause judges
-    // the cells of the STATED variant only — the variant
-    // disambiguates the duplicate), the namespace is presentation.
-    // The old row-id stamp made a ghost-dropped reopen whose held
-    // variant is a LATER variant refuse at the run ('unknown quant
-    // "turbo__int8_convrot"'). The pick seat has spoken this
-    // vocabulary since 2026-09-29 (axisStampOf — THE AXIS STAMP
-    // VOCABULARY); the seed seats join the same law.
-    const judged: string[] = []
+  test('THE SHARED WORD — every served Quant row speaks ONE word: the id IS the coordinate (2026-11-08, the operator: "Both singualarity and the other combined h3 models are VARIANTS that both have the quant of int8 … the shared vocabularity never came though"; supersedes the GHOST-STAMP PLANE — the mint that plane policed is dead, so the two-plane split it guarded cannot exist)', () => {
+    // ONE WORD, EVERY ADDRESS: the serializer once minted a second
+    // quant word per variant (`variant__quant` — the D2 world's
+    // namespaced presentation) and the stamp seats had to translate
+    // it back to the door's coordinate on every seat. THE CURE: the
+    // row's id IS the coordinate (discovery.ts specVariants — THE
+    // SHARED QUANT VOCABULARY), so the address and the value are one
+    // word estate-wide. This census derives over every booted
+    // family: a serializer that ever re-mints reds here the day the
+    // mint returns, and the seed seat below keeps judging the stamp
+    // plane against the door's coordinate.
+    const failures: string[] = []
+    let quantRows = 0
     for (const decl of FAMILIES) {
-      const spec = servedSpec(decl)
-      const all = spec.variants ?? []
-      const namespaced = all.filter((r) =>
-        r.group === 'Quant' && typeof r.quant === 'string' && r.quant !== '' && r.id !== r.quant)
-      if (namespaced.length === 0) continue
-      judged.push(decl.id)
-      // THE GHOST: the burn's own departed value ('int8' — krea-2's
-      // cell) when it names no row of THIS family, else a value
-      // absent by construction — either way it names no row id and
-      // no row quant of this spec, so the ghost drop's clause lets
-      // nothing ride and the seed re-derives the lane.
-      const ghost = all.some((r) => r.id === 'int8' || r.quant === 'int8') ? '__departed-ghost__' : 'int8'
-      const order = all.filter((r) => r.group === 'Variant').map((r) => r.id)
-      // one iteration per LATER variant owning a namespaced row (the
-      // seed stamps the FIRST composing cell's coordinate — the
-      // catalog's first-declared law — never every row)
-      const owners = [...new Set(namespaced.map((r) => r.owner).filter((o): o is string => typeof o === 'string'))]
-      for (const ownerId of owners) {
-        const later = all.find((r) => r.group === 'Variant' && r.id === ownerId)
-        if (later === undefined) continue
-        expect(order.indexOf(later.id), `${decl.id}: a namespaced row's owner IS a LATER variant (the finding's shape)`)
-          .toBeGreaterThan(0)
-        const held: SpecValues = { model: decl.id, variant: later.id, quant: ghost, ...numericStamps(later) }
-        const seeded = seedUser(spec, held)
-        // THE REOPEN COMPOSES (the door's own mirror judges first —
-        // its refusal voice IS the operator's red)
-        const doc = composeCandidateDoc({}, seeded, {})
-        expect(composeValidate(spec, doc), `${decl.id}/${later.id}: the ghost-dropped reopen composes on its re-derived lane — ${JSON.stringify(doc)}`)
-          .toEqual([])
-        // THE STAMP PLANE: the re-seeded quant is the RAW coordinate
-        // of the variant's FIRST composing cell — never that cell's
-        // namespaced served row id
-        const firstCell = all.find((r) =>
-          r.group === 'Quant' && r.owner === ownerId
-          && typeof r.quant === 'string' && r.quant !== '')
-        expect(firstCell, `${decl.id}/${later.id}: the variant composes a cell`).toBeDefined()
-        if (firstCell === undefined) continue
-        expect(seeded['quant'], `${decl.id}/${later.id}: the seed stamps the door's coordinate of the first composing cell (got ${String(seeded['quant'])}, cell id ${firstCell.id})`)
-          .toBe(firstCell.quant)
+      const all = specVariants(decl, decl.id)
+      for (const r of all) {
+        if (r.group !== 'Quant') continue
+        quantRows++
+        if (typeof r.quant !== 'string' || r.quant === '') {
+          failures.push(`${decl.id}/${String(r.owner)}: a Quant row without its coordinate (the birth wall's own law)`)
+        } else if (r.id !== r.quant) {
+          failures.push(`${decl.id}/${String(r.owner)}: the Quant row mints a second word (id ${JSON.stringify(r.id)} ≠ coordinate ${JSON.stringify(r.quant)}) — a word the door refuses (selectCardVariant judges the raw c.quant)`)
+        }
       }
-      // THE OTHER STAMP SEAT, SAME PLANE: the model switch's own
-      // seeding stamps the door's vocabulary too — its quant stamp
-      // must name a composing Quant row by the quant COORDINATE
+      // THE SEED SEAT, SAME PLANE: the model switch's own seeding
+      // stamps the door's vocabulary — its quant stamp must name a
+      // composing Quant row by the coordinate.
+      const spec = servedSpec(decl)
       const patch = modelSwitchPatch(spec, decl.id)
       if (typeof patch['quant'] === 'string' && patch['quant'] !== '') {
-        const speaks = all.some((r) =>
+        const speaks = (spec.variants ?? []).some((r) =>
           r.group === 'Quant' && r.quant === patch['quant'] && r.owner === patch['variant'])
-        expect(speaks, `${decl.id}: the model switch's quant stamp ${JSON.stringify(patch['quant'])} is the door's coordinate, never a namespaced row id`).toBe(true)
+        expect(speaks, `${decl.id}: the model switch's quant stamp ${JSON.stringify(patch['quant'])} is the door's coordinate`).toBe(true)
       }
     }
-    // THE ARRIVAL CENSUS: the families the serializer namespaces
-    // today — a family boarding tomorrow with a duplicate cell id
-    // rides this arm the day its DECL lands (derived, never frozen).
-    expect(judged, 'the ghost-stamp plane is judged on every namespaced family')
-      .toEqual(expect.arrayContaining(['anima', 'flux-klein', 'krea-2', 'qwen-img-21', 'qwen-img-edit-21', 'qwen3-tts', 'z-image']))
+    expect(quantRows, 'the census walked served Quant rows — a vacuous walk is a lie').toBeGreaterThan(0)
+    expect(failures, `the shared vocabulary is broken (${failures.length} rows):\n${failures.join('\n')}`).toEqual([])
   })
 
   test('every CROSS-FAMILY switch lands STATED-BY-HAND envelope-bound numerics inside the arrival lane (order d, 2026-11-06)', () => {

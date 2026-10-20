@@ -170,12 +170,24 @@ export declare function fetchCardCatalogRows(signal?: AbortSignal): Promise<Reco
 export declare function resetCardFamiliesCache(): void;
 /** The family currency (the {model:} door's model ids — the cards
  *  section's projection): card id → its boarded families, first = the
- *  DEFAULT family (form-spec's card-id alias law: boarded[0]). The
- *  runs door resolves NEITHER card ids nor aliases — callers hand the
- *  start verb the family from HERE. Rides the one reader + cache
+ *  DEFAULT family (form-spec's card-id alias law: boarded[0]). A row
+ *  with no families array carries NO family ([]) — the client half
+ *  of the minted-model kill (2026-10-12 server, this seat
+ *  2026-11-08): the old `: [id]` minted the card's own id as a
+ *  family, the same lie the server cut from cardSections. The runs
+ *  door resolves NEITHER card ids nor aliases — callers hand the
+ *  start verb the family from HERE, or the explicit card-unit alias
+ *  when the table carries none. Rides the one reader + cache
  *  above. */
 export declare function fetchCardFamilies(signal?: AbortSignal): Promise<Record<string, string[]>>;
-/** Resolve a card's DEFAULT family (boarded[0]); the card id itself
- *  when the catalog names none (mask-studio-style self-services). */
-export declare function defaultFamilyForCard(cardId: string, signal?: AbortSignal): Promise<string>;
+/** Resolve a card's DEFAULT family (boarded[0]) — null when the
+ *  catalog carries the card with NO family (lawful family-less; the
+ *  RUN seat maps null to the card-unit address explicitly against
+ *  admitStageModel's card-unit arm). THROWS when the catalog does
+ *  not carry the card at all — the writer's old `?? cardId` minted
+ *  the card id as its own family (operator 2026-11-08: a fallback
+ *  is a hidden error), the exact pattern the minted-model kill
+ *  executed server-side. An absent row is an error, never a silent
+ *  self-default. */
+export declare function defaultFamilyForCard(cardId: string, signal?: AbortSignal): Promise<string | null>;
 //# sourceMappingURL=index.d.ts.map

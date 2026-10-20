@@ -1256,10 +1256,11 @@ export function modelSwitchPatch(spec, model, held, arrival) {
             seededVariant = row;
         // THE USER PLANE SPEAKS THE CARD'S VOCABULARY (model = family;
         // the axis keys speak the DOOR's vocabulary — axisStampOf, the
-        // STAMP PLANE law D2 2026-11-06: a duplicate cell id's served
-        // row id is the serializer's namespaced presentation
-        // ('turbo__int8_convrot'), never the raw coordinate the door's
-        // clause 2 judges): a row's re-point stamp (model:
+        // STAMP PLANE law D2 2026-11-06, AMENDED 2026-11-08 by THE
+        // SHARED QUANT VOCABULARY: the serializer no longer namespaces a
+        // duplicate cell id — the served Quant row's id IS the raw
+        // coordinate the door's clause 2 judges, so the address and the
+        // value are one word): a row's re-point stamp (model:
         // krea-2-raw) is the DECL's compose business — the server
         // resolves it into the run's params. It NEVER lands in the user
         // layer, so the Model rail never shows routes and a reopened
@@ -1836,8 +1837,10 @@ export function composeValidate(spec, doc) {
     const offered = vres.variant;
     // clause 2 — the stated quant must be a cell of THIS variant
     // (the resolver judges the quant VALUE against the folded cells —
-    // the row id is the address, the coordinate is the value, D2's
-    // plane).
+    // the coordinate is the value and, since THE SHARED QUANT
+    // VOCABULARY (2026-11-08), the served row id too; a handed legacy
+    // spec may still carry composite ids, which are addresses the
+    // mirror never judges).
     const rawQuant = doc['quant'];
     if (typeof rawQuant === 'string' && rawQuant !== '') {
         const qres = resolveCellRow(offered, rawQuant, '', 'offered');

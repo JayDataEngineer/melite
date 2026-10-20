@@ -25,10 +25,15 @@ const MCP_CARD = 'mcp'
  *  params.workflow nobody emitted — the Sep 11 bench runs' "node
  *  carries no inline workflow". The {model:} door composes the card's
  *  arms estate-side; `model` is the card's DEFAULT FAMILY from the
- *  catalog, and — the Run-press law, 2026-10-08 — a family-less
- *  card rides its OWN id (defaultFamilyForCard's documented
- *  fallback): the door's card-unit arm composes the card verbatim
- *  (prepareCardParams' card-unit arm; no family overlay).
+ *  catalog, and — the Run-press law, 2026-10-08, re-seated 2026-11-08
+ *  when the writer's `?? cardId` mint was cut — a family-less card
+ *  rides its OWN id as the CARD-UNIT address (defaultFamilyForCard
+ *  returns null for a carried card with no family; THIS seat maps
+ *  null to the card id against admitStageModel's card-unit arm):
+ *  the door's card-unit arm composes the card verbatim
+ *  (prepareCardParams' card-unit arm; no family overlay). An
+ *  UNKNOWN card (no catalog row) refuses AT THE PRESS, naming the
+ *  miss — never a minted self-default.
  *  THE PARAM IS THE WIRE (the two-month law): whatever the stage's
  *  slot holds — an upload's estate path or a picked upstream output's
  *  media-route url — rides the start doc VERBATIM; the engine stages
@@ -82,8 +87,24 @@ export async function runCardStage(
   //  the {model:} door VERBATIM. The card's default family is only the
   //  RESTING value for stages that never touched the axes.
   const heldModel = params['model']
-  const model = typeof heldModel === 'string' && heldModel !== '' ? heldModel
-    : await defaultFamilyForCard(card)
+  // THE RESTING VALUE (the writer's mint is cut — defaultFamilyForCard
+  // returns the default FAMILY, null for a carried family-less card,
+  // and THROWS for an uncarried card): the card-unit alias lives HERE
+  // explicitly (admitStageModel's card-unit arm, cardsCompose's
+  // familyless arm) — never inside the writer as a silent `?? cardId`.
+  // An unknown card refuses AT THE PRESS, naming the miss.
+  let model: string
+  if (typeof heldModel === 'string' && heldModel !== '') {
+    model = heldModel
+  } else {
+    let fam: string | null
+    try {
+      fam = await defaultFamilyForCard(card)
+    } catch (e) {
+      return { refused: `the catalog carries no family for card ${JSON.stringify(card)} (${rejectionVoice(e)}) — the run refuses rather than mint a self-default` }
+    }
+    model = fam ?? card
+  }
   // THE ENGINE-STAGE ARM (the generic MCP card, operator 2026-09-21:
   // "ALWAYS spawn a completely standalone DSH subagent"): the mcp
   // card composes NO card graph — its run is the AGENT stage on the

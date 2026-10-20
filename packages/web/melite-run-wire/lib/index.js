@@ -257,23 +257,38 @@ export function resetCardFamiliesCache() {
 }
 /** The family currency (the {model:} door's model ids — the cards
  *  section's projection): card id → its boarded families, first = the
- *  DEFAULT family (form-spec's card-id alias law: boarded[0]). The
- *  runs door resolves NEITHER card ids nor aliases — callers hand the
- *  start verb the family from HERE. Rides the one reader + cache
+ *  DEFAULT family (form-spec's card-id alias law: boarded[0]). A row
+ *  with no families array carries NO family ([]) — the client half
+ *  of the minted-model kill (2026-10-12 server, this seat
+ *  2026-11-08): the old `: [id]` minted the card's own id as a
+ *  family, the same lie the server cut from cardSections. The runs
+ *  door resolves NEITHER card ids nor aliases — callers hand the
+ *  start verb the family from HERE, or the explicit card-unit alias
+ *  when the table carries none. Rides the one reader + cache
  *  above. */
 export async function fetchCardFamilies(signal) {
     const rows = await fetchCardCatalogRows(signal);
     const out = {};
     for (const [id, row] of Object.entries(rows)) {
         const fams = row['families'];
-        out[id] = Array.isArray(fams) ? fams.filter((x) => typeof x === 'string') : [id];
+        out[id] = Array.isArray(fams) ? fams.filter((x) => typeof x === 'string') : [];
     }
     return out;
 }
-/** Resolve a card's DEFAULT family (boarded[0]); the card id itself
- *  when the catalog names none (mask-studio-style self-services). */
+/** Resolve a card's DEFAULT family (boarded[0]) — null when the
+ *  catalog carries the card with NO family (lawful family-less; the
+ *  RUN seat maps null to the card-unit address explicitly against
+ *  admitStageModel's card-unit arm). THROWS when the catalog does
+ *  not carry the card at all — the writer's old `?? cardId` minted
+ *  the card id as its own family (operator 2026-11-08: a fallback
+ *  is a hidden error), the exact pattern the minted-model kill
+ *  executed server-side. An absent row is an error, never a silent
+ *  self-default. */
 export async function defaultFamilyForCard(cardId, signal) {
     const families = await fetchCardFamilies(signal);
-    return families[cardId]?.[0] ?? cardId;
+    if (!Object.prototype.hasOwnProperty.call(families, cardId)) {
+        throw new Error(`card '${cardId}' is not carried by the catalog (no /v1/model-catalog row — the run seat cannot default its family)`);
+    }
+    return families[cardId]?.[0] ?? null;
 }
 //# sourceMappingURL=index.js.map

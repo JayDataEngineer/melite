@@ -265,6 +265,74 @@ test('runCardStage composes the HELD model; the default family is only the resti
   }
 })
 
+test('runCardStage maps a family-less null to the card-unit address (never a writer mint)', async () => {
+  // THE WRITER'S MINT, CUT (2026-11-08): a carried card with no family
+  // (families []) is lawful — defaultFamilyForCard returns null and
+  // THIS seat maps null to the card id against admitStageModel's
+  // card-unit arm. The writer never mints the id as a family.
+  const { resetCardFamiliesCache } = await import('@melite-plugin/melite-run-wire')
+  resetCardFamiliesCache()
+  const { runCardStage } = await import('../src/client/CardsTab.tsx')
+  const { mountEstateFakes } = await import('./estate-harness.ts')
+  const fakes = mountEstateFakes()
+  const realFetch = globalThis.fetch
+  ;(globalThis as Record<string, unknown>)['fetch'] = async (url: unknown): Promise<unknown> => {
+    if (String(url) === '/v1/model-catalog') {
+      return { ok: true, json: async () => ({ cards: { 'mask': { id: 'mask', families: [] } } }) }
+    }
+    if (String(url).includes('/v1/form-spec')) {
+      return { ok: true, json: async () => KREA }
+    }
+    throw new Error('estate door on the fetch lane: ' + String(url))
+  }
+  try {
+    const res = await runCardStage('bench-main', {
+      id: 's_m', title: 'Mask', card: 'mask', engine: 'comfyui',
+      params: { prompt: 'x' },
+      result: null,
+    })
+    expect(res).toEqual({ runId: 'run-1' })
+    const start = fakes.calls.find((c) => c.method === 'runs/start')
+    expect((start?.args['doc'] as Record<string, unknown>)['model']).toBe('mask')
+  } finally {
+    ;(globalThis as Record<string, unknown>)['fetch'] = realFetch
+    fakes.unmount()
+  }
+})
+
+test('runCardStage refuses an uncarried card AT THE PRESS (never a minted self-default)', async () => {
+  // THE ABSENT ROW IS AN ERROR: the catalog carries no row for the
+  // card — the old `?? cardId` minted a self-default and sent a doomed
+  // run. Now the press refuses, naming the miss.
+  const { resetCardFamiliesCache } = await import('@melite-plugin/melite-run-wire')
+  resetCardFamiliesCache()
+  const { runCardStage } = await import('../src/client/CardsTab.tsx')
+  const { mountEstateFakes } = await import('./estate-harness.ts')
+  const fakes = mountEstateFakes()
+  const realFetch = globalThis.fetch
+  ;(globalThis as Record<string, unknown>)['fetch'] = async (url: unknown): Promise<unknown> => {
+    if (String(url) === '/v1/model-catalog') {
+      return { ok: true, json: async () => ({ cards: { known: { id: 'known', families: ['fam'] } } }) }
+    }
+    if (String(url).includes('/v1/form-spec')) {
+      return { ok: true, json: async () => KREA }
+    }
+    throw new Error('estate door on the fetch lane: ' + String(url))
+  }
+  try {
+    const res = await runCardStage('bench-main', {
+      id: 's_g', title: 'Ghost', card: 'ghost-card', engine: 'comfyui',
+      params: { prompt: 'x' },
+      result: null,
+    })
+    expect('refused' in res && (res as { refused: string }).refused).toContain('ghost-card')
+    expect(fakes.calls.find((c) => c.method === 'runs/start')).toBeUndefined()
+  } finally {
+    ;(globalThis as Record<string, unknown>)['fetch'] = realFetch
+    fakes.unmount()
+  }
+})
+
 // ── THE WIRE RESOLUTION LAW (2026-10-10, the operator's
 //    extermination order: NO SILENT BEHAVIOR — run 880aaa85d928
 //    proved the seam: the bench wired input_images from s_0, the

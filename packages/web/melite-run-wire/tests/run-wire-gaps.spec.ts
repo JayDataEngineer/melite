@@ -94,7 +94,7 @@ describe('the family currency — the ONE door\'s judgments', () => {
     await expect(defaultFamilyForCard('img-to-mesh')).rejects.toThrow(/unreadable body/)
   })
 
-  it('a text body refuses loud too; ragged ROWS still distill honestly', async () => {
+  it('a text body refuses loud too; ragged ROWS still distill honestly (never a minted family)', async () => {
     globalThis.fetch = vi.fn(async (): Promise<Response> => new Response('"str"', { status: 200 }))
     await expect(fetchCardFamilies()).rejects.toThrow(/unreadable body/)
     globalThis.fetch = vi.fn(async (): Promise<Response> =>
@@ -107,7 +107,12 @@ describe('the family currency — the ONE door\'s judgments', () => {
       }), { status: 200 }),
     )
     resetCardFamiliesCache()
-    expect(await fetchCardFamilies()).toEqual({ bare: ['bare'], good: ['fam'] })
+    // THE MINTED-MODEL KILL's client half (2026-10-12 server, this
+    // seat 2026-11-08): a row with no families array carries NO
+    // family — the old `: [id]` minted the card's own id as a family,
+    // the same lie the server cut. Non-string entries still distill
+    // out honestly.
+    expect(await fetchCardFamilies()).toEqual({ bare: [], good: ['fam'] })
   })
 
   it('a reset mid-flight drops the stale resolve — the next read fetches fresh (never a refilled stale)', async () => {
@@ -157,16 +162,28 @@ describe('the family currency — the ONE door\'s judgments', () => {
     await expect(fetchCardFamilies()).rejects.toThrow(/\/v1\/model-catalog: HTTP 502/)
   })
 
-  it('a card the catalog does not carry defaults to ITSELF (never a phantom first family)', async () => {
+  it('a card the catalog does not carry REFUSES loud (never a minted self-default)', async () => {
     globalThis.fetch = vi.fn(async (): Promise<Response> =>
-      new Response(JSON.stringify({ cards: { known: { families: ['fam-first', 'fam-second'] } } }), { status: 200 }))
+      new Response(JSON.stringify({
+        cards: {
+          known: { families: ['fam-first', 'fam-second'] },
+          empty: { families: [] },
+        },
+      }), { status: 200 }))
     // the carried card's FIRST family is the default (the arrival
     // order is the catalog's own)
     expect(await defaultFamilyForCard('known')).toBe('fam-first')
-    // the absent card falls to its own id — the card exists even
-    // when the catalog row does not (a family-less card IS its own
-    // family; never a phantom, never a throw)
-    expect(await defaultFamilyForCard('unknown-card')).toBe('unknown-card')
+    // THE WRITER'S MINT, CUT (operator 2026-11-08): the absent card
+    // used to fall to its own id (`?? cardId`) — the exact pattern
+    // the minted-model kill executed server-side, alive in this wire.
+    // An absent row is an error (a card the catalog does not carry),
+    // never a silent self-default.
+    await expect(defaultFamilyForCard('unknown-card')).rejects.toThrow(/unknown-card/)
+    // a KNOWN family-less card carries NO family (null) — the
+    // card-unit alias is the RUN seat's explicit law (stage-run maps
+    // null to the card id against admitStageModel's card-unit arm),
+    // never this writer minting the card id as a family.
+    expect(await defaultFamilyForCard('empty')).toBeNull()
   })
 
   it('the ROW reader skips junk rows silently (the catalog-ROWS loop is its own distiller)', async () => {
