@@ -4257,6 +4257,26 @@ window.__ModuleLoader__.load({
 			return changed ? patch : null;
 		}
 		//#endregion
+		//#region ../../estate/provisioning/src/contracts.ts
+		const PROVISION_STATES = [
+			"unknown",
+			"absent",
+			"acquiring",
+			"verifying",
+			"installed",
+			"restart_required",
+			"active",
+			"failed",
+			"blocked"
+		];
+		/** THE LIVE ACQUIRE STATES — the states that name a fetch still
+		*  holding its plane slot (one spelling for every reader that must
+		*  tell a landing download from a settled row: the manage plane's
+		*  rescue verbs refuse live ids, the run gate's lane-presence voice
+		*  reports the live fraction). A settled row — landed, failed,
+		*  blocked — is never in this set. */
+		const LIVE_ACQUIRE_STATES$1 = /* @__PURE__ */ new Set(["acquiring", "verifying"]);
+		//#endregion
 		//#region src/client/run-rescue-core.ts
 		/**
 		* run-rescue-core.ts — the run-gate rescue's data half (roadmap item 4,
@@ -4348,26 +4368,18 @@ window.__ModuleLoader__.load({
 				target: family
 			};
 		}
-		/** Terminal acquire_weight states — the LEDGER's settled vocabulary
-		*  (completion is judged off ENGINE TRUTH, never the state word
-		*  alone: see isAcquireSettled). Failed and blocked are verdicts —
-		*  settled at any byte count. Installed, restart_required, and
-		*  active are LANDED states: the weight ledger settles
-		*  result.operationState (service.ts), and 'active' IS the landing
-		*  for a weight acquire — bytes on the store, engine admitted.
-		*  ERRORS k2/m's "active is not terminal" was the PARTIAL-BYTES
-		*  false-ready (a landed WORD over moving bytes); audit F6b's
-		*  overshoot (active dropped entirely) made every landed acquire
-		*  ride the whole ceiling into the stuck face at 100%. The two
-		*  burns meet in isAcquireSettled: the landed word settles ONLY at
-		*  the engine's own total. */
-		const ACQUIRE_TERMINAL = /* @__PURE__ */ new Set([
-			"installed",
-			"restart_required",
-			"active",
-			"failed",
-			"blocked"
-		]);
+		[...LIVE_ACQUIRE_STATES$1];
+		/** Terminal acquire_weight states — DERIVED, never listed (audit
+		*  F6b): every provision state except the unknowns (unknown/absent)
+		*  and the live flights. The k2/m and F6b burns meet here: a
+		*  verdict state (failed/blocked) settles at any byte count — the
+		*  engine judged; a landed state (installed/restart_required/
+		*  active) settles ONLY at the engine's own total (a landed word at
+		*  partial bytes is live flight, the k2/m false-ready), judged by
+		*  isAcquireSettled below. A total of 0 (a DECL with no declared
+		*  size) settles on the landed word (acquiredDetailOf voices it,
+		*  never the dead "0/0"). */
+		const ACQUIRE_TERMINAL = new Set(PROVISION_STATES.filter((state) => state !== "unknown" && state !== "absent" && !LIVE_ACQUIRE_STATES$1.has(state)));
 		/** THE COMPLETION PREDICATE (one spelling, both seats — the k2/m and
 		*  F6b burns reconciled): a verdict state (failed/blocked) is
 		*  settled at any byte count — the engine judged. A landed state
@@ -4438,6 +4450,7 @@ window.__ModuleLoader__.load({
 				state: typeof data["state"] === "string" ? data["state"] : "acquiring",
 				bytes: typeof data["bytes"] === "number" ? data["bytes"] : 0,
 				total: typeof data["total"] === "number" ? data["total"] : 0,
+				...typeof data["phase"] === "string" && data["phase"] !== "" ? { phase: data["phase"] } : {},
 				...cause !== void 0 ? { detail: cause } : typeof reply.detail === "string" && reply.detail !== "" ? { detail: reply.detail } : {}
 			};
 		}
@@ -5147,6 +5160,29 @@ window.__ModuleLoader__.load({
 						setFlow(null);
 						if (!isAcquireSettled(current)) {
 							setStuck({ ...current });
+							(async () => {
+								try {
+									const healed = await pollAcquireToSettled(current, {
+										pollMs: 2e3,
+										ceiling: 150,
+										signal
+									});
+									if (signal.aborted) return;
+									if (!isAcquireSettled(healed)) return;
+									setStuck(null);
+									if (healed.state === "failed" || healed.state === "blocked") {
+										setFailed({ ...healed });
+										setNote(healed.detail ?? "weight acquisition " + healed.state);
+										return;
+									}
+									setDone({
+										detail: healed.detail ?? acquiredDetailOf(target, healed),
+										restartRequired: healed.state === "restart_required" || healed.state === "installed"
+									});
+								} catch {
+									if (signal.aborted) return;
+								}
+							})();
 							return;
 						}
 						if (current.state === "failed" || current.state === "blocked") {

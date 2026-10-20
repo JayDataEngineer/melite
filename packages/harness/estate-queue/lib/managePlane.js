@@ -1074,13 +1074,19 @@ async function hAcquireWeight(req, ctx) {
             ctx.rearmWeights?.();
         }
         return ok(req.action, "acquire_weight " + progress.operationId + ": " + String(progress.bytes) + "/" + String(progress.total)
-            + " bytes (" + progress.state + ")", {
+            + " bytes (" + progress.state
+            // THE LIVE-PHASE VOICE (audit F2): a frozen byte count with a
+            // live phase names it (verifying:verify) — the popup's only
+            // liveness window rides this text. Phaseless rows keep the
+            // old shape.
+            + (progress.phase === undefined ? "" : ":" + progress.phase) + ")", {
             operation_id: progress.operationId,
             state: progress.state,
             bytes: progress.bytes,
             total: progress.total,
             next_action: "acquire_weight",
             ...(progress.detail === undefined ? {} : { detail: progress.detail }),
+            ...(progress.phase === undefined ? {} : { phase: progress.phase }),
         });
     }
     // THE START (the Download press): model required, the missing file
@@ -1186,6 +1192,9 @@ async function hAcquireWeight(req, ctx) {
         ...(req.variant === "" ? {} : { variant: req.variant }),
         ...(req.quant === "" ? {} : { quant: req.quant }),
         next_action: "acquire_weight",
+        // the start answers the opening phase with the row (the face's
+        // first paint already names the re-check, never a phaseless 0)
+        ...(progress?.phase === undefined ? {} : { phase: progress.phase }),
     });
 }
 // ── THE RESCUE VERBS (k2: "no retry, no delete, just stuck") ────────

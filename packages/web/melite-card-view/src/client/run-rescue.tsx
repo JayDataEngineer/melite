@@ -340,6 +340,36 @@ export function RunRescue({ error, stages, onRun, rescue: structured }: {
           // ceiling expiry with no terminal verdict: the stuck truth,
           // never the success face
           setStuck({ ...current })
+          // THE STUCK HEAL (audit F6c): the ceiling is patience, not
+          // a verdict — the engine may still land the fetch (a
+          // multi-GB hash slower than this seat's ceiling). A
+          // background poll keeps reading the ledger on the SAME
+          // teardown signal (close/unmount or a fresh Download press
+          // aborts it); when the engine settles, the stuck face heals
+          // to done/failed instead of wedging on Retry. Still
+          // unsettled at the heal ceiling: the stuck face stands with
+          // its exits.
+          void (async () => {
+            try {
+              const healed = await pollAcquireToSettled(current, { pollMs: 2000, ceiling: 150, signal })
+              if (signal.aborted) return
+              if (!isAcquireSettled(healed)) return
+              setStuck(null)
+              if (healed.state === 'failed' || healed.state === 'blocked') {
+                setFailed({ ...healed })
+                setNote(healed.detail ?? 'weight acquisition ' + healed.state)
+                return
+              }
+              setDone({
+                detail: healed.detail ?? acquiredDetailOf(target, healed),
+                restartRequired: healed.state === 'restart_required' || healed.state === 'installed',
+              })
+            } catch {
+              if (signal.aborted) return
+              // a torn heal read leaves the stuck face with its exits
+              // — the next Retry re-polls from the door
+            }
+          })()
           return
         }
         if (current.state === 'failed' || current.state === 'blocked') {

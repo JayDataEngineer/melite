@@ -192,6 +192,17 @@ export declare class ProvisioningService extends Service implements Provisioning
     /** THE F9 BYTE ADD (the tracker's numerator write): adds landed
      *  bytes to one operation's live count. No entry, no write. */
     private bumpProgress;
+    /** THE PHASE VOICE (audit download-stack-audit-2026-10-20 F2):
+     *  mirrors the live flow onto the ledger entry — the poll's only
+     *  liveness window. Ledger-only by law: the record's state machine
+     *  keeps its pinned shapes (the present path's history is
+     *  acquiring→active, untouched), while the per-operation ledger
+     *  voices the sub-phase the fetch is actually in (recheck before
+     *  the store inspect answers, stream on the wire, queue in the
+     *  manager drain, verify at the hash boundary). The optional state
+     *  rides only where no record move may carry it; where a move
+     *  exists the mirror carries the word and this carries the phase. */
+    private voicePhase;
     /** THE F9 ENTRY FILL (the tracker's denominator keep): creates the
      *  live entry when the blocking path is the first writer, and never
      *  shrinks a background start's plan total. */

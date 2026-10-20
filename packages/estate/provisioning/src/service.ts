@@ -51,6 +51,7 @@ import type { ArtifactFetcher } from "./ports.ts";
 import {
   resourceKey,
   sameResourceRef,
+  type AcquirePhase,
   type ActivateOptions,
   type EnsureOptions,
   type ExternalProvisionRequest,
@@ -838,6 +839,9 @@ export class ProvisioningService extends Service implements ProvisioningServiceD
         state: "acquiring",
         bytes: 0,
         total,
+        // every flight opens checking the store — the re-check voice
+        // is seeded before the fetch arms take over with their own
+        phase: "recheck",
       });
       this.weightProgressByRef.set(key, id);
       void this.runWithId(ref, id, async (operationId, operationSignal) =>
@@ -915,6 +919,8 @@ export class ProvisioningService extends Service implements ProvisioningServiceD
       state: "acquiring",
       bytes: 0,
       total,
+      // the join rides the same opening voice as a fresh mint
+      phase: "recheck",
     });
     this.weightProgressByRef.set(resourceKey(ref), operationId);
   }
@@ -1125,7 +1131,13 @@ export class ProvisioningService extends Service implements ProvisioningServiceD
           const parts = relativePath.split("/");
           const landedName = parts[parts.length - 1] as string;
           const landedFolder = parts.slice(0, -1).join("/");
-          this.move(ref, operationId, "verifying");
+          // the external seat drains the same Manager queue — the
+          // same acquiring/queue voice as the declared arm. (No
+          // per-poll hook: the declared arm is the walled flight.
+          // the voice persists until the post-install re-check —
+          // nothing clobbers it mid-drain.)
+          this.move(ref, operationId, "acquiring");
+          this.voicePhase(operationId, "queue");
           const installed = await this.manager.installModel({
             id: relativePath,
             name: landedName,
@@ -1139,6 +1151,7 @@ export class ProvisioningService extends Service implements ProvisioningServiceD
           if (!installed.installed) {
             throw new ItemRefusal("failed", "manager/model-install-failed", installed.detail ?? "ComfyUI-Manager did not install the model");
           }
+          this.voicePhase(operationId, "recheck", "verifying");
           const landed = await this.writer.inspect({
             root: this.writerRoot,
             relativePath,
@@ -1300,6 +1313,8 @@ export class ProvisioningService extends Service implements ProvisioningServiceD
         state: "acquiring",
         bytes: 0,
         total: planTotal(plan),
+        // the blocking path opens on the same re-check voice
+        phase: "recheck",
       });
       this.weightProgressByRef.set(resourceKey(ref), operationId);
     }
@@ -1445,6 +1460,13 @@ export class ProvisioningService extends Service implements ProvisioningServiceD
       );
     }
     const relativePath = relativeArtifactPath(item.folder, item.name);
+    // THE RE-CHECK VOICE (audit F6a): the store inspect IS a live
+    // phase — a present multi-GB file re-hashes under this await,
+    // and a phaseless 0/total poll reads as dead. The voice rides
+    // the ledger only (the record's present-path history stays
+    // acquiring→active); the count still lands only when the inspect
+    // confirms the bytes below.
+    this.voicePhase(operationId, "recheck", "verifying");
     const existing = await this.writer.inspect({
       root: this.writerRoot,
       relativePath,
@@ -1485,6 +1507,9 @@ export class ProvisioningService extends Service implements ProvisioningServiceD
       // 'verifying', so the poll's state word names the phase the
       // operation is actually in (the popup's only liveness window).
       this.move(ref, operationId, "acquiring");
+      // the stream takes over from the opening re-check — the bytes
+      // landing now are wire bytes, and the ledger says so
+      this.voicePhase(operationId, "stream");
       // THE STALL WATCHDOG'S WINDOW (ERRORS.md k2): arms over the
       // whole direct fetch — the headers wait and the counted byte
       // stream — and disarms on every exit, so a fetch that freezes
@@ -1519,6 +1544,12 @@ export class ProvisioningService extends Service implements ProvisioningServiceD
           // FIRST heartbeat carries the verify boundary to the
           // ledger's state word (acquiring → verifying: the honest
           // phase law, audit F5)
+          // the verify heartbeat: hash chunks + phase boundaries poke
+          // the watchdog's clock (the field above) — a slow multi-GB
+          // verify reads as flow, never as a frozen stream — and the
+          // FIRST heartbeat carries the verify boundary to the
+          // ledger's state word (acquiring → verifying: the honest
+          // phase law, audit F5)
           onVerifyBytes: () => {
             this.verifyFlowAt.set(operationId, Date.now());
             // the FIRST heartbeat carries the verify boundary to the
@@ -1529,6 +1560,10 @@ export class ProvisioningService extends Service implements ProvisioningServiceD
             if (entry !== undefined && entry.state === "acquiring") {
               this.move(ref, operationId, "verifying");
             }
+            // every heartbeat carries the phase to the ledger — the
+            // bytes sit frozen at the total through a multi-GB hash,
+            // and the phase is the only movement on the poll
+            this.voicePhase(operationId, "verify");
           },
         }, signal);
         this.move(ref, operationId, "installed");
@@ -1549,7 +1584,13 @@ export class ProvisioningService extends Service implements ProvisioningServiceD
     if (this.manager?.installModel === undefined) {
       throw new ItemRefusal("blocked", "manager/model-unavailable", "model acquisition requires ComfyUI-Manager model installation");
     }
-    this.move(ref, operationId, "verifying");
+    // THE DRAIN VOICE (audit F4): the queue drain IS acquisition —
+    // the Manager owns its own queue bytes, so no stream byte lands
+    // on the ledger for minutes while gigabytes move. The ledger
+    // voices the drain as acquiring/queue (never hash); each queue
+    // poll re-voices it through the hook below.
+    this.move(ref, operationId, "acquiring");
+    this.voicePhase(operationId, "queue");
     const installed = await this.manager.installModel({
       id: item.key,
       name: item.name,
@@ -1560,10 +1601,15 @@ export class ProvisioningService extends Service implements ProvisioningServiceD
       // queue's drain budget scales for multi-GB artifacts (the
       // provider's modelQueueTimeoutMs arm was armed but never fed).
       ...(item.sizeBytes === undefined ? {} : { sizeBytes: item.sizeBytes }),
+      onQueueStatus: () => { this.voicePhase(operationId, "queue"); },
     }, signal);
     if (!installed.installed) {
       throw new ItemRefusal("failed", "manager/model-install-failed", installed.detail ?? "ComfyUI-Manager did not install the model");
     }
+    // the post-install inspect re-reads the landed bytes — a second
+    // re-check under the same ledger-only voice as the opening one
+    // (the record's history keeps its shape; the poll voices the hash)
+    this.voicePhase(operationId, "recheck", "verifying");
     const landed = await this.writer.inspect({
       root: this.writerRoot,
       relativePath,
@@ -1811,6 +1857,26 @@ export class ProvisioningService extends Service implements ProvisioningServiceD
     this.weightProgress.set(operationId, { ...entry, bytes: entry.bytes + count });
   }
 
+  /** THE PHASE VOICE (audit download-stack-audit-2026-10-20 F2):
+   *  mirrors the live flow onto the ledger entry — the poll's only
+   *  liveness window. Ledger-only by law: the record's state machine
+   *  keeps its pinned shapes (the present path's history is
+   *  acquiring→active, untouched), while the per-operation ledger
+   *  voices the sub-phase the fetch is actually in (recheck before
+   *  the store inspect answers, stream on the wire, queue in the
+   *  manager drain, verify at the hash boundary). The optional state
+   *  rides only where no record move may carry it; where a move
+   *  exists the mirror carries the word and this carries the phase. */
+  private voicePhase(operationId: string, phase: AcquirePhase, state?: ProvisionState): void {
+    const entry = this.weightProgress.get(operationId);
+    if (entry === undefined) return;
+    this.weightProgress.set(operationId, {
+      ...entry,
+      ...(state === undefined || entry.state === state ? {} : { state }),
+      phase,
+    });
+  }
+
   /** THE F9 ENTRY FILL (the tracker's denominator keep): creates the
    *  live entry when the blocking path is the first writer, and never
    *  shrinks a background start's plan total. */
@@ -1823,6 +1889,8 @@ export class ProvisioningService extends Service implements ProvisioningServiceD
         state: "acquiring",
         bytes: 0,
         total,
+        // the F9 keep fills the same opening voice
+        phase: "recheck",
       });
       this.weightProgressByRef.set(resourceKey(ref), operationId);
     } else if (entry.total === 0 && total > 0) {

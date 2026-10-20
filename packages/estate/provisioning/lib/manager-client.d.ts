@@ -37,6 +37,11 @@ export interface ManagerQueueStatus {
 export interface ManagerQueueWaitOptions extends ManagerRequestOptions {
     readonly timeoutMs?: number;
     readonly pollIntervalMs?: number;
+    /** THE DRAIN HEARTBEAT (audit F4): fired once per queue-status
+     *  poll — the provider forwards the service's hook so each drain
+     *  poll re-voices the ledger's queue phase. Never awaited, never
+     *  allowed to fail the drain (a throwing hook is swallowed). */
+    readonly onQueueStatus?: () => void;
 }
 export declare class ComfyUiManagerHttpClient {
     readonly baseUrl: string;

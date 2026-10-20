@@ -89,12 +89,12 @@ async function pollUntil(
   id: string,
   until: (p: { state: string; bytes: number; total: number }) => boolean,
   budgetMs: number,
-): Promise<{ state: string; bytes: number; total: number; detail?: string }> {
-  let last: { state: string; bytes: number; total: number; detail?: string } = { state: "unknown", bytes: 0, total: 0 };
+): Promise<{ state: string; bytes: number; total: number; detail?: string; phase?: string }> {
+  let last: { state: string; bytes: number; total: number; detail?: string; phase?: string } = { state: "unknown", bytes: 0, total: 0 };
   const deadline = Date.now() + budgetMs;
   for (;;) {
     const p = service.progressOf(id);
-    if (p !== null) last = { state: p.state, bytes: p.bytes, total: p.total, ...(p.detail === undefined ? {} : { detail: p.detail }) };
+    if (p !== null) last = { state: p.state, bytes: p.bytes, total: p.total, ...(p.detail === undefined ? {} : { detail: p.detail }), ...(p.phase === undefined ? {} : { phase: p.phase }) };
     if (until(last)) return last;
     if (Date.now() >= deadline) return last;
     await new Promise((resolve) => { setTimeout(resolve, 25) });
@@ -230,5 +230,29 @@ describe("the verify-phase kill (100% then FAILED)", () => {
     expect(dead.state).toBe("failed");
     expect(String(dead.detail ?? "")).toMatch(/verif/i);
     release();
+  });
+
+  test("THE LEDGER EXPOSES THE LIVE PHASE (audit F2): a held verify with heartbeats reads phase 'verify' while the bytes sit frozen at total — the operator's 88% burn shape made visible, never a silent freeze", async () => {
+    const root = tempRoot();
+    const context = new Context();
+    contexts.push(context);
+    const writer = gatedWriter();
+    const service = new ProvisioningService(context, config(root, writer));
+
+    const id = await service.startWeightAcquire(ref());
+    const full = await pollUntil(service, id, (p) => p.bytes === TOTAL, 5_000);
+    assert.equal(full.bytes, TOTAL, "the stream must land its full total first");
+
+    // the verify holds for a full stall budget while heartbeating —
+    // the bytes NEVER move again, but the ledger must expose the
+    // live phase (the burn: frozen bytes with no phase read as dead)
+    const held = await pollUntil(service, id, (p) => p.bytes === TOTAL && p.phase === "verify", 2_500);
+    expect(held.phase,
+      "bytes froze at total with no live phase on the poll — the popup's only liveness window still reads a silent freeze (audit F2: mirror verify flow into the poll ledger)",
+    ).toBe("verify");
+    expect(held.state).toBe("verifying");
+    writer.release();
+    const done = await pollUntil(service, id, (p) => p.state === "active" || p.state === "failed", 5_000);
+    expect(done.state).toBe("active");
   });
 });

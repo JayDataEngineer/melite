@@ -341,8 +341,7 @@ describe("manage acquire_weight (the one acquisition door)", () => {
     assert.match(envelope.detail, /acquire_weight is not configured/);
   });
 
-  it("the poll renders the ledger's detail word (the tracker shows the why, not just the bytes)", async () => {
-    const fake = fakeProvisioning();
+  it("the poll renders the ledger's detail word (the tracker shows the why, not just the bytes)", async () => {    const fake = fakeProvisioning();
     fake.plans.set(resourceKey(modelRef("weight-fam")), modelPlan(modelRef("weight-fam")));
     const ctx = ctxFor(fake);
 
@@ -355,6 +354,30 @@ describe("manage acquire_weight (the one acquisition door)", () => {
     const [pollCode, polled] = await dispatchManage({ action: "acquire_weight", operation_id: opId }, ctx);
     assert.equal(pollCode, 200);
     assert.equal(dataOf(polled)["detail"], "fetching weight.bin");
+  });
+
+  it("THE ENVELOPE CARRIES THE LEDGER'S LIVE PHASE (audit F2): a poll on a verifying row with phase 'verify' answers the phase and names it in the text voice — the popup's only liveness window rides this door", async () => {
+    const fake = fakeProvisioning();
+    fake.plans.set(resourceKey(modelRef("weight-fam")), modelPlan(modelRef("weight-fam")));
+    const ctx = ctxFor(fake);
+
+    const [, start] = await dispatchManage({ action: "acquire_weight", model: "weight-fam" }, ctx);
+    const opId = String(dataOf(start)["operation_id"]);
+    const entry = fake.ledger.get(opId);
+    assert.ok(entry !== undefined);
+    // the service's verify boundary opened mid-flight: bytes frozen,
+    // phase live (the operator's 88% burn shape, at this door)
+    fake.ledger.set(opId, { ...entry, state: "verifying", bytes: 6, phase: "verify" });
+
+    const [pollCode, polled] = await dispatchManage({ action: "acquire_weight", operation_id: opId }, ctx);
+    assert.equal(pollCode, 200);
+    const data = dataOf(polled);
+    assert.equal(data["state"], "verifying");
+    assert.equal(data["phase"], "verify",
+      "the poll envelope dropped the ledger's live phase — the client reads this door, and a phaseless poll is a silent freeze (audit F2: carry through hAcquireWeight)");
+    assert.match(String((polled as { detail?: unknown }).detail ?? ""),
+      /verifying:verify/,
+      "the text voice names the live phase with the bytes — a frozen count with no phase reads dead");
   });
 
   it("the start spells variant and quant onto the family ref (the fetch keys the exact address)", async () => {

@@ -40,6 +40,23 @@ export const LIVE_ACQUIRE_STATES: ReadonlySet<ProvisionState> = new Set<Provisio
   "verifying",
 ]);
 
+/** THE ACQUIRE PHASES (audit download-stack-audit-2026-10-20 F2):
+ *  the live liveness word on the weight ledger. The state word names
+ *  the phase the operation is in; the phase word names the flow that
+ *  is moving under a frozen byte count: 'stream' (bytes landing),
+ *  'queue' (the manager queue draining), 'verify' (hash chunks read),
+ *  'recheck' (a present file's re-hash before the count). The popup's
+ *  only liveness window rides the poll; a frozen byte count with a
+ *  live phase is flight, never death. */
+export const ACQUIRE_PHASES = [
+  "stream",
+  "queue",
+  "verify",
+  "recheck",
+] as const;
+
+export type AcquirePhase = (typeof ACQUIRE_PHASES)[number];
+
 export const PROVISION_OUTCOMES = [
   "active",
   "restart_required",
@@ -149,6 +166,11 @@ export interface WeightAcquireProgress {
   readonly bytes: number;
   readonly total: number;
   readonly detail?: string;
+  /** THE LIVE PHASE (audit F2): the flow moving under the byte
+   *  count — stream, queue, verify, recheck. Absent on rows seeded
+   *  before the phase law; every flight the service opens carries it
+   *  from the first poll. */
+  readonly phase?: AcquirePhase;
 }
 
 export interface EnsureOptions {

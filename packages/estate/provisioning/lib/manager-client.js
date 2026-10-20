@@ -218,6 +218,14 @@ export class ComfyUiManagerHttpClient {
             if (Date.now() > deadline) {
                 throw new ManagerClientError("queue-timeout", `ComfyUI-Manager queue did not drain within ${String(timeoutMs)} ms`, { method: "GET", path });
             }
+            // the drain heartbeat: one fire per status poll, swallowed on
+            // throw — the hook voices liveness, it never judges the drain
+            try {
+                options.onQueueStatus?.();
+            }
+            catch {
+                /* a listener must not fail the queue it observes */
+            }
             if (!status.isProcessing && status.inProgressCount === 0 && status.totalCount === status.doneCount) {
                 return status;
             }

@@ -1,20 +1,21 @@
-// run-rescue-live-alignment.spec.ts — THE LIVE-STATE COPY JUDGED
-// AGAINST THE SERVICE TRUTH (audit F8, 2026-10-20: one stuck law,
-// one spelling, both seats).
+// run-rescue-live-alignment.spec.ts — THE LIVE-STATE VOCABULARY
+// JUDGED AGAINST THE SERVICE TRUTH (audit F8, 2026-10-20: one stuck
+// law, one spelling, both seats; audit F6b: the derived terminal).
 //
-// THE CLIENT COPY LAW: the web client package cannot import the
-// node-side service into its browser bundle, so run-rescue-core.ts
-// carries its own LIVE_ACQUIRE_STATES — a copy of
-// @melite/estate-provisioning's LIVE_ACQUIRE_STATES (contracts.ts).
-// A copy nobody judges is a copy that drifts: the day the service
-// adds a live state the client does not know, the client's poll
-// loops would treat live flight as settled (the k2/m false-ready,
-// born again); the day the service retires one, the client polls a
-// settled row into its ceiling (the F6b stuck face). This wall pins
-// the copy to the truth — same members, nothing more, nothing less
-// — and the terminal/settled vocabulary's complement law: every
-// service ProvisionState is either LIVE or in the client's settled
-// vocabulary, never both, never neither.
+// THE DERIVATION LAW: the web client no longer carries its own LIVE
+// list (the old copy drifted — the overshoot dropped 'active' and
+// every landed acquire rode the ceiling into the stuck face at
+// 100%). run-rescue-core.ts imports the service's own
+// LIVE_ACQUIRE_STATES through the browser-safe contracts subpath
+// (@melite/estate-provisioning/contracts — types + literal sets,
+// no node runtime) and DERIVES the terminal vocabulary:
+// provision states minus {unknown, absent} minus live. A derivation
+// nobody judges is a derivation that rots back into a list: this
+// wall pins the client's sets to the service truth — same members,
+// nothing more, nothing less — and the terminal/settled
+// vocabulary's complement law: every service ProvisionState is
+// either LIVE or in the client's settled vocabulary, never both,
+// never neither.
 import { describe, expect, it } from 'vitest'
 import { LIVE_ACQUIRE_STATES as SERVICE_LIVE, PROVISION_STATES } from '@melite/estate-provisioning'
 import { ACQUIRE_TERMINAL, LIVE_ACQUIRE_STATES as CLIENT_LIVE, isAcquireSettled } from '../src/client/run-rescue-core.ts'
@@ -22,6 +23,15 @@ import { ACQUIRE_TERMINAL, LIVE_ACQUIRE_STATES as CLIENT_LIVE, isAcquireSettled 
 describe('the live-state copy is pinned to the service truth (one stuck law, both seats)', () => {
   it('the client LIVE_ACQUIRE_STATES copy carries exactly the service members', () => {
     expect([...CLIENT_LIVE].sort()).toEqual([...SERVICE_LIVE].sort())
+  })
+
+  it('the terminal vocabulary is DERIVED from the service sets, never listed (audit F6b)', () => {
+    // the derivation the core claims: every provision state except
+    // the unknowns and the live flights. A hardcoded list that
+    // drops a member (the F6b overshoot dropped 'active') reds here.
+    const derived = new Set(
+      PROVISION_STATES.filter((state) => state !== 'unknown' && state !== 'absent' && !SERVICE_LIVE.has(state)))
+    expect([...ACQUIRE_TERMINAL].sort()).toEqual([...derived].sort())
   })
 
   it('every service ProvisionState is LIVE or settled-vocabulary — never both, never neither', () => {

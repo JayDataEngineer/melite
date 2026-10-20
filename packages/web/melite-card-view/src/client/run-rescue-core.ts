@@ -26,6 +26,8 @@
 import { postManageAction } from '@melite/card-base/client'
 import type { ManageJsonValue } from '@melite/estate-manage/types'
 import { statusOrPendingOf } from '@melite/contracts/stageView'
+import { LIVE_ACQUIRE_STATES as SERVER_LIVE_ACQUIRE_STATES, PROVISION_STATES } from '@melite/estate-provisioning/contracts'
+import type { AcquirePhase } from '@melite/estate-provisioning/contracts'
 
 /** What a failed run can offer to fix. `extension` names a pack id
  * (from the missing-extension refusal's own text); `model` names a
@@ -158,35 +160,39 @@ export interface WeightAcquireState {
   bytes: number
   total: number
   detail?: string
+  /** THE LEDGER'S LIVE PHASE (audit F2): the flow moving under the
+   *  byte count — stream, queue, verify, recheck. The server's
+   *  AcquirePhase rides the poll envelope; the face's only liveness
+   *  window is a frozen count with a live phase. */
+  phase?: AcquirePhase
 }
 
-/** THE LIVE ACQUIRE STATES (the client copy of the service's
- *  LIVE_ACQUIRE_STATES, contracts.ts — a web client package cannot
- *  import the node-side service without dragging its runtime into
- *  the browser bundle; the alignment wall judges the copy). A poll
- *  in one of these states is a flight still moving under the
+/** THE LIVE ACQUIRE STATES — the SERVER's own set, not a client
+ *  copy (audit F6b: the popup carried its own LIVE list beside the
+ *  service's, and the two spellings drifted — the overshoot dropped
+ *  'active' and every landed acquire rode the ceiling into the stuck
+ *  face at 100%). One spelling, one home: the service's contracts.
+ *  A poll in one of these states is a flight still moving under the
  *  engine's own stall watchdog — the client keeps polling, never
  *  invents a verdict from its own clock. */
-export const LIVE_ACQUIRE_STATES: ReadonlySet<string> = new Set([
-  'acquiring', 'verifying',
+export const LIVE_ACQUIRE_STATES: ReadonlySet<string> = new Set<string>([
+  ...SERVER_LIVE_ACQUIRE_STATES,
 ])
 
-/** Terminal acquire_weight states — the LEDGER's settled vocabulary
- *  (completion is judged off ENGINE TRUTH, never the state word
- *  alone: see isAcquireSettled). Failed and blocked are verdicts —
- *  settled at any byte count. Installed, restart_required, and
- *  active are LANDED states: the weight ledger settles
- *  result.operationState (service.ts), and 'active' IS the landing
- *  for a weight acquire — bytes on the store, engine admitted.
- *  ERRORS k2/m's "active is not terminal" was the PARTIAL-BYTES
- *  false-ready (a landed WORD over moving bytes); audit F6b's
- *  overshoot (active dropped entirely) made every landed acquire
- *  ride the whole ceiling into the stuck face at 100%. The two
- *  burns meet in isAcquireSettled: the landed word settles ONLY at
- *  the engine's own total. */
-export const ACQUIRE_TERMINAL: ReadonlySet<string> = new Set([
-  'installed', 'restart_required', 'active', 'failed', 'blocked',
-])
+/** Terminal acquire_weight states — DERIVED, never listed (audit
+ *  F6b): every provision state except the unknowns (unknown/absent)
+ *  and the live flights. The k2/m and F6b burns meet here: a
+ *  verdict state (failed/blocked) settles at any byte count — the
+ *  engine judged; a landed state (installed/restart_required/
+ *  active) settles ONLY at the engine's own total (a landed word at
+ *  partial bytes is live flight, the k2/m false-ready), judged by
+ *  isAcquireSettled below. A total of 0 (a DECL with no declared
+ *  size) settles on the landed word (acquiredDetailOf voices it,
+ *  never the dead "0/0"). */
+export const ACQUIRE_TERMINAL: ReadonlySet<string> = new Set<string>(
+  PROVISION_STATES.filter((state) =>
+    state !== 'unknown' && state !== 'absent' && !SERVER_LIVE_ACQUIRE_STATES.has(state)),
+)
 
 /** THE COMPLETION PREDICATE (one spelling, both seats — the k2/m and
  *  F6b burns reconciled): a verdict state (failed/blocked) is
@@ -268,6 +274,12 @@ function weightStateOf(reply: { data?: unknown, detail?: string }): WeightAcquir
     state: typeof data['state'] === 'string' ? data['state'] as string : 'acquiring',
     bytes: typeof data['bytes'] === 'number' ? data['bytes'] as number : 0,
     total: typeof data['total'] === 'number' ? data['total'] as number : 0,
+    // THE LIVE PHASE RIDES THROUGH (audit F2): the door's phase
+    // word (stream/queue/verify/recheck) survives onto the snapshot
+    // — a phaseless snapshot is the silent freeze the burn died on
+    ...(typeof data['phase'] === 'string' && data['phase'] !== ''
+      ? { phase: data['phase'] as AcquirePhase }
+      : {}),
     ...(cause !== undefined
       ? { detail: cause }
       : (typeof reply.detail === 'string' && reply.detail !== '' ? { detail: reply.detail as string } : {})),

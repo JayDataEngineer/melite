@@ -4,8 +4,16 @@ import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, mkdtempSync, rmSync, utimesSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
+import { Context } from "@deepseek-ai/cordis";
 import type { ArtifactInput } from "../src/index.ts";
-import { ProvisioningError, writeVerifiedArtifact } from "../src/index.ts";
+import { ProvisioningError, VerifiedArtifactWriter, writeVerifiedArtifact } from "../src/index.ts";
+import { ProvisioningService } from "../src/index.ts";
+import type {
+  ProvisionPlan,
+  ProvisioningConfig,
+  ResourceRef,
+  VerifiedArtifactRequest,
+} from "../src/index.ts";
 
 const fsMocks = vi.hoisted(() => ({
   lstat: vi.fn(),
@@ -36,6 +44,7 @@ type Handle = Awaited<ReturnType<ActualFs["open"]>>;
 
 let actualFs: ActualFs;
 const roots: string[] = [];
+const contexts: Context[] = [];
 
 beforeEach(async () => {
   actualFs = await vi.importActual<ActualFs>("node:fs/promises");
@@ -48,8 +57,9 @@ beforeEach(async () => {
   fsMocks.stat.mockImplementation(actualFs.stat);
 });
 
-afterEach(() => {
+afterEach(async () => {
   for (const root of roots.splice(0)) rmSync(root, { recursive: true, force: true });
+  for (const context of contexts.splice(0)) await context.fiber.dispose();
   vi.restoreAllMocks();
 });
 
@@ -93,6 +103,75 @@ function proxied(handle: Handle, overrides: Record<string, unknown>): Handle {
 }
 
 describe("verified artifact filesystem seams", () => {
+  test("THE REAL WRITER'S VERIFY FLOW REACHES THE LEDGER (audit F9 — the emission wall: the real VerifiedArtifactWriter's hash chunks ride the service's onVerifyBytes into the ledger's verify phase, never a silent freeze)", async () => {
+    const store = root();
+    const FULL = Buffer.alloc(64, 7);
+    const DIGEST = createHash("sha256").update(FULL).digest("hex");
+    const ref: Extract<ResourceRef, { kind: "model" }> = { kind: "model", owner: "family", id: "moss-image" };
+    const plan: ProvisionPlan = {
+      ref,
+      items: [{
+        kind: "model",
+        key: "model:family:moss-image::qwen3.5_9b_w4a8_gptq.safetensors",
+        owner: "family",
+        id: "moss-image",
+        name: "qwen3.5_9b_w4a8_gptq.safetensors",
+        folder: "text_encoders",
+        url: "https://example.invalid/qwen3.5_9b_w4a8_gptq.safetensors",
+        sha256: DIGEST,
+        sizeBytes: FULL.byteLength,
+        required: true,
+        provider: "direct",
+      }],
+    };
+    // the class-level spy: the REAL writer writes, but its verify
+    // heartbeats are counted — the emission the ledger's phase
+    // voice depends on
+    const writer = new VerifiedArtifactWriter(store);
+    const seen: number[] = [];
+    const realWrite = writer.write.bind(writer);
+    vi.spyOn(writer, "write").mockImplementation(
+      async (request: VerifiedArtifactRequest, signal?: AbortSignal) =>
+        realWrite({
+          ...request,
+          onVerifyBytes: (n: number) => {
+            seen.push(n);
+            request.onVerifyBytes?.(n);
+          },
+        }, signal),
+    );
+    const context = new Context();
+    contexts.push(context);
+    const service = new ProvisioningService(context, {
+      declaration: { resolve: async (): Promise<ProvisionPlan> => plan },
+      storeRoot: store,
+      artifactWriter: writer,
+      fetcher: async () => ({
+        status: 200,
+        body: {
+          async *[Symbol.asyncIterator]() {
+            yield FULL;
+          },
+        },
+      }),
+    } satisfies ProvisioningConfig);
+    const id = await service.startWeightAcquire(ref);
+    // the ledger's FINAL row still carries the verify phase — no
+    // timing hazard (a 64-byte hash lands in microseconds, but the
+    // voice it left on the ledger is permanent)
+    const deadline = Date.now() + 5_000;
+    let last = service.progressOf(id);
+    while (last !== null && last.state !== "active" && last.state !== "failed" && Date.now() < deadline) {
+      await new Promise((resolve) => { setTimeout(resolve, 10) });
+      last = service.progressOf(id);
+    }
+    assert.equal(last?.state, "active");
+    assert.ok(seen.length > 0,
+      "the real writer emitted no verify heartbeats through the service's callback — the ledger's verify phase has no source (audit F9: the writer's emission is the phase's truth)");
+    assert.equal(last?.phase, "verify",
+      "the real writer hashed but the ledger never voiced verify — the emission died between write() and the poll (audit F2/F9)");
+  });
+
   test("THE FSYNC HEARTBEAT FIRES BEFORE THE SYNC (audit F3: the boundary heartbeat must precede handle.sync — a multi-GB flush on a loaded disk stalls seconds with zero stream movement)", async () => {
     const store = root();
     const order: string[] = [];

@@ -79,14 +79,14 @@ const plan = (): ProvisionPlan => ({ ref: ref(), items: [item()] });
 async function pollUntil(
   service: ProvisioningService,
   id: string,
-  until: (p: { state: string; bytes: number; total: number }) => boolean,
+  until: (p: { state: string; bytes: number; total: number; phase?: string }) => boolean,
   budgetMs: number,
-): Promise<{ state: string; bytes: number; total: number }> {
-  let last = { state: "unknown", bytes: 0, total: 0 };
+): Promise<{ state: string; bytes: number; total: number; phase?: string }> {
+  let last = { state: "unknown", bytes: 0, total: 0, phase: undefined as string | undefined };
   const deadline = Date.now() + budgetMs;
   for (;;) {
     const p = service.progressOf(id);
-    if (p !== null) last = { state: p.state, bytes: p.bytes, total: p.total };
+    if (p !== null) last = { state: p.state, bytes: p.bytes, total: p.total, phase: p.phase };
     if (until(last)) return last;
     if (Date.now() >= deadline) return last;
     await new Promise((resolve) => { setTimeout(resolve, 25) });
@@ -163,6 +163,9 @@ describe("the honest phase word (acquiring while streaming, verifying at the ver
     expect(mid.state,
       "the poll voiced 'verifying' while the byte stream was still landing — the state word must name the phase the operation is in (audit F5: the whole 100MB/s stream read as hash)",
     ).toBe("acquiring");
+    expect(mid.phase,
+      "mid-stream the ledger exposes no live phase — a frozen-bytes poll during a hiccup reads as dead without it (audit F2: a phase word or moving verifyBytes on the ledger)",
+    ).toBe("stream");
   });
 
   test("PHASE 2 — once the writer's verify boundary opens, the poll says 'verifying'", async () => {
@@ -180,5 +183,45 @@ describe("the honest phase word (acquiring while streaming, verifying at the ver
     ).toBe("verifying");
     const done = await pollUntil(service, id, (p) => p.state === "active" || p.state === "failed", 5_000);
     expect(done.state).toBe("active");
+  });
+
+  test("PHASE 3 — the present-file re-check reads as a live verify (audit F6a): a declared file already on disk re-hashes under state 'verifying' with the recheck phase, never 'acquiring' with no phase — the count lands when the inspect confirms, never as a pre-counted claim", async () => {
+    const root = tempRoot();
+    const context = new Context();
+    contexts.push(context);
+    // the store already holds the declared bytes — the re-hash holds
+    // on a gate so the ledger is observable mid-recheck
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => { release = resolve; });
+    const present: ArtifactWriterPort = {
+      inspect: async () => {
+        await gate;
+        return { present: true as const, sha256: DIGEST, sizeBytes: TOTAL };
+      },
+      write: async () => { throw new Error("a present file never writes"); },
+    };
+    const service = new ProvisioningService(context, config(root, present));
+
+    const id = await service.startWeightAcquire(ref());
+    // the file IS on disk and the re-hash is running: the poll
+    // voices the live phase (verifying/recheck) instead of freezing
+    // at 0/total with no phase — the recheck is flight, not death.
+    // The byte count is still 0 here by law: unconfirmed bytes are
+    // never counted (the F9 already-landed count lands below, when
+    // The byte count is still 0 here by law: unconfirmed bytes are
+    // never counted (the F9 already-landed count lands below, when
+    // the inspect confirms the file). The predicate waits for the
+    // re-check VOICE (verifying), not the opening seed (acquiring).
+    const checking = await pollUntil(service, id, (p) => p.phase === "recheck" && p.state === "verifying", 5_000);
+    expect(checking.state,
+      "the present-file re-check still voices 'acquiring' — the state word lies about the phase (audit F6a: surface the re-check as a live phase)",
+    ).toBe("verifying");
+    expect(checking.phase).toBe("recheck");
+    release();
+    const landed = await pollUntil(service, id, (p) => p.state === "active" || p.state === "failed", 5_000);
+    expect(landed.state).toBe("active");
+    expect(landed.bytes,
+      "the confirmed present file must count its declared bytes on landing (the F9 already-landed law)",
+    ).toBe(TOTAL);
   });
 });

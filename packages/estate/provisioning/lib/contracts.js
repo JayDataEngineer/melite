@@ -19,6 +19,20 @@ export const LIVE_ACQUIRE_STATES = new Set([
     "acquiring",
     "verifying",
 ]);
+/** THE ACQUIRE PHASES (audit download-stack-audit-2026-10-20 F2):
+ *  the live liveness word on the weight ledger. The state word names
+ *  the phase the operation is in; the phase word names the flow that
+ *  is moving under a frozen byte count: 'stream' (bytes landing),
+ *  'queue' (the manager queue draining), 'verify' (hash chunks read),
+ *  'recheck' (a present file's re-hash before the count). The popup's
+ *  only liveness window rides the poll; a frozen byte count with a
+ *  live phase is flight, never death. */
+export const ACQUIRE_PHASES = [
+    "stream",
+    "queue",
+    "verify",
+    "recheck",
+];
 export const PROVISION_OUTCOMES = [
     "active",
     "restart_required",

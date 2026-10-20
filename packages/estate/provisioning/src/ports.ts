@@ -62,6 +62,11 @@ export interface ManagerModelInstallRequest {
   /** Declared artifact size in bytes; scales the queue-drain budget
    *  (multi-GB model files outlast an extension-sized wait). */
   readonly sizeBytes?: number;
+  /** THE DRAIN HEARTBEAT (audit F4): fired by the queue drain once
+   *  per status poll — the service re-voices the ledger's queue
+   *  phase through it, so a multi-GB drain with frozen byte counts
+   *  still reads as flight on the poll. */
+  readonly onQueueStatus?: () => void;
 }
 
 export interface ManagerModelInstallResult {

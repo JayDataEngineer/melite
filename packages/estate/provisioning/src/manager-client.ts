@@ -67,6 +67,11 @@ export interface ManagerQueueStatus {
 export interface ManagerQueueWaitOptions extends ManagerRequestOptions {
   readonly timeoutMs?: number;
   readonly pollIntervalMs?: number;
+  /** THE DRAIN HEARTBEAT (audit F4): fired once per queue-status
+   *  poll — the provider forwards the service's hook so each drain
+   *  poll re-voices the ledger's queue phase. Never awaited, never
+   *  allowed to fail the drain (a throwing hook is swallowed). */
+  readonly onQueueStatus?: () => void;
 }
 
 const DEFAULT_REQUEST_TIMEOUT_MS = 10_000;
@@ -331,6 +336,13 @@ export class ComfyUiManagerHttpClient {
           `ComfyUI-Manager queue did not drain within ${String(timeoutMs)} ms`,
           { method: "GET", path },
         );
+      }
+      // the drain heartbeat: one fire per status poll, swallowed on
+      // throw — the hook voices liveness, it never judges the drain
+      try {
+        options.onQueueStatus?.();
+      } catch {
+        /* a listener must not fail the queue it observes */
       }
       if (!status.isProcessing && status.inProgressCount === 0 && status.totalCount === status.doneCount) {
         return status;

@@ -619,7 +619,13 @@ describe("provisioning service", () => {
     assert.equal(result.items[0]?.errorCode, "artifact/size-mismatch");
     const inspected = await service.inspect(ref);
     assert.equal(inspected.items[0]?.errorCode, "artifact/size-mismatch");
-    assert.deepEqual(received, {
+    // audit F4 (2026-10-20): the declared arm rides a drain
+    // heartbeat (onQueueStatus) — behavior, not metadata. The shape
+    // below stays the metadata-out contract; the heartbeat earns its
+    // own function check and its own manager-liveness wall.
+    const { onQueueStatus, ...requestShape } = received as Record<string, unknown>;
+    assert.equal(typeof onQueueStatus, "function");
+    assert.deepEqual(requestShape, {
       id: item.key,
       name: item.name,
       savePath: item.folder,

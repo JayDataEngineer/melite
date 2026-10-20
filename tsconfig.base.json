@@ -87,6 +87,7 @@
       "@melite/estate-models": ["./packages/estate/models/src/index.ts"],
       "@melite/estate-provisioning": ["./packages/estate/provisioning/src/index.ts"],
       "@melite/estate-provisioning/types": ["./packages/estate/provisioning/src/types.ts"],
+      "@melite/estate-provisioning/contracts": ["./packages/estate/provisioning/src/contracts.ts"],
       "@melite/estate-runs": ["./packages/estate/runs/src/index.ts"],
       "@melite/estate-runs/remote": ["./packages/estate/runs/src/typert.remote-client.d.ts"],
       "@melite/estate-runs/types": ["./packages/estate/runs/src/types.ts"],

@@ -564,6 +564,9 @@ export class ComfyUiManagerProvider implements ManagerPort {
       timeoutMs: modelQueueTimeoutMs(request.sizeBytes,
         this.queue?.timeoutMs ?? this.client.queueTimeoutMs),
       ...(signal === undefined ? {} : { signal }),
+      // the drain heartbeat rides to the queue — the service's hook
+      // re-voices the ledger's queue phase once per status poll
+      ...(request.onQueueStatus === undefined ? {} : { onQueueStatus: request.onQueueStatus }),
     });
     return {
       installed: true,

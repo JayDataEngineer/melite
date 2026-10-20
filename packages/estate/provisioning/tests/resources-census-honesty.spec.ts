@@ -30,6 +30,7 @@ import type {
   DeclarationPort,
   ProvisionPlan,
   ProvisioningConfig,
+  ProvisionResult,
   ResourceRef,
 } from "../src/index.ts";
 
@@ -347,5 +348,112 @@ describe("the resources census honesty law (the anima burn)", () => {
       "the plan cut names its own cause — the census_partial mark fires on this row");
     expect(row.items.length).toBe(0,
       "the plan never resolved — there is no item roster to fake");
+  });
+
+  // RESIDUE B2-3 (audit h3-frames-anima-residue-2026-10-20): three
+  // seats with zero tests touching them — refusalFor's generic-throw
+  // mapping, cancelledJoinResult's join-abort shape, and the
+  // reconcile catch that serves failed/[]. The two arms below pin
+  // all three: the catch arm rides refusalFor's generic mapping
+  // (the only law the catch applies), the join arm pins
+  // cancelledJoinResult's exact triple.
+  test("A GENERIC THROW INSIDE THE RECONCILE LOOP WEARS 'failed' WITH ZERO ITEMS (the catch + refusalFor's generic mapping)", async () => {
+    const context = new Context();
+    contexts.push(context);
+    // the only deterministic escape hatch out of inspect()'s
+    // per-door catches is move()'s invalid-transition throw: census 1
+    // seats the record 'active', census 2 aggregates 'installed'
+    // (active -> installed has no edge), so inspect() throws a
+    // GENERIC Error and the reconcile catch — not any health door —
+    // answers.
+    let secondPass = false;
+    const declaration: DeclarationPort = {
+      resolve: async (): Promise<ProvisionPlan> => ({
+        ref: { kind: "extension", id: "ext-pack" },
+        items: [0, 1].map((index): ProvisionPlan["items"][number] => ({
+          kind: "extension",
+          key: `ext-pack::item${String(index)}`,
+          id: `item${String(index)}`,
+          url: `https://example.invalid/item${String(index)}.zip`,
+          required: true,
+          provider: "manager",
+        })),
+      }),
+      list: async (): Promise<readonly ResourceRef[]> => [{ kind: "extension", id: "ext-pack" }],
+    };
+    const service = new ProvisioningService(context, {
+      declaration,
+      manager: {
+        inspect: async (id: string) => {
+          if (!secondPass) return { installed: true, active: true };
+          if (id === "item0") return { installed: true, active: false };
+          return { installed: true, active: true };
+        },
+      },
+      storeRoot: tempRoot(),
+    } satisfies ProvisioningConfig);
+
+    const landed = await service.reconcile(undefined);
+    assert.equal(landed[0]?.state, "active",
+      "control: the all-active census seats the record 'active'");
+
+    secondPass = true;
+    const rows = await service.reconcile(undefined);
+    assert.equal(rows.length, 1);
+    const row = rows[0];
+    expect(row.state,
+      "an unexpected throw inside the reconcile loop fails loud — never a health verdict over unchecked bytes, never a crash",
+    ).toBe("failed");
+    expect(row.items.length).toBe(0,
+      "the catch serves zero items — the failed aggregate's items died with the throw, nothing is faked");
+    assert.match(row.detail ?? "", /invalid provisioning transition active -> installed/,
+      "refusalFor's generic mapping carries the throw's own message (the 'provisioning/failed' law) — the detail names the seat, not a health verdict");
+  });
+
+  test("A JOIN-ABORTED WAIT SERVES outcome 'cancelled' WITH operationState 'failed' AND NO ITEMS (cancelledJoinResult's triple)", async () => {
+    const context = new Context();
+    contexts.push(context);
+    // the lock is held by a background ensure parked in plan
+    // resolve; the joiner arrives with its own signal already
+    // aborted — joinLocked answers without touching the shared
+    // fetch.
+    let releasePlan!: () => void;
+    const planGate = new Promise<never>((_resolve, reject) => { releasePlan = (): void => { reject(new Error("released")); }; });
+    const declaration: DeclarationPort = {
+      resolve: (_target: ResourceRef): Promise<ProvisionPlan> => planGate,
+      list: async (): Promise<readonly ResourceRef[]> => [refOf("anima")],
+    };
+    const service = new ProvisioningService(context, {
+      declaration,
+      storeRoot: tempRoot(),
+    } satisfies ProvisioningConfig);
+
+    const parked = service.ensure(refOf("anima"));
+    void parked.catch(() => undefined);
+    // the lock registers synchronously inside runLocked — flush one
+    // microtask so the join below cannot win a mint race
+    await Promise.resolve();
+    const controller = new AbortController();
+    controller.abort();
+    let result!: ProvisionResult;
+    try {
+      result = await service.ensure(refOf("anima"), {}, controller.signal);
+    } finally {
+      // the parked fetch releases on every exit — an assertion red
+      // must not wedge teardown on the hanging plan
+      releasePlan();
+      await parked;
+    }
+
+    expect(result.outcome,
+      "the joiner's own abort is a cancellation — the shared fetch it waited on is untouched",
+    ).toBe("cancelled");
+    expect(result.operationState,
+      "the join never landed anything — operationState 'failed' with zero items, never a health word",
+    ).toBe("failed");
+    expect(result.items.length).toBe(0,
+      "the aborted wait contributes no item rows — nothing was checked on its behalf");
+    assert.match(result.detail ?? "", /cancelled while waiting/,
+      "the detail names the wait, not the fetch");
   });
 });

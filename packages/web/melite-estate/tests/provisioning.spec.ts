@@ -129,4 +129,26 @@ describe("the acquire stall budget's deployment face (P5 F1)", () => {
       }
     }
   });
+
+  // THE LANE CLOCK AGREEMENT (audit F7, 2026-10-20): the melite-test
+  // lane pins acquireStallTimeoutMs: 10000 in its cordis.patch.yml
+  // (the profile layer, deliberate — the comment names the audit).
+  // 10000 IS the service's own default: the lane rides the contract,
+  // it does not fork it. If the default ever moves, this arm reds
+  // and forces a deliberate lane decision (re-pin or follow), never
+  // a silent divergence between the clock the lane enforces and the
+  // clock the service owns. (The original burn's default was 1000 —
+  // one TCP hiccup deep on a moving 100 MB/s fetch.)
+  test("the lane's deliberate stall budget agrees with the service default", async () => {
+    const LANE_STALL_MS = 10_000;
+    expect(ACQUIRE_STALL_TIMEOUT_MS).toBe(LANE_STALL_MS);
+    const ctx = contextWithCards();
+    try {
+      const plugin: Plugin.Object = composition;
+      plugin.apply(ctx, { acquireStallTimeoutMs: LANE_STALL_MS });
+      expect(ctx.provisioning.stallBudgetMs()).toBe(LANE_STALL_MS);
+    } finally {
+      await ctx.fiber.dispose();
+    }
+  });
 });
