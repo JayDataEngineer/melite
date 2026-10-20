@@ -359,13 +359,29 @@ describe("every facts row composes its card alive (the dead-card wall)", () => {
       const model = facts.models[modelId]!;
       const composed = composeProbedRow(def, model);
       if (composed.graph === null) continue; // the dead-card arm owns the refusal voice
-      try {
-        assertWiringAgainst(nodes, inputs, row.card, composed.graph);
-      } catch (err) {
+      // THE PROVISIONER SHADOW LAW (audit 2026-10-20 F2): the
+      // carve-out used to swallow the ROW — one DECL-declared
+      // filename refusal hid every OTHER finding the row carried
+      // (moss-image's stale CLIPLoader.type rode green behind its
+      // clip_name for a week, and the adjudication row that owned it
+      // read as orphaned). The carve-out now swallows exactly ONE
+      // finding: the swallowed value is neutralized to a member of
+      // the engine's own enum on a probe copy and the judgment
+      // re-runs, so the row's remaining findings still surface and
+      // the adjudication owns what is genuinely stale.
+      let probe: unknown = composed.graph;
+      for (let pass = 0; ; pass += 1) {
+        let refusal: unknown;
+        try {
+          assertWiringAgainst(nodes, inputs, row.card, probe);
+          break;
+        } catch (err) {
+          refusal = err;
+        }
         // unknown-node is the CLASS arm's own voice (the vocabulary
         // floors own it); this arm reports wired-VALUE findings.
-        if (err instanceof ComposeRefusal && (err.code === "unknown-node" || err.code === "malformed-graph")) continue;
-        const message = err instanceof Error ? err.message : String(err);
+        if (refusal instanceof ComposeRefusal && (refusal.code === "unknown-node" || refusal.code === "malformed-graph")) break;
+        const message = refusal instanceof Error ? refusal.message : String(refusal);
         // THE PROVISIONER LAW (operator 2026-11-09: "if a model is
         // not on disk, that is not a red unless our auto-provisioner
         // sucks"): a FILENAME the engine's folder enum lacks is
@@ -374,8 +390,19 @@ describe("every facts row composes its card alive (the dead-card wall)", () => {
         // declared source the provisioner is blind and the miss
         // stays red below.
         const wired = /wired '[^']+' = "([^"]*)"/.exec(message)?.[1];
-        if (wired !== undefined && declaredProvision(modelId, wired)) continue;
+        const seat = /^[\s\S]*?wired '([^'.]+)\.([^']+)'/.exec(message);
+        if (wired !== undefined && seat !== null && declaredProvision(modelId, wired)) {
+          const member = inputs?.get(seat[1]!)?.get(seat[2]!)?.enum?.find((m): m is string => typeof m === "string");
+          if (member !== undefined && pass < 8) {
+            probe = JSON.parse(JSON.stringify(probe), (_k, v: unknown) => (v === wired ? member : v));
+            continue;
+          }
+          // no enum member to neutralize with (or bound hit): the
+          // download prompt owns the miss, the row stands down.
+          break;
+        }
         stale.push(`${modelId} / ${row.card}: ${message}`);
+        break;
       }
     }
 
@@ -385,10 +412,26 @@ describe("every facts row composes its card alive (the dead-card wall)", () => {
     // reason breaks, and a row whose finding disappeared REDS for
     // deletion (an adjudication that outlives its truth is drift).
     // Any NEW stale value no row owns reds unadjudicated. ──
+    const clipTypes = ((bootDoc.CLIPLoader as { input: { required: { type: [string[]] } } }).input.required.type[0]);
     const adjudicated: Array<{ row: RegExp; reason: string; holds: () => string | null }> = [
-      // (the moss-image row is GONE: the engine build regenerated
-      // with upstream PR #17095 — CLIPLoader.type carries moss_image,
-      // the finding cured, the adjudication law deleted the row.)
+      {
+        // the operator's own burn (2026-11-09): moss-image wires the
+        // PR #17095 spelling this engine build does not carry.
+        // RESTORED 2026-10-20 (audit h3-refine-denoise-verification
+        // F2): the refine-window commit deleted this row on the claim
+        // the engine build carried the PR — the boot fixture (this
+        // wall's own truth source) still carries 29 CLIPLoader.type
+        // values with no moss_image, and the moss compose still emits
+        // it; the deletion left a live finding unowned, green only
+        // because the row's clip_name refusal (swallowed by the
+        // provisioner carve-out) shadowed the type finding. The row
+        // self-deletes the day the build genuinely carries the enum.
+        row: /^moss-image \/ image-gen: .*CLIPLoader\.type.*moss_image/,
+        reason: "the engine build predates upstream PR #17095 — its CLIPLoader.type enum carries 29 values, none moss_image",
+        holds: () => clipTypes.includes("moss_image")
+          ? "the engine build now carries moss_image — the finding is cured; delete this row"
+          : null,
+      },
       // (the qwen-img-21 images finding NEVER sat here: its root was
       // the wiring wall judging an autogrow input by a law the
       // engine never stated — TextEncodeQwenImage21.images declares

@@ -137,12 +137,16 @@ function resolveRefineSeat(p: Record<string, unknown>): { name: string; strength
   // 3): unstated keeps the full-denoise rider byte-stable (the
   // TaoMate mechanic legacy graphs rode); the research's refinement
   // window is a partial denoise (0.30–0.35 — pass 1's structure
-  // stays, the rider polishes texture). (0, 1]: 0 is a dead pass,
-  // > 1 re-noises past the terminal — both refuse loud naming the
-  // knob, never compose a broken rider.
+  // stays, the rider polishes texture). Domain [0.05, 1] — ONE law
+  // with the schema row and the film.params row below (audit
+  // 2026-10-20 F1/F4: the resolver's old (0, 1] and the walk's
+  // [0.05, 1] disagreed at 0 < d < 0.05, and the walk owned every
+  // real-doc refusal before compose — the resolver's voice had no
+  // firing arm. Both seats now state the same bounds and ARM 4f
+  // judges the resolver at the family plane, its own seat).
   const denoise = (p.refine_denoise as number | undefined) ?? 1
-  if (!(denoise > 0 && denoise <= 1)) {
-    throw new Error(`h3 action: refine_denoise ${String(p.refine_denoise)} falls outside the refinement window (0, 1] — 1 is the full-denoise taomate mechanic, 0.30–0.35 the SOTA refinement window; a dead or over-terminal rider never composes`)
+  if (!(denoise >= 0.05 && denoise <= 1)) {
+    throw new Error(`h3 action: refine_denoise ${String(p.refine_denoise)} falls outside the refinement window [0.05, 1] — 1 is the full-denoise taomate mechanic, 0.30–0.35 the SOTA refinement window; a dead or over-terminal rider never composes`)
   }
   return {
     name: row.filename,
@@ -2117,8 +2121,9 @@ export const film: ComfyActionSpec<Record<string, unknown>, H3Facts> = {
     { name: "refine_lora", type: "string" },
     { name: "refine_strength", type: "number", bounds: [0, 2] },
     { name: "refine_steps", type: "number", bounds: [1, 10] },
-    // THE REFINE WINDOW (SOTA limb 1): (0, 1] — the resolver's own
-    // domain; 1 is the full-denoise taomate mechanic (the default)
+    // THE REFINE WINDOW (SOTA limb 1): [0.05, 1] — ONE domain with
+    // the schema row and the resolver above (parity walled by ARM
+    // 4f); 1 is the full-denoise taomate mechanic (the default)
     { name: "refine_denoise", type: "number", bounds: [0.05, 1] },
     { name: "attention_backend", type: "enum", options: ["comfy kitchen attention", "pytorch attention"] },
     { name: "sr_switch", type: "boolean" },

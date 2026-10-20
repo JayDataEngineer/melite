@@ -105,15 +105,38 @@ export const t2i: ComfyActionSpec<T2IParams, T2IFacts> = {
     const negative: OutputHandle = negativeText.trim() === ""
       ? g.node("ConditioningZeroOut", { conditioning: positive }).out()
       : g.node("CLIPTextEncode", { text: negativeText, clip }).out();
-    const latent = g.node("EmptyFlux2LatentImage", { width: p.width, height: p.height, batch_size: 1 }).out();
+    // THE CANVAS LAW (audit 2026-10-20 F2, the shadowed finding): an
+    // agent-side minimal doc may state no canvas — the walk passes,
+    // but the engine declares EmptyFlux2LatentImage.height/width (and
+    // the sampling stack's steps/sampler/seed/cfg) REQUIRED and
+    // refuses the prompt live. The stated value wins; unstated falls
+    // to the family's OWN DECL defaults (facts.defaults — the
+    // official distilled template: 1024², 4 steps, cfg 1, euler); a
+    // family that declares neither refuses loud here, never ships an
+    // undefined input the engine would reject at run time.
+    const canvas = (stated: unknown, knob: string): number => {
+      if (typeof stated === "number") return stated;
+      const d = model.defaults[knob];
+      if (typeof d === "number") return d;
+      throw new Error(`flux-klein t2i: ${knob} is stated neither in the doc nor the family defaults — the canvas never composes blind (the engine declares it required)`);
+    };
+    const word = (stated: unknown, knob: string): string => {
+      if (typeof stated === "string" && stated !== "") return stated;
+      const d = model.defaults[knob];
+      if (typeof d === "string" && d !== "") return d;
+      throw new Error(`flux-klein t2i: ${knob} is stated neither in the doc nor the family defaults — the sampler never composes blind (the engine declares it required)`);
+    };
+    const width = canvas(p.width, "width");
+    const height = canvas(p.height, "height");
+    const latent = g.node("EmptyFlux2LatentImage", { width, height, batch_size: 1 }).out();
     // THE FLUX.2 SAMPLING STACK (the official template's own): the
     // scheduler computes the empirical time-SNR shift from steps and
     // the canvas; the stock scheduler knob declares the card domain
     // but wires nothing on this lane.
-    const sigmas = g.node("Flux2Scheduler", { steps: p.steps, width: p.width, height: p.height }).out();
-    const sampler = g.node("KSamplerSelect", { sampler_name: p.sampler }).out();
-    const noise = g.node("RandomNoise", { noise_seed: p.seed }).out();
-    const guider = g.node("CFGGuider", { cfg: p.cfg, model: unet, positive, negative }).out();
+    const sigmas = g.node("Flux2Scheduler", { steps: canvas(p.steps, "steps"), width, height }).out();
+    const sampler = g.node("KSamplerSelect", { sampler_name: word(p.sampler, "sampler") }).out();
+    const noise = g.node("RandomNoise", { noise_seed: canvas(p.seed, "seed") }).out();
+    const guider = g.node("CFGGuider", { cfg: canvas(p.cfg, "cfg"), model: unet, positive, negative }).out();
     // (burn, 2026-10-20: the empty latent composed above was never
     // wired — the engine declares latent_image required and refused
     // the prompt; the canvas rides here, never dangling.)

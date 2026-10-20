@@ -46,6 +46,8 @@ import type { ModelFacts } from "@melite/comfyui-card-kit/facts";
 import type { CardDefinition } from "@melite/comfyui-card-kit/card-definition";
 import { getModel, registryIds, registryModel } from "../../../engines/comfyui-cordis/src/models/models.ts";
 import { H3_LORA_ROWS } from "@melite/models-h3/mods/loras";
+import { film } from "../src/actions.ts";
+import { instantiateAction } from "@melite/comfyui-card-kit";
 
 const FACTS_PATH = join(
   dirname(fileURLToPath(import.meta.url)),
@@ -307,7 +309,7 @@ describe("the h3 sampler knobs ride VERBATIM to their consumers (purge P2 value 
       "a doc with no refine_denoise keeps the full-denoise rider — legacy graphs stay byte-stable");
   });
 
-  it("ARM 4c — a refine_denoise outside (0, 1] refuses LOUD naming the knob", async () => {
+  it("ARM 4c — a refine_denoise outside [0.05, 1] refuses LOUD naming the knob (the schema walk owns the real-doc door)", async () => {
     await assert.rejects(
       composeH3({
         length: 56,
@@ -332,6 +334,41 @@ describe("the h3 sampler knobs ride VERBATIM to their consumers (purge P2 value 
       /refine_denoise/,
       "denoise above 1 re-noises past the terminal — the door refuses it loud",
     );
+  });
+
+  // ARM 4f (audit 2026-10-20 F1/F4 — the resolver's own firing arm):
+  // ARM 4c's probes die at the schemastery walk (which runs INSIDE
+  // the card's compose wrapper) before the action body ever runs, so
+  // the walk owns every real-doc refusal and resolveRefineSeat's
+  // domain check had no judge — deleting its throw left 4c green.
+  // This arm judges the FAMILY PLANE (the raw film action through
+  // instantiateAction, door.spec's pattern — no schema walk in
+  // front), where the resolver IS the refusing seat. One law, both
+  // seats: the resolver's domain must equal the declared row
+  // [0.05, 1] exactly — the sub-minimal band (0 < d < 0.05) the walk
+  // refuses is refused here too, never admitted through the back
+  // plane.
+  it("ARM 4f — the resolver's own [0.05, 1] voice fires at the family plane (no walk in front)", () => {
+    const windowModel: ModelFacts = {
+      id: "h3", card: "h3-timeline", defaults: {},
+      lane_inputs: { unet: "minimax_h3_hybrid_fl2va_ref2va_b30-49-int8.safetensors" },
+      variants: [], variant_groups: [], outputs: [],
+    };
+    const base = {
+      variant: "t4_open", length: 124, prompt: "a slow push in", seed: 42,
+      second_pass_enabled: true, refine_lora: "h3_taomate_3step",
+    };
+    for (const bad of [0, 0.02, 1.5]) {
+      assert.throws(
+        () => {
+          const g = new GraphBuilder();
+          instantiateAction(film, { ...base, refine_denoise: bad }, windowModel, g, `h3_value_arm4f_${String(bad)}`);
+        },
+        (err: unknown) => err instanceof Error
+          && err.message.includes(`refine_denoise ${String(bad)} falls outside the refinement window [0.05, 1]`),
+        `refine_denoise ${bad} must refuse AT THE RESOLVER with its own voice — the walk is not the only owner (the sub-minimal band included: both seats state ONE domain)`,
+      );
+    }
   });
 
   it("ARM 6 — a bogus refine_lora id refuses LOUD naming the knob (the compose door refuses hand-spelled ids)", async () => {
