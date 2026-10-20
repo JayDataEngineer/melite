@@ -157,8 +157,16 @@ test('MODS: owned names never render flat (the section owns them, in every surfa
       }],
     },
   })
-  form({ spec, user: {} })
-  expect(screen.getByText('Strength')).not.toBeNull()
+  const { container } = form({ spec, user: {} })
+  // THE MOD-KIND KNOB LAW (E2-7): a leaf-bearing kind's scalars
+  // never render beside the tiles either — the burn's own words.
+  // They seat inside the mod's leaf (opened below) and never flat
+  // in the form's param groups (the original law, unchanged).
+  expect(container.textContent).not.toContain('Strength')
+  fireEvent.click(document.querySelector('[data-subcard-add="mod"]') as HTMLElement)
+  fireEvent.click(screen.getByRole('menuitem', { name: 'Shots' }))
+  expect(screen.getByLabelText('Strength')).not.toBeNull()
+  expect(container.textContent).not.toMatch(/Prompt[\s\S]*Strength[\s\S]*Prompt/)
 })
 
 test('MODS: declared rows ride verbatim; the wtype hint rebuilds the type (never re-derived)', () => {
@@ -167,14 +175,14 @@ test('MODS: declared rows ride verbatim; the wtype hint rebuilds the type (never
     features: {
       modifiers: [
         {
-          param_key: 'a', label: 'A', entry: 'field',
+          kind: 'a', param_key: 'a', label: 'A', entry: 'field',
           fields: [
             { name: 'w1', label: 'W1', type: 'path', wtype: 'image' },
             { name: 'p1', label: 'P1', type: 'text' },
           ],
         },
         {
-          param_key: 'b', schema_key: 'shared', label: 'B', entry: 'hybrid',
+          kind: 'b', param_key: 'b', schema_key: 'shared', label: 'B', entry: 'hybrid',
         },
       ],
     },
@@ -183,7 +191,13 @@ test('MODS: declared rows ride verbatim; the wtype hint rebuilds the type (never
     },
   })
   const { container } = form({ spec, user: { a: [{ w1: 'https://host/w.png', p1: 'hello' }] } })
-  expect(container.textContent).toContain('gain')
+  // THE MOD-KIND KNOB LAW (E2-7): the envelope-derived kind scalar
+  // ('gain') seats inside B's leaf, never beside the tiles.
+  expect(container.textContent).not.toContain('gain')
+  fireEvent.click(document.querySelector('[data-subcard-add="mod"]') as HTMLElement)
+  fireEvent.click(screen.getByRole('menuitem', { name: 'B' }))
+  expect(screen.getByText('gain')).not.toBeNull()
+  fireEvent.click(screen.getByRole('button', { name: 'Close' }) as HTMLElement)
   // THE WTYPE REWRITE, proven in the leaf: the declared path+image
   // row builds the square (the filled ✕ face), the plain row stays
   // a text input carrying its value.

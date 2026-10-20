@@ -352,12 +352,29 @@ test('declared face + hosted face: the leaf embeds the canvas at the top; a stro
   })
 })
 
-test('CONTRACT A: declared kindFields ride verbatim — the section owns the served scalar row', async () => {
+test('CONTRACT A: declared kindFields ride verbatim — inside the mod\'s own leaf (E2-7)', async () => {
   const values: SpecValues = { input_image: 'http://x/in.png' }
-  await openPaintLeaf(values, { paintFace: FakeFace, paintReference: 'input_image' })
-  // the detect kind's served kindFields render as the section's own
-  // row (never re-derived from a mod_schemas envelope it has none of)
-  expect(screen.getByLabelText('Detection threshold')).toBeTruthy()
+  const { CardForm } = await import('@melite/card-base/client')
+  render(createElement(CardForm, {
+    spec: PAINT_SPEC,
+    user: values,
+    onSet: (name: string, v: unknown) => { values[name] = v },
+    onPick: () => {},
+    paintFace: FakeFace,
+    paintReference: 'input_image',
+  }))
+  // THE MOD-KIND KNOB LAW (E2-7 — the operator's burn: a kind's
+  // scalar NEVER renders outside its mod): the detect kind is
+  // leaf-bearing (cardinality 'list'), so its served kindFields
+  // seat inside the Detect leaf — never beside the tiles.
+  expect(screen.queryByLabelText('Detection threshold')).toBeNull()
+  fireEvent.click(document.querySelector('[data-subcard-add="mod"]') as HTMLElement)
+  fireEvent.click(await screen.findByRole('menuitem', { name: 'Detect' }))
+  const knob = await screen.findByLabelText('Detection threshold')
+  // verbatim + committed envelope-level the moment it changes
+  expect((knob as HTMLInputElement).value).toBe('0.35')
+  fireEvent.change(knob, { target: { value: '0.5' } })
+  expect(values['detection_threshold']).toBe(0.5)
 })
 
 test('declared face + NO hosted face: no canvas — the square holds (graceful by design)', async () => {

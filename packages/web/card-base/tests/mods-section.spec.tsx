@@ -100,6 +100,62 @@ test('THE PACK ROW: the values map wins over the field default (the run shows wh
   expect((screen.getByLabelText('Floor') as HTMLInputElement).value).toBe('0.3')
 })
 
+// THE MOD-KIND KNOB LAW (E2-7, the operator's burn: "WHY AM I SEEING
+// CONTROLNET STRENGTH FLOOR OUTSIDE OF THE CONTROLNET MOD? WHY? WHAT
+// REASON? THAT SHOULD NOT BE THERE" — the ledger carries the
+// verbatim voice): a kind-level scalar of a LEAF-BEARING kind
+// (cardinality ≠ 'scalar') renders ONLY inside the mod's own leaf —
+// never as a section-level row beside the tiles. The client derives
+// kindFields for hybrid kinds off the mod_schemas envelope
+// (form.tsx:199, kindScalarFieldsOfEnvelope — the controlnet floor
+// on z-image), so the leak is live for every boarded family, seated
+// or not. A LEAFLESS kind (cardinality 'scalar' — no entries, no
+// add square) keeps its section rows: they are its ONLY face, there
+// is no mod modal to host them and no "outside" to leak from.
+const CONTROL_FLOOR = {
+  ...CONTROL,
+  kindFields: [{ name: 'controlnet_strength_floor', type: 'number', label: 'Strength Floor', default: 0 }],
+} as unknown as ModifierKind
+
+test('THE MOD-KIND KNOB LAW (E2-7) THE BURN ARM: a hybrid kind\'s scalars NEVER render at the section (seated or not)', () => {
+    // zero entries seated — the burn's exact face: a ControlNet knob
+    // on a card with no ControlNet at all.
+    openSection({ kinds: [CONTROL_FLOOR], values: {} })
+    expect(screen.queryByLabelText('Strength Floor')).toBeNull()
+    // and with an entry seated — still never beside the tiles.
+    openSection({ kinds: [CONTROL_FLOOR], values: { controlnets: [{ type: 'depth', strength: 0.5 }] } })
+    expect(screen.queryByLabelText('Strength Floor')).toBeNull()
+  })
+
+test('THE MOD-KIND KNOB LAW (E2-7) THE LEAF FACE: the create leaf carries the kind\'s scalars and commits them envelope-level', () => {
+    const { onEdit, onPatch } = openSection({ kinds: [CONTROL_FLOOR], values: {} })
+    fireEvent.click(document.querySelector('[data-subcard-add="mod"]') as HTMLElement)
+    fireEvent.click(screen.getByRole('menuitem', { name: 'ControlNet' }))
+    const input = screen.getByLabelText('Strength Floor') as HTMLInputElement
+    expect(input.value).toBe('0')
+    fireEvent.change(input, { target: { value: '0.9' } })
+    expect(onEdit).toHaveBeenCalledWith('controlnet_strength_floor', 0.9)
+    expect(onPatch).toHaveBeenCalledWith({ controlnet_strength_floor: 0.9 })
+  })
+
+test('THE MOD-KIND KNOB LAW (E2-7) THE LEAF FACE, EDIT MODE: the edit leaf carries the same scalars (one face, both doors)', () => {
+    const { onEdit } = openSection({
+      kinds: [CONTROL_FLOOR],
+      values: { controlnets: [{ type: 'depth', strength: 0.5 }], controlnet_strength_floor: 0.4 },
+    })
+    fireEvent.click(tile('controlnets-0'))
+    expect((screen.getByLabelText('Strength Floor') as HTMLInputElement).value).toBe('0.4')
+    fireEvent.change(screen.getByLabelText('Strength Floor'), { target: { value: '0.6' } })
+    expect(onEdit).toHaveBeenCalledWith('controlnet_strength_floor', 0.6)
+  })
+
+test('THE MOD-KIND KNOB LAW (E2-7) THE LEAFLESS EXCEPTION: a scalar-only kind keeps its section rows (its only face)', () => {
+    const { onEdit } = openSection({ kinds: [FLOOR], values: {} })
+    const input = screen.getByLabelText('Floor') as HTMLInputElement
+    fireEvent.change(input, { target: { value: '0.9' } })
+  expect(onEdit).toHaveBeenCalledWith('floor', 0.9)
+})
+
 test('THE TILES: served rows name + seed; id-less option rows fall to "Label N"; strengths print 2dp', () => {
   openSection({
     kinds: [LORA],

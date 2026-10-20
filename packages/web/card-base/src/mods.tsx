@@ -527,11 +527,14 @@ export function ModifiersSection(props: ModifiersSectionProps): ReturnType<typeo
     leafError !== null && leaf === null
       ? h('p', { className: css.modLeafError }, leafError)
       : null,
-    // THE PACK-LEVEL ROWS (the hybrid section's own scalars — the
-    // controlnet strength floor): served kindFields above the tiles,
-    // committed + persisted like any card scalar (never flat in the
-    // card form — mod-owned names stay in the section).
-    ...kinds.filter((k) => (k.kindFields ?? []).length > 0).map((k) =>
+    // THE MOD-KIND KNOB LAW (E2-7, the operator's burn: a ControlNet
+    // knob NEVER renders outside the ControlNet mod): a kind-level
+    // scalar of a LEAF-BEARING kind (cardinality ≠ 'scalar') renders
+    // inside the mod's own leaf — never here above the tiles. Only a
+    // LEAFLESS kind (cardinality 'scalar' — no entries, no add
+    // square, no modal to host them) keeps its rows at the section:
+    // they are its only face.
+    ...kinds.filter((k) => k.cardinality === 'scalar' && (k.kindFields ?? []).length > 0).map((k) =>
       h('div', { key: k.param_key + ':kind', className: css.modLeafFields },
         // (kindFields! — the filter above passes only kinds with a
         // defined non-empty kindFields; TS cannot see through it.)
@@ -676,7 +679,13 @@ export function ModifiersSection(props: ModifiersSectionProps): ReturnType<typeo
     },
       h(ModLeaf, { leaf, values, hideFields: seated, onDraft: { setDraftOption, setDraftStrength, setDraftParams, setDraftSteps, draftOption, draftStrength, draftParams, draftSteps }, onError: setLeafError, onSave: saveLeaf, onDelete: deleteLeaf, leafError, paintFace: props.paintFace, bboxFace: props.bboxFace, paintReferenceValue: typeof props.paintReference === 'string' ? String(values[props.paintReference] ?? '') : '', ...(props.loadMedia !== undefined ? { loadMedia: props.loadMedia } : {}),
         ...(props.candidates !== undefined ? { candidates: props.candidates } : {}),
-        ...(props.candidatesFor !== undefined ? { candidatesFor: props.candidatesFor } : {}) }),
+        ...(props.candidatesFor !== undefined ? { candidatesFor: props.candidatesFor } : {}),
+        // THE MOD-KIND KNOB LAW (E2-7): the kind's own scalars ride
+        // the leaf — the mod's face, the only seat a leaf-bearing
+        // kind's knobs ever get (the section rows died with the
+        // burn). Committed envelope-level like any card scalar, the
+        // same commitScalar the leafless kinds still ride.
+        kindScalars: { fields: leaf.kind.kindFields ?? [], values, onCommit: commitScalar } }),
     ) : null,
   )
 }
@@ -716,6 +725,15 @@ function ModLeaf(props: {
   /** the flow rows + per-field narrowing (E2-11a — see the section's own props). */
   candidates?: Array<{ id: string; label: string; url: string }>
   candidatesFor?: (f: SpecField) => Array<{ id: string; label: string; url: string }>
+  /** THE MOD-KIND KNOB LAW (E2-7): the kind's own scalars — rendered
+   *  INSIDE the leaf (the mod's face), committed envelope-level the
+   *  moment they change. Absent (the leafless kinds' section rows
+   *  own their own face) = no block. */
+  kindScalars?: {
+    fields: readonly SpecField[]
+    values: SpecValues
+    onCommit: (f: SpecField, name: string, v: unknown) => void
+  }
 }): ReturnType<typeof h> {
   const { leaf, onDraft, onSave, onDelete, leafError } = props
   const k = leaf.kind
@@ -1013,6 +1031,26 @@ function ModLeaf(props: {
           )),
           own.wireMenu,
         ),
+    // THE MOD-KIND KNOB LAW (E2-7 — the operator's burn: "WHY AM I
+    // SEEING CONTROLNET STRENGTH FLOOR OUTSIDE OF THE CONTROLNET
+    // MOD?"): the kind's own scalars seat HERE, inside the mod's
+    // face, below the entry rows — committed envelope-level the
+    // moment they change (the same commit the leafless kinds' section
+    // rows ride). Never a section-level row beside the tiles again.
+    ...(props.kindScalars !== undefined && props.kindScalars.fields.length > 0
+      ? [h('div', { className: css.modLeafFields, 'data-leaf-kind-scalars': k.kind },
+          props.kindScalars.fields.map((f) =>
+            h('label', { key: f.name, className: css.modField },
+              f.label ?? f.name,
+              h(SpecAtom, {
+                f,
+                value: props.kindScalars!.values[f.name] ?? f.default,
+                onEdit: (name: string, v: unknown) => { props.kindScalars!.onCommit(f, name, v) },
+              }),
+            ),
+          ),
+        )]
+      : []),
     h('div', { className: css.modLeafActions },
       h(Button, { variant: 'primary', onClick: onSave }, leaf.mode === 'create' ? 'Add' : 'Save'),
       leaf.mode === 'edit'

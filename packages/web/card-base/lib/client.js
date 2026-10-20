@@ -14863,7 +14863,7 @@ window.__ModuleLoader__.load({
 				className: card_module_css_default.modSection,
 				"data-subcard-grid": "on",
 				"data-testid": "cb-mods-section"
-			}, (0, react.createElement)("div", { className: card_module_css_default.modHead }, (0, react.createElement)("span", { className: card_module_css_default.modTitle }, chromeCopy.modifiersTitle), (0, react.createElement)("span", { className: card_module_css_default.modHint }, anyOrdered ? "drag to set apply order" : "each entry is its own output (standalone)")), leafError !== null && leaf === null ? (0, react.createElement)("p", { className: card_module_css_default.modLeafError }, leafError) : null, ...kinds.filter((k) => (k.kindFields ?? []).length > 0).map((k) => (0, react.createElement)("div", {
+			}, (0, react.createElement)("div", { className: card_module_css_default.modHead }, (0, react.createElement)("span", { className: card_module_css_default.modTitle }, chromeCopy.modifiersTitle), (0, react.createElement)("span", { className: card_module_css_default.modHint }, anyOrdered ? "drag to set apply order" : "each entry is its own output (standalone)")), leafError !== null && leaf === null ? (0, react.createElement)("p", { className: card_module_css_default.modLeafError }, leafError) : null, ...kinds.filter((k) => k.cardinality === "scalar" && (k.kindFields ?? []).length > 0).map((k) => (0, react.createElement)("div", {
 				key: k.param_key + ":kind",
 				className: card_module_css_default.modLeafFields
 			}, k.kindFields.map((f) => (0, react.createElement)("label", {
@@ -14976,7 +14976,12 @@ window.__ModuleLoader__.load({
 				paintReferenceValue: typeof props.paintReference === "string" ? String(values[props.paintReference] ?? "") : "",
 				...props.loadMedia !== void 0 ? { loadMedia: props.loadMedia } : {},
 				...props.candidates !== void 0 ? { candidates: props.candidates } : {},
-				...props.candidatesFor !== void 0 ? { candidatesFor: props.candidatesFor } : {}
+				...props.candidatesFor !== void 0 ? { candidatesFor: props.candidatesFor } : {},
+				kindScalars: {
+					fields: leaf.kind.kindFields ?? [],
+					values,
+					onCommit: commitScalar
+				}
 			})) : null);
 		}
 		/** THE LEAF BODY — split so the FIELD-kind editor gets its own
@@ -15165,7 +15170,19 @@ window.__ModuleLoader__.load({
 					...sq !== void 0 ? { square: sq } : {}
 				});
 				return sq !== void 0 ? (0, react.createElement)("div", { className: card_module_css_default.modField }, (0, react.createElement)("span", { title: f.tooltip ?? f.label ?? f.name }, f.label ?? f.name, leafStar(f)), atom) : (0, react.createElement)("label", { className: card_module_css_default.modField }, f.label ?? f.name, leafStar(f), atom);
-			})())), own.wireMenu), (0, react.createElement)("div", { className: card_module_css_default.modLeafActions }, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+			})())), own.wireMenu), ...props.kindScalars !== void 0 && props.kindScalars.fields.length > 0 ? [(0, react.createElement)("div", {
+				className: card_module_css_default.modLeafFields,
+				"data-leaf-kind-scalars": k.kind
+			}, props.kindScalars.fields.map((f) => (0, react.createElement)("label", {
+				key: f.name,
+				className: card_module_css_default.modField
+			}, f.label ?? f.name, (0, react.createElement)(SpecAtom, {
+				f,
+				value: props.kindScalars.values[f.name] ?? f.default,
+				onEdit: (name, v) => {
+					props.kindScalars.onCommit(f, name, v);
+				}
+			}))))] : [], (0, react.createElement)("div", { className: card_module_css_default.modLeafActions }, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Button, {
 				variant: "primary",
 				onClick: onSave
 			}, leaf.mode === "create" ? "Add" : "Save"), leaf.mode === "edit" ? (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Button, {
