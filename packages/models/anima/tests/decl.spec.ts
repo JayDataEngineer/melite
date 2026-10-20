@@ -5,6 +5,7 @@
 // Run: npx vitest run --project node
 import { describe, it } from "vitest";
 import assert from "node:assert/strict";
+import { judgeSamplerEnvelope } from "@melite/contracts/laneRelations";
 import { DECL, family } from "../src/index.ts";
 
 describe("the anima model plugin", () => {
@@ -119,5 +120,67 @@ describe("the three-checkpoint matrix (operator 2026-10-16)", () => {
   it("the family default view is base × convrot (the served tier)", () => {
     assert.equal((DECL.lane_inputs as Record<string, unknown>).unet,
       "anima-base-v1.0-int8convrot.safetensors");
+  });
+});
+
+// THE ENVELOPE DECLARATION LAW (the E2-8 cure, 2026-11-08): anima is a
+// split-numbers family (base 52/4 beside turbo 8/1), so every serving
+// lane DECLARES its sampler domain — the krea-2 shape (2026-09-21, the
+// 25-steps-into-turbo cure). Bounds are the lane's own truth, not
+// invented: the base/aesthetic domain [8,60]×[2,8] holds the family
+// default 52/4, the official template's 30-step euler walk, the
+// operator's good runs (35/4, 52/4) AND the Draft recipe's 8-step
+// stamp, while the burn's CFG 1 (every "completely off" run — 8/1,
+// 20/1, 52/1, euler 52/1 — sat at CFG 1 on a non-distilled lane) sits
+// OUT. Turbo holds its upstream distilled marriage [4,8]×[1,2].
+const ENVELOPE_PINS: ReadonlyArray<
+  readonly [variant: string, envelope: { steps: [number, number]; cfg: [number, number] }]
+> = [
+  ["base", { steps: [8, 60], cfg: [2, 8] }],
+  ["turbo", { steps: [4, 8], cfg: [1, 2] }],
+  ["aesthetic", { steps: [8, 60], cfg: [2, 8] }],
+];
+
+describe("the lanes declare their sampler envelopes (the E2-8 cure)", () => {
+  it("every serving Variant row carries its pinned envelope verbatim", () => {
+    const serving = (DECL.variants ?? []).filter((v) => (v.cells ?? []).length > 0);
+    for (const [variant, envelope] of ENVELOPE_PINS) {
+      const row = serving.find((v) => v.id === variant)!;
+      assert.deepEqual(row.sampler_envelope, envelope,
+        `${variant}: the declared domain is pinned — a widened or narrowed bound is a deliberate edit`);
+    }
+  });
+
+  it("every lane's own marriage, the family defaults and the recipe stamps sit INSIDE their bounds", () => {
+    const inside = (v: number, [lo, hi]: readonly [number, number]) => v >= lo && v <= hi;
+    for (const [variant, envelope] of ENVELOPE_PINS) {
+      const row = (DECL.variants ?? []).find((v) => v.id === variant)!;
+      const own = row.resolver_defaults as { steps: number; cfg: number };
+      assert.ok(inside(own.steps, envelope.steps) && inside(own.cfg, envelope.cfg),
+        `${variant}: its own ${own.steps}/${own.cfg} must live inside its declared domain`);
+    }
+    const base = ENVELOPE_PINS.find(([v]) => v === "base")![1];
+    const defaults = DECL.defaults as { steps: number; cfg: number };
+    assert.ok(inside(defaults.steps, base.steps) && inside(defaults.cfg, base.cfg),
+      "the family default 52/4 lives inside the base domain");
+    const draft = (DECL.variants ?? []).find((v) => v.id === "draft")!;
+    const detailed = (DECL.variants ?? []).find((v) => v.id === "detailed")!;
+    assert.ok(inside((draft.wire_defaults as { steps: number }).steps, base.steps),
+      "the Draft recipe's 8-step stamp rides on base (no over-refusal)");
+    assert.ok(inside((detailed.wire_defaults as { steps: number }).steps, base.steps),
+      "the Detailed recipe's 52-step stamp rides on base");
+  });
+
+  it("the judge refuses the cross-lane marriages over these real rows", () => {
+    const base = (DECL.variants ?? []).find((v) => v.id === "base")!;
+    const turbo = (DECL.variants ?? []).find((v) => v.id === "turbo")!;
+    // the E2-8 burn shape: turbo-era numbers on the base lane
+    assert.ok(judgeSamplerEnvelope({ steps: 8, cfg: 1 }, base.sampler_envelope!, base) !== null,
+      "8 steps at CFG 1 on base is OUTSIDE the base domain — the burn refuses");
+    assert.ok(judgeSamplerEnvelope({ steps: 52, cfg: 4 }, turbo.sampler_envelope!, turbo) !== null,
+      "52 steps at CFG 4 on the distilled lane refuses too");
+    // the lanes' own numbers never offend
+    assert.equal(judgeSamplerEnvelope({ steps: 52, cfg: 4 }, base.sampler_envelope!, base), null);
+    assert.equal(judgeSamplerEnvelope({ steps: 8, cfg: 1 }, turbo.sampler_envelope!, turbo), null);
   });
 });
