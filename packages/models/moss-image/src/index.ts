@@ -30,16 +30,16 @@ export const DECL: ModelDecl = {
   "label": "MOSS-Image",
   "description": "MOSS-Image — OpenMOSS's 5B DiT in the FLUX.2 latent space: a 50-step SFT lane (25-30 for fast iteration) at CFG 3, typography through line breaks and quoted text, layout through native JSON bboxes in the prompt. Apache-2.0 licensed (OpenMOSS's own release terms).",
   "engine": "comfyui",
-  // The official MOSS template's own defaults: 1024², 50 steps,
-  // CFG 3, euler, simple. `scheduler` declares the card domain (the
-  // models-against-cards law); sgm_uniform is the template's other
-  // sanctioned pick.
+  // The Comfy-Org template's own defaults: 1024², 50 steps,
+  // CFG 3, er_sde, simple. `sampler`/`scheduler` declare the card
+  // domain (the models-against-cards law) and WIRE through the
+  // template's plain KSampler — the knobs work on this lane.
   "defaults": {
     "width": 1024,
     "height": 1024,
     "steps": 50,
     "cfg": 3,
-    "sampler": "euler",
+    "sampler": "er_sde",
     "scheduler": "simple"
   },
   "genre": "image",
@@ -68,26 +68,26 @@ export const DECL: ModelDecl = {
     { "name": "cfg", "class": "variant" },
     { "name": "prompt", "class": "user" }
   ],
-  // THE PROVISION TRUTH (the silent-failure cure, 2511's law): the
-  // shared lane weights carry their provision — the Qwen3.5-9B
-  // tokenizer (int8 convrot) and the flux2 VAE (byte-identical to
-  // flux-klein's row: same digest, one download serves both lanes);
-  // the unet rides the cell artifacts (the variant owns the
-  // download).
+  // THE PROVISION TRUTH (the silent-failure cure, 2511's law, and
+  // the 2026-10-20 weave burn): the shared lane weights carry their
+  // provision — the template's OWN files (w4a8_gptq tokenizer, small
+  // VAE), never the klein lane's. The first cure mis-provisioned the
+  // klein pair (int8 convrot + full VAE) for dedupe; the operator's
+  // render proved the template's files are load-bearing.
   "provisions": [
     {
-      "name": "qwen3.5_9b_int8_convrot.safetensors",
-      "url": "https://huggingface.co/Comfy-Org/MOSS-Image/resolve/main/text_encoders/qwen3.5_9b_int8_convrot.safetensors",
+      "name": "qwen3.5_9b_w4a8_gptq.safetensors",
+      "url": "https://huggingface.co/Comfy-Org/MOSS-Image/resolve/main/text_encoders/qwen3.5_9b_w4a8_gptq.safetensors",
       "folder": "text_encoders",
-      "sha256": "32e3787472f708fa5f83624acbf5ef23f7fc89c439e05065ea57cfe5a97f025a",
-      "size_bytes": 9748121532
+      "sha256": "4cc6a1543ad2061806da46f35f90cadb4801dcba246c44782cf42ec0feb6407c",
+      "size_bytes": 7343591088
     },
     {
-      "name": "flux2-vae.safetensors",
-      "url": "https://huggingface.co/Comfy-Org/MOSS-Image/resolve/main/vae/flux2-vae.safetensors",
+      "name": "flux2-vae_small.safetensors",
+      "url": "https://huggingface.co/Comfy-Org/MOSS-Image/resolve/main/vae/flux2-vae_small.safetensors",
       "folder": "vae",
-      "sha256": "868fe7b343cc8f3a19dbcfcafbc3d5f888802be3f89bd81b65b3621a066ce8f3",
-      "size_bytes": 336211292
+      "sha256": "d8d52ba036475f5fb07c8b435e176d3d97ebfa82f0d1a1c317f9cc1e25bd013b",
+      "size_bytes": 249521340
     }
   ],
   "variants": [
@@ -236,9 +236,9 @@ export const DECL: ModelDecl = {
     // rides ModelSamplingAuraFlow with it (unlike klein, whose
     // Flux2Scheduler computes the shift itself).
     "sampling_shift": 5.0,
-    "text_encoder": "qwen3.5_9b_int8_convrot.safetensors",
+    "text_encoder": "qwen3.5_9b_w4a8_gptq.safetensors",
     "unet": "moss_image_sft_int8_convrot.safetensors",
-    "vae": "flux2-vae.safetensors"
+    "vae": "flux2-vae_small.safetensors"
   },
   // THE REQUIRED WORD, STATED (the qwen-img-21 precedent): every
   // image lane states WHAT the picture is — the bench-write door

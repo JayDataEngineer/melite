@@ -717,16 +717,20 @@ describe("THE COMPLETENESS GRAMMAR (B7: the reverse arm + the either-or table)",
     });
   });
 
-  it("(e) THE SERVED T2I ARM (the 2026-10-20 image-gen burn): the boarded flux-klein + moss-image t2i composes wire SamplerCustomAdvanced's declared-required latent_image — the engine refused the prompt without it", () => {
+  it("(e) THE SERVED T2I ARM (the 2026-10-20 image-gen burn + the same-day weave burn): the boarded flux-klein + moss-image t2i composes wire the sampler's declared-required inputs — the engine refused the prompt without latent_image, and moss-image now rides the template's plain KSampler", () => {
     // THE BURN: card 'image-gen' built node 'SamplerCustomAdvanced.0'
     // without its declared-required input 'latent_image' — the empty
     // latent was composed but never wired, and the engine refused the
-    // prompt. Both advanced-stack families carried the same dangling
-    // build. The arm composes each family's REAL t2i through the
-    // production builder and walks the REAL composed sampler row
-    // against the REAL boot doc — the row alone, so the wall judges
-    // the burn's own edges and never the fixture's stale value
-    // census (the recording predates these families' weights).
+    // prompt. The klein lane carried the dangling build. THE WEAVE
+    // BURN (same day, operator order: match the original workflow):
+    // moss-image's sampling core is the Comfy-Org template's plain
+    // KSampler over the SLG-patched model — the klein-tuned
+    // Flux2Scheduler ladder never belonged on this lane. The arm
+    // composes each family's REAL t2i through the production builder
+    // and walks the REAL composed sampler row against the REAL boot
+    // doc — the row alone, so the wall judges the burn's own edges
+    // and never the fixture's stale value census (the recording
+    // predates these families' weights).
     const { nodes, inputs } = armedBoot();
     const fluxLane = fluxKleinDecl.lane_inputs;
     assert.ok(fluxLane, "the flux-klein DECL declares lane_inputs");
@@ -746,8 +750,8 @@ describe("THE COMPLETENESS GRAMMAR (B7: the reverse arm + the either-or table)",
         sampler: "euler", scheduler: "simple",
       }, facts, g, "e_wall_t2i");
       const graph = g.toJSON() as Record<string, { class_type: string; inputs: Record<string, unknown> }>;
-      const found = Object.entries(graph).find(([, n]) => n.class_type === "SamplerCustomAdvanced");
-      assert.ok(found, `the ${facts.id} t2i compose builds the SamplerCustomAdvanced sampler node`);
+      const found = Object.entries(graph).find(([, n]) => n.class_type === "SamplerCustomAdvanced" || n.class_type === "KSampler");
+      assert.ok(found, `the ${facts.id} t2i compose builds the sampler node (the advanced stack or the template's plain KSampler)`);
       return { [found[0]]: found[1] };
     };
     assertWiringAgainst(nodes, inputs, "image-gen", samplerRowOf(fluxKleinT2i, factsOf(fluxKleinDecl.id, fluxLane)));

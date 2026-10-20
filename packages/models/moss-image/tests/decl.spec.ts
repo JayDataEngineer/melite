@@ -74,9 +74,9 @@ describe("the moss-image model plugin (the FLUX.2-latent MOSS 5B lane)", () => {
     assert.equal(lane.latent_node, "EmptyFlux2LatentImage", "MOSS lives in the FLUX.2 latent space");
     assert.equal(lane.text_encode_node, "CLIPTextEncode");
     assert.equal(lane.sampling_shift, 5.0, "the template's own declared shift — the ModelSamplingAuraFlow arm");
-    assert.equal(lane.text_encoder, "qwen3.5_9b_int8_convrot.safetensors");
+    assert.equal(lane.text_encoder, "qwen3.5_9b_w4a8_gptq.safetensors");
     assert.equal(lane.unet, "moss_image_sft_int8_convrot.safetensors");
-    assert.equal(lane.vae, "flux2-vae.safetensors");
+    assert.equal(lane.vae, "flux2-vae_small.safetensors");
   });
 
   it("carries its mods boarding — mask + the loras pack (the every-image-family law)", () => {
@@ -99,8 +99,8 @@ describe("the moss-image model plugin (the FLUX.2-latent MOSS 5B lane)", () => {
 const PROVISION_PINS: ReadonlyArray<
   readonly [name: string, sha256: string, url: string, size_bytes: number]
 > = [
-  ["qwen3.5_9b_int8_convrot.safetensors", "32e3787472f708fa5f83624acbf5ef23f7fc89c439e05065ea57cfe5a97f025a", "https://huggingface.co/Comfy-Org/MOSS-Image/resolve/main/text_encoders/qwen3.5_9b_int8_convrot.safetensors", 9748121532],
-  ["flux2-vae.safetensors", "868fe7b343cc8f3a19dbcfcafbc3d5f888802be3f89bd81b65b3621a066ce8f3", "https://huggingface.co/Comfy-Org/MOSS-Image/resolve/main/vae/flux2-vae.safetensors", 336211292],
+  ["qwen3.5_9b_w4a8_gptq.safetensors", "4cc6a1543ad2061806da46f35f90cadb4801dcba246c44782cf42ec0feb6407c", "https://huggingface.co/Comfy-Org/MOSS-Image/resolve/main/text_encoders/qwen3.5_9b_w4a8_gptq.safetensors", 7343591088],
+  ["flux2-vae_small.safetensors", "d8d52ba036475f5fb07c8b435e176d3d97ebfa82f0d1a1c317f9cc1e25bd013b", "https://huggingface.co/Comfy-Org/MOSS-Image/resolve/main/vae/flux2-vae_small.safetensors", 249521340],
 ];
 
 describe("the declared provisions are pinned verbatim", () => {

@@ -3,16 +3,23 @@
 // lane_inputs stay the ONE facts door; the action's parser reads the
 // RESOLVED merge (family ⊕ variant ⊕ cell) into the closed typed
 // shape, and the segment factory composes the official MOSS-Image
-// template topology (the Comfy-Org MOSS workflow): the split loader
-// trio over the moss tokenizer, the stock CLIPTextEncode pair, the
-// declared ModelSamplingAuraFlow shift, and the
-// Flux2Scheduler/KSamplerSelect/CFGGuider/RandomNoise sampling stack.
+// template topology (the Comfy-Org `image_moss_image_t2i` template,
+// cross-checked against the OpenMOSS developer workflow): the split
+// loader trio over the moss tokenizer, the stock CLIPTextEncode pair,
+// the declared shift wrap, SkipLayerGuidanceDiTSimple on single
+// layer 22, and the template's plain KSampler over the flux2 canvas.
+// (The OpenMOSS original runs euler/sgm_uniform at 50/3 through its
+// HF-loader path; the Comfy-Org single-file template — the reference
+// for the weights this family provisions — runs er_sde/simple, and
+// the family follows the repack author. Both official flows agree on
+// the load-bearing shape: plain KSampler, SLG-22 ON, and NO
+// Flux2Scheduler — the klein-tuned sigma ladder never belonged on
+// this lane.)
 //
-// NO SkipLayerGuidanceDiTSimple arm: the template offers it as an
-// OPTIONAL refinement (skip-layer 22) and the hermetic engine's
-// boot roster carries no such class — the declared surface is the
-// template without the optional arm, so the graph never emits a
-// class the engine would refuse.
+// NO advanced stack: the FLUX.2 SamplerCustomAdvanced topology was
+// the 2026-10-20 weave burn (a klein-tuned ladder over MOSS latents) —
+// the graph never emits Flux2Scheduler, KSamplerSelect, CFGGuider,
+// RandomNoise, or SamplerCustomAdvanced.
 import type { ComfyActionSpec } from "@melite/comfyui-card-kit";
 import { loadTextPair, decodeSave, stackLoras } from "@melite/comfyui-card-kit";
 import { fireLoras, refuseIPAdapterFiring } from "@melite/comfyui-card-kit/guard";
@@ -70,13 +77,13 @@ export function parseT2IFacts(raw: LaneInputsFacts): T2IFacts {
   };
 }
 
-/** The text-to-image action: the official MOSS-Image template —
- * UNETLoader + the declared ModelSamplingAuraFlow shift + CLIPLoader
- * (moss_image) + VAELoader, the stock CLIPTextEncode pair,
- * EmptyFlux2LatentImage at card resolution, and the FLUX.2 advanced
- * sampling stack (Flux2Scheduler → KSamplerSelect, RandomNoise,
- * CFGGuider, SamplerCustomAdvanced) the latent space requires.
- * Creation order IS node-id order (the recipe law).
+/** The text-to-image action: the official MOSS-Image template — the
+ *  UNETLoader + the declared shift wrap + CLIPLoader (moss_image) +
+ *  VAELoader, the stock CLIPTextEncode pair, EmptyFlux2LatentImage at
+ *  card resolution, SkipLayerGuidanceDiTSimple on single layer 22,
+ *  and the template's plain KSampler (sampler/scheduler ride the
+ *  card's knobs, family defaults er_sde/simple). Creation order IS
+ *  node-id order (the recipe law).
  *
  * THE NEGATIVE ARM: MOSS's SFT lane runs live guidance (CFG 3), so a
  * STATED negative_prompt encodes through CLIPTextEncode and bites; a
@@ -116,18 +123,14 @@ export const t2i: ComfyActionSpec<T2IParams, T2IFacts> = {
       ? g.node("ConditioningZeroOut", { conditioning: positive }).out()
       : g.node("CLIPTextEncode", { text: negativeText, clip }).out();
     const latent = g.node("EmptyFlux2LatentImage", { width: p.width, height: p.height, batch_size: 1 }).out();
-    // THE FLUX.2 SAMPLING STACK (the klein lane's own): the
-    // scheduler computes the sigma ladder from steps and the canvas;
-    // the declared shift rode ModelSamplingAuraFlow above. The stock
-    // scheduler knob declares the card domain but wires nothing on
-    // this lane.
-    const sigmas = g.node("Flux2Scheduler", { steps: p.steps, width: p.width, height: p.height }).out();
-    const sampler = g.node("KSamplerSelect", { sampler_name: p.sampler }).out();
-    const noise = g.node("RandomNoise", { noise_seed: p.seed }).out();
-    const guider = g.node("CFGGuider", { cfg: p.cfg, model: unet, positive, negative }).out();
-    // (burn, 2026-10-20: same dangling-latent class as the flux-klein
-    // lane — the canvas rides here, never dangling.)
-    const sampled = g.node("SamplerCustomAdvanced", { noise, guider, sampler, sigmas, latent_image: latent });
+    // THE TEMPLATE SAMPLER (the 2026-10-20 weave burn — the operator's
+    // own order: match the original workflow): the template IS a plain
+    // KSampler over the SLG-patched model (er_sde/simple). The shift
+    // wrap rode ModelSamplingAuraFlow above; SLG patches the sampling
+    // model, and the KSampler samples through it — the seed is already
+    // concrete here (the interpreter mints the -1 sentinel).
+    const guided = g.node("SkipLayerGuidanceDiTSimple", { model: unet, double_layers: "", single_layers: "22", start_percent: 0, end_percent: 0.5 }).out();
+    const sampled = g.node("KSampler", { model: guided, positive, negative, latent_image: latent, seed: p.seed, steps: p.steps, cfg: p.cfg, sampler_name: p.sampler, scheduler: p.scheduler, denoise: 1 });
     return decodeSave(g, sampled.out(0), vae, `${runId}/gen`).out();
   },
 };

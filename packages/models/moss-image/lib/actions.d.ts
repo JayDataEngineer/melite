@@ -35,13 +35,13 @@ export type T2IParams = {
  *  @param raw the resolved lane_inputs (family ⊕ variant ⊕ cell)
  *  @returns the typed facts the segment factory reads */
 export declare function parseT2IFacts(raw: LaneInputsFacts): T2IFacts;
-/** The text-to-image action: the official MOSS-Image template —
- * UNETLoader + the declared ModelSamplingAuraFlow shift + CLIPLoader
- * (moss_image) + VAELoader, the stock CLIPTextEncode pair,
- * EmptyFlux2LatentImage at card resolution, and the FLUX.2 advanced
- * sampling stack (Flux2Scheduler → KSamplerSelect, RandomNoise,
- * CFGGuider, SamplerCustomAdvanced) the latent space requires.
- * Creation order IS node-id order (the recipe law).
+/** The text-to-image action: the official MOSS-Image template — the
+ *  UNETLoader + the declared shift wrap + CLIPLoader (moss_image) +
+ *  VAELoader, the stock CLIPTextEncode pair, EmptyFlux2LatentImage at
+ *  card resolution, SkipLayerGuidanceDiTSimple on single layer 22,
+ *  and the template's plain KSampler (sampler/scheduler ride the
+ *  card's knobs, family defaults er_sde/simple). Creation order IS
+ *  node-id order (the recipe law).
  *
  * THE NEGATIVE ARM: MOSS's SFT lane runs live guidance (CFG 3), so a
  * STATED negative_prompt encodes through CLIPTextEncode and bites; a
