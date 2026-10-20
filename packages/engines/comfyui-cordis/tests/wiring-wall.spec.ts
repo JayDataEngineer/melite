@@ -24,6 +24,10 @@ import { GraphBuilder, deriveDefaults } from "@melite/comfyui-card-kit/graph";
 import { instantiateAction } from "@melite/comfyui-card-kit";
 import type { ModelFacts } from "@melite/comfyui-card-kit/facts";
 import { film } from "@melite/models-h3/actions";
+import { t2i as fluxKleinT2i } from "../../../models/flux-klein/src/actions.ts";
+import { DECL as fluxKleinDecl } from "../../../models/flux-klein/src/index.ts";
+import { t2i as mossImageT2i } from "../../../models/moss-image/src/actions.ts";
+import { DECL as mossImageDecl } from "../../../models/moss-image/src/index.ts";
 import { cascadeInit } from "../src/models/models.ts";
 import { ComfyUIService } from "../src/service.ts";
 
@@ -711,6 +715,43 @@ describe("THE COMPLETENESS GRAMMAR (B7: the reverse arm + the either-or table)",
     assertWiringAgainst(boot.nodes, boot.inputs, "image-gen", {
       "1": { class_type: "TextEncodeQwenImage21", inputs: { clip: ["2", 0], prompt: "a cat", negative_prompt: "", resolution: 1024 } },
     });
+  });
+
+  it("(e) THE SERVED T2I ARM (the 2026-10-20 image-gen burn): the boarded flux-klein + moss-image t2i composes wire SamplerCustomAdvanced's declared-required latent_image — the engine refused the prompt without it", () => {
+    // THE BURN: card 'image-gen' built node 'SamplerCustomAdvanced.0'
+    // without its declared-required input 'latent_image' — the empty
+    // latent was composed but never wired, and the engine refused the
+    // prompt. Both advanced-stack families carried the same dangling
+    // build. The arm composes each family's REAL t2i through the
+    // production builder and walks the REAL composed sampler row
+    // against the REAL boot doc — the row alone, so the wall judges
+    // the burn's own edges and never the fixture's stale value
+    // census (the recording predates these families' weights).
+    const { nodes, inputs } = armedBoot();
+    const fluxLane = fluxKleinDecl.lane_inputs;
+    assert.ok(fluxLane, "the flux-klein DECL declares lane_inputs");
+    const mossLane = mossImageDecl.lane_inputs;
+    assert.ok(mossLane, "the moss-image DECL declares lane_inputs");
+    const factsOf = (id: string, lane: typeof fluxLane): ModelFacts => ({
+      id, card: "image-gen", defaults: {}, lane_inputs: lane,
+      variants: [], variant_groups: [], outputs: [],
+    });
+    const samplerRowOf = (
+      action: typeof fluxKleinT2i, facts: ModelFacts,
+    ): Record<string, { class_type: string; inputs: Record<string, unknown> }> => {
+      const g = new GraphBuilder(deriveDefaults(bootDoc));
+      instantiateAction(action, {
+        prompt: "a quiet hallway", negative_prompt: "blur",
+        width: 1024, height: 1024, seed: 7, steps: 4, cfg: 1,
+        sampler: "euler", scheduler: "simple",
+      }, facts, g, "e_wall_t2i");
+      const graph = g.toJSON() as Record<string, { class_type: string; inputs: Record<string, unknown> }>;
+      const found = Object.entries(graph).find(([, n]) => n.class_type === "SamplerCustomAdvanced");
+      assert.ok(found, `the ${facts.id} t2i compose builds the SamplerCustomAdvanced sampler node`);
+      return { [found[0]]: found[1] };
+    };
+    assertWiringAgainst(nodes, inputs, "image-gen", samplerRowOf(fluxKleinT2i, factsOf(fluxKleinDecl.id, fluxLane)));
+    assertWiringAgainst(nodes, inputs, "image-gen", samplerRowOf(mossImageT2i, factsOf(mossImageDecl.id, mossLane)));
   });
 });
 

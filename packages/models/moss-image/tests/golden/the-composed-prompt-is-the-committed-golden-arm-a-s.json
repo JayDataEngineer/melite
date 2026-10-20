@@ -113,6 +113,10 @@
       "sigmas": [
         "Flux2Scheduler.0",
         0
+      ],
+      "latent_image": [
+        "EmptyFlux2LatentImage.0",
+        0
       ]
     }
   },

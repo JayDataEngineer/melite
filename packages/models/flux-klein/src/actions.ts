@@ -114,7 +114,10 @@ export const t2i: ComfyActionSpec<T2IParams, T2IFacts> = {
     const sampler = g.node("KSamplerSelect", { sampler_name: p.sampler }).out();
     const noise = g.node("RandomNoise", { noise_seed: p.seed }).out();
     const guider = g.node("CFGGuider", { cfg: p.cfg, model: unet, positive, negative }).out();
-    const sampled = g.node("SamplerCustomAdvanced", { noise, guider, sampler, sigmas });
+    // (burn, 2026-10-20: the empty latent composed above was never
+    // wired — the engine declares latent_image required and refused
+    // the prompt; the canvas rides here, never dangling.)
+    const sampled = g.node("SamplerCustomAdvanced", { noise, guider, sampler, sigmas, latent_image: latent });
     return decodeSave(g, sampled.out(0), vae, `${runId}/gen`).out();
   },
 };
