@@ -72,6 +72,27 @@ export const isPreviewable = (source: string): boolean =>
   || source.startsWith('http://') || source.startsWith('https://')
   || source.startsWith('/')
 
+/** THE MEDIA-KIND SNIFF (audit input-prep F2, 2026-10-20): an
+ * audio pick was unseat-able as audio — no media_type verb existed,
+ * so a .wav drop composed the IMAGE lane (LoadImage with an audio
+ * filename) and died in engine dialect. The pick's own shape seats
+ * the lane: an audio-shaped source carries media_type:'audio' with
+ * the pick, an image-shaped one carries 'image'; an unrecognizable
+ * shape seats the source alone (the row keeps whatever lane it had
+ * — the sniff never fights an explicit choice). */
+const AUDIO_EXT = new Set(['wav', 'mp3', 'ogg', 'oga', 'flac', 'm4a', 'aac', 'opus', 'aiff', 'wv'])
+const IMAGE_EXT = new Set(['png', 'jpg', 'jpeg', 'webp', 'gif', 'bmp', 'avif', 'tiff', 'svg'])
+
+export function sniffMediaType(source: string): 'audio' | 'image' | null {
+  if (source.startsWith('data:audio/') || source.startsWith('blob:audio/')) return 'audio'
+  if (source.startsWith('data:image/') || source.startsWith('blob:image/')) return 'image'
+  const ext = source.slice(source.lastIndexOf('.') + 1).toLowerCase()
+  if (ext === '' || source.lastIndexOf('.') < 0) return null
+  if (AUDIO_EXT.has(ext)) return 'audio'
+  if (IMAGE_EXT.has(ext)) return 'image'
+  return null
+}
+
 export function InputPrepStudio(props: StageViewOwnerProps) {
   const { row } = props
   // THE ABSENT-PARAMS ROW (audit input-prep F4): a row without a
@@ -143,6 +164,14 @@ export function InputPrepStudio(props: StageViewOwnerProps) {
     void patchRef.current(patch)
   }
 
+  /** The source pick seats its own lane with it (audit F2: the
+   * compose branch keys on media_type — a picked .wav composing the
+   * image lane is the silent wrong-arm burn). */
+  const pickSource = (v: string): void => {
+    const media = sniffMediaType(v)
+    edit(media === null ? { source: v } : { source: v, media_type: media })
+  }
+
   /** The leaf's atomic commit → the four flat params. */
   const onCropCommit = (next: CropRect | null): void => {
     edit(next === null
@@ -184,7 +213,7 @@ export function InputPrepStudio(props: StageViewOwnerProps) {
             label="Source file"
             kind="file"
             value={source}
-            onEdit={(v: string) => { edit({ source: v }) }}
+            onEdit={pickSource}
             candidates={props.upstream.map((u) => ({ id: u.id, label: u.title, url: u.url }))}
           />
           {/* THE DECLARED SURFACE LAW (image-3d wave-2): the transform

@@ -267,6 +267,55 @@ describe('the studio (InputPrepStudio)', () => {
     expect(screen.queryByTestId('prep-empty-note')).toBeNull()
   })
 
+  // AUDIT input-prep F2 (input-prep-total-verification-2026-10-20):
+  // an audio pick was unseat-able as audio — no media_type verb
+  // existed, so a .wav drop composed the IMAGE lane (LoadImage with
+  // an audio filename) and died in engine dialect, or the pane
+  // rendered the staged-IMAGE note for it. THE MEDIA-KIND LAW: the
+  // pick's own shape seats the lane — an audio-shaped source seats
+  // media_type:'audio' with the source, and the pane renders the
+  // audio restage face, never a broken image arm.
+  it('AUDIT F2: AN AUDIO PICK SEATS THE AUDIO LANE — the pick shape carries media_type and the pane follows', () => {
+    const onPatch = vi.fn()
+    render(h(InputPrepStudio, owner({ params: {} }, { onPatch })))
+    const square = document.querySelector('[data-slot-square]') as HTMLElement
+    act(() => {
+      fireEvent.drop(square, {
+        dataTransfer: {
+          getData: (t: string) => t === ASSET_DRAG_MIME ? JSON.stringify({ url: 'https://media.example/voice-take.wav' }) : '',
+          files: [],
+          types: [ASSET_DRAG_MIME],
+        },
+      })
+    })
+    expect(onPatch, 'the pick schedules its row write like every edit').toHaveBeenCalledTimes(1)
+    expect(onPatch.mock.calls[0][0]).toMatchObject({
+      source: 'https://media.example/voice-take.wav',
+      media_type: 'audio',
+    }, 'an audio-shaped pick seats the audio lane with the source — the compose branch keys on media_type')
+    // the pane follows: the audio restage face, never a dead image arm
+    expect(screen.getByTestId('prep-audio-note')).not.toBeNull()
+    expect(screen.queryByTestId('prep-staged-note')).toBeNull()
+    expect(screen.queryByTestId('prep-crop-preview')).toBeNull()
+
+    // the counter: an IMAGE-shaped pick seats the image lane
+    cleanup()
+    const onImagePatch = vi.fn()
+    render(h(InputPrepStudio, owner({ params: {} }, { onPatch: onImagePatch })))
+    const imageSquare = document.querySelector('[data-slot-square]') as HTMLElement
+    act(() => {
+      fireEvent.drop(imageSquare, {
+        dataTransfer: {
+          getData: (t: string) => t === ASSET_DRAG_MIME ? JSON.stringify({ url: IMG }) : '',
+          files: [],
+          types: [ASSET_DRAG_MIME],
+        },
+      })
+    })
+    expect(onImagePatch.mock.calls[0][0]).toMatchObject({ source: IMG, media_type: 'image' })
+    expect(screen.queryByTestId('prep-audio-note')).toBeNull()
+  })
+
   it('NO RUN VERB BINDS (single writer: the drill owns the frame pill — the last-bind-wins race is dead by construction)', () => {
     const bindRun = vi.fn()
     render(h(InputPrepStudio, owner({ params: { source: IMG } }, { bindRun })))
