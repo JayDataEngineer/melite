@@ -1099,7 +1099,7 @@
       "owner": ""
     },
     {
-      "id": "turbo__int8_convrot",
+      "id": "int8_convrot",
       "label": "INT8 ConvRot",
       "group": "Quant",
       "defaults": {},
@@ -1111,7 +1111,7 @@
       "owner": "turbo"
     },
     {
-      "id": "turbo__bf16",
+      "id": "bf16",
       "label": "BF16",
       "group": "Quant",
       "defaults": {},

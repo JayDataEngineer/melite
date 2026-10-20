@@ -163,11 +163,18 @@ describe("THE DOOR-DEPTH resolver_defaults STAMP (axis-unification P1#5)", () =>
     expect(params["steps"]).not.toBe(52);
     expect(params["cfg"]).not.toBe(4);
     // CALLER AGENCY: a stated body keeps its own numbers (the stamp
-    // seeds ABSENT keys only — never an override)
-    const stated = prepareCardParams(svc, { model: "anima", variant: "turbo", prompt: "a cat", steps: 12, cfg: 3 }, "anima", "wall-agency");
+    // seeds ABSENT keys only — never an override). The statement sits
+    // INSIDE the lane's declared envelope — outside is the envelope
+    // law's loud refusal, not a quiet ride (krea 2026-09-21; anima
+    // joined 2026-11-09, the E2-8 cure).
+    const stated = prepareCardParams(svc, { model: "anima", variant: "turbo", prompt: "a cat", steps: 6, cfg: 1.5 }, "anima", "wall-agency");
     const statedParams = stated.params as Record<string, unknown>;
-    expect(statedParams["steps"]).toBe(12);
-    expect(statedParams["cfg"]).toBe(3);
+    expect(statedParams["steps"]).toBe(6);
+    expect(statedParams["cfg"]).toBe(1.5);
+    // the outside statement refuses at the same door, naming the lane
+    expect(() =>
+      prepareCardParams(svc, { model: "anima", variant: "turbo", prompt: "a cat", steps: 12, cfg: 3 }, "anima", "wall-agency-out"),
+    ).toThrow(/OUTSIDE the route envelope for variant "turbo"/);
   });
 
   it("THE BURN, DOOR-SIDE (control): the pre-wave-31 quant spelling refuses at the real door naming the known cells; the repaired coordinate composes", async () => {

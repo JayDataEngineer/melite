@@ -749,6 +749,39 @@ describe('melite_construct render — refused or revved', () => {
     )
   })
 
+  // THE NULL-VOICE TRUTH (the invisible-press burn, 2026-10-20): the
+  // operator's read printed "runs window: ... matched 2" beside
+  // "last_run null (draft has no run in the window)" on every stage —
+  // a contradiction that hid a COMPLETED press (its digest named the
+  // card skeleton, not the bench row). The two nulls are different
+  // diseases and the voice must say which: runs exist but none name
+  // this stage (matched > 0) vs the draft truly has no run (matched 0).
+  test('read voices the null truth by the matched count — runs that name no stage never read as a run-less draft', () => {
+    const tool = meliteConstruct(stubEstate())
+    const base = {
+      verb: 'read', bench: 'main', ok: true, rev: 6,
+      stages: [{ id: 's_0', card: 'image-gen', engine: 'comfyui', last_run: null }],
+    }
+    const named = tool.output.render(
+      { verb: 'read' },
+      { ...base, runs: { checked: 100, total: 1808, matched: 2 } } as never,
+    ) as Array<{ text?: string }>
+    const namedText = named.map((p) => p?.text ?? '').join('\n')
+    assert.ok(
+      namedText.includes('s_0 — image-gen [comfyui] — last_run null (no run in the window names this stage)'),
+      'matched>0 + a null stage says NO RUN NAMES THIS STAGE, never "draft has no run"',
+    )
+    assert.ok(namedText.includes('matched 2'), 'the window facts ride the same read')
+    const bare = tool.output.render(
+      { verb: 'read' },
+      { ...base, runs: { checked: 100, total: 1808, matched: 0 } } as never,
+    ) as Array<{ text?: string }>
+    assert.ok(
+      (bare.map((p) => p?.text ?? '').join('\n')).includes('last_run null (draft has no run in the window)'),
+      'matched 0 keeps the never-ran voice',
+    )
+  })
+
   test('an empty bench says so — never silence', () => {
     const tool = meliteConstruct(stubEstate())
     const parts = tool.output.render(

@@ -215,17 +215,30 @@ describe('specBody primary envelope', () => {
             engine: 'variant-engine',
             resolver_defaults: { steps: 10 },
             cells: [
-              { quant: 'q-hide', label: 'Hidden', route: 'syn-a', hide_from_dropdown: true },
+              // hidden AND routeless: a hidden cell never serves, but
+              // only a hidden cell ROUTED AT the key retires the
+              // address (the hidden-lane mirror reads routes — a
+              // routeless hidden cell matches no mid).
+              { quant: 'q-hide', label: 'Hidden', hide_from_dropdown: true },
+              // THE LANE-PARITY LAW (b57e7d70d): a routeless cell
+              // serves everywhere its row serves — the D4 ruling.
               { quant: 'q-noroute', label: 'NoRoute' },
+              // ONE int8 cell: a variant's own cells never share a
+              // coordinate (the door cannot judge them apart — the
+              // DECL shape is refused upstream; the shared quant
+              // vocabulary assumes it, ed718ba63).
               { quant: 'int8', label: 'INT8', route: 'syn-a', engine: 'cell-eng', vram_peak_gb: 20, resolver_defaults: { b: 2 } },
-              { quant: 'int8', label: 'INT8-dup', route: 'syn-a' },
               { quant: 'fp8', label: 'F', route: 'syn-b' },
               { quant: 'q3', route: 'syn-a' },
               { quant: 'q4', label: 'Q', route: 'syn-a' },
             ],
           },
            { id: 'bare', group: 'Variant' },
-           { id: 'hidden-variant', group: 'Variant', hide_from_dropdown: true, cells: [{ quant: 'q8', route: 'syn-a' }] },
+           // the hidden variant's cell routes a RETIRED address —
+           // never the serve key: a hidden lane refuses the whole
+           // address at the door (the hidden-lane mirror), so routing
+           // one at 'syn-a' would empty the spec, not hide a row.
+           { id: 'hidden-variant', group: 'Variant', hide_from_dropdown: true, cells: [{ quant: 'q8', route: 'syn-h' }] },
         ],
       }),
     }
@@ -293,16 +306,33 @@ describe('specBody primary envelope', () => {
     assert.equal(spec.layout, 'studio')
     assert.equal(spec.size, 'huge')
     const variants = spec.variants ?? []
+    // THE SHARED QUANT VOCABULARY (ed718ba63): every Quant row's id
+    // IS its quant — one word estate-wide, no composite mints; the
+    // routeless cell rides (the lane-parity law).
     assert.deepEqual(variants.map((r) => r.id), [
       'turbo',
+      'q-noroute',
       'int8',
-      'turbo__int8',
       'fp8',
       'q3',
       'q4',
       'bare',
     ])
+    // the routeless Quant row serves everywhere its row serves; its
+    // route is empty (no routing stamp to carry)
     assert.deepEqual(variants[1], {
+      id: 'q-noroute',
+      label: 'NoRoute',
+      group: 'Quant',
+      defaults: {},
+      route: '',
+      hint: null,
+      engine: 'custom-engine',
+      quant: 'q-noroute',
+      vram_peak_gb: null,
+      owner: 'turbo',
+    })
+    assert.deepEqual(variants[2], {
       id: 'int8',
       label: 'INT8',
       group: 'Quant',
@@ -437,7 +467,7 @@ describe('specBody non-primary envelope', () => {
     assert.equal(spec['schema'], null)
     assert.deepEqual(spec['mod_schemas'], { loras: null })
   })
-  test('unrouted cells drop when the key is not primary', () => {
+  test('unrouted and foreign-routed cells RIDE at every served key (the lane-parity law)', () => {
     reset()
     mockState.decls = {
       'syn-b': decl({
@@ -472,10 +502,18 @@ describe('specBody non-primary envelope', () => {
       model: 'syn-b',
     })
     const variants = spec.variants ?? []
+    // THE LANE-PARITY LAW (b57e7d70d, the g2 cure): every non-hidden
+    // cell of a served row serves at every served key — the old
+    // addressability filter (routeless cells at service only, routed
+    // cells at their own keys) starved every sibling cell and 98
+    // lane probes red estate-wide. The route stays the run's ROUTING
+    // stamp, never a serve filter.
     assert.deepEqual(
       variants.map((r) => r.id),
-      ['v', 'q-key', 'q-svc'],
+      ['v', 'q-key', 'q-svc', 'q-out'],
     )
+    // the foreign-routed cell rides WITH its stamp (routing, not gating)
+    assert.equal(variants[3]!['route'], 'elsewhere')
     assert.equal(spec['layout'], null)
     assert.equal(spec['size'], null)
   })

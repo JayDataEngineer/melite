@@ -123,7 +123,6 @@ function projectServed(r: FormVariantRow): SyncRow {
  *  else the first row). */
 function expectedServedRows(fam: string, row: ModelFacts): SyncRow[] {
   const rows: SyncRow[] = []
-  const seen = new Set<string>()
   for (const v of row.variants) {
     if (v.hide_from_dropdown === true) continue
     rows.push({
@@ -137,14 +136,18 @@ function expectedServedRows(fam: string, row: ModelFacts): SyncRow[] {
       envelope: v.sampler_envelope ?? null,
       defaults: { ...v.resolver_defaults, ...v.defaults },
     })
-    seen.add(v.id)
     for (const c of v.cells) {
       if (c.hide_from_dropdown === true) continue
       if (!c.quant) continue
-      const id = seen.has(c.quant) ? `${v.id}__${c.quant}` : c.quant
-      seen.add(id)
+      // THE SHARED QUANT VOCABULARY (operator, 2026-11-08): the
+      // served Quant row's id IS the cell's quant — the ONE word the
+      // door judges (selectCardVariant's raw c.quant match), the
+      // stamp plane stamps (axisStampOf) and the user layer holds.
+      // A composite `variant__quant` id exists nowhere in the facts
+      // row, so the projection never mints one; the owner chain
+      // disambiguates the lane (the compare key is id+group+owner).
       rows.push({
-        id,
+        id: c.quant,
         group: 'Quant',
         owner: v.id,
         quant: c.quant,
@@ -165,7 +168,7 @@ function expectedServedRows(fam: string, row: ModelFacts): SyncRow[] {
     const resolving = row.variants.find((v) => v.cells.length > 0) ?? row.variants[0]
     if (resolving !== undefined && resolving.hide_from_dropdown !== true) {
       rows.push({
-        id: seen.has(resolving.id) ? `${resolving.id}__head` : resolving.id,
+        id: `${resolving.id}__head`,
         group: 'Variant',
         owner: '',
         quant: null,
