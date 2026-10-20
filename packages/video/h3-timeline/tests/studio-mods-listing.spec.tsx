@@ -25,7 +25,7 @@ const DOC = {
   fps: 24,
 }
 
-function studio(extra?: Record<string, unknown>) {
+function studio(extra?: Record<string, unknown>, upstream: Array<{ id: string; title: string; url: string }> = []) {
   const saved: Record<string, unknown>[] = []
   const els = render(
     <VideoTimelineStudio
@@ -38,7 +38,7 @@ function studio(extra?: Record<string, unknown>) {
       onStop={() => {}}
       onRemove={() => {}}
       onSurface={() => {}}
-      upstream={[]}
+      upstream={upstream}
       runId={null}
     />,
   )
@@ -143,6 +143,33 @@ describe("the refmods listing door — the tenant's feed (2026-11-05)", () => {
     await openModsPicker()
     assert.ok(await screen.findByText("nothing to pick yet"))
     assert.equal(screen.queryAllByTestId("source-pick-row").length, 0)
+  })
+
+  it("THE TENANT UNION ARM (FINDING C1, 2026-10-20): with an upstream artifact on the run, the tenant's From-flow verb offers it BESIDE the door's stems — the component→panel→card threading of a non-empty artifact index, witnessed end-to-end", async () => {
+    const { lane, act } = fakeManage(served(["pack_one", "pack_two"]))
+    bindWith(lane)
+    studio({}, [{ id: "up_1", title: "run-shot.png", url: "https://u/run-shot.png" }])
+    focusCall0()
+    await openModsPicker()
+    const rows = await screen.findAllByTestId("source-pick-row")
+    assert.equal(rows.length, 3, `stems + the upstream artifact ride: ${rows.map((r) => r.textContent)}`)
+    assert.ok(rows.some((r) => r.textContent!.includes("pack_one")), "stem one rides")
+    assert.ok(rows.some((r) => r.textContent!.includes("pack_two")), "stem two rides")
+    assert.ok(rows.some((r) => r.textContent!.includes("run-shot.png")), "the upstream artifact rides the tenant verb")
+    fireEvent.click(rows.find((r) => r.textContent!.includes("run-shot.png"))!)
+    await waitFor(() => {
+      assert.equal(act.calls.length, 1, "the tenant fed the door exactly once — the artifact rode no fetch")
+    })
+  })
+
+  it("THE TENANT STARVATION ARM (the burn verbatim at tenant level): an empty stems listing beside an upstream artifact offers the artifact — never 'nothing to pick yet'", async () => {
+    bindWith(fakeManage(served([])).lane)
+    studio({}, [{ id: "up_1", title: "run-shot.png", url: "https://u/run-shot.png" }])
+    focusCall0()
+    await openModsPicker()
+    const rows = await screen.findAllByTestId("source-pick-row")
+    assert.equal(rows.length, 1, "the empty listing starves no door while the run holds media")
+    assert.ok(rows[0]!.textContent!.includes("run-shot.png"))
   })
 
   it("THE ABSENT-REMOTE ARM: no manage contribution — the studio boots, the manual fallback writes (the degrade, S4's arms stay green)", async () => {

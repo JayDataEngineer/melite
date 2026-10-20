@@ -614,6 +614,17 @@ describe("THE LAYER A/B CANON (2026-10-24): a stated call lane REPLACES the decl
     h.unmount()
   })
 
+  it("THE MODS LANE committed-artifact arm (the no-duplicate-offer law's artifact half, 2026-10-20): a picked run artifact leaves the picker — only the unpicked rows offer", async () => {
+    const { d } = deps({ modsListing: ["pack_one"] })
+    const h = render(<CallCard c={{ ...BASE, refs: { mods: "https://u/ra.png" } }} i={0} deps={d} />)
+    fireEvent.click(screen.getByRole("button", { name: "+ ref mods source" }))
+    fireEvent.click(await screen.findByRole("menuitem", { name: "From flow" }))
+    const rows = await screen.findAllByTestId("source-pick-row")
+    assert.equal(rows.length, 1, "the chipped artifact is held — only the engine's stems are offered")
+    assert.ok(rows[0]!.textContent!.includes("pack_one"))
+    h.unmount()
+  })
+
   it("THE MODS LANE declared arm: card-declared packs render as declared chips and the count names the inherit", () => {
     const h = render(
       <CallCard
