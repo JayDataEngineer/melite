@@ -7,7 +7,7 @@ import assert from "node:assert/strict";
 import { chmodSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { resourceKey } from "@melite/estate-provisioning";
+import { resourceKey, ProvisioningService } from "@melite/estate-provisioning";
 import type {
   ModelProvisionPlanItem,
   ProvisionItemResult,
@@ -17,11 +17,13 @@ import type {
   ProvisionPlanItem,
   ProvisionResult,
   ProvisioningServiceDefinition,
+  ProvisioningConfig,
   ExternalProvisionRequest,
   ProvisionState,
   ResourceRef,
   ResourceStatus,
 } from "@melite/estate-provisioning";
+import { Context } from "@deepseek-ai/cordis";
 import { dispatchManage } from "../src/managePlane.ts";
 import type { ManageCtx } from "../src/managePlane.ts";
 import { resolveStateRoot } from "../src/queueLock.ts";
@@ -894,6 +896,67 @@ describe("hStatus operations", () => {
       assert.equal(settledData.census_partial, undefined,
         "a failed row over all-checked items is a whole verdict — no mark");
     } finally {
+      rmRoot();
+    }
+  });
+
+  // AUDIT F3 (infra-resources-census-honesty): the census arms above
+  // stub reconcile and the provisioning walls never ride hStatus —
+  // the service->status edge had no single judge. This arm rides the
+  // REAL ProvisioningService through the REAL status budget: the
+  // writer hangs past STATUS_RECONCILE_MS, the deadline cuts the
+  // census, and the status must still ANSWER — census_partial over a
+  // row-complete, item-complete unknown roster, never a truncation,
+  // never a 504, never a health verdict over unchecked bytes.
+  it("AUDIT F3 integration: a real service cut by the real status budget answers census_partial, never truncated", async () => {
+    mkRoot();
+    const context = new Context();
+    try {
+      const ref: ResourceRef = { kind: "model", owner: "family", id: "anima" };
+      const service = new ProvisioningService(context, {
+        declaration: {
+          resolve: async (): Promise<ProvisionPlan> => ({
+            ref,
+            items: [
+              { kind: "model", key: "model:family:anima::w0.safetensors", owner: "family", id: "anima", name: "w0.safetensors", folder: "checkpoints", url: "https://example.invalid/w0.safetensors", sha256: "a".repeat(64), sizeBytes: 1, required: true, provider: "direct" },
+              { kind: "model", key: "model:family:anima::w1.safetensors", owner: "family", id: "anima", name: "w1.safetensors", folder: "checkpoints", url: "https://example.invalid/w1.safetensors", sha256: "a".repeat(64), sizeBytes: 1, required: true, provider: "direct" },
+            ],
+          }),
+          list: async (): Promise<readonly ResourceRef[]> => [ref],
+        },
+        // the disk check hangs until the budget's deadline cuts it —
+        // the exact window the anima burn rode
+        artifactWriter: {
+          inspect: async (_item, signal) => await new Promise<never>((_resolve, reject) => {
+            const timer = setTimeout(() => { reject(new Error("unreachable")) }, 30_000);
+            signal?.addEventListener("abort", () => { clearTimeout(timer); reject(new Error("aborted")) }, { once: true });
+          }),
+          write: async () => { throw new Error("the census never writes") },
+        },
+        storeRoot: mkdtempSync(join(tmpdir(), "f3-store-")),
+      } satisfies ProvisioningConfig);
+      route((url) => {
+        if (url.endsWith("/system_stats")) return json({ system: { comfyui_version: "9.9" }, devices: [] });
+        if (url.endsWith("/manager/version")) return json({ version: "3.0" });
+        return json({ is_processing: false, total_count: 0, done_count: 0 });
+      });
+      const ctx = CTX({ provisioning: service });
+
+      const started = Date.now();
+      const [code, env] = await manage({ action: "status" }, ctx);
+      const waited = Date.now() - started;
+
+      assert.equal(code, 200, "the status still ANSWERS — the budget cut is scan data, not a refusal");
+      assert.ok(waited >= 1400 && waited < 5000, "the cut rode the real STATUS_RECONCILE_MS deadline (1.5s), not a stubbed fast path");
+      const data = env.data as { resources: Array<{ state: string; items?: Array<{ state: string }> }>; census_partial?: boolean };
+      assert.equal(data.resources.length, 1, "row-complete — the cut never truncates the roster");
+      const row = data.resources[0]!;
+      assert.equal(row.items?.length, 2, "item-complete — the cut never truncates the item list");
+      assert.ok(row.items?.every((item) => item.state === "unknown"),
+        "every unchecked item rides unknown — never 'failed' (the burn's word), never 'absent'");
+      assert.equal(data.census_partial, true, "the real seam marks the census partial");
+    } finally {
+      await context.fiber.dispose();
       rmRoot();
     }
   });
