@@ -276,8 +276,14 @@ export function TimelineRuler(props: TimelineRulerProps) {
           gesture's always-computable home — the calls row's clips own
           their own double-click for editing). Single-click SEEKS (the
           NLE parity: click the time line, the playhead jumps — the
-          tenant resolves through onSeekFrame). Scrubbing is the cap's. */}
+          tenant resolves through onSeekFrame). Scrubbing is the cap's.
+          fill (E2-10 THE SHRINK): the Tip anchor is block-level and
+          DEFINITE — the width-auto band fills it. The hug face
+          shrink-wrapped this band to its 62px chip (live-measured in
+          1064px of content): a full-width face with a chip-wide hit
+          seat, clicks past the chip deselecting instead of seeking. */}
       <Tip
+        fill
         tip={
           onPromptAdd
             ? "Drag the playhead cap to scrub — double-click here to add a call at that frame"
@@ -359,10 +365,39 @@ export interface TimelinePlayheadProps {
 
 /** The playhead, spanning every row (bar line 1517). The cap at its
  *  top is THE scrub handle (operator 2026-11: the gesture lives on
- *  the white circle, never the bar's middle) — the line itself stays
- *  pointer-dead so clips underneath keep their own gestures. */
+ *  the white circle, never the bar's middle) — the line itself
+ *  SWALLOWS its pixels (E2-10: pointer-dead is pass-through, and the
+ *  pass-through woke every seat beneath — the ruler's seek over the
+ *  ruler band, clip drags over clips, click-away deselect over empty
+ *  track. The line intercepts and eats the gesture: no session, no
+ *  seek, no select. The cap is carved out — a press bubbling from the
+ *  cap still opens the scrub). */
 export function TimelinePlayhead(props: TimelinePlayheadProps) {
   const { frameIdx, frameToPx, playhead, onGrab } = props
+  // THE SWALLOW GUARD: a press bubbling up from the cap is the scrub's
+  // own — every other target on this 2px column is silence.
+  const fromCap = (e: React.SyntheticEvent): boolean =>
+    (e.target as HTMLElement | null)?.closest?.('[data-testid="motion-timeline-playhead-cap"]') != null
+  // Inert + capturing: the press's pointer is captured to the line so
+  // a press-drag-release starting here can never land its click on the
+  // content's click-away seat (or the ruler's) — the gesture dies here.
+  const swallow = (e: React.PointerEvent): void => {
+    if (fromCap(e)) return
+    e.stopPropagation()
+    e.preventDefault()
+    try {
+      e.currentTarget.setPointerCapture(e.pointerId)
+    } catch (captureErr) {
+      // No capture face (jsdom/happy-dom): the stopPropagation above
+      // already holds the silence — capture is the drag-tail's lock.
+      void captureErr
+    }
+  }
+  const swallowClick = (e: React.SyntheticEvent): void => {
+    if (fromCap(e)) return
+    e.stopPropagation()
+    e.preventDefault()
+  }
   return (
     <>
       {/* Playhead — brand cyan, spans every row, above the clips. */}
@@ -376,6 +411,11 @@ export function TimelinePlayhead(props: TimelinePlayheadProps) {
           boxShadow: `0 0 6px color-mix(in srgb, ${playhead} 40%, transparent)`,
           transform: "translateX(-50%)",
         }}
+        onPointerDown={swallow}
+        onPointerUp={swallowClick}
+        onPointerCancel={swallowClick}
+        onClick={swallowClick}
+        onDoubleClick={swallowClick}
       >
         <span
           data-testid="motion-timeline-playhead-cap"

@@ -81,7 +81,12 @@ export interface TimelinePlayheadProps {
 }
 /** The playhead, spanning every row (bar line 1517). The cap at its
  *  top is THE scrub handle (operator 2026-11: the gesture lives on
- *  the white circle, never the bar's middle) — the line itself stays
- *  pointer-dead so clips underneath keep their own gestures. */
+ *  the white circle, never the bar's middle) — the line itself
+ *  SWALLOWS its pixels (E2-10: pointer-dead is pass-through, and the
+ *  pass-through woke every seat beneath — the ruler's seek over the
+ *  ruler band, clip drags over clips, click-away deselect over empty
+ *  track. The line intercepts and eats the gesture: no session, no
+ *  seek, no select. The cap is carved out — a press bubbling from the
+ *  cap still opens the scrub). */
 export declare function TimelinePlayhead(props: TimelinePlayheadProps): React.JSX.Element;
 //# sourceMappingURL=MotionTimelineBarChrome.d.ts.map

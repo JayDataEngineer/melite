@@ -782,15 +782,19 @@ describe("scrub (the cap owns the gesture; seek pairs the interaction state)", (
 
   // THE LINE ITSELF (operator item b, verbatim: "when I click and drag
   // the LINE part, nothing should happen — it should only drag when I
-  // grab the white ball on top"). The line div carries NO pointer
-  // wiring and its css.playhead class is pointer-events:none — in the
-  // browser a press on the line NEVER TARGETS IT, it targets whatever
-  // sits beneath (empty track space: no scrub seat exists there — the
-  // lanes' pointerdowns are clip drags only). jsdom can't honor the
-  // css hit-test, so the arm pins the wiring directly: the line has no
-  // handler of its own, the css rule is read from the built timeline
-  // module, and a dispatched press on the line opens no session.
-  it("the playhead LINE is pointer-dead: no handler, a pointer-dead css rule, and a press on it opens no scrub session", async () => {
+  // grab the white ball on top"; E2-10 re-burn: "NEVER FIXED ... I NEED
+  // HARD TESTS"). The old face (no wiring + pointer-dead css) was
+  // PASS-THROUGH, not silence: in the browser a press on the line
+  // targeted whatever sat beneath (the ruler's seek, clip drags,
+  // click-away deselect). THE SWALLOW: the line intercepts its pixels
+  // and eats the gesture (no session, no seek, no select; the cap
+  // carved out). jsdom can't honor the css hit-test, so the arm pins
+  // the mechanism directly: the line carries the swallow seat, the
+  // shipped rule hit-tests (never the dead value), and a dispatched
+  // press/drag/click on the line opens nothing, seeks nothing, and
+  // never deselects. The kit wall (timelinePlayheadLine) owns the
+  // full burn; this arm keeps the tenant's seat on the same law.
+  it("the playhead LINE swallows: the swallow seat, a hit-testing css rule, and a press/drag/click on it does nothing", async () => {
     const { rec } = strip()
     const line = screen.getByTestId("motion-timeline-playhead") as HTMLElement
     const cap = screen.getByTestId("motion-timeline-playhead-cap") as HTMLElement
@@ -800,7 +804,7 @@ describe("scrub (the cap owns the gesture; seek pairs the interaction state)", (
       const key = Object.keys(el).find((k) => k.startsWith("__reactProps$"))
       return key ? (el as unknown as Record<string, unknown>)[key] as Record<string, unknown> : {}
     }
-    assert.equal(propsOf(line).onPointerDown, undefined, "the line element carries no pointerdown wiring")
+    assert.equal(typeof propsOf(line).onPointerDown, "function", "the line carries the swallow seat (no handler = pass-through = the burn)")
     assert.equal(typeof propsOf(cap).onPointerDown, "function", "the cap is wired — the asymmetry is the law")
     // the css rule, from the real built timeline module css (not a copy)
     const { readFileSync } = await import("node:fs")
@@ -810,12 +814,14 @@ describe("scrub (the cap owns the gesture; seek pairs the interaction state)", (
     const playheadClass = line.className.split(" ").find((c) => c.includes("playhead") && !c.includes("Cap"))
     assert.ok(playheadClass, "the line rides the playhead css module class")
     // the built css keeps original module names — pin the rule itself
-    assert.match(css, /\.playhead\s*\{[^}]*pointer-events:\s*none/, "the playhead line's css rule is pointer-events:none — the browser never targets the line")
+    assert.doesNotMatch(css, /\.playhead\s*\{[^}]*pointer-events:\s*none/, "the playhead line's css rule hit-tests — the dead value is the pass-through")
     fireEvent.pointerDown(line, { button: 0, clientX: 60 })
     fireEvent.pointerMove(document.body, { clientX: 120 })
     fireEvent.pointerUp(document.body, { clientX: 120 })
     assert.deepEqual(rec.scrubStart, [], "a press on the line opens no scrub session")
     assert.deepEqual(rec.bar, [], "a line drag seeks nothing")
+    fireEvent.click(line, { clientX: 60 })
+    assert.deepEqual(rec.select, [], "a line click never deselects (the F3 ghost)")
   })
 })
 

@@ -293,11 +293,14 @@ export function useTimelineDragSession(opts: TimelineDragSessionOpts) {
             ns = Math.max(ns, packed ? (prevStart ?? 0) + 1 : prevEnd + 1)
           }
           onPromptResize(d.id, ns, endF)
-          // TRIM-FOLLOW (audit F5b, DaVinci parity): an edge drag scrubs
-          // the viewer to the trim frame — the playhead rides the cut
-          // being made, so the indicator and the edit point stay linked
-          // mid-gesture (rAF-coalesced downstream by the player wrapper).
-          onFrameChange(ns)
+          // NO TRIM-FOLLOW (E2-10, the operator's HOOKS-ON note:
+          // "when I drag the end of the video bits in the timeline,
+          // the scrubber HOOKS ON"). The old DaVinci-parity follow
+          // (audit F5b) scrubbed the viewer to the trim frame on every
+          // move — yanking the preview along with the cut. The
+          // operator's ONLY ("it ONLY scrubs on the white circle")
+          // kills it: jumps are click seats (ruler, pins); drag-follow
+          // belongs to the cap alone. The edge moves; the playhead sits.
         } else {
           // prompt-r — LIVE start for the same reason.
           const live = promptsRef.current.find((x) => x.uuid === d.id)
@@ -325,7 +328,9 @@ export function useTimelineDragSession(opts: TimelineDragSessionOpts) {
             }
           }
           onPromptResize(d.id, startF, ne)
-          onFrameChange(ne) // TRIM-FOLLOW (audit F5b): the playhead rides the trimmed edge.
+          // NO TRIM-FOLLOW (E2-10, symmetric with the left edge): the
+          // playhead never rides a trimmed edge — the end moves, the
+          // playhead sits, the preview stays where the operator left it.
           if (d.id === lastPromptRef.current) keepTailVisible(ne)
         }
       }

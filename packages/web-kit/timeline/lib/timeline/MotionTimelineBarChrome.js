@@ -68,7 +68,7 @@ export function TimelineRuler(props) {
     // the playhead went — or why it didn't. A seek that announces
     // itself is still a receipt.
     const [clickVoice, setClickVoice] = useState("");
-    return (_jsx(_Fragment, { children: _jsx(Tip, { tip: onPromptAdd
+    return (_jsx(_Fragment, { children: _jsx(Tip, { fill: true, tip: onPromptAdd
                 ? "Drag the playhead cap to scrub — double-click here to add a call at that frame"
                 : "Drag the playhead cap to scrub", children: _jsxs("div", { "data-testid": "motion-timeline-ruler", className: css.ruler, style: { height: RULER_H }, onClick: (e) => {
                     // P6 SINGLE-CLICK SEEK: the NLE parity — click the time
@@ -99,16 +99,47 @@ export function TimelineRuler(props) {
 }
 /** The playhead, spanning every row (bar line 1517). The cap at its
  *  top is THE scrub handle (operator 2026-11: the gesture lives on
- *  the white circle, never the bar's middle) — the line itself stays
- *  pointer-dead so clips underneath keep their own gestures. */
+ *  the white circle, never the bar's middle) — the line itself
+ *  SWALLOWS its pixels (E2-10: pointer-dead is pass-through, and the
+ *  pass-through woke every seat beneath — the ruler's seek over the
+ *  ruler band, clip drags over clips, click-away deselect over empty
+ *  track. The line intercepts and eats the gesture: no session, no
+ *  seek, no select. The cap is carved out — a press bubbling from the
+ *  cap still opens the scrub). */
 export function TimelinePlayhead(props) {
     const { frameIdx, frameToPx, playhead, onGrab } = props;
+    // THE SWALLOW GUARD: a press bubbling up from the cap is the scrub's
+    // own — every other target on this 2px column is silence.
+    const fromCap = (e) => e.target?.closest?.('[data-testid="motion-timeline-playhead-cap"]') != null;
+    // Inert + capturing: the press's pointer is captured to the line so
+    // a press-drag-release starting here can never land its click on the
+    // content's click-away seat (or the ruler's) — the gesture dies here.
+    const swallow = (e) => {
+        if (fromCap(e))
+            return;
+        e.stopPropagation();
+        e.preventDefault();
+        try {
+            e.currentTarget.setPointerCapture(e.pointerId);
+        }
+        catch (captureErr) {
+            // No capture face (jsdom/happy-dom): the stopPropagation above
+            // already holds the silence — capture is the drag-tail's lock.
+            void captureErr;
+        }
+    };
+    const swallowClick = (e) => {
+        if (fromCap(e))
+            return;
+        e.stopPropagation();
+        e.preventDefault();
+    };
     return (_jsx(_Fragment, { children: _jsx("div", { "data-testid": "motion-timeline-playhead", className: css.playhead, style: {
                 left: frameToPx(frameIdx),
                 width: 2,
                 background: playhead,
                 boxShadow: `0 0 6px color-mix(in srgb, ${playhead} 40%, transparent)`,
                 transform: "translateX(-50%)",
-            }, children: _jsx("span", { "data-testid": "motion-timeline-playhead-cap", className: css.playheadCap, style: { background: playhead }, onPointerDown: onGrab }) }) }));
+            }, onPointerDown: swallow, onPointerUp: swallowClick, onPointerCancel: swallowClick, onClick: swallowClick, onDoubleClick: swallowClick, children: _jsx("span", { "data-testid": "motion-timeline-playhead-cap", className: css.playheadCap, style: { background: playhead }, onPointerDown: onGrab }) }) }));
 }
 //# sourceMappingURL=MotionTimelineBarChrome.js.map

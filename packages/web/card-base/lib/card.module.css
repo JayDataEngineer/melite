@@ -580,6 +580,14 @@ select option {
  * screen (the operator's catch). inline-flex hugs the wrapped
  * control; the bubble seats beside the cursor's anchor. */
 .tipAnchor { display: inline-flex; }
+/* THE FILL FACE (E2-10 THE SHRINK, 2026-11-09): a band seat (the
+ * timeline ruler) must BE its parent's width — the hug face above
+ * shrink-wraps a width-auto band to its in-flow content (the ruler's
+ * 62px chip inside 1064px of content; the absolute ticks paint but
+ * never hit). The fill anchor is block-level and definite, so a
+ * width-auto band child fills it. Opt-in per seat (Tip fill) — the
+ * hug stays the default for controls. */
+.tipFill { display: block; }
 
 .ctlRow, .ctlRowSm {
   display: flex;

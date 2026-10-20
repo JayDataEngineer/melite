@@ -18,11 +18,16 @@ export type TipSide = 'top' | 'bottom' | 'right';
  * @param props.tip - bubble text; absent renders the child bare.
  * @param props.side - bubble placement, default 'top'.
  * @param props.delayDuration - hover delay in ms, default 300.
+ * @param props.fill - the anchor fills its parent (display:block) instead
+ *  of hugging the child (E2-10 THE SHRINK: the timeline ruler's hug-face
+ *  anchor shrink-wrapped the width-auto band to its 62px chip — a 1064px
+ *  face with a 62px hit seat. Fill is opt-in, for band seats only).
  * @param props.children - the single anchor element. */
-export declare function Tip({ tip, side, delayDuration, children }: {
+export declare function Tip({ tip, side, delayDuration, fill, children }: {
     tip?: string;
     side?: TipSide;
     delayDuration?: number;
+    fill?: boolean;
     children: ReactElement;
 }): ReactElement;
 export type ControlDensity = 'md' | 'sm';

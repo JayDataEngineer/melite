@@ -867,7 +867,13 @@
   bottom: 0;
   top: 0;
   z-index: 40;
-  pointer-events: none;
+  /* THE SWALLOW (E2-10, 2026-11-09): the line INTERCEPTS its pixels —
+     the dead value was pass-through, and the pass-through woke every
+     seat beneath (ruler seek, clip drags, click-away deselect). The
+     line's own handlers eat the gesture (MotionTimelineBarChrome's
+     swallow: no session, no seek, no select; the cap carved out), so
+     the line must stay hit-testable — auto, never dead. */
+  pointer-events: auto;
 }
 .playheadCap {
   position: absolute;
@@ -880,11 +886,12 @@
   border: 1px solid var(--dsw-alias-border-l4);
   /* THE SCRUB HANDLE (operator 2026-11: the gesture lives on the
      white circle at the top, never the bar's middle): the cap is the
-     timeline's one scrub surface — the parent line stays
-     pointer-dead so the clips beneath keep their gestures. The
-     ::before widens the grab target to ~18px without growing the
-     painted dot (audit F7: an honest affordance, not a lying
-     cursor — grab/grabbing say exactly what the pointer does). */
+     timeline's one scrub surface — the parent line SWALLOWS its own
+     pixels (E2-10) so a grab on the visible line never wakes the
+     seats beneath. The ::before widens the grab target to ~18px
+     without growing the painted dot (audit F7: an honest affordance,
+     not a lying cursor — grab/grabbing say exactly what the pointer
+     does). */
   pointer-events: auto;
   cursor: grab;
   touch-action: none;

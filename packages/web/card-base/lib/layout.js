@@ -8,11 +8,15 @@ import css from './card.module.css';
  * @param props.tip - bubble text; absent renders the child bare.
  * @param props.side - bubble placement, default 'top'.
  * @param props.delayDuration - hover delay in ms, default 300.
+ * @param props.fill - the anchor fills its parent (display:block) instead
+ *  of hugging the child (E2-10 THE SHRINK: the timeline ruler's hug-face
+ *  anchor shrink-wrapped the width-auto band to its 62px chip — a 1064px
+ *  face with a 62px hit seat. Fill is opt-in, for band seats only).
  * @param props.children - the single anchor element. */
-export function Tip({ tip, side = 'top', delayDuration = 300, children }) {
+export function Tip({ tip, side = 'top', delayDuration = 300, fill = false, children }) {
     if (tip === undefined)
         return children;
-    return (_jsx(Tooltip, { label: tip, side: side, delayMs: delayDuration, children: _jsx("span", { className: css.tipAnchor, children: children }) }));
+    return (_jsx(Tooltip, { label: tip, side: side, delayMs: delayDuration, children: _jsx("span", { className: fill ? css.tipFill : css.tipAnchor, children: children }) }));
 }
 export function ControlRow({ label, hint, children, density = 'md', className, }) {
     return (_jsxs("label", { className: cn(density === 'sm' ? css.ctlRowSm : css.ctlRow, className), children: [_jsxs("span", { children: [label, hint != null ? hint : null] }), children] }));
