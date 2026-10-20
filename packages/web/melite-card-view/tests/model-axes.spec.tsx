@@ -1,4 +1,4 @@
-
+// @contract cards-run-resting-card-unit
 // @vitest-environment happy-dom
 /**
  * THE MODEL AXES (the pass-along law, 2026-09-12 — operator order:
