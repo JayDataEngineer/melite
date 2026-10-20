@@ -39,7 +39,7 @@
  */
 import { createElement as h } from 'react';
 import type { ReactElement } from 'react';
-import { type ModifierKind, type SpecField, type SpecValues } from './spec.js';
+import { type ModifierKind, type SpecField, type SpecValues } from './spec.ts';
 export type { PaintCanvasFaceProps, BboxCanvasFaceProps } from '@melite/contracts';
 import type { BboxCanvasFaceProps, PaintCanvasFaceProps } from '@melite/contracts';
 export type BboxFaceComponent = (props: BboxCanvasFaceProps) => ReactElement;

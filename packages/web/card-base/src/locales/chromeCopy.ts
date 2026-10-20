@@ -11,6 +11,17 @@
  * report). Input-selection copy is a DIFFERENT face — square.ts owns
  * it; nothing input-selection grows here.
  *
+ * SCHEMA-COPY SEAM (audit h3-frames-anima B1-4): model/card schema
+ * `.description()` strings NEVER pass through this dictionary — they
+ * arrive as runtime DATA on the served form spec (fieldsOf reads
+ * meta.description verbatim as the label, extra.tooltip as the
+ * hover) and render with no dictionary hop, so no client-side i18n
+ * gate can see them. Their law lives estate-side: the
+ * operator-copy-estate wall (tests/walls/ts/suites/operator-copy-estate.spec.ts)
+ * walks every served family + card schema and refuses architecture
+ * vocabulary. If a schema string needs locale ownership one day, the
+ * seat is the serving projection (emitParamsSpec), not this file.
+ *
  * Melite ships one locale (English). The dictionary is the seat a
  * second locale plugs into — the consumer contract (`chromeT`) is the
  * same shape DSH's client UI uses, so a wall guarding it transfers
