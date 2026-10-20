@@ -1754,6 +1754,14 @@ export function composeValidate(spec, doc) {
         for (const g of axisGroups(spec))
             declared.add(axisKey(g));
         declared.add('model');
+        // THE STUDIO-OWNED SURFACE (h¹, the mirror-truth cure): the
+        // estate's write door sanctions the DECL's studio.writes beside
+        // params — the mirror sanctions the same set or it refuses the
+        // studio's own document plane (calls + keyframes on every real
+        // film doc), a lie that blocked every pick and every
+        // flip-settlement recheck.
+        for (const k of spec.studio_writes ?? [])
+            declared.add(k);
         // THE MOD-SURFACE SANCTION (E2-11, the operator's burn — its
         // verbatim voice lives in the ERRORS_2 ledger): a key a card-declared mod kind owns — its
         // param_key bag plus its envelope's field names — is DECLARED

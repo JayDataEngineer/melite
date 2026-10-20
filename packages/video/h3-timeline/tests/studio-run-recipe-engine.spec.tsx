@@ -503,14 +503,20 @@ describe("THE COMPOSE GATE at the studio rail (law C — the schema is never thr
     cleanup()
   })
 
-  it("THE FAMILY CLAUSE (B5, hop 3's first judge): a Final-Cut stamp on a keyframe doc refuses at the pick gate in the run door's own voice — before the write and before the run press", async () => {
+  it("THE FAMILY CLAUSE SETTLES (B5 → h¹, hop 3's first judge): a Final-Cut stamp on a keyframe doc no longer bricks at the pick gate — the gate reseats the family-dead strand with its named voice and the pick LANDS; the run door's clause keeps its teeth downstream (the estate walk refuses a WRITTEN strand)", async () => {
     serve()
     // THE BURN: Final Cut saved pre-keyframe (its own wire_defaults —
     // second_pass_enabled + sr_switch), the doc gained a pin, the
     // family re-derived t4r under the stamp. Pre-B5 the gate
-    // green-lit every pick over this doc and the run press was the
-    // first judge; now ANY pick (an ordinary Draft re-pick) composes
-    // the stamped verdict and refuses HERE.
+    // green-lit every pick over this doc; B5 refused it — and h¹
+    // found the refusal's own brick: the strand rode a hidden tab,
+    // no write could carry the reseat, "fix the stated value" pointed
+    // at a surface that does not render. The settlement law (h¹):
+    // a refusal whose dead weight is ONLY the family-dead strand is
+    // stranded state asking to settle — the gate reseats (the
+    // estate's ONE spelling, reseatFamilyDead), lands the pick, and
+    // NAMES what it cleared. Removing the settlement clause reds this
+    // arm (the pick refuses again — the toggle-proof).
     const { doc } = engine(
       { fps: 24, steps: 20 },
       {
@@ -526,17 +532,23 @@ describe("THE COMPOSE GATE at the studio rail (law C — the schema is never thr
     const pick = await screen.findByLabelText("Recipe")
     fireEvent.click(pick)
     fireEvent.click(screen.getByRole("menuitem", { name: /Draft 02MP/ }))
-    // a refused pick never touches layerA (the atomic pick law): the
-    // held layer is exactly what it was — no width/height stamp, no
-    // menu residue (the base's 800/600 live in the base, never layerA)
-    assert.deepEqual(doc(), { fps: 24, steps: 20 })
+    // the pick LANDED: the strand died (unstated — the base's own
+    // stamps settle through the serializer's null-ride) and the
+    // recipe stamp rode whole (the atomic pick law).
+    const after = doc() as Record<string, unknown>
+    assert.equal(after.second_pass_enabled, undefined,
+      "the settled strand: second_pass_enabled unstated, never deferred")
+    assert.equal(after.sr_switch, undefined,
+      "the settled strand: sr_switch unstated, never deferred")
+    assert.notDeepEqual(after, { fps: 24, steps: 20 },
+      `the pick landed — the strand never refused it (doc: ${JSON.stringify(after)})`)
     const face = await screen.findByRole("alert")
-    assert.match(face.textContent ?? "", /THE COMPOSE GATE REFUSED/)
-    assert.match(
-      face.textContent ?? "",
-      /card 'h3-timeline' refused params: h3_window\(t4r\): unsanctioned inject keys: second_pass_enabled, sr_switch/,
-      "the gate speaks the run door's clause verbatim",
-    )
+    assert.match(face.textContent ?? "", /THE COMPOSE GATE SETTLED/,
+      "the gate NAMES the settlement — voiced, never silent")
+    assert.match(face.textContent ?? "", /second_pass_enabled, sr_switch/,
+      "the settlement names the cleared keys (the reseat's sorted spelling)")
+    assert.doesNotMatch(face.textContent ?? "", /REFUSED/,
+      "a settled pick is never spoken as a refusal")
     cleanup()
   })
 })

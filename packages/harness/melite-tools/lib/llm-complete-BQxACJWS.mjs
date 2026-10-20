@@ -1068,6 +1068,7 @@ function specBody(svc, defs, res) {
 		mod_schemas: servedModEnvelopes(schemas.mods, res.card),
 		model: res.model ?? null,
 		params: decl?.params,
+		...decl?.studio?.writes !== void 0 ? { studio_writes: decl.studio.writes } : {},
 		stage_view: stageViewDeclaration(res.card) ?? null,
 		...decl?.familyLaw !== void 0 ? { familyLaw: decl.familyLaw } : {},
 		outputs: def.flowKinds.outputs,

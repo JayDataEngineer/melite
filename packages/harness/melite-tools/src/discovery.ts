@@ -953,6 +953,15 @@ export function specBody(
     // admission's field-named voice, mirrored client-side. Absent
     // when the DECL is unreachable (the legacy surface-less shape).
     params: decl?.params,
+    // THE STUDIO-OWNED SURFACE (h¹, the mirror-truth cure): the
+    // DECL's studio.writes verbatim — the document-plane keys the
+    // estate's write door sanctions beside params. The client
+    // compose mirror's declared set learns them here; without this
+    // the mirror refused the studio's own truth-in-hand (calls +
+    // keyframes on every real film doc) and the flip-settlement's
+    // recheck could never come back clean. Absent when the DECL
+    // declares no studio — the mirror judges as before.
+    ...(decl?.studio?.writes !== undefined ? { studio_writes: decl.studio.writes } : {}),
     // THE CARD'S STUDIO DECLARATION (2026-11-09, the fallback
     // extermination): derived from the card package's own client
     // index (stageViewPlane — the mount census's tree truth), served

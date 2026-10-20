@@ -22,6 +22,16 @@ export const studioCopy = {
    *  prose died with the anchor face — the cap tail carries the
    *  count; labels are faces, prose lives in hint seats). */
   imagesBusLabel: "Images",
+  /** THE SETTLEMENT VOICE (h¹, the flip-settlement law): the pick
+   *  gate reseated the family-dead strand to land the pick — it
+   *  names the cleared keys and the lane that refuses them. A
+   *  settlement is VOICED, never silent and never a bare refusal:
+   *  the silent strand was the bricked-doc burn (the four keys
+   *  stranded under a hidden tab until the pick gate gang-refused). */
+  gateSettled(dropped: readonly string[]): string {
+    return "THE COMPOSE GATE SETTLED — cleared " + dropped.join(", ")
+      + ": the reference lane (t4r) doesn't sanction them. The pick landed."
+  },
   /** Ref-videos lane label (terse, symmetric with the sister lanes). */
   refVideos: "Videos",
   /** Ref-audios lane label (terse, symmetric with the sister lanes). */

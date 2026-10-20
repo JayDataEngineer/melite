@@ -42,6 +42,16 @@
  *   DETERMINISM — the same t4r lane answers present WITH the stale
  *   stated gate and absent WITHOUT it: presence is a function of
  *   invisible state, the operator's exact burn.
+ *   THE PICK SETTLES — the variant pick on a stranded holding LANDS:
+ *   the gate reseats the family-dead strand (the estate's one
+ *   spelling, reseatFamilyDead) with its named voice; a four-key
+ *   gang refusal is never the answer to a one-parameter switch (the
+ *   operator: "it should literally just be replacing a model file
+ *   and that's it"). The brick it replaces: the pick gate judged the
+ *   stranded HOLDINGS pre-write and refused — the reseat math one
+ *   door away was unreachable, the doc bricked ("it got stuck").
+ *   THE TEETH — a refusal that is NOT the family-dead strand still
+ *   refuses: the settlement never launders an illegal pick.
  */
 import { beforeAll, describe, expect, it, afterAll, vi } from "vitest"
 import { cleanup, fireEvent, render, screen } from "@testing-library/react"
@@ -54,11 +64,13 @@ import { mkdtempSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { bindEstateRemote, unbindEstateRemote } from "@melite/card-base/client"
+import { axisKey, composeValidate, rowsFor } from "@melite/card-base/client"
 import type { FormSpecDoc } from "@melite/card-base/client"
 import type { LayerA } from "../src/ui/studio/docModel.ts"
 import { mergeDocLayers } from "../src/ui/studio/docModel.ts"
 import { RunRecipeEngine } from "../src/ui/studio/RunRecipeEngine.tsx"
 import { deriveWindowFamily } from "@melite/models-h3/timelineContract"
+import { pickFamilyRefusal } from "../src/ui/studio/pickVerdict.ts"
 
 /** THE BURN'S FOUR, in the operator's sorted spelling. */
 const FOUR = ["interpolate_enabled", "second_pass_enabled", "sharpen_enabled", "sr_switch"] as const
@@ -270,6 +282,90 @@ describe("THE SECOND-PASS VISIBILITY ARM (ERROR h — presence is a pure functio
       `presence is a function of invisible state, not of the lane (the omit survivors' visible_when, ` +
       `RunRecipeEngine.tsx:108-113 + timelineContract.ts:80). This on/off flip with no visible reason IS the ` +
       `operator's burn.`).toBe(withoutStaleGate)
+  })
+
+  /** THE GESTURE (the operator's exact burn): the Variant pick to
+   *  Singularity — the real AxisMenuSelect (atoms' SpecMenuSelect:
+   *  the aria-labeled trigger button, the portal menu rows). */
+  async function pickSingularity(servedDoc: FormSpecDoc): Promise<{ id: string }> {
+    const row = rowsFor(servedDoc, "Variant").find((r) => /singularity/i.test(`${r.id} ${r.label ?? ""}`))
+    if (row === undefined) throw new Error("the served matrix offers no singularity variant — the arm drives the REAL rows")
+    fireEvent.click(screen.getByRole("button", { name: "Variant" }))
+    fireEvent.click(await screen.findByText(/singularity/i, {}, { timeout: 4000 }))
+    return row
+  }
+  /** THE GATE FACE's own render seam (RunRecipeEngine's
+   *  data-gate-face alert), read off the real DOM. */
+  function gateFace(): string {
+    return document.querySelector("[data-gate-face]")?.textContent ?? ""
+  }
+
+  it("THE PICK SETTLES (red): the variant pick on a stranded t4r holding LANDS — the gate reseats the family-dead strand with its named voice; a four-key gang refusal is never the answer to a one-parameter switch", async () => {
+    serve(); bind()
+    const mounted = mount(flippedBase(), statedLayerA())
+    await tabPresent() // the stranded era settled: the tab hidden, the four stated
+    const row = await pickSingularity(served)
+    const layer = mounted.layer() as unknown as Record<string, unknown>
+    const face = gateFace()
+    // THE SETTLEMENT'S FOUR FACES:
+    const settledDead = FOUR.every((k) => layer[k] === undefined)
+    const landed = layer[axisKey("Variant")] === row.id
+    const voiceSettles = /settled/i.test(face) && FOUR.every((k) => face.includes(k))
+    const voiceNeverRefuses = !/refused/i.test(face)
+    cleanup()
+    unbindEstateRemote(); vi.unstubAllGlobals()
+    // the next run composes — the window clause is silent on the
+    // settled truth (the reseat's own judge, the estate's ONE spelling)
+    const composed = mergeDocLayers(flippedBase(), mounted.layer())
+    expect(pickFamilyRefusal(composed as unknown as Record<string, unknown>), "the settled holding composes clean — the strand is dead, not deferred").toBeNull()
+    expect(settledDead && landed, `h¹ (the flip-settlement law, the pick hop): the variant pick on a stranded t4r holding ` +
+      `REFUSED with the four-key gang ("unsanctioned inject keys") and the pick never landed — the gate judged the ` +
+      `stranded HOLDINGS pre-write, while the settlement math (reseatFamilyDead) sat one door away, unreachable ` +
+      `behind its own refusal. The doc bricked: the tab owning the values was hidden, no write could carry the ` +
+      `reseat, "Fix the stated value" pointed at a surface that does not render. A one-parameter switch must land: ` +
+      `(settled dead keys: ${settledDead}, pick landed: ${landed}, layer: ${JSON.stringify(FOUR.map((k) => [k, layer[k]]))})`).toBe(true)
+    expect(voiceSettles && voiceNeverRefuses, `h¹ (the WHY voice): the gate face must NAME the settlement — the cleared ` +
+      `keys and the lane that refuses them — never a bare refusal and never silence (face: "${face}")`).toBe(true)
+  })
+
+  it("THE MIRROR SPEAKS TRUE (red): the studio-owned document surface never refuses at the client mirror — the estate sanctions decl.studio.writes, so a mirror that flags calls/keyframes on a film doc is a lying mirror (it blocks every settlement and every pick on any real doc)", async () => {
+    // no mount: the REAL served spec (model 'h3', params 59 — sans
+    // calls/keyframes, live-probed) against the REAL judge. A film
+    // doc IS calls + keyframes + params — the estate's write door
+    // sanctions the studio surface (the DECL's studio.writes); the
+    // mirror must sanction exactly the same set or it refuses the
+    // studio's own truth-in-hand.
+    const filmDoc = {
+      calls: [{ text: "the harbour holds its breath", start_frame: 0, end_frame: 90 }],
+      keyframes: [{ image: "anchor.png", frame: 0 }],
+      fps: 24, seed: 7, width: 768, height: 448, steps: 12,
+    }
+    const mirrorViolations = composeValidate(served, filmDoc as unknown as Record<string, unknown>)
+      .filter((v) => /fires nothing on this lane/.test(v.message))
+    expect(mirrorViolations, `h¹ (the mirror-truth law, the judge hop): the client compose mirror refused the STUDIO-OWNED ` +
+      `document surface — ${JSON.stringify(mirrorViolations.map((v) => v.field))} — the estate's admission gate sanctions ` +
+      `those keys (the DECL's studio.writes), so the mirror speaks a lie. The served form-spec carries decl.params but ` +
+      `not decl.studio.writes, and the mirror's declared set never learns the studio surface: every film doc (calls + ` +
+      `keyframes — EVERY real timeline doc) refuses at every pick, and the flip-settlement's recheck can never come ` +
+      `back clean (the settlement dies behind the lying mirror).`).toEqual([])
+  })
+
+  it("THE TEETH (green today, must stay green through the cure): a refusal that is NOT the family-dead strand still refuses — the settlement never launders an illegal pick", async () => {
+    serve(); bind()
+    // the strand + an UNDECLARED knob: the mirror clause's violation
+    // ("fires nothing on this lane") survives the reseat — the reseat
+    // drops family-dead keys only. The pick must refuse WHOLE.
+    const strandedIllegal = { ...statedLayerA(), frobnicate_depth: 3 } as unknown as LayerA
+    const mounted = mount(flippedBase(), strandedIllegal)
+    await tabPresent()
+    const row = await pickSingularity(served)
+    const face = gateFace()
+    const layer = mounted.layer() as unknown as Record<string, unknown>
+    cleanup()
+    unbindEstateRemote(); vi.unstubAllGlobals()
+    expect(face, `h¹ (the teeth): the gate keeps its law — a violation the reseat does not clear still refuses the pick ` +
+      `(face: "${face}")`).toMatch(/refused/i)
+    expect(layer[axisKey("Variant")], "the illegal pick never landed (the atomic pick law holds through the settlement)").not.toBe(row.id)
   })
 })
 

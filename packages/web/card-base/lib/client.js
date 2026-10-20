@@ -10165,6 +10165,7 @@ window.__ModuleLoader__.load({
 				const declared = new Set(spec.params);
 				for (const g of axisGroups(spec)) declared.add(axisKey(g));
 				declared.add("model");
+				for (const k of spec.studio_writes ?? []) declared.add(k);
 				for (const k of modOwnedFields(spec)) declared.add(k);
 				for (const k of Object.keys(doc)) {
 					if (k === "model" || declared.has(k)) continue;

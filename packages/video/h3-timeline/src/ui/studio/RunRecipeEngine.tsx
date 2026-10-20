@@ -29,7 +29,7 @@ import { fetchMediaLibrary } from '@melite/card-base/client'
 import { type Dispatch, type SetStateAction, useMemo, useState } from "react"
 import s from "./studio.module.css"
 import { DOC_FPS_DEFAULT } from '@melite/models-h3/timelineContract'
-import { FILM_ONLY_KEYS, T4_ONLY_KEYS, deriveWindowFamily } from "@melite/models-h3/timelineContract"
+import { FILM_ONLY_KEYS, T4_ONLY_KEYS, deriveWindowFamily, reseatFamilyDead } from "@melite/models-h3/timelineContract"
 import type { LayerA, SetLayerAKey } from "./docModel.ts"
 import { mergeDocLayers } from "./docModel.ts"
 import { parseSpecNumber } from "./docGrid.ts"
@@ -239,6 +239,43 @@ export function RunRecipeEngine({
             const family = pickFamilyRefusal(candidate)
             if (family !== null) violations.push({ message: "card_compose: " + family })
             if (violations.length > 0) {
+              // THE SETTLEMENT CLAUSE (h¹ — the flip-settlement law):
+              // a refusal whose dead weight is ONLY the family-dead
+              // strand is not a refusal — it is stranded state asking
+              // to settle. The family can flip under carried stamps
+              // with no field write authoring it (the keyframes pin);
+              // the owning surface hides on the new lane, so no hand
+              // can "fix the stated value" — the gang refusal bricks
+              // the doc (the live burn: the four keys stranded under
+              // a hidden tab until the pick gate refused them). Ask
+              // the estate's ONE settlement spelling: reseat the
+              // candidate, re-judge. Clean → the pick LANDS on the
+              // reseated holdings, the dropped keys unstated (the
+              // base's own stamps settle through the serializer's
+              // null-ride), and the face NAMES the settlement —
+              // voiced, never silent, never a bare refusal. Anything
+              // the reseat does not clear keeps the full refusal: the
+              // gate's teeth stay (the settlement never launders an
+              // illegal pick).
+              const reseated = reseatFamilyDead(candidate)
+              if (reseated.dropped.length > 0) {
+                const recheck = composeValidate(spec, reseated.doc)
+                const reFam = pickFamilyRefusal(reseated.doc)
+                if (reFam !== null) recheck.push({ message: "card_compose: " + reFam })
+                if (recheck.length === 0) {
+                  setLayerA((prev) => {
+                    const next: Record<string, unknown> = { ...prev }
+                    for (const k of reseated.dropped) next[k] = undefined
+                    for (const [k, v] of Object.entries(patch)) {
+                      if (axisUnset(k, v, spec)) next[k] = undefined
+                      else next[k] = v
+                    }
+                    return next as unknown as LayerA
+                  })
+                  setGateFace(studioCopy.gateSettled(reseated.dropped))
+                  return
+                }
+              }
               setGateFace(
                 'THE COMPOSE GATE REFUSED — ' + violations[0].message
                   + ' — the write never left the studio. Fix the stated value, or pick a different route.',

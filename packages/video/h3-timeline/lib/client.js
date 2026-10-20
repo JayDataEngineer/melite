@@ -431,6 +431,15 @@ window.__ModuleLoader__.load({
 			*  prose died with the anchor face — the cap tail carries the
 			*  count; labels are faces, prose lives in hint seats). */
 			imagesBusLabel: "Images",
+			/** THE SETTLEMENT VOICE (h¹, the flip-settlement law): the pick
+			*  gate reseated the family-dead strand to land the pick — it
+			*  names the cleared keys and the lane that refuses them. A
+			*  settlement is VOICED, never silent and never a bare refusal:
+			*  the silent strand was the bricked-doc burn (the four keys
+			*  stranded under a hidden tab until the pick gate gang-refused). */
+			gateSettled(dropped) {
+				return "THE COMPOSE GATE SETTLED — cleared " + dropped.join(", ") + ": the reference lane (t4r) doesn't sanction them. The pick landed.";
+			},
 			/** Ref-videos lane label (terse, symmetric with the sister lanes). */
 			refVideos: "Videos",
 			/** Ref-audios lane label (terse, symmetric with the sister lanes). */
@@ -821,6 +830,35 @@ window.__ModuleLoader__.load({
 		*  derives t4_chain (the same one-spelling family derivation the t4r
 		*  gate uses). */
 		const FILM_ONLY_KEYS = ["duck_depth_db"];
+		/** THE FAMILY-RESEAT SPINE (the ERROR g/h cure, 2026-11-08): the ONE
+		*  reseat spelling for the settlement seam — the seat that lands an
+		*  arrival whose family FLIPPED under carried stamps (the emit's
+		*  legal t4_open era settling under a keyframe pin; the bench
+		*  merge-patch landing a non-studio flip). Drops every PRESENT
+		*  family-dead key and names them — the settlement lands the row
+		*  the next run composes (the lane-migration law's own spelling:
+		*  stale carry drops before the store, never a stored doc refusing
+		*  later). The caller owns the voice (the drafts patch row, the
+		*  studio's unstating op); this spine owns the MATH. A doc whose
+		*  family honors the keys rides unchanged (dropped: []). */
+		function reseatFamilyDead(doc) {
+			if (deriveWindowFamily(doc) !== "t4r") return {
+				doc,
+				dropped: []
+			};
+			const explicit = Object.keys(doc);
+			const dropped = T4_ONLY_KEYS.filter((k) => explicit.includes(k)).sort();
+			if (dropped.length === 0) return {
+				doc,
+				dropped
+			};
+			const reseated = { ...doc };
+			for (const k of dropped) delete reseated[k];
+			return {
+				doc: reseated,
+				dropped
+			};
+		}
 		/** (2026-11-06, the family-reseat cure) the doc-level window family
 		*  derivation, ONE spelling for every door that needs the family
 		*  BEFORE the walk refuses: the walk derives the composed doc's
@@ -4902,6 +4940,23 @@ window.__ModuleLoader__.load({
 						const family = pickFamilyRefusal(candidate);
 						if (family !== null) violations.push({ message: "card_compose: " + family });
 						if (violations.length > 0) {
+							const reseated = reseatFamilyDead(candidate);
+							if (reseated.dropped.length > 0) {
+								const recheck = (0, _melite_card_base_client.composeValidate)(spec, reseated.doc);
+								const reFam = pickFamilyRefusal(reseated.doc);
+								if (reFam !== null) recheck.push({ message: "card_compose: " + reFam });
+								if (recheck.length === 0) {
+									setLayerA((prev) => {
+										const next = { ...prev };
+										for (const k of reseated.dropped) next[k] = void 0;
+										for (const [k, v] of Object.entries(patch)) if ((0, _melite_card_base_client.axisUnset)(k, v, spec)) next[k] = void 0;
+										else next[k] = v;
+										return next;
+									});
+									setGateFace(studioCopy.gateSettled(reseated.dropped));
+									return;
+								}
+							}
 							setGateFace("THE COMPOSE GATE REFUSED — " + violations[0].message + " — the write never left the studio. Fix the stated value, or pick a different route.");
 							return;
 						}

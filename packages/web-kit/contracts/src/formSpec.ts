@@ -336,6 +336,17 @@ export interface FormSpecDoc {
    *  absent surface as unknown: no nulling, no refusal — never a
    *  guess). */
   params?: ReadonlyArray<string>
+  /** THE STUDIO-OWNED SURFACE (h¹, the mirror-truth cure): the
+   *  DECL's studio.writes verbatim — the document-plane keys the
+   *  card's studio writes through its own door (h3: calls,
+   *  keyframes, fps, …). The estate's admission gate sanctions
+   *  these at the write door; the client compose mirror sanctions
+   *  the same set or it refuses the studio's own truth-in-hand (a
+   *  film doc IS calls + keyframes — the lying mirror blocked every
+   *  pick and every flip-settlement on any real timeline doc).
+   *  Served verbatim off the DECL; absent when the DECL declares no
+   *  studio (the mirror judges as before — never a guess). */
+  studio_writes?: ReadonlyArray<string>
   /** THE FAMILY-CONDITIONAL KEY LAW (the ERROR g/h cure, 2026-11-08):
    *  the DECL's window-family law in the SERVED spelling — lanes
    *  derived from the doc's own shape (ordered; first match wins, the

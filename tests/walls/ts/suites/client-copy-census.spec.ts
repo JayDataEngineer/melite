@@ -436,7 +436,12 @@ const PINS: Record<string, number> = {
   // property ("card_compose: " + family) — the wire-refusal-voice
   // triage class (wire.ts:84 ×2, estate-remote.ts:216, the spec.ts
   // triad), not presentation copy.
-  'packages/video/h3-timeline/src/ui': 5,
+  // Re-pinned 5 -> 6 (2026-11-08, h¹'s flip-settlement): the
+  // settlement's RE-JUDGE pushes the same clause class on the reseated
+  // candidate ("card_compose: " + reFam) — the same arm-A refusal
+  // voice at the same gate, not presentation copy. The settlement's
+  // USER-FACING voice rides studioCopy.gateSettled (the dictionary).
+  'packages/video/h3-timeline/src/ui': 6,
   'packages/image/mask-studio/src/ui': 0,
   // card-base: 36 (the S7j/class-4 merge, argued above) + 6 from the
   // D1 .ts arms — all arm A `message` properties in .ts: the wire
