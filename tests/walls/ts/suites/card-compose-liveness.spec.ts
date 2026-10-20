@@ -49,7 +49,7 @@ import { ComposeRefusal } from "@melite/comfyui-card-kit/errors";
 import { assertWiringAgainst, deriveWiringDoc } from "../../../../packages/engines/comfyui-cordis/src/wiringWall.ts";
 import { GraphBuilder } from "@melite/comfyui-card-kit/graph";
 import { loadFacts } from "@melite/comfyui-card-kit/facts";
-import { getModel, registryIds, registryModel, modelIds } from "../../../../packages/engines/comfyui-cordis/src/models/models.ts";
+import { getModel, registryIds, registryModel, modelIds, owningAtom } from "../../../../packages/engines/comfyui-cordis/src/models/models.ts";
 import { CardRegistryService } from "../../../../packages/harness/estate-queue/src/cardsRegistry.ts";
 import { admissionRefusal, prepareCardParams } from "../../../../packages/harness/estate-queue/src/cardsCompose.ts";
 import { liftCardParams } from "../../../../packages/harness/estate-queue/src/cardsVariant.ts";
@@ -114,7 +114,17 @@ const fillFor = (name: string): unknown => probeFillFor(name, ESTATE_FILE);
  *  are engine-build vocabulary, not folder state. */
 function declaredProvision(modelId: string, filename: string): boolean {
   if (!/\.(safetensors|sft|gguf|bin|pth|onnx|engine|npz|ckpt)$/i.test(filename)) return false;
-  const decl = join(process.cwd(), "packages", "models", modelId, "src", "index.ts");
+  // THE ROUTE→ATOM FOLD (2026-11-09, the h3-singularity row): a lane
+  // address is not a package — its family's DECL carries the
+  // provision. The unbooted-table throw is the miss (fail closed —
+  // the skip must never pass on a table that cannot speak).
+  let atom = modelId
+  try {
+    atom = owningAtom(modelId)
+  } catch {
+    return false
+  }
+  const decl = join(process.cwd(), "packages", "models", atom, "src", "index.ts");
   if (!existsSync(decl)) return false;
   const text = readFileSync(decl, "utf8");
   return text.includes(`/${filename}"`) || text.includes(`"${filename}"`);
