@@ -19,6 +19,7 @@
 //      r2v node's ref_images.ref_image_0 lane is wired.
 import { describe, it, expect, vi } from "vitest";
 import { film } from "../src/actions.ts";
+import { deriveWindowFamily } from "../src/timelineContract.ts";
 import { schema as h3schema } from "../src/schema.ts";
 import { GraphBuilder } from "@melite/comfyui-card-kit/graph";
 import { instantiateAction } from "@melite/comfyui-card-kit";
@@ -488,5 +489,74 @@ describe("the keyframe lane (placement refuses; endpoints ride the seats, interi
     const json = JSON.stringify(g.toJSON())
     expect(json).toContain("MiniMaxH3ReferenceToVideo")
     expect(json).toContain("MiniMaxH3AddGuide")
+  })
+})
+
+// THE DOC-LEVEL GUIDE TIER (2026-10-20, the operator's chained-image
+// burn — session bench-session-1e767d50, the verbatim wound: "The AI
+// doesn't understand the concept of how image input is put in the
+// video card. It tried to type the prompt into the text prompt,
+// because it didn't see that I had run the generation needed" +
+// "The Agent CANNOT chain images from cards that have not been
+// run"). The agent wired the guide the way the bench teaches —
+// doc-level `image: "$image"` with an inputs binding to the image
+// stage — and the schema stamped the doc t4_open (deriveWindowFamily
+// counted only per-call guides, keyframes, the declared refs surface
+// and last_frame), the walk then read the doc-level guide and
+// REFUSED its own stamp: "a guide image rides only the t4r reference
+// lane — this doc's variant is 't4_open'. State no variant (the walk
+// derives t4r from the guide)" — a cure sentence that lied, because
+// stating no variant derived t4_open again. Three refusals later the
+// agent dropped the guide and typed the prompt text-only: the exact
+// brain-twister the operator named. The derivation's own law (its
+// comment: "Reads exactly the seats the walk reads — a private
+// spelling elsewhere is the run-899a8448 disease: one seat missed,
+// the family lies") demands the DOC-LEVEL spellings the walk
+// (actions.ts guideImage: image ?? image_name) and the render
+// (guide0: image, image_name, ref_image) both read.
+describe("the doc-level guide (the chained-image burn: every spelling the walk and render read)", () => {
+  const textCall = { text: "she waves", start_frame: 0, end_frame: 90 }
+
+  it("a DOC-LEVEL guide derives t4r — image, image_name and ref_image, the walk/render union", () => {
+    for (const key of ["image", "image_name", "ref_image"] as const) {
+      const out = walk({ loras: LORA, seed: 7, [key]: "refs/anchor.png", calls: [textCall] })
+      expect(out.variant, `doc-level guide spelling '${key}' must derive t4r`).toBe("t4r")
+    }
+    // the operator's exact wiring: a $spell guide (the bench input
+    // binding) derives the reference lane exactly as a media path —
+    // the derivation judges the SEAT, never the value's dialect.
+    expect(deriveWindowFamily({ image: "$image", calls: [textCall] })).toBe("t4r")
+    expect(deriveWindowFamily({ ref_image: "$guide0", calls: [textCall] })).toBe("t4r")
+    // and the text-only pole holds: no guide seat anywhere is t4_open
+    expect(deriveWindowFamily({ calls: [textCall] })).toBe("t4_open")
+  })
+
+  it("the operator's chain end to end: the doc-level guide's OWN schema stamp composes — never the self-refusal loop", () => {
+    // production order: the schema walk stamps the variant FIRST
+    // (schema.ts derives it through deriveWindowFamily), then the
+    // compose walks the stamped doc. Pre-cure the stamp said
+    // t4_open and the compose refused the doc's own guide.
+    const walked = walk({ loras: LORA, seed: 7, image: "e2e_anchor.png", calls: [textCall] })
+    expect(walked.variant).toBe("t4r")
+    const g = new GraphBuilder()
+    // THE RED: pre-cure this exact call threw the guard's
+    // "rides only the t4r reference lane" refusal.
+    instantiateAction(film, walked, WINDOW_MODEL, g, "run_doc_guide_chain")
+    const json = JSON.stringify(g.toJSON())
+    expect(json, "the reference bundle rides").toContain("PlagueKindBundleIn")
+    expect(json, "the doc-level guide value reaches the engine").toContain("e2e_anchor.png")
+    expect(json, "the anchor lands on the r2v reference slot").toContain("ref_images.ref_image_0")
+  })
+
+  it("the guard's cure sentence is TRUE: a doc-level guide with NO stated variant walks clean (never the three-refusal loop)", () => {
+    // the guard's own voice promises this arm: "State no variant
+    // (the walk derives t4r from the guide)". Pre-cure that state
+    // re-derived t4_open and refused again — the lie the agent rode
+    // into text-only. No variant key at all, the guide at doc level.
+    const walked = walk({ loras: LORA, seed: 7, image: "refs/anchor.png", calls: [textCall] })
+    expect(walked.variant).toBe("t4r")
+    const g = new GraphBuilder()
+    expect(() => instantiateAction(film, walked, WINDOW_MODEL, g, "run_doc_guide_unstated"), "unstated variant + doc-level guide composes").not.toThrow()
+    expect(JSON.stringify(g.toJSON())).toContain("refs/anchor.png")
   })
 })

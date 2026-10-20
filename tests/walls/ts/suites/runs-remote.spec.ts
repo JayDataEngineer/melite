@@ -793,6 +793,48 @@ test("runs {model:} — the card arm: real compose (phase-1/phase-2), voices, re
   await fiber.dispose();
 });
 
+test("W9 THE BENCH DIGEST (the invisible-press cure, 2026-10-20): a single-card press's stage_ids digest names the DRAFT row — the card skeleton never occupies the read's membership ticket", async () => {
+  // The operator's burn, verbatim shape (bench-session-1e767d50):
+  // "When I hit play on the card, by pressing the play button on
+  // the bench, the AI does not know about it" — the press ran
+  // (run-3f1ddb894a34, COMPLETED, the image the operator chained
+  // from), yet melite-construct's read printed "runs window:
+  // checked 100, total 1808, matched 2" with EVERY stage row
+  // "last_run null (draft has no run in the window)". Root: the
+  // card arm composes the card's own skeleton ('generate') while
+  // the bench draft's row is 's_0'; the settle mirror already
+  // addresses the draft row through the benchStageId seam
+  // (2026-10-22, run-4610e1c38d75) but the SIDECAR DIGEST — the
+  // ticket withLastRun joins on — kept the skeleton namespace, so
+  // membership never matched. The digest speaks the DRAFT
+  // namespace; the skeleton rides the stage row's own id, and the
+  // draft address rides beside it as bench_stage_id.
+  const { runs, fiber, root } = await boot();
+  const sig = new AbortController().signal;
+  // d_ok is the boot's bench-shaped draft: ONE stage row, id s_0.
+  const started = await runs.start(
+    { model: "krea-2", test: true, draft_id: "d_ok", params: { prompt: "a red boat on glass water" } },
+    sig,
+  );
+  assert.match(started.run_id, /^run-/);
+  const flowDoc = JSON.parse(
+    readFileSync(join(root, "test-output", started.run_id, "_flow.json"), "utf8"),
+  ) as Record<string, unknown>;
+  // THE RED (pre-cure): stage_ids carried 'generate' — the card
+  // skeleton — while the read joins on the draft row 's_0'.
+  assert.equal(
+    flowDoc["stage_ids"], "s_0",
+    "the digest is the bench read's membership ticket — it names the DRAFT row, never the card skeleton",
+  );
+  // The seam rides the stage row too (forensic twin of the settle
+  // mirror's stamp): the run's own vocabulary stays, the draft
+  // address is named, the two namespaces stop being strangers.
+  const stageRow = (flowDoc["stages"] as Array<Record<string, unknown>>)[0]!;
+  assert.equal(stageRow["bench_stage_id"], "s_0");
+  assert.equal(stageRow["id"], "generate");
+  await fiber.dispose();
+});
+
 test("runs {flow:} — the named-flow shim: live expansion, the door's voices (REBUILD-13)", async () => {
   const { ctx, runs, fiber, root } = await boot();
   const sig = new AbortController().signal;

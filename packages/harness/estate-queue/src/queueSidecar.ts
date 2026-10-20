@@ -18,6 +18,14 @@ export interface GraphRow {
 
 export interface SidecarStage {
   readonly id: string;
+  /** THE DRAFT ROW this stage ran for (the bench identity seam,
+   *  2026-10-22, extended to the sidecar 2026-10-20's
+   *  invisible-press burn): `id` may be the card skeleton's own id
+   *  ('generate' — a namespace the bench draft never heard of),
+   *  while the bench read joins on the draft row's id. Absent on
+   *  legacy sidecars and multi-row bench runs (those already stamp
+   *  each row's own id). */
+  readonly bench_stage_id?: string;
   readonly name: string;
   readonly index: number;
   readonly status: string;
@@ -43,6 +51,7 @@ export function sidecarStageOf(stage: {
 }): SidecarStage {
   const out: {
     id: string;
+    bench_stage_id?: string;
     name: string;
     index: number;
     status: string;
@@ -62,6 +71,7 @@ export function sidecarStageOf(stage: {
     outputs: stage.outputs ?? {},
     expected: stage.expected ?? {},
   };
+  if (typeof stage.benchStageId === 'string' && stage.benchStageId !== '') out.bench_stage_id = stage.benchStageId;
   if (typeof stage.engine === 'string') out.engine = stage.engine;
   if (typeof stage.url === 'string') out.url = stage.url;
   if (Array.isArray(stage.gallery)) {
@@ -414,7 +424,20 @@ export function sidecarDoc(args: {
     // reaches this. Derived from the very stages the doc stores, so
     // digest and array can never disagree; every writer (queued,
     // settled, resurrect) shares this one seat.
-    stage_ids: args.stages.map((s) => s.id).filter((id) => id !== "").join(","),
+    // THE DRAFT NAMESPACE (the invisible-press cure, 2026-10-20):
+    // the digest is the bench read's MEMBERSHIP TICKET
+    // (melite-construct's withLastRun joins stage_ids against the
+    // bench draft's row ids) — a single-card press composes the
+    // card's own skeleton ('generate'), a namespace the draft doc
+    // never heard of, so the ticket takes the bench_stage_id seam
+    // first and falls back to the row id only when the draft
+    // address is absent (inline runs, multi-row bench loops — those
+    // stamp each row's own id). The skeleton survives on the stage
+    // row's own `id`, named beside its draft address.
+    stage_ids: args.stages
+      .map((s) => (s.bench_stage_id !== undefined && s.bench_stage_id !== "" ? s.bench_stage_id : s.id))
+      .filter((id) => id !== "")
+      .join(","),
     ...(args.exportName !== undefined && args.exportName !== "" ? { export_name: args.exportName } : {}),
     ...(args.exportPath !== undefined && args.exportPath !== "" ? { export_path: args.exportPath } : {}),
     ...(args.variant !== undefined && args.variant !== "" ? { variant: args.variant } : {}),
