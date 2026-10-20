@@ -1,3 +1,4 @@
+// @contract models-h3-flip-settlement
 /**
  * h3-injectkeys-second-pass-visibility.spec.tsx — THE SECOND-PASS
  * VISIBILITY ARM (ERROR item h, audit §3 SD-7/SD-3). The operator's

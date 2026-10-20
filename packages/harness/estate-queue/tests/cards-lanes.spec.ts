@@ -1,3 +1,4 @@
+// @contract models-variant-lane-presence
 // cards-lanes.spec.ts — the lane presence gate's every arm (TEST-2
 // breadth, the deterministic census of 2026-09-19): pack-folder
 // reads (good config / no extras / broken config), the sandbox

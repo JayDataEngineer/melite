@@ -1,3 +1,4 @@
+// @contract models-shared-quant-vocabulary
 // discovery.ts walls, live plane (vitest, live card defs + live model
 // registry; synthetic Maps only for the pure projections
 // formsTable/cardSections, which take their defs as an argument):
