@@ -44,7 +44,7 @@ export { PackPrompt, ModelAxes, RecipePills } from './axes.js';
  *  over the USER layer (the settings law: presence IS the override
  *  mark, the reset chip removes it). The constructor OWNS the square
  *  provider (no call site wires it, no call site can forget it). */
-export declare function CardForm({ spec, user, base, onSet, onPick, onUnset, wire, square, atoms, onPatch, onDownloadModel, onInstallPack, paintFace, bboxFace, paintReference, omitInputRail, omitFields, omitRecipeRow }: {
+export declare function CardForm({ spec, user, base, onSet, onPick, onUnset, wire, square, atoms, onPatch, onDownloadModel, onInstallPack, paintFace, bboxFace, paintReference, omitInputRail, omitFields, omitRecipeRow, mutedViolations }: {
     /** the WHOLE emission (the schema envelope + model/variants) —
      *  REQUIRED now: the fields, the axes, and the mod param rows all
      *  derive from THIS (useFormSpec fetches it). */
@@ -93,6 +93,14 @@ export declare function CardForm({ spec, user, base, onSet, onPick, onUnset, wir
      *  so a pick can never brick the card. Family-agnostic: the
      *  host's predicate IS the law. */
     omitRecipeRow?: (row: FormVariantRow) => boolean;
+    /** THE ONE-VOICE LAW (E2-12, operator 2026-11-09: "I SEE IT 3
+     *  TIMES"): compose-violation messages the host already voices on
+     *  an actionable face (the drill's error strip with its unstamp —
+     *  the drill parses its own gate template and passes the message).
+     *  The banner skips muted messages; a fully-muted banner hides —
+     *  one refusal paints once, on the seat that can act. Absent =
+     *  the banner voices everything (the bench face's only voice). */
+    mutedViolations?: readonly string[];
     /** the host's square override (the claim seam). Rare. */
     square?: (f: SpecField) => SquareHost | undefined;
     /** the field-atom seam's claims, keyed by emitted wire type —

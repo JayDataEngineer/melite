@@ -14149,7 +14149,7 @@ window.__ModuleLoader__.load({
 		*  over the USER layer (the settings law: presence IS the override
 		*  mark, the reset chip removes it). The constructor OWNS the square
 		*  provider (no call site wires it, no call site can forget it). */
-		function CardForm({ spec, user, base, onSet, onPick, onUnset, wire, square, atoms, onPatch, onDownloadModel, onInstallPack, paintFace, bboxFace, paintReference, omitInputRail, omitFields, omitRecipeRow }) {
+		function CardForm({ spec, user, base, onSet, onPick, onUnset, wire, square, atoms, onPatch, onDownloadModel, onInstallPack, paintFace, bboxFace, paintReference, omitInputRail, omitFields, omitRecipeRow, mutedViolations }) {
 			const fields = omitFields !== void 0 ? fieldsOf(spec).filter((f) => !omitFields(f.name)) : fieldsOf(spec);
 			const value = resolveValue(spec, user, base);
 			const fieldByName = new Map(fields.map((f) => [f.name, f]));
@@ -14209,6 +14209,7 @@ window.__ModuleLoader__.load({
 				model: family ?? ""
 			}, base).filter((v) => !isUnstatedRequiredVoice(v.message));
 			const gateViolations = composeValidate(spec, user);
+			const shownGateViolations = mutedViolations === void 0 ? gateViolations : gateViolations.filter((v) => !mutedViolations.includes(v.message));
 			const variantEnvelope = offeredVariantOf(spec.variants ?? [], value)?.sampler_envelope ?? null;
 			const knobEnvelope = (f) => {
 				if (f.name !== "steps" && f.name !== "cfg") return {};
@@ -14290,11 +14291,11 @@ window.__ModuleLoader__.load({
 					...wire?.candidatesFor !== void 0 ? { candidatesFor: wire.candidatesFor } : {}
 				})) : null));
 			};
-			return (0, react.createElement)("div", { className: card_module_css_default.specForm }, gateViolations.length > 0 ? (0, react.createElement)("div", {
+			return (0, react.createElement)("div", { className: card_module_css_default.specForm }, shownGateViolations.length > 0 ? (0, react.createElement)("div", {
 				className: card_module_css_default.laneWarn,
-				"data-compose-gate": String(gateViolations.length),
+				"data-compose-gate": String(shownGateViolations.length),
 				role: "alert"
-			}, (0, react.createElement)("p", { style: { fontWeight: 700 } }, "THE COMPOSE GATE REFUSED THIS DOC — the card will not render an impossible contract. Fix the stated value, or reset the row."), gateViolations.map((v, i) => (0, react.createElement)("p", { key: "gate-" + String(i) }, v.message))) : null, laneWarns.length > 0 ? (0, react.createElement)("div", {
+			}, (0, react.createElement)("p", { style: { fontWeight: 700 } }, "THE COMPOSE GATE REFUSED THIS DOC — the card will not render an impossible contract. Fix the stated value, or reset the row."), shownGateViolations.map((v, i) => (0, react.createElement)("p", { key: "gate-" + String(i) }, v.message))) : null, laneWarns.length > 0 ? (0, react.createElement)("div", {
 				className: card_module_css_default.laneWarn,
 				"data-lane-warn": String(laneWarns.length),
 				role: "alert"

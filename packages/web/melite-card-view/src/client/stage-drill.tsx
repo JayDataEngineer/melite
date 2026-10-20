@@ -124,6 +124,16 @@ function gateRefusalVoice(v: ComposeViolation): string {
     + ' — the write never left the studio. Fix the stated value, or pick a different route.'
 }
 
+/** THE ONE-VOICE LAW (E2-12): extract a gate refusal's bare message
+ *  from a voiced face (the strip's or the write face's template), or
+ *  null when the face voices no gate refusal — non-gate voices never
+ *  mute anything (different truths keep their own seats). */
+function gateRefusalMessage(voice: string | null): string | null {
+  if (voice === null || !voice.startsWith('THE COMPOSE GATE REFUSED — ')) return null
+  const tail = ' — the write never left the studio. Fix the stated value, or pick a different route.'
+  return voice.endsWith(tail) ? voice.slice('THE COMPOSE GATE REFUSED — '.length, -tail.length) : null
+}
+
 function composeGateRefusal(
   spec: FormSpecDoc | null,
   held: Record<string, unknown> | undefined,
@@ -1515,6 +1525,12 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
         : spec !== null
           ? h(CardForm, {
             spec, user, base: servedBase, onSet, onPick, onUnset, wire,
+            // THE ONE-VOICE LAW (E2-12, "I SEE IT 3 TIMES"): the gate
+            // messages the strip / write face already voice — the
+            // banner stands down for those (its header too, when
+            // fully muted); every other violation still banners.
+            mutedViolations: [gateRefusalMessage(error), gateRefusalMessage(writeFace === error ? null : writeFace)]
+              .filter((m): m is string => m !== null),
             onPatch: onPatchParams,
             // THE TWO PROMPTS' ARMS (stroke 18, the operator's law:
             // offered-but-absent PROMPTS, never blocks): a boarded
@@ -1563,14 +1579,23 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
               onClick: () => { setGateField(null); setError(null) },
             }, h(IconCloseOutlineRegular, { size: 12 }))),
         ) : null,
-        writeFace !== null ? h('div', { className: css.drillRunRow },
-          h('span', { className: css.runError, 'data-testid': 'stage-write-face' }, writeFace,
-            h(Button, {
-              size: 'sm', variant: 'ghost', className: css.errorDismiss,
-              'aria-label': chromeCopy.dismissError,
-              onClick: () => { setWriteFace(null) },
-            }, h(IconCloseOutlineRegular, { size: 12 }))),
-        ) : null,
+        // THE ONE-VOICE LAW (E2-12): a write face whose words the
+        // strip already voices is the SAME refusal at an earlier seat
+        // — it stands down (the strip owns it: unstamp + ×). GATE
+        // REFUSALS ONLY: the gate template is one string per
+        // violation, so equality is identity; the unlanded-write
+        // template is shared by DIFFERENT events (a refused typed
+        // write beside a refused run flush) — those keep both rows,
+        // each with its own ×.
+        writeFace !== null && !(writeFace === error && gateRefusalMessage(error) !== null)
+          ? h('div', { className: css.drillRunRow },
+            h('span', { className: css.runError, 'data-testid': 'stage-write-face' }, writeFace,
+              h(Button, {
+                size: 'sm', variant: 'ghost', className: css.errorDismiss,
+                'aria-label': chromeCopy.dismissError,
+                onClick: () => { setWriteFace(null) },
+              }, h(IconCloseOutlineRegular, { size: 12 }))),
+          ) : null,
       ),
       preview: h('div', { className: css.outputs },
         h('div', {

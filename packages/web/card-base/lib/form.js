@@ -55,7 +55,7 @@ export { PackPrompt, ModelAxes, RecipePills } from "./axes.js";
  *  over the USER layer (the settings law: presence IS the override
  *  mark, the reset chip removes it). The constructor OWNS the square
  *  provider (no call site wires it, no call site can forget it). */
-export function CardForm({ spec, user, base, onSet, onPick, onUnset, wire, square, atoms, onPatch, onDownloadModel, onInstallPack, paintFace, bboxFace, paintReference, omitInputRail, omitFields, omitRecipeRow }) {
+export function CardForm({ spec, user, base, onSet, onPick, onUnset, wire, square, atoms, onPatch, onDownloadModel, onInstallPack, paintFace, bboxFace, paintReference, omitInputRail, omitFields, omitRecipeRow, mutedViolations }) {
     // DERIVED, ALWAYS FRESH (the layered law): fields walk the schema
     // envelope (families-scoped); the resolved value layers defaults
     // <- model defaults <- recipe <- user — exactly what a run
@@ -227,6 +227,14 @@ export function CardForm({ spec, user, base, onSet, onPick, onUnset, wire, squar
     // refuse). A violation renders the door's voice ABOVE the form:
     // the impossible value never presents as live, selectable truth.
     const gateViolations = composeValidate(spec, user);
+    // THE ONE-VOICE LAW (E2-12): the host's actionable face (the
+    // drill's strip: unstamp + dismiss) may already voice some of
+    // these — those stand down here (a fully-muted banner hides); the
+    // bench face passes no mute list and voices everything, its only
+    // seat.
+    const shownGateViolations = mutedViolations === undefined
+        ? gateViolations
+        : gateViolations.filter((v) => !mutedViolations.includes(v.message));
     // THE DRAGBAR CLAMP SOURCE (the form-must-not-author row,
     // 2026-10-13): the ACTIVE variant's sampler envelope — resolved
     // by the door's own law (offeredVariantOf: stated id-or-route,
@@ -375,8 +383,8 @@ export function CardForm({ spec, user, base, onSet, onPick, onUnset, wire, squar
             }))
             : null));
     };
-    return h('div', { className: css.specForm }, gateViolations.length > 0
-        ? h('div', { className: css.laneWarn, 'data-compose-gate': String(gateViolations.length), role: 'alert' }, h('p', { style: { fontWeight: 700 } }, 'THE COMPOSE GATE REFUSED THIS DOC — the card will not render an impossible contract. Fix the stated value, or reset the row.'), gateViolations.map((v, i) => h('p', { key: 'gate-' + String(i) }, v.message)))
+    return h('div', { className: css.specForm }, shownGateViolations.length > 0
+        ? h('div', { className: css.laneWarn, 'data-compose-gate': String(shownGateViolations.length), role: 'alert' }, h('p', { style: { fontWeight: 700 } }, 'THE COMPOSE GATE REFUSED THIS DOC — the card will not render an impossible contract. Fix the stated value, or reset the row.'), shownGateViolations.map((v, i) => h('p', { key: 'gate-' + String(i) }, v.message)))
         : null, 
     // LANE REFUSALS SEAT WITH THE FORM'S REFUSAL SURFACE (the admission
     // voice never renders inside the parameter flow — a bare sibling

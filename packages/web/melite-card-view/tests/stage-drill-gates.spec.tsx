@@ -717,6 +717,37 @@ describe("the unset's refused write and the run seat's refused sync — both spe
     }, { timeout: 8000 });
   });
 
+  test("THE ONE-VOICE LAW (E2-3/E2-12): a field-named compose refusal renders EXACTLY ONCE in the card's document — the face that keeps it carries the unstamp and the dismiss", async () => {
+    // The operator burn (dev_docs/ERRORS_2.md: "EVEN THE ERROR DISPLAY
+    // IS BUGGED IN THE CARD, I SEE IT 3 TIMES" + "THE ERROR DOESN'T
+    // EVEN HAVE THE X NEXT TO IT TO CLOSE"): one compose refusal —
+    // the ghost key — voiced from THREE seats at once (the form's
+    // gate banner above the axes, the drill's error strip with its
+    // unstamp, the write face beside it), and the topmost banner
+    // carried no affordance at all. The law: within the card's
+    // document a given refusal message paints ONCE, on the seat that
+    // can act (the strip: unstamp + ×); the derived banner and the
+    // write face stand down while their words are already voiced.
+    const doc = axisSpecDoc();
+    doc.params = ["prompt", "variant", "input_image"];
+    mountBench([stage({ model: "krea-2", double_reference: true })], undefined, doc);
+    await openDrill();
+    await typePrompt("a red cube");
+    await pressRun();
+    await waitFor(() => {
+      if ((errorStrip() ?? '').includes("'double_reference' fires nothing") === false) {
+        throw new Error("gate banner not voiced yet");
+      }
+    }, { timeout: 8000 });
+    const body = document.body.textContent ?? "";
+    const voices = body.split("'double_reference' fires nothing").length - 1;
+    expect(voices, "one refusal, one voice — the operator counted three").toBe(1);
+    // the surviving face is the actionable one: the unstamp verb and
+    // the dismiss × both ride it (E2-3's other half).
+    expect(await screen.findByRole("button", { name: "Unstamp 'double_reference'" }, { timeout: 4000 })).toBeTruthy();
+    expect(await screen.findByRole("button", { name: "Dismiss error" }, { timeout: 4000 })).toBeTruthy();
+  });
+
   test("the unstamp's door failure speaks the ledger row's face — the act is a write like any other", async () => {
     // SD-7's unstamp rides the same one-voice law as every write half:
     // a rejecting door speaks the row's unlanded face (never a raw

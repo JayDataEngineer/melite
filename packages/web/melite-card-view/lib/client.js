@@ -18070,6 +18070,14 @@ window.__ModuleLoader__.load({
 		function gateRefusalVoice(v) {
 			return "THE COMPOSE GATE REFUSED — " + v.message + " — the write never left the studio. Fix the stated value, or pick a different route.";
 		}
+		/** THE ONE-VOICE LAW (E2-12): extract a gate refusal's bare message
+		*  from a voiced face (the strip's or the write face's template), or
+		*  null when the face voices no gate refusal — non-gate voices never
+		*  mute anything (different truths keep their own seats). */
+		function gateRefusalMessage(voice) {
+			if (voice === null || !voice.startsWith("THE COMPOSE GATE REFUSED — ")) return null;
+			return voice.endsWith(" — the write never left the studio. Fix the stated value, or pick a different route.") ? voice.slice(27, -84) : null;
+		}
 		function composeGateRefusal(spec, held, user, frame) {
 			const v = composeGateViolation(spec, held, user, frame);
 			return v === null ? null : gateRefusalVoice(v);
@@ -18761,6 +18769,7 @@ window.__ModuleLoader__.load({
 					onPick,
 					onUnset,
 					wire,
+					mutedViolations: [gateRefusalMessage(error), gateRefusalMessage(writeFace === error ? null : writeFace)].filter((m) => m !== null),
 					onPatch: onPatchParams,
 					onDownloadModel: (id) => (0, _melite_card_base_client.postManageAction)("provision_model", { model: id }).then((r) => r.ok),
 					onInstallPack: (id) => (0, _melite_card_base_client.postManageAction)("install_extension", { nodes: [id] }).then((r) => r.ok),
@@ -18786,7 +18795,7 @@ window.__ModuleLoader__.load({
 						setGateField(null);
 						setError(null);
 					}
-				}, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.IconCloseOutlineRegular, { size: 12 })))) : null, writeFace !== null ? (0, react.createElement)("div", { className: card_module_css_default.drillRunRow }, (0, react.createElement)("span", {
+				}, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.IconCloseOutlineRegular, { size: 12 })))) : null, writeFace !== null && !(writeFace === error && gateRefusalMessage(error) !== null) ? (0, react.createElement)("div", { className: card_module_css_default.drillRunRow }, (0, react.createElement)("span", {
 					className: card_module_css_default.runError,
 					"data-testid": "stage-write-face"
 				}, writeFace, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Button, {

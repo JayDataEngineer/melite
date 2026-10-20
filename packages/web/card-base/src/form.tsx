@@ -58,7 +58,7 @@ export { PackPrompt, ModelAxes, RecipePills } from './axes.tsx'
  *  over the USER layer (the settings law: presence IS the override
  *  mark, the reset chip removes it). The constructor OWNS the square
  *  provider (no call site wires it, no call site can forget it). */
-export function CardForm({ spec, user, base, onSet, onPick, onUnset, wire, square, atoms, onPatch, onDownloadModel, onInstallPack, paintFace, bboxFace, paintReference, omitInputRail, omitFields, omitRecipeRow }: {
+export function CardForm({ spec, user, base, onSet, onPick, onUnset, wire, square, atoms, onPatch, onDownloadModel, onInstallPack, paintFace, bboxFace, paintReference, omitInputRail, omitFields, omitRecipeRow, mutedViolations }: {
   /** the WHOLE emission (the schema envelope + model/variants) —
    *  REQUIRED now: the fields, the axes, and the mod param rows all
    *  derive from THIS (useFormSpec fetches it). */
@@ -107,6 +107,14 @@ export function CardForm({ spec, user, base, onSet, onPick, onUnset, wire, squar
    *  so a pick can never brick the card. Family-agnostic: the
    *  host's predicate IS the law. */
   omitRecipeRow?: (row: FormVariantRow) => boolean
+  /** THE ONE-VOICE LAW (E2-12, operator 2026-11-09: "I SEE IT 3
+   *  TIMES"): compose-violation messages the host already voices on
+   *  an actionable face (the drill's error strip with its unstamp —
+   *  the drill parses its own gate template and passes the message).
+   *  The banner skips muted messages; a fully-muted banner hides —
+   *  one refusal paints once, on the seat that can act. Absent =
+   *  the banner voices everything (the bench face's only voice). */
+  mutedViolations?: readonly string[]
   /** the host's square override (the claim seam). Rare. */
   square?: (f: SpecField) => SquareHost | undefined
   /** the field-atom seam's claims, keyed by emitted wire type —
@@ -305,6 +313,14 @@ export function CardForm({ spec, user, base, onSet, onPick, onUnset, wire, squar
   // refuse). A violation renders the door's voice ABOVE the form:
   // the impossible value never presents as live, selectable truth.
   const gateViolations = composeValidate(spec, user)
+  // THE ONE-VOICE LAW (E2-12): the host's actionable face (the
+  // drill's strip: unstamp + dismiss) may already voice some of
+  // these — those stand down here (a fully-muted banner hides); the
+  // bench face passes no mute list and voices everything, its only
+  // seat.
+  const shownGateViolations = mutedViolations === undefined
+    ? gateViolations
+    : gateViolations.filter((v) => !mutedViolations.includes(v.message))
   // THE DRAGBAR CLAMP SOURCE (the form-must-not-author row,
   // 2026-10-13): the ACTIVE variant's sampler envelope — resolved
   // by the door's own law (offeredVariantOf: stated id-or-route,
@@ -467,11 +483,11 @@ export function CardForm({ spec, user, base, onSet, onPick, onUnset, wire, squar
     )
   }
   return h('div', { className: css.specForm },
-    gateViolations.length > 0
-      ? h('div', { className: css.laneWarn, 'data-compose-gate': String(gateViolations.length), role: 'alert' },
+    shownGateViolations.length > 0
+      ? h('div', { className: css.laneWarn, 'data-compose-gate': String(shownGateViolations.length), role: 'alert' },
           h('p', { style: { fontWeight: 700 } },
             'THE COMPOSE GATE REFUSED THIS DOC — the card will not render an impossible contract. Fix the stated value, or reset the row.'),
-          gateViolations.map((v, i) => h('p', { key: 'gate-' + String(i) }, v.message)),
+          shownGateViolations.map((v, i) => h('p', { key: 'gate-' + String(i) }, v.message)),
         )
       : null,
     // LANE REFUSALS SEAT WITH THE FORM'S REFUSAL SURFACE (the admission
