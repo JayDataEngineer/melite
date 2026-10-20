@@ -94,6 +94,11 @@ function stalledConfig(root: string): ProvisioningConfig {
   return {
     declaration: { resolve: async (): Promise<ProvisionPlan> => plan() },
     storeRoot: root,
+    // EXPLICIT STALL BUDGET (audit F7): the service default widened
+    // to 10_000ms (WAN-honest); this wall drives a real acquire to
+    // its stall-settled FAILED state inside a 10s poll window, so it
+    // seats its own tight budget instead of riding the default.
+    acquireStallTimeoutMs: 250,
     // the composition's own wiring (melite-estate provisioningConfig):
     // the durable row lives in a FileOperationStore, never in memory
     // alone — without this seat the wall would test a store-less

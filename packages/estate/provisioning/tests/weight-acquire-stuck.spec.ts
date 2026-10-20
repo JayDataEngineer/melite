@@ -79,6 +79,14 @@ function stalledConfig(root: string): ProvisioningConfig {
   return {
     declaration: { resolve: async (): Promise<ProvisionPlan> => plan() },
     storeRoot: root,
+    // THE WATCHDOG'S OWN BUDGET IS EXPLICIT (audit F7, 2026-10-20):
+    // the service default widened to 10_000ms (WAN-honest — one TCP
+    // hiccup must not kill a moving fetch), so this wall seats its
+    // own tight budget: it judges the WATCHDOG LAW (a freeze past
+    // the budget dies loud), which is budget-relative, never the
+    // default's value. The 1.5s poll window below sees the 250ms
+    // stall fire with margin.
+    acquireStallTimeoutMs: 250,
     fetcher: async (_url: string, signal?: AbortSignal) => ({
       status: 200,
       body: (async function* generate(): AsyncGenerator<Uint8Array> {

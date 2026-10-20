@@ -40,6 +40,15 @@ export declare const ProvisioningCompositionConfig: Schema<Schemastery.ObjectS<N
     storeRoot: Schema<string, string, "plain">;
     acquireStallTimeoutMs: Schema<number, number, "plain">;
 }>>, "plain">;
+/** The direct-model arm's idle budget when the caller passes no
+ *  signal (audit V-E9 → the 9.35GB cure, 2026-10-10): the dial
+ *  bounds IDLE, never duration — a whole-body cap aborts a healthy
+ *  saturated stream mid-file (10 minutes ≈ 5.4GB at lane
+ *  bandwidth), so a large weight can never land: every attempt
+ *  dies, the partial is discarded, the retry restarts at zero. A
+ *  stalled DECL host still cannot park its operation forever —
+ *  only a source that stops flowing trips the bound. */
+export declare const PROVISION_FETCH_DIAL_MS = 600000;
 /** THE IDLE DIAL (the direct arm's byte source): a fetch whose
  *  abort clock REARMS on every flowing chunk and clears when the
  *  stream ends or is cancelled. `fetch`'s own signal abort is the

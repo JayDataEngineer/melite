@@ -34,10 +34,15 @@ const DISK_FLOOR_BYTES = 1024 * 1024 * 1024;
  *  as it moves. The failed row keeps its truth (bytes + why) and the
  *  state machine re-admits the ref (failed → acquiring), so a retry
  *  is a fresh fetch, never a resurrect (weight-acquire-stuck.spec.ts
- *  ARM 5). 1000ms is the tightest bound that contract's own settle
- *  window (its 1.5s failed-poll budget) permits; the deployment face
- *  is ProvisioningConfig.acquireStallTimeoutMs. */
-export const ACQUIRE_STALL_TIMEOUT_MS = 1_000;
+ *  ARM 5). 10_000ms is the WAN-honest bound (audit F7, 2026-10-20:
+ *  at 1000ms the watchdog was one TCP hiccup deep — a single >1s
+ *  jitter on a moving 100 MB/s fetch killed the stream, discarded
+ *  the .part, and forced a zero-byte re-download; the budget bounds
+ *  the FREEZE, so 10s of true silence still dies loud while real
+ *  WAN jitter rides); the walls that judge the watchdog itself seat
+ *  their own explicit budget (stalledConfig's 250ms), and the
+ *  deployment face is ProvisioningConfig.acquireStallTimeoutMs. */
+export const ACQUIRE_STALL_TIMEOUT_MS = 10_000;
 /** The stall watchdog's check cadence: a stall is detected within one
  *  tick past the budget (the part-reaper's periodic-sweep pattern,
  *  scaled from PART_REAP_INTERVAL_MS to the budget's size). */

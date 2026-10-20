@@ -10,10 +10,15 @@ import type { Context, Plugin } from "@deepseek-ai/cordis";
  *  as it moves. The failed row keeps its truth (bytes + why) and the
  *  state machine re-admits the ref (failed → acquiring), so a retry
  *  is a fresh fetch, never a resurrect (weight-acquire-stuck.spec.ts
- *  ARM 5). 1000ms is the tightest bound that contract's own settle
- *  window (its 1.5s failed-poll budget) permits; the deployment face
- *  is ProvisioningConfig.acquireStallTimeoutMs. */
-export declare const ACQUIRE_STALL_TIMEOUT_MS = 1000;
+ *  ARM 5). 10_000ms is the WAN-honest bound (audit F7, 2026-10-20:
+ *  at 1000ms the watchdog was one TCP hiccup deep — a single >1s
+ *  jitter on a moving 100 MB/s fetch killed the stream, discarded
+ *  the .part, and forced a zero-byte re-download; the budget bounds
+ *  the FREEZE, so 10s of true silence still dies loud while real
+ *  WAN jitter rides); the walls that judge the watchdog itself seat
+ *  their own explicit budget (stalledConfig's 250ms), and the
+ *  deployment face is ProvisioningConfig.acquireStallTimeoutMs. */
+export declare const ACQUIRE_STALL_TIMEOUT_MS = 10000;
 import { type ActivateOptions, type EnsureOptions, type ExternalProvisionRequest, type ProvisionOperation, type ProvisionPlan, type ProvisionResult, type ProvisionState, type ResourceRef, type ResourceStatus, type WeightAcquireProgress } from "./contracts.ts";
 import type { ProvisioningConfig, ProvisioningServiceDefinition } from "./ports.ts";
 /** THE BUSY REFUSAL (audit I-S4): startWeightAcquire throws this when

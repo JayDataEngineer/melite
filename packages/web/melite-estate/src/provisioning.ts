@@ -333,7 +333,7 @@ const INSPECT_DIAL_MS = 2_000;
  *  dies, the partial is discarded, the retry restarts at zero. A
  *  stalled DECL host still cannot park its operation forever —
  *  only a source that stops flowing trips the bound. */
-const PROVISION_FETCH_DIAL_MS = 600_000;
+export const PROVISION_FETCH_DIAL_MS = 600_000;
 
 /** THE IDLE DIAL (the direct arm's byte source): a fetch whose
  *  abort clock REARMS on every flowing chunk and clears when the
@@ -510,6 +510,19 @@ function lifecyclePort(ctx: Context): {
 function provisioningConfig(ctx: Context, config: ProvisioningCompositionConfig = {}): ProvisioningConfig {
   const storeRoot = configuredStoreRoot(config);
   const operationRoot = join(resolveRepoRoot(), "data", "runtime", "provisioning");
+  // THE TWO ABORT CLOCKS AGREE BY CONSTRUCTION (audit F7, 2026-10-20):
+  // the fetcher's idle dial bounds a SILENT SOURCE (600s); the stall
+  // watchdog bounds a FROZEN LEDGER inside the same stream. A budget
+  // past the dial would make the dial dead code — the watchdog would
+  // outlive the fetcher's own idle bound — so the degenerate tuning
+  // refuses loud at boot, never rides silently.
+  if (config.acquireStallTimeoutMs !== undefined && config.acquireStallTimeoutMs > PROVISION_FETCH_DIAL_MS) {
+    throw new Error(
+      "acquireStallTimeoutMs " + String(config.acquireStallTimeoutMs)
+      + " exceeds the direct arm's fetch idle dial " + String(PROVISION_FETCH_DIAL_MS)
+      + " — the stall watchdog must never outlive the fetcher's own idle bound (the two abort clocks agree by construction)",
+    );
+  }
   return {
     declaration: declarationPort(ctx),
     ...(storeRoot === undefined ? {} : { storeRoot, artifactWriter: new VerifiedArtifactWriter(storeRoot) }),

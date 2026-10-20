@@ -2,6 +2,7 @@ import "../../../../tests/helpers/boot-models.ts";
 import { describe, expect, test } from 'vitest'
 import { Context, type Plugin } from '@deepseek-ai/cordis'
 import { ACQUIRE_STALL_TIMEOUT_MS } from "@melite/estate-provisioning";
+import { PROVISION_FETCH_DIAL_MS } from "../src/provisioning.ts";
 import composition, { ProvisioningCompositionConfig } from '../src/provisioning.ts'
 
 function contextWithCards(): Context {
@@ -90,6 +91,39 @@ describe("the acquire stall budget's deployment face (P5 F1)", () => {
       try {
         const plugin: Plugin.Object = composition;
         expect(() => plugin.apply(ctx, { acquireStallTimeoutMs: bad })).toThrow(/positive integer/);
+      } finally {
+        await ctx.fiber.dispose();
+      }
+    }
+  });
+
+  // THE TWO ABORT CLOCKS AGREE BY CONSTRUCTION (audit F7, 2026-10-20:
+  // the deployed stall budget was the 1000ms default — one TCP hiccup
+  // deep on a moving 100 MB/s fetch — while the fetcher's own idle
+  // dial sat at 600s, a 600x disagreement. The watchdog must never
+  // outlive the dial: a budget past it makes the dial's protection
+  // dead code, so the degenerate tuning refuses loud at boot).
+  test("the stall budget never outlives the direct arm's fetch idle dial", async () => {
+    // the default itself agrees: budget <= dial, with room to breathe
+    expect(ACQUIRE_STALL_TIMEOUT_MS).toBeLessThanOrEqual(PROVISION_FETCH_DIAL_MS);
+
+    // a tuned budget inside the dial rides through to the service
+    const tuned = contextWithCards();
+    try {
+      const plugin: Plugin.Object = composition;
+      plugin.apply(tuned, { acquireStallTimeoutMs: PROVISION_FETCH_DIAL_MS });
+      expect(tuned.provisioning.stallBudgetMs()).toBe(PROVISION_FETCH_DIAL_MS);
+    } finally {
+      await tuned.fiber.dispose();
+    }
+
+    // one past the dial refuses loud — the dial never becomes dead code
+    for (const beyond of [PROVISION_FETCH_DIAL_MS + 1, PROVISION_FETCH_DIAL_MS * 7]) {
+      const ctx = contextWithCards();
+      try {
+        const plugin: Plugin.Object = composition;
+        expect(() => plugin.apply(ctx, { acquireStallTimeoutMs: beyond }))
+          .toThrow(/must never outlive the fetcher's own idle bound/);
       } finally {
         await ctx.fiber.dispose();
       }

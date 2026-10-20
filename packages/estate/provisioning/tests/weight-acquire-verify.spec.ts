@@ -148,6 +148,11 @@ function config(root: string, writer: ArtifactWriterPort): ProvisioningConfig {
   return {
     declaration: { resolve: async (): Promise<ProvisionPlan> => plan() },
     storeRoot: root,
+    // EXPLICIT STALL BUDGET (audit F7): the service default widened
+    // to 10_000ms; this wall's silent-verify arm judges the watchdog
+    // law itself (no heartbeat past the budget fails loud), so it
+    // seats its own tight budget instead of riding the default.
+    acquireStallTimeoutMs: 250,
     artifactWriter: writer,
     fetcher: async () => ({
       status: 200,
