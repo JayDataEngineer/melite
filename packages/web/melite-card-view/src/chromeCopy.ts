@@ -240,6 +240,19 @@ export const chromeCopy = {
   missingInstall: (p: { what: string }): string => 'Missing ' + p.what + ' — install through the manage seat?',
   /** Rescue missing-weight note (what the run lacked). */
   missingDownload: (p: { what: string }): string => 'Missing ' + p.what + ' — download through the manage seat?',
+  /** Rescue missing-runtime note (E2-2: what the run lacked — the
+   *  engine's own tool runtime, provisioned where the engine
+   *  lives, never through the estate). */
+  missingRuntime: (p: { runtime: string }): string => 'Missing engine runtime "' + p.runtime + '" — the run needs its tool runtime, and the engine does not have it.',
+  /** Rescue runtime face's provision voice (E2-2): the engine's own
+   *  provision command, verbatim — the command IS the offer (no
+   *  estate door provisions runtimes, so no button is faked). */
+  runtimeProvision: (p: { command: string }): string => 'Provision it where the engine lives: ' + p.command,
+  /** Rescue runtime face's env-override voice (E2-2): the engine
+   *  names its escape hatch when one exists. */
+  runtimeEnvOverride: (p: { env: string }): string => 'Or point an existing runtime at ' + p.env + '.',
+  /** Rescue runtime face's dismiss label (the × every rescue face carries). */
+  closeRuntimeFace: 'Close runtime notice',
   /** Weight popup title when the acquisition ended STUCK (frozen
    *  bytes across polls or an expired poll ceiling) — never the
    *  ready face (the purge P5 rescue honesty, ERRORS k2/m). */

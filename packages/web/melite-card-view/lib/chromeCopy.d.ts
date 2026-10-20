@@ -258,6 +258,25 @@ export declare const chromeCopy: {
     readonly missingDownload: (p: {
         what: string;
     }) => string;
+    /** Rescue missing-runtime note (E2-2: what the run lacked — the
+     *  engine's own tool runtime, provisioned where the engine
+     *  lives, never through the estate). */
+    readonly missingRuntime: (p: {
+        runtime: string;
+    }) => string;
+    /** Rescue runtime face's provision voice (E2-2): the engine's own
+     *  provision command, verbatim — the command IS the offer (no
+     *  estate door provisions runtimes, so no button is faked). */
+    readonly runtimeProvision: (p: {
+        command: string;
+    }) => string;
+    /** Rescue runtime face's env-override voice (E2-2): the engine
+     *  names its escape hatch when one exists. */
+    readonly runtimeEnvOverride: (p: {
+        env: string;
+    }) => string;
+    /** Rescue runtime face's dismiss label (the × every rescue face carries). */
+    readonly closeRuntimeFace: "Close runtime notice";
     /** Weight popup title when the acquisition ended STUCK (frozen
      *  bytes across polls or an expired poll ceiling) — never the
      *  ready face (the purge P5 rescue honesty, ERRORS k2/m). */

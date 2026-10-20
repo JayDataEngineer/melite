@@ -4301,6 +4301,19 @@ window.__ModuleLoader__.load({
 				file: lane[2],
 				target: lane[1]
 			};
+			const runtimeMiss = /([A-Za-z0-9_-]+) runtime not found at \S+/.exec(error);
+			if (runtimeMiss !== null) {
+				const provision = /Provision it:\s*([\s\S]+?)(?:\.\s+(?:Missing:|Or point)|$)/.exec(error);
+				if (provision !== null) {
+					const env = /Or point ([A-Z][A-Z0-9_]*) at an existing runtime/.exec(error)?.[1];
+					return {
+						kind: "runtime",
+						runtime: runtimeMiss[1],
+						command: provision[1].trim(),
+						...env === void 0 ? {} : { env }
+					};
+				}
+			}
 			const target = /provision_model\s+model=([A-Za-z0-9_-]+)(?=\s|\)|;|,|$)/i.exec(error)?.[1];
 			const weight = /needs weight '([^']+)'/i.exec(error);
 			if (weight !== null && /absent on the models tree/i.test(error)) return {
@@ -4403,6 +4416,7 @@ window.__ModuleLoader__.load({
 		* refuses STUCK when the ceiling expires non-terminal (the stuck
 		* burn, ERRORS k2/m). */
 		async function runRescueCall(rescue, target, signal) {
+			if (rescue.kind === "runtime") throw new Error("no estate door provisions the engine runtime \"" + rescue.runtime + "\" — run `" + rescue.command + "` where the engine lives");
 			const provisionTarget = rescue.kind === "model" && rescue.target !== void 0 && rescue.target !== "" ? rescue.target : target;
 			if (rescue.kind === "extension") {
 				const reply = await (0, _melite_card_base_client.postManageAction)("install_extension", { nodes: [rescue.pack] });
@@ -4723,6 +4737,19 @@ window.__ModuleLoader__.load({
 			missingInstall: (p) => "Missing " + p.what + " — install through the manage seat?",
 			/** Rescue missing-weight note (what the run lacked). */
 			missingDownload: (p) => "Missing " + p.what + " — download through the manage seat?",
+			/** Rescue missing-runtime note (E2-2: what the run lacked — the
+			*  engine's own tool runtime, provisioned where the engine
+			*  lives, never through the estate). */
+			missingRuntime: (p) => "Missing engine runtime \"" + p.runtime + "\" — the run needs its tool runtime, and the engine does not have it.",
+			/** Rescue runtime face's provision voice (E2-2): the engine's own
+			*  provision command, verbatim — the command IS the offer (no
+			*  estate door provisions runtimes, so no button is faked). */
+			runtimeProvision: (p) => "Provision it where the engine lives: " + p.command,
+			/** Rescue runtime face's env-override voice (E2-2): the engine
+			*  names its escape hatch when one exists. */
+			runtimeEnvOverride: (p) => "Or point an existing runtime at " + p.env + ".",
+			/** Rescue runtime face's dismiss label (the × every rescue face carries). */
+			closeRuntimeFace: "Close runtime notice",
 			/** Weight popup title when the acquisition ended STUCK (frozen
 			*  bytes across polls or an expired poll ceiling) — never the
 			*  ready face (the purge P5 rescue honesty, ERRORS k2/m). */
@@ -4846,7 +4873,9 @@ window.__ModuleLoader__.load({
 		*  or starts a new fetch (the acquire state changed). */
 		const dismissedMisses = /* @__PURE__ */ new Set();
 		function dismissalKeyOf(rescue) {
-			return rescue.kind === "model" ? "model:" + rescue.file + "@" + (rescue.target ?? "") : "extension:" + rescue.pack;
+			if (rescue.kind === "model") return "model:" + rescue.file + "@" + (rescue.target ?? "");
+			if (rescue.kind === "runtime") return "runtime:" + rescue.runtime;
+			return "extension:" + rescue.pack;
 		}
 		function RunRescue({ error, stages, onRun, rescue: structured }) {
 			const rescue = structured ?? parseRescue(error);
@@ -4866,9 +4895,10 @@ window.__ModuleLoader__.load({
 			if (rescue === null) return null;
 			const family = familyOfStages(stages) ?? "";
 			const card = family !== "" ? "" : cardOfStages(stages) ?? "";
-			const target = rescue.kind === "model" && rescue.target !== void 0 && rescue.target !== "" ? rescue.target : family !== "" ? family : card;
-			const targetKind = rescue.kind === "model" && rescue.target !== void 0 && rescue.target !== "" ? "declared target " : family !== "" ? "family " : "card ";
-			const what = rescue.kind === "extension" ? "extension pack \"" + rescue.pack + "\"" : "model file \"" + rescue.file + "\"" + (target !== "" ? " (" + targetKind + target + ")" : "");
+			const modelTarget = rescue.kind === "model" && rescue.target !== void 0 && rescue.target !== "" ? rescue.target : null;
+			const target = rescue.kind === "runtime" ? "" : modelTarget ?? (family !== "" ? family : card);
+			const targetKind = rescue.kind === "runtime" ? "" : modelTarget !== null ? "declared target " : family !== "" ? "family " : "card ";
+			const what = rescue.kind === "extension" ? "extension pack \"" + rescue.pack + "\"" : rescue.kind === "runtime" ? "engine runtime \"" + rescue.runtime + "\"" : "model file \"" + rescue.file + "\"" + (target !== "" ? " (" + targetKind + target + ")" : "");
 			const restartFace = (detail) => {
 				if (restarted) return (0, react.createElement)("div", { className: card_module_css_default.rescue }, (0, react.createElement)("p", { className: card_module_css_default.rescueNote }, chromeCopy.restartWaiting));
 				return (0, react.createElement)("div", { className: card_module_css_default.rescue }, (0, react.createElement)("p", { className: card_module_css_default.rescueNote }, chromeCopy.restartRequiredNote({ detail })), (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Button, {
@@ -4916,6 +4946,19 @@ window.__ModuleLoader__.load({
 						});
 					}
 				}, busy ? chromeCopy.installingWord : chromeCopy.installContinue), note !== null ? (0, react.createElement)("p", { className: card_module_css_default.rescueErr }, note) : null);
+			}
+			if (rescue.kind === "runtime") {
+				if (dismissed) return null;
+				return (0, react.createElement)("div", { className: card_module_css_default.rescue }, (0, react.createElement)("p", { className: card_module_css_default.rescueNote }, chromeCopy.missingRuntime({ runtime: rescue.runtime })), (0, react.createElement)("p", { className: card_module_css_default.rescueNote }, chromeCopy.runtimeProvision({ command: rescue.command })), rescue.env !== void 0 ? (0, react.createElement)("p", { className: card_module_css_default.rescueNote }, chromeCopy.runtimeEnvOverride({ env: rescue.env })) : null, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+					size: "sm",
+					variant: "ghost",
+					className: card_module_css_default.errorDismiss,
+					"aria-label": chromeCopy.closeRuntimeFace,
+					onClick: () => {
+						dismissedMisses.add(dismissalKey);
+						setDismissed(true);
+					}
+				}, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.IconCloseOutlineRegular, { size: 12 })));
 			}
 			if (done !== null) {
 				if (dismissed) return null;

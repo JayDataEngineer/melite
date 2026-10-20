@@ -24,7 +24,7 @@
  * (the dismissal memory) — the tab's remounts never re-pop it.
  */
 import { createElement as h, useEffect, useRef, useState } from 'react'
-import { Button, Modal } from '@deepseek-ai/dsh-client-ui-primitives'
+import { Button, IconCloseOutlineRegular, Modal } from '@deepseek-ai/dsh-client-ui-primitives'
 import { abortableSleep, postManageAction } from '@melite/card-base/client'
 import css from './card.module.css'
 import { ACQUIRE_TERMINAL, acquiredDetailOf, acquireWeightPoll, acquireWeightStart, cardOfStages, familyOfStages, parseRescue, runRescueCall, type Rescue, type RescueResult, type WeightAcquireState } from './run-rescue-core.ts'
@@ -91,9 +91,9 @@ function trackerFaces(acquire: WeightAcquireState | null): Array<ReturnType<type
 const dismissedMisses = new Set<string>()
 
 function dismissalKeyOf(rescue: Rescue): string {
-  return rescue.kind === 'model'
-    ? 'model:' + rescue.file + '@' + (rescue.target ?? '')
-    : 'extension:' + rescue.pack
+  if (rescue.kind === 'model') return 'model:' + rescue.file + '@' + (rescue.target ?? '')
+  if (rescue.kind === 'runtime') return 'runtime:' + rescue.runtime
+  return 'extension:' + rescue.pack
 }
 
 export function RunRescue({ error, stages, onRun, rescue: structured }: {
@@ -135,15 +135,21 @@ export function RunRescue({ error, stages, onRun, rescue: structured }: {
   // (model-less tool cards carry their own DECL rows under it).
   const family = familyOfStages(stages) ?? ''
   const card = family !== '' ? '' : (cardOfStages(stages) ?? '')
-  const target = rescue.kind === 'model' && rescue.target !== undefined && rescue.target !== ''
+  // THE RUNTIME OWNS NO TARGET (E2-2): the provision runs where
+  // the engine lives — no family, card, or DECL owns it, so the
+  // wire seats below never read it for this kind.
+  const modelTarget = rescue.kind === 'model' && rescue.target !== undefined && rescue.target !== ''
     ? rescue.target
-    : family !== '' ? family : card
-  const targetKind = rescue.kind === 'model' && rescue.target !== undefined && rescue.target !== ''
-    ? 'declared target '
-    : family !== '' ? 'family ' : 'card '
+    : null
+  const target = rescue.kind === 'runtime' ? '' : (modelTarget ?? (family !== '' ? family : card))
+  const targetKind = rescue.kind === 'runtime'
+    ? ''
+    : modelTarget !== null ? 'declared target ' : family !== '' ? 'family ' : 'card '
   const what = rescue.kind === 'extension'
     ? 'extension pack "' + rescue.pack + '"'
-    : 'model file "' + rescue.file + '"' + (target !== '' ? ' (' + targetKind + target + ')' : '')
+    : rescue.kind === 'runtime'
+      ? 'engine runtime "' + rescue.runtime + '"'
+      : 'model file "' + rescue.file + '"' + (target !== '' ? ' (' + targetKind + target + ')' : '')
 
   const restartFace = (detail: string): ReturnType<typeof h> => {
     if (restarted) {
@@ -204,6 +210,36 @@ export function RunRescue({ error, stages, onRun, rescue: structured }: {
         },
       }, busy ? chromeCopy.installingWord : chromeCopy.installContinue),
       note !== null ? h('p', { className: css.rescueErr }, note) : null,
+    )
+  }
+
+  // THE RUNTIME BANNER (E2-2, operator 2026-10-20 — "A DOWNLOAD
+  // PROMPT APPEARS, NOT WHATEVER BULLSHIT I SEE"): the engine's own
+  // sentence names the missing tool runtime AND its provision
+  // command, so the estate faces the provision — never the raw
+  // ComfyError. The estate owns no runtime-provision door, so the
+  // face offers NO wire (never a fake install): the command IS the
+  // offer, with the engine's env override beside it when one
+  // exists. The × carries the same dismissal law as every rescue
+  // face — the miss retires for this runtime until a new refusal.
+  if (rescue.kind === 'runtime') {
+    if (dismissed) return null
+    return h('div', { className: css.rescue },
+      h('p', { className: css.rescueNote }, chromeCopy.missingRuntime({ runtime: rescue.runtime })),
+      h('p', { className: css.rescueNote }, chromeCopy.runtimeProvision({ command: rescue.command })),
+      rescue.env !== undefined
+        ? h('p', { className: css.rescueNote }, chromeCopy.runtimeEnvOverride({ env: rescue.env }))
+        : null,
+      h(Button, {
+        size: 'sm',
+        variant: 'ghost',
+        className: css.errorDismiss,
+        'aria-label': chromeCopy.closeRuntimeFace,
+        onClick: () => {
+          dismissedMisses.add(dismissalKey)
+          setDismissed(true)
+        },
+      }, h(IconCloseOutlineRegular, { size: 12 })),
     )
   }
 

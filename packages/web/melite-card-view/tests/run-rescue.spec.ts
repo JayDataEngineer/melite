@@ -1,3 +1,4 @@
+// @contract cards-run-rescue-runtime
 /**
  * run-rescue.spec.ts — the run-gate rescue's law (roadmap item 4):
  * the parse takes EXACTLY the estate's own refusal shapes (the
@@ -87,6 +88,26 @@ describe('parseRescue (the estate refusal shapes, nothing else)', () => {
       .toEqual({ kind: 'model', file: 'x.safetensors', target: 'm1' })
     expect(parseRescue("lane presence: family 'f1' declares vae 'not a weight name here' but no store copy exists"))
       .toBe(null)
+  })
+
+  // THE RUNTIME-MISS VOICE (E2-2, operator 2026-10-20 — "WHEN THE
+  // MODEL IS MISSING, A DOWNLOAD PROMPT APPEARS, NOT WHATEVER
+  // BULLSHIT I SEE"): the engine's own sentence names the missing
+  // tool runtime AND its provision command — `X runtime not found
+  // at <path>. Provision it: <cmd>` — so the estate faces the
+  // provision instead of the raw ComfyError. The anchor is the
+  // engine's own "Provision it:" sentence (the anchored-pack
+  // precedent): a bare "runtime not found" without it is not ours
+  // to fix — never a wrong install.
+  it('the engine runtime-miss sentence yields the runtime and its provision command', () => {
+    expect(parseRescue("ComfyError: ComfyUI run failed: RuntimeError: anny-estimator runtime not found at /home/user/tools/data/runtime/anny-estimator. Provision it: pnpm run provision -- estimator (SAM 3D Body venv + SOMA-X checkout — see dev_docs/design/estimator-chain.md). Missing: /home/user/tools/data/runtime/anny-estimator/estimator_chain.py, /home/user/tools/data/runtime/anny-estimator/.venv/bin/python, /home/user/tools/data/runtime/anny-estimator/SOMA-X/tools/mhr2soma.py. Or point ANNY_ESTIMATOR_ROOT at an existing runtime. @ anny::Sam3dBodyImageToAnny.0 (Sam3dBodyImageToAnny, 1 nodes executed before the failure)"))
+      .toEqual({ kind: 'runtime', runtime: 'anny-estimator', command: 'pnpm run provision -- estimator (SAM 3D Body venv + SOMA-X checkout — see dev_docs/design/estimator-chain.md)', env: 'ANNY_ESTIMATOR_ROOT' })
+  })
+
+  it('a runtime-miss without the engine Provision sentence is not ours to fix', () => {
+    expect(parseRescue('RuntimeError: some-tool runtime not found at /opt/runtimes/x'))
+      .toBe(null)
+    expect(parseRescue('the engine refused: CUDA out of memory')).toBe(null)
   })
 })
 

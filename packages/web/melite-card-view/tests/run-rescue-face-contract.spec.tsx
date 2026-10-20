@@ -1,3 +1,4 @@
+// @contract cards-run-rescue-runtime
 // @vitest-environment happy-dom
 // run-rescue-face-contract.spec.tsx — THE POPUP'S FACE CONTRACT
 // (ERRORS.md k2/m + the purge plan's P5 rescue honesty:
@@ -152,4 +153,34 @@ test('F4 — after a failed acquire, dismissing the popup must not re-pop it whi
   expect(screen.queryByTestId('weight-popup')).toBe(null)
   // the inline offer serves instead (the miss is never lost)
   expect(screen.getByText(/download through the manage seat\?/)).toBeTruthy()
+})
+
+const RUNTIME_MISS = "ComfyError: ComfyUI run failed: RuntimeError: anny-estimator runtime not found at /home/user/tools/data/runtime/anny-estimator. Provision it: pnpm run provision -- estimator (SAM 3D Body venv + SOMA-X checkout — see dev_docs/design/estimator-chain.md). Missing: /home/user/tools/data/runtime/anny-estimator/estimator_chain.py. Or point ANNY_ESTIMATOR_ROOT at an existing runtime. @ anny::Sam3dBodyImageToAnny.0 (Sam3dBodyImageToAnny, 1 nodes executed before the failure)"
+
+test('F5 (E2-2) — the engine runtime-miss faces the provision, never the raw ComfyError', () => {
+  // THE BURN (E2-2, verbatim): the estimator venv absent, the run
+  // died at the engine's raw RuntimeError with no provision face.
+  // The face must name the runtime + the exact provision command +
+  // the env override — and the raw "RuntimeError:" text must not
+  // paint. No wire fires: the estate owns no runtime-provision
+  // door, so there is no button to fake — the command is the offer.
+  render(<RunRescue error={RUNTIME_MISS} stages={STAGES} onRun={() => {}} />)
+  expect(screen.getByText(/anny-estimator/)).toBeTruthy()
+  expect(screen.getByText(/pnpm run provision -- estimator/)).toBeTruthy()
+  expect(screen.getByText(/ANNY_ESTIMATOR_ROOT/)).toBeTruthy()
+  expect(document.body.textContent).not.toMatch(/RuntimeError/)
+  expect(wire.postManageAction).not.toHaveBeenCalled()
+})
+
+test('F6 (E2-2) — the runtime-miss face dismisses with the × and stays dismissed', () => {
+  // THE × (E2-2's second sentence — "THERE IS NO MORE X FOR ERRORS
+  // IN CARD ANYMORE"): the provision face carries the same
+  // dismissal law as every rescue face — the miss retires on press
+  // and never re-pops for the same miss.
+  const first = render(<RunRescue error={RUNTIME_MISS} stages={STAGES} onRun={() => {}} />)
+  fireEvent.click(screen.getByRole('button', { name: /close/i }))
+  expect(screen.queryByText(/pnpm run provision -- estimator/)).toBe(null)
+  first.unmount()
+  render(<RunRescue error={RUNTIME_MISS} stages={STAGES} onRun={() => {}} />)
+  expect(screen.queryByText(/pnpm run provision -- estimator/)).toBe(null)
 })

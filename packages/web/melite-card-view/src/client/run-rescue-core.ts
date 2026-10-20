@@ -30,10 +30,15 @@ import { statusOrPendingOf } from '@melite/contracts/stageView'
 /** What a failed run can offer to fix. `extension` names a pack id
  * (from the missing-extension refusal's own text); `model` names a
  * missing model FILE (from the engine's error) — the family rides
- * separately (the stage params own it; the DECL owns the file). */
+ * separately (the stage params own it; the DECL owns the file).
+ * `runtime` names a missing ENGINE TOOL RUNTIME (E2-2: the venv the
+ * engine's own node needs, e.g. anny-estimator) with the engine's
+ * own provision command — the estate owns no runtime-provision
+ * door, so the command IS the offer (never a fake install). */
 export type Rescue =
   | { kind: 'extension', pack: string }
   | { kind: 'model', file: string, target?: string }
+  | { kind: 'runtime', runtime: string, command: string, env?: string }
 
 /** Parse a failed run's reason for a rescueable miss. The
  * missing-extension refusal names its pack verbatim
@@ -62,6 +67,33 @@ export function parseRescue(error: string): Rescue | null {
   // the carried URL stays server-side: names only, always).
   const lane = /lane presence: family '([^']+)' declares \S+ '([\w.-]+\.(?:safetensors|bin|pt|pth|ckpt|gguf))' but no store copy exists/.exec(error)
   if (lane !== null) return { kind: 'model', file: lane[2]!, target: lane[1]! }
+  // THE RUNTIME-MISS VOICE (E2-2, operator 2026-10-20 — "WHEN THE
+  // MODEL IS MISSING, A DOWNLOAD PROMPT APPEARS, NOT WHATEVER
+  // BULLSHIT I SEE"): the engine's own sentence names the missing
+  // tool runtime AND its provision command — `<name> runtime not
+  // found at <path>. Provision it: <cmd>` — so the estate faces
+  // the provision instead of the raw ComfyError. The anchor is the
+  // engine's own "Provision it:" sentence (the anchored-pack
+  // precedent): a bare "runtime not found" without it parses to
+  // nothing — never a wrong install. The command runs where the
+  // ENGINE lives (the estate owns no runtime-provision door); the
+  // env override rides when the engine names one.
+  const runtimeMiss = /([A-Za-z0-9_-]+) runtime not found at \S+/.exec(error)
+  if (runtimeMiss !== null) {
+    const provision = /Provision it:\s*([\s\S]+?)(?:\.\s+(?:Missing:|Or point)|$)/.exec(error)
+    // without the engine's own Provision sentence the text falls
+    // through to the generic arms below (which will almost surely
+    // refuse it) — the anchor claims, never steals.
+    if (provision !== null) {
+      const env = /Or point ([A-Z][A-Z0-9_]*) at an existing runtime/.exec(error)?.[1]
+      return {
+        kind: 'runtime',
+        runtime: runtimeMiss[1]!,
+        command: provision[1]!.trim(),
+        ...(env === undefined ? {} : { env }),
+      }
+    }
+  }
   const target = /provision_model\s+model=([A-Za-z0-9_-]+)(?=\s|\)|;|,|$)/i.exec(error)?.[1]
   const weight = /needs weight '([^']+)'/i.exec(error)
   if (weight !== null && /absent on the models tree/i.test(error)) {
@@ -208,6 +240,14 @@ export function acquiredDetailOf(target: string, current: { bytes: number, total
  * refuses STUCK when the ceiling expires non-terminal (the stuck
  * burn, ERRORS k2/m). */
 export async function runRescueCall(rescue: Rescue, target: string, signal?: AbortSignal): Promise<RescueResult> {
+  // THE RUNTIME STAND-DOWN (E2-2): the estate owns no
+  // runtime-provision door — a programmatic caller reaching here
+  // with a runtime rescue gets the honest refusal, never a wrong
+  // acquire (the face offers no wire, so this is unreachable from
+  // the UI; the type keeps it total).
+  if (rescue.kind === 'runtime') {
+    throw new Error('no estate door provisions the engine runtime "' + rescue.runtime + '" — run `' + rescue.command + '` where the engine lives')
+  }
   const provisionTarget = rescue.kind === 'model' && rescue.target !== undefined && rescue.target !== ''
     ? rescue.target
     : target
