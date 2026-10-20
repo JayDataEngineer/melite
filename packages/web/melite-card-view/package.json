@@ -64,7 +64,8 @@
     "tailwindcss": "^4.3.3",
     "tsdown": "^0.22.14",
     "tw-animate-css": "^1.4.0",
-    "typescript": "~6.0.3"
+    "typescript": "~6.0.3",
+    "@melite/estate-provisioning": "workspace:*"
   },
   "peerDependencies": {
     "@deepseek-ai/cordis": "^4.0.5",

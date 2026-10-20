@@ -160,13 +160,48 @@ export interface WeightAcquireState {
   detail?: string
 }
 
-/** Terminal acquire_weight states (the tracker stops polling).
- *  'active' is NOT here: it is the service's LIVE state (the manage
- *  plane re-arms on it), never completion — a poll saying 'active'
- *  is not a landing (ERRORS k2/m, the purge P5 rescue honesty). */
-export const ACQUIRE_TERMINAL: ReadonlySet<string> = new Set([
-  'installed', 'restart_required', 'failed', 'blocked',
+/** THE LIVE ACQUIRE STATES (the client copy of the service's
+ *  LIVE_ACQUIRE_STATES, contracts.ts — a web client package cannot
+ *  import the node-side service without dragging its runtime into
+ *  the browser bundle; the alignment wall judges the copy). A poll
+ *  in one of these states is a flight still moving under the
+ *  engine's own stall watchdog — the client keeps polling, never
+ *  invents a verdict from its own clock. */
+export const LIVE_ACQUIRE_STATES: ReadonlySet<string> = new Set([
+  'acquiring', 'verifying',
 ])
+
+/** Terminal acquire_weight states — the LEDGER's settled vocabulary
+ *  (completion is judged off ENGINE TRUTH, never the state word
+ *  alone: see isAcquireSettled). Failed and blocked are verdicts —
+ *  settled at any byte count. Installed, restart_required, and
+ *  active are LANDED states: the weight ledger settles
+ *  result.operationState (service.ts), and 'active' IS the landing
+ *  for a weight acquire — bytes on the store, engine admitted.
+ *  ERRORS k2/m's "active is not terminal" was the PARTIAL-BYTES
+ *  false-ready (a landed WORD over moving bytes); audit F6b's
+ *  overshoot (active dropped entirely) made every landed acquire
+ *  ride the whole ceiling into the stuck face at 100%. The two
+ *  burns meet in isAcquireSettled: the landed word settles ONLY at
+ *  the engine's own total. */
+export const ACQUIRE_TERMINAL: ReadonlySet<string> = new Set([
+  'installed', 'restart_required', 'active', 'failed', 'blocked',
+])
+
+/** THE COMPLETION PREDICATE (one spelling, both seats — the k2/m and
+ *  F6b burns reconciled): a verdict state (failed/blocked) is
+ *  settled at any byte count — the engine judged. A landed state
+ *  (installed/restart_required/active) settles ONLY when the bytes
+ *  reach the engine's own total; a landed word at partial bytes is
+ *  live flight (the k2/m false-ready: 'active' at 39%), and the
+ *  tracker keeps polling. A total of 0 (a DECL with no declared
+ *  size) settles on the landed word — the undeclared-total success
+ *  face (acquiredDetailOf voices it; never the dead "0/0"). */
+export function isAcquireSettled(row: WeightAcquireState): boolean {
+  if (row.state === 'failed' || row.state === 'blocked') return true
+  if (!ACQUIRE_TERMINAL.has(row.state)) return false
+  return !(row.total > 0) || row.bytes >= row.total
+}
 
 /** THE HUMAN BYTE VOICE (operator 2026-10-20: "THE TRACKING OF
  *  BYTES ALONE IS INEXCUSABLE" — the popup showed
@@ -271,6 +306,55 @@ export async function acquireWeightPoll(operationId: string, signal?: AbortSigna
   return weightStateOf(reply)
 }
 
+/** ONE STUCK LAW, ONE SPELLING, BOTH SEATS (audit F8, 2026-10-20:
+ *  the popup's inline loop and the agent seat's runRescueCall each
+ *  carried their own poll loop with their own cadence and ceiling —
+ *  the same frozen operation was "stuck" in one seat and "in
+ *  flight" in the other. This helper is the one law: poll while the
+ *  ledger is LIVE (the engine's own watchdog owns stall truth — the
+ *  client never invents a verdict from its own clock), stop at the
+ *  first settled state, and give up after `ceiling` polls. Returns
+ *  the LAST snapshot whether settled or not — the CALLER owns the
+ *  face (the popup paints stuck/failed/done; the agent seat throws
+ *  on a non-settled return). Throws the abort reason when the
+ *  caller's signal fires mid-loop.
+ *  @param first — the opening snapshot from acquireWeightStart (the
+ *   loop never re-polls what it already has)
+ *  @param options.pollMs — the poll cadence in ms
+ *  @param options.ceiling — the max poll count past the opening
+ *   snapshot (the stuck bound: cadence x ceiling is the seat's
+ *   patience window)
+ *  @param options.signal — the caller's teardown; aborts sleep,
+ *   polls, and the loop itself
+ *  @param options.onPoll — the per-snapshot hook (the popup's rate
+ *   and ETA face) */
+export async function pollAcquireToSettled(
+  first: WeightAcquireState,
+  options: { pollMs: number, ceiling: number, signal?: AbortSignal, onPoll?: (state: WeightAcquireState) => void },
+): Promise<WeightAcquireState> {
+  let current = first
+  for (let attempt = 0; !isAcquireSettled(current) && attempt < options.ceiling; attempt += 1) {
+    await abortableSleep(options.pollMs, options.signal)
+    if (options.signal?.aborted === true) throw options.signal.reason ?? new Error('aborted')
+    current = await acquireWeightPoll(current.operationId, options.signal)
+    options.onPoll?.({ ...current })
+  }
+  return current
+}
+
+/** The sleep that dies with the caller's signal (the poll law's own
+ *  tick): resolves normally on elapsed, throws the signal's reason
+ *  when aborted mid-sleep. */
+function abortableSleep(ms: number, signal?: AbortSignal): Promise<void> {
+  return new Promise<void>((resolve, reject) => {
+    const timer = setTimeout(resolve, ms)
+    signal?.addEventListener('abort', () => {
+      clearTimeout(timer)
+      reject(signal.reason ?? new Error('aborted'))
+    }, { once: true })
+  })
+}
+
 /** THE ACQUIRED VOICE (one home for the success line): the landed
  *  byte count over the DECL total. A report with no declared total
  *  (a DECL row without size_bytes seeds 0) voices the undeclared
@@ -318,27 +402,19 @@ export async function runRescueCall(rescue: Rescue, target: string, signal?: Abo
     }
   }
   // THE MODEL ARM (F9 one-door law): start the fetch, then poll the
-  // SAME door to the terminal state — the popup tracker polls the
-  // same snapshots this loop awaits.
-  // THE SIGNAL RIDES THE WHOLE LOOP (audit L-ERROR-3, 2026-10-22):
-  // an aborted caller stops paying manage calls — the start, every
-  // poll, and each sleep carry it, so a closed caller tears down.
+  // SAME door to the terminal state — ONE STUCK LAW with the popup
+  // tracker (pollAcquireToSettled, audit F8): the same live-state
+  // spelling, the same ceiling-is-stuck law, this seat's own
+  // cadence. The signal rides the whole loop (audit L-ERROR-3,
+  // 2026-10-22): an aborted caller stops paying manage calls.
   const first = await acquireWeightStart(provisionTarget, rescue.file, signal)
-  let current = first
-  for (let attempt = 0; !ACQUIRE_TERMINAL.has(current.state) && attempt < 150; attempt += 1) {
-    await new Promise<void>((resolve) => {
-      const t = setTimeout(resolve, 200)
-      signal?.addEventListener('abort', () => { clearTimeout(t); resolve() }, { once: true })
-    })
-    if (signal?.aborted === true) throw signal.reason ?? new Error('aborted')
-    current = await acquireWeightPoll(current.operationId, signal)
-  }
+  const current = await pollAcquireToSettled(first, { pollMs: 200, ceiling: 150, signal })
   // THE CEILING IS A FAILURE (the stuck burn, ERRORS k2/m): a fetch
   // still non-terminal after the whole poll ceiling is a STUCK
   // operation — bytes frozen is stuck, never success. The throw
   // voices the last engine truth (state + bytes/total) so the face
   // can offer Retry/Delete on it.
-  if (!ACQUIRE_TERMINAL.has(current.state)) {
+  if (!isAcquireSettled(current)) {
     throw new Error('weight acquisition stuck — no longer progressing: the engine last reported state "' + current.state + '" at ' + formatWeightProgress(current.bytes, current.total) + ' across the full 150-poll ceiling; retry the fetch or delete the stuck operation')
   }
   const restartRequired = current.state === 'restart_required' || current.state === 'installed'

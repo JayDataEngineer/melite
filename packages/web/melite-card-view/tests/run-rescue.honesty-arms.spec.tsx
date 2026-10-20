@@ -291,3 +291,29 @@ describe('CLASS 6 — CEILING EXPIRY (SD-8b, FALSE-READY #2): a poll ceiling exp
     ).toBeTruthy()
   })
 })
+
+describe('CLASS 7 — THE LANDED ACTIVE FACE (audit F6b, 2026-10-20): the popup settles the landing, never rides the ceiling at 100%', () => {
+  it("ARM 9 — a poll answering 'active' AT the engine's total renders Weight ready at once — both seats, one law", async () => {
+    // THE F6b BURN: with 'active' dropped from the terminal
+    // vocabulary, every landed weight acquire (the service settles
+    // landed fetches 'active') rode the whole 150-poll ceiling and
+    // landed the STUCK face reading "state 'active' at 6.8/6.8 GB
+    // (100%)" — a successful download dressed as a wedge. The
+    // refined law (isAcquireSettled): the landed word settles ONLY
+    // at the engine's own total — here it does, so the ready face
+    // renders and no restart is demanded.
+    wire.postManageAction
+      .mockResolvedValueOnce(reply('acquiring', PARTIAL, TOTAL))
+      .mockResolvedValueOnce(reply('active', TOTAL, TOTAL, 'acquire_weight op-honesty landed'))
+    render(<RunRescue error={MISS} stages={STAGES} onRun={() => {}} />)
+    await userEvent.click(screen.getByTestId('weight-download'))
+    await waitFor(() => { expect(screen.getByText('Weight ready')).toBeTruthy() })
+    // the landed 'active' is engine-admitted: no restart note rides
+    // the ready face (installed/restart_required carry one; active
+    // does not)
+    expect(screen.queryByText(/restart/i)).toBeNull()
+    // the meter reads the engine's own total — 100% of the report
+    const fill = screen.getByTestId('weight-meter-fill') as HTMLElement
+    expect(fill.style.width).toBe('100%')
+  })
+})

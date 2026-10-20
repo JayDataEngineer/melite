@@ -4348,16 +4348,40 @@ window.__ModuleLoader__.load({
 				target: family
 			};
 		}
-		/** Terminal acquire_weight states (the tracker stops polling).
-		*  'active' is NOT here: it is the service's LIVE state (the manage
-		*  plane re-arms on it), never completion — a poll saying 'active'
-		*  is not a landing (ERRORS k2/m, the purge P5 rescue honesty). */
+		/** Terminal acquire_weight states — the LEDGER's settled vocabulary
+		*  (completion is judged off ENGINE TRUTH, never the state word
+		*  alone: see isAcquireSettled). Failed and blocked are verdicts —
+		*  settled at any byte count. Installed, restart_required, and
+		*  active are LANDED states: the weight ledger settles
+		*  result.operationState (service.ts), and 'active' IS the landing
+		*  for a weight acquire — bytes on the store, engine admitted.
+		*  ERRORS k2/m's "active is not terminal" was the PARTIAL-BYTES
+		*  false-ready (a landed WORD over moving bytes); audit F6b's
+		*  overshoot (active dropped entirely) made every landed acquire
+		*  ride the whole ceiling into the stuck face at 100%. The two
+		*  burns meet in isAcquireSettled: the landed word settles ONLY at
+		*  the engine's own total. */
 		const ACQUIRE_TERMINAL = /* @__PURE__ */ new Set([
 			"installed",
 			"restart_required",
+			"active",
 			"failed",
 			"blocked"
 		]);
+		/** THE COMPLETION PREDICATE (one spelling, both seats — the k2/m and
+		*  F6b burns reconciled): a verdict state (failed/blocked) is
+		*  settled at any byte count — the engine judged. A landed state
+		*  (installed/restart_required/active) settles ONLY when the bytes
+		*  reach the engine's own total; a landed word at partial bytes is
+		*  live flight (the k2/m false-ready: 'active' at 39%), and the
+		*  tracker keeps polling. A total of 0 (a DECL with no declared
+		*  size) settles on the landed word — the undeclared-total success
+		*  face (acquiredDetailOf voices it; never the dead "0/0"). */
+		function isAcquireSettled(row) {
+			if (row.state === "failed" || row.state === "blocked") return true;
+			if (!ACQUIRE_TERMINAL.has(row.state)) return false;
+			return !(row.total > 0) || row.bytes >= row.total;
+		}
 		/** THE HUMAN BYTE VOICE (operator 2026-10-20: "THE TRACKING OF
 		*  BYTES ALONE IS INEXCUSABLE" — the popup showed
 		*  "5196173399/7343591088 bytes (71%)", a wall of digits no
@@ -4444,6 +4468,50 @@ window.__ModuleLoader__.load({
 			if (!reply.ok) throw new Error(reply.detail ?? "manage refused");
 			return weightStateOf(reply);
 		}
+		/** ONE STUCK LAW, ONE SPELLING, BOTH SEATS (audit F8, 2026-10-20:
+		*  the popup's inline loop and the agent seat's runRescueCall each
+		*  carried their own poll loop with their own cadence and ceiling —
+		*  the same frozen operation was "stuck" in one seat and "in
+		*  flight" in the other. This helper is the one law: poll while the
+		*  ledger is LIVE (the engine's own watchdog owns stall truth — the
+		*  client never invents a verdict from its own clock), stop at the
+		*  first settled state, and give up after `ceiling` polls. Returns
+		*  the LAST snapshot whether settled or not — the CALLER owns the
+		*  face (the popup paints stuck/failed/done; the agent seat throws
+		*  on a non-settled return). Throws the abort reason when the
+		*  caller's signal fires mid-loop.
+		*  @param first — the opening snapshot from acquireWeightStart (the
+		*   loop never re-polls what it already has)
+		*  @param options.pollMs — the poll cadence in ms
+		*  @param options.ceiling — the max poll count past the opening
+		*   snapshot (the stuck bound: cadence x ceiling is the seat's
+		*   patience window)
+		*  @param options.signal — the caller's teardown; aborts sleep,
+		*   polls, and the loop itself
+		*  @param options.onPoll — the per-snapshot hook (the popup's rate
+		*   and ETA face) */
+		async function pollAcquireToSettled(first, options) {
+			let current = first;
+			for (let attempt = 0; !isAcquireSettled(current) && attempt < options.ceiling; attempt += 1) {
+				await abortableSleep$1(options.pollMs, options.signal);
+				if (options.signal?.aborted === true) throw options.signal.reason ?? /* @__PURE__ */ new Error("aborted");
+				current = await acquireWeightPoll(current.operationId, options.signal);
+				options.onPoll?.({ ...current });
+			}
+			return current;
+		}
+		/** The sleep that dies with the caller's signal (the poll law's own
+		*  tick): resolves normally on elapsed, throws the signal's reason
+		*  when aborted mid-sleep. */
+		function abortableSleep$1(ms, signal) {
+			return new Promise((resolve, reject) => {
+				const timer = setTimeout(resolve, ms);
+				signal?.addEventListener("abort", () => {
+					clearTimeout(timer);
+					reject(signal.reason ?? /* @__PURE__ */ new Error("aborted"));
+				}, { once: true });
+			});
+		}
 		/** THE ACQUIRED VOICE (one home for the success line): the landed
 		*  byte count over the DECL total. A report with no declared total
 		*  (a DECL row without size_bytes seeds 0) voices the undeclared
@@ -4476,19 +4544,12 @@ window.__ModuleLoader__.load({
 					restartRequired: data !== null && data["restart_required"] === true || state === "restart_required"
 				};
 			}
-			let current = await acquireWeightStart(provisionTarget, rescue.file, signal);
-			for (let attempt = 0; !ACQUIRE_TERMINAL.has(current.state) && attempt < 150; attempt += 1) {
-				await new Promise((resolve) => {
-					const t = setTimeout(resolve, 200);
-					signal?.addEventListener("abort", () => {
-						clearTimeout(t);
-						resolve();
-					}, { once: true });
-				});
-				if (signal?.aborted === true) throw signal.reason ?? /* @__PURE__ */ new Error("aborted");
-				current = await acquireWeightPoll(current.operationId, signal);
-			}
-			if (!ACQUIRE_TERMINAL.has(current.state)) throw new Error("weight acquisition stuck — no longer progressing: the engine last reported state \"" + current.state + "\" at " + formatWeightProgress(current.bytes, current.total) + " across the full 150-poll ceiling; retry the fetch or delete the stuck operation");
+			const current = await pollAcquireToSettled(await acquireWeightStart(provisionTarget, rescue.file, signal), {
+				pollMs: 200,
+				ceiling: 150,
+				signal
+			});
+			if (!isAcquireSettled(current)) throw new Error("weight acquisition stuck — no longer progressing: the engine last reported state \"" + current.state + "\" at " + formatWeightProgress(current.bytes, current.total) + " across the full 150-poll ceiling; retry the fetch or delete the stuck operation");
 			const restartRequired = current.state === "restart_required" || current.state === "installed";
 			if (current.state === "failed" || current.state === "blocked") throw new Error(current.detail ?? "weight acquisition " + current.state);
 			return {
@@ -5068,22 +5129,23 @@ window.__ModuleLoader__.load({
 						setAcquire(first);
 						const t0 = Date.now();
 						const b0 = first.bytes;
-						let current = first;
-						for (let attempt = 0; !ACQUIRE_TERMINAL.has(current.state) && attempt < 150; attempt += 1) {
-							if (await (0, _melite_card_base_client.abortableSleep)(400, signal) === "abort") return;
-							if (signal.aborted) return;
-							current = await acquireWeightPoll(current.operationId, signal);
-							setAcquire({ ...current });
-							const elapsedSec = (Date.now() - t0) / 1e3;
-							const rateBps = elapsedSec > 0 ? (current.bytes - b0) / elapsedSec : 0;
-							setFlow({
-								rateBps: rateBps > 0 ? rateBps : 0,
-								etaSec: rateBps > 0 && current.total > current.bytes ? (current.total - current.bytes) / rateBps : null
-							});
-						}
+						const current = await pollAcquireToSettled(first, {
+							pollMs: 400,
+							ceiling: 150,
+							signal,
+							onPoll: (snapshot) => {
+								setAcquire(snapshot);
+								const elapsedSec = (Date.now() - t0) / 1e3;
+								const rateBps = elapsedSec > 0 ? (snapshot.bytes - b0) / elapsedSec : 0;
+								setFlow({
+									rateBps: rateBps > 0 ? rateBps : 0,
+									etaSec: rateBps > 0 && snapshot.total > snapshot.bytes ? (snapshot.total - snapshot.bytes) / rateBps : null
+								});
+							}
+						});
 						setBusy(false);
 						setFlow(null);
-						if (!ACQUIRE_TERMINAL.has(current.state)) {
+						if (!isAcquireSettled(current)) {
 							setStuck({ ...current });
 							return;
 						}
@@ -5105,7 +5167,7 @@ window.__ModuleLoader__.load({
 					}
 				})();
 			};
-			const downloading = acquire !== null && !ACQUIRE_TERMINAL.has(acquire.state);
+			const downloading = acquire !== null && !isAcquireSettled(acquire);
 			if (dismissed) return (0, react.createElement)("div", { className: card_module_css_default.rescue }, (0, react.createElement)("p", { className: card_module_css_default.rescueNote }, chromeCopy.missingDownload({ what })), (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Button, {
 				size: "sm",
 				variant: "primary",

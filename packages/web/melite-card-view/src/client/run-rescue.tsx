@@ -25,9 +25,9 @@
  */
 import { createElement as h, useEffect, useRef, useState } from 'react'
 import { Button, IconCloseOutlineRegular, Modal } from '@deepseek-ai/dsh-client-ui-primitives'
-import { abortableSleep, postManageAction } from '@melite/card-base/client'
+import { postManageAction } from '@melite/card-base/client'
 import css from './card.module.css'
-import { ACQUIRE_TERMINAL, acquiredDetailOf, acquireWeightPoll, acquireWeightStart, cardOfStages, familyOfStages, formatByteSize, formatRateLine, formatWeightProgress, parseRescue, runRescueCall, type Rescue, type RescueResult, type WeightAcquireState } from './run-rescue-core.ts'
+import { acquiredDetailOf, acquireWeightStart, cardOfStages, familyOfStages, formatByteSize, formatRateLine, formatWeightProgress, isAcquireSettled, parseRescue, pollAcquireToSettled, runRescueCall, type Rescue, type RescueResult, type WeightAcquireState } from './run-rescue-core.ts'
 import { rejectionVoice } from './rejection-voice.ts'
 import { chromeCopy } from '../chromeCopy.ts'
 
@@ -303,7 +303,6 @@ export function RunRescue({ error, stages, onRun, rescue: structured }: {
         // poll's delta over the wall clock voices MB/s + ETA.
         const t0 = Date.now()
         const b0 = first.bytes
-        let current = first
         // ONE STALL AUTHORITY — THE ENGINE (the 100-MBps-then-stuck
         // burn, 2026-10-20): the popup's own byte-freeze guess fired
         // the stuck face 800ms into a WAN hiccup the engine was
@@ -313,23 +312,31 @@ export function RunRescue({ error, stages, onRun, rescue: structured }: {
         // kills a dead stream and the state lands 'failed' carrying
         // the cause; the client polls until a terminal state or the
         // ceiling, NEVER inventing a verdict from its own clock.
-        for (let attempt = 0; !ACQUIRE_TERMINAL.has(current.state) && attempt < 150; attempt += 1) {
-          if ((await abortableSleep(400, signal)) === 'abort') return
-          if (signal.aborted) return
-          current = await acquireWeightPoll(current.operationId, signal)
-          setAcquire({ ...current })
-          const elapsedSec = (Date.now() - t0) / 1000
-          const rateBps = elapsedSec > 0 ? (current.bytes - b0) / elapsedSec : 0
-          setFlow({
-            rateBps: rateBps > 0 ? rateBps : 0,
-            etaSec: rateBps > 0 && current.total > current.bytes
-              ? (current.total - current.bytes) / rateBps
-              : null,
-          })
-        }
+        // ONE STUCK LAW, ONE SPELLING, BOTH SEATS (audit F8): this
+        // loop is pollAcquireToSettled — the same live-state
+        // spelling and ceiling law the agent seat rides, this seat's
+        // own cadence, with the rate/ETA face on the per-poll hook.
+        // An aborted caller throws out of the helper; the catch
+        // below owns the quiet teardown.
+        const current = await pollAcquireToSettled(first, {
+          pollMs: 400,
+          ceiling: 150,
+          signal,
+          onPoll: (snapshot) => {
+            setAcquire(snapshot)
+            const elapsedSec = (Date.now() - t0) / 1000
+            const rateBps = elapsedSec > 0 ? (snapshot.bytes - b0) / elapsedSec : 0
+            setFlow({
+              rateBps: rateBps > 0 ? rateBps : 0,
+              etaSec: rateBps > 0 && snapshot.total > snapshot.bytes
+                ? (snapshot.total - snapshot.bytes) / rateBps
+                : null,
+            })
+          },
+        })
         setBusy(false)
         setFlow(null)
-        if (!ACQUIRE_TERMINAL.has(current.state)) {
+        if (!isAcquireSettled(current)) {
           // ceiling expiry with no terminal verdict: the stuck truth,
           // never the success face
           setStuck({ ...current })
@@ -356,7 +363,7 @@ export function RunRescue({ error, stages, onRun, rescue: structured }: {
     })()
   }
 
-  const downloading = acquire !== null && !ACQUIRE_TERMINAL.has(acquire.state)
+  const downloading = acquire !== null && !isAcquireSettled(acquire)
 
   // A dismissed popup falls back to the inline offer (the run error
   // still carries the miss — the popup is re-openable, never lost).
