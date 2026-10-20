@@ -133,12 +133,15 @@ export function apply(ctx: Context): void {
     compose(p, model, g, runId) {
       // THE SCHEMA GATE (the music/sfx/tts admission precedent —
       // the card's own declaration validates the last hop into the
-      // engine): schemastery walk enforces the declared type (source
-      // is a string — anything else refuses LOUD, never composes);
-      // the schema declares no bounds and no defaults (source is the
-      // only knob; crop/media_type/scale ride admits, inert). The
-      // composer's reads below are reads of the GATED doc.
-      const doc = gatedResolve('input-prep', schemaFn, ['crop', 'scale', 'model'], p)
+      // engine): schemastery walk enforces the declared types and
+      // bounds on every declared knob (source, media_type, the four
+      // crop keys, the scale rail — anything else refuses LOUD,
+      // never composes); the riders admit the two LEGACY overlay
+      // objects only (crop/scale — old drafts keep parsing; 'model'
+      // is no rider: nothing reads it, so the gate refuses it loud
+      // rather than passing a dead key through). The composer's
+      // reads below are reads of the GATED doc.
+      const doc = gatedResolve('input-prep', schemaFn, ['crop', 'scale'], p)
       if (typeof doc.source !== 'string' || !doc.source.trim()) {
         throw new Error("required param 'source' missing on the input-prep card (the staged source — upload, asset drop, prior-run artifact, or input-dir filename)")
       }

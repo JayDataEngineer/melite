@@ -1,6 +1,7 @@
 import "../../../../tests/helpers/boot-models.ts";
 import { describe, it, beforeAll } from "vitest";
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { loadCardDefs } from "@melite/comfyui-cordis";
@@ -287,6 +288,34 @@ describe("the input-prep compose gate", () => {
     assert.equal(image?.when?.({ media_type: "audio" }), false);
     assert.equal(audio?.when?.({ media_type: "image" }), false);
     assert.equal(audio?.when?.({ media_type: "audio" }), true);
+  });
+
+  // AUDIT input-prep F6.5: the stage-view registration key and the
+  // card id are two literals in two files — the mount census derives
+  // both rosters from the SAME literal, so a key typo'd away from
+  // the card id passes every census and only surfaces as the live
+  // LOUD refusal. One arm binds the literals: the studio registers
+  // under exactly the card's registered id.
+  it("AUDIT F6.5: the stage-view registration key IS the card's registered id (the two literals agree)", () => {
+    const cardSrc = readFileSync(join(__dirname, "../src/card.ts"), "utf8");
+    const clientSrc = readFileSync(join(__dirname, "../src/client/index.ts"), "utf8");
+    const cardId = cardSrc.match(/registerCard\(\{\s*\n?\s*id:\s*'([^']+)'/);
+    const regKey = clientSrc.match(/defineStageViewRegistration\('([^']+)'/);
+    assert.ok(cardId !== null, "the registerCard id literal is readable in src/card.ts");
+    assert.ok(regKey !== null, "the registration key literal is readable in src/client/index.ts");
+    assert.equal(regKey[1], cardId[1],
+      "the studio registers under the card's id — a typo here passes the mount census (both rosters share one literal) and only fires as the live LOUD refusal");
+  });
+
+  // AUDIT input-prep F7: the 'model' rider admitted a key nothing
+  // consumes — a silent pass-through for a param compose never
+  // reads. The gate refuses it loud now (the refusal names the key).
+  it("AUDIT F7: a 'model' param refuses loud — no rider admits a key nothing consumes", () => {
+    assert.throws(
+      () => def.compose({ source: "upload.png", model: "4x-ultrasharp" }, DUMMY, new GraphBuilder(), "model_rider"),
+      /undeclared param\(s\): model/,
+      "an admitted-but-unread key is a silent pass-through; the gate's refusal names what to remove",
+    );
   });
 
   it("PRODUCER-ONLY: the card seats no flow inputs (the text-seat trap)", () => {

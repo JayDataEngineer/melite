@@ -79,6 +79,18 @@ function drag(el: Element, points: Array<[number, number]>) {
 }
 
 describe('the crop leaf (CropPreview)', () => {
+  it('AUDIT F8: a source that fails to decode names itself — never a permanent broken frame', () => {
+    render(h(CropPreview, { src: 'https://dead.example/host/gone.png', crop: null, onChange: vi.fn() }))
+    const img = screen.getByTestId('prep-crop-preview').querySelector('img') as HTMLImageElement
+    fireEvent.error(img)
+    // the pane's own honesty law: the studio SAYS the source will
+    // not load instead of rendering a silent broken frame — the note
+    // names the unloadable source and no crop overlay mounts
+    const note = screen.getByTestId('prep-load-error')
+    expect(note.textContent).toContain('https://dead.example/host/gone.png')
+    expect(screen.queryByTestId('prep-crop-overlay')).toBeNull()
+  })
+
   it('THE PREVIEW SEAT IS THE IMAGE (the ANNY-studio pin): the <img> renders the stage media and the drag box rides OVER it', () => {
     const onChange = vi.fn()
     render(h(CropPreview, { src: IMG, crop: null, onChange }))
@@ -314,6 +326,23 @@ describe('the studio (InputPrepStudio)', () => {
     })
     expect(onImagePatch.mock.calls[0][0]).toMatchObject({ source: IMG, media_type: 'image' })
     expect(screen.queryByTestId('prep-audio-note')).toBeNull()
+  })
+
+  // AUDIT input-prep F6.4: the rail's clamp `Math.max(1,
+  // Math.round(Number(raw)))` seated Infinity for 1e999 — a value
+  // that JSON-serializes to null at the door and composes garbage.
+  // THE FINITE LAW: a non-finite keystroke seats the UNSET key,
+  // never Infinity.
+  it('AUDIT F6.4: a degenerate scale keystroke (1e999) seats unset, never Infinity', () => {
+    const onPatch = vi.fn()
+    render(h(InputPrepStudio, owner({ params: { source: IMG } }, { onPatch })))
+    act(() => {
+      fireEvent.change(screen.getByTestId('prep-scale-scale_width'), { target: { value: '1e999' } })
+    })
+    expect(onPatch.mock.calls[0][0]).toMatchObject({ scale_width: -1 },
+      'Infinity JSON-serializes to null at the door — a non-finite keystroke seats the unset key')
+    expect(Number.isFinite(onPatch.mock.calls[0][0]['scale_width'])).toBe(true)
+    expect(screen.getByTestId('prep-scale-scale_width').value).toBe('')
   })
 
   it('NO RUN VERB BINDS (single writer: the drill owns the frame pill — the last-bind-wins race is dead by construction)', () => {

@@ -101,6 +101,14 @@ export function CropPreview({ src, crop, onChange, onNatural }: {
 }) {
   const [natural, setNatural] = useState<NaturalSize | null>(null)
   const [live, setLive] = useState<CropRect | null>(crop)
+  // THE HONEST FAILURE FACE (audit input-prep F8, 2026-10-20): a
+  // source that passes isPreviewable but fails to decode (a dead
+  // rooted path, a dead artifact host) used to render a PERMANENT
+  // broken frame with no note — the pane's own law says the studio
+  // tells the operator instead. A failed decode latches the error
+  // face naming the source; no crop overlay mounts over a frame
+  // that never loaded.
+  const [failed, setFailed] = useState(false)
   const dragRef = useRef<DragState | null>(null)
   // THE GESTURE STATE IS REF-READ, NEVER CLOSURE-READ (the
   // tap-before-commit race, caught by the wall's act-batched drag):
@@ -219,9 +227,15 @@ export function CropPreview({ src, crop, onChange, onNatural }: {
             onNatural?.(n)
           }
         }}
+        onError={() => { setFailed(true) }}
         draggable={false}
       />
-      {natural !== null && (
+      {failed && (
+        <div className={css.paneNote} data-testid="prep-load-error">
+          the source "{src}" would not load — the file is gone or its host is unreachable; the preview and crop need a live image
+        </div>
+      )}
+      {natural !== null && !failed && (
         <div
           ref={overlayRef}
           className={css.previewOverlay}

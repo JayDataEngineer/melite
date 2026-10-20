@@ -236,6 +236,7 @@ window.__ModuleLoader__.load({
 		function CropPreview({ src, crop, onChange, onNatural }) {
 			const [natural, setNatural] = (0, react.useState)(null);
 			const [live, setLive] = (0, react.useState)(crop);
+			const [failed, setFailed] = (0, react.useState)(false);
 			const dragRef = (0, react.useRef)(null);
 			const naturalRef = (0, react.useRef)(null);
 			const liveRef = (0, react.useRef)(crop);
@@ -353,56 +354,71 @@ window.__ModuleLoader__.load({
 			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 				className: prep_module_css_default.previewWrap,
 				"data-testid": "prep-crop-preview",
-				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("img", {
-					src,
-					alt: "crop source",
-					className: prep_module_css_default.previewImg,
-					onLoad: (e) => {
-						const im = e.currentTarget;
-						if (im.naturalWidth > 0 && im.naturalHeight > 0) {
-							const n = {
-								width: im.naturalWidth,
-								height: im.naturalHeight
-							};
-							naturalRef.current = n;
-							setNatural(n);
-							onNatural?.(n);
-						}
-					},
-					draggable: false
-				}), natural !== null && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-					ref: overlayRef,
-					className: prep_module_css_default.previewOverlay,
-					onPointerDown: onOverlayDown,
-					onPointerMove: onOverlayMove,
-					onPointerUp: onOverlayUp,
-					"data-testid": "prep-crop-overlay",
-					children: [box !== null && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-						className: prep_module_css_default.cropBox,
-						style: pct(box),
-						"data-testid": "prep-crop-box",
-						children: [HANDLES.map((hd) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-							className: prep_module_css_default[`handle_${hd}`] ?? prep_module_css_default.handle,
-							"data-handle": hd,
-							"data-testid": `prep-crop-handle-${hd}`,
-							onPointerDown: (e) => {
-								onHandleDown(e, hd);
-							},
-							onPointerMove: onOverlayMove,
-							onPointerUp: onOverlayUp
-						}, hd)), /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
-							className: prep_module_css_default.cropBadge,
-							children: [
-								box.width,
-								"×",
-								box.height
-							]
+				children: [
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("img", {
+						src,
+						alt: "crop source",
+						className: prep_module_css_default.previewImg,
+						onLoad: (e) => {
+							const im = e.currentTarget;
+							if (im.naturalWidth > 0 && im.naturalHeight > 0) {
+								const n = {
+									width: im.naturalWidth,
+									height: im.naturalHeight
+								};
+								naturalRef.current = n;
+								setNatural(n);
+								onNatural?.(n);
+							}
+						},
+						onError: () => {
+							setFailed(true);
+						},
+						draggable: false
+					}),
+					failed && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+						className: prep_module_css_default.paneNote,
+						"data-testid": "prep-load-error",
+						children: [
+							"the source \"",
+							src,
+							"\" would not load — the file is gone or its host is unreachable; the preview and crop need a live image"
+						]
+					}),
+					natural !== null && !failed && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+						ref: overlayRef,
+						className: prep_module_css_default.previewOverlay,
+						onPointerDown: onOverlayDown,
+						onPointerMove: onOverlayMove,
+						onPointerUp: onOverlayUp,
+						"data-testid": "prep-crop-overlay",
+						children: [box !== null && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+							className: prep_module_css_default.cropBox,
+							style: pct(box),
+							"data-testid": "prep-crop-box",
+							children: [HANDLES.map((hd) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+								className: prep_module_css_default[`handle_${hd}`] ?? prep_module_css_default.handle,
+								"data-handle": hd,
+								"data-testid": `prep-crop-handle-${hd}`,
+								onPointerDown: (e) => {
+									onHandleDown(e, hd);
+								},
+								onPointerMove: onOverlayMove,
+								onPointerUp: onOverlayUp
+							}, hd)), /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
+								className: prep_module_css_default.cropBadge,
+								children: [
+									box.width,
+									"×",
+									box.height
+								]
+							})]
+						}), box === null && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+							className: prep_module_css_default.previewHint,
+							children: "drag a box to crop — click to clear"
 						})]
-					}), box === null && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-						className: prep_module_css_default.previewHint,
-						children: "drag a box to crop — click to clear"
-					})]
-				})]
+					})
+				]
 			});
 		}
 		//#endregion
@@ -632,7 +648,8 @@ window.__ModuleLoader__.load({
 											placeholder: "unset",
 											onChange: (e) => {
 												const raw = e.target.value;
-												edit({ scale_width: raw === "" ? -1 : Math.max(1, Math.round(Number(raw))) });
+												const parsed = raw === "" ? -1 : Number(raw);
+												edit({ scale_width: Number.isFinite(parsed) && parsed > 0 ? Math.max(1, Math.round(parsed)) : -1 });
 											}
 										})]
 									}), /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("label", {
@@ -645,7 +662,8 @@ window.__ModuleLoader__.load({
 											placeholder: "unset",
 											onChange: (e) => {
 												const raw = e.target.value;
-												edit({ scale_height: raw === "" ? -1 : Math.max(1, Math.round(Number(raw))) });
+												const parsed = raw === "" ? -1 : Number(raw);
+												edit({ scale_height: Number.isFinite(parsed) && parsed > 0 ? Math.max(1, Math.round(parsed)) : -1 });
 											}
 										})]
 									})]

@@ -245,7 +245,12 @@ export function InputPrepStudio(props: StageViewOwnerProps) {
               placeholder="unset"
               onChange={(e) => {
                 const raw = e.target.value
-                edit({ scale_width: raw === '' ? -1 : Math.max(1, Math.round(Number(raw))) })
+                // THE FINITE LAW (audit F6.4): 1e999 parses to
+                // Infinity, Math.max(1, Infinity) seats Infinity,
+                // and JSON.stringify turns it to null at the door —
+                // a non-finite keystroke seats the UNSET key
+                const parsed = raw === '' ? -1 : Number(raw)
+                edit({ scale_width: Number.isFinite(parsed) && parsed > 0 ? Math.max(1, Math.round(parsed)) : -1 })
               }}
             />
           </label>
@@ -259,7 +264,8 @@ export function InputPrepStudio(props: StageViewOwnerProps) {
               placeholder="unset"
               onChange={(e) => {
                 const raw = e.target.value
-                edit({ scale_height: raw === '' ? -1 : Math.max(1, Math.round(Number(raw))) })
+                const parsed = raw === '' ? -1 : Number(raw)
+                edit({ scale_height: Number.isFinite(parsed) && parsed > 0 ? Math.max(1, Math.round(parsed)) : -1 })
               }}
             />
           </label>
