@@ -260,6 +260,28 @@ describe('the studio (InputPrepStudio)', () => {
     expect(onRun).not.toHaveBeenCalled()
   })
 
+  it('AUDIT F9: a seeded retired key never re-asserts — an edit schedules ONLY its touched keys (the dormant-key law)', () => {
+    const onPatch = vi.fn()
+    const onRun = vi.fn()
+    render(h(InputPrepStudio, owner(
+      { params: { source: IMG, retired_knob: 'stale-value' } },
+      { onPatch, onRun },
+    )))
+    const overlay = seatPreview(800, 600)
+    act(() => {
+      drag(overlay, [[10, 20], [110, 170]])
+    })
+    // the retired key rides the frozen row (an old draft) but no edit
+    // touches it — under the schedule law it must never reach the
+    // admission gate, which would refuse it loud as unknown-param.
+    // toEqual, not toMatchObject: extras are the finding.
+    expect(onPatch, 'the edit must schedule its patch at edit time').toHaveBeenCalledTimes(1)
+    expect(onPatch.mock.calls[0][0]).toEqual({
+      crop_x: 10, crop_y: 20, crop_width: 100, crop_height: 150,
+    })
+    expect(onRun).not.toHaveBeenCalled()
+  })
+
   it('THE PICK SCHEDULES THE ROW WRITE AT PICK TIME (the tile-door carry: no studio verb exists on that door — the schedule IS the carry)', () => {
     const onPatch = vi.fn()
     render(h(InputPrepStudio, owner({ params: {} }, { onPatch })))
