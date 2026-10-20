@@ -4963,6 +4963,7 @@ window.__ModuleLoader__.load({
 			const [acquire, setAcquire] = (0, react.useState)(null);
 			const [flow, setFlow] = (0, react.useState)(null);
 			const [stuck, setStuck] = (0, react.useState)(null);
+			const [failed, setFailed] = (0, react.useState)(null);
 			const [dismissed, setDismissed] = (0, react.useState)(() => dismissedMisses.has(dismissalKey));
 			const downloadAbort = (0, react.useRef)(null);
 			(0, react.useEffect)(() => () => {
@@ -5055,6 +5056,7 @@ window.__ModuleLoader__.load({
 				setBusy(true);
 				setNote(null);
 				setStuck(null);
+				setFailed(null);
 				setFlow(null);
 				setAcquire(null);
 				downloadAbort.current?.abort();
@@ -5067,8 +5069,6 @@ window.__ModuleLoader__.load({
 						const t0 = Date.now();
 						const b0 = first.bytes;
 						let current = first;
-						let lastSeenBytes = first.bytes;
-						let frozenPolls = 0;
 						for (let attempt = 0; !ACQUIRE_TERMINAL.has(current.state) && attempt < 150; attempt += 1) {
 							if (await (0, _melite_card_base_client.abortableSleep)(400, signal) === "abort") return;
 							if (signal.aborted) return;
@@ -5080,9 +5080,6 @@ window.__ModuleLoader__.load({
 								rateBps: rateBps > 0 ? rateBps : 0,
 								etaSec: rateBps > 0 && current.total > current.bytes ? (current.total - current.bytes) / rateBps : null
 							});
-							frozenPolls = current.total > 0 && current.bytes < current.total && current.bytes === lastSeenBytes ? frozenPolls + 1 : 0;
-							lastSeenBytes = current.bytes;
-							if (frozenPolls >= 2) break;
 						}
 						setBusy(false);
 						setFlow(null);
@@ -5091,6 +5088,7 @@ window.__ModuleLoader__.load({
 							return;
 						}
 						if (current.state === "failed" || current.state === "blocked") {
+							setFailed({ ...current });
 							setNote(current.detail ?? "weight acquisition " + current.state);
 							return;
 						}
@@ -5102,6 +5100,7 @@ window.__ModuleLoader__.load({
 						if (signal.aborted) return;
 						setBusy(false);
 						setFlow(null);
+						setFailed(null);
 						setNote((0, _melite_card_base_client.rejectionVoice)(e));
 					}
 				})();
@@ -5118,38 +5117,26 @@ window.__ModuleLoader__.load({
 				}
 			}, chromeCopy.downloadWeight));
 			const dismissPopup = () => {
-				if (stuck !== null || acquire !== null && (acquire.state === "failed" || acquire.state === "blocked")) dismissedMisses.add(dismissalKey);
+				if (stuck !== null || failed !== null || acquire !== null && (acquire.state === "failed" || acquire.state === "blocked")) dismissedMisses.add(dismissalKey);
 				downloadAbort.current?.abort();
 				setAcquire(null);
 				setFlow(null);
 				setDismissed(true);
 			};
-			return (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Modal, {
-				open: true,
-				onClose: dismissPopup,
-				title: stuck !== null ? chromeCopy.weightStuck : chromeCopy.missingWeight,
-				closeLabel: chromeCopy.closeWeightPopup
-			}, (0, react.createElement)("div", {
-				"data-testid": "weight-popup",
-				className: card_module_css_default.rescue
-			}, stuck !== null ? (0, react.createElement)("p", { className: card_module_css_default.rescueNote }, chromeCopy.stuckNote({
-				state: stuck.state,
-				progress: formatWeightProgress(stuck.bytes, stuck.total)
-			})) : (0, react.createElement)("p", { className: card_module_css_default.rescueNote }, chromeCopy.missingDownload({ what })), (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Button, {
-				size: "sm",
-				variant: "primary",
-				"data-testid": "weight-download",
-				disabled: busy || target === "",
-				title: target === "" ? chromeCopy.noProvisionTarget : chromeCopy.downloadViaManage,
-				onClick: download
-			}, busy ? acquire === null ? chromeCopy.startingWord : chromeCopy.downloadingWord : chromeCopy.downloadWord), ...trackerFaces(acquire, downloading ? flow : null), stuck === null && downloading ? flow !== null ? null : (0, react.createElement)("p", { className: card_module_css_default.rescueNote }, chromeCopy.downloadingLive) : null, stuck !== null ? (0, react.createElement)("div", null, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+			const exitsRow = (row) => (0, react.createElement)("div", { style: {
+				display: "flex",
+				gap: "8px",
+				flexWrap: "wrap",
+				marginTop: "8px"
+			} }, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Button, {
 				size: "sm",
 				onClick: download
 			}, chromeCopy.retryDownload), (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Button, {
 				size: "sm",
 				onClick: () => {
-					const operationId = stuck.operationId;
+					const operationId = row.operationId;
 					setStuck(null);
+					setFailed(null);
 					setAcquire(null);
 					setFlow(null);
 					setNote(null);
@@ -5162,7 +5149,26 @@ window.__ModuleLoader__.load({
 				onClick: () => {
 					setNote(chromeCopy.stuckRunRefusal);
 				}
-			}, chromeCopy.runAgain)) : null, note !== null ? (0, react.createElement)("p", { className: card_module_css_default.rescueErr }, note) : null));
+			}, chromeCopy.runAgain));
+			return (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Modal, {
+				open: true,
+				onClose: dismissPopup,
+				title: stuck !== null || failed !== null ? chromeCopy.weightStuck : chromeCopy.missingWeight,
+				closeLabel: chromeCopy.closeWeightPopup
+			}, (0, react.createElement)("div", {
+				"data-testid": "weight-popup",
+				className: card_module_css_default.rescue
+			}, stuck !== null ? (0, react.createElement)("p", { className: card_module_css_default.rescueNote }, chromeCopy.stuckNote({
+				state: stuck.state,
+				progress: formatWeightProgress(stuck.bytes, stuck.total)
+			})) : failed !== null ? null : (0, react.createElement)("p", { className: card_module_css_default.rescueNote }, chromeCopy.missingDownload({ what })), (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+				size: "sm",
+				variant: "primary",
+				"data-testid": "weight-download",
+				disabled: busy || target === "",
+				title: target === "" ? chromeCopy.noProvisionTarget : chromeCopy.downloadViaManage,
+				onClick: download
+			}, busy ? acquire === null ? chromeCopy.startingWord : chromeCopy.downloadingWord : chromeCopy.downloadWord), ...trackerFaces(acquire, downloading ? flow : null), stuck === null && downloading ? flow !== null ? null : (0, react.createElement)("p", { className: card_module_css_default.rescueNote }, chromeCopy.downloadingLive) : null, stuck !== null ? exitsRow(stuck) : failed !== null ? exitsRow(failed) : null, note !== null ? (0, react.createElement)("p", { className: card_module_css_default.rescueErr }, note) : null));
 		}
 		//#endregion
 		//#region src/client/card-drill.tsx

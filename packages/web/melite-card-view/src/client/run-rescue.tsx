@@ -129,10 +129,16 @@ export function RunRescue({ error, stages, onRun, rescue: structured }: {
   // gap); cleared with the flight.
   const [flow, setFlow] = useState<{ rateBps: number, etaSec: number | null } | null>(null)
   // THE STUCK TRUTH (the purge P5): the last engine report when the
-  // flight ended stuck (bytes frozen across polls, or the ceiling
-  // expired non-terminal) — the face offers Retry/Delete on it, and
-  // a run press on it refuses loudly (never the success face).
+  // flight ended stuck (the ceiling expired non-terminal — the ONE
+  // client-side backstop; stall truth itself is the engine's) — the
+  // face offers Retry/Delete on it, and a run press on it refuses
+  // loudly (never the success face).
   const [stuck, setStuck] = useState<WeightAcquireState | null>(null)
+  // THE FAILED VERDICT (the one-authority law, 2026-10-20): the
+  // engine's own failed/blocked terminal report — its cause rides
+  // `note` (data.detail preferred), and the SAME exits serve as the
+  // stuck face: retry re-issues, delete clears the settled row.
+  const [failed, setFailed] = useState<WeightAcquireState | null>(null)
   const [dismissed, setDismissed] = useState(() => dismissedMisses.has(dismissalKey))
   // THE DOWNLOAD TELEMETRY (audit L-ERROR-3, 2026-10-22): the old
   // download loop polled 150×400ms with no teardown — a closed or
@@ -277,11 +283,12 @@ export function RunRescue({ error, stages, onRun, rescue: structured }: {
 
   const download = (): void => {
     // a new fetch re-arms the face: the dismissal memory clears (the
-    // acquire state changed) and the stuck face retires
+    // acquire state changed) and the stuck/failed faces retire
     dismissedMisses.delete(dismissalKey)
     setBusy(true)
     setNote(null)
     setStuck(null)
+    setFailed(null)
     setFlow(null)
     // the tracker renders only reports of a LIVE flight
     setAcquire(null)
@@ -297,8 +304,15 @@ export function RunRescue({ error, stages, onRun, rescue: structured }: {
         const t0 = Date.now()
         const b0 = first.bytes
         let current = first
-        let lastSeenBytes = first.bytes
-        let frozenPolls = 0
+        // ONE STALL AUTHORITY — THE ENGINE (the 100-MBps-then-stuck
+        // burn, 2026-10-20): the popup's own byte-freeze guess fired
+        // the stuck face 800ms into a WAN hiccup the engine was
+        // riding out (the direct arm seats 'verifying' for the WHOLE
+        // fetch, so a frozen ledger during a hiccup is live flight,
+        // not a stall). The engine's watchdog owns stall truth — it
+        // kills a dead stream and the state lands 'failed' carrying
+        // the cause; the client polls until a terminal state or the
+        // ceiling, NEVER inventing a verdict from its own clock.
         for (let attempt = 0; !ACQUIRE_TERMINAL.has(current.state) && attempt < 150; attempt += 1) {
           if ((await abortableSleep(400, signal)) === 'abort') return
           if (signal.aborted) return
@@ -312,26 +326,19 @@ export function RunRescue({ error, stages, onRun, rescue: structured }: {
               ? (current.total - current.bytes) / rateBps
               : null,
           })
-          // THE STALL WATCH (the stuck burn, ERRORS k2/m): the
-          // engine's own bytes frozen across consecutive polls on an
-          // incomplete transfer is a stuck fetch, not a slow one —
-          // the flight ends into the stuck face (Retry/Delete),
-          // never setDone.
-          frozenPolls = current.total > 0 && current.bytes < current.total && current.bytes === lastSeenBytes
-            ? frozenPolls + 1
-            : 0
-          lastSeenBytes = current.bytes
-          if (frozenPolls >= 2) break
         }
         setBusy(false)
         setFlow(null)
         if (!ACQUIRE_TERMINAL.has(current.state)) {
-          // frozen polls or ceiling expiry: the stuck truth, never
-          // the success face
+          // ceiling expiry with no terminal verdict: the stuck truth,
+          // never the success face
           setStuck({ ...current })
           return
         }
         if (current.state === 'failed' || current.state === 'blocked') {
+          // THE ENGINE'S OWN VERDICT lands with its cause AND the
+          // exits — retry re-issues the fetch, delete clears the row
+          setFailed({ ...current })
           setNote(current.detail ?? 'weight acquisition ' + current.state)
           return
         }
@@ -343,6 +350,7 @@ export function RunRescue({ error, stages, onRun, rescue: structured }: {
         if (signal.aborted) return // the close/unmount owns the face now
         setBusy(false)
         setFlow(null)
+        setFailed(null)
         setNote(rejectionVoice(e))
       }
     })()
@@ -374,7 +382,7 @@ export function RunRescue({ error, stages, onRun, rescue: structured }: {
   // beyond this mount only when the acquire ended failed or stuck —
   // the re-pop burn; a live flight's close stays mount-local.
   const dismissPopup = (): void => {
-    const endedBad = stuck !== null
+    const endedBad = stuck !== null || failed !== null
       || (acquire !== null && (acquire.state === 'failed' || acquire.state === 'blocked'))
     if (endedBad) dismissedMisses.add(dismissalKey)
     // THE CLOSE ABORTS THE FLIGHT (audit L-ERROR-3, 2026-10-22):
@@ -389,17 +397,51 @@ export function RunRescue({ error, stages, onRun, rescue: structured }: {
     setDismissed(true)
   }
 
+  // THE EXITS ROW (the k2 law: "there's no retry, there's no delete"
+  // — and the failed face owed the same doors): whichever terminal
+  // verdict the engine served, the operator can RETRY the fetch or
+  // DELETE the settled row. The buttons spread with a gap — the
+  // operator's paste showed them mashed edge-to-edge.
+  const exitsRow = (row: WeightAcquireState): ReturnType<typeof h> =>
+    h('div', { style: { display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '8px' } },
+      h(Button, { size: 'sm', onClick: download }, chromeCopy.retryDownload),
+      h(Button, {
+        size: 'sm',
+        // THE DELETE DOOR: the discard rides the manage seat carrying
+        // the settled operation's id — names only, the plane owns
+        // the verdict.
+        onClick: () => {
+          const operationId = row.operationId
+          setStuck(null)
+          setFailed(null)
+          setAcquire(null)
+          setFlow(null)
+          setNote(null)
+          postManageAction('acquire_discard', { operation_id: operationId })
+            .catch((e: unknown) => { setNote(rejectionVoice(e)) })
+        },
+      }, chromeCopy.deleteStuck),
+      h(Button, {
+        size: 'sm',
+        // a run press on an incomplete weight is refused loudly,
+        // never fired silently (the purge P5)
+        onClick: () => { setNote(chromeCopy.stuckRunRefusal) },
+      }, chromeCopy.runAgain),
+    )
+
   return h(Modal, {
     open: true,
     onClose: dismissPopup,
-    title: stuck !== null ? chromeCopy.weightStuck : chromeCopy.missingWeight,
+    title: stuck !== null || failed !== null ? chromeCopy.weightStuck : chromeCopy.missingWeight,
     closeLabel: chromeCopy.closeWeightPopup,
   },
     h('div', { 'data-testid': 'weight-popup', className: css.rescue },
       stuck !== null
         ? h('p', { className: css.rescueNote },
           chromeCopy.stuckNote({ state: stuck.state, progress: formatWeightProgress(stuck.bytes, stuck.total) }))
-        : h('p', { className: css.rescueNote }, chromeCopy.missingDownload({ what })),
+        : failed !== null
+          ? null // the failed face's voice is the cause itself (note)
+          : h('p', { className: css.rescueNote }, chromeCopy.missingDownload({ what })),
       h(Button, {
         size: 'sm',
         variant: 'primary',
@@ -412,31 +454,7 @@ export function RunRescue({ error, stages, onRun, rescue: structured }: {
       stuck === null && downloading
         ? (flow !== null ? null : h('p', { className: css.rescueNote }, chromeCopy.downloadingLive))
         : null,
-      stuck !== null ? h('div', null,
-        h(Button, { size: 'sm', onClick: download }, chromeCopy.retryDownload),
-        h(Button, {
-          size: 'sm',
-          // THE DELETE DOOR (the k2 burn: "there's no retry, there's
-          // no delete"): the discard rides the manage seat carrying
-          // the stuck operation's id — names only, the plane owns
-          // the verdict.
-          onClick: () => {
-            const operationId = stuck.operationId
-            setStuck(null)
-            setAcquire(null)
-            setFlow(null)
-            setNote(null)
-            postManageAction('acquire_discard', { operation_id: operationId })
-              .catch((e: unknown) => { setNote(rejectionVoice(e)) })
-          },
-        }, chromeCopy.deleteStuck),
-        h(Button, {
-          size: 'sm',
-          // a run press on an incomplete weight is refused loudly,
-          // never fired silently (the purge P5)
-          onClick: () => { setNote(chromeCopy.stuckRunRefusal) },
-        }, chromeCopy.runAgain),
-      ) : null,
+      stuck !== null ? exitsRow(stuck) : (failed !== null ? exitsRow(failed) : null),
       note !== null ? h('p', { className: css.rescueErr }, note) : null,
     ),
   )

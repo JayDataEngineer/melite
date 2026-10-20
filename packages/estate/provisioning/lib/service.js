@@ -1272,7 +1272,13 @@ export class ProvisioningService extends Service {
             if (this.fetcher === undefined) {
                 throw new ItemRefusal("blocked", "artifact/fetch-unavailable", "direct model acquisition requires a configured artifact fetcher");
             }
-            this.move(ref, operationId, "verifying");
+            // THE HONEST PHASE WORD (audit download-stack-audit-2026-10-20
+            // F5): 'acquiring' while the byte stream lands — the whole
+            // 100MB/s download must not read as hash. The verify boundary
+            // (the writer's first onVerifyBytes heartbeat) moves the row to
+            // 'verifying', so the poll's state word names the phase the
+            // operation is actually in (the popup's only liveness window).
+            this.move(ref, operationId, "acquiring");
             // THE STALL WATCHDOG'S WINDOW (ERRORS.md k2): arms over the
             // whole direct fetch — the headers wait and the counted byte
             // stream — and disarms on every exit, so a fetch that freezes
@@ -1299,8 +1305,21 @@ export class ProvisioningService extends Service {
                     sizeBytes: item.sizeBytes,
                     // the verify heartbeat: hash chunks + phase boundaries poke
                     // the watchdog's clock (the field above) — a slow multi-GB
-                    // verify reads as flow, never as a frozen stream
-                    onVerifyBytes: () => { this.verifyFlowAt.set(operationId, Date.now()); },
+                    // verify reads as flow, never as a frozen stream — and the
+                    // FIRST heartbeat carries the verify boundary to the
+                    // ledger's state word (acquiring → verifying: the honest
+                    // phase law, audit F5)
+                    onVerifyBytes: () => {
+                        this.verifyFlowAt.set(operationId, Date.now());
+                        // the FIRST heartbeat carries the verify boundary to the
+                        // state machine (acquiring → verifying, mirrored into the
+                        // ledger by move()) — later heartbeats only re-arm the
+                        // clock
+                        const entry = this.weightProgress.get(operationId);
+                        if (entry !== undefined && entry.state === "acquiring") {
+                            this.move(ref, operationId, "verifying");
+                        }
+                    },
                 }, signal);
                 this.move(ref, operationId, "installed");
                 return itemResult(item, "active", "active", {

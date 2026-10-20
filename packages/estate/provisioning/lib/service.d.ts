@@ -14,8 +14,8 @@ import type { Context, Plugin } from "@deepseek-ai/cordis";
  *  window (its 1.5s failed-poll budget) permits; the deployment face
  *  is ProvisioningConfig.acquireStallTimeoutMs. */
 export declare const ACQUIRE_STALL_TIMEOUT_MS = 1000;
-import { type ActivateOptions, type EnsureOptions, type ExternalProvisionRequest, type ProvisionOperation, type ProvisionPlan, type ProvisionResult, type ProvisionState, type ResourceRef, type ResourceStatus, type WeightAcquireProgress } from "./contracts.js";
-import type { ProvisioningConfig, ProvisioningServiceDefinition } from "./ports.js";
+import { type ActivateOptions, type EnsureOptions, type ExternalProvisionRequest, type ProvisionOperation, type ProvisionPlan, type ProvisionResult, type ProvisionState, type ResourceRef, type ResourceStatus, type WeightAcquireProgress } from "./contracts.ts";
+import type { ProvisioningConfig, ProvisioningServiceDefinition } from "./ports.ts";
 /** THE BUSY REFUSAL (audit I-S4): startWeightAcquire throws this when
  *  the plane already runs its concurrency cap of fetches. The door
  *  maps it to a 429 with retry_after_ms — a busy plane is a wait, not

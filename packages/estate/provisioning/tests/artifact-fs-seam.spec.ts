@@ -93,6 +93,43 @@ function proxied(handle: Handle, overrides: Record<string, unknown>): Handle {
 }
 
 describe("verified artifact filesystem seams", () => {
+  test("THE FSYNC HEARTBEAT FIRES BEFORE THE SYNC (audit F3: the boundary heartbeat must precede handle.sync — a multi-GB flush on a loaded disk stalls seconds with zero stream movement)", async () => {
+    const store = root();
+    const order: string[] = [];
+    fsMocks.open.mockImplementation(async (...args: unknown[]) => {
+      const handle = await actualFs.open(...(args as Parameters<ActualFs["open"]>));
+      if (String(args[0]).endsWith(".part-op-fsync") && args[1] === "wx") {
+        return proxied(handle, {
+          // the slow flush: 250ms of zero-movement stall inside sync
+          sync: async () => {
+            order.push("sync");
+            await new Promise((resolve) => { setTimeout(resolve, 250) });
+            return handle.sync();
+          },
+        });
+      }
+      return handle;
+    });
+    const result = await writeVerifiedArtifact({
+      root: store,
+      relativePath: "fsync.bin",
+      operationId: "op-fsync",
+      source: source(bytes()),
+      onVerifyBytes: (count) => {
+        if (order[order.length - 1] !== "heartbeat-before-sync") order.push("heartbeat-before-sync");
+      },
+    });
+    assert.ok(result.present !== false);
+    // the FIRST heartbeat precedes the flush — the plane's stall
+    // clock is re-armed before the window where no stream byte can
+    // move. Red shape (the cure's gap): the only boundary heartbeat
+    // fired AFTER sync, so a >budget fsync killed the land at 100%.
+    expect(order[0],
+      "the verify heartbeat fired only after handle.sync() — the fsync window was unheartbeated (audit F3)",
+    ).toBe("heartbeat-before-sync");
+    expect(order.indexOf("sync")).toBeGreaterThan(0);
+  });
+
   test("surfaces a zero-progress write", async () => {
     const store = root();
     const destination = join(store, "zero.bin");

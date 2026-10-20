@@ -385,13 +385,16 @@ export class VerifiedArtifactWriter implements ArtifactWriterPort {
         await writeAll(handle, chunk.value);
         sizeBytes += chunk.value.byteLength;
       }
+      // THE FSYNC WINDOW (audit download-stack-audit-2026-10-20 F3):
+      // a multi-GB fsync on a loaded disk can stall seconds with zero
+      // stream movement — the FIRST boundary heartbeat fires BEFORE
+      // the sync, so the plane's clock knows the verify is alive
+      // through the flush (the hash's own chunks flow after it).
+      request.onVerifyBytes?.(0);
       await handle.sync();
       await handle.close();
       handle = undefined;
       throwIfAborted(signal);
-      // the fsync above can stall seconds on a loaded disk with zero
-      // stream movement — heartbeat the boundary so the plane's clock
-      // knows the verify is alive before the hash's own chunks flow
       request.onVerifyBytes?.(0);
       const temporarySha256 = await sha256File(temporary, signal, request.onVerifyBytes);
       if (expectedSha256 !== undefined && temporarySha256 !== expectedSha256) {

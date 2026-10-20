@@ -12,6 +12,7 @@ import type {
   ProvisionPlanItem,
   ProvisioningConfig,
   ResourceRef,
+  VerifiedArtifactRequest,
 } from "../src/index.ts";
 
 const contexts: Context[] = [];
@@ -550,19 +551,42 @@ describe("the provision-plane ceiling (audit I-S4)", () => {
     };
     const ctx = new Context();
     contexts.push(ctx);
-    // the live fetch parks in "verifying" for its whole 400ms window;
-    // the ghosts settle fast and drive eviction pressure past the cap
+    // the live fetch parks INSIDE ITS VERIFY (the writer's boundary
+    // heartbeat opened, the hash flows with heartbeats — under the
+    // honest phase word this is the one lock-held window whose ledger
+    // state is a non-acquiring word); the ghosts settle fast and
+    // drive eviction pressure past the cap
     const plans = new Map([["live", tinyPlan("live")]]);
-    // the live fetch parks mid-body until the wall releases it — its
-    // "verifying" ledger state spans the whole eviction pressure
+    // the live fetch parks at its verify boundary until the wall
+    // releases it — its "verifying" ledger state spans the whole
+    // eviction pressure
     let releaseLive: () => void = () => {};
     const gate = new Promise<void>((resolve) => { releaseLive = resolve; });
+    let firstWrite = true;
     const base = namedConfig(root, plans, { store });
     const service = new ProvisioningService(ctx, {
       ...base,
-      fetcher: async () => {
-        await gate;
-        return { status: 200, body: (async function* generate(): AsyncGenerator<Uint8Array> { yield Uint8Array.from(BYTES); })() };
+      artifactWriter: {
+        inspect: async () => ({ present: false as const }),
+        write: async (request: VerifiedArtifactRequest, signal?: AbortSignal) => {
+          for await (const chunk of request.source as AsyncIterable<Uint8Array>) void chunk;
+          const beat = (request as unknown as { onVerifyBytes?: (n: number) => void }).onVerifyBytes;
+          beat?.(0);
+          if (firstWrite) {
+            firstWrite = false;
+            const timer = setInterval(() => { beat?.(1) }, 50);
+            try {
+              await new Promise<void>((resolve, reject) => {
+                const t = setTimeout(resolve, 600_000);
+                signal?.addEventListener("abort", () => { clearTimeout(t); reject(new Error("aborted")) }, { once: true });
+                void gate.then(() => { clearTimeout(t); resolve(); });
+              });
+            } finally {
+              clearInterval(timer);
+            }
+          }
+          return { path: join("checkpoints", "weight.bin"), sha256: DIGEST, sizeBytes: BYTES.length, integrity: "declared-sha256" };
+        },
       },
     });
 
