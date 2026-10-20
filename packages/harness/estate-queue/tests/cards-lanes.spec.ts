@@ -495,3 +495,92 @@ describe("the declared-home loop (the lane_homes cure, 2026-10-23)", () => {
     assert.equal(lanePresenceRefusal("anny"), null, "the file under its declared home passes");
   });
 });
+
+// THE VARIANT-LANE PRESENCE LAW (h¹ remainder — the operator's
+// one-parameter switch: "it should literally just be replacing a
+// model file and that's it"). The gate probed the FAMILY's
+// lane_inputs only, so a variant whose own lane_inputs override names
+// a file the store never saw rode the family probe's green straight
+// into the engine's validation — the switch broke LIVE (the h3
+// Singularity burn: the family's timeline unet present, the
+// Singularity 20 GB never fetched, the pick refused nothing until the
+// engine said invalid quant/prompt). The gate probes the RESOLVED
+// lane inputs: family under the STATED variant's override — the same
+// derivation the compose stamps (stated body.variant wins, else the
+// address's own row, else the family default).
+describe("THE VARIANT-LANE PRESENCE LAW (the gate probes the resolved lane inputs)", () => {
+  it("a variant whose lane_inputs override misses the store refuses lane_input_missing with the structured download face — the family-keyed null that returns today is the silent pass", () => {
+    arm(null);
+    rmSync(MODELS, { recursive: true, force: true });
+    mkdirSync(join(MODELS, "diffusion_models"), { recursive: true });
+    const decl = getModel("h3") as {
+      lane_inputs?: Record<string, unknown>;
+      provisions?: Array<{ name: string; url: string; folder: string }>;
+      variants?: Array<{ id: string; lane_inputs?: Record<string, unknown> }>;
+    };
+    const famUnet = decl.lane_inputs?.["unet"];
+    assert.equal(typeof famUnet, "string");
+    writeFileSync(join(MODELS, "diffusion_models", famUnet as string), "x");
+    // the family's OTHER rows stand too (the timeline lane fully
+    // seated — the burn's shape: only the variant's override missing)
+    const famLoras = decl.lane_inputs?.["loras"];
+    if (typeof famLoras === "string" && famLoras.trim() !== "") {
+      mkdirSync(join(MODELS, "loras", "h3"), { recursive: true });
+      writeFileSync(join(MODELS, "loras", "h3", famLoras), "x");
+    }
+    const varRow = (decl.variants ?? []).find((v) => v.id === "singularity");
+    assert.ok(varRow !== undefined, "the h3 DECL declares the singularity variant");
+    const varUnet = varRow.lane_inputs?.["unet"];
+    assert.equal(typeof varUnet, "string");
+    assert.notEqual(varUnet, famUnet, "the burn's shape: the variant overrides the unet file");
+    // the family probe alone is GREEN (the silent pass that broke the
+    // switch live): the family unet stands, nobody looked at the
+    // variant's file.
+    assert.equal(lanePresenceMiss("h3"), null);
+    // THE LAW: the stated variant's override rides the probe —
+    const miss = lanePresenceMiss("h3", { variant: "singularity" }, "h3");
+    assert.ok(miss !== null, "the variant-scoped probe refuses the missing weight");
+    assert.equal(miss.code, "lane_input_missing");
+    assert.match(miss.message, /declares unet 'Minimax-h3_Singularity_ref2va_Pruned_v1\.3_int8\.safetensors'/);
+    const details = (toRemoteError(cardRefusal(miss)).details ?? {}) as Record<string, unknown>;
+    assert.equal(details["slot"], "unet");
+    assert.equal(details["missing"], varUnet, "the structured face names the VARIANT's file");
+    const prov = (decl.provisions ?? []).find((p) => p.name === varUnet);
+    assert.ok(prov !== undefined, "the provision row exists for the variant's file");
+    assert.equal(details["fetch_url"], prov.url, "the download face keys on fields (the wire spelling) — the popup's install action");
+    // the address's own row rides too (a bare route pick, no stated
+    // variant — the compose stamps the route's defaults):
+    const addrMiss = lanePresenceMiss("h3", {}, "h3-singularity");
+    assert.ok(addrMiss !== null, "the route address probes its own row's file");
+    // and the family default still passes — the first-declared lane's
+    // own file stands:
+    assert.equal(lanePresenceMiss("h3", {}, "h3"), null);
+    assert.throws(() => lanePresenceRefusal("h3", { variant: "singularity" }, "h3"), CardArmError,
+      "the gate THROWS the refusal at the run seat (the pinned contract)");
+  });
+
+  it("a variant whose override file IS on the store rides — the law only ever refuses a real miss", () => {
+    arm(null);
+    mkdirSync(join(MODELS, "diffusion_models"), { recursive: true });
+    const decl = getModel("h3") as {
+      lane_inputs?: Record<string, unknown>;
+      variants?: Array<{ id: string; lane_inputs?: Record<string, unknown> }>;
+    };
+    writeFileSync(join(MODELS, "diffusion_models", decl.lane_inputs?.["unet"] as string), "x");
+    const famLoras = decl.lane_inputs?.["loras"];
+    if (typeof famLoras === "string" && famLoras.trim() !== "") {
+      mkdirSync(join(MODELS, "loras", "h3"), { recursive: true });
+      writeFileSync(join(MODELS, "loras", "h3", famLoras), "x");
+    }
+    const varRow = (decl.variants ?? []).find((v) => v.id === "singularity");
+    writeFileSync(join(MODELS, "diffusion_models", varRow?.lane_inputs?.["unet"] as string), "x");
+    assert.equal(lanePresenceMiss("h3", { variant: "singularity" }, "h3"), null,
+      "the variant's own file present: the switch composes — replacing a model file is all it takes");
+    // the turbo lora (the family's second lane row, NOT overridden)
+    // still gates: the override never mutes the family's other rows.
+    rmSync(join(MODELS, "loras"), { recursive: true, force: true });
+    const miss = lanePresenceMiss("h3", { variant: "singularity" }, "h3");
+    assert.ok(miss !== null && miss.message.includes("loras"),
+      "the family's non-overridden rows keep gating: " + (miss?.message ?? "null"));
+  });
+});

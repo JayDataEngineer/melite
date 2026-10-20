@@ -31,13 +31,13 @@ export declare function lanePackFolders(): readonly string[];
  * stands down and ComfyUI's own validation (UI-surfaced since
  * 2026-09-13) remains the backstop. A fixture endpoint env always
  * re-arms the gate (the gate specs drive it that way). */
-export declare function lanePresenceRefusal(fam: string): CardArmError | null;
+export declare function lanePresenceRefusal(fam: string, body?: Record<string, unknown>, mid?: string): CardArmError | null;
 /** THE WEIGHTS PROBE (roadmap §10's e2e gate, 2026-09-21): the same
  *  walk lanePresenceRefusal gates with, env-deferral stripped — the
  *  caller (the GPU receipt rows) decides what a miss means (a skip,
  *  never a cost signal). One loop, two seats, no divergence. */
 type LaneCheck = (folder: string, name: string) => string | null;
 export declare function laneFilesStatus(decl: Pick<ModelDecl, "lane_inputs" | "provisions" | "lane_homes">, check?: LaneCheck): boolean | null;
-export declare function lanePresenceMiss(fam: string): CardArmError | null;
+export declare function lanePresenceMiss(fam: string, body?: Record<string, unknown>, mid?: string): CardArmError | null;
 export {};
 //# sourceMappingURL=cardsLanes.d.ts.map

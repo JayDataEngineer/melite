@@ -70,14 +70,14 @@ export function lanePackFolders() {
  * stands down and ComfyUI's own validation (UI-surfaced since
  * 2026-09-13) remains the backstop. A fixture endpoint env always
  * re-arms the gate (the gate specs drive it that way). */
-export function lanePresenceRefusal(fam) {
+export function lanePresenceRefusal(fam, body, mid) {
     const sandbox = process.env["INFERENCE_TEST_SANDBOX"] ?? "";
     const envPath = process.env["COMFYUI_ENDPOINT_CONFIG"] ?? "";
     if (sandbox !== "" && envPath === "")
         return null;
     // the refusal is a THROW, never a value (phase1Card's pinned
     // contract — no return-value arm there)
-    const miss = lanePresenceMiss(fam);
+    const miss = lanePresenceMiss(fam, body, mid);
     if (miss !== null)
         throw miss;
     return null;
@@ -94,8 +94,15 @@ function homeProbes(home, name) {
         probes.push([home + "/" + name.slice(0, cut), name.slice(cut + 1)]);
     return probes;
 }
-function firstLaneMiss(decl, check) {
-    const li = (decl.lane_inputs ?? {});
+function firstLaneMiss(decl, check, variantRow) {
+    // THE VARIANT-LANE PRESENCE LAW (h¹ remainder — the one-parameter
+    // switch): the probe judges the RESOLVED lane inputs — the family's
+    // rows under the STATED variant's per-key override (the same merge
+    // the compose stamps; a variant that does not override a key leaves
+    // the family's row gating). A family-only probe green-lit a variant
+    // whose own file never existed (the Singularity burn: the family's
+    // timeline unet present, the override's 20 GB never fetched).
+    const li = { ...(decl.lane_inputs ?? {}), ...(variantRow?.lane_inputs ?? {}) };
     const homes = (decl.lane_homes ?? {});
     const packs = lanePackFolders();
     for (const [key, stock] of Object.entries(LANE_FOLDERS)) {
@@ -178,9 +185,31 @@ function inFlightFraction(progress) {
         return "total undeclared";
     return String(Math.floor((progress.bytes * 100) / progress.total)) + "%";
 }
-export function lanePresenceMiss(fam) {
+/** THE STATED VARIANT'S ROW (the same derivation the compose
+ *  stamps, over the DECL's own rows — the facts fold drops
+ *  lane_inputs): a stated body.variant wins (id match), else the
+ *  ADDRESS's own row (route/id/cell-route/resolver model — a bare
+ *  route pick composes that route's defaults), else undefined (the
+ *  family default: no override, the family rows gate alone). */
+function statedVariantRow(decl, body, mid) {
+    const variants = decl.variants ?? [];
+    const stated = typeof body?.["variant"] === "string" && body["variant"].trim() !== ""
+        ? body["variant"].trim()
+        : "";
+    if (stated !== "") {
+        const row = variants.find((v) => v.id === stated || v.route === stated);
+        if (row !== undefined)
+            return row;
+    }
+    if (mid === undefined || mid === "")
+        return undefined;
+    return variants.find((v) => v.route === mid || v.id === mid
+        || (v.cells ?? []).some((c) => c.route === mid)
+        || v.resolver_defaults?.["model"] === mid);
+}
+export function lanePresenceMiss(fam, body, mid) {
     const decl = getModel(fam);
-    const miss = firstLaneMiss(decl, (folder, name) => checkModelPresent("models/" + folder, name));
+    const miss = firstLaneMiss(decl, (folder, name) => checkModelPresent("models/" + folder, name), statedVariantRow(decl, body, mid));
     if (miss === null)
         return null;
     const prov = (decl.provisions ?? []).find((p) => p.name === miss.name);

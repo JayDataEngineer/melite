@@ -1574,7 +1574,10 @@ export class CardRegistryService extends Service {
         // body. Same gate, same voice — validate predicts start on
         // weights, not just on shape.
         if (prep.familyless !== true) {
-            const miss = lanePresenceRefusal(prep.fam);
+            // THE VARIANT-LANE PRESENCE LAW (h¹ remainder): the probe rides
+            // the RESOLVED lane inputs — the body's stated variant over the
+            // address's own row (the same derivation the compose stamps).
+            const miss = lanePresenceRefusal(prep.fam, prep.params, prep.modelId);
             if (miss !== null)
                 return { message: miss.message, code: miss.code };
         }
@@ -1662,7 +1665,10 @@ export class CardRegistryService extends Service {
         // lanes, and the card's own pins gate loud at the engine's load
         // (the YOLO/SAM2 checkpoints refuse hard when absent).
         if (prep.familyless !== true) {
-            lanePresenceRefusal(prep.fam);
+            // THE VARIANT-LANE PRESENCE LAW (h¹ remainder): same derivation
+            // as validate's seat — the switch refuses LOUD at the gate, never
+            // at the engine's validation.
+            lanePresenceRefusal(prep.fam, prep.params, prep.modelId);
         }
         const spells = prep.decl.spells;
         const pool = {};
