@@ -134,7 +134,7 @@ export const paramSchema = z.object({
     // (hidden = unserved by the hidden-alias law, and CALL_KNOB_KEYS
     // pins length per call — the studio-contract wall burns on drift
     // here); the LAYER-A FACE never shows it as the span's rival.
-    length: z.number().description("Frames (Layer B — the timeline's calls own it; a stated span derives it at compose)").min(GRID_BASE_FRAMES).max(GRID_MAX_FRAMES).step(GRID_STEP_FRAMES).default(56).extra('extra', bag({ order: null, columns: 2, width: 1, tooltip: "17k+5 grid: 56 = 2.33s, 124 = 5.17s, 362 = 15s (the call's span snaps to this grid at compose)", wtype: 'number' })),
+    length: z.number().description("Frames").min(GRID_BASE_FRAMES).max(GRID_MAX_FRAMES).step(GRID_STEP_FRAMES).default(56).extra('extra', bag({ order: null, columns: 2, width: 1, tooltip: "How long each clip runs. Durations snap to the engine's 17k+5 grid: 56 frames = 2.33s, 124 = 5.17s, 362 = 15s — the clip's length rounds to the nearest step.", wtype: 'number' })),
     // FPS IS LAYER A (operator 2026-10-16, verbatim) — the project
     // clock, ONE owner: the doc's stated fps rides into every
     // CreateVideo container so the clip's seconds equal the bar's
@@ -142,7 +142,7 @@ export const paramSchema = z.object({
     // declared kind, never a silent ?? in the compose). The old
     // hardcoded 24 in both render arms played a 90-frame window at
     // 3.75s under a 5.6s bar.
-    fps: z.number().description("Playback fps (Layer A — the project clock; rides the output container)").min(1).max(120).default(24).extra('extra', bag({ hidden: true })),
+    fps: z.number().description("Playback fps").min(1).max(120).default(24).extra('extra', bag({ hidden: true })),
     steps: z.number().description("Steps").min(4).max(30).default(6).extra('extra', samplingExtra('steps', { tooltip: "6 for draft — the engine kernel's own calibrated count (its H3SLAAttention tooltip: use 6 steps rather than lowering sparsity; PARITY-pinned with plaguekind v7 — the 12 carried no receipt and matched neither his v7=6 nor v9=8; regolded by the 2026-10-16 upstream-parity audit); 30 standard; a boarded distill lora applies its own steps (edit them on the lora entry)" })),
     // THE SECOND-PASS MASTER (2026-09-22, operator: "Second Pass also
     // needs an on/off switch, it is very unclear if it is on or off"):
@@ -213,7 +213,7 @@ export const paramSchema = z.object({
     // refine_lora picks the instrument; strength/steps default from
     // THE ROW (no silent overrides); the pass rides the doc's own
     // sampler/scheduler.
-    refine_lora: z.string().description("Refine lora").default("").extra('extra', bag({ order: null, group: 'second_pass', visible_when: "second_pass_enabled=true", wtype: 'select', optionsFrom: 'loras', tooltip: "Catalog id of a refiner lora (e.g. h3_taomate_3step). Empty = no refine pass. Strength/steps default from the row. LORAS ARE ONLY MODS — the pick serves from the loras flavor rows, never a hand-spelled id (the compose door refuses unknown ids loud)." })),
+    refine_lora: z.string().description("Refine lora").default("").extra('extra', bag({ order: null, group: 'second_pass', visible_when: "second_pass_enabled=true", wtype: 'select', optionsFrom: 'loras', tooltip: "Pick a refiner lora from your library (e.g. h3_taomate_3step). Empty = no refine pass. Strength/steps default from the row. LORAS ARE ONLY MODS — pick from the list; an unknown id is refused." })),
     refine_strength: z.number().description("Refine strength").min(0).max(2).step(0.05).extra('extra', bag({ order: null, group: 'second_pass', visible_when: "second_pass_enabled=true", wtype: 'number', tooltip: "Override the refiner row's strength. Rides only when refine_lora is set." })),
     refine_steps: z.number().description("Refine steps").min(1).max(10).step(1).extra('extra', bag({ order: null, group: 'second_pass', visible_when: "second_pass_enabled=true", wtype: 'number', tooltip: "Override the refiner row's step count (taomate: 3). Rides only when refine_lora is set." })),
     // ── THE ATTENTION BACKEND (roadmap item 3; the h3_attention
@@ -224,7 +224,7 @@ export const paramSchema = z.object({
     // estate-proven literal (plaguekind's template value, silicon
     // receipts on the t4 arm); 'pytorch attention' is the engine's
     // own enumeration. Values the engine refuses are NOT offered.
-    attention_backend: vocabulary(["comfy kitchen attention", "pytorch attention"]).description("Attention backend").default("comfy kitchen attention").extra('extra', bag({ order: null, group: 'sampling', wtype: 'select', tooltip: "The non-SLA arm's ModelAttentionBackend — used when the SLA sparse attention switch (Sla group) is OFF. ck-kitchen is the estate-proven default; pytorch is the engine's enumerated literal." })),
+    attention_backend: vocabulary(["comfy kitchen attention", "pytorch attention"]).description("Attention backend").default("comfy kitchen attention").extra('extra', bag({ order: null, group: 'sampling', wtype: 'select', tooltip: "The attention math the engine uses when the SLA sparse-attention switch (Sla group) is OFF. comfy-kitchen is the proven default; pytorch is the engine's fallback." })),
     interp_model: vocabulary(["film_net_fp16.safetensors", "rife47.pth"]).description("Interp model").default("film_net_fp16.safetensors").extra('extra', bag({ order: null, group: 'second_pass', visible_when: "second_pass_enabled=true&interpolate_enabled=true", wtype: 'select', tooltip: "FILM or RIFE frame-interpolation weights." })),
     interp_multiplier: z.number().description("Interp multiplier").min(2).max(4).step(1).default(2).extra('extra', bag({ order: null, group: 'second_pass', visible_when: "second_pass_enabled=true&interpolate_enabled=true", wtype: 'number', tooltip: "Frame multiple (2 = double the frame rate)." })),
     sr_switch: z.boolean().description("Super-Res (SeedVR2)").default(false).extra('extra', bag({ order: null, group: 'second_pass', visible_when: "second_pass_enabled=true", tooltip: "Upscale the final film through SeedVR2 before saving." })),
