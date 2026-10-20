@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { existsSync, readdirSync, readFileSync, rmSync } from "node:fs";
-import { join } from "node:path";
+import { join, relative } from "node:path";
 import { spawnSync, execSync, execFileSync } from "node:child_process";
 
 // GATE REGRESSIONS — one pin per WEDGE this estate has actually been
@@ -17,6 +17,17 @@ const REPO = join(import.meta.dirname, "..", "..", "..", "..");
 
 function read(path: string): string {
   return readFileSync(join(REPO, path), "utf8");
+}
+
+/** The COMMITTED bytes of a tracked path (`git show HEAD:<path>`) —
+ *  the committed-lib and committed-file arms' byte source. This wall
+ *  judges what a clone carries; a working-tree read judges churn the
+ *  landing never committed (2026-10-20: an estate-queue lib rebuild
+ *  mid-flight reded the d.ts specifier arm on bytes HEAD never
+ *  carried, and the deleted doors.mjs ENOENT'd the store-path sweep
+ *  outright). A landing's bytes are judged the moment they commit. */
+function readCommitted(path: string): string {
+  return execFileSync("git", ["show", `HEAD:${path}`], { cwd: REPO, encoding: "utf8", maxBuffer: 64 * 1024 * 1024 });
 }
 
 describe("THE HOOK THAT CRIED RED (the SIGPIPE wedge)", () => {
@@ -250,14 +261,35 @@ describe("THE DANGLING STORE PATH (round-6, 2026-10-13)", () => {
     // hardcoded react@19.2.8 went red when the store moved to
     // 19.3.0) and typescript (the repo tier's compiler pin). Both
     // now derive their paths; this arm keeps a third instance out.
+    //
+    // THE JUDGE READS THE COMMITTED TREE (git grep over HEAD), never
+    // the working tree: the wall's subject is the TRACKED bytes —
+    // what a clone carries — and a working-tree read judges churn
+    // the landing never committed (a lib file deleted mid-rebuild
+    // ENOENT'd the whole sweep on 2026-10-20, red with zero
+    // offenders). A real landing commits its file; the next run
+    // judges it here by name.
     const offenders: string[] = [];
-    const files = execFileSync("git", ["ls-files"], { cwd: REPO, encoding: "utf8" })
-      .split("\n")
-      .filter((f) => /\.(ts|tsx|mjs|js|json|sh|yml)$/u.test(f));
-    for (const f of files) {
-      const text = readFileSync(join(REPO, f), "utf8");
-      const hits = text.match(/node_modules\/\.pnpm\/[A-Za-z@/_-]+@\d+\.\d+\.\d+/gu);
-      if (hits !== null) offenders.push(`${f}: ${hits[0]}`);
+    const PATTERN = "node_modules/\\.pnpm/[A-Za-z@/_-]+@[0-9]+\\.[0-9]+\\.[0-9]+";
+    const r = spawnSync("git", [
+      "grep", "-o", "-E", PATTERN, "HEAD", "--",
+      "*.ts", "*.tsx", "*.mjs", "*.js", "*.json", "*.sh", "*.yml",
+    ], { cwd: REPO, encoding: "utf8" });
+    // git grep exits 1 on zero matches — that is the clean verdict,
+    // not a failure; anything else is a broken sweep.
+    if (r.status !== 0 && r.status !== 1) {
+      throw new Error(`the committed-tree sweep failed (git grep status ${r.status}): ${r.stderr}`);
+    }
+    for (const line of (r.stdout ?? "").split("\n")) {
+      if (line === "") continue;
+      // git grep -o HEAD emits `HEAD:<path>:<match>` — the wall's
+      // offender voice names the tracked path and the first literal.
+      const rest = line.slice(line.indexOf(":") + 1);
+      const sep = rest.indexOf(":");
+      const path = rest.slice(0, sep);
+      if (!offenders.some((o) => o.startsWith(`${path}: `))) {
+        offenders.push(`${path}: ${rest.slice(sep + 1)}`);
+      }
     }
     expect(offenders, `tracked files pinning a pnpm store version path: ${offenders.join(" | ")}`).toEqual([]);
   });
@@ -559,7 +591,7 @@ describe("THE COMMITTED LIB (an emitted import Node can actually resolve)", () =
   it("no emitted JS names a relative .ts specifier", () => {
     const offenders: string[] = [];
     for (const f of libFiles) {
-      if (/(?:from\s*|import\(\s*)(["'])\.[^"']*\.ts\1/.test(read(f))) offenders.push(f);
+      if (/(?:from\s*|import\(\s*)(["'])\.[^"']*\.ts\1/.test(readCommitted(f))) offenders.push(f);
     }
     expect(offenders, `emitted JS carrying a .ts specifier: ${offenders.join(" | ")}`).toEqual([]);
   });
@@ -572,21 +604,37 @@ describe("THE COMMITTED LIB (an emitted import Node can actually resolve)", () =
     // relative imports erase from JS emit, so the declaration
     // file is the only plane the specifier lives on. Same regex
     // law, own derivation (any lib/ segment, root included).
+    // (2026-10-20) the bytes are the COMMITTED ones: the working
+    // tree carries rebuild churn this wall must not judge — the
+    // rebuild's own d.ts emit is judged when its landing commits.
+    // THE FIRST COMMITTED READ REDS FOR REAL: 18 d.ts (16 card-kit +
+    // krea-2 + qwen-img-21) carry "./x.ts" specifiers at HEAD —
+    // 7da1ed576's lib rebuild bypassed build-plane's declaration
+    // rewrite finisher, regressing the b4f769688-cured class. The
+    // disk-reading sweep never saw it: the tree's own uncommitted
+    // rebuild (the fix) masked HEAD. Cure: the rebuild rides
+    // build-plane.mjs (never a raw-tsc bypass) and its landing
+    // commits the emitted bytes.
     const dtsFiles = execFileSync("git", ["ls-files"], { cwd: REPO, encoding: "utf8" })
       .split("\n")
       .filter((f) => /(^|\/)lib\/.*\.d\.ts$/.test(f));
     const offenders: string[] = [];
     for (const f of dtsFiles) {
-      if (/(?:from\s*|import\(\s*)(["'])\.[^"']*\.ts\1/.test(read(f))) offenders.push(f);
+      if (/(?:from\s*|import\(\s*)(["'])\.[^"']*\.ts\1/.test(readCommitted(f))) offenders.push(f);
     }
     expect(offenders, `emitted d.ts carrying a .ts specifier: ${offenders.join(" | ")}`).toEqual([]);
   });
 
   it("every relative specifier in emitted JS resolves to a file on disk", () => {
+    // "on disk" is the COMMITTED tree (the tracked roster): Node
+    // resolves the served plane, and the served plane is what a
+    // clone carries — a working-tree deletion of a tracked sibling
+    // is churn, not a broken emit (2026-10-20).
+    const tracked = new Set(execFileSync("git", ["ls-files"], { cwd: REPO, encoding: "utf8" }).split("\n"));
     const offenders: string[] = [];
     for (const f of libFiles) {
-      for (const m of read(f).matchAll(specRe)) {
-        const base = join(REPO, f, "..", m[2]);
+      for (const m of readCommitted(f).matchAll(specRe)) {
+        const base = relative(REPO, join(REPO, f, "..", m[2]));
         const candidates = [
           base,
           `${base}.js`,
@@ -597,7 +645,7 @@ describe("THE COMMITTED LIB (an emitted import Node can actually resolve)", () =
           `${base}/index.cjs`,
           `${base}/index.node`,
         ];
-        if (!candidates.some((c) => existsSync(c))) offenders.push(`${f} -> ${m[2]}`);
+        if (!candidates.some((c) => tracked.has(c))) offenders.push(`${f} -> ${m[2]}`);
       }
     }
     expect(offenders, `emitted JS with a dangling relative import: ${offenders.join(" | ")}`).toEqual([]);

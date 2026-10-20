@@ -308,6 +308,10 @@ export function VideoTimelineStudio(owner: StageViewOwnerProps) {
               setCallSpan: mut.setCallSpan, setCallGuide: mut.setCallGuide,
               setCallTransition: mut.setCallTransition,
               setCallRefs: mut.setCallRefs, setCallKnob: mut.setCallKnob,
+              // G7's writer seat (2026-11-09): the declared mods chip's
+              // detach writes the DOC verb — the run-level ref_mods
+              // lane is authored by the studio, not just read.
+              setLayerAKey: doc.setLayerAKey,
               voicePinnedCalls: derived.voicePinnedCalls,
               audioClipsPresent: derived.audioClipsPresent,
             }}

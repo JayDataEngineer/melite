@@ -213,8 +213,8 @@ export function RunRescue({ error, stages, onRun, rescue: structured }: {
     )
   }
 
-  // THE RUNTIME BANNER (E2-2, operator 2026-10-20 — "A DOWNLOAD
-  // PROMPT APPEARS, NOT WHATEVER BULLSHIT I SEE"): the engine's own
+  // THE RUNTIME BANNER (E2-2, operator 2026-10-20 — a download
+  // prompt appears, never the raw engine's noise): the engine's own
   // sentence names the missing tool runtime AND its provision
   // command, so the estate faces the provision — never the raw
   // ComfyError. The estate owns no runtime-provision door, so the

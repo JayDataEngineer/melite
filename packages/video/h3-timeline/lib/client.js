@@ -494,6 +494,8 @@ window.__ModuleLoader__.load({
 			declaredChipTitle: (url) => `card-level default — rides this window while the call states no chips of its own (a stated lane replaces it; edit via the card params)\n${url}`,
 			/** The mods bucket's declared chip hover (the merge law: the card mods ride every window; a call's chips merge with them). */
 			modDeclaredChipTitle: (url) => `card-level mod — rides every window; a call's own chips merge with it (the compose dedupes by value)\n${url}`,
+			/** The declared mod chip's detach verb (G7's writer seat, 2026-11-09: the run-level lane is authored by the studio — the press writes the DOC verb). The detach button's accessible name. */
+			modDeclaredRemoveTitle: (url) => `detach ${url} — the run's declared mod lane drops this card-level pack`,
 			/** The mod chip's hover law (the any-media seat: media bakes, stems reuse). */
 			modChipTitle: (chip) => `refmod seat — media bakes into a pack at the run (the system handles the conversion); .safetensors stems reuse the engine's loader\n${chip}`,
 			/** The call head shared by the focused card and the compact row (one face, two seats). */
@@ -873,10 +875,11 @@ window.__ModuleLoader__.load({
 		*  @returns the derived window family */
 		function deriveWindowFamily(raw) {
 			const calls = Array.isArray(raw.calls) ? raw.calls : [];
+			const docGuide = (v) => typeof v === "string" && v.trim() !== "";
 			const hasGuide = calls.some((c) => {
 				const cc = c ?? {};
 				return Boolean(cc.image) || Boolean(cc.ref_images) || Boolean(cc.ref_image) || Boolean(cc.image_name);
-			}) || Array.isArray(raw.keyframes) && raw.keyframes.length > 0 || refSurfaceCount(raw) > 0 || typeof raw.last_frame === "string" && raw.last_frame.trim() !== "";
+			}) || Array.isArray(raw.keyframes) && raw.keyframes.length > 0 || refSurfaceCount(raw) > 0 || typeof raw.last_frame === "string" && raw.last_frame.trim() !== "" || docGuide(raw.image) || docGuide(raw.image_name) || docGuide(raw.ref_image);
 			return calls.length > 1 ? "t4_chain" : hasGuide ? "t4r" : "t4_open";
 		}
 		function refSurfaceCount(raw) {
@@ -4261,7 +4264,10 @@ window.__ModuleLoader__.load({
 		*  base's seats and mis-derive the family (t4_open for a t4r doc —
 		*  the exact lie the gate exists to kill). Shared by the rail's
 		*  omitFields gate and the commit seam's family reseat (useShownDoc's
-		*  commit — the mount heal dissolved with B2): one merge, one truth. */
+		*  commit — the mount heal dissolved with B2): one merge, one truth.
+		*  The layer's domain is any doc layer object (LayerA included —
+		*  an interface carries no index signature, so the callers pass the
+		*  layer bare, never through a Record cast). */
 		function mergeDocLayers(base, layer) {
 			const out = { ...base ?? {} };
 			for (const [k, v] of Object.entries(layer)) if (v !== void 0 && v !== "") out[k] = v;
@@ -5233,12 +5239,17 @@ window.__ModuleLoader__.load({
 			return `frames ${start}–${end} (end exclusive) — delivered ${delivered}f after the seam's carry`;
 		}
 		/** A CARD-LEVEL reference chip (the Layer A/B canon, 2026-10-24):
-		*  display-only — the studio never writes the declared surface (the
-		*  agent path owns it), so there is no edit door to lie about. It
-		*  renders only while this call's lane states no chips (the inherit
-		*  arm); a stated lane REPLACES the defaults. The full URL rides
-		*  the title; a dead URL shows its broken thumb honestly. */
-		function DeclaredChip({ url, kind }) {
+		*  display-only for the ref lanes — the studio never writes the
+		*  declared surface (the agent path owns it), so there is no edit
+		*  door to lie about. THE EXCEPTION IS THE MOD LANE (G7's writer
+		*  seat, 2026-11-09): a threaded DOC writer arms the detach control
+		*  — the press writes the run-level ref_mods key minus the pack
+		*  (the last pack unstamps the key, the absent-key law); no writer,
+		*  no control (a control whose press cannot write is a dead
+		*  control). It renders only while this call's lane states no chips
+		*  (the inherit arm); a stated lane REPLACES the defaults. The full
+		*  URL rides the title; a dead URL shows its broken thumb honestly. */
+		function DeclaredChip({ url, kind, onRemove, removeLabel }) {
 			const short = declaredShortName(url);
 			const [open, setOpen] = (0, react.useState)(false);
 			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
@@ -5268,6 +5279,15 @@ window.__ModuleLoader__.load({
 						className: studio_module_css_default.declaredTag,
 						children: studioCopy.declaredCardTag
 					}),
+					onRemove !== void 0 ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+						type: "button",
+						variant: "ghost",
+						className: studio_module_css_default.declaredThumbBtn,
+						"aria-label": removeLabel,
+						"data-testid": "tl-declared-mod-remove",
+						onClick: onRemove,
+						children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.IconCloseOutlineRegular, { className: studio_module_css_default.sz10 })
+					}) : null,
 					open ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.ImageLightbox, {
 						src: url,
 						alt: short,
@@ -5490,7 +5510,7 @@ window.__ModuleLoader__.load({
 		*  estate's live media (canonical /melite-media paths). Same wire
 		*  form as the other lanes (the comma string), the canon's override
 		*  display (stated lane replaces; absent inherits), same cap tail. */
-		function ModsBucket({ label, cap, value, onChange, declared, listing }) {
+		function ModsBucket({ label, cap, value, onChange, declared, listing, onDeclaredRemove }) {
 			const [fileError, setFileError] = (0, react.useState)(null);
 			const chips = splitRefList(value);
 			const overrides = chips.length > 0;
@@ -5566,7 +5586,9 @@ window.__ModuleLoader__.load({
 						children: [
 							declared.map((path) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)(DeclaredChip, {
 								url: path,
-								kind: "mod"
+								kind: "mod",
+								onRemove: onDeclaredRemove === void 0 ? void 0 : () => onDeclaredRemove(path),
+								removeLabel: studioCopy.modDeclaredRemoveTitle(path)
 							}, `declared-${path}`)),
 							chips.map((chip, ci) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.SourceRow, {
 								label: chip.startsWith("data:") ? studioCopy.uploadChipLabel(ci + 1) : declaredShortName(chip),
@@ -5617,7 +5639,7 @@ window.__ModuleLoader__.load({
 		/** One focused model-call card (monolith lines 3418–3466 + 3641–3844;
 		*  the prompt block lives in CallCardPrompt). */
 		function CallCard({ c, i, deps }) {
-			const { selected, fps, layerA, knobFields, callCardRefs, artifactIndex, linkGroups, guideLinks, refArtifacts, handlePromptDelete, handlePromptUpdate, enhanceOne, undoEnhance, enhancing, enhanceErr, enhanceUndo, setCallSpan, setCallGuide, setCallTransition, setCallRefs, setCallKnob, voicePinnedCalls, audioClipsPresent } = deps;
+			const { selected, fps, layerA, knobFields, callCardRefs, artifactIndex, linkGroups, guideLinks, refArtifacts, handlePromptDelete, handlePromptUpdate, enhanceOne, undoEnhance, enhancing, enhanceErr, enhanceUndo, setCallSpan, setCallGuide, setCallTransition, setCallRefs, setCallKnob, voicePinnedCalls, audioClipsPresent, setLayerAKey } = deps;
 			const modsListing = deps.modsListing;
 			const [knobsOpen, setKnobsOpen] = (0, react.useState)(false);
 			if (selected != null && i !== selected.callIdx) return null;
@@ -5779,7 +5801,11 @@ window.__ModuleLoader__.load({
 									value: c.refs?.mods,
 									onChange: (v) => setCallRefs(i, "mods", v),
 									declared: normalizeDeclaredRefs(layerA?.ref_mods),
-									listing: modsListing
+									listing: modsListing,
+									onDeclaredRemove: setLayerAKey === void 0 ? void 0 : (path) => {
+										const kept = normalizeDeclaredRefs(layerA?.ref_mods).filter((p) => p !== path);
+										setLayerAKey("ref_mods", kept.length ? kept : void 0);
+									}
 								}),
 								/* @__PURE__ */ (0, react_jsx_runtime.jsx)(SeamControls, {
 									callIndex: i,
@@ -16565,6 +16591,7 @@ window.__ModuleLoader__.load({
 								setCallTransition: mut.setCallTransition,
 								setCallRefs: mut.setCallRefs,
 								setCallKnob: mut.setCallKnob,
+								setLayerAKey: doc.setLayerAKey,
 								voicePinnedCalls: derived.voicePinnedCalls,
 								audioClipsPresent: derived.audioClipsPresent
 							}

@@ -2,8 +2,8 @@
   "version": 1,
   "families": {
     "anima": {
-      "srcHash": "b862b620f3b81e5547d7a1b9da5be0b623218eda09ed9703013a71e681e72ddf",
-      "libHash": "4af6be951557bbc09e4eb85cbb52bb7ac9459b6badf1d42ef0f655345ce1d65c"
+      "srcHash": "a301ab2cb1b37d55afd671c5608cabe3ad4e4a7ace51260010956663d9320cc8",
+      "libHash": "5d99747e6444996a96c03363c9c727214ea638f8ac14cfa03010aff8c6e46b97"
     },
     "anny": {
       "srcHash": "bf27c12d28e252a88f71c2293c474e95a0d25040d02fe813070f281f1fba4813",
@@ -34,8 +34,8 @@
       "libHash": "9fdf772370a69bf7d60d57957e3e9cd2d7f8b512d74d5a507be09367e3166c22"
     },
     "h3": {
-      "srcHash": "4828e27687dfbc71ecd55ea35d85586e2cc770970336dd7c28a19163548af5e6",
-      "libHash": "73be08041ede2288139c7ed5154cd6dad345aad1e2ead855aba344f58d881bf1"
+      "srcHash": "856d5630e36a969d45640e2950967c13488254a85f8cbc8b1818dd1e18a63bba",
+      "libHash": "d6b58215846b9aecc4249ce64de8046f6486a9d4c15c069a327faa9750c4d147"
     },
     "input": {
       "srcHash": "7ae43b6977b879f30e1c0a54b59f5762103dfba638884d5ff0bb6bff0a1a4b5d",
@@ -54,8 +54,8 @@
       "libHash": "fbad5adf07dd4ac4f6fa9254c71a69a9d557884e04008ff76d3b6b8638d3c707"
     },
     "krea-2": {
-      "srcHash": "3c70a9f7292116baf6a4a817fd5c6d8759c2185f5a0fc773a42e48cf1895084c",
-      "libHash": "0b2a874e9c3c19db2baff0a2d16dd5a4acc48a9373c82faae356feb0f4df542d"
+      "srcHash": "3f37b004529a09a333da85f83172ba7b72d369e9df89fb24bedb73df7b7bf0ec",
+      "libHash": "7897803d64ef58dc1aabc2edfe471956311974a3a391bea9d33c0e3de6422c36"
     },
     "mask": {
       "srcHash": "864ed1bc1d6ba6fe7e440624ad6b08b34b0779334028669091b4e2a65e7625b4",
@@ -78,8 +78,8 @@
       "libHash": "97c48d477f1e8090b88ae59eb42523e0f99f3d85e208d2dfa91d8dc8e286edd4"
     },
     "qwen-img-21": {
-      "srcHash": "7c161dd367d75c96c8717d6c821f227fbc42612d3c1a5695e652333aa1ab47f1",
-      "libHash": "b8771c3ac114c96044b426a2d05a24f71c34bd9c37265c5f0ef8ce49fd74a030"
+      "srcHash": "fc8aabde60c7cfd7dad065a0daece76a8d7de234c9f3e763628a42b31f79bf1e",
+      "libHash": "0d430c957d50814ea5197911c926805cdf79a6eaa912011edfeaa87010b5a643"
     },
     "qwen-img-edit-21": {
       "srcHash": "1c7b53ac3eb5558491a921292f7686aebff6d33e811885a3974e7fc1a92f49a9",

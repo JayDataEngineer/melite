@@ -42,6 +42,12 @@ export interface CallCardDeps {
    *  (the 2026-09-15 "inherit" wall: an unset knob shows the value
    *  it inherits from the run, never the bare word "inherit"). */
   layerA?: LayerA
+  /** G7's writer seat (2026-11-09): the run-level Layer A key
+   *  writer — the declared mods chip's detach writes the DOC verb
+   *  through it (the last pack unstamps the key entirely, the
+   *  absent-key law). OPTIONAL: absent, no detach control renders
+   *  (a control whose press cannot write is a dead control). */
+  setLayerAKey?: <K extends keyof LayerA>(key: K, value: LayerA[K]) => void
   /** THE REFMODS LISTING (the estate-side door's feed, 2026-11-05):
    *  the H3 refmods loader's own mod_N combo stems, served by the
    *  manage door `refmods_list` and loaded once by the tenant. Absent

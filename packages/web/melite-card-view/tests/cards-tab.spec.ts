@@ -91,7 +91,16 @@ interface Call { method: string; args: Record<string, unknown> }
 
 let fakes: { calls: Call[]; unmount: () => void } | null = null;
 
-function stubCatalogFetch(catalog: Record<string, unknown> = { cards: { "img-to-mesh": { families: ["trellis2-native"] } } }): void {
+// THE CATALOG'S CARD ROWS (the writer-mint cut, 2026-11-08): the run
+// seat resolves a stage's default family from the /v1/model-catalog
+// cards section and REFUSES an uncarried card — never mints the card
+// id as its own family. The stub carries the rows the stages below
+// run: image-gen's real boarded atoms (boarded[0] = the default
+// family the start doc rides), img-to-mesh's 3D lift.
+function stubCatalogFetch(catalog: Record<string, unknown> = { cards: {
+  "image-gen": { families: ["krea-2", "z-image", "anima", "qwen-img-21", "flux-klein", "moss-image"] },
+  "img-to-mesh": { families: ["trellis2-native"] },
+} }): void {
   vi.stubGlobal("fetch", async (url: unknown): Promise<Response> => {
     const path = String(url);
     if (path === "/v1/model-catalog") {

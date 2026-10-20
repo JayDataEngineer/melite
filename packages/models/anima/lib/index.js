@@ -62,6 +62,13 @@ export const DECL = {
             // The base face declared, never inherited (the variant-sampler-defaults
             // law): 52 / 4 — the family defaults' own prescription, now owned here.
             "resolver_defaults": { "steps": 52, "cfg": 4 },
+            // THE ENVELOPE DECLARATION LAW (the E2-8 cure, 2026-11-08): the
+            // lane's sampler domain, held IN ITS OWN TRUTH — the family default
+            // 52/4, the official template's 30-step euler walk, the operator's
+            // good live runs (35/4, 52/4) and the Draft recipe's 8-step stamp
+            // sit INSIDE; the burn's CFG 1 on this non-distilled lane (every
+            // "completely off" run sat there) sits OUT and refuses at compose.
+            "sampler_envelope": { "steps": [8, 60], "cfg": [2, 8] },
             "cells": [
                 {
                     "quant": "int8_convrot",
@@ -99,6 +106,11 @@ export const DECL = {
             "route": "anima-turbo",
             "order": 1,
             "resolver_defaults": { "steps": 8, "cfg": 1 },
+            // THE ENVELOPE DECLARATION LAW (the E2-8 cure, 2026-11-08): the
+            // distilled lane's domain — its own upstream marriage and half-step
+            // neighbors inside; the base lanes' 52/4 refuses here (the krea
+            // turbo shape, 2026-09-21).
+            "sampler_envelope": { "steps": [4, 8], "cfg": [1, 2] },
             "cells": [
                 {
                     "quant": "int8_convrot",
@@ -146,6 +158,9 @@ export const DECL = {
             // The aesthetic face declared, never inherited: the base sampler
             // prescription (52 / 4) — the fine-tune retunes style, not the sampler.
             "resolver_defaults": { "steps": 52, "cfg": 4 },
+            // THE ENVELOPE DECLARATION LAW (the E2-8 cure, 2026-11-08): the
+            // base domain verbatim — the fine-tune retunes style, not the sampler.
+            "sampler_envelope": { "steps": [8, 60], "cfg": [2, 8] },
             "cells": [
                 {
                     "quant": "int8_convrot",

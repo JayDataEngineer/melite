@@ -8,6 +8,14 @@ export interface GraphRow {
 }
 export interface SidecarStage {
     readonly id: string;
+    /** THE DRAFT ROW this stage ran for (the bench identity seam,
+     *  2026-10-22, extended to the sidecar 2026-10-20's
+     *  invisible-press burn): `id` may be the card skeleton's own id
+     *  ('generate' — a namespace the bench draft never heard of),
+     *  while the bench read joins on the draft row's id. Absent on
+     *  legacy sidecars and multi-row bench runs (those already stamp
+     *  each row's own id). */
+    readonly bench_stage_id?: string;
     readonly name: string;
     readonly index: number;
     readonly status: string;

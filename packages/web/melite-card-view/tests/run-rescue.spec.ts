@@ -90,9 +90,9 @@ describe('parseRescue (the estate refusal shapes, nothing else)', () => {
       .toBe(null)
   })
 
-  // THE RUNTIME-MISS VOICE (E2-2, operator 2026-10-20 — "WHEN THE
-  // MODEL IS MISSING, A DOWNLOAD PROMPT APPEARS, NOT WHATEVER
-  // BULLSHIT I SEE"): the engine's own sentence names the missing
+  // THE RUNTIME-MISS VOICE (E2-2, operator 2026-10-20 — when the
+  // model is missing, a download prompt appears, never the raw
+  // engine's noise): the engine's own sentence names the missing
   // tool runtime AND its provision command — `X runtime not found
   // at <path>. Provision it: <cmd>` — so the estate faces the
   // provision instead of the raw ComfyError. The anchor is the

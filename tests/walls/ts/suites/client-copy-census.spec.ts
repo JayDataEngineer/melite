@@ -462,7 +462,16 @@ const PINS: Record<string, number> = {
   // the gesture's gate and the estate walk speak one law; same class
   // as the mirror clause above (the wire.ts data-site argument,
   // class 1 — the voice IS the door's identity).
-  'packages/web/card-base/src': 48,
+  // RE-PIN 48→49 (2026-11-09, E2-11 the mod-surface sanction): +1
+  // law-wording h() child — form.tsx:430's OVER-CAP REFUSAL paragraph
+  // ("'<field>': <n> stated, this lane admits <cap> — remove <k>
+  // before the write (the capacity follows the boarded model)"). The
+  // sentence IS the compose door's over-cap refusal mirrored at the
+  // seat (the schema-contract law: the form renders the law a past-cap
+  // draft arrives under), computed with the lane's live counts — the
+  // door-voice mirror class (class 1), localized only by forking the
+  // door's identity per locale.
+  'packages/web/card-base/src': 49,
   // card-view: 13 — the D1 dictionary moves landed (the cards-tab
   // title/guide trio + the mention title now ride chromeCopy), so the
   // residue is two DEBT classes, every seat computed law-voiceing:

@@ -3499,7 +3499,8 @@ window.__ModuleLoader__.load({
 		*  the card id as its own family (operator 2026-11-08: a fallback
 		*  is a hidden error), the exact pattern the minted-model kill
 		*  executed server-side. An absent row is an error, never a silent
-		*  self-default. */
+		*  self-default. A wire failure (the read itself) still throws the
+		*  wire's own error verbatim. */
 		async function defaultFamilyForCard(cardId, signal) {
 			const families = await fetchCardFamilies(signal);
 			if (!Object.prototype.hasOwnProperty.call(families, cardId)) throw new Error(`card '${cardId}' is not carried by the catalog (no /v1/model-catalog row — the run seat cannot default its family)`);
@@ -4783,7 +4784,14 @@ window.__ModuleLoader__.load({
 			/** Weight tracker line when the engine declared no total (a DECL
 			*  row without size seeds 0): the voice says so — no dead
 			*  0-of-0 meter dressed as 0% (the purge P5's total=0 face). */
-			undeclaredTotal: (p) => p.bytes + "/" + p.total + " bytes — total undeclared (the engine reported no size)"
+			undeclaredTotal: (p) => p.bytes + "/" + p.total + " bytes — total undeclared (the engine reported no size)",
+			/** The Q1 Auto-mode popup's On row (the composer `+` popup's
+			*  label + blast-radius detail: On hands the AI the run press). */
+			autoModeOnLabel: "Auto mode on",
+			autoModeOnDetail: "The AI starts runs itself — generations no longer wait for your Run press",
+			/** The popup's Off row (Off hands the run press back to the user). */
+			autoModeOffLabel: "Auto mode off",
+			autoModeOffDetail: "Runs wait for your Run press again — the AI only stages"
 		};
 		//#endregion
 		//#region src/client/run-rescue.tsx
@@ -7080,17 +7088,18 @@ window.__ModuleLoader__.load({
 		/**
 		* The popup's rows: On hands the AI the run press, Off hands it back
 		* to the user. The detail says what changes (who presses Run) because
-		* a bare On/Off toggle never explains its own blast radius.
+		* a bare On/Off toggle never explains its own blast radius. Copy is
+		* locale-owned — the words ride chromeCopy.
 		*/
 		function autoModeOptions() {
 			return [{
 				id: "on",
-				label: "Auto mode on",
-				detail: "The AI starts runs itself — generations no longer wait for your Run press"
+				label: chromeCopy.autoModeOnLabel,
+				detail: chromeCopy.autoModeOnDetail
 			}, {
 				id: "off",
-				label: "Auto mode off",
-				detail: "Runs wait for your Run press again — the AI only stages"
+				label: chromeCopy.autoModeOffLabel,
+				detail: chromeCopy.autoModeOffDetail
 			}];
 		}
 		/**
@@ -7323,6 +7332,7 @@ window.__ModuleLoader__.load({
 			let model;
 			if (typeof heldModel === "string" && heldModel !== "") model = heldModel;
 			else {
+				await fetchCardFamilies();
 				let fam;
 				try {
 					fam = await defaultFamilyForCard(card);

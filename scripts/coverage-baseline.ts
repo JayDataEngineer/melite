@@ -762,12 +762,20 @@ export const COVERAGE_BASELINE: Record<string, {
   '**/packages/web/melite-card-deck/src/index.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/web/melite-card-view/src/client/add-card-door.tsx': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/web/melite-card-view/src/client/add-stage.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
+  // the Q1 auto-mode decoration (2026-10-20): row pinned at the scoped
+  // measured face of its own suite (auto-mode-menu.spec.ts) — the
+  // refusal/unmaterialized throw arms are the uncovered residue
+  '**/packages/web/melite-card-view/src/client/auto-mode-decoration.ts': { statements: 79.16, branches: 75, functions: 75, lines: 85.71 },
   '**/packages/web/melite-card-view/src/client/bench-row.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/web/melite-card-view/src/client/bench-view.tsx': { statements: 98.02, branches: 96.42, functions: 100, lines: 100 },
   '**/packages/web/melite-card-view/src/client/card-drill.tsx': { statements: 96.29, branches: 96.15, functions: 90.9, lines: 95.83 },
   '**/packages/web/melite-card-view/src/client/card-labels.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/web/melite-card-view/src/client/card-mentions.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/web/melite-card-view/src/client/card-tools.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
+  // the q3 frozen in-chat previews (2026-10-20): row pinned at the
+  // scoped measured face of its own suites (chat-preview.spec.ts +
+  // flow-cards-chat-preview.spec.tsx)
+  '**/packages/web/melite-card-view/src/client/chat-preview.ts': { statements: 92.3, branches: 76.92, functions: 100, lines: 100 },
   '**/packages/web/melite-card-view/src/client/cards-resource.ts': { statements: 99.43, branches: 99.71, functions: 96.51, lines: 99.34 },
   '**/packages/web/melite-card-view/src/client/cards-tab-body.tsx': { statements: 98.42, branches: 96.66, functions: 98, lines: 99.37 },
   '**/packages/web/melite-card-view/src/client/construct-card.tsx': { statements: 100, branches: 100, functions: 100, lines: 100 },

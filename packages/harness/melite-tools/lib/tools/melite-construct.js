@@ -465,6 +465,10 @@ export function meliteConstruct(estate, opts = {}) {
                 // line each (id, card, engine), plus the intent. A model
                 // that can read never probes.
                 const lines = ['bench ' + String(v.verb ?? '?') + ' → rev ' + String(v.rev ?? '?')];
+                // hoisted once (the null-voice truth below and the trailing
+                // facts line read the same seam — one read, two voices)
+                const runsFacts = v.runs;
+                const matched = Number(runsFacts?.matched ?? 0);
                 if (Array.isArray(v.stages)) {
                     const stages = v.stages;
                     if (stages.length === 0) {
@@ -504,13 +508,23 @@ export function meliteConstruct(estate, opts = {}) {
                                 suffix = ` — last_run ${lr.run_id} (${String(lr.status ?? '?')}${arts ? ', ' + arts + ' artifact(s)' : ''}${exp}${first !== '' ? ', ' + first : ''})`;
                             }
                             else if (lr === null) {
-                                suffix = ' — last_run null (draft has no run in the window)';
+                                // THE NULL-VOICE TRUTH (the invisible-press burn,
+                                // 2026-10-20): "draft has no run in the window" LIED
+                                // whenever the runs facts said matched>0 — the
+                                // operator's read printed "matched 2" beside it while
+                                // the completed press sat invisible (its digest named
+                                // the card skeleton, a namespace the bench rows never
+                                // heard of). The two nulls are different diseases and
+                                // must say so: no runs at all vs runs that name no
+                                // stage of this draft.
+                                suffix = matched > 0
+                                    ? ' — last_run null (no run in the window names this stage)'
+                                    : ' — last_run null (draft has no run in the window)';
                             }
                             lines.push(`  ${id} — ${card} [${engine}]${suffix}`);
                         }
                     }
                 }
-                const runsFacts = v.runs;
                 if (runsFacts !== undefined) {
                     lines.push(`runs window: checked ${String(runsFacts.checked ?? '?')}, total ${String(runsFacts.total ?? '?')}, matched ${String(runsFacts.matched ?? '?')}`);
                 }

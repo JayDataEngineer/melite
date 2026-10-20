@@ -18,6 +18,7 @@ import type {
   SelectOption,
 } from '@deepseek-ai/dsh-client-ui-commands/client'
 import type { ClientSessionContext } from '@deepseek-ai/dsh-client-ui-input-trigger/client'
+import { chromeCopy } from '../chromeCopy.ts'
 
 /** The host command this decorates (without the leading slash). */
 export const AUTO_MODE_COMMAND = 'melite-runs'
@@ -28,19 +29,20 @@ export type AutoModeOptionId = 'on' | 'off'
 /**
  * The popup's rows: On hands the AI the run press, Off hands it back
  * to the user. The detail says what changes (who presses Run) because
- * a bare On/Off toggle never explains its own blast radius.
+ * a bare On/Off toggle never explains its own blast radius. Copy is
+ * locale-owned — the words ride chromeCopy.
  */
 export function autoModeOptions(): readonly SelectOption[] {
   return [
     {
       id: 'on',
-      label: 'Auto mode on',
-      detail: 'The AI starts runs itself — generations no longer wait for your Run press',
+      label: chromeCopy.autoModeOnLabel,
+      detail: chromeCopy.autoModeOnDetail,
     },
     {
       id: 'off',
-      label: 'Auto mode off',
-      detail: 'Runs wait for your Run press again — the AI only stages',
+      label: chromeCopy.autoModeOffLabel,
+      detail: chromeCopy.autoModeOffDetail,
     },
   ]
 }

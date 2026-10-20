@@ -46,7 +46,13 @@ function stubFetch(): void {
       }), { status: 200, headers: { "content-type": "application/json" } });
     }
     if (path.includes("/v1/forms") || path.includes("/v1/model-catalog")) {
-      return new Response(JSON.stringify(path.includes("catalog") ? { cards: {} } : {}), {
+      // THE CATALOG'S CARD ROW (the writer-mint cut, 2026-11-08): the
+      // run seat resolves image-gen's default family from this cards
+      // section and refuses an uncarried card — the empty section
+      // made the stop arm's run refuse, so the tile never armed.
+      return new Response(JSON.stringify(path.includes("catalog") ? { cards: {
+        "image-gen": { families: ["krea-2", "z-image", "anima", "qwen-img-21", "flux-klein", "moss-image"] },
+      } } : {}), {
         status: 200, headers: { "content-type": "application/json" },
       });
     }

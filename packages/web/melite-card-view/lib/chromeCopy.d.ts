@@ -326,6 +326,13 @@ export declare const chromeCopy: {
         bytes: string;
         total: string;
     }) => string;
+    /** The Q1 Auto-mode popup's On row (the composer `+` popup's
+     *  label + blast-radius detail: On hands the AI the run press). */
+    readonly autoModeOnLabel: "Auto mode on";
+    readonly autoModeOnDetail: "The AI starts runs itself — generations no longer wait for your Run press";
+    /** The popup's Off row (Off hands the run press back to the user). */
+    readonly autoModeOffLabel: "Auto mode off";
+    readonly autoModeOffDetail: "Runs wait for your Run press again — the AI only stages";
 };
 /** The dictionary's key union — the typed seat's domain. */
 export type ChromeCopyKey = keyof typeof chromeCopy;

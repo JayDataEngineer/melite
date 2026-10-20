@@ -67,9 +67,9 @@ export function parseRescue(error: string): Rescue | null {
   // the carried URL stays server-side: names only, always).
   const lane = /lane presence: family '([^']+)' declares \S+ '([\w.-]+\.(?:safetensors|bin|pt|pth|ckpt|gguf))' but no store copy exists/.exec(error)
   if (lane !== null) return { kind: 'model', file: lane[2]!, target: lane[1]! }
-  // THE RUNTIME-MISS VOICE (E2-2, operator 2026-10-20 — "WHEN THE
-  // MODEL IS MISSING, A DOWNLOAD PROMPT APPEARS, NOT WHATEVER
-  // BULLSHIT I SEE"): the engine's own sentence names the missing
+  // THE RUNTIME-MISS VOICE (E2-2, operator 2026-10-20 — when the
+  // model is missing, a download prompt appears, never the raw
+  // engine's noise): the engine's own sentence names the missing
   // tool runtime AND its provision command — `<name> runtime not
   // found at <path>. Provision it: <cmd>` — so the estate faces
   // the provision instead of the raw ComfyError. The anchor is the

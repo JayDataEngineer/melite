@@ -27,6 +27,16 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
+// THE CATALOG'S CARD ROW (the writer-mint cut, 2026-11-08): the run
+// seat resolves image-gen's default family from the cards section and
+// refuses an uncarried card — the empty fallback made every run arm
+// refuse ("cannot default its family"). Families are image-gen's real
+// boarded atoms; boarded[0] is the default family the start doc
+// rides. A test arming doors.catalog replaces it wholesale.
+const DEFAULT_CATALOG: Record<string, Record<string, unknown>> = {
+  "image-gen": { families: ["krea-2", "z-image", "anima", "qwen-img-21", "flux-klein", "moss-image"] },
+};
+
 const doors: {
   specFields: Record<string, unknown> | null;
   specStatus?: number;
@@ -110,11 +120,11 @@ function stubFetch(): void {
       if (doors.catalogDeferred !== null) {
         return new Promise<unknown>((resolve, reject) => {
           doors.catalogDeferred?.push({ resolve: resolve as (v: unknown) => void, reject });
-        }).then(() => new Response(JSON.stringify({ cards: doors.catalog ?? {} }), {
+        }).then(() => new Response(JSON.stringify({ cards: doors.catalog ?? DEFAULT_CATALOG }), {
           status: 200, headers: { "content-type": "application/json" },
         }));
       }
-      return new Response(JSON.stringify({ cards: doors.catalog ?? {} }), {
+      return new Response(JSON.stringify({ cards: doors.catalog ?? DEFAULT_CATALOG }), {
         status: 200, headers: { "content-type": "application/json" },
       });
     }

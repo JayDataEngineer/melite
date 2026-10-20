@@ -69,12 +69,17 @@ function cardSpanLine(start: number, end: number, delivered: number) {
 }
 
 /** A CARD-LEVEL reference chip (the Layer A/B canon, 2026-10-24):
- *  display-only — the studio never writes the declared surface (the
- *  agent path owns it), so there is no edit door to lie about. It
- *  renders only while this call's lane states no chips (the inherit
- *  arm); a stated lane REPLACES the defaults. The full URL rides
- *  the title; a dead URL shows its broken thumb honestly. */
-function DeclaredChip({ url, kind }: { url: string; kind: "image" | "video" | "audio" | "mod" }) {
+ *  display-only for the ref lanes — the studio never writes the
+ *  declared surface (the agent path owns it), so there is no edit
+ *  door to lie about. THE EXCEPTION IS THE MOD LANE (G7's writer
+ *  seat, 2026-11-09): a threaded DOC writer arms the detach control
+ *  — the press writes the run-level ref_mods key minus the pack
+ *  (the last pack unstamps the key, the absent-key law); no writer,
+ *  no control (a control whose press cannot write is a dead
+ *  control). It renders only while this call's lane states no chips
+ *  (the inherit arm); a stated lane REPLACES the defaults. The full
+ *  URL rides the title; a dead URL shows its broken thumb honestly. */
+function DeclaredChip({ url, kind, onRemove, removeLabel }: { url: string; kind: "image" | "video" | "audio" | "mod"; onRemove?: () => void; removeLabel?: string }) {
   const short = declaredShortName(url)
   const [open, setOpen] = useState(false)
   return (
@@ -103,6 +108,18 @@ function DeclaredChip({ url, kind }: { url: string; kind: "image" | "video" | "a
       ) : null}
       <span className={s.declaredName}>{short}</span>
       <span className={s.declaredTag}>{studioCopy.declaredCardTag}</span>
+      {onRemove !== undefined ? (
+        <Button
+          type="button"
+          variant="ghost"
+          className={s.declaredThumbBtn}
+          aria-label={removeLabel}
+          data-testid="tl-declared-mod-remove"
+          onClick={onRemove}
+        >
+          <IconCloseOutlineRegular className={s.sz10} />
+        </Button>
+      ) : null}
       {open ? (
         <ImageLightbox
           src={url}
@@ -413,13 +430,17 @@ function modsNotMediaLine(entry: string) {
  *  form as the other lanes (the comma string), the canon's override
  *  display (stated lane replaces; absent inherits), same cap tail. */
 function ModsBucket({
-  label, cap, value, onChange, declared, listing,
+  label, cap, value, onChange, declared, listing, onDeclaredRemove,
 }: {
   label: string
   cap: number
   value: string | undefined
   onChange: (next: string) => void
   declared: string[]
+  /** G7's writer seat (2026-11-09): the detach arm for one declared
+   *  pack — threaded only when the DOC writer rides the deps.
+   *  Absent: the chips stay display-only (the dead-control law). */
+  onDeclaredRemove?: (path: string) => void
   /** THE LISTING DOOR'S ROWS (slice 4's door seam): the engine's own
    *  models/refmods stems — the MiniMaxH3RefModsLoader combo's facts
    *  off the live /object_info doc, served through deps by the
@@ -524,7 +545,13 @@ function ModsBucket({
       </SectionLabel>
       <div className={s.chips}>
         {declared.map((path) => (
-          <DeclaredChip key={`declared-${path}`} url={path} kind="mod" />
+          <DeclaredChip
+            key={`declared-${path}`}
+            url={path}
+            kind="mod"
+            onRemove={onDeclaredRemove === undefined ? undefined : () => onDeclaredRemove(path)}
+            removeLabel={studioCopy.modDeclaredRemoveTitle(path)}
+          />
         ))}
         {/* THE SQUARE GRAMMAR (operator 2026-10-16: "THE REFMOD IS
             NOT APPEARING LIKE THE OTHER INPUT SQUARES. INSTEAD OF
@@ -605,6 +632,7 @@ export function CallCard({
     setCallRefs, setCallKnob,
     voicePinnedCalls,
     audioClipsPresent,
+    setLayerAKey,
   } = deps
   // THE LISTING DOOR'S SEAT (slice 4, design §B): the mods pick's
   // candidates are the engine's own refmods stems, served through
@@ -812,6 +840,13 @@ export function CallCard({
           onChange={(v) => setCallRefs(i, "mods", v)}
           declared={normalizeDeclaredRefs(layerA?.ref_mods)}
           listing={modsListing}
+          onDeclaredRemove={setLayerAKey === undefined ? undefined : (path) => {
+            // THE ABSENT-KEY LAW (G7's writer seat): the kept lane
+            // rides; the LAST pack's detach unstamps the key — an
+            // empty array is a stated value the compose would judge.
+            const kept = normalizeDeclaredRefs(layerA?.ref_mods).filter((p) => p !== path)
+            setLayerAKey("ref_mods", kept.length ? kept : undefined)
+          }}
         />
         {/* THE SEAM — the call's join (carried vs cut; the carry
             itself is automatic — drift control, never authored). LAST

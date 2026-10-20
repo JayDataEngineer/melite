@@ -1,4 +1,4 @@
-import type { ModFields } from './service-faces.ts';
+import type { ModFields } from './service-faces.js';
 import z from '@deepseek-ai/schemastery';
 import type Schema from '@deepseek-ai/schemastery';
 export interface LorasShape {

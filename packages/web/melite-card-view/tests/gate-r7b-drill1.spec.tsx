@@ -81,7 +81,15 @@ function stubFetch(): void {
       }), { status: 200, headers: { "content-type": "application/json" } });
     }
     if (path.includes("/v1/model-catalog")) {
-      return new Response(JSON.stringify({ cards: {} }), {
+      // THE CATALOG'S CARD ROWS (the writer-mint cut, 2026-11-08): the
+      // run seat resolves a stage's default family from this cards
+      // section and refuses an uncarried card — the empty section made
+      // every run arm refuse ("cannot default its family"). The rows
+      // carry the stages' real boarded atoms; boarded[0] is the
+      // default family the start doc rides.
+      return new Response(JSON.stringify({ cards: {
+        "image-gen": { families: ["krea-2", "z-image", "anima", "qwen-img-21", "flux-klein", "moss-image"] },
+      } }), {
         status: 200, headers: { "content-type": "application/json" },
       });
     }

@@ -5,7 +5,7 @@
 
 import { fetchFormSpec, fieldsOf } from '@melite/card-base/client'
 import { statusOrPendingOf } from '@melite/contracts/stageView'
-import { defaultFamilyForCard } from '@melite-plugin/melite-run-wire'
+import { defaultFamilyForCard, fetchCardFamilies } from '@melite-plugin/melite-run-wire'
 import { startCardRun, startFlowInlineRun, type StartOutcome } from '@melite/card-base/client'
 import type { CardsBenchValue, BenchStageView } from './cards-resource.ts'
 import { freshStageRow, readStageRow, observeRunOutcome } from './cards-resource.ts'
@@ -92,11 +92,17 @@ export async function runCardStage(
   // and THROWS for an uncarried card): the card-unit alias lives HERE
   // explicitly (admitStageModel's card-unit arm, cardsCompose's
   // familyless arm) — never inside the writer as a silent `?? cardId`.
-  // An unknown card refuses AT THE PRESS, naming the miss.
+  // An unknown card refuses AT THE PRESS, naming the miss. THE TWO
+  // THROW ARMS stay distinct: the families READ itself rides the wire
+  // — a dead catalog wire REJECTS (the thrown-start arm voices the
+  // throw's own words); once the read answers, the only throw left in
+  // defaultFamilyForCard is the uncarried card — the wrapped refusal,
+  // never a minted self-default.
   let model: string
   if (typeof heldModel === 'string' && heldModel !== '') {
     model = heldModel
   } else {
+    await fetchCardFamilies()
     let fam: string | null
     try {
       fam = await defaultFamilyForCard(card)

@@ -152,6 +152,16 @@ export function reseatFamilyDead(doc) {
  *  @returns the derived window family */
 export function deriveWindowFamily(raw) {
     const calls = Array.isArray(raw.calls) ? raw.calls : [];
+    // THE DOC-LEVEL GUIDE SEAT (2026-10-20, the chained-image burn):
+    // the walk reads the doc-level guide (actions.ts guideImage =
+    // image ?? image_name) and the render's family seat counts all
+    // three spellings (guide0 = image, image_name, ref_image) — the
+    // derivation MUST count the same seats, or a doc-level guide
+    // stamps t4_open and the walk's own conflict guard refuses the
+    // doc's stamp with a lying cure sentence ("state no variant —
+    // the walk derives t4r from the guide"): the three-refusal loop
+    // that drove the operator's agent text-only.
+    const docGuide = (v) => typeof v === 'string' && v.trim() !== '';
     const hasGuide = calls.some((c) => {
         const cc = (c ?? {});
         return Boolean(cc.image) || Boolean(cc.ref_images) || Boolean(cc.ref_image) || Boolean(cc.image_name);
@@ -160,7 +170,8 @@ export function deriveWindowFamily(raw) {
         // reference lane by the same law as a per-call guide
         || (Array.isArray(raw.keyframes) && raw.keyframes.length > 0)
         || refSurfaceCount(raw) > 0
-        || (typeof raw.last_frame === 'string' && raw.last_frame.trim() !== '');
+        || (typeof raw.last_frame === 'string' && raw.last_frame.trim() !== '')
+        || docGuide(raw.image) || docGuide(raw.image_name) || docGuide(raw.ref_image);
     return calls.length > 1 ? 't4_chain' : hasGuide ? 't4r' : 't4_open';
 }
 function refSurfaceCount(raw) {

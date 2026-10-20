@@ -292,6 +292,13 @@ export const chromeCopy = {
    *  0-of-0 meter dressed as 0% (the purge P5's total=0 face). */
   undeclaredTotal: (p: { bytes: string, total: string }): string =>
     p.bytes + '/' + p.total + ' bytes — total undeclared (the engine reported no size)',
+  /** The Q1 Auto-mode popup's On row (the composer `+` popup's
+   *  label + blast-radius detail: On hands the AI the run press). */
+  autoModeOnLabel: 'Auto mode on',
+  autoModeOnDetail: 'The AI starts runs itself — generations no longer wait for your Run press',
+  /** The popup's Off row (Off hands the run press back to the user). */
+  autoModeOffLabel: 'Auto mode off',
+  autoModeOffDetail: 'Runs wait for your Run press again — the AI only stages',
 } as const
 
 /** The dictionary's key union — the typed seat's domain. */

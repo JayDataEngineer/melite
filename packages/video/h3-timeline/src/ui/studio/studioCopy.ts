@@ -94,6 +94,9 @@ export const studioCopy = {
   /** The mods bucket's declared chip hover (the merge law: the card mods ride every window; a call's chips merge with them). */
   modDeclaredChipTitle: (url: string): string =>
     `card-level mod — rides every window; a call's own chips merge with it (the compose dedupes by value)\n${url}`,
+  /** The declared mod chip's detach verb (G7's writer seat, 2026-11-09: the run-level lane is authored by the studio — the press writes the DOC verb). The detach button's accessible name. */
+  modDeclaredRemoveTitle: (url: string): string =>
+    `detach ${url} — the run's declared mod lane drops this card-level pack`,
   /** The mod chip's hover law (the any-media seat: media bakes, stems reuse). */
   modChipTitle: (chip: string): string =>
     `refmod seat — media bakes into a pack at the run (the system handles the conversion); .safetensors stems reuse the engine's loader\n${chip}`,

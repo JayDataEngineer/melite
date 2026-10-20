@@ -624,6 +624,44 @@ export class RunsRuntimeService extends Service {
         const mid = String(params["model"] ?? service ?? card);
         if (params["model"] === undefined && service !== undefined)
             params["model"] = service;
+        // THE UNWIRED-SPELL GATE (the $image burn, 2026-10-20): a $spell in
+        // the row's params resolves at the merge against the row's own inputs
+        // edges — FromStage links and initial bindings ride the composed row
+        // verbatim into the merge's inputNames — so a spell naming NO wired
+        // input is a promise this seat cannot keep. Composing it verbatim let
+        // a card guard misdiagnose it (h3's stated-variant voice for an
+        // unwired image) or the merge refuse it with a stranger's voice. THE
+        // DOOR COVERS WHAT THE RUN WILL DO (the flow_inline SPELL GATE's own
+        // law, runsStart.ts): refuse here, in the seat's voice, naming the
+        // spell and the fix. The exempt set IS the downstream gate's (the
+        // inputs bag's keys — every binding shape the merge reads) — a wired
+        // spell still rides for the merged worker to resolve, so no legal run
+        // changes verdict; only the seat of the refusal moves earlier.
+        const wiredInputs = new Set(typeof row["inputs"] === "object" && row["inputs"] !== null && !Array.isArray(row["inputs"])
+            ? Object.keys(row["inputs"])
+            : []);
+        const ghosts = [];
+        const sweepSpell = (v) => {
+            if (typeof v === "string") {
+                if (v.startsWith("$") && v.length > 1 && !wiredInputs.has(v.slice(1)))
+                    ghosts.push(v);
+            }
+            else if (Array.isArray(v)) {
+                for (const x of v)
+                    sweepSpell(x);
+            }
+            else if (typeof v === "object" && v !== null) {
+                for (const x of Object.values(v))
+                    sweepSpell(x);
+            }
+        };
+        sweepSpell(params);
+        if (ghosts.length > 0) {
+            throw new RemoteError("runs/invalid-request", label + JSON.stringify(id) + ": params carry " +
+                JSON.stringify([...new Set(ghosts)].sort()) +
+                " but the stage wires no input of that name — the merge would refuse it at run time. " +
+                "Wire the input (an inputs edge from a prior stage, or an initial binding) or replace the $spell with a concrete value.", { loc: "stages" });
+        }
         let p1;
         let composed;
         try {

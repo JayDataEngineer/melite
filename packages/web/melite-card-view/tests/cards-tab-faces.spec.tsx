@@ -108,7 +108,13 @@ function stubFetch(): void {
       if (doors.catalogStatus !== undefined) {
         return new Response("down", { status: doors.catalogStatus });
       }
-      return new Response(JSON.stringify({ cards: {} }), {
+      // THE CATALOG'S CARD ROW (the writer-mint cut, 2026-11-08): the
+      // run seat resolves image-gen's default family from this cards
+      // section and refuses an uncarried card — the empty section
+      // made every run arm refuse ("cannot default its family").
+      return new Response(JSON.stringify({ cards: {
+        "image-gen": { families: ["krea-2", "z-image", "anima", "qwen-img-21", "flux-klein", "moss-image"] },
+      } }), {
         status: 200, headers: { "content-type": "application/json" },
       });
     }

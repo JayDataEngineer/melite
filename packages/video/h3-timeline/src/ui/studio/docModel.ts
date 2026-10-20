@@ -502,10 +502,13 @@ export type SetLayerAKey = <K extends keyof LayerA>(k: K, v: LayerA[K]) => void
  *  base's seats and mis-derive the family (t4_open for a t4r doc —
  *  the exact lie the gate exists to kill). Shared by the rail's
  *  omitFields gate and the commit seam's family reseat (useShownDoc's
- *  commit — the mount heal dissolved with B2): one merge, one truth. */
+ *  commit — the mount heal dissolved with B2): one merge, one truth.
+ *  The layer's domain is any doc layer object (LayerA included —
+ *  an interface carries no index signature, so the callers pass the
+ *  layer bare, never through a Record cast). */
 export function mergeDocLayers(
   base: Record<string, unknown> | null | undefined,
-  layer: Record<string, unknown>,
+  layer: object,
 ): Record<string, unknown> {
   const out: Record<string, unknown> = { ...(base ?? {}) }
   for (const [k, v] of Object.entries(layer)) {
