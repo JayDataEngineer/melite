@@ -473,6 +473,19 @@ test('the ✦ rail model dropdown picks the enhancer route and threads it', asyn
   await user.click(await screen.findByRole('button', { name: 'Agent Enhance' }, { timeout: 4000 }))
   await waitFor(() => { expect(enhanceCalls.length).toBe(2) }, { timeout: 4000 })
   expect(enhanceCalls[1]!['llm']).toBe('opencode-go/muse-spark-1.3-contributor')
+  // THE BAR CLAMP (operator 2026-11-09: "the model name is too long
+  // so it stretches button too far right"): the picked model name is
+  // 36 chars — the anchor's label rides the CLAMP SPAN (an element
+  // node, the defect-2 class fix: a flex container ignores
+  // text-overflow, so a raw text node stretches the button without
+  // bound), and the FULL name stays on the anchor's title.
+  {
+    const anchor = screen.getByTestId('drill-llm')
+    expect(anchor.getAttribute('title')).toBe('opencode-go/muse-spark-1.3-contributor')
+    const label = anchor.firstChild
+    expect(label?.nodeType).toBe(Node.ELEMENT_NODE)
+    expect(label?.textContent).toBe('opencode-go/muse-spark-1.3-contributor')
+  }
   // the choice PERSISTS (the shared card-LLM store)
   expect(window.localStorage.getItem('melite:card-llm:v1')).toBe('opencode-go/muse-spark-1.3-contributor')
   // back to Auto clears the store and the wire param

@@ -350,6 +350,41 @@ describe('the studio (InputPrepStudio)', () => {
     expect(screen.getByTestId('prep-scale-scale_width')).not.toBeNull()
     expect(screen.getByTestId('prep-scale-model')).not.toBeNull()
   })
+
+  // THE CHROME LAW (operator 2026-11-09, verbatim: "Parameters to
+  // the fucking left, preview / edit window to the fucking right.
+  // THAT IS HOW EVERY FUCKING CARD WORKS." and "WHERE IS THE IMAGE
+  // UPLOAD SPOT? WHAT, AM I SUPPOSED TO DO MAGIC TO GET AN IMAGE TO
+  // APPEAR THERE?") — the studio forked the shell (preview first,
+  // rail second) and replaced the generic form without seating the
+  // source square: two burns, one fork.
+  describe('the chrome (the ANNY law: params LEFT, preview RIGHT, upload SEATED)', () => {
+    it('PARAMS LEFT, PREVIEW RIGHT — the shared shell seats the rail BEFORE the preview pane (DOM order)', () => {
+      render(h(InputPrepStudio, owner({ params: { source: IMG } })))
+      const rail = screen.getByTestId('prep-rail')
+      const preview = screen.getByTestId('prep-crop-preview')
+      expect(rail.compareDocumentPosition(preview) & Node.DOCUMENT_POSITION_FOLLOWING).not.toBe(0)
+    })
+
+    it('THE UPLOAD SEAT CONSTRUCTS (the construction law — no magic to get an image in): the source square renders in the studio and mirrors the held param', () => {
+      render(h(InputPrepStudio, owner({ params: { source: IMG } })))
+      const seat = document.querySelector('[data-source-row="Source file"]')
+      expect(seat).not.toBeNull()
+      const thumb = seat?.querySelector('img') ?? null
+      expect(thumb?.getAttribute('src')).toBe(IMG)
+    })
+
+    it('THE SOURCE SEAT SPEAKS ITS VERBS (the one square: From flow / From media / From file)', async () => {
+      render(h(InputPrepStudio, owner({ params: {} })))
+      const seat = document.querySelector('[data-source-row="Source file"]') as HTMLElement | null
+      expect(seat).not.toBeNull()
+      const square = seat!.querySelector('[data-slot-square]') as HTMLElement | null
+      expect(square).not.toBeNull()
+      await act(async () => { fireEvent.click(square!) })
+      const rows = await screen.findAllByText(/from flow|from media|from file/i)
+      expect(rows.length).toBeGreaterThanOrEqual(3)
+    })
+  })
 })
 
 describe('the adapter (src/client/index.ts)', () => {

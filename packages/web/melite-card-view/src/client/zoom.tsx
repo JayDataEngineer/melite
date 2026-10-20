@@ -303,8 +303,18 @@ function ZoomMount(props: ZoomDetailProps & { detail: (p: ZoomDetailProps) => Re
                     anchor: h(Button, {
                       size: 'sm', variant: 'outline',
                       'aria-label': chromeCopy.enhanceModelAria, ...{ 'data-testid': 'drill-llm' },
+                      // THE BAR CLAMP (operator 2026-11-09: "the model
+                      // name is too long so it stretches button too
+                      // far right"): the full route name rides the
+                      // title; the label rides the clamp span below
+                      // (the defect-2 class — DSH's Button base is
+                      // inline-flex, and a flex container ignores
+                      // text-overflow, so a raw text node stretches
+                      // the anchor without bound and shoves Run and
+                      // Stop off the bar).
+                      title: cardLlm === '' ? chromeCopy.autoOption : cardLlm,
                       onClick: () => { setLlmOpen(true) },
-                    }, cardLlm === '' ? chromeCopy.autoOption : cardLlm),
+                    }, h('span', { className: css.zoomClamp }, cardLlm === '' ? chromeCopy.autoOption : cardLlm)),
                     items: [{ id: '', label: chromeCopy.autoOption }, ...llmRoutes.map((r) => ({ id: r, label: r }))],
                     selectedId: cardLlm,
                     onSelect: (id: string) => { pickLlm(id); setLlmOpen(false) },

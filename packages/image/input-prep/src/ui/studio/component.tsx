@@ -26,6 +26,7 @@
  */
 import { useEffect, useRef, useState } from 'react'
 import type { StageViewOwnerProps } from '@melite/contracts/stageView'
+import { StudioShell, SourceRow } from '@melite/card-base/client'
 import { SCALE_METHODS, SCALE_MODEL_OPTIONS } from '@melite/models-input'
 import { CropPreview } from './CropPreview.tsx'
 import type { CropRect, NaturalSize } from './CropPreview.tsx'
@@ -125,40 +126,38 @@ export function InputPrepStudio(props: StageViewOwnerProps) {
     })
   }
 
+  // THE SHARED SHELL (operator 2026-11-09, verbatim: "Parameters to
+  // the left, preview / edit window to the right. THAT IS HOW EVERY
+  // CARD WORKS." — the handrolled flex rendered the preview FIRST and
+  // the rail second, the exact inversion). StudioShell owns the
+  // three-slot shape: params LEFT, preview RIGHT; this component owns
+  // only the CONTENT of each slot (studio.tsx's law: a takeover rides
+  // beside the shared renderer, never a fork of its chrome).
   return (
-    <div className={css.studio} data-testid="prep-studio">
-      <div className={css.previewPane}>
-        {mediaType === 'audio' && (
-          <div className={css.paneNote} data-testid="prep-audio-note">
-            audio restage — crop and scale are image-lane knobs (LoadAudio → SaveAudio composes without them)
-          </div>
-        )}
-        {mediaType === 'image' && source === '' && (
-          <div className={css.paneNote} data-testid="prep-empty-note">
-            pick a source file first — the preview crops what the run stages
-          </div>
-        )}
-        {mediaType === 'image' && source !== '' && !previewable && (
-          <div className={css.paneNote} data-testid="prep-staged-note">
-            staged source "{source}" — the engine holds this file; the drag-crop preview needs a browser-loadable image (upload or asset drop)
-          </div>
-        )}
-        {previewable && (
-          <CropPreview src={source} crop={crop} onChange={onCropCommit} onNatural={setNatural} />
-        )}
-        {previewable && natural !== null && (
-          <div className={css.paneMeta} data-testid="prep-natural">
-            source {natural.width}×{natural.height}
-            {crop !== null ? ` — crop ${crop.width}×${crop.height} at ${crop.x},${crop.y}` : ''}
-          </div>
-        )}
-      </div>
-      {/* THE DECLARED SURFACE LAW (image-3d wave-2): the transform
-          rail mirrors the declaration's visible_when — crop/scale
-          are image-lane knobs (card.ts); on the audio arm the rail
-          hid nothing and compose silently dropped the keys. */}
-      {mediaType === 'image' && (
-      <div className={css.rail} data-testid="prep-rail">
+    <div data-testid="prep-studio" className={css.studioHost}>
+    <StudioShell
+      // LEFT — the params rail: THE SOURCE SEAT first (the
+      // construction law — the studio replaced the generic form when
+      // it declared a stage view, and the fork dropped the upload
+      // square with it: "WHERE IS THE IMAGE UPLOAD SPOT?"). The ONE
+      // SourceRow every card rides: upload / from-flow / from-media /
+      // clear, writing the source param.
+      params={(
+        <div className={css.paramsCol}>
+          <SourceRow
+            name="source"
+            label="Source file"
+            kind="file"
+            value={source}
+            onEdit={(v: string) => { edit({ source: v }) }}
+            candidates={props.upstream.map((u) => ({ id: u.id, label: u.title, url: u.url }))}
+          />
+          {/* THE DECLARED SURFACE LAW (image-3d wave-2): the transform
+              rail mirrors the declaration's visible_when — crop/scale
+              are image-lane knobs (card.ts); on the audio arm the rail
+              hid nothing and compose silently dropped the keys. */}
+          {mediaType === 'image' && (
+          <div className={css.rail} data-testid="prep-rail">
         <div className={css.railTitle}>Transform</div>
         <div className={css.railRow}>
           <button
@@ -239,8 +238,41 @@ export function InputPrepStudio(props: StageViewOwnerProps) {
         <span className={css.railHint}>
           pick a model to run the engine's model upscaler in this lane (UpscaleModelLoader → ImageUpscaleWithModel); a width/height resize rides after it
         </span>
-      </div>
+          </div>
+          )}
+        </div>
       )}
+      // RIGHT — the preview / edit window: the drag-crop pane (the
+      // domain takeover content — the one thing no renderer declares).
+      preview={(
+        <div className={css.previewPane}>
+        {mediaType === 'audio' && (
+          <div className={css.paneNote} data-testid="prep-audio-note">
+            audio restage — crop and scale are image-lane knobs (LoadAudio → SaveAudio composes without them)
+          </div>
+        )}
+        {mediaType === 'image' && source === '' && (
+          <div className={css.paneNote} data-testid="prep-empty-note">
+            pick a source file first — the preview crops what the run stages
+          </div>
+        )}
+        {mediaType === 'image' && source !== '' && !previewable && (
+          <div className={css.paneNote} data-testid="prep-staged-note">
+            staged source "{source}" — the engine holds this file; the drag-crop preview needs a browser-loadable image (upload or asset drop)
+          </div>
+        )}
+        {previewable && (
+          <CropPreview src={source} crop={crop} onChange={onCropCommit} onNatural={setNatural} />
+        )}
+        {previewable && natural !== null && (
+          <div className={css.paneMeta} data-testid="prep-natural">
+            source {natural.width}×{natural.height}
+            {crop !== null ? ` — crop ${crop.width}×${crop.height} at ${crop.x},${crop.y}` : ''}
+          </div>
+        )}
+        </div>
+      )}
+    />
     </div>
   )
 }

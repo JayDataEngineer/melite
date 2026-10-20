@@ -867,7 +867,28 @@
 }
 .zoomTitle { font-size: 13px; font-weight: 600;
   flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   line-height: 20px;}
+
+/* THE BAR CLAMP (operator 2026-11-09: "the model name is too long so
+ * it stretches button too far right") — the LLM route anchor's label
+ * rides this span (the defect-2 class fix: DSH's Button base is
+ * display:inline-flex and a flex container ignores text-overflow, so
+ * a raw text node stretches the anchor without bound; a flex ITEM
+ * with min-width:0 + overflow:hidden clamps under any cascade order —
+ * the .specSelectText idiom, seated at the bar's missed slot). The
+ * full name stays on the anchor's title. */
+.zoomClamp {
+  display: block;
+  max-width: 170px;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 
 /* The detail payload sits inside the morphed card; it scrolls with the
  * card's own bounds (max-height keeps the square law bounded). */
