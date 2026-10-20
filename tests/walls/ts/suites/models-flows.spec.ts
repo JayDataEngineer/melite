@@ -213,7 +213,9 @@ describe("the models plane feeds the compose/flows plane (A2)", () => {
     // 60 -> 66 (2026-11-07, the operator's drop): krea-2 serves the
     // two Kroma lanes (kroma + kroma-int8/kroma-bf16 cells +
     // kroma-base) and moss-image lands (moss-image + moss-image-bf16).
-    assert.equal(total, 66, `the facts roster is 66 rows (saw ${String(total)}) — a new family route is a deliberate edit`);
+    // 66 -> 67 (2026-11-09, E2-4 THE QUANT AXIS CONTRACT): the
+    // seedvr2 3B fp8 tier gains its own facts route (seedvr2-ema-fp8).
+    assert.equal(total, 67, `the facts roster is 67 rows (saw ${String(total)}) — a new family route is a deliberate edit`);
   });
 });
 

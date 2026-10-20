@@ -284,6 +284,7 @@ describe("the resurrected model registry (families/variants/cells/links)", () =>
   "qwen3-tts-voicedesign-design",
   "seedvr2-ema",
   "seedvr2-ema-7b",
+  "seedvr2-ema-fp8",
   "seedvr2-ema-vae-fp16",
   "transfer-rig",
   "trellis2-native",
@@ -462,7 +463,10 @@ describe("the resurrected model registry (families/variants/cells/links)", () =>
     // 60 -> 63 (2026-11-07, the operator's drop): krea-2 serves the
     // two Kroma lanes beside turbo/raw, and moss-image lands with its
     // one sft lane.
-    assert.equal(variants, 63); // +2: fit + skin's Standard rows (stroke 4 — the unoffered verb families each declare one)
+    // 63 -> 64 (2026-11-09, E2-4 THE QUANT AXIS CONTRACT): the
+    // seedvr2 3B variant seats its fp16+fp8 cells — the variant
+    // becomes a serving row (its tiers are real provisioned bodies)
+    assert.equal(variants, 64);
     // 85 -> 84 (2026-10-13, the autoremesher excision): the family's
     // one cell left with the pack the owner removed.
     // 84 -> 86 (2026-10-23): the turbo cells join (turbo_int8_convrot + turbo_bf16).
@@ -484,6 +488,7 @@ describe("the resurrected model registry (families/variants/cells/links)", () =>
     // 71 -> 76 (2026-11-07, the operator's drop): kroma's two turbo
     // quants + kroma-base's dtype-mapped cell (3) and moss-image's
     // int8 + bf16 pair (2) join.
-    assert.equal(cells, 76);
+    // 76 -> 78 (2026-11-09, E2-4): the seedvr2 3B fp16+fp8 cells
+    assert.equal(cells, 78);
   });
 });

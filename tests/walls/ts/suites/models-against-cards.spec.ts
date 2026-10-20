@@ -64,7 +64,7 @@ import { describe, it } from "vitest";
 // route) and moss-image lands (variant route moss-image + the bf16
 // cell route moss-image-bf16; the int8 cell shares the variant
 // route).
-const SERVED_ADDR_CENSUS = 66
+const SERVED_ADDR_CENSUS = 67
 // 24 -> 25 (2026-10-22, audit 006/U1): flux-klein claims its own
 // atom (the family's routes resolve to its declared owners)
 // 25 -> 24 (2026-10-13, the autoremesher excision — the pack the owner removed from the system)
@@ -73,6 +73,10 @@ const SERVED_ADDR_CENSUS = 66
 // five addresses survive as qwen3-tts cell routes (the FOLD LAW),
 // so the served-address census is unmoved at 67 while the owner
 // census drops one)
+// 66 -> 67 (2026-11-09, E2-4 THE QUANT AXIS CONTRACT): seedvr2-ema's
+// 3B body seats its two real tiers as cells — the fp8 lane gains
+// its own route address (seedvr2-ema-fp8), the fp16 tier keeps the
+// family head
 // 23 -> 24 (2026-11-07, the operator's drop): moss-image claims its
 // own atom (the kroma lanes ride the krea-2 atom — variants, not
 // families).

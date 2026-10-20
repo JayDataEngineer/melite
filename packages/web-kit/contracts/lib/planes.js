@@ -46,6 +46,11 @@ export const CATEGORIES = {
 export const SOLO_GROUP = "";
 const NAMED_QUANTS = {
     bf16: "encoding",
+    // fp16 (E2-4, the seedvr2-ema tier cure): a real encoding the
+    // vocabulary lacked — the 3B body's default tier names it and the
+    // registration canon refused it as a free string. Deliberate
+    // vocabulary extension, never a per-family carve.
+    fp16: "encoding",
     int8: "encoding",
     int8_convrot: "encoding",
     fp8: "encoding",

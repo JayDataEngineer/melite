@@ -20,18 +20,43 @@ export const DECL = {
     ],
     "variants": [
         {
+            // THE QUANT AXIS CONTRACT (E2-4, the operator's burn: "THE
+            // MODEL / VARIANT / RECIPE LAYOUT IS MISSING QUANT! … WHERE IS
+            // THE SHARED VOCAB HERE AS A CONTRACT?"): the tiers are CELLS
+            // on the Quant axis — one per real provisioned body, each
+            // naming its own route and its own weights file (CellRow's
+            // lane stamps, merged base ← variant ← cell) — never faces
+            // stuffed into the variant label until the row spills over
+            // the Model beside it. The krea-2 pattern verbatim.
             "id": "3b",
-            "label": "3B FP16",
-            "hint": "3B EMA fp16 — fast, ~7 GB VRAM (DEFAULT). Precision ships with this body.",
+            "label": "3B",
+            "hint": "3B EMA — fast, ~7 GB VRAM at FP16 (DEFAULT). Precision is the Quant axis.",
             "group": "Variant",
             "route": "seedvr2-ema",
             "order": 0,
-            "cells": []
+            "cells": [
+                {
+                    "quant": "fp16",
+                    "label": "FP16",
+                    "route": "seedvr2-ema",
+                    "lane_inputs": {
+                        "unet": "seedvr2_ema_3b_fp16.safetensors"
+                    }
+                },
+                {
+                    "quant": "fp8",
+                    "label": "FP8 (~3.4 GB)",
+                    "route": "seedvr2-ema-fp8",
+                    "lane_inputs": {
+                        "unet": "seedvr2_ema_3b_fp8_e4m3fn.safetensors"
+                    }
+                },
+            ]
         },
         {
             "id": "7b",
-            "label": "7B FP8",
-            "hint": "7B EMA fp8_e4m3fn (mixed block-35 fp16) — beefier fine detail, ~3× slower.",
+            "label": "7B",
+            "hint": "7B EMA fp8_e4m3fn (mixed block-35 fp16) — beefier fine detail, ~3× slower. One precision body; no tier choice.",
             "group": "Variant",
             "route": "seedvr2-ema-7b",
             "order": 1,
