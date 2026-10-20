@@ -1204,16 +1204,25 @@ export function ComfyManagerPanel(): React.ReactElement {
                 // JSX condition's narrowing
                 const operationId = resource.operation_id
                 // the fold's own roll-up: "2/3 failed" — the item
-                // states compress like the section's (S1)
+                // states compress like the section's (S1). THE
+                // CENSUS HONESTY LAW (audit F4, 2026-10-20):
+                // 'unknown' items are the scan's own artifact —
+                // counting them good ("N items") titles a partial
+                // check as the whole truth; they ride their own
+                // unchecked voice, never the settled count.
                 const badItems = items.filter((item) => {
                   const itemState = item.state ?? assetsCopy.unknownFallback
                   return itemState === 'failed' || itemState === 'blocked' || itemState === 'absent' || itemState === 'missing'
                 }).length
+                const uncheckedItems = items.filter((item) => {
+                  const itemState = item.state ?? assetsCopy.unknownFallback
+                  return itemState === 'unknown'
+                }).length
                 const itemRollup = items.length === 0
                   ? ''
-                  : badItems === 0
+                  : badItems === 0 && uncheckedItems === 0
                     ? `${items.length} item${items.length === 1 ? '' : 's'}`
-                    : `${badItems}/${items.length} failed`
+                    : `${badItems > 0 ? `${badItems}/${items.length} failed` : ''}${badItems > 0 && uncheckedItems > 0 ? ' · ' : ''}${uncheckedItems > 0 ? `${uncheckedItems}/${items.length} unchecked` : ''}`
                 return (
                   <li className={css.resourceRow} key={resourceLabel(resource) + ':' + index}>
                     {/* ONE FOLD PER RESOURCE (S1): the state badge is the

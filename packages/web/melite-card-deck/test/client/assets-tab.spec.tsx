@@ -314,6 +314,88 @@ test('the census honesty marks: scan note over zero rows, the partial mark, neve
   expect(screen.queryByTestId('resources-census-partial')).toBeNull()
 })
 
+// AUDIT F4 (infra-resources-census-honesty, 2026-10-20): the fold's
+// item roll-up counted 'unknown' items as good — a row with one
+// failed and one unchecked item titled "1/2 failed" (silent about the
+// uncheck), an all-unknown row titled "2 items" flat. The census
+// honesty law one plane deeper: unchecked items ride their own
+// voice in the preview count, never the settled tally.
+test('the fold item roll-up never counts unchecked items as good', async () => {
+  // ARM 1 — the masked shape: a real failure over an unchecked
+  // sibling; both voices ride the roll-up
+  stubManageSeat({
+    status: {
+      ...STATUS,
+      data: {
+        ...(STATUS.data as Record<string, unknown>),
+        census_partial: true,
+        resources: [
+          {
+            ref: { kind: 'model', owner: 'family', id: 'anima' },
+            state: 'failed',
+            items: [
+              { key: 'model:family:anima::w0.safetensors', state: 'failed', detail: 'digest mismatch' },
+              { key: 'model:family:anima::w1.safetensors', state: 'unknown', detail: 'scan incomplete — the check was cut off before it could judge this item' },
+            ],
+          },
+        ],
+      },
+    },
+  })
+  render(<ComfyManagerPanel />)
+  const masked = (await screen.findAllByTestId('resource-fold'))[0] as HTMLElement
+  expect(within(masked).getByText('1/2 failed · 1/2 unchecked')).toBeTruthy()
+  cleanup()
+
+  // ARM 2 — an all-unknown roster never titles "N items"
+  stubManageSeat({
+    status: {
+      ...STATUS,
+      data: {
+        ...(STATUS.data as Record<string, unknown>),
+        census_partial: true,
+        resources: [
+          {
+            ref: { kind: 'model', owner: 'family', id: 'moss' },
+            state: 'unknown',
+            items: [
+              { key: 'model:family:moss::w0.safetensors', state: 'unknown' },
+              { key: 'model:family:moss::w1.safetensors', state: 'unknown' },
+            ],
+          },
+        ],
+      },
+    },
+  })
+  render(<ComfyManagerPanel />)
+  const unknownRow = (await screen.findAllByTestId('resource-fold'))[0] as HTMLElement
+  expect(within(unknownRow).getByText('2/2 unchecked')).toBeTruthy()
+  expect(within(unknownRow).queryByText('2 items')).toBeNull()
+  cleanup()
+
+  // ARM 3 — the settled counter stands: all-checked items keep the
+  // plain count (the new voice never leaks into whole verdicts)
+  stubManageSeat({
+    status: {
+      ...STATUS,
+      data: {
+        ...(STATUS.data as Record<string, unknown>),
+        resources: [
+          {
+            ref: { kind: 'model', owner: 'family', id: 'zimage' },
+            state: 'active',
+            items: [{ key: 'model:family:zimage', state: 'active' }],
+          },
+        ],
+      },
+    },
+  })
+  render(<ComfyManagerPanel />)
+  const settled = (await screen.findAllByTestId('resource-fold'))[0] as HTMLElement
+  expect(within(settled).getByText('1 item')).toBeTruthy()
+  expect(within(settled).queryByText(/unchecked/)).toBeNull()
+})
+
 // THE RESOURCE ACTION DOORS (audit B2-4, the anima burn's
 // follow-up): acquire_retry/acquire_discard existed door-side only —
 // the fold offered no way to act on a dead row. A failed/blocked

@@ -2085,7 +2085,10 @@ window.__ModuleLoader__.load({
 										const itemState = item.state ?? assetsCopy.unknownFallback;
 										return itemState === "failed" || itemState === "blocked" || itemState === "absent" || itemState === "missing";
 									}).length;
-									const itemRollup = items.length === 0 ? "" : badItems === 0 ? `${items.length} item${items.length === 1 ? "" : "s"}` : `${badItems}/${items.length} failed`;
+									const uncheckedItems = items.filter((item) => {
+										return (item.state ?? assetsCopy.unknownFallback) === "unknown";
+									}).length;
+									const itemRollup = items.length === 0 ? "" : badItems === 0 && uncheckedItems === 0 ? `${items.length} item${items.length === 1 ? "" : "s"}` : `${badItems > 0 ? `${badItems}/${items.length} failed` : ""}${badItems > 0 && uncheckedItems > 0 ? " · " : ""}${uncheckedItems > 0 ? `${uncheckedItems}/${items.length} unchecked` : ""}`;
 									return /* @__PURE__ */ (0, react_jsx_runtime.jsx)("li", {
 										className: assets_module_css_default.resourceRow,
 										children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
