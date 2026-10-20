@@ -1,4 +1,4 @@
-import { loadTextPair, decodeSave, stackLoras, stackControlNets } from "@melite/comfyui-card-kit";
+import { loadTextPair, decodeSave, stackLoras, stackControlNets, statedRegion, regionSegs, genDetailerSave } from "@melite/comfyui-card-kit";
 import { fireLoras, fireControlNets, refuseIPAdapterFiring } from "@melite/comfyui-card-kit/guard";
 import { parseDiffusionLaneFacts } from "@melite/comfyui-card-kit/facts";
 import { diffusionParamRows } from "@melite/comfyui-card-kit/paramRows";
@@ -63,6 +63,22 @@ export const t2i = {
             positive: pos.out(),
             negative: neg.out(),
         });
+        // THE GEN DETAILER (the gen detailer serve, operator 2026-11-07,
+        // the mod SERVES): a stated region rides the crop_stitch arm —
+        // the SAME generic DetailerForEach tail as the edit lanes, over
+        // this lane's own conditioning — instead of the plain decode.
+        // The card's gate already taught mode-without-region and
+        // region-without-crop_stitch; the build branches on the kit's
+        // ONE stated-region read, so gate and arm never disagree.
+        const region = statedRegion(p);
+        if (region !== null) {
+            const decoded = g.node("VAEDecode", { samples: sampled.out(), vae }).out();
+            const segs = regionSegs(g, region.merged, decoded, region.maskPath);
+            return genDetailerSave(g, p, region.merged, {
+                image: decoded, segs, model: unet, clip, vae,
+                positive: pos.out(), negative: neg.out(), seed: p.seed,
+            }, runId).out();
+        }
         return decodeSave(g, sampled.out(), vae, `${runId}/gen`).out();
     },
 };

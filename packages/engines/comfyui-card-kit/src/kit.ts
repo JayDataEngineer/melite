@@ -51,12 +51,15 @@ export {
   orderedInputImages,
   editImageCap,
   regionSegs,
+  statedRegion,
+  regionSourceKind,
   detailerSave,
+  genDetailerSave,
   isSpell,
   laneSampler,
   laneScheduler,
 } from './lanes-image.ts'
-export type { TensorRef } from './lanes-image.ts'
+export type { TensorRef, StatedRegion } from './lanes-image.ts'
 export type { ActionBinding } from './facts.ts'
 export { qvoiceUse, type QVoiceUse } from './lanes-audio.ts'
 export {

@@ -1,3 +1,4 @@
+// @contract models-gen-detailer-serve
 // @melite/image-image-gen — the card's compose gate arm the
 // composition spec does not own: the prompt admission + the happy
 // lane against the boarded default family.
@@ -101,16 +102,35 @@ describe("the image-gen compose gate", () => {
     // (the firing arm below proves the refusal that REPLACED it)
   });
 
-  it("THE REGION FIRING GATE (E2-11, the refused-fate honesty): a stated region refuses LOUD in the teaching voice — never a silent plain t2i", () => {
-    const model = facts.models[def.boarded[0]!]!;
-    // no gen lane builds the region arm — the DECL's own law
-    // (krea-2 mods comment: "refuses LOUD at admission … never a
-    // silent plain run"). The refusal names the mod's key and
-    // teaches where the region vocabulary composes today.
+  it("THE GEN DETAILER SERVE (operator 2026-11-07, the mod SERVES): a stated region on a served lane composes the DetailerForEach arm — never a refusal, never a silent plain t2i", () => {
+    // the served lanes (the burn's own krea-2 + the declared qwen
+    // slice): the region vocabulary rides the gen card through the
+    // Impact detector chain, crop_stitch via the shared kit arm.
+    for (const [fam, run] of [["krea-2", "r_serve_k"], ["qwen-img-21", "r_serve_q"]] as const) {
+      const model = facts.models[fam]!;
+      assert.ok(model, `the facts serve ${fam}`);
+      const g = new GraphBuilder();
+      def.compose({ prompt: "a cat", mask: [{ input_mask: "/v1/assets/region.png" }], mask_mode: "crop_stitch" }, model, g, run);
+      const nodes = Object.values(g.toJSON() as Record<string, { class_type?: string; inputs?: Record<string, unknown> }>);
+      const detailer = nodes.find((n) => n.class_type === "DetailerForEach");
+      assert.ok(detailer, `the stated region mints DetailerForEach on ${fam} (the gen detailer arm serves)`);
+      const saved = nodes.find((n) => n.class_type === "SaveImage");
+      assert.ok(
+        typeof saved?.inputs?.filename_prefix === "string" && (saved.inputs.filename_prefix as string).startsWith(run + "/gen"),
+        `the detailed image saves under the gen prefix on ${fam}`,
+      );
+    }
+  });
+
+  it("THE REGION FIRING GATE (E2-11, kept for unserved lanes): a stated region where no lane builds the arm refuses LOUD in the teaching voice — never a silent plain t2i", () => {
+    const model = facts.models["anima"]!;
+    assert.ok(model, "the facts serve anima (an unserved lane)");
+    // the unserved lanes keep the refused-fate honesty — the refusal
+    // names the mod's key and teaches the serving lanes.
     const fires = (e: unknown): boolean =>
       e instanceof Error && !(e instanceof ComposeRefusal)
       && /fires on the image-gen card/.test(String((e as Error).message))
-      && /region arm/.test(String((e as Error).message));
+      && /region arm serves/.test(String((e as Error).message));
     assert.throws(
       () => def.compose({ prompt: "a cat", mask: [{ input_mask: "/v1/assets/region.png" }] }, model, new GraphBuilder(), "r_bag"),
       fires,
@@ -133,8 +153,9 @@ describe("the image-gen compose gate", () => {
     // THE SILENT-DROP GUARD'S OTHER HALF: a doc with NO stated
     // region composes the plain lane untouched (an explicit
     // mask_mode 'auto' is the plain lane's own word — never fires).
-    def.compose(def.schema({ prompt: "a cat" }), model, new GraphBuilder(), "r_plain");
-    def.compose({ prompt: "a cat", mask_mode: "auto" }, model, new GraphBuilder(), "r_auto");
+    const plain = facts.models[def.boarded[0]!]!;
+    def.compose(def.schema({ prompt: "a cat" }), plain, new GraphBuilder(), "r_plain");
+    def.compose({ prompt: "a cat", mask_mode: "auto" }, plain, new GraphBuilder(), "r_auto");
   });
 });
 

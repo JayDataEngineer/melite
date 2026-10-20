@@ -248,6 +248,66 @@ export function refuseImageEditFiring(p: Record<string, unknown>, model?: ModelF
  * UltralyticsDetectorProvider model list, 2026-09-22): hand is the
  * s-variant this engine ships — the n-variant pin was a stale copy
  * that would refuse at execute time. */
+/** THE STATED-REGION READ (the gen detailer serve, operator
+ *  2026-11-07): ONE spelling of "the doc states a region", shared by
+ *  the image-gen card's serve/refuse gate and the served t2i builds —
+ *  the two seats can never disagree about whether a region was sent.
+ *  The conditions ARE the E2-11 firing gate's (bag entry, flat mask,
+ *  picked detector, flat prep/detail knob — the walk fills no rider
+ *  defaults, so presence is authored intent; mask_mode 'auto' is the
+ *  plain lane's own word and never states). The bag merges UNDER flat
+ *  params (explicit flat keys win — the edit lanes' own merge twin).
+ *  mask_mode 'full_frame' normalizes to 'auto' (the edit precedent). */
+export interface StatedRegion {
+  key: string;
+  mode: string;
+  merged: Record<string, unknown>;
+  maskPath: string;
+  detector: string;
+}
+export function statedRegion(doc: Record<string, unknown>): StatedRegion | null {
+  const rawBag: unknown = doc['mask'];
+  const bagLen = Array.isArray(rawBag) ? rawBag.length : 0;
+  const bagFirst = bagLen === 1 ? (rawBag as unknown[])[0] : null;
+  const bagObj = typeof bagFirst === 'object' && bagFirst !== null
+    ? (bagFirst as Record<string, unknown>)
+    : null;
+  const merged: Record<string, unknown> = { ...doc };
+  if (bagObj) {
+    for (const [k, v] of Object.entries(bagObj)) {
+      if (merged[k] === undefined) merged[k] = v;
+    }
+  }
+  const flatMask = typeof merged['input_mask'] === 'string' && (merged['input_mask'] as string).trim() !== '';
+  const detector = typeof merged['mask_detector'] === 'string' ? (merged['mask_detector'] as string) : 'off';
+  const detectorStated = detector !== '' && detector !== 'off';
+  const flatKnobs = ['mask_mode', 'mask_context_pad', 'mask_grow', 'mask_feather',
+    'mask_threshold', 'mask_invert', 'mask_detail_size', 'mask_denoise'] as const;
+  const flatStated = flatKnobs.find((k) => {
+    const v = merged[k];
+    if (k === 'mask_mode') return v === 'crop_stitch';
+    return v !== undefined;
+  });
+  if (bagLen === 0 && !flatMask && !detectorStated && flatStated === undefined) return null;
+  const rawMode = (merged['mask_mode'] ?? 'auto') as string;
+  return {
+    key: bagLen > 0 ? 'mask' : flatMask ? 'input_mask' : flatStated ?? 'mask_detector',
+    mode: rawMode === 'full_frame' ? 'auto' : rawMode,
+    merged,
+    maskPath: typeof merged['input_mask'] === 'string' ? (merged['input_mask'] as string).trim() : '',
+    detector,
+  };
+}
+
+/** THE REGION SOURCE: the painted mask or the picked detector —
+ *  crop_stitch details exactly one. Null = crop_stitch with no
+ *  source (the edit fire table's 'crop_stitch needs a region'). */
+export function regionSourceKind(r: StatedRegion): 'mask' | 'detector' | null {
+  if (r.maskPath !== '') return 'mask';
+  if (r.detector !== 'off') return 'detector';
+  return null;
+}
+
 export function regionSegs(g: GraphBuilder, region: Record<string, unknown>, image: TensorRef, maskPath: string): OutputHandle {
   const detector = (region.mask_detector ?? 'off') as string
   const expand = ((region.mask_grow ?? 8) as number) + ((region.mask_context_pad ?? 64) as number)
@@ -307,6 +367,30 @@ export function detailerSave(
     noise_mask: true, force_inpaint: true, wildcard: '', cycle: 1,
   }).out()
   return g.node('SaveImage', { images: detailed, filename_prefix: `${runId}/edit` })
+}
+
+/** THE GEN TWIN (the gen detailer serve, operator 2026-11-07): the
+ *  SAME DetailerForEach arm over the SAME kit segs, saving under the
+ *  gen prefix — the run-media prefix law names the stage kind (gen
+ *  stages harvest under gen/, edit stages under edit/), so the arm
+ *  cannot share detailerSave's edit-stamped tail. All other wiring
+ *  (guide size, denoise, feather, sampler, inpaint flags) is the
+ *  twin's verbatim — one arm, two seats. */
+export function genDetailerSave(
+  g: GraphBuilder, p: Record<string, unknown>, region: Record<string, unknown>,
+  io: { image: TensorRef, segs: OutputHandle, model: OutputHandle, clip: OutputHandle, vae: OutputHandle, positive: OutputHandle, negative: OutputHandle, seed: number },
+  runId: string,
+): NodeRef {
+  const detailed = g.node('DetailerForEach', {
+    image: io.image, segs: io.segs, model: io.model, clip: io.clip, vae: io.vae,
+    guide_size: (region.mask_detail_size ?? 512) as number, guide_size_for: true, max_size: 1024,
+    seed: io.seed, steps: p.steps, cfg: p.cfg,
+    sampler_name: laneSampler(p), scheduler: laneScheduler(p),
+    positive: io.positive, negative: io.negative,
+    denoise: (region.mask_denoise ?? 0.5) as number, feather: (region.mask_feather ?? 8) as number,
+    noise_mask: true, force_inpaint: true, wildcard: '', cycle: 1,
+  }).out()
+  return g.node('SaveImage', { images: detailed, filename_prefix: `${runId}/gen` })
 }
 
 /** A tensor carrier: a node's output handle, or THE SPELL ARM's raw

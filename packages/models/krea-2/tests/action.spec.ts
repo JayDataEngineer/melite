@@ -1,4 +1,5 @@
 // the wire is pinned to a COMMITTED GOLDEN — recorded while the kit's legacy
+// @contract models-gen-detailer-serve
 // imageT2I still existed and this spec compared the two arms byte-for-byte.
 // That arm is deleted (the families own their lanes now), so the golden
 // carries the compatibility law. The interpreter's own contract walls live
@@ -111,6 +112,17 @@ describe("the t2i action — byte-stability (the compatibility law)", () => {
     assert.ok(lora, "the stated pick mints the loader node");
     assert.strictEqual(lora!.inputs?.strength_model, 1.0, "the turbo recipe's 1.0 strength rides");
     assert.strictEqual(lora!.inputs?.lora_name, "krea2_turbo_lora_rank_64_bf16", "the turbo rank-64 adapter rides by name");
+  });
+
+  it("THE GEN DETAILER SERVE (operator 2026-11-07, the mod SERVES): a stated region rides the crop_stitch arm — DetailerForEach over the Impact segs, saved under gen", () => {
+    const action = new GraphBuilder({});
+    instantiateAction(t2i, { ...PARAMS, mask: [{ input_mask: "/v1/assets/region.png" }], mask_mode: "crop_stitch" }, FACTS, action, "probe-region");
+    const nodes = Object.values(action.toJSON() as Record<string, { class_type?: string; inputs?: Record<string, unknown> }>);
+    const detailer = nodes.find((n) => n.class_type === "DetailerForEach");
+    assert.ok(detailer, "the stated region mints DetailerForEach (crop_stitch via Impact on gen)");
+    assert.ok(nodes.some((n) => n.class_type === "MaskToSEGS"), "the painted mask converts through MaskToSEGS");
+    const saved = nodes.find((n) => n.class_type === "SaveImage");
+    assert.strictEqual(saved?.inputs?.filename_prefix, "probe-region/gen", "the detailed image saves under the gen prefix");
   });
 
   it("GATE S rides the declared rule: the sentinel -1 mints a concrete seed, two runs differ", () => {

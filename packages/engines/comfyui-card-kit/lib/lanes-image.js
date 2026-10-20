@@ -226,16 +226,52 @@ export function refuseImageEditFiring(p, model) {
         fire('mask_threshold', (region.mask_threshold ?? 0) !== 0, 'no core node re-binarizes — the soft feathered falloff rides as-is');
     }
 }
-/** THE REGION SEGS (the generic region detailer's source): the
- * detector proposes (person = segmentation silhouette, face/hand =
- * boxes) or the painted mask converts via MaskToSEGS(combined) —
- * one region per run. grow + context_pad compose as ONE px
- * expansion (the region's working halo). Lane-agnostic.
- *
- * THE LIVE-ENGINE PINS (proven against :8188's own
- * UltralyticsDetectorProvider model list, 2026-09-22): hand is the
- * s-variant this engine ships — the n-variant pin was a stale copy
- * that would refuse at execute time. */
+export function statedRegion(doc) {
+    const rawBag = doc['mask'];
+    const bagLen = Array.isArray(rawBag) ? rawBag.length : 0;
+    const bagFirst = bagLen === 1 ? rawBag[0] : null;
+    const bagObj = typeof bagFirst === 'object' && bagFirst !== null
+        ? bagFirst
+        : null;
+    const merged = { ...doc };
+    if (bagObj) {
+        for (const [k, v] of Object.entries(bagObj)) {
+            if (merged[k] === undefined)
+                merged[k] = v;
+        }
+    }
+    const flatMask = typeof merged['input_mask'] === 'string' && merged['input_mask'].trim() !== '';
+    const detector = typeof merged['mask_detector'] === 'string' ? merged['mask_detector'] : 'off';
+    const detectorStated = detector !== '' && detector !== 'off';
+    const flatKnobs = ['mask_mode', 'mask_context_pad', 'mask_grow', 'mask_feather',
+        'mask_threshold', 'mask_invert', 'mask_detail_size', 'mask_denoise'];
+    const flatStated = flatKnobs.find((k) => {
+        const v = merged[k];
+        if (k === 'mask_mode')
+            return v === 'crop_stitch';
+        return v !== undefined;
+    });
+    if (bagLen === 0 && !flatMask && !detectorStated && flatStated === undefined)
+        return null;
+    const rawMode = (merged['mask_mode'] ?? 'auto');
+    return {
+        key: bagLen > 0 ? 'mask' : flatMask ? 'input_mask' : flatStated ?? 'mask_detector',
+        mode: rawMode === 'full_frame' ? 'auto' : rawMode,
+        merged,
+        maskPath: typeof merged['input_mask'] === 'string' ? merged['input_mask'].trim() : '',
+        detector,
+    };
+}
+/** THE REGION SOURCE: the painted mask or the picked detector —
+ *  crop_stitch details exactly one. Null = crop_stitch with no
+ *  source (the edit fire table's 'crop_stitch needs a region'). */
+export function regionSourceKind(r) {
+    if (r.maskPath !== '')
+        return 'mask';
+    if (r.detector !== 'off')
+        return 'detector';
+    return null;
+}
 export function regionSegs(g, region, image, maskPath) {
     const detector = (region.mask_detector ?? 'off');
     const expand = (region.mask_grow ?? 8) + (region.mask_context_pad ?? 64);
@@ -292,6 +328,25 @@ export function detailerSave(g, p, region, io, runId) {
         noise_mask: true, force_inpaint: true, wildcard: '', cycle: 1,
     }).out();
     return g.node('SaveImage', { images: detailed, filename_prefix: `${runId}/edit` });
+}
+/** THE GEN TWIN (the gen detailer serve, operator 2026-11-07): the
+ *  SAME DetailerForEach arm over the SAME kit segs, saving under the
+ *  gen prefix — the run-media prefix law names the stage kind (gen
+ *  stages harvest under gen/, edit stages under edit/), so the arm
+ *  cannot share detailerSave's edit-stamped tail. All other wiring
+ *  (guide size, denoise, feather, sampler, inpaint flags) is the
+ *  twin's verbatim — one arm, two seats. */
+export function genDetailerSave(g, p, region, io, runId) {
+    const detailed = g.node('DetailerForEach', {
+        image: io.image, segs: io.segs, model: io.model, clip: io.clip, vae: io.vae,
+        guide_size: (region.mask_detail_size ?? 512), guide_size_for: true, max_size: 1024,
+        seed: io.seed, steps: p.steps, cfg: p.cfg,
+        sampler_name: laneSampler(p), scheduler: laneScheduler(p),
+        positive: io.positive, negative: io.negative,
+        denoise: (region.mask_denoise ?? 0.5), feather: (region.mask_feather ?? 8),
+        noise_mask: true, force_inpaint: true, wildcard: '', cycle: 1,
+    }).out();
+    return g.node('SaveImage', { images: detailed, filename_prefix: `${runId}/gen` });
 }
 /** True when the value names a wired stage input (the $spell law):
  *  '$image1' means "the upstream stage's wired output", never a

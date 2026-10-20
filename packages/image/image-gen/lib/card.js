@@ -6,6 +6,7 @@ import { promptPairExtra, samplingExtra, seedExtra } from '@melite/comfyui-card-
 import { callableSchema, gatedResolve } from '@melite/comfyui-card-kit/admission';
 import { MASK_RIDERS } from '@melite/comfyui-card-kit/pack-fields';
 import { IMPACT_PACKS } from '@melite/comfyui-card-kit';
+import { statedRegion, regionSourceKind } from '@melite/comfyui-card-kit';
 import { DECL as krea2Decl } from '@melite/models-krea-2';
 import { DECL as zImageDecl } from '@melite/models-z-image';
 import { DECL as animaDecl } from '@melite/models-anima';
@@ -22,6 +23,12 @@ import { bag } from '@melite/contracts/extraKeys';
  *  not-boarded refusal. The model-knob enum, the tool default, and
  *  the registry row all derive from this array. */
 export const BOARDED = [krea2Decl.id, zImageDecl.id, animaDecl.id, qwenImg21Decl.id, fluxKleinDecl.id, mossImageDecl.id];
+/** THE GEN REGION ROSTER (the gen detailer serve, operator
+ *  2026-11-07): the img-gen families whose t2i builds compose the
+ *  crop_stitch arm — the operator's burn lane plus the declared
+ *  Impact slice. Every other boarded family keeps the E2-11
+ *  refusal, naming this roster's seats. */
+export const GEN_REGION_SERVED = new Set([krea2Decl.id, qwenImg21Decl.id]);
 /** The served style enum (the semantic model knob): entries derived
  *  from the same five DECLs — labels are their own copy, values
  *  are stable family:variant:cell addresses, routes resolve
@@ -169,36 +176,26 @@ export function registerCard(ctx, comfy) {
             // fields ride the walk verbatim, exactly like the loras bag
             // (image-edit's own rider shape, one spelling: MASK_RIDERS).
             const doc = gatedResolve('image-gen', schemaFn, ['loras', 'model', ...MASK_RIDERS], p);
-            // THE REGION FIRING GATE (the refused-fate honesty, E2-11):
-            // no gen lane builds a region arm yet — the DECL's own law
-            // (krea-2 mods: "refuses LOUD … never a silent plain run"). A
-            // STATED region (a bag entry, a flat input_mask, or a picked
-            // detector) refuses in the teaching voice — the mod's key is
-            // declared (never 'unknown-param'), and the plain t2i never
-            // swallows the region quietly. The walk's FILLED default
-            // (mask_mode 'crop_stitch', detector 'off') never fires: the
-            // form stamps defaults on every write.
-            const bagLen = Array.isArray(doc['mask']) ? doc['mask'].length : 0;
-            const flatMask = typeof doc['input_mask'] === 'string' && doc['input_mask'].trim() !== '';
-            const detector = doc['mask_detector'];
-            // the prep/detail knobs (the DetailerForEach vocabulary the
-            // operator's "impact 2 detailer wrapper" burn named): the
-            // walk fills NO defaults for rider keys — PRESENCE is a
-            // stated intent, never a form stamp (the mod leaf writes the
-            // BAG; flat knobs arrive only by authored state)
-            const flatKnobs = ['mask_mode', 'mask_context_pad', 'mask_grow', 'mask_feather',
-                'mask_threshold', 'mask_invert', 'mask_detail_size', 'mask_denoise'];
-            const flatStated = flatKnobs.find((k) => {
-                const v = doc[k];
-                // 'auto' is the plain lane's own word (whole-image) — it
-                // changes nothing and never fires
-                if (k === 'mask_mode')
-                    return v === 'crop_stitch';
-                return v !== undefined;
-            });
-            if (bagLen > 0 || flatMask || (typeof detector === 'string' && detector !== '' && detector !== 'off') || flatStated !== undefined) {
-                const key = bagLen > 0 ? 'mask' : flatMask ? 'input_mask' : flatStated ?? 'mask_detector';
-                throw new Error(`'${key}' fires on the image-gen card (no gen lane builds the region arm yet — the region vocabulary composes on the image-edit card; the gen detailer arm is owed) — refusing instead of silently plain-generating`);
+            // THE REGION SERVE/REFUSE GATE (E2-11 refused-fate honesty, the
+            // gen detailer serve 2026-11-07): the stated-region read is the
+            // kit's ONE spelling (statedRegion — the served t2i builds
+            // branch on the same verdict, so the gate and the arm can never
+            // disagree). Served lanes (krea-2, qwen-img-21) compose the
+            // crop_stitch arm; every other lane keeps the E2-11 refusal in
+            // the teaching voice, naming the serving lanes. The walk's
+            // FILLED default (mask_mode 'crop_stitch', detector 'off')
+            // never fires: the form stamps defaults on every write.
+            const region = statedRegion(doc);
+            if (region !== null && !GEN_REGION_SERVED.has(model.family ?? model.id)) {
+                throw new Error(`'${region.key}' fires on the image-gen card (the region arm serves krea-2 + qwen-img-21 — the region vocabulary composes on the image-edit card and the served gen lanes; this family builds no region arm yet) — refusing instead of silently plain-generating`);
+            }
+            if (region !== null) {
+                if (regionSourceKind(region) === null) {
+                    throw new Error(`'${region.key}' fires on the image-gen card (crop_stitch needs a region — state input_mask or pick a detector) — refusing instead of silently plain-generating`);
+                }
+                if (region.mode !== 'crop_stitch') {
+                    throw new Error(`'${region.key}' fires on the image-gen card (regions ride crop_stitch only — state mask_mode crop_stitch or clear the region) — refusing instead of silently plain-generating`);
+                }
             }
             if (!doc.prompt || !doc.prompt.trim()) {
                 throw new Error("required param 'prompt' missing or empty on the image-gen card (what the picture IS)");

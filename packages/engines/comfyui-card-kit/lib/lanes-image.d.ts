@@ -1,6 +1,6 @@
-import { GraphBuilder, OutputHandle } from './graph.js';
-import type { NodeRef, PromptGraph, StripTable } from './graph.js';
-import { type ModelFacts } from './facts.js';
+import { GraphBuilder, OutputHandle } from './graph.ts';
+import type { NodeRef, PromptGraph, StripTable } from './graph.ts';
+import { type ModelFacts } from './facts.ts';
 /** The lane's solver, honouring an EXPLICIT choice (a cleared select
  *  is not a choice: the lane's own default answers, exactly as the
  *  DECL cascade answers elsewhere). Exported for the family actions
@@ -63,6 +63,28 @@ export declare function refuseImageEditFiring(p: Record<string, unknown>, model?
  * UltralyticsDetectorProvider model list, 2026-09-22): hand is the
  * s-variant this engine ships — the n-variant pin was a stale copy
  * that would refuse at execute time. */
+/** THE STATED-REGION READ (the gen detailer serve, operator
+ *  2026-11-07): ONE spelling of "the doc states a region", shared by
+ *  the image-gen card's serve/refuse gate and the served t2i builds —
+ *  the two seats can never disagree about whether a region was sent.
+ *  The conditions ARE the E2-11 firing gate's (bag entry, flat mask,
+ *  picked detector, flat prep/detail knob — the walk fills no rider
+ *  defaults, so presence is authored intent; mask_mode 'auto' is the
+ *  plain lane's own word and never states). The bag merges UNDER flat
+ *  params (explicit flat keys win — the edit lanes' own merge twin).
+ *  mask_mode 'full_frame' normalizes to 'auto' (the edit precedent). */
+export interface StatedRegion {
+    key: string;
+    mode: string;
+    merged: Record<string, unknown>;
+    maskPath: string;
+    detector: string;
+}
+export declare function statedRegion(doc: Record<string, unknown>): StatedRegion | null;
+/** THE REGION SOURCE: the painted mask or the picked detector —
+ *  crop_stitch details exactly one. Null = crop_stitch with no
+ *  source (the edit fire table's 'crop_stitch needs a region'). */
+export declare function regionSourceKind(r: StatedRegion): 'mask' | 'detector' | null;
 export declare function regionSegs(g: GraphBuilder, region: Record<string, unknown>, image: TensorRef, maskPath: string): OutputHandle;
 /** THE REGION DETAILER TAIL: DetailerForEach (crop → edit → paste)
  * reworks each region at mask_detail_size/mask_denoise and saves
@@ -72,6 +94,23 @@ export declare function regionSegs(g: GraphBuilder, region: Record<string, unkno
  * Lane-agnostic: the model/clip/vae/conditioning are whatever the
  * active lane built. */
 export declare function detailerSave(g: GraphBuilder, p: Record<string, unknown>, region: Record<string, unknown>, io: {
+    image: TensorRef;
+    segs: OutputHandle;
+    model: OutputHandle;
+    clip: OutputHandle;
+    vae: OutputHandle;
+    positive: OutputHandle;
+    negative: OutputHandle;
+    seed: number;
+}, runId: string): NodeRef;
+/** THE GEN TWIN (the gen detailer serve, operator 2026-11-07): the
+ *  SAME DetailerForEach arm over the SAME kit segs, saving under the
+ *  gen prefix — the run-media prefix law names the stage kind (gen
+ *  stages harvest under gen/, edit stages under edit/), so the arm
+ *  cannot share detailerSave's edit-stamped tail. All other wiring
+ *  (guide size, denoise, feather, sampler, inpaint flags) is the
+ *  twin's verbatim — one arm, two seats. */
+export declare function genDetailerSave(g: GraphBuilder, p: Record<string, unknown>, region: Record<string, unknown>, io: {
     image: TensorRef;
     segs: OutputHandle;
     model: OutputHandle;

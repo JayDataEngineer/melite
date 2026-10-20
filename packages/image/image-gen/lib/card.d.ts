@@ -13,6 +13,12 @@ import type { SemanticModelEntry } from '@melite/comfyui-card-kit/semanticModelK
  *  not-boarded refusal. The model-knob enum, the tool default, and
  *  the registry row all derive from this array. */
 export declare const BOARDED: readonly [string, string, string, string, string, string];
+/** THE GEN REGION ROSTER (the gen detailer serve, operator
+ *  2026-11-07): the img-gen families whose t2i builds compose the
+ *  crop_stitch arm — the operator's burn lane plus the declared
+ *  Impact slice. Every other boarded family keeps the E2-11
+ *  refusal, naming this roster's seats. */
+export declare const GEN_REGION_SERVED: ReadonlySet<string>;
 /** The served style enum (the semantic model knob): entries derived
  *  from the same five DECLs — labels are their own copy, values
  *  are stable family:variant:cell addresses, routes resolve

@@ -32,7 +32,7 @@ export { isItemWrapped, unwrapItemArrays, coerceWireArrays, coerceWireNumbers, w
 export { mintSeed, voiceLockSeed } from "./graph-helpers.js";
 export { declaredAction, instantiateAction } from "./action.js";
 export { IMPACT_DETECTOR_IDS, IMPACT_DETECTORS, IMPACT_DETECTOR_PROVISIONS, IMPACT_PACKS, impactArmNames, impactDetector, } from "./impact.js";
-export { IMAGE_EDIT_STRIP, finalizeImageEdit, refuseImageEditFiring, editRefs, orderedInputImages, editImageCap, regionSegs, detailerSave, isSpell, laneSampler, laneScheduler, } from "./lanes-image.js";
+export { IMAGE_EDIT_STRIP, finalizeImageEdit, refuseImageEditFiring, editRefs, orderedInputImages, editImageCap, regionSegs, statedRegion, regionSourceKind, detailerSave, genDetailerSave, isSpell, laneSampler, laneScheduler, } from "./lanes-image.js";
 export { qvoiceUse } from "./lanes-audio.js";
 export { ANNY_STRIP, finalizeAnny, MOTION_STRIP, finalizeMotion, MESH_RESOLUTIONS, MESH_BG_MODES, MESH_PIXAL_FOVS, MESH_BAKE_SIZES, MESH_ATLAS_SIZES, MESH_AO_SIZES, MESH_NORMAL_SIZES, admitMeshLiftShared, } from "./lanes-3d.js";
 export { TAGGER_STRIP, finalizeTagger, finalizeMask, TAGGER_CAPTION_TASKS, TAGGER_CAPTION_TYPES, TAGGER_CAPTION_LENGTHS, TAGGER_EXTRA_OPTIONS, taggerSaveText, parseWeightlessFacts, assertTagInput, } from "./lanes-image-tools.js";

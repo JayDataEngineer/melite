@@ -652,19 +652,26 @@ test("THE MASK ORDER (operator 2026-11-07): every img-gen family boards mask; st
   }
   // THE PLANE-LOCAL FATE (the refused-fate honesty): no image-gen
   // lane builds a region arm (compose untouched), so a stated mask
-  // on the gen card refuses LOUD — field-named, never a silent
-  // plain run. E2-11 moved the refusal's LAW, not its fate: the
-  // mask mod's keys are DECLARED surface now (MASK_RIDERS at the
-  // walk — the mod's own keys, never 'undeclared param'), and
+  // on the gen card's UNSERVED lanes refuses LOUD — field-named,
+  // never a silent plain run. E2-11 moved the refusal's LAW, not its
+  // fate: the mask mod's keys are DECLARED surface now (MASK_RIDERS
+  // at the walk — the mod's own keys, never 'undeclared param'), and
   // the refusal speaks at the card's own REGION FIRING GATE,
-  // teaching where the region vocabulary composes. The region
-  // story lives on the edit plane; the gen card routes nothing.
+  // teaching the serving lanes. The served lanes (krea-2, qwen-img-21
+  // — the gen detailer serve, operator 2026-11-07) compose the
+  // crop_stitch arm instead of refusing.
   const { GraphBuilder } = await import("../../../../packages/engines/comfyui-cordis/src/index.ts");
   const gen = svc.getCardDef("image-gen") as unknown as {
-    compose: (p: unknown, m: unknown, g: unknown, r: string) => void;
+    compose: (p: unknown, m: unknown, g: unknown, r: string) => unknown;
   };
+  for (const fam of ["qwen-img-21", "krea-2"]) {
+    const g = new GraphBuilder({});
+    gen.compose({ prompt: "a cat", input_mask: "region.png", mask_mode: "crop_stitch" }, getModel(fam) as never, g, "wall-mask-serve-" + fam);
+    const nodes = Object.values(g.toJSON() as Record<string, { class_type?: string }>);
+    assert.ok(nodes.some((n) => n.class_type === "DetailerForEach"), `the stated mask serves DetailerForEach on ${fam} (the mod SERVES)`);
+  }
   assert.throws(
-    () => gen.compose({ prompt: "a cat", input_mask: "region.png" }, getModel("qwen-img-21") as never, new GraphBuilder({}), "wall-mask-c"),
+    () => gen.compose({ prompt: "a cat", input_mask: "region.png" }, getModel("anima") as never, new GraphBuilder({}), "wall-mask-c"),
     (err: unknown): boolean =>
       err instanceof Error && /'input_mask' fires on the image-gen card.*region arm/.test(err.message),
     "a stated input_mask on image-gen refuses LOUD at the firing gate (the fate this boarding carries)",
