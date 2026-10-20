@@ -14,8 +14,8 @@ import type { Context, Plugin } from "@deepseek-ai/cordis";
  *  window (its 1.5s failed-poll budget) permits; the deployment face
  *  is ProvisioningConfig.acquireStallTimeoutMs. */
 export declare const ACQUIRE_STALL_TIMEOUT_MS = 1000;
-import { type ActivateOptions, type EnsureOptions, type ExternalProvisionRequest, type ProvisionOperation, type ProvisionPlan, type ProvisionResult, type ProvisionState, type ResourceRef, type ResourceStatus, type WeightAcquireProgress } from "./contracts.js";
-import type { ProvisioningConfig, ProvisioningServiceDefinition } from "./ports.js";
+import { type ActivateOptions, type EnsureOptions, type ExternalProvisionRequest, type ProvisionOperation, type ProvisionPlan, type ProvisionResult, type ProvisionState, type ResourceRef, type ResourceStatus, type WeightAcquireProgress } from "./contracts.ts";
+import type { ProvisioningConfig, ProvisioningServiceDefinition } from "./ports.ts";
 /** THE BUSY REFUSAL (audit I-S4): startWeightAcquire throws this when
  *  the plane already runs its concurrency cap of fetches. The door
  *  maps it to a 429 with retry_after_ms — a busy plane is a wait, not
@@ -80,6 +80,13 @@ export declare class ProvisioningService extends Service implements Provisioning
      *  would otherwise read as a cancellation at refusalFor, and a
      *  stalled fetch is a FAILURE, never an operator's cancel. */
     private readonly stallRefusals;
+    /** THE VERIFY FLOW CLOCK (the 100%-then-FAILED burn, 2026-10-20):
+     *  last epoch ms the writer's verify heartbeat fired per operation.
+     *  Hashing a multi-GB part flows for tens of seconds with zero
+     *  stream movement — the watchdog's clock rides THIS alongside the
+     *  stream bytes, or it murders every complete download. Deleted on
+     *  the watchdog's disarm (every exit path), never a leak. */
+    private readonly verifyFlowAt;
     constructor(ctx: Context, config: ProvisioningConfig);
     /** THE REHYDRATE SEED (audit E3): one stored row joins the live
      *  ledger. A row still mid-flight belongs to a fetch that died
@@ -193,9 +200,12 @@ export declare class ProvisioningService extends Service implements Provisioning
      *  aborts the operation's stream (tearing the wedged wire down) and
      *  seats the stuck refusal, whose voice the item loop consumes so
      *  the operation settles FAILED — at the frozen bytes, with the
-     *  why — instead of riding 'verifying' forever. A watchdog that
-     *  never fires costs one interval per live fetch; every exit path
-     *  disarms via the returned closure.
+     *  why — instead of riding 'verifying' forever. THE VERIFY OWNS
+     *  THE CLOCK (the 100%-then-FAILED burn, 2026-10-20): the writer's
+     *  verify heartbeat re-arms the same clock — a complete stream is
+     *  never a stalled stream. A watchdog that never fires costs one
+     *  interval per live fetch; every exit path disarms via the
+     *  returned closure.
      *
      * @param operationId the operation whose ledger the watchdog reads.
      * @param ref the operation's resource key (its lock, for the abort).

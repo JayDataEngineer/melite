@@ -1,8 +1,8 @@
-export * from "./contracts.js";
-export * from "./ports.js";
-export * from "./artifact-writer.js";
-export * from "./manager-client.js";
-export * from "./manager-provider.js";
-export * from "./operation-store.js";
-export * from "./service.js";
+export * from "./contracts.ts";
+export * from "./ports.ts";
+export * from "./artifact-writer.ts";
+export * from "./manager-client.ts";
+export * from "./manager-provider.ts";
+export * from "./operation-store.ts";
+export * from "./service.ts";
 //# sourceMappingURL=index.d.ts.map

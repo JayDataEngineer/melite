@@ -11,6 +11,15 @@ export interface VerifiedArtifactRequest {
     readonly operationId: string;
     readonly source: ArtifactInput;
     readonly sizeBytes?: number;
+    /** THE VERIFY HEARTBEAT (the 100%-then-FAILED burn, 2026-10-20):
+     *  hashing a multi-GB part takes tens of seconds with zero stream
+     *  movement — the plane's stall clock must ride the verify flow
+     *  too, or it murders every complete download. The writer calls
+     *  this per hash chunk plus once at each verify-phase boundary
+     *  (post-sync, pre-rename); the count is informational (never a
+     *  ledger add — the stream already counted these bytes). Optional
+     *  so older callers still satisfy the port. */
+    readonly onVerifyBytes?: (bytes: number) => void;
 }
 export interface VerifiedArtifactResult {
     readonly path: string;
@@ -35,7 +44,7 @@ export interface ArtifactWriterPort {
 }
 export declare function isValidSha256(value: string): boolean;
 export declare function resolveConfinedPath(root: string, relativePath: string): string;
-export declare function sha256File(path: string, signal?: AbortSignal): Promise<string>;
+export declare function sha256File(path: string, signal?: AbortSignal, onProgress?: (bytes: number) => void): Promise<string>;
 export declare const hashFile: typeof sha256File;
 export declare class VerifiedArtifactWriter implements ArtifactWriterPort {
     readonly root: string;

@@ -226,7 +226,7 @@ async function writeAll(handle, bytes) {
         offset += result.bytesWritten;
     }
 }
-export async function sha256File(path, signal) {
+export async function sha256File(path, signal, onProgress) {
     const handle = await open(path, "r");
     const hash = createHash("sha256");
     const buffer = Buffer.allocUnsafe(HASH_CHUNK_BYTES);
@@ -237,6 +237,7 @@ export async function sha256File(path, signal) {
             if (result.bytesRead === 0)
                 break;
             hash.update(buffer.subarray(0, result.bytesRead));
+            onProgress?.(result.bytesRead);
         }
     }
     finally {
@@ -283,7 +284,11 @@ export class VerifiedArtifactWriter {
             await handle.close();
             handle = undefined;
             throwIfAborted(signal);
-            const temporarySha256 = await sha256File(temporary, signal);
+            // the fsync above can stall seconds on a loaded disk with zero
+            // stream movement — heartbeat the boundary so the plane's clock
+            // knows the verify is alive before the hash's own chunks flow
+            request.onVerifyBytes?.(0);
+            const temporarySha256 = await sha256File(temporary, signal, request.onVerifyBytes);
             if (expectedSha256 !== undefined && temporarySha256 !== expectedSha256) {
                 throw new ProvisioningError("hash-mismatch", `artifact SHA-256 mismatch: expected ${expectedSha256}, got ${temporarySha256}`);
             }
@@ -298,7 +303,7 @@ export class VerifiedArtifactWriter {
             if (finalKind !== "file") {
                 throw new ProvisioningError("landing-failed", "artifact destination is not a file after landing");
             }
-            const finalSha256 = await sha256File(destination, signal);
+            const finalSha256 = await sha256File(destination, signal, request.onVerifyBytes);
             if (expectedSha256 !== undefined && finalSha256 !== expectedSha256) {
                 throw new ProvisioningError("landing-failed", "artifact destination changed after landing");
             }
