@@ -240,7 +240,12 @@ describe("ProvisioningService public seams", () => {
     signal.abort();
     const signalled = makeService(basicConfig(async () => { throw new Error("late"); })).service;
     const cancelled = await signalled.inspect(ref, signal.signal);
-    assert.equal(cancelled.state, "failed");
+    // CENSUS HONESTY LAW AT THE PLAN DOOR (audit V1): a cancelled
+    // plan resolution is the scan's own artifact — 'unknown' with
+    // the budget voice, never 'failed' over zero checked bytes
+    assert.equal(cancelled.state, "unknown");
+    assert.match(cancelled.detail ?? "", /scan incomplete/);
+    assert.equal(cancelled.items.length, 0);
   });
 
   test("an extension naming a provider outside the vocabulary is refused by name", async () => {

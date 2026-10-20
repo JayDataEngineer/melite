@@ -877,12 +877,25 @@ export class ProvisioningService extends Service {
         }
         catch (error) {
             const refusal = refusalFor(error, signal);
-            this.move(ref, undefined, refusal.outcome === "blocked" ? "blocked" : "failed");
+            // THE CENSUS HONESTY LAW AT THE PLAN DOOR (audit
+            // infra-census V1, 2026-10-20): a cancelled plan resolution
+            // is the scan's own artifact, never a health verdict — the
+            // row wore 'failed' with items [] over ZERO checked bytes
+            // and the census_partial mark never fired. The plan door
+            // rides the same law as the item door: cancelled → 'unknown'
+            // with the scan's budget voice; the plan never resolved, so
+            // there is no item roster to seat.
+            const state = refusal.outcome === "blocked"
+                ? "blocked"
+                : refusal.outcome === "cancelled" ? "unknown" : "failed";
+            this.move(ref, undefined, state);
             return {
                 ref: copyRef(ref),
-                state: refusal.outcome === "blocked" ? "blocked" : "failed",
+                state,
                 items: [],
-                detail: refusal.message,
+                detail: refusal.outcome === "cancelled"
+                    ? "scan incomplete — this resource's plan was cut off before any item was checked"
+                    : refusal.message,
             };
         }
         const items = [];

@@ -304,4 +304,48 @@ describe("the resources census honesty law (the anima burn)", () => {
       "the unchecked sibling never absorbs the failure verdict — it rides unknown",
     ).toBe("unknown");
   });
+
+  // AUDIT V1 (infra-census-f1-f2-verification-2026-10-20): the
+  // plan()-throw abort door still seats 'failed' over zero checked
+  // bytes — inspect()'s plan() catch mapped refusalFor's cancelled
+  // outcome through `blocked ? "blocked" : "failed"`, so a resolve
+  // that throws AFTER the budget's signal aborted wore the failure
+  // token with items [] and NO census_partial (the deck painted red
+  // with no note). THE PLAN DOOR rides the same law as the item
+  // door: a cancelled plan resolution is the scan's own artifact.
+  test("A PLAN-DOOR CUT NEVER ANSWERS 'failed' OVER ZERO CHECKED BYTES", async () => {
+    const context = new Context();
+    contexts.push(context);
+    const declaration: DeclarationPort = {
+      // resolve() outlives the abort, then throws — the real
+      // production shape (the port resolves in-process with no
+      // signal; the error lands after the budget closed)
+      resolve: async (_target: ResourceRef): Promise<ProvisionPlan> => {
+        await new Promise((resolve) => { setTimeout(resolve, 40) });
+        throw new Error("declaration blew up after the budget closed");
+      },
+      list: async (): Promise<readonly ResourceRef[]> => [refOf("anima")],
+    };
+    const service = new ProvisioningService(context, {
+      declaration,
+      artifactWriter: hangingWriter(0),
+      storeRoot: tempRoot(),
+    } satisfies ProvisioningConfig);
+
+    const controller = new AbortController();
+    const flight = service.reconcile(undefined, controller.signal);
+    await new Promise((resolve) => { setTimeout(resolve, 10) });
+    controller.abort();
+    const rows = await flight;
+
+    assert.equal(rows.length, 1);
+    const row = rows[0];
+    expect(row.state,
+      "a cancelled plan resolution is the scan's own artifact — never 'failed' (the V1 door painted a health verdict over zero checked bytes)",
+    ).toBe("unknown");
+    assert.match(row.detail ?? "", /scan incomplete/,
+      "the plan cut names its own cause — the census_partial mark fires on this row");
+    expect(row.items.length).toBe(0,
+      "the plan never resolved — there is no item roster to fake");
+  });
 });
