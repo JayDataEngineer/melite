@@ -390,13 +390,18 @@ export function acquiredDetailOf(target: string, current: { bytes: number, total
  * refuses STUCK when the ceiling expires non-terminal (the stuck
  * burn, ERRORS k2/m). */
 export async function runRescueCall(rescue: Rescue, target: string, signal?: AbortSignal): Promise<RescueResult> {
-  // THE RUNTIME STAND-DOWN (E2-2): the estate owns no
-  // runtime-provision door — a programmatic caller reaching here
-  // with a runtime rescue gets the honest refusal, never a wrong
-  // acquire (the face offers no wire, so this is unreachable from
-  // the UI; the type keeps it total).
+  // THE RUNTIME DOOR (E2-2 Piece B, 2026-10-20): the estate owns
+  // provision_runtime now — the press carries the runtime NAME only
+  // (the family scan is server-side; names only, always). The verb
+  // links the engine tree to the repo's healthy seed instantly: no
+  // poll, no restart — the face retires on ok and the re-run rides
+  // the caller's own press.
   if (rescue.kind === 'runtime') {
-    throw new Error('no estate door provisions the engine runtime "' + rescue.runtime + '" — run `' + rescue.command + '` where the engine lives')
+    const reply = signal !== undefined
+      ? await postManageAction('provision_runtime', { runtime: rescue.runtime }, signal)
+      : await postManageAction('provision_runtime', { runtime: rescue.runtime })
+    if (!reply.ok) throw new Error(reply.detail ?? 'manage refused')
+    return { detail: reply.detail ?? rescue.runtime + ' provisioned', restartRequired: false }
   }
   const provisionTarget = rescue.kind === 'model' && rescue.target !== undefined && rescue.target !== ''
     ? rescue.target

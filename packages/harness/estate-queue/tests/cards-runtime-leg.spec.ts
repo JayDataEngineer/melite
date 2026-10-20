@@ -18,6 +18,7 @@ import type { LaneInputMiss } from "../src/cardsArmError.ts";
 
 const DIR = join(tmpdir(), "melite-runtime-leg-" + process.pid);
 const CFG = join(DIR, "endpoint.json");
+const LANES = join(DIR, "lanes.env");
 const MODELS = join(DIR, "models");
 const ENGINE = join(DIR, "engine");
 const OUTPUT = join(ENGINE, "output");
@@ -60,6 +61,22 @@ const arm = (engineRoot: string | null): void => {
   delete process.env["INFERENCE_TEST_SANDBOX"];
   process.env["MELITE_REPO_ROOT"] = DIR;
   delete process.env["ANNY_ESTIMATOR_ROOT"];
+};
+
+// THE G3 ARM (Piece B): the same statement plus the additive
+// lanes_env_file key — the lane unit's EnvironmentFile the gate's env
+// view overlays onto the process env for exactly rt.env.
+const armLanes = (engineRoot: string, lanes: string): void => {
+  const doc: Record<string, unknown> = {
+    url: "http://127.0.0.1:8188",
+    model_base_path: MODELS,
+    engine_root: engineRoot,
+    lanes_env_file: lanes,
+  };
+  writeFileSync(CFG, JSON.stringify(doc));
+  process.env["COMFYUI_ENDPOINT_CONFIG"] = CFG;
+  delete process.env["INFERENCE_TEST_SANDBOX"];
+  process.env["MELITE_REPO_ROOT"] = DIR;
 };
 
 // The store's sam stands (the burn's shape: weights present, the
@@ -122,6 +139,48 @@ describe("THE RUNTIME LEG (photo-stated runs refuse at press, E2-2 Piece A)", ()
     const home = placeRuntime(DIR);
     process.env["ANNY_ESTIMATOR_ROOT"] = home;
     assert.equal(lanePresenceMiss("anny", { body_image: "person.jpg" }), null);
+  });
+
+  it("THE G3 LANES.ENV LEG: an override the lane file carries satisfies the press gate (the engine-visible export the process predates)", () => {
+    arm(ENGINE);
+    placeSam();
+    const home = placeRuntime(DIR);
+    // The lane unit is started with EnvironmentFile=lanes.env — an
+    // override exported there is engine-visible but INVISIBLE to a
+    // lane process started before the edit. The G3 leg reads the
+    // endpoint's lanes_env_file beside engineRootOf (the ONE env
+    // view the provision_runtime verb decides on — gate and verb
+    // agree), so the file's value counts at press.
+    writeFileSync(LANES, "ANNY_ESTIMATOR_ROOT=" + home + "\n");
+    armLanes(ENGINE, LANES);
+    delete process.env["ANNY_ESTIMATOR_ROOT"];
+    assert.equal(lanePresenceMiss("anny", { body_image: "person.jpg" }), null);
+  });
+
+  it("THE G3 LANES.ENV LEG: the file overlays a stale process env — lanes.env wins for exactly rt.env", () => {
+    arm(ENGINE);
+    placeSam();
+    const healthy = placeRuntime(DIR);
+    // process.env carries a DEAD value; the file carries the healthy
+    // one — the overlay order is the file's (what the next lane start
+    // arms beats the stale process copy). A process-wins read would
+    // refuse here and red the arm.
+    process.env["ANNY_ESTIMATOR_ROOT"] = join(DIR, "dead", "stale-process");
+    writeFileSync(LANES, ["# comment line", "", "OTHER_KEY=not-ours", "ANNY_ESTIMATOR_ROOT=" + healthy].join("\n"));
+    armLanes(ENGINE, LANES);
+    assert.equal(lanePresenceMiss("anny", { body_image: "person.jpg" }), null);
+  });
+
+  it("THE G3 LANES.ENV LEG: an invalid lanes.env value still refuses at press — the file leg is the same env leg, not a second chance", () => {
+    arm(ENGINE);
+    placeSam();
+    writeFileSync(LANES, "ANNY_ESTIMATOR_ROOT=" + join(DIR, "dead", "path") + "\n");
+    armLanes(ENGINE, LANES);
+    delete process.env["ANNY_ESTIMATOR_ROOT"];
+    const miss = lanePresenceMiss("anny", { body_image: "person.jpg" });
+    assert.ok(miss !== null, "an override from any side is judged the same way");
+    assert.match(miss.message, E2_RUNTIME);
+    assert.match(miss.message, /dead/, "the refusal names the path it checked (the file's own value)");
   });
 
   it("a walk-up copy under the declared engine tree satisfies the leg", () => {

@@ -4545,7 +4545,14 @@ window.__ModuleLoader__.load({
 		* refuses STUCK when the ceiling expires non-terminal (the stuck
 		* burn, ERRORS k2/m). */
 		async function runRescueCall(rescue, target, signal) {
-			if (rescue.kind === "runtime") throw new Error("no estate door provisions the engine runtime \"" + rescue.runtime + "\" — run `" + rescue.command + "` where the engine lives");
+			if (rescue.kind === "runtime") {
+				const reply = signal !== void 0 ? await (0, _melite_card_base_client.postManageAction)("provision_runtime", { runtime: rescue.runtime }, signal) : await (0, _melite_card_base_client.postManageAction)("provision_runtime", { runtime: rescue.runtime });
+				if (!reply.ok) throw new Error(reply.detail ?? "manage refused");
+				return {
+					detail: reply.detail ?? rescue.runtime + " provisioned",
+					restartRequired: false
+				};
+			}
 			const provisionTarget = rescue.kind === "model" && rescue.target !== void 0 && rescue.target !== "" ? rescue.target : target;
 			if (rescue.kind === "extension") {
 				const reply = await (0, _melite_card_base_client.postManageAction)("install_extension", { nodes: [rescue.pack] });
@@ -4865,16 +4872,28 @@ window.__ModuleLoader__.load({
 			/** Rescue missing-weight note (what the run lacked). */
 			missingDownload: (p) => "Missing " + p.what + " — download through the manage seat?",
 			/** Rescue missing-runtime note (E2-2: what the run lacked — the
-			*  engine's own tool runtime, provisioned where the engine
-			*  lives, never through the estate). */
+			*  engine's own tool runtime, now provisionable through the estate
+			*  door). */
 			missingRuntime: (p) => "Missing engine runtime \"" + p.runtime + "\" — the run needs its tool runtime, and the engine does not have it.",
 			/** Rescue runtime face's provision voice (E2-2): the engine's own
-			*  provision command, verbatim — the command IS the offer (no
-			*  estate door provisions runtimes, so no button is faked). */
+			*  provision command, verbatim — the manual path stays named beside
+			*  the button (the command is the engine-tree spelling; the button
+			*  rides the estate's provision_runtime link door). */
 			runtimeProvision: (p) => "Provision it where the engine lives: " + p.command,
 			/** Rescue runtime face's env-override voice (E2-2): the engine
 			*  names its escape hatch when one exists. */
 			runtimeEnvOverride: (p) => "Or point an existing runtime at " + p.env + ".",
+			/** Rescue runtime face's provision button (E2-2 Piece B): fires
+			*  provision_runtime with the runtime NAME — the estate links the
+			*  engine tree to the repo's healthy seed. */
+			runtimeProvisionButton: "Provision runtime",
+			/** Rescue runtime face's in-flight word (an instant link, but the
+			*  press still gets its own word). */
+			runtimeProvisioningWord: "Provisioning…",
+			/** Rescue runtime face's success voice (E2-2 Piece B): the miss
+			*  face retires and the re-run rides the caller's own press —
+			*  never an automatic re-fire. */
+			runtimeProvisioned: (p) => "Engine runtime \"" + p.runtime + "\" provisioned — press Run again.",
 			/** Rescue runtime face's dismiss label (the × every rescue face carries). */
 			closeRuntimeFace: "Close runtime notice",
 			/** Weight popup title when the acquisition ended STUCK (frozen
@@ -5099,8 +5118,29 @@ window.__ModuleLoader__.load({
 				}, busy ? chromeCopy.installingWord : chromeCopy.installContinue), note !== null ? (0, react.createElement)("p", { className: card_module_css_default.rescueErr }, note) : null);
 			}
 			if (rescue.kind === "runtime") {
+				if (done !== null) return (0, react.createElement)("div", { className: card_module_css_default.rescue }, (0, react.createElement)("p", { className: card_module_css_default.rescueNote }, chromeCopy.runtimeProvisioned({ runtime: rescue.runtime })), (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+					size: "sm",
+					variant: "primary",
+					onClick: onRun
+				}, chromeCopy.runAgain));
 				if (dismissed) return null;
 				return (0, react.createElement)("div", { className: card_module_css_default.rescue }, (0, react.createElement)("p", { className: card_module_css_default.rescueNote }, chromeCopy.missingRuntime({ runtime: rescue.runtime })), (0, react.createElement)("p", { className: card_module_css_default.rescueNote }, chromeCopy.runtimeProvision({ command: rescue.command })), rescue.env !== void 0 ? (0, react.createElement)("p", { className: card_module_css_default.rescueNote }, chromeCopy.runtimeEnvOverride({ env: rescue.env })) : null, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+					size: "sm",
+					variant: "primary",
+					"data-testid": "runtime-provision",
+					disabled: busy,
+					onClick: () => {
+						setBusy(true);
+						setNote(null);
+						runRescueCall(rescue, "").then((result) => {
+							setBusy(false);
+							setDone(result);
+						}).catch((e) => {
+							setBusy(false);
+							setNote((0, _melite_card_base_client.rejectionVoice)(e));
+						});
+					}
+				}, busy ? chromeCopy.runtimeProvisioningWord : chromeCopy.runtimeProvisionButton), note !== null ? (0, react.createElement)("p", { className: card_module_css_default.rescueErr }, note) : null, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Button, {
 					size: "sm",
 					variant: "ghost",
 					className: card_module_css_default.errorDismiss,

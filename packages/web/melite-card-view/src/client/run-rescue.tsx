@@ -232,16 +232,25 @@ export function RunRescue({ error, stages, onRun, rescue: structured }: {
     )
   }
 
-  // THE RUNTIME BANNER (E2-2, operator 2026-10-20 — a download
-  // prompt appears, never the raw engine's noise): the engine's own
-  // sentence names the missing tool runtime AND its provision
-  // command, so the estate faces the provision — never the raw
-  // ComfyError. The estate owns no runtime-provision door, so the
-  // face offers NO wire (never a fake install): the command IS the
-  // offer, with the engine's env override beside it when one
-  // exists. The × carries the same dismissal law as every rescue
-  // face — the miss retires for this runtime until a new refusal.
+  // THE RUNTIME BANNER (E2-2, operator 2026-10-20; PIECE B fired
+  // 2026-11-10): the engine's own sentence names the missing tool
+  // runtime AND its provision command, and the face grows the
+  // FIRING offer — a Provision button through the estate's
+  // provision_runtime door (ONE manage wire, the runtime NAME only;
+  // the family scan is server-side). The verb links the engine tree
+  // to the repo's healthy seed instantly: success retires the miss
+  // face and voices "provisioned — press Run again", the re-run
+  // rides the CALLER's press (never an automatic re-fire); a
+  // refused link voices the returned detail (a named refusal, never
+  // raw). The × carries the same dismissal law as every rescue face
+  // — the miss retires for this runtime until a new refusal.
   if (rescue.kind === 'runtime') {
+    if (done !== null) {
+      return h('div', { className: css.rescue },
+        h('p', { className: css.rescueNote }, chromeCopy.runtimeProvisioned({ runtime: rescue.runtime })),
+        h(Button, { size: 'sm', variant: 'primary', onClick: onRun }, chromeCopy.runAgain),
+      )
+    }
     if (dismissed) return null
     return h('div', { className: css.rescue },
       h('p', { className: css.rescueNote }, chromeCopy.missingRuntime({ runtime: rescue.runtime })),
@@ -249,6 +258,20 @@ export function RunRescue({ error, stages, onRun, rescue: structured }: {
       rescue.env !== undefined
         ? h('p', { className: css.rescueNote }, chromeCopy.runtimeEnvOverride({ env: rescue.env }))
         : null,
+      h(Button, {
+        size: 'sm',
+        variant: 'primary',
+        ...{ 'data-testid': 'runtime-provision' },
+        disabled: busy,
+        onClick: () => {
+          setBusy(true)
+          setNote(null)
+          runRescueCall(rescue, '')
+            .then((result) => { setBusy(false); setDone(result) })
+            .catch((e: unknown) => { setBusy(false); setNote(rejectionVoice(e)) })
+        },
+      }, busy ? chromeCopy.runtimeProvisioningWord : chromeCopy.runtimeProvisionButton),
+      note !== null ? h('p', { className: css.rescueErr }, note) : null,
       h(Button, {
         size: 'sm',
         variant: 'ghost',

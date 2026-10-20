@@ -104,6 +104,29 @@ describe('parseRescue (the estate refusal shapes, nothing else)', () => {
       .toEqual({ kind: 'runtime', runtime: 'anny-estimator', command: 'pnpm run provision -- estimator (SAM 3D Body venv + SOMA-X checkout — see dev_docs/design/estimator-chain.md)', env: 'ANNY_ESTIMATOR_ROOT' })
   })
 
+  it('a runtime rescue posts provision_runtime with the runtime NAME (the Piece B door — the family scan is server-side)', async () => {
+    // RED before cure: runRescueCall stood the runtime arm down with
+    // the honest no-door refusal — the door exists now, and the wire
+    // carries exactly the name (never a path, never a family).
+    const spy = vi.fn().mockResolvedValue({ ok: true, detail: 'linked', data: { state: 'active', runtime: 'anny-estimator' } })
+    vi.resetModules()
+    vi.doMock('@melite/card-base/client', () => ({ postManageAction: spy }))
+    const { runRescueCall: call } = await import('../src/client/run-rescue-core.ts')
+    await expect(call({ kind: 'runtime', runtime: 'anny-estimator', command: 'pnpm run provision -- estimator', env: 'ANNY_ESTIMATOR_ROOT' }, ''))
+      .resolves.toEqual({ detail: 'linked', restartRequired: false })
+    expect(spy).toHaveBeenCalledWith('provision_runtime', { runtime: 'anny-estimator' })
+  })
+
+  it('a refused provision_runtime surfaces the detail, never a silent ok', async () => {
+    vi.resetModules()
+    vi.doMock('@melite/card-base/client', () => ({
+      postManageAction: vi.fn().mockResolvedValue({ ok: false, detail: 'target blocked — remove the foreign dir first' }),
+    }))
+    const { runRescueCall: call } = await import('../src/client/run-rescue-core.ts')
+    await expect(call({ kind: 'runtime', runtime: 'anny-estimator', command: 'pnpm run provision -- estimator' }, ''))
+      .rejects.toThrow('target blocked')
+  })
+
   it('a runtime-miss without the engine Provision sentence is not ours to fix', () => {
     expect(parseRescue('RuntimeError: some-tool runtime not found at /opt/runtimes/x'))
       .toBe(null)

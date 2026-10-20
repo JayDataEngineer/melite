@@ -13,7 +13,8 @@
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { readFileSync } from "node:fs";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
+import { resolveRuntimeProvision, nodeRuntimeFs, runtimeEnvView, engineOutputDir, engineRootOf, sentinelHit } from "./runtimeProvision.ts";
 import {
   ComfyError,
   endpointConfigPath,
@@ -67,6 +68,12 @@ export const ACTIONS = [
   "download_model",
   "provision_model",
   "acquire_weight",
+  // THE RUNTIME PROVISION VERB (E2-2 Piece B, 2026-10-20): the door
+  // the run-rescue runtime banner fires — links the engine tree's
+  // data/runtime/<name> to the repo's healthy seed (SYMLINK, never a
+  // copy). Decided by the same core the press-time gate reads
+  // (runtimeProvision.ts): gate and verb can never disagree.
+  "provision_runtime",
   // THE RESCUE VERBS (ERRORS.md k2 + the purge plan's P5 rescue
   // honesty): a settled-failed acquire is retryable — a fresh fetch
   // on the dead row's ref, the dead row's truth kept — and the dead
@@ -245,6 +252,11 @@ export interface Req {
   model: string;
   variant: string;
   quant: string;
+  /** THE RUNTIME PROVISION VERB'S NAME (E2-2 Piece B): the runtime
+   *  NAME as the DECL declares it ("anny-estimator") — resolved
+   *  server-side by scanning ctx.models.allDecls() for
+   *  decl.runtime.name; the client never knows families. */
+  runtime: string;
   tail: number;
   query: string;
   version: string;
@@ -366,6 +378,7 @@ export function parseReq(doc: unknown): Req {
     model: str("model"),
     variant: str("variant"),
     quant: str("quant"),
+    runtime: str("runtime"),
     tail: num("tail", 200),
     query: str("query"),
     version: str("version"),
@@ -1266,6 +1279,102 @@ async function hProvisionModel(req: Req, ctx: ManageCtx): Promise<[number, Manag
   });
 }
 
+/** THE RUNTIME PROVISION VERB (E2-2 Piece B, operator 2026-10-20):
+ *  the door the run-rescue runtime banner's Provision button fires.
+ *  The client sends the runtime NAME only — the family scan is
+ *  server-side (ctx.models.allDecls() carries the DECL runtime rows;
+ *  the client never knows families). The decision is the SAME pure
+ *  core the press-time gate reads (runtimeProvision.ts), so gate and
+ *  verb can never disagree; the only materialize arm is a SYMLINK
+ *  from the engine tree's data/runtime/<name> to the repo's healthy
+ *  seed — never a copy (the stuck-download law: zero moving bytes,
+ *  the seed stays the source of truth), never a fresh provision (the
+ *  chain files are placed by hand). Instant: no poll, no restart —
+ *  the engine's own walk-up re-reads the tree every run. */
+async function hProvisionRuntime(req: Req, ctx: ManageCtx): Promise<[number, ManageEnvelope]> {
+  need(req, "runtime");
+  estateOnly(req, ctx.endpoint());
+  const decls = ctx.models.allDecls();
+  const rt = decls.map((d) => d.runtime).find((r) => r !== undefined && r.name === req.runtime);
+  if (rt === undefined) {
+    const declared = [...new Set(decls.map((d) => d.runtime?.name).filter((n): n is string => n !== undefined))];
+    throw badRequest(
+      "unknown runtime '" + req.runtime + "' — no family DECL declares a runtime by this name (declared runtimes: " +
+        (declared.length === 0 ? "none" : declared.join(", ")) + ")",
+    );
+  }
+  const root = engineRootOf();
+  const decision = resolveRuntimeProvision(rt, {
+    engineRoot: root,
+    walkStart: root === null ? "" : engineOutputDir(root),
+    env: runtimeEnvView(rt.env),
+    repoSeedHome: join(ctx.repoRoot, "data", "runtime", rt.name),
+    fs: nodeRuntimeFs,
+  });
+  if (decision.kind === "refused") {
+    throw new Refused(
+      decision.reason === "no-engine-root" || decision.reason === "env-invalid" ? 422 : 409,
+      decision.detail,
+      { kind: decision.reason, runtime: rt.name },
+    );
+  }
+  if (decision.kind === "linkable") {
+    nodeRuntimeFs.mkdir(dirname(decision.target));
+    nodeRuntimeFs.symlink(decision.seed, decision.target);
+    // THE THROUGH-THE-LINK VERIFY (the operator's own gate): the
+    // sentinels are re-read THROUGH the new link — a link that does
+    // not resolve is a loud refusal, never a success envelope.
+    const verified = rt.sentinel.filter((s) => sentinelHit(decision.target, s));
+    if (verified.length !== rt.sentinel.length) {
+      throw new Refused(
+        500,
+        "provision_runtime: the link " + decision.target + " → " + decision.seed +
+          " landed but does not resolve every sentinel (" + rt.sentinel.join(", ") +
+          ") — remove the link by hand and press again",
+        { kind: "broken-seed", runtime: rt.name },
+      );
+    }
+    return ok(
+      req.action,
+      "provision_runtime " + rt.name + ": linked " + decision.target + " → " + decision.seed +
+        " (symlink — the engine tree holds a link, the repo seed stays the source of truth); sentinels verified through the link: " +
+        verified.join(", "),
+      {
+        runtime: rt.name,
+        state: "active",
+        provisioned: true,
+        strategy: "symlink",
+        link: { seed: decision.seed, target: decision.target },
+        sentinels_verified: [...verified],
+        restart_required: false,
+        next_action: "status",
+      },
+    );
+  }
+  // THE ALREADY-PRESENT RECEIPT names where the runtime stood, and —
+  // for a lanes.env-sourced value — states the engine-visibility
+  // assumption honestly (the G2 fail-open trust extended to the
+  // file: the lane process may predate the edit; a restart arms it).
+  const presentClause = decision.source === "lanes.env"
+    ? " — value read from the endpoint's lanes_env_file; this assumes the engine's lane reads the same file (EnvironmentFile), so restart the lane to arm a fresh edit"
+    : decision.source === "walk-up"
+      ? " (walk-up from the engine's own output)"
+      : "";
+  return ok(
+    req.action,
+    "provision_runtime " + rt.name + ": already present at " + decision.home + " (" + decision.source + ")" + presentClause,
+    {
+      runtime: rt.name,
+      state: "active",
+      provisioned: false,
+      home: decision.home,
+      source: decision.source,
+      restart_required: false,
+      next_action: "status",
+    },
+  );
+}
+
 /** THE F9 ACQUISITION DOOR (run-press acquisition — ONE door, TWO
  *  callers): the bench popup's Download button and the agent's
  *  comfy_manage acquire_weight seat both land here. It starts the
@@ -2109,6 +2218,7 @@ const HANDLERS: Record<ManageAction, Handler> = {
   install_extension_url: hInstallExtensionUrl,
   download_model: hDownloadModel,
   provision_model: hProvisionModel,
+  provision_runtime: hProvisionRuntime,
   acquire_weight: hAcquireWeight,
   acquire_retry: hAcquireRetry,
   acquire_discard: hAcquireDiscard,

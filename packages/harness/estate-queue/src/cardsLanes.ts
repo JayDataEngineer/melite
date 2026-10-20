@@ -5,8 +5,7 @@ import { checkModelPresent, getModel, loadEndpointConfig } from "@melite/comfyui
 import { LIVE_ACQUIRE_STATES, provisioningSeat } from "@melite/estate-provisioning";
 import type { WeightAcquireProgress } from "@melite/estate-provisioning";
 import type { DeclaredRuntime, ModelDecl } from "@melite/comfyui-card-kit/model-contract";
-import { existsSync } from "node:fs";
-import { dirname, join, resolve } from "node:path";
+import { engineOutputDir, engineRootOf, resolveRuntimeHome, runtimeEnvView, sentinelHit } from "./runtimeProvision.ts";
 import { CardArmError } from "./cardsArmError.ts";
 
 // ── THE LANE PRESENCE GATE (2026-09-13, the one-pattern law) ───────
@@ -183,76 +182,6 @@ export function laneFilesStatus(
   return firstLaneMiss(decl, check) === null;
 }
 
-/** THE DECLARED ENGINE ROOT (E2-2 Piece A): where the live engine
- *  lives on this box, stated in the endpoint machine statement
- *  (`engine_root`). The runtime walk-up must start from the
- *  ENGINE's own output dir — probing the estate's repo tree would
- *  green-light runs the BYO engine then burns (the repo copy the
- *  engine never reads). No declared root = the estate cannot see
- *  that tree, so the leg stands down (today's behavior: the
- *  post-hoc banner stays the only face). Additive key, unknown to
- *  every existing reader. */
-function engineRootOf(): string | null {
-  let cfg: Record<string, unknown>;
-  try {
-    cfg = loadEndpointConfig() as unknown as Record<string, unknown>;
-  } catch {
-    return null;
-  }
-  const raw: unknown = cfg["engine_root"];
-  if (typeof raw !== "string" || raw.trim() === "") return null;
-  return raw.trim();
-}
-
-/** The engine's output dir: the endpoint's output_dir when stated
- *  (absolute as-is, relative resolved under the declared engine
- *  root — the managed "data/temp" spelling), else the ComfyUI
- *  default (<root>/output). The walk-up only moves UP, so
- *  starting deep is safe; starting shallow would skip the true
- *  ancestor — this never starts shallower than the engine's own
- *  output. */
-function engineOutputDir(root: string): string {
-  let cfg: Record<string, unknown>;
-  try {
-    cfg = loadEndpointConfig() as unknown as Record<string, unknown>;
-  } catch {
-    return join(root, "output");
-  }
-  const raw: unknown = cfg["output_dir"];
-  if (typeof raw !== "string" || raw.trim() === "") return join(root, "output");
-  const v: string = raw.trim();
-  return v.startsWith("/") ? v : join(root, v);
-}
-
-/** One sentinel's safe join: a sentinel escaping its home (.. or
- *  empty) is a declaration bug — false, never a filesystem escape. */
-function sentinelHit(home: string, sentinel: string): boolean {
-  const clean: string = sentinel.trim().replace(/^\/+|\/+$/gu, "");
-  if (clean === "" || clean.split("/").some((part) => part === "..")) return false;
-  return existsSync(join(home, clean));
-}
-
-/** The engine's own walk-up, mirrored (nodes_anny.py:885-935):
- *  the first ancestor of the output dir holding the rel dir
- *  decides — a chipped first hit is the miss, never a cue to walk
- *  on. Walk-up only: the caller owns the env leg (below), so this
- *  function never re-checks it. */
-function resolveRuntimeHome(
-  outputDir: string,
-  rt: Pick<DeclaredRuntime, "rel" | "sentinel">,
-): string | null {
-  let dir: string = resolve(outputDir);
-  for (;;) {
-    const home: string = join(dir, ...rt.rel);
-    if (existsSync(home)) {
-      return rt.sentinel.every((s) => sentinelHit(home, s)) ? home : null;
-    }
-    const parent: string = dirname(dir);
-    if (parent === dir) return null;
-    dir = parent;
-  }
-}
-
 /** THE RUNTIME LEG (E2-2 Piece A, 2026-10-20 — the press-time
  *  half): the DECL's runtime row, judged only when the consuming
  *  param is stated (a GLB-only anny run never touches the
@@ -261,9 +190,19 @@ function resolveRuntimeHome(
  *  sentence (name + path + Provision it + env override) so the
  *  existing runtime banner fires on it with no new wire; the
  *  structured artifact rides beside the prose (the fold's law).
- *  The lanes.env hatch rides every refusal: an override the
- *  engine sees but the lane cannot is a one-line export away,
- *  and the refusal says so. */
+ *  THE G3 LEG (Piece B, 2026-10-20): the override is read through
+ *  the ONE env view (runtimeEnvView — the endpoint's
+ *  lanes_env_file overlays the process env for exactly rt.env), the
+ *  same view the provision_runtime verb decides on, so a
+ *  lanes.env-visible override is a press-time pass with the file's
+ *  value named — gate and verb can never disagree. The lanes.env
+ *  hatch rides every refusal: an override the engine sees but the
+ *  lane cannot is a one-line export away, and the refusal says so.
+ *
+ *  The engine-root/output-dir readers, the walk-up, and the
+ *  sentinel join live in ./runtimeProvision.ts — the decision core
+ *  the provision_runtime verb shares (ONE spelling; gate and verb
+ *  can never disagree). */
 function runtimeLegMiss(
   decl: Pick<ModelDecl, "runtime">,
   fam: string,
@@ -275,21 +214,21 @@ function runtimeLegMiss(
   if (typeof stated !== "string" || stated.trim() === "") return null;
   const root: string | null = engineRootOf();
   if (root === null) return null;
-  const override: string = (process.env[rt.env] ?? "").trim();
-  // THE FAIL-OPEN TRUST (audit G2): a stated override with valid
-  // sentinels is trusted WITHOUT a walk-up — a deliberately stated
-  // path is right far more often than a blind walk is. The known
-  // split (override valid in the LANE's env but absent from the
-  // ENGINE's own env) then passes the gate and burns at the engine
-  // — but that burn is FACED (the post-hoc runtime banner voices
-  // the same provision + env), never silent. The alternative
+  // THE FAIL-OPEN TRUST (audit G2, extended to the lanes.env file by
+  // G3): a stated override with valid sentinels is trusted WITHOUT a
+  // walk-up — a deliberately stated path is right far more often
+  // than a blind walk is. The known split (an override valid in the
+  // LANE's env but absent from the ENGINE's own env) then passes the
+  // gate and burns at the engine — but that burn is FACED (the
+  // post-hoc runtime banner voices the same provision + env, and the
+  // provision_runtime verb answers it), never silent. The alternative
   // (distrusting a stated-valid path) would false-refuse managed
   // deployments whose override points outside any walk-up tree —
-  // blocking good work is worse than facing a bad run. G3 (a
-  // lanes.env-aware probe) belongs to Piece B.
-  if (override !== "") {
-    if (rt.sentinel.every((s) => sentinelHit(override, s))) return null;
-    return runtimeRefusal(fam, rt, [override]);
+  // blocking good work is worse than facing a bad run.
+  const override = runtimeEnvView(rt.env);
+  if (override.value !== "") {
+    if (rt.sentinel.every((s) => sentinelHit(override.value, s))) return null;
+    return runtimeRefusal(fam, rt, [override.value]);
   }
   const start: string = engineOutputDir(root);
   const home: string | null = resolveRuntimeHome(start, rt);

@@ -160,19 +160,37 @@ test('F4 — after a failed acquire, dismissing the popup must not re-pop it whi
 
 const RUNTIME_MISS = "ComfyError: ComfyUI run failed: RuntimeError: anny-estimator runtime not found at /home/user/tools/data/runtime/anny-estimator. Provision it: pnpm run provision -- estimator (SAM 3D Body venv + SOMA-X checkout — see dev_docs/design/estimator-chain.md). Missing: /home/user/tools/data/runtime/anny-estimator/estimator_chain.py. Or point ANNY_ESTIMATOR_ROOT at an existing runtime. @ anny::Sam3dBodyImageToAnny.0 (Sam3dBodyImageToAnny, 1 nodes executed before the failure)"
 
-test('F5 (E2-2) — the engine runtime-miss faces the provision, never the raw ComfyError', () => {
-  // THE BURN (E2-2, verbatim): the estimator venv absent, the run
-  // died at the engine's raw RuntimeError with no provision face.
-  // The face must name the runtime + the exact provision command +
-  // the env override — and the raw "RuntimeError:" text must not
-  // paint. No wire fires: the estate owns no runtime-provision
-  // door, so there is no button to fake — the command is the offer.
-  render(<RunRescue error={RUNTIME_MISS} stages={STAGES} onRun={() => {}} />)
+test('F5 (E2-2, Piece B) — the runtime face FIRES provision_runtime through the manage wire', async () => {
+  // THE FIRING ARM (Piece B, operator 2026-10-20): the face grew a
+  // provision button — the estate DOES own a runtime-provision door
+  // now (provision_runtime links the engine tree to the repo seed).
+  // The press rides the ONE manage wire with the runtime NAME only
+  // (names only, always — the family scan is server-side); success
+  // retires the miss face and voices "provisioned — press Run
+  // again"; the re-run rides the CALLER's press (never auto-run).
+  const onRun = vi.fn()
+  wire.postManageAction.mockResolvedValue({ ok: true, detail: 'linked', data: { state: 'active', runtime: 'anny-estimator' } })
+  render(<RunRescue error={RUNTIME_MISS} stages={STAGES} onRun={onRun} />)
   expect(screen.getByText(/anny-estimator/)).toBeTruthy()
-  expect(screen.getByText(/pnpm run provision -- estimator/)).toBeTruthy()
-  expect(screen.getByText(/ANNY_ESTIMATOR_ROOT/)).toBeTruthy()
-  expect(document.body.textContent).not.toMatch(/RuntimeError/)
-  expect(wire.postManageAction).not.toHaveBeenCalled()
+  // RED before cure: the face offered no wire — no provision button existed.
+  fireEvent.click(screen.getByRole('button', { name: /provision/i }))
+  await waitFor(() => { expect(screen.getByText(/provisioned — press Run again/)).toBeTruthy() })
+  expect(wire.postManageAction).toHaveBeenCalledWith('provision_runtime', { runtime: 'anny-estimator' })
+  expect(onRun).not.toHaveBeenCalled()
+  // the miss face retired with the success — the old command/env
+  // notes are gone with it
+  expect(screen.queryByText(/Provision it where the engine lives/)).toBe(null)
+  // the re-run rides the caller's own press
+  fireEvent.click(screen.getByRole('button', { name: 'Run again' }))
+  expect(onRun).toHaveBeenCalledTimes(1)
+})
+
+test('F5b (E2-2, Piece B) — a refused provision voices the returned detail, never a fake success', async () => {
+  wire.postManageAction.mockResolvedValue({ ok: false, detail: 'provision_runtime: target blocked — /eng/data/runtime/anny-estimator holds a foreign dir; remove it first' })
+  render(<RunRescue error={RUNTIME_MISS} stages={STAGES} onRun={() => {}} />)
+  fireEvent.click(screen.getByRole('button', { name: /provision/i }))
+  await waitFor(() => { expect(screen.getByText(/target blocked/)).toBeTruthy() })
+  expect(screen.queryByText(/provisioned — press Run again/)).toBe(null)
 })
 
 test('F6 (E2-2) — the runtime-miss face dismisses with the × and stays dismissed', () => {

@@ -247,16 +247,28 @@ export const chromeCopy = {
   /** Rescue missing-weight note (what the run lacked). */
   missingDownload: (p: { what: string }): string => 'Missing ' + p.what + ' — download through the manage seat?',
   /** Rescue missing-runtime note (E2-2: what the run lacked — the
-   *  engine's own tool runtime, provisioned where the engine
-   *  lives, never through the estate). */
+   *  engine's own tool runtime, now provisionable through the estate
+   *  door). */
   missingRuntime: (p: { runtime: string }): string => 'Missing engine runtime "' + p.runtime + '" — the run needs its tool runtime, and the engine does not have it.',
   /** Rescue runtime face's provision voice (E2-2): the engine's own
-   *  provision command, verbatim — the command IS the offer (no
-   *  estate door provisions runtimes, so no button is faked). */
+   *  provision command, verbatim — the manual path stays named beside
+   *  the button (the command is the engine-tree spelling; the button
+   *  rides the estate's provision_runtime link door). */
   runtimeProvision: (p: { command: string }): string => 'Provision it where the engine lives: ' + p.command,
   /** Rescue runtime face's env-override voice (E2-2): the engine
    *  names its escape hatch when one exists. */
   runtimeEnvOverride: (p: { env: string }): string => 'Or point an existing runtime at ' + p.env + '.',
+  /** Rescue runtime face's provision button (E2-2 Piece B): fires
+   *  provision_runtime with the runtime NAME — the estate links the
+   *  engine tree to the repo's healthy seed. */
+  runtimeProvisionButton: 'Provision runtime',
+  /** Rescue runtime face's in-flight word (an instant link, but the
+   *  press still gets its own word). */
+  runtimeProvisioningWord: 'Provisioning…',
+  /** Rescue runtime face's success voice (E2-2 Piece B): the miss
+   *  face retires and the re-run rides the caller's own press —
+   *  never an automatic re-fire. */
+  runtimeProvisioned: (p: { runtime: string }): string => 'Engine runtime "' + p.runtime + '" provisioned — press Run again.',
   /** Rescue runtime face's dismiss label (the × every rescue face carries). */
   closeRuntimeFace: 'Close runtime notice',
   /** Weight popup title when the acquisition ended STUCK (frozen
