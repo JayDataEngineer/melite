@@ -121,7 +121,13 @@ export function registerCard(ctx: Context, comfy: ComfyUIServiceFace): void {
     // BOARDING (resolved 2026-09-07): the card boards
     // all three families.
     // video_h3_open-cascade composing model 'h3' through this card.
-    boarded: [...BOARDED],
+    // THE OFFERED SET = atoms + variant routes (the tts card's own
+    // law, 2026-09-23 — the bench door and the tool enum offer the
+    // SAME set; the 2026-11-09 live write refusal "model
+    // 'h3-timeline' is not offered by card 'h3-timeline' (boards:
+    // h3)" was this card boarding only the atom while its tool enum
+    // offered the lane addresses too). The default stays BOARDED[0].
+    boarded: [...BOARDED, ...VARIANT_ADDRESSES],
     // THE video door (2026-09-21, operator order — video-gen
     // retired): a blind "make a video" must find THIS card first.
     tags: ['video', 'generate', 'text-to-video', 'timeline', 'edit'],

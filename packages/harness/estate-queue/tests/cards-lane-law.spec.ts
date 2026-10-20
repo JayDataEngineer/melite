@@ -951,6 +951,22 @@ describe("an unoffered address is refused (the board IS the offer)", () => {
       expect(svc.admitStageModel("tts", id).ok, id).toBe(true);
     }
   });
+  // THE H3-TIMELINE WRITE REFUSAL (operator 2026-11-09, live: THE
+  // WRITE DID NOT LAND — "model 'h3-timeline' is not offered by
+  // card 'h3-timeline' (boards: h3; downloaded here: h3)"). THE
+  // MENU OFFERED WHAT THE DOOR REFUSED: the card's tool enum offers
+  // [...BOARDED, ...VARIANT_ADDRESSES] (tool.ts — the lane compose
+  // addresses h3-timeline + h3-singularity), but the board carried
+  // only the atom — the offered-set law (2026-09-23, the tts
+  // card's own law: "the bench door and the tool enum offer the
+  // SAME set") broken on this card. The board carries the offered
+  // set — atoms + variant routes — so every address any face offers
+  // admits at this door.
+  it("the h3-timeline card admits its own offered lane addresses (the menu offered them)", () => {
+    for (const id of ["h3", "h3-timeline", "h3-singularity"]) {
+      expect(svc.admitStageModel("h3-timeline", id).ok, `h3-timeline admits '${id}'`).toBe(true);
+    }
+  });
   // THE MINTED-MODEL REGRESSION KILL (2026-10-12, the operator's
   // live refusal): a card that boards nothing is its own ROUTING
   // key (the GUI's Run press names the card id; the compose seam

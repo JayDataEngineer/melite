@@ -48,7 +48,16 @@ function declRoutes(decl) {
 }
 export function resolveSpecKey(key, defs, boarded) {
     const def = defs.get(key);
-    if (def !== undefined && !isFamilyKey(key)) {
+    /* THE CARD ALIAS WINS ITS OWN NAME (LAW 12b, the h3-timeline
+     * collision, 2026-11-09): the family arm claims a defs hit only
+     * when the key IS a family atom (owningAtom(key) === key — 'h3',
+     * 'mask'). A key that names a card AND a lane route of some
+     * family (owningAtom('h3-timeline') === 'h3') is the CARD ALIAS
+     * reading: the model seat serves the card's boarded atom, never
+     * the route address — the route spelling stays a VARIANT-axis row
+     * and an old-draft run-door address, never a Model-axis offer the
+     * write door would refuse ("boards: h3"). */
+    if (def !== undefined && !(isFamilyKey(key) && owningAtom(key) === key)) {
         // A card-id alias key (?model=tts): the card's envelope for its
         // default family (boarded[0] ?? the card itself — rig and mask
         // board nothing and ARE their own service). A card boarding

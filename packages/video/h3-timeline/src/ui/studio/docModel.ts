@@ -364,10 +364,16 @@ export interface LayerA {
    * seat, or the panel lies about what the doc carries. */
   duck_depth_db?: number
   variant?: string
-  /** The MODEL ROUTE key (Layer A selector): "h3-timeline" (FL2VA) vs
-   * "h3-timeline-ref" (Ref2VA). Serialized as params.model — which WINS
-   * at the run door (compose resolves params.model before the service
-   * default), so the card's selector is authoritative for the run. */
+  /** The MODEL key (Layer A selector): the family atom "h3" —
+   *  the lanes retired their own route spellings with the
+   *  operator's 2026-11-02 recipe rework ("1 model, 1 variant, 1
+   *  quant"), so the fold spellings (h3-fl2va, h3-ref2va,
+   *  h3-keyframe, h3-timeline-ref) are dead and the live lane
+   *  addresses (h3-timeline, h3-singularity) ride the VARIANT axis,
+   *  never this seat. Serialized as params.model — which WINS at
+   *  the run door (compose resolves params.model before the
+   *  service default), so the card's selector is authoritative
+   *  for the run. */
   model?: string
   audio_stem?: string
   /** (Layer A NLE law, 2026-08-31; the stitch RESTORED 2026-09-21;

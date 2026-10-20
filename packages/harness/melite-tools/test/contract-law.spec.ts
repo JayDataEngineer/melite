@@ -18,7 +18,7 @@ import "../../../../tests/helpers/boot-models.ts";
 import { describe, expect, test, beforeAll } from 'vitest'
 import { loadCardDefs, theService, getModel } from '@melite/comfyui-cordis'
 import { emitParamsSchema } from '@melite/comfyui-card-kit/params-emit'
-import { formSpecArm } from '../src/discovery.ts'
+import { formSpecArm, resolveSpecKey, boardedMap } from '../src/discovery.ts'
 import { fieldsOf, fieldVisible, axisKey, type FormSpecDoc, type SpecField } from '@melite/card-base/spec'
 import { WTYPE_SET, MEDIA_SET, ROLE_SET, WTYPE_SEATS } from '@melite/contracts/extraKeys'
 import { assertEnvelopeLaws, EnvelopeLawRefusal } from '@melite/comfyui-cordis/envelope-laws'
@@ -363,6 +363,41 @@ describe('THE ESTATE CONTRACT LAWS (every card × family × mod, three faces)', 
       expect(served.has(retired), `the retired fold spelling '${retired}' must not serve`).toBe(false)
       expect(() => getModel(retired), `the retired spelling '${retired}' refuses LOUD (a clean unknown-model, never a false admit)`).toThrow()
     }
+  })
+
+  // LAW 12b — THE CARD'S OWN NAME IS THE CARD ALIAS (the h3-timeline
+  // collision, operator 2026-11-09: the live Model dropdown offered
+  // BOTH "MiniMax H3" (the family atom h3) AND "H3 Timeline" (the
+  // lane address h3-timeline — the card's own id); picking the second
+  // stamped model='h3-timeline' and the bench write refused "is not
+  // offered by card 'h3-timeline' (boards: h3)". THE MENU OFFERED
+  // WHAT THE DOOR REFUSES.) The operator's law: Model rows come
+  // from THE FAMILY PACKAGE — the atom. A card-keyed spec request is
+  // the CARD ALIAS reading: the model seat serves the card's boarded
+  // atom ('h3'), never a lane route address of the same spelling.
+  // The lane addresses stay VARIANT-axis rows and old-draft run-door
+  // addresses — they are not Model-axis offers.
+  test('LAW 12b — THE CARD ALIAS WINS ITS OWN NAME: a card-keyed spec serves the boarded atom, never the colliding lane route', async () => {
+    const defs = await loadCardDefs()
+    const boarded = boardedMap(defs)
+    const res = resolveSpecKey('h3-timeline', defs, boarded)
+    expect(res, 'the card key resolves').not.toBeNull()
+    expect(res!.card, 'the card').toBe('h3-timeline')
+    expect(res!.model, 'the model seat is the FAMILY PACKAGE atom — the lane route may not steal the card\'s own name (the menu offered it, the write door refused it)').toBe('h3')
+    // THE OFFER INVARIANT: the served model seat is always a value
+    // the write door's own board carries — the menu can never offer
+    // what the door refuses.
+    const def = defs.get('h3-timeline')!
+    expect(def.boarded.includes(res!.model!), 'the served model is in the card\'s board').toBe(true)
+    // the atom key keeps its own reading (the family head)
+    const head = resolveSpecKey('h3', defs, boarded)
+    expect(head!.model, 'the atom key serves the atom').toBe('h3')
+    // THE SERVED HOP (the journey seat: the GUI's fetchFormSpec →
+    // modelChoices=[spec.model] → the Model menu's rows): the card
+    // alias doc carries the atom — ONE menu row, "MiniMax H3".
+    const doc = await formSpecArm('h3-timeline')
+    expect(doc, 'the card alias serves a form doc').not.toBeNull()
+    expect(doc!.model, 'the served doc\'s model seat is the atom — the menu offers exactly the family package row').toBe('h3')
   })})
 
 // helper: does the SERVED extra row for `field` carry key===value?
