@@ -617,6 +617,14 @@ export function meliteConstruct(
           const verb = String(v.verb ?? '?')
           lines.push(verb === 'add_stage' ? 'minted stage ' + stageId + ' (patch/remove_stage/rewire address it as {stage: "' + stageId + '"})' : 'stage ' + stageId)
         }
+        // THE STALENESS LINE, RENDERED (the warm-2 fire: the payload
+        // carried stale:true and the model never saw it — a payload
+        // key nobody prints is a voice nobody hears). The patch that
+        // changed params says so: the done mark is cleared, the next
+        // flow re-runs the stage — no [done] no-op to diagnose.
+        if ((v as { stale?: unknown }).stale === true) {
+          lines.push('stale: params changed — the stage\'s done mark is cleared; the next flow re-runs it (its old artifact stays readable as last_run)')
+        }
         // THE SPELL VOICE, RENDERED (the compose-time spell gate,
         // 2026-10-21): the payload names every $-token and its one
         // resolution source; the render says it in the model's own

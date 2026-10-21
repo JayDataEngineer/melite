@@ -183,6 +183,21 @@ describe('melite_view execute — the observe arm', () => {
     assert.equal(img.attachment.mediaType, 'image/png')
   })
 
+  test('THE HOST-PATH VOICE (F7\'s twin, the warm-fire ls burn): the value and the render carry the HOST path, never the browser url alone', async () => {
+    // The burn: melite_view answered /melite-media/runs/... — the
+    // BROWSER lane's url — and the agent read it as a filesystem
+    // path (`ls /melite-media/runs/` → ENOENT), then burned calls
+    // hunting the artifact. The url stays (the browser face owns
+    // it); the host path joins it, and the render PRINTS it — a
+    // payload key nobody prints is a voice nobody hears.
+    const { ctx, attachments } = fakeCtx()
+    const tool = meliteView(ctx)
+    const out = await tool.execute({ run_id: 'run-abc123-hero' }, visualExec as never) as ViewedImageValue
+    assert.equal(out.host, join(root, 'output', 'run-abc123-hero', 'gen_00002_.png'), 'the value carries the host path under the estate output tree')
+    const text = (tool.output!.render!({} as never, out as never)[0] as { text: string }).text
+    assert.ok(text.includes('(host: ' + join(root, 'output', 'run-abc123-hero', 'gen_00002_.png') + ')'), 'the render prints the host path — an ls-able path, not the browser url alone')
+  })
+
   test('the artifact substring names the pick (the walk stays the authority)', async () => {
     const { ctx } = fakeCtx()
     const tool = meliteView(ctx)

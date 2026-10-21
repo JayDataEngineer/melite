@@ -407,6 +407,13 @@ describe('melite_construct mutations — every verb', () => {
     const tool = meliteConstruct(estate)
     const out = await tool.execute({ verb: 'patch', stage: 's1', params: { p: 2 }, expect_rev: 6 }, exec()) as Record<string, unknown>
     assert.equal(out.stale, true, 'the door\'s staleness voice rides the answer')
+    // THE RENDER IS THE MODEL'S READ (the warm-2 fire: the payload
+    // carried stale:true and the render never printed it — the
+    // model could not see why the next flow would re-run): the
+    // rendered text names the invalidation, or the voice is unheard.
+    const blocks = tool.output!.render!({ verb: 'patch', stage: 's1' } as never, out as never) as Array<{ type?: string, text?: string }>
+    const rendered = blocks.map((b) => b.text ?? '').join('\n')
+    assert.ok(rendered.includes('stale: params changed'), 'the render prints the staleness line — a payload key nobody prints is a voice nobody hears')
     const quiet = await (async () => {
       const { estate: e2 } = mockEstate((lane, args) => {
         if (lane === 'benchVerb' && args[1] === 'patch') return { rev: 8, stage: 's1', patched: ['p'] }
