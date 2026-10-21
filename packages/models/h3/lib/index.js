@@ -53,6 +53,8 @@ export const DECL = {
             "refine_strength",
             "refine_steps",
             "refine_denoise",
+            "upscale_route",
+            "upscale_model",
             "audio_clips",
             "audio_stem",
             "loras",
@@ -280,6 +282,10 @@ export const DECL = {
         "interpolate_enabled", "interp_model", "interp_multiplier", "interp_switch",
         "sampler_name", "sched_name", "k", "noise_seed", "fps", "fps_seconds",
         "refine_lora", "refine_strength", "refine_steps", "refine_denoise",
+        // THE LATENT-UPSCALE ROUTE (SOTA plan Phase P2 — the P2 verdict's
+        // own knobs on the lane surface): the sub-gate + its closed file
+        // surface ride beside the refine seats, witnessed at ARM 37.
+        "upscale_route", "upscale_model",
         "attention_backend",
         "sr_switch", "sr_resolution", "sr_model",
         "ref_image_size",

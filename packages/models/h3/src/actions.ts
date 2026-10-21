@@ -145,16 +145,33 @@ function resolveRefineSeat(p: Record<string, unknown>): { name: string; strength
   // real-doc refusal before compose — the resolver's voice had no
   // firing arm. Both seats now state the same bounds and ARM 4f
   // judges the resolver at the family plane, its own seat).
-  const denoise = (p.refine_denoise as number | undefined) ?? 0.35
-  if (!(denoise >= 0.05 && denoise <= 1)) {
-    throw new Error(`h3 action: refine_denoise ${String(p.refine_denoise)} falls outside the refinement window [0.05, 1] — 1 is the full-denoise taomate mechanic, 0.30–0.35 the SOTA refinement window; a dead or over-terminal rider never composes`)
-  }
+  // P2 SHARES THE SEAT (SOTA plan Phase P2): the latent-upscale
+  // handoff reads the SAME refine_denoise as its own Stage-2 window
+  // (rider or none — pass 1's structure stays either way), so the
+  // assembly moves to resolveStage2Denoise below (one owner, two
+  // consumers — the rider keeps its voice, the arm borrows it).
+  const denoise = resolveStage2Denoise(p)
   return {
     name: row.filename,
     strength: (p.refine_strength as number | undefined) ?? row.default_strength,
     steps,
     denoise,
   }
+}
+// THE STAGE-2 DENOISE (SOTA plan Phase P2 — one owner, two
+// consumers): the refine rider AND the latent-upscale handoff read the
+// SAME refine_denoise seat. The rider's window over the pass-1 latent;
+// the handoff's own partial-denoise inside the LBH kernel over the
+// upscaled latent (rider or none — pass 1's structure stays either
+// way). Unstated rides the DECLARED 0.35 (the SOTA refinement window);
+// the voice is the rider's (ARM 4f judges it at the family plane),
+// borrowed verbatim by the arm.
+function resolveStage2Denoise(p: Record<string, unknown>): number {
+  const denoise = (p.refine_denoise as number | undefined) ?? 0.35
+  if (!(denoise >= 0.05 && denoise <= 1)) {
+    throw new Error(`h3 action: refine_denoise ${String(p.refine_denoise)} falls outside the refinement window [0.05, 1] — 1 is the full-denoise taomate mechanic, 0.30–0.35 the SOTA refinement window; a dead or over-terminal second pass never composes`)
+  }
+  return denoise
 }
 // His 17k+5 grid, in-graph (ComfyMathExpression): snap latent steps to 2 mod 5
 // (the card's own principles row: "Length snaps to the 17k+5 frame grid
@@ -941,6 +958,21 @@ function renderH3Window(
   p.fps_seconds = Math.round(((p.length as number) / fpsClock) * 1000) / 1000
   const isT4r = family === 't4r'
   const isChain = family === 't4_chain'
+  // THE LATENT-UPSCALE ARM (SOTA plan Phase P2, 2026-11-10): behind
+  // second_pass_enabled AND the upscale_route sub-gate — the vendored
+  // xmarre pack's MinimaxH3LatentUpscaler3DRefineHandoff rides
+  // in-band on the pass-1 joint AV latent (upscale + the low-sigma
+  // refinement inside the 3D-conv kernel, lock_audio true — z_v
+  // through the LBH kernel, z_a preserved).
+  const upscaleOn = p.second_pass_enabled === true && p.upscale_route === "latent_2x"
+  // THE HEAD HALVES UNDER THE ARM (both r2v seats below): pass 1
+  // composes the quarter grid the kernel was distilled on
+  // (1344×768 → 672×384); the handoff doubles the latent in-band
+  // before the second pass. Route off = stated geometry (ARM 41's
+  // byte-stable plain pass — the halving never touches the legacy
+  // graph).
+  const headW = upscaleOn ? (p.width as number) / 2 : (p.width as number)
+  const headH = upscaleOn ? (p.height as number) / 2 : (p.height as number)
   // (M5, the fallback audit — judged LAWFUL and now documented: this
   // is the fresh-card admission, not a fallback crime. The window
   // shape's text face is p.prompt (declared required=True, "optional
@@ -1280,7 +1312,7 @@ function renderH3Window(
     const refSize = p.ref_image_size as string
 
     const r2vInputs: Record<string, OutputHandle | string | number> = {
-      prompt, width: p.width as number, height: p.height as number,
+      prompt, width: headW, height: headH,
       length: lengthNode, ref_image_size: refSize,
       clip, vae: vaeVideo, audio_vae: vaeAudio,
     }
@@ -1488,8 +1520,8 @@ function renderH3Window(
   // retired with the nulling that fed them)
   const length = p.length as number
     const r2v = g.node('MiniMaxH3ReferenceToVideo', {
-      prompt, width: p.width as number,
-      height: p.height as number, length: length as number,
+      prompt, width: headW,
+      height: headH, length: length as number,
       ref_image_size: p.ref_image_size as string,
       clip, vae: vaeVideo, audio_vae: vaeAudio,
     })
@@ -1779,6 +1811,47 @@ function renderH3Window(
   // leaves set but no master render the plain pass, byte-stable).
   const secondPassOn = p.second_pass_enabled === true
   const refine = resolveRefineSeat(p)
+  // ── THE P2 LATENT-UPSCALE HANDOFF (SOTA plan Phase P2 — mounts
+  // BEFORE the rider: the rider goes in-band on the UPSCALED
+  // latent, ARM 43): the handoff's latent edge names the pass-1
+  // sampler's output (the sampled joint AV — 24 video ch, ARM 38),
+  // lock_audio true preserves pass-1 audio exactly, and the decode
+  // below rides latOut so it decodes the upscaled latent (ARM 39).
+  if (upscaleOn) {
+    // THE STAGE-2 SCHEDULE: the married steps AT THIS SEAT — the
+    // rider's own count when it mounts (the in-band marriage), else
+    // the doc steps (a riderless stated refine_steps is a cross-gate
+    // leaf, ARM 45's ARM-5 heir — it never reaches this schedule);
+    // the denoise is the shared Stage-2 seat (resolveStage2Denoise
+    // above — rides with or without the rider, the P2 verdict's
+    // core). THE PARTIAL-DENOISE LAW (the vendored sequence node's
+    // own contract — nodes/minimax_h3_refine.py run_h3_refinement:
+    // sigmas must be 1-dim, ≥2 finite entries, and
+    // 0 <= sigmas[0] < 1 STRICT; a full-noise sigma discards the
+    // learned upscaled latent and the node throws at the engine).
+    // A BasicScheduler full schedule (denoise 1.0) opens AT sigma_max
+    // — so denoise 1.0 is ILLEGAL on this arm and refuses HERE, in
+    // the handoff's own voice naming the sigmas law (ARM 46 fires
+    // it). Off-arm 1.0 stays legal (the rider's taomate full-denoise
+    // mechanic never crosses this node).
+    const stage2Denoise = resolveStage2Denoise(p)
+    if (stage2Denoise >= 1) {
+      throw new Error(`h3 action: refine_denoise 1 composes no partial-denoise window — the latent-upscale handoff requires 0 <= sigmas[0] < 1 (vendored MinimaxH3LatentUpscaler3DRefineHandoff, run_h3_refinement: a full-noise sigma discards the upscaled latent); state a window below 1 (the researched 0.30–0.35) or turn upscale_route off for the taomate full-denoise mechanic`)
+    }
+    const stage2Sched = g.node('BasicScheduler', {
+      model: sigmaModel, scheduler: schedName,
+      steps: refine !== undefined ? refine.steps : (p.steps as number),
+      denoise: stage2Denoise,
+    }).out()
+    const upscaled = g.node('MinimaxH3LatentUpscaler3DRefineHandoff', {
+      model: sigmaModel, noise, sampler: samplerSel, positive: cond,
+      sigmas: stage2Sched, latent: latOut,
+      model_name: p.upscale_model as string,
+      mode: "scale by multiplier", scale: 2.0,
+      lock_audio: true, precision: "bf16", device: "cuda", cfg: 1.0,
+    })
+    latOut = upscaled.out(0)
+  }
   if (refine !== undefined) {
     const refineModel = g.node('LTX_lora_loader', {
       model: sigmaModel, mode: 'minimax',
@@ -2126,6 +2199,15 @@ export const film: ComfyActionSpec<Record<string, unknown>, H3Facts> = {
     // the schema row and the resolver above (parity walled by ARM
     // 4f); 1 is the full-denoise taomate mechanic (the default)
     { name: "refine_denoise", type: "number", bounds: [0.05, 1] },
+    // THE LATENT-UPSCALE ROUTE (SOTA plan Phase P2 — the P2 verdict's
+    // own seats on the family door): the sub-gate + its closed file
+    // surface ride the door like every knob — h3-window-parity's
+    // undeclaredServed arm names them, the census witnesses them at
+    // ARM 37. The route is the OFF-latched union (off default,
+    // byte-stable); the model is the on-disk LBH v1 3D-conv bf16
+    // checkpoint (single-member vocabulary, the sr_model precedent).
+    { name: "upscale_route", type: "enum", options: ["off", "latent_2x"] },
+    { name: "upscale_model", type: "enum", options: ["minimax_h3_latent_upscaler_3d_bf16.safetensors"] },
     { name: "attention_backend", type: "enum", options: ["comfy kitchen attention", "pytorch attention"] },
     { name: "sr_switch", type: "boolean" },
     { name: "sr_resolution", type: "number", bounds: [720, 2160] },

@@ -1204,6 +1204,269 @@ describe("the h3 knob-block remainder: per-class liveness + the mis-narrated and
   });
 });
 
+// ── THE P2 LATENT-UPSCALE ROUTE (the SOTA plan's Phase P2, 2026-11-10 —
+// dev_docs/design/h3-sota-execution-plan-2026-11-10.md §4: the vendored
+// xmarre pack's MinimaxH3LatentUpscaler3DRefineHandoff rides the pass-1
+// joint AV latent in-band, behind second_pass_enabled + the
+// upscale_route sub-gate — z_v through the LBH kernel, z_a preserved
+// under lock_audio). ARMs 37-39 pin the mount (the class + the full pin
+// set + the channel-count and grid-legality topology); ARMs 40-42 the
+// three-state switch parity (on / off / off-with-stated-leaf, the ARMs
+// 10-12 law's heir); ARMs 43-44 the rider firewall both ways (the rider
+// never hijacks the arm, the arm never strands the rider); ARM 45 the
+// dropdown-file + Stage-2 schedule liveness; ARM 46 the sigmas-law
+// refusal (denoise 1.0 illegal on-arm, legal off-arm). ──
+describe("the h3 latent-upscale route: the handoff arm mounts behind second_pass_enabled + upscale_route (P2, hop [4]→[5])", () => {
+  const HANDOFF = "MinimaxH3LatentUpscaler3DRefineHandoff";
+  const UPSCALE_FILE = "minimax_h3_latent_upscaler_3d_bf16.safetensors";
+  /** THE HANDOFF PROBE with the VALUE voice (ARM 4b's lesson): the node
+   *  by class, exactly one per window — never a presence glance at a
+   *  coincidental class name. */
+  const handoff = (graph: Graph): { id: string; node: GNode } => {
+    const found = Object.entries(graph).filter(([, n]) => n.class_type === HANDOFF);
+    assert.equal(found.length, 1,
+      `UPSCALE MOUNT ARM (hop [5]): expected exactly one '${HANDOFF}' in the single-window graph, saw ${found.length} — the arm never mounted (or mounted twice)`);
+    return { id: found[0]![0], node: found[0]![1] };
+  };
+  /** THE EDGE reader (slaPick's heir): the named input must be a link,
+   *  and the link must name a node of the expected class. */
+  const edgeUpstream = (graph: Graph, fromId: string, input: string, expectCls: string): { id: string; node: GNode } => {
+    const from = graph[fromId];
+    assert.ok(from, `UPSCALE EDGE ARM: the graph carries no node '${fromId}' — the edge named a ghost`);
+    const edge = from.inputs[input];
+    assert.ok(Array.isArray(edge) && typeof edge[0] === "string",
+      `UPSCALE EDGE ARM: node '${fromId}' (${from.class_type}) input '${input}' is not an edge (saw ${JSON.stringify(edge)}) — schedulers ride edges`);
+    const upstream = graph[edge[0] as string];
+    assert.ok(upstream, `UPSCALE EDGE ARM: node '${fromId}' input '${input}' named unknown node ${JSON.stringify(edge[0])}`);
+    assert.equal(upstream.class_type, expectCls,
+      `UPSCALE EDGE ARM: node '${fromId}' input '${input}' resolves to '${upstream.class_type}', expected '${expectCls}' — the arm wired the wrong upstream`);
+    return { id: edge[0] as string, node: upstream };
+  };
+  /** THE STAGE-2 SCHEDULER: the BasicScheduler the handoff's own sigmas
+   *  edge names (ARM 36's topology — never a value-coincidence scan). */
+  const handoffScheduler = (graph: Graph, hid: string): GNode =>
+    edgeUpstream(graph, hid, "sigmas", "BasicScheduler").node;
+
+  it("ARM 37 (mount) — route latent_2x mounts the handoff with the full pin set on edges (the pack's ledge: scale-by, bf16, cuda, cfg 1.0, lock_audio)", async () => {
+    const graph = await composeH3({
+      length: 56, width: 1280, height: 768,
+      second_pass_enabled: true, upscale_route: "latent_2x",
+      calls: [SHOT()],
+    }, "h3_upscale_arm37");
+    const { id, node } = handoff(graph);
+    assertValueAtConsumer(graph, HANDOFF, "mode", "scale by multiplier", "handoff mode");
+    assertValueAtConsumer(graph, HANDOFF, "scale", 2.0, "handoff scale");
+    assertValueAtConsumer(graph, HANDOFF, "lock_audio", true, "handoff lock_audio");
+    assertValueAtConsumer(graph, HANDOFF, "precision", "bf16", "handoff precision");
+    assertValueAtConsumer(graph, HANDOFF, "device", "cuda", "handoff device");
+    assertValueAtConsumer(graph, HANDOFF, "cfg", 1.0, "handoff cfg");
+    assertValueAtConsumer(graph, HANDOFF, "model_name", UPSCALE_FILE, "handoff model_name");
+    for (const input of ["latent", "noise", "sampler", "model", "positive", "sigmas"]) {
+      assert.ok(Array.isArray(node.inputs[input]) && typeof (node.inputs[input] as unknown[])[0] === "string",
+        `UPSCALE MOUNT ARM: node '${id}' input '${input}' is not an edge — the handoff's seats ride links, never literals`);
+    }
+    edgeUpstream(graph, id, "sigmas", "BasicScheduler");
+    edgeUpstream(graph, id, "sampler", "KSamplerSelect");
+    edgeUpstream(graph, id, "noise", "RandomNoise");
+    // THE SHARED STACK: the handoff rides the pass-1 stack's OWN
+    // model + conditioning (the shifted model the scheduler hears,
+    // the conditioning the guider hears) — a forked stack would
+    // refine under a different schedule/prompt voice. Both read by
+    // edge identity off the pass-1 sampler (ARM 4b's lesson).
+    const pass1 = Object.entries(graph).find(([, n]) => n.class_type === "SamplerCustomAdvanced");
+    assert.ok(pass1, "UPSCALE MOUNT ARM: no pass-1 SamplerCustomAdvanced — the arm has no latent to upscale");
+    const passSched = edgeUpstream(graph, pass1[0], "sigmas", "BasicScheduler").node;
+    assert.deepEqual(node.inputs.model, passSched.inputs.model,
+      `UPSCALE MOUNT ARM: the handoff's model edge ${JSON.stringify(node.inputs.model)} is not the pass-1 scheduler's ${JSON.stringify(passSched.inputs.model)} — the refinement would ride an unshifted stack`);
+    const passGuider = edgeUpstream(graph, pass1[0], "guider", "BasicGuider").node;
+    assert.deepEqual(node.inputs.positive, passGuider.inputs.conditioning,
+      `UPSCALE MOUNT ARM: the handoff's positive edge ${JSON.stringify(node.inputs.positive)} is not the pass-1 guider's ${JSON.stringify(passGuider.inputs.conditioning)} — the refinement would hear a forked conditioning`);
+  });
+
+  it("ARM 38 (channel-count) — the handoff's latent edge names the pass-1 SAMPLER (the sampled joint AV, 24 video ch — never the empty shell), and lock_audio pins true", async () => {
+    const graph = await composeH3({
+      length: 56, width: 1280, height: 768,
+      second_pass_enabled: true, upscale_route: "latent_2x",
+      calls: [SHOT()],
+    }, "h3_upscale_arm38");
+    const { id } = handoff(graph);
+    // THE MIS-WIRE this convicts: the empty-latent node (the 24ch
+    // unsampled shell) or any non-sampler upstream — a 16ch wire or an
+    // unsampled wire would throw inside the LBH kernel, never here.
+    edgeUpstream(graph, id, "latent", "SamplerCustomAdvanced");
+    assertValueAtConsumer(graph, HANDOFF, "lock_audio", true, "handoff lock_audio (the audio-preservation pin)");
+  });
+
+  it("ARM 39 (grid-legality) — scale 2.0 halves the r2v head (1280×768 → 640×384) and the VAE decode rides the handoff's upscaled latent (no temporal op between)", async () => {
+    const graph = await composeH3({
+      length: 56, width: 1280, height: 768,
+      second_pass_enabled: true, upscale_route: "latent_2x",
+      calls: [SHOT()],
+    }, "h3_upscale_arm39");
+    const { id, node } = handoff(graph);
+    assert.equal(node.inputs.scale, 2.0, "the handoff scale is the 2.0 leg (the grid law's only legal factor)");
+    assertValueAtConsumer(graph, "MiniMaxH3ReferenceToVideo", "width", 640, "halved r2v width");
+    assertValueAtConsumer(graph, "MiniMaxH3ReferenceToVideo", "height", 384, "halved r2v height");
+    // THE TEMPORAL leg: the handoff's latent edge names the sampler
+    // DIRECTLY (no frame op between — the edge identity IS the proof).
+    const latent = node.inputs.latent as unknown[];
+    assert.ok(Array.isArray(latent) && typeof latent[0] === "string", "the handoff latent is not an edge");
+    assert.equal(graph[latent[0] as string]?.class_type, "SamplerCustomAdvanced",
+      "a node sits between the pass-1 sampler and the handoff — the temporal frames would fork");
+    // THE DECODE leg: a VAE decode downstream whose samples edge names
+    // the handoff (the upscaled latent decodes, never the pass-1 one).
+    const decodes = Object.entries(graph).filter(([, n]) => n.class_type.includes("VAEDecode"));
+    assert.ok(decodes.length >= 1, "UPSCALE GRID ARM: no VAE decode in the graph — the upscaled latent never decodes");
+    assert.ok(decodes.some(([, d]) => {
+      const samples = d.inputs.samples as unknown[];
+      return Array.isArray(samples) && samples[0] === id;
+    }), `UPSCALE GRID ARM: no VAE decode's samples edge names the handoff '${id}' — the decode still rides the pass-1 latent`);
+  });
+
+  it("ARM 40 (switch parity, ON) — route latent_2x: the handoff mounts AND the head halves (the verdict's home)", async () => {
+    const graph = await composeH3({
+      length: 56, width: 1280, height: 768,
+      second_pass_enabled: true, upscale_route: "latent_2x",
+      calls: [SHOT()],
+    }, "h3_upscale_arm40");
+    handoff(graph);
+    assertValueAtConsumer(graph, "MiniMaxH3ReferenceToVideo", "width", 640, "halved r2v width (switch ON)");
+    assertValueAtConsumer(graph, "MiniMaxH3ReferenceToVideo", "height", 384, "halved r2v height (switch ON)");
+  });
+
+  it("ARM 41 (switch parity, OFF) — the default route: no handoff anywhere, the head stays stated, the refine rider still mounts (the master is alive)", async () => {
+    const graph = await composeH3({
+      length: 56, width: 1280, height: 768,
+      second_pass_enabled: true, refine_lora: "h3_taomate_3step",
+      calls: [SHOT()],
+    }, "h3_upscale_arm41");
+    assert.ok(!Object.values(graph).some((n) => n.class_type === HANDOFF),
+      "UPSCALE SWITCH ARM (OFF): the handoff mounted with the route off — the plain pass is no longer plain");
+    assertValueAtConsumer(graph, "MiniMaxH3ReferenceToVideo", "width", 1280, "stated r2v width (switch OFF)");
+    assertValueAtConsumer(graph, "MiniMaxH3ReferenceToVideo", "height", 768, "stated r2v height (switch OFF)");
+    const samplers = Object.values(graph).filter((n) => n.class_type === "SamplerCustomAdvanced");
+    assert.equal(samplers.length, 2, "the refine rider still mounts with the route off (TWO samplers) — the upscale arm must not strand the rider");
+  });
+
+  it("ARM 42 (switch parity, OFF-with-stated-leaf) — the route off with a stated upscale_model composes the plain pass: the leaf drops WITH its unmounted arm", async () => {
+    // ARM 5's cross-gate precedent (refine seats without the master
+    // compose the plain pass), NOT ARM 11's in-dict carry: an unmounted
+    // arm carries nothing — there is no dict to ride, no switch to
+    // route, and a refusal would strand old drafts that state the leaf
+    // (the gate-admission canon). The firewall matters: the leaf must
+    // never summon the mount behind the switch's back.
+    const graph = await composeH3({
+      length: 56, width: 1280, height: 768,
+      second_pass_enabled: true, upscale_model: UPSCALE_FILE,
+      calls: [SHOT()],
+    }, "h3_upscale_arm42");
+    assert.ok(!Object.values(graph).some((n) => n.class_type === HANDOFF),
+      "UPSCALE SWITCH ARM (OFF-leaf): the stated upscale_model summoned the mount with the route off — the leaf owns a switch it was never given");
+    assertValueAtConsumer(graph, "MiniMaxH3ReferenceToVideo", "width", 1280, "stated r2v width (OFF-leaf)");
+    assertValueAtConsumer(graph, "MiniMaxH3ReferenceToVideo", "height", 768, "stated r2v height (OFF-leaf)");
+  });
+
+  it("ARM 43 (rider firewall, ON) — route on + refine_lora: the rider mounts IN-BAND (its sampler's latent edge names the handoff) at the row's own 3 steps", async () => {
+    const graph = await composeH3({
+      length: 56, width: 1280, height: 768,
+      second_pass_enabled: true, upscale_route: "latent_2x", refine_lora: "h3_taomate_3step",
+      calls: [SHOT()],
+    }, "h3_upscale_arm43");
+    const { id } = handoff(graph);
+    const samplers = Object.entries(graph).filter(([, n]) => n.class_type === "SamplerCustomAdvanced");
+    assert.equal(samplers.length, 2, "route on + rider: TWO samplers (pass-1 + in-band rider)");
+    const rider = samplers.find(([, s]) => (s.inputs.latent_image as unknown[])?.[0] === id);
+    assert.ok(rider, `UPSCALE RIDER ARM: no sampler's latent_image edge names the handoff '${id}' — the rider is not in-band on the upscaled latent`);
+    const sched = edgeUpstream(graph, rider[0], "sigmas", "BasicScheduler").node;
+    assert.equal(sched.inputs.steps, 3, "the in-band rider's scheduler carries the taomate row's own 3 steps (ARM 7's marriage survives the arm)");
+  });
+
+  it("ARM 44 (rider firewall, OFF) — route off + refine_lora: the rider mounts WITHOUT the handoff at stated geometry (the arm never hijacks the rider)", async () => {
+    const graph = await composeH3({
+      length: 56, width: 1280, height: 768,
+      second_pass_enabled: true, refine_lora: "h3_taomate_3step",
+      calls: [SHOT()],
+    }, "h3_upscale_arm44");
+    assert.ok(!Object.values(graph).some((n) => n.class_type === HANDOFF),
+      "UPSCALE RIDER ARM (OFF): the handoff mounted with the route off — the rider's lane is no longer its own");
+    const samplers = Object.values(graph).filter((n) => n.class_type === "SamplerCustomAdvanced");
+    assert.equal(samplers.length, 2, "the rider still mounts with the route off (TWO samplers)");
+    assertValueAtConsumer(graph, "MiniMaxH3ReferenceToVideo", "width", 1280, "stated r2v width (rider, route OFF)");
+    assertValueAtConsumer(graph, "MiniMaxH3ReferenceToVideo", "height", 768, "stated r2v height (rider, route OFF)");
+  });
+
+  it("ARM 45 (liveness, Stage-2 schedule) — the handoff's own scheduler carries the dropped defaults (doc steps + 0.35), the stated denoise rides, and a riderless stated steps drops (ARM 5's cross-gate law)", async () => {
+    const graph = await composeH3({
+      length: 56, width: 1280, height: 768,
+      second_pass_enabled: true, upscale_route: "latent_2x",
+      calls: [SHOT()],
+    }, "h3_upscale_arm45");
+    const { id } = handoff(graph);
+    const sched = handoffScheduler(graph, id);
+    assert.equal(sched.inputs.steps, 6, "the handoff scheduler carries the doc-default steps when the rider is absent");
+    assert.equal(sched.inputs.denoise, 0.35, "the handoff scheduler carries the declared 0.35 when refine_denoise rides unstated");
+    assert.throws(
+      () => assert.equal(handoffScheduler(graph, id).inputs.denoise, 0.3, "stated denoise"),
+      /0\.3\b/,
+      "the arm PASSED on a dropped refine_denoise — it is a presence arm, not a value arm; fix the arm, not the code",
+    );
+    // THE STATED DENOISE rides with NO rider mounted (the P2 verdict's
+    // core: refine_denoise is no longer the rider's private seat).
+    const stated = await composeH3({
+      length: 56, width: 1280, height: 768,
+      second_pass_enabled: true, upscale_route: "latent_2x", refine_denoise: 0.3,
+      calls: [SHOT()],
+    }, "h3_upscale_arm45_stated");
+    assert.equal(handoffScheduler(stated, handoff(stated).id).inputs.denoise, 0.3,
+      "STAGE-2 DENOISE VALUE ARM: the stated refine_denoise never reached the handoff scheduler — the denoise is still the rider's private seat");
+    // THE RIDERLESS STEPS is a cross-gate leaf (ARM 5): stated
+    // refine_steps without a rider never reaches the Stage-2 schedule.
+    const stepless = await composeH3({
+      length: 56, width: 1280, height: 768,
+      second_pass_enabled: true, upscale_route: "latent_2x", refine_steps: 9,
+      calls: [SHOT()],
+    }, "h3_upscale_arm45_stepless");
+    assert.equal(handoffScheduler(stepless, handoff(stepless).id).inputs.steps, 6,
+      "STAGE-2 STEPS VALUE ARM: a riderless stated refine_steps reached the handoff scheduler — the cross-gate leaf grew an owner behind ARM 5's back");
+  });
+
+  it("ARM 46 (sigmas-law refusal) — denoise 1.0 + route latent_2x refuses LOUD naming the vendored sigmas law (run_h3_refinement: 0 <= sigmas[0] < 1); off-arm 1.0 stays legal (the taomate full-denoise mechanic)", async () => {
+    // ON-ARM: a full-noise Stage-2 schedule would open AT sigma_max and
+    // discard the learned upscaled latent at the engine — the refusal
+    // fires HERE, at compose, in the handoff's own voice.
+    await assert.rejects(
+      composeH3({
+        length: 56, width: 1280, height: 768,
+        second_pass_enabled: true, upscale_route: "latent_2x", refine_denoise: 1,
+        calls: [SHOT()],
+      }, "h3_upscale_arm46_refused"),
+      /sigmas\[0\] < 1|partial-denoise/,
+      "denoise 1.0 on the latent-upscale arm composed a full-noise schedule — the handoff would discard the upscaled latent at the engine (run_h3_refinement refuses sigmas[0] >= 1)",
+    );
+    // OFF-ARM: 1.0 stays legal — the rider's taomate full-denoise
+    // mechanic never crosses the handoff node.
+    const graph = await composeH3({
+      length: 56, width: 1280, height: 768,
+      second_pass_enabled: true, refine_lora: "h3_taomate_3step", refine_denoise: 1,
+      calls: [SHOT()],
+    }, "h3_upscale_arm46_taomate");
+    assert.ok(!Object.values(graph).some((n) => n.class_type === HANDOFF),
+      "UPSCALE SIGMAS ARM (OFF): the handoff mounted with the route off — the taomate mechanic must never cross the handoff node");
+    const samplers = Object.entries(graph).filter(([, n]) => n.class_type === "SamplerCustomAdvanced");
+    assert.equal(samplers.length, 2, "the taomate full-denoise rider still mounts off-arm (TWO samplers)");
+    // THE EDGE-IDENTIFIED rider (ARM 4b's topology): the scheduler the
+    // rider sampler's sigmas edge NAMES, carrying the row's own 3 steps.
+    const rider = samplers.find(([, s]) => {
+      const edge = s.inputs.sigmas;
+      if (!Array.isArray(edge) || typeof edge[0] !== "string") return false;
+      return (graph[edge[0] as string] as GNode)?.inputs.steps === 3;
+    });
+    assert.ok(rider, "UPSCALE SIGMAS ARM (OFF): no rider scheduler carries the taomate row's own 3 steps — the rider never mounted");
+    assert.equal(edgeUpstream(graph, rider[0], "sigmas", "BasicScheduler").node.inputs.denoise, 1,
+      "the off-arm rider scheduler does not carry the stated full-denoise 1.0 — the taomate mechanic broke behind the handoff refusal");
+  });
+});
+
 /** Fetch one node by id with the assert voice (the CONTROL arms'
  *  edge reader). */
 function graph0(graph: Graph, id: string): GNode {

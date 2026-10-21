@@ -97,6 +97,7 @@ const LAYER_A_ALL_KEYS: string[] = [
   "seed", "shift_video", "shift_audio", "steps", "denoise", "width", "height",
   "sampler_name", "sched_name",
   "refine_lora", "refine_strength", "refine_steps", "refine_denoise",
+  "upscale_route", "upscale_model",
   "second_pass_enabled",
   "attention_backend",
   "sla_enabled",
@@ -158,6 +159,11 @@ function populatedMax(): Record<string, unknown> {
     // the operator's stated window verbatim (1 would ride identical
     // to the door's own default — presence by coincidence)
     else if (key === "refine_denoise") populated[key] = 0.35
+    // THE LATENT-UPSCALE ROUTE (SOTA plan Phase P2): the sub-gate
+    // rides the latent_2x pole (off = absent = the default, never a
+    // populated state) and the weight rides the on-disk LBH v1 file
+    else if (key === "upscale_route") populated[key] = "latent_2x"
+    else if (key === "upscale_model") populated[key] = "minimax_h3_latent_upscaler_3d_bf16.safetensors"
     else if (key === "attention_backend") populated[key] = "pytorch attention"
     else if (key === "sr_model") populated[key] = "seedvr2_ema_3b_fp16.safetensors"
     else populated[key] = 1
@@ -268,6 +274,11 @@ describe("the studio contract wall (Layer A writes only card truth)", () => {
     expect(openOut.refine_strength).toBe(1)
     expect(openOut.refine_steps).toBe(1)
     expect(openOut.refine_denoise).toBe(0.35)
+    // THE LATENT-UPSCALE RECEIPT (SOTA plan Phase P2): the same
+    // maximal doc carries the sub-gate at its latent_2x pole and the
+    // LBH v1 file — both ride the t4_open carrier under the master
+    expect(openOut.upscale_route).toBe("latent_2x")
+    expect(openOut.upscale_model).toBe("minimax_h3_latent_upscaler_3d_bf16.safetensors")
     // THE DECLARED-SURFACE ROUND TRIP (2026-09-23): card-level refs
     // hydrate AND serialize back — a save never drops what the lanes show
     expect(out.ref_images).toEqual(["https://u/d.png"])

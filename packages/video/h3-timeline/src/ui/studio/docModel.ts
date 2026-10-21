@@ -328,6 +328,15 @@ export interface LayerA {
    * is the research's refinement window — pass 1's structure
    * stays, the rider polishes texture. (0, 1] at the door. */
   refine_denoise?: number
+  /** THE LATENT-UPSCALE ROUTE (SOTA plan Phase P2): the second-pass
+   * sub-gate + its learned weight. off (absent) = the legacy
+   * full-geometry pass; latent_2x = pass 1 renders the distilled
+   * quarter, the pack's handoff doubles the latent in-band before
+   * the second pass. Film-level (never per-call — the route owns
+   * the whole run's geometry, like the master). Serialized only
+   * under second_pass_enabled (the refine-seat precedent). */
+  upscale_route?: "off" | "latent_2x"
+  upscale_model?: string
   /** R2V COMBO "match"|"max" — NOT a number (numbers fail node validation). */
   ref_image_size?: string
   /** The loras MOD BAG (the operator's law: loras are MODS, never

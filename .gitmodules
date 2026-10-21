@@ -31,3 +31,6 @@
 [submodule "vendor/comfyui_extensions/ComfyUI-MiniMaxH3Mod"]
 	path = vendor/comfyui_extensions/ComfyUI-MiniMaxH3Mod
 	url = https://github.com/JayDataEngineer/ComfyUI-MiniMaxH3Mod.git
+[submodule "vendor/comfyui_extensions/Comfyui_Minimax_h3_latent_Upscaler-Plus"]
+	path = vendor/comfyui_extensions/Comfyui_Minimax_h3_latent_Upscaler-Plus
+	url = https://github.com/xmarre/Comfyui_Minimax_h3_latent_Upscaler-Plus

@@ -6245,6 +6245,8 @@ window.__ModuleLoader__.load({
 				refine_strength: optNum("refine_strength"),
 				refine_steps: optNum("refine_steps"),
 				refine_denoise: optNum("refine_denoise"),
+				upscale_route: raw?.upscale_route === "latent_2x" ? "latent_2x" : void 0,
+				upscale_model: typeof raw?.upscale_model === "string" && raw.upscale_model !== "" ? raw.upscale_model : void 0,
 				ref_image_size: raw?.ref_image_size === "match" || raw?.ref_image_size === "max" ? raw.ref_image_size : void 0,
 				loras: Array.isArray(raw?.loras) ? raw.loras.filter((r) => !!r && typeof r.id === "string").map((r) => {
 					const steps = typeof r.steps === "number" && Number.isFinite(r.steps) ? r.steps : void 0;
@@ -6353,6 +6355,8 @@ window.__ModuleLoader__.load({
 			"refine_strength",
 			"refine_steps",
 			"refine_denoise",
+			"upscale_route",
+			"upscale_model",
 			"refmod_mode",
 			"refmod_pool",
 			"refmod_identity",
@@ -6391,6 +6395,8 @@ window.__ModuleLoader__.load({
 				if (a.refine_strength != null) out.refine_strength = a.refine_strength;
 				if (a.refine_steps != null) out.refine_steps = a.refine_steps;
 				if (a.refine_denoise != null) out.refine_denoise = a.refine_denoise;
+				if (a.upscale_route != null && a.upscale_route !== "off") out.upscale_route = a.upscale_route;
+				if (a.upscale_model != null && a.upscale_model !== "") out.upscale_model = a.upscale_model;
 			}
 			if (a.sla_enabled === false) out.sla_enabled = false;
 			if (a.refmod_mode != null) out.refmod_mode = a.refmod_mode;

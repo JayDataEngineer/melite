@@ -217,6 +217,12 @@ export function hydrateLayerA(rawDoc: Record<string, unknown> | undefined): Laye
     refine_strength: optNum("refine_strength"),
     refine_steps: optNum("refine_steps"),
     refine_denoise: optNum("refine_denoise"),
+    // THE LATENT-UPSCALE ROUTE (SOTA plan Phase P2): off is the
+    // default = absent (the serializer only rides it under the
+    // master); any non-latent_2x spelling hydrates absent — the
+    // compose's walk refuses junk loud, the studio never pins it.
+    upscale_route: raw?.upscale_route === "latent_2x" ? "latent_2x" : undefined,
+    upscale_model: typeof raw?.upscale_model === "string" && raw.upscale_model !== "" ? raw.upscale_model : undefined,
     ref_image_size: raw?.ref_image_size === "match" || raw?.ref_image_size === "max" ? raw.ref_image_size : undefined,
     loras: Array.isArray(raw?.loras)
       ? (raw.loras as Array<Record<string, unknown>>)
@@ -340,6 +346,7 @@ export const LAYERA_KEY_UNIVERSE: ReadonlySet<string> = new Set([
   // the true-gated switch riders + their stamps
   "sr_switch", "sr_model", "sr_resolution",
   "second_pass_enabled", "refine_lora", "refine_strength", "refine_steps", "refine_denoise",
+  "upscale_route", "upscale_model",
   // the bake's stated dials (the override-gated riders + the
   // false-gated save)
   "refmod_mode", "refmod_pool", "refmod_identity", "refmod_save",
@@ -393,6 +400,11 @@ export function serializeLayerA(a: LayerA, base?: Record<string, unknown>): Reco
     // the refine window — absent = 1.0 byte-stable (the rider's
     // own ?? 1 default); stated rides verbatim
     if (a.refine_denoise != null) out.refine_denoise = a.refine_denoise
+    // THE LATENT-UPSCALE ROUTE (SOTA plan Phase P2): the sub-gate +
+    // its weight ride only under the master (off = absent, the
+    // family default — the same ride law as the refine rider).
+    if (a.upscale_route != null && a.upscale_route !== "off") out.upscale_route = a.upscale_route
+    if (a.upscale_model != null && a.upscale_model !== "") out.upscale_model = a.upscale_model
   }
   // THE SLA MASTER SWITCH rides only when OFF (absent = on — the
   // family default; a false is the real override compose reads).

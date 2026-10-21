@@ -227,7 +227,24 @@ export const paramSchema = z.object({
     // full-denoise mechanic). 1.0 stays STATEABLE for that mechanic;
     // the ARM 36 band arm outlaws an out-of-window default.
     // (0.05, 1]; 0 is a dead pass and refuses.
-    refine_denoise: z.number().description("Refine denoise").min(0.05).max(1).step(0.05).default(0.35).extra('extra', bag({ order: null, group: 'second_pass', visible_when: "second_pass_enabled=true", wtype: 'number', tooltip: "The rider's denoise window. Default 0.35 — the researched refinement band (0.30–0.35): the first pass's structure stays, the rider polishes texture. 1.0 = full re-denoise (the taomate full pass, opt-in). Rides only when refine_lora is set." })),
+    refine_denoise: z.number().description("Refine denoise").min(0.05).max(1).step(0.05).default(0.35).extra('extra', bag({ order: null, group: 'second_pass', visible_when: "second_pass_enabled=true", wtype: 'number', tooltip: "The refinement window (the researched 0.30–0.35 band): pass 1's structure stays, the second pass polishes texture. Default 0.35. 1.0 = full re-denoise (the taomate full pass, opt-in). Rides on the refine rider when refine_lora is set — and as the handoff's own window when the latent-upscale route is on." })),
+    // ── THE LATENT-UPSCALE ROUTE (SOTA plan Phase P2, 2026-11-10) —
+    // the learned-latent alternative to the SeedVR2 pixel route: the
+    // vendored xmarre pack's MinimaxH3LatentUpscaler3DRefineHandoff
+    // rides IN-BAND on the pass-1 joint AV latent (upscale + the
+    // low-sigma refinement inside the 3D-conv kernel, audio preserved
+    // under lock_audio). The sub-gate: route latents halve the r2v head
+    // (1344×768 → 672×384) so pass 1 composes the quarter the kernel
+    // was distilled on; the rider (when set) mounts in-band on the
+    // upscaled latent. Route off (default) = the graph is byte-stable
+    // with the pre-route estate (ARM 41).
+    upscale_route: vocabulary(["off", "latent_2x"]).description("Latent upscale route").default("off").extra('extra', bag({ order: null, group: 'second_pass', visible_when: "second_pass_enabled=true", wtype: 'select', tooltip: "Upscale between the passes: off (default — the second pass works at full size) or latent_2x (pass 1 renders at half size, the learned upscaler doubles the latent in-band before the second pass)." })),
+    // CLOSED FILE SURFACE (the operator's dropdown law — the sr_model
+    // precedent above): the ONE file the estate runs — the on-disk LBH
+    // v1 3D-conv bf16 checkpoint (the h3 latent weight, verified
+    // sha256 4f57821f). Single-member until the vendor ships a second
+    // weight; the union owns the dropdown AND the membership refusal.
+    upscale_model: vocabulary(["minimax_h3_latent_upscaler_3d_bf16.safetensors"]).description("Latent upscale model").default("minimax_h3_latent_upscaler_3d_bf16.safetensors").extra('extra', bag({ order: null, group: 'second_pass', visible_when: "second_pass_enabled=true", wtype: 'select', tooltip: "The learned latent-upscale weights (the 3D-conv bf16 checkpoint). Joins from the engine's latent-upscale shelf." })),
     // ── THE ATTENTION BACKEND (roadmap item 3; the h3_attention
     // "sage/sol" folklore was FICTION — no such knob, and the engine
     // enumerates only 'pytorch attention' on ModelAttentionBackend;

@@ -8892,6 +8892,219 @@
   "python_module": "comfy_extras.nodes_minimax_music",
   "search_aliases": null
  },
+ "MinimaxH3LatentUpscaler3DRefineHandoff": {
+  "category": "video/MinimaxH3",
+  "description": "Learned LBH 3D upscale followed by low-sigma MiniMax H3 refinement. H3 Continuum chunk lists are refined sequentially so each Native-Masked continuation prefix is replaced by the exact post-refine tail of the preceding chunk before sampler 2. The LATENT output is final/decode-ready.",
+  "display_name": "MiniMax H3 Latent Upscaler + Refine (3D)",
+  "has_intermediate_output": false,
+  "input": {
+   "optional": {
+    "audio_latent": [
+     "LATENT",
+     {
+      "tooltip": "For H3 Continuum, connect the matching audio_latents output. Leave disconnected for native joint AV LATENT input."
+     }
+    ],
+    "model": [
+     "MODEL",
+     {
+      "tooltip": "Native/non-Continuum fallback. Ignored when refine_state is connected."
+     }
+    ],
+    "negative": [
+     "CONDITIONING",
+     {
+      "tooltip": "Optional CFG compatibility for native fallback only. Ignored when refine_state is connected."
+     }
+    ],
+    "positive": [
+     "CONDITIONING",
+     {
+      "tooltip": "Native/non-Continuum fallback. Ignored when refine_state is connected."
+     }
+    ],
+    "refine_state": [
+     "H3_CONTINUUM_REFINE_STATE",
+     {
+      "tooltip": "Preferred H3 Continuum path: exact per-chunk fresh MODEL wrapper + positive CONDITIONING captured by Continuum. Takes precedence over manual model/positive/negative fallback connections."
+     }
+    ]
+   },
+   "required": {
+    "align": [
+     "INT",
+     {
+      "default": 32,
+      "max": 512,
+      "min": 1,
+      "step": 1
+     }
+    ],
+    "cfg": [
+     "FLOAT",
+     {
+      "advanced": true,
+      "default": 1,
+      "max": 100,
+      "min": 0,
+      "step": 0.1,
+      "tooltip": "Used only when optional negative conditioning is connected on the native fallback path."
+     }
+    ],
+    "device": [
+     [
+      "cuda",
+      "cpu"
+     ],
+     {
+      "default": "cuda"
+     }
+    ],
+    "height": [
+     "INT",
+     {
+      "default": 704,
+      "max": 4096,
+      "min": 64,
+      "step": 8
+     }
+    ],
+    "keep_proportion": [
+     "BOOLEAN",
+     {
+      "default": true
+     }
+    ],
+    "latent": [
+     "LATENT"
+    ],
+    "lock_audio": [
+     "BOOLEAN",
+     {
+      "default": true,
+      "tooltip": "On preserves pass-1 audio exactly and masks it out of refinement. Off lets sampler 2 refine/remix audio too."
+     }
+    ],
+    "megapixels": [
+     "FLOAT",
+     {
+      "default": 1,
+      "max": 8,
+      "min": 0.1,
+      "step": 0.1
+     }
+    ],
+    "mode": [
+     [
+      "scale by multiplier",
+      "target dimensions",
+      "megapixels"
+     ],
+     {
+      "default": "scale by multiplier"
+     }
+    ],
+    "model_name": [
+     [
+      "2x_APISR_RRDB_GAN_generator.pth",
+      "4x_APISR_GRL_GAN_generator.pth",
+      "ltx-2-spatial-upscaler-x2-1.0.safetensors",
+      "ltx-2-temporal-upscaler-x2-1.0.safetensors",
+      "ltx-2.3-spatial-upscaler-x2-1.1.safetensors",
+      "ltx-2.3-temporal-upscaler-x2-1.0.safetensors",
+      "minimax_h3_latent_upscaler_3d_bf16.safetensors"
+     ]
+    ],
+    "noise": [
+     "NOISE"
+    ],
+    "offload_after_upscale": [
+     "BOOLEAN",
+     {
+      "advanced": true,
+      "default": false,
+      "tooltip": "Move the cached learned upscaler to CPU after the upscale and before sampler 2. Useful for low VRAM; leave off for faster repeated runs."
+     }
+    ],
+    "precision": [
+     [
+      "fp32",
+      "fp16",
+      "bf16"
+     ],
+     {
+      "default": "fp16"
+     }
+    ],
+    "sampler": [
+     "SAMPLER"
+    ],
+    "scale": [
+     "FLOAT",
+     {
+      "default": 2,
+      "max": 4,
+      "min": 1,
+      "step": 0.05
+     }
+    ],
+    "sigmas": [
+     "SIGMAS"
+    ],
+    "width": [
+     "INT",
+     {
+      "default": 1280,
+      "max": 4096,
+      "min": 64,
+      "step": 8
+     }
+    ]
+   }
+  },
+  "input_order": {
+   "optional": [
+    "audio_latent",
+    "refine_state",
+    "model",
+    "positive",
+    "negative"
+   ],
+   "required": [
+    "latent",
+    "noise",
+    "sampler",
+    "sigmas",
+    "model_name",
+    "mode",
+    "scale",
+    "width",
+    "height",
+    "megapixels",
+    "align",
+    "keep_proportion",
+    "lock_audio",
+    "cfg",
+    "device",
+    "precision",
+    "offload_after_upscale"
+   ]
+  },
+  "is_input_list": true,
+  "name": "MinimaxH3LatentUpscaler3DRefineHandoff",
+  "output": [
+   "LATENT"
+  ],
+  "output_is_list": [
+   true
+  ],
+  "output_name": [
+   "latent"
+  ],
+  "output_node": false,
+  "python_module": "custom_nodes.Comfyui_Minimax_h3_latent_Upscaler-Plus",
+  "search_aliases": []
+ },
  "ModelAttentionBackend": {
   "api_node": false,
   "category": "model/patch",

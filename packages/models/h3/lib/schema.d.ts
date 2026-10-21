@@ -41,6 +41,8 @@ export declare const paramSchema: z<Schemastery.ObjectS<NoInfer<{
     refine_strength: z<number, number, "plain">;
     refine_steps: z<number, number, "plain">;
     refine_denoise: z<number, number, "defined">;
+    upscale_route: z<string, string, "defined">;
+    upscale_model: z<string, string, "defined">;
     attention_backend: z<string, string, "defined">;
     interp_model: z<string, string, "defined">;
     interp_multiplier: z<number, number, "defined">;
@@ -108,6 +110,8 @@ export declare const paramSchema: z<Schemastery.ObjectS<NoInfer<{
     refine_strength: z<number, number, "plain">;
     refine_steps: z<number, number, "plain">;
     refine_denoise: z<number, number, "defined">;
+    upscale_route: z<string, string, "defined">;
+    upscale_model: z<string, string, "defined">;
     attention_backend: z<string, string, "defined">;
     interp_model: z<string, string, "defined">;
     interp_multiplier: z<number, number, "defined">;
@@ -187,6 +191,8 @@ export declare const carrier: z<Schemastery.ObjectS<NoInfer<{
     refine_strength: z<number, number, "plain">;
     refine_steps: z<number, number, "plain">;
     refine_denoise: z<number, number, "defined">;
+    upscale_route: z<string, string, "defined">;
+    upscale_model: z<string, string, "defined">;
     attention_backend: z<string, string, "defined">;
     interp_model: z<string, string, "defined">;
     interp_multiplier: z<number, number, "defined">;
@@ -254,6 +260,8 @@ export declare const carrier: z<Schemastery.ObjectS<NoInfer<{
     refine_strength: z<number, number, "plain">;
     refine_steps: z<number, number, "plain">;
     refine_denoise: z<number, number, "defined">;
+    upscale_route: z<string, string, "defined">;
+    upscale_model: z<string, string, "defined">;
     attention_backend: z<string, string, "defined">;
     interp_model: z<string, string, "defined">;
     interp_multiplier: z<number, number, "defined">;

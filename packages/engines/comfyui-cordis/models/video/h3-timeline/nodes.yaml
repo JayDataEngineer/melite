@@ -87,3 +87,24 @@ extensions:
     names still shift between versions; re-pin only with a composed
     re-render. Pip: nothing beyond the ComfyUI base env
     (torch/safetensors/numpy/Pillow are core-provided).
+- name: Comfyui_Minimax_h3_latent_Upscaler-Plus
+  url: https://github.com/xmarre/Comfyui_Minimax_h3_latent_Upscaler-Plus
+  ref: fc58fb80246bc58383929d21e78f54cf87d6507a
+  version: 0.2.2
+  required: true
+  desc: >-
+    H3 learned-latent upscale pack (the SOTA plan's P2 pick over
+    mamad8c — the weight IS the on-disk LBH v1 3D-conv bf16
+    checkpoint, so no second weight). Graph-addressed class:
+    MinimaxH3LatentUpscaler3DRefineHandoff (upscale + the in-band
+    low-sigma refinement over the native joint AV latent,
+    lock_audio true — z_v through the LBH kernel, z_a preserved);
+    support classes MinimaxH3LatentUpscalerNode2D /
+    MinimaxH3LatentUpscaler3D / MinimaxH3LatentUpscaler3DProvider.
+    Weight joins models/latent_upscale_models/ by symlink onto the
+    DECL diffusion_models bytes (the node's folder convention).
+    Pinned at v0.2.2 (fc58fb8 — the coordinated release set with
+    the Continuum/Flow/Sol/VDN/Spectrum siblings) — upstream ships
+    NO LICENSE file (unlicensed; operator clearance owed before
+    estate reliance). Pip: einops (torch/safetensors are
+    core-provided). Re-pin only with a composed re-render.

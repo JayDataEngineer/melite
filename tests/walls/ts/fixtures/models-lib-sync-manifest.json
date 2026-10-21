@@ -18,8 +18,8 @@
       "libHash": "5daea4bad3574a7f082df0aed211bcd7b310bc5f9152ca51feb9dd3768e75d47"
     },
     "fibo2-edit": {
-      "srcHash": "3fb7a5b35960dc06079539717f7a55c1207aa9cf919088417871500defbb3b7a",
-      "libHash": "04a9c5cb11abfd9ab6372a2c19563a25f2c0ebf01c3c8abb7d8549d71792448b"
+      "srcHash": "e3bfedfba78add189caf4c86a7b6d4ed69217ebd597b11367694cfc1dab1bee2",
+      "libHash": "23dae8242ae77b95313ce9472f53922ee8294d2a9c85b8047c2b356a40637600"
     },
     "fit": {
       "srcHash": "922cdf85643f639b6aadb0a0839d72356122e1f6950bb1ac1d06e48a321fe630",
@@ -38,8 +38,8 @@
       "libHash": "9fdf772370a69bf7d60d57957e3e9cd2d7f8b512d74d5a507be09367e3166c22"
     },
     "h3": {
-      "srcHash": "dcefb0e60e4d17514d761fcabc4a3fa990f81d3b31bb99ca48f7b0208d65906d",
-      "libHash": "6f56e99552040154c811f44d8d92c40d14b1657f75391ffaa62332c88e0b8cd9"
+      "srcHash": "65005c791fd7d8894be2b21347c65025d05d070de3a1be99a820aaf7161111c1",
+      "libHash": "d1e9f01cae3b580aa001270ef4a160496b76e0af150b6382a2731b214e178ef5"
     },
     "input": {
       "srcHash": "b85d1b6d6320a675cf1c394529af56e05ba89dea4474d60185218b73680e0447",

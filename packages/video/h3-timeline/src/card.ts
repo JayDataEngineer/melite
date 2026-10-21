@@ -201,6 +201,7 @@ export function registerCard(ctx: Context, comfy: ComfyUIServiceFace): void {
       'comfyui-h3-motion-context', 'Comfyui-PlagueKind-Nodes',
       'ComfyUI-KJNodes',
       'ComfyUI-MiniMaxH3Mod',
+      'Comfyui_Minimax_h3_latent_Upscaler-Plus',
       'ComfyUI-SeedVR2_VideoUpscaler',
       'melite-utility-nodes', 'melite-audio-nodes',
     ],

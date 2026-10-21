@@ -258,6 +258,14 @@ function valueCells(): Cell[] {
     duck_depth_db: { anchor: 'ARM 22 — duck_depth_db verbatim at the film mix (duck_db) + the image_name alias reaches LoadImage', note: 'duck_db at MeliteFilmAudioMix' },
     image_name: { anchor: 'ARM 22 — duck_depth_db verbatim at the film mix (duck_db) + the image_name alias reaches LoadImage', note: "the call-level alias at LoadImage (the compose's documented read)" },
     second_pass_enabled: { anchor: 'ARM 4 — second_pass_enabled + refine seats mount the T3 refine rider (TWO SamplerCustomAdvanced; the LTX stack carries the catalog file + stated strength; the rider scheduler carries the stated steps)', note: "the master gate — ARM 4's mount + ARMs 5/10-12 the guards" },
+    // THE LATENT-UPSCALE ROUTE (SOTA plan Phase P2, LIMB 3): the
+    // sub-gate + its file surface ride the handoff mount (ARM 37 the
+    // pin set on edges; ARM 39 the quarter-head + upscaled decode;
+    // ARM 40 the on-parity; ARMs 41/42 the off-parity; ARM 43 the
+    // rider firewall; ARM 45 the Stage-2 schedule; ARM 46 the
+    // partial-denoise refusal) — witnessed, never unclassed.
+    upscale_route: { anchor: 'ARM 37 (mount)', note: 'the sub-gate mounts the handoff on edges (ARM 40 the on-parity, ARM 46 the denoise-1.0 refusal voice)' },
+    upscale_model: { anchor: 'ARM 37 (mount)', note: 'the file surface rides model_name on the handoff edge (ARM 42 the off-leaf drop)' },
   }
   for (const knob of paramsOf('h3')) {
     if (H3_PINNED.has(knob)) {
