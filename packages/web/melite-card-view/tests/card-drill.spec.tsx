@@ -615,9 +615,9 @@ test('picking a family in the Model select RE-SPECS LIVE: the anima matrix lands
     }),
     variants: [
       { id: 'turbo', label: 'Turbo', group: 'Variant', defaults: { model: 'krea-2' }, route: 'krea-2' },
-      { id: 'int8', label: 'INT8', group: 'Quant', defaults: {}, route: 'krea-2', owner: 'turbo' },
+      { id: 'int8', label: 'INT8', group: 'Quant', defaults: {}, route: 'krea-2', quant: 'int8', owner: 'turbo' },
       { id: 'raw', label: 'Raw', group: 'Variant', defaults: { model: 'krea-2-raw' }, route: 'krea-2-raw' },
-      { id: 'raw__int8', label: 'INT8', group: 'Quant', defaults: {}, route: 'krea-2-raw', owner: 'raw' },
+      { id: 'raw__int8', label: 'INT8', group: 'Quant', defaults: {}, route: 'krea-2-raw', quant: 'int8', owner: 'raw' },
     ],
   }
   const animaSpec = {
