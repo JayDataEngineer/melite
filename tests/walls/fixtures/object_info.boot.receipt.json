@@ -1,11 +1,11 @@
 {
- "derived_at": "2026-10-19T23:19:08.039Z",
+ "derived_at": "2026-10-21T03:25:33.372Z",
  "tool": "scripts/regen-node-vocab.mjs --boot",
  "source": {
   "path": "data/tmp/object_info_prod.json",
-  "sha256": "0ec92b7d8ef45e16b8ec9b2402f7ef6018fe0741bb56e9539eef409347d409a0",
-  "mtime_ms": 1792451947816.0535,
-  "class_count": 1658,
+  "sha256": "0585200fef633236b87b9d8515bfedf9c9703e546dae2da4e1990916f4041937",
+  "mtime_ms": 1792553133142.993,
+  "class_count": 1665,
   "origin": "live"
  },
  "bootstrap_seed": {
@@ -15,23 +15,36 @@
  },
  "derivation": {
   "facts_path": "packages/engines/comfyui-cordis/data/model-facts.json",
-  "addressed_class_count": 95,
+  "addressed_class_count": 96,
   "bootstrap_class_count": 51,
-  "fixture_class_count": 146,
-  "rows_probed": 29,
+  "fixture_class_count": 147,
+  "rows_probed": 30,
   "refused_rows": 0
  },
  "delta": {
-  "added": [],
+  "added": [
+   "SkipLayerGuidanceDiTSimple"
+  ],
   "pruned": [],
   "updated": [
    "CLIPLoader",
+   "CompositeCharacter",
+   "FitProp",
+   "FitRow",
+   "KimodoTransferWeights",
    "LTX_lora_loader",
    "LoadImage",
    "LoadImageMask",
    "LoraLoader",
    "MiniMaxH3RefModsLoader",
-   "UNETLoader"
+   "RayRenderGLBViews",
+   "RaySomaxBake",
+   "RemeshMesh",
+   "SaveRiggedModel",
+   "SkinApply",
+   "SkinPack",
+   "SkinSidecar",
+   "VAELoader"
   ],
   "reordered_keys": 0
  }

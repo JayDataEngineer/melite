@@ -1124,7 +1124,7 @@
  },
  "CLIPLoader": {
   "category": "model/loaders",
-  "description": "Recipes:\nsd: clip-l\nstable cascade: clip-g\nsd3: t5 xxl / clip-g / clip-l\nstable audio: t5 base\nmochi: t5 xxl\ncogvideox: t5 xxl (226-token padding)\ncosmos: old t5 xxl\nlumina2: gemma 2 2B\nwan: umt5 xxl\nhidream: llama-3.1 (Recommend) or t5\nomnigen2: qwen vl 2.5 3B\njoyimage: qwen3-vl 8B\nlens: gpt-oss-20b\npixeldit: gemma 2 2B elm\nminimax: MiniMax H3 Qwen3-VL or Music3 Qwen/RVQ",
+  "description": "Recipes:\nsd: clip-l\nstable cascade: clip-g\nsd3: t5 xxl / clip-g / clip-l\nstable audio: t5 base\nmochi: t5 xxl\ncogvideox: t5 xxl (226-token padding)\ncosmos: old t5 xxl\nlumina2: gemma 2 2B\nwan: umt5 xxl\nhidream: llama-3.1 (Recommend) or t5\nomnigen2: qwen vl 2.5 3B\njoyimage: qwen3-vl 8B\nlens: gpt-oss-20b\npixeldit: gemma 2 2B elm\nminimax: MiniMax H3 Qwen3-VL or Music3 Qwen/RVQ\nflux3: qwen3-vl 4B",
   "display_name": "Load CLIP",
   "has_intermediate_output": false,
   "input": {
@@ -1145,6 +1145,7 @@
       "clip_l.safetensors",
       "minimax_music3_text_encoder_pruned_int8_convrot.safetensors",
       "qwen3.5_9b_int8_convrot.safetensors",
+      "qwen3.5_9b_w4a8_gptq.safetensors",
       "qwen3vl_32b_minimax_h3_int8_convrot.safetensors",
       "qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors",
       "qwen3vl_4b_fp8_scaled.safetensors",
@@ -1187,7 +1188,9 @@
       "joyimage",
       "mage",
       "minimax",
-      "yue2"
+      "yue2",
+      "flux3",
+      "moss_image"
      ]
     ]
    }
@@ -1614,7 +1617,7 @@
   ]
  },
  "CompositeCharacter": {
-  "category": "Melite/Mesh",
+  "category": "TechNoir/Mesh",
   "description": "",
   "display_name": "\ud83d\udd27 Composite Character (body+hair+outfit)",
   "has_intermediate_output": false,
@@ -2421,7 +2424,7 @@
   "search_aliases": null
  },
  "FitProp": {
-  "category": "Melite/Mesh",
+  "category": "TechNoir/Mesh",
   "description": "",
   "display_name": "Fit Prop (seat a static prop onto a SOMAX body)",
   "has_intermediate_output": false,
@@ -2476,7 +2479,7 @@
   "search_aliases": []
  },
  "FitRow": {
-  "category": "Melite/Mesh",
+  "category": "TechNoir/Mesh",
   "description": "",
   "display_name": "Fit Row (assemble the meld attachment row from knobs)",
   "has_intermediate_output": false,
@@ -4510,7 +4513,7 @@
   "search_aliases": []
  },
  "KimodoTransferWeights": {
-  "category": "Melite/AutoRig",
+  "category": "TechNoir/AutoRig",
   "description": "",
   "display_name": "\ud83d\udc55 Kimodo Transfer Weights (Clean \u2192 Clothed)",
   "has_intermediate_output": false,
@@ -4571,7 +4574,6 @@
       "h3/MiniMax-H3-FL2VA-Acc-8Step_pruned_comfy.safetensors",
       "h3/MiniMax-H3-Ref2VA-Acc-8Step_pruned_comfy.safetensors",
       "h3/dmad_minimax_h3_4step_lora_critic_comfyui.safetensors",
-      "h3/h3_silu_temb_grid.safetensors",
       "h3/minimax_h3_fl2v_lightx2v_turbo_4to8step_v0.1-v1.0_768p_v4_step600_dareties.safetensors",
       "h3/minimax_h3_fl2v_lightx2v_v0.1_dareties_v4_step600_comfy_fro.safetensors",
       "h3/minimax_h3_fl2v_turbo_4step_v1.0_768p_comfyui_bf16.safetensors",
@@ -4818,7 +4820,9 @@
       "SaveImage.0_edit_00001__f57d1713bfb3.png",
       "SaveImage.0_gen_00001__09689fe61e7a.png",
       "SaveImage.0_gen_00001__2193b347e808.png",
+      "SaveImage.0_gen_00001__3a075223adfa.png",
       "SaveImage.0_gen_00001__4efbfe6341d0.png",
+      "SaveImage.0_gen_00001__50f22877cd95.png",
       "SaveImage.0_gen_00001__62b97ce19787.png",
       "SaveImage.0_gen_00001__85379519f4df.png",
       "SaveImage.0_gen_00001__c0aa96997f3e.png",
@@ -4837,6 +4841,7 @@
       "e2e_anchor (1).png",
       "e2e_anchor.png",
       "example.png",
+      "melite-data-1d3efadeb639ca12_700ae1b16e8a.png",
       "melite-data-4703258cd8213f17_5600aecdb168.jpg",
       "melite-data-58045ad11e46d53f_5600aecdb168.jpg",
       "melite-data-5bd1165a72f97550_fd9660a4273a.png",
@@ -4917,7 +4922,9 @@
       "SaveImage.0_edit_00001__f57d1713bfb3.png",
       "SaveImage.0_gen_00001__09689fe61e7a.png",
       "SaveImage.0_gen_00001__2193b347e808.png",
+      "SaveImage.0_gen_00001__3a075223adfa.png",
       "SaveImage.0_gen_00001__4efbfe6341d0.png",
+      "SaveImage.0_gen_00001__50f22877cd95.png",
       "SaveImage.0_gen_00001__62b97ce19787.png",
       "SaveImage.0_gen_00001__85379519f4df.png",
       "SaveImage.0_gen_00001__c0aa96997f3e.png",
@@ -4936,6 +4943,7 @@
       "e2e_anchor (1).png",
       "e2e_anchor.png",
       "example.png",
+      "melite-data-1d3efadeb639ca12_700ae1b16e8a.png",
       "melite-data-4703258cd8213f17_5600aecdb168.jpg",
       "melite-data-58045ad11e46d53f_5600aecdb168.jpg",
       "melite-data-5bd1165a72f97550_fd9660a4273a.png",
@@ -5053,7 +5061,6 @@
       "h3/MiniMax-H3-FL2VA-Acc-8Step_pruned_comfy.safetensors",
       "h3/MiniMax-H3-Ref2VA-Acc-8Step_pruned_comfy.safetensors",
       "h3/dmad_minimax_h3_4step_lora_critic_comfyui.safetensors",
-      "h3/h3_silu_temb_grid.safetensors",
       "h3/minimax_h3_fl2v_lightx2v_turbo_4to8step_v0.1-v1.0_768p_v4_step600_dareties.safetensors",
       "h3/minimax_h3_fl2v_lightx2v_v0.1_dareties_v4_step600_comfy_fro.safetensors",
       "h3/minimax_h3_fl2v_turbo_4step_v1.0_768p_comfyui_bf16.safetensors",
@@ -7450,6 +7457,7 @@
      [
       "(none)",
       "SaveImage.0_edit_00001_",
+      "SaveImage.0_gen_00001_",
       "bake-variance-probe-anchor",
       "vanellope_example"
      ],
@@ -7461,6 +7469,7 @@
      [
       "(none)",
       "SaveImage.0_edit_00001_",
+      "SaveImage.0_gen_00001_",
       "bake-variance-probe-anchor",
       "vanellope_example"
      ],
@@ -7472,6 +7481,7 @@
      [
       "(none)",
       "SaveImage.0_edit_00001_",
+      "SaveImage.0_gen_00001_",
       "bake-variance-probe-anchor",
       "vanellope_example"
      ],
@@ -7483,6 +7493,7 @@
      [
       "(none)",
       "SaveImage.0_edit_00001_",
+      "SaveImage.0_gen_00001_",
       "bake-variance-probe-anchor",
       "vanellope_example"
      ],
@@ -7494,6 +7505,7 @@
      [
       "(none)",
       "SaveImage.0_edit_00001_",
+      "SaveImage.0_gen_00001_",
       "bake-variance-probe-anchor",
       "vanellope_example"
      ],
@@ -7505,6 +7517,7 @@
      [
       "(none)",
       "SaveImage.0_edit_00001_",
+      "SaveImage.0_gen_00001_",
       "bake-variance-probe-anchor",
       "vanellope_example"
      ],
@@ -7516,6 +7529,7 @@
      [
       "(none)",
       "SaveImage.0_edit_00001_",
+      "SaveImage.0_gen_00001_",
       "bake-variance-probe-anchor",
       "vanellope_example"
      ],
@@ -7527,6 +7541,7 @@
      [
       "(none)",
       "SaveImage.0_edit_00001_",
+      "SaveImage.0_gen_00001_",
       "bake-variance-probe-anchor",
       "vanellope_example"
      ],
@@ -9056,7 +9071,7 @@
   "search_aliases": null
  },
  "RayRenderGLBViews": {
-  "category": "Melite/Mesh",
+  "category": "TechNoir/Mesh",
   "description": "",
   "display_name": "\ud83c\udfac Render GLB Views (Blender EEVEE_NEXT \u00d78 angles)",
   "has_intermediate_output": false,
@@ -9160,7 +9175,7 @@
   "search_aliases": []
  },
  "RaySomaxBake": {
-  "category": "Melite/Animation",
+  "category": "TechNoir/Animation",
   "description": "",
   "display_name": "\ud83d\udd27 Somax Bake (motion NPZ \u2192 animated GLB)",
   "has_intermediate_output": false,
@@ -9250,7 +9265,7 @@
       "max": 4,
       "min": 0.5,
       "step": 0.1,
-      "tooltip": "Narrow-band width in voxel units. In UDF mode also offsets the surface."
+      "tooltip": "Narrow-band width in voxel units. In udf mode also offsets the surface; in solid mode it is the closing radius: creases are filleted and gaps bridged at this size, the surface sits half a voxel out."
      }
     ],
     "drop_small_components": [
@@ -9335,7 +9350,7 @@
            {
             "advanced": true,
             "default": false,
-            "tooltip": "QEF (Quadratic Error Function) dual-vertex placement for sharper edges."
+            "tooltip": "QEF (Quadratic Error Function) vertex placement: sharp edges on hard-surface input, jagged creases on organic input."
            }
           ]
          }
@@ -9362,9 +9377,34 @@
          }
         },
         "key": "sdf"
+       },
+       {
+        "inputs": {
+         "required": {
+          "fill": [
+           "FLOAT",
+           {
+            "default": 20,
+            "max": 1000,
+            "min": 0,
+            "step": 1,
+            "tooltip": "Cost of closing an opening relative to following the surface. Lower closes larger openings (0 puts a lid on a cup); higher only closes small holes and cracks."
+           }
+          ],
+          "qef": [
+           "BOOLEAN",
+           {
+            "advanced": true,
+            "default": false,
+            "tooltip": "QEF (Quadratic Error Function) vertex placement: sharp edges on hard-surface input, jagged creases on organic input."
+           }
+          ]
+         }
+        },
+        "key": "solid"
        }
       ],
-      "tooltip": "udf: robust to messy/non-manifold input. sdf: clean single surface with QEF (Quadratic Error Function) sharp-feature recovery, but needs consistent winding."
+      "tooltip": "udf: robust to messy/non-manifold input. sdf: clean single surface with QEF (Quadratic Error Function) sharp-feature recovery, but needs consistent winding. solid: one watertight solid from messy input: a global inside/outside graph cut (CelloCut) removes double shells and closes small holes. Slower."
      }
     ],
     "smooth_iters": [
@@ -10366,7 +10406,7 @@
   ]
  },
  "SaveRiggedModel": {
-  "category": "Melite/AutoRig",
+  "category": "TechNoir/AutoRig",
   "description": "",
   "display_name": "\ud83d\udcbe Save Rigged Model",
   "has_intermediate_output": false,
@@ -11623,7 +11663,7 @@
   "search_aliases": []
  },
  "SkinApply": {
-  "category": "Melite/Mesh",
+  "category": "TechNoir/Mesh",
   "description": "",
   "display_name": "Skin Apply (attach detail maps to a SOMAX body)",
   "has_intermediate_output": false,
@@ -11672,7 +11712,7 @@
   "search_aliases": []
  },
  "SkinPack": {
-  "category": "Melite/Mesh",
+  "category": "TechNoir/Mesh",
   "description": "",
   "display_name": "Skin Pack (deterministic detail maps, CPU)",
   "has_intermediate_output": false,
@@ -11723,7 +11763,7 @@
   "search_aliases": []
  },
  "SkinSidecar": {
-  "category": "Melite/Mesh",
+  "category": "TechNoir/Mesh",
   "description": "",
   "display_name": "Skin Sidecar (controller sidecar from kind knobs)",
   "has_intermediate_output": false,
@@ -11797,6 +11837,89 @@
   "output_node": false,
   "python_module": "custom_nodes.melite-poser-nodes",
   "search_aliases": []
+ },
+ "SkipLayerGuidanceDiTSimple": {
+  "api_node": false,
+  "category": "advanced/guidance",
+  "deprecated": false,
+  "description": "Simple version of the SkipLayerGuidanceDiT node that only modifies the uncond pass.",
+  "dev_only": false,
+  "display_name": null,
+  "essentials_category": null,
+  "experimental": true,
+  "has_intermediate_output": false,
+  "input": {
+   "required": {
+    "double_layers": [
+     "STRING",
+     {
+      "advanced": true,
+      "default": "7, 8, 9",
+      "multiline": false
+     }
+    ],
+    "end_percent": [
+     "FLOAT",
+     {
+      "advanced": true,
+      "default": 1,
+      "max": 1,
+      "min": 0,
+      "step": 0.001
+     }
+    ],
+    "model": [
+     "MODEL",
+     {}
+    ],
+    "single_layers": [
+     "STRING",
+     {
+      "advanced": true,
+      "default": "7, 8, 9",
+      "multiline": false
+     }
+    ],
+    "start_percent": [
+     "FLOAT",
+     {
+      "advanced": true,
+      "default": 0,
+      "max": 1,
+      "min": 0,
+      "step": 0.001
+     }
+    ]
+   }
+  },
+  "input_order": {
+   "required": [
+    "model",
+    "double_layers",
+    "single_layers",
+    "start_percent",
+    "end_percent"
+   ]
+  },
+  "is_input_list": false,
+  "name": "SkipLayerGuidanceDiTSimple",
+  "output": [
+   "MODEL"
+  ],
+  "output_is_list": [
+   false
+  ],
+  "output_matchtypes": null,
+  "output_name": [
+   "MODEL"
+  ],
+  "output_node": false,
+  "output_tooltips": [
+   null
+  ],
+  "price_badge": null,
+  "python_module": "comfy_extras.nodes_slg",
+  "search_aliases": null
  },
  "TextEncodeQwenImage21": {
   "api_node": false,
@@ -12822,6 +12945,7 @@
       "Wan2_2_VAE_bf16.safetensors",
       "ae.safetensors",
       "flux2-vae.safetensors",
+      "flux2-vae_small.safetensors",
       "minimax_h3_audio_vae_fp32.safetensors",
       "minimax_h3_video_vae_fp16.safetensors",
       "minimax_h3_video_vae_int8_convrot.safetensors",
