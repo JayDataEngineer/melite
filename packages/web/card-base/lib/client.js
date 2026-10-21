@@ -9341,6 +9341,28 @@ window.__ModuleLoader__.load({
 		*  'loras', a mod list projects 'image_list'); the NODE is the
 		*  truth. Nulls ride modelSwitchPatch's cross-model arm: the bag
 		*  dies with its model, never seeds the arrival. */
+		/** THE IMAGE-SUBJECT KEYS (operator, 2026-10-21: "When I switch
+		*  image edit models in the Image Edit card, the input images drop,
+		*  and I have to re put in the image edit model. I want it to not
+		*  drop the image"): a schema-declared array whose wtype is
+		*  image_list is the edit's SUBJECT (input_images, the reference
+		*  anchors) — the photo being edited, model-agnostic. It is NOT mod
+		*  currency: the mods (loras, ref_mods) ride features.modifiers and
+		*  die with their model ("keeping the lora on makes zero sense");
+		*  the subject survives every switch — the same edit, another model.
+		*  Pure companion of bagKeysOf's walk, one ref shape, one law. */
+		function imageSubjectKeysOf(spec) {
+			const env = spec.schema;
+			if (env == null) return /* @__PURE__ */ new Set();
+			const dict = env.refs[env.uid]?.dict ?? {};
+			const out = /* @__PURE__ */ new Set();
+			for (const [name, id] of Object.entries(dict)) {
+				const ref = env.refs[id];
+				if (ref?.type !== "array") continue;
+				if (extraOf(ref).wtype === "image_list") out.add(name);
+			}
+			return out;
+		}
 		function bagKeysOf(spec) {
 			const env = spec.schema;
 			if (env == null) return /* @__PURE__ */ new Set();
@@ -9923,12 +9945,16 @@ window.__ModuleLoader__.load({
 				const vocab = /* @__PURE__ */ new Set();
 				for (const r of spec.variants ?? []) for (const k of Object.keys(r.sampler_envelope ?? {})) vocab.add(k);
 				for (const k of vocab) if (!(k in patch)) patch[k] = null;
-				for (const k of bagKeysOf(spec)) if (!(k in patch)) patch[k] = null;
+				const subjects = imageSubjectKeysOf(spec);
+				for (const k of bagKeysOf(spec)) {
+					if (subjects.has(k)) continue;
+					if (!(k in patch)) patch[k] = null;
+				}
 				if (Array.isArray(spec.params) && arrival !== void 0 && Array.isArray(arrival.params)) {
 					const arrivalWords = new Set(arrival.params);
 					const axisWords = new Set(axisGroups(spec).map((g) => axisKey(g)));
 					for (const k of spec.params) {
-						if (k === "model" || axisWords.has(k) || arrivalWords.has(k)) continue;
+						if (k === "model" || axisWords.has(k) || arrivalWords.has(k) || subjects.has(k)) continue;
 						if (!(k in patch)) patch[k] = null;
 					}
 				}

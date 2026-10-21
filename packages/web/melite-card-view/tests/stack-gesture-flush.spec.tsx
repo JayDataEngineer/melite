@@ -80,7 +80,7 @@ function mountBench(stages: BenchStageView[]): void {
 
 async function openFirstTile(): Promise<void> {
   const user = userEvent.setup();
-  const el = document.querySelector('button[class*="tileInner"]');
+  const el = document.querySelector('[role="button"][class*="tileInner"]');
   if (el === null) throw new Error("tile button not found");
   await user.click(el as HTMLElement);
   await screen.findByTestId("stage-preview-seat", {}, { timeout: 4000 });

@@ -597,8 +597,16 @@ async function runSingle(
   signal: AbortSignal,
 ): Promise<Record<string, unknown>> {
   const card = a.card
-  const model = a.model
-  if (!model) return { mode: 'card', target: card, error: 'model is required (name the family explicitly — QUEUE LANE LAW)' }
+  // THE MODEL DERIVE (the zero-friction audit, 2026-10-21): the card
+  // arm refused without an explicit `model` while modelForCard — the
+  // same card→family derivation the BENCH arm rides — sat one block
+  // above unused. The operator's explicit family still wins; a card
+  // that boards a family derives it (the QUEUE LANE LAW's own
+  // resolver, never a minted id); only a card boarding NOTHING still
+  // refuses, and the refusal now names where the family lives.
+  let model = a.model
+  if (!model) model = await modelForCard(card, a.params)
+  if (!model) return { mode: 'card', target: card, error: 'model is required: this card boards no default family — name the family explicitly (melite_load lists the boarded families on the card)' }
   // THE CARD ARM OWNS THE COMPOSE (REBUILD-9): the runs registry's
   // start {model:} arm gates (manifest/runnability), overlays the
   // route-lens stamp (family defaults + variant resolver_defaults),

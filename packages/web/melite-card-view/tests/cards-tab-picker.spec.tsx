@@ -134,7 +134,7 @@ function mountBench(
 
 async function openMainDrill(): Promise<void> {
   const user = userEvent.setup();
-  const tile = document.querySelector('button[class*="tileInner"]') as HTMLElement;
+  const tile = document.querySelector('[role="button"][class*="tileInner"]') as HTMLElement;
   await user.click(tile);
   await screen.findByTestId("stage-preview-seat", {}, { timeout: 4000 });
   await screen.findByText("Prompt", {}, { timeout: 4000 });

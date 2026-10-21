@@ -49,7 +49,7 @@
 // they red until the null set and the merge order carry the law
 // themselves.
 import { describe, expect, test } from 'vitest'
-import { axisGroups, axisKey, composeCandidateDoc, composeValidate, mergeSwitchFrame, modelSwitchPatch, seedUser,
+import { axisGroups, axisKey, composeCandidateDoc, composeValidate, mergeSwitchFrame, modelSwitchPatch, schemaEnvelope, seedUser,
   type FormSpecDoc, type SpecValues } from '../../card-base/src/spec.ts'
 import { specVariants } from '../../../../packages/harness/melite-tools/src/discovery.ts'
 import { DECL as qwenImgEdit21 } from '../../../models/qwen-img-edit-21/src/index.ts'
@@ -115,6 +115,33 @@ function burnedHolding(): SpecValues {
 }
 
 describe('the drill null-set arms (ERRORS h; study §6; purge P4) — the switch verbs on the REAL 2511/21 DECLs', () => {
+  // ── THE IMAGE-SUBJECT EXEMPTION (operator, 2026-10-21: "When I
+  // switch image edit models in the Image Edit card, the input
+  // images drop, and I have to re put in the image edit model. I
+  // want it to not drop the image") ──────────────────────────────
+  // An array whose wtype is image_list is the edit's SUBJECT — the
+  // photo being edited, model-agnostic. The mod-bag law ("keeping
+  // the lora on makes zero sense") kills mod currency; it must never
+  // kill the subject. The real served docs carry the schema (the
+  // form-spec door's envelope); this arm rides that face.
+  test('THE SUBJECT SURVIVES THE SWITCH — image_list arrays never null; mod bags still die', () => {
+    const subjectSpec: FormSpecDoc = {
+      ...FROM_SPEC,
+      schema: schemaEnvelope({
+        input_images: { type: 'array', meta: { extra: { wtype: 'image_list', zone: 'inputs' } } },
+        reference_images: { type: 'array', meta: { extra: { wtype: 'image_list', zone: 'params' } } },
+        ref_mods: { type: 'array', meta: {} },
+      }),
+    }
+    const patch = modelSwitchPatch(subjectSpec, TO_DECL.id, burnedHolding(), TO_SPEC)
+    // the edit's subject NEVER nulls — held input_images ride through
+    expect(patch['input_images'], 'the INPUT image must survive the model switch (the operator\'s law)').not.toBeNull()
+    expect(patch['reference_images'], 'a params-zone image_list (reference anchors) is subject too').not.toBeNull()
+    if ('input_images' in patch) throw new Error('the switch must not even carry the subject key — the held value rides untouched')
+    // and the mod currency still dies with its model (the law's other half)
+    expect(patch['ref_mods'], 'a mod array still nulls on the cross-model switch').toBeNull()
+  })
+
   test('THE SURFACE FLOOR — the derivation finds the burned pair (the arms cannot pass vacuously)', () => {
     for (const k of BURNED_PAIR) {
       expect(SURFACE, `the derived departed surface must contain '${k}' (2511 params: [${(FROM_DECL.params ?? []).join(', ')}]; 21 params: [${(TO_DECL.params ?? []).join(', ')}])`).toContain(k)

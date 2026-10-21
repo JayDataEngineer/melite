@@ -76,7 +76,7 @@ function mount(renderSlot?: CardsTabProps_['renderSlot']): void {
 type CardsTabProps_ = Parameters<typeof CardsTab>[0]
 
 function tileButton(): HTMLElement {
-  const el = document.querySelectorAll('button[class*="tileInner"]')[0]
+  const el = document.querySelectorAll('[role="button"][class*="tileInner"]')[0]
   if (el === undefined) throw new Error('tile button not found')
   return el as HTMLElement
 }
@@ -127,7 +127,7 @@ test('an unclaimed key renders the generic form-spec card (the fallback IS the f
     (opts?.fallback ?? null)) as CardsTabProps_['renderSlot']
   mount(renderSlot)
   // tile 2 is tagger — unclaimed by the double above
-  const tiles = document.querySelectorAll('button[class*="tileInner"]')
+  const tiles = document.querySelectorAll('[role="button"][class*="tileInner"]')
   await user.click(tiles[1] as HTMLElement)
   expect(await screen.findByText('Threshold', {}, { timeout: 4000 })).toBeTruthy()
 })

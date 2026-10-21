@@ -1565,6 +1565,43 @@ describe('melite_construct — THE SPELL VOICE (compose-time spell judgement)', 
     assert.equal(seen.filter((entry) => entry.lane === 'benchGet').length, 0)
   })
 
+  test('THE RENDER IS THE MODEL\'S READ: the minted stage id and the spell lines print (the 107-call cure)', async () => {
+    const tool = meliteConstruct(stubEstate())
+    // add_stage shape: the payload the execute above returns
+    const parts = tool.output.render(
+      { verb: 'add_stage', card: 'image-edit' },
+      {
+        verb: 'add_stage', bench: 's_chat7', ok: true, rev: 9, stage: 's_2',
+        spells: [
+          { token: '$image1', on: 'image1', resolves: 'channel', via: 's_0.default' },
+          { token: '$input', on: 'input', resolves: 'request_initial', via: 'input — the run must carry this initial (user attaches it at the Run press), or wire inputs.input {stage, output}; a real file is an asset path from melite_view, never a $spell' },
+        ],
+      } as never,
+    ) as Array<{ text?: string }>
+    const text = parts.map((p) => p?.text ?? '').join('\n')
+    assert.match(text, /minted stage s_2/, 'the minted id prints — the model can address the stage it just added')
+    assert.match(text, /patch\/remove_stage\/rewire address it/)
+    assert.match(text, /spell \$image1 on image1 → channel s_0\.default/)
+    assert.match(text, /spell \$input on input → REQUEST INITIAL — nothing wired/)
+    assert.match(text, /wire inputs\.input/)
+
+    // patch shape: no minted id, the stage it touched still names
+    const patchParts = tool.output.render(
+      { verb: 'patch', stage: 's_1' },
+      { verb: 'patch', bench: 's_chat7', ok: true, rev: 6, stage: 's_1', patched: ['image'] } as never,
+    ) as Array<{ text?: string }>
+    assert.match(patchParts.map((p) => p?.text ?? '').join('\n'), /^stage s_1$/m)
+
+    // spell-free payloads stay lean: no spell lines, no minted line
+    const leanParts = tool.output.render(
+      { verb: 'add_stage', card: 'image-gen' },
+      { verb: 'add_stage', bench: 's_chat7', ok: true, rev: 3, stage: 's_0' } as never,
+    ) as Array<{ text?: string }>
+    const lean = leanParts.map((p) => p?.text ?? '').join('\n')
+    assert.match(lean, /minted stage s_0/)
+    assert.doesNotMatch(lean, /spell/)
+  })
+
   test('load: every stage swept, each against its OWN inputs', async () => {
     const { estate } = mockEstate((lane, args) => {
       if (lane === 'benchEnsure') return { rev: 2, stages: [{ id: 's_0' }, { id: 's_1' }] }

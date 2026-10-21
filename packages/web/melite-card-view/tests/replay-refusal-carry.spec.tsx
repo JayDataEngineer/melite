@@ -133,7 +133,7 @@ test('a FRESH card opens with NO red face (the operator\'s law: open is never an
   mountTab()
   const user = userEvent.setup()
   await screen.findByTestId('tile-run', {}, { timeout: 4000 })
-  const tile = document.querySelector('button[class*="tileInner"]') as HTMLElement | null
+  const tile = document.querySelector('[role="button"][class*="tileInner"]') as HTMLElement | null
   if (tile === null) throw new Error('tile button not found')
   await user.click(tile)
   await screen.findByTestId('stage-preview-seat', {}, { timeout: 4000 })

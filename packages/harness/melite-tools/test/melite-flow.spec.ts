@@ -1452,14 +1452,22 @@ describe('melite_flow bench — the agent drives THE shared bench', () => {
 })
 
 describe('melite_flow card — compose inside', () => {
-  test('a missing model refuses before any HTTP', async () => {
-    const seen = mockEstate([okBench, okValidate])
+  test('THE MODEL DERIVE (zero-friction audit, 2026-10-21): a card with no explicit model derives its boarded family and starts — the refusal era is over', async () => {
+    const seen = mockEstate([ensureOk('d_derive'), benchAlive, startOk('r_derive')])
     const tool = meliteFlow(seen.request)
     const out = await tool.execute({ card: 'image-gen' }, fakeExec(AbortSignal.timeout(2000))) as Record<string, unknown>
-    assert.equal(out.mode, 'card')
-    assert.equal(out.target, 'image-gen')
-    assert.ok(String(out.error).includes('model is required'), String(out.error))
-    assert.equal(seen.calls.length, 0)
+    assert.equal(out.run_id, 'r_derive')
+    // the derived family rode the start doc — modelForCard's own
+    // resolution (the QUEUE LANE resolver, never a minted id)
+    const startBody = decodeJsonBody(seen.calls.find((c) => c.lane === 'runsStart')!.args) as Record<string, unknown>
+    assert.equal(typeof startBody['model'], 'string')
+    assert.notEqual(String(startBody['model']), '')
+    // and an explicit model still WINS over the derivation
+    const seen2 = mockEstate([ensureOk('d_derive2'), benchAlive, startOk('r_derive2')])
+    const tool2 = meliteFlow(seen2.request)
+    await tool2.execute({ card: 'image-gen', model: 'explicit-fam' }, fakeExec(AbortSignal.timeout(2000)))
+    const startBody2 = decodeJsonBody(seen2.calls.find((c) => c.lane === 'runsStart')!.args) as Record<string, unknown>
+    assert.equal(startBody2['model'], 'explicit-fam')
   })
 
   test('no prompt anywhere: the intent falls back to the card', async () => {

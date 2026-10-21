@@ -134,7 +134,8 @@ export const Config: Schema<Config> = Schema.object({
 /** EAGER — the compose loop, the only melite schemas in a session's
  * first request (progressive disclosure, operator 2026-10-08: three
  * doors in context, the estate's deeper doors expand on first
- * catalog touch — src/expansion.ts owns the law). */
+ * catalog touch — the deferred-seat closure in THIS file
+ * owns the law). */
 export const EAGER_TOOL_NAMES = [
   'melite_discover', 'melite_load', 'melite_construct',
 ] as const

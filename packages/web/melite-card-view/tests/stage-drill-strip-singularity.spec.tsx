@@ -119,7 +119,7 @@ function mountBench(stages: BenchStageView[]): void {
 
 async function openDrill(): Promise<void> {
   const user = userEvent.setup();
-  const tile = document.querySelector('button[class*="tileInner"]') as HTMLElement;
+  const tile = document.querySelector('[role="button"][class*="tileInner"]') as HTMLElement;
   await user.click(tile);
   await screen.findByTestId("stage-preview-seat", {}, { timeout: 4000 });
   await screen.findByLabelText("Text", {}, { timeout: 4000 });

@@ -558,6 +558,37 @@ export function meliteConstruct(
         // line each (id, card, engine), plus the intent. A model
         // that can read never probes.
         const lines: string[] = ['bench ' + String(v.verb ?? '?') + ' → rev ' + String(v.rev ?? '?')]
+        // THE MINTED-ID DISCLOSURE (session 90a0b920's friction map,
+        // 2026-10-21: a read after every mutation to learn the minted
+        // id): add_stage/patch/remove_stage answers carry the stage id
+        // in the payload, but the render never printed it — the model
+        // could not address the stage it just added. The render
+        // voices what it holds (stroke 85's law, extended).
+        const stageId = (v as { stage?: unknown }).stage
+        if (typeof stageId === 'string' && stageId !== '') {
+          const verb = String(v.verb ?? '?')
+          lines.push(verb === 'add_stage' ? 'minted stage ' + stageId + ' (patch/remove_stage/rewire address it as {stage: "' + stageId + '"})' : 'stage ' + stageId)
+        }
+        // THE SPELL VOICE, RENDERED (the compose-time spell gate,
+        // 2026-10-21): the payload names every $-token and its one
+        // resolution source; the render says it in the model's own
+        // read — channel (the wired stage output) or request initial
+        // (the run must declare it). This is the line that teaches
+        // the wire BEFORE the run-time gate refuses it.
+        const spellLines = (v as { spells?: unknown }).spells
+        if (Array.isArray(spellLines)) {
+          for (const line of spellLines) {
+            const row = line as { stage?: unknown; token?: unknown; on?: unknown; resolves?: unknown; via?: unknown }
+            const head = typeof row.stage === 'string' && row.stage !== '' ? row.stage + ': ' : ''
+            if (row.resolves === 'channel') {
+              lines.push(`spell ${String(row.token)} on ${String(row.on)} → channel ${String(row.via)}`)
+            } else if (row.resolves === 'request_initial') {
+              lines.push(`spell ${String(row.token)} on ${String(row.on)} → REQUEST INITIAL — nothing wired; ${String(row.via)}`)
+            } else {
+              lines.push(`${head}spell ${String(row.token)} on ${String(row.on)} → ${String(row.via)}`)
+            }
+          }
+        }
         // hoisted once (the null-voice truth below and the trailing
         // facts line read the same seam — one read, two voices)
         const runsFacts = (v as { runs?: { checked?: unknown; total?: unknown; matched?: unknown } }).runs

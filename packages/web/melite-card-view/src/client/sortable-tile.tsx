@@ -148,9 +148,22 @@ export function SortableTile({ row, entered, onOpen, grouping, selected, onToggl
     ...dragHandlers,
   },
     h('div', { className: css.tileShared },
-      h('button', {
-        className: css.tileInner, type: 'button', 'data-status': row.status,
+      // THE TILE IS A role=button DIV, never a <button> (the
+      // content-model cure, 2026-10-21): the tile's face carries
+      // REAL buttons (trash, run/stop, the error face's ×) and HTML
+      // forbids interactive content inside a <button> — three nested
+      // buttons rode here through the × parity cure. The div keeps
+      // the button's whole contract: role, tab focus, Enter/Space
+      // activation, the same click handler.
+      h('div', {
+        className: css.tileInner, role: 'button', tabIndex: 0, 'data-status': row.status,
         onClick: () => {
+          if (grouping) { onToggleSelect(row.id); return }
+          onOpen(row)
+        },
+        onKeyDown: (e: React.KeyboardEvent<HTMLElement>) => {
+          if (e.key !== 'Enter' && e.key !== ' ') return
+          e.preventDefault()
           if (grouping) { onToggleSelect(row.id); return }
           onOpen(row)
         },

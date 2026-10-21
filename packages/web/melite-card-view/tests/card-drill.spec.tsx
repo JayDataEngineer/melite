@@ -121,7 +121,7 @@ function sitsInZoomBar(node: HTMLElement): boolean {
  * carries role="button" with the same accessible name; scope to the
  * tile's inner button by its class (module hash keeps tileInner). */
 function tileButton(): HTMLElement {
-  const el = document.querySelector('button[class*="tileInner"]')
+  const el = document.querySelector('[role="button"][class*="tileInner"]')
   if (el === null) throw new Error('tile button not found')
   return el as HTMLElement
 }

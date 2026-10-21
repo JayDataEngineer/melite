@@ -529,6 +529,32 @@ export function fieldsOf(spec: FormSpecDoc): SpecField[] {
  *  'loras', a mod list projects 'image_list'); the NODE is the
  *  truth. Nulls ride modelSwitchPatch's cross-model arm: the bag
  *  dies with its model, never seeds the arrival. */
+/** THE IMAGE-SUBJECT KEYS (operator, 2026-10-21: "When I switch
+ *  image edit models in the Image Edit card, the input images drop,
+ *  and I have to re put in the image edit model. I want it to not
+ *  drop the image"): a schema-declared array whose wtype is
+ *  image_list is the edit's SUBJECT (input_images, the reference
+ *  anchors) — the photo being edited, model-agnostic. It is NOT mod
+ *  currency: the mods (loras, ref_mods) ride features.modifiers and
+ *  die with their model ("keeping the lora on makes zero sense");
+ *  the subject survives every switch — the same edit, another model.
+ *  Pure companion of bagKeysOf's walk, one ref shape, one law. */
+function imageSubjectKeysOf(spec: FormSpecDoc): Set<string> {
+  const env = spec.schema
+  if (env == null) return new Set()
+  const root = env.refs[env.uid]
+  const dict = root?.dict ?? {}
+  const out = new Set<string>()
+  for (const [name, id] of Object.entries(dict)) {
+    const ref = env.refs[id]
+    if (ref?.type !== 'array') continue
+    // extraOf is the one typed read (the wtype floor's own law —
+    // never a second hand-narrowing beside it)
+    if (extraOf(ref).wtype === 'image_list') out.add(name)
+  }
+  return out
+}
+
 function bagKeysOf(spec: FormSpecDoc): Set<string> {
   const env = spec.schema
   if (env == null) return new Set()
@@ -1409,7 +1435,9 @@ export function modelSwitchPatch(spec: FormSpecDoc, model: string, held?: SpecVa
     // family that boards the same mod KIND never inherits another
     // model's picks. The NODE is the truth, never the presentation
     // type (an image_list mod and a bare lora bag are both bags).
+    const subjects = imageSubjectKeysOf(spec)
     for (const k of bagKeysOf(spec)) {
+      if (subjects.has(k)) continue
       if (!(k in patch)) patch[k] = null
     }
     // THE DEPARTED SURFACE DIES WITH ITS MODEL (the drill null-set
@@ -1428,7 +1456,7 @@ export function modelSwitchPatch(spec: FormSpecDoc, model: string, held?: SpecVa
       const arrivalWords = new Set(arrival.params)
       const axisWords = new Set(axisGroups(spec).map((g) => axisKey(g)))
       for (const k of spec.params) {
-        if (k === 'model' || axisWords.has(k) || arrivalWords.has(k)) continue
+        if (k === 'model' || axisWords.has(k) || arrivalWords.has(k) || subjects.has(k)) continue
         if (!(k in patch)) patch[k] = null
       }
     }

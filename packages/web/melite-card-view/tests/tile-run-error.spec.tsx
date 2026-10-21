@@ -81,7 +81,7 @@ function stubWire(): void {
 }
 
 function tileButton(): HTMLElement {
-  const el = document.querySelector('button[class*="tileInner"]')
+  const el = document.querySelector('[role="button"][class*="tileInner"]')
   if (el === null) throw new Error('tile button not found')
   return el as HTMLElement
 }
@@ -261,4 +261,36 @@ test('a refused start lands on the row — the open drill reads the why', async 
   // the refusal lands IN the drill — the full compose text
   const drillErr = await screen.findByTestId('drill-run-error', undefined, { timeout: 4000 })
   expect(drillErr.textContent).toContain(unknownVariantVoice('turbo', 'anima', ['standard', 'default']))
+})
+
+// ── THE CONTENT-MODEL LAW (2026-10-21, the × parity follow-up) ────
+// The tile face carries REAL buttons (the error ×, run/stop, trash);
+// HTML forbids interactive content inside a <button> — three nested
+// buttons rode the tile from the × parity cure. The tile is a
+// role=button DIV with the button's whole contract: tab focus,
+// Enter/Space activation, the same open.
+test('the tile is a role=button div — real buttons inside, Enter opens like the button it replaced', async () => {
+  stubWire()
+  const user = userEvent.setup()
+  render(createElement(CardsTab, {
+    useTabInfo: () => ({
+      tab: {
+        kind: 'sidebar.right.pane.tab', contentId: undefined,
+        navigation: { address: 'dsh-resource://cards/bench' },
+        actions: { openResource: () => {} },
+      },
+    }),
+    useResource: () => ({ status: 'live' as const, value: BENCH }),
+  }))
+
+  const tile = tileButton()
+  // the law: never a <button> itself (its children include buttons)
+  expect(tile.tagName).toBe('DIV')
+  expect(tile.getAttribute('role')).toBe('button')
+  expect(tile.querySelector('button')).not.toBeNull() // the error × is a real button
+
+  // the contract the type="button" gave for free: keyboard activation
+  tile.focus()
+  await user.keyboard('{Enter}')
+  expect(await screen.findByTestId('drill-run-error', undefined, { timeout: 4000 })).toBeTruthy()
 })

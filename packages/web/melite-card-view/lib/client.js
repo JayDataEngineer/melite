@@ -16286,11 +16286,21 @@ window.__ModuleLoader__.load({
 					onAssetAttach(row.id, file, "image");
 				},
 				...dragHandlers
-			}, (0, react.createElement)("div", { className: card_module_css_default.tileShared }, (0, react.createElement)("button", {
+			}, (0, react.createElement)("div", { className: card_module_css_default.tileShared }, (0, react.createElement)("div", {
 				className: card_module_css_default.tileInner,
-				type: "button",
+				role: "button",
+				tabIndex: 0,
 				"data-status": row.status,
 				onClick: () => {
+					if (grouping) {
+						onToggleSelect(row.id);
+						return;
+					}
+					onOpen(row);
+				},
+				onKeyDown: (e) => {
+					if (e.key !== "Enter" && e.key !== " ") return;
+					e.preventDefault();
 					if (grouping) {
 						onToggleSelect(row.id);
 						return;

@@ -88,7 +88,7 @@ function mountBench(params: Record<string, unknown>): void {
 }
 
 async function openDrill(): Promise<void> {
-  const el = document.querySelector('button[class*="tileInner"]');
+  const el = document.querySelector('[role="button"][class*="tileInner"]');
   if (el === null) throw new Error("tile button not found");
   el.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
   await screen.findByTestId("stage-preview-seat", {}, { timeout: 4000 });

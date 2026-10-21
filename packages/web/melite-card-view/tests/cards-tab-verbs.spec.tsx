@@ -179,9 +179,9 @@ function mountDraft(estateOpts: Parameters<typeof mountEstateFakes>[0] = {}, sta
 
 async function openZoom(): Promise<HTMLElement> {
   await waitFor(() => {
-    if (document.querySelector('button[class*="tileInner"]') === null) throw new Error("no tile");
+    if (document.querySelector('[role="button"][class*="tileInner"]') === null) throw new Error("no tile");
   });
-  fireEvent.click(document.querySelector('button[class*="tileInner"]') as HTMLElement);
+  fireEvent.click(document.querySelector('[role="button"][class*="tileInner"]') as HTMLElement);
   const patch = await screen.findByText("slot patch", {}, { timeout: 5000 });
   return patch;
 }
@@ -341,7 +341,7 @@ describe("the picker close — the door dismisses without landing", () => {
   test("closing the picker returns to the rail (nothing lands)", async () => {
     mountBench();
     await waitFor(() => {
-      if (document.querySelector('button[class*="tileInner"]') === null) throw new Error("no tile");
+      if (document.querySelector('[role="button"][class*="tileInner"]') === null) throw new Error("no tile");
     });
     const add = screen.getByRole("button", { name: "Add a card" });
     fireEvent.click(add);

@@ -87,7 +87,7 @@ function stubWire(): void {
 }
 
 function tileButtons(): HTMLElement[] {
-  return [...document.querySelectorAll('button[class*="tileInner"]')] as HTMLElement[]
+  return [...document.querySelectorAll('[role="button"][class*="tileInner"]')] as HTMLElement[]
 }
 
 const mount = (): ReturnType<typeof render> =>

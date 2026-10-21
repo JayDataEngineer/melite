@@ -145,7 +145,7 @@ function mountBench(stages: BenchStageView[]): void {
 async function openDrill(): Promise<void> {
   mountBench([{ id: "s_0", card: "image-gen", engine: "comfyui", params: {} }]);
   const user = userEvent.setup();
-  const tile = document.querySelector('button[class*="tileInner"]') as HTMLElement;
+  const tile = document.querySelector('[role="button"][class*="tileInner"]') as HTMLElement;
   await user.click(tile);
   await screen.findByTestId("stage-preview-seat", {}, { timeout: 4000 });
   await screen.findByText("Prompt", {}, { timeout: 4000 });
@@ -208,7 +208,7 @@ describe("the enhance guards — every rejection renders its face", () => {
       return (impl as typeof fetch)(url as string, init);
     });
     const user = userEvent.setup();
-    const tile = document.querySelector('button[class*="tileInner"]') as HTMLElement;
+    const tile = document.querySelector('[role="button"][class*="tileInner"]') as HTMLElement;
     await user.click(tile);
     await screen.findByTestId("stage-preview-seat", {}, { timeout: 4000 });
     await screen.findByText("Prompt", {}, { timeout: 4000 });
@@ -231,7 +231,7 @@ describe("the sweep landing — results ride the hand-edit seam", () => {
     mountBench([{ id: "s_0", card: "image-gen", engine: "comfyui", params: { model: "image-gen" } }]);
     doors.enhanceResults = { prompt: { positive: "P2", negative: "N2", via: "skill" } };
     const user = userEvent.setup();
-    const tile = document.querySelector('button[class*="tileInner"]') as HTMLElement;
+    const tile = document.querySelector('[role="button"][class*="tileInner"]') as HTMLElement;
     await user.click(tile);
     await screen.findByTestId("stage-preview-seat", {}, { timeout: 4000 });
     await screen.findByText("Prompt", {}, { timeout: 4000 });
@@ -255,7 +255,7 @@ describe("the sweep landing — results ride the hand-edit seam", () => {
     doors.enhanceResults = { seed: { positive: "42", via: "blueprint" } };
     try {
       const opener = userEvent.setup();
-      await opener.click(document.querySelector('button[class*="tileInner"]') as HTMLElement);
+      await opener.click(document.querySelector('[role="button"][class*="tileInner"]') as HTMLElement);
       await screen.findByTestId("stage-preview-seat", {}, { timeout: 4000 });
       await screen.findByText("Seed", {}, { timeout: 4000 });
       await typePrompt("a red cube");
@@ -286,7 +286,7 @@ describe("the sweep landing — results ride the hand-edit seam", () => {
     doors.specFields = "two";
     doors.enhanceResults = { prompt: { positive: "A" }, notes: { positive: "B" } };
     const user = userEvent.setup();
-    const tile = document.querySelector('button[class*="tileInner"]') as HTMLElement;
+    const tile = document.querySelector('[role="button"][class*="tileInner"]') as HTMLElement;
     await user.click(tile);
     await screen.findByTestId("stage-preview-seat", {}, { timeout: 4000 });
     await screen.findByText("Prompt", {}, { timeout: 4000 });
@@ -300,7 +300,7 @@ describe("the sweep landing — results ride the hand-edit seam", () => {
     mountBench([{ id: "s_0", card: "image-gen", engine: "comfyui", params: { model: "image-gen" } }]);
     doors.enhanceResults = {};
     const user = userEvent.setup();
-    const tile = document.querySelector('button[class*="tileInner"]') as HTMLElement;
+    const tile = document.querySelector('[role="button"][class*="tileInner"]') as HTMLElement;
     await user.click(tile);
     await screen.findByTestId("stage-preview-seat", {}, { timeout: 4000 });
     await screen.findByText("Prompt", {}, { timeout: 4000 });
@@ -314,7 +314,7 @@ describe("the sweep landing — results ride the hand-edit seam", () => {
     mountBench([{ id: "s_0", card: "image-gen", engine: "comfyui", params: { model: "image-gen" } }]);
     doors.enhanceResults = { zzz: { positive: "X" } };
     const user = userEvent.setup();
-    const tile = document.querySelector('button[class*="tileInner"]') as HTMLElement;
+    const tile = document.querySelector('[role="button"][class*="tileInner"]') as HTMLElement;
     await user.click(tile);
     await screen.findByTestId("stage-preview-seat", {}, { timeout: 4000 });
     await screen.findByText("Prompt", {}, { timeout: 4000 });
@@ -332,7 +332,7 @@ describe("the sweep landing — results ride the hand-edit seam", () => {
     doors.specModel = true;
     doors.enhanceResults = { prompt: { positive: "P2" } };
     const user = userEvent.setup();
-    const tile = document.querySelector('button[class*="tileInner"]') as HTMLElement;
+    const tile = document.querySelector('[role="button"][class*="tileInner"]') as HTMLElement;
     await user.click(tile);
     await screen.findByTestId("stage-preview-seat", {}, { timeout: 4000 });
     await screen.findByText("Prompt", {}, { timeout: 4000 });
@@ -347,7 +347,7 @@ describe("the sweep landing — results ride the hand-edit seam", () => {
     mountBench([{ id: "s_0", card: "image-gen", engine: "comfyui", params: { model: "image-gen" } }]);
     doors.enhanceResults = { prompt: { positive: "P2" } };
     const user = userEvent.setup();
-    const tile = document.querySelector('button[class*="tileInner"]') as HTMLElement;
+    const tile = document.querySelector('[role="button"][class*="tileInner"]') as HTMLElement;
     await user.click(tile);
     await screen.findByTestId("stage-preview-seat", {}, { timeout: 4000 });
     await screen.findByText("Prompt", {}, { timeout: 4000 });
@@ -364,7 +364,7 @@ describe("the sweep landing — results ride the hand-edit seam", () => {
     mountBench([{ id: "s_0", card: "image-gen", engine: "comfyui", params: { model: "image-gen" } }]);
     doors.enhanceMode = "stale-route";
     const user = userEvent.setup();
-    const tile = document.querySelector('button[class*="tileInner"]') as HTMLElement;
+    const tile = document.querySelector('[role="button"][class*="tileInner"]') as HTMLElement;
     await user.click(tile);
     await screen.findByTestId("stage-preview-seat", {}, { timeout: 4000 });
     await screen.findByText("Prompt", {}, { timeout: 4000 });
@@ -386,7 +386,7 @@ describe("the enhance failures — the door's words, never a stack", () => {
     mountBench([{ id: "s_0", card: "image-gen", engine: "comfyui", params: { model: "image-gen" } }]);
     doors.enhanceMode = "http500-body";
     const user = userEvent.setup();
-    const tile = document.querySelector('button[class*="tileInner"]') as HTMLElement;
+    const tile = document.querySelector('[role="button"][class*="tileInner"]') as HTMLElement;
     await user.click(tile);
     await screen.findByTestId("stage-preview-seat", {}, { timeout: 4000 });
     await screen.findByText("Prompt", {}, { timeout: 4000 });
@@ -400,7 +400,7 @@ describe("the enhance failures — the door's words, never a stack", () => {
     mountBench([{ id: "s_0", card: "image-gen", engine: "comfyui", params: { model: "image-gen" } }]);
     doors.enhanceMode = "http500-empty";
     const user = userEvent.setup();
-    const tile = document.querySelector('button[class*="tileInner"]') as HTMLElement;
+    const tile = document.querySelector('[role="button"][class*="tileInner"]') as HTMLElement;
     await user.click(tile);
     await screen.findByTestId("stage-preview-seat", {}, { timeout: 4000 });
     await screen.findByText("Prompt", {}, { timeout: 4000 });
@@ -414,7 +414,7 @@ describe("the enhance failures — the door's words, never a stack", () => {
     mountBench([{ id: "s_0", card: "image-gen", engine: "comfyui", params: { model: "image-gen" } }]);
     doors.enhanceMode = "error-string";
     const user = userEvent.setup();
-    const tile = document.querySelector('button[class*="tileInner"]') as HTMLElement;
+    const tile = document.querySelector('[role="button"][class*="tileInner"]') as HTMLElement;
     await user.click(tile);
     await screen.findByTestId("stage-preview-seat", {}, { timeout: 4000 });
     await screen.findByText("Prompt", {}, { timeout: 4000 });
@@ -433,7 +433,7 @@ describe("the enhance failures — the door's words, never a stack", () => {
     mountBench([{ id: "s_0", card: "image-gen", engine: "comfyui", params: { model: "image-gen" } }]);
     doors.enhanceMode = "error-number";
     const user = userEvent.setup();
-    const tile = document.querySelector('button[class*="tileInner"]') as HTMLElement;
+    const tile = document.querySelector('[role="button"][class*="tileInner"]') as HTMLElement;
     await user.click(tile);
     await screen.findByTestId("stage-preview-seat", {}, { timeout: 4000 });
     await screen.findByText("Prompt", {}, { timeout: 4000 });
@@ -447,7 +447,7 @@ describe("the enhance failures — the door's words, never a stack", () => {
     mountBench([{ id: "s_0", card: "image-gen", engine: "comfyui", params: { model: "image-gen" } }]);
     doors.enhanceMode = "throw-string";
     const user = userEvent.setup();
-    const tile = document.querySelector('button[class*="tileInner"]') as HTMLElement;
+    const tile = document.querySelector('[role="button"][class*="tileInner"]') as HTMLElement;
     await user.click(tile);
     await screen.findByTestId("stage-preview-seat", {}, { timeout: 4000 });
     await screen.findByText("Prompt", {}, { timeout: 4000 });

@@ -226,9 +226,9 @@ function renderSlot(slotName: string, owner: Record<string, unknown>): ReactElem
 
 async function openZoom(): Promise<void> {
   await waitFor(() => {
-    if (document.querySelector('button[class*="tileInner"]') === null) throw new Error("no tile");
+    if (document.querySelector('[role="button"][class*="tileInner"]') === null) throw new Error("no tile");
   });
-  fireEvent.click(document.querySelector('button[class*="tileInner"]') as HTMLElement);
+  fireEvent.click(document.querySelector('[role="button"][class*="tileInner"]') as HTMLElement);
   await waitFor(() => {
     if (document.querySelector('div[class*="zoomCard"]') === null) throw new Error("no zoom");
   }, { timeout: 5000 });

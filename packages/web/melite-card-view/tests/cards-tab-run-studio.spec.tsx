@@ -81,7 +81,7 @@ afterEach(() => {
 });
 
 function firstTile(): HTMLElement {
-  const el = document.querySelector('button[class*="tileInner"]');
+  const el = document.querySelector('[role="button"][class*="tileInner"]');
   if (el === null) throw new Error("tile button not found");
   return el as HTMLElement;
 }

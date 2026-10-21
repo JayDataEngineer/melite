@@ -86,7 +86,7 @@ function tileLi(id: string): HTMLElement {
 function innerButton(li: HTMLElement): HTMLElement {
   // the tile face button (the nested chrome buttons ride INSIDE it —
   // a bare getByRole would match them too outside grouping mode)
-  const btn = li.querySelector('button[class*="tileInner"]');
+  const btn = li.querySelector('[role="button"][class*="tileInner"]');
   if (btn === null) throw new Error("tile face button missing");
   return btn as HTMLElement;
 }
