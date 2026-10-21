@@ -5,8 +5,12 @@
  * THE LINKS-IN-CODE LAW: names only, the DECL owns every URL
  * server-side (run-rescue-core.ts's header).
  *
- * TWO FACES: an extension miss keeps the inline banner (one confirm
- * through install_extension); a model miss opens the WEIGHT POPUP —
+ * TWO FACES: an extension miss keeps the inline banner — the install
+ * drive now mirrors the model face's seats (the parity cure, recon
+ * 2026-11-11 round 22): a progress tracker over the SAME ledger the
+ * weight popup polls, with Retry + Delete exits on a refused drive.
+ * The install still rides install_extension (names only); a model
+ * miss opens the WEIGHT POPUP —
  * the F9 run-press acquisition seat — with a Download button and a
  * live bytes/total tracker. The Download press rides acquire_weight
  * (ONE door with the agent's comfy_manage seat: one door, two
@@ -27,7 +31,7 @@ import { createElement as h, useEffect, useRef, useState } from 'react'
 import { Button, IconCloseOutlineRegular, Modal } from '@deepseek-ai/dsh-client-ui-primitives'
 import { postManageAction } from '@melite/card-base/client'
 import css from './card.module.css'
-import { acquiredDetailOf, acquireWeightStart, cardOfStages, familyOfStages, formatByteSize, formatRateLine, formatWeightProgress, isAcquireSettled, parseRescue, pollAcquireToSettled, runRescueCall, type Rescue, type RescueResult, type WeightAcquireState } from './run-rescue-core.ts'
+import { acquiredDetailOf, acquireWeightPoll, acquireWeightStart, cardOfStages, familyOfStages, formatByteSize, formatRateLine, formatWeightProgress, isAcquireSettled, parseRescue, pollAcquireToSettled, runRescueCall, type Rescue, type RescueResult, type WeightAcquireState } from './run-rescue-core.ts'
 import { rejectionVoice } from './rejection-voice.ts'
 import { chromeCopy } from '../chromeCopy.ts'
 
@@ -154,6 +158,14 @@ export function RunRescue({ error, stages, onRun, rescue: structured }: {
   // face offers Retry/Delete on it, and a run press on it refuses
   // loudly (never the success face).
   const [stuck, setStuck] = useState<WeightAcquireState | null>(null)
+  // THE EXTENSION LEDGER SNAPSHOT (the parity cure, recon 2026-11-11
+  // round 22): the install drive's own row off the SAME ledger the
+  // weight tracker polls — seeded from the install answer, filled by
+  // one acquire_weight poll. extFailed is the refused drive's row
+  // (the face offers Retry/Delete on it); extAcquire renders the
+  // tracker seats on every post-press face.
+  const [extAcquire, setExtAcquire] = useState<WeightAcquireState | null>(null)
+  const [extFailed, setExtFailed] = useState<WeightAcquireState | null>(null)
   // THE FAILED VERDICT (the one-authority law, 2026-10-20): the
   // engine's own failed/blocked terminal report — its cause rides
   // `note` (data.detail preferred), and the SAME exits serve as the
@@ -228,26 +240,146 @@ export function RunRescue({ error, stages, onRun, rescue: structured }: {
     )
   }
 
-  // THE EXTENSION BANNER (unchanged): one confirm through
-  // install_extension, then the caller's own re-run.
+  // THE EXTENSION DRIVE (the parity cure, recon 2026-11-11 round 22):
+  // the bare banner showed no ledger and left a refused install with
+  // no exits. The face now mirrors the model face's seats on the SAME
+  // ledger and voices — no new download path, just the face:
+  //   * the install still rides install_extension (names only — the
+  //     pack id from the refusal's own text, the DECL owns the URL);
+  //   * the answer's operation_id seeds a snapshot off the SAME
+  //     ledger the weight tracker polls — one acquire_weight read
+  //     with the operation id only (the blocking ensure seeds that
+  //     row, the F9 ledger seed in service.ts, so the poll is the
+  //     row's own truth, never a second fetch);
+  //   * trackerFaces renders that snapshot in the SAME seats
+  //     (weight-progress/meter-fill), indeterminate (installing…)
+  //     while the blocking call holds the drive;
+  //   * a refused install lands the failed face with the cause AND
+  //     the exits row — Retry re-issues the install, Delete discards
+  //     the failed row through the SAME acquire_discard door the
+  //     model face rides (or clears locally when the door named no
+  //     row — a 404-shaped refusal).
   if (rescue.kind === 'extension') {
-    if (done !== null) return doneFace(done)
+    const installExtension = (): void => {
+      setBusy(true)
+      setNote(null)
+      setExtFailed(null)
+      setExtAcquire(null)
+      postManageAction('install_extension', { nodes: [rescue.pack] }).then((reply) => {
+        const data = typeof reply.data === 'object' && reply.data !== null
+          ? reply.data as Record<string, unknown>
+          : null
+        const operationId = data !== null && typeof data['operation_id'] === 'string'
+          ? data['operation_id']
+          : ''
+        const state = data !== null && typeof data['state'] === 'string'
+          ? data['state']
+          : (reply.ok ? 'active' : 'failed')
+        const landed: WeightAcquireState = {
+          operationId,
+          state,
+          bytes: 0,
+          total: 0,
+          ...(reply.detail ? { detail: reply.detail } : {}),
+        }
+        // THE SAME LEDGER READ (no new path): the blocking install
+        // seeded the progress row under its operation id — one poll
+        // fills the snapshot's bytes/total truth. A poll that misses
+        // (an id the ledger never held) keeps the answer's own truth.
+        const settle = (snapshot: WeightAcquireState): void => {
+          setBusy(false)
+          setExtAcquire(snapshot)
+          if (!reply.ok) {
+            setExtFailed(snapshot)
+            setNote(snapshot.detail || reply.detail || 'install_extension refused')
+            return
+          }
+          setDone({
+            detail: reply.detail ?? rescue.pack + ' installed',
+            restartRequired: (data !== null && data['restart_required'] === true) || state === 'restart_required',
+          })
+        }
+        if (operationId === '') {
+          settle(landed)
+          return
+        }
+        acquireWeightPoll(operationId).then(
+          (polled) => { settle(polled) },
+          () => { settle(landed) },
+        )
+      }).catch((e: unknown) => {
+        // a torn wire names no row — the note voices it and the offer
+        // stays (the press itself is the retry, mirroring the model
+        // face's poll-rejection voice with its press un-busied)
+        setBusy(false)
+        setExtFailed(null)
+        setNote(rejectionVoice(e))
+      })
+    }
+    // THE EXTENSION EXITS (the same row shape as the model exitsRow —
+    // the k2 law: a terminal-bad drive must offer Retry + Delete, the
+    // re-run riding the caller's own press, never an automatic
+    // re-fire). Delete reaches the SAME acquire_discard door carrying
+    // the failed row's id; with no id it clears locally (the door
+    // named no row — nothing to discard, the face still re-arms).
+    const extExitsRow = (row: WeightAcquireState): ReturnType<typeof h> =>
+      h('div', { style: { display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '8px' } },
+        h(Button, { size: 'sm', onClick: installExtension }, chromeCopy.retryDownload),
+        h(Button, {
+          size: 'sm',
+          onClick: () => {
+            const operationId = row.operationId
+            setExtFailed(null)
+            setExtAcquire(null)
+            setNote(null)
+            if (operationId !== '') {
+              postManageAction('acquire_discard', { operation_id: operationId })
+                .catch((e: unknown) => { setNote(rejectionVoice(e)) })
+            }
+          },
+        }, chromeCopy.deleteStuck),
+      )
+    // THE IN-FLIGHT TRACKER (E1): the blocking install names no bytes
+    // yet — the face answers the tracker seats at once with the
+    // indeterminate voice (installing… over an unmeasured track, the
+    // undeclared-total pattern: no role, no bounds, no fake bytes),
+    // and the ledger snapshot replaces it when the door answers.
+    const extInFlight = [
+      h('p', { 'data-testid': 'weight-progress', className: css.rescueNote }, chromeCopy.installingWord),
+      h('div', {
+        'data-testid': 'weight-meter',
+        style: { height: '8px', borderRadius: '4px', background: 'rgba(127,127,127,.25)', overflow: 'hidden' },
+      },
+        h('span', {
+          'data-testid': 'weight-meter-fill',
+          style: {
+            display: 'block', height: '100%', width: '100%',
+            background: 'currentColor', opacity: 0.35,
+          },
+        }),
+      ),
+    ]
+    if (done !== null) {
+      // trackerFaces tolerates a null snapshot (no fetch started —
+      // no seats); the drive always seeds one before the done face,
+      // so the terminal count stays mounted here.
+      return h('div', { className: css.rescue },
+        ...trackerFaces(extAcquire, null),
+        doneFace(done),
+      )
+    }
     return h('div', { className: css.rescue },
       h('p', { className: css.rescueNote },
         chromeCopy.missingInstall({ what })),
+      ...(extAcquire !== null ? trackerFaces(extAcquire, null) : (busy ? extInFlight : [])),
       h(Button, {
         size: 'sm',
         variant: 'primary',
         disabled: busy,
         title: chromeCopy.installViaManage,
-        onClick: () => {
-          setBusy(true)
-          setNote(null)
-          runRescueCall(rescue, target)
-            .then((result) => { setBusy(false); setDone(result) })
-            .catch((e: unknown) => { setBusy(false); setNote(rejectionVoice(e)) })
-        },
+        onClick: installExtension,
       }, busy ? chromeCopy.installingWord : chromeCopy.installContinue),
+      extFailed !== null ? extExitsRow(extFailed) : null,
       note !== null ? h('p', { className: css.rescueErr }, note) : null,
     )
   }
