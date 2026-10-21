@@ -578,7 +578,13 @@ describe("THE COMMITTED LIB (an emitted import Node can actually resolve)", () =
   // fibo2-edit boarding's four first faces (lib/index.js, lib/actions.js,
   // lib/mods/loras.js, lib/mods/mask.js) plus cordis's
   // lib/scripts/provision-shared-deps.js (the one-pack consolidation).
-  const LIB_CENSUS_PIN = 608;
+  // 609 (2026-10-21): estate/provisioning's lib/snapshot.js — the
+  // snapshot_provisions cure's committed face (the Download-button
+  // burn, a4214dfaa): the pure dest/channel halves the service arms
+  // and the walls share. Landed unpinned in the same commit as the
+  // ghost-name wall; repinned at the reopen-carry commit when the
+  // census next read the tree.
+  const LIB_CENSUS_PIN = 609;
   const specRe = /(?:from\s*|import\(\s*)(["'])(\.[^"']*)\1/g;
 
   it("the census is exact (a deletion OR a lowered floor reds — the count is pinned, not floored)", () => {
