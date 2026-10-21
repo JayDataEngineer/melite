@@ -702,6 +702,18 @@ window.__ModuleLoader__.load({
 										})]
 									})]
 								}),
+								/* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+									className: prep_module_css_default.railRow,
+									children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
+										className: prep_module_css_default.railHint,
+										"data-testid": "prep-scale-floor-hint",
+										children: [
+											"targets under ",
+											8,
+											"px refuse at Run (smaller targets upscale to a blank — the crop leaf's drag-time floor, named here)"
+										]
+									})
+								}),
 								/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 									className: prep_module_css_default.railRow,
 									children: [

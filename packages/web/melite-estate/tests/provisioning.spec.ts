@@ -151,4 +151,21 @@ describe("the acquire stall budget's deployment face (P5 F1)", () => {
       await ctx.fiber.dispose();
     }
   });
+
+  // THE LANE PIN IS READ, NOT CLAIMED (audit F7 close-out, 2026-11-11):
+  // the comment above claimed the lane pins 10000 while the rendered
+  // cordis.patch.yml carried only repoRoot+agentRoute — the lane rode
+  // the default silently and no wall read the file. This arm reads the
+  // rendered profile-layer file and demands the explicit key, so the
+  // deployed budget stays a decision, never an accident. Self-skips
+  // where the lane file is absent (hermetic lanes, CI).
+  test("the rendered lane file pins the deliberate stall budget", async () => {
+    const { readFileSync, existsSync } = await import('node:fs')
+    const { homedir } = await import('node:os')
+    const { join } = await import('node:path')
+    const laneFile = join(homedir(), '.dsh-dev/profiles/melite-test/cordis.patch.yml')
+    if (!existsSync(laneFile)) return
+    const text = readFileSync(laneFile, 'utf8')
+    expect(text).toMatch(/acquireStallTimeoutMs:\s*10000\b/)
+  });
 });

@@ -598,6 +598,16 @@ describe('the studio (InputPrepStudio)', () => {
     expect(onPatch.mock.calls[3][0]).toMatchObject({ scale_width: -1, scale_height: -1 })
   })
 
+  it('AUDIT F7: THE SCALE RAIL NAMES THE 8px FLOOR — the operator learns before the Run press, not at it', () => {
+    render(h(InputPrepStudio, owner({ params: { source: IMG } })))
+    seatPreview(800, 600)
+    // the crop leaf refuses under-MIN_DIM boxes at drag time; the scale
+    // rail seats any positive integer — so the rail must NAME the floor
+    // its sibling enforces (the door's loud refusal is the backstop)
+    const hint = screen.getByTestId('prep-scale-floor-hint')
+    expect(hint.textContent).toMatch(/8px/)
+  })
+
   it('THE MODEL CHOICE IS THE UPSCALE-MODEL VOCABULARY (its own home is the oracle; "" unstated leads)', () => {
     render(h(InputPrepStudio, owner({ params: { source: IMG } })))
     const select = screen.getByTestId('prep-scale-model') as HTMLSelectElement

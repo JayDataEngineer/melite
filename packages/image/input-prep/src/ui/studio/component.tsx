@@ -35,7 +35,7 @@
 import { useEffect, useRef, useState } from 'react'
 import type { StageViewOwnerProps } from '@melite/contracts/stageView'
 import { StudioShell, SourceRow } from '@melite/card-base/client'
-import { SCALE_METHODS, SCALE_MODEL_OPTIONS } from '@melite/models-input'
+import { SCALE_METHODS, SCALE_MODEL_OPTIONS, MIN_DIM } from '@melite/models-input'
 import { CropPreview } from './CropPreview.tsx'
 import type { CropRect, NaturalSize } from './CropPreview.tsx'
 import css from './prep.module.css'
@@ -291,6 +291,11 @@ export function InputPrepStudio(props: StageViewOwnerProps) {
               }}
             />
           </label>
+        </div>
+        <div className={css.railRow}>
+          <span className={css.railHint} data-testid="prep-scale-floor-hint">
+            targets under {MIN_DIM}px refuse at Run (smaller targets upscale to a blank — the crop leaf's drag-time floor, named here)
+          </span>
         </div>
         <div className={css.railRow}>
           <button type="button" className={css.chip} data-testid="prep-preset-2x" disabled={base === null} onClick={() => { preset(2) }}>2×</button>

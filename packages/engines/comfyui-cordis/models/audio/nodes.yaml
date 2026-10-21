@@ -16,13 +16,16 @@ extensions:
   # extension_lane manifest refused to serve.
   - name: melite-audio-nodes
     url: https://github.com/JayDataEngineer/melite-audio-nodes
-    ref: 8274227c9ab14408a55bd6ee871422f463d655ea
+    ref: e9f4ae901b71adab01160d2299d782da23db7122
     required: true
     desc: >-
       The ONE audio pack: Qwen3-TTS synthesis (qwen3_tts, riding
       faster-qwen3-tts as of 2026-11-10), Voice Studio (.qvoice),
       MOSS-SFX v2 diffusion, voice embeddings, MeliteQVoiceCopy,
       film/loudness utilities. Every Audiocore* class lives here.
+      2026-10-21 re-pin: the faster-backend cure (all synthesis
+      through FasterQwen3TTS, silent default dead, 5.20 RoPE shim)
+      with 3/3 lane renders + the served-lane proof render.
   # 2026-10-16 (the roster-rows batch): the GGUF loader family declares
   # for the §4d HF-directory model channel — the qwen3-tts .gguf weights
   # load through its nodes (ace-step died in the 2026-10-12 operator

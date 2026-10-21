@@ -574,7 +574,11 @@ describe("THE COMMITTED LIB (an emitted import Node can actually resolve)", () =
   // runtime-presence seam). Repinned at sequencing after the cell-fold
   // track settled the tree (audit input-prep-total F4; deferred off the
   // in-flight cardsLanes tree by the repo-heal charter).
-  const LIB_CENSUS_PIN = 603;
+  // 608 (2026-11-11): five deliberate committed lib faces — the
+  // fibo2-edit boarding's four first faces (lib/index.js, lib/actions.js,
+  // lib/mods/loras.js, lib/mods/mask.js) plus cordis's
+  // lib/scripts/provision-shared-deps.js (the one-pack consolidation).
+  const LIB_CENSUS_PIN = 608;
   const specRe = /(?:from\s*|import\(\s*)(["'])(\.[^"']*)\1/g;
 
   it("the census is exact (a deletion OR a lowered floor reds — the count is pinned, not floored)", () => {
