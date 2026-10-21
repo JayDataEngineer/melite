@@ -1,5 +1,5 @@
-import type { ManagerInstallRequest, ManagerInstallResult, ManagerModelInstallRequest, ManagerModelInstallResult, ManagerPort } from "./ports.ts";
-import { ComfyUiManagerHttpClient, ManagerClientError, type ManagerQueueWaitOptions } from "./manager-client.ts";
+import type { ManagerInstallRequest, ManagerInstallResult, ManagerModelInstallRequest, ManagerModelInstallResult, ManagerPort } from "./ports.js";
+import { ComfyUiManagerHttpClient, ManagerClientError, type ManagerQueueWaitOptions } from "./manager-client.js";
 export type ManagerProviderErrorCode = "invalid-request" | "pin-mismatch" | "model-unregistered" | "model-metadata" | "head-mismatch" | "ref-unverifiable";
 export declare class ManagerProviderError extends Error {
     readonly code: ManagerProviderErrorCode;

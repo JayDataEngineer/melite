@@ -156,9 +156,6 @@ describe("verified artifact filesystem seams", () => {
       }),
     } satisfies ProvisioningConfig);
     const id = await service.startWeightAcquire(ref);
-    // the ledger's FINAL row still carries the verify phase — no
-    // timing hazard (a 64-byte hash lands in microseconds, but the
-    // voice it left on the ledger is permanent)
     const deadline = Date.now() + 5_000;
     let last = service.progressOf(id);
     while (last !== null && last.state !== "active" && last.state !== "failed" && Date.now() < deadline) {
@@ -168,8 +165,13 @@ describe("verified artifact filesystem seams", () => {
     assert.equal(last?.state, "active");
     assert.ok(seen.length > 0,
       "the real writer emitted no verify heartbeats through the service's callback — the ledger's verify phase has no source (audit F9: the writer's emission is the phase's truth)");
-    assert.equal(last?.phase, "verify",
-      "the real writer hashed but the ledger never voiced verify — the emission died between write() and the poll (audit F2/F9)");
+    // THE ACCEPTANCE LAW (the moss popup burn, 2026-11-10): the
+    // verify phase is the FLIGHT's word — the live mid-flight voice
+    // is walled by weight-acquire-phase PHASE 2 — and the settle
+    // sheds it, so the settled row voices the ready word alone
+    // (never a permanent live word a face would wait on).
+    assert.equal(last?.phase, undefined,
+      "the settled row kept its flight phase — a settled op must voice the ready word, never a live-flow word");
   });
 
   test("THE FSYNC HEARTBEAT FIRES BEFORE THE SYNC (audit F3: the boundary heartbeat must precede handle.sync — a multi-GB flush on a loaded disk stalls seconds with zero stream movement)", async () => {

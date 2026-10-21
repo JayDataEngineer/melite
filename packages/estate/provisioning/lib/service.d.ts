@@ -19,8 +19,8 @@ import type { Context, Plugin } from "@deepseek-ai/cordis";
  *  their own explicit budget (stalledConfig's 250ms), and the
  *  deployment face is ProvisioningConfig.acquireStallTimeoutMs. */
 export declare const ACQUIRE_STALL_TIMEOUT_MS = 10000;
-import { type ActivateOptions, type EnsureOptions, type ExternalProvisionRequest, type ProvisionOperation, type ProvisionPlan, type ProvisionResult, type ProvisionState, type ResourceRef, type ResourceStatus, type WeightAcquireProgress } from "./contracts.ts";
-import type { ProvisioningConfig, ProvisioningServiceDefinition } from "./ports.ts";
+import { type ActivateOptions, type EnsureOptions, type ExternalProvisionRequest, type ProvisionOperation, type ProvisionPlan, type ProvisionResult, type ProvisionState, type ResourceRef, type ResourceStatus, type WeightAcquireProgress } from "./contracts.js";
+import type { ProvisioningConfig, ProvisioningServiceDefinition } from "./ports.js";
 /** THE BUSY REFUSAL (audit I-S4): startWeightAcquire throws this when
  *  the plane already runs its concurrency cap of fetches. The door
  *  maps it to a 429 with retry_after_ms — a busy plane is a wait, not
@@ -150,6 +150,18 @@ export declare class ProvisioningService extends Service implements Provisioning
      *  runLocked's join law). The fetch itself rides executeEnsure
      *  (the existing fetcher — no second fetcher). */
     startWeightAcquire(ref: ResourceRef, options?: EnsureOptions): Promise<string>;
+    /** THE NO-RE-MINT COVERAGE (the mint door's judge): the id of the
+     *  settled operation that already covers the ask for one resource
+     *  key, undefined when nothing covers it. Coverage = the latest
+     *  operation for the key is FINISHED with the store's own success
+     *  vocabulary (outcome "active" or "restart_required" —
+     *  aggregateOutcome's succeeded set) and every covered item wears a
+     *  verified integrity word ("declared-sha256" or "size-checked").
+     *  A whole-plan ask (wantedKeys undefined) demands the whole roster
+     *  verified; a named ask demands exactly the requested keys. A
+     *  failed/blocked settle, an unfinished row, or an unprovable ask
+     *  (wantedKeys null) never covers. */
+    private settledCoverageId;
     /** THE JOIN FILL (verify R3): the joiner tops the ledger up only
      *  where the live entry lacks. The row is re-read AFTER the plan
      *  resolve — a concurrent executeEnsure seed may have counted
@@ -201,7 +213,10 @@ export declare class ProvisioningService extends Service implements Provisioning
      *  the store inspect answers, stream on the wire, queue in the
      *  manager drain, verify at the hash boundary). The optional state
      *  rides only where no record move may carry it; where a move
-     *  exists the mirror carries the word and this carries the phase. */
+     *  exists the mirror carries the word and this carries the phase.
+     *  The voice is FLIGHT-ONLY: complete() sheds the phase at the
+     *  settle (the acceptance law — a settled row never keeps a live
+     *  word), so only in-flight rows answer with one. */
     private voicePhase;
     /** THE FLIGHT DETAIL VOICE (audit download-stack-audit-2026-10-20
      *  F7): mirrors one mid-flight fact onto the ledger row's detail —

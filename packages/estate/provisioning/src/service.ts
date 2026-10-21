@@ -649,6 +649,12 @@ export class ProvisioningService extends Service implements ProvisioningServiceD
       (operation.state === "acquiring" || operation.state === "verifying");
     if (!inFlight) {
       if (operation.finishedAt === undefined) return;
+      // THE NO-RE-MINT MEMORY REJOINS (the restart's dedupe seat): a
+      // settled stored row becomes the record's settled operation
+      // again, so a post-restart accept dedupes onto ITS id (the boot
+      // seed walks oldest-first — the newest row for the ref wins,
+      // the same recency law the ledger pointer rides).
+      this.record(operation.ref).operation = copyOperation(operation);
       this.weightProgress.set(operation.operationId, {
         operationId: operation.operationId,
         ref: copyRef(operation.ref),
@@ -826,11 +832,32 @@ export class ProvisioningService extends Service implements ProvisioningServiceD
     let id = "";
     try {
       let total = 0;
+      // THE NO-RE-MINT COVERAGE ASK: undefined = the whole plan is the
+      // ask (every settled item must be verified); an array = the
+      // named subset's plan keys; null = the plan would not resolve,
+      // so no coverage can be proven and the dedupe skips.
+      let wantedKeys: readonly string[] | null | undefined = options?.items === undefined ? undefined : null;
       try {
         const plan = await this.plan(ref);
-        total = planTotal(narrowPlan(plan, options?.items));
+        const narrowed = narrowPlan(plan, options?.items);
+        total = planTotal(narrowed);
+        wantedKeys = narrowed.items.map((item) => item.key);
       } catch {
         total = 0;
+      }
+      // THE NO-RE-MINT LAW (the popup loop's third duplicate, burn
+      // 2026-11-09/10 — ops cd085c9b, 9dfe1a72, f634607f minted for
+      // ONE sha-verified VAE): an accept against a weight an
+      // already-settled op covers returns the EXISTING operation id.
+      // A settled FAILED op never covers (the retry law, ARM 5);
+      // a discarded or evicted row covers nothing (the delete exit).
+      const settledId = this.settledCoverageId(key, wantedKeys);
+      if (settledId !== undefined) {
+        // parked same-key joiners must wake: the mint answers the
+        // settled id, the joiner's lock check finds none, and its own
+        // mint path converges on this same dedupe
+        settleMint(settledId);
+        return settledId;
       }
       id = this.operationIdFactory();
       this.weightProgress.set(id, {
@@ -890,6 +917,38 @@ export class ProvisioningService extends Service implements ProvisioningServiceD
       if (this.pendingMints.get(key) === mint) this.pendingMints.delete(key);
     }
     return id;
+  }
+
+  /** THE NO-RE-MINT COVERAGE (the mint door's judge): the id of the
+   *  settled operation that already covers the ask for one resource
+   *  key, undefined when nothing covers it. Coverage = the latest
+   *  operation for the key is FINISHED with the store's own success
+   *  vocabulary (outcome "active" or "restart_required" —
+   *  aggregateOutcome's succeeded set) and every covered item wears a
+   *  verified integrity word ("declared-sha256" or "size-checked").
+   *  A whole-plan ask (wantedKeys undefined) demands the whole roster
+   *  verified; a named ask demands exactly the requested keys. A
+   *  failed/blocked settle, an unfinished row, or an unprovable ask
+   *  (wantedKeys null) never covers. */
+  private settledCoverageId(key: string, wantedKeys: readonly string[] | null | undefined): string | undefined {
+    if (wantedKeys === null) return undefined;
+    const operation = this.records.get(key)?.operation;
+    if (operation === undefined || operation.finishedAt === undefined) return undefined;
+    if (operation.outcome !== "active" && operation.outcome !== "restart_required") return undefined;
+    const verified = (item: ResourceStatusItem): boolean =>
+      (item.state === "active" || item.state === "restart_required") &&
+      (item.integrity === "declared-sha256" || item.integrity === "size-checked");
+    if (wantedKeys === undefined) {
+      if (!operation.items.every(verified)) return undefined;
+    } else {
+      if (wantedKeys.length === 0) return undefined;
+      const byKey = new Map(operation.items.map((item) => [item.key, item]));
+      for (const want of wantedKeys) {
+        const item = byKey.get(want);
+        if (item === undefined || !verified(item)) return undefined;
+      }
+    }
+    return operation.operationId;
   }
 
   /** THE JOIN FILL (verify R3): the joiner tops the ledger up only
@@ -1852,6 +1911,25 @@ export class ProvisioningService extends Service implements ProvisioningServiceD
         this.weightProgress.set(operationId, { ...entry, detail: result.detail });
       }
     }
+    // THE SETTLED ROW SHEDS THE FLIGHT WORD (the acceptance law, the
+    // moss popup burn 2026-11-09/10): the ledger's phase is the LIVE
+    // liveness word — a settled row that kept it minted
+    // "(active:recheck)" at the acquire door and every phase-reading
+    // face waited for a recheck transition that never comes. The
+    // phase belongs to the flight, not the landing: the settle drops
+    // it, so the poll voices the ready word (state alone).
+    const settled = this.weightProgress.get(operationId);
+    if (settled !== undefined && settled.phase !== undefined) {
+      const row: WeightAcquireProgress = {
+        operationId: settled.operationId,
+        ref: settled.ref,
+        state: settled.state,
+        bytes: settled.bytes,
+        total: settled.total,
+        ...(settled.detail === undefined ? {} : { detail: settled.detail }),
+      };
+      this.weightProgress.set(operationId, row);
+    }
     this.persist(record);
     this.evictSettledAcquires();
     return result;
@@ -1964,7 +2042,10 @@ export class ProvisioningService extends Service implements ProvisioningServiceD
    *  the store inspect answers, stream on the wire, queue in the
    *  manager drain, verify at the hash boundary). The optional state
    *  rides only where no record move may carry it; where a move
-   *  exists the mirror carries the word and this carries the phase. */
+   *  exists the mirror carries the word and this carries the phase.
+   *  The voice is FLIGHT-ONLY: complete() sheds the phase at the
+   *  settle (the acceptance law — a settled row never keeps a live
+   *  word), so only in-flight rows answer with one. */
   private voicePhase(operationId: string, phase: AcquirePhase, state?: ProvisionState): void {
     const entry = this.weightProgress.get(operationId);
     if (entry === undefined) return;
@@ -2119,6 +2200,12 @@ export class ProvisioningService extends Service implements ProvisioningServiceD
       for (const [refKey, id] of this.weightProgressByRef) {
         if (id === entry.operationId) this.weightProgressByRef.delete(refKey);
       }
+      // THE NO-RE-MINT MEMORY EVICTS WITH THE ROW: an evicted id is
+      // forgotten everywhere the plane keeps it, so the mint door
+      // never dedupes an accept onto an id the ledger no longer holds.
+      for (const record of this.records.values()) {
+        if (record.operation?.operationId === entry.operationId) record.operation = undefined;
+      }
       const store = this.operationStore;
       if (store?.remove !== undefined) {
         // the tombstone lands BEFORE the remove so a same-id save
@@ -2151,6 +2238,14 @@ export class ProvisioningService extends Service implements ProvisioningServiceD
     if ([...this.locks.values()].some((lock) => lock.id === operationId)) {
       throw new Error(
         "acquire " + operationId + " is still in flight — poll it or wait for it to settle before discarding");
+    }
+    // THE NO-RE-MINT MEMORY CLEARS WITH THE ROW (the delete exit): a
+    // discarded settled op covers nothing — the record's settled
+    // pointer must not keep deduping accepts onto a removed id. The
+    // clear runs even when the ledger entry is already gone (evicted),
+    // so a discard always ends the row's coverage.
+    for (const record of this.records.values()) {
+      if (record.operation?.operationId === operationId) record.operation = undefined;
     }
     if (!this.weightProgress.has(operationId)) return;
     this.weightProgress.delete(operationId);

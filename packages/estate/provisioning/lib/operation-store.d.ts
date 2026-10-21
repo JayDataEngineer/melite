@@ -1,5 +1,5 @@
-import { type ProvisionOperation } from "./contracts.ts";
-import type { OperationStorePort } from "./ports.ts";
+import { type ProvisionOperation } from "./contracts.js";
+import type { OperationStorePort } from "./ports.js";
 export type OperationStoreErrorCode = "invalid-request" | "invalid-record" | "io";
 export declare class OperationStoreError extends Error {
     readonly code: OperationStoreErrorCode;

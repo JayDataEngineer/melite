@@ -125,7 +125,10 @@ export interface WeightAcquireProgress {
     /** THE LIVE PHASE (audit F2): the flow moving under the byte
      *  count — stream, queue, verify, recheck. Absent on rows seeded
      *  before the phase law; every flight the service opens carries it
-     *  from the first poll. */
+     *  from the first poll. Absent on SETTLED rows (the acceptance
+     *  law, 2026-11-10): the phase belongs to the flight, not the
+     *  landing — a settled row shedding it at complete() voices the
+     *  ready word alone, never a live-flow word a face would wait on. */
     readonly phase?: AcquirePhase;
 }
 export interface EnsureOptions {

@@ -353,10 +353,13 @@ describe("the resources census honesty law (the anima burn)", () => {
   // RESIDUE B2-3 (audit h3-frames-anima-residue-2026-10-20): three
   // seats with zero tests touching them — refusalFor's generic-throw
   // mapping, cancelledJoinResult's join-abort shape, and the
-  // reconcile catch that serves failed/[]. The two arms below pin
-  // all three: the catch arm rides refusalFor's generic mapping
-  // (the only law the catch applies), the join arm pins
-  // cancelledJoinResult's exact triple.
+  // reconcile catch that serves failed/[]. The arms below pin all
+  // three doors of the amended law: the read-fault arm rides the
+  // writer's inspect throw (the exact door the residue named — the
+  // fault is a checked verdict, never the scan's unknown), the
+  // catch arm rides refusalFor's generic mapping (the only law the
+  // catch applies), the join arm pins cancelledJoinResult's exact
+  // triple.
   test("A GENERIC THROW INSIDE THE RECONCILE LOOP WEARS 'failed' WITH ZERO ITEMS (the catch + refusalFor's generic mapping)", async () => {
     const context = new Context();
     contexts.push(context);
@@ -408,6 +411,47 @@ describe("the resources census honesty law (the anima burn)", () => {
       "the catch serves zero items — the failed aggregate's items died with the throw, nothing is faked");
     assert.match(row.detail ?? "", /invalid provisioning transition active -> installed/,
       "refusalFor's generic mapping carries the throw's own message (the 'provisioning/failed' law) — the detail names the seat, not a health verdict");
+  });
+
+  test("A REAL READ FAULT IS A VERDICT, NOT A SCAN ARTIFACT — the writer's inspect throw wears 'failed' with the fault's own message (the amended B2-3 law)", async () => {
+    const context = new Context();
+    contexts.push(context);
+    // EACCES on the store root — the residue's own example. The
+    // throw is not the budget's: the check RAN and the machinery
+    // refused. The scan-artifact voice ('unknown' + scan-incomplete
+    // + census_partial) would promise the operator that a rescan
+    // heals it; the amended law refuses that promise — the fault is
+    // a checked verdict that stands, carrying its own message.
+    const writer: ArtifactWriterPort = {
+      inspect: async () => {
+        const fault: NodeJS.ErrnoException = new Error("EACCES: permission denied, stat '/estate/models/anima/w0.safetensors'");
+        fault.code = "EACCES";
+        throw fault;
+      },
+      write: async () => { throw new Error("the census never writes") },
+    };
+    const service = new ProvisioningService(context, {
+      declaration: multiItemRoster([["anima", 2]]),
+      artifactWriter: writer,
+      storeRoot: tempRoot(),
+    } satisfies ProvisioningConfig);
+
+    const rows = await service.reconcile(undefined);
+    assert.equal(rows.length, 1);
+    const row = rows[0];
+    expect(row.state,
+      "a thrown read fault is a checked verdict — the row keeps it, never the scan's 'unknown' (the arm must flip exactly when refusalFor's fall-through stops naming the fault)",
+    ).toBe("failed");
+    expect(row.items.length).toBe(2,
+      "the throw is per-item — the item roster stays complete (both items were genuinely attempted, nothing was cut)");
+    for (const item of row.items) {
+      expect(item.state).toBe("failed");
+      assert.match(item.detail ?? "", /EACCES: permission denied/,
+        "the fault's own message rides the item — the operator reads the seat, never a scan note");
+    }
+    expect(row.detail,
+      "no scan-incomplete voice on a checked fault — the incomplete-scan mark is the budget's artifact alone",
+    ).toBeUndefined();
   });
 
   test("A JOIN-ABORTED WAIT SERVES outcome 'cancelled' WITH operationState 'failed' AND NO ITEMS (cancelledJoinResult's triple)", async () => {
