@@ -1,9 +1,3 @@
-[submodule "references/anny-fit"]
-	url = https://github.com/naver/anny-fit
-	path = references/anny-fit
-[submodule "references/multi-hmr2"]
-	url = https://github.com/naver/multi-hmr2
-	path = references/multi-hmr2
 [submodule "vendor/comfyui_extensions/ComfyUI-MiniMax-H3-MotionCache-FastVAE"]
 	path = vendor/comfyui_extensions/ComfyUI-MiniMax-H3-MotionCache-FastVAE
 	url = https://github.com/JayDataEngineer/ComfyUI-MiniMax-H3-MotionCache-FastVAE.git
