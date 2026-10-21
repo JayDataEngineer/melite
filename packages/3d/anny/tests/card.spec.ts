@@ -242,6 +242,24 @@ describe("the anny compose gate", () => {
     assert.deepEqual(def.preview, { figure: { identityModel: "anny" } });
   });
 
+  it("(j) the served body_glb row is the mesh face: group body, wtype mesh — the attached-GLB preview arm walks the served schema, never a hand list", async () => {
+    const { theService } = await import("@melite/comfyui-cordis");
+    await loadCardDefs();
+    const live = theService().formSchemas("anny", "anny")!;
+    const env = live.schema as {
+      refs: Record<string | number, { type?: string; dict?: Record<string, unknown>; meta?: { extra?: { group?: string, wtype?: string } } }>;
+      uid: number;
+    };
+    const root = env.refs[env.uid];
+    const dict = (root?.dict ?? {}) as Record<string, unknown>;
+    const refId = dict.body_glb;
+    assert.ok(typeof refId === "number", "body_glb rides the served envelope (a dict ref)");
+    const row = env.refs[refId];
+    assert.ok(row, "the dict ref resolves to its schema row");
+    assert.equal(row.meta?.extra?.group, "body", "the mesh sits in the body group beside the photo");
+    assert.equal(row.meta?.extra?.wtype, "mesh", "the mesh wtype — attachedMeshOf's mesh-kind gate and the constructor's mesh face key off it");
+  });
+
   it("(l) the served body_image row is the image face: group body, wtype image — the constructor's auto-square law rides it", async () => {
     const { theService } = await import("@melite/comfyui-cordis");
     await loadCardDefs();
