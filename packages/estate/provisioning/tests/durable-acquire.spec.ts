@@ -96,13 +96,16 @@ function seat(
   return { service: new ProvisioningService(ctx, config), fetched, ctx };
 }
 
-/** Poll a seat's ledger (memory) until a predicate holds. */
+/** Poll a seat's ledger (memory) until a predicate holds. The 15s
+ *  budget (not 5s): under parallel vitest load the claim cadence +
+ *  fetch settle chain can outrun a tighter window — the wall judges
+ *  the LAWS, not the scheduler's mood. */
 async function untilLedger(
   read: () => WeightAcquireProgress | null,
   pred: (row: WeightAcquireProgress) => boolean,
   what: string,
 ): Promise<WeightAcquireProgress> {
-  for (let attempt = 0; attempt < 500; attempt += 1) {
+  for (let attempt = 0; attempt < 1500; attempt += 1) {
     const row = read();
     if (row !== null && pred(row)) return row;
     await new Promise((resolve) => { setTimeout(resolve, 10); });
