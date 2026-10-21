@@ -1,6 +1,6 @@
-import { GraphBuilder, OutputHandle } from './graph.ts';
-import type { NodeRef, PromptGraph, StripTable } from './graph.ts';
-import type { LaneInputsFacts } from './facts.ts';
+import { GraphBuilder, OutputHandle } from './graph.js';
+import type { NodeRef, PromptGraph, StripTable } from './graph.js';
+import type { LaneInputsFacts } from './facts.js';
 /** The per-export TUNE (stroke 95 — every knob a mask source owns
  *  rides its bag entry; the card threads each export's own tune as
  *  the trip's fourth arm). Absent arms ride the lane-flat values
