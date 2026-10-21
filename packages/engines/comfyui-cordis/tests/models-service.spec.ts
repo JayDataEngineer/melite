@@ -19,6 +19,18 @@ import { resetCatalogCache } from "../src/catalog.ts";
 import { ModelError, ProvisionRow } from "@melite/comfyui-card-kit/model-contract";
 import type { ModelDecl } from '@melite/comfyui-card-kit/model-contract';
 import { DECL as KREA } from "../../../models/krea-2/src/index.ts";
+import { DECL as QWEN21 } from "../../../models/qwen-img-21/src/index.ts";
+import { t2i as T2I } from "../../../models/qwen-img-21/src/actions.ts";
+
+/** The three cell-owned unets the qwen-img-21 pin counts: the bf16
+ *  tier's, and each turbo tier's. The int8 cell declares no
+ *  lane_inputs (the family default is its tier), so its merge
+ *  duplicates the base variant merge and is not a fold to count. */
+const CELL_UNETS: readonly string[] = [
+  "qwen_image_2.1_bf16.safetensors",
+  "qwen_image_2.1_turbo_int8_convrot.safetensors",
+  "qwen_image_2.1_turbo_bf16.safetensors",
+];
 
 /** Mint a tree owned by the CURRENT test (disposed with it). */
 function mintRoot(): string {
@@ -392,6 +404,81 @@ describe("registerFamily (the metaclass gates)", () => {
     merged.actions = [door];
     assert.throws(
       () => fresh().registerFamily(merged),
+      /probe door: lane_inputs\.unet = "drifted\.safetensors"/,
+    );
+  });
+
+  it("THE ACTION ADMISSION GATE — QWEN CELL-FOLD: the door parses every CELL merge (qwen-img-21's tier weights ride cells only)", () => {
+    // ROADMAP "OWED 2026-11-10 — THE NIGHT BATCH REMAINDERS" (QWEN
+    // CELL-FOLD): qwen-img-21 declares weights at variants[].cells
+    // lane_inputs ONLY — neither the base nor the turbo variant row
+    // carries lane_inputs — and the admission door parsed the family
+    // row and every variant merge but never folded a CELL merge, the
+    // resolved rows a cell-coordinate run actually composes. The gate
+    // judged NO cell weight slot for the family: a drifted cell
+    // lane_input booted green and detonated at the first
+    // cell-coordinate compose.
+    //
+    // THE PIN (the real DECL, a recording door beside the real t2i
+    // door): the door must see the cell-folded merges — the bf16
+    // merge re-spelling unet + text_encoder, each turbo merge
+    // re-spelling its unet. RED at HEAD: the door sees the family
+    // row + the bare variant merges only — zero cell-folded merges.
+    const seen: Array<Record<string, unknown>> = [];
+    const recorder = {
+      id: "cell-fold-pin",
+      inputs: [],
+      outputs: [{ name: "image", kind: "IMAGE" }],
+      params: [],
+      facts: (raw: Record<string, unknown>): unknown => {
+        seen.push({ ...raw });
+        return {};
+      },
+      build: (): unknown => ({}),
+    };
+    const { actions: _door, ...rest } = QWEN21 as unknown as Record<string, unknown>;
+    const qwen = structuredClone(rest) as unknown as { actions?: unknown[] };
+    qwen.actions = [T2I, recorder];
+    fresh().registerFamily(qwen as unknown as ModelDecl);
+    const cellMerges = seen.filter((m) =>
+      CELL_UNETS.includes(m["unet"] as string),
+    );
+    assert.equal(
+      cellMerges.length,
+      3,
+      `the door parsed the three cell-folded merges (saw ${cellMerges.length} — the gate folds zero cells): ${JSON.stringify(seen.map((m) => m["unet"]))}`,
+    );
+  });
+
+  it("THE ACTION ADMISSION GATE — QWEN CELL-FOLD: a drifted CELL merge refuses at birth in the door's own voice", () => {
+    // The same hole the variant arm pins, one axis down: the merge a
+    // cell-coordinate run composes must refuse at BOOT when it
+    // drifts, never at first compose. RED at HEAD: the drifted cell
+    // registers.
+    const door = {
+      id: "probe",
+      inputs: [],
+      outputs: [{ name: "image", kind: "IMAGE" }],
+      params: [],
+      facts: (raw: Record<string, unknown>): unknown => {
+        if (raw.unet !== "good.safetensors") {
+          throw new Error(`probe door: lane_inputs.unet = ${JSON.stringify(raw.unet)} — this door serves good.safetensors only`);
+        }
+        return {};
+      },
+      build: (): unknown => ({}),
+    };
+    const drifted = clone({
+      id: "synth-cell-door",
+      lane_inputs: { unet: "good.safetensors" },
+      variants: [{
+        ...variant({ id: "v1" }),
+        cells: [cell({ quant: "int8", lane_inputs: { unet: "drifted.safetensors" } })],
+      }],
+    });
+    drifted.actions = [door];
+    assert.throws(
+      () => fresh().registerFamily(drifted),
       /probe door: lane_inputs\.unet = "drifted\.safetensors"/,
     );
   });
