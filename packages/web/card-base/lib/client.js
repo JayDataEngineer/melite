@@ -16205,8 +16205,24 @@ window.__ModuleLoader__.load({
 				props.onSurface(liveSpec.size === "huge" ? "huge" : "");
 			}, [liveSpec, specError]);
 			const fieldByName = new Map((spec !== null ? fieldsOf(spec) : []).map((f) => [f.name, f]));
+			const writeFailedRef = (0, react.useRef)(false);
 			const seat = writeThroughSeat(props.stageId, (patch) => {
-				props.onPatch(patch);
+				try {
+					const settled = props.onPatch(patch);
+					if (settled instanceof Promise) settled.then((landed) => {
+						if (landed === false) {
+							writeFailedRef.current = true;
+							console.warn("[studio] drafts write refused: the door answered false");
+						} else writeFailedRef.current = false;
+					}, (e) => {
+						writeFailedRef.current = true;
+						console.warn("[studio] drafts write refused:", e);
+					});
+					else writeFailedRef.current = false;
+				} catch (e) {
+					writeFailedRef.current = true;
+					console.warn("[studio] drafts write refused:", e);
+				}
 			});
 			const onEdit = (name, v) => {
 				const coerced = coerceFieldEdit(fieldByName.get(name), v);
@@ -16231,6 +16247,7 @@ window.__ModuleLoader__.load({
 				for (const k of userKeys) patch[k] = user[k];
 				for (const k of Object.keys(params)) if (!userKeys.has(k)) patch[k] = null;
 				seat.now(patch);
+				if (writeFailedRef.current) return;
 				onRun();
 			};
 			const runRef = (0, react.useRef)(run);

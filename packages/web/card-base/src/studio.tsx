@@ -159,7 +159,37 @@ export function DeclarativeStudio(props: StageViewOwnerProps & {
   // (one write per pause, the CAS budget's law); the press routes
   // its full patch through NOW, superseding every queued row (one
   // door write, never a stale re-fire after it).
-  const seat = writeThroughSeat(props.stageId, (patch) => { props.onPatch(patch) })
+  //
+  // THE WRITE-REFUSAL FACE (R2-4-SYNC, re-seated 2026-10-21 after
+  // the collapse deleted r3's catch): a refused door write VOICES
+  // and never escapes its caller — the trailing timer survives a
+  // sync throw, and the press stops on its OWN refused write (a row
+  // whose write did not land never composes) while a refused
+  // trailing write never kills a later healthy press.
+  const writeFailedRef = useRef(false)
+  const seat = writeThroughSeat(props.stageId, (patch) => {
+    try {
+      const settled: void | Promise<boolean | void> = props.onPatch(patch)
+      if (settled instanceof Promise) {
+        void settled.then((landed) => {
+          if (landed === false) {
+            writeFailedRef.current = true
+            console.warn('[studio] drafts write refused: the door answered false')
+          } else {
+            writeFailedRef.current = false
+          }
+        }, (e: unknown) => {
+          writeFailedRef.current = true
+          console.warn('[studio] drafts write refused:', e)
+        })
+      } else {
+        writeFailedRef.current = false
+      }
+    } catch (e) {
+      writeFailedRef.current = true
+      console.warn('[studio] drafts write refused:', e)
+    }
+  })
   const onEdit = (name: string, v: unknown): void => {
     const coerced = coerceFieldEdit(fieldByName.get(name), v)
     setUser((prev) => ({ ...prev, [name]: coerced }))
@@ -193,6 +223,9 @@ export function DeclarativeStudio(props: StageViewOwnerProps & {
     for (const k of userKeys) patch[k] = user[k]
     for (const k of Object.keys(params)) if (!userKeys.has(k)) patch[k] = null
     seat.now(patch as Record<string, unknown>)
+    // the press-stops law: a row whose own write refused never
+    // composes (the door's refusal is already voiced by the seat)
+    if (writeFailedRef.current) return
     onRun()
   }
   // THE GESTURE BINDING (hour-26): the frame's top-bar pill calls

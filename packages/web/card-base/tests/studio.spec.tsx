@@ -465,3 +465,74 @@ describe('THE SETTINGS-EATER LAW (every edit fires through the door, 2026-10-21)
     expect(onRun).toHaveBeenCalledTimes(1)
   })
 })
+
+describe('THE WRITE-REFUSAL FACE (R2-4-SYNC re-seated 2026-10-21 — a refused write voices, never escapes, never composes)', () => {
+  // The r2 accuracy finding, REGRESSED by the studio collapse: r3's
+  // catch was deleted whole, and the seat wiring re-landed with a
+  // BARE send — a sync-throwing door escapes into the timer and the
+  // press. The law: a refused write VOICES (console.warn), never
+  // crashes its caller, and the press NEVER composes a row whose
+  // own write did not land (the press-stops law) — but a refused
+  // TRAILING write never kills a later healthy press (recovery).
+  test('THE SYNC THROW — a door that throws at the press stops the run (no onRun), voices, and never escapes run()', async () => {
+    stubWire()
+    const onPatch = vi.fn(() => { throw new Error('door refused: cas lost') })
+    const onRun = vi.fn()
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const bound: Array<() => void> = []
+    render(studio({
+      onPatch, onRun,
+      bindRun: (r: () => void) => { bound.push(r) },
+    }))
+    const field = await screen.findByLabelText('Steps', {}, { timeout: 4000 })
+    fireEvent.change(field, { target: { value: '7' } })
+    await waitFor(() => { if (bound.length === 0) throw new Error('run not bound') })
+    let escaped: unknown = null
+    try { bound[bound.length - 1]!() } catch (e) { escaped = e }
+    expect(escaped).toBe(null)  // the throw never escapes the press
+    await new Promise((r) => setTimeout(r, 500))
+    expect(onRun).not.toHaveBeenCalled()  // a row whose write refused never composes
+    expect(warn).toHaveBeenCalled()  // the refusal VOICES
+    warn.mockRestore()
+  })
+
+  test('THE TRAILING THROW — a door that throws inside the trailing window voices and never crashes the timer', async () => {
+    stubWire()
+    const onPatch = vi.fn(() => { throw new Error('door refused: cas lost') })
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    render(studio({ onPatch }))
+    const field = await screen.findByLabelText('Steps', {}, { timeout: 4000 })
+    fireEvent.change(field, { target: { value: '9' } })
+    await waitFor(() => {
+      if (!onPatch.mock.calls.some((c) => (c[0] as Record<string, unknown>)['steps'] === 9)) {
+        throw new Error('the trailing write never fired; calls: ' + JSON.stringify(onPatch.mock.calls))
+      }
+    }, { timeout: 4000 })
+    await waitFor(() => { if (warn.mock.calls.length === 0) throw new Error('the refusal never voiced') }, { timeout: 4000 })
+    warn.mockRestore()
+  })
+
+  test('THE PRESS RECOVERY — a refused trailing write never kills a later healthy press', async () => {
+    stubWire()
+    let refuse = true
+    const onPatch = vi.fn((patch: Record<string, unknown>) => {
+      if (refuse && patch['steps'] === 11) throw new Error('door refused: cas lost')
+      return true
+    })
+    const onRun = vi.fn()
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const bound: Array<() => void> = []
+    render(studio({
+      onPatch, onRun,
+      bindRun: (r: () => void) => { bound.push(r) },
+    }))
+    const field = await screen.findByLabelText('Steps', {}, { timeout: 4000 })
+    fireEvent.change(field, { target: { value: '11' } })  // refused at the trailing window
+    await waitFor(() => { if (warn.mock.calls.length === 0) throw new Error('the refusal never voiced') }, { timeout: 4000 })
+    refuse = false  // the door heals
+    await waitFor(() => { if (bound.length === 0) throw new Error('run not bound') })
+    bound[bound.length - 1]!()
+    await waitFor(() => { if (onRun.mock.calls.length === 0) throw new Error('the healthy press never ran') }, { timeout: 4000 })
+    warn.mockRestore()
+  })
+})
