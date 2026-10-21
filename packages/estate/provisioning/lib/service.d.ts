@@ -24,6 +24,12 @@ export declare const ACQUIRE_STALL_TIMEOUT_MS = 10000;
  *  many times before the acquire settles failed — the deployment-varying
  *  face is ProvisioningConfig.acquireStallRetries. */
 export declare const ACQUIRE_STALL_RETRIES = 6;
+/** THE DURABLE CLAIM CADENCE (2026-10-21): how often a durable seat
+ *  polls the shared op store for 'requested' rows. A deployment
+ *  tunable — ProvisioningConfig.downloadClaimIntervalMs — because a
+ *  busy lane and a quiet box want different latencies between an
+ *  agent's request and the lane's claim. */
+export declare const DOWNLOAD_CLAIM_INTERVAL_MS = 2000;
 import { type ActivateOptions, type EnsureOptions, type ExternalProvisionRequest, type ProvisionOperation, type ProvisionPlan, type ProvisionResult, type ProvisionState, type ResourceRef, type ResourceStatus, type WeightAcquireProgress } from "./contracts.js";
 import type { ProvisioningConfig, ProvisioningServiceDefinition } from "./ports.js";
 /** THE BUSY REFUSAL (audit I-S4): startWeightAcquire throws this when
@@ -97,6 +103,17 @@ export declare class ProvisioningService extends Service implements Provisioning
      *  teardown: the lock's own controller. Deleted on every attempt
      *  exit, never a leak. */
     private readonly stallAborters;
+    /** THE DURABLE DOWNLOAD SEAT (2026-10-21): true = this seat
+     *  claims 'requested' op rows on a cadence and owns every fetch's
+     *  lifetime. The validated read of
+     *  ProvisioningConfig.durableDownloads. */
+    private readonly durableDownloadsSeat;
+    /** THE CLAIM CADENCE: the validated read of
+     *  ProvisioningConfig.downloadClaimIntervalMs. */
+    private readonly downloadClaimIntervalMs;
+    /** The per-boot identity a claim stamps into the row it wins —
+     *  the re-read guard names the loser of a two-seat race. */
+    private readonly seatId;
     /** THE STALL VOICE SEAT: the watchdog's refusal per operation,
      *  consumed once by the item loop — the abort the refusal rode
      *  would otherwise read as a cancellation at refusalFor, and a
@@ -173,6 +190,58 @@ export declare class ProvisioningService extends Service implements Provisioning
      *  runLocked's join law). The fetch itself rides executeEnsure
      *  (the existing fetcher — no second fetcher). */
     startWeightAcquire(ref: ResourceRef, options?: EnsureOptions): Promise<string>;
+    /** THE FLIGHT LAUNCH (the mint tail, shared by the direct start
+     *  and the durable claim): registers the lock synchronously under
+     *  the GIVEN id and settles the ledger at the flight's end. The
+     *  caller owns the slot reservation and the ledger seeding. */
+    private launchWeightAcquire;
+    /** THE DURABLE DOWNLOAD SEAT'S REQUEST ARM (2026-10-21): mints a
+     *  'requested' op row for the ref WITHOUT opening a wire — the
+     *  fetch belongs to the durable seat that claims it, so the
+     *  download outlives this session. The ask is always the WHOLE
+     *  plan (a subset ask is a durable-seat-only shape: the GUI's
+     *  subset presses ride the durable seat directly). One want, one
+     *  row: a requested or live row for the ref returns its id, and a
+     *  settled op that already covers the ask returns the settled id
+     *  (the no-re-mint law).
+     *  @param ref the model ref the durable seat will fetch
+     *  @returns the requested operation's id
+     *  @throws when the seat has no operation store — a request row
+     *  nobody can claim is a dead queue, never a silent no-op. */
+    requestWeightAcquire(ref: ResourceRef): Promise<string>;
+    /** THE CROSS-PROCESS POLL (2026-10-21): the SHARED STORE is the
+     *  truth for a 'requested' row — the local seed goes stale the
+     *  moment a durable seat claims it, and the poll must answer the
+     *  claim, never the stale want. Every other memory entry is this
+     *  process's OWN truth by construction (a live flight here, or a
+     *  terminal state — immutable), and wins without a store read.
+     *  @param operationId the operation the tracker polls
+     *  @returns the row's face, null when no memory entry and no
+     *  stored row answers the id. */
+    readProgress(operationId: string): Promise<WeightAcquireProgress | null>;
+    /** THE DURABILITY WORD: true when this seat claims requested rows
+     *  and owns fetch lifetimes — the manage plane's start arm routes
+     *  on it. */
+    durableDownloads(): boolean;
+    /** THE CLAIMER-LIVENESS WORD (2026-10-21): a FRESH heartbeat from
+     *  ANOTHER seat on the shared store — the only condition under
+     *  which a transient may queue a download. No store, no stamp, a
+     *  stale stamp, this seat's own stamp, or an unreadable stamp all
+     *  answer false: the caller takes the wire itself, and a
+     *  deployment without a live durable seat never dead-queues.
+     *  @returns true only when a foreign stamp sits inside the
+     *  freshness window */
+    durableClaimerLive(): Promise<boolean>;
+    /** THE DURABLE CLAIM SWEEP: every 'requested' row in the shared
+     *  store, claimed sequentially — a claim joins the plane's own
+     *  locks and cap, so the sweep never overbooks the plane. */
+    private claimRequestedRows;
+    /** THE CLAIM (one row): a same-key lock here already owns the
+     *  ref; the claim stamp wins by re-read (the two-seat race's
+     *  loser yields); the flight launches under the row's OWN id —
+     *  the requester's poll id is the fetch's id.
+     *  @returns true when this seat claimed and launched the row. */
+    private claimRequested;
     /** THE NO-RE-MINT COVERAGE (the mint door's judge): the id of the
      *  settled operation that already covers the ask for one resource
      *  key, undefined when nothing covers it. Coverage = the latest

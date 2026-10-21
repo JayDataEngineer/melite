@@ -48,6 +48,12 @@ export const ACQUIRE_STALL_RETRIES = 6;
  *  constant (the re-open IS the recovery; the pause only lets the
  *  torn socket drain), never a deployment tunable. */
 const ACQUIRE_STALL_RETRY_DELAY_MS = 500;
+/** THE DURABLE CLAIM CADENCE (2026-10-21): how often a durable seat
+ *  polls the shared op store for 'requested' rows. A deployment
+ *  tunable — ProvisioningConfig.downloadClaimIntervalMs — because a
+ *  busy lane and a quiet box want different latencies between an
+ *  agent's request and the lane's claim. */
+export const DOWNLOAD_CLAIM_INTERVAL_MS = 2_000;
 /** The bounded pause between stall-recovery attempts: fixed-width,
  * resolved early by the operator's cancel — the pause never outlives
  * the operation it serves.
@@ -74,7 +80,7 @@ function stallRetryDelay(signal) {
  *  tick past the budget (the part-reaper's periodic-sweep pattern,
  *  scaled from PART_REAP_INTERVAL_MS to the budget's size). */
 const ACQUIRE_STALL_TICK_MS = 100;
-import { resourceKey, sameResourceRef, } from "./contracts.js";
+import { DURABLE_CLAIMER_FRESH_MS, DURABLE_QUEUE_DETAIL, LIVE_ACQUIRE_STATES, resourceKey, sameResourceRef, } from "./contracts.js";
 class ItemRefusal extends Error {
     outcome;
     code;
@@ -91,7 +97,13 @@ const TRANSITIONS = {
     // previously-active resource must seat the unknown row, never
     // throw on a missing edge and never keep the stale verdict.
     unknown: ["absent", "acquiring", "installed", "restart_required", "active", "failed", "blocked"],
-    absent: ["acquiring", "verifying", "installed", "restart_required", "active", "failed", "blocked", "unknown"],
+    absent: ["requested", "acquiring", "verifying", "installed", "restart_required", "active", "failed", "blocked", "unknown"],
+    // THE DURABLE DOWNLOAD SEAT (2026-10-21): 'requested' is an
+    // op-ROW word only — the per-ref record never holds it (no
+    // fetch exists to record). A row leaves it by CLAIM (acquiring,
+    // under the durable seat's lock), by refusal at claim
+    // (failed/blocked), or by a re-scan's census (unknown).
+    requested: ["acquiring", "failed", "blocked", "unknown"],
     acquiring: ["verifying", "installed", "restart_required", "active", "failed", "blocked", "absent", "unknown"],
     verifying: ["installed", "restart_required", "active", "failed", "blocked", "acquiring", "absent", "unknown"],
     installed: ["acquiring", "verifying", "active", "restart_required", "failed", "blocked", "absent", "unknown"],
@@ -532,6 +544,17 @@ export class ProvisioningService extends Service {
      *  teardown: the lock's own controller. Deleted on every attempt
      *  exit, never a leak. */
     stallAborters = new Map();
+    /** THE DURABLE DOWNLOAD SEAT (2026-10-21): true = this seat
+     *  claims 'requested' op rows on a cadence and owns every fetch's
+     *  lifetime. The validated read of
+     *  ProvisioningConfig.durableDownloads. */
+    durableDownloadsSeat;
+    /** THE CLAIM CADENCE: the validated read of
+     *  ProvisioningConfig.downloadClaimIntervalMs. */
+    downloadClaimIntervalMs;
+    /** The per-boot identity a claim stamps into the row it wins —
+     *  the re-read guard names the loser of a two-seat race. */
+    seatId = newOperationId();
     /** THE STALL VOICE SEAT: the watchdog's refusal per operation,
      *  consumed once by the item loop — the abort the refusal rode
      *  would otherwise read as a cancellation at refusalFor, and a
@@ -576,6 +599,15 @@ export class ProvisioningService extends Service {
             throw new Error("acquireStallRetries must be a non-negative integer (retry count)");
         }
         this.acquireStallRetries = stallRetries;
+        // THE DURABLE DOWNLOAD SEAT'S CONFIG FACE (2026-10-21): the
+        // durability word and the claim cadence, both validated — a
+        // misconfigured cadence fails loud at construction.
+        this.durableDownloadsSeat = config.durableDownloads === true;
+        const claimMs = config.downloadClaimIntervalMs ?? DOWNLOAD_CLAIM_INTERVAL_MS;
+        if (!Number.isInteger(claimMs) || claimMs <= 0) {
+            throw new Error("downloadClaimIntervalMs must be a positive integer (milliseconds)");
+        }
+        this.downloadClaimIntervalMs = claimMs;
         armProvisioningSeat(this);
         this.ctx.effect(() => async () => {
             disarmProvisioningSeat(this);
@@ -600,6 +632,34 @@ export class ProvisioningService extends Service {
                     clearInterval(ticker);
                 };
             }, "provisioning.part-reaper");
+        }
+        // THE DURABLE CLAIM TICKER (the lifetime finding, 2026-10-21):
+        // the durable seat polls the shared op store for 'requested'
+        // rows — a download a transient seat (an agent session) wanted
+        // — and claims them into this process's lifetime. The fetch
+        // rides the plane's own locks and cap; a claim that loses the
+        // two-seat race yields by the re-read guard. Every tick also
+        // stamps the CLAIMER HEARTBEAT: a transient reading a fresh
+        // stamp may queue here; a stale one takes its own wire (the
+        // dead-queue impossibility).
+        if (this.durableDownloadsSeat && this.operationStore?.list !== undefined) {
+            const store = this.operationStore;
+            this.ctx.effect(() => {
+                const tick = () => {
+                    void store.writeSeatHeartbeat?.({ bootId: this.seatId, at: Date.now() })
+                        .catch((error) => {
+                        this.ctx.logger.error(error instanceof Error ? error : new Error(String(error)));
+                    });
+                    void this.claimRequestedRows(store).catch((error) => {
+                        this.ctx.logger.error(error instanceof Error ? error : new Error(String(error)));
+                    });
+                };
+                tick();
+                const ticker = setInterval(tick, this.downloadClaimIntervalMs);
+                return () => {
+                    clearInterval(ticker);
+                };
+            }, "provisioning.durable-claim");
         }
         // THE PROGRESS REHYDRATE (audit E3, 2026-10-22): the weight
         // ledger is in-memory, so a restart orphaned every in-flight
@@ -649,6 +709,23 @@ export class ProvisioningService extends Service {
         const live = this.locks.get(resourceKey(operation.ref));
         if (live !== undefined && live.id !== operation.operationId)
             return;
+        // THE DURABLE DOWNLOAD SEAT (2026-10-21): a requested row is
+        // WAITING, not dead — no fetch existed to die with the old
+        // process. It rejoins as-requested on every seat (the transient
+        // seat answers its own poll; the durable seat's claim ticker
+        // takes it from there).
+        if (operation.state === "requested") {
+            this.weightProgress.set(operation.operationId, {
+                operationId: operation.operationId,
+                ref: copyRef(operation.ref),
+                state: "requested",
+                bytes: 0,
+                total: 0,
+                detail: operation.detail ?? DURABLE_QUEUE_DETAIL,
+            });
+            this.weightProgressByRef.set(resourceKey(operation.ref), operation.operationId);
+            return;
+        }
         const inFlight = operation.finishedAt === undefined &&
             (operation.state === "acquiring" || operation.state === "verifying");
         if (!inFlight) {
@@ -878,35 +955,8 @@ export class ProvisioningService extends Service {
                 phase: "recheck",
             });
             this.weightProgressByRef.set(key, id);
-            void this.runWithId(ref, id, async (operationId, operationSignal) => await this.executeEnsure(ref, options, operationId, operationSignal)).then((result) => {
-                this.stallRefusals.delete(id);
-                const current = this.weightProgress.get(id);
-                if (current !== undefined) {
-                    const landed = current.total > 0 &&
-                        (result.state === "active" || result.state === "restart_required")
-                        ? current.total
-                        : current.bytes;
-                    this.weightProgress.set(id, {
-                        ...current,
-                        state: result.operationState,
-                        bytes: landed,
-                        ...(result.detail === undefined ? {} : { detail: result.detail }),
-                    });
-                }
-                this.evictSettledAcquires();
-            }).catch((error) => {
-                this.stallRefusals.delete(id);
-                const current = this.weightProgress.get(id);
-                if (current !== undefined) {
-                    this.weightProgress.set(id, {
-                        ...current,
-                        state: "failed",
-                        detail: error instanceof Error ? error.message : String(error),
-                    });
-                }
-                this.evictSettledAcquires();
-            });
-            // the lock is registered (synchronous, inside runWithId) —
+            this.launchWeightAcquire(ref, options, id);
+            // the lock is registered (synchronous, inside launch) —
             // parked same-key joiners may now join it
             settleMint(id);
         }
@@ -925,6 +975,223 @@ export class ProvisioningService extends Service {
                 this.pendingMints.delete(key);
         }
         return id;
+    }
+    /** THE FLIGHT LAUNCH (the mint tail, shared by the direct start
+     *  and the durable claim): registers the lock synchronously under
+     *  the GIVEN id and settles the ledger at the flight's end. The
+     *  caller owns the slot reservation and the ledger seeding. */
+    launchWeightAcquire(ref, options, id) {
+        void this.runWithId(ref, id, async (operationId, operationSignal) => await this.executeEnsure(ref, options, operationId, operationSignal)).then((result) => {
+            this.stallRefusals.delete(id);
+            const current = this.weightProgress.get(id);
+            if (current !== undefined) {
+                const landed = current.total > 0 &&
+                    (result.state === "active" || result.state === "restart_required")
+                    ? current.total
+                    : current.bytes;
+                this.weightProgress.set(id, {
+                    ...current,
+                    state: result.operationState,
+                    bytes: landed,
+                    ...(result.detail === undefined ? {} : { detail: result.detail }),
+                });
+            }
+            this.evictSettledAcquires();
+        }).catch((error) => {
+            this.stallRefusals.delete(id);
+            const current = this.weightProgress.get(id);
+            if (current !== undefined) {
+                this.weightProgress.set(id, {
+                    ...current,
+                    state: "failed",
+                    detail: error instanceof Error ? error.message : String(error),
+                });
+            }
+            this.evictSettledAcquires();
+        });
+    }
+    /** THE DURABLE DOWNLOAD SEAT'S REQUEST ARM (2026-10-21): mints a
+     *  'requested' op row for the ref WITHOUT opening a wire — the
+     *  fetch belongs to the durable seat that claims it, so the
+     *  download outlives this session. The ask is always the WHOLE
+     *  plan (a subset ask is a durable-seat-only shape: the GUI's
+     *  subset presses ride the durable seat directly). One want, one
+     *  row: a requested or live row for the ref returns its id, and a
+     *  settled op that already covers the ask returns the settled id
+     *  (the no-re-mint law).
+     *  @param ref the model ref the durable seat will fetch
+     *  @returns the requested operation's id
+     *  @throws when the seat has no operation store — a request row
+     *  nobody can claim is a dead queue, never a silent no-op. */
+    async requestWeightAcquire(ref) {
+        const key = resourceKey(ref);
+        const existingId = this.weightProgressByRef.get(key);
+        if (existingId !== undefined) {
+            const entry = this.weightProgress.get(existingId);
+            if (entry !== undefined && (entry.state === "requested" || LIVE_ACQUIRE_STATES.has(entry.state))) {
+                return existingId;
+            }
+        }
+        const settledId = this.settledCoverageId(key, undefined);
+        if (settledId !== undefined)
+            return settledId;
+        const store = this.operationStore;
+        if (store === undefined) {
+            throw new Error("this seat has no provisioning operation store — a download requested here cannot outlive the session; configure the durable lane seat instead");
+        }
+        const id = this.operationIdFactory();
+        const row = {
+            operationId: id,
+            ref: copyRef(ref),
+            state: "requested",
+            items: [],
+            startedAt: Date.now(),
+            detail: DURABLE_QUEUE_DETAIL,
+        };
+        await store.save(row);
+        this.weightProgress.set(id, {
+            operationId: id,
+            ref: copyRef(ref),
+            state: "requested",
+            bytes: 0,
+            total: 0,
+            detail: DURABLE_QUEUE_DETAIL,
+        });
+        this.weightProgressByRef.set(key, id);
+        return id;
+    }
+    /** THE CROSS-PROCESS POLL (2026-10-21): the SHARED STORE is the
+     *  truth for a 'requested' row — the local seed goes stale the
+     *  moment a durable seat claims it, and the poll must answer the
+     *  claim, never the stale want. Every other memory entry is this
+     *  process's OWN truth by construction (a live flight here, or a
+     *  terminal state — immutable), and wins without a store read.
+     *  @param operationId the operation the tracker polls
+     *  @returns the row's face, null when no memory entry and no
+     *  stored row answers the id. */
+    async readProgress(operationId) {
+        const local = this.progressOf(operationId);
+        if (local !== null && local.state !== "requested")
+            return local;
+        const store = this.operationStore;
+        if (store === undefined || store.load === undefined)
+            return local;
+        const row = await store.load(operationId).catch((error) => {
+            // a poisoned row degrades to the local face — the poll never
+            // crashes on a store it does not own
+            this.ctx.logger.error(new Error(`readProgress: store read failed for ${operationId}: ${error instanceof Error ? error.message : String(error)}`));
+            return null;
+        });
+        if (row === null)
+            return local;
+        if (row.state === "requested") {
+            return {
+                operationId: row.operationId,
+                ref: copyRef(row.ref),
+                state: "requested",
+                bytes: 0,
+                total: 0,
+                detail: row.detail ?? DURABLE_QUEUE_DETAIL,
+            };
+        }
+        const foreign = row.finishedAt === undefined && LIVE_ACQUIRE_STATES.has(row.state);
+        return {
+            operationId: row.operationId,
+            ref: copyRef(row.ref),
+            state: row.state,
+            bytes: 0,
+            total: 0,
+            detail: foreign
+                ? (row.detail ?? "claimed by another seat — bytes count in the fetching process")
+                : row.detail,
+        };
+    }
+    /** THE DURABILITY WORD: true when this seat claims requested rows
+     *  and owns fetch lifetimes — the manage plane's start arm routes
+     *  on it. */
+    durableDownloads() {
+        return this.durableDownloadsSeat;
+    }
+    /** THE CLAIMER-LIVENESS WORD (2026-10-21): a FRESH heartbeat from
+     *  ANOTHER seat on the shared store — the only condition under
+     *  which a transient may queue a download. No store, no stamp, a
+     *  stale stamp, this seat's own stamp, or an unreadable stamp all
+     *  answer false: the caller takes the wire itself, and a
+     *  deployment without a live durable seat never dead-queues.
+     *  @returns true only when a foreign stamp sits inside the
+     *  freshness window */
+    async durableClaimerLive() {
+        const store = this.operationStore;
+        if (store === undefined || store.readSeatHeartbeat === undefined)
+            return false;
+        const beat = await store.readSeatHeartbeat().catch((error) => {
+            this.ctx.logger.error(new Error(`durableClaimerLive: seat heartbeat read failed: ${error instanceof Error ? error.message : String(error)}`));
+            return null;
+        });
+        if (beat === null)
+            return false;
+        if (beat.bootId === this.seatId)
+            return false;
+        return Date.now() - beat.at <= DURABLE_CLAIMER_FRESH_MS;
+    }
+    /** THE DURABLE CLAIM SWEEP: every 'requested' row in the shared
+     *  store, claimed sequentially — a claim joins the plane's own
+     *  locks and cap, so the sweep never overbooks the plane. */
+    async claimRequestedRows(store) {
+        if (store.list === undefined)
+            return;
+        const rows = await store.list();
+        for (const row of rows) {
+            if (row.state !== "requested")
+                continue;
+            const claimed = await this.claimRequested(row, store);
+            if (!claimed)
+                continue;
+            // one claim per sweep past the cap: the plane owns the pace
+            if (this.locks.size + this.pendingAcquires >= MAX_CONCURRENT_ACQUIRES)
+                return;
+        }
+    }
+    /** THE CLAIM (one row): a same-key lock here already owns the
+     *  ref; the claim stamp wins by re-read (the two-seat race's
+     *  loser yields); the flight launches under the row's OWN id —
+     *  the requester's poll id is the fetch's id.
+     *  @returns true when this seat claimed and launched the row. */
+    async claimRequested(row, store) {
+        const key = resourceKey(row.ref);
+        if (this.locks.has(key) || this.pendingMints.has(key))
+            return false;
+        const seen = this.weightProgress.get(row.operationId);
+        if (seen !== undefined && seen.state !== "requested")
+            return false;
+        if (this.locks.size + this.pendingAcquires >= MAX_CONCURRENT_ACQUIRES)
+            return false;
+        const claimDetail = `claimed by seat ${this.seatId}`;
+        await store.save({ ...row, state: "acquiring", detail: claimDetail });
+        const reread = await store.load(row.operationId);
+        if (reread === null || reread.state !== "acquiring" || reread.detail !== claimDetail) {
+            // lost the race: another durable seat's fetch owns the row
+            return false;
+        }
+        this.weightProgress.set(row.operationId, {
+            operationId: row.operationId,
+            ref: copyRef(row.ref),
+            state: "acquiring",
+            bytes: 0,
+            total: 0,
+            // every flight opens checking the store — the re-check voice
+            // is seeded before the fetch arms take over with their own
+            phase: "recheck",
+        });
+        this.weightProgressByRef.set(key, row.operationId);
+        this.pendingAcquires += 1;
+        try {
+            this.launchWeightAcquire(row.ref, {}, row.operationId);
+        }
+        finally {
+            this.pendingAcquires -= 1;
+        }
+        return true;
     }
     /** THE NO-RE-MINT COVERAGE (the mint door's judge): the id of the
      *  settled operation that already covers the ask for one resource

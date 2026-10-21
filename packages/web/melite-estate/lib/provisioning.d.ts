@@ -31,14 +31,28 @@ export interface ProvisioningCompositionConfig {
      *  wants a wider window). Unset: the service default owns the bound.
      *  Validated downstream (positive integer, fails loud at boot). */
     acquireStallTimeoutMs?: number;
+    /** THE DURABLE DOWNLOAD SEAT (the lifetime finding, 2026-10-21):
+     *  true on the operator's lane — that seat claims 'requested' op
+     *  rows and owns every download's lifetime. Unset/false:
+     *  transient (an agent session's seat mints requests, never
+     *  wires). */
+    durableDownloads?: boolean;
+    /** THE CLAIM CADENCE (durable seats only): how often the shared
+     *  op store is polled for requested rows, in milliseconds.
+     *  Validated downstream (positive integer, fails loud at boot). */
+    downloadClaimIntervalMs?: number;
 }
 /** The validator twin of {@link ProvisioningCompositionConfig}. */
 export declare const ProvisioningCompositionConfig: Schema<Schemastery.ObjectS<NoInfer<{
     storeRoot: Schema<string, string, "plain">;
     acquireStallTimeoutMs: Schema<number, number, "plain">;
+    durableDownloads: Schema<boolean, boolean, "plain">;
+    downloadClaimIntervalMs: Schema<number, number, "plain">;
 }>>, Schemastery.ObjectT<NoInfer<{
     storeRoot: Schema<string, string, "plain">;
     acquireStallTimeoutMs: Schema<number, number, "plain">;
+    durableDownloads: Schema<boolean, boolean, "plain">;
+    downloadClaimIntervalMs: Schema<number, number, "plain">;
 }>>, "plain">;
 /** The direct-model arm's idle budget when the caller passes no
  *  signal (audit V-E9 → the 9.35GB cure, 2026-10-10): the dial

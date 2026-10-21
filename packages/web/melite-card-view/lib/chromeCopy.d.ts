@@ -372,6 +372,11 @@ export declare const chromeCopy: {
         bytes: string;
         total: string;
     }) => string;
+    /** Weight tracker line for a 'requested' row (the durable
+     *  download seat, 2026-10-21): the press queued — this session
+     *  never opens the wire, the durable lane seat claims the fetch.
+     *  No meter renders: there are no bytes to measure yet. */
+    readonly weightQueued: "Queued for the durable lane seat — the fetch starts there, never in this session.";
     /** The Q1 Auto-mode popup's On row (the composer `+` popup's
      *  label + blast-radius detail: On hands the AI the run press). */
     readonly autoModeOnLabel: "Auto mode on";

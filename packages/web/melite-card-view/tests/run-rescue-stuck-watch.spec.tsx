@@ -193,4 +193,35 @@ describe('THE ONE STUCK WATCH, BOTH SEATS (audit F8/fix #7): one wedge, one verd
       chromeCopy.stuckNote({ state: 'acquiring', progress: formatWeightProgress(0, 0) }),
     )
   })
+
+  it('ARM S1f — the WAITING row (durable-seat queue, 0/0, no phase) trips NO watch: both seats keep polling and the popup voices the queue, never stuck', async () => {
+    vi.useFakeTimers()
+    // a 'requested' row: this session queued the download, the
+    // durable lane seat owes the fetch — frozen 0/0 with no phase is
+    // WAITING, not silence-dead (the durable download seat law,
+    // 2026-10-21). The watch must exempt it in BOTH seats.
+    wire.postManageAction
+      .mockResolvedValueOnce(reply('op-queued', 'requested', 0, 0))
+      .mockResolvedValue(reply('op-queued', 'requested', 0, 0))
+    const { runRescueCall } = await import('../src/client/run-rescue-core.ts')
+    const flight = observe(runRescueCall({ kind: 'model', file: 'moss_image_sft_int8_convrot.safetensors' }, 'moss-image'))
+    await startDownload()
+    await act(async () => { await vi.advanceTimersByTimeAsync(WATCH_WINDOW_MS) })
+    // the agent seat: still polling, no verdict — waiting exempted
+    expect(flight.settled(),
+      'the waiting row ended the agent seat inside the watch window — the watch does not exempt requested',
+    ).toBe(false)
+    expect(pollCalls()).toBeGreaterThan(15)
+    // the popup: the QUEUED face names the durable lane seat, no
+    // stuck face, no undeclared-total lie
+    expect(screen.queryByText(/Weight stuck/i),
+      'the waiting row landed the popup stuck face — a queued download is not a dead one',
+    ).toBeNull()
+    expect(screen.getByTestId('weight-queued'),
+      'the waiting row voiced no queued face — the popup has no waiting word',
+    ).toBeTruthy()
+    expect(screen.queryByText(/total undeclared/i),
+      'the waiting row wore the undeclared-total voice — the size is declared, the fetch has not started',
+    ).toBeNull()
+  })
 })

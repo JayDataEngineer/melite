@@ -35,6 +35,23 @@ export interface Config {
      *  stays unseated and refuses at the door — loud, never a silent
      *  default brain). */
     agentRoute?: string;
+    /** The provisioning weights store root (unset: the checkout's
+     *  tracked configs derive it at apply — loadStoreRoot). */
+    storeRoot?: string;
+    /** THE ACQUIRE STALL BUDGET (ERRORS.md k2, P5 F1): how long a
+     *  direct fetch may land no bytes before the stall watchdog
+     *  fails it. Unset: the service default owns the bound. */
+    acquireStallTimeoutMs?: number;
+    /** THE DURABLE DOWNLOAD SEAT (the lifetime finding, 2026-10-21):
+     *  true on the operator's lane — that seat claims 'requested' op
+     *  rows (a transient seat's download requests) and owns every
+     *  fetch's lifetime. Unset/false: this seat is transient; its
+     *  acquire requests queue for a durable seat, never wiring a
+     *  fetch in this process. */
+    durableDownloads?: boolean;
+    /** THE CLAIM CADENCE (durable seats only): how often the shared
+     *  op store is polled for requested rows, in milliseconds. */
+    downloadClaimIntervalMs?: number;
 }
 /** The validator twin of {@link Config}. */
 export declare const Config: Schema<Config>;

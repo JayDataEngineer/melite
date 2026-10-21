@@ -232,8 +232,15 @@ export const LIVE_ACQUIRE_STATES: ReadonlySet<string> = new Set<string>([
  *  never the dead "0/0"). */
 export const ACQUIRE_TERMINAL: ReadonlySet<string> = new Set<string>(
   PROVISION_STATES.filter((state) =>
-    state !== 'unknown' && state !== 'absent' && !SERVER_LIVE_ACQUIRE_STATES.has(state)),
+    state !== 'unknown' && state !== 'absent' && state !== 'requested' && !SERVER_LIVE_ACQUIRE_STATES.has(state)),
 )
+
+/** THE WAITING WORD (2026-10-21): a 'requested' row is queued for
+ *  the durable lane seat — neither a live fetch (no bytes move in
+ *  this process) nor settled (nothing judged). The poll lives, the
+ *  stuck watch exempts it (waiting is not silence-dead), and the
+ *  face names the seat that owes the fetch. */
+export const ACQUIRE_WAITING = 'requested'
 
 /** THE COMPLETION PREDICATE (one spelling, both seats — the k2/m and
  *  F6b burns reconciled): a verdict state (failed/blocked) is
@@ -371,7 +378,7 @@ export function acquireStuckWatch(first: WeightAcquireState): (snapshot: WeightA
   let frozen = 0
   let lastBytes = first.bytes
   return (snapshot) => {
-    const exempt = snapshot.phase !== undefined || snapshot.bytes !== lastBytes
+    const exempt = snapshot.state === ACQUIRE_WAITING || snapshot.phase !== undefined || snapshot.bytes !== lastBytes
     lastBytes = snapshot.bytes
     frozen = exempt ? 0 : frozen + 1
     return frozen >= STUCK_FROZEN_POLLS

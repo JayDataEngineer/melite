@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import { lstat, mkdir, readFile, readdir, realpath, unlink } from "node:fs/promises";
 import { writeFileAtomic } from "@deepseek-ai/dsh-atomic-write";
-import { join, resolve } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { PROVISION_OUTCOMES, PROVISION_STATES, } from "./contracts.js";
 export class OperationStoreError extends Error {
     code;
@@ -245,6 +245,48 @@ export class FileOperationStore {
             rows.push(copyProvisionOperation(parseOperation(value)));
         }
         return rows;
+    }
+    /** THE CLAIMER HEARTBEAT — a small JSON under <root>/seat/ where
+     *  the row list never reads (it scans *.json at the root only).
+     *  A missing or unreadable stamp answers null: the caller degrades
+     *  to no-claimer, the wire-here default.
+     *  @returns the last stamp another seat may read, null when none */
+    async readSeatHeartbeat() {
+        const root = await this.prepareRoot();
+        const path = join(root, "seat", "durable.json");
+        try {
+            const kind = await pathKind(path);
+            if (kind === "missing")
+                return null;
+            if (kind !== "file")
+                return null;
+            const value = JSON.parse(await readFile(path, "utf8"));
+            if (typeof value !== "object" || value === null)
+                return null;
+            const beat = value;
+            if (typeof beat["bootId"] !== "string" || typeof beat["at"] !== "number")
+                return null;
+            return { bootId: beat["bootId"], at: beat["at"] };
+        }
+        catch (error) {
+            // a poisoned stamp refuses loud — the CALLER degrades to
+            // no-claimer (wire-here): liveness is advisory, never silent
+            throw new OperationStoreError("invalid-record", "Seat heartbeat is not readable", error);
+        }
+    }
+    /** THE CLAIMER HEARTBEAT WRITE — the durable seat stamps itself
+     *  every claim tick, atomically, 0600 like every store row.
+     *  @param heartbeat the seat's boot id and the tick's epoch ms */
+    async writeSeatHeartbeat(heartbeat) {
+        const root = await this.prepareRoot();
+        const destination = join(root, "seat", "durable.json");
+        try {
+            await mkdir(dirname(destination), { recursive: true });
+            await writeFileAtomic(destination, `${JSON.stringify(heartbeat)}\n`, { mode: 0o600 });
+        }
+        catch (error) {
+            throw new OperationStoreError("io", "Failed to persist seat heartbeat", error);
+        }
     }
     async prepareRoot() {
         try {

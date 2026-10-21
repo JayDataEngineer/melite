@@ -8,6 +8,7 @@ import type {
   ProvisionState,
   ResourceRef,
   ResourceStatus,
+  SeatHeartbeat,
 } from "./contracts.ts";
 import type {
   ArtifactInput,
@@ -144,6 +145,14 @@ export interface OperationStorePort {
    *  stores still satisfy the port; a store that cannot enumerate
    *  rehydrates nothing. */
   list?(): Promise<ProvisionOperation[]>;
+  /** THE CLAIMER HEARTBEAT (optional, 2026-10-21): the durable seat
+   *  stamps liveness where every seat sharing the store reads it — a
+   *  transient queues a download ONLY while a claimer is alive, so a
+   *  deployment with no durable seat never dead-queues. The file
+   *  store keeps it under <root>/seat/ where the row list never
+   *  reads. */
+  readSeatHeartbeat?(): Promise<SeatHeartbeat | null>;
+  writeSeatHeartbeat?(heartbeat: SeatHeartbeat): Promise<void>;
 }
 
 export interface ProvisioningConfig {
@@ -175,6 +184,18 @@ export interface ProvisioningConfig {
    *  exhausted backstop. 0 restores the single-flight law (one stall
    *  fails the acquire). Validated: a non-negative integer. */
   readonly acquireStallRetries?: number;
+  /** THE DURABLE DOWNLOAD SEAT (the lifetime finding, 2026-10-21):
+   *  true = this seat CLAIMS 'requested' op rows on a cadence and
+   *  owns every fetch's lifetime (the operator's lane). Absent/false
+   *  = this seat is transient: acquire requests mint 'requested'
+   *  rows and never open a wire, so a download can outlive the
+   *  session that wanted it. */
+  readonly durableDownloads?: boolean;
+  /** THE CLAIM CADENCE (the durable seat's poll of the shared op
+   *  store): a positive integer in milliseconds. Validated at
+   *  construction — the deployment-varying face of
+   *  DOWNLOAD_CLAIM_INTERVAL_MS. */
+  readonly downloadClaimIntervalMs?: number;
 }
 
 export type ProvisioningServiceDefinition = {
@@ -213,6 +234,31 @@ export type ProvisioningServiceDefinition = {
    *  never two). The fetch itself rides ensure (the existing
    *  fetcher — no second fetcher). */
   startWeightAcquire?(ref: ResourceRef, options?: EnsureOptions): Promise<string>;
+  /** THE DURABLE DOWNLOAD SEAT'S REQUEST ARM (optional, 2026-10-21):
+   *  mints a 'requested' op row for the ref WITHOUT opening a wire —
+   *  the durable seat claims it and owns the fetch. Returns the
+   *  operation id at once. Refuses loud when the seat has no
+   *  operation store (a request row nobody can claim is a dead
+   *  queue). */
+  requestWeightAcquire?(ref: ResourceRef, options?: EnsureOptions): Promise<string>;
+  /** THE CROSS-PROCESS POLL (optional, 2026-10-21): the memory
+   *  ledger first, then the shared store — a row another seat
+   *  claimed or is still fetching answers with its stored state and
+   *  a detail naming the cross-process truth (bytes live only in
+   *  the fetching process). */
+  readProgress?(operationId: string): Promise<import("./contracts.ts").WeightAcquireProgress | null>;
+  /** THE DURABILITY WORD (optional, 2026-10-21): true when this
+   *  seat claims requested rows and owns fetch lifetimes — the
+   *  manage plane's start arm routes on it (durable: start here;
+   *  transient: queue for the lane). */
+  durableDownloads?(): boolean;
+  /** THE CLAIMER-LIVENESS WORD (optional, 2026-10-21): true when a
+   *  FRESH heartbeat from ANOTHER seat answers on the shared store —
+   *  the manage plane queues a request only then, so a deployment
+   *  with no live durable seat never dead-queues a download (the
+   *  transient takes the wire itself). Absent reads false — the
+   *  wire-here default, never a blind queue. */
+  durableClaimerLive?(): Promise<boolean>;
   /** THE LIFECYCLE-GUARD SEAM (MP-F3, round 19, 2026-10-10): the
    *  sync names of the fetches this seat currently holds — every
    *  lock-held fetch plus every pre-lock mint (the P-R1 pendingMints

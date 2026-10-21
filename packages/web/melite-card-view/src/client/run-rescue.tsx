@@ -54,9 +54,17 @@ function progressPercent(bytes: number, total: number): number {
  *  undeclared and the meter stays an unmeasured track (no role, no
  *  bounds) so the face keeps its place. The meter's aria bounds
  *  stay byte-exact (the machine truth); only the VISIBLE line is
- *  human. */
+ *  human.
+ *  THE WAITING FACE (2026-10-21): a 'requested' row has no bytes to
+ *  meter — this seat never opened the wire, the durable lane seat
+ *  owes the fetch. The queued line names that seat; the
+ *  undeclared-total voice would lie here (the size IS declared, the
+ *  fetch has simply not started). */
 function trackerFaces(acquire: WeightAcquireState | null, flow: { rateBps: number, etaSec: number | null } | null, hashing = false): Array<ReturnType<typeof h>> {
   if (acquire === null) return []
+  if (acquire.state === 'requested') {
+    return [h('p', { 'data-testid': 'weight-queued', className: css.rescueNote }, chromeCopy.weightQueued)]
+  }
   const undeclared = !(acquire.total > 0)
   const pct = undeclared ? 0 : progressPercent(acquire.bytes, acquire.total)
   const progress = undeclared

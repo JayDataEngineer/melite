@@ -335,6 +335,11 @@ export const chromeCopy = {
    *  0-of-0 meter dressed as 0% (the purge P5's total=0 face). */
   undeclaredTotal: (p: { bytes: string, total: string }): string =>
     p.bytes + ' downloaded — total undeclared (the engine reported no size)',
+  /** Weight tracker line for a 'requested' row (the durable
+   *  download seat, 2026-10-21): the press queued — this session
+   *  never opens the wire, the durable lane seat claims the fetch.
+   *  No meter renders: there are no bytes to measure yet. */
+  weightQueued: 'Queued for the durable lane seat — the fetch starts there, never in this session.',
   /** The Q1 Auto-mode popup's On row (the composer `+` popup's
    *  label + blast-radius detail: On hands the AI the run press). */
   autoModeOnLabel: 'Auto mode on',

@@ -18,6 +18,7 @@ export type ResourceRef = ModelResourceRef | ExtensionResourceRef;
 export const PROVISION_STATES = [
   "unknown",
   "absent",
+  "requested",
   "acquiring",
   "verifying",
   "installed",
@@ -28,6 +29,35 @@ export const PROVISION_STATES = [
 ] as const;
 
 export type ProvisionState = (typeof PROVISION_STATES)[number];
+
+/** THE DURABLE DOWNLOAD SEAT (the lifetime finding, 2026-10-21):
+ *  'requested' names a download WANTED whose fetch no process has
+ *  claimed — a transient seat (an agent session) mints the row and
+ *  never opens a wire; the durable seat (the operator's lane)
+ *  claims it and owns the fetch's lifetime. It is never live (no
+ *  fetch holds a plane slot) and never failed (nothing died) — it
+ *  is waiting, and the waiting voice names the seat that owes the
+ *  claim. */
+export const DURABLE_QUEUE_DETAIL =
+  "queued for the durable lane seat — the fetch starts there, never in this session";
+
+/** THE CLAIMER HEARTBEAT SHAPE — the durable seat's liveness stamp
+ *  on the shared store: which seat claims, and when it last ticked.
+ *  @param bootId the claiming seat's boot id
+ *  @param at epoch milliseconds of the seat's last claim tick */
+export interface SeatHeartbeat {
+  readonly bootId: string;
+  readonly at: number;
+}
+
+/** THE CLAIMER FRESHNESS WINDOW — five default claim cadences: a
+ *  heartbeat older than this names a dead seat, and a transient
+ *  reading it must take the wire itself rather than queue into a
+ *  store no one will claim (the dead-queue impossibility). Derived
+ *  from DOWNLOAD_CLAIM_INTERVAL_MS × 5; a deployment running a
+ *  slower cadence still fits (the window reads the stamp's age, not
+ *  the cadence's configured value). */
+export const DURABLE_CLAIMER_FRESH_MS = 10_000;
 
 /** THE LIVE ACQUIRE STATES — the states that name a fetch still
  *  holding its plane slot (one spelling for every reader that must

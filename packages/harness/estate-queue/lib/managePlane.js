@@ -1296,12 +1296,17 @@ async function hAcquireWeight(req, ctx) {
     const provisioner = provisioningOf(ctx);
     // THE POLL (the tracker's read): same action, operation id only —
     // no model, no fetch, no wait. Unknown ids 404 (never a fake
-    // zero — the tracker must render the truth).
+    // zero — the tracker must render the truth). The cross-process
+    // read arm (2026-10-21): a row another seat claimed answers from
+    // the SHARED STORE — the transient seat's poll sees the durable
+    // seat's states without sharing its memory.
     if (req.operation_id !== "") {
         if (typeof provisioner.progressOf !== "function") {
             throw unavailable("acquire_weight progress is not configured on this lane");
         }
-        const progress = provisioner.progressOf(req.operation_id);
+        const progress = typeof provisioner.readProgress === "function"
+            ? await provisioner.readProgress(req.operation_id)
+            : provisioner.progressOf(req.operation_id);
         if (progress === null || progress === undefined) {
             throw notFound("unknown acquire_weight operation: " + req.operation_id);
         }
@@ -1401,10 +1406,23 @@ async function hAcquireWeight(req, ctx) {
     }
     // THE BUSY MAP (audit I-S4): a plane at its concurrency cap is a
     // wait, not a failure — the 429 carries retry_after_ms and points
-    // the caller back at the poll arm
+    // the caller back at the poll arm.
+    // THE DURABLE DOWNLOAD SEAT ROUTE (2026-10-21): a durable seat
+    // starts the fetch HERE (the GUI press, the lane's own lifetime);
+    // a transient seat (an agent session) QUEUES — but ONLY while a
+    // FRESH claimer heartbeat from another seat answers on the shared
+    // store (the dead-queue impossibility: no live claimer, no queue —
+    // the press takes the wire itself). The queue arm never takes a
+    // concurrency slot and never throws busy.
+    const queueReady = provisioner.durableDownloads?.() !== true
+        && provisioner.requestWeightAcquire !== undefined
+        && (await provisioner.durableClaimerLive?.()) === true;
+    const requestAcquire = queueReady ? provisioner.requestWeightAcquire : undefined;
     let operationId;
     try {
-        operationId = await withManageTimeout(req, ctx, async () => await startAcquire.call(provisioner, ref, acquireOptions));
+        operationId = await withManageTimeout(req, ctx, async () => requestAcquire !== undefined
+            ? await requestAcquire.call(provisioner, ref)
+            : await startAcquire.call(provisioner, ref, acquireOptions));
     }
     catch (error) {
         if (error instanceof AcquireBusyError) {
@@ -1425,6 +1443,20 @@ async function hAcquireWeight(req, ctx) {
     const total = progress?.total ?? 0;
     const state = progress?.state ?? "acquiring";
     const file = req.filename !== "" ? " (" + req.filename + ")" : "";
+    // THE QUEUE VOICE (2026-10-21): a requested row never wears the
+    // acquiring text — the operator/agent reads WHERE the fetch runs
+    // (the durable lane seat), never a started-here lie.
+    if (state === "requested") {
+        return ok(req.action, "queued " + req.model + file + " for the durable lane seat — the fetch starts there, never in this session (poll acquire_weight operation_id=" + operationId + ")", {
+            operation_id: operationId,
+            operationId,
+            state,
+            bytes,
+            total,
+            model: req.model,
+            next_action: "acquire_weight",
+        });
+    }
     return ok(req.action, "acquiring " + req.model + file + " — " + String(bytes) + "/" + String(total)
         + " bytes (poll acquire_weight operation_id=" + operationId + ")", {
         operation_id: operationId,

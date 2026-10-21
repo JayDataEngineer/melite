@@ -97,12 +97,24 @@ export interface ProvisioningCompositionConfig {
    *  wants a wider window). Unset: the service default owns the bound.
    *  Validated downstream (positive integer, fails loud at boot). */
   acquireStallTimeoutMs?: number;
+  /** THE DURABLE DOWNLOAD SEAT (the lifetime finding, 2026-10-21):
+   *  true on the operator's lane — that seat claims 'requested' op
+   *  rows and owns every download's lifetime. Unset/false:
+   *  transient (an agent session's seat mints requests, never
+   *  wires). */
+  durableDownloads?: boolean;
+  /** THE CLAIM CADENCE (durable seats only): how often the shared
+   *  op store is polled for requested rows, in milliseconds.
+   *  Validated downstream (positive integer, fails loud at boot). */
+  downloadClaimIntervalMs?: number;
 }
 
 /** The validator twin of {@link ProvisioningCompositionConfig}. */
 export const ProvisioningCompositionConfig = Schema.object({
   storeRoot: Schema.string(),
   acquireStallTimeoutMs: Schema.number(),
+  durableDownloads: Schema.boolean(),
+  downloadClaimIntervalMs: Schema.number(),
 });
 
 function configuredStoreRoot(config: ProvisioningCompositionConfig): string | undefined {
@@ -623,6 +635,10 @@ function provisioningConfig(ctx: Context, config: ProvisioningCompositionConfig 
     // the composition Config into the service — unset stays unset so
     // the service default (the stuck-acquire contract's bound) owns it.
     ...(config.acquireStallTimeoutMs === undefined ? {} : { acquireStallTimeoutMs: config.acquireStallTimeoutMs }),
+    // THE DURABLE DOWNLOAD SEAT (2026-10-21): the lane's durability
+    // word + claim cadence ride the same deployment face.
+    ...(config.durableDownloads === undefined ? {} : { durableDownloads: config.durableDownloads }),
+    ...(config.downloadClaimIntervalMs === undefined ? {} : { downloadClaimIntervalMs: config.downloadClaimIntervalMs }),
   };
 }
 

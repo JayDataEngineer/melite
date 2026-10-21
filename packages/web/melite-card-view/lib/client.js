@@ -4266,6 +4266,7 @@ window.__ModuleLoader__.load({
 		const PROVISION_STATES = [
 			"unknown",
 			"absent",
+			"requested",
 			"acquiring",
 			"verifying",
 			"installed",
@@ -4649,6 +4650,11 @@ window.__ModuleLoader__.load({
 			*  row without size seeds 0): the voice says so — no dead
 			*  0-of-0 meter dressed as 0% (the purge P5's total=0 face). */
 			undeclaredTotal: (p) => p.bytes + " downloaded — total undeclared (the engine reported no size)",
+			/** Weight tracker line for a 'requested' row (the durable
+			*  download seat, 2026-10-21): the press queued — this session
+			*  never opens the wire, the durable lane seat claims the fetch.
+			*  No meter renders: there are no bytes to measure yet. */
+			weightQueued: "Queued for the durable lane seat — the fetch starts there, never in this session.",
 			/** The Q1 Auto-mode popup's On row (the composer `+` popup's
 			*  label + blast-radius detail: On hands the AI the run press). */
 			autoModeOnLabel: "Auto mode on",
@@ -4786,7 +4792,7 @@ window.__ModuleLoader__.load({
 		*  isAcquireSettled below. A total of 0 (a DECL with no declared
 		*  size) settles on the landed word (acquiredDetailOf voices it,
 		*  never the dead "0/0"). */
-		const ACQUIRE_TERMINAL = new Set(PROVISION_STATES.filter((state) => state !== "unknown" && state !== "absent" && !LIVE_ACQUIRE_STATES$1.has(state)));
+		const ACQUIRE_TERMINAL = new Set(PROVISION_STATES.filter((state) => state !== "unknown" && state !== "absent" && state !== "requested" && !LIVE_ACQUIRE_STATES$1.has(state)));
 		/** THE COMPLETION PREDICATE (one spelling, both seats — the k2/m and
 		*  F6b burns reconciled): a verdict state (failed/blocked) is
 		*  settled at any byte count — the engine judged. A landed state
@@ -4867,7 +4873,7 @@ window.__ModuleLoader__.load({
 			let frozen = 0;
 			let lastBytes = first.bytes;
 			return (snapshot) => {
-				const exempt = snapshot.phase !== void 0 || snapshot.bytes !== lastBytes;
+				const exempt = snapshot.state === "requested" || snapshot.phase !== void 0 || snapshot.bytes !== lastBytes;
 				lastBytes = snapshot.bytes;
 				frozen = exempt ? 0 : frozen + 1;
 				return frozen >= 15;
@@ -5082,9 +5088,18 @@ window.__ModuleLoader__.load({
 		*  undeclared and the meter stays an unmeasured track (no role, no
 		*  bounds) so the face keeps its place. The meter's aria bounds
 		*  stay byte-exact (the machine truth); only the VISIBLE line is
-		*  human. */
+		*  human.
+		*  THE WAITING FACE (2026-10-21): a 'requested' row has no bytes to
+		*  meter — this seat never opened the wire, the durable lane seat
+		*  owes the fetch. The queued line names that seat; the
+		*  undeclared-total voice would lie here (the size IS declared, the
+		*  fetch has simply not started). */
 		function trackerFaces(acquire, flow, hashing = false) {
 			if (acquire === null) return [];
+			if (acquire.state === "requested") return [(0, react.createElement)("p", {
+				"data-testid": "weight-queued",
+				className: card_module_css_default.rescueNote
+			}, chromeCopy.weightQueued)];
 			const undeclared = !(acquire.total > 0);
 			const pct = undeclared ? 0 : progressPercent(acquire.bytes, acquire.total);
 			const progress = undeclared ? chromeCopy.undeclaredTotal({

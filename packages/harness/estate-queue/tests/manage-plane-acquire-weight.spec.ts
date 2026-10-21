@@ -75,6 +75,12 @@ interface Fake extends ProvisioningServiceDefinition {
   startCalls: ResourceRef[];
   /** T-S1: the START's options land here — the file→items subset proof. */
   startOptions: Array<{ items?: string[] } | undefined>;
+  /** T-DS1: the durable-seat routing — queue requests, cross-process
+   *  reads, and the seat's own durability word land here. */
+  requestCalls: ResourceRef[];
+  readCalls: string[];
+  durableMode: boolean;
+  claimerLive: boolean;
   ledger: Map<string, WeightAcquireProgress>;
   land: (operationId: string) => void;
 }
@@ -85,6 +91,8 @@ function fakeProvisioning(): Fake {
   const planCalls: ResourceRef[] = [];
   const startCalls: ResourceRef[] = [];
   const startOptions: Array<{ items?: string[] } | undefined> = [];
+  const requestCalls: ResourceRef[] = [];
+  const readCalls: string[] = [];
   const ledger = new Map<string, WeightAcquireProgress>();
   let seq = 0;
   const fake: Fake = {
@@ -93,6 +101,10 @@ function fakeProvisioning(): Fake {
     planCalls,
     startCalls,
     startOptions,
+    requestCalls,
+    readCalls,
+    durableMode: false,
+    claimerLive: false,
     ledger,
     land: (operationId: string): void => {
       const entry = ledger.get(operationId);
@@ -141,6 +153,26 @@ function fakeProvisioning(): Fake {
       ledger.set(id, { operationId: id, ref: { ...ref }, state: "acquiring", bytes: 0, total });
       return id;
     },
+    requestWeightAcquire: async (ref: ResourceRef): Promise<string> => {
+      requestCalls.push(ref);
+      seq += 1;
+      const id = `op-weight-${seq}`;
+      ledger.set(id, {
+        operationId: id,
+        ref: { ...ref },
+        state: "requested",
+        bytes: 0,
+        total: 0,
+        detail: "queued for the durable lane seat — the fetch starts there, never in this session",
+      });
+      return id;
+    },
+    readProgress: async (operationId: string): Promise<WeightAcquireProgress | null> => {
+      readCalls.push(operationId);
+      return ledger.get(operationId) ?? null;
+    },
+    durableDownloads: (): boolean => fake.durableMode,
+    durableClaimerLive: async (): Promise<boolean> => fake.claimerLive,
   };
   return fake;
 }
@@ -569,5 +601,55 @@ describe("the weight-landing re-arm (the presence face follows the landing)", ()
     fake.land(id);
     const [code] = await dispatchManage({ action: "acquire_weight", operation_id: id }, ctx);
     assert.equal(code, 200);
+  });
+
+  it("a transient seat QUEUES only while a claimer heartbeat answers (dead-queue impossibility); the voice names the durable lane; a durable seat STARTS its own wire", async () => {
+    const fake = fakeProvisioning();
+    fake.plans.set(resourceKey(modelRef("weight-fam")), modelPlan(modelRef("weight-fam")));
+    const ctx = ctxFor(fake);
+
+    // NO CLAIMER (the default deployment): the press takes the wire
+    // here — queueing into a store nobody claims is the dead queue
+    fake.durableMode = false;
+    fake.claimerLive = false;
+    const [, direct] = await dispatchManage(
+      { action: "acquire_weight", model: "weight-fam", file: "weight.bin" }, ctx);
+    assert.equal(dataOf(direct)["state"], "acquiring");
+    assert.equal(fake.startCalls.length, 1);
+    assert.equal(fake.requestCalls.length, 0);
+
+    // CLAIMER ALIVE: the same transient press queues — the row lands
+    // 'requested', the wire never opens here
+    fake.claimerLive = true;
+    const [, queued] = await dispatchManage(
+      { action: "acquire_weight", model: "weight-fam", file: "weight.bin" }, ctx);
+    const qid = String(dataOf(queued)["operation_id"]);
+    assert.equal(dataOf(queued)["state"], "requested");
+    assert.match(String(queued["detail"]), /durable lane seat/);
+    assert.match(String(queued["detail"]), /never in this session/);
+    assert.equal(fake.requestCalls.length, 1);
+    assert.equal(fake.startCalls.length, 1);
+    assert.equal(fake.ledger.get(qid)?.state, "requested");
+
+    // the poll rides readProgress (the cross-process face) and
+    // answers the queued truth while the durable seat has not claimed
+    const [, waiting] = await dispatchManage({ action: "acquire_weight", operation_id: qid }, ctx);
+    assert.ok(fake.readCalls.includes(qid), "the poll must ride readProgress");
+    assert.equal(dataOf(waiting)["state"], "requested");
+    assert.match(String(dataOf(waiting)["detail"] ?? ""), /durable lane seat/);
+
+    // TOGGLE RED (the routing cure inverted): this seat IS the
+    // durable seat — it owns fetch lifetimes, it never queues to
+    // itself, heartbeat or no heartbeat. Land the earlier wire
+    // first so the fake's busy-join law cannot fold this press
+    // into it (each start proves its own mint).
+    fake.land(String(dataOf(direct)["operation_id"]));
+    fake.durableMode = true;
+    const [, started] = await dispatchManage(
+      { action: "acquire_weight", model: "weight-fam", file: "weight.bin" }, ctx);
+    assert.equal(dataOf(started)["state"], "acquiring");
+    assert.equal(fake.startCalls.length, 2);
+    assert.equal(fake.requestCalls.length, 1);
+    assert.match(String(started["detail"]), /acquiring weight-fam/);
   });
 });

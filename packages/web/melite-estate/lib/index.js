@@ -343,6 +343,10 @@ export const Config = Schema.object({
     mcpEngines: Schema.union([Schema.string(), Schema.array(Schema.string())]),
     criticRoute: Schema.string(),
     agentRoute: Schema.string(),
+    storeRoot: Schema.string(),
+    acquireStallTimeoutMs: Schema.number(),
+    durableDownloads: Schema.boolean(),
+    downloadClaimIntervalMs: Schema.number(),
 });
 export async function apply(ctx, config = {}) {
     // THE BUNDLE GATE RUNS FIRST: a configuration refusal precedes any
@@ -408,7 +412,16 @@ export async function apply(ctx, config = {}) {
         // in the store. Awaiting this row pins the order; the door's
         // own use-site probe remains the real cure.
         if (row === provisioningComposition) {
-            await ctx.plugin(row);
+            // THE DURABLE DOWNLOAD SEAT + the provisioning deployment face
+            // (2026-10-21, closing the audit's unwired-config drift): the
+            // estate row forwards its provisioning fields into the
+            // composition's own Config — never a second declaration site.
+            await ctx.plugin(row, {
+                ...(config.storeRoot === undefined ? {} : { storeRoot: config.storeRoot }),
+                ...(config.acquireStallTimeoutMs === undefined ? {} : { acquireStallTimeoutMs: config.acquireStallTimeoutMs }),
+                ...(config.durableDownloads === undefined ? {} : { durableDownloads: config.durableDownloads }),
+                ...(config.downloadClaimIntervalMs === undefined ? {} : { downloadClaimIntervalMs: config.downloadClaimIntervalMs }),
+            });
             continue;
         }
         // the queue row receives the pin (its QueueConfig roots)

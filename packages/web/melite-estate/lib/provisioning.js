@@ -43,6 +43,8 @@ function endpointUrl() {
 export const ProvisioningCompositionConfig = Schema.object({
     storeRoot: Schema.string(),
     acquireStallTimeoutMs: Schema.number(),
+    durableDownloads: Schema.boolean(),
+    downloadClaimIntervalMs: Schema.number(),
 });
 function configuredStoreRoot(config) {
     const cfg = loadEndpointConfig();
@@ -523,6 +525,10 @@ function provisioningConfig(ctx, config = {}) {
         // the composition Config into the service — unset stays unset so
         // the service default (the stuck-acquire contract's bound) owns it.
         ...(config.acquireStallTimeoutMs === undefined ? {} : { acquireStallTimeoutMs: config.acquireStallTimeoutMs }),
+        // THE DURABLE DOWNLOAD SEAT (2026-10-21): the lane's durability
+        // word + claim cadence ride the same deployment face.
+        ...(config.durableDownloads === undefined ? {} : { durableDownloads: config.durableDownloads }),
+        ...(config.downloadClaimIntervalMs === undefined ? {} : { downloadClaimIntervalMs: config.downloadClaimIntervalMs }),
     };
 }
 export const provisioningComposition = {
