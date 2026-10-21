@@ -39,7 +39,12 @@
 //       both exits;
 //   E9  a Delete whose discard is refused voices the refusal and the
 //       face re-arms anyway (the local clear stands, exactly like the
-//       model delete).
+//       model delete);
+//   E10 THE × PARITY (operator 2026-11-05): the extension face
+//       carries the dismissal every rescue face owes — press retires
+//       the miss, the retirement outlives the remount (per-pack
+//       memory), a different pack's miss re-voices. Runs LAST: the
+//       dismissal memory is module-global.
 //
 // Red pre-cure: E1-E9 (the extension face carries none of these seats;
 // the RED run captured E1-E6 failing — E7-E9 pin the cure's own honesty
@@ -257,4 +262,35 @@ test('E6 — the done face keeps the landed ledger row visible', async () => {
   expect(wire.postManageAction).toHaveBeenNthCalledWith(2, 'acquire_weight', { operation_id: 'op-ext-ok' })
   expect(screen.getByTestId('weight-progress').textContent).toMatch(/9 B\/9 B \(100%\)/)
   expect((screen.getByTestId('weight-meter-fill') as HTMLElement).style.width).toBe('100%')
+})
+
+test('E10 — THE × PARITY: the extension face carries the dismissal every rescue face owes, and it outlives the mount', async () => {
+  wire.postManageAction.mockReset()
+  // THE E2-2 LAW RE-FIRED (operator 2026-11-05: "YOU GOT RID OF THE
+  // CLOSE BUTTON ON ERROR MESSAGES"): the extension face was rebuilt
+  // (b2979ed38) with Retry/Delete exits but NO ×, while the file's
+  // own runtime-face law says every rescue face carries the same
+  // dismissal. This arm MUST run last: the dismissal memory is
+  // module-global and retires the MiniPack face for every later
+  // render in this file.
+  const { unmount } = render(<RunRescue error={MISS} stages={STAGES} onRun={() => {}} />)
+  // the × serves, with its own accessible name
+  const close = screen.getByRole('button', { name: 'Close extension notice' })
+  fireEvent.click(close)
+  // the miss retires for this pack — no note, no install offer
+  await waitFor(() => { expect(screen.queryByText(/Missing extension pack "ComfyUI-MiniPack"/)).toBe(null) })
+  expect(screen.queryByRole('button', { name: 'Install & continue' })).toBe(null)
+  unmount()
+  // THE RE-POP CURE (the dismissal outlives the mount): the tab's
+  // error-strip retire/re-arm remounts the same miss — it stays
+  // retired until a NEW refusal
+  render(<RunRescue error={MISS} stages={STAGES} onRun={() => {}} />)
+  expect(screen.queryByText(/Missing extension pack "ComfyUI-MiniPack"/)).toBe(null)
+  expect(screen.queryByRole('button', { name: 'Install & continue' })).toBe(null)
+  // a DIFFERENT pack's miss re-voices — the memory is per-pack,
+  // never a global mute
+  const OTHER = "card 'h3-timeline' requires 'ComfyUI-OtherPack' (nodes B) — none live on the engine"
+  render(<RunRescue error={OTHER} stages={STAGES} onRun={() => {}} />)
+  expect(screen.getByText(/Missing extension pack "ComfyUI-OtherPack"/)).toBeTruthy()
+  expect(screen.getByRole('button', { name: 'Install & continue' })).toBeTruthy()
 })

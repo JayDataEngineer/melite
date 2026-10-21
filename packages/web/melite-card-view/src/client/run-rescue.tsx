@@ -368,6 +368,14 @@ export function RunRescue({ error, stages, onRun, rescue: structured }: {
         doneFace(done),
       )
     }
+    // THE × PARITY (the E2-2 law, re-fired 2026-11-05): every rescue
+    // face carries the same dismissal — the extension face was
+    // rebuilt (b2979ed38) with Retry/Delete exits but no ×, against
+    // this file's own runtime-face law. The miss retires for this
+    // pack until a new refusal; a dismissal mid-flight stays
+    // mount-local only for the model popup's download law — here,
+    // like the runtime face, the record is the miss identity.
+    if (dismissed) return null
     return h('div', { className: css.rescue },
       h('p', { className: css.rescueNote },
         chromeCopy.missingInstall({ what })),
@@ -381,6 +389,16 @@ export function RunRescue({ error, stages, onRun, rescue: structured }: {
       }, busy ? chromeCopy.installingWord : chromeCopy.installContinue),
       extFailed !== null ? extExitsRow(extFailed) : null,
       note !== null ? h('p', { className: css.rescueErr }, note) : null,
+      h(Button, {
+        size: 'sm',
+        variant: 'ghost',
+        className: css.errorDismiss,
+        'aria-label': chromeCopy.closeExtensionFace,
+        onClick: () => {
+          dismissedMisses.add(dismissalKey)
+          setDismissed(true)
+        },
+      }, h(IconCloseOutlineRegular, { size: 12 })),
     )
   }
 

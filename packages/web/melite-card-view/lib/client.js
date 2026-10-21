@@ -4596,6 +4596,11 @@ window.__ModuleLoader__.load({
 			runtimeProvisioned: (p) => "Engine runtime \"" + p.runtime + "\" provisioned — press Run again.",
 			/** Rescue runtime face's dismiss label (the × every rescue face carries). */
 			closeRuntimeFace: "Close runtime notice",
+			/** Rescue extension face's dismiss label (the × every rescue face
+			* carries — the E2-2 parity arm, 2026-11-05: the extension-miss
+			* face was rebuilt without it while the file's own law demanded
+			* it). */
+			closeExtensionFace: "Close extension notice",
 			/** Weight popup title when the acquisition ended STUCK (frozen
 			*  bytes across polls or an expired poll ceiling) — never the
 			*  ready face (the purge P5 rescue honesty, ERRORS k2/m). */
@@ -5291,13 +5296,23 @@ window.__ModuleLoader__.load({
 					}
 				}))];
 				if (done !== null) return (0, react.createElement)("div", { className: card_module_css_default.rescue }, ...trackerFaces(extAcquire, null), doneFace(done));
+				if (dismissed) return null;
 				return (0, react.createElement)("div", { className: card_module_css_default.rescue }, (0, react.createElement)("p", { className: card_module_css_default.rescueNote }, chromeCopy.missingInstall({ what })), ...extAcquire !== null ? trackerFaces(extAcquire, null) : busy ? extInFlight : [], (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Button, {
 					size: "sm",
 					variant: "primary",
 					disabled: busy,
 					title: chromeCopy.installViaManage,
 					onClick: installExtension
-				}, busy ? chromeCopy.installingWord : chromeCopy.installContinue), extFailed !== null ? extExitsRow(extFailed) : null, note !== null ? (0, react.createElement)("p", { className: card_module_css_default.rescueErr }, note) : null);
+				}, busy ? chromeCopy.installingWord : chromeCopy.installContinue), extFailed !== null ? extExitsRow(extFailed) : null, note !== null ? (0, react.createElement)("p", { className: card_module_css_default.rescueErr }, note) : null, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+					size: "sm",
+					variant: "ghost",
+					className: card_module_css_default.errorDismiss,
+					"aria-label": chromeCopy.closeExtensionFace,
+					onClick: () => {
+						dismissedMisses.add(dismissalKey);
+						setDismissed(true);
+					}
+				}, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.IconCloseOutlineRegular, { size: 12 })));
 			}
 			if (rescue.kind === "runtime") {
 				if (done !== null) return (0, react.createElement)("div", { className: card_module_css_default.rescue }, (0, react.createElement)("p", { className: card_module_css_default.rescueNote }, chromeCopy.runtimeProvisioned({ runtime: rescue.runtime })), (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Button, {

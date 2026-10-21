@@ -305,6 +305,11 @@ export declare const chromeCopy: {
     }) => string;
     /** Rescue runtime face's dismiss label (the × every rescue face carries). */
     readonly closeRuntimeFace: "Close runtime notice";
+    /** Rescue extension face's dismiss label (the × every rescue face
+     * carries — the E2-2 parity arm, 2026-11-05: the extension-miss
+     * face was rebuilt without it while the file's own law demanded
+     * it). */
+    readonly closeExtensionFace: "Close extension notice";
     /** Weight popup title when the acquisition ended STUCK (frozen
      *  bytes across polls or an expired poll ceiling) — never the
      *  ready face (the purge P5 rescue honesty, ERRORS k2/m). */
