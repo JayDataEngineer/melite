@@ -15508,6 +15508,52 @@ window.__ModuleLoader__.load({
 			return resolveValue(spec, user, base);
 		}
 		//#endregion
+		//#region src/write-through.ts
+		const TRAILING_MS = 300;
+		const rows = /* @__PURE__ */ new Map();
+		function fire(row) {
+			if (row.timer !== null) {
+				clearTimeout(row.timer);
+				row.timer = null;
+			}
+			if (row.entries.size === 0) return;
+			const frame = {};
+			for (const [k, v] of row.entries) frame[k] = v;
+			row.entries.clear();
+			row.send(frame);
+		}
+		/** Bind (or rebind) the stage's trailing row to this mount's door.
+		*  A pending write from an unmounted view still fires — through the
+		*  freshest send, same stage, same door. */
+		function writeThroughSeat(stageId, send) {
+			let row = rows.get(stageId);
+			if (row === void 0) {
+				row = {
+					send,
+					entries: /* @__PURE__ */ new Map(),
+					timer: null
+				};
+				rows.set(stageId, row);
+			}
+			row.send = send;
+			return {
+				trailing(patch) {
+					for (const [k, v] of Object.entries(patch)) row.entries.set(k, v);
+					if (row.timer !== null) clearTimeout(row.timer);
+					row.timer = setTimeout(() => {
+						fire(row);
+					}, TRAILING_MS);
+				},
+				now(patch) {
+					for (const k of Object.keys(patch)) row.entries.delete(k);
+					send(patch);
+				},
+				flush() {
+					if (row.entries.size > 0) fire(row);
+				}
+			};
+		}
+		//#endregion
 		//#region src/runs-policy.ts
 		/**
 		* runs-policy.ts — the run verbs over THE ONE LANE (stroke 81; the
@@ -16159,11 +16205,16 @@ window.__ModuleLoader__.load({
 				props.onSurface(liveSpec.size === "huge" ? "huge" : "");
 			}, [liveSpec, specError]);
 			const fieldByName = new Map((spec !== null ? fieldsOf(spec) : []).map((f) => [f.name, f]));
+			const seat = writeThroughSeat(props.stageId, (patch) => {
+				props.onPatch(patch);
+			});
 			const onEdit = (name, v) => {
+				const coerced = coerceFieldEdit(fieldByName.get(name), v);
 				setUser((prev) => ({
 					...prev,
-					[name]: coerceFieldEdit(fieldByName.get(name), v)
+					[name]: coerced
 				}));
+				seat.trailing({ [name]: coerced });
 			};
 			const servedBase = typeof row["resolved"] === "object" && row["resolved"] !== null && !Array.isArray(row["resolved"]) ? row["resolved"] : void 0;
 			const value = resolveValue(spec ?? { form: "" }, user, servedBase);
@@ -16179,7 +16230,7 @@ window.__ModuleLoader__.load({
 				const userKeys = new Set(Object.keys(user));
 				for (const k of userKeys) patch[k] = user[k];
 				for (const k of Object.keys(params)) if (!userKeys.has(k)) patch[k] = null;
-				onPatch(patch);
+				seat.now(patch);
 				onRun();
 			};
 			const runRef = (0, react.useRef)(run);

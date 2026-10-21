@@ -43,6 +43,19 @@ describe('THE TRAILING WRITE WINDOW (write-through.ts)', () => {
     expect(sends).toEqual([{ prompt: 'fresh' }, { steps: 20 }])
   })
 
+  test('SUPERSEDE-ALL: a NOW that owns every queued key disarms the window — the later timer fires NOTHING, never a phantom {} write', () => {
+    const sends: Array<Record<string, unknown>> = []
+    const seat = writeThroughSeat('s_0', (p) => { sends.push(p) })
+    seat.trailing({ prompt: 'stale', steps: 20 })
+    // the press's NOW owns BOTH queued keys (the full-patch press law)
+    seat.now({ prompt: 'fresh', steps: 40 })
+    expect(sends).toEqual([{ prompt: 'fresh', steps: 40 }])
+    vi.advanceTimersByTime(300)
+    // the armed timer fired NOTHING: its every entry was superseded —
+    // an empty {} door write is a phantom CAS write and a ledger lie
+    expect(sends).toEqual([{ prompt: 'fresh', steps: 40 }])
+  })
+
   test('FLUSH-MERGE: the press fires every queued edit as ONE door write, synchronously, and empties the window', () => {
     const sends: Array<Record<string, unknown>> = []
     const seat = writeThroughSeat('s_0', (p) => { sends.push(p) })

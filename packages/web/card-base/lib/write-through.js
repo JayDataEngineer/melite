@@ -29,6 +29,12 @@ function fire(row) {
         clearTimeout(row.timer);
         row.timer = null;
     }
+    // NEVER an empty frame: a timer whose every entry a discrete NOW
+    // superseded fires nothing — a phantom {} door write burns the CAS
+    // budget and pollutes the write ledger (the press-supersede law,
+    // 2026-10-21).
+    if (row.entries.size === 0)
+        return;
     const frame = {};
     for (const [k, v] of row.entries)
         frame[k] = v;

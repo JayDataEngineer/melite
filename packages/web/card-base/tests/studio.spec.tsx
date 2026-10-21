@@ -7,7 +7,7 @@
 // the base, never a card package.
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { afterEach, expect, test, vi } from 'vitest'
+import { afterEach, describe, expect, test, vi } from 'vitest'
 import { createElement } from 'react'
 
 import { DeclarativeStudio, defineStudioDeclaration } from '../src/studio.tsx'
@@ -406,4 +406,62 @@ test('a picked family survives the re-landed doc (the re-seed never snaps back t
   // and the pick SURVIVED the re-seed — the axis still reads the
   // picked family, never the row's old one
   expect((screen.getByLabelText('Model') as HTMLButtonElement).textContent).toContain('Trellis2 Native')
+})
+
+describe('THE SETTINGS-EATER LAW (every edit fires through the door, 2026-10-21)', () => {
+  // THE BURN CLASS (write-through.ts's own docstring, never wired):
+  // an edit that lives only in component state dies with the view —
+  // flip the tab, lose the knobs. The studio mounts the
+  // write-through seat: every edit lands on the drafts door inside
+  // the trailing window, discrete gestures fire NOW, and the press
+  // routes its full patch through the seat's NOW (superseding every
+  // queued row — one door write, never a stale re-fire after it).
+  test('THE RED — a typed edit reaches the door WITHOUT a press (the trailing window)', async () => {
+    stubWire()
+    const onPatch = vi.fn()
+    render(studio({ onPatch }))
+    const field = await screen.findByLabelText('Steps', {}, { timeout: 4000 })
+    fireEvent.change(field, { target: { value: '24' } })
+    await waitFor(() => {
+      const edit = onPatch.mock.calls.map((c) => c[0] as Record<string, unknown>).find((p) => p['steps'] === 24)
+      if (edit === undefined) throw new Error('the edit never reached the door; calls: ' + JSON.stringify(onPatch.mock.calls))
+    }, { timeout: 4000 })
+    expect(onPatch).toHaveBeenCalledTimes(1)
+  })
+
+  test('THE UNMOUNT SURVIVAL — the queued write fires after the studio dies (module-level rows)', async () => {
+    stubWire()
+    const onPatch = vi.fn()
+    const view = render(studio({ onPatch }))
+    const field = await screen.findByLabelText('Steps', {}, { timeout: 4000 })
+    fireEvent.change(field, { target: { value: '31' } })
+    view.unmount()
+    await waitFor(() => {
+      const edit = onPatch.mock.calls.map((c) => c[0] as Record<string, unknown>).find((p) => p['steps'] === 31)
+      if (edit === undefined) throw new Error('the queued write died with the mount; calls: ' + JSON.stringify(onPatch.mock.calls))
+    }, { timeout: 4000 })
+  })
+
+  test('THE PRESS SUPERSEDE — a queued edit never re-fires after the press (one door write, the fresh value)', async () => {
+    stubWire()
+    const onPatch = vi.fn()
+    const onRun = vi.fn()
+    const bound: Array<() => void> = []
+    render(studio({
+      onPatch, onRun,
+      bindRun: (r: () => void) => { bound.push(r) },
+    }))
+    const field = await screen.findByLabelText('Steps', {}, { timeout: 4000 })
+    fireEvent.change(field, { target: { value: '40' } })
+    await waitFor(() => { if (bound.length === 0) throw new Error('run not bound') })
+    bound[bound.length - 1]!()
+    await waitFor(() => {
+      const press = onPatch.mock.calls.map((c) => c[0] as Record<string, unknown>).find((p) => p['steps'] === 40)
+      if (press === undefined) throw new Error('the press patch never fired; calls: ' + JSON.stringify(onPatch.mock.calls))
+    }, { timeout: 4000 })
+    // never a stale re-fire after the press write
+    await new Promise((r) => setTimeout(r, 500))
+    expect(onPatch).toHaveBeenCalledTimes(1)
+    expect(onRun).toHaveBeenCalledTimes(1)
+  })
 })

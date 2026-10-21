@@ -18,6 +18,7 @@ import { SpecFieldRow } from "./rows.js";
 import { coerceFieldEdit, fieldsOf, resolveValue, } from "./spec.js";
 import { useFormSpec } from "./use-form-spec.js";
 import { useSquareProvider } from "./square-provider.js";
+import { writeThroughSeat } from "./write-through.js";
 import { ModelAxes } from "./axes.js";
 import { Box, Layers } from "./icons.js";
 import { pollRunStageUrl } from "./runs-policy.js";
@@ -117,8 +118,19 @@ export function DeclarativeStudio(props) {
         props.onSurface(liveSpec.size === 'huge' ? 'huge' : '');
     }, [liveSpec, specError]);
     const fieldByName = new Map((spec !== null ? fieldsOf(spec) : []).map((f) => [f.name, f]));
+    // THE SETTINGS-EATER LAW (write-through.ts's seat, wired 2026-10-21
+    // — the module landed walled but production-orphaned): every edit
+    // lands on the drafts door, never in component state alone — an
+    // edit that lives only in the view dies with the view (the
+    // 2026-09-23 burn). Keystroke-class edits ride the trailing window
+    // (one write per pause, the CAS budget's law); the press routes
+    // its full patch through NOW, superseding every queued row (one
+    // door write, never a stale re-fire after it).
+    const seat = writeThroughSeat(props.stageId, (patch) => { props.onPatch(patch); });
     const onEdit = (name, v) => {
-        setUser((prev) => ({ ...prev, [name]: coerceFieldEdit(fieldByName.get(name), v) }));
+        const coerced = coerceFieldEdit(fieldByName.get(name), v);
+        setUser((prev) => ({ ...prev, [name]: coerced }));
+        seat.trailing({ [name]: coerced });
     };
     // the resolved value — derived per render (what a run composes).
     // THE SERVED BASE (hour-26 stroke 15, the 1:1 run law): the row's
@@ -139,7 +151,10 @@ export function DeclarativeStudio(props) {
         // PATCH FIRST (the generic drill's law, kept): the run reads what
         // the user SEES — the USER layer verbatim, plus nulls for keys
         // the frozen row held that left the map (JSON Merge Patch
-        // deletes them; the unset path's domain half).
+        // deletes them; the unset path's domain half). The patch rides
+        // the seat's NOW: every queued trailing row for its keys
+        // supersedes (the same value lands once — a queued stale re-fire
+        // after the press is the write-accountability lie).
         const patch = {};
         const userKeys = new Set(Object.keys(user));
         for (const k of userKeys)
@@ -147,7 +162,7 @@ export function DeclarativeStudio(props) {
         for (const k of Object.keys(params))
             if (!userKeys.has(k))
                 patch[k] = null;
-        onPatch(patch);
+        seat.now(patch);
         onRun();
     };
     // THE GESTURE BINDING (hour-26): the frame's top-bar pill calls
