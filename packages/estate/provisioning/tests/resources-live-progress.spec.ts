@@ -96,7 +96,13 @@ function planOf(id: string, sizeBytes: number = TOTAL): ProvisionPlan {
 function writerFor(over: Partial<ArtifactWriterPort> = {}): ArtifactWriterPort {
   return {
     inspect: async () => ({ present: false as const }),
-    write: async () => {
+    write: async (request) => {
+      // the fake CONSUMES the stream — the counted write's ledger
+      // bytes flow only as the writer pulls (countedSource fires on
+      // the pull) — and refuses the land after the source ends
+      for await (const _chunk of request.source) {
+        void _chunk;
+      }
       throw new Error("the live-progress walls never land bytes");
     },
     ...over,
@@ -141,7 +147,6 @@ describe("THE LIVE-ROW DOOR LAW (audit download-stack-audit-2026-10-20 F10)", ()
     } satisfies ProvisioningConfig);
     const ref = refOf("live-fam");
     const flight = service.ensure(ref);
-    void flight.catch(() => undefined);
     await until(() => service.progressOfRef(ref)?.bytes === PART,
       "the stream's first chunk never reached the ledger — the arm cannot seat a mid-flight scan");
     const preScan = service.progressOfRef(ref);
