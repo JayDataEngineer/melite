@@ -33,6 +33,7 @@ import {
   resolveEngineLorasDir,
   unboardedRows,
   userLorasPath,
+  validateUserLoraRow,
 } from "@melite/comfyui-cordis/user-loras";
 import type { ModelsService } from "@melite/comfyui-cordis";
 import type {
@@ -91,6 +92,24 @@ export const ACTIONS = [
   "snapshot_restore",
   "lora_list",
   "lora_install",
+  // THE LORA-FETCH VERB (the operator's 2026-11-09 order — the
+  // LORA-FROM-URL burn, ROADMAP line 7892: "Can you add this lora
+  // to krea 2" + a HuggingFace URL is the ONE download an operator
+  // actually does, and nothing served it — the session fell to raw
+  // bash archaeology against the no-loras-remote rule). THE
+  // AMENDED LAW, voiced here where the verb lives: the rule is
+  // amended, NOT deleted — no SILENT remote fetch; a stated URL
+  // rides the provisioning service (download_model's own stack:
+  // range resume, kept parts, live ledger, honest voices) behind
+  // the human's operator_confirmed gate, lands under the FAMILY
+  // subfolder the engine already serves (loras/<family>/<file> —
+  // the combo lists '<family>/<file>'), and the landing drops the
+  // estate's cached /object_info doc so the next lora_list re-asks.
+  // download_model's own loras refusal STAYS (its comment names
+  // this verb as the supersession). Recipe: add a lora to <family>:
+  // lora_fetch url → auto restart → the mod appears in the family's
+  // mods.
+  "lora_fetch",
   // THE REFMODS LISTING DOOR (2026-11-05, the timeline card's mods
   // square): the H3 refmods loader's own mod_N combo, read off the
   // same cached /object_info doc lora_list rides — the stems, sorted.
@@ -276,6 +295,11 @@ export interface Req {
   path: string;
   data: string;
   families: string[];
+  /** THE LORA-FETCH VERIFY (the operator's 2026-11-09 cure item 1:
+   *  sha256 verify when stated) — the source-stated digest, carried
+   *  into the provisioning acquire so the landing verifies. Empty =
+   *  unstated, no verification claimed. */
+  sha256: string;
   /** THE ACQUIRE-WEIGHT POLL KEY (F9 run-press acquisition): the
    *  tracker's poll carries ONLY this — the start carries the model
    *  (plus the missing file for display, via filename) and returns
@@ -400,6 +424,8 @@ export function parseReq(doc: unknown): Req {
     filename: str("filename") || str("file"),
     families: Array.isArray(d["families"]) ? (d["families"] as unknown[]).map(String).filter((s) => s !== "") : [],
     operation_id: str("operation_id"),
+    // THE LORA-FETCH VERIFY (see Req.sha256)
+    sha256: str("sha256"),
   };
 }
 
@@ -876,13 +902,16 @@ function externalModelPath(req: Req): { readonly relativePath: string; readonly 
   if (folder.includes("..") || folder.startsWith("/")) {
     throw badRequest("relative_path must stay under the models root: " + req.relative_path);
   }
-  // THE NO-LORAS-REMOTE LAW, enforced at the one fetch door: the
-  // operator's rule ("THERE SHOULD NOT BE A LORAS REMOTE / IT'S
-  // ALL BUILT IN") — a LoRA arrives by COPY through lora_install
-  // or the user rows file, never by url. Before this arm the door
-  // could fetch into models/loras and contradict the stated law.
+  // THE LORAS LAW, AMENDED 2026-11-09 (the LORA-FROM-URL burn,
+  // ROADMAP line 7892): the rule is amended, not deleted — no
+  // SILENT remote fetch; a stated URL now rides its OWN verb,
+  // lora_fetch (the provisioning service's full progress face,
+  // family subfolder, operator_confirmed gate). THIS door keeps
+  // its refusal: the generic model fetch never writes the loras
+  // dir — that is the lora verb's ground, and a checkpoint URL
+  // has no business masquerading as a LoRA.
   if (folder === "loras" || folder.startsWith("loras/")) {
-    throw badRequest("download_model refuses the loras dir — LoRAs arrive by copy or upload (lora_install), never by url");
+    throw badRequest("download_model refuses the loras dir — a LoRA URL rides the lora_fetch verb (operator order 2026-11-09: the provisioning service lands it under the family's loras subfolder); this generic model door never writes loras");
   }
   // THE C5 FILENAME LAW (audit T-E3, 2026-10-22): the derived name
   // rides the SSOT the cell artifacts ride — a URL's query and
@@ -1203,6 +1232,145 @@ async function hDownloadModel(req: Req, ctx: ManageCtx): Promise<[number, Manage
   invalidateLiveObjectInfo(ctx);
   ctx.rearmWeights?.();
   return provisionEnvelope(req.action, result);
+}
+
+/** `lora_fetch` — THE LORA-FROM-URL DOOR (the operator's 2026-11-09
+ *  order: "Can you add this lora to krea 2" + a HuggingFace URL).
+ *  The amended law lives in the ACTIONS row above; this handler is
+ *  its mechanics, hDownloadModel's own template with three lora
+ *  facts folded in: the family subfolder (one family per call —
+ *  the combo name is '<family>/<file>'), the row grammar's
+ *  extension judge (a non-LoRA name refuses at the door, never
+ *  after the money), and the RESTART CHAIN — the operator's design
+ *  ("lora_fetch url → auto restart → the mod appears in the
+ *  family's mods") chains the SAME guarded restart door hRestart
+ *  is; a chain that cannot fire (runs live, engine down) folds to
+ *  ok:true + restart_required:true + next_action:'restart' — the
+ *  LANDING is this verb's job, never a restart's refusal wearing
+ *  the fetch's face. */
+async function hLoraFetch(req: Req, ctx: ManageCtx): Promise<[number, ManageEnvelope]> {
+  need(req, "url");
+  estateOnly(req, ctx.endpoint());
+  // ONE family — the subfolder the file lands under; the combo
+  // name is '<family>/<filename>' and the mods plane scopes the
+  // offer by it
+  if (req.families.length !== 1) {
+    throw badRequest(
+      "lora_fetch requires exactly one family (the loras subfolder the engine serves the file under) — families: [\"<family-id>\"]",
+    );
+  }
+  const family = req.families[0] as string;
+  if (family.includes("/") || !segmentConfined(family)) {
+    throw badRequest("family must be one safe path segment under the loras root: " + family);
+  }
+  // THE C5 FILENAME LAW (the download_model door's own SSOT): the
+  // URL's query/fragment never names the file
+  const filename = req.filename !== "" ? req.filename : artifactFileName(req.url);
+  if (filename.includes("/") || !segmentConfined(filename)) {
+    throw badRequest("filename must be a bare name under the loras root");
+  }
+  // THE ROW GRAMMAR OWNS WHAT A LORA FILE IS (one spelling with
+  // the user rows: the same extension judge the picker's rows
+  // serve — probe rides validateUserLoraRow and reads only its
+  // problem)
+  const probe = validateUserLoraRow({ id: "probe", filename: family + "/" + filename, families: [family] }, 0);
+  if (probe.problem !== undefined) throw badRequest("lora_fetch: " + probe.problem);
+  // THE SEAT ASKS FIRST (the hProvisionModel order law), then the
+  // gate below the shape guards: a request refused on its own
+  // merits never needs the human's flag
+  const provisioner = provisioningOf(ctx);
+  const confirmed = operatorConfirmGate(req, "lora_fetch");
+  if (confirmed !== null) return confirmed;
+  const result = await withManageTimeout(req, ctx, (signal) =>
+    provisioner.acquireExternal(
+      {
+        kind: "model",
+        url: req.url,
+        relativePath: "loras/" + family,
+        filename,
+        ...(req.sha256 === "" ? {} : { sha256: req.sha256 }),
+      },
+      { operatorConfirmed: req.operator_confirmed },
+      signal,
+    ));
+  // THE UNCONDITIONAL DROP (the download_model law this verb
+  // rides): the boot-time /object_info memo must not outlive a
+  // landed file — the next lora_list (and the next form-spec
+  // serve) re-asks, and the engine's mtime-based folder scan
+  // serves the new name. ZERO restarts estate-side; the engine
+  // reboot below is a separate, voiced concern.
+  invalidateLiveObjectInfo(ctx);
+  ctx.rearmWeights?.();
+  const comboName = family + "/" + filename;
+  // THE COMBO ASK, PRE-RESTART: a modern core re-scans the loras
+  // folder per read, so the name may already serve; an unreachable
+  // engine proves nothing (the null-doc contract) and refuses
+  // nothing — the deadline refusal is folded by the same honesty.
+  let inComboNow = false;
+  try {
+    inComboNow = loraNamesFromObjectInfo(await objectInfoDoc(ctx, railMs(req))).includes(comboName);
+  } catch {
+    inComboNow = false;
+  }
+  // THE RESTART CHAIN (the operator's design: the Manager reloads
+  // ComfyUI). The chain rides the guarded restart door; ANY fold —
+  // the guard's 409 (runs live), a rail error, a dead engine —
+  // leaves the fetch ok and voices the owed restart.
+  let restartVoice: { restart_required: boolean; next_action: string; note: string };
+  try {
+    await hRestart({ ...req, action: "restart" }, ctx);
+    restartVoice = {
+      restart_required: false,
+      next_action: "status",
+      note: "engine restart issued (the Manager reloads ComfyUI)",
+    };
+  } catch (e) {
+    const why = e instanceof Refused ? e.message : e instanceof Error ? e.message : String(e);
+    restartVoice = {
+      restart_required: true,
+      next_action: "restart",
+      note: "the lora LANDED; the engine restart is owed and did not fire: " + why,
+    };
+  }
+  const detail = comboName + " landed for " + family + " — " + restartVoice.note +
+    (inComboNow ? " (already in the engine's combo)" : " (not yet in the engine's combo read)");
+  const first = result.items[0];
+  const data = {
+    family,
+    filename: comboName,
+    url: req.url,
+    operation_id: result.operationId,
+    state: result.state,
+    ...(first?.path !== undefined ? { path: first.path } : {}),
+    in_combo_now: inComboNow,
+    restart_required: restartVoice.restart_required,
+    next_action: restartVoice.next_action,
+    // THE ROW SUGGESTION (the lora_install door's pattern): paste
+    // this into the family's user rows (or the DECL) and the
+    // picker's id-pick composes; the engine name serves as the
+    // candidate either way (the mods union)
+    row_suggestion: {
+      id: comboName,
+      filename: comboName,
+      families: [family],
+      source_url: req.url,
+      label: filename.replace(/\.[^.]+$/, ""),
+    },
+  };
+  return [
+    200,
+    {
+      action: req.action,
+      ok: true,
+      detail,
+      status: 200,
+      state: result.state,
+      next_action: restartVoice.next_action,
+      operation_id: result.operationId,
+      restart_required: restartVoice.restart_required,
+      data,
+    },
+  ];
 }
 
 function familyModelDeclared(ctx: ManageCtx, id: string): boolean {
@@ -2232,6 +2400,7 @@ const HANDLERS: Record<ManageAction, Handler> = {
   snapshot_restore: hSnapshotRestore,
   lora_list: hLoraList,
   lora_install: hLoraInstall,
+  lora_fetch: hLoraFetch,
   refmods_list: hRefmodsList,
 };
 

@@ -1,6 +1,6 @@
 import type { ModelsService } from "@melite/comfyui-cordis";
 import type { ProvisioningServiceDefinition } from "@melite/estate-provisioning";
-export declare const ACTIONS: readonly ["status", "endpoint_set", "logs", "search_models", "list_extensions", "snapshot_list", "install_extension", "install_extension_url", "download_model", "provision_model", "acquire_weight", "provision_runtime", "acquire_retry", "acquire_discard", "restart", "stop", "launch", "update", "switch_version", "free", "snapshot_save", "snapshot_restore", "lora_list", "lora_install", "refmods_list"];
+export declare const ACTIONS: readonly ["status", "endpoint_set", "logs", "search_models", "list_extensions", "snapshot_list", "install_extension", "install_extension_url", "download_model", "provision_model", "acquire_weight", "provision_runtime", "acquire_retry", "acquire_discard", "restart", "stop", "launch", "update", "switch_version", "free", "snapshot_save", "snapshot_restore", "lora_list", "lora_install", "lora_fetch", "refmods_list"];
 export type ManageAction = (typeof ACTIONS)[number];
 export declare const LIFECYCLE_GUARDED: ReadonlySet<ManageAction>;
 export interface ManageEnvelope {
@@ -139,6 +139,11 @@ export interface Req {
     path: string;
     data: string;
     families: string[];
+    /** THE LORA-FETCH VERIFY (the operator's 2026-11-09 cure item 1:
+     *  sha256 verify when stated) — the source-stated digest, carried
+     *  into the provisioning acquire so the landing verifies. Empty =
+     *  unstated, no verification claimed. */
+    sha256: string;
     /** THE ACQUIRE-WEIGHT POLL KEY (F9 run-press acquisition): the
      *  tracker's poll carries ONLY this — the start carries the model
      *  (plus the missing file for display, via filename) and returns

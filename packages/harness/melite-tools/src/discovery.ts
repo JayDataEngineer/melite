@@ -22,16 +22,19 @@ import {
   enhanceRecipeFor,
   getModel,
   isServedFamily,
+  liveObjectInfo,
   liveScanOrder,
   modelsBooted,
   owningAtom,
   registryModel,
   loadCardDefs,
   modelIds,
+  resolveEngineBaseUrl,
   theService,
   emitModifierKinds,
   declaredDefaults,
 } from '@melite/comfyui-cordis'
+import { loraNamesFromObjectInfo } from '@melite/comfyui-cordis/user-loras'
 import type { ComfyUIService } from '@melite/comfyui-cordis'
 import type { CardDefinition } from '@melite/comfyui-card-kit/card-definition'
 import type { DeclaredModifierKind } from '@melite/comfyui-card-kit/params-emit'
@@ -581,6 +584,26 @@ function servedOptions(
   })
 }
 
+/** THE ENGINE LISTING READER (the lora-from-url cure, operator order
+ *  2026-11-09): the engine's own LoRA combo — the SAME reader + memo
+ *  the manage plane's lora_list rides (`liveObjectInfo`, cached per
+ *  engine for the process life, dropped by the lora_fetch landing) —
+ *  so the picker's candidates and the lora doors can never disagree
+ *  about what the engine will load. Absent (undefined) when the
+ *  engine is unreachable or undeclared: the picker serves its DECL
+ *  rows alone — an engine that proves nothing never invents
+ *  candidates (the honest-empty law). @param boundMs the live read's
+ *  deadline bound (the manage doors' own railMs posture, tighter
+ *  here: a form-spec serve must not hang on a dead engine).
+ *  @returns the combo names ('<family>/<file>'), or undefined. */
+export async function engineLorasListing(boundMs = 3_000): Promise<readonly string[] | undefined> {
+  try {
+    return loraNamesFromObjectInfo(await liveObjectInfo(resolveEngineBaseUrl(), undefined, boundMs))
+  } catch {
+    return undefined
+  }
+}
+
 function specModifiers(
   svc: ComfyUIService,
   card: string,
@@ -588,6 +611,7 @@ function specModifiers(
   decl: ModelDecl | null,
   def: CardDefinition | undefined,
   enveloped: ReadonlySet<string>,
+  engineLoras?: readonly string[],
 ): ModifierKind[] {
   const out: ModifierKind[] = []
   for (const m of decl?.mods ?? []) {
@@ -653,6 +677,35 @@ function specModifiers(
       model: r.filename,
       ...(r.preprocessor !== undefined ? { preprocessor: r.preprocessor } : {}),
     }))
+    // THE MODS-BUCKET UNION (the lora-from-url cure, operator order
+    // 2026-11-09, design B: "the lora appears in MODS"): the
+    // family's picker candidates UNION the engine's own
+    // loras/<family>/ listing (the same combo lora_list serves), so
+    // a LoRA landed by comfy_manage lora_fetch appears here with NO
+    // DECL edit — the engine is the truth about what it will load.
+    // Family-scoped by construction: only '<key>/'-prefixed names
+    // union, so another family's files never leak into this
+    // picker. Names a DECL row already serves do not duplicate (the
+    // row wins — its label/default_strength is the richer face).
+    // Absent listing (engine down/undeclared): the DECL rows alone,
+    // unchanged.
+    if (pack === 'loras' && engineLoras !== undefined) {
+      const prefix = key + '/'
+      const declared = new Set(cat.rows.map((r) => r.filename))
+      const served = new Set(entry.options.map((o) => o.value))
+      const engineRows: ModifierOption[] = []
+      for (const name of engineLoras) {
+        if (!name.startsWith(prefix)) continue
+        if (declared.has(name) || served.has(name)) continue
+        engineRows.push({
+          value: name,
+          label: name.slice(prefix.length),
+          tooltip: 'the engine\u2019s own loras/' + key + '/ listing — land more with comfy_manage lora_fetch',
+          model: name,
+        })
+      }
+      if (engineRows.length > 0) entry.options = [...entry.options, ...engineRows]
+    }
     out.push(entry)
   }
   // CARD-DECLARED KINDS (CONTRACT A): the card's own action kinds
@@ -820,6 +873,7 @@ export function specBody(
   svc: ComfyUIService,
   defs: Map<string, CardDefinition>,
   res: SpecResolution,
+  engineLoras?: readonly string[],
 ): FormSpecDoc {
   // ONE VOICE FOR AN UNKNOWN CARD: the defs map is this function's
   // own input and its only caller builds res.card FROM it, so a miss
@@ -890,7 +944,7 @@ export function specBody(
   // pack) and render ONLY through the mod surface. ControlNet
   // proves the law by absence: the pack waits unboarded and no
   // envelope, no entry, no endpoint ever names it.
-  const modifiers = specModifiers(svc, res.card, envelopeKey, decl, def, boardedPacks)
+  const modifiers = specModifiers(svc, res.card, envelopeKey, decl, def, boardedPacks, engineLoras)
   // the machine truth (one spelling: liveScanOrder, the registry's
   // own admission read) — presence marks ride the families block
   let liveMids: Set<string>
@@ -1439,6 +1493,11 @@ export async function kindsDoorArm(): Promise<Record<string, unknown>> {
 export async function formSpecArm(
   model: string,
   engineDocs?: ReadonlyMap<string, () => Record<string, unknown>>,
+  // THE MODS-BUCKET UNION (operator order 2026-11-09): the engine's
+  // own LoRA listing joins the picker candidates — a Promise is
+  // accepted so the door can fire the live read concurrently with
+  // the serve and await it here (never serially before it).
+  engineLoras?: readonly string[] | Promise<readonly string[] | undefined>,
 ): Promise<FormSpecDoc | null> {
   // THE ENGINE ARM (stroke 66, generalized stroke 69 — the
   // card-seam completion): an engine id resolves to the ENGINE's
@@ -1464,5 +1523,5 @@ export async function formSpecArm(
   const defs = await loadCardDefs()
   const res = resolveSpecKey(model, defs, boardedMap(defs))
   if (res === null) return null
-  return specBody(theService(), defs, res)
+  return specBody(theService(), defs, res, await engineLoras)
 }

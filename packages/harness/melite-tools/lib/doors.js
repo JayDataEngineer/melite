@@ -1,7 +1,7 @@
 import { contentTypeForArtifact, segmentConfined } from '@melite/contracts/mediaKinds';
 import { harnessEnhance, resolveHarnessRoutes, routeName } from "./llm-complete.js";
 import { agenticSweep } from "./enhance-agent.js";
-import { formSpecArm, formsArm, kindsDoorArm, modelCatalogArm, cardToolsArm, } from "./discovery.js";
+import { engineLorasListing, formSpecArm, formsArm, kindsDoorArm, modelCatalogArm, cardToolsArm, } from "./discovery.js";
 import { makeEstateRequest, seatFamilyForPath } from "./estate.js";
 // The protocol refusal discrimination (the false-death fix,
 // 2026-10-08): a seat's NAMED refusal is a 4xx answer about the
@@ -862,7 +862,12 @@ export function apply(c, config = {}) {
                                 servers,
                             }));
                         }
-                        return void formSpecArm(model, engineDocs).then((spec) => {
+                        // THE MODS-BUCKET UNION (operator order 2026-11-09): the
+                        // live engine listing fires CONCURRENTLY with the serve
+                        // and the form-spec arm awaits it — a fetched lora shows
+                        // in the picker with no DECL edit; an unreachable engine
+                        // serves the DECL rows alone (honest-absent).
+                        return void formSpecArm(model, engineDocs, engineLorasListing()).then((spec) => {
                             if (spec === null) {
                                 return fail(404, { error: `form-spec: '${model}' does not resolve (unknown, unoffered, or retired)` });
                             }

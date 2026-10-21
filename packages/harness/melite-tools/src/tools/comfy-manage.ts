@@ -59,6 +59,11 @@ const ACTIONS = [
   'restart', 'stop', 'launch', 'update', 'switch_version', 'free',
   'snapshot_save', 'snapshot_restore',
   'lora_list', 'lora_install',
+  // THE LORA-FETCH VERB (the operator's 2026-11-09 order): a stated
+  // LoRA URL rides the provisioning service into the family's loras
+  // subfolder, auto-restarts, and appears in the family's mods — the
+  // SSOT's ACTIONS row voices the amended law.
+  'lora_fetch',
   'refmods_list',
 ] as const
 
@@ -334,7 +339,10 @@ export function comfyManage(estate: Estate): ToolDefinition {
        + '(THE run-failure weight door — ONE door with the bench popup Download button: start with model + optional file/variant/quant, '
        + 'take the operation_id from the answer, then poll the SAME action with operation_id for live bytes/total until a terminal state); lora_list (the '
        + 'engine-accepted LoRA names plus the user rows file) and lora_install (copy or upload a LoRA file the operator '
-       + 'already has — never fetched; the answer names the restart that follows); refmods_list (the engine\'s own '
+       + 'already has — never fetched; the answer names the restart that follows); lora_fetch — THE LORA RECIPE (the operator\'s 2026-11-09 order): '
+       + 'add a lora to <family>: lora_fetch url → auto restart → the mod appears in the family\'s mods (the human\'s operator_confirmed gates it like '
+       + 'every external fetch; the answer carries the combo name, whether the engine already lists it, and a row_suggestion for the family\'s rows); '
+       + 'refmods_list (the engine\'s own '
       + 'MiniMaxH3RefModsLoader mod combos off /object_info — the refmod picker\'s candidate feed, read-only); restart, stop, launch, update '
        + '(target comfy), switch_version, free. INFRA UPKEEP only — it '
       + 'never runs inference, and lifecycle actions are refused while runs are '
@@ -355,7 +363,7 @@ export function comfyManage(estate: Estate): ToolDefinition {
       },
       url: {
         type: 'string',
-        description: 'install_extension_url / download_model / endpoint_set: the git URL, file URL, or ComfyUI server URL.',
+        description: 'install_extension_url / download_model / endpoint_set / lora_fetch: the git URL, file URL, ComfyUI server URL, or the LoRA file URL (query/fragment never name the file).',
       },
       ref: {
         type: 'string',
@@ -363,19 +371,23 @@ export function comfyManage(estate: Estate): ToolDefinition {
       },
       operator_confirmed: {
         type: 'boolean',
-        description: 'install_extension_url / download_model: pass true ONLY after the human running you explicitly approved this URL — the flag is recorded with the operation and the door refuses without it. Never set it on your own judgment.',
+        description: 'install_extension_url / download_model / lora_fetch: pass true ONLY after the human running you explicitly approved this URL — the flag is recorded with the operation and the door refuses without it. Never set it on your own judgment.',
       },
       relative_path: {
         type: 'string',
         description: 'download_model: destination under the models root, e.g. "models/checkpoints".',
       },
-      filename: { type: 'string', description: 'download_model: on-disk filename. lora_install: required with data (the name the engine combo will list).' },
+      filename: { type: 'string', description: 'download_model: on-disk filename. lora_fetch: optional bare name (derived from the URL by the C5 law when omitted). lora_install: required with data (the name the engine combo will list).' },
       path: { type: 'string', description: 'lora_install: source path of a LoRA file the operator already has (copied, never fetched).' },
       data: { type: 'string', description: 'lora_install: base64 LoRA bytes (the browser-upload arm; requires filename).' },
       families: {
         type: 'array',
         items: { type: 'string' },
-        description: 'lora_install: family ids for the row suggestion in the answer (e.g. ["z-image"]).',
+        description: 'lora_install: family ids for the row suggestion in the answer (e.g. ["z-image"]). lora_fetch: EXACTLY ONE family — the loras subfolder the engine serves the file under (e.g. ["krea-2"]; the combo name becomes "<family>/<file>").',
+      },
+      sha256: {
+        type: 'string',
+        description: 'lora_fetch: the source-stated sha256 — the landing verifies against it when carried; omit when the source states none.',
       },
       model: {
         type: 'string',
@@ -443,7 +455,7 @@ export function comfyManage(estate: Estate): ToolDefinition {
       for (const k of ['nodes', 'url', 'ref', 'relative_path', 'filename', 'file', 'model',
                        'variant', 'quant', 'query', 'tail', 'version',
                        'target', 'force', 'snapshot', 'path', 'data',
-                       'families', 'operation_id', 'operator_confirmed']) {
+                       'families', 'operation_id', 'operator_confirmed', 'sha256']) {
         if (a[k] !== undefined && a[k] !== null && a[k] !== '') body[k] = a[k]
       }
       let res: Record<string, unknown>

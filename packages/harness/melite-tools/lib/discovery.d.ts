@@ -100,6 +100,19 @@ export declare const MODIFIER_PACKS: Record<string, {
      *  leaf never guesses off the kind name. */
     scalar_key?: string;
 }>;
+/** THE ENGINE LISTING READER (the lora-from-url cure, operator order
+ *  2026-11-09): the engine's own LoRA combo — the SAME reader + memo
+ *  the manage plane's lora_list rides (`liveObjectInfo`, cached per
+ *  engine for the process life, dropped by the lora_fetch landing) —
+ *  so the picker's candidates and the lora doors can never disagree
+ *  about what the engine will load. Absent (undefined) when the
+ *  engine is unreachable or undeclared: the picker serves its DECL
+ *  rows alone — an engine that proves nothing never invents
+ *  candidates (the honest-empty law). @param boundMs the live read's
+ *  deadline bound (the manage doors' own railMs posture, tighter
+ *  here: a form-spec serve must not hang on a dead engine).
+ *  @returns the combo names ('<family>/<file>'), or undefined. */
+export declare function engineLorasListing(boundMs?: number): Promise<readonly string[] | undefined>;
 export type { DeclaredModifierKind };
 export declare function stampOptionsFrom(schema: unknown, svc: {
     modCatalog(pack: string, family: string): {
@@ -113,7 +126,7 @@ export declare function stampOptionsFrom(schema: unknown, svc: {
  *  both build the same sentence from this function. Two literals is
  *  how they drifted apart in the first place. */
 export declare const unknownCardVoice: (card: string) => string;
-export declare function specBody(svc: ComfyUIService, defs: Map<string, CardDefinition>, res: SpecResolution): FormSpecDoc;
+export declare function specBody(svc: ComfyUIService, defs: Map<string, CardDefinition>, res: SpecResolution, engineLoras?: readonly string[]): FormSpecDoc;
 /** The forms table (the /v1/forms body — card meta only, no fields).
  *  Sorted by (sidebar order, card id) — deterministic. */
 export declare function formsTable(defs: Map<string, CardDefinition>): Record<string, unknown>;
@@ -159,5 +172,5 @@ export declare function kindsDoorArm(): Promise<Record<string, unknown>>;
  *  does not resolve (the door 404s, same body as ever). A model
  *  FAMILY name against an unbooted table THROWS the table's own
  *  refusal (never a 404 — the census-arm split, 2026-10-13). */
-export declare function formSpecArm(model: string, engineDocs?: ReadonlyMap<string, () => Record<string, unknown>>): Promise<FormSpecDoc | null>;
+export declare function formSpecArm(model: string, engineDocs?: ReadonlyMap<string, () => Record<string, unknown>>, engineLoras?: readonly string[] | Promise<readonly string[] | undefined>): Promise<FormSpecDoc | null>;
 //# sourceMappingURL=discovery.d.ts.map

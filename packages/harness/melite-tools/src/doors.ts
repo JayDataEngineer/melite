@@ -31,6 +31,7 @@ import { contentTypeForArtifact, segmentConfined } from '@melite/contracts/media
 import { harnessEnhance, resolveHarnessRoutes, routeName } from './llm-complete.ts'
 import { agenticSweep } from './enhance-agent.ts'
 import {
+  engineLorasListing,
   formSpecArm,
   formsArm,
   kindsDoorArm,
@@ -1001,7 +1002,12 @@ export function apply(c: CtxView, config: Config = {}): void {
                 servers,
               }))
             }
-            return void formSpecArm(model, engineDocs).then((spec) => {
+            // THE MODS-BUCKET UNION (operator order 2026-11-09): the
+            // live engine listing fires CONCURRENTLY with the serve
+            // and the form-spec arm awaits it — a fetched lora shows
+            // in the picker with no DECL edit; an unreachable engine
+            // serves the DECL rows alone (honest-absent).
+            return void formSpecArm(model, engineDocs, engineLorasListing()).then((spec) => {
               if (spec === null) {
                 return fail(404, { error: `form-spec: '${model}' does not resolve (unknown, unoffered, or retired)` })
               }
