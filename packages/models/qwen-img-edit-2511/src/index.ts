@@ -154,6 +154,14 @@ export const DECL: ModelDecl = {
       // THE WEIGHTS SWAP (recipe↔weights law): this variant's
       // stamps ride its OWN unet, merged over the family's
       // lane_inputs by the variant rail.
+      // THE ENVELOPE DECLARATION LAW (CONTRACTS §4 debt 27): the
+      // distilled domain for the lightx2v 4-step checkpoint —
+      // steps [4, 8] mirrors flux-distilled (own 4 at the floor),
+      // cfg [1, 2] the distilled guidance mode. The standard pair
+      // 20/2.5 refuses on BOTH knobs. Declared though hidden (the
+      // survivor arc retired the lane from the dropdown, not from
+      // old drafts): an unhide re-arms the law with no new edit.
+      "sampler_envelope": { "steps": [4, 8], "cfg": [1, 2] },
       "lane_inputs": {
         "unet": "qwen_image_edit_2511_fp8_e4m3fn_scaled_lightning_comfyui_4steps_v1.0.safetensors"
       },
@@ -188,6 +196,14 @@ export const DECL: ModelDecl = {
       // SOFT-RETIRED (2026-11-08, the survivor arc): addressable,
       // not offered — see lightning above.
       "hide_from_dropdown": true,
+      // THE ENVELOPE DECLARATION LAW (CONTRACTS §4 debt 27): the
+      // standard domain — 20/2.5 is the INT8 ConvRot merge the
+      // family defaults stamp (steps [10, 30] centers the merge,
+      // the flux-base-widened floor; cfg [2, 4] holds the 2.5
+      // truth and excludes the lightning guidance). The lightning
+      // pair 4/1 refuses on BOTH knobs. Declared though hidden —
+      // see the lightning row.
+      "sampler_envelope": { "steps": [10, 30], "cfg": [2, 4] },
       "resolver_defaults": {
         "steps": 20,
         "cfg": 2.5

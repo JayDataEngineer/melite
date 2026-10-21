@@ -112,6 +112,14 @@ export const DECL: ModelDecl = {
       "order": 0,
       // The base face declared, never inherited (the variant-sampler-defaults
       // law): 25 / 1 — the official template's own count, the family mirror.
+      // THE ENVELOPE DECLARATION LAW (CONTRACTS §4 debt 27, the E2-8
+      // cure's drain): the base domain — the official template's own
+      // 25-step count centered (steps [20, 30], the kroma-base
+      // [25, 35]-around-28 shape); cfg [1, 2] is this family's
+      // guidance mode (family defaults cfg 1, both lanes, "same
+      // sampler truth"). The turbo pair's 8 steps refuses here —
+      // the distilled marriage on non-distilled weights.
+      "sampler_envelope": { "steps": [20, 30], "cfg": [1, 2] },
       "resolver_defaults": { "steps": 25, "cfg": 1 },
       "cells": [
         {
@@ -157,6 +165,13 @@ export const DECL: ModelDecl = {
       "order": 1,
       // cfg declared beside steps — the pair is the law, half a face
       // inherits nothing (the variant-sampler-defaults law).
+      // THE ENVELOPE DECLARATION LAW (CONTRACTS §4 debt 27): the
+      // distilled domain — upstream's own "Turbo uses 8 steps"
+      // (steps [4, 8], the krea-turbo/flux-distilled convention);
+      // cfg [1, 2] is the shared family guidance mode. The base
+      // pair's 25 steps refuses here — a full-schedule marriage on
+      // distilled weights.
+      "sampler_envelope": { "steps": [4, 8], "cfg": [1, 2] },
       "resolver_defaults": { "steps": 8, "cfg": 1 },
       "cells": [
         {

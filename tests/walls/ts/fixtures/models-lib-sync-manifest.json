@@ -82,16 +82,16 @@
       "libHash": "97c48d477f1e8090b88ae59eb42523e0f99f3d85e208d2dfa91d8dc8e286edd4"
     },
     "qwen-img-21": {
-      "srcHash": "8e1e2c3dad4eef0dd6117c7bb8c319e04bf4be805fafd0a8925ecaa79c9876f5",
-      "libHash": "0d430c957d50814ea5197911c926805cdf79a6eaa912011edfeaa87010b5a643"
+      "srcHash": "6268fe1c5e55e102917ce02e159cee8c4693a9de6a658552979b47c59d8e316b",
+      "libHash": "6d2541b6ffba005bd9eddf622fba74405ced8ba3d620e1d2c9f7d6ed1454f438"
     },
     "qwen-img-edit-21": {
-      "srcHash": "8fc01d016b726bdc57ca60db2764032b237977c1d09b48f1e3190c1ff4e89bf1",
-      "libHash": "a793ec67fcbe4d433763457a57b29bfd1cdf26e956a9590854fff6e816e28c95"
+      "srcHash": "41db67348ef2c0715405ce835c295428ffb50403fca5e5d42bafb0f985bf2529",
+      "libHash": "ce66b7e2abd7b4244bb0afb61d865347a57a0830ccb011afbc5f91464d0e180b"
     },
     "qwen-img-edit-2511": {
-      "srcHash": "1d9c98e61aa14dca633725c142bcef288a38e0f5d8599f6263a86b0f49bf2b63",
-      "libHash": "967a5d4a0c5dfb66c6657e784e8c31a67a4d56847b46306530b0c1cf67911ef1"
+      "srcHash": "032c1240316c8d4efca88b4407758d3b51d43955e14efd50374eea44fafd0d65",
+      "libHash": "106a796099fbfcd9c33ec23202ff0aa0119930285b3262a0780782c1f1f8640d"
     },
     "qwen3-tts": {
       "srcHash": "1861b173c0c153cd062e06791d7ebd466a6350746db7f66244e37eba53344fc9",
@@ -126,8 +126,8 @@
       "libHash": "346241cd9e7b30719307736af9c12e36eb49b93f4cdb5dbd86e7895f863d47a7"
     },
     "z-image": {
-      "srcHash": "db193fc7b2a809072eb0d034fd17e057da163d2a9e4daf68192b38a50a4eca8d",
-      "libHash": "bba17e254434c80bb65925fcc8980e740de1fb741b5c490fa71a1e3bb3e8f3c8"
+      "srcHash": "d1970086d97d4fb4ae99eeeaa62fec8f310d442d93092f5eb7ddb7fe49244c8d",
+      "libHash": "43634fe1b2bda293487feeb54076a7528f5c6833e989004d0289b91455cd8384"
     }
   }
 }

@@ -37,6 +37,8 @@ import {
 import { EnvelopeRefusal } from "../../../../packages/harness/estate-queue/src/cardsArmError.ts";
 import type { ModelFactsRow, CardDeclRow } from "../../../../packages/harness/estate-queue/src/cardsFacts.ts";
 import { DECL as anima } from "../../../../packages/models/anima/src/index.ts";
+import { DECL as decl2511 } from "../../../../packages/models/qwen-img-edit-2511/src/index.ts";
+import { judgeSamplerEnvelope } from "@melite/contracts/laneRelations";
 import { loadCardDefs } from "@melite/comfyui-cordis";
 
 let svc: CardRegistryService;
@@ -71,16 +73,13 @@ function offeredLanes(row: ModelFactsRow) {
     v.group === "Variant" && v.hide_from_dropdown !== true);
 }
 
-/** The OWED debts (CONTRACTS §4, entry 18): split-numbers families
- *  whose envelopes are a tracked debt, not an exemption. Each names its
- *  debt so draining it edits both seats together; a family not listed
- *  and not declaring REFUSES this wall. */
-const OWED_ENVELOPE_DECLARATION: Record<string, string> = {
-  "z-image": "envelope-decl-z-image",
-  "qwen-img-21": "envelope-decl-qwen-img-21",
-  "qwen-img-edit-21": "envelope-decl-qwen-img-edit-21",
-  "qwen-img-edit-2511": "envelope-decl-qwen-img-edit-2511",
-};
+/** THE DRAINED DEBTS (CONTRACTS §4 debt 27, drained 2026-10-21):
+ *  z-image, qwen-img-21, qwen-img-edit-21 and qwen-img-edit-2511
+ *  each declared sampler envelopes on their split-numbers lanes in
+ *  the same change that added their door twins below — the carve-out
+ *  is deleted, never emptied: a future split-numbers family with no
+ *  envelope refuses THIS wall by name (the failures list), never
+ *  silently exempts. */
 
 describe("THE ENVELOPE DECLARATION LAW (split-numbers lanes declare their sampler domain)", () => {
   it("every split-numbers family declares envelopes on ALL its offered lanes (derived census)", () => {
@@ -91,7 +90,6 @@ describe("THE ENVELOPE DECLARATION LAW (split-numbers lanes declare their sample
       if (numeric.length < 2) continue; // not a split-numbers family
       const distinct = new Set(numeric.map((l) => `${l.s.steps}/${l.s.cfg}`));
       if (distinct.size < 2) continue; // one shared marriage — no cross-lane crime exists
-      if (OWED_ENVELOPE_DECLARATION[fam] !== undefined) continue; // tracked §4 debt, not silent
       for (const l of numeric) {
         const env = (l.v as { sampler_envelope?: unknown }).sampler_envelope;
         if (env === undefined || env === null) {
@@ -178,5 +176,178 @@ describe("THE ANIMA MARRIAGE DOOR (real rows, the burn shape)", () => {
     expect(() => stampCardOverlay({ steps: 8 }, animaRow, animaDecl, animaBase, "1", "anima")).not.toThrow();
     expect(() => stampCardOverlay({ steps: 8 }, animaRow, animaDecl, animaTurbo, "1", "anima")).not.toThrow();
     expect(() => stampCardOverlay({}, animaRow, animaDecl, animaBase, "1", "anima")).not.toThrow();
+  });
+});
+
+/** THE DRAINED-FAMILY DOOR TWINS (CONTRACTS §4 debt 27, 2026-10-21):
+ *  each drained family proves the same law as anima at the same seat
+ *  the queue composes through — the neighbor lane's marriage refuses
+ *  LOUD, the lane's own numbers ride, the envelope pins verbatim.
+ *  Real booted rows through the real selectCardVariant +
+ *  stampCardOverlay; the harness-min decl frame carries only the
+ *  judged knobs. The 2511 lanes are hidden-by-design (the survivor
+ *  arc), so the door cannot seat them — their twin judges the real
+ *  DECL envelopes through the same one judge the door asks. */
+const knobDecl: CardDeclRow = {
+  skeleton: "knob",
+  boarded: [],
+  schemaNames: ["steps", "cfg"],
+  admits: [],
+  spells: [],
+};
+
+function familyRow(fam: string): ModelFactsRow {
+  const row = facts[fam];
+  if (row === undefined) throw new Error(`booted facts carry no family ${JSON.stringify(fam)} — the twin judges nothing`);
+  return row;
+}
+
+/** The burn shape through the real door: the refusal voice, or a
+ *  thrown Error naming the unchecked crime (never a silent pass). */
+function burnRefusal(fam: string, variant: string, body: Record<string, unknown>): string {
+  const row = familyRow(fam);
+  const sel = selectCardVariant(fam, row, { variant }, "1");
+  try {
+    stampCardOverlay(body, row, knobDecl, sel, "1", fam);
+  } catch (e) {
+    if (e instanceof EnvelopeRefusal) return e.message;
+    throw e;
+  }
+  throw new Error(`no refusal rode — the E2-8 crime renders unchecked (${fam} ${variant} ${JSON.stringify(body)})`);
+}
+
+function ownRides(fam: string, variant: string, body: Record<string, unknown>): Record<string, unknown> {
+  const row = familyRow(fam);
+  return stampCardOverlay(body, row, knobDecl, selectCardVariant(fam, row, { variant }, "1"), "1", fam);
+}
+
+describe("THE Z-IMAGE MARRIAGE DOOR (debt 27 drain)", () => {
+  it("the base marriage — 25 steps at CFG 4 — REFUSES on the turbo lane", () => {
+    const voice = burnRefusal("z-image", "turbo", { steps: 25, cfg: 4 });
+    expect(voice).toContain('variant "turbo"');
+    expect(voice).toContain("stated steps 25");
+    expect(voice).toContain("[4, 8]");
+    expect(voice).toContain("married to steps 8");
+  });
+
+  it("the turbo marriage — 8 steps at CFG 1 — REFUSES on the base lane", () => {
+    const voice = burnRefusal("z-image", "base", { steps: 8, cfg: 1 });
+    expect(voice).toContain('variant "base"');
+    expect(voice).toContain("stated steps 8");
+    expect(voice).toContain("[20, 30]");
+    expect(voice).toContain("married to steps 25");
+  });
+
+  it("the lanes' own numbers ride; an unstated body never refuses", () => {
+    expect(ownRides("z-image", "turbo", { steps: 8, cfg: 1 })["steps"]).toBe(8);
+    expect(ownRides("z-image", "base", { steps: 25, cfg: 4 })["steps"]).toBe(25);
+    expect(() => ownRides("z-image", "base", {})).not.toThrow();
+  });
+
+  it("the envelopes pin verbatim (the declared domains, not a drifted copy)", () => {
+    const row = familyRow("z-image");
+    const byId = new Map((row.variants ?? []).map((v) => [v.id, v] as const));
+    expect((byId.get("turbo") as { sampler_envelope?: unknown }).sampler_envelope).toEqual({ steps: [4, 8], cfg: [1, 2] });
+    expect((byId.get("base") as { sampler_envelope?: unknown }).sampler_envelope).toEqual({ steps: [20, 30], cfg: [3, 5] });
+  });
+});
+
+describe("THE QWEN-IMG-21 MARRIAGE DOOR (debt 27 drain)", () => {
+  it("the base marriage — 25 steps at CFG 1 — REFUSES on the turbo lane", () => {
+    const voice = burnRefusal("qwen-img-21", "turbo", { steps: 25, cfg: 1 });
+    expect(voice).toContain('variant "turbo"');
+    expect(voice).toContain("(route qwen-img-21-turbo)");
+    expect(voice).toContain("stated steps 25");
+    expect(voice).toContain("[4, 8]");
+    expect(voice).toContain("married to steps 8");
+  });
+
+  it("the turbo marriage — 8 steps at CFG 1 — REFUSES on the base lane", () => {
+    const voice = burnRefusal("qwen-img-21", "base", { steps: 8, cfg: 1 });
+    expect(voice).toContain('variant "base"');
+    expect(voice).toContain("(route qwen-img-21)");
+    expect(voice).toContain("stated steps 8");
+    expect(voice).toContain("[20, 30]");
+    expect(voice).toContain("married to steps 25");
+  });
+
+  it("the lanes' own numbers ride; an unstated body never refuses", () => {
+    expect(ownRides("qwen-img-21", "base", { steps: 25, cfg: 1 })["steps"]).toBe(25);
+    expect(ownRides("qwen-img-21", "turbo", { steps: 8, cfg: 1 })["steps"]).toBe(8);
+    expect(() => ownRides("qwen-img-21", "base", {})).not.toThrow();
+  });
+
+  it("the envelopes pin verbatim (the declared domains, not a drifted copy)", () => {
+    const row = familyRow("qwen-img-21");
+    const byId = new Map((row.variants ?? []).map((v) => [v.id, v] as const));
+    expect((byId.get("base") as { sampler_envelope?: unknown }).sampler_envelope).toEqual({ steps: [20, 30], cfg: [1, 2] });
+    expect((byId.get("turbo") as { sampler_envelope?: unknown }).sampler_envelope).toEqual({ steps: [4, 8], cfg: [1, 2] });
+  });
+});
+
+describe("THE QWEN-IMG-EDIT-21 MARRIAGE DOOR (debt 27 drain)", () => {
+  it("the base marriage — 25 steps at CFG 1 — REFUSES on the turbo lane", () => {
+    const voice = burnRefusal("qwen-img-edit-21", "turbo", { steps: 25, cfg: 1 });
+    expect(voice).toContain('variant "turbo"');
+    expect(voice).toContain("(route qwen-img-edit-21-turbo)");
+    expect(voice).toContain("stated steps 25");
+    expect(voice).toContain("[4, 8]");
+    expect(voice).toContain("married to steps 8");
+  });
+
+  it("the turbo marriage — 8 steps at CFG 1 — REFUSES on the base lane", () => {
+    const voice = burnRefusal("qwen-img-edit-21", "base", { steps: 8, cfg: 1 });
+    expect(voice).toContain('variant "base"');
+    expect(voice).toContain("(route qwen-img-edit-21)");
+    expect(voice).toContain("stated steps 8");
+    expect(voice).toContain("[20, 30]");
+    expect(voice).toContain("married to steps 25");
+  });
+
+  it("the lanes' own numbers ride; an unstated body never refuses", () => {
+    expect(ownRides("qwen-img-edit-21", "base", { steps: 25, cfg: 1 })["steps"]).toBe(25);
+    expect(ownRides("qwen-img-edit-21", "turbo", { steps: 8, cfg: 1 })["steps"]).toBe(8);
+    expect(() => ownRides("qwen-img-edit-21", "base", {})).not.toThrow();
+  });
+
+  it("the envelopes pin verbatim (the declared domains, not a drifted copy)", () => {
+    const row = familyRow("qwen-img-edit-21");
+    const byId = new Map((row.variants ?? []).map((v) => [v.id, v] as const));
+    expect((byId.get("base") as { sampler_envelope?: unknown }).sampler_envelope).toEqual({ steps: [20, 30], cfg: [1, 2] });
+    expect((byId.get("turbo") as { sampler_envelope?: unknown }).sampler_envelope).toEqual({ steps: [4, 8], cfg: [1, 2] });
+  });
+});
+
+describe("THE 2511 MARRIAGE DOOR (debt 27 drain, hidden lanes)", () => {
+  function envelopeOf(id: string): { steps?: readonly number[]; cfg?: readonly number[] } {
+    const v = (decl2511.variants ?? []).find((row) => row.id === id);
+    if (v === undefined) throw new Error(`the 2511 DECL carries no variant ${JSON.stringify(id)} — the twin judges nothing`);
+    const env = (v as { sampler_envelope?: { steps?: readonly number[]; cfg?: readonly number[] } }).sampler_envelope;
+    if (env === undefined) throw new Error(`the 2511 DECL variant ${JSON.stringify(id)} declares no envelope — the census arm owns this red`);
+    return env;
+  }
+
+  it("the standard marriage — 20 steps at CFG 2.5 — is OFF the lightning envelope", () => {
+    const off = judgeSamplerEnvelope({ steps: 20, cfg: 2.5 }, envelopeOf("lightning"), { id: "lightning" });
+    expect(off?.knob).toBe("steps");
+    expect(off?.voice).toContain('variant "lightning"');
+    expect(off?.voice).toContain("[4, 8]");
+  });
+
+  it("the lightning marriage — 4 steps at CFG 1 — is OFF the standard envelope", () => {
+    const off = judgeSamplerEnvelope({ steps: 4, cfg: 1 }, envelopeOf("standard"), { id: "standard" });
+    expect(off?.knob).toBe("steps");
+    expect(off?.voice).toContain('variant "standard"');
+    expect(off?.voice).toContain("[10, 30]");
+  });
+
+  it("each hidden lane's own numbers ride its own envelope", () => {
+    expect(judgeSamplerEnvelope({ steps: 4, cfg: 1 }, envelopeOf("lightning"), { id: "lightning" })).toBeNull();
+    expect(judgeSamplerEnvelope({ steps: 20, cfg: 2.5 }, envelopeOf("standard"), { id: "standard" })).toBeNull();
+  });
+
+  it("the envelopes pin verbatim (the declared domains, not a drifted copy)", () => {
+    expect(envelopeOf("lightning")).toEqual({ steps: [4, 8], cfg: [1, 2] });
+    expect(envelopeOf("standard")).toEqual({ steps: [10, 30], cfg: [2, 4] });
   });
 });

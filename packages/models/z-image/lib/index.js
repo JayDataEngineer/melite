@@ -45,6 +45,12 @@ export const DECL = {
             "order": 0,
             // The turbo face declared, never inherited (the variant-sampler-defaults
             // law): 8 / 1 — the official turbo template's own pair.
+            // THE ENVELOPE DECLARATION LAW (CONTRACTS §4 debt 27, the E2-8
+            // cure's drain): the distilled domain — the official turbo
+            // template's 8/1 rides; the base lane's 25/4 refuses on BOTH
+            // knobs (the distilled convention shared with krea-turbo and
+            // flux-distilled: steps [4, 8], cfg [1, 2]).
+            "sampler_envelope": { "steps": [4, 8], "cfg": [1, 2] },
             "resolver_defaults": { "steps": 8, "cfg": 1 },
             "cells": [
                 {
@@ -65,6 +71,13 @@ export const DECL = {
             // The base face declared, never inherited (the variant-sampler-defaults
             // law): 25 / 4 — the official base template's own pair, NOT the
             // family turbo mirror.
+            // THE ENVELOPE DECLARATION LAW (CONTRACTS §4 debt 27): the base
+            // domain — cfg [3, 5] IS the hint's stated card range
+            // (3.0–5.0); steps [20, 30] centers the official 25-step
+            // template (the kroma-base [25, 35]-around-28 shape). The
+            // turbo pair 8/1 refuses on BOTH knobs (cfg 1 is turbo-only —
+            // the hint says so verbatim).
+            "sampler_envelope": { "steps": [20, 30], "cfg": [3, 5] },
             "resolver_defaults": { "steps": 25, "cfg": 4 },
             "cells": [
                 {
