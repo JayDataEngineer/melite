@@ -4,9 +4,6 @@
 [submodule "references/multi-hmr2"]
 	url = https://github.com/naver/multi-hmr2
 	path = references/multi-hmr2
-[submodule "vendor/comfyui_extensions/melite-sfx-nodes"]
-	path = vendor/comfyui_extensions/melite-sfx-nodes
-	url = https://github.com/JayDataEngineer/melite-sfx-nodes.git
 [submodule "vendor/comfyui_extensions/ComfyUI-MiniMax-H3-MotionCache-FastVAE"]
 	path = vendor/comfyui_extensions/ComfyUI-MiniMax-H3-MotionCache-FastVAE
 	url = https://github.com/JayDataEngineer/ComfyUI-MiniMax-H3-MotionCache-FastVAE.git
@@ -28,9 +25,6 @@
 [submodule "vendor/comfyui_extensions/melite-poser-nodes"]
 	path = vendor/comfyui_extensions/melite-poser-nodes
 	url = https://github.com/JayDataEngineer/melite-poser-nodes.git
-[submodule "vendor/comfyui_extensions/melite-tts-nodes"]
-	path = vendor/comfyui_extensions/melite-tts-nodes
-	url = https://github.com/JayDataEngineer/melite-tts-nodes.git
 [submodule "vendor/comfyui_extensions/melite-utility-nodes"]
 	path = vendor/comfyui_extensions/melite-utility-nodes
 	url = https://github.com/JayDataEngineer/melite-utility-nodes.git
