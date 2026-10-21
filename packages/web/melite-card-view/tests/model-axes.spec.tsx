@@ -56,8 +56,16 @@ const pickRecipe = (rowName: string | RegExp): void => {
   fireEvent.click(screen.getByRole('menuitem', { name: rowName }))
 }
 
-/** The krea-2 wire shape (lane read 2026-09-12): turbo (default) +
- *  raw Variant rows, int8 Quant cell OWNED by turbo. */
+/** The krea-2 wire shape: turbo (default) + raw Variant rows, each
+ *  with its OWN int8 Quant cell (turbo/int8 + raw/raw__int8 — the
+ *  discovery serializer's collision rule namespaces the later cell:
+ *  the served row id is raw__int8, its stamped coordinate the cell
+ *  quant 'int8'. The raw cell is the DECL's own truth
+ *  (packages/models/krea-2/src/index.ts raw cells: krea2_raw_int8_convrot) —
+ *  the N6 false-absence cure: the old fixture declared raw cell-less
+ *  and pinned quantRowsFor(raw) === [], an absence the door
+ *  contradicts. Appended AFTER raw so the variant indices the pick
+ *  arms pin (variants[1] int8, variants[2] raw) do not move. */
 const KREA: FormSpecDoc = {
   form: 'image-gen',
   schema: schemaEnvelope({
@@ -70,6 +78,7 @@ const KREA: FormSpecDoc = {
     { id: 'turbo', label: 'Turbo', group: 'Variant', defaults: { model: 'krea-2' }, route: 'krea-2', hint: '8-step distilled — fast, photorealistic (DEFAULT)' },
     { id: 'int8', label: 'INT8 ConvRot', group: 'Quant', defaults: {}, route: 'krea-2', quant: 'int8', owner: 'turbo' },
     { id: 'raw', label: 'Raw', group: 'Variant', defaults: { model: 'krea-2-raw', steps: 52, cfg: 3.5 }, route: 'krea-2-raw', hint: '52-step base checkpoint' },
+    { id: 'raw__int8', label: 'INT8 ConvRot', group: 'Quant', defaults: {}, route: 'krea-2-raw', quant: 'int8', owner: 'raw' },
   ],
 }
 
@@ -83,9 +92,11 @@ afterEach(() => {
 
 test('variantRows keeps the served Variant rows; the quant chain filters by owner', () => {
   expect(variantRows(KREA).map((v) => v.id)).toEqual(['turbo', 'raw'])
-  // THE CHAIN (one direction): int8 composes with turbo, not raw
+  // THE CHAIN (owner-scoped, the N6 cure): int8 composes with turbo,
+  // raw__int8 with raw — raw owns its DECL-declared cell, so the
+  // chain has two links and the door never substitutes a neighbor
   expect(quantRowsFor(KREA, 'turbo').map((q) => q.id)).toEqual(['int8'])
-  expect(quantRowsFor(KREA, 'raw')).toEqual([])
+  expect(quantRowsFor(KREA, 'raw').map((q) => q.id)).toEqual(['raw__int8'])
 })
 
 test('modelChoices: THE FAMILY THE SPEC SERVES — a variant route is never a model (stroke 21)', () => {
@@ -98,15 +109,19 @@ test('activeVariantId: exact route match; quant chains under the active variant'
   expect(activeVariantId(KREA, { model: 'krea-2-raw' } as SpecValues, 'Variant')).toBe('raw')
   expect(activeVariantId(KREA, { model: 'krea-2' } as SpecValues, 'Variant')).toBe('turbo')
   expect(activeVariantId(KREA, { model: 'krea-2' } as SpecValues, 'Quant')).toBe('int8')
-  expect(activeVariantId(KREA, { model: 'krea-2-raw' } as SpecValues, 'Quant')).toBeUndefined()
+  // the raw lane chains to its OWN cell (the N6 cure — the old
+  // toBeUndefined pinned the false absence)
+  expect(activeVariantId(KREA, { model: 'krea-2-raw' } as SpecValues, 'Quant')).toBe('raw__int8')
 })
 
 test('axisPickPatch: the visible stamps ride; the route NEVER lands in the user plane (stroke 21)', () => {
   // a Variant pick overlays steps/cfg and lands variant + the
   // reseeded quant — the model key is NEVER written (the re-point
-  // krea-2-raw is the server's compose business)
+  // krea-2-raw is the server's compose business). The raw pick
+  // stamps its composing cell's coordinate (the N6 cure — the old
+  // quant: '' rode the false cell-less absence)
   expect(axisPickPatch(KREA, KREA.variants![2]!)).toEqual({
-    steps: 52, cfg: 3.5, variant: 'raw', quant: '',
+    steps: 52, cfg: 3.5, variant: 'raw', quant: 'int8',
   })
   expect('model' in axisPickPatch(KREA, KREA.variants![2]!)).toBe(false)
   // a Quant pick overlays the cell's own defaults + quant
@@ -116,13 +131,12 @@ test('axisPickPatch: the visible stamps ride; the route NEVER lands in the user 
 test('seedAxisValues: the first-declared law; held values win on reopen', () => {
   expect(seedAxisValues(KREA, {})).toEqual({ variant: 'turbo', quant: 'int8', model: 'krea-2' })
   // a reopened stage holds its axes — no re-seed, model untouched.
-  // The 'raw' variant declares no quant cells, so the quant axis is
-  // UNSTATED and the seed OMITS the key (2026-10-10's empty-selection
-  // law: this arm used to expect quant: '' — the stated-empty that
-  // the add door wrote into a stage's params and the run door
-  // refused, 'unknown quant "" for model "z-image" variant "turbo"')
+  // The 'raw' variant owns its int8 cell (the N6 cure), so the quant
+  // axis seeds the cell's stamped coordinate (2026-10-10's
+  // empty-selection law survives: an axis with NO composing row
+  // still omits the key — 'unknown quant ""' stays refused)
   expect(seedAxisValues(KREA, { variant: 'raw', model: 'krea-2-raw' }))
-    .toEqual({ variant: 'raw' })
+    .toEqual({ variant: 'raw', quant: 'int8' })
   // a matrix-less spec seeds nothing
   expect(seedAxisValues({ ...KREA, variants: [] }, {})).toEqual({})
 })
@@ -130,9 +144,12 @@ test('seedAxisValues: the first-declared law; held values win on reopen', () => 
 test('seedUser: the user-layer seed is the axis seed over held params (presence law)', () => {
   // a fresh stage: axis seeds only — defaults derive, never ride
   expect(seedUser(KREA, {})).toEqual({ variant: 'turbo', quant: 'int8', model: 'krea-2' })
-  // a reopened stage holds EVERY key verbatim (presence survived)
+  // a reopened stage holds EVERY key verbatim (presence survived) —
+  // except the stated-empty the seed refuses to keep: held quant ''
+  // is not a choice, so the axis seed writes raw's composing
+  // coordinate over it (the N6 cure — raw composes now)
   expect(seedUser(KREA, { steps: 52, variant: 'raw', quant: '', model: 'krea-2-raw' }))
-    .toEqual({ steps: 52, variant: 'raw', quant: '', model: 'krea-2-raw' })
+    .toEqual({ steps: 52, variant: 'raw', quant: 'int8', model: 'krea-2-raw' })
 })
 
 // ── the rendered axes ───────────────────────────────────────────────────────
@@ -181,7 +198,7 @@ test('CardForm renders Model, Variant, and Quant selects ABOVE the parameters', 
   })
 })
 
-test('picking Raw applies the overlay: steps/cfg ride, quant clears, the model NEVER moves (stroke 21)', async () => {
+test('picking Raw applies the overlay: steps/cfg ride, quant stamps raw\'s own cell, the model NEVER moves (stroke 21)', async () => {
   const edits: Record<string, unknown> = {}
   const user = userEvent.setup()
   const comp = createElement(function Host() {
@@ -208,7 +225,9 @@ test('picking Raw applies the overlay: steps/cfg ride, quant clears, the model N
   expect(edits['steps']).toBe(52)
   expect(edits['cfg']).toBe(3.5)
   expect(edits['variant']).toBe('raw')
-  expect(edits['quant']).toBe('')
+  // the pick stamps raw's composing cell coordinate (the N6 cure —
+  // the old '' rode the false cell-less absence; raw owns raw__int8)
+  expect(edits['quant']).toBe('int8')
 })
 
 test('no matrix, no axes — the plain form is unchanged', () => {
@@ -1206,9 +1225,18 @@ test('a held INVALID axis on a VALID model refuses too — the ungated union no 
   expect(screen.getByLabelText('Variant').getAttribute('data-refused')).toBe('Variant')
 })
 
-test('a held coord that breaks the OWNER CHAIN refuses as itself — the first-row substitution is dead', async () => {
-  // int8 is owned by turbo; holding it under raw never composed —
-  // the old form silently painted the first quant row over it
+test('a held coord that FOLLOWS the owner chain renders valid — raw owns its own int8 cell (the N6 cure)', async () => {
+  // THE INVERSION (N6): the old arm held {variant raw, quant int8}
+  // and pinned 'Int8 — invalid' — "owned by turbo, never composed
+  // under raw". That was the false absence: raw OWNS an int8 cell
+  // (the DECL's raw cells, the :1363 matrix note's raw__int8), and
+  // the stamp coordinate is owner-agnostic by the axisStampOf law
+  // (the cell quant 'int8', never the row id). The held coord now
+  // resolves through raw's OWN row — no substitution, because there
+  // is nothing to substitute. The no-substitution half lives at the
+  // door seat (cards-variant.spec.ts:127 — {variant base, quant of
+  // another lane} refuses unknown-quant; resolveCellRow searches the
+  // resolved variant's cells, never the matrix's first row).
   const comp = createElement(function Host() {
     const [user, setUser] = useState<SpecValues>({ model: 'krea-2', variant: 'raw', quant: 'int8' })
     return createElement(CardForm, {
@@ -1220,8 +1248,8 @@ test('a held coord that breaks the OWNER CHAIN refuses as itself — the first-r
   })
   render(comp)
   const quant = await screen.findByLabelText('Quant')
-  expect(axisFace('Quant')).toContain('Int8 — invalid')
-  expect(quant.getAttribute('data-refused')).toBe('Quant')
+  expect(axisFace('Quant')).toContain('INT8 ConvRot')
+  expect(quant.getAttribute('data-refused')).toBe(null)
 })
 
 test('one pick repairs a refused stage — the pick\'s overlay re-points the model coherently', async () => {
