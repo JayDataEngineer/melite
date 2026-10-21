@@ -1,7 +1,9 @@
 // @vitest-environment happy-dom
 // weight-live-through-hiccup.spec.tsx — THE NETWORK-HICCUP LAW
-// (operator 2026-10-20: "IT GOES 100 MBPS, THEN GETS FUCKING STUCK.
-//  NO MORE. I REFUSE TO TEST YOUR TRASH ANYMORE" — the popup wedged
+// (operator 2026-10-20, quoted with the expletive elided — the
+// verbatim rides the burn receipt: "IT GOES 100 MBPS, THEN GETS
+// [EXPLETIVE] STUCK. NO MORE. I REFUSE TO TEST YOUR TRASH ANYMORE"
+// — the popup wedged
 //  to "Weight stuck … state 'verifying' at 6.0 GB/6.8 GB (88%)" mid
 //  flight, on transfers the ENGINE was still serving fine).
 //

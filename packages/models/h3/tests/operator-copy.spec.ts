@@ -1,7 +1,8 @@
-/** THE OPERATOR-COPY LAW (operator 2026-11-10, verbatim: "WHY DOES
- *  THIS FUCKING EXIST ON THE H3 CARD — Frames (Layer B — the
- *  timeline's calls own it; a stated span derives it at compose) —
- *  WHY DOES LAYER A HAVE A BUGGY PART FROM LAYER B").
+/** THE OPERATOR-COPY LAW (operator 2026-11-10, quoted with the
+ *  expletive elided — the verbatim rides the burn receipt: "WHY
+ *  DOES THIS [EXPLETIVE] EXIST ON THE H3 CARD — Frames (Layer B —
+ *  the timeline's calls own it; a stated span derives it at
+ *  compose) — WHY DOES LAYER A HAVE A BUGGY PART FROM LAYER B").
  *
  *  THE SEAM: schemastery's meta.description IS the card's field
  *  LABEL (card-base spec.ts — `label: meta['description']`), and
