@@ -5,7 +5,7 @@ import { join } from "node:path";
 import { ProvisioningError, VerifiedArtifactWriter, newOperationId, } from "./artifact-writer.js";
 import { ManagerProviderError } from "./manager-provider.js";
 import { providerOk, unknownProviderRefusal } from "./contracts.js";
-import { exactPatternFiles, hfRepoFiles, snapshotDest, snapshotFileUrl, snapshotFilesForPatterns, snapshotTreePresent, } from "./snapshot.js";
+import { exactPatternFiles, hfTreeEntries, snapshotDest, snapshotFileUrl, snapshotFilesForPatterns, snapshotTotalForEntries, snapshotTreePresent, } from "./snapshot.js";
 /** The part-reaper cadence: a stale part (the writer's own
  *  mtime bound, PART_STALE_MS) waits at most this long past
  *  service start for its sweep. */
@@ -1591,11 +1591,18 @@ export class ProvisioningService extends Service {
         }
         this.move(ref, operationId, "acquiring");
         this.voicePhase(operationId, "stream");
-        const siblings = await hfRepoFiles(item.repoId, this.fetcher, signal);
-        const files = snapshotFilesForPatterns(siblings, item.allowPatterns);
+        const entries = await hfTreeEntries(item.repoId, item.revision, this.fetcher, signal);
+        const files = snapshotFilesForPatterns(entries.map((e) => e.path), item.allowPatterns);
         if (files.length === 0) {
             throw new ItemRefusal("blocked", "snapshot/patterns-empty", `repo ${pin} matches none of the declared allow patterns`);
         }
+        // THE PROGRESS DENOMINATOR (the no-percent burn, 2026-10-21): a
+        // snapshot row declares no size_bytes, so the mint's total is 0
+        // and the live poll answered bytes/0 — a 16GB stream with no
+        // percent. The pinned listing carries per-file sizes; their sum
+        // over the matched set seeds the denominator (raise-only: a
+        // DECL-declared total, when one exists, keeps its word).
+        this.seedWeightTotal(operationId, snapshotTotalForEntries(entries, item.allowPatterns));
         for (const file of files) {
             if (signal.aborted)
                 throw new ItemRefusal("cancelled", "provisioning/cancelled", "operation cancelled");
@@ -2146,6 +2153,18 @@ export class ProvisioningService extends Service {
         if (entry === undefined || count <= 0)
             return;
         this.weightProgress.set(operationId, { ...entry, bytes: entry.bytes + count });
+    }
+    /** THE DENOMINATOR SEED (raise-only): a listing-derived total
+     *  lands when the mint's DECL-derived total is 0 (snapshot rows
+     *  declare no size_bytes) — never shrinks a declared word, never
+     *  invented (the sum of the listing's own sizes).
+     *  @param operationId the acquire operation's id
+     *  @param total the matched set's byte sum */
+    seedWeightTotal(operationId, total) {
+        const entry = this.weightProgress.get(operationId);
+        if (entry === undefined || total <= 0 || entry.total >= total)
+            return;
+        this.weightProgress.set(operationId, { ...entry, total });
     }
     /** THE PHASE VOICE (audit download-stack-audit-2026-10-20 F2):
      *  mirrors the live flow onto the ledger entry — the poll's only

@@ -309,23 +309,28 @@ export function snapshotCoversLoadSet(files: readonly string[]): boolean {
     files.some((f) => f.startsWith("speech_tokenizer/") && f.length > "speech_tokenizer/".length);
 }
 
-/** The repo file list behind a snapshot row.
+/** The repo file list behind a snapshot row, AT THE PIN (the seat's
+ *  hfTreeEntries owns the same law — the unpinned model-info door
+ *  was a drift seam: the file set could name paths the pin does not
+ *  carry).
  *  @param repoId the upstream repo (owner/name)
+ *  @param revision the immutable pin
  *  @param fetchFn the fetch implementation (injectable for tests)
- *  @returns the sibling rfilenames */
+ *  @returns the pinned tree's file paths */
 export async function hfRepoFiles(
   repoId: string,
+  revision: string,
   fetchFn: typeof globalThis.fetch = globalThis.fetch,
 ): Promise<string[]> {
-  const res = await fetchFn("https://huggingface.co/api/models/" + repoId);
+  const res = await fetchFn("https://huggingface.co/api/models/" + repoId + "/tree/" + revision + "?recursive=true");
   if (!res.ok) {
     throw new Error("HF repo list for " + repoId + " answered HTTP " + String(res.status));
   }
-  const data = await res.json() as { siblings?: Array<{ rfilename?: unknown }> };
-  const siblings = Array.isArray(data?.siblings) ? data.siblings : [];
-  return siblings
-    .map((s) => typeof s?.rfilename === "string" ? s.rfilename : "")
-    .filter((f) => f !== "");
+  const data = await res.json() as Array<{ type?: unknown; path?: unknown }>;
+  if (!Array.isArray(data)) return [];
+  return data
+    .filter((r) => r.type === "file" && typeof r.path === "string" && r.path !== "")
+    .map((r) => r.path as string);
 }
 
 /** The snapshot presence probe (the fetchable-tree receipt).
@@ -384,7 +389,7 @@ export async function fetchSnapshotVerified(
     row.repo_id + "@" + row.revision);
   let siblings: string[];
   try {
-    siblings = await hfRepoFiles(row.repo_id, fetchFn);
+    siblings = await hfRepoFiles(row.repo_id, row.revision, fetchFn);
   } catch (error: unknown) {
     warn("  [model] " + label + ": repo list failed — " +
       (error instanceof Error ? error.message : String(error)).slice(0, 160));

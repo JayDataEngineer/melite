@@ -71,11 +71,15 @@ export declare function snapshotFilesForPatterns(siblings: readonly string[], al
  *  @param files the expanded snapshot file list
  *  @returns true when the list covers the load set */
 export declare function snapshotCoversLoadSet(files: readonly string[]): boolean;
-/** The repo file list behind a snapshot row.
+/** The repo file list behind a snapshot row, AT THE PIN (the seat's
+ *  hfTreeEntries owns the same law — the unpinned model-info door
+ *  was a drift seam: the file set could name paths the pin does not
+ *  carry).
  *  @param repoId the upstream repo (owner/name)
+ *  @param revision the immutable pin
  *  @param fetchFn the fetch implementation (injectable for tests)
- *  @returns the sibling rfilenames */
-export declare function hfRepoFiles(repoId: string, fetchFn?: typeof globalThis.fetch): Promise<string[]>;
+ *  @returns the pinned tree's file paths */
+export declare function hfRepoFiles(repoId: string, revision: string, fetchFn?: typeof globalThis.fetch): Promise<string[]>;
 /** The snapshot presence probe (the fetchable-tree receipt).
  *  A tree counts present when its dir holds the load set's two
  *  anchor files (config + weights).

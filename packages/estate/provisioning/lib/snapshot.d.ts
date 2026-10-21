@@ -13,7 +13,7 @@ export declare function snapshotDest(folder: string, name: string): string;
 /** The files a snapshot row fetches (deterministic: sorted, deduped).
  *  An allow pattern is either an exact repo path (config.json) or a
  *  `dir/*` prefix for a whole subtree (speech_tokenizer/*).
- *  @param siblings the repo file list (HF API rfilenames)
+ *  @param siblings the repo file list (paths)
  *  @param allowPatterns the row's allow_patterns
  *  @returns the matched files */
 export declare function snapshotFilesForPatterns(siblings: readonly string[], allowPatterns: readonly string[]): string[];
@@ -27,12 +27,40 @@ export interface SnapshotFetchResponse {
  *  @param signal the operation's abort signal
  *  @returns the response's status and byte body */
 export type SnapshotFetch = (url: string, signal?: AbortSignal) => Promise<SnapshotFetchResponse>;
-/** The repo file list behind a snapshot row.
+/** One repo file row from the pinned tree listing.
+ *  `size` is 0 when upstream names none (an honest undercount — the
+ *  denominator never invents bytes). */
+export interface SnapshotTreeEntry {
+    readonly path: string;
+    readonly size: number;
+}
+/** The revision-pinned tree listing door.
  *  @param repoId the upstream repo (owner/name)
+ *  @param revision the immutable pin
+ *  @returns the tree listing url (recursive, pinned — the unpinned
+ *    model-info listing was a drift seam: the file set could name
+ *    paths the pin does not carry) */
+export declare function snapshotTreeUrl(repoId: string, revision: string): string;
+/** The repo file list behind a snapshot row, AT THE PIN — one door
+ *  with the per-file sizes the progress denominator derives from.
+ *  @param repoId the upstream repo (owner/name)
+ *  @param revision the immutable pin
  *  @param fetchFn the seat's fetcher
  *  @param signal the operation's abort signal
- *  @returns the sibling rfilenames */
-export declare function hfRepoFiles(repoId: string, fetchFn: SnapshotFetch, signal?: AbortSignal): Promise<string[]>;
+ *  @returns the pinned tree's file rows (directories dropped, a
+ *    missing size row counts 0) */
+export declare function hfTreeEntries(repoId: string, revision: string, fetchFn: SnapshotFetch, signal?: AbortSignal): Promise<readonly SnapshotTreeEntry[]>;
+/** THE PROGRESS DENOMINATOR (the no-percent burn, 2026-10-21): the
+ *  live 16GB joycaption fetch answered bytes/0 — no total, no
+ *  percent, the operator's only signal a raw counter. The pinned
+ *  tree listing carries per-file sizes; their sum over the MATCHED
+ *  set (the same pattern law as the file set) is the denominator.
+ *  An upstream row without a size counts 0 — an undercount, never
+ *  an invented byte.
+ *  @param entries the pinned tree's file rows
+ *  @param allowPatterns the row's allow_patterns
+ *  @returns the matched set's byte sum */
+export declare function snapshotTotalForEntries(entries: readonly SnapshotTreeEntry[], allowPatterns: readonly string[]): number;
 /** The resolve url for one snapshot file at the pinned revision.
  *  @param repoId the upstream repo (owner/name)
  *  @param revision the immutable pin

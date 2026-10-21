@@ -241,6 +241,13 @@ export declare class ProvisioningService extends Service implements Provisioning
     /** THE F9 BYTE ADD (the tracker's numerator write): adds landed
      *  bytes to one operation's live count. No entry, no write. */
     private bumpProgress;
+    /** THE DENOMINATOR SEED (raise-only): a listing-derived total
+     *  lands when the mint's DECL-derived total is 0 (snapshot rows
+     *  declare no size_bytes) — never shrinks a declared word, never
+     *  invented (the sum of the listing's own sizes).
+     *  @param operationId the acquire operation's id
+     *  @param total the matched set's byte sum */
+    private seedWeightTotal;
     /** THE PHASE VOICE (audit download-stack-audit-2026-10-20 F2):
      *  mirrors the live flow onto the ledger entry — the poll's only
      *  liveness window. Ledger-only by law: the record's state machine

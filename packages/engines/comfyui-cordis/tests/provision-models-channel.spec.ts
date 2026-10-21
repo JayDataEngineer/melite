@@ -184,16 +184,24 @@ describe("snapshotCoversLoadSet", () => {
 });
 
 describe("hfRepoFiles", () => {
-  it("maps the API siblings to rfilenames", async () => {
-    const fake = (async () => new Response(JSON.stringify({
-      siblings: [{ rfilename: "config.json" }, { rfilename: "model.safetensors" }, {}],
-    }))) as typeof globalThis.fetch;
-    assert.deepEqual(await hfRepoFiles("Qwen/X", fake), ["config.json", "model.safetensors"]);
+  it("rides the REVISION-PINNED tree door and maps file rows to paths (the unpinned listing was a drift seam)", async () => {
+    const seen: string[] = [];
+    const fake = (async (url: unknown) => {
+      seen.push(String(url));
+      return new Response(JSON.stringify([
+        { type: "file", path: "config.json" },
+        { type: "file", path: "model.safetensors" },
+        { type: "directory", path: "sub" },
+        "not-a-row",
+      ]));
+    }) as typeof globalThis.fetch;
+    assert.deepEqual(await hfRepoFiles("Qwen/X", "f".repeat(40), fake), ["config.json", "model.safetensors"]);
+    assert.deepEqual(seen, ["https://huggingface.co/api/models/Qwen/X/tree/" + "f".repeat(40) + "?recursive=true"]);
   });
 
   it("throws loud on a non-2xx answer", async () => {
     const fake = (async () => new Response("no", { status: 404 })) as typeof globalThis.fetch;
-    await assert.rejects(() => hfRepoFiles("Qwen/X", fake), /HTTP 404/);
+    await assert.rejects(() => hfRepoFiles("Qwen/X", "f".repeat(40), fake), /HTTP 404/);
   });
 });
 
@@ -221,13 +229,11 @@ describe("fetchSnapshotVerified", () => {
     revision: "a".repeat(40),
     allow_patterns: ["config.json", "model.safetensors", "speech_tokenizer/*"],
   };
-  const siblingsBody = JSON.stringify({
-    siblings: [
-      { rfilename: "config.json" },
-      { rfilename: "model.safetensors" },
-      { rfilename: "speech_tokenizer/config.json" },
-    ],
-  });
+  const siblingsBody = JSON.stringify([
+    { type: "file", path: "config.json" },
+    { type: "file", path: "model.safetensors" },
+    { type: "file", path: "speech_tokenizer/config.json" },
+  ]);
 
   it("skips a tree that already holds the load set (no fetch fires)", async () => {
     const dir = mkdtempSync(join(tmpdir(), "melite-snap-skip-"));
@@ -260,7 +266,7 @@ describe("fetchSnapshotVerified", () => {
     const seen: string[] = [];
     const fake = (async (url: string) => {
       seen.push(url);
-      if (url.endsWith("/api/models/Qwen/Tree")) return new Response(siblingsBody);
+      if (url.includes("/api/models/Qwen/Tree/tree/") && url.endsWith("?recursive=true")) return new Response(siblingsBody);
       const file = url.split("/").slice(-1)[0] ?? "";
       const speech = url.includes("/speech_tokenizer/") ? "speech_tokenizer/" + file : file;
       const body = bodies[speech] ?? bodies[file] ?? "";
@@ -280,7 +286,7 @@ describe("fetchSnapshotVerified", () => {
   it("fails loud when one file 404s", async () => {
     const dir = mkdtempSync(join(tmpdir(), "melite-snap-bad-"));
     const fake = (async (url: string) => {
-      if (url.endsWith("/api/models/Qwen/Tree")) return new Response(siblingsBody);
+      if (url.includes("/api/models/Qwen/Tree/tree/") && url.endsWith("?recursive=true")) return new Response(siblingsBody);
       return new Response("no", { status: 404 });
     }) as typeof globalThis.fetch;
     assert.equal(await fetchSnapshotVerified(dir, "fam", tree, fake), "bad");

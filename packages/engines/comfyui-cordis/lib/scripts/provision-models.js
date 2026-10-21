@@ -277,20 +277,25 @@ export function snapshotCoversLoadSet(files) {
         files.includes("model.safetensors") &&
         files.some((f) => f.startsWith("speech_tokenizer/") && f.length > "speech_tokenizer/".length);
 }
-/** The repo file list behind a snapshot row.
+/** The repo file list behind a snapshot row, AT THE PIN (the seat's
+ *  hfTreeEntries owns the same law — the unpinned model-info door
+ *  was a drift seam: the file set could name paths the pin does not
+ *  carry).
  *  @param repoId the upstream repo (owner/name)
+ *  @param revision the immutable pin
  *  @param fetchFn the fetch implementation (injectable for tests)
- *  @returns the sibling rfilenames */
-export async function hfRepoFiles(repoId, fetchFn = globalThis.fetch) {
-    const res = await fetchFn("https://huggingface.co/api/models/" + repoId);
+ *  @returns the pinned tree's file paths */
+export async function hfRepoFiles(repoId, revision, fetchFn = globalThis.fetch) {
+    const res = await fetchFn("https://huggingface.co/api/models/" + repoId + "/tree/" + revision + "?recursive=true");
     if (!res.ok) {
         throw new Error("HF repo list for " + repoId + " answered HTTP " + String(res.status));
     }
     const data = await res.json();
-    const siblings = Array.isArray(data?.siblings) ? data.siblings : [];
-    return siblings
-        .map((s) => typeof s?.rfilename === "string" ? s.rfilename : "")
-        .filter((f) => f !== "");
+    if (!Array.isArray(data))
+        return [];
+    return data
+        .filter((r) => r.type === "file" && typeof r.path === "string" && r.path !== "")
+        .map((r) => r.path);
 }
 /** The snapshot presence probe (the fetchable-tree receipt).
  *  A tree counts present when its dir holds the load set's two
@@ -342,7 +347,7 @@ export async function fetchSnapshotVerified(storeRoot, family, row, fetchFn = gl
         row.repo_id + "@" + row.revision);
     let siblings;
     try {
-        siblings = await hfRepoFiles(row.repo_id, fetchFn);
+        siblings = await hfRepoFiles(row.repo_id, row.revision, fetchFn);
     }
     catch (error) {
         warn("  [model] " + label + ": repo list failed — " +

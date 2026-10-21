@@ -18,7 +18,7 @@ export function snapshotDest(folder, name) {
 /** The files a snapshot row fetches (deterministic: sorted, deduped).
  *  An allow pattern is either an exact repo path (config.json) or a
  *  `dir/*` prefix for a whole subtree (speech_tokenizer/*).
- *  @param siblings the repo file list (HF API rfilenames)
+ *  @param siblings the repo file list (paths)
  *  @param allowPatterns the row's allow_patterns
  *  @returns the matched files */
 export function snapshotFilesForPatterns(siblings, allowPatterns) {
@@ -26,16 +26,24 @@ export function snapshotFilesForPatterns(siblings, allowPatterns) {
     const out = [];
     for (const file of siblings) {
         for (const pattern of allowPatterns) {
-            const hit = pattern.endsWith("/*")
-                ? file.startsWith(pattern.slice(0, -1)) && file.length > pattern.length - 1
-                : file === pattern;
-            if (hit && !seen.has(file)) {
+            if (patternMatches(file, pattern) && !seen.has(file)) {
                 seen.add(file);
                 out.push(file);
             }
         }
     }
     return out.sort();
+}
+/** ONE pattern law for both faces (the file set and the size
+ *  denominator must match the SAME rows — two spellings would drift).
+ *  Exact path or `dir/*` subtree prefix; nothing else.
+ *  @param file the repo-relative path
+ *  @param pattern the allow pattern
+ *  @returns whether the pattern claims the file */
+function patternMatches(file, pattern) {
+    return pattern.endsWith("/*")
+        ? file.startsWith(pattern.slice(0, -1)) && file.length > pattern.length - 1
+        : file === pattern;
 }
 /** Is this body a stream (vs an async iterable)? One realm — the
  *  seat's own fetcher answers in-process, so instanceof is the
@@ -72,21 +80,63 @@ async function bodyText(body) {
     }
     return new TextDecoder().decode(out);
 }
-/** The repo file list behind a snapshot row.
+/** The revision-pinned tree listing door.
  *  @param repoId the upstream repo (owner/name)
+ *  @param revision the immutable pin
+ *  @returns the tree listing url (recursive, pinned — the unpinned
+ *    model-info listing was a drift seam: the file set could name
+ *    paths the pin does not carry) */
+export function snapshotTreeUrl(repoId, revision) {
+    return "https://huggingface.co/api/models/" + repoId + "/tree/" + revision + "?recursive=true";
+}
+/** The repo file list behind a snapshot row, AT THE PIN — one door
+ *  with the per-file sizes the progress denominator derives from.
+ *  @param repoId the upstream repo (owner/name)
+ *  @param revision the immutable pin
  *  @param fetchFn the seat's fetcher
  *  @param signal the operation's abort signal
- *  @returns the sibling rfilenames */
-export async function hfRepoFiles(repoId, fetchFn, signal) {
-    const res = await fetchFn("https://huggingface.co/api/models/" + repoId, signal);
+ *  @returns the pinned tree's file rows (directories dropped, a
+ *    missing size row counts 0) */
+export async function hfTreeEntries(repoId, revision, fetchFn, signal) {
+    const res = await fetchFn(snapshotTreeUrl(repoId, revision), signal);
     if (res.status !== 200) {
         throw new Error("HF repo list for " + repoId + " answered HTTP " + String(res.status));
     }
     const data = JSON.parse(await bodyText(res.body));
-    const siblings = Array.isArray(data?.siblings) ? data.siblings : [];
-    return siblings
-        .map((s) => typeof s?.rfilename === "string" ? s.rfilename : "")
-        .filter((f) => f !== "");
+    if (!Array.isArray(data))
+        return [];
+    const out = [];
+    for (const row of data) {
+        if (typeof row !== "object" || row === null)
+            continue;
+        const r = row;
+        if (r.type !== "file" || typeof r.path !== "string" || r.path === "")
+            continue;
+        out.push({ path: r.path, size: typeof r.size === "number" && Number.isFinite(r.size) ? r.size : 0 });
+    }
+    return out;
+}
+/** THE PROGRESS DENOMINATOR (the no-percent burn, 2026-10-21): the
+ *  live 16GB joycaption fetch answered bytes/0 — no total, no
+ *  percent, the operator's only signal a raw counter. The pinned
+ *  tree listing carries per-file sizes; their sum over the MATCHED
+ *  set (the same pattern law as the file set) is the denominator.
+ *  An upstream row without a size counts 0 — an undercount, never
+ *  an invented byte.
+ *  @param entries the pinned tree's file rows
+ *  @param allowPatterns the row's allow_patterns
+ *  @returns the matched set's byte sum */
+export function snapshotTotalForEntries(entries, allowPatterns) {
+    let total = 0;
+    for (const entry of entries) {
+        for (const pattern of allowPatterns) {
+            if (patternMatches(entry.path, pattern)) {
+                total += entry.size;
+                break;
+            }
+        }
+    }
+    return total;
 }
 /** The resolve url for one snapshot file at the pinned revision.
  *  @param repoId the upstream repo (owner/name)

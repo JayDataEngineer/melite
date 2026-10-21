@@ -16,7 +16,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Context } from "@deepseek-ai/cordis";
 import { ProvisioningService } from "../src/index.ts";
-import { hfRepoFiles, snapshotDest, snapshotFilesForPatterns, snapshotTreePresent, type SnapshotFetch } from "../src/snapshot.ts";
+import { hfTreeEntries, snapshotDest, snapshotFilesForPatterns, snapshotTotalForEntries, snapshotTreePresent, snapshotTreeUrl, type SnapshotFetch, type SnapshotTreeEntry } from "../src/snapshot.ts";
 import type {
   ProvisionPlan,
   ProvisionPlanItem,
@@ -83,8 +83,10 @@ function snapshotConfig(
     declaration: { resolve: async (): Promise<ProvisionPlan> => plan },
     storeRoot: root,
     fetcher: async (url: string) => {
-      if (url === "https://huggingface.co/api/models/" + REPO) {
-        const body = JSON.stringify({ siblings: siblings.map((rfilename) => ({ rfilename })) });
+      if (url === "https://huggingface.co/api/models/" + REPO + "/tree/" + REVISION + "?recursive=true") {
+        const body = JSON.stringify(siblings.map((path) => ({
+          type: "file", path, size: files[path]?.byteLength ?? 0,
+        })));
         async function* generate(): AsyncGenerator<Uint8Array> {
           yield Uint8Array.from(Buffer.from(body, "utf8"));
         }
@@ -177,19 +179,35 @@ describe("the snapshot pure helpers (one spelling, both faces)", () => {
     assert.equal(configOnly.present, false);
   });
 
-  test("hfRepoFiles parses the listing from a ReadableStream body and an async-iterable body alike", async () => {
-    const listing = JSON.stringify({ siblings: [{ rfilename: "config.json" }, { rfilename: "model.safetensors" }] });
-    const streamFetch: SnapshotFetch = async () => ({
-      status: 200,
-      body: new ReadableStream<Uint8Array>({
-        start(controller) {
-          controller.enqueue(Uint8Array.from(Buffer.from(listing.slice(0, 10), "utf8")));
-          controller.enqueue(Uint8Array.from(Buffer.from(listing.slice(10), "utf8")));
-          controller.close();
-        },
-      }),
-    });
-    assert.deepEqual(await hfRepoFiles("o/m", streamFetch), ["config.json", "model.safetensors"]);
+  test("hfTreeEntries rides the REVISION-PINNED tree door (the unpinned listing was a drift seam) and parses file rows with sizes from a ReadableStream body and an async-iterable body alike", async () => {
+    const REV = "b".repeat(40);
+    const listing = JSON.stringify([
+      { type: "file", path: "config.json", size: 17 },
+      { type: "file", path: "model.safetensors", size: 4096 },
+      { type: "directory", path: "sub", size: 0 },
+      { type: "file", path: "no-size-row.json" },
+    ]);
+    const seen: string[] = [];
+    const streamFetch: SnapshotFetch = async (url) => {
+      seen.push(url);
+      return {
+        status: 200,
+        body: new ReadableStream<Uint8Array>({
+          start(controller) {
+            controller.enqueue(Uint8Array.from(Buffer.from(listing.slice(0, 10), "utf8")));
+            controller.enqueue(Uint8Array.from(Buffer.from(listing.slice(10), "utf8")));
+            controller.close();
+          },
+        }),
+      };
+    };
+    assert.deepEqual(await hfTreeEntries("o/m", REV, streamFetch), [
+      { path: "config.json", size: 17 },
+      { path: "model.safetensors", size: 4096 },
+      { path: "no-size-row.json", size: 0 },
+    ]);
+    assert.deepEqual(seen, [snapshotTreeUrl("o/m", REV)]);
+    assert.equal(snapshotTreeUrl("o/m", REV), "https://huggingface.co/api/models/o/m/tree/" + REV + "?recursive=true");
 
     const iterableFetch: SnapshotFetch = async () => ({
       status: 200,
@@ -197,19 +215,48 @@ describe("the snapshot pure helpers (one spelling, both faces)", () => {
         yield Uint8Array.from(Buffer.from(listing, "utf8"));
       })(),
     });
-    assert.deepEqual(await hfRepoFiles("o/m", iterableFetch), ["config.json", "model.safetensors"]);
+    assert.deepEqual(await hfTreeEntries("o/m", REV, iterableFetch), [
+      { path: "config.json", size: 17 },
+      { path: "model.safetensors", size: 4096 },
+      { path: "no-size-row.json", size: 0 },
+    ]);
   });
 
-  test("hfRepoFiles refuses a non-200 listing by status, never by throw shape", async () => {
+  test("hfTreeEntries refuses a non-200 listing by status, never by throw shape", async () => {
     const refused: SnapshotFetch = async () => ({ status: 503, body: null });
     await assert.rejects(
-      () => hfRepoFiles("o/m", refused),
+      () => hfTreeEntries("o/m", "b".repeat(40), refused),
       /answered HTTP 503/,
     );
+  });
+
+  test("THE DENOMINATOR (pure): snapshotTotalForEntries sums the matched set's sizes — absent size counts 0, unmatched rows count nothing", () => {
+    const entries: readonly SnapshotTreeEntry[] = [
+      { path: "config.json", size: 17 },
+      { path: "model.safetensors", size: 4096 },
+      { path: "sub/x.bin", size: 100 },
+    ];
+    assert.equal(snapshotTotalForEntries(entries, ["config.json", "model.safetensors"]), 4113);
+    assert.equal(snapshotTotalForEntries(entries, ["sub/*"]), 100);
+    assert.equal(snapshotTotalForEntries(entries, ["nothing/*"]), 0);
+    assert.equal(snapshotTotalForEntries([{ path: "a.json", size: 0 }], ["a.json"]), 0);
   });
 });
 
 describe("the snapshot acquire channel (the lying-Download cure)", () => {
+  test("THE DENOMINATOR (the no-percent burn): a snapshot acquire's live progress answers the listing-derived total — bytes/total both real", async () => {
+    const root = tempRoot();
+    const config = snapshotConfig(root);
+    const service = serviceFor(config);
+    const opId = await service.startWeightAcquire(snapRef());
+    const settled = await awaitSettled(service, opId);
+    assert.ok(settled === "active" || settled === "installed", "the tree completed, state " + settled);
+    const progress = service.progressOf(opId);
+    assert.equal(progress?.total, CONFIG.byteLength + WEIGHTS.byteLength);
+    assert.equal(progress?.bytes, CONFIG.byteLength + WEIGHTS.byteLength);
+    assert.equal(service.operationOf(snapRef())?.operationId, opId);
+  });
+
   test("a snapshot row fetches its pinned tree file-by-file through the same acquire door", async () => {
     const root = tempRoot();
     const fetched: string[] = [];
