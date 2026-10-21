@@ -27,14 +27,22 @@ const schema = z.object({
   prompt: z.string().description("Sound Description").extra('extra', bag({ order: null, tooltip: "Describe the SOUND itself, not the scene (e.g. 'sharp metallic clang with long decay')", required: true, wtype: 'textarea', })),
   // UPSTREAM 1:1 (defect b, 2026-09-23): MOSS-SFX-v2's pipeline
   // declares num_inference_steps=100 / cfg_scale=4.0
-  // (vendor/…/moss_sfx_impl/moss_soundeffect_v2/pipeline_moss_soundeffect.py:162).
+  // (vendor/…/moss_sfx_impl/moss_soundeffect_v2/pipeline_moss_soundeffect.py:171-172).
   // The old 50/5.0 were the INNER wan_audio layer's defaults — half
   // the sampling budget, over-guided: the operator's low-quality
-  // catch. The node's _DEFAULT_* constants stay the layer floor;
-  // the CARD carries the pipeline's quality point.
+  // catch. The node's INPUT_TYPES defaults and the kit autofill pin
+  // the same numbers (residual-defaults cure, 2026-11-10); the
+  // pipeline-truth wall judges card, autofill, and node against the
+  // pipeline's own parsed values.
   guidance_scale: z.number().description("CFG").min(0).max(20).step(0.1).default(4).extra('extra', bag({ order: null, tooltip: "Diffusion classifier-free guidance" })),
   n_diffusion_steps: z.number().description("Diffusion Steps").min(1).max(500).step(1).default(100).extra('extra', bag({ order: null, tooltip: "More = higher quality, slower", wtype: 'slider' })),
-  duration: z.number().description("Duration (s)").min(0.5).max(300).step(0.5).default(10).extra('extra', bag({ order: null, tooltip: "Output length in seconds" })),
+  // THE ENGINE CEILING (audit S2, 2026-11-10): the pipeline refuses
+  // seconds > max_inference_seconds=30 with a raise
+  // (pipeline_moss_soundeffect.py:203-207) — a longer draft used to
+  // die MID-RUN at the engine. The schema bound refuses it HERE, at
+  // the bench-write door, before any dispatch; the pipeline-truth
+  // wall reads the pipeline's max, never a frozen 30.
+  duration: z.number().description("Duration (s)").min(0.5).max(30).step(0.5).default(10).extra('extra', bag({ order: null, tooltip: "Output length in seconds (up to 30 — the engine's ceiling)" })),
   seed: z.number().description("Seed").step(1).default(-1).extra('extra', bag(seedExtra({ order: null }))),
 })
 
@@ -74,7 +82,8 @@ export function apply(ctx: Context): void {
     compose(p, model, g, runId) {
       // THE SCHEMA GATE (the h3 admission precedent): the card's
       // own schemastery walk validates types + bounds (duration is
-      // 0.5–300 — anything else refuses LOUD, never composes),
+      // 0.5–30, the pipeline's max_inference_seconds — anything else
+      // refuses LOUD here, never mid-run at the engine),
       // fills defaults; the composer reads the GATED doc.
       const doc = gatedResolve('sfx', schemaFn, ['model'], p)
       if (!(doc.prompt as string)?.trim()) {

@@ -1,13 +1,19 @@
-import { GraphBuilder, OutputHandle, type NodeRef } from '../graph.js';
-import type { ModelFacts } from '../facts.js';
+import { GraphBuilder, OutputHandle, type NodeRef } from '../graph.ts';
+import type { ModelFacts } from '../facts.ts';
 /** The AudiocoreTTS optional-input defaults the engine pin autofills
- *  (object_info pin). Renderer-passed inputs merge OVER these. */
+ *  (object_info pin). Renderer-passed inputs merge OVER these. The
+ *  SFX keys carry the vendored pipeline's own quality point
+ *  (guidance_scale 4.0 / num_inference_steps 100 — the pipeline's
+ *  __call__ defaults, pipeline_moss_soundeffect.py:171-172; the old
+ *  5.0/50 was the inner wan_audio layer's floor, the 2026-09-23
+ *  quality catch). The moss-sfx pipeline-truth wall judges this pin
+ *  against the pipeline's parsed values. */
 export declare const AUDIACORE_TTS_AUTOFILL: {
     readonly duration_seconds: 10;
-    readonly guidance_scale: 5;
+    readonly guidance_scale: 4;
     readonly instruct: "";
     readonly language: "";
-    readonly num_inference_steps: 50;
+    readonly num_inference_steps: 100;
     readonly reference_audio: "";
     readonly reference_text: "";
     readonly repetition_penalty: 1.05;

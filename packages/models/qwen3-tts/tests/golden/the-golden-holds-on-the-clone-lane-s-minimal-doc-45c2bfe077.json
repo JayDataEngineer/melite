@@ -11,10 +11,10 @@
     "class_type": "AudiocoreTTS",
     "inputs": {
       "duration_seconds": 10,
-      "guidance_scale": 5,
+      "guidance_scale": 4,
       "instruct": "",
       "language": "",
-      "num_inference_steps": 50,
+      "num_inference_steps": 100,
       "reference_audio": "/m/r.wav",
       "reference_text": "the words",
       "repetition_penalty": 1.05,

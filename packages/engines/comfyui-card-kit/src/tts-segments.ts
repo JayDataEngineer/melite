@@ -105,8 +105,11 @@ export function ttsParamRows(
 
 /** The speak segment: a stated .qvoice performs the text through
  *  the studio's clone pipeline (the voice-lock LOAD half); otherwise
- *  AudiocoreTTS synthesis with the persona default + the 1:1
- *  generate kwargs (absent rows ride the autofill pin). */
+ *  AudiocoreTTS synthesis — a stated persona rides, an unstated one
+ *  OMITS the voice input entirely (the node's own default resolves
+ *  it; a family that still declares a voice default fills it, the
+ *  qwen3-tts no-default-voice law removed that default), plus the
+ *  1:1 generate kwargs (absent rows ride the autofill pin). */
 export function speakSegment(p: Record<string, unknown>, model: ModelFacts, g: GraphBuilder, runId: string): NodeRef {
   const use = qvoiceUse(p)
   if (use) return useSegment(p, model, g, runId, use.path, use.strength)

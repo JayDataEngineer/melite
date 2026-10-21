@@ -65,19 +65,24 @@ describe("the tts compose gate", () => {
     );
   });
 
-  it("the happy lane speaks with the model's default voice", () => {
+  it("fresh cards seat the NO-PRESET encoding, never a persona (the no-voice ruling)", () => {
     const g = new GraphBuilder();
     def.compose(def.schema({ text: "the words to speak" }), ttsModel, g, "run_4");
     const graph = g.toJSON();
     const synth = graph["AudiocoreTTS.0"];
     assert.ok(synth, "the Audiocore synth rides");
     assert.equal(synth.inputs.prompt, "the words to speak");
-    // THE ONE-OWNER FLOOR (dual-floor cure, 2026-11-02): the schema
-    // stamps NO voice default — the boarded family's defaults row
-    // (qwen3-tts persona "vivian", the resting lane) owns the floor.
-    // The old .default("ryan") was a silenced fork: the UI prefilled
-    // vivian while serve composed ryan on every fresh card.
-    assert.equal(synth.inputs.voice, "vivian", "the family's default voice rides");
+    // THE NO-VOICE RULING (operator 2026-11-10: "Make sure it
+    // DEFAULTS to no voice, instead of VIVIAN"): the schema stamps
+    // NO voice default and the family defaults row seeds NO persona
+    // — the seat rides the node's OWN INPUT_TYPES default ('' —
+    // nodes.py:478), the no-preset encoding: qwen3_tts_model.py:182
+    // skips '' at validation and the run is PROMPT-ONLY
+    // (speaker_embed=None, upstream parity). The dual-floor era
+    // (2026-11-02) floored fresh cards to vivian via the defaults
+    // row; the ruling deleted that floor and the resurrect class
+    // died at the root. A persona name here is the regression.
+    assert.equal(synth.inputs.voice, "", "the no-preset encoding rides — a persona name is the regression");
     const save = graph["SaveAudio.0"];
     assert.ok(save, "the audio save rides");
     assert.equal(save.inputs.filename_prefix, "run_4/tts");

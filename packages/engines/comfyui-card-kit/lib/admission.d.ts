@@ -1,5 +1,5 @@
 import Schema from '@deepseek-ai/schemastery';
-export { ComposeRefusal } from './errors.js';
+export { ComposeRefusal } from './errors.ts';
 /** The schema's callable face — ONE cast serving both seams (the
  *  registration's schema carrier and the compose strict resolve's
  *  judge): schemastery schemas are callable (Schema.resolve) but

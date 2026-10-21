@@ -48,9 +48,13 @@ export const DECL = {
         {
             "id": "ambience-bed",
             "label": "Ambience Bed",
-            "hint": "Duration 300s — the card schema's own ceiling (a long bed).",
+            // THE RE-SPEC (audit S2, 2026-11-10): the recipe sold 300s, a
+            // duration the pipeline refuses (max_inference_seconds=30) — a
+            // dead button. The intent (a long bed) survives AT the engine's
+            // own ceiling: 30s is the longest bed a single run serves.
+            "hint": "Duration 30s — the pipeline's max_inference_seconds ceiling (the longest bed a single run serves).",
             "group": "Recipe",
-            "wire_defaults": { "duration": 300 },
+            "wire_defaults": { "duration": 30 },
             "cells": [],
         },
         {

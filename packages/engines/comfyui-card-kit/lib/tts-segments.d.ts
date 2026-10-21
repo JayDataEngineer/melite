@@ -1,5 +1,5 @@
-import type { GraphBuilder, NodeRef } from './graph.js';
-import type { ModelFacts, LaneInputsFacts } from './facts.js';
+import type { GraphBuilder, NodeRef } from './graph.ts';
+import type { ModelFacts, LaneInputsFacts } from './facts.ts';
 import type { ParamSpec } from '@melite/engine-contract/vocabulary';
 /** The closed facts shape the tts segments read (model_path: the
  *  audiocore load key — the ONE engine-general member the families
@@ -44,8 +44,11 @@ export declare function parseTtsFacts(raw: LaneInputsFacts, label: string): TtsF
 export declare function ttsParamRows(sentinelSeed: boolean, presetSpeakers: readonly string[]): readonly ParamSpec[];
 /** The speak segment: a stated .qvoice performs the text through
  *  the studio's clone pipeline (the voice-lock LOAD half); otherwise
- *  AudiocoreTTS synthesis with the persona default + the 1:1
- *  generate kwargs (absent rows ride the autofill pin). */
+ *  AudiocoreTTS synthesis — a stated persona rides, an unstated one
+ *  OMITS the voice input entirely (the node's own default resolves
+ *  it; a family that still declares a voice default fills it, the
+ *  qwen3-tts no-default-voice law removed that default), plus the
+ *  1:1 generate kwargs (absent rows ride the autofill pin). */
 export declare function speakSegment(p: Record<string, unknown>, model: ModelFacts, g: GraphBuilder, runId: string): NodeRef;
 /** The use segment: a saved persona performs the text — the
  *  studio's generate mode with the lock seed derived from the

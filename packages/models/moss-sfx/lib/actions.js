@@ -20,7 +20,10 @@ export const sfx = {
     // defaults and variant presets against this row.
     params: [
         { name: "prompt", type: "string" },
-        { name: "duration", type: "number", bounds: [0.5, 300] },
+        // The engine ceiling (audit S2, 2026-11-10): the pipeline refuses
+        // seconds > max_inference_seconds=30 — the bound equals the
+        // pipeline's own max (the pipeline-truth wall parses it).
+        { name: "duration", type: "number", bounds: [0.5, 30] },
         { name: "guidance_scale", type: "number", bounds: [0, 20] },
         { name: "n_diffusion_steps", type: "number", bounds: [1, 500] },
         { name: "seed", type: "number", rule: "seed-sentinel" },
