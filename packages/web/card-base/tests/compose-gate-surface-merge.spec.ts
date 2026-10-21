@@ -139,9 +139,12 @@ describe('THE REOPEN CARRY DROP (the saved-doc heal, the stale-carry reopen cure
   })
 
   test('THE MOD-BAG LAW — a mod system bag key (param_key) never drops however the lanes spell their surfaces', () => {
+    // the modifier row rides the FULL ModifierKind contract (kind +
+    // cardinality are required fields; this literal was the
+    // typecheck-gate's standing red, fixed with it)
     const spec: FormSpecDoc = {
       ...lanesSpec(),
-      features: { modifiers: [{ param_key: 'qvoice', schema_key: 'qvoice', entry: 'bag', label: 'qvoice' }] },
+      features: { modifiers: [{ kind: 'lora', label: 'qvoice', param_key: 'qvoice', schema_key: 'qvoice', entry: 'bag', cardinality: 'list' }] },
     }
     expect(dropStaleReopenCarry(spec, { model: 'synth', variant: 'small', qvoice: { item: { voice_strength: 1 } } })).toEqual({})
   })

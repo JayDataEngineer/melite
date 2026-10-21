@@ -12,6 +12,16 @@ import { createElement } from 'react'
 
 import { DeclarativeStudio, defineStudioDeclaration } from '../src/studio.tsx'
 import { schemaEnvelope } from '../src/spec.ts'
+// THE REAL-DECL ROWS (the D11 cure, 2026-10-21): the family axis's
+// roster rides the card's own boarded truth — img-to-mesh boards
+// [pixal3d, trellis2-native, transfer-rig] via the three DECL ids
+// (card.ts `boarded`), the same source-path import pattern as
+// melite-card-view's anima twin. A family the card re-boards (or
+// drops) now MOVES this spec's roster with it — the old hand copy
+// survived any card change by silence, exactly the drift r2 flagged.
+import { DECL as pixal3dDecl } from '../../../models/pixal3d/src/index.ts'
+import { DECL as trellis2NativeDecl } from '../../../models/trellis2-native/src/index.ts'
+import { DECL as transferRigDecl } from '../../../models/transfer-rig/src/index.ts'
 
 const DECLARATION = defineStudioDeclaration({
   model: 'img-to-mesh',
@@ -330,9 +340,9 @@ test('blank run ids and urls seat nothing (never a poll on an empty string)', as
 const FAMILIES_SPEC = {
   ...SPEC,
   families: [
-    { id: 'pixal3d', present: true },
-    { id: 'trellis2-native', present: false },
-    { id: 'transfer-rig', present: false },
+    { id: pixal3dDecl.id, present: true },
+    { id: trellis2NativeDecl.id, present: false },
+    { id: transferRigDecl.id, present: false },
   ],
 }
 
@@ -368,7 +378,7 @@ test('a family pick lands as the run patch (the pick is a write, one atomic verb
   await waitFor(() => { expect(bound.length).toBeGreaterThan(0) })
   bound[bound.length - 1]!()
   // the pick stamps the model key; the run verb carries it in ONE patch
-  expect(onPatch).toHaveBeenCalledWith(expect.objectContaining({ model: 'trellis2-native' }))
+  expect(onPatch).toHaveBeenCalledWith(expect.objectContaining({ model: trellis2NativeDecl.id }))
   expect(onRun).toHaveBeenCalledTimes(1)
 })
 
