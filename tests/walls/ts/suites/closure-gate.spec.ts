@@ -891,10 +891,15 @@ describe("THE AUDIT-ADDED LAWS", async () => {
     const OWNER_DECL = /export const ENGINE_TRUTH[^\n]*/g;
     for (const f of SOURCES) {
       const code = readCode(f).replace(OWNER_DECL, "");
-      // any array literal naming two of the three engine-truth words
-      // beside each other is a second spelling
-      const hits = [...code.matchAll(/\[\s*"([a-z_]+)"\s*,\s*"([a-z_]+)"[^\]]*\]/g)]
-        .filter((m) => ENGINE_TRUTH.includes(m[1]!) && ENGINE_TRUTH.includes(m[2]!));
+      // a second spelling of the TRIPLE is an array literal naming
+      // all three engine-truth words. The first cut judged the
+      // first-two prefix and fired on the resolver AXES
+      // ["model","variant","quant"] (cardsRegistry, 2026-11-10) — a
+      // different concept sharing two member names; the wall judges
+      // the whole triple, not a prefix of it.
+      const hits = [...code.matchAll(/\[([^\]]*)\]/g)]
+        .map((m) => m[1]!)
+        .filter((inner) => ENGINE_TRUTH.every((w) => inner.includes(`"${w}"`)));
       if (hits.length > 0) {
         offenders.push(f + " — the engine-truth triple is validate.ts's ENGINE_TRUTH; import it");
       }

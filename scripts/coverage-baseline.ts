@@ -277,6 +277,9 @@ export const COVERAGE_BASELINE: Record<string, {
   '**/packages/harness/estate-queue/src/cardsDangling.ts': { statements: 98.79, branches: 100.00, functions: 100.00, lines: 98.71 },
   '**/packages/harness/estate-queue/src/cardsFacts.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/harness/estate-queue/src/cardsLanes.ts': { statements: 97.26, branches: 95.31, functions: 100.00, lines: 98.18 },
+  // measured over the full coverage gate (2026-11-10, the cell-fold
+  // cure's extracted helper)
+  '**/packages/harness/estate-queue/src/cardsLanesCopy.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/harness/estate-queue/src/cardsRegistry.ts': { statements: 99.07, branches: 96.09, functions: 100, lines: 99.46 },
   '**/packages/harness/estate-queue/src/cardsVariant.ts': { statements: 99.13, branches: 96.62, functions: 100.00, lines: 100.00 },
   '**/packages/harness/estate-queue/src/discloseRegistry.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
@@ -310,6 +313,9 @@ export const COVERAGE_BASELINE: Record<string, {
   '**/packages/harness/estate-queue/src/queueSweep.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/harness/estate-queue/src/resurrect.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/harness/estate-queue/src/rootsManifest.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
+  // measured over the full coverage gate (2026-11-10, the provision
+  // extensions door's extracted face)
+  '**/packages/harness/estate-queue/src/runtimeProvision.ts': { statements: 90, branches: 92.42, functions: 94.11, lines: 89.61 },
   '**/packages/harness/estate-queue/src/runsChange.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/harness/estate-queue/src/runsErrorCodes.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/harness/estate-queue/src/runsExecute.ts': { statements: 98.82, branches: 95.49, functions: 100.00, lines: 99.35 },

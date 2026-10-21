@@ -566,7 +566,13 @@ describe("THE COMMITTED LIB (an emitted import Node can actually resolve)", () =
   // bump's typert-protocol subpaths (principal.js, remote-access.js,
   // remote-info.js), the fallback purge's stageViewPlane.js, and
   // input-prep's own root face index.js (the dual-face marker).
-  const LIB_CENSUS_PIN = 601;
+  // 603 (2026-10-21): two deliberate committed lib faces from the
+  // run-row truth cure (94f2adf0e) landed unpinned — cardsLanesCopy.js
+  // (the voice table the gate reads) and runtimeProvision.js (the
+  // runtime-presence seam). Repinned at sequencing after the cell-fold
+  // track settled the tree (audit input-prep-total F4; deferred off the
+  // in-flight cardsLanes tree by the repo-heal charter).
+  const LIB_CENSUS_PIN = 603;
   const specRe = /(?:from\s*|import\(\s*)(["'])(\.[^"']*)\1/g;
 
   it("the census is exact (a deletion OR a lowered floor reds — the count is pinned, not floored)", () => {
