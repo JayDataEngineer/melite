@@ -716,6 +716,9 @@ describe('melite_flow tile contract — the chat hydrates from the render', () =
           ] } }
         }
         if (lane === 'benchVerb' && args[1] === 'patch') return { status: 200, body: { rev: 3, patched: ['runStatus'] } }
+        // the attribution stamp lands (this arm judges the ids, not
+        // the stamp's miss face — the loud-miss arms own that law)
+        if (lane === 'draftsStagePatch') return { status: 200, body: { draftId: args[0], stageId: args[1], delivered: true, patched: ['runStatus', 'result'] } }
         return undefined
       },
     ])
@@ -1281,6 +1284,86 @@ describe('melite_flow bench — the agent drives THE shared bench', () => {
     // no re-arm: the poll count is stable past the cadence
     await new Promise((r) => setTimeout(r, 120))
     assert.equal(polls, pollsAtExpiry, 'a rearms-0 link re-armed anyway')
+  })
+
+  // THE LOUD MISS (the no-feedback defect, 2026-10-22): the operator
+  // watched an agent bench pass mint five runs while the cards tab
+  // showed NOTHING — every attribution stamp the tool made died at
+  // the seat seam and each death was swallowed as "bookkeeping". A
+  // stamp that does not land is a voice the user never hears: the
+  // observation answer must SAY so, so the maker can tell the user
+  // their tab will not paint this run.
+  test('a refused attribution stamp answers loud: stamp_note names the refusal (a delivered:false patch is a miss, never silence)', async () => {
+    const seen = mockEstate([
+      (lane: string) => {
+        if (lane === 'runsStatus') {
+          return { status: 200, body: { status: 'completed', stages: [{ id: 's_0' }] } }
+        }
+        if (lane === 'draftsStagePatch') {
+          // the drafts door's DOMAIN outcome — delivered:false with a
+          // reason (the exact answer shape patchBody answers for a
+          // doc or stage the store never had)
+          return { status: 200, body: { draftId: 'd_miss', stageId: 's_0', delivered: false, reason: 'stage not found' } }
+        }
+        return undefined
+      },
+    ])
+    const out = await observeAndAttribute(seen.request, 'd_miss', 's_0', 'run-miss', new AbortController().signal, false, 40, 0)
+    assert.equal(out.status, 'done', 'the run itself succeeded — the miss is the stamp, never the run')
+    assert.ok(out.stamp_note !== undefined && out.stamp_note.includes('stage not found'),
+      'the miss says why: ' + JSON.stringify(out.stamp_note))
+  })
+
+  test('a thrown attribution patch answers loud too: stamp_note names the transport failure', async () => {
+    const seen = mockEstate([
+      (lane: string) => {
+        if (lane === 'runsStatus') {
+          return { status: 200, body: { status: 'completed', stages: [{ id: 's_0' }] } }
+        }
+        if (lane === 'draftsStagePatch') {
+          throw new Error('seat is gone')
+        }
+        return undefined
+      },
+    ])
+    const out = await observeAndAttribute(seen.request, 'd_throw', 's_0', 'run-throw', new AbortController().signal, false, 40, 0)
+    assert.equal(out.status, 'done')
+    assert.ok(out.stamp_note !== undefined && out.stamp_note.includes('seat is gone'),
+      'the miss says why: ' + JSON.stringify(out.stamp_note))
+  })
+
+  // The RENDERED face of the same law (the payload-only assertion
+  // is the exact gap class the staleness cure closed this morning):
+  // a bench pass whose stamp never landed must PRINT the miss in the
+  // row prose — the maker reads the render, not the payload.
+  test('the bench render prints the miss: a refused stamp\'s row says the cards tab will NOT show the run', async () => {
+    const seen = mockEstate([
+      (lane: string) => {
+        if (lane === 'benchGet') {
+          return { status: 200, body: { draft_id: 'd_miss_render', rev: 1, stages: [
+            { id: 's_0', card: 'tts', params: {} },
+          ] } }
+        }
+        if (lane === 'runsStart') {
+          return { status: 202, body: { run_id: 'r_miss_render', status: 'queued' } }
+        }
+        if (lane === 'runsStatus') {
+          return { status: 200, body: { status: 'completed', stages: [{ id: 's_0', url: '/runs/a.flac' }] } }
+        }
+        if (lane === 'draftsStagePatch') {
+          return { status: 200, body: { delivered: false, reason: 'stage not found' } }
+        }
+        return undefined
+      },
+    ])
+    const tool = meliteFlow(seen.request)
+    const out = await tool.execute({ bench: true }, fakeExec(AbortSignal.timeout(8000))) as Record<string, unknown>
+    assert.equal(out.status, 'done', 'the run itself succeeded')
+    const text = (tool.output.render({ bench: true }, out as never) as Array<{ text?: string }>)
+      .map((p) => p?.text ?? '').join('\n')
+    assert.ok(text.includes('STAMP MISSED'), 'the render says the stamp missed')
+    assert.ok(text.includes('stage not found'), 'the render carries the refusal\u2019s own reason')
+    assert.ok(text.includes('cards tab will NOT show this run'), 'the render tells the maker what the user will not see')
   })
 
   // The bench caller's receipt for the same expiry: the flow is NOT

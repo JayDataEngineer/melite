@@ -47,26 +47,38 @@ interface LaneRow {
   method: string
   /** Drive the lane; args[0..] are the lane args before the signal. */
   call: (e: Estate) => Promise<unknown>
+  /** THE SEAT-SIGNATURE WALL (the silent-attribution kill, 2026-10-22):
+   *  the arg vector the SEAT must receive, in the seat's own parameter
+   *  order. The typed Seats interface is stated structurally in this
+   *  package, so nothing else can catch a drift between it and the
+   *  compiled service — the drift that burned: draftsRemote.patch grew
+   *  expectRev (the CAS law) while the lane kept calling
+   *  (id, stage, patch, signal), the AbortSignal landed in expectRev's
+   *  slot, signal landed undefined, and the service's first line
+   *  (signal.throwIfAborted) killed every attribution stamp the agent
+   *  ever made — each swallowed as bookkeeping, so agent-run benches
+   *  showed the watching user nothing at all. */
+  seatArgs?: unknown[]
 }
 
 const BENCH: Record<string, unknown> = { benchRemote: recorder().seat }
 const ROWS: LaneRow[] = [
-  { seat: 'draftsRemote', method: 'list', call: (e) => e.draftsList(SIG, 250) },
-  { seat: 'draftsRemote', method: 'get', call: (e) => e.draftsGet('d1', SIG, 250) },
-  { seat: 'draftsRemote', method: 'patch', call: (e) => e.draftsStagePatch('d1', 's_0', { a: 1 }, SIG, 250) },
-  { seat: 'benchRemote', method: 'get', call: (e) => e.benchGet('default', SIG, 250) },
-  { seat: 'benchRemote', method: 'ensure', call: (e) => e.benchEnsure({ session: 'default' }, SIG, 250) },
-  { seat: 'benchRemote', method: 'patch', call: (e) => e.benchVerb('default', 'patch', {}, SIG, 250) },
-  { seat: 'benchRemote', method: 'addStage', call: (e) => e.benchVerb('default', 'add_stage', {}, SIG, 250) },
-  { seat: 'benchRemote', method: 'removeStage', call: (e) => e.benchVerb('default', 'remove_stage', {}, SIG, 250) },
-  { seat: 'benchRemote', method: 'clear', call: (e) => e.benchVerb('default', 'clear', {}, SIG, 250) },
-  { seat: 'benchRemote', method: 'rewire', call: (e) => e.benchVerb('default', 'rewire', {}, SIG, 250) },
-  { seat: 'benchRemote', method: 'undo', call: (e) => e.benchVerb('default', 'undo', {}, SIG, 250) },
-  { seat: 'runs', method: 'validate', call: (e) => e.runsValidate({}, SIG, 250) },
-  { seat: 'runs', method: 'start', call: (e) => e.runsStart({}, SIG, 250) },
-  { seat: 'runs', method: 'status', call: (e) => e.runsStatus('r1', true, SIG, 250) },
-  { seat: 'runs', method: 'stop', call: (e) => e.runsStop('r1', SIG, 250) },
-  { seat: 'runs', method: 'list', call: (e) => e.runsList('100', SIG, 250) },
+  { seat: 'draftsRemote', method: 'list', call: (e) => e.draftsList(SIG, 250), seatArgs: [SIG] },
+  { seat: 'draftsRemote', method: 'get', call: (e) => e.draftsGet('d1', SIG, 250), seatArgs: ['d1', SIG] },
+  { seat: 'draftsRemote', method: 'patch', call: (e) => e.draftsStagePatch('d1', 's_0', { a: 1 }, SIG, 250), seatArgs: ['d1', 's_0', { a: 1 }, null, SIG] },
+  { seat: 'benchRemote', method: 'get', call: (e) => e.benchGet('default', SIG, 250), seatArgs: ['default', SIG] },
+  { seat: 'benchRemote', method: 'ensure', call: (e) => e.benchEnsure({ session: 'default' }, SIG, 250), seatArgs: [{ session: 'default' }, SIG] },
+  { seat: 'benchRemote', method: 'patch', call: (e) => e.benchVerb('default', 'patch', {}, SIG, 250), seatArgs: ['default', {}, SIG] },
+  { seat: 'benchRemote', method: 'addStage', call: (e) => e.benchVerb('default', 'add_stage', {}, SIG, 250), seatArgs: ['default', {}, SIG] },
+  { seat: 'benchRemote', method: 'removeStage', call: (e) => e.benchVerb('default', 'remove_stage', {}, SIG, 250), seatArgs: ['default', {}, SIG] },
+  { seat: 'benchRemote', method: 'clear', call: (e) => e.benchVerb('default', 'clear', {}, SIG, 250), seatArgs: ['default', {}, SIG] },
+  { seat: 'benchRemote', method: 'rewire', call: (e) => e.benchVerb('default', 'rewire', {}, SIG, 250), seatArgs: ['default', {}, SIG] },
+  { seat: 'benchRemote', method: 'undo', call: (e) => e.benchVerb('default', 'undo', {}, SIG, 250), seatArgs: ['default', {}, SIG] },
+  { seat: 'runs', method: 'validate', call: (e) => e.runsValidate({}, SIG, 250), seatArgs: [{}, SIG] },
+  { seat: 'runs', method: 'start', call: (e) => e.runsStart({}, SIG, 250), seatArgs: [{}, SIG] },
+  { seat: 'runs', method: 'status', call: (e) => e.runsStatus('r1', true, SIG, 250), seatArgs: ['r1', SIG, true] },
+  { seat: 'runs', method: 'stop', call: (e) => e.runsStop('r1', SIG, 250), seatArgs: ['r1', SIG] },
+  { seat: 'runs', method: 'list', call: (e) => e.runsList('100', SIG, 250), seatArgs: ['100', SIG] },
   { seat: 'disclose', method: 'discover', call: (e) => e.discover('all', '', '', SIG, 250) },
   { seat: 'disclose', method: 'contracts', call: (e) => e.flowsContracts(SIG, 250) },
   { seat: 'manage', method: 'act', call: (e) => e.manageAct({}, SIG, 250) },
@@ -85,6 +97,9 @@ describe('the typed lanes (F-1)', () => {
       assert.deepEqual(out, { ok: 1 }, row.seat + '.' + row.method)
       assert.equal(calls.length, 1, row.seat + '.' + row.method + ': exactly one seat call')
       assert.equal(calls[0]![0], row.method, row.seat + ': the 1:1 method')
+      if (row.seatArgs !== undefined) {
+        assert.deepEqual(calls[0]![1], row.seatArgs, row.seat + '.' + row.method + ': the seat\u2019s own parameter order')
+      }
     }
   })
 

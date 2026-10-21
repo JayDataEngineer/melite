@@ -87,7 +87,15 @@ interface Seats {
   draftsRemote?: {
     list(signal?: AbortSignal): Promise<{ count: number; drafts: unknown[] }>
     get(draftId: string, signal?: AbortSignal): Promise<unknown>
-    patch(draftId: string, stageId: string, patch: Record<string, unknown>, signal?: AbortSignal): Promise<unknown>
+    /** The seat's REAL signature (the domain service's): expectRev
+     *  fences the bench CAS walk, signal rides its own slot LAST.
+     *  This typed seam drifted to (id, stage, patch, signal) once
+     *  and every attribution stamp died on the service's first line
+     *  — signal.throwIfAborted on undefined — each swallowed as
+     *  bookkeeping, so agent-run benches showed the watching user
+     *  nothing (2026-10-22). The interface states the true order so
+     *  the drift class cannot regrow silently. */
+    patch(draftId: string, stageId: string, patch: Record<string, unknown>, expectRev: number | null, signal?: AbortSignal): Promise<unknown>
   }
   benchRemote?: {
     get(session: string, signal?: AbortSignal): Promise<unknown>
@@ -206,10 +214,14 @@ async function trySeats(
     if (body === undefined || typeof body !== 'object' || body === null) {
       throw new Error('draft stage patch needs a JSON body')
     }
+    // expectRev NULL + signal in its own slot (the same seat law the
+    // typed lane obeys — the drift that killed every attribution
+    // stamp once lived on BOTH faces of this seam).
     return seats.draftsRemote.patch(
       decodeURIComponent(m[1]!),
       decodeURIComponent(m[2]!),
       body as Record<string, unknown>,
+      null,
       signal,
     )
   }
@@ -659,7 +671,12 @@ export function makeEstate(ctx: EstateHost): Estate {
         signal, timeoutMs),
     draftsStagePatch: (draftId, stageId, patch, signal, timeoutMs) =>
       estateLane(ctx, `PATCH /v1/flows/drafts/${encodeURIComponent(draftId)}/stages/${encodeURIComponent(stageId)}`, BENCH_LANE,
-        (s) => s.draftsRemote === undefined ? undefined : s.draftsRemote.patch(draftId, stageId, patch, signal),
+        // expectRev NULL, signal in its own slot: the tool stamps
+        // TELEMETRY (runStatus/result — the drafts door's telemetry
+        // law never fences those keys), so no CAS rev is ever spent;
+        // the signal must never ride expectRev's seat (the kill the
+        // seat-signature wall guards).
+        (s) => s.draftsRemote === undefined ? undefined : s.draftsRemote.patch(draftId, stageId, patch, null, signal),
         signal, timeoutMs),
     cardCompose: (body, signal, timeoutMs) => {
       signal.throwIfAborted()

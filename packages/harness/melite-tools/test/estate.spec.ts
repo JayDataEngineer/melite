@@ -126,19 +126,21 @@ describe('drafts lanes', () => {
     await assert.rejects(req({})('GET', '/v1/flows/drafts/x', undefined, SIG, 1000))
   })
 
-  test('PATCH stage decodes both ids and passes the patch; seatless refuses', async () => {
+  test('PATCH stage decodes both ids and passes the patch in the seat\u2019s own parameter order; seatless refuses', async () => {
     let seen: unknown[] = []
     const r = req({
       draftsRemote: {
-        patch: async (d: string, s: string, p: unknown, sig: unknown) => {
-          seen = [d, s, p, sig]
+        // the seat's REAL parameter order — expectRev (null here: the
+        // router's wire face carries no CAS rev) before the signal
+        patch: async (d: string, s: string, p: unknown, rev: unknown, sig: unknown) => {
+          seen = [d, s, p, rev, sig]
           return { ok: true }
         },
       },
     })
     const out = await r('PATCH', '/v1/flows/drafts/d%201/stages/s_0/result', { x: 1 }, SIG, 1000)
     assert.deepEqual(out, { ok: true })
-    assert.deepEqual(seen, ['d 1', 's_0', { x: 1 }, SIG])
+    assert.deepEqual(seen, ['d 1', 's_0', { x: 1 }, null, SIG])
     await assert.rejects(req({})('PATCH', '/v1/flows/drafts/d/stages/s', { x: 1 }, SIG, 1000))
   })
 
