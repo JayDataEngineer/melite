@@ -50,6 +50,7 @@ import {
 } from '@melite-plugin/melite-run-wire'
 import {
   fetchLatestRunForDraft,
+  fetchListRow,
   fetchRunStageUrl,
   fetchRunStatus,
   fetchRunTerminal,
@@ -594,6 +595,23 @@ const run = async (): Promise<void> => {
  * (or a retry after settle) observes fresh. */
 const observingRuns = new Map<string, Promise<'done' | 'failed' | 'stopped' | null>>()
 
+// THE POLL CADENCE (shared by the observer's transport escalation and
+// the verdict-delivery retry below): exponential 1500*2^(n-1) capped
+// at 10s — ConnectionRecoveryConfig's shape (references/
+// deepseek-harness/packages/client/connection/src/recovery-config.ts),
+// each poll a full estate door round-trip, not a carrier redial.
+const TRANSPORT_BACKOFF_BASE_MS = 1500
+const TRANSPORT_BACKOFF_MAX_MS = 10000
+// THE VERDICT DELIVERY BUDGET (2026-11-10, the poller-convergence
+// cure): a verdict the poller READ must LAND. A refused terminal
+// patch no longer ends the watch as a swallowed bookkeeping note —
+// the delivery retries on the transport cadence, and a budget that
+// dies undelivered reports failure so the caller releases its armed
+// claim and a later refresh re-probes the row against the settled
+// door. Three attempts: two retries past a CAS flap, not a second
+// poll loop.
+const VERDICT_DELIVERY_ATTEMPTS = 3
+
 export function observeRunOutcome(
   draftId: string,
   stageId: string,
@@ -676,8 +694,30 @@ async function observeRunOutcomeRun(
   let transportFails = 0
   let healthStamped = false
   const TRANSPORT_UNREACHABLE_AFTER = 10
-  const TRANSPORT_BACKOFF_BASE_MS = 1500
-  const TRANSPORT_BACKOFF_MAX_MS = 10000
+  // THE VERDICT DELIVERY (the poller's own contract): a verdict this
+  // loop READ from the runs door must LAND on the row. Returns false
+  // when the budget dies undelivered — the caller exits null (the
+  // armed claim releases) and a later refresh re-probes the settled
+  // door, instead of a swallowed patch no next run ever rewrote.
+  const deliverVerdict = async (
+    patch: { runStatus: string; result?: Record<string, unknown>; health?: null },
+  ): Promise<boolean> => {
+    for (let attempt = 1; attempt <= VERDICT_DELIVERY_ATTEMPTS; attempt += 1) {
+      try {
+        await patchStageOutcome(draftId, stageId, patch)
+        onTouched?.()
+        return true
+      } catch {
+        if (attempt < VERDICT_DELIVERY_ATTEMPTS) {
+          await abortableSleep(Math.min(
+            TRANSPORT_BACKOFF_BASE_MS * 2 ** (attempt - 1),
+            TRANSPORT_BACKOFF_MAX_MS,
+          ), signal)
+        }
+      }
+    }
+    return false
+  }
   while (signal?.aborted !== true) {
     let row: Awaited<ReturnType<typeof fetchRunStatus>>
     try {
@@ -694,15 +734,13 @@ async function observeRunOutcomeRun(
         try {
           // the refusal ANSWERED the transport — a stale health word
           // retires with the phantom verdict (same clear law)
-          await patchStageOutcome(draftId, stageId,
-            healthStamped
-              ? { runStatus: terminal, result: { run_id: runId }, health: null }
-              : { runStatus: terminal, result: { run_id: runId } })
-          onTouched?.()
+          const landed = await deliverVerdict(healthStamped
+            ? { runStatus: terminal, result: { run_id: runId }, health: null }
+            : { runStatus: terminal, result: { run_id: runId } })
+          if (!landed) return null // undelivered — release the claim; a later refresh re-probes
         } catch {
-          /* a refused terminal patch is bookkeeping: the verdict came
-           * from the runs door — the poller keeps it and retries the
-           * row write on the next pass */
+          /* the delivery's abort rides the watch's own signal — the
+           * budget never outlives the caller */
         }
         // tileStatusFromVerdict's vocabulary is running|done|stopped
         // (a 'failed' verdict folds to 'stopped' by its own law) —
@@ -791,15 +829,12 @@ async function observeRunOutcomeRun(
     const rowError: unknown = (row as unknown as Record<string, unknown>)['error']
     const runError = typeof rowError === 'string' ? rowError : undefined
     const { result, terminal } = terminalOutcomeOf(runId, row.status, stage, runError)
-    try {
-      // the terminal patch clears a stale health word too: a settled
-      // run answered the transport — no warning face outlives it
-      await patchStageOutcome(draftId, stageId,
-        healthStamped ? { runStatus: terminal, result, health: null } : { runStatus: terminal, result })
-      onTouched?.()
-    } catch {
-      /* bookkeeping — the bench may have moved; the next run rewrites the row */
-    }
+    // the terminal patch clears a stale health word too: a settled
+    // run answered the transport — no warning face outlives it
+    const landed = await deliverVerdict(healthStamped
+      ? { runStatus: terminal, result, health: null }
+      : { runStatus: terminal, result })
+    if (!landed) return null // undelivered — release the claim; a later refresh re-probes
     // NO EXHAUSTIVENESS IF (the disjunction is provably total:
     // this block runs only under the isTerminalRun gate —
     // completed/failed/stopped — and the mapping above sends those
@@ -817,11 +852,46 @@ async function observeRunOutcomeRun(
  *  started the run. Live rows arm a tab-side observer so terminal
  *  always lands even when the starting session is gone. Idempotent
  *  per stage:run key (the `armed` set is the caller's, kept across
- *  bench refreshes). */
+ *  bench refreshes).
+ *
+ *  THE POLLER CONVERGENCE (2026-11-10): the armed key is a
+ *  LIVE-WATCH claim, not a spent probe — it releases when the watch
+ *  ends undelivered (the null exit, an abort, a transport death) so a
+ *  later refresh re-probes the row against the settled door. The
+ *  reconcile reads the status row ITSELF: a row that answers terminal
+ *  delivers its full verdict in this tick, never delegated to a
+ *  freshly spawned poller. */
 export async function reconcileBenchRuns(
   bench: CardsBenchValue,
   hooks: { signal?: AbortSignal; onTouched?: () => void; armed?: Set<string> } = {},
 ): Promise<void> {
+  // THE VERDICT DELIVERY (the observer's budget, the reconcile's own
+  // arms): a verdict this pass READ must land, or the key releases —
+  // the old swallow's "the row heals on a later refresh" was a lie
+  // while the key stayed armed forever.
+  const deliverVerdict = async (stageId: string, patch: Record<string, unknown>): Promise<boolean> => {
+    for (let attempt = 1; attempt <= VERDICT_DELIVERY_ATTEMPTS; attempt += 1) {
+      try {
+        await patchStageOutcome(bench.draftId, stageId, patch)
+        hooks.onTouched?.()
+        return true
+      } catch {
+        if (attempt < VERDICT_DELIVERY_ATTEMPTS) {
+          await abortableSleep(Math.min(
+            TRANSPORT_BACKOFF_BASE_MS * 2 ** (attempt - 1),
+            TRANSPORT_BACKOFF_MAX_MS,
+          ), hooks.signal)
+        }
+      }
+    }
+    return false
+  }
+  const armWatch = (watchKey: string, stageId: string, runId: string): void => {
+    void observeRunOutcome(bench.draftId, stageId, runId, hooks.signal, hooks.onTouched).then(
+      (verdict) => { if (verdict === null) hooks.armed?.delete(watchKey) },
+      () => { hooks.armed?.delete(watchKey) }, // a dead watch never holds the claim
+    )
+  }
   for (const stage of bench.stages) {
     // the owner's live judgement (was a private {running,queued} set —
     // a 'pending' or 'stopping' row whose run died was never reconciled
@@ -832,23 +902,48 @@ export async function reconcileBenchRuns(
     if (runId === '') continue
     const key = stage.id + ':' + runId
     if (hooks.armed?.has(key) === true) continue
+    // THE CLAIM: this pass takes the row (a live watch, or a verdict
+    // being delivered). It releases only when the pass ends
+    // undelivered — a delivered verdict keeps it, the transition is
+    // spent and later refreshes skip the settled row.
     hooks.armed?.add(key)
-    let verdict: 'live' | 'gone' | string
+    // THE SETTLED READ: one status answer decides this row's pass —
+    // terminal delivers here, live arms the watch, a refusal falls to
+    // the file-era list (the gone-verdict's vocabulary, read at this
+    // seam so the refused id is not spent twice).
+    let row: Awaited<ReturnType<typeof fetchRunStatus>>
     try {
-      verdict = await probeRunGone(runId, hooks.signal)
-    } catch {
-      hooks.armed?.delete(key) // transport — a later refresh retries
+      row = await fetchRunStatus(runId, hooks.signal)
+    } catch (e: unknown) {
+      if (!isEstateRefusal(e)) {
+        hooks.armed?.delete(key) // transport — a later refresh retries
+        continue
+      }
+      const listed = await fetchListRow(runId, hooks.signal).catch((): null => null)
+      const listedStatus = listed?.['status']
+      // a listed row with no status field is UNKNOWN, never 'completed'
+      // (2026-10-01, the vocabulary audit) — 'gone' when absent entirely
+      const verdict = typeof listedStatus === 'string' && listedStatus !== '' ? listedStatus : 'gone'
+      const terminal = tileStatusFromVerdict(verdict)
+      if (terminal === 'running') {
+        armWatch(key, stage.id, runId) // a file-era LIVE row still needs its watcher
+        continue
+      }
+      const landed = await deliverVerdict(stage.id, { runStatus: terminal, result: { run_id: runId } })
+      if (!landed) hooks.armed?.delete(key) // undelivered — a later refresh heals the row
       continue
     }
-    if (verdict === 'live') {
-      void observeRunOutcome(bench.draftId, stage.id, runId, hooks.signal, hooks.onTouched)
+    if (isTerminalRun(row.status)) {
+      const rowStage = row.stages.find((s) => s.id === stage.id)
+        ?? (row.stages.length === 1 ? row.stages[0] : undefined)
+      const rowError = (row as unknown as Record<string, unknown>)['error']
+      const runError = typeof rowError === 'string' ? rowError : undefined
+      const { result: outcome, terminal } = terminalOutcomeOf(runId, row.status, rowStage, runError)
+      const landed = await deliverVerdict(stage.id, { runStatus: terminal, result: outcome })
+      if (!landed) hooks.armed?.delete(key)
       continue
     }
-    const terminal = tileStatusFromVerdict(verdict)
-    try {
-      await patchStageOutcome(bench.draftId, stage.id, { runStatus: terminal, result: { run_id: runId } })
-      hooks.onTouched?.()
-    } catch { /* bookkeeping — the row heals on a later refresh */ }
+    armWatch(key, stage.id, runId)
   }
 }
 

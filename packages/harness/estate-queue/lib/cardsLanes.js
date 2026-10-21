@@ -3,6 +3,7 @@
 // disk (the packs the compose arm refuses without).
 import { checkModelPresent, getModel, loadEndpointConfig } from "@melite/comfyui-cordis";
 import { LIVE_ACQUIRE_STATES, provisioningSeat } from "@melite/estate-provisioning";
+import { resolveCellRow } from "@melite/contracts/laneRelations";
 import { engineOutputDir, engineRootOf, resolveRuntimeHome, runtimeEnvView, sentinelHit } from "./runtimeProvision.js";
 import { hashPhaseWordOf, laneVoice } from "./cardsLanesCopy.js";
 import { CardArmError } from "./cardsArmError.js";
@@ -104,7 +105,7 @@ function homeProbes(home, name) {
  *  once). One face per press: the operator learns of every missing
  *  weight in the refusal that names the first, never one wedged run
  *  later. */
-function laneMisses(decl, check, variantRow) {
+function laneMisses(decl, check, variantRow, cellRow) {
     // THE VARIANT-LANE PRESENCE LAW (h¹ remainder — the one-parameter
     // switch): the probe judges the RESOLVED lane inputs — the family's
     // rows under the STATED variant's per-key override (the same merge
@@ -112,7 +113,22 @@ function laneMisses(decl, check, variantRow) {
     // the family's row gating). A family-only probe green-lit a variant
     // whose own file never existed (the Singularity burn: the family's
     // timeline unet present, the override's 20 GB never fetched).
-    const li = { ...(decl.lane_inputs ?? {}), ...(variantRow?.lane_inputs ?? {}) };
+    const li = {
+        ...(decl.lane_inputs ?? {}),
+        ...(variantRow?.lane_inputs ?? {}),
+        // THE CELL-LANE CASCADE (the qwen cell-fold cure, 2026-11-10):
+        // the STATED cell's rows fold in last — the same per-key
+        // precedence the compose stamps (the derived route read folds
+        // atom → variant → CELL, comfyui-cordis service.ts getModel) and
+        // the client mirror's resolvedLaneSurface rides (the ONE
+        // RESOLVER's coordinate, never a second spelling). A family whose
+        // weight tiers live only at variants[].cells (qwen-img-21 /
+        // qwen-img-edit-21's bf16+turbo unets, qwen3-tts's per-size
+        // model_path) gated the DEFAULT tier's files for every stated
+        // coordinate — the burn: a missing stated-cell weight sailed the
+        // presence gate straight into the engine's validation.
+        ...(cellRow?.lane_inputs ?? {}),
+    };
     const homes = (decl.lane_homes ?? {});
     const packs = lanePackFolders();
     const misses = [];
@@ -313,11 +329,34 @@ function statedVariantRow(decl, body, mid) {
         || (v.cells ?? []).some((c) => c.route === mid)
         || v.resolver_defaults?.["model"] === mid);
 }
+/** THE STATED CELL'S ROW (the cell-fold cure, 2026-11-10): the ONE
+ *  RESOLVER's quant coordinate over the stated variant — the same
+ *  shape selectCardVariant rides at the door (stated body.quant wins,
+ *  else the address's own cell claim, else the variant's first
+ *  visible cell) and the client mirror's resolvedLaneCoordinate runs
+ *  (resolveCellRow in @melite/contracts/laneRelations — one
+ *  coordinate law, no second resolution). 'native' rides unstated
+ *  (the fold's legacy coordinate). A coordinate the door already
+ *  refused (an unknown quant, a hidden cell route) folds nothing —
+ *  the gate sits DOWNSTREAM of prepareCardParams, it never re-voices
+ *  a coordinate refusal, and a missing resolution degrades to the
+ *  pre-cure family ∪ variant row rather than guessing. */
+function statedCellRow(variant, body, mid) {
+    if (variant === undefined)
+        return undefined;
+    const raw = body?.["quant"];
+    const stated = typeof raw === "string" && raw !== "native" ? raw : null;
+    // the explicit cell type: the resolver's generic erases to its
+    // constraint (ResolverCellRow) — the runtime row IS the DECL cell
+    const res = resolveCellRow(variant, stated, mid ?? "", "offered");
+    return res.status === "resolved" ? (res.cell ?? undefined) : undefined;
+}
 export function lanePresenceMiss(fam, body, mid) {
     const decl = getModel(fam);
     const check = (folder, name) => checkModelPresent("models/" + folder, name);
     const variantRow = statedVariantRow(decl, body, mid);
-    const misses = laneMisses(decl, check, variantRow);
+    const cellRow = statedCellRow(variantRow, body, mid);
+    const misses = laneMisses(decl, check, variantRow, cellRow);
     const miss = misses[0] ?? null;
     if (miss === null)
         return runtimeLegMiss(decl, fam, body);

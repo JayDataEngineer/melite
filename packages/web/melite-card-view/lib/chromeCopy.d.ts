@@ -265,6 +265,13 @@ export declare const chromeCopy: {
     readonly missingDownload: (p: {
         what: string;
     }) => string;
+    /** THE ONE-FACE TOTAL (the sequential-missing-weight-reveal cure,
+     *  2026-11-09): the count + human sizes line under the download
+     *  list — the burn's "2 files · 7.0 GB + 249 MB". */
+    readonly missingWeightTotal: (p: {
+        count: number;
+        sizes: string;
+    }) => string;
     /** Rescue missing-runtime note (E2-2: what the run lacked — the
      *  engine's own tool runtime, now provisionable through the estate
      *  door). */

@@ -1,4 +1,4 @@
-import type { SkillRow, StepRow } from "./skillPlane.ts";
+import type { SkillRow, StepRow } from "./skillPlane.js";
 export declare function frontmatter(text: string): {
     name: string;
     description: string;

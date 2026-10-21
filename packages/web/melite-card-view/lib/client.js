@@ -5272,7 +5272,7 @@ window.__ModuleLoader__.load({
 				downloadAbort.current?.abort();
 				downloadAbort.current = new AbortController();
 				const signal = downloadAbort.current.signal;
-				const files = rescue.kind === "model" ? weightFilesOf(rescue) : [{ file: rescue.file }];
+				const files = weightFilesOf(rescue);
 				(async () => {
 					let last = null;
 					try {
@@ -5869,6 +5869,9 @@ window.__ModuleLoader__.load({
 		* entry clears when the observer settles, so a genuinely new run
 		* (or a retry after settle) observes fresh. */
 		const observingRuns = /* @__PURE__ */ new Map();
+		const TRANSPORT_BACKOFF_BASE_MS = 1500;
+		const TRANSPORT_BACKOFF_MAX_MS = 1e4;
+		const VERDICT_DELIVERY_ATTEMPTS = 3;
 		function observeRunOutcome(draftId, stageId, runId, signal, onTouched) {
 			const key = `${draftId}\u0000${stageId}\u0000${runId}`;
 			const inFlight = observingRuns.get(key);
@@ -5893,8 +5896,16 @@ window.__ModuleLoader__.load({
 			let transportFails = 0;
 			let healthStamped = false;
 			const TRANSPORT_UNREACHABLE_AFTER = 10;
-			const TRANSPORT_BACKOFF_BASE_MS = 1500;
-			const TRANSPORT_BACKOFF_MAX_MS = 1e4;
+			const deliverVerdict = async (patch) => {
+				for (let attempt = 1; attempt <= VERDICT_DELIVERY_ATTEMPTS; attempt += 1) try {
+					await patchStageOutcome(draftId, stageId, patch);
+					onTouched?.();
+					return true;
+				} catch {
+					if (attempt < VERDICT_DELIVERY_ATTEMPTS) await (0, _melite_card_base_client.abortableSleep)(Math.min(TRANSPORT_BACKOFF_BASE_MS * 2 ** (attempt - 1), TRANSPORT_BACKOFF_MAX_MS), signal);
+				}
+				return false;
+			};
 			while (signal?.aborted !== true) {
 				let row;
 				try {
@@ -5903,15 +5914,14 @@ window.__ModuleLoader__.load({
 					if ((0, _melite_card_base_client.isEstateRefusal)(e)) {
 						const terminal = tileStatusFromVerdict(await (0, _melite_card_base_client.probeRunGone)(runId, signal));
 						try {
-							await patchStageOutcome(draftId, stageId, healthStamped ? {
+							if (!await deliverVerdict(healthStamped ? {
 								runStatus: terminal,
 								result: { run_id: runId },
 								health: null
 							} : {
 								runStatus: terminal,
 								result: { run_id: runId }
-							});
-							onTouched?.();
+							})) return null;
 						} catch {}
 						return terminal === "running" ? null : terminal;
 					}
@@ -5964,17 +5974,14 @@ window.__ModuleLoader__.load({
 				const rowError = row["error"];
 				const runError = typeof rowError === "string" ? rowError : void 0;
 				const { result, terminal } = terminalOutcomeOf(runId, row.status, stage, runError);
-				try {
-					await patchStageOutcome(draftId, stageId, healthStamped ? {
-						runStatus: terminal,
-						result,
-						health: null
-					} : {
-						runStatus: terminal,
-						result
-					});
-					onTouched?.();
-				} catch {}
+				if (!await deliverVerdict(healthStamped ? {
+					runStatus: terminal,
+					result,
+					health: null
+				} : {
+					runStatus: terminal,
+					result
+				})) return null;
 				return terminal;
 			}
 			return null;
@@ -5986,8 +5993,33 @@ window.__ModuleLoader__.load({
 		*  started the run. Live rows arm a tab-side observer so terminal
 		*  always lands even when the starting session is gone. Idempotent
 		*  per stage:run key (the `armed` set is the caller's, kept across
-		*  bench refreshes). */
+		*  bench refreshes).
+		*
+		*  THE POLLER CONVERGENCE (2026-11-10): the armed key is a
+		*  LIVE-WATCH claim, not a spent probe — it releases when the watch
+		*  ends undelivered (the null exit, an abort, a transport death) so a
+		*  later refresh re-probes the row against the settled door. The
+		*  reconcile reads the status row ITSELF: a row that answers terminal
+		*  delivers its full verdict in this tick, never delegated to a
+		*  freshly spawned poller. */
 		async function reconcileBenchRuns(bench, hooks = {}) {
+			const deliverVerdict = async (stageId, patch) => {
+				for (let attempt = 1; attempt <= VERDICT_DELIVERY_ATTEMPTS; attempt += 1) try {
+					await patchStageOutcome(bench.draftId, stageId, patch);
+					hooks.onTouched?.();
+					return true;
+				} catch {
+					if (attempt < VERDICT_DELIVERY_ATTEMPTS) await (0, _melite_card_base_client.abortableSleep)(Math.min(TRANSPORT_BACKOFF_BASE_MS * 2 ** (attempt - 1), TRANSPORT_BACKOFF_MAX_MS), hooks.signal);
+				}
+				return false;
+			};
+			const armWatch = (watchKey, stageId, runId) => {
+				observeRunOutcome(bench.draftId, stageId, runId, hooks.signal, hooks.onTouched).then((verdict) => {
+					if (verdict === null) hooks.armed?.delete(watchKey);
+				}, () => {
+					hooks.armed?.delete(watchKey);
+				});
+			};
 			for (const stage of bench.stages) {
 				if (!isLiveRunStatus(typeof stage.runStatus === "string" ? stage.runStatus : "")) continue;
 				const result = typeof stage.result === "object" && stage.result !== null ? stage.result : null;
@@ -5996,25 +6028,38 @@ window.__ModuleLoader__.load({
 				const key = stage.id + ":" + runId;
 				if (hooks.armed?.has(key) === true) continue;
 				hooks.armed?.add(key);
-				let verdict;
+				let row;
 				try {
-					verdict = await (0, _melite_card_base_client.probeRunGone)(runId, hooks.signal);
-				} catch {
-					hooks.armed?.delete(key);
-					continue;
-				}
-				if (verdict === "live") {
-					observeRunOutcome(bench.draftId, stage.id, runId, hooks.signal, hooks.onTouched);
-					continue;
-				}
-				const terminal = tileStatusFromVerdict(verdict);
-				try {
-					await patchStageOutcome(bench.draftId, stage.id, {
+					row = await (0, _melite_card_base_client.fetchRunStatus)(runId, hooks.signal);
+				} catch (e) {
+					if (!(0, _melite_card_base_client.isEstateRefusal)(e)) {
+						hooks.armed?.delete(key);
+						continue;
+					}
+					const listedStatus = (await (0, _melite_card_base_client.fetchListRow)(runId, hooks.signal).catch(() => null))?.["status"];
+					const terminal = tileStatusFromVerdict(typeof listedStatus === "string" && listedStatus !== "" ? listedStatus : "gone");
+					if (terminal === "running") {
+						armWatch(key, stage.id, runId);
+						continue;
+					}
+					if (!await deliverVerdict(stage.id, {
 						runStatus: terminal,
 						result: { run_id: runId }
-					});
-					hooks.onTouched?.();
-				} catch {}
+					})) hooks.armed?.delete(key);
+					continue;
+				}
+				if (isTerminalStatus$1(row.status)) {
+					const rowStage = row.stages.find((s) => s.id === stage.id) ?? (row.stages.length === 1 ? row.stages[0] : void 0);
+					const rowError = row["error"];
+					const runError = typeof rowError === "string" ? rowError : void 0;
+					const { result: outcome, terminal } = terminalOutcomeOf(runId, row.status, rowStage, runError);
+					if (!await deliverVerdict(stage.id, {
+						runStatus: terminal,
+						result: outcome
+					})) hooks.armed?.delete(key);
+					continue;
+				}
+				armWatch(key, stage.id, runId);
 			}
 		}
 		/** THE TERMINAL OUTCOME BUILDER (pure, under CONTRACT — the

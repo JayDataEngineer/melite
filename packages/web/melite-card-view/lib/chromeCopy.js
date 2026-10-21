@@ -242,6 +242,10 @@ export const chromeCopy = {
     missingInstall: (p) => 'Missing ' + p.what + ' — install through the manage seat?',
     /** Rescue missing-weight note (what the run lacked). */
     missingDownload: (p) => 'Missing ' + p.what + ' — download through the manage seat?',
+    /** THE ONE-FACE TOTAL (the sequential-missing-weight-reveal cure,
+     *  2026-11-09): the count + human sizes line under the download
+     *  list — the burn's "2 files · 7.0 GB + 249 MB". */
+    missingWeightTotal: (p) => p.count + ' files · ' + p.sizes,
     /** Rescue missing-runtime note (E2-2: what the run lacked — the
      *  engine's own tool runtime, now provisionable through the estate
      *  door). */

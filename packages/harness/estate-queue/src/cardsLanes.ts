@@ -5,6 +5,7 @@ import { checkModelPresent, getModel, loadEndpointConfig } from "@melite/comfyui
 import { LIVE_ACQUIRE_STATES, provisioningSeat } from "@melite/estate-provisioning";
 import type { WeightAcquireProgress } from "@melite/estate-provisioning";
 import type { DeclaredRuntime, ModelDecl } from "@melite/comfyui-card-kit/model-contract";
+import { resolveCellRow } from "@melite/contracts/laneRelations";
 import { engineOutputDir, engineRootOf, resolveRuntimeHome, runtimeEnvView, sentinelHit } from "./runtimeProvision.ts";
 import { hashPhaseWordOf, laneVoice } from "./cardsLanesCopy.ts";
 import { CardArmError } from "./cardsArmError.ts";
@@ -125,6 +126,7 @@ function laneMisses(
   decl: Pick<ModelDecl, "lane_inputs" | "provisions" | "lane_homes">,
   check: LaneCheck,
   variantRow?: { lane_inputs?: Record<string, unknown> },
+  cellRow?: { lane_inputs?: Record<string, unknown> },
 ): LaneMiss[] {
   // THE VARIANT-LANE PRESENCE LAW (h¹ remainder — the one-parameter
   // switch): the probe judges the RESOLVED lane inputs — the family's
@@ -133,7 +135,22 @@ function laneMisses(
   // the family's row gating). A family-only probe green-lit a variant
   // whose own file never existed (the Singularity burn: the family's
   // timeline unet present, the override's 20 GB never fetched).
-  const li = { ...(decl.lane_inputs ?? {}), ...(variantRow?.lane_inputs ?? {}) } as Record<string, unknown>;
+  const li = {
+    ...(decl.lane_inputs ?? {}),
+    ...(variantRow?.lane_inputs ?? {}),
+    // THE CELL-LANE CASCADE (the qwen cell-fold cure, 2026-11-10):
+    // the STATED cell's rows fold in last — the same per-key
+    // precedence the compose stamps (the derived route read folds
+    // atom → variant → CELL, comfyui-cordis service.ts getModel) and
+    // the client mirror's resolvedLaneSurface rides (the ONE
+    // RESOLVER's coordinate, never a second spelling). A family whose
+    // weight tiers live only at variants[].cells (qwen-img-21 /
+    // qwen-img-edit-21's bf16+turbo unets, qwen3-tts's per-size
+    // model_path) gated the DEFAULT tier's files for every stated
+    // coordinate — the burn: a missing stated-cell weight sailed the
+    // presence gate straight into the engine's validation.
+    ...(cellRow?.lane_inputs ?? {}),
+  } as Record<string, unknown>;
   const homes = (decl.lane_homes ?? {}) as Record<string, string>;
   const packs = lanePackFolders();
   const misses: LaneMiss[] = [];
@@ -357,11 +374,38 @@ function statedVariantRow(
     || v.resolver_defaults?.["model"] === mid);
 }
 
+/** THE STATED CELL'S ROW (the cell-fold cure, 2026-11-10): the ONE
+ *  RESOLVER's quant coordinate over the stated variant — the same
+ *  shape selectCardVariant rides at the door (stated body.quant wins,
+ *  else the address's own cell claim, else the variant's first
+ *  visible cell) and the client mirror's resolvedLaneCoordinate runs
+ *  (resolveCellRow in @melite/contracts/laneRelations — one
+ *  coordinate law, no second resolution). 'native' rides unstated
+ *  (the fold's legacy coordinate). A coordinate the door already
+ *  refused (an unknown quant, a hidden cell route) folds nothing —
+ *  the gate sits DOWNSTREAM of prepareCardParams, it never re-voices
+ *  a coordinate refusal, and a missing resolution degrades to the
+ *  pre-cure family ∪ variant row rather than guessing. */
+function statedCellRow(
+  variant: ModelDecl["variants"][number] | undefined,
+  body: Record<string, unknown> | undefined,
+  mid: string | undefined,
+): ModelDecl["variants"][number]["cells"][number] | undefined {
+  if (variant === undefined) return undefined;
+  const raw: unknown = body?.["quant"];
+  const stated: string | null = typeof raw === "string" && raw !== "native" ? raw : null;
+  // the explicit cell type: the resolver's generic erases to its
+  // constraint (ResolverCellRow) — the runtime row IS the DECL cell
+  const res = resolveCellRow<ModelDecl["variants"][number]["cells"][number]>(variant, stated, mid ?? "", "offered");
+  return res.status === "resolved" ? (res.cell ?? undefined) : undefined;
+}
+
 export function lanePresenceMiss(fam: string, body?: Record<string, unknown>, mid?: string): CardArmError | null {
   const decl = getModel(fam);
   const check = (folder: string, name: string): string | null => checkModelPresent("models/" + folder, name);
   const variantRow = statedVariantRow(decl, body, mid);
-  const misses = laneMisses(decl, check, variantRow);
+  const cellRow = statedCellRow(variantRow, body, mid);
+  const misses = laneMisses(decl, check, variantRow, cellRow);
   const miss = misses[0] ?? null;
   if (miss === null) return runtimeLegMiss(decl, fam, body);
   // THE IN-FLIGHT LEG (ERRORS.md k2 — NEVER-RUN-ON-INCOMPLETE): a

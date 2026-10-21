@@ -343,7 +343,9 @@ export function RunRescue({ error, stages, onRun, rescue: structured }: {
     // at a time; only the last landing lands the done face. A
     // failed/stuck flight surfaces its own file's verdict and the
     // exits (the same one-authority law as the single-file face).
-    const files = rescue.kind === 'model' ? weightFilesOf(rescue) : [{ file: rescue.file }]
+    // the extension (:extension) and runtime (:runtime) faces return
+    // above — the download face is model-only by construction.
+    const files = weightFilesOf(rescue)
     void (async () => {
       let last: WeightAcquireState | null = null
       try {
