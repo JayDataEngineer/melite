@@ -262,13 +262,8 @@ describe("THE QWEN-IMG-21 MARRIAGE DOOR (debt 27 drain)", () => {
     expect(voice).toContain("married to steps 8");
   });
 
-  it("the turbo marriage — 8 steps at CFG 1 — REFUSES on the base lane", () => {
-    const voice = burnRefusal("qwen-img-21", "base", { steps: 8, cfg: 1 });
-    expect(voice).toContain('variant "base"');
-    expect(voice).toContain("(route qwen-img-21)");
-    expect(voice).toContain("stated steps 8");
-    expect(voice).toContain("[20, 30]");
-    expect(voice).toContain("married to steps 25");
+  it("the turbo pair — 8 steps at CFG 1 — RIDES the base lane (T3 operator law outranks: the admission matrix pins image-gen × qwen-img-21 base at steps 8 with loras landing whole — a LoRA'd few-step write is agency, not the burn; the protection on this family is ONE-DIRECTIONAL)", () => {
+    expect(ownRides("qwen-img-21", "base", { steps: 8, cfg: 1 })["steps"]).toBe(8);
   });
 
   it("the lanes' own numbers ride; an unstated body never refuses", () => {
@@ -280,7 +275,7 @@ describe("THE QWEN-IMG-21 MARRIAGE DOOR (debt 27 drain)", () => {
   it("the envelopes pin verbatim (the declared domains, not a drifted copy)", () => {
     const row = familyRow("qwen-img-21");
     const byId = new Map((row.variants ?? []).map((v) => [v.id, v] as const));
-    expect((byId.get("base") as { sampler_envelope?: unknown }).sampler_envelope).toEqual({ steps: [20, 30], cfg: [1, 2] });
+    expect((byId.get("base") as { sampler_envelope?: unknown }).sampler_envelope).toEqual({ steps: [8, 30], cfg: [1, 2] });
     expect((byId.get("turbo") as { sampler_envelope?: unknown }).sampler_envelope).toEqual({ steps: [4, 8], cfg: [1, 2] });
   });
 });
@@ -295,13 +290,8 @@ describe("THE QWEN-IMG-EDIT-21 MARRIAGE DOOR (debt 27 drain)", () => {
     expect(voice).toContain("married to steps 8");
   });
 
-  it("the turbo marriage — 8 steps at CFG 1 — REFUSES on the base lane", () => {
-    const voice = burnRefusal("qwen-img-edit-21", "base", { steps: 8, cfg: 1 });
-    expect(voice).toContain('variant "base"');
-    expect(voice).toContain("(route qwen-img-edit-21)");
-    expect(voice).toContain("stated steps 8");
-    expect(voice).toContain("[20, 30]");
-    expect(voice).toContain("married to steps 25");
+  it("the turbo pair — 8 steps at CFG 1 — RIDES the base lane (same physical weights as the t2i sibling, same T3 operator law: steps 8 with loras lands whole on these weights)", () => {
+    expect(ownRides("qwen-img-edit-21", "base", { steps: 8, cfg: 1 })["steps"]).toBe(8);
   });
 
   it("the lanes' own numbers ride; an unstated body never refuses", () => {
@@ -313,7 +303,7 @@ describe("THE QWEN-IMG-EDIT-21 MARRIAGE DOOR (debt 27 drain)", () => {
   it("the envelopes pin verbatim (the declared domains, not a drifted copy)", () => {
     const row = familyRow("qwen-img-edit-21");
     const byId = new Map((row.variants ?? []).map((v) => [v.id, v] as const));
-    expect((byId.get("base") as { sampler_envelope?: unknown }).sampler_envelope).toEqual({ steps: [20, 30], cfg: [1, 2] });
+    expect((byId.get("base") as { sampler_envelope?: unknown }).sampler_envelope).toEqual({ steps: [8, 30], cfg: [1, 2] });
     expect((byId.get("turbo") as { sampler_envelope?: unknown }).sampler_envelope).toEqual({ steps: [4, 8], cfg: [1, 2] });
   });
 });

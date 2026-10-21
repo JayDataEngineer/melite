@@ -200,10 +200,13 @@ export const DECL: ModelDecl = {
       // law): 25 / 1 — the official template's own count, the family mirror.
       // THE ENVELOPE DECLARATION LAW (CONTRACTS §4 debt 27, the E2-8
       // cure's drain): the same physical weights as the t2i family's
-      // base lane, the same domain — 25 centered (steps [20, 30]),
-      // family guidance mode cfg [1, 2]. The turbo pair's 8 steps
-      // refuses here.
-      "sampler_envelope": { "steps": [20, 30], "cfg": [1, 2] },
+      // base lane, the same domain — 25 centered (steps [8, 30]: the
+      // floor follows the t2i sibling's T3 operator-write pin — the
+      // admission matrix pins steps 8 with loras landing whole on the
+      // same weights, so the distilled 8 rides here too); family
+      // guidance mode cfg [1, 2]. ONE-DIRECTIONAL like the sibling:
+      // the base pair's 25 refuses on turbo, 8 steps rides base.
+      "sampler_envelope": { "steps": [8, 30], "cfg": [1, 2] },
       "resolver_defaults": { "steps": 25, "cfg": 1 },
       "cells": [
         {

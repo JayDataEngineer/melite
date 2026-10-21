@@ -114,12 +114,17 @@ export const DECL: ModelDecl = {
       // law): 25 / 1 — the official template's own count, the family mirror.
       // THE ENVELOPE DECLARATION LAW (CONTRACTS §4 debt 27, the E2-8
       // cure's drain): the base domain — the official template's own
-      // 25-step count centered (steps [20, 30], the kroma-base
-      // [25, 35]-around-28 shape); cfg [1, 2] is this family's
-      // guidance mode (family defaults cfg 1, both lanes, "same
-      // sampler truth"). The turbo pair's 8 steps refuses here —
-      // the distilled marriage on non-distilled weights.
-      "sampler_envelope": { "steps": [20, 30], "cfg": [1, 2] },
+      // 25-step count centered (steps [8, 30]: the floor is the T3
+      // operator-write tier, not the template — the admission matrix
+      // pins image-gen × qwen-img-21 base at steps 8 WITH LORAS
+      // landing whole, so the distilled 8 rides here by operator law;
+      // the ceiling keeps the kroma-base [25, 35]-around-28 shape);
+      // cfg [1, 2] is this family's guidance mode (family defaults
+      // cfg 1, both lanes, "same sampler truth"). The protection is
+      // ONE-DIRECTIONAL by that same operator law: the base pair's
+      // 25 steps refuses on turbo, but 8 steps rides base — a LoRA'd
+      // few-step write is agency, not the burn.
+      "sampler_envelope": { "steps": [8, 30], "cfg": [1, 2] },
       "resolver_defaults": { "steps": 25, "cfg": 1 },
       "cells": [
         {

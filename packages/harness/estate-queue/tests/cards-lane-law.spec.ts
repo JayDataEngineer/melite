@@ -1641,7 +1641,15 @@ describe("THE OVERLAP LAW (schema ∩ lane — no path admits a both-violating s
       height: 1024,
     });
     expect(verdict.ok, "the lane seat refuses the state outright").toBe(false);
-    expect(String(!verdict.ok ? verdict.error : undefined)).toContain("width");
+    // THE VOICE IS THE ENVELOPE'S — seat order, not preference
+    // (the E2-8 drain): laneVerdictCore judges prepare (the envelope
+    // refusal — the GAP-1 cure's seat, same voice as the run door)
+    // BEFORE admissionRefusal (the surface/width voice), so a state
+    // violating both arrives in the envelope's words. The width voice
+    // keeps its own pin (the latent-law arms) — this arm pins the
+    // deterministic FIRST voice: steps 999 is outside the base
+    // envelope [8, 30], married to steps 25.
+    expect(String(!verdict.ok ? verdict.error : undefined)).toContain("route envelope");
     // and the schema's own seat refuses the steps half
     // THE SCHEMA'S HALF of the same state is pinned at the card's
     // own compose gate (packages/image/image-edit/tests/card.spec.ts
