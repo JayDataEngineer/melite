@@ -3,8 +3,17 @@
 // interface law — browser default, headless via env or config, ad
 // hoc parsing (env wins, string-or-list config, trim/filter), and
 // the exact registration sets.
-import { describe, test } from 'vitest'
+//
+// THE ISOLATED DSH HOME (2026-11-09): apply boots on the PERSISTED
+// delegation (runsDelegation.ts) — without a pinned DSH_HOME the
+// toggle test would write the operator's real state file and every
+// later boot, here and on this machine, would inherit it. The spec
+// owns a throwaway home.
+import { describe, test, beforeAll, afterAll } from 'vitest'
 import assert from 'node:assert/strict'
+import { mkdtempSync, rmSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import type { Context } from '@deepseek-ai/cordis'
 import {
   ADHOC_TOOL_NAMES,
@@ -17,6 +26,21 @@ import {
   MELITE_TOOL_NAMES,
   name,
 } from '../src/index.ts'
+import { writeRunsDelegation, readRunsDelegation } from '../src/runsDelegation.ts'
+
+const previousHome = process.env.DSH_HOME
+let specHome: string
+
+beforeAll(() => {
+  specHome = mkdtempSync(join(tmpdir(), 'melite-tools-index-'))
+  process.env.DSH_HOME = specHome
+})
+
+afterAll(() => {
+  if (previousHome === undefined) delete process.env.DSH_HOME
+  else process.env.DSH_HOME = previousHome
+  rmSync(specHome, { recursive: true, force: true })
+})
 
 interface Fake {
   ctx: unknown
@@ -272,5 +296,38 @@ describe('the /melite-runs toggle (the user-side AI-run door, 2026-10-13)', () =
     const toggedOn = cmd.handler({ rawInput: 'toggle' })
     assert.equal(toggedOn.kind, 'success')
     for (const h of HEADLESS) assert.ok(names().includes(h), 'toggle failed to re-seat: ' + h)
+  })
+
+  // THE BURN'S OWN FIRING ARM (session 90a0b920, 2026-11-05: "the
+  // melite_runs auto mode turned off... after I had it on" — the
+  // toggle's state was memory-only, so a lane reload rebooted the
+  // browser lane UNSEATED mid-session). The record outlives the
+  // mount: a fresh boot reads it and seats accordingly.
+  test('a persisted ON survives the reload — the fresh browser boot seats the run doors', async () => {
+    assert.equal(writeRunsDelegation({ delegated: true }), undefined)
+    assert.deepEqual(readRunsDelegation(), { delegated: true })
+    const f = fakeCtxWithCommands()
+    await apply(f.ctx as unknown as Context) // browser config — no headless
+    const names = f.registered.map((r) => r.name)
+    for (const h of HEADLESS) assert.ok(names.includes(h), 'the reload stole the delegation: ' + h)
+
+    // and the record's other half: a persisted OFF boots unseated
+    // (memory cannot resurrect what the operator switched off)
+    assert.equal(writeRunsDelegation({ delegated: false }), undefined)
+    const g = fakeCtxWithCommands()
+    await apply(g.ctx as unknown as Context)
+    for (const h of HEADLESS) assert.ok(!g.registered.map((r) => r.name).includes(h), 'an OFF record seated a door: ' + h)
+  })
+
+  test('the toggle\'s success voice states whether the flip persisted', async () => {
+    const f = fakeCtxWithCommands()
+    await apply(f.ctx as unknown as Context)
+    const [cmd] = f.seatRegistry()
+    const on = cmd.handler({ rawInput: 'on' }) as { kind: string; text: string }
+    assert.equal(on.kind, 'success')
+    assert.match(on.text, /Recorded — the delegation survives lane reloads/, 'the ON voice names the persistence')
+    const off = cmd.handler({ rawInput: 'off' }) as { kind: string; text: string }
+    assert.equal(off.kind, 'success')
+    assert.match(off.text, /Recorded/, 'the OFF voice names the persistence')
   })
 })

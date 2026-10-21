@@ -45,6 +45,7 @@ import { buildImageGenTool } from '@melite/image-image-gen/tool'
 import { buildMotionTool } from '@melite/motion-motion/tool'
 import { buildH3TimelineTool } from '@melite/video-h3-timeline/tool'
 import { makeEstate, makeEstateRequest, asEstateCall } from './estate.ts'
+import { readRunsDelegation, writeRunsDelegation, resolveDelegationAtBoot } from './runsDelegation.ts'
 import { runStatus } from './tools/run-status.ts'
 import { meliteFlow } from './tools/melite-flow.ts'
 import { comfyManage } from './tools/comfy-manage.ts'
@@ -194,6 +195,14 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
   // THE INTERFACE RESOLVE (one explicit step — the profile's
   // cordis.yml row pins every gate; no env seam: V6 cure, 2026-10-18)
   const headless = config.headless === true
+  // THE PERSISTED DELEGATION (session 90a0b920 burn, 2026-11-05:
+  // "the melite_runs auto mode turned off... after I had it on") —
+  // the toggle's state was memory-only, so a lane reload rebooted
+  // browser lanes UNSEATED and the transcript shows the theft
+  // (melite_flow answered 11:35, "unknown tool melite_flow" 11:39,
+  // no /melite-runs off between). The boot now reads the operator's
+  // last toggle; every toggle writes it back.
+  const bootDelegated = resolveDelegationAtBoot(headless, readRunsDelegation(c.logger))
   const adhoc = (Array.isArray(config.adhocTools)
     ? config.adhocTools.map((s: string) => s.trim()).filter(Boolean)
     : (typeof config.adhocTools === 'string'
@@ -271,7 +280,7 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
       c.tools.register(meliteLoad(estate, { headless: delegated, expandEstateDoors })),
     )
   }
-  seatComposeLoop(headless)
+  seatComposeLoop(bootDelegated)
 
   // HEADLESS SEATS EAGER (transcript-016 audit, operator 2026-09-24:
   // "the tool should be as simple to use as possible"): the headless
@@ -309,7 +318,7 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
   const unseatRunDoors = (): void => {
     for (const dispose of runDoorSeats.splice(0)) dispose()
   }
-  if (headless) seatRunDoors()
+  if (bootDelegated) seatRunDoors()
 
   // The /melite-runs COMMAND — the user-side toggle for the same
   // delegation. on/off/settle verbs: 'on' seats the run doors and
@@ -350,12 +359,19 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
           unseatRunDoors()
           seatComposeLoop(false)
         }
-        c.logger.info('melite-tools: /melite-runs %s — AI run doors %s', verb || '(read)', delegated ? 'SEATED' : 'UNSEATED')
+        // THE PERSISTED FLIP (session 90a0b920 burn, 2026-11-05):
+        // every toggle writes the record the next boot reads — a
+        // reload can no longer steal the operator's choice. A failed
+        // write is said in the success voice, never silent.
+        const writeFailure = writeRunsDelegation({ delegated })
+        c.logger.info('melite-tools: /melite-runs %s — AI run doors %s%s', verb || '(read)', delegated ? 'SEATED' : 'UNSEATED', writeFailure === undefined ? ' (recorded)' : ' (WRITE FAILED: ' + writeFailure + ')')
         return {
           kind: 'success',
           text: delegated
             ? 'AI runs ON — melite_flow + run_status seated; the next model request sees them (a boot-fixed catalog sees them next session).'
-            : 'AI runs OFF — runs start at the user\u2019s Run press again.',
+              + (writeFailure === undefined ? ' Recorded — the delegation survives lane reloads.' : ' WARNING: recording failed (' + writeFailure + ') — a reload reverts to OFF.')
+            : 'AI runs OFF — runs start at the user\u2019s Run press again.'
+              + (writeFailure === undefined ? ' Recorded.' : ' WARNING: recording failed (' + writeFailure + ') — a reload reverts to ON.'),
         }
       },
     })

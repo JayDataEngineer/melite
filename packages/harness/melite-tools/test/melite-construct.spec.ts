@@ -1475,3 +1475,110 @@ describe('melite_construct presentationMeta — the native flow-link channel', (
     assert.deepEqual(metaOf(tool, value), metaOf(tool, value))
   })
 })
+
+// ── THE SPELL VOICE (session 90a0b920, 2026-11-09) ─────────────────
+// The operator's burn: the agent spelled params {input: '$input'} with
+// nothing wired and learned it only at the run's spell gate. The
+// mutation answer now carries the judgement at COMPOSE time: every
+// $-token named with its ONE resolution source — the wired input (a
+// channel) or a run-request initial (nothing wired; the run must
+// declare it). No spells → no key (the payload stays lean).
+describe('melite_construct — THE SPELL VOICE (compose-time spell judgement)', () => {
+  const ADD_ANSWER = { rev: 9, stage: 's_2' }
+
+  test('add_stage: a WIRED $spell resolves to its channel (stage.output)', async () => {
+    const { estate } = mockEstate((lane, args) => {
+      if (lane === 'benchVerb' && args[1] === 'add_stage') return ADD_ANSWER
+      throw new Error('unmocked lane ' + lane)
+    })
+    const out = await meliteConstruct(estate).execute({
+      verb: 'add_stage', card: 'image-edit',
+      params: { image1: '$image1' },
+      inputs: { image1: { stage: 's_0', output: 'default' } },
+    }, exec()) as Record<string, unknown>
+    const spells = out['spells'] as Array<Record<string, unknown>>
+    assert.equal(spells.length, 1)
+    assert.deepEqual(
+      { token: spells[0]!['token'], on: spells[0]!['on'], resolves: spells[0]!['resolves'], via: spells[0]!['via'] },
+      { token: '$image1', on: 'image1', resolves: 'channel', via: 's_0.default' },
+    )
+  })
+
+  test('add_stage: the SESSION BURN shape — an unwired $spell reads request_initial and the voice teaches the two legal sources', async () => {
+    const { estate } = mockEstate((lane, args) => {
+      if (lane === 'benchVerb' && args[1] === 'add_stage') return ADD_ANSWER
+      throw new Error('unmocked lane ' + lane)
+    })
+    const out = await meliteConstruct(estate).execute({
+      verb: 'add_stage', card: 'image-edit',
+      params: { input: '$input', input_image: '$input_image' },
+    }, exec()) as Record<string, unknown>
+    const spells = out['spells'] as Array<Record<string, unknown>>
+    assert.equal(spells.length, 2)
+    for (const line of spells) {
+      assert.equal(line['resolves'], 'request_initial')
+      // the voice names the fix: wire inputs.<name> or carry the
+      // initial; a real file is an asset path, never a $spell
+      assert.match(String(line['via']), /inputs\./)
+      assert.match(String(line['via']), /asset path/)
+    }
+    assert.equal(spells[0]!['token'], '$input')
+  })
+
+  test('add_stage: no spells → no spells key (payload stays lean)', async () => {
+    const { estate } = mockEstate((lane, args) => {
+      if (lane === 'benchVerb' && args[1] === 'add_stage') return ADD_ANSWER
+      throw new Error('unmocked lane ' + lane)
+    })
+    const out = await meliteConstruct(estate).execute({
+      verb: 'add_stage', card: 'image-gen', params: { prompt: 'a cat' },
+    }, exec()) as Record<string, unknown>
+    assert.equal('spells' in out, false)
+  })
+
+  test('patch: the stage\'s BENCH-HELD inputs are the wired truth — one bounded read, only when spells ride', async () => {
+    const seen: Array<{ lane: string; args: unknown[]; timeoutMs?: number }> = []
+    const rows = { session: 's_chat7', rev: 5, intent: '', stages: [
+      { id: 's_1', card: 'image-gen', inputs: { image: { stage: 's_0', output: 'png' } } },
+    ], log: [] }
+    const { estate } = fakeEstateRecorded(seen, (lane: string, args: unknown[]) => {
+      if (lane === 'benchGet') return rows
+      if (lane === 'benchVerb' && args[1] === 'patch') return { rev: 6, stage: 's_1', patched: ['image'] }
+      throw new Error('unmocked lane ' + lane)
+    })
+    const tool = meliteConstruct(estate)
+    const out = await tool.execute({
+      verb: 'patch', stage: 's_1', params: { image: '$image' },
+    }, fakeExec(AbortSignal.timeout(5000), { agent: { id: 's_chat7' } })) as Record<string, unknown>
+    const spells = out['spells'] as Array<Record<string, unknown>>
+    assert.equal(spells[0]!['resolves'], 'channel')
+    assert.equal(spells[0]!['via'], 's_0.png')
+    // the bounded read rode the bench (the wired truth), exactly once
+    assert.equal(seen.filter((entry) => entry.lane === 'benchGet').length, 1)
+
+    // and a spell-free patch pays NO read at all
+    seen.length = 0
+    const lean = await tool.execute({
+      verb: 'patch', stage: 's_1', params: { prompt: 'a cat' },
+    }, fakeExec(AbortSignal.timeout(5000), { agent: { id: 's_chat7' } })) as Record<string, unknown>
+    assert.equal('spells' in lean, false)
+    assert.equal(seen.filter((entry) => entry.lane === 'benchGet').length, 0)
+  })
+
+  test('load: every stage swept, each against its OWN inputs', async () => {
+    const { estate } = mockEstate((lane, args) => {
+      if (lane === 'benchEnsure') return { rev: 2, stages: [{ id: 's_0' }, { id: 's_1' }] }
+      throw new Error('unmocked lane ' + lane)
+    })
+    const out = await meliteConstruct(estate).execute({
+      verb: 'load', stages: [
+        { card: 'image-gen', params: { prompt: 'a cat' } },
+        { card: 'image-edit', params: { image1: '$image1' }, inputs: { image1: { stage: 's_0' } } },
+      ],
+    }, exec()) as Record<string, unknown>
+    const spells = out['spells'] as Array<Record<string, unknown>>
+    assert.equal(spells.length, 1)
+    assert.equal(spells[0]!['stage'], 'image-edit')
+    assert.equal(spells[0]!['via'], 's_0.default')
+  })
+})

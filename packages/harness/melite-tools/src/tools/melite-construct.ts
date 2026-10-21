@@ -98,6 +98,81 @@ function refusalOf(e: unknown, verb: string, bench: string): ConstructResult {
   return jsonClean<ConstructResult>({ verb, bench, error, error_kind: 'remote', ok: false })
 }
 
+// ── THE SPELL VOICE (session 90a0b920, 2026-11-05) ─────────────────
+// The operator's burn: the agent passed params {image1: "$input"} with
+// NOTHING wired — "you were supposed to attach a) A real image b) A
+// previous output from a flow. It was unclear." The spell gate refuses
+// at RUN time; the mutation answer now carries the same judgement at
+// COMPOSE time, naming every $-token and the ONE source that resolves
+// it: the stage's wired input (a channel), or a run-request initial
+// (the user attaches it at the Run press / melite_flow initials).
+// Anything else — including a real file on disk, which is an asset
+// path from melite_view, never a $spell — reads as request_initial
+// with the law spelled out, so the next call fixes the wire instead of
+// discovering the refusal four hops later.
+
+type SpellLine = {
+  token: string;
+  on: string;
+  resolves: 'channel' | 'request_initial';
+  via: string;
+};
+
+/** Every $-token in a params bag, at the top level and one nesting
+ *  level deep (the spell grammar's whole domain), keyed by the param
+ *  it rides. Returns [] when the bag carries no spells. */
+function spellTokensIn(params: unknown, prefix = ''): Array<{ token: string; on: string }> {
+  if (typeof params !== 'object' || params === null) return []
+  const found: Array<{ token: string; on: string }> = []
+  for (const [key, value] of Object.entries(params as Record<string, unknown>)) {
+    const on = prefix === '' ? key : prefix + '.' + key
+    if (typeof value === 'string' && value.startsWith('$')) found.push({ token: value, on })
+    else if (typeof value === 'object' && value !== null && prefix === '') {
+      found.push(...spellTokensIn(value, on))
+    }
+  }
+  return found
+}
+
+/** The inputs record of one stage row (the bench's own spelling:
+ *  {slot: {stage, output?}}); {} when the row wires nothing. */
+function inputsOfStageRow(stages: Array<Record<string, unknown>>, stage: unknown): Record<string, unknown> {
+  if (typeof stage !== 'string') return {}
+  const row = stages.find((entry) => entry['stage'] === stage || entry['id'] === stage)
+  const inputs = row === undefined ? undefined : row['inputs']
+  return typeof inputs === 'object' && inputs !== null && !Array.isArray(inputs)
+    ? inputs as Record<string, unknown>
+    : {}
+}
+
+/** The voice itself: each $-token named with its resolution source.
+ *  A token whose name matches a WIRED input resolves to that channel
+ *  (stage.output); every other token is a REQUEST INITIAL — the run
+ *  must declare it or the spell gate refuses at start. */
+function spellVoiceOf(params: unknown, inputs: unknown): SpellLine[] {
+  const wired = typeof inputs === 'object' && inputs !== null && !Array.isArray(inputs)
+    ? inputs as Record<string, unknown>
+    : {}
+  return spellTokensIn(params).map(({ token, on }) => {
+    const name = token.slice(1)
+    const channel = wired[name]
+    if (typeof channel === 'object' && channel !== null && !Array.isArray(channel)
+      && typeof (channel as Record<string, unknown>)['stage'] === 'string') {
+      const output = (channel as Record<string, unknown>)['output']
+      return {
+        token, on, resolves: 'channel' as const,
+        via: (channel as Record<string, unknown>)['stage'] as string + '.'
+          + (typeof output === 'string' && output !== '' ? output : 'default'),
+      }
+    }
+    return {
+      token, on, resolves: 'request_initial' as const,
+      via: name + ' — the run must carry this initial (user attaches it at the Run press), or wire inputs.' + name
+        + ' {stage, output}; a real file is an asset path from melite_view, never a $spell',
+    }
+  })
+}
+
 /** GET the bench; not-found → ensure (birth) → GET again. Reads are
  *  the freshness mechanism — always a remote round trip. */
 async function readBench(
@@ -384,7 +459,7 @@ export function meliteConstruct(
       + 'was there — load a throwaway TEST/scratch flow only when replacing is the intent, never to "try" a shape; '
       + 'refused on a non-empty bench unless overwrite:true confirms it; prefer add_stage to grow the bench) | patch {stage, params} | add_stage {card, params?, '
       + 'inputs?, expected?, outputs?} (inputs wire PRIOR STAGES through the card\'s declared ports, never files: '
-      + 'inputs {image1: {stage: "s_0", output: "default"}} AND params {image1: "$image1"} — the $spell consumes the channel, the queue resolves it at run time; to chain '
+      + 'inputs {image1: {stage: "s_0", output: "default"}} AND params {image1: "$image1"} — the $spell is the CHANNEL REFERENCE ONLY: it resolves at run time to that wired stage output or a request initial the USER attaches at the Run press, nothing else; for a REAL FILE on disk use its asset path from melite_view, never a $spell; to chain '
       + 'the last generation, bind its stage, never hunt its artifact on disk; kinds derive from the card\'s ports — '
       + 'state expected only to override, outputs only for custom channels) | remove_stage {stage} | clear (EVERY stage out in one rev; undo restores all — the cure when the bench itself is the wound) | rewire {stage, input, from?} (from is {stage, output} | '
       + '{initial} — same law: stage bindings, never paths) | undo {n?, author?} | validate (compile '
@@ -640,12 +715,30 @@ export function meliteConstruct(
               ...(a.overwrite === true ? { overwrite: true } : {}),
               expect_rev: a.expect_rev,
             }, signal, 15000) as Record<string, unknown>
-          return out({ rev: r.rev, stages: r.stages })
+          // THE SPELL VOICE rides load too: every stage's params swept,
+          // each $-token named against that stage's own wired inputs.
+          const spells = (Array.isArray(a.stages) ? a.stages : []).flatMap((stage, i) => {
+            if (typeof stage !== 'object' || stage === null) return []
+            const row = stage as Record<string, unknown>
+            const card = typeof row['card'] === 'string' ? row['card'] : 'stage ' + i
+            return spellVoiceOf(row['params'], row['inputs']).map((line) => ({ stage: card, ...line }))
+          })
+          return out({ rev: r.rev, stages: r.stages, ...(spells.length > 0 ? { spells } : {}) })
         }
         if (verb === 'patch') {
+          // THE SPELL VOICE needs the stage's wired inputs, which a
+          // patch does not carry — one bounded bench read, ONLY when
+          // the params spell tokens (the read births the same bench
+          // the patch below writes, so it adds no cross-bench state).
+          let wiredInputs: unknown
+          if (spellTokensIn(a.params).length > 0) {
+            const b = await readBench(estate, bench, signal)
+            wiredInputs = inputsOfStageRow(projectStages(b.stages), a.stage)
+          }
           const r = await postBenchVerb(estate, bench, 'patch',
             { stage: a.stage, params: a.params, expect_rev: a.expect_rev }, signal)
-          return out({ rev: r.rev, stage: r.stage, patched: r.patched })
+          const spellLines = spellVoiceOf(a.params, wiredInputs)
+          return out({ rev: r.rev, stage: r.stage, patched: r.patched, ...(spellLines.length > 0 ? { spells: spellLines } : {}) })
         }
         if (verb === 'add_stage') {
           // LOUD, never accept-and-ignore (2026-09-21): add_stage
@@ -681,7 +774,10 @@ export function meliteConstruct(
               ...(isRecordArg(a.outputs) ? { outputs: a.outputs } : {}),
               expect_rev: a.expect_rev,
             }, signal)
-          return out({ rev: r.rev, stage: r.stage })
+          // THE SPELL VOICE rides the verb that MINTS the stage: the
+          // call's own inputs are the wired truth here, no extra read.
+          const spellLines = spellVoiceOf(a.params, a.inputs)
+          return out({ rev: r.rev, stage: r.stage, ...(spellLines.length > 0 ? { spells: spellLines } : {}) })
         }
         if (verb === 'remove_stage') {
           const r = await postBenchVerb(estate, bench, 'remove_stage',
