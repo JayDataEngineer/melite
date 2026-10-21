@@ -897,7 +897,11 @@ describe("the single-window doors", () => {
     assert.equal(rows.filter((r) => r.on === true).length, 1, "ONE refiner row on the rider's loader");
     assert.equal(rows[0]!.str, 0.7, "at the row's default 0.7");
     const scheds = scoped(graphOf(g), "", "BasicScheduler");
-    assert.ok(scheds.some(([, n]) => n.inputs.steps === 3 && n.inputs.denoise === 1.0), "the closing schedule: the row's 3 steps, full denoise");
+    // (P0 parameter audit 2026-11-10: the unstated refine_denoise
+    // default re-aimed 1.0 → 0.35 — the research refinement window;
+    // 1.0 stays a stated mechanic. This pin rides the same law as
+    // value-roundtrip ARM 4b.)
+    assert.ok(scheds.some(([, n]) => n.inputs.steps === 3 && n.inputs.denoise === 0.35), "the closing schedule: the row's 3 steps at the declared 0.35 refinement window");
     assert.equal(scoped(graphOf(g), "", "SamplerCustomAdvanced").length, 2, "pass A + pass B");
   });
 

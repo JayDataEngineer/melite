@@ -220,11 +220,14 @@ export const paramSchema = z.object({
     refine_strength: z.number().description("Refine strength").min(0).max(2).step(0.05).extra('extra', bag({ order: null, group: 'second_pass', visible_when: "second_pass_enabled=true", wtype: 'number', tooltip: "Override the refiner row's strength. Rides only when refine_lora is set." })),
     refine_steps: z.number().description("Refine steps").min(1).max(10).step(1).extra('extra', bag({ order: null, group: 'second_pass', visible_when: "second_pass_enabled=true", wtype: 'number', tooltip: "Override the refiner row's step count (taomate: 3). Rides only when refine_lora is set." })),
     // THE REFINE WINDOW (SOTA plan limb 1, H3_TIMELINE_RESERACH Stage
-    // 3): 1.0 regenerates the whole window (the TaoMate full-denoise
-    // mechanic, the byte-stable default); the research's refinement
-    // window is a PARTIAL denoise — 0.30–0.35 keeps pass 1's structure
-    // and polishes texture. (0, 1]; 0 is a dead pass and refuses.
-    refine_denoise: z.number().description("Refine denoise").min(0.05).max(1).step(0.05).default(1).extra('extra', bag({ order: null, group: 'second_pass', visible_when: "second_pass_enabled=true", wtype: 'number', tooltip: "The rider's denoise window. 1 = full re-denoise (the taomate mechanic, default). 0.30–0.35 = the SOTA refinement window: pass 1's structure stays, the rider polishes texture. Rides only when refine_lora is set." })),
+    // 3; RE-TUNED by the P0 parameter audit, 2026-11-10): the DEFAULT
+    // is 0.35 — the research's refinement window [0.30, 0.35] keeps
+    // pass 1's structure and polishes texture, instead of the old
+    // default 1.0 regenerating the whole window (the TaoMate
+    // full-denoise mechanic). 1.0 stays STATEABLE for that mechanic;
+    // the ARM 36 band arm outlaws an out-of-window default.
+    // (0.05, 1]; 0 is a dead pass and refuses.
+    refine_denoise: z.number().description("Refine denoise").min(0.05).max(1).step(0.05).default(0.35).extra('extra', bag({ order: null, group: 'second_pass', visible_when: "second_pass_enabled=true", wtype: 'number', tooltip: "The rider's denoise window. Default 0.35 — the researched refinement band (0.30–0.35): the first pass's structure stays, the rider polishes texture. 1.0 = full re-denoise (the taomate full pass, opt-in). Rides only when refine_lora is set." })),
     // ── THE ATTENTION BACKEND (roadmap item 3; the h3_attention
     // "sage/sol" folklore was FICTION — no such knob, and the engine
     // enumerates only 'pytorch attention' on ModelAttentionBackend;
@@ -273,8 +276,23 @@ export const paramSchema = z.object({
     // visible_when behind it. Default true = today's behavior for
     // every existing doc (absent = on at compose).
     sla_enabled: z.boolean().description("SLA sparse attention").default(true).extra('extra', bag({ order: null, group: "sla", tooltip: "Block-sparse attention on the DiT (the primary speed arm, ~1.75x). Off falls back to the Attention backend row." })),
-    sla_sparsity: z.number().description("SLA sparsity").min(0).max(0.95).step(0.05).default(0.9).extra('extra', bag({ order: null, group: "sla", visible_when: "sla_enabled=true", wtype: 'slider', tooltip: "Block-sparse attention density. 0.90 ≈ 1.75x speedup, no quality loss." })),
-    sla_block_size: vocabulary(["32", "64", "128"]).description("SLA block size").default("32").extra('extra', bag({ order: null, group: "sla", visible_when: "sla_enabled=true", wtype: 'select', tooltip: "64 = clean audio; 128 = faster, robotic." })),
+    // SLA_SPARSITY (the P0 parameter audit, 2026-11-10 — plan
+    // dev_docs/design/h3-sota-execution-plan-2026-11-10.md §2): default
+    // 0.9 → 0.85. The research band is 0.75–0.85 (H3_TIMELINE_RESERACH
+    // §3 summary matrix) and the kernel's own tooltip states 0.85 is
+    // "the shipped default and what the SLA turbo LoRA was distilled
+    // against" (object_info_prod H3SLAAttention) — the shipped 0.9 sat
+    // OUTSIDE both (ROADMAP's old "no cure owed" row conflated
+    // knobs-seated with values-matching). 0.90 stays a STATEABLE speed
+    // preset; the band arm ARM 35 reds a default nudged past either
+    // edge without the P3 arena's receipt.
+    sla_sparsity: z.number().description("SLA sparsity").min(0).max(0.95).step(0.05).default(0.85).extra('extra', bag({ order: null, group: "sla", visible_when: "sla_enabled=true", wtype: 'slider', tooltip: "Block-sparse attention density. Default 0.85 — what the speed turbo LoRA was distilled against, and the top of the researched 0.75–0.85 band. 0.90 is a stated speed preset (~15% faster, kept from earlier tuning); below ~0.60 the sparse kernel is slower than plain attention. Steps, not this dial, own audio cleanliness." })),
+    // BLOCK SIZE — audited MATCH (the P0 audit's table verdict; no
+    // retune): "32" IS the kernel's own default and its tooltip's
+    // quality-best point ("Coming down to 32 has increased the quality
+    // even further for marginal slowdown"). The old tooltip named only
+    // 64/128 — a default its own copy never mentioned. Stated in full:
+    sla_block_size: vocabulary(["32", "64", "128"]).description("SLA block size").default("32").extra('extra', bag({ order: null, group: "sla", visible_when: "sla_enabled=true", wtype: 'select', tooltip: "How many tokens share one key selection — it matters most for audio. 32 = the default, the finest routing and the kernel author's quality-best. 64 = clean audio, ~2% faster. 128 = robotic speech; audio-less generations only." })),
     sla_min_seq_len: z.number().description("SLA min seq length").min(512).step(512).default(12288).extra('extra', bag({ order: null, group: "sla", visible_when: "sla_enabled=true", wtype: 'number', tooltip: "Sequences shorter than this skip sparsity." })),
     sla_dense_last_steps: z.number().description("SLA dense last steps").min(0).max(10).step(1).default(1).extra('extra', bag({ order: null, group: "sla", visible_when: "sla_enabled=true", wtype: 'number', tooltip: "Final steps run dense for convergence." })),
     sla_dense_steps: z.string().description("SLA dense steps (explicit)").default("0").extra('extra', bag({ order: null, group: "sla", visible_when: "sla_enabled=true", tooltip: "e.g. 0,1 or 0-2 — explicit dense step indices." })),

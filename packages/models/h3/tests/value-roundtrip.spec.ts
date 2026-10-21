@@ -274,8 +274,8 @@ describe("the h3 sampler knobs ride VERBATIM to their consumers (purge P2 value 
     const stack = JSON.parse(rider![1].inputs.stack_data as string) as Array<{ lora: string; str: number }>;
     assert.equal(stack[0]!.str, 0.9, "the rider stack carries the STATED strength");
     const riderSched = Object.entries(graph).filter(([, n]) =>
-      n.class_type === "BasicScheduler" && n.inputs.steps === 3 && n.inputs.denoise === 1.0);
-    assert.ok(riderSched.length >= 1, "the rider scheduler carries the STATED steps (the row's own count) at full denoise");
+      n.class_type === "BasicScheduler" && n.inputs.steps === 3 && n.inputs.denoise === 0.35);
+    assert.ok(riderSched.length >= 1, "the rider scheduler carries the STATED steps (the row's own count) at the declared 0.35 refinement window");
   });
 
   it("ARM 5 (master-off guard) — refine seats WITHOUT second_pass_enabled compose the plain pass (exactly ONE SamplerCustomAdvanced)", async () => {
@@ -296,14 +296,15 @@ describe("the h3 sampler knobs ride VERBATIM to their consumers (purge P2 value 
   });
 
   // ARM 4b (the SOTA plan's refine-denoise limb, H3_TIMELINE_RESERACH
-  // Stage 3): the refine rider hardcoded denoise 1.0 — a FULL
-  // re-denoise that regenerates the window instead of refining it.
-  // The research's refinement window is a partial denoise
-  // (0.30–0.35 over 4–6 steps): the structure stays (pass 1 owns
-  // it), the rider polishes texture. The knob must reach the rider
-  // scheduler; unstated keeps 1.0 byte-stable (the TaoMate
-  // full-denoise mechanic legacy graphs rode).
-  it("ARM 4b — a stated refine_denoise reaches the rider scheduler; unstated keeps 1.0 byte-stable", async () => {
+  // Stage 3; RE-AIMED by the P0 parameter audit, 2026-11-10): the
+  // refine rider's denoise DEFAULT is the SOTA refinement window's
+  // own 0.35 — the research band [0.30, 0.35] keeps pass 1's
+  // structure (pass 1 owns it), the rider polishes texture. The old
+  // default 1.0 (the TaoMate full-denoise mechanic) regenerated the
+  // whole window — it stays STATEABLE, never the default (the band
+  // arm ARM 36 outlaws an out-of-window default). The knob must
+  // reach the rider scheduler; unstated rides 0.35.
+  it("ARM 4b — a stated refine_denoise reaches the rider scheduler; unstated rides the declared 0.35 refinement window", async () => {
     const graph = await composeH3({
       length: 56,
       calls: [SHOT()],
@@ -312,7 +313,7 @@ describe("the h3 sampler knobs ride VERBATIM to their consumers (purge P2 value 
       refine_lora: "h3_taomate_3step",
       refine_strength: 0.35,
       refine_steps: 3,
-      refine_denoise: 0.35,
+      refine_denoise: 0.30,
     }, "h3_value_arm4b");
     // TOPOLOGY FIRST (audit 2026-10-20 debt 5 — rider identity is the
     // EDGE, never value coincidence): the rider scheduler is the node
@@ -333,7 +334,7 @@ describe("the h3 sampler knobs ride VERBATIM to their consumers (purge P2 value 
       .filter((sched): sched is { cls: string; inputs: Record<string, unknown> } =>
         sched !== null && sched.cls === "BasicScheduler");
     assert.equal(riders.length, 2, "every sampler's sigmas edge resolves to a BasicScheduler");
-    const rider = riders.find((r) => r.inputs.denoise === 0.35);
+    const rider = riders.find((r) => r.inputs.denoise === 0.30);
     assert.ok(rider !== undefined,
       "the RIDER scheduler — identified by its sampler's sigmas edge — carries the stated refine window (research Stage 3: 0.30–0.35)");
     assert.equal(rider!.inputs.steps, 3,
@@ -357,8 +358,8 @@ describe("the h3 sampler knobs ride VERBATIM to their consumers (purge P2 value 
     assert.equal(legacyRiders.length, 2, "the legacy counter also wires both schedulers by edge");
     const legacyRider = legacyRiders.find((r) => r.inputs.steps === 3);
     assert.ok(legacyRider !== undefined, "the legacy rider scheduler exists among the edge-resolved pair");
-    assert.equal(legacyRider!.inputs.denoise, 1.0,
-      "a doc with no refine_denoise keeps the full-denoise rider — legacy graphs stay byte-stable");
+    assert.equal(legacyRider!.inputs.denoise, 0.35,
+      "a doc with no refine_denoise rides the declared 0.35 refinement window — the SOTA band's own default (P0 audit 2026-11-10; the full-denoise 1.0 stays a stated mechanic)");
   });
 
   it("ARM 4c — a refine_denoise outside [0.05, 1] refuses LOUD naming the knob (the schema walk owns the real-doc door)", async () => {
@@ -461,7 +462,7 @@ describe("the h3 sampler knobs ride VERBATIM to their consumers (purge P2 value 
     const stack = JSON.parse(rider![1].inputs.stack_data as string) as Array<{ lora: string; str: number }>;
     assert.equal(stack[0]!.str, 0.7, "unstated strength defaults from the row (taomate 0.7)");
     const riderSched = Object.entries(graph).filter(([, n]) =>
-      n.class_type === "BasicScheduler" && n.inputs.steps === 3 && n.inputs.denoise === 1.0);
+      n.class_type === "BasicScheduler" && n.inputs.steps === 3 && n.inputs.denoise === 0.35);
     assert.ok(riderSched.length >= 1, "unstated steps default from the row (taomate 3)");
   });
 
@@ -493,7 +494,7 @@ describe("the h3 sampler knobs ride VERBATIM to their consumers (purge P2 value 
     );
     const graph = await composeH3(doc(6, "h3_value_arm8ok"), "h3_value_arm8ok");
     const riderSched = Object.entries(graph).filter(([, n]) =>
-      n.class_type === "BasicScheduler" && n.inputs.steps === 6 && n.inputs.denoise === 1.0);
+      n.class_type === "BasicScheduler" && n.inputs.steps === 6 && n.inputs.denoise === 0.35);
     assert.ok(riderSched.length >= 1, "an in-domain refine count still rides the rider scheduler");
   });
 
@@ -701,15 +702,20 @@ describe("the h3 class knobs ride VERBATIM to their consumers (P0 witness extens
   });
 
   it("ARM 15 — every stated sla_* rides H3SLAAttention verbatim + sla_enabled owns the attention switch", async () => {
+    // (P0 audit 2026-11-10: the stated values stay NON-defaults.
+    // The retuned default is sla_sparsity 0.85 — the research band
+    // [0.75, 0.85]'s distilled-at edge (ARM 25/35 own it); block
+    // "32" is unchanged (the kernel's own default, the plan's MATCH
+    // verdict), so this arm states 0.75 and "64".)
     const graph = await composeH3({
       length: 56,
-      sla_sparsity: 0.85, sla_block_size: "64", sla_min_seq_len: 1024,
+      sla_sparsity: 0.75, sla_block_size: "64", sla_min_seq_len: 1024,
       sla_dense_last_steps: 3, sla_dense_steps: "0,1", sla_dense_backend: "pytorch",
       sla_reference_protection: "Light", sla_protect_audio: false,
       sla_stabilize_motion: false, sla_disable_fp16_accum: false, sla_enabled: true,
       calls: [SHOT()],
     }, "h3_value_arm15");
-    assertValueAtConsumer(graph, "H3SLAAttention", "sparsity_ratio", 0.85, "sla_sparsity");
+    assertValueAtConsumer(graph, "H3SLAAttention", "sparsity_ratio", 0.75, "sla_sparsity");
     assertValueAtConsumer(graph, "H3SLAAttention", "block_size", "64", "sla_block_size");
     assertValueAtConsumer(graph, "H3SLAAttention", "min_seq_len", 1024, "sla_min_seq_len");
     assertValueAtConsumer(graph, "H3SLAAttention", "dense_last_steps", 3, "sla_dense_last_steps");
@@ -953,11 +959,20 @@ describe("the h3 knob-block remainder: per-class liveness + the mis-narrated and
     );
   });
 
-  it("ARM 25 (liveness, SLA) — sla_sparsity dropped composes the declared 0.9 at the kernel, and the stated arm reds with the VALUE voice", async () => {
+  // ARM 25 (liveness, SLA; RE-AIMED by the P0 parameter audit,
+  // 2026-11-10): the DECLARED default is 0.85 — the research band
+  // [0.75, 0.85] (H3_TIMELINE_RESERACH §3 summary matrix) and the
+  // kernel's own distilled-at value ("0.85 is the shipped default
+  // and what the SLA turbo LoRA was distilled against", the census's
+  // H3SLAAttention tooltip). The old 0.9 default sat OUTSIDE the
+  // band — a wall pinning a wrong number is a wall worth re-aiming.
+  // The stated 0.9 stays a LEGAL speed preset (the node's own "~15%
+  // faster" word) and still must ride verbatim when stated.
+  it("ARM 25 (liveness, SLA) — sla_sparsity dropped composes the declared 0.85 at the kernel, and the stated arm reds with the VALUE voice", async () => {
     const graph = await composeH3({ length: 56, calls: [SHOT()] }, "h3_knob_arm25");
-    assertValueAtConsumer(graph, "H3SLAAttention", "sparsity_ratio", 0.9, "default sla_sparsity");
+    assertValueAtConsumer(graph, "H3SLAAttention", "sparsity_ratio", 0.85, "default sla_sparsity");
     assert.throws(
-      () => assertValueAtConsumer(graph, "H3SLAAttention", "sparsity_ratio", 0.85, "sla_sparsity"),
+      () => assertValueAtConsumer(graph, "H3SLAAttention", "sparsity_ratio", 0.9, "sla_sparsity"),
       /SLA_SPARSITY VALUE ARM/,
       "the arm PASSED on a dropped sla_sparsity — it is a presence arm, not a value arm; fix the arm, not the code",
     );
@@ -1118,6 +1133,74 @@ describe("the h3 knob-block remainder: per-class liveness + the mis-narrated and
     }, "h3_knob_arm34");
     assertValueAtConsumer(graph, "RandomNoise", "noise_seed", 909, "film-level noise_seed", "window1_");
     assertValueAtConsumer(graph, "RandomNoise", "noise_seed", 555, "call-level noise_seed", "window2_");
+  });
+
+  // ── THE P0 BAND ARMS (the parameter audit's gate, 2026-11-10 —
+  // dev_docs/design/h3-sota-execution-plan-2026-11-10.md §2: "every
+  // re-tune lands WITH its wall re-aim in the same change … and each
+  // pinned number's wall spec carries the research citation"). ARM 25
+  // pins the exact default; these arms make an OUT-OF-BAND default
+  // ILLEGAL — a future nudge past either edge reds before the wall
+  // can pin it. A stated out-of-band value stays the user's word
+  // (ARMs 15/4b judge carriage; these judge the DEFAULT). ──
+
+  it("ARM 35 (band) — the declared sla_sparsity default composes INSIDE the research band [0.75, 0.85] (P0 audit, 2026-11-10)", async () => {
+    // CITATION: research band 0.75–0.85 (H3_TIMELINE_RESERACH §3
+    // summary matrix; the plan's §2 row) + the kernel's own tooltip —
+    // "0.85 is the shipped default and what the SLA turbo LoRA was
+    // distilled against; 0.90 is the value validated here and is
+    // ~15% faster" (object_info_prod H3SLAAttention). The shipped
+    // 0.9 sat OUTSIDE the band — convicted and re-tuned to 0.85.
+    const graph = await composeH3({ length: 56, calls: [SHOT()] }, "h3_knob_arm35");
+    const sla = Object.values(graph).find((n) => n.class_type === "H3SLAAttention");
+    assert.ok(sla, "the SLA kernel composed (hop [5])");
+    const seen = sla!.inputs.sparsity_ratio;
+    assert.ok(
+      typeof seen === "number" && seen >= 0.75 && seen <= 0.85,
+      `SLA_SPARSITY BAND ARM: the declared default composed ${JSON.stringify(seen)} — OUTSIDE the research band [0.75, 0.85] ` +
+      `(the distilled-at-0.85 kernel contract; moving the default past the band needs the P3 arena's receipt, never a silent literal)`,
+    );
+  });
+
+  it("ARM 36 (band) — the declared refine_denoise default composes INSIDE the Stage-2 window [0.30, 0.35], edge-identified (P0 audit, 2026-11-10)", async () => {
+    // CITATION: the research's refinement window 0.30–0.35 @ 4–6
+    // steps (H3_TIMELINE_RESERACH Stage 3; the plan's §2 refine_denoise
+    // row; ROADMAP LIMB 1). The shipped 1.0 was the TaoMate
+    // full-denoise mechanic — a whole-window regeneration, not a
+    // refinement; the default is now 0.35 and 1.0 stays STATEABLE.
+    const graph = await composeH3({
+      length: 56, second_pass_enabled: true, refine_lora: "h3_taomate_3step",
+      calls: [SHOT()],
+    }, "h3_knob_arm36");
+    // TOPOLOGY FIRST (ARM 4b's lesson): the rider is the scheduler the
+    // SECOND SamplerCustomAdvanced's sigmas edge names — never a
+    // value-coincidence scan.
+    const samplers = Object.entries(graph).filter(([, n]) => n.class_type === "SamplerCustomAdvanced");
+    assert.equal(samplers.length, 2, "the refine rider mounts (TWO SamplerCustomAdvanced)");
+    const riders = samplers
+      .map(([sid, s]) => {
+        const edge = s.inputs.sigmas;
+        assert.ok(Array.isArray(edge) && typeof edge[0] === "string", `sampler ${sid} wired sigmas as a literal — schedulers ride edges`);
+        const node = graph[edge[0] as string];
+        assert.ok(node, `sampler ${sid}'s sigmas edge named unknown node`);
+        return node;
+      })
+      .filter((n) => n.class_type === "BasicScheduler");
+    assert.equal(riders.length, 2, "every sampler's sigmas edge resolves to a BasicScheduler");
+    // The RIDER within the edge-resolved pair: the scheduler carrying
+    // the taomate ROW's own 3 steps (the row owns that count — ARM 7;
+    // the pair's other member is the primary pass, whose denoise is
+    // the main denoise knob, not this law's subject).
+    const riderScheds = riders.filter((r) => r.inputs.steps === 3);
+    assert.ok(riderScheds.length >= 1, "the rider scheduler (the row's own 3 steps) resolved among the edge pair");
+    const seen = riderScheds.map((r) => r.inputs.denoise);
+    for (const d of seen) {
+      assert.ok(
+        typeof d === "number" && d >= 0.3 && d <= 0.35,
+        `REFINE_DENOISE BAND ARM: the declared default composed ${JSON.stringify(d)} — OUTSIDE the Stage-2 refinement window [0.30, 0.35] ` +
+        `(research LIMB 1; the full-denoise 1.0 stays a stated mechanic, never the default)`,
+      );
+    }
   });
 });
 

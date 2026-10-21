@@ -103,7 +103,7 @@ export const identity = {
     'Length snaps to the 17k+5 frame grid at 24fps',
     'For timelines: repeat the ambient soundscape verbatim in every window; add one new layer where the story needs it',
     "Same seed across a shot's re-rolls keeps the world texture",
-    'SLA at sparsity 0.90 gives ~1.75x speedup with no quality loss — use it by default',
+    'SLA sparse attention ships at sparsity 0.85 — the value the turbo LoRA was distilled against; stating 0.90 trades a little quality for ~15% more speed',
   ],
 }
 

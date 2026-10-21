@@ -134,17 +134,18 @@ function resolveRefineSeat(p: Record<string, unknown>): { name: string; strength
     throw new Error(`h3 action: refine_steps ${steps} for refine_lora '${id}' falls outside the row's declared domain [${lo ?? '…'}, ${hi ?? '…'}] — pick a count the instrument serves, never force one (the compose door enforces the row domain)`)
   }
   // THE REFINE WINDOW (SOTA plan limb 1, H3_TIMELINE_RESERACH Stage
-  // 3): unstated keeps the full-denoise rider byte-stable (the
-  // TaoMate mechanic legacy graphs rode); the research's refinement
-  // window is a partial denoise (0.30–0.35 — pass 1's structure
-  // stays, the rider polishes texture). Domain [0.05, 1] — ONE law
+  // 3; RE-TUNED by the P0 parameter audit, 2026-11-10): unstated
+  // rides the DECLARED 0.35 default — the research's refinement
+  // window (0.30–0.35: pass 1's structure stays, the rider polishes
+  // texture); 1.0 stays stateable, the TaoMate full-denoise mechanic.
+  // Domain [0.05, 1] — ONE law
   // with the schema row and the film.params row below (audit
   // 2026-10-20 F1/F4: the resolver's old (0, 1] and the walk's
   // [0.05, 1] disagreed at 0 < d < 0.05, and the walk owned every
   // real-doc refusal before compose — the resolver's voice had no
   // firing arm. Both seats now state the same bounds and ARM 4f
   // judges the resolver at the family plane, its own seat).
-  const denoise = (p.refine_denoise as number | undefined) ?? 1
+  const denoise = (p.refine_denoise as number | undefined) ?? 0.35
   if (!(denoise >= 0.05 && denoise <= 1)) {
     throw new Error(`h3 action: refine_denoise ${String(p.refine_denoise)} falls outside the refinement window [0.05, 1] — 1 is the full-denoise taomate mechanic, 0.30–0.35 the SOTA refinement window; a dead or over-terminal rider never composes`)
   }
