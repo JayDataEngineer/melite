@@ -104,6 +104,7 @@ describe("the manager-arm liveness (the queue drain is acquisition, and it shows
     let emissions = 0;
     const manager: ManagerPort = {
       inspect: async () => ({ installed: true, active: false }),
+      install: async () => ({ installed: true }),
       installModel: async (request: ManagerModelInstallRequest): Promise<{ installed: boolean; detail?: string }> => {
         for (let drain = 0; drain < 3; drain += 1) {
           (request.onQueueStatus as ((status: { doneCount: number; totalCount: number }) => void) | undefined)?.({ doneCount: drain, totalCount: 3 });

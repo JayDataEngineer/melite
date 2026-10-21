@@ -87,7 +87,7 @@ const plan = (): ProvisionPlan => ({ ref: ref(), items: [item()] });
 async function pollUntil(
   service: ProvisioningService,
   id: string,
-  until: (p: { state: string; bytes: number; total: number }) => boolean,
+  until: (p: { state: string; bytes: number; total: number; phase?: string }) => boolean,
   budgetMs: number,
 ): Promise<{ state: string; bytes: number; total: number; detail?: string; phase?: string }> {
   let last: { state: string; bytes: number; total: number; detail?: string; phase?: string } = { state: "unknown", bytes: 0, total: 0 };

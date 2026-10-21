@@ -200,7 +200,7 @@ describe("verified artifact filesystem seams", () => {
         if (order[order.length - 1] !== "heartbeat-before-sync") order.push("heartbeat-before-sync");
       },
     });
-    assert.ok(result.present !== false);
+    assert.ok(result.path.endsWith("fsync.bin"), "the verified artifact landed at its declared path");
     // the FIRST heartbeat precedes the flush — the plane's stall
     // clock is re-armed before the window where no stream byte can
     // move. Red shape (the cure's gap): the only boundary heartbeat

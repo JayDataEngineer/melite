@@ -106,7 +106,7 @@ function writerFor(over: Partial<ArtifactWriterPort> = {}): ArtifactWriterPort {
 /** A gated byte body: lands its prefix, then holds the stream open
  *  (never closes) until the arm releases it — the lock stays held
  *  the whole scan. The proven shape from range-resume.spec.ts. */
-function gatedBody(prefix: Buffer, gate: Promise<void>): AsyncIterable<Uint8Array> {
+function gatedBody(prefix: Uint8Array, gate: Promise<void>): AsyncIterable<Uint8Array> {
   return (async function* generate(): AsyncGenerator<Uint8Array> {
     yield Uint8Array.from(prefix);
     await gate;
@@ -116,7 +116,7 @@ function gatedBody(prefix: Buffer, gate: Promise<void>): AsyncIterable<Uint8Arra
 /** Wait until the predicate holds — the ledger's pump counts
  *  asynchronously, so the arms wait for the counted state instead of
  *  sleeping. */
-async function until(predicate: (): boolean, what: string): Promise<void> {
+async function until(predicate: () => boolean, what: string): Promise<void> {
   for (let attempt = 0; attempt < 500; attempt += 1) {
     if (predicate()) return;
     await new Promise((resolve) => { setTimeout(resolve, 10); });
@@ -131,12 +131,12 @@ describe("THE LIVE-ROW DOOR LAW (audit download-stack-audit-2026-10-20 F10)", ()
     // the flight: the stream lands PART bytes, then holds (never
     // closes) until the arm releases it — the lock stays held the
     // whole scan
-    let releaseStream!: (): void;
+    let releaseStream!: () => void;
     const streamGate = new Promise<void>((resolve) => { releaseStream = resolve; });
     const service = new ProvisioningService(ctx, {
       declaration: { resolve: async (): Promise<ProvisionPlan> => planOf("live-fam") },
       storeRoot: tempRoot(),
-      writer: writerFor(),
+      artifactWriter: writerFor(),
       fetcher: async () => ({ status: 200, body: gatedBody(BYTES.subarray(0, PART), streamGate) }) as never,
     } satisfies ProvisioningConfig);
     const ref = refOf("live-fam");
@@ -193,7 +193,7 @@ describe("THE LIVE-ROW DOOR LAW (audit download-stack-audit-2026-10-20 F10)", ()
     const legacyPart = Buffer.alloc(RESUME_OFFSET, 3);
     mkdirSync(join(root, "checkpoints"), { recursive: true });
     writeFileSync(join(root, "checkpoints", "weight.bin.part-legacy"), legacyPart);
-    let releaseStream!: (): void;
+    let releaseStream!: () => void;
     const streamGate = new Promise<void>((resolve) => { releaseStream = resolve; });
     let rangedAsk = false;
     const service = new ProvisioningService(ctx, {
@@ -259,12 +259,12 @@ describe("THE LIVE-ROW DOOR LAW (audit download-stack-audit-2026-10-20 F10)", ()
     // the plan resolve is gated: the lock registers (runLocked), the
     // ledger seeds only AFTER the plan lands — the window the old
     // join rode
-    let releasePlan!: (): void;
+    let releasePlan!: () => void;
     const planGate = new Promise<ProvisionPlan>((resolve) => { releasePlan = (): void => { resolve(planOf("arming-fam")); }; });
     const service = new ProvisioningService(ctx, {
       declaration: { resolve: (_ref: ResourceRef): Promise<ProvisionPlan> => planGate },
       storeRoot: tempRoot(),
-      writer: writerFor(),
+      artifactWriter: writerFor(),
     } satisfies ProvisioningConfig);
     const ref = refOf("arming-fam");
     const flight = service.ensure(ref);

@@ -53,7 +53,7 @@ describe('the comfy_manage tool face — the lora_fetch recipe', () => {
   test('the recipe rides the description verbatim and the action enum carries the verb', () => {
     const def = comfyManage(stubEstate()) as unknown as {
       description: string
-      parameters: { properties: { action: { enum: readonly string[] } } }
+      parameters: { properties: { action: { enum: readonly string[] }, operator_confirmed: { description: string } } }
     }
     // THE OPERATOR'S ORDER, VERBATIM (the tool description is the
     // agent's only curriculum — the burn's recipe rides it or no

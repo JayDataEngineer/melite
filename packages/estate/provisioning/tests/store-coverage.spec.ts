@@ -18,6 +18,7 @@ import {
   OperationStoreError,
   copyProvisionOperation,
   type ProvisionOperation,
+  type ResourceStatusItem,
 } from "../src/index.ts";
 
 const roots: string[] = [];
@@ -283,8 +284,8 @@ describe("operation-store list (audit E3 boot rehydrate)", () => {
   test("the integrity vocabulary carries the cheap-first word (audit M2 round-trip face)", async () => {
     const store = new InMemoryOperationStore();
     const row = modelOperation();
-    row.items[0]!.integrity = "size-checked";
-    row.items[0]!.sha256 = undefined;
+    // the item face is readonly — the mutation is a fresh literal
+    (row.items as ResourceStatusItem[])[0] = { ...row.items[0]!, integrity: "size-checked", sha256: undefined };
     await store.save(row);
     const loaded = await store.load(row.operationId);
     assert.equal(loaded?.items[0]?.integrity, "size-checked",

@@ -346,8 +346,7 @@ describe("the resources census honesty law (the anima burn)", () => {
     ).toBe("unknown");
     assert.match(row.detail ?? "", /scan incomplete/,
       "the plan cut names its own cause — the census_partial mark fires on this row");
-    expect(row.items.length).toBe(0,
-      "the plan never resolved — there is no item roster to fake");
+    expect(row.items.length, "the plan never resolved — there is no item roster to fake").toBe(0);
   });
 
   // RESIDUE B2-3 (audit h3-frames-anima-residue-2026-10-20): three
@@ -392,6 +391,7 @@ describe("the resources census honesty law (the anima burn)", () => {
           if (id === "item0") return { installed: true, active: false };
           return { installed: true, active: true };
         },
+        install: async () => ({ installed: true }),
       },
       storeRoot: tempRoot(),
     } satisfies ProvisioningConfig);
@@ -407,8 +407,7 @@ describe("the resources census honesty law (the anima burn)", () => {
     expect(row.state,
       "an unexpected throw inside the reconcile loop fails loud — never a health verdict over unchecked bytes, never a crash",
     ).toBe("failed");
-    expect(row.items.length).toBe(0,
-      "the catch serves zero items — the failed aggregate's items died with the throw, nothing is faked");
+    expect(row.items.length, "the catch serves zero items — the failed aggregate's items died with the throw, nothing is faked").toBe(0);
     assert.match(row.detail ?? "", /invalid provisioning transition active -> installed/,
       "refusalFor's generic mapping carries the throw's own message (the 'provisioning/failed' law) — the detail names the seat, not a health verdict");
   });
@@ -442,8 +441,7 @@ describe("the resources census honesty law (the anima burn)", () => {
     expect(row.state,
       "a thrown read fault is a checked verdict — the row keeps it, never the scan's 'unknown' (the arm must flip exactly when refusalFor's fall-through stops naming the fault)",
     ).toBe("failed");
-    expect(row.items.length).toBe(2,
-      "the throw is per-item — the item roster stays complete (both items were genuinely attempted, nothing was cut)");
+    expect(row.items.length, "the throw is per-item — the item roster stays complete (both items were genuinely attempted, nothing was cut)").toBe(2);
     for (const item of row.items) {
       expect(item.state).toBe("failed");
       assert.match(item.detail ?? "", /EACCES: permission denied/,
@@ -495,8 +493,7 @@ describe("the resources census honesty law (the anima burn)", () => {
     expect(result.operationState,
       "the join never landed anything — operationState 'failed' with zero items, never a health word",
     ).toBe("failed");
-    expect(result.items.length).toBe(0,
-      "the aborted wait contributes no item rows — nothing was checked on its behalf");
+    expect(result.items.length, "the aborted wait contributes no item rows — nothing was checked on its behalf").toBe(0);
     assert.match(result.detail ?? "", /cancelled while waiting/,
       "the detail names the wait, not the fetch");
   });
