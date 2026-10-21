@@ -1,5 +1,5 @@
-import type { Estate } from '../estate.ts';
-import type { ToolDefinition } from '../types.ts';
+import type { Estate } from '../estate.js';
+import type { ToolDefinition } from '../types.js';
 export interface MeliteConnectArg {
     from?: unknown;
     to?: unknown;
@@ -62,6 +62,7 @@ export declare function observeAndAttribute(estate: Estate, draftId: string, sta
     url: string;
     artifacts: string[];
     host_paths: string[];
+    stamp_note?: string;
 }>;
 export declare function meliteFlow(estate: Estate): ToolDefinition;
 export {};

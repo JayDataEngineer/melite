@@ -576,6 +576,14 @@ export function meliteConstruct(estate, opts = {}) {
                     const verb = String(v.verb ?? '?');
                     lines.push(verb === 'add_stage' ? 'minted stage ' + stageId + ' (patch/remove_stage/rewire address it as {stage: "' + stageId + '"})' : 'stage ' + stageId);
                 }
+                // THE STALENESS LINE, RENDERED (the warm-2 fire: the payload
+                // carried stale:true and the model never saw it — a payload
+                // key nobody prints is a voice nobody hears). The patch that
+                // changed params says so: the done mark is cleared, the next
+                // flow re-runs the stage — no [done] no-op to diagnose.
+                if (v.stale === true) {
+                    lines.push('stale: params changed — the stage\'s done mark is cleared; the next flow re-runs it (its old artifact stays readable as last_run)');
+                }
                 // THE SPELL VOICE, RENDERED (the compose-time spell gate,
                 // 2026-10-21): the payload names every $-token and its one
                 // resolution source; the render says it in the model's own
@@ -804,7 +812,15 @@ export function meliteConstruct(estate, opts = {}) {
                     }
                     const r = await postBenchVerb(estate, bench, 'patch', { stage: a.stage, params: a.params, expect_rev: rev0 }, signal);
                     const spellLines = spellVoiceOf(a.params, wiredInputs);
-                    return out({ rev: r.rev, stage: r.stage, patched: r.patched, ...(spellLines.length > 0 ? { spells: spellLines } : {}) });
+                    // THE STALENESS VOICE (the silent no-op cure): the door
+                    // answers stale:true when the patch changed params and
+                    // invalidated the stage's done mark — the model reads WHY
+                    // its next flow will re-run (or, absent stale, that the
+                    // write was idempotent and the done mark stands).
+                    const stale = r['stale'] === true;
+                    return out({ rev: r.rev, stage: r.stage, patched: r.patched,
+                        ...(stale ? { stale: true } : {}),
+                        ...(spellLines.length > 0 ? { spells: spellLines } : {}) });
                 }
                 if (verb === 'add_stage') {
                     // LOUD, never accept-and-ignore (2026-09-21): add_stage

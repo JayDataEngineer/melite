@@ -326,7 +326,8 @@ async function runBench(estate, a, signal) {
         pass.push({ stage: stageId, card, run_id: runId, status: outcome.status,
             ...(outcome.url !== '' ? { url: outcome.url } : {}),
             ...(outcome.artifacts.length > 0 ? { artifacts: outcome.artifacts } : {}),
-            ...(outcome.host_paths.length > 0 ? { host_paths: outcome.host_paths } : {}) });
+            ...(outcome.host_paths.length > 0 ? { host_paths: outcome.host_paths } : {}),
+            ...(outcome.stamp_note !== undefined ? { stamp_note: outcome.stamp_note } : {}) });
         if (outcome.status === 'queued') {
             // THE PENDING RECEIPT (the commission wedge, 2026-10-03): the
             // observation budget spent on a run that is still live — the
@@ -446,6 +447,19 @@ function canonicalHostPath(p, rid, test) {
 export async function observeAndAttribute(estate, draftId, stageId, runId, signal, test, budgetMs = OBSERVE_MAX_MS, rearms = 2) {
     const deadline = Date.now() + budgetMs;
     let lastLive = '';
+    // THE LOUD MISS (the no-feedback defect, 2026-10-22): the operator
+    // watched an agent bench pass mint five runs while the cards tab
+    // showed NOTHING — every stamp died at the seat seam and each
+    // death was swallowed as "bookkeeping". A stamp that does not land
+    // is a voice the user never hears, so the observation CARRIES the
+    // miss (stamp_note) instead of eating it; the run's own outcome
+    // still answers. The newest attempt owns the note: a later stamp
+    // that LANDS clears it (the preview paints — the earlier miss is
+    // history), a later miss overwrites it.
+    let stampNote;
+    const noteMiss = (phase, why) => {
+        stampNote = `attribution ${phase}: ${why}`;
+    };
     for (;;) {
         signal.throwIfAborted();
         let doc;
@@ -542,11 +556,22 @@ export async function observeAndAttribute(estate, draftId, stageId, runId, signa
             // reused, skipped, stale and live landed on bench rows as words
             // nothing translated. One fold classifies every word.
             const terminal = statusOf(status);
+            // The stamp is BOOKKEEPING for the run but FEEDBACK for the
+            // watching user (the cards tab adopts foreign runs off these
+            // very rows) — a miss answers loud, never silence.
             try {
-                await estate.draftsStagePatch(draftId, stageId, { runStatus: terminal, result }, signal, DRAFT_TIMEOUT_MS);
+                const ans = await estate.draftsStagePatch(draftId, stageId, { runStatus: terminal, result }, signal, DRAFT_TIMEOUT_MS);
+                if (ans !== null && typeof ans === 'object' && ans['delivered'] === false) {
+                    noteMiss('refused', typeof ans['reason'] === 'string' && ans['reason'] !== '' ? ans['reason'] : 'not delivered');
+                }
+                else {
+                    stampNote = undefined;
+                }
             }
-            catch { /* bookkeeping — the run's own outcome is the answer */ }
-            return { status: terminal, url, artifacts: arts, host_paths: hostPaths };
+            catch (e) {
+                noteMiss('failed', e instanceof Error ? e.message : String(e));
+            }
+            return { status: terminal, url, artifacts: arts, host_paths: hostPaths, ...(stampNote !== undefined ? { stamp_note: stampNote } : {}) };
         }
         // the queue-feedback stamp, classified by the fold (queued or
         // still-waiting stamps queued; 'live'/'stopping' stamp running).
@@ -561,7 +586,11 @@ export async function observeAndAttribute(estate, draftId, stageId, runId, signa
             try {
                 await estate.draftsStagePatch(draftId, stageId, { runStatus: live, result: { run_id: runId } }, signal, DRAFT_TIMEOUT_MS);
             }
-            catch { /* bookkeeping */ }
+            catch (e) {
+                // bookkeeping for the run, FEEDBACK for the watching user —
+                // noted, superseded by whatever the terminal stamp does.
+                noteMiss('live stamp failed', e instanceof Error ? e.message : String(e));
+            }
         }
         if (Date.now() >= deadline) {
             // THE WAIT-EXPIRED RECEIPT (the commission wedge, 2026-10-03):
@@ -577,7 +606,7 @@ export async function observeAndAttribute(estate, draftId, stageId, runId, signa
             if (rearms > 0) {
                 void observeAndAttribute(estate, draftId, stageId, runId, new AbortController().signal, test, budgetMs, rearms - 1).catch(String);
             }
-            return { status: 'queued', url: '', artifacts: [], host_paths: [] };
+            return { status: 'queued', url: '', artifacts: [], host_paths: [], ...(stampNote !== undefined ? { stamp_note: stampNote } : {}) };
         }
         await sleepAbort(1500, signal);
     }
@@ -946,7 +975,24 @@ export function meliteFlow(estate) {
                 const passRows = Array.isArray(pass)
                     ? pass.map((p) => '  · ' + String(p['stage'] ?? '?') + ' ' + String(p['card'] ?? '?')
                         + (typeof p['run_id'] === 'string' && p['run_id'] !== '' ? ' → ' + p['run_id'] : '')
-                        + ' [' + String(p['status'] ?? p['skipped'] ?? '?') + ']'
+                        // THE HONEST SKIP FACE (the warm-fire no-op lie): a
+                        // skipped row printed [done] — indistinguishable from a
+                        // minted run, and the agent hunted a run that never
+                        // existed. The skip says WHAT it skipped and WHY.
+                        // THE HONEST SKIP FACE (the warm-fire no-op lie): a
+                        // skipped row printed [done] — indistinguishable from a
+                        // minted run, and the agent hunted a run that never
+                        // existed. The skip says WHAT it skipped and WHY.
+                        + ' [' + (p['status'] === undefined && p['skipped'] !== undefined
+                        ? 'skipped ' + String(p['skipped']) + ' — unchanged since its last run; patch params to re-run'
+                        : String(p['status'] ?? p['skipped'] ?? '?')) + ']'
+                        // THE LOUD MISS FACE (the no-feedback defect): a stamp
+                        // that never landed means the watching user's cards tab
+                        // paints NOTHING for this row — the maker must see that
+                        // and say so, not report a run the user cannot find.
+                        + (typeof p['stamp_note'] === 'string' && p['stamp_note'] !== ''
+                            ? ' — STAMP MISSED (' + p['stamp_note'] + '): the user\u2019s cards tab will NOT show this run'
+                            : '')
                         + (typeof p['url'] === 'string' && p['url'] !== '' ? ' ' + p['url'] : '')
                         + (Array.isArray(p['host_paths']) && p['host_paths'].length > 0
                             ? ' (host: ' + p['host_paths'].join(', ') + ')' : '')).join('\n')

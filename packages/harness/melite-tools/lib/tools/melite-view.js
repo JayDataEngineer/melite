@@ -208,6 +208,7 @@ async function delegatedFilmVisual(seat, runId, row, absPath, probe, exec, ctx, 
     return {
         runId,
         url: row.url,
+        host: absPath,
         textObservation: 'melite_view film: ' + row.name
             + (probe.duration_s !== undefined ? ', ' + String(probe.duration_s) + 's' : '')
             + ', ' + String(probe.size_bytes) + ' bytes, streams: ' + streams
@@ -253,6 +254,7 @@ export async function viewFilmArtifact(seat, runId, artifact, exec, ctx, attachm
         return {
             runId,
             url: row.url,
+            host: absPath,
             textObservation: filmTextObservation(row.name, probe, capability.model),
         };
     }
@@ -261,6 +263,7 @@ export async function viewFilmArtifact(seat, runId, artifact, exec, ctx, attachm
     return {
         runId: row.runId,
         url: row.url,
+        host: absPath,
         image: {
             attachmentId: ref.attachmentId,
             mediaType: ref.mediaType,
@@ -313,6 +316,7 @@ export async function viewAudioArtifact(seat, runId, artifact, exec, ctx, attach
         return {
             runId: row.runId,
             url: row.url,
+            host: absPath,
             textObservation: 'melite_view audio: ' + row.name
                 + (probe.duration_s !== undefined ? ', ' + String(probe.duration_s) + 's' : '')
                 + ', ' + String(probe.size_bytes) + ' bytes, streams: ' + rows
@@ -345,6 +349,7 @@ export async function viewAudioArtifact(seat, runId, artifact, exec, ctx, attach
     return {
         runId: row.runId,
         url: row.url,
+        host: absPath,
         image: {
             attachmentId: ref.attachmentId,
             mediaType: ref.mediaType,
@@ -440,8 +445,9 @@ function filmTextObservation(name, probe, model) {
 function viewedContent(value) {
     // the text-only arm: no image block is possible, and the value says
     // which facts it carries
+    const hostVoice = value.host !== undefined ? ' (host: ' + value.host + ')' : '';
     if (value.textObservation !== undefined) {
-        return [{ type: 'text', text: value.textObservation }];
+        return [{ type: 'text', text: value.textObservation + hostVoice }];
     }
     if (value.film !== undefined) {
         const f = value.film;
@@ -453,7 +459,7 @@ function viewedContent(value) {
                     + (f.duration_s !== undefined ? ', ' + String(f.duration_s) + 's' : '')
                     + (f.size_bytes !== undefined ? ', ' + String(f.size_bytes) + ' bytes' : '')
                     + ', streams: ' + streams + '; contact sheet of ' + String(f.sheet_of)
-                    + ': ' + image.mediaType + ' ' + String(image.width) + 'x' + String(image.height) + ')' },
+                    + ': ' + image.mediaType + ' ' + String(image.width) + 'x' + String(image.height) + hostVoice + ')' },
             { type: 'image', attachment: imageRefFromValue(image) },
         ];
     }
@@ -465,7 +471,7 @@ function viewedContent(value) {
             { type: 'text', text: 'melite_view audio: ' + value.url + ' (' + a.file
                     + (a.duration_s !== undefined ? ', ' + String(a.duration_s) + 's' : '')
                     + ', ' + String(a.size_bytes) + ' bytes'
-                    + ', streams: ' + streams + '; waveform sheet: ' + audio.mediaType + ' ' + String(audio.width) + 'x' + String(audio.height) + ')' },
+                    + ', streams: ' + streams + '; waveform sheet: ' + audio.mediaType + ' ' + String(audio.width) + 'x' + String(audio.height) + hostVoice + ')' },
             { type: 'image', attachment: imageRefFromValue(audio) },
         ];
     }
@@ -473,13 +479,13 @@ function viewedContent(value) {
         const m = value.mesh;
         return [
             { type: 'text', text: 'melite_view mesh: ' + value.url + ' (' + meshVoice(m)
-                    + '; poster: ' + m.poster + ')' },
+                    + '; poster: ' + m.poster + hostVoice + ')' },
             { type: 'image', attachment: imageRefFromValue(value.image) },
         ];
     }
     const still = value.image;
     return [
-        { type: 'text', text: 'melite_view: ' + value.url + ' (' + still.mediaType + ', ' + String(still.width) + 'x' + String(still.height) + ', ' + String(still.bytes) + ' bytes)' },
+        { type: 'text', text: 'melite_view: ' + value.url + ' (' + still.mediaType + ', ' + String(still.width) + 'x' + String(still.height) + ', ' + String(still.bytes) + ' bytes)' + hostVoice },
         { type: 'image', attachment: imageRefFromValue(still) },
     ];
 }
@@ -529,6 +535,7 @@ async function delegatedMeshPoster(root, runId, poster, exec, ctx, attachments, 
     return {
         runId,
         url: row.url,
+        host: join(root, 'output', row.runId, row.name),
         textObservation: 'melite_view mesh: ' + row.url + ' (' + meshVoice(summary)
             + '; poster: ' + posterName
             + '; VISUAL VERIFICATION via ' + seen.via + ' (a seeing route looked at the poster): ' + seen.verdict + ')',
@@ -615,6 +622,7 @@ export async function viewModelArtifact(seat, runId, artifact, exec, ctx, attach
     return {
         runId,
         url: row.url,
+        host: join(found.root, 'output', row.runId, row.name),
         image: { attachmentId: ref.attachmentId, mediaType, bytes: ref.bytes, width: ref.width, height: ref.height, name: basename(poster.name) },
         mesh: { ...summary, poster: posterName },
     };
@@ -658,6 +666,7 @@ export async function viewStillArtifact(root, row, runId, exec, ctx, attachments
             return {
                 runId,
                 url: row.url,
+                host: absPath,
                 textObservation: facts
                     + '; TEXT-ONLY observation — model "' + stillCapability.model
                     + '" declares no image input, so the file was not attached. The facts above are complete; the picture is what this route cannot have.',
@@ -666,6 +675,7 @@ export async function viewStillArtifact(root, row, runId, exec, ctx, attachments
         return {
             runId,
             url: row.url,
+            host: absPath,
             textObservation: facts
                 + '; VISUAL VERIFICATION via ' + seen.via + ' (a seeing route looked at the pixels): ' + seen.verdict,
         };
@@ -713,6 +723,7 @@ export async function viewStillArtifact(root, row, runId, exec, ctx, attachments
     const value = {
         runId: row.runId,
         url: row.url,
+        host: absPath,
         image: {
             attachmentId: ref.attachmentId,
             mediaType: ref.mediaType,

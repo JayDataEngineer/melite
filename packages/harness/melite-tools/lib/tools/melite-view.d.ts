@@ -1,11 +1,11 @@
 import type { EngineJson } from '@melite/comfyui-cordis';
 import type { Context } from '@deepseek-ai/cordis';
 import type { ImageAttachmentRef, ImageMediaType } from '@deepseek-ai/dsh-attachment';
-import type { ProbedStream } from './mp4Probe.ts';
-import type { MeshSummary } from './glbSummary.ts';
+import type { ProbedStream } from './mp4Probe.js';
+import type { MeshSummary } from './glbSummary.js';
 import type { MediaListRow } from '@melite/estate-media';
-import type { VisionQuestionKind, VisionRoute } from './vision-route.ts';
-import type { ToolDefinition } from '../types.ts';
+import type { VisionQuestionKind, VisionRoute } from './vision-route.js';
+import type { ToolDefinition } from '../types.js';
 /** Identify the media type declared by a supported image signature. */
 export declare function sniffImageMediaType(data: Uint8Array): ImageMediaType | undefined;
 /** Map a path to its declared image media type by extension. */
@@ -15,6 +15,12 @@ export declare function imageMediaTypeForPath(filePath: string): ImageMediaType 
 export interface ViewedImageValue {
     runId: string;
     url: string;
+    /** THE HOST-PATH VOICE (F7's twin, the warm-fire ls burn): the
+     *  artifact's path under the estate's output tree on the HOST —
+     *  the url above is the BROWSER lane's; an agent that read it as a
+     *  filesystem path met ENOENT. Present on every arm; the render
+     *  prints it so the model reads a path it can actually use. */
+    host?: string;
     /** THE TEXT-ONLY OBSERVE ARM: a route that declares no image input
      *  gets the measurements as text and NO image block (the contact
      *  sheet was never built). Present instead of `image`. */

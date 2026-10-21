@@ -63,7 +63,10 @@ async function trySeats(ctx, method, path, body, signal) {
         if (body === undefined || typeof body !== 'object' || body === null) {
             throw new Error('draft stage patch needs a JSON body');
         }
-        return seats.draftsRemote.patch(decodeURIComponent(m[1]), decodeURIComponent(m[2]), body, signal);
+        // expectRev NULL + signal in its own slot (the same seat law the
+        // typed lane obeys — the drift that killed every attribution
+        // stamp once lived on BOTH faces of this seam).
+        return seats.draftsRemote.patch(decodeURIComponent(m[1]), decodeURIComponent(m[2]), body, null, signal);
     }
     if (method === 'POST' && path === '/v1/bench/ensure') {
         if (seats.benchRemote === undefined)
@@ -434,7 +437,13 @@ export function makeEstate(ctx) {
     return {
         draftsList: lane('GET /v1/flows/drafts', BENCH_LANE, (s, signal) => s.draftsRemote === undefined ? undefined : s.draftsRemote.list(signal)),
         draftsGet: (draftId, signal, timeoutMs) => estateLane(ctx, `GET /v1/flows/drafts/${encodeURIComponent(draftId)}`, BENCH_LANE, (s) => s.draftsRemote === undefined ? undefined : s.draftsRemote.get(draftId, signal), signal, timeoutMs),
-        draftsStagePatch: (draftId, stageId, patch, signal, timeoutMs) => estateLane(ctx, `PATCH /v1/flows/drafts/${encodeURIComponent(draftId)}/stages/${encodeURIComponent(stageId)}`, BENCH_LANE, (s) => s.draftsRemote === undefined ? undefined : s.draftsRemote.patch(draftId, stageId, patch, signal), signal, timeoutMs),
+        draftsStagePatch: (draftId, stageId, patch, signal, timeoutMs) => estateLane(ctx, `PATCH /v1/flows/drafts/${encodeURIComponent(draftId)}/stages/${encodeURIComponent(stageId)}`, BENCH_LANE, 
+        // expectRev NULL, signal in its own slot: the tool stamps
+        // TELEMETRY (runStatus/result — the drafts door's telemetry
+        // law never fences those keys), so no CAS rev is ever spent;
+        // the signal must never ride expectRev's seat (the kill the
+        // seat-signature wall guards).
+        (s) => s.draftsRemote === undefined ? undefined : s.draftsRemote.patch(draftId, stageId, patch, null, signal), signal, timeoutMs),
         cardCompose: (body, signal, timeoutMs) => {
             signal.throwIfAborted();
             const work = cardComposeLane(ctx, seatsOf(ctx), body, signal);
