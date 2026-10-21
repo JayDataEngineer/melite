@@ -256,8 +256,22 @@ async function postBenchVerb(
   const attempt = (rev: unknown): Promise<Record<string, unknown>> =>
     estate.benchVerb(bench, verbPath,
       { ...body, expect_rev: rev }, signal, 15000) as Promise<Record<string, unknown>>
+  // THE AUTO-REV FRONT DOOR (session 90a0b920's friction map: the
+  // agent burned a whole bench read per mutation just to learn the
+  // rev — reads the render then told it to repeat): an omitted
+  // expect_rev takes the SAME path the rebase takes behind a
+  // conflict — one bounded read, the fresh rev, the write. The CAS
+  // door still guards every write; a race between the fill-read
+  // and the write meets the one-retry rebase below. Non-destructive
+  // verbs only (this helper's law); load's wholesale replacement
+  // keeps demanding the caller's own rev.
+  let rev0 = body['expect_rev']
+  if (rev0 === undefined || rev0 === null) {
+    const fresh = await readBench(estate, bench, signal)
+    if (typeof fresh['rev'] === 'number') rev0 = fresh['rev']
+  }
   try {
-    return await attempt(body['expect_rev'])
+    return await attempt(rev0)
   } catch (e) {
     if (!isCasConflict(e)) throw e
     const fresh = await readBench(estate, bench, signal)
@@ -498,8 +512,7 @@ export function meliteConstruct(
       + 'the last generation, bind its stage, never hunt its artifact on disk; kinds derive from the card\'s ports — '
       + 'state expected only to override, outputs only for custom channels) | remove_stage {stage} | clear (EVERY stage out in one rev; undo restores all — the cure when the bench itself is the wound) | rewire {stage, input, from?} (from is {stage, output} | '
       + '{initial} — same law: stage bindings, never paths) | undo {n?, author?} | validate (compile '
-      + 'check, no GPU). Mutations take expect_rev from your last read — a moved bench refuses 409 with '
-      + 'current_rev; re-read, re-apply. No ids anywhere: the bench is the one shared state.',
+      + "check, no GPU). Mutations take expect_rev from your last read — or omit it: the tool fills the fresh rev itself (one bounded read) and a moved bench still refuses 409 with current_rev, re-read, re-apply. No ids anywhere: the bench is the one shared state.",
     parameters: {
       verb: {
         type: 'string',
@@ -565,7 +578,7 @@ export function meliteConstruct(
       },
       n: { type: 'number', description: 'undo: how many entries (default 1).' },
       author: { type: 'string', description: 'undo: "agent" (default) | "user" — whose entries to revert.' },
-      expect_rev: { type: 'number', description: 'CAS: the rev from your last read (required on mutations).' },
+      expect_rev: { type: 'number', description: 'CAS: the rev from your last read. Optional on non-destructive mutations — omitted, the tool reads the fresh rev itself (one bounded read); supply it to assert the state you saw.' },
     },
     presentCall,
     output: {
@@ -816,12 +829,17 @@ export function meliteConstruct(
           // the params spell tokens (the read births the same bench
           // the patch below writes, so it adds no cross-bench state).
           let wiredInputs: unknown
+          // the spell read doubles as the AUTO-REV fill when the
+          // caller brought no rev — one bounded read serves both
+          // (the fill never adds a second read on this path)
+          let rev0 = a.expect_rev
           if (spellTokensIn(a.params).length > 0) {
             const b = await readBench(estate, bench, signal)
             wiredInputs = inputsOfStageRow(projectStages(b.stages), a.stage)
+            if (rev0 === undefined && typeof b.rev === 'number') rev0 = b.rev
           }
           const r = await postBenchVerb(estate, bench, 'patch',
-            { stage: a.stage, params: a.params, expect_rev: a.expect_rev }, signal)
+            { stage: a.stage, params: a.params, expect_rev: rev0 }, signal)
           const spellLines = spellVoiceOf(a.params, wiredInputs)
           return out({ rev: r.rev, stage: r.stage, patched: r.patched, ...(spellLines.length > 0 ? { spells: spellLines } : {}) })
         }

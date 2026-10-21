@@ -356,6 +356,43 @@ describe('melite_construct mutations — every verb', () => {
     assert.deepEqual(seen[0]!.args[0], { session: 'main', stages, intent: 'make art', overwrite: true, expect_rev: 4 })
   })
 
+  // THE AUTO-REV FRONT DOOR (session 90a0b920's friction map: the
+  // agent burned a whole bench read per mutation just to learn the
+  // rev, then the render told it to repeat). An omitted expect_rev
+  // takes the rebase's own path: one bounded read, the fresh rev,
+  // the write — the CAS door still guards every write.
+  test('an omitted expect_rev fills from one bounded read (the mutation never demands a prior read call)', async () => {
+    const { seen, estate } = mockEstate((lane, args) => {
+      if (lane === 'benchGet' && args[0] === 'main') return { session: 'main', rev: 9, intent: '', stages: [{ id: 's1' }], log: [] }
+      if (lane === 'benchVerb' && args[1] === 'patch') return { rev: 10, stage: 's1', patched: ['p'] }
+      throw new Error('unmocked lane ' + lane)
+    })
+    const tool = meliteConstruct(estate)
+    const out = await tool.execute(
+      { verb: 'patch', stage: 's1', params: { p: 1 } },
+      exec(),
+    ) as Record<string, unknown>
+    assert.equal(out.rev, 10)
+    // the fill-read precedes the write, and the write carries the
+    // read's rev — never undefined
+    assert.equal(seen[0]!.lane, 'benchGet')
+    assert.equal(seen[1]!.lane, 'benchVerb')
+    assert.deepEqual(seen[1]!.args[2], { stage: 's1', params: { p: 1 }, expect_rev: 9 })
+    // ONE read — the fill is bounded, not a loop
+    assert.equal(seen.filter((r) => r.lane === 'benchGet').length, 1)
+  })
+
+  test('a supplied expect_rev skips the fill-read entirely (the caller saw the state)', async () => {
+    const { seen, estate } = mockEstate((lane, args) => {
+      if (lane === 'benchVerb' && args[1] === 'patch') return { rev: 11, stage: 's1', patched: ['p'] }
+      throw new Error('unmocked lane ' + lane)
+    })
+    const tool = meliteConstruct(estate)
+    await tool.execute({ verb: 'patch', stage: 's1', params: { p: 1 }, expect_rev: 5 }, exec())
+    assert.deepEqual(seen.map((r) => r.lane), ['benchVerb'])
+    assert.deepEqual(seen[0]!.args[2], { stage: 's1', params: { p: 1 }, expect_rev: 5 })
+  })
+
   test('patch merges params onto one stage', async () => {
     const { seen, estate } = mockEstate((lane, args) => {
       if (lane === 'benchVerb' && args[1] === 'patch') return { rev: 6, stage: 's1', patched: ['p'] }
@@ -1519,6 +1556,8 @@ describe('melite_construct — THE SPELL VOICE (compose-time spell judgement)', 
   test('add_stage: the SESSION BURN shape — an unwired $spell reads request_initial and the voice teaches the two legal sources', async () => {
     const { estate } = mockEstate((lane, args) => {
       if (lane === 'benchVerb' && args[1] === 'add_stage') return ADD_ANSWER
+      // the AUTO-REV fill (rev-less mutations read once)
+      if (lane === 'benchGet') return { session: 'main', rev: 1, intent: '', stages: [], log: [] }
       throw new Error('unmocked lane ' + lane)
     })
     const out = await meliteConstruct(estate).execute({
@@ -1568,13 +1607,22 @@ describe('melite_construct — THE SPELL VOICE (compose-time spell judgement)', 
     // the bounded read rode the bench (the wired truth), exactly once
     assert.equal(seen.filter((entry) => entry.lane === 'benchGet').length, 1)
 
-    // and a spell-free patch pays NO read at all
+    // a spell-free patch with the rev in hand pays NO read at all
     seen.length = 0
     const lean = await tool.execute({
-      verb: 'patch', stage: 's_1', params: { prompt: 'a cat' },
+      verb: 'patch', stage: 's_1', params: { prompt: 'a cat' }, expect_rev: 4,
     }, fakeExec(AbortSignal.timeout(5000), { agent: { id: 's_chat7' } })) as Record<string, unknown>
     assert.equal('spells' in lean, false)
     assert.equal(seen.filter((entry) => entry.lane === 'benchGet').length, 0)
+
+    // AUTO-REV: rev-less, the spell-free patch pays exactly ONE read
+    // (the fill) and spells stay absent — the spell gate never opens
+    seen.length = 0
+    const filled = await tool.execute({
+      verb: 'patch', stage: 's_1', params: { prompt: 'a cat' },
+    }, fakeExec(AbortSignal.timeout(5000), { agent: { id: 's_chat7' } })) as Record<string, unknown>
+    assert.equal('spells' in filled, false)
+    assert.equal(seen.filter((entry) => entry.lane === 'benchGet').length, 1)
   })
 
   test('THE RENDER IS THE MODEL\'S READ: the minted stage id and the spell lines print (the 107-call cure)', async () => {
