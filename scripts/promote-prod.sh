@@ -23,10 +23,12 @@
 # ROLLBACK: `promote-prod.sh --rollback` restarts prod onto the
 # recorded prior HEAD (the service runs from this repo tree).
 set -euo pipefail
+# deployment env (.env is gitignored; .env.example documents every knob)
+[ -f ./.env ] && . ./.env   # env-file loaded
 
 PROD_UNIT="dsh-web.service"
-PROD_URL="https://cloud.tailb1e597.ts.net:3080"
-DEV_URL="https://cloud.tailb1e597.ts.net:3088"
+PROD_URL="${MELITE_PROD_URL:-http://127.0.0.1:3080}"
+DEV_URL="${MELITE_DEV_URL:-http://127.0.0.1:3088}"
 STATE_FILE="/tmp/promote-prod.last"
 TOKEN="${DSH_PROD_TOKEN:?DSH_PROD_TOKEN must name the prod bearer (never committed)}"
 

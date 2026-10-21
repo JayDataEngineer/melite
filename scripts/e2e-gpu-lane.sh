@@ -32,6 +32,8 @@ LOG=/tmp/e2e-gpu-lane.log
 ENGINE_URL="${E2E_GPU_ENGINE:-http://127.0.0.1:8188}"
 REPO_ROOT="$(cd -- "${BASH_SOURCE[0]%/*}/.." && pwd)"
 cd "$REPO_ROOT"
+# deployment env (.env is gitignored; .env.example documents every knob)
+[ -f ./.env ] && . ./.env   # env-file loaded
 DSH_BIN="${DSH_BIN:-dsh}"
 CARD_VIEW_FILTER="${CARD_VIEW_FILTER:-@melite-plugin/dsh-card-view}"
 

@@ -21,9 +21,11 @@
 set -euo pipefail
 REPO="$(git -C "$(dirname "$0")/.." rev-parse --show-toplevel)"
 cd "$REPO"
+# deployment env (.env is gitignored; .env.example documents every knob)
+[ -f ./.env ] && . ./.env   # env-file loaded
 
 PROFILE="${LANE_PROFILE:-melite-test}"
-DSH_HOME="${LANE_DSH_HOME:-/home/user/.dsh-dev}"
+DSH_HOME="${LANE_DSH_HOME:-$HOME/.dsh-dev}"
 # The seat is the PRIMARY brain (zai/glm-5.3-flash, same as :3080's
 # MELITE_AGENT_ROUTE). It sat on the muse FALLBACK until 2026-10-20 —
 # every lane-sync re-pin stuck the lane on muse and the rate-limit

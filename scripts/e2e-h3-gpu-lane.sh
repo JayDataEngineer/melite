@@ -49,7 +49,9 @@ LOG=/tmp/e2e-h3-lane.log
 ENGINE_URL="${E2E_H3_ENGINE:-${E2E_GPU_ENGINE:-http://127.0.0.1:8188}}"
 # The engine's weights tree — the operator's real tree. The lane
 # READS it (the weights gate); it never provisions or mutates it.
-WEIGHTS_ROOT="${MELITE_H3_WEIGHTS_ROOT:-/home/user/tools/comfyui/models}"
+# deployment env (.env is gitignored; .env.example documents every knob)
+[ -f ./.env ] && . ./.env   # env-file loaded
+WEIGHTS_ROOT="${MELITE_H3_WEIGHTS_ROOT:-$HOME/tools/comfyui/models}"
 REPO_ROOT="$(cd -- "${BASH_SOURCE[0]%/*}/.." && pwd)"
 cd "$REPO_ROOT"
 DSH_BIN="${DSH_BIN:-dsh}"

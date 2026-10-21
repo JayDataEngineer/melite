@@ -22,6 +22,8 @@ LOG=/tmp/e2e-studio-lane.log
 # must never stand between the prereq gates and their verdict.
 REPO_ROOT="$(cd -- "${BASH_SOURCE[0]%/*}/.." && pwd)"
 cd "$REPO_ROOT"
+# deployment env (.env is gitignored; .env.example documents every knob)
+[ -f ./.env ] && . ./.env   # env-file loaded
 DSH_BIN="${DSH_BIN:-dsh}"
 CARD_VIEW_FILTER="${CARD_VIEW_FILTER:-@melite-plugin/dsh-card-view}"
 

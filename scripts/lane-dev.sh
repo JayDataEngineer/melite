@@ -18,6 +18,8 @@
 # — that script restarts the lane; this one hot-swaps browser plugins.
 set -euo pipefail
 cd "$(dirname "$0")/.."
+# deployment env (.env is gitignored; .env.example documents every knob)
+[ -f ./.env ] && . ./.env   # env-file loaded
 
 PORT=3088
 LOG="$HOME/.dsh-dev/melite-test-3088.log"

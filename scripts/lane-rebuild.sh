@@ -21,7 +21,9 @@
 # that tree; a hand-cp is a lie that the next render erases.
 set -euo pipefail
 cd "$(dirname "$0")/.."
-LOG=/home/user/.dsh-dev/melite-test-3088.log
+# deployment env (.env is gitignored; .env.example documents every knob)
+[ -f ./.env ] && . ./.env   # env-file loaded
+LOG="$HOME/.dsh-dev/melite-test-3088.log"
 PORT=3088
 # THE RENDER CONTRACT (the model-loss cure, 2026-11-06): the profile
 # render MUST carry the same flags lane-sync uses — a FLAGLESS render
@@ -30,7 +32,7 @@ PORT=3088
 # the agentRoute pin: the lane then boots with ZERO LLM models while
 # the script's llm-blind receipts still print success.
 PROFILE="${LANE_PROFILE:-melite-test}"
-DSH_HOME="${LANE_DSH_HOME:-/home/user/.dsh-dev}"
+DSH_HOME="${LANE_DSH_HOME:-$HOME/.dsh-dev}"
 # The seat is the PRIMARY brain (zai/glm-5.3-flash, same as :3080's
 # MELITE_AGENT_ROUTE). It sat on the muse FALLBACK until 2026-10-20 —
 # every lane-sync re-pin stuck the lane on muse and the rate-limit
@@ -139,5 +141,5 @@ else
 fi
 echo ""
 echo "OPEN IN A VIRGIN BROWSER (zero cache exists anywhere):"
-echo "  ${TOKEN_URL/127.0.0.1/cloud.tailb1e597.ts.net}"
+echo "  ${TOKEN_URL/127.0.0.1/${MELITE_PUBLIC_HOST:-127.0.0.1}}"
 echo "  (local fallback: $TOKEN_URL)"

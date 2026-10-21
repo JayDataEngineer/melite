@@ -32,8 +32,17 @@
 set -uo pipefail
 
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-UNIT="dsh-melite-test.service"
-ORIGIN="${MELITE_LANE_ORIGIN:-https://cloud.tailb1e597.ts.net:3088}"
+# deployment env (.env is gitignored; .env.example documents every knob)
+_ENV_FILE="${REPO}/.env"
+[ -f "$_ENV_FILE" ] && . "$_ENV_FILE"   # env-file loaded
+# THE SANCTIONED PAIR (unit + origin bind as one lane — the check
+# below refuses an override of either alone). Deployment-specific:
+# override BOTH via env (MELITE_SHIP_UNIT + MELITE_LANE_ORIGIN) or
+# edit these defaults — never bake a private host into the tree.
+SANCTIONED_UNIT="${MELITE_SHIP_UNIT:-dsh-melite-test.service}"
+SANCTIONED_ORIGIN="${MELITE_LANE_ORIGIN:-http://127.0.0.1:3088}"
+UNIT="$SANCTIONED_UNIT"
+ORIGIN="$SANCTIONED_ORIGIN"
 DO_BUILD=1
 CHECK_ONLY=0
 
@@ -65,7 +74,7 @@ done
 # unless BOTH name the sanctioned lane. (A second lane gets its own
 # playbook entry, not a flag soup.)
 if [ "${UNIT_OVERRIDE:-0}" = "1" ] || [ "${ORIGIN_OVERRIDE:-0}" = "1" ]; then
-  if [ "$UNIT" != "dsh-melite-test.service" ] || [ "$ORIGIN" != "https://cloud.tailb1e597.ts.net:3088" ]; then
+  if [ "$UNIT" != "$SANCTIONED_UNIT" ] || [ "$ORIGIN" != "$SANCTIONED_ORIGIN" ]; then
     bad "--unit/--origin must name the sanctioned lane together (unit $UNIT, origin $ORIGIN)"
     echo "        A ship that restarts one lane and proves another certifies nothing."
     echo "        Edit the defaults at the top of this script to move the lane."

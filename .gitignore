@@ -73,6 +73,7 @@ __pycache__/
 inference.config.json
 .env
 .env.*
+!.env.example
 
 # === OS / editor ===
 .DS_Store
