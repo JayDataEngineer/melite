@@ -1,0 +1,698 @@
+/* card.module.css — @melite/card-base: the atoms' own skin, moved
+ * verbatim from the card-view module (the base owns its classes; the
+ * consumer's chrome still wraps the constructor's output). */
+.specForm :where(input, textarea, select, button) {
+  box-sizing: border-box;
+}
+
+.specForm {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.specGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+/* THE MODEL AXES (the pass-along law): Model/Variant/Quant ride one
+ * row ABOVE the parameter groups — three selects side by side.
+ * THE CLEAN-ROW LAW (operator 2026-09-23, the sound-cards catch):
+ * the zone owns EXACTLY TWO RAILS — never auto-fit. The pair's
+ * halves (Model|Variant) and every row below (Quant under Model,
+ * the recipe select under Variant) share the SAME two column
+ * lines; auto-fit made the rail count follow the panel width, so
+ * the rows below the pair staggered off its rails ("not aligned
+ * in a clean row"). minmax(0) both rails: long option faces
+ * shrink, the zone never wraps. */
+.modelAxes {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+/* the zone title SPANS the row — the h4 is a grid CHILD by default
+ * and was eating the first cell (the empty slot under "Model", the
+ * operator's lane report: "nothing is placed under the MODEL intro
+ * title area, it takes up two vertical slots"). The download
+ * prompt spans the same way — a full-row hint line, never a rail
+ * cell (the clean-row law). */
+.modelAxes .specGroupTitle { grid-column: 1 / -1; margin-bottom: 0; }
+.modelAxes > .specHint { grid-column: 1 / -1; }
+/* THE MODEL+VARIANT PAIR (the pass-along law, enforced): Model and
+ * Variant ride ONE row — a dedicated 1fr 1fr pair that NEVER
+ * wraps; its halves ARE the zone's two rails (the clean-row law
+ * above), so the rows below align to the very same column lines.
+ * minmax(0) both halves so long option faces shrink instead of
+ * forcing the row wider than the panel. */
+.axesPair {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 10px;
+  grid-column: 1 / -1;
+  align-items: start;
+}
+.axesPair > * { min-width: 0; }
+.specGroupTitle {
+  color: var(--dsw-alias-label-secondary);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  margin: 0 0 2px;
+  text-transform: uppercase;
+}
+.specField {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.specFieldKey {
+  color: var(--dsw-alias-label-secondary);
+  font-size: 12px;
+  /* STROKE 84 (the operator's row law): the key line is a HEADER
+   * seat — the seed's dice makes its line 20px tall with the label
+   * centered, while diceless fields (Width/Height beside Seed)
+   * rendered a bare ~14px text line: same-row labels sat at
+   * different heights. ONE key-line height everywhere — labels
+   * center in the same 20px band, dice or no dice. */
+  align-items: center;
+  display: flex;
+  min-height: 20px;
+}
+.specRequired { color: var(--dsw-alias-state-critical, #e5484d); }
+.specHint {
+  color: var(--dsw-alias-label-secondary);
+  font-size: 11px;
+}
+/* THE LANE WARN STRIP (2026-10-10, the YOU_ARE_A_LIAR fix shape 4:
+ * "the form gates inline from the same declaration"): the lane's
+ * relation/surface violations over the CURRENT form state — the
+ * same judgment the bench-write refusal rides, rendered while the
+ * user types. Critical-tinted prose, one row per violation, the
+ * cure riding the message; never a modal, never a toast that
+ * leaves the field. */
+.laneWarn {
+  border-top: 1px solid var(--dsw-alias-state-critical, #e5484d);
+  border-bottom: 1px solid var(--dsw-alias-state-critical, #e5484d);
+  color: var(--dsw-alias-state-critical, #e5484d);
+  font-size: 11px;
+  line-height: 1.5;
+  padding: 6px 0;
+  margin: 0;
+}
+.laneWarn p { margin: 0; }
+/* THE INFO GLYPH (hour 21, the operator's law: "the primitives
+ * should expose an (i) icon so on hover you can see the description
+ * to the right of the parameter label"): the declaration's help
+ * prose rides a hover tooltip on a circled (i) inline with the
+ * label — NEVER a flat always-visible line under the field (the
+ * old face broke the row geometry). Space is CONFIRMED inline:
+ * a fixed 12px circle + 5px gap, cursor help, select-proof. */
+.specInfo {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 12px;
+  height: 12px;
+  margin-left: 5px;
+  border: 1px solid var(--dsw-alias-label-secondary);
+  border-radius: 50%;
+  font-size: 9px;
+  font-style: italic;
+  font-family: Georgia, 'Times New Roman', serif;
+  line-height: 1;
+  color: var(--dsw-alias-label-secondary);
+  cursor: help;
+  vertical-align: middle;
+  user-select: none;
+  flex: none;
+}
+/* THE SEED DICE (stroke 39): the key line becomes a header — name
+   left, dice right (the operator's placement law: "top right,
+   across from Seed"). The pip fill IS the state: filled = random
+   (a new seed every run), hollow = fixed. */
+.specFieldHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+.specDice {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--dsw-alias-label-secondary);
+  cursor: pointer;
+  opacity: 0.65;
+}
+.specDice:hover { opacity: 1; }
+.specDiceOn { color: var(--dsw-alias-accent-primary, #4a7dbd); opacity: 1; }
+
+/* ══ THE POPUP FACE — THE ONE OWNER ══════════════════════════
+ * `color: inherit` is light text on the dark theme while the
+ * browser's dropdown popup defaults to a white list, so every option
+ * reads invisible until highlighted. Option rows pin a LIGHT popup
+ * with dark text: deterministic on every theme, and the closed select
+ * keeps the card's own inherited face. Canvas/CanvasText are the
+ * popup's own system colors — UA chrome no DSH token can paint — and
+ * they follow the select's own color-scheme: light.
+ *
+ * THE RULE IS ELEMENT-SCOPED AND WRITTEN ONCE HERE, in card-base (the
+ * sheet every card loads), because a per-stylesheet copy drifted
+ * already: a copied skin carried the closed face and not this one, and
+ * every studio dropdown regressed to invisible options. A select that
+ * wants this popup pairs it with color-scheme: light; no stylesheet
+ * restates the pair. */
+select option {
+  background: Canvas;
+  color: CanvasText;
+}
+
+.specSelect { color-scheme: light; }
+.specSelect {
+  background: var(--dsw-alias-interactive-bg-hover);
+  border: 0.5px solid var(--dsw-alias-border-l2);
+  border-radius: 6px;
+  /* (burn 5, 2026-11-10: the single-model STATIC face is a div, not
+   * a DSH Button — the sheet's own border-box reset names only form
+   * controls, so the pill computed content-box and width:100% PLUS
+   * padding painted 17px under the Variant button on every
+   * single-family card. The pill owns its box on itself — harmless
+   * where the reset already applies.) */
+  box-sizing: border-box;
+  color: inherit;
+  font: inherit;
+  font-size: 13px;
+  padding: 5px 8px;
+  width: 100%;
+  /* (operator 2026-11-05: "PASTES THE TEXT OUTSIDE THE BOX" /
+   * "PILL OVERFLOWS") — the face clamps to one line, ellipsis; the
+   * full text rides the title. */
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* THE FACE'S OWN CLAMP (operator 2026-11, defect 2: the dropdown
+ * pills/badges "sometimes" overflow instead of being cut off):
+ * .specSelect's block+ellipsis only holds while the cascade puts
+ * this sheet after DSH's Button.module.css — the Button base is
+ * display:inline-flex and a flex container IGNORES text-overflow, so
+ * a late-loading primitives sheet resurrected the spill. The anchor's
+ * label rides this span: a flex item with min-width:0 +
+ * overflow:hidden clamps under ANY cascade order (the button-level
+ * rules stay as the belt; this is the suspenders). */
+.specSelectText {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* The single-model static face (2026-11-05): a stated value, never
+ * a dead dropdown — non-interactive, titled, the same clamp. */
+.specSelectStatic { cursor: default; }
+.specSliderRow {
+  align-items: center;
+  display: flex;
+  gap: 8px;
+}
+.specSlider { flex: 1 1 0%; accent-color: var(--dsw-alias-accent, #3b82f6); }
+/* the mixed knob's typed face: a compact box beside the track —
+ * one value, two faces (swipe + type, operator 2026-11-05) */
+.specSliderInput {
+  font-family: var(--dsw-alias-font-mono, ui-monospace, monospace);
+  font-size: 12px;
+  min-width: 6ch;
+  text-align: right;
+  width: 7ch;
+}
+.specSliderValue {
+  color: var(--dsw-alias-label-secondary);
+  font-family: var(--dsw-alias-font-mono, ui-monospace, monospace);
+  font-size: 12px;
+  min-width: 4ch;
+  text-align: right;
+}
+.specTextarea {
+  background: var(--dsw-alias-interactive-bg-hover);
+  border: 0.5px solid var(--dsw-alias-border-l2);
+  border-radius: 6px;
+  color: inherit;
+  font: inherit;
+  font-size: 13px;
+  padding: 6px 8px;
+  resize: vertical;
+  width: 100%;
+}
+.squareWrap { align-items: center; display: flex; flex-direction: column; gap: 4px; width: 84px; }
+.squareOff { opacity: 0.5; pointer-events: none; }
+.squareBox {
+  align-items: center; border: 0.5px solid var(--dsw-alias-border-l2);
+  border-radius: 8px; cursor: pointer; display: flex; height: 80px; justify-content: center;
+  overflow: hidden; position: relative; transition: border-color var(--ds-transition-duration) var(--ds-ease-in-out);
+  width: 80px;
+}
+.squareOver { border-color: var(--dsw-alias-border-l3); box-shadow: 0 0 0 2px var(--dsw-alias-border-l1); }
+.squareThumb { height: 100%; object-fit: cover; width: 100%; }
+/* THE MESH THUMB (primitive ③, 2026-09-21): the inline mini GLB
+   viewport, absolutely filling the same 80px square the image thumb
+   fills — the mesh atom lives INSIDE the one square grammar. */
+.squareMesh { inset: 0; pointer-events: none; position: absolute; }
+.squareGlyph { color: var(--dsw-alias-label-tertiary); }
+.squareEmptyIcon { align-items: center; display: flex; }
+.squareHeld { color: var(--dsw-alias-label-secondary); font-size: 9px; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.squareActions { align-items: flex-end; display: flex; inset: 0; justify-content: flex-end; padding: 4px; pointer-events: none; position: absolute; }
+.squareActions > * { pointer-events: auto; }
+/* THE CHIP CONTRAST LAW (2026-10-02, the operator's recurring blank
+   ✕): `--dsw-alias-bg-module` is not a DSH token — the theme defines
+   `--dsw-alias-bg-module-platform`, and the dead name always fell
+   through to this rule's own `#fff`. That painted a WHITE chip on
+   the dark module while `--dsw-alias-label-primary` (measured
+   rgb(249,250,251) on the live lane) painted a near-white glyph on
+   it: the detach ✕ and the pick icon were both invisible, measured in
+   Chromium at 1.005:1 contrast. A chip now paints the theme's solid
+   interactive surface with its content in the primary label — the pair
+   inverts correctly in both schemes. The fill carries NO hard-coded
+   fallback: a fallback literal is exactly how the white chip returned,
+   and the shipped rules name only tokens the theme defines.
+   card-base/tests/chip-contrast.spec.ts fails the build if a chip rule
+   regresses to a dead name or a literal fill. */
+.squarePick {
+  align-items: center; background: var(--dsw-alias-interactive-bg-hover-solid); border: 0.5px solid var(--dsw-alias-border-l2);
+  border-radius: 999px; color: var(--dsw-alias-label-primary); cursor: pointer; display: flex; height: 22px;
+  justify-content: center; left: 4px; padding: 0; position: absolute; top: 4px; width: 22px;
+}
+.squareBadge { color: var(--dsw-alias-label-secondary); font-size: 10px; line-height: 17px; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.squareX {
+  align-items: center; background: var(--dsw-alias-interactive-bg-hover-solid); border: 0.5px solid var(--dsw-alias-border-l2);
+  border-radius: 999px; color: var(--dsw-alias-label-primary); cursor: pointer; display: flex; font-size: 10px; line-height: 17px;
+  padding: 0 4px; position: absolute; right: 4px; top: 4px;
+}
+.squareLabel { color: var(--dsw-alias-label-primary); font-size: 11px; line-height: 17px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; width: 100%; }
+.squareMetric { color: var(--dsw-alias-label-tertiary); font-size: 10px; line-height: 17px; }
+.squareFileInput { display: none; }
+
+/* ── the mod system (moved from the view — core, 2026-09-12) ────────── */
+.modSection { display: flex; flex-direction: column; gap: 6px; margin-top: 10px; padding-top: 8px; border-top: 1px dashed var(--border, rgba(128,128,128,.25)); }
+.modHead { display: flex; align-items: baseline; gap: 8px; }
+.modTitle { font-size: 10px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; opacity: .7; }
+.modHint { font-size: 9px; opacity: .45; }
+.modRow { display: flex; flex-wrap: wrap; gap: 6px; align-items: stretch; list-style: none; margin: 0; padding: 0; }
+.modTile { display: flex; flex-direction: column; gap: 2px; justify-content: center; min-width: 84px; max-width: 132px; padding: 6px 8px; border: 1px solid var(--border, rgba(128,128,128,.3)); border-radius: 8px; background: var(--bg-elevated, rgba(128,128,128,.08)); cursor: grab; touch-action: none; }
+.modTile:active { cursor: grabbing; }
+.modTileLabel { font-size: 11px; line-height: 1.2; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.modTileStrength { font-size: 9px; opacity: .55; }
+/* THE STEPS BADGE (#38): the effective distill count beside strength. */
+.modTileSteps { font-size: 9px; opacity: .55; font-variant-numeric: tabular-nums; }
+.modAddSquare {
+  align-items: center; background: transparent;
+  border: 1px dashed var(--dsw-alias-border-l3); border-radius: 8px;
+  cursor: pointer; display: flex; height: 64px; justify-content: center; opacity: .7;
+  transition: border-color var(--ds-transition-duration) var(--ds-ease-in-out),
+    background-color var(--ds-transition-duration) var(--ds-ease-in-out);
+  width: 64px;
+}
+.modAddSquare:hover {
+  background: var(--dsw-alias-interactive-bg-hover);
+  border-color: var(--dsw-alias-border-l4);
+  opacity: 1;
+}
+.tileDragging { opacity: .5; }
+/* RECIPE-OWNED MOD ROWS (hour-26 stroke 16): the card recipe's mod
+ * payload — read-only, never dragged, never edited (the user layer
+ * never carries them; compose concats ahead of the caller's). */
+.modTileRecipe { border-style: dashed; cursor: default; }
+.modTileRecipe .modTileStrength::after { content: " · recipe"; }
+/* THE ACTION-CARD SHAPE (2026-10-08, the operator's "too tall, no
+ * scroll" verdict): the mod leaf popup rides the action card's own
+ * bounding grammar (CardDrill/.wireDialog): viewport-bounded, the
+ * modal card itself scrolls — the embedded canvas seats at the top,
+ * the knobs ride under it. No colors here (layout only — the color
+ * law stays with the leaf chrome). */
+/* THE MULTI-SELECT CHIPS (the YOLO-classes law): toggle pills over
+ * a detector-owned vocabulary — modTile's own token pattern (the
+ * color law: aliases with fallbacks, no literals). */
+.specChips { display: flex; flex-wrap: wrap; gap: 4px; }
+
+.modLeafModal { width: min(760px, calc(100vw - 32px)); max-height: min(80vh, 760px); overflow-y: auto; }
+
+/* THE ACTION-CARD SPLIT (CardDrill's grammar: preview LEFT, knobs
+ * RIGHT): the canvas column holds its own (the face sizes itself),
+ * the knobs column stays a single compact stack. Narrow viewports
+ * fall back to one column (the canvas rides on top). */
+.modLeafSplit { display: grid; grid-template-columns: minmax(0, 7fr) minmax(240px, 5fr); gap: 12px; align-items: start; }
+.modLeafStage { min-width: 0; }
+.modStageCaption { font-size: 10px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; opacity: .7; }
+@media (max-width: 720px) { .modLeafSplit { grid-template-columns: minmax(0, 1fr); } }
+
+.modLeaf { display: flex; flex-direction: column; gap: 10px; min-width: 260px; }
+.modLeafFields { display: grid; gap: 8px; }
+.modLeafActions { display: flex; gap: 8px; }
+.modField { display: flex; flex-direction: column; gap: 4px; font-size: 11px; }
+.modLeafError { margin: 0; font-size: 11px; color: #e06c5f; }
+
+/* THE PICKER MODAL (2026-09-13, the source-row stroke) — the default
+ * face of the From flow / From media selector. Token-only colors. */
+.pickList {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  list-style: none;
+  margin: 0;
+  max-height: 60vh;
+  overflow-y: auto;
+  padding: 0;
+}
+
+.pickRow {
+  display: block;
+}
+
+.pickBtn {
+  align-items: center;
+  background: transparent;
+  border: 1px solid var(--dsw-alias-border-l2);
+  border-radius: 6px;
+  color: var(--dsw-alias-label-primary);
+  cursor: pointer;
+  display: flex;
+  gap: 10px;
+  padding: 6px;
+  text-align: left;
+  transition: border-color var(--ds-transition-duration) var(--ds-ease-in-out),
+    background-color var(--ds-transition-duration) var(--ds-ease-in-out);
+  width: 100%;
+}
+
+.pickBtn:hover {
+  background: var(--dsw-alias-interactive-bg-hover);
+  border-color: var(--dsw-alias-border-l4);
+}
+
+.pickThumb {
+  border-radius: 4px;
+  flex: none;
+  height: 40px;
+  object-fit: cover;
+  width: 40px;
+}
+
+.pickGlyph {
+  align-items: center;
+  background: var(--dsw-alias-interactive-bg-hover);
+  border-radius: 4px;
+  color: var(--dsw-alias-label-secondary);
+  display: inline-flex;
+  flex: none;
+  font-size: 15px;
+  font-weight: 600;
+  height: 40px;
+  justify-content: center;
+  width: 40px;
+}
+
+.pickLabel {
+  font-size: 13px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pickEmpty {
+  color: var(--dsw-alias-label-tertiary);
+  font-size: 13px;
+  margin: 0;
+}
+
+.sourceRow { display: flex; flex-direction: column; }
+
+/* THE REFUSAL FACE (2026-10-24): a failed upload's voice under the
+ * square — danger color, never a param value. */
+.sourceRowErr { margin: 2px 0 0; font-size: 11px; color: #e06c5f; word-break: break-word; }
+
+/* THE SLOT ROW (2026-09-13, the old melite's input-zone grammar): the
+ * slot-shaped fields of one group render side-by-side — their labels
+ * live under their squares, not in stacked key rows. Token-only. */
+.specSlotRow { display: flex; flex-wrap: wrap; gap: 8px; align-items: flex-start; }
+
+/* THE DECL GRID (stroke 22, the operator's law: "smaller things
+ * like width/height need to take up one row and not 2"): when the
+ * card package's fields declare `columns` (the group's grid), the
+ * group renders as a grid and each field spans its declared
+ * `width`. The DECL owns the geometry — the form renders it. */
+.specGrid { display: grid; gap: 8px; align-items: start; }
+.specSlotCell { display: flex; flex-direction: column; gap: 4px; }
+
+/* THE INPUT RAIL (the operator's law: cards emit input signatures —
+ * clean data in, ONE rail out). The input zone is the rail: squares in
+ * declared-signature order, the list row in the same zone. */
+.inputRail { gap: 10px; }
+
+/* THE INPUT STACK (#37, the operator's law: the input rows laid out
+ * "like the additive mod thing"): ONE grammar with the mods' own bag
+ * — the head names the list ABOVE the row (modHead/modTitle/
+ * modHint, one skin), the cells flow in one wrap row, the add-cell
+ * rides inline after the last cell wearing the mods' dashed
+ * plus-square face. Never an inline caption beside the first
+ * square, never a repeated list name under every cell. */
+.specStack { display: flex; flex-direction: column; gap: 6px; }
+[data-stack-add] .squareBox { border-style: dashed; }
+
+/* == THE WIRE PICKER (promoted from the mask-studio local port,
+   hour 25 stroke 17 - one shared component; the audit found the
+   ideogram4 slot is a canvas bridge and motion has no source face,
+   so this is the one true bespoke port left) ==================== */
+.sz14 { width: 14px; height: 14px; flex: none; }
+.wireDialog { width: min(448px, calc(100vw - 32px)); max-height: 60vh; overflow-y: auto; }
+.wireUnwire {
+  display: flex; width: 100%; align-items: center; gap: 8px; padding: 8px 12px;
+  font-size: 11px; text-align: left; cursor: pointer; background: transparent; border: 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--dsw-alias-label-primary) 12%, transparent);
+  color: var(--dsw-alias-state-error-primary);
+}
+.wireUnwire:hover {
+  background: color-mix(in srgb, var(--dsw-alias-bg-module-platform) 40%, transparent);
+}
+.wireList {
+  list-style: none; margin: 0; padding: 0;
+}
+.wireList > li + li {
+  border-top: 1px solid color-mix(in srgb, var(--dsw-alias-label-primary) 12%, transparent);
+}
+.wireEmpty {
+  padding: 12px; font-size: 11px;
+  color: color-mix(in srgb, var(--dsw-alias-label-primary) 48%, transparent);
+}
+.wireOption {
+  display: flex; width: 100%; align-items: center; gap: 8px; padding: 8px 12px;
+  text-align: left; cursor: pointer; background: transparent; border: 0;
+  color: var(--dsw-alias-label-primary);
+}
+.wireOption:hover {
+  background: color-mix(in srgb, var(--dsw-alias-bg-module-platform) 40%, transparent);
+}
+.wireSelected {
+  background: color-mix(in srgb, var(--dsw-alias-brand-primary) 8%, transparent);
+}
+.wireIdx {
+  display: flex; height: 20px; width: 20px; flex: none; align-items: center; justify-content: center;
+  border-radius: 4px; font-size: 9px; font-weight: 700; font-variant-numeric: tabular-nums;
+  background: color-mix(in srgb, var(--dsw-alias-brand-primary) 60%, transparent);
+  color: color-mix(in srgb, var(--dsw-alias-label-primary) 60%, transparent);
+}
+.wireThumb {
+  height: 32px; width: 32px; flex: none; border-radius: 4px; object-fit: cover;
+  border: 1px solid color-mix(in srgb, var(--dsw-alias-label-primary) 20%, transparent);
+}
+.wireThumbFallback {
+  display: flex; height: 32px; width: 32px; flex: none; align-items: center; justify-content: center;
+  border-radius: 4px;
+  border: 1px solid color-mix(in srgb, var(--dsw-alias-label-primary) 20%, transparent);
+  background: color-mix(in srgb, var(--dsw-alias-bg-module-platform) 40%, transparent);
+  color: color-mix(in srgb, var(--dsw-alias-label-primary) 60%, transparent);
+}
+.wireMeta { min-width: 0; flex: 1; }
+.wireTitle {
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  font-size: 11px; font-weight: 500; color: var(--dsw-alias-label-primary);
+}
+.wireOut {
+  margin-left: 4px; font-family: var(--dsw-alias-font-mono, ui-monospace, monospace); font-size: 9px;
+  color: color-mix(in srgb, var(--dsw-alias-brand-primary) 80%, transparent);
+}
+.wireSub {
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  font-family: var(--dsw-alias-font-mono, ui-monospace, monospace); font-size: 9px;
+  color: color-mix(in srgb, var(--dsw-alias-label-primary) 48%, transparent);
+}
+.wiredTag {
+  flex: none; border-radius: 4px; padding: 2px 6px; font-size: 9px; font-weight: 600;
+  background: color-mix(in srgb, var(--dsw-alias-brand-primary) 15%, transparent);
+  color: var(--dsw-alias-brand-primary);
+}
+
+/* THE DOWNLOAD PROMPT's action (stroke 18): the inline verb on the
+ * mark — a plain text-button face (never dead chrome; the manage
+ * door queues the provision). */
+/* THE INLINE-VERB CLASS (S6e, 2026-11-05): a raw <button> + module
+ * css is the DSH reference's own idiom for inline form verbs —
+ * dsh-client-ui-primitives lib/settings-form/fields.module.css
+ * hand-types .reset/.helpButton this exact way (border/background
+ * resets + dsw tokens), NOT the Button atom. The underline is the
+ * link cue that distinguishes a prose verb from a control. */
+.specLinkBtn {
+  border: none;
+  background: none;
+  padding: 0;
+  font: inherit;
+  cursor: pointer;
+  color: var(--dsw-alias-state-business-primary);
+  text-decoration: underline;
+}
+.specLinkBtn:disabled {
+  cursor: default;
+  color: var(--dsw-alias-label-tertiary);
+  text-decoration: none;
+}
+/* THE OVERFLOW LAW (stroke 24, the operator's burn): a gridded
+ * group's cells FILL their tracks — inputs/selects take the track
+ * width (never their ~185px intrinsic min), so a columns:3 group
+ * in a narrow drill card never grows a horizontal scrollbar. The
+ * tracks shrink via minmax(0,1fr) (form.tsx); this makes the atoms
+ * follow. */
+.specGrid :where(input, select) {
+  width: 100%;
+}
+
+/* THE PARAMETER SUBMENU (stroke 89, operator order 2026-09-17: the
+ * form card owns switchable parameter submenus — a card never
+ * handrolls a group switcher). The tab rail rode the chip rules below
+ * this comment until S7j (2026-11-05) moved it onto the catalog
+ * SegmentedTabs (the chrome canon's tablist atom — role grammar,
+ * arrow walk, sliding indicator); the rules died with the raw rail. */
+
+/* ── THE ESTATE'S LAYOUT GRAMMAR (2026-09-18, promoted VERBATIM from
+   h3's studio.module.css — rows, section headings, empty states, pane
+   chrome. One definition; every card composes them). ──────────────── */
+/* THE ANCHOR MUST BE A REAL BOX (hour 21 fix): the DSH Tooltip
+ * measures its anchor child (ref → getBoundingClientRect) to place
+ * the bubble. `display: contents` generates NO box — the rect
+ * collapses to (0,0) and the bubble pinned to the top of the
+ * screen (the operator's catch). inline-flex hugs the wrapped
+ * control; the bubble seats beside the cursor's anchor. */
+.tipAnchor { display: inline-flex; }
+/* THE FILL FACE (E2-10 THE SHRINK, 2026-11-09): a band seat (the
+ * timeline ruler) must BE its parent's width — the hug face above
+ * shrink-wraps a width-auto band to its in-flow content (the ruler's
+ * 62px chip inside 1064px of content; the absolute ticks paint but
+ * never hit). The fill anchor is block-level and definite, so a
+ * width-auto band child fills it. Opt-in per seat (Tip fill) — the
+ * hug stays the default for controls. */
+.tipFill { display: block; }
+
+.ctlRow, .ctlRowSm {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  color: var(--dsw-alias-label-secondary);
+}
+/* (2026-09-15, the operator's type-scale catch) ONE row size — the
+ * old 9px sm-variant was the "nothing is the same size" chaos; the
+ * knob fold's rows now read exactly like the rail's rows. */
+.ctlRow, .ctlRowSm { font-size: 10px; }
+/* ONE SKIN, ONE SIZE in the rail rows (2026-09-15): every select
+ * inside a row rides the row's size — an atom leaking its 13px face
+ * into the grid is a law break, not a look. */
+.ctlRow select, .ctlRowSm select { font-size: 10px; }
+
+.sectionLabel {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+.sectionLabelText {
+  font-size: 9px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--dsw-alias-label-tertiary);
+}
+.sectionLabelTail {
+  font-size: 9px;
+  font-variant-numeric: tabular-nums;
+  color: var(--dsw-alias-label-tertiary);
+}
+
+.emptyPane, .emptyOverlay {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  text-align: center;
+}
+/* THE THIRD APPEARANCE of the hour-9 law (2026-09-22, the
+ * preview-pane wheel): height:100% + vertical padding under
+ * content-box sizing spills the box (100% of the parent's content
+ * height + 48px), and inside a flex row with overflow-x:auto the
+ * spill computes overflow-y to AUTO — a vertical scrollbar on an
+ * EMPTY pane. border-box: 100% includes the padding. */
+.emptyPane { box-sizing: border-box; height: 100%; width: 100%; padding: 24px 0; }
+.emptyOverlay { position: absolute; inset: 0; padding: 24px; pointer-events: none; }
+.emptyTitle { font-size: 12px; font-weight: 500; color: var(--dsw-alias-label-secondary); margin: 0; }
+.emptyHint { font-size: 10px; line-height: 1.6; color: var(--dsw-alias-label-tertiary); max-width: 25rem; margin: 0; }
+
+.paneHeaderPreview {
+  display: flex;
+  flex: none;
+  align-items: baseline;
+  gap: 6px;
+  padding-bottom: 6px;
+}
+.paneHeaderStrip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-bottom: 1px solid var(--dsw-alias-border-l2);
+  background: var(--dsw-alias-interactive-bg-hover);
+  padding: 4px 10px;
+}
+.paneTitle {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--dsw-alias-label-secondary);
+}
+.paneMeta { font-size: 9px; color: var(--dsw-alias-label-tertiary); }
+.paneMetaNum { font-size: 9px; font-variant-numeric: tabular-nums; color: var(--dsw-alias-label-tertiary); }
+.paneHint { margin-left: auto; font-size: 9px; color: var(--dsw-alias-label-tertiary); }
+/* DSH pane chrome: surfaces/borders/text ride the DSW alias tokens —
+ * the panes are DSH modules, not bespoke islands. */
+.paneShell {
+  flex: none;
+  overflow: hidden;
+  border-radius: 6px;
+  border: 1px solid var(--dsw-alias-border-l2);
+  background: var(--dsw-alias-bg-layer-1);
+}
+
+@keyframes panePulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.45; }
+}
+
+.skeleton {
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--dsw-alias-label-secondary) 22%, transparent);
+  animation: panePulse 1.6s ease-in-out infinite;
+}
+

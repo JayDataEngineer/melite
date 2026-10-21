@@ -1,0 +1,119 @@
+/* Card-base shell — rail/center/bottom seams + loud errors.
+ * The ONE shell rule set (founded 2026-09-12, debt extermination:
+ * anny's superset rules; ideo's identical shell/errorLine folded in,
+ * its dead .rail dropped, its solid-danger errorRow unified to the
+ * translucent border; the kits' shellErrors look unified here). */
+
+/* THE UNIFORM SHELL LAW (2026-09-13): every card surface — timeline
+ * studio or standard form — is the same three-slot shape: params LEFT
+ * (own column, scrolls), preview RIGHT (the viewport/output pane,
+ * scrolls), bottom OPTIONAL (full width, row 2, bounded). Geometry
+ * adopted from the h3 studio's proven grid (hour-8 laws: the preview
+ * scrolls inside its pane; the bottom row is bounded and never cuts
+ * off). Forms leave preview/bottom unclaimed — the shape is the same. */
+.shell {
+  display: grid;
+  grid-template-columns: minmax(280px, 330px) minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr) auto;
+  height: 100%;
+  min-height: 0;
+}
+/* narrow screens: the three-slot shape collapses to one column (the
+ * zoom's old 640px law, moved to the shell when the zoom adopted it) */
+@media (max-width: 640px) {
+  .shell { grid-template-columns: 1fr; grid-template-rows: none; }
+  .shell > *:first-child { overflow-y: visible; max-height: none; }
+}
+/* THE PARAMS RAIL'S OWN SCROLL (hour 24 stroke 14 — the operator
+ * caught img-to-mesh still clipping): the rail cell scrolls within
+ * the bounded shell height and KEEPS ITS RIGHT MARGIN under the
+ * thumb — the same law card-view's .params got in stroke 11, now at
+ * the SHELL so every studio tenant (img-to-mesh, mask-studio,
+ * motion, h3, ideogram) inherits it from one site. The rail
+ * scrolling also collapses the outer detail scroll — no second
+ * scrollbar cutting anything.
+ *
+ * THE CLASS BELT (the motion-params journey audit, 2026-10-16): the
+ * h3 tenant cured its rail's horizontal scrollbar 2026-09-22 with
+ * overflow-x: clip and the cure never crossed the genre boundary —
+ * motion burned the same way a month later. The belt lives HERE, the
+ * one shell site: a future min-content regression is a clipped face,
+ * never a horizontal wheel on the params rail. */
+.shell > *:first-child {
+  grid-column: 1;
+  grid-row: 1;
+  overflow-y: auto;
+  overflow-x: clip;
+  min-height: 0;
+  padding-right: 10px;
+  scrollbar-gutter: stable;
+}
+.shell > *:nth-child(2) { grid-column: 2; grid-row: 1; overflow-y: auto; min-height: 0; }
+/* THE BOTTOM ROW NEVER WHEELS (2026-09-22, operator: "I DON'T WANT
+ * A VERTICAL SCROLL WHEEL ON THE TIMELINE INPUT BAR" — re-caught
+ * after the tenant fix: THIS base rule was the surviving cap; a
+ * tenant override that omits max-height inherits it, and the wheel
+ * came back). The row sizes to its content: the shell grid's row 2
+ * is AUTO, min-height: 0 / max-height: none kill both floors and
+ * caps, overflow: visible so nothing inner-scrolls either. The
+ * center pane above owns the fit; the fold is the card's scroll,
+ * never the strip's. (Supersedes the hour-8 bounded-cap law.) */
+.shell > *:nth-child(3) {
+  grid-column: 1 / -1;
+  grid-row: 2;
+  min-height: 0;
+  max-height: none;
+  overflow: visible;
+}
+
+.errorLine {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.errorRow {
+  border-radius: 4px;
+  border: 1px solid color-mix(in srgb, var(--dsw-alias-danger, #dc2626) 40%, transparent);
+  background: color-mix(in srgb, var(--dsw-alias-danger, #dc2626) 10%, transparent);
+  color: var(--dsw-alias-danger, #dc2626);
+  padding: 6px 8px;
+  font-family: ui-monospace, monospace;
+  font-size: 9px;
+  line-height: 1.4;
+  overflow-wrap: break-word;
+  white-space: pre-wrap;
+  margin: 0;
+}
+
+.errorIcon {
+  width: 12px;
+  height: 12px;
+  margin-right: 4px;
+  display: inline;
+  vertical-align: -2px;
+}
+
+.railSection {
+  border-radius: 8px;
+  border: 1px solid var(--dsw-alias-border, #e2e4e9);
+  padding: 8px 12px;
+}
+
+.railHead {
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.railTitle {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--dsw-alias-label-tertiary);
+  margin: 0;
+}

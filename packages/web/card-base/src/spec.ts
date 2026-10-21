@@ -166,7 +166,7 @@ export function modOwnedFields(spec: FormSpecDoc): Set<string> {
     const mainRoot = main.refs[main.uid]
     const dict = mainRoot?.dict ?? {}
     for (const name of Object.keys(dict)) {
-      const ref = main.refs[dict[name] as string]
+      const ref = main.refs[dict[name]]
       if (ref === undefined) continue
       if (extraOf(ref).hidden === true) continue
       owned.delete(name)
