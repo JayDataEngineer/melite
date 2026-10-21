@@ -622,3 +622,108 @@ describe("start model arm", () => {
     assert.equal(row.pipeline, "m");
   });
 });
+
+// THE RAW flow_inline CARD COMPOSE (the warm-1 unported refusal cure,
+// 2026-10-21): a caller-submitted inline doc carrying card= stages met
+// "card= stages are unported on this gateway" while the bench and
+// named-flow doors composed the SAME stages through the card walk. The
+// raw door now rides composeRegistryFlowStages too — one execution
+// path, no second answering of the card plane's laws. Every arm here
+// fires red with the compose block toggled out (the unported voice
+// returns).
+describe("start raw flow_inline card compose", () => {
+  const p1 = {
+    mid: "m",
+    fam: "f",
+    card: "c",
+    skeleton: "sk",
+    decl: {},
+    params: {},
+    spell: null,
+  };
+  const cardDoc = (stages: unknown[]): Record<string, unknown> => ({
+    draft_id: "d1",
+    test: false,
+    flow_inline: { id: "x", stages },
+  });
+
+  it("a card= stage composes through the card plane and registers (never the unported voice)", async () => {
+    const s = seat({
+      phase1Card: async (): Promise<unknown> => p1,
+      phase2Card: async (): Promise<unknown> => ({
+        graph: { n: { class_type: "EmptyLatentImage", inputs: { width: 64, height: 64 } } },
+        outputNodes: { out: "n" },
+        outputs: { out: "image" },
+      }),
+    });
+    const ans = await s.svc.start(cardDoc([{ id: "s0", card: "c", params: {} }]), sig());
+    assert.match(String(ans.run_id), /^run-/, "the run registers");
+    assert.equal(s.core.runs.size, 1);
+    const row = (await settleWait(s, String(ans.run_id))) as RunRecord;
+    // the compiled stage's params ride the run row (registration
+    // order), the stage row itself stays schema-clean
+    const wf = (row.params[0] as Record<string, unknown>)["workflow"] as Record<string, unknown>;
+    assert.equal(
+      (wf["n"] as Record<string, unknown>)["class_type"],
+      "EmptyLatentImage",
+      "the run carries the COMPOSED graph, not the card= row",
+    );
+    assert.ok(!("card" in (row.stages[0] as Record<string, unknown>)), "the card reference is consumed by the compose");
+  });
+
+  it("the card plane's own gates keep their voice — a compose refusal names the flow stage, never the unported boundary", async () => {
+    const s = seat({
+      phase1Card: async (): Promise<unknown> => {
+        throw new CardArmError(400, "p1 bad param", "card_compose", "params.seed", "int", "str");
+      },
+    });
+    const err = await remote(() =>
+      s.svc.start(cardDoc([{ id: "s0", card: "c", params: {} }]), sig()));
+    assert.equal(err.code, "runs/card-compose", "the card plane's own code");
+    assert.match(err.message, /flow stage "s0"/, "the refusal names the flow stage");
+    assert.doesNotMatch(err.message, /unported/, "never the old boundary voice");
+    assert.equal(s.core.runs.size, 0, "nothing registered on a refusal");
+  });
+
+  it("the compose does not widen the scope law — a raw MULTI-stage card doc still refuses the preview scope", async () => {
+    const s = seat({
+      phase1Card: async (): Promise<unknown> => p1,
+      phase2Card: async (): Promise<unknown> => ({
+        graph: { n: { class_type: "EmptyLatentImage", inputs: { width: 64, height: 64 } } },
+        outputNodes: { out: "n" },
+        outputs: { out: "image" },
+      }),
+    });
+    const err = await remote(() =>
+      s.svc.start(cardDoc([
+        { id: "s0", card: "c", params: {} },
+        { id: "s1", card: "c", params: {} },
+      ]), sig()));
+    assert.equal(err.code, "runs/preview-scope");
+    assert.match(err.message, /single-stage/, "the multi-stage policy stands");
+    assert.equal(s.core.runs.size, 0);
+  });
+
+  it("the claim and receipt ledgers ride the registered row — stageFams + graph receipt stages for the composed card", async () => {
+    const s = seat({
+      phase1Card: async (): Promise<unknown> => p1,
+      phase2Card: async (): Promise<unknown> => ({
+        graph: { n: { class_type: "EmptyLatentImage", inputs: { width: 64, height: 64 } } },
+        outputNodes: { out: "n" },
+        outputs: { out: "image" },
+      }),
+    });
+    const ans = await s.svc.start(cardDoc([{ id: "s0", card: "c", params: {} }]), sig());
+    const row = (await settleWait(s, String(ans.run_id))) as RunRecord & {
+      stageFams?: Record<string, string>;
+      graphReceipt?: { stages?: Record<string, unknown> };
+    };
+    assert.deepEqual(row.stageFams, { s0: "f" }, "the claim-time re-probe ledger rides the row");
+    const receiptRow = row.graphReceipt?.stages?.[0] as Record<string, unknown> | undefined;
+    assert.ok(
+      row.graphReceipt !== undefined && receiptRow !== undefined &&
+      receiptRow["stage"] === "s0",
+      "the graph-receipt ledger carries the composed stage's evidence row (registration order)",
+    );
+  });
+});

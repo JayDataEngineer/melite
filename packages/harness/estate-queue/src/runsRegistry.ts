@@ -1807,6 +1807,54 @@ export class RunsRuntimeService extends Service {
       delete rest["flow"];
       body = { ...rest, flow_inline: inlineDoc };
     }
+    // THE RAW flow_inline CARD COMPOSE (the warm-1 unported refusal,
+    // 2026-10-21): a caller-submitted inline doc carrying card=
+    // stages met "card= stages are unported on this gateway" — the
+    // agent's ad-hoc bypass arm (one card, exact params, no bench
+    // round trip) refused while the bench and named-flow doors
+    // composed the SAME stages through the card walk. There is no
+    // second execution path here either: the raw door rides the same
+    // composeRegistryFlowStages walk, so the compiler only ever sees
+    // compiled stages — mixed docs (a card row beside an engine row)
+    // stay mixed, the engine rows passing through untouched, exactly
+    // as the named-flow arm treats them. The compose's own gates
+    // (unknown card, illegal params) refuse in the card plane's
+    // voice; nothing caller-authored reaches the engine unjudged.
+    if (selected.door === "flow_inline" && !benchComposed) {
+      const rawInline: unknown = body["flow_inline"];
+      if (
+        typeof rawInline === "object" && rawInline !== null &&
+        inlineStagesNameCards(rawInline as Record<string, unknown>)
+      ) {
+        // THE JUNK LAW STANDS (the tolerance arm's own contract): the
+        // shared walk SKIPS non-object rows — correct for a named
+        // flow (its projection guarantees object rows), a silent
+        // DROP for a hand-authored doc. A raw doc carrying junk rows
+        // is left untouched here so the compile gate refuses it in
+        // its own voice (junk costs the whole flow its start, never
+        // a half flow); only a junk-free card doc composes.
+        const rawRows: unknown = (rawInline as Record<string, unknown>)["stages"];
+        const junkFree = Array.isArray(rawRows) &&
+          rawRows.every((st: unknown) => typeof st === "object" && st !== null);
+        if (junkFree) {
+          const stageFams: Record<string, string> = {};
+          const stageReceipts: Record<string, GraphReceiptStageRow> = {};
+          const composedInline = await this.composeRegistryFlowStages(
+            rawInline as Record<string, unknown>,
+            runId,
+            stageFams,
+            stageReceipts,
+          );
+          flowStageFams = stageFams;
+          flowStageReceipts = stageReceipts;
+          body = { ...body, flow_inline: composedInline };
+          console.log(
+            "[runs] the raw inline doc composes its card stages through the card plane (" +
+            (composedInline["stages"] as unknown[]).length + " stages)",
+          );
+        }
+      }
+    }
     // ONE stage schema for the whole bench (the law above): every
     // stage that reaches the compiler carries an engine, whether a
     // human, the GUI, the agent or a hand-written flow authored it.
