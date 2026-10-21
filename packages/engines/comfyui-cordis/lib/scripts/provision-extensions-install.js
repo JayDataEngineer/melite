@@ -15,6 +15,7 @@ import { execSync } from "node:child_process";
 import { existsSync, lstatSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { defaultConfig, DRY, repo, runtime, die, info, warn } from "./provision-shared.js";
+import { rowSharedDepDeltas } from "./provision-shared-deps.js";
 import { engineLiveRoot, engineUrl, loadConfig } from "./provision-config.js";
 import { mergeManifest } from "./provision-extensions-manifest.js";
 /** The cold-cache retry window for Manager git-url installs: a
@@ -331,6 +332,18 @@ export async function stepExtensions() {
                     planned += 1;
                     continue;
                 }
+                // the shared-dep guard owns this push too: a converged row
+                // still hands Manager the venv (the same pip leg runs)
+                const convergeDir = url.split("/").pop() ?? "";
+                const convergeDeltas = rowSharedDepDeltas(join(repo(), "vendor", "comfyui_extensions"), convergeDir);
+                if (convergeDeltas.length > 0) {
+                    warn("  [" + name + "] BLOCKED — the pack's pip leg would move a pinned shared dep under the live engine:");
+                    for (const delta of convergeDeltas) {
+                        warn("    " + delta);
+                    }
+                    counts.blocked += 1;
+                    continue;
+                }
                 rmSync(join(seat.root, "custom_nodes", seat.dir), { recursive: true, force: true });
                 pending.push({ name, url, ref });
                 continue;
@@ -343,6 +356,23 @@ export async function stepExtensions() {
         if (DRY) {
             console.log("[dry-run] manager git_url install [" + name + "] " + url);
             planned += 1;
+            continue;
+        }
+        // THE SHARED-DEP GUARD (ERRORS_2 2026-11-10, the owed SYSTEMIC
+        // wall): Manager's git-url door runs the pack's requirements.txt
+        // pip leg inside the install request — a pack that moves a pinned
+        // shared dep (upgrade OR downgrade) mutates the LIVE venv under
+        // the engine. The pack's vendored twin is the at-pin truth; any
+        // delta from the record pack's pins blocks the row HERE, loud,
+        // before Manager ever opens the venv.
+        const guardDir = url.split("/").pop() ?? "";
+        const deltas = rowSharedDepDeltas(join(repo(), "vendor", "comfyui_extensions"), guardDir);
+        if (deltas.length > 0) {
+            warn("  [" + name + "] BLOCKED — the pack's pip leg would move a pinned shared dep under the live engine:");
+            for (const delta of deltas) {
+                warn("    " + delta);
+            }
+            counts.blocked += 1;
             continue;
         }
         pending.push({ name, url, ref });

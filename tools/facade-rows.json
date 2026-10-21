@@ -341,6 +341,15 @@
   "@melite/models-concat": [
     "./packages/models/concat/src/index.ts"
   ],
+  "@melite/models-fibo2-edit": [
+    "./packages/models/fibo2-edit/src/index.ts"
+  ],
+  "@melite/models-fibo2-edit/mods/loras": [
+    "./packages/models/fibo2-edit/mods/loras.ts"
+  ],
+  "@melite/models-fibo2-edit/mods/mask": [
+    "./packages/models/fibo2-edit/mods/mask.ts"
+  ],
   "@melite/models-fit": [
     "./packages/models/fit/src/index.ts"
   ],

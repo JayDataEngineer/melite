@@ -892,7 +892,7 @@ describe("THE EVERY-ADDRESS WALL — every served address composes its own decla
         def.schema({ prompt: "make the hallway blue", input_images: ["/m/anchor.png"], seed: 5 }),
         row as never, new GraphBuilder(), "wall_fallback",
       ),
-      /no declared action for family 'synthetic-edit' on the image-edit card — every boarded family \(qwen-img-edit-21, qwen-img-edit-2511\)/,
+      /no declared action for family 'synthetic-edit' on the image-edit card — every boarded family \(qwen-img-edit-21, qwen-img-edit-2511, fibo2-edit\)/,
     );
   });
 });

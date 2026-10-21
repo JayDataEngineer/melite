@@ -53,6 +53,8 @@
       name: '@melite/models-qwen3-tts'
     - id: family-anima
       name: '@melite/models-anima'
+    - id: family-fibo2-edit
+      name: '@melite/models-fibo2-edit'
     - id: family-florence2
       name: '@melite/models-florence2'
     - id: family-flux-klein

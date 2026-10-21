@@ -18,6 +18,9 @@
           "node"
       ],
       "paths": {
+        "@melite/models-fibo2-edit": ["./../../models/fibo2-edit/src/index.ts"],
+        "@melite/models-fibo2-edit/mods/loras": ["./../../models/fibo2-edit/mods/loras.ts"],
+        "@melite/models-fibo2-edit/mods/mask": ["./../../models/fibo2-edit/mods/mask.ts"],
         "@melite/estate-provisioning/contracts": ["./../../estate/provisioning/src/contracts.ts"],
         "@melite/models-moss-image": ["./../../models/moss-image/src/index.ts"],
         "@melite/models-moss-image/mods/loras": ["./../../models/moss-image/mods/loras.ts"],

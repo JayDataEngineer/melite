@@ -35,7 +35,7 @@ describe("the families provider (the lanes' models seat)", () => {
     // step1x_texture, stretchy-rig, trellis_native) with the three
     // census-verb families named — the flows the commission chain
     // composes.
-    expect(ids.length).toBe(31); // 35 -> 30 (2026-10-12, the operator five-family kill)
+    expect(ids.length).toBe(32); // 31 -> 32 (2026-11-08, the third edit lane: fibo2-edit)
     for (const family of ["anny", "skin", "fit"]) {
       expect(ids, `family ${family} boards the lane seat`).toContain(family);
     }
@@ -57,7 +57,7 @@ describe("the families provider (the lanes' models seat)", () => {
     await ctx.plugin(modelsFamiliesProvider);
     const seat = ctx.get("models") as unknown as { familyCount(): number };
     // THE KILL SWEEP (12 fossils deleted 2026-10-12): 35, not 47.
-    expect(seat.familyCount()).toBe(31); // 35 -> 30 (2026-10-12, the operator five-family kill)
+    expect(seat.familyCount()).toBe(32); // 31 -> 32 (2026-11-08, the third edit lane: fibo2-edit)
     await ctx.fiber.dispose();
     // ctx.plugin children are parent-owned: the provider's fiber
     // disposes recursively — the ModelsService registration and

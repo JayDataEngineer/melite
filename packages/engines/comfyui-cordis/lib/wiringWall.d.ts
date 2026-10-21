@@ -82,4 +82,16 @@ export declare class ComfyUIWiringService extends Service {
  *  `comfyui` classes and the run seat read it from first submit. */
 export declare const comfyuiWiringProvider: Plugin;
 export declare function assertWiringAgainst(nodes: ReadonlySet<string> | null, declaredInputs: ReadonlyMap<string, ReadonlyMap<string, WiringInputSpec>> | null | undefined, cardId: string, graph: unknown): void;
+/** The widget-serialization keys ComfyUI accepts on the wire but
+ *  never lists in `/object_info` — each with the node that proves it
+ *  (a landed run in data/runs/output carries the pair):
+ *   - `upload` — LoadImage (image lanes: the upload walk stages the
+ *     value; the server ignores the key)
+ *   - `model_options` — CLIPLoader (audio lanes; restates the default)
+ *   - `lora_ui` — LTX_lora_loader (the h3 refine arm; stripped on
+ *     some arms and shipped on others)
+ *  A name that is not here and not declared is still refused.
+ *  Exported so the key judge (the liveness wall's card/action sweep)
+ *  honors the SAME receipt — one allowlist, every key-depth judge. */
+export declare const WIDGET_SERIALIZATION_KEYS: ReadonlySet<string>;
 //# sourceMappingURL=wiringWall.d.ts.map

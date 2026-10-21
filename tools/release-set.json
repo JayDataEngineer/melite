@@ -1,7 +1,7 @@
 {
   "tag": "v0.1.5-pre-alpha",
   "version": "0.1.5-pre-alpha",
-  "count": 77,
+  "count": 78,
   "names": [
     "@melite-plugin/dsh-card-deck",
     "@melite-plugin/dsh-card-view",
@@ -48,6 +48,7 @@
     "@melite/models-anny",
     "@melite/models-anycreature",
     "@melite/models-concat",
+    "@melite/models-fibo2-edit",
     "@melite/models-fit",
     "@melite/models-florence2",
     "@melite/models-flux-klein",

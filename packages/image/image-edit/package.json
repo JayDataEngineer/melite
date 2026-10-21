@@ -28,6 +28,7 @@
     "@melite/comfyui-card-kit": "workspace:*",
     "@melite/contracts": "workspace:*",
     "@melite/estate-call": "workspace:*",
+    "@melite/models-fibo2-edit": "workspace:*",
     "@melite/models-mask": "workspace:*",
     "@melite/models-qwen-img-edit-21": "workspace:*",
     "@melite/models-qwen-img-edit-2511": "workspace:*"

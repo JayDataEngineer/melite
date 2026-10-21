@@ -2,6 +2,8 @@
   "compilerOptions": {
     "noEmitOnError": true,
       "paths": {
+        "@melite/models-fibo2-edit/mods/loras": ["./../../models/fibo2-edit/mods/loras.ts"],
+        "@melite/models-fibo2-edit/mods/mask": ["./../../models/fibo2-edit/mods/mask.ts"],
         "@melite/estate-provisioning/contracts": ["./../../estate/provisioning/src/contracts.ts"],
         "@melite/models-moss-image": ["./../../models/moss-image/src/index.ts"],
         "@melite/models-moss-image/mods/loras": ["./../../models/moss-image/mods/loras.ts"],
@@ -174,6 +176,7 @@
         "@melite/models-anycreature": ["./../../models/anycreature/src/index.ts"],
         "@melite/models-concat": ["./../../models/concat/src/index.ts"],
         "@melite/models-fit": ["./../../models/fit/src/index.ts"],
+        "@melite/models-fibo2-edit": ["./../../models/fibo2-edit/src/index.ts"],
         "@melite/models-florence2": ["./../../models/florence2/src/index.ts"],
         "@melite/models-gem-soma": ["./../../models/gem-soma/src/index.ts"],
         "@melite/models-h3": ["./../../models/h3/src/index.ts"],

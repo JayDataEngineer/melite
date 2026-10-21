@@ -18,6 +18,9 @@
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "paths": {
+        "@melite/models-fibo2-edit": ["./../fibo2-edit/src/index.ts"],
+        "@melite/models-fibo2-edit/mods/loras": ["./../fibo2-edit/mods/loras.ts"],
+        "@melite/models-fibo2-edit/mods/mask": ["./../fibo2-edit/mods/mask.ts"],
         "@melite/estate-provisioning/contracts": ["./../../estate/provisioning/src/contracts.ts"],
         "@melite/3d-anny": ["./../../3d/anny/src/index.ts"],
         "@melite/3d-anny/card": ["./../../3d/anny/src/card.ts"],

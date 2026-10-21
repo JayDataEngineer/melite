@@ -198,6 +198,11 @@ export const composeModPlane = async (ctx) => {
         ['@melite/models-qwen-img-edit-2511/mods/lanpaint', 'qwen-img-edit-2511 lanpaint'],
         ['@melite/models-qwen-img-edit-2511/mods/loras', 'qwen-img-edit-2511 loras'],
         ['@melite/models-qwen-img-edit-2511/mods/mask', 'qwen-img-edit-2511 mask'],
+        // THE THIRD EDIT LANE (fibo2-edit): the same boarding pair the
+        // qwen edit lanes carry — the loras seed (user files ride) and
+        // the mask bare flavor (the crop_stitch detailer arm).
+        ['@melite/models-fibo2-edit/mods/loras', 'fibo2-edit loras'],
+        ['@melite/models-fibo2-edit/mods/mask', 'fibo2-edit mask'],
         // THE 2.1 MASK BOARDING (2026-09-22, the operator's lane call):
         // the region contract absorbs onto the CURRENT edit lane — the
         // GPU receipt caught the gap (the compose door's admission

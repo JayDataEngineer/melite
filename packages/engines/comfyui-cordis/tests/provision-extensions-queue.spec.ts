@@ -98,8 +98,8 @@ describe("ensureManagerPinnedConfig", () => {
 
 describe("urlInstalled + installedHead", () => {
   const dir = mkdtempSync(join(tmpdir(), "melite-ext-verify-"));
-  const url = "https://github.com/JayDataEngineer/melite-sfx-nodes.git";
-  const cn = join(dir, "custom_nodes", "melite-sfx-nodes");
+  const url = "https://github.com/JayDataEngineer/melite-audio-nodes.git";
+  const cn = join(dir, "custom_nodes", "melite-audio-nodes");
   mkdirSync(cn, { recursive: true });
   execSync("git init -q", { cwd: cn, env: gitEnv });
   execSync("git config remote.origin.url " + url, { cwd: cn, env: gitEnv });
@@ -112,12 +112,12 @@ describe("urlInstalled + installedHead", () => {
   });
   it("normalizes trailing slashes and .git suffixes", () => {
     assert.equal(urlInstalled(
-      "https://github.com/JayDataEngineer/melite-sfx-nodes", dir), true);
+      "https://github.com/JayDataEngineer/melite-audio-nodes", dir), true);
   });
   it("reads the installed HEAD for ref-pin verification", () => {
     const head = execSync("git rev-parse HEAD",
       { cwd: cn, encoding: "utf8", env: gitEnv }).trim();
-    assert.equal(installedHead(dir, "melite-sfx-nodes"), head);
+    assert.equal(installedHead(dir, "melite-audio-nodes"), head);
     assert.equal(installedHead(dir, "not-a-clone"), "");
   });
 
@@ -125,7 +125,7 @@ describe("urlInstalled + installedHead", () => {
 });
 
 describe("clearStaleInstall", () => {
-  const url = "https://github.com/JayDataEngineer/melite-sfx-nodes";
+  const url = "https://github.com/JayDataEngineer/melite-audio-nodes";
   let dir: string;
   let cn: string;
 
@@ -143,17 +143,17 @@ describe("clearStaleInstall", () => {
     const victim = join(dir, "vendor-copy");
     mkdirSync(victim);
     writeFileSync(join(victim, "nodes.py"), "# pack\n");
-    symlinkSync(victim, join(cn, "melite-sfx-nodes"));
+    symlinkSync(victim, join(cn, "melite-audio-nodes"));
     assert.equal(clearStaleInstall(url, dir), "symlink");
-    assert.equal(existsSync(join(cn, "melite-sfx-nodes")), false);
+    assert.equal(existsSync(join(cn, "melite-audio-nodes")), false);
     assert.equal(existsSync(join(victim, "nodes.py")), true);
   });
 
   it("removes a real-copy directory (no git, no remote)", () => {
-    mkdirSync(join(cn, "melite-sfx-nodes"));
-    writeFileSync(join(cn, "melite-sfx-nodes", "nodes.py"), "# pack\n");
+    mkdirSync(join(cn, "melite-audio-nodes"));
+    writeFileSync(join(cn, "melite-audio-nodes", "nodes.py"), "# pack\n");
     assert.equal(clearStaleInstall(url, dir), "directory");
-    assert.equal(existsSync(join(cn, "melite-sfx-nodes")), false);
+    assert.equal(existsSync(join(cn, "melite-audio-nodes")), false);
   });
 
   it("removes a stale clone with a different remote", () => {
@@ -161,18 +161,18 @@ describe("clearStaleInstall", () => {
     execSync("git init --quiet --bare " + JSON.stringify(other),
       { encoding: "utf8" });
     execSync("git clone --quiet " + JSON.stringify(other) +
-      " melite-sfx-nodes", { cwd: cn, encoding: "utf8" });
+      " melite-audio-nodes", { cwd: cn, encoding: "utf8" });
     assert.equal(clearStaleInstall(url, dir), "stale clone");
-    assert.equal(existsSync(join(cn, "melite-sfx-nodes")), false);
+    assert.equal(existsSync(join(cn, "melite-audio-nodes")), false);
   });
 
   it("keeps a Manager install of this remote", () => {
-    const keep = join(cn, "melite-sfx-nodes");
+    const keep = join(cn, "melite-audio-nodes");
     const origin = join(dir, "pack-origin.git");
     execSync("git init --quiet --bare " + JSON.stringify(origin),
       { encoding: "utf8" });
     execSync("git clone --quiet " + JSON.stringify(origin) +
-      " melite-sfx-nodes", { cwd: cn, encoding: "utf8" });
+      " melite-audio-nodes", { cwd: cn, encoding: "utf8" });
     execSync("git remote set-url origin " + url,
       { cwd: keep, encoding: "utf8" });
     assert.equal(clearStaleInstall(url, dir), "");
@@ -184,7 +184,7 @@ describe("clearStaleInstall", () => {
     // comfyanonymous/ComfyUI.git sat at "comfyui-impact-pack", so
     // Manager answered "Already exists" over it and installed
     // nothing — the declaration is the truth, the squatter goes.
-    rmSync(join(cn, "melite-sfx-nodes"), { recursive: true, force: true });
+    rmSync(join(cn, "melite-audio-nodes"), { recursive: true, force: true });
     const other = join(dir, "foreign-origin.git");
     execSync("git init --quiet --bare " + JSON.stringify(other),
       { encoding: "utf8" });
@@ -216,7 +216,7 @@ describe("landedVerdict (the CLI step's landed-HEAD law)", () => {
   // same law: a declared pin is checked against the commit on disk,
   // and a row that reports none is unverifiable, not a pass.
   const workspace = mkdtempSync(join(tmpdir(), "melite-ext-verdict-"));
-  const url = "https://github.com/JayDataEngineer/melite-tts-nodes";
+  const url = "https://github.com/JayDataEngineer/melite-audio-nodes";
 
   // a row is verified in the directory whose git remote IS the url —
   // Manager renames install dirs, so the repo name is not the dir.
@@ -235,9 +235,9 @@ describe("landedVerdict (the CLI step's landed-HEAD law)", () => {
   }).trim();
 
   it("a clone at the declared ref passes — the step's own equality", () => {
-    landAClone("melite-tts-nodes", "");
-    const head = commit("melite-tts-nodes");
-    assert.equal(landedVerdict("melite-tts-nodes", url, head, [workspace]), "");
+    landAClone("melite-audio-nodes", "");
+    const head = commit("melite-audio-nodes");
+    assert.equal(landedVerdict("melite-audio-nodes", url, head, [workspace]), "");
   });
 
   it("verifies the head in the dir whose remote IS the url — Manager renames install dirs", () => {
@@ -253,14 +253,14 @@ describe("landedVerdict (the CLI step's landed-HEAD law)", () => {
   });
 
   it("the SAME clone, advanced one commit, is drift — named with both shas", () => {
-    const clone = join(workspace, "custom_nodes", "melite-tts-nodes");
-    const atPin = commit("melite-tts-nodes");
+    const clone = join(workspace, "custom_nodes", "melite-audio-nodes");
+    const atPin = commit("melite-audio-nodes");
     execSync("git commit -q --allow-empty -m drift && git rev-parse HEAD", {
       cwd: clone,
       encoding: "utf8",
       env: gitEnv,
     }).trim();
-    const verdict = landedVerdict("melite-tts-nodes", url, atPin, [workspace]);
+    const verdict = landedVerdict("melite-audio-nodes", url, atPin, [workspace]);
     assert.match(verdict, /landed at/);
     assert.match(verdict, /but the declaration pins/);
   });

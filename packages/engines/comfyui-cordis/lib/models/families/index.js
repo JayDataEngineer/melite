@@ -23,6 +23,7 @@ export const FAMILY_PKGS = [
     "@melite/models-yue2",
     "@melite/models-qwen3-tts",
     "@melite/models-anima",
+    "@melite/models-fibo2-edit",
     "@melite/models-florence2",
     "@melite/models-flux-klein",
     "@melite/models-input",

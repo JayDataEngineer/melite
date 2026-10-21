@@ -1,34 +1,28 @@
-# audio ComfyUI extension dependencies (the audio-core split,
+# audio ComfyUI extension dependencies.
 # 2026-09-04: tts + qvoice in melite-tts-nodes, sfx in
 # melite-sfx-nodes — carved from the too-heavy all-in-one; class
-# names unchanged, graphs survive the swap)
+# names unchanged, graphs survive the swap.
+# 2026-11-10: THE CARVE IS RETIRED (operator: "Why not just one?") —
+# the all-in-one melite-audio-nodes kept evolving (engines/,
+# qvoice.py, film_mix, loudness, the served .so) while the two
+# carves went stale; three required packs racing one custom_nodes
+# slot, with Audiocore* classes duplicated across them, is the race
+# the old engine-tree law existed to manage. ONE pack now owns every
+# Audiocore* class + MeliteQVoiceCopy; the carves are deleted
+# (deployed copies + vendor trees + model-facts rows folded here).
 extensions:
   # 2026-09-06 gap-fix: pins restated in the canonical shape (name +
   # registry + version) — bare-name rows forked pins and the
   # extension_lane manifest refused to serve.
-  - name: melite-tts-nodes
-    url: https://github.com/JayDataEngineer/melite-tts-nodes
-    ref: 96f07c317e7bc5f377fec1b5c3062521350c9285
-    required: true
-    desc: Qwen3-TTS synthesis, voice embeddings, Voice Studio (.qvoice) — tts/voice-lock lanes.
-  - name: melite-sfx-nodes
-    url: https://github.com/JayDataEngineer/melite-sfx-nodes
-    ref: 580a72010b2ac8841332b99b859e8da031e2ee87
-    required: true
-    desc: MOSS-SFX v2 diffusion — the sfx lane.
   - name: melite-audio-nodes
     url: https://github.com/JayDataEngineer/melite-audio-nodes
     ref: 8274227c9ab14408a55bd6ee871422f463d655ea
     required: true
     desc: >-
-      The audio core pack, and the ONLY owner of MeliteQVoiceCopy — the
-      .qvoice copy node the tts graph emits. Declared here because the
-      2026-09-04 split declared the two carved packs and left this one
-      undeclared, so a fresh estate installed tts+sfx and still failed
-      at /prompt on a node class nothing had installed (audit
-      2026-10-13). The Audiocore* classes are duplicated across the
-      three packs by the split; this row is what makes MeliteQVoiceCopy
-      reachable.
+      The ONE audio pack: Qwen3-TTS synthesis (qwen3_tts, riding
+      faster-qwen3-tts as of 2026-11-10), Voice Studio (.qvoice),
+      MOSS-SFX v2 diffusion, voice embeddings, MeliteQVoiceCopy,
+      film/loudness utilities. Every Audiocore* class lives here.
   # 2026-10-16 (the roster-rows batch): the GGUF loader family declares
   # for the §4d HF-directory model channel — the qwen3-tts .gguf weights
   # load through its nodes (ace-step died in the 2026-10-12 operator

@@ -82,6 +82,7 @@
     "@melite/models-anny": "workspace:*",
     "@melite/models-anycreature": "workspace:*",
     "@melite/models-concat": "workspace:*",
+    "@melite/models-fibo2-edit": "workspace:*",
     "@melite/models-fit": "workspace:*",
     "@melite/models-florence2": "workspace:*",
     "@melite/models-flux-klein": "workspace:*",

@@ -366,8 +366,10 @@ export function assertWiringAgainst(nodes, declaredInputs, cardId, graph) {
  *   - `model_options` — CLIPLoader (audio lanes; restates the default)
  *   - `lora_ui` — LTX_lora_loader (the h3 refine arm; stripped on
  *     some arms and shipped on others)
- *  A name that is not here and not declared is still refused. */
-const WIDGET_SERIALIZATION_KEYS = new Set([
+ *  A name that is not here and not declared is still refused.
+ *  Exported so the key judge (the liveness wall's card/action sweep)
+ *  honors the SAME receipt — one allowlist, every key-depth judge. */
+export const WIDGET_SERIALIZATION_KEYS = new Set([
     'upload',
     'model_options',
     'lora_ui',

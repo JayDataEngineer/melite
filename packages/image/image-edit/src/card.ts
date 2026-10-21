@@ -51,6 +51,7 @@ import { SAMPLERS, SCHEDULERS } from '@melite/comfyui-card-kit/vocab'
 import { promptPairExtra, samplingExtra, seedExtra } from '@melite/comfyui-card-kit/fields'
 import { DECL as qwenImgEdit21Decl } from '@melite/models-qwen-img-edit-21'
 import { DECL as qwenImgEdit2511Decl } from '@melite/models-qwen-img-edit-2511'
+import { DECL as fibo2EditDecl } from '@melite/models-fibo2-edit'
 import { bag } from '@melite/contracts/extraKeys'
 import { callableSchema, gatedResolve } from '@melite/comfyui-card-kit/admission'
 import { MASK_RIDERS, LANPAINT_RIDERS } from '@melite/comfyui-card-kit/pack-fields'
@@ -66,7 +67,7 @@ export const declCap = (d: { id: string; lane_inputs?: Record<string, unknown> }
   if (typeof v === 'number' && Number.isFinite(v) && v >= 1) return Math.floor(v)
   throw new Error(`image-edit card: boarded family '${d.id}' declares no lane_inputs.max_images (the max_images law — the node's own image-input count)`)
 }
-const EDIT_LIST_CAP = Math.max(declCap(qwenImgEdit2511Decl), declCap(qwenImgEdit21Decl))
+const EDIT_LIST_CAP = Math.max(declCap(qwenImgEdit2511Decl), declCap(qwenImgEdit21Decl), declCap(fibo2EditDecl))
 
 export const schema = z.object({  // CARD-OWNED SURFACE ONLY (2026-09-08, the 1:1 port): declaration
   // order = the field order. image1 IS THE PLAIN ANCHOR (2026-09-21,
@@ -169,7 +170,7 @@ const schemaFn = callableSchema(schema)
 // BOTH IDS COME FROM THEIR DECLS (the card audit's M1): the 2511 DECL
 // was imported and its id retyped as a literal, so a rename broke the card
 // at runtime (not-boarded) with every wall green.
-export const BOARDED: string[] = [qwenImgEdit21Decl.id, qwenImgEdit2511Decl.id]
+export const BOARDED: string[] = [qwenImgEdit21Decl.id, qwenImgEdit2511Decl.id, fibo2EditDecl.id]
 
 /** The action bindings (the atom vocabulary, stroke 3): a boarded
  *  family with a bound action composes through the atom's own
@@ -187,26 +188,29 @@ export const ACTION_BINDINGS: Record<string, (p: Record<string, unknown>, model:
   [qwenImgEdit2511Decl.id]: (p, model, g, runId) => {
     instantiateAction(declaredAction(qwenImgEdit2511Decl, 'edit'), p, model, g, runId)
   },
+  [fibo2EditDecl.id]: (p, model, g, runId) => {
+    instantiateAction(declaredAction(fibo2EditDecl, 'edit'), p, model, g, runId)
+  },
 }
 
 /** The identity rung (label/description — the authored prose the
  *  emitted tool row carries; the ring's spelling, stated once). */
 export const identity = {
   label: 'Edit Image',
-  description: 'Instruction-driven image editing — the edit_image interface card boarding the qwen image edit LANES: qwen-img-edit-2511 (the dedicated edit checkpoint — lightning/standard cascade, lanpaint flavor) and qwen-img-edit-21 (the cached-reference edit lane of the same 2.1 weights as the t2i sibling family). The family names the model, the card names the operation. The surface scopes itself.',
+  description: 'Instruction-driven image editing — the edit_image interface card boarding three LANES: qwen-img-edit-2511 (the dedicated edit checkpoint — lightning/standard cascade, lanpaint flavor), qwen-img-edit-21 (the cached-reference edit lane of the same 2.1 weights as the t2i sibling family), and fibo2-edit (BRIA\'s licensed Fibo 2.0 model, the Comfy-Org repack — one TextEncodeFibo2 encoder conditioning both arms, dev/edit-turbo checkpoint pair, the encoder\'s own trained-size latent). The family names the model, the card names the operation. The surface scopes itself.',
   genre: 'image',
   icon: 'edit',
   principles: [
     'ONE ordered input list (the merge, 2026-10-10): input_images — the FIRST image is the one being edited, the rest are references the prompt cites as <image2>, <image3>…; image1/image2/image3/reference_images are hidden legacy aliases merging into the same list (anchor, numbered, then stack) so old drafts recompose byte-stable',
-    'the list capacity rides each lane DECL\'s max_images (2.1: 16 total, 2511: 3 total — anchor included); a list past the lane cap refuses loudly, never drops quietly',
+    'the list capacity rides each lane DECL\'s max_images (2.1: 16 total, fibo2-edit: 16 total, 2511: 3 total — anchor included); a list past the lane cap refuses loudly, never drops quietly',
     'Qwen-Image-Edit uses low CFG (flow-matching) — the Guidance Scale slider tops out at 10.0',
     'Without a mask modifier, image editing is whole-image by default; a mask modifier opts into masked-region editing',
-    'An input_mask alongside image1 in auto switches the 2511 lane to the LanPaint inpaint sampler (the masked region regenerates, the rest is preserved); the 2.1 lane refuses auto+mask field-named — state crop_stitch there',
-    'Masked region (crop_stitch) runs the generic region detailer instead, on BOTH lanes (the operator\'s 2.1 rides its cache-wrapped model + encoder conditioning): region → SEGS → DetailerForEach crop/edit/paste — pixels outside the region never change; the region is the painted mask, or pick a detector (person/face/hand) and the Impact chain proposes it',
+    'An input_mask alongside image1 in auto switches the 2511 lane to the LanPaint inpaint sampler (the masked region regenerates, the rest is preserved); the 2.1 and fibo2-edit lanes refuse auto+mask field-named — state crop_stitch there',
+    'Masked region (crop_stitch) runs the generic region detailer instead, on ALL THREE lanes (the operator\'s 2.1 rides its cache-wrapped model + encoder conditioning): region → SEGS → DetailerForEach crop/edit/paste — pixels outside the region never change; the region is the painted mask, or pick a detector (person/face/hand) and the Impact chain proposes it',
     'Region detail rides mask_detail_size (working size) + mask_denoise (rework strength); grow + context pad compose the region halo, feather blends the paste',
     'Mask prep (grow/feather/invert) rides in-graph ahead of the sampler; re-threshold has no node and refuses non-zero',
     'Iterate HERE, not in video — an edit costs seconds, a render minutes; name what changes, state the rest as unchanged',
-    'THE GEOMETRY LAW (the latent law, 2026-11-08): both edit lanes inherit the source\'s own frame — the 2.1 lane samples the encoder\'s anchor-sized latent (any other size shifts the edit, the node\'s own law), 2511 encodes the source outright; a stated Width/Height has no seat on either lane and refuses field-named. Match Input Resolution is retained for draft compatibility and switches nothing; the crop_stitch detailer owns the crop size',
+    'THE GEOMETRY LAW (the latent law, 2026-11-08): all three edit lanes inherit their source\'s own frame — the 2.1 lane samples the encoder\'s anchor-sized latent (any other size shifts the edit, the node\'s own law), 2511 encodes the source outright, and fibo2-edit samples its encoder\'s emitted latent at the trained size (the first image\'s aspect); a stated Width/Height has no seat on any lane and refuses field-named. Match Input Resolution is retained for draft compatibility and switches nothing; the crop_stitch detailer owns the crop size',
     'Previous card outputs ride as artifact URLs (/v1/assets/runs/<run>/<file>); the compose resolves them to data/runs/output/<run>/<file> and stages into the comfy input dir (phase 1 validates on the mounts BEFORE registration)',
   ],
 }
@@ -339,7 +343,7 @@ export function registerCard(ctx: Context, comfy: ComfyUIServiceFace): void {
         return
       }
       throw new Error(
-        `no declared action for family '${String(model.family ?? model.id)}' on the image-edit card — every boarded family (qwen-img-edit-21, qwen-img-edit-2511) composes its own declared segment; this address owns none`)
+        `no declared action for family '${String(model.family ?? model.id)}' on the image-edit card — every boarded family (qwen-img-edit-21, qwen-img-edit-2511, fibo2-edit) composes its own declared segment; this address owns none`)
     },
     finalize: finalizeImageEdit,
   }))

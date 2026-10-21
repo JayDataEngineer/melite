@@ -246,7 +246,11 @@
       "MeliteAudioSlice",
       "MeliteFilmAudioMix",
       "MeliteLoudness",
-      "MeliteQVoiceCopy"
+      "MeliteQVoiceCopy",
+      "AudiocoreFamilyInfo",
+      "AudiocoreMusic",
+      "AudiocoreVoiceEmbedding",
+      "UnloadAudiocoreModel"
     ],
     "melite-autorig-nodes": [
       "KimodoTransferWeights",
@@ -273,22 +277,6 @@
       "SkinPack",
       "SkinSidecar"
     ],
-    "melite-sfx-nodes": [
-      "AudiocoreFamilyInfo",
-      "AudiocoreMusic",
-      "AudiocoreTTS",
-      "AudiocoreVoiceEmbedding",
-      "AudiocoreVoiceStudio",
-      "LoadAudiocoreModel",
-      "UnloadAudiocoreModel"
-    ],
-    "melite-tts-nodes": [
-      "AudiocoreTTS",
-      "AudiocoreVoiceStudio",
-      "AudiocoreVoiceEmbedding",
-      "LoadAudiocoreModel",
-      "UnloadAudiocoreModel"
-    ],
     "melite-utility-nodes": [
       "MeliteConcatVideos",
       "MeliteUnload"
@@ -311,10 +299,13 @@
     ],
     "comfy_extras/nodes_video.py": [
       "CreateVideo"
+    ],
+    "comfy_extras/nodes_fibo2.py": [
+      "TextEncodeFibo2"
     ]
   },
   "meta": {
-    "status": "CARD-OWNED SLICES (merged 2026-09-08, package-boundary extermination): model-owned keys (defaults/lane_inputs/variants/variant_groups/mods/accepts/studio) DERIVE from the registry at load (facts.ts) — this file keeps ONLY what the registry cannot carry: per-card outputs/requires_by_family, per-address card_knobs, the row roster, extension_node_types, core_node_types (2026-10-15: node classes the pinned engine CORE serves — never extension keys; the upstream gate proves each file carries its classes at infra/comfyui/core.pin). mask-studio RETIRED 2026-09-16 (CONTRACT D at parity, stroke 75): mask-form owns the mask surface; the studio rows left with the card.",
+    "status": "CARD-OWNED SLICES (merged 2026-09-08, package-boundary extermination): model-owned keys (defaults/lane_inputs/variants/variant_groups/mods/accepts/studio) DERIVE from the registry at load (facts.ts) \u2014 this file keeps ONLY what the registry cannot carry: per-card outputs/requires_by_family, per-address card_knobs, the row roster, extension_node_types, core_node_types (2026-10-15: node classes the pinned engine CORE serves \u2014 never extension keys; the upstream gate proves each file carries its classes at infra/comfyui/core.pin). mask-studio RETIRED 2026-09-16 (CONTRACT D at parity, stroke 75): mask-form owns the mask surface; the studio rows left with the card.",
     "wall": "tests/walls/ts/suites/models-flows.test.ts (AGREE + derivation)"
   },
   "rows": {
@@ -323,6 +314,9 @@
     },
     "anny": {
       "card": "anny"
+    },
+    "fibo2-edit": {
+      "card": "image-edit"
     },
     "florence2": {
       "card": "tagger"
@@ -333,10 +327,10 @@
     "h3": {
       "card": "h3-timeline"
     },
-    "h3-timeline": {
+    "h3-singularity": {
       "card": "h3-timeline"
     },
-    "h3-singularity": {
+    "h3-timeline": {
       "card": "h3-timeline"
     },
     "input": {
@@ -363,9 +357,6 @@
     "music3": {
       "card": "music"
     },
-    "yue2": {
-      "card": "music"
-    },
     "pixal3d": {
       "card": "img-to-mesh"
     },
@@ -387,6 +378,12 @@
     "qwen3-tts-voicedesign": {
       "card": "tts"
     },
+    "qwen3-tts-voicedesign-base": {
+      "card": "tts"
+    },
+    "qwen3-tts-voicedesign-design": {
+      "card": "tts"
+    },
     "seedvr2-ema": {
       "card": "upscale-tools"
     },
@@ -399,14 +396,11 @@
     "wd14": {
       "card": "tagger"
     },
+    "yue2": {
+      "card": "music"
+    },
     "z-image": {
       "card": "image-gen"
-    },
-    "qwen3-tts-voicedesign-design": {
-      "card": "tts"
-    },
-    "qwen3-tts-voicedesign-base": {
-      "card": "tts"
     }
   },
   "engine_node_types": [
