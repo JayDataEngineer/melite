@@ -87,6 +87,7 @@
     "@melite/estate-drafts": "workspace:*",
     "@melite/estate-manage": "workspace:*",
     "@melite/estate-media": "workspace:*",
+    "@melite/estate-provisioning": "workspace:*",
     "@melite/estate-runs": "workspace:*",
     "@melite/image-mask-studio": "workspace:*",
     "@melite/three-client": "workspace:*",
