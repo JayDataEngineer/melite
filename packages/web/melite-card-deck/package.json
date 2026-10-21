@@ -27,6 +27,7 @@
     "@deepseek-ai/dsh-host-webserver": "0.2.1-rc.2",
     "@deepseek-ai/dsh-typert-protocol": "0.2.1-rc.2",
     "@melite/estate-manage": "workspace:*",
+    "@melite/estate-provisioning": "workspace:*",
     "@playwright/test": "^1.62.1",
     "@testing-library/react": "^16.3.3",
     "@testing-library/user-event": "^14.6.7",

@@ -72,7 +72,7 @@ function validItem(value) {
         return false;
     if (!hasValue(PROVISION_STATES, value["state"]))
         return false;
-    if (value["integrity"] !== undefined && value["integrity"] !== "declared-sha256" && value["integrity"] !== "operator-unverified")
+    if (value["integrity"] !== undefined && value["integrity"] !== "declared-sha256" && value["integrity"] !== "size-checked" && value["integrity"] !== "operator-unverified")
         return false;
     for (const key of ["path", "sha256", "errorCode", "detail"]) {
         if (value[key] !== undefined && typeof value[key] !== "string")

@@ -18,6 +18,7 @@
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "paths": {
+        "@melite/estate-provisioning/contracts": ["./../../estate/provisioning/src/contracts.ts"],
         "@melite/models-moss-image": ["./../moss-image/src/index.ts"],
         "@melite/models-moss-image/mods/loras": ["./../moss-image/mods/loras.ts"],
         "@melite/models-moss-image/mods/mask": ["./../moss-image/mods/mask.ts"],

@@ -45,7 +45,16 @@ import type { IconProps } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { ManageActDoc, ManageEnvelopeRow, ManageJsonValue } from '@melite/estate-manage/types'
 import type { RemoteResult } from '@deepseek-ai/dsh-typert-protocol'
 import { Button, Checkbox, DisclosureRow, Menu, IconBranchOutlineRegular, IconDownloadOutlineRegular, IconLinkOutlineRegular, IconPlusOutlineRegular, IconRefreshOutlineRegular, Input } from '@deepseek-ai/dsh-client-ui-primitives'
+import { LIVE_ACQUIRE_STATES, formatWeightProgress, weightPercent } from '@melite/estate-provisioning/contracts'
 import { assetsCopy } from '../assetsCopy.ts'
+
+/** THE LIVE RE-POLL CADENCE (audit download-stack-audit-2026-10-20
+ *  F10): while any declared resource is mid-flight the panel re-polls
+ *  status on this beat — fast enough that a settling flight lands its
+ *  verdict within seconds, slow enough to never crowd the manage
+ *  plane's 1.5s reconcile budget. The poll stops itself: no live row,
+ *  no timer. */
+const RESOURCE_POLL_MS = 2_500
 
 /** The engine's local address — the endpoint field's placeholder and
  *  the value a BLANK Set sends (the field's own default, not a
@@ -146,6 +155,12 @@ interface ResourceView {
   state?: string
   detail?: string
   operation_id?: string
+  // THE LIVE-ROW ADDITIVES (audit download-stack-audit-2026-10-20
+  // F10): a mid-flight family's ledger snapshot — bytes landed, the
+  // DECL total, the phase word. Settled rows never carry them.
+  bytes?: number
+  total?: number
+  phase?: string
   items?: ResourceItemView[]
 }
 
@@ -782,6 +797,14 @@ export function ComfyManagerPanel(): React.ReactElement {
   const resultSequenceRef = useRef(0)
   const mountedRef = useRef(true)
   const statusControllerRef = useRef<AbortController | null>(null)
+  // THE STALL TRACKER (audit F10's stalled-flight voice): per live
+  // row, the byte count and how many consecutive polls have read it
+  // frozen. A row whose bytes freeze across 2+ polls with NO phase
+  // moving is named stalled on the face; frozen bytes with a live
+  // phase stay flight (the F2 law — verify after stream reads
+  // bytes-flat). Entries for rows no longer live are dropped each
+  // poll, so a settled verdict can never leave a ghost note behind.
+  const stallTrackerRef = useRef(new Map<string, { bytes: number; polls: number }>())
   const actionControllerRef = useRef<AbortController | null>(null)
 
   const [extRows, setExtRows] = useState<string[] | null>(null)
@@ -829,6 +852,26 @@ export function ComfyManagerPanel(): React.ReactElement {
         setStatusReceivedAt(received)
         setStatusError('')
         setStatusDetail(reply.detail ?? '')
+        // THE STALL TRACKER'S COUNT (one beat per poll): every live
+        // row answers with its byte count — a changed count restarts
+        // its frozen streak, an unchanged one extends it.
+        const tracker = stallTrackerRef.current
+        const seen = new Set<string>()
+        for (const resource of view.resources ?? []) {
+          const state = resource.state ?? assetsCopy.unknownFallback
+          if (!(LIVE_ACQUIRE_STATES as ReadonlySet<string>).has(state)) continue
+          const key = resource.operation_id ?? resourceLabel(resource)
+          seen.add(key)
+          const previous = tracker.get(key)
+          if (previous === undefined || previous.bytes !== (resource.bytes ?? 0)) {
+            tracker.set(key, { bytes: resource.bytes ?? 0, polls: 1 })
+          } else {
+            tracker.set(key, { bytes: previous.bytes, polls: previous.polls + 1 })
+          }
+        }
+        for (const key of [...tracker.keys()]) {
+          if (!seen.has(key)) tracker.delete(key)
+        }
         const live = view.endpoint?.url
         // seed only while UNTOUCHED: the live url owns the field
         // from mount until the user types; the default it opened at
@@ -880,6 +923,23 @@ export function ComfyManagerPanel(): React.ReactElement {
     const timer = window.setInterval(() => { setNow(Date.now()) }, 5_000)
     return () => { window.clearInterval(timer) }
   }, [])
+  // THE LIVE RE-POLL (audit download-stack-audit-2026-10-20 F10):
+  // while any declared resource is mid-flight, status re-polls on the
+  // RESOURCE_POLL_MS beat — the sidebar watches a download move. The
+  // effect re-arms on every status change: a settled roster arms NO
+  // timer (the poll stops itself), and an in-flight poll is never
+  // stacked (the controller ref is the guard).
+  useEffect(() => {
+    const rows = status?.resources ?? []
+    const anyLive = rows.some((resource) =>
+      (LIVE_ACQUIRE_STATES as ReadonlySet<string>).has(resource.state ?? assetsCopy.unknownFallback))
+    if (!anyLive) return
+    const timer = window.setInterval(() => {
+      if (statusControllerRef.current !== null) return
+      void fetchStatus()
+    }, RESOURCE_POLL_MS)
+    return () => { window.clearInterval(timer) }
+  }, [status, fetchStatus])
 
   const run = useCallback(async (action: string, payload: Record<string, ManageJsonValue> = {}, recordOutput = true): Promise<ManageReply | null> => {
     if (dispatchingRef.current) return null
@@ -1180,120 +1240,188 @@ export function ComfyManagerPanel(): React.ReactElement {
         {resources.length === 0 ? (
           <p className={css.sub}>{assetsCopy.noDeclaredResources}</p>
         ) : (
-          <>
-            {(() => {
-              // ONE roll-up line (S3): counts by state class, painted
-              // once — a billion reds compress to "14 failed".
-              const buckets = new Map<string, number>()
-              for (const resource of resources) {
-                const state = resource.state ?? assetsCopy.unknownFallback
-                buckets.set(state, (buckets.get(state) ?? 0) + 1)
-              }
-              const rollup = [...buckets.entries()]
-                .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
-                .map(([state, count]) => `${count} ${state}`)
-                .join(' · ')
-              return <p className={css.sub} data-testid="resource-rollup">{rollup}</p>
-            })()}
-            <ul className={css.resourceList} data-testid="resource-status">
-              {resources.map((resource, index) => {
-                const state = resource.state ?? assetsCopy.unknownFallback
-                const items = resource.items ?? []
-                // captured once: the doors' payloads need the id as
-                // a plain string, and the fold's closures lose the
-                // JSX condition's narrowing
-                const operationId = resource.operation_id
-                // the fold's own roll-up: "2/3 failed" — the item
-                // states compress like the section's (S1). THE
-                // CENSUS HONESTY LAW (audit F4, 2026-10-20):
-                // 'unknown' items are the scan's own artifact —
-                // counting them good ("N items") titles a partial
-                // check as the whole truth; they ride their own
-                // unchecked voice, never the settled count.
-                const badItems = items.filter((item) => {
-                  const itemState = item.state ?? assetsCopy.unknownFallback
-                  return itemState === 'failed' || itemState === 'blocked' || itemState === 'absent' || itemState === 'missing'
-                }).length
-                const uncheckedItems = items.filter((item) => {
-                  const itemState = item.state ?? assetsCopy.unknownFallback
-                  return itemState === 'unknown'
-                }).length
-                const itemRollup = items.length === 0
-                  ? ''
-                  : badItems === 0 && uncheckedItems === 0
-                    ? `${items.length} item${items.length === 1 ? '' : 's'}`
-                    : `${badItems > 0 ? `${badItems}/${items.length} failed` : ''}${badItems > 0 && uncheckedItems > 0 ? ' · ' : ''}${uncheckedItems > 0 ? `${uncheckedItems}/${items.length} unchecked` : ''}`
-                return (
-                  <li className={css.resourceRow} key={resourceLabel(resource) + ':' + index}>
-                    {/* ONE FOLD PER RESOURCE (S1): the state badge is the
-                        leading icon (the state IS the row's semantic);
-                        the label is the title; the item roll-up rides
-                        collapsedContent — the preview of what's inside,
-                        hidden once the items themselves show. */}
-                    <div className={css.resourceFold} data-testid="resource-fold">
-                      <DisclosureRow
-                        icon={<span className={resourceStateClass(state)}>{state}</span>}
-                        title={resourceLabel(resource)}
-                        open={openFolds.has('resource:' + index)}
-                        expandable
-                        expandOnRowClick
-                        onToggle={() => { toggleFold('resource:' + index) }}
-                        collapsedContent={(
-                          <>
-                            {itemRollup !== '' && <span className={css.sub}>{itemRollup}</span>}
-                            {resource.operation_id !== undefined && <span className={css.mono}>{assetsCopy.operationIdValue({ id: resource.operation_id })}</span>}
-                          </>
-                        )}
-                      >
-                        {resource.detail !== undefined && <p className={css.sub}>{resource.detail}</p>}
-                        {/* THE RESOURCE ACTION DOORS (audit B2-4, the
-                            anima burn's follow-up: the fold offered
-                            no way to act on a dead row — the doors
-                            existed door-side only, and the operator
-                            could not act on the red. A failed or
-                            blocked row that carries an operation_id
-                            gets the acquire_retry/acquire_discard
-                            verbs; the door itself refuses anything
-                            else (a live row 409s, an unknown id
-                            404s) — the UI surfaces the door, it
-                            never invents the verb. */}
-                        {operationId !== undefined && (state === 'failed' || state === 'blocked') && (
-                          <div className={css.row} data-testid="resource-doors">
-                            <Button
-                              aria-busy={busy === 'acquire_retry'}
-                              disabled={locked || busy !== null}
-                              onClick={() => { confirmRun('acquire_retry', assetsCopy.resourceRetryConfirm({ id: operationId }), { payload: { operation_id: operationId } }) }}
-                            >{assetsCopy.resourceRetryButton}</Button>
-                            <Button
-                              aria-busy={busy === 'acquire_discard'}
-                              disabled={locked || busy !== null}
-                              onClick={() => { confirmRun('acquire_discard', assetsCopy.resourceDiscardConfirm({ id: operationId }), { payload: { operation_id: operationId } }) }}
-                            >{assetsCopy.resourceDiscardButton}</Button>
+          (() => {
+            // ONE roll-up line (S3): counts by state class, painted
+            // once — a billion reds compress to "14 failed".
+            const buckets = new Map<string, number>()
+            for (const resource of resources) {
+              const state = resource.state ?? assetsCopy.unknownFallback
+              buckets.set(state, (buckets.get(state) ?? 0) + 1)
+            }
+            const rollup = [...buckets.entries()]
+              .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+              .map(([state, count]) => `${count} ${state}`)
+              .join(' · ')
+            // THE FOLDED SECTION (the sidebar-height burn, 2026-11:
+            // "very, very tall, and it dominates the whole right
+            // sidebar by default"): the roster rides the same
+            // DisclosureRow law as every sibling fold — DEFAULT
+            // CLOSED, the one-line story (count + roll-up) visible in
+            // the title, the rows capped with an internal scroll when
+            // open. The seam and census notes stay OUTSIDE the fold,
+            // above it — a section-level truth never hides behind a
+            // fold toggle.
+            return (
+              <div data-testid="resources-fold">
+                <DisclosureRow
+                  icon={<span className={css.count}>{resources.length}</span>}
+                  title={assetsCopy.resourceFoldStory({ count: resources.length })}
+                  open={openFolds.has('resources-section')}
+                  expandable
+                  expandOnRowClick
+                  onToggle={() => { toggleFold('resources-section') }}
+                  collapsedContent={(
+                    <span className={css.sub} data-testid="resources-fold-story">
+                      {assetsCopy.resourceFoldStory({ count: resources.length })} · <span data-testid="resource-rollup">{rollup}</span>
+                    </span>
+                  )}
+                >
+                  <ul className={css.resourceList} data-testid="resource-status">
+                    {resources.map((resource, index) => {
+                      const state = resource.state ?? assetsCopy.unknownFallback
+                      const items = resource.items ?? []
+                      // captured once: the doors' payloads need the id as
+                      // a plain string, and the fold's closures lose the
+                      // JSX condition's narrowing
+                      const operationId = resource.operation_id
+                      // THE LIVE VOICE (audit F10 last remainder): the
+                      // shared byte/percent vocabulary renders the
+                      // ledger's live snapshot — "4.8/6.8 GB (71%) ·
+                      // stream" — and the meter carries the same
+                      // percent. It rides the collapsed content: the
+                      // operator watches a download move WITHOUT
+                      // opening the row.
+                      const isLive = (LIVE_ACQUIRE_STATES as ReadonlySet<string>).has(state)
+                      const progressLine = isLive
+                        ? (resource.total !== undefined && resource.total > 0
+                          ? formatWeightProgress(resource.bytes ?? 0, resource.total) + ' · ' + (resource.phase ?? state)
+                          : (resource.phase ?? state))
+                        : ''
+                      const stall = stallTrackerRef.current.get(operationId ?? resourceLabel(resource))
+                      const stalled = isLive && stall !== undefined && stall.polls >= 2 && resource.phase === undefined
+                      // the fold's own roll-up: "2/3 failed" — the item
+                      // states compress like the section's (S1). THE
+                      // CENSUS HONESTY LAW (audit F4, 2026-10-20):
+                      // 'unknown' items are the scan's own artifact —
+                      // counting them good ("N items") titles a partial
+                      // check as the whole truth; they ride their own
+                      // unchecked voice, never the settled count.
+                      const badItems = items.filter((item) => {
+                        const itemState = item.state ?? assetsCopy.unknownFallback
+                        return itemState === 'failed' || itemState === 'blocked' || itemState === 'absent' || itemState === 'missing'
+                      }).length
+                      const uncheckedItems = items.filter((item) => {
+                        const itemState = item.state ?? assetsCopy.unknownFallback
+                        return itemState === 'unknown'
+                      }).length
+                      const itemRollup = items.length === 0
+                        ? ''
+                        : badItems === 0 && uncheckedItems === 0
+                          ? `${items.length} item${items.length === 1 ? '' : 's'}`
+                          : `${badItems > 0 ? `${badItems}/${items.length} failed` : ''}${badItems > 0 && uncheckedItems > 0 ? ' · ' : ''}${uncheckedItems > 0 ? `${uncheckedItems}/${items.length} unchecked` : ''}`
+                      // THE PAYLOAD-LESS ROW IS NOT A FOLD (the fold
+                      // diagnostic, 2026-11): a row with nothing behind
+                      // it — no items, no detail, no doors — renders one
+                      // flat line; its expandable is false so the
+                      // operator never clicks a fold that opens onto
+                      // nothing. The progress line and operation id
+                      // still ride the collapsed content, which renders
+                      // closed or open.
+                      const hasDoors = operationId !== undefined && (state === 'failed' || state === 'blocked')
+                      const expandable = items.length > 0 || resource.detail !== undefined || hasDoors
+                      return (
+                        <li className={css.resourceRow} key={resourceLabel(resource) + ':' + index}>
+                          {/* ONE FOLD PER RESOURCE (S1): the state badge is the
+                              leading icon (the state IS the row's semantic);
+                              the label is the title; the item roll-up rides
+                              collapsedContent — the preview of what's inside,
+                              hidden once the items themselves show. */}
+                          <div className={css.resourceFold} data-testid="resource-fold">
+                            <DisclosureRow
+                              icon={<span className={resourceStateClass(state)}>{state}</span>}
+                              title={resourceLabel(resource)}
+                              open={openFolds.has('resource:' + index)}
+                              expandable={expandable}
+                              expandOnRowClick
+                              onToggle={() => { toggleFold('resource:' + index) }}
+                              collapsedContent={(
+                                <>
+                                  {progressLine !== '' && (
+                                    <span className={css.progressLine} data-testid="resource-progress">
+                                      {progressLine}
+                                      {resource.total !== undefined && resource.total > 0 && (
+                                        <span className={css.bar} data-testid="resource-meter">
+                                          <span
+                                            className={css.barFill}
+                                            data-testid="resource-meter-fill"
+                                            style={{ width: weightPercent(resource.bytes ?? 0, resource.total) + '%' }}
+                                          />
+                                        </span>
+                                      )}
+                                    </span>
+                                  )}
+                                  {stalled && (
+                                    <span className={css.warningNote} data-testid="resource-stalled">
+                                      {assetsCopy.resourceStalledNote({ polls: stall?.polls ?? 0 })}
+                                    </span>
+                                  )}
+                                  {itemRollup !== '' && <span className={css.sub}>{itemRollup}</span>}
+                                  {resource.operation_id !== undefined && <span className={css.mono}>{assetsCopy.operationIdValue({ id: resource.operation_id })}</span>}
+                                </>
+                              )}
+                            >
+                              {resource.detail !== undefined && <p className={css.sub}>{resource.detail}</p>}
+                              {/* THE RESOURCE ACTION DOORS (audit B2-4, the
+                                  anima burn's follow-up: the fold offered
+                                  no way to act on a dead row — the doors
+                                  existed door-side only, and the operator
+                                  could not act on the red. A failed or
+                                  blocked row that carries an operation_id
+                                  gets the acquire_retry/acquire_discard
+                                  verbs; the door itself refuses anything
+                                  else (a live row 409s, an unknown id
+                                  404s) — the UI surfaces the door, it
+                                  never invents the verb. */}
+                              {hasDoors && (
+                                <div className={css.row} data-testid="resource-doors">
+                                  <Button
+                                    aria-busy={busy === 'acquire_retry'}
+                                    disabled={locked || busy !== null}
+                                    onClick={() => { confirmRun('acquire_retry', assetsCopy.resourceRetryConfirm({ id: operationId }), { payload: { operation_id: operationId } }) }}
+                                  >{assetsCopy.resourceRetryButton}</Button>
+                                  <Button
+                                    aria-busy={busy === 'acquire_discard'}
+                                    disabled={locked || busy !== null}
+                                    onClick={() => { confirmRun('acquire_discard', assetsCopy.resourceDiscardConfirm({ id: operationId }), { payload: { operation_id: operationId } }) }}
+                                  >{assetsCopy.resourceDiscardButton}</Button>
+                                </div>
+                              )}
+                              {items.length > 0 && (
+                                <ul className={css.resourceItems}>
+                                  {items.map((item, itemIndex) => (
+                                    <li className={css.resourceItem} key={item.key ?? String(itemIndex)}>
+                                      <span className={resourceStateClass(item.state ?? assetsCopy.unknownFallback)}>{item.state ?? assetsCopy.unknownFallback}</span>
+                                      <span className={css.mono}>{item.key ?? item.kind ?? assetsCopy.itemFallback}</span>
+                                      {item.outcome !== undefined && item.outcome !== item.state && <span className={css.sub}>{item.outcome}</span>}
+                                      {item.integrity !== undefined && <span className={css.sub}>{item.integrity}</span>}
+                                      {item.errorCode !== undefined && <span className={css.errorCode}>{item.errorCode}</span>}
+                                      {item.path !== undefined && <span className={css.wrapText}>{item.path}</span>}
+                                      {item.sha256 !== undefined && <span className={css.hash}>{item.sha256}</span>}
+                                      {item.detail !== undefined && <span className={css.sub}>{item.detail}</span>}
+                                    </li>
+                                  ))}
+                                </ul>
+                              )}
+                            </DisclosureRow>
                           </div>
-                        )}
-                        {items.length > 0 && (
-                          <ul className={css.resourceItems}>
-                            {items.map((item, itemIndex) => (
-                              <li className={css.resourceItem} key={item.key ?? String(itemIndex)}>
-                                <span className={resourceStateClass(item.state ?? assetsCopy.unknownFallback)}>{item.state ?? assetsCopy.unknownFallback}</span>
-                                <span className={css.mono}>{item.key ?? item.kind ?? assetsCopy.itemFallback}</span>
-                                {item.outcome !== undefined && item.outcome !== item.state && <span className={css.sub}>{item.outcome}</span>}
-                                {item.integrity !== undefined && <span className={css.sub}>{item.integrity}</span>}
-                                {item.errorCode !== undefined && <span className={css.errorCode}>{item.errorCode}</span>}
-                                {item.path !== undefined && <span className={css.wrapText}>{item.path}</span>}
-                                {item.sha256 !== undefined && <span className={css.hash}>{item.sha256}</span>}
-                                {item.detail !== undefined && <span className={css.sub}>{item.detail}</span>}
-                              </li>
-                            ))}
-                          </ul>
-                        )}
-                      </DisclosureRow>
-                    </div>
-                  </li>
-                )
-              })}
-            </ul>
-          </>
+                        </li>
+                      )
+                    })}
+                  </ul>
+                </DisclosureRow>
+              </div>
+            )
+          })()
         )}
       </section>
 

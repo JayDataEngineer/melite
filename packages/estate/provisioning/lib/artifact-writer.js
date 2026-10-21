@@ -284,6 +284,16 @@ export async function sha256File(path, signal, onProgress) {
 export const hashFile = sha256File;
 export class VerifiedArtifactWriter {
     root;
+    // THE VERIFIED-HASH MEMO (audit download-stack-audit-2026-10-20
+    // F10 addendum A): a full-hash answer is remembered by the file's
+    // stat triple (real path + size + mtimeMs) — the same file
+    // re-inspected while its triple holds never re-hashes. The scan's
+    // budget survives a 56-resource estate because a landed-and-
+    // verified file hashes exactly once.
+    verifiedMemo = new Map();
+    /** Memo bound: a scan walks hundreds of files; the memo never
+     *  grows past the estate's working set (oldest triple evicted). */
+    static MEMO_BOUND = 4_096;
     constructor(root) {
         this.root = root;
     }
@@ -443,9 +453,38 @@ export class VerifiedArtifactWriter {
         if (!stats.isFile()) {
             throw new ProvisioningError("invalid-path", "artifact inspection target is not a file");
         }
+        // THE CHEAP-FIRST VERDICT (audit download-stack-audit-2026-10-20
+        // F10 addendum A): a present file whose size matches the DECL's
+        // declared size is judged by stat — the digest is never read.
+        // One stat per file per scan keeps a 56-resource estate inside
+        // the status budget; a corrupted file of equal size is the
+        // declared-sha256 wall's own catch at acquire/verify time, not
+        // the scan's per-press re-hash.
+        if (request.expectedSizeBytes !== undefined && stats.size === request.expectedSizeBytes) {
+            return { present: true, path: destination, sizeBytes: stats.size, verifiedBy: "size" };
+        }
+        // THE MEMO ANSWER: a sizeless or mismatching-size request pays
+        // the hash only once per stat triple — the re-inspect of an
+        // unchanged file answers from the memo (a stale triple — any
+        // mtime or size move — misses and re-hashes below).
+        const memoKey = realDestination + "\0" + String(stats.size) + "\0" + String(stats.mtimeMs);
+        const memoized = this.verifiedMemo.get(memoKey);
+        if (memoized !== undefined &&
+            (request.expectedSha256 === undefined || normalizeDigest(request.expectedSha256) === memoized)) {
+            return { present: true, path: destination, sha256: memoized, sizeBytes: stats.size };
+        }
         const sha256 = await sha256File(realDestination, signal);
         if (request.expectedSha256 !== undefined && normalizeDigest(request.expectedSha256) !== sha256) {
             return { present: false, path: destination, sha256 };
+        }
+        // THE MEMO FILL: only a verified answer is remembered — a
+        // digest-mismatch file's hash is never mistaken for a verdict.
+        this.verifiedMemo.delete(memoKey);
+        this.verifiedMemo.set(memoKey, sha256);
+        if (this.verifiedMemo.size > VerifiedArtifactWriter.MEMO_BOUND) {
+            const oldest = this.verifiedMemo.keys().next().value;
+            if (oldest !== undefined)
+                this.verifiedMemo.delete(oldest);
         }
         return { present: true, path: destination, sha256, sizeBytes: stats.size };
     }

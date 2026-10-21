@@ -6,6 +6,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Context } from "@deepseek-ai/cordis";
 import {
+  FileOperationStore,
   ManagerProviderError,
   ProvisioningError,
   ProvisioningService,
@@ -367,10 +368,21 @@ describe("ProvisioningService public seams", () => {
       manager: manager({ installModel: async () => { await gate; return { installed: true }; } }),
     })).service;
     const pending = service.ensure(ref);
-    const locked = service.inspect(ref);
+    // THE LIVE-ROW DOOR (audit download-stack-audit-2026-10-20 F10,
+    // last remainder — supersedes the locked join this arm once
+    // pinned): the locked inspect answers NOW with the live snapshot
+    // and never joins the flight. This flight rides the manager
+    // install, whose ledger row does not exist yet — the pre-seed
+    // window's honest arming row: live, named, no invented numbers.
+    const locked = await service.inspect(ref);
+    assert.equal(locked.state, "acquiring");
+    assert.equal(typeof locked.operationId === "string", true, JSON.stringify(locked));
+    assert.equal(locked.items.length, 0);
+    for (const additive of ["bytes", "total", "phase"]) {
+      assert.equal(additive in locked, false, "the arming row invents no " + additive);
+    }
     release();
     assert.equal((await pending).state, "active");
-    assert.equal((await locked).state, "active");
     const refused = makeService(basicConfig(async () => { throw new ManagerProviderError("pin-mismatch", "no"); })).service;
     const status = await refused.inspect(ref);
     assert.equal(status.state, "blocked");
@@ -1063,11 +1075,50 @@ describe("ProvisioningService public seams", () => {
       throw new Error("locked failure");
     })).service;
     const first = failed.ensure(model);
+    // THE LIVE-ROW DOOR (audit F10 last remainder — supersedes the
+    // joined-failure detail this arm once pinned): the locked inspect
+    // answers the arming row NOW; the plan gate is still closed, so
+    // no ledger row and no numbers. The failure detail rides the
+    // flight's own await (the join seam below), never the scan.
     const joined = failed.inspect(model);
     release();
     const [firstResult, joinedResult] = await Promise.all([first, joined]);
     assert.equal(firstResult.items[0]?.detail, "locked failure");
-    assert.equal(joinedResult.detail, "locked failure", JSON.stringify(joinedResult));
+    assert.equal(joinedResult.state, "acquiring");
+    assert.equal(joinedResult.detail === undefined, true, JSON.stringify(joinedResult));
+    for (const additive of ["bytes", "total", "phase"]) {
+      assert.equal(additive in joinedResult, false, "the arming row invents no " + additive);
+    }
+  });
+
+  test("a size-checked activate persists — the store's integrity vocabulary carries the cheap-first word (audit M2, 2026-11)", async () => {
+    const root = tempRoot();
+    writeFileSync(join(root, "one.bin"), "abcd");
+    const ref = modelRef();
+    const item = modelItem({ folder: "", sha256: createHash("sha256").update("abcd").digest("hex"), sizeBytes: 4 });
+    const storeRoot = join(root, "operations");
+    const service = makeService(basicConfig(plan(ref, [item]), {
+      storeRoot: root,
+      operationStore: new FileOperationStore(storeRoot),
+    })).service;
+    const result = await service.activate(ref);
+    assert.equal(result.state, "active");
+    assert.equal(result.items[0]?.integrity, "size-checked",
+      "control: the scan judged the size-matching file by stat, never a hash");
+    // THE ROUND TRIP (audit M2): the persist is an enqueued write —
+    // reload the store from disk and demand the item with its
+    // size-checked integrity. Pre-fix the store's allowlist refused
+    // the word (invalid-record) and the stale begin-record stayed.
+    const reloaded = new FileOperationStore(storeRoot);
+    let record: Awaited<ReturnType<typeof reloaded.load>> = null;
+    for (let attempt = 0; attempt < 100 && record === null; attempt += 1) {
+      record = await reloaded.load(result.operationId);
+      if (record === null) await new Promise((resolve) => { setTimeout(resolve, 10); });
+    }
+    assert.ok(record !== null,
+      "the activate's record must persist — a refused integrity leaves the stale begin-record forever");
+    assert.equal(record.items[0]?.integrity, "size-checked",
+      "the persisted item carries the cheap-first word, not a downgraded one");
   });
 
   test("model fallback inspection includes references without optional coordinates", async () => {

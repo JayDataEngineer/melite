@@ -565,6 +565,29 @@
   gap: 4px;
 }
 
+/* THE SECTION-FOLD CAP (the sidebar-height burn, 2026-11: the open
+   roster dominated the whole right sidebar): the row list scrolls
+   INTERNALLY — the cap is a real height bound on the list, not a
+   class name. The section fold's body never grows past this. */
+.resourceList {
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+/* THE LIVE VOICE's line (audit F10 last remainder): the progress
+   text with its meter — the meter inherits the shared .bar chrome
+   (the VRAM bar's) and reads at a fixed inline width beside it. */
+.progressLine {
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.progressLine .bar {
+  width: 90px;
+}
+
 .resourceItems {
   display: flex;
   flex-direction: column;

@@ -31,8 +31,8 @@ window.__ModuleLoader__.load({
 		let _deepseek_ai_dsh_client_ui_primitives = require("@deepseek-ai/dsh-client-ui-primitives");
 		let react_jsx_runtime = require("react/jsx-runtime");
 		//#region \0dsh-css:packages/web/melite-card-deck/src/client/assets.module.css.mjs
-		const css = ".zcZoIq_root{box-sizing:border-box;width:100%;min-width:0;max-width:100%;height:100%;min-height:0;color:var(--dsw-alias-label-primary);flex-direction:column;gap:10px;padding:clamp(8px,3cqi,12px);font-size:12px;line-height:1.4;display:flex;overflow:hidden auto;container-type:inline-size}.zcZoIq_root,.zcZoIq_root *{box-sizing:border-box}.zcZoIq_head,.zcZoIq_healthTop,.zcZoIq_resultHead,.zcZoIq_resultRecordHead,.zcZoIq_nextRow,.zcZoIq_resultItem,.zcZoIq_resourceItem,.zcZoIq_lifecycleActions,.zcZoIq_checkRow,.zcZoIq_device{min-width:0}.zcZoIq_head{flex-wrap:wrap;justify-content:space-between;align-items:baseline;gap:8px;display:flex}.zcZoIq_title{letter-spacing:.02em;margin:0;font-size:14px;font-weight:650}.zcZoIq_sub,.zcZoIq_freshness,.zcZoIq_resultKind,.zcZoIq_resultDataLabel{opacity:.72;overflow-wrap:anywhere;font-size:11px}.zcZoIq_section{border:1px solid var(--dsw-alias-border-l1);background:var(--dsw-alias-bg-layer-1);border-radius:10px;flex-direction:column;gap:8px;min-width:0;padding:10px;display:flex}.zcZoIq_sectionTitle{text-transform:uppercase;letter-spacing:.08em;opacity:.68;align-items:center;gap:6px;margin:0;font-size:11px;font-weight:650;display:flex}.zcZoIq_count{background:color-mix(in srgb, var(--dsw-alias-label-primary) 10%, transparent);border-radius:999px;justify-content:center;align-items:center;min-width:20px;padding:1px 6px;font-size:10px;display:inline-flex}.zcZoIq_healthPanel{gap:7px}.zcZoIq_healthTop{flex-wrap:wrap;align-items:center;gap:8px;display:flex}.zcZoIq_healthCopy{flex-direction:column;flex:150px;min-width:0;display:flex}.zcZoIq_healthTitle{text-transform:uppercase;letter-spacing:.08em;opacity:.58;margin:0;font-size:10px;font-weight:600}.zcZoIq_healthLabel{overflow-wrap:anywhere;font-size:13px}.zcZoIq_healthGrid{grid-template-columns:repeat(auto-fit,minmax(min(128px,100%),1fr));gap:6px 10px;margin:0;display:grid}.zcZoIq_healthItem{border:1px solid color-mix(in srgb, var(--dsw-alias-border-l2) 75%, transparent);background:color-mix(in srgb, var(--dsw-alias-bg-base) 55%, transparent);border-radius:7px;min-width:0;padding:5px 7px}.zcZoIq_healthItem dt{text-transform:uppercase;letter-spacing:.05em;opacity:.58;margin-bottom:2px;font-size:10px;font-weight:600}.zcZoIq_healthItem dd{overflow-wrap:anywhere;min-width:0;margin:0;font-size:11px}.zcZoIq_row{flex-flow:wrap;align-items:flex-end;gap:6px;min-width:0;display:flex}.zcZoIq_row>label{flex:150px;min-width:0;max-width:100%}.zcZoIq_field{flex-direction:column;gap:3px;min-width:0;display:flex}.zcZoIq_fieldLabel{opacity:.74;font-size:11px;font-weight:550}.zcZoIq_input{box-sizing:border-box;background:var(--dsw-alias-bg-base);border:1px solid var(--dsw-alias-border-l2);width:100%;min-width:0;max-width:100%;color:inherit;border-radius:7px;padding:6px 8px;font-family:inherit;font-size:12px}.zcZoIq_input:focus{outline:1px solid var(--dsw-alias-state-business-primary);border-color:#0000}.zcZoIq_mono,.zcZoIq_hash{font-family:ui-monospace,monospace;font-size:11px}.zcZoIq_chipRow{flex-wrap:wrap;gap:4px;min-width:0;display:flex}.zcZoIq_chip{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-base);border-radius:7px;align-items:center;gap:4px;padding:3px 4px 3px 7px;font-size:11px;line-height:1;display:inline-flex}.zcZoIq_chipX{color:inherit;cursor:pointer;font:inherit;background:0 0;border:none;border-radius:4px;padding:2px 4px;font-size:13px;line-height:1}.zcZoIq_chipX:hover{background:var(--dsw-alias-border-l1)}.zcZoIq_wrapText,.zcZoIq_hash{overflow-wrap:anywhere;word-break:break-word;min-width:0;max-width:100%}.zcZoIq_btnDanger{border:1px solid color-mix(in srgb, var(--dsw-alias-state-error-primary) 55%, transparent);color:var(--dsw-alias-state-error-primary)}.zcZoIq_dot{border-radius:50%;flex:none;width:9px;height:9px}.zcZoIq_dotOk{background:var(--dsw-alias-state-business-primary);}.zcZoIq_dotWarn{background:color-mix(in srgb, var(--dsw-alias-label-primary) 55%, transparent);}.zcZoIq_dotBad{background:var(--dsw-alias-state-error-primary);}.zcZoIq_kvKey{overflow-wrap:anywhere;min-width:0;font-weight:600}.zcZoIq_deviceList{flex-direction:column;gap:5px;display:flex}.zcZoIq_device{grid-template-columns:minmax(54px,auto) minmax(40px,1fr) auto;align-items:center;gap:7px;display:grid}.zcZoIq_bar{background:color-mix(in srgb, var(--dsw-alias-label-primary) 14%, transparent);border-radius:3px;min-width:0;height:5px;display:block;overflow:hidden}.zcZoIq_barFill{background:var(--dsw-alias-state-business-primary);border-radius:3px;height:100%;display:block}.zcZoIq_advanced{border:1px solid var(--dsw-alias-border-l2);background:color-mix(in srgb, var(--dsw-alias-bg-base) 45%, transparent);border-radius:8px;min-width:0;padding:7px 8px}.zcZoIq_operatorBadge{border:1px solid var(--dsw-alias-state-error-primary);color:var(--dsw-alias-state-error-primary);letter-spacing:.04em;text-transform:uppercase;border-radius:999px;margin-right:5px;padding:1px 6px;font-size:9px;font-weight:700;display:inline-block}.zcZoIq_operatorNote,.zcZoIq_warningNote{color:var(--dsw-alias-state-warning-primary,var(--dsw-alias-label-primary));overflow-wrap:anywhere;margin:0;font-size:11px}.zcZoIq_dangerNote,.zcZoIq_errorCode{color:var(--dsw-alias-state-error-primary);overflow-wrap:anywhere;margin:0;font-size:11px}.zcZoIq_resultDock{border-color:color-mix(in srgb, var(--dsw-alias-state-business-primary) 40%, var(--dsw-alias-border-l1))}.zcZoIq_resultHead{flex-wrap:wrap;justify-content:space-between;align-items:center;gap:8px;display:flex}.zcZoIq_resultRecord{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-base);border-radius:8px;flex-direction:column;gap:6px;min-width:0;padding:8px;display:flex}.zcZoIq_resultRecord+.zcZoIq_resultRecord{margin-top:7px}.zcZoIq_resultRecordHead{flex-wrap:wrap;align-items:center;gap:6px;display:flex}.zcZoIq_resultAction{overflow-wrap:anywhere;min-width:0;font-family:ui-monospace,monospace;font-size:11px;font-weight:600}.zcZoIq_resultKind{margin-left:auto}.zcZoIq_resultOk,.zcZoIq_resultWarn,.zcZoIq_resultBad,.zcZoIq_stateOk,.zcZoIq_stateWarn,.zcZoIq_stateBad,.zcZoIq_stateNeutral{border:1px solid var(--dsw-alias-border-l2);letter-spacing:.05em;overflow-wrap:anywhere;border-radius:999px;align-items:center;max-width:100%;padding:2px 7px;font-size:9px;font-weight:700;line-height:1.25;display:inline-flex}.zcZoIq_resultOk,.zcZoIq_stateOk{border-color:color-mix(in srgb, var(--dsw-alias-state-business-primary) 55%, transparent);background:color-mix(in srgb, var(--dsw-alias-state-business-primary) 14%, transparent);color:var(--dsw-alias-state-business-primary)}.zcZoIq_resultWarn,.zcZoIq_stateWarn{border-color:color-mix(in srgb, var(--dsw-alias-state-warning-primary,var(--dsw-alias-label-primary)) 65%, transparent);background:color-mix(in srgb, var(--dsw-alias-state-warning-primary,var(--dsw-alias-label-primary)) 12%, transparent);color:var(--dsw-alias-state-warning-primary,var(--dsw-alias-label-primary))}.zcZoIq_resultBad,.zcZoIq_stateBad{border-color:color-mix(in srgb, var(--dsw-alias-state-error-primary) 55%, transparent);background:color-mix(in srgb, var(--dsw-alias-state-error-primary) 12%, transparent);color:var(--dsw-alias-state-error-primary)}.zcZoIq_stateNeutral{background:color-mix(in srgb, var(--dsw-alias-label-primary) 8%, transparent)}.zcZoIq_resultMeta,.zcZoIq_resultFlags{grid-template-columns:repeat(auto-fit,minmax(min(150px,100%),1fr));gap:4px 8px;min-width:0;font-size:11px;display:grid}.zcZoIq_resultMeta>span,.zcZoIq_resultFlags>span{overflow-wrap:anywhere;min-width:0}.zcZoIq_resultDetail{overflow-wrap:anywhere;margin:0;font-size:11px}.zcZoIq_nextRow{flex-wrap:wrap;align-items:center;gap:7px;display:flex}.zcZoIq_resultItem,.zcZoIq_resourceItem{border:1px solid var(--dsw-alias-border-l2);background:color-mix(in srgb, var(--dsw-alias-bg-layer-1) 72%, transparent);border-radius:7px;flex-wrap:wrap;align-items:center;gap:5px 8px;padding:5px 6px;display:flex}.zcZoIq_resultItem+.zcZoIq_resultItem,.zcZoIq_resourceItem+.zcZoIq_resourceItem{margin-top:4px}.zcZoIq_resultData{flex-direction:column;gap:4px;min-width:0;display:flex}.zcZoIq_pre{border:1px solid var(--dsw-alias-border-l2);background:color-mix(in srgb, var(--dsw-alias-bg-layer-1) 70%, transparent);white-space:pre-wrap;overflow-wrap:anywhere;word-break:break-word;border-radius:7px;min-width:0;max-width:100%;max-height:min(42vh,360px);margin:0;padding:7px;font-family:ui-monospace,monospace;font-size:11px;line-height:1.45;overflow:auto}.zcZoIq_resourceList,.zcZoIq_resourceItems,.zcZoIq_list{min-width:0;margin:0;padding:0;list-style:none}.zcZoIq_resourceList,.zcZoIq_list{flex-direction:column;gap:5px;display:flex}.zcZoIq_resourceRow{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-base);border-radius:8px;min-width:0;padding:7px}.zcZoIq_resourceRow>.zcZoIq_sub{margin-top:4px}.zcZoIq_resourceFold{flex-direction:column;gap:4px;min-width:0;display:flex}.zcZoIq_resourceItems{flex-direction:column;gap:4px;margin-top:5px;display:flex}.zcZoIq_resourceItem{padding:4px 5px}.zcZoIq_listRow{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-base);border-radius:7px;justify-content:space-between;align-items:center;gap:6px 8px;min-width:0;padding:5px 7px;display:flex}.zcZoIq_snapshotRow>.zcZoIq_wrapText{flex:150px}.zcZoIq_lifecycleActions{flex-wrap:wrap;gap:6px;display:flex}@container (width<=330px){.zcZoIq_root{gap:8px;padding:8px}.zcZoIq_section{padding:8px}.zcZoIq_healthGrid,.zcZoIq_resultMeta,.zcZoIq_resultFlags{grid-template-columns:minmax(0,1fr)}.zcZoIq_row>label,.zcZoIq_healthCopy{flex-basis:100%}.zcZoIq_device{grid-template-columns:minmax(0,1fr)}.zcZoIq_bar{grid-row:2}.zcZoIq_resultKind{width:100%;margin-left:0}}";
-		const tagId = "@melite-plugin/dsh-card-deck/assets.module.css@476721f0";
+		const css = ".zcZoIq_root{box-sizing:border-box;width:100%;min-width:0;max-width:100%;height:100%;min-height:0;color:var(--dsw-alias-label-primary);flex-direction:column;gap:10px;padding:clamp(8px,3cqi,12px);font-size:12px;line-height:1.4;display:flex;overflow:hidden auto;container-type:inline-size}.zcZoIq_root,.zcZoIq_root *{box-sizing:border-box}.zcZoIq_head,.zcZoIq_healthTop,.zcZoIq_resultHead,.zcZoIq_resultRecordHead,.zcZoIq_nextRow,.zcZoIq_resultItem,.zcZoIq_resourceItem,.zcZoIq_lifecycleActions,.zcZoIq_checkRow,.zcZoIq_device{min-width:0}.zcZoIq_head{flex-wrap:wrap;justify-content:space-between;align-items:baseline;gap:8px;display:flex}.zcZoIq_title{letter-spacing:.02em;margin:0;font-size:14px;font-weight:650}.zcZoIq_sub,.zcZoIq_freshness,.zcZoIq_resultKind,.zcZoIq_resultDataLabel{opacity:.72;overflow-wrap:anywhere;font-size:11px}.zcZoIq_section{border:1px solid var(--dsw-alias-border-l1);background:var(--dsw-alias-bg-layer-1);border-radius:10px;flex-direction:column;gap:8px;min-width:0;padding:10px;display:flex}.zcZoIq_sectionTitle{text-transform:uppercase;letter-spacing:.08em;opacity:.68;align-items:center;gap:6px;margin:0;font-size:11px;font-weight:650;display:flex}.zcZoIq_count{background:color-mix(in srgb, var(--dsw-alias-label-primary) 10%, transparent);border-radius:999px;justify-content:center;align-items:center;min-width:20px;padding:1px 6px;font-size:10px;display:inline-flex}.zcZoIq_healthPanel{gap:7px}.zcZoIq_healthTop{flex-wrap:wrap;align-items:center;gap:8px;display:flex}.zcZoIq_healthCopy{flex-direction:column;flex:150px;min-width:0;display:flex}.zcZoIq_healthTitle{text-transform:uppercase;letter-spacing:.08em;opacity:.58;margin:0;font-size:10px;font-weight:600}.zcZoIq_healthLabel{overflow-wrap:anywhere;font-size:13px}.zcZoIq_healthGrid{grid-template-columns:repeat(auto-fit,minmax(min(128px,100%),1fr));gap:6px 10px;margin:0;display:grid}.zcZoIq_healthItem{border:1px solid color-mix(in srgb, var(--dsw-alias-border-l2) 75%, transparent);background:color-mix(in srgb, var(--dsw-alias-bg-base) 55%, transparent);border-radius:7px;min-width:0;padding:5px 7px}.zcZoIq_healthItem dt{text-transform:uppercase;letter-spacing:.05em;opacity:.58;margin-bottom:2px;font-size:10px;font-weight:600}.zcZoIq_healthItem dd{overflow-wrap:anywhere;min-width:0;margin:0;font-size:11px}.zcZoIq_row{flex-flow:wrap;align-items:flex-end;gap:6px;min-width:0;display:flex}.zcZoIq_row>label{flex:150px;min-width:0;max-width:100%}.zcZoIq_field{flex-direction:column;gap:3px;min-width:0;display:flex}.zcZoIq_fieldLabel{opacity:.74;font-size:11px;font-weight:550}.zcZoIq_input{box-sizing:border-box;background:var(--dsw-alias-bg-base);border:1px solid var(--dsw-alias-border-l2);width:100%;min-width:0;max-width:100%;color:inherit;border-radius:7px;padding:6px 8px;font-family:inherit;font-size:12px}.zcZoIq_input:focus{outline:1px solid var(--dsw-alias-state-business-primary);border-color:#0000}.zcZoIq_mono,.zcZoIq_hash{font-family:ui-monospace,monospace;font-size:11px}.zcZoIq_chipRow{flex-wrap:wrap;gap:4px;min-width:0;display:flex}.zcZoIq_chip{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-base);border-radius:7px;align-items:center;gap:4px;padding:3px 4px 3px 7px;font-size:11px;line-height:1;display:inline-flex}.zcZoIq_chipX{color:inherit;cursor:pointer;font:inherit;background:0 0;border:none;border-radius:4px;padding:2px 4px;font-size:13px;line-height:1}.zcZoIq_chipX:hover{background:var(--dsw-alias-border-l1)}.zcZoIq_wrapText,.zcZoIq_hash{overflow-wrap:anywhere;word-break:break-word;min-width:0;max-width:100%}.zcZoIq_btnDanger{border:1px solid color-mix(in srgb, var(--dsw-alias-state-error-primary) 55%, transparent);color:var(--dsw-alias-state-error-primary)}.zcZoIq_dot{border-radius:50%;flex:none;width:9px;height:9px}.zcZoIq_dotOk{background:var(--dsw-alias-state-business-primary);}.zcZoIq_dotWarn{background:color-mix(in srgb, var(--dsw-alias-label-primary) 55%, transparent);}.zcZoIq_dotBad{background:var(--dsw-alias-state-error-primary);}.zcZoIq_kvKey{overflow-wrap:anywhere;min-width:0;font-weight:600}.zcZoIq_deviceList{flex-direction:column;gap:5px;display:flex}.zcZoIq_device{grid-template-columns:minmax(54px,auto) minmax(40px,1fr) auto;align-items:center;gap:7px;display:grid}.zcZoIq_bar{background:color-mix(in srgb, var(--dsw-alias-label-primary) 14%, transparent);border-radius:3px;min-width:0;height:5px;display:block;overflow:hidden}.zcZoIq_barFill{background:var(--dsw-alias-state-business-primary);border-radius:3px;height:100%;display:block}.zcZoIq_advanced{border:1px solid var(--dsw-alias-border-l2);background:color-mix(in srgb, var(--dsw-alias-bg-base) 45%, transparent);border-radius:8px;min-width:0;padding:7px 8px}.zcZoIq_operatorBadge{border:1px solid var(--dsw-alias-state-error-primary);color:var(--dsw-alias-state-error-primary);letter-spacing:.04em;text-transform:uppercase;border-radius:999px;margin-right:5px;padding:1px 6px;font-size:9px;font-weight:700;display:inline-block}.zcZoIq_operatorNote,.zcZoIq_warningNote{color:var(--dsw-alias-state-warning-primary,var(--dsw-alias-label-primary));overflow-wrap:anywhere;margin:0;font-size:11px}.zcZoIq_dangerNote,.zcZoIq_errorCode{color:var(--dsw-alias-state-error-primary);overflow-wrap:anywhere;margin:0;font-size:11px}.zcZoIq_resultDock{border-color:color-mix(in srgb, var(--dsw-alias-state-business-primary) 40%, var(--dsw-alias-border-l1))}.zcZoIq_resultHead{flex-wrap:wrap;justify-content:space-between;align-items:center;gap:8px;display:flex}.zcZoIq_resultRecord{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-base);border-radius:8px;flex-direction:column;gap:6px;min-width:0;padding:8px;display:flex}.zcZoIq_resultRecord+.zcZoIq_resultRecord{margin-top:7px}.zcZoIq_resultRecordHead{flex-wrap:wrap;align-items:center;gap:6px;display:flex}.zcZoIq_resultAction{overflow-wrap:anywhere;min-width:0;font-family:ui-monospace,monospace;font-size:11px;font-weight:600}.zcZoIq_resultKind{margin-left:auto}.zcZoIq_resultOk,.zcZoIq_resultWarn,.zcZoIq_resultBad,.zcZoIq_stateOk,.zcZoIq_stateWarn,.zcZoIq_stateBad,.zcZoIq_stateNeutral{border:1px solid var(--dsw-alias-border-l2);letter-spacing:.05em;overflow-wrap:anywhere;border-radius:999px;align-items:center;max-width:100%;padding:2px 7px;font-size:9px;font-weight:700;line-height:1.25;display:inline-flex}.zcZoIq_resultOk,.zcZoIq_stateOk{border-color:color-mix(in srgb, var(--dsw-alias-state-business-primary) 55%, transparent);background:color-mix(in srgb, var(--dsw-alias-state-business-primary) 14%, transparent);color:var(--dsw-alias-state-business-primary)}.zcZoIq_resultWarn,.zcZoIq_stateWarn{border-color:color-mix(in srgb, var(--dsw-alias-state-warning-primary,var(--dsw-alias-label-primary)) 65%, transparent);background:color-mix(in srgb, var(--dsw-alias-state-warning-primary,var(--dsw-alias-label-primary)) 12%, transparent);color:var(--dsw-alias-state-warning-primary,var(--dsw-alias-label-primary))}.zcZoIq_resultBad,.zcZoIq_stateBad{border-color:color-mix(in srgb, var(--dsw-alias-state-error-primary) 55%, transparent);background:color-mix(in srgb, var(--dsw-alias-state-error-primary) 12%, transparent);color:var(--dsw-alias-state-error-primary)}.zcZoIq_stateNeutral{background:color-mix(in srgb, var(--dsw-alias-label-primary) 8%, transparent)}.zcZoIq_resultMeta,.zcZoIq_resultFlags{grid-template-columns:repeat(auto-fit,minmax(min(150px,100%),1fr));gap:4px 8px;min-width:0;font-size:11px;display:grid}.zcZoIq_resultMeta>span,.zcZoIq_resultFlags>span{overflow-wrap:anywhere;min-width:0}.zcZoIq_resultDetail{overflow-wrap:anywhere;margin:0;font-size:11px}.zcZoIq_nextRow{flex-wrap:wrap;align-items:center;gap:7px;display:flex}.zcZoIq_resultItem,.zcZoIq_resourceItem{border:1px solid var(--dsw-alias-border-l2);background:color-mix(in srgb, var(--dsw-alias-bg-layer-1) 72%, transparent);border-radius:7px;flex-wrap:wrap;align-items:center;gap:5px 8px;padding:5px 6px;display:flex}.zcZoIq_resultItem+.zcZoIq_resultItem,.zcZoIq_resourceItem+.zcZoIq_resourceItem{margin-top:4px}.zcZoIq_resultData{flex-direction:column;gap:4px;min-width:0;display:flex}.zcZoIq_pre{border:1px solid var(--dsw-alias-border-l2);background:color-mix(in srgb, var(--dsw-alias-bg-layer-1) 70%, transparent);white-space:pre-wrap;overflow-wrap:anywhere;word-break:break-word;border-radius:7px;min-width:0;max-width:100%;max-height:min(42vh,360px);margin:0;padding:7px;font-family:ui-monospace,monospace;font-size:11px;line-height:1.45;overflow:auto}.zcZoIq_resourceList,.zcZoIq_resourceItems,.zcZoIq_list{min-width:0;margin:0;padding:0;list-style:none}.zcZoIq_resourceList,.zcZoIq_list{flex-direction:column;gap:5px;display:flex}.zcZoIq_resourceRow{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-base);border-radius:8px;min-width:0;padding:7px}.zcZoIq_resourceRow>.zcZoIq_sub{margin-top:4px}.zcZoIq_resourceFold{flex-direction:column;gap:4px;min-width:0;display:flex}.zcZoIq_resourceList{max-height:320px;overflow-y:auto}.zcZoIq_progressLine{align-items:center;gap:6px;min-width:0;display:inline-flex}.zcZoIq_progressLine .zcZoIq_bar{width:90px}.zcZoIq_resourceItems{flex-direction:column;gap:4px;margin-top:5px;display:flex}.zcZoIq_resourceItem{padding:4px 5px}.zcZoIq_listRow{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-base);border-radius:7px;justify-content:space-between;align-items:center;gap:6px 8px;min-width:0;padding:5px 7px;display:flex}.zcZoIq_snapshotRow>.zcZoIq_wrapText{flex:150px}.zcZoIq_lifecycleActions{flex-wrap:wrap;gap:6px;display:flex}@container (width<=330px){.zcZoIq_root{gap:8px;padding:8px}.zcZoIq_section{padding:8px}.zcZoIq_healthGrid,.zcZoIq_resultMeta,.zcZoIq_resultFlags{grid-template-columns:minmax(0,1fr)}.zcZoIq_row>label,.zcZoIq_healthCopy{flex-basis:100%}.zcZoIq_device{grid-template-columns:minmax(0,1fr)}.zcZoIq_bar{grid-row:2}.zcZoIq_resultKind{width:100%;margin-left:0}}";
+		const tagId = "@melite-plugin/dsh-card-deck/assets.module.css@d2a681a3";
 		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId) + "]") === null) {
 			const tag = document.createElement("style");
 			tag.dataset.plugin = "@melite-plugin/dsh-card-deck";
@@ -80,6 +80,7 @@ window.__ModuleLoader__.load({
 			"operatorBadge": "zcZoIq_operatorBadge",
 			"operatorNote": "zcZoIq_operatorNote",
 			"pre": "zcZoIq_pre",
+			"progressLine": "zcZoIq_progressLine",
 			"resourceFold": "zcZoIq_resourceFold",
 			"resourceItem": "zcZoIq_resourceItem",
 			"resourceItems": "zcZoIq_resourceItems",
@@ -114,6 +115,66 @@ window.__ModuleLoader__.load({
 			"warningNote": "zcZoIq_warningNote",
 			"wrapText": "zcZoIq_wrapText"
 		};
+		//#endregion
+		//#region ../../estate/provisioning/src/contracts.ts
+		/** THE LIVE ACQUIRE STATES — the states that name a fetch still
+		*  holding its plane slot (one spelling for every reader that must
+		*  tell a landing download from a settled row: the manage plane's
+		*  rescue verbs refuse live ids, the run gate's lane-presence voice
+		*  reports the live fraction). A settled row — landed, failed,
+		*  blocked — is never in this set. */
+		const LIVE_ACQUIRE_STATES = /* @__PURE__ */ new Set(["acquiring", "verifying"]);
+		/** THE HUMAN BYTE VOICE (operator 2026-10-20: "THE TRACKING OF
+		*  BYTES ALONE IS INEXCUSABLE" — the popup showed
+		*  "5196173399/7343591088 bytes (71%)", a wall of digits no
+		*  operator can read at a glance). Binary-base sizes with one
+		*  decimal: 7343591088 → "6.8 GB", 519617399 → "4.8 GB".
+		*  Non-finite or negative input voices "0 B" (never NaN on the
+		*  face). Re-homed here (2026-11, audit F10 last remainder) as the
+		*  ONE byte vocabulary both the rescue popup and the deck's
+		*  declared-resources face import — never a second spelling.
+		*  @param bytes the byte count to voice
+		*  @returns the human size, one decimal, binary base */
+		function formatByteSize(bytes) {
+			if (typeof bytes !== "number" || !Number.isFinite(bytes) || bytes < 0) return "0 B";
+			if (bytes < 1024) return String(Math.floor(bytes)) + " B";
+			const units = [
+				"KB",
+				"MB",
+				"GB",
+				"TB"
+			];
+			let value = bytes / 1024;
+			let unit = 0;
+			while (value >= 1024 && unit < units.length - 1) {
+				value /= 1024;
+				unit += 1;
+			}
+			return value.toFixed(1) + " " + units[unit];
+		}
+		/** THE HUMAN PROGRESS LINE (the same burn): "4.8/6.8 GB (71%)"
+		*  — human sizes over the DECL total with the percent the bar
+		*  already carries. A total=0 row has no line (the purge P5
+		*  undeclared face owns it) — empty string, never "0/0".
+		*  @param bytes the landed byte count
+		*  @param total the declared total the percent rides
+		*  @returns "4.8/6.8 GB (71%)"-shaped line, or "" when total=0 */
+		function formatWeightProgress(bytes, total) {
+			if (!(total > 0)) return "";
+			const pct = Math.min(100, Math.round(bytes / total * 100));
+			return formatByteSize(bytes) + "/" + formatByteSize(total) + " (" + String(pct) + "%)";
+		}
+		/** THE SHARED PERCENT (the meter's number, one spelling beside the
+		*  byte voice it mirrors): the 0–100 integer formatWeightProgress
+		*  prints in parentheses. Clamped at 100 — an over-delivered row
+		*  never reads 104%.
+		*  @param bytes the landed byte count
+		*  @param total the declared total
+		*  @returns the clamped 0–100 percent integer */
+		function weightPercent(bytes, total) {
+			if (!(total > 0)) return 0;
+			return Math.min(100, Math.round(bytes / total * 100));
+		}
 		//#endregion
 		//#region src/assetsCopy.ts
 		/**
@@ -338,6 +399,14 @@ window.__ModuleLoader__.load({
 			resourceRetryConfirm: (p) => "Retry the failed fetch " + p.id + " as a fresh download? The dead row keeps its truth.",
 			/** Confirm sentence for the discard door; the id rides it. */
 			resourceDiscardConfirm: (p) => "Discard the failed row " + p.id + "? A later poll answers 404.",
+			/** THE FOLDED SECTION'S STORY (the sidebar-height burn, 2026-11):
+			*  the one-line count the closed section fold titles itself with —
+			*  the roll-up rides the same line (the census wall pins it). */
+			resourceFoldStory: (p) => String(p.count) + " declared",
+			/** THE STALLED FLIGHT'S VOICE (audit F10 last remainder): a live
+			*  row whose bytes froze across N polls with no phase moving —
+			*  named on the face, never silent, with the door out. */
+			resourceStalledNote: (p) => "no bytes landed across the last " + String(p.polls) + " polls — the flight reads stalled; press Refresh to re-check",
 			/** Extensions section title. */
 			extensionsTitle: "Extensions",
 			/** Installed-packs filter field label. */
@@ -896,6 +965,13 @@ window.__ModuleLoader__.load({
 		* (5cbb5bcc — DSH's own media system owns that surface); Ray Flows
 		* retired with the yaml spec library (35f2f830).
 		*/
+		/** THE LIVE RE-POLL CADENCE (audit download-stack-audit-2026-10-20
+		*  F10): while any declared resource is mid-flight the panel re-polls
+		*  status on this beat — fast enough that a settling flight lands its
+		*  verdict within seconds, slow enough to never crowd the manage
+		*  plane's 1.5s reconcile budget. The poll stops itself: no live row,
+		*  no timer. */
+		const RESOURCE_POLL_MS = 2500;
 		/** The engine's local address — the endpoint field's placeholder and
 		*  the value a BLANK Set sends (the field's own default, not a
 		*  configurable): ComfyUI's stock bind. */
@@ -1544,6 +1620,7 @@ window.__ModuleLoader__.load({
 			const resultSequenceRef = (0, react.useRef)(0);
 			const mountedRef = (0, react.useRef)(true);
 			const statusControllerRef = (0, react.useRef)(null);
+			const stallTrackerRef = (0, react.useRef)(/* @__PURE__ */ new Map());
 			const actionControllerRef = (0, react.useRef)(null);
 			const [extRows, setExtRows] = (0, react.useState)(null);
 			const [extFilter, setExtFilter] = (0, react.useState)("");
@@ -1589,6 +1666,24 @@ window.__ModuleLoader__.load({
 						setStatusReceivedAt(received);
 						setStatusError("");
 						setStatusDetail(reply.detail ?? "");
+						const tracker = stallTrackerRef.current;
+						const seen = /* @__PURE__ */ new Set();
+						for (const resource of view.resources ?? []) {
+							const state = resource.state ?? assetsCopy.unknownFallback;
+							if (!LIVE_ACQUIRE_STATES.has(state)) continue;
+							const key = resource.operation_id ?? resourceLabel(resource);
+							seen.add(key);
+							const previous = tracker.get(key);
+							if (previous === void 0 || previous.bytes !== (resource.bytes ?? 0)) tracker.set(key, {
+								bytes: resource.bytes ?? 0,
+								polls: 1
+							});
+							else tracker.set(key, {
+								bytes: previous.bytes,
+								polls: previous.polls + 1
+							});
+						}
+						for (const key of [...tracker.keys()]) if (!seen.has(key)) tracker.delete(key);
 						const live = view.endpoint?.url;
 						if (typeof live === "string" && live !== "" && !epTouchedRef.current) setEpUrl(live);
 					} else {
@@ -1645,6 +1740,16 @@ window.__ModuleLoader__.load({
 					window.clearInterval(timer);
 				};
 			}, []);
+			(0, react.useEffect)(() => {
+				if (!(status?.resources ?? []).some((resource) => LIVE_ACQUIRE_STATES.has(resource.state ?? assetsCopy.unknownFallback))) return;
+				const timer = window.setInterval(() => {
+					if (statusControllerRef.current !== null) return;
+					fetchStatus();
+				}, RESOURCE_POLL_MS);
+				return () => {
+					window.clearInterval(timer);
+				};
+			}, [status, fetchStatus]);
 			const run = (0, react.useCallback)(async (action, payload = {}, recordOutput = true) => {
 				if (dispatchingRef.current) return null;
 				dispatchingRef.current = true;
@@ -2062,127 +2167,178 @@ window.__ModuleLoader__.load({
 							resources.length === 0 ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
 								className: assets_module_css_default.sub,
 								children: assetsCopy.noDeclaredResources
-							}) : /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [(() => {
+							}) : (() => {
 								const buckets = /* @__PURE__ */ new Map();
 								for (const resource of resources) {
 									const state = resource.state ?? assetsCopy.unknownFallback;
 									buckets.set(state, (buckets.get(state) ?? 0) + 1);
 								}
 								const rollup = [...buckets.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])).map(([state, count]) => `${count} ${state}`).join(" · ");
-								return /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
-									className: assets_module_css_default.sub,
-									"data-testid": "resource-rollup",
-									children: rollup
-								});
-							})(), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("ul", {
-								className: assets_module_css_default.resourceList,
-								"data-testid": "resource-status",
-								children: resources.map((resource, index) => {
-									const state = resource.state ?? assetsCopy.unknownFallback;
-									const items = resource.items ?? [];
-									const operationId = resource.operation_id;
-									const badItems = items.filter((item) => {
-										const itemState = item.state ?? assetsCopy.unknownFallback;
-										return itemState === "failed" || itemState === "blocked" || itemState === "absent" || itemState === "missing";
-									}).length;
-									const uncheckedItems = items.filter((item) => {
-										return (item.state ?? assetsCopy.unknownFallback) === "unknown";
-									}).length;
-									const itemRollup = items.length === 0 ? "" : badItems === 0 && uncheckedItems === 0 ? `${items.length} item${items.length === 1 ? "" : "s"}` : `${badItems > 0 ? `${badItems}/${items.length} failed` : ""}${badItems > 0 && uncheckedItems > 0 ? " · " : ""}${uncheckedItems > 0 ? `${uncheckedItems}/${items.length} unchecked` : ""}`;
-									return /* @__PURE__ */ (0, react_jsx_runtime.jsx)("li", {
-										className: assets_module_css_default.resourceRow,
-										children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
-											className: assets_module_css_default.resourceFold,
-											"data-testid": "resource-fold",
-											children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(_deepseek_ai_dsh_client_ui_primitives.DisclosureRow, {
-												icon: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-													className: resourceStateClass(state),
-													children: state
-												}),
-												title: resourceLabel(resource),
-												open: openFolds.has("resource:" + index),
-												expandable: true,
-												expandOnRowClick: true,
-												onToggle: () => {
-													toggleFold("resource:" + index);
-												},
-												collapsedContent: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [itemRollup !== "" && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-													className: assets_module_css_default.sub,
-													children: itemRollup
-												}), resource.operation_id !== void 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-													className: assets_module_css_default.mono,
-													children: assetsCopy.operationIdValue({ id: resource.operation_id })
-												})] }),
-												children: [
-													resource.detail !== void 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
-														className: assets_module_css_default.sub,
-														children: resource.detail
-													}),
-													operationId !== void 0 && (state === "failed" || state === "blocked") && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-														className: assets_module_css_default.row,
-														"data-testid": "resource-doors",
-														children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
-															"aria-busy": busy === "acquire_retry",
-															disabled: locked || busy !== null,
-															onClick: () => {
-																confirmRun("acquire_retry", assetsCopy.resourceRetryConfirm({ id: operationId }), { payload: { operation_id: operationId } });
+								return /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+									"data-testid": "resources-fold",
+									children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.DisclosureRow, {
+										icon: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+											className: assets_module_css_default.count,
+											children: resources.length
+										}),
+										title: assetsCopy.resourceFoldStory({ count: resources.length }),
+										open: openFolds.has("resources-section"),
+										expandable: true,
+										expandOnRowClick: true,
+										onToggle: () => {
+											toggleFold("resources-section");
+										},
+										collapsedContent: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
+											className: assets_module_css_default.sub,
+											"data-testid": "resources-fold-story",
+											children: [
+												assetsCopy.resourceFoldStory({ count: resources.length }),
+												" · ",
+												/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+													"data-testid": "resource-rollup",
+													children: rollup
+												})
+											]
+										}),
+										children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("ul", {
+											className: assets_module_css_default.resourceList,
+											"data-testid": "resource-status",
+											children: resources.map((resource, index) => {
+												const state = resource.state ?? assetsCopy.unknownFallback;
+												const items = resource.items ?? [];
+												const operationId = resource.operation_id;
+												const isLive = LIVE_ACQUIRE_STATES.has(state);
+												const progressLine = isLive ? resource.total !== void 0 && resource.total > 0 ? formatWeightProgress(resource.bytes ?? 0, resource.total) + " · " + (resource.phase ?? state) : resource.phase ?? state : "";
+												const stall = stallTrackerRef.current.get(operationId ?? resourceLabel(resource));
+												const stalled = isLive && stall !== void 0 && stall.polls >= 2 && resource.phase === void 0;
+												const badItems = items.filter((item) => {
+													const itemState = item.state ?? assetsCopy.unknownFallback;
+													return itemState === "failed" || itemState === "blocked" || itemState === "absent" || itemState === "missing";
+												}).length;
+												const uncheckedItems = items.filter((item) => {
+													return (item.state ?? assetsCopy.unknownFallback) === "unknown";
+												}).length;
+												const itemRollup = items.length === 0 ? "" : badItems === 0 && uncheckedItems === 0 ? `${items.length} item${items.length === 1 ? "" : "s"}` : `${badItems > 0 ? `${badItems}/${items.length} failed` : ""}${badItems > 0 && uncheckedItems > 0 ? " · " : ""}${uncheckedItems > 0 ? `${uncheckedItems}/${items.length} unchecked` : ""}`;
+												const hasDoors = operationId !== void 0 && (state === "failed" || state === "blocked");
+												const expandable = items.length > 0 || resource.detail !== void 0 || hasDoors;
+												return /* @__PURE__ */ (0, react_jsx_runtime.jsx)("li", {
+													className: assets_module_css_default.resourceRow,
+													children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+														className: assets_module_css_default.resourceFold,
+														"data-testid": "resource-fold",
+														children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(_deepseek_ai_dsh_client_ui_primitives.DisclosureRow, {
+															icon: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+																className: resourceStateClass(state),
+																children: state
+															}),
+															title: resourceLabel(resource),
+															open: openFolds.has("resource:" + index),
+															expandable,
+															expandOnRowClick: true,
+															onToggle: () => {
+																toggleFold("resource:" + index);
 															},
-															children: assetsCopy.resourceRetryButton
-														}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
-															"aria-busy": busy === "acquire_discard",
-															disabled: locked || busy !== null,
-															onClick: () => {
-																confirmRun("acquire_discard", assetsCopy.resourceDiscardConfirm({ id: operationId }), { payload: { operation_id: operationId } });
-															},
-															children: assetsCopy.resourceDiscardButton
-														})]
-													}),
-													items.length > 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("ul", {
-														className: assets_module_css_default.resourceItems,
-														children: items.map((item, itemIndex) => /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("li", {
-															className: assets_module_css_default.resourceItem,
-															children: [
-																/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-																	className: resourceStateClass(item.state ?? assetsCopy.unknownFallback),
-																	children: item.state ?? assetsCopy.unknownFallback
+															collapsedContent: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [
+																progressLine !== "" && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
+																	className: assets_module_css_default.progressLine,
+																	"data-testid": "resource-progress",
+																	children: [progressLine, resource.total !== void 0 && resource.total > 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+																		className: assets_module_css_default.bar,
+																		"data-testid": "resource-meter",
+																		children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+																			className: assets_module_css_default.barFill,
+																			"data-testid": "resource-meter-fill",
+																			style: { width: weightPercent(resource.bytes ?? 0, resource.total) + "%" }
+																		})
+																	})]
 																}),
-																/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+																stalled && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+																	className: assets_module_css_default.warningNote,
+																	"data-testid": "resource-stalled",
+																	children: assetsCopy.resourceStalledNote({ polls: stall?.polls ?? 0 })
+																}),
+																itemRollup !== "" && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+																	className: assets_module_css_default.sub,
+																	children: itemRollup
+																}),
+																resource.operation_id !== void 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 																	className: assets_module_css_default.mono,
-																	children: item.key ?? item.kind ?? assetsCopy.itemFallback
-																}),
-																item.outcome !== void 0 && item.outcome !== item.state && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+																	children: assetsCopy.operationIdValue({ id: resource.operation_id })
+																})
+															] }),
+															children: [
+																resource.detail !== void 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
 																	className: assets_module_css_default.sub,
-																	children: item.outcome
+																	children: resource.detail
 																}),
-																item.integrity !== void 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-																	className: assets_module_css_default.sub,
-																	children: item.integrity
+																hasDoors && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+																	className: assets_module_css_default.row,
+																	"data-testid": "resource-doors",
+																	children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+																		"aria-busy": busy === "acquire_retry",
+																		disabled: locked || busy !== null,
+																		onClick: () => {
+																			confirmRun("acquire_retry", assetsCopy.resourceRetryConfirm({ id: operationId }), { payload: { operation_id: operationId } });
+																		},
+																		children: assetsCopy.resourceRetryButton
+																	}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+																		"aria-busy": busy === "acquire_discard",
+																		disabled: locked || busy !== null,
+																		onClick: () => {
+																			confirmRun("acquire_discard", assetsCopy.resourceDiscardConfirm({ id: operationId }), { payload: { operation_id: operationId } });
+																		},
+																		children: assetsCopy.resourceDiscardButton
+																	})]
 																}),
-																item.errorCode !== void 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-																	className: assets_module_css_default.errorCode,
-																	children: item.errorCode
-																}),
-																item.path !== void 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-																	className: assets_module_css_default.wrapText,
-																	children: item.path
-																}),
-																item.sha256 !== void 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-																	className: assets_module_css_default.hash,
-																	children: item.sha256
-																}),
-																item.detail !== void 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-																	className: assets_module_css_default.sub,
-																	children: item.detail
+																items.length > 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("ul", {
+																	className: assets_module_css_default.resourceItems,
+																	children: items.map((item, itemIndex) => /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("li", {
+																		className: assets_module_css_default.resourceItem,
+																		children: [
+																			/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+																				className: resourceStateClass(item.state ?? assetsCopy.unknownFallback),
+																				children: item.state ?? assetsCopy.unknownFallback
+																			}),
+																			/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+																				className: assets_module_css_default.mono,
+																				children: item.key ?? item.kind ?? assetsCopy.itemFallback
+																			}),
+																			item.outcome !== void 0 && item.outcome !== item.state && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+																				className: assets_module_css_default.sub,
+																				children: item.outcome
+																			}),
+																			item.integrity !== void 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+																				className: assets_module_css_default.sub,
+																				children: item.integrity
+																			}),
+																			item.errorCode !== void 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+																				className: assets_module_css_default.errorCode,
+																				children: item.errorCode
+																			}),
+																			item.path !== void 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+																				className: assets_module_css_default.wrapText,
+																				children: item.path
+																			}),
+																			item.sha256 !== void 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+																				className: assets_module_css_default.hash,
+																				children: item.sha256
+																			}),
+																			item.detail !== void 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+																				className: assets_module_css_default.sub,
+																				children: item.detail
+																			})
+																		]
+																	}, item.key ?? String(itemIndex)))
 																})
 															]
-														}, item.key ?? String(itemIndex)))
+														})
 													})
-												]
+												}, resourceLabel(resource) + ":" + index);
 											})
 										})
-									}, resourceLabel(resource) + ":" + index);
-								})
-							})] })
+									})
+								});
+							})()
 						]
 					}),
 					/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("section", {

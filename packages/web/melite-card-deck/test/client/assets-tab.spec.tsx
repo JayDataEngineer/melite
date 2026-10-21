@@ -149,6 +149,15 @@ function actionsOf(calls: Array<Record<string, unknown>>): string[] {
   return calls.map((call) => String(call.action))
 }
 
+/** Open the resources SECTION fold (the sidebar-height burn cure,
+ *  2026-11: the roster rides the DisclosureRow law — default CLOSED,
+ *  the one-line story in its title). Every arm that queries the row
+ *  list opens the section first; assertions are unchanged. */
+async function openResourcesSection(): Promise<void> {
+  const user = userEvent.setup()
+  await user.click(await screen.findByTestId('resources-fold-story'))
+}
+
 beforeEach(() => {
   vi.unstubAllGlobals()
   vi.stubGlobal('confirm', vi.fn(() => true))
@@ -174,6 +183,7 @@ test('renders the real nested status payload and declared resource rows', async 
   expect(screen.getByText('2 active · run-a, run-b')).toBeTruthy()
   expect(screen.getByText('{"mode":"managed"}')).toBeTruthy()
 
+  await openResourcesSection()
   const resources = screen.getByTestId('resource-status')
   expect(within(resources).getByText('model family/wan:preview:fp8')).toBeTruthy()
   expect(within(resources).getByText('operation_id: op-resource')).toBeTruthy()
@@ -221,6 +231,7 @@ test('declared resources fold closed with a roll-up line and the scan note above
 
   // the roll-up line: counts by state, painted once
   expect(screen.getByTestId('resource-rollup').textContent).toBe('1 failed · 1 present')
+  await openResourcesSection()
   // the seam note reads FIRST — above the rows, not after them
   const section = document.getElementById('manage-resources')!
   const note = screen.getByTestId('resources-scan-note')
@@ -296,14 +307,17 @@ test('the census honesty marks: scan note over zero rows, the partial mark, neve
   const note = await screen.findByTestId('resources-census-partial')
   expect(note.textContent).toContain('Scan incomplete')
   expect(note.textContent).toContain('Refresh')
+  // the unknown row rides the section fold's story painted neutral,
+  // never failed — the roll-up is visible while CLOSED (it rides the
+  // collapsed content), asserted before the section opens
+  expect(screen.getByTestId('resource-rollup').textContent).toBe('1 unknown')
+  await openResourcesSection()
   // the partial note reads above the roster, with the section
   const section = document.getElementById('manage-resources')!
   const list = screen.getByTestId('resource-status')
   expect(section.contains(note)).toBe(true)
   expect(note.compareDocumentPosition(list) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
-  // the unknown row rides the roster painted neutral, never failed
   expect(within(list).getByText('model family/anima')).toBeTruthy()
-  expect(screen.getByTestId('resource-rollup').textContent).toBe('1 unknown')
   cleanup()
 
   // ARM 3 — a settled whole scan paints neither note
@@ -343,6 +357,7 @@ test('the fold item roll-up never counts unchecked items as good', async () => {
     },
   })
   render(<ComfyManagerPanel />)
+  await openResourcesSection()
   const masked = (await screen.findAllByTestId('resource-fold'))[0] as HTMLElement
   expect(within(masked).getByText('1/2 failed · 1/2 unchecked')).toBeTruthy()
   cleanup()
@@ -368,6 +383,7 @@ test('the fold item roll-up never counts unchecked items as good', async () => {
     },
   })
   render(<ComfyManagerPanel />)
+  await openResourcesSection()
   const unknownRow = (await screen.findAllByTestId('resource-fold'))[0] as HTMLElement
   expect(within(unknownRow).getByText('2/2 unchecked')).toBeTruthy()
   expect(within(unknownRow).queryByText('2 items')).toBeNull()
@@ -391,6 +407,7 @@ test('the fold item roll-up never counts unchecked items as good', async () => {
     },
   })
   render(<ComfyManagerPanel />)
+  await openResourcesSection()
   const settled = (await screen.findAllByTestId('resource-fold'))[0] as HTMLElement
   expect(within(settled).getByText('1 item')).toBeTruthy()
   expect(within(settled).queryByText(/unchecked/)).toBeNull()
@@ -432,6 +449,7 @@ test('dead resource rows carry retry/discard doors that fire the acquire verbs',
     acquire_discard: { action: 'acquire_discard', ok: true, detail: 'discarded', data: {} },
   })
   render(<ComfyManagerPanel />)
+  await openResourcesSection()
   const resources = await screen.findByTestId('resource-status')
 
   // the closed fold mounts NO hidden DOM — open the dead row first

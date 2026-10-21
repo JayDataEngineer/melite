@@ -280,6 +280,17 @@ describe("operation-store list (audit E3 boot rehydrate)", () => {
     assert.equal(again.find((row) => row.operationId === "op-model")?.state, "active");
   });
 
+  test("the integrity vocabulary carries the cheap-first word (audit M2 round-trip face)", async () => {
+    const store = new InMemoryOperationStore();
+    const row = modelOperation();
+    row.items[0]!.integrity = "size-checked";
+    row.items[0]!.sha256 = undefined;
+    await store.save(row);
+    const loaded = await store.load(row.operationId);
+    assert.equal(loaded?.items[0]?.integrity, "size-checked",
+      "the store persists and reloads a size-checked item — the allowlist refuses only unknown words");
+  });
+
   test("the file store enumerates settled rows and refuses a poison record by name", async () => {
     const store = new FileOperationStore(root());
     await store.save(modelOperation());

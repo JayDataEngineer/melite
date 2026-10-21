@@ -82,7 +82,7 @@ function validItem(value: unknown): value is ResourceStatusItem {
   if (typeof value["key"] !== "string" || value["key"] === "") return false;
   if (value["kind"] !== "model" && value["kind"] !== "extension") return false;
   if (!hasValue(PROVISION_STATES, value["state"])) return false;
-  if (value["integrity"] !== undefined && value["integrity"] !== "declared-sha256" && value["integrity"] !== "operator-unverified") return false;
+  if (value["integrity"] !== undefined && value["integrity"] !== "declared-sha256" && value["integrity"] !== "size-checked" && value["integrity"] !== "operator-unverified") return false;
   for (const key of ["path", "sha256", "errorCode", "detail"] as const) {
     if (value[key] !== undefined && typeof value[key] !== "string") return false;
   }

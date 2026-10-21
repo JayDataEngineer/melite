@@ -957,8 +957,38 @@ export class ProvisioningService extends Service implements ProvisioningServiceD
     const key = resourceKey(ref);
     const locked = this.locks.get(key);
     if (locked !== undefined) {
-      const result = await this.joinLocked(ref, locked, signal);
-      return this.statusFromResult(result);
+      // THE LIVE-ROW DOOR (audit download-stack-audit-2026-10-20 F10,
+      // last remainder): a LOCKED row resolves to the LIVE ledger
+      // snapshot — state/bytes/total/phase/operation_id — WITHOUT
+      // awaiting the flight's settle. The old path joined the lock
+      // (joinLocked below): the scan blocked on a multi-GB download,
+      // the status budget ate the row, and the sidebar froze every
+      // mid-flight family at its last settled state. The live row's
+      // additive fields are the face's progress line; a settled row
+      // never carries them (the additive-fields law).
+      const progress = this.progressOfRef(ref);
+      if (progress !== null && progress.operationId === locked.id) {
+        return {
+          ref: copyRef(ref),
+          state: progress.state,
+          operationId: progress.operationId,
+          bytes: progress.bytes,
+          total: progress.total,
+          ...(progress.phase === undefined ? {} : { phase: progress.phase }),
+          ...(progress.detail === undefined ? {} : { detail: progress.detail }),
+          items: [],
+        };
+      }
+      // THE PRE-SEED WINDOW: the lock is held but the ledger has no
+      // row yet (the plan is still resolving) — an honest arming row
+      // names the operation and invents no numbers. Never a hang,
+      // never a join, never invented bytes.
+      return {
+        ref: copyRef(ref),
+        state: "acquiring",
+        operationId: locked.id,
+        items: [],
+      };
     }
     let plan: ProvisionPlan;
     try {
@@ -1745,6 +1775,12 @@ export class ProvisioningService extends Service implements ProvisioningServiceD
         root: this.writerRoot,
         relativePath: relativeArtifactPath(item.folder, item.name),
         expectedSha256: item.sha256,
+        // THE CHEAP-FIRST ASK (audit download-stack-audit-2026-10-20
+        // F10 addendum A): the DECL's own declared size rides the
+        // request — a matching file is judged by stat (verifiedBy
+        // 'size', no hash) and the scan's per-press cost drops from
+        // one full sha256 per file to one stat per file.
+        ...(item.sizeBytes === undefined ? {} : { expectedSizeBytes: item.sizeBytes }),
       }, signal);
       if (!inspection.present) return itemResult(item, "absent", "blocked", inspection.path === undefined ? {} : { path: inspection.path, sha256: inspection.sha256 });
       if (item.sizeBytes !== undefined && inspection.sizeBytes !== item.sizeBytes) {
@@ -1756,7 +1792,10 @@ export class ProvisioningService extends Service implements ProvisioningServiceD
       return itemResult(item, "active", "active", {
         ...(inspection.path === undefined ? {} : { path: inspection.path }),
         ...(inspection.sha256 === undefined ? {} : { sha256: inspection.sha256 }),
-        integrity: "declared-sha256",
+        // THE SIZE-CHECKED WORD: the cheap verdict names its own
+        // integrity — the row carries no sha256 it never computed
+        // (a full-hash answer keeps 'declared-sha256').
+        integrity: inspection.verifiedBy === "size" ? "size-checked" : "declared-sha256",
       });
     }
     if (item.provider === "local") {

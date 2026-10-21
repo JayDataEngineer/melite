@@ -220,6 +220,14 @@ export const assetsCopy = {
     resourceRetryConfirm: (p) => 'Retry the failed fetch ' + p.id + ' as a fresh download? The dead row keeps its truth.',
     /** Confirm sentence for the discard door; the id rides it. */
     resourceDiscardConfirm: (p) => 'Discard the failed row ' + p.id + '? A later poll answers 404.',
+    /** THE FOLDED SECTION'S STORY (the sidebar-height burn, 2026-11):
+     *  the one-line count the closed section fold titles itself with —
+     *  the roll-up rides the same line (the census wall pins it). */
+    resourceFoldStory: (p) => String(p.count) + ' declared',
+    /** THE STALLED FLIGHT'S VOICE (audit F10 last remainder): a live
+     *  row whose bytes froze across N polls with no phase moving —
+     *  named on the face, never silent, with the door out. */
+    resourceStalledNote: (p) => 'no bytes landed across the last ' + String(p.polls) + ' polls — the flight reads stalled; press Refresh to re-check',
     /** Extensions section title. */
     extensionsTitle: 'Extensions',
     /** Installed-packs filter field label. */

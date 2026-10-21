@@ -49,7 +49,16 @@ const ts: typeof import('typescript') = createRequire(
  *  (the media sidebar client), web-kit/timeline (the timeline UI kit),
  *  comfyui action_cards (the motion/ui viewers) — each with its own
  *  typed dictionary (galleryCopy/timelineCopy/actionCopy) and its own
- *  pin row below. */
+ *  pin row below.
+ *
+ *  EXEMPT BY THIS LIST, NOT BY ACCIDENT (audit LOW-1, 2026-11):
+ *  packages/estate/provisioning/src/contracts.ts hosts the download
+ *  face's operation words (the formatByteSize/formatWeightProgress
+ *  byte and percent strings, the fold story's counts) — estate-side
+ *  provisioning vocabulary the deck imports and re-renders, not a
+ *  card surface. It is NOT walked here; its copy is census-exempt by
+ *  that absence, now written law in this comment. Moving card-facing
+ *  copy INTO the estate tree later is a scope move argued here. */
 const TREES = [
   'packages/motion/motion/src/ui',
   'packages/video/h3-timeline/src/ui',
@@ -503,7 +512,17 @@ const PINS: Record<string, number> = {
   // literals (the stuck verdict rides chromeCopy.stuckNote, one home
   // for both seats). Data-unit seats in the tracker's own words, the
   // same class as the acquiredDetailOf assembly (arm B).
-  'packages/web/melite-card-view/src': 22,
+  // RE-PIN 22→21 (2026-11, audit download-stack-audit-2026-10-20 F10
+  // last remainder): −1 — formatByteSize and formatWeightProgress
+  // re-homed verbatim to @melite/estate-provisioning/contracts (the
+  // shared byte vocabulary the deck's declared-resources face also
+  // imports — ONE spelling for "4.8 GB/6.8 GB (71%)", never a
+  // second one on the deck); run-rescue-core re-exports them so the
+  // popup's call sites are untouched. formatRateLine stays (its 4
+  // literals remain). The provisioner's contracts module is
+  // locale-owner territory for wire-shaped vocabulary (the same
+  // class as state words), not product copy.
+  'packages/web/melite-card-view/src': 21,
   // deck: 2 — the register() title/guideDescription positions now ride
   // assetsCopy (D2's proof seat: a literal at those arguments fires
   // this wall). Residue: index.ts:41 + :50 `message` embed notices

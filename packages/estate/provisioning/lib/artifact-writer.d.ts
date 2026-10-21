@@ -45,12 +45,20 @@ export interface ArtifactInspectionRequest {
     readonly root: string;
     readonly relativePath: string;
     readonly expectedSha256?: string;
+    /** The DECL's declared size: a present file matching it is judged
+     *  by stat alone (verifiedBy 'size', no hash) — the cheap-first
+     *  verdict that keeps the scan inside the status budget. */
+    readonly expectedSizeBytes?: number;
 }
 export interface ArtifactInspection {
     readonly present: boolean;
     readonly path?: string;
     readonly sha256?: string;
     readonly sizeBytes?: number;
+    /** THE CHEAP-FIRST WORD: the verdict came from the stat match,
+     *  never a digest — the scan row carries integrity 'size-checked'
+     *  and no sha256 (the service maps this word). */
+    readonly verifiedBy?: "size";
 }
 export interface ArtifactWriterPort {
     write(request: VerifiedArtifactRequest, signal?: AbortSignal): Promise<VerifiedArtifactResult>;
@@ -77,6 +85,10 @@ export declare function sha256File(path: string, signal?: AbortSignal, onProgres
 export declare const hashFile: typeof sha256File;
 export declare class VerifiedArtifactWriter implements ArtifactWriterPort {
     readonly root: string;
+    private readonly verifiedMemo;
+    /** Memo bound: a scan walks hundreds of files; the memo never
+     *  grows past the estate's working set (oldest triple evicted). */
+    private static readonly MEMO_BOUND;
     constructor(root: string);
     write(request: VerifiedArtifactRequest, signal?: AbortSignal): Promise<VerifiedArtifactResult>;
     inspect(request: ArtifactInspectionRequest, signal?: AbortSignal): Promise<ArtifactInspection>;

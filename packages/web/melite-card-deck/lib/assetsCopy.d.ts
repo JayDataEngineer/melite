@@ -251,6 +251,18 @@ export declare const assetsCopy: {
     readonly resourceDiscardConfirm: (p: {
         id: string;
     }) => string;
+    /** THE FOLDED SECTION'S STORY (the sidebar-height burn, 2026-11):
+     *  the one-line count the closed section fold titles itself with —
+     *  the roll-up rides the same line (the census wall pins it). */
+    readonly resourceFoldStory: (p: {
+        count: number;
+    }) => string;
+    /** THE STALLED FLIGHT'S VOICE (audit F10 last remainder): a live
+     *  row whose bytes froze across N polls with no phase moving —
+     *  named on the face, never silent, with the door out. */
+    readonly resourceStalledNote: (p: {
+        polls: number;
+    }) => string;
     /** Extensions section title. */
     readonly extensionsTitle: "Extensions";
     /** Installed-packs filter field label. */

@@ -71,7 +71,7 @@ export interface ResourceStatusItem {
     readonly state: ProvisionState;
     readonly path?: string;
     readonly sha256?: string;
-    readonly integrity?: "declared-sha256" | "operator-unverified";
+    readonly integrity?: "declared-sha256" | "size-checked" | "operator-unverified";
     readonly errorCode?: string;
     readonly detail?: string;
 }
@@ -81,6 +81,9 @@ export interface ResourceStatus {
     readonly operationId?: string;
     readonly items: readonly ResourceStatusItem[];
     readonly detail?: string;
+    readonly bytes?: number;
+    readonly total?: number;
+    readonly phase?: AcquirePhase;
 }
 export interface ProvisionItemResult extends ResourceStatusItem {
     readonly outcome: ProvisionOutcome;
@@ -179,4 +182,32 @@ export declare function providerOk(name: string): name is ProvisionProvider;
 /** The refusal a plan item earns by naming a provider the service
  *  cannot honour — the honest voice for "this token has no arm". */
 export declare function unknownProviderRefusal(name: string): string;
+/** THE HUMAN BYTE VOICE (operator 2026-10-20: "THE TRACKING OF
+ *  BYTES ALONE IS INEXCUSABLE" — the popup showed
+ *  "5196173399/7343591088 bytes (71%)", a wall of digits no
+ *  operator can read at a glance). Binary-base sizes with one
+ *  decimal: 7343591088 → "6.8 GB", 519617399 → "4.8 GB".
+ *  Non-finite or negative input voices "0 B" (never NaN on the
+ *  face). Re-homed here (2026-11, audit F10 last remainder) as the
+ *  ONE byte vocabulary both the rescue popup and the deck's
+ *  declared-resources face import — never a second spelling.
+ *  @param bytes the byte count to voice
+ *  @returns the human size, one decimal, binary base */
+export declare function formatByteSize(bytes: number): string;
+/** THE HUMAN PROGRESS LINE (the same burn): "4.8/6.8 GB (71%)"
+ *  — human sizes over the DECL total with the percent the bar
+ *  already carries. A total=0 row has no line (the purge P5
+ *  undeclared face owns it) — empty string, never "0/0".
+ *  @param bytes the landed byte count
+ *  @param total the declared total the percent rides
+ *  @returns "4.8/6.8 GB (71%)"-shaped line, or "" when total=0 */
+export declare function formatWeightProgress(bytes: number, total: number): string;
+/** THE SHARED PERCENT (the meter's number, one spelling beside the
+ *  byte voice it mirrors): the 0–100 integer formatWeightProgress
+ *  prints in parentheses. Clamped at 100 — an over-delivered row
+ *  never reads 104%.
+ *  @param bytes the landed byte count
+ *  @param total the declared total
+ *  @returns the clamped 0–100 percent integer */
+export declare function weightPercent(bytes: number, total: number): number;
 //# sourceMappingURL=contracts.d.ts.map

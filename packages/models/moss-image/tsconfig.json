@@ -18,6 +18,7 @@
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "paths": {
+        "@melite/estate-provisioning/contracts": ["./../../estate/provisioning/src/contracts.ts"],
         "@melite/3d-anny": ["./../../3d/anny/src/index.ts"],
         "@melite/3d-anny/card": ["./../../3d/anny/src/card.ts"],
         "@melite/3d-img-to-mesh": ["./../../3d/img-to-mesh/src/index.ts"],
