@@ -1157,7 +1157,8 @@ describe('melite_flow bench — the agent drives THE shared bench', () => {
     assert.equal(out.status, 'done')
     assert.deepEqual(out.pass, [
       { stage: 's_0', card: 'img-to-mesh', skipped: 'done' },
-      { stage: 's_1', card: 'image-gen', run_id: 'rb1', status: 'done', url: '/melite-media/runs/rb1/img/SaveImage_00001_.png' },
+      { stage: 's_1', card: 'image-gen', run_id: 'rb1', status: 'done', url: '/melite-media/runs/rb1/img/SaveImage_00001_.png',
+        host_paths: ['test-output/rb1/img/SaveImage_00001_.png'] },
     ])
     // ONE start — the DONE row never starts (skip-done law)
     const starts = seen.calls.filter((c) => c.lane === 'runsStart')
@@ -1184,6 +1185,31 @@ describe('melite_flow bench — the agent drives THE shared bench', () => {
        url: '/melite-media/runs/rb1/img/SaveImage_00001_.png',
        assetUrls: ['/melite-media/runs/rb1/img/SaveImage_00001_.png'],
      })
+  })
+
+  // THE RUN CONTRACT'S HOST FACE (session 90a0b920's F7): the
+  // agent read `/melite-media/...` urls — the BROWSER's channel —
+  // tried them on the host (`ls: cannot access '/melite-media/'`),
+  // and burned ~6 bash calls on find + a path-dialect census before
+  // daring to touch a file. The flow's success answer now carries
+  // out-rooted host paths, and the render prints them in
+  // run_status's resolving-root voice — the maker feeds them to
+  // bash/load lanes with zero archaeology.
+  test('the run contract prints host-readable artifact paths (F7: the media url is the browser channel, the shell never sees it)', async () => {
+    const tool = meliteFlow(fakeEstate({}).estate)
+    const render = tool.output.render as unknown as (a: unknown, v: unknown) => Array<{ type: string; text: string }>
+    const text = render({}, {
+      mode: 'bench', target: 'bench-main @ rev 3', draft_id: 'd_bench', run_id: 'rb1', status: 'done',
+      host_paths: ['output/rb1/img/SaveImage_00001_.png', 'output/rb1/img/SaveImage_00002_.png'],
+      pass: [
+        { stage: 's_1', card: 'image-gen', run_id: 'rb1', status: 'done',
+          url: '/melite-media/runs/rb1/img/SaveImage_00001_.png',
+          host_paths: ['output/rb1/img/SaveImage_00001_.png', 'output/rb1/img/SaveImage_00002_.png'] },
+      ],
+    })[0]!.text
+    assert.ok(text.includes('(host: output/rb1/img/SaveImage_00001_.png'), 'the pass row names the shell-openable path')
+    assert.ok(text.includes('artifacts on host (rooted at the estate output tree, not your cwd):'), 'run_status resolving-root voice')
+    assert.ok(text.includes('output/rb1/img/SaveImage_00002_.png'), 'every minted path prints')
   })
 
   // THE OBSERVATION BUDGET (the commission wedge landing, 2026-10-03):
@@ -1217,7 +1243,7 @@ describe('melite_flow bench — the agent drives THE shared bench', () => {
     // budget 40ms, one re-arm: the first link polls twice (t0 live,
     // then sleeps past its deadline), returns the waiting face, and
     // its successor observes the terminal and stamps done
-    const out = await observeAndAttribute(seen.request, 'd_b', 's_0', 'run-x', new AbortController().signal, 40, 1)
+    const out = await observeAndAttribute(seen.request, 'd_b', 's_0', 'run-x', new AbortController().signal, false, 40, 1)
     assert.equal(out.status, 'queued')
     assert.equal(out.url, '')
     assert.deepEqual(out.artifacts, [])
@@ -1245,7 +1271,7 @@ describe('melite_flow bench — the agent drives THE shared bench', () => {
         return undefined
       },
     ])
-    const out = await observeAndAttribute(seen.request, 'd_last', 's_0', 'run-last', new AbortController().signal, 40, 0)
+    const out = await observeAndAttribute(seen.request, 'd_last', 's_0', 'run-last', new AbortController().signal, false, 40, 0)
     assert.equal(out.status, 'queued', 'the waiting face')
     const pollsAtExpiry = polls
     assert.ok(pollsAtExpiry >= 1, 'the link observed at least once')

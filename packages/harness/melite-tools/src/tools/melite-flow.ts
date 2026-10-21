@@ -388,10 +388,11 @@ async function runBench(
       return { mode: 'bench', target, draft_id: draftId, status: 'stopped', stoppedAt: stageId, error: started['error'], pass }
     }
     const runId = started['run_id'] as string
-    const outcome = await observeAndAttribute(estate, draftId, stageId, runId, signal)
+    const outcome = await observeAndAttribute(estate, draftId, stageId, runId, signal, wireBool(a.test))
     pass.push({ stage: stageId, card, run_id: runId, status: outcome.status,
       ...(outcome.url !== '' ? { url: outcome.url } : {}),
-      ...(outcome.artifacts.length > 0 ? { artifacts: outcome.artifacts } : {}) })
+      ...(outcome.artifacts.length > 0 ? { artifacts: outcome.artifacts } : {}),
+      ...(outcome.host_paths.length > 0 ? { host_paths: outcome.host_paths } : {}) })
     if (outcome.status === 'queued') {
       // THE PENDING RECEIPT (the commission wedge, 2026-10-03): the
       // observation budget spent on a run that is still live — the
@@ -420,7 +421,19 @@ async function runBench(
     }
     return ''
   })()
-  return { mode: 'bench', target, draft_id: draftId, run_id: lastRun, status: 'done', pass }
+  const lastHosts = (() => {
+    const acc: string[] = []
+    for (const row of pass) {
+      const hp = row['host_paths']
+      if (!Array.isArray(hp)) continue
+      for (const h of hp) {
+        if (typeof h === 'string' && h !== '' && !acc.includes(h)) acc.push(h)
+      }
+    }
+    return acc
+  })()
+  return { mode: 'bench', target, draft_id: draftId, run_id: lastRun, status: 'done',
+    ...(lastHosts.length > 0 ? { host_paths: lastHosts } : {}), pass }
 }
 
 /** Signal-honoring sleep — the observer's poll cadence (the run-wire
@@ -437,6 +450,42 @@ function sleepAbort(ms: number, signal: AbortSignal): Promise<void> {
     const t = setTimeout(resolve, ms)
     signal.addEventListener('abort', () => { clearTimeout(t); resolve() }, { once: true })
   })
+}
+
+/** THE HOST-PATH CANONICALIZER (session 90a0b920's F7, the
+ * artifact-path archaeology burn: the agent read `/melite-media/...`
+ * urls in flow results, tried them on the host, `ls: cannot access
+ * '/melite-media/'`, and burned ~6 bash calls on find + a python
+ * census over 1,834 runs to learn the estate's path dialects before
+ * daring to touch a file). The media route is the BROWSER's channel;
+ * the maker's shell never sees it. This mirrors run-status.ts's
+ * canonical receipt law (023's self-critique #3) and adds the one
+ * spelling that tool never meets: a full media url folds back to
+ * its out-root form — `/melite-media/runs/<rid>/<rel>` is the
+ * estate output tree served over HTTP, so it canonicalizes to
+ * `output/<rid>/<rel>` (test runs root under test-output/ — the
+ * flag rides the caller's run request, never the url). Absolute
+ * non-media paths stay verbatim (run-status's law); bare relatives
+ * stay bare (one home per fact: the UI face keeps the media url,
+ * the agent face carries this). */
+function canonicalHostPath(p: string, rid: string, test: boolean): string {
+  const media = RUN_MEDIA_PREFIX + '/'
+  let value = p
+  if (value.startsWith(media)) value = value.slice(media.length)
+  if (value.startsWith('/')) return p
+  const bare = value.startsWith('./') ? value.slice(2) : value
+  // the legacy-double collapse (024's self-critique #2): rows served
+  // before the run-dir-relative fix spell <rid>/<rid>/…
+  const single = rid !== '' && bare.startsWith(rid + '/' + rid + '/')
+    ? rid + bare.slice((rid + '/' + rid).length) : bare
+  const root = test ? 'test-output/' : 'output/'
+  if (rid !== '' && (single === rid || single.startsWith(rid + '/'))) {
+    return root + single
+  }
+  // a bare run-relative name (the live row's gallery spelling) still
+  // lives under the run's own directory — root it there (run-status
+  // never meets this spelling; its rows arrive rid-prefixed).
+  return single !== '' && rid !== '' ? root + rid + '/' + single : single
 }
 
 /** THE OUTCOME OBSERVER, agent-side (observeRunOutcome's law, the
@@ -464,9 +513,10 @@ export async function observeAndAttribute(
   stageId: string,
   runId: string,
   signal: AbortSignal,
+  test: boolean,
   budgetMs: number = OBSERVE_MAX_MS,
   rearms: number = 2,
-): Promise<{ status: string; url: string; artifacts: string[] }> {
+): Promise<{ status: string; url: string; artifacts: string[]; host_paths: string[] }> {
   const deadline = Date.now() + budgetMs
   let lastLive = ''
   for (;;) {
@@ -481,7 +531,7 @@ export async function observeAndAttribute(
       const re = remoteErrorOf(e)
       // folded like every other arm of this poller: unknown-outcome
       // is the 'stopped' CardStatus by the owner's contract
-      if (re !== null && re !== undefined && re.code === 'runs/unknown-run') return { status: statusOf('unknown'), url: '', artifacts: [] }
+      if (re !== null && re !== undefined && re.code === 'runs/unknown-run') return { status: statusOf('unknown'), url: '', artifacts: [], host_paths: [] }
       await sleepAbort(1500, signal)
       continue
     }
@@ -507,6 +557,10 @@ export async function observeAndAttribute(
       }
       const rawUrl = st !== undefined && typeof st['url'] === 'string' && st['url'] !== '' ? st['url'] as string : ''
       const url = toMediaUrl(rawUrl)
+      // THE HOST FACE rides the raw spellings the browser rewrite
+      // consumed (F7's law): the agent gets out-rooted paths its
+      // shell can open, minted BEFORE any media prefix joins.
+      const hostPaths: string[] = rawUrl !== '' ? [canonicalHostPath(rawUrl, runId, test)] : []
       const arts: string[] = []
       const rawArts = doc['artifacts']
       if (Array.isArray(rawArts)) {
@@ -526,6 +580,10 @@ export async function observeAndAttribute(
         : []
       for (const name of [...gallery, ...arts]) {
         if (!names.includes(name)) names.push(name)
+      }
+      for (const name of names) {
+        const host = canonicalHostPath(name, runId, test)
+        if (host !== '' && !hostPaths.includes(host)) hostPaths.push(host)
       }
       const result: Record<string, unknown> = { run_id: runId }
       if (url !== '') result['url'] = url
@@ -548,7 +606,7 @@ export async function observeAndAttribute(
       try {
         await estate.draftsStagePatch(draftId, stageId, { runStatus: terminal, result }, signal, DRAFT_TIMEOUT_MS)
       } catch { /* bookkeeping — the run's own outcome is the answer */ }
-      return { status: terminal, url, artifacts: arts }
+      return { status: terminal, url, artifacts: arts, host_paths: hostPaths }
     }
     // the queue-feedback stamp, classified by the fold (queued or
     // still-waiting stamps queued; 'live'/'stopping' stamp running).
@@ -576,9 +634,9 @@ export async function observeAndAttribute(
       // settles or the chain's re-arms run out (the queue-side
       // armor bounds the run itself).
       if (rearms > 0) {
-        void observeAndAttribute(estate, draftId, stageId, runId, new AbortController().signal, budgetMs, rearms - 1).catch(String)
+        void observeAndAttribute(estate, draftId, stageId, runId, new AbortController().signal, test, budgetMs, rearms - 1).catch(String)
       }
-      return { status: 'queued', url: '', artifacts: [] }
+      return { status: 'queued', url: '', artifacts: [], host_paths: [] }
     }
     await sleepAbort(1500, signal)
   }
@@ -692,7 +750,7 @@ async function runSingle(
     if (typeof started["error"] === "string") return { mode: 'card', target: card, rode: 'flow-arm (bench carries wiring — the wires ride as stage inputs)', ...started }
     const runId = started['run_id']
     if (typeof runId === 'string' && runId !== '') {
-      void observeAndAttribute(estate, draftId, 's_0', runId, new AbortController().signal).catch(String)
+      void observeAndAttribute(estate, draftId, 's_0', runId, new AbortController().signal, wireBool(a.test)).catch(String)
     }
     return { mode: 'card', target: card, model, draft_id: draftId, rode: 'flow-arm (bench carries wiring — the wires ride as stage inputs)', ...started }
   }
@@ -700,7 +758,7 @@ async function runSingle(
   if (typeof started["error"] === "string") return { mode: 'card', target: card, ...started }
   const runId = started['run_id']
   if (typeof runId === 'string' && runId !== '') {
-    void observeAndAttribute(estate, draftId, 's_0', runId, new AbortController().signal).catch(String)
+    void observeAndAttribute(estate, draftId, 's_0', runId, new AbortController().signal, wireBool(a.test)).catch(String)
   }
   return { mode: 'card', target: card, model, draft_id: draftId, ...started }
 }
@@ -966,7 +1024,9 @@ export function meliteFlow(estate: Estate): ToolDefinition {
             '  · ' + String(p['stage'] ?? '?') + ' ' + String(p['card'] ?? '?')
             + (typeof p['run_id'] === 'string' && p['run_id'] !== '' ? ' → ' + p['run_id'] : '')
             + ' [' + String(p['status'] ?? p['skipped'] ?? '?') + ']'
-            + (typeof p['url'] === 'string' && p['url'] !== '' ? ' ' + p['url'] : ''),
+            + (typeof p['url'] === 'string' && p['url'] !== '' ? ' ' + p['url'] : '')
+            + (Array.isArray(p['host_paths']) && (p['host_paths'] as unknown[]).length > 0
+              ? ' (host: ' + (p['host_paths'] as string[]).join(', ') + ')' : ''),
           ).join('\n')
           : ''
         return [{
@@ -977,7 +1037,15 @@ export function meliteFlow(estate: Estate): ToolDefinition {
             // when a run exists to poll.
             + (typeof v.run_id === 'string' && v.run_id !== '' ? ' → ' + v.run_id : '')
             + ' [' + String(v.status ?? 'queued') + '] — poll with run_status'
-            + (passRows !== '' ? '\n' + passRows : ''),
+            + (passRows !== '' ? '\n' + passRows : '')
+            // THE RUN CONTRACT'S HOST FACE (F7): every path the
+            // maker's shell can open, in run_status's resolving-root
+            // voice — the media urls above are the browser's
+            // channel, these are the filesystem's.
+            + (Array.isArray((v as { host_paths?: unknown }).host_paths) && ((v as { host_paths?: unknown[] }).host_paths ?? []).length > 0
+              ? '\nartifacts on host (rooted at the estate output tree, not your cwd): '
+                + ((v as { host_paths: string[] }).host_paths).join('\n  ')
+              : ''),
         }]
       },
       // presentationMeta: the NATIVE tile channel — persisted verbatim on
