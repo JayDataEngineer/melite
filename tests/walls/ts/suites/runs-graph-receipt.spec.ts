@@ -51,6 +51,12 @@
  *       true-absent drop is refusal-gated, the unwired drop is
  *       receipt-gated — the arm's closing comment carries the
  *       verbatim refusal and the presence-keying wart).
+ *   h — THE RUN-fcf9572a HONESTY FACE: the stuck run's envelope
+ *       scalars (draft_id/model/press_key/quant/variant) receipt
+ *       partial naming EXACTLY those keys SORTED; the
+ *       verdict↔dropped biconditional (partial ⟺ dropped non-empty)
+ *       and the run/stage fold agreement (run complete iff every
+ *       stage complete) hold on every row.
  *
  * THE RED-PROOF (registry row runs-graph-receipt): neutralize the
  * stamp in registerCompiledRun (runsStart.ts — `run.graphReceipt =
@@ -518,5 +524,62 @@ describe("runs-graph-receipt (the served-graph receipt, purge P1)", () => {
     } finally {
       restoreLaneStoreOverlay();
     }
+  });
+
+  it("ARM h — THE RUN-fcf9572a HONESTY FACE: a partial verdict names its dropped keys, and the run fold agrees with its stages", async () => {
+    // THE BURN (stuck-run receipt remainder 4, 2026-11-09 night):
+    // run-fcf9572a5ffb-5ba89b44 settled completed with
+    // graph_receipt.verdict "partial", dropped ["draft_id", "model",
+    // "press_key", "quant", "variant"] (bench-door envelope scalars the
+    // compose never wires), carried ["test"]. The honesty seam: a
+    // partial verdict MUST name its dropped keys — the judge that says
+    // so is this arm. It pins (i) the run's exact envelope vocabulary
+    // on the synth rig, (ii) the verdict↔dropped biconditional
+    // (partial ⟺ dropped non-empty, on every stage row), (iii) the
+    // run/stage fold agreement (run complete iff every stage
+    // complete).
+    const { sidecar } = await runBench({
+      prompt: "the courier steps in",
+      steps: 12,
+      guidance: 3.5,
+      orphans: { draft_id: "d1", model: "receipt-model", press_key: "k", quant: "q", variant: "v" },
+    });
+    const receipt = sidecar["graph_receipt"] as Record<string, unknown>;
+    assert.ok(receipt !== undefined, "the receipt exists (arm a's cure)");
+    assert.equal(receipt["verdict"], "partial", "envelope scalars the compose never wires are a receipt fact: " + JSON.stringify(receipt));
+    assert.deepEqual(
+      receipt["dropped"],
+      ["draft_id", "model", "press_key", "quant", "variant"],
+      "dropped names EXACTLY the unwired envelope scalars, SORTED: " + JSON.stringify(receipt),
+    );
+    assert.deepEqual(
+      receipt["carried"],
+      ["guidance", "prompt", "steps"],
+      "carried keeps the scalars the graph took: " + JSON.stringify(receipt),
+    );
+    assert.deepEqual(
+      (receipt["populated"] as string[]).sort(),
+      ["draft_id", "guidance", "model", "press_key", "prompt", "quant", "steps", "variant"],
+      "populated is every judged scalar; carried/dropped partition it",
+    );
+    // THE BICONDITIONAL + THE FOLD (the judge): no partial without
+    // named drops, no complete with drops, and the run verdict is the
+    // AND of its stages.
+    const stages = receipt["stages"] as Array<Record<string, unknown>>;
+    assert.ok(stages.length === 1 && stages[0]!["stage"] === "s_0", "one stage row");
+    for (const s of stages) {
+      const dropped = s["dropped"] as string[];
+      if (s["verdict"] === "partial") {
+        assert.ok(dropped.length > 0, "a partial stage row names its dropped keys: " + JSON.stringify(s));
+        assert.deepEqual([...dropped].sort(), dropped, "the stage drops ride SORTED: " + JSON.stringify(s));
+      } else {
+        assert.deepEqual(dropped, [], "a complete stage row drops nothing: " + JSON.stringify(s));
+      }
+    }
+    assert.equal(
+      receipt["verdict"],
+      stages.every((s) => s["verdict"] === "complete") ? "complete" : "partial",
+      "the run verdict is the AND of its stages: " + JSON.stringify(receipt),
+    );
   });
 });

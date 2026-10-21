@@ -5037,8 +5037,12 @@ window.__ModuleLoader__.load({
 		* THE LINKS-IN-CODE LAW: names only, the DECL owns every URL
 		* server-side (run-rescue-core.ts's header).
 		*
-		* TWO FACES: an extension miss keeps the inline banner (one confirm
-		* through install_extension); a model miss opens the WEIGHT POPUP —
+		* TWO FACES: an extension miss keeps the inline banner — the install
+		* drive now mirrors the model face's seats (the parity cure, recon
+		* 2026-11-11 round 22): a progress tracker over the SAME ledger the
+		* weight popup polls, with Retry + Delete exits on a refused drive.
+		* The install still rides install_extension (names only); a model
+		* miss opens the WEIGHT POPUP —
 		* the F9 run-press acquisition seat — with a Download button and a
 		* live bytes/total tracker. The Download press rides acquire_weight
 		* (ONE door with the agent's comfy_manage seat: one door, two
@@ -5157,6 +5161,8 @@ window.__ModuleLoader__.load({
 			const [acquire, setAcquire] = (0, react.useState)(null);
 			const [flow, setFlow] = (0, react.useState)(null);
 			const [stuck, setStuck] = (0, react.useState)(null);
+			const [extAcquire, setExtAcquire] = (0, react.useState)(null);
+			const [extFailed, setExtFailed] = (0, react.useState)(null);
 			const [failed, setFailed] = (0, react.useState)(null);
 			const [dismissed, setDismissed] = (0, react.useState)(() => dismissedMisses.has(dismissalKey));
 			const downloadAbort = (0, react.useRef)(null);
@@ -5199,24 +5205,99 @@ window.__ModuleLoader__.load({
 				}, chromeCopy.runAgain));
 			};
 			if (rescue.kind === "extension") {
-				if (done !== null) return doneFace(done);
-				return (0, react.createElement)("div", { className: card_module_css_default.rescue }, (0, react.createElement)("p", { className: card_module_css_default.rescueNote }, chromeCopy.missingInstall({ what })), (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+				const installExtension = () => {
+					setBusy(true);
+					setNote(null);
+					setExtFailed(null);
+					setExtAcquire(null);
+					(0, _melite_card_base_client.postManageAction)("install_extension", { nodes: [rescue.pack] }).then((reply) => {
+						const data = typeof reply.data === "object" && reply.data !== null ? reply.data : null;
+						const operationId = data !== null && typeof data["operation_id"] === "string" ? data["operation_id"] : "";
+						const state = data !== null && typeof data["state"] === "string" ? data["state"] : reply.ok ? "active" : "failed";
+						const landed = {
+							operationId,
+							state,
+							bytes: 0,
+							total: 0,
+							...reply.detail ? { detail: reply.detail } : {}
+						};
+						const settle = (snapshot) => {
+							setBusy(false);
+							setExtAcquire(snapshot);
+							if (!reply.ok) {
+								setExtFailed(snapshot);
+								setNote(snapshot.detail || reply.detail || "install_extension refused");
+								return;
+							}
+							setDone({
+								detail: reply.detail ?? rescue.pack + " installed",
+								restartRequired: data !== null && data["restart_required"] === true || state === "restart_required"
+							});
+						};
+						if (operationId === "") {
+							settle(landed);
+							return;
+						}
+						acquireWeightPoll(operationId).then((polled) => {
+							settle(polled);
+						}, () => {
+							settle(landed);
+						});
+					}).catch((e) => {
+						setBusy(false);
+						setExtFailed(null);
+						setNote((0, _melite_card_base_client.rejectionVoice)(e));
+					});
+				};
+				const extExitsRow = (row) => (0, react.createElement)("div", { style: {
+					display: "flex",
+					gap: "8px",
+					flexWrap: "wrap",
+					marginTop: "8px"
+				} }, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+					size: "sm",
+					onClick: installExtension
+				}, chromeCopy.retryDownload), (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+					size: "sm",
+					onClick: () => {
+						const operationId = row.operationId;
+						setExtFailed(null);
+						setExtAcquire(null);
+						setNote(null);
+						if (operationId !== "") (0, _melite_card_base_client.postManageAction)("acquire_discard", { operation_id: operationId }).catch((e) => {
+							setNote((0, _melite_card_base_client.rejectionVoice)(e));
+						});
+					}
+				}, chromeCopy.deleteStuck));
+				const extInFlight = [(0, react.createElement)("p", {
+					"data-testid": "weight-progress",
+					className: card_module_css_default.rescueNote
+				}, chromeCopy.installingWord), (0, react.createElement)("div", {
+					"data-testid": "weight-meter",
+					style: {
+						height: "8px",
+						borderRadius: "4px",
+						background: "rgba(127,127,127,.25)",
+						overflow: "hidden"
+					}
+				}, (0, react.createElement)("span", {
+					"data-testid": "weight-meter-fill",
+					style: {
+						display: "block",
+						height: "100%",
+						width: "100%",
+						background: "currentColor",
+						opacity: .35
+					}
+				}))];
+				if (done !== null) return (0, react.createElement)("div", { className: card_module_css_default.rescue }, ...trackerFaces(extAcquire, null), doneFace(done));
+				return (0, react.createElement)("div", { className: card_module_css_default.rescue }, (0, react.createElement)("p", { className: card_module_css_default.rescueNote }, chromeCopy.missingInstall({ what })), ...extAcquire !== null ? trackerFaces(extAcquire, null) : busy ? extInFlight : [], (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Button, {
 					size: "sm",
 					variant: "primary",
 					disabled: busy,
 					title: chromeCopy.installViaManage,
-					onClick: () => {
-						setBusy(true);
-						setNote(null);
-						runRescueCall(rescue, target).then((result) => {
-							setBusy(false);
-							setDone(result);
-						}).catch((e) => {
-							setBusy(false);
-							setNote((0, _melite_card_base_client.rejectionVoice)(e));
-						});
-					}
-				}, busy ? chromeCopy.installingWord : chromeCopy.installContinue), note !== null ? (0, react.createElement)("p", { className: card_module_css_default.rescueErr }, note) : null);
+					onClick: installExtension
+				}, busy ? chromeCopy.installingWord : chromeCopy.installContinue), extFailed !== null ? extExitsRow(extFailed) : null, note !== null ? (0, react.createElement)("p", { className: card_module_css_default.rescueErr }, note) : null);
 			}
 			if (rescue.kind === "runtime") {
 				if (done !== null) return (0, react.createElement)("div", { className: card_module_css_default.rescue }, (0, react.createElement)("p", { className: card_module_css_default.rescueNote }, chromeCopy.runtimeProvisioned({ runtime: rescue.runtime })), (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Button, {
