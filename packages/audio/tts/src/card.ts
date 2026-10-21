@@ -43,6 +43,15 @@ export const schema = z.object({
   //                 designs a brand-new voice from the description)
   style_instruction: z.string().description("Emotion & Delivery Style").extra('extra', bag({ order: null, placeholder: "e.g. Speak with immense excitement, laughing slightly", tooltip: "HOW the preset speaker delivers the text — emotion, tone, pacing (excited, whisper, cheerful). A CustomVoice (1.7B) capability; the 0.6B has no instruction control, Base clones instead, VoiceDesign designs the speaker itself", wtype: 'textarea' })),
   design_prompt: z.string().description("Voice Persona & Timbre").extra('extra', bag({ order: null, placeholder: "e.g. A gritty, deep male radio host in his late 50s, unhurried pace, authoritative and warm", tooltip: "WHO speaks — describe the voice itself (age, gender, texture, pitch, cadence) and the exporter designs a brand-new speaker from the description. No reference audio needed; the exported .qvoice performs any script on every qwen3-tts model. Pairs with the Design mod's name (voice_name) — the save fires from any model", wtype: 'textarea' })),
+  // THE DESIGN MOD'S NAME (the studio-unbrick field, 2026-11-10: the
+  // export pair's other half had NO widget — design_prompt rendered,
+  // voice_name did not, so the required-together relation refused
+  // every half-pair write and the pair could never complete from the
+  // UI; the studio bricked with the write unlanded). The saved
+  // .qvoice export's name: state it WITH the persona description on
+  // the Design lane (the relation's required word), and the loaded
+  // mod performs on every qwen3-tts model.
+  voice_name: z.string().description("Design Mod Name").extra('extra', bag({ order: null, placeholder: "e.g. deep_radio_host (the saved .qvoice's name)", tooltip: "The export's file name — the Design mod you load later to perform this voice. Required WITH Voice Persona & Timbre on the VoiceDesign model (both or neither); the save fires from any model", wtype: 'text' })),
   // THE CLONE INPUTS (the Base variant clones from a 3-second
   // reference): reference audio + its transcript, Base only.
   // OPTIONAL (the optional-clone law, operator 2026-10-12): a run

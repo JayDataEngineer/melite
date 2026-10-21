@@ -429,7 +429,12 @@ describe("models against cards (the cross-validation, resurrected)", () => {
     // upscale_model — the two-pass latent-upscale pair (both carry
     // schema defaults: off + the LBH bf16 file), walked like every
     // knob. Two new fields, argued here.
-    assert.equal(walked, 475,
+    // 475 -> 476 (2026-10-21, the studio-unbrick cure, row
+    // cards-tts-export-pair-renders): tts voice_name — the design
+    // export pair's other half joins the walked set (a string, not
+    // a numeric knob; the walk counts every walked field). One new
+    // field, argued here.
+    assert.equal(walked, 476,
       `the census walked the estate's fields (${String(walked)} — a re-zoned or re-typed field set MOVES this number; growth is argued here, loss means the census emptied an arm)`);
     // judged 8 -> 6 (2026-11-08, the latent law): the image-edit
     // card's width/height leave the params zone (hidden compatibility
@@ -1782,7 +1787,14 @@ describe("THE TWO-HOMES BOUNDS-SYNC WALL (card schema == action ParamSpec, every
     // latent_2x, identical options both planes) + the model vocab
     // (the LBH bf16 file, identical list both planes), one agreeing
     // pair per carried h3 address; offenders stay empty.
-    assert.equal(pairs, 795, "the shared-name pair census changed — update this pin deliberately");
+    // 795 -> 805 (2026-10-21, the studio-unbrick cure, row
+    // cards-tts-export-pair-renders): tts voice_name joins the
+    // shared names — the export action's ParamSpec declared it all
+    // along (the save needs the name); the card schema half was the
+    // missing home, so ten carried qwen3-tts addresses now match
+    // (the family's served route coordinates), one agreeing pair
+    // per address; offenders stay empty.
+    assert.equal(pairs, 805, "the shared-name pair census changed — update this pin deliberately");
     assert.deepEqual(offenders, [], `two-homes drift (card schema vs action ParamSpec):\n${offenders.join("\n")}`);
   });
 });

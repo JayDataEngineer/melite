@@ -1,5 +1,7 @@
 import { Service } from "@deepseek-ai/cordis";
+import { existsSync } from "node:fs";
 import { stat, statfs } from "node:fs/promises";
+import { join } from "node:path";
 import type { Context, Plugin } from "@deepseek-ai/cordis";
 import {
   ProvisioningError,
@@ -8,7 +10,15 @@ import {
   type ArtifactWriterPort,
 } from "./artifact-writer.ts";
 import { ManagerProviderError } from "./manager-provider.ts";
-import { providerOk, unknownProviderRefusal } from "./contracts.ts";
+import { providerOk, unknownProviderRefusal, type SnapshotProvisionPlanItem } from "./contracts.ts";
+import {
+  exactPatternFiles,
+  hfRepoFiles,
+  snapshotDest,
+  snapshotFileUrl,
+  snapshotFilesForPatterns,
+  snapshotTreePresent,
+} from "./snapshot.ts";
 
 /** The part-reaper cadence: a stale part (the writer's own
  *  mtime bound, PART_STALE_MS) waits at most this long past
@@ -256,6 +266,21 @@ function copyPlanItem(item: ProvisionPlanItem): ProvisionPlanItem {
       ...(item.quant === undefined ? {} : { quant: item.quant }),
     };
   }
+  if (item.kind === "snapshot") {
+    return {
+      kind: "snapshot",
+      key: item.key,
+      owner: item.owner,
+      id: item.id,
+      name: item.name,
+      folder: item.folder,
+      repoId: item.repoId,
+      revision: item.revision,
+      allowPatterns: [...item.allowPatterns],
+      required: item.required,
+      provider: item.provider,
+    };
+  }
   return {
     kind: "extension",
     key: item.key,
@@ -279,13 +304,20 @@ function copyPlan(plan: ProvisionPlan, ref: ResourceRef): ProvisionPlan {
     throw new Error("declaration port returned a plan for a different resource");
   }
   for (const item of plan.items) {
-    if (item.kind !== "model" && item.kind !== "extension") {
+    if (item.kind !== "model" && item.kind !== "snapshot" && item.kind !== "extension") {
       throw new Error("declaration port returned an invalid plan item kind");
     }
     if (item.key.trim() === "" || item.provider.trim() === "" || typeof item.required !== "boolean") {
       throw new Error("declaration port returned an incomplete plan item");
     }
-    if (item.kind === "model") {
+    if (item.kind === "snapshot") {
+      if (item.name.trim() === "" || item.folder.trim() === "" || item.repoId.trim() === "" || item.revision.trim() === "") {
+        throw new Error("declaration port returned an invalid snapshot destination or source");
+      }
+      if (item.allowPatterns.length === 0) {
+        throw new Error("declaration port returned a snapshot with no allow patterns");
+      }
+    } else if (item.kind === "model") {
       if (item.name.trim() === "" || item.folder.trim() === "" && item.folder !== "") {
         throw new Error("declaration port returned an invalid model destination");
       }
@@ -455,7 +487,7 @@ function planTotal(plan: ProvisionPlan): number {
 function narrowPlan(plan: ProvisionPlan, items: readonly string[] | undefined): ProvisionPlan {
   if (items === undefined) return plan;
   const requested = new Set(items);
-  return { ...plan, items: plan.items.filter((item) => requested.has(item.kind === "model" ? item.name : item.id)) };
+  return { ...plan, items: plan.items.filter((item) => requested.has(item.kind === "extension" ? item.id : item.name)) };
 }
 
 /** THE F9 COUNTED SOURCE (the tracker's numerator): wraps the
@@ -1535,7 +1567,21 @@ export class ProvisioningService extends Service implements ProvisioningServiceD
     }
     const operationState = outcome === "cancelled" ? "failed" : aggregateState(items);
     let result = makeResult(ref, operationId, outcome, operationState, items);
-    if (stallVoice !== undefined) result = { ...result, detail: stallVoice };
+    if (stallVoice !== undefined) {
+      result = { ...result, detail: stallVoice };
+    } else if (result.detail === undefined) {
+      // THE ITEM-FAILURE WHY (the snapshot channel's 503 burn,
+      // 2026-11-10): a per-item refusal (a refused file fetch, a
+      // patterns-empty plan) carries its message on the ITEM row
+      // only — makeResult leaves the result detailless and the F9
+      // detail mirror (complete) had nothing to voice, so the
+      // tracker polled a bare 'failed' with no cause. The first
+      // failed/blocked item's why rides the result — one law for
+      // every item kind (model, snapshot, extension).
+      const why = items.find((row) =>
+        (row.outcome === "failed" || row.outcome === "blocked") && typeof row.detail === "string");
+      if (why !== undefined) result = { ...result, detail: why.detail };
+    }
     if (options.activate === true || options.activateIfIdle === true) {
       if (ref.kind === "extension" && (outcome === "active" || outcome === "restart_required")) {
         result = await this.activateExtension(ref, plan, operationId, signal, {
@@ -1554,6 +1600,7 @@ export class ProvisioningService extends Service implements ProvisioningServiceD
     signal: AbortSignal,
   ): Promise<ProvisionItemResult> {
     if (item.kind === "model") return await this.acquireModel(ref, item, operationId, signal);
+    if (item.kind === "snapshot") return await this.acquireSnapshot(ref, item, operationId, signal);
     // THE PROVIDER ARM (the contract's vocabulary): `local` verifies
     // in place. A token with no arm is REFUSED BY NAME — it used to
     // fall through to the Manager, so a "git" item on a lane with no
@@ -1614,6 +1661,104 @@ export class ProvisioningService extends Service implements ProvisioningServiceD
     if (inspection.active) return "active";
     if (inspection.installed) return "restart_required";
     throw new ItemRefusal("failed", "manager/install-not-landed", "the Manager acked the install but the pack is not present on inspect");
+  }
+
+  /** THE SNAPSHOT ARM (the lying-Download cure, 2026-11-10): a
+   *  directory-shaped weight tree the DECL pins as repo+revision+allow
+   *  patterns lands file-by-file through the SAME writer, fetcher,
+   *  stall clock, and progress counter every direct model download
+   *  rides. No symlink, no clone, no Manager catalog — a fresh
+   *  Windows install fetches the same bytes. Resume is per-file: a
+   *  landed sibling is kept (the revision pin is the integrity word;
+   *  no per-file digest exists upstream).
+   *  @param ref the resource the row belongs to
+   *  @param item the snapshot plan item
+   *  @param operationId the acquire operation's id
+   *  @param signal the operation's abort signal
+   *  @returns the item result (active once the anchor probe passes) */
+  private async acquireSnapshot(
+    ref: ResourceRef,
+    item: SnapshotProvisionPlanItem,
+    operationId: string,
+    signal: AbortSignal,
+  ): Promise<ProvisionItemResult> {
+    if (this.fetcher === undefined) {
+      throw new ItemRefusal("blocked", "snapshot/fetch-unavailable", "snapshot acquisition requires a configured artifact fetcher");
+    }
+    if (this.writer === undefined) {
+      throw new ItemRefusal("blocked", "snapshot/write-unavailable", "snapshot acquisition requires the configured model store writer");
+    }
+    const destDir = snapshotDest(item.folder, item.name);
+    const pin = item.repoId + "@" + item.revision.slice(0, 12);
+    const exactFiles = exactPatternFiles(item.allowPatterns);
+    // the opening re-check rides the same anchor probe as inspect:
+    // a tree whose declared exact files all exist is already active
+    this.voicePhase(operationId, "recheck", "verifying");
+    if (snapshotTreePresent((p) => existsSync(p), join(this.writerRoot, destDir), exactFiles).present) {
+      return itemResult(item, "active", "active", {
+        path: join(this.writerRoot, destDir),
+        integrity: "operator-unverified",
+        detail: "pinned snapshot " + pin,
+      });
+    }
+    this.move(ref, operationId, "acquiring");
+    this.voicePhase(operationId, "stream");
+    const siblings = await hfRepoFiles(item.repoId, this.fetcher, signal);
+    const files = snapshotFilesForPatterns(siblings, item.allowPatterns);
+    if (files.length === 0) {
+      throw new ItemRefusal(
+        "blocked",
+        "snapshot/patterns-empty",
+        `repo ${pin} matches none of the declared allow patterns`,
+      );
+    }
+    for (const file of files) {
+      if (signal.aborted) throw new ItemRefusal("cancelled", "provisioning/cancelled", "operation cancelled");
+      const relativePath = destDir + "/" + file;
+      // per-file resume: a landed sibling is kept whole — the pin,
+      // not a digest, is the row's integrity word
+      if (existsSync(join(this.writerRoot, relativePath))) continue;
+      const stopStallWatch = this.armStallWatch(operationId, ref);
+      try {
+        const response = await this.fetcher(snapshotFileUrl(item.repoId, item.revision, file), signal);
+        if (response.status !== 200 || response.body === null) {
+          throw new ItemRefusal(
+            "failed",
+            "snapshot/fetch-refused",
+            `file ${file} of ${pin} answered HTTP ${String(response.status)} with ${response.body === null ? "no body" : "a body"}`,
+          );
+        }
+        await this.writer.write({
+          root: this.writerRoot,
+          relativePath,
+          operationId,
+          source: countedSource(response.body, (count) => this.bumpProgress(operationId, count)),
+        }, signal);
+      } finally {
+        stopStallWatch();
+      }
+    }
+    // THE POST-FETCH FILE PROBE (listing-backed — stronger than the
+    // pattern probe): every file the listing matched must be on
+    // disk; the exact-named anchors must all hold too. A fetch that
+    // lands patterns but not its files is a failed acquire, never
+    // an active row.
+    const landed = files.filter((file) => !existsSync(join(this.writerRoot, destDir, file)));
+    const anchors = snapshotTreePresent((p) => existsSync(p), join(this.writerRoot, destDir), exactFiles);
+    if (landed.length > 0 || !anchors.present) {
+      const why = landed.length > 0
+        ? `files ${landed.join(", ")} of ${pin} did not land`
+        : anchors.missing.length > 0
+          ? `exact-named files ${anchors.missing.join(", ")} of ${pin} are missing`
+          : `the exact-named allow files of ${pin} name no weights anchor (model.safetensors or a shard)`;
+      throw new ItemRefusal("failed", "snapshot/incomplete", why + " — the tree is incomplete");
+    }
+    this.move(ref, operationId, "installed");
+    return itemResult(item, "active", "active", {
+      path: join(this.writerRoot, destDir),
+      integrity: "operator-unverified",
+      detail: `pinned snapshot ${pin}, ${String(files.length)} files`,
+    });
   }
 
   private async acquireModel(
@@ -1927,6 +2072,28 @@ export class ProvisioningService extends Service implements ProvisioningServiceD
   }
 
   private async inspectPlanItem(item: ProvisionPlanItem, signal?: AbortSignal): Promise<ProvisionItemResult> {
+    if (item.kind === "snapshot") {
+      // THE SNAPSHOT PRESENCE PROBE — the row's own exact-named
+      // allow files, all present plus a weights anchor (single-file
+      // or sharded). A partial tree is absent, never active. No
+      // digest exists to check; the revision pin is the integrity
+      // word and the row says so.
+      const destDir = join(this.writerRoot, snapshotDest(item.folder, item.name));
+      const probe = snapshotTreePresent((p) => existsSync(p), destDir, exactPatternFiles(item.allowPatterns));
+      if (probe.present) {
+        return itemResult(item, "active", "active", {
+          path: destDir,
+          integrity: "operator-unverified",
+          detail: "pinned snapshot " + item.repoId + "@" + item.revision.slice(0, 12),
+        });
+      }
+      return itemResult(item, "absent", "blocked", {
+        path: destDir,
+        errorCode: "snapshot/missing",
+        detail: "fetchable snapshot " + item.repoId + "@" + item.revision.slice(0, 12)
+          + " has not landed (" + probe.missing.slice(0, 3).join(", ") + (probe.missing.length > 3 ? ", …" : "") + " missing)",
+      });
+    }
     if (item.kind === "model") {
       if (item.sha256 === undefined || item.sha256.trim() === "") {
         return itemResult(item, "blocked", "blocked", { errorCode: "artifact/invalid-digest" });

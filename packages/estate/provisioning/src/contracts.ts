@@ -84,6 +84,26 @@ export interface ModelProvisionPlanItem {
   readonly quant?: string;
 }
 
+/** A pinned Hugging Face snapshot tree (the `snapshot_provisions`
+ *  DECL row — the directory-shaped weight a single-file row cannot
+ *  name). Acquisition lists the pinned repo, fetches the declared
+ *  patterns, and verifies the tree's anchor files landed; presence
+ *  is the same anchor probe. No digest: the revision pin is the
+ *  integrity word (immutable bytes upstream). */
+export interface SnapshotProvisionPlanItem {
+  readonly kind: "snapshot";
+  readonly key: string;
+  readonly owner: ResourceOwner;
+  readonly id: string;
+  readonly name: string;
+  readonly folder: string;
+  readonly repoId: string;
+  readonly revision: string;
+  readonly allowPatterns: readonly string[];
+  readonly required: boolean;
+  readonly provider: "hf-snapshot";
+}
+
 export interface ExtensionProvisionPlanItem {
   readonly kind: "extension";
   readonly key: string;
@@ -100,6 +120,7 @@ export interface ExtensionProvisionPlanItem {
 
 export type ProvisionPlanItem =
   | ModelProvisionPlanItem
+  | SnapshotProvisionPlanItem
   | ExtensionProvisionPlanItem;
 
 export interface ProvisionPlan {
@@ -109,7 +130,7 @@ export interface ProvisionPlan {
 
 export interface ResourceStatusItem {
   readonly key: string;
-  readonly kind: "model" | "extension";
+  readonly kind: "model" | "snapshot" | "extension";
   readonly state: ProvisionState;
   readonly path?: string;
   readonly sha256?: string;

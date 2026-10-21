@@ -110,6 +110,28 @@ function familyPlan(ref, decl) {
     for (const row of decl.provisions ?? []) {
         items.push(modelPlanItem(ref, row, "direct"));
     }
+    // THE SNAPSHOT CHANNEL (the lying-Download cure, 2026-11-10):
+    // directory-shaped weights ride snapshot_provisions — repo +
+    // revision + allow patterns — through the same plan door every
+    // single-file row rides. Families whose only fetchable bytes are
+    // whole-dirs (joycaption, kimodo, qwen3-tts HF trees) used to
+    // throw "declares no downloadable provisions" here while the
+    // button promised a download; the fold makes the promise true.
+    for (const row of decl.snapshot_provisions ?? []) {
+        items.push({
+            kind: "snapshot",
+            key: `model:${ref.id}:snapshot:${row.name}`,
+            owner: ref.owner,
+            id: ref.id,
+            name: row.name,
+            folder: row.folder,
+            repoId: row.repo_id,
+            revision: row.revision,
+            allowPatterns: [...row.allow_patterns],
+            required: true,
+            provider: "hf-snapshot",
+        });
+    }
     const coordinates = routeCoordinates(ref, decl);
     const resolved = modelsService().resolve(ref.id, coordinates.variant, coordinates.quant);
     const artifact = resolved.cell?.artifact;
@@ -135,7 +157,10 @@ function familyPlan(ref, decl) {
         items.push(modelPlanItem(ref, row, "direct", resolved.variant.id, resolved.cell?.quant));
     }
     if (items.length === 0) {
-        throw new Error(`model "${ref.id}" declares no downloadable provisions`);
+        // hand-placed-only families (merged TTS trees, the sfx source
+        // tree) reach here: no fetchable byte exists to plan, and the
+        // roster never lists them (list() filters by fetchable truth)
+        throw new Error(`model "${ref.id}" declares no downloadable provisions — its weights are hand-placed, not fetchable`);
     }
     return { ref, items };
 }
@@ -394,7 +419,22 @@ export function declarationPort(ctx) {
             return extensionPlan(ref, row, facts.extension_node_types[ref.id] ?? []);
         },
         list: async () => {
-            const refs = modelsService().registryIds().map((id) => ({ kind: "model", owner: "family", id }));
+            // THE FETCHABLE ROSTER (the 8 false-'failed' rows cure,
+            // 2026-11-10): a family row appears only when it declares
+            // bytes the provisioner can actually land — provisions,
+            // snapshot rows, or a variant-cell artifact. Hand-placed-only
+            // families (moss-sfx, the merged TTS trees) have no fetchable
+            // row: listing them minted 'failed' faces for weights that
+            // were never downloadable, and the Download button lied.
+            const refs = [];
+            for (const id of modelsService().registryIds()) {
+                const decl = modelsService().getModel(id);
+                const fetchable = (decl.provisions ?? []).length > 0
+                    || (decl.snapshot_provisions ?? []).length > 0
+                    || decl.variants.some((candidate) => candidate.cells.some((cell) => cell.artifact !== undefined && cell.artifact !== null));
+                if (fetchable)
+                    refs.push({ kind: "model", owner: "family", id });
+            }
             for (const [id, def] of cards.defsSync()) {
                 if ((def.provisions ?? []).length > 0)
                     refs.push({ kind: "model", owner: "card", id });

@@ -18754,17 +18754,41 @@ window.__ModuleLoader__.load({
 		function gateRefusalVoice(v) {
 			return "THE COMPOSE GATE REFUSED — " + v.message + " — the write never left the studio. Fix the stated value, or pick a different route.";
 		}
+		/** THE PENDING VOICE (the frictionless-authoring cure, 2026-11-10,
+		*  the operator: "ALL THE REDS WE SAW WITH QWEN SHOULD BE IMPOSSIBLE
+		*  ... AT THE GENERIC CARD LEVEL"): an AUTHORING write (typing, a
+		*  slot pick, an axis unset, the enhance sweep) never drops on a
+		*  compose violation — the blank law's own tolerance reads a state
+		*  still being authored as authoring-in-progress, not a refusal
+		*  (the voice_name brick: half-pair writes unlanded and the pair
+		*  could never complete). The write lands; this face states what
+		*  the Run press refuses until the state heals. The Run press keeps
+		*  the full-set gate (the singularity cure); the atomic pick keeps
+		*  its own before-the-wire marriage judgment (a lane switch, never
+		*  authoring). */
+		function gatePendingVoice(v) {
+			return "THE COMPOSE GATE WILL REFUSE AT RUN — " + v.message + " — the write landed; complete the pair or unstamp before Run.";
+		}
 		/** THE ONE-VOICE LAW (E2-12): extract a gate refusal's bare message
-		*  from a voiced face (the strip's or the write face's template), or
-		*  null when the face voices no gate refusal — non-gate voices never
-		*  mute anything (different truths keep their own seats). */
+		*  from a voiced face (the strip's, the write face's refusal
+		*  template, or its pending template), or null when the face voices
+		*  no gate refusal — non-gate voices never mute anything (different
+		*  truths keep their own seats). */
 		function gateRefusalMessage(voice) {
-			if (voice === null || !voice.startsWith("THE COMPOSE GATE REFUSED — ")) return null;
-			return voice.endsWith(" — the write never left the studio. Fix the stated value, or pick a different route.") ? voice.slice(27, -84) : null;
+			if (voice === null) return null;
+			for (const [head, tail] of [["THE COMPOSE GATE REFUSED — ", " — the write never left the studio. Fix the stated value, or pick a different route."], ["THE COMPOSE GATE WILL REFUSE AT RUN — ", " — the write landed; complete the pair or unstamp before Run."]]) if (voice.startsWith(head) && voice.endsWith(tail)) return voice.slice(head.length, -tail.length);
+			return null;
 		}
 		function composeGateRefusal(spec, held, user, frame) {
 			const v = composeGateViolations(spec, held, user, frame)[0] ?? null;
 			return v === null ? null : gateRefusalVoice(v);
+		}
+		/** The authoring writes' pending face — the first violation the
+		*  candidate carries, voiced as what Run will refuse (the write
+		*  itself proceeds). */
+		function composePendingVoice(spec, held, user, frame) {
+			const v = composeGateViolations(spec, held, user, frame)[0] ?? null;
+			return v === null ? null : gatePendingVoice(v);
 		}
 		/** THE GATE'S FULL SET (the singularity cure, 2026-11-10): EVERY
 		*  violation the candidate carries — the press strip voices one row
@@ -18950,7 +18974,13 @@ window.__ModuleLoader__.load({
 					refuses a model re-point only when the departing spec's
 					model is absent/empty, and the form-spec door emits
 					`model ?? null` — never ''. Kept so the re-point stays
-					refusal-gated if the door's emission drifts. */
+					refusal-gated if the door's emission drifts. THE
+					FRICTIONLESS-AUTHORING BOUNDARY: this block is the ATOMIC
+					PICK's own marriage-before-the-wire judgment (a lane
+					switch, its own registry row and arms) — every AUTHORING
+					write (typing, slot, unset, sweep) lands with the pending
+					face instead; only this discrete re-target still refuses
+					in place. */
 					if (refusedM !== null) {
 						setWriteFace(refusedM);
 						return;
@@ -18973,16 +19003,13 @@ window.__ModuleLoader__.load({
 						for (const [k, val] of Object.entries(m)) if (k !== name) next[k] = val;
 						return next;
 					});
-					const refused = composeGateRefusal(spec, stage.params, user, { [name]: null });
-					if (refused !== null) {
-						setWriteFace(refused);
-						return;
-					}
+					const pendingUnset = composePendingVoice(spec, stage.params, user, { [name]: null });
+					if (pendingUnset !== null) setWriteFace(pendingUnset);
 					const settleDraftId = bench.draftId;
 					const settleStageId = stage.id;
 					scheduleStageParam(settleDraftId, settleStageId, name, null, bench.rev).then(() => {
 						if (lastStageRef.current !== settleStageId) return;
-						setWriteFace(stageWriteState(settleDraftId, settleStageId).failedKeys.length > 0 ? unlandedWriteVoice(settleDraftId, settleStageId) : null);
+						setWriteFace(stageWriteState(settleDraftId, settleStageId).failedKeys.length > 0 ? unlandedWriteVoice(settleDraftId, settleStageId) : pendingUnset);
 					});
 					return;
 				}
@@ -18995,16 +19022,13 @@ window.__ModuleLoader__.load({
 				const shape2 = spec !== null ? (0, _melite_card_base_client.fieldsOf)(spec).find((f) => f.name === name)?.type : void 0;
 				/* v8 ignore next 4 -- the tri-state atoms unset only from slot shapes; these atoms are never slots (probe 2026-09-19). image_list rides the slot flush below (THE STACK GESTURE LAW, 2026-10-13: an upload onto a stack is as discrete as a slot pick — the trailing write's delay let a close-before-flush drop it) */
 				if (shape2 !== "image" && shape2 !== "file" && shape2 !== "mesh" && shape2 !== "image_list") {
-					const refused = composeGateRefusal(spec, stage.params, user, { [name]: v });
-					if (refused !== null) {
-						setWriteFace(refused);
-						return;
-					}
+					const pendingTyped = composePendingVoice(spec, stage.params, user, { [name]: v });
+					if (pendingTyped !== null) setWriteFace(pendingTyped);
 					const settleDraftId = bench.draftId;
 					const settleStageId = stage.id;
 					scheduleStageParam(settleDraftId, settleStageId, name, v, bench.rev).then(() => {
 						if (lastStageRef.current !== settleStageId) return;
-						setWriteFace(stageWriteState(settleDraftId, settleStageId).failedKeys.length > 0 ? unlandedWriteVoice(settleDraftId, settleStageId) : null);
+						setWriteFace(stageWriteState(settleDraftId, settleStageId).failedKeys.length > 0 ? unlandedWriteVoice(settleDraftId, settleStageId) : pendingTyped);
 					});
 				}
 				/* v8 ignore next 1 -- single-render law: CardForm renders only when spec is non-null (probe 2026-09-19) */
@@ -19013,11 +19037,8 @@ window.__ModuleLoader__.load({
 				if (shape === "image" || shape === "file" || shape === "mesh" || shape === "image_list") {
 					const slotEmpty = v === "" || Array.isArray(v) && v.length === 0;
 					const slotFrame = slotEmpty ? { [name]: null } : { [name]: v };
-					const refused = composeGateRefusal(spec, stage.params, user, slotFrame);
-					if (refused !== null) {
-						setWriteFace(refused);
-						return;
-					}
+					const pendingSlot = composePendingVoice(spec, stage.params, user, slotFrame);
+					if (pendingSlot !== null) setWriteFace(pendingSlot);
 					const settleDraftId = bench.draftId;
 					const settleStageId = stage.id;
 					patchStageParams(settleDraftId, settleStageId, slotEmpty ? { [name]: null } : { [name]: v }, bench.rev).catch((e) => {
@@ -19207,16 +19228,13 @@ window.__ModuleLoader__.load({
 						...sweptPatch
 					}));
 					if (Object.keys(sweptPatch).length > 0) {
-						const refused = composeGateRefusal(spec, stage.params, user, sweptPatch);
-						if (refused !== null) {
-							setWriteFace(refused);
-							return;
-						}
+						const pendingSwept = composePendingVoice(spec, stage.params, user, sweptPatch);
+						if (pendingSwept !== null) setWriteFace(pendingSwept);
 						const settleDraftId = bench.draftId;
 						const settleStageId = stage.id;
 						patchStageParams(settleDraftId, settleStageId, sweptPatch, bench.rev).then(() => {
 							if (lastStageRef.current !== settleStageId) return;
-							setWriteFace(stageWriteState(settleDraftId, settleStageId).failedKeys.length > 0 ? unlandedWriteVoice(settleDraftId, settleStageId) : null);
+							setWriteFace(stageWriteState(settleDraftId, settleStageId).failedKeys.length > 0 ? unlandedWriteVoice(settleDraftId, settleStageId) : pendingSwept);
 						}).catch((e) => {
 							if (lastStageRef.current !== settleStageId) return;
 							setWriteFace(unlandedWriteVoice(settleDraftId, settleStageId));

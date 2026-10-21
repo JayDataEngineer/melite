@@ -61,17 +61,43 @@ const registerKey = (ref: ResourceRef): string =>
  *  nothing — a plan-less resolve is its honest answer, never a
  *  defect. The defect class is download intent that produces no
  *  plan: a cell naming a source (the declaration SAYS this family
- *  has weights) with no artifact row to fetch it with. */
+ *  has weights) with no artifact row to fetch it with. Snapshot
+ *  rows are intent too (2026-11-10): a whole-dir tree is bytes the
+ *  family promises to fetch. */
 const declaresDownloadIntent = (id: string): boolean => {
   const decl = modelsService().getModel(id) as {
     provisions?: readonly unknown[];
+    snapshot_provisions?: readonly unknown[];
     variants?: readonly {
       cells?: readonly { source?: unknown }[];
     }[];
   };
   if ((decl.provisions ?? []).length > 0) return true;
+  if ((decl.snapshot_provisions ?? []).length > 0) return true;
   return (decl.variants ?? []).some((v) =>
     (v.cells ?? []).some((c) => c.source !== null && c.source !== undefined),
+  );
+};
+
+/** Does the family DECLARE FETCHABLE BYTES — provisions, snapshot
+ *  rows, or a variant-cell artifact? THE ROSTER LAW's truth source
+ *  (the 8 false-'failed' rows + lying-Download cure, 2026-11-10):
+ *  list() offers exactly these families; a hand-placed-only family
+ *  (moss-sfx's source tree, tool families) has no fetchable row and
+ *  must never appear — a listed-but-unplannable ref is a 'failed'
+ *  face for weights that were never downloadable. */
+const declaresFetchableBytes = (id: string): boolean => {
+  const decl = modelsService().getModel(id) as {
+    provisions?: readonly unknown[];
+    snapshot_provisions?: readonly unknown[];
+    variants?: readonly {
+      cells?: readonly { artifact?: unknown }[];
+    }[];
+  };
+  if ((decl.provisions ?? []).length > 0) return true;
+  if ((decl.snapshot_provisions ?? []).length > 0) return true;
+  return (decl.variants ?? []).some((v) =>
+    (v.cells ?? []).some((c) => c.artifact !== null && c.artifact !== undefined),
   );
 };
 
@@ -97,13 +123,12 @@ const freshPort = async (): Promise<{
 describe("the declared resources resolve before the app ships", () => {
   test("every plan resolves sound and every source names its artifact", async () => {
     const { refs, resolve: resolveRef } = await freshPort();
-    // >= 40 -> >= 35 -> >= 30 (2026-10-12: the 12-fossil sweep, then
-    // the operator's five-family kill — ace-step, moss, skintokens,
-    // ltx-2-3, ltx-director-distilled took their declaration refs
-    // with them — 32 enumerate now; the floor stays a
-    // silent-boot-failure trip, not a census).
+    // >= 40 -> >= 35 -> >= 30 -> >= 20 (2026-11-10: the fetchable
+    // roster law — 10 hand-placed/tool families left the roster
+    // with their false-'failed' faces; 24 enumerate now, the floor
+    // stays a silent-boot-failure trip, not a census).
     assert.ok(
-      refs.length >= 30,
+      refs.length >= 20,
       `the declaration port enumerated ${refs.length} refs — the ` +
         `registry boot failed silently (families+cards+extensions ` +
         `expect dozens)`,
@@ -155,6 +180,33 @@ describe("the declared resources resolve before the app ships", () => {
           }
           if ((item.folder ?? "") === "") {
             structural.push(`${key}: item '${name}' names no folder`);
+          }
+        } else if (item.kind === "snapshot") {
+          // THE SNAPSHOT ARM (2026-11-10): a whole-dir tree row is
+          // load-bearing the same way a single-file row is — repo,
+          // revision pin, patterns, one-segment tree name, folder.
+          // A malformed pin here is a Download button that fetches
+          // the wrong tree or nothing.
+          const snap = item as { name?: string; folder?: string; repoId?: string; revision?: string; allowPatterns?: string[] };
+          if (!/^[^/\s]+\/[^/\s]+$/.test(snap.repoId ?? "")) {
+            structural.push(`${key}: snapshot '${snap.name}' repoId ` +
+              `is not owner/name: '${String(snap.repoId)}'`);
+          }
+          if (!/^[0-9a-f]{40}$/i.test(snap.revision ?? "")) {
+            structural.push(`${key}: snapshot '${snap.name}' revision ` +
+              `is not a 40-hex pin: '${String(snap.revision)}'`);
+          }
+          if ((snap.allowPatterns ?? []).length === 0) {
+            structural.push(`${key}: snapshot '${snap.name}' carries ` +
+              `no allow patterns (the fetch has no bounds)`);
+          }
+          const name = snap.name ?? "";
+          if (name === "" || name.includes("/") || name.includes("\\")) {
+            structural.push(`${key}: snapshot name '${name}' is not ` +
+              `one path segment (the landed tree's name)`);
+          }
+          if ((snap.folder ?? "") === "") {
+            structural.push(`${key}: snapshot '${name}' names no folder`);
           }
         }
       }
@@ -224,6 +276,36 @@ describe("the declared resources resolve before the app ships", () => {
       [],
       "register rows naming no declared ref (renamed or deleted " +
         "families leave their debt row behind)",
+    );
+  });
+
+  // THE ROSTER LAW (the 8 false-'failed' rows + the lying Download
+  // button, 2026-11-10): list() offers EXACTLY the families that
+  // declare fetchable bytes (provisions | snapshots | cell
+  // artifact). A hand-placed-only family on the roster is a
+  // 'failed' face for weights that were never downloadable; a
+  // fetchable family OFF the roster is a hidden Download. Both
+  // directions red here, derived from the DECLs — never counted.
+  test("the roster offers exactly the fetchable families", async () => {
+    const { refs } = await freshPort();
+    const listed = new Set(refs
+      .filter((ref) => ref.kind === "model" && ref.owner === "family")
+      .map((ref) => ref.id));
+    const expected = new Set(modelsService().registryIds().filter(declaresFetchableBytes));
+    const hidden = [...expected].filter((id) => !listed.has(id));
+    const phantom = [...listed].filter((id) => !expected.has(id));
+    assert.deepEqual(
+      hidden,
+      [],
+      "families declaring fetchable bytes are missing from the " +
+        "roster (their Download is hidden)",
+    );
+    assert.deepEqual(
+      phantom,
+      [],
+      "hand-placed-only families appear on the roster (their row " +
+        "wears a false 'failed' face — weights never downloadable " +
+        "must not be offered)",
     );
   });
 });

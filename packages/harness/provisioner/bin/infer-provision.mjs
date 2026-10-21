@@ -376,16 +376,20 @@ function renderProfile(name) {  // In-box bundles (@deepseek-ai/*) resolve from 
   // render's own repo root), so the runs/drafts seats never boot
   // unpinned (they refuse loud by design). agentRoute names the agent
   // brain (provider/model); absent, the estate logs the engine unseated
-  // — the honest state, never a silent default.
+  // — the honest state, never a silent default. acquireStallTimeoutMs
+  // is the deliberate stall budget (audit F7 close-out, 2026-11-11):
+  // the lane rides a pinned 10s, never the library default by accident.
   const estateRow = bundles.includes('@melite-plugin/dsh-estate')
     ? '# ESTATE SEAT PIN — the estate row config owns every seat:\n'
       + '# repoRoot pins the runs/drafts seats (unpinned boots refuse loud);\n'
       + '# stateRoot overrides it (J12: walls render hermetic roots by\n'
       + '# config — stateRoot wins over repoRoot in the queue seat).\n'
       + '# agentRoute names the agent brain (absent = unseated, logged loud).\n'
+      + '# acquireStallTimeoutMs: the deliberate stall budget (audit F7).\n'
       + '- id: melite-estate\n'
       + '  config:\n'
       + '    repoRoot: ' + JSON.stringify(resolve(PROVISIONER, '../../..')) + '\n'
+      + '    acquireStallTimeoutMs: 10000\n'
       + (ESTATE_STATE_ROOT
         ? '    stateRoot: ' + JSON.stringify(ESTATE_STATE_ROOT) + '\n'
         : '')

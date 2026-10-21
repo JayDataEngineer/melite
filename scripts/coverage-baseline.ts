@@ -266,6 +266,11 @@ export const COVERAGE_BASELINE: Record<string, {
   // deletion path) and the .then/.catch current-undefined arms (both
   // start paths seed the id before attaching handlers).
   '**/packages/estate/provisioning/src/service.ts': { statements: 96.74, branches: 96.62, functions: 96.85, lines: 96.92 },
+  // the snapshot channel's pure helpers (2026-10-21): measured with
+  // the wall seated — the uncovered branches are the external-JSON
+  // defensive arms (null body, non-array siblings, non-string
+  // rfilenames) the listing parser tolerates by contract.
+  '**/packages/estate/provisioning/src/snapshot.ts': { statements: 97.72, branches: 80.00, functions: 100.00, lines: 100.00 },
   '**/packages/estate/runs/src/index.ts': { statements: 98.52, branches: 95.45, functions: 100.00, lines: 100.00 },
   '**/packages/harness/estate-call/src/cardTool.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/harness/estate-call/src/estateCall.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },

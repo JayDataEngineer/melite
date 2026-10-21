@@ -1648,13 +1648,15 @@ async function hAcquireWeight(req: Req, ctx: ManageCtx): Promise<[number, Manage
   // filename now SUBSETS the fetch — one missing file no longer
   // downloads every row of a multi-GB family. The name maps to plan
   // item keys exactly as the provisioner's own options.items filter
-  // keys them (kind model → name, else id); an unknown filename is
-  // the item-not-found refusal, never a whole-family fetch.
+  // keys them (extension → id, else name — the snapshot channel
+  // keys its trees by name, the row the missing-file refusal
+  // voices); an unknown filename is the item-not-found refusal,
+  // never a whole-family fetch.
   let acquireOptions: { items: string[] } | undefined;
   if (req.filename !== "" && plan !== null) {
     const wanted = plan.items
-      .filter((item) => (item.kind === "model" ? item.name : item.id) === req.filename)
-      .map((item) => (item.kind === "model" ? item.name : item.id));
+      .filter((item) => (item.kind === "extension" ? item.id : item.name) === req.filename)
+      .map((item) => (item.kind === "extension" ? item.id : item.name));
     if (wanted.length === 0) {
       throw badRequest(
         `acquire_weight file '${req.filename}' matches no provision row of '${req.model}' (item-not-found) — refusing to fetch the whole family for a one-file miss`);

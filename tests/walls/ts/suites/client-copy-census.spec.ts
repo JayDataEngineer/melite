@@ -522,7 +522,17 @@ const PINS: Record<string, number> = {
   // literals remain). The provisioner's contracts module is
   // locale-owner territory for wire-shaped vocabulary (the same
   // class as state words), not product copy.
-  'packages/web/melite-card-view/src': 21,
+  // RE-PIN 21→23 (2026-10-21, the frictionless-authoring cure, row
+  // cards-authoring-writes-land): +2 arm B string returns in
+  // stage-drill.tsx — gatePendingVoice's PENDING voice ("THE COMPOSE
+  // GATE WILL REFUSE AT RUN — / — the write landed; complete the pair
+  // or unstamp before Run."), the authoring writes' Run-gate preview.
+  // The same string-contract class as gateRefusalVoice's SD-7 re-pin
+  // above: the voice IS the door's identity (its bare message is the
+  // E2-12 standdown key beside the refusal template — gateRefusalMessage
+  // strips BOTH templates to the same bare words); localizing would
+  // fork the drill's identity per locale.
+  'packages/web/melite-card-view/src': 23,
   // deck: 2 — the register() title/guideDescription positions now ride
   // assetsCopy (D2's proof seat: a literal at those arguments fires
   // this wall). Residue: index.ts:41 + :50 `message` embed notices

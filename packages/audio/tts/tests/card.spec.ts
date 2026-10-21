@@ -301,6 +301,25 @@ describe("the lane surface IS the visibility (2026-10-10, the YOU_ARE_A_LIAR fix
     assert.equal(leaf("repetition_penalty"), undefined);
     assert.equal(leaf("top_k"), undefined);
   });
+
+  it("THE EXPORT PAIR RENDERS WHOLE (the studio-unbrick law, 2026-11-10): voice_name is a declared schema leaf with a widget, never a ghost name the relation requires but the form cannot state", () => {
+    // the burn: the DECL's required-together row named voice_name +
+    // design_prompt, the schema carried ONLY design_prompt — the
+    // pair was uncompletable from the UI and every half-pair write
+    // refused, unlanding the studio's keys. Both halves must be
+    // stateable fields.
+    const carrier = (def.schemaCarrier ?? def.schema) as unknown as { toJSON(): { refs: Record<number, { type?: string; dict?: Record<string, number>; meta?: { extra?: { wtype?: string; tooltip?: string } } }> } };
+    const json = carrier.toJSON();
+    const root = Object.values(json.refs).find((n) => n.type === "object" && n.dict !== undefined);
+    assert.ok(root, "the schema envelope serves");
+    for (const half of ["design_prompt", "voice_name"]) {
+      const refId = root!.dict![half];
+      assert.notEqual(refId, undefined, half + " is a declared schema leaf (the export pair's required halves both render)");
+      const meta = json.refs[refId!]?.meta?.extra;
+      assert.ok(typeof meta?.wtype === "string" && meta.wtype !== "", half + " carries a widget type");
+      assert.ok(typeof meta?.tooltip === "string" && meta.tooltip !== "", half + " carries its tooltip copy");
+    }
+  });
 });
 
 describe("the qvoice USE lane (the voice-lock LOAD half — a stated .qvoice performs the text through the studio's clone pipeline)", () => {

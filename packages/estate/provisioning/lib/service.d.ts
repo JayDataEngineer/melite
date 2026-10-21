@@ -214,6 +214,20 @@ export declare class ProvisioningService extends Service implements Provisioning
      *  by name. No inspect seat = no belt (the ack stands, degraded —
      *  the same no-seat law the trust merge runs). */
     private verifyLanded;
+    /** THE SNAPSHOT ARM (the lying-Download cure, 2026-11-10): a
+     *  directory-shaped weight tree the DECL pins as repo+revision+allow
+     *  patterns lands file-by-file through the SAME writer, fetcher,
+     *  stall clock, and progress counter every direct model download
+     *  rides. No symlink, no clone, no Manager catalog — a fresh
+     *  Windows install fetches the same bytes. Resume is per-file: a
+     *  landed sibling is kept (the revision pin is the integrity word;
+     *  no per-file digest exists upstream).
+     *  @param ref the resource the row belongs to
+     *  @param item the snapshot plan item
+     *  @param operationId the acquire operation's id
+     *  @param signal the operation's abort signal
+     *  @returns the item result (active once the anchor probe passes) */
+    private acquireSnapshot;
     private acquireModel;
     private activateExtension;
     private inspectPlanItem;

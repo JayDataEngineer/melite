@@ -124,14 +124,38 @@ function gateRefusalVoice(v: ComposeViolation): string {
     + ' — the write never left the studio. Fix the stated value, or pick a different route.'
 }
 
+/** THE PENDING VOICE (the frictionless-authoring cure, 2026-11-10,
+ *  the operator: "ALL THE REDS WE SAW WITH QWEN SHOULD BE IMPOSSIBLE
+ *  ... AT THE GENERIC CARD LEVEL"): an AUTHORING write (typing, a
+ *  slot pick, an axis unset, the enhance sweep) never drops on a
+ *  compose violation — the blank law's own tolerance reads a state
+ *  still being authored as authoring-in-progress, not a refusal
+ *  (the voice_name brick: half-pair writes unlanded and the pair
+ *  could never complete). The write lands; this face states what
+ *  the Run press refuses until the state heals. The Run press keeps
+ *  the full-set gate (the singularity cure); the atomic pick keeps
+ *  its own before-the-wire marriage judgment (a lane switch, never
+ *  authoring). */
+function gatePendingVoice(v: ComposeViolation): string {
+  return 'THE COMPOSE GATE WILL REFUSE AT RUN — ' + v.message
+    + ' — the write landed; complete the pair or unstamp before Run.'
+}
+
 /** THE ONE-VOICE LAW (E2-12): extract a gate refusal's bare message
- *  from a voiced face (the strip's or the write face's template), or
- *  null when the face voices no gate refusal — non-gate voices never
- *  mute anything (different truths keep their own seats). */
+ *  from a voiced face (the strip's, the write face's refusal
+ *  template, or its pending template), or null when the face voices
+ *  no gate refusal — non-gate voices never mute anything (different
+ *  truths keep their own seats). */
 function gateRefusalMessage(voice: string | null): string | null {
-  if (voice === null || !voice.startsWith('THE COMPOSE GATE REFUSED — ')) return null
-  const tail = ' — the write never left the studio. Fix the stated value, or pick a different route.'
-  return voice.endsWith(tail) ? voice.slice('THE COMPOSE GATE REFUSED — '.length, -tail.length) : null
+  if (voice === null) return null
+  const templates: readonly [string, string][] = [
+    ['THE COMPOSE GATE REFUSED — ', ' — the write never left the studio. Fix the stated value, or pick a different route.'],
+    ['THE COMPOSE GATE WILL REFUSE AT RUN — ', ' — the write landed; complete the pair or unstamp before Run.'],
+  ]
+  for (const [head, tail] of templates) {
+    if (voice.startsWith(head) && voice.endsWith(tail)) return voice.slice(head.length, -tail.length)
+  }
+  return null
 }
 
 function composeGateRefusal(
@@ -142,6 +166,19 @@ function composeGateRefusal(
 ): string | null {
   const v = composeGateViolations(spec, held, user, frame)[0] ?? null
   return v === null ? null : gateRefusalVoice(v)
+}
+
+/** The authoring writes' pending face — the first violation the
+ *  candidate carries, voiced as what Run will refuse (the write
+ *  itself proceeds). */
+function composePendingVoice(
+  spec: FormSpecDoc | null,
+  held: Record<string, unknown> | undefined,
+  user: SpecValues,
+  frame: Record<string, unknown>,
+): string | null {
+  const v = composeGateViolations(spec, held, user, frame)[0] ?? null
+  return v === null ? null : gatePendingVoice(v)
 }
 
 /** THE GATE'S FULL SET (the singularity cure, 2026-11-10): EVERY
@@ -628,7 +665,13 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
          refuses a model re-point only when the departing spec's
          model is absent/empty, and the form-spec door emits
          `model ?? null` — never ''. Kept so the re-point stays
-         refusal-gated if the door's emission drifts. */
+         refusal-gated if the door's emission drifts. THE
+         FRICTIONLESS-AUTHORING BOUNDARY: this block is the ATOMIC
+         PICK's own marriage-before-the-wire judgment (a lane
+         switch, its own registry row and arms) — every AUTHORING
+         write (typing, slot, unset, sweep) lands with the pending
+         face instead; only this discrete re-target still refuses
+         in place. */
       if (refusedM !== null) { setWriteFace(refusedM); return }
       const settleDraftId = bench.draftId
       const settleStageId = stage.id
@@ -672,9 +715,11 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
       // THE AUTHORING CONTRACT rides the unset too: the row's key
       // leaves on the same ledger (a null param DELETEs it — the
       // door's own law), so "inherited" is the row's state and not
-      // only this modal's.
-      const refused = composeGateRefusal(spec, stage.params, user, { [name]: null })
-      if (refused !== null) { setWriteFace(refused); return }
+      // only this modal's. THE FRICTIONLESS-AUTHORING CURE: a
+      // violation voices the pending face (what Run will refuse) —
+      // the unset itself LANDS (an authoring state is never dropped).
+      const pendingUnset = composePendingVoice(spec, stage.params, user, { [name]: null })
+      if (pendingUnset !== null) setWriteFace(pendingUnset)
       // THE ALIVE GUARD (client-plane RISK-3, 2026-10-20): the
       // settle once re-addressed the RENDER-CAPURED bench/stage —
       // a re-targeted drill (the operator switched stages before
@@ -690,11 +735,13 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
         // resolves either way — the failure memory is the ledger's,
         // per-key and latest-wins). THE ONE VOICE: the face derives
         // from the row (draft.ts's unlandedWriteVoice) — this call
-        // site never builds the string.
+        // site never builds the string. The pending face STANDS
+        // while its violation stands (the settle never clears what
+        // Run still refuses; the next write re-derives).
         if (lastStageRef.current !== settleStageId) return
         setWriteFace(stageWriteState(settleDraftId, settleStageId).failedKeys.length > 0
           ? unlandedWriteVoice(settleDraftId, settleStageId)
-          : null)
+          : pendingUnset)
       })
       return
     }
@@ -717,8 +764,14 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
       ? fieldsOf(spec).find((f) => f.name === name)?.type : undefined
     /* v8 ignore next 4 -- the tri-state atoms unset only from slot shapes; these atoms are never slots (probe 2026-09-19). image_list rides the slot flush below (THE STACK GESTURE LAW, 2026-10-13: an upload onto a stack is as discrete as a slot pick — the trailing write's delay let a close-before-flush drop it) */
     if (shape2 !== 'image' && shape2 !== 'file' && shape2 !== 'mesh' && shape2 !== 'image_list') {
-      const refused = composeGateRefusal(spec, stage.params, user, { [name]: v })
-      if (refused !== null) { setWriteFace(refused); return }
+      // THE FRICTIONLESS-AUTHORING CURE (the voice_name brick's
+      // class, killed generically): a typed write NEVER drops on a
+      // compose violation — half a required pair is a state being
+      // authored, exactly what the blank law tolerates; the pending
+      // face states what Run refuses until the pair completes. The
+      // write registers in the ledger like every edit.
+      const pendingTyped = composePendingVoice(spec, stage.params, user, { [name]: v })
+      if (pendingTyped !== null) setWriteFace(pendingTyped)
       // THE ALIVE GUARD (the 2026-11-02 audit's H-6): typing is the
       // slowest write (trailing coalescing) — the door can answer
       // long after a re-target; the settle never paints a face on a
@@ -728,11 +781,13 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
       const settleStageId = stage.id
       void scheduleStageParam(settleDraftId, settleStageId, name, v, bench.rev).then(() => {
         // the door ANSWERED: the ledger is the truth; THE ONE VOICE
-        // derives from the row, never built here.
+        // derives from the row, never built here. The pending face
+        // STANDS while its violation stands (the next write
+        // re-derives; the Run press voices the full set).
         if (lastStageRef.current !== settleStageId) return
         setWriteFace(stageWriteState(settleDraftId, settleStageId).failedKeys.length > 0
           ? unlandedWriteVoice(settleDraftId, settleStageId)
-          : null)
+          : pendingTyped)
       })
     }
     // THE SLOT FLUSH LAW (2026-09-15 — the operator's burn: "when I
@@ -764,8 +819,13 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
       // UNSTATED (the null DELETE), never a stated-empty list.
       const slotEmpty = v === '' || (Array.isArray(v) && v.length === 0)
       const slotFrame = slotEmpty ? { [name]: null } : { [name]: v }
-      const refused = composeGateRefusal(spec, stage.params, user, slotFrame)
-      if (refused !== null) { setWriteFace(refused); return }
+      // THE FRICTIONLESS-AUTHORING CURE: a slot pick is authoring —
+      // it LANDS; a violation voices the pending face (Run gates).
+      // The catch below still speaks the louder unlanded truth when
+      // the door itself refuses (a write failure, never a compose
+      // judgment).
+      const pendingSlot = composePendingVoice(spec, stage.params, user, slotFrame)
+      if (pendingSlot !== null) setWriteFace(pendingSlot)
       const settleDraftId = bench.draftId
       const settleStageId = stage.id
       void patchStageParams(settleDraftId, settleStageId,
@@ -1049,8 +1109,11 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
         // a discrete gesture, not typing — it lands as ONE frame so
         // the door judges the swept fields together, never the
         // half-swept state the per-key scheduler would produce.
-        const refused = composeGateRefusal(spec, stage.params, user, sweptPatch)
-        if (refused !== null) { setWriteFace(refused); return }
+        // THE FRICTIONLESS-AUTHORING CURE: a violation on the swept
+        // doc voices the pending face (Run gates) — the sweep LANDS
+        // (an enhanced prompt is authoring, never a dropped write).
+        const pendingSwept = composePendingVoice(spec, stage.params, user, sweptPatch)
+        if (pendingSwept !== null) setWriteFace(pendingSwept)
         // THE ALIVE GUARD (client-plane RISK-3, 2026-10-20): same law
         // as the per-key settle above — the keys are captured here so
         // the ledger lookup stays honest, and both settle faces stand
@@ -1062,11 +1125,13 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
           // THE ONE VOICE (the 2026-11-02 audit's H-4): the sweep is
           // a write like every other write — its failure face is the
           // row's voice (draft.ts's unlandedWriteVoice), never a
-          // second "ENHANCE" dialect. The success half clears.
+          // second "ENHANCE" dialect. The success half keeps a
+          // standing pending face (the violation did not heal by
+          // landing; the next write re-derives).
           if (lastStageRef.current !== settleStageId) return
           setWriteFace(stageWriteState(settleDraftId, settleStageId).failedKeys.length > 0
             ? unlandedWriteVoice(settleDraftId, settleStageId)
-            : null)
+            : pendingSwept)
         }).catch((e: unknown) => {
           // the sweep write is fire-and-forget; the verb's outer
           // catch cannot see it — the NO-SILENT-REJECT law holds

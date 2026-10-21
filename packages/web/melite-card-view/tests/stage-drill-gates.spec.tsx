@@ -259,7 +259,14 @@ describe("the axis-unset authoring law (an empty axis is unstated, never stated-
     expect(writeFace()).toBe(null);
   });
 
-  test("an axis-unset whose composed doc the gate refuses never writes", async () => {
+  test("an axis-unset whose composed doc the gate refuses LANDS with the pending face (the frictionless-authoring law)", async () => {
+    // THE FRICTIONLESS-AUTHORING CURE (2026-11-10, the operator:
+    // "ALL THE REDS WE SAW WITH QWEN SHOULD BE IMPOSSIBLE ... AT THE
+    // GENERIC CARD LEVEL"): an authoring write NEVER drops on a
+    // compose violation — the voice_name brick's class (half-pair
+    // writes unlanded, the pair could never complete). The unset
+    // lands on the wire; the pending face states what Run will
+    // refuse; the Run press owns the gate.
     mountBench([stage({ model: "krea-2", quant: "fp16" })]);
     await openDrill();
     const field = await screen.findByLabelText("Variant override", {}, { timeout: 4000 });
@@ -267,12 +274,21 @@ describe("the axis-unset authoring law (an empty axis is unstated, never stated-
     fireEvent.change(field, { target: { value: "" } });
     await waitFor(() => {
       const face = writeFace();
-      if (face === null || !face.includes("THE COMPOSE GATE REFUSED")) {
-        throw new Error("gate face not voiced yet; face: " + face);
+      if (face === null || !face.includes("THE COMPOSE GATE WILL REFUSE AT RUN")) {
+        throw new Error("pending face not voiced yet; face: " + face);
       }
     }, { timeout: 8000 });
     expect(writeFace()).toContain("quant");
-    expect(patchCalls()).toEqual([]);
+    expect(writeFace()).toContain("the write landed");
+    // THE WRITE ITSELF LANDED: the null delete reached the door —
+    // never again an unlanded authoring state.
+    await waitFor(() => {
+      const landed = patchCalls().some((c) => {
+        const params = (c["patch"] as Record<string, unknown>)?.["params"] as Record<string, unknown> | undefined;
+        return params?.["variant"] === null;
+      });
+      if (!landed) throw new Error("the unset never landed; calls: " + JSON.stringify(patchCalls()));
+    }, { timeout: 8000 });
   });
 
   test("a stage with null params walks the same seats (held falls to the empty doc)", async () => {
@@ -978,7 +994,13 @@ describe("the unset's refused write and the run seat's refused sync — both spe
 });
 
 describe("the enhance sweep's write seat (what the studio shows is what the engine gets)", () => {
-  test("a swept patch the gate refuses never reaches the door", async () => {
+  test("a swept patch the gate refuses LANDS with the pending face (the frictionless-authoring law)", async () => {
+    // THE FRICTIONLESS-AUTHORING CURE: the sweep is authoring — the
+    // enhanced prompt LANDS even when the doc carries a violation
+    // elsewhere (the stage's own quant state); the pending face
+    // states what Run refuses. An enhanced prompt that evaporates
+    // because some OTHER key was illegal is the unlanded-write
+    // class, dead at every authoring seat.
     mountBench([stage({ model: "krea-2", quant: "fp16" })]);
     await openDrill();
     await typePrompt("a red cube");
@@ -987,8 +1009,8 @@ describe("the enhance sweep's write seat (what the studio shows is what the engi
     resolveEnhance!({ results: { prompt: { positive: "P2" } } }, 200);
     await waitFor(() => {
       const face = writeFace();
-      if (face === null || !face.includes("THE COMPOSE GATE REFUSED")) {
-        throw new Error("gate face not voiced yet; face: " + face);
+      if (face === null || !face.includes("THE COMPOSE GATE WILL REFUSE AT RUN")) {
+        throw new Error("pending face not voiced yet; face: " + face);
       }
     }, { timeout: 8000 });
     expect(writeFace()).toContain("quant");
@@ -996,7 +1018,7 @@ describe("the enhance sweep's write seat (what the studio shows is what the engi
       const params = (c["patch"] as Record<string, unknown>)?.["params"] as Record<string, unknown> | undefined;
       return params?.["prompt"] === "P2";
     });
-    expect(swept).toBe(false);
+    expect(swept).toBe(true);
   });
 
   test("an enhance write landing over a stale failed key speaks the ONE banner (no enhance dialect)", async () => {

@@ -101,7 +101,12 @@ const CARD_ROSTER = 14;
 // (wtype select, the off|latent_2x vocabulary) + upscale_model
 // (wtype select, the LBH bf16 single-file vocab) — both agree with
 // their z.enum shapes; the two-pass pair joins the judged roster.
-const FIELD_ROSTER = 475;
+// 475 -> 476 (2026-10-21, the studio-unbrick cure, row
+// cards-tts-export-pair-renders): tts voice_name — wtype text
+// agreeing with its z.string shape (the design export pair's other
+// half; before the cure the field did not render at all, which is
+// the ghost-name wall's class, not a wtype mismatch).
+const FIELD_ROSTER = 476;
 
 interface DictField {
   readonly type?: string;
