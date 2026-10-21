@@ -36,7 +36,6 @@ import { ledgerTail } from "../../../../packages/harness/melite-tools/src/tools/
 import { meliteLoad } from "../../../../packages/harness/melite-tools/src/tools/melite-load.ts";
 
 import { runStatus } from "../../../../packages/harness/melite-tools/src/tools/run-status.ts";
-import { skillIndex } from "../../../../packages/harness/melite-tools/src/tools/skill-index.ts";
 import { skillRead } from "../../../../packages/harness/melite-tools/src/tools/skill-read.ts";
 import { meliteView } from "../../../../packages/harness/melite-tools/src/tools/melite-view.ts";
 import { meliteRead } from "../../../../packages/harness/melite-tools/src/tools/melite-read.ts";
@@ -77,7 +76,6 @@ const ALL: Array<[string, ToolDefinition]> = [
   ["ledger_tail", ledgerTail(LANES)],
   ["melite_load", meliteLoad(LANES)],
   ["run_status", runStatus(LANES)],
-  ["melite_skill_index", skillIndex(LANES)],
   ["melite_skill_read", skillRead(LANES)],
   ["melite_view", meliteView(STUB_CTX)],
   ["melite_read", meliteRead(STUB_CTX)],

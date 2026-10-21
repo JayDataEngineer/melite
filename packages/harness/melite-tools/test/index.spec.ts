@@ -110,7 +110,7 @@ describe('plugin surface', () => {
       'melite_discover', 'melite_load', 'melite_construct',
     ])
     assert.deepEqual([...DEFERRED_TOOL_NAMES], [
-      'melite_view', 'melite_read', 'comfy_manage', 'melite_skill_index', 'melite_skill_read', 'ledger_tail',
+      'melite_view', 'melite_read', 'comfy_manage', 'melite_skill_read', 'ledger_tail',
     ])
     assert.deepEqual(HEADLESS, ['melite_flow', 'run_status'])
     assert.deepEqual([...ADHOC_TOOL_NAMES], [])
@@ -314,7 +314,7 @@ describe('the /melite-runs toggle (the user-side AI-run door, 2026-10-13)', () =
     // THE SEAT PIN (the flap class, L336-377): a delegated reload
     // boots with the ESTATE doors pinned too — no catalog touch, no
     // 'unknown tool "comfy_manage"' hunt after a reload
-    for (const d of ['melite_view', 'melite_read', 'comfy_manage', 'melite_skill_index', 'melite_skill_read', 'ledger_tail']) {
+    for (const d of ['melite_view', 'melite_read', 'comfy_manage', 'melite_skill_read', 'ledger_tail']) {
       assert.ok(names.includes(d), 'the delegated reload booted without the estate door: ' + d)
     }
 

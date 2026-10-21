@@ -37,7 +37,7 @@ export function meliteDiscover(estate, expandEstateDoors) {
     const def = defineTool({
         name: 'melite_discover',
         description: 'Progressive disclosure tier 1 over the estate (cards + flows): returns clamped summary LINES, never bodies. '
-            + 'THE EXPANSION LAW: the estate\u2019s deeper doors (melite_view, comfy_manage, melite_skill_index, melite_skill_read, ledger_tail) '
+            + 'THE EXPANSION LAW: the estate\u2019s deeper doors (melite_view, comfy_manage, melite_skill_read, ledger_tail) '
             + 'seat themselves the first time you touch the catalog \u2014 they are never missing, only deferred. '
             + 'q matches names/titles/descriptions LITERALLY (a full user sentence matches nothing) \u2014 for a MODALITY ask (video, image, audio, 3d) search tags= first, q second. '
             + 'Args: lookup (all | cards | flows, default all) + tags (comma-separated card-declared tags, e.g. "image,upscale") '

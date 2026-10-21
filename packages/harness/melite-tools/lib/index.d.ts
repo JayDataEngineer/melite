@@ -23,7 +23,7 @@
  * via harnessEnhance.)
  *
  * BASE toolset (both interfaces): melite_discover, melite_construct,
- * melite_load, melite_view, comfy_manage, melite_skill_index, melite_skill_read,
+ * melite_load, melite_view, comfy_manage, melite_skill_read,
  * ledger_tail (+ melite_flow + run_status headless).
  * Card tools compose from their card packages (named imports above
  * — the fetch registrar retired with its last row).
@@ -32,21 +32,20 @@
  */
 import type { Context } from '@deepseek-ai/cordis';
 import Schema from '@deepseek-ai/schemastery';
-import { harnessEnhance, resolveHarnessRoutes, matchHarnessRoute, routeName } from './llm-complete.js';
+import { harnessEnhance, resolveHarnessRoutes, matchHarnessRoute, routeName } from './llm-complete.ts';
 export { harnessEnhance, resolveHarnessRoutes, matchHarnessRoute, routeName };
-export { makeEstate, makeEstateRequest } from './estate.js';
-export type { EstateRequest, Estate, BenchVerb } from './estate.js';
-export { runStatus } from './tools/run-status.js';
-export { meliteDiscover } from './tools/melite-discover.js';
-export { meliteConstruct, DEFAULT_BENCH } from './tools/melite-construct.js';
-export { meliteFlow } from './tools/melite-flow.js';
-export { comfyManage } from './tools/comfy-manage.js';
-export { meliteLoad } from './tools/melite-load.js';
-export { meliteView } from './tools/melite-view.js';
-export { meliteRead, readRunText } from './tools/melite-read.js';
-export { skillIndex } from './tools/skill-index.js';
-export { skillRead } from './tools/skill-read.js';
-export { ledgerTail } from './tools/ledger-tail.js';
+export { makeEstate, makeEstateRequest } from './estate.ts';
+export type { EstateRequest, Estate, BenchVerb } from './estate.ts';
+export { runStatus } from './tools/run-status.ts';
+export { meliteDiscover } from './tools/melite-discover.ts';
+export { meliteConstruct, DEFAULT_BENCH } from './tools/melite-construct.ts';
+export { meliteFlow } from './tools/melite-flow.ts';
+export { comfyManage } from './tools/comfy-manage.ts';
+export { meliteLoad } from './tools/melite-load.ts';
+export { meliteView } from './tools/melite-view.ts';
+export { meliteRead, readRunText } from './tools/melite-read.ts';
+export { skillRead } from './tools/skill-read.ts';
+export { ledgerTail } from './tools/ledger-tail.ts';
 /** Cordis plugin name used by loader diagnostics. */
 export declare const name = "melite-tools";
 /**
@@ -86,17 +85,18 @@ export declare const Config: Schema<Config>;
 /** EAGER — the compose loop, the only melite schemas in a session's
  * first request (progressive disclosure, operator 2026-10-08: three
  * doors in context, the estate's deeper doors expand on first
- * catalog touch — src/expansion.ts owns the law). */
+ * catalog touch — the deferred-seat closure in THIS file
+ * owns the law). */
 export declare const EAGER_TOOL_NAMES: readonly ["melite_discover", "melite_load", "melite_construct"];
 /** DEFERRED — seated by the first discover/load execute. The skill
  * twins carry the melite_ prefix (operator 2026-10-08: they are OUR
  * catalog's doors, not DSH core's skill machinery — the old
  * unprefixed names invited exactly that conflation). */
-export declare const DEFERRED_TOOL_NAMES: readonly ["melite_view", "melite_read", "comfy_manage", "melite_skill_index", "melite_skill_read", "ledger_tail"];
+export declare const DEFERRED_TOOL_NAMES: readonly ["melite_view", "melite_read", "comfy_manage", "melite_skill_read", "ledger_tail"];
 /** BASE tool names — both interfaces (discovery, compose, view,
  * management, audit). melite_view is the observe arm (viewing an
  * artifact is not a run press — the interface law holds). */
-export declare const BASE_TOOL_NAMES: readonly ["melite_discover", "melite_load", "melite_construct", "melite_view", "melite_read", "comfy_manage", "melite_skill_index", "melite_skill_read", "ledger_tail"];
+export declare const BASE_TOOL_NAMES: readonly ["melite_discover", "melite_load", "melite_construct", "melite_view", "melite_read", "comfy_manage", "melite_skill_read", "ledger_tail"];
 /** HEADLESS-only run doors (config headless:true) — the delegated operator. */
 export declare const HEADLESS_TOOL_NAMES: readonly ["melite_flow", "run_status"];
 /** AD HOC names (config adhocTools) — never in a base toolset.
@@ -104,7 +104,7 @@ export declare const HEADLESS_TOOL_NAMES: readonly ["melite_flow", "run_status"]
  *  the editor ✦ door below keeps the user surface via harnessEnhance.) */
 export declare const ADHOC_TOOL_NAMES: readonly [];
 /** Every tool name this plugin can own (registration log + smoke filter). */
-export declare const MELITE_TOOL_NAMES: readonly ["melite_discover", "melite_load", "melite_construct", "melite_view", "melite_read", "comfy_manage", "melite_skill_index", "melite_skill_read", "ledger_tail", "melite_flow", "run_status"];
+export declare const MELITE_TOOL_NAMES: readonly ["melite_discover", "melite_load", "melite_construct", "melite_view", "melite_read", "comfy_manage", "melite_skill_read", "ledger_tail", "melite_flow", "run_status"];
 /** Register the Melite tools against the live estate gateway.
  *  THE TYPED CONTEXT (F-2/F-4 cure, 2026-11-05): the hand-declared
  *  CtxView parallel is retired — logger/effect are cordis Context

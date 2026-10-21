@@ -4,7 +4,7 @@
  * gateway-side (skill.read in _ledger.jsonl), so which recipes the
  * agent actually used is auditable after the fact.
  *
- * Ids come from melite_skill_index: global lane docs are bare stems
+ * Ids come from melite_load (its skill section prints every boarded skill id): global lane docs are bare stems
  * ("run-recovery"), model card docs are "model:<id>", and per-model
  * skills are "model:<id>:<stem>".
  */
@@ -56,15 +56,15 @@ export function skillRead(estate: Estate): ToolDefinition {
     name: 'melite_skill_read',
     description:
       'Load ONE skill document in full (progressive disclosure tier 2): markdown body plus its '
-      + 'name/description and genre/model when scoped. Discover ids first with melite_skill_index. '
+      + 'name/description and genre/model when scoped. Discover ids first with melite_load. '
       + 'Reads are recorded in the gateway ledger (skill.read) - the audit trail of which '
-      + 'recipes informed a generation. Args: id (from melite_skill_index).',
+      + 'recipes informed a generation. Args: id (from melite_load).',
     // ParameterSchemaSpec grammar: the map IS the implicit object root
     // (no type/properties wrapper), per-property `required: true`.
     parameters: {
       id: {
         type: 'string',
-        description: 'Skill id from melite_skill_index: "<stem>", "model:<id>" or "model:<id>:<stem>".',
+        description: 'Skill id from melite_load\'s skill section: "<stem>", "model:<id>" or "model:<id>:<stem>".',
         required: true,
       },
     },
@@ -105,7 +105,7 @@ export function skillRead(estate: Estate): ToolDefinition {
       const a = args as { id?: unknown }
       const id = a.id as string
       if (id.length === 0) {
-        throw new Error('melite_skill_read: "id" is required (a skill id string from melite_skill_index)')
+        throw new Error('melite_skill_read: "id" is required (a skill id string from melite_load\'s skill section)')
       }
       // Unknown ids arrive as RayGatewayError with the gateway's 404 body
       // VERBATIM - let it propagate; that IS the honest answer.

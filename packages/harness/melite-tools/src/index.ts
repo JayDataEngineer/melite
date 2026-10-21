@@ -23,7 +23,7 @@
  * via harnessEnhance.)
  *
  * BASE toolset (both interfaces): melite_discover, melite_construct,
- * melite_load, melite_view, comfy_manage, melite_skill_index, melite_skill_read,
+ * melite_load, melite_view, comfy_manage, melite_skill_read,
  * ledger_tail (+ melite_flow + run_status headless).
  * Card tools compose from their card packages (named imports above
  * — the fetch registrar retired with its last row).
@@ -54,7 +54,6 @@ import { meliteConstruct } from './tools/melite-construct.ts'
 import { meliteLoad } from './tools/melite-load.ts'
 import { meliteView } from './tools/melite-view.ts'
 import { meliteRead } from './tools/melite-read.ts'
-import { skillIndex } from './tools/skill-index.ts'
 import { skillRead } from './tools/skill-read.ts'
 import { ledgerTail } from './tools/ledger-tail.ts'
 import type { ToolDefinition } from './types.ts'
@@ -77,7 +76,6 @@ export { comfyManage } from './tools/comfy-manage.ts'
 export { meliteLoad } from './tools/melite-load.ts'
 export { meliteView } from './tools/melite-view.ts'
 export { meliteRead, readRunText } from './tools/melite-read.ts'
-export { skillIndex } from './tools/skill-index.ts'
 export { skillRead } from './tools/skill-read.ts'
 export { ledgerTail } from './tools/ledger-tail.ts'
 
@@ -145,7 +143,7 @@ export const EAGER_TOOL_NAMES = [
  * catalog's doors, not DSH core's skill machinery — the old
  * unprefixed names invited exactly that conflation). */
 export const DEFERRED_TOOL_NAMES = [
-  'melite_view', 'melite_read', 'comfy_manage', 'melite_skill_index', 'melite_skill_read', 'ledger_tail',
+  'melite_view', 'melite_read', 'comfy_manage', 'melite_skill_read', 'ledger_tail',
 ] as const
 
 /** BASE tool names — both interfaces (discovery, compose, view,
@@ -237,7 +235,6 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
       ['melite_view', () => c.tools.register(meliteView(ctx))],
       ['melite_read', () => c.tools.register(meliteRead(ctx))],
       ['comfy_manage', () => c.tools.register(comfyManage(estate))],
-      ['melite_skill_index', () => c.tools.register(skillIndex(estate))],
       ['melite_skill_read', () => c.tools.register(skillRead(estate))],
       ['ledger_tail', () => c.tools.register(ledgerTail(estate))],
     ]

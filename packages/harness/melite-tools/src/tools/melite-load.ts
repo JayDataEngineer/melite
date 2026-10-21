@@ -60,7 +60,7 @@ export function meliteLoad(
     description:
       'Open ONE card or flow (discover it first with melite_discover). Args: name (the card id or flow name) + '
       + 'inference_type (card | flow — a card or a flow tool call; nothing else executes). '
-      + 'THE EXPANSION LAW: the estate’s deeper doors (melite_view, comfy_manage, melite_skill_index, melite_skill_read, ledger_tail) seat themselves on this call — never missing, only deferred. '
+      + 'THE EXPANSION LAW: the estate’s deeper doors (melite_view, comfy_manage, melite_skill_read, ledger_tail) seat themselves on this call — never missing, only deferred. '
       + 'Returns the bundle: '
       + 'agents md, the tool-call signature (params_schema for cards; the prebuilt simplified signature for flows), '
       + 'tier-1 skill lines for the underlying skills (bodies load via melite_skill_read — write the prompts yourself from '

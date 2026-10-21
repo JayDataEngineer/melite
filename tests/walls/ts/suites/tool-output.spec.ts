@@ -196,14 +196,14 @@ describe("the melite tool faces answer over the live composition", () => {
     // whole reasoning spirals. This composition opts into headless
     // (the run doors + card faces), so the five sit at apply; the
     // browser-side deferral stays pinned in melite-tools' index.spec.
-    const makerDoors = ["melite_view", "comfy_manage", "melite_skill_index", "melite_skill_read", "ledger_tail"];
+    const makerDoors = ["melite_view", "comfy_manage", "melite_skill_read", "ledger_tail"];
     for (const name of makerDoors) {
       assert.ok(tools.registered.some((d) => d.name === name), `${name} seated at apply (the maker law)`);
     }
     const names = tools.registered.map((d) => d.name).sort();
     for (const want of [
       "melite_discover", "melite_construct", "melite_load", "comfy_manage",
-      "melite_skill_index", "melite_skill_read", "ledger_tail",
+      "melite_skill_read", "ledger_tail",
       "melite_flow", "run_status",
       "music", "tts", // voice_lock died 2026-09-21 (design moved into the tts card's mods)
       "image_edit", "motion", "h3_timeline",
@@ -311,39 +311,20 @@ describe("the melite tool faces answer over the live composition", () => {
       `a rendered line names the first card by id`);
   });
 
-  it("melite_skill_index render CARRIES the entrance ids (melite_skill_read demands one; the dump is dead)", async () => {
-    // THE SELECTION LAW: the index serves the LIVE BENCH — seed one
-    // (image-gen) or the render serves the empty-bench pointer.
-    const seeded = await seedRepoBench();
-    let out: { envelope: unknown; lines: string[] };
-    try {
-      out = await drive("melite_skill_index", {});
-    } finally {
-      await dropRepoBench(seeded);
-    }
-    const { envelope, lines } = out;
-    const env = envelope as { families?: Array<{ entrance?: string }>; cards?: Array<{ entrance?: string }>; skills?: Array<{ id?: string }>; error?: string };
-    assert.equal(env.skills, undefined, "the envelope never carries skill rows");
-    const first = [...(env.families ?? []), ...(env.cards ?? [])]
-      .map((r) => r.entrance).find((e): e is string => typeof e === "string" && e !== "");
-    assert.ok(typeof first === "string" && lines.join("\n").includes(first),
-      `the rendered lines carry an entrance id (want ${first} in: ${lines.join(" | ").slice(0, 200)}`);
-  });
-
   it("melite_skill_read render CARRIES the body (tier 2's whole purpose)", async () => {
-    // the selection law: seed the bench (image-gen) so the index
-    // carries an entrance id for melite_skill_read to open
+    // THE ID'S NEW HOME (session 90a0b920's tool-surface audit): the
+    // index tool is deleted — its bench-scoped id law already lived
+    // in melite_load's skill section. The id comes from load.
     const seeded = await seedRepoBench();
-    let idx: { envelope: unknown; lines: string[] };
+    let loaded: { envelope: unknown; lines: string[] };
     try {
-      idx = await drive("melite_skill_index", {});
+      loaded = await drive("melite_load", { name: "image-gen", inference_type: "card" });
     } finally {
       await dropRepoBench(seeded);
     }
-    const id = [...((idx.envelope as { families?: Array<{ entrance?: string }> }).families ?? []),
-      ...((idx.envelope as { cards?: Array<{ entrance?: string }> }).cards ?? [])]
-      .map((r) => r.entrance).find((e): e is string => typeof e === "string" && e !== "");
-    assert.ok(typeof id === "string", "an entrance id came from melite_skill_index");
+    const bundle = (loaded.envelope as { bundle?: { skills?: Array<{ id?: string }> } }).bundle;
+    const id = (bundle?.skills ?? []).map((r) => r.id).find((e): e is string => typeof e === "string" && e !== "");
+    assert.ok(typeof id === "string", "a skill id came from melite_load's bundle");
     const { envelope, lines } = await drive("melite_skill_read", { id });
     const env = envelope as { content?: string; error?: string };
     const body = typeof env.content === "string" ? env.content : "";

@@ -19,7 +19,7 @@ gateway) and mounts card tools imported from their own packages.
   every composition) and `melite-tools-doors` (inject webServer + llm +
   tools — web profiles only; server profiles disable the row by id).
 - Base toolset: `melite_discover`, `melite_load`, `melite_construct`,
-  `melite_view`, `comfy_manage`, `melite_skill_index`, `melite_skill_read`,
+  `melite_view`, `comfy_manage`, `melite_skill_read`,
   `ledger_tail`; headless adds `melite_flow` and `run_status`. `adhocTools`
   registers session-named extras only.
 - Doors: `/melite-tools/catalog` (live tool schemas + llm route list) and

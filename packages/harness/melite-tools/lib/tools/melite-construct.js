@@ -81,6 +81,92 @@ function refusalOf(e, verb, bench) {
     const error = e instanceof Error ? e.message : String(e);
     return jsonClean({ verb, bench, error, error_kind: 'remote', ok: false });
 }
+// ── THE COMPILE VERDICT ON EVERY WIRING MUTATION (session
+// 90a0b920's worst loop, 2026-10-21: the agent landed wires, met the
+// kind gate only at a LATER validate, read an identical refusal three
+// times, guessed kinds, and abandoned wiring — the operator repaired
+// the bench off-log). The mutation that changes wiring now carries
+// the compile's own verdict IN ITS ANSWER: ok, or the gate's teaching
+// refusal verbatim (the vocabulary + the expected {} fix + where the
+// card's own kinds live). One call = the write + the judgement.
+/** Run the compile check the validate verb runs, over the bench's
+ *  CURRENT stages (post-write truth), and fold the verdict into a
+ *  result-payload fragment. Never throws — a compile refusal is a
+ *  VALUE the answer teaches with, not a failed mutation.
+ *  @returns undefined when the bench holds no stages to compile. */
+async function compileVerdictOf(estate, bench, signal) {
+    const b = await readBench(estate, bench, signal);
+    const stages = projectStages(b.stages);
+    if (stages.length === 0)
+        return undefined;
+    const intent = typeof b.intent === 'string' ? b.intent : '';
+    const flowId = intent !== '' && FLOW_ID_RE.test(intent) ? intent : 'bench';
+    try {
+        const r = await estate.runsValidate({ flow_inline: { id: flowId, stages } }, signal, 20000);
+        return { compile_ok: r['ok'] === true || r['valid'] === true, ...(r['ok'] === true || r['valid'] === true ? {} : { compile_error: typeof r['error'] === 'string' ? r['error'] : JSON.stringify(r) }) };
+    }
+    catch (e) {
+        // the gate's refusal IS the verdict (the teaching voice rides it)
+        const refusal = remoteErrorOf(e);
+        const message = refusal !== undefined ? refusal.message : e instanceof Error ? e.message : String(e);
+        return { compile_ok: false, compile_error: message };
+    }
+}
+/** Every $-token in a params bag, at the top level and one nesting
+ *  level deep (the spell grammar's whole domain), keyed by the param
+ *  it rides. Returns [] when the bag carries no spells. */
+function spellTokensIn(params, prefix = '') {
+    if (typeof params !== 'object' || params === null)
+        return [];
+    const found = [];
+    for (const [key, value] of Object.entries(params)) {
+        const on = prefix === '' ? key : prefix + '.' + key;
+        if (typeof value === 'string' && value.startsWith('$'))
+            found.push({ token: value, on });
+        else if (typeof value === 'object' && value !== null && prefix === '') {
+            found.push(...spellTokensIn(value, on));
+        }
+    }
+    return found;
+}
+/** The inputs record of one stage row (the bench's own spelling:
+ *  {slot: {stage, output?}}); {} when the row wires nothing. */
+function inputsOfStageRow(stages, stage) {
+    if (typeof stage !== 'string')
+        return {};
+    const row = stages.find((entry) => entry['stage'] === stage || entry['id'] === stage);
+    const inputs = row === undefined ? undefined : row['inputs'];
+    return typeof inputs === 'object' && inputs !== null && !Array.isArray(inputs)
+        ? inputs
+        : {};
+}
+/** The voice itself: each $-token named with its resolution source.
+ *  A token whose name matches a WIRED input resolves to that channel
+ *  (stage.output); every other token is a REQUEST INITIAL — the run
+ *  must declare it or the spell gate refuses at start. */
+function spellVoiceOf(params, inputs) {
+    const wired = typeof inputs === 'object' && inputs !== null && !Array.isArray(inputs)
+        ? inputs
+        : {};
+    return spellTokensIn(params).map(({ token, on }) => {
+        const name = token.slice(1);
+        const channel = wired[name];
+        if (typeof channel === 'object' && channel !== null && !Array.isArray(channel)
+            && typeof channel['stage'] === 'string') {
+            const output = channel['output'];
+            return {
+                token, on, resolves: 'channel',
+                via: channel['stage'] + '.'
+                    + (typeof output === 'string' && output !== '' ? output : 'default'),
+            };
+        }
+        return {
+            token, on, resolves: 'request_initial',
+            via: name + ' — the run must carry this initial (user attaches it at the Run press), or wire inputs.' + name
+                + ' {stage, output}; a real file is an asset path from melite_view, never a $spell',
+        };
+    });
+}
 /** GET the bench; not-found → ensure (birth) → GET again. Reads are
  *  the freshness mechanism — always a remote round trip. */
 async function readBench(estate, bench, signal) {
@@ -121,8 +207,23 @@ function isCasConflict(e) {
  *  could clobber a concurrent write silently). */
 async function postBenchVerb(estate, bench, verbPath, body, signal) {
     const attempt = (rev) => estate.benchVerb(bench, verbPath, { ...body, expect_rev: rev }, signal, 15000);
+    // THE AUTO-REV FRONT DOOR (session 90a0b920's friction map: the
+    // agent burned a whole bench read per mutation just to learn the
+    // rev — reads the render then told it to repeat): an omitted
+    // expect_rev takes the SAME path the rebase takes behind a
+    // conflict — one bounded read, the fresh rev, the write. The CAS
+    // door still guards every write; a race between the fill-read
+    // and the write meets the one-retry rebase below. Non-destructive
+    // verbs only (this helper's law); load's wholesale replacement
+    // keeps demanding the caller's own rev.
+    let rev0 = body['expect_rev'];
+    if (rev0 === undefined || rev0 === null) {
+        const fresh = await readBench(estate, bench, signal);
+        if (typeof fresh['rev'] === 'number')
+            rev0 = fresh['rev'];
+    }
     try {
-        return await attempt(body['expect_rev']);
+        return await attempt(rev0);
     }
     catch (e) {
         if (!isCasConflict(e))
@@ -366,12 +467,11 @@ export function meliteConstruct(estate, opts = {}) {
             + 'was there — load a throwaway TEST/scratch flow only when replacing is the intent, never to "try" a shape; '
             + 'refused on a non-empty bench unless overwrite:true confirms it; prefer add_stage to grow the bench) | patch {stage, params} | add_stage {card, params?, '
             + 'inputs?, expected?, outputs?} (inputs wire PRIOR STAGES through the card\'s declared ports, never files: '
-            + 'inputs {image1: {stage: "s_0", output: "default"}} AND params {image1: "$image1"} — the $spell consumes the channel, the queue resolves it at run time; to chain '
+            + 'inputs {image1: {stage: "s_0", output: "default"}} AND params {image1: "$image1"} — the $spell is the CHANNEL REFERENCE ONLY: it resolves at run time to that wired stage output or a request initial the USER attaches at the Run press, nothing else; for a REAL FILE on disk use its asset path from melite_view, never a $spell; to chain '
             + 'the last generation, bind its stage, never hunt its artifact on disk; kinds derive from the card\'s ports — '
             + 'state expected only to override, outputs only for custom channels) | remove_stage {stage} | clear (EVERY stage out in one rev; undo restores all — the cure when the bench itself is the wound) | rewire {stage, input, from?} (from is {stage, output} | '
             + '{initial} — same law: stage bindings, never paths) | undo {n?, author?} | validate (compile '
-            + 'check, no GPU). Mutations take expect_rev from your last read — a moved bench refuses 409 with '
-            + 'current_rev; re-read, re-apply. No ids anywhere: the bench is the one shared state.',
+            + "check, no GPU). Mutations take expect_rev from your last read — or omit it: the tool fills the fresh rev itself (one bounded read) and a moved bench still refuses 409 with current_rev, re-read, re-apply. No ids anywhere: the bench is the one shared state.",
         parameters: {
             verb: {
                 type: 'string',
@@ -437,7 +537,7 @@ export function meliteConstruct(estate, opts = {}) {
             },
             n: { type: 'number', description: 'undo: how many entries (default 1).' },
             author: { type: 'string', description: 'undo: "agent" (default) | "user" — whose entries to revert.' },
-            expect_rev: { type: 'number', description: 'CAS: the rev from your last read (required on mutations).' },
+            expect_rev: { type: 'number', description: 'CAS: the rev from your last read. Optional on non-destructive mutations — omitted, the tool reads the fresh rev itself (one bounded read); supply it to assert the state you saw.' },
         },
         presentCall,
         output: {
@@ -465,6 +565,54 @@ export function meliteConstruct(estate, opts = {}) {
                 // line each (id, card, engine), plus the intent. A model
                 // that can read never probes.
                 const lines = ['bench ' + String(v.verb ?? '?') + ' → rev ' + String(v.rev ?? '?')];
+                // THE MINTED-ID DISCLOSURE (session 90a0b920's friction map,
+                // 2026-10-21: a read after every mutation to learn the minted
+                // id): add_stage/patch/remove_stage answers carry the stage id
+                // in the payload, but the render never printed it — the model
+                // could not address the stage it just added. The render
+                // voices what it holds (stroke 85's law, extended).
+                const stageId = v.stage;
+                if (typeof stageId === 'string' && stageId !== '') {
+                    const verb = String(v.verb ?? '?');
+                    lines.push(verb === 'add_stage' ? 'minted stage ' + stageId + ' (patch/remove_stage/rewire address it as {stage: "' + stageId + '"})' : 'stage ' + stageId);
+                }
+                // THE SPELL VOICE, RENDERED (the compose-time spell gate,
+                // 2026-10-21): the payload names every $-token and its one
+                // resolution source; the render says it in the model's own
+                // read — channel (the wired stage output) or request initial
+                // (the run must declare it). This is the line that teaches
+                // the wire BEFORE the run-time gate refuses it.
+                // THE COMPILE VERDICT, RENDERED (the model-facing law: a
+                // payload key nobody prints is a voice nobody hears): the
+                // wiring mutation's own answer says whether the bench
+                // compiles — the teaching refusal verbatim when it does not,
+                // one calm line when it does (the validate round-trip the
+                // agent no longer needs).
+                const compileOk = v.compile_ok;
+                if (compileOk === false) {
+                    const compileError = v.compile_error;
+                    lines.push('COMPILE REFUSED — ' + (typeof compileError === 'string' ? compileError : '?')
+                        + ' — the write LANDED; fix the wire it names (expected {slot: kind} on the stage) and re-run.');
+                }
+                else if (compileOk === true) {
+                    lines.push('compiles ✓ (no validate call needed)');
+                }
+                const spellLines = v.spells;
+                if (Array.isArray(spellLines)) {
+                    for (const line of spellLines) {
+                        const row = line;
+                        const head = typeof row.stage === 'string' && row.stage !== '' ? row.stage + ': ' : '';
+                        if (row.resolves === 'channel') {
+                            lines.push(`spell ${String(row.token)} on ${String(row.on)} → channel ${String(row.via)}`);
+                        }
+                        else if (row.resolves === 'request_initial') {
+                            lines.push(`spell ${String(row.token)} on ${String(row.on)} → REQUEST INITIAL — nothing wired; ${String(row.via)}`);
+                        }
+                        else {
+                            lines.push(`${head}spell ${String(row.token)} on ${String(row.on)} → ${String(row.via)}`);
+                        }
+                    }
+                }
                 // hoisted once (the null-voice truth below and the trailing
                 // facts line read the same seam — one read, two voices)
                 const runsFacts = v.runs;
@@ -623,11 +771,40 @@ export function meliteConstruct(estate, opts = {}) {
                         ...(a.overwrite === true ? { overwrite: true } : {}),
                         expect_rev: a.expect_rev,
                     }, signal, 15000);
-                    return out({ rev: r.rev, stages: r.stages });
+                    // THE SPELL VOICE rides load too: every stage's params swept,
+                    // each $-token named against that stage's own wired inputs.
+                    const spells = (Array.isArray(a.stages) ? a.stages : []).flatMap((stage, i) => {
+                        if (typeof stage !== 'object' || stage === null)
+                            return [];
+                        const row = stage;
+                        const card = typeof row['card'] === 'string' ? row['card'] : 'stage ' + i;
+                        return spellVoiceOf(row['params'], row['inputs']).map((line) => ({ stage: card, ...line }));
+                    });
+                    // THE COMPILE VERDICT rides a load that wires anything
+                    const wired = (Array.isArray(a.stages) ? a.stages : []).some((stage) => typeof stage === 'object' && stage !== null
+                        && typeof stage['inputs'] === 'object');
+                    const compile = wired ? await compileVerdictOf(estate, bench, signal) : undefined;
+                    return out({ rev: r.rev, stages: r.stages, ...(spells.length > 0 ? { spells } : {}), ...(compile !== undefined ? { ...compile } : {}) });
                 }
                 if (verb === 'patch') {
-                    const r = await postBenchVerb(estate, bench, 'patch', { stage: a.stage, params: a.params, expect_rev: a.expect_rev }, signal);
-                    return out({ rev: r.rev, stage: r.stage, patched: r.patched });
+                    // THE SPELL VOICE needs the stage's wired inputs, which a
+                    // patch does not carry — one bounded bench read, ONLY when
+                    // the params spell tokens (the read births the same bench
+                    // the patch below writes, so it adds no cross-bench state).
+                    let wiredInputs;
+                    // the spell read doubles as the AUTO-REV fill when the
+                    // caller brought no rev — one bounded read serves both
+                    // (the fill never adds a second read on this path)
+                    let rev0 = a.expect_rev;
+                    if (spellTokensIn(a.params).length > 0) {
+                        const b = await readBench(estate, bench, signal);
+                        wiredInputs = inputsOfStageRow(projectStages(b.stages), a.stage);
+                        if (rev0 === undefined && typeof b.rev === 'number')
+                            rev0 = b.rev;
+                    }
+                    const r = await postBenchVerb(estate, bench, 'patch', { stage: a.stage, params: a.params, expect_rev: rev0 }, signal);
+                    const spellLines = spellVoiceOf(a.params, wiredInputs);
+                    return out({ rev: r.rev, stage: r.stage, patched: r.patched, ...(spellLines.length > 0 ? { spells: spellLines } : {}) });
                 }
                 if (verb === 'add_stage') {
                     // LOUD, never accept-and-ignore (2026-09-21): add_stage
@@ -664,7 +841,12 @@ export function meliteConstruct(estate, opts = {}) {
                         ...(isRecordArg(a.outputs) ? { outputs: a.outputs } : {}),
                         expect_rev: a.expect_rev,
                     }, signal);
-                    return out({ rev: r.rev, stage: r.stage });
+                    // THE SPELL VOICE rides the verb that MINTS the stage: the
+                    // call's own inputs are the wired truth here, no extra read.
+                    const spellLines = spellVoiceOf(a.params, a.inputs);
+                    // THE COMPILE VERDICT rides every wiring add_stage
+                    const compile = a.inputs !== undefined ? await compileVerdictOf(estate, bench, signal) : undefined;
+                    return out({ rev: r.rev, stage: r.stage, ...(spellLines.length > 0 ? { spells: spellLines } : {}), ...(compile !== undefined ? { ...compile } : {}) });
                 }
                 if (verb === 'remove_stage') {
                     const r = await postBenchVerb(estate, bench, 'remove_stage', { stage: a.stage, expect_rev: a.expect_rev }, signal);
@@ -685,7 +867,9 @@ export function meliteConstruct(estate, opts = {}) {
                         ...(a.from !== undefined ? { from: a.from } : {}),
                         expect_rev: a.expect_rev,
                     }, signal);
-                    return out({ rev: r.rev, stage: r.stage, input: r.input });
+                    // THE COMPILE VERDICT rides every rewire (the verb IS wiring)
+                    const compile = await compileVerdictOf(estate, bench, signal);
+                    return out({ rev: r.rev, stage: r.stage, input: r.input, ...(compile !== undefined ? { ...compile } : {}) });
                 }
                 else {
                     // THE LAST ARM IS THE ELSE (the re-audit, 2026-10-16): the

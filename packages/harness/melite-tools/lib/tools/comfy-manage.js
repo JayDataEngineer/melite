@@ -329,7 +329,8 @@ export function comfyManage(estate) {
     // never had as a raw registration.
     const def = defineTool({
         name: 'comfy_manage',
-        description: 'managed workspace only), snapshot_list / snapshot_save / '
+        description: 'Manage the ComfyUI engine lane for the bench (the estate\'s '
+            + 'managed workspace only), snapshot_list / snapshot_save / '
             + 'snapshot_restore (environment snapshots; restore is refused while '
             + 'runs are active); endpoint_set (point at a different ComfyUI server '
             + 'url — validate-first: an unreachable url is refused, never written); install_extension (registry ids), '

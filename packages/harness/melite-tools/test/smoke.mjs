@@ -114,7 +114,6 @@ const main = async () => {
     ['melite_flow(empty: no composition)', lib.meliteFlow(estate), {}, {}],
     ['comfy_manage(status)', lib.comfyManage(estate), { action: 'status' }, {}],
     ['comfy_manage(provision loud-fail)', lib.comfyManage(estate), { action: 'provision_model', model: '__smoke_no_such_model__' }, {}],
-    ['melite_skill_index', lib.skillIndex(estate), {}, {}],
     ['melite_skill_read', lib.skillRead(estate), null, {}], // id filled from index
     ['ledger_tail', lib.ledgerTail(estate), { limit: 3 }, {}],
     // --- the HEADLESS run doors (MELITE_HEADLESS=1 registration) —
@@ -125,7 +124,7 @@ const main = async () => {
   for (const [label, tool, args, _] of tools) {
     try {
       if (label === 'melite_skill_read') {
-        if (skillId === '') throw new Error('no skill id from melite_skill_index')
+        if (skillId === '') throw new Error('no skill id from melite_load (the card bundle\'s skills section)'
         const r = await runTool(tool, { id: skillId }, label)
         note(label, typeof r.value?.body === 'string' || typeof r.text === 'string', 'body loaded')
         continue
@@ -167,14 +166,13 @@ const main = async () => {
       } else if (label === 'melite_load(card)') {
         const b = r.value?.bundle ?? {}
         note(label, Object.keys(b).join() === 'name,kind,signature,agents,skills,model_hints,digest' && b.name === 'upscale-tools', 'the card bundle')
+        // skill ids ride the load (the index tool is deleted — its
+        // subset law already lived here)
+        skillId = Array.isArray(b.skills) && b.skills[0]?.id ? b.skills[0].id : ''
       } else if (label === 'melite_load(flow)') {
         const b = r.value?.bundle ?? {}
         const sig = b.signature ?? {}
         note(label, b.name === 'image-upscale' && sig.name === 'image_upscale' && (b.stages?.length ?? 0) === 2, 'the prebuilt signature + stages')
-      } else if (label === 'melite_skill_index') {
-        const skills = r.value?.skills ?? []
-        skillId = skills[0]?.id ?? ''
-        note(label, skills.length > 0, skills.length + ' skills; first: ' + skillId)
       } else if (label === 'ledger_tail') {
         note(label, Array.isArray(r.value?.entries), 'ledger readable')
       } else {
