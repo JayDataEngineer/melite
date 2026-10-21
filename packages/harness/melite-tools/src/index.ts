@@ -293,6 +293,16 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
   // known depth (view artifacts, read skills, tail the ledger) — the
   // disclosure tax buys nothing headless. Seat at boot.
   if (headless) expandEstateDoors()
+  // THE SEAT PIN (session 90a0b920's flap class, L336-377): a
+  // delegated browser lane that reloads booted with the deferred
+  // doors ABSENT until some catalog touch re-seated them — the
+  // agent's first post-reload estate call met 'unknown tool
+  // "comfy_manage"' and burned the session on a hunt. Delegation ON
+  // means the agent RUNS the estate: its surface is needed from the
+  // first call, so the doors pin at boot. The off-lane keeps the
+  // progressive-disclosure law (operator 2026-10-08) — seats there
+  // still arrive on first catalog touch.
+  else if (bootDelegated) expandEstateDoors()
 
   // THE RUN DOORS — runtime-seatable (the /melite-runs toggle,
   // operator 2026-10-13: "a / command that toggles if the AI
@@ -356,6 +366,10 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
         if (delegated) {
           seatRunDoors()
           seatComposeLoop(true)
+          // the pin's mid-session face: delegation ON seats the whole
+          // estate surface, not just the run doors (the flap cure —
+          // seats never depend on a catalog touch again)
+          expandEstateDoors()
         } else {
           unseatRunDoors()
           seatComposeLoop(false)
@@ -369,7 +383,7 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
         return {
           kind: 'success',
           text: delegated
-            ? 'AI runs ON — melite_flow + run_status seated; the next model request sees them (a boot-fixed catalog sees them next session).'
+            ? 'AI runs ON — melite_flow + run_status + the estate doors (melite_view, melite_read, comfy_manage, skills, ledger) seated; the next model request sees them (a boot-fixed catalog sees them next session).'
               + (writeFailure === undefined ? ' Recorded — the delegation survives lane reloads.' : ' WARNING: recording failed (' + writeFailure + ') — a reload reverts to OFF.')
             : 'AI runs OFF — runs start at the user\u2019s Run press again.'
               + (writeFailure === undefined ? ' Recorded.' : ' WARNING: recording failed (' + writeFailure + ') — a reload reverts to ON.'),

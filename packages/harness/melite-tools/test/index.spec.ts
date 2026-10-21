@@ -311,12 +311,24 @@ describe('the /melite-runs toggle (the user-side AI-run door, 2026-10-13)', () =
     const names = f.registered.map((r) => r.name)
     for (const h of HEADLESS) assert.ok(names.includes(h), 'the reload stole the delegation: ' + h)
 
+    // THE SEAT PIN (the flap class, L336-377): a delegated reload
+    // boots with the ESTATE doors pinned too — no catalog touch, no
+    // 'unknown tool "comfy_manage"' hunt after a reload
+    for (const d of ['melite_view', 'melite_read', 'comfy_manage', 'melite_skill_index', 'melite_skill_read', 'ledger_tail']) {
+      assert.ok(names.includes(d), 'the delegated reload booted without the estate door: ' + d)
+    }
+
     // and the record's other half: a persisted OFF boots unseated
     // (memory cannot resurrect what the operator switched off)
     assert.equal(writeRunsDelegation({ delegated: false }), undefined)
     const g = fakeCtxWithCommands()
     await apply(g.ctx as unknown as Context)
     for (const h of HEADLESS) assert.ok(!g.registered.map((r) => r.name).includes(h), 'an OFF record seated a door: ' + h)
+    // the off-lane keeps the progressive-disclosure law: deferred
+    // doors arrive on first catalog touch, never at boot
+    for (const d of ['melite_view', 'comfy_manage', 'ledger_tail']) {
+      assert.ok(!g.registered.map((r) => r.name).includes(d), 'an OFF record pinned a deferred door: ' + d)
+    }
   })
 
   test('the toggle\'s success voice states whether the flip persisted', async () => {
@@ -326,6 +338,12 @@ describe('the /melite-runs toggle (the user-side AI-run door, 2026-10-13)', () =
     const on = cmd.handler({ rawInput: 'on' }) as { kind: string; text: string }
     assert.equal(on.kind, 'success')
     assert.match(on.text, /Recorded — the delegation survives lane reloads/, 'the ON voice names the persistence')
+    // the pin's mid-session face: ON seats the estate doors too
+    const seatedNames = f.registered.map((r) => r.name)
+    for (const d of ['melite_view', 'comfy_manage', 'ledger_tail']) {
+      assert.ok(seatedNames.includes(d), 'the ON toggle left an estate door unseated: ' + d)
+    }
+    assert.match(on.text, /estate doors/, 'the ON voice names the pinned estate doors')
     const off = cmd.handler({ rawInput: 'off' }) as { kind: string; text: string }
     assert.equal(off.kind, 'success')
     assert.match(off.text, /Recorded/, 'the OFF voice names the persistence')
