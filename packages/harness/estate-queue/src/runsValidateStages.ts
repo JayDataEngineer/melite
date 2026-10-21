@@ -25,6 +25,7 @@ import type {
 // distinct at every import site.
 export type { FlowStageRow };
 import { edgeRef, inlineEdge, inlineKind, inlineSkip } from "./runsValidateInline.ts";
+import { KIND_VOCAB } from "./runsValidateShared.ts";
 import { coerceRecord, minLengthRefusal } from "./runsValidateRefusals.ts";
 
 // ── strict body ──────
@@ -393,8 +394,22 @@ export function kindsOk(
     const onlyExpected: string[] = [...expectedNames].filter((k) => !inputNames.has(k)).sort();
     if (onlyInput.length > 0 || onlyExpected.length > 0) {
       const bits: string[] = [];
-      if (onlyInput.length > 0) bits.push("wired but untyped: " + JSON.stringify(onlyInput));
+      if (onlyInput.length > 0) {
+        bits.push("wired but untyped: " + JSON.stringify(onlyInput));
+      }
       if (onlyExpected.length > 0) bits.push("typed but unwired: " + JSON.stringify(onlyExpected));
+      // THE TEACHING VOICE (session 90a0b920, 2026-10-21: the agent
+      // met this refusal three times, guessed kinds blindly, and
+      // abandoned wiring — the voice named the mismatch but never
+      // the legal vocabulary, the fix's shape, or where the card's
+      // own kinds live). One refusal must carry the whole cure.
+      const first = onlyInput[0];
+      const teach = first === undefined
+        ? ""
+        : " — state the wire's kind with expected {" +
+          JSON.stringify(first) + ": \"image\"} on the stage (the closed Kind vocabulary is " +
+          JSON.stringify([...KIND_VOCAB]) +
+          "; a card whose ports declare the slot types itself — load its schema first)";
       throw new FlowError(
         "flow " +
           JSON.stringify(flowId) +
@@ -403,7 +418,8 @@ export function kindsOk(
           ": inputs/expected mismatch (" +
           bits.join("; ") +
           ") — every input needs an expected Kind, every expected " +
-          "Kind needs an input",
+          "Kind needs an input" +
+          teach,
       );
     }
     const resolved: Map<string, string> = new Map();

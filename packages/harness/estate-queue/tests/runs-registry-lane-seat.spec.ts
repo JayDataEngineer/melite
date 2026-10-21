@@ -82,7 +82,11 @@ describe("the runs door through the lane's models seat", () => {
     // and the transactional gate pins familyCount to it, so the seat
     // equals the census by construction.
     // 30 -> 31 (2026-11-07, the operator's drop): moss-image joins FAMILY_PKGS.
-    assert.equal(seat.allDecls().length, 31, "the booted table, not a bare service (the FAMILY_PKGS census)");
+    // 31 -> 32 (2026-10-21, the fibo2-edit boarding, 11961ab40): the
+    // third image-edit family joins the load table — the census red
+    // surfaced only when this suite next ran (the boarding wave never
+    // did); the count now names the booted truth again.
+    assert.equal(seat.allDecls().length, 32, "the booted table, not a bare service (the FAMILY_PKGS census)");
     const err = await remote(() =>
       svc.start({ draft_id: "d1", test: false, flow: "fit-seat" }, new AbortController().signal),
     );

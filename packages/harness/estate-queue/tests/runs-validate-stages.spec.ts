@@ -387,3 +387,26 @@ describe("the toll arms (falsy maps, nullish scalars, initial-edge skips)", () =
       .toThrow(/schema refused body — flat string refusal/);
   });
 });
+
+
+// ── THE TEACHING VOICE (session 90a0b920's worst loop, 2026-10-21:
+// the identical refusal three times taught nothing; the agent
+// guessed kinds and abandoned wiring) ─────────────────────────────
+describe("the untyped-wire refusal teaches the whole cure", () => {
+  const noPortCards = { defsSync: (): Map<string, unknown> => new Map() }
+  const ks = (id: string, over: Record<string, unknown> = {}): FlowStageRow =>
+    row(0, stage({ id, ...over }))
+  it("the voice names the Kind vocabulary, the expected {} fix, and the card-schema route", () => {
+    try {
+      kindsOk("f1", [ks("a", { inputs: { x: { initial: "seed" } }, expected: {} })], {}, noPortCards as never);
+      expect.unreachable();
+    } catch (e) {
+      const message = (e as Error).message;
+      expect(message).toMatch(/wired but untyped: \["x"\]/);
+      expect(message).toContain('expected {"x": "image"}');
+      expect(message).toContain('"text"');
+      expect(message).toContain('"mesh"');
+      expect(message).toContain('"lora"');
+    }
+  });
+});

@@ -98,6 +98,41 @@ function refusalOf(e: unknown, verb: string, bench: string): ConstructResult {
   return jsonClean<ConstructResult>({ verb, bench, error, error_kind: 'remote', ok: false })
 }
 
+// ── THE COMPILE VERDICT ON EVERY WIRING MUTATION (session
+// 90a0b920's worst loop, 2026-10-21: the agent landed wires, met the
+// kind gate only at a LATER validate, read an identical refusal three
+// times, guessed kinds, and abandoned wiring — the operator repaired
+// the bench off-log). The mutation that changes wiring now carries
+// the compile's own verdict IN ITS ANSWER: ok, or the gate's teaching
+// refusal verbatim (the vocabulary + the expected {} fix + where the
+// card's own kinds live). One call = the write + the judgement.
+
+/** Run the compile check the validate verb runs, over the bench's
+ *  CURRENT stages (post-write truth), and fold the verdict into a
+ *  result-payload fragment. Never throws — a compile refusal is a
+ *  VALUE the answer teaches with, not a failed mutation.
+ *  @returns undefined when the bench holds no stages to compile. */
+async function compileVerdictOf(
+  estate: Estate, bench: string, signal: AbortSignal,
+): Promise<Record<string, unknown> | undefined> {
+  const b = await readBench(estate, bench, signal)
+  const stages = projectStages(b.stages)
+  if (stages.length === 0) return undefined
+  const intent: string = typeof b.intent === 'string' ? b.intent : ''
+  const flowId: string =
+    intent !== '' && FLOW_ID_RE.test(intent) ? intent : 'bench'
+  try {
+    const r = await estate.runsValidate(
+      { flow_inline: { id: flowId, stages } }, signal, 20000) as Record<string, unknown>
+    return { compile_ok: r['ok'] === true || r['valid'] === true, ...(r['ok'] === true || r['valid'] === true ? {} : { compile_error: typeof r['error'] === 'string' ? r['error'] : JSON.stringify(r) }) }
+  } catch (e) {
+    // the gate's refusal IS the verdict (the teaching voice rides it)
+    const refusal = remoteErrorOf(e)
+    const message = refusal !== undefined ? refusal.message : e instanceof Error ? e.message : String(e)
+    return { compile_ok: false, compile_error: message }
+  }
+}
+
 // ── THE SPELL VOICE (session 90a0b920, 2026-11-05) ─────────────────
 // The operator's burn: the agent passed params {image1: "$input"} with
 // NOTHING wired — "you were supposed to attach a) A real image b) A
@@ -575,6 +610,20 @@ export function meliteConstruct(
         // read — channel (the wired stage output) or request initial
         // (the run must declare it). This is the line that teaches
         // the wire BEFORE the run-time gate refuses it.
+        // THE COMPILE VERDICT, RENDERED (the model-facing law: a
+        // payload key nobody prints is a voice nobody hears): the
+        // wiring mutation's own answer says whether the bench
+        // compiles — the teaching refusal verbatim when it does not,
+        // one calm line when it does (the validate round-trip the
+        // agent no longer needs).
+        const compileOk = (v as { compile_ok?: unknown }).compile_ok
+        if (compileOk === false) {
+          const compileError = (v as { compile_error?: unknown }).compile_error
+          lines.push('COMPILE REFUSED — ' + (typeof compileError === 'string' ? compileError : '?')
+            + ' — the write LANDED; fix the wire it names (expected {slot: kind} on the stage) and re-run.')
+        } else if (compileOk === true) {
+          lines.push('compiles ✓ (no validate call needed)')
+        }
         const spellLines = (v as { spells?: unknown }).spells
         if (Array.isArray(spellLines)) {
           for (const line of spellLines) {
@@ -754,7 +803,12 @@ export function meliteConstruct(
             const card = typeof row['card'] === 'string' ? row['card'] : 'stage ' + i
             return spellVoiceOf(row['params'], row['inputs']).map((line) => ({ stage: card, ...line }))
           })
-          return out({ rev: r.rev, stages: r.stages, ...(spells.length > 0 ? { spells } : {}) })
+          // THE COMPILE VERDICT rides a load that wires anything
+          const wired = (Array.isArray(a.stages) ? a.stages : []).some((stage) =>
+            typeof stage === 'object' && stage !== null
+            && typeof (stage as Record<string, unknown>)['inputs'] === 'object')
+          const compile = wired ? await compileVerdictOf(estate, bench, signal) : undefined
+          return out({ rev: r.rev, stages: r.stages, ...(spells.length > 0 ? { spells } : {}), ...(compile !== undefined ? { ...compile } : {}) })
         }
         if (verb === 'patch') {
           // THE SPELL VOICE needs the stage's wired inputs, which a
@@ -808,7 +862,9 @@ export function meliteConstruct(
           // THE SPELL VOICE rides the verb that MINTS the stage: the
           // call's own inputs are the wired truth here, no extra read.
           const spellLines = spellVoiceOf(a.params, a.inputs)
-          return out({ rev: r.rev, stage: r.stage, ...(spellLines.length > 0 ? { spells: spellLines } : {}) })
+          // THE COMPILE VERDICT rides every wiring add_stage
+          const compile = a.inputs !== undefined ? await compileVerdictOf(estate, bench, signal) : undefined
+          return out({ rev: r.rev, stage: r.stage, ...(spellLines.length > 0 ? { spells: spellLines } : {}), ...(compile !== undefined ? { ...compile } : {}) })
         }
         if (verb === 'remove_stage') {
           const r = await postBenchVerb(estate, bench, 'remove_stage',
@@ -831,7 +887,9 @@ export function meliteConstruct(
               ...(a.from !== undefined ? { from: a.from } : {}),
               expect_rev: a.expect_rev,
             }, signal)
-          return out({ rev: r.rev, stage: r.stage, input: r.input })
+          // THE COMPILE VERDICT rides every rewire (the verb IS wiring)
+          const compile = await compileVerdictOf(estate, bench, signal)
+          return out({ rev: r.rev, stage: r.stage, input: r.input, ...(compile !== undefined ? { ...compile } : {}) })
         } else {
           // THE LAST ARM IS THE ELSE (the re-audit, 2026-10-16): the
           // verb is a literal enum in this tool's parameter schema,

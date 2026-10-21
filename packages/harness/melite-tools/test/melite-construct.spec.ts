@@ -374,6 +374,8 @@ describe('melite_construct mutations — every verb', () => {
   test('add_stage carries the optional wiring', async () => {
     const { seen, estate } = mockEstate((lane, args) => {
       if (lane === 'benchVerb' && args[1] === 'add_stage') return { rev: 7, stage: 's2' }
+      if (lane === 'benchGet') return { session: 'main', rev: 7, intent: '', stages: [{ id: 's2' }], log: [] }
+      if (lane === 'runsValidate') return { ok: true }
       throw new Error('unmocked lane ' + lane)
     })
     const tool = meliteConstruct(estate)
@@ -390,6 +392,8 @@ describe('melite_construct mutations — every verb', () => {
   test('add_stage drops absent wiring', async () => {
     const { seen, estate } = mockEstate((lane, args) => {
       if (lane === 'benchVerb' && args[1] === 'add_stage') return { rev: 7, stage: 's2' }
+      if (lane === 'benchGet') return { session: 'main', rev: 7, intent: '', stages: [{ id: 's2' }], log: [] }
+      if (lane === 'runsValidate') return { ok: true }
       throw new Error('unmocked lane ' + lane)
     })
     const tool = meliteConstruct(estate)
@@ -432,6 +436,8 @@ describe('melite_construct mutations — every verb', () => {
   test('rewire sets a binding', async () => {
     const { seen, estate } = mockEstate((lane, args) => {
       if (lane === 'benchVerb' && args[1] === 'rewire') return { rev: 9, stage: 's1', input: 'in' }
+      if (lane === 'benchGet') return { session: 'main', rev: 7, intent: '', stages: [{ id: 's2' }], log: [] }
+      if (lane === 'runsValidate') return { ok: true }
       throw new Error('unmocked lane ' + lane)
     })
     const tool = meliteConstruct(estate)
@@ -448,6 +454,8 @@ describe('melite_construct mutations — every verb', () => {
   test('rewire without from clears the binding', async () => {
     const { seen, estate } = mockEstate((lane, args) => {
       if (lane === 'benchVerb' && args[1] === 'rewire') return { rev: 9, stage: 's1', input: 'in' }
+      if (lane === 'benchGet') return { session: 'main', rev: 7, intent: '', stages: [{ id: 's2' }], log: [] }
+      if (lane === 'runsValidate') return { ok: true }
       throw new Error('unmocked lane ' + lane)
     })
     const tool = meliteConstruct(estate)
@@ -1080,6 +1088,8 @@ describe('melite_construct add_stage — expected/outputs ride (the load workaro
   test('stated expected/outputs forward verbatim', async () => {
     const { seen, estate } = mockEstate((lane, args) => {
       if (lane === 'benchVerb' && args[1] === 'add_stage') return { rev: 7, stage: 's2' }
+      if (lane === 'benchGet') return { session: 'main', rev: 7, intent: '', stages: [{ id: 's2' }], log: [] }
+      if (lane === 'runsValidate') return { ok: true }
       throw new Error('unmocked lane ' + lane)
     })
     const tool = meliteConstruct(estate)
@@ -1489,6 +1499,8 @@ describe('melite_construct — THE SPELL VOICE (compose-time spell judgement)', 
   test('add_stage: a WIRED $spell resolves to its channel (stage.output)', async () => {
     const { estate } = mockEstate((lane, args) => {
       if (lane === 'benchVerb' && args[1] === 'add_stage') return ADD_ANSWER
+      if (lane === 'benchGet') return { session: 's_chat7', rev: 9, intent: '', stages: [{ id: 's_2' }], log: [] }
+      if (lane === 'runsValidate') return { ok: true }
       throw new Error('unmocked lane ' + lane)
     })
     const out = await meliteConstruct(estate).execute({
@@ -1602,9 +1614,48 @@ describe('melite_construct — THE SPELL VOICE (compose-time spell judgement)', 
     assert.doesNotMatch(lean, /spell/)
   })
 
+  test('THE COMPILE VERDICT rides the wiring mutation (the worst-loop cure): a refusing gate teaches in the answer', async () => {
+    const { estate } = mockEstate((lane, args) => {
+      if (lane === 'benchVerb' && args[1] === 'add_stage') return ADD_ANSWER
+      if (lane === 'benchGet') return { session: 's_chat7', rev: 9, intent: '', stages: [{ id: 's_2' }], log: [] }
+      if (lane === 'runsValidate') {
+        // the gate's teaching refusal, verbatim as the estate throws it
+        return Promise.reject(Object.assign(new Error('flow "bench" stage "s_2": inputs/expected mismatch (wired but untyped: ["image1"]) — every input needs an expected Kind, every expected Kind needs an input — state the wire\'s kind with expected {"image1": "image"} on the stage (the closed Kind vocabulary is ["text","image","video","audio","mesh","num","lora","seg","data"]; a card whose ports declare the slot types itself — load its schema first)'), { code: 'flow/invalid' }))
+      }
+      throw new Error('unmocked lane ' + lane)
+    })
+    const out = await meliteConstruct(estate).execute({
+      verb: 'add_stage', card: 'image-edit',
+      inputs: { image1: { stage: 's_0', output: 'default' } },
+    }, exec()) as Record<string, unknown>
+    // the write LANDED (stage minted) and the verdict rides the answer
+    assert.equal(out.stage, 's_2')
+    assert.equal(out.compile_ok, false)
+    assert.match(String(out.compile_error), /wired but untyped/)
+    assert.match(String(out.compile_error), /"image1": "image"/)
+    assert.match(String(out.compile_error), /lora/)
+    // THE RENDER prints it — the model-facing law
+    const tool = meliteConstruct(estate)
+    const parts = tool.output.render(
+      { verb: 'add_stage', card: 'image-edit' },
+      { verb: 'add_stage', bench: 's_chat7', ok: true, rev: 9, stage: 's_2', compile_ok: false, compile_error: String(out.compile_error) } as never,
+    ) as Array<{ text?: string }>
+    const text = parts.map((p) => p?.text ?? '').join('\n')
+    assert.match(text, /COMPILE REFUSED/)
+    assert.match(text, /the write LANDED/)
+    // and the OK face: a compiling wire says so — no validate call needed
+    const okParts = tool.output.render(
+      { verb: 'add_stage', card: 'image-edit' },
+      { verb: 'add_stage', bench: 's_chat7', ok: true, rev: 9, stage: 's_2', compile_ok: true } as never,
+    ) as Array<{ text?: string }>
+    assert.match(okParts.map((p) => p?.text ?? '').join('\n'), /compiles ✓/)
+  })
+
   test('load: every stage swept, each against its OWN inputs', async () => {
     const { estate } = mockEstate((lane, args) => {
       if (lane === 'benchEnsure') return { rev: 2, stages: [{ id: 's_0' }, { id: 's_1' }] }
+      if (lane === 'benchGet') return { session: 's_chat7', rev: 2, intent: '', stages: [{ id: 's_0' }, { id: 's_1' }], log: [] }
+      if (lane === 'runsValidate') return { ok: true }
       throw new Error('unmocked lane ' + lane)
     })
     const out = await meliteConstruct(estate).execute({
