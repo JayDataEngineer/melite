@@ -2283,6 +2283,9 @@ importers:
       '@melite/contracts':
         specifier: workspace:*
         version: link:../../web-kit/contracts
+      '@melite/estate-provisioning':
+        specifier: workspace:*
+        version: link:../../estate/provisioning
       '@melite/formats':
         specifier: workspace:*
         version: link:../../web-kit/formats
@@ -2314,9 +2317,6 @@ importers:
       '@melite/estate-manage':
         specifier: workspace:*
         version: link:../../estate/manage
-      '@melite/estate-provisioning':
-        specifier: workspace:*
-        version: link:../../estate/provisioning
       '@playwright/test':
         specifier: ^1.62.1
         version: 1.62.1
@@ -2401,6 +2401,9 @@ importers:
       '@melite/estate-media':
         specifier: workspace:*
         version: link:../../estate/media
+      '@melite/estate-provisioning':
+        specifier: workspace:*
+        version: link:../../estate/provisioning
       '@melite/estate-runs':
         specifier: workspace:*
         version: link:../../estate/runs
@@ -2444,9 +2447,6 @@ importers:
       '@deepseek-ai/dsh-host-webserver':
         specifier: 0.2.1-rc.2
         version: 0.2.1-rc.2(@deepseek-ai/cordis@4.0.5)
-      '@melite/estate-provisioning':
-        specifier: workspace:*
-        version: link:../../estate/provisioning
       '@melite/formats':
         specifier: workspace:*
         version: link:../../web-kit/formats
