@@ -131,6 +131,18 @@ export function CropPreview({ src, crop, onChange, onNatural }: {
     }
   }, [crop])
 
+  // THE LATCH RE-ARMS PER SOURCE (audit input-prep-total F2,
+  // 2026-11-10): failed used to reset only on unmount — one dead URL
+  // latched the error face forever, and the operator's next GOOD pick
+  // kept the error note while the crop overlay never mounted (the
+  // re-attach gesture was dead). A new src clears the latch and the
+  // stale decode; the new <img> owns the verdict.
+  useEffect(() => {
+    setFailed(false)
+    naturalRef.current = null
+    setNatural(null)
+  }, [src])
+
   const overlayRef = useRef<HTMLDivElement | null>(null)
 
   /** Image-px point for a pointer event, via the overlay's own box. */

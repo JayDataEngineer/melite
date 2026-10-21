@@ -13,7 +13,11 @@
  * move alone: a rail that seats a knob the declaration hides, a
  * declaration that admits a knob compose drops, or a compose that
  * honors a knob the rail hides all red here — each on its own
- * assertion.
+ * assertion. (Audit input-prep-total F1, 2026-11-10: compose's
+ * audio-arm verdict flipped from the silent drop to the LOUD refusal
+ * — the card's own never-silently-drops law — and the pinned verdict
+ * arm below flipped with the gate; "not honored" now covers both the
+ * drop and the refusal.)
  *
  * The second wall pins the run verb's flush (the merge-behavior arm
  * for the deleted JSON-merge deletion loop — component.tsx's bindRun
@@ -79,14 +83,21 @@ function declSeats(knob: string, arm: string): boolean {
 }
 
 /** The COMPOSE plane: the ImageScale node's inputs when a seated
- * scale face reaches the graph on this arm, null when compose drops
- * the face. */
+ * scale face reaches the graph on this arm, null when compose refuses
+ * the face. Null covers the loud refusal too (audit input-prep-total
+ * F1: compose REFUSES seated transforms on the audio lane instead of
+ * dropping them — the refusal IS the not-honored verdict), caught here
+ * so the agreement below judges the DECL and rail planes against it. */
 function composeScaleFace(arm: string): Record<string, unknown> | null {
   const g = new GraphBuilder()
-  def.compose(
-    def.schema({ source: 'upload.png', media_type: arm, ...SEATED_SCALE }),
-    DUMMY, g, `agreement_${arm}`,
-  )
+  try {
+    def.compose(
+      def.schema({ source: 'upload.png', media_type: arm, ...SEATED_SCALE }),
+      DUMMY, g, `agreement_${arm}`,
+    )
+  } catch {
+    return null
+  }
   const graph = g.toJSON() as Record<string, { class_type: string; inputs: Record<string, unknown> }>
   return Object.values(graph).find((n) => n.class_type === 'ImageScale')?.inputs ?? null
 }
@@ -138,15 +149,13 @@ describe('THE THREE-PLANE AGREEMENT (image-3d wave-2 cure 3): rail == declaratio
       .toBe(honored !== null)
   })
 
-  it("the audio arm's compose drops a seated scale row without refusing (the pinned compose verdict — if compose ever honors scale on audio, this arm and the audio agreement arm both red and the declaration owes the knob, never the rail)", () => {
+  it("the audio arm's compose REFUSES a seated scale row loud (the pinned compose verdict — audit input-prep-total F1 flipped it: the old pin held the silent drop, which contradicted the card's own 'never silently drops' law; if compose ever honors scale on audio, or drops it silently again, this arm and the audio agreement arm both red)", () => {
     const g = new GraphBuilder()
     expect(() => def.compose(
       def.schema({ source: 'speech.wav', media_type: 'audio', ...SEATED_SCALE }),
-      DUMMY, g, 'audio_drop',
-    )).not.toThrow()
-    const graph = g.toJSON() as Record<string, { class_type: string }>
-    expect(Object.values(graph).some((n) => n.class_type === 'ImageScale')).toBe(false)
-    expect(Object.values(graph).some((n) => n.class_type === 'SaveAudio')).toBe(true)
+      DUMMY, g, 'audio_refusal',
+    )).toThrow(/audio lane \(LoadAudio → SaveAudio\) takes no image transforms — seated scale_width\/scale_height refuse loud/)
+    expect(Object.values(g.toJSON()).some((n) => n.class_type === 'SaveAudio')).toBe(false)
   })
 })
 
@@ -155,14 +164,19 @@ describe('THE MODEL FACE JOINS THE AGREEMENT (the studio-card directive, 2026-11
 
   /** The COMPOSE plane for the model face: the ImageUpscaleWithModel
    *  inputs + the loader's model_name when a stated scale_model
-   *  reaches the graph on this arm, null when compose drops the
-   *  face (the audio passthrough returns before the image chain). */
+   *  reaches the graph on this arm, null when compose refuses the
+   *  face (the loud refusal IS the not-honored verdict on the audio
+   *  arm — audit input-prep-total F1). */
   function composeModelFace(arm: string): { withModel: Record<string, unknown>, loaderName: unknown } | null {
     const g = new GraphBuilder()
-    def.compose(
-      def.schema({ source: 'upload.png', media_type: arm, scale_model: STATED_MODEL }),
-      DUMMY, g, `model_agreement_${arm}`,
-    )
+    try {
+      def.compose(
+        def.schema({ source: 'upload.png', media_type: arm, scale_model: STATED_MODEL }),
+        DUMMY, g, `model_agreement_${arm}`,
+      )
+    } catch {
+      return null
+    }
     const graph = g.toJSON() as Record<string, { class_type: string; inputs: Record<string, unknown> }>
     const withModel = Object.values(graph).find((n) => n.class_type === 'ImageUpscaleWithModel')
     if (withModel === undefined) return null

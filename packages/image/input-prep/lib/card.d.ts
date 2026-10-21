@@ -26,6 +26,7 @@ export declare const schema: z<Schemastery.ObjectS<NoInfer<{
     scale_method: z<string, string, "defined">;
     scale_model: z<string, string, "defined">;
 }>>, "plain">;
+export declare const MAX_DIM = 16384;
 export declare const inject: string[];
 export declare const identity: {
     label: string;

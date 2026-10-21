@@ -31,6 +31,21 @@ import { SCALE_METHODS, SCALE_MODEL_OPTIONS, UPSCALE_MODELS, MIN_DIM } from '@me
 
 const IMG = 'data:image/png;base64,iVBORw0KGgo='
 
+/** The asset drop — the media bar's own door (ASSET_DRAG_MIME), riding
+ * the real square → provider → studio edit seam. */
+function dropOnSquare(url: string): void {
+  const square = document.querySelector('[data-slot-square]') as HTMLElement
+  act(() => {
+    fireEvent.drop(square, {
+      dataTransfer: {
+        getData: (t: string) => t === ASSET_DRAG_MIME ? JSON.stringify({ url }) : '',
+        files: [],
+        types: [ASSET_DRAG_MIME],
+      },
+    })
+  })
+}
+
 function owner(row: Record<string, unknown>, over: Record<string, unknown> = {}) {
   return {
     stageId: 's_0',
@@ -195,6 +210,29 @@ describe('the crop leaf (CropPreview)', () => {
     expect(cropIsHonorable({ x: 0, y: 0, width: MIN_DIM, height: MIN_DIM })).toBe(true)
     expect(cropIsHonorable({ x: 0, y: 0, width: MIN_DIM - 1, height: 100 })).toBe(false)
   })
+
+  // AUDIT input-prep-total F2 (2026-11-10): the failed latch used to
+  // reset only on unmount — one dead URL latched the error face
+  // forever, and the operator's next GOOD pick kept the error note
+  // while the crop overlay never mounted (the re-attach gesture was
+  // dead). THE RECOVERY LAW: the latch re-arms per source — a new src
+  // clears the error face and the stale decode, and the new <img>
+  // owns the verdict.
+  it('AUDIT F2: A DEAD SOURCE LATCHES ONLY ITSELF — the next pick re-arms the leaf', () => {
+    const onChange = vi.fn()
+    const view = render(h(CropPreview, { src: 'https://dead.example/host/gone.png', crop: null, onChange }))
+    fireEvent.error(screen.getByTestId('prep-crop-preview').querySelector('img') as HTMLImageElement)
+    expect(screen.getByTestId('prep-load-error')).not.toBeNull()
+    expect(screen.queryByTestId('prep-crop-overlay')).toBeNull()
+    // the next pick: a perfectly good source — the latch must reset
+    view.rerender(h(CropPreview, { src: IMG, crop: null, onChange }))
+    expect(screen.queryByTestId('prep-load-error')).toBeNull()
+    // the overlay mounts over the new decode and the gesture works again
+    seatPreview(800, 600)
+    drag(screen.getByTestId('prep-crop-overlay'), [[10, 20], [110, 170]])
+    expect(onChange).toHaveBeenCalledTimes(1)
+    expect(onChange).toHaveBeenCalledWith({ x: 10, y: 20, width: 100, height: 150 })
+  })
 })
 
 describe('the studio (InputPrepStudio)', () => {
@@ -349,6 +387,89 @@ describe('the studio (InputPrepStudio)', () => {
     })
     expect(onImagePatch.mock.calls[0][0]).toMatchObject({ source: IMG, media_type: 'image' })
     expect(screen.queryByTestId('prep-audio-note')).toBeNull()
+  })
+
+  it('AUDIT F1 (the unrecognizable shape): a pick the sniff cannot place seats the source ALONE — the lane is retained, never fought', () => {
+    const onPatch = vi.fn()
+    render(h(InputPrepStudio, owner({ params: { source: 'x.wav', media_type: 'audio' } }, { onPatch })))
+    dropOnSquare('https://cdn.example/staged-no-ext')
+    // toEqual: the source alone — no lane key rides the patch (the
+    // sniff never fights an explicit choice)
+    expect(onPatch.mock.calls[0][0]).toEqual({ source: 'https://cdn.example/staged-no-ext' })
+    expect(screen.getByTestId('prep-audio-note')).not.toBeNull()
+  })
+
+  // AUDIT input-prep-total F1 (2026-11-10, the re-switch matrix — the
+  // operator's combination-sweep axis): pickSource used to seat
+  // {source, media_type} and nothing else, and edit is merge-only — so
+  // a lane flip left the PREVIOUS lane's transform keys seated in the
+  // doc. Compose validated then silently dropped them on the audio
+  // passthrough (the pinned verdict contradicted the card's own "never
+  // silently drops" law), and flipping back resurrected the stale crop
+  // box over the NEW source. THE RE-SWITCH LAW: the flip seats the
+  // unset grammar for every transform key IN THE SAME patch — the doc
+  // never carries a transform its lane does not declare, and no stale
+  // box ever resurrects (compose's loud refusal is the backstop for
+  // docs that bypass this seat).
+  it("AUDIT F1: A LANE FLIP SEATS THE UNSET GRAMMAR — the re-switch never resurrects the old lane's box over the new source", () => {
+    const onPatch = vi.fn()
+    render(h(InputPrepStudio, owner({ params: { source: IMG } }, { onPatch })))
+    // 1. image + crop: the drag commits the four flat keys
+    const overlay = seatPreview(800, 600)
+    act(() => { drag(overlay, [[10, 20], [110, 170]]) })
+    expect(onPatch).toHaveBeenCalledTimes(1)
+    expect(onPatch.mock.calls[0][0]).toMatchObject({
+      crop_x: 10, crop_y: 20, crop_width: 100, crop_height: 150,
+    })
+    // 2. flip to audio: the pick seats the lane AND the unset grammar
+    //    in ONE patch — toEqual, not toMatchObject: every transform
+    //    key must be explicitly unset (the card's own -1/"" truth,
+    //    no deletion domain; scale_method rides no seat — it is a
+    //    modifier of the stated dims, and its vocabulary has no
+    //    unset member)
+    dropOnSquare('https://media.example/voice-take.wav')
+    expect(onPatch).toHaveBeenCalledTimes(2)
+    expect(onPatch.mock.calls[1][0]).toEqual({
+      source: 'https://media.example/voice-take.wav',
+      media_type: 'audio',
+      crop_x: -1, crop_y: -1, crop_width: -1, crop_height: -1,
+      scale_width: -1, scale_height: -1,
+      scale_model: '',
+    })
+    expect(screen.queryByTestId('prep-rail')).toBeNull()
+    // 3. flip back to image: the stale box does NOT resurrect over the
+    //    new source — the flip seats the unset grammar again, the
+    //    fresh image mounts with NO box, and clear-crop knows the
+    //    crop is unset
+    const NEXT = 'https://media.example/new-take.png'
+    dropOnSquare(NEXT)
+    expect(onPatch).toHaveBeenCalledTimes(3)
+    expect(onPatch.mock.calls[2][0]).toEqual({
+      source: NEXT,
+      media_type: 'image',
+      crop_x: -1, crop_y: -1, crop_width: -1, crop_height: -1,
+      scale_width: -1, scale_height: -1,
+      scale_model: '',
+    })
+    expect(screen.getByTestId('prep-crop-preview').querySelector('img')?.getAttribute('src')).toBe(NEXT)
+    expect(screen.queryByTestId('prep-crop-box')).toBeNull()
+    expect((screen.getByTestId('prep-clear-crop') as HTMLButtonElement).disabled).toBe(true)
+  })
+
+  // AUDIT input-prep-total F2 at the studio seat: the REAL re-attach
+  // gesture — a dead pick, then a good one through the ONE square. The
+  // dead source's error face must not survive the next pick (the
+  // leaf's recovery arm above judges the latch itself).
+  it('AUDIT F2: A DEAD PICK DOES NOT KILL THE NEXT ONE (the re-attach gesture rides the one square)', () => {
+    render(h(InputPrepStudio, owner({ params: {} })))
+    dropOnSquare('https://dead.example/host/gone.png')
+    fireEvent.error(screen.getByTestId('prep-crop-preview').querySelector('img') as HTMLImageElement)
+    expect(screen.getByTestId('prep-load-error')).not.toBeNull()
+    expect(screen.queryByTestId('prep-crop-overlay')).toBeNull()
+    dropOnSquare(IMG)
+    expect(screen.queryByTestId('prep-load-error')).toBeNull()
+    seatPreview(800, 600)
+    expect(screen.getByTestId('prep-crop-overlay')).not.toBeNull()
   })
 
   // AUDIT input-prep F6.4: the rail's clamp `Math.max(1,

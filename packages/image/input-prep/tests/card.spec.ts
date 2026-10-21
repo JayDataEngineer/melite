@@ -12,7 +12,7 @@ import { CardDefinition } from '@melite/comfyui-card-kit/card-definition'
 import {
   getModel, registryIds, registryModel,
 } from "../../../engines/comfyui-cordis/src/models/models.ts";
-import { ACTION_BINDINGS } from "../src/card.ts";
+import { ACTION_BINDINGS, MAX_DIM } from "../src/card.ts";
 import { SCALE_METHODS, MIN_DIM } from "@melite/models-input";
 
 const FACTS_PATH = join(
@@ -178,6 +178,104 @@ describe("the input-prep compose gate", () => {
     const g = new GraphBuilder();
     def.compose(def.schema({ source: "upload.png", scale_width: MIN_DIM, scale_height: MIN_DIM }), DUMMY, g, "floor_ok");
     assert.ok(Object.values(g.toJSON()).some((node) => node.class_type === "ImageScale"), "the floor member composes");
+  });
+
+  // AUDIT input-prep-total F1 (2026-11-10, the re-switch backstop):
+  // the audio passthrough used to VALIDATE then silently drop seated
+  // transforms (actions.ts returns before any image build) — the
+  // pinned declared-surface verdict that contradicted the card's own
+  // law (principles[2]: "anything else refuses loudly, never silently
+  // drops"). Compose refuses loud now: an audio doc with ANY seated
+  // transform — flat keys, a stated model, or a legacy overlay object
+  // — dies in the card's voice naming the keys; the clean audio doc
+  // still composes the restage. (The studio's re-switch seat is the
+  // primary cure — the client wall's re-switch arm; this gate is the
+  // backstop for docs that bypass the seat.)
+  it("AUDIT F1: the audio lane refuses seated transforms LOUD — compose never silently drops", () => {
+    assert.throws(
+      () => def.compose(def.schema({ source: "speech.wav", media_type: "audio", crop_x: 0, crop_y: 0, crop_width: 64, crop_height: 64 }), DUMMY, new GraphBuilder(), "audio_crop_rider"),
+      /audio lane \(LoadAudio → SaveAudio\) takes no image transforms — seated crop_x\/crop_y\/crop_width\/crop_height/,
+    );
+    assert.throws(
+      () => def.compose(def.schema({ source: "speech.wav", media_type: "audio", scale_width: 64, scale_height: 64, scale_model: "RealESRGAN_x4plus" }), DUMMY, new GraphBuilder(), "audio_scale_rider"),
+      /seated scale_width\/scale_height, scale_model/,
+    );
+    assert.throws(
+      () => def.compose({ source: "speech.wav", media_type: "audio", scale: { width: 64, height: 64 } }, DUMMY, new GraphBuilder(), "audio_legacy_rider"),
+      /seated legacy scale row/,
+    );
+    assert.throws(
+      () => def.compose({ source: "speech.wav", media_type: "audio", crop: { x: 0, y: 0, width: 64, height: 64 } }, DUMMY, new GraphBuilder(), "audio_legacy_crop_rider"),
+      /seated legacy crop row/,
+    );
+    // the counter: the audio doc WITHOUT transforms still composes
+    const g = new GraphBuilder();
+    def.compose(def.schema({ source: "speech.wav", media_type: "audio" }), DUMMY, g, "audio_clean");
+    assert.ok(Object.values(g.toJSON()).some((node) => node.class_type === "SaveAudio"));
+  });
+
+  // AUDIT input-prep-total F3 (2026-11-10, the oversize arm): no bound
+  // existed anywhere — the schema envelope is unbounded above (the
+  // parity wall pins both spellings: the card's served f.max null, the
+  // family ParamSpec's MAX_SAFE_INTEGER), so the ceiling rides as a
+  // compose-time gate, the MIN_DIM floor's own class. scale_width: 1e9
+  // (an integer over MIN_DIM) used to compose a 1e9×1e9 ImageScale raw
+  // to the engine — OOM/abort in engine dialect, never card voice.
+  // MAX_DIM is the 16k class: above any engine-sane transform target
+  // (a 4× model upscale of a 4k source).
+  it("AUDIT F3: an oversize scale target refuses at the gate — the engine never sees the 1e9 class", () => {
+    assert.throws(
+      () => def.compose(def.schema({ source: "upload.png", scale_width: 1e9, scale_height: 1e9 }), DUMMY, new GraphBuilder(), "oversize_scale"),
+      new RegExp(`input-prep scale needs width and height of at most ${MAX_DIM}px \\(got 1000000000x1000000000\\) — bigger targets are an engine abort, never a resize`),
+    );
+    assert.throws(
+      () => def.compose(def.schema({ source: "upload.png", scale_width: 64, scale_height: 1e9 }), DUMMY, new GraphBuilder(), "oversize_scale_height"),
+      new RegExp(`input-prep scale needs width and height of at most ${MAX_DIM}px \\(got 64x1000000000\\)`),
+    );
+    // the boundary member composes — the ceiling is a ceiling, not an off-by-one
+    const g = new GraphBuilder();
+    def.compose(def.schema({ source: "upload.png", scale_width: MAX_DIM, scale_height: MAX_DIM }), DUMMY, g, "ceiling_ok");
+    assert.ok(Object.values(g.toJSON()).some((node) => node.class_type === "ImageScale"), "the ceiling member composes");
+  });
+
+  it("AUDIT F3: an oversize crop member refuses — flat and legacy path alike", () => {
+    assert.throws(
+      () => def.compose(def.schema({ source: "upload.png", crop_x: 0, crop_y: 0, crop_width: 20000, crop_height: 64 }), DUMMY, new GraphBuilder(), "oversize_crop_flat"),
+      new RegExp(`input-prep crop needs values of at most ${MAX_DIM}px \\(got crop_width=20000\\) — bigger boxes are an engine abort, not a crop`),
+    );
+    // the LEGACY objects ride the admits overlay raw — the schema
+    // cannot see inside the row, so the gate ceilings them here
+    assert.throws(
+      () => def.compose({ source: "upload.png", crop: { x: 0, y: 0, width: 1e9, height: 64 } }, DUMMY, new GraphBuilder(), "oversize_crop_legacy"),
+      new RegExp(`input-prep: the legacy crop row carries a member above the ${MAX_DIM}px ceiling \\(got width=1000000000\\)`),
+    );
+    assert.throws(
+      () => def.compose({ source: "upload.png", scale: { width: 1e9, height: 64 } }, DUMMY, new GraphBuilder(), "oversize_scale_legacy"),
+      new RegExp(`input-prep: the legacy scale row carries a member above the ${MAX_DIM}px ceiling \\(got 1000000000x64\\)`),
+    );
+    assert.throws(
+      () => def.compose({ source: "upload.png", scale: { width: 64, height: 1e9 } }, DUMMY, new GraphBuilder(), "oversize_scale_legacy_height"),
+      new RegExp(`input-prep: the legacy scale row carries a member above the ${MAX_DIM}px ceiling \\(got 64x1000000000\\)`),
+    );
+  });
+
+  // AUDIT F3's origin sibling, named honestly: an out-of-bounds crop
+  // ORIGIN within the ceiling (past the source's real edge) cannot be
+  // pre-validated here — compose never sees the pixels; the engine's
+  // numpy slice-clamp owns the result. This arm pins that the declared
+  // box rides VERBATIM (the absurd class — values above the ceiling —
+  // is refused by the arms above), so the engine-side clamp is a named
+  // contract, never a silent one.
+  it("AUDIT F3: an out-of-bounds crop origin rides DECLARED — the engine owns the pixels", () => {
+    const g = new GraphBuilder();
+    def.compose(def.schema({ source: "upload.png", crop_x: 5000, crop_y: 5000, crop_width: 64, crop_height: 64 }), DUMMY, g, "oob_origin");
+    const crop = Object.values(g.toJSON()).find((node) => node.class_type === "ImageCrop");
+    assert.ok(crop, "the near-miss origin composes");
+    assert.deepEqual(
+      { x: crop?.inputs.x, y: crop?.inputs.y, width: crop?.inputs.width, height: crop?.inputs.height },
+      { x: 5000, y: 5000, width: 64, height: 64 },
+      "the declared box rides verbatim — the engine's clamp is the truth compose cannot pre-judge",
+    );
   });
 
   it("THE INTEGER LAW (volley item g, 2026-10-24): fractional dims refuse on EVERY path — never engine dialect", () => {

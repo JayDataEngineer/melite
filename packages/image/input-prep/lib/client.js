@@ -250,6 +250,11 @@ window.__ModuleLoader__.load({
 					setLive(crop);
 				}
 			}, [crop]);
+			(0, react.useEffect)(() => {
+				setFailed(false);
+				naturalRef.current = null;
+				setNatural(null);
+			}, [src]);
 			const overlayRef = (0, react.useRef)(null);
 			/** Image-px point for a pointer event, via the overlay's own box. */
 			const toImage = (e) => {
@@ -538,6 +543,9 @@ window.__ModuleLoader__.load({
 			const mediaType = user["media_type"] === "audio" ? "audio" : "image";
 			const [natural, setNatural] = (0, react.useState)(null);
 			const previewable = source !== "" && isPreviewable(source) && mediaType === "image";
+			(0, react.useEffect)(() => {
+				setNatural(null);
+			}, [source]);
 			const crop = cropOf(user);
 			const scaleW = num(user["scale_width"]);
 			const scaleH = num(user["scale_height"]);
@@ -554,12 +562,38 @@ window.__ModuleLoader__.load({
 			};
 			/** The source pick seats its own lane with it (audit F2: the
 			* compose branch keys on media_type — a picked .wav composing the
-			* image lane is the silent wrong-arm burn). */
+			* image lane is the silent wrong-arm burn). THE RE-SWITCH LAW
+			* (audit input-prep-total F1, 2026-11-10): when the sniff FLIPS the
+			* lane, the SAME patch seats every transform key's unset grammar —
+			* edit is merge-only, so without this seat the previous lane's
+			* crop/scale keys stayed in the doc (compose dropped them silently
+			* on the audio passthrough, and flipping back resurrected the stale
+			* box over the new source). scale_method rides no seat: it is a
+			* modifier of the stated dims (compose reads it only under a stated
+			* width/height) and its vocabulary has no unset member. */
 			const pickSource = (v) => {
 				const media = sniffMediaType(v);
-				edit(media === null ? { source: v } : {
+				if (media === null) {
+					edit({ source: v });
+					return;
+				}
+				if (media === mediaType) {
+					edit({
+						source: v,
+						media_type: media
+					});
+					return;
+				}
+				edit({
 					source: v,
-					media_type: media
+					media_type: media,
+					crop_x: -1,
+					crop_y: -1,
+					crop_width: -1,
+					crop_height: -1,
+					scale_width: -1,
+					scale_height: -1,
+					scale_model: ""
 				});
 			};
 			/** The leaf's atomic commit → the four flat params. */

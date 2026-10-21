@@ -48,6 +48,17 @@ export const schema = z.object({
     scale_model: vocabulary([...SCALE_MODEL_OPTIONS]).description("Upscale Model").default("").extra('extra', bag({ order: 7, group: "transform", wtype: 'select', visible_when: 'media_type=image' })),
 });
 const schemaFn = callableSchema(schema);
+// THE OVERSIZE CEILING (audit input-prep-total F3, 2026-11-10): the
+// 16k class — above any engine-sane transform target (a 4× model
+// upscale of a 4k source). The schema envelope stays unbounded above
+// (the parity wall pins both spellings: the card's served f.max null,
+// the family ParamSpec's MAX_SAFE_INTEGER), so the ceiling rides as a
+// compose-time gate — the MIN_DIM floor's own class: scale_width 1e9
+// is refused in card voice, never composed raw to the engine.
+export const MAX_DIM = 16384;
+/** The four flat crop keys, in the schema's own order (the ceiling
+ * walk names the offending member from this list). */
+const CROP_KEYS = ['crop_x', 'crop_y', 'crop_width', 'crop_height'];
 export const inject = ['comfyui'];
 // THE IDENTITY RUNG (native 2026-09-10 — migrated from the frozen
 // identity ring; the card owns its label/description/genre/icon).
@@ -130,6 +141,40 @@ export function apply(ctx) {
             }
             const cropValues = [doc['crop_x'], doc['crop_y'], doc['crop_width'], doc['crop_height']];
             const hasCrop = cropValues.some((value) => value >= 0);
+            const scaleWidth = doc['scale_width'];
+            const scaleHeight = doc['scale_height'];
+            const hasScale = scaleWidth >= 0 || scaleHeight >= 0;
+            const legacyCrop = typeof doc['crop'] === 'object' && doc['crop'] !== null && !Array.isArray(doc['crop'])
+                ? doc['crop']
+                : undefined;
+            const legacyScale = typeof doc['scale'] === 'object' && doc['scale'] !== null && !Array.isArray(doc['scale'])
+                ? doc['scale']
+                : undefined;
+            // THE APPLICABILITY GATE (audit input-prep-total F1,
+            // 2026-11-10): the audio lane (LoadAudio → SaveAudio) takes no
+            // image transforms. The passthrough used to validate then
+            // silently drop them — the pinned declared-surface verdict that
+            // contradicted this card's own law (principles[2]: "anything
+            // else refuses loudly, never silently drops"). The studio's
+            // re-switch seat (component.tsx pickSource) is the primary cure;
+            // this refusal is the backstop for docs that bypass it (agent
+            // patches, old drafts, hand-built rows).
+            if (doc['media_type'] === 'audio') {
+                const seated = [];
+                if (hasCrop)
+                    seated.push('crop_x/crop_y/crop_width/crop_height');
+                if (hasScale)
+                    seated.push('scale_width/scale_height');
+                if (doc['scale_model'] !== '')
+                    seated.push('scale_model');
+                if (legacyCrop !== undefined)
+                    seated.push('legacy crop row');
+                if (legacyScale !== undefined)
+                    seated.push('legacy scale row');
+                if (seated.length > 0) {
+                    throw new Error(`input-prep: the audio lane (LoadAudio → SaveAudio) takes no image transforms — seated ${seated.join(', ')} refuse loud (the card never silently drops); clear them or flip the source back to an image`);
+                }
+            }
             if (hasCrop && cropValues.some((value) => value < 0)) {
                 throw new Error('input-prep crop needs all four values; unset fields are -1');
             }
@@ -142,9 +187,6 @@ export function apply(ctx) {
             if (hasCrop && (cropValues[2] < MIN_DIM || cropValues[3] < MIN_DIM)) {
                 throw new Error(`input-prep crop needs width and height of at least ${MIN_DIM}px (got ${cropValues[2]}x${cropValues[3]}) — smaller crops upscale to a blank`);
             }
-            const scaleWidth = doc['scale_width'];
-            const scaleHeight = doc['scale_height'];
-            const hasScale = scaleWidth >= 0 || scaleHeight >= 0;
             if (hasScale && (scaleWidth <= 0 || scaleHeight <= 0)) {
                 throw new Error('input-prep scale needs positive width and height; -1 unsets both');
             }
@@ -155,12 +197,33 @@ export function apply(ctx) {
             if (hasScale && (scaleWidth < MIN_DIM || scaleHeight < MIN_DIM)) {
                 throw new Error(`input-prep scale needs width and height of at least ${MIN_DIM}px (got ${scaleWidth}x${scaleHeight}) — smaller targets upscale to a blank`);
             }
-            const legacyCrop = typeof doc['crop'] === 'object' && doc['crop'] !== null && !Array.isArray(doc['crop'])
-                ? doc['crop']
-                : undefined;
-            const legacyScale = typeof doc['scale'] === 'object' && doc['scale'] !== null && !Array.isArray(doc['scale'])
-                ? doc['scale']
-                : undefined;
+            // THE OVERSIZE CEILING (audit input-prep-total F3, 2026-11-10):
+            // refused here on BOTH paths — the flat keys the schema walk
+            // passed, and the LEGACY overlay objects that ride the admits
+            // raw (the schema cannot see inside the row). The oversize class
+            // is an engine abort (OOM in engine dialect), never a resize.
+            if (hasCrop) {
+                const over = CROP_KEYS.map((key, i) => cropValues[i] > MAX_DIM ? `${key}=${cropValues[i]}` : null)
+                    .find((named) => named !== null);
+                if (over !== undefined) {
+                    throw new Error(`input-prep crop needs values of at most ${MAX_DIM}px (got ${over}) — bigger boxes are an engine abort, not a crop`);
+                }
+            }
+            if (hasScale && (scaleWidth > MAX_DIM || scaleHeight > MAX_DIM)) {
+                throw new Error(`input-prep scale needs width and height of at most ${MAX_DIM}px (got ${scaleWidth}x${scaleHeight}) — bigger targets are an engine abort, never a resize`);
+            }
+            if (!hasCrop && legacyCrop !== undefined) {
+                const over = ['x', 'y', 'width', 'height']
+                    .map((key) => legacyCrop[key] > MAX_DIM ? `${key}=${legacyCrop[key]}` : null)
+                    .find((named) => named !== null);
+                if (over !== undefined) {
+                    throw new Error(`input-prep: the legacy crop row carries a member above the ${MAX_DIM}px ceiling (got ${over}) — refused at the gate, never composed`);
+                }
+            }
+            if (!hasScale && legacyScale !== undefined
+                && (legacyScale['width'] > MAX_DIM || legacyScale['height'] > MAX_DIM)) {
+                throw new Error(`input-prep: the legacy scale row carries a member above the ${MAX_DIM}px ceiling (got ${legacyScale['width']}x${legacyScale['height']}) — refused at the gate, never composed`);
+            }
             // THE DISPLAY-TRUTH LAW (audit input-prep F3,
             // 2026-10-20): the studio seeds its user layer from the row
             // and the run patch carries the whole layer, so an old draft
