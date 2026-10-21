@@ -16,10 +16,19 @@
 // THE DOOR: the card def's REAL path — def.schema (the walk) then
 // def.compose — the refmod-value-arms wall's proven composeH3, the
 // same hop the run rides (refmod-value-arms.spec.ts:137-142).
-// THE WITNESS SCOPE: the five sampler knobs above. The census's
-// h3 U block beyond them (latent-shape rows, refine:1669, sr /
-// sharpen / interp / sla, per-window rows) stays UNWITNESSED until
-// its own arms land — this wall names its five and no more.
+// THE WITNESS SCOPE: the five sampler knobs above, the refine rider
+// (ARMs 4-9), the SD-2 sharpen gates (ARMs 10-12), and the P0 class
+// map (ARMs 13-23 — every remaining DECL class at its consumer). THE
+// 2026-11-09 KNOB-BLOCK REMAINDER (ARMs 24-34, registry row
+// models-h3-sampler-value-law): the per-class LIVENESS half (the drop
+// variant reds per seat-class — ARM 3a's pattern is the law for every
+// class, not just the sampler five), the sla_switch LIVE t4r seat
+// (ARM 31 — the census cell ARM 23's narration wrongly retired; the
+// alias is read at the t4r attention pick), the sharpen_switch
+// retirement pin (ARM 32 — ARM 23 exercised interp_switch only), the
+// fps_seconds no-stale ownership (ARM 33 — a stated pin never
+// survives the render seat's derivation), and the per-window
+// noise_seed film pins (ARM 34).
 // THE LIVENESS PROOF (ARM 3, the music wall's ARM-4 pattern): the
 // drop variant — a doc WITHOUT the stated seed composes the
 // consumer with the schema default, and the arm asserting the
@@ -98,6 +107,24 @@ function assertValueAtConsumer(
       `— the stated value never reached the engine's consumer (THE SILENT UI DROP, ERRORS.md bottom)`,
     );
   }
+}
+
+/** THE SWITCH-Voice ARM: resolve the ComfySwitchNode that switches ON
+ *  to the named class — the switch-value pin rides TOPOLOGY (which
+ *  node feeds on_true), never node order (ids are minted, not
+ *  contracted). Shared by the SLA/interp/sr/sharpen switch arms. */
+function switchCarrying(graph: Graph, onTrueClass: string): { id: string; switch: unknown } {
+  for (const [id, n] of Object.entries(graph)) {
+    if (n.class_type !== "ComfySwitchNode") continue;
+    const onTrue = n.inputs.on_true as unknown;
+    if (Array.isArray(onTrue) && typeof onTrue[0] === "string") {
+      const upstream = graph[onTrue[0]];
+      if (upstream?.class_type === onTrueClass) return { id, switch: n.inputs.switch };
+    }
+  }
+  assert.fail(
+    `SWITCH ARM (hop [5]): no ComfySwitchNode switches on a '${onTrueClass}' output — the class's switch never composed (the knob's on/off never reaches the engine)`,
+  );
 }
 
 // ── THE STATED VALUES (distinctive non-defaults — a default-echoing
@@ -567,23 +594,6 @@ describe("the h3 sampler knobs ride VERBATIM to their consumers (purge P2 value 
 // Stated values are NON-defaults: a default-echoing arm proves nothing
 // (the CONTROL arm above is the harness's own sane-proof).
 describe("the h3 class knobs ride VERBATIM to their consumers (P0 witness extension, hop [4]→[5])", () => {
-  /** Resolve the ComfySwitchNode that switches ON to the named class —
-   *  the switch-value pin rides TOPOLOGY (which node feeds on_true),
-   *  never node order (ids are minted, not contracted). */
-  function switchCarrying(graph: Graph, onTrueClass: string): { id: string; switch: unknown } {
-    for (const [id, n] of Object.entries(graph)) {
-      if (n.class_type !== "ComfySwitchNode") continue;
-      const onTrue = n.inputs.on_true as unknown;
-      if (Array.isArray(onTrue) && typeof onTrue[0] === "string") {
-        const upstream = graph[onTrue[0]];
-        if (upstream?.class_type === onTrueClass) return { id, switch: n.inputs.switch };
-      }
-    }
-    assert.fail(
-      `SWITCH ARM (hop [5]): no ComfySwitchNode switches on a '${onTrueClass}' output — the class's switch never composed (the knob's on/off never reaches the engine)`,
-    );
-  }
-
   it("ARM 13 — the shape + clock pins: width/height/length/ref_image_size at the ReferenceToVideo head, fps at the container (single window) and the window clock nodes (film), the derived seconds on the clock, noise_seed at RandomNoise", async () => {
     const graph = await composeH3({
       length: 124, width: 512, height: 480, fps: 30, noise_seed: 909,
@@ -839,11 +849,14 @@ describe("the h3 class knobs ride VERBATIM to their consumers (P0 witness extens
 
   it("ARM 23 — the legacy switch aliases are retired dead law: a stated interp_switch never rides the interp switch (the primary owns it)", async () => {
     // THE RETIREMENT PIN (actions.ts, the one-owner note): the old
-    // renderer-era aliases (interp_switch / sharpen_switch /
-    // sla_switch) are gate-admitted for old drafts but the wiring
-    // reads ONLY the primaries. A stated alias must NOT flip its
-    // switch — if it ever does, this arm reds (the alias grew a
-    // second owner behind the primary's back).
+    // renderer-era aliases interp_switch and sharpen_switch are
+    // gate-admitted for old drafts but the second-pass wiring reads
+    // ONLY the primaries — a stated alias must NOT flip its switch
+    // (if it ever does, this arm reds: the alias grew a second owner
+    // behind the primary's back). sla_switch is NOT in this class:
+    // the t4r arm READS it (the attention pick, actions.ts) — its
+    // live seat has its own arm below (ARM 31); the census cell that
+    // called it retired was the narration drift this block corrects.
     const graph = await composeH3({
       length: 56,
       second_pass_enabled: true, interp_switch: true,
@@ -853,3 +866,265 @@ describe("the h3 class knobs ride VERBATIM to their consumers (P0 witness extens
       "the stated legacy interp_switch flipped the interp switch — the alias rode behind the primary's back");
   });
 });
+
+// ── THE KNOB-BLOCK REMAINDER (2026-11-09, registry row
+// models-h3-sampler-value-law): the class map above WITNESSES the
+// seats; this block makes it FIRE. Three honest gaps closed:
+// (1) LIVENESS PER CLASS — ARMs 13-23 assert values but only the
+//     sampler five carried the ARM 3a drop-class self-red; every
+//     class gets its own (the drop variant composes the consumer
+//     carrying the declared default, and the stated-value arm must
+//     THROW — a presence arm would pass, the VALUE arm is the law).
+// (2) THE MIS-NARRATED SEAT — sla_switch is ALIVE on the t4r arm
+//     (the attention pick reads it verbatim); it gets its value arms
+//     + topology + the default-carrying CONTROL (ARM 31).
+// (3) THE UNPINNED OWNERSHIPS — sharpen_switch joins the retirement
+//     pair (ARM 32), the internal fps_seconds row's stated pin never
+//     survives the render seat (ARM 33), and the per-window
+//     noise_seed row rides the film stanza per key (ARM 34).
+describe("the h3 knob-block remainder: per-class liveness + the mis-narrated and unpinned seats (2026-11-09, hop [4]→[5])", () => {
+  /** The dict-probe with the VALUE voice for the grouped
+   *  ImageSharpenKJ method (assertValueAtConsumer reads flat node
+   *  inputs; the sharpen leaves ride a nested dict). */
+  const sharpenStrengthArm = (graph: Graph, stated: number): void => {
+    const sharpen = Object.values(graph).find((n) => n.class_type === "ImageSharpenKJ");
+    assert.ok(sharpen, "the sharpen node composed (hop [5])");
+    const method = sharpen.inputs.method as Record<string, unknown>;
+    if (method.strength === stated) return;
+    assert.fail(
+      `SHARPEN VALUE ARM (hop [5], the consumer's dict): ImageSharpenKJ method.strength did not carry ` +
+      `the stated value verbatim — expected ${JSON.stringify(stated)}, saw ${JSON.stringify(method.strength)} ` +
+      `— the stated value never reached the engine's consumer (THE SILENT UI DROP, ERRORS.md bottom)`,
+    );
+  };
+  /** The rider-stack probe with the VALUE voice (the refine strength
+   *  rides the LTX stack_data JSON, not a flat input). */
+  const riderStrengthArm = (graph: Graph, stated: number): void => {
+    const riders = Object.values(graph).filter((n) =>
+      n.class_type === "LTX_lora_loader"
+      && typeof n.inputs.stack_data === "string"
+      && (n.inputs.stack_data as string).includes("taomate"));
+    assert.ok(riders.length >= 1, "the refine rider's loader composed (hop [5])");
+    const stack = JSON.parse(riders[0]!.inputs.stack_data as string) as Array<{ str: number }>;
+    if (stack[0]!.str === stated) return;
+    assert.fail(
+      `REFINE VALUE ARM (hop [5], the consumer's stack): the rider LTX stack carried strength ` +
+      `${JSON.stringify(stack[0]!.str)}, expected the stated ${JSON.stringify(stated)} ` +
+      `— the stated value never reached the engine's consumer (THE SILENT UI DROP, ERRORS.md bottom)`,
+    );
+  };
+  /** THE SLA ATTENTION PICK (the t4r arm's own switch): its value,
+   *  with the EDGE identities of both branches (ARM 4b's lesson —
+   *  identity is the edge, never value coincidence). */
+  const slaPick = (graph: Graph): { id: string; sel: unknown; onTrue: string; onFalse: string } => {
+    const edge = (v: unknown): string => {
+      assert.ok(Array.isArray(v) && typeof v[0] === "string",
+        "SLA SWITCH ARM: the attention pick wired a branch as a literal — switches ride edges");
+      const upstream = graph[v[0] as string];
+      assert.ok(upstream, `SLA SWITCH ARM: the pick's edge named unknown node ${JSON.stringify(v[0])}`);
+      return upstream.class_type;
+    };
+    for (const [id, n] of Object.entries(graph)) {
+      if (n.class_type !== "ComfySwitchNode") continue;
+      return { id, sel: n.inputs.switch, onTrue: edge(n.inputs.on_true), onFalse: edge(n.inputs.on_false) };
+    }
+    assert.fail("SLA SWITCH ARM: no ComfySwitchNode in the t4r graph — the attention pick never composed (hop [5])");
+  };
+
+  // ── THE PER-CLASS LIVENESS HALF (ARM 3a's pattern, every class):
+  // each arm composes the DROP variant (the knob unstated), pins the
+  // default the consumer carries, then requires the stated-value arm
+  // to THROW with the VALUE voice — the proof the class's value arms
+  // are comparators, never presence glances. ──
+
+  it("ARM 24 (liveness, latent-shape) — width/height dropped compose the declared geometry floor at the r2v head, and the stated arms red with the VALUE voice", async () => {
+    const graph = await composeH3({ length: 56, calls: [SHOT()] }, "h3_knob_arm24");
+    assertValueAtConsumer(graph, "MiniMaxH3ReferenceToVideo", "width", 1344, "default width");
+    assertValueAtConsumer(graph, "MiniMaxH3ReferenceToVideo", "height", 768, "default height");
+    assert.throws(
+      () => assertValueAtConsumer(graph, "MiniMaxH3ReferenceToVideo", "width", 512, "width"),
+      /WIDTH VALUE ARM/,
+      "the arm PASSED on a dropped width — it is a presence arm, not a value arm; fix the arm, not the code",
+    );
+    assert.throws(
+      () => assertValueAtConsumer(graph, "MiniMaxH3ReferenceToVideo", "height", 480, "height"),
+      /HEIGHT VALUE ARM/,
+      "the arm PASSED on a dropped height — it is a presence arm, not a value arm; fix the arm, not the code",
+    );
+  });
+
+  it("ARM 25 (liveness, SLA) — sla_sparsity dropped composes the declared 0.9 at the kernel, and the stated arm reds with the VALUE voice", async () => {
+    const graph = await composeH3({ length: 56, calls: [SHOT()] }, "h3_knob_arm25");
+    assertValueAtConsumer(graph, "H3SLAAttention", "sparsity_ratio", 0.9, "default sla_sparsity");
+    assert.throws(
+      () => assertValueAtConsumer(graph, "H3SLAAttention", "sparsity_ratio", 0.85, "sla_sparsity"),
+      /SLA_SPARSITY VALUE ARM/,
+      "the arm PASSED on a dropped sla_sparsity — it is a presence arm, not a value arm; fix the arm, not the code",
+    );
+  });
+
+  it("ARM 26 (liveness, interp+sr) — interp_multiplier and sr_resolution dropped compose their declared defaults at the FILM/SeedVR2 pair, and the stated arms red", async () => {
+    const graph = await composeH3({
+      length: 56, second_pass_enabled: true, interpolate_enabled: true, sr_switch: true,
+      calls: [SHOT()],
+    }, "h3_knob_arm26");
+    assertValueAtConsumer(graph, "FrameInterpolate", "multiplier", 2, "default interp_multiplier");
+    assertValueAtConsumer(graph, "SeedVR2VideoUpscaler", "resolution", 1080, "default sr_resolution");
+    assert.throws(
+      () => assertValueAtConsumer(graph, "FrameInterpolate", "multiplier", 4, "interp_multiplier"),
+      /INTERP_MULTIPLIER VALUE ARM/,
+      "the arm PASSED on a dropped interp_multiplier — it is a presence arm, not a value arm; fix the arm, not the code",
+    );
+    assert.throws(
+      () => assertValueAtConsumer(graph, "SeedVR2VideoUpscaler", "resolution", 1440, "sr_resolution"),
+      /SR_RESOLUTION VALUE ARM/,
+      "the arm PASSED on a dropped sr_resolution — it is a presence arm, not a value arm; fix the arm, not the code",
+    );
+  });
+
+  it("ARM 27 (liveness, sharpen) — sharpen_strength dropped composes the node's own rcas 0.3 in the grouped dict, and the stated arm reds with the VALUE voice", async () => {
+    const graph = await composeH3({
+      length: 56, second_pass_enabled: true, sharpen_enabled: true,
+      calls: [SHOT()],
+    }, "h3_knob_arm27");
+    sharpenStrengthArm(graph, 0.3);
+    assert.throws(
+      () => sharpenStrengthArm(graph, 0.55),
+      /SHARPEN VALUE ARM/,
+      "the arm PASSED on a dropped sharpen_strength — it is a presence arm, not a value arm; fix the arm, not the code",
+    );
+  });
+
+  it("ARM 28 (liveness, refmod) — the dials dropped compose the declared defaults at the bake head, and the stated arms red with the VALUE voice", async () => {
+    const graph = await composeH3({
+      length: 56, ref_mods: ["data/input/pack.png"],
+      calls: [SHOT()],
+    }, "h3_knob_arm28");
+    assertValueAtConsumer(graph, "MiniMaxH3RefModExtract", "pool_h", 16, "default refmod_pool (h)");
+    assertValueAtConsumer(graph, "MiniMaxH3RefModExtract", "pool_w", 16, "default refmod_pool (w)");
+    assertValueAtConsumer(graph, "MiniMaxH3RefModExtract", "identity", 500, "default refmod_identity");
+    assert.throws(
+      () => assertValueAtConsumer(graph, "MiniMaxH3RefModExtract", "pool_h", 24, "refmod_pool"),
+      /REFMOD_POOL VALUE ARM/,
+      "the arm PASSED on a dropped refmod_pool — it is a presence arm, not a value arm; fix the arm, not the code",
+    );
+    assert.throws(
+      () => assertValueAtConsumer(graph, "MiniMaxH3RefModExtract", "identity", 700, "refmod_identity"),
+      /REFMOD_IDENTITY VALUE ARM/,
+      "the arm PASSED on a dropped refmod_identity — it is a presence arm, not a value arm; fix the arm, not the code",
+    );
+  });
+
+  it("ARM 29 (liveness, sigma) — shift_video dropped composes the declared 8 at the sigma shift, and the stated arm reds with the VALUE voice (the receipt's toggle-A twin, in-spec)", async () => {
+    const graph = await composeH3({ length: 56, calls: [SHOT()] }, "h3_knob_arm29");
+    assertValueAtConsumer(graph, "MiniMaxH3SigmaShift", "shift_video", 8, "default shift_video");
+    assert.throws(
+      () => assertValueAtConsumer(graph, "MiniMaxH3SigmaShift", "shift_video", 11.5, "shift_video"),
+      /SHIFT_VIDEO VALUE ARM/,
+      "the arm PASSED on a dropped shift_video — it is a presence arm, not a value arm; fix the arm, not the code",
+    );
+  });
+
+  it("ARM 30 (liveness, refine) — refine_strength dropped composes the catalog row's 0.7 on the rider stack, and the stated arm reds with the VALUE voice", async () => {
+    const graph = await composeH3({
+      length: 56, second_pass_enabled: true, refine_lora: "h3_taomate_3step",
+      calls: [SHOT()],
+    }, "h3_knob_arm30");
+    riderStrengthArm(graph, 0.7);
+    assert.throws(
+      () => riderStrengthArm(graph, 0.9),
+      /REFINE VALUE ARM/,
+      "the arm PASSED on a dropped refine_strength — it is a presence arm, not a value arm; fix the arm, not the code",
+    );
+  });
+
+  // ── THE MIS-NARRATED SEAT: sla_switch LIVES on the t4r arm. The
+  // attention pick reads it verbatim (actions.ts: the injected scalar
+  // replaces the bool node); the census cell that anchored it to the
+  // retirement arm narrated a retirement that never happened. ──
+
+  it("ARM 31 — a stated sla_switch rides the t4r attention pick verbatim (both poles), the branches stay SLA-direct vs chunked by edge, and the unstated doc rides the PrimitiveBoolean-false default node", async () => {
+    // STATED TRUE: the pick carries the user's word as a literal...
+    const on = await composeH3({
+      length: 56, image: "data/input/anchor.png", sla_switch: true,
+      calls: [SHOT()],
+    }, "h3_knob_arm31_on");
+    const pickOn = slaPick(on);
+    assert.equal(pickOn.sel, true, "the stated sla_switch=true never reached the t4r attention pick (hop [5])");
+    assert.equal(pickOn.onTrue, "MiniMaxChunkFeedForward", "the pick's on_true branch must stay the chunked chain");
+    assert.equal(pickOn.onFalse, "H3SLAAttention", "the pick's on_false branch must stay the SLA kernel");
+    // ...and FALSE is equally the user's word (the pole that proves
+    // the seat is a read, not a constant true).
+    const off = await composeH3({
+      length: 56, image: "data/input/anchor.png", sla_switch: false,
+      calls: [SHOT()],
+    }, "h3_knob_arm31_off");
+    assert.equal(slaPick(off).sel, false, "the stated sla_switch=false never reached the t4r attention pick (hop [5])");
+    // CONTROL — UNSTATED rides the default-carrying node (the pick's
+    // link into PrimitiveBoolean false). A presence arm passes here
+    // (the node still composes); the VALUE arms above are the law.
+    const unset = await composeH3({
+      length: 56, image: "data/input/anchor.png",
+      calls: [SHOT()],
+    }, "h3_knob_arm31_unset");
+    const pickUnset = slaPick(unset);
+    assert.ok(Array.isArray(pickUnset.sel) && typeof pickUnset.sel[0] === "string",
+      `the unstated doc's attention pick must ride the bool NODE (saw ${JSON.stringify(pickUnset.sel)})`);
+    const boolNode = graph0(unset, pickUnset.sel[0] as string);
+    assert.equal(boolNode.class_type, "PrimitiveBoolean", "the unstated pick's default node left the PrimitiveBoolean false seat");
+    assert.equal(boolNode.inputs.value, false, "the unstated pick's default node must carry false (the t4r template's SLA-on default)");
+  });
+
+  it("ARM 32 — a stated sharpen_switch (the second retired alias) never rides the sharpen switch (the sharpen_enabled primary owns it)", async () => {
+    // ARM 23 exercised interp_switch only; the sharpen alias gets its
+    // own firing arm (same retirement law, own seat — the toggle that
+    // wires the alias in reds THIS arm, not ARM 23).
+    const graph = await composeH3({
+      length: 56,
+      second_pass_enabled: true, sharpen_switch: true,
+      calls: [SHOT()],
+    }, "h3_knob_arm32");
+    assert.equal(switchCarrying(graph, "ImageSharpenKJ").switch, false,
+      "the stated legacy sharpen_switch flipped the sharpen switch — the alias rode behind the primary's back");
+  });
+
+  // ── THE INTERNAL ROWS (the per-window trio's stand-downs, named):
+  // fps_seconds is the render seat's DERIVATION — a stated pin is
+  // clobbered before any node reads it (the no-stale law), and the
+  // arm makes that ownership fire. ──
+
+  it("ARM 33 — a stated fps_seconds never survives to the clock nodes: the t4r window's clock set stays the DERIVED seconds + the doc fps (the no-stale ownership, firing)", async () => {
+    // 31 is in the declared row's [1,60] and is NOT the derived value
+    // (56/16 = 3.5) — if a future edit lets the stated pin ride, the
+    // clock set grows 31 and this arm reds.
+    const graph = await composeH3({
+      length: 56, fps: 16, fps_seconds: 31, image: "data/input/anchor.png",
+      calls: [SHOT()],
+    }, "h3_knob_arm33");
+    const clockValues = Object.entries(graph)
+      .filter(([, n]) => n.class_type === "PrimitiveFloat")
+      .map(([, n]) => n.inputs.value).sort((a, b) => Number(a) - Number(b));
+    assert.deepEqual(
+      clockValues,
+      [Math.round((56 / 16) * 1000) / 1000, 16],
+      `the stated fps_seconds leaked to the clock set (saw ${JSON.stringify(clockValues)}) — the internal row grew a stated owner behind the render seat's derivation`,
+    );
+  });
+
+  it("ARM 34 — the per-window noise_seed row: the film-level word fills BOTH windows' RandomNoise, and the call's own knob REPLACES it per window (window1_ / window2_)", async () => {
+    const graph = await composeH3({
+      length: 124, noise_seed: 909,
+      calls: [SHOT(), SHOT({ text: "then a turn", start_frame: 56, end_frame: 124, knobs: { noise_seed: 555 } })],
+    }, "h3_knob_arm34");
+    assertValueAtConsumer(graph, "RandomNoise", "noise_seed", 909, "film-level noise_seed", "window1_");
+    assertValueAtConsumer(graph, "RandomNoise", "noise_seed", 555, "call-level noise_seed", "window2_");
+  });
+});
+
+/** Fetch one node by id with the assert voice (the CONTROL arms'
+ *  edge reader). */
+function graph0(graph: Graph, id: string): GNode {
+  const n = graph[id];
+  assert.ok(n, `the graph carries no node '${id}' — the edge named a ghost`);
+  return n;
+}

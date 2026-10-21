@@ -275,6 +275,26 @@ export const DECL: ModelDecl = {
   // from this data at the gesture and at the render, one hop before
   // the door.
   "familyLaw": FAMILY_LAW,
+  // THE KNOB→SEAT MAP (2026-11-09, the 55-knob block's close-out over
+  // the round-48 sampler five): every row below either rides a graph
+  // consumer VERBATIM or is named as unstatable here — silent unmapped
+  // is the one shape this surface forbids. Wall:
+  // tests/value-roundtrip.spec.ts (registry row
+  // models-h3-sampler-value-law). Sampler → RandomNoise/KSamplerSelect/
+  // BasicScheduler (ARMs 1-3). Latent shape → ReferenceToVideo
+  // width/height/length/ref_image_size (13). Shifts → SigmaShift (14).
+  // sla_* → H3SLAAttention, sla_enabled owns the attention switch (15);
+  // sla_switch is NOT retired — the t4r arm reads it at the pick (31).
+  // attention_backend → ModelAttentionBackend (16). interp/sr → the
+  // FILM + SeedVR2 pairs behind the second-pass master (17);
+  // sharpen_* → the ImageSharpenKJ grouped dict (18). refine_* → the
+  // rider loader/scheduler (4/4b/7). Media/refmod/duck/image_name →
+  // 19/20/22. k → the window save name (21); noise_seed → RandomNoise
+  // per stanza (2/34). STAND-DOWNS, named: fps_seconds is INTERNAL —
+  // derived from the window length at the render seat (the no-stale
+  // law; a stated pin never reaches a node, ARM 33); interp_switch and
+  // sharpen_switch are retired aliases — the primaries own their
+  // switches (23/32).
   "params": [
     "image", "last_frame",
     "ref_images", "ref_videos", "ref_video_trims", "ref_audios", "ref_mods",
