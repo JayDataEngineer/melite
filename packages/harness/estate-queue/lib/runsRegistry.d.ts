@@ -25,6 +25,17 @@ export interface LaneInputMissingDetails extends RunsRefusalDetails {
     readonly missing: string;
     readonly folders: readonly string[];
     readonly fetch_url?: string;
+    /** THE ONE-FACE LIST (the reveal cure, 2026-11-09): every missing
+     *  declared weight the gate found, lead row = the slot/missing pair
+     *  above. The popup's download list keys on these rows — one face
+     *  per press. Absent on the runtime leg and the in-flight arm. */
+    readonly missing_all?: ReadonlyArray<{
+        readonly slot: string;
+        readonly name: string;
+        readonly folders: readonly string[];
+        readonly size_bytes?: number;
+        readonly fetch_url?: string;
+    }>;
     /** "runtime" rides the tool-runtime leg (E2-2 Piece A) — the
      *  popup's runtime banner keys on the parsed prose, never on
      *  this row (there is no fetch_url for a provision command). */
@@ -76,6 +87,15 @@ declare module "@deepseek-ai/dsh-typert-protocol" {
         /** Stop on an id this process owns no row for. */
         "runs/run-unknown": {
             readonly runId: string;
+        };
+        /** Stop on a plainly settled row (the stuck-run cure,
+         *  2026-11-09): the loud refusal that replaced the silent
+         *  `{error}` payload — the details name the run and its true
+         *  state. Direct-throw family (the runs/unknown-run precedent):
+         *  thrown at the door, never an {error} envelope row. */
+        "runs/already-settled": {
+            readonly runId: string;
+            readonly status: string;
         };
     }
 }
@@ -264,6 +284,21 @@ export declare class RunsRuntimeService extends Service {
     stop(runId: string, signal: AbortSignal): Promise<Record<string, unknown>>;
     /** The live map (the queue seat's core registry — rich rows). */
     private liveRun;
+    /** THE SETTLED-TRUTH RESYNC (the stuck-run cure, 2026-11-09): a
+     *  live row may never claim queued/running/stopping past the run
+     *  tree's settled verdict. The queue settles memory-first
+     *  (runsExecute → settle → _flow.json + ledger); a row the poller
+     *  still sees "running" while the settle's own write says terminal
+     *  is the zombie the operator pressed Stop against. One judge, both
+     *  doors: adopt the disk verdict + error into the map row,
+     *  re-announce the change (the tab's poller re-fires on truth, not
+     *  on the stale claim), report whether the claim was stale. The
+     *  rich stage/artifact rows stay the disk serve's job (the status
+     *  door answers from the durable row, the same shape its two disk
+     *  arms already serve). A live row with no disk row yet
+     *  (pre-first-persist) or an agreeing disk row is untouched — the
+     *  resync rides DIVERGENCE only, never a live run's claim. */
+    private resyncSettledTruth;
     /** The durable record under the run tree (F-5's fallback read):
      *  the on-disk _flow.json for a run — the SAME file the maker
      *  verified byte-by-byte while status answered husks. The

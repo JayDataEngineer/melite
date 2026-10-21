@@ -21,12 +21,14 @@
 // the throw; the WIRE value (runs/card-compose) is what the client
 // compares. Both live in this table's one row.
 //
-// THE DIRECT-THROW EXEMPTION (wire-chain F2/F3, 2026-10-20): three
-// wire codes never ride the envelope and are NOT tabled here, by
-// design — `runs/unknown-run` and `runs/run-unknown` are thrown
+// THE DIRECT-THROW EXEMPTION (wire-chain F2/F3, 2026-10-20): the
+// wire codes that never ride the envelope and are NOT tabled here,
+// by design — `runs/unknown-run` and `runs/run-unknown` are thrown
 // direct with the wire spelling at their own sites (status/stop
 // misses; their details rows live in the RemoteErrorDetailsMap at
-// runsRegistry.ts, not in this envelope table), and `bad_json` is
+// runsRegistry.ts, not in this envelope table), `runs/already-settled`
+// joins them the same way (the stuck-run cure, 2026-11-09: the stop
+// door's loud refusal on a plainly settled row), and `bad_json` is
 // the strict-wire gate's 400 payload (runsGates.ts; its door path
 // has zero production consumers — its deletion call sits with the
 // dead-exports census row, not here). A new code must still take

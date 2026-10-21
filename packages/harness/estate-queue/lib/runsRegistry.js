@@ -1886,6 +1886,18 @@ export class RunsRuntimeService extends Service {
             }
             return withStageReports({ ...enrichDiskRow(disk.row), from_disk: true, queue_position: 0, served_from: disk.root }, sidecarReaderFor(disk.dir));
         }
+        // THE SETTLED-TRUTH DOOR (the stuck-run cure, 2026-11-09): the
+        // polled row derives from the durable truth. A live row still
+        // claiming queued/running/stopping over a settled run tree
+        // resyncs here — the answer is the disk-enriched serve (the same
+        // shape the fallback arms above return, marked from_disk), and
+        // the map row now reads the settled verdict.
+        if (this.resyncSettledTruth(run)) {
+            const disk = this.diskRunRow(runId);
+            if (disk !== undefined) {
+                return withStageReports({ ...enrichDiskRow(disk.row), from_disk: true, queue_position: this.core.queuePosition(run.runId), served_from: disk.root }, sidecarReaderFor(disk.dir));
+            }
+        }
         const payload = {
             run_id: run.runId,
             status: run.status,
@@ -2030,8 +2042,22 @@ export class RunsRuntimeService extends Service {
             throw new RemoteError("runs/run-unknown", "unknown run_id " + JSON.stringify(runId) + " " +
                 searchedVoice(this.ctx.queue.stateRoots), { runId });
         }
+        // THE SETTLED-TRUTH STOP (the stuck-run cure, 2026-11-09): the
+        // press first judges the claim against the durable row. A zombie
+        // (live claim over a settled run tree) RESOLVES here: the verdict
+        // names the row's true state and clears the stale claim — the
+        // operator's press does something honest, never a stop lie.
+        if (this.resyncSettledTruth(run)) {
+            return { run_id: runId, status: run.status, already_settled: true };
+        }
         if (run.status !== "queued" && run.status !== "running" && run.status !== "stopping") {
-            return { error: "cannot stop run in state " + run.status };
+            // THE LOUD REFUSAL (the silent-payload cure, 2026-11-09): the
+            // old `{ error: "cannot stop run in state …" }` payload resolved
+            // as success at every unwrapping client and nothing voiced —
+            // the exact no-op press the burn named. A plainly settled row
+            // refuses with its own wire code, naming the true state.
+            throw new RemoteError("runs/already-settled", "run " + JSON.stringify(runId) + " is already settled (status " + run.status +
+                ") — nothing to stop", { runId, status: run.status });
         }
         // THE STOPPING STAMP (stroke 83 — the state existed in the
         // union but nothing ever set it): a stop press on a LIVE run
@@ -2061,6 +2087,42 @@ export class RunsRuntimeService extends Service {
     /** The live map (the queue seat's core registry — rich rows). */
     liveRun(runId) {
         return this.core.runs.get(runId);
+    }
+    /** THE SETTLED-TRUTH RESYNC (the stuck-run cure, 2026-11-09): a
+     *  live row may never claim queued/running/stopping past the run
+     *  tree's settled verdict. The queue settles memory-first
+     *  (runsExecute → settle → _flow.json + ledger); a row the poller
+     *  still sees "running" while the settle's own write says terminal
+     *  is the zombie the operator pressed Stop against. One judge, both
+     *  doors: adopt the disk verdict + error into the map row,
+     *  re-announce the change (the tab's poller re-fires on truth, not
+     *  on the stale claim), report whether the claim was stale. The
+     *  rich stage/artifact rows stay the disk serve's job (the status
+     *  door answers from the durable row, the same shape its two disk
+     *  arms already serve). A live row with no disk row yet
+     *  (pre-first-persist) or an agreeing disk row is untouched — the
+     *  resync rides DIVERGENCE only, never a live run's claim. */
+    resyncSettledTruth(run) {
+        if (run.status !== "queued" && run.status !== "running" && run.status !== "stopping") {
+            return false;
+        }
+        const disk = this.diskRunRow(run.runId);
+        if (disk === undefined)
+            return false;
+        const diskStatus = disk.row["status"];
+        if (diskStatus === run.status)
+            return false;
+        // THE SETTLED TRIPLE only: a disk row claiming a live word is a
+        // foreign/partial write — the durable boundary never adopts it
+        // (the same law diskRunRow's vocabulary guard serves).
+        if (diskStatus !== "completed" && diskStatus !== "failed" && diskStatus !== "stopped") {
+            return false;
+        }
+        run.status = diskStatus;
+        if (typeof disk.row["error"] === "string")
+            run.error = disk.row["error"];
+        notifyRunChanged(run.runId);
+        return true;
     }
     /** The durable record under the run tree (F-5's fallback read):
      *  the on-disk _flow.json for a run — the SAME file the maker

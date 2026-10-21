@@ -387,8 +387,18 @@ test("status/stop on unknown ids refuse with their codes; a stop receipt answers
     await new Promise((r) => setTimeout(r, 20));
   }
   assert.equal(final["status"], "failed", "settled without an engine");
-  const after = await runs.stop(receipt.run_id, sig);
-  assert.deepEqual(after, { error: "cannot stop run in state failed" });
+  // THE LOUD REFUSAL (cards-run-row-truth, the stuck-run cure): the
+  // old `{error: "cannot stop run in state failed"}` payload resolved
+  // as success at every unwrapping client — a settled run refuses
+  // with its own wire code, naming the true state.
+  try {
+    await runs.stop(receipt.run_id, sig);
+    assert.fail("expected the settled-run refusal");
+  } catch (e) {
+    const re = e as { code?: string; message?: string };
+    assert.equal(re["code"], "runs/already-settled");
+    assert.match(String(re["message"]), /failed/);
+  }
   await fiber.dispose();
 });
 
@@ -434,15 +444,24 @@ test("the tools' runs lane grammar rides the seat end-to-end (the un-kill)", asy
     15000,
   )) as Record<string, unknown>;
   assert.ok("log_tail" in withLog, "include_log surfaces log_tail");
-  // 4. stop through the lane on a terminal run → the door's message.
-  const stop = (await request(
-    "POST",
-    `/v1/flows/stop/${receipt.run_id}`,
-    undefined,
-    sig,
-    15000,
-  )) as Record<string, unknown>;
-  assert.deepEqual(stop, { error: "cannot stop run in state failed" });
+  // 4. stop through the lane on a terminal run → the LOUD refusal
+  //    (cards-run-row-truth): the lane's RemoteError names the wire
+  //    code and the true state (the old `{error: …}` payload resolved
+  //    as success at every unwrapping client).
+  try {
+    await request(
+      "POST",
+      `/v1/flows/stop/${receipt.run_id}`,
+      undefined,
+      sig,
+      15000,
+    );
+    assert.fail("expected the settled-run refusal");
+  } catch (e) {
+    const re = e as { code?: string; message?: string };
+    assert.equal(re["code"], "runs/already-settled");
+    assert.match(String(re["message"]), /failed/);
+  }
   // 5. QUEUE LANE LAW: a ctx WITHOUT the seat still refuses LOUD
   //    (no fallback absorbs the lane).
   const { Context: BareCtx } = await import(
@@ -1053,10 +1072,19 @@ test("the remote adapter speaks every registry arm (start/status/list/stop/valid
   const env = await adapter.remoteExportList("10", sig);
   assert.equal(env.count, 0);
   assert.equal(env.runs.length, 0);
-  // stop: resolves (coverage of the arm) with the door's terminal
-  // refusal — the run already settled FAILED, never "stopping".
-  const stopped = await adapter.remoteExportStop(receipt.run_id, sig);
-  assert.deepEqual(stopped, { error: "cannot stop run in state failed" });
+  // stop: refuses LOUD (coverage of the arm, cards-run-row-truth) —
+  // the run already settled FAILED; the adapter's RemoteError names
+  // the wire code and the true state, never "stopping", never a
+  // resolved `{error}` payload.
+  await assert.rejects(
+    adapter.remoteExportStop(receipt.run_id, sig),
+    (e: unknown): boolean => {
+      const re = e as { code?: string; message?: string };
+      assert.equal(re["code"], "runs/already-settled");
+      assert.match(String(re["message"]), /failed/);
+      return true;
+    },
+  );
   // validate: the happy compile (200 row), adapter-verbatim.
   const ok = (await adapter.remoteExportValidate(
     {

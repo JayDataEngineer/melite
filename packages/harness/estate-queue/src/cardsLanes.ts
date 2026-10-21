@@ -8,6 +8,7 @@ import type { DeclaredRuntime, ModelDecl } from "@melite/comfyui-card-kit/model-
 import { engineOutputDir, engineRootOf, resolveRuntimeHome, runtimeEnvView, sentinelHit } from "./runtimeProvision.ts";
 import { hashPhaseWordOf, laneVoice } from "./cardsLanesCopy.ts";
 import { CardArmError } from "./cardsArmError.ts";
+import type { LaneMissRow } from "./cardsArmError.ts";
 
 // ── THE LANE PRESENCE GATE (2026-09-13, the one-pattern law) ───────
 // The operator's alarm: "If Img Gen works and Img Edit doesn't,
@@ -112,11 +113,19 @@ function homeProbes(home: string, name: string): Array<[string, string]> {
   return probes;
 }
 
-function firstLaneMiss(
+/** THE MISS COLLECTION (the sequential-missing-weight-reveal cure,
+ *  2026-11-09): the SAME walk firstLaneMiss always rode, collecting
+ *  EVERY missing declared weight instead of returning at the first —
+ *  the stock-map loop, then the declared-home loop, deduped by
+ *  slot+name (a key declared in both shapes is one miss, judged
+ *  once). One face per press: the operator learns of every missing
+ *  weight in the refusal that names the first, never one wedged run
+ *  later. */
+function laneMisses(
   decl: Pick<ModelDecl, "lane_inputs" | "provisions" | "lane_homes">,
   check: LaneCheck,
   variantRow?: { lane_inputs?: Record<string, unknown> },
-): LaneMiss | null {
+): LaneMiss[] {
   // THE VARIANT-LANE PRESENCE LAW (h¹ remainder — the one-parameter
   // switch): the probe judges the RESOLVED lane inputs — the family's
   // rows under the STATED variant's per-key override (the same merge
@@ -127,6 +136,8 @@ function firstLaneMiss(
   const li = { ...(decl.lane_inputs ?? {}), ...(variantRow?.lane_inputs ?? {}) } as Record<string, unknown>;
   const homes = (decl.lane_homes ?? {}) as Record<string, string>;
   const packs = lanePackFolders();
+  const misses: LaneMiss[] = [];
+  const seen = new Set<string>();
   for (const [key, stock] of Object.entries(LANE_FOLDERS)) {
     const raw: unknown = li[key];
     const name: string = typeof raw === "string" ? raw.trim() : "";
@@ -143,7 +154,11 @@ function firstLaneMiss(
     const prov = (decl.provisions ?? []).find((p) => p.name === name);
     if (prov !== undefined && !folders.includes(prov.folder)) folders.push(prov.folder);
     if (folders.some((folder) => check(folder, name) !== null)) continue;
-    return { key, name, folders };
+    const dedupe = key + " " + name;
+    if (!seen.has(dedupe)) {
+      seen.add(dedupe);
+      misses.push({ key, name, folders });
+    }
   }
   // THE DECLARED-HOME LOOP (the declaration-only cure, 2026-10-23):
   // model_path/texture_vae name files whose loader is pack-specific
@@ -163,9 +178,24 @@ function firstLaneMiss(
       probes.push([prov.folder, name]);
     }
     if (probes.some(([folder, probeName]) => check(folder, probeName) !== null)) continue;
-    return { key, name, folders: probes.map(([f, n]) => f + " × " + n) };
+    const dedupe = key + " " + name;
+    if (!seen.has(dedupe)) {
+      seen.add(dedupe);
+      misses.push({ key, name, folders: probes.map(([f, n]) => f + " × " + n) });
+    }
   }
-  return null;
+  return misses;
+}
+
+/** The first miss — the presence boolean's own leg (laneFilesStatus)
+ *  and the refusal's LEAD row. The whole list rides beside it
+ *  (laneMisses → the refusal's missingAll). */
+function firstLaneMiss(
+  decl: Pick<ModelDecl, "lane_inputs" | "provisions" | "lane_homes">,
+  check: LaneCheck,
+  variantRow?: { lane_inputs?: Record<string, unknown> },
+): LaneMiss | null {
+  return laneMisses(decl, check, variantRow)[0] ?? null;
 }
 
 export function laneFilesStatus(
@@ -329,9 +359,11 @@ function statedVariantRow(
 
 export function lanePresenceMiss(fam: string, body?: Record<string, unknown>, mid?: string): CardArmError | null {
   const decl = getModel(fam);
-  const miss = firstLaneMiss(decl, (folder, name) => checkModelPresent("models/" + folder, name), statedVariantRow(decl, body, mid));
+  const check = (folder: string, name: string): string | null => checkModelPresent("models/" + folder, name);
+  const variantRow = statedVariantRow(decl, body, mid);
+  const misses = laneMisses(decl, check, variantRow);
+  const miss = misses[0] ?? null;
   if (miss === null) return runtimeLegMiss(decl, fam, body);
-  const prov = (decl.provisions ?? []).find((p) => p.name === miss.name);
   // THE IN-FLIGHT LEG (ERRORS.md k2 — NEVER-RUN-ON-INCOMPLETE): a
   // miss whose file is landing RIGHT NOW is not the idle story. The
   // refusal voices the acquisition (the operation and its live
@@ -369,11 +401,35 @@ export function lanePresenceMiss(fam: string, body?: Record<string, unknown>, mi
       },
     );
   }
+  // THE ONE-FACE LIST (the sequential-missing-weight-reveal cure,
+  // 2026-11-09): the anchored lead sentence keeps the client's prose
+  // anchor byte-exact; the WHOLE miss list rides after it (prose)
+  // and inside the structured row (missingAll) — the operator learns
+  // of the vae in the refusal that names the text encoder, with the
+  // DECL's declared size per file, never one wedged run later.
+  const rows = misses.map((m: LaneMiss): LaneMissRow => {
+    const prov = (decl.provisions ?? []).find((p) => p.name === m.name);
+    return {
+      slot: m.key,
+      name: m.name,
+      folders: m.folders,
+      ...(prov?.size_bytes !== undefined ? { sizeBytes: prov.size_bytes } : {}),
+      ...(prov !== undefined ? { fetchUrl: prov.url } : {}),
+    };
+  });
+  const listVoice = misses.length > 1
+    ? "; the run declares " + String(misses.length) + " missing files — " +
+      misses.map((m: LaneMiss): string => {
+        const prov = (decl.provisions ?? []).find((p) => p.name === m.name);
+        return m.key + " '" + m.name + "'" + (prov !== undefined ? " — fetch it: " + prov.url : "");
+      }).join("; ")
+    : "";
   return new CardArmError(
     400,
     "lane presence: family '" + fam + "' declares " + miss.key + " '" + miss.name +
       "' but no store copy exists (folders checked: " + miss.folders.join(", ") + ")" +
-      (prov !== undefined ? " — fetch it: " + prov.url : ""),
+      (rows[0]?.fetchUrl !== undefined ? " — fetch it: " + rows[0].fetchUrl : "") +
+      listVoice,
     "lane_input_missing",
     undefined,
     undefined,
@@ -387,7 +443,8 @@ export function lanePresenceMiss(fam: string, body?: Record<string, unknown>, mi
       slot: miss.key,
       missing: miss.name,
       folders: miss.folders,
-      ...(prov !== undefined ? { fetchUrl: prov.url } : {}),
+      ...(rows[0]?.fetchUrl !== undefined ? { fetchUrl: rows[0].fetchUrl } : {}),
+      ...(rows.length > 1 ? { missingAll: rows } : {}),
       kind: "model",
     },
   );

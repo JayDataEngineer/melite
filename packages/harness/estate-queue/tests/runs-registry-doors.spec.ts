@@ -1687,16 +1687,26 @@ describe("status + stop", () => {
     assert.equal(arts[2], "note.png");
   });
 
-  it("stop flags live runs (no seat: the flag is the authority); terminal rows refuse", async () => {
+  it("stop flags live runs (no seat: the flag is the authority); terminal rows refuse LOUD (the stuck-run cure, 2026-11-09)", async () => {
     const s = seat();
     const id = live(s);
     const ans = await s.svc.stop(id, sig());
     assert.deepEqual(ans, { run_id: id, status: "stopping" });
     assert.equal((s.core.runs.get(id) as RunRecord).stopFlag, true);
     const done = live(s, { runId: "run-done", status: "completed" });
-    assert.deepEqual(await s.svc.stop(done, sig()), {
-      error: "cannot stop run in state completed",
-    });
+    // THE LOUD REFUSAL (cards-run-row-truth): the old
+    // `{error: "cannot stop run in state …"}` payload resolved as
+    // success at every unwrapping client — the no-op press the burn
+    // named. A settled row refuses with its own wire code.
+    await assert.rejects(
+      s.svc.stop(done, sig()),
+      (e: unknown): boolean => {
+        assert.ok(e instanceof RemoteError, "a RemoteError, not a payload");
+        assert.equal((e as RemoteError).code, "runs/already-settled");
+        assert.match((e as RemoteError).message, /completed/);
+        return true;
+      },
+    );
   });
 
   it("THE REPORT SIDECAR MOUNT (2026-10-17): a run dir's <stem>.report.json rides the status stage INLINE, contract-judged", async () => {
