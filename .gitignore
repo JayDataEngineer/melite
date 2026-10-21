@@ -89,10 +89,6 @@ Thumbs.db
 *.tar.gz
 *.zip
 *.7z
-references/autoremesher/
-references/comfy-mcp/
-references/deepseek-harness/
-references/timeline-director/
 
 # === Web build artifacts ===
 # Prebundled three.js (~10 MB) — `npm install three` regenerates it
