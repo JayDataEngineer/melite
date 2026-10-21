@@ -150,12 +150,6 @@
       "LanPaint_NumSteps": 5,
       "LanPaint_Lambda": 0.5,
       "LanPaint_StepSize": 1,
-      "LanPaint_Beta": 1,
-      "LanPaint_Friction": 15,
-      "LanPaint_EarlyStop": 1,
-      "LanPaint_InnerThreshold": 0,
-      "LanPaint_InnerPatience": 1,
-      "LanPaint_MinStepFrac": 1,
       "LanPaint_PromptMode": "Prompt First",
       "LanPaint_Info": "LanPaint KSampler Adv.",
       "Inpainting_mode": "🖼️ Image Inpainting"

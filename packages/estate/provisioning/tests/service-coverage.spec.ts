@@ -741,7 +741,7 @@ describe("ProvisioningService public seams", () => {
     const extensionService = makeService(basicConfig(plan(extensionRef("minimal"), [minimalExtension]), {
       inspector: inspector({ active: true }),
     })).service;
-    assert.equal((await extensionService.plan(extensionRef("minimal"))).items[0]?.url, undefined);
+    assert.equal(((await extensionService.plan(extensionRef("minimal"))).items[0] as Extract<ProvisionPlanItem, { kind: "extension" }>)?.url, undefined);
     assert.equal((await extensionService.ensure(extensionRef("minimal"))).state, "active");
     assert.equal(extensionService.operationOf(extensionRef("minimal"))?.detail, undefined);
     const unavailable = makeService(basicConfig(plan(extensionRef("minimal"), [minimalExtension]), {

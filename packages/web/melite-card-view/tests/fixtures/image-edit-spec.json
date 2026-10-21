@@ -85,17 +85,17 @@
   "loader_info": null,
   "mod_schemas": {
     "loras": {
-      "uid": 3570,
+      "uid": 3573,
       "refs": {
-        "3558": {
+        "3561": {
           "type": "string",
           "meta": {}
         },
-        "3559": {
+        "3562": {
           "type": "number",
           "meta": {}
         },
-        "3565": {
+        "3568": {
           "type": "number",
           "meta": {
             "min": 1,
@@ -111,18 +111,18 @@
             }
           }
         },
-        "3566": {
+        "3569": {
           "type": "object",
           "meta": {
             "default": {}
           },
           "dict": {
-            "name": 3558,
-            "strength": 3559,
-            "steps": 3565
+            "name": 3561,
+            "strength": 3562,
+            "steps": 3568
           }
         },
-        "3569": {
+        "3572": {
           "type": "array",
           "meta": {
             "default": [],
@@ -135,23 +135,23 @@
               "order": 0
             }
           },
-          "inner": 3566
+          "inner": 3569
         },
-        "3570": {
+        "3573": {
           "type": "object",
           "meta": {
             "default": {}
           },
           "dict": {
-            "loras": 3569
+            "loras": 3572
           }
         }
       }
     },
     "mask": {
-      "uid": 3798,
+      "uid": 3801,
       "refs": {
-        "3732": {
+        "3735": {
           "type": "any",
           "meta": {
             "description": "Region Mask",
@@ -164,7 +164,7 @@
             }
           }
         },
-        "3736": {
+        "3739": {
           "type": "string",
           "meta": {
             "role": "path",
@@ -180,22 +180,22 @@
             "description": "Region Mask"
           }
         },
-        "3737": {
+        "3740": {
           "type": "const",
           "meta": {},
           "value": "auto"
         },
-        "3738": {
+        "3741": {
           "type": "const",
           "meta": {},
           "value": "crop_stitch"
         },
-        "3739": {
+        "3742": {
           "type": "const",
           "meta": {},
           "value": "full_frame"
         },
-        "3743": {
+        "3746": {
           "type": "union",
           "meta": {
             "default": "crop_stitch",
@@ -220,32 +220,32 @@
             }
           },
           "list": [
-            3737,
-            3738,
-            3739
+            3740,
+            3741,
+            3742
           ]
-        },
-        "3744": {
-          "type": "const",
-          "meta": {},
-          "value": "off"
-        },
-        "3745": {
-          "type": "const",
-          "meta": {},
-          "value": "person"
-        },
-        "3746": {
-          "type": "const",
-          "meta": {},
-          "value": "face"
         },
         "3747": {
           "type": "const",
           "meta": {},
+          "value": "off"
+        },
+        "3748": {
+          "type": "const",
+          "meta": {},
+          "value": "person"
+        },
+        "3749": {
+          "type": "const",
+          "meta": {},
+          "value": "face"
+        },
+        "3750": {
+          "type": "const",
+          "meta": {},
           "value": "hand"
         },
-        "3751": {
+        "3754": {
           "type": "union",
           "meta": {
             "default": "off",
@@ -266,13 +266,13 @@
             }
           },
           "list": [
-            3744,
-            3745,
-            3746,
-            3747
+            3747,
+            3748,
+            3749,
+            3750
           ]
         },
-        "3758": {
+        "3761": {
           "type": "number",
           "meta": {
             "min": 0,
@@ -290,7 +290,7 @@
             }
           }
         },
-        "3765": {
+        "3768": {
           "type": "number",
           "meta": {
             "min": -32,
@@ -308,7 +308,7 @@
             }
           }
         },
-        "3772": {
+        "3775": {
           "type": "number",
           "meta": {
             "min": 0,
@@ -326,7 +326,7 @@
             }
           }
         },
-        "3779": {
+        "3782": {
           "type": "number",
           "meta": {
             "min": 0,
@@ -344,7 +344,7 @@
             }
           }
         },
-        "3783": {
+        "3786": {
           "type": "boolean",
           "meta": {
             "default": false,
@@ -359,7 +359,7 @@
             }
           }
         },
-        "3790": {
+        "3793": {
           "type": "number",
           "meta": {
             "min": 64,
@@ -377,7 +377,7 @@
             }
           }
         },
-        "3797": {
+        "3800": {
           "type": "number",
           "meta": {
             "min": 0.05,
@@ -395,23 +395,23 @@
             }
           }
         },
-        "3798": {
+        "3801": {
           "type": "object",
           "meta": {
             "default": {}
           },
           "dict": {
-            "mask": 3732,
-            "input_mask": 3736,
-            "mask_mode": 3743,
-            "mask_detector": 3751,
-            "mask_context_pad": 3758,
-            "mask_grow": 3765,
-            "mask_feather": 3772,
-            "mask_threshold": 3779,
-            "mask_invert": 3783,
-            "mask_detail_size": 3790,
-            "mask_denoise": 3797
+            "mask": 3735,
+            "input_mask": 3739,
+            "mask_mode": 3746,
+            "mask_detector": 3754,
+            "mask_context_pad": 3761,
+            "mask_grow": 3768,
+            "mask_feather": 3775,
+            "mask_threshold": 3782,
+            "mask_invert": 3786,
+            "mask_detail_size": 3793,
+            "mask_denoise": 3800
           }
         }
       }
@@ -439,7 +439,7 @@
     "default": "image"
   },
   "schema": {
-    "uid": 3446,
+    "uid": 3449,
     "refs": {
       "359": {
         "type": "const",
@@ -711,11 +711,11 @@
         "meta": {},
         "value": "simple"
       },
-      "3378": {
+      "3381": {
         "type": "string",
         "meta": {}
       },
-      "3382": {
+      "3385": {
         "type": "array",
         "meta": {
           "default": [],
@@ -731,9 +731,9 @@
             "tooltip": "Ordered input images — the FIRST is the image being edited; the rest are references the prompt can cite as <image2>, <image3>… in order. Capacity follows the boarded model; more than it admits refuses loudly."
           }
         },
-        "inner": 3378
+        "inner": 3381
       },
-      "3386": {
+      "3389": {
         "type": "string",
         "meta": {
           "role": "path",
@@ -743,7 +743,7 @@
           "description": "Input Image"
         }
       },
-      "3390": {
+      "3393": {
         "type": "string",
         "meta": {
           "role": "path",
@@ -753,7 +753,7 @@
           "description": "Image 2"
         }
       },
-      "3394": {
+      "3397": {
         "type": "string",
         "meta": {
           "role": "path",
@@ -763,11 +763,11 @@
           "description": "Image 3"
         }
       },
-      "3395": {
+      "3398": {
         "type": "string",
         "meta": {}
       },
-      "3398": {
+      "3401": {
         "type": "array",
         "meta": {
           "default": [],
@@ -776,9 +776,9 @@
             "hidden": true
           }
         },
-        "inner": 3395
+        "inner": 3398
       },
-      "3402": {
+      "3405": {
         "type": "string",
         "meta": {
           "role": "path",
@@ -788,7 +788,7 @@
           "description": "Region Mask"
         }
       },
-      "3405": {
+      "3408": {
         "type": "string",
         "meta": {
           "description": "Prompt",
@@ -803,7 +803,7 @@
           }
         }
       },
-      "3408": {
+      "3411": {
         "type": "string",
         "meta": {
           "description": "Negative Prompt",
@@ -816,7 +816,7 @@
           }
         }
       },
-      "3411": {
+      "3414": {
         "type": "number",
         "meta": {
           "description": "Width",
@@ -826,7 +826,7 @@
           }
         }
       },
-      "3414": {
+      "3417": {
         "type": "number",
         "meta": {
           "description": "Height",
@@ -836,7 +836,7 @@
           }
         }
       },
-      "3418": {
+      "3421": {
         "type": "boolean",
         "meta": {
           "description": "Match Input Resolution",
@@ -851,7 +851,7 @@
           }
         }
       },
-      "3423": {
+      "3426": {
         "type": "number",
         "meta": {
           "description": "Seed",
@@ -865,7 +865,7 @@
           }
         }
       },
-      "3429": {
+      "3432": {
         "type": "number",
         "meta": {
           "description": "Steps",
@@ -882,7 +882,7 @@
           }
         }
       },
-      "3435": {
+      "3438": {
         "type": "number",
         "meta": {
           "description": "Guidance Scale",
@@ -899,7 +899,7 @@
           }
         }
       },
-      "3437": {
+      "3440": {
         "type": "union",
         "meta": {
           "description": "Sampler",
@@ -960,7 +960,7 @@
           403
         ]
       },
-      "3439": {
+      "3442": {
         "type": "union",
         "meta": {
           "description": "Scheduler",
@@ -985,7 +985,7 @@
           413
         ]
       },
-      "3442": {
+      "3445": {
         "type": "boolean",
         "meta": {
           "description": "Use Stock Nodes",
@@ -998,7 +998,7 @@
           }
         }
       },
-      "3445": {
+      "3448": {
         "type": "boolean",
         "meta": {
           "description": "Double Reference",
@@ -1011,30 +1011,30 @@
           }
         }
       },
-      "3446": {
+      "3449": {
         "type": "object",
         "meta": {
           "default": {}
         },
         "dict": {
-          "input_images": 3382,
-          "image1": 3386,
-          "image2": 3390,
-          "image3": 3394,
-          "reference_images": 3398,
-          "input_mask": 3402,
-          "prompt": 3405,
-          "negative_prompt": 3408,
-          "width": 3411,
-          "height": 3414,
-          "match_input_resolution": 3418,
-          "seed": 3423,
-          "steps": 3429,
-          "cfg": 3435,
-          "sampler": 3437,
-          "scheduler": 3439,
-          "use_stock_nodes": 3442,
-          "double_reference": 3445
+          "input_images": 3385,
+          "image1": 3389,
+          "image2": 3393,
+          "image3": 3397,
+          "reference_images": 3401,
+          "input_mask": 3405,
+          "prompt": 3408,
+          "negative_prompt": 3411,
+          "width": 3414,
+          "height": 3417,
+          "match_input_resolution": 3421,
+          "seed": 3426,
+          "steps": 3432,
+          "cfg": 3438,
+          "sampler": 3440,
+          "scheduler": 3442,
+          "use_stock_nodes": 3445,
+          "double_reference": 3448
         }
       }
     }
@@ -1053,7 +1053,16 @@
       "route": "qwen-img-edit-21",
       "hint": "The 2.1 base checkpoint on the edit lane — 25 steps (the official template's own count), both download tiers below, the cache-wrapped edit compose. Requires provisioning: the 2.1 files are NOT on this box by default; without them the engine validation refuses LOUD (the honest face — the 2511 weights are what ship).",
       "engine": "comfyui",
-      "sampler_envelope": null,
+      "sampler_envelope": {
+        "steps": [
+          8,
+          30
+        ],
+        "cfg": [
+          1,
+          2
+        ]
+      },
       "quant": null,
       "vram_peak_gb": null,
       "owner": ""
@@ -1093,7 +1102,16 @@
       "route": "qwen-img-edit-21-turbo",
       "hint": "The distilled turbo weights on the edit lane — 8 steps instead of the base 25 (upstream: 'Turbo uses 8 steps'), both download tiers below, same cache-wrapped edit compose. Requires provisioning: the 2.1 turbo files are NOT on this box by default; without them the engine validation refuses LOUD (the honest face — the 2511 weights are what ship).",
       "engine": "comfyui",
-      "sampler_envelope": null,
+      "sampler_envelope": {
+        "steps": [
+          4,
+          8
+        ],
+        "cfg": [
+          1,
+          2
+        ]
+      },
       "quant": null,
       "vram_peak_gb": null,
       "owner": ""
@@ -1230,7 +1248,52 @@
         "max": 50
       }
     },
-    "variants": {}
+    "variants": {
+      "base": {
+        "bounds": {
+          "steps": {
+            "min": 8,
+            "max": 30
+          },
+          "cfg": {
+            "min": 1,
+            "max": 2
+          }
+        },
+        "sampler_envelope": {
+          "steps": [
+            8,
+            30
+          ],
+          "cfg": [
+            1,
+            2
+          ]
+        }
+      },
+      "turbo": {
+        "bounds": {
+          "steps": {
+            "min": 4,
+            "max": 8
+          },
+          "cfg": {
+            "min": 1,
+            "max": 2
+          }
+        },
+        "sampler_envelope": {
+          "steps": [
+            4,
+            8
+          ],
+          "cfg": [
+            1,
+            2
+          ]
+        }
+      }
+    }
   },
   "packs": [],
   "families": [

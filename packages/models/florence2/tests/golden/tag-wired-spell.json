@@ -2,7 +2,7 @@
   "DownloadAndLoadFlorence2Model.0": {
     "class_type": "DownloadAndLoadFlorence2Model",
     "inputs": {
-      "model": "FLUX.1-Florence2-large",
+      "model": "MiaoshouAI/Florence-2-large-PromptGen-v2.0",
       "precision": "fp16"
     }
   },

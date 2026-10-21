@@ -69,7 +69,7 @@ describe("the t2i action — byte-stability (the compatibility law)", () => {
     // stack; the family boards the pack, the action delegates.
     const fired = {
       ...PARAMS,
-      controlnets: [{ type: "depth", model: "z_image_depth.safetensors", artifact: "asset:1", strength: 1.0 }],
+      controlnets: [{ type: "depth", model: "z-image-fun-union-2.1/Z-Image-Turbo-Fun-Controlnet-Union-2.1-2602-8steps.safetensors", artifact: "asset:1", strength: 1.0 }],
     };
     const action = new GraphBuilder({});
     instantiateAction(t2i, fired, FACTS, action, "probe-cn");

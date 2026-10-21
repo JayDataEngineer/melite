@@ -31,10 +31,10 @@ test("a params patch that CHANGES the view invalidates the stage's done mark (th
   });
   const ans = await patchBench(drafts, "stale1", {
     stage: "a", params: { steps: 9 }, expect_rev: 0,
-  }) as Record<string, unknown>;
+  });
   // the answer NAMES the invalidation — the model reads why its
   // next run re-runs the stage instead of skipping it.
-  assert.equal(ans["stale"], true, "a changed patch answers stale: true");
+  assert.equal(ans.stale, true, "a changed patch answers stale: true");
   const row = (getBench(drafts, "stale1").stages as Array<Record<string, unknown>>)[0]!;
   assert.equal(row["runStatus"], undefined, "the done mark is gone — the skip law cannot fold it");
   // the artifact memory stands: the enrichment read keeps the last
@@ -54,8 +54,8 @@ test("an idempotent patch keeps the done mark — staleness judges the VIEW, not
   });
   const ans = await patchBench(drafts, "stale2", {
     stage: "a", params: { steps: 4 }, expect_rev: 0,
-  }) as Record<string, unknown>;
-  assert.equal(ans["stale"], undefined, "no change, no stale key");
+  });
+  assert.equal(ans.stale, undefined, "no change, no stale key");
   const row = (getBench(drafts, "stale2").stages as Array<Record<string, unknown>>)[0]!;
   assert.equal(row["runStatus"], "done", "the done mark stands — the view is unchanged");
 });

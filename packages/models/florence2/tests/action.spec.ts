@@ -33,7 +33,9 @@ const FACTS: ModelFacts = {
 
 const PARAMS = {
   input_image: "/m/i.png",
-  checkpoint: "FLUX.1-Florence2-large",
+  // The DECL's own default row (PromptGen-v2.0) — a spell the
+  // engine's model enum actually serves.
+  checkpoint: "MiaoshouAI/Florence-2-large-PromptGen-v2.0",
   caption_task: "more_detailed_caption",
 };
 
@@ -50,7 +52,7 @@ describe("the tag action — byte-stability (the compatibility law)", () => {
     const graph = compose(PARAMS, "probe");
     assertGraphGolden(golden("tag-vision-task"), graph, "the vision task");
     const loader = Object.values(graph).find((n) => n.class_type === "DownloadAndLoadFlorence2Model")!;
-    assert.equal(loader.inputs.model, "FLUX.1-Florence2-large", "the stamped checkpoint rides");
+    assert.equal(loader.inputs.model, "MiaoshouAI/Florence-2-large-PromptGen-v2.0", "the stamped checkpoint rides");
     assert.equal(loader.inputs.precision, "fp16", "the fixed precision rides");
     const run = Object.values(graph).find((n) => n.class_type === "Florence2Run")!;
     assert.equal(run.inputs.task, "more_detailed_caption", "the vision task rides");

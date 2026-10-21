@@ -102,6 +102,7 @@ const _melite_estate_drafts_bench_patch_result$schema = () => (_melite_estate_dr
   'stage': z.string().readonly(),
   'patched': z.array(z.string()).readonly(),
   'dropped': z.union([z.undefined(), z.array(z.string())]).readonly().optional().describe('THE FAMILY RESEAT\'S RECEIPT (the ERROR g/h cure, 2026-11-08): the family-dead keys the settlement dropped off the merged view (the flip\'s own strand — the arrival flipped the derived family under carried stamps). Empty/absent when nothing dropped. The drop rides the row so it SPEAKS — never a silent strip.'),
+  'stale': z.union([z.undefined(), z.literal(true)]).readonly().optional().describe('Present-and-true when the patch changed what the next run composes (the done mark cleared — the skip law cannot fold it). Absent when the patch was idempotent.'),
 }))
 let _melite_estate_drafts_bench_remove_stage_parameter_0$schema$value
 const _melite_estate_drafts_bench_remove_stage_parameter_0$schema = () => (_melite_estate_drafts_bench_remove_stage_parameter_0$schema$value ??= z.string())
@@ -547,7 +548,7 @@ const $remote = createTypertRemoteInfo({
         mode: 'strict',
         typeSymbol: '@melite/estate-drafts/types#BenchPatchRow',
         create: _melite_estate_drafts_bench_patch_result$schema,
-        jsonSchema: {"type":"object","properties":{"draft_id":{"type":"string"},"session":{"type":"string"},"rev":{"type":"number"},"stage":{"type":"string"},"patched":{"type":"array","items":{"type":"string"}},"dropped":{"type":"array","items":{"type":"string"},"description":"THE FAMILY RESEAT'S RECEIPT (the ERROR g/h cure, 2026-11-08): the family-dead keys the settlement dropped off the merged view (the flip's own strand — the arrival flipped the derived family under carried stamps). Empty/absent when nothing dropped. The drop rides the row so it SPEAKS — never a silent strip."}},"required":["draft_id","session","rev","stage","patched"],"additionalProperties":true},
+        jsonSchema: {"type":"object","properties":{"draft_id":{"type":"string"},"session":{"type":"string"},"rev":{"type":"number"},"stage":{"type":"string"},"patched":{"type":"array","items":{"type":"string"}},"dropped":{"type":"array","items":{"type":"string"},"description":"THE FAMILY RESEAT'S RECEIPT (the ERROR g/h cure, 2026-11-08): the family-dead keys the settlement dropped off the merged view (the flip's own strand — the arrival flipped the derived family under carried stamps). Empty/absent when nothing dropped. The drop rides the row so it SPEAKS — never a silent strip."},"stale":{"type":"boolean","const":true,"description":"Present-and-true when the patch changed what the next run composes (the done mark cleared — the skip law cannot fold it). Absent when the patch was idempotent."}},"required":["draft_id","session","rev","stage","patched"],"additionalProperties":true},
       },
       sourceLocation: {"file":"packages/estate/drafts/src/remote.ts","line":1514,"column":9},
     },
@@ -1118,7 +1119,7 @@ export const TYPERT = {
           },
           {
             "name": "BenchPatchRow",
-            "declaration": "export interface BenchPatchRow {\n    readonly draft_id: string;\n    readonly session: string;\n    readonly rev: number;\n    readonly stage: string;\n    readonly patched: readonly string[];\n    readonly dropped?: readonly string[];\n}"
+            "declaration": "export interface BenchPatchRow {\n    readonly draft_id: string;\n    readonly session: string;\n    readonly rev: number;\n    readonly stage: string;\n    readonly patched: readonly string[];\n    readonly dropped?: readonly string[];\n    readonly stale?: true;\n}"
           },
           {
             "name": "BenchReorderRow",

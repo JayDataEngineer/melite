@@ -24,7 +24,8 @@
       ],
       "file_format": "glb",
       "preserve_texture": true,
-      "decimate_ratio": 0
+      "decimate_ratio": 0,
+      "fps": 30
     }
   }
 }

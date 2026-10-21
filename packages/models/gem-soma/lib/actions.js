@@ -1,3 +1,7 @@
+// fps is LANE-INTERNAL (the node's own declared default 30 — the
+// card vocabulary has no fps param and the engine refuses the
+// prompt without the required input).
+const EXPORT_FPS = 30;
 /** The weightless door: the family declares no lane_inputs, so there
  * is nothing to parse and nothing that can drift.
  *  @param _raw the resolved lane_inputs (empty for this family)
@@ -34,6 +38,7 @@ export const rig = {
             file_format: p.file_format === "fbx" ? "fbx" : "glb",
             preserve_texture: p.preserve_texture === true,
             decimate_ratio: p.decimate_ratio,
+            fps: EXPORT_FPS,
         }).out();
     },
 };

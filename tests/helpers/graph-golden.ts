@@ -26,15 +26,16 @@
 import assert from 'node:assert/strict'
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
-import { assertWiringAgainst, deriveWiringDoc } from '../../packages/engines/comfyui-cordis/src/wiringWall.ts'
+import { deriveWiringDoc } from '../../packages/engines/comfyui-cordis/src/wiringWall.ts'
 import { ComposeRefusal } from '../../packages/engines/comfyui-card-kit/src/errors.ts'
+import { assertWiringProvisioned, type WiringCensus } from './provisioner-law.ts'
 import type { WiringInputSpec } from '../../packages/engines/comfyui-cordis/src/wiringWall.ts'
 
 /** The recorded engine build's wiring census, read once per process
  *  (the same tracked boot fixture the liveness wall's key judge
  *  unions over). */
-let goldenWiring: { nodes: ReadonlySet<string>; inputs: ReadonlyMap<string, ReadonlyMap<string, WiringInputSpec>> } | null = null
-function wiringCensus(): { nodes: ReadonlySet<string>; inputs: ReadonlyMap<string, ReadonlyMap<string, WiringInputSpec>> } {
+let goldenWiring: WiringCensus | null = null
+function wiringCensus(): WiringCensus {
   if (goldenWiring === null) {
     goldenWiring = deriveWiringDoc(
       JSON.parse(readFileSync(join(import.meta.dirname, '..', 'walls', 'fixtures', 'object_info.boot.json'), 'utf8')) as Record<string, unknown>,
@@ -58,7 +59,11 @@ export function assertGraphGolden(path: string, graph: unknown, what: string): v
       `the golden ${path} names no models family — the golden driver's wiring gate derives the card from the family path`)
   }
   const census = wiringCensus()
-  assertWiringAgainst(census.nodes, census.inputs, family, graph)
+  // THE PROVISIONER LAW rides here too (one home, two runners): a
+  // DECL-declared filename the folder enum lacks is neutralized in
+  // the judgment copy — the golden bytes still pin the DECL spell,
+  // and every other node, edge, and value is still judged.
+  assertWiringProvisioned(census, family, graph)
   const serialized = `${JSON.stringify(graph, null, 2)}\n`
   if (process.env.DSH_SNAPSHOT === 'refresh') {
     mkdirSync(dirname(path), { recursive: true })

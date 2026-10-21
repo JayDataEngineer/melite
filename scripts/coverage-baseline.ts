@@ -371,6 +371,11 @@ export const COVERAGE_BASELINE: Record<string, {
   '**/packages/harness/melite-tools/src/index.ts': { statements: 88.37, branches: 97.43, functions: 94.44, lines: 90.78 },
   '**/packages/harness/melite-tools/src/json-clean.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/harness/melite-tools/src/llm-complete.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
+  // runsDelegation (3370c9b64, the delegation outlives the mount):
+  // measured 2026-10-21 — the three cond-expr fallback arms (the
+  // failed-write voices) ride the delegation suites; branch floor
+  // is the measured 82.35, ratchets up as arms land.
+  '**/packages/harness/melite-tools/src/runsDelegation.ts': { statements: 100, branches: 82.35, functions: 100, lines: 100 },
   '**/packages/harness/melite-tools/src/stageViewPlane.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/harness/melite-tools/src/tools/comfy-manage.ts': { statements: 99.57, branches: 98.11, functions: 100.00, lines: 99.40 },
   '**/packages/harness/melite-tools/src/tools/glbSummary.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
@@ -388,7 +393,8 @@ export const COVERAGE_BASELINE: Record<string, {
   '**/packages/harness/melite-tools/src/tools/melite-view.ts': { statements: 100, branches: 99.68, functions: 100, lines: 100 },
   '**/packages/harness/melite-tools/src/tools/mp4Probe.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/harness/melite-tools/src/tools/run-status.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
-  '**/packages/harness/melite-tools/src/tools/skill-index.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
+  // (skill-index.ts row deleted with 57cc90a41 — melite_skill_index
+  // was deleted; its id law already lived in melite_load.)
   '**/packages/harness/melite-tools/src/tools/skill-read.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/harness/melite-tools/src/tools/vision-route.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/image/image-edit/src/card.ts': { statements: 100, branches: 92.04, functions: 100, lines: 100 },

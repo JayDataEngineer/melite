@@ -202,6 +202,10 @@ export interface BenchPatchRow {
      *  under carried stamps). Empty/absent when nothing dropped. The
      *  drop rides the row so it SPEAKS — never a silent strip. */
     readonly dropped?: readonly string[];
+    /** Present-and-true when the patch changed what the next run
+     *  composes (the done mark cleared — the skip law cannot fold
+     *  it). Absent when the patch was idempotent. */
+    readonly stale?: true;
 }
 /** patch — params merge with CAS + log. THE ONE OUTCOME DOOR
  *  (the telemetry law's other half, 2026-10-08): run outcomes ride

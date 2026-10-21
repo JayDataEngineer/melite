@@ -486,7 +486,7 @@ describe('THE WRITE-REFUSAL FACE (R2-4-SYNC re-seated 2026-10-21 — a refused w
   // TRAILING write never kills a later healthy press (recovery).
   test('THE SYNC THROW — a door that throws at the press stops the run (no onRun), voices, and never escapes run()', async () => {
     stubWire()
-    const onPatch = vi.fn(() => { throw new Error('door refused: cas lost') })
+    const onPatch = vi.fn((_doc: Record<string, unknown>) => { throw new Error('door refused: cas lost') })
     const onRun = vi.fn()
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const bound: Array<() => void> = []
@@ -508,13 +508,13 @@ describe('THE WRITE-REFUSAL FACE (R2-4-SYNC re-seated 2026-10-21 — a refused w
 
   test('THE TRAILING THROW — a door that throws inside the trailing window voices and never crashes the timer', async () => {
     stubWire()
-    const onPatch = vi.fn(() => { throw new Error('door refused: cas lost') })
+    const onPatch = vi.fn((_doc: Record<string, unknown>) => { throw new Error('door refused: cas lost') })
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     render(studio({ onPatch }))
     const field = await screen.findByLabelText('Steps', {}, { timeout: 4000 })
     fireEvent.change(field, { target: { value: '9' } })
     await waitFor(() => {
-      if (!onPatch.mock.calls.some((c) => (c[0] as Record<string, unknown>)['steps'] === 9)) {
+      if (!onPatch.mock.calls.some((c) => c[0]['steps'] === 9)) {
         throw new Error('the trailing write never fired; calls: ' + JSON.stringify(onPatch.mock.calls))
       }
     }, { timeout: 4000 })

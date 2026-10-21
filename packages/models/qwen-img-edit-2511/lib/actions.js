@@ -164,8 +164,10 @@ export const edit = {
                 LanPaint_NumSteps: 5,
                 LanPaint_Lambda: numOf(p.lanpaint_lambda, 0.5, "lanpaint_lambda"),
                 LanPaint_StepSize: numOf(p.lanpaint_step_size, 1.0, "lanpaint_step_size"),
-                LanPaint_Beta: 1, LanPaint_Friction: 15,
-                LanPaint_EarlyStop: 1, LanPaint_InnerThreshold: 0, LanPaint_InnerPatience: 1, LanPaint_MinStepFrac: 1.0,
+                // The engine build carries no Beta/Friction/EarlyStop/
+                // InnerThreshold/InnerPatience/MinStepFrac inputs (the
+                // live /object_info row declares exactly the 19 above) —
+                // the compose restates nothing the node cannot spell.
                 LanPaint_PromptMode: promptMode, LanPaint_Info: "LanPaint KSampler Adv.",
                 Inpainting_mode: "🖼️ Image Inpainting",
             });

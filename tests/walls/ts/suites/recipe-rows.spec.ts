@@ -354,7 +354,11 @@ const ACTION_CARDS_WITHOUT_ENVELOPE: string[] = [];
       steps: 99,
     });
     assert.ok(!over.ok, "an out-of-domain stamp is refused");
-    assert.match(over.ok ? "" : String(over.error), /1–50|outside this lane's range/);
+    // The envelope seat refuses FIRST when the route declares one
+    // (the lawful seat order — prepare judges the envelope before
+    // the card's own bounds voice can surface); either refusal
+    // proves the teeth.
+    assert.match(over.ok ? "" : String(over.error), /1–50|outside this lane's range|OUTSIDE the route envelope/);
     // LAW B's teeth: a key the card never declared → refused, named
     const dead = registry.admitStageRelations("image-gen", {
       model: "krea-2",

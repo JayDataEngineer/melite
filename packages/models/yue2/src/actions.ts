@@ -87,6 +87,12 @@ export const compose: ComfyActionSpec<Yue2Params, Yue2Facts> = {
     // GenerateMusic rides an empty abc (the engine's own off mode);
     // full/melody ride YuE2GenerateABC with the same style + lyrics.
     let abc: string | OutputHandle = "";
+    // Off is CARD vocabulary the node enum cannot spell (full|melody)
+    // and mode is engine-REQUIRED — the off arm wires the engine's
+    // own default 'full' over the EMPTY abc (the off semantics live
+    // in the missing conditioning, never in a mode literal the enum
+    // refuses).
+    const nodeMode = mode === "off" ? "full" : mode;
     if (mode !== "off") {
       abc = g.node("YuE2GenerateABC", {
         clip: ckpt.out(1), style, lyrics, seed, mode,
@@ -95,7 +101,7 @@ export const compose: ComfyActionSpec<Yue2Params, Yue2Facts> = {
       }).out(0);
     }
     const music = g.node("YuE2GenerateMusic", {
-      clip: ckpt.out(1), style, lyrics, abc, seed, mode,
+      clip: ckpt.out(1), style, lyrics, abc, seed, mode: nodeMode,
       max_duration: p.duration, temperature: 1.0, top_p: 0.95, top_k: 100,
       repetition_penalty: 1.2,
     });

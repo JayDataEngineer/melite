@@ -39,7 +39,7 @@
   "ModelPatchLoader.0": {
     "class_type": "ModelPatchLoader",
     "inputs": {
-      "name": "z_image_depth.safetensors"
+      "name": "z-image-fun-union-2.1/Z-Image-Turbo-Fun-Controlnet-Union-2.1-2602-8steps.safetensors"
     }
   },
   "ZImageFunControlnet.0": {

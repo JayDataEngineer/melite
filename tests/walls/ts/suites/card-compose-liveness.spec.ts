@@ -50,6 +50,7 @@ import { assertWiringAgainst, deriveWiringDoc, WIDGET_SERIALIZATION_KEYS } from 
 import { GraphBuilder } from "@melite/comfyui-card-kit/graph";
 import { loadFacts } from "@melite/comfyui-card-kit/facts";
 import { getModel, registryIds, registryModel, modelIds, owningAtom } from "../../../../packages/engines/comfyui-cordis/src/models/models.ts";
+import { declaredProvision } from "../../../helpers/provisioner-law.ts";
 import { CardRegistryService } from "../../../../packages/harness/estate-queue/src/cardsRegistry.ts";
 import { admissionRefusal, prepareCardParams } from "../../../../packages/harness/estate-queue/src/cardsCompose.ts";
 import { liftCardParams } from "../../../../packages/harness/estate-queue/src/cardsVariant.ts";
@@ -117,34 +118,8 @@ const ESTATE_FILE = join(
 );
 const fillFor = (name: string): unknown => probeFillFor(name, ESTATE_FILE);
 
-/** Whether the family's DECL declares this artifact downloadable —
- *  the provisioner's own contract (the operator's law, 2026-11-09:
- *  "if a model is not on disk, that is not a red unless our
- *  auto-provisioner sucks"). A wired FILENAME absent from the
- *  engine's folder enum is PROVISIONING STATE while the DECL
- *  carries it (a url tail or a provision name in
- *  packages/models/<family>/src/index.ts — the download prompt can
- *  offer it); with no declared source the estate dead-ends instead
- *  of offering the download — THAT miss is the red. Non-filename
- *  literals (mode pickers like CLIPLoader.type) never pass: those
- *  are engine-build vocabulary, not folder state. */
-function declaredProvision(modelId: string, filename: string): boolean {
-  if (!/\.(safetensors|sft|gguf|bin|pth|onnx|engine|npz|ckpt)$/i.test(filename)) return false;
-  // THE ROUTE→ATOM FOLD (2026-11-09, the h3-singularity row): a lane
-  // address is not a package — its family's DECL carries the
-  // provision. The unbooted-table throw is the miss (fail closed —
-  // the skip must never pass on a table that cannot speak).
-  let atom = modelId
-  try {
-    atom = owningAtom(modelId)
-  } catch {
-    return false
-  }
-  const decl = join(process.cwd(), "packages", "models", atom, "src", "index.ts");
-  if (!existsSync(decl)) return false;
-  const text = readFileSync(decl, "utf8");
-  return text.includes(`/${filename}"`) || text.includes(`"${filename}"`);
-}
+// declaredProvision lives in tests/helpers/provisioner-law.ts (one
+// home, two runners — the golden driver rides the same law).
 
 /** THE STUDIO-EMIT GREP (CURE-1's emit depth): the computed
  *  `[MOTION_*_PARAM]` keys inside every onSave(...) payload of one
@@ -477,7 +452,7 @@ describe("every facts row composes its card alive (the dead-card wall)", () => {
         // stays red below.
         const wired = /wired '[^']+' = "([^"]*)"/.exec(message)?.[1];
         const seat = /^[\s\S]*?wired '([^'.]+)\.([^']+)'/.exec(message);
-        if (wired !== undefined && seat !== null && declaredProvision(modelId, wired)) {
+        if (wired !== undefined && seat !== null && declaredProvision(modelId, wired, owningAtom)) {
           const member = inputs?.get(seat[1]!)?.get(seat[2]!)?.enum?.find((m): m is string => typeof m === "string");
           if (member !== undefined && pass < 8) {
             probe = JSON.parse(JSON.stringify(probe), (_k, v: unknown) => (v === wired ? member : v));

@@ -318,9 +318,11 @@ export const mesh: ComfyActionSpec<MeshParams, MeshFacts> = {
       }).out()
       const mogeGeom = g.node('MoGeInference', {
         moge_model: mogeModel, image: cropped, resolution_level: 9,
-        // pin autofills leaves in place (core defaults)
+        // pin autofills leaves in place (core defaults); refine_steps
+        // restates the node's own default 3 — the engine declares it
+        // required and refuses the prompt without it.
         apply_mask: true, batch_size: 4, force_projection: true,
-        fov_x_degrees: 0.0,
+        fov_x_degrees: 0.0, refine_steps: 3,
       }).out()
       cameraAngleX = g.node('MoGeGeometryToFOV', {
         moge_geometry: mogeGeom, axis: 'horizontal', unit: 'degrees',

@@ -276,8 +276,11 @@ describe("the image-edit compose gate", () => {
     assert.equal(ks.LanPaint_NumSteps, 5, "upstream default, no pack knob");
     assert.equal(ks.LanPaint_Lambda, 0.5, "pack default (lighter pull than their 5.0)");
     assert.equal(ks.LanPaint_StepSize, 1.0, "pack default (theirs is 0.2)");
-    assert.equal(ks.LanPaint_Beta, 1, "retired-upstream fixed value, explicit");
-    assert.equal(ks.LanPaint_Friction, 15, "retired-upstream fixed value, explicit");
+    // The engine build declares no Beta/Friction (nor EarlyStop/
+    // Inner* / MinStepFrac) inputs — the compose restates nothing
+    // the node cannot spell (2026-10-21, the wiring gate's catch).
+    assert.equal(ks.LanPaint_Beta, undefined, "retired-upstream input never wired");
+    assert.equal(ks.LanPaint_Friction, undefined, "retired-upstream input never wired");
     assert.equal(ks.LanPaint_PromptMode, "Image First", "negative maps image-first");
     assert.equal(ks.start_at_step, 0, "their example wiring");
     assert.equal(ks.end_at_step, 10000, "their example wiring");

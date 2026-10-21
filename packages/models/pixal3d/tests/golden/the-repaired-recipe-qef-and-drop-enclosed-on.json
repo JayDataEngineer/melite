@@ -123,7 +123,8 @@
       "apply_mask": true,
       "batch_size": 4,
       "force_projection": true,
-      "fov_x_degrees": 0
+      "fov_x_degrees": 0,
+      "refine_steps": 3
     }
   },
   "MoGeGeometryToFOV.0": {
