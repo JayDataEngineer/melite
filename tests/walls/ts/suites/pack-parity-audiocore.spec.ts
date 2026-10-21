@@ -393,13 +393,18 @@ describe("the estate venv standard (the transformers/hf-hub pin law)", () => {
   // huggingface-hub to 1.33.0, whose 1.x guard broke the ENGINE
   // BOOT (core transformers wants hf-hub >=0.34,<1.0 — the
   // traceback died in `import execution` before any pack loaded).
-  // The cure is the pin, and the STANDARD is what the estate venv
-  // verifies against: transformers 4.57.3, huggingface_hub <1.0
-  // (the live venv runs 0.36.2; diffusers 0.40.0's >=1.23 want is
-  // latent — nothing at boot imports it). This wall holds the pin
-  // so every fresh install converges on the standard, never the
-  // lottery. The clean-venv boot gate rides the next provision.
-  const STANDARD = { transformers: "4.57.3", huggingface_hub: "<1.0" } as const;
+  // The cure was that pin. THE 2026-11-10 RE-PIN (the py3.14
+  // generation): the engine venv moved to python 3.14, where 4.57.3
+  // cannot even fresh-import PreTrainedConfig, while transformers
+  // 5.1.0 imports BOTH engine chains clean (moss_sfx_v2 +
+  // qwen3_tts, faithful parent-package tests) — and the live venv
+  // already runs the pair. The STANDARD is the proven pair:
+  // transformers 5.1.0, huggingface_hub 1.33.0 (the 1.x line is
+  // what the 5.x line requires; the old <1.0 guard is superseded).
+  // This wall holds the pin so every fresh install converges on
+  // the standard, never the lottery. The clean-venv boot gate rides
+  // the next provision.
+  const STANDARD = { transformers: "5.1.0", huggingface_hub: "==1.33.0" } as const;
 
   it("every audio-family pack carries the estate venv standard pins in requirements.txt", () => {
     for (const pack of PACKS) {
@@ -407,7 +412,7 @@ describe("the estate venv standard (the transformers/hf-hub pin law)", () => {
       expect(req, `${pack}/requirements.txt exists`).not.toBeNull();
       const body = (req as string).split("\n").map((l) => l.trim()).filter((l) => l !== "" && !l.startsWith("#"));
       expect(body, `${pack}: transformers pinned to the estate standard`).toContain(`transformers==${STANDARD.transformers}`);
-      expect(body, `${pack}: huggingface_hub held below the 1.0 guard break`).toContain(`huggingface_hub${STANDARD.huggingface_hub}`);
+      expect(body, `${pack}: huggingface_hub pinned to the 1.x line the 5.x transformers requires`).toContain(`huggingface_hub${STANDARD.huggingface_hub}`);
     }
   });
 
@@ -419,7 +424,7 @@ describe("the estate venv standard (the transformers/hf-hub pin law)", () => {
         if (line === "" || line.startsWith("#")) continue;
         const dep = line.split(/[=<>!~\[]/)[0]!.toLowerCase();
         if (dep !== "transformers" && dep !== "huggingface_hub" && dep !== "huggingface-hub") continue;
-        expect(line.startsWith("transformers==") || line.startsWith("huggingface_hub<") || line.startsWith("huggingface-hub<"),
+        expect(line.startsWith("transformers==") || line.startsWith("huggingface_hub==") || line.startsWith("huggingface-hub==") || line.startsWith("huggingface_hub<") || line.startsWith("huggingface-hub<"),
           `${name}: '${line}' floats a boot-critical dep — pin it to the estate venv standard`).toBe(true);
       }
     }

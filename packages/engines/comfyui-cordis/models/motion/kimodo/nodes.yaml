@@ -25,6 +25,10 @@ extensions:
   # forked the pin and extension_lane refused the whole manifest.
   - name: melite-poser-nodes
     url: https://github.com/JayDataEngineer/melite-poser-nodes
-    ref: ab25cc34e26a0f6521acc6d766ab811da370c05b
+    # 2026-10-21 estate pin re-cure: re-pinned to the current upstream main
+    # (the ref the live engine serves) — content verified non-functional vs
+    # the prior pin (category strings only; receipt
+    # 2026-10-21-estate-pin-recure.md).
+    ref: 94db78c7bc189cfd207c39d6bfacbd0c29550ef2
     required: true
     desc: RaySomaxBake — skins the motion NPZ onto a SOMAX-rigged character GLB.

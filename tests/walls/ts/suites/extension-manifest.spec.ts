@@ -27,8 +27,13 @@
 // deliberately not installed yet, it is named below with its reason.
 
 import { describe, it, expect } from "vitest";
-import { readFileSync, readdirSync, statSync } from "node:fs";
+import { execSync } from "node:child_process";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { landedIn, landedVerdict } from "../../../../packages/engines/comfyui-cordis/scripts/provision-extensions-install.ts";
+import { defaultConfig, runtime } from "../../../../packages/engines/comfyui-cordis/scripts/provision-shared.ts";
+import { engineLiveRoot, loadConfig } from "../../../../packages/engines/comfyui-cordis/scripts/provision-config.ts";
 
 const ROOT = join(__dirname, "..", "..", "..", "..");
 const PACKAGES = join(ROOT, "packages");
@@ -329,5 +334,159 @@ describe("THE VENDOR→INSTALL CENSUS (every vendored submodule is installed or 
     expect(stale,
       "these retired packs now HAVE an install row — move them out of RETIRED_VENDORED; the retirement is a lie while a row installs them")
       .toEqual([]);
+  });
+});
+
+// ── THE CARD-REQUIRED INSTALL CENSUS (P1 — the refmod-seat drift
+// class, 2026-11-10) ─────────────────────────────────────────────
+// The two censuses above judge the manifest's own planes
+// (check⇔manifest⇔card-requires, vendor⇔manifest); nothing judged
+// the plane BELOW the manifest: the engine trees the manifests
+// install INTO. The refmod seat burned exactly there: the card
+// required ComfyUI-MiniMaxH3Mod (h3-timeline card.ts:203), the
+// manifest pinned it (nodes.yaml, b746d15fec v0.2.6), every wall
+// above stayed green — and the seat's serving state was checked by
+// NO wall at all. The judge is the provision door's OWN install
+// identity — landedIn/landedVerdict from
+// provision-extensions-install.ts (remote-match + landed-HEAD) —
+// never a re-spelled copy (one home per fact). The two-tree estate
+// (the overlay's engines.comfyui.live_root: Manager's door installs
+// into the tree its engine runs from, not data/runtime) is judged
+// the way the door judges it: an install in ANY verify tree counts.
+
+/** A card-required pack joined to its pinned manifest row — the
+ *  fleet this census judges. Existence of the row is the census
+ *  above's law (arms 1–2); this plane judges the INSTALL. */
+interface RequiredInstall { pack: string; cards: string[]; url: string; ref: string; file: string }
+
+/** Every card-required pack with a pinned manifest row, sorted by
+ *  pack name (derived from the same walks the censuses above trust —
+ *  no hand list). */
+function cardRequiredInstalls(): RequiredInstall[] {
+  const pinned = new Map<string, ManifestRow>();
+  for (const r of manifestRows(PACKAGES)) {
+    if (r.url !== undefined && r.url !== "" && r.ref !== undefined && r.ref !== "") {
+      pinned.set(r.name, r);
+    }
+  }
+  const out: RequiredInstall[] = [];
+  for (const [pack, cards] of cardRequires()) {
+    const row = pinned.get(pack);
+    if (row?.url === undefined || row?.ref === undefined) continue;
+    out.push({ pack, cards: [...cards].sort(), url: row.url, ref: row.ref, file: row.file });
+  }
+  return out.sort((a, b) => (a.pack < b.pack ? -1 : 1));
+}
+
+/** The engine trees the estate can serve from: the IaC runtime
+ *  (data/runtime/comfyui) first, then the overlay's live_root when
+ *  it names a different one. verifyRoots() itself is NOT used — it
+ *  process.exit()s on a declared-but-missing root, which no vitest
+ *  file may do; a missing tree here is the skip gate below instead.
+ *  @returns the verify roots, IaC first. */
+function engineTrees(): string[] {
+  const iac = runtime();
+  const live = engineLiveRoot(loadConfig(defaultConfig()));
+  return live === "" || live === iac ? [iac] : [iac, live];
+}
+
+/** The presence verdicts: rows a card requires, pinned in a
+ *  manifest, whose git remote NO engine tree carries. */
+function missingInstalls(fleet: readonly RequiredInstall[], trees: readonly string[]): string[] {
+  return fleet
+    .filter((r) => landedIn(r.url, [...trees]) === null)
+    .map((r) => `${r.pack} (required by ${r.cards.join(", ")}) — pinned ${r.ref.slice(0, 10)} in ${r.file} but installed in NO engine tree (custom_nodes judged: ${trees.join(", ")})`);
+}
+
+/** The pin verdicts: installed rows whose landed HEAD disagrees with
+ *  the declared ref (the pin is the truth — the provision door's own
+ *  converge law, named with both shas and the tree). */
+function pinDrifts(fleet: readonly RequiredInstall[], trees: readonly string[]): string[] {
+  return fleet
+    .map((r) => ({ r, verdict: landedVerdict(r.pack, r.url, r.ref, [...trees]) }))
+    .filter((x) => x.verdict !== "")
+    .map((x) => `${x.r.pack}: ${x.verdict}`);
+}
+
+describe("THE CARD-REQUIRED INSTALL CENSUS (every card-required pinned pack is landed in an engine tree)", () => {
+  const fleet = cardRequiredInstalls();
+  const trees = engineTrees();
+  const enginePlane = trees.some((t) => existsSync(join(t, "custom_nodes")));
+
+  it("the census floor: the join found the card-required pinned fleet (the vacuous guard)", () => {
+    // 16 card-required pinned packs live (2026-11-10); a shrink is a
+    // card losing its requires or a manifest row losing its pin —
+    // both change what this plane must judge, never a quiet pass.
+    expect(fleet.length,
+      "the card-requires ⇔ pinned-manifest join found fewer installs than the estate requires — the walk or a manifest row rotted")
+      .toBeGreaterThanOrEqual(16);
+  });
+
+  it.skipIf(!enginePlane)("every card-required pinned pack is installed in an engine tree (the presence arm — the refmod-seat burn class)", () => {
+    expect(
+      missingInstalls(fleet, trees),
+      "these packs a card REQUIRES are pinned in a manifest but carried by NO engine tree custom_nodes — a compose addressing them dies unknown-node at the engine exactly as the refmod seat was believed dead (cure: pnpm run provision extensions, then the operator's restart)",
+    ).toEqual([]);
+  });
+
+  it.skipIf(!enginePlane)("every installed card-required pack sits at its declared pin (the agreement arm — the pin is the truth)", () => {
+    expect(
+      pinDrifts(fleet, trees),
+      "these card-required installs disagree with their manifest pins (the manifest's own re-pin law: only with a composed re-render)",
+    ).toEqual([]);
+  });
+
+  it("the census FIRES: a missing install reds, a drifted head reds, the pin greens (synthetic trees, never the estate)", () => {
+    // Synthetic engine trees with REAL clone shapes (git init +
+    // remote + commits — the same idiom the provision queue spec
+    // uses), so the arms' own judges are proven on the burn class
+    // without touching the estate's trees.
+    const url = "https://github.com/JayDataEngineer/ComfyUI-MiniMaxH3Mod";
+    const mkTree = (shape: "none" | "pin" | "drift"): { root: string; pin: string } => {
+      const root = mkdtempSync(join(tmpdir(), "melite-install-census-"));
+      const cn = join(root, "custom_nodes");
+      mkdirSync(cn, { recursive: true });
+      let pin = "";
+      if (shape !== "none") {
+        const clone = join(cn, "ComfyUI-MiniMaxH3Mod");
+        mkdirSync(clone, { recursive: true });
+        execSync("git init -q . && git config user.email t@t && git config user.name t && " +
+          "git commit -q --allow-empty -m pin", { cwd: clone, encoding: "utf8" });
+        execSync("git remote add origin " + url, { cwd: clone, encoding: "utf8" });
+        pin = execSync("git rev-parse HEAD", { cwd: clone, encoding: "utf8" }).trim();
+        if (shape === "drift") {
+          execSync("git commit -q --allow-empty -m drift", { cwd: clone, encoding: "utf8" });
+        }
+      }
+      return { root, pin };
+    };
+    const burned = mkTree("none");
+    const atPin = mkTree("pin");
+    const drifted = mkTree("drift");
+    try {
+      const row: RequiredInstall = {
+        pack: "ComfyUI-MiniMaxH3Mod",
+        cards: ["packages/video/h3-timeline/src/card.ts"],
+        url,
+        ref: atPin.pin,
+        file: "packages/engines/comfyui-cordis/models/video/h3-timeline/nodes.yaml",
+      };
+      // MISSING — the burn itself: a required pinned pack no tree carries.
+      expect(missingInstalls([row], [burned.root]),
+        "the presence judge must red when no engine tree carries the pack")
+        .toEqual([expect.stringContaining("installed in NO engine tree")]);
+      // DRIFT — installed, but past the pin: the same disagreement.
+      expect(pinDrifts([row], [drifted.root]),
+        "the pin judge must red when the landed head is past the declared ref")
+        .toEqual([expect.stringMatching(/^ComfyUI-MiniMaxH3Mod: landed at /)]);
+      // GREEN — the two-tree estate's pass shape: empty IaC runtime,
+      // the live tree holds the clone at the declared pin.
+      expect(missingInstalls([row], [burned.root, atPin.root])).toEqual([]);
+      expect(pinDrifts([row], [burned.root, atPin.root])).toEqual([]);
+    } finally {
+      for (const t of [burned, atPin, drifted]) {
+        rmSync(t.root, { recursive: true, force: true });
+      }
+    }
   });
 });
