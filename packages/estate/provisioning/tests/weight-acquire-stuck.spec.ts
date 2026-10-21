@@ -87,6 +87,12 @@ function stalledConfig(root: string): ProvisioningConfig {
     // default's value. The 1.5s poll window below sees the 250ms
     // stall fire with margin.
     acquireStallTimeoutMs: 250,
+    // THE RECOVERY LOOP IS OFF HERE (stall-recovery.spec, 2026-11-05):
+    // this wall judges the WATCHDOG LAW — a freeze past the budget
+    // dies loud INSIDE the budget. The recovery default re-opens
+    // flights (rightly); isolating the single-flight budget keeps
+    // this arm's 1.5s terminal window judging the watchdog alone.
+    acquireStallRetries: 0,
     fetcher: async (_url: string, signal?: AbortSignal) => ({
       status: 200,
       body: (async function* generate(): AsyncGenerator<Uint8Array> {

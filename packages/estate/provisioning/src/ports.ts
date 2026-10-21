@@ -168,6 +168,13 @@ export interface ProvisioningConfig {
    *  link wants a wider window; the default is the tightest bound the
    *  stuck-acquire contract allows). Validated: a positive integer. */
   readonly acquireStallTimeoutMs?: number;
+  /** THE STALL AUTO-RECOVERY BUDGET (the "will never finish" burn,
+   *  2026-11-05): how many times a stalled direct fetch re-opens at
+   *  its kept part's offset (`Range: bytes=N-`) before the operation
+   *  settles failed and the stuck face's Retry/Delete stands as the
+   *  exhausted backstop. 0 restores the single-flight law (one stall
+   *  fails the acquire). Validated: a non-negative integer. */
+  readonly acquireStallRetries?: number;
 }
 
 export type ProvisioningServiceDefinition = {

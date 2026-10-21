@@ -43,6 +43,36 @@ const DISK_FLOOR_BYTES = 1024 * 1024 * 1024;
  *  their own explicit budget (stalledConfig's 250ms), and the
  *  deployment face is ProvisioningConfig.acquireStallTimeoutMs. */
 export const ACQUIRE_STALL_TIMEOUT_MS = 10_000;
+/** THE STALL AUTO-RECOVERY BUDGET (the "will never finish" burn,
+ *  2026-11-05): a wedged wire re-opens at its kept part's offset this
+ *  many times before the acquire settles failed — the deployment-varying
+ *  face is ProvisioningConfig.acquireStallRetries. */
+export const ACQUIRE_STALL_RETRIES = 6;
+/** The pause between stall-recovery attempts: a fixed protocol
+ *  constant (the re-open IS the recovery; the pause only lets the
+ *  torn socket drain), never a deployment tunable. */
+const ACQUIRE_STALL_RETRY_DELAY_MS = 500;
+
+/** The bounded pause between stall-recovery attempts: fixed-width,
+ * resolved early by the operator's cancel — the pause never outlives
+ * the operation it serves.
+ *
+ * @param signal the operation's signal (an abort resolves the pause).
+ * @returns when the delay elapses or the operation aborts. */
+function stallRetryDelay(signal: AbortSignal): Promise<void> {
+  return new Promise((resolve) => {
+    const onAbort = (): void => {
+      clearTimeout(timer);
+      resolve();
+    };
+    const timer = setTimeout(() => {
+      signal.removeEventListener("abort", onAbort);
+      resolve();
+    }, ACQUIRE_STALL_RETRY_DELAY_MS);
+    if (signal.aborted) onAbort();
+    else signal.addEventListener("abort", onAbort, { once: true });
+  });
+}
 /** The stall watchdog's check cadence: a stall is detected within one
  *  tick past the budget (the part-reaper's periodic-sweep pattern,
  *  scaled from PART_REAP_INTERVAL_MS to the budget's size). */
@@ -538,6 +568,18 @@ export class ProvisioningService extends Service implements ProvisioningServiceD
    *  ProvisioningConfig.acquireStallTimeoutMs, defaulting to
    *  ACQUIRE_STALL_TIMEOUT_MS). */
   private readonly acquireStallTimeoutMs: number;
+  /** THE STALL AUTO-RECOVERY BUDGET (the constructor's read of
+   *  ProvisioningConfig.acquireStallRetries, defaulting to
+   *  ACQUIRE_STALL_RETRIES). */
+  private readonly acquireStallRetries: number;
+  /** THE ATTEMPT-SCOPED ABORT SEAT (the recovery loop's other arm):
+   *  the direct arm's CURRENT fetch attempt per operation. The
+   *  watchdog aborts THIS controller on a stall — the wedged wire
+   *  dies, the operation's lock lives to re-open at the kept offset.
+   *  No seat (a verify stall, a non-direct arm) keeps the legacy
+   *  teardown: the lock's own controller. Deleted on every attempt
+   *  exit, never a leak. */
+  private readonly stallAborters = new Map<string, AbortController>();
   /** THE STALL VOICE SEAT: the watchdog's refusal per operation,
    *  consumed once by the item loop — the abort the refusal rode
    *  would otherwise read as a cancellation at refusalFor, and a
@@ -575,6 +617,14 @@ export class ProvisioningService extends Service implements ProvisioningServiceD
       throw new Error("acquireStallTimeoutMs must be a positive integer (milliseconds)");
     }
     this.acquireStallTimeoutMs = stallMs;
+    // THE STALL AUTO-RECOVERY BUDGET'S CONFIG FACE (the same
+    // validated-face law): 0 is legal — it restores the
+    // single-flight law for lanes that want a human on every stall.
+    const stallRetries = config.acquireStallRetries ?? ACQUIRE_STALL_RETRIES;
+    if (!Number.isInteger(stallRetries) || stallRetries < 0) {
+      throw new Error("acquireStallRetries must be a non-negative integer (retry count)");
+    }
+    this.acquireStallRetries = stallRetries;
     armProvisioningSeat(this);
     this.ctx.effect(() => async (): Promise<void> => {
       disarmProvisioningSeat(this);
@@ -731,6 +781,15 @@ export class ProvisioningService extends Service implements ProvisioningServiceD
    *  constant: an operator-tuned window answers tuned. */
   stallBudgetMs(): number {
     return this.acquireStallTimeoutMs;
+  }
+
+  /** THE STALL AUTO-RECOVERY BUDGET'S READ FACE (the recovery wall's
+   *  seat): the validated retry count the direct arm re-opens with —
+   *  the composition's pass-through lands here, and the wall reads it
+   *  back. Never the constant: an operator-tuned budget answers
+   *  tuned. */
+  stallRetryBudget(): number {
+    return this.acquireStallRetries;
   }
 
   /** THE F9 PROGRESS READ (the tracker's poll): a copy of the live
@@ -1637,96 +1696,143 @@ export class ProvisioningService extends Service implements ProvisioningServiceD
       // the stream takes over from the opening re-check — the bytes
       // landing now are wire bytes, and the ledger says so
       this.voicePhase(operationId, "stream");
-      // THE STALL WATCHDOG'S WINDOW (ERRORS.md k2): arms over the
-      // whole direct fetch — the headers wait and the counted byte
-      // stream — and disarms on every exit, so a fetch that freezes
-      // settles FAILED inside the stall budget instead of holding the
-      // plane (and the operator's popup) forever.
-      const stopStallWatch = this.armStallWatch(operationId, ref);
-      try {
-        // THE RANGE RESUME MEASURE (audit download-stack-audit-2026-10-20
-        // F7): the previous attempt's kept part, sized BEFORE the fetch —
-        // a kept part turns into `Range: bytes=N-` and, on a 206, an
-        // append at N instead of a from-byte-0 re-download of the whole
-        // weight. No kept part asks for nothing.
-        const adoptable = this.writer?.adoptablePart === undefined
-          ? null
-          : await this.writer.adoptablePart({ root: this.writerRoot, relativePath, sizeBytes: item.sizeBytes });
-        const resumeFrom = adoptable?.sizeBytes ?? 0;
-        const response = await this.fetcher(item.url, signal, resumeFrom > 0 ? { rangeFrom: resumeFrom } : undefined);
-        if ((response.status !== 200 && response.status !== 206) || response.body === null) {
-          throw new ItemRefusal(
-            "failed",
-            "artifact/fetch-refused",
-            `direct fetch of ${item.url} answered status ${String(response.status)}${response.body === null ? " with no body" : ""}`,
-          );
-        }
-        // THE RESUMED FLIGHT (F7): a 206 to a ranged ask appends at the
-        // adopted offset; a 200 to the same ask means the host ignored
-        // the range — the restart from zero is said out loud, never
-        // silent while the operator's bar falls back.
-        const resumed = resumeFrom > 0 && response.status === 206;
-        // THE F9 COUNTED WRITE (the tracker's numerator): the ledger
-        // entry must exist before the first chunk lands (a background
-        // start seeded it with the plan total; a blocking ensure
-        // seeded it in executeEnsure — this keeps whichever total is
-        // already there and only fills a missing one).
-        this.ensureProgress(operationId, ref, item.sizeBytes ?? 0);
-        if (resumed) {
-          // THE SEEDED LEDGER (never a 0% lie): the adopted prefix
-          // counts before the first wire byte lands, so the poll
-          // resumes at N/M instead of restarting at 0%.
-          this.bumpProgress(operationId, resumeFrom);
-          this.voiceDetail(operationId, "resuming at " + String(resumeFrom) + " of " +
-            String(item.sizeBytes ?? response.totalBytes ?? 0) + " bytes");
-        } else if (resumeFrom > 0) {
-          this.voiceDetail(operationId, "the host ignored the range request — downloading from byte 0");
-        }
-        const landed = await this.writer.write({
-          root: this.writerRoot,
-          relativePath,
-          expectedSha256: item.sha256,
-          operationId,
-          source: countedSource(response.body, (count) => this.bumpProgress(operationId, count)),
-          sizeBytes: item.sizeBytes,
-          // the writer re-runs the adoption scan under this arm's lock
-          // and appends from the part it actually adopts
-          ...(resumed ? { resumeFrom } : {}),
-          // the verify heartbeat: hash chunks + phase boundaries poke
-          // the watchdog's clock (the field above) — a slow multi-GB
-          // verify reads as flow, never as a frozen stream — and the
-          // FIRST heartbeat carries the verify boundary to the
-          // ledger's state word (acquiring → verifying: the honest
-          // phase law, audit F5)
-          onVerifyBytes: () => {
-            this.verifyFlowAt.set(operationId, Date.now());
-            // the FIRST heartbeat carries the verify boundary to the
-            // state machine (acquiring → verifying, mirrored into the
-            // ledger by move()) — later heartbeats only re-arm the
-            // clock
+      // THE STALL RECOVERY LOOP (the "will never finish" burn,
+      // 2026-11-05): a wedged wire is a per-attempt fact, never an
+      // operation death. The watchdog tears down only the stalled
+      // ATTEMPT (the stallAborters seat) and this loop re-opens the
+      // fetch at the kept part's offset — `Range: bytes=N-`, bounded
+      // by acquireStallRetries. Exhaustion re-seats the refusal and
+      // throws: the failed face with Retry/Delete is the exhausted
+      // backstop, never the first stall's landing.
+      for (let attemptNo = 0; ; attemptNo += 1) {
+        // THE ATTEMPT-SCOPED WIRE: the fetcher and the writer ride
+        // this controller, chained to the operation's signal — the
+        // watchdog kills the wire without killing the operation, and
+        // an operator's cancel still kills both.
+        const attempt = new AbortController();
+        const onOuterAbort = (): void => { attempt.abort(); };
+        if (signal.aborted) attempt.abort();
+        else signal.addEventListener("abort", onOuterAbort);
+        this.stallAborters.set(operationId, attempt);
+        // THE STALL WATCHDOG'S WINDOW (ERRORS.md k2): arms over the
+        // whole attempt — the headers wait and the counted byte
+        // stream — and disarms on every exit, so a fetch that freezes
+        // dies inside the stall budget instead of holding the
+        // plane (and the operator's popup) forever.
+        const stopStallWatch = this.armStallWatch(operationId, ref);
+        try {
+          // THE RANGE RESUME MEASURE (audit download-stack-audit-2026-10-20
+          // F7): the previous attempt's kept part, sized BEFORE the fetch —
+          // a kept part turns into `Range: bytes=N-` and, on a 206, an
+          // append at N instead of a from-byte-0 re-download of the whole
+          // weight. No kept part asks for nothing.
+          const adoptable = this.writer?.adoptablePart === undefined
+            ? null
+            : await this.writer.adoptablePart({ root: this.writerRoot, relativePath, sizeBytes: item.sizeBytes });
+          const resumeFrom = adoptable?.sizeBytes ?? 0;
+          const response = await this.fetcher(item.url, attempt.signal, resumeFrom > 0 ? { rangeFrom: resumeFrom } : undefined);
+          if ((response.status !== 200 && response.status !== 206) || response.body === null) {
+            throw new ItemRefusal(
+              "failed",
+              "artifact/fetch-refused",
+              `direct fetch of ${item.url} answered status ${String(response.status)}${response.body === null ? " with no body" : ""}`,
+            );
+          }
+          // THE RESUMED FLIGHT (F7): a 206 to a ranged ask appends at the
+          // adopted offset; a 200 to the same ask means the host ignored
+          // the range — the restart from zero is said out loud, never
+          // silent while the operator's bar falls back.
+          const resumed = resumeFrom > 0 && response.status === 206;
+          // THE F9 COUNTED WRITE (the tracker's numerator): the ledger
+          // entry must exist before the first chunk lands (a background
+          // start seeded it with the plan total; a blocking ensure
+          // seeded it in executeEnsure — this keeps whichever total is
+          // already there and only fills a missing one).
+          this.ensureProgress(operationId, ref, item.sizeBytes ?? 0);
+          if (resumed) {
+            // THE SEEDED LEDGER, BY DELTA (never a 0% lie, never a
+            // double count): a fresh operation seeds the whole adopted
+            // prefix before the first wire byte lands; an in-place
+            // recovery attempt already counts the frozen prefix, so
+            // only the missing delta seeds — the count never rewinds
+            // and never double-counts.
+            const counted = this.weightProgress.get(operationId)?.bytes ?? 0;
+            if (resumeFrom > counted) this.bumpProgress(operationId, resumeFrom - counted);
+            this.voiceDetail(operationId, "resuming at " + String(resumeFrom) + " of " +
+              String(item.sizeBytes ?? response.totalBytes ?? 0) + " bytes");
+          } else if (resumeFrom > 0) {
+            // the host ignored the range: the wire restarts from byte
+            // 0, and the ledger rewinds with it (the restarted count
+            // is the truth; the dead prefix's count is a lie)
+            this.rewindProgress(operationId);
+            this.voiceDetail(operationId, "the host ignored the range request — downloading from byte 0");
+          }
+          const landed = await this.writer.write({
+            root: this.writerRoot,
+            relativePath,
+            expectedSha256: item.sha256,
+            operationId,
+            source: countedSource(response.body, (count) => this.bumpProgress(operationId, count)),
+            sizeBytes: item.sizeBytes,
+            // the writer re-runs the adoption scan under this arm's lock
+            // and appends from the part it actually adopts
+            ...(resumed ? { resumeFrom } : {}),
+            // the verify heartbeat: hash chunks + phase boundaries poke
+            // the watchdog's clock (the field above) — a slow multi-GB
+            // verify reads as flow, never as a frozen stream — and the
+            // FIRST heartbeat carries the verify boundary to the
+            // ledger's state word (acquiring → verifying: the honest
+            // phase law, audit F5)
+            onVerifyBytes: () => {
+              this.verifyFlowAt.set(operationId, Date.now());
+              // the FIRST heartbeat carries the verify boundary to the
+              // state machine (acquiring → verifying, mirrored into the
+              // ledger by move()) — later heartbeats only re-arm the
+              // clock
+              const entry = this.weightProgress.get(operationId);
+              if (entry !== undefined && entry.state === "acquiring") {
+                this.move(ref, operationId, "verifying");
+              }
+              // every heartbeat carries the phase to the ledger — the
+              // bytes sit frozen at the total through a multi-GB hash,
+              // and the phase is the only movement on the poll
+              this.voicePhase(operationId, "verify");
+            },
+          }, attempt.signal);
+          this.move(ref, operationId, "installed");
+          return itemResult(item, "active", "active", {
+            path: landed.path,
+            sha256: landed.sha256,
+            integrity: "declared-sha256",
+          });
+        } catch (error: unknown) {
+          // THE STALL READ COMES FIRST: the watchdog's abort makes the
+          // writer throw ProvisioningError("cancelled") — the stall's
+          // own teardown — so the refusal must be read BEFORE the
+          // ProvisioningError conversion or every recovery reads as a
+          // plain cancel (the burn's first red, 2026-11-05).
+          const stall = this.takeStallRefusal(operationId);
+          if (stall !== undefined && stall.code === "artifact/stalled" && attemptNo < this.acquireStallRetries) {
             const entry = this.weightProgress.get(operationId);
-            if (entry !== undefined && entry.state === "acquiring") {
-              this.move(ref, operationId, "verifying");
-            }
-            // every heartbeat carries the phase to the ledger — the
-            // bytes sit frozen at the total through a multi-GB hash,
-            // and the phase is the only movement on the poll
-            this.voicePhase(operationId, "verify");
-          },
-        }, signal);
-        this.move(ref, operationId, "installed");
-        return itemResult(item, "active", "active", {
-          path: landed.path,
-          sha256: landed.sha256,
-          integrity: "declared-sha256",
-        });
-      } catch (error) {
-        if (error instanceof ProvisioningError) {
-          throw new ItemRefusal("failed", "artifact/" + error.code, error.message);
+            this.voiceDetail(operationId, "stalled at " + String(entry?.bytes ?? 0) + " of " +
+              String(entry?.total ?? 0) + " bytes — re-opening the fetch at the kept offset (attempt " +
+              String(attemptNo + 2) + " of " + String(this.acquireStallRetries + 1) + ")");
+            await stallRetryDelay(signal);
+            continue;
+          }
+          if (stall !== undefined) {
+            this.stallRefusals.set(operationId, stall);
+            throw stall;
+          }
+          if (error instanceof ProvisioningError) {
+            throw new ItemRefusal("failed", "artifact/" + error.code, error.message);
+          }
+          throw error;
+        } finally {
+          stopStallWatch();
+          this.stallAborters.delete(operationId);
+          signal.removeEventListener("abort", onOuterAbort);
         }
-        throw error;
-      } finally {
-        stopStallWatch();
       }
     }
     if (this.manager?.installModel === undefined) {
@@ -2066,6 +2172,17 @@ export class ProvisioningService extends Service implements ProvisioningServiceD
     this.weightProgress.set(operationId, { ...entry, detail });
   }
 
+  /** THE RESTART REWIND (the ignored-range law's ledger face, the
+   * recovery loop's second red, 2026-11-05): a host that answers 200
+   * to a ranged ask restarts the flight from byte 0 — the in-place
+   * ledger rewinds to the restarted truth, never keeps the dead
+   * prefix's count (a fresh operation never carries one). */
+  private rewindProgress(operationId: string): void {
+    const entry = this.weightProgress.get(operationId);
+    if (entry === undefined || entry.bytes === 0) return;
+    this.weightProgress.set(operationId, { ...entry, bytes: 0 });
+  }
+
   /** THE F9 ENTRY FILL (the tracker's denominator keep): creates the
    *  live entry when the blocking path is the first writer, and never
    *  shrinks a background start's plan total. */
@@ -2158,7 +2275,14 @@ export class ProvisioningService extends Service implements ProvisioningServiceD
             // frozen offset instead of re-downloading from byte 0
             (total > 0 ? "; the landed part is kept and the retry resumes at " + String(bytes) + " of " + String(total) : ""),
         ));
-      this.locks.get(key)?.controller.abort();
+      // THE ATTEMPT-SCOPED TEARDOWN (the recovery loop's other arm,
+      // 2026-11-05): a live direct-fetch attempt dies with ITS wire —
+      // the operation's lock lives to re-open at the kept offset. No
+      // attempt seat (a verify stall, a non-direct arm) keeps the
+      // legacy teardown: the lock's own controller.
+      const attempt = this.stallAborters.get(operationId);
+      if (attempt !== undefined) attempt.abort();
+      else this.locks.get(key)?.controller.abort();
     }, ACQUIRE_STALL_TICK_MS);
     return (): void => {
       fired = true;

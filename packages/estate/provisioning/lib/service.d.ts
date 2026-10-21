@@ -19,6 +19,11 @@ import type { Context, Plugin } from "@deepseek-ai/cordis";
  *  their own explicit budget (stalledConfig's 250ms), and the
  *  deployment face is ProvisioningConfig.acquireStallTimeoutMs. */
 export declare const ACQUIRE_STALL_TIMEOUT_MS = 10000;
+/** THE STALL AUTO-RECOVERY BUDGET (the "will never finish" burn,
+ *  2026-11-05): a wedged wire re-opens at its kept part's offset this
+ *  many times before the acquire settles failed — the deployment-varying
+ *  face is ProvisioningConfig.acquireStallRetries. */
+export declare const ACQUIRE_STALL_RETRIES = 6;
 import { type ActivateOptions, type EnsureOptions, type ExternalProvisionRequest, type ProvisionOperation, type ProvisionPlan, type ProvisionResult, type ProvisionState, type ResourceRef, type ResourceStatus, type WeightAcquireProgress } from "./contracts.js";
 import type { ProvisioningConfig, ProvisioningServiceDefinition } from "./ports.js";
 /** THE BUSY REFUSAL (audit I-S4): startWeightAcquire throws this when
@@ -80,6 +85,18 @@ export declare class ProvisioningService extends Service implements Provisioning
      *  ProvisioningConfig.acquireStallTimeoutMs, defaulting to
      *  ACQUIRE_STALL_TIMEOUT_MS). */
     private readonly acquireStallTimeoutMs;
+    /** THE STALL AUTO-RECOVERY BUDGET (the constructor's read of
+     *  ProvisioningConfig.acquireStallRetries, defaulting to
+     *  ACQUIRE_STALL_RETRIES). */
+    private readonly acquireStallRetries;
+    /** THE ATTEMPT-SCOPED ABORT SEAT (the recovery loop's other arm):
+     *  the direct arm's CURRENT fetch attempt per operation. The
+     *  watchdog aborts THIS controller on a stall — the wedged wire
+     *  dies, the operation's lock lives to re-open at the kept offset.
+     *  No seat (a verify stall, a non-direct arm) keeps the legacy
+     *  teardown: the lock's own controller. Deleted on every attempt
+     *  exit, never a leak. */
+    private readonly stallAborters;
     /** THE STALL VOICE SEAT: the watchdog's refusal per operation,
      *  consumed once by the item loop — the abort the refusal rode
      *  would otherwise read as a cancellation at refusalFor, and a
@@ -124,6 +141,12 @@ export declare class ProvisioningService extends Service implements Provisioning
      *  lands here, and the deployment wall reads it back. Never the
      *  constant: an operator-tuned window answers tuned. */
     stallBudgetMs(): number;
+    /** THE STALL AUTO-RECOVERY BUDGET'S READ FACE (the recovery wall's
+     *  seat): the validated retry count the direct arm re-opens with —
+     *  the composition's pass-through lands here, and the wall reads it
+     *  back. Never the constant: an operator-tuned budget answers
+     *  tuned. */
+    stallRetryBudget(): number;
     /** THE F9 PROGRESS READ (the tracker's poll): a copy of the live
      *  byte ledger for one operation id, null when unknown. Bytes are
      *  counted as the fetcher stream lands — real landed bytes, never
@@ -223,6 +246,12 @@ export declare class ProvisioningService extends Service implements Provisioning
      *  the resume offset, or the ignored-range restart. No entry, no
      *  write; a terminal result's detail overwrites it in complete(). */
     private voiceDetail;
+    /** THE RESTART REWIND (the ignored-range law's ledger face, the
+     * recovery loop's second red, 2026-11-05): a host that answers 200
+     * to a ranged ask restarts the flight from byte 0 — the in-place
+     * ledger rewinds to the restarted truth, never keeps the dead
+     * prefix's count (a fresh operation never carries one). */
+    private rewindProgress;
     /** THE F9 ENTRY FILL (the tracker's denominator keep): creates the
      *  live entry when the blocking path is the first writer, and never
      *  shrinks a background start's plan total. */

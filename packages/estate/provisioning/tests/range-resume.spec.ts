@@ -194,6 +194,10 @@ describe("the direct arm's range resume (audit download-stack-audit-2026-10-20 F
       declaration: { resolve: async (): Promise<ProvisionPlan> => plan() },
       storeRoot: root,
       acquireStallTimeoutMs: 250,
+      // THE RECOVERY DEFAULT MOVED ON (stall-recovery.spec, 2026-11-05):
+      // this arm judges the EXHAUSTED backstop's face — the kept part
+      // the manual Retry adopts — so it rides the single-flight budget
+      acquireStallRetries: 0,
       fetcher: async (_url: string, signal?: AbortSignal) => ({
         status: 200,
         body: (async function* generate(): AsyncGenerator<Uint8Array> {
@@ -234,6 +238,10 @@ describe("the direct arm's range resume (audit download-stack-audit-2026-10-20 F
       declaration: { resolve: async (): Promise<ProvisionPlan> => plan() },
       storeRoot: root,
       acquireStallTimeoutMs: 250,
+      // single-flight budget (the exhausted backstop's face — the
+      // manual Retry this arm judges is the recovery default's
+      // exhausted backstop, stall-recovery.spec ARM 2/3)
+      acquireStallRetries: 0,
       fetcher: async (_url: string, signal?: AbortSignal, init?: { rangeFrom?: number }) => {
         calls += 1;
         if (calls === 1) {

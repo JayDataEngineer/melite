@@ -450,15 +450,19 @@ export class VerifiedArtifactWriter implements ArtifactWriterPort {
     await preparePath(request.root, destination);
     throwIfAborted(signal);
     const temporary = `${destination}.part-${operationId}`;
-    await rm(temporary, { force: true });
     // THE RANGE RESUME ADOPTION (audit download-stack-audit-2026-10-20
     // F7): a resume ask renames the previous attempt's newest viable
-    // part to THIS operation's part name and opens for append — every
-    // attempt mints its own operation id, so adoption-by-rename is
-    // what moves the old bytes under the live part (and out of the
-    // scan: the reaper can never eat an adopted part, it no longer
-    // exists under the old name). A clean start (resumeFrom 0/absent)
-    // keeps the delete-and-recreate the 200-fallback needs.
+    // part to THIS operation's part name and opens for append. A clean
+    // start (resumeFrom 0/absent) keeps the delete-and-recreate the
+    // 200-fallback needs.
+    // THE SAME-ID RE-ENTRY (the "will never finish" burn, 2026-11-05):
+    // the stall recovery loop re-enters write under the SAME operation
+    // id, so its kept part sits under `temporary` itself — the rm must
+    // not delete the bytes the resume is here to adopt. The delete
+    // runs only when adoption took nothing (a clean start, or a resume
+    // whose candidate vanished between the service's scan and this
+    // lock): a stale own-name part then clears before the
+    // exclusive-create below.
     let adopted = 0;
     if ((request.resumeFrom ?? 0) > 0) {
       const candidate = await newestAdoptablePart(destination, request.sizeBytes);
@@ -467,6 +471,7 @@ export class VerifiedArtifactWriter implements ArtifactWriterPort {
         adopted = candidate.sizeBytes;
       }
     }
+    if (adopted === 0) await rm(temporary, { force: true });
     const iterator = iteratorFor(request.source);
     let handle: FileHandle | undefined;
     let landed = false;
