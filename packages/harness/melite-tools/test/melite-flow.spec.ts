@@ -757,7 +757,10 @@ describe('melite_flow tile contract — the chat hydrates from the render', () =
     assert.equal(seen.calls.filter((c) => c.lane === 'runsStart').length, 0)
     const text = (tool.output.render({ bench: true }, out as never) as Array<{ text?: string }>)
       .map((p) => p?.text ?? '').join('\n')
-    assert.ok(text.includes('s_0 tts [done]'), 'a skipped row prints stage, card, and its skipped mark')
+    assert.ok(
+      text.includes('s_0 tts [skipped done — unchanged since its last run; patch params to re-run]'),
+      'a skipped row SAYS it skipped — never the bare [done] that sent the warm-fire agent hunting a run that never existed',
+    )
     assert.ok(!text.includes('→'), 'no arrow prints — there is no id to point at')
   })
 

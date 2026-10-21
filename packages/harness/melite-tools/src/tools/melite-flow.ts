@@ -1023,7 +1023,17 @@ export function meliteFlow(estate: Estate): ToolDefinition {
           ? (pass as Array<Record<string, unknown>>).map((p) =>
             '  · ' + String(p['stage'] ?? '?') + ' ' + String(p['card'] ?? '?')
             + (typeof p['run_id'] === 'string' && p['run_id'] !== '' ? ' → ' + p['run_id'] : '')
-            + ' [' + String(p['status'] ?? p['skipped'] ?? '?') + ']'
+            // THE HONEST SKIP FACE (the warm-fire no-op lie): a
+            // skipped row printed [done] — indistinguishable from a
+            // minted run, and the agent hunted a run that never
+            // existed. The skip says WHAT it skipped and WHY.
+            // THE HONEST SKIP FACE (the warm-fire no-op lie): a
+            // skipped row printed [done] — indistinguishable from a
+            // minted run, and the agent hunted a run that never
+            // existed. The skip says WHAT it skipped and WHY.
+            + ' [' + (p['status'] === undefined && p['skipped'] !== undefined
+              ? 'skipped ' + String(p['skipped']) + ' — unchanged since its last run; patch params to re-run'
+              : String(p['status'] ?? p['skipped'] ?? '?')) + ']'
             + (typeof p['url'] === 'string' && p['url'] !== '' ? ' ' + p['url'] : '')
             + (Array.isArray(p['host_paths']) && (p['host_paths'] as unknown[]).length > 0
               ? ' (host: ' + (p['host_paths'] as string[]).join(', ') + ')' : ''),

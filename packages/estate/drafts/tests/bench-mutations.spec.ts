@@ -16,6 +16,50 @@ import { boot, seed, codeOf } from "./bench-helpers.ts";
 
 // ── patch: the full arm set ─────────────────────────────────────
 
+test("a params patch that CHANGES the view invalidates the stage's done mark (the silent no-op cure, session 90a0b920's warm fire)", async () => {
+  // THE BURN: the agent patched params, ran the bench, and the
+  // skip-done law folded the row — [done] answered, no run minted,
+  // no run_id, twelve diagnostic calls hunting a run that never
+  // existed. The done mark described the PREVIOUS params; the law
+  // that skips unchanged stages has no business skipping changed
+  // ones. The door maintains the coherence itself: the patch that
+  // changes the view clears the mark its run memory now lies about.
+  const drafts = await boot();
+  await seed(drafts, "stale1", {
+    stages: [{ id: "a", card: "hero", params: { steps: 4 },
+      runStatus: "done", result: { run_id: "r-1", url: "/runs/r-1/out.png" } }],
+  });
+  const ans = await patchBench(drafts, "stale1", {
+    stage: "a", params: { steps: 9 }, expect_rev: 0,
+  }) as Record<string, unknown>;
+  // the answer NAMES the invalidation — the model reads why its
+  // next run re-runs the stage instead of skipping it.
+  assert.equal(ans["stale"], true, "a changed patch answers stale: true");
+  const row = (getBench(drafts, "stale1").stages as Array<Record<string, unknown>>)[0]!;
+  assert.equal(row["runStatus"], undefined, "the done mark is gone — the skip law cannot fold it");
+  // the artifact memory stands: the enrichment read keeps the last
+  // run's url (the invalidation owns the SKIP decision, not history).
+  assert.deepEqual(row["result"], { run_id: "r-1", url: "/runs/r-1/out.png" });
+});
+
+test("an idempotent patch keeps the done mark — staleness judges the VIEW, not the write", async () => {
+  // The inverse law: an agent re-asserting the same params (a
+  // re-read-compose loop) did not change what the next run
+  // composes; skipping stays true and the answer carries no stale
+  // key (a false stale would teach the model a re-run it does not
+  // owe — the GPU burn the skip law exists to prevent).
+  const drafts = await boot();
+  await seed(drafts, "stale2", {
+    stages: [{ id: "a", card: "hero", params: { steps: 4 }, runStatus: "done" }],
+  });
+  const ans = await patchBench(drafts, "stale2", {
+    stage: "a", params: { steps: 4 }, expect_rev: 0,
+  }) as Record<string, unknown>;
+  assert.equal(ans["stale"], undefined, "no change, no stale key");
+  const row = (getBench(drafts, "stale2").stages as Array<Record<string, unknown>>)[0]!;
+  assert.equal(row["runStatus"], "done", "the done mark stands — the view is unchanged");
+});
+
 test("patch refuses non-string stages, non-record params, and empty bodies", async () => {
   const drafts = await boot();
   await ensureBench(drafts, { session: "s", stages: [{ id: "a" }] });

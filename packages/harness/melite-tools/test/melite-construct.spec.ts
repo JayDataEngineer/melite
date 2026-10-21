@@ -393,6 +393,30 @@ describe('melite_construct mutations — every verb', () => {
     assert.deepEqual(seen[0]!.args[2], { stage: 's1', params: { p: 1 }, expect_rev: 5 })
   })
 
+  test('a changed patch answers stale:true — the model reads WHY its next run re-runs (the silent no-op cure)', async () => {
+    // The door's invalidation is invisible unless the answer
+    // carries it: the patch that cleared a done mark must say so,
+    // or the agent meets an unexplained skip-to-run transition.
+    // The payload prints every key — stale rides the door's own
+    // answer, and its ABSENCE on an idempotent write is equally
+    // readable (the done mark stands).
+    const { estate } = mockEstate((lane, args) => {
+      if (lane === 'benchVerb' && args[1] === 'patch') return { rev: 7, stage: 's1', patched: ['p'], stale: true }
+      throw new Error('unmocked lane ' + lane)
+    })
+    const tool = meliteConstruct(estate)
+    const out = await tool.execute({ verb: 'patch', stage: 's1', params: { p: 2 }, expect_rev: 6 }, exec()) as Record<string, unknown>
+    assert.equal(out.stale, true, 'the door\'s staleness voice rides the answer')
+    const quiet = await (async () => {
+      const { estate: e2 } = mockEstate((lane, args) => {
+        if (lane === 'benchVerb' && args[1] === 'patch') return { rev: 8, stage: 's1', patched: ['p'] }
+        throw new Error('unmocked lane ' + lane)
+      })
+      return meliteConstruct(e2).execute({ verb: 'patch', stage: 's1', params: { p: 2 }, expect_rev: 7 }, exec()) as Promise<Record<string, unknown>>
+    })()
+    assert.equal(quiet.stale, undefined, 'an idempotent write carries no stale key')
+  })
+
   test('patch merges params onto one stage', async () => {
     const { seen, estate } = mockEstate((lane, args) => {
       if (lane === 'benchVerb' && args[1] === 'patch') return { rev: 6, stage: 's1', patched: ['p'] }

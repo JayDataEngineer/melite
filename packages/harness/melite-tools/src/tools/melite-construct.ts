@@ -841,7 +841,15 @@ export function meliteConstruct(
           const r = await postBenchVerb(estate, bench, 'patch',
             { stage: a.stage, params: a.params, expect_rev: rev0 }, signal)
           const spellLines = spellVoiceOf(a.params, wiredInputs)
-          return out({ rev: r.rev, stage: r.stage, patched: r.patched, ...(spellLines.length > 0 ? { spells: spellLines } : {}) })
+          // THE STALENESS VOICE (the silent no-op cure): the door
+          // answers stale:true when the patch changed params and
+          // invalidated the stage's done mark — the model reads WHY
+          // its next flow will re-run (or, absent stale, that the
+          // write was idempotent and the done mark stands).
+          const stale = r['stale'] === true
+          return out({ rev: r.rev, stage: r.stage, patched: r.patched,
+            ...(stale ? { stale: true } : {}),
+            ...(spellLines.length > 0 ? { spells: spellLines } : {}) })
         }
         if (verb === 'add_stage') {
           // LOUD, never accept-and-ignore (2026-09-21): add_stage

@@ -961,6 +961,8 @@ export async function patchBench(
     : "agent";
   const before: Record<string, unknown> = {};
   const added: string[] = [];
+  let paramsChanged = false;
+  let staleCleared = false;
   // THE FAMILY RESEAT'S RECEIPT, hoisted (the row below rides it; the
   // reseat itself runs inside the params arm above).
   let reseatDropped: readonly string[] | undefined;
@@ -976,6 +978,12 @@ export async function patchBench(
     const cur: Record<string, unknown> = isRecord(st["params"])
       ? { ...(st["params"] as Record<string, unknown>) }
       : {};
+    // THE STALENESS CAPTURE (the silent no-op cure, session
+    // 90a0b920's warm fire): the pre-patch params, canonically
+    // spelled — if the stored view differs, the stage's run memory
+    // is a lie (it describes a run of params that no longer exist)
+    // and the skip-done law must not skip what changed.
+    const beforeCanonical = canonicalParams(cur);
     for (const k of Object.keys(paramsIn)) {
       if (Object.prototype.hasOwnProperty.call(cur, k)) before[k] = cur[k];
       else added.push(k);
@@ -1102,6 +1110,20 @@ export async function patchBench(
       toleratedByRow([st], liveIdsOf(stagesOf(loaded.doc))).get(stageId),
     );
     st["params"] = stored;
+    // THE STALENESS ARM (the silent no-op cure): a params change
+    // invalidates the stage's run memory — the done mark described
+    // the PREVIOUS params, and the skip-done law (bench order, Run
+    // All's own law) skipped the patched stage while the flow
+    // answered [done] with nothing minted. The agent burned twelve
+    // calls diagnosing the no-op. Clearing runStatus here is the
+    // door maintaining coherence, never a caller outcome write
+    // (the refusal above governs the CALLER's runStatus key); the
+    // result row keeps the last artifact for the enrichment read.
+    paramsChanged = canonicalParams(stored) !== beforeCanonical;
+    if (paramsChanged && typeof st["runStatus"] === "string" && st["runStatus"] !== "") {
+      delete st["runStatus"];
+      staleCleared = true;
+    }
   }
   if (paramsIn === undefined) {
     throw new RemoteError(
@@ -1124,7 +1146,25 @@ export async function patchBench(
     stage: stageId,
     patched: Object.keys(paramsIn).sort(),
     ...(reseatDropped !== undefined ? { dropped: reseatDropped } : {}),
+    ...(staleCleared ? { stale: true } : {}),
   };
+}
+
+/** Canonical params spelling for the staleness compare — sorted
+ * keys, recursively (a params view is a shallow record of scalars
+ * and one-deep records; this spells both orders identically). */
+function canonicalParams(view: Record<string, unknown>): string {
+  const walk = (v: unknown): unknown => {
+    if (v !== null && typeof v === "object" && !Array.isArray(v)) {
+      const out: Record<string, unknown> = {};
+      for (const k of Object.keys(v as Record<string, unknown>).sort()) {
+        out[k] = walk((v as Record<string, unknown>)[k]);
+      }
+      return out;
+    }
+    return v;
+  };
+  return JSON.stringify(walk(view));
 }
 
 const ADD_KEYS = ["id", "card", "engine", "params", "inputs", "outputs", "expected", "expect_rev", "author"];
