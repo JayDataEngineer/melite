@@ -65,7 +65,16 @@ const seat = (cardOver: Record<string, (...args: never[]) => unknown> = {}): Sea
   const ctx = new Context();
   new FlowsSeatService(ctx);
   const core = new QueueCore();
-  (ctx as unknown as { queue: unknown }).queue = { core, stateRoot: state };
+  (ctx as unknown as { queue: unknown }).queue = {
+    core,
+    stateRoot: state,
+    // the roots manifest the durable-row walks probe (the doors
+    // spec's shape): the settled-truth resync reads it on every
+    // live-row status/stop
+    get stateRoots(): string[] {
+      return [state];
+    },
+  };
   (ctx as unknown as { draftsRemote: unknown }).draftsRemote = {
     // the happy path only (a re-audit finding, 2026-10-16): the
     // transport-down and not-found legs this mock used to carry had

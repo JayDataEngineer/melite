@@ -7,7 +7,15 @@ export const DECL = {
     "engine": "comfyui",
     "defaults": {
         "mode": "tts",
-        "voice": "vivian",
+        // THE NO-DEFAULT-VOICE LAW (operator ruling 2026-11-10, verbatim:
+        // "Make sure it DEFAULTS to no voice, instead of VIVIAN"): the
+        // family defaults seed NO persona — a fresh card's voice is
+        // UNSTATED, the compose seat omits the engine input (the node's
+        // own default resolves it; AudiocoreTTS.voice is optional), and
+        // the resurrect class dies at the root: no family default for
+        // prepare to re-inject after laneMigrate drops a stated carry.
+        // The presets stay OFFERED (PRESET_SPEAKERS); vivian is a choice,
+        // never a seed.
         // THE VARIANT STAMP: the family's resting lane rides the
         // defaults so every derived row's model_defaults names its
         // lane. It is the selection's default coordinate, and the lane
@@ -215,15 +223,13 @@ export const DECL = {
             },
             "resolver_defaults": {
                 "variant": "voicedesign",
-                // THE NULL STAMP (the size-at-quant fold, operator 2026-10-26:
-                // the merged family defaults the persona `voice: "vivian"`
-                // for the customvoice head — the design lane's surface takes
-                // no persona, so the stamp unsets it here, the base lane's
-                // own null stamp verbatim. Without it the verdict's prepare
-                // re-injects the family default AFTER laneMigrate drops the
-                // stated carry, and the switch refuses the resurrect —
-                // "field 'voice' fires nothing on this lane" on a state no
-                // author wrote (the stuck-switch wall's two red arms).
+                // THE NULL STAMP (kept by the no-default-voice ruling,
+                // 2026-11-10: "KEEP the null stamps for the real switches"):
+                // the design lane's surface takes no persona, so a USER-STATED
+                // voice carried from customvoice unsets here, the base lane's
+                // own null stamp verbatim. The drop itself is judged at the
+                // pick seam (dropStaleAxisCarry — the tts-gate-surface-merge
+                // walls); the stamp is the resolver-side belt.
                 "voice": null,
             },
             "cells": [
@@ -258,11 +264,12 @@ export const DECL = {
                 ],
             },
             // THE NULL STAMP (operator 2026-09-23, "base doesn't even have
-            // the audio input"): voice:null unsets the family's persona
-            // default on a lane whose surface does not declare it. The
-            // ADDRESS needs no re-point under the fold — the selected
-            // cell owns it (a variant:'base' pick resolves its cell's
-            // route at compose).
+            // the audio input"; kept by the no-default-voice ruling
+            // 2026-11-10 — the real switches still drop a USER-STATED
+            // carry): voice:null unsets the persona on a lane whose surface
+            // does not declare it. The ADDRESS needs no re-point under the
+            // fold — the selected cell owns it (a variant:'base' pick
+            // resolves its cell's route at compose).
             "resolver_defaults": {
                 "variant": "base",
                 "voice": null,

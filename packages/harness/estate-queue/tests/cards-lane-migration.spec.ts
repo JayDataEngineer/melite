@@ -87,20 +87,19 @@ const DESIGNED_FLOOR_ROSTER: readonly string[] = [
   // form schema; the variant surface simply omits what it inherits)
   "joycaption/standard:checkpoint",
   // qwen3-tts families: mode ("tts") is the form's routing knob on
-  // every lane; voice ("vivian") is the persona floor the read
-  // lanes inherit (steady-read/expressive-read select prosody, the
-  // voice rides admitted and unused where the graph ignores it)
+  // every lane. THE VOICE RIDERS ARE GONE (the no-default-voice
+  // ruling, 2026-11-10 — operator: "Make sure it DEFAULTS to no
+  // voice, instead of VIVIAN"): the recipe lanes' voice riders
+  // (steady-read/expressive-read/default) existed only because the
+  // family defaults seeded vivian onto every stamp; the seed is dead,
+  // so the pin shrinks with the riders it pinned.
   ...[
     "customvoice:mode", "voicedesign:mode", "base:mode",
-    "steady-read:mode", "steady-read:voice",
-    "expressive-read:mode", "expressive-read:voice",
-    "default:mode", "default:voice",
+    "steady-read:mode", "expressive-read:mode", "default:mode",
   ].map((lane) => "qwen3-tts/" + lane),
   ...["steady-read:mode", "expressive-read:mode", "default:mode"].map((lane) => "qwen3-tts-base/" + lane),
   ...[
-    "steady-read:mode", "steady-read:voice",
-    "expressive-read:mode", "expressive-read:voice",
-    "default:mode", "default:voice",
+    "steady-read:mode", "expressive-read:mode", "default:mode",
   ].map((lane) => "qwen3-tts-voicedesign/" + lane),
   ...["steady-read:mode", "expressive-read:mode", "default:mode"].map((lane) => "qwen3-tts-voicedesign-design/" + lane),
   ...["steady-read:mode", "expressive-read:mode", "default:mode"].map((lane) => "qwen3-tts-voicedesign-base/" + lane),

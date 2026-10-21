@@ -140,23 +140,24 @@ function composeGateRefusal(
   user: SpecValues,
   frame: Record<string, unknown>,
 ): string | null {
-  const v = composeGateViolation(spec, held, user, frame)
+  const v = composeGateViolations(spec, held, user, frame)[0] ?? null
   return v === null ? null : gateRefusalVoice(v)
 }
 
-/** THE GATE'S STRUCTURED HALF (SD-7, the refusal-without-cure cure):
- *  the refusal's named field, when the producing clause knows it —
- *  the mirror and family clauses name keys NO rendered control owns,
- *  so the banner must let the words act (the field's unstamp). */
-function composeGateViolation(
+/** THE GATE'S FULL SET (the singularity cure, 2026-11-10): EVERY
+ *  violation the candidate carries — the press strip voices one row
+ *  per refusal (the old seat kept [0] and the banner re-voiced the
+ *  rest: the twice face). The mirror and family clauses name keys NO
+ *  rendered control owns, so each row's words must act (the field's
+ *  unstamp), not just name. */
+function composeGateViolations(
   spec: FormSpecDoc | null,
   held: Record<string, unknown> | undefined,
   user: SpecValues,
   frame: Record<string, unknown>,
-): ComposeViolation | null {
-  if (spec === null) return null
-  const violations = composeValidate(spec, composeCandidateDoc(held ?? {}, user, frame))
-  return violations[0] ?? null
+): ComposeViolation[] {
+  if (spec === null) return []
+  return composeValidate(spec, composeCandidateDoc(held ?? {}, user, frame))
 }
 
 export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRemoved, onResync, onPatchParams, renderStageView, renderPreview, onSurface, runId, canRemove, bindRun, bindEnhance }: {
@@ -238,11 +239,14 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
   const [enhancing, setEnhancing] = useState(false)
   const [enhanceNote, setEnhanceNote] = useState<{ err: boolean, text: string } | null>(null)
   const [error, setError] = useState<string | null>(null)
-  // THE BANNER'S ACTABLE FIELD (SD-7): the gate refusal's named field
-  // — present only while the banner's words are the gate's own; the
-  // unstamp affordance rides it (a banner that names a field the form
-  // does not render must let the words act, never refuse without cure).
-  const [gateField, setGateField] = useState<string | null>(null)
+  // THE STRIP'S GATE SET (the singularity cure, 2026-11-10 — the
+  // operator: "ERRORS APPEAR TWICE ON THE TTS CARD, ONE ABOVE AND
+  // BELOW, AND I CAN ONLY CLOSE THE BOTTOM ERROR MESSAGE"): EVERY
+  // gate refusal the press seat judged — one refusal is one row on
+  // ONE closable strip, each row's words acting through its own
+  // field-named unstamp. The old seat kept violations[0] and let the
+  // banner re-voice the rest (the twice face); the set owns them all.
+  const [gateSet, setGateSet] = useState<ComposeViolation[]>([])
   // THE LEDGER FACE (the write-seat audit's silent-dead-write finding,
   // 2026-10-10): the ordinary authoring branch used to swallow its
   // write failures (`.catch(() => {})`) — a typed edit whose write
@@ -502,7 +506,7 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
         // already answered (never an arrival-window fence over a
         // settled failure).
         if (pendingSpecRef.current?.seq === fetchSeq) pendingSpecRef.current = null
-        setGateField(null); setError(rejectionVoice(e))
+        setGateSet([]); setError(rejectionVoice(e))
         setLoaded(true)
       })
     return () => { alive = false }
@@ -607,7 +611,7 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
       const landedM: Record<string, unknown> = {}
       const nullsM: Record<string, unknown> = {}
       for (const [k, kv] of Object.entries(rescoped)) {
-        if (axisUnset(k, kv, spec)) nullsM[k] = null
+        if (axisUnset(k, kv, spec) || kv === null) nullsM[k] = null
         else landedM[k] = kv
       }
       for (const k of Object.keys(landedM)) touchedRef.current.add(k)
@@ -805,7 +809,14 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
     const landed: Record<string, unknown> = {}
     const nulls: Record<string, unknown> = {}
     for (const [k, v] of Object.entries(rescoped)) {
-      if (axisUnset(k, v, spec)) nulls[k] = null
+      // THE CARRY NULL IS A NULLS KEY (the resurrect cure's client
+      // half, 2026-11-10): the pick patch's null verdicts (the
+      // carried key the resolved lane does not declare —
+      // dropStaleAxisCarry) ride the frame as JSON-Merge-Patch nulls
+      // and LEAVE the user map; a null landed into the user map would
+      // ride composeCandidateDoc verbatim (only frame nulls consume)
+      // and the mirror would refuse the mark itself.
+      if (axisUnset(k, v, spec) || v === null) nulls[k] = null
       else landed[k] = v
     }
     setUser((m) => {
@@ -900,7 +911,7 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
       for (const [k, v] of Object.entries(m)) if (k !== name) next[k] = v
       return next
     })
-    setGateField(null)
+    setGateSet([])
     setError(null)
     // the WRITE FACE too: the trailing write's gate voiced the same
     // field-named refusal on its own face — its subject just left the
@@ -1108,7 +1119,7 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
       // window must never write.
       const pending = pendingSpecRef.current
       if (pending !== null) {
-        setGateField(null); setError(`the ${pending.family} spec is still settling — press Run again once the form lands`)
+        setGateSet([]); setError(`the ${pending.family} spec is still settling — press Run again once the form lands`)
         return
       }
       // THE USER LAYER RIDES VERBATIM (the parameter audit): the
@@ -1161,13 +1172,15 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
         }
         // THE COMPOSE GATE AT THE RUN SEAT: the full-doc sync is a
         // write like any other — an invalid candidate refuses HERE,
-        // in the studio, before anything reaches the engine. The
-        // refusal's named field rides the banner as the unstamp
-        // affordance (SD-7): the words act, not just name.
-        const violation = composeGateViolation(spec, baseAfterSync, user, {})
-        if (violation !== null) {
-          setError(gateRefusalVoice(violation))
-          setGateField(violation.field ?? null)
+        // in the studio, before anything reaches the engine. THE
+        // SINGULARITY CURE: the WHOLE judged set lands on the ONE
+        // strip — one row per refusal, each row's words acting
+        // through its own field-named unstamp; the banner stands
+        // down for every voiced row (mutedViolations).
+        const gateViolations = composeGateViolations(spec, baseAfterSync, user, {})
+        if (gateViolations.length > 0) {
+          setError(gateViolations.map((v) => gateRefusalVoice(v)).join('\n'))
+          setGateSet(gateViolations)
           return
         }
         try {
@@ -1179,7 +1192,7 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
           // fence refuses on), never a bare rejection string the row
           // never heard of. The resync pulls the fresh rev so the
           // next press re-tries against the doc that actually landed.
-          setGateField(null); setError(unlandedWriteVoice(bench.draftId, stage.id))
+          setGateSet([]); setError(unlandedWriteVoice(bench.draftId, stage.id))
           onResync?.()
           return
         }
@@ -1195,7 +1208,7 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
       // onRun prop may be any host's verb, and a bare start must be
       // unexpressible from this seat.
       const fence = await refuseForUnlandedWrite(bench.draftId, stage.id)
-      if (fence !== null) { setGateField(null); setError(fence); return }
+      if (fence !== null) { setGateSet([]); setError(fence); return }
       onRun()
     } catch (e: unknown) {
       // The write's own throw never reaches here (the sync's inner
@@ -1203,7 +1216,7 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
       // non-write failures of the press — the fence's ledger read
       // and the host's onRun verb — where the bare reason is the
       // whole story and no row exists to voice it.
-      setGateField(null); setError(rejectionVoice(e))
+      setGateSet([]); setError(rejectionVoice(e))
       onResync?.()
     }
   }
@@ -1235,7 +1248,7 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
       forgetStageWrites(bench.draftId, [stage.id])
       onRemoved()
     } catch (e: unknown) {
-      setGateField(null); setError(rejectionVoice(e))
+      setGateSet([]); setError(rejectionVoice(e))
       setRemoving(false)
       // THE RESYNC LAW: a final refusal (even post-rebase) means this
       // drill's bench view is stale truth — re-read so the next
@@ -1257,7 +1270,7 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
         await ungroupStageWire({ stage: stage.id, expect_rev: bench.rev }, bench.sessionKey)
         onRemoved()
       } catch (e: unknown) {
-        setGateField(null); setError(rejectionVoice(e))
+        setGateSet([]); setError(rejectionVoice(e))
         setRemoving(false)
         onResync?.()
       }
@@ -1524,12 +1537,17 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
         : spec !== null
           ? h(CardForm, {
             spec, user, base: servedBase, onSet, onPick, onUnset, wire,
-            // THE ONE-VOICE LAW (E2-12, "I SEE IT 3 TIMES"): the gate
-            // messages the strip / write face already voice — the
-            // banner stands down for those (its header too, when
+            // THE ONE-VOICE LAW (E2-12, "I SEE IT 3 TIMES"; the
+            // singularity cure rides it): the gate messages the
+            // strip's judged SET voices — one entry per refusal, not
+            // just [0] — plus the write face's own, when distinct.
+            // The banner stands down for those (its header too, when
             // fully muted); every other violation still banners.
-            mutedViolations: [gateRefusalMessage(error), gateRefusalMessage(writeFace === error ? null : writeFace)]
-              .filter((m): m is string => m !== null),
+            mutedViolations: [
+              ...gateSet.map((v) => v.message),
+              gateRefusalMessage(error),
+              gateRefusalMessage(writeFace === error ? null : writeFace),
+            ].filter((m): m is string => m !== null),
             onPatch: onPatchParams,
             // THE TWO PROMPTS' ARMS (stroke 18, the operator's law:
             // offered-but-absent PROMPTS, never blocks): a boarded
@@ -1567,26 +1585,35 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
         // so the next settle re-voices a still-unlanded key.
         error !== null ? h('div', { className: css.drillRunRow },
           h('span', { className: css.runError, 'data-testid': 'stage-error-strip' }, error,
-            gateField !== null ? h(Button, {
+            // THE SINGULARITY CURE (2026-11-10, the operator: "ERRORS
+            // APPEAR TWICE … I CAN ONLY CLOSE THE BOTTOM"): one strip,
+            // one field-named unstamp PER refused row — every
+            // refusal's words act; the strip's one × retires the
+            // whole set at once.
+            gateSet.map((v) => h(Button, {
+              key: (v.field ?? '') + ':' + v.message,
               size: 'sm', variant: 'ghost',
-              'aria-label': chromeCopy.unstampWord + " '" + gateField + "'",
-              onClick: () => { onUnstamp(gateField) },
-            }, chromeCopy.unstampWord + " '" + gateField + "'") : null,
+              'aria-label': chromeCopy.unstampWord + " '" + (v.field ?? '') + "'",
+              onClick: () => { if (v.field != null) onUnstamp(v.field) },
+            }, chromeCopy.unstampWord + " '" + (v.field ?? '') + "'")),
             h(Button, {
               size: 'sm', variant: 'ghost', className: css.errorDismiss,
               'aria-label': chromeCopy.dismissError,
-              onClick: () => { setGateField(null); setError(null) },
+              onClick: () => { setGateSet([]); setError(null) },
             }, h(IconCloseOutlineRegular, { size: 12 }))),
         ) : null,
-        // THE ONE-VOICE LAW (E2-12): a write face whose words the
-        // strip already voices is the SAME refusal at an earlier seat
-        // — it stands down (the strip owns it: unstamp + ×). GATE
-        // REFUSALS ONLY: the gate template is one string per
-        // violation, so equality is identity; the unlanded-write
+        // THE ONE-VOICE LAW (E2-12 + the singularity cure): a write
+        // face whose words the strip already voices is the SAME
+        // refusal at an earlier seat — it stands down (the strip owns
+        // it: unstamp + ×). The strip's voice is the gate SET (one
+        // bare message per refusal) beside the legacy single-voice
+        // error. GATE REFUSALS ONLY: the gate template is one string
+        // per violation, so equality is identity; the unlanded-write
         // template is shared by DIFFERENT events (a refused typed
         // write beside a refused run flush) — those keep both rows,
         // each with its own ×.
         writeFace !== null && !(writeFace === error && gateRefusalMessage(error) !== null)
+          && !(gateRefusalMessage(writeFace) !== null && gateSet.some((v) => v.message === gateRefusalMessage(writeFace)))
           ? h('div', { className: css.drillRunRow },
             h('span', { className: css.runError, 'data-testid': 'stage-write-face' }, writeFace,
               h(Button, {

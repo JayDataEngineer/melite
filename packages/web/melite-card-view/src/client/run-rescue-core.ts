@@ -37,10 +37,25 @@ import { chromeCopy } from '../chromeCopy.ts'
  * `runtime` names a missing ENGINE TOOL RUNTIME (E2-2: the venv the
  * engine's own node needs, e.g. anny-estimator) with the engine's
  * own provision command — the estate owns no runtime-provision
- * door, so the command IS the offer (never a fake install). */
+ * door, so the command IS the offer (never a fake install).
+ * THE WHOLE LIST (the sequential-missing-weight-reveal cure,
+ * 2026-11-09): the gate's missing_all rows ride `more` — the face
+ * lists every missing declared weight and the download fetches them
+ * in order, one settled operation at a time. */
 export type Rescue =
   | { kind: 'extension', pack: string }
-  | { kind: 'model', file: string, target?: string }
+  | {
+    kind: 'model',
+    file: string,
+    target?: string,
+    /** The DECL's declared size for `file`, when the wire row
+     *  carried one (the face's human size, never a guess). */
+    sizeBytes?: number,
+    /** Every missing declared weight BEYOND the lead file, in gate
+     *  order. Absent for a single-file miss (the prose-parsed face).
+     *  Never re-lists a landed file — the gate's re-check owns that. */
+    more?: ReadonlyArray<{ file: string, sizeBytes?: number }>,
+  }
   | { kind: 'runtime', runtime: string, command: string, env?: string }
 
 /** Parse a failed run's reason for a rescueable miss. The
@@ -134,7 +149,9 @@ export function parseRescue(error: string): Rescue | null {
  *  lane_input_missing details row, read into the popup's Rescue —
  *  the exact key at the press site, no prose parsing. Null when the
  *  record is not that row (the prose anchor in parseRescue still
- *  covers the row-derived face). */
+ *  covers the row-derived face). THE WHOLE LIST (the reveal cure,
+ *  2026-11-09): missing_all rows map onto `more` (lead row = `file`)
+ *  with their declared sizes — one face, one press, every weight. */
 export function rescueOfLaneDetails(details: Record<string, unknown> | undefined): Rescue | null {
   if (details === undefined) return null
   const family = details['family']
@@ -144,7 +161,30 @@ export function rescueOfLaneDetails(details: Record<string, unknown> | undefined
     || typeof slot !== 'string' || slot === ''
     || typeof missing !== 'string' || missing === ''
     || details['kind'] !== 'model') return null
-  return { kind: 'model', file: missing, target: family }
+  const rawAll: unknown = details['missing_all']
+  let leadSize: number | undefined
+  const more: Array<{ file: string, sizeBytes?: number }> = []
+  if (Array.isArray(rawAll)) {
+    for (const row of rawAll) {
+      const r = row as Record<string, unknown>
+      if (typeof r['name'] !== 'string' || r['name'] === '') continue
+      const size = typeof r['size_bytes'] === 'number' ? r['size_bytes'] as number : undefined
+      if (r['name'] === missing) {
+        // the lead row's own facts (its size) — the gate emits the
+        // lead twice: as slot/missing and as missing_all[0]
+        leadSize = size
+        continue
+      }
+      more.push({ file: r['name'], ...(size !== undefined ? { sizeBytes: size } : {}) })
+    }
+  }
+  return {
+    kind: 'model',
+    file: missing,
+    target: family,
+    ...(leadSize !== undefined ? { sizeBytes: leadSize } : {}),
+    ...(more.length > 0 ? { more } : {}),
+  }
 }
 
 export interface RescueResult {
@@ -210,35 +250,14 @@ export function isAcquireSettled(row: WeightAcquireState): boolean {
   return !(row.total > 0) || row.bytes >= row.total
 }
 
-/** THE HUMAN BYTE VOICE (operator 2026-10-20: "THE TRACKING OF
- *  BYTES ALONE IS INEXCUSABLE" — the popup showed
- *  "5196173399/7343591088 bytes (71%)", a wall of digits no
- *  operator can read at a glance). Binary-base sizes with one
- *  decimal: 7343591088 → "6.8 GB", 5196173399 → "4.8 GB".
- *  Non-finite or negative input voices "0 B" (never NaN on the
- *  face). */
-export function formatByteSize(bytes: number): string {
-  if (typeof bytes !== 'number' || !Number.isFinite(bytes) || bytes < 0) return '0 B'
-  if (bytes < 1024) return String(Math.floor(bytes)) + ' B'
-  const units = ['KB', 'MB', 'GB', 'TB'] as const
-  let value = bytes / 1024
-  let unit = 0
-  while (value >= 1024 && unit < units.length - 1) {
-    value /= 1024
-    unit += 1
-  }
-  return value.toFixed(1) + ' ' + units[unit]
-}
-
-/** THE HUMAN PROGRESS LINE (the same burn): "4.8/6.8 GB (71%)"
- *  — human sizes over the DECL total with the percent the bar
- *  already carries. A total=0 row has no line (the purge P5
- *  undeclared face owns it) — empty string, never "0/0". */
-export function formatWeightProgress(bytes: number, total: number): string {
-  if (!(total > 0)) return ''
-  const pct = Math.min(100, Math.round((bytes / total) * 100))
-  return formatByteSize(bytes) + '/' + formatByteSize(total) + ' (' + String(pct) + '%)'
-}
+/** THE HUMAN BYTE VOICE — re-homed (2026-11, audit F10 last
+ *  remainder) to `@melite/estate-provisioning/contracts` as the ONE
+ *  byte vocabulary the deck's declared-resources face also imports;
+ *  this module re-exports it so the rescue popup's call sites and
+ *  walls are untouched. The import keeps the local bindings the
+ *  module's own rate/progress lines read. */
+import { formatByteSize, formatWeightProgress } from '@melite/estate-provisioning/contracts'
+export { formatByteSize, formatWeightProgress }
 
 /** THE HUMAN RATE LINE (the same burn's second sentence — no
  *  rate, no ETA): "247.6 MB/s · ~8 s left". Null ETA (unknown

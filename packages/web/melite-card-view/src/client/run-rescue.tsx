@@ -101,9 +101,26 @@ function trackerFaces(acquire: WeightAcquireState | null, flow: { rateBps: numbe
 const dismissedMisses = new Set<string>()
 
 function dismissalKeyOf(rescue: Rescue): string {
-  if (rescue.kind === 'model') return 'model:' + rescue.file + '@' + (rescue.target ?? '')
+  if (rescue.kind === 'model') {
+    // THE WHOLE LIST IS THE IDENTITY (the reveal cure, 2026-11-09):
+    // a dismissed two-file face and a dismissed single-file face of
+    // the same lead weight are different misses — the key covers
+    // every file the face offered.
+    const files = [rescue.file, ...(rescue.more ?? []).map((f) => f.file)].join('+')
+    return 'model:' + files + '@' + (rescue.target ?? '')
+  }
   if (rescue.kind === 'runtime') return 'runtime:' + rescue.runtime
   return 'extension:' + rescue.pack
+}
+
+/** THE DOWNLOAD LIST (the reveal cure, 2026-11-09): every missing
+ *  declared weight the face offers, lead first — the sequence the
+ *  Download press fetches, one settled operation at a time. */
+function weightFilesOf(rescue: Extract<Rescue, { kind: 'model' }>): Array<{ file: string, sizeBytes?: number }> {
+  return [
+    { file: rescue.file, ...(rescue.sizeBytes !== undefined ? { sizeBytes: rescue.sizeBytes } : {}) },
+    ...(rescue.more ?? []).map((f) => ({ ...f })),
+  ]
 }
 
 export function RunRescue({ error, stages, onRun, rescue: structured }: {
@@ -321,95 +338,109 @@ export function RunRescue({ error, stages, onRun, rescue: structured }: {
     downloadAbort.current?.abort()
     downloadAbort.current = new AbortController()
     const signal = downloadAbort.current.signal
+    // THE SEQUENTIAL REVEAL (the cure, 2026-11-09): the press fetches
+    // EVERY missing declared weight IN ORDER — one settled operation
+    // at a time; only the last landing lands the done face. A
+    // failed/stuck flight surfaces its own file's verdict and the
+    // exits (the same one-authority law as the single-file face).
+    const files = rescue.kind === 'model' ? weightFilesOf(rescue) : [{ file: rescue.file }]
     void (async () => {
+      let last: WeightAcquireState | null = null
       try {
-        const first = await acquireWeightStart(target, rescue.file, signal)
-        setAcquire(first)
-        // THE FLOW CLOCK: the opening report anchors the rate — each
-        // poll's delta over the wall clock voices MB/s + ETA.
-        const t0 = Date.now()
-        const b0 = first.bytes
-        // ONE STALL AUTHORITY — THE ENGINE (the 100-MBps-then-stuck
-        // burn, 2026-10-20): stall truth is the engine's — its
-        // watchdog kills a dead stream and the state lands 'failed'
-        // carrying the cause. What the seat owns is the ONE STUCK
-        // WATCH both seats share (pollAcquireToSettled, audit F8 fix
-        // #7): a flight frozen AND silent (no live phase) for
-        // STUCK_FROZEN_POLLS polls lands the stuck face at watch
-        // speed — this seat's fast face, well inside the 60s
-        // ceiling — while a live-phase flight (a healthy hash, a
-        // draining queue) keeps polling. The ceiling stays the
-        // backstop for a flight the watch can never judge.
-        // An aborted caller throws out of the helper; the catch
-        // below owns the quiet teardown.
-        const flight = await pollAcquireToSettled(first, {
-          pollMs: 400,
-          ceiling: 150,
-          signal,
-          onPoll: (snapshot) => {
-            setAcquire(snapshot)
-            const elapsedSec = (Date.now() - t0) / 1000
-            const rateBps = elapsedSec > 0 ? (snapshot.bytes - b0) / elapsedSec : 0
-            setFlow({
-              rateBps: rateBps > 0 ? rateBps : 0,
-              etaSec: rateBps > 0 && snapshot.total > snapshot.bytes
-                ? (snapshot.total - snapshot.bytes) / rateBps
-                : null,
-            })
-          },
-        })
-        setBusy(false)
-        setFlow(null)
-        const current = flight.snapshot
-        if (flight.endedBy !== 'settled') {
-          // the watch's trip (this seat's fast stuck face) and the
-          // ceiling expiry land the same stuck truth — the last
-          // engine report, never the success face
-          setStuck({ ...current })
-          // THE STUCK HEAL (audit F6c): the ceiling is patience, not
-          // a verdict — the engine may still land the fetch (a
-          // multi-GB hash slower than this seat's ceiling). A
-          // background poll keeps reading the ledger on the SAME
-          // teardown signal (close/unmount or a fresh Download press
-          // aborts it); when the engine settles, the stuck face heals
-          // to done/failed instead of wedging on Retry. Still
-          // unsettled at the heal ceiling: the stuck face stands with
-          // its exits.
-          void (async () => {
-            try {
-              const healedFlight = await pollAcquireToSettled(current, { pollMs: 2000, ceiling: 150, signal })
-              const healed = healedFlight.snapshot
-              if (signal.aborted) return
-              if (!isAcquireSettled(healed)) return
-              setStuck(null)
-              if (healed.state === 'failed' || healed.state === 'blocked') {
-                setFailed({ ...healed })
-                setNote(healed.detail ?? 'weight acquisition ' + healed.state)
-                return
-              }
-              setDone({
-                detail: healed.detail ?? acquiredDetailOf(target, healed),
-                restartRequired: healed.state === 'restart_required' || healed.state === 'installed',
+        for (const entry of files) {
+          const first = await acquireWeightStart(target, entry.file, signal)
+          setAcquire(first)
+          // THE FLOW CLOCK: the opening report anchors the rate — each
+          // poll's delta over the wall clock voices MB/s + ETA.
+          const t0 = Date.now()
+          const b0 = first.bytes
+          // ONE STALL AUTHORITY — THE ENGINE (the 100-MBps-then-stuck
+          // burn, 2026-10-20): stall truth is the engine's — its
+          // watchdog kills a dead stream and the state lands 'failed'
+          // carrying the cause. What the seat owns is the ONE STUCK
+          // WATCH both seats share (pollAcquireToSettled, audit F8 fix
+          // #7): a flight frozen AND silent (no live phase) for
+          // STUCK_FROZEN_POLLS polls lands the stuck face at watch
+          // speed — this seat's fast face, well inside the 60s
+          // ceiling — while a live-phase flight (a healthy hash, a
+          // draining queue) keeps polling. The ceiling stays the
+          // backstop for a flight the watch can never judge.
+          // An aborted caller throws out of the helper; the catch
+          // below owns the quiet teardown.
+          const flight = await pollAcquireToSettled(first, {
+            pollMs: 400,
+            ceiling: 150,
+            signal,
+            onPoll: (snapshot) => {
+              setAcquire(snapshot)
+              const elapsedSec = (Date.now() - t0) / 1000
+              const rateBps = elapsedSec > 0 ? (snapshot.bytes - b0) / elapsedSec : 0
+              setFlow({
+                rateBps: rateBps > 0 ? rateBps : 0,
+                etaSec: rateBps > 0 && snapshot.total > snapshot.bytes
+                  ? (snapshot.total - snapshot.bytes) / rateBps
+                  : null,
               })
-            } catch {
-              if (signal.aborted) return
-              // a torn heal read leaves the stuck face with its exits
-              // — the next Retry re-polls from the door
-            }
-          })()
-          return
+            },
+          })
+          setFlow(null)
+          const current = flight.snapshot
+          if (flight.endedBy !== 'settled') {
+            // the watch's trip (this seat's fast stuck face) and the
+            // ceiling expiry land the same stuck truth — the last
+            // engine report, never the success face
+            setBusy(false)
+            setStuck({ ...current })
+            // THE STUCK HEAL (audit F6c): the ceiling is patience, not
+            // a verdict — the engine may still land the fetch (a
+            // multi-GB hash slower than this seat's ceiling). A
+            // background poll keeps reading the ledger on the SAME
+            // teardown signal (close/unmount or a fresh Download press
+            // aborts it); when the engine settles, the stuck face heals
+            // to done/failed instead of wedging on Retry. Still
+            // unsettled at the heal ceiling: the stuck face stands with
+            // its exits.
+            void (async () => {
+              try {
+                const healedFlight = await pollAcquireToSettled(current, { pollMs: 2000, ceiling: 150, signal })
+                const healed = healedFlight.snapshot
+                if (signal.aborted) return
+                if (!isAcquireSettled(healed)) return
+                setStuck(null)
+                if (healed.state === 'failed' || healed.state === 'blocked') {
+                  setFailed({ ...healed })
+                  setNote(healed.detail ?? 'weight acquisition ' + healed.state)
+                  return
+                }
+                setDone({
+                  detail: healed.detail ?? acquiredDetailOf(target, healed),
+                  restartRequired: healed.state === 'restart_required' || healed.state === 'installed',
+                })
+              } catch {
+                if (signal.aborted) return
+                // a torn heal read leaves the stuck face with its exits
+                // — the next Retry re-polls from the door
+              }
+            })()
+            return
+          }
+          if (current.state === 'failed' || current.state === 'blocked') {
+            // THE ENGINE'S OWN VERDICT lands with its cause AND the
+            // exits — retry re-issues the fetch, delete clears the row
+            setBusy(false)
+            setFailed({ ...current })
+            setNote(current.detail ?? 'weight acquisition ' + current.state)
+            return
+          }
+          last = current
         }
-        if (current.state === 'failed' || current.state === 'blocked') {
-          // THE ENGINE'S OWN VERDICT lands with its cause AND the
-          // exits — retry re-issues the fetch, delete clears the row
-          setFailed({ ...current })
-          setNote(current.detail ?? 'weight acquisition ' + current.state)
-          return
+        setBusy(false)
+        if (last !== null) {
+          setDone({
+            detail: last.detail ?? acquiredDetailOf(target, last),
+            restartRequired: last.state === 'restart_required' || last.state === 'installed',
+          })
         }
-        setDone({
-          detail: current.detail ?? acquiredDetailOf(target, current),
-          restartRequired: current.state === 'restart_required' || current.state === 'installed',
-        })
       } catch (e: unknown) {
         if (signal.aborted) return // the close/unmount owns the face now
         setBusy(false)
@@ -521,6 +552,28 @@ export function RunRescue({ error, stages, onRun, rescue: structured }: {
         : failed !== null
           ? null // the failed face's voice is the cause itself (note)
           : h('p', { className: css.rescueNote }, chromeCopy.missingDownload({ what })),
+      // THE ONE-FACE LIST (the reveal cure, 2026-11-09): every missing
+      // declared weight, name + declared human size, with the count
+      // line — the operator sees the whole fetch before pressing
+      // Download, never one file per wedged run. Only on the missing
+      // face (a stuck/failed face is one flight's verdict).
+      stuck === null && failed === null && rescue.kind === 'model' && (rescue.more?.length ?? 0) > 0
+        ? [
+          h('ul', { key: 'weight-list', 'data-testid': 'weight-list', className: css.rescueNote, style: { margin: '4px 0 0', paddingLeft: '18px' } },
+            weightFilesOf(rescue).map((entry) => h('li', { key: entry.file },
+              entry.file + (entry.sizeBytes !== undefined ? ' · ' + formatByteSize(entry.sizeBytes) : '')),
+            )),
+          h('p', { key: 'weight-total', 'data-testid': 'weight-total', className: css.rescueNote },
+            chromeCopy.missingWeightTotal({
+              count: weightFilesOf(rescue).length,
+              sizes: weightFilesOf(rescue)
+                .map((entry) => (entry.sizeBytes !== undefined ? formatByteSize(entry.sizeBytes) : null))
+                .filter((s): s is string => s !== null)
+                .join(' + '),
+            }),
+          ),
+        ]
+        : null,
       h(Button, {
         size: 'sm',
         variant: 'primary',

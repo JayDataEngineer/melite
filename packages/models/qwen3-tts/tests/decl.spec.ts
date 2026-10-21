@@ -50,9 +50,14 @@ describe("the qwen3-tts model plugin (ONE family, size at the quant cell)", () =
     assert.equal(custom.group, "Variant");
     assert.ok(configured.some((v) => v.id === "voicedesign"), "VoiceDesign rides as a variant lane");
     assert.ok(configured.some((v) => v.id === "base"), "Base rides as a variant lane");
-    // THE DEFAULT STAMP: the family's resting lane.
+    // THE DEFAULT STAMP: the family's resting lane. THE NO-DEFAULT-
+    // VOICE LAW (operator ruling 2026-11-10: "Make sure it DEFAULTS
+    // to no voice, instead of VIVIAN"): the defaults seed NO persona.
     assert.equal((DECL.defaults as Record<string, unknown>)["variant"], "customvoice");
-    assert.equal((DECL.defaults as Record<string, unknown>)["voice"], "vivian");
+    assert.equal(
+      Object.prototype.hasOwnProperty.call(DECL.defaults as Record<string, unknown>, "voice"), false,
+      "the family defaults seat no voice — the fresh card's persona is UNSTATED (the offered presets are choices, never a seed)",
+    );
   });
 
   it("QUANT names the size — every ladder leads with its 1.7B rung, and every cell names its OWN weights tree", () => {

@@ -19,6 +19,18 @@ function refusalEnvelopeOf(err: CardArmError): Record<string, unknown> {
     p["missing"] = lane.missing;
     p["folders"] = [...lane.folders];
     if (lane.fetchUrl !== undefined) p["fetch_url"] = lane.fetchUrl;
+    // THE ONE-FACE LIST (the reveal cure, 2026-11-09): the wire
+    // spelling is snake; every row carries the popup's download
+    // facts (slot, name, folders, declared size, fetch address).
+    if (lane.missingAll !== undefined) {
+      p["missing_all"] = lane.missingAll.map((r) => ({
+        slot: r.slot,
+        name: r.name,
+        folders: [...r.folders],
+        ...(r.sizeBytes !== undefined ? { size_bytes: r.sizeBytes } : {}),
+        ...(r.fetchUrl !== undefined ? { fetch_url: r.fetchUrl } : {}),
+      }));
+    }
     p["kind"] = lane.kind;
   }
   return p;
@@ -49,6 +61,39 @@ function laneDetailsOf(p: Record<string, unknown>): LaneInputMissingDetails {
   const loc = p["loc"];
   const expected = p["expected"];
   const got = p["got"];
+  // THE ONE-FACE LIST, READ BACK (the reveal cure, 2026-11-09):
+  // malformed rows throw loud — the popup's download list keys on
+  // these fields, never on prose. Optional: the runtime leg and the
+  // in-flight arm carry no list.
+  const rawMissingAll: unknown = p["missing_all"];
+  let missingAll: LaneInputMissingDetails["missing_all"];
+  if (rawMissingAll !== undefined) {
+    if (!Array.isArray(rawMissingAll)) {
+      throw new Error("runs remote: lane_input_missing missing_all is not a list");
+    }
+    missingAll = rawMissingAll.map((row: unknown) => {
+      const r = row as Record<string, unknown>;
+      const slot = r["slot"];
+      const name = r["name"];
+      const folders = r["folders"];
+      const size = r["size_bytes"];
+      const fetch = r["fetch_url"];
+      if (typeof slot !== "string" || slot === "" || typeof name !== "string" || name === ""
+        || !Array.isArray(folders)) {
+        throw new Error("runs remote: lane_input_missing missing_all row lacks slot/name/folders");
+      }
+      if (size !== undefined && typeof size !== "number") {
+        throw new Error("runs remote: lane_input_missing missing_all row size_bytes is not a number");
+      }
+      return {
+        slot,
+        name,
+        folders: folders.filter((f): f is string => typeof f === "string"),
+        ...(typeof size === "number" ? { size_bytes: size } : {}),
+        ...(typeof fetch === "string" && fetch !== "" ? { fetch_url: fetch } : {}),
+      };
+    });
+  }
   return {
     // THE ROW EXTENDS RunsRefusalDetails: the bench arm's loc-carry
     // reads these three off the mapped details — a lane refusal that
@@ -61,6 +106,7 @@ function laneDetailsOf(p: Record<string, unknown>): LaneInputMissingDetails {
     missing,
     folders: folders.filter((f): f is string => typeof f === "string"),
     ...(typeof fetchUrl === "string" && fetchUrl !== "" ? { fetch_url: fetchUrl } : {}),
+    ...(missingAll !== undefined ? { missing_all: missingAll } : {}),
     kind,
   };
 }

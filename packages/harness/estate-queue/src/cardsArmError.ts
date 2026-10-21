@@ -8,6 +8,26 @@ import { RUNS_ERROR_CODES } from "./runsErrorCodes.ts";
  *  operator 2026-10-22): the wire code names the class, these fields
  *  name the artifact — which slot, which family, which file, where
  *  the manager fetches it. */
+/** ONE FACE'S ROW (the sequential-missing-weight-reveal cure,
+ *  2026-11-09): a missing declared weight with the facts the popup's
+ *  download list keys on — the DECL's declared size when the family
+ *  provisions the file, the fetch address when one is declared. The
+ *  wire spelling is snake (missing_all / size_bytes / fetch_url) —
+ *  the refusal fold maps them. */
+export interface LaneMissRow {
+  /** The lane slot key (text_encoder, vae, …). */
+  readonly slot: string;
+  /** The declared file name that has no store copy. */
+  readonly name: string;
+  /** The model folders the presence probe checked, in order. */
+  readonly folders: readonly string[];
+  /** The DECL provision's declared size in bytes, when the family
+   *  fetches the file itself (a pack-borne file declares none). */
+  readonly sizeBytes?: number;
+  /** The provision URL when the family declares one for the file. */
+  readonly fetchUrl?: string;
+}
+
 export interface LaneInputMiss {
   /** The model family id whose lane_inputs declared the row. */
   readonly family: string;
@@ -19,6 +39,14 @@ export interface LaneInputMiss {
   readonly folders: readonly string[];
   /** The provision URL when the family declares one for the file. */
   readonly fetchUrl?: string;
+  /** THE WHOLE LIST (the reveal cure, 2026-11-09): every missing
+   *  declared weight the gate found, first row = the slot/missing
+   *  pair above. One face per press — the operator learns of the
+   *  vae in the SAME refusal that names the text encoder, never one
+   *  wedged run later. Absent on the runtime leg (a runtime miss
+   *  has no file list) and on the in-flight arm (that face is the
+   *  acquisition, not a fresh-fetch list). */
+  readonly missingAll?: readonly LaneMissRow[];
   /** The artifact class the popup's action keys on. "runtime" is
    *  the tool-runtime leg (E2-2 Piece A): the slot is the consuming
    *  param, missing is the runtime name, folders are the checked

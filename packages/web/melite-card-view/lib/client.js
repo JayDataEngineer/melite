@@ -4276,6 +4276,46 @@ window.__ModuleLoader__.load({
 		*  reports the live fraction). A settled row — landed, failed,
 		*  blocked — is never in this set. */
 		const LIVE_ACQUIRE_STATES$1 = /* @__PURE__ */ new Set(["acquiring", "verifying"]);
+		/** THE HUMAN BYTE VOICE (operator 2026-10-20: "THE TRACKING OF
+		*  BYTES ALONE IS INEXCUSABLE" — the popup showed
+		*  "5196173399/7343591088 bytes (71%)", a wall of digits no
+		*  operator can read at a glance). Binary-base sizes with one
+		*  decimal: 7343591088 → "6.8 GB", 519617399 → "4.8 GB".
+		*  Non-finite or negative input voices "0 B" (never NaN on the
+		*  face). Re-homed here (2026-11, audit F10 last remainder) as the
+		*  ONE byte vocabulary both the rescue popup and the deck's
+		*  declared-resources face import — never a second spelling.
+		*  @param bytes the byte count to voice
+		*  @returns the human size, one decimal, binary base */
+		function formatByteSize(bytes) {
+			if (typeof bytes !== "number" || !Number.isFinite(bytes) || bytes < 0) return "0 B";
+			if (bytes < 1024) return String(Math.floor(bytes)) + " B";
+			const units = [
+				"KB",
+				"MB",
+				"GB",
+				"TB"
+			];
+			let value = bytes / 1024;
+			let unit = 0;
+			while (value >= 1024 && unit < units.length - 1) {
+				value /= 1024;
+				unit += 1;
+			}
+			return value.toFixed(1) + " " + units[unit];
+		}
+		/** THE HUMAN PROGRESS LINE (the same burn): "4.8/6.8 GB (71%)"
+		*  — human sizes over the DECL total with the percent the bar
+		*  already carries. A total=0 row has no line (the purge P5
+		*  undeclared face owns it) — empty string, never "0/0".
+		*  @param bytes the landed byte count
+		*  @param total the declared total the percent rides
+		*  @returns "4.8/6.8 GB (71%)"-shaped line, or "" when total=0 */
+		function formatWeightProgress(bytes, total) {
+			if (!(total > 0)) return "";
+			const pct = Math.min(100, Math.round(bytes / total * 100));
+			return formatByteSize(bytes) + "/" + formatByteSize(total) + " (" + String(pct) + "%)";
+		}
 		//#endregion
 		//#region src/chromeCopy.ts
 		/**
@@ -4522,6 +4562,10 @@ window.__ModuleLoader__.load({
 			missingInstall: (p) => "Missing " + p.what + " — install through the manage seat?",
 			/** Rescue missing-weight note (what the run lacked). */
 			missingDownload: (p) => "Missing " + p.what + " — download through the manage seat?",
+			/** THE ONE-FACE TOTAL (the sequential-missing-weight-reveal cure,
+			*  2026-11-09): the count + human sizes line under the download
+			*  list — the burn's "2 files · 7.0 GB + 249 MB". */
+			missingWeightTotal: (p) => p.count + " files · " + p.sizes,
 			/** Rescue missing-runtime note (E2-2: what the run lacked — the
 			*  engine's own tool runtime, now provisionable through the estate
 			*  door). */
@@ -4629,6 +4673,12 @@ window.__ModuleLoader__.load({
 		* model file the presence mark believed present, an engine refusal
 		* mid-run. Same seat, same vocabulary, later gate.
 		*/
+		/** THE HUMAN BYTE VOICE — re-homed (2026-11, audit F10 last
+		*  remainder) to `@melite/estate-provisioning/contracts` as the ONE
+		*  byte vocabulary the deck's declared-resources face also imports;
+		*  this module re-exports it so the rescue popup's call sites and
+		*  walls are untouched. The import keeps the local bindings the
+		*  module's own rate/progress lines read. */
 		/** Parse a failed run's reason for a rescueable miss. The
 		* missing-extension refusal names its pack verbatim
 		* ("card 'x' requires 'PACK' …"); the lane-presence gate names its
@@ -4682,17 +4732,37 @@ window.__ModuleLoader__.load({
 		*  lane_input_missing details row, read into the popup's Rescue —
 		*  the exact key at the press site, no prose parsing. Null when the
 		*  record is not that row (the prose anchor in parseRescue still
-		*  covers the row-derived face). */
+		*  covers the row-derived face). THE WHOLE LIST (the reveal cure,
+		*  2026-11-09): missing_all rows map onto `more` (lead row = `file`)
+		*  with their declared sizes — one face, one press, every weight. */
 		function rescueOfLaneDetails(details) {
 			if (details === void 0) return null;
 			const family = details["family"];
 			const slot = details["slot"];
 			const missing = details["missing"];
 			if (typeof family !== "string" || family === "" || typeof slot !== "string" || slot === "" || typeof missing !== "string" || missing === "" || details["kind"] !== "model") return null;
+			const rawAll = details["missing_all"];
+			let leadSize;
+			const more = [];
+			if (Array.isArray(rawAll)) for (const row of rawAll) {
+				const r = row;
+				if (typeof r["name"] !== "string" || r["name"] === "") continue;
+				const size = typeof r["size_bytes"] === "number" ? r["size_bytes"] : void 0;
+				if (r["name"] === missing) {
+					leadSize = size;
+					continue;
+				}
+				more.push({
+					file: r["name"],
+					...size !== void 0 ? { sizeBytes: size } : {}
+				});
+			}
 			return {
 				kind: "model",
 				file: missing,
-				target: family
+				target: family,
+				...leadSize !== void 0 ? { sizeBytes: leadSize } : {},
+				...more.length > 0 ? { more } : {}
 			};
 		}
 		[...LIVE_ACQUIRE_STATES$1];
@@ -4720,39 +4790,6 @@ window.__ModuleLoader__.load({
 			if (row.state === "failed" || row.state === "blocked") return true;
 			if (!ACQUIRE_TERMINAL.has(row.state)) return false;
 			return !(row.total > 0) || row.bytes >= row.total;
-		}
-		/** THE HUMAN BYTE VOICE (operator 2026-10-20: "THE TRACKING OF
-		*  BYTES ALONE IS INEXCUSABLE" — the popup showed
-		*  "5196173399/7343591088 bytes (71%)", a wall of digits no
-		*  operator can read at a glance). Binary-base sizes with one
-		*  decimal: 7343591088 → "6.8 GB", 5196173399 → "4.8 GB".
-		*  Non-finite or negative input voices "0 B" (never NaN on the
-		*  face). */
-		function formatByteSize(bytes) {
-			if (typeof bytes !== "number" || !Number.isFinite(bytes) || bytes < 0) return "0 B";
-			if (bytes < 1024) return String(Math.floor(bytes)) + " B";
-			const units = [
-				"KB",
-				"MB",
-				"GB",
-				"TB"
-			];
-			let value = bytes / 1024;
-			let unit = 0;
-			while (value >= 1024 && unit < units.length - 1) {
-				value /= 1024;
-				unit += 1;
-			}
-			return value.toFixed(1) + " " + units[unit];
-		}
-		/** THE HUMAN PROGRESS LINE (the same burn): "4.8/6.8 GB (71%)"
-		*  — human sizes over the DECL total with the percent the bar
-		*  already carries. A total=0 row has no line (the purge P5
-		*  undeclared face owns it) — empty string, never "0/0". */
-		function formatWeightProgress(bytes, total) {
-			if (!(total > 0)) return "";
-			const pct = Math.min(100, Math.round(bytes / total * 100));
-			return formatByteSize(bytes) + "/" + formatByteSize(total) + " (" + String(pct) + "%)";
 		}
 		/** THE HUMAN RATE LINE (the same burn's second sentence — no
 		*  rate, no ETA): "247.6 MB/s · ~8 s left". Null ETA (unknown
@@ -5091,9 +5128,18 @@ window.__ModuleLoader__.load({
 		*  or starts a new fetch (the acquire state changed). */
 		const dismissedMisses = /* @__PURE__ */ new Set();
 		function dismissalKeyOf(rescue) {
-			if (rescue.kind === "model") return "model:" + rescue.file + "@" + (rescue.target ?? "");
+			if (rescue.kind === "model") return "model:" + [rescue.file, ...(rescue.more ?? []).map((f) => f.file)].join("+") + "@" + (rescue.target ?? "");
 			if (rescue.kind === "runtime") return "runtime:" + rescue.runtime;
 			return "extension:" + rescue.pack;
+		}
+		/** THE DOWNLOAD LIST (the reveal cure, 2026-11-09): every missing
+		*  declared weight the face offers, lead first — the sequence the
+		*  Download press fetches, one settled operation at a time. */
+		function weightFilesOf(rescue) {
+			return [{
+				file: rescue.file,
+				...rescue.sizeBytes !== void 0 ? { sizeBytes: rescue.sizeBytes } : {}
+			}, ...(rescue.more ?? []).map((f) => ({ ...f }))];
 		}
 		function RunRescue({ error, stages, onRun, rescue: structured }) {
 			const rescue = structured ?? parseRescue(error);
@@ -5226,64 +5272,71 @@ window.__ModuleLoader__.load({
 				downloadAbort.current?.abort();
 				downloadAbort.current = new AbortController();
 				const signal = downloadAbort.current.signal;
+				const files = rescue.kind === "model" ? weightFilesOf(rescue) : [{ file: rescue.file }];
 				(async () => {
+					let last = null;
 					try {
-						const first = await acquireWeightStart(target, rescue.file, signal);
-						setAcquire(first);
-						const t0 = Date.now();
-						const b0 = first.bytes;
-						const flight = await pollAcquireToSettled(first, {
-							pollMs: 400,
-							ceiling: 150,
-							signal,
-							onPoll: (snapshot) => {
-								setAcquire(snapshot);
-								const elapsedSec = (Date.now() - t0) / 1e3;
-								const rateBps = elapsedSec > 0 ? (snapshot.bytes - b0) / elapsedSec : 0;
-								setFlow({
-									rateBps: rateBps > 0 ? rateBps : 0,
-									etaSec: rateBps > 0 && snapshot.total > snapshot.bytes ? (snapshot.total - snapshot.bytes) / rateBps : null
-								});
-							}
-						});
-						setBusy(false);
-						setFlow(null);
-						const current = flight.snapshot;
-						if (flight.endedBy !== "settled") {
-							setStuck({ ...current });
-							(async () => {
-								try {
-									const healed = (await pollAcquireToSettled(current, {
-										pollMs: 2e3,
-										ceiling: 150,
-										signal
-									})).snapshot;
-									if (signal.aborted) return;
-									if (!isAcquireSettled(healed)) return;
-									setStuck(null);
-									if (healed.state === "failed" || healed.state === "blocked") {
-										setFailed({ ...healed });
-										setNote(healed.detail ?? "weight acquisition " + healed.state);
-										return;
-									}
-									setDone({
-										detail: healed.detail ?? acquiredDetailOf(target, healed),
-										restartRequired: healed.state === "restart_required" || healed.state === "installed"
+						for (const entry of files) {
+							const first = await acquireWeightStart(target, entry.file, signal);
+							setAcquire(first);
+							const t0 = Date.now();
+							const b0 = first.bytes;
+							const flight = await pollAcquireToSettled(first, {
+								pollMs: 400,
+								ceiling: 150,
+								signal,
+								onPoll: (snapshot) => {
+									setAcquire(snapshot);
+									const elapsedSec = (Date.now() - t0) / 1e3;
+									const rateBps = elapsedSec > 0 ? (snapshot.bytes - b0) / elapsedSec : 0;
+									setFlow({
+										rateBps: rateBps > 0 ? rateBps : 0,
+										etaSec: rateBps > 0 && snapshot.total > snapshot.bytes ? (snapshot.total - snapshot.bytes) / rateBps : null
 									});
-								} catch {
-									if (signal.aborted) return;
 								}
-							})();
-							return;
+							});
+							setFlow(null);
+							const current = flight.snapshot;
+							if (flight.endedBy !== "settled") {
+								setBusy(false);
+								setStuck({ ...current });
+								(async () => {
+									try {
+										const healed = (await pollAcquireToSettled(current, {
+											pollMs: 2e3,
+											ceiling: 150,
+											signal
+										})).snapshot;
+										if (signal.aborted) return;
+										if (!isAcquireSettled(healed)) return;
+										setStuck(null);
+										if (healed.state === "failed" || healed.state === "blocked") {
+											setFailed({ ...healed });
+											setNote(healed.detail ?? "weight acquisition " + healed.state);
+											return;
+										}
+										setDone({
+											detail: healed.detail ?? acquiredDetailOf(target, healed),
+											restartRequired: healed.state === "restart_required" || healed.state === "installed"
+										});
+									} catch {
+										if (signal.aborted) return;
+									}
+								})();
+								return;
+							}
+							if (current.state === "failed" || current.state === "blocked") {
+								setBusy(false);
+								setFailed({ ...current });
+								setNote(current.detail ?? "weight acquisition " + current.state);
+								return;
+							}
+							last = current;
 						}
-						if (current.state === "failed" || current.state === "blocked") {
-							setFailed({ ...current });
-							setNote(current.detail ?? "weight acquisition " + current.state);
-							return;
-						}
-						setDone({
-							detail: current.detail ?? acquiredDetailOf(target, current),
-							restartRequired: current.state === "restart_required" || current.state === "installed"
+						setBusy(false);
+						if (last !== null) setDone({
+							detail: last.detail ?? acquiredDetailOf(target, last),
+							restartRequired: last.state === "restart_required" || last.state === "installed"
 						});
 					} catch (e) {
 						if (signal.aborted) return;
@@ -5351,7 +5404,22 @@ window.__ModuleLoader__.load({
 			}, stuck !== null ? (0, react.createElement)("p", { className: card_module_css_default.rescueNote }, chromeCopy.stuckNote({
 				state: stuck.state,
 				progress: formatWeightProgress(stuck.bytes, stuck.total)
-			})) : failed !== null ? null : (0, react.createElement)("p", { className: card_module_css_default.rescueNote }, chromeCopy.missingDownload({ what })), (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+			})) : failed !== null ? null : (0, react.createElement)("p", { className: card_module_css_default.rescueNote }, chromeCopy.missingDownload({ what })), stuck === null && failed === null && rescue.kind === "model" && (rescue.more?.length ?? 0) > 0 ? [(0, react.createElement)("ul", {
+				key: "weight-list",
+				"data-testid": "weight-list",
+				className: card_module_css_default.rescueNote,
+				style: {
+					margin: "4px 0 0",
+					paddingLeft: "18px"
+				}
+			}, weightFilesOf(rescue).map((entry) => (0, react.createElement)("li", { key: entry.file }, entry.file + (entry.sizeBytes !== void 0 ? " · " + formatByteSize(entry.sizeBytes) : "")))), (0, react.createElement)("p", {
+				key: "weight-total",
+				"data-testid": "weight-total",
+				className: card_module_css_default.rescueNote
+			}, chromeCopy.missingWeightTotal({
+				count: weightFilesOf(rescue).length,
+				sizes: weightFilesOf(rescue).map((entry) => entry.sizeBytes !== void 0 ? formatByteSize(entry.sizeBytes) : null).filter((s) => s !== null).join(" + ")
+			}))] : null, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Button, {
 				size: "sm",
 				variant: "primary",
 				"data-testid": "weight-download",
@@ -18539,16 +18607,18 @@ window.__ModuleLoader__.load({
 			return voice.endsWith(" — the write never left the studio. Fix the stated value, or pick a different route.") ? voice.slice(27, -84) : null;
 		}
 		function composeGateRefusal(spec, held, user, frame) {
-			const v = composeGateViolation(spec, held, user, frame);
+			const v = composeGateViolations(spec, held, user, frame)[0] ?? null;
 			return v === null ? null : gateRefusalVoice(v);
 		}
-		/** THE GATE'S STRUCTURED HALF (SD-7, the refusal-without-cure cure):
-		*  the refusal's named field, when the producing clause knows it —
-		*  the mirror and family clauses name keys NO rendered control owns,
-		*  so the banner must let the words act (the field's unstamp). */
-		function composeGateViolation(spec, held, user, frame) {
-			if (spec === null) return null;
-			return (0, _melite_card_base_client.composeValidate)(spec, (0, _melite_card_base_client.composeCandidateDoc)(held ?? {}, user, frame))[0] ?? null;
+		/** THE GATE'S FULL SET (the singularity cure, 2026-11-10): EVERY
+		*  violation the candidate carries — the press strip voices one row
+		*  per refusal (the old seat kept [0] and the banner re-voiced the
+		*  rest: the twice face). The mirror and family clauses name keys NO
+		*  rendered control owns, so each row's words must act (the field's
+		*  unstamp), not just name. */
+		function composeGateViolations(spec, held, user, frame) {
+			if (spec === null) return [];
+			return (0, _melite_card_base_client.composeValidate)(spec, (0, _melite_card_base_client.composeCandidateDoc)(held ?? {}, user, frame));
 		}
 		function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRemoved, onResync, onPatchParams, renderStageView, renderPreview, onSurface, runId, canRemove, bindRun, bindEnhance }) {
 			String(stage.title ?? stage.card ?? stage.id);
@@ -18561,7 +18631,7 @@ window.__ModuleLoader__.load({
 			const [enhancing, setEnhancing] = (0, react.useState)(false);
 			const [enhanceNote, setEnhanceNote] = (0, react.useState)(null);
 			const [error, setError] = (0, react.useState)(null);
-			const [gateField, setGateField] = (0, react.useState)(null);
+			const [gateSet, setGateSet] = (0, react.useState)([]);
 			const [writeFace, setWriteFace] = (0, react.useState)(null);
 			const [loaded, setLoaded] = (0, react.useState)(false);
 			const reportSurface = onSurface ?? (() => {});
@@ -18651,7 +18721,7 @@ window.__ModuleLoader__.load({
 				}).catch((e) => {
 					if (!alive) return;
 					if (pendingSpecRef.current?.seq === fetchSeq) pendingSpecRef.current = null;
-					setGateField(null);
+					setGateSet([]);
 					setError((0, _melite_card_base_client.rejectionVoice)(e));
 					setLoaded(true);
 				});
@@ -18702,7 +18772,7 @@ window.__ModuleLoader__.load({
 					const rescoped = rePointFrame({ [name]: v });
 					const landedM = {};
 					const nullsM = {};
-					for (const [k, kv] of Object.entries(rescoped)) if ((0, _melite_card_base_client.axisUnset)(k, kv, spec)) nullsM[k] = null;
+					for (const [k, kv] of Object.entries(rescoped)) if ((0, _melite_card_base_client.axisUnset)(k, kv, spec) || kv === null) nullsM[k] = null;
 					else landedM[k] = kv;
 					for (const k of Object.keys(landedM)) touchedRef.current.add(k);
 					for (const k of Object.keys(nullsM)) touchedRef.current.add(k);
@@ -18810,7 +18880,7 @@ window.__ModuleLoader__.load({
 				const rescoped = rePointFrame(patch);
 				const landed = {};
 				const nulls = {};
-				for (const [k, v] of Object.entries(rescoped)) if ((0, _melite_card_base_client.axisUnset)(k, v, spec)) nulls[k] = null;
+				for (const [k, v] of Object.entries(rescoped)) if ((0, _melite_card_base_client.axisUnset)(k, v, spec) || v === null) nulls[k] = null;
 				else landed[k] = v;
 				setUser((m) => {
 					const next = { ...m };
@@ -18886,7 +18956,7 @@ window.__ModuleLoader__.load({
 					for (const [k, v] of Object.entries(m)) if (k !== name) next[k] = v;
 					return next;
 				});
-				setGateField(null);
+				setGateSet([]);
 				setError(null);
 				setWriteFace((cur) => cur !== null && cur.includes("'" + name + "'") ? null : cur);
 				const settleDraftId = bench.draftId;
@@ -19030,7 +19100,7 @@ window.__ModuleLoader__.load({
 				try {
 					const pending = pendingSpecRef.current;
 					if (pending !== null) {
-						setGateField(null);
+						setGateSet([]);
 						setError(`the ${pending.family} spec is still settling — press Run again once the form lands`);
 						return;
 					}
@@ -19044,16 +19114,16 @@ window.__ModuleLoader__.load({
 						const baseAfterSync = { ...held };
 						for (const [k, v] of Object.entries(patch)) if (v === null) delete baseAfterSync[k];
 						else baseAfterSync[k] = v;
-						const violation = composeGateViolation(spec, baseAfterSync, user, {});
-						if (violation !== null) {
-							setError(gateRefusalVoice(violation));
-							setGateField(violation.field ?? null);
+						const gateViolations = composeGateViolations(spec, baseAfterSync, user, {});
+						if (gateViolations.length > 0) {
+							setError(gateViolations.map((v) => gateRefusalVoice(v)).join("\n"));
+							setGateSet(gateViolations);
 							return;
 						}
 						try {
 							await patchStageParams(bench.draftId, stage.id, patch, bench.rev);
 						} catch {
-							setGateField(null);
+							setGateSet([]);
 							setError(unlandedWriteVoice(bench.draftId, stage.id));
 							onResync?.();
 							return;
@@ -19061,13 +19131,13 @@ window.__ModuleLoader__.load({
 					}
 					const fence = await refuseForUnlandedWrite(bench.draftId, stage.id);
 					if (fence !== null) {
-						setGateField(null);
+						setGateSet([]);
 						setError(fence);
 						return;
 					}
 					onRun();
 				} catch (e) {
-					setGateField(null);
+					setGateSet([]);
 					setError((0, _melite_card_base_client.rejectionVoice)(e));
 					onResync?.();
 				}
@@ -19095,7 +19165,7 @@ window.__ModuleLoader__.load({
 					forgetStageWrites(bench.draftId, [stage.id]);
 					onRemoved();
 				} catch (e) {
-					setGateField(null);
+					setGateSet([]);
 					setError((0, _melite_card_base_client.rejectionVoice)(e));
 					setRemoving(false);
 					onResync?.();
@@ -19113,7 +19183,7 @@ window.__ModuleLoader__.load({
 						}, bench.sessionKey);
 						onRemoved();
 					} catch (e) {
-						setGateField(null);
+						setGateSet([]);
 						setError((0, _melite_card_base_client.rejectionVoice)(e));
 						setRemoving(false);
 						onResync?.();
@@ -19229,7 +19299,11 @@ window.__ModuleLoader__.load({
 					onPick,
 					onUnset,
 					wire,
-					mutedViolations: [gateRefusalMessage(error), gateRefusalMessage(writeFace === error ? null : writeFace)].filter((m) => m !== null),
+					mutedViolations: [
+						...gateSet.map((v) => v.message),
+						gateRefusalMessage(error),
+						gateRefusalMessage(writeFace === error ? null : writeFace)
+					].filter((m) => m !== null),
 					onPatch: onPatchParams,
 					onDownloadModel: (id) => (0, _melite_card_base_client.postManageAction)("provision_model", { model: id }).then((r) => r.ok),
 					onInstallPack: (id) => (0, _melite_card_base_client.postManageAction)("install_extension", { nodes: [id] }).then((r) => r.ok),
@@ -19239,23 +19313,24 @@ window.__ModuleLoader__.load({
 				}) : (0, react.createElement)("pre", { className: card_module_css_default.mono }, JSON.stringify(held, null, 2))), error !== null ? (0, react.createElement)("div", { className: card_module_css_default.drillRunRow }, (0, react.createElement)("span", {
 					className: card_module_css_default.runError,
 					"data-testid": "stage-error-strip"
-				}, error, gateField !== null ? (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+				}, error, gateSet.map((v) => (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+					key: (v.field ?? "") + ":" + v.message,
 					size: "sm",
 					variant: "ghost",
-					"aria-label": chromeCopy.unstampWord + " '" + gateField + "'",
+					"aria-label": chromeCopy.unstampWord + " '" + (v.field ?? "") + "'",
 					onClick: () => {
-						onUnstamp(gateField);
+						if (v.field != null) onUnstamp(v.field);
 					}
-				}, chromeCopy.unstampWord + " '" + gateField + "'") : null, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+				}, chromeCopy.unstampWord + " '" + (v.field ?? "") + "'")), (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Button, {
 					size: "sm",
 					variant: "ghost",
 					className: card_module_css_default.errorDismiss,
 					"aria-label": chromeCopy.dismissError,
 					onClick: () => {
-						setGateField(null);
+						setGateSet([]);
 						setError(null);
 					}
-				}, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.IconCloseOutlineRegular, { size: 12 })))) : null, writeFace !== null && !(writeFace === error && gateRefusalMessage(error) !== null) ? (0, react.createElement)("div", { className: card_module_css_default.drillRunRow }, (0, react.createElement)("span", {
+				}, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.IconCloseOutlineRegular, { size: 12 })))) : null, writeFace !== null && !(writeFace === error && gateRefusalMessage(error) !== null) && !(gateRefusalMessage(writeFace) !== null && gateSet.some((v) => v.message === gateRefusalMessage(writeFace))) ? (0, react.createElement)("div", { className: card_module_css_default.drillRunRow }, (0, react.createElement)("span", {
 					className: card_module_css_default.runError,
 					"data-testid": "stage-write-face"
 				}, writeFace, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Button, {

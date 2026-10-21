@@ -1211,6 +1211,27 @@ export class CardRegistryService extends Service {
             // states the composing family admits.
             return this.modellessDraftVerdict(card, params, admitIncomplete, factsArg); // null when no family agrees on any word
         }
+        // THE EMPTY-SELECTION LAW, FIRST-CLASS (the no-default-voice
+        // ruling's ripple, 2026-11-10 — operator: "Make sure it DEFAULTS
+        // to no voice, instead of VIVIAN"): the stated-empty refusal used
+        // to ride an incidental ghost — the family's vivian default
+        // stamped onto a resolved recipe lane refused first, and the
+        // catch clause below only converted that arm error. With the
+        // default gone the ghost never rides, so the law states itself
+        // HERE, in the run door's own voice, before prepare: a stated
+        // EMPTY variant/quant/model is not a selection, it is an
+        // authoring surface's unchosen control written as a value — the
+        // parity law's false admit if this seat passed it to a run door
+        // that refuses the same state. An ABSENT axis still passes
+        // (compose defaults it).
+        for (const axis of ["model", "variant", "quant"]) {
+            if (params[axis] === "") {
+                return {
+                    message: `unknown ${axis} "" for model ${JSON.stringify(mid)} — a stated empty selection is not a choice (pick one, or remove the key and let compose default it)`,
+                    incomplete: false,
+                };
+            }
+        }
         let prep;
         try {
             prep = prepareCardParams(this, params, mid, "admission", factsArg);
