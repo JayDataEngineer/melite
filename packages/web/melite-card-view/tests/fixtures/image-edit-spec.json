@@ -85,17 +85,17 @@
   "loader_info": null,
   "mod_schemas": {
     "loras": {
-      "uid": 3549,
+      "uid": 3559,
       "refs": {
-        "3537": {
+        "3547": {
           "type": "string",
           "meta": {}
         },
-        "3538": {
+        "3548": {
           "type": "number",
           "meta": {}
         },
-        "3544": {
+        "3554": {
           "type": "number",
           "meta": {
             "min": 1,
@@ -111,18 +111,18 @@
             }
           }
         },
-        "3545": {
+        "3555": {
           "type": "object",
           "meta": {
             "default": {}
           },
           "dict": {
-            "name": 3537,
-            "strength": 3538,
-            "steps": 3544
+            "name": 3547,
+            "strength": 3548,
+            "steps": 3554
           }
         },
-        "3548": {
+        "3558": {
           "type": "array",
           "meta": {
             "default": [],
@@ -135,23 +135,23 @@
               "order": 0
             }
           },
-          "inner": 3545
+          "inner": 3555
         },
-        "3549": {
+        "3559": {
           "type": "object",
           "meta": {
             "default": {}
           },
           "dict": {
-            "loras": 3548
+            "loras": 3558
           }
         }
       }
     },
     "mask": {
-      "uid": 3777,
+      "uid": 3787,
       "refs": {
-        "3711": {
+        "3721": {
           "type": "any",
           "meta": {
             "description": "Region Mask",
@@ -164,7 +164,7 @@
             }
           }
         },
-        "3715": {
+        "3725": {
           "type": "string",
           "meta": {
             "role": "path",
@@ -175,27 +175,27 @@
               "order": -1,
               "width": 1,
               "columns": 3,
-              "tooltip": "RGBA PNG whose alpha channel marks the region. Standalone: region semantics for this lane. Alongside lanpaint: the inpaint region — present with the input images, the builder switches to the lanpaint sampler."
+              "tooltip": "RGBA PNG whose alpha channel marks the region. On its own: the mask selects this entry's region. Alongside lanpaint: the inpaint region — present with the input images, the run switches to the lanpaint sampler."
             },
             "description": "Region Mask"
           }
         },
-        "3716": {
+        "3726": {
           "type": "const",
           "meta": {},
           "value": "auto"
         },
-        "3717": {
+        "3727": {
           "type": "const",
           "meta": {},
           "value": "crop_stitch"
         },
-        "3718": {
+        "3728": {
           "type": "const",
           "meta": {},
           "value": "full_frame"
         },
-        "3722": {
+        "3732": {
           "type": "union",
           "meta": {
             "default": "crop_stitch",
@@ -220,32 +220,32 @@
             }
           },
           "list": [
-            3716,
-            3717,
-            3718
+            3726,
+            3727,
+            3728
           ]
         },
-        "3723": {
+        "3733": {
           "type": "const",
           "meta": {},
           "value": "off"
         },
-        "3724": {
+        "3734": {
           "type": "const",
           "meta": {},
           "value": "person"
         },
-        "3725": {
+        "3735": {
           "type": "const",
           "meta": {},
           "value": "face"
         },
-        "3726": {
+        "3736": {
           "type": "const",
           "meta": {},
           "value": "hand"
         },
-        "3730": {
+        "3740": {
           "type": "union",
           "meta": {
             "default": "off",
@@ -266,13 +266,13 @@
             }
           },
           "list": [
-            3723,
-            3724,
-            3725,
-            3726
+            3733,
+            3734,
+            3735,
+            3736
           ]
         },
-        "3737": {
+        "3747": {
           "type": "number",
           "meta": {
             "min": 0,
@@ -290,7 +290,7 @@
             }
           }
         },
-        "3744": {
+        "3754": {
           "type": "number",
           "meta": {
             "min": -32,
@@ -308,7 +308,7 @@
             }
           }
         },
-        "3751": {
+        "3761": {
           "type": "number",
           "meta": {
             "min": 0,
@@ -326,7 +326,7 @@
             }
           }
         },
-        "3758": {
+        "3768": {
           "type": "number",
           "meta": {
             "min": 0,
@@ -344,7 +344,7 @@
             }
           }
         },
-        "3762": {
+        "3772": {
           "type": "boolean",
           "meta": {
             "default": false,
@@ -359,7 +359,7 @@
             }
           }
         },
-        "3769": {
+        "3779": {
           "type": "number",
           "meta": {
             "min": 64,
@@ -377,7 +377,7 @@
             }
           }
         },
-        "3776": {
+        "3786": {
           "type": "number",
           "meta": {
             "min": 0.05,
@@ -395,23 +395,23 @@
             }
           }
         },
-        "3777": {
+        "3787": {
           "type": "object",
           "meta": {
             "default": {}
           },
           "dict": {
-            "mask": 3711,
-            "input_mask": 3715,
-            "mask_mode": 3722,
-            "mask_detector": 3730,
-            "mask_context_pad": 3737,
-            "mask_grow": 3744,
-            "mask_feather": 3751,
-            "mask_threshold": 3758,
-            "mask_invert": 3762,
-            "mask_detail_size": 3769,
-            "mask_denoise": 3776
+            "mask": 3721,
+            "input_mask": 3725,
+            "mask_mode": 3732,
+            "mask_detector": 3740,
+            "mask_context_pad": 3747,
+            "mask_grow": 3754,
+            "mask_feather": 3761,
+            "mask_threshold": 3768,
+            "mask_invert": 3772,
+            "mask_detail_size": 3779,
+            "mask_denoise": 3786
           }
         }
       }
@@ -439,283 +439,283 @@
     "default": "image"
   },
   "schema": {
-    "uid": 3425,
+    "uid": 3435,
     "refs": {
-      "349": {
+      "359": {
         "type": "const",
         "meta": {},
         "value": "cfgpp_ud10_ab"
       },
-      "350": {
+      "360": {
         "type": "const",
         "meta": {},
         "value": "ddim"
       },
-      "351": {
+      "361": {
         "type": "const",
         "meta": {},
         "value": "ddpm"
       },
-      "352": {
+      "362": {
         "type": "const",
         "meta": {},
         "value": "deis"
       },
-      "353": {
+      "363": {
         "type": "const",
         "meta": {},
         "value": "dpm_2"
       },
-      "354": {
+      "364": {
         "type": "const",
         "meta": {},
         "value": "dpm_2_ancestral"
       },
-      "355": {
+      "365": {
         "type": "const",
         "meta": {},
         "value": "dpm_adaptive"
       },
-      "356": {
+      "366": {
         "type": "const",
         "meta": {},
         "value": "dpm_fast"
       },
-      "357": {
+      "367": {
         "type": "const",
         "meta": {},
         "value": "dpmpp_2m"
       },
-      "358": {
+      "368": {
         "type": "const",
         "meta": {},
         "value": "dpmpp_2m_cfg_pp"
       },
-      "359": {
+      "369": {
         "type": "const",
         "meta": {},
         "value": "dpmpp_2m_sde"
       },
-      "360": {
+      "370": {
         "type": "const",
         "meta": {},
         "value": "dpmpp_2m_sde_gpu"
       },
-      "361": {
+      "371": {
         "type": "const",
         "meta": {},
         "value": "dpmpp_2m_sde_heun"
       },
-      "362": {
+      "372": {
         "type": "const",
         "meta": {},
         "value": "dpmpp_2m_sde_heun_gpu"
       },
-      "363": {
+      "373": {
         "type": "const",
         "meta": {},
         "value": "dpmpp_2s_ancestral"
       },
-      "364": {
+      "374": {
         "type": "const",
         "meta": {},
         "value": "dpmpp_2s_ancestral_cfg_pp"
       },
-      "365": {
+      "375": {
         "type": "const",
         "meta": {},
         "value": "dpmpp_3m_sde"
       },
-      "366": {
+      "376": {
         "type": "const",
         "meta": {},
         "value": "dpmpp_3m_sde_gpu"
       },
-      "367": {
+      "377": {
         "type": "const",
         "meta": {},
         "value": "dpmpp_sde"
       },
-      "368": {
+      "378": {
         "type": "const",
         "meta": {},
         "value": "dpmpp_sde_gpu"
       },
-      "369": {
+      "379": {
         "type": "const",
         "meta": {},
         "value": "er_sde"
       },
-      "370": {
+      "380": {
         "type": "const",
         "meta": {},
         "value": "euler"
       },
-      "371": {
+      "381": {
         "type": "const",
         "meta": {},
         "value": "euler_ancestral"
       },
-      "372": {
+      "382": {
         "type": "const",
         "meta": {},
         "value": "euler_ancestral_cfg_pp"
       },
-      "373": {
+      "383": {
         "type": "const",
         "meta": {},
         "value": "euler_cfg_pp"
       },
-      "374": {
+      "384": {
         "type": "const",
         "meta": {},
         "value": "exp_heun_2_x0"
       },
-      "375": {
+      "385": {
         "type": "const",
         "meta": {},
         "value": "exp_heun_2_x0_sde"
       },
-      "376": {
+      "386": {
         "type": "const",
         "meta": {},
         "value": "gradient_estimation"
       },
-      "377": {
+      "387": {
         "type": "const",
         "meta": {},
         "value": "gradient_estimation_cfg_pp"
       },
-      "378": {
+      "388": {
         "type": "const",
         "meta": {},
         "value": "heun"
       },
-      "379": {
+      "389": {
         "type": "const",
         "meta": {},
         "value": "heunpp2"
       },
-      "380": {
+      "390": {
         "type": "const",
         "meta": {},
         "value": "ipndm"
       },
-      "381": {
+      "391": {
         "type": "const",
         "meta": {},
         "value": "ipndm_v"
       },
-      "382": {
+      "392": {
         "type": "const",
         "meta": {},
         "value": "lcm"
       },
-      "383": {
+      "393": {
         "type": "const",
         "meta": {},
         "value": "lms"
       },
-      "384": {
+      "394": {
         "type": "const",
         "meta": {},
         "value": "res_multistep"
       },
-      "385": {
+      "395": {
         "type": "const",
         "meta": {},
         "value": "res_multistep_ancestral"
       },
-      "386": {
+      "396": {
         "type": "const",
         "meta": {},
         "value": "res_multistep_ancestral_cfg_pp"
       },
-      "387": {
+      "397": {
         "type": "const",
         "meta": {},
         "value": "res_multistep_cfg_pp"
       },
-      "388": {
+      "398": {
         "type": "const",
         "meta": {},
         "value": "sa_solver"
       },
-      "389": {
+      "399": {
         "type": "const",
         "meta": {},
         "value": "sa_solver_pece"
       },
-      "390": {
+      "400": {
         "type": "const",
         "meta": {},
         "value": "seeds_2"
       },
-      "391": {
+      "401": {
         "type": "const",
         "meta": {},
         "value": "seeds_3"
       },
-      "392": {
+      "402": {
         "type": "const",
         "meta": {},
         "value": "uni_pc"
       },
-      "393": {
+      "403": {
         "type": "const",
         "meta": {},
         "value": "uni_pc_bh2"
       },
-      "395": {
+      "405": {
         "type": "const",
         "meta": {},
         "value": "beta"
       },
-      "396": {
+      "406": {
         "type": "const",
         "meta": {},
         "value": "ddim_uniform"
       },
-      "397": {
+      "407": {
         "type": "const",
         "meta": {},
         "value": "exponential"
       },
-      "398": {
+      "408": {
         "type": "const",
         "meta": {},
         "value": "karras"
       },
-      "399": {
+      "409": {
         "type": "const",
         "meta": {},
         "value": "kl_optimal"
       },
-      "400": {
+      "410": {
         "type": "const",
         "meta": {},
         "value": "linear_quadratic"
       },
-      "401": {
+      "411": {
         "type": "const",
         "meta": {},
         "value": "normal"
       },
-      "402": {
+      "412": {
         "type": "const",
         "meta": {},
         "value": "sgm_uniform"
       },
-      "403": {
+      "413": {
         "type": "const",
         "meta": {},
         "value": "simple"
       },
-      "3357": {
+      "3367": {
         "type": "string",
         "meta": {}
       },
-      "3361": {
+      "3371": {
         "type": "array",
         "meta": {
           "default": [],
@@ -731,9 +731,9 @@
             "tooltip": "Ordered input images — the FIRST is the image being edited; the rest are references the prompt can cite as <image2>, <image3>… in order. Capacity follows the boarded model; more than it admits refuses loudly."
           }
         },
-        "inner": 3357
+        "inner": 3367
       },
-      "3365": {
+      "3375": {
         "type": "string",
         "meta": {
           "role": "path",
@@ -743,7 +743,7 @@
           "description": "Input Image"
         }
       },
-      "3369": {
+      "3379": {
         "type": "string",
         "meta": {
           "role": "path",
@@ -753,7 +753,7 @@
           "description": "Image 2"
         }
       },
-      "3373": {
+      "3383": {
         "type": "string",
         "meta": {
           "role": "path",
@@ -763,11 +763,11 @@
           "description": "Image 3"
         }
       },
-      "3374": {
+      "3384": {
         "type": "string",
         "meta": {}
       },
-      "3377": {
+      "3387": {
         "type": "array",
         "meta": {
           "default": [],
@@ -776,9 +776,9 @@
             "hidden": true
           }
         },
-        "inner": 3374
+        "inner": 3384
       },
-      "3381": {
+      "3391": {
         "type": "string",
         "meta": {
           "role": "path",
@@ -788,7 +788,7 @@
           "description": "Region Mask"
         }
       },
-      "3384": {
+      "3394": {
         "type": "string",
         "meta": {
           "description": "Prompt",
@@ -803,7 +803,7 @@
           }
         }
       },
-      "3387": {
+      "3397": {
         "type": "string",
         "meta": {
           "description": "Negative Prompt",
@@ -816,7 +816,7 @@
           }
         }
       },
-      "3390": {
+      "3400": {
         "type": "number",
         "meta": {
           "description": "Width",
@@ -826,7 +826,7 @@
           }
         }
       },
-      "3393": {
+      "3403": {
         "type": "number",
         "meta": {
           "description": "Height",
@@ -836,7 +836,7 @@
           }
         }
       },
-      "3397": {
+      "3407": {
         "type": "boolean",
         "meta": {
           "description": "Match Input Resolution",
@@ -847,11 +847,11 @@
             "columns": 3,
             "width": 1,
             "zone": "params",
-            "tooltip": "Retained for draft compatibility — it switches nothing: both edit lanes edit at the source’s own frame (the 2.1 lane samples the encoder’s own latent; 2511 encodes the source)."
+            "tooltip": "Retained for old drafts — it switches nothing: both edit models edit at the source’s own frame (the 2.1 model samples the encoder’s own latent; 2511 encodes the source)."
           }
         }
       },
-      "3402": {
+      "3412": {
         "type": "number",
         "meta": {
           "description": "Seed",
@@ -865,7 +865,7 @@
           }
         }
       },
-      "3408": {
+      "3418": {
         "type": "number",
         "meta": {
           "description": "Steps",
@@ -882,7 +882,7 @@
           }
         }
       },
-      "3414": {
+      "3424": {
         "type": "number",
         "meta": {
           "description": "Guidance Scale",
@@ -899,7 +899,7 @@
           }
         }
       },
-      "3416": {
+      "3426": {
         "type": "union",
         "meta": {
           "description": "Sampler",
@@ -913,16 +913,6 @@
           }
         },
         "list": [
-          349,
-          350,
-          351,
-          352,
-          353,
-          354,
-          355,
-          356,
-          357,
-          358,
           359,
           360,
           361,
@@ -957,10 +947,20 @@
           390,
           391,
           392,
-          393
+          393,
+          394,
+          395,
+          396,
+          397,
+          398,
+          399,
+          400,
+          401,
+          402,
+          403
         ]
       },
-      "3418": {
+      "3428": {
         "type": "union",
         "meta": {
           "description": "Scheduler",
@@ -974,18 +974,18 @@
           }
         },
         "list": [
-          395,
-          396,
-          397,
-          398,
-          399,
-          400,
-          401,
-          402,
-          403
+          405,
+          406,
+          407,
+          408,
+          409,
+          410,
+          411,
+          412,
+          413
         ]
       },
-      "3421": {
+      "3431": {
         "type": "boolean",
         "meta": {
           "description": "Use Stock Nodes",
@@ -998,7 +998,7 @@
           }
         }
       },
-      "3424": {
+      "3434": {
         "type": "boolean",
         "meta": {
           "description": "Double Reference",
@@ -1006,35 +1006,35 @@
             "order": 2,
             "group": "edit_tuning",
             "width": 1,
-            "tooltip": "CURRENTLY UNBUILDABLE on this plane (agent-debt F-4, 2026-09-22): true fires a LOUD refusal — the TS plane builds the stock plain-edit graph only, never a silent plain-edit. Leave false. (When the double-encode lane exists: encode the input image twice — VAE + vision encoder — for stronger identity preservation.)",
+            "tooltip": "Not available yet: turning this on stops the run with a clear error — the edit models build the standard single-pass edit only, never a silent plain edit. Leave it off. (Once supported: the input image is encoded twice — VAE + vision encoder — for stronger identity preservation.)",
             "zone": "params"
           }
         }
       },
-      "3425": {
+      "3435": {
         "type": "object",
         "meta": {
           "default": {}
         },
         "dict": {
-          "input_images": 3361,
-          "image1": 3365,
-          "image2": 3369,
-          "image3": 3373,
-          "reference_images": 3377,
-          "input_mask": 3381,
-          "prompt": 3384,
-          "negative_prompt": 3387,
-          "width": 3390,
-          "height": 3393,
-          "match_input_resolution": 3397,
-          "seed": 3402,
-          "steps": 3408,
-          "cfg": 3414,
-          "sampler": 3416,
-          "scheduler": 3418,
-          "use_stock_nodes": 3421,
-          "double_reference": 3424
+          "input_images": 3371,
+          "image1": 3375,
+          "image2": 3379,
+          "image3": 3383,
+          "reference_images": 3387,
+          "input_mask": 3391,
+          "prompt": 3394,
+          "negative_prompt": 3397,
+          "width": 3400,
+          "height": 3403,
+          "match_input_resolution": 3407,
+          "seed": 3412,
+          "steps": 3418,
+          "cfg": 3424,
+          "sampler": 3426,
+          "scheduler": 3428,
+          "use_stock_nodes": 3431,
+          "double_reference": 3434
         }
       }
     }
