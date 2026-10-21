@@ -24,7 +24,7 @@ export declare function unknownDraftRefusal(draftId: string): QueueRefusal;
  * ("One list now" — its header already claimed it); queue re-exports
  * for barrel consumers. */
 export { draftIdOk } from "@melite/estate-drafts";
-export { RETIRED_RUNNER_KNOBS, RETIRED_CARRY_KEYS, DOOR_KEYS, } from "./vocab.ts";
+export { RETIRED_RUNNER_KNOBS, RETIRED_CARRY_KEYS, DOOR_KEYS, } from "./vocab.js";
 /** The strict-body gate (_strict_body 248-276). */
 export declare function strictBodyCheck(body: Record<string, unknown>): QueueRefusal | null;
 /** THE TEST-FLAG RESOLVE SEAT (purge §7 P7 F-1, single-resolve): the

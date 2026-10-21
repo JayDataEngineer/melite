@@ -1,6 +1,6 @@
 import { Service } from "@deepseek-ai/cordis";
 import type { Context } from "@deepseek-ai/cordis";
-import type { FlowsSeat } from "./flowsData.ts";
+import type { FlowsSeat } from "./flowsData.js";
 /** One card summary (the routing layer — no bodies). */
 export interface DiscoveredCard {
     readonly id: string;

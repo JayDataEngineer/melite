@@ -29,7 +29,7 @@ export declare const KIND_VOCAB: readonly string[];
 export declare const SKIP_VOCAB: readonly string[];
 export declare const INLINE_TOP_SORTED: readonly string[];
 export declare const STAGE_KEYS_SORTED: readonly string[];
-export { FLOW_ID_RE } from "./runsGates.ts";
+export { FLOW_ID_RE } from "./runsGates.js";
 /** needCardRegistry (start-door-verbatim): the LOUD
  *  miswire when the card registry is absent — a card= stage
  *  refuses until the cardRegistry stroke slots the defs in. */
