@@ -40,8 +40,11 @@ const ROSTER: Record<string, [string, string]> = {
   "melite-kimodo-nodes": ["melite-kimodo-nodes", "0.1.0"],
   "melite-model-base": ["melite-model-base", "1.0.0"],
   "melite-poser-nodes": ["melite-poser-nodes", "0.1.0"],
-  "melite-sfx-nodes": ["melite-sfx-nodes", "0.1.0"],
-  "melite-tts-nodes": ["melite-tts-nodes", "0.1.0"],
+  // melite-sfx-nodes + melite-tts-nodes are NOT here: removed from
+  // the estate 2026-11-10 (the one-audio-pack consolidation — every
+  // Audiocore* class lives in melite-audio-nodes; the carves were
+  // byte-identical duplicates). Published-dormant like unity above:
+  // versions are immutable, no vendored repo left to discipline.
   // melite-unity-nodes is NOT here: removed from the estate
   // 2026-10-18 (operator ruling, audit 008 M15 — the M12 shape).
   // Its registry node data-engineer/melite-unity-nodes 0.1.0 stays
@@ -103,12 +106,14 @@ function versionAtLeast(a: string, b: string): boolean {
 describe("registry door discipline", () => {
   it("every pack carries a roster row — no pack publishes unrostered", () => {
     const repos = Object.keys(ROSTER).sort();
-    // 10, not 11: melite-unity-nodes left the estate 2026-10-18
-    // (M15 ruling; its registry node stays published-dormant —
-    // see the roster comment above), and melite-autoremesher-nodes
-    // left 2026-10-13 (the autoremesher excision — the pack the
-    // owner removed from the system).
-    expect(repos).toHaveLength(10);
+    // 8, not 10 (2026-11-10): melite-unity-nodes left the estate
+    // 2026-10-18 (M15 ruling; its registry node stays
+    // published-dormant — see the roster comment above),
+    // melite-autoremesher-nodes left 2026-10-13 (the autoremesher
+    // excision — the pack the owner removed from the system), and
+    // melite-sfx-nodes + melite-tts-nodes left 2026-11-10 (the
+    // one-audio-pack consolidation; published-dormant, same shape).
+    expect(repos).toHaveLength(8);
     for (const repo of repos) {
       expect(readProject(repo).name, repo).toBe(ROSTER[repo][0]);
     }

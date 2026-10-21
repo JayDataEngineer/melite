@@ -66,6 +66,14 @@
   "UpscaleModelLoader": "the upscale lane's loader — the film/upscale walls' composes",
   "VHS_LoadVideo": "the VHS video loader (comfyui-upload lane helpers) — the video walls' composes",
   "VHS_LoadVideoPath": "the VHS video-path loader — the video walls' composes",
-  "Video Slice": "the h3 video-slice stamp lane (actions.ts/schema.ts) — the corpus's stamp members compose it"
+  "Video Slice": "the h3 video-slice stamp lane (actions.ts/schema.ts) — the corpus's stamp members compose it",
+  "RayCreatureRigBridge": "the anycreature card's species-bind lane (packages/models/anycreature golden) — composed against the primed boot doc by the golden driver's wiring gate",
+  "KimodoExportFBX": "the gem-soma card's export lane (packages/models/gem-soma golden) — composed against the primed boot doc by the golden driver's wiring gate",
+  "ImageCrop": "the input card's crop lane (packages/models/input golden) — composed against the primed boot doc by the golden driver's wiring gate",
+  "ImageUpscaleWithModel": "the input card's upscale lane (packages/models/input golden) — composed against the primed boot doc by the golden driver's wiring gate",
+  "LoadMoGeModel": "the pixal3d card's geometry loader (packages/models/pixal3d golden) — composed against the primed boot doc by the golden driver's wiring gate",
+  "GrowMask": "the qwen-img-edit-21/2511 cards' inpaint mask lanes (their goldens) — composed against the primed boot doc by the golden driver's wiring gate",
+  "FeatherMask": "the qwen-img-edit-2511 card's feather lane (its golden) — composed against the primed boot doc by the golden driver's wiring gate",
+  "DetailerForEach": "the qwen-img-edit-2511 card's detailer stack (its golden) — composed against the primed boot doc by the golden driver's wiring gate"
  }
 }

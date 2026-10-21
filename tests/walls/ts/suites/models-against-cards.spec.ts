@@ -64,7 +64,9 @@ import { describe, it } from "vitest";
 // route) and moss-image lands (variant route moss-image + the bf16
 // cell route moss-image-bf16; the int8 cell shares the variant
 // route).
-const SERVED_ADDR_CENSUS = 67
+// 67 -> 74 (2026-11-08, the third edit lane): fibo2-edit serves its
+// family route + two lanes × variant/cell routes (7 addresses).
+const SERVED_ADDR_CENSUS = 74
 // 24 -> 25 (2026-10-22, audit 006/U1): flux-klein claims its own
 // atom (the family's routes resolve to its declared owners)
 // 25 -> 24 (2026-10-13, the autoremesher excision — the pack the owner removed from the system)
@@ -80,7 +82,9 @@ const SERVED_ADDR_CENSUS = 67
 // 23 -> 24 (2026-11-07, the operator's drop): moss-image claims its
 // own atom (the kroma lanes ride the krea-2 atom — variants, not
 // families).
-const OWNER_ATOM_CENSUS = 24
+// 24 -> 25 (2026-11-08, the third edit lane): fibo2-edit claims its
+// own atom (its routes resolve to their declared owner).
+const OWNER_ATOM_CENSUS = 25
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -444,6 +448,117 @@ describe("models against cards (the cross-validation, resurrected)", () => {
       `the hand-written-carrier exemption is pinned (seen ${handWritten.join(", ") || "—"} vs the named ${HAND_WRITTEN_CARRIERS.join(", ") || "—"} — a card that rewrites itself out of the census must be argued in this list)`);
   });
 
+  // ── SD-5: THE EXEMPTIONS WEARING COMMENTS (the purge audit's
+  // meta-finding) ────────────────────────────────────────────────────
+  // The census pin comments above (470→471 ref_mods, 472→473
+  // ref_video_trims, 466→467 match_input_resolution) record the
+  // numeric judge's type blindness as ARGUMENTS, not judgments. The
+  // two arms below convert the class into law: (a) pins THE seat the
+  // audit names to its live judged homes; (d) censuses the whole
+  // skip class — every member named with its judged home, both
+  // directions judged, homes verified live by title substring.
+
+  it("THE WALKED-NEVER-JUDGED SEAT (ref_mods, SD-5a): the params walk visits the h3 array seat and the numeric judge judges nothing BY LAW — the seat's value law lives at named, live judges (the refmod value arms' arrival, the liveness round-trip's emission), pinned here by title, never by comment", async () => {
+    const read = (rel: string): string => readFileSync([process.cwd(), ...rel.split("/")].join("/"), "utf8");
+    // 1. THE SEAT EXISTS IN THE WALK — derived from the real card
+    // defs (the same walk the starving judge runs), never a hand
+    // name. The walk counts EVERY dict field (walked++), then the
+    // numeric judge judges params-zone numbers only — so the
+    // walked-never-judged seat class is: type "array", zone NOT
+    // params (the census pins' own description of ref_mods, audit
+    // 010/R1). The seat leaving the walk kills this pin with it
+    // (the exemption dies when its seat dies).
+    const defs = await loadCardDefs();
+    const seats: string[] = [];
+    for (const [cardId, def] of defs) {
+      const carrier = (def as { schemaCarrier?: unknown }).schemaCarrier ??
+        (def as { schema?: unknown }).schema;
+      const dict = (carrier as { dict?: Record<string, { type?: string; meta?: { extra?: { zone?: string } } }> | undefined })?.dict;
+      if (dict === undefined) continue;
+      for (const [name, field] of Object.entries(dict)) {
+        const zone = field?.meta?.extra?.zone;
+        if (field?.type === "array" && zone !== "params") seats.push(`${cardId}.${name}`);
+      }
+    }
+    assert.deepEqual(seats, [
+      "h3-timeline.ref_images", "h3-timeline.ref_videos", "h3-timeline.ref_video_trims",
+      "h3-timeline.ref_audios", "h3-timeline.ref_mods",
+      "image-edit.input_images", "image-edit.reference_images",
+    ], `the walked ref_mods seat moved (seen [${seats.join(", ") || "—"}] vs the pinned seats) — the exemption's seat is judged here, never assumed; the walk's zone-less array class is enumerated IN FULL, and a new member is a deliberate edit to this list (the walked-pin law)`);
+    // 2. THE ARRIVAL JUDGE IS LIVE: the refmod value wall's ARM 2
+    // drives the run-level ref_mods seat through the real compose and
+    // judges the value at the consumer — arrival, not emission.
+    const refmodWall = read("tests/walls/ts/suites/refmod-value-arms.spec.ts");
+    assert.ok(
+      refmodWall.includes("ARM 2 — the run-level declared seat (ref_mods"),
+      "the ref_mods arrival judge went dark: ARM 2's title left tests/walls/ts/suites/refmod-value-arms.spec.ts — the exemption's cited home is a comment again",
+    );
+    // 3. THE EMISSION JUDGE IS LIVE: the liveness wall's WRITES_EXEMPT
+    // round-trip arm fires on the exempt seat (SD-5b) — the serialize
+    // round-trip the ledger's why cites, made an actual arm.
+    const livenessWall = read("tests/walls/ts/suites/card-compose-liveness.spec.ts");
+    assert.ok(
+      livenessWall.includes("THE WRITES_EXEMPT ROUND-TRIP ARMS (SD-5b)"),
+      "the ref_mods emission judge went dark: the WRITES_EXEMPT round-trip arm's title left card-compose-liveness.spec.ts — the WRITES_EXEMPT why cites a judge that no longer exists",
+    );
+  });
+
+  it("THE TYPE-BLIND CENSUS (SD-5d): every boolean/array params field the walk visits and the numeric judge skips is enumerated here with its live judged home — the skip class is a named census, never a construction", async () => {
+    const read = (rel: string): string => readFileSync([process.cwd(), ...rel.split("/")].join("/"), "utf8");
+    // THE DERIVATION: the starving judge's own walk, stopped at the
+    // type filter (`field.type !== "number"`) for the two classes the
+    // SD-5 finding names. Strings ride the walk's own stated law
+    // (emptiness is honest); booleans and arrays are the blind class.
+    const defs = await loadCardDefs();
+    const census: string[] = [];
+    for (const [cardId, def] of defs) {
+      const carrier = (def as { schemaCarrier?: unknown }).schemaCarrier ??
+        (def as { schema?: unknown }).schema;
+      const dict = (carrier as { dict?: Record<string, { type?: string; meta?: { extra?: { zone?: string } } }> | undefined })?.dict;
+      if (dict === undefined) continue; // the hand-written carriers are the starving arm's own pin
+      for (const [name, field] of Object.entries(dict)) {
+        if (field?.meta?.extra?.zone !== "params") continue;
+        if (field.type !== "boolean" && field.type !== "array") continue;
+        census.push(`${cardId}.${name} (${String(field.type)})`);
+      }
+    }
+    assert.ok(census.length > 0, "the type-blind census went vacuous — the walk no longer sees any boolean/array params field (the derivation broke)");
+    // THE LEDGER: the explicit judged invariant per member. A census
+    // member with no ledger row is an UNARGUED skip (the SD-5 class —
+    // a comment wearing a judgment's clothes); a ledger row with no
+    // census member is a dead name; every row's home is verified LIVE
+    // by title substring over the named wall file.
+    const LEDGER: Record<string, { home: string; anchor: string }> = {
+      "image-edit.match_input_resolution (boolean)": {
+        home: "packages/image/image-edit/tests/value-roundtrip.spec.ts",
+        anchor: "E8 (documented inert): match_input_resolution switches NOTHING",
+      },
+      "image-edit.use_stock_nodes (boolean)": {
+        home: "packages/image/image-edit/tests/value-roundtrip.spec.ts",
+        anchor: "E9 (single-plane law): use_stock_nodes takes no branch",
+      },
+      "image-edit.double_reference (boolean)": {
+        home: "packages/image/image-edit/tests/value-roundtrip.spec.ts",
+        anchor: "E10 (unbuildable, honest): a stated double_reference=true REFUSES loud naming the knob",
+      },
+      "image-gen.reference_images (array)": {
+        home: "packages/image/image-gen/tests/card.spec.ts",
+        anchor: "a stated reference_images key refuses LOUD on every family EXCEPT its owner qwen-img-21",
+      },
+    };
+    const offenders: string[] = [];
+    offenders.push(...census.filter((seat) => !(seat in LEDGER))
+      .map((s) => `${s}: walked, never judged, and NO ledger row names its home — an unargued type-blind skip (the SD-5 class)`));
+    offenders.push(...Object.keys(LEDGER).filter((k) => !census.includes(k))
+      .map((k) => `ledger row '${k}' names no walked seat — a dead exemption, prune it`));
+    for (const [seat, { home, anchor }] of Object.entries(LEDGER)) {
+      if (!read(home).includes(anchor)) {
+        offenders.push(`${seat}: the judged home's anchor left ${home} — the exemption's judge went dark`);
+      }
+    }
+    assert.deepEqual(offenders, [], "THE TYPE-BLIND CLASS IS UNNAMED:\n  " + offenders.join("\n  "));
+  });
+
   // THE VARIANT-STAMP LAW (operator 2026-09-23, "base doesn't even
   // have the audio input — where is the audit?"): the form's
   // visible_when guards key `variant=` against the RESOLVED
@@ -712,7 +827,11 @@ describe("models against cards (the cross-validation, resurrected)", () => {
     // 2026-10-16, the ghost-tree judgment: 16 -> 17 (transfer_rig's
     // mirrored skin npz row — its lane loads the file kimodo's
     // receipt minted) and 60 -> 61 rows.
-    const PROVISION_DECLARERS = ["anima", "anny", "flux-klein", "h3", "joytag", "kimodo",
+    // 2026-11-08, the third edit lane: 19 -> 20 declarers, 72 -> 74
+    // rows (fibo2-edit provisions the BF16 Qwen3-VL encoder + the
+    // flux2-family VAE; the int8 encoder is deliberately absent —
+    // the open upstream bug's seat).
+    const PROVISION_DECLARERS = ["anima", "anny", "fibo2-edit", "flux-klein", "h3", "joytag", "kimodo",
       "krea-2", "mask-select", "moss-image", "music3", "pixal3d", "qwen-img-21", "qwen-img-edit-21",
       "qwen-img-edit-2511", "seedvr2-ema", "transfer-rig",
       "trellis2-native", "yue2", "z-image"];
@@ -747,7 +866,7 @@ describe("models against cards (the cross-validation, resurrected)", () => {
     // 71 -> 72 (2026-11-08, the drift lock): qwen-img-edit-21's
     // consistency LoRA joins (the AusBoss row, sha256 + size pinned
     // in the DECL) — the Δ4 drift-lock recipe's own download.
-    const PROVISION_ROW_COUNT = 72;
+    const PROVISION_ROW_COUNT = 74;
     const declarers: string[] = [];
     let judged = 0;
     for (const id of registryIds()) {
@@ -802,7 +921,7 @@ describe("models against cards (the cross-validation, resurrected)", () => {
     // THE MASK ORDER (operator 2026-11-07): the MASK mod serves on
     // EVERY img-gen model — the 2.1-only MASK-C roster is history.
     const MASK_DECLARERS = [
-      "anima", "flux-klein", "krea-2", "moss-image", "qwen-img-21",
+      "anima", "fibo2-edit", "flux-klein", "krea-2", "moss-image", "qwen-img-21",
       "qwen-img-edit-21", "qwen-img-edit-2511", "z-image",
     ];
     const declarers: string[] = [];
@@ -873,7 +992,7 @@ describe("models against cards (the cross-validation, resurrected)", () => {
     // 21 -> 14, 17 -> 10 (2026-10-12, the operator's five-family
     // kill): ace-step's 4 and moss's 3 per-cell gguf artifacts and
     // their 7 distinct upstream urls die with the families.
-    const ARTIFACT_ROW_COUNT = 21 - 7 + 5 + 5; // +2 (2026-10-23, the operator's turbo call): the qwen 2.1 turbo cells // +2 (2026-10-24, THE 2.1 MATRIX RESHAPE): the edit lane's turbo cells join with the fold // +5 (2026-10-16, the anima three checkpoints): three Bedovyy convrot + two official bf16 // +5 (2026-11-07, the operator's drop): kroma's two turbo quants + kroma-base's dtype-mapped cell, and moss-image's int8 + bf16 pair
+    const ARTIFACT_ROW_COUNT = 21 - 7 + 5 + 5 + 4; // +2 (2026-10-23, the operator's turbo call): the qwen 2.1 turbo cells // +2 (2026-10-24, THE 2.1 MATRIX RESHAPE): the edit lane's turbo cells join with the fold // +5 (2026-10-16, the anima three checkpoints): three Bedovyy convrot + two official bf16 // +5 (2026-11-07, the operator's drop): kroma's two turbo quants + kroma-base's dtype-mapped cell, and moss-image's int8 + bf16 pair // +4 (2026-11-08, the third edit lane): fibo2-edit's dev + edit-turbo, each int8_convrot + bf16
     const artifacts: Array<{ id: string; url: string }> = [];
     for (const id of registryIds()) {
       const decl = registryModel(id) as { variants?: Array<{ cells?: Array<{ artifact?: unknown }> }> };
@@ -908,8 +1027,11 @@ describe("models against cards (the cross-validation, resurrected)", () => {
     // base/turbo/aesthetic ride five per-cell downloads (three
     // Bedovyy convrot + two official bf16; base bf16 stays a
     // provisions row).
-    assert.deepEqual(ARTIFACT_DECLARERS, ["anima", "flux-klein", "krea-2", "moss-image", "qwen-img-21", "qwen-img-edit-21", "qwen-img-edit-2511"],
-      `the artifact declarers are the named 7 (saw ${ARTIFACT_DECLARERS.join(", ")}) — a family starting or stopping its cell-artifact channel is a deliberate edit`);
+    // 6 -> 7 (2026-11-08, the third edit lane): fibo2-edit's four
+    // cells ride its own repo's four checkpoint urls (no sharing —
+    // the Fibo files are its own).
+    assert.deepEqual(ARTIFACT_DECLARERS, ["anima", "fibo2-edit", "flux-klein", "krea-2", "moss-image", "qwen-img-21", "qwen-img-edit-21", "qwen-img-edit-2511"],
+      `the artifact declarers are the named 8 (saw ${ARTIFACT_DECLARERS.join(", ")}) — a family starting or stopping its cell-artifact channel is a deliberate edit`);
     assert.equal(artifacts.length, ARTIFACT_ROW_COUNT,
       `the variant-cell artifact rows are exactly ${String(ARTIFACT_ROW_COUNT)} (saw ${String(artifacts.length)}) — a cell appearing or leaving is a deliberate edit`);
     // deduped by url the same way the union walk dedupes —
@@ -928,6 +1050,10 @@ describe("models against cards (the cross-validation, resurrected)", () => {
     );
     assert.deepEqual(roster, {
       "anima": 5,
+      // 2026-11-08, the third edit lane: four distinct checkpoint
+      // urls — dev + edit-turbo, each int8_convrot + bf16, all its
+      // own repo's files.
+      "fibo2-edit": 4,
       "flux-klein": 2,
       // 2026-11-07, the operator's drop: krea-2's five cells (turbo +
       // raw int8s + kroma's two turbo quants + the base tier),
@@ -1438,12 +1564,15 @@ describe("THE BOUNDS-SANITY WALL (every declared numeric row is real, surfaced, 
     // left both DECLs. The SOLVER span returned the same day
     // (steps [1,50] on both edit lanes — KSampler steps beyond the
     // edit narrowing is the washed-out-edit burn), so the census
-    // judges 9 ids: qwen-img-edit-21 (family + 2 flat routes) and
+    // judged 9 ids: qwen-img-edit-21 (family + 2 flat routes) and
     // qwen-img-edit-2511 (family + 5 variants), one row each. A
     // row appearing or leaving moves the numbers and argues here.
-    assert.equal(judgedFamilies, 9,
-      `the bounds census is EXACT: both edit lanes' solver span over their 9 route ids (saw ${String(judgedFamilies)})`);
-    assert.equal(judged, 9,
+    // 9 -> 16 (2026-11-08, the third edit lane): fibo2-edit's
+    // family row + its 6 lane routes all carry the same solver
+    // span (the routes ride the family bounds row).
+    assert.equal(judgedFamilies, 16,
+      `the bounds census is EXACT: the edit lanes' solver span over their 16 route ids (saw ${String(judgedFamilies)})`);
+    assert.equal(judged, 16,
       `the bounds row census is exact (saw ${String(judged)} — a schema change that empties a bounds table is a deliberate edit, never silent)`);
   });
 
@@ -1640,7 +1769,11 @@ describe("THE TWO-HOMES BOUNDS-SYNC WALL (card schema == action ParamSpec, every
     // joins the shared names — one agreeing pair per carried h3
     // address (schema min 0.05 / max 1 == the action row's bounds
     // [0.05, 1], number on both planes); offenders stay empty.
-    assert.equal(pairs, 776, "the shared-name pair census changed — update this pin deliberately");
+    // 776 -> 789 (2026-11-08, the third edit lane): fibo2-edit's 7
+    // carried addresses join — 13 agreeing pairs (seed, steps, cfg
+    // + the envelope/bounds pair rides per bounded address);
+    // offenders stay empty.
+    assert.equal(pairs, 789, "the shared-name pair census changed — update this pin deliberately");
     assert.deepEqual(offenders, [], `two-homes drift (card schema vs action ParamSpec):\n${offenders.join("\n")}`);
   });
 });

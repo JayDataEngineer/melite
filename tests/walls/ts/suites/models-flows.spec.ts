@@ -215,7 +215,10 @@ describe("the models plane feeds the compose/flows plane (A2)", () => {
     // kroma-base) and moss-image lands (moss-image + moss-image-bf16).
     // 66 -> 67 (2026-11-09, E2-4 THE QUANT AXIS CONTRACT): the
     // seedvr2 3B fp8 tier gains its own facts route (seedvr2-ema-fp8).
-    assert.equal(total, 67, `the facts roster is 67 rows (saw ${String(total)}) — a new family route is a deliberate edit`);
+    // 67 -> 74 (2026-11-10, the fibo2-edit board): dev + edit-turbo
+    // variant routes + the int8_convrot/bf16 cell routes join (the
+    // facts-total census rose with the same board).
+    assert.equal(total, 74, `the facts roster is 74 rows (saw ${String(total)}) — a new family route is a deliberate edit`);
   });
 });
 
@@ -276,7 +279,7 @@ describe("the facts FILE is pinned against the registry (E-C2)", () => {
   // 29 -> 28 (2026-11-02): the h3-keyframe row left WITH its route
   // (the 2026-10-27 fold lesson — a stale facts row false-admits a
   // dead family through the selection-tolerance catch).
-  const FACTS_ROW_CENSUS = 30; // -1 (2026-10-13, the autoremesher excision); +1 (2026-11-07, the operator's drop — moss-image's card-owned row joins); +1 (2026-11-09, the h3-timeline board==offer cure — the card boards its offered h3-singularity lane address, so the compose plane's reverse arm demands its row)
+  const FACTS_ROW_CENSUS = 31; // -1 (2026-10-13, the autoremesher excision); +1 (2026-11-07, the operator's drop — moss-image's card-owned row joins); +1 (2026-11-09, the h3-timeline board==offer cure — the card boards its offered h3-singularity lane address, so the compose plane's reverse arm demands its row); +1 (2026-11-10, fibo2-edit boards onto image-edit — the facts row lands with the core pin hop to 87ed5a06, TextEncodeFibo2 serving live)
 
   it("the frozen roster is exact, and the frozen-variant escape hatch census is named", async (): Promise<void> => {
     await loadCardDefs();

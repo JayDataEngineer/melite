@@ -102,7 +102,11 @@ interface SkillLine { id?: string }
 // card boards its offered lane addresses, and each carried address
 // advertises its own skill line (both round-tripped 200 + body in
 // the arm above — the offer is real, so its skill line is real).
-const EXPECTED_CARD_SKILLS = 32;
+// 32 → 33 (2026-11-08, the third edit lane): the image-edit card's
+// agent line now advertises the fibo2-edit prompt-enhance skill —
+// the family-lane-law wall serves model:fibo2-edit from
+// comfyui-cordis/models/image/fibo2-edit/agents/skills/prompt-enhance.
+const EXPECTED_CARD_SKILLS = 33;
 // 8 → 11 (2026-10-11): object-forge's skillRefs — image-gen +
 // img-to-mesh card lines and z-image's prompt-enhance ride the flow
 // bundle (card:quad-remesh resolves null — the card ships no agent

@@ -1,4 +1,6 @@
 import { describe, it, expect } from "vitest";
+import { assertGraphGolden } from "../../../../tests/helpers/graph-golden.ts";
+import { ComposeRefusal } from "@melite/comfyui-card-kit/errors";
 import { existsSync, readdirSync, readFileSync, rmSync } from "node:fs";
 import { join, relative } from "node:path";
 import { spawnSync, execSync, execFileSync } from "node:child_process";
@@ -1162,5 +1164,51 @@ describe("THE IDENTITY LAW: a value that crosses a door has ONE producer (2026-0
     expect(bridges,
       "a pytest seat bridging into a .ts module — port the proof to vitest (the census law: Layer A is typescript)")
       .toEqual([]);
+  });
+});
+
+describe("THE GOLDEN DRIVER'S GATE (SD-6: the goldens drove instantiateAction DIRECTLY)", () => {
+  // THE BYPASS (the purge audit's SD-6, hop 5): assertGraphGolden
+  // byte-compared whatever the family's action composed with NO
+  // wiring judge on the path — a typo'd NEW input key rode the
+  // driver straight past every gate to the byte compare (or, in
+  // refresh mode, into a freshly recorded golden). Every other
+  // compose door answers to the estate's wiring wall; the golden
+  // driver answered to nobody. The cure seats assertWiringAgainst
+  // INSIDE the driver, upstream of both the byte compare and the
+  // refresh write, with the card derived from the family path and
+  // the roster derived from the recorded engine build.
+  const goldenPath = (family: string, name: string): string =>
+    join(REPO, "packages", "models", family, "tests", "golden", `${name}.json`);
+  const ksamplerGraph = (extra: Record<string, unknown> = {}): Record<string, unknown> => ({
+    "1": {
+      class_type: "KSampler",
+      inputs: {
+        seed: 1, steps: 20, cfg: 7, sampler_name: "euler", scheduler: "normal", denoise: 1,
+        model: [["loader", 0]], positive: [["loader", 1]],
+        negative: [["loader", 2]], latent_image: [["loader", 3]],
+        ...extra,
+      },
+    },
+  });
+
+  it("THE GOLDEN DRIVER REFUSES A TYPO'D INPUT KEY (SD-6): a NEW input key no engine build declares rides the golden driver into a ComposeRefusal unknown-input naming the key — the wire never reaches the byte compare", () => {
+    let caught: unknown;
+    try {
+      assertGraphGolden(goldenPath("krea-2", "sd6-typo-probe"), ksamplerGraph({ samplar_name: "euler" }), "the sd6 typo probe");
+    } catch (e) { caught = e; }
+    expect(caught, `the golden driver answered a typo'd input key with ${String(caught)} — the bypass is open (SD-6)`).toBeInstanceOf(ComposeRefusal);
+    expect((caught as ComposeRefusal).code).toBe("unknown-input");
+    expect((caught as ComposeRefusal).message).toContain("samplar_name");
+  });
+
+  it("THE GOLDEN DRIVER'S GATE STANDS DOWN FOR A LEGAL WIRE (SD-6 control): a fully-declared KSampler graph passes the wiring gate and reaches the golden's own missing-file refusal — the gate judges keys, it never invents refusals", () => {
+    let caught: unknown;
+    try {
+      assertGraphGolden(goldenPath("krea-2", "sd6-clean-probe"), ksamplerGraph(), "the sd6 clean probe");
+    } catch (e) { caught = e; }
+    expect(caught).toBeInstanceOf(Error);
+    expect((caught as Error).message).toMatch(/the golden .* is missing/);
+    expect((caught as Error).message).not.toMatch(/stale against the engine build/);
   });
 });

@@ -306,11 +306,13 @@ describe("THE VENDOR→INSTALL CENSUS (every vendored submodule is installed or 
   };
 
   it("the census floor: the walk finds the vendored fleet (the vacuous guard)", () => {
-    // 11 vendored today; a shrink is a deliberate submodule removal
-    // in progress, never a quiet pass.
+    // 9 vendored today (2026-11-10; was 11 — the melite-sfx-nodes +
+    // melite-tts-nodes carves are retired by the one-audio-pack
+    // consolidation); a shrink is a deliberate submodule removal in
+    // progress, never a quiet pass.
     expect(vendoredExtensionNames().length,
       "the .gitmodules walk found fewer vendored extension packs than the estate vendors — the reader rotted")
-      .toBeGreaterThanOrEqual(10);
+      .toBeGreaterThanOrEqual(9);
   });
 
   it("every vendored extension submodule is installed by a row or ledgered below", () => {

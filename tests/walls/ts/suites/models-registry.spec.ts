@@ -234,6 +234,17 @@ describe("the resurrected model registry (families/variants/cells/links)", () =>
   "anima-turbo-bf16",
   "anima-turbo-int8",
   "anny",
+  // 2026-11-08, the third image-edit family: Fibo 2.0 Edit (BRIA's
+  // licensed model, the Comfy-Org repack) rides the untyped carve —
+  // the family route plus the two lanes' variant and cell routes
+  // (the weights' origin is the cell artifacts).
+  "fibo2-edit",
+  "fibo2-edit-dev",
+  "fibo2-edit-dev-bf16",
+  "fibo2-edit-dev-int8",
+  "fibo2-edit-turbo",
+  "fibo2-edit-turbo-bf16",
+  "fibo2-edit-turbo-int8",
   "florence2",
   "flux-klein",
   "flux-klein-base",
@@ -332,6 +343,9 @@ describe("the resurrected model registry (families/variants/cells/links)", () =>
     assert.deepEqual(withMods, [
       "anima",
       "anny",
+      // the third edit lane boards loras + mask (the MASK ORDER +
+      // the loras law, the klein-style seed).
+      "fibo2-edit",
       "flux-klein",
       "h3",
       "krea-2",
@@ -466,7 +480,10 @@ describe("the resurrected model registry (families/variants/cells/links)", () =>
     // 63 -> 64 (2026-11-09, E2-4 THE QUANT AXIS CONTRACT): the
     // seedvr2 3B variant seats its fp16+fp8 cells — the variant
     // becomes a serving row (its tiers are real provisioned bodies)
-    assert.equal(variants, 64);
+    // 64 -> 66 (2026-11-08, the third edit lane): fibo2-edit serves
+    // dev + edit-turbo (each a Variant row with its own envelope and
+    // resolver pair — no Recipe group, the scoped judgment).
+    assert.equal(variants, 66);
     // 85 -> 84 (2026-10-13, the autoremesher excision): the family's
     // one cell left with the pack the owner removed.
     // 84 -> 86 (2026-10-23): the turbo cells join (turbo_int8_convrot + turbo_bf16).
@@ -489,6 +506,9 @@ describe("the resurrected model registry (families/variants/cells/links)", () =>
     // quants + kroma-base's dtype-mapped cell (3) and moss-image's
     // int8 + bf16 pair (2) join.
     // 76 -> 78 (2026-11-09, E2-4): the seedvr2 3B fp16+fp8 cells
-    assert.equal(cells, 78);
+    // join (its tiers are real provisioned bodies).
+    // 78 -> 82 (2026-11-08, the third edit lane): fibo2-edit's four
+    // cells join — dev + edit-turbo, each int8_convrot + bf16.
+    assert.equal(cells, 82);
   });
 });

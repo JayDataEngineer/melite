@@ -30,6 +30,7 @@ import { t2i as animaT2I } from "../../../../packages/models/anima/src/actions.t
 import { t2i as krea2T2I } from "../../../../packages/models/krea-2/src/actions.ts";
 import { edit as edit21 } from "../../../../packages/models/qwen-img-edit-21/src/actions.ts";
 import { edit as edit2511 } from "../../../../packages/models/qwen-img-edit-2511/src/actions.ts";
+import { edit as editFibo2 } from "../../../../packages/models/fibo2-edit/src/actions.ts";
 import { t2i as fluxKleinT2I } from "../../../../packages/models/flux-klein/src/actions.ts";
 import { t2i as mossImageT2I } from "../../../../packages/models/moss-image/src/actions.ts";
 
@@ -75,14 +76,15 @@ const ADOPTERS = readdirSync(modelsDir).filter((f) => {
 
 describe("the shared diffusion param surface (one home)", () => {
   it("every tree adopter is asserted by name here (the census is the tree, not this file)", () => {
-    const asserted = new Set(["qwen-img-21", "z-image", "anima", "krea-2", "qwen-img-edit-21", "qwen-img-edit-2511", "flux-klein", "moss-image"]);
+    const asserted = new Set(["qwen-img-21", "z-image", "anima", "krea-2", "qwen-img-edit-21", "qwen-img-edit-2511", "fibo2-edit", "flux-klein", "moss-image"]);
     assert.deepEqual(
       ADOPTERS.filter((f) => !asserted.has(f)),
       [],
       "a family spreads diffusionParamRows() but has no named assertion in this wall — add its expectations",
     );
     // 7 -> 8 (2026-11-07, the operator's drop): moss-image spreads the factory.
-    assert.deepEqual(ADOPTERS.length, 8, "the adopter census changed — update this pin and the named assertions together");
+    // 8 -> 9 (2026-11-08, the third edit lane): fibo2-edit spreads the factory.
+    assert.deepEqual(ADOPTERS.length, 9, "the adopter census changed — update this pin and the named assertions together");
   });
 
   it("the five text-to-image families declare the factory's rows, not a hand copy", () => {
@@ -113,6 +115,14 @@ describe("the shared diffusion param surface (one home)", () => {
         `${family}'s edit action must wrap the shared rows with its own five head and three tail rows`,
       );
     }
+  });
+
+  it("the third edit family declares the narrowed rows around its own tail (no qwen edit-tuning booleans)", () => {
+    assert.deepEqual(
+      editFibo2.params,
+      [...EDIT_OWN_HEAD, ...diffusionParamRows(EDIT_DIFFUSION_BOUNDS), { name: "match_input_resolution", type: "boolean" }],
+      "fibo2-edit's edit action wraps the shared rows with the five-row head and the match toggle alone",
+    );
   });
 
   it("the served order is the canonical one: prompt pair, size pair, managed seed, sampler knobs", () => {

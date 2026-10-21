@@ -3758,11 +3758,16 @@ window.__ModuleLoader__.load({
 		*  honestly rather than patched with a lying flush: a write inside
 		*  its trailing window dies on DRILL CLOSE — but on a real BROWSER
 		*  TAB close the whole heap dies with the page (this ledger, the
-		*  timers, the run gate itself — no beforeunload/beacon exists, and
-		*  none honestly can: the door's CAS fence needs the write's
-		*  answer). The tab-close loss window is REAL and UNCOVERED; the
-		*  drill-close half is caught by the run gate, which FORCES every
-		*  pending write before composing (flushStageWrites below), so the
+		*  timers, the run gate itself). No beforeunload/beacon exists, and
+		*  none honestly can: the estate lane is the api-gateway's ONE
+		*  WebSocket (the sanctioned client face is the mounted namespace —
+		*  estate-remote.ts), which pagehide tears down with the page; a
+		*  keepalive fetch would be a hand-rolled second transport with no
+		*  server door to receive it. The tab-close loss window is REAL and
+		*  UNCOVERED; the drill-close half is caught by the run gate
+		*  (refuseForUnlandedWrite below, walled in
+		*  tests/run-gate-trailing-window.spec.ts), which FORCES every
+		*  pending write before composing, so the
 		*  engine only ever sees what the studio shows. */
 		const SCHEDULED_TRAILING_MS = 300;
 		/** Pending trailing writes, keyed draft/stage then param key (the

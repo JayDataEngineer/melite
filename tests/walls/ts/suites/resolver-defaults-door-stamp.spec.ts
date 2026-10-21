@@ -282,7 +282,10 @@ describe("THE DOOR-DEPTH resolver_defaults STAMP (axis-unification P1#5)", () =>
     // variant-class + the prompt user seat). An eleventh steps+cfg
     // face REDS HERE until its family declares the law — the census
     // grows by declaration, never by a silent neighbor.
-    expect(lawFamilies).toBe(10);
+    // 10 -> 11 (2026-11-10): fibo2-edit declares the law at birth
+    // (dev 30/5, edit-turbo 8/1 — the variant rows carry their own
+    // numbers; the encoder-emitted-latent graph keeps cfg 1 on turbo).
+    expect(lawFamilies).toBe(11);
     expect(lawVariants).toBeGreaterThan(0);
   });
 });

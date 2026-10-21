@@ -1,50 +1,40 @@
 {
- "derived_at": "2026-10-21T03:25:33.372Z",
+ "derived_at": "2026-10-21T07:40:39.293Z",
  "tool": "scripts/regen-node-vocab.mjs --boot",
  "source": {
   "path": "data/tmp/object_info_prod.json",
-  "sha256": "0585200fef633236b87b9d8515bfedf9c9703e546dae2da4e1990916f4041937",
-  "mtime_ms": 1792553133142.993,
-  "class_count": 1665,
-  "origin": "live"
+  "sha256": "648a11b21b82c2d05afeccd5a6d58339e1270d242333b647581ceae0d44398ba",
+  "mtime_ms": 1792568432701.067,
+  "class_count": 1673,
+  "origin": "capture"
  },
  "bootstrap_seed": {
   "path": "tests/walls/fixtures/object_info.boot.bootstrap.json",
-  "sha256": "82752fba588b6ef688a97c3a3d8ab9e2f2d4798d9b0f29cdd5399ca8f7d342e5",
-  "rows": 51
+  "sha256": "20283441a77aece1efa9e539ce50c9a0def61bf91be06dd288bef90f1d99fd37",
+  "rows": 59
  },
  "derivation": {
   "facts_path": "packages/engines/comfyui-cordis/data/model-facts.json",
-  "addressed_class_count": 96,
-  "bootstrap_class_count": 51,
-  "fixture_class_count": 147,
-  "rows_probed": 30,
+  "addressed_class_count": 97,
+  "bootstrap_class_count": 59,
+  "fixture_class_count": 156,
+  "rows_probed": 31,
   "refused_rows": 0
  },
  "delta": {
   "added": [
-   "SkipLayerGuidanceDiTSimple"
+   "TextEncodeFibo2"
   ],
   "pruned": [],
   "updated": [
+   "AudiocoreTTS",
+   "AudiocoreVoiceStudio",
    "CLIPLoader",
-   "CompositeCharacter",
-   "FitProp",
-   "FitRow",
+   "KimodoExportFBX",
    "KimodoTransferWeights",
-   "LTX_lora_loader",
-   "LoadImage",
-   "LoadImageMask",
-   "LoraLoader",
-   "MiniMaxH3RefModsLoader",
-   "RayRenderGLBViews",
-   "RaySomaxBake",
-   "RemeshMesh",
+   "LoadAudiocoreModel",
    "SaveRiggedModel",
-   "SkinApply",
-   "SkinPack",
-   "SkinSidecar",
-   "VAELoader"
+   "UNETLoader"
   ],
   "reordered_keys": 0
  }

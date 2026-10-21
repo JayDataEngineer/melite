@@ -418,6 +418,10 @@ export const COVERAGE_BASELINE: Record<string, {
   '**/packages/models/anycreature/src/actions.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/models/anycreature/src/index.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/models/concat/src/index.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
+  // 2026-11-08, the third edit lane: fibo2-edit lands at 100x4 on its own
+  // spec pair (decl.spec + action.spec drive every branch).
+  '**/packages/models/fibo2-edit/src/actions.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
+  '**/packages/models/fibo2-edit/src/index.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/models/fit/src/actions.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/models/fit/src/index.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/models/florence2/src/actions.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },

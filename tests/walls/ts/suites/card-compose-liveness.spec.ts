@@ -32,11 +32,11 @@
 // precedes boot-models.
 import { assertHermeticRode } from "../../../helpers/hermetic-engine.ts";
 import { fillFor as probeFillFor, namedMulti, namedParam } from "../../../../packages/engines/comfyui-cordis/scripts/compose-probe.ts";
-import { describe, it, beforeAll } from "vitest";
+import { describe, it, beforeAll, onTestFinished } from "vitest";
 import assert from "node:assert/strict";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { existsSync, mkdtempSync, readFileSync, readdirSync, statSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync } from "node:fs";
 import { tmpdir } from "node:os";
 
 // THE CARD TIER, BOOTED THE CARD SPEC'S WAY (models registry + card
@@ -46,7 +46,7 @@ import "../../../helpers/boot-models.ts";
 import { Context } from "@deepseek-ai/cordis";
 import { loadCardDefs } from "@melite/comfyui-cordis";
 import { ComposeRefusal } from "@melite/comfyui-card-kit/errors";
-import { assertWiringAgainst, deriveWiringDoc } from "../../../../packages/engines/comfyui-cordis/src/wiringWall.ts";
+import { assertWiringAgainst, deriveWiringDoc, WIDGET_SERIALIZATION_KEYS } from "../../../../packages/engines/comfyui-cordis/src/wiringWall.ts";
 import { GraphBuilder } from "@melite/comfyui-card-kit/graph";
 import { loadFacts } from "@melite/comfyui-card-kit/facts";
 import { getModel, registryIds, registryModel, modelIds, owningAtom } from "../../../../packages/engines/comfyui-cordis/src/models/models.ts";
@@ -63,6 +63,22 @@ import { fieldsOf } from "../../../../packages/web/card-base/src/spec.ts";
 // tenant reds the dispatch assert until it teaches this judge.
 import { serializeLayerA, hydrateLayerA } from "../../../../packages/video/h3-timeline/src/ui/studio/docHydrate.ts";
 import { deriveWindowFamily, T4_ONLY_KEYS } from "@melite/models-h3/timelineContract";
+// SD-3's door rig (the commit seam OUTSIDE studio commits): the real
+// drafts/bench plugin over real DSH storage rows, and the remoteError
+// classifier (discrimination is never instanceof — the drafts wall's
+// own law). The type-only BenchDoc import carries the cordis Context
+// augmentation that names `draftsRemote`/`benchRemote`.
+import draftsPlugin from "@melite/estate-drafts";
+import type { BenchDoc } from "../../../../packages/estate/drafts/src/remote.ts";
+import { remoteErrorOf } from "@deepseek-ai/dsh-typert-protocol";
+import Storage from "@deepseek-ai/dsh-storage";
+import {
+  apply as jsonApply, Config as JsonConfig, inject as jsonInject, name as jsonName,
+} from "@deepseek-ai/dsh-storage-json";
+import {
+  apply as domainApply, Config as DomainConfig, inject as domainInject, name as domainName,
+} from "@deepseek-ai/dsh-storage-domain";
+import type { Plugin } from "@deepseek-ai/cordis";
 
 const FACTS_PATH = join(
   dirname(fileURLToPath(import.meta.url)),
@@ -243,6 +259,76 @@ function composeProbedRow(
     }
   }
   return { graph: null, error: "" };
+}
+
+// ── THE KEY JUDGE'S OWN TRUTH, ONE HOME (SD-5c/SD-6) ────────────────
+// The tracked min fixture (the curated floor) and the roster the
+// judge derives from it. The arms that prove the judge's teeth read
+// THIS roster — never a re-spelled copy.
+let minKeyDocCache: Record<string, { r?: string[]; o?: string[] }> | null = null;
+function minKeyDoc(): Record<string, { r?: string[]; o?: string[] }> {
+  if (minKeyDocCache === null) {
+    minKeyDocCache = JSON.parse(
+      readFileSync(new URL("../../fixtures/object_info.min.json", import.meta.url), "utf8"),
+    ) as Record<string, { r?: string[]; o?: string[] }>;
+  }
+  return minKeyDocCache;
+}
+let keyRosterCache: Map<string, ReadonlySet<string>> | null = null;
+function keyRoster(): Map<string, ReadonlySet<string>> {
+  if (keyRosterCache !== null) return keyRosterCache;
+  const roster = new Map<string, ReadonlySet<string>>();
+  for (const [ct, d] of Object.entries(minKeyDoc())) {
+    roster.set(ct, new Set([...(d.r ?? []), ...(d.o ?? [])]));
+  }
+  // THE CURE (SD-5c/SD-6, audit D5): the roster derives from the
+  // RECORDED ENGINE BUILD — the same tracked object_info.boot.json
+  // the VALUE JUDGE arms the wiring wall with, parsed by the estate's
+  // own deriveWiringDoc. No hand list: a class the build carries is
+  // judged against the engine's own declared keys (required ∪
+  // optional); a class in NEITHER the floor nor the build is the
+  // judge-gap, and the scan's caller refuses it by name.
+  const boot = deriveWiringDoc(JSON.parse(readFileSync(BOOT_FIXTURE_PATH, "utf8")) as Record<string, unknown>);
+  for (const [ct, keys] of boot.inputs) {
+    const floor = roster.get(ct);
+    roster.set(ct, floor === undefined ? new Set(keys.keys()) : new Set([...floor, ...keys.keys()]));
+  }
+  keyRosterCache = roster;
+  return roster;
+}
+
+/** THE KEY-JUDGE SCAN, ONE HOME (SD-6): the per-graph judgment the
+ *  KEY JUDGE runs — every input key a composed node carries must be
+ *  declared by the key roster; a dotted sub-widget rides its base
+ *  declaration; a class with NO roster row is the judge-gap and the
+ *  caller owns its voice. Exported so the arms that prove the
+ *  judge's teeth drive THIS function, never a re-spelled copy. */
+export function scanGraphKeys(
+  composed: Graph,
+  roster: ReadonlyMap<string, ReadonlySet<string>>,
+  seen: Set<string> | null,
+  blame: string,
+): string[] {
+  const findings: string[] = [];
+  for (const [nid, node] of Object.entries(composed)) {
+    const ct = (node as NodeShape).class_type;
+    if (typeof ct !== "string") continue;
+    const declared = roster.get(ct) ?? null;
+    if (seen !== null) seen.add(ct);
+    if (declared === null) continue; // the judge-gap seat: the caller owns the voice
+    const inputs = (node as { inputs?: Record<string, unknown> }).inputs ?? {};
+    for (const key of Object.keys(inputs)) {
+      if (declared.has(key)) continue;
+      const prefix = key.split(".")[0] ?? key;
+      if (key.includes(".") && declared.has(prefix)) continue;
+      // THE WIDGET-SERIALIZATION RECEIPT (one allowlist, every
+      // key-depth judge): keys ComfyUI serializes but never declares,
+      // receipt-named in the wiring wall — never a blanket pass.
+      if (WIDGET_SERIALIZATION_KEYS.has(key)) continue;
+      findings.push(`${blame}: node ${nid} ${ct}.${key} is not declared by the key fixture — a typo'd widget key that dies at the engine`);
+    }
+  }
+  return findings;
 }
 
 describe("every facts row composes its card alive (the dead-card wall)", () => {
@@ -446,14 +532,7 @@ describe("every facts row composes its card alive (the dead-card wall)", () => {
     // (the same {r, o} min doc, live-parity-guarded in the registry
     // wall); classes it does not carry are census-named here and
     // stay judged at class level by the arm above.
-    const keyDoc = JSON.parse(
-      readFileSync(new URL("../../fixtures/object_info.min.json", import.meta.url), "utf8"),
-    ) as Record<string, { r?: string[]; o?: string[] }>;
-    const declaredOf = (ct: string): Set<string> | null => {
-      const d = keyDoc[ct];
-      if (d === undefined) return null;
-      return new Set([...(d.r ?? []), ...(d.o ?? [])]);
-    };
+    const keyDoc = minKeyDoc();
     const defs = await loadCardDefs();
     const offenders: string[] = [];
     // THE ACTION UNIVERSE, DERIVED (no hand import list — the rot
@@ -492,20 +571,7 @@ describe("every facts row composes its card alive (the dead-card wall)", () => {
         }
       }
       if (composed === null) continue;
-      for (const [nid, node] of Object.entries(composed)) {
-        const ct = (node as NodeShape).class_type;
-        if (typeof ct !== "string") continue;
-        const declared = declaredOf(ct);
-        seenClasses.add(ct);
-        if (declared === null) continue;
-        const inputs = (node as { inputs?: Record<string, unknown> }).inputs ?? {};
-        for (const key of Object.keys(inputs)) {
-          if (declared.has(key)) continue;
-          const prefix = key.split(".")[0] ?? key;
-          if (key.includes(".") && declared.has(prefix)) continue;
-          offenders.push(`${modelId} / ${row.card}: node ${nid} ${ct}.${key} is not declared by the key fixture — a typo'd widget key that dies at the engine`);
-        }
-      }
+      offenders.push(...scanGraphKeys(composed, keyRoster(), seenClasses, `${modelId} / ${row.card}`));
     }
     // THE ACTION SWEEP: same judge, the atom specs' own graphs
     for (const { modelId, name, spec } of actionSpecs) {
@@ -560,24 +626,86 @@ describe("every facts row composes its card alive (the dead-card wall)", () => {
         }
       }
       if (composed === null) continue;
-      for (const [nid, node] of Object.entries(composed)) {
-        const ct = (node as NodeShape).class_type;
-        if (typeof ct !== "string") continue;
-        const declared = declaredOf(ct);
-        seenClasses.add(ct);
-        if (declared === null) continue;
-        const inputs = (node as { inputs?: Record<string, unknown> }).inputs ?? {};
-        for (const key of Object.keys(inputs)) {
-          if (declared.has(key)) continue;
-          const prefix = key.split(".")[0] ?? key;
-          if (key.includes(".") && declared.has(prefix)) continue;
-          offenders.push(`${modelId} action ${name}: node ${nid} ${ct}.${key} is not declared by the key fixture — a typo'd widget key that dies at the engine`);
-        }
-      }
+      offenders.push(...scanGraphKeys(composed, keyRoster(), seenClasses, `${modelId} action ${name}`));
     }
     assert.deepEqual(offenders, [], "CARD KEY DRIFT:\n" + offenders.join("\n"));
     const unjudged = Object.keys(keyDoc).filter((ct) => !seenClasses.has(ct));
     assert.deepEqual(unjudged, [], "key fixture rows no card composes (vacuous judges — prune or extend the composed universe):\n" + unjudged.join(", "));
+  });
+
+  // ── SD-5c / SD-6: THE KEY JUDGE'S TEETH ────────────────────────────
+  // D5 (the purge audit's key-judge blindness): the tracked min
+  // fixture carries ZERO music classes, so the scan's `declared ===
+  // null` seat SKIPPED every node music3/yue2 compose — a typo'd NEW
+  // input key on a music node greened the judge vacuously (the
+  // fixture-gated judge-gap; unserved spellings sailed through).
+  // These arms ride the judge's OWN path: the real probe compose
+  // (composeProbedRow — the card's own def.compose, the function the
+  // run door dispatches to), the judge's REAL roster (keyRoster),
+  // and the judge's REAL scan (scanGraphKeys). No re-spelled copy.
+  const MUSIC_FAMILIES = ["music3", "yue2"] as const;
+
+  /** The music family's composed graph through the judge's own probe
+   *  loop — throws naming the family when the card is dead (never a
+   *  silent skip: a dead music card is the dead-card arm's finding). */
+  async function composedMusicGraph(family: (typeof MUSIC_FAMILIES)[number]): Promise<Graph> {
+    const row = pairs.find(([mid]) => mid === family);
+    assert.ok(row !== undefined, `${family}: no facts row rides a card — the music pair left the composed universe`);
+    const def = (await loadCardDefs()).get(row[1].card)!;
+    const model = facts.models[family]!;
+    const composed = composeProbedRow(def, model);
+    assert.ok(composed.graph !== null, `${family}: the probe compose refused — ${composed.error}`);
+    return composed.graph;
+  }
+
+  it("THE KEY ROSTER COVERS THE SERVED MUSIC FAMILIES (D5, SD-5c): every node class music3 and yue2 compose resolves to a declared key roster — no served family composes outside the judge's truth", async () => {
+    const roster = keyRoster();
+    const uncovered: string[] = [];
+    for (const family of MUSIC_FAMILIES) {
+      for (const node of Object.values(await composedMusicGraph(family))) {
+        const ct = node.class_type;
+        if (typeof ct === "string" && !roster.has(ct)) uncovered.push(`${family}: ${ct}`);
+      }
+    }
+    assert.deepEqual(
+      uncovered,
+      [],
+      "SERVED FAMILIES OUTSIDE THE KEY ROSTER (the fixture-gated judge-gap — these classes' input keys are judged by nothing):\n" + uncovered.join("\n"),
+    );
+  });
+
+  it("THE UNKNOWN-KEY REFUSAL (SD-6): a typo'd input key on a music node REDS the key judge — the judge's own scan refuses the unserved spelling by name, and the clean graph stays unflagged", async () => {
+    const roster = keyRoster();
+    for (const family of MUSIC_FAMILIES) {
+      const composed = await composedMusicGraph(family);
+      // THE CONTROL: the clean graph scans EMPTY — a served spelling
+      // never flags (this is the half the fixture-gated judge could
+      // not even state for music: it judged the graph not at all).
+      assert.deepEqual(
+        scanGraphKeys(composed, roster, null, family),
+        [],
+        `${family}: the CLEAN composed graph flagged at the key judge — the roster refuses a served spelling (the judge is lying)`,
+      );
+      // THE TYPO, DERIVED (never a hand literal): the music encode
+      // node's first input key, minus its last character — the
+      // unserved spelling riding the graph exactly as a card typo
+      // would (the legal key absent, the misspelling present).
+      const [nid, node] = Object.entries(composed)[0]!;
+      const inputs = (node.inputs ?? {}) as Record<string, unknown>;
+      const legal = Object.keys(inputs)[0];
+      assert.ok(typeof legal === "string" && legal.length > 1, `${family}: the probed node carries no input key to typo`);
+      const typo = legal.slice(0, -1);
+      const typoGraph: Graph = {
+        ...composed,
+        [nid!]: { ...node, inputs: { ...inputs, [typo]: inputs[legal!] } },
+      };
+      delete (typoGraph[nid!]!.inputs as Record<string, unknown>)[legal!];
+      const findings = scanGraphKeys(typoGraph, roster, null, family);
+      assert.ok(
+        findings.length === 1 && findings[0]!.includes(`.${typo} `),
+        `${family}: the key judge greened a typo'd input key — '${legal}' rode as '${typo}' and the scan answered [${findings.join(" | ")}] (the fixture-gated vacuous green, SD-6)`,
+      );
+    }
   });
 
   // ─── CURE-1's studio-write admission arm GREW UP (B4/R1,
@@ -1203,5 +1331,228 @@ describe("every studio tenant's persisted key set composes on its own derived la
       [],
       `PARAM-SEAT-PARITY UN-SCOPED: the sweep judged [${[...JUDGED_TENANTS].join(", ") || "nothing"}] but the DECL rows derive [${[...derived].join(", ")}] — tenant(s) ${unjudged.join(", ")} have no emit-side judge (the GREEN-F1 frozen-literal class: a hand tenant universe is a judge whose universe rots)`,
     );
+  });
+
+  // ── SD-5b: THE WRITES_EXEMPT ROUND-TRIP ARMS ───────────────────────
+  // The purge audit's SD-5 (exemptions wearing comments): the
+  // WRITES_EXEMPT ref-lane rows' `why` CITES "the serialize round-trip
+  // arm" — an arm that did not exist, so the exemption rode a comment
+  // where a judgment should be. THIS arm is the cited judge: derived
+  // from the ledger itself (every round-trip-cited entry, never a
+  // hand list), it stages each exempt seat through the REAL writer
+  // faces this wall imports (hydrateLayerA → serializeLayerA) and
+  // judges both directions of the round trip — the staged value
+  // survives the emit, and hydrate reads it back. Toggling a lane's
+  // carriage out of serializeLayerA reds HERE, naming the exempt seat.
+  it("THE WRITES_EXEMPT ROUND-TRIP ARMS (SD-5b): the serialize round-trip the ref-lane exemptions cite FIRES on each exempt seat — the staged value survives serializeLayerA and hydrate reads it back, emission judged live, never cited-only", () => {
+    const tenant = "video/h3-timeline";
+    const cited = (WRITES_EXEMPT[tenant] ?? []).filter((e) => e.why.includes("round-trip"));
+    assert.ok(cited.length >= 4, `the round-trip-cited ledger collapsed to ${cited.length} row(s) — the exemptions the SD-5 finding names left the ledger`);
+    for (const entry of cited) {
+      const staged = [`sd5b-witness/${entry.key}`];
+      const state = hydrateLayerA({ [entry.key]: staged } as never);
+      const saved = serializeLayerA(state, {}) as Record<string, unknown>;
+      assert.deepEqual(
+        saved[entry.key],
+        staged,
+        `${tenant}: WRITES_EXEMPT seat '${entry.key}' (${entry.why}) — the cited serialize round-trip does NOT fire: the staged value did not survive the emit`,
+      );
+      const back = hydrateLayerA(saved as never) as Record<string, unknown>;
+      assert.deepEqual(
+        back[entry.key],
+        staged,
+        `${tenant}: WRITES_EXEMPT seat '${entry.key}' — the emit does not hydrate back: the round trip loses the exempt seat`,
+      );
+    }
+  });
+});
+
+// ═══ SD-3: THE COMMIT SEAM OUTSIDE STUDIO COMMITS ══════════════════
+// The purge audit's SD-3 (ui-engine-fidelity-purge-2026-11-08 §3):
+// "B1 closed the t4r strip, but no single owner decides the legal key
+// set at the commit seam outside studio commits. B4's mechanism."
+// The param-seat-parity wall above owns the STUDIO COMMIT half (the
+// writer faces the DECLs name); this block owns the OTHER arrivals:
+// the agent's bench patches, the GUI drill's per-keystroke writes,
+// any flow-driven write — everything that reaches the shared bench
+// doc WITHOUT the studio's own commit path. The audit's own cure row
+// is B4's presence-at-door: the DOOR itself derives the legal key set
+// (the card's DECL — knobs + contract admits, the same composed
+// admission the run door's compose speaks) and refuses an illegal
+// key loud BEFORE the row lands. The judge here rides the REAL door:
+// the drafts/bench plugin over real DSH storage, with the REAL primed
+// card registry mounted (the same service the estate composes with —
+// the drafts wall's every-boot law), never a stubbed admission.
+describe("presence-at-door: the commit seam outside studio commits refuses an illegal key loud (SD-3)", () => {
+  const sig: AbortSignal = new AbortController().signal;
+
+  /** One bench doc seeded through the REAL bench door; returns the
+   *  door's answer (rev + minted stage id). */
+  async function seedStage(
+    ctx: Context, session: string, card: string,
+  ): Promise<{ draftId: string; stageId: string; rev: number }> {
+    await ctx.benchRemote.ensure({ session }, sig);
+    const added = await ctx.benchRemote.addStage(session, { card, expect_rev: 0 }, sig);
+    return { draftId: "bench-" + session, stageId: String(added.stage), rev: added.rev };
+  }
+
+  async function failureOf(p: Promise<unknown>): Promise<Record<string, unknown> | null> {
+    return await p.then(
+      (): null => null,
+      (error: unknown): Record<string, unknown> | null =>
+        (remoteErrorOf(error) ?? error) as Record<string, unknown>,
+    );
+  }
+
+  function stageParamsOf(doc: unknown, stageId: string): Record<string, unknown> {
+    const stages = (doc as { stages?: unknown }).stages;
+    assert.ok(Array.isArray(stages), "the served doc carries a stage list");
+    const row = (stages as Array<Record<string, unknown>>).find((s) => s["id"] === stageId);
+    assert.ok(row !== undefined, "the served doc carries the written stage");
+    const params = row["params"];
+    return params !== null && typeof params === "object" && !Array.isArray(params)
+      ? params as Record<string, unknown>
+      : {};
+  }
+
+  it("THE ILLEGAL-KEY ARM: a key no card declares through the real drafts/patch door refuses loud — the compose door's own voice names the key at the write, and the row never carries it", async () => {
+    const root = mkdtempSync(join(tmpdir(), "sd3-presence-"));
+    onTestFinished(() => rmSync(root, { recursive: true, force: true }));
+    mkdirSync(join(root, "drafts"), { recursive: true });
+    const ctx = new Context();
+    // THE REAL REGISTRY (the drafts wall's every-boot law): the door's
+    // legal key set is the card DECL — served by the same service the
+    // estate composes with, primed here, never a fixture envelope.
+    const registry = new CardRegistryService(new Context());
+    await registry.prime();
+    ctx.provide("cardRegistry", registry);
+    await ctx.plugin(Storage as unknown as Plugin);
+    await ctx.plugin(
+      { name: jsonName, inject: jsonInject, apply: jsonApply, Config: JsonConfig } as unknown as Plugin,
+      { root: join(root, "storage") },
+    );
+    await ctx.plugin(
+      { name: domainName, inject: domainInject, apply: domainApply, Config: DomainConfig } as unknown as Plugin,
+      { backend: "json" },
+    );
+    await ctx.plugin(draftsPlugin as unknown as Plugin, { storageRoot: join(root, "storage") });
+    const live = ctx as unknown as Context;
+    const { draftId, stageId, rev } = await seedStage(live, "sd3bad", "image-gen");
+
+    // THE ILLEGAL KEY arrives exactly as an outside author sends it:
+    // a params merge patch through the GUI drill's own door.
+    const refused = await failureOf(
+      live.draftsRemote.remoteExportPatch(draftId, stageId, { params: { bogus_param_zzz: 7 } }, rev, sig),
+    );
+    assert.ok(refused !== null && typeof refused === "object", "the door refuses the illegal key — presence-at-door means the write never lands silent");
+    assert.equal(
+      (refused as { code?: string }).code, "bench/lane-refusal",
+      "the refusal rides the lane admission's own code: " + JSON.stringify(refused),
+    );
+    const voice = String((refused as { message?: string }).message ?? "");
+    assert.match(voice, /bogus_param_zzz/, "the refusal NAMES the key it refused");
+    assert.match(
+      voice, /unknown param\(s\) on the image-gen card/,
+      "the refusal is the COMPOSE DOOR'S OWN VOICE (the run door's admission spoken one hop earlier), not a door-private dialect",
+    );
+    // THE ROW NEVER CARRIES IT: the refusal is not a note — the stored
+    // doc the next run composes from is untouched.
+    const after = await live.draftsRemote.get(draftId, sig);
+    assert.deepEqual(stageParamsOf(after, stageId), {}, "the refused key never lands in the stored row");
+  });
+
+  it("THE DOOR'S ROSTER IS THE DECL'S: a key the image-gen card's own schema declares rides the same door and lands — the refusal is set membership on the derived surface, never a blanket door", async () => {
+    const root = mkdtempSync(join(tmpdir(), "sd3-roster-"));
+    onTestFinished(() => rmSync(root, { recursive: true, force: true }));
+    mkdirSync(join(root, "drafts"), { recursive: true });
+    const ctx = new Context();
+    const registry = new CardRegistryService(new Context());
+    await registry.prime();
+    ctx.provide("cardRegistry", registry);
+    await ctx.plugin(Storage as unknown as Plugin);
+    await ctx.plugin(
+      { name: jsonName, inject: jsonInject, apply: jsonApply, Config: JsonConfig } as unknown as Plugin,
+      { root: join(root, "storage") },
+    );
+    await ctx.plugin(
+      { name: domainName, inject: domainInject, apply: domainApply, Config: DomainConfig } as unknown as Plugin,
+      { backend: "json" },
+    );
+    await ctx.plugin(draftsPlugin as unknown as Plugin, { storageRoot: join(root, "storage") });
+    const live = ctx as unknown as Context;
+    // THE DERIVED KEY: read off the card's DECL row (schemaNames — the
+    // knob surface the emitter projects), never a hand list. The floor
+    // assert keeps the arm from passing vacuously: if the projection
+    // collapses, this arm names the collapse instead of landing.
+    const schemaNames = registry.cardDecls()["image-gen"]?.schemaNames ?? [];
+    assert.ok(
+      schemaNames.includes("negative_prompt"),
+      "the DECL projection must name the key this arm rides (image-gen schemaNames collapsed: " +
+        JSON.stringify(schemaNames.slice(0, 10)) + "…)",
+    );
+    const { draftId, stageId, rev } = await seedStage(live, "sd3legal", "image-gen");
+    const landed = await live.draftsRemote.remoteExportPatch(
+      draftId, stageId, { params: { negative_prompt: "blurry" } }, rev, sig,
+    );
+    assert.equal((landed as { delivered?: boolean }).delivered, true, "a DECLARED key rides the same door and lands");
+    const after = await live.draftsRemote.get(draftId, sig);
+    assert.equal(stageParamsOf(after, stageId)["negative_prompt"], "blurry", "the landed key is the stored row's own state");
+  });
+
+  it("THE FAMILY SEAM: the t4r presence walk's inject keys refuse at the write door in the run door's own voice — one hop before compose, and the identical body without the key lands", async () => {
+    const root = mkdtempSync(join(tmpdir(), "sd3-family-"));
+    onTestFinished(() => rmSync(root, { recursive: true, force: true }));
+    mkdirSync(join(root, "drafts"), { recursive: true });
+    const ctx = new Context();
+    const registry = new CardRegistryService(new Context());
+    await registry.prime();
+    ctx.provide("cardRegistry", registry);
+    await ctx.plugin(Storage as unknown as Plugin);
+    await ctx.plugin(
+      { name: jsonName, inject: jsonInject, apply: jsonApply, Config: JsonConfig } as unknown as Plugin,
+      { root: join(root, "storage") },
+    );
+    await ctx.plugin(
+      { name: domainName, inject: domainInject, apply: domainApply, Config: DomainConfig } as unknown as Plugin,
+      { backend: "json" },
+    );
+    await ctx.plugin(draftsPlugin as unknown as Plugin, { storageRoot: join(root, "storage") });
+    const live = ctx as unknown as Context;
+    const { draftId, stageId, rev } = await seedStage(live, "sd3t4r", "h3-timeline");
+    // THE AUDIT'S OWN EXAMPLE (SD-3's rows: SPE/SR stamps meeting the
+    // value-blind presence walk): a guided single-call doc derives t4r
+    // (deriveWindowFamily — the same contract module the walk reads),
+    // and the sr_switch stamp is an inject key on that lane.
+    const t4rBody: Record<string, unknown> = {
+      model: "h3",
+      variant: "timeline",
+      quant: "int8",
+      calls: [{ text: "one shot", start_frame: 0, end_frame: 90, image: "webp/run1/pin-0.png" }],
+      sr_switch: true,
+    };
+    assert.equal(deriveWindowFamily(t4rBody as never), "t4r", "the probe body derives t4r on the walk's own derivation — a stale derivation invalidates this arm, not the door");
+    const refused = await failureOf(
+      live.draftsRemote.remoteExportPatch(draftId, stageId, { params: t4rBody }, rev, sig),
+    );
+    assert.ok(refused !== null && typeof refused === "object", "the write door refuses the inject key — the walk's verdict fires at the commit seam, not only at compose");
+    assert.equal(
+      (refused as { code?: string }).code, "bench/family-refusal",
+      "the refusal rides the family admission's own code: " + JSON.stringify(refused),
+    );
+    assert.match(
+      String((refused as { message?: string }).message ?? ""),
+      /unsanctioned inject keys: sr_switch/,
+      "the refusal is the RUN DOOR'S OWN VERDICT (the presence walk's spine), spoken one hop before compose",
+    );
+    // THE PRESENCE, NOT THE SHAPE: the identical body minus the inject
+    // key lands — the door judged the KEY, never the body's accent.
+    const clean = { ...t4rBody };
+    delete clean["sr_switch"];
+    const ok = await live.draftsRemote.remoteExportPatch(draftId, stageId, { params: clean }, rev, sig);
+    assert.equal((ok as { delivered?: boolean }).delivered, true, "the same body without the inject key lands");
+    const after = await live.draftsRemote.get(draftId, sig);
+    const params = stageParamsOf(after, stageId);
+    assert.equal(params["sr_switch"], undefined, "the refused key is not in the stored row");
+    assert.ok(Array.isArray(params["calls"]), "the landed body's own plane rides");
   });
 });

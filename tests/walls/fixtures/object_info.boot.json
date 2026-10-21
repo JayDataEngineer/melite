@@ -111,7 +111,7 @@
  "AudiocoreTTS": {
   "category": "audio/audiocore",
   "description": "",
-  "display_name": "AudiocoreTTS (Melite)",
+  "display_name": "Audiocore TTS",
   "has_intermediate_output": false,
   "input": {
    "optional": {
@@ -128,7 +128,7 @@
     "guidance_scale": [
      "FLOAT",
      {
-      "default": 5,
+      "default": 4,
       "max": 20,
       "min": 0,
       "step": 0.1,
@@ -163,7 +163,7 @@
     "num_inference_steps": [
      "INT",
      {
-      "default": 50,
+      "default": 100,
       "max": 500,
       "min": 1,
       "step": 1,
@@ -320,13 +320,13 @@
    "audio"
   ],
   "output_node": false,
-  "python_module": "custom_nodes.melite-tts-nodes",
+  "python_module": "custom_nodes.melite-audio-nodes",
   "search_aliases": []
  },
  "AudiocoreVoiceStudio": {
   "category": "audio/audiocore",
   "description": "",
-  "display_name": "AudiocoreVoiceStudio (Melite)",
+  "display_name": "Voice Studio",
   "has_intermediate_output": false,
   "input": {
    "optional": {
@@ -502,7 +502,7 @@
    "audio"
   ],
   "output_node": true,
-  "python_module": "custom_nodes.melite-tts-nodes",
+  "python_module": "custom_nodes.melite-audio-nodes",
   "search_aliases": []
  },
  "BakeAmbientOcclusion": {
@@ -1124,7 +1124,7 @@
  },
  "CLIPLoader": {
   "category": "model/loaders",
-  "description": "Recipes:\nsd: clip-l\nstable cascade: clip-g\nsd3: t5 xxl / clip-g / clip-l\nstable audio: t5 base\nmochi: t5 xxl\ncogvideox: t5 xxl (226-token padding)\ncosmos: old t5 xxl\nlumina2: gemma 2 2B\nwan: umt5 xxl\nhidream: llama-3.1 (Recommend) or t5\nomnigen2: qwen vl 2.5 3B\njoyimage: qwen3-vl 8B\nlens: gpt-oss-20b\npixeldit: gemma 2 2B elm\nminimax: MiniMax H3 Qwen3-VL or Music3 Qwen/RVQ\nflux3: qwen3-vl 4B",
+  "description": "Recipes:\nsd: clip-l\nstable cascade: clip-g\nsd3: t5 xxl / clip-g / clip-l\nstable audio: t5 base\nmochi: t5 xxl\ncogvideox: t5 xxl (226-token padding)\ncosmos: old t5 xxl\nlumina2: gemma 2 2B\nwan: umt5 xxl\nhidream: llama-3.1 (Recommend) or t5\nomnigen2: qwen vl 2.5 3B\njoyimage: qwen3-vl 8B\nlens: gpt-oss-20b\npixeldit: gemma 2 2B elm\nminimax: MiniMax H3 Qwen3-VL or Music3 Qwen/RVQ\nflux3: qwen3-vl 4B\nfibo2: qwen3-vl 4B",
   "display_name": "Load CLIP",
   "has_intermediate_output": false,
   "input": {
@@ -1148,6 +1148,7 @@
       "qwen3.5_9b_w4a8_gptq.safetensors",
       "qwen3vl_32b_minimax_h3_int8_convrot.safetensors",
       "qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors",
+      "qwen3vl_4b_bf16.safetensors",
       "qwen3vl_4b_fp8_scaled.safetensors",
       "qwen3vl_8b_bf16.safetensors",
       "qwen3vl_8b_int8_convrot.safetensors",
@@ -1190,7 +1191,8 @@
       "minimax",
       "yue2",
       "flux3",
-      "moss_image"
+      "moss_image",
+      "fibo2"
      ]
     ]
    }
@@ -1980,6 +1982,298 @@
   "python_module": "comfy_extras.nodes_mesh_postprocess",
   "search_aliases": null
  },
+ "DetailerForEach": {
+  "category": "ImpactPack/Detailer",
+  "description": "It enhances details by inpainting each region within the detected area bundle (SEGS) after enlarging them based on the guide size.",
+  "display_name": "Detailer (SEGS)",
+  "has_intermediate_output": false,
+  "input": {
+   "optional": {
+    "detailer_hook": [
+     "DETAILER_HOOK"
+    ],
+    "inpaint_model": [
+     "BOOLEAN",
+     {
+      "default": false,
+      "label_off": "disabled",
+      "label_on": "enabled"
+     }
+    ],
+    "noise_mask_feather": [
+     "INT",
+     {
+      "default": 20,
+      "max": 100,
+      "min": 0,
+      "step": 1
+     }
+    ],
+    "scheduler_func_opt": [
+     "SCHEDULER_FUNC"
+    ],
+    "tiled_decode": [
+     "BOOLEAN",
+     {
+      "default": false,
+      "label_off": "disabled",
+      "label_on": "enabled"
+     }
+    ],
+    "tiled_encode": [
+     "BOOLEAN",
+     {
+      "default": false,
+      "label_off": "disabled",
+      "label_on": "enabled"
+     }
+    ]
+   },
+   "required": {
+    "cfg": [
+     "FLOAT",
+     {
+      "default": 8,
+      "max": 100,
+      "min": 0
+     }
+    ],
+    "clip": [
+     "CLIP"
+    ],
+    "cycle": [
+     "INT",
+     {
+      "default": 1,
+      "max": 10,
+      "min": 1,
+      "step": 1
+     }
+    ],
+    "denoise": [
+     "FLOAT",
+     {
+      "default": 0.5,
+      "max": 1,
+      "min": 0.0001,
+      "step": 0.01
+     }
+    ],
+    "feather": [
+     "INT",
+     {
+      "default": 5,
+      "max": 100,
+      "min": 0,
+      "step": 1
+     }
+    ],
+    "force_inpaint": [
+     "BOOLEAN",
+     {
+      "default": true,
+      "label_off": "disabled",
+      "label_on": "enabled"
+     }
+    ],
+    "guide_size": [
+     "FLOAT",
+     {
+      "default": 512,
+      "max": 16384,
+      "min": 64,
+      "step": 8
+     }
+    ],
+    "guide_size_for": [
+     "BOOLEAN",
+     {
+      "default": true,
+      "label_off": "crop_region",
+      "label_on": "bbox"
+     }
+    ],
+    "image": [
+     "IMAGE"
+    ],
+    "max_size": [
+     "FLOAT",
+     {
+      "default": 1024,
+      "max": 16384,
+      "min": 64,
+      "step": 8
+     }
+    ],
+    "model": [
+     "MODEL",
+     {
+      "tooltip": "If the `ImpactDummyInput` is connected to the model, the inference stage is skipped."
+     }
+    ],
+    "negative": [
+     "CONDITIONING"
+    ],
+    "noise_mask": [
+     "BOOLEAN",
+     {
+      "default": true,
+      "label_off": "disabled",
+      "label_on": "enabled"
+     }
+    ],
+    "positive": [
+     "CONDITIONING"
+    ],
+    "sampler_name": [
+     [
+      "euler",
+      "euler_cfg_pp",
+      "euler_ancestral",
+      "euler_ancestral_cfg_pp",
+      "heun",
+      "heunpp2",
+      "exp_heun_2_x0",
+      "exp_heun_2_x0_sde",
+      "dpm_2",
+      "dpm_2_ancestral",
+      "lms",
+      "dpm_fast",
+      "dpm_adaptive",
+      "dpmpp_2s_ancestral",
+      "dpmpp_2s_ancestral_cfg_pp",
+      "dpmpp_sde",
+      "dpmpp_sde_gpu",
+      "dpmpp_2m",
+      "dpmpp_2m_cfg_pp",
+      "dpmpp_2m_sde",
+      "dpmpp_2m_sde_gpu",
+      "dpmpp_2m_sde_heun",
+      "dpmpp_2m_sde_heun_gpu",
+      "dpmpp_3m_sde",
+      "dpmpp_3m_sde_gpu",
+      "ddpm",
+      "lcm",
+      "ipndm",
+      "ipndm_v",
+      "deis",
+      "cfgpp_ud10_ab",
+      "res_multistep",
+      "res_multistep_cfg_pp",
+      "res_multistep_ancestral",
+      "res_multistep_ancestral_cfg_pp",
+      "gradient_estimation",
+      "gradient_estimation_cfg_pp",
+      "er_sde",
+      "seeds_2",
+      "seeds_3",
+      "sa_solver",
+      "sa_solver_pece",
+      "ddim",
+      "uni_pc",
+      "uni_pc_bh2"
+     ]
+    ],
+    "scheduler": [
+     [
+      "simple",
+      "sgm_uniform",
+      "karras",
+      "exponential",
+      "ddim_uniform",
+      "beta",
+      "normal",
+      "linear_quadratic",
+      "kl_optimal",
+      "AYS SDXL",
+      "AYS SD1",
+      "AYS SVD",
+      "GITS[coeff=1.2]",
+      "LTXV[default]",
+      "OSS FLUX",
+      "OSS Wan",
+      "OSS Chroma"
+     ]
+    ],
+    "seed": [
+     "INT",
+     {
+      "default": 0,
+      "max": 18446744073709552000,
+      "min": 0
+     }
+    ],
+    "segs": [
+     "SEGS"
+    ],
+    "steps": [
+     "INT",
+     {
+      "default": 20,
+      "max": 10000,
+      "min": 1
+     }
+    ],
+    "vae": [
+     "VAE"
+    ],
+    "wildcard": [
+     "STRING",
+     {
+      "dynamicPrompts": false,
+      "multiline": true
+     }
+    ]
+   }
+  },
+  "input_order": {
+   "optional": [
+    "detailer_hook",
+    "inpaint_model",
+    "noise_mask_feather",
+    "scheduler_func_opt",
+    "tiled_encode",
+    "tiled_decode"
+   ],
+   "required": [
+    "image",
+    "segs",
+    "model",
+    "clip",
+    "vae",
+    "guide_size",
+    "guide_size_for",
+    "max_size",
+    "seed",
+    "steps",
+    "cfg",
+    "sampler_name",
+    "scheduler",
+    "positive",
+    "negative",
+    "denoise",
+    "feather",
+    "noise_mask",
+    "force_inpaint",
+    "wildcard",
+    "cycle"
+   ]
+  },
+  "is_input_list": false,
+  "name": "DetailerForEach",
+  "output": [
+   "IMAGE"
+  ],
+  "output_is_list": [
+   false
+  ],
+  "output_name": [
+   "IMAGE"
+  ],
+  "output_node": false,
+  "python_module": "custom_nodes.ComfyUI-Impact-Pack",
+  "search_aliases": []
+ },
  "DownloadAndLoadFlorence2Model": {
   "category": "Florence2",
   "description": "",
@@ -2422,6 +2716,93 @@
   "price_badge": null,
   "python_module": "comfy_extras.nodes_yue2",
   "search_aliases": null
+ },
+ "FeatherMask": {
+  "api_node": false,
+  "category": "image/mask",
+  "deprecated": false,
+  "description": "",
+  "dev_only": false,
+  "display_name": "Feather Mask",
+  "essentials_category": null,
+  "experimental": false,
+  "has_intermediate_output": false,
+  "input": {
+   "required": {
+    "bottom": [
+     "INT",
+     {
+      "default": 0,
+      "max": 16384,
+      "min": 0,
+      "step": 1
+     }
+    ],
+    "left": [
+     "INT",
+     {
+      "default": 0,
+      "max": 16384,
+      "min": 0,
+      "step": 1
+     }
+    ],
+    "mask": [
+     "MASK",
+     {}
+    ],
+    "right": [
+     "INT",
+     {
+      "default": 0,
+      "max": 16384,
+      "min": 0,
+      "step": 1
+     }
+    ],
+    "top": [
+     "INT",
+     {
+      "default": 0,
+      "max": 16384,
+      "min": 0,
+      "step": 1
+     }
+    ]
+   }
+  },
+  "input_order": {
+   "required": [
+    "mask",
+    "left",
+    "top",
+    "right",
+    "bottom"
+   ]
+  },
+  "is_input_list": false,
+  "name": "FeatherMask",
+  "output": [
+   "MASK"
+  ],
+  "output_is_list": [
+   false
+  ],
+  "output_matchtypes": null,
+  "output_name": [
+   "MASK"
+  ],
+  "output_node": false,
+  "output_tooltips": [
+   null
+  ],
+  "price_badge": null,
+  "python_module": "comfy_extras.nodes_mask",
+  "search_aliases": [
+   "soft edge mask",
+   "blur mask edges",
+   "gradient mask edge"
+  ]
  },
  "FitProp": {
   "category": "TechNoir/Mesh",
@@ -3043,6 +3424,70 @@
    "demux"
   ]
  },
+ "GrowMask": {
+  "api_node": false,
+  "category": "image/mask",
+  "deprecated": false,
+  "description": "",
+  "dev_only": false,
+  "display_name": "Grow Mask",
+  "essentials_category": null,
+  "experimental": false,
+  "has_intermediate_output": false,
+  "input": {
+   "required": {
+    "expand": [
+     "INT",
+     {
+      "default": 0,
+      "max": 16384,
+      "min": -16384,
+      "step": 1
+     }
+    ],
+    "mask": [
+     "MASK",
+     {}
+    ],
+    "tapered_corners": [
+     "BOOLEAN",
+     {
+      "advanced": true,
+      "default": true
+     }
+    ]
+   }
+  },
+  "input_order": {
+   "required": [
+    "mask",
+    "expand",
+    "tapered_corners"
+   ]
+  },
+  "is_input_list": false,
+  "name": "GrowMask",
+  "output": [
+   "MASK"
+  ],
+  "output_is_list": [
+   false
+  ],
+  "output_matchtypes": null,
+  "output_name": [
+   "MASK"
+  ],
+  "output_node": false,
+  "output_tooltips": [
+   null
+  ],
+  "price_badge": null,
+  "python_module": "comfy_extras.nodes_mask",
+  "search_aliases": [
+   "expand mask",
+   "shrink mask"
+  ]
+ },
  "H3AdaLNLoRAFix": {
   "api_node": false,
   "category": "PlagueKind/model_patches/minimax",
@@ -3276,6 +3721,91 @@
   "price_badge": null,
   "python_module": "custom_nodes.Comfyui-PlagueKind-Nodes",
   "search_aliases": null
+ },
+ "ImageCrop": {
+  "api_node": false,
+  "category": "image/transform",
+  "deprecated": true,
+  "description": "",
+  "dev_only": false,
+  "display_name": "Crop Image (DEPRECATED)",
+  "essentials_category": "Image Tools",
+  "experimental": false,
+  "has_intermediate_output": false,
+  "input": {
+   "required": {
+    "height": [
+     "INT",
+     {
+      "default": 512,
+      "max": 16384,
+      "min": 1,
+      "step": 1
+     }
+    ],
+    "image": [
+     "IMAGE",
+     {}
+    ],
+    "width": [
+     "INT",
+     {
+      "default": 512,
+      "max": 16384,
+      "min": 1,
+      "step": 1
+     }
+    ],
+    "x": [
+     "INT",
+     {
+      "default": 0,
+      "max": 16384,
+      "min": 0,
+      "step": 1
+     }
+    ],
+    "y": [
+     "INT",
+     {
+      "default": 0,
+      "max": 16384,
+      "min": 0,
+      "step": 1
+     }
+    ]
+   }
+  },
+  "input_order": {
+   "required": [
+    "image",
+    "width",
+    "height",
+    "x",
+    "y"
+   ]
+  },
+  "is_input_list": false,
+  "name": "ImageCrop",
+  "output": [
+   "IMAGE"
+  ],
+  "output_is_list": [
+   false
+  ],
+  "output_matchtypes": null,
+  "output_name": [
+   "IMAGE"
+  ],
+  "output_node": false,
+  "output_tooltips": [
+   null
+  ],
+  "price_badge": null,
+  "python_module": "comfy_extras.nodes_images",
+  "search_aliases": [
+   "trim"
+  ]
  },
  "ImageCropToMask": {
   "api_node": false,
@@ -3646,6 +4176,63 @@
    "rcas",
    "high-pass",
    "postprocessing"
+  ]
+ },
+ "ImageUpscaleWithModel": {
+  "api_node": false,
+  "category": "image/upscaling",
+  "deprecated": false,
+  "description": "",
+  "dev_only": false,
+  "display_name": "Upscale Image (using Model)",
+  "essentials_category": null,
+  "experimental": false,
+  "has_intermediate_output": false,
+  "input": {
+   "required": {
+    "image": [
+     "IMAGE",
+     {}
+    ],
+    "upscale_model": [
+     "UPSCALE_MODEL",
+     {}
+    ]
+   }
+  },
+  "input_order": {
+   "required": [
+    "upscale_model",
+    "image"
+   ]
+  },
+  "is_input_list": false,
+  "name": "ImageUpscaleWithModel",
+  "output": [
+   "IMAGE"
+  ],
+  "output_is_list": [
+   false
+  ],
+  "output_matchtypes": null,
+  "output_name": [
+   "IMAGE"
+  ],
+  "output_node": false,
+  "output_tooltips": [
+   null
+  ],
+  "price_badge": null,
+  "python_module": "comfy_extras.nodes_upscale_model",
+  "search_aliases": [
+   "upscale",
+   "upscaler",
+   "upsc",
+   "enlarge image",
+   "super resolution",
+   "hires",
+   "superres",
+   "increase resolution"
   ]
  },
  "JJC_DownloadAndLoadJoyCaptionModel": {
@@ -4330,6 +4917,116 @@
   "python_module": "comfy_extras.nodes_custom_sampler",
   "search_aliases": null
  },
+ "KimodoExportFBX": {
+  "category": "Melite/AutoRig",
+  "description": "",
+  "display_name": "\ud83c\udfac Kimodo Export FBX (Retarget)",
+  "has_intermediate_output": false,
+  "input": {
+   "optional": {
+    "decimate_ratio": [
+     "FLOAT",
+     {
+      "default": 0.2,
+      "max": 1,
+      "min": 0,
+      "step": 0.05,
+      "tooltip": "Mesh decimation ratio (0=off, 0.2=reduce to 20%% of faces). Uses Collapse mode which preserves skin weights. Reduces file size ~70%%."
+     }
+    ],
+    "in_place": [
+     "BOOLEAN",
+     {
+      "default": true,
+      "tooltip": "In-place motion: zero root horizontal drift so character walks on a treadmill (stays centered). Recommended for Pose Studio."
+     }
+    ],
+    "npz_path": [
+     "STRING",
+     {
+      "default": "",
+      "forceInput": true,
+      "multiline": false,
+      "tooltip": "Optional: SOMA-77 motion NPZ for retargeting. If provided, Blender retargets motion onto the character. If empty, just converts format."
+     }
+    ],
+    "preserve_texture": [
+     "BOOLEAN",
+     {
+      "default": true,
+      "tooltip": "SOMAX standalone mode only. When True (default), the output GLB keeps the source mesh's textures. When False, all textures are stripped and the mesh is given a flat SOMA-blue material \u2014 useful when you want to apply textures later in Pose Studio or an external tool. Ignored for retarget."
+     }
+    ],
+    "source_glb": [
+     "STRING",
+     {
+      "default": "",
+      "forceInput": true,
+      "multiline": false,
+      "tooltip": "Optional: original textured GLB. When provided (and no npz_path), GPU transfers the rig + skin weights from rigged_path onto THIS mesh, preserving textures. Uses AABB-aligned torch.cdist nearest-neighbor on the RTX 4090 (~10s for 500K verts) and writes the GLB directly \u2014 no Blender involved."
+     }
+    ]
+   },
+   "required": {
+    "file_format": [
+     [
+      "fbx",
+      "glb"
+     ],
+     {
+      "default": "fbx",
+      "tooltip": "FBX for Unity/Unreal/Kimodo. GLB for web/Three.js."
+     }
+    ],
+    "fps": [
+     "INT",
+     {
+      "default": 30,
+      "max": 120,
+      "min": 1,
+      "tooltip": "Output animation frame rate."
+     }
+    ],
+    "rigged_path": [
+     "STRING",
+     {
+      "default": "",
+      "forceInput": true,
+      "multiline": false,
+      "tooltip": "Path to a rigged GLB/FBX with Mixamo bone names. Connect from SaveRiggedModel or provide a path."
+     }
+    ]
+   }
+  },
+  "input_order": {
+   "optional": [
+    "npz_path",
+    "in_place",
+    "decimate_ratio",
+    "source_glb",
+    "preserve_texture"
+   ],
+   "required": [
+    "rigged_path",
+    "fps",
+    "file_format"
+   ]
+  },
+  "is_input_list": false,
+  "name": "KimodoExportFBX",
+  "output": [
+   "STRING"
+  ],
+  "output_is_list": [
+   false
+  ],
+  "output_name": [
+   "animated_path"
+  ],
+  "output_node": true,
+  "python_module": "custom_nodes.melite-autorig-nodes",
+  "search_aliases": []
+ },
  "KimodoLoader": {
   "category": "Melite/Kimodo",
   "description": "",
@@ -4513,7 +5210,7 @@
   "search_aliases": []
  },
  "KimodoTransferWeights": {
-  "category": "TechNoir/AutoRig",
+  "category": "Melite/AutoRig",
   "description": "",
   "display_name": "\ud83d\udc55 Kimodo Transfer Weights (Clean \u2192 Clothed)",
   "has_intermediate_output": false,
@@ -4725,7 +5422,7 @@
  "LoadAudiocoreModel": {
   "category": "audio/audiocore",
   "description": "",
-  "display_name": "LoadAudiocoreModel (Melite)",
+  "display_name": "Load Audiocore Model",
   "has_intermediate_output": false,
   "input": {
    "optional": {
@@ -4794,7 +5491,7 @@
    "model"
   ],
   "output_node": false,
-  "python_module": "custom_nodes.melite-tts-nodes",
+  "python_module": "custom_nodes.melite-audio-nodes",
   "search_aliases": []
  },
  "LoadImage": {
@@ -4986,6 +5683,54 @@
    "alpha mask",
    "channel mask"
   ]
+ },
+ "LoadMoGeModel": {
+  "api_node": false,
+  "category": "model/loaders",
+  "deprecated": false,
+  "description": "",
+  "dev_only": false,
+  "display_name": "Load MoGe Model",
+  "essentials_category": null,
+  "experimental": false,
+  "has_intermediate_output": false,
+  "input": {
+   "required": {
+    "model_name": [
+     "COMBO",
+     {
+      "multiselect": false,
+      "options": [
+       "moge_2_vitl_normal_fp16.safetensors"
+      ]
+     }
+    ]
+   }
+  },
+  "input_order": {
+   "required": [
+    "model_name"
+   ]
+  },
+  "is_input_list": false,
+  "name": "LoadMoGeModel",
+  "output": [
+   "MOGE_MODEL"
+  ],
+  "output_is_list": [
+   false
+  ],
+  "output_matchtypes": null,
+  "output_name": [
+   "MOGE_MODEL"
+  ],
+  "output_node": false,
+  "output_tooltips": [
+   null
+  ],
+  "price_badge": null,
+  "python_module": "comfy_extras.nodes_moge",
+  "search_aliases": null
  },
  "LoadVideo": {
   "api_node": false,
@@ -9070,6 +9815,80 @@
   "python_module": "comfy_extras.nodes_custom_sampler",
   "search_aliases": null
  },
+ "RayCreatureRigBridge": {
+  "category": "melite/creature",
+  "description": "",
+  "display_name": "\ud83e\uddbe Creature Rig Bridge (TRELLIS mesh -> anyCreature anims)",
+  "has_intermediate_output": false,
+  "input": {
+   "required": {
+    "creature_glb": [
+     "STRING",
+     {
+      "forceInput": true,
+      "multiline": false,
+      "tooltip": "anyCreature GLB (armature + idle/move): filename in input/ or output/, or absolute path."
+     }
+    ],
+    "height_ratio": [
+     "FLOAT",
+     {
+      "default": 1,
+      "max": 10,
+      "min": 0.05,
+      "tooltip": "Mesh height as a fraction of the creature bind-pose height."
+     }
+    ],
+    "max_influences": [
+     "INT",
+     {
+      "default": 3,
+      "max": 8,
+      "min": 1,
+      "tooltip": "Max bone influences per vertex (nearest segments win)."
+     }
+    ],
+    "mesh_glb": [
+     "STRING",
+     {
+      "forceInput": true,
+      "multiline": false,
+      "tooltip": "Static textured mesh GLB (e.g. TRELLIS asset) to bind onto the skeleton."
+     }
+    ],
+    "strip_body": [
+     "BOOLEAN",
+     {
+      "default": true,
+      "tooltip": "Delete the creature body meshes; export only the bound mesh."
+     }
+    ]
+   }
+  },
+  "input_order": {
+   "required": [
+    "creature_glb",
+    "mesh_glb",
+    "height_ratio",
+    "max_influences",
+    "strip_body"
+   ]
+  },
+  "is_input_list": false,
+  "name": "RayCreatureRigBridge",
+  "output": [
+   "STRING"
+  ],
+  "output_is_list": [
+   false
+  ],
+  "output_name": [
+   "glb_path"
+  ],
+  "output_node": false,
+  "python_module": "custom_nodes.melite-poser-nodes",
+  "search_aliases": []
+ },
  "RayRenderGLBViews": {
   "category": "TechNoir/Mesh",
   "description": "",
@@ -10406,7 +11225,7 @@
   ]
  },
  "SaveRiggedModel": {
-  "category": "TechNoir/AutoRig",
+  "category": "Melite/AutoRig",
   "description": "",
   "display_name": "\ud83d\udcbe Save Rigged Model",
   "has_intermediate_output": false,
@@ -11921,6 +12740,149 @@
   "python_module": "comfy_extras.nodes_slg",
   "search_aliases": null
  },
+ "TextEncodeFibo2": {
+  "api_node": false,
+  "category": "model/conditioning/fibo",
+  "deprecated": false,
+  "description": "Encode a Fibo 2.0 prompt, a structured JSON caption or plain text. With images, the prompt is the edit instruction, or a JSON caption of the result with an edit_instruction key, and the images become reference latents of both outputs when a vae is connected. Sample the latent output, the result's size the images are cropped for.",
+  "dev_only": false,
+  "display_name": null,
+  "essentials_category": null,
+  "experimental": false,
+  "has_intermediate_output": false,
+  "input": {
+   "optional": {
+    "vae": [
+     "VAE",
+     {}
+    ]
+   },
+   "required": {
+    "batch_size": [
+     "INT",
+     {
+      "default": 1,
+      "max": 4096,
+      "min": 1
+     }
+    ],
+    "clip": [
+     "CLIP",
+     {}
+    ],
+    "height": [
+     "INT",
+     {
+      "default": 0,
+      "max": 16384,
+      "min": 0,
+      "step": 16,
+      "tooltip": "Height of the result. 0 = the size Fibo 2.0 was trained at for the first image's aspect ratio, about 1 megapixel, or 1024 without images."
+     }
+    ],
+    "images": [
+     "COMFY_AUTOGROW_V3",
+     {
+      "template": {
+       "input": {
+        "required": {
+         "image": [
+          "IMAGE",
+          {}
+         ]
+        }
+       },
+       "min": 0,
+       "names": [
+        "image_1",
+        "image_2",
+        "image_3",
+        "image_4",
+        "image_5",
+        "image_6",
+        "image_7",
+        "image_8",
+        "image_9",
+        "image_10",
+        "image_11",
+        "image_12",
+        "image_13",
+        "image_14",
+        "image_15",
+        "image_16"
+       ]
+      },
+      "tooltip": "Images to edit, referred to as <image_1>, <image_2> and so on in the instruction. A single image is scaled and center cropped to the result's size, since the edit lines up with it pixel for pixel; several images each to their own trained size."
+     }
+    ],
+    "negative_prompt": [
+     "STRING",
+     {
+      "advanced": true,
+      "multiline": true,
+      "tooltip": "Empty is the null caption Fibo 2.0 was trained with for classifier-free guidance."
+     }
+    ],
+    "prompt": [
+     "STRING",
+     {
+      "multiline": true
+     }
+    ],
+    "width": [
+     "INT",
+     {
+      "default": 0,
+      "max": 16384,
+      "min": 0,
+      "step": 16,
+      "tooltip": "Width of the result. 0 = the size Fibo 2.0 was trained at for the first image's aspect ratio, about 1 megapixel, or 1024 without images."
+     }
+    ]
+   }
+  },
+  "input_order": {
+   "optional": [
+    "vae"
+   ],
+   "required": [
+    "clip",
+    "prompt",
+    "negative_prompt",
+    "images",
+    "width",
+    "height",
+    "batch_size"
+   ]
+  },
+  "is_input_list": false,
+  "name": "TextEncodeFibo2",
+  "output": [
+   "CONDITIONING",
+   "CONDITIONING",
+   "LATENT"
+  ],
+  "output_is_list": [
+   false,
+   false,
+   false
+  ],
+  "output_matchtypes": null,
+  "output_name": [
+   "positive",
+   "negative",
+   "latent"
+  ],
+  "output_node": false,
+  "output_tooltips": [
+   null,
+   null,
+   null
+  ],
+  "price_badge": null,
+  "python_module": "comfy_extras.nodes_fibo2",
+  "search_aliases": null
+ },
  "TextEncodeQwenImage21": {
   "api_node": false,
   "category": "model/conditioning/qwen image",
@@ -12388,6 +13350,7 @@
       "Wan2_2_VACE_A14B_HIGH_fp8_e4m3fn_scaled_KJ_merged.safetensors",
       "anima-base-v1.0-int8convrot.safetensors",
       "anima-base-v1.0.safetensors",
+      "fibo2_edit_turbo_int8_convrot.safetensors",
       "ideogram4_nvfp4_mixed.safetensors",
       "ideogram4_unconditional_nvfp4_mixed.safetensors",
       "krea2_raw_int8_convrot.safetensors",
