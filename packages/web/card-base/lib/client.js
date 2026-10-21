@@ -14408,11 +14408,12 @@ window.__ModuleLoader__.load({
 				model: family ?? ""
 			});
 			const groupFieldsAll = flatFields.filter(visible);
+			const gateViolations = composeValidate(spec, user);
+			const gateFields = new Set(gateViolations.flatMap((v) => v.field !== void 0 ? [v.field] : []));
 			const laneWarns = laneViolations(spec, flatFields, {
 				...user,
 				model: family ?? ""
-			}, base).filter((v) => !isUnstatedRequiredVoice(v.message));
-			const gateViolations = composeValidate(spec, user);
+			}, base).filter((v) => !isUnstatedRequiredVoice(v.message) && !(gateFields.has(v.field) && v.message.includes("fires nothing on this lane")));
 			const shownGateViolations = mutedViolations === void 0 ? gateViolations : gateViolations.filter((v) => !mutedViolations.includes(v.message));
 			const variantEnvelope = offeredVariantOf(spec.variants ?? [], value)?.sampler_envelope ?? null;
 			const knobEnvelope = (f) => {

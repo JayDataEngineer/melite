@@ -296,12 +296,26 @@ export function CardForm({ spec, user, base, onSet, onPick, onUnset, wire, squar
   // Run press). Stated-wrong violations stay: they are actionable at
   // open. The class test is the contracts judge's own stem, the one
   // spelling every seat shares.
+  const gateViolations = composeValidate(spec, user)
+  // THE ONE-VOICE LAW ACROSS THE FORM'S OWN SEATS (the double-render
+  // burn, operator 2026-10-21: "double rendering of errors on
+  // cards"): a stated knob the lane's surface neither declares nor
+  // renders fires BOTH judges — the mirror's "fires nothing on this
+  // lane" AND the strip's hidden-stated row — one crime, two rows.
+  // The refusing authority is the COMPOSE GATE (its voice is the one
+  // the write door refuses with); the lane strip stands down ONLY
+  // for that surface class (the 'fires nothing' stem) on a
+  // gate-voiced field — a relation row (requires/together/conflicts)
+  // keeps its voice even on a gate-voiced field: it is a DIFFERENT
+  // crime with its own cure line. One crime, one row.
+  const gateFields = new Set(gateViolations.flatMap((v) => (v.field !== undefined ? [v.field] : [])))
   const laneWarns = laneViolations(
     spec,
     flatFields,
     { ...user, model: family ?? '' },
     base,
-  ).filter((v) => !isUnstatedRequiredVoice(v.message))
+  ).filter((v) => !isUnstatedRequiredVoice(v.message)
+    && !(gateFields.has(v.field) && v.message.includes('fires nothing on this lane')))
   // THE INTAKE GATE (2026-09-29, the render law — the operator's
   // words: THE CARD DOES NOT RENDER IMPOSSIBLE CONTRACTS). The pick
   // gates judge every WRITE the composer makes; this seat judges
@@ -312,7 +326,7 @@ export function CardForm({ spec, user, base, onSet, onPick, onUnset, wire, squar
   // unfinished cards still render, only CONSTRUCTED impossibilities
   // refuse). A violation renders the door's voice ABOVE the form:
   // the impossible value never presents as live, selectable truth.
-  const gateViolations = composeValidate(spec, user)
+  // (moved above laneWarns: the one-voice law reads its fields)
   // THE ONE-VOICE LAW (E2-12): the host's actionable face (the
   // drill's strip: unstamp + dismiss) may already voice some of
   // these — those stand down here (a fully-muted banner hides); the

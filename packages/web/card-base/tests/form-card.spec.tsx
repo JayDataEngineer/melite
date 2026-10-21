@@ -634,31 +634,36 @@ test('PAIR VISIBILITY (operator 2026-10-12): the transcript row appears only onc
   expect(screen.queryByText('Text to Speak')).not.toBeNull()
 })
 
-test('LANES: the customvoice lane is quiet too, and a STATED off-surface value still warns', () => {
+test('LANES: the customvoice lane is quiet too, and a STATED off-surface value voices once (the gate owns it)', () => {
   form({ spec: ttsDoc(), user: { model: 'qwen3-tts', variant: 'customvoice' } })
   expect(document.querySelector('[data-lane-warn]')).toBeNull()
+  expect(document.querySelector('[data-compose-gate]')).toBeNull()
   cleanup()
-  // a leftover from a variant switch IS carried, so it warns with the cure
+  // a leftover from a variant switch IS carried: ONE row, the gate's
+  // voice (the one-voice law, 2026-10-21 — the strip stands down for
+  // gate-voiced knobs; two banners for one crime was the operator's
+  // double-render burn)
   form({ spec: ttsDoc(), user: { model: 'qwen3-tts', variant: 'customvoice', ref_audio: '/a.flac' } })
-  const strip = document.querySelector('[data-lane-warn="1"]')
-  if (strip === null) throw new Error('a carried off-surface value warns')
-  expect(strip.textContent ?? '').toContain('ref_audio')
-  expect(strip.textContent ?? '').toContain('fires nothing')
+  const rows = [...document.querySelectorAll('[role="alert"] p')].filter((p) => (p.textContent ?? '').includes('ref_audio'))
+  expect(rows.length).toBe(1)
+  expect(rows[0]?.textContent ?? '').toContain('fires nothing')
+  expect(document.querySelector('[data-lane-warn]')).toBeNull()
 })
 
-test('LANES: the admission strip seats with the refusal surface, never in the axes flow', () => {
+test('LANES: the single refusal row seats on the form\'s refusal surface, never in the axes flow', () => {
   // THE SEAT LAW (2026-09-30): a lane refusal rendered as a bare
   // sibling after the axes grid READ as the Recipe row's value. The
-  // strip belongs to the form's refusal surface (beside the compose
-  // gate), before the axes; the axes block's last row carries no
+  // row belongs to the form's refusal surface (the compose gate's
+  // seat), before the axes; the axes block's last row carries no
   // lane text.
   form({ spec: ttsDoc(), user: { model: 'qwen3-tts', variant: 'customvoice', ref_audio: '/a.flac' } })
-  const strip = document.querySelector('[data-lane-warn="1"]')
-  if (strip === null) throw new Error('a carried off-surface value warns')
+  const row = [...document.querySelectorAll('[role="alert"] p')].find((p) => (p.textContent ?? '').includes('ref_audio'))
+  if (row === undefined) throw new Error('a carried off-surface value voices')
+  const banner = row.closest('div')
   const axes = document.querySelector('[data-axes-pair]')
-  if (axes === null) throw new Error('the axes grid renders')
-  expect(strip.compareDocumentPosition(axes) & Node.DOCUMENT_POSITION_FOLLOWING).not.toBe(0)
-  expect(axes.parentElement?.contains(strip) ?? true, 'the strip is outside the axes section').toBe(false)
+  if (banner === null || axes === null) throw new Error('the refusal surface and the axes grid render')
+  expect(banner.compareDocumentPosition(axes) & Node.DOCUMENT_POSITION_FOLLOWING).not.toBe(0)
+  expect(axes.parentElement?.contains(banner) ?? true, 'the banner is outside the axes section').toBe(false)
   expect(axes.parentElement?.textContent ?? '', 'the axes rows carry no lane text').not.toContain('fires nothing')
 })
 
@@ -668,9 +673,11 @@ test('LANES: an unknown or cleared variant is the run door\'s voice, never this 
     expect(document.querySelector('[data-lane-warn]'), 'variant ' + JSON.stringify(variant)).toBeNull()
     cleanup()
   }
-  // a RECIPE variant is served and inherits the family base — judged
+  // a RECIPE variant is served and inherits the family base — judged,
+  // and the carried off-surface value voices ONCE (the gate's row)
   form({ spec: ttsDoc(), user: { model: 'qwen3-tts', variant: 'steady-read', ref_audio: '/a.flac' } })
-  expect(document.querySelector('[data-lane-warn="1"]')).not.toBeNull()
+  const carried = [...document.querySelectorAll('[role="alert"] p')].filter((p) => (p.textContent ?? '').includes('ref_audio'))
+  expect(carried.length).toBe(1)
 })
 
 test('LANES: the export pair warns on the real doc, and clears when cured', () => {
