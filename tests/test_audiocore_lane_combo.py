@@ -36,7 +36,7 @@ PACK = (
     Path(__file__).resolve().parents[1]
     / "vendor"
     / "comfyui_extensions"
-    / "melite-sfx-nodes"
+    / "melite-audio-nodes"
     / "nodes.py"
 )
 

@@ -65,13 +65,16 @@ const REGISTERED_DIVERGENCES: ReadonlyArray<{
   // voicedesign lane), never on the family base — the cure stays the
   // variant-scoped face filter (UNITY-2).
   ...["qwen3-tts", "qwen3-tts-voicedesign", "qwen3-tts-voicedesign-design", "qwen3-tts-voicedesign-base", "qwen3-tts-base"].flatMap((family) =>
-    ["voice", "style_instruction", "ref_audio", "ref_text", "design_prompt"].map((knob) => ({
+    ["voice", "style_instruction", "ref_audio", "ref_text", "design_prompt", "voice_name"].map((knob) => ({
       card: "tts",
       family,
       knob,
       // design_prompt's row is the voicedesign lane's declared input
       // (voicedesign variant params) — the same variant-scoped cure:
       // it appears on the voicedesign lane, hides elsewhere.
+      // voice_name (the persona-export pair's other half, card.ts:54)
+      // rides the identical law: declared beside design_prompt in the
+      // relations, served family-blind by the frozen dict.
       cure: TTS_CURE,
     })),
   ),
@@ -99,6 +102,16 @@ const REGISTERED_DIVERGENCES: ReadonlyArray<{
   // (UNITY-1, landed in card-base form.tsx) owns the visible face.
   { card: "image-edit", family: "qwen-img-edit-21", knob: "width", cure: FACE_FILTER_CURE },
   { card: "image-edit", family: "qwen-img-edit-21", knob: "height", cure: FACE_FILTER_CURE },
+  // THE FIBO2 EDIT SEAT (2026-10-21, the wall's own first sighting
+  // after the family boarded): fibo2-edit declares neither the size
+  // pair (an edit lane edits at the source's own frame — the 21
+  // lane's stated-size law verbatim) nor the 2511-only tuning pair
+  // (use_stock_nodes/double_reference); the frozen dict serves all
+  // four family-blind. Same face-filter cure.
+  { card: "image-edit", family: "fibo2-edit", knob: "width", cure: FACE_FILTER_CURE },
+  { card: "image-edit", family: "fibo2-edit", knob: "height", cure: FACE_FILTER_CURE },
+  { card: "image-edit", family: "fibo2-edit", knob: "use_stock_nodes", cure: FACE_FILTER_CURE },
+  { card: "image-edit", family: "fibo2-edit", knob: "double_reference", cure: FACE_FILTER_CURE },
   // THE MUSIC MODE CURE (2026-11-08): music3's DECL dropped mode (the
   // door refuses non-"full" loudly — music3 has no symbolic planner);
   // the dict's mode seat is yue2-scoped at the face (visible_when:

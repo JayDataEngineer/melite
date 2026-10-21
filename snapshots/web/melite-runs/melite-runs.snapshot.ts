@@ -128,7 +128,7 @@ describe('web melite-runs (the AI-run toggle face, keyless)', () => {
     assert.equal(seated.kind, 'success')
     assert.equal(
       seated.text,
-      'AI runs ON — melite_flow + run_status seated; the next model request sees them (a boot-fixed catalog sees them next session).',
+      'AI runs ON — melite_flow + run_status + the estate doors (melite_view, melite_read, comfy_manage, skills, ledger) seated; the next model request sees them (a boot-fixed catalog sees them next session). Recorded — the delegation survives lane reloads.',
       'the ON text verbatim',
     )
     assert.deepEqual(
@@ -146,13 +146,13 @@ describe('web melite-runs (the AI-run toggle face, keyless)', () => {
     cmd.handler({ rawInput: 'on' })
     const off = cmd.handler({ rawInput: 'off' })
     assert.equal(off.kind, 'success')
-    assert.equal(off.text, 'AI runs OFF — runs start at the user\u2019s Run press again.', 'the OFF text verbatim')
+    assert.equal(off.text, 'AI runs OFF — runs start at the user\u2019s Run press again. Recorded.', 'the OFF text verbatim')
     for (const h of HEADLESS_TOOL_NAMES) {
       assert.ok(!toolNames().includes(h), `run door ${h} never withdrawn by off`)
     }
     const read = cmd.handler({ rawInput: '' })
     assert.equal(read.kind, 'success')
-    assert.equal(read.text, 'AI runs OFF — runs start at the user\u2019s Run press again.', 'the bare read states the current state')
+    assert.equal(read.text, 'AI runs OFF — runs start at the user\u2019s Run press again. Recorded.', 'the bare read states the current state')
   })
 
   it('unknown argument: the refusal text verbatim', () => {

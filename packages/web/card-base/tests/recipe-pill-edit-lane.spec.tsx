@@ -47,9 +47,12 @@ describe("THE EDIT LANE'S RECIPE PILL (SD-8/G4): the anonymous post-pick doc is 
   afterAll(async () => { await restoreLaneOverlay() })
 
   it("THE LAW OVER LIVE VALUES: the held post-pick doc journals remove-background; a fresh doc journals no row (no emergent pick)", () => {
-    // THE RAW HELD DOC, verbatim off the lane shape: the pick's stamp
-    // is the prompt — anonymous (no recipe key exists to read).
-    const postPick = { prompt: REMOVE_BG_PROMPT }
+    // THE RAW HELD DOC, off the lane shape: the pick's stamp is
+    // anonymous (no recipe key exists to read) — and the pick
+    // WRITES the lane's married sampler values beside the prompt
+    // (reconcilePick, operator 2026-11-05): the pill derives from
+    // the stamp the pick writes, so the held doc carries all of it.
+    const postPick = { prompt: REMOVE_BG_PROMPT, steps: 25, cfg: 1 }
     expect(activeRecipeId(served, postPick as never as SpecValues),
       "G4 (law, post-pick): the held doc states the remove-background stamp yet the derivation names no row — the pill state is unshowable on an addressable doc")
       .toBe("remove-background")

@@ -189,18 +189,18 @@ describe("clearStaleInstall", () => {
     execSync("git init --quiet --bare " + JSON.stringify(other),
       { encoding: "utf8" });
     execSync("git clone --quiet " + JSON.stringify(other) +
-      " MELITE-SFX-NODES", { cwd: cn, encoding: "utf8" });
+      " MELITE-AUDIO-NODES", { cwd: cn, encoding: "utf8" });
     assert.equal(clearStaleInstall(url, dir), "stale clone");
-    assert.equal(existsSync(join(cn, "MELITE-SFX-NODES")), false);
+    assert.equal(existsSync(join(cn, "MELITE-AUDIO-NODES")), false);
   });
 
   it("keeps a renamed dir that carries the row's own remote", () => {
-    const keep = join(cn, "Melite-Sfx-Nodes");
+    const keep = join(cn, "Melite-Audio-Nodes");
     const origin = join(dir, "pack-origin-2.git");
     execSync("git init --quiet --bare " + JSON.stringify(origin),
       { encoding: "utf8" });
     execSync("git clone --quiet " + JSON.stringify(origin) +
-      " Melite-Sfx-Nodes", { cwd: cn, encoding: "utf8" });
+      " Melite-Audio-Nodes", { cwd: cn, encoding: "utf8" });
     execSync("git remote set-url origin " + url,
       { cwd: keep, encoding: "utf8" });
     assert.equal(clearStaleInstall(url, dir), "");
