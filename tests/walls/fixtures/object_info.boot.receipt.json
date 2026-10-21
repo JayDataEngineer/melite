@@ -1,12 +1,12 @@
 {
- "derived_at": "2026-10-21T10:09:57.552Z",
+ "derived_at": "2026-10-21T10:42:00.642Z",
  "tool": "scripts/regen-node-vocab.mjs --boot",
  "source": {
   "path": "data/tmp/object_info_prod.json",
   "sha256": "5c194f4fd72f6e1dc65b97630944620455d4e395fff101d78d3655f631540125",
-  "mtime_ms": 1792577184681.9258,
+  "mtime_ms": 1792579320401.5718,
   "class_count": 1677,
-  "origin": "capture"
+  "origin": "live"
  },
  "bootstrap_seed": {
   "path": "tests/walls/fixtures/object_info.boot.bootstrap.json",
@@ -22,9 +22,7 @@
   "refused_rows": 0
  },
  "delta": {
-  "added": [
-   "MinimaxH3LatentUpscaler3DRefineHandoff"
-  ],
+  "added": [],
   "pruned": [],
   "updated": [],
   "reordered_keys": 0

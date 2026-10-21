@@ -23,6 +23,11 @@ export const schema = z.object({
     // door's explicit-params overlay (non-strict object) so old drafts
     // keep parsing, but they are never declared knobs.
     source: z.string().role('path').description("Source file").extra('extra', bag({ order: 0, group: "input", tooltip: "The file to stage — upload, asset drop, prior-run artifact, or mount path. Image or audio (video is not boarded yet).", required: true, wtype: 'file', })),
+    // THE SNIFF OWNS THE LANE (audit input-prep-total F6, INFO stand-down,
+    // 2026-11-10): media_type is DECLARED (the visible_when rails key on it)
+    // but the studio seats no select for it — pickSource's sniff is its only
+    // writer. An extension-less source cannot be lane-flipped by hand; only an
+    // agent's patch can. Documented, not seated, by auditor-sanctioned choice.
     media_type: vocabulary(["image", "audio"]).description("Media type").default("image").extra('extra', bag({ order: 1, group: "input", width: 1, wtype: 'select' })),
     crop_x: z.number().description("Crop X").min(-1).step(1).default(-1).extra('extra', bag({ order: 0, group: "transform", wtype: 'number', visible_when: 'media_type=image' })),
     crop_y: z.number().description("Crop Y").min(-1).step(1).default(-1).extra('extra', bag({ order: 1, group: "transform", wtype: 'number', visible_when: 'media_type=image' })),

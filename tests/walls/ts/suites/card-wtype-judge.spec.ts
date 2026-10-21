@@ -97,7 +97,11 @@ const CARD_ROSTER = 14;
 // refine_denoise — a number knob, wtype number agreeing with its
 // z.number shape (the (0,1] refine window; default 1 = the taomate
 // full-denoise mechanic).
-const FIELD_ROSTER = 473;
+// 473 -> 475 (2026-10-21, SOTA P2 LIMB 3): h3's upscale_route
+// (wtype select, the off|latent_2x vocabulary) + upscale_model
+// (wtype select, the LBH bf16 single-file vocab) — both agree with
+// their z.enum shapes; the two-pass pair joins the judged roster.
+const FIELD_ROSTER = 475;
 
 interface DictField {
   readonly type?: string;

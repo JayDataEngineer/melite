@@ -264,14 +264,25 @@ function validateDecl(decl) {
     // actually composes (getModel splices variant over atom at read
     // time; the bf16 precedent re-spells two door-read keys). Drift
     // refuses HERE, at boot, in the door's own voice — the family's
-    // parse throw, never reworded by the service.
+    // parse throw, never reworded by the service. The fold runs one
+    // axis deeper than the variant merges: every CELL merge (family
+    // ∪ variant ∪ cell) parses too — the resolved rows a
+    // cell-coordinate run actually composes. qwen-img-21 carries its
+    // tier weights at variants[].cells lane_inputs ONLY: with no cell
+    // fold the gate judged NO weight slot for the family and a
+    // drifted cell lane_input booted green (QWEN CELL-FOLD,
+    // 2026-11-10).
     if (decl.actions !== undefined) {
         for (const action of decl.actions) {
             // spread of undefined yields {} — a door may face an empty
             // row only when the family omits lane_inputs entirely
             action.facts({ ...decl.lane_inputs });
             for (const v of decl.variants) {
-                action.facts({ ...decl.lane_inputs, ...v.lane_inputs });
+                const vmerge = { ...decl.lane_inputs, ...v.lane_inputs };
+                action.facts(vmerge);
+                for (const c of v.cells ?? []) {
+                    action.facts({ ...vmerge, ...c.lane_inputs });
+                }
             }
         }
     }

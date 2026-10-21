@@ -425,7 +425,11 @@ describe("models against cards (the cross-validation, resurrected)", () => {
     // refine_denoise — a numeric knob WITH the schema default(1),
     // so the starving judge passes it (default-owned by the schema)
     // and the walk counts it. One new knob, argued here.
-    assert.equal(walked, 473,
+    // 473 -> 475 (2026-10-21, SOTA P2 LIMB 3): h3's upscale_route +
+    // upscale_model — the two-pass latent-upscale pair (both carry
+    // schema defaults: off + the LBH bf16 file), walked like every
+    // knob. Two new fields, argued here.
+    assert.equal(walked, 475,
       `the census walked the estate's fields (${String(walked)} — a re-zoned or re-typed field set MOVES this number; growth is argued here, loss means the census emptied an arm)`);
     // judged 8 -> 6 (2026-11-08, the latent law): the image-edit
     // card's width/height leave the params zone (hidden compatibility
@@ -1773,7 +1777,12 @@ describe("THE TWO-HOMES BOUNDS-SYNC WALL (card schema == action ParamSpec, every
     // carried addresses join — 13 agreeing pairs (seed, steps, cfg
     // + the envelope/bounds pair rides per bounded address);
     // offenders stay empty.
-    assert.equal(pairs, 789, "the shared-name pair census changed — update this pin deliberately");
+    // 789 -> 795 (2026-10-21, SOTA P2 LIMB 3): h3's upscale_route +
+    // upscale_model join the shared names — the route enum (off |
+    // latent_2x, identical options both planes) + the model vocab
+    // (the LBH bf16 file, identical list both planes), one agreeing
+    // pair per carried h3 address; offenders stay empty.
+    assert.equal(pairs, 795, "the shared-name pair census changed — update this pin deliberately");
     assert.deepEqual(offenders, [], `two-homes drift (card schema vs action ParamSpec):\n${offenders.join("\n")}`);
   });
 });
