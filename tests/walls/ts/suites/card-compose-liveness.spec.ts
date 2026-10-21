@@ -414,24 +414,9 @@ describe("every facts row composes its card alive (the dead-card wall)", () => {
     // Any NEW stale value no row owns reds unadjudicated. ──
     const clipTypes = ((bootDoc.CLIPLoader as { input: { required: { type: [string[]] } } }).input.required.type[0]);
     const adjudicated: Array<{ row: RegExp; reason: string; holds: () => string | null }> = [
-      {
-        // the operator's own burn (2026-11-09): moss-image wires the
-        // PR #17095 spelling this engine build does not carry.
-        // RESTORED 2026-10-20 (audit h3-refine-denoise-verification
-        // F2): the refine-window commit deleted this row on the claim
-        // the engine build carried the PR — the boot fixture (this
-        // wall's own truth source) still carries 29 CLIPLoader.type
-        // values with no moss_image, and the moss compose still emits
-        // it; the deletion left a live finding unowned, green only
-        // because the row's clip_name refusal (swallowed by the
-        // provisioner carve-out) shadowed the type finding. The row
-        // self-deletes the day the build genuinely carries the enum.
-        row: /^moss-image \/ image-gen: .*CLIPLoader\.type.*moss_image/,
-        reason: "the engine build predates upstream PR #17095 — its CLIPLoader.type enum carries 29 values, none moss_image",
-        holds: () => clipTypes.includes("moss_image")
-          ? "the engine build now carries moss_image — the finding is cured; delete this row"
-          : null,
-      },
+      // (the moss-image CLIPLoader.type row self-deleted 2026-11-10:
+      // the engine build caught up to upstream PR #17095 and the boot
+      // fixture now carries moss_image — the finding is cured.)
       // (the qwen-img-21 images finding NEVER sat here: its root was
       // the wiring wall judging an autogrow input by a law the
       // engine never stated — TextEncodeQwenImage21.images declares
