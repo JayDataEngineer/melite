@@ -323,10 +323,11 @@ describe('the studio (InputPrepStudio)', () => {
       })
     })
     expect(onPatch, 'the pick schedules its row write like every edit').toHaveBeenCalledTimes(1)
+    // an audio-shaped pick seats the audio lane with the source — the compose branch keys on media_type
     expect(onPatch.mock.calls[0][0]).toMatchObject({
       source: 'https://media.example/voice-take.wav',
       media_type: 'audio',
-    }, 'an audio-shaped pick seats the audio lane with the source — the compose branch keys on media_type')
+    })
     // the pane follows: the audio restage face, never a dead image arm
     expect(screen.getByTestId('prep-audio-note')).not.toBeNull()
     expect(screen.queryByTestId('prep-staged-note')).toBeNull()
@@ -361,10 +362,10 @@ describe('the studio (InputPrepStudio)', () => {
     act(() => {
       fireEvent.change(screen.getByTestId('prep-scale-scale_width'), { target: { value: '1e999' } })
     })
-    expect(onPatch.mock.calls[0][0]).toMatchObject({ scale_width: -1 },
-      'Infinity JSON-serializes to null at the door — a non-finite keystroke seats the unset key')
+    // Infinity JSON-serializes to null at the door — a non-finite keystroke seats the unset key
+    expect(onPatch.mock.calls[0][0]).toMatchObject({ scale_width: -1 })
     expect(Number.isFinite(onPatch.mock.calls[0][0]['scale_width'])).toBe(true)
-    expect(screen.getByTestId('prep-scale-scale_width').value).toBe('')
+    expect((screen.getByTestId('prep-scale-scale_width') as HTMLInputElement).value).toBe('')
   })
 
   it('NO RUN VERB BINDS (single writer: the drill owns the frame pill — the last-bind-wins race is dead by construction)', () => {

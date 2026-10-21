@@ -10220,10 +10220,10 @@ window.__ModuleLoader__.load({
 					quantId: qres.quant !== "" ? qres.quant : null
 				};
 			}
-			const first = (offered.cells ?? [])[0];
+			const firstQuant = (offered.cells ?? [])[0]?.quant;
 			return {
 				variantId: offered.id,
-				quantId: first?.quant ?? null
+				quantId: typeof firstQuant === "string" ? firstQuant : null
 			};
 		}
 		/** THE MIRROR'S RESOLVED SURFACE (the tts lockout cure, 2026-11-10):

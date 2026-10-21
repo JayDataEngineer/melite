@@ -78,7 +78,7 @@ export function schemaEnvelope(dict) {
 // tool face spelled visibleWhen — a dead read for every card).
 import { extraOf } from '@melite/contracts/extraKeys';
 import { deepEqualJson } from '@deepseek-ai/dsh-util-values';
-import { judgeLaneBounds, judgeLaneRelations, judgeLaneSurface, laneBoundsOf, laneSurfaceOf, judgeSamplerEnvelope, marriedKnobValues, resolveCellRow, resolveVariantRow, samplerEnvelopeCure, unknownQuantVoice, unknownVariantVoice, variantMatrixFromFlatRows, } from '@melite/contracts/laneRelations';
+import { judgeLaneBounds, judgeLaneRelations, judgeLaneSurface, laneBlank, laneBoundsOf, laneSurfaceOf, judgeSamplerEnvelope, marriedKnobValues, resolveCellRow, resolveVariantRow, samplerEnvelopeCure, unknownQuantVoice, unknownVariantVoice, variantMatrixFromFlatRows, } from '@melite/contracts/laneRelations';
 /** THE MOD-OWNED NAMES (the SubcardGrid law, enforced): every name a
  *  served modifier kind owns — its fields' names plus its param_key
  *  (the bag storage). CardForm EXCLUDES these from the flat param
@@ -1113,6 +1113,7 @@ export function axisPickPatch(spec, row, held) {
             }
         }
         reconcilePick(patch, spec, row, held);
+        dropStaleAxisCarry(patch, spec, row, held);
         return patch;
     }
     for (const g of groups.slice(at + 1)) {
@@ -1132,7 +1133,58 @@ export function axisPickPatch(spec, row, held) {
     // the departed choice's numbers never survive a judged key (the
     // overrideEnvelopeKeys priority chain).
     reconcilePick(patch, spec, row, held);
+    dropStaleAxisCarry(patch, spec, row, held);
     return patch;
+}
+/** THE AXIS-PICK CARRY DROP (the tts lockout cure, 2026-11-10 — the
+ *  QUANT-CELL switch class): a pick that re-keys the resolved
+ *  (variant × quant) lane drops the STATED carry the departing lane
+ *  declared and the arriving lane does not — the same prev ∩ ¬next
+ *  law the estate's own laneMigrate judges at the write door
+ *  (cardsRegistry's prevSurface/nextSurface sets), seated at the
+ *  pick so the studio never leaves the ghost stated for the press
+ *  gate to refuse. The burn: style_instruction stated on the 1.7B
+ *  customvoice cell rode the 0.6B pick and every compose refused it
+ *  field-named — the client refused before the estate's migration
+ *  ever saw the write. The null is the UNSET LAW's null: it deletes
+ *  the bench key at the flush, and mergeSwitchFrame's null verdicts
+ *  beat incoming frames. NEVER A GUESS: both lanes must resolve to a
+ *  DECLARED surface (the lanes contract served, both coordinates
+ *  known); keys the DEPARTING lane did not declare are authored
+ *  state and stand (the gate refuses them as authored — this verb
+ *  never launders a hand-typed off-lane key); shared words never
+ *  null; the axis keys, model, and the patch's own stamps are
+ *  transport, never carry; unstated keys have nothing to drop. A
+ *  pick that does not re-key the lane (a Recipe pick, a
+ *  same-coordinate repair) is a no-op here. PURE — the caller owns
+ *  the write. */
+function dropStaleAxisCarry(patch, spec, row, held) {
+    if (spec.lanes === undefined || held === undefined)
+        return;
+    const axisKeys = new Set(axisGroups(spec).map((g) => axisKey(g)));
+    if (!axisKeys.has(axisKey(row.group)))
+        return;
+    const prev = resolvedLaneCoordinate(spec, held);
+    const next = resolvedLaneCoordinate(spec, { ...held, ...patch });
+    if (prev === null || next === null)
+        return;
+    if (prev.variantId === next.variantId && prev.quantId === next.quantId)
+        return;
+    const prevSurface = laneSurfaceFor(spec, prev.variantId, prev.quantId);
+    const nextSurface = laneSurfaceFor(spec, next.variantId, next.quantId);
+    if (prevSurface === null || nextSurface === null)
+        return;
+    for (const [k, v] of Object.entries(held)) {
+        if (k === 'model' || axisKeys.has(k) || k in patch)
+            continue;
+        if (laneBlank(v))
+            continue;
+        if (nextSurface.includes(k))
+            continue;
+        if (!prevSurface.includes(k))
+            continue;
+        patch[k] = null;
+    }
 }
 /** THE OVERRIDE RECONCILE (operator 2026-11-05: "THE LATEST
  *  SELECTION MUST OVERRIDE" — the multi-level live break: model,
@@ -1718,6 +1770,52 @@ function deriveFamilyLane(law, doc) {
     }
     return law.lanes[law.lanes.length - 1]?.lane ?? '';
 }
+/** THE DOC'S RESOLVED LANE COORDINATE, ONE SPELLING (the tts lockout
+ *  cure, 2026-11-10): the (variant × quant) the estate door resolves
+ *  for this doc — the stated variant, else pool[0] (the shared
+ *  resolver's own law); the stated quant, else the variant's FIRST
+ *  cell (selectCardVariant's unstated law). Null when the coordinate
+ *  does not resolve (a stated variant/quant the matrix does not
+ *  know): the callers degrade, never guess. */
+function resolvedLaneCoordinate(spec, values) {
+    const matrix = variantMatrixFromFlatRows(spec.variants ?? []);
+    const vres = resolveVariantRow(matrix, unchosenToUnstated(values['variant']), '', 'offered');
+    if (vres.status === 'missing' || vres.status === 'pool-empty')
+        return null;
+    const offered = vres.variant;
+    const statedQuant = typeof values['quant'] === 'string' && values['quant'] !== ''
+        ? values['quant']
+        : null;
+    if (statedQuant !== null) {
+        const qres = resolveCellRow(offered, statedQuant, '', 'offered');
+        if (qres.status === 'missing')
+            return null;
+        return { variantId: offered.id, quantId: qres.quant !== '' ? qres.quant : null };
+    }
+    const firstQuant = (offered.cells ?? [])[0]?.quant;
+    return { variantId: offered.id, quantId: typeof firstQuant === 'string' ? firstQuant : null };
+}
+/** THE MIRROR'S RESOLVED SURFACE (the tts lockout cure, 2026-11-10):
+ *  the doc's lane surface — family base ∪ variant additions ∪ cell
+ *  additions — the SAME merged surface the estate write door judges
+ *  (cardsRegistry admitFamily's laneSurfaceOf call) and the form's
+ *  own visibility read (fieldOnLane). The mirror judged the FAMILY
+ *  BASE projection alone (the served `params`) and refused the
+ *  variant's own persona picker ('voice') on the 0.6B customvoice
+ *  cell — the operator's lockout: voice rides the VARIANT's params
+ *  at both sizes, style_instruction is CELL-exclusive to 1.7B.
+ *  Resolution rides the same shared resolvers clause 2/3 ride.
+ *  Null = the family declares no resolved surface (no lanes block,
+ *  or a lanes block with an absent base — the surface-less family's
+ *  own truth): the caller keeps its legacy behavior, never a guess. */
+function resolvedLaneSurface(spec, doc) {
+    if (spec.lanes === undefined)
+        return null;
+    const coord = resolvedLaneCoordinate(spec, doc);
+    if (coord === null)
+        return spec.lanes.base ?? null;
+    return laneSurfaceFor(spec, coord.variantId, coord.quantId);
+}
 export function composeValidate(spec, doc) {
     if (spec === null)
         return [];
@@ -1743,45 +1841,62 @@ export function composeValidate(spec, doc) {
     // admission gate refuses it FIELD-NAMED ("field 'double_reference'
     // fires nothing on this lane"), while this mirror greened the doc
     // and every suite stayed green. The mirror speaks the door's voice
-    // BEFORE the wire. Judged only when the served doc carries the
-    // declared surface (`params` — absent on legacy carriers: never a
-    // guess); `model` and the axis keys are the transport's own words,
-    // never doc surface. THE ARRIVAL FLOOR ((h2) remainder, the
-    // stage-drill `arrival !== ''` floor at the mirror): an arrival that
-    // has not named itself (model '') must never clobber the doc's
-    // voice — the mirror refuses to guess until the surface is named.
-    if (Array.isArray(spec.params) && spec.model !== '') {
-        const declared = new Set(spec.params);
-        for (const g of axisGroups(spec))
-            declared.add(axisKey(g));
-        declared.add('model');
-        // THE STUDIO-OWNED SURFACE (h¹, the mirror-truth cure): the
-        // estate's write door sanctions the DECL's studio.writes beside
-        // params — the mirror sanctions the same set or it refuses the
-        // studio's own document plane (calls + keyframes on every real
-        // film doc), a lie that blocked every pick and every
-        // flip-settlement recheck.
-        for (const k of spec.studio_writes ?? [])
-            declared.add(k);
-        // THE MOD-SURFACE SANCTION (E2-11, the operator's burn — its
-        // verbatim voice lives in the ERRORS_2 ledger): a key a card-declared mod kind owns — its
-        // param_key bag plus its envelope's field names — is DECLARED
-        // surface, exactly like a schema knob. The mirror refused the
-        // mask mod's own bag as "field 'mask' … the served surface
-        // does not declare it": a lie (the family boards the pack; the
-        // estate's admission gate sanctions the same names via the
-        // absorbed-mod interlock, cardsCompose.ts). Whether the plane
-        // BUILDS the mod's lane is the compose door's firing voice,
-        // never this clause's undeclared-surface voice.
-        for (const k of modOwnedFields(spec))
-            declared.add(k);
-        for (const k of Object.keys(doc)) {
-            if (k === 'model' || declared.has(k))
-                continue;
-            out.push({
-                message: 'card_compose: field \'' + k + '\' fires nothing on this lane — the served surface (' + (spec.model ?? '') + ') does not declare it; the estate admission gate refuses the same key field-named at the write door.',
-                field: k,
-            });
+    // BEFORE the wire. THE RESOLVED SURFACE (the tts lockout cure,
+    // 2026-11-10): the judged surface is the doc's RESOLVED
+    // (variant × quant) lane — family base ∪ variant additions ∪ cell
+    // additions (resolvedLaneSurface, one spelling with the estate
+    // write door) — never the family base projection alone: that
+    // projection refused the variant's own persona picker ('voice') on
+    // the 0.6B customvoice cell and locked the operator out of TTS
+    // while the bench door admitted the same state. `model` and the
+    // axis keys are the transport's own words, never doc surface. THE
+    // ARRIVAL FLOOR ((h2) remainder, the stage-drill `arrival !== ''`
+    // floor at the mirror): an arrival that has not named itself
+    // (model '') must never clobber the doc's voice — the mirror
+    // refuses to guess until the surface is named. A family that
+    // declares NO resolved surface (no lanes block, or a lanes block
+    // with an absent base) keeps its legacy truth: the served
+    // `params` judged verbatim when present, else no mirror at all —
+    // never a guess.
+    if (spec.model !== '') {
+        const resolved = resolvedLaneSurface(spec, doc);
+        const legacy = resolved === null && spec.lanes === undefined && Array.isArray(spec.params)
+            ? spec.params
+            : null;
+        const surface = resolved ?? legacy;
+        if (surface !== null) {
+            const declared = new Set(surface);
+            for (const g of axisGroups(spec))
+                declared.add(axisKey(g));
+            declared.add('model');
+            // THE STUDIO-OWNED SURFACE (h¹, the mirror-truth cure): the
+            // estate's write door sanctions the DECL's studio.writes beside
+            // params — the mirror sanctions the same set or it refuses the
+            // studio's own document plane (calls + keyframes on every real
+            // film doc), a lie that blocked every pick and every
+            // flip-settlement recheck.
+            for (const k of spec.studio_writes ?? [])
+                declared.add(k);
+            // THE MOD-SURFACE SANCTION (E2-11, the operator's burn — its
+            // verbatim voice lives in the ERRORS_2 ledger): a key a card-declared mod kind owns — its
+            // param_key bag plus its envelope's field names — is DECLARED
+            // surface, exactly like a schema knob. The mirror refused the
+            // mask mod's own bag as "field 'mask' … the served surface
+            // does not declare it": a lie (the family boards the pack; the
+            // estate's admission gate sanctions the same names via the
+            // absorbed-mod interlock, cardsCompose.ts). Whether the plane
+            // BUILDS the mod's lane is the compose door's firing voice,
+            // never this clause's undeclared-surface voice.
+            for (const k of modOwnedFields(spec))
+                declared.add(k);
+            for (const k of Object.keys(doc)) {
+                if (k === 'model' || declared.has(k))
+                    continue;
+                out.push({
+                    message: 'card_compose: field \'' + k + '\' fires nothing on this lane — the served surface (' + (spec.model ?? '') + ') does not declare it; the estate admission gate refuses the same key field-named at the write door.',
+                    field: k,
+                });
+            }
         }
     }
     // THE FAMILY CLAUSE (the ERROR g/h cure, 2026-11-08): a family-
