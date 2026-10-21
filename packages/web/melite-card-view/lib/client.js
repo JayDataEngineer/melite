@@ -18895,6 +18895,11 @@ window.__ModuleLoader__.load({
 						setWriteFace(null);
 						setError(null);
 						reconcileStageWriteFailures(bench.draftId, stage.id, held, seeded, new Set((0, _melite_card_base_client.fieldsOf)(doc).map((f) => f.name)));
+						const reopenDrop = (0, _melite_card_base_client.dropStaleReopenCarry)(doc, held);
+						for (const k of Object.keys(reopenDrop)) droppedRef.current.add(k);
+						if (Object.keys(reopenDrop).length > 0) patchStageParams(bench.draftId, stage.id, reopenDrop, bench.rev).then(void 0, (e) => {
+							if (alive) console.warn("[stage-drill] reopen carry drop refused:", e);
+						});
 					}
 					setLoaded(true);
 					reportSurface(doc.size === "huge" ? "huge" : "");

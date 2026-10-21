@@ -1847,6 +1847,49 @@ function resolvedLaneSurface(spec, doc) {
         return spec.lanes.base ?? null;
     return laneSurfaceFor(spec, coord.variantId, coord.quantId);
 }
+/** THE REOPEN CARRY DROP (the stale-carry reopen cure, 2026-10-21 —
+ *  the saved-doc heal). dropStaleAxisCarry seats the prev ∩ ¬next
+ *  drop at the PICK only; a SAVED doc that arrives already resolved
+ *  to a lane its stated keys do not serve (written by an older door,
+ *  patched by the agent, restored from an older save) rides ghosts
+ *  the press gate refuses forever — the user never typed the key on
+ *  THIS lane, so no unstamp affordance exists for it. The reopen
+ *  derives the drop from the RESOLVED surface alone: every STATED
+ *  key the resolved lane cannot state — not on its surface, not a
+ *  mod bag's param_key, not transport (model + axis keys) — is dead
+ *  carry BY CONSTRUCTION: the form renders no widget for it and the
+ *  estate door refuses off-lane writes, so a saved doc never carries
+ *  fresh authoring there. Blank carried keys have nothing to drop; a
+ *  carrier with no lanes block (or a surface-less family) drops
+ *  nothing — never a guess. PURE — the caller owns the write: the
+ *  drill's open effect flushes the nulls through the ledger like a
+ *  pick's drop (a null deletes the bench key).
+ *  @param spec the doc's served form-spec.
+ *  @param held the SAVED doc the drill opened.
+ *  @returns the null-patch for the dead carried keys ({} when the
+ *    doc is already stateable on its resolved lane). */
+export function dropStaleReopenCarry(spec, held) {
+    const out = {};
+    if (held === undefined)
+        return out;
+    const surface = resolvedLaneSurface(spec, held);
+    if (surface === null)
+        return out;
+    const axisKeys = new Set(axisGroups(spec).map((g) => axisKey(g)));
+    const modKeys = modOwnedFields(spec);
+    for (const [k, v] of Object.entries(held)) {
+        if (k === 'model' || k === 'variant' || k === 'quant' || axisKeys.has(k))
+            continue;
+        if (modKeys.has(k))
+            continue;
+        if (surface.includes(k))
+            continue;
+        if (laneBlank(v))
+            continue;
+        out[k] = null;
+    }
+    return out;
+}
 export function composeValidate(spec, doc) {
     if (spec === null)
         return [];

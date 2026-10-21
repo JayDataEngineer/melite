@@ -456,6 +456,28 @@ export interface ComposeViolation {
      *  the words ACT, never refuse without cure). */
     field?: string;
 }
+/** THE REOPEN CARRY DROP (the stale-carry reopen cure, 2026-10-21 —
+ *  the saved-doc heal). dropStaleAxisCarry seats the prev ∩ ¬next
+ *  drop at the PICK only; a SAVED doc that arrives already resolved
+ *  to a lane its stated keys do not serve (written by an older door,
+ *  patched by the agent, restored from an older save) rides ghosts
+ *  the press gate refuses forever — the user never typed the key on
+ *  THIS lane, so no unstamp affordance exists for it. The reopen
+ *  derives the drop from the RESOLVED surface alone: every STATED
+ *  key the resolved lane cannot state — not on its surface, not a
+ *  mod bag's param_key, not transport (model + axis keys) — is dead
+ *  carry BY CONSTRUCTION: the form renders no widget for it and the
+ *  estate door refuses off-lane writes, so a saved doc never carries
+ *  fresh authoring there. Blank carried keys have nothing to drop; a
+ *  carrier with no lanes block (or a surface-less family) drops
+ *  nothing — never a guess. PURE — the caller owns the write: the
+ *  drill's open effect flushes the nulls through the ledger like a
+ *  pick's drop (a null deletes the bench key).
+ *  @param spec the doc's served form-spec.
+ *  @param held the SAVED doc the drill opened.
+ *  @returns the null-patch for the dead carried keys ({} when the
+ *    doc is already stateable on its resolved lane). */
+export declare function dropStaleReopenCarry(spec: FormSpecDoc, held: SpecValues | undefined): Record<string, null>;
 export declare function composeValidate(spec: FormSpecDoc | null, doc: SpecValues): ComposeViolation[];
 /** Compose the CANDIDATE doc the door would judge: the bench row's
  *  held params, the user layer's overrides, then the in-flight frame

@@ -8,7 +8,7 @@ import { CardDrill } from './card-drill.tsx'
 import { MediaDrilldown, type MediaDrilldownItem } from '@melite-plugin/dsh-gallery/drilldown'
 import type { StageViewOwnerProps } from './types.ts'
 import { coerceFieldEdit, fetchFormSpec, fieldsOf, resolveValue, seedUser, reseatEnvelopeKeys, CardForm, type FormSpecDoc, type SpecValues } from '@melite/card-base/client'
-import { axisUnset, axisGroups, axisKey, composeCandidateDoc, composeValidate, mergeSwitchFrame, modelSwitchPatch } from '@melite/card-base/client'
+import { axisUnset, axisGroups, axisKey, composeCandidateDoc, composeValidate, dropStaleReopenCarry, mergeSwitchFrame, modelSwitchPatch } from '@melite/card-base/client'
 import type { ComposeViolation } from '@melite/card-base/client'
 import { forgetStageWrites, reconcileStageWriteFailures, refuseForUnlandedWrite, scheduleStageParam } from './draft.ts'
 import { canonicalOutputUrl, trailDedupe } from '@melite/estate-drafts/trail'
@@ -532,6 +532,34 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
             bench.draftId, stage.id, held, seeded,
             new Set(fieldsOf(doc).map((f) => f.name)),
           )
+          // THE REOPEN CARRY DROP (the stale-carry reopen cure,
+          // 2026-10-21): the pick-time drop (dropStaleAxisCarry)
+          // never sees a SAVED doc — one that arrives already
+          // resolved to a lane its stated keys do not serve (an
+          // older door's write, an agent patch, an older save) rides
+          // ghosts the Run press refuses forever, and this lane
+          // renders no widget to unstamp them with. The open derive
+          // judges the doc's STATED keys against the RESOLVED
+          // surface: off-surface keys are dead carry BY CONSTRUCTION
+          // (no widget authors them, the estate door refuses
+          // off-lane writes), so ONE atomic null write heals the doc
+          // — silent (no face, no error: the heal is not user
+          // authorship), and the dropped keys join the seed-drop
+          // ledger so a Run pressed before the door answers still
+          // nulls them at its own flush.
+          const reopenDrop = dropStaleReopenCarry(doc, held)
+          for (const k of Object.keys(reopenDrop)) droppedRef.current.add(k)
+          if (Object.keys(reopenDrop).length > 0) {
+            void patchStageParams(bench.draftId, stage.id, reopenDrop, bench.rev).then(
+              undefined,
+              (e: unknown) => {
+                // a refused heal is never a silent swallow: the doc
+                // stays as-saved, Run's own refusal still names the
+                // fields, and the console row carries the reason.
+                if (alive) console.warn('[stage-drill] reopen carry drop refused:', e)
+              },
+            )
+          }
         }
         setLoaded(true)
         reportSurface(doc.size === 'huge' ? 'huge' : '')

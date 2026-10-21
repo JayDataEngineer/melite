@@ -2380,3 +2380,62 @@ describe("THE REGION-MASK PICKER (E2-11a — the mask node's artifact is offered
     }
   });
 });
+
+describe("the reopen carry drop (a saved doc resolved to a lane its stated keys do not serve, 2026-10-21)", () => {
+  // THE STALE-CARRY REOPEN CURE: dropStaleAxisCarry seats the lane
+  // drop at the PICK only — a SAVED doc arriving already resolved to
+  // a lane its stated keys do not serve rides ghosts the Run press
+  // refuses forever (the qwen burn's shape: persona + instruct
+  // riding a small-variant doc). The drill's open settle derives the
+  // same drop from the resolved surface and flushes ONE atomic null
+  // write through the bench door — the doc heals itself at open, no
+  // manual unstamp owed for keys this lane renders no widget for.
+  function lanesSpecDoc(): Record<string, unknown> {
+    return {
+      form: 'image-gen', genre: 'image', engine: 'comfyui', model: 'qwen3-tts',
+      schema: schemaEnvelope({
+        prompt: { type: 'string', meta: { description: 'Prompt', extra: { wtype: 'textarea' } } },
+        variant: { type: 'string', meta: { description: 'Variant override' } },
+      }),
+      variants: [
+        { id: 'big', label: 'Big', group: 'Variant', defaults: {}, route: 'big' },
+        { id: 'small', label: 'Small', group: 'Variant', defaults: {}, route: 'small' },
+      ],
+      lanes: {
+        base: ['prompt'],
+        variants: { big: { params: ['persona'] }, small: { params: [] } },
+      },
+    };
+  }
+
+  test("opening a stage carrying dead lane-carry flushes ONE null write and no face — the heal is silent and the doc stateable", async () => {
+    mountBench([stage({ model: "qwen3-tts", variant: "small", persona: "gritty host" })], undefined, lanesSpecDoc());
+    await openDrill();
+    await waitFor(() => {
+      const heals = patchCalls().filter((c) => {
+        const params = (c["patch"] as Record<string, unknown> | undefined)?.["params"] as Record<string, unknown> | undefined;
+        return params?.["persona"] === null;
+      });
+      if (heals.length !== 1) throw new Error("expected exactly one heal write, saw " + heals.length + " of " + patchCalls().length);
+    }, { timeout: 8000 });
+    // THE ATOMIC SHAPE: the heal carries ONLY the dead-carry nulls —
+    // never a partial or piggyback patch, never a second flush
+    const heal = patchCalls().find((c) => {
+      const params = (c["patch"] as Record<string, unknown> | undefined)?.["params"] as Record<string, unknown> | undefined;
+      return params?.["persona"] === null;
+    });
+    const keys = Object.keys((heal!["patch"] as Record<string, unknown>)["params"] as Record<string, unknown>);
+    expect(keys).toEqual(["persona"]);
+    // THE SILENT LAW: the heal is not user authorship — no write
+    // face, no error strip, the form opens clean
+    expect(writeFace()).toBeNull();
+    expect(errorStrip()).toBeNull();
+  });
+
+  test("a stateable saved doc opens with ZERO writes — the drop never invents nulls (the pass-along law stands)", async () => {
+    mountBench([stage({ model: "qwen3-tts", variant: "big", prompt: "a cube", persona: "host" })], undefined, lanesSpecDoc());
+    await openDrill();
+    await awaitWriteSettled();
+    expect(patchCalls().filter((c) => c.method === "drafts/patch")).toEqual([]);
+  });
+});

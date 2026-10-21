@@ -18,7 +18,7 @@
 //   keys on the sibling cell by the same token. GREEN on the cured
 //   tree; toggling the cure out re-reds them.
 import { describe, expect, test } from 'vitest'
-import { composeValidate, type FormSpecDoc, type SpecValues } from '../src/spec.ts'
+import { composeValidate, dropStaleReopenCarry, type FormSpecDoc, type SpecValues } from '../src/spec.ts'
 import type { LaneContractRow } from '@melite/contracts/laneRelations'
 
 /** A lanes-served spec shaped like the qwen3-tts burn: family base
@@ -103,5 +103,51 @@ describe('the compose mirror judges the resolved (variant × cell) surface, neve
     }
     const violations = composeValidate(spec, { model: 'laws-only', anything: 'rides' })
     expect(violations.filter((v) => v.message.includes('does not declare it'))).toEqual([])
+  })
+})
+
+describe('THE REOPEN CARRY DROP (the saved-doc heal, the stale-carry reopen cure, 2026-10-21)', () => {
+  // THE BURN: dropStaleAxisCarry seats the prev ∩ ¬next drop at the
+  // PICK only — a SAVED doc that arrives already resolved to a lane
+  // its stated keys do not serve (written by an older door, patched
+  // by the agent, or restored from an older save) rides ghosts the
+  // press gate refuses forever: the studio opens it, Run refuses
+  // "fires nothing on this lane", and the user never typed the key
+  // on THIS lane to unstamp. The reopen derives the same drop at
+  // doc open: every STATED key the resolved lane cannot state (not
+  // on its surface, not a mod bag's param_key, not transport) is
+  // dead carry by construction — the UI renders no widget for it,
+  // the estate door refuses off-lane writes, so a saved doc's
+  // off-surface stated keys are stale carry, never fresh authoring.
+  // PURE — the caller owns the write.
+  test('THE RED — a saved doc resolved to a lane its stated keys do not serve drops them (the qwen shape: persona + instruct riding the small variant)', () => {
+    const spec = lanesSpec()
+    const drop = dropStaleReopenCarry(spec, { model: 'synth', variant: 'small', persona: 'gritty host', instruct: 'excited' })
+    expect(drop).toEqual({ persona: null, instruct: null })
+  })
+
+  test('THE STATEABLE TRUTH — keys the resolved lane serves never drop (base keys at every coordinate, the variant/cell additions on their own lane)', () => {
+    const spec = lanesSpec()
+    expect(dropStaleReopenCarry(spec, { model: 'synth', variant: 'small', prompt: 'a cube', steps: 20 })).toEqual({})
+    expect(dropStaleReopenCarry(spec, { model: 'synth', variant: 'big', persona: 'host' })).toEqual({})
+    expect(dropStaleReopenCarry(spec, { model: 'synth', variant: 'big', quant: 'large', instruct: 'soft' })).toEqual({})
+  })
+
+  test('THE TRANSPORT + BLANK LAW — model and axis keys never drop, blank carried keys have nothing to drop, unstated quant inherits the variant surface', () => {
+    const spec = lanesSpec()
+    expect(dropStaleReopenCarry(spec, { model: 'synth', variant: 'big', quant: 'small', prompt: '' })).toEqual({})
+  })
+
+  test('THE MOD-BAG LAW — a mod system bag key (param_key) never drops however the lanes spell their surfaces', () => {
+    const spec: FormSpecDoc = {
+      ...lanesSpec(),
+      features: { modifiers: [{ param_key: 'qvoice', schema_key: 'qvoice', entry: 'bag', label: 'qvoice' }] },
+    }
+    expect(dropStaleReopenCarry(spec, { model: 'synth', variant: 'small', qvoice: { item: { voice_strength: 1 } } })).toEqual({})
+  })
+
+  test('THE NEVER-A-GUESS LAW — a carrier with NO lanes block drops nothing (the legacy truth has no surface to judge against)', () => {
+    const spec: FormSpecDoc = { model: 'legacy', label: null, form: 'form_legacy', params: ['prompt'], variants: [] }
+    expect(dropStaleReopenCarry(spec, { model: 'legacy', ghost: 1 })).toEqual({})
   })
 })
