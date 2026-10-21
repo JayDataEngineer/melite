@@ -15,11 +15,14 @@
 // the family-owned rows in packages/models/<family>/mods/loras.ts
 // composed server-side. NO second spelling, no remote fetch.
 import { laneContractOf as sharedLaneContractOf } from '@melite/contracts/laneRelations';
+import { engineRootOf, engineOutputDir, resolveRuntimeHome, runtimeEnvView } from '@melite/estate-queue';
 import { buildCatalog, CARD_KINDS, emitParamsSchema, enhanceRecipeFor, getModel, isServedFamily, liveObjectInfo, liveScanOrder, modelsBooted, owningAtom, registryModel, loadCardDefs, modelIds, resolveEngineBaseUrl, theService, emitModifierKinds, declaredDefaults, } from '@melite/comfyui-cordis';
 import { loraNamesFromObjectInfo } from '@melite/comfyui-cordis/user-loras';
 import { deriveVariants } from '@melite/comfyui-card-kit/facts';
 import { faceStamp } from "./faceStamp.js";
 import { stageViewDeclaration } from "./stageViewPlane.js";
+import { existsSync } from 'node:fs';
+import { join } from 'node:path';
 /** The boarded map (family -> the card that boards it, first-seen).
  *  Exported for the flow tool's bench pass (the card-id alias
  *  resolution rides the SAME table form-spec serves — one truth). */
@@ -330,6 +333,12 @@ export function specVariants(decl, key) {
                 quant: null,
                 vram_peak_gb: null,
                 owner: '',
+                // THE DUPED-VARIANT CURE (2026-10-21): the alias row carried
+                // the lane's label verbatim and the rail offered it beside the
+                // lane — two identical rows (the operator's dupe). The row
+                // stays served for the address law; `alias: true` marks it
+                // unpickable at the rail (rowsFor skips it).
+                alias: true,
             });
         }
     }
@@ -759,6 +768,53 @@ export function stampOptionsFrom(schema, svc, family, boardedPacks) {
  *  both build the same sentence from this function. Two literals is
  *  how they drifted apart in the first place. */
 export const unknownCardVoice = (card) => `form-spec: card '${card}' unknown`;
+/** THE RUNTIMES BLOCK'S ROWS (the anny burn's serving cure,
+ *  2026-10-21): every boarded family's DECLARED tool runtime serves
+ *  presence-marked — present (a valid env override or a walk-up hit)
+ *  or ABSENT with its provision command — so the face can mark the
+ *  consuming input and the operator never learns a missing runtime
+ *  at run press. The probe is the press gate's own (one spelling:
+ *  cardsLanes walks the same helpers). */
+function runtimeRowsOf(boarded) {
+    const rows = [];
+    for (const family of boarded) {
+        let decl = null;
+        try {
+            decl = getModel(family);
+        }
+        catch {
+            decl = null;
+        }
+        const rt = decl?.runtime;
+        if (rt === undefined)
+            continue;
+        const override = runtimeEnvView(rt.env);
+        let present = false;
+        if (override.value !== "") {
+            present = rt.sentinel.every((s) => {
+                try {
+                    return existsSync(join(override.value, s));
+                }
+                catch {
+                    return false;
+                }
+            });
+        }
+        else {
+            const root = engineRootOf();
+            present = root !== null && resolveRuntimeHome(engineOutputDir(root), rt) !== null;
+        }
+        rows.push({
+            family,
+            name: rt.name,
+            present,
+            command: rt.command,
+            env: rt.env,
+            consuming_param: rt.consuming_param,
+        });
+    }
+    return rows;
+}
 export function specBody(svc, defs, res, engineLoras) {
     // ONE VOICE FOR AN UNKNOWN CARD: the defs map is this function's
     // own input and its only caller builds res.card FROM it, so a miss
@@ -996,6 +1052,14 @@ export function specBody(svc, defs, res, engineLoras) {
         // modifier bag or a run-time surprise. null = unknown (engine
         // facts not loaded; the gate cannot see it either).
         packs: svc.packPresence(def.requiresByFamily?.[key] ?? def.requires ?? []),
+        // THE RUNTIMES BLOCK (the no-silent-drop law's runtime half, the
+        // anny burn 2026-10-21): every boarded family's DECLARED tool
+        // runtime serves presence-marked — present or ABSENT with its
+        // provision command — so the face can mark the consuming input
+        // and the operator never learns a missing runtime at run press
+        // (the packs' own law, finally given its runtime half). Absent
+        // from the doc when no boarded family declares one.
+        ...(runtimeRowsOf(def.boarded ?? []).length > 0 ? { runtimes: runtimeRowsOf(def.boarded ?? []) } : {}),
         // THE FAMILY FACE (operator, 2026-09-16 — supersedes the
         // stroke-19 ids-only law): every family row serves the DECL's
         // own label (registryModel — "MOSS-SFX v2"), version included;

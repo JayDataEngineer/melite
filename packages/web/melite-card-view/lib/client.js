@@ -518,7 +518,8 @@ window.__ModuleLoader__.load({
 			"rev": zod.z.number().readonly(),
 			"stage": zod.z.string().readonly(),
 			"patched": zod.z.array(zod.z.string()).readonly(),
-			"dropped": zod.z.union([zod.z.undefined(), zod.z.array(zod.z.string())]).readonly().optional().describe("THE FAMILY RESEAT'S RECEIPT (the ERROR g/h cure, 2026-11-08): the family-dead keys the settlement dropped off the merged view (the flip's own strand — the arrival flipped the derived family under carried stamps). Empty/absent when nothing dropped. The drop rides the row so it SPEAKS — never a silent strip.")
+			"dropped": zod.z.union([zod.z.undefined(), zod.z.array(zod.z.string())]).readonly().optional().describe("THE FAMILY RESEAT'S RECEIPT (the ERROR g/h cure, 2026-11-08): the family-dead keys the settlement dropped off the merged view (the flip's own strand — the arrival flipped the derived family under carried stamps). Empty/absent when nothing dropped. The drop rides the row so it SPEAKS — never a silent strip."),
+			"stale": zod.z.union([zod.z.undefined(), zod.z.literal(true)]).readonly().optional().describe("Present-and-true when the patch changed what the next run composes (the done mark cleared — the skip law cannot fold it). Absent when the patch was idempotent.")
 		});
 		let _melite_estate_drafts_bench_remove_stage_parameter_0$schema$value;
 		const _melite_estate_drafts_bench_remove_stage_parameter_0$schema = () => _melite_estate_drafts_bench_remove_stage_parameter_0$schema$value ??= zod.z.string();
@@ -1479,6 +1480,11 @@ window.__ModuleLoader__.load({
 									"type": "array",
 									"items": { "type": "string" },
 									"description": "THE FAMILY RESEAT'S RECEIPT (the ERROR g/h cure, 2026-11-08): the family-dead keys the settlement dropped off the merged view (the flip's own strand — the arrival flipped the derived family under carried stamps). Empty/absent when nothing dropped. The drop rides the row so it SPEAKS — never a silent strip."
+								},
+								"stale": {
+									"type": "boolean",
+									"const": true,
+									"description": "Present-and-true when the patch changed what the next run composes (the done mark cleared — the skip law cannot fold it). Absent when the patch was idempotent."
 								}
 							},
 							"required": [

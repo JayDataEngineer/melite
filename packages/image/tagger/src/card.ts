@@ -77,19 +77,19 @@ const schema = z.object({
   trailing_comma: z.boolean().description("Trailing comma").extra('extra', bag({ order: 5, group: "tagger", width: 1, tooltip: "Terminate the tag list with a comma (prompt-paste shape)." })),
   add_tag: z.string().description("Add tag").extra('extra', bag({ order: 6, group: "tagger", width: 1, tooltip: "JoyTag: tags force-prepended to the output (comma-separated). Ignored by WD14." })),
   remove_tag: z.string().description("Remove tag").extra('extra', bag({ order: 7, group: "tagger", width: 1, tooltip: "JoyTag: tags pruned from the output (comma-separated). Ignored by WD14." })),
-  caption_task: vocabulary([...TAGGER_CAPTION_TASKS]).description("Caption task").extra('extra', bag({ order: 8, group: "tagger", width: 1, tooltip: "Florence-2: the vision task (live task vocabulary). Ignored by WD14/JoyTag.", wtype: 'select' })),
-  caption_type: vocabulary([...TAGGER_CAPTION_TYPES]).description("Caption style").extra('extra', bag({ order: 9, group: "tagger", width: 1, tooltip: "JoyCaption: the caption template (live vocabulary). Ignored by WD14/JoyTag/Florence-2.", wtype: 'select' })),
+  caption_task: vocabulary([...TAGGER_CAPTION_TASKS]).default("more_detailed_caption").description("Caption task").extra('extra', bag({ order: 8, group: "tagger", width: 1, tooltip: "Florence-2: the vision task (live task vocabulary). Ignored by WD14/JoyTag.", wtype: 'select' })),
+  caption_type: vocabulary([...TAGGER_CAPTION_TYPES]).default("Descriptive").description("Caption style").extra('extra', bag({ order: 9, group: "tagger", width: 1, tooltip: "JoyCaption: the caption template (live vocabulary). Ignored by WD14/JoyTag/Florence-2.", wtype: 'select' })),
   // the FORM subset (the named six) of the kit's full set (which
   // also carries the node's 20-260 word counts, for bare/API
   // bodies) — a named subset, never a retyped copy that can
   // drift from the node's own vocabulary (the card-plane
   // audit's H2)
-  caption_length: vocabulary([...TAGGER_CAPTION_LENGTHS]).description("Caption length").extra('extra', bag({ order: 10, group: "tagger", width: 1, tooltip: "JoyCaption: target length (the named six; the node also takes word counts 20-260, which bare/API bodies may send). Ignored by other families.", wtype: 'select' })),
+  caption_length: vocabulary([...TAGGER_CAPTION_LENGTHS]).default("long").description("Caption length").extra('extra', bag({ order: 10, group: "tagger", width: 1, tooltip: "JoyCaption: target length (the named six; the node also takes word counts 20-260, which bare/API bodies may send). Ignored by other families.", wtype: 'select' })),
   // the FULL kit list: the card had retyped a 14-option subset and
   // one entry had ALREADY drifted into a truncated fork of the
   // upstream canned string, which rode verbatim into the node
   // (the card-plane audit's H2 — the one entry proved it)
-  extra_option: vocabulary([...TAGGER_EXTRA_OPTIONS]).description("Extra instruction").extra('extra', bag({ order: 11, group: "tagger", width: 1, tooltip: "JoyCaption: one appended instruction (the full 27-option list rides bare/API bodies; the engine's own vulgar-caption row is dropped at this surface — release hygiene). Ignored by other families.", wtype: 'select' })),
+  extra_option: vocabulary([...TAGGER_EXTRA_OPTIONS]).default("").description("Extra instruction").extra('extra', bag({ order: 11, group: "tagger", width: 1, tooltip: "JoyCaption: one appended instruction (the full 27-option list rides bare/API bodies; the engine's own vulgar-caption row is dropped at this surface — release hygiene). Ignored by other families.", wtype: 'select' })),
   // NO filename_prefix (card: "the run routes outputs by run id
   // (compose stamps `<run>/tags`) — a user knob here was silently
   // overwritten, a dead promise"). Old drafts naming it still parse

@@ -44,4 +44,5 @@ export declare const runsRegistryPlugin: {
     inject: readonly ["queue", "draftsRemote", "cardRegistry"];
     apply(ctx: Context): void;
 };
+export { engineRootOf, engineOutputDir, resolveRuntimeHome, runtimeEnvView, resolveRuntimeProvision, nodeRuntimeFs, sentinelHit } from "./runtimeProvision.js";
 //# sourceMappingURL=index.d.ts.map

@@ -252,6 +252,13 @@ export interface FormVariantRow {
     quant?: string | null;
     vram_peak_gb?: number | null;
     owner?: string;
+    /** THE HEAD ALIAS (the duped-variant cure, 2026-10-21): true on
+     *  the synthesized family-address row (`<lane>__head`, route = the
+     *  family id). The row exists so drafts naming the family address
+     *  resolve — it is an ADDRESS, never an OFFER: the rail never
+     *  renders it as a pickable lane (the door refuses its id against
+     *  the family matrix — a pickable alias is a trap row). */
+    alias?: boolean;
 }
 /** The served form-spec document — the card package's emission as the
  *  base consumes it. */

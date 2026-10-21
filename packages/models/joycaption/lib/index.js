@@ -6,10 +6,12 @@ export const DECL = {
     "description": "Stylized natural-language image captioning (JoyCaption beta-one, 8B VLM) — descriptive / SD-prompt / MJ / booru-list templates for recreating images in FLUX / Ideogram / image-edit.",
     "engine": "comfyui",
     "defaults": {
-        "checkpoint": "fancyfeast/llama-joycaption-beta-one-hf-llava",
-        "caption_type": "Descriptive",
-        "caption_length": "long",
-        "extra_option": ""
+        // THE ONE-FLOOR LAW (card-default-overlap, 2026-10-21): the
+        // caption_* face defaults live on the CARD schema alone — the
+        // overlay is absent-keys-only and the card declares these keys,
+        // so family rows here were dead floors the dual-floor wall
+        // refuses (the card's pins rest the face; same values).
+        "checkpoint": "fancyfeast/llama-joycaption-beta-one-hf-llava"
     },
     "genre": "image",
     // THE REQUIRED DEFAULTS (operator contract 2026-11-07): the

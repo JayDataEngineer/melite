@@ -18,8 +18,12 @@ export const DECL: ModelDecl = {
   "description": "Natural-language image captioning (Florence-2 large, PromptGen-tuned) — dense descriptive prompts for recreating images in FLUX / Ideogram / image-edit.",
   "engine": "comfyui",
   "defaults": {
-    "checkpoint": "MiaoshouAI/Florence-2-large-PromptGen-v2.0",
-    "caption_task": "more_detailed_caption"
+    // THE ONE-FLOOR LAW (card-default-overlap, 2026-10-21): the
+    // caption_* face defaults live on the CARD schema alone — the
+    // overlay is absent-keys-only and the card declares these keys,
+    // so a family row here was a dead floor the dual-floor wall
+    // refuses (the card's pin rests the face; same value).
+    "checkpoint": "MiaoshouAI/Florence-2-large-PromptGen-v2.0"
   },
   "genre": "image",
   // THE REQUIRED DEFAULTS (operator contract 2026-11-07): the

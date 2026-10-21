@@ -132,7 +132,27 @@ import {
 /** THE MOD-OWNED NAMES (the SubcardGrid law, enforced): every name a
  *  served modifier kind owns — its fields' names plus its param_key
  *  (the bag storage). CardForm EXCLUDES these from the flat param
- *  groups: mod params render ONLY inside the mod system. PURE. */
+ *  groups: mod params render ONLY inside the mod system. PURE.
+ *
+ *  THE SSOT DISEMBIGUATION (the voice_name brick, 2026-10-21): a
+ *  name the card's own schema declares as a root leaf is a MAIN-FACE
+ *  field — a pack envelope naming the same knob never steals its
+ *  seat. The tts burn: the qvoice_save pack restates voice_name, the
+ *  exclusion hid the card's widget leaf from the whole main face,
+ *  and the lane's required-together pair could never be stated —
+ *  every half-pair write refused and the studio bricked. One knob,
+ *  one owner: the owner is the card's own serialized schema.
+ *
+ *  THE HIDDEN CARRIER ARM (the input_mask regression, caught by
+ *  real-contract + modifiers suites the same day): a main leaf
+ *  declaring extra.hidden is VALIDATION-ONLY — it never renders on
+ *  the main face (fieldsOfEnvelope's hidden arm skips it), so
+ *  releasing its name to the main face would orphan the visible
+ *  knob entirely. image-edit's input_mask: a hidden flow-gate
+ *  carrier on the card, the VISIBLE Region Mask row on the mask
+ *  pack (the operator's one-list merge, 2026-10-10). A hidden main
+ *  leaf keeps its pack ownership; only a SERVED main leaf claims
+ *  the name. */
 export function modOwnedFields(spec: FormSpecDoc): Set<string> {
   const owned = new Set<string>()
   for (const k of spec.features?.modifiers ?? []) owned.add(k.param_key)
@@ -140,6 +160,17 @@ export function modOwnedFields(spec: FormSpecDoc): Set<string> {
     if (env == null) continue
     const root = env.refs[env.uid]
     for (const name of Object.keys(root?.dict ?? {})) owned.add(name)
+  }
+  const main = spec.schema
+  if (main != null) {
+    const mainRoot = main.refs[main.uid]
+    const dict = mainRoot?.dict ?? {}
+    for (const name of Object.keys(dict)) {
+      const ref = main.refs[dict[name] as string]
+      if (ref === undefined) continue
+      if (extraOf(ref).hidden === true) continue
+      owned.delete(name)
+    }
   }
   return owned
 }
@@ -932,9 +963,15 @@ export function variantGroupsContract(spec: FormSpecDoc): string[] {
   return Object.keys(vg as Record<string, unknown>)
 }
 
-/** One axis' rows (served order). */
+/** One axis' rows (served order). AN ALIAS IS AN ADDRESS, NEVER AN
+ *  OFFER (the duped-variant cure, 2026-10-21): the synthesized
+ *  family-address row (`<lane>__head`) rides spec.variants so drafts
+ *  naming the family address resolve, but no pick, ground, or chain
+ *  may seat it — the door refuses its id against the family matrix,
+ *  so an offered alias is a trap row. Direct spec.variants reads
+ *  (address resolution, walls) still see it. */
 export function rowsFor(spec: FormSpecDoc, group: string): FormVariantRow[] {
-  return (spec.variants ?? []).filter((v) => v.group === group)
+  return (spec.variants ?? []).filter((v) => v.group === group && v.alias !== true)
 }
 
 /** THE CHAIN (one direction: an axis filters the axes BELOW it): a

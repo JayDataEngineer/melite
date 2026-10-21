@@ -323,7 +323,7 @@ export const paramSchema = z.object({
     // change a run that never sets them). VISIBILITY rides the
     // declaration's own visible_when grammar (&-ANDed guards, |-SET
     // values) — no hand-rolled predicates anywhere.
-    sharpen_method: vocabulary(["rcas", "adaptive_usm", "high_pass", "deconvolution"]).description("Sharpen Method").extra('extra', bag({ order: null, group: 'second_pass', visible_when: "second_pass_enabled=true&sharpen_enabled=true", wtype: 'select' })),
+    sharpen_method: vocabulary(["rcas", "adaptive_usm", "high_pass", "deconvolution"]).default("rcas").description("Sharpen Method").extra('extra', bag({ order: null, group: 'second_pass', visible_when: "second_pass_enabled=true&sharpen_enabled=true", wtype: 'select' })),
     sharpen_radius: z.number().description("Sharpen Radius").min(0.5).max(5).step(0.5).extra('extra', bag({ order: null, group: 'second_pass', visible_when: "second_pass_enabled=true&sharpen_enabled=true&sharpen_method=adaptive_usm|high_pass|deconvolution", wtype: 'number', tooltip: "adaptive_usm / high_pass / deconvolution only." })),
     sharpen_threshold: z.number().description("Sharpen Noise Gate").min(0).max(1).step(0.05).extra('extra', bag({ order: null, group: 'second_pass', visible_when: "second_pass_enabled=true&sharpen_enabled=true&sharpen_method=adaptive_usm", wtype: 'number', tooltip: "adaptive_usm only." })),
     sharpen_iterations: z.number().description("Sharpen Iterations").min(1).max(100).step(1).extra('extra', bag({ order: null, group: 'second_pass', visible_when: "second_pass_enabled=true&sharpen_enabled=true&sharpen_method=deconvolution", wtype: 'number', tooltip: "deconvolution only." })),

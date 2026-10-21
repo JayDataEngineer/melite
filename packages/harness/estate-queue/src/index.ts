@@ -89,3 +89,10 @@ export const runsRegistryPlugin = {
     new RunsRuntimeService(ctx);
   },
 };
+
+// THE RUNTIME PRESENCE PROBE (the anny burn's serving cure,
+// 2026-10-21): the pure filesystem/config helpers the form-spec
+// doc's runtimes block rides — one probe, every consumer (the
+// press gate in cardsLanes and the doc's presence rows in
+// melite-tools' discovery), never a second spelling.
+export { engineRootOf, engineOutputDir, resolveRuntimeHome, runtimeEnvView, resolveRuntimeProvision, nodeRuntimeFs, sentinelHit } from "./runtimeProvision.ts";

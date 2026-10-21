@@ -148,9 +148,14 @@ test('max_stack refuses a second tile LOUD (the mask cap law)', async () => {
 /** The qwen wire shape (the parameter audit): BOTH kind shapes —
  *  lora (option kind: served rows + strength) and mask (FIELD kind:
  *  its param rows derive from mod_schemas, entry IS the params
- *  object). input_mask ALSO sits on the card schema — a legacy-
- *  shaped emission — to pin the hide filter; the law: mod-owned
- *  names NEVER render flat. */
+ *  object). input_mask ALSO sits on the card schema as a SERVED
+ *  leaf — pinning the SSOT disambiguation (the voice_name cure,
+ *  2026-10-21): a served main leaf CLAIMS its name back from the
+ *  pack (one knob, one owner — a pack envelope restating a served
+ *  main knob never steals its seat, the brick that hid tts's
+ *  voice_name widget from the whole face); a HIDDEN main leaf
+ *  (validation-only carrier — image-edit's REAL input_mask shape)
+ *  keeps its pack ownership (HIDDEN_CARRIER_SPEC below). */
 const QWEN_MOD_SPEC = {
   form: 'image-edit',
   model: 'qwen-img-edit-2511',
@@ -177,12 +182,30 @@ const QWEN_MOD_SPEC = {
   },
 } as never as import('@melite/card-base/client').FormSpecDoc
 
-test('THE LAW: mod-owned fields NEVER render flat on the card form — the section owns them', async () => {
+/** The hidden-carrier shape — image-edit's REAL input_mask: a
+ *  validation-only main leaf (extra.hidden) never claims the name;
+ *  the pack's visible row stays pack-owned. */
+const HIDDEN_CARRIER_SPEC = {
+  ...QWEN_MOD_SPEC,
+  schema: schemaEnvelope({
+    image1: { type: 'string', meta: { description: 'Image 1', extra: { wtype: 'image', required: true, group: 'input' } } },
+    input_mask: { type: 'string', meta: { description: 'Region Mask', extra: { wtype: 'image', hidden: true } } },
+    prompt: { type: 'string', meta: { description: 'Prompt', extra: { wtype: 'textarea', group: 'prompt' } } },
+  }),
+} as never as import('@melite/card-base/client').FormSpecDoc
+
+test('THE LAW (SSOT disambiguation): a SERVED main leaf claims its name from the pack; a hidden carrier keeps pack ownership', async () => {
   const { CardForm, modOwnedFields } = await import('@melite/card-base/client')
-  // the pure projection: the mask kind owns its three names + both bags
+  // the served main input_mask CLAIMS the name: the pack keeps its
+  // other two rows + both bags, but input_mask is main-owned
   const owned = modOwnedFields(QWEN_MOD_SPEC)
-  expect([...owned].sort()).toEqual(['input_mask', 'loras', 'mask', 'mask_feather', 'mask_mode'])
-  // the rendered form: NO Region Mode / Region Mask / Feather flat
+  expect([...owned].sort()).toEqual(['loras', 'mask', 'mask_feather', 'mask_mode'])
+  // the hidden carrier NEVER claims: the pack owns all three rows
+  const carrierOwned = modOwnedFields(HIDDEN_CARRIER_SPEC)
+  expect([...carrierOwned].sort()).toEqual(['input_mask', 'loras', 'mask', 'mask_feather', 'mask_mode'])
+  // the rendered form (served leaf): Region Mode / Feather stay in
+  // the section; the main-owned Region Mask renders flat as the
+  // card's own knob
   const values: SpecValues = {}
   render(createElement(CardForm, {
     spec: QWEN_MOD_SPEC,
@@ -192,8 +215,6 @@ test('THE LAW: mod-owned fields NEVER render flat on the card form — the secti
   }))
   expect(screen.queryByLabelText('Region Mode')).toBeNull()
   expect(screen.queryByLabelText('Feather')).toBeNull()
-  expect(screen.queryByLabelText('Region Mask')).toBeNull()
-  expect(screen.queryByRole('button', { name: 'Region Mask source' })).toBeNull()
   // but the card's OWN fields render + the section rides under them
   // (the prompt group seats behind its submenu tab — stroke 89)
   fireEvent.click(screen.getByRole('tab', { name: 'Prompt' }))

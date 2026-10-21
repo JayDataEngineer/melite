@@ -39,9 +39,7 @@
 import "../../../helpers/boot-models.ts";
 import { describe, it } from "vitest";
 import assert from "node:assert/strict";
-import { existsSync } from "node:fs";
-import { join, resolve } from "node:path";
-import { dirname } from "node:path";
+import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { loadCardDefs } from "@melite/comfyui-cordis";
 import { getModel } from "../../../../packages/engines/comfyui-cordis/src/models/models.ts";
@@ -162,6 +160,14 @@ describe("a served select carries a member default (no blank face)", () => {
       // precedent).
       const memberValues = (opts: Array<string | { value: string; label: string }>): string[] =>
         opts.map((o) => (typeof o === "string" ? o : o.value));
+      // THE DISPLAY CHAIN (resolveValue's own order): the resting
+      // value the face shows is the schema default, else the served
+      // model_default — the same fallback the form resolves. A blank
+      // the OPERATOR sees is a field NEITHER layer rests on a member
+      // (the null-dropped model_default is the CustomVoice voice
+      // burn: the family declares voice:null, the null never serves,
+      // the picker rests on nothing).
+      const modelDefaults = (spec.model_defaults ?? {}) as Record<string, unknown>;
       for (const f of fieldsOfEnvelope(spec.schema) as SpecField[]) {
         if ((f.options ?? []).length === 0) continue;
         if (owned.has(f.name)) continue;
@@ -169,18 +175,20 @@ describe("a served select carries a member default (no blank face)", () => {
           (v) => typeof v.id === "string" && fieldOnLane(spec, f.name, { variant: v.id } as never),
         );
         if (!servedOnSomeLane) continue;
-        const def2 = (f as unknown as { default?: unknown }).default;
+        const schemaDef = (f as unknown as { default?: unknown }).default;
+        const modelDef = modelDefaults[f.name];
+        const def2 = schemaDef !== undefined && schemaDef !== null ? schemaDef : modelDef;
         const values = memberValues(f.options ?? []);
         if (def2 === undefined || def2 === null || def2 === "") {
           if (def2 === "" && values.includes("")) continue;
           burns.push(
-            `field '${f.name}' serves options ${JSON.stringify(f.options)} with default ${JSON.stringify(def2)} — the fresh face renders a blank no legal state produces; the default must be a member of the served options`,
+            `field '${f.name}' serves options ${JSON.stringify(f.options)} with no resting default (schema ${JSON.stringify(schemaDef)}, model_default ${JSON.stringify(modelDef)}) — the fresh face renders a blank no legal state produces; the default must be a member of the served options`,
           );
           continue;
         }
         assert.ok(
           values.includes(String(def2)),
-          `field '${f.name}' default '${String(def2)}' is not a member of its own options`,
+          `field '${f.name}' resting default '${String(def2)}' is not a member of its own options`,
         );
       }
       assert.deepEqual(burns, [], `blank select defaults:\n${burns.join("\n")}`);
@@ -193,23 +201,29 @@ describe("a declared runtime is provisioned or serves marked (no run-time surpri
     it(`card '${cardId}' marks every declared runtime`, async () => {
       const doc = await formSpecArm(cardId);
       assert.ok(doc !== null, `form-spec: card '${cardId}' served no doc`);
-      const spec = doc as unknown as FormSpecDoc & { runtime?: unknown };
+      const spec = doc as unknown as FormSpecDoc & { runtimes?: Array<Record<string, unknown>> };
       const families = FAMILIES_BY_CARD.get(cardId) ?? [];
       const burns: string[] = [];
       for (const family of families) {
         const decl = getModel(family) as unknown as FamilyDeclShape | null;
         if (decl === null || decl.runtime === undefined) continue;
         const rt = decl.runtime;
-        const engineRoot = process.env["MELITE_ENGINE_ROOT"] ?? "/home/user/tools/comfyui";
-        const target = join(engineRoot, ...rt.rel);
-        const present = rt.sentinel.every((s) => existsSync(join(target, s)));
-        if (!present && spec.runtime === undefined) {
+        const row = (spec.runtimes ?? []).find((r) => r["family"] === family);
+        if (row === undefined) {
           burns.push(
-            `family '${family}' declares runtime '${rt.name}' (sentinel ${rt.sentinel.join(", ")}) — ABSENT at ${target} and the served doc carries NO runtime presence block: the operator learns it at run press ('${rt.command}' never prompted), the no-silent-drop law packs already ride`,
+            `family '${family}' declares runtime '${rt.name}' but the served doc carries NO runtimes row for it — the face cannot mark the consuming input '${rt.consuming_param}' and the operator learns the absence at run press`,
+          );
+          continue;
+        }
+        if (row["present"] !== true) {
+          assert.equal(
+            typeof row["command"],
+            "string",
+            `family '${family}' runtime '${rt.name}' row serves present=false with no provision command`,
           );
         }
       }
-      assert.deepEqual(burns, [], `unmarked absent runtimes:\n${burns.join("\n")}`);
+      assert.deepEqual(burns, [], `unserved declared runtimes:\n${burns.join("\n")}`);
     });
   }
 });

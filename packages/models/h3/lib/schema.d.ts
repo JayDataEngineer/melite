@@ -63,7 +63,7 @@ export declare const paramSchema: z<Schemastery.ObjectS<NoInfer<{
     sla_protect_audio: z<boolean, boolean, "defined">;
     sla_stabilize_motion: z<boolean, boolean, "plain">;
     sla_disable_fp16_accum: z<boolean, boolean, "defined">;
-    sharpen_method: z<string, string, "plain">;
+    sharpen_method: z<string, string, "defined">;
     sharpen_radius: z<number, number, "plain">;
     sharpen_threshold: z<number, number, "plain">;
     sharpen_iterations: z<number, number, "plain">;
@@ -132,7 +132,7 @@ export declare const paramSchema: z<Schemastery.ObjectS<NoInfer<{
     sla_protect_audio: z<boolean, boolean, "defined">;
     sla_stabilize_motion: z<boolean, boolean, "plain">;
     sla_disable_fp16_accum: z<boolean, boolean, "defined">;
-    sharpen_method: z<string, string, "plain">;
+    sharpen_method: z<string, string, "defined">;
     sharpen_radius: z<number, number, "plain">;
     sharpen_threshold: z<number, number, "plain">;
     sharpen_iterations: z<number, number, "plain">;
@@ -213,7 +213,7 @@ export declare const carrier: z<Schemastery.ObjectS<NoInfer<{
     sla_protect_audio: z<boolean, boolean, "defined">;
     sla_stabilize_motion: z<boolean, boolean, "plain">;
     sla_disable_fp16_accum: z<boolean, boolean, "defined">;
-    sharpen_method: z<string, string, "plain">;
+    sharpen_method: z<string, string, "defined">;
     sharpen_radius: z<number, number, "plain">;
     sharpen_threshold: z<number, number, "plain">;
     sharpen_iterations: z<number, number, "plain">;
@@ -282,7 +282,7 @@ export declare const carrier: z<Schemastery.ObjectS<NoInfer<{
     sla_protect_audio: z<boolean, boolean, "defined">;
     sla_stabilize_motion: z<boolean, boolean, "plain">;
     sla_disable_fp16_accum: z<boolean, boolean, "defined">;
-    sharpen_method: z<string, string, "plain">;
+    sharpen_method: z<string, string, "defined">;
     sharpen_radius: z<number, number, "plain">;
     sharpen_threshold: z<number, number, "plain">;
     sharpen_iterations: z<number, number, "plain">;

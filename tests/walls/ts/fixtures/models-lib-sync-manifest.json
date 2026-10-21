@@ -26,8 +26,8 @@
       "libHash": "7c1b8bd78205a3adc10757c779ac3a7ed39344fcd76ce4f00ab2c715408a16d0"
     },
     "florence2": {
-      "srcHash": "9cdc6ab14c9f4393fc9d957be2600802ca229569da8a374f7c8aa7bfcce520ff",
-      "libHash": "15ffd9206a3291a615be2cf5c7cbc3b2be8fe2d594bf2b3f0ab28728dbff270c"
+      "srcHash": "d531cd0cfd440957d8def707fbc1567c67bd65a890ee49cff4152051051afceb",
+      "libHash": "acf49fad264bf0668851de2f4840e00c8d8619533c4cd9a41ccfc1a80eb1b16b"
     },
     "flux-klein": {
       "srcHash": "80e7e21327c29e22dd6a582a01cb879aa939202496ad0ee1a037aebe7218dae2",
@@ -38,16 +38,16 @@
       "libHash": "00bfa878335330ad211f4d2babd13fa58785b612a32a81d62d43ea7d742371c9"
     },
     "h3": {
-      "srcHash": "65005c791fd7d8894be2b21347c65025d05d070de3a1be99a820aaf7161111c1",
-      "libHash": "d1e9f01cae3b580aa001270ef4a160496b76e0af150b6382a2731b214e178ef5"
+      "srcHash": "9ca5f16c56fd9e95779123a84821a0fcf198556659e6da2aa2817aa36f91ac16",
+      "libHash": "4e545cdc410acd84c58195a0bb98bbefc624fdf120fb197e8d224bd211a33e4f"
     },
     "input": {
       "srcHash": "b85d1b6d6320a675cf1c394529af56e05ba89dea4474d60185218b73680e0447",
       "libHash": "a6314137bba32a50dcb1240b31286dc9278db3e2c811c83b7b6eb227720d0a28"
     },
     "joycaption": {
-      "srcHash": "132c5b7becce7ad68b525df6ef562afbdf699b93b70769b3dbd6cdae8547acdb",
-      "libHash": "28fb5e2ab839b19dc5d0792126e6a98496c1f6ad45601870fde6c55ddf5336ec"
+      "srcHash": "e82a84703c0c5f1a632ae1eaf47de8b5fc99c6f2d05c81796f6dc6091b2ae62e",
+      "libHash": "497c97c177fcbe87577c704974a24604925aa82351bfae901f042f47242dfe4f"
     },
     "joytag": {
       "srcHash": "71f8a03f5f5bb7a3c8e6bafdac3b5160254c17f05b45efced98d673fd6d5627a",
