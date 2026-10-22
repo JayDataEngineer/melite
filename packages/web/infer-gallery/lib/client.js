@@ -2810,6 +2810,7 @@ window.__ModuleLoader__.load({
 			const [deleteArmed, setDeleteArmed] = (0, react.useState)(false);
 			const [deleting, setDeleting] = (0, react.useState)(false);
 			const deletingRef = (0, react.useRef)(false);
+			const draftInflight = (0, react.useRef)(/* @__PURE__ */ new Set());
 			const [deleteNote, setDeleteNote] = (0, react.useState)("");
 			const [page, setPage] = (0, react.useState)(0);
 			(0, react.useEffect)(() => {
@@ -2907,15 +2908,22 @@ window.__ModuleLoader__.load({
 			*  wand voices its restore but the draft click went silent — a slow
 			*  load read as a dead button. The row names the in-flight restore
 			*  until the chain settles every exit (the guarded clear keeps a
-			*  second gesture's voice when two clicks overlap). */
+			*  second gesture's voice when two clicks overlap).
+			*  THE OVERLAP DEDUPE (journey audit 2026-10-22): the guarded clear
+			*  compares ids, so it cannot hold a SAME-row overlap — two ensures
+			*  would race one expect_rev and the loser would 409 over a restore
+			*  that landed. A second click on an in-flight draft is ignored
+			*  (the ref above); a different row still loads alongside. */
 			const openDraft = (draftId) => {
 				if (draftId === "") return;
+				if (draftInflight.current.has(draftId)) return;
 				setUiError("");
 				const open = tabInfo?.tab.actions.openResource;
 				if (open === void 0) {
 					setError("Melite Bench view unavailable — the sidebar tab service is not loaded.");
 					return;
 				}
+				draftInflight.current.add(draftId);
 				setRestoringId(draftId);
 				loadDraftOntoBench(draftId, {
 					openResource: open,
@@ -2924,6 +2932,7 @@ window.__ModuleLoader__.load({
 				}).catch((e) => {
 					setError("bench load failed — " + (e instanceof Error ? e.message : String(e)));
 				}).finally(() => {
+					draftInflight.current.delete(draftId);
 					setRestoringId((cur) => cur === draftId ? "" : cur);
 				});
 			};
@@ -3161,7 +3170,7 @@ window.__ModuleLoader__.load({
 						},
 						children: [chip("all", galleryCopy.chipAll), KIND_ORDER.map((k) => chip(k, KIND_LABEL[k]))]
 					}),
-					tab === "flows" ? drafts.length === 0 ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Empty, { children: galleryCopy.emptyDrafts }) : /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+					tab === "flows" ? /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [uiError !== "" ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)(ErrorBanner, { children: galleryCopy.openFailed({ error: uiError }) }) : null, drafts.length === 0 ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Empty, { children: galleryCopy.emptyDrafts }) : /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
 						"data-infer-media-drafts": "1",
 						style: {
 							display: "flex",
@@ -3253,7 +3262,7 @@ window.__ModuleLoader__.load({
 								}) : null
 							]
 						}, d.draft_id ?? Math.random()))
-					}) : /* @__PURE__ */ (0, react_jsx_runtime.jsx)(FeedErrors, { errors: gatewayErrors }),
+					})] }) : /* @__PURE__ */ (0, react_jsx_runtime.jsx)(FeedErrors, { errors: gatewayErrors }),
 					tab === "artifacts" && deleteNote !== "" ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)(ErrorBanner, { children: deleteNote }) : null,
 					tab === "artifacts" && uiError !== "" ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)(ErrorBanner, { children: galleryCopy.openFailed({ error: uiError }) }) : null,
 					tab === "artifacts" && (feedError !== "" ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)(ErrorBanner, { children: galleryCopy.feedFailed({ error: feedError }) }) : loading && items.length === 0 ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Empty, { children: galleryCopy.loadingRuns }) : shown.length === 0 ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Empty, { children: galleryCopy.noArtifacts }) : /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {

@@ -503,6 +503,72 @@ describe('MediaPanel — the flows face + the bench CAS load', () => {
     fireEvent.click(screen.getByText(/Artifacts/))
     expect(await screen.findByText(/Melite Bench view unavailable/)).toBeTruthy()
   })
+
+  it('a failed draft restore banners ON the flows face (never silence where the gesture happened)', async () => {
+    // THE FLOWS-FACE SILENCE (journey audit 2026-10-22): the action
+    // error banner rendered only under tab === 'artifacts', so a
+    // draft restore that refused (404 draft, 409 ensure, dead tab
+    // service) showed nothing on the face where the click happened —
+    // the restoring… voice cleared and left silence. The banner must
+    // ride the flows face too.
+    const opened: string[] = []
+    vi.stubGlobal('fetch', (url: string) => {
+      const u = String(url)
+      if (u === '/infer-gallery/runs') return runsFeed([])
+      if (u === '/infer-gallery/drafts') return draftsFeed([{ draft_id: 'd1', name: 'card one', model: 'qwen' }])
+      if (u === '/v1/flows/drafts/d1') return Promise.resolve(new Response(JSON.stringify({ error: 'unknown draft' }), { status: 404 }))
+      if (u === '/v1/bench/main') return Promise.resolve(new Response(JSON.stringify({ draft_id: 'bench-main', rev: 3 }), { status: 200 }))
+      return Promise.resolve(new Response('{}', { status: 200 }))
+    })
+    render(<MediaPanel useTabInfo={() => ({
+      tab: { navigation: { address: 'dsh-resource://media' },
+        actions: { openResource: (a: string) => { opened.push(a) } } },
+    }) as never} />)
+    fireEvent.click(await screen.findByText(/Flows 1/))
+    fireEvent.click(await waitFor(() => screen.getByText('card one').closest('button') as HTMLElement))
+    // NO tab switch: the banner surfaces where the click happened.
+    expect(await screen.findByText(/open failed: could not read that card \(unknown draft\)/)).toBeTruthy()
+    expect(opened).toEqual([])
+    // the in-flight voice settled with the failure (no stuck restoring…).
+    expect(screen.queryByText('restoring…')).toBeNull()
+  })
+
+  it('a same-row double-click loads once (the guarded clear holds for overlaps)', async () => {
+    // THE DOUBLE-CLICK OVERLAP (journey audit 2026-10-22): the
+    // restoringId guarded clear compares ids, so a second click on
+    // the SAME row while the first load is in flight is not deduped —
+    // two ensures race with one expect_rev and the loser voices a
+    // 409 over a restore that actually landed. The in-flight draft
+    // owns its gesture until it settles; the overlap is ignored.
+    const opened: string[] = []
+    let ensures = 0
+    let release!: () => void
+    const gate = new Promise<Response>((resolve) => {
+      release = () => { resolve(new Response(JSON.stringify({ ok: true }), { status: 200 })) }
+    })
+    vi.stubGlobal('fetch', (url: string) => {
+      const u = String(url)
+      if (u === '/infer-gallery/runs') return runsFeed([])
+      if (u === '/infer-gallery/drafts') return draftsFeed([{ draft_id: 'd1', name: 'card one', model: 'qwen' }])
+      if (u === '/v1/flows/drafts/d1') return Promise.resolve(new Response(JSON.stringify(draftDoc), { status: 200 }))
+      if (u === '/v1/bench/main') return Promise.resolve(new Response(JSON.stringify({ draft_id: 'bench-main', rev: 3 }), { status: 200 }))
+      if (u === '/v1/bench/ensure') { ensures += 1; return gate }
+      return Promise.resolve(new Response('{}', { status: 200 }))
+    })
+    render(<MediaPanel useTabInfo={() => ({
+      tab: { navigation: { address: 'dsh-resource://media' },
+        actions: { openResource: (a: string) => { opened.push(a) } } },
+    }) as never} />)
+    fireEvent.click(await screen.findByText(/Flows 1/))
+    const row = await waitFor(() => screen.getByText('card one').closest('button') as HTMLElement)
+    fireEvent.click(row)
+    fireEvent.click(row)
+    await waitFor(() => { expect(screen.getByText('restoring…')).toBeTruthy() })
+    release()
+    await waitFor(() => { expect(screen.queryByText('restoring…')).toBeNull() })
+    expect(ensures).toBe(1)
+    expect(opened).toEqual(['dsh-resource://cards/bench/main'])
+  })
 })
 
 describe('MediaPanel — the wand restores the run onto the bench', () => {

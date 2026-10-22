@@ -465,6 +465,11 @@ export function MediaPanel({ useTabInfo, sessionId }: { useTabInfo?: () => TabIn
    * to stop a second click in the same tick (the stale-closure double
    * fire — audit 311bccca). */
   const deletingRef = useRef(false)
+  /* The synchronous half of the restore-overlap guard: state
+   *  re-renders too late to stop a second click in the same tick
+   *  (the deletingRef law above) — the in-flight draft ids live in
+   *  a ref so a same-row double-click is deduped synchronously. */
+  const draftInflight = useRef<Set<string>>(new Set())
   /* The mass-delete tally rides its OWN banner — not the feed-error
    * face (that banner's copy names a dead feed; a delete tally is an
    * action outcome and must not read as one). */
@@ -582,15 +587,22 @@ export function MediaPanel({ useTabInfo, sessionId }: { useTabInfo?: () => TabIn
    *  wand voices its restore but the draft click went silent — a slow
    *  load read as a dead button. The row names the in-flight restore
    *  until the chain settles every exit (the guarded clear keeps a
-   *  second gesture's voice when two clicks overlap). */
+   *  second gesture's voice when two clicks overlap).
+   *  THE OVERLAP DEDUPE (journey audit 2026-10-22): the guarded clear
+   *  compares ids, so it cannot hold a SAME-row overlap — two ensures
+   *  would race one expect_rev and the loser would 409 over a restore
+   *  that landed. A second click on an in-flight draft is ignored
+   *  (the ref above); a different row still loads alongside. */
   const openDraft = (draftId: string): void => {
     if (draftId === '') return
+    if (draftInflight.current.has(draftId)) return
     setUiError('')
     const open = tabInfo?.tab.actions.openResource
     if (open === undefined) {
       setError('Melite Bench view unavailable — the sidebar tab service is not loaded.')
       return
     }
+    draftInflight.current.add(draftId)
     setRestoringId(draftId)
     void loadDraftOntoBench(draftId, { openResource: open, onError: setError, sessionId })
       // the silent-wand law's draft face: the load's own catch
@@ -601,6 +613,7 @@ export function MediaPanel({ useTabInfo, sessionId }: { useTabInfo?: () => TabIn
         setError('bench load failed — ' + (e instanceof Error ? e.message : String(e)))
       })
       .finally(() => {
+        draftInflight.current.delete(draftId)
         setRestoringId((cur) => cur === draftId ? '' : cur)
       })
   }
@@ -815,9 +828,13 @@ export function MediaPanel({ useTabInfo, sessionId }: { useTabInfo?: () => TabIn
       </div>
 
       {tab === 'flows'
-        ? (drafts.length === 0
-            ? <Empty>{galleryCopy.emptyDrafts}</Empty>
-            : <div data-infer-media-drafts="1" style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+        ? (<>
+            {uiError !== ''
+              ? <ErrorBanner>{galleryCopy.openFailed({ error: uiError })}</ErrorBanner>
+              : null}
+            {drafts.length === 0
+              ? <Empty>{galleryCopy.emptyDrafts}</Empty>
+              : <div data-infer-media-drafts="1" style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                 {drafts.map((d) => (
                   <button
                     key={d.draft_id ?? Math.random()}
@@ -851,7 +868,8 @@ export function MediaPanel({ useTabInfo, sessionId }: { useTabInfo?: () => TabIn
                       : null}
                   </button>
                 ))}
-              </div>)
+              </div>}
+          </>)
         : <FeedErrors errors={gatewayErrors} />}
       {tab === 'artifacts' && deleteNote !== ''
         ? <ErrorBanner>{deleteNote}</ErrorBanner>
