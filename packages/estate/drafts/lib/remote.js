@@ -423,15 +423,18 @@ let DraftsRemoteService = (() => {
     let _instanceExtraInitializers = [];
     let _remoteExportList_decorators;
     let _remoteExportGet_decorators;
+    let _remoteExportDelete_decorators;
     let _remoteExportPatch_decorators;
     return class DraftsRemoteService extends _classSuper {
         static {
             const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
             _remoteExportList_decorators = [Remote("list")];
             _remoteExportGet_decorators = [Remote("get")];
+            _remoteExportDelete_decorators = [Remote("delete")];
             _remoteExportPatch_decorators = [Remote("patch")];
             __esDecorate(this, null, _remoteExportList_decorators, { kind: "method", name: "remoteExportList", static: false, private: false, access: { has: obj => "remoteExportList" in obj, get: obj => obj.remoteExportList }, metadata: _metadata }, null, _instanceExtraInitializers);
             __esDecorate(this, null, _remoteExportGet_decorators, { kind: "method", name: "remoteExportGet", static: false, private: false, access: { has: obj => "remoteExportGet" in obj, get: obj => obj.remoteExportGet }, metadata: _metadata }, null, _instanceExtraInitializers);
+            __esDecorate(this, null, _remoteExportDelete_decorators, { kind: "method", name: "remoteExportDelete", static: false, private: false, access: { has: obj => "remoteExportDelete" in obj, get: obj => obj.remoteExportDelete }, metadata: _metadata }, null, _instanceExtraInitializers);
             __esDecorate(this, null, _remoteExportPatch_decorators, { kind: "method", name: "remoteExportPatch", static: false, private: false, access: { has: obj => "remoteExportPatch" in obj, get: obj => obj.remoteExportPatch }, metadata: _metadata }, null, _instanceExtraInitializers);
             if (_metadata) Object.defineProperty(this, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
         }
@@ -462,6 +465,16 @@ let DraftsRemoteService = (() => {
         /** Endpoint `drafts/get` — one doc by id. */
         async remoteExportGet(draftId, signal) {
             return (await this.get(draftId, signal));
+        }
+        /** Endpoint `drafts/delete` — removes one doc WHOLE (2026-10-22,
+         *  the scratch-residue door): auditor probe docs and other debris
+         *  were clearable only by hand because the plane had no delete
+         *  verb. The removal JOINS the bench write chain for the same id
+         *  (a delete never interleaves an in-flight bench transaction on
+         *  the doc it removes) and refuses loud on every bad shape —
+         *  never a silent no-op. */
+        async remoteExportDelete(draftId, signal) {
+            return await this.delete(draftId, signal);
         }
         /** The in-process API the adapters above delegate to. */
         async list(signal) {
@@ -506,6 +519,35 @@ let DraftsRemoteService = (() => {
             }
             const doc = rec.doc;
             return { ...doc, stages: withResolvedStages(this.ctx, doc["stages"]) };
+        }
+        /** The in-process delete arm (the adapter above delegates here):
+         *  id law first, then the removal INSIDE the bench write chain —
+         *  the same serialization the bench doors queue on — and a loud
+         *  not-found when the id names no doc (KvTable.delete answers
+         *  false; the door never turns that into a silent success). */
+        async delete(draftId, signal) {
+            signal.throwIfAborted();
+            if (!DRAFT_ID_RE.test(draftId)) {
+                throw new RemoteError("draft/bad-id", `bad draft id ${JSON.stringify(draftId)}`, {
+                    draftId,
+                });
+            }
+            return await withBenchWrite(draftId, async () => {
+                let drafts;
+                try {
+                    drafts = await openDraftsDomain(this.ctx);
+                }
+                catch (error) {
+                    throw new RemoteError("draft/store-failed", thrownMessage(error), {}, { cause: error });
+                }
+                const removed = await drafts.table("docs").delete(draftId);
+                if (!removed) {
+                    throw new RemoteError("draft/not-found", `draft not found: ${draftId}`, {
+                        draftId,
+                    });
+                }
+                return { draft_id: draftId };
+            });
         }
         /** Endpoint `drafts/patch` — the stage patch door, REBORN on the
          *  domain (2026-09-11; the gateway-era PATCH /v1/flows/drafts/:id/

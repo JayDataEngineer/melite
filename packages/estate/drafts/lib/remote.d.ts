@@ -48,6 +48,11 @@ export type JsonValue = string | number | boolean | null | JsonValue[] | {
 export type DraftGetRow = {
     readonly [key: string]: JsonValue;
 };
+/** Endpoint `drafts/delete` answer — the id the door removed. */
+export interface DraftDeleteRow {
+    /** The canonical draft id the door removed. */
+    draft_id: string;
+}
 /** Endpoint `drafts/patch` body — the door's FIXED key set (unknown
  *  keys refuse at admission with the old door's voice; STAGE_PATCH_KEYS).
  *  Optional: presence IS the write; a null params value is the
@@ -253,10 +258,24 @@ export declare class DraftsRemoteService extends TypertRemoteService {
     remoteExportList(signal: AbortSignal): Promise<DraftListResult>;
     /** Endpoint `drafts/get` — one doc by id. */
     remoteExportGet(draftId: string, signal: AbortSignal): Promise<DraftGetRow>;
+    /** Endpoint `drafts/delete` — removes one doc WHOLE (2026-10-22,
+     *  the scratch-residue door): auditor probe docs and other debris
+     *  were clearable only by hand because the plane had no delete
+     *  verb. The removal JOINS the bench write chain for the same id
+     *  (a delete never interleaves an in-flight bench transaction on
+     *  the doc it removes) and refuses loud on every bad shape —
+     *  never a silent no-op. */
+    remoteExportDelete(draftId: string, signal: AbortSignal): Promise<DraftDeleteRow>;
     /** The in-process API the adapters above delegate to. */
     list(signal: AbortSignal): Promise<DraftListResult>;
     /** The in-process API the adapter above delegates to. */
     get(draftId: string, signal: AbortSignal): Promise<Record<string, unknown>>;
+    /** The in-process delete arm (the adapter above delegates here):
+     *  id law first, then the removal INSIDE the bench write chain —
+     *  the same serialization the bench doors queue on — and a loud
+     *  not-found when the id names no doc (KvTable.delete answers
+     *  false; the door never turns that into a silent success). */
+    delete(draftId: string, signal: AbortSignal): Promise<DraftDeleteRow>;
     /** Endpoint `drafts/patch` — the stage patch door, REBORN on the
      *  domain (2026-09-11; the gateway-era PATCH /v1/flows/drafts/:id/
      *  stages/:sid died with the app and stroke L left the client door

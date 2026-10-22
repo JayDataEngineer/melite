@@ -379,10 +379,18 @@ function lazyInspector() {
                 registryModel: (id) => modelsService().registryModel(id),
             });
             const expected = facts.extension_node_types[ref.id] ?? [];
+            // THE UNVERIFIABLE ANSWER (the rgthree burn, 2026-10-22): a
+            // DECL that names no node types gives this read nothing to
+            // verify against — active:false here is CANNOT-VERIFY, never
+            // evidence of absence. The flag folds the census 'unknown'
+            // (never 'absent'), so an installed-but-unlisted pack no
+            // longer wears a negative verdict no door can converge.
             return {
                 active: expected.length === 0 ? false : expected.every((node) => nodeTypes.includes(node)),
                 nodeTypes,
-                detail: expected.length === 0 ? "extension has no declared node types" : undefined,
+                ...(expected.length === 0
+                    ? { unverifiable: true, detail: "extension has no declared node types" }
+                    : {}),
             };
         },
     };

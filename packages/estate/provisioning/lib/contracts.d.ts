@@ -125,6 +125,7 @@ export interface ResourceStatus {
     readonly operationId?: string;
     readonly items: readonly ResourceStatusItem[];
     readonly detail?: string;
+    readonly fetchable?: boolean;
     readonly bytes?: number;
     readonly total?: number;
     readonly phase?: AcquirePhase;
