@@ -1,5 +1,5 @@
 {
- "derived_at": "2026-10-22T14:10:23.823Z",
+ "derived_at": "2026-10-22T14:20:11.402Z",
  "tool": "scripts/regen-node-vocab.mjs --boot",
  "source": {
   "path": "data/tmp/object_info_prod.json",
@@ -15,18 +15,18 @@
  },
  "derivation": {
   "facts_path": "packages/engines/comfyui-cordis/data/model-facts.json",
-  "addressed_class_count": 96,
+  "addressed_class_count": 97,
   "bootstrap_class_count": 68,
-  "fixture_class_count": 164,
+  "fixture_class_count": 165,
   "rows_probed": 31,
   "refused_rows": 0
  },
  "delta": {
-  "added": [],
-  "pruned": [
+  "added": [
    "MeliteQVoiceCopy"
   ],
+  "pruned": [],
   "updated": [],
-  "reordered_keys": 91
+  "reordered_keys": 0
  }
 }

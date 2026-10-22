@@ -112,6 +112,38 @@ export async function deriveBootAddressSet(opts: { facts_path: string }): Promis
       if (typeof ct !== "string" || ct.length === 0) continue;
       (classes[ct] ??= []).push(`${modelId} / ${row.card}`);
     }
+    // THE SAVE-BRANCH PROBE (the MeliteQVoiceCopy prune burn,
+    // 2026-10-22): a family that boards a save pack composes a
+    // SECOND graph the plain probe never reaches — the save
+    // intent's export segment (the refusal-echo loop fills only
+    // what a refusal names, and a lawful blank save doc refuses
+    // nothing). The address set must cover what the card CAN
+    // compose, not only its default intent: seed the save boolean
+    // for boarding rows and merge the classes. A refusal here
+    // never kills the row — the plain compose above already
+    // certified the route; the save arm is additive.
+    const modIds = (model.mods ?? [])
+      .map((m) => (typeof m === "string" ? m : (m as { id?: unknown }).id))
+      .filter((m): m is string => typeof m === "string");
+    const savePacks = modIds.filter((m) => m.endsWith("_save"));
+    for (const pack of savePacks) {
+      const saveFlag = `save_${pack.slice(0, -"_save".length)}`;
+      const saveProbe = probeCompose((doc) => {
+        const g = new GraphBuilder();
+        def.compose(def.schema({ ...doc, [saveFlag]: true }), model, g, "boot-address-probe");
+        const graph = g.toJSON() as Graph;
+        if (graph === null || typeof graph !== "object" || Object.keys(graph).length === 0) {
+          throw new Error("compose produced an EMPTY graph");
+        }
+        return graph as ProbeGraph;
+      }, PROBE_ROUNDS, opts.facts_path);
+      if (saveProbe.composed === null) continue;
+      for (const node of Object.values(saveProbe.composed)) {
+        const ct = node?.class_type;
+        if (typeof ct !== "string" || ct.length === 0) continue;
+        (classes[ct] ??= []).push(`${modelId} / ${row.card} (save)`);
+      }
+    }
   }
   return {
     classes,
