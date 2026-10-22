@@ -336,28 +336,25 @@ export function registerCard(ctx: Context, comfy: ComfyUIServiceFace): void {
         const refStated = !blank(doc.ref_audio)
         const presetStated = typeof doc.voice === 'string' && doc.voice !== 'none' && doc.voice !== ''
         if (refStated && presetStated) {
-          throw new Error("params 'voice' and 'ref_audio' fire together on no save on the tts card (ONE voice source — the preset saves its speaker, the reference saves the clone; drop one)")
+          throw new Error("params 'voice' and 'ref_audio' fire together on the tts card (ONE voice performs — the run's own law; the save persists it)")
         }
         if (presetStated && !blank(doc.design_prompt)) {
-          throw new Error("params 'design_prompt' and 'voice' fire together on no save on the tts card (ONE voice source — the description saves a design, the preset saves its speaker; drop one)")
+          throw new Error("params 'design_prompt' and 'voice' fire together on the tts card (ONE voice performs — the run's own law; the save persists it)")
         }
         if (refStated && !blank(doc.design_prompt)) {
-          throw new Error("params 'design_prompt' and 'ref_audio' fire together on no save on the tts card (ONE voice source — the reference saves the clone, the description saves a design; drop one)")
+          throw new Error("params 'design_prompt' and 'ref_audio' fire together on the tts card (ONE voice performs — the run's own law; the save persists it)")
         }
         if (!refStated && !presetStated) {
           const missing = ['design_prompt'].filter((k) => blank(doc[k]))
           if (missing.length > 0) {
-            throw new Error("required Design param(s) " + missing.map((k) => "'" + k + "'").join(' + ') + " missing or empty on the tts card (the save persists ONE voice — state a Preset Speaker, state ref_audio to save the clone, or describe who speaks)")
+            throw new Error("required Design param(s) " + missing.map((k) => "'" + k + "'").join(' + ') + " missing or empty on the tts card (the save persists whatever the run renders — state a Preset Speaker, a reference clip, or describe who speaks; the run's own one-voice law)")
           }
           if (!blank(doc.ref_text)) {
-            throw new Error("param 'ref_text' rides only with 'ref_audio' on a save (the reference is the voice; the transcript describes it — state the reference or drop the transcript)")
+            throw new Error("param 'ref_text' rides only with 'ref_audio' (the reference is the voice; the transcript describes it)")
           }
         }
         if (qvoiceStated(doc)) {
-          throw new Error("param 'qvoice' fires nothing on a save (the exporter persists ONE voice — the stated reference or the description; a saved persona performs nothing beside it; drop the .qvoice)")
-        }
-        if (!blank(doc.style_instruction)) {
-          throw new Error("param 'style_instruction' fires nothing on a save (delivery style rides the CustomVoice performance — a saved voice carries no style while it persists; drop the style)")
+          throw new Error("param 'qvoice' fires nothing beside the save (the exporter persists the run's own render — a saved persona performs nothing beside it; drop the .qvoice)")
         }
         // THE DECLARED ACTION (the atom vocabulary, stroke 3): the
         // boarded family's own export action composes; an unbound

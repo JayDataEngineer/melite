@@ -312,24 +312,37 @@ export function registerCard(ctx, comfy) {
                 // THE JUDGE ALREADY SPOKE (the DECL audit's row 4): the
                 // family-level relation words are judged above by the one
                 // implementation. What remains here is what NO family row
-                // can say, because it is the LANE's own law: the design
-                // surface's required word (the persona description — the
-                // lane judge speaks it when blank), and the save's
-                // OFF-SURFACE inputs (a reference or a saved persona
-                // perform nothing on the design lane — surface facts, not
-                // relation rows).
-                const missing = ['design_prompt'].filter((k) => blank(doc[k]));
-                if (missing.length > 0) {
-                    throw new Error("required Design param(s) " + missing.map((k) => "'" + k + "'").join(' + ') + " missing or empty on the tts card (the save designs from the description — state who speaks)");
+                // can say, because it is the LANE's own law: the save's ONE
+                // voice source — a reference saves the CLONE (the qvoice
+                // boolean law, operator 2026-10-22: "save the embeddings to
+                // media" from ANY lane; a reference-cloned voice persists
+                // its own .qvoice), a description saves a DESIGN — and the
+                // off-source params that perform nothing beside either.
+                const refStated = !blank(doc.ref_audio);
+                const presetStated = typeof doc.voice === 'string' && doc.voice !== 'none' && doc.voice !== '';
+                if (refStated && presetStated) {
+                    throw new Error("params 'voice' and 'ref_audio' fire together on no save on the tts card (ONE voice source — the preset saves its speaker, the reference saves the clone; drop one)");
                 }
-                if (!blank(doc.ref_audio) || !blank(doc.ref_text)) {
-                    throw new Error("params 'ref_audio'/'ref_text' fire nothing on a Design export (the exporter designs from the description — no reference clones; drop them, or run the Base variant)");
+                if (presetStated && !blank(doc.design_prompt)) {
+                    throw new Error("params 'design_prompt' and 'voice' fire together on no save on the tts card (ONE voice source — the description saves a design, the preset saves its speaker; drop one)");
+                }
+                if (refStated && !blank(doc.design_prompt)) {
+                    throw new Error("params 'design_prompt' and 'ref_audio' fire together on no save on the tts card (ONE voice source — the reference saves the clone, the description saves a design; drop one)");
+                }
+                if (!refStated && !presetStated) {
+                    const missing = ['design_prompt'].filter((k) => blank(doc[k]));
+                    if (missing.length > 0) {
+                        throw new Error("required Design param(s) " + missing.map((k) => "'" + k + "'").join(' + ') + " missing or empty on the tts card (the save persists ONE voice — state a Preset Speaker, state ref_audio to save the clone, or describe who speaks)");
+                    }
+                    if (!blank(doc.ref_text)) {
+                        throw new Error("param 'ref_text' rides only with 'ref_audio' on a save (the reference is the voice; the transcript describes it — state the reference or drop the transcript)");
+                    }
                 }
                 if (qvoiceStated(doc)) {
-                    throw new Error("param 'qvoice' fires nothing on a Design save (the exporter designs a NEW voice — a saved persona performs nothing beside it; drop the .qvoice)");
+                    throw new Error("param 'qvoice' fires nothing on a save (the exporter persists ONE voice — the stated reference or the description; a saved persona performs nothing beside it; drop the .qvoice)");
                 }
                 if (!blank(doc.style_instruction)) {
-                    throw new Error("param 'style_instruction' fires nothing on a Design save (delivery style rides the CustomVoice performance — a saved voice carries no style while it is designed; drop the style)");
+                    throw new Error("param 'style_instruction' fires nothing on a save (delivery style rides the CustomVoice performance — a saved voice carries no style while it persists; drop the style)");
                 }
                 // THE DECLARED ACTION (the atom vocabulary, stroke 3): the
                 // boarded family's own export action composes; an unbound

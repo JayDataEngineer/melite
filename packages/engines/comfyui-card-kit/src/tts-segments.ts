@@ -232,25 +232,26 @@ export function exportSegment(p: Record<string, unknown>, model: ModelFacts, g: 
   const refAudio = typeof p.ref_audio === 'string' ? p.ref_audio.trim() : ''
   const refText = typeof p.ref_text === 'string' ? p.ref_text.trim() : ''
   const presetSpeaker = typeof p.voice === 'string' && p.voice !== 'none' ? p.voice.trim() : ''
+  const styleInstruction = typeof p.style_instruction === 'string' ? p.style_instruction.trim() : ''
   if (refAudio !== '' && designPrompt !== '') {
     throw new Error(
-      "params 'design_prompt' and 'ref_audio' fire together on no save (ONE voice source — the reference saves the clone, the description saves a design; drop one)")
+      "params 'design_prompt' and 'ref_audio' fire together (ONE voice performs — the run's own law; the save persists it)")
   }
   if (presetSpeaker !== '' && designPrompt !== '') {
     throw new Error(
-      "params 'design_prompt' and 'voice' fire together on no save (ONE voice source — the description saves a design, the preset saves its speaker; drop one)")
+      "params 'design_prompt' and 'voice' fire together (ONE voice performs — the run's own law; the save persists it)")
   }
   if (presetSpeaker !== '' && refAudio !== '') {
     throw new Error(
-      "params 'voice' and 'ref_audio' fire together on no save (ONE voice source — the preset saves its speaker, the reference saves the clone; drop one)")
+      "params 'voice' and 'ref_audio' fire together (ONE voice performs — the run's own law; the save persists it)")
   }
   if (refAudio === '' && presetSpeaker === '' && designPrompt === '') {
     throw new Error(
-      "required param 'design_prompt' missing or empty (the save persists ONE voice — state a Preset Speaker, state ref_audio to save the clone, or describe who speaks)")
+      "required param 'design_prompt' missing or empty (the save persists whatever the run renders — state a Preset Speaker, a reference clip, or describe who speaks; the run's own one-voice law)")
   }
-  if (refAudio === '' && presetSpeaker === '' && refText !== '') {
+  if (refAudio === '' && refText !== '') {
     throw new Error(
-      "param 'ref_text' rides only with 'ref_audio' on a save (the reference is the voice; the transcript describes it — state the reference or drop the transcript)")
+      "param 'ref_text' rides only with 'ref_audio' (the reference is the voice; the transcript describes it)")
   }
   const studio = g.node('AudiocoreVoiceStudio', {
     ...AUDIACORE_STUDIO_AUTOFILL,
@@ -262,6 +263,7 @@ export function exportSegment(p: Record<string, unknown>, model: ModelFacts, g: 
       : presetSpeaker !== ''
         ? { speaker: presetSpeaker }
         : { instruct: designPrompt }),
+    ...(styleInstruction !== '' ? { style_instruction: styleInstruction } : {}),
     sample_text: p.text,
     temperature: p.temperature,
     top_p: p.top_p,

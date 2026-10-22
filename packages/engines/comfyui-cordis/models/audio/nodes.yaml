@@ -16,7 +16,7 @@ extensions:
   # extension_lane manifest refused to serve.
   - name: melite-audio-nodes
     url: https://github.com/JayDataEngineer/melite-audio-nodes
-    ref: c6284fda6010e7bbfcfc3de811191598be2c615b
+    ref: 0da9b89f755869d46fca9e5edf51a31f6719b67c
     required: true
     desc: >-
       The ONE audio pack: Qwen3-TTS synthesis (qwen3_tts — card lane

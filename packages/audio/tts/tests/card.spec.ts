@@ -177,7 +177,7 @@ describe("the tts compose gate", () => {
         design_prompt: "warm",
         qvoice: [{ qvoice: "Old.qvoice" }],
       }), designModel, new GraphBuilder(), "r_design_qvoice"),
-      /qvoice.*fires nothing on a save/,
+      /qvoice.*fires nothing beside the save/,
     );
   });
 
@@ -202,18 +202,29 @@ describe("the tts compose gate", () => {
     // ONE-OF-THREE: preset + design refuses
     assert.throws(
       () => def.compose(def.schema({ text: "sample", save_qvoice: true, voice: "vivian", design_prompt: "warm" }), model, new GraphBuilder(), "r_preset_design"),
-      /'design_prompt' and 'voice' fire together on no save/,
+      /'design_prompt' and 'voice' fire together/,
     );
     // ONE-OF-THREE: preset + reference refuses
     assert.throws(
       () => def.compose(def.schema({ text: "sample", save_qvoice: true, voice: "vivian", ref_audio: "/m/r.wav" }), model, new GraphBuilder(), "r_preset_ref"),
-      /'voice' and 'ref_audio' fire together on no save/,
+      /'voice' and 'ref_audio' fire together/,
     );
-    // NO SOURCE: the refusal names all three ways
+    // NO SOURCE: the refusal names the run's own law
     assert.throws(
       () => def.compose(def.schema({ text: "sample", save_qvoice: true }), model, new GraphBuilder(), "r_preset_none"),
-      /state a Preset Speaker, state ref_audio to save the clone, or describe who speaks/,
+      /state a Preset Speaker, a reference clip, or describe who speaks/,
     );
+    // THE OPERATOR'S EXACT PRESS (hour ~20 of the qvoice burn): CV
+    // lane + preset + STYLE + save — style conditions the render and
+    // never refuses the save (the save adds persistence, never
+    // demands different params — operator law 2026-10-22).
+    const gStyle = new GraphBuilder();
+    def.compose(def.schema({ text: "sample", save_qvoice: true, voice: "ryan", style_instruction: "excited" }), model, gStyle, "r_preset_style");
+    const studioStyle = Object.values(gStyle.toJSON() as Record<string, { class_type: string; inputs: Record<string, unknown> }>)
+      .find((n) => n.class_type === "AudiocoreVoiceStudio");
+    assert.ok(studioStyle, "the style save composes");
+    assert.equal((studioStyle!.inputs as Record<string, unknown>).style_instruction, "excited",
+      "the style rides the serialized graph (it conditions the render, never refuses the save)");
   });
 
   // THE QVOICE BOOLEAN LAW (operator 2026-10-22): the export pair is
@@ -244,7 +255,7 @@ describe("the tts compose gate", () => {
       () => def.compose(def.schema({
         text: "sample", save_qvoice: true, design_prompt: "warm", ref_text: "words",
       }), designModel, new GraphBuilder(), "r_design_reftext"),
-      /ref_text.*rides only with 'ref_audio' on a save/,
+      /ref_text.*rides only with 'ref_audio'/,
     );
     // the stale pack shape names no surface on the design lane
     assert.throws(
@@ -797,7 +808,7 @@ describe("THE EVERY-ADDRESS WALL — every served address composes its own decla
     // the save's off-surface reference: the save branch refuses it.
     assert.throws(
       () => def.compose(def.schema({ text: "sample", save_qvoice: true, design_prompt: "warm", ref_audio: "/m/r.wav" }), model, new GraphBuilder(), "wall_design_ref"),
-      /'design_prompt' and 'ref_audio' fire together on no save/,
+      /'design_prompt' and 'ref_audio' fire together/,
     );
     // the stale 'qvoice_save' spelling names no surface — judged
     // even with no save signal (the silent-skip law).
