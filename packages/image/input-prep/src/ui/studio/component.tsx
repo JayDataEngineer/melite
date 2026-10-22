@@ -34,7 +34,7 @@
  */
 import { useEffect, useRef, useState } from 'react'
 import type { StageViewOwnerProps } from '@melite/contracts/stageView'
-import { StudioShell, SourceRow } from '@melite/card-base/client'
+import { StudioShell, SourceRow, readAsDataURL, fetchMediaLibrary } from '@melite/card-base/client'
 import { SCALE_METHODS, SCALE_MODEL_OPTIONS, MIN_DIM } from '@melite/models-input'
 import { CropPreview } from './CropPreview.tsx'
 import type { CropRect, NaturalSize } from './CropPreview.tsx'
@@ -230,12 +230,26 @@ export function InputPrepStudio(props: StageViewOwnerProps) {
       // clear, writing the source param.
       params={(
         <div className={css.paramsCol}>
+          {/* THE SOURCE SEAT (the 2026-10-22 media burn: the label
+              said "Source file" while the seat is an IMAGE square,
+              and From-media opened EMPTY — the studio never injected
+              the wire's loadMedia, so the modal rendered "nothing to
+              pick yet" beside a full library; the wall asserted the
+              menu's TEXT, never the door). The label speaks the lane
+              ('Image' / 'Audio'), the square is kind-typed (an image
+              slot filters the media modal to images and renders the
+              thumb), upload rides onFile → data-URL (the ONE read
+              path every square attach uses), and From-media rides
+              fetchMediaLibrary — the same seams MotionRail wires. */}
           <SourceRow
             name="source"
-            label="Source file"
-            kind="file"
+            label={mediaType === 'image' ? 'Image' : 'Audio'}
+            kind={mediaType === 'image' ? 'image' : 'file'}
             value={source}
             onEdit={pickSource}
+            onFile={(file) => { void readAsDataURL(file).then((url) => { pickSource(url) }) }}
+            loadMedia={fetchMediaLibrary}
+            accept={mediaType === 'image' ? 'image/*' : 'audio/*'}
             candidates={props.upstream.map((u) => ({ id: u.id, label: u.title, url: u.url }))}
           />
           {/* THE DECLARED SURFACE LAW (image-3d wave-2): the transform

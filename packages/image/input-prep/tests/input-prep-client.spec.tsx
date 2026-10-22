@@ -26,8 +26,22 @@ import { createElement as h } from 'react'
 import { InputPrepStudio, cropOf, isPreviewable } from '../src/ui/studio/component.tsx'
 import { CropPreview, cropIsHonorable } from '../src/ui/studio/CropPreview.tsx'
 import { apply, inject, name } from '../src/client/index.ts'
-import { ASSET_DRAG_MIME } from '@melite/card-base/client'
+import { ASSET_DRAG_MIME, fetchMediaLibrary } from '@melite/card-base/client'
 import { SCALE_METHODS, SCALE_MODEL_OPTIONS, UPSCALE_MODELS, MIN_DIM } from '@melite/models-input'
+
+// THE MEDIA LIBRARY MOCK (the 2026-10-22 media burn): the studio now
+// injects fetchMediaLibrary into the source square's wire — the
+// gesture wall below rides the mock so the arm judges THIS seat's
+// wiring (loader called, kind-filtered; a pick seats the source and
+// renders the preview), never the network.
+vi.mock('@melite/card-base/client', async (importOriginal) => {
+  const orig = await importOriginal<typeof import('@melite/card-base/client')>()
+  const mediaLoader = vi.fn(async (_kind: string, _signal?: AbortSignal) => [
+    { url: '/media/runs/r1/pic.png', name: 'pic.png' },
+  ])
+  return { ...orig, fetchMediaLibrary: mediaLoader }
+})
+const mediaLoader = vi.mocked(fetchMediaLibrary)
 
 const IMG = 'data:image/png;base64,iVBORw0KGgo='
 
@@ -697,21 +711,48 @@ describe('the studio (InputPrepStudio)', () => {
 
     it('THE UPLOAD SEAT CONSTRUCTS (the construction law — no magic to get an image in): the source square renders in the studio and mirrors the held param', () => {
       render(h(InputPrepStudio, owner({ params: { source: IMG } })))
-      const seat = document.querySelector('[data-source-row="Source file"]')
+      const seat = document.querySelector('[data-source-row="Image"]')
       expect(seat).not.toBeNull()
       const thumb = seat?.querySelector('img') ?? null
       expect(thumb?.getAttribute('src')).toBe(IMG)
     })
 
-    it('THE SOURCE SEAT SPEAKS ITS VERBS (the one square: From flow / From media / From file)', async () => {
-      render(h(InputPrepStudio, owner({ params: {} })))
-      const seat = document.querySelector('[data-source-row="Source file"]') as HTMLElement | null
+    it('THE LABEL SPEAKS THE LANE (the 2026-10-22 burn: the seat said "Source file" while the square is an IMAGE seat)', () => {
+      const { unmount } = render(h(InputPrepStudio, owner({ params: { source: IMG } })))
+      expect(document.querySelector('[data-source-row="Image"]')).not.toBeNull()
+      expect(document.querySelector('[data-source-row="Source file"]')).toBeNull()
+      unmount()
+      render(h(InputPrepStudio, owner({ params: { source: 'data:audio/wav;base64,x', media_type: 'audio' } })))
+      expect(document.querySelector('[data-source-row="Audio"]')).not.toBeNull()
+    })
+
+    // THE DOOR WALL (the 2026-10-22 media burn — the arm this seat
+    // never had): the old verbs wall asserted the MENU TEXT rendered
+    // and stopped — the from-media door opened EMPTY because the
+    // studio never injected the wire's loadMedia, and the wall stayed
+    // green beside a dead door. THIS arm drives the gesture: open the
+    // menu, walk through From media, demand the loader FIRED with the
+    // image kind, pick a row, and prove the source seats + the
+    // preview renders. Toggle (loadMedia out of the wire) reds at the
+    // loader-called assertion — the exact hole the old wall blessed.
+    it('FROM MEDIA IS A DOOR, NOT A LABEL: the pick loads the library, seats the source, renders the preview', async () => {
+      mediaLoader.mockClear()
+      const props = owner({ params: {} })
+      render(h(InputPrepStudio, props))
+      const seat = document.querySelector('[data-source-row="Image"]') as HTMLElement | null
       expect(seat).not.toBeNull()
       const square = seat!.querySelector('[data-slot-square]') as HTMLElement | null
       expect(square).not.toBeNull()
       await act(async () => { fireEvent.click(square!) })
-      const rows = await screen.findAllByText(/from flow|from media|from file/i)
-      expect(rows.length).toBeGreaterThanOrEqual(3)
+      const fromMedia = await screen.findAllByText(/from media/i)
+      await act(async () => { fireEvent.click(fromMedia[0]!) })
+      const row = await screen.findAllByTestId('source-pick-row')
+      expect(row.length).toBe(1)
+      expect(mediaLoader).toHaveBeenCalledTimes(1)
+      expect(mediaLoader).toHaveBeenCalledWith('image', expect.anything())
+      await act(async () => { fireEvent.click(row[0]!) })
+      expect(props.onPatch).toHaveBeenCalledWith(expect.objectContaining({ source: '/media/runs/r1/pic.png' }))
+      expect(screen.getByTestId('prep-crop-preview')).not.toBeNull()
     })
   })
 })

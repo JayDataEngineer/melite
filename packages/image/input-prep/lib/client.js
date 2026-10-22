@@ -633,10 +633,17 @@ window.__ModuleLoader__.load({
 						className: prep_module_css_default.paramsCol,
 						children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.SourceRow, {
 							name: "source",
-							label: "Source file",
-							kind: "file",
+							label: mediaType === "image" ? "Image" : "Audio",
+							kind: mediaType === "image" ? "image" : "file",
 							value: source,
 							onEdit: pickSource,
+							onFile: (file) => {
+								(0, _melite_card_base_client.readAsDataURL)(file).then((url) => {
+									pickSource(url);
+								});
+							},
+							loadMedia: _melite_card_base_client.fetchMediaLibrary,
+							accept: mediaType === "image" ? "image/*" : "audio/*",
 							candidates: props.upstream.map((u) => ({
 								id: u.id,
 								label: u.title,
