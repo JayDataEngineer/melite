@@ -997,9 +997,23 @@ export function terminalOutcomeOf(
     // ONE FILE, ONE ENTRY — both faces: the name→url map and the
     // flat primary-first list. An engine emitting the same file
     // under two gallery names (or twice) never lands it twice.
+    // THE HERO LEADS THE MAP (the operator's "random image"): the
+    // tile paints first-in-map, and the engine's gallery order is
+    // its own — the stage url's file leads, so the restored tile
+    // paints the run's product, not whatever the engine listed
+    // first. The wand's resultOfRun already stamps hero-first; one
+    // hero law, both builders.
+    const ordered = [...artNames]
+    if (url !== '') {
+      const hero = ordered.findIndex((n) => toRunMediaUrl(runId, n) === url)
+      if (hero > 0) {
+        const [name] = ordered.splice(hero, 1) as string[]
+        ordered.unshift(name as string)
+      }
+    }
     const artifacts: Record<string, string> = {}
     const mediaUrls: string[] = []
-    for (const n of artNames) {
+    for (const n of ordered) {
       const u = toRunMediaUrl(runId, n)
       if (mediaUrls.includes(u)) continue
       mediaUrls.push(u)

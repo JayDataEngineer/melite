@@ -257,6 +257,19 @@ describe("terminalOutcomeOf — the terminal row builder, contract-fenced", () =
     expect(benchResultDefects(result)).toEqual([]);
   });
 
+  test("THE HERO LEADS THE MAP (the operator's 'random image'): the tile paints first-in-map, so the stage url's file leads", () => {
+    // A multi-output run whose engine lists the hero SECOND: the
+    // artifacts map must still lead with the hero — otherwise the
+    // restored tile paints whatever the engine listed first.
+    const { result } = terminalOutcomeOf(
+      "run-m", "completed",
+      { url: "/melite-media/runs/run-m/out.png", gallery: [{ name: "thumb.png" }, { name: "out.png" }] },
+      undefined,
+    );
+    expect(Object.keys(result["artifacts"] as Record<string, string>)[0]).toBe("out.png");
+    expect(benchResultDefects(result)).toEqual([]);
+  });
+
   test("a failed run carries its reason (the silent-failure cure) and stays contract-clean", () => {
     const { result, terminal } = terminalOutcomeOf(
       "run-f", "failed",
