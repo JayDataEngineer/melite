@@ -1033,3 +1033,74 @@ test('RESOLVE SEAT: a create seat (or an edit seat with no tiers) resolves nothi
   const editNoTiers: mod.LeafSeat = { mode: 'edit', kind: LORA, index: 0 }
   expect(resolveSeatEntry(entries, editNoTiers)).toBeNull()
 })
+
+// ── THE FLAT LAW (the qvoice_save burn, operator 2026-10-22: "THE
+// QVOICE OF QWEN TTS MOD IS FULLY BORKEN, PARAMTER INPUTS ARE
+// FUCKED — THE WRITE DID NOT LAND: unknown param(s) on the tts
+// card: qvoice_save"). The Design kind's fields ARE the card's own
+// knobs (the tts schema declares voice_name + the sampling dials
+// flat) — the leaf's commit write rides them at the ROOT, never as
+// a qvoice_save bag the write door refuses. Hop [1] of the burn:
+// the operator's exact gesture, driven on the rendered leaf. The
+// door hop [4] + the wire hop [5] live in the walls tier
+// (tests/walls/ts/suites/mod-write-parity.spec.ts).
+const QVOICE_SAVE = {
+  kind: 'qvoice_save', label: 'Design', param_key: 'qvoice_save', cardinality: 'list', flat: true,
+  fields: [
+    { name: 'voice_name', type: 'text', label: 'Voice Name' },
+    { name: 'temperature', type: 'number', label: 'Temperature', default: 0.7 },
+    { name: 'speed', type: 'number', label: 'Speed', default: 1 },
+  ],
+} as unknown as ModifierKind
+
+test('FLAT CREATE: the Design entry commits its fields at the root — no qvoice_save bag rides the write (the burn, hop [1])', () => {
+  const { onEdit, onPatch } = openLeaf({ kinds: [QVOICE_SAVE], values: {} })
+  openCreate('Design')
+  fireEvent.change(screen.getByLabelText('Voice Name'), { target: { value: 'harbour narrator' } })
+  fireEvent.change(screen.getByLabelText('Temperature'), { target: { value: '0.4' } })
+  fireEvent.click(screen.getByRole('button', { name: 'Add' }))
+  // THE REFUSED WRITE, PINNED: the payload must carry the fields
+  // flat and must NOT carry the bag key the door refused verbatim.
+  // the seeded default (speed 1) rides with the typed fields —
+  // every draft field commits flat, defaults included
+  expect(onPatch).toHaveBeenCalledWith({ voice_name: 'harbour narrator', temperature: 0.4, speed: 1 })
+  expect(onEdit).toHaveBeenCalledWith('voice_name', 'harbour narrator')
+  expect(onEdit).toHaveBeenCalledWith('temperature', 0.4)
+  for (const call of onPatch.mock.calls) {
+    expect(call[0]).not.toHaveProperty('qvoice_save')
+  }
+})
+
+test('FLAT READ: a saved flat entry re-opens on the card root — the leaf shows the saved persona, the save keeps it flat', () => {
+  const { onPatch } = openLeaf({
+    kinds: [QVOICE_SAVE],
+    values: { voice_name: 'dusk voice', temperature: 0.4, speed: 1 },
+  })
+  openEditTile('qvoice_save-0')
+  expect((screen.getByLabelText('Voice Name') as HTMLInputElement).value).toBe('dusk voice')
+  expect((screen.getByLabelText('Temperature') as HTMLInputElement).value).toBe('0.4')
+  fireEvent.change(screen.getByLabelText('Voice Name'), { target: { value: 'dusk voice ii' } })
+  fireEvent.click(screen.getByRole('button', { name: 'Save' }))
+  expect(onPatch).toHaveBeenCalledWith({ voice_name: 'dusk voice ii', temperature: 0.4, speed: 1 })
+  for (const call of onPatch.mock.calls) {
+    expect(call[0]).not.toHaveProperty('qvoice_save')
+  }
+})
+
+test('FLAT DELETE: removing the entry writes the fields off — undefined drops at the lift, never a bag splice', () => {
+  const { onPatch } = openLeaf({
+    kinds: [QVOICE_SAVE],
+    values: { voice_name: 'dusk voice', temperature: 0.4 },
+  })
+  openEditTile('qvoice_save-0')
+  fireEvent.click(screen.getByRole('button', { name: 'Remove' }))
+  expect(onPatch).toHaveBeenCalledWith({ voice_name: undefined, temperature: undefined })
+  for (const call of onPatch.mock.calls) {
+    expect(call[0]).not.toHaveProperty('qvoice_save')
+  }
+})
+
+test('FLAT SEED: an untouched root renders no phantom entry (the create tile stays; a stated field seats it)', () => {
+  openLeaf({ kinds: [QVOICE_SAVE], values: {} })
+  expect(document.querySelector('[data-mod-tile="qvoice_save-0"]')).toBeNull()
+})

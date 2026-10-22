@@ -213,6 +213,33 @@ export interface ModifierKind {
    *  verbatim; the compose door enforces them only when the kind's
    *  bag is non-empty (an unused arm never blocks a run). */
   requires?: readonly string[]
+  /** THE FLAT LAW (the qvoice_save burn, operator 2026-10-22:
+   *  "THE WRITE DID NOT LAND — compose-door: unknown param(s) on
+   *  the tts card: qvoice_save"): a kind whose fields are the
+   *  CARD'S OWN KNOBS (the Design pack restates voice_name + the
+   *  sampling dials the tts card already declares flat) commits
+   *  its entry FLAT at the root — no bag forms, param_key is group
+   *  identity only. The door's own voice ("it takes no key of its
+   *  own; its fields ride flat top-level") and the client's write
+   *  are one law, spelled once in modCommitWrite. */
+  flat?: true
+}
+
+/** THE COMMIT-SHAPE SPELLING (the qvoice_save burn's twin-kill,
+ *  Journey Law §3.2): the params write ONE committed entry
+ *  produces — flat fields for a flat kind, the param_key bag for a
+ *  bag kind. The client leaf's commit and every wall that judges
+ *  the write call THIS, never a re-typed copy — a wall that
+ *  hand-builds the write shape certifies its own fiction while the
+ *  client burns (the fake-green class, 2026-10-22).
+ * @param kind the served modifier kind (flat law rides the serve)
+ * @param entry the committed entry (its own field values)
+ * @returns the params write the door must admit */
+export function modCommitWrite(
+  kind: ModifierKind,
+  entry: Record<string, unknown>,
+): Record<string, unknown> {
+  return kind.flat === true ? { ...entry } : { [kind.param_key]: [entry] }
 }
 
 /** One served catalog row (the discovery options projection — the

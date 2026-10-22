@@ -9,8 +9,8 @@
  * node-plane package and the one-row walls refuse a node package's
  * src importing the web plane's `/client` door.
  */
-import type { Wtype } from './extraKeys.js';
-import type { LaneRelations, SamplerEnvelope } from './laneRelations.js';
+import type { Wtype } from './extraKeys.ts';
+import type { LaneRelations, SamplerEnvelope } from './laneRelations.ts';
 /** One node of a serialized schemastery schema (toJSON's refs entry):
  *  `type` discriminates, `meta` carries the declaration's facts
  *  (description/min/max/step/default + the UI bag under meta.extra),
@@ -211,7 +211,28 @@ export interface ModifierKind {
      *  verbatim; the compose door enforces them only when the kind's
      *  bag is non-empty (an unused arm never blocks a run). */
     requires?: readonly string[];
+    /** THE FLAT LAW (the qvoice_save burn, operator 2026-10-22:
+     *  "THE WRITE DID NOT LAND — compose-door: unknown param(s) on
+     *  the tts card: qvoice_save"): a kind whose fields are the
+     *  CARD'S OWN KNOBS (the Design pack restates voice_name + the
+     *  sampling dials the tts card already declares flat) commits
+     *  its entry FLAT at the root — no bag forms, param_key is group
+     *  identity only. The door's own voice ("it takes no key of its
+     *  own; its fields ride flat top-level") and the client's write
+     *  are one law, spelled once in modCommitWrite. */
+    flat?: true;
 }
+/** THE COMMIT-SHAPE SPELLING (the qvoice_save burn's twin-kill,
+ *  Journey Law §3.2): the params write ONE committed entry
+ *  produces — flat fields for a flat kind, the param_key bag for a
+ *  bag kind. The client leaf's commit and every wall that judges
+ *  the write call THIS, never a re-typed copy — a wall that
+ *  hand-builds the write shape certifies its own fiction while the
+ *  client burns (the fake-green class, 2026-10-22).
+ * @param kind the served modifier kind (flat law rides the serve)
+ * @param entry the committed entry (its own field values)
+ * @returns the params write the door must admit */
+export declare function modCommitWrite(kind: ModifierKind, entry: Record<string, unknown>): Record<string, unknown>;
 /** One served catalog row (the discovery options projection — the
  *  row's resolved facts ride along so the hybrid leaf can stamp
  *  them; the lane re-validates, never trusts). */

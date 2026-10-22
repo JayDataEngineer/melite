@@ -44,6 +44,7 @@ import css from './card.module.css'
 import { SpecAtom } from './form.tsx'
 import { useSquareProvider } from './form.tsx'
 import { coerceFieldEdit, fieldRequired, isHybridKind, isOptionKind, optionKeyOf, scalarKeyOf, titleCaseId, type ModifierKind, type ModifierOption, type SpecField, type SpecValues } from './spec.ts'
+import { modCommitWrite } from '@melite/contracts/formSpec'
 import { SpecMenuSelect } from './atoms.tsx'
 import { Tip } from './layout.tsx'
 
@@ -239,6 +240,19 @@ export function ModifiersSection(props: ModifiersSectionProps): ReturnType<typeo
   const [draftParams, setDraftParams] = useState<SpecValues>({})
 
   const entriesOf = (k: ModifierKind): Array<Record<string, unknown>> => {
+    // THE FLAT READ (the qvoice_save burn, 2026-10-22): a flat kind's
+    // fields ARE the root knobs — its one entry is those values; no
+    // bag exists to read. A root with none of the fields stated has
+    // no entry yet (create seeds them).
+    if (k.flat === true) {
+      const entry: Record<string, unknown> = {}
+      let stated = false
+      for (const f of k.fields ?? []) {
+        const v = values[f.name]
+        if (v !== undefined && v !== null) { entry[f.name] = v; stated = true }
+      }
+      return stated ? [entry] : []
+    }
     const v = values[k.param_key]
     return Array.isArray(v) ? v.filter((e): e is Record<string, unknown> => typeof e === 'object' && e !== null) : []
   }
@@ -266,6 +280,20 @@ export function ModifiersSection(props: ModifiersSectionProps): ReturnType<typeo
     onPatch?.({ [name]: coerced })
   }
   const commit = (k: ModifierKind, next: Array<Record<string, unknown>>): void => {
+    // THE FLAT COMMIT (the qvoice_save burn): the write is the shared
+    // spelling — flat fields at the root, never the bag key the door
+    // refuses. A flat kind holds ONE entry; an emptied entries array
+    // clears the fields (undefined drops off the wire).
+    if (k.flat === true) {
+      const entry = next[next.length - 1] ?? {}
+      const flatWrite = modCommitWrite(k, entry)
+      for (const name of Object.keys(flatWrite)) onEdit(name, flatWrite[name])
+      if (next.length === 0) {
+        for (const f of k.fields ?? []) { onEdit(f.name, undefined); flatWrite[f.name] = undefined }
+      }
+      onPatch?.(flatWrite)
+      return
+    }
     onEdit(k.param_key, next)
     onPatch?.({ [k.param_key]: next })
   }
