@@ -433,6 +433,15 @@ describe.sequential("estate provisioning composition paths", () => {
     assert.equal(modelStatus.state, "absent", JSON.stringify(modelStatus));
     const extension = await mounted.ctx.provisioning.inspect({ kind: "extension", id: "demo" });
     assert.equal(extension.items[0]?.detail, "extension has no declared node types");
+    // THE UNVERIFIABLE-EXTENSION LAW (the 2026-10-22 downloads-stream
+    // audit, the rgthree burn: the pack sat installed + serving 24
+    // classes while the roster wore 'absent' forever — the empty
+    // expected list is CANNOT-VERIFY, never a negative verdict; the
+    // install door could never converge the face). A DECL that names
+    // no node types answers 'unknown' with the same detail — census
+    // honesty, never a health verdict over unchecked bytes.
+    assert.equal(extension.items[0]?.state, "unknown", JSON.stringify(extension.items[0]));
+    assert.equal(extension.state, "unknown", JSON.stringify(extension));
     const missingFacts = await mount({ facts: { extension_node_types: { demo: ["MissingNode"] }, rows: { h3: { card: "h3", card_knobs: [] } } }, extensions: "extensions:\n  - name: demo\n    version: 1.0.0\n    url: https://example.invalid/demo.git\n" });
     assert.equal((await missingFacts.ctx.provisioning.inspect({ kind: "extension", id: "demo" })).items[0]?.state, "absent");
     const noEndpoint = await mount({ endpoint: { url: "" }, server: false });

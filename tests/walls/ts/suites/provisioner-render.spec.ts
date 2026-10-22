@@ -221,6 +221,16 @@ gate("the estate profile renders the HEADLESS tools interface in a non-web mount
   // executes; it never composes the browser doors)
   assert.ok(/^tools-interface:\s*headless$/m.test(patch) || patch.includes("headless"),
     "the estate mount pins the tools row's headless interface");
+  // THE DURABLE PIN'S OTHER HALF (its own arm, never the web gate's):
+  // a non-web mount renders the estate row WITHOUT durableDownloads —
+  // a job server / headless task is a short-lived process; a claimer
+  // in it orphans every fetch it dies mid-flight (the same lifetime
+  // finding). Its presses take their own wire, exactly as before.
+  const estateRows = parseYaml(patch) as Array<Record<string, unknown>>;
+  const estatePin = estateRows.find((r) => r["id"] === "melite-estate") as Record<string, unknown> | undefined;
+  assert.ok(estatePin !== undefined, "the estate mount carries the seat pin");
+  assert.ok(!("durableDownloads" in (estatePin["config"] as Record<string, unknown>)),
+    "a non-web mount never pins durableDownloads — short-lived processes never claim requested rows");
 });
 
 gate("the melite-test profile renders the WEB mount with the estate seat pin", () => {
@@ -249,6 +259,16 @@ gate("the melite-test profile renders the WEB mount with the estate seat pin", (
     `repoRoot is the render's own repo root, unqualified (got ${String(config["repoRoot"])})`);
   assert.ok(!("agentRoute" in config),
     "no agentRoute without the flag — the engine stays honestly unseated");
+  // THE DURABLE DOWNLOAD PIN (the 2026-10-22 downloads-stream audit:
+  // the code cure — the durable claim ticker, the claimer heartbeat,
+  // the requested-row law — landed whole, but the RENDERER never
+  // emitted the pin, so every fresh render wiped the manual
+  // deployment step and the lane booted TRANSIENT: no heartbeat, no
+  // claimer, and the lifetime wedge (a headless press's fetch dies
+  // with its session, nothing claims the requested row) live again.
+  // The web mount is the long-lived process — it renders the pin.
+  assert.equal(config["durableDownloads"], true,
+    "the WEB mount renders durableDownloads: true — the lane owns fetch lifetimes (the lifetime finding)");
 });
 
 gate("--estate-agent-route pins the agent brain verbatim", () => {

@@ -414,6 +414,60 @@ describe("the studio contract wall (Layer A writes only card truth)", () => {
     }
   })
 
+  // AUDIT A7 (journey contract-gap audit 2026-11-07, deferred with a
+  // named home — closed this round): the DECL's studio.writes row is
+  // a hand list; the serializer's key universe is the machine truth.
+  // They drifted: the bake's stated dials and the attention backend
+  // are serialized and authored by the studio, yet the DECL declared
+  // no seat. The arm DERIVES the drift from LAYERA_KEY_UNIVERSE —
+  // every universe key the studio authors must carry its writes seat,
+  // minus the lane coordinates (model/variant select the lane, they
+  // never stage — the parity sweep's coordinate law) and minus the
+  // NAMED served-schema exemption class, each member's admission home
+  // being the card's own schema (card-compose-liveness WRITES_EXEMPT
+  // is that table's one home; this arm pins the same membership so
+  // the two lists cannot drift apart silently). A key joining the
+  // universe without a writes seat reds HERE, named.
+  it("THE DECL's studio.writes row accounts for every serialized key the studio authors (A7): universe − writes = the named served-schema exemptions, exactly", () => {
+    // the DECL types studio nullable (a card may declare no studio);
+    // THIS card's row is the wall's own subject — a missing row is
+    // itself the drift, failed loud, never a type-shaped skip
+    if (h3Decl.studio === null || h3Decl.studio === undefined) {
+      expect.fail("the h3 DECL declares no studio row — the A7 wall has no subject")
+    }
+    const writes = new Set(h3Decl.studio.writes as readonly string[])
+    // the doc planes the DECL declares and the Layer-A serializer
+    // never touches — DERIVED from the row itself, never a hand list
+    const planes = [...writes].filter((k) => !LAYERA_KEY_UNIVERSE.has(k)).sort()
+    expect(
+      planes,
+      "the DECL's non-serializer seats are exactly the other doc planes — a new seat outside the universe re-pins this pin",
+    ).toEqual(["calls", "document", "keyframes"])
+    // the lane coordinates: the studio writes them into the doc, they
+    // never stage as params (the §4 strip law)
+    const coords = new Set(["model", "variant"])
+    const undeclared = [...LAYERA_KEY_UNIVERSE].filter((k) => !writes.has(k) && !coords.has(k)).sort()
+    expect(undeclared, "serialized studio keys with no DECL writes seat and no named exemption — the A7 drift class").toEqual([
+      "duck_depth_db", // the FILM_ONLY rider; the walk's sibling clause owns its lane gate
+      "ref_audios", // the card-level reference surface; the round-trip arm judges its emission
+      "ref_image_size", // the ref lane's size pick; served schema knob
+      "ref_images", // the card-level reference surface; the round-trip arm judges its emission
+      "ref_mods", // the fourth declared ref lane; the round-trip arm judges its emission
+      "ref_video_trims", // the served-row seat (index-paired per-video trims); served schema knob
+      "ref_videos", // the card-level reference surface; the round-trip arm judges its emission
+      "sla_enabled", // the SLA master rides only its false pole (absent = on); served schema knob
+      "sla_min_seq_len", // the SLA sparse-attention seat; served schema knob
+    ])
+    // every exemption is REAL on the card's declared schema — the
+    // exemption's stated home; a dead excuse reds by name
+    for (const k of undeclared) {
+      expect(
+        DECLARED.has(k),
+        `exemption '${k}' is not a row of the card's declared schema — the excuse is dead, declare the writes seat`,
+      ).toBe(true)
+    }
+  })
+
   // THE FAMILY-AWARE EMIT LAW (B1, journey-closure 2026-11-06): the
   // serializer — never a second emit path — derives the family over
   // mergeDocLayers(base, state) and OMITS every T4_ONLY member on a

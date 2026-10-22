@@ -19,22 +19,30 @@
 //   every card's def.boarded set × every visible variant × every
 //   cell) × every relation row the facts row declares (the SAME rows
 //   laneVerdictCore judges — family-wide + the variant's own):
-//     CROSS WORDS (requires / together / conflicts / either_or /
-//       at_most_one): the violating state (the half-pair, the
-//       conflict pair, the half-stated either_or group, the two-slot
-//       at_most_one) REFUSES through the real write door, and the
-//       refusal carries the DECL's own cure; the satisfied state
-//       ADMITS (no false refusal — the door must refuse the breach,
-//       never the state).
-//     required: the BLANK state ADMITS at the write seat (the
-//       authoring-in-progress tolerance, li-j: the write door never
-//       grew the run door's incomplete-draft refusal) and the
-//       satisfied state admits.
+//     CROSS WORDS (requires-needs / conflicts / at_most_one — the
+//       write-refused class): the violating state REFUSES through
+//       the real write door, and the refusal carries the DECL's own
+//       cure; the satisfied state ADMITS (no false refusal).
+//       THE BOOLEAN LAW (operator 2026-10-22) EMPTIED THIS CLASS:
+//       the grammar declares no write-refused word — every relation
+//       half SAVES at the write door by ruling. The census derives
+//       the class mechanically, and the not-silent arm pins the
+//       emptiness BY NAME: a reintroduced breach word re-populates
+//       the census instead of landing unjudged.
+//     required (fields spelling): the BLANK state ADMITS at the write
+//       seat (the authoring-in-progress tolerance) and the satisfied
+//       state admits.
+//     together / either_or HALVES (the 2026-11-11 ruling): they SAVE
+//       at the write door; the RUN press refuses them — the
+//       authoring roster below, never the breach census.
 //
 // THE WITNESS: the burn's exact lane — qwen3-tts CustomVoice with a
-// design_prompt and no voice_name — is pinned by name through the
-// derived roster cell, refusal naming both pair words, the lane, and
-// the DECL's cure ("name the voice ... drop both").
+// design_prompt, a persona description riding a lane that never
+// takes one (the Design mod's boolean law killed the name) — is
+// pinned by name through the derived roster cell: refusal naming
+// the off-lane field, the lane, and the move ("drop it or switch
+// lane"). The boolean half — the persona-less design draft — saves
+// on its own lane and the RUN press refuses it, naming the word.
 //
 // JOURNEY MAP (THE_JOURNEY_LAW §2): the burn crossed UI seat → saved
 // doc → run params → compose door; the felt hop was the estate's own
@@ -330,14 +338,27 @@ describe("THE OFFERED-STATE PARITY — every declared relation refuses its breac
     }
   });
 
-  it("the census is not silent (a sweep with no declared relations judges nothing)", () => {
+  it("the census is not silent (a sweep with no derived judgment judges nothing)", () => {
     expect(rosterDead, "offered families with no facts row").toEqual([]);
     expect(roster.length, "offered cells across the fleet").toBeGreaterThan(20);
-    expect(census.length, "breach arms derived from the DECLs' own relation rows").toBeGreaterThan(0);
-    // the inert roster is the surface-canon's record, not dead weight:
-    // a family-wide row whose fields another lane never declares is
-    // skipped BY NAME so the census can never silently shrink.
-    expect(skippedInert.length).toBeGreaterThan(0);
+    // THE BOOLEAN LAW (operator 2026-10-22): the breach class is
+    // EMPTY — the grammar declares no write-refused relation word
+    // (no requires-needs, conflicts, or at_most_one rows anywhere
+    // in the fleet). Pinned as empty ON PURPOSE: every relation
+    // half saves at the write door by ruling, and a reintroduced
+    // breach word re-populates the census below instead of landing
+    // unjudged (the derivation reads the live rows, never a list).
+    expect(census.length, "the write-refused breach class — empty by ruling, derived live").toBe(0);
+    // what the grammar DOES declare, the rosters hold: the halves
+    // (authoring saves, run refuses) and the blank-required
+    // tolerance — and the inert record is EMPTY, pinned as empty ON
+    // PURPOSE: the live rows leave no cross-lane residue (required
+    // text is universal; the clone either_or is variant-scoped to
+    // the lane that carries it). A future family-wide row naming a
+    // field another lane never declares re-populates this record by
+    // name instead of shrinking the census silently.
+    expect(authoring.length, "the halves the ruling saves at the write door").toBeGreaterThan(0);
+    expect(skippedInert.length, "no inert residue under the live grammar — every row rides where its fields live").toBe(0);
   });
 
   it("THE CENSUS: every breach refuses through the real write door, in the DECL's own voice; every satisfied state admits", () => {
@@ -412,65 +433,66 @@ describe("THE OFFERED-STATE PARITY — every declared relation refuses its breac
     expect(bad, "the write door judging the run door's incomplete-draft class").toEqual([]);
   });
 
-  it("THE WITNESS (the operator's burn, by name): qwen3-tts CustomVoice builds a half persona and the write door refuses it — the fields never belonged to that lane (the signature recut names the move); the pair's OWN lane saves the half and the RUN press refuses it", async () => {
+  it("THE WITNESS (the operator's burn, by name): qwen3-tts CustomVoice builds a persona and the write door refuses it — the field never belonged to that lane (the signature recut names the move); the persona-less draft saves on its OWN lane and the RUN press refuses it", async () => {
     const lane = roster.find((c) => c.atom === "qwen3-tts" && c.variantId === "customvoice");
     expect(lane, "the qwen3-tts CustomVoice cell must be offered (the roster derives it, never a hand list)").toBeDefined();
     if (lane === undefined) return;
-    const declared = lane.relations.some((rel) => (rel.together ?? []).some(
-      (row) => Array.isArray(row.fields) && row.fields.includes("voice_name") && row.fields.includes("design_prompt"),
-    ));
-    expect(declared, "the qwen3-tts DECL must still declare the persona pair as together").toBe(true);
+    // THE PAIR IS DEAD (operator 2026-10-22): no together row may
+    // resurrect it — the persona is a surface word now, and the
+    // verdict below is the surface's, not a pair's.
+    const hasPairRow = lane.relations.some((rel) => (rel.together ?? []).length > 0 || (rel.conflicts ?? []).length > 0);
+    expect(hasPairRow, "the persona pair is dead — no together/conflicts row on the tts lanes").toBe(false);
     const verdict = svc.admitStageRelations(lane.card, {
       ...selectionOf(lane),
       design_prompt: "a warm, unhurried narrator with gravel in the low end",
     });
-    expect(verdict.ok, "the half persona on CustomVoice refuses at the write door — the lane never declared the field").toBe(false);
+    expect(verdict.ok, "the persona on CustomVoice refuses at the write door — the lane never declared the field").toBe(false);
     if (!verdict.ok) {
       expect(verdict.error).toContain("design_prompt");
       expect(verdict.error).toContain("fires nothing on this lane");
       expect(verdict.error).toContain("qwen3-tts/customvoice");
       expect(verdict.error).toContain("drop it or switch lane");
     }
-    // THE RULING'S OTHER FACE (2026-11-11): on the pair's own lane
-    // the same half is mid-form — it saves, and the press refuses.
+    // THE RULING'S OTHER FACE (2026-11-11): on the design lane the
+    // persona-less draft is mid-form — it saves, and the press
+    // refuses, naming the required word.
     const design = roster.find((c) => c.atom === "qwen3-tts" && c.variantId === "voicedesign");
     expect(design, "the qwen3-tts VoiceDesign cell must be offered").toBeDefined();
     if (design === undefined) return;
-    const halfState = { ...selectionOf(design), design_prompt: "a warm, unhurried narrator" } as Record<string, unknown>;
+    const halfState = { ...selectionOf(design), text: "read this" } as Record<string, unknown>;
     const saved = svc.admitStageRelations(design.card, halfState);
-    expect(saved.ok, `the half persona SAVES on its own lane (mid-form) — ${saved.ok ? "" : saved.error}`).toBe(true);
+    expect(saved.ok, `the persona-less draft SAVES on its own lane (mid-form) — ${saved.ok ? "" : saved.error}`).toBe(true);
     let runRefused: string | null = null;
     try {
       await svc.phase1Card(halfState, String(halfState["model"] ?? "qwen3-tts"));
     } catch (e) {
       runRefused = (e as Error).message;
     }
-    expect(runRefused, "the run press refuses the half persona, naming the pair").toMatch(/ride together on this lane|completes none of them/);
+    expect(runRefused, "the run press refuses the persona-less draft, naming the word").toMatch(/this lane requires 'design_prompt'/);
   });
 
-  it("THE RECUT CANON (signature lanes, 2026-10-12): the persona pair rides the VoiceDesign lane's own surface — the COMPLETE pair admits there, and customvoice refuses the fields outright", () => {
+  it("THE RECUT CANON (signature lanes, 2026-10-12, re-derived 2026-10-22): the persona rides the VoiceDesign lane's own surface — stated it admits there, and customvoice refuses the field outright", () => {
     const design = roster.find((c) => c.atom === "qwen3-tts" && c.variantId === "voicedesign");
     expect(design, "the qwen3-tts VoiceDesign cell must be offered").toBeDefined();
     if (design === undefined) return;
     const complete = svc.admitStageRelations(design.card, {
       ...selectionOf(design),
-      voice_name: "harbour-narrator",
+      text: "read this",
       design_prompt: "a warm, unhurried narrator with gravel in the low end",
     });
-    expect(complete.ok, `the complete persona must admit on its own lane — ${complete.ok ? "" : complete.error}`).toBe(true);
-    // the surface canon: customvoice never declared the pair's fields
-    // (the signature recut) — a state carrying voice_name refuses on
-    // SURFACE grounds there, named, whether or not the family-wide
-    // relation row also fires.
+    expect(complete.ok, `the stated persona must admit on its own lane — ${complete.ok ? "" : complete.error}`).toBe(true);
+    // the surface canon: customvoice never declared the persona field
+    // (the signature recut) — a state carrying design_prompt refuses
+    // on SURFACE grounds there, named.
     const custom = roster.find((c) => c.atom === "qwen3-tts" && c.variantId === "customvoice");
     expect(custom).toBeDefined();
     if (custom === undefined) return;
     const surfaceVerdict = svc.admitStageRelations(custom.card, {
       ...selectionOf(custom),
-      voice_name: "harbour-narrator",
+      text: "read this",
       design_prompt: "a warm, unhurried narrator with gravel in the low end",
     });
-    expect(surfaceVerdict.ok, "customvoice must refuse the persona fields it never declared").toBe(false);
+    expect(surfaceVerdict.ok, "customvoice must refuse the persona field it never declared").toBe(false);
     if (!surfaceVerdict.ok) {
       expect(surfaceVerdict.error).toContain("fires nothing on this lane");
     }
