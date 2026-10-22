@@ -29,8 +29,11 @@ import { cascadeInit, getModel } from "../src/models/models.ts";
 import {
   fieldsOfEnvelope,
   activeRowId,
+  fieldOnLane,
+  fieldVisible,
 } from "../../../../packages/web/card-base/src/spec.ts";
-import type { FormSpecDoc } from "../../../../packages/web/card-base/src/spec.ts";
+import type { FormSpecDoc, SpecValues, SpecField } from "../../../../packages/web/card-base/src/spec.ts";
+import { laneContractOf } from "@melite/contracts/laneRelations";
 import { formSpecArm } from "../../../../packages/harness/melite-tools/src/discovery.ts";
 
 await cascadeInit();
@@ -75,9 +78,32 @@ describe("THE FACE-LANE UNITY WALL (the rendered face equals the declared backen
         for (const p of variant?.params ?? []) surface.add(p);
         // THE CELL AXIS: the resolving cell's params join the surface
         for (const c of variant?.cells ?? []) for (const p of c.params ?? []) surface.add(p);
+        // THE RENDERED-SET LAW (operator 2026-10-22 — correct by
+        // design, never a fallback): the judged set is the face a
+        // family can SHOW — the envelope filtered by the SAME two
+        // gates the face rides. (1) fieldVisible, the one
+        // visible_when grammar (spec.ts:675, form.tsx's own
+        // interpreter): a knob whose guards hide it on this family
+        // is one no gesture on this face can state. (2) fieldOnLane
+        // against THIS family's lane contract — the served doc
+        // carries the CARD-DEFAULT family's lanes (the music card
+        // serves music3's base for its yue2 iteration too), so the
+        // wall re-resolves the contract per family with the same
+        // pure laneContractOf the serve itself rides (discovery.ts:
+        // sharedLaneContractOf) — the exact projection a model pick
+        // re-serves. No cross-lane mirrors, no skip tables; the
+        // DECL surface below stays the judge.
+        const laneState: SpecValues = variantId === undefined
+          ? { model: fam }
+          : { model: fam, variant: variantId };
+        const familyDoc: FormSpecDoc = { ...doc, lanes: laneContractOf(decl as never) };
         // the RENDERED face on this family: the envelope's
-        // families-bag filter is the family gate
-        for (const f of fieldsOfEnvelope(doc.schema, fam)) {
+        // families-bag filter is the family gate, visible_when is
+        // the state gate, the lane contract is the surface gate —
+        // all three gates the face itself rides
+        for (const f of fieldsOfEnvelope(doc.schema, fam) as SpecField[]) {
+          if (!fieldVisible(f, laneState)) continue;
+          if (!fieldOnLane(familyDoc, f.name, laneState)) continue;
           if (!surface.has(f.name)) {
             divergent.push(`${fam} renders '${f.name}' — the lane declares no such knob`);
           }
