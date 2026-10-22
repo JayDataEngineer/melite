@@ -118,6 +118,12 @@ export type JsonValue =
  *  card-authored) with its stages resolved for the wire. */
 export type DraftGetRow = { readonly [key: string]: JsonValue };
 
+/** Endpoint `drafts/delete` answer — the id the door removed. */
+export interface DraftDeleteRow {
+  /** The canonical draft id the door removed. */
+  draft_id: string;
+}
+
 /** Endpoint `drafts/patch` body — the door's FIXED key set (unknown
  *  keys refuse at admission with the old door's voice; STAGE_PATCH_KEYS).
  *  Optional: presence IS the write; a null params value is the
@@ -681,6 +687,21 @@ export class DraftsRemoteService extends TypertRemoteService {
     return (await this.get(draftId, signal)) as DraftGetRow;
   }
 
+  /** Endpoint `drafts/delete` — removes one doc WHOLE (2026-10-22,
+   *  the scratch-residue door): auditor probe docs and other debris
+   *  were clearable only by hand because the plane had no delete
+   *  verb. The removal JOINS the bench write chain for the same id
+   *  (a delete never interleaves an in-flight bench transaction on
+   *  the doc it removes) and refuses loud on every bad shape —
+   *  never a silent no-op. */
+  @Remote("delete")
+  async remoteExportDelete(
+    draftId: string,
+    signal: AbortSignal,
+  ): Promise<DraftDeleteRow> {
+    return await this.delete(draftId, signal);
+  }
+
   /** The in-process API the adapters above delegate to. */
   async list(signal: AbortSignal): Promise<DraftListResult> {
     signal.throwIfAborted();
@@ -736,6 +757,40 @@ export class DraftsRemoteService extends TypertRemoteService {
     }
     const doc = rec.doc as unknown as Record<string, unknown>;
     return { ...doc, stages: withResolvedStages(this.ctx, doc["stages"]) };
+  }
+
+  /** The in-process delete arm (the adapter above delegates here):
+   *  id law first, then the removal INSIDE the bench write chain —
+   *  the same serialization the bench doors queue on — and a loud
+   *  not-found when the id names no doc (KvTable.delete answers
+   *  false; the door never turns that into a silent success). */
+  async delete(draftId: string, signal: AbortSignal): Promise<DraftDeleteRow> {
+    signal.throwIfAborted();
+    if (!DRAFT_ID_RE.test(draftId)) {
+      throw new RemoteError("draft/bad-id", `bad draft id ${JSON.stringify(draftId)}`, {
+        draftId,
+      });
+    }
+    return await withBenchWrite(draftId, async (): Promise<DraftDeleteRow> => {
+      let drafts: Domain<DraftsDomainSpec>;
+      try {
+        drafts = await openDraftsDomain(this.ctx);
+      } catch (error: unknown) {
+        throw new RemoteError(
+          "draft/store-failed",
+          thrownMessage(error),
+          {},
+          { cause: error },
+        );
+      }
+      const removed = await drafts.table("docs").delete(draftId);
+      if (!removed) {
+        throw new RemoteError("draft/not-found", `draft not found: ${draftId}`, {
+          draftId,
+        });
+      }
+      return { draft_id: draftId };
+    });
   }
 
   /** Endpoint `drafts/patch` — the stage patch door, REBORN on the

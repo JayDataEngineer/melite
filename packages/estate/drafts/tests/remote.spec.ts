@@ -2035,3 +2035,67 @@ describe("drafts.patch admits the MERGED view (the GUI param editor's door)", ()
     assert.equal(unwired2.delivered, true);
   });
 });
+
+// ── drafts/delete: the scratch-residue door (2026-10-22) ────────────
+// THE BURN: the auditor probe docs (bench-journey-probe-audit et al)
+// could only be cleared by hand — the plane had no delete verb, so
+// every probe polluted the operator's flows list forever. The verb
+// removes a doc WHOLE (get and list stop serving it), refuses loud on
+// every bad shape, and JOINS the bench write chain for the same id
+// (a delete never interleaves an in-flight bench transaction).
+describe("drafts/delete: removes whole, refuses loud, joins the bench chain", () => {
+  test("a deleted doc leaves the store AND the list", async () => {
+    const { ctx, domain } = await bootCtx();
+    await seedDraft(domain, "bench-probe-demo", 1, { model: "m" });
+    const svc = new DraftsRemoteService(ctx);
+    assert.deepEqual(await svc.delete("bench-probe-demo", sig), { draft_id: "bench-probe-demo" });
+    await assert.rejects(svc.get("bench-probe-demo", sig), (e: unknown) => {
+      assert.equal((e as RemoteError).code, "draft/not-found");
+      return true;
+    });
+    const list = await svc.list(sig);
+    assert.equal(list.drafts.some((d) => d.draft_id === "bench-probe-demo"), false);
+  });
+
+  test("a well-formed but missing id refuses draft/not-found (never a silent no-op)", async () => {
+    const { ctx } = await bootCtx();
+    const svc = new DraftsRemoteService(ctx);
+    const err = await errOf(svc.delete("ghost-del", sig));
+    assert.equal(err.code, "draft/not-found");
+    assert.deepEqual(err.details, { draftId: "ghost-del" });
+  });
+
+  test("a malformed id refuses draft/bad-id with the id in the details", async () => {
+    const { ctx } = await bootCtx();
+    const svc = new DraftsRemoteService(ctx);
+    for (const bad of ["", "has space!", "slash/no"]) {
+      const err = await errOf(svc.delete(bad, sig));
+      assert.equal(err.code, "draft/bad-id");
+      assert.deepEqual(err.details, { draftId: bad });
+    }
+  });
+
+  test("an aborted signal refuses at entry", async () => {
+    const { ctx } = await bootCtx();
+    await assert.rejects(new DraftsRemoteService(ctx).delete("bench-x", aborted()));
+  });
+
+  test("the delete adapter delegates to the in-process arm", async () => {
+    const { ctx, domain } = await bootCtx();
+    await seedDraft(domain, "ad-del-draft", 1, { model: "m" });
+    const svc = new DraftsRemoteService(ctx);
+    assert.deepEqual(await svc.remoteExportDelete("ad-del-draft", sig), { draft_id: "ad-del-draft" });
+    await assert.rejects(svc.get("ad-del-draft", sig));
+  });
+
+  test("the verb joins the bench write chain (the serialization seat is in the body)", async () => {
+    // STRUCTURAL ARM: the delete body rides withBenchWrite — the same
+    // chain the bench write doors queue on, keyed by the canonical
+    // draft id, so a delete can never interleave an in-flight bench
+    // transaction on the doc it removes.
+    const { readFileSync } = await import("node:fs");
+    const src = readFileSync(new URL("../src/remote.ts", import.meta.url), "utf8");
+    const deleteBody = src.slice(src.indexOf("async delete("), src.indexOf("async delete(") + 900);
+    assert.match(deleteBody, /withBenchWrite\(/);
+  });
+});

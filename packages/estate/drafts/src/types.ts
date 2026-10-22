@@ -8,6 +8,7 @@
 // src/types.ts + its ./types export).
 export type {
   BenchDoc,
+  DraftDeleteRow,
   DraftGetRow,
   DraftListRow,
   DraftListResult,
