@@ -30,8 +30,8 @@ export declare const ACQUIRE_STALL_RETRIES = 6;
  *  busy lane and a quiet box want different latencies between an
  *  agent's request and the lane's claim. */
 export declare const DOWNLOAD_CLAIM_INTERVAL_MS = 2000;
-import { type ActivateOptions, type EnsureOptions, type ExternalProvisionRequest, type ProvisionOperation, type ProvisionPlan, type ProvisionResult, type ProvisionState, type ResourceRef, type ResourceStatus, type WeightAcquireProgress } from "./contracts.js";
-import type { ProvisioningConfig, ProvisioningServiceDefinition } from "./ports.js";
+import { type ActivateOptions, type EnsureOptions, type ExternalProvisionRequest, type ProvisionOperation, type ProvisionPlan, type ProvisionResult, type ProvisionState, type ResourceRef, type ResourceStatus, type WeightAcquireProgress } from "./contracts.ts";
+import type { ProvisioningConfig, ProvisioningServiceDefinition } from "./ports.ts";
 /** THE BUSY REFUSAL (audit I-S4): startWeightAcquire throws this when
  *  the plane already runs its concurrency cap of fetches. The door
  *  maps it to a 429 with retry_after_ms — a busy plane is a wait, not
