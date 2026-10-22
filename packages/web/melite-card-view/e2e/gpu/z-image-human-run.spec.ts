@@ -82,7 +82,7 @@ test('a human runs image-gen (z-image) with configuration changes — real GPU i
   await seedBenchImageGen(page, sessionKey)
   await page.locator('[data-sidebar-right-expand]').first().click({ timeout: 10_000 })
   await page.waitForTimeout(3_000)
-  await page.getByRole('button', { name: /Media Flow/ }).first().click({ timeout: 10_000 })
+  await page.getByRole('button', { name: /Melite Bench/ }).first().click({ timeout: 10_000 })
   await page.waitForTimeout(7_000)
 
   // 3 — the image-gen tile renders with its live status

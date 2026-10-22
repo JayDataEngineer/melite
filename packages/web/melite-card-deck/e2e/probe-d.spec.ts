@@ -53,7 +53,7 @@ test('probe (d): h3 Final Cut second-pass visibility + refmod steps', async ({ p
   }
   await page.locator('[data-sidebar-right-expand]').first().click({ timeout: 30_000 })
   await page.waitForTimeout(2_000)
-  await page.getByText('Media Flow', { exact: true }).first().click({ timeout: 30_000 })
+  await page.getByText('Melite Bench', { exact: true }).first().click({ timeout: 30_000 })
   await page.waitForTimeout(2_000)
   const roster = await page.evaluate(async () => {
     const forms = await (await fetch('/v1/forms')).json() as Record<string, unknown>

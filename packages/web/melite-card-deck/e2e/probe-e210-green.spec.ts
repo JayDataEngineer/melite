@@ -18,7 +18,7 @@ test('probe (e2-10-green): post-cure journey verdict — ruler spans, line swall
   }
   await page.locator('[data-sidebar-right-expand]').first().click({ timeout: 30_000 })
   await page.waitForTimeout(2_000)
-  await page.getByText('Media Flow', { exact: true }).first().click({ timeout: 30_000 })
+  await page.getByText('Melite Bench', { exact: true }).first().click({ timeout: 30_000 })
   await page.waitForTimeout(3_000)
   await page.getByText('Generate Video', { exact: true }).first().click({ timeout: 30_000 })
   await page.waitForTimeout(4_000)

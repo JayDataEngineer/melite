@@ -482,7 +482,7 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
     // nothing.
     /* v8 ignore next 4 -- single-render law: BenchView mounts only with kind bench (probe 2026-09-19); the loud voice fences a shape the harness never produces */
     if (snapshot?.value?.kind !== 'bench') {
-      setLocalRunError(startClaim('the bench is not ready to run from — reopen the Media Flow tab (snapshot kind: ' + String(snapshot?.value?.kind ?? 'none') + ')'))
+      setLocalRunError(startClaim('the bench is not ready to run from — reopen the Melite Bench tab (snapshot kind: ' + String(snapshot?.value?.kind ?? 'none') + ')'))
       return
     }
     // THE TWIN-PRESS FENCE (audit L-ERROR-1, 2026-10-22): a stage

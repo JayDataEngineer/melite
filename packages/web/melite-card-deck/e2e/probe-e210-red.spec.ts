@@ -16,7 +16,7 @@ test('probe (e2-10-red): the video studio line press/drag does nothing; the cap 
   }
   await page.locator('[data-sidebar-right-expand]').first().click({ timeout: 30_000 })
   await page.waitForTimeout(2_000)
-  await page.getByText('Media Flow', { exact: true }).first().click({ timeout: 30_000 })
+  await page.getByText('Melite Bench', { exact: true }).first().click({ timeout: 30_000 })
   await page.waitForTimeout(3_000)
   // the h3 video tile → its studio (drill)
   const tile = page.getByText('Generate Video', { exact: true }).first()

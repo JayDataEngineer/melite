@@ -47,10 +47,13 @@ export declare const chromeCopy: {
         on: string;
     }) => string;
     /** The sidebar tab's chip + guide title — the bench page is titled this
-     *  no matter which address form reached it (the address law, 2026-09-11). */
-    readonly cardsTabTitle: "Media Flow";
+     *  no matter which address form reached it (the address law, 2026-09-11).
+     *  THE MELITE BENCH (operator 2026-10-21: rename 'Media Flow' → 'Melite
+     *  Bench' on the sidebar) — the tab's user-facing face; identifiers
+     *  (addresses, variables, CSS) keep the old spelling. */
+    readonly cardsTabTitle: "Melite Bench";
     /** The cards tab guide row's description under the tab title. */
-    readonly cardsTabGuide: "The media flow — the shared bench and its runs.";
+    readonly cardsTabGuide: "The Melite bench — the shared bench and its runs.";
     /** A chat file mention's tooltip title, naming the live kind + value. */
     readonly mentionTitle: (p: {
         kind: string;

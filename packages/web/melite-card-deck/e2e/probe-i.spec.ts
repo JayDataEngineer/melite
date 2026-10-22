@@ -16,7 +16,7 @@ test('probe (i): input-prep renders the crop + model-choice seats', async ({ pag
   }
   await page.locator('[data-sidebar-right-expand]').first().click({ timeout: 30_000 })
   await page.waitForTimeout(2_000)
-  await page.getByText('Media Flow', { exact: true }).first().click({ timeout: 30_000 })
+  await page.getByText('Melite Bench', { exact: true }).first().click({ timeout: 30_000 })
   await page.waitForTimeout(3_000)
   // the served spec, read in-page (the shell gets 401 — the estate's own law)
   const served = await page.evaluate(async () => {

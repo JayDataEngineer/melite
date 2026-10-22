@@ -324,10 +324,10 @@ test.describe('journey-closure E2 — the browser-tier arms (the live lane)', ()
     // expanded; the tab hop matches BOTH faces — the collapsed rail's
     // guide pill renders role=button, the expanded strip's tab renders
     // role=tab with the close affordance in its accessible name
-    // ("Media Flow Close"). Which face greets the reopen is the
+    // ("Melite Bench Close"). Which face greets the reopen is the
     // survived expanded state, not the test's choice (the 2026-10-17
     // ride-3 red: the role=button-only locator timed out against an
-    // already-expanded, already-selected Media Flow tab).
+    // already-expanded, already-selected Melite Bench tab).
     const expand = page.locator('[data-sidebar-right-expand]').first()
     await expect(expand, 'the right sidebar offers its expand seat (or is already expanded)')
       .toBeVisible({ timeout: 15_000 }).catch(() => {})
@@ -335,8 +335,8 @@ test.describe('journey-closure E2 — the browser-tier arms (the live lane)', ()
       await expand.click({ timeout: 10_000 })
       await page.waitForTimeout(3_000)
     }
-    await page.getByRole('button', { name: /Media Flow/ })
-      .or(page.getByRole('tab', { name: /Media Flow/ }))
+    await page.getByRole('button', { name: /Melite Bench/ })
+      .or(page.getByRole('tab', { name: /Melite Bench/ }))
       .first().click({ timeout: 20_000 })
     await page.waitForTimeout(5_000)
     await openDrill(page, stageId, 'the reopened arm stage')

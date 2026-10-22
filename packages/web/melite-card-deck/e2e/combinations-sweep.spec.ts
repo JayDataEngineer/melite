@@ -114,9 +114,9 @@ async function settleHost(page: Page): Promise<void> {
   await page.waitForTimeout(2_000)
 }
 
-/** Open the cards bench (the Media Flow tab is the bench face). */
+/** Open the cards bench (the Melite Bench tab is the bench face). */
 async function openBench(page: Page): Promise<void> {
-  await page.getByText('Media Flow', { exact: true }).first().click({ timeout: 30_000 })
+  await page.getByText('Melite Bench', { exact: true }).first().click({ timeout: 30_000 })
   await expect
     .poll(async () => (await page.locator('body').innerText()).includes('Add'), { timeout: 30_000 })
     .toBe(true)

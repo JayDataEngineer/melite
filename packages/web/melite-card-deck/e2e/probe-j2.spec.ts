@@ -19,7 +19,7 @@ test('probe (j2): the cards-tab roster folds the mcp row; ambient agent tiles st
   }
   await page.locator('[data-sidebar-right-expand]').first().click({ timeout: 30_000 })
   await page.waitForTimeout(2_000)
-  await page.getByText('Media Flow', { exact: true }).first().click({ timeout: 30_000 })
+  await page.getByText('Melite Bench', { exact: true }).first().click({ timeout: 30_000 })
   await page.waitForTimeout(3_000)
   // the roster serves, read in-page (the shell fetch the cards tab
   // rides: card-base wire.ts fetchFormsTable → GET /v1/forms)

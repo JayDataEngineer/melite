@@ -27,7 +27,7 @@ async function openBench(page: Page, stages: Array<{ card: string; params: Recor
   for (const s of stages) await board(page, mint.sessionKey, s.card, s.params)
   await page.locator('[data-sidebar-right-expand]').first().click({ timeout: 10_000 })
   await page.waitForTimeout(3_000)
-  await page.getByRole('button', { name: /Media Flow/ }).first().click({ timeout: 10_000 })
+  await page.getByRole('button', { name: /Melite Bench/ }).first().click({ timeout: 10_000 })
   await page.waitForTimeout(4_000)
   const rail = page.locator('button[class*="tileInner"]:not([aria-label="Add a card"])')
   await expect(rail).toHaveCount(stages.length, { timeout: 30_000 })

@@ -507,7 +507,7 @@ export function MediaPanel({ useTabInfo, sessionId }: { useTabInfo?: () => TabIn
     setUiError('')
     const open = tabInfo?.tab.actions.openResource
     if (open === undefined) {
-      setError('Media Flow view unavailable — the sidebar tab service is not loaded.')
+      setError('Melite Bench view unavailable — the sidebar tab service is not loaded.')
       return
     }
     const deps = { openResource: open, onError: setError, sessionId }
@@ -583,7 +583,7 @@ export function MediaPanel({ useTabInfo, sessionId }: { useTabInfo?: () => TabIn
     setUiError('')
     const open = tabInfo?.tab.actions.openResource
     if (open === undefined) {
-      setError('Media Flow view unavailable — the sidebar tab service is not loaded.')
+      setError('Melite Bench view unavailable — the sidebar tab service is not loaded.')
       return
     }
     void loadDraftOntoBench(draftId, { openResource: open, onError: setError, sessionId })

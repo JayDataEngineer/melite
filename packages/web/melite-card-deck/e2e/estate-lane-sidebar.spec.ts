@@ -90,17 +90,17 @@ test('the estate lane renders the sidebar with Media + cards (the operator censu
   // eslint-disable-next-line no-console -- THE CENSUS (the audit's human-readable receipt)
   console.log('[lane-sidebar-census]', JSON.stringify(raw))
 
-  // THE ESTATE TRIO: the media faces (Media Flow — the shared
+  // THE ESTATE TRIO: the media faces (Melite Bench — the shared
   // bench; Media — the archive) and the deck's manager — the tabs
   // the bare-shell lane lost.
-  expect(raw, 'strip carries the Media Flow guide').toMatch(/Media Flow/)
+  expect(raw, 'strip carries the Melite Bench guide').toMatch(/Melite Bench/)
   expect(raw, 'strip carries the Media guide').toMatch(/Media/)
   expect(raw, 'strip carries the ComfyUI Manager guide').toMatch(/ComfyUI Manager/)
 
   // The Media tab OPENS and paints (the gallery's panel mounts:
   // any body-text change beyond the strip itself)
   const before = await page.locator('body').innerText()
-  await page.getByText('Media Flow', { exact: true }).first().click({ timeout: 30_000 })
+  await page.getByText('Melite Bench', { exact: true }).first().click({ timeout: 30_000 })
   await expect
     .poll(async () => (await page.locator('body').innerText()) !== before, { timeout: 30_000 })
     .toBe(true)
@@ -109,7 +109,7 @@ test('the estate lane renders the sidebar with Media + cards (the operator censu
   // estate's runs face through the gallery — the 500-run window).
   // A lane whose queue seat silently deferred serves an empty
   // panel: the gallery's 502 becomes an empty list, not an error.
-  // (From the open Media Flow bench: New tab → the Media guide.)
+  // (From the open Melite Bench bench: New tab → the Media guide.)
   await page.getByRole('button', { name: 'New tab' }).click({ timeout: 30_000 })
   await page.getByText('Media', { exact: true }).first().click({ timeout: 30_000 })
   // the archive's visible signature: the stat line (N runs · M

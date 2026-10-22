@@ -95,7 +95,7 @@ async function readStableCatalog(page: Page): Promise<CardRow[]> {
 async function openCardsTab(page: Page): Promise<void> {
   await page.locator('[data-sidebar-right-expand]').first().click({ timeout: 10_000 })
   await page.waitForTimeout(3_000)
-  await page.getByRole('button', { name: /Media Flow/ }).first().click({ timeout: 10_000 })
+  await page.getByRole('button', { name: /Melite Bench/ }).first().click({ timeout: 10_000 })
   await page.waitForTimeout(5_000)
 }
 

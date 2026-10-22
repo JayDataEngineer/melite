@@ -2847,7 +2847,7 @@ window.__ModuleLoader__.load({
 				setUiError("");
 				const open = tabInfo?.tab.actions.openResource;
 				if (open === void 0) {
-					setError("Media Flow view unavailable — the sidebar tab service is not loaded.");
+					setError("Melite Bench view unavailable — the sidebar tab service is not loaded.");
 					return;
 				}
 				const deps = {
@@ -2905,7 +2905,7 @@ window.__ModuleLoader__.load({
 				setUiError("");
 				const open = tabInfo?.tab.actions.openResource;
 				if (open === void 0) {
-					setError("Media Flow view unavailable — the sidebar tab service is not loaded.");
+					setError("Melite Bench view unavailable — the sidebar tab service is not loaded.");
 					return;
 				}
 				loadDraftOntoBench(draftId, {

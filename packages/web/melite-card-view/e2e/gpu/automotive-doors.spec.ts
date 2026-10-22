@@ -139,7 +139,7 @@ test('the automotive doors: /melite-runs seats the AI run doors and the Run pres
   await seedBenchImageGen(page, sessionKey)
   await page.locator('[data-sidebar-right-expand]').first().click({ timeout: 10_000 })
   await page.waitForTimeout(3_000)
-  await page.getByRole('button', { name: /Media Flow/ }).first().click({ timeout: 10_000 })
+  await page.getByRole('button', { name: /Melite Bench/ }).first().click({ timeout: 10_000 })
   await page.waitForTimeout(7_000)
   const tile = page.locator('[data-stage-id][data-stage-status]').first()
   await expect(tile, 'the seeded image-gen stage renders a tile').toBeVisible({ timeout: 30_000 })

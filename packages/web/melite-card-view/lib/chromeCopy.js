@@ -55,10 +55,13 @@ export const chromeCopy = {
      *  literals — presentation code carries none). */
     constructTitle: (p) => 'Bench ' + p.verb + (p.on !== '' ? ' · ' + p.on : ''),
     /** The sidebar tab's chip + guide title — the bench page is titled this
-     *  no matter which address form reached it (the address law, 2026-09-11). */
-    cardsTabTitle: 'Media Flow',
+     *  no matter which address form reached it (the address law, 2026-09-11).
+     *  THE MELITE BENCH (operator 2026-10-21: rename 'Media Flow' → 'Melite
+     *  Bench' on the sidebar) — the tab's user-facing face; identifiers
+     *  (addresses, variables, CSS) keep the old spelling. */
+    cardsTabTitle: 'Melite Bench',
     /** The cards tab guide row's description under the tab title. */
-    cardsTabGuide: 'The media flow — the shared bench and its runs.',
+    cardsTabGuide: 'The Melite bench — the shared bench and its runs.',
     /** A chat file mention's tooltip title, naming the live kind + value. */
     mentionTitle: (p) => `melite ${p.kind} ${p.value} — opens the Media page`,
     /** Loading face while the draft doc hydrates. */

@@ -183,7 +183,7 @@ test('served-lib byte proofs: the built client carries the ported machinery', ()
     ["3D badge literal (the dictionary's one mint)", 'kindModel: "3D"'],
     ['3D badge rule USES the dictionary', 'text: galleryCopy.kindModel'],
     ['honest 3D absence copy', '3D view unavailable'],
-    ['honest media-flow absence copy', 'Media Flow view unavailable'],
+    ['honest Melite Bench absence copy', 'Melite Bench view unavailable'],
   ]
   for (const [name, needle] of probes) {
     // A re-homed fact rides the module-table edge in the bundle

@@ -16,7 +16,7 @@ test('probe (tab-gap): gap between the tab title and the rev bar', async ({ page
   }
   await page.locator('[data-sidebar-right-expand]').first().click({ timeout: 30_000 })
   await page.waitForTimeout(2_000)
-  await page.getByText('Media Flow', { exact: true }).first().click({ timeout: 30_000 })
+  await page.getByText('Melite Bench', { exact: true }).first().click({ timeout: 30_000 })
   await page.waitForTimeout(3_000)
 
   const geo = await page.evaluate(() => {

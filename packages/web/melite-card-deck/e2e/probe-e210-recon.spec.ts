@@ -16,7 +16,7 @@ test('probe (e2-10-recon): locate the video timeline face', async ({ page }) => 
   }
   await page.locator('[data-sidebar-right-expand]').first().click({ timeout: 30_000 })
   await page.waitForTimeout(2_000)
-  await page.getByText('Media Flow', { exact: true }).first().click({ timeout: 30_000 })
+  await page.getByText('Melite Bench', { exact: true }).first().click({ timeout: 30_000 })
   await page.waitForTimeout(3_000)
   const tiles = await page.evaluate(() => {
     const texts: string[] = []

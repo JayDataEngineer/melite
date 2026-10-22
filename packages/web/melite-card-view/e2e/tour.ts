@@ -323,10 +323,10 @@ export async function openCardsWithBench(page: Page, mintedKey = ''): Promise<vo
   await page.locator('[data-sidebar-right-expand]').first().click({ timeout: 10_000 })
   await page.waitForTimeout(3_000)
   // THE GUIDE TAB — matched by the estate plugin's OWN hard-coded
-  // title ('Media Flow', src/client/index.ts), never the shell's
+  // title ('Melite Bench', src/client/index.ts), never the shell's
   // locale copy and never a stale pinned label on the operator's
   // shared host: both drift, our plugin title does not.
-  await page.getByRole('button', { name: /Media Flow/ }).first().click({ timeout: 10_000 })
+  await page.getByRole('button', { name: /Melite Bench/ }).first().click({ timeout: 10_000 })
   await page.waitForTimeout(7_000)
   if (sessionKey !== '' && mintedKey === '') await seedBenchH3(page, sessionKey)
   // the resource stream pushes the rev drift; give the tile time
