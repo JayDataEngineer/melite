@@ -96,7 +96,7 @@ import type { CardDeclRow, ModelFactsRow, ResolvedVariantRow, VariantCellRow } f
 import { factsPath, deriveDecls } from "./cardsFacts.ts";
 import { WIRE_STAGE_KEYS } from "@melite/contracts/benchStage";
 import type { LaneRelations, LaneViolation } from "@melite/contracts/laneRelations";
-import { isEitherOrHalfVoice, isTogetherHalfVoice, isUnstatedRequiredVoice, judgeLaneBounds, judgeLaneRelations, judgeLaneSurface, laneBlank, laneBoundsOf, laneStaleCarry, laneSurfaceOf, laneTogetherClosure, RELATION_WORDS } from "@melite/contracts/laneRelations";
+import { dropAuthoringIncomplete, isEitherOrHalfVoice, isTogetherHalfVoice, isUnstatedRequiredVoice, judgeLaneBounds, judgeLaneRelations, judgeLaneSurface, laneBlank, laneBoundsOf, laneStaleCarry, laneSurfaceOf, laneTogetherClosure, RELATION_WORDS } from "@melite/contracts/laneRelations";
 import { lanePresenceRefusal } from "./cardsLanes.ts";
 import { selectCardVariant, liftCardParams } from "./cardsVariant.ts";
 import type { VariantSelection } from "./cardsVariant.ts";
@@ -240,19 +240,13 @@ function isUnstatedRequiredWord(message: string): boolean {
 }
 
 function incompleteDraftViolations(violations: readonly LaneViolation[]): LaneViolation[] {
-  // THE FRICTIONLESS-AUTHORING RULING (operator 2026-11-11: "The
-  // refusal is never one keystroke at a time … you are submitting a
-  // form, not hacking the mainframe" — reaffirming the 2026-11-10
-  // order): a doc mid-authoring holds halves — an unstated required
-  // word, a together group with some members stated, an either_or
-  // alternative no group of which is complete. The write door drops
-  // all three classes (the authoring-incomplete class); every other
-  // seat — the run press above all — judges them strict, so a half
-  // pair saves and never composes.
-  return violations.filter((v) =>
-    !isUnstatedRequiredWord(v.message)
-    && !isTogetherHalfVoice(v.message)
-    && !isEitherOrHalfVoice(v.message));
+  // THE FRICTIONLESS-AUTHORING RULING (operator 2026-11-11) — the
+  // drop itself is ONE spelling in the contracts judge
+  // (dropAuthoringIncomplete); the form's inline gate calls the same
+  // function, so the class can never drift between the two
+  // transports (attempt 12 was exactly that drift: the door
+  // filtered, the form's copy didn't, and the keystroke refused).
+  return dropAuthoringIncomplete(violations)
 }
 
 /** THE OUTPUT-RESOLUTION SEAM (round-22 compose audit Q4a,

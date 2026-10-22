@@ -80,7 +80,12 @@ describe('THE ONE-VOICE LAW: one crime, one row on the card face', () => {
     expect(gate === null || lane === null).toBe(true)
   })
 
-  test('a knob the lane DECLARES never double-voices either (the together pair fires once)', () => {
+  test('a together HALF voices ZERO rows at the form (2026-11-11 ruling: halves save, the run press owns the complete pair)', () => {
+    // re-derived from "the together pair fires once": the
+    // frictionless-authoring ruling moved the together half out of
+    // every write/form seat — dropAuthoringIncomplete is the one
+    // spelling, so the form renders nothing for the half; the run
+    // door refuses it strict
     form({
       spec: {
         form: 'txt2img',
@@ -97,6 +102,6 @@ describe('THE ONE-VOICE LAW: one crime, one row on the card face', () => {
       user: { model: 'krea-2', prompt: 'half the pair' },
     })
     const rows = violationRows().filter((p) => (p.textContent ?? '').includes('prompt') || (p.textContent ?? '').includes('notes'))
-    expect(rows.length).toBe(1)
+    expect(rows.length, 'no row for the half-stated pair at the form').toBe(0)
   })
 })

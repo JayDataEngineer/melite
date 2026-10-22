@@ -107,6 +107,24 @@ export declare function judgeLaneRelations(relations: readonly LaneRelations[], 
  * @param text the refusal sentence to classify
  * @returns true when the sentence is the unstated-required voice */
 export declare function isUnstatedRequiredVoice(text: string): boolean;
+/** THE WRITE-SEAT SPELLING of the frictionless-authoring ruling
+ *  (operator 2026-11-11: "The refusal is never one keystroke at a
+ *  time … you are submitting a form, not hacking the mainframe"):
+ *  the ONE function every write-side gate calls after the strict
+ *  judge — it drops the authoring-incomplete class (the
+ *  unstated-required word, a together half, an either_or half).
+ *  The registry's write doors AND the form's inline gate BOTH drop
+ *  through THIS function — attempt 12 (2026-11-11) was exactly this
+ *  drift: the door filtered, the form's own copy of the judgment
+ *  didn't, and the operator's keystroke refused while every wall
+ *  was green because the walls drove the door, not the form. One
+ *  spelling; a second copy of this class test anywhere is the
+ *  multiple-seat disease.
+ * @param violations the strict judge's violations (any seat)
+ * @returns the violations a write-side gate may voice */
+export declare function dropAuthoringIncomplete<T extends {
+    message: string;
+}>(violations: readonly T[]): T[];
 /** The together-half class test: the sentence names a together group
  *  whose members are not all stated yet.
  * @param text the refusal sentence to classify

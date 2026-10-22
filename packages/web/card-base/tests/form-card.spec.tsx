@@ -542,28 +542,46 @@ test('LANES: a legacy doc (no lanes block) renders everything — the declare-to
   expect(screen.queryByLabelText('Notes')).not.toBeNull()
 })
 
-test('LANES: a broken relation renders the named strip with the cure (the form gates from the DECL)', () => {
+test('LANES: a CONFLICT renders the named strip with the cure (the form gates from the DECL — conflicts stay strict at every seat; halves are the run\'s)', () => {
   const spec = doc({
     model: 'qwen3-tts',
     lanes: {
       base: ['prompt', 'steps', 'cfg', 'turbo', 'inherit', 'notes', 'img', 'shots'],
       relations: {
-        together: [{
-          fields: ['prompt', 'notes'],
-          cure: 'the persona export needs both halves — name the voice and describe it, or drop both',
+        conflicts: [{
+          a: 'prompt',
+          b: 'notes',
+          cure: 'a reference clone performs the text — drop one of the pair',
         }],
       },
     },
   })
-  form({ spec, user: { model: 'qwen3-tts', prompt: 'the words' } })
+  form({ spec, user: { model: 'qwen3-tts', prompt: 'the words', notes: 'the persona' } })
   const strip = document.querySelector('[data-lane-warn="1"]')
-  if (strip === null) throw new Error('the relation warning renders')
+  if (strip === null) throw new Error('the conflict warning renders')
   expect(strip.textContent ?? '').toContain('prompt')
   expect(strip.textContent ?? '').toContain('notes')
-  expect(strip.textContent ?? '').toContain('name the voice and describe it, or drop both')
-  // the paired state carries no strip
+  expect(strip.textContent ?? '').toContain('drop one of the pair')
+  // one of the pair alone carries no strip
   cleanup()
-  form({ spec, user: { model: 'qwen3-tts', prompt: 'the words', notes: 'the persona' } })
+  form({ spec, user: { model: 'qwen3-tts', prompt: 'the words' } })
+  expect(document.querySelector('[data-lane-warn]')).toBeNull()
+})
+
+test('ATTEMPT 12 (2026-11-11): typing ONE box of the persona pair renders NO refusal — the form gate drops the authoring half; the run press owns the complete pair', () => {
+  // the operator's exact gesture, at the rendered form: the persona
+  // description typed, the name not yet — mid-form. The strip must
+  // NOT render; the save lands; the run refuses naming the pair.
+  form({ spec: ttsDoc(), user: { model: 'qwen3-tts', variant: 'customvoice', design_prompt: 'a warm, unhurried narrator with gravel in the low end' } })
+  expect(document.querySelector('[data-lane-warn]')).toBeNull()
+  const alerts = Array.from(document.querySelectorAll('[role="alert"] p'))
+    .filter((p) => (p.textContent ?? '').includes('design_prompt'))
+  expect(alerts, 'no refusal row names the half-stated field').toEqual([])
+  // the run press keeps the full gate: the same doc through the
+  // strict judge refuses naming the pair (the form gate's own seat
+  // is judged in the walls tier — both verdicts, one state)
+  cleanup()
+  form({ spec: ttsDoc(), user: { model: 'qwen3-tts', variant: 'customvoice', design_prompt: 'a warm narrator', voice_name: 'harbour_gravel' } })
   expect(document.querySelector('[data-lane-warn]')).toBeNull()
 })
 
@@ -682,12 +700,14 @@ test('LANES: an unknown or cleared variant is the run door\'s voice, never this 
   expect(carried.length).toBe(1)
 })
 
-test('LANES: the export pair warns on the real doc, and clears when cured', () => {
+test('LANES: the export pair does NOT warn mid-form (attempt 12, 2026-11-11) and carries no strip when cured', () => {
+  // THE HALF (the operator's exact attempt-12 gesture on the real
+  // served doc): the description typed, the name not yet — the form
+  // gate drops the authoring half (one spelling with the door);
+  // the RUN press owns the complete pair
   form({ spec: ttsDoc(), user: { model: 'qwen3-tts', variant: 'customvoice', text: 'x', design_prompt: 'a warm narrator' } })
-  const strip = document.querySelector('[data-lane-warn="1"]')
-  if (strip === null) throw new Error('the export pair warns')
-  expect(strip.textContent ?? '').toContain('voice_name')
-  expect(strip.textContent ?? '').toContain('name the voice and describe it, or drop both')
+  expect(document.querySelector('[data-lane-warn]'), 'no strip for the half-stated pair (the ruling)').toBeNull()
+  // the cured pair stays quiet
   cleanup()
   form({ spec: ttsDoc(), user: { model: 'qwen3-tts', variant: 'customvoice', text: 'x', design_prompt: 'a warm narrator', voice_name: 'warm_1' } })
   expect(document.querySelector('[data-lane-warn]')).toBeNull()

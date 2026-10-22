@@ -78,7 +78,7 @@ export function schemaEnvelope(dict) {
 // tool face spelled visibleWhen — a dead read for every card).
 import { extraOf } from '@melite/contracts/extraKeys';
 import { deepEqualJson } from '@deepseek-ai/dsh-util-values';
-import { judgeLaneBounds, judgeLaneRelations, judgeLaneSurface, laneBlank, laneBoundsOf, laneSurfaceOf, judgeSamplerEnvelope, marriedKnobValues, resolveCellRow, resolveVariantRow, samplerEnvelopeCure, unknownQuantVoice, unknownVariantVoice, variantMatrixFromFlatRows, } from '@melite/contracts/laneRelations';
+import { dropAuthoringIncomplete, judgeLaneBounds, judgeLaneRelations, judgeLaneSurface, laneBlank, laneBoundsOf, laneSurfaceOf, judgeSamplerEnvelope, marriedKnobValues, resolveCellRow, resolveVariantRow, samplerEnvelopeCure, unknownQuantVoice, unknownVariantVoice, variantMatrixFromFlatRows, } from '@melite/contracts/laneRelations';
 /** THE MOD-OWNED NAMES (the SubcardGrid law, enforced): every name a
  *  served modifier kind owns — its fields' names plus its param_key
  *  (the bag storage). CardForm EXCLUDES these from the flat param
@@ -801,11 +801,22 @@ export function laneViolations(spec, fields, user, base) {
     // user layer: a stated field over its ceiling is a refusal at
     // every seat; a defaulted field inside its row never fires.)
     const bounds = laneBoundsFor(spec, variantId);
-    return [
+    // THE FRICTIONLESS-AUTHORING RULING (operator 2026-11-11, attempt
+    // 12: "The refusal is never one keystroke at a time … you are
+    // submitting a form, not hacking the mainframe"): this gate is the
+    // WRITE seat's inline face — it drops the authoring-incomplete
+    // class through the SAME spelling the registry's write doors call
+    // (dropAuthoringIncomplete, the contracts judge's own export;
+    // never a second copy — the drift between this gate and the door
+    // WAS attempt 12: the door filtered, this copy refused, and the
+    // keystroke bounced while every wall was green). The strip still
+    // voices everything strict — conflicts, off-surface keys, bounds
+    // — and the RUN press judges the halves.
+    return dropAuthoringIncomplete([
         ...judgeLaneSurface(surface, names, stated),
         ...judgeLaneRelations(relations, stated),
         ...judgeLaneBounds(bounds, stated),
-    ];
+    ]);
 }
 /** Does the served doc offer this variant id? The VARIANT rows are
  *  the served truth — a recipe row and a surface-less variant

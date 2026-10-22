@@ -387,4 +387,52 @@ describe("THE VARIANT-SWITCH GESTURE — every card, every transition, both door
     // gate, before any live write — the seat lives at prime()).
     expect(FAMILY_RESEAT_CARVE, "H3 is the named exception (its lane identity is derived from the doc's params — deriveWindowFamily — which no DECL variant row can name)").toContain("h3-timeline");
   });
+
+  it("BOTH SEATS, ONE STATE (attempt 12, 2026-11-11): the rendered form's inline gate and the registry's write door pass the SAME authoring halves — drift between the two seats IS the red", async () => {
+    // THE ATTEMPT-12 LESSON, WALLED: the door filtered the
+    // authoring-half class while the form's own copy of the
+    // judgment refused it, and every wall stayed green because the
+    // walls drove the door, never the form. This arm drives BOTH
+    // seats with the SAME state — the burn's own family and pairs —
+    // and reds the instant their verdicts diverge.
+    const { laneViolations } = await import("../../../../packages/web/card-base/src/spec.ts");
+    const tts2 = transitions.filter((t) => t.family === "qwen3-tts");
+    expect(tts2.length, "the roster derives qwen3-tts transitions").toBeGreaterThan(0);
+    const bad: string[] = [];
+    const seen = new Set<string>();
+    for (const t of tts2) {
+      const spec = specs.get(t.family);
+      if (spec == null) continue;
+      const fields: Array<{ name: string }> = [];
+      for (const f of t.to.surface) {
+        if ((AXIS_KEYS as readonly string[]).includes(f)) continue;
+        const key = `${t.to.variantId}/${f}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        fields.push({ name: f });
+        // the HALF state: the pick + ONE box stated, the pair's other
+        // half absent — the operator mid-form
+        const user: Record<string, unknown> = { ...t.pick, model: t.family, [f]: probeFor(f) };
+        // seat 1 — THE RENDERED FORM'S GATE (hop [1]): no
+        // authoring-half voice may render
+        const formGate = laneViolations(spec, fields as never, user);
+        const formHalfVoices = formGate.filter((v) =>
+          /ride together on this lane|completes none of them|this lane requires/.test(v.message));
+        if (formHalfVoices.length > 0) {
+          bad.push(`FORM seat refuses the half (${key}): ${formHalfVoices.map((v) => v.message).join("; ")}`);
+        }
+        // seat 2 — THE REGISTRY'S WRITE DOOR: the same state admits
+        const door = reg.admitStageRelations(t.card, user);
+        if (!door.ok) {
+          bad.push(`DOOR refuses the same half (${key}): ${door.error}`);
+        }
+        // THE DRIFT RED: a pass at one seat and a refusal at the
+        // other is the multiple-seat disease, whatever its direction
+        if (formHalfVoices.length === 0 !== (door.ok === true)) {
+          bad.push(`DRIFT (${key}): form ${formHalfVoices.length === 0 ? "passes" : "refuses"} while door ${door.ok === true ? "passes" : "refuses"}`);
+        }
+      }
+    }
+    expect(bad, "both seats, one state — the attempt-12 drift is red in both directions").toEqual([]);
+  });
 });
