@@ -45,7 +45,6 @@ function strip(over?: Record<string, unknown>) {
       handleBarFrame: () => {},
       handleScrubStart: () => {},
       handleScrubEnd: () => {},
-      handleKeyframeAdd: () => "k9",
       addKeyframeWithImage: () => "k9-img",
       handleKeyframeMove: () => {},
       handleKeyframeDelete: () => {},

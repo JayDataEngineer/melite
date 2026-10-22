@@ -617,7 +617,11 @@ export interface TimelineKeyframeLanesProps {
   frameToPx: (f: number) => number
   xToFrame: (clientX: number) => number | null
   startDrag: (e: React.PointerEvent, d: Drag) => void
-  onKeyframeAdd: (trackId: string, frame: number) => string
+  /** Lane-click add. Optional (2026-10-22): a pane may refuse the
+   *  gesture entirely (h3's keyframes lane did — its click authored an
+   *  imageless pin no door could fill); absent → the lane seats
+   *  nothing on click. */
+  onKeyframeAdd?: (trackId: string, frame: number) => string
   onKeyframeDelete: (id: string) => void
 }
 
@@ -647,7 +651,7 @@ export function TimelineKeyframeLanes(props: TimelineKeyframeLanesProps) {
             data-kf-cards={kfLaneCards ? "true" : "false"}
             onDoubleClick={(e) => {
               const f = xToFrame(e.clientX)
-              if (f != null) onKeyframeAdd(track.uuid, f)
+              if (f != null) onKeyframeAdd?.(track.uuid, f)
             }}
           >
             {/* (SD-8) EVERY empty lane carries its own drop well — the

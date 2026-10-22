@@ -12,6 +12,7 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react"
 import { StudioStripPane } from "../src/ui/studio/StudioStripPane.tsx"
 import { studioCopy } from "../src/ui/studio/studioCopy.ts"
 import { bindEstateRemote, unbindEstateRemote } from "@melite/card-base/client"
+import { repoRoot } from "./repo-root.ts"
 
 // happy-dom returns zero rects (no layout) — the bar's ClientX→frame
 // doors need a viewport width, as every real browser provides.
@@ -38,7 +39,7 @@ const CLIP = { id: "c1", name: "song.mp3", start_frame: 10, dur_frames: 48 }
 
 function strip(over?: Record<string, unknown>) {
   const rec: Record<string, unknown[]> = {
-    bar: [], scrubStart: [], scrubEnd: [], kfAdd: [], kfMove: [], kfDel: [], kfDoor: [] as number[], kfWithImage: [] as [string, number][],
+    bar: [], scrubStart: [], scrubEnd: [], kfMove: [], kfDel: [], kfDoor: [] as number[], kfWithImage: [] as [string, number][],
   audioDoor: [] as string[],
     promptUpdate: [], promptMove: [], promptResize: [], promptDel: [],
     extend: [], addCall: [], select: [], addedClip: [], taken: [],
@@ -60,7 +61,6 @@ function strip(over?: Record<string, unknown>) {
       handleBarFrame={(f) => { rec.bar.push([f]) }}
       handleScrubStart={() => { rec.scrubStart.push([]) }}
       handleScrubEnd={() => { rec.scrubEnd.push([]) }}
-      handleKeyframeAdd={(t, f) => { rec.kfAdd.push([t, f]); return "k9" }}
       handleKeyframeMove={(id, f) => { rec.kfMove.push([id, f]) }}
       handleKeyframeDelete={(id) => { rec.kfDel.push([id]) }}
       handlePromptUpdate={(id, t) => { rec.promptUpdate.push([id, t]) }}
@@ -640,10 +640,13 @@ describe("additive gestures (double-click lands in DOC frames)", () => {
     assert.deepEqual(rec.addCall, [[4242]])
   })
 
-  it("keyframe-lane double-click pins the lane's track", () => {
+  it("keyframe-lane double-click seats NOTHING (the dead imageless path is gone — operator 2026-10-22; the lane upload door is the ONE add)", () => {
     const { rec } = strip()
+    const mounted = document.body.querySelectorAll("[data-kf]").length
     fireEvent.doubleClick(document.body.querySelector('[data-lane="image"]')!, { clientX: 60 })
-    assert.deepEqual(rec.kfAdd, [["image", 4242]])
+    assert.equal(rec.kfWithImage.length, 0, "no atomic add fired either")
+    assert.equal(document.body.querySelectorAll("[data-kf]").length, mounted,
+      `the lane click mounted no pin (mounted before: ${mounted})`)
   })
 })
 
@@ -809,8 +812,10 @@ describe("scrub (the cap owns the gesture; seek pairs the interaction state)", (
     // the css rule, from the real built timeline module css (not a copy)
     const { readFileSync } = await import("node:fs")
     const { join } = await import("node:path")
-    // the suite always runs from the repo root (the walker's cwd law)
-    const css = readFileSync(join(process.cwd(), "packages", "web-kit", "timeline", "lib", "timeline", "timeline.module.css"), "utf8")
+    // the workspace root by marker walk — the invocation cwd is the
+    // walker's repo root OR the package dir; a cwd assumption ENOENTs
+    // under the other (the 2026-10-22 red class)
+    const css = readFileSync(join(repoRoot(), "packages", "web-kit", "timeline", "lib", "timeline", "timeline.module.css"), "utf8")
     const playheadClass = line.className.split(" ").find((c) => c.includes("playhead") && !c.includes("Cap"))
     assert.ok(playheadClass, "the line rides the playhead css module class")
     // the built css keeps original module names — pin the rule itself

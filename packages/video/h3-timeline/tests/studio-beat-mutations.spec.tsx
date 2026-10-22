@@ -44,24 +44,10 @@ describe("addKeyframeWithImage (the lane-add parity law, 2026-11-06)", () => {
   })
 })
 
-describe("handleKeyframeAdd", () => {
-  it("adds an unwired image pin and returns the index-derived id", () => {
-    const { result } = harness([KF])
-    let id = ""
-    act(() => { id = result.current.handleKeyframeAdd("image", 44) })
-    assert.equal(id, "kf-1")
-    assert.deepEqual(result.current.keyframes, [KF, { image: "", frame: 44 }])
-  })
-
-  it("the channel has ONE pin kind — any lane gesture authors an image pin", () => {
-    const { result } = harness([])
-    let id = ""
-    act(() => { id = result.current.handleKeyframeAdd("clip", 5) })
-    assert.equal(id, "kf-0")
-    assert.deepEqual(result.current.keyframes[0], { image: "", frame: 5 })
-    expect(result.current.keyframes.length).toBe(1)
-  })
-})
+// (operator 2026-10-22) the former describe("handleKeyframeAdd") — the
+// imageless pin author — changed with its behavior: the hook no longer
+// exports it and the lane click seats nothing (studio-keyframe-pin.spec
+// owns the absence wall).
 
 describe("handleKeyframeMove", () => {
   it("moves a real keyframe", () => {

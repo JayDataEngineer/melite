@@ -399,6 +399,17 @@ window.__ModuleLoader__.load({
 			resourceRetryConfirm: (p) => "Retry the failed fetch " + p.id + " as a fresh download? The dead row keeps its truth.",
 			/** Confirm sentence for the discard door; the id rides it. */
 			resourceDiscardConfirm: (p) => "Discard the failed row " + p.id + "? A later poll answers 404.",
+			/** Label for the Download door on an absent/failed/blocked MODEL
+			*  family row (the 2026-10-22 downloads-stream audit: the roster
+			*  is where an operator meets a missing weight, and the row
+			*  offered no door — the verbs existed door-side only). */
+			resourceDownloadButton: "Download",
+			/** Confirm sentence for the Download door; the family id rides it. */
+			resourceDownloadConfirm: (p) => "Download the declared weights of " + p.id + " now? The fetch runs on the lane and the row reports its progress.",
+			/** Label for the Install door on an absent EXTENSION row. */
+			resourceInstallButton: "Install pack",
+			/** Confirm sentence for the Install door; the pack id rides it. */
+			resourceInstallConfirm: (p) => "Install the declared extension pack " + p.id + " into the engine? The pack declaration owns its source.",
 			/** THE FOLDED SECTION'S STORY (the sidebar-height burn, 2026-11):
 			*  the one-line count the closed section fold titles itself with —
 			*  the roll-up rides the same line (the census wall pins it). */
@@ -999,6 +1010,7 @@ window.__ModuleLoader__.load({
 			"install_extension_url",
 			"download_model",
 			"provision_model",
+			"acquire_weight",
 			"acquire_retry",
 			"acquire_discard",
 			"launch",
@@ -1021,6 +1033,7 @@ window.__ModuleLoader__.load({
 			download_model: assetsCopy.actionOpenRawModel,
 			acquire_retry: assetsCopy.resourceRetryButton,
 			acquire_discard: assetsCopy.resourceDiscardButton,
+			acquire_weight: assetsCopy.resourceDownloadButton,
 			lora_list: assetsCopy.actionListLoras,
 			lora_install: assetsCopy.actionCopyLora,
 			snapshot_list: assetsCopy.actionReviewSnapshots,
@@ -2219,7 +2232,12 @@ window.__ModuleLoader__.load({
 													return (item.state ?? assetsCopy.unknownFallback) === "unknown";
 												}).length;
 												const itemRollup = items.length === 0 ? "" : badItems === 0 && uncheckedItems === 0 ? `${items.length} item${items.length === 1 ? "" : "s"}` : `${badItems > 0 ? `${badItems}/${items.length} failed` : ""}${badItems > 0 && uncheckedItems > 0 ? " · " : ""}${uncheckedItems > 0 ? `${uncheckedItems}/${items.length} unchecked` : ""}`;
-												const hasDoors = operationId !== void 0 && (state === "failed" || state === "blocked");
+												const refId = resource.ref?.id;
+												const refKind = resource.ref?.kind;
+												const stateDoors = operationId !== void 0 && (state === "failed" || state === "blocked");
+												const modelDoor = (state === "absent" || state === "failed" || state === "blocked") && refKind === "model" && refId !== void 0;
+												const installDoor = state === "absent" && refKind === "extension" && refId !== void 0;
+												const hasDoors = stateDoors || modelDoor || installDoor;
 												const expandable = items.length > 0 || resource.detail !== void 0 || hasDoors;
 												return /* @__PURE__ */ (0, react_jsx_runtime.jsx)("li", {
 													className: assets_module_css_default.resourceRow,
@@ -2274,21 +2292,41 @@ window.__ModuleLoader__.load({
 																hasDoors && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 																	className: assets_module_css_default.row,
 																	"data-testid": "resource-doors",
-																	children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
-																		"aria-busy": busy === "acquire_retry",
-																		disabled: locked || busy !== null,
-																		onClick: () => {
-																			confirmRun("acquire_retry", assetsCopy.resourceRetryConfirm({ id: operationId }), { payload: { operation_id: operationId } });
-																		},
-																		children: assetsCopy.resourceRetryButton
-																	}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
-																		"aria-busy": busy === "acquire_discard",
-																		disabled: locked || busy !== null,
-																		onClick: () => {
-																			confirmRun("acquire_discard", assetsCopy.resourceDiscardConfirm({ id: operationId }), { payload: { operation_id: operationId } });
-																		},
-																		children: assetsCopy.resourceDiscardButton
-																	})]
+																	children: [
+																		stateDoors && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+																			"aria-busy": busy === "acquire_retry",
+																			disabled: locked || busy !== null,
+																			onClick: () => {
+																				confirmRun("acquire_retry", assetsCopy.resourceRetryConfirm({ id: operationId }), { payload: { operation_id: operationId } });
+																			},
+																			children: assetsCopy.resourceRetryButton
+																		}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+																			"aria-busy": busy === "acquire_discard",
+																			disabled: locked || busy !== null,
+																			onClick: () => {
+																				confirmRun("acquire_discard", assetsCopy.resourceDiscardConfirm({ id: operationId }), { payload: { operation_id: operationId } });
+																			},
+																			children: assetsCopy.resourceDiscardButton
+																		})] }),
+																		modelDoor && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+																			"data-testid": "resource-download",
+																			"aria-busy": busy === "acquire_weight",
+																			disabled: locked || busy !== null,
+																			onClick: () => {
+																				confirmRun("acquire_weight", assetsCopy.resourceDownloadConfirm({ id: refId }), { payload: { model: refId } });
+																			},
+																			children: assetsCopy.resourceDownloadButton
+																		}),
+																		installDoor && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+																			"data-testid": "resource-install",
+																			"aria-busy": busy === "install_extension",
+																			disabled: locked || busy !== null,
+																			onClick: () => {
+																				confirmRun("install_extension", assetsCopy.resourceInstallConfirm({ id: refId }), { payload: { nodes: [refId] } });
+																			},
+																			children: assetsCopy.resourceInstallButton
+																		})
+																	]
 																}),
 																items.length > 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("ul", {
 																	className: assets_module_css_default.resourceItems,

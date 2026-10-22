@@ -2590,7 +2590,7 @@ window.__ModuleLoader__.load({
 					"data-kf-cards": kfLaneCards ? "true" : "false",
 					onDoubleClick: (e) => {
 						const f = xToFrame(e.clientX);
-						if (f != null) onKeyframeAdd(track.uuid, f);
+						if (f != null) onKeyframeAdd?.(track.uuid, f);
 					},
 					children: [kfs.length === 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 						"data-testid": "kf-drop-well",
@@ -4479,7 +4479,7 @@ window.__ModuleLoader__.load({
 		const loadAudioMedia = async (_kind, signal) => {
 			return (await (0, _melite_card_base_client.fetchMediaLibrary)("all", signal)).filter((r) => AUDIO_ROW_RE.test(r.url) || AUDIO_ROW_RE.test(r.name));
 		};
-		function StudioStripPane({ calls, fps, barPrompts, barLanes, barAudioClips, barTotal, frameIdx, callPreviews, selectedBarId, filmMap, handleBarFrame, handleScrubStart, handleScrubEnd, handleKeyframeAdd, handleKeyframeMove, handleKeyframeDelete, handlePromptUpdate, handlePromptMove, handlePromptResize, handlePromptDelete, handleExtend, addCallAt, handleTimelineSelect, layerA, refAudiosBlocked, addAudioClip, takeAudioFile, moveAudioClip, deleteAudioClip, updateAudioClip, setLayerAKey, artifactIndex, docFromFilm, keyframes, addKeyframeWithImage, enterKfView, enterAudioView }) {
+		function StudioStripPane({ calls, fps, barPrompts, barLanes, barAudioClips, barTotal, frameIdx, callPreviews, selectedBarId, filmMap, handleBarFrame, handleScrubStart, handleScrubEnd, handleKeyframeMove, handleKeyframeDelete, handlePromptUpdate, handlePromptMove, handlePromptResize, handlePromptDelete, handleExtend, addCallAt, handleTimelineSelect, layerA, refAudiosBlocked, addAudioClip, takeAudioFile, moveAudioClip, deleteAudioClip, updateAudioClip, setLayerAKey, artifactIndex, docFromFilm, keyframes, addKeyframeWithImage, enterKfView, enterAudioView }) {
 			const pickLane = (0, react.useRef)("music");
 			const [laneErr, setLaneErr] = (0, react.useState)(null);
 			const laneField = (lane) => ({
@@ -4632,7 +4632,6 @@ window.__ModuleLoader__.load({
 						onFrameChange: handleBarFrame,
 						onScrubStart: handleScrubStart,
 						onScrubEnd: handleScrubEnd,
-						onKeyframeAdd: (trackId, frame) => handleKeyframeAdd(trackId, docFromFilm(frame)),
 						onKeyframeMove: (id, frame) => handleKeyframeMove(id, docFromFilm(frame)),
 						onKeyframeDelete: handleKeyframeDelete,
 						onTrackAdd: openTrackAdd,
@@ -16124,14 +16123,6 @@ window.__ModuleLoader__.load({
 				}]);
 				return id;
 			};
-			const handleKeyframeAdd = (trackId, frame) => {
-				const id = `kf-${keyframes.length}`;
-				setKeyframes((prev) => [...prev, {
-					image: "",
-					frame
-				}]);
-				return id;
-			};
 			const handleKeyframeMove = (id, frame) => {
 				const i = kfIndexOf(id);
 				setKeyframes((prev) => {
@@ -16156,7 +16147,6 @@ window.__ModuleLoader__.load({
 				});
 			};
 			return {
-				handleKeyframeAdd,
 				addKeyframeWithImage,
 				handleKeyframeMove,
 				handleKeyframeDelete,
@@ -16672,7 +16662,6 @@ window.__ModuleLoader__.load({
 					handleBarFrame: film.handleBarFrame,
 					handleScrubStart: film.handleScrubStart,
 					handleScrubEnd: film.handleScrubEnd,
-					handleKeyframeAdd: kf.handleKeyframeAdd,
 					handleKeyframeMove: kf.handleKeyframeMove,
 					handleKeyframeDelete: kf.handleKeyframeDelete,
 					handlePromptUpdate: pr.handlePromptUpdate,

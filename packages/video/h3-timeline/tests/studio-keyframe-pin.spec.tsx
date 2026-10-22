@@ -4,14 +4,17 @@
  * never looks settled — the empty pin renders its pending face and the
  * gate names it."
  *
- * RULING (2026-11-06): NAMED-PENDING. The double-click stays the
- * frame-precise gesture and authors the pin PENDING ({image:""}) —
- * the bar's onKeyframeAdd contract is synchronous (the diamond binds
- * to the returned id immediately), while the lawful atomic add
- * (addKeyframeWithImage) commits through the picker doors ASYNC
- * (the fit promise chain) and at the PLAYHEAD, not the clicked
- * frame — the two gestures keep one owner each. The pending state is
- * named at hop 1 on every face — the chip's aria/readout/drop hint
+ * RULING (2026-11-06): NAMED-PENDING — SUPERSEDED (operator
+ * 2026-10-22): THE LANE-CLICK ADD IS GONE. The double-click authored
+ * the pin PENDING ({image:""}), but no door could ever fill it — the
+ * picker doors commit through addKeyframeWithImage at the PLAYHEAD,
+ * never at the clicked frame — so the gesture was a dead path the
+ * operator read as broken. The lane click now seats NOTHING (the bar's
+ * onKeyframeAdd is optional and the pane no longer wires it); the
+ * upload doors (the lane head's icon, the call-cards panel) are the
+ * ONE add, atomic: the pin and its image ride together or not at all.
+ * Legacy saved docs that already carry imageless pins keep the
+ * named-pending faces below — the chip's aria/readout/drop hint
  * (StudioStripPane.kfChips) and the studio's gate (useFilmSync.unwired
  * → the shell's unwiredWarning line) — and the compose door's
  * "image is required" refusal (h3 actions plan gate, walled in
@@ -53,7 +56,7 @@ const WIRED: DocKeyframe = { image: "data:image/png;base64,AA", frame: 40 }
 
 function strip(over?: Record<string, unknown>) {
   const rec: Record<string, unknown[]> = {
-    bar: [], scrubStart: [], scrubEnd: [], kfAdd: [], kfMove: [], kfDel: [], kfDoor: [], kfWithImage: [],
+    bar: [], scrubStart: [], scrubEnd: [], kfMove: [], kfDel: [], kfDoor: [], kfWithImage: [],
     promptUpdate: [], promptMove: [], promptResize: [], promptDel: [],
     extend: [], addCall: [], select: [], addedClip: [], taken: [],
     movedClip: [], delClip: [], keys: [], audioDoor: [],
@@ -74,7 +77,6 @@ function strip(over?: Record<string, unknown>) {
       handleBarFrame={(f) => { rec.bar.push([f]) }}
       handleScrubStart={() => { rec.scrubStart.push([]) }}
       handleScrubEnd={() => { rec.scrubEnd.push([]) }}
-      handleKeyframeAdd={(t, f) => { rec.kfAdd.push([t, f]); return "k9" }}
       handleKeyframeMove={(id, f) => { rec.kfMove.push([id, f]) }}
       handleKeyframeDelete={(id) => { rec.kfDel.push([id]) }}
       handlePromptUpdate={(id, t) => { rec.promptUpdate.push([id, t]) }}
@@ -136,21 +138,35 @@ describe("the pending face (C6 — the empty pin never looks settled)", () => {
   })
 })
 
-describe("the gesture keeps ONE owner (the double-click is the pending author)", () => {
-  it("handleKeyframeAdd lands {image:\"\"} — and that exact row renders the pending faces through the real mapper", () => {
+describe("the lane click seats NOTHING (the dead imageless path is removed — operator 2026-10-22)", () => {
+  // THE ORDER THAT SUPERSEDES THE 2026-11-06 NAMED-PENDING RULING:
+  // the lane click authored a pin with NO image and NO door could
+  // ever fill it (the upload doors pin at the playhead) — the
+  // operator read it as a dead path and ordered the gesture gone.
+  // The lane-head upload door (addKeyframeWithImage, atomic) is the
+  // ONE add; legacy saved docs that already carry imageless pins keep
+  // their pending faces and the unwired gate below.
+
+  it("the pane wires no lane-add and the hook authors no imageless pin (source + seam arms)", async () => {
+    const { readFileSync } = await import("node:fs")
+    const { fileURLToPath } = await import("node:url")
+    const { dirname, join } = await import("node:path")
+    const dir = join(dirname(fileURLToPath(import.meta.url)), "../src/ui/studio")
+    for (const f of ["StudioStripPane.tsx", "useBeatMutations.ts"]) {
+      const src = readFileSync(join(dir, f), "utf8")
+      assert.ok(!src.includes("onKeyframeAdd"), `${f} no longer wires the bar's lane-add`)
+      assert.ok(!src.includes("handleKeyframeAdd"), `${f} carries no imageless-pin writer`)
+    }
+  })
+
+  it("the hook's keyframe writers all carry an image — addKeyframeWithImage is the ONE add", () => {
     const { result } = renderHook(() => {
       const [kf, setKf] = useState<DocKeyframe[]>([])
       const m = useBeatMutations(kf, setKf)
       return { kf, ...m }
     })
-    act(() => { result.current.handleKeyframeAdd("image", 42) })
-    const pins = result.current.kf
-    assert.deepEqual(pins, [{ image: "", frame: 42 }], "the write is the PENDING author (the picker doors own the atomic add)")
-    // the write feeds the strip through the real keyframes→lanes seam
-    strip({ barLanes: keyframesToLanes(pins) as never, keyframes: pins as never })
-    assert.ok(screen.getByLabelText(studioCopy.keyframePendingAria(42)),
-      "the row the gesture authored IS the row the pending face names — write and face judge one state")
-    assert.equal(document.querySelector('[data-kf-thumb="kf-0"]'), null)
+    assert.equal("handleKeyframeAdd" in result.current, false, "no imageless author on the hook")
+    assert.equal(typeof result.current.addKeyframeWithImage, "function", "the atomic add stays")
   })
 })
 

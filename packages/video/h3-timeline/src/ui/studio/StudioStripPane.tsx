@@ -49,7 +49,7 @@ export function StudioStripPane({
   barPrompts, barLanes, barAudioClips, barTotal, frameIdx,
   callPreviews, selectedBarId, filmMap,
   handleBarFrame, handleScrubStart, handleScrubEnd,
-  handleKeyframeAdd, handleKeyframeMove, handleKeyframeDelete,
+  handleKeyframeMove, handleKeyframeDelete,
   handlePromptUpdate, handlePromptMove, handlePromptResize, handlePromptDelete,
   handleExtend, addCallAt, handleTimelineSelect,
   layerA, refAudiosBlocked, addAudioClip, takeAudioFile, moveAudioClip, deleteAudioClip,
@@ -69,7 +69,6 @@ export function StudioStripPane({
   handleBarFrame: (frame: number) => void
   handleScrubStart: () => void
   handleScrubEnd: () => void
-  handleKeyframeAdd: (trackId: string, frame: number) => string
   /** (2026-11-05, the lane upload door) — the atomic pin+image write
    *  the keyframes lane's upload icon commits (one write, the
    *  audio-lane grammar mirrored for frames). */
@@ -330,7 +329,9 @@ export function StudioStripPane({
       onFrameChange={handleBarFrame}
       onScrubStart={handleScrubStart}
       onScrubEnd={handleScrubEnd}
-      onKeyframeAdd={(trackId, frame) => handleKeyframeAdd(trackId, docFromFilm(frame))}
+      // (operator 2026-10-22) the bar's lane-add prop is NOT wired: the
+      // lane click authored an imageless pin no door could fill — the
+      // dead path is gone; the upload door below is the ONE add.
       onKeyframeMove={(id, frame) => handleKeyframeMove(id, docFromFilm(frame))}
       onKeyframeDelete={handleKeyframeDelete}
       // (D7, the lane-add parity law) the keyframes track head's add

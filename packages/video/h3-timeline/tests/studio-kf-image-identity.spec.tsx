@@ -141,7 +141,6 @@ function openStripDoor(): { added: [string, number][]; unmount: () => void } {
       handleBarFrame={() => {}}
       handleScrubStart={() => {}}
       handleScrubEnd={() => {}}
-      handleKeyframeAdd={() => "k9"}
       handleKeyframeMove={() => {}}
       handleKeyframeDelete={() => {}}
       handlePromptUpdate={() => {}}

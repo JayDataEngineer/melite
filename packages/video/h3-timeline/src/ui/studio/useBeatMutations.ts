@@ -28,27 +28,18 @@ export function useBeatMutations(
    *  audio inputs — the upload icon lands a pin WITH its image) —
    *  ONE atomic write: the pin and its image ride together, never an
    *  imageless pin followed by a second write (the atomic law). */
+  // (operator 2026-10-22: THE LANE-CLICK ADD IS GONE, superseding the
+  // 2026-11-06 NAMED-PENDING ruling) the former lane-click add authored
+  // a pin with NO image and NO door could ever fill it — the
+  // upload doors pin at the playhead — a dead path the operator read
+  // as broken. addKeyframeWithImage is the ONE add: the pin and its
+  // image ride together, atomically, or not at all. Legacy saved docs
+  // that already carry imageless pins keep their pending faces and
+  // the unwired gate (useFilmSync); the compose door's "image is
+  // required" refusal stays the backstop at the run.
   const addKeyframeWithImage = (image: string, frame: number): string => {
     const id = `kf-${keyframes.length}`
     setKeyframes((prev) => [...prev, { image, frame }])
-    return id
-  }
-
-  // (C6, the imageless pin — NAMED-PENDING ruling) the double-click's
-  // ONE writer: the pin lands at the clicked frame with image:"" —
-  // the PENDING author (the picker doors' atomic verb is
-  // addKeyframeWithImage below; the bar's synchronous
-  // onKeyframeAdd contract binds the diamond immediately, the
-  // picker's commit rides an async fit and pins at the playhead —
-  // a different gesture, one owner each). The pending state is
-  // named at hop 1 (the chip's faces in StudioStripPane.kfChips +
-  // the shell's unwiredWarning gate); the plan door's
-  // "image is required" refusal stays the backstop at the run.
-  const handleKeyframeAdd = (trackId: string, frame: number): string => {
-    // Return the index-derived uuid of the slot the new keyframe will
-    // occupy (the bar binds the diamond to it immediately).
-    const id = `kf-${keyframes.length}`
-    setKeyframes((prev) => [...prev, { image: "", frame }])
     return id
   }
 
@@ -72,6 +63,6 @@ export function useBeatMutations(
     })
   }
   return {
-    handleKeyframeAdd, addKeyframeWithImage, handleKeyframeMove, handleKeyframeDelete, setKeyframeImage,
+    addKeyframeWithImage, handleKeyframeMove, handleKeyframeDelete, setKeyframeImage,
   }
 }
