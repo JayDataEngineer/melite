@@ -215,8 +215,17 @@ select option {
   white-space: nowrap;
 }
 /* The single-model static face (2026-11-05): a stated value, never
- * a dead dropdown — non-interactive, titled, the same clamp. */
-.specSelectStatic { cursor: default; }
+ * a dead dropdown — non-interactive, titled, the same clamp.
+ * (operator 2026-11-11: the lone model read off-center beside the
+ * menu faces) — the interactive faces are DSH Buttons (Button.module
+ * .button: inline-flex + justify-content:center), so the static
+ * face centers by the SAME grammar, never a text-align that a
+ * cascade reorder can split from the faces it sits beside. */
+.specSelectStatic {
+  cursor: default;
+  display: flex;
+  justify-content: center;
+}
 .specSliderRow {
   align-items: center;
   display: flex;
