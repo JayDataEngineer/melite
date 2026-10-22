@@ -179,6 +179,11 @@ async function loadStagesOntoBench(
     // THE LOAD — stages replace; expect_rev carries the CAS, and
     // the click IS the confirmation (the overwrite law, 2026-09-15:
     // a user gesture declares what a composing agent must confirm).
+    // NOTE: no strip here — this tail also carries the run arm's
+    // FRESHLY stamped results (loadRunOntoBench stamps AFTER its own
+    // strip). The stale-doc strip lives at the draft door
+    // (loadDraftOntoBench), where the doc's own memory is the only
+    // thing on the rows.
     const ensureRes = await fetchUntilSeated('/v1/bench/ensure', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
@@ -220,8 +225,22 @@ export async function loadDraftOntoBench(draftId: string, deps: BenchLoadDeps): 
     }
     const stages = (doc as Record<string, unknown>)['stages']
     const intent = (doc as Record<string, unknown>)['intent']
+    // THE RESTORE STRIP (the operator's "random image"): the drafts
+    // door serves bench docs VERBATIM, results included — a draft
+    // that ran before carries the old run's result/runStatus/
+    // history on every stage. The contract's RESTORE_STRIP_KEYS
+    // leave here, at the draft door, so the load lands the WORKFLOW
+    // and never another run's outputs. It lives HERE and not in the
+    // shared tail because the run arm stamps its FRESH results after
+    // its own strip — a tail strip would eat those too.
+    const rows = Array.isArray(stages) ? stages : []
+    for (const st of rows) {
+      if (typeof st === 'object' && st !== null && !Array.isArray(st)) {
+        stripKeys(st as Record<string, unknown>, RESTORE_STRIP_KEYS)
+      }
+    }
     await loadStagesOntoBench(
-      Array.isArray(stages) ? stages : [],
+      rows,
       typeof intent === 'string' && intent !== '' ? intent : 'restored draft',
       deps,
     )

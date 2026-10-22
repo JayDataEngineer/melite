@@ -14,6 +14,7 @@
  */
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
+import { RESTORE_STRIP_KEYS } from '@melite/contracts/benchStage'
 import {
   cardsBenchAddress,
   cardsRunAddress,
@@ -169,6 +170,43 @@ describe('loadDraftOntoBench — the CAS load', () => {
       const body = JSON.parse(String(calls.find((c) => c.url === '/v1/bench/ensure')?.init?.body)) as Record<string, unknown>
       expect('expect_rev' in body).toBe(false)
     }
+  })
+
+  it('a stale draft restores the WORKFLOW — never another run’s outputs', async () => {
+    // THE OPERATOR'S "RANDOM IMAGE" (flows face, living-bench
+    // rows): the drafts door serves bench docs VERBATIM, results
+    // included — a draft that ran before carries the old run's
+    // result/runStatus/history on every stage. The load must strip
+    // the contract's RESTORE_STRIP_KEYS before the ensure, or every
+    // restored card paints the previous run's image.
+    const STALE = {
+      stages: [
+        {
+          id: 's_0', card: 'image-gen', engine: 'comfyui', params: { prompt: 'a red cube' },
+          result: { run_id: 'run-old', url: '/old.png', artifacts: { 'a.png': '/old.png' } },
+          runStatus: 'done', history: [{ rev: 1 }], resultParams: { prompt: 'a red cube' }, resolved: { model: 'm' },
+        },
+      ],
+      intent: 'old bench',
+    }
+    const { calls } = stubFetch((url) => {
+      if (url.startsWith('/v1/flows/drafts/')) return json(STALE)
+      if (url.startsWith('/v1/bench/ensure')) return json({ ok: true })
+      return json({ error: 'no bench' }, 404)
+    })
+    const d = deps('s1')
+    await loadDraftOntoBench('bench-session-old', d)
+    expect(d.errors).toEqual([])
+    expect(d.opened).toEqual(['dsh-resource://cards/bench/s1'])
+    const body = JSON.parse(String(calls.find((c) => c.url === '/v1/bench/ensure')?.init?.body)) as Record<string, unknown>
+    const stages = body['stages'] as Array<Record<string, unknown>>
+    expect(stages).toHaveLength(1)
+    // DERIVED, not listed: the arm loops the contract's own key set,
+    // so a sixth stripped key reds here the day the contract grows.
+    for (const k of RESTORE_STRIP_KEYS) {
+      expect(stages[0]).not.toHaveProperty(k)
+    }
+    expect(stages[0]).toMatchObject({ id: 's_0', card: 'image-gen', params: { prompt: 'a red cube' } })
   })
 
   it('an unreadable draft errors honestly (refusal voice, then HTTP n)', async () => {
