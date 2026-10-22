@@ -120,8 +120,19 @@ export function namedMulti(message: string): string[] {
   // injects, and the next round refuses them as undeclared forever
   // (the probe manufactures its own dead card). The undeclared list
   // itself rides unquoted and is NEVER a fill instruction — it is a
-  // delete instruction the caller owns.
-  const harvestable = message.replace(/card '[^']+' got undeclared param\(s\):[^.]*\.?/g, " ");
+  // a delete instruction the caller owns.
+  // THE TYPEERROR EXCISION (the design-route 'trim' burn, 2026-10-22):
+  // "Cannot read properties of undefined (reading 'trim')" quotes a
+  // property or method name — `(p.design_prompt as string).trim()`
+  // derefs before any gate names the field. Harvesting that quote
+  // mints 'trim' as a phantom param, the admission then refuses it
+  // as undeclared, and the delete arm sheds it only to re-meet the
+  // same deref — a loop that can only end dead. A TypeError names
+  // NO param; the deref's owner either refuses in its own voice
+  // (field-named, harvestable) or the row is dead by its own hand.
+  const harvestable = message
+    .replace(/card '[^']+' got undeclared param\(s\):[^.]*\.?/g, " ")
+    .replace(/Cannot read propert(?:y|ies) of (?:undefined|null) \(reading '[^']+'\)/g, " ");
   for (const m of harvestable.matchAll(/'([A-Za-z_][\w-]*)'/g)) names.add(m[1]);
   const first = namedParam(harvestable);
   if (first) names.add(first);
@@ -191,10 +202,24 @@ export function probeCompose(attempt: ProbeAttempt, rounds: number, estateFile: 
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       refusals.push(message);
+      // THE DELETE ARM (the 'trim' dead-card burn, 2026-10-22): an
+      // undeclared name the doc carries can never be filled into
+      // legality — undeclaredNames is the admission's own delete
+      // instruction, and the probe OWNS it here (the round the doc
+      // sheds a phantom is a round that composed nothing; without
+      // this arm a harvested phantom ends the loop as a dead card).
+      let deleted = false;
+      for (const name of undeclaredNames(message)) {
+        if (name in doc) {
+          delete doc[name];
+          filled.delete(name);
+          deleted = true;
+        }
+      }
       const named = namedMulti(message);
       const enumOffer = /expected "([^"]+)"/.exec(message);
       const fresh = enumOffer ? named : named.filter((n) => !filled.has(n));
-      if (fresh.length === 0) break;
+      if (fresh.length === 0 && !deleted) break;
       for (const name of fresh) {
         filled.add(name);
         doc[name] = enumOffer ? (enumOffer[1] as string) : fillFor(name, estateFile);

@@ -101,7 +101,11 @@ test('the sweep WALL bites: a poisoned doc is named, not printed', async () => {
       ],
     }))
     const crimes = sweepDir(dir, await bootRegistry())
-    expect(crimes.some((c) => c.includes('LANE') && c.includes('voice_name')), crimes.join('\n')).toBe(true)
+    // THE QVOICE BOOLEAN LAW recut (operator 2026-10-22): the export
+    // pair is dead — the customvoice lane's LANE crime names the
+    // stale knob the poisoned doc itself carries ('design_prompt'
+    // fires nothing on this lane), never the dead voice_name pair.
+    expect(crimes.some((c) => c.includes('LANE') && c.includes('design_prompt')), crimes.join('\n')).toBe(true)
     expect(crimes.some((c) => c.includes('PHANTOM-SPELL')), crimes.join('\n')).toBe(true)
     expect(crimes.some((c) => c.includes('PHANTOM-WIRE')), crimes.join('\n')).toBe(true)
   } finally {

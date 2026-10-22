@@ -6650,67 +6650,6 @@
   "python_module": "custom_nodes.melite-audio-nodes",
   "search_aliases": []
  },
- "MeliteQVoiceCopy": {
-  "category": "melite/audio",
-  "description": "",
-  "display_name": "Melite QVoice Copy",
-  "has_intermediate_output": false,
-  "input": {
-   "optional": {
-    "voices_root": [
-     "STRING",
-     {
-      "default": "",
-      "tooltip": "Engine-side voices mount override. EMPTY = the documented root (/mnt/data/models/audio/voices) resolved at RUN time \u2014 an empty default is deliberate: a directory path defaultled into the graph is unrepresentable to the source-echo guard (attempt-018's finding: the whole design lane refused), so the fallback lives in the node, never in the graph"
-     }
-    ]
-   },
-   "required": {
-    "audio": [
-     "AUDIO",
-     {
-      "tooltip": "The studio's own audio output \u2014 ORDERING ONLY (never read): the copy provably runs after the mint"
-     }
-    ],
-    "dest_prefix": [
-     "STRING",
-     {
-      "tooltip": "Output-dir prefix for the copy, e.g. <runId>/voices"
-     }
-    ],
-    "voice_name": [
-     "STRING",
-     {
-      "tooltip": "The studio export's name (the qvoice_save name) \u2014 the mint is <name>*.qvoice, newest wins (collision-numbered mounts)"
-     }
-    ]
-   }
-  },
-  "input_order": {
-   "optional": [
-    "voices_root"
-   ],
-   "required": [
-    "voice_name",
-    "dest_prefix",
-    "audio"
-   ]
-  },
-  "is_input_list": false,
-  "name": "MeliteQVoiceCopy",
-  "output": [
-   "STRING"
-  ],
-  "output_is_list": [
-   false
-  ],
-  "output_name": [
-   "saved_path"
-  ],
-  "output_node": true,
-  "python_module": "custom_nodes.melite-audio-nodes",
-  "search_aliases": []
- },
  "MeliteUnload": {
   "category": "melite/film",
   "description": "",

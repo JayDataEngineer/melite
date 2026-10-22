@@ -1161,21 +1161,27 @@ describe('the agent contract carries the lane contract', () => {
     expect(base).toContain('text')
     // design_prompt is NOT a family-base param — it is the
     // voicedesign variant's declared input (its lane surface params
-    // ["design_prompt","voice_name"]), so the base must not carry it.
+    // ["design_prompt"]), so the base must not carry it.
     expect(base).not.toContain('design_prompt')
-    // the export-pair law rides with the contract
+    // THE EXPORT PAIR IS DEAD (operator 2026-10-22: "Qvoice. Is a
+    // mod. It is not BAKED INTO THE DEFAULT CARD" — the qvoice
+    // boolean law): the together row that fired "the persona export
+    // needs both halves" is gone from the DECL, so the manifest
+    // serves NO together rows; the name is the SAVE QVOICE mod's
+    // one text field (the named-presence law), never a lane param.
     const relations = lanes!['qwen3-tts']!['relations'] as { together?: Array<{ fields: string[] }> }
-    expect(relations?.together?.[0]?.fields).toEqual(['voice_name', 'design_prompt'])
+    expect(relations?.together ?? [], 'the base tts lane declares NO together pair (the export pair is dead)').toEqual([])
     // the base lane adds the clone pair; the customvoice lane the persona
     const variants = lanes!['qwen3-tts']!['variants'] as Record<string, { params?: string[]; cells?: Record<string, { params?: string[] }> }>
     expect(variants['base']?.params).toEqual(['ref_audio', 'ref_text'])
     expect(variants['customvoice']?.params).toEqual(['voice'])
     // THE FOLDED DECL STRUCTURE (three variants, two quants — Base a
-    // variant, never a third family): the voicedesign lane owns the
-    // export pair, and the instruct split rides the 1.7B customvoice
+    // variant, never a third family): the design lane owns the
+    // description alone (no name rides the lane — the save mod owns
+    // the export), and the instruct split rides the 1.7B customvoice
     // cell (size-at-quant).
     expect(Object.keys(variants).sort()).toEqual(['base', 'customvoice', 'voicedesign'])
-    expect(variants['voicedesign']?.params).toEqual(['design_prompt', 'voice_name'])
+    expect(variants['voicedesign']?.params).toEqual(['design_prompt'])
     expect(variants['customvoice']?.cells?.['1_7b']?.params).toEqual(['style_instruction'])
   })
 

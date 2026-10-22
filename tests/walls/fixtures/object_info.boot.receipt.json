@@ -1,12 +1,12 @@
 {
- "derived_at": "2026-10-21T20:48:13.540Z",
+ "derived_at": "2026-10-22T14:10:23.823Z",
  "tool": "scripts/regen-node-vocab.mjs --boot",
  "source": {
   "path": "data/tmp/object_info_prod.json",
   "sha256": "e2adc1f55000c5f437f8ccc6e07cbcd27667fc706592f6b8c44df3daf3104486",
   "mtime_ms": 1792615693312.3054,
   "class_count": 1677,
-  "origin": "live"
+  "origin": "capture"
  },
  "bootstrap_seed": {
   "path": "tests/walls/fixtures/object_info.boot.bootstrap.json",
@@ -15,18 +15,18 @@
  },
  "derivation": {
   "facts_path": "packages/engines/comfyui-cordis/data/model-facts.json",
-  "addressed_class_count": 97,
+  "addressed_class_count": 96,
   "bootstrap_class_count": 68,
-  "fixture_class_count": 165,
+  "fixture_class_count": 164,
   "rows_probed": 31,
   "refused_rows": 0
  },
  "delta": {
-  "added": [
-   "LanPaint_ImageDecode"
+  "added": [],
+  "pruned": [
+   "MeliteQVoiceCopy"
   ],
-  "pruned": [],
   "updated": [],
-  "reordered_keys": 0
+  "reordered_keys": 91
  }
 }
