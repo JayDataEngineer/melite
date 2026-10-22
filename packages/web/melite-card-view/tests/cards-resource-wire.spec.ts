@@ -32,13 +32,6 @@ function run(over: Partial<CardsRunValue> = {}): CardsRunValue {
   };
 }
 
-/** The bench/add-stage docs the restore sent, in order. */
-function addedDocs(calls: Array<{ method: string; args: Record<string, unknown> }>): unknown[] {
-  return calls
-    .filter((c) => c.method === "bench/add-stage")
-    .map((c) => c.args["doc"]);
-}
-
 describe("fetchBench — a missing bench is a zero state, not a failure", () => {
   test("a served bench reads through", async () => {
     const fakes = mountEstateFakes({
@@ -103,8 +96,20 @@ describe("readDraft — the bench rev rides when it is a number", () => {
   });
 });
 
-describe("restoreRunToBench — the refusal arms", () => {
+describe("restoreRunToBench — the refusal arms (ONE batch write, operator 2026-10-21)", () => {
   const DRAFT = [{ id: "s_0", card: "image-gen", engine: "comfyui", params: { steps: 1 } }];
+
+  /** The bench/add-stages docs the restore sent (the ONE batch door —
+   *  any bench/add-stage call on this plane is the retired N-write
+   *  path crawling back). */
+  function batchDocs(calls: Array<{ method: string; args: Record<string, unknown> }>): unknown[] {
+    return calls
+      .filter((c) => c.method === "bench/add-stages")
+      .map((c) => c.args["doc"]);
+  }
+  function legacyAdds(calls: Array<{ method: string; args: Record<string, unknown> }>): number {
+    return calls.filter((c) => c.method === "bench/add-stage").length;
+  }
 
   test("an unreadable draft throws with the door's own text (Error and foreign)", async () => {
     const refused = mountEstateFakes({
@@ -163,14 +168,16 @@ describe("restoreRunToBench — the refusal arms", () => {
     }
   });
 
-  test("a revless bench chains from 0 (the birth row's own rev)", async () => {
+  test("a revless bench rides ONE batch write at expect_rev 0 (the birth row's own rev)", async () => {
     const fakes = mountEstateFakes({
       draftStages: DRAFT,
       benchDoc: { rev: "x", stages: [], log: [] },
     });
     try {
       await expect(restoreRunToBench(run(), "main")).resolves.toMatchObject({ added: 1 });
-      expect(addedDocs(fakes.calls).map((d) => (d as Record<string, unknown>)["expect_rev"])).toEqual([0]);
+      expect(batchDocs(fakes.calls).map((d) => (d as Record<string, unknown>)["expect_rev"])).toEqual([0]);
+      expect(batchDocs(fakes.calls).length, "exactly ONE batch write").toBe(1);
+      expect(legacyAdds(fakes.calls), "no per-stage writes — the retired N-write path").toBe(0);
     } finally {
       fakes.unmount();
     }
@@ -183,13 +190,13 @@ describe("restoreRunToBench — the refusal arms", () => {
     });
     try {
       await restoreRunToBench(run(), "main");
-      expect(addedDocs(fakes.calls)).toEqual([{ card: "c", author: "user", expect_rev: 0, id: "s_0" }]);
+      expect(batchDocs(fakes.calls)).toEqual([{ stages: [{ card: "c", id: "s_0" }], author: "user", expect_rev: 0 }]);
     } finally {
       fakes.unmount();
     }
   });
 
-  test("a revless add answer keeps the chain (the next add reuses the rev)", async () => {
+  test("the batch rides the bench/get rev (the door chains the CAS server-side)", async () => {
     const fakes = mountEstateFakes({
       draftStages: [
         { id: "s_0", card: "a" },
@@ -198,20 +205,19 @@ describe("restoreRunToBench — the refusal arms", () => {
       benchDoc: { rev: 7, stages: [], log: [] },
     });
     try {
-      // the live lane's add answer carries no rev — the chain holds
-      // the bench/get rev for every write.
       await expect(restoreRunToBench(run(), "main")).resolves.toMatchObject({ added: 2 });
-      expect(addedDocs(fakes.calls).map((d) => (d as Record<string, unknown>)["expect_rev"])).toEqual([7, 7]);
+      // ONE write names the rev once — there is no per-write chain
+      expect(batchDocs(fakes.calls).map((d) => (d as Record<string, unknown>)["expect_rev"])).toEqual([7]);
     } finally {
       fakes.unmount();
     }
   });
 
-  test("a foreign add-stage throw stops the restore with its text", async () => {
+  test("a foreign add-stages throw stops the restore with its text", async () => {
     const fakes = mountEstateFakes({
       draftStages: DRAFT,
       benchDoc: { rev: 0, stages: [], log: [] },
-      throws: [{ method: "bench/add-stage", value: "kablam" }],
+      throws: [{ method: "bench/add-stages", value: "kablam" }],
     });
     try {
       await expect(restoreRunToBench(run(), "main")).rejects.toThrow(
@@ -222,45 +228,34 @@ describe("restoreRunToBench — the refusal arms", () => {
     }
   });
 
-  test("a twice-taken id stops the restore (the retry's own text rides)", async () => {
+  test("a door refusal stops the restore whole (the batch refuses atomically)", async () => {
     const fakes = mountEstateFakes({
       draftStages: DRAFT,
       benchDoc: { rev: 0, stages: [], log: [] },
-      // the door keeps refusing — the first write AND the id-less
-      // retry both land on the taken id (one queue entry per call).
-      refusals: [
-        { method: "bench/add-stage", message: "already on the bench: s_0" },
-        { method: "bench/add-stage", message: "already on the bench: s_0" },
-      ],
+      refusals: [{ method: "bench/add-stages", message: "stage 0 of the batch: card is required" }],
     });
     try {
       await expect(restoreRunToBench(run(), "main")).rejects.toThrow(
-        "restore stopped after 0 stage(s): already on the bench: s_0",
+        "restore stopped after 0 stage(s): stage 0 of the batch: card is required",
       );
     } finally {
       fakes.unmount();
     }
   });
 
-  test("a foreign retry throw stops the restore with its text", async () => {
+  test("an id the bench already holds rides id-less and noted (the whole-batch pre-shape, never a retry round trip)", async () => {
     const fakes = mountEstateFakes({
-      draftStages: DRAFT,
-      benchDoc: { rev: 0, stages: [], log: [] },
-      refusals: [{ method: "bench/add-stage", message: "already on the bench: s_0" }],
-      // the retry's own death (the 2nd add-stage call): the first
-      // write refuses on the taken id, the id-less retry throws the
-      // foreign value verbatim.
-      throws: [{ method: "bench/add-stage", value: "kablam", onCall: 2 }],
+      draftStages: [{ id: "s_0", card: "image-gen", params: { steps: 1 } }],
+      benchDoc: { rev: 0, stages: [{ id: "s_0", card: "x" }], log: [] },
     });
     try {
-      await expect(restoreRunToBench(run(), "main")).rejects.toThrow(
-        "restore stopped after 0 stage(s): kablam",
-      );
-      // the retry path ran: two writes, the second id-less.
-      expect(addedDocs(fakes.calls)).toEqual([
-        { card: "image-gen", author: "user", expect_rev: 0, engine: "comfyui", params: { steps: 1 }, id: "s_0" },
-        { card: "image-gen", author: "user", expect_rev: 0, engine: "comfyui", params: { steps: 1 } },
-      ]);
+      const report = await restoreRunToBench(run(), "main");
+      expect(report).toMatchObject({ added: 1, skipped: 0 });
+      expect(report.notes).toEqual(["s_0 was already on the bench — added under a fresh id"]);
+      // the collision is pre-computed client-side: the row carries NO
+      // id, the door mints fresh — one call, no retry
+      expect(batchDocs(fakes.calls)).toEqual([{ stages: [{ card: "image-gen", params: { steps: 1 } }], author: "user", expect_rev: 0 }]);
+      expect(legacyAdds(fakes.calls)).toBe(0);
     } finally {
       fakes.unmount();
     }
@@ -273,48 +268,7 @@ describe("restoreRunToBench — the refusal arms", () => {
     });
     try {
       await expect(restoreRunToBench(run(), "main")).resolves.toMatchObject({ added: 1 });
-      expect(addedDocs(fakes.calls)).toEqual([{ card: "image-gen", author: "user", expect_rev: 0, params: {} }]);
-    } finally {
-      fakes.unmount();
-    }
-  });
-
-  test("a revless retry answer keeps the chain (the next write reuses the rev)", async () => {
-    const fakes = mountEstateFakes({
-      draftStages: [
-        { id: "s_0", card: "a" },
-        { id: "s_1", card: "b" },
-      ],
-      benchDoc: { rev: 4, stages: [], log: [] },
-      // the taken id burns one refusal; the id-less retry and the
-      // next write land clean with no rev in their answers.
-      refusals: [{ method: "bench/add-stage", message: "already on the bench: s_0" }],
-    });
-    try {
-      await expect(restoreRunToBench(run(), "main")).resolves.toMatchObject({ added: 2 });
-      expect(addedDocs(fakes.calls).map((d) => (d as Record<string, unknown>)["expect_rev"])).toEqual([4, 4, 4]);
-    } finally {
-      fakes.unmount();
-    }
-  });
-
-  test("a rev-carrying retry answer moves the chain (the next write rides the fresh rev)", async () => {
-    const fakes = mountEstateFakes({
-      draftStages: [
-        { id: "s_0", card: "a" },
-        { id: "s_1", card: "b" },
-      ],
-      benchDoc: { rev: 4, stages: [], log: [] },
-      // the retry's answer stamps rev 9 (the bench re-seated under
-      // the restore) — the chain moves with it.
-      addStageRevs: [9],
-      refusals: [{ method: "bench/add-stage", message: "already on the bench: s_0" }],
-    });
-    try {
-      const report = await restoreRunToBench(run(), "main");
-      expect(report).toMatchObject({ added: 2, skipped: 0 });
-      expect(report.notes).toEqual(["s_0 was already on the bench — added under a fresh id"]);
-      expect(addedDocs(fakes.calls).map((d) => (d as Record<string, unknown>)["expect_rev"])).toEqual([4, 4, 9]);
+      expect(batchDocs(fakes.calls)).toEqual([{ stages: [{ card: "image-gen", params: {} }], author: "user", expect_rev: 0 }]);
     } finally {
       fakes.unmount();
     }
@@ -346,7 +300,9 @@ describe("restoreRunToBench — the outcome carry (the run view previews after a
       // artifacts/assetUrls where the tile's gallery face reads it.
       const [patch] = patches(fakes.calls);
       expect(patch?.["draftId"]).toBe("main");
-      expect(patch?.["stageId"]).toBe("fresh_1");
+      // a non-colliding draft id seats AS SENT (the door honors a
+      // provided id) — the carry rides the answer's id, here s_0
+      expect(patch?.["stageId"]).toBe("s_0");
       expect(patch?.["patch"]).toEqual({
         runStatus: "done",
         result: {
@@ -361,18 +317,18 @@ describe("restoreRunToBench — the outcome carry (the run view previews after a
     }
   });
 
-  test("the collision retry carries onto the SEATED id (the answer's, never the draft's)", async () => {
+  test("a collision pre-shape carries onto the SEATED id (the answer's, never the draft's)", async () => {
     const fakes = mountEstateFakes({
       draftStages: [{ id: "s_0", card: "image-gen" }],
-      benchDoc: { rev: 0, stages: [], log: [] },
-      refusals: [{ method: "bench/add-stage", message: "already on the bench: s_0" }],
+      // the bench already holds s_0 — the client drops the id and
+      // the door mints fresh (the whole-batch pre-shape law)
+      benchDoc: { rev: 0, stages: [{ id: "s_0", card: "x" }], log: [] },
     });
     try {
       const report = await restoreRunToBench(doneRun(), "main");
       expect(report).toMatchObject({ added: 1, carried: 1 });
-      // the refused add never mints (the door answered before the
-      // seq moved) — the retry's row is fresh_1, and the carry rides
-      // the ANSWER's seated id, never the draft's taken one
+      // the id-less row seats fresh_1, and the carry rides the
+      // ANSWER's seated id, never the draft's taken one
       expect(patches(fakes.calls).map((p) => p["stageId"])).toEqual(["fresh_1"]);
     } finally {
       fakes.unmount();

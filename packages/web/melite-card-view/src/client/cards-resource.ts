@@ -1148,18 +1148,19 @@ export interface RestoreReport {
 }
 
 /** Card-back-into-flow: restore a run's producing draft onto the
- *  shared bench — drafts/get (the draft holds the full
- *  card/engine/params stages) then per-stage bench/add-stage as the
- *  USER (the CAS law: bench/get first, each add carries expect_rev,
- *  chained from the previous answer's rev). A stage with no card is
- *  SKIPPED and counted (add-stage requires one); an id collision
- *  retries once without the id (the bench auto-ids s_<n>) and notes
- *  it. Any other refusal throws with the door's own text — the bench
- *  keeps whatever landed before it, and the report says so.
+ *  shared bench as ONE WRITE (drafts/get, bench/get, then a single
+ *  bench/add-stages as the USER carrying expect_rev — the door
+ *  chains the per-row CAS server-side). The client pre-reshapes
+ *  what the batch door refuses whole-batch: a stage with no card is
+ *  SKIPPED and counted (the door requires one); an id the bench
+ *  already holds is DROPPED from the row (the door mints s_<n>;
+ *  restoring twice keeps working) and noted. Any door refusal
+ *  throws with the door's own text — the batch refuses atomically,
+ *  so nothing half-lands.
  *
  *  THE OUTCOME CARRY (2026-10-02, the resume law's run-view half):
  *  the run's own stage rows hold the terminal outcome a bare
- *  re-admission loses — the add-stage door authors params only and
+ *  re-admission loses — the add-stages door authors params only and
  *  refuses result/runStatus by its own law, so the outcome rides the
  *  same drafts patch door the live observer writes, stamped by the
  *  same builder (terminalOutcomeOf). Matching is by stage id (the
@@ -1195,6 +1196,25 @@ export async function restoreRunToBench(
   }
   let rev = typeof bench['rev'] === 'number' ? (bench['rev'] as number) : 0
   const report: RestoreReport = { added: 0, skipped: 0, carried: 0, notes: [] }
+  // THE BATCH BUILD (the restore law, operator 2026-10-21: "Restoring
+  // takes an extreme amount of time"): the whole flow lands as ONE
+  // bench/add-stages write — the door chains the CAS server-side
+  // (one load, one save, one history event, one observer wave). The
+  // client pre-reshapes what the door refuses: a stage with no card
+  // is SKIPPED and counted here (the door requires one); an id the
+  // bench already holds is DROPPED from the row (the door mints
+  // s_<n>; restoring twice keeps working) and noted — the batch's
+  // refusal is whole-batch, so the retry shape is pre-computed
+  // client-side, never a second round trip.
+  const benchStageIds = new Set(
+    Array.isArray(bench['stages'])
+      ? (bench['stages'] as Array<Record<string, unknown>>)
+          .map((r) => (typeof r['id'] === 'string' ? (r['id'] as string) : ''))
+          .filter((v) => v !== '')
+      : [],
+  )
+  const rows: Array<Record<string, unknown>> = []
+  const draftIds: Array<string | null> = []
   for (const st of stages) {
     const card = st['card']
     if (typeof card !== 'string' || card === '') {
@@ -1202,39 +1222,39 @@ export async function restoreRunToBench(
       report.notes.push('skipped a stage with no card (add-stage requires one)')
       continue
     }
-    const doc: Record<string, unknown> = { card, author: 'user', expect_rev: rev }
+    const doc: Record<string, unknown> = { card }
     if (typeof st['engine'] === 'string' && (st['engine'] as string) !== '') doc['engine'] = st['engine']
     if (typeof st['params'] === 'object' && st['params'] !== null && !Array.isArray(st['params'])) {
       doc['params'] = st['params']
     }
     const id = typeof st['id'] === 'string' && (st['id'] as string) !== '' ? (st['id'] as string) : null
-    if (id !== null) doc['id'] = id
-    try {
-      const row = await unwrapRemote(estateRemote().bench['add-stage'](key, doc as Parameters<BenchNamespace['add-stage']>[1], signal), 'bench/add-stage') as unknown as Record<string, unknown>
-      if (typeof row['rev'] === 'number') rev = row['rev'] as number
-      report.added += 1
-      await carryOutcome(run, key, id, row, report, signal)
-    } catch (e) {
-      const message = rejectionVoice(e)
-      if (id !== null && message.includes('already on the bench')) {
-        // The id is taken (restoring twice, or the bench kept it) —
-        // retry once without the id; the bench auto-ids s_<n>.
-        const retry: Record<string, unknown> = { ...doc }
-        delete retry['id']
-        try {
-          const row = await unwrapRemote(estateRemote().bench['add-stage'](key, retry as Parameters<BenchNamespace['add-stage']>[1], signal), 'bench/add-stage') as unknown as Record<string, unknown>
-          if (typeof row['rev'] === 'number') rev = row['rev'] as number
-          report.added += 1
-          report.notes.push(id + ' was already on the bench — added under a fresh id')
-          await carryOutcome(run, key, id, row, report, signal)
-        } catch (e2) {
-          throw new Error('restore stopped after ' + String(report.added) + ' stage(s): '
-            + (rejectionVoice(e2)))
-        }
+    if (id !== null) {
+      if (benchStageIds.has(id)) {
+        report.notes.push(id + ' was already on the bench — added under a fresh id')
       } else {
-        throw new Error('restore stopped after ' + String(report.added) + ' stage(s): ' + message)
+        doc['id'] = id
       }
     }
+    rows.push(doc)
+    draftIds.push(id)
+  }
+  if (rows.length === 0) return report
+  let answer: Record<string, unknown>
+  try {
+    answer = await unwrapRemote(estateRemote().bench['add-stages'](key, {
+      stages: rows,
+      author: 'user',
+      expect_rev: rev,
+    } as Parameters<BenchNamespace['add-stages']>[1], signal), 'bench/add-stages') as unknown as Record<string, unknown>
+  } catch (e) {
+    throw new Error('restore stopped after ' + String(report.added) + ' stage(s): ' + (rejectionVoice(e)))
+  }
+  const seatedIds = Array.isArray(answer['stages'])
+    ? (answer['stages'] as unknown[]).map((v) => (typeof v === 'string' ? v : ''))
+    : []
+  report.added = rows.length
+  for (let i = 0; i < rows.length; i += 1) {
+    await carryOutcome(run, key, draftIds[i] ?? null, { stage: seatedIds[i] ?? '' }, report, signal)
   }
   return report
 }

@@ -3,8 +3,8 @@ import { TypertRemoteService } from "@deepseek-ai/dsh-typert-protocol";
 import { STAGE_PATCH_KEYS, type StagePatchKey } from "@melite/contracts/benchStage";
 export { STAGE_PATCH_KEYS, type StagePatchKey };
 import { type LaneMigration, type FamilyReseat } from "./bench.js";
-import type { BenchEnsureRow, BenchGetRow, BenchPatchRow, BenchReorderRow, BenchRewireRow, BenchClearRow, BenchStageRow, BenchUndoRow } from "./bench.js";
-export type { BenchEnsureRow, BenchGetRow, BenchPatchRow, BenchReorderRow, BenchRewireRow, BenchStageRow, BenchUndoRow, } from "./bench.js";
+import type { BenchEnsureRow, BenchGetRow, BenchPatchRow, BenchReorderRow, BenchRewireRow, BenchClearRow, BenchStageRow, BenchStagesRow, BenchUndoRow } from "./bench.js";
+export type { BenchEnsureRow, BenchGetRow, BenchPatchRow, BenchReorderRow, BenchRewireRow, BenchStageRow, BenchStagesRow, BenchUndoRow, } from "./bench.js";
 /** Endpoint `drafts/patch` answer — the old door's delivered envelope:
  *  a missing doc/stage is delivered:false + reason (a DOMAIN outcome,
  *  never an error); a landing patch reports the patched key set and
@@ -317,6 +317,10 @@ export declare class BenchRemoteService extends TypertRemoteService {
     remoteExportPatch(sessionKey: string, doc: BenchDoc, signal: AbortSignal): Promise<BenchPatchRow>;
     /** Endpoint `bench/add-stage` — append a card stage. */
     remoteExportAddStage(sessionKey: string, doc: BenchDoc, signal: AbortSignal): Promise<BenchStageRow>;
+    /** Endpoint `bench/add-stages` — append N stages as ONE write (the
+     * restore law: the CAS chains server-side, one save, one history
+     * event). */
+    remoteExportAddStages(sessionKey: string, doc: BenchDoc, signal: AbortSignal): Promise<BenchStagesRow>;
     /** Endpoint `bench/remove-stage` — splice one stage out. */
     remoteExportRemoveStage(sessionKey: string, doc: BenchDoc, signal: AbortSignal): Promise<BenchStageRow>;
     /** Endpoint `bench/clear` — THE OPERATOR'S CLEAR ALL (2026-10-10,
@@ -342,6 +346,10 @@ export declare class BenchRemoteService extends TypertRemoteService {
     private open;
     patch(session: string, doc: BenchDoc, signal: AbortSignal): Promise<BenchPatchRow>;
     addStage(session: string, doc: BenchDoc, signal: AbortSignal): Promise<BenchStageRow>;
+    /** THE BATCH ADD (the restore law, 2026-10-21): N stages, one
+     * write — the same seats and refusals as addStage, the CAS chained
+     * server-side. */
+    addStages(session: string, doc: BenchDoc, signal: AbortSignal): Promise<BenchStagesRow>;
     removeStage(session: string, doc: BenchDoc, signal: AbortSignal): Promise<BenchStageRow>;
     clear(session: string, doc: BenchDoc, signal: AbortSignal): Promise<BenchClearRow>;
     rewire(session: string, doc: BenchDoc, signal: AbortSignal): Promise<BenchRewireRow>;

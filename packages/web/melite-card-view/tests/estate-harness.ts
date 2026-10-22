@@ -60,6 +60,7 @@ import type {
   BenchRewireRow,
   BenchClearRow,
   BenchStageRow,
+  BenchStagesRow,
   BenchUndoRow,
   DraftGetRow,
   DraftPatchRow,
@@ -312,6 +313,35 @@ export function mountEstateFakes(opts: EstateFakesOptions = {}): EstateFakes {
       }
       return ok(scriptedRev !== undefined ? { ...defaultOk, rev: scriptedRev, stage: answerStage } : { ...defaultOk, stage: answerStage })
     }
+    // THE BATCH ADD (the restore law, 2026-10-21): every row seats
+    // under ONE rev bump — the fake mirrors the verb's one-write
+    // law, minting sequential fresh ids in batch order.
+    if (method === 'bench/add-stages') {
+      const rawRows: unknown = doc['stages']
+      const list: Array<Record<string, unknown>> = Array.isArray(rawRows)
+        ? (rawRows as Array<Record<string, unknown>>)
+        : []
+      const seated: string[] = []
+      for (const row of list) {
+        freshSeq += 1
+        const card = typeof row['card'] === 'string' ? (row['card'] as string) : 'card'
+        const id = typeof row['id'] === 'string' && (row['id'] as string) !== '' ? (row['id'] as string) : 'fresh_' + String(freshSeq)
+        benchStages.push({
+          id,
+          card,
+          title: card,
+          engine: typeof row['engine'] === 'string' ? (row['engine'] as string) : 'comfyui',
+          params: typeof row['params'] === 'object' && row['params'] !== null && !Array.isArray(row['params'])
+            ? { ...(row['params'] as Record<string, unknown>) }
+            : {},
+        })
+        seated.push(id)
+      }
+      benchRevValue += 1
+      // SCRIPTED DRIFT (addStageNoIds): the rows land but the answer
+      // names no ids — the carry's fallback-to-draft-id arm rides it.
+      return ok({ ...defaultOk, rev: benchRevValue, stages: opts.addStageNoIds === true ? [] : seated })
+    }
     // THE CLEAR ALL (2026-10-10): the fake mirrors the verb — every
     // stage out, one rev.
     if (method === 'bench/clear') {
@@ -373,6 +403,7 @@ export function mountEstateFakes(opts: EstateFakesOptions = {}): EstateFakes {
       rewire: (sessionKey: string, doc: Record<string, unknown>, signal?: AbortSignal) => benchDocVerb('bench/rewire', sessionKey, doc, signal) as unknown as Promise<RemoteResult<BenchRewireRow>>,
       undo: (sessionKey: string, doc: Record<string, unknown>, signal?: AbortSignal) => benchDocVerb('bench/undo', sessionKey, doc, signal) as unknown as Promise<RemoteResult<BenchUndoRow>>,
       'add-stage': (sessionKey: string, doc: Record<string, unknown>, signal?: AbortSignal) => benchDocVerb('bench/add-stage', sessionKey, doc, signal) as unknown as Promise<RemoteResult<BenchStageRow>>,
+      'add-stages': (sessionKey: string, doc: Record<string, unknown>, signal?: AbortSignal) => benchDocVerb('bench/add-stages', sessionKey, doc, signal) as unknown as Promise<RemoteResult<BenchStagesRow>>,
       'remove-stage': (sessionKey: string, doc: Record<string, unknown>, signal?: AbortSignal) => benchDocVerb('bench/remove-stage', sessionKey, doc, signal) as unknown as Promise<RemoteResult<BenchStageRow>>,
       clear: (sessionKey: string, doc: Record<string, unknown>, signal?: AbortSignal) => benchDocVerb('bench/clear', sessionKey, doc, signal) as unknown as Promise<RemoteResult<BenchClearRow>>,
       reorder: (sessionKey: string, doc: Record<string, unknown>, signal?: AbortSignal) => benchDocVerb('bench/reorder', sessionKey, doc, signal) as unknown as Promise<RemoteResult<BenchReorderRow>>,

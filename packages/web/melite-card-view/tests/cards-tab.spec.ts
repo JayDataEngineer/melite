@@ -140,30 +140,33 @@ function run(over: Partial<CardsRunValue> = {}): CardsRunValue {
 }
 
 describe("restoreRunToBench — the card back into a flow", () => {
-  test("drafts/get → bench/get rev → per-stage add-stage as the user, rev chained", async () => {
+  test("drafts/get → bench/get rev → ONE bench/add-stages as the user (the restore law, 2026-10-21)", async () => {
     const { calls } = mountFakes({
       draftStages: [
         { id: "s_0", card: "image-gen", engine: "comfyui", params: { prompt: "a sailboat" } },
         { id: "s_1", card: "tts", params: { text: "hi" } },
       ],
       benchDoc: { draft_id: "bench-main", rev: 21, stages: [], log: [] },
-      // the estate stamps 22 on the first add (the old {rev: 21+n}
-      // answers verbatim) — the second add chains it.
-      addStageRevs: [22, 23],
     });
     const report = await restoreRunToBench(run(), 'main');
     // carried 0 — this run's stage rows are empty (no outcome to ride)
     expect(report).toEqual({ added: 2, skipped: 0, carried: 0, notes: [] });
-    expect(calls.map((c) => c.method)).toEqual(["drafts/get", "bench/get", "bench/add-stage", "bench/add-stage"]);
+    expect(calls.map((c) => c.method)).toEqual(["drafts/get", "bench/get", "bench/add-stages"]);
     expect(calls[0]?.args).toEqual({ draftId: "bench-main" });
     expect(calls[1]?.args).toEqual({ sessionKey: "main" });
-    // first add carries the bench rev + user authorship; the second
-    // chains the first answer's rev (the CAS law).
-    // add-stage args carry the remote's FULL signature — {sessionKey,
-    // doc} (the gateway arg-law; the bare-doc shape was a latent 422).
-    expect(calls[2]?.args).toMatchObject({ sessionKey: "main", doc: { card: "image-gen", engine: "comfyui", author: "user", expect_rev: 21, id: "s_0" } });
-    expect(((calls[2]?.args["doc"] as Record<string, unknown>)["params"] as Record<string, unknown>)["prompt"]).toBe("a sailboat");
-    expect(calls[3]?.args).toMatchObject({ sessionKey: "main", doc: { card: "tts", author: "user", expect_rev: 22, id: "s_1" } });
+    // the ONE batch write carries every row + the bench rev + user
+    // authorship (the door chains the per-row CAS server-side).
+    expect(calls[2]?.args).toMatchObject({
+      sessionKey: "main",
+      doc: {
+        stages: [
+          { card: "image-gen", engine: "comfyui", id: "s_0", params: { prompt: "a sailboat" } },
+          { card: "tts", id: "s_1", params: { text: "hi" } },
+        ],
+        author: "user",
+        expect_rev: 21,
+      },
+    });
   });
 
   test("a run naming no draft throws before any fetch", async () => {
@@ -180,7 +183,7 @@ describe("restoreRunToBench — the card back into a flow", () => {
     expect(calls.map((c) => c.method)).toEqual(["drafts/get"]);
   });
 
-  test("cardless stages skip and count, the rest land", async () => {
+  test("cardless stages skip and count client-side, the rest land in the ONE batch", async () => {
     const { calls } = mountFakes({
       draftStages: [{ id: "s_0" }, { id: "s_1", card: "image-gen" }],
       benchDoc: { draft_id: "bench-main", rev: 3, stages: [], log: [] },
@@ -188,37 +191,39 @@ describe("restoreRunToBench — the card back into a flow", () => {
     const report = await restoreRunToBench(run(), 'main');
     expect(report.added).toBe(1);
     expect(report.skipped).toBe(1);
-    expect(calls.filter((c) => c.method === "bench/add-stage")).toHaveLength(1);
+    const batches = calls.filter((c) => c.method === "bench/add-stages");
+    expect(batches).toHaveLength(1);
+    expect((batches[0]?.args["doc"] as Record<string, unknown>)["stages"])
+      .toEqual([{ card: "image-gen", id: "s_1" }]);
   });
 
-  test("an id collision retries once without the id and notes it", async () => {
+  test("an id the bench holds rides id-less and notes it (never a retry round trip)", async () => {
     const { calls } = mountFakes({
       draftStages: [{ id: "s_0", card: "image-gen" }],
-      benchDoc: { draft_id: "bench-main", rev: 7, stages: [], log: [] },
-      refusals: [{ method: "bench/add-stage", message: "stage id already on the bench: s_0" }],
+      benchDoc: { draft_id: "bench-main", rev: 7, stages: [{ id: "s_0", card: "x" }], log: [] },
     });
     const report = await restoreRunToBench(run(), 'main');
     expect(report.added).toBe(1);
     expect(report.notes).toEqual(["s_0 was already on the bench — added under a fresh id"]);
-    const adds = calls.filter((c) => c.method === "bench/add-stage");
-    expect(adds).toHaveLength(2);
-    const retryDoc = (adds[1]?.args["doc"] ?? {}) as Record<string, unknown>;
-    expect(retryDoc["id"]).toBeUndefined();
-    expect(retryDoc["expect_rev"]).toBe(7);
+    const batches = calls.filter((c) => c.method === "bench/add-stages");
+    expect(batches).toHaveLength(1);
+    const doc = (batches[0]?.args["doc"] ?? {}) as Record<string, unknown>;
+    const rows = doc["stages"] as Array<Record<string, unknown>>;
+    expect(rows[0]?.["id"]).toBeUndefined();
+    expect(doc["expect_rev"]).toBe(7);
   });
 
-  test("a real refusal stops the restore and names what landed", async () => {
+  test("a real batch refusal stops the restore whole (nothing half-lands)", async () => {
     const { calls } = mountFakes({
       draftStages: [
         { id: "s_0", card: "image-gen" },
         { id: "s_1", card: "tts" },
       ],
       benchDoc: { draft_id: "bench-main", rev: 1, stages: [], log: [] },
-      addStageRevs: [2],
-      refusals: [{ method: "bench/add-stage", message: "bench/cas-conflict: stale rev", onCall: 2 }],
+      refusals: [{ method: "bench/add-stages", message: "bench/cas-conflict: stale rev" }],
     });
-    await expect(restoreRunToBench(run(), 'main')).rejects.toThrow("restore stopped after 1 stage(s): bench/cas-conflict: stale rev");
-    expect(calls.filter((c) => c.method === "bench/add-stage")).toHaveLength(2);
+    await expect(restoreRunToBench(run(), 'main')).rejects.toThrow("restore stopped after 0 stage(s): bench/cas-conflict: stale rev");
+    expect(calls.filter((c) => c.method === "bench/add-stages")).toHaveLength(1);
   });
 });
 

@@ -88,7 +88,7 @@ async function trySeats(ctx, method, path, body, signal) {
     if (method === 'POST') {
         // "clear" (2026-10-10, the operator's demanded clear-all) — the
         // nuclear arm: every stage out, one log entry, undoable whole.
-        const arm = /^\/v1\/bench\/([^/?]+)\/(patch|add_stage|remove_stage|clear|rewire|undo)$/.exec(path);
+        const arm = /^\/v1\/bench\/([^/?]+)\/(patch|add_stage|add_stages|remove_stage|clear|rewire|undo)$/.exec(path);
         if (arm !== null) {
             if (seats.benchRemote === undefined)
                 return undefined;
@@ -100,6 +100,7 @@ async function trySeats(ctx, method, path, body, signal) {
             switch (arm[2]) {
                 case 'patch': return seats.benchRemote.patch(session, doc, signal);
                 case 'add_stage': return seats.benchRemote.addStage(session, doc, signal);
+                case 'add_stages': return seats.benchRemote.addStages(session, doc, signal);
                 case 'remove_stage': return seats.benchRemote.removeStage(session, doc, signal);
                 case 'clear': return seats.benchRemote.clear(session, doc, signal);
                 case 'rewire': return seats.benchRemote.rewire(session, doc, signal);
@@ -458,6 +459,7 @@ export function makeEstate(ctx) {
             switch (verb) {
                 case 'patch': return bench.patch(session, doc, signal);
                 case 'add_stage': return bench.addStage(session, doc, signal);
+                case 'add_stages': return bench.addStages(session, doc, signal);
                 case 'remove_stage': return bench.removeStage(session, doc, signal);
                 case 'clear': return bench.clear(session, doc, signal);
                 case 'rewire': return bench.rewire(session, doc, signal);

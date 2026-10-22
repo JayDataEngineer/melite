@@ -133,7 +133,7 @@ interface BenchEntry {
     rev: number;
     at: number;
     author: Author;
-    kind: "patch" | "add_stage" | "remove_stage" | "rewire" | "reorder" | "group" | "ungroup" | "load" | "clear" | "undo";
+    kind: "patch" | "add_stage" | "add_stages" | "remove_stage" | "rewire" | "reorder" | "group" | "ungroup" | "load" | "clear" | "undo";
     stage?: string;
     summary?: string;
     /** Kind-specific inverse payload (undo applies it). */
@@ -224,6 +224,14 @@ export interface BenchStageRow {
     readonly rev: number;
     readonly stage: string;
 }
+/** The batch add's row: every minted stage id under the ONE rev the
+ *  whole batch landed at. */
+export interface BenchStagesRow {
+    readonly draft_id: string;
+    readonly session: string;
+    readonly rev: number;
+    readonly stages: readonly string[];
+}
 /** THE ADMISSION SEAT (the no-silent-drop law, hour 26 stroke 17):
  *  the remote injects the registry's model admission (card +
  *  params.model -> refusal with the offered list); the domain stays
@@ -290,6 +298,17 @@ export declare function toleratedByRow(stages: Array<Record<string, unknown>>, p
 /** add_stage — append a card stage with optional wiring (the
  *  runner's input convention rides the row). */
 export declare function addStageBench(drafts: Domain<DraftsDomainSpec>, session: string, body: Record<string, unknown>, admit?: StageAdmission): Promise<BenchStageRow>;
+/** THE BATCH ADD DOOR (the restore law, operator 2026-10-21:
+ * "Restoring takes an extreme amount of time"): N stages land as
+ * ONE write — one load, one CAS over the whole list, one save, one
+ * history event, one observer wave. The per-stage gates are the
+ * single add's own laws verbatim (the judged view is the stored
+ * view; the mint walks the PROJECTED rows so each fresh id is fresh
+ * against the bench as it stands plus the rows before it; wiring
+ * admits against the projected live ids), each refusal naming the
+ * row's index. EVERY gate passes before the first mutation (the
+ * refusal-that-lies law): a refused batch persists nothing. */
+export declare function addStagesBench(drafts: Domain<DraftsDomainSpec>, session: string, body: Record<string, unknown>, admit?: StageAdmission): Promise<BenchStagesRow>;
 /** reorder — move ONE stage to a new index in the bench's stage order
  *  (the drag-reorder door, 2026-09-11: the old system's reorderRange
  *  gesture; the reborn bench is SSOT so the door exists before the UX

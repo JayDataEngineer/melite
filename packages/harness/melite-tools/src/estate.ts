@@ -102,6 +102,9 @@ interface Seats {
     ensure(doc: Record<string, unknown>, signal?: AbortSignal): Promise<unknown>
     patch(session: string, doc: Record<string, unknown>, signal?: AbortSignal): Promise<unknown>
     addStage(session: string, doc: Record<string, unknown>, signal?: AbortSignal): Promise<unknown>
+    // THE BATCH ADD (2026-10-21, the restore law): N stages as ONE
+    // write — one rev, one history event, whole-batch refusals.
+    addStages(session: string, doc: Record<string, unknown>, signal?: AbortSignal): Promise<unknown>
     removeStage(session: string, doc: Record<string, unknown>, signal?: AbortSignal): Promise<unknown>
     // THE CLEAR ALL (2026-10-10, the operator's demanded door) — the
     // drafts bench's clear verb, beside removeStage.
@@ -243,7 +246,7 @@ async function trySeats(
   if (method === 'POST') {
     // "clear" (2026-10-10, the operator's demanded clear-all) — the
     // nuclear arm: every stage out, one log entry, undoable whole.
-    const arm = /^\/v1\/bench\/([^/?]+)\/(patch|add_stage|remove_stage|clear|rewire|undo)$/.exec(path)
+    const arm = /^\/v1\/bench\/([^/?]+)\/(patch|add_stage|add_stages|remove_stage|clear|rewire|undo)$/.exec(path)
     if (arm !== null) {
       if (seats.benchRemote === undefined) return undefined
       if (body === undefined || typeof body !== 'object' || body === null) {
@@ -254,6 +257,7 @@ async function trySeats(
       switch (arm[2]) {
         case 'patch': return seats.benchRemote.patch(session, doc, signal)
         case 'add_stage': return seats.benchRemote.addStage(session, doc, signal)
+        case 'add_stages': return seats.benchRemote.addStages(session, doc, signal)
         case 'remove_stage': return seats.benchRemote.removeStage(session, doc, signal)
         case 'clear': return seats.benchRemote.clear(session, doc, signal)
         case 'rewire': return seats.benchRemote.rewire(session, doc, signal)
@@ -576,7 +580,7 @@ async function performEstateRequest(
 
 /** The bench plane's mutation verbs — the six arms the bench seat
  *  answers 1:1 (the router's regex admits the same six). */
-export type BenchVerb = 'patch' | 'add_stage' | 'remove_stage' | 'clear' | 'rewire' | 'undo'
+export type BenchVerb = 'patch' | 'add_stage' | 'add_stages' | 'remove_stage' | 'clear' | 'rewire' | 'undo'
 
 /** The tool plane's ONE estate seam: the typed lanes. A tool factory
  *  takes `Estate` and calls methods — never `request('GET', path)`. */
@@ -698,6 +702,7 @@ export function makeEstate(ctx: EstateHost): Estate {
         switch (verb) {
           case 'patch': return bench.patch(session, doc, signal)
           case 'add_stage': return bench.addStage(session, doc, signal)
+          case 'add_stages': return bench.addStages(session, doc, signal)
           case 'remove_stage': return bench.removeStage(session, doc, signal)
           case 'clear': return bench.clear(session, doc, signal)
           case 'rewire': return bench.rewire(session, doc, signal)

@@ -1144,13 +1144,20 @@ describe("THE IDENTITY LAW: a value that crosses a door has ONE producer (2026-0
     // NO site re-derives the max+1 by hand any more
     expect(bench, "no site writes the max+1 arithmetic by hand (highestStageSuffix owns it)")
       .not.toMatch(/Math\.max\((?:acc|max), Number\(m\[1\]\)\)/);
-    // the mint is exported, and the WRITE door binds its value ONCE
-    // and reads it for both the admitted and the stored row
+    // the mint is exported, and every WRITE door binds its value
+    // ONCE. The count law grew a door with bench/add-stages
+    // (2026-10-21, the one-write restore): one binding per write
+    // door — the single add's admitted-id binding and the batch
+    // add's projected-rows binding — and never two in one door.
     expect(bench, "the one mint is exported for the wall and for every door")
       .toMatch(/export function mintStageId\(/);
-    expect((bench.match(/mintStageId\(/g) ?? []).length,
-      "the mint is called from the wall-visible definition and from the write door only")
+    const doorBindings = bench.match(/[=:]\s*mintStageId\(/g) ?? [];
+    expect(doorBindings.length,
+      "exactly one mint binding per write door (add-stage, add-stages)")
       .toBe(2);
+    expect((bench.match(/mintStageId\(/g) ?? []).length,
+      "the definition plus the doors' bindings only — no third spelling")
+      .toBe(doorBindings.length + 1);
     expect(bench, "the stored row READS the admitted row's id (one call, not two producers)")
       .toMatch(/const stageId: string = stageIdForAdmit;/);
     expect(bench).not.toMatch(/"s_" \+\s*\n\s*String\(/);

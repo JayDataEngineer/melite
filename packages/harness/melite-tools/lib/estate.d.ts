@@ -43,7 +43,7 @@ export declare function seatFamilyForPath(path: string): {
 export declare function makeEstateRequest(ctx: EstateHost): EstateRequest;
 /** The bench plane's mutation verbs — the six arms the bench seat
  *  answers 1:1 (the router's regex admits the same six). */
-export type BenchVerb = 'patch' | 'add_stage' | 'remove_stage' | 'clear' | 'rewire' | 'undo';
+export type BenchVerb = 'patch' | 'add_stage' | 'add_stages' | 'remove_stage' | 'clear' | 'rewire' | 'undo';
 /** The tool plane's ONE estate seam: the typed lanes. A tool factory
  *  takes `Estate` and calls methods — never `request('GET', path)`. */
 export interface Estate {

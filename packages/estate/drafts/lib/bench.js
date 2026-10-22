@@ -1263,6 +1263,105 @@ export async function addStageBench(drafts, session, body, admit) {
     });
     return { draft_id: loaded.draftId, session, rev: newRev, stage: stageId };
 }
+/** The batch add's body keys: the stage list + the ONE CAS word the
+ *  whole batch rides (the door chains the per-stage revs
+ *  server-side; a caller never states a per-stage expect_rev). */
+const ADD_STAGES_KEYS = ["stages", "expect_rev", "author"];
+/** The per-row keys inside `stages` — add_stage's own row vocabulary
+ *  minus the CAS/author words (those belong to the BATCH, never a
+ *  row). */
+const ADD_STAGES_ROW_KEYS = ["id", "card", "engine", "params", "inputs", "outputs", "expected"];
+/** THE BATCH ADD DOOR (the restore law, operator 2026-10-21:
+ * "Restoring takes an extreme amount of time"): N stages land as
+ * ONE write — one load, one CAS over the whole list, one save, one
+ * history event, one observer wave. The per-stage gates are the
+ * single add's own laws verbatim (the judged view is the stored
+ * view; the mint walks the PROJECTED rows so each fresh id is fresh
+ * against the bench as it stands plus the rows before it; wiring
+ * admits against the projected live ids), each refusal naming the
+ * row's index. EVERY gate passes before the first mutation (the
+ * refusal-that-lies law): a refused batch persists nothing. */
+export async function addStagesBench(drafts, session, body, admit) {
+    refuseUnknown(body, ADD_STAGES_KEYS);
+    const rawList = body["stages"];
+    if (!Array.isArray(rawList) || rawList.length === 0) {
+        throw new RemoteError("bench/bad-body", "stages is required — a non-empty array of stage rows (got " + typeof rawList + ")", {});
+    }
+    const loaded = await loadBench(drafts, session);
+    casCheck(loaded.block, body["expect_rev"], session);
+    const author = authorOk(body["author"])
+        ? body["author"]
+        : "agent";
+    const stages = stagesOf(loaded.doc);
+    const minted = [];
+    const rows = [];
+    rawList.forEach((raw, i) => {
+        const pos = "stage " + String(i) + " of the batch: ";
+        if (!isRecord(raw)) {
+            throw new RemoteError("bench/bad-body", pos + "must be an object (got " + typeof raw + ")", {});
+        }
+        const stageBody = raw;
+        const unknownKeys = Object.keys(stageBody).filter((k) => !ADD_STAGES_ROW_KEYS.includes(k));
+        if (unknownKeys.length > 0) {
+            throw new RemoteError("bench/bad-body", pos + "unknown bench key(s): " + unknownKeys.sort().join(", ") + " (want " + ADD_STAGES_ROW_KEYS.join(", ") + ")", {});
+        }
+        const cardForRow = stageBody["card"];
+        if (typeof cardForRow !== "string" || cardForRow === "") {
+            throw new RemoteError("bench/bad-body", pos + "card is required", {});
+        }
+        const rawInputs = stageBody["inputs"];
+        if (rawInputs !== undefined && !isRecord(rawInputs)) {
+            throw new RemoteError("bench/bad-body", pos + "inputs must be an object of channel → {stage, output} | {initial} (got " + typeof rawInputs + "); a wire that cannot be read is refused here, not dropped", {});
+        }
+        const rawParams = wireParams(stageBody["params"]);
+        if (rawParams !== undefined && !isRecord(rawParams)) {
+            throw new RemoteError("bench/bad-body", pos + "params must be an object (got " + (Array.isArray(rawParams) ? "an array — the card's knobs, not a list of them" : typeof rawParams) + "); a wire that cannot be read is refused here, not dropped", {});
+        }
+        // THE MINT over the projected rows (max+1 against the bench as
+        // it stands PLUS the batch's earlier rows — the one arithmetic,
+        // the projected set this door owns)
+        const stageId = mintStageId([...stages, ...rows], stageBody);
+        if (stageRow(loaded.doc, stageId) !== null || rows.some((r) => r["id"] === stageId)) {
+            throw new RemoteError("bench/duplicate-stage", pos + "stage id already on the bench: " + stageId, { session, stage: stageId });
+        }
+        const row = normalizeBenchStage({
+            id: stageId,
+            card: cardForRow,
+            ...(typeof stageBody["engine"] === "string" && stageBody["engine"] !== "" ? { engine: stageBody["engine"] } : {}),
+            ...(rawParams !== undefined ? { params: rawParams } : {}),
+            ...(isRecord(rawInputs) ? { inputs: rawInputs } : {}),
+            ...(isRecord(stageBody["outputs"]) ? { outputs: stageBody["outputs"] } : {}),
+        }, stageId);
+        row["provenance"] = author;
+        if (isRecord(stageBody["expected"]))
+            row["expected"] = stageBody["expected"];
+        // the per-stage gates in the single add's own order: admission,
+        // then wiring against the PROJECTED live ids (current + batch
+        // rows before this one + this row's own)
+        const admitted = normalizeBenchStage({
+            id: stageId,
+            card: cardForRow,
+            ...(typeof stageBody["engine"] === "string" && stageBody["engine"] !== "" ? { engine: stageBody["engine"] } : {}),
+            ...(rawParams !== undefined ? { params: rawParams } : {}),
+            ...(isRecord(rawInputs) ? { inputs: rawInputs } : {}),
+            ...(isRecord(stageBody["outputs"]) ? { outputs: stageBody["outputs"] } : {}),
+        }, stageId);
+        admitStage(admit, admitted["card"], admitted["params"]);
+        admitWiring(row, row["params"], row["inputs"], [...stages.map((r) => String(r["id"] ?? "")), ...rows.map((r) => String(r["id"] ?? "")), stageId], stageId, session);
+        minted.push(stageId);
+        rows.push(row);
+    });
+    stages.push(...rows);
+    loaded.doc["stages"] = stages;
+    // pure adds grow the card set — the orphaning law, verbatim
+    const newRev = await appendAndSave(drafts, loaded, {
+        author,
+        kind: "add_stages",
+        summary: "add " + String(rows.length) + " stages",
+        inverse: { stages: minted },
+    });
+    return { draft_id: loaded.draftId, session, rev: newRev, stages: minted };
+}
 const REMOVE_KEYS = ["stage", "expect_rev", "author"];
 const REORDER_KEYS = ["stage", "to", "expect_rev", "author", "after"];
 /** reorder — move ONE stage to a new index in the bench's stage order
@@ -1828,6 +1927,22 @@ function applyInverse(doc, e, admit, session = "") {
         const idx = stages.findIndex((s) => s["id"] === inv["stage"]);
         if (idx >= 0)
             stages.splice(idx, 1);
+        doc["stages"] = stages;
+        return;
+    }
+    // THE BATCH INVERSE (the restore law): one entry added N rows, so
+    // one undo removes them all — the ids in their batch order, each
+    // spliced only if still live (a later hand may have removed one;
+    // the undo takes what stands, never refuses a ghost).
+    if (e.kind === "add_stages") {
+        const ids = inv["stages"];
+        if (Array.isArray(ids)) {
+            for (const id of ids) {
+                const idx = stages.findIndex((s) => s["id"] === id);
+                if (idx >= 0)
+                    stages.splice(idx, 1);
+            }
+        }
         doc["stages"] = stages;
         return;
     }

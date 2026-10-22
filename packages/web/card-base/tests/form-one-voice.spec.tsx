@@ -23,13 +23,13 @@ import { describe, test, expect, afterEach } from 'vitest'
 import { cleanup, render } from '@testing-library/react'
 import { createElement as h } from 'react'
 import { CardForm } from '../src/form.tsx'
-import type { FormSpecDoc, Ref } from '@melite/contracts/formSpec'
+import type { FormSpecDoc, SchemaRef } from '@melite/contracts/formSpec'
 
 /** A served doc: prompt (declared on the lane) + dead_knob (declared
  *  in the schema dict but on NO lane surface — the hidden-stated
  *  class). */
-function doc(over: Record<string, unknown> = {}): FormSpecDoc {
-  const refs: Record<number, Ref> = {
+function doc(over: Partial<FormSpecDoc> = {}): FormSpecDoc {
+  const refs: Record<number, SchemaRef> = {
     0: { type: 'object', dict: { prompt: 1, dead_knob: 2 } },
     1: { type: 'string', meta: { description: 'Prompt', required: true } },
     2: { type: 'string', meta: { description: 'Dead Knob' } },
@@ -42,12 +42,12 @@ function doc(over: Record<string, unknown> = {}): FormSpecDoc {
       base: ['prompt'],
     },
     ...over,
-  } as unknown as FormSpecDoc
+  }
 }
 
 function form(props: Partial<Parameters<typeof CardForm>[0]> = {}) {
   return render(h(CardForm, {
-    spec: doc(props.spec === undefined ? {} : (props.spec as Record<string, unknown>)),
+    spec: doc(props.spec),
     user: props.user ?? {},
     base: props.base,
     onSet: props.onSet ?? (() => {}),
@@ -58,7 +58,9 @@ function form(props: Partial<Parameters<typeof CardForm>[0]> = {}) {
 
 /** Every violation row across every alert seat on the face. */
 function violationRows(): HTMLElement[] {
-  return [...document.querySelectorAll<HTMLElement>('[role="alert"] p')]
+  // the package lib is DOM without DOM.Iterable (src never spreads
+  // collections) — Array.from is the identical read
+  return Array.from(document.querySelectorAll<HTMLElement>('[role="alert"] p'))
     .filter((p) => p.textContent !== null && p.textContent !== '')
 }
 
@@ -81,6 +83,7 @@ describe('THE ONE-VOICE LAW: one crime, one row on the card face', () => {
   test('a knob the lane DECLARES never double-voices either (the together pair fires once)', () => {
     form({
       spec: {
+        form: 'txt2img',
         lanes: {
           base: ['prompt', 'notes'],
           relations: {
@@ -90,7 +93,7 @@ describe('THE ONE-VOICE LAW: one crime, one row on the card face', () => {
             }],
           },
         },
-      } as never,
+      },
       user: { model: 'krea-2', prompt: 'half the pair' },
     })
     const rows = violationRows().filter((p) => (p.textContent ?? '').includes('prompt') || (p.textContent ?? '').includes('notes'))

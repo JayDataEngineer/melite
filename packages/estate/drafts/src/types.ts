@@ -24,5 +24,6 @@ export type {
   BenchReorderRow,
   BenchRewireRow,
   BenchStageRow,
+  BenchStagesRow,
   BenchUndoRow,
 } from "./bench.js";

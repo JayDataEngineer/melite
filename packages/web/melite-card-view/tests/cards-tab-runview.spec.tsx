@@ -213,9 +213,12 @@ describe("the restore — the run's stages back on the bench", () => {
     await screen.findByText("r-1");
     fireEvent.click(screen.getByRole("button", { name: "Restore to bench" }));
     expect(await screen.findByText("restored 1 stage(s) to the bench", {}, { timeout: 5000 })).toBeTruthy();
-    const add = posted.find((p) => p.method === "bench/add-stage");
+    // the ONE batch write carries the bench rev (the restore law,
+    // 2026-10-21 — no per-stage calls fire at all)
+    const add = posted.find((p) => p.method === "bench/add-stages");
     expect(add).toBeTruthy();
     expect((add?.args["doc"] as Record<string, unknown>)["expect_rev"]).toBe(5);
+    expect(posted.find((p) => p.method === "bench/add-stage")).toBeUndefined();
     // the restore returns to the bench (onRestored rides onBack)
     await waitFor(() => {
       expect(opened.length).toBeGreaterThan(0);

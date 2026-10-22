@@ -602,7 +602,10 @@ describe("the door-less restore — the note lands with nowhere to go", () => {
     } as never));
     await screen.findByText("r-1");
     fireEvent.click(screen.getByRole("button", { name: "Restore to bench" }));
-    expect(await screen.findByText("restored 1 stage(s) to the bench", {}, { timeout: 5000 })).toBeTruthy();
+    // the bench already holds s_9 (estateOpts seeds bench+draft from
+    // the same rows) — the pre-shape drops the id and notes it, so
+    // the note carries the fresh-id note in parens
+    expect(await screen.findByText(/^restored 1 stage\(s\) to the bench \(s_9 was already on the bench/, {}, { timeout: 5000 })).toBeTruthy();
     expect(doors.opened).toEqual([]);
   });
 });

@@ -644,7 +644,9 @@ test('LANES: the customvoice lane is quiet too, and a STATED off-surface value v
   // gate-voiced knobs; two banners for one crime was the operator's
   // double-render burn)
   form({ spec: ttsDoc(), user: { model: 'qwen3-tts', variant: 'customvoice', ref_audio: '/a.flac' } })
-  const rows = [...document.querySelectorAll('[role="alert"] p')].filter((p) => (p.textContent ?? '').includes('ref_audio'))
+  // Array.from: the package lib is DOM without DOM.Iterable (src
+  // never spreads collections) — the identical read
+  const rows = Array.from(document.querySelectorAll('[role="alert"] p')).filter((p) => (p.textContent ?? '').includes('ref_audio'))
   expect(rows.length).toBe(1)
   expect(rows[0]?.textContent ?? '').toContain('fires nothing')
   expect(document.querySelector('[data-lane-warn]')).toBeNull()
@@ -657,7 +659,7 @@ test('LANES: the single refusal row seats on the form\'s refusal surface, never 
   // seat), before the axes; the axes block's last row carries no
   // lane text.
   form({ spec: ttsDoc(), user: { model: 'qwen3-tts', variant: 'customvoice', ref_audio: '/a.flac' } })
-  const row = [...document.querySelectorAll('[role="alert"] p')].find((p) => (p.textContent ?? '').includes('ref_audio'))
+  const row = Array.from(document.querySelectorAll('[role="alert"] p')).find((p) => (p.textContent ?? '').includes('ref_audio'))
   if (row === undefined) throw new Error('a carried off-surface value voices')
   const banner = row.closest('div')
   const axes = document.querySelector('[data-axes-pair]')
@@ -676,7 +678,7 @@ test('LANES: an unknown or cleared variant is the run door\'s voice, never this 
   // a RECIPE variant is served and inherits the family base — judged,
   // and the carried off-surface value voices ONCE (the gate's row)
   form({ spec: ttsDoc(), user: { model: 'qwen3-tts', variant: 'steady-read', ref_audio: '/a.flac' } })
-  const carried = [...document.querySelectorAll('[role="alert"] p')].filter((p) => (p.textContent ?? '').includes('ref_audio'))
+  const carried = Array.from(document.querySelectorAll('[role="alert"] p')).filter((p) => (p.textContent ?? '').includes('ref_audio'))
   expect(carried.length).toBe(1)
 })
 

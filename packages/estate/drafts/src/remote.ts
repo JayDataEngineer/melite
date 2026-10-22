@@ -22,6 +22,7 @@ import { DRAFT_ID_RE } from "./spec.js";
 import type { DraftRecord, DraftsDomainSpec } from "./spec.js";
 import {
   addStageBench,
+  addStagesBench,
   ensureBench,
   notifyBenchChange,
   notifyBenchDocWrite,
@@ -50,6 +51,7 @@ import type {
   BenchRewireRow,
   BenchClearRow,
   BenchStageRow,
+  BenchStagesRow,
   BenchUndoRow,
 } from "./bench.js";
 
@@ -60,6 +62,7 @@ export type {
   BenchReorderRow,
   BenchRewireRow,
   BenchStageRow,
+  BenchStagesRow,
   BenchUndoRow,
 } from "./bench.js";
 
@@ -1529,6 +1532,18 @@ export class BenchRemoteService extends TypertRemoteService {
     return await this.addStage(sessionKey, doc, signal);
   }
 
+  /** Endpoint `bench/add-stages` — append N stages as ONE write (the
+   * restore law: the CAS chains server-side, one save, one history
+   * event). */
+  @Remote("add-stages")
+  async remoteExportAddStages(
+    sessionKey: string,
+    doc: BenchDoc,
+    signal: AbortSignal,
+  ): Promise<BenchStagesRow> {
+    return await this.addStages(sessionKey, doc, signal);
+  }
+
   /** Endpoint `bench/remove-stage` — splice one stage out. */
   @Remote("remove-stage")
   async remoteExportRemoveStage(
@@ -1664,6 +1679,23 @@ export class BenchRemoteService extends TypertRemoteService {
     return withBenchWrite(benchDraftIdOf(session), async () => {
       const drafts: Domain<DraftsDomainSpec> = await this.open(signal);
       const row = await addStageBench(drafts, session, doc, benchAdmissionOf(this.ctx));
+      notifyBenchChange(session);
+      return row;
+    });
+  }
+
+  /** THE BATCH ADD (the restore law, 2026-10-21): N stages, one
+   * write — the same seats and refusals as addStage, the CAS chained
+   * server-side. */
+  async addStages(
+    session: string,
+    doc: BenchDoc,
+    signal: AbortSignal,
+  ): Promise<BenchStagesRow> {
+    signal.throwIfAborted();
+    return withBenchWrite(benchDraftIdOf(session), async () => {
+      const drafts: Domain<DraftsDomainSpec> = await this.open(signal);
+      const row = await addStagesBench(drafts, session, doc, benchAdmissionOf(this.ctx));
       notifyBenchChange(session);
       return row;
     });
