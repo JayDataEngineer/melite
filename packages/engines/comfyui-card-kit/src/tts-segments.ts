@@ -222,21 +222,33 @@ export function exportSegment(p: Record<string, unknown>, model: ModelFacts, g: 
   // "save the embeddings to media" from ANY lane): the save persists
   // ONE voice — the stated reference saves the CLONE (no design
   // fire; the Base variant extracts the prompt from the reference
-  // itself), the description saves a DESIGN. Every refusal names its
-  // word at this seat; a cast is never a gate (the boot-probe
-  // 'trim' burn, 2026-10-22).
+  // itself), the description saves a DESIGN, the stated preset
+  // speaker saves ITS OWN voice (CustomVoice renders the preset
+  // speaking the card's text; that render is the reference — its
+  // transcript is known verbatim, so the extraction rides full
+  // ICL). Every refusal names its word at this seat; a cast is
+  // never a gate (the boot-probe 'trim' burn, 2026-10-22).
   const designPrompt = typeof p.design_prompt === 'string' ? p.design_prompt.trim() : ''
   const refAudio = typeof p.ref_audio === 'string' ? p.ref_audio.trim() : ''
   const refText = typeof p.ref_text === 'string' ? p.ref_text.trim() : ''
+  const presetSpeaker = typeof p.voice === 'string' && p.voice !== 'none' ? p.voice.trim() : ''
   if (refAudio !== '' && designPrompt !== '') {
     throw new Error(
       "params 'design_prompt' and 'ref_audio' fire together on no save (ONE voice source — the reference saves the clone, the description saves a design; drop one)")
   }
-  if (refAudio === '' && designPrompt === '') {
+  if (presetSpeaker !== '' && designPrompt !== '') {
     throw new Error(
-      "required param 'design_prompt' missing or empty (the studio designs a voice from the description — state who speaks, or state ref_audio to save the cloned voice)")
+      "params 'design_prompt' and 'voice' fire together on no save (ONE voice source — the description saves a design, the preset saves its speaker; drop one)")
   }
-  if (refAudio === '' && refText !== '') {
+  if (presetSpeaker !== '' && refAudio !== '') {
+    throw new Error(
+      "params 'voice' and 'ref_audio' fire together on no save (ONE voice source — the preset saves its speaker, the reference saves the clone; drop one)")
+  }
+  if (refAudio === '' && presetSpeaker === '' && designPrompt === '') {
+    throw new Error(
+      "required param 'design_prompt' missing or empty (the save persists ONE voice — state a Preset Speaker, state ref_audio to save the clone, or describe who speaks)")
+  }
+  if (refAudio === '' && presetSpeaker === '' && refText !== '') {
     throw new Error(
       "param 'ref_text' rides only with 'ref_audio' on a save (the reference is the voice; the transcript describes it — state the reference or drop the transcript)")
   }
@@ -247,7 +259,9 @@ export function exportSegment(p: Record<string, unknown>, model: ModelFacts, g: 
     name,
     ...(refAudio !== ''
       ? { reference_audio: refAudio, reference_text: refText }
-      : { instruct: designPrompt }),
+      : presetSpeaker !== ''
+        ? { speaker: presetSpeaker }
+        : { instruct: designPrompt }),
     sample_text: p.text,
     temperature: p.temperature,
     top_p: p.top_p,

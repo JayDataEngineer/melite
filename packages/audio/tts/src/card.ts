@@ -334,13 +334,20 @@ export function registerCard(ctx: Context, comfy: ComfyUIServiceFace): void {
         // its own .qvoice), a description saves a DESIGN — and the
         // off-source params that perform nothing beside either.
         const refStated = !blank(doc.ref_audio)
+        const presetStated = typeof doc.voice === 'string' && doc.voice !== 'none' && doc.voice !== ''
+        if (refStated && presetStated) {
+          throw new Error("params 'voice' and 'ref_audio' fire together on no save on the tts card (ONE voice source — the preset saves its speaker, the reference saves the clone; drop one)")
+        }
+        if (presetStated && !blank(doc.design_prompt)) {
+          throw new Error("params 'design_prompt' and 'voice' fire together on no save on the tts card (ONE voice source — the description saves a design, the preset saves its speaker; drop one)")
+        }
         if (refStated && !blank(doc.design_prompt)) {
           throw new Error("params 'design_prompt' and 'ref_audio' fire together on no save on the tts card (ONE voice source — the reference saves the clone, the description saves a design; drop one)")
         }
-        if (!refStated) {
+        if (!refStated && !presetStated) {
           const missing = ['design_prompt'].filter((k) => blank(doc[k]))
           if (missing.length > 0) {
-            throw new Error("required Design param(s) " + missing.map((k) => "'" + k + "'").join(' + ') + " missing or empty on the tts card (the save designs from the description — state who speaks, or state ref_audio to save the cloned voice)")
+            throw new Error("required Design param(s) " + missing.map((k) => "'" + k + "'").join(' + ') + " missing or empty on the tts card (the save persists ONE voice — state a Preset Speaker, state ref_audio to save the clone, or describe who speaks)")
           }
           if (!blank(doc.ref_text)) {
             throw new Error("param 'ref_text' rides only with 'ref_audio' on a save (the reference is the voice; the transcript describes it — state the reference or drop the transcript)")
