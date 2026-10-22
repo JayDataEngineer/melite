@@ -58,7 +58,7 @@ import { DraftsRemoteService, BenchRemoteService, installBenchChangeSeam } from 
 import { openDraftsDomain, DraftsDomainSeatService } from "../../../../packages/estate/drafts/src/store.ts";
 import { benchBlockOf } from "../../../../packages/estate/drafts/src/bench.ts";
 import type { DraftsDomainSpec } from "../../../../packages/estate/drafts/src/spec.js";
-import { CardRegistryService } from "../../../../packages/harness/estate-queue/src/cardsRegistry.ts";
+import { CardRegistryService, FAMILY_RESEAT_CARVE } from "../../../../packages/harness/estate-queue/src/cardsRegistry.ts";
 import { FlowsSeatService } from "../../../../packages/harness/estate-queue/src/flowsData.ts";
 import { loadCardDefs } from "@melite/comfyui-cordis";
 // THE CLIENT'S OWN VARIANT-PICK BUILDER (the unforgeable half): the
@@ -101,6 +101,7 @@ let bench: BenchRemoteService;
 let facts: Record<string, import("../../../../packages/harness/estate-queue/src/cardsFacts.ts").ModelFactsRow>;
 let specs: Map<string, Awaited<ReturnType<typeof formSpecArm>>>;
 let root: string;
+let reg: CardRegistryService;
 
 beforeAll(async () => {
   root = mkdtempSync(join(tmpdir(), "variant-switch-"));
@@ -114,7 +115,7 @@ beforeAll(async () => {
   // THE REAL REGISTRY as the doors' seat (the dropper + admission)
   new FlowsSeatService(ctx);
   (ctx as unknown as { queue: unknown }).queue = { stateRoot: mkdtempSync(join(tmpdir(), "variant-switch-q-")), stateRoots: [] };
-  const reg = new CardRegistryService(ctx);
+  reg = new CardRegistryService(ctx);
   await reg.prime();
   drafts = await openDraftsDomain(ctx);
   gui = new DraftsRemoteService(ctx);
@@ -223,7 +224,6 @@ describe("THE VARIANT-SWITCH GESTURE — every card, every transition, both door
   }
   const transitions: TransitionArm[] = [];
   const sourceBurns: string[] = [];
-  const pinnedDeadBoxes = new Set<string>();
 
   beforeAll(async () => {
     const pairs = new Set<string>();
@@ -316,40 +316,75 @@ describe("THE VARIANT-SWITCH GESTURE — every card, every transition, both door
           rev = await revOf(seeded.docId);
         } catch (err) {
           const msg = err instanceof Error ? err.message : String(err);
-          if (/ride together on this lane|completes none of them/.test(msg)) {
-            // THE PINNED DEBT (surfaced 2026-11-11, NOT cured in the
-            // switch wire's increment — the operator's sequencing
-            // order): a mid-authoring half-pair refuses AT THE WRITE
-            // DOOR. The 2026-11-10 frictionless-authoring ruling
-            // ("half-pair writes unlanded and the pair could never
-            // complete" — the voice_name brick) ruled these LAND and
-            // the Run press refuses; the door never got the ruling.
-            // Pinned here verbatim: the exact dead-box set, named in
-            // every run, red on ANY drift — growth, wording change,
-            // or a silent heal that bypasses this wall's flip.
-            pinnedDeadBoxes.add(`${t.family} / ${t.to.variantId}${t.to.quant} / ${f}`);
-          } else {
-            bad.push(`${t.card} / ${t.family} / ${t.to.variantId}${t.to.quant} / typing '${f}': THE BOX DID NOT LAND — ${msg}`);
-          }
+          // THE FRICTIONLESS-AUTHORING RULING (operator 2026-11-11:
+          // "The refusal is never one keystroke at a time … you are
+          // submitting a form, not hacking the mainframe" —
+          // reaffirming the 2026-11-10 order): a mid-authoring half —
+          // a together group or an either_or alternative stated but
+          // not complete — SAVES. The write door drops the
+          // authoring-half class exactly as it drops the
+          // unstated-required word; THE RUN PRESS owns the complete
+          // pair (the run-gate arm below fires its refusal). Any
+          // refusal here, in any voice, is the dead-box bug again.
+          bad.push(`${t.card} / ${t.family} / ${t.to.variantId}${t.to.quant} / typing '${f}': THE BOX DID NOT LAND — ${msg}`);
         }
       }
     }
-    if (pinnedDeadBoxes.size > 0) {
-      console.log(`[variant-switch-parity] ${pinnedDeadBoxes.size} PINNED dead boxes (the together-half write-door debt — ruling owed, not cured in this increment):`);
-      for (const b of pinnedDeadBoxes) console.log("  - " + b);
+    expect(bad, "dead boxes — the operator switched the variant and the very next keystroke refused (the save accepts a form being filled)").toEqual([]);
+  });
+
+  it("THE RUN GATE (the same ruling's other half): a landed together-half pair SAVES at the write door and the RUN PRESS refuses it — the pair completes at the press, never mid-form", async () => {
+    // the burn's own pair: qwen3-tts's ref lane declares ref_audio +
+    // ref_text together. Seed on the source seat, SWITCH to the seat
+    // whose surface fires ref_text (the operator's gesture — the
+    // switch must land first), then state the half EXPLICITLY
+    // (ref_text stated, ref_audio deleted) through the GUI door —
+    // the ruling says this saves.
+    const tts = transitions.find(
+      (t) => t.family === "qwen3-tts" && t.to.surface.includes("ref_text"));
+    expect(tts, "the estate boards a qwen3-tts lane that fires ref_text").toBeDefined();
+    if (tts === undefined) return;
+    const seeded = await seedThroughDoor(tts.card, tts.family, tts.from, "vs-run-gate");
+    expect(seeded.burned, "the source seat seeds clean").toBeNull();
+    if (seeded.burned !== null) return;
+    let rev = seeded.rev;
+    await gui.patch(seeded.docId, "s_0", { params: { ...tts.pick } }, rev, sig);
+    rev = await revOf(seeded.docId);
+    await gui.patch(seeded.docId, "s_0",
+      { params: { ref_audio: null, ref_text: "a mid-form anchor text" } }, rev, sig);
+    rev = await revOf(seeded.docId);
+    // the stored row holds exactly the half
+    const stored = (await drafts.table("docs").get(seeded.docId))?.doc as
+      | { stages: Array<{ id: string, params: Record<string, unknown> }> }
+      | undefined;
+    const stage = stored?.stages.find((s) => s.id === "s_0");
+    expect(stage, "the half-pair row is stored").toBeDefined();
+    if (stage === undefined) return;
+    expect(stage.params, "ref_text stated").toHaveProperty("ref_text", "a mid-form anchor text");
+    expect(stage.params, "ref_audio absent — the pair is half").not.toHaveProperty("ref_audio");
+    // THE PRESS: the run seat judges the stored row strict (the
+    // write door's authoring filter never rides here) — the together
+    // voice refuses the half, naming the pair.
+    const runMsg = await reg.phase1Card(
+      { ...stage.params, card: tts.card, model: tts.family } as Record<string, unknown>,
+      tts.family,
+    ).then(() => null, (e: unknown) => (e instanceof Error ? e.message : String(e)));
+    expect(runMsg, "the run press refuses the half pair").toMatch(
+      /(ride together on this lane|completes none of them)/);
+  });
+
+  it("THE FAMILY-RESEAT CARVE (operator 2026-11-11: 'just make a carve for H3 as an exception, then do the ONE seat for the rest'): the cards declaring a per-card reseat face are EXACTLY the carve — no second exception can grow silently, and the carve never goes stale", async () => {
+    // the REAL defs, the same load the registry primes
+    const implementing: string[] = [];
+    for (const [id, def] of await loadCardDefs()) {
+      if (def.reseatFamily !== undefined) implementing.push(id);
     }
-    expect(bad, "dead boxes — the operator switched the variant and the very next keystroke refused").toEqual([]);
-    // THE PIN: exactly this set, no growth, no silent heal. When the
-    // together ruling lands at the door, this arm goes RED (the set
-    // empties) and forces the wall's flip — the pin is
-    // self-destructing by design.
-    expect([...pinnedDeadBoxes].sort(), "the pinned together-half debt — drift in either direction is a red").toEqual([
-      "qwen3-tts / base0_6b / ref_audio",
-      "qwen3-tts / base0_6b / ref_text",
-      "qwen3-tts / base1_7b / ref_audio",
-      "qwen3-tts / base1_7b / ref_text",
-      "qwen3-tts / voicedesign1_7b / design_prompt",
-      "qwen3-tts / voicedesign1_7b / voice_name",
-    ]);
+    expect([...implementing].sort(),
+      "the per-card reseat faces — drift in either direction is a red: a new face owes a carve entry WITH its reason, a stale entry owes deletion").toEqual(
+      [...FAMILY_RESEAT_CARVE].sort());
+    // the boot check itself fires: prime() throws naming the
+    // offender when the equality breaks (the carve gate is a GLOBAL
+    // gate, before any live write — the seat lives at prime()).
+    expect(FAMILY_RESEAT_CARVE, "H3 is the named exception (its lane identity is derived from the doc's params — deriveWindowFamily — which no DECL variant row can name)").toContain("h3-timeline");
   });
 });

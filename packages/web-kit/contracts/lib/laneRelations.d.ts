@@ -107,6 +107,16 @@ export declare function judgeLaneRelations(relations: readonly LaneRelations[], 
  * @param text the refusal sentence to classify
  * @returns true when the sentence is the unstated-required voice */
 export declare function isUnstatedRequiredVoice(text: string): boolean;
+/** The together-half class test: the sentence names a together group
+ *  whose members are not all stated yet.
+ * @param text the refusal sentence to classify
+ * @returns true when the sentence is the together-half voice */
+export declare function isTogetherHalfVoice(text: string): boolean;
+/** The either_or-half class test: the sentence names an alternative
+ *  none of whose groups the stated fields complete yet.
+ * @param text the refusal sentence to classify
+ * @returns true when the sentence is the either_or-half voice */
+export declare function isEitherOrHalfVoice(text: string): boolean;
 /** The heal's stricter twin: the text is the unstated-required class
  * AND NOTHING ELSE. A composite refusal (the judge joins multiple
  * violations with "; ") can carry the stem beside a stated-wrong

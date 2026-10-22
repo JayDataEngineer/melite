@@ -231,6 +231,15 @@ describe("THE OFFERED-STATE PARITY — every declared relation refuses its breac
     cure: string | null;
   }
   const census: CensusArm[] = [];
+  // THE FRICTIONLESS-AUTHORING RULING (operator 2026-11-11: "The
+  // refusal is never one keystroke at a time … you are submitting a
+  // form, not hacking the mainframe"): a together or either_or HALF
+  // is a form being filled, not a breach. It SAVES at the write
+  // door; the RUN press refuses it, naming the fields. The census
+  // splits on that line: conflicts, at_most_one, and
+  // requires-with-needs stay write-refused breaches; the halves
+  // move to the authoring roster below.
+  const authoring: CensusArm[] = [];
   const skippedInert: string[] = [];
   beforeAll(() => {
     for (const cell of roster) {
@@ -259,7 +268,7 @@ describe("THE OFFERED-STATE PARITY — every declared relation refuses its breac
             skippedInert.push(`${cell.card}/${cell.variantId}/${cell.quant}: together(${members.join(", ")}) — the surface owns a named field on this lane`);
             continue;
           }
-          census.push({
+          authoring.push({
             cell, word: "together",
             label: `${members[0]} without ${members[1]}`,
             breach: { [members[0]!]: PROBE },
@@ -292,7 +301,7 @@ describe("THE OFFERED-STATE PARITY — every declared relation refuses its breac
             skippedInert.push(`${cell.card}/${cell.variantId}/${cell.quant}: either_or(${groups.map((g) => g.join("+")).join(" / ")}) — the surface owns a named field on this lane`);
             continue;
           }
-          census.push({
+          authoring.push({
             cell, word: "either_or",
             label: `half-stated (${first[0]})`,
             breach: { [first[0]!]: PROBE },
@@ -358,6 +367,34 @@ describe("THE OFFERED-STATE PARITY — every declared relation refuses its breac
     expect(bad, "relation breaches the write door fails to refuse (or lawful states it refuses)").toEqual([]);
   });
 
+  it("THE AUTHORING CENSUS (the 2026-11-11 ruling): every together/either_or HALF saves at the write door and the RUN PRESS refuses it in the DECL's own voice", async () => {
+    const bad: string[] = [];
+    expect(authoring.length, "the authoring roster derives from the DECLs' own relation rows").toBeGreaterThan(0);
+    for (const arm of authoring) {
+      const saved = svc.admitStageRelations(arm.cell.card, { ...selectionOf(arm.cell), ...arm.breach });
+      if (!saved.ok) {
+        bad.push(`${arm.cell.card} / ${arm.cell.variantId} / ${arm.cell.quant}: the write door refuses the ${arm.word} HALF (${arm.label}) — a form being filled must save — ${saved.error}`);
+        continue;
+      }
+      let runRefused: string | null = null;
+      try {
+        await svc.phase1Card({ ...selectionOf(arm.cell), ...arm.breach }, String(arm.cell.atom));
+      } catch (e) {
+        runRefused = (e as Error).message;
+      }
+      if (runRefused === null) {
+        bad.push(`${arm.cell.card} / ${arm.cell.variantId} / ${arm.cell.quant}: the RUN composed the ${arm.word} half (${arm.label}) — a half pair never runs`);
+        continue;
+      }
+      for (const field of arm.expectFields) {
+        if (!runRefused.includes(`'${field}'`)) {
+          bad.push(`${arm.cell.card} / ${arm.cell.variantId} / ${arm.cell.quant}: the ${arm.word} run refusal lost the field voice ('${field}') — ${runRefused}`);
+        }
+      }
+    }
+    expect(bad, "the save/run split of the authoring halves").toEqual([]);
+  });
+
   it("THE TOLERANCE LAW: a blank required row admits at the write seat (the write door never grew the run door's incomplete-draft refusal)", () => {
     const bad: string[] = [];
     for (const cell of roster) {
@@ -375,7 +412,7 @@ describe("THE OFFERED-STATE PARITY — every declared relation refuses its breac
     expect(bad, "the write door judging the run door's incomplete-draft class").toEqual([]);
   });
 
-  it("THE WITNESS (the operator's burn, by name): qwen3-tts CustomVoice builds a half persona and the write door refuses it in the DECL's voice", () => {
+  it("THE WITNESS (the operator's burn, by name): qwen3-tts CustomVoice builds a half persona and the write door refuses it — the fields never belonged to that lane (the signature recut names the move); the pair's OWN lane saves the half and the RUN press refuses it", async () => {
     const lane = roster.find((c) => c.atom === "qwen3-tts" && c.variantId === "customvoice");
     expect(lane, "the qwen3-tts CustomVoice cell must be offered (the roster derives it, never a hand list)").toBeDefined();
     if (lane === undefined) return;
@@ -387,14 +424,28 @@ describe("THE OFFERED-STATE PARITY — every declared relation refuses its breac
       ...selectionOf(lane),
       design_prompt: "a warm, unhurried narrator with gravel in the low end",
     });
-    expect(verdict.ok, "the half persona must refuse at the write door").toBe(false);
+    expect(verdict.ok, "the half persona on CustomVoice refuses at the write door — the lane never declared the field").toBe(false);
     if (!verdict.ok) {
-      expect(verdict.error).toContain("voice_name");
       expect(verdict.error).toContain("design_prompt");
+      expect(verdict.error).toContain("fires nothing on this lane");
       expect(verdict.error).toContain("qwen3-tts/customvoice");
-      expect(verdict.error).toContain("name the voice");
-      expect(verdict.error).toContain("drop both");
+      expect(verdict.error).toContain("drop it or switch lane");
     }
+    // THE RULING'S OTHER FACE (2026-11-11): on the pair's own lane
+    // the same half is mid-form — it saves, and the press refuses.
+    const design = roster.find((c) => c.atom === "qwen3-tts" && c.variantId === "voicedesign");
+    expect(design, "the qwen3-tts VoiceDesign cell must be offered").toBeDefined();
+    if (design === undefined) return;
+    const halfState = { ...selectionOf(design), design_prompt: "a warm, unhurried narrator" } as Record<string, unknown>;
+    const saved = svc.admitStageRelations(design.card, halfState);
+    expect(saved.ok, `the half persona SAVES on its own lane (mid-form) — ${saved.ok ? "" : saved.error}`).toBe(true);
+    let runRefused: string | null = null;
+    try {
+      await svc.phase1Card(halfState, String(halfState["model"] ?? "qwen3-tts"));
+    } catch (e) {
+      runRefused = (e as Error).message;
+    }
+    expect(runRefused, "the run press refuses the half persona, naming the pair").toMatch(/ride together on this lane|completes none of them/);
   });
 
   it("THE RECUT CANON (signature lanes, 2026-10-12): the persona pair rides the VoiceDesign lane's own surface — the COMPLETE pair admits there, and customvoice refuses the fields outright", () => {

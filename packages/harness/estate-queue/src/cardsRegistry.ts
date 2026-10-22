@@ -96,7 +96,7 @@ import type { CardDeclRow, ModelFactsRow, ResolvedVariantRow, VariantCellRow } f
 import { factsPath, deriveDecls } from "./cardsFacts.ts";
 import { WIRE_STAGE_KEYS } from "@melite/contracts/benchStage";
 import type { LaneRelations, LaneViolation } from "@melite/contracts/laneRelations";
-import { isUnstatedRequiredVoice, judgeLaneBounds, judgeLaneRelations, judgeLaneSurface, laneBlank, laneBoundsOf, laneStaleCarry, laneSurfaceOf, laneTogetherClosure, RELATION_WORDS } from "@melite/contracts/laneRelations";
+import { isEitherOrHalfVoice, isTogetherHalfVoice, isUnstatedRequiredVoice, judgeLaneBounds, judgeLaneRelations, judgeLaneSurface, laneBlank, laneBoundsOf, laneStaleCarry, laneSurfaceOf, laneTogetherClosure, RELATION_WORDS } from "@melite/contracts/laneRelations";
 import { lanePresenceRefusal } from "./cardsLanes.ts";
 import { selectCardVariant, liftCardParams } from "./cardsVariant.ts";
 import type { VariantSelection } from "./cardsVariant.ts";
@@ -240,7 +240,19 @@ function isUnstatedRequiredWord(message: string): boolean {
 }
 
 function incompleteDraftViolations(violations: readonly LaneViolation[]): LaneViolation[] {
-  return violations.filter((v) => !isUnstatedRequiredWord(v.message));
+  // THE FRICTIONLESS-AUTHORING RULING (operator 2026-11-11: "The
+  // refusal is never one keystroke at a time … you are submitting a
+  // form, not hacking the mainframe" — reaffirming the 2026-11-10
+  // order): a doc mid-authoring holds halves — an unstated required
+  // word, a together group with some members stated, an either_or
+  // alternative no group of which is complete. The write door drops
+  // all three classes (the authoring-incomplete class); every other
+  // seat — the run press above all — judges them strict, so a half
+  // pair saves and never composes.
+  return violations.filter((v) =>
+    !isUnstatedRequiredWord(v.message)
+    && !isTogetherHalfVoice(v.message)
+    && !isEitherOrHalfVoice(v.message));
 }
 
 /** THE OUTPUT-RESOLUTION SEAM (round-22 compose audit Q4a,
@@ -285,6 +297,19 @@ export function resolveCardOutputsOrThrow(
     throw new CardArmError(400, `flow-output: ${card}: ${why}`, "card_compose");
   }
 }
+
+/** THE FAMILY-RESEAT CARVE (operator 2026-11-11: "just make a carve
+ *  for H3 as an exception, then do the ONE seat for the rest"): the
+ *  cards sanctioned to declare a per-card reseatFamily face. H3
+ *  rides it because its lane identity is DERIVED from the doc's
+ *  params (deriveWindowFamily), a family axis no DECL variant row
+ *  can name. Every other family's lane-shift drops ride the
+ *  registry's ONE migration seat (laneMigrate — DECL-driven).
+ *  prime() reds on any drift in either direction: a new face
+ *  without an entry here, or a stale entry whose card dropped its
+ *  face. Empty the carve the day the derived family rides the lane
+ *  declaration. */
+export const FAMILY_RESEAT_CARVE: readonly string[] = ["h3-timeline"];
 
 export class CardRegistryService extends Service {
   static inject = ["queue"];
@@ -334,6 +359,34 @@ export class CardRegistryService extends Service {
   async prime(): Promise<void> {
     this.defs = await loadCardDefs();
     this.decls = null;
+    // THE FAMILY-RESEAT CARVE (operator 2026-11-11: "just make a
+    // carve for H3 as an exception, then do the ONE seat for the
+    // rest"): the per-card reseat face is a NAMED exception, not a
+    // pattern. Every card outside the carve that declares
+    // reseatFamily reds HERE, at boot — before any live write — so
+    // the one-seat law for the rest of the estate (the generic
+    // laneMigrate seat, DECL-driven) can never grow a second face
+    // silently. A carve entry whose card dropped its face reds the
+    // same check (the list never goes stale). H3 rides the carve
+    // because its lane identity is DERIVED from the doc's params
+    // (deriveWindowFamily — t4_open/t4r/t4_chain), a family axis no
+    // DECL variant row can name; when the lane identity rides the
+    // declaration, the face dies and the carve empties.
+    const carved = [...this.defs.entries()]
+      .filter(([, def]) => def.reseatFamily !== undefined)
+      .map(([id]) => id)
+      .sort();
+    const expected = [...FAMILY_RESEAT_CARVE].sort();
+    if (carved.length !== expected.length || carved.some((id, i) => id !== expected[i])) {
+      throw new Error(
+        "family-reseat carve violated: cards declaring reseatFamily " +
+        JSON.stringify(carved) + " — the carve names " + JSON.stringify(expected) +
+        ". A per-card reseat face is the H3 exception only (operator 2026-11-11); " +
+        "every other family's lane-shift drops ride the registry's ONE migration seat. " +
+        "Grow the generic seat, never another face — or seat the new exception in " +
+        "FAMILY_RESEAT_CARVE with its reason.",
+      );
+    }
     // the models boot feeds the row derivation (facts.ts renders
     // rows through these reads — one spelling, no frozen matrix).
     await bootModels();
@@ -845,7 +898,10 @@ export class CardRegistryService extends Service {
    *  later. The judge keeps its teeth for AUTHORED poison (a doc
    *  assembled family-dead with no flip still refuses at
    *  admitStageFamily — this seat only settles the flip's own
-   *  strand). Null when the card declares no reseat face. */
+   *  strand). Null when the card declares no reseat face.
+   *  THE CARVE (2026-11-11): the face is the H3 exception only —
+   *  prime() reds any card outside FAMILY_RESEAT_CARVE that grows
+   *  one. */
   reseatStageFamily(
     card: string,
     params: Record<string, unknown>,

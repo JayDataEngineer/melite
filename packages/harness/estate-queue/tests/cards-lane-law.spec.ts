@@ -79,19 +79,31 @@ afterAll(() => {
 });
 
 describe("THE INCIDENT A WALL (CustomVoice + design_prompt, no voice_name)", () => {
-  it("refuses AT WRITE TIME, names the pair, carries the cure", () => {
+  it("refuses AT WRITE TIME with the SELECTION voice — design_prompt is the design lane's field, never CustomVoice's (the canon recut); a key the lane never takes is not an authoring half", () => {
     const verdict = svc.admitStageRelations("tts", INCIDENT_A);
     expect(verdict.ok).toBe(false);
     if (!verdict.ok) {
-      // named: both halves of the export pair
-      expect(verdict.error).toContain("voice_name");
+      // named: the off-lane key itself, the lane, the move
       expect(verdict.error).toContain("design_prompt");
-      // the lane is named (the family/variant the state built)
+      expect(verdict.error).toContain("fires nothing on this lane");
       expect(verdict.error).toContain("qwen3-tts/customvoice");
-      // cured: the message names the cure (both halves or drop both)
-      expect(verdict.error).toContain("name the voice");
-      expect(verdict.error).toContain("drop both");
+      // cured: the message names the move (drop it or switch lane)
+      expect(verdict.error).toContain("drop it or switch lane");
     }
+  });
+
+  it("THE FRICTIONLESS-AUTHORING RULING (operator 2026-11-11): the pair's OWN lane saves the half — the save accepts a form being filled; the RUN press owns the complete pair", async () => {
+    const half = { ...INCIDENT_A, variant: "voicedesign" } as Record<string, unknown>;
+    expect(svc.admitStageRelations("tts", half),
+      "design_prompt stated, voice_name not yet — mid-form, the write admits").toEqual({ ok: true });
+    let runRefused: string | null = null;
+    try {
+      await svc.phase1Card(half, String(half["model"]));
+    } catch (e) {
+      runRefused = (e as Error).message;
+    }
+    expect(runRefused, "the run press refuses the incomplete pair, naming it").toMatch(
+      /(ride together on this lane|completes none of them)/);
   });
 
   it("the CURED state admits — ON THE DESIGN LANE (the signature canon recut, 2026-10-12: design_prompt + voice_name are the VoiceDesign lane's own inputs, never CustomVoice's)", () => {
@@ -176,14 +188,19 @@ describe("THE CLONE EITHER_OR WALL (one COMPLETE source)", () => {
     expect(svc.admitStageRelations("tts", { ...base })).toEqual({ ok: true });
   });
 
-  it("half the reference pair refuses with both arms named", () => {
-    const verdict = svc.admitStageRelations("tts", { ...base, ref_audio: "/assets/x.flac" });
-    expect(verdict.ok).toBe(false);
-    if (!verdict.ok) {
-      expect(verdict.error).toContain("ref_audio");
-      expect(verdict.error).toContain("ref_text");
-      expect(verdict.error).toContain("qvoice");
+  it("THE FRICTIONLESS-AUTHORING RULING (2026-11-11): half the reference pair SAVES at the write door — the run press names both arms", async () => {
+    const half = { ...base, ref_audio: "/assets/x.flac" } as Record<string, unknown>;
+    expect(svc.admitStageRelations("tts", half),
+      "mid-form: the save accepts the half").toEqual({ ok: true });
+    let runRefused: string | null = null;
+    try {
+      await svc.phase1Card(half, String(half["model"]));
+    } catch (e) {
+      runRefused = (e as Error).message;
     }
+    expect(runRefused).toContain("ref_audio");
+    expect(runRefused).toContain("ref_text");
+    expect(runRefused).toContain("qvoice");
   });
 
   it("the full pair admits; a stated qvoice alone admits", () => {
@@ -236,21 +253,28 @@ describe("THE CLONE EITHER_OR WALL (one COMPLETE source)", () => {
     })).toEqual({ ok: true });
   });
 
-  it("the 1.7B clone lane carries the same law (variant-stated, its own route)", () => {
+  it("the 1.7B clone lane carries the same law (variant-stated, its own route)", async () => {
     // THE FOLD (2026-10-26): ONE qwen3-tts family — variants
     // customvoice/voicedesign/base, size at the quant cell. The dead
     // qwen3-tts-voicedesign atom survives only as retained routes, so
     // the 1.7B clone lane is qwen3-tts/base (quant 1_7b stated).
     // half the pair on the 1.7B clone lane: the either_or names both arms
-    const verdict = svc.admitStageRelations("tts", {
+    const half = {
       model: "qwen3-tts",
       variant: "base",
       quant: "1_7b",
       text: "clone this",
       ref_text: "the transcript",
-    });
-    expect(verdict.ok, "half the 1.7B reference pair must refuse on qwen3-tts/base").toBe(false);
-    if (!verdict.ok) expect(verdict.error).toContain("qwen3-tts/base");
+    } as Record<string, unknown>;
+    expect(svc.admitStageRelations("tts", half).ok,
+      "the 1.7B half-pair SAVES at write (the 2026-11-11 ruling)").toBe(true);
+    let runRefused: string | null = null;
+    try {
+      await svc.phase1Card(half, String(half["model"]));
+    } catch (e) {
+      runRefused = (e as Error).message;
+    }
+    expect(runRefused, "the run press refuses the 1.7B half-pair on its own lane").toContain("qwen3-tts/base");
     // the full pair composes the 1.7B Base checkpoint
     expect(svc.admitStageRelations("tts", {
       model: "qwen3-tts",
@@ -717,12 +741,14 @@ describe("THE CLAIM LAW (the card claims nothing the model did not declare)", ()
       voice_name: "harbour_gravel",
       design_prompt: "a warm narrator",
     })).toEqual({ ok: true });
-    // half the pair = the wound, refused
+    // THE FRICTIONLESS-AUTHORING RULING (2026-11-11): half the pair
+    // = mid-form, SAVED at the write door — the run press refuses it
+    // (the parity law's sanctioned divergence, pinned there)
     expect(svc.admitStageRelations("tts", {
       model: "qwen3-tts-voicedesign", variant: "voicedesign",
       text: "read this",
       voice_name: "harbour_gravel",
-    }).ok).toBe(false);
+    })).toEqual({ ok: true });
   });
 });
 
@@ -869,7 +895,6 @@ describe("THE PARITY LAW (the write door and the run must agree, BOTH ways)", ()
     { name: "incident A cured", params: { ...INCIDENT_A, voice_name: "warm_1" } },
     { name: "0.6B customvoice synthesis", params: { model: "qwen3-tts", variant: "customvoice", text: "x", voice: "vivian", temperature: 0.7 } },
     { name: "0.6B base clone (variant stated)", params: { model: "qwen3-tts", variant: "base", text: "x", ref_audio: "/a.flac", ref_text: "t" } },
-    { name: "0.6B base clone half a pair", params: { model: "qwen3-tts", variant: "base", text: "x", ref_audio: "/a.flac" } },
     { name: "base ADDRESS without a variant (synth lane, reference fires nothing)", params: { model: "qwen3-tts-base", text: "x", ref_audio: "/a.flac", ref_text: "t" } },
     { name: "1.7B customvoice with instruction", params: { model: "qwen3-tts-voicedesign", variant: "customvoice", text: "x", voice: "vivian", style_instruction: "whispered" } },
     { name: "1.7B base clone (variant stated)", params: { model: "qwen3-tts-voicedesign", variant: "base", text: "x", ref_audio: "/a.flac", ref_text: "t" } },
@@ -905,23 +930,29 @@ describe("THE PARITY LAW (the write door and the run must agree, BOTH ways)", ()
     });
   }
 
-  // THE ONE SANCTIONED DIVERGENCE (the law audit's F4 — the parity
-  // table could not see the incomplete-draft filter at all): an
-  // UNSTATED required word is the single state class where the two
-  // seats DELIBERATELY disagree — the write door admits (a card
-  // under construction is bench state; the operator types the
-  // prompt next), the run door refuses in the lane's own sentence.
-  // It is pinned HERE, beside the table, as law — so it can never
-  // ride the table itself (a door-admitted lane refusal there would
-  // be red, correctly), and so the divergence can never silently
-  // widen: any OTHER write-admits/run-refuses lane state is the
-  // parity bug the table above exists to catch.
-  it("the one sanctioned divergence: an unstated required word (the write door admits, the run refuses)", async () => {
+  // The save button and the run button check different things (by
+  // design — the operator's 2026-11-11 ruling: "you are submitting a
+  // form, not hacking the mainframe"). The save accepts a form being
+  // filled: a required word not typed yet, half a pair, half an
+  // alternative — all land. The run demands the form complete. This
+  // arm pins exactly that class — the authoring-incomplete states —
+  // so it can never ride the table above (a door-admitted lane
+  // refusal there is red, correctly), and so the class can never
+  // silently widen: any OTHER write-admits/run-refuses lane state is
+  // the parity bug the table exists to catch.
+  it("the save accepts a form being filled; the run demands it complete (an unstated word, a half pair, a half alternative)", async () => {
+    // an unstated required word
     const PROMPTLESS = { model: "krea-2", variant: "turbo" } as Record<string, unknown>;
     expect(svc.admitStageRelations("image-gen", PROMPTLESS).ok).toBe(true);
     await expect(
       svc.phase1Card({ ...PROMPTLESS }, "krea-2"),
     ).rejects.toThrow(/this lane requires 'prompt'.*write the prompt/);
+    // half a reference pair (the 0.6B clone lane)
+    const HALF_PAIR = { model: "qwen3-tts", variant: "base", text: "x", ref_audio: "/a.flac" } as Record<string, unknown>;
+    expect(svc.admitStageRelations("tts", HALF_PAIR).ok).toBe(true);
+    await expect(
+      svc.phase1Card({ ...HALF_PAIR }, "qwen3-tts"),
+    ).rejects.toThrow(/completes none of them|ride together on this lane/);
   });
 });
 

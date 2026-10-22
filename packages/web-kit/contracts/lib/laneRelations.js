@@ -255,6 +255,32 @@ const UNSTATED_REQUIRED_STEM = 'this lane requires ';
 export function isUnstatedRequiredVoice(text) {
     return text.includes(UNSTATED_REQUIRED_STEM);
 }
+/** The sentence stems of the two AUTHORING-HALF voices — a together
+ *  group or an either_or alternative stated but not yet completed.
+ *  THE FRICTIONLESS-AUTHORING RULING (operator 2026-11-11: "you are
+ *  submitting a form, not hacking the mainframe" — reaffirming the
+ *  2026-11-10 order): a doc mid-authoring holds halves. The write
+ *  door drops the class exactly as it drops the unstated-required
+ *  word; the run seat keeps judging it — a half pair never composes.
+ *  Same export law as the unstated stem: the write door's filter and
+ *  any seat that classifies these sentences spell the class through
+ *  these tests, never a re-typed literal. */
+const TOGETHER_HALF_STEM = ' ride together on this lane (state all or none)';
+const EITHER_OR_HALF_STEM = ' — the stated combination completes none of them';
+/** The together-half class test: the sentence names a together group
+ *  whose members are not all stated yet.
+ * @param text the refusal sentence to classify
+ * @returns true when the sentence is the together-half voice */
+export function isTogetherHalfVoice(text) {
+    return text.includes(TOGETHER_HALF_STEM);
+}
+/** The either_or-half class test: the sentence names an alternative
+ *  none of whose groups the stated fields complete yet.
+ * @param text the refusal sentence to classify
+ * @returns true when the sentence is the either_or-half voice */
+export function isEitherOrHalfVoice(text) {
+    return text.includes(EITHER_OR_HALF_STEM);
+}
 /** The heal's stricter twin: the text is the unstated-required class
  * AND NOTHING ELSE. A composite refusal (the judge joins multiple
  * violations with "; ") can carry the stem beside a stated-wrong

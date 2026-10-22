@@ -54,6 +54,18 @@ export declare function resolveCardOutputsOrThrow(defs: ReadonlyMap<string, Pick
     outputs: Record<string, string>;
     outputNodes: Record<string, string>;
 };
+/** THE FAMILY-RESEAT CARVE (operator 2026-11-11: "just make a carve
+ *  for H3 as an exception, then do the ONE seat for the rest"): the
+ *  cards sanctioned to declare a per-card reseatFamily face. H3
+ *  rides it because its lane identity is DERIVED from the doc's
+ *  params (deriveWindowFamily), a family axis no DECL variant row
+ *  can name. Every other family's lane-shift drops ride the
+ *  registry's ONE migration seat (laneMigrate — DECL-driven).
+ *  prime() reds on any drift in either direction: a new face
+ *  without an entry here, or a stale entry whose card dropped its
+ *  face. Empty the carve the day the derived family rides the lane
+ *  declaration. */
+export declare const FAMILY_RESEAT_CARVE: readonly string[];
 export declare class CardRegistryService extends Service {
     static inject: string[];
     /** The primed card definitions (null until prime()). */
@@ -268,7 +280,10 @@ export declare class CardRegistryService extends Service {
      *  later. The judge keeps its teeth for AUTHORED poison (a doc
      *  assembled family-dead with no flip still refuses at
      *  admitStageFamily — this seat only settles the flip's own
-     *  strand). Null when the card declares no reseat face. */
+     *  strand). Null when the card declares no reseat face.
+     *  THE CARVE (2026-11-11): the face is the H3 exception only —
+     *  prime() reds any card outside FAMILY_RESEAT_CARVE that grows
+     *  one. */
     reseatStageFamily(card: string, params: Record<string, unknown>, priorParams: Record<string, unknown>): {
         params: Record<string, unknown>;
         dropped: readonly string[];
