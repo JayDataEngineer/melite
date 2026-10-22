@@ -121,7 +121,11 @@ describe("the run-gate rescue — the chat tile's drill mounts the popup (lane-m
   // anchor in the message (the message below matches none of
   // parseRescue's arms, so only the structured key can pop it).
   const laneMiss = (): Error => Object.assign(new Error("press refused"), {
-    details: { kind: "model", family: "qwen-image", slot: "weight", missing: "qwen-image.safetensors" },
+    // fetch_url rides: this burn is the DOWNLOAD lifecycle (the press,
+    // the tracker, the done face) — a fetchable weight's wire row. A
+    // fetch-less row is hand-placed and renders no press at all (the
+    // weight-offer parity law; run-rescue-hand-only.spec.tsx owns it).
+    details: { kind: "model", family: "qwen-image", slot: "weight", missing: "qwen-image.safetensors", fetch_url: "https://huggingface.co/qwen-image/qwen-image.safetensors" },
   });
   const STAGES = [{ card: "image-gen", params: {} }];
 

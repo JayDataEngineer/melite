@@ -51,10 +51,25 @@ export type Rescue =
     /** The DECL's declared size for `file`, when the wire row
      *  carried one (the face's human size, never a guess). */
     sizeBytes?: number,
+    /** THE PROVENANCE FACE (the weight-offer parity cure, operator
+     *  2026-10-22): false ⇔ at least one listed weight carried NO
+     *  fetch url on the wire — a HAND-PLACED tree (an operator
+     *  merge: no upstream repo exists, the estate's row omits
+     *  fetch_url for exactly that reason). The face may render the
+     *  Download press ONLY when this is not false; a hand-only
+     *  rescue renders the placement note, never a dead button.
+     *  Absent (a prose-parsed rescue with no structured row) ⇒
+     *  legacy ⇒ offerable. */
+    fetchable?: boolean,
+    /** The listed weights that are hand-placed (no fetch exists).
+     *  The placement note names these, with the DECL's folders. */
+    handPlaced?: ReadonlyArray<string>,
+    /** The DECL's checked folders — the placement sentence's where. */
+    folders?: ReadonlyArray<string>,
     /** Every missing declared weight BEYOND the lead file, in gate
      *  order. Absent for a single-file miss (the prose-parsed face).
      *  Never re-lists a landed file — the gate's re-check owns that. */
-    more?: ReadonlyArray<{ file: string, sizeBytes?: number }>,
+    more?: ReadonlyArray<{ file: string, sizeBytes?: number, fetchable?: boolean }>,
   }
   | { kind: 'runtime', runtime: string, command: string, env?: string }
 
@@ -84,7 +99,21 @@ export function parseRescue(error: string): Rescue | null {
   // anchor trusts the gate the way the needs-weight arm does, and
   // the carried URL stays server-side: names only, always).
   const lane = /lane presence: family '([^']+)' declares \S+ '([\w.-]+\.(?:safetensors|bin|pt|pth|ckpt|gguf))' but no store copy exists/.exec(error)
-  if (lane !== null) return { kind: 'model', file: lane[2]!, target: lane[1]! }
+  if (lane !== null) {
+    // THE PROVENANCE FACE (the weight-offer parity cure, operator
+    // 2026-10-22): the gate appends "— fetch it: <url>" ONLY for a
+    // provisions-backed weight; a hand-placed tree (an operator
+    // merge) gets no anchor. The sentence's own honesty is the
+    // verdict — no anchor ⇒ fetchable:false, the face offers nothing.
+    const fetchable = /— fetch it:/.test(error)
+    return {
+      kind: 'model',
+      file: lane[2]!,
+      target: lane[1]!,
+      fetchable,
+      ...(!fetchable ? { handPlaced: [lane[2]!] } : {}),
+    }
+  }
   // THE RUNTIME-MISS VOICE (E2-2, operator 2026-10-20 — when the
   // model is missing, a download prompt appears, never the raw
   // engine's noise): the engine's own sentence names the missing
@@ -163,26 +192,50 @@ export function rescueOfLaneDetails(details: Record<string, unknown> | undefined
     || details['kind'] !== 'model') return null
   const rawAll: unknown = details['missing_all']
   let leadSize: number | undefined
-  const more: Array<{ file: string, sizeBytes?: number }> = []
+  // THE PROVENANCE FACE: the wire row carries fetch_url ONLY for a
+  // provisions-backed weight — the estate omits it for a hand-placed
+  // tree (an operator merge with no upstream repo). Absence of the
+  // url IS the hand-only verdict; the face may never offer a fetch
+  // the wire does not name.
+  let leadFetchable: boolean | undefined
+  const more: Array<{ file: string, sizeBytes?: number, fetchable?: boolean }> = []
   if (Array.isArray(rawAll)) {
     for (const row of rawAll) {
       const r = row as Record<string, unknown>
       if (typeof r['name'] !== 'string' || r['name'] === '') continue
       const size = typeof r['size_bytes'] === 'number' ? r['size_bytes'] as number : undefined
+      const fetchable = typeof r['fetch_url'] === 'string' && r['fetch_url'] !== ''
       if (r['name'] === missing) {
-        // the lead row's own facts (its size) — the gate emits the
-        // lead twice: as slot/missing and as missing_all[0]
+        // the lead row's own facts (its size + its fetchability) —
+        // the gate emits the lead twice: as slot/missing and as
+        // missing_all[0]
         leadSize = size
+        leadFetchable = fetchable
         continue
       }
-      more.push({ file: r['name'], ...(size !== undefined ? { sizeBytes: size } : {}) })
+      more.push({ file: r['name'], ...(size !== undefined ? { sizeBytes: size } : {}), fetchable })
     }
   }
+  if (leadFetchable === undefined) {
+    // a single-file miss (no missing_all lead row): the gate's own
+    // top-level fetch_url is the lead's verdict
+    leadFetchable = typeof details['fetch_url'] === 'string' && details['fetch_url'] !== ''
+  }
+  const handPlaced = [
+    ...(leadFetchable ? [] : [missing]),
+    ...more.filter((e) => e.fetchable === false).map((e) => e.file),
+  ]
+  const folders = Array.isArray(details['folders'])
+    ? (details['folders'] as unknown[]).filter((f): f is string => typeof f === 'string')
+    : []
   return {
     kind: 'model',
     file: missing,
     target: family,
     ...(leadSize !== undefined ? { sizeBytes: leadSize } : {}),
+    fetchable: handPlaced.length === 0,
+    ...(handPlaced.length > 0 ? { handPlaced } : {}),
+    ...(folders.length > 0 ? { folders } : {}),
     ...(more.length > 0 ? { more } : {}),
   }
 }

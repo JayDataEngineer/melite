@@ -221,6 +221,22 @@ export const assetsCopy = {
   resourceRetryConfirm: (p: { id: string }): string => 'Retry the failed fetch ' + p.id + ' as a fresh download? The dead row keeps its truth.',
   /** Confirm sentence for the discard door; the id rides it. */
   resourceDiscardConfirm: (p: { id: string }): string => 'Discard the failed row ' + p.id + '? A later poll answers 404.',
+  /** Label for the Download door on an absent/failed/blocked MODEL
+   *  family row (the 2026-10-22 downloads-stream audit: the roster
+   *  is where an operator meets a missing weight, and the row
+   *  offered no door — the verbs existed door-side only). */
+  resourceDownloadButton: 'Download',
+  /** Confirm sentence for the Download door; the family id rides it. */
+  resourceDownloadConfirm: (p: { id: string }): string => 'Download the declared weights of ' + p.id + ' now? The fetch runs on the lane and the row reports its progress.',
+  /** THE HAND-ONLY FACE (the weight-offer parity cure, operator
+   *  2026-10-22): the family's DECL declares no fetchable row — every
+   *  tree is an operator merge. The row names the placement instead of
+   *  offering a Download that could only die on item-not-found. */
+  resourceHandPlaced: (p: { id: string }): string => 'Hand-placed family — no fetch exists for ' + p.id + '. Place its weight files by hand, then refresh.',
+  /** Label for the Install door on an absent EXTENSION row. */
+  resourceInstallButton: 'Install pack',
+  /** Confirm sentence for the Install door; the pack id rides it. */
+  resourceInstallConfirm: (p: { id: string }): string => 'Install the declared extension pack ' + p.id + ' into the engine? The pack declaration owns its source.',
   /** THE FOLDED SECTION'S STORY (the sidebar-height burn, 2026-11):
    *  the one-line count the closed section fold titles itself with —
    *  the roll-up rides the same line (the census wall pins it). */

@@ -286,6 +286,32 @@
     "melite-utility-nodes": [
       "MeliteConcatVideos",
       "MeliteUnload"
+    ],
+    "rgthree-comfy": [
+      "Any Switch (rgthree)",
+      "Context (rgthree)",
+      "Context Big (rgthree)",
+      "Context Merge (rgthree)",
+      "Context Merge Big (rgthree)",
+      "Context Switch (rgthree)",
+      "Context Switch Big (rgthree)",
+      "Display Any (rgthree)",
+      "Display Int (rgthree)",
+      "Image Comparer (rgthree)",
+      "Image Inset Crop (rgthree)",
+      "Image Resize (rgthree)",
+      "Image or Latent Size (rgthree)",
+      "KSampler Config (rgthree)",
+      "Lora Loader Stack (rgthree)",
+      "Power Lora Loader (rgthree)",
+      "Power Primitive (rgthree)",
+      "Power Prompt (rgthree)",
+      "Power Prompt - Simple (rgthree)",
+      "Power Puter (rgthree)",
+      "SDXL Empty Latent Image (rgthree)",
+      "SDXL Power Prompt - Positive (rgthree)",
+      "SDXL Power Prompt - Simple / Negative (rgthree)",
+      "Seed (rgthree)"
     ]
   },
   "core_node_types": {

@@ -260,6 +260,13 @@ export declare const assetsCopy: {
     readonly resourceDownloadConfirm: (p: {
         id: string;
     }) => string;
+    /** THE HAND-ONLY FACE (the weight-offer parity cure, operator
+     *  2026-10-22): the family's DECL declares no fetchable row — every
+     *  tree is an operator merge. The row names the placement instead of
+     *  offering a Download that could only die on item-not-found. */
+    readonly resourceHandPlaced: (p: {
+        id: string;
+    }) => string;
     /** Label for the Install door on an absent EXTENSION row. */
     readonly resourceInstallButton: "Install pack";
     /** Confirm sentence for the Install door; the pack id rides it. */

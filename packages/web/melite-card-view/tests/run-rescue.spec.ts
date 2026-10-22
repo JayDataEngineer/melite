@@ -82,11 +82,14 @@ describe('parseRescue (the estate refusal shapes, nothing else)', () => {
   // target, the declared file the miss, and the URL the prose carries
   // stays server-side (names only, always).
   it('the lane-presence gate sentence yields the family and the declared file', () => {
+    // the fetch anchor rides the parse (the weight-offer parity law,
+    // operator 2026-10-22): an anchored sentence is fetchable; an
+    // anchorless one is HAND-PLACED — fetchable:false + the names.
     expect(parseRescue("lane presence: family 'qwen-img-edit-21' declares text_encoder 'qwen3vl_8b_int8_convrot.safetensors' but no store copy exists (folders checked: text_encoders, clip, SEEDVR2) — fetch it: https://huggingface.co/Comfy-Org/Qwen-Image-2.1/resolve/main/text_encoders/qwen3vl_8b_int8_convrot.safetensors"))
-      .toEqual({ kind: 'model', file: 'qwen3vl_8b_int8_convrot.safetensors', target: 'qwen-img-edit-21' })
+      .toEqual({ kind: 'model', file: 'qwen3vl_8b_int8_convrot.safetensors', target: 'qwen-img-edit-21', fetchable: true })
     expect(parseRescue("bench stages/\"s_0\" (params.checkpoint): lane presence: family 'm1' declares checkpoint 'x.safetensors' but no store copy exists (folders checked: checkpoints)"))
-      .toEqual({ kind: 'model', file: 'x.safetensors', target: 'm1' })
-    expect(parseRescue("lane presence: family 'f1' declares vae 'not a weight name here' but no store copy exists"))
+      .toEqual({ kind: 'model', file: 'x.safetensors', target: 'm1', fetchable: false, handPlaced: ['x.safetensors'] })
+    expect(parseRescue("lane presence: family 'f1' declares vae 'not a weight name here' but no store copy exists — fetch it: https://huggingface.co/moss-image/moss_image_sft_int8_convrot.safetensors"))
       .toBe(null)
   })
 
@@ -148,8 +151,12 @@ describe('parseRescue (the estate refusal shapes, nothing else)', () => {
 
 describe('rescueOfLaneDetails (the structured lane miss, exact at the press site)', () => {
   it('the door\'s details row reads into a model rescue with the family target', () => {
+    // the provenance face rides (the weight-offer parity law): a
+    // fetch_url row is fetchable:true; a fetch-less row is hand-placed.
     expect(rescueOfLaneDetails({ family: 'f1', slot: 'text_encoder', missing: 't.safetensors', folders: ['clip'], fetch_url: 'https://example/t', kind: 'model' }))
-      .toEqual({ kind: 'model', file: 't.safetensors', target: 'f1' })
+      .toEqual({ kind: 'model', file: 't.safetensors', target: 'f1', fetchable: true, folders: ['clip'] })
+    expect(rescueOfLaneDetails({ family: 'f1', slot: 'text_encoder', missing: 't.safetensors', folders: ['clip'], kind: 'model' }))
+      .toEqual({ kind: 'model', file: 't.safetensors', target: 'f1', fetchable: false, handPlaced: ['t.safetensors'], folders: ['clip'] })
   })
   it('anything that is not that row is null (the prose anchor covers it)', () => {
     expect(rescueOfLaneDetails(undefined)).toBe(null)

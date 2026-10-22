@@ -4695,6 +4695,13 @@ window.__ModuleLoader__.load({
 			missingInstall: (p) => "Missing " + p.what + " — install through the manage seat?",
 			/** Rescue missing-weight note (what the run lacked). */
 			missingDownload: (p) => "Missing " + p.what + " — download through the manage seat?",
+			/** THE HAND-PLACED FACE (the weight-offer parity cure, operator
+			*  2026-10-22): the missing weight is an operator merge with NO
+			*  upstream fetch — the estate's wire row carried no fetch url for
+			*  exactly that reason. The face names the placement (files + the
+			*  DECL's folders) and offers nothing: a Download press here could
+			*  only die on the door's item-not-found. */
+			weightHandPlaced: (p) => "Hand-placed weight — no fetch exists. Place " + p.files + " under " + p.folders + " and run again.",
 			/** THE ONE-FACE TOTAL (the sequential-missing-weight-reveal cure,
 			*  2026-11-09): the count + human sizes line under the download
 			*  list — the burn's "2 files · 7.0 GB + 249 MB". */
@@ -4837,11 +4844,16 @@ window.__ModuleLoader__.load({
 				pack: ext[1]
 			};
 			const lane = /lane presence: family '([^']+)' declares \S+ '([\w.-]+\.(?:safetensors|bin|pt|pth|ckpt|gguf))' but no store copy exists/.exec(error);
-			if (lane !== null) return {
-				kind: "model",
-				file: lane[2],
-				target: lane[1]
-			};
+			if (lane !== null) {
+				const fetchable = /— fetch it:/.test(error);
+				return {
+					kind: "model",
+					file: lane[2],
+					target: lane[1],
+					fetchable,
+					...!fetchable ? { handPlaced: [lane[2]] } : {}
+				};
+			}
 			const runtimeMiss = /([A-Za-z0-9_-]+) runtime not found at \S+/.exec(error);
 			if (runtimeMiss !== null) {
 				const provision = /Provision it:\s*([\s\S]+?)(?:\.\s+(?:Missing:|Or point)|$)/.exec(error);
@@ -4886,25 +4898,35 @@ window.__ModuleLoader__.load({
 			if (typeof family !== "string" || family === "" || typeof slot !== "string" || slot === "" || typeof missing !== "string" || missing === "" || details["kind"] !== "model") return null;
 			const rawAll = details["missing_all"];
 			let leadSize;
+			let leadFetchable;
 			const more = [];
 			if (Array.isArray(rawAll)) for (const row of rawAll) {
 				const r = row;
 				if (typeof r["name"] !== "string" || r["name"] === "") continue;
 				const size = typeof r["size_bytes"] === "number" ? r["size_bytes"] : void 0;
+				const fetchable = typeof r["fetch_url"] === "string" && r["fetch_url"] !== "";
 				if (r["name"] === missing) {
 					leadSize = size;
+					leadFetchable = fetchable;
 					continue;
 				}
 				more.push({
 					file: r["name"],
-					...size !== void 0 ? { sizeBytes: size } : {}
+					...size !== void 0 ? { sizeBytes: size } : {},
+					fetchable
 				});
 			}
+			if (leadFetchable === void 0) leadFetchable = typeof details["fetch_url"] === "string" && details["fetch_url"] !== "";
+			const handPlaced = [...leadFetchable ? [] : [missing], ...more.filter((e) => e.fetchable === false).map((e) => e.file)];
+			const folders = Array.isArray(details["folders"]) ? details["folders"].filter((f) => typeof f === "string") : [];
 			return {
 				kind: "model",
 				file: missing,
 				target: family,
 				...leadSize !== void 0 ? { sizeBytes: leadSize } : {},
+				fetchable: handPlaced.length === 0,
+				...handPlaced.length > 0 ? { handPlaced } : {},
+				...folders.length > 0 ? { folders } : {},
 				...more.length > 0 ? { more } : {}
 			};
 		}
@@ -5647,7 +5669,10 @@ window.__ModuleLoader__.load({
 			}, stuck !== null ? (0, react.createElement)("p", { className: card_module_css_default.rescueNote }, chromeCopy.stuckNote({
 				state: stuck.state,
 				progress: formatWeightProgress(stuck.bytes, stuck.total)
-			})) : failed !== null ? null : (0, react.createElement)("p", { className: card_module_css_default.rescueNote }, chromeCopy.missingDownload({ what })), stuck === null && failed === null && rescue.kind === "model" && (rescue.more?.length ?? 0) > 0 ? [(0, react.createElement)("ul", {
+			})) : failed !== null ? null : rescue.kind === "model" && (rescue.handPlaced?.length ?? 0) > 0 ? (0, react.createElement)("p", { className: card_module_css_default.rescueNote }, chromeCopy.weightHandPlaced({
+				files: rescue.handPlaced.join(", "),
+				folders: (rescue.folders ?? []).join(", ")
+			})) : (0, react.createElement)("p", { className: card_module_css_default.rescueNote }, chromeCopy.missingDownload({ what })), stuck === null && failed === null && rescue.kind === "model" && (rescue.more?.length ?? 0) > 0 ? [(0, react.createElement)("ul", {
 				key: "weight-list",
 				"data-testid": "weight-list",
 				className: card_module_css_default.rescueNote,
@@ -5662,14 +5687,14 @@ window.__ModuleLoader__.load({
 			}, chromeCopy.missingWeightTotal({
 				count: weightFilesOf(rescue).length,
 				sizes: weightFilesOf(rescue).map((entry) => entry.sizeBytes !== void 0 ? formatByteSize(entry.sizeBytes) : null).filter((s) => s !== null).join(" + ")
-			}))] : null, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+			}))] : null, !(rescue.kind === "model" && (rescue.handPlaced?.length ?? 0) > 0) ? (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Button, {
 				size: "sm",
 				variant: "primary",
 				"data-testid": "weight-download",
 				disabled: busy || target === "",
 				title: target === "" ? chromeCopy.noProvisionTarget : chromeCopy.downloadViaManage,
 				onClick: download
-			}, busy ? acquire === null ? chromeCopy.startingWord : chromeCopy.downloadingWord : chromeCopy.downloadWord), ...trackerFaces(acquire, downloading ? flow : null, hashing), stuck === null && downloading && !hashing ? flow !== null ? null : (0, react.createElement)("p", { className: card_module_css_default.rescueNote }, chromeCopy.downloadingLive) : null, stuck !== null ? exitsRow(stuck) : failed !== null ? exitsRow(failed) : null, note !== null ? (0, react.createElement)("p", { className: card_module_css_default.rescueErr }, note) : null));
+			}, busy ? acquire === null ? chromeCopy.startingWord : chromeCopy.downloadingWord : chromeCopy.downloadWord) : null, ...trackerFaces(acquire, downloading ? flow : null, hashing), stuck === null && downloading && !hashing ? flow !== null ? null : (0, react.createElement)("p", { className: card_module_css_default.rescueNote }, chromeCopy.downloadingLive) : null, stuck !== null ? exitsRow(stuck) : failed !== null ? exitsRow(failed) : null, note !== null ? (0, react.createElement)("p", { className: card_module_css_default.rescueErr }, note) : null));
 		}
 		//#endregion
 		//#region src/client/card-drill.tsx
@@ -16867,6 +16892,11 @@ window.__ModuleLoader__.load({
 			emptyDrafts: "no composed cards yet — build one in a chat.",
 			/** A draft row's fallback kind word when the model is unknown. */
 			draftKindFallback: "card",
+			/** The explicit per-row restore affordance face (the operator's
+			*  literal ask: the row click restores, but only this names it). */
+			restoreAction: "Restore",
+			/** A draft row's accessible restore name. */
+			restoreDraftAria: (p) => `Restore ${p.name} onto the bench`,
 			/** The open-failure banner lead. */
 			openFailed: (p) => `open failed: ${p.error}`,
 			/** The feed-failure banner lead. */

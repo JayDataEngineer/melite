@@ -268,6 +268,16 @@ export declare const chromeCopy: {
     readonly missingDownload: (p: {
         what: string;
     }) => string;
+    /** THE HAND-PLACED FACE (the weight-offer parity cure, operator
+     *  2026-10-22): the missing weight is an operator merge with NO
+     *  upstream fetch — the estate's wire row carried no fetch url for
+     *  exactly that reason. The face names the placement (files + the
+     *  DECL's folders) and offers nothing: a Download press here could
+     *  only die on the door's item-not-found. */
+    readonly weightHandPlaced: (p: {
+        files: string;
+        folders: string;
+    }) => string;
     /** THE ONE-FACE TOTAL (the sequential-missing-weight-reveal cure,
      *  2026-11-09): the count + human sizes line under the download
      *  list — the burn's "2 files · 7.0 GB + 249 MB". */

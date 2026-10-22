@@ -379,6 +379,14 @@ function renderProfile(name) {  // In-box bundles (@deepseek-ai/*) resolve from 
   // — the honest state, never a silent default. acquireStallTimeoutMs
   // is the deliberate stall budget (audit F7 close-out, 2026-11-11):
   // the lane rides a pinned 10s, never the library default by accident.
+  // durableDownloads: true rides WEB mounts only (the 2026-10-22
+  // downloads-stream audit): the lane is the long-lived process that
+  // owns fetch lifetimes — its durable claim ticker claims requested
+  // rows and stamps the claimer heartbeat, so a headless press's
+  // wanted download survives its own session dying. A non-web mount
+  // (headless task, estate job server) is short-lived: a claimer in
+  // it would orphan every fetch it died mid-flight, so its presses
+  // take their own wire, exactly as before.
   const estateRow = bundles.includes('@melite-plugin/dsh-estate')
     ? '# ESTATE SEAT PIN — the estate row config owns every seat:\n'
       + '# repoRoot pins the runs/drafts seats (unpinned boots refuse loud);\n'
@@ -386,10 +394,15 @@ function renderProfile(name) {  // In-box bundles (@deepseek-ai/*) resolve from 
       + '# config — stateRoot wins over repoRoot in the queue seat).\n'
       + '# agentRoute names the agent brain (absent = unseated, logged loud).\n'
       + '# acquireStallTimeoutMs: the deliberate stall budget (audit F7).\n'
+      + (webMount
+        ? '# durableDownloads: the lane claims requested rows (the lifetime\n'
+          + '# finding) — long-lived web mounts only, never a task process.\n'
+        : '')
       + '- id: melite-estate\n'
       + '  config:\n'
       + '    repoRoot: ' + JSON.stringify(resolve(PROVISIONER, '../../..')) + '\n'
       + '    acquireStallTimeoutMs: 10000\n'
+      + (webMount ? '    durableDownloads: true\n' : '')
       + (ESTATE_STATE_ROOT
         ? '    stateRoot: ' + JSON.stringify(ESTATE_STATE_ROOT) + '\n'
         : '')

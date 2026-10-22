@@ -1470,10 +1470,24 @@ export class ProvisioningService extends Service implements ProvisioningServiceD
       ref: copyRef(ref),
       state,
       ...(operationId === undefined ? {} : { operationId }),
+      // THE PROVENANCE FACE (the weight-offer parity cure, operator
+      // 2026-10-22): the resolved plan IS the fetchable truth — a
+      // family whose DECL declares no fetchable row (every tree an
+      // operator merge) plans ZERO items, and the served row says so,
+      // so the roster never offers a Download no repo can serve.
+      ...(ref.kind === "model" ? { fetchable: plan.items.length > 0 } : {}),
       // THE CENSUS HONESTY LAW (the anima burn): an unknown row
       // names its own cause at the row level — the scan's budget,
-      // never a health verdict.
-      ...(state === "unknown" ? { detail: "scan incomplete — the check was cut off before it could judge this resource" } : {}),
+      // never a health verdict. The cause is the FIRST unknown
+      // item's own detail (a budget cut carries the item-level
+      // scan voice; a CHECKED unknown — the unverifiable-DECL fold —
+      // carries the check's own answer, e.g. the DECL's missing
+      // node-type row), falling back to the resource-level voice
+      // when no item spoke.
+      ...(state === "unknown"
+        ? { detail: items.find((item) => item.state === "unknown")?.detail
+            ?? "scan incomplete — the check was cut off before it could judge this resource" }
+        : {}),
       items: items.map(copyItem),
     };
   }
@@ -2377,6 +2391,11 @@ export class ProvisioningService extends Service implements ProvisioningServiceD
       if (this.writer?.inspect === undefined) {
         if (this.inspector === undefined) return itemResult(item, "unknown", "blocked", { errorCode: "artifact/inspect-unavailable" });
         const inspection = await this.inspector.inspect(itemOwnerRef(item), signal);
+        // THE UNVERIFIABLE FOLD (the rgthree burn, 2026-10-22): an
+        // inspector that could not verify (the DECL names no node
+        // types) is CANNOT-VERIFY — census honesty, never a negative
+        // verdict over unchecked bytes.
+        if (inspection.unverifiable === true) return itemResult(item, "unknown", "blocked", inspection.detail === undefined ? {} : { detail: inspection.detail });
         return itemResult(item, inspection.active ? "active" : "absent", inspection.active ? "active" : "blocked", inspection.detail === undefined ? {} : { detail: inspection.detail });
       }
       const inspection = await this.writer.inspect({
@@ -2409,6 +2428,11 @@ export class ProvisioningService extends Service implements ProvisioningServiceD
     if (item.provider === "local") {
       if (this.inspector === undefined) return itemResult(item, "unknown", "blocked", { errorCode: "extension/inspect-unavailable" });
       const inspection = await this.inspector.inspect({ kind: "extension", id: item.id }, signal);
+      // THE UNVERIFIABLE FOLD (the rgthree burn, 2026-10-22): the
+      // pack sat installed + serving 24 classes while the roster
+      // wore 'absent' forever and no door could converge the face —
+      // cannot-verify wears the census's own honest word.
+      if (inspection.unverifiable === true) return itemResult(item, "unknown", "blocked", inspection.detail === undefined ? {} : { detail: inspection.detail });
       return itemResult(item, inspection.active ? "active" : "absent", inspection.active ? "active" : "blocked", inspection.detail === undefined ? {} : { detail: inspection.detail });
     }
     if (this.manager?.inspect !== undefined) {
@@ -2419,6 +2443,10 @@ export class ProvisioningService extends Service implements ProvisioningServiceD
     }
     if (this.inspector !== undefined) {
       const inspection = await this.inspector.inspect({ kind: "extension", id: item.id }, signal);
+      // THE UNVERIFIABLE FOLD (same law as the local arm): the
+      // inspector-fallback's cannot-verify answers 'unknown', never
+      // the absent verdict.
+      if (inspection.unverifiable === true) return itemResult(item, "unknown", "blocked", inspection.detail === undefined ? {} : { detail: inspection.detail });
       return itemResult(item, inspection.active ? "active" : "absent", inspection.active ? "active" : "blocked", inspection.detail === undefined ? {} : { detail: inspection.detail });
     }
     return itemResult(item, "unknown", "blocked", { errorCode: "extension/inspect-unavailable" });

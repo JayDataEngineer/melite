@@ -34,7 +34,7 @@ vi.mock('@melite/card-base/client', async (importOriginal) => ({
 }))
 
 const STAGES = [{ params: { model: 'moss-image', prompt: 'x' } }]
-const MISS = "lane presence: family 'moss-image' declares loras 'moss_image_sft_int8_convrot.safetensors' but no store copy exists"
+const MISS = "lane presence: family 'moss-image' declares loras 'moss_image_sft_int8_convrot.safetensors' but no store copy exists — fetch it: https://huggingface.co/moss-image/moss_image_sft_int8_convrot.safetensors"
 
 afterEach(() => {
   cleanup()

@@ -175,6 +175,13 @@ export interface ResourceStatus {
   readonly operationId?: string;
   readonly items: readonly ResourceStatusItem[];
   readonly detail?: string;
+  // THE PROVENANCE FACE (the weight-offer parity cure, operator
+  // 2026-10-22): model rows only — false ⇔ the family's resolved plan
+  // carries ZERO items (the DECL declares no fetchable row; every
+  // tree is an operator merge). The roster renders the placement note
+  // instead of a Download door. Absent = the plan never resolved (the
+  // row's state already voices that).
+  readonly fetchable?: boolean;
   // THE LIVE-ROW ADDITIVES (audit download-stack-audit-2026-10-20
   // F10): a LOCKED row's live ledger snapshot carries its flight's
   // counts — a settled row never sets these (the settled shape is

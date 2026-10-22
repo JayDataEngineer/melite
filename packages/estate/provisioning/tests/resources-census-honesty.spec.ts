@@ -172,6 +172,67 @@ describe("the resources census honesty law (the anima burn)", () => {
     ).toBe("unknown");
   });
 
+  test("AN UNVERIFIABLE EXTENSION WEARS UNKNOWN, never absent (the rgthree burn: installed + serving 24 classes, rostered 'absent' forever)", async () => {
+    const context = new Context();
+    contexts.push(context);
+    // THE BURN (2026-10-22 downloads-stream audit): the inspector's
+    // empty-expected arm answered active:false — "the DECL names no
+    // node types to verify against" — and the fold painted it
+    // 'absent', a NEGATIVE verdict over bytes nobody checked. The
+    // pack sat installed and serving; no door could converge the
+    // face (retry/discard need an operation row; a re-install lands
+    // and the face still reads absent). The census honesty law
+    // already owns the word for cannot-verify: 'unknown'.
+    const extensionPlan: ProvisionPlan = {
+      ref: { kind: "extension", id: "rgthree-comfy" },
+      items: [{
+        kind: "extension",
+        key: "extension:rgthree-comfy",
+        id: "rgthree-comfy",
+        url: "https://github.com/rgthree/rgthree-comfy.git",
+        required: false,
+        provider: "local",
+        ref: "main",
+        version: "1.0.0",
+        registry: "custom",
+        requirements: [],
+        nodeTypes: [],
+      }],
+    };
+    const port: DeclarationPort = {
+      resolve: async (): Promise<ProvisionPlan> => extensionPlan,
+      list: async (): Promise<readonly ResourceRef[]> => [extensionPlan.ref],
+    };
+    // no manager (the inspector-fallback arm rides), the inspector
+    // answers the DECL-has-no-node-types truth
+    const unverifiable = new ProvisioningService(context, {
+      declaration: port,
+      inspector: { inspect: async () => ({ active: false, unverifiable: true, nodeTypes: [], detail: "extension has no declared node types" }) },
+      storeRoot: tempRoot(),
+    } satisfies ProvisioningConfig);
+    const rows = await unverifiable.reconcile(undefined, new AbortController().signal);
+    assert.equal(rows.length, 1);
+    expect(rows[0]?.state,
+      "cannot-verify wears the census's own honest word — 'absent' is a verdict over unchecked bytes",
+    ).toBe("unknown");
+    assert.match(rows[0]?.detail ?? "", /no declared node types/,
+      "the row keeps its cause — the DECL's gap, named");
+    // THE CONTROL (its own arm): a VERIFIABLE miss (the inspector
+    // checked and the answer is no) still folds 'absent' — the law
+    // moves the cannot-verify case only, never the checked negative.
+    const controlContext = new Context();
+    contexts.push(controlContext);
+    const verifiedMiss = new ProvisioningService(controlContext, {
+      declaration: port,
+      inspector: { inspect: async () => ({ active: false, nodeTypes: [], detail: "pack not loaded" }) },
+      storeRoot: tempRoot(),
+    } satisfies ProvisioningConfig);
+    const missRows = await verifiedMiss.reconcile(undefined, new AbortController().signal);
+    assert.equal(missRows.length, 1);
+    assert.equal(missRows[0]?.state, "absent",
+      "a checked negative keeps the absent verdict — the law moves cannot-verify only");
+  });
+
   test("A QUIET CENSUS ANSWERS WHOLE (the positive control: no unknown rows, no partial)", async () => {
     const context = new Context();
     contexts.push(context);
@@ -496,5 +557,56 @@ describe("the resources census honesty law (the anima burn)", () => {
     expect(result.items.length, "the aborted wait contributes no item rows — nothing was checked on its behalf").toBe(0);
     assert.match(result.detail ?? "", /cancelled while waiting/,
       "the detail names the wait, not the fetch");
+  });
+
+  test("THE PROVENANCE FACE (weight-offer parity, operator 2026-10-22): a plan-less family's row carries fetchable:false — the roster never offers a fetch no repo serves", async () => {
+    const context = new Context();
+    contexts.push(context);
+    // a hand-only family: the DECL declares ZERO fetchable rows (every
+    // tree an operator merge — the qwen3-tts merged-tree shape); beside
+    // it, a family with one declared fetchable weight.
+    const fetchablePlan: ProvisionPlan = {
+      ref: refOf("fetchable-family"),
+      items: [{
+        kind: "model",
+        key: "model:family:fetchable-family::w0.safetensors",
+        owner: "family",
+        id: "fetchable-family",
+        name: "w0.safetensors",
+        folder: "checkpoints",
+        url: "https://example.invalid/w0.safetensors",
+        sha256: "a".repeat(64),
+        sizeBytes: 1,
+        required: true,
+        provider: "direct",
+      }],
+    };
+    const declaration: DeclarationPort = {
+      resolve: async (target: ResourceRef): Promise<ProvisionPlan> => {
+        if (target.id === "hand-only-family") return { ref: refOf(target.id), items: [] };
+        if (target.id === "fetchable-family") return fetchablePlan;
+        throw new Error("no plan for " + target.id);
+      },
+      list: async () => [refOf("hand-only-family"), refOf("fetchable-family")],
+    };
+    const writer: ArtifactWriterPort = {
+      inspect: async () => ({ present: false, sizeBytes: 1 }),
+      write: async () => { throw new Error("the census never writes") },
+    };
+    const service = new ProvisioningService(context, {
+      declaration,
+      artifactWriter: writer,
+      storeRoot: tempRoot(),
+    } satisfies ProvisioningConfig);
+
+    const rows = await service.reconcile(undefined, undefined);
+    const hand = rows.find((row) => row.ref.id === "hand-only-family");
+    assert.ok(hand, "the hand-only family is row-complete in the census");
+    assert.equal(hand.fetchable, false,
+      "a plan-less family's served row carries fetchable:false — the roster renders the placement note, never a Download door");
+    const fetchable = rows.find((row) => row.ref.id === "fetchable-family");
+    assert.ok(fetchable, "the fetchable family is row-complete in the census");
+    assert.notEqual(fetchable.fetchable, false,
+      "a family with a declared fetchable row stays offerable (the law gates hand-only, never the fetchable class)");
   });
 });

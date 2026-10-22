@@ -124,6 +124,12 @@ export interface InspectorResult {
   readonly active: boolean;
   readonly nodeTypes?: readonly string[];
   readonly detail?: string;
+  /** True when the DECL gives this read nothing to verify against
+   *  (an extension whose node-type row is missing): the dial
+   *  succeeded, but a negative answer here is CANNOT-VERIFY, never
+   *  evidence of absence — the census folds it 'unknown' (never
+   *  'absent'). Absent only when this stays unset. */
+  readonly unverifiable?: boolean;
 }
 
 export interface InspectorPort {

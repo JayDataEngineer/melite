@@ -155,6 +155,11 @@ interface ResourceView {
   state?: string
   detail?: string
   operation_id?: string
+  // THE PROVENANCE FACE (the weight-offer parity cure, operator
+  // 2026-10-22): false ⇔ the family's DECL declares no fetchable row
+  // (every tree an operator merge) — the row renders the placement
+  // note, never a Download door.
+  fetchable?: boolean
   // THE LIVE-ROW ADDITIVES (audit download-stack-audit-2026-10-20
   // F10): a mid-flight family's ledger snapshot — bytes landed, the
   // DECL total, the phase word. Settled rows never carry them.
@@ -220,7 +225,7 @@ const STATUS_STALE_MS = 30_000
 const MUTATING: ReadonlySet<string> = new Set([
   'endpoint_set', 'install_extension', 'install_extension_url',
   'download_model', 'provision_model',
-  'acquire_retry', 'acquire_discard',
+  'acquire_weight', 'acquire_retry', 'acquire_discard',
   'launch', 'restart', 'stop', 'update', 'switch_version', 'free',
   'snapshot_save', 'snapshot_restore',
 ])
@@ -238,6 +243,9 @@ const ACTION_LABELS: Readonly<Record<string, string>> = {
   // the door the fold's Retry/Discard verbs fire.
   acquire_retry: assetsCopy.resourceRetryButton,
   acquire_discard: assetsCopy.resourceDiscardButton,
+  // THE ROSTER ROW DOORS (2026-10-22 downloads stream): the result
+  // dock names the row's own Download/Install verbs too.
+  acquire_weight: assetsCopy.resourceDownloadButton,
   // THE LORA DOORS (2026-09-26): the sidebar's own vocabulary now
   // carries the custom-LoRA block.
   lora_list: assetsCopy.actionListLoras,
@@ -1327,7 +1335,32 @@ export function ComfyManagerPanel(): React.ReactElement {
                       // nothing. The progress line and operation id
                       // still ride the collapsed content, which renders
                       // closed or open.
-                      const hasDoors = operationId !== undefined && (state === 'failed' || state === 'blocked')
+                      // THE ROSTER ROW DOORS (the 2026-10-22 downloads
+                      // stream, wave item (m)): the roster is where an
+                      // operator meets a missing weight or pack, and the
+                      // row offered no verb — the doors existed door-side
+                      // only and the provision fold wanted typed ids. An
+                      // absent (or failed/blocked) MODEL family row gets
+                      // Download (acquire_weight, the family id alone —
+                      // the DECL owns the URL); an absent EXTENSION row
+                      // gets Install (install_extension, the row's own
+                      // pack id). A failed/blocked row with an operation
+                      // row keeps Retry/Discard. An ACTIVE row gets
+                      // nothing: landed bytes never re-fetch (the
+                      // no-re-mint law is the door-side judge; the face
+                      // simply does not offer the door).
+                      const refId = resource.ref?.id
+                      const refKind = resource.ref?.kind
+                      const stateDoors = operationId !== undefined && (state === 'failed' || state === 'blocked')
+                      // THE WEIGHT-OFFER PARITY (operator 2026-10-22): a
+                      // hand-only family (the census row's fetchable:false —
+                      // the DECL declares no fetchable row at all) offers NO
+                      // Download: an acquire here can only die on the door's
+                      // item-not-found. The row renders the placement note.
+                      const handOnlyFamily = resource.fetchable === false && refKind === 'model'
+                      const modelDoor = (state === 'absent' || state === 'failed' || state === 'blocked') && refKind === 'model' && refId !== undefined && !handOnlyFamily
+                      const installDoor = state === 'absent' && refKind === 'extension' && refId !== undefined
+                      const hasDoors = stateDoors || modelDoor || installDoor
                       const expandable = items.length > 0 || resource.detail !== undefined || hasDoors
                       return (
                         <li className={css.resourceRow} key={resourceLabel(resource) + ':' + index}>
@@ -1371,6 +1404,15 @@ export function ComfyManagerPanel(): React.ReactElement {
                               )}
                             >
                               {resource.detail !== undefined && <p className={css.sub}>{resource.detail}</p>}
+                              {/* THE HAND-ONLY FACE (the weight-offer parity
+                                  cure, operator 2026-10-22): the placement
+                                  truth where a Download button would have
+                                  been — no fetch exists for this family. */}
+                              {handOnlyFamily && (
+                                <p className={css.sub} data-testid="resource-hand-placed">
+                                  {assetsCopy.resourceHandPlaced({ id: refId ?? '' })}
+                                </p>
+                              )}
                               {/* THE RESOURCE ACTION DOORS (audit B2-4, the
                                   anima burn's follow-up: the fold offered
                                   no way to act on a dead row — the doors
@@ -1384,6 +1426,8 @@ export function ComfyManagerPanel(): React.ReactElement {
                                   never invents the verb. */}
                               {hasDoors && (
                                 <div className={css.row} data-testid="resource-doors">
+                              {stateDoors && (
+                                <>
                                   <Button
                                     aria-busy={busy === 'acquire_retry'}
                                     disabled={locked || busy !== null}
@@ -1394,6 +1438,24 @@ export function ComfyManagerPanel(): React.ReactElement {
                                     disabled={locked || busy !== null}
                                     onClick={() => { confirmRun('acquire_discard', assetsCopy.resourceDiscardConfirm({ id: operationId }), { payload: { operation_id: operationId } }) }}
                                   >{assetsCopy.resourceDiscardButton}</Button>
+                                </>
+                              )}
+                              {modelDoor && (
+                                <Button
+                                  data-testid="resource-download"
+                                  aria-busy={busy === 'acquire_weight'}
+                                  disabled={locked || busy !== null}
+                                  onClick={() => { confirmRun('acquire_weight', assetsCopy.resourceDownloadConfirm({ id: refId }), { payload: { model: refId } }) }}
+                                >{assetsCopy.resourceDownloadButton}</Button>
+                              )}
+                              {installDoor && (
+                                <Button
+                                  data-testid="resource-install"
+                                  aria-busy={busy === 'install_extension'}
+                                  disabled={locked || busy !== null}
+                                  onClick={() => { confirmRun('install_extension', assetsCopy.resourceInstallConfirm({ id: refId }), { payload: { nodes: [refId] } }) }}
+                                >{assetsCopy.resourceInstallButton}</Button>
+                              )}
                                 </div>
                               )}
                               {items.length > 0 && (

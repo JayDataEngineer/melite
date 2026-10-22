@@ -39,7 +39,7 @@ vi.mock('@melite/card-base/client', async (importOriginal) => ({
 }))
 
 const STAGES = [{ params: { model: 'moss-image', prompt: 'x' } }]
-const MISS = "lane presence: family 'moss-image' declares loras 'moss_image_sft_int8_convrot.safetensors' but no store copy exists"
+const MISS = "lane presence: family 'moss-image' declares loras 'moss_image_sft_int8_convrot.safetensors' but no store copy exists — fetch it: https://huggingface.co/moss-image/moss_image_sft_int8_convrot.safetensors"
 const TOTAL = 7_343_591_088
 const HICCUP_AT = 6_012_000_000 // the operator's own wedge point: 6.0 GB of 6.8
 

@@ -249,6 +249,14 @@ export const chromeCopy = {
   missingInstall: (p: { what: string }): string => 'Missing ' + p.what + ' — install through the manage seat?',
   /** Rescue missing-weight note (what the run lacked). */
   missingDownload: (p: { what: string }): string => 'Missing ' + p.what + ' — download through the manage seat?',
+  /** THE HAND-PLACED FACE (the weight-offer parity cure, operator
+   *  2026-10-22): the missing weight is an operator merge with NO
+   *  upstream fetch — the estate's wire row carried no fetch url for
+   *  exactly that reason. The face names the placement (files + the
+   *  DECL's folders) and offers nothing: a Download press here could
+   *  only die on the door's item-not-found. */
+  weightHandPlaced: (p: { files: string; folders: string }): string =>
+    'Hand-placed weight — no fetch exists. Place ' + p.files + ' under ' + p.folders + ' and run again.',
   /** THE ONE-FACE TOTAL (the sequential-missing-weight-reveal cure,
    *  2026-11-09): the count + human sizes line under the download
    *  list — the burn's "2 files · 7.0 GB + 249 MB". */

@@ -711,7 +711,17 @@ export function RunRescue({ error, stages, onRun, rescue: structured }: {
           chromeCopy.stuckNote({ state: stuck.state, progress: formatWeightProgress(stuck.bytes, stuck.total) }))
         : failed !== null
           ? null // the failed face's voice is the cause itself (note)
-          : h('p', { className: css.rescueNote }, chromeCopy.missingDownload({ what })),
+          : rescue.kind === 'model' && (rescue.handPlaced?.length ?? 0) > 0
+            ? // THE WEIGHT-OFFER PARITY (operator 2026-10-22): a
+              // hand-placed tree has no fetch — the face names the
+              // placement and offers NOTHING. A Download press here
+              // could only die on the door's item-not-found.
+              h('p', { className: css.rescueNote },
+                chromeCopy.weightHandPlaced({
+                  files: rescue.handPlaced!.join(', '),
+                  folders: (rescue.folders ?? []).join(', '),
+                }))
+            : h('p', { className: css.rescueNote }, chromeCopy.missingDownload({ what })),
       // THE ONE-FACE LIST (the reveal cure, 2026-11-09): every missing
       // declared weight, name + declared human size, with the count
       // line — the operator sees the whole fetch before pressing
@@ -734,14 +744,20 @@ export function RunRescue({ error, stages, onRun, rescue: structured }: {
           ),
         ]
         : null,
-      h(Button, {
-        size: 'sm',
-        variant: 'primary',
-        ...{ 'data-testid': 'weight-download' },
-        disabled: busy || target === '',
-        title: target === '' ? chromeCopy.noProvisionTarget : chromeCopy.downloadViaManage,
-        onClick: download,
-      }, busy ? (acquire === null ? chromeCopy.startingWord : chromeCopy.downloadingWord) : chromeCopy.downloadWord),
+      // THE OFFER LAW (the weight-offer parity cure, operator
+      // 2026-10-22): the press exists ONLY where every listed weight
+      // is fetchable — a hand-only rescue renders the placement note
+      // above and no button at all (the burn: the button was the lie).
+      !(rescue.kind === 'model' && (rescue.handPlaced?.length ?? 0) > 0)
+        ? h(Button, {
+          size: 'sm',
+          variant: 'primary',
+          ...{ 'data-testid': 'weight-download' },
+          disabled: busy || target === '',
+          title: target === '' ? chromeCopy.noProvisionTarget : chromeCopy.downloadViaManage,
+          onClick: download,
+        }, busy ? (acquire === null ? chromeCopy.startingWord : chromeCopy.downloadingWord) : chromeCopy.downloadWord)
+        : null,
       ...trackerFaces(acquire, downloading ? flow : null, hashing),
       stuck === null && downloading && !hashing
         ? (flow !== null ? null : h('p', { className: css.rescueNote }, chromeCopy.downloadingLive))
