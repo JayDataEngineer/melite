@@ -242,7 +242,7 @@ async function runPressRefusal(docId: string, card: string): Promise<string | nu
   }
 }
 
-test('THE OPERATOR\'S GESTURE, END TO END: fresh tts card → VoiceDesign pick → ONE persona box typed → the half SAVES, renders NO strip, and the RUN press owns the complete pair', async () => {
+test('THE QVOICE BOOLEAN LAW, END TO END (operator 2026-10-22): fresh tts card → VoiceDesign pick → text + persona typed, NO name box on the form → the state SAVES, renders NO strip, and the RUN press owns NO pair', async () => {
   expect(spec, 'the served qwen3-tts spec armed').not.toBeNull()
   const docId = 'bench-gesture-e2e'
   await drafts.table('docs').put(docId, {
@@ -265,37 +265,41 @@ test('THE OPERATOR\'S GESTURE, END TO END: fresh tts card → VoiceDesign pick �
   expect(afterPick['variant'], 'the switch landed in the stored doc').toBe('voicedesign')
   await seat.reopen()
 
-  // [2] THE HALF — the operator types the script and ONE box of the
-  // persona pair (real DOM change events on the labeled inputs) and
-  // the estate holds all three seats to the ruling
+  // [2] THE GESTURE (the qvoice boolean law, operator 2026-10-22):
+  // the base VoiceDesign card is text + persona description —
+  // qvoice IS a mod ("IT IS A SIMPLE BOOLEAN"), never a baked-in
+  // base-lane field. The Design Mod Name box is DEAD on this form.
   await seat.type('Text to Speak', 'the words the voice performs')
   await seat.type('Voice Persona', 'a warm narrator, low and close')
   const afterHalf = await storedParams(docId)
-  expect(String(afterHalf['design_prompt'] ?? ''), 'the half LANDED in the stored doc (the write door admitted it)').toContain('warm narrator')
+  expect(String(afterHalf['design_prompt'] ?? ''), 'the persona LANDED in the stored doc (the write door admitted it)').toContain('warm narrator')
+  const nameBox = document.querySelector('input[placeholder*="deep_radio_host"]')
+  expect(nameBox, 'the Design Mod Name box is GONE from the base form (voice_name is not a base-lane field)').toBeNull()
   const halfRefusals = renderedRefusals().filter((t) => AUTHORING_STEMS.some((re) => re.test(t)))
-  expect(halfRefusals, 'the RENDERED FORM voices no authoring refusal for the half (the strip stays silent mid-form)').toEqual([])
+  expect(halfRefusals, 'the RENDERED FORM voices no authoring refusal for the state (the strip stays silent mid-form)').toEqual([])
   // the write door's own verdict, asked directly: the same state admits
   const door = reg.admitStageRelations('tts', afterHalf)
-  expect(door.ok === true, `the registry door admits the same half (one law, both seats): ${door.ok === true ? '' : door.error}`).toBe(true)
+  expect(door.ok === true, `the registry door admits the same state (one law, both seats): ${door.ok === true ? '' : door.error}`).toBe(true)
 
-  // [3] THE RUN PRESS — the half REFUSES, naming the pair (the
-  // run seat owns completeness; the operator's own ruling)
+  // [3] THE RUN PRESS — text + persona is the COMPLETE design state:
+  // the run seat owns no pair here (the name was never this lane's
+  // to demand; the SAVE QVOICE mod persists the embedding — the
+  // mint names itself). Engine presence may voice itself (the test
+  // env has no ComfyUI — the EXTENSION LAW); an AUTHORING refusal
+  // is the failure, and it must be GONE.
   const runHalf = await runPressRefusal(docId, 'tts')
-  expect(runHalf, 'the run press refuses the half').not.toBeNull()
-  expect(runHalf!, 'the run refusal NAMES both halves of the pair').toContain('voice_name')
-  expect(runHalf!, 'the run refusal NAMES both halves of the pair').toContain('design_prompt')
+  const authoringRefused = runHalf !== null && AUTHORING_STEMS.some((re) => re.test(runHalf))
+  expect(authoringRefused, `the run press owns NO pair on the design state: ${runHalf ?? '(admitted)'}`).toBe(false)
 
-  // [4] THE COMPLETE PAIR — the second box lands and the run
-  // admission's lane refusal is GONE (presence/weights voices may
-  // stand; the pair's law is satisfied)
-  await seat.type('Design Mod Name', 'deep_radio_host')
-  const afterPair = await storedParams(docId)
-  expect(String(afterPair['voice_name'] ?? ''), 'the second half LANDED').toBe('deep_radio_host')
-  const runPair = await runPressRefusal(docId, 'tts')
-  const pairStillRefused = runPair !== null && AUTHORING_STEMS.some((re) => re.test(runPair))
-  expect(pairStillRefused, `the completed pair passes the run seat's lane law: ${runPair ?? '(admitted)'}`).toBe(false)
-  const fullRefusals = renderedRefusals().filter((t) => AUTHORING_STEMS.some((re) => re.test(t)))
-  expect(fullRefusals, 'the rendered form stays quiet for the complete pair').toEqual([])
+  // [4] THE BOOLEAN — SAVE QVOICE rides the mods pane as a flat
+  // boolean (attach = ON): stating it through the form's own write
+  // path saves, and the door still admits (the save is a mod fact,
+  // never a base-lane demand)
+  await seat.writeDirect({ save_qvoice: true })
+  const afterBool = await storedParams(docId)
+  expect(afterBool['save_qvoice'], 'the SAVE QVOICE boolean LANDED in the stored doc').toBe(true)
+  const boolDoor = reg.admitStageRelations('tts', afterBool)
+  expect(boolDoor.ok === true, `the registry door admits the boolean-on state: ${boolDoor.ok === true ? '' : boolDoor.error}`).toBe(true)
 
   // [5] THE REOPEN FACE — a fresh read of the stored doc renders no
   // resurrected authoring refusal (the 2026-10-18 replayed-refusal
@@ -306,7 +310,7 @@ test('THE OPERATOR\'S GESTURE, END TO END: fresh tts card → VoiceDesign pick �
   expect(reopenRefusals, 'the reopened card carries no authoring strip for its own stored state').toEqual([])
 })
 
-test('THE PAIR CENSUS (derived from the served DECL): every together/either_or half on the tts lanes — door admits, form silent, run refuses', async () => {
+test('THE PAIR CENSUS (derived from the served DECL): the tts lanes declare NO authoring pairs — voice_name is not a base-lane field (the qvoice boolean law)', async () => {
   expect(spec, 'the served qwen3-tts spec armed').not.toBeNull()
   const relations = spec?.lanes?.relations
   const pairs: Array<{ stem: RegExp, fields: string[] }> = []
@@ -314,39 +318,9 @@ test('THE PAIR CENSUS (derived from the served DECL): every together/either_or h
   for (const row of relations?.either_or ?? []) {
     for (const group of row.groups) pairs.push({ stem: /completes none of them/, fields: [...group] })
   }
-  expect(pairs.length, 'the tts DECL declares its pairs (derived, never hand-listed)').toBeGreaterThan(0)
-
-  let n = 0
-  for (const pair of pairs) {
-    for (const half of pair.fields) {
-      const docId = `bench-gesture-census-${n++}`
-      await drafts.table('docs').put(docId, {
-        updated_at: 1,
-        doc: {
-          draft_id: docId, intent: 'gesture', status: 'ready', createdAt: 1, completedAt: null,
-          stages: [{ id: 's_0', card: 'tts', params: { model: 'qwen3-tts', variant: 'voicedesign' } }],
-          bench: { rev: 0, log: [] },
-        } as never,
-      })
-      // the half state, born through the door itself
-      try {
-        await gui.patch(docId, 's_0', { params: { [half]: 'census probe ' + half } }, 0, sig)
-      } catch (err) {
-        throw new Error(`DOOR refused the half (${half}): ${err instanceof Error ? err.message : String(err)}`)
-      }
-      const params = await storedParams(docId)
-      const door = reg.admitStageRelations('tts', params)
-      expect(door.ok, `the door admits the half (${half}): ${door.ok ? '' : door.error}`).toBe(true)
-      // the form's own gate on the same state (the rendered face)
-      const seat = mountHost(docId)
-      await seat.writeDirect({ [half]: 'census probe ' + half })
-      await seat.reopen()
-      const refusals = renderedRefusals().filter((t) => AUTHORING_STEMS.some((re) => re.test(t)))
-      expect(refusals, `the form is silent for the half (${half})`).toEqual([])
-      // the run seat refuses the same half, naming the pair
-      const runHalf = await runPressRefusal(docId, 'tts')
-      expect(runHalf, `the run press refuses the half (${half})`).not.toBeNull()
-      cleanup()
-    }
-  }
+  // THE LAW (operator 2026-10-22): the export pair is DEAD on the
+  // base lane — the together row that fired "the persona export
+  // needs both halves" was the requirement itself injuring the
+  // operator. The census derives from the served DECL: zero pairs.
+  expect(pairs.map((p) => p.fields.join('+')), 'the tts DECL declares NO authoring pairs (the name is a mod boolean, never a base-lane field)').toEqual([])
 })
