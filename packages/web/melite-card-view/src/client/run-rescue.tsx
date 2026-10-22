@@ -180,6 +180,18 @@ export function RunRescue({ error, stages, onRun, rescue: structured }: {
   // stuck face: retry re-issues, delete clears the settled row.
   const [failed, setFailed] = useState<WeightAcquireState | null>(null)
   const [dismissed, setDismissed] = useState(() => dismissedMisses.has(dismissalKey))
+  // THE INLINE RETIRE (the weight-popup × cure, operator 2026-10-22:
+  // "the close button here to close out the error in card is not
+  // working"): the collapsed inline fallback is a rescue face too —
+  // the E2-2 × parity law seats a × on it that retires the face
+  // outright (a hand-only miss has no re-offer: no fetch exists).
+  // Re-armed by a new refusal: the key change clears both flags, so
+  // a new miss always pops while the same miss never re-pops.
+  const [retired, setRetired] = useState(false)
+  useEffect(() => {
+    setDismissed(dismissedMisses.has(dismissalKey))
+    setRetired(false)
+  }, [dismissalKey])
   // THE DOWNLOAD TELEMETRY (audit L-ERROR-3, 2026-10-22): the old
   // download loop polled 150×400ms with no teardown — a closed or
   // unmounted popup kept paying manage calls and kept setAcquire'ing
@@ -623,11 +635,26 @@ export function RunRescue({ error, stages, onRun, rescue: structured }: {
   // A dismissed popup falls back to the inline offer (the run error
   // still carries the miss — the popup is re-openable, never lost).
   // The re-offer press clears the dismissal memory: the operator
-  // asked again.
+  // asked again. The retired face returns nothing — the × below owns
+  // that (the inline retire above); a new refusal re-arms via the
+  // key effect.
+  if (retired) return null
   if (dismissed) {
+    const handOnly = rescue.kind === 'model' && (rescue.handPlaced?.length ?? 0) > 0
     return h('div', { className: css.rescue },
-      h('p', { className: css.rescueNote }, chromeCopy.missingDownload({ what })),
-      h(Button, {
+      handOnly
+        // THE INLINE OFFER LAW (the weight-offer parity's other half):
+        // the collapsed face mirrors the popup — the placement note
+        // and no Download press where no fetch exists (the burn: the
+        // inline Download re-opened the popup in a loop, and with no ×
+        // the error could never be closed out).
+        ? h('p', { className: css.rescueNote },
+          chromeCopy.weightHandPlaced({
+            files: (rescue.handPlaced ?? []).join(', '),
+            folders: (rescue.folders ?? []).join(', '),
+          }))
+        : h('p', { className: css.rescueNote }, chromeCopy.missingDownload({ what })),
+      !handOnly ? h(Button, {
         size: 'sm',
         variant: 'primary',
         disabled: target === '',
@@ -636,7 +663,14 @@ export function RunRescue({ error, stages, onRun, rescue: structured }: {
           dismissedMisses.delete(dismissalKey)
           setDismissed(false)
         },
-      }, chromeCopy.downloadWeight),
+      }, chromeCopy.downloadWeight) : null,
+      h(Button, {
+        size: 'sm',
+        variant: 'ghost',
+        className: css.errorDismiss,
+        'aria-label': chromeCopy.dismissError,
+        onClick: () => { setRetired(true) },
+      }, h(IconCloseOutlineRegular, { size: 12 })),
     )
   }
 
@@ -764,6 +798,20 @@ export function RunRescue({ error, stages, onRun, rescue: structured }: {
         : null,
       stuck !== null ? exitsRow(stuck) : (failed !== null ? exitsRow(failed) : null),
       note !== null ? h('p', { className: css.rescueErr }, note) : null,
+      // THE MISSING-FACE × (the weight-popup × cure, operator
+      // 2026-10-22): the missing face relied solely on the Modal's
+      // chrome close — behind an overlay the card's own × goes dead
+      // and the collapse leaves an inline face with no exit. Every
+      // rescue face carries the same dismissal (the E2-2 law, as the
+      // extension and runtime faces above): this × collapses to the
+      // inline offer, whose own × retires outright.
+      h(Button, {
+        size: 'sm',
+        variant: 'ghost',
+        className: css.errorDismiss,
+        'aria-label': chromeCopy.dismissError,
+        onClick: dismissPopup,
+      }, h(IconCloseOutlineRegular, { size: 12 })),
     ),
   )
 }

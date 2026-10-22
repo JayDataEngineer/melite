@@ -692,6 +692,10 @@ window.__ModuleLoader__.load({
 			"rev": zod.z.number().readonly(),
 			"stage": zod.z.string().readonly()
 		});
+		let _melite_estate_drafts_drafts_delete_parameter_0$schema$value;
+		const _melite_estate_drafts_drafts_delete_parameter_0$schema = () => _melite_estate_drafts_drafts_delete_parameter_0$schema$value ??= zod.z.string();
+		let _melite_estate_drafts_drafts_delete_result$schema$value;
+		const _melite_estate_drafts_drafts_delete_result$schema = () => _melite_estate_drafts_drafts_delete_result$schema$value ??= zod.z.object({ "draft_id": zod.z.string().describe("The canonical draft id the door removed.") });
 		let _melite_estate_drafts_drafts_get_parameter_0$schema$value;
 		const _melite_estate_drafts_drafts_get_parameter_0$schema = () => _melite_estate_drafts_drafts_get_parameter_0$schema$value ??= zod.z.string();
 		let _melite_estate_drafts_drafts_get_result$schema$value;
@@ -1093,6 +1097,8 @@ window.__ModuleLoader__.load({
 			zod.z.array(zod.z.lazy(() => closed$JsonValueRemoteCodec$schema10())),
 			zod.z.record(zod.z.string(), zod.z.lazy(() => closed$JsonValueRemoteCodec$schema10())).readonly()
 		])).readonly();
+		let _melite_estate_drafts_drafts_delete_parameter_0_strict$schema$value;
+		const _melite_estate_drafts_drafts_delete_parameter_0_strict$schema = () => _melite_estate_drafts_drafts_delete_parameter_0_strict$schema$value ??= zod.z.string();
 		let _melite_estate_drafts_drafts_get_parameter_0_strict$schema$value;
 		const _melite_estate_drafts_drafts_get_parameter_0_strict$schema = () => _melite_estate_drafts_drafts_get_parameter_0_strict$schema$value ??= zod.z.string();
 		let _melite_estate_drafts_drafts_patch_parameter_0_strict$schema$value;
@@ -1275,7 +1281,7 @@ window.__ModuleLoader__.load({
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 1527,
+						"line": 1598,
 						"column": 9
 					}
 				},
@@ -1342,7 +1348,7 @@ window.__ModuleLoader__.load({
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 1539,
+						"line": 1610,
 						"column": 9
 					}
 				},
@@ -1406,7 +1412,7 @@ window.__ModuleLoader__.load({
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 1562,
+						"line": 1633,
 						"column": 9
 					}
 				},
@@ -1440,7 +1446,7 @@ window.__ModuleLoader__.load({
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 1458,
+						"line": 1529,
 						"column": 9
 					}
 				},
@@ -1474,7 +1480,7 @@ window.__ModuleLoader__.load({
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 1353,
+						"line": 1424,
 						"column": 9
 					}
 				},
@@ -1538,7 +1544,7 @@ window.__ModuleLoader__.load({
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 1600,
+						"line": 1671,
 						"column": 9
 					}
 				},
@@ -1617,7 +1623,7 @@ window.__ModuleLoader__.load({
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 1517,
+						"line": 1588,
 						"column": 9
 					}
 				},
@@ -1681,7 +1687,7 @@ window.__ModuleLoader__.load({
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 1549,
+						"line": 1620,
 						"column": 9
 					}
 				},
@@ -1749,7 +1755,7 @@ window.__ModuleLoader__.load({
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 1583,
+						"line": 1654,
 						"column": 9
 					}
 				},
@@ -1815,7 +1821,7 @@ window.__ModuleLoader__.load({
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 1572,
+						"line": 1643,
 						"column": 9
 					}
 				},
@@ -1849,7 +1855,7 @@ window.__ModuleLoader__.load({
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 1371,
+						"line": 1442,
 						"column": 10
 					}
 				},
@@ -1898,7 +1904,7 @@ window.__ModuleLoader__.load({
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 1632,
+						"line": 1703,
 						"column": 9
 					}
 				},
@@ -1962,7 +1968,49 @@ window.__ModuleLoader__.load({
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 1616,
+						"line": 1687,
+						"column": 9
+					}
+				},
+				"drafts/delete": {
+					service: "draftsRemote",
+					description: "Endpoint `drafts/delete` — removes one doc WHOLE (2026-10-22, the scratch-residue door): auditor probe docs and other debris were clearable only by hand because the plane had no delete verb. The removal JOINS the bench write chain for the same id (a delete never interleaves an in-flight bench transaction on the doc it removes) and refuses loud on every bad shape — never a silent no-op.",
+					implementation: "remoteExportDelete",
+					invocation: { kind: "direct" },
+					parameters: [{
+						name: "draftId",
+						source: "json",
+						codec: {
+							mode: "strict",
+							typeSymbol: "@melite/estate-drafts#drafts/delete:draftId",
+							create: _melite_estate_drafts_drafts_delete_parameter_0$schema,
+							jsonSchema: { "type": "string" }
+						},
+						strictCodec: {
+							mode: "strict",
+							typeSymbol: "@melite/estate-drafts#drafts/delete:draftId",
+							create: _melite_estate_drafts_drafts_delete_parameter_0_strict$schema,
+							jsonSchema: { "type": "string" }
+						}
+					}],
+					cancellation: { parameter: "signal" },
+					result: {
+						mode: "strict",
+						typeSymbol: "@melite/estate-drafts/types#DraftDeleteRow",
+						create: _melite_estate_drafts_drafts_delete_result$schema,
+						jsonSchema: {
+							"type": "object",
+							"properties": { "draft_id": {
+								"type": "string",
+								"description": "The canonical draft id the door removed."
+							} },
+							"required": ["draft_id"],
+							"additionalProperties": true
+						}
+					},
+					sourceLocation: {
+						"file": "packages/estate/drafts/src/remote.ts",
+						"line": 698,
 						"column": 9
 					}
 				},
@@ -1996,7 +2044,7 @@ window.__ModuleLoader__.load({
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 677,
+						"line": 683,
 						"column": 9
 					}
 				},
@@ -2039,7 +2087,7 @@ window.__ModuleLoader__.load({
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 671,
+						"line": 677,
 						"column": 9
 					}
 				},
@@ -2148,7 +2196,7 @@ window.__ModuleLoader__.load({
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 764,
+						"line": 819,
 						"column": 9
 					}
 				}
@@ -5334,6 +5382,11 @@ window.__ModuleLoader__.load({
 			const [extFailed, setExtFailed] = (0, react.useState)(null);
 			const [failed, setFailed] = (0, react.useState)(null);
 			const [dismissed, setDismissed] = (0, react.useState)(() => dismissedMisses.has(dismissalKey));
+			const [retired, setRetired] = (0, react.useState)(false);
+			(0, react.useEffect)(() => {
+				setDismissed(dismissedMisses.has(dismissalKey));
+				setRetired(false);
+			}, [dismissalKey]);
 			const downloadAbort = (0, react.useRef)(null);
 			(0, react.useEffect)(() => () => {
 				downloadAbort.current?.abort();
@@ -5614,16 +5667,31 @@ window.__ModuleLoader__.load({
 			};
 			const downloading = acquire !== null && !isAcquireSettled(acquire);
 			const hashing = downloading && (acquire?.phase === "verify" || acquire?.phase === "recheck");
-			if (dismissed) return (0, react.createElement)("div", { className: card_module_css_default.rescue }, (0, react.createElement)("p", { className: card_module_css_default.rescueNote }, chromeCopy.missingDownload({ what })), (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Button, {
-				size: "sm",
-				variant: "primary",
-				disabled: target === "",
-				title: target === "" ? chromeCopy.noProvisionTarget : chromeCopy.downloadViaManage,
-				onClick: () => {
-					dismissedMisses.delete(dismissalKey);
-					setDismissed(false);
-				}
-			}, chromeCopy.downloadWeight));
+			if (retired) return null;
+			if (dismissed) {
+				const handOnly = rescue.kind === "model" && (rescue.handPlaced?.length ?? 0) > 0;
+				return (0, react.createElement)("div", { className: card_module_css_default.rescue }, handOnly ? (0, react.createElement)("p", { className: card_module_css_default.rescueNote }, chromeCopy.weightHandPlaced({
+					files: (rescue.handPlaced ?? []).join(", "),
+					folders: (rescue.folders ?? []).join(", ")
+				})) : (0, react.createElement)("p", { className: card_module_css_default.rescueNote }, chromeCopy.missingDownload({ what })), !handOnly ? (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+					size: "sm",
+					variant: "primary",
+					disabled: target === "",
+					title: target === "" ? chromeCopy.noProvisionTarget : chromeCopy.downloadViaManage,
+					onClick: () => {
+						dismissedMisses.delete(dismissalKey);
+						setDismissed(false);
+					}
+				}, chromeCopy.downloadWeight) : null, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+					size: "sm",
+					variant: "ghost",
+					className: card_module_css_default.errorDismiss,
+					"aria-label": chromeCopy.dismissError,
+					onClick: () => {
+						setRetired(true);
+					}
+				}, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.IconCloseOutlineRegular, { size: 12 })));
+			}
 			const dismissPopup = () => {
 				if (stuck !== null || failed !== null || acquire !== null && (acquire.state === "failed" || acquire.state === "blocked")) dismissedMisses.add(dismissalKey);
 				downloadAbort.current?.abort();
@@ -5694,7 +5762,13 @@ window.__ModuleLoader__.load({
 				disabled: busy || target === "",
 				title: target === "" ? chromeCopy.noProvisionTarget : chromeCopy.downloadViaManage,
 				onClick: download
-			}, busy ? acquire === null ? chromeCopy.startingWord : chromeCopy.downloadingWord : chromeCopy.downloadWord) : null, ...trackerFaces(acquire, downloading ? flow : null, hashing), stuck === null && downloading && !hashing ? flow !== null ? null : (0, react.createElement)("p", { className: card_module_css_default.rescueNote }, chromeCopy.downloadingLive) : null, stuck !== null ? exitsRow(stuck) : failed !== null ? exitsRow(failed) : null, note !== null ? (0, react.createElement)("p", { className: card_module_css_default.rescueErr }, note) : null));
+			}, busy ? acquire === null ? chromeCopy.startingWord : chromeCopy.downloadingWord : chromeCopy.downloadWord) : null, ...trackerFaces(acquire, downloading ? flow : null, hashing), stuck === null && downloading && !hashing ? flow !== null ? null : (0, react.createElement)("p", { className: card_module_css_default.rescueNote }, chromeCopy.downloadingLive) : null, stuck !== null ? exitsRow(stuck) : failed !== null ? exitsRow(failed) : null, note !== null ? (0, react.createElement)("p", { className: card_module_css_default.rescueErr }, note) : null, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+				size: "sm",
+				variant: "ghost",
+				className: card_module_css_default.errorDismiss,
+				"aria-label": chromeCopy.dismissError,
+				onClick: dismissPopup
+			}, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.IconCloseOutlineRegular, { size: 12 }))));
 		}
 		//#endregion
 		//#region src/client/card-drill.tsx
@@ -9870,6 +9944,38 @@ window.__ModuleLoader__.load({
 		function isUnstatedRequiredVoice(text) {
 			return text.includes(UNSTATED_REQUIRED_STEM);
 		}
+		/** THE WRITE-SEAT SPELLING of the frictionless-authoring ruling
+		*  (operator 2026-11-11: "The refusal is never one keystroke at a
+		*  time … you are submitting a form, not hacking the mainframe"):
+		*  the ONE function every write-side gate calls after the strict
+		*  judge — it drops the authoring-incomplete class (the
+		*  unstated-required word, a together half, an either_or half).
+		*  The registry's write doors AND the form's inline gate BOTH drop
+		*  through THIS function — attempt 12 (2026-11-11) was exactly this
+		*  drift: the door filtered, the form's own copy of the judgment
+		*  didn't, and the operator's keystroke refused while every wall
+		*  was green because the walls drove the door, not the form. One
+		*  spelling; a second copy of this class test anywhere is the
+		*  multiple-seat disease.
+		* @param violations the strict judge's violations (any seat)
+		* @returns the violations a write-side gate may voice */
+		function dropAuthoringIncomplete(violations) {
+			return violations.filter((v) => !isUnstatedRequiredVoice(v.message) && !isTogetherHalfVoice(v.message) && !isEitherOrHalfVoice(v.message));
+		}
+		/** The together-half class test: the sentence names a together group
+		*  whose members are not all stated yet.
+		* @param text the refusal sentence to classify
+		* @returns true when the sentence is the together-half voice */
+		function isTogetherHalfVoice(text) {
+			return text.includes(TOGETHER_HALF_STEM);
+		}
+		/** The either_or-half class test: the sentence names an alternative
+		*  none of whose groups the stated fields complete yet.
+		* @param text the refusal sentence to classify
+		* @returns true when the sentence is the either_or-half voice */
+		function isEitherOrHalfVoice(text) {
+			return text.includes(EITHER_OR_HALF_STEM);
+		}
 		/** The heal's stricter twin: the text is the unstated-required class
 		* AND NOTHING ELSE. A composite refusal (the judge joins multiple
 		* violations with "; ") can carry the stem beside a stated-wrong
@@ -10361,7 +10467,7 @@ window.__ModuleLoader__.load({
 				}))
 			}));
 		}
-		var RELATION_WORDS, quote, UNSTATED_REQUIRED_STEM, statedOf, visibleRows, visibleCells, knownIds, knownQuants;
+		var RELATION_WORDS, quote, UNSTATED_REQUIRED_STEM, TOGETHER_HALF_STEM, EITHER_OR_HALF_STEM, statedOf, visibleRows, visibleCells, knownIds, knownQuants;
 		var init_laneRelations = __esmMin((() => {
 			RELATION_WORDS = {
 				requires: true,
@@ -10373,6 +10479,8 @@ window.__ModuleLoader__.load({
 			};
 			quote = (fields) => fields.map((f) => "'" + f + "'").join(" + ");
 			UNSTATED_REQUIRED_STEM = "this lane requires ";
+			TOGETHER_HALF_STEM = " ride together on this lane (state all or none)";
+			EITHER_OR_HALF_STEM = " — the stated combination completes none of them";
 			statedOf = (stated) => typeof stated === "string" ? stated : null;
 			visibleRows = (variants) => variants.filter((v) => v.hide_from_dropdown !== true);
 			visibleCells = (cells) => cells.filter((c) => c.hide_from_dropdown !== true);
@@ -11639,14 +11747,17 @@ window.__ModuleLoader__.load({
 			cardResultFromRecord: () => cardResultFromRecord,
 			cnEntriesOf: () => cnEntriesOf,
 			crossRootOrder: () => crossRootOrder,
+			dropAuthoringIncomplete: () => dropAuthoringIncomplete,
 			extraOf: () => extraOf,
 			hasModifierCapability: () => hasModifierCapability,
 			healRunMediaPaths: () => healRunMediaPaths,
 			isDataUrl: () => isDataUrl,
+			isEitherOrHalfVoice: () => isEitherOrHalfVoice,
 			isLiveRunStatus: () => isLiveRunStatus$1,
 			isProvenance: () => isProvenance,
 			isPurelyUnstatedRequiredVoice: () => isPurelyUnstatedRequiredVoice,
 			isTerminalStatus: () => isTerminalStatus$1,
+			isTogetherHalfVoice: () => isTogetherHalfVoice,
 			isUnstatedRequiredVoice: () => isUnstatedRequiredVoice,
 			judgeLaneBounds: () => judgeLaneBounds,
 			judgeLaneRelations: () => judgeLaneRelations,
