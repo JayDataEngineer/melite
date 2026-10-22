@@ -99,6 +99,10 @@ export declare const MODIFIER_PACKS: Record<string, {
      *  for lora/controlnet, weight for ip_adapter — served so the
      *  leaf never guesses off the kind name. */
     scalar_key?: string;
+    /** THE FLAT LAW (the qvoice_save burn, 2026-10-22): true = the
+     *  pack's fields are the card's own knobs — commits ride the
+     *  root, no bag forms (modCommitWrite, @melite/contracts). */
+    flat?: true;
 }>;
 /** THE ENGINE LISTING READER (the lora-from-url cure, operator order
  *  2026-11-09): the engine's own LoRA combo — the SAME reader + memo

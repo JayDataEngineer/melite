@@ -56,13 +56,14 @@ export function errText(err) {
 export async function settlePersist(run, stateRoot) {
     // THE EXPORT-NAME STAMP (023's self-critique #4/#6): a
     // design/export lane's voice_name rides the submitted body — lift
-    // THE EXPORT-NAME STAMP (023's self-critique #4/#6, re-derived
-    // under the qvoice boolean law, operator 2026-10-22: no typed
-    // export name rides anymore — the build MINTS it): the receipt is
-    // named by the minted file itself, lifted off the engine-reported
-    // path below. The params loop stays only for pre-law runs
-    // replayed through this settle (their snapshots still carry the
-    // dead key; a replay must not lose its receipt).
+    // THE EXPORT-NAME STAMP (023's self-critique #4/#6, re-stated
+    // under the named-presence refinement, operator 2026-10-22: the
+    // Design mod's popup states the save name; unstated runs mint
+    // it): a stated voice_name wins here; the mint-named file lifts
+    // below. The params loop also keeps pre-refinement runs replayed
+    // through this settle honest (their snapshots carry whatever the
+    // door admitted at their time; a replay must not lose its
+    // receipt).
     let exportName;
     const bodies = [...run.params];
     const snap = run.cardSnapshot;

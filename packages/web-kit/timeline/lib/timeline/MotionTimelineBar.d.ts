@@ -39,7 +39,11 @@ export interface MotionTimelineBarProps {
      *  the bar is unchanged (the motion card never notices). */
     onScrubStart?: () => void;
     onScrubEnd?: () => void;
-    onKeyframeAdd: (trackId: string, frame: number) => string;
+    /** Lane-click add. Optional (2026-10-22): a pane may refuse the
+     *  gesture entirely (h3's keyframes lane did — its click authored an
+     *  imageless pin no door could fill); absent → the lane seats
+     *  nothing on click. */
+    onKeyframeAdd?: (trackId: string, frame: number) => string;
     onKeyframeMove: (id: string, frame: number) => void;
     onKeyframeDelete: (id: string) => void;
     onPromptUpdate: (id: string, text: string) => void;

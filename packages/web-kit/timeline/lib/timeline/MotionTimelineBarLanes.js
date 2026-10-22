@@ -245,7 +245,7 @@ export function TimelineKeyframeLanes(props) {
                 }, "data-kf-cards": kfLaneCards ? "true" : "false", onDoubleClick: (e) => {
                     const f = xToFrame(e.clientX);
                     if (f != null)
-                        onKeyframeAdd(track.uuid, f);
+                        onKeyframeAdd?.(track.uuid, f);
                 }, children: [kfs.length === 0 && (_jsx("span", { "data-testid": "kf-drop-well", className: css.kfDropWell, style: { borderColor: `color-mix(in srgb, ${color} 30%, transparent)` }, children: _jsx("span", { className: css.dropHint, children: laneHint }) })), kfs.map((kf) => {
                         const isMoving = dragId === kf.uuid;
                         return (_jsxs("div", { className: css.kfWrap, style: { left: frameToPx(kf.frame) }, "data-drop-hint": kf.dropHint, children: [_jsx(Tip, { tip: `${track.name} constraint @ frame ${kf.frame} — drag to move, click to jump, hover ✕ to delete${kf.dropHint ? `\n\n${kf.dropHint}` : ""}`, children: _jsx(Button, { variant: "ghost", size: "sm", "data-kf": kf.uuid, "aria-label": kf.ariaLabel ?? timelineCopy.keyframeAria({ track: track.name, frame: kf.frame }), onPointerDown: (e) => startDrag(e, {

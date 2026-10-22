@@ -403,7 +403,11 @@ export const MODIFIER_PACKS = {
     // qvoice_save pack — name + VoiceDesign prompt + sampling —
     // boards qwen3-tts-voicedesign, fires the 1.7B export lane.
     // Field mode, same precedent: the entry IS the contract.
-    qvoice_save: { kind: 'qvoice_save', label: 'Design', cardinality: 'list', max_stack: 1 },
+    // FLAT (the 2026-10-22 burn): every Design field is a card knob
+    // (voice_name + the sampling dials the tts schema declares flat) —
+    // the bag key the param_key default invented named no surface and
+    // the operator's write refused at the door. The fields ride root.
+    qvoice_save: { kind: 'qvoice_save', label: 'Design', cardinality: 'list', max_stack: 1, flat: true },
 };
 function optionTooltip(row, shared) {
     // A row-served tooltip wins (the controlnet catalog's own prose
@@ -560,6 +564,8 @@ function specModifiers(svc, card, key, decl, def, enveloped, engineLoras) {
             entry.option_key = meta.option_key;
         if (meta.scalar_key !== undefined)
             entry.scalar_key = meta.scalar_key;
+        if (meta.flat === true)
+            entry.flat = true;
         entry.options = cat.rows.map((r) => ({
             value: r.id,
             label: r.label ?? r.id,

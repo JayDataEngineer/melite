@@ -219,7 +219,7 @@ const QvoiceFields = z.object({
 // THE NAMED-PRESENCE REFINEMENT (operator 2026-10-22: "Make sure
 // that the 'design' mod has a popup, it can just be 'name' or
 // something so a name can be used for the save file"): the pack
-// carries exactly one text field — the add opens a one-field
+// carries exactly one text field - the add opens a one-field
 // popup (the name), never a knob wall; empty stays lawful (the
 // build mints the export name voice-<runId> and the receipt
 // names itself from the minted file).

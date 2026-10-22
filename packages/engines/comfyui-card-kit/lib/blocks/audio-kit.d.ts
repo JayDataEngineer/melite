@@ -1,5 +1,5 @@
-import { GraphBuilder, OutputHandle, type NodeRef } from '../graph.js';
-import type { ModelFacts } from '../facts.js';
+import { GraphBuilder, OutputHandle, type NodeRef } from '../graph.ts';
+import type { ModelFacts } from '../facts.ts';
 /** The AudiocoreTTS optional-input defaults the engine pin autofills
  *  (object_info pin). Renderer-passed inputs merge OVER these. The
  *  SFX keys carry the vendored pipeline's own quality point

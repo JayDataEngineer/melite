@@ -70,7 +70,11 @@ export interface TimelineKeyframeLanesProps {
     frameToPx: (f: number) => number;
     xToFrame: (clientX: number) => number | null;
     startDrag: (e: React.PointerEvent, d: Drag) => void;
-    onKeyframeAdd: (trackId: string, frame: number) => string;
+    /** Lane-click add. Optional (2026-10-22): a pane may refuse the
+     *  gesture entirely (h3's keyframes lane did — its click authored an
+     *  imageless pin no door could fill); absent → the lane seats
+     *  nothing on click. */
+    onKeyframeAdd?: (trackId: string, frame: number) => string;
     onKeyframeDelete: (id: string) => void;
 }
 /** Keyframe lanes: pin, drag, hover-X delete (bar line 1443). */

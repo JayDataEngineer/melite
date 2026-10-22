@@ -5100,6 +5100,38 @@ window.__ModuleLoader__.load({
 		function isUnstatedRequiredVoice(text) {
 			return text.includes(UNSTATED_REQUIRED_STEM);
 		}
+		/** THE WRITE-SEAT SPELLING of the frictionless-authoring ruling
+		*  (operator 2026-11-11: "The refusal is never one keystroke at a
+		*  time … you are submitting a form, not hacking the mainframe"):
+		*  the ONE function every write-side gate calls after the strict
+		*  judge — it drops the authoring-incomplete class (the
+		*  unstated-required word, a together half, an either_or half).
+		*  The registry's write doors AND the form's inline gate BOTH drop
+		*  through THIS function — attempt 12 (2026-11-11) was exactly this
+		*  drift: the door filtered, the form's own copy of the judgment
+		*  didn't, and the operator's keystroke refused while every wall
+		*  was green because the walls drove the door, not the form. One
+		*  spelling; a second copy of this class test anywhere is the
+		*  multiple-seat disease.
+		* @param violations the strict judge's violations (any seat)
+		* @returns the violations a write-side gate may voice */
+		function dropAuthoringIncomplete(violations) {
+			return violations.filter((v) => !isUnstatedRequiredVoice(v.message) && !isTogetherHalfVoice(v.message) && !isEitherOrHalfVoice(v.message));
+		}
+		/** The together-half class test: the sentence names a together group
+		*  whose members are not all stated yet.
+		* @param text the refusal sentence to classify
+		* @returns true when the sentence is the together-half voice */
+		function isTogetherHalfVoice(text) {
+			return text.includes(TOGETHER_HALF_STEM);
+		}
+		/** The either_or-half class test: the sentence names an alternative
+		*  none of whose groups the stated fields complete yet.
+		* @param text the refusal sentence to classify
+		* @returns true when the sentence is the either_or-half voice */
+		function isEitherOrHalfVoice(text) {
+			return text.includes(EITHER_OR_HALF_STEM);
+		}
 		/** The heal's stricter twin: the text is the unstated-required class
 		* AND NOTHING ELSE. A composite refusal (the judge joins multiple
 		* violations with "; ") can carry the stem beside a stated-wrong
@@ -5591,7 +5623,7 @@ window.__ModuleLoader__.load({
 				}))
 			}));
 		}
-		var RELATION_WORDS, quote, UNSTATED_REQUIRED_STEM, statedOf, visibleRows, visibleCells, knownIds, knownQuants;
+		var RELATION_WORDS, quote, UNSTATED_REQUIRED_STEM, TOGETHER_HALF_STEM, EITHER_OR_HALF_STEM, statedOf, visibleRows, visibleCells, knownIds, knownQuants;
 		var init_laneRelations = __esmMin((() => {
 			RELATION_WORDS = {
 				requires: true,
@@ -5603,6 +5635,8 @@ window.__ModuleLoader__.load({
 			};
 			quote = (fields) => fields.map((f) => "'" + f + "'").join(" + ");
 			UNSTATED_REQUIRED_STEM = "this lane requires ";
+			TOGETHER_HALF_STEM = " ride together on this lane (state all or none)";
+			EITHER_OR_HALF_STEM = " — the stated combination completes none of them";
 			statedOf = (stated) => typeof stated === "string" ? stated : null;
 			visibleRows = (variants) => variants.filter((v) => v.hide_from_dropdown !== true);
 			visibleCells = (cells) => cells.filter((c) => c.hide_from_dropdown !== true);
@@ -7337,14 +7371,17 @@ window.__ModuleLoader__.load({
 			cardResultFromRecord: () => cardResultFromRecord,
 			cnEntriesOf: () => cnEntriesOf,
 			crossRootOrder: () => crossRootOrder,
+			dropAuthoringIncomplete: () => dropAuthoringIncomplete,
 			extraOf: () => extraOf,
 			hasModifierCapability: () => hasModifierCapability,
 			healRunMediaPaths: () => healRunMediaPaths,
 			isDataUrl: () => isDataUrl,
+			isEitherOrHalfVoice: () => isEitherOrHalfVoice,
 			isLiveRunStatus: () => isLiveRunStatus,
 			isProvenance: () => isProvenance,
 			isPurelyUnstatedRequiredVoice: () => isPurelyUnstatedRequiredVoice,
 			isTerminalStatus: () => isTerminalStatus,
+			isTogetherHalfVoice: () => isTogetherHalfVoice,
 			isUnstatedRequiredVoice: () => isUnstatedRequiredVoice,
 			judgeLaneBounds: () => judgeLaneBounds,
 			judgeLaneRelations: () => judgeLaneRelations,

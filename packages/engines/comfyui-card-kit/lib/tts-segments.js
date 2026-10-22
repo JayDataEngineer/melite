@@ -168,6 +168,16 @@ export function exportSegment(p, model, g, runId) {
     const loaded = loadAudiocore(g, model);
     const stated = typeof p.voice_name === 'string' ? p.voice_name.trim() : '';
     const name = stated !== '' ? stated : `voice-${runId}`;
+    // THE DESIGN WORD, REFUSED AT THE SEAT (the boot-probe 'trim' burn,
+    // 2026-10-22): the card's save branch checks blankness, the preview
+    // branch delegates to the variant relations — but this kit is the
+    // shared library both ride, and an absent persona reached the raw
+    // `.trim()` deref as a TypeError naming the method, never the
+    // field. The segment names its own required word in the refusal
+    // voice every probe harvests; a cast is never a gate.
+    if (typeof p.design_prompt !== 'string' || p.design_prompt.trim() === '') {
+        throw new Error("required param 'design_prompt' missing or empty (the studio designs a voice from the description — state who speaks)");
+    }
     const studio = g.node('AudiocoreVoiceStudio', {
         ...AUDIACORE_STUDIO_AUTOFILL,
         model: loaded,
@@ -200,6 +210,12 @@ export function designPreviewSegment(p, model, g, runId) {
     assertModUse(model, 'qvoice_save');
     const seed = mintSeed(p);
     const loaded = loadAudiocore(g, model);
+    // THE DESIGN WORD, REFUSED AT THE SEAT (the boot-probe 'trim' burn,
+    // 2026-10-22 — the preview path's own exposure): same voice as the
+    // export segment; the cast is never a gate.
+    if (typeof p.design_prompt !== 'string' || p.design_prompt.trim() === '') {
+        throw new Error("required param 'design_prompt' missing or empty (the studio designs a voice from the description — state who speaks)");
+    }
     const studio = g.node('AudiocoreVoiceStudio', {
         ...AUDIACORE_STUDIO_AUTOFILL,
         model: loaded,
