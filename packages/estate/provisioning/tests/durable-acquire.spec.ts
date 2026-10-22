@@ -187,8 +187,17 @@ describe("THE DURABLE DOWNLOAD SEAT (transient requests, durable claims, 2026-10
 
   test("THE RACE — two durable seats over one store: exactly ONE fetch (the loser yields by the claim re-read)", async () => {
     const opRoot = tempRoot();
-    const seatA = seat(opRoot, { durable: true, claimMs: 20 });
-    const seatB = seat(opRoot, { durable: true, claimMs: 20 });
+    // THE CADENCE HEADROOM (the battery-load red, 2026-10-22): the
+    // arm configured claimMs 20 to make the race window tight — but
+    // under a full parallel battery a worker can be descheduled
+    // past the whole 20ms claim validity, and the loser's re-read
+    // then names an EXPIRED claim: two fetches, a red that says
+    // nothing about the law. 200ms keeps the race real (both seats
+    // still contend; the loser still yields by the re-read) while
+    // the window survives scheduler load. Standalone: green at
+    // either cadence; the battery reded only at 20.
+    const seatA = seat(opRoot, { durable: true, claimMs: 200 });
+    const seatB = seat(opRoot, { durable: true, claimMs: 200 });
     const transient = seat(opRoot);
     const id = await transient.service.requestWeightAcquire(famRef());
     await untilLedger(
