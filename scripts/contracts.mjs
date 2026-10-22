@@ -59,7 +59,11 @@ function rowFile(tier) {
 
 function writeTier(tier, rows) {
   const doc = YAML.parse(readFileSync(rowFile(tier), 'utf8'))
+  // SORT ON WRITE (canon audit F4, 2026-10-22): a hand-prepended row
+  // must not survive as an id inversion — every write re-seats the
+  // file in id order, the same law seat-row applies at insert.
   doc.rows = rows.map(({ tier: _t, ...r }) => r)
+    .sort((a, b) => String(a.id).localeCompare(String(b.id)))
   writeFileSync(rowFile(tier), YAML.stringify(doc))
 }
 
