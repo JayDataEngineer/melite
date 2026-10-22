@@ -241,6 +241,13 @@ const QvoiceFields = z.object({
 // save_qvoice:true, remove nulls it; no editor, no toggle, no
 // knobs. The sampling surface is the card's own lane surface —
 // restating it here duped every knob on the mods pane.
+// THE NAMED-PRESENCE REFINEMENT (operator 2026-10-22: "Make sure
+// that the 'design' mod has a popup, it can just be 'name' or
+// something so a name can be used for the save file"): the pack
+// carries exactly one text field - the add opens a one-field
+// popup (the name), never a knob wall; empty stays lawful (the
+// build mints the export name voice-<runId> and the receipt
+// names itself from the minted file).
 const QvoiceSaveFields = z.object({
   // The presence stamp the add/remove gesture writes; never
   // rendered as a widget (the pane's presence-kind law).
@@ -248,6 +255,13 @@ const QvoiceSaveFields = z.object({
     .extra('extra', bag({
       wtype: 'boolean', group: 'qvoice_save', zone: 'mods', order: 0,
       tooltip: 'The mod IS the save: present = the designed voice persists to media as a .qvoice; remove the mod = no save.',
+    })),
+  // The one text field the named-presence popup serves (the chip's
+  // name for the save file); '' = unstated, the mint owns it.
+  voice_name: z.string().description('NAME')
+    .extra('extra', bag({
+      wtype: 'text', group: 'qvoice_save', zone: 'mods', order: 1,
+      tooltip: 'Names the .qvoice file this mod saves. Leave empty and the build mints a unique name for the run.',
     })),
 })
 

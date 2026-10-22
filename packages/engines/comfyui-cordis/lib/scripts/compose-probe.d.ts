@@ -44,6 +44,14 @@ export declare function namedParam(message: string): string | null;
  * @returns the distinct param names the message grounds.
  */
 export declare function namedMulti(message: string): string[];
+/** The undeclared names a schema-admission refusal lists, if it
+ * lists any — the probe's DELETE instruction (a key the doc carries
+ * that the card does not know can never be filled into legality;
+ * it must leave the doc).
+ *
+ * @param message — the refusal's message.
+ * @returns the undeclared param names, unquoted comma text. */
+export declare function undeclaredNames(message: string): string[];
 /** A composed graph as the probe reads it: node id → its class_type
  *  and wired inputs (the /prompt wire's untyped JSON). */
 export interface ProbeGraph {

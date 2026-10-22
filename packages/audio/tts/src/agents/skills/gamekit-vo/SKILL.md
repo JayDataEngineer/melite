@@ -13,9 +13,11 @@ The retired flat door (`export_qvoice: true`) is GONE — the save and load
 ride the tts card's mod bags (022's receipt: the grammar rides melite_load's
 mods line):
 - **Save**: `save_qvoice: true` (the presence stamp — the mod IS the
-  save; no name, no knobs; the build mints the `.qvoice` name and it
-  lands under the voices root) plus the lane's `design_prompt` (the
-  persona description — WHO speaks). Any lane fires the export.
+  save; no toggle, no knobs) plus `voice_name` (OPTIONAL — the Design
+  mod's name popup; empty or absent and the build mints a unique
+  `.qvoice` name for the run, landing under the voices root) plus the
+  lane's `design_prompt` (the persona description — WHO speaks). Any
+  lane fires the export.
 - **Perform**: `qvoice: [{ qvoice: '<path>.qvoice', voice_strength: 1 }]`
   with `voice: "none"` on the CustomVoice lane (a preset and a saved persona
   never ride together; the Base lane clones ref_audio instead).

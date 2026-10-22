@@ -203,21 +203,26 @@ export function cloneSegment(p: Record<string, unknown>, model: ModelFacts, g: G
 
 /** The export segment: the studio's export_lite on the persona
  *  description — the .qvoice persists into the run's own tree (One
- *  copy node after the sample). THE MINT (the qvoice boolean law,
- *  operator 2026-10-22): no typed name rides — the build mints
- *  `voice-<runId>` (unique per save, the collision-numbered search
- *  key both nodes share), and the receipt names itself from the
- *  minted file. */
+ *  copy node after the sample). THE NAME LAW (the named-presence
+ *  refinement, operator 2026-10-22: "Make sure that the 'design'
+ *  mod has a popup, it can just be 'name' or something so a name
+ *  can be used for the save file"): the mod's stated voice_name
+ *  names BOTH nodes (the pair law — the studio's write and the
+ *  copy's search key share one string); unstated ('' or absent)
+ *  falls to the mint `voice-<runId>` (unique per save, the
+ *  collision-numbered search key both nodes share), and the
+ *  receipt names itself from the saved file. */
 export function exportSegment(p: Record<string, unknown>, model: ModelFacts, g: GraphBuilder, runId: string): NodeRef {
   assertModUse(model, 'qvoice_save')
   const seed = mintSeed(p)
   const loaded = loadAudiocore(g, model)
-  const mint = `voice-${runId}`
+  const stated = typeof p.voice_name === 'string' ? p.voice_name.trim() : ''
+  const name = stated !== '' ? stated : `voice-${runId}`
   const studio = g.node('AudiocoreVoiceStudio', {
     ...AUDIACORE_STUDIO_AUTOFILL,
     model: loaded,
     mode: 'export_lite',
-    name: mint,
+    name,
     instruct: (p.design_prompt as string).trim(),
     sample_text: p.text,
     temperature: p.temperature,
@@ -228,7 +233,7 @@ export function exportSegment(p: Record<string, unknown>, model: ModelFacts, g: 
   })
   const save = saveAudio(g, studio.out(), `${runId}/design`)
   g.node('MeliteQVoiceCopy', {
-    voice_name: mint,
+    voice_name: name,
     dest_prefix: `${runId}/voices`,
     audio: studio.out(),
   })

@@ -94,7 +94,7 @@ test("mods registered through the service as plugins (PORT LAW: Schemastery cont
   ],
     "image-gen absorbs loras + the controlnet stack (the z-image restoration) + the ip_adapter bag (the refused-fate restoration: vocabulary served, entries refuse loud) + the mask contract (MASK-C: the 2.1 checkpoint's region vocabulary)");
   const tts = svc.cardModFields("tts");
-  assert.deepEqual(tts.flatMap(names).sort(), ["qvoice", "save_qvoice", "voice_strength"], "tts absorbs the qvoice pack + the qvoice_save pack (THE MOD-PRESENCE LAW, operator 2026-10-22: 'WHEN I PUT THE SAVE QVOICE MOD ON, IT JUST WORKS' — the chip IS the signal; the pack's one boolean stamp save_qvoice is the whole surface. The name died with the mint (the build names the export); the sampling knobs died with the duped-pane burn (the card's lane surface already owns them — restating them duped every knob on the mods pane))");
+  assert.deepEqual(tts.flatMap(names).sort(), ["qvoice", "save_qvoice", "voice_name", "voice_strength"], "tts absorbs the qvoice pack + the qvoice_save pack (THE MOD-PRESENCE LAW, operator 2026-10-22: 'WHEN I PUT THE SAVE QVOICE MOD ON, IT JUST WORKS' — the chip IS the signal; the pack's boolean stamp save_qvoice is the presence, voice_name is the one text field the named-presence popup serves (operator 2026-10-22: the Design mod 'has a popup, it can just be name' — stated names the save file, empty mints it); the sampling knobs died with the duped-pane burn (the card's lane surface already owns them — restating them duped every knob on the mods pane))");
 });
 
 // THE ENVELOPE PARITY: formSchemas serves the card's own toJSON

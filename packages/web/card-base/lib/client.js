@@ -8996,6 +8996,18 @@ window.__ModuleLoader__.load({
 			addModifierAria: "Add modifier",
 			/** Add-modifier square's hover title. */
 			addModifierTitle: "Add a modifier",
+			/** Named-presence popup title: "Name the <kind label>" (the add gesture opens one field, never a knob wall). */
+			namedPresenceTitle: (p) => `Name the ${p.kindLabel}`,
+			/** Named-presence popup's single input label + accessible name. */
+			namedPresenceInputLabel: "Save-file name",
+			/** Named-presence input placeholder: the mint fallback owns an empty field. */
+			namedPresencePlaceholder: "leave empty to auto-name",
+			/** Named-presence input hover law: what the name does at the engine. */
+			namedPresenceHint: "Names the file this mod saves. Leave empty and the build mints a unique name for the run.",
+			/** Named-presence popup confirm control. */
+			namedPresenceCreate: "Add",
+			/** Named-presence popup cancel control. */
+			namedPresenceCancel: "Cancel",
 			/** Leaf modal title in create mode: "Add <kind label>". */
 			leafCreateTitle: (p) => "Add " + p.kindLabel,
 			/** Leaf modal title in edit mode: "Edit <kind label>". */
@@ -14875,6 +14887,7 @@ window.__ModuleLoader__.load({
 			const [overTile, setOverTile] = (0, react.useState)(null);
 			const [pickAt, setPickAt] = (0, react.useState)(null);
 			const [leaf, setLeaf] = (0, react.useState)(null);
+			const [namedLeaf, setNamedLeaf] = (0, react.useState)(null);
 			const [leafError, setLeafError] = (0, react.useState)(null);
 			const [draftOption, setDraftOption] = (0, react.useState)("");
 			const [draftStrength, setDraftStrength] = (0, react.useState)("");
@@ -14934,11 +14947,22 @@ window.__ModuleLoader__.load({
 			};
 			const addable = kinds.filter((k) => k.cardinality !== "scalar");
 			const presenceKind = (k) => k.flat === true && (k.fields ?? []).length > 0 && (k.fields ?? []).every((f) => f.type === "boolean");
+			const namedPresenceKind = (k) => {
+				const fields = k.fields ?? [];
+				return k.flat === true && fields.filter((f) => f.type === "text").length === 1 && fields.some((f) => f.type === "boolean") && fields.every((f) => f.type === "boolean" || f.type === "text");
+			};
+			const namedFieldOf = (k) => {
+				return (k.fields ?? []).find((x) => x.type === "text") ?? (k.fields ?? [])[0];
+			};
 			const presenceStamp = (k) => {
 				const stamp = {};
 				for (const f of k.fields ?? []) stamp[f.name] = true;
 				return stamp;
 			};
+			const namedPresenceStamp = (k, name) => ({
+				...presenceStamp(k),
+				[namedFieldOf(k).name]: name.trim()
+			});
 			if (kinds.length === 0) return null;
 			const seated = props.railSeated;
 			const fieldDefaults = (k) => {
@@ -14957,6 +14981,13 @@ window.__ModuleLoader__.load({
 				}
 				if (presenceKind(k)) {
 					commit(k, [presenceStamp(k)]);
+					return;
+				}
+				if (namedPresenceKind(k)) {
+					setNamedLeaf({
+						kind: k,
+						name: ""
+					});
 					return;
 				}
 				setDraftOption("");
@@ -15232,7 +15263,7 @@ window.__ModuleLoader__.load({
 						...strength !== void 0 ? { strength } : {},
 						...steps !== void 0 ? { steps } : {},
 						onOpen: () => {
-							if (presenceKind(k)) {
+							if (presenceKind(k) || namedPresenceKind(k)) {
 								commit(k, []);
 								return;
 							}
@@ -15318,7 +15349,41 @@ window.__ModuleLoader__.load({
 					values,
 					onCommit: commitScalar
 				}
-			})) : null);
+			})) : null, namedLeaf !== null ? (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Modal, {
+				open: true,
+				onClose: () => {
+					setNamedLeaf(null);
+				},
+				title: chromeCopy.namedPresenceTitle({ kindLabel: namedLeaf.kind.label }),
+				closeLabel: chromeCopy.leafCloseLabel,
+				className: card_module_css_default.modLeafModal
+			}, (0, react.createElement)("div", { className: card_module_css_default.modLeaf }, (0, react.createElement)(SpecAtom, {
+				f: {
+					name: namedFieldOf(namedLeaf.kind).name,
+					label: chromeCopy.namedPresenceInputLabel,
+					type: "text",
+					tooltip: chromeCopy.namedPresenceHint
+				},
+				value: namedLeaf.name === "" ? void 0 : namedLeaf.name,
+				placeholder: chromeCopy.namedPresencePlaceholder,
+				onEdit: (_, v) => {
+					setNamedLeaf({
+						kind: namedLeaf.kind,
+						name: typeof v === "string" ? v : ""
+					});
+				}
+			}), (0, react.createElement)("div", { className: card_module_css_default.modLeafActions }, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+				variant: "ghost",
+				onClick: () => {
+					setNamedLeaf(null);
+				}
+			}, chromeCopy.namedPresenceCancel), (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+				variant: "primary",
+				onClick: () => {
+					commit(namedLeaf.kind, [namedPresenceStamp(namedLeaf.kind, namedLeaf.name)]);
+					setNamedLeaf(null);
+				}
+			}, chromeCopy.namedPresenceCreate)))) : null);
 		}
 		/** THE LEAF BODY — split so the FIELD-kind editor gets its own
 		*  square provider (the construction law: an image input constructs

@@ -429,13 +429,43 @@ describe("THE MOD-WRITE PARITY — every served modifier kind's studio commit wr
     expect(prepared["save_qvoice"], "the presence stamp rides the run params flat (the chip IS the signal)").toBe(true);
     // hop [5]: the real card compose serializes the export — the
     // persona description (the lane's own design_prompt) rides the
-    // wire the engine reads; the export name is the BUILD'S mint.
+    // wire the engine reads.
     const g = new GraphBuilder();
     def.compose(def.schema({ ...prepared }), row, g, "mod-write-parity:witness");
     const graph = g.toJSON() as Record<string, unknown>;
     expect(Object.keys(graph).length, "the Design save composes a non-empty graph").toBeGreaterThan(0);
     expect(JSON.stringify(graph), "the persona description rides the serialized graph (the engine's instruct input)").toContain("a warm, unhurried narrator with gravel in the low end");
-    expect(JSON.stringify(graph), "the minted export name rides the graph (the build mints — never a hand-stated name)").toContain("voice-mod-write-parity");
+    // THE NAME LAW (the named-presence refinement, operator
+    // 2026-10-22: the Design mod "has a popup, it can just be
+    // 'name'"): the STATED voice_name names the export; unstated
+    // ('' or absent) falls to the mint `voice-<runId>`. Either way
+    // the PAIR law holds — the studio's write and the copy's
+    // search key ride ONE string, read structurally (never a
+    // substring fiction).
+    const studioIn = (graph["AudiocoreVoiceStudio.0"] as { inputs: Record<string, unknown> }).inputs;
+    const copyIn = (graph["MeliteQVoiceCopy.0"] as { inputs: Record<string, unknown> }).inputs;
+    const statedWrite = typeof prepared["voice_name"] === "string" ? (prepared["voice_name"] as string).trim() : "";
+    const expectedName = statedWrite !== "" ? statedWrite : "voice-mod-write-parity:witness";
+    expect(studioIn["name"], `the studio's export name is the stated name when given (got ${JSON.stringify(studioIn["name"])}, stated ${JSON.stringify(statedWrite)})`).toBe(expectedName);
+    expect(copyIn["voice_name"], "the copy's search key rides the SAME string (the pair law — one name, both nodes)").toBe(expectedName);
+    // THE MINT FALLBACK ARM: the unstated write ('' — the popup's
+    // lawful empty) composes the mint on both nodes.
+    const preparedMint = prepareCardParams(svc, {
+      model: cell.mid,
+      variant: cell.variantId,
+      ...(cell.quant !== "" ? { quant: cell.quant } : {}),
+      text: "The harbour lights at dusk.",
+      design_prompt: "a warm, unhurried narrator with gravel in the low end",
+      ...arm.write,
+      voice_name: "",
+    }, cell.mid, "mod-write-parity").params;
+    const gMint = new GraphBuilder();
+    def.compose(def.schema({ ...preparedMint }), row, gMint, "mod-write-parity:witness");
+    const graphMint = gMint.toJSON() as Record<string, unknown>;
+    const studioMint = (graphMint["AudiocoreVoiceStudio.0"] as { inputs: Record<string, unknown> }).inputs;
+    const copyMint = (graphMint["MeliteQVoiceCopy.0"] as { inputs: Record<string, unknown> }).inputs;
+    expect(studioMint["name"], "an unstated name falls to the build's mint (voice-<runId>)").toBe("voice-mod-write-parity:witness");
+    expect(copyMint["voice_name"], "the mint rides the copy's search key too (the pair law holds under the mint)").toBe("voice-mod-write-parity:witness");
   });
 
   it("hermetic rode (the boot stayed off the live lane)", () => {

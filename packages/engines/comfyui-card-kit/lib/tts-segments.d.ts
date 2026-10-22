@@ -63,11 +63,15 @@ export declare function useSegment(p: Record<string, unknown>, model: ModelFacts
 export declare function cloneSegment(p: Record<string, unknown>, model: ModelFacts, g: GraphBuilder, runId: string): NodeRef;
 /** The export segment: the studio's export_lite on the persona
  *  description — the .qvoice persists into the run's own tree (One
- *  copy node after the sample). THE MINT (the qvoice boolean law,
- *  operator 2026-10-22): no typed name rides — the build mints
- *  `voice-<runId>` (unique per save, the collision-numbered search
- *  key both nodes share), and the receipt names itself from the
- *  minted file. */
+ *  copy node after the sample). THE NAME LAW (the named-presence
+ *  refinement, operator 2026-10-22: "Make sure that the 'design'
+ *  mod has a popup, it can just be 'name' or something so a name
+ *  can be used for the save file"): the mod's stated voice_name
+ *  names BOTH nodes (the pair law — the studio's write and the
+ *  copy's search key share one string); unstated ('' or absent)
+ *  falls to the mint `voice-<runId>` (unique per save, the
+ *  collision-numbered search key both nodes share), and the
+ *  receipt names itself from the saved file. */
 export declare function exportSegment(p: Record<string, unknown>, model: ModelFacts, g: GraphBuilder, runId: string): NodeRef;
 /** The design PREVIEW segment (the qvoice boolean law, operator
  *  2026-10-22: a plain design run previews — the persona speaks

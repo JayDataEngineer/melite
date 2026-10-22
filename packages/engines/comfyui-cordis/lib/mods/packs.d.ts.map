@@ -1,1 +1,1 @@
-{"version":3,"file":"packs.d.ts","sourceRoot":"","sources":["../../src/mods/packs.ts"],"names":[],"mappings":"AAeA,OAAO,KAAK,EAAE,OAAO,EAAE,MAAM,qBAAqB,CAAA;AAKlD,eAAO,MAAM,MAAM,UAAc,CAAA;AAyOjC,wBAAgB,KAAK,CAAC,GAAG,EAAE,OAAO,GAAG,IAAI,CAWxC"}
+{"version":3,"file":"packs.d.ts","sourceRoot":"","sources":["../../src/mods/packs.ts"],"names":[],"mappings":"AAeA,OAAO,KAAK,EAAE,OAAO,EAAE,MAAM,qBAAqB,CAAA;AAKlD,eAAO,MAAM,MAAM,UAAc,CAAA;AAuPjC,wBAAgB,KAAK,CAAC,GAAG,EAAE,OAAO,GAAG,IAAI,CAWxC"}

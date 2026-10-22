@@ -112,6 +112,20 @@ export declare const chromeCopy: {
     readonly addModifierAria: "Add modifier";
     /** Add-modifier square's hover title. */
     readonly addModifierTitle: "Add a modifier";
+    /** Named-presence popup title: "Name the <kind label>" (the add gesture opens one field, never a knob wall). */
+    readonly namedPresenceTitle: (p: {
+        kindLabel: string;
+    }) => string;
+    /** Named-presence popup's single input label + accessible name. */
+    readonly namedPresenceInputLabel: "Save-file name";
+    /** Named-presence input placeholder: the mint fallback owns an empty field. */
+    readonly namedPresencePlaceholder: "leave empty to auto-name";
+    /** Named-presence input hover law: what the name does at the engine. */
+    readonly namedPresenceHint: "Names the file this mod saves. Leave empty and the build mints a unique name for the run.";
+    /** Named-presence popup confirm control. */
+    readonly namedPresenceCreate: "Add";
+    /** Named-presence popup cancel control. */
+    readonly namedPresenceCancel: "Cancel";
     /** Leaf modal title in create mode: "Add <kind label>". */
     readonly leafCreateTitle: (p: {
         kindLabel: string;

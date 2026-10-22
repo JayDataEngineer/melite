@@ -113,21 +113,43 @@ export function namedParam(message) {
  */
 export function namedMulti(message) {
     const names = new Set();
-    for (const m of message.matchAll(/'([A-Za-z_][\w-]*)'/g))
+    // THE UNDECLARED-SENTENCE EXCISION (the tts dead-card burn,
+    // 2026-10-22): "card 'tts' got undeclared param(s): trim, tts"
+    // quotes the CARD ID and may quote enum literals elsewhere in a
+    // refusal — harvesting them mints phantom params the probe then
+    // injects, and the next round refuses them as undeclared forever
+    // (the probe manufactures its own dead card). The undeclared list
+    // itself rides unquoted and is NEVER a fill instruction — it is a
+    // delete instruction the caller owns.
+    const harvestable = message.replace(/card '[^']+' got undeclared param\(s\):[^.]*\.?/g, " ");
+    for (const m of harvestable.matchAll(/'([A-Za-z_][\w-]*)'/g))
         names.add(m[1]);
-    const first = namedParam(message);
+    const first = namedParam(harvestable);
     if (first)
         names.add(first);
-    const undef = /([A-Za-z_][\w-]*) = undefined/.exec(message);
+    const undef = /([A-Za-z_][\w-]*) = undefined/.exec(harvestable);
     if (undef)
         names.add(undef[1]);
-    const bare = /([A-Za-z_][\w-]*) undefined is not/.exec(message);
+    const bare = /([A-Za-z_][\w-]*) undefined is not/.exec(harvestable);
     if (bare)
         names.add(bare[1]);
     // the schema walk's path voice: $.field expected "x" | "y"
-    for (const m of message.matchAll(/\$\.([A-Za-z_][\w-]*)/g))
+    for (const m of harvestable.matchAll(/\$\.([A-Za-z_][\w-]*)/g))
         names.add(m[1]);
     return [...names].filter((n) => !["random", "int", "undefined", "required"].includes(n));
+}
+/** The undeclared names a schema-admission refusal lists, if it
+ * lists any — the probe's DELETE instruction (a key the doc carries
+ * that the card does not know can never be filled into legality;
+ * it must leave the doc).
+ *
+ * @param message — the refusal's message.
+ * @returns the undeclared param names, unquoted comma text. */
+export function undeclaredNames(message) {
+    const m = /got undeclared param\(s\):\s*([^.]+)/.exec(message);
+    if (m === null)
+        return [];
+    return m[1].split(",").map((s) => s.trim()).filter((s) => /^[A-Za-z_][\w-]*$/.test(s));
 }
 /**
  * THE PROBE LOOP: compose, read the refusal's named param, fill,

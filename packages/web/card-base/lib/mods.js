@@ -139,6 +139,7 @@ export function ModifiersSection(props) {
     // the opened entry's frozen identity (resolved from the live bag
     // at save — see resolveSeatEntry).
     const [leaf, setLeaf] = useState(null);
+    const [namedLeaf, setNamedLeaf] = useState(null);
     const [leafError, setLeafError] = useState(null);
     const [draftOption, setDraftOption] = useState('');
     const [draftStrength, setDraftStrength] = useState('');
@@ -229,15 +230,41 @@ export function ModifiersSection(props) {
     // every boolean true (one write, no leaf); the tile's open
     // gesture removes it (commit([]) → the null delete). No toggle
     // widget, no knob wall, nothing to get stuck in.
+    //
+    // THE NAMED-PRESENCE REFINEMENT (operator 2026-10-22: "Make sure
+    // that the 'design' mod has a popup, it can just be 'name' or
+    // something so a name can be used for the save file"): a flat
+    // kind of booleans plus EXACTLY ONE text field keeps the chip law
+    // — add is one gesture, the tile click still removes — but the
+    // add opens a one-field popup (the name), never a knob wall. The
+    // booleans still stamp true; the name rides as its one text
+    // field; empty stays lawful (the build mints the save name).
     const presenceKind = (k) => k.flat === true
         && (k.fields ?? []).length > 0
         && (k.fields ?? []).every((f) => f.type === 'boolean');
+    const namedPresenceKind = (k) => {
+        const fields = k.fields ?? [];
+        return k.flat === true
+            && fields.filter((f) => f.type === 'text').length === 1
+            && fields.some((f) => f.type === 'boolean')
+            && fields.every((f) => f.type === 'boolean' || f.type === 'text');
+    };
+    const namedFieldOf = (k) => {
+        const f = (k.fields ?? []).find((x) => x.type === 'text');
+        // namedPresenceKind guards every caller (the render and the
+        // stamp both branch on it first); the fallback is unreachable.
+        return f ?? (k.fields ?? [])[0];
+    };
     const presenceStamp = (k) => {
         const stamp = {};
         for (const f of k.fields ?? [])
             stamp[f.name] = true;
         return stamp;
     };
+    const namedPresenceStamp = (k, name) => ({
+        ...presenceStamp(k),
+        [namedFieldOf(k).name]: name.trim(),
+    });
     if (kinds.length === 0)
         return null;
     const seated = props.railSeated;
@@ -261,6 +288,12 @@ export function ModifiersSection(props) {
         // the add IS the statement (every boolean true, one write).
         if (presenceKind(k)) {
             commit(k, [presenceStamp(k)]);
+            return;
+        }
+        // THE NAMED-PRESENCE ADD: the one-field popup (the name), never
+        // a knob wall — confirm states the booleans plus the name.
+        if (namedPresenceKind(k)) {
+            setNamedLeaf({ kind: k, name: '' });
             return;
         }
         setDraftOption('');
@@ -614,8 +647,10 @@ export function ModifiersSection(props) {
                     // THE PRESENCE TILE: the chip's open gesture IS the
                     // remove (the add menu put it on; clicking it takes it
                     // off — the null delete lands at the bench). No editor
-                    // exists for a presence kind.
-                    onOpen: () => { if (presenceKind(k)) {
+                    // exists for a presence kind — named presence rides the
+                    // same law (the name was stated at add; the tile is not
+                    // an editor).
+                    onOpen: () => { if (presenceKind(k) || namedPresenceKind(k)) {
                         commit(k, []);
                         return;
                     } openEdit(k, i); },
@@ -710,7 +745,42 @@ export function ModifiersSection(props) {
         // kind's knobs ever get (the section rows died with the
         // burn). Committed envelope-level like any card scalar, the
         // same commitScalar the leafless kinds still ride.
-        kindScalars: { fields: leaf.kind.kindFields ?? [], values, onCommit: commitScalar } })) : null);
+        kindScalars: { fields: leaf.kind.kindFields ?? [], values, onCommit: commitScalar } })) : null, 
+    // THE NAMED-PRESENCE POPUP (operator 2026-10-22: the Design mod
+    // "has a popup, it can just be 'name'"): one field, two
+    // controls — confirm states the chip (booleans true + the
+    // name), cancel changes nothing. Empty stays lawful: the build
+    // mints the save name.
+    namedLeaf !== null ? h(Modal, {
+        open: true,
+        onClose: () => { setNamedLeaf(null); },
+        title: chromeCopy.namedPresenceTitle({ kindLabel: namedLeaf.kind.label }),
+        closeLabel: chromeCopy.leafCloseLabel,
+        className: css.modLeafModal,
+    }, h('div', { className: css.modLeaf }, 
+    // the string row's own atom (one text pattern estate-wide):
+    // the field's served name rides, the label/placeholder own
+    // the popup copy, the tooltip is the mint-fallback law.
+    h(SpecAtom, {
+        f: {
+            name: namedFieldOf(namedLeaf.kind).name,
+            label: chromeCopy.namedPresenceInputLabel,
+            type: 'text',
+            tooltip: chromeCopy.namedPresenceHint,
+        },
+        value: namedLeaf.name === '' ? undefined : namedLeaf.name,
+        placeholder: chromeCopy.namedPresencePlaceholder,
+        onEdit: (_, v) => { setNamedLeaf({ kind: namedLeaf.kind, name: typeof v === 'string' ? v : '' }); },
+    }), h('div', { className: css.modLeafActions }, h(Button, {
+        variant: 'ghost',
+        onClick: () => { setNamedLeaf(null); },
+    }, chromeCopy.namedPresenceCancel), h(Button, {
+        variant: 'primary',
+        onClick: () => {
+            commit(namedLeaf.kind, [namedPresenceStamp(namedLeaf.kind, namedLeaf.name)]);
+            setNamedLeaf(null);
+        },
+    }, chromeCopy.namedPresenceCreate)))) : null);
 }
 /** THE LEAF BODY — split so the FIELD-kind editor gets its own
  *  square provider (the construction law: an image input constructs

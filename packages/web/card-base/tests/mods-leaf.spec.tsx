@@ -1063,6 +1063,18 @@ const PRESENCE_SAVE = {
   fields: [{ name: 'save_qvoice', type: 'boolean', label: 'Save QVoice' }],
 } as unknown as ModifierKind
 
+// THE NAMED-PRESENCE KIND (the refinement pack: booleans plus
+// exactly one text field — the Design mod after the name popup,
+// operator 2026-10-22: "it can just be 'name' or something so a
+// name can be used for the save file").
+const NAMED_PRESENCE_SAVE = {
+  kind: 'qvoice_save', label: 'Design', param_key: 'qvoice_save', cardinality: 'list', flat: true,
+  fields: [
+    { name: 'save_qvoice', type: 'boolean', label: 'Save QVoice' },
+    { name: 'voice_name', type: 'text', label: 'Save-file name' },
+  ],
+} as unknown as ModifierKind
+
 test('FLAT CREATE: the Design entry commits its fields at the root — no qvoice_save bag rides the write (the burn, hop [1])', () => {
   const { onEdit, onPatch } = openLeaf({ kinds: [QVOICE_SAVE], values: {} })
   openCreate('Design')
@@ -1132,4 +1144,55 @@ test('PRESENCE REMOVE: the chip click IS the remove — the null delete lands (t
   fireEvent.click(tile as HTMLElement)
   expect(onEdit).toHaveBeenCalledWith('save_qvoice', undefined)
   expect(onPatch).toHaveBeenCalledWith({ save_qvoice: null })
+})
+
+// ── THE NAMED-PRESENCE REFINEMENT (operator 2026-10-22: "Make sure
+// that the 'design' mod has a popup, it can just be 'name' or
+// something so a name can be used for the save file") — the add
+// opens a ONE-FIELD popup (never a knob wall), confirm states the
+// booleans plus the name, the tile click still removes. ──
+
+test('NAMED ADD (stated): the popup takes the name and commits the stamp + name flat — one gesture, no knob wall', () => {
+  const { onEdit, onPatch } = openLeaf({ kinds: [NAMED_PRESENCE_SAVE], values: {} })
+  openCreate('Design')
+  // THE POPUP, not the instant presence commit: one field is up
+  expect(onPatch).not.toHaveBeenCalled()
+  fireEvent.change(screen.getByLabelText('Save-file name'), { target: { value: 'harbour narrator' } })
+  fireEvent.click(screen.getByRole('button', { name: 'Add' }))
+  expect(onEdit).toHaveBeenCalledWith('save_qvoice', true)
+  expect(onEdit).toHaveBeenCalledWith('voice_name', 'harbour narrator')
+  expect(onPatch).toHaveBeenCalledWith({ save_qvoice: true, voice_name: 'harbour narrator' })
+  // no knob wall ever opened — the popup was the whole editor
+  expect(screen.queryByLabelText('Temperature')).toBeNull()
+})
+
+test('NAMED ADD (empty): an empty name stays lawful — the stamp commits with "" and the build mints the save name', () => {
+  const { onEdit, onPatch } = openLeaf({ kinds: [NAMED_PRESENCE_SAVE], values: {} })
+  openCreate('Design')
+  fireEvent.click(screen.getByRole('button', { name: 'Add' }))
+  expect(onEdit).toHaveBeenCalledWith('save_qvoice', true)
+  expect(onEdit).toHaveBeenCalledWith('voice_name', '')
+  expect(onPatch).toHaveBeenCalledWith({ save_qvoice: true, voice_name: '' })
+})
+
+test('NAMED CANCEL: the popup\'s cancel commits nothing — the card is untouched', () => {
+  const { onEdit, onPatch } = openLeaf({ kinds: [NAMED_PRESENCE_SAVE], values: {} })
+  openCreate('Design')
+  fireEvent.change(screen.getByLabelText('Save-file name'), { target: { value: 'never lands' } })
+  fireEvent.click(screen.getByRole('button', { name: 'Cancel' }))
+  expect(onEdit).not.toHaveBeenCalled()
+  expect(onPatch).not.toHaveBeenCalled()
+})
+
+test('NAMED REMOVE: the chip click IS the remove — both keys null-delete (the presence law holds under the refinement)', () => {
+  const { onEdit, onPatch } = openLeaf({
+    kinds: [NAMED_PRESENCE_SAVE],
+    values: { save_qvoice: true, voice_name: 'harbour narrator' },
+  })
+  const tile = document.querySelector('[data-mod-tile="qvoice_save-0"]')
+  expect(tile).not.toBeNull()
+  fireEvent.click(tile as HTMLElement)
+  expect(onEdit).toHaveBeenCalledWith('save_qvoice', undefined)
+  expect(onEdit).toHaveBeenCalledWith('voice_name', undefined)
+  expect(onPatch).toHaveBeenCalledWith({ save_qvoice: null, voice_name: null })
 })

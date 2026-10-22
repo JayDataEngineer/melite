@@ -3,7 +3,7 @@
  * types; the slots module imports them for its SlotMap entries, the
  * built-in atoms implement them.
  */
-import type { SpecField, SpecValues } from './spec.ts';
+import type { SpecField, SpecValues } from './spec.js';
 /** The field-atom seam's owner share: the emitted field, its held
  *  value, the edit callback, and (slot-shaped fields only) the
  *  square host the host surface provided. */
