@@ -16,11 +16,13 @@ extensions:
   # extension_lane manifest refused to serve.
   - name: melite-audio-nodes
     url: https://github.com/JayDataEngineer/melite-audio-nodes
-    ref: 2702efff6ee0100c787c7c88550c0dcfe0ce4fb8
+    ref: fcd25d097d4f86ed095c366c2538e1502ea0b689
     required: true
     desc: >-
-      The ONE audio pack: Qwen3-TTS synthesis (qwen3_tts, riding
-      faster-qwen3-tts as of 2026-11-10), Voice Studio (.qvoice),
+      The ONE audio pack: Qwen3-TTS synthesis (qwen3_tts — card lane
+      AND studio riding faster-qwen3-tts/torch since THE FLIP
+      fcd25d0, 2026-10-22; native stays for moss_tts/ace_step only),
+      Voice Studio (.qvoice),
       MOSS-SFX v2 diffusion, voice embeddings, MeliteQVoiceCopy,
       film/loudness utilities. Every Audiocore* class lives here.
       2026-10-21 re-pin: the faster-backend cure (all synthesis
