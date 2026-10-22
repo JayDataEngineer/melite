@@ -440,6 +440,35 @@ describe('MediaPanel — the flows face + the bench CAS load', () => {
     expect('expect_rev' in bodies[0]).toBe(false)
   })
 
+  it('the draft row voices the in-flight restore (never a dead click)', async () => {
+    // THE OPERATOR'S FLOWS-FACE COMPLAINT: the wand voices its
+    // restore (restoringId) but the draft click went silent — a slow
+    // load read as a dead button. The row names the in-flight
+    // restore until the chain settles every exit.
+    let release!: () => void
+    const gate = new Promise<Response>((resolve) => {
+      release = () => { resolve(new Response(JSON.stringify({ ok: true }), { status: 200 })) }
+    })
+    vi.stubGlobal('fetch', (url: string) => {
+      const u = String(url)
+      if (u === '/infer-gallery/runs') return runsFeed([])
+      if (u === '/infer-gallery/drafts') return draftsFeed([{ draft_id: 'd1', name: 'card one', model: 'qwen' }])
+      if (u === '/v1/flows/drafts/d1') return Promise.resolve(new Response(JSON.stringify(draftDoc), { status: 200 }))
+      if (u === '/v1/bench/main') return Promise.resolve(new Response(JSON.stringify({ draft_id: 'bench-main', rev: 3 }), { status: 200 }))
+      if (u === '/v1/bench/ensure') return gate
+      return Promise.resolve(new Response('{}', { status: 200 }))
+    })
+    render(<MediaPanel useTabInfo={() => ({
+      tab: { navigation: { address: 'dsh-resource://media' },
+        actions: { openResource: () => {} } },
+    }) as never} />)
+    fireEvent.click(await screen.findByText(/Flows 1/))
+    fireEvent.click(await waitFor(() => screen.getByText('card one').closest('button') as HTMLElement))
+    await waitFor(() => { expect(screen.getByText('restoring…')).toBeTruthy() })
+    release()
+    await waitFor(() => { expect(screen.queryByText('restoring…')).toBeNull() })
+  })
+
   it('a refusing bench door surfaces the door\'s own error text, never a throw (the flows face)', async () => {
     const opened: string[] = []
     vi.stubGlobal('fetch', (url: string) => {

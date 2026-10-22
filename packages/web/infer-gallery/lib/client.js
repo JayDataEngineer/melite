@@ -582,6 +582,7 @@ window.__ModuleLoader__.load({
 		const bgLayer2 = "var(--dsw-alias-bg-layer-2, #0f172a)";
 		const bgOverlay1 = "var(--dsw-alias-bg-overlay, rgba(127,29,29,0.35))";
 		const borderL2 = "var(--dsw-alias-border-l2, rgba(148,163,184,0.25))";
+		const fillSubtle2 = "var(--dsw-alias-fill-subtle, rgba(2,6,23,0.72))";
 		/** Caption-scrim weight of the same fill token (the full port's
 		*  single-site fix: the old package restated this raw spelling inline
 		*  in ui.tsx — one token, one site, three weights). */
@@ -1886,7 +1887,9 @@ window.__ModuleLoader__.load({
 				}
 				const stages = doc["stages"];
 				const intent = doc["intent"];
-				await loadStagesOntoBench(Array.isArray(stages) ? stages : [], typeof intent === "string" && intent !== "" ? intent : "restored draft", deps);
+				const rows = Array.isArray(stages) ? stages : [];
+				for (const st of rows) if (typeof st === "object" && st !== null && !Array.isArray(st)) stripKeys$1(st, RESTORE_STRIP_KEYS$1);
+				await loadStagesOntoBench(rows, typeof intent === "string" && intent !== "" ? intent : "restored draft", deps);
 			} catch (e) {
 				deps.onError("bench load failed — " + (e instanceof Error ? e.message : String(e)));
 			}
@@ -2899,7 +2902,12 @@ window.__ModuleLoader__.load({
 				})();
 			};
 			/** FLOW OPEN (hunk 4): a draft row loads onto THE BENCH (the shared
-			*  state both authors edit) and opens the cards tab — bench-load.ts. */
+			*  state both authors edit) and opens the cards tab — bench-load.ts.
+			*  THE RESTORING VOICE (the operator's flows-face complaint): the
+			*  wand voices its restore but the draft click went silent — a slow
+			*  load read as a dead button. The row names the in-flight restore
+			*  until the chain settles every exit (the guarded clear keeps a
+			*  second gesture's voice when two clicks overlap). */
 			const openDraft = (draftId) => {
 				if (draftId === "") return;
 				setUiError("");
@@ -2908,12 +2916,15 @@ window.__ModuleLoader__.load({
 					setError("Melite Bench view unavailable — the sidebar tab service is not loaded.");
 					return;
 				}
+				setRestoringId(draftId);
 				loadDraftOntoBench(draftId, {
 					openResource: open,
 					onError: setError,
 					sessionId
 				}).catch((e) => {
 					setError("bench load failed — " + (e instanceof Error ? e.message : String(e)));
+				}).finally(() => {
+					setRestoringId((cur) => cur === draftId ? "" : cur);
 				});
 			};
 			/** THE MODAL MUTATIONS (the mediasidebar's popup modal on media
@@ -3226,6 +3237,19 @@ window.__ModuleLoader__.load({
 										padding: "2px 6px"
 									},
 									children: d.source.replace(/^https?:\/\//, "")
+								}) : null,
+								restoringId !== "" && restoringId === d.draft_id ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+									style: {
+										fontSize: 9,
+										fontWeight: 700,
+										letterSpacing: "0.4px",
+										color: labelPrimary1,
+										border: "1px solid " + borderL2,
+										borderRadius: 6,
+										padding: "2px 6px",
+										background: fillSubtle2
+									},
+									children: galleryCopy.restoringAction
 								}) : null
 							]
 						}, d.draft_id ?? Math.random()))

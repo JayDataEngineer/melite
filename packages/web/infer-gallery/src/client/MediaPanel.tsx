@@ -577,7 +577,12 @@ export function MediaPanel({ useTabInfo, sessionId }: { useTabInfo?: () => TabIn
   }
 
   /** FLOW OPEN (hunk 4): a draft row loads onto THE BENCH (the shared
-   *  state both authors edit) and opens the cards tab — bench-load.ts. */
+   *  state both authors edit) and opens the cards tab — bench-load.ts.
+   *  THE RESTORING VOICE (the operator's flows-face complaint): the
+   *  wand voices its restore but the draft click went silent — a slow
+   *  load read as a dead button. The row names the in-flight restore
+   *  until the chain settles every exit (the guarded clear keeps a
+   *  second gesture's voice when two clicks overlap). */
   const openDraft = (draftId: string): void => {
     if (draftId === '') return
     setUiError('')
@@ -586,6 +591,7 @@ export function MediaPanel({ useTabInfo, sessionId }: { useTabInfo?: () => TabIn
       setError('Melite Bench view unavailable — the sidebar tab service is not loaded.')
       return
     }
+    setRestoringId(draftId)
     void loadDraftOntoBench(draftId, { openResource: open, onError: setError, sessionId })
       // the silent-wand law's draft face: the load's own catch
       // voices door failures, but a rejection past it (a throwing
@@ -593,6 +599,9 @@ export function MediaPanel({ useTabInfo, sessionId }: { useTabInfo?: () => TabIn
       // without a voice.
       .catch((e: unknown) => {
         setError('bench load failed — ' + (e instanceof Error ? e.message : String(e)))
+      })
+      .finally(() => {
+        setRestoringId((cur) => cur === draftId ? '' : cur)
       })
   }
 
@@ -833,6 +842,11 @@ export function MediaPanel({ useTabInfo, sessionId }: { useTabInfo?: () => TabIn
                     {typeof d.source === 'string' && d.source !== ''
                       ? <span style={{ fontSize: 9, color: textTertiary2, border: '1px solid ' + borderL2, borderRadius: 6, padding: '2px 6px' }}>
                           {d.source.replace(/^https?:\/\//, '')}
+                        </span>
+                      : null}
+                    {restoringId !== '' && restoringId === d.draft_id
+                      ? <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.4px', color: labelPrimary1, border: '1px solid ' + borderL2, borderRadius: 6, padding: '2px 6px', background: fillSubtle2 }}>
+                          {galleryCopy.restoringAction}
                         </span>
                       : null}
                   </button>

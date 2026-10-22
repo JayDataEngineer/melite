@@ -6332,9 +6332,17 @@ window.__ModuleLoader__.load({
 			const artNames = [];
 			for (const g of gallery) if (typeof g?.name === "string" && g.name !== "") artNames.push(g.name);
 			if (artNames.length > 0) {
+				const ordered = [...artNames];
+				if (url !== "") {
+					const hero = ordered.findIndex((n) => toRunMediaUrl(runId, n) === url);
+					if (hero > 0) {
+						const [name] = ordered.splice(hero, 1);
+						ordered.unshift(name);
+					}
+				}
 				const artifacts = {};
 				const mediaUrls = [];
-				for (const n of artNames) {
+				for (const n of ordered) {
 					const u = toRunMediaUrl(runId, n);
 					if (mediaUrls.includes(u)) continue;
 					mediaUrls.push(u);
