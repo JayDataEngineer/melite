@@ -218,23 +218,36 @@ export function exportSegment(p: Record<string, unknown>, model: ModelFacts, g: 
   const loaded = loadAudiocore(g, model)
   const stated = typeof p.voice_name === 'string' ? p.voice_name.trim() : ''
   const name = stated !== '' ? stated : `voice-${runId}`
-  // THE DESIGN WORD, REFUSED AT THE SEAT (the boot-probe 'trim' burn,
-  // 2026-10-22): the card's save branch checks blankness, the preview
-  // branch delegates to the variant relations — but this kit is the
-  // shared library both ride, and an absent persona reached the raw
-  // `.trim()` deref as a TypeError naming the method, never the
-  // field. The segment names its own required word in the refusal
-  // voice every probe harvests; a cast is never a gate.
-  if (typeof p.design_prompt !== 'string' || p.design_prompt.trim() === '') {
+  // THE ONE-SOURCE LAW (the qvoice boolean law, operator 2026-10-22:
+  // "save the embeddings to media" from ANY lane): the save persists
+  // ONE voice — the stated reference saves the CLONE (no design
+  // fire; the Base variant extracts the prompt from the reference
+  // itself), the description saves a DESIGN. Every refusal names its
+  // word at this seat; a cast is never a gate (the boot-probe
+  // 'trim' burn, 2026-10-22).
+  const designPrompt = typeof p.design_prompt === 'string' ? p.design_prompt.trim() : ''
+  const refAudio = typeof p.ref_audio === 'string' ? p.ref_audio.trim() : ''
+  const refText = typeof p.ref_text === 'string' ? p.ref_text.trim() : ''
+  if (refAudio !== '' && designPrompt !== '') {
     throw new Error(
-      "required param 'design_prompt' missing or empty (the studio designs a voice from the description — state who speaks)")
+      "params 'design_prompt' and 'ref_audio' fire together on no save (ONE voice source — the reference saves the clone, the description saves a design; drop one)")
+  }
+  if (refAudio === '' && designPrompt === '') {
+    throw new Error(
+      "required param 'design_prompt' missing or empty (the studio designs a voice from the description — state who speaks, or state ref_audio to save the cloned voice)")
+  }
+  if (refAudio === '' && refText !== '') {
+    throw new Error(
+      "param 'ref_text' rides only with 'ref_audio' on a save (the reference is the voice; the transcript describes it — state the reference or drop the transcript)")
   }
   const studio = g.node('AudiocoreVoiceStudio', {
     ...AUDIACORE_STUDIO_AUTOFILL,
     model: loaded,
     mode: 'export_lite',
     name,
-    instruct: p.design_prompt.trim(),
+    ...(refAudio !== ''
+      ? { reference_audio: refAudio, reference_text: refText }
+      : { instruct: designPrompt }),
     sample_text: p.text,
     temperature: p.temperature,
     top_p: p.top_p,
