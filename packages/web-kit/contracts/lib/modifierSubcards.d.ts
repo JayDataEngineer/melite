@@ -1,5 +1,5 @@
-import type { LoRAEntry } from "./loraTypes.ts";
-import type { ModifierFieldSpec, ModifierKindSpec, ModifierOptionSpec } from "./wireTypes.ts";
+import type { LoRAEntry } from "./loraTypes.js";
+import type { ModifierFieldSpec, ModifierKindSpec, ModifierOptionSpec } from "./wireTypes.js";
 export type { ModifierFieldSpec, ModifierKindSpec, ModifierOptionSpec };
 export interface ControlNetEntry {
     id: string;

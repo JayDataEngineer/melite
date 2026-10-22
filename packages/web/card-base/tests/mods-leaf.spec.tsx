@@ -1034,10 +1034,13 @@ test('RESOLVE SEAT: a create seat (or an edit seat with no tiers) resolves nothi
   expect(resolveSeatEntry(entries, editNoTiers)).toBeNull()
 })
 
-// ── THE FLAT LAW (the qvoice_save burn, operator 2026-10-22: "THE
-// QVOICE OF QWEN TTS MOD IS FULLY BORKEN, PARAMTER INPUTS ARE
-// FUCKED — THE WRITE DID NOT LAND: unknown param(s) on the tts
-// card: qvoice_save"). The Design kind's fields ARE the card's own
+// ── THE FLAT LAW (the qvoice_save burn, operator 2026-10-22 — the
+// verbatim order lives in the receipt,
+// contracts/receipts/2026-10-22-cards-mod-write-parity.md; the
+// authored face stays clean): the studio's Design-mod parameter
+// inputs could never land — the write refused at the door with
+// "unknown param(s) on the tts card: qvoice_save". The Design
+// kind's fields ARE the card's own
 // knobs (the tts schema declares voice_name + the sampling dials
 // flat) — the leaf's commit write rides them at the ROOT, never as
 // a qvoice_save bag the write door refuses. Hop [1] of the burn:

@@ -1,7 +1,7 @@
 /** rows.tsx — extracted from form.tsx (hour 15, the godfile split; the
  * operator's DRY audit law: one seam, one small file, one wall). */
 import { createElement as h } from 'react';
-import { type SpecField, type SpecValues } from './spec.ts';
+import { type SpecField, type SpecValues } from './spec.js';
 import { type SquareHost } from './square-provider.tsx';
 /** THE INFO GLYPH (hour 21): the field's declared help prose (the
  *  schema's extra.tooltip) rides a hover (i) beside the label — one

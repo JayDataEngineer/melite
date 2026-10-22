@@ -9,10 +9,10 @@
  *  The view is a pure function of what the bench already knows, plus
  *  the host callbacks the drill owns. Keyed by CARD name; an unclaimed
  *  key falls back to the generic form-spec card. */
-import type { CardGenre, CardResult, CardStage, CardStatus } from './card.ts';
+import type { CardGenre, CardResult, CardStage, CardStatus } from './card.js';
 /** Re-exported for the seats that judge status words through this
  *  module (the vocabulary's owner route — see statusOf below). */
-export type { CardStatus } from './card.ts';
+export type { CardStatus } from './card.js';
 export interface StageViewOwnerProps {
     /** Bench stage identity (stable across param edits). */
     stageId: string;
