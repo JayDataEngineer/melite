@@ -1,5 +1,5 @@
-import type { ActivateOptions, EnsureOptions, ExternalOptions, ProvisionOperation, ProvisionPlan, ProvisionResult, ProvisionState, ResourceRef, ResourceStatus, SeatHeartbeat } from "./contracts.ts";
-import type { ArtifactInput, ArtifactInspection, ArtifactInspectionRequest, ArtifactWriterPort, VerifiedArtifactRequest, VerifiedArtifactResult } from "./artifact-writer.ts";
+import type { ActivateOptions, EnsureOptions, ExternalOptions, ProvisionOperation, ProvisionPlan, ProvisionResult, ProvisionState, ResourceRef, ResourceStatus, SeatHeartbeat } from "./contracts.js";
+import type { ArtifactInput, ArtifactInspection, ArtifactInspectionRequest, ArtifactWriterPort, VerifiedArtifactRequest, VerifiedArtifactResult } from "./artifact-writer.js";
 export interface ArtifactResponse {
     readonly status: number;
     readonly body: ArtifactInput | null;
@@ -165,18 +165,18 @@ export type ProvisioningServiceDefinition = {
     plan(ref: ResourceRef): Promise<ProvisionPlan>;
     ensure(ref: ResourceRef, options?: EnsureOptions, signal?: AbortSignal): Promise<ProvisionResult>;
     activate(ref: ResourceRef, options?: ActivateOptions, signal?: AbortSignal): Promise<ProvisionResult>;
-    acquireExternal(request: import("./contracts.ts").ExternalProvisionRequest, options?: ExternalOptions, signal?: AbortSignal): Promise<ProvisionResult>;
+    acquireExternal(request: import("./contracts.js").ExternalProvisionRequest, options?: ExternalOptions, signal?: AbortSignal): Promise<ProvisionResult>;
     reconcile(ref?: ResourceRef, signal?: AbortSignal): Promise<ResourceStatus[]>;
     stateOf(ref: ResourceRef): ProvisionState;
     operationOf(ref: ResourceRef): ProvisionOperation | undefined;
     /** THE TRUST RE-VERIFY (optional so older fakes satisfy the type):
      *  re-stats a served operation's recorded model paths before the
      *  status merge trusts the row (audit I-S6). */
-    verifyOperation?(operation: import("./contracts.ts").ProvisionOperation, signal?: AbortSignal): Promise<import("./contracts.ts").ProvisionOperation>;
+    verifyOperation?(operation: import("./contracts.js").ProvisionOperation, signal?: AbortSignal): Promise<import("./contracts.js").ProvisionOperation>;
     isLocked(ref: ResourceRef): boolean;
     /** THE F9 PROGRESS SEAT (optional so older fakes still satisfy
      *  the type): the live byte count for one weight fetch. */
-    progressOf?(operationId: string): import("./contracts.ts").WeightAcquireProgress | null;
+    progressOf?(operationId: string): import("./contracts.js").WeightAcquireProgress | null;
     /** THE F9 START SEAT (optional, same reason): starts the fetch
      *  for one ref in the background and returns its operation id
      *  WITHOUT awaiting the landing — the tracker polls progressOf.
@@ -196,7 +196,7 @@ export type ProvisioningServiceDefinition = {
      *  claimed or is still fetching answers with its stored state and
      *  a detail naming the cross-process truth (bytes live only in
      *  the fetching process). */
-    readProgress?(operationId: string): Promise<import("./contracts.ts").WeightAcquireProgress | null>;
+    readProgress?(operationId: string): Promise<import("./contracts.js").WeightAcquireProgress | null>;
     /** THE DURABILITY WORD (optional, 2026-10-21): true when this
      *  seat claims requested rows and owns fetch lifetimes — the
      *  manage plane's start arm routes on it (durable: start here;

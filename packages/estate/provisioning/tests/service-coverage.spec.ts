@@ -1111,9 +1111,15 @@ describe("ProvisioningService public seams", () => {
     // the word (invalid-record) and the stale begin-record stayed.
     const reloaded = new FileOperationStore(storeRoot);
     let record: Awaited<ReturnType<typeof reloaded.load>> = null;
-    for (let attempt = 0; attempt < 100 && record === null; attempt += 1) {
+    // THE COMPLETED RECORD, NOT THE FIRST BYTE (the battery-load
+    // flake): the store's first persist is the BEGIN record — items
+    // still empty — and under a full parallel battery the enqueued
+    // completion write can land seconds later. The poll waits for
+    // the record that CARRIES the item (the begin-record is not the
+    // answer; a window that reads it reds as integrity undefined).
+    for (let attempt = 0; attempt < 600 && (record === null || record.items[0] === undefined); attempt += 1) {
       record = await reloaded.load(result.operationId);
-      if (record === null) await new Promise((resolve) => { setTimeout(resolve, 10); });
+      if (record === null || record.items[0] === undefined) await new Promise((resolve) => { setTimeout(resolve, 25); });
     }
     assert.ok(record !== null,
       "the activate's record must persist — a refused integrity leaves the stale begin-record forever");
