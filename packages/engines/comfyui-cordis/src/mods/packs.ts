@@ -230,28 +230,25 @@ const QvoiceFields = z.object({
 // card's design half, moved into the TTS card's mods 2026-09-21 —
 // the operator: "THE VOICE LOCK CARD DIES. THE VOICE LOCK SAVE
 // AND LOAD GO INSIDE TTS CARD MODS"). Owner-only: the 1.7B
-// VoiceDesign family fires it. ──
+// VoiceDesign family fires it. THE BOOLEAN LAW (operator
+// 2026-10-22: "IT IS A SIMPLE BOOLEAN… SAVE THE EMBEDDINGS TO
+// MEDIA"): no name field — the toggle IS the save; the build mints
+// the export name (voice-<runId>) and the receipt names itself
+// from the minted file. ──
+// THE MOD-PRESENCE LAW (operator 2026-10-22: "WHEN I PUT THE SAVE
+// QVOICE MOD ON, IT JUST WORKS. IT IS LIKE A MOD… WHY WOULD IT
+// HAVE A TOGGLE / BOOLEAN"): the chip IS the signal — add states
+// save_qvoice:true, remove nulls it; no editor, no toggle, no
+// knobs. The sampling surface is the card's own lane surface —
+// restating it here duped every knob on the mods pane.
 const QvoiceSaveFields = z.object({
-  voice_name: z.string().description('Voice Name')
+  // The presence stamp the add/remove gesture writes; never
+  // rendered as a widget (the pane's presence-kind law).
+  save_qvoice: z.boolean().description('SAVE QVOICE')
     .extra('extra', bag({
-      wtype: 'text', group: 'qvoice_save', zone: 'mods', order: 0, required: true,
-      tooltip: 'Name for the designed persona — becomes the .qvoice filename stem. Reused across every future TTS render.',
+      wtype: 'boolean', group: 'qvoice_save', zone: 'mods', order: 0,
+      tooltip: 'The mod IS the save: present = the designed voice persists to media as a .qvoice; remove the mod = no save.',
     })),
-  // THE PROMPT MOVED TO THE LANE (operator 2026-09-23, three
-  // variants three inputs): the design prompt is the VoiceDesign
-  // lane's own required input — the card's task-named row
-  // (design_prompt, "Voice Persona & Timbre"), visible on that
-  // variant only. One knob, one owner: never restated here.
-  temperature: z.number().description('Temperature').min(0).max(2).step(0.05).default(0.7)
-    .extra('extra', bag({ group: 'qvoice_save', zone: 'mods', order: 2, tooltip: 'Design sampling temperature.' })),
-  top_p: z.number().description('Top-P').min(0).max(1).step(0.01).default(0.9)
-    .extra('extra', bag({ group: 'qvoice_save', zone: 'mods', order: 3, tooltip: 'Design sampling top-p.' })),
-  speed: z.number().description('Speed').min(0.5).max(2).step(0.1).default(1)
-    .extra('extra', bag({ group: 'qvoice_save', zone: 'mods', order: 4, tooltip: 'Design sampling speed.' })),
-  repetition_penalty: z.number().description('Repetition Penalty').min(0.8).max(2).step(0.01).default(1.05)
-    .extra('extra', bag({ group: 'qvoice_save', zone: 'mods', order: 5, tooltip: 'Design sampling repetition penalty.' })),
-  seed: z.number().description('Seed').step(1).default(-1)
-    .extra('extra', bag({ group: 'qvoice_save', zone: 'mods', order: 6, tooltip: 'Design seed (-1 = random).' })),
 })
 
 export function apply(ctx: Context): void {

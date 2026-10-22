@@ -7,7 +7,6 @@ export declare const schema: z<Schemastery.ObjectS<NoInfer<{
     voice: z<string, string, "defined">;
     style_instruction: z<string, string, "plain">;
     design_prompt: z<string, string, "plain">;
-    voice_name: z<string, string, "plain">;
     ref_audio: z<string, string, "plain">;
     ref_text: z<string, string, "plain">;
     temperature: z<number, number, "defined">;
@@ -21,7 +20,6 @@ export declare const schema: z<Schemastery.ObjectS<NoInfer<{
     voice: z<string, string, "defined">;
     style_instruction: z<string, string, "plain">;
     design_prompt: z<string, string, "plain">;
-    voice_name: z<string, string, "plain">;
     ref_audio: z<string, string, "plain">;
     ref_text: z<string, string, "plain">;
     temperature: z<number, number, "defined">;

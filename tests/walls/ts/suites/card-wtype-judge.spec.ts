@@ -106,7 +106,13 @@ const CARD_ROSTER = 14;
 // agreeing with its z.string shape (the design export pair's other
 // half; before the cure the field did not render at all, which is
 // the ghost-name wall's class, not a wtype mismatch).
-const FIELD_ROSTER = 476;
+// 476 -> 475 (2026-10-22, THE MOD-PRESENCE LAW, row
+// cards-tts-mod-presence): the qvoice_save pack shrank to its one
+// boolean stamp — voice_name (text) and the five sampling knobs
+// (number) died with the duped-pane burn (the card's lane surface
+// owns the sampling; the build mints the export name);
+// save_qvoice (wtype boolean, z.boolean) joins the judged roster.
+const FIELD_ROSTER = 475;
 
 interface DictField {
   readonly type?: string;

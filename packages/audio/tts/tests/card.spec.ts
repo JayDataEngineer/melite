@@ -119,18 +119,19 @@ describe("the tts compose gate", () => {
     assert.deepEqual(def.flowKinds.inputs, { text: "text", ref_audio: "audio" });
     // THE VOICES CHANNEL (the optional-channel law, 2026-09-25): the
     // static union declares both; the resolved set per run picks by
-    // voice_name (a design run resolves voices, a plain run default).
+    // the SAVE QVOICE boolean (the qvoice boolean law, operator
+    // 2026-10-22: a save-on run resolves voices, a plain run default).
     assert.deepEqual(def.flowKinds.outputs, { default: "audio", voices: "voice" });
     assert.equal(def.flowOutputBindings?.[0]?.channel, "default");
     assert.equal(def.flowOutputBindings?.[0]?.node, "SaveAudio.0");
     assert.equal(def.flowOutputBindings?.[0]?.nodeClass, "SaveAudio");
     assert.equal(def.flowOutputBindings?.[0]?.when?.({ text: "hello" }), true);
-    assert.equal(def.flowOutputBindings?.[0]?.when?.({ voice_name: "saved" }), false);
+    assert.equal(def.flowOutputBindings?.[0]?.when?.({ save_qvoice: true }), false);
     const voices = def.flowOutputBindings?.[1];
     assert.equal(voices?.channel, "voices");
     assert.equal(voices?.node, "MeliteQVoiceCopy.0");
     assert.equal(voices?.nodeClass, "MeliteQVoiceCopy");
-    assert.equal(voices?.when?.({ voice_name: "saved" }), true);
+    assert.equal(voices?.when?.({ save_qvoice: true }), true);
     assert.equal(voices?.when?.({ text: "hello" }), false);
   });
 
@@ -153,88 +154,85 @@ describe("the tts compose gate", () => {
     );
   });
 
-  it("a design export refuses reference inputs and a saved persona", () => {
+  it("a Design save refuses reference inputs and a saved persona (the boolean law: save_qvoice is the save signal)", () => {
     const designModel = facts.models["qwen3-tts-voicedesign-design"]!;
     assert.throws(
       () => def.compose(def.schema({
         text: "sample",
-        voice_name: "Cherry",
+        save_qvoice: true,
         design_prompt: "warm",
         ref_audio: "reference.wav",
       }), designModel, new GraphBuilder(), "r_design_ref"),
       /ref_audio|ref_text/,
     );
-    // judged at the FAMILY conflict row (the lying-test re-audit,
-    // 2026-10-16): voice_name×qvoice is a DECL-declared conflict, so
-    // the throw rides the family relation judgment — the card's own
-    // duplicate seat was dead by data flow and is deleted (card.ts
-    // carries the proof). This arm names that family door.
+    // judged at the card's own surface seat (the qvoice boolean law,
+    // operator 2026-10-22): the family conflict row that owned this
+    // word died with voice_name — a lane's own surface fact (a
+    // saved persona performs nothing beside a design) refuses loud
+    // here, never silently skips.
     assert.throws(
       () => def.compose(def.schema({
         text: "sample",
-        voice_name: "Cherry",
+        save_qvoice: true,
         design_prompt: "warm",
         qvoice: [{ qvoice: "Old.qvoice" }],
       }), designModel, new GraphBuilder(), "r_design_qvoice"),
-      /qvoice|persona/,
+      /qvoice.*fires nothing on a Design save/,
     );
   });
 
-  // THE EXACT-MISSING VOICE (batch-7 closure, 2026-10-14 — O25n):
-  // the together row fires only when a member is stated, so a
-  // design compose with NEITHER half is named here, in the lane's
-  // own voice — both missing keys spelled, and each single miss
-  // named alone. The ref_text twin and the stale pack shape ride
-  // the same seat.
-  it("a design export names its actually-missing keys (both, either, and the ref_text twin)", () => {
+  // THE QVOICE BOOLEAN LAW (operator 2026-10-22): the export pair is
+  // dead — no together row, no exact-missing voice, no name. The
+  // card compose's design arms: a plain design run previews (the
+  // studio designs, the flac lands, NOTHING persists); the save
+  // branch's own refusals (missing persona, reference twin, stale
+  // pack shape) fire from the boolean.
+  it("a design compose under the boolean law: plain run PREVIEWS, save run demands the persona, and the off-surface twins refuse", () => {
     // the DESIGN lane's own row (the bare -voicedesign id is the
     // customvoice lane — speak, not design)
     const designModel = facts.models["qwen3-tts-voicedesign-design"]!;
-    // NEITHER half — the exact-missing voice names both
+    // PLAIN RUN (no boolean): the preview composes — studio + flac,
+    // NO copy node (the persona's blankness is the variant's own
+    // required word, judged at the bench and run seats, never here)
+    const plain = new GraphBuilder();
+    def.compose(def.schema({ text: "sample", design_prompt: "warm" }), designModel, plain, "r_plain");
+    const plainNodes = Object.values(plain.toJSON() as Record<string, { class_type: string }>).map((n) => n.class_type);
+    assert.ok(plainNodes.includes("AudiocoreVoiceStudio"), "the studio designs");
+    assert.ok(!plainNodes.includes("MeliteQVoiceCopy"), "a plain design run persists NOTHING (the boolean is the save)");
+    // SAVE WITHOUT THE PERSONA — the save branch's own word
     assert.throws(
-      () => def.compose(def.schema({ text: "sample" }), designModel, new GraphBuilder(), "r_design_none"),
-      /required Design param\(s\) 'voice_name' \+ 'design_prompt' missing or empty/,
-    );
-    // voice_name alone — the family's TOGETHER row speaks first
-    // (the judge already spoke: half-stated states are family rows)
-    assert.throws(
-      () => def.compose(def.schema({ text: "sample", voice_name: "Cherry" }), designModel, new GraphBuilder(), "r_design_v"),
-      /ride together on this lane \(state all or none\)/,
-    );
-    // design_prompt alone — the same together word
-    assert.throws(
-      () => def.compose(def.schema({ text: "sample", design_prompt: "warm" }), designModel, new GraphBuilder(), "r_design_d"),
-      /ride together on this lane \(state all or none\)/,
+      () => def.compose(def.schema({ text: "sample", save_qvoice: true }), designModel, new GraphBuilder(), "r_design_none"),
+      /required Design param\(s\) 'design_prompt' missing or empty/,
     );
     // the ref_TEXT twin refuses the same way
     assert.throws(
       () => def.compose(def.schema({
-        text: "sample", voice_name: "Cherry", design_prompt: "warm", ref_text: "words",
+        text: "sample", save_qvoice: true, design_prompt: "warm", ref_text: "words",
       }), designModel, new GraphBuilder(), "r_design_reftext"),
       /fire nothing on a Design export/,
     );
     // the stale pack shape names no surface on the design lane
     assert.throws(
       () => def.compose(def.schema({
-        text: "sample", voice_name: "Cherry", design_prompt: "warm", qvoice_save: "Old",
+        text: "sample", save_qvoice: true, design_prompt: "warm", qvoice_save: "Old",
       }), designModel, new GraphBuilder(), "r_design_stale"),
       /param 'qvoice_save' names no surface on the tts card/,
     );
   });
 
-  it("THE QVOICE PERSISTENCE LAW: the design lane copies the minted .qvoice into the run tree", () => {
+  it("THE QVOICE PERSISTENCE LAW: the SAVE QVOICE boolean copies the minted .qvoice into the run tree (the mint names itself)", () => {
     const designModel = facts.models["qwen3-tts-voicedesign-design"]!;
     const g = new GraphBuilder();
     def.compose(def.schema({
       text: "sample",
-      voice_name: "harbourmaster",
+      save_qvoice: true,
       design_prompt: "gravelly, warm, unhurried",
     }), designModel, g, "r_qvoice_copy");
     const graph = g.toJSON() as Record<string, { inputs: Record<string, unknown>; class_type: string }>;
     const copies = Object.entries(graph).filter(([, n]) => n.class_type === "MeliteQVoiceCopy");
-    assert.equal(copies.length, 1, "exactly one copy node on the design lane");
+    assert.equal(copies.length, 1, "exactly one copy node on the save path");
     const inputs = copies[0]![1].inputs;
-    assert.equal(inputs.voice_name, "harbourmaster", "the export's name is the search key");
+    assert.equal(inputs.voice_name, "voice-r_qvoice_copy", "the build MINTS the name (voice-<runId> — no typed name anywhere)");
     assert.equal(inputs.dest_prefix, "r_qvoice_copy/voices", "the copy lands in the run's own tree");
     assert.ok(Array.isArray(inputs.audio), "order rides the studio's audio wire");
   });
@@ -302,23 +300,22 @@ describe("the lane surface IS the visibility (2026-10-10, the YOU_ARE_A_LIAR fix
     assert.equal(leaf("top_k"), undefined);
   });
 
-  it("THE EXPORT PAIR RENDERS WHOLE (the studio-unbrick law, 2026-11-10): voice_name is a declared schema leaf with a widget, never a ghost name the relation requires but the form cannot state", () => {
-    // the burn: the DECL's required-together row named voice_name +
-    // design_prompt, the schema carried ONLY design_prompt — the
-    // pair was uncompletable from the UI and every half-pair write
-    // refused, unlanding the studio's keys. Both halves must be
-    // stateable fields.
+  it("THE NAME LEAF IS DEAD (the qvoice boolean law, operator 2026-10-22: \"Qvoice. Is a mod. It is not BAKED INTO THE DEFAULT CARD\"): voice_name is NO schema leaf — the save is the mod's boolean, never a base-lane field", () => {
+    // the burn this law closed: the DECL's required-together row
+    // named voice_name + design_prompt, the form demanded the pair,
+    // and the requirement itself injured the operator — a typed
+    // export name was never a base-lane fact. The leaf must be GONE
+    // (a dead field that lingers renders a box no law demands).
     const carrier = (def.schemaCarrier ?? def.schema) as unknown as { toJSON(): { refs: Record<number, { type?: string; dict?: Record<string, number>; meta?: { extra?: { wtype?: string; tooltip?: string } } }> } };
     const json = carrier.toJSON();
     const root = Object.values(json.refs).find((n) => n.type === "object" && n.dict !== undefined);
     assert.ok(root, "the schema envelope serves");
-    for (const half of ["design_prompt", "voice_name"]) {
-      const refId = root!.dict![half];
-      assert.notEqual(refId, undefined, half + " is a declared schema leaf (the export pair's required halves both render)");
-      const meta = json.refs[refId!]?.meta?.extra;
-      assert.ok(typeof meta?.wtype === "string" && meta.wtype !== "", half + " carries a widget type");
-      assert.ok(typeof meta?.tooltip === "string" && meta.tooltip !== "", half + " carries its tooltip copy");
-    }
+    assert.equal(root!.dict!["voice_name"], undefined, "voice_name is NOT a declared schema leaf (the name is the mod's mint, never a card field)");
+    const promptId = root!.dict!["design_prompt"];
+    assert.notEqual(promptId, undefined, "design_prompt stays the design lane's own leaf");
+    const meta = json.refs[promptId!]?.meta?.extra;
+    assert.ok(typeof meta?.wtype === "string" && meta.wtype !== "", "design_prompt carries its widget type");
+    assert.ok(typeof meta?.tooltip === "string" && !meta.tooltip.includes("voice_name"), "the persona tooltip names no pair");
   });
 });
 
@@ -540,16 +537,16 @@ describe("the design lane (the SAVE half — the lane owns the task-named prompt
   // three inputs — they are SPECIFIC TASKS, not INSTRUCT"): the
   // design prompt rides the CARD as design_prompt (the
   // "Voice Persona & Timbre" row, visible on the VoiceDesign
-  // variant only); the pack carries the export name + design
+  // variant only); the pack carries the save boolean + design
   // sampling — never the prompt (one knob, one owner).
-  it("a stated flat Design entry fires VoiceStudio export_lite on the 1.7B checkpoint", () => {
+  it("a stated SAVE QVOICE boolean fires VoiceStudio export_lite on the 1.7B checkpoint (the save from any lane — the mint names itself)", () => {
     const designModel = facts.models["qwen3-tts-voicedesign"]!;
     assert.ok(designModel, "the design facts row serves");
     const g = new GraphBuilder();
     def.compose(
       def.schema({
         text: "the sample to voice",
-        voice_name: "Cherry",
+        save_qvoice: true,
         design_prompt: "a warm voice",
         top_p: 0.9,
         speed: 1,
@@ -564,7 +561,7 @@ describe("the design lane (the SAVE half — the lane owns the task-named prompt
     const studio = graph["AudiocoreVoiceStudio.0"];
     assert.ok(studio, "the VoiceStudio rides");
     assert.equal(studio.inputs.mode, "export_lite", "design exports lite");
-    assert.equal(studio.inputs.name, "Cherry", "the entry's name wires");
+    assert.equal(studio.inputs.name, "voice-run_design", "the build MINTS the name (voice-<runId> — no typed name, the operator's boolean law)");
     assert.equal(studio.inputs.instruct, "a warm voice", "the persona description wires as the design prompt");
     assert.equal(studio.inputs.sample_text, "the sample to voice", "the card text voices the sample");
     assert.equal(studio.inputs.seed, 7, "the entry's seed wires");
@@ -576,11 +573,11 @@ describe("the design lane (the SAVE half — the lane owns the task-named prompt
     // the loader stamps the lane it rides.
     assert.equal(loader.inputs.extras, JSON.stringify({ variant: "customvoice" }), "the loader declares the lane it rides (the large CustomVoice default — the export is lane-legal anywhere)");
   });
-  it("a lonely persona description refuses loud (the export needs BOTH halves — the fold keeps bare text a lawful perform)", () => {
+  it("a lonely persona description refuses loud outside the design lane (the fold keeps bare text a lawful perform)", () => {
     const designModel = facts.models["qwen3-tts-voicedesign"]!;
     assert.throws(
       () => def.compose(def.schema({ text: "the words", design_prompt: "a warm voice" }), designModel, new GraphBuilder(), "r_nodesign"),
-      /design_prompt|voice_name/i,
+      /design_prompt.*fires nothing on the tts card outside the VoiceDesign lane/,
     );
     // and the flip's own law: bare text at the head COMPOSES (the family
     // default is the everyday CustomVoice perform lane — the operator's
@@ -594,23 +591,32 @@ describe("the design lane (the SAVE half — the lane owns the task-named prompt
     assert.throws(
       () => def.compose(def.schema({
         text: "the sample",
-        voice_name: "Cherry",
         design_prompt: "a warm voice",
         style_instruction: "excited",
       }), designModel, new GraphBuilder(), "r_stalestyle"),
-      /style_instruction|CustomVoice/i,
+      /style_instruction.*fires nothing on the VoiceDesign lane/,
     );
   });
-  it("the stale bag shape refuses loud (it names no surface — the flat params are the contract)", () => {
+  it("the stale pack spelling refuses loud on every path (it names no surface — the boolean is the contract)", () => {
     const designModel = facts.models["qwen3-tts-voicedesign-design"]!;
+    // with the save riding
     assert.throws(
       () => def.compose(def.schema({
         text: "the sample to voice",
-        voice_name: "Cherry",
+        save_qvoice: true,
         design_prompt: "a warm voice",
-        qvoice_save: [{ voice_name: "Cherry", design_prompt: "a warm voice" }],
+        qvoice_save: [{ save_qvoice: true }],
       }), designModel, new GraphBuilder(), "r_stalebag"),
       /qvoice_save/i,
+    );
+    // and with NO save signal at all (the silent-skip law: a stale
+    // key refuses loud even when nothing else fires)
+    assert.throws(
+      () => def.compose(def.schema({
+        text: "the sample to voice",
+        qvoice_save: true,
+      }), designModel, new GraphBuilder(), "r_staleflat"),
+      /param 'qvoice_save' names no surface on the tts card/,
     );
   });
   it("a saved persona on the designer refuses loud (design exports a new voice — it performs none)", () => {
@@ -618,45 +624,31 @@ describe("the design lane (the SAVE half — the lane owns the task-named prompt
     assert.throws(
       () => def.compose(def.schema({
         text: "the sample to voice",
-        voice_name: "Cherry",
         design_prompt: "a warm voice",
         qvoice: [{ qvoice: "Old.qvoice" }],
       }), designModel, new GraphBuilder(), "r_usedesign"),
-      /qvoice|VoiceDesign|persona/i,
+      /qvoice.*fires nothing on the Design lane/,
     );
   });
-  it("THE ONE JUDGE AT COMPOSE (the DECL audit's row 4, 2026-10-10): a half-stated export pair refuses in the DECL's voice — the SAME sentence the bench speaks", () => {
+  it("THE ONE JUDGE AT COMPOSE (the seats' ownership under the boolean law): the variant's required word belongs to the bench + run seats — compose speaks no duplicate", () => {
     const designModel = facts.models["qwen3-tts-voicedesign-design"]!;
-    // The compose seat routes the family relation rows through
-    // judgeLaneRelations — the one implementation. The half-stated
-    // export pair (either half alone) is the together row's state,
-    // and the refusal is the row's cure text, byte-for-byte the
-    // voice the bench-write door speaks (the parity is the kill:
-    // the imperative copy could drift, and its blank law already
-    // had — the design audit's Q4).
-    const halfStated = (): void => {
-      def.compose(def.schema({
-        text: "the sample",
-        design_prompt: "a warm voice",
-      }), designModel, new GraphBuilder(), "r_noname");
-    };
-    assert.throws(halfStated, /ride together on this lane/);
-    assert.throws(halfStated, /persona export needs both halves/);
-    // THE PARITY PIN: the bench-write door judges the identical
-    // body by calling THIS SAME judge (judgeLaneRelations — see
-    // cardsRegistry's relation seat) over the family's DECL rows.
-    // If compose ever hand-rolls the sentence again, the equality
-    // breaks: one law, one voice, two seats.
-    const decl = qwenDecl.relations;
-    assert.ok(decl !== undefined, 'the Qwen family declares rows');
-    const benchViol = judgeLaneRelations([decl], {
-      text: "the sample",
-      design_prompt: "a warm voice",
-    });
-    assert.ok(benchViol.length > 0, 'the bench judge refuses the identical body');
-    let composeMsg = '';
-    try { halfStated(); assert.fail('must refuse'); } catch (e) { composeMsg = (e as Error).message; }
-    assert.equal(composeMsg, benchViol[0]!.message, 'compose and bench speak the identical sentence');
+    // The design lane's required persona word lives on the VARIANT's
+    // relations (the resolved lane's own rows), judged by the one
+    // implementation at the bench-write door and the run seat. The
+    // card's compose hand-rolls NO copy: a stated persona previews
+    // (the engine's own instruct-required word guards the blank
+    // downstream), and the judge's cure is the sentence the bench
+    // speaks — pinned byte-for-byte here.
+    const variant = qwenDecl.variants.find((v) => v.id === "voicedesign");
+    assert.ok(variant?.relations !== undefined, "the voicedesign variant declares its own relations");
+    const benchViol = judgeLaneRelations([variant!.relations!], { text: "the sample" });
+    assert.ok(benchViol.length > 0, "the bench judge refuses the persona-less body");
+    assert.match(benchViol[0]!.message, /design lane builds a voice from the description/, "the variant row's cure is the word");
+    // and compose does NOT hand-roll it: the stated-persona preview
+    // composes clean (no imperative duplicate — the Q4 class is dead)
+    const g = new GraphBuilder();
+    def.compose(def.schema({ text: "the sample", design_prompt: "a warm voice" }), designModel, g, "r_nodup");
+    assert.ok(Object.keys(g.toJSON()).length > 0, "the preview composes");
   });
 
   it("A NEITHER-STATED ROW COMPOSES THE SYNTH LANE (the preset-voice sample — the old gates never refused it either)", () => {
@@ -686,8 +678,9 @@ describe("THE EVERY-ADDRESS WALL — every served address composes its own decla
   });
 
   // THE LANE PARAMS per resolved lane topology: the clone lane needs
-  // its reference pair; the design lane needs its export pair; the
-  // speak lane needs only the words (admission on the card holds).
+  // its reference pair; the design lane takes the persona + the SAVE
+  // QVOICE boolean (the strongest compose — preview AND persist);
+  // the speak lane needs only the words (admission on the card holds).
   const laneOf = (row: ModelFacts): string => ttsLaneTopologyOf(row).synth_lane;
   const laneParams = (row: ModelFacts): Record<string, unknown> => {
     const lane = laneOf(row);
@@ -695,7 +688,7 @@ describe("THE EVERY-ADDRESS WALL — every served address composes its own decla
       return { text: "wall probe", ref_audio: "/m/ref.wav", ref_text: "the reference words" };
     }
     if (lane === "design") {
-      return { text: "wall probe", voice_name: "wall-host", design_prompt: "a wall probe voice" };
+      return { text: "wall probe", design_prompt: "a wall probe voice", save_qvoice: true };
     }
     return { text: "wall probe" };
   };
@@ -720,8 +713,14 @@ describe("THE EVERY-ADDRESS WALL — every served address composes its own decla
       assert.equal(save.inputs.filename_prefix, `wall_${row.id}/${suffix}`, "compose stamps the run prefix");
       if (laneOf(row) === "design") {
         const copy = Object.values(graph).find((n) => n.class_type === "MeliteQVoiceCopy")!;
-        assert.ok(copy, "the design lane exports the .qvoice artifact");
+        assert.ok(copy, "the boolean-on design run exports the .qvoice artifact");
         assert.equal(copy.inputs.dest_prefix, `wall_${row.id}/voices`, "the export persists into the run's own tree");
+        // and the PLAIN design run (boolean off) previews — no copy
+        const plain = new GraphBuilder();
+        def.compose(def.schema({ text: "wall probe", design_prompt: "a wall probe voice" }), row, plain, `wallp_${row.id}`);
+        const plainGraph = plain.toJSON() as Record<string, { class_type: string }>;
+        assert.ok(Object.values(plainGraph).some((n) => n.class_type === "AudiocoreVoiceStudio"), "the plain run still designs (the preview)");
+        assert.ok(!Object.values(plainGraph).some((n) => n.class_type === "MeliteQVoiceCopy"), "the plain run persists NOTHING (the boolean is the save)");
       }
     });
   }
@@ -737,9 +736,9 @@ describe("THE EVERY-ADDRESS WALL — every served address composes its own decla
     );
   });
 
-  it("THE OTHER SIZE SEAT: the small cell's save fires too (a stated Design pair on the small CustomVoice row exports)", () => {
+  it("THE OTHER SIZE SEAT: the small cell's save fires too (the SAVE QVOICE boolean on the small CustomVoice row exports)", () => {
     const g = new GraphBuilder();
-    def.compose(def.schema({ text: "sample", voice_name: "wall-host", design_prompt: "a wall probe voice" }), ttsModel, g, "wall_save_060");
+    def.compose(def.schema({ text: "sample", save_qvoice: true, design_prompt: "a wall probe voice" }), ttsModel, g, "wall_save_060");
     const graph = g.toJSON() as Record<string, { class_type: string; inputs: Record<string, unknown> }>;
     const studio = Object.values(graph).find((n) => n.class_type === "AudiocoreVoiceStudio")!;
     assert.equal(studio.inputs.mode, "export_lite", "the save binding routes to the export segment");
@@ -747,30 +746,28 @@ describe("THE EVERY-ADDRESS WALL — every served address composes its own decla
     assert.equal(copy.inputs.dest_prefix, "wall_save_060/voices", "the export persists into the run's own tree");
   });
 
-  it("THE DECLARED DESIGN ADMISSIONS: the export branch's own refusals fire from any stated voice_name (the save intent)", () => {
-    // The export branch's refusals are lane-level seats reached
-    // through the save intent (a stated voice_name fires the
-    // exporter from ANY lane, per the full qvoice law) — driven
-    // here on the real small-cell row, the lane every address can reach.
-    // The together/conflict halves speak in the RELATIONS judge's
-    // voice (the one implementation); the stale param name is the
-    // save intent's own seat.
+  it("THE DECLARED DESIGN ADMISSIONS: the save branch's own refusals fire from the SAVE QVOICE boolean (the save signal)", () => {
+    // The save branch's refusals are lane-level seats reached
+    // through the boolean (save_qvoice fires the exporter from ANY
+    // lane, per the full qvoice law) — driven here on the real
+    // small-cell row, the lane every address can reach. The save's
+    // own words: the missing persona, the off-surface reference,
+    // and the stale pack spelling (judged on every path now).
     const model = ttsModel;
-    // the half-stated export: the together row judges it first (the
-    // one implementation — the judge owns the both-halves law).
+    // the save without the persona: the save branch's own word
     assert.throws(
-      () => def.compose(def.schema({ text: "sample", voice_name: "host" }), model, new GraphBuilder(), "wall_design_missing"),
-      /fields 'voice_name' \+ 'design_prompt' ride together on this lane/,
+      () => def.compose(def.schema({ text: "sample", save_qvoice: true }), model, new GraphBuilder(), "wall_design_missing"),
+      /required Design param\(s\) 'design_prompt' missing or empty/,
     );
-    // the export's off-surface reference: the conflict row judges it.
+    // the save's off-surface reference: the save branch refuses it.
     assert.throws(
-      () => def.compose(def.schema({ text: "sample", voice_name: "host", design_prompt: "warm", ref_audio: "/m/r.wav" }), model, new GraphBuilder(), "wall_design_ref"),
-      /fields 'voice_name' \+ 'ref_audio' conflict on this lane/,
+      () => def.compose(def.schema({ text: "sample", save_qvoice: true, design_prompt: "warm", ref_audio: "/m/r.wav" }), model, new GraphBuilder(), "wall_design_ref"),
+      /fire nothing on a Design export/,
     );
-    // the stale 'qvoice_save' param names no surface — the save
-    // intent's own refusal (the Design entry is FLAT).
+    // the stale 'qvoice_save' spelling names no surface — judged
+    // even with no save signal (the silent-skip law).
     assert.throws(
-      () => def.compose(def.schema({ text: "sample", voice_name: "host", design_prompt: "warm", qvoice_save: true }), model, new GraphBuilder(), "wall_design_stale"),
+      () => def.compose(def.schema({ text: "sample", qvoice_save: true }), model, new GraphBuilder(), "wall_design_stale"),
       /param 'qvoice_save' names no surface on the tts card/,
     );
   });

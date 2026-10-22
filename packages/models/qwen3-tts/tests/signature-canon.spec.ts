@@ -54,10 +54,11 @@ const TABLE: ReadonlyArray<{
   // NOTHING over the variant's own surface.
   { variant: "customvoice", quant: "0_6b", upstream: "generate_custom_voice(text, speaker, language) — 0.6B: no instruct control", laneOwned: ["voice"] },
   // 1.7B — generate_voice_design(text, instruct, language): the
-  // persona description IS this lane's instruct; the save mod's name
-  // rides with it (the lane exists to export). No 0.6B row —
-  // upstream ships no small design checkpoint.
-  { variant: "voicedesign", quant: "1_7b", upstream: "generate_voice_design(text, instruct, language)", laneOwned: ["design_prompt", "voice_name"] },
+  // persona description IS this lane's instruct (the qvoice
+  // boolean law, operator 2026-10-22: the name is the SAVE QVOICE
+  // mod's boolean — never a lane input). No 0.6B row — upstream
+  // ships no small design checkpoint.
+  { variant: "voicedesign", quant: "1_7b", upstream: "generate_voice_design(text, instruct, language)", laneOwned: ["design_prompt"] },
   // 1.7B — generate_voice_clone(text, language, ref_audio, ref_text)
   { variant: "base", quant: "1_7b", upstream: "generate_voice_clone(text, language, ref_audio, ref_text) — 1.7B", laneOwned: ["ref_audio", "ref_text"] },
   // 0.6B clone lane — same signature, smaller tree.

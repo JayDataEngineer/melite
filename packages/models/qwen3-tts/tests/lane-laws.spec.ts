@@ -57,19 +57,20 @@ describe("the tts lane dispatch (variant topology data, never the family id)", (
     assert.ok(Object.values(row).some((n) => n.inputs.reference_audio === "/a.wav"), "the reference rides");
   });
 
-  it("the voicedesign variant routes the design lane (the studio's export segment)", () => {
+  it("the voicedesign variant routes the design lane (the studio's preview segment — the boolean law: no save without save_qvoice)", () => {
     const g = new GraphBuilder();
-    instantiateAction(speak, { text: "hi", seed: 1, voice_name: "V", design_prompt: "warm" }, stub("whatever", "voicedesign"), g, "rd");
+    instantiateAction(speak, { text: "hi", seed: 1, design_prompt: "warm" }, stub("whatever", "voicedesign"), g, "rd");
     const row = dump(g);
     assert.ok(Object.values(row).some((n) => n.class_type === "AudiocoreVoiceStudio"), "the design lane emits the studio node");
+    assert.ok(!classes(row).includes("MeliteQVoiceCopy"), "a plain design run persists nothing (the boolean is the save)");
   });
 
   it("the export action routes the VoiceStudio lane whatever the id (the exporter composes whatever the family)", () => {
     const g = new GraphBuilder();
     // THE LANE'S OWN PROMPT ROW (2026-09-23): design_prompt is the
     // card's task-named "Voice Persona & Timbre" row — the pack
-    // carries the export name + sampling, never the prompt.
-    instantiateAction(exportAction, { text: "hi", seed: 1, voice_name: "V", design_prompt: "warm" }, stub("not-the-real-id"), g, "rs");
+    // carries the save boolean + sampling, never the prompt.
+    instantiateAction(exportAction, { text: "hi", seed: 1, save_qvoice: true, design_prompt: "warm" }, stub("not-the-real-id"), g, "rs");
     assert.ok(classes(dump(g)).includes("AudiocoreVoiceStudio"), "the design lane emits the studio node");
   });
 

@@ -121,37 +121,15 @@ export const DECL = {
                 "cure": "every tts lane speaks words — state the text to synthesize",
             },
         ],
-        // THE EXPORT PAIR (incident A, operator 2026-10-10): the studio
-        // exporter fires only when the persona description and the save
-        // mod's name BOTH ride — a design_prompt without voice_name is
-        // not an authoring state, it is the exact state the run refused
-        // after the form happily built it.
-        "together": [
-            {
-                "fields": ["voice_name", "design_prompt"],
-                "cure": "the persona export needs both halves — name the voice and describe it, or drop both",
-            },
-        ],
-        // an export performs nothing beside a clone or a persona: the
-        // exporter runs the DESIGN lane; a reference clone runs the Base
-        // table; a styled performance runs the CustomVoice table.
-        "conflicts": [
-            {
-                "a": "voice_name",
-                "b": "ref_audio",
-                "cure": "a reference clone performs the text — the exporter clones no reference (drop the export or drop the reference)",
-            },
-            {
-                "a": "voice_name",
-                "b": "style_instruction",
-                "cure": "an export creates the voice — it is styled on its performances, not while it is designed (drop the style, then style the voice when you perform it)",
-            },
-            {
-                "a": "voice_name",
-                "b": "qvoice",
-                "cure": "a saved persona performs the text — the exporter performs nothing beside it (drop the export or drop the .qvoice)",
-            },
-        ],
+        // THE EXPORT PAIR IS DEAD (operator 2026-10-22: "Qvoice. Is a
+        // mod. It is not BAKED INTO THE DEFAULT CARD"): the together
+        // row that fired "the persona export needs both halves" was
+        // the requirement itself injuring the operator — a
+        // design_prompt with no name IS an authoring state; the save is
+        // the qvoice_save mod's boolean and the mint names itself. No
+        // pair rows live on the base tts lane; the conflicts rows that
+        // named voice_name died with the field (a row naming a dead
+        // field is a lie the census would pin).
     },
     // QVOICE SAVES AND LOADS ACROSS ALL qwen3-tts (operator
     // 2026-09-23): the load pack performs a saved persona on every
@@ -205,19 +183,19 @@ export const DECL = {
             // THE DESIGN LANE'S OWN FLAT ROUTE (route law: <family>-<lane>;
             // the dead atom's '-design' address survives verbatim).
             "route": "qwen3-tts-voicedesign-design",
-            // THE LANE SURFACE: the design lane OWNS the export pair —
+            // THE LANE SURFACE (the qvoice boolean law, operator
+            // 2026-10-22): the design lane is the persona description —
             // generate_voice_design(text, instruct, language) takes the
-            // persona description as ITS instruct input (upstream's only
-            // signature with one), and the .qvoice save needs the mod's
-            // name. No persona, no reference, no delivery style rides it.
-            // THE EXPORT PAIR IS REQUIRED HERE (the DECL audit's gap 3):
-            // the design lane exists to export — its required word says so.
-            "params": ["design_prompt", "voice_name"],
+            // description as ITS instruct input (upstream's only
+            // signature with one). No name, no reference, no delivery
+            // style rides it: the .qvoice persist is the SAVE QVOICE
+            // mod's boolean on the mods pane, and the mint names itself.
+            "params": ["design_prompt"],
             "relations": {
                 "required": [
                     {
-                        "fields": ["voice_name", "design_prompt"],
-                        "cure": "the design lane exports a voice — state the persona description and the Design mod's name (the save fires from this lane by definition)",
+                        "fields": ["design_prompt"],
+                        "cure": "the design lane builds a voice from the description — state who speaks (toggle SAVE QVOICE on the mods pane to persist the embedding)",
                     },
                 ],
             },

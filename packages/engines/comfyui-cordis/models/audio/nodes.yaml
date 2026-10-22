@@ -16,7 +16,7 @@ extensions:
   # extension_lane manifest refused to serve.
   - name: melite-audio-nodes
     url: https://github.com/JayDataEngineer/melite-audio-nodes
-    ref: e9f4ae901b71adab01160d2299d782da23db7122
+    ref: 716104b1918c1cacd4989873191536e9f24aeab9
     required: true
     desc: >-
       The ONE audio pack: Qwen3-TTS synthesis (qwen3_tts, riding
@@ -26,6 +26,11 @@ extensions:
       2026-10-21 re-pin: the faster-backend cure (all synthesis
       through FasterQwen3TTS, silent default dead, 5.20 RoPE shim)
       with 3/3 lane renders + the served-lane proof render.
+      2026-10-22 re-pin: the studio VRAM law (warm-handle cache,
+      capture-at-load, compat pre-init, seq-len 2048 / decode 1792
+      clamps, pre-load headroom gate, release-on-unload) — the
+      Triton capture burn cured; receipt
+      infra-qwen3-studio-vram-law.
   # 2026-10-16 (the roster-rows batch): the GGUF loader family declares
   # for the §4d HF-directory model channel — the qwen3-tts .gguf weights
   # load through its nodes (ace-step died in the 2026-10-12 operator

@@ -12,7 +12,7 @@
     "inputs": {
       "emotion": "",
       "language": "",
-      "name": "radio-host",
+      "name": "voice-probe-export",
       "qvoice_path": "",
       "repetition_penalty": 1.05,
       "sample_text": "the words to speak",
@@ -45,7 +45,7 @@
   "MeliteQVoiceCopy.0": {
     "class_type": "MeliteQVoiceCopy",
     "inputs": {
-      "voice_name": "radio-host",
+      "voice_name": "voice-probe-export",
       "dest_prefix": "probe-export/voices",
       "audio": [
         "AudiocoreVoiceStudio.0",

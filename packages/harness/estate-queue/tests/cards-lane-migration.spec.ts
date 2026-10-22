@@ -360,12 +360,13 @@ describe("THE FULL JOURNEY MATRIX (every ordered lane pair, the prior lane's own
     expect(syntheticWalk).not.toEqual(cellWalk);
   });
 
-  it("voicedesign → customvoice: the export pair drops, the switch lands", () => {
-    const prior = { model: LARGE, variant: "voicedesign", text: "words", design_prompt: "a gravel narrator", voice_name: "radio-host" };
+  it("voicedesign → customvoice: the persona drops, the switch lands", () => {
+    // THE BOOLEAN RECUT (operator 2026-10-22): no name — the prior
+    // is the persona alone, off-lane on the arriving CustomVoice.
+    const prior = { model: LARGE, variant: "voicedesign", text: "words", design_prompt: "a gravel narrator" };
     const landed = landPatch("tts", prior, { variant: "customvoice" });
     expect(landed.ok).toBe(true);
     expect(landed.stored["design_prompt"]).toBeUndefined();
-    expect(landed.stored["voice_name"]).toBeUndefined();
     expect(landed.stored["text"]).toBe("words");
   });
 
@@ -386,12 +387,11 @@ describe("THE FULL JOURNEY MATRIX (every ordered lane pair, the prior lane's own
     expect(landed.stored["ref_audio"]).toBe("/assets/ref.flac");
   });
 
-  it("voicedesign → base(clone): the export pair drops beside the arriving reference", () => {
-    const prior = { model: LARGE, variant: "voicedesign", text: "words", design_prompt: "persona", voice_name: "name" };
+  it("voicedesign → base(clone): the persona drops beside the arriving reference", () => {
+    const prior = { model: LARGE, variant: "voicedesign", text: "words", design_prompt: "persona" };
     const landed = landPatch("tts", prior, { variant: "base", ref_audio: "/assets/r.flac", ref_text: "ref words" });
     expect(landed.ok).toBe(true);
     expect(landed.stored["design_prompt"]).toBeUndefined();
-    expect(landed.stored["voice_name"]).toBeUndefined();
   });
 
   it("base(clone) → voicedesign: the reference pair drops, the design lane demands its own pair (incomplete, admitted)", () => {

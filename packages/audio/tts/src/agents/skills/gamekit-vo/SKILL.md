@@ -12,9 +12,10 @@ Per-LINE instruct carries only the emotion ("surprised, warming into relief").
 The retired flat door (`export_qvoice: true`) is GONE — the save and load
 ride the tts card's mod bags (022's receipt: the grammar rides melite_load's
 mods line):
-- **Save**: `qvoice_save: [{ voice_name: '<char>_v1', temperature: 0.7, seed: -1 }]`
-  plus the lane's `design_prompt` (the persona description — WHO speaks).
-  Any lane fires the export; the `.qvoice` lands under the voices root.
+- **Save**: `save_qvoice: true` (the presence stamp — the mod IS the
+  save; no name, no knobs; the build mints the `.qvoice` name and it
+  lands under the voices root) plus the lane's `design_prompt` (the
+  persona description — WHO speaks). Any lane fires the export.
 - **Perform**: `qvoice: [{ qvoice: '<path>.qvoice', voice_strength: 1 }]`
   with `voice: "none"` on the CustomVoice lane (a preset and a saved persona
   never ride together; the Base lane clones ref_audio instead).

@@ -31,7 +31,9 @@ export function parseTtsFacts(raw, label) {
  *  one seam: `speak` carries it PLAIN (the voice-lock law — the mint
  *  sits inside build, branch-local, never sentinel-pre-minted);
  *  `export` carries the sentinel rule (its single mint has no lock
- *  to preserve).
+ *  to preserve). THE QVOICE BOOLEAN LAW (operator 2026-10-22): no
+ *  voice_name row — the save is the save_qvoice boolean (the
+ *  qvoice_save mod's toggle; the build mints the export name).
  *  @param sentinelSeed true for the export action's seed row
  *  @param presetSpeakers the family's voice enum options
  *  @returns the declared param rows */
@@ -43,7 +45,7 @@ export function ttsParamRows(sentinelSeed, presetSpeakers) {
         { name: 'design_prompt', type: 'string' },
         { name: 'ref_audio', type: 'string' },
         { name: 'ref_text', type: 'string' },
-        { name: 'voice_name', type: 'string' },
+        { name: 'save_qvoice', type: 'boolean' },
         { name: 'temperature', type: 'number', bounds: [0.05, 2] },
         { name: 'top_p', type: 'number', bounds: [0, 1] },
         { name: 'top_k', type: 'number', bounds: [0, 1000] },
@@ -150,17 +152,22 @@ export function cloneSegment(p, model, g, runId) {
     return saveAudio(g, synth.out(), `${runId}/tts`);
 }
 /** The export segment: the studio's export_lite on the persona
- *  description + the Design mod's name — the .qvoice persists into
- *  the run's own tree (One copy node after the sample). */
+ *  description — the .qvoice persists into the run's own tree (One
+ *  copy node after the sample). THE MINT (the qvoice boolean law,
+ *  operator 2026-10-22): no typed name rides — the build mints
+ *  `voice-<runId>` (unique per save, the collision-numbered search
+ *  key both nodes share), and the receipt names itself from the
+ *  minted file. */
 export function exportSegment(p, model, g, runId) {
     assertModUse(model, 'qvoice_save');
     const seed = mintSeed(p);
     const loaded = loadAudiocore(g, model);
+    const mint = `voice-${runId}`;
     const studio = g.node('AudiocoreVoiceStudio', {
         ...AUDIACORE_STUDIO_AUTOFILL,
         model: loaded,
         mode: 'export_lite',
-        name: p.voice_name.trim(),
+        name: mint,
         instruct: p.design_prompt.trim(),
         sample_text: p.text,
         temperature: p.temperature,
@@ -171,10 +178,36 @@ export function exportSegment(p, model, g, runId) {
     });
     const save = saveAudio(g, studio.out(), `${runId}/design`);
     g.node('MeliteQVoiceCopy', {
-        voice_name: p.voice_name.trim(),
+        voice_name: mint,
         dest_prefix: `${runId}/voices`,
         audio: studio.out(),
     });
     return save;
+}
+/** The design PREVIEW segment (the qvoice boolean law, operator
+ *  2026-10-22: a plain design run previews — the persona speaks
+ *  the text, the flac lands, and NOTHING persists to the media
+ *  tree): the same studio design fire as the export, with NO copy
+ *  node — the embedding stays in the engine's own scratch (its
+ *  cache law), and the run carries the sample only. The save is
+ *  the SAVE QVOICE boolean, never the lane. */
+export function designPreviewSegment(p, model, g, runId) {
+    assertModUse(model, 'qvoice_save');
+    const seed = mintSeed(p);
+    const loaded = loadAudiocore(g, model);
+    const studio = g.node('AudiocoreVoiceStudio', {
+        ...AUDIACORE_STUDIO_AUTOFILL,
+        model: loaded,
+        mode: 'export_lite',
+        name: `voice-${runId}`,
+        instruct: p.design_prompt.trim(),
+        sample_text: p.text,
+        temperature: p.temperature,
+        top_p: p.top_p,
+        speed: p.speed,
+        repetition_penalty: p.repetition_penalty,
+        seed,
+    });
+    return saveAudio(g, studio.out(), `${runId}/design`);
 }
 //# sourceMappingURL=tts-segments.js.map

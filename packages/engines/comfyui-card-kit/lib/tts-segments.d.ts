@@ -37,7 +37,9 @@ export declare function parseTtsFacts(raw: LaneInputsFacts, label: string): TtsF
  *  one seam: `speak` carries it PLAIN (the voice-lock law — the mint
  *  sits inside build, branch-local, never sentinel-pre-minted);
  *  `export` carries the sentinel rule (its single mint has no lock
- *  to preserve).
+ *  to preserve). THE QVOICE BOOLEAN LAW (operator 2026-10-22): no
+ *  voice_name row — the save is the save_qvoice boolean (the
+ *  qvoice_save mod's toggle; the build mints the export name).
  *  @param sentinelSeed true for the export action's seed row
  *  @param presetSpeakers the family's voice enum options
  *  @returns the declared param rows */
@@ -60,7 +62,19 @@ export declare function useSegment(p: Record<string, unknown>, model: ModelFacts
  *  qvoice carry — works across ALL qwen3-tts). */
 export declare function cloneSegment(p: Record<string, unknown>, model: ModelFacts, g: GraphBuilder, runId: string): NodeRef;
 /** The export segment: the studio's export_lite on the persona
- *  description + the Design mod's name — the .qvoice persists into
- *  the run's own tree (One copy node after the sample). */
+ *  description — the .qvoice persists into the run's own tree (One
+ *  copy node after the sample). THE MINT (the qvoice boolean law,
+ *  operator 2026-10-22): no typed name rides — the build mints
+ *  `voice-<runId>` (unique per save, the collision-numbered search
+ *  key both nodes share), and the receipt names itself from the
+ *  minted file. */
 export declare function exportSegment(p: Record<string, unknown>, model: ModelFacts, g: GraphBuilder, runId: string): NodeRef;
+/** The design PREVIEW segment (the qvoice boolean law, operator
+ *  2026-10-22: a plain design run previews — the persona speaks
+ *  the text, the flac lands, and NOTHING persists to the media
+ *  tree): the same studio design fire as the export, with NO copy
+ *  node — the embedding stays in the engine's own scratch (its
+ *  cache law), and the run carries the sample only. The save is
+ *  the SAVE QVOICE boolean, never the lane. */
+export declare function designPreviewSegment(p: Record<string, unknown>, model: ModelFacts, g: GraphBuilder, runId: string): NodeRef;
 //# sourceMappingURL=tts-segments.d.ts.map

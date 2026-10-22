@@ -36,16 +36,13 @@ export const schema = z.object({
     //   VoiceDesign → Voice Persona & Timbre (WHO is speaking —
     //                 designs a brand-new voice from the description)
     style_instruction: z.string().description("Emotion & Delivery Style").extra('extra', bag({ order: null, placeholder: "e.g. Speak with immense excitement, laughing slightly", tooltip: "HOW the preset speaker delivers the text — emotion, tone, pacing (excited, whisper, cheerful). A CustomVoice (1.7B) capability; the 0.6B has no instruction control, Base clones instead, VoiceDesign designs the speaker itself", wtype: 'textarea' })),
-    design_prompt: z.string().description("Voice Persona & Timbre").extra('extra', bag({ order: null, placeholder: "e.g. A gritty, deep male radio host in his late 50s, unhurried pace, authoritative and warm", tooltip: "WHO speaks — describe the voice itself (age, gender, texture, pitch, cadence) and the exporter designs a brand-new speaker from the description. No reference audio needed; the exported .qvoice performs any script on every qwen3-tts model. Pairs with the Design mod's name (voice_name) — the save fires from any model", wtype: 'textarea' })),
-    // THE DESIGN MOD'S NAME (the studio-unbrick field, 2026-11-10: the
-    // export pair's other half had NO widget — design_prompt rendered,
-    // voice_name did not, so the required-together relation refused
-    // every half-pair write and the pair could never complete from the
-    // UI; the studio bricked with the write unlanded). The saved
-    // .qvoice export's name: state it WITH the persona description on
-    // the Design lane (the relation's required word), and the loaded
-    // mod performs on every qwen3-tts model.
-    voice_name: z.string().description("Design Mod Name").extra('extra', bag({ order: null, placeholder: "e.g. deep_radio_host (the saved .qvoice's name)", tooltip: "The export's file name — the Design mod you load later to perform this voice. Required WITH Voice Persona & Timbre on the VoiceDesign model (both or neither); the save fires from any model", wtype: 'text' })),
+    design_prompt: z.string().description("Voice Persona & Timbre").extra('extra', bag({ order: null, placeholder: "e.g. A gritty, deep male radio host in his late 50s, unhurried pace, authoritative and warm", tooltip: "WHO speaks — describe the voice itself (age, gender, texture, pitch, cadence) and the VoiceDesign pick builds a brand-new speaker from the description. No reference audio needed. Toggle SAVE QVOICE on the mods pane to persist the embedding as media — the mint names itself, no name is demanded here", wtype: 'textarea' })),
+    // THE NAME FIELD IS DEAD (the qvoice boolean law, operator
+    // 2026-10-22: "Qvoice. Is a mod. It is not BAKED INTO THE
+    // DEFAULT CARD"): voice_name was never a base-lane fact — the
+    // save is the qvoice_save mod's save_qvoice boolean, the mint
+    // names itself, and the base VoiceDesign surface is text + the
+    // persona description, nothing else.
     // THE CLONE INPUTS (the Base variant clones from a 3-second
     // reference): reference audio + its transcript, Base only.
     // OPTIONAL (the optional-clone law, operator 2026-10-12): a run
@@ -162,7 +159,7 @@ export const identity = {
         'MODEL = QWEN, VARIANT = FLAVOR, QUANT = SIZE: the one Qwen atom serves CustomVoice, Base, and VoiceDesign; the 1.7B/0.6B choice is the quant cell, never a second model',
         'ALWAYS the big size: the 1.7B cell is the default on every door; the 0.6B is a fallback, never an unprompted pick; the Base route is named only to clone from reference audio',
         'THE THREE SIGNATURES: VoiceDesign takes the CHARACTER instruct (Voice Persona & Timbre — WHO speaks, designed and exported as a .qvoice); CustomVoice takes the EMOTION instruct (Emotion & Delivery Style — HOW the line reads, on a preset or a saved voice); Base only clones (3-second reference + transcript in, that speaker out)',
-        'THE FLOW: character instruct INTO emotion instruct — design the character once on VoiceDesign (qvoice_save: voice_name + the persona description), then the saved .qvoice performs on CustomVoice (qvoice) with the emotion instruct riding on top',
+        'THE FLOW: character instruct INTO emotion instruct — design the character once on VoiceDesign (toggle SAVE QVOICE to persist the embedding to media), then the saved .qvoice performs on CustomVoice (LOAD QVOICE) with the emotion instruct riding on top',
         'Use Voice Embedding (.qvoice) for consistent character voices — the file IS the voice',
         'One line per call — serial execution for multi-line sequences',
     ],
@@ -199,10 +196,12 @@ export function registerCard(ctx, comfy) {
             // THE VOICES CHANNEL (2026-09-25, the optional-channel law):
             // a design run publishes BOTH its artifacts — the preview
             // flac (default) AND the persisted .qvoice (voices). The
-            // bindings are complementary (`when` on voice_name), so a
-            // plain run resolves default only and a design run resolves
-            // voices (the resolved set — resolveCardFlowOutputs — is what
-            // the stage carries; the static record declares the union).
+            // bindings are complementary (`when` on the SAVE QVOICE
+            // boolean — the qvoice boolean law, operator 2026-10-22), so
+            // a plain run resolves default only and a save-on run
+            // resolves voices (the resolved set — resolveCardFlowOutputs
+            // — is what the stage carries; the static record declares
+            // the union).
             outputs: { default: 'audio', voices: 'voice' },
             requiresModel: true,
         },
@@ -211,13 +210,13 @@ export function registerCard(ctx, comfy) {
                 channel: 'default',
                 node: 'SaveAudio.0',
                 nodeClass: 'SaveAudio',
-                when: (params) => typeof params['voice_name'] !== 'string' || params['voice_name'] === '',
+                when: (params) => params['save_qvoice'] !== true,
             },
             {
                 channel: 'voices',
                 node: 'MeliteQVoiceCopy.0',
                 nodeClass: 'MeliteQVoiceCopy',
-                when: (params) => typeof params['voice_name'] === 'string' && params['voice_name'] !== '',
+                when: (params) => params['save_qvoice'] === true,
             },
         ],
         // Load + TTS ride the authored Audiocore pack; SaveAudio is core.
@@ -290,51 +289,48 @@ export function registerCard(ctx, comfy) {
             // calls them blank. Three seats, three answers, for one concept.)
             const blank = laneBlank;
             const qvoiceStated = (doc) => qvoiceUse(doc) !== undefined;
-            // THE SAVE INTENT (operator 2026-09-23, the full qvoice law:
-            // SAVE and LOAD across ALL qwen3-tts): a stated voice_name (the
-            // Design mod's export name) is the save signal — the studio
-            // exporter fires from ANY lane (it loads its own model
-            // variants; the lane's checkpoint only resolves directories).
-            // The VoiceDesign VARIANT is the same path by definition
-            // (designing IS its lane). Walls: the export needs BOTH the
-            // name and the persona description; it takes no delivery
-            // style, no clone reference, no saved persona (an export
-            // performs nothing), and the stale 'qvoice_save' param names
-            // no surface (the Design entry is FLAT).
-            const saveIntent = lane === 'design' || !blank(doc.voice_name);
+            // THE SAVE INTENT (the qvoice boolean law, operator
+            // 2026-10-22: "IT IS A SIMPLE BOOLEAN… SAVE THE EMBEDDINGS
+            // TO MEDIA"): the save_qvoice boolean on the qvoice_save mod
+            // is the ONE save signal — boolean on, the studio exporter
+            // fires and persists the .qvoice to media from ANY lane (it
+            // loads its own model variants; the lane's checkpoint only
+            // resolves directories); the mint names itself. The lane
+            // alone no longer implies the save (a plain design run
+            // previews the voice and demands nothing).
+            // THE STALE PACK NAME (admitted at the gate only so this seat
+            // speaks): 'qvoice_save' names no surface on the tts card —
+            // the save is the SAVE QVOICE boolean (save_qvoice). Judged
+            // on EVERY path, never only the save branch: a stale key with
+            // no save signal still refuses loud (the silent-skip law).
+            const stale = doc.qvoice_save;
+            if (stale !== undefined) {
+                throw new Error("param 'qvoice_save' names no surface on the tts card (the save is the SAVE QVOICE boolean on the mods pane — toggle save_qvoice)");
+            }
+            const saveIntent = doc.save_qvoice === true;
             if (saveIntent) {
                 // THE JUDGE ALREADY SPOKE (the DECL audit's row 4): the
-                // export pair's HALF-stated states and the export conflicts
-                // (style with a voice_name) are family rows, judged above
-                // by the one implementation — their imperative copies died
-                // with the blank-law divergence (Q4's shape: three seats,
-                // three answers, one concept). What remains here is what
-                // NO family row can say, because it is the LANE's own law:
-                // THE EXACT-MISSING VOICE (029's self-critique #2): the
-                // together row fires only when a member is stated — a
-                // design compose with NEITHER half names nothing, so this
-                // seat refuses it naming the actually-missing keys; and the
-                // export's OFF-SURFACE inputs (a reference or a saved
-                // persona perform nothing on the design lane — surface
-                // facts, not relation rows).
-                const missing = ['voice_name', 'design_prompt'].filter((k) => blank(doc[k]));
+                // family-level relation words are judged above by the one
+                // implementation. What remains here is what NO family row
+                // can say, because it is the LANE's own law: the design
+                // surface's required word (the persona description — the
+                // lane judge speaks it when blank), and the save's
+                // OFF-SURFACE inputs (a reference or a saved persona
+                // perform nothing on the design lane — surface facts, not
+                // relation rows).
+                const missing = ['design_prompt'].filter((k) => blank(doc[k]));
                 if (missing.length > 0) {
-                    throw new Error("required Design param(s) " + missing.map((k) => "'" + k + "'").join(' + ') + " missing or empty on the tts card (the export needs the persona description + the Design mod's name — state both; the save fires from any lane)");
+                    throw new Error("required Design param(s) " + missing.map((k) => "'" + k + "'").join(' + ') + " missing or empty on the tts card (the save designs from the description — state who speaks)");
                 }
                 if (!blank(doc.ref_audio) || !blank(doc.ref_text)) {
-                    throw new Error("params 'ref_audio'/'ref_text' fire nothing on a Design export (the exporter designs from the description — no reference clones; drop them, or run the Base variant without voice_name)");
+                    throw new Error("params 'ref_audio'/'ref_text' fire nothing on a Design export (the exporter designs from the description — no reference clones; drop them, or run the Base variant)");
                 }
-                const stale = doc.qvoice_save;
-                if (stale !== undefined) {
-                    throw new Error("param 'qvoice_save' names no surface on the tts card (the Design entry is FLAT — voice_name + design_prompt + sampling, the qvoice_save pack contract)");
+                if (qvoiceStated(doc)) {
+                    throw new Error("param 'qvoice' fires nothing on a Design save (the exporter designs a NEW voice — a saved persona performs nothing beside it; drop the .qvoice)");
                 }
-                // NOTE (the lying-test re-audit, 2026-10-16): a qvoice refusal
-                // seat here ("qvoice fires nothing on a Design export") was
-                // DEAD BY DATA FLOW — with voice_name stated (the design
-                // lane's required param) the DECLARED family conflict row
-                // voice_name×qvoice throws first, and without it the missing-
-                // params wall above throws. The family row owns the judgment;
-                // the duplicate is gone.
+                if (!blank(doc.style_instruction)) {
+                    throw new Error("param 'style_instruction' fires nothing on a Design save (delivery style rides the CustomVoice performance — a saved voice carries no style while it is designed; drop the style)");
+                }
                 // THE DECLARED ACTION (the atom vocabulary, stroke 3): the
                 // boarded family's own export action composes; an unbound
                 // row refuses loud below.
@@ -362,16 +358,36 @@ export function registerCard(ctx, comfy) {
                     throw new Error("params 'ref_audio' + 'ref_text' are ONE source on the tts card — state the COMPLETE pair (the 3-second reference + its transcript) or neither (a run with no reference performs prompt-only speech; the clone is optional, never required)");
                 }
                 if (!blank(doc.style_instruction) || !blank(doc.design_prompt)) {
-                    throw new Error("params 'style_instruction'/'design_prompt' fire nothing on the tts card's Base variant (style control styles the CustomVoice persona; the persona description only exports WITH the Design mod's name — pair it with voice_name or drop them)");
+                    throw new Error("params 'style_instruction'/'design_prompt' fire nothing on the tts card's Base variant (style control styles the CustomVoice persona; the persona description designs on the VoiceDesign variant — switch variants or drop them)");
                 }
             }
             else {
                 if (!blank(doc.ref_audio) || !blank(doc.ref_text)) {
                     throw new Error("params 'ref_audio'/'ref_text' fire nothing on the tts card outside the Base variant (reference audio only clones — switch to the Base variant or drop the reference)");
                 }
-                // design_prompt without voice_name: the together family row
-                // judges it now (the one implementation, above) — the
-                // imperative copy died with the audit's row 4.
+                if (lane !== 'design' && !blank(doc.design_prompt)) {
+                    throw new Error("param 'design_prompt' fires nothing on the tts card outside the VoiceDesign lane (the persona description designs a voice — switch to the VoiceDesign variant or drop it)");
+                }
+                if (lane === 'design') {
+                    // a saved persona performs nothing on the design lane —
+                    // preview or save, the studio designs a NEW voice (the
+                    // instruction-control law: a mod that fires nothing on a
+                    // lane refuses LOUD, never silently skips). The conflict
+                    // row that owned this word died with voice_name; this
+                    // seat — the lane's own surface fact — now speaks it.
+                    if (qvoiceStated(doc)) {
+                        throw new Error("param 'qvoice' fires nothing on the Design lane (the studio designs a NEW voice — a saved persona performs nothing beside it; load it on a synthesis lane)");
+                    }
+                    // delivery style rides the CustomVoice instruct only —
+                    // the design lane's instruct IS the persona description
+                    // (one knob per lane, the signature canon).
+                    if (!blank(doc.style_instruction)) {
+                        throw new Error("param 'style_instruction' fires nothing on the VoiceDesign lane (emotion styling rides the CustomVoice lane — the design lane's instruct is the persona itself; drop the style)");
+                    }
+                }
+                // design_prompt on the design lane: the lane's own required
+                // word (the variant relations above) judges blankness — no
+                // imperative copy here.
             }
             if (!blank(doc.style_instruction) && !laneTakesStyleInstruction(model)) {
                 throw new Error("param 'style_instruction' fires nothing on the resolved TTS lane (this size cell has no instruction control — choose a lane with instruction control or drop the instruction)");

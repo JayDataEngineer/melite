@@ -56,12 +56,13 @@ export function errText(err) {
 export async function settlePersist(run, stateRoot) {
     // THE EXPORT-NAME STAMP (023's self-critique #4/#6): a
     // design/export lane's voice_name rides the submitted body — lift
-    // the first non-empty one onto the row so the receipt names the
-    // mint (the preview flac carries the design sample; the .qvoice
-    // is the deliverable and rides no artifact list). The compiled
-    // stage params are engine-shaped (the compose may consume card
-    // keys into the workflow — 024 proved voice_name missing there),
-    // so the card snapshot (the exact submitted body) is the fallback.
+    // THE EXPORT-NAME STAMP (023's self-critique #4/#6, re-derived
+    // under the qvoice boolean law, operator 2026-10-22: no typed
+    // export name rides anymore — the build MINTS it): the receipt is
+    // named by the minted file itself, lifted off the engine-reported
+    // path below. The params loop stays only for pre-law runs
+    // replayed through this settle (their snapshots still carry the
+    // dead key; a replay must not lose its receipt).
     let exportName;
     const bodies = [...run.params];
     const snap = run.cardSnapshot;
@@ -101,6 +102,17 @@ export async function settlePersist(run, stateRoot) {
             exportPath = v.trim();
             run.exportPath = exportPath;
             break;
+        }
+    }
+    // THE MINT NAMES ITSELF (the qvoice boolean law, operator
+    // 2026-10-22): with no typed name riding, the receipt's name is
+    // the minted file's stem (voice-<runId>.qvoice → voice-<runId>).
+    if (exportName === undefined && exportPath !== undefined) {
+        const base = exportPath.split("/").pop() ?? "";
+        const stem = base.endsWith(".qvoice") ? base.slice(0, -".qvoice".length) : base;
+        if (stem !== "") {
+            exportName = stem;
+            run.exportName = exportName;
         }
     }
     // THE LOUDNESS + FRESHNESS STAMPS (2026-09-26): lift the meter's

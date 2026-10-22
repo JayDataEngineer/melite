@@ -196,16 +196,23 @@ export function ModifiersSection(props) {
         // THE FLAT COMMIT (the qvoice_save burn): the write is the shared
         // spelling — flat fields at the root, never the bag key the door
         // refuses. A flat kind holds ONE entry; an emptied entries array
-        // clears the fields (undefined drops off the wire).
+        // clears the fields.
         if (k.flat === true) {
             const entry = next[next.length - 1] ?? {};
             const flatWrite = modCommitWrite(k, entry);
             for (const name of Object.keys(flatWrite))
                 onEdit(name, flatWrite[name]);
             if (next.length === 0) {
+                // THE REMOVE MUST LAND (the stuck-mod burn, operator
+                // 2026-10-22: "I CAN'T EVEN REMOVE THE MOD"): the patch
+                // wire is JSON — undefined DROPS OUT of the serialized
+                // patch, the bench never receives the delete, and the chip
+                // re-serves forever. null is the merge-patch delete
+                // spelling: onEdit drops the client key, the patch carries
+                // the null the bench turns into a key delete.
                 for (const f of k.fields ?? []) {
                     onEdit(f.name, undefined);
-                    flatWrite[f.name] = undefined;
+                    flatWrite[f.name] = null;
                 }
             }
             onPatch?.(flatWrite);
@@ -215,6 +222,22 @@ export function ModifiersSection(props) {
         onPatch?.({ [k.param_key]: next });
     };
     const addable = kinds.filter((k) => k.cardinality !== 'scalar');
+    // THE PRESENCE-KIND LAW (operator 2026-10-22: "WHEN I PUT THE
+    // SAVE QVOICE MOD ON, IT JUST WORKS. IT IS LIKE A MOD… WHY WOULD
+    // IT HAVE A TOGGLE / BOOLEAN"): a flat kind whose fields are all
+    // booleans has NO editor — the chip IS the signal. Add states
+    // every boolean true (one write, no leaf); the tile's open
+    // gesture removes it (commit([]) → the null delete). No toggle
+    // widget, no knob wall, nothing to get stuck in.
+    const presenceKind = (k) => k.flat === true
+        && (k.fields ?? []).length > 0
+        && (k.fields ?? []).every((f) => f.type === 'boolean');
+    const presenceStamp = (k) => {
+        const stamp = {};
+        for (const f of k.fields ?? [])
+            stamp[f.name] = true;
+        return stamp;
+    };
     if (kinds.length === 0)
         return null;
     const seated = props.railSeated;
@@ -232,6 +255,12 @@ export function ModifiersSection(props) {
         const entries = entriesOf(k);
         if (k.max_stack !== undefined && entries.length >= k.max_stack) {
             setLeafError(k.label + ' stack limit reached (' + String(k.max_stack) + ') — remove one to add another.');
+            return;
+        }
+        // THE PRESENCE ADD: no leaf ever opens for a presence kind —
+        // the add IS the statement (every boolean true, one write).
+        if (presenceKind(k)) {
+            commit(k, [presenceStamp(k)]);
             return;
         }
         setDraftOption('');
@@ -582,7 +611,14 @@ export function ModifiersSection(props) {
                     label: option !== null ? option.label : (pickedLabel !== null ? pickedLabel : (id !== '' ? titleCaseId(id) : (isOptionKind(k) ? k.label + ' ' + String(i + 1) : k.label))),
                     ...(strength !== undefined ? { strength } : {}),
                     ...(steps !== undefined ? { steps } : {}),
-                    onOpen: () => { openEdit(k, i); },
+                    // THE PRESENCE TILE: the chip's open gesture IS the
+                    // remove (the add menu put it on; clicking it takes it
+                    // off — the null delete lands at the bench). No editor
+                    // exists for a presence kind.
+                    onOpen: () => { if (presenceKind(k)) {
+                        commit(k, []);
+                        return;
+                    } openEdit(k, i); },
                     dragging: dragTile === k.param_key + '-' + i,
                     dragOver: overTile === k.param_key + '-' + i && dragTile !== null && dragTile !== overTile,
                     ...(ordered ? {

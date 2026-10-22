@@ -54,6 +54,7 @@ import {
   useSegment,
   cloneSegment,
   exportSegment,
+  designPreviewSegment,
 } from "@melite/comfyui-card-kit/tts-segments";
 
 /** The lane topology per variant id — the FAMILY-OWNED data rows
@@ -108,17 +109,25 @@ export const speak: ComfyActionSpec<TtsParams, TtsFacts> = {
   build({ p, model, g, runId }) {
     const lane = laneTopologyOf(model).synth_lane;
     // three lanes under ONE family (the size-at-quant fold): the
-    // design lane's "speak" IS the export (a persona is born, not
-    // performed), the clone lane composes the reference, everything
-    // else is persona synthesis.
-    if (lane === "design") return exportSegment(p, model, g, runId).out();
+    // design lane composes the studio in PREVIEW (the persona is
+    // born and speaks the text — flac out, no persist), the clone
+    // lane composes the reference, everything else is persona
+    // synthesis. THE BOOLEAN (the qvoice law, operator 2026-10-22):
+    // the .qvoice persist rides save_qvoice — the card's save
+    // intent fires the export segment (the mint names itself);
+    // a plain design run previews and demands nothing.
+    if (lane === "design") {
+      return p.save_qvoice === true
+        ? exportSegment(p, model, g, runId).out()
+        : designPreviewSegment(p, model, g, runId).out();
+    }
     if (lane === "clone") return cloneSegment(p, model, g, runId).out();
     return speakSegment(p, model, g, runId).out();
   },
 };
 
 /** The export action: the persona SAVE half — fires from any lane
- * when the Design mod's name + the persona description both ride
+ * when the SAVE QVOICE boolean + the persona description both ride
  * (admission stays on the card). */
 export const exportAction: ComfyActionSpec<TtsParams, TtsFacts> = {
   id: "export",

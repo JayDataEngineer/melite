@@ -195,7 +195,7 @@ describe("toolRowFor", () => {
     // the tool projection's real row for this card
     const proj = toolBaseRows(new Map([["tts", tts]]));
     const out = toolRowFor("tts", tts, proj);
-    const lanes = out["lanes"] as Record<string, { base: string[]; relations?: Record<string, unknown> }> | undefined;
+    const lanes = out["lanes"] as Record<string, { base: string[]; relations?: Record<string, unknown>; variants?: Record<string, { relations?: Record<string, unknown> }> }> | undefined;
     assert.ok(lanes !== undefined, "the bundle signature carries the lane contracts");
     const fam = lanes["qwen3-tts"] ?? lanes["qwen3-tts-voicedesign"];
     assert.ok(fam !== undefined, "a declared tts family rides the contract: " + Object.keys(lanes).join(","));
@@ -203,9 +203,14 @@ describe("toolRowFor", () => {
     const required = (fam.relations?.["required"] as Array<{ fields?: string[] }> | undefined) ?? [];
     assert.ok(required.some((r) => (r.fields ?? []).includes("text")),
       "the required text law rides the contract the bench enforces");
-    const together = (fam.relations?.["together"] as Array<{ fields?: string[] }> | undefined) ?? [];
-    assert.ok(together.some((r) => (r.fields ?? []).includes("voice_name")),
-      "the export pair law rides too");
+    // THE BOOLEAN RECUT (operator 2026-10-22): the export-pair
+    // together row is dead — the design lane's own required persona
+    // rides the contract in its place, variant-scoped.
+    const design = fam.variants?.["voicedesign"];
+    assert.ok(design !== undefined, "the design lane rides the contract");
+    const designRequired = (design.relations?.["required"] as Array<{ fields?: string[] }> | undefined) ?? [];
+    assert.ok(designRequired.some((r) => (r.fields ?? []).includes("design_prompt")),
+      "the design persona law rides the contract the bench enforces");
   });
 
   it("a card whose families declare nothing carries no lanes key (the legacy stand-down)", () => {

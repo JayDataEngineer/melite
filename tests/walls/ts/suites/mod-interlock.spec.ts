@@ -94,7 +94,7 @@ test("mods registered through the service as plugins (PORT LAW: Schemastery cont
   ],
     "image-gen absorbs loras + the controlnet stack (the z-image restoration) + the ip_adapter bag (the refused-fate restoration: vocabulary served, entries refuse loud) + the mask contract (MASK-C: the 2.1 checkpoint's region vocabulary)");
   const tts = svc.cardModFields("tts");
-  assert.deepEqual(tts.flatMap(names).sort(), ["qvoice", "repetition_penalty", "seed", "speed", "temperature", "top_p", "voice_name", "voice_strength"], "tts absorbs the qvoice pack + the qvoice_save pack (the README stroke — save lives on the tts card's mods; the DESIGN PROMPT moved to the lane's own card row design_prompt 2026-09-23, one knob one owner — the pack keeps the export name + design sampling)");
+  assert.deepEqual(tts.flatMap(names).sort(), ["qvoice", "save_qvoice", "voice_strength"], "tts absorbs the qvoice pack + the qvoice_save pack (THE MOD-PRESENCE LAW, operator 2026-10-22: 'WHEN I PUT THE SAVE QVOICE MOD ON, IT JUST WORKS' — the chip IS the signal; the pack's one boolean stamp save_qvoice is the whole surface. The name died with the mint (the build names the export); the sampling knobs died with the duped-pane burn (the card's lane surface already owns them — restating them duped every knob on the mods pane))");
 });
 
 // THE ENVELOPE PARITY: formSchemas serves the card's own toJSON

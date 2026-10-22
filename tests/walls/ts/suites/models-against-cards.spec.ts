@@ -434,7 +434,11 @@ describe("models against cards (the cross-validation, resurrected)", () => {
     // export pair's other half joins the walked set (a string, not
     // a numeric knob; the walk counts every walked field). One new
     // field, argued here.
-    assert.equal(walked, 476,
+    // 476 -> 475 (2026-10-22, THE MOD-PRESENCE LAW, row
+    // cards-tts-mod-presence): the qvoice_save pack shrank to its
+    // one boolean stamp — voice_name + the five sampling knobs died
+    // with the duped-pane burn; save_qvoice joins the walked set.
+    assert.equal(walked, 475,
       `the census walked the estate's fields (${String(walked)} — a re-zoned or re-typed field set MOVES this number; growth is argued here, loss means the census emptied an arm)`);
     // judged 8 -> 6 (2026-11-08, the latent law): the image-edit
     // card's width/height leave the params zone (hidden compatibility
@@ -1185,6 +1189,37 @@ describe("models against cards (the cross-validation, resurrected)", () => {
       "krea-2 raw artifact rides the union (it IS a provision row)");
   });
 
+  it("THE POSITIVE JOIN (contract-gap audit A6, 2026-11-07): every h3 catalog row the studio serves resolves to a provision artifact of its own family — the picker never offers an undownloadable distill", async () => {
+    // A6's shape: the negative walls above judge what IS declared
+    // (shape, counts, ghost weights, the family-owns reference law);
+    // nothing judged the POSITIVE direction — every mods-catalog row
+    // a studio serves must be resolvable to its family's provision
+    // artifact, or the operator picks a distill the estate can never
+    // obtain (the dead-pick class: all-green walls, dead door). The
+    // arm rides the real DECL + the real catalog (never a roster):
+    // h3 is the estate's catalog-folded family (mods/loras.ts rows
+    // ARE provision rows by filename); krea-2/z-image are the
+    // operator-supplied carve (their source_urls are provenance, the
+    // arm above pins they leak into NO union).
+    const { H3_LORA_ROWS } = await import(
+      "../../../../packages/models/h3/mods/loras.ts"
+    );
+    const familyRows = (registryModel("h3") as { provisions?: Array<{ name: string }> }).provisions ?? [];
+    assert.ok(
+      H3_LORA_ROWS.length > 0 && familyRows.length > 0,
+      "the h3 catalog or its provisions table is empty — the positive join would pass vacuously",
+    );
+    const offenders: string[] = [];
+    for (const row of H3_LORA_ROWS as ReadonlyArray<{ id: string; filename: string }>) {
+      const base = row.filename.split("/").pop() ?? row.filename;
+      if (!familyRows.some((p) => p.name === base)) {
+        offenders.push(`${row.id}: catalog row '${base}' is declared by NO h3 provision row — the studio serves an undownloadable distill`);
+      }
+    }
+    assert.deepEqual(offenders, [],
+      "every catalog row resolves to a provision artifact (the positive catalog→provisions join, audit A6):\n" + offenders.join("\n"));
+  });
+
   it("fieldDomains extracts schemastery min/max/options", (): void => {
     // schemastery truth (probed 2026-09-08): the union's
     // alternatives live at .list (NODE level), each const carries
@@ -1794,7 +1829,13 @@ describe("THE TWO-HOMES BOUNDS-SYNC WALL (card schema == action ParamSpec, every
     // missing home, so ten carried qwen3-tts addresses now match
     // (the family's served route coordinates), one agreeing pair
     // per address; offenders stay empty.
-    assert.equal(pairs, 805, "the shared-name pair census changed — update this pin deliberately");
+    // 805 -> 795 (2026-10-22, THE MOD-PRESENCE LAW, row
+    // cards-tts-mod-presence): voice_name + the five sampling knobs
+    // leave BOTH homes with the pack cut (the build mints the export
+    // name; the card's lane surface owns the sampling) — one pair
+    // per carried address each; save_qvoice matches on both planes;
+    // offenders stay empty.
+    assert.equal(pairs, 795, "the shared-name pair census changed — update this pin deliberately");
     assert.deepEqual(offenders, [], `two-homes drift (card schema vs action ParamSpec):\n${offenders.join("\n")}`);
   });
 });

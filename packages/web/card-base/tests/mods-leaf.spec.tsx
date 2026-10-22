@@ -1056,6 +1056,13 @@ const QVOICE_SAVE = {
   ],
 } as unknown as ModifierKind
 
+// THE PRESENCE KIND (the real pack after the duped-knob cut): flat
+// and all-boolean — the chip IS the signal.
+const PRESENCE_SAVE = {
+  kind: 'qvoice_save', label: 'Design', param_key: 'qvoice_save', cardinality: 'list', flat: true,
+  fields: [{ name: 'save_qvoice', type: 'boolean', label: 'Save QVoice' }],
+} as unknown as ModifierKind
+
 test('FLAT CREATE: the Design entry commits its fields at the root — no qvoice_save bag rides the write (the burn, hop [1])', () => {
   const { onEdit, onPatch } = openLeaf({ kinds: [QVOICE_SAVE], values: {} })
   openCreate('Design')
@@ -1090,14 +1097,14 @@ test('FLAT READ: a saved flat entry re-opens on the card root — the leaf shows
   }
 })
 
-test('FLAT DELETE: removing the entry writes the fields off — undefined drops at the lift, never a bag splice', () => {
+test('FLAT DELETE: removing the entry writes nulls — the merge-patch delete lands at the bench (undefined drops from JSON; the stuck-mod burn, 2026-10-22)', () => {
   const { onPatch } = openLeaf({
     kinds: [QVOICE_SAVE],
     values: { voice_name: 'dusk voice', temperature: 0.4 },
   })
   openEditTile('qvoice_save-0')
   fireEvent.click(screen.getByRole('button', { name: 'Remove' }))
-  expect(onPatch).toHaveBeenCalledWith({ voice_name: undefined, temperature: undefined })
+  expect(onPatch).toHaveBeenCalledWith({ voice_name: null, temperature: null, speed: null })
   for (const call of onPatch.mock.calls) {
     expect(call[0]).not.toHaveProperty('qvoice_save')
   }
@@ -1106,4 +1113,23 @@ test('FLAT DELETE: removing the entry writes the fields off — undefined drops 
 test('FLAT SEED: an untouched root renders no phantom entry (the create tile stays; a stated field seats it)', () => {
   openLeaf({ kinds: [QVOICE_SAVE], values: {} })
   expect(document.querySelector('[data-mod-tile="qvoice_save-0"]')).toBeNull()
+})
+
+test('PRESENCE ADD: the add commits the true stamp — no leaf ever opens (the MOD-PRESENCE LAW, operator 2026-10-22: "WHEN I PUT THE SAVE QVOICE MOD ON, IT JUST WORKS")', () => {
+  const { onEdit, onPatch } = openLeaf({ kinds: [PRESENCE_SAVE], values: {} })
+  openCreate('Design')
+  expect(onEdit).toHaveBeenCalledWith('save_qvoice', true)
+  expect(onPatch).toHaveBeenCalledWith({ save_qvoice: true })
+  // no leaf face exists for a presence kind — nothing to edit
+  expect(screen.queryByLabelText('Save QVoice')).toBeNull()
+  expect(screen.queryByRole('button', { name: 'Add' })).toBeNull()
+})
+
+test('PRESENCE REMOVE: the chip click IS the remove — the null delete lands (the tile unseats when the bench serves the cleared doc)', () => {
+  const { onEdit, onPatch } = openLeaf({ kinds: [PRESENCE_SAVE], values: { save_qvoice: true } })
+  const tile = document.querySelector('[data-mod-tile="qvoice_save-0"]')
+  expect(tile).not.toBeNull()
+  fireEvent.click(tile as HTMLElement)
+  expect(onEdit).toHaveBeenCalledWith('save_qvoice', undefined)
+  expect(onPatch).toHaveBeenCalledWith({ save_qvoice: null })
 })

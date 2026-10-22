@@ -59,8 +59,9 @@ import { CardArmError } from '../../../harness/estate-queue/src/cardsArmError.ts
 import { FlowsSeatService } from '../../../harness/estate-queue/src/flowsData.ts'
 import { formSpecArm } from '../../../harness/melite-tools/src/discovery.ts'
 import { axisPickPatch, seedUser } from '../src/spec.ts'
+import type { SpecValues } from '../src/spec.ts'
 import { CardForm } from '../src/form.tsx'
-import type { FormSpecDoc, SpecValues } from '@melite/contracts/formSpec'
+import type { FormSpecDoc } from '@melite/contracts/formSpec'
 
 const sig = new AbortController().signal
 
@@ -124,8 +125,8 @@ interface HostSeat {
 }
 
 function mountHost(docId: string): HostSeat {
-  let setUserState: ((u: SpecValues) => void) | null = null
-  let setBaseState: ((b: SpecValues) => void) | null = null
+  let setUserState: ((u: SpecValues | ((prev: SpecValues) => SpecValues)) => void) | null = null
+  let setBaseState: ((b: SpecValues | ((prev: SpecValues) => SpecValues)) => void) | null = null
   let pending: Record<string, unknown> = {}
   let writing = Promise.resolve()
 

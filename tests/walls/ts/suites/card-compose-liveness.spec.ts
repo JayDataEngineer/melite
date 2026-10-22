@@ -31,7 +31,7 @@
 // must register before the barrel's first evaluation, so this import
 // precedes boot-models.
 import { assertHermeticRode } from "../../../helpers/hermetic-engine.ts";
-import { fillFor as probeFillFor, namedMulti, namedParam } from "../../../../packages/engines/comfyui-cordis/scripts/compose-probe.ts";
+import { fillFor as probeFillFor, namedMulti, namedParam, undeclaredNames } from "../../../../packages/engines/comfyui-cordis/scripts/compose-probe.ts";
 import { describe, it, beforeAll, onTestFinished } from "vitest";
 import assert from "node:assert/strict";
 import { dirname, join } from "node:path";
@@ -215,6 +215,16 @@ function composeProbedRow(
       return { graph: null, error: "compose produced an EMPTY graph" };
     } catch (err) {
       const lastError = err instanceof Error ? err.message : String(err);
+      // THE UNDECLARED DELETE (the tts dead-card burn, 2026-10-22):
+      // a key the card does not know can never be filled into
+      // legality — the probe drops it and retries. (The names enter
+      // the doc only through this probe's own harvest; the excision
+      // in namedMulti closes that gate — this arm is the belt.)
+      const undeclared = undeclaredNames(lastError);
+      if (undeclared.length > 0) {
+        for (const name of undeclared) { delete doc[name]; filled.delete(name); }
+        continue;
+      }
       const named = namedMulti(lastError);
       // A closed enum overwrites even an already-filled name: the
       // first refusal may come unquoted ("not one of 1024|1536")

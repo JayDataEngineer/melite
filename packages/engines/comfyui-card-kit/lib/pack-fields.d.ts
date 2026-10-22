@@ -94,19 +94,9 @@ export declare const QvoiceFields: z<Schemastery.ObjectS<NoInfer<{
     voice_strength: z<number, number, "defined">;
 }>>, "plain">;
 export declare const QvoiceSaveFields: z<Schemastery.ObjectS<NoInfer<{
-    voice_name: z<string, string, "plain">;
-    temperature: z<number, number, "defined">;
-    top_p: z<number, number, "defined">;
-    speed: z<number, number, "defined">;
-    repetition_penalty: z<number, number, "defined">;
-    seed: z<number, number, "defined">;
+    save_qvoice: z<boolean, boolean, "plain">;
 }>>, Schemastery.ObjectT<NoInfer<{
-    voice_name: z<string, string, "plain">;
-    temperature: z<number, number, "defined">;
-    top_p: z<number, number, "defined">;
-    speed: z<number, number, "defined">;
-    repetition_penalty: z<number, number, "defined">;
-    seed: z<number, number, "defined">;
+    save_qvoice: z<boolean, boolean, "plain">;
 }>>, "plain">;
 /** The loras pack's rider keys (every card boarding a lora family). */
 export declare const LORAS_RIDERS: readonly string[];

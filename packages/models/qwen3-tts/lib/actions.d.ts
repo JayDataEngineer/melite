@@ -34,7 +34,7 @@ export declare function parseTtsFacts(raw: LaneInputsFacts): TtsFacts;
  * live under this ONE family (the size-at-quant fold). */
 export declare const speak: ComfyActionSpec<TtsParams, TtsFacts>;
 /** The export action: the persona SAVE half — fires from any lane
- * when the Design mod's name + the persona description both ride
+ * when the SAVE QVOICE boolean + the persona description both ride
  * (admission stays on the card). */
 export declare const exportAction: ComfyActionSpec<TtsParams, TtsFacts>;
 //# sourceMappingURL=actions.d.ts.map

@@ -30,7 +30,7 @@ function doc(over: Record<string, unknown> = {}): FormSpecDoc {
 }
 
 function form(props: Partial<Parameters<typeof CardForm>[0]> = {}) {
-  return render(h(CardForm, { spec: doc(), user: {}, ...props }))
+  return render(h(CardForm, { spec: doc(), user: {}, onSet: (): void => {}, onPick: (): void => {}, ...props }))
 }
 
 const cssPath = join(import.meta.dirname, '../../../../packages/web/card-base/src/card.module.css')

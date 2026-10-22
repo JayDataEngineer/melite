@@ -14924,7 +14924,7 @@ window.__ModuleLoader__.load({
 					for (const name of Object.keys(flatWrite)) onEdit(name, flatWrite[name]);
 					if (next.length === 0) for (const f of k.fields ?? []) {
 						onEdit(f.name, void 0);
-						flatWrite[f.name] = void 0;
+						flatWrite[f.name] = null;
 					}
 					onPatch?.(flatWrite);
 					return;
@@ -14933,6 +14933,12 @@ window.__ModuleLoader__.load({
 				onPatch?.({ [k.param_key]: next });
 			};
 			const addable = kinds.filter((k) => k.cardinality !== "scalar");
+			const presenceKind = (k) => k.flat === true && (k.fields ?? []).length > 0 && (k.fields ?? []).every((f) => f.type === "boolean");
+			const presenceStamp = (k) => {
+				const stamp = {};
+				for (const f of k.fields ?? []) stamp[f.name] = true;
+				return stamp;
+			};
 			if (kinds.length === 0) return null;
 			const seated = props.railSeated;
 			const fieldDefaults = (k) => {
@@ -14947,6 +14953,10 @@ window.__ModuleLoader__.load({
 				const entries = entriesOf(k);
 				if (k.max_stack !== void 0 && entries.length >= k.max_stack) {
 					setLeafError(k.label + " stack limit reached (" + String(k.max_stack) + ") — remove one to add another.");
+					return;
+				}
+				if (presenceKind(k)) {
+					commit(k, [presenceStamp(k)]);
 					return;
 				}
 				setDraftOption("");
@@ -15222,6 +15232,10 @@ window.__ModuleLoader__.load({
 						...strength !== void 0 ? { strength } : {},
 						...steps !== void 0 ? { steps } : {},
 						onOpen: () => {
+							if (presenceKind(k)) {
+								commit(k, []);
+								return;
+							}
 							openEdit(k, i);
 						},
 						dragging: dragTile === k.param_key + "-" + i,

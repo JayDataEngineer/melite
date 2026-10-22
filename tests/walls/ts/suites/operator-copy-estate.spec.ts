@@ -216,12 +216,16 @@ describe("the estate-wide operator-copy law (no architecture vocabulary on any s
   // 14 composed cards (the mod-kind walk included; the mask sam3
   // kinds are the mods plane's whole live census today).
   // 2026-11-10 (the pack-envelope arm): the mod-contracts walk
-  // judges the absorbed pack envelopes over the same walker — 541
-  // labels / 479 tooltips across cards + packs; the 7 registered
-  // pack contracts (controlnet, ip_adapter, lanpaint, loras, mask,
-  // qvoice, qvoice_save) each judged once.
-  const LABEL_FLOOR = 541;
-  const TOOLTIP_FLOOR = 479;
+  // judges the absorbed pack envelopes over the same walker — the
+  // 7 registered pack contracts (controlnet, ip_adapter, lanpaint,
+  // loras, mask, qvoice, qvoice_save) each judged once.
+  // 2026-10-22 (THE MOD-PRESENCE LAW): the qvoice_save pack shrank
+  // to its one boolean stamp — voice_name + the five sampling knobs
+  // died with the duped-pane burn (the card's lane surface owns the
+  // sampling; the build mints the export name); the stamp's label +
+  // tooltip stay operator language. 538 labels / 476 tooltips.
+  const LABEL_FLOOR = 538;
+  const TOOLTIP_FLOOR = 476;
   const PACK_FLOOR = 7;
 
   it("the judged set IS the served set: every composed card serves its schema dict, and every pack contract is walked", async () => {

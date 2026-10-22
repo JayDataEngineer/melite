@@ -53,6 +53,7 @@ import { Context } from "@deepseek-ai/cordis";
 import { CardRegistryService } from "../../../../packages/harness/estate-queue/src/cardsRegistry.ts";
 import { FlowsSeatService } from "../../../../packages/harness/estate-queue/src/flowsData.ts";
 import { loadCardDefs, owningAtom } from "@melite/comfyui-cordis";
+import type { CardDefinition } from "@melite/comfyui-card-kit/card-definition";
 import { GraphBuilder } from "@melite/comfyui-card-kit/graph";
 import { prepareCardParams } from "../../../../packages/harness/estate-queue/src/cardsCompose.ts";
 import { modelIds, getModel } from "../../../../packages/engines/comfyui-cordis/src/models/models.ts";
@@ -81,9 +82,10 @@ process.env["MELITE_REPO_ROOT"] = resolve(
 /** A stated value for one served field — the leaf's own coercion
  *  class (a number knob takes a number, everything else a string;
  *  a served default wins verbatim). */
-function probeValue(field: { default?: unknown; wtype?: string }): unknown {
+function probeValue(field: { default?: unknown; wtype?: string; type?: string }): unknown {
   if (field.default !== undefined && field.default !== null) return field.default;
-  if (field.wtype === "slider" || field.wtype === "number") return 1;
+  if (field.wtype === "boolean" || field.type === "boolean") return true;
+  if (field.wtype === "slider" || field.wtype === "number" || field.type === "number") return 1;
   return "mod-write-parity probe";
 }
 
@@ -333,18 +335,84 @@ describe("THE MOD-WRITE PARITY — every served modifier kind's studio commit wr
     expect(verdict.ok, `the Design mod's parameter inputs must LAND on ${cell.mid}/${cell.variantId} — ${verdict.ok ? "" : verdict.error}`).toBe(true);
   });
 
-  it("THE WIRE HOP (§2 [5]): the Design entry's admitted write composes — the persona name rides the serialized graph, no bag residue", async () => {
+  /** THE COMPOSE-SEATED WITNESS (the presence law, 2026-10-22): the
+   *  persona gesture is the SAVE STAMP + the lane's own design_prompt —
+   *  no name, no knobs (the chip IS the signal). The seat must land
+   *  through BOTH doors: the write door's admission AND the card's own
+   *  compose (design_prompt fires only on the VoiceDesign lane — a
+   *  cell that admits but cannot compose is the three-door split,
+   *  alive and named). Never a hand-picked variant id: the first
+   *  offered cell the full journey accepts is the operator's seat. */
+  const witnessRefusals: string[] = [];
+  async function witnessComposeCell(arm: KindArm, defs: Map<string, CardDefinition>): Promise<{ mid: string; variantId: string; quant: string } | null> {
+    const facts = svc.modelFacts();
+    const atom = owningAtom(arm.family);
+    const def = defs.get(arm.card)!;
+    if (facts[atom] === undefined) return null;
+    witnessRefusals.length = 0;
+    for (const variant of facts[atom].variants ?? []) {
+      if (variant.hide_from_dropdown === true || variant.group === "Recipe") continue;
+      const cells = (variant.cells ?? []).filter((c) => c.hide_from_dropdown !== true);
+      const seats = cells.length > 0 ? cells.map((c) => ({
+        quant: typeof c.quant === "string" ? c.quant : "",
+        route: typeof c.route === "string" && c.route !== "" ? c.route : null,
+      })) : [{ quant: "", route: null }];
+      for (const seat of seats) {
+        const mid = seat.route ?? atom;
+        // THE RESOLVED ROW (the run path's own): a route id with its
+        // own facts row keeps it — the card's lane derivation keys on
+        // the resolved row's defaults.variant, never the atom's.
+        const row = facts[mid] ?? facts[atom];
+        const verdict = svc.admitStageRelations(arm.card, {
+          model: mid,
+          variant: variant.id,
+          ...(seat.quant !== "" ? { quant: seat.quant } : {}),
+          text: "The harbour lights at dusk.",
+          design_prompt: "a warm, unhurried narrator with gravel in the low end",
+          ...arm.write,
+        });
+        if (!verdict.ok) { witnessRefusals.push(`${mid}/${variant.id}: admit — ${verdict.ok ? "" : verdict.error}`); continue }
+        try {
+          // THE PROBE RIDES THE RUN PATH (the press's own prepare,
+          // never a hand-built doc): prepareCardParams is the door
+          // that already merged/axis-resolved the cell's quant —
+          // feeding compose the raw seat keys would state params the
+          // run path itself never sends.
+          const preparedProbe = prepareCardParams(svc, {
+            model: mid,
+            variant: variant.id,
+            ...(seat.quant !== "" ? { quant: seat.quant } : {}),
+            text: "The harbour lights at dusk.",
+            design_prompt: "a warm, unhurried narrator with gravel in the low end",
+            ...arm.write,
+          }, mid, "mod-write-parity:probe").params;
+          const g = new GraphBuilder();
+          def.compose(def.schema({ ...preparedProbe }), row, g, "mod-write-parity:probe");
+          if (Object.keys(g.toJSON() as Record<string, unknown>).length === 0) { witnessRefusals.push(`${mid}/${variant.id}: compose — empty graph`); continue }
+        } catch (e) {
+          witnessRefusals.push(`${mid}/${variant.id}: compose — ${e instanceof Error ? e.message : String(e)}`);
+          continue; // this lane admits but cannot compose the persona — the split, skipped only when another cell truly lands
+        }
+        return { mid, variantId: variant.id, quant: seat.quant };
+      }
+    }
+    return null;
+  }
+
+  it("THE WIRE HOP (§2 [5]): the Design entry's admitted write composes — the save stamp + the persona description ride the serialized graph, no bag residue", async () => {
     const arm = arms.find((a) => a.family === "qwen3-tts" && a.paramKey === "qvoice_save");
     expect(arm, "the burned kind is served").toBeDefined();
     if (arm === undefined) return;
-    const cell = witnessCell(arm);
-    expect(cell, "some offered qwen3-tts cell must admit the Design gesture").not.toBeNull();
-    if (cell === null) return;
     const defs = await loadCardDefs();
     const def = defs.get(arm.card)!;
     const facts = svc.modelFacts();
     const atom = owningAtom(arm.family);
-    const famRow = facts[atom]!;
+    const cell = await witnessComposeCell(arm, defs);
+    expect(cell, `some offered qwen3-tts cell must land the persona gesture through BOTH doors (admission + compose — a save no lane can compose is the burn, alive); per-cell refusals: ${witnessRefusals.join(" | ") || "(none offered)"}`).not.toBeNull();
+    if (cell === null) return;
+    // THE RESOLVED ROW (the run path's own): the lane derives from the
+    // resolved cell row, never the atom's defaults.
+    const row = facts[cell.mid] ?? facts[atom]!;
     // THE RUN PATH'S OWN MERGED VIEW (the run press's prepare, not a
     // hand-built doc): the operator's admitted write rides it whole.
     const prepared = prepareCardParams(svc, {
@@ -355,17 +423,19 @@ describe("THE MOD-WRITE PARITY — every served modifier kind's studio commit wr
       design_prompt: "a warm, unhurried narrator with gravel in the low end",
       ...arm.write,
     }, cell.mid, "mod-write-parity").params;
-    // hop [3] residue: the merged run params carry the persona name
+    // hop [3] residue: the merged run params carry the presence stamp
     // at the ROOT and never the refused bag key.
     expect("qvoice_save" in prepared, "no bag key may survive the run params (the burn's exact refusal)").toBe(false);
-    expect(prepared["voice_name"], "the persona name rides the run params flat").toBe(arm.entry["voice_name"]);
+    expect(prepared["save_qvoice"], "the presence stamp rides the run params flat (the chip IS the signal)").toBe(true);
     // hop [5]: the real card compose serializes the export — the
-    // operator's persona name must ride the wire the engine reads.
+    // persona description (the lane's own design_prompt) rides the
+    // wire the engine reads; the export name is the BUILD'S mint.
     const g = new GraphBuilder();
-    def.compose(def.schema({ ...prepared }), famRow, g, "mod-write-parity:witness");
+    def.compose(def.schema({ ...prepared }), row, g, "mod-write-parity:witness");
     const graph = g.toJSON() as Record<string, unknown>;
     expect(Object.keys(graph).length, "the Design save composes a non-empty graph").toBeGreaterThan(0);
-    expect(JSON.stringify(graph), "the persona name rides the serialized graph (the engine reads it)").toContain(String(arm.entry["voice_name"]));
+    expect(JSON.stringify(graph), "the persona description rides the serialized graph (the engine's instruct input)").toContain("a warm, unhurried narrator with gravel in the low end");
+    expect(JSON.stringify(graph), "the minted export name rides the graph (the build mints — never a hand-stated name)").toContain("voice-mod-write-parity");
   });
 
   it("hermetic rode (the boot stayed off the live lane)", () => {

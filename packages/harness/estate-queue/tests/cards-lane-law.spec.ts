@@ -3,12 +3,13 @@
 // surface + relation words, judged at the bench-write seat over the
 // SAME prepared params the next run composes. THE FIRST WALL is the
 // operator's exact incident A state — CustomVoice with a
-// design_prompt and no voice_name — refused at bench-write, named,
-// cured in the message ("pair design_prompt with voice_name").
-// Before this seat the state landed silently and died at Run
-// (Part III incident A of the report): the form could build what
-// the run refused, because nothing anywhere carried the model's
-// own words for what it accepts.
+// design_prompt, a persona description riding a lane that never
+// takes one (the Design mod's boolean law killed the name) —
+// refused at bench-write, named, cured in the message ("drop it or
+// switch lane"). Before this seat the state landed silently and died
+// at Run (Part III incident A of the report): the form could build
+// what the run refused, because nothing anywhere carried the
+// model's own words for what it accepts.
 //
 // THE CLAIM LAW (fix shape 4's first half) rides at the bottom:
 // for every family that DECLARES a surface, the card may claim
@@ -65,8 +66,9 @@ beforeAll(async () => {
 }, 90_000);
 
 /** The incident A body, verbatim in shape: the operator's state —
- *  CustomVoice synthesis, a design prompt for the persona export,
- *  no voice_name (the save mod's required name). */
+ *  CustomVoice synthesis with a persona description riding a lane
+ *  that never takes one (the Design mod's boolean law killed the
+ *  name: design_prompt alone on customvoice is the wound now). */
 const INCIDENT_A: Record<string, unknown> = {
   model: "qwen3-tts",
   variant: "customvoice",
@@ -78,7 +80,7 @@ afterAll(() => {
   restoreLaneStoreOverlay();
 });
 
-describe("THE INCIDENT A WALL (CustomVoice + design_prompt, no voice_name)", () => {
+describe("THE INCIDENT A WALL (CustomVoice + design_prompt — the persona on the wrong lane)", () => {
   it("refuses AT WRITE TIME with the SELECTION voice — design_prompt is the design lane's field, never CustomVoice's (the canon recut); a key the lane never takes is not an authoring half", () => {
     const verdict = svc.admitStageRelations("tts", INCIDENT_A);
     expect(verdict.ok).toBe(false);
@@ -92,35 +94,43 @@ describe("THE INCIDENT A WALL (CustomVoice + design_prompt, no voice_name)", () 
     }
   });
 
-  it("THE FRICTIONLESS-AUTHORING RULING (operator 2026-11-11): the pair's OWN lane saves the half — the save accepts a form being filled; the RUN press owns the complete pair", async () => {
-    const half = { ...INCIDENT_A, variant: "voicedesign" } as Record<string, unknown>;
+  it("THE FRICTIONLESS-AUTHORING RULING (operator 2026-11-11): the design lane saves the half — the save accepts a form being filled; the RUN press owns the complete persona", async () => {
+    // THE BOOLEAN RECUT (operator 2026-10-22): the pair is dead —
+    // the "half" is the persona-less design draft (nothing typed
+    // yet), and the save toggle itself is statable mid-form (the
+    // boolean is a knob, not a completeness claim).
+    const half = { model: "qwen3-tts", variant: "voicedesign", text: "The harbour lights at dusk." } as Record<string, unknown>;
     expect(svc.admitStageRelations("tts", half),
-      "design_prompt stated, voice_name not yet — mid-form, the write admits").toEqual({ ok: true });
+      "personality not yet typed — mid-form, the write admits").toEqual({ ok: true });
     let runRefused: string | null = null;
     try {
       await svc.phase1Card(half, String(half["model"]));
     } catch (e) {
       runRefused = (e as Error).message;
     }
-    expect(runRefused, "the run press refuses the incomplete pair, naming it").toMatch(
-      /(ride together on this lane|completes none of them)/);
+    expect(runRefused, "the run press refuses the persona-less draft, naming it").toMatch(
+      /this lane requires 'design_prompt'/);
+    // the save toggle rides the complete draft through the same door
+    const saving = { ...half, design_prompt: "a warm, unhurried narrator", save_qvoice: true } as Record<string, unknown>;
+    expect(svc.admitStageRelations("tts", saving),
+      "persona stated + SAVE QVOICE on — the write holds the save intent").toEqual({ ok: true });
+    const phase1 = await svc.phase1Card(saving, String(saving["model"]));
+    expect(phase1.fam).toBe("qwen3-tts");
   });
 
-  it("the CURED state admits — ON THE DESIGN LANE (the signature canon recut, 2026-10-12: design_prompt + voice_name are the VoiceDesign lane's own inputs, never CustomVoice's)", () => {
-    // the pair rides the lane upstream declares it on:
+  it("the CURED state admits — ON THE DESIGN LANE (the signature canon recut, 2026-10-12, re-derived 2026-10-22: design_prompt is the VoiceDesign lane's own input, never CustomVoice's)", () => {
+    // the persona rides the lane upstream declares it on:
     // generate_voice_design(text, instruct, language)
     const verdict = svc.admitStageRelations("tts", {
       ...INCIDENT_A,
       variant: "voicedesign",
-      voice_name: "harbour_gravel",
     });
     expect(verdict).toEqual({ ok: true });
-    // ...and on CustomVoice the pair is now the GUI injury itself
+    // ...and on CustomVoice the persona is now the GUI injury itself
     // (Voice Persona & Timbre rendered where upstream takes no such
     // input) — refused in the surface's own voice
     const cvVerdict = svc.admitStageRelations("tts", {
       ...INCIDENT_A,
-      voice_name: "harbour_gravel",
     });
     expect(cvVerdict.ok).toBe(false);
     if (cvVerdict.ok === false) {
@@ -300,17 +310,25 @@ describe("THE CLONE EITHER_OR WALL (one COMPLETE source)", () => {
 
 describe("THE EXPORT CONFLICT WALL (an export performs nothing)", () => {
   it("an export stated with a reference clone refuses", () => {
+    // THE BOOLEAN RECUT: the export is the SAVE QVOICE boolean + the
+    // persona — stated beside a clone reference on the clone lane,
+    // the persona is off-surface, so the door refuses in the
+    // surface's own voice (the dead conflict row's "clones no
+    // reference" is now this: a field the lane never takes).
     const verdict = svc.admitStageRelations("tts", {
       model: "qwen3-tts",
       variant: "base",
       text: "clone this",
       ref_audio: "/assets/x.flac",
       ref_text: "the transcript",
-      voice_name: "harbour_gravel",
       design_prompt: "a warm narrator",
+      save_qvoice: true,
     });
     expect(verdict.ok).toBe(false);
-    if (!verdict.ok) expect(verdict.error).toContain("clones no reference");
+    if (!verdict.ok) {
+      expect(verdict.error).toContain("design_prompt");
+      expect(verdict.error).toContain("fires nothing on this lane");
+    }
   });
 
   it("THE LEGACY LANES DECLARE THEIR REQUIRED FIELD (the GAP-7 shape on seven cards — the RUN refuses what compose refused)", async () => {
@@ -362,56 +380,67 @@ describe("THE EXPORT CONFLICT WALL (an export performs nothing)", () => {
     // model-lessly, as cards-lane-law pins elsewhere.
   });
 
-  it("the design lane's export pair is REQUIRED (the GAP-7 shape one lane over — the RUN refuses what compose refused)", async () => {
+  it("the design lane's persona is REQUIRED (the GAP-7 shape one lane over — the RUN refuses what compose refused)", async () => {
     // 2026-10-10, the DECL audit's gap 3: the compose seat refused a
-    // design-lane row with NEITHER half, but the family's together
-    // word fires only when a member is STATED — so that state was
-    // bench-ADMITTED and run-refused. The design lane now declares the
-    // pair as required (it exists to export).
+    // design-lane row with NO persona, but the family's together
+    // word fired only when a member was STATED — so that state was
+    // bench-ADMITTED and run-refused. THE BOOLEAN RECUT (operator
+    // 2026-10-22): the pair is dead — the design lane declares the
+    // single persona word as required (it exists to export).
     const neither = svc.admitStageRelations("tts", {
       model: "qwen3-tts-voicedesign",
       variant: "voicedesign",
       text: "the sample",
     });
     // THE INCOMPLETE-DRAFT LAW (2026-10-10): the write seat admits
-    // the half-stated draft — a card under construction is bench
+    // the unstated draft — a card under construction is bench
     // state — and the RUN seat refuses it in the declared word.
     expect(neither.ok).toBe(true);
     await expect(
       svc.phase1Card({
         model: "qwen3-tts-voicedesign", variant: "voicedesign", text: "the sample",
       }, "qwen3-tts-voicedesign"),
-    ).rejects.toThrow(/design lane exports a voice|voice_name/);
-    // the pair stated composes (the cure stands)
-    const both = svc.admitStageRelations("tts", {
+    ).rejects.toThrow(/this lane requires 'design_prompt'/);
+    // the persona stated admits (the cure stands)
+    const stated = svc.admitStageRelations("tts", {
       model: "qwen3-tts-voicedesign",
       variant: "voicedesign",
       text: "the sample",
-      voice_name: "warm_1",
       design_prompt: "a warm narrator",
     });
-    expect(both.ok).toBe(true);
+    expect(stated.ok).toBe(true);
   });
 
-  it("an export stated with a saved persona refuses (1.7B customvoice, style wound too)", () => {
-    const verdict = svc.admitStageRelations("tts", {
+  it("a save stated beside a saved persona refuses (the design lane designs NEW voices — style wound too)", async () => {
+    // THE BOOLEAN RECUT: the export contradiction is save intent
+    // beside a stated .qvoice — the write HOLDs the contradiction
+    // (no DECL row names the boolean), the RUN seat refuses it in
+    // the card's own save-branch voice.
+    const body = {
       model: "qwen3-tts",
-      variant: "customvoice",
-      quant: "1_7b",
+      variant: "voicedesign",
       text: "read this",
-      style_instruction: "whispered",
-      qvoice: "/voices/harbour.qvoice",
-      voice_name: "harbour_gravel",
       design_prompt: "a warm narrator",
+      save_qvoice: true,
+      qvoice: "/voices/harbour.qvoice",
+    } as Record<string, unknown>;
+    expect(svc.admitStageRelations("tts", body).ok,
+      "the write holds the contradiction — the run owns it").toBe(true);
+    await expect(
+      svc.phase1Card(body, "qwen3-tts"),
+    ).rejects.toThrow(/fires nothing on a Design save/);
+    // ...and a delivery style on the design lane refuses at the door
+    // (the persona IS the lane's instruct — emotion styling rides
+    // the CustomVoice performance, never the design).
+    const styled = svc.admitStageRelations("tts", {
+      model: "qwen3-tts",
+      variant: "voicedesign",
+      text: "read this",
+      design_prompt: "a warm narrator",
+      style_instruction: "whispered",
     });
-    expect(verdict.ok).toBe(false);
-    if (!verdict.ok) {
-      // THE FOLD (2026-10-26): the merged family states both export
-      // conflicts ONCE at family level — the voice is the family's
-      // own row, and both fire on the customvoice lane.
-      expect(verdict.error).toContain("a saved persona performs the text");
-      expect(verdict.error).toContain("an export creates the voice");
-    }
+    expect(styled.ok).toBe(false);
+    if (!styled.ok) expect(styled.error).toContain("style_instruction");
   });
 });
 
@@ -709,11 +738,11 @@ describe("THE CLAIM LAW (the card claims nothing the model did not declare)", ()
           `family ${fam} relates on '${name}' but nothing carries it`,
         ).toBe(true);
         // A relation may name a field the family's own surface does
-        // NOT carry — that is often its POINT: the 0.6B declares
-        // voice_name × style_instruction, and style_instruction is a
-        // 1.7B-only field, so the row refuses at the DOOR a state
-        // that would have died at compose ("fires nothing on this
-        // lane"). What it may not name is a field NOTHING carries —
+        // NOT carry — that is often its POINT: the design lane's
+        // required design_prompt is a VARIANT word, so a state that
+        // would die at compose ("fires nothing on this lane")
+        // refuses at the DOOR in the field's voice. What it may not
+        // name is a field NOTHING carries —
         // so the check is: the name is in some lane surface, or it is
         // a field the CARD carries, or a mod field.
         expect(
@@ -730,24 +759,27 @@ describe("THE CLAIM LAW (the card claims nothing the model did not declare)", ()
     // design lane is the family atom + variant 'voicedesign' — the
     // old arm addressed it by the route id, which selects the HEAD
     // lane and only admitted under the pre-canon base-surface leak.
-    // neither export half stated = in progress
+    // THE BOOLEAN RECUT (operator 2026-10-22): no pair — the persona
+    // alone is the export the lane exists for.
+    // no persona stated = in progress
     expect(svc.admitStageRelations("tts", {
       model: "qwen3-tts-voicedesign", variant: "voicedesign", text: "read this",
     })).toEqual({ ok: true });
-    // the pair stated = the export the lane exists for
+    // the persona stated = the design the lane exists for
     expect(svc.admitStageRelations("tts", {
       model: "qwen3-tts-voicedesign", variant: "voicedesign",
       text: "read this",
-      voice_name: "harbour_gravel",
       design_prompt: "a warm narrator",
     })).toEqual({ ok: true });
-    // THE FRICTIONLESS-AUTHORING RULING (2026-11-11): half the pair
-    // = mid-form, SAVED at the write door — the run press refuses it
-    // (the parity law's sanctioned divergence, pinned there)
+    // THE FRICTIONLESS-AUTHORING RULING (2026-11-11): the save toggle
+    // rides the complete draft — SAVED at the write door, the mint
+    // names itself at the run press (the parity law's sanctioned
+    // divergence, pinned there)
     expect(svc.admitStageRelations("tts", {
       model: "qwen3-tts-voicedesign", variant: "voicedesign",
       text: "read this",
-      voice_name: "harbour_gravel",
+      design_prompt: "a warm narrator",
+      save_qvoice: true,
     })).toEqual({ ok: true });
   });
 });
@@ -772,9 +804,9 @@ describe("THE RUN SEAT RIDES THE SAME DECLARATION (li-o's second voice)", () => 
     ).rejects.toThrow(/lane 'qwen3-tts\/customvoice' refuses the state/);
   });
 
-  it("the cured state composes phase 1 (the door and the run agree — on the lane the canon gives the pair)", async () => {
+  it("the cured state composes phase 1 (the door and the run agree — on the lane the canon gives the persona)", async () => {
     const phase1 = await svc.phase1Card(
-      { ...INCIDENT_A, model: "qwen3-tts", variant: "voicedesign", voice_name: "harbour_gravel" },
+      { ...INCIDENT_A, model: "qwen3-tts", variant: "voicedesign" },
       "qwen3-tts",
     );
     expect(phase1.fam).toBe("qwen3-tts");
@@ -892,14 +924,14 @@ describe("THE PARITY LAW (the write door and the run must agree, BOTH ways)", ()
   // from ONE table — the lane judge and the run seat, per state.
   const CASES: Array<{ name: string; params: Record<string, unknown> }> = [
     { name: "incident A (export half a pair)", params: { ...INCIDENT_A } },
-    { name: "incident A cured", params: { ...INCIDENT_A, voice_name: "warm_1" } },
+    { name: "incident A cured", params: { ...INCIDENT_A, model: "qwen3-tts", variant: "voicedesign" } },
     { name: "0.6B customvoice synthesis", params: { model: "qwen3-tts", variant: "customvoice", text: "x", voice: "vivian", temperature: 0.7 } },
     { name: "0.6B base clone (variant stated)", params: { model: "qwen3-tts", variant: "base", text: "x", ref_audio: "/a.flac", ref_text: "t" } },
     { name: "base ADDRESS without a variant (synth lane, reference fires nothing)", params: { model: "qwen3-tts-base", text: "x", ref_audio: "/a.flac", ref_text: "t" } },
     { name: "1.7B customvoice with instruction", params: { model: "qwen3-tts-voicedesign", variant: "customvoice", text: "x", voice: "vivian", style_instruction: "whispered" } },
     { name: "1.7B base clone (variant stated)", params: { model: "qwen3-tts-voicedesign", variant: "base", text: "x", ref_audio: "/a.flac", ref_text: "t" } },
     { name: "a recipe variant (inherits the family base)", params: { model: "qwen3-tts", variant: "steady-read", text: "x" } },
-    { name: "export beside a .qvoice", params: { model: "qwen3-tts", variant: "customvoice", text: "x", voice: "vivian", qvoice: "/v.qvoice", voice_name: "warm_1", design_prompt: "warm" } },
+    { name: "export beside a .qvoice", params: { model: "qwen3-tts", variant: "voicedesign", text: "x", design_prompt: "warm", save_qvoice: true, qvoice: "/v.qvoice" } },
     { name: "a legacy family is untouched", params: { model: "z-image", prompt: "x" } },
   ];
 
@@ -1055,27 +1087,26 @@ describe("THE RUN SEAT COMPOSES THE RESOLVED ADDRESS (BROKEN-C)", () => {
   });
 });
 
-// ── THE EXPORT CONFLICTS ARE COMPLETE (the bypass audit's HIGH-4) ──
-// The 0.6B family declared `together(voice_name, design_prompt)` and
-// two conflicts but NOT the voice_name × style_instruction export
-// conflict its 1.7B SIBLING carries. So an export + delivery-style
-// state passed the judge and refused at compose: the form builds what
-// the run refuses — the exact failure the whole shape exists to kill.
+// ── THE STYLED-SAVE REFUSAL (the bypass audit's HIGH-4, recut) ──
+// The 0.6B cell takes NO instruction control (upstream's small
+// generate_custom_voice has no instruct input). So a styled save on
+// the small cell refuses at the door in the surface's own voice:
+// the form never builds what the run refuses — the exact failure
+// the whole shape exists to kill.
 describe("an export is styled on its performances, not while it is designed", () => {
-  it("the 0.6B lane refuses voice_name + style_instruction (the 1.7B law, at last)", () => {
+  it("the 0.6B lane refuses a styled save (no instruction control on the small cell)", () => {
     const verdict = svc.admitStageRelations("tts", {
       model: "qwen3-tts",
       variant: "customvoice",
       text: "x",
-      voice_name: "warm_1",
-      design_prompt: "a warm narrator",
+      voice: "vivian",
+      save_qvoice: true,
       style_instruction: "whispered",
     });
     expect(verdict.ok).toBe(false);
     if (!verdict.ok) {
-      expect(verdict.error).toContain("voice_name");
       expect(verdict.error).toContain("style_instruction");
-      expect(verdict.error).toMatch(/styled on its performances|drop the style/);
+      expect(verdict.error).toContain("fires nothing on this lane");
     }
   });
   it("a style on its own composes (the conflict is the EXPORT's, not the style's)", () => {
@@ -1205,18 +1236,19 @@ describe("THE RE-CHECK'S TWO BYPASSES ARE CLOSED", () => {
 // validate. An export conflict answered ok:true there while the bench
 // and the start door both refused it.
 describe("THE LANE LAWS AT THE VALIDATE SEAT", () => {
-  it("the export conflict refuses THROUGH composeValidateCard (not only at the bench)", async () => {
-    // the same state the bench refuses (an export styled while it is
-    // designed), sent to the door that composes
+  it("the save contradiction refuses THROUGH composeValidateCard (not only at the run press)", async () => {
+    // the same state the run press refuses (a save beside a saved
+    // persona — the door HOLDS it, the compose seat refuses it),
+    // sent to the door that composes
     const refused = await svc.composeValidateCard(
       "tts",
       "qwen3-tts",
-      { model: "qwen3-tts", variant: "customvoice", text: "x", voice_name: "warm_1", design_prompt: "warm", style_instruction: "whispered" },
+      { model: "qwen3-tts", variant: "voicedesign", text: "x", design_prompt: "warm", save_qvoice: true, qvoice: "/v.qvoice" },
       "qwen3-tts",
-      { model: "qwen3-tts", variant: "customvoice", text: "x", voice_name: "warm_1", design_prompt: "warm", style_instruction: "whispered" },
+      { model: "qwen3-tts", variant: "voicedesign", text: "x", design_prompt: "warm", save_qvoice: true, qvoice: "/v.qvoice" },
     );
     expect(refused).not.toBeNull();
-    expect(refused?.message).toMatch(/style|conflict|export/i);
+    expect(refused?.message).toMatch(/fires nothing on a Design save/);
   });
 
   it("a lawful state answers null through the same door (the happy path stays walled)", async () => {
@@ -1467,42 +1499,37 @@ describe("THE REQUIRED WORD ON A REAL LANE", () => {
     ).rejects.toThrow(/input_images|image1|anchor/i);
   });
 
-  it("tts siblings AGREE on the voice_name x style_instruction row — the model-less intersection holds it (the DECL audit's row 5)", () => {
-    // 2026-10-10: the 0.6B family stated the row at FAMILY level
-    // while voicedesign carried it only on its customvoice VARIANT —
-    // the member-keyed intersection emptied, so a model-less draft
-    // held voice_name+style_instruction while every boarded lane
-    // refused it (surface or variant word). The row now rides the
-    // FAMILY layer on both siblings, and the model-less draft meets
-    // it through the intersection — the same voice every lane
-    // speaks.
+  it("tts siblings AGREE on the persona/style split — the model-less draft holds both, every named lane refuses its off-lane half (the DECL audit's row 5, recut)", () => {
+    // THE BOOLEAN RECUT (operator 2026-10-22): the family-level
+    // conflict row is dead — the split lives in the lane surfaces.
+    // No lane selected: nothing to contradict, so the model-less
+    // draft holds BOTH halves (mid-form, the lane is picked next).
     const held = svc.admitStageRelations("tts", {
-      voice_name: "warm_1",
+      design_prompt: "a warm narrator",
       style_instruction: "speak warmly",
       text: "hello",
     });
-    expect(held.ok).toBe(false);
-    if (!held.ok) expect(held.error).toMatch(/voice_name|style_instruction/);
-    // the export pair alone stays legal (the style is the conflict,
-    // not the export) — ON THE DESIGN LANE, the only surface the
-    // signature canon gives the pair (a bare family atom selects the
-    // head/customvoice lane, where the pair now refuses).
+    expect(held.ok).toBe(true);
+    // ...but the persona alone stays legal ON THE DESIGN LANE, the
+    // only surface the signature canon gives it (a bare family atom
+    // selects the head/customvoice lane, where it refuses).
     const exportOnly = svc.admitStageRelations("tts", {
       model: "qwen3-tts-voicedesign",
       variant: "voicedesign",
-      voice_name: "warm_1",
       design_prompt: "a warm narrator",
       text: "hello",
     });
     expect(exportOnly.ok).toBe(true);
-    // and each named family still refuses it in its own voice
-    const fam = svc.admitStageRelations("tts", {
+    // and each named lane refuses its off-lane half in its own voice
+    const designStyled = svc.admitStageRelations("tts", {
       model: "qwen3-tts-voicedesign",
-      voice_name: "warm_1",
+      variant: "voicedesign",
+      design_prompt: "a warm narrator",
       style_instruction: "speak warmly",
       text: "hello",
     });
-    expect(fam.ok).toBe(false);
+    expect(designStyled.ok).toBe(false);
+    if (!designStyled.ok) expect(designStyled.error).toContain("style_instruction");
   });
 
   it("the boot gate READS the vocabulary (a hand list is how a legal declaration used to refuse)", () => {

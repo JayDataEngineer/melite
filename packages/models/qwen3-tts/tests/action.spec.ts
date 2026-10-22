@@ -74,7 +74,7 @@ const PARAMS = {
   repetition_penalty: 1.05,
   seed: 42,
 };
-const EXPORT_PARAMS = { ...PARAMS, voice_name: "radio-host", design_prompt: "a gritty, deep male radio host" };
+const EXPORT_PARAMS = { ...PARAMS, save_qvoice: true, design_prompt: "a gritty, deep male radio host" };
 
 const nodeOf = (g: GraphBuilder, classType: string): { inputs: Record<string, unknown> } | undefined =>
   Object.values(g.toJSON() as Record<string, { class_type: string; inputs: Record<string, unknown> }>).find(
@@ -158,16 +158,33 @@ describe("the qwen3-tts speak + export actions — byte-stability (the compatibi
     assert.equal(nodeOf(action, "AudiocoreVoiceStudio")!.inputs.seed, 42, "a stated seed wins over the lock");
   });
 
-  it("the export action composes the design lane (voice design creates a new voice — it exports a persona)", () => {
+  it("the export action composes the design lane (THE QVOICE BOOLEAN LAW — save_qvoice on: the mint names itself, no typed name rides)", () => {
     const action = new GraphBuilder({});
     instantiateAction(exportAction, { ...EXPORT_PARAMS }, DESIGN_FACTS, action, "probe-export");
     assertGraphGolden(golden("the-export-action-composes-the-design-lane"), action.toJSON(), "the export action composes the design lane");
     const studio = nodeOf(action, "AudiocoreVoiceStudio")!;
     assert.equal(studio.inputs.mode, "export_lite", "the export mode rides");
-    assert.equal(studio.inputs.name, "radio-host", "the Design mod's name rides");
+    assert.equal(studio.inputs.name, "voice-probe-export", "the build MINTS the export name (voice-<runId> — the operator's boolean law: no typed name)");
     assert.equal(nodeOf(action, "LoadAudiocoreModel")!.inputs.model_path, "Qwen3-TTS-12Hz-1.7B-VoiceDesign", "the design lane loads its own tree — never the family default's");
     const copy = nodeOf(action, "MeliteQVoiceCopy")!;
+    assert.equal(copy.inputs.voice_name, "voice-probe-export", "the copy searches the SAME mint (one name, both nodes)");
     assert.equal(copy.inputs.dest_prefix, "probe-export/voices", "the .qvoice persists into the run's own tree");
+  });
+
+  it("THE PREVIEW HALF (the qvoice boolean law): speak on the design lane with NO boolean previews — the studio designs + the flac lands, and NOTHING persists to the media tree", () => {
+    const action = new GraphBuilder({});
+    instantiateAction(speak, { text: "hi", design_prompt: "warm", seed: 1 }, DESIGN_FACTS, action, "probe-prev");
+    const studio = nodeOf(action, "AudiocoreVoiceStudio")!;
+    assert.equal(studio.inputs.mode, "export_lite", "the studio designs (its only design path)");
+    assert.equal(studio.inputs.instruct, "warm", "the persona rides the instruct input");
+    assert.equal(nodeOf(action, "MeliteQVoiceCopy"), undefined, "NO copy node — the embedding does not persist (the boolean is the save, never the lane)");
+    assert.equal(nodeOf(action, "SaveAudio")!.inputs.filename_prefix, "probe-prev/design", "the design sample lands as the run's preview flac");
+  });
+
+  it("the speak action honors the boolean itself (save_qvoice on the speak action's design lane = the export segment — the card returns before speak, other callers get the law)", () => {
+    const action = new GraphBuilder({});
+    instantiateAction(speak, { text: "hi", design_prompt: "warm", seed: 1, save_qvoice: true }, DESIGN_FACTS, action, "probe-both");
+    assert.notEqual(nodeOf(action, "MeliteQVoiceCopy"), undefined, "the boolean on speak fires the persist");
   });
 
 
