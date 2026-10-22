@@ -9,9 +9,12 @@
  *   retry   — fetchUntilSeated returns the first non-wait response
  *             unchanged (success or failure alike), retries the
  *             wait voices on the retry cadence, and hands back the
- *             LAST wait voice once the doors' grace window closes
- *             (the body re-readable for the caller's own error
- *             extraction);
+ *             LAST 502 no_estate_seat voice once the doors' grace
+ *             window closes (absence past the window is the honest
+ *             error; the body re-readable for the caller's own
+ *             error extraction). A 503 estate/pending body RETRIES
+ *             PAST the grace at a backing-off cadence — pending is
+ *             a wait, not a deadline (E2-3, 2026-10-22);
  *   posts   — the request init rides verbatim on every attempt
  *             (the CAS ensure is safe to re-send: the door never
  *             executed it while its seat was absent).
@@ -83,7 +86,8 @@ describe('waitState — fetchUntilSeated', () => {
       () => clock,
       (ms) => { sleeps.push(ms); clock += ms; return Promise.resolve() })
     expect(res.status).toBe(200)
-    expect(sleeps).toEqual([ESTATE_WAIT_RETRY_MS, ESTATE_WAIT_RETRY_MS])
+    // the cadence backs off after each nap (E2-3): 1s then 2s
+    expect(sleeps).toEqual([ESTATE_WAIT_RETRY_MS, ESTATE_WAIT_RETRY_MS * 2])
     expect(n).toBe(3)
   })
 
@@ -95,21 +99,45 @@ describe('waitState — fetchUntilSeated', () => {
     expect(await res.text()).toBe('Service Unavailable')
   })
 
-  it('hands back the LAST wait voice once the grace window closes (body re-readable)', async () => {
+  it('hands back the LAST no_estate_seat voice once the grace window closes (absence past the window is the honest error — body re-readable)', async () => {
     let n = 0
     let clock = 0
     vi.stubGlobal('fetch', vi.fn(async (): Promise<Response> => {
       ++n
-      return json(PENDING, 503)
+      return json(NO_SEAT, 502)
     }))
     const res = await fetchUntilSeated('/u', undefined,
       () => clock,
       (ms) => { clock += ms; return Promise.resolve() })
-    expect(res.status).toBe(503)
-    const body = await res.json() as { code?: string }
-    expect(body['code']).toBe('estate/pending')
+    expect(res.status).toBe(502)
+    const body = await res.json() as { error?: string }
+    expect(body['error']).toBe('no_estate_seat')
     // the cadence bounded the attempts: ~grace/retry, never a tight loop
     expect(n).toBeLessThanOrEqual(Math.ceil(ESTATE_WAIT_GRACE_MS / ESTATE_WAIT_RETRY_MS) + 1)
+  })
+
+  // PENDING IS A WAIT, NOT A DEADLINE (E2-3, operator burn
+  // 2026-10-22: "the first load from history takes 5+ minutes"):
+  // the door saying estate/pending outranks the clock — a 503
+  // pending body retries PAST the grace at a backing-off cadence
+  // until the voice changes. The measured activation (~112s on the
+  // 1931-run estate) collided with the old cap and terminaled the
+  // history panel mid-boot; every reload re-entered the window.
+  it('a 503 pending voice RETRIES PAST the grace window until the door changes its word', async () => {
+    let n = 0
+    let clock = 0
+    vi.stubGlobal('fetch', vi.fn(async (): Promise<Response> => {
+      ++n
+      // the seat lands on the 130th attempt — past the 120s grace
+      return n < 130 ? json(PENDING, 503) : json({ runs: [] }, 200)
+    }))
+    const res = await fetchUntilSeated('/u', undefined,
+      () => clock,
+      (ms) => { clock += ms; return Promise.resolve() })
+    expect(res.status).toBe(200)
+    // the clock passed the grace window on its way to the seat
+    expect(clock).toBeGreaterThan(ESTATE_WAIT_GRACE_MS)
+    expect(n).toBe(130)
   })
 
   it('a pre-aborted signal throws at once — fetch never fires (audit V-E2)', async () => {

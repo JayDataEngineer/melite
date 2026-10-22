@@ -171,15 +171,45 @@ describe('useFeed — the estate boot race (wait voices, never terminal)', () =>
     }
   })
 
-  it('a wait voice that outlives the grace window surfaces honestly', async () => {
+  // PENDING IS A WAIT, NOT A DEADLINE (E2-3, 2026-10-22): the door
+  // saying estate/pending outranks the clock — past the grace the
+  // feed KEEPS WAITING (loading stays true, error stays empty) at a
+  // backing-off cadence until the door changes its word. The old
+  // arm terminaled at 120s while the measured activation was ~112s
+  // — the operator's 5-minute first-load burn was reloads entering
+  // fresh activation windows. Only no_estate_seat absence surfaces
+  // as the honest error past the window.
+  it('a pending voice that outlives the grace window KEEPS WAITING (loading honest, never terminal)', async () => {
     vi.useFakeTimers()
     try {
       let n = 0
       stubFetch(() => { ++n; return pending() })
       const { result, unmount } = renderHook(() => useFeed('/infer-gallery/runs', decode, EMPTY))
+      await act(async () => { await vi.advanceTimersByTimeAsync(120_000) })
+      const atGrace = n
+      expect(result.current.loading).toBe(true)
+      expect(result.current.error).toBe('')
+      // attempts CONTINUED past the grace window (the backoff
+      // ceiling is 5s: +30s of past-window naps must grow the count)
+      await act(async () => { await vi.advanceTimersByTimeAsync(30_000) })
+      expect(result.current.loading).toBe(true)
+      expect(n).toBeGreaterThan(atGrace)
+      expect(n).toBeGreaterThanOrEqual(atGrace + 5)
+      unmount()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('a no_estate_seat voice that outlives the grace window surfaces honestly (absence is misconfiguration)', async () => {
+    vi.useFakeTimers()
+    try {
+      let n = 0
+      stubFetch(() => { ++n; return noSeat() })
+      const { result, unmount } = renderHook(() => useFeed('/infer-gallery/runs', decode, EMPTY))
       await act(async () => { await vi.advanceTimersByTimeAsync(120_000 + 2_000) })
       expect(result.current.loading).toBe(false)
-      expect(result.current.error).toBe('estate composition is still activating')
+      expect(result.current.error).toBe('no_estate_seat')
       // the cadence bounded the attempts: ~grace/retry, never a tight loop
       expect(n).toBeLessThanOrEqual(123)
       unmount()

@@ -17,12 +17,24 @@
 
 /** The doors' own pending grace (doors.ts ESTATE_PENDING_GRACE_MS):
  * the window within which a wait voice is a boot race, not a
- * misconfiguration. Past it the same voice surfaces as the honest
- * error it then is. */
+ * misconfiguration. Past it the 502 no_estate_seat voice surfaces
+ * as the honest error it then is — a seat that never mounted. */
 export const ESTATE_WAIT_GRACE_MS = 120_000
 
 /** The retry cadence inside the grace window. */
 export const ESTATE_WAIT_RETRY_MS = 1_000
+
+/** PENDING IS A WAIT, NOT A DEADLINE (E2-3, operator burn
+ * 2026-10-22: "the first load from history takes 5+ minutes"):
+ * measured activation on the 1931-run estate is ~112s and longer
+ * under load — colliding with the old grace cap terminaled the
+ * history panel mid-boot and every reload entered a fresh
+ * activation window. A 503 estate/pending body is the door still
+ * SAYING it activates; the door outranks the clock: pending
+ * retries past the grace at a backing-off cadence (doubling to
+ * this ceiling). Only the 502 no_estate_seat voice is
+ * grace-bounded (absence past the window is misconfiguration). */
+export const ESTATE_WAIT_BACKOFF_CEILING_MS = 5_000
 
 /** Does this response body carry a boot-race wait voice?
  *  @param status the HTTP status (503 or 502 carry the voices).
@@ -75,6 +87,7 @@ export async function fetchUntilSeated(
 ): Promise<Response> {
   const signal = init?.signal ?? null
   const deadline = now() + ESTATE_WAIT_GRACE_MS
+  let cadence = ESTATE_WAIT_RETRY_MS
   for (;;) {
     if (signal?.aborted === true) throw abortOf(signal)
     const res = await fetch(input, init)
@@ -87,8 +100,13 @@ export async function fetchUntilSeated(
       body = null
     }
     if (!estateWaitVoiceOf(res.status, body)) return rebuild(res.status, bodyText, res.headers)
-    if (now() >= deadline) return rebuild(res.status, bodyText, res.headers)
-    await nap(sleep, ESTATE_WAIT_RETRY_MS, signal)
+    // PENDING IS A WAIT, NOT A DEADLINE: a 503 pending body persists
+    // past the grace at a backing-off cadence (the door's own voice
+    // outranks the clock); only the 502 no_estate_seat absence is
+    // grace-bounded — a seat that never mounted surfaces honestly.
+    if (res.status === 502 && now() >= deadline) return rebuild(res.status, bodyText, res.headers)
+    await nap(sleep, cadence, signal)
+    cadence = Math.min(cadence * 2, ESTATE_WAIT_BACKOFF_CEILING_MS)
   }
 }
 
