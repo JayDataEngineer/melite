@@ -1188,6 +1188,11 @@ export async function restoreRunToBench(
   if (run.draftId === null || run.draftId === '') {
     throw new Error('this run names no draft — nothing to restore')
   }
+  // THE DEAD-GESTURE ARM: an already-aborted restore writes nothing —
+  // the caller let go before the first door; the report says so.
+  if (signal?.aborted === true) {
+    return { added: 0, skipped: 0, carried: 0, notes: ['restore aborted before any write'] }
+  }
   const key = benchSessionOf(sessionKey)
   let draft: Record<string, unknown>
   try {
@@ -1268,7 +1273,37 @@ export async function restoreRunToBench(
     : []
   report.added = rows.length
   for (let i = 0; i < rows.length; i += 1) {
-    await carryOutcome(run, key, draftIds[i] ?? null, { stage: seatedIds[i] ?? '' }, report, signal)
+    // THE MID-LOOP ABORT: the door calls below are signal-deaf (the
+    // patch seam owns no signal — draft.ts, out of this seat), so the
+    // abort binds what this loop STARTS: one in-flight carry settles,
+    // the next never begins, and the hole is voiced, never silent.
+    // (Re-read through ??. the entry check narrowed this signal's
+    // aborted to false — an abort arriving between the doors must
+    // still bind the next iteration, so the live bit is re-read, not
+    // re-compared against the narrowed type.)
+    const abortedNow: boolean = signal?.aborted ?? false
+    if (abortedNow) {
+      report.notes.push('restore stopped — aborted with ' + String(report.carried)
+        + ' of ' + String(rows.length) + ' outcome(s) carried')
+      break
+    }
+    const draftId = draftIds[i] ?? null
+    const seatedRaw = seatedIds[i]
+    if (typeof seatedRaw === 'string' && seatedRaw !== '') {
+      await carryOutcome(run, key, draftId, seatedRaw, report, signal)
+      continue
+    }
+    // THE SEAT-UNKNOWN ARM: the answer named no seated id. Falling back
+    // to the draft id is sound ONLY when the row carried it (the door
+    // keeps provided ids) — a collision-dropped row falling back would
+    // patch the PRE-EXISTING row's outcome onto the old tile: restored
+    // previews landing on the wrong stages, silent. Note and skip loud.
+    if (draftId !== null && rows[i]?.['id'] === draftId) {
+      await carryOutcome(run, key, draftId, draftId, report, signal)
+      continue
+    }
+    report.notes.push('could not carry ' + (draftId ?? 'stage ' + String(i))
+      + "'s outcome: the bench answer named no seated id")
   }
   return report
 }
@@ -1278,24 +1313,27 @@ export async function restoreRunToBench(
  *  drafts patch door (the only door result/runStatus lawfully ride
  *  — the add-stage verb refuses them by its authoring law). The
  *  lookup id is the DRAFT's id (the run's rows carry it); the patch
- *  target is the SEATED id the add answer names (a collision retry
- *  seats a fresh one). A stage with no outcome data carries nothing;
- *  a carry that cannot land notes itself — the workflow stands
- *  either way.
+ *  target is the SEATED id the caller resolved from the add answer
+ *  (a collision retry seats a fresh one — the caller never hands a
+ *  guessed id here: a guessed seat would repaint the wrong tile).
+ *  A stage with no outcome data carries nothing; a carry that cannot
+ *  land notes itself — the workflow stands either way.
  *  @param run the run value the restore serves (its stage rows hold
  *  the terminal outcomes).
  *  @param benchKey the bench draft id the rows landed on.
  *  @param draftStageId the DRAFT stage id this row restored (null —
  *  an id-less draft row — carries nothing: the run's rows are id-keyed).
- *  @param addAnswer the bench/add-stage answer (its `stage` names the
- *  seated id; a non-string answer falls back to the draft id).
+ *  @param seated the SEATED bench id to patch (resolved by the caller
+ *  from the add answer; never a guess).
  *  @param report the report the carry counts into.
- *  @param signal the caller's abort signal, honored by the patch. */
+ *  @param signal the caller's abort signal (binds the restore loop —
+ *  the patch seam below owns no signal, so an abort stops the NEXT
+ *  carry, never the in-flight patch). */
 async function carryOutcome(
   run: CardsRunValue,
   benchKey: string,
   draftStageId: string | null,
-  addAnswer: Record<string, unknown>,
+  seated: string,
   report: RestoreReport,
   signal?: AbortSignal,
 ): Promise<void> {
@@ -1304,8 +1342,6 @@ async function carryOutcome(
   if (runStage === undefined) return
   const outcome = terminalOutcomeOf(run.runId, runStage.status, runStage, undefined)
   if (!('url' in outcome.result) && !('artifacts' in outcome.result) && !('error' in outcome.result)) return
-  const seated = typeof addAnswer['stage'] === 'string' && (addAnswer['stage'] as string) !== ''
-    ? (addAnswer['stage'] as string) : draftStageId
   try {
     await patchStageOutcome(benchKey, seated, { runStatus: outcome.terminal, result: outcome.result })
     report.carried += 1

@@ -6431,6 +6431,12 @@ window.__ModuleLoader__.load({
 		*  its surviving ids' outcomes and simply has none for new rows. */
 		async function restoreRunToBench(run, sessionKey, signal) {
 			if (run.draftId === null || run.draftId === "") throw new Error("this run names no draft — nothing to restore");
+			if (signal?.aborted === true) return {
+				added: 0,
+				skipped: 0,
+				carried: 0,
+				notes: ["restore aborted before any write"]
+			};
 			const key = benchSessionOf(sessionKey);
 			let draft;
 			try {
@@ -6488,7 +6494,23 @@ window.__ModuleLoader__.load({
 			}
 			const seatedIds = Array.isArray(answer["stages"]) ? answer["stages"].map((v) => typeof v === "string" ? v : "") : [];
 			report.added = rows.length;
-			for (let i = 0; i < rows.length; i += 1) await carryOutcome(run, key, draftIds[i] ?? null, { stage: seatedIds[i] ?? "" }, report, signal);
+			for (let i = 0; i < rows.length; i += 1) {
+				if (signal?.aborted ?? false) {
+					report.notes.push("restore stopped — aborted with " + String(report.carried) + " of " + String(rows.length) + " outcome(s) carried");
+					break;
+				}
+				const draftId = draftIds[i] ?? null;
+				const seatedRaw = seatedIds[i];
+				if (typeof seatedRaw === "string" && seatedRaw !== "") {
+					await carryOutcome(run, key, draftId, seatedRaw, report, signal);
+					continue;
+				}
+				if (draftId !== null && rows[i]?.["id"] === draftId) {
+					await carryOutcome(run, key, draftId, draftId, report, signal);
+					continue;
+				}
+				report.notes.push("could not carry " + (draftId ?? "stage " + String(i)) + "'s outcome: the bench answer named no seated id");
+			}
 			return report;
 		}
 		/** One restored row's outcome carry: patch the terminal outcome the
@@ -6496,26 +6518,28 @@ window.__ModuleLoader__.load({
 		*  drafts patch door (the only door result/runStatus lawfully ride
 		*  — the add-stage verb refuses them by its authoring law). The
 		*  lookup id is the DRAFT's id (the run's rows carry it); the patch
-		*  target is the SEATED id the add answer names (a collision retry
-		*  seats a fresh one). A stage with no outcome data carries nothing;
-		*  a carry that cannot land notes itself — the workflow stands
-		*  either way.
+		*  target is the SEATED id the caller resolved from the add answer
+		*  (a collision retry seats a fresh one — the caller never hands a
+		*  guessed id here: a guessed seat would repaint the wrong tile).
+		*  A stage with no outcome data carries nothing; a carry that cannot
+		*  land notes itself — the workflow stands either way.
 		*  @param run the run value the restore serves (its stage rows hold
 		*  the terminal outcomes).
 		*  @param benchKey the bench draft id the rows landed on.
 		*  @param draftStageId the DRAFT stage id this row restored (null —
 		*  an id-less draft row — carries nothing: the run's rows are id-keyed).
-		*  @param addAnswer the bench/add-stage answer (its `stage` names the
-		*  seated id; a non-string answer falls back to the draft id).
+		*  @param seated the SEATED bench id to patch (resolved by the caller
+		*  from the add answer; never a guess).
 		*  @param report the report the carry counts into.
-		*  @param signal the caller's abort signal, honored by the patch. */
-		async function carryOutcome(run, benchKey, draftStageId, addAnswer, report, signal) {
+		*  @param signal the caller's abort signal (binds the restore loop —
+		*  the patch seam below owns no signal, so an abort stops the NEXT
+		*  carry, never the in-flight patch). */
+		async function carryOutcome(run, benchKey, draftStageId, seated, report, signal) {
 			if (draftStageId === null) return;
 			const runStage = run.stages.find((s) => s.id === draftStageId);
 			if (runStage === void 0) return;
 			const outcome = terminalOutcomeOf(run.runId, runStage.status, runStage, void 0);
 			if (!("url" in outcome.result) && !("artifacts" in outcome.result) && !("error" in outcome.result)) return;
-			const seated = typeof addAnswer["stage"] === "string" && addAnswer["stage"] !== "" ? addAnswer["stage"] : draftStageId;
 			try {
 				await patchStageOutcome(benchKey, seated, {
 					runStatus: outcome.terminal,

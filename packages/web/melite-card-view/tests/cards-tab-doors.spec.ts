@@ -270,6 +270,54 @@ describe("terminalOutcomeOf — the terminal row builder, contract-fenced", () =
     expect(benchResultDefects(result)).toEqual([]);
   });
 
+  test("HERO (a) single-output: the one file leads the map", () => {
+    const { result } = terminalOutcomeOf(
+      "run-1", "completed",
+      { url: "/melite-media/runs/run-1/one.png", gallery: [{ name: "one.png" }] },
+      undefined,
+    );
+    expect(Object.keys(result["artifacts"] as Record<string, string>)[0]).toBe("one.png");
+    expect(result["artifacts"]).toEqual({ "one.png": "/melite-media/runs/run-1/one.png" });
+    expect(benchResultDefects(result)).toEqual([]);
+  });
+
+  test("HERO (b) multi-output hero FIRST: engine order already leads, map keeps it", () => {
+    const { result } = terminalOutcomeOf(
+      "run-b", "completed",
+      { url: "/melite-media/runs/run-b/hero.png", gallery: [{ name: "hero.png" }, { name: "thumb.png" }] },
+      undefined,
+    );
+    expect(Object.keys(result["artifacts"] as Record<string, string>)).toEqual(["hero.png", "thumb.png"]);
+    expect(benchResultDefects(result)).toEqual([]);
+  });
+
+  test("HERO (d) url naming NO gallery file: engine order survives, url still stamped, contract-clean", () => {
+    const { result } = terminalOutcomeOf(
+      "run-x", "completed",
+      { url: "/melite-media/runs/run-x/elsewhere.png", gallery: [{ name: "a.png" }, { name: "b.png" }] },
+      undefined,
+    );
+    expect(Object.keys(result["artifacts"] as Record<string, string>)).toEqual(["a.png", "b.png"]);
+    expect(result["url"]).toBe("/melite-media/runs/run-x/elsewhere.png");
+    expect(result["assetUrls"]).toEqual([
+      "/melite-media/runs/run-x/elsewhere.png",
+      "/melite-media/runs/run-x/a.png",
+      "/melite-media/runs/run-x/b.png",
+    ]);
+    expect(benchResultDefects(result)).toEqual([]);
+  });
+
+  test("HERO (e) url with NO gallery: no artifacts key, url still stamped, contract-clean", () => {
+    const { result } = terminalOutcomeOf(
+      "run-u", "completed",
+      { url: "/melite-media/runs/run-u/only.png" },
+      undefined,
+    );
+    expect(result["artifacts"]).toBeUndefined();
+    expect(result["url"]).toBe("/melite-media/runs/run-u/only.png");
+    expect(benchResultDefects(result)).toEqual([]);
+  });
+
   test("a failed run carries its reason (the silent-failure cure) and stays contract-clean", () => {
     const { result, terminal } = terminalOutcomeOf(
       "run-f", "failed",
