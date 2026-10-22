@@ -840,6 +840,7 @@ export function MediaPanel({ useTabInfo, sessionId }: { useTabInfo?: () => TabIn
                     key={d.draft_id ?? Math.random()}
                     onClick={() => { openDraft(d.draft_id ?? '') }}
                     data-draft={d.draft_id}
+                    aria-label={galleryCopy.restoreDraftAria({ name: d.name || d.draft_id || '' })}
                     style={{
                       display: 'flex', alignItems: 'center', gap: 10, textAlign: 'left',
                       border: '1px solid ' + borderL2, borderRadius: 10, padding: '8px 12px',
@@ -865,7 +866,9 @@ export function MediaPanel({ useTabInfo, sessionId }: { useTabInfo?: () => TabIn
                       ? <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.4px', color: labelPrimary1, border: '1px solid ' + borderL2, borderRadius: 6, padding: '2px 6px', background: fillSubtle2 }}>
                           {galleryCopy.restoringAction}
                         </span>
-                      : null}
+                      : <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.4px', color: labelPrimary1, border: '1px solid ' + borderL2, borderRadius: 6, padding: '2px 6px' }}>
+                          {galleryCopy.restoreAction}
+                        </span>}
                   </button>
                 ))}
               </div>}

@@ -569,6 +569,27 @@ describe('MediaPanel — the flows face + the bench CAS load', () => {
     expect(ensures).toBe(1)
     expect(opened).toEqual(['dsh-resource://cards/bench/main'])
   })
+
+  it('every draft row carries an explicit, named restore affordance (never a bare clickable row)', async () => {
+    // THE OPERATOR'S LITERAL ASK ("no way to restore from flows
+    // view"): the row click restores, but nothing NAMED the gesture —
+    // a bare clickable row reads as navigation, not as restore. Each
+    // draft row names its restore: a visible Restore face plus an
+    // accessible restore name; activating it rides the identical
+    // restore path (strip, voice, dedupe — one path, never two).
+    const opened: string[] = []
+    const { bodies } = stubBench(() => new Response(JSON.stringify({ draft_id: 'bench-main', rev: 3 }), { status: 200 }))
+    render(<MediaPanel useTabInfo={() => ({
+      tab: { navigation: { address: 'dsh-resource://media' },
+        actions: { openResource: (a: string) => { opened.push(a) } } },
+    }) as never} />)
+    fireEvent.click(await screen.findByText(/Flows 1/))
+    const restore = await waitFor(() => screen.getByRole('button', { name: /restore card one onto the bench/i }))
+    expect(restore.textContent).toMatch(/restore/i)
+    fireEvent.click(restore)
+    await waitFor(() => { expect(opened).toEqual(['dsh-resource://cards/bench/main']) })
+    expect(bodies).toHaveLength(1)
+  })
 })
 
 describe('MediaPanel — the wand restores the run onto the bench', () => {

@@ -478,6 +478,11 @@ window.__ModuleLoader__.load({
 			emptyDrafts: "no composed cards yet — build one in a chat.",
 			/** A draft row's fallback kind word when the model is unknown. */
 			draftKindFallback: "card",
+			/** The explicit per-row restore affordance face (the operator's
+			*  literal ask: the row click restores, but only this names it). */
+			restoreAction: "Restore",
+			/** A draft row's accessible restore name. */
+			restoreDraftAria: (p) => `Restore ${p.name} onto the bench`,
 			/** The open-failure banner lead. */
 			openFailed: (p) => `open failed: ${p.error}`,
 			/** The feed-failure banner lead. */
@@ -3182,6 +3187,7 @@ window.__ModuleLoader__.load({
 								openDraft(d.draft_id ?? "");
 							},
 							"data-draft": d.draft_id,
+							"aria-label": galleryCopy.restoreDraftAria({ name: d.name || d.draft_id || "" }),
 							style: {
 								display: "flex",
 								alignItems: "center",
@@ -3259,7 +3265,18 @@ window.__ModuleLoader__.load({
 										background: fillSubtle2
 									},
 									children: galleryCopy.restoringAction
-								}) : null
+								}) : /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+									style: {
+										fontSize: 9,
+										fontWeight: 700,
+										letterSpacing: "0.4px",
+										color: labelPrimary1,
+										border: "1px solid " + borderL2,
+										borderRadius: 6,
+										padding: "2px 6px"
+									},
+									children: galleryCopy.restoreAction
+								})
 							]
 						}, d.draft_id ?? Math.random()))
 					})] }) : /* @__PURE__ */ (0, react_jsx_runtime.jsx)(FeedErrors, { errors: gatewayErrors }),

@@ -78,6 +78,11 @@ export const galleryCopy = {
   emptyDrafts: "no composed cards yet — build one in a chat.",
   /** A draft row's fallback kind word when the model is unknown. */
   draftKindFallback: "card",
+  /** The explicit per-row restore affordance face (the operator's
+   *  literal ask: the row click restores, but only this names it). */
+  restoreAction: "Restore",
+  /** A draft row's accessible restore name. */
+  restoreDraftAria: (p: { name: string }): string => `Restore ${p.name} onto the bench`,
   // ── Artifacts states ─────────────────────────────────────────────────
   /** The open-failure banner lead. */
   openFailed: (p: { error: string }): string => `open failed: ${p.error}`,
