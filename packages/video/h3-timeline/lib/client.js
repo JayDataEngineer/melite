@@ -843,13 +843,23 @@ window.__ModuleLoader__.load({
 		*  later). The caller owns the voice (the drafts patch row, the
 		*  studio's unstating op); this spine owns the MATH. A doc whose
 		*  family honors the keys rides unchanged (dropped: []). */
-		function reseatFamilyDead(doc) {
+		/**
+		* THE CARRY LINE (2026-11-11, the one-seat law's family-seam proof):
+		* a T4-only key drops only when the PRIOR row stated it — the doc's
+		* own carried past, stranded by the family flip this reseat settles.
+		* A key the merged doc holds only because THIS write states it is
+		* authored, stands untouched, and the write door's family judge
+		* refuses it in the run door's own voice. Never a launderer.
+		* @param doc the merged params view the write door would judge
+		* @param prior the stored row's params BEFORE the merge
+		*/
+		function reseatFamilyDead(doc, prior) {
 			if (deriveWindowFamily(doc) !== "t4r") return {
 				doc,
 				dropped: []
 			};
 			const explicit = Object.keys(doc);
-			const dropped = T4_ONLY_KEYS.filter((k) => explicit.includes(k)).sort();
+			const dropped = T4_ONLY_KEYS.filter((k) => explicit.includes(k) && Object.prototype.hasOwnProperty.call(prior, k)).sort();
 			if (dropped.length === 0) return {
 				doc,
 				dropped
@@ -4940,12 +4950,13 @@ window.__ModuleLoader__.load({
 					onSet: edit,
 					onUnset: (n) => setLayerAKey(n, void 0),
 					onPick: (patch) => {
-						const candidate = resolvePickVerdictDoc(base ?? {}, layerA, patch);
+						const held = base ?? {};
+						const candidate = resolvePickVerdictDoc(held, layerA, patch);
 						const violations = (0, _melite_card_base_client.composeValidate)(spec, candidate);
 						const family = pickFamilyRefusal(candidate);
 						if (family !== null) violations.push({ message: "card_compose: " + family });
 						if (violations.length > 0) {
-							const reseated = reseatFamilyDead(candidate);
+							const reseated = reseatFamilyDead(candidate, resolvePickVerdictDoc(held, layerA, {}));
 							if (reseated.dropped.length > 0) {
 								const recheck = (0, _melite_card_base_client.composeValidate)(spec, reseated.doc);
 								const reFam = pickFamilyRefusal(reseated.doc);

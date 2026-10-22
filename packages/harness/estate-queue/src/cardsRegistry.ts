@@ -849,10 +849,11 @@ export class CardRegistryService extends Service {
   reseatStageFamily(
     card: string,
     params: Record<string, unknown>,
+    priorParams: Record<string, unknown>,
   ): { params: Record<string, unknown>; dropped: readonly string[] } | null {
     const def: CardDefinition | undefined = this.defsSync().get(card);
     if (def === undefined || def.reseatFamily === undefined) return null;
-    return def.reseatFamily(params);
+    return def.reseatFamily(params, priorParams);
   }
 
   /** THE LANE MIGRATION (operator 2026-10-12, the stuck-switch
@@ -1076,9 +1077,27 @@ export class CardRegistryService extends Service {
       new Set(stale),
       params,
     );
-    if (staleSet.size === 0) return params;
+    // THE CARRY/AUTHORED LINE (operator 2026-11-11, the one-seat
+    // law's family-seam proof): stale carry is what the STORED ROW
+    // held — the doc's own past, droppable on a lane it leaves. A
+    // member the merged view holds ONLY because THIS patch states
+    // it is AUTHORED — the writer's present act; this seat never
+    // launders it. It stands and the admission judges it exactly as
+    // the a priori law promises ("a member no prior lane declared
+    // is authored state and still refuses"). Before this line the
+    // union fallback read the merged view alone, so a freshly
+    // authored off-lane key (h3's sr_switch on a t4r arrival over a
+    // bare seeded stage) classified as "carry from SOMEWHERE" and
+    // silently vanished — the write landed a state the author never
+    // sent, and the family judge never saw the poison. Both patch
+    // verbs ride this seat, so both doors answer identically.
+    const carry: string[] = [];
+    for (const name of staleSet) {
+      if (Object.prototype.hasOwnProperty.call(priorParams, name)) carry.push(name);
+    }
+    if (carry.length === 0) return params;
     const cleaned: Record<string, unknown> = { ...params };
-    for (const name of staleSet) delete cleaned[name];
+    for (const name of carry) delete cleaned[name];
     return cleaned;
   }
 

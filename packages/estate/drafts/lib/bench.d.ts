@@ -263,7 +263,7 @@ export type LaneMigration = (card: string, params: Record<string, unknown>, prio
  *  reseat face (every card but the family-conditional ones) — the
  *  domain stays pure, the registry owns the law (the admission
  *  trio's injection pattern). */
-export type FamilyReseat = (card: string, params: Record<string, unknown>) => {
+export type FamilyReseat = (card: string, params: Record<string, unknown>, priorParams: Record<string, unknown>) => {
     params: Record<string, unknown>;
     dropped: readonly string[];
 } | null;

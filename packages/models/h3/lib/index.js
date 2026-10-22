@@ -57,6 +57,16 @@ export const DECL = {
             "upscale_model",
             "audio_clips",
             "audio_stem",
+            // THE BAKE'S STATED DIALS + the attention backend (audit A7,
+            // 2026-11-07): serialized by the studio's Layer-A emitter and
+            // authored on the panel — declared here so the writes row
+            // accounts for every serialized studio seat (the
+            // studio-contract-wall's A7 arm derives the drift).
+            "attention_backend",
+            "refmod_mode",
+            "refmod_pool",
+            "refmod_identity",
+            "refmod_save",
             "loras",
             "document"
         ],

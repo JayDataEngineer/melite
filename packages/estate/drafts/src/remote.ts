@@ -1190,19 +1190,35 @@ export class DraftsRemoteService extends TypertRemoteService {
         if (incoming[k] === null) delete merged[k];
         else merged[k] = incoming[k];
       }
-      // THE DRAFTS DOOR IS A BENCH DOOR (2026-10-10, the door
-      // audit's CRITICAL): bench docs live in THIS table (a
-      // "bench-<session>" id satisfies DRAFT_ID_RE), and the GUI's
-      // param editor rides exactly this call (card-view's
-      // patchStageParams) — so every keystroke edited a live stage
-      // with the model board AND the lane relations unjudged, while
-      // the agent's bench/patch refused the identical body. The
-      // merged view (never the patch arm alone — a per-key merge
-      // composes with what the row already carried) walks the same
-      // composed admission, BEFORE the assignment: the domain's
-      // cached record is mutated in place below, so a refusal after
-      // the assignment would leak the refused merge.
+      // ONE LAW, BOTH TRANSPORTS (operator 2026-11-11, attempt 11 —
+      // "ALL I DID WAS CHANGE THE QWEN TTS MODEL"): the lane-shift
+      // drop and the family reseat the bench verb runs on the
+      // identical merge (patchBench's own sequence — the 2026-10-12
+      // stuck-switch cure + the 2026-11-08 family reseat). The
+      // registry's own seats, resolved once, called by EVERY write
+      // transport: a write that re-keys the lane drops the stale
+      // carry HERE, before the strip, the admission, and the store,
+      // so the row that lands is the row the next run composes.
+      // Before this wire the GUI's door admitted the un-migrated
+      // view and refused the very switch the agent's verb landed
+      // ("drop it or switch lane" while the form hid the row).
       const stageCard = typeof stage["card"] === "string" ? stage["card"] : ""
+      const priorParams: Record<string, unknown> =
+        stage["params"] !== null && typeof stage["params"] === "object" && !Array.isArray(stage["params"])
+          ? (stage["params"] as Record<string, unknown>)
+          : {}
+      const migrate = laneMigrationOf(this.ctx)
+      const migrated: Record<string, unknown> =
+        stageCard !== "" && migrate !== undefined
+          ? migrate(stageCard, merged, priorParams)
+          : merged
+      const reseat = familyReseatOf(this.ctx)
+      const reseated =
+        stageCard !== "" && reseat !== undefined
+          ? reseat(stageCard, migrated, priorParams)
+          : null
+      const view: Record<string, unknown> =
+        reseated === null ? migrated : reseated.params
       const admit = this.benchAdmit()
       if (stageCard !== "" && admit !== undefined) {
         // NO PROVENANCE (the audit's GAP 3): the restored carve is
@@ -1214,13 +1230,13 @@ export class DraftsRemoteService extends TypertRemoteService {
         // door judges through — a model key naming the row's own
         // card never survives to compose, so this door judges the
         // stripped view or refuses what the run admits.
-        admit(stageCard, strippedForAdmission(stageCard, merged), undefined)
+        admit(stageCard, strippedForAdmission(stageCard, view), undefined)
       }
       // DEFERRED (the write-seat audit's row 3, second half): the
       // assignment waits for the wiring pair-gate below — the pair
       // (params, inputs) is judged as ONE write, and a refused
       // orphan must leak NEITHER half into the cached record.
-      pendingParams = merged;
+      pendingParams = view;
     }
     // THE WIRING ARM ADMITS TOO (2026-10-10, the bypass audit's
     // CRITICAL-2: the params arm walked the composed admission and

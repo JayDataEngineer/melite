@@ -1073,7 +1073,11 @@ export async function patchBench(
     // undoing the patch restores the patched keys, not the dropped
     // carry — the author re-picks on the lane they land on.
     const reseated = reseat !== undefined && typeof st["card"] === "string"
-      ? reseat(st["card"] as string, migrated)
+      ? reseat(
+          st["card"] as string,
+          migrated,
+          isRecord(st["params"]) ? (st["params"] as Record<string, unknown>) : {},
+        )
       : null;
     if (reseated !== null && reseated.dropped.length > 0) reseatDropped = reseated.dropped;
     const view: Record<string, unknown> = reseated === null ? migrated : reseated.params;
@@ -1234,6 +1238,7 @@ export type LaneMigration = (
 export type FamilyReseat = (
   card: string,
   params: Record<string, unknown>,
+  priorParams: Record<string, unknown>,
 ) => { params: Record<string, unknown>; dropped: readonly string[] } | null;
 
 

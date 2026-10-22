@@ -232,12 +232,18 @@ export interface CardDefinition {
      *  store — so the row that lands is the row the next run composes
      *  (the lane-migration law's spelling, on the family axis; never a
      *  stored doc refusing later). The judge above keeps its teeth for
-     *  AUTHORED poison: this face settles the FLIP's strand only, and
-     *  the dropped set rides the write row so the drop speaks. Returns
-     *  the reseated params + the dropped key names (an empty dropped
-     *  set = the doc rode unchanged); optional — a card without a
-     *  family contract declares nothing. */
-    reseatFamily?(params: Record<string, unknown>): {
+     *  AUTHORED poison: this face settles the FLIP's CARRIED strand
+     *  only — a key the PRIOR row stated (the doc's own past). A key
+     *  the merged view holds only because THIS write states it is
+     *  authored, stands untouched, and the judge refuses it in the
+     *  run door's own voice (the 2026-11-11 one-seat law: the drop is
+     *  never a launderer). Returns the reseated params + the dropped
+     *  key names (an empty dropped set = the doc rode unchanged);
+     *  optional — a card without a family contract declares nothing.
+     *  OWED (ROADMAP, the one-seat destination): this face dies into
+     *  the registry's ONE migration seat once the derived family
+     *  rides the lane identity — never extended again. */
+    reseatFamily?(params: Record<string, unknown>, priorParams: Record<string, unknown>): {
         params: Record<string, unknown>;
         dropped: readonly string[];
     } | null;

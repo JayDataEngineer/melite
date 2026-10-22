@@ -64,7 +64,10 @@ function settleRaw(base: Record<string, unknown>, saved: Record<string, unknown>
   return settled
 }
 function settle(base: Record<string, unknown>, saved: Record<string, unknown>): Record<string, unknown> {
-  return reseatFamilyDead(settleRaw(base, saved)).doc
+  // run seat: the doc itself is the history (nothing is authored at
+  // a run press) — the carry line drops the whole stranded strand.
+  const settled = settleRaw(base, saved)
+  return reseatFamilyDead(settled, settled).doc
 }
 
 describe("THE EMIT-SIDE JUDGE ARM (SD-3 — a studio-emitted doc composes clean on the lane it arrives on)", () => {
@@ -141,7 +144,7 @@ describe("THE EMIT-SIDE JUDGE ARM (SD-3 — a studio-emitted doc composes clean 
     // exactly the burn's four (sorted), and the RAW merged view (what
     // a seat without the reseat would land) still walks into the
     // operator's spine.
-    const dropped = reseatFamilyDead(raw).dropped
+    const dropped = reseatFamilyDead(raw, raw).dropped
     expect(dropped, "the reseat names exactly what it dropped (sorted)").toEqual(
       ["interpolate_enabled", "second_pass_enabled", "sharpen_enabled", "sr_switch"],
     )

@@ -124,12 +124,22 @@ export const FAMILY_LAW = {
  *  later). The caller owns the voice (the drafts patch row, the
  *  studio's unstating op); this spine owns the MATH. A doc whose
  *  family honors the keys rides unchanged (dropped: []). */
-export function reseatFamilyDead(doc) {
+/**
+ * THE CARRY LINE (2026-11-11, the one-seat law's family-seam proof):
+ * a T4-only key drops only when the PRIOR row stated it — the doc's
+ * own carried past, stranded by the family flip this reseat settles.
+ * A key the merged doc holds only because THIS write states it is
+ * authored, stands untouched, and the write door's family judge
+ * refuses it in the run door's own voice. Never a launderer.
+ * @param doc the merged params view the write door would judge
+ * @param prior the stored row's params BEFORE the merge
+ */
+export function reseatFamilyDead(doc, prior) {
     if (deriveWindowFamily(doc) !== 't4r')
         return { doc, dropped: [] };
     const explicit = Object.keys(doc);
     const dropped = T4_ONLY_KEYS
-        .filter((k) => explicit.includes(k))
+        .filter((k) => explicit.includes(k) && Object.prototype.hasOwnProperty.call(prior, k))
         .sort();
     if (dropped.length === 0)
         return { doc, dropped };

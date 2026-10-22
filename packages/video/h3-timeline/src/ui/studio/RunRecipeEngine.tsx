@@ -257,7 +257,19 @@ export function RunRecipeEngine({
               // the reseat does not clear keeps the full refusal: the
               // gate's teeth stay (the settlement never launders an
               // illegal pick).
-              const reseated = reseatFamilyDead(candidate)
+              // THE CARRY LINE (2026-11-11): the settlement drops
+              // the DOC'S OWN stranded stamps — everything the stage
+              // held before the pick (base + the shown layerA, the
+              // operator's earlier keystrokes). A T4-only key the
+              // pick's OWN patch authors stands for the family
+              // clause to refuse — the settlement never launders a
+              // write.
+              const priorView = resolvePickVerdictDoc(
+                held,
+                layerA as unknown as Record<string, unknown>,
+                {},
+              )
+              const reseated = reseatFamilyDead(candidate, priorView)
               if (reseated.dropped.length > 0) {
                 const recheck = composeValidate(spec, reseated.doc)
                 const reFam = pickFamilyRefusal(reseated.doc)

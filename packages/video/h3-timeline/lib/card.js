@@ -200,8 +200,8 @@ export function registerCard(ctx, comfy) {
         // the write never lands a doc the walk refuses. One spelling:
         // reseatFamilyDead rides the same contract module the judge and
         // the walk read.
-        reseatFamily(params) {
-            const r = reseatFamilyDead(params);
+        reseatFamily(params, priorParams) {
+            const r = reseatFamilyDead(params, priorParams);
             return { params: r.doc, dropped: r.dropped };
         },
         compose(p, model, g, runId) {

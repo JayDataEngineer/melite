@@ -269,7 +269,7 @@ export declare class CardRegistryService extends Service {
      *  assembled family-dead with no flip still refuses at
      *  admitStageFamily — this seat only settles the flip's own
      *  strand). Null when the card declares no reseat face. */
-    reseatStageFamily(card: string, params: Record<string, unknown>): {
+    reseatStageFamily(card: string, params: Record<string, unknown>, priorParams: Record<string, unknown>): {
         params: Record<string, unknown>;
         dropped: readonly string[];
     } | null;

@@ -1530,4 +1530,46 @@ describe("presence-at-door: the commit seam outside studio commits refuses an il
     assert.equal(params["sr_switch"], undefined, "the refused key is not in the stored row");
     assert.ok(Array.isArray(params["calls"]), "the landed body's own plane rides");
   });
+
+  it("THE FAMILY SEAM, BOTH DOORS (2026-11-11, the one-seat law): the agent's bench/patch verb refuses the IDENTICAL authored inject key with the identical verdict — a wall that drives one door certifies one door, and the split lived exactly there (the bench verb's union fallback silently dropped the authored key while the GUI's verb refused it)", async () => {
+    const root = mkdtempSync(join(tmpdir(), "sd3-family-b-"));
+    onTestFinished(() => rmSync(root, { recursive: true, force: true }));
+    mkdirSync(join(root, "drafts"), { recursive: true });
+    const ctx = new Context();
+    const registry = new CardRegistryService(new Context());
+    await registry.prime();
+    ctx.provide("cardRegistry", registry);
+    await ctx.plugin(Storage as unknown as Plugin);
+    await ctx.plugin(
+      { name: jsonName, inject: jsonInject, apply: jsonApply, Config: JsonConfig } as unknown as Plugin,
+      { root: join(root, "storage") },
+    );
+    await ctx.plugin(
+      { name: domainName, inject: domainInject, apply: domainApply, Config: DomainConfig } as unknown as Plugin,
+      { backend: "json" },
+    );
+    await ctx.plugin(draftsPlugin as unknown as Plugin, { storageRoot: join(root, "storage") });
+    const live = ctx as unknown as Context;
+    const seeded = await live.benchRemote.addStage("sd3t4rb", { card: "h3-timeline", expect_rev: 0 }, sig);
+    const refused = await failureOf(
+      live.benchRemote.patch("sd3t4rb", {
+        stage: String(seeded.stage),
+        params: {
+          model: "h3", variant: "timeline", quant: "int8",
+          calls: [{ text: "one shot", start_frame: 0, end_frame: 90, image: "webp/run1/pin-0.png" }],
+          sr_switch: true,
+        },
+        expect_rev: seeded.rev,
+      }, sig),
+    );
+    assert.ok(refused !== null && typeof refused === "object",
+      "the agent's door refuses the authored inject key exactly as the GUI's door does — one law, both transports");
+    assert.equal((refused as { code?: string }).code, "bench/family-refusal",
+      "the refusal rides the family admission's own code on this door too: " + JSON.stringify(refused));
+    assert.match(
+      String((refused as { message?: string }).message ?? ""),
+      /unsanctioned inject keys: sr_switch/,
+      "the agent's door speaks the run door's own verdict, never a silent drop",
+    );
+  });
 });

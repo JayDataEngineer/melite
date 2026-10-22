@@ -124,7 +124,17 @@ export declare const FAMILY_LAW: {
  *  later). The caller owns the voice (the drafts patch row, the
  *  studio's unstating op); this spine owns the MATH. A doc whose
  *  family honors the keys rides unchanged (dropped: []). */
-export declare function reseatFamilyDead(doc: Record<string, unknown>): {
+/**
+ * THE CARRY LINE (2026-11-11, the one-seat law's family-seam proof):
+ * a T4-only key drops only when the PRIOR row stated it — the doc's
+ * own carried past, stranded by the family flip this reseat settles.
+ * A key the merged doc holds only because THIS write states it is
+ * authored, stands untouched, and the write door's family judge
+ * refuses it in the run door's own voice. Never a launderer.
+ * @param doc the merged params view the write door would judge
+ * @param prior the stored row's params BEFORE the merge
+ */
+export declare function reseatFamilyDead(doc: Record<string, unknown>, prior: Record<string, unknown>): {
     doc: Record<string, unknown>;
     dropped: string[];
 };

@@ -770,7 +770,7 @@ export async function patchBench(drafts, session, body, admit, migrate, reseat) 
         // undoing the patch restores the patched keys, not the dropped
         // carry — the author re-picks on the lane they land on.
         const reseated = reseat !== undefined && typeof st["card"] === "string"
-            ? reseat(st["card"], migrated)
+            ? reseat(st["card"], migrated, isRecord(st["params"]) ? st["params"] : {})
             : null;
         if (reseated !== null && reseated.dropped.length > 0)
             reseatDropped = reseated.dropped;

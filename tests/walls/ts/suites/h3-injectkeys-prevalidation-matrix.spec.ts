@@ -85,7 +85,12 @@ function settleRaw(base: Record<string, unknown>, saved: Record<string, unknown>
   return settled;
 }
 function settle(base: Record<string, unknown>, saved: Record<string, unknown>): Record<string, unknown> {
-  return reseatFamilyDead(settleRaw(base, saved)).doc;
+  // THE CARRY LINE (2026-11-11): the settlement drops the doc's own
+  // stranded stamps — the prior is the PRE-PATCH state (base, the
+  // stored row this write rides), never the merged view: a T4-only
+  // key the PATCH itself authors stands for the family clause to
+  // refuse.
+  return reseatFamilyDead(settleRaw(base, saved), base).doc;
 }
 
 /** THE LANES, assembled through deriveWindowFamily's own derivation
@@ -288,7 +293,7 @@ describe("THE PRE-VALIDATION SEAT (the DECL matrix wall — no sanctioned cell r
     // THE RESEAT RECEIPT (the cure's own voice, never silent): the
     // product carries NONE of the carried stamps — the settlement
     // dropped exactly the burn's four, sorted.
-    const dropped = reseatFamilyDead(raw).dropped;
+    const dropped = reseatFamilyDead(raw, era).dropped;
     expect(dropped, "the reseat names exactly what it dropped (sorted)").toEqual([...FOUR].sort());
     for (const k of dropped) {
       expect(product, `the product no longer carries '${k}'`).not.toHaveProperty(k);
