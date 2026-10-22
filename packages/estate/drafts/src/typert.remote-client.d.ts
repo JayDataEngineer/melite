@@ -5,7 +5,7 @@ import type {
   TypertRemoteInfo,
   TypertRemoteMethod,
 } from '@deepseek-ai/dsh-typert-protocol'
-import type { BenchClearRow, BenchDoc, BenchEnsureRow, BenchGetRow, BenchPatchRow, BenchReorderRow, BenchRewireRow, BenchStageRow, BenchStagesRow, BenchUndoRow, DraftGetRow, DraftListResult, DraftPatchRow, DraftStagePatch } from '@melite/estate-drafts/types'
+import type { BenchClearRow, BenchDoc, BenchEnsureRow, BenchGetRow, BenchPatchRow, BenchReorderRow, BenchRewireRow, BenchStageRow, BenchStagesRow, BenchUndoRow, DraftDeleteRow, DraftGetRow, DraftListResult, DraftPatchRow, DraftStagePatch } from '@melite/estate-drafts/types'
 
 declare module '@deepseek-ai/dsh-typert-protocol' {
   interface TypertRemoteNamespace$62656e6368 {
@@ -24,6 +24,7 @@ declare module '@deepseek-ai/dsh-typert-protocol' {
     ungroup: (sessionKey: string, doc: BenchDoc, signal?: AbortSignal) => Promise<RemoteResult<BenchStageRow>>
   }
   interface TypertRemoteNamespace$647261667473 {
+    delete: (draftId: string, signal?: AbortSignal) => Promise<RemoteResult<DraftDeleteRow>>
     get: (draftId: string, signal?: AbortSignal) => Promise<RemoteResult<DraftGetRow>>
     list: (signal?: AbortSignal) => Promise<RemoteResult<DraftListResult>>
     patch: (draftId: string, stageId: string, patch: DraftStagePatch, expectRev: number | null, signal?: AbortSignal) => Promise<RemoteResult<DraftPatchRow>>
@@ -42,6 +43,7 @@ declare module '@deepseek-ai/dsh-typert-protocol' {
     'bench/subscribe': (sessionKey: string, signal?: AbortSignal) => RemoteStreamHandle<BenchGetRow, never>
     'bench/undo': (sessionKey: string, doc: BenchDoc, signal?: AbortSignal) => Promise<RemoteResult<BenchUndoRow>>
     'bench/ungroup': (sessionKey: string, doc: BenchDoc, signal?: AbortSignal) => Promise<RemoteResult<BenchStageRow>>
+    'drafts/delete': (draftId: string, signal?: AbortSignal) => Promise<RemoteResult<DraftDeleteRow>>
     'drafts/get': (draftId: string, signal?: AbortSignal) => Promise<RemoteResult<DraftGetRow>>
     'drafts/list': (signal?: AbortSignal) => Promise<RemoteResult<DraftListResult>>
     'drafts/patch': (draftId: string, stageId: string, patch: DraftStagePatch, expectRev: number | null, signal?: AbortSignal) => Promise<RemoteResult<DraftPatchRow>>
@@ -66,6 +68,7 @@ export declare const TYPERT_REMOTE: TypertRemoteInfo<{
   readonly 'bench/subscribe': TypertRemoteMethod<{ readonly 'sessionKey': string }, BenchGetRow, 'stream'>
   readonly 'bench/undo': TypertRemoteMethod<{ readonly 'sessionKey': string; readonly 'doc': BenchDoc }, BenchUndoRow>
   readonly 'bench/ungroup': TypertRemoteMethod<{ readonly 'sessionKey': string; readonly 'doc': BenchDoc }, BenchStageRow>
+  readonly 'drafts/delete': TypertRemoteMethod<{ readonly 'draftId': string }, DraftDeleteRow>
   readonly 'drafts/get': TypertRemoteMethod<{ readonly 'draftId': string }, DraftGetRow>
   readonly 'drafts/list': TypertRemoteMethod<{  }, DraftListResult>
   readonly 'drafts/patch': TypertRemoteMethod<{ readonly 'draftId': string; readonly 'stageId': string; readonly 'patch': DraftStagePatch; readonly 'expectRev': number | null }, DraftPatchRow>

@@ -62,6 +62,7 @@ import type {
   BenchStageRow,
   BenchStagesRow,
   BenchUndoRow,
+  DraftDeleteRow,
   DraftGetRow,
   DraftPatchRow,
 } from '@melite/estate-drafts/types'
@@ -471,6 +472,17 @@ export function mountEstateFakes(opts: EstateFakesOptions = {}): EstateFakes {
         calls.push({ method: 'drafts/list', args: {} })
         takeThrow('drafts/list')
         return takeRefusal('drafts/list') ?? ok({ count: 0, drafts: [] })
+      },
+      // THE DELETE DOOR (drafts/delete — the protocol's row answers
+      // with the removed id; no wall scripts it, so it echoes the
+      // id verbatim, recorded like every other call).
+      delete: async (draftId: string, signal?: AbortSignal) => {
+        void signal
+        calls.push({ method: 'drafts/delete', args: { draftId } })
+        takeThrow('drafts/delete')
+        const deleteRefused = takeRefusal('drafts/delete')
+        if (deleteRefused !== undefined) return deleteRefused
+        return ok({ draft_id: draftId } as DraftDeleteRow)
       },
     },
     runs: {
