@@ -20,6 +20,7 @@ import { resetStageWrites, stageWriteState } from "../src/client/draft.ts";
 import { StageDrill, dedupWalkSet } from "../src/client/stage-drill.tsx";
 import { CardsTab } from "../src/client/CardsTab.tsx";
 import type { BenchStageView, CardsBenchValue } from "../src/client/cards-resource.ts";
+import { repoRoot } from "./repo-root.ts";
 
 afterEach(() => {
   cleanup();
@@ -1476,9 +1477,10 @@ describe("the re-point seam (one switch semantics at the drill's write seat)", (
     // against the live DECL modules; this arm proves the SEAT passes its
     // arrival doc).
     const paramsOf = (id: string): string[] => {
-      // repo-root anchored (vitest runs with cwd at the root; import.meta
-      // URLs are vite-rewritten and do not resolve to disk here).
-      const text = readFileSync(join(process.cwd(), "packages", "models", id, "src", "index.ts"), "utf8");
+      // the workspace root by marker walk (the invocation cwd is the
+      // repo root or the package dir — never assumed; import.meta URLs
+      // are vite-rewritten and do not resolve to disk here).
+      const text = readFileSync(join(repoRoot(), "packages", "models", id, "src", "index.ts"), "utf8");
       const m = text.match(/"params": \[([\s\S]*?)\]/);
       if (m === null) throw new Error(`no params array parsed from ${id}/src/index.ts`);
       const out = [...m[1].matchAll(/"([^"]+)"/g)].map((g) => g[1]);
@@ -1602,7 +1604,7 @@ describe("the arrival window (the gesture→settle one-round-trip gap, P4 remain
   // the live DECL files.
   function windowDocs(): { servedByModel: Record<string, Record<string, unknown>>; FROM: string; TO: string } {
     const paramsOf = (id: string): string[] => {
-      const text = readFileSync(join(process.cwd(), "packages", "models", id, "src", "index.ts"), "utf8");
+      const text = readFileSync(join(repoRoot(), "packages", "models", id, "src", "index.ts"), "utf8");
       const m = text.match(/"params": \[([\s\S]*?)\]/);
       if (m === null) throw new Error(`no params array parsed from ${id}/src/index.ts`);
       const out = [...m[1].matchAll(/"([^"]+)"/g)].map((g) => g[1]);

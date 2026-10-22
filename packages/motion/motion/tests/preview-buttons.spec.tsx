@@ -45,13 +45,13 @@ import { createRequire } from 'node:module'
 import { dirname, join } from 'node:path'
 import { waitForText } from './harness.tsx'
 import { MOTION_URL } from './fixtures.ts'
-import { resetStudio, stubLoads, mountEditor } from './helpers.ts'
+import { resetStudio, stubLoads, mountEditor, repoRoot } from './helpers.ts'
 import s from '../src/ui/studio/component.module.css'
 
 afterEach(() => resetStudio())
 
-const LAW = 'packages/motion/motion/src/ui/studio/component.module.css'
-const VIEW = 'packages/motion/motion/src/ui/studio/MotionStageView.tsx'
+const LAW = join(repoRoot(), 'packages/motion/motion/src/ui/studio/component.module.css')
+const VIEW = join(repoRoot(), 'packages/motion/motion/src/ui/studio/MotionStageView.tsx')
 const LABELS = [
   'Rotate view left (45°)',
   'Full body framing',

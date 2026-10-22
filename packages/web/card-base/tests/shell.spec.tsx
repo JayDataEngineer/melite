@@ -17,9 +17,11 @@
 import { cleanup, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, expect, test } from 'vitest'
 import { createElement as h, useEffect } from 'react'
+import { join } from 'node:path'
 
 import { StudioShell } from '../src/shell.tsx'
 import { useToastStore } from '../src/toast.tsx'
+import { repoRoot } from './helpers/repo-root.ts'
 
 /** A studio seam that pushes a toast on mount — exactly how anny's
  *  slotGrid or motion's export dialog does it. */
@@ -70,10 +72,10 @@ test('NO PER-STUDIO MOUNT: motion hand-mounts are DELETED (the shell owns chrome
   // structural wall: the studios import the store, never the viewport
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const fs = require('node:fs') as typeof import('node:fs')
-  const motion = fs.readFileSync('packages/motion/motion/src/ui/studio/component.tsx', 'utf8')
+  const motion = fs.readFileSync(join(repoRoot(), 'packages/motion/motion/src/ui/studio/component.tsx'), 'utf8')
   expect(motion).not.toContain('<ToastViewport')
   // the shell is the one mount
   // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const shell = fs.readFileSync('packages/web/card-base/src/shell.tsx', 'utf8')
+  const shell = fs.readFileSync(join(repoRoot(), 'packages/web/card-base/src/shell.tsx'), 'utf8')
   expect(shell).toContain('<ToastViewport />')
 })

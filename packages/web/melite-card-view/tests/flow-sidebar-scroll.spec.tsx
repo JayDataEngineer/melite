@@ -14,6 +14,7 @@
 // the same honest plane the sibling reads (happy-dom does no
 // layout — the stylesheet text is the contract).
 import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, test, vi } from "vitest";
 import { createElement as h } from "react";
@@ -21,6 +22,7 @@ import { CardsTab } from "../src/client/CardsTab.tsx";
 import type { BenchStageView } from "../src/client/cards-resource.ts";
 import { mountEstateFakes } from "./estate-harness.ts";
 import { unbindEstateRemote } from "@melite/card-base/client";
+import { repoRoot } from "./repo-root.ts";
 
 let fakes: { calls: Array<{ method: string; args: Record<string, unknown> }>; unmount: () => void } | null = null;
 
@@ -107,7 +109,7 @@ function ruleBlock(law: string, selector: string): string | null {
   return law.slice(at, end + 1);
 }
 
-const LAW = "packages/web/melite-card-view/src/client/card.module.css";
+const LAW = join(repoRoot(), "packages/web/melite-card-view/src/client/card.module.css");
 
 describe("1 — the flow panel body is the scroll container (the d+j seat, not the shell)", () => {
   test("the bench panel carries the scroll law: fills the tab seat, min-zero, scrolls its own axis", async () => {

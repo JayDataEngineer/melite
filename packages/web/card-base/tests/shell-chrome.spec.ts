@@ -15,6 +15,9 @@ import { cleanup, render, screen } from '@testing-library/react'
 import { afterEach, expect, test } from 'vitest'
 import { createElement as h, useContext } from 'react'
 import { createPortal } from 'react-dom'
+import { join } from 'node:path'
+
+import { repoRoot } from './helpers/repo-root.ts'
 
 import {
   defineShellDeclaration,
@@ -136,7 +139,7 @@ test('THE RAIL SLOT: createPortal is the projection mechanic (no split tenant, n
   // the tenant stays ONE component writing through onSave
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const fs = require('node:fs') as typeof import('node:fs')
-  const rail = fs.readFileSync('packages/web/card-base/src/studioRail.tsx', 'utf8')
+  const rail = fs.readFileSync(join(repoRoot(), 'packages/web/card-base/src/studioRail.tsx'), 'utf8')
   expect(rail).toContain('createPortal')
   expect(createPortal).toBeTypeOf('function')
 })

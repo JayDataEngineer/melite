@@ -7,8 +7,10 @@ import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/re
 import { createElement as h } from 'react'
 import { afterEach, expect, test, vi } from 'vitest'
 import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import { composeCandidateDoc, composeValidate } from '../src/spec.ts'
 import type { FormSpecDoc, SpecValues, FormVariantRow } from '../src/spec.ts'
+import { repoRoot } from './helpers/repo-root.ts'
 
 import { ModelAxes, PackPrompt, useFormSpec } from '../src/form.tsx'
 
@@ -303,7 +305,7 @@ test('CLEAN-ROW LAW: the axes zone owns exactly TWO rails — the rows below the
   const pair = container.querySelector('[data-axes-pair="Model+Variant"]')
   expect(kids[1]).toBe(pair)
   // the css law, pinned verbatim from the module (never auto-fit)
-  const css = readFileSync('packages/web/card-base/src/card.module.css', 'utf8')
+  const css = readFileSync(join(repoRoot(), 'packages/web/card-base/src/card.module.css'), 'utf8')
   const zone = css.match(/\.modelAxes \{[^}]*\}/)![0]
   expect(zone).toContain('grid-template-columns: repeat(2, minmax(0, 1fr))')
   expect(zone).not.toContain('auto-fit')
@@ -348,7 +350,7 @@ test('MENU SELECT: the anchor label rides its own clamp span (the dropdown pill 
   expect(trigger.textContent).toBe(span!.textContent)
   // THE RULE HALF: the clamp trio pinned verbatim from the module —
   // min-width:0 is the flex-item law that survives the cascade
-  const css = readFileSync('packages/web/card-base/src/card.module.css', 'utf8')
+  const css = readFileSync(join(repoRoot(), 'packages/web/card-base/src/card.module.css'), 'utf8')
   const rule = css.match(/\.specSelectText \{[^}]*\}/)![0]
   expect(rule).toContain('min-width: 0')
   expect(rule).toContain('overflow: hidden')
@@ -389,7 +391,7 @@ test('MENU SELECT: the static single-model pill owns border-box (burn 5 — the 
   expect(staticFace.getAttribute('data-model-static')).toBe('1')
   // THE RULE HALF: pinned verbatim from the module — the pill's own
   // box, not the ambient reset (which names only form controls)
-  const css = readFileSync('packages/web/card-base/src/card.module.css', 'utf8')
+  const css = readFileSync(join(repoRoot(), 'packages/web/card-base/src/card.module.css'), 'utf8')
   const rules = css.match(/\.specSelect \{[^}]*\}/g) ?? []
   const pill = rules.find((r) => r.includes('width: 100%'))
   if (pill === undefined) throw new Error('the .specSelect pill rule did not render')

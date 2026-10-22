@@ -10,23 +10,35 @@
  * SWEPT TODAY (each gesture fail-loud — a silent skip is itself a
  * lie for a silent-error hunt, the journey re-run's E): add card by
  * catalog label, Serving-family model switch (+ ghost census),
- * recipe SELECT + blank round-trip, drill teardown.
- * NOT SWEPT YET (owed, named — never claimed): variant/quant knob
- * switches, attach/detach of file inputs, re-switch after attach,
- * and RUNS (runs start at the user's press by the estate law; an
- * in-run silent-error rider is its own later opt-in).
+ * recipe SELECT + blank round-trip, THE VARIANT/QUANT AXIS SWEEP
+ * (every rendered row of every non-Recipe served axis, same
+ * select→pick→face round-trip the model arm rides), and ASSERT
+ * CLASS (b): the picked faces == the saved bench doc's coordinates
+ * == the compose door's admission (the doc the run would receive
+ * validates through /v1/flows/validate — a 400 there is the
+ * switch-bricks-the-card class, h3 2026-11-05). NOT SWEPT YET (owed,
+ * named — never claimed): attach/detach of file inputs, re-switch
+ * after attach, RUNS (runs start at the user's press by the estate
+ * law; an in-run silent-error rider is its own later opt-in), and
+ * the SERIALIZED-GRAPH BYTES (the graph receipt is stamped at
+ * queue time by the run path — byte parity rides the engine rider;
+ * what this sweep proves is the compose door ADMITS the saved doc,
+ * not the emitted node graph).
  *
  * THE THREE ASSERT CLASSES (the ROADMAP row):
  *   (a) zero silent errors — console errors, page errors, and
  *       failed /v1/* wire answers, collected per combination;
- *   (b) the UI state == the params composed — day one this rides
- *       the drill's OWN faces (the arrival fence's refusal voice is
- *       a PARITY break: a switch whose arrival never settles means
- *       the UI is not what compose would read; the bench doc's
- *       stage params are read through the page's own doors). The
- *       full serialized-graph parity rider (ComfyUI graph receipt)
- *       lands with the engine rider — self-skipped when no engine
- *       answers, same law as tests/e2e/engine-gate.ts.
+ *   (b) the UI state == the params composed — THREE arms, each its
+ *       own firing path: the drill's OWN faces (the arrival fence's
+ *       refusal voice is a PARITY break: a switch whose arrival
+ *       never settles means the UI is not what compose would read);
+ *       THE SAVED DOC (the bench draft's stage coordinates must
+ *       carry exactly the faces the user picked — the Second Pass
+ *       class: a seat that shows a pick the doc never took); and
+ *       THE COMPOSE DOOR (/v1/flows/validate — the read-only
+ *       compose-and-discard arm — must admit the saved doc verbatim;
+ *       a 400 is the switch-bricks-the-card class). The serialized
+ *       graph's BYTES ride the engine rider (queue-time receipt).
  *   (c) no ghost knobs after a switch — the rendered knob set is
  *       diffed against the ARRIVAL family's served envelope after
  *       every switch (the P4 class: departed-surface keys that
@@ -77,7 +89,14 @@ function armCollectors(page: Page): void {
   silent.length = 0
   wireFailures.length = 0
   page.on('console', (msg): void => {
-    if (msg.type() === 'error') silent.push(`console: ${msg.text()}`)
+    if (msg.type() === 'error') {
+      // THE DOOR'S NAME (the 2026-11-08 ride's find: a 502 the console
+      // voiced with no URL in the text — the message's location names
+      // the resource, so the ledger can carry the door, not just the
+      // status).
+      const at = msg.location()?.url ?? ''
+      silent.push(`console: ${msg.text()}${at !== '' ? ` @ ${at.replace(/\?token=[^&]*/, '')}` : ''}`)
+    }
   })
   page.on('pageerror', (err): void => {
     silent.push(`pageerror: ${String(err)}`)
@@ -225,7 +244,97 @@ async function ghostKnobs(page: Page, arrivalFamily: string): Promise<string[]> 
   }, arrivalFamily)
 }
 
+/**
+ * THE AXIS SWEEP (the ROADMAP remainder: "variant / quant knobs not
+ * yet swept — sweep them"): every non-Recipe served axis group rides
+ * the select→pick→face round-trip the model arm rides, EVERY row the
+ * open drill renders (the rendered menu IS the arrival's truth — the
+ * row set filters client-side, so the live menu is the derived
+ * roster, never a frozen list). SWEEP_AXIS_ROWS=all|first bounds the
+ * ride (default all; the sweep is opt-in long by design). Each pick
+ * is judged by the face it leaves (a pick that does not land is a
+ * silent drop) and returns its final row — id AND face — mapped
+ * through the SERVED envelope (the depth read: every menu row must
+ * name a served row, both-face) for the class-(b) doc-parity rider.
+ */
+async function sweepAxis(page: Page, group: string, tag: string, card: string): Promise<{ id: string, label: string } | null> {
+  const trigger = page.locator(`[data-axis="${group}"]`).first()
+  if ((await trigger.count()) === 0) return null // the axis does not render on this card — the census says so
+  const norm = (s: string): string => s.toLowerCase().replace(/[^a-z0-9]/g, '')
+  const title = (id: string): string =>
+    id.split(/[-_\s]+/).map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
+  const bare = (label: string): string => norm(label.replace(/\([^)]*\)/g, ''))
+  // THE SERVED ROWS (the depth read): the menu's rows mapped to the
+  // envelope's own {id,label} pairs — a menu row that names NO served
+  // row is a ghost voice and fails loud here.
+  const served = await page.evaluate(async ({ group: g, cardId }: { group: string, cardId: string }) => {
+    const spec = await (await fetch(`/v1/form-spec?model=${encodeURIComponent(cardId)}`)).json() as {
+      variants?: Array<{ id?: unknown, label?: unknown, group?: unknown }>
+    }
+    return (spec.variants ?? [])
+      .filter((v) => v.group === g && typeof v.id === 'string' && v.id !== '')
+      .map((v) => ({ id: v.id as string, label: typeof v.label === 'string' && v.label !== '' ? v.label : v.id as string }))
+  }, { group, cardId: card })
+  const bound = process.env.SWEEP_AXIS_ROWS === 'first' ? 1 : Number.MAX_SAFE_INTEGER
+  let last: { id: string, label: string } | null = null
+  for (let round = 0; ; round++) {
+    await trigger.click({ timeout: 15_000 })
+    await page.waitForTimeout(500)
+    const items = page.getByRole('menuitem')
+    const count = await items.count()
+    expect(count, `${tag}: the ${group} axis menu opens with rows (an axis that never opens is a silent drop)`).toBeGreaterThan(0)
+    const row = items.nth(round)
+    const label = ((await row.textContent()) ?? '').trim()
+    // THE MENU↔ENVELOPE MAP: the row's face must name a served row by
+    // its label or its titled id — a menu voice the envelope cannot
+    // own is the frozen-literal class rendered live.
+    const mapped = served.find((r) => norm(r.label) === norm(label) || title(r.id) === label || bare(r.label) === bare(label))
+    expect(mapped, `${tag}: the ${group} menu row ${JSON.stringify(label)} names a served envelope row (served: ${JSON.stringify(served)})`).toBeTruthy()
+    await row.click({ timeout: 15_000 })
+    await page.waitForTimeout(800)
+    const face = ((await trigger.textContent()) ?? '').trim()
+    expect(norm(face), `${tag}: the ${group} axis face carries the picked row ${JSON.stringify(label)} (face ${JSON.stringify(face)} — a pick that does not land is a silent drop)`).toBe(norm(label))
+    last = { id: mapped!.id, label }
+    if (round + 1 >= Math.min(count, bound)) break
+  }
+  return last
+}
+
+
+/** THE SAVED DOC READ (assert class (b), arm 2 — the page's own
+ * door): the bench draft is the drafts domain's recency-top
+ * bench-session doc (the drill's atomic picks write through NOW —
+ * write-through.ts's discrete-gesture law), and the stage under test
+ * is the LAST stage of the swept card (add_stage appends). The
+ * caller judges the coordinates against the faces just picked. */
+async function benchStageOf(page: Page, card: string, tag: string): Promise<{
+  draftId: string
+  params: Record<string, unknown>
+}> {
+  const read = await page.evaluate(async (cardId: string) => {
+    const list = await (await fetch('/v1/flows/drafts')).json() as {
+      drafts?: Array<{ draft_id?: unknown, model?: unknown }>
+    }
+    const benchRows = (list.drafts ?? []).filter((r): r is { draft_id: string, model?: unknown } =>
+      typeof r.draft_id === 'string' && r.draft_id.startsWith('bench-'))
+    for (const row of benchRows.slice(0, 4)) {
+      const res = await fetch('/v1/flows/drafts/' + encodeURIComponent(row.draft_id))
+      if (!res.ok) continue
+      const doc = await res.json() as { draft_id?: unknown, stages?: Array<{ card?: unknown, params?: unknown }> }
+      if (!Array.isArray(doc.stages)) continue
+      const mine = doc.stages.filter((s): s is { card: string, params: Record<string, unknown> } =>
+        s.card === cardId && typeof s.params === 'object' && s.params !== null)
+      if (mine.length === 0) continue
+      return { draftId: String(doc.draft_id ?? row.draft_id), params: mine[mine.length - 1].params }
+    }
+    return null
+  }, card)
+  expect(read, `${tag}: the bench doc read found a ${card} stage (the drill's writes land in the drafts domain — a missing stage is a linkage break, named as such)`).not.toBeNull()
+  return read as { draftId: string, params: Record<string, unknown> }
+}
+
 test('the real-usage combination sweep — derived roster, 1:1 gestures, zero silent errors', async ({ page }) => {
+
   test.setTimeout(1_800_000)
   armCollectors(page)
   await settleHost(page)
@@ -262,6 +371,23 @@ test('the real-usage combination sweep — derived roster, 1:1 gestures, zero si
       const pickerCard = page.getByRole('button', { name: new RegExp(`^${escapeRe(row.label)}$`, 'i') }).first()
       await pickerCard.click({ timeout: 30_000 })
       await page.waitForTimeout(2_000)
+      // THE PROMPT GESTURE (1:1: a user states what they want before
+      // they touch the axes): fill the prompt knob when the card
+      // renders one — the compose door's required-knob voice would
+      // otherwise lawfully refuse every admission judgment below.
+      // The prompt is also THE LINKAGE MARKER: the doc read must
+      // carry this exact string on the stage under test.
+      const sweepPrompt = `combination sweep ${tag}`
+      const promptBox = page.getByRole('textbox', { name: 'Prompt', exact: true }).first()
+      let promptFilled = false
+      if ((await promptBox.count()) > 0) {
+        await promptBox.fill(sweepPrompt, { timeout: 15_000 })
+        promptFilled = true
+        // THE TRAILING WRITE WINDOW (write-through.ts): keystroke-class
+        // edits coalesce on a short trailing delay — give the write
+        // its pause before any doc read judges it.
+        await page.waitForTimeout(2_000)
+      }
 
       if (combo.model !== undefined) {
         // FAIL LOUD, never silently skip (the journey re-run's E: a
@@ -363,6 +489,96 @@ test('the real-usage combination sweep — derived roster, 1:1 gestures, zero si
         } else {
           await page.keyboard.press('Escape')
         }
+      }
+
+      // THE VARIANT/QUANT SWEEP (the ROADMAP remainder): every served
+      // non-Recipe axis rides the pick round-trip; the arrival's
+      // ghost census judges each landed face. The final pick per
+      // group feeds the class-(b) doc parity below.
+      const axisGroups = await page.evaluate(() =>
+        Array.from(document.querySelectorAll('[data-axis]'))
+          .map((el) => el.getAttribute('data-axis') ?? '')
+          .filter((g) => g !== '' && g !== 'Recipe'),
+      )
+      const axisPicks: Record<string, { id: string, label: string }> = {}
+      for (const group of axisGroups) {
+        const landed = await sweepAxis(page, group, tag, row.card)
+        if (landed !== null) axisPicks[group.toLowerCase()] = landed
+        const ghosts = await ghostKnobs(page, combo.model?.id ?? row.card)
+        expect(ghosts, `${tag}: ghost knobs after the ${group} sweep (the P4 class — the UI did not follow the arrival)`).toEqual([])
+      }
+
+      // ASSERT CLASS (b) — arm 2, THE SAVED DOC: the doc's
+      // coordinates must be the faces the sweep just left on the
+      // drill (the Second Pass class: a seat whose pick the doc
+      // never took). THE BOTH-FACE LAW (the model arm's id↔label
+      // law): the doc carries the ROW ID, the menu speaks the DECL
+      // label — one norm, matched against the id, the label, or the
+      // label's bare name ('BF16 (dtype-mapped)' is one row whose id
+      // is 'bf16'; the live catch that taught this arm the third
+      // face).
+      const doc = await benchStageOf(page, row.card, tag)
+      const normB = (s: unknown): string => String(s ?? '').toLowerCase().replace(/[^a-z0-9]/g, '')
+      const bareB = (s: string): string => normB(s.replace(/\([^)]*\)/g, ''))
+      // THE LINKAGE MARKER: the stage under test carries the sweep's
+      // own prompt string (typed at the add) — the doc read is THE
+      // stage the gestures drove, not a sibling.
+      if (promptFilled) {
+        expect(normB(doc.params.prompt), `${tag}: the bench doc's prompt carries the sweep's marker (doc ${JSON.stringify(doc.params.prompt ?? null)})`).toContain(normB(sweepPrompt))
+      }
+      if (combo.model !== undefined) {
+        expect(normB(doc.params.model), `${tag}: the bench doc's model coordinate carries the arrival family ${combo.model.id} (doc ${JSON.stringify(doc.params.model ?? null)} — a face the doc never took is the Second Pass class)`).toBe(normB(combo.model.id))
+      } else {
+        expect(normB(doc.params.model), `${tag}: the bench doc carries a model coordinate (doc ${JSON.stringify(doc.params.model ?? null)} — the seed law names the family at birth)`).not.toBe('')
+      }
+      for (const [key, pick] of Object.entries(axisPicks)) {
+        const faces = [normB(pick.id), normB(pick.label), bareB(pick.label)]
+        expect(faces, `${tag}: the bench doc's ${key} coordinate carries the swept row (doc ${JSON.stringify(doc.params[key] ?? null)}, swept id ${JSON.stringify(pick.id)}, face ${JSON.stringify(pick.label)})`).toContain(normB(doc.params[key]))
+      }
+      // THE (k) LAW at the doc: no recipe key persists — the blank is
+      // a WRITE of the departure, never a stored coordinate.
+      expect('recipe' in doc.params, `${tag}: no recipe key persists in the bench doc (keys ${JSON.stringify(Object.keys(doc.params))} — the (k) law: the blank is the departure, never a key)`).toBe(false)
+
+      // ASSERT CLASS (b) — arm 3, THE COMPOSE DOOR: the read-only
+      // validate arm composes-and-discards the SAME pipeline the run
+      // press rides; the saved doc must be ADMITTED verbatim (a 400
+      // here is the h3 switch-brick class: a UI whose coordinates the
+      // compose refuses). The doc→body mapping is the RUN PRESS'S OWN
+      // shape law (liftCardParams): the axis coordinates ride the
+      // body ROOT, the knob stanza rides `params` — a probe that
+      // posts the coordinates INSIDE the stanza is refused as unknown
+      // knobs (the door's own voice, red-proven live). Never queues,
+      // never touches the engine.
+      const verdict = await page.evaluate(async (stage: Record<string, unknown>) => {
+        const { model, variant, quant, ...knobs } = stage
+        const body: Record<string, unknown> = { model: String(model ?? ''), params: knobs }
+        if (typeof variant === 'string' && variant !== '') body.variant = variant
+        if (typeof quant === 'string' && quant !== '') body.quant = quant
+        const res = await fetch('/v1/flows/validate', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify(body),
+        })
+        const answer = await res.json() as Record<string, unknown>
+        return { status: res.status, ok: answer['ok'] === true, error: String(answer['error'] ?? '') }
+      }, doc.params)
+      expect(verdict.status !== 200 || verdict.ok, `${tag}: the compose door's 200 answer carries ok:true`).toBe(true)
+      if (verdict.status !== 200) {
+        // THE THREE REFUSAL CLASSES: a brick voice (unknown param /
+        // variant / quant / model, not-offered, unsanctioned keys) is
+        // THE SWITCH-BRICK CLASS — red, verbatim. Two lawful
+        // empty-bench voices: the required-knob voice ("this lane
+        // requires 'x' — not stated") and the PRESENCE voice ("declares
+        // unet '…' but no store copy exists" — the weights are not on
+        // the machine; the door refuses LOUD, the run press voices it,
+        // nothing silent — the offered-but-absent VARIANT weight rides
+        // the (m) download-UX theme, logged as the sweep's own find).
+        // ANY OTHER voice is an unclassified refusal — red, verbatim.
+        const brickVoice = /unknown param|unknown variant|unknown quant|unknown model|unknown card|not offered|unsanctioned inject keys|no model unit|composes outside|not a legal identifier|dangling artifact ref/
+        expect(verdict.error, `${tag}: the compose door refused the saved doc with a BRICK-CLASS voice (${verdict.status}): ${verdict.error}`).not.toMatch(brickVoice)
+        expect(verdict.error, `${tag}: the compose door's refusal must be a classified lawful voice (required-knob | absent weights), got: ${verdict.error}`).toMatch(/requires|no store copy exists/)
+        // eslint-disable-next-line no-console -- the lawful-refusal receipt (which knob/weight, which lane)
+        console.log(`[sweep-admission] ${tag}: lawful refusal — ${verdict.error}`)
       }
 
       // assert class (a) — per combination, naming it

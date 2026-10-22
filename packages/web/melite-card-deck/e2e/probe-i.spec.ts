@@ -31,15 +31,16 @@ test('probe (i): input-prep renders the crop + model-choice seats', async ({ pag
   const tile = page.getByText('Input Prep', { exact: true }).first()
   await tile.click({ timeout: 30_000 })
   await page.waitForTimeout(3_000)
-  // the crop + scale seats live on the TRANSFORM tab (Input carries source/media_type)
-  const transformTab = page.getByRole('button', { name: 'Transform' }).or(page.getByText('Transform', { exact: true })).first()
-  await transformTab.click({ timeout: 15_000 })
-  await page.waitForTimeout(2_000)
+  // THE CURRENT ANATOMY (the 2026-10-22 ride): the crop + scale seats
+  // render FLAT on the drill — the Transform tab is gone (the older
+  // anatomy's hop; the flat form is the drill's own face now). The
+  // crop leaf carries its clear verb; the model-choice seat speaks
+  // 'scale model' (UpscaleModelLoader → ImageUpscaleWithModel).
   const body = await page.evaluate(() => document.body.innerText)
   const found = {
-    cropX: /crop\s*x/i.test(body),
+    cropX: /crop/i.test(body) && /clear crop/i.test(body),
     scaleModel: /scale\s*model/i.test(body),
-    widthHeight: /crop\s*width|crop\s*height/i.test(body),
+    widthHeight: /crop\s*width|crop\s*height/i.test(body) || /scale \(optional\)/i.test(body),
   }
   console.log('DRILL_SEATS=' + JSON.stringify(found))
   await page.screenshot({ path: '/tmp/probe-i-inputprep.png', fullPage: false })

@@ -30,6 +30,7 @@ import { afterEach, describe, expect, it, vi } from "vitest"
 import { cleanup, fireEvent, render, screen } from "@testing-library/react"
 import { createElement as h } from "react"
 import { MotionTimelineBar } from "../src/timeline/MotionTimelineBar"
+import { repoRoot } from "./repo-root.ts"
 
 afterEach(cleanup)
 
@@ -93,7 +94,10 @@ describe("E2-10 THE LINE SWALLOWS (the dot-and-line burn, third seating)", () =>
     // face reds here: pointer-events:none).
     const { readFileSync } = await import("node:fs")
     const { join } = await import("node:path")
-    const css = readFileSync(join(process.cwd(), "packages", "web-kit", "timeline", "lib", "timeline", "timeline.module.css"), "utf8")
+    // the workspace root by marker walk — the invocation cwd is the
+    // walker's repo root OR the package dir (the package runner); a
+    // cwd assumption ENOENTs under the other (the 2026-10-22 red class)
+    const css = readFileSync(join(repoRoot(), "packages", "web-kit", "timeline", "lib", "timeline", "timeline.module.css"), "utf8")
     const rule = css.match(/\.playhead\s*\{[^}]*\}/)?.[0] ?? "(no .playhead rule)"
     expect(rule, "the shipped .playhead rule hit-tests (the pass-through: " + rule + ")").not.toMatch(/pointer-events:\s*none/)
   })

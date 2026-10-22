@@ -464,19 +464,23 @@ describe('THE SWITCHING SWEEP — every real family × every switch (the core-fe
     const honest: SpecValues = { ...seated, prompt: 'a red cube' }
     expect(composeValidate(spec, composeCandidateDoc({}, honest, {}))).toEqual([])
     expect(judgeLaneRelations([rels], honest)).toEqual([])
-    // (ii) TOGETHER — qwen3-tts's persona export pair
-    // (voice_name + design_prompt): a held HALF surviving a re-key
-    // refuses through the door's judge, both halves admit
+    // (ii) THE QVOICE BOOLEAN LAW (operator 2026-10-22: "Qvoice. Is
+    // a mod. It is not BAKED INTO THE DEFAULT CARD"): qwen3-tts
+    // declares NO together pair — the export pair is dead, and the
+    // judge's remaining family word is the required `text`. A held
+    // persona half survives re-keys freely (it authors alone); a
+    // text-less doc refuses through the door's judge.
     const tts = qwen3Tts as ModelDecl
     const ttsRels = tts.relations
     if (ttsRels === undefined) throw new Error('qwen3-tts declares relations (the audit\'s own receipt)')
-    expect(ttsRels?.together?.length, 'qwen3-tts declares the persona export pair').toBeGreaterThan(0)
-    const half: SpecValues = { model: 'qwen3-tts', voice_name: 'nova' }
-    expect(judgeLaneRelations([ttsRels], half).some((v) => v.field === 'voice_name' || v.field === 'design_prompt'),
-      'a held together-pair half refuses').toBe(true)
-    // (qwen3-tts also requires `text` on every lane — the family's
-    // own required word rides alongside the pair)
-    expect(judgeLaneRelations([ttsRels], { ...half, design_prompt: 'warm alto', text: 'hello' })).toEqual([])
+    expect(ttsRels?.together ?? [], 'qwen3-tts declares NO together pair (the name is a mod boolean, never a base-lane field)').toEqual([])
+    const half: SpecValues = { model: 'qwen3-tts', design_prompt: 'warm alto' }
+    expect(judgeLaneRelations([ttsRels], half),
+      'a held persona half refuses only through the required-text word').toEqual([
+      expect.objectContaining({ field: 'text' }),
+    ])
+    // (the complete doc — text stated — admits)
+    expect(judgeLaneRelations([ttsRels], { ...half, text: 'hello' })).toEqual([])
   })
 
   test('a variant pick lands the CHOICE\'s declared defaults (the latest selection overrides)', () => {

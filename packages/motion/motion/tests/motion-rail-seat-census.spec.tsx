@@ -53,9 +53,10 @@ import { LOADED_WAIT } from '../../../../tests/helpers/loaded-wait.ts';
 import "../../../../tests/helpers/boot-models.ts";
 import { beforeAll, afterEach, describe, expect, it, vi } from 'vitest'
 import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import { loadCardDefs } from '@melite/comfyui-cordis'
 import type { CardDefinition } from '@melite/comfyui-card-kit/card-definition'
-import { resetStudio, stubLoads, mountEditor } from './helpers.ts'
+import { resetStudio, stubLoads, mountEditor, repoRoot } from './helpers.ts'
 import { MOTION_URL } from './fixtures.ts'
 
 /** The groups whose knobs the rail's panel owns — SANCTIONED ids
@@ -160,7 +161,7 @@ describe('THE RAIL SEAT PARITY (the motion-params journey audit)', () => {
     // grid — one ~120px track against a ~180px slider min-content —
     // and the overflow became the rail's horizontal scrollbar. The
     // wrapper rule spans the grid and lets the panel shrink.
-    const css = readFileSync('packages/motion/motion/src/ui/studio/component.module.css', 'utf8')
+    const css = readFileSync(join(repoRoot(), 'packages/motion/motion/src/ui/studio/component.module.css'), 'utf8')
     const rule = css.match(/\.railPanel \{[^}]*\}/)
     expect(rule, 'the rail panel wrapper rule exists').not.toBeNull()
     expect(rule![0]).toContain('grid-column: 1 / -1')
@@ -172,7 +173,7 @@ describe('THE RAIL SEAT PARITY (the motion-params journey audit)', () => {
     // promoted to card-base's shell so every tenant inherits it: the
     // belt that keeps a future min-content regression a clipped face,
     // never a horizontal wheel on the params rail.
-    const css = readFileSync('packages/web/card-base/src/shell.module.css', 'utf8')
+    const css = readFileSync(join(repoRoot(), 'packages/web/card-base/src/shell.module.css'), 'utf8')
     // the scroll-cell rule (the media-query collapse overrides the
     // SAME selector first — pin the rule that carries the scroll)
     const cell = css.match(/\.shell > \*:first-child \{[^}]*?overflow-y: auto[^}]*\}/)
@@ -183,8 +184,8 @@ describe('THE RAIL SEAT PARITY (the motion-params journey audit)', () => {
 })
 
 describe('THE BG PICK IS THE ESTATE SQUARE (the square-dsh-native law\u2019s motion arm — motion-params audit F4)', () => {
-  const RAIL = 'packages/motion/motion/src/ui/studio/MotionRail.tsx'
-  const CSS = 'packages/motion/motion/src/ui/studio/component.module.css'
+  const RAIL = join(repoRoot(), 'packages/motion/motion/src/ui/studio/MotionRail.tsx')
+  const CSS = join(repoRoot(), 'packages/motion/motion/src/ui/studio/component.module.css')
   const HAND_SEAT = 'the bg pick renders the hand seat (the ghost "Background" Button + the hidden type="file" input + .bgBtnIdle) \u2014 ride the estate\u2019s input-selection square (SourceRow, the motion-params journey audit F4)'
 
   it('FACT M1 (source import): the rail seats the estate\u2019s ONE input-selection component \u2014 imported, not imitated', () => {
@@ -244,9 +245,9 @@ describe('THE BG PICK IS THE ESTATE SQUARE (the square-dsh-native law\u2019s mot
 })
 
 describe('THE CHROME RIDES THE DSH VARIANTS (the motion-params audit F5 — the skin scan)', () => {
-  const RAIL = 'packages/motion/motion/src/ui/studio/MotionRail.tsx'
-  const VIEW = 'packages/motion/motion/src/ui/studio/MotionStageView.tsx'
-  const CSS = 'packages/motion/motion/src/ui/studio/component.module.css'
+  const RAIL = join(repoRoot(), 'packages/motion/motion/src/ui/studio/MotionRail.tsx')
+  const VIEW = join(repoRoot(), 'packages/motion/motion/src/ui/studio/MotionStageView.tsx')
+  const CSS = join(repoRoot(), 'packages/motion/motion/src/ui/studio/component.module.css')
   /** The hand-skin inventory the variant map killed (the audit's five
    *  rail families + the camera pill's reset/faces). The scan derives
    *  the roster from these FAMILIES — a re-planted member reds named. */

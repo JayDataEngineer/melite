@@ -12,6 +12,7 @@
 // plane: nothing booted the row's own apply, so the sink call
 // executed in zero tests and a regression in it would ship silently.
 import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import { afterEach, expect, test } from 'vitest'
 
 import { Context } from '@deepseek-ai/cordis'
@@ -20,6 +21,7 @@ import { useToastStore } from '../src/toastStore.ts'
 // The door: importing the face and booting its apply runs the row's
 // own sink wiring (the wire rides apply — the ordering proof).
 import * as row from '@melite/card-base/client'
+import { repoRoot } from './helpers/repo-root.ts'
 
 // the boot loop's own step: registry.plugin runs apply for the row,
 // and apply wires the seam (the ordering proof: every fire is
@@ -54,7 +56,7 @@ test('the unwired seam THROWS — a dead verdict channel stays visible', () => {
   // The loud half of the seam. A fresh instance cannot be built inside
   // this module graph (the row already wired this one), so the refusal
   // is pinned at its source: the exact error the runtime raises.
-  const src = readFileSync('packages/web-kit/catalog/src/contractToast.ts', 'utf8')
+  const src = readFileSync(join(repoRoot(), 'packages/web-kit/catalog/src/contractToast.ts'), 'utf8')
   expect(src).toMatch(/throw new Error\(/)
   expect(src).toMatch(/contract toast sink unset/)
   // ...and the sink starts empty, so the throw is reachable at all.

@@ -11,6 +11,7 @@ import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { createElement as h } from 'react'
 import { createFilmSeam, FilmSeamBar, FilmSeamPlayer } from '../src/client/filmSeam.tsx'
 import type { FilmSeam } from '../src/client/filmSeam.tsx'
+import { repoRoot } from './repo-root.ts'
 
 afterEach(cleanup)
 
@@ -75,10 +76,12 @@ describe('the straddle: player writes, bar reads', () => {
       // ONLY fit law this face has; absent, the intrinsic width wins
       expect(v.className).toMatch(/player/)
       // jsdom does no layout: the module's own file IS the contract —
-      // pin the law's declarations (the honest jsdom way for CSS;
-      // vitest runs from the repo root, the workspace runner's cwd)
+      // pin the law's declarations (the honest jsdom way for CSS; the
+      // workspace root by marker walk — the invocation cwd is the repo
+      // root or the package dir, never assumed)
       const fs = await import('node:fs')
-      const law = fs.readFileSync('packages/web/melite-card-view/src/client/filmSeam.module.css', 'utf8')
+      const { join } = await import('node:path')
+      const law = fs.readFileSync(join(repoRoot(), 'packages/web/melite-card-view/src/client/filmSeam.module.css'), 'utf8')
       expect(law).toContain('width: 100%')
       expect(law).toContain('max-width: 100%')
       expect(law).toContain('max-height: 100%')

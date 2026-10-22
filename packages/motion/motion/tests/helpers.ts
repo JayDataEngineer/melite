@@ -7,6 +7,8 @@
 import { vi } from 'vitest'
 import { createElement as h } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
+import { existsSync } from 'node:fs'
+import { dirname, join } from 'node:path'
 import type { CardStage } from '@melite/contracts'
 
 import { MotionCardEditor } from '../src/ui/studio/component.tsx'
@@ -185,4 +187,19 @@ export function mountEditor(over: Record<string, unknown> = {}, props: Record<st
     ...props,
   } as never))
   return { container, onSave, stage }
+}
+
+/** The workspace root for spec disk reads: the nearest dir above the
+ *  invocation cwd carrying pnpm-workspace.yaml — never a cwd
+ *  assumption (the 2026-10-22 suite-red ENOENT class; the marker walk
+ *  is the comfyui-cordis repo() law; import.meta.url is
+ *  vite-rewritten under vitest and cannot anchor a disk read). */
+export function repoRoot(): string {
+  let dir = process.cwd()
+  for (;;) {
+    if (existsSync(join(dir, 'pnpm-workspace.yaml'))) return dir
+    const parent = dirname(dir)
+    if (parent === dir) throw new Error(`no pnpm-workspace.yaml above the invocation cwd ${process.cwd()}`)
+    dir = parent
+  }
 }

@@ -27,11 +27,13 @@ import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, test, vi } from "vitest";
 import { createElement as h } from "react";
 import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { CardsTab } from "../src/client/CardsTab.tsx";
 import { schemaEnvelope } from '@melite/card-base/client';
 import type { BenchStageView, CardsBenchValue } from "../src/client/cards-resource.ts";
 import { mountEstateFakes } from "./estate-harness.ts";
 import { unbindEstateRemote } from '@melite/card-base/client';
+import { repoRoot } from "./repo-root.ts";
 
 let fakes: { calls: Array<{ method: string; args: Record<string, unknown> }>; unmount: () => void } | null = null;
 
@@ -108,7 +110,7 @@ function ruleBlock(law: string, selector: string): string | null {
   return law.slice(at, end + 1);
 }
 
-const LAW = "packages/web/melite-card-view/src/client/card.module.css";
+const LAW = join(repoRoot(), "packages/web/melite-card-view/src/client/card.module.css");
 
 describe("D1 — the error strip rides INSIDE the scroller and growth never moves it", () => {
   const stages: BenchStageView[] = [{ id: "s_0", card: "image-gen", engine: "comfyui", params: {} }];
