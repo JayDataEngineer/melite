@@ -73,8 +73,22 @@ const uncoveredLocationsReporter = fileURLToPath(new URL('./scripts/coverage-unc
  *  helper. A project added later spreads it too — the budget cannot
  *  be forgotten by omission, which is exactly how it was forgotten
  *  for a year (root-only) and how the pre-commit hook kept bouncing
- *  green trees on 5s timeouts that vanish in isolation. */
-const BOOT_BUDGET = { testTimeout: 30_000, hookTimeout: 30_000 } as const;
+ *  green trees on 5s timeouts that vanish in isolation.
+ *
+ *  THE LOAD STRETCH (flake-slowness-wave3, 2026-10-23): under the
+ *  coverage gate's loaded pool (MELITE_COVERAGE_SHARED=1 — the same
+ *  signal tests/helpers/loaded-wait.ts keys on) the shared dom/node
+ *  loops starve past the scoped 30s ceiling — one NEW default-budget
+ *  arm hung per full-gate run, each a different victim (the wave's
+ *  signature: scheduler starvation, never a slower claim). The
+ *  ceiling stretches ×2 at this ONE seat, every project inherits,
+ *  and the per-arm LOADED_WAIT multiples keep their relative
+ *  meaning (explicit arm timeouts are absolute and untouched). */
+const BOOT_POOL_STRETCH = process.env.MELITE_COVERAGE_SHARED === "1" ? 2 : 1;
+const BOOT_BUDGET = {
+  testTimeout: 30_000 * BOOT_POOL_STRETCH,
+  hookTimeout: 30_000 * BOOT_POOL_STRETCH,
+} as const;
 
 const DECK = rootPath('packages/web/melite-card-deck')
 const CARD_VIEW = rootPath('packages/web/melite-card-view')
@@ -168,9 +182,11 @@ export default defineConfig({
   // any project added later — a new project cannot forget it).
   //
   // 30s is the honest budget for a boot; nothing here takes 30s to
-  // fail, and nothing here should be re-run instead of read.
-  testTimeout: 30_000,
-  hookTimeout: 30_000,
+  // fail, and nothing here should be re-run instead of read. Under
+  // the gate's loaded pool the BOOT_BUDGET stretch above carries the
+  // same law here at the root.
+  testTimeout: 30_000 * BOOT_POOL_STRETCH,
+  hookTimeout: 30_000 * BOOT_POOL_STRETCH,
   test: {
     projects: [
       {
