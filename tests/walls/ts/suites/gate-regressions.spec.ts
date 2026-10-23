@@ -1076,8 +1076,12 @@ describe("THE BOOT BUDGET REACHES EVERY PROJECT (the hook's 5s bounces, 2026-09-
     expect(projects, "the config declares projects (a config with none defeats this arm)").toBeGreaterThan(0);
     expect(budgets, `every project spreads BOOT_BUDGET (${String(projects)} projects, ${String(budgets)} spreads)`)
       .toBe(projects);
-    // and the budget is the honest one, not a token value
-    expect(src).toMatch(/BOOT_BUDGET = \{ testTimeout: 30_000, hookTimeout: 30_000 \}/);
+    // and the budget is the honest one, not a token value: the base
+    // is 30_000 and only the wave3 load stretch may multiply it (the
+    // stretch is keyed on the same MELITE_COVERAGE_SHARED signal
+    // loaded-wait.ts keys on — a bigger literal here is still a wall)
+    expect(src).toMatch(/testTimeout: 30_000 \* BOOT_POOL_STRETCH/);
+    expect(src).toMatch(/BOOT_POOL_STRETCH = process\.env\.MELITE_COVERAGE_SHARED === "1" \? 2 : 1/);
     // the root's own copy is kept for anything that reads it, and
     // the correction is written down where the next reader looks
     expect(src).toMatch(/does NOT inherit the root's testTimeout/);
