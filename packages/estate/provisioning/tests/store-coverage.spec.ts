@@ -312,3 +312,76 @@ describe("operation-store list (audit E3 boot rehydrate)", () => {
     );
   });
 });
+
+describe("the store vocabulary — snapshot rows persist (F1: durable re-admit was model-only)", () => {
+  // The F1 debt (2026-10-22 audit): the service plane speaks
+  // model|snapshot|extension items, but validItem accepted
+  // model|extension only — a snapshot acquire threw invalid-items at
+  // save and its durable seat never persisted. These arms ride the
+  // REAL store doors (File + InMemory round-trip, fresh-instance
+  // rehydrate) with the lane's real snapshot vocabulary (the
+  // snapshot-acquire shapes: model-shaped ref, kind "snapshot" item,
+  // revision-pin integrity word).
+  function snapshotOperation(): ProvisionOperation {
+    return operation({
+      operationId: "op-snapshot",
+      ref: { kind: "model", owner: "family", id: "snap-fam" },
+      items: [
+        {
+          key: "model:snap-fam:snapshot:tts-tree",
+          kind: "snapshot",
+          state: "installed",
+          path: "qwen3-tts/hf",
+          integrity: "operator-unverified",
+        },
+        {
+          key: "model:snap-fam:weights.bin",
+          kind: "model",
+          state: "installed",
+          path: "qwen3-tts/hf/weights.bin",
+          sha256: "a".repeat(64),
+          integrity: "declared-sha256",
+        },
+      ],
+    });
+  }
+
+  test("file store round-trips a snapshot row through save→load byte-honest", async () => {
+    const store = new FileOperationStore(root());
+    await store.save(snapshotOperation());
+    const loaded = await store.load("op-snapshot");
+    assert.deepEqual(loaded, snapshotOperation());
+  });
+
+  test("a fresh store instance rehydrates the snapshot row (restart→re-admit)", async () => {
+    const dir = root();
+    const first = new FileOperationStore(dir);
+    await first.save(snapshotOperation());
+    // a NEW instance over the same root is the boot-after-restart reader
+    const reborn = new FileOperationStore(dir);
+    const rows = await reborn.list();
+    assert.equal(rows.length, 1);
+    assert.deepEqual(rows[0], snapshotOperation());
+  });
+
+  test("the in-memory store carries snapshot rows the same way", async () => {
+    const store = new InMemoryOperationStore();
+    await store.save(snapshotOperation());
+    const rows = await store.list();
+    assert.equal(rows.length, 1);
+    assert.deepEqual(rows[0]?.items[0], snapshotOperation().items[0]);
+  });
+
+  test("the widened gate still refuses unknown kinds — a vocabulary, not an open door", async () => {
+    const store = new InMemoryOperationStore();
+    const bogus = operation({
+      items: [{ key: "bogus:x", kind: "dataset", state: "installed" }],
+    });
+    await assert.rejects(
+      () => store.save(bogus),
+      (error: unknown) => error instanceof OperationStoreError &&
+        error.code === "invalid-record" &&
+        error.message.includes("invalid items"),
+    );
+  });
+});

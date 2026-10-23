@@ -133,6 +133,34 @@ echo "$CATALOG" | grep -q '"h3"' || {
   exit 1
 }
 echo "   composed family rows served (h3 present) ✓"
+# THE QUEUE-DOOR RECEIPTS (2026-10-24 debt, the silent-green class):
+# catalog-200 proves only the catalog row. Five boots (2026-10-23)
+# passed every check above while drafts/runs answered seatless 502s —
+# a dead required row settles green under cordis, the estate serves
+# the catalog from a half-up composition. The settle gate now refuses
+# such boots at apply time; these receipts are the door-side proof on
+# the SAME boot. The pending gate stamps at FIRST REQUEST (permanent
+# agentPresets/tools/pluginMarket waiters keep estateStillActivating
+# true), so the first probe may 503 — poll through the 120s grace and
+# demand a seated 200 within the budget. A seatless boot fails here.
+door_poll () { # $1 = path, $2 = label
+	local code waited=0
+	# first request starts the pending stamp
+	code=$(curl -s -b /tmp/lane-rebuild-jar -o /dev/null -w "%{http_code}" "http://127.0.0.1:$PORT$1")
+	for i in $(seq 1 42); do
+		[ "$code" = "200" ] && break
+		sleep 4; waited=$((waited + 4))
+		code=$(curl -s -b /tmp/lane-rebuild-jar -o /dev/null -w "%{http_code}" "http://127.0.0.1:$PORT$1")
+	done
+	if [ "$code" != "200" ]; then
+		echo "FATAL: $2 → $code after ${waited}s — the queue plane never seated"
+		echo "   — the silent-green class: check the boot log for the settle gate's refusal"
+		exit 1
+	fi
+	echo "   $2 → 200 (${waited}s past first request) ✓"
+}
+door_poll "/v1/flows/drafts" "GET /v1/flows/drafts (drafts seat)"
+door_poll "/v1/flows/runs?limit=1" "GET /v1/flows/runs  (runs seat)"
 CB=$(curl -s "http://127.0.0.1:$PORT/plugins/??@melite/card-base/client.js&rev=x" | head -c 400000)
 if echo "$CB" | grep -q "estateInputUrl(props.value)"; then
   echo "   served card-base carries the input-mirror cure ✓"
