@@ -914,3 +914,82 @@ describe("provisioning service", () => {
     assert.equal(service.stateOf(ref), "active");
   });
 });
+
+// THE FAILED-ROW RE-ADMIT (the moss-image burn, audit
+// 2026-11-12): the stall watchdog settled a 7.3 GB acquire failed
+// while the declared bytes sat complete on disk — FAIL#2 died stuck
+// at exactly the declared size — and the census row wore red until a
+// fresh acquire happened to run. verifyOperation's re-admit arm is
+// the symmetric verdict: a failed model item whose DECL counterpart
+// verifies on disk (the same cheap-first scan inspect() runs — stat
+// against the declared size, never a multi-GB hash per poll) is
+// re-admitted active naming the settled operation, and the operation
+// lifts when every item verifies. The disk is the truth a dead
+// verdict cannot outrank.
+describe("verifyOperation re-admit (moss-image burn)", () => {
+  function failedStallOperation(): ProvisionOperation {
+    return operationRow({
+      operationId: "op-stall",
+      state: "failed",
+      finishedAt: Date.now(),
+      detail: "the fetch stalled: no bytes landed in 1000ms (stuck at 7343591088 bytes) — retry the acquire",
+      items: [{
+        key: "model:family:one.bin",
+        kind: "model",
+        state: "failed",
+        errorCode: "artifact/stalled",
+        detail: "the fetch stalled — retry the acquire",
+      }],
+    });
+  }
+
+  function serviceFor(store: string, plan: ProvisionPlan): ProvisioningService {
+    return new ProvisioningService(new Context(), {
+      declaration: declarationFor(plan),
+      artifactWriter: new VerifiedArtifactWriter(store),
+    });
+  }
+
+  test("a settled-failed acquire whose declared bytes verify on disk re-admits active, naming the settled operation (the burn's lift)", async () => {
+    const store = root();
+    mkdirSync(join(store, "checkpoints"), { recursive: true });
+    writeFileSync(join(store, "checkpoints", "one.bin"), BYTES);
+    const service = serviceFor(store, { ref: modelRef(), items: [modelItem()] });
+    const verified = await service.verifyOperation(failedStallOperation());
+    assert.equal(verified.state, "active", "the settled failure lifts when every item verifies on disk");
+    const item = verified.items[0];
+    assert.equal(item.state, "active");
+    assert.equal(item.integrity, "size-checked");
+    assert.match(item.path ?? "", /checkpoints\/one\.bin$/);
+    assert.match(item.detail ?? "", /re-admitted by disk truth/);
+    assert.match(item.detail ?? "", /op-stall/, "the re-admit names the settled operation");
+  });
+
+  test("a failed item whose bytes are NOT on disk keeps its settled verdict verbatim", async () => {
+    const store = root();
+    const service = serviceFor(store, { ref: modelRef(), items: [modelItem()] });
+    const settled = failedStallOperation();
+    const verified = await service.verifyOperation(settled);
+    assert.equal(verified.state, "failed");
+    assert.equal(verified.items[0]?.state, "failed");
+    assert.equal(verified.items[0]?.errorCode, "artifact/stalled", "the stall refusal is preserved");
+  });
+
+  test("a partial file (size mismatch) is never re-admitted — the re-admit verifies, it does not assume", async () => {
+    const store = root();
+    mkdirSync(join(store, "checkpoints"), { recursive: true });
+    writeFileSync(join(store, "checkpoints", "one.bin"), BYTES.subarray(0, BYTES.length - 1));
+    const service = serviceFor(store, { ref: modelRef(), items: [modelItem()] });
+    const verified = await service.verifyOperation(failedStallOperation());
+    assert.equal(verified.state, "failed", "a short file is a real failure, not a stall victim");
+  });
+
+  test("a failed item with no DECL counterpart (family row gone) keeps its settled verdict", async () => {
+    const store = root();
+    mkdirSync(join(store, "checkpoints"), { recursive: true });
+    writeFileSync(join(store, "checkpoints", "one.bin"), BYTES);
+    const service = serviceFor(store, { ref: modelRef(), items: [] });
+    const verified = await service.verifyOperation(failedStallOperation());
+    assert.equal(verified.state, "failed");
+  });
+});

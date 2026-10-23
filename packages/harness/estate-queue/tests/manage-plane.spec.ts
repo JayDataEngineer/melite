@@ -22,6 +22,7 @@ import type {
   ProvisionState,
   ResourceRef,
   ResourceStatus,
+  ResourceStatusItem,
 } from "@melite/estate-provisioning";
 import { Context } from "@deepseek-ai/cordis";
 import { dispatchManage } from "../src/managePlane.ts";
@@ -2031,6 +2032,59 @@ describe("hStatus trust re-verify (audit I-S6)", () => {
     } finally {
       rmRoot();
     }
+  });
+
+  // THE RE-ADMIT FACE (the moss-image burn, audit 2026-11-12): the
+  // merge's symmetric verdict — a settled-FAILED operation whose
+  // bytes verify on disk re-admits through the same seam the demote
+  // rides, and the SERVED row lifts to active naming the settled
+  // operation. The fake here answers the port the service owns; the
+  // real re-admit law is walled in provisioning.spec.ts.
+  it("a settled-failed operation re-admitted by the disk truth serves the row active, naming the operation", async () => {
+    const ref: ResourceRef = { kind: "model", owner: "card", id: "external-model" };
+    const failedItems: ResourceStatusItem[] = [{
+      key: "external:op-ext-1",
+      kind: "model",
+      state: "failed",
+      errorCode: "artifact/stalled",
+      detail: "the fetch stalled — retry the acquire",
+    }];
+    const ctx = CTX({
+      provisioning: {
+        ...fakeProvisioning,
+        reconcile: async (): Promise<ResourceStatus[]> => [{
+          ref,
+          state: "failed",
+          items: failedItems,
+        }],
+        operationOf: () => ({
+          operationId: "op-ext-1",
+          ref,
+          state: "failed",
+          items: failedItems,
+          startedAt: Date.now() - 60_000,
+          finishedAt: Date.now(),
+        }),
+        verifyOperation: async (operation: ProvisionOperation) => ({
+          ...operation,
+          state: "active",
+          items: [{
+            ...operation.items[0],
+            state: "active" as const,
+            path: join(ROOT, "landed-model.safetensors"),
+            integrity: "size-checked" as const,
+            detail: "re-admitted by disk truth: the declared bytes are on disk and verify (size-checked) — operation " +
+              operation.operationId + " settled failed but the file landed; the row serves the disk",
+          }],
+        }),
+      },
+    });
+    const [, env] = await manage({ action: "status" }, ctx);
+    const data = env.data as { resources: Array<{ state: string; detail?: string }>; operations: Array<{ state: string }> };
+    assert.equal(data.resources[0]?.state, "active", "the re-admitted operation lifts the served row");
+    assert.match(data.resources[0]?.detail ?? "", /re-admitted by disk truth/);
+    assert.match(data.resources[0]?.detail ?? "", /op-ext-1/, "the served row names the settled operation");
+    assert.equal(data.operations[0]?.state, "active");
   });
 });
 

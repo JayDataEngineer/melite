@@ -149,8 +149,33 @@ export declare class ProvisioningService extends Service implements Provisioning
      *  path (existence only: the operator-confirmed semantic is that
      *  the bytes' SHA-256 is unverified) and demotes a missing path to
      *  absent, naming the operation and the gone path. Declared rows
-     *  are not this method's subject — inspect() owns them. */
+     *  are not this method's subject — inspect() owns them.
+     *
+     *  THE RE-ADMIT ARM (the moss-image burn, audit 2026-11-12): the
+     *  symmetric verdict for a settled-FAILED item — the stall
+     *  watchdog settled the acquire failed while the declared bytes
+     *  sat complete on disk, and the row wore red until a fresh
+     *  acquire happened to run. A failed model item whose DECL
+     *  counterpart verifies on disk (the same cheap-first scan
+     *  inspect() runs — a stat when the declared size matches, never
+     *  a multi-GB hash per poll) is re-admitted active naming the
+     *  settled operation, and the operation lifts when every item
+     *  verifies. The disk is the truth a dead verdict cannot outrank. */
     verifyOperation(operation: ProvisionOperation): Promise<ProvisionOperation>;
+    /** THE RE-ADMIT CHECK (the moss-image burn, audit 2026-11-12): one
+     *  failed model item's DECL counterpart, verified against the disk
+     *  through the same cheap-first scan inspect() runs. A verifying
+     *  counterpart returns the re-admitted item naming the settled
+     *  operation; anything else — no DECL counterpart, absent bytes,
+     *  a size mismatch, a scan refusal — keeps the failed item
+     *  verbatim (a settled verdict is never invented away).
+     * @param operation the settled operation the item rode (named in
+     *  the re-admitted item's detail).
+     * @param item the failed model item from that operation's row.
+     * @param plan the ref's re-resolved DECL plan (the path + digest +
+     *  size truth the failed item never carried).
+     * @returns the re-admitted active item, or null to keep the item. */
+    private reAdmitFailedItem;
     transitionsOf(ref: ResourceRef): readonly ProvisionState[];
     isLocked(ref: ResourceRef): boolean;
     /** THE STALL BUDGET'S READ FACE (P5 F1's wall seat): the validated
