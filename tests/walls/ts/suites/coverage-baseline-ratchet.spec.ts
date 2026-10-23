@@ -323,8 +323,10 @@ const TRANSPORT_DEEPEN_NEW_FLOORS: Record<string, { statements: number, branches
  *  drift: three same-tree full-gate runs (A/B/C, 944 files,
  *  13,454 tests, suite-green save the four cured walls arms)
  *  deliver the IDENTICAL 135-metric failing set with zero
- *  fail-set drift (three files carry sub-1pp value jitter, none
- *  flipping a verdict); every row re-pinned at the MIN of the
+ *  fail-set drift (three files carry sub-1pp value jitter —
+ *  MotionTimelineBarDrag's branches later swung wider on the first
+ *  post-regen gate and re-seated at the failing face, the
+ *  load-jitter law); every row re-pinned at the MIN of the
  *  three faces (scripts/coverage-regen.mjs — the mechanism seat;
  *  no hand edits). Heading: the roadmap's 2026-10-23 gate
  *  regeneration section. */
