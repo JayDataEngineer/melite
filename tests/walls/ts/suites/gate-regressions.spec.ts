@@ -584,7 +584,10 @@ describe("THE COMMITTED LIB (an emitted import Node can actually resolve)", () =
   // and the walls share. Landed unpinned in the same commit as the
   // ghost-name wall; repinned at the reopen-carry commit when the
   // census next read the tree.
-  const LIB_CENSUS_PIN = 609;
+  // 611 (2026-10-23): cordis's comfyui-vram dual faces (lib/ root +
+  // lib/src/) — the vram headroom gate's module (commit 586982cf4's
+  // emits, 80fa3c709): two committed .js faces for one new src.
+  const LIB_CENSUS_PIN = 611;
   const specRe = /(?:from\s*|import\(\s*)(["'])(\.[^"']*)\1/g;
 
   it("the census is exact (a deletion OR a lowered floor reds — the count is pinned, not floored)", () => {
