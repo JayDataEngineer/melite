@@ -9,7 +9,12 @@
 // the estate's own ComfyUiManagerProvider — a hand-rolled fetch here
 // is the exact cheating the tier exists to catch.
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { afterAll, beforeAll, describe, test } from "vitest";
+import { executeSingle, GraphBuilder } from "@melite/comfyui-cordis";
+import { declaredAction, instantiateAction } from "@melite/comfyui-card-kit";
+import { DECL } from "@melite/models-anny";
 import {
   bootColdStartWorld,
   censusPackDirs,
@@ -129,6 +134,52 @@ describe.skipIf(misses.length > 0)("the cold-start tier (opt-in)", () => {
       choices.includes(wanted),
       "LoraLoader.lora_name does not list the Manager-landed lora (" + wanted + "); saw " + choices.filter((c) => c.includes("qwen-img-edit-21")).join(", "),
     );
+  });
+
+  test("the compose→run→artifact arm: kimodo lands at the cure pin and the anny bake runs to a real GLB", async () => {
+    // THE PACK AT THE CURE PIN — the manifest row is the declared
+    // truth (f283926, pushed to origin/main: a cold Manager clone
+    // reaches the Sam3dBodyImageToAnny artifact-name cure). The
+    // install rides the same Manager git door the impact arm proved.
+    const result = await world.service.ensure({ kind: "extension", id: world.kimodo.name });
+    assert.match(result.state, /restart_required|active/, "the kimodo install did not conclude: " + JSON.stringify(result.items));
+    const landed = landedPackDir(world.engine.coreRoot + "/custom_nodes", world.kimodo.ref);
+    assert.ok(landed !== undefined, "no landed kimodo pack at the pinned ref in custom_nodes");
+    assert.equal(gitHead(landed), world.kimodo.ref, "the landed kimodo HEAD is not the pinned cure ref");
+    // the pack's bake node is served
+    await restartScratchEngine(world);
+    const served = await objectInfoTypeNames(world.engine.baseUrl);
+    assert.ok(served.has("AnnyParamsToGlb"), "AnnyParamsToGlb is not served after the kimodo install (fresh: " + [...served].slice(0, 12).join(", ") + ")");
+    // COMPOSE through the estate's own door: the anny family DECL's
+    // bake action — the same seam the anny-params flow rides (the
+    // facts row mirrors composeOne's family shape).
+    const action = declaredAction(DECL, "bake");
+    const g = new GraphBuilder();
+    const handle = instantiateAction(
+      action,
+      { params_json: JSON.stringify({ dialect: "authored", phenotype: Array.from({ length: 11 }, () => 0.5) }) },
+      { id: "anny", card: "", family: "anny", defaults: {}, lane_inputs: {}, variants: [], variant_groups: [], outputs: [], mods: [] },
+      g,
+      "",
+    );
+    // RUN through the estate's execute door against the scratch
+    // engine (no Context — the walls/probes face; the plugin doors
+    // ride the same inner).
+    const runDir = join(scratchRoot, "run-bake");
+    const res = await executeSingle(
+      runDir,
+      { workflow: g.toJSON(), output_nodes: { body: handle.nodeId } },
+      {},
+      {},
+      world.engine.baseUrl,
+    );
+    // THE ARTIFACT IS REAL: a glb with the glTF magic, downloaded
+    // into the run dir by the estate's own harvest.
+    assert.ok(res.artifacts.length > 0, "the bake landed no artifacts (outputs: " + JSON.stringify(res.outputs) + ")");
+    const glb = res.artifacts.find((a) => a.endsWith(".glb"));
+    assert.ok(glb !== undefined, "no .glb among the landed artifacts: " + res.artifacts.join(", "));
+    const magic = readFileSync(glb).subarray(0, 4).toString("latin1");
+    assert.equal(magic, "glTF", "the landed glb does not carry the glTF magic");
   });
 });
 

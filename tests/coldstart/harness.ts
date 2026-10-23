@@ -225,6 +225,10 @@ export interface ColdStartWorld {
   readonly hand: ReturnType<typeof declaredRows>["hand"];
   readonly lora: ReturnType<typeof declaredRows>["lora"];
   readonly extension: { readonly name: string; readonly url: string; readonly ref: string; readonly pip: readonly string[] };
+  /** the kimodo row (the compose→run→artifact arm's pack — the
+   *  manifest's pinned cure ref is the declared truth this tier
+   *  proves cold-reachable). */
+  readonly kimodo: { readonly name: string; readonly url: string; readonly ref: string; readonly pip: readonly string[] };
   readonly process: ChildProcess;
 }
 
@@ -302,6 +306,15 @@ export async function bootColdStartWorld(scratchRoot: string): Promise<ColdStart
   if (extension === undefined) {
     throw new Error("comfyui-impact-pack missing from the merged extensions manifest");
   }
+  // THE COMPOSE→RUN→ARTIFACT ARM'S PACK (2026-10-23): the kimodo row
+  // re-pinned to f283926 (the Sam3dBodyImageToAnny artifact-name
+  // cure, pushed to origin/main the same day) — a cold Manager clone
+  // reaches the cure, and the tier proves it by composing the anny
+  // bake through the estate's own doors.
+  const kimodo = mergeManifest(REPO_ROOT).find((row) => row.name === "melite-kimodo-nodes");
+  if (kimodo === undefined) {
+    throw new Error("melite-kimodo-nodes missing from the merged extensions manifest");
+  }
 
   const port = await freePort();
   const baseUrl = "http://127.0.0.1:" + String(port);
@@ -353,6 +366,21 @@ export async function bootColdStartWorld(scratchRoot: string): Promise<ColdStart
         ...(extension.ref.trim() === "" ? {} : { ref: extension.ref }),
         ...(extension.version.trim() === "" ? {} : { version: extension.version }),
         requirements: [...extension.pip],
+        nodeTypes: [],
+      }],
+    },
+    {
+      ref: { kind: "extension", id: kimodo.name },
+      items: [{
+        kind: "extension",
+        key: "extension:" + kimodo.name,
+        id: kimodo.name,
+        url: kimodo.url,
+        required: true,
+        provider: "git",
+        ...(kimodo.ref.trim() === "" ? {} : { ref: kimodo.ref }),
+        ...(kimodo.version.trim() === "" ? {} : { version: kimodo.version }),
+        requirements: [...kimodo.pip],
         nodeTypes: [],
       }],
     },
@@ -438,6 +466,7 @@ export async function bootColdStartWorld(scratchRoot: string): Promise<ColdStart
     hand: rows.hand,
     lora: rows.lora,
     extension: { name: extension.name, url: extension.url, ref: extension.ref, pip: extension.pip },
+    kimodo: { name: kimodo.name, url: kimodo.url, ref: kimodo.ref, pip: kimodo.pip },
     process: child,
   };
 }
