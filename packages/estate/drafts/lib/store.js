@@ -133,10 +133,26 @@ export class DraftsDomainSeatService extends Service {
     /** Per-facility open handles, keyed by the facility object (one
      *  slot per provider; GC-bounded, fiber-lifetime). */
     cached = new WeakMap();
+    /** Handles this seat opened: the facility frees the name on
+     *  Domain.close() only, and the WeakMap above cannot be
+     *  enumerated at teardown — so live handles ride this set. */
+    opened = new Set();
     constructor(ctx, config = {}) {
         // the estate-seat id: dsh core may own the bare name
         super(ctx, "meliteDraftsDomain");
         this.config = config;
+        // THE RE-MOUNT LAW (incident
+        // dev_docs/audits/journey/2026-10-23-drafts-domain-wedge.md):
+        // the caller owns its handles — the facility frees the name on
+        // Domain.close() only (its own documented shape: the close as
+        // the caller's ctx.effect disposer). Unloading awaits async
+        // disposers, so the reservation is gone before a re-mounted
+        // seat can open.
+        this.ctx.effect(() => async () => {
+            const handles = [...this.opened];
+            this.opened.clear();
+            await Promise.allSettled(handles.map((domain) => domain.close()));
+        }, "meliteDraftsDomain: close opened domains");
     }
     /** The composition site's named storage root (J12: config —
      *  the retired env seam's twin). */
@@ -163,8 +179,26 @@ export class DraftsDomainSeatService extends Service {
             return hit.ready;
         const ready = (async () => {
             const drafts = await facility.open(draftsDomainSpec);
-            await importLegacyDrafts(drafts, root);
-            await healReplayedRefusals(drafts);
+            try {
+                await importLegacyDrafts(drafts, root);
+                await healReplayedRefusals(drafts);
+            }
+            catch (error) {
+                // A post-open failure must not leak the reservation: the
+                // slot is cleared below, and without this close the retry
+                // would meet 'already open' — the same wedge, one request
+                // later. The close is best-effort reservation hygiene (the
+                // facility also frees on unmount); the original failure is
+                // what propagates.
+                try {
+                    await drafts.close();
+                }
+                catch {
+                    /* close-time second fault: the open failure below owns the voice */
+                }
+                throw error;
+            }
+            this.opened.add(drafts);
             return drafts;
         })();
         this.cached.set(facility, { root, ready });

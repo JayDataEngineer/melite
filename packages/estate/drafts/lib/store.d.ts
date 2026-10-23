@@ -27,6 +27,10 @@ export declare class DraftsDomainSeatService extends Service {
     /** Per-facility open handles, keyed by the facility object (one
      *  slot per provider; GC-bounded, fiber-lifetime). */
     private cached;
+    /** Handles this seat opened: the facility frees the name on
+     *  Domain.close() only, and the WeakMap above cannot be
+     *  enumerated at teardown — so live handles ride this set. */
+    private opened;
     constructor(ctx: Context, config?: Readonly<DraftsConfig>);
     /** The composition site's named storage root (J12: config —
      *  the retired env seam's twin). */

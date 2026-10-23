@@ -351,3 +351,90 @@ test("a root with no legacy drafts dir imports nothing, cleanly", async () => {
   assert.equal(drafts.puts.length, 0, "no dir, no rows");
   assert.notEqual(drafts.markerSetAt, null, "the epoch still stamps");
 });
+
+// THE RE-MOUNT LAW (incident
+// dev_docs/audits/journey/2026-10-23-drafts-domain-wedge.md): the
+// reserving fake models the REAL facility — a second open of a held
+// name throws 'already open', and only Domain.close() frees it.
+// The lenient fake above stays untouched: the foreign-root arm
+// opens two handles on one facility by design (config isolation,
+// not facility multiplexing).
+class ReservingDomain extends FakeDomain {
+  closed = 0;
+  failStamp = false;
+  constructor(private readonly releaseName: () => void) {
+    super();
+    const inner = this.global;
+    this.global = {
+      get: inner.get,
+      set: async (v: number): Promise<void> => {
+        if (this.failStamp) throw new Error("storage/junit-stamp-fails");
+        await inner.set(v);
+      },
+    };
+  }
+  async close(): Promise<void> {
+    this.closed += 1;
+    this.releaseName();
+  }
+}
+
+function mountReservingFacility(ctx: Context): {
+  facility: { open(): Promise<Domain<DraftsDomainSpec>> };
+  opens: () => number;
+  domain: ReservingDomain;
+  held: () => boolean;
+} {
+  let held = false;
+  let opens = 0;
+  const domain = new ReservingDomain(() => {
+    held = false;
+  });
+  const facility = {
+    open(): Promise<Domain<DraftsDomainSpec>> {
+      if (held) return Promise.reject(new Error("domain 'drafts' is already open"));
+      held = true;
+      opens += 1;
+      return Promise.resolve(domain as unknown as Domain<DraftsDomainSpec>);
+    },
+  };
+  ctx.provide("storageDomain", facility);
+  return { facility, opens: () => opens, domain, held: () => held };
+}
+
+test("seat unload closes its domains: a re-mounted seat re-opens (the 2026-10-23 wedge)", async () => {
+  const root = mintRoot();
+  mkdirSync(join(root, "storage"), { recursive: true });
+  const ctxA = new Context();
+  new DraftsDomainSeatService(ctxA, { storageRoot: join(root, "storage") });
+  const rec = mountReservingFacility(ctxA);
+  const first = await openDraftsDomain(ctxA);
+  assert.ok(first !== undefined);
+  assert.equal(rec.held(), true, "the name stays reserved while the seat lives");
+  // the re-mount: A's fiber dies (reload), a new seat mounts against the same facility
+  await ctxA.fiber.dispose();
+  assert.equal(rec.domain.closed, 1, "unload closed the handle");
+  assert.equal(rec.held(), false, "the reservation freed");
+  const ctxB = new Context();
+  new DraftsDomainSeatService(ctxB, { storageRoot: join(root, "storage") });
+  ctxB.provide("storageDomain", rec.facility);
+  const second = await openDraftsDomain(ctxB);
+  assert.ok(second !== undefined, "the re-mounted seat opens");
+  assert.equal(rec.opens(), 2, "exactly one open per seat — no leak, no wedge");
+});
+
+test("a post-open failure closes the handle: the retry re-opens (never 'already open')", async () => {
+  const root = mintRoot();
+  mkdirSync(join(root, "storage"), { recursive: true });
+  const ctx = new Context();
+  new DraftsDomainSeatService(ctx, { storageRoot: join(root, "storage") });
+  const rec = mountReservingFacility(ctx);
+  rec.domain.failStamp = true;
+  await assert.rejects(() => openDraftsDomain(ctx), /storage\/junit-stamp-fails/);
+  assert.equal(rec.domain.closed, 1, "the failed open's handle closed");
+  assert.equal(rec.held(), false, "the name freed for the retry");
+  rec.domain.failStamp = false;
+  const retry = await openDraftsDomain(ctx);
+  assert.ok(retry !== undefined, "the retry opens against the freed name");
+  assert.equal(rec.opens(), 2, "slot purged AND name freed — the retry is a real re-open");
+});
