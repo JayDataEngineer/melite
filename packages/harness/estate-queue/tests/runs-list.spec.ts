@@ -446,6 +446,16 @@ describe("runRowOrNull gates", () => {
     assert.equal(runRowOrNull(row({ artifacts: [{ truncated: false, listed: 1, total: 2 }] })), null);
     assert.equal(runRowOrNull(row({ artifacts: [{ truncated: true, listed: -1, total: 2 }] })), null);
     assert.ok(runRowOrNull(row({ artifacts: [{ truncated: true, listed: 2, total: 3 }] })) !== null);
+    // THE CAPPED FACE (previews 2b): the row field rides when the
+    // ints are sane, refuses the row whole when they are not — the
+    // gate never serves a half-shaped truncation verdict.
+    const withField = row({ truncated: { listed: 3, total: 6 } }) as Parameters<typeof runRowOrNull>[0] & { truncated?: { listed: number; total: number } };
+    assert.deepEqual(
+      (runRowOrNull(withField) as Record<string, unknown>)["truncated"],
+      { listed: 3, total: 6 },
+    );
+    const badField = row({ truncated: { listed: -1, total: 6 } }) as Parameters<typeof runRowOrNull>[0] & { truncated?: { listed: number; total: number } };
+    assert.equal(runRowOrNull(badField), null);
     assert.ok(runRowOrNull(row({ artifacts: [art({ type: "video" }), art({ type: "audio" }), art({ type: "model" })] })) !== null);
   });
 });
@@ -499,6 +509,25 @@ describe("listRuns envelope", () => {
     put("run-BAD!", sidecar(), false);
     mkdirSync(join(out, "notes"), { recursive: true });
   };
+  it("a truncated listing stamps the ROW FIELD (the panel's capped face — previews 2b, 2026-11-12)", async () => {
+    // The marker rode only INSIDE the artifacts array; the panel's
+    // capped counter reads the run row's `truncated` field, which
+    // the seat never stamped — a 3-of-6 listing read as complete
+    // and the grid never said a product was missing.
+    const state = tmp();
+    const dir = join(state, "output", "run-capped");
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(join(dir, "_flow.json"), JSON.stringify({
+      status: "completed", pipeline: "flow_inline", seed: 7, created_at: 100,
+    }));
+    for (let i = 0; i < 6; i++) writeFileSync(join(dir, "i" + i + ".png"), "img");
+    const { runs } = await listRuns(state, 10, async () => true);
+    const row = runs[0] as Record<string, unknown>;
+    const arts = row["artifacts"] as Array<Record<string, unknown>>;
+    assert.deepEqual(arts[arts.length - 1], { truncated: true, listed: 3, total: 6 });
+    assert.deepEqual(row["truncated"], { listed: 3, total: 6 });
+  });
+
   it("stroke-82: a bulky sidecar payload never zombies the identity keys (the 8191 slice)", async () => {
     // The sidecar's key order puts the identity scalars FIRST
     // (stroke 82); a stages/error payload past 8K used to push

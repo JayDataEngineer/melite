@@ -16979,6 +16979,9 @@ window.__ModuleLoader__.load({
 			statGatewayNotes: (p) => ` · ${p.count} gateway note${p.count > 1 ? "s" : ""}`,
 			/** The header stat line's truncation suffix. */
 			statCapped: (p) => ` · ${p.count} capped`,
+			/** The header's boot-staged face: the persisted feed is painted
+			*  while the fresh one seats (E2-3 arm 2 — instant first paint). */
+			statStale: " · stale — refreshing",
 			/** The flows tab pill face. */
 			tabFlows: (p) => `Flows ${p.count}`,
 			/** The artifacts tab pill face. */

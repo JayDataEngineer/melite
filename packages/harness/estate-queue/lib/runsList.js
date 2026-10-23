@@ -378,6 +378,11 @@ export function runRowOrNull(row) {
         if (!artifactRowOk(a))
             return null;
     }
+    // a half-shaped truncation verdict refuses the row whole (the
+    // gate's own law: never serve a shape it cannot vouch for)
+    if (row.truncated !== undefined
+        && !(isIntGe0(row.truncated.listed) && isIntGe0(row.truncated.total)))
+        return null;
     return {
         run_id: row.run_id,
         name: row.name,
@@ -393,6 +398,9 @@ export function runRowOrNull(row) {
         ...(row.stage_ids !== undefined && row.stage_ids.length > 0 ? { stage_ids: [...row.stage_ids] } : {}),
         ...(typeof row.export_name === "string" && row.export_name !== "" ? { export_name: row.export_name } : {}),
         ...(typeof row.export_path === "string" && row.export_path !== "" ? { export_path: row.export_path } : {}),
+        ...(row.truncated !== undefined && isIntGe0(row.truncated.listed) && isIntGe0(row.truncated.total)
+            ? { truncated: { listed: row.truncated.listed, total: row.truncated.total } }
+            : {}),
     };
 }
 /** Strict int parse: surrounding whitespace stripped, one optional
@@ -557,6 +565,13 @@ async function buildRunCard(outputRoot, ent, hasDraft) {
     if (pipeline.startsWith("_"))
         return null; // user-surface law
     const literal = "./output/" + ent.dir;
+    const arts = runArtifacts(runDir, literal);
+    // THE CAPPED FACE (previews 2b, 2026-11-12): the truncation marker
+    // rides the artifact list's tail, but the panel's capped counter
+    // reads the run row's `truncated` FIELD — stamp it beside the list
+    // so a 3-of-6 listing never reads as complete (the grid says a
+    // product is missing).
+    const truncMarker = arts.find((a) => a["truncated"] === true);
     const built = runRowOrNull({
         run_id: ent.dir,
         name: pipeline,
@@ -566,7 +581,10 @@ async function buildRunCard(outputRoot, ent, hasDraft) {
         prompt,
         seed,
         thumbnail: runThumbnail(runDir, ent.dir),
-        artifacts: runArtifacts(runDir, literal),
+        artifacts: arts,
+        ...(truncMarker !== undefined
+            ? { truncated: { listed: truncMarker["listed"], total: truncMarker["total"] } }
+            : {}),
         params: { seed },
         draft_id: draft,
         ...(stageIdsRaw !== "" ? { stage_ids: stageIdsRaw.split(",") } : {}),

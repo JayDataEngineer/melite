@@ -48,6 +48,14 @@ export declare function runRowOrNull(row: {
      *  engine-reported minted .qvoice absolute path; older sidecars
      *  predate it, load lanes stamp nothing. */
     export_path?: string;
+    /** THE CAPPED FACE (previews 2b, 2026-11-12): the artifact list's
+     *  trailing marker lifted onto the row — the panel's capped
+     *  counter reads THIS, so a partial listing never reads as
+     *  complete. Optional — full listings stamp nothing. */
+    truncated?: {
+        listed: number;
+        total: number;
+    };
 }): Record<string, unknown> | null;
 /** Strict int parse: surrounding whitespace stripped, one optional
  *  sign, ASCII digits with single internal underscores ("1_0" ->
