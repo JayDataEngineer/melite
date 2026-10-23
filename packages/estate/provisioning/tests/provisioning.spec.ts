@@ -1222,6 +1222,95 @@ describe("verifyOperation re-admit (moss-image burn)", () => {
     assert.equal(verified.items[0]?.errorCode, "provisioning/byo");
   });
 
+  // THE SNAPSHOT DEMOTE (the ROADMAP rider on audit F1, 2026-10-22:
+  // the trust re-verify demoted a missing MODEL path to absent but
+  // let snapshot items through unverified — a deleted snapshot tree
+  // kept the op face active at merge). An ACTIVE snapshot item
+  // re-runs its kind's anchor probe against the DECL counterpart's
+  // tree; a gone or gutted tree demotes to absent naming the
+  // operation and the tree, and the operation settles absent.
+  function snapshotPlanTree() {
+    return {
+      kind: "snapshot",
+      key: "model:family:snapshot:tts-tree",
+      owner: "family",
+      id: "family",
+      name: "tts-tree",
+      folder: "qwen3-tts/hf",
+      repoId: "example/tts-tree",
+      revision: "a".repeat(40),
+      allowPatterns: ["config.json", "model.safetensors"],
+      required: true,
+      provider: "hf-snapshot",
+    } as const;
+  }
+
+  function activeSnapshotOperation(treePath: string): ProvisionOperation {
+    return operationRow({
+      operationId: "op-snap-merge",
+      state: "active",
+      finishedAt: Date.now(),
+      items: [{
+        key: "model:family:snapshot:tts-tree",
+        kind: "snapshot",
+        state: "active",
+        path: treePath,
+        integrity: "operator-unverified",
+        detail: "pinned snapshot example/tts-tree@aaaaaaaaaaaa",
+      }],
+    });
+  }
+
+  test("a DELETED snapshot tree demotes the active op to absent, naming the tree", async () => {
+    const store = root();
+    // the tree was never landed (or was deleted wholesale)
+    const treePath = join(store, "qwen3-tts", "hf", "tts-tree");
+    const service = serviceFor(store, { ref: modelRef(), items: [snapshotPlanTree()] });
+    const verified = await service.verifyOperation(activeSnapshotOperation(treePath));
+    assert.equal(verified.state, "absent", "a gone tree cannot serve active");
+    assert.equal(verified.items[0]?.state, "absent");
+    assert.match(verified.items[0]?.detail ?? "", /the recorded snapshot tree is gone/);
+    assert.match(verified.items[0]?.detail ?? "", /op-snap-merge/);
+  });
+
+  test("a GUTTED snapshot tree (folder present, anchors gone) demotes — the probe, not the folder, is the law", async () => {
+    const store = root();
+    const tree = join(store, "qwen3-tts", "hf", "tts-tree");
+    mkdirSync(tree, { recursive: true });
+    writeFileSync(join(tree, "README.md"), "docs the patterns exclude");
+    // folder EXISTS — the old folder-only check would have served
+    // active; the anchor probe refuses (no config.json, no weights)
+    const service = serviceFor(store, { ref: modelRef(), items: [snapshotPlanTree()] });
+    const verified = await service.verifyOperation(activeSnapshotOperation(tree));
+    assert.equal(verified.state, "absent", "a tree without its anchors is not the declared truth");
+    assert.equal(verified.items[0]?.state, "absent");
+  });
+
+  test("a PRESENT snapshot tree keeps the active op verbatim — the demote never invents absence", async () => {
+    const store = root();
+    const tree = join(store, "qwen3-tts", "hf", "tts-tree");
+    mkdirSync(tree, { recursive: true });
+    writeFileSync(join(tree, "config.json"), "{}");
+    writeFileSync(join(tree, "model.safetensors"), "weights");
+    const service = serviceFor(store, { ref: modelRef(), items: [snapshotPlanTree()] });
+    const before = activeSnapshotOperation(tree);
+    const verified = await service.verifyOperation(before);
+    assert.deepEqual(verified, before, "nothing missing, nothing re-admitted — the row rides verbatim");
+  });
+
+  test("no DECL counterpart (row moved on) falls back to the folder's existence — never an invented verdict", async () => {
+    const store = root();
+    const tree = join(store, "qwen3-tts", "hf", "tts-tree");
+    mkdirSync(tree, { recursive: true });
+    writeFileSync(join(tree, "config.json"), "{}");
+    // the DECL no longer names the tree — the anchor probe has no
+    // counterpart, so the folder's own existence is the whole law
+    const service = serviceFor(store, { ref: modelRef(), items: [] });
+    const verified = await service.verifyOperation(activeSnapshotOperation(tree));
+    assert.equal(verified.state, "active", "an unjudgeable tree is never invented absent");
+    assert.equal(verified.items[0]?.state, "active");
+  });
+
   // THE MIXED-KIND LIFT (fold audit F3, 2026-11-12): the kind gate
   // lives in TWO spots (the failed-item filter AND the loop's heal
   // gate) — a mixed-kind op (failed model + failed snapshot, BOTH

@@ -184,6 +184,19 @@ async function fileExists(path) {
         return false;
     }
 }
+/** A recorded path stands regardless of kind — model paths are files,
+ * snapshot trees are directories. The no-counterpart fallback judges
+ * the row's own standing place, where only presence (either kind)
+ * counts. */
+async function pathExists(path) {
+    try {
+        await stat(path);
+        return true;
+    }
+    catch {
+        return false;
+    }
+}
 function copyOperation(operation) {
     return {
         operationId: operation.operationId,
@@ -810,6 +823,38 @@ export class ProvisioningService extends Service {
             if (healed !== null) {
                 reAdmitted = true;
                 items.push(healed);
+                continue;
+            }
+            // THE SNAPSHOT DEMOTE (the ROADMAP rider, 2026-10-22 audit F1:
+            // the trust re-verify above demoted a missing model path to
+            // absent but let snapshot items through unverified — a deleted
+            // snapshot tree kept the op face active at merge). An active
+            // snapshot item re-runs its kind's own presence probe (the
+            // anchor probe inspect() runs: the DECL counterpart's exact
+            // files all present plus a weights anchor) against the recorded
+            // tree; a gutted or deleted tree demotes to absent naming the
+            // operation and the gone tree. No counterpart (the DECL row
+            // moved on) falls back to the recorded path's own existence
+            // (pathExists: file OR directory — a snapshot's standing place
+            // is a tree, and fileExists's isFile would invent absence) — an
+            // unjudgeable tree is never invented absent.
+            if (item.kind === "snapshot" && item.path !== undefined && item.state === "active") {
+                const fetched = plan === undefined ? await this.plan(operation.ref).catch(() => undefined) : plan;
+                const counterpart = fetched?.items.find((planItem) => planItem.key === item.key);
+                const present = counterpart !== undefined && counterpart.kind === "snapshot"
+                    ? snapshotTreePresent((p) => existsSync(p), join(this.writerRoot, snapshotDest(counterpart.folder, counterpart.name)), exactPatternFiles(counterpart.allowPatterns)).present
+                    : await pathExists(item.path);
+                if (!present) {
+                    missing = true;
+                    items.push({
+                        ...item,
+                        state: "absent",
+                        detail: "the recorded snapshot tree is gone (" + item.path + ") — operation " +
+                            operation.operationId + " landed a tree that no longer verifies; run the download again",
+                    });
+                    continue;
+                }
+                items.push(item);
                 continue;
             }
             if (item.kind !== "model" || item.path === undefined || item.state !== "active" || await fileExists(item.path)) {
