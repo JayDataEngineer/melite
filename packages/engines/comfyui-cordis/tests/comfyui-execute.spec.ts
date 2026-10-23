@@ -805,7 +805,7 @@ describe("executeSingle × THE VRAM HEADROOM GATE (the prevent-oom law, 2026-10-
   it("a declared budget headroom proves: the run submits, /free never fired", async () => {
     const r = await executeSingle(
       "/tmp/run-vram-ok",
-      { timeout_s: 10, vram_budget_mb: 13500 },
+      { timeout_s: 10, vram_budget_mb: 15500 },
       {},
       {},
       "http://override:8188",
@@ -814,14 +814,12 @@ describe("executeSingle × THE VRAM HEADROOM GATE (the prevent-oom law, 2026-10-
     expect(vramFreeBodies).toHaveLength(0);
     expect(submitCalls).toBe(1);
   });
-  it("a budget the engine cannot prove REFUSES BEFORE SUBMIT — queuePrompt never reached, the voice names headroom vs budget and the reclaim", async () => {
-    // short probe → /free → three re-probes still short (the burn:
-    // engine cache 10.26 GiB resident, the estimator needing ~12.9).
-    vramStatsQueue = [stats(9_000), stats(9_500), stats(9_600), stats(9_700)];
+  it("a budget the engine cannot prove REFUSES BEFORE SUBMIT — queuePrompt never reached, /free NEVER fired (ComfyUI manages VRAM auto; the estate never evicts)", async () => {
+    vramStatsFallback = stats(9_000);
     await expect(
-      executeSingle("/tmp/run-vram-refuse", { timeout_s: 10, vram_budget_mb: 13500 }, {}, {}, "http://override:8188"),
-    ).rejects.toThrow(/refusing rather than OOM at run time.*9700 MiB free.*13500 MiB/s);
+      executeSingle("/tmp/run-vram-refuse", { timeout_s: 10, vram_budget_mb: 15500 }, {}, {}, "http://override:8188"),
+    ).rejects.toThrow(/refusing rather than OOM at run time.*9000 MiB free.*15500 MiB/s);
     expect(submitCalls, "the refusal fires BEFORE the engine queues anything").toBe(0);
-    expect(vramFreeBodies).toEqual([{ unload_models: true, free_memory: true }]);
+    expect(vramFreeBodies, "the never-evicts law").toHaveLength(0);
   });
 });

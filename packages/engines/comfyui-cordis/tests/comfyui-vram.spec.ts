@@ -1,19 +1,19 @@
 // comfyui-vram.spec.ts — THE VRAM HEADROOM GATE WALL (the
-// "Comfyui should prevent oom" law, operator 2026-10-23). The burn:
-// the anny estimator subprocess needed ~12.9 GiB on a 4090 whose
-// engine cache held 10.26 GiB — the run died 20 minutes in on a
-// 388 MiB alloc, torch's OOM the only diagnosis. The law: the
-// estate refuses BEFORE submit when headroom cannot be proven,
-// freeing engine cache first — never a mid-run OOM. Every arm here
-// fires on its own path (canon axis 3): the knob's admission, the
-// probe's refusal voices, the reclaim loop, and the loud refusal
-// that names headroom vs budget.
+// "ComfyUI should prevent oom" law, operator 2026-10-23, refined
+// the same round: "ComfyUI manages VRAM auto" / "only comfyui uses
+// the GPU"). The burn: the anny estimator subprocess needed ~13.8
+// GiB free on a 4090 whose engine held 10.26 GiB managed residency
+// — the run died mid-flight on a 388 MiB alloc, torch's OOM the
+// only diagnosis. The law: the estate refuses BEFORE submit when
+// headroom cannot be proven — and NEVER evicts (no /free, no
+// nudge, no restarts: the engine's own management owns residency;
+// an earlier arm fired /free from here and evicted the operator's
+// managed cache — retired). Every arm fires on its own path.
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-// The transport is the ONLY seam mocked: the SDK client's doors
-// (getSystemStats / free) are the rig. The unload core
-// (comfyui-control) rides REAL — its own wall holds its refusal
-// voice; here it exercises through the mocked transport's free().
+// The transport is the ONLY seam mocked: the SDK client's
+// getSystemStats door is the rig. The free() door counts CALLS —
+// the never-evicts law's oracle (it must stay zero on every path).
 vi.mock("../src/comfyui-transport.ts", () => ({
   withBound: (work: () => Promise<unknown>): Promise<unknown> => work(),
   sdkClient: (server: string): unknown => ({
@@ -27,23 +27,22 @@ vi.mock("../src/comfyui-transport.ts", () => ({
 
 import { normalizeVramBudgetMb, probeVramFreeMb, ensureVramHeadroom, gateVramForStage } from "../src/comfyui-vram.ts";
 
-const MB = 1024 * 1024;
-
-// THE RIG: stats answers shift off a queue (a short probe, then the
-// post-/free re-probes); the fallback covers the pass arm's single read.
+// THE RIG: stats answers shift off a queue; the fallback covers the
+// pass arm's single read.
 let statsQueue: unknown[] = [];
-let statsFallback: unknown = { devices: [{ name: "cuda:0", vram_total: 25_600 * MB, vram_free: 20_000 * MB }] };
+let statsFallback: unknown = { devices: [] };
 const freeCalls: unknown[] = [];
 
 const probeClient = { getSystemStats: async (): Promise<unknown> => statsQueue.shift() ?? statsFallback };
 
 beforeEach((): void => {
   statsQueue = [];
-  statsFallback = { devices: [{ name: "cuda:0", vram_total: 25_600 * MB, vram_free: 20_000 * MB }] };
+  statsFallback = { devices: [] };
   freeCalls.length = 0;
   vi.restoreAllMocks();
 });
 
+const MB = 1024 * 1024;
 const stats = (freeMb: number): unknown => ({
   devices: [{ name: "cuda:0", vram_total: 25_600 * MB, vram_free: freeMb * MB }],
 });
@@ -53,7 +52,7 @@ describe("normalizeVramBudgetMb (the knob's admission)", () => {
     expect(normalizeVramBudgetMb(undefined)).toBeUndefined();
   });
   it("a positive finite number is the budget in MiB", () => {
-    expect(normalizeVramBudgetMb(13500)).toBe(13500);
+    expect(normalizeVramBudgetMb(15500)).toBe(15500);
   });
   it.each([0, -1, Number.NaN, Number.POSITIVE_INFINITY, "big", null])(
     "a present-but-garbage value (%s) REFUSES LOUD — a typo'd budget that silently gated nothing is the failure class this law retires",
@@ -65,6 +64,7 @@ describe("normalizeVramBudgetMb (the knob's admission)", () => {
 
 describe("probeVramFreeMb (the engine's own numbers, bytes → MiB)", () => {
   it("devices[0].vram_free rides back as MiB", async () => {
+    statsFallback = { devices: [{ name: "cuda:0", vram_total: 25_600 * MB, vram_free: 20_000 * MB }] };
     await expect(probeVramFreeMb("http://s:8188", probeClient)).resolves.toBe(20_000);
   });
   it("an empty devices array REFUSES — headroom cannot be proven, never assumed", async () => {
@@ -79,23 +79,18 @@ describe("probeVramFreeMb (the engine's own numbers, bytes → MiB)", () => {
   });
 });
 
-describe("ensureVramHeadroom (prove, reclaim, or refuse — never a mid-run OOM)", () => {
-  it("headroom already proved: NO /free, NO loop, clean return", async () => {
-    await expect(ensureVramHeadroom("http://s:8188", 13500, probeClient)).resolves.toBeUndefined();
+describe("ensureVramHeadroom (prove or refuse — the estate NEVER evicts)", () => {
+  it("headroom proved: clean return, ZERO /free calls (ComfyUI manages VRAM auto)", async () => {
+    statsFallback = stats(20_000);
+    await expect(ensureVramHeadroom("http://s:8188", 15500, probeClient)).resolves.toBeUndefined();
     expect(freeCalls).toHaveLength(0);
   });
-  it("short headroom fires the engine's own /free and the re-probe that meets budget proceeds", async () => {
-    statsQueue = [stats(9_000), stats(14_000)];
-    await expect(ensureVramHeadroom("http://s:8188", 13500, probeClient)).resolves.toBeUndefined();
-    expect(freeCalls).toHaveLength(1);
-    expect(freeCalls[0]).toEqual({ unload_models: true, free_memory: true });
-  });
-  it("still short after the reclaim loop REFUSES LOUD — headroom vs budget vs reclaimed, the numbers named", async () => {
-    statsQueue = [stats(9_000), stats(9_500), stats(9_600), stats(9_700)];
-    await expect(ensureVramHeadroom("http://s:8188", 13500, probeClient)).rejects.toThrowError(
-      /refusing rather than OOM at run time.*9700 MiB free.*13500 MiB.*reclaimed 700 MiB/s,
+  it("short headroom REFUSES LOUD on the ONE probe — the numbers named, and /free is NEVER fired (the engine's own management owns residency)", async () => {
+    statsFallback = stats(9_000);
+    await expect(ensureVramHeadroom("http://s:8188", 15500, probeClient)).rejects.toThrowError(
+      /refusing rather than OOM at run time.*9000 MiB free.*15500 MiB.*never evicts/s,
     );
-    expect(freeCalls).toHaveLength(1);
+    expect(freeCalls, "the never-evicts law: the estate does not command the engine's memory").toHaveLength(0);
   });
 });
 
@@ -107,13 +102,12 @@ describe("gateVramForStage (the stage-door read)", () => {
     ).resolves.toBeUndefined();
     expect(statsSpy).not.toHaveBeenCalled();
   });
-  it("a doc carrying the knob delegates the gate (reclaim arm resolves, /free fired)", async () => {
-    statsFallback = stats(9_000);
-    statsQueue = [stats(9_000), stats(14_000)];
+  it("a doc carrying the knob delegates the gate (proved arm resolves, /free never fired)", async () => {
+    statsFallback = stats(20_000);
     await expect(
-      gateVramForStage("http://s:8188", { workflow: {}, vram_budget_mb: 13500 }, probeClient),
+      gateVramForStage("http://s:8188", { workflow: {}, vram_budget_mb: 15500 }, probeClient),
     ).resolves.toBeUndefined();
-    expect(freeCalls).toHaveLength(1);
+    expect(freeCalls).toHaveLength(0);
   });
   it("a garbage knob on the doc refuses with the admission voice", async () => {
     await expect(

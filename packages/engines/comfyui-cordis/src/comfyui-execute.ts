@@ -450,11 +450,12 @@ export async function executeSingleInner(
   const params: Record<string, EngineJson> = { ...nodeParams };
   const wf: Record<string, EngineJson> = spliceWorkflow(params);
   // THE VRAM HEADROOM GATE (the "ComfyUI should prevent oom" law,
-  // 2026-10-23): a stage declaring vram_budget_mb proves that much
-  // free VRAM BEFORE submit — short headroom fires the engine's own
-  // /free unload, then refuses loud, never a mid-run OOM. Absent
-  // knob = zero traffic (back-compat). Fired before uploadReferenced
-  // so a refused run moves no bytes.
+  // 2026-10-23 — the estate never evicts, ComfyUI manages VRAM
+  // auto): a stage declaring vram_budget_mb proves that much free
+  // VRAM BEFORE submit — short headroom REFUSES loud, never a
+  // mid-run OOM, never a /free (the engine's own management owns
+  // residency). Absent knob = zero traffic (back-compat). Fired
+  // before uploadReferenced so a refused run moves no bytes.
   await gateVramForStage(server, params, client);
   const staged = await uploadReferenced(client, wf, { runsRoot: dirname(String(runDir)), stateRoots: opts.stateRoots });
   const timeoutS: number = normalizeTimeoutS(params["timeout_s"]);

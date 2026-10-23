@@ -204,11 +204,12 @@ function composeOne(
   if (firstOutput !== undefined) {
     producer[firstOutput.name] = handle.nodeId;
   }
-  // THE VRAM BUDGET RIDES THE DECLARATION ("Comfyui should prevent
-  // oom", 2026-10-23): an action that declares vramBudgetMb stamps
-  // its composed stage's params with the raw knob — the same
-  // channel timeout_s reads — and the execute door gates on it
-  // (prove headroom, /free, or refuse loud; never a mid-run OOM).
+  // THE VRAM BUDGET RIDES THE DECLARATION ("ComfyUI should prevent
+  // oom", 2026-10-23 — the estate never evicts, ComfyUI manages
+  // VRAM auto): an action that declares vramBudgetMb stamps its
+  // composed stage's params with the raw knob — the same channel
+  // timeout_s reads — and the execute door gates on it (prove
+  // headroom or refuse loud; never a mid-run OOM, never a /free).
   // Stamped ONLY when declared: actions without a budget keep the
   // envelope byte-identical (no key, no gate, no traffic).
   const vramBudget: number | undefined = action.vramBudgetMb;
