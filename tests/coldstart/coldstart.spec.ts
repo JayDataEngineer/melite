@@ -157,7 +157,11 @@ describe.skipIf(misses.length > 0)("the cold-start tier (opt-in)", () => {
     const g = new GraphBuilder();
     const handle = instantiateAction(
       action,
-      { params_json: JSON.stringify({ dialect: "authored", phenotype: Array.from({ length: 11 }, () => 0.5) }) },
+      // the node's authored contract (nodes_anny.py bake): phenotype[11]
+      // AND a local_changes object — morph label -> value; empty is the
+      // neutral bake (every morph at zero), and unknown labels refuse
+      // loud inside the node, never a silent skip
+      { params_json: JSON.stringify({ dialect: "authored", phenotype: Array.from({ length: 11 }, () => 0.5), local_changes: {} }) },
       { id: "anny", card: "", family: "anny", defaults: {}, lane_inputs: {}, variants: [], variant_groups: [], outputs: [], mods: [] },
       g,
       "",
