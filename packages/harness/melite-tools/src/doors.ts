@@ -224,26 +224,67 @@ export const ESTATE_PENDING_REARM_MS = 10_000
 interface PendingGateStamps {
   pendingSince: number | null
   quietSince: number | null
+  /** Per-fiber first-observed-activating stamps (uid → ms) and
+   *  last-observed-idle stamps (uid → ms). A fiber activating
+   *  continuously longer than the grace is PERMANENT — the
+   *  tools/agentPresets s1 + pluginMarket s0 waiters the census
+   *  showed on every boot (receipts/2026-10-23-estate-settle-gate.md
+   *  §NOT COVERED) — and permanent waiters must not freeze the
+   *  stamp: past the window they keep their honest probe voice,
+   *  but a LATER genuine race (a re-mounted seat) still gets its
+   *  OWN fresh grace. A fiber that lifts and re-trips inside the
+   *  re-arm quiet keeps its ORIGINAL stamp (the li-l flap brick:
+   *  3379 remounts must not extend the window — entries evaporate
+   *  only after a SUSTAINED lift). Uids are registry-monotonic
+   *  (never reused), and the sustained-quiet reset below clears
+   *  both maps, so they stay bounded by the fibers a mount ever
+   *  observes. */
+  firstSeen: Map<number, number>
+  lastIdle: Map<number, number>
 }
 const estateStillActivating = (gate: PendingGateStamps, c: CtxView): boolean => {
-  let activating = false
+  const now = Date.now()
+  const activating = new Set<number>()
   for (const runtime of c.registry.values()) {
     for (const fiber of runtime.fibers) {
-      if (fiber.uid !== null && (fiber.store === undefined || fiber.inertia !== undefined)) activating = true
+      if (fiber.uid !== null && (fiber.store === undefined || fiber.inertia !== undefined)) activating.add(fiber.uid)
     }
   }
-  if (!activating) {
+  for (const uid of activating) {
+    gate.lastIdle.delete(uid)
+    if (!gate.firstSeen.has(uid)) gate.firstSeen.set(uid, now)
+  }
+  for (const [uid, idleSince] of gate.lastIdle) {
+    if (!activating.has(uid) && now - idleSince >= ESTATE_PENDING_REARM_MS) {
+      gate.lastIdle.delete(uid)
+      gate.firstSeen.delete(uid)
+    }
+  }
+  for (const uid of gate.firstSeen.keys()) {
+    if (!activating.has(uid) && !gate.lastIdle.has(uid)) gate.lastIdle.set(uid, now)
+  }
+  // Fresh racers only: permanent waiters (activating longer than
+  // the grace) are past their window — the probe's honest voice,
+  // never the gate — and they lend no stamp to a newer race.
+  let oldestFresh: number | null = null
+  for (const uid of activating) {
+    const since = gate.firstSeen.get(uid) ?? now
+    if (now - since < ESTATE_PENDING_GRACE_MS && (oldestFresh === null || since < oldestFresh)) oldestFresh = since
+  }
+  if (oldestFresh === null) {
     if (gate.quietSince === null) gate.quietSince = Date.now()
     // only a SUSTAINED lift re-arms the grace window; a flap's
     // momentary lift does not
     if (gate.pendingSince !== null && Date.now() - gate.quietSince >= ESTATE_PENDING_REARM_MS) {
       gate.pendingSince = null
+      gate.firstSeen.clear()
+      gate.lastIdle.clear()
     }
     return false
   }
   gate.quietSince = null
-  if (gate.pendingSince === null) gate.pendingSince = Date.now()
-  return Date.now() - gate.pendingSince < ESTATE_PENDING_GRACE_MS
+  gate.pendingSince = oldestFresh
+  return now - gate.pendingSince < ESTATE_PENDING_GRACE_MS
 }
 
 // ── THE POSER ARMS (2026-09-16 — estate verbs, never a proxy) ─────
@@ -323,7 +364,7 @@ export function apply(c: CtxView, config: Config = {}): void {
   // THE PENDING GRACE's stamps, per-mount (V5 cure): a fresh mount
   // starts with a clean window; unloading a mount drops its state
   // with the closure — never shared, never leaked.
-  const pendingGate: PendingGateStamps = { pendingSince: null, quietSince: null }
+  const pendingGate: PendingGateStamps = { pendingSince: null, quietSince: null, firstSeen: new Map(), lastIdle: new Map() }
 
   // The host default model, read LIVE (2026-09-06 — the door serves
   // the USER'S default, never first-breathing by registration order).

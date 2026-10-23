@@ -610,6 +610,91 @@ describe('doors apply', () => {
       await two.door.dispose()
     }
   })
+
+  // THE PERMANENT-WAITER LAW (the settle-gate receipt's §NOT
+  // COVERED, 2026-10-23): the live lane boots with permanent
+  // upstream waiters (tools/agentPresets s1, pluginMarket s0 — the
+  // census showed them on every boot). The OLD gate read them as
+  // activating forever, so its stamp froze at boot: a seat
+  // re-mounting hours later inherited a SPENT window and answered
+  // 502 mid-race instead of 503 pending. The cured gate ages
+  // fibers out — a waiter older than the grace lends no stamp, so
+  // a LATER genuine race gets its OWN fresh window.
+  test('THE PERMANENT-WAITER LAW: a waiter older than the grace lends no stamp — a later race gets its own fresh pending window', async () => {
+    const ctx = new Context()
+    const routes: Route[] = []
+    ctx.provide('webServer', {
+      port: 0,
+      register: (route: Route) => {
+        routes.push(route)
+        return () => {}
+      },
+    } as never)
+    ctx.provide('llm', fakeLlm() as never)
+    ctx.provide('tools', { schemas: () => [] } as never)
+    // the permanent waiter: its dependency NEVER lands (the
+    // upstream host seats' shape on the live lane)
+    const waiter = ctx.plugin({
+      name: 'estate-waiter',
+      inject: ['queue'],
+      apply: (child: Context) => {
+        child.provide('runs', {
+          validate: async () => ({ ok: true }),
+        })
+      },
+    })
+    const door = ctx.plugin({ name: 'melite-tools-doors', inject, apply: apply as never }) // the provides above satisfy the door's private CtxView at runtime; cordis's Plugin type can't see them
+    const probe = (): Promise<{ status: number; body: unknown }> =>
+      call(routes, '/v1', {
+        method: 'POST',
+        url: 'http://localhost/v1/flows/validate',
+        body: {},
+      })
+    try {
+      await door
+      await waiter
+      await Promise.resolve()
+      const realNow = Date.now
+      try {
+        // inside the waiter's own grace: the typed pending
+        Date.now = realNow
+        assert.equal((await probe()).status, 503)
+        // past the grace the waiter is PERMANENT: the honest probe
+        // voice answers (this half of the arm locks the standing
+        // law — never a permanent pending)
+        Date.now = (): number => realNow() + ESTATE_PENDING_GRACE_MS + 1_000
+        const past = await probe()
+        assert.equal(past.status, 502)
+        assert.match(String((past.body as { error: string }).error), /no seat on this lane serves/)
+        // a LATER genuine race (a re-mounted seat, hours after
+        // boot): its OWN fresh window — 503 pending, not the
+        // waiter's spent stamp
+        const race = ctx.plugin({
+          name: 'estate-runs-remount',
+          inject: ['queue'],
+          apply: (child: Context) => {
+            child.provide('runs', {
+              validate: async () => ({ ok: true }),
+            })
+          },
+        })
+        await race
+        const fresh = await probe()
+        assert.equal(fresh.status, 503)
+        assert.deepEqual(fresh.body, {
+          error: 'estate composition is still activating',
+          code: 'estate/pending',
+          pending: true,
+        })
+        await race.dispose()
+      } finally {
+        Date.now = realNow
+      }
+    } finally {
+      await waiter.dispose()
+      await door.dispose()
+    }
+  })
 })
 
 // ── catalog ───────────────────────────────────────────────────────

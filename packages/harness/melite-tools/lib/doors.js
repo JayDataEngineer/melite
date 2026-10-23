@@ -127,27 +127,53 @@ export const ESTATE_PENDING_GRACE_MS = 120_000;
  *  (a later boot race gets a fresh window: doors.spec.ts). */
 export const ESTATE_PENDING_REARM_MS = 10_000;
 const estateStillActivating = (gate, c) => {
-    let activating = false;
+    const now = Date.now();
+    const activating = new Set();
     for (const runtime of c.registry.values()) {
         for (const fiber of runtime.fibers) {
             if (fiber.uid !== null && (fiber.store === undefined || fiber.inertia !== undefined))
-                activating = true;
+                activating.add(fiber.uid);
         }
     }
-    if (!activating) {
+    for (const uid of activating) {
+        gate.lastIdle.delete(uid);
+        if (!gate.firstSeen.has(uid))
+            gate.firstSeen.set(uid, now);
+    }
+    for (const [uid, idleSince] of gate.lastIdle) {
+        if (!activating.has(uid) && now - idleSince >= ESTATE_PENDING_REARM_MS) {
+            gate.lastIdle.delete(uid);
+            gate.firstSeen.delete(uid);
+        }
+    }
+    for (const uid of gate.firstSeen.keys()) {
+        if (!activating.has(uid) && !gate.lastIdle.has(uid))
+            gate.lastIdle.set(uid, now);
+    }
+    // Fresh racers only: permanent waiters (activating longer than
+    // the grace) are past their window — the probe's honest voice,
+    // never the gate — and they lend no stamp to a newer race.
+    let oldestFresh = null;
+    for (const uid of activating) {
+        const since = gate.firstSeen.get(uid) ?? now;
+        if (now - since < ESTATE_PENDING_GRACE_MS && (oldestFresh === null || since < oldestFresh))
+            oldestFresh = since;
+    }
+    if (oldestFresh === null) {
         if (gate.quietSince === null)
             gate.quietSince = Date.now();
         // only a SUSTAINED lift re-arms the grace window; a flap's
         // momentary lift does not
         if (gate.pendingSince !== null && Date.now() - gate.quietSince >= ESTATE_PENDING_REARM_MS) {
             gate.pendingSince = null;
+            gate.firstSeen.clear();
+            gate.lastIdle.clear();
         }
         return false;
     }
     gate.quietSince = null;
-    if (gate.pendingSince === null)
-        gate.pendingSince = Date.now();
-    return Date.now() - gate.pendingSince < ESTATE_PENDING_GRACE_MS;
+    gate.pendingSince = oldestFresh;
+    return now - gate.pendingSince < ESTATE_PENDING_GRACE_MS;
 };
 const POSER_ARMS = [
     { doorPath: '/v1/poser/mesh', enginePath: '/poser/skin/mesh', methods: ['GET', 'POST'], timeoutMs: 120_000 },
@@ -191,7 +217,7 @@ export function apply(c, config = {}) {
     // THE PENDING GRACE's stamps, per-mount (V5 cure): a fresh mount
     // starts with a clean window; unloading a mount drops its state
     // with the closure — never shared, never leaked.
-    const pendingGate = { pendingSince: null, quietSince: null };
+    const pendingGate = { pendingSince: null, quietSince: null, firstSeen: new Map(), lastIdle: new Map() };
     // The host default model, read LIVE (2026-09-06 — the door serves
     // the USER'S default, never first-breathing by registration order).
     // agentDefaultModel is the host's own service (settings → Models);
