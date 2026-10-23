@@ -24,6 +24,7 @@ import type {
   ResourceRef,
   ResourceStatus,
   ResourceStatusItem,
+  SnapshotProvisionPlanItem,
 } from "@melite/estate-provisioning";
 import { Context } from "@deepseek-ai/cordis";
 import { dispatchManage } from "../src/managePlane.ts";
@@ -2156,6 +2157,78 @@ describe("hStatus trust re-verify (audit I-S6)", () => {
       // never re-hashes; the digest is the acquire/verify door's own
       // word ("declared-sha256"), never the status scan's
       assert.equal(row.items?.[0]?.integrity, "size-checked");
+      assert.equal(data.operations[0]?.state, "active", "the settled operation lifts with its row");
+    } finally {
+      await context.fiber.dispose();
+      rmRoot();
+      rmSync(store, { recursive: true, force: true });
+    }
+  });
+
+  // THE SNAPSHOT INTEGRATION FACE (re-admit audit F5, owed since
+  // 2026-11-12): F1's mirror on the other fetch kind. The REAL
+  // ProvisioningService with a snapshot DECL and a transport-dying
+  // fetcher settles failed through the real ensure(); the declared
+  // tree lands during the stall tail; the REAL status door serves
+  // the row active by the anchor probe alone (operator-unverified —
+  // the pin is the integrity word, never a hash).
+  it("AUDIT F5 integration: a real service re-admits its own settled-failed SNAPSHOT operation when the tree landed, serving the row active", async () => {
+    mkRoot();
+    const context = new Context();
+    const store = mkdtempSync(join(tmpdir(), "f5-snap-readmit-"));
+    try {
+      const ref: ResourceRef = { kind: "model", owner: "family", id: "snap-fam" };
+      const item: SnapshotProvisionPlanItem = {
+        kind: "snapshot",
+        key: "model:snap-fam:snapshot:tts-tree",
+        owner: "family",
+        id: "snap-fam",
+        name: "tts-tree",
+        folder: "qwen3-tts/hf",
+        repoId: "example/tts-tree",
+        revision: "a".repeat(40),
+        allowPatterns: ["config.json", "model.safetensors"],
+        required: true,
+        provider: "hf-snapshot",
+      };
+      const service = new ProvisioningService(context, {
+        declaration: {
+          resolve: async (): Promise<ProvisionPlan> => ({ ref, items: [item] }),
+          list: async (): Promise<readonly ResourceRef[]> => [ref],
+        },
+        // the REAL writer over the real storeRoot; the fetcher port
+        // dies in transport on the LISTING itself — the stall class,
+        // never a semantic refusal — so the acquire settles FAILED
+        // through the real ensure() with a failed snapshot item
+        fetcher: async (): Promise<never> => {
+          throw new TypeError("connection died mid-fetch");
+        },
+        storeRoot: store,
+      } satisfies ProvisioningConfig);
+      const settled = await service.ensure(ref);
+      assert.equal(settled.state, "failed", "the refused listing settles the snapshot operation failed");
+      assert.equal(settled.items[0]?.kind, "snapshot");
+      assert.equal(settled.items[0]?.state, "failed", "the re-admit filter's own shape: failed + snapshot");
+
+      // the stall tail: the declared tree lands on disk AFTER the
+      // failure verdict — nobody tells the service
+      const tree = join(store, "qwen3-tts", "hf", "tts-tree");
+      mkdirSync(tree, { recursive: true });
+      writeFileSync(join(tree, "config.json"), "{ \"kind\": \"tree\" }");
+      writeFileSync(join(tree, "model.safetensors"), "weights-bytes");
+
+      const [code, env] = await manage({ action: "status" }, CTX({ provisioning: service }));
+      assert.equal(code, 200);
+      const data = env.data as {
+        resources: Array<{ state: string; detail?: string; items?: Array<{ state: string; integrity?: string }> }>;
+        operations: Array<{ state: string }>;
+      };
+      const row = data.resources[0]!;
+      assert.equal(row.state, "active", "the real status read lifts the snapshot row by the anchor probe alone");
+      assert.match(row.detail ?? "", /re-admitted by disk truth/, "the served row names the re-admit");
+      assert.equal(row.items?.[0]?.state, "active");
+      // the pin is the integrity word — no digest exists to check
+      assert.equal(row.items?.[0]?.integrity, "operator-unverified");
       assert.equal(data.operations[0]?.state, "active", "the settled operation lifts with its row");
     } finally {
       await context.fiber.dispose();

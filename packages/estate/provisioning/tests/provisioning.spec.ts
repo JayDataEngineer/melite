@@ -1311,6 +1311,40 @@ describe("verifyOperation re-admit (moss-image burn)", () => {
     assert.equal(verified.items[0]?.state, "active");
   });
 
+  test("no DECL counterpart + a GONE path demotes — the folder check is the whole law when no probe exists", async () => {
+    const store = root();
+    // the tree was deleted AND the DECL row moved on — nothing to
+    // probe with, nowhere standing: the absence is the verdict
+    const gone = join(store, "qwen3-tts", "hf", "tts-tree");
+    const service = serviceFor(store, { ref: modelRef(), items: [] });
+    const verified = await service.verifyOperation(activeSnapshotOperation(gone));
+    assert.equal(verified.state, "absent", "a gone path with no counterpart is absent, not unjudgeable");
+    assert.equal(verified.items[0]?.state, "absent");
+    assert.match(verified.items[0]?.detail ?? "", /the recorded snapshot tree is gone/);
+  });
+
+  test("an unresolvable DECL on an all-active op falls back to the recorded path — never breaks the read", async () => {
+    const store = root();
+    const tree = join(store, "qwen3-tts", "hf", "tts-tree");
+    mkdirSync(tree, { recursive: true });
+    writeFileSync(join(tree, "config.json"), "{}");
+    // the family uninstalled between settle and read AND nothing
+    // failed (so the loop's own plan fetch never ran) — the
+    // demote-side re-resolve throws, the catch carries undefined,
+    // and the folder's existence is the whole law
+    const service = new ProvisioningService(new Context(), {
+      declaration: {
+        resolve: async (): Promise<ProvisionPlan> => {
+          throw new Error("family uninstalled");
+        },
+      },
+      artifactWriter: new VerifiedArtifactWriter(store),
+    });
+    const verified = await service.verifyOperation(activeSnapshotOperation(tree));
+    assert.equal(verified.state, "active", "a throwing DECL never invents absence for a standing tree");
+    assert.equal(verified.items[0]?.state, "active");
+  });
+
   // THE MIXED-KIND LIFT (fold audit F3, 2026-11-12): the kind gate
   // lives in TWO spots (the failed-item filter AND the loop's heal
   // gate) — a mixed-kind op (failed model + failed snapshot, BOTH
