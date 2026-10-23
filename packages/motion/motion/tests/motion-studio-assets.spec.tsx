@@ -133,13 +133,13 @@ describe('background + body slot (drops / picks / wire)', () => {
     expect(touched).toBe(false)
   })
 
-  test('slot asset-drop of a GLB attaches, detach clears', { timeout: LOADED_WAIT() * 3 }, async () => {
+  test('slot asset-drop of a GLB attaches, detach clears', { timeout: LOADED_WAIT() * 6 }, async () => {
     await mountedNoRun()
     fireEvent.drop(slotSquare(), { dataTransfer: assetTransfer('https://host/slot.glb') })
     await vi.waitFor(() => {
       if (!document.body.querySelector('[aria-label="Detach preview_glb"]')) throw new Error('no detach yet')
-      // stroke 83: the GLB drop path stalls past 10s under full-suite parallel load (the fetch rides the shared dom loop); 30s still tripped under the 2026-09-17 full gate — 90s keeps the evidence point load-robust
-    }, { timeout: LOADED_WAIT() * 3 })
+      // stroke 83: the GLB drop path stalls past 10s under full-suite parallel load (the fetch rides the shared dom loop); 30s still tripped under the 2026-09-17 full gate — 90s kept the evidence point load-robust until the 2026-10-23 green-triple gate (flake-slowness-wave3) starved the dom loop past 180s. The multiple doubles again — the stall is scheduler starvation, never a slower claim.
+    }, { timeout: LOADED_WAIT() * 6 })
     fireEvent.click(document.body.querySelector('[aria-label="Detach preview_glb"]') as HTMLButtonElement)
     await vi.waitFor(() => {
       if (document.body.querySelector('[aria-label="Detach preview_glb"]')) throw new Error('detach did not clear yet')
