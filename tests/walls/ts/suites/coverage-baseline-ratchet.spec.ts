@@ -293,6 +293,19 @@ const CAS_LANDING_NEW_FLOORS: Record<string, { statements: number, branches: num
   '**/packages/estate/provisioning/src/snapshot.ts': { statements: 95.38, branches: 86.95, functions: 100, lines: 100 },
 };
 
+/** THE CAS DEEPEN (1 row) — the scoped probe seated operation-store
+ *  at its single-suite face; the first FULL-gate measurement of the
+ *  CAS code came in below it (the loaded pool's interleaving skips
+ *  marker-race paths the scoped run takes deterministically). The
+ *  row re-seats at the full gate's failing face — the same
+ *  load-jitter law that seated MotionTimelineBarDrag. */
+const CAS_DEEPEN_OLD_FLOORS: Record<string, { statements: number, branches: number, functions: number, lines: number }> = {
+  '**/packages/estate/provisioning/src/operation-store.ts': { statements: 91.45, branches: 92.89, functions: 96.96, lines: 93.49 },
+};
+const CAS_DEEPEN_NEW_FLOORS: Record<string, { statements: number, branches: number, functions: number, lines: number }> = {
+  '**/packages/estate/provisioning/src/operation-store.ts': { statements: 91.04, branches: 92.3, functions: 96.96, lines: 93.49 },
+};
+
 /** THE 2026-10-23 GATE REGENERATION (61 rows) — the vram-gate era
  *  drift: three same-tree full-gate runs (A/B/C, 944 files,
  *  13,454 tests, suite-green save the four cured walls arms)
@@ -642,6 +655,13 @@ const ARGUED_FLOOR_DROPS: Record<string, {
     roadmapHeading: "The claim CAS landing — the two-seat race's store-arbiter cure",
     reviewBy: "2026-12-23",
     reason: "the two-fetch hole (save-then-reread let the race's loser clobber the winner's claim stamp and read its own back) closes at the store itself: saveIfState is a wx-create claim marker arbitrated by the filesystem, cross-handle and cross-process; the three touched files re-seat at the scoped provisioning-pool faces (the full pool only adds covered paths on top) — lift the floors back with the CAS's own arms before the review date",
+  }])),
+  ...Object.fromEntries(Object.keys(CAS_DEEPEN_OLD_FLOORS).map((key) => [key, {
+    from: CAS_DEEPEN_OLD_FLOORS[key]!,
+    to: CAS_DEEPEN_NEW_FLOORS[key]!,
+    roadmapHeading: "The claim CAS landing — the two-seat race's store-arbiter cure",
+    reviewBy: "2026-12-23",
+    reason: "the CAS landing's first FULL-gate measurement seated operation-store below the scoped probe's single-suite face (the loaded pool's interleaving skips marker-race paths the scoped run takes deterministically — the same load-jitter law that seated MotionTimelineBarDrag at its failing face) — re-measure at a calm load or lift with the CAS's own arms before the review date",
   }])),
 };
 

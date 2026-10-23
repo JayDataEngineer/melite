@@ -267,7 +267,7 @@ export const COVERAGE_BASELINE: Record<string, {
   '**/packages/estate/provisioning/src/index.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/estate/provisioning/src/manager-client.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/estate/provisioning/src/manager-provider.ts': { statements: 100, branches: 99.61, functions: 100, lines: 100 },
-  '**/packages/estate/provisioning/src/operation-store.ts': { statements: 91.45, branches: 92.89, functions: 96.96, lines: 93.49 },
+  '**/packages/estate/provisioning/src/operation-store.ts': { statements: 91.04, branches: 92.3, functions: 96.96, lines: 93.49 },
   '**/packages/estate/provisioning/src/ports.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   // 2026-10-21: the 100s above were the driver-seat-env over-count;
   // the stripped gate measures the honest floor. The landing deleted

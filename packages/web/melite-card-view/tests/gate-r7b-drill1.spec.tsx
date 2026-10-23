@@ -211,7 +211,7 @@ describe("the authoring contract — a typed field RIDES the row", () => {
     // macrotask — a 4s real-timer poll starves under coverage's ±40%
     // settlement swing; every settlement poll on a failure verb rides
     // the siblings' 15s/30s pairing.
-    const face = await screen.findByTestId("stage-write-face", {}, { timeout: LOADED_WAIT() * 0.5 });
+    const face = await screen.findByTestId("stage-write-face", {}, { timeout: LOADED_WAIT() });
     expect(face.textContent).toContain("THE WRITE DID NOT LAND");
     expect(face.textContent).toContain("bench/stale-window");
     expect(face.textContent).toContain("studio shows your edit");
@@ -268,7 +268,7 @@ describe("the slot flush's foreign voice — a down wire still names the face", 
     // THE THROWN-VERB SETTLEMENT LAW (flake-slowness-wave2): gate23
     // reded this arm solo under --coverage at the old 4s budget — the
     // C1 raise missed it. 15s/30s, the remove/ungroup siblings' law.
-    expect(await screen.findByText(/kablam/, {}, { timeout: LOADED_WAIT() * 0.5 })).toBeTruthy();
+    expect(await screen.findByText(/kablam/, {}, { timeout: LOADED_WAIT() })).toBeTruthy();
     expect(calls().some((p) => p.method === "drafts/patch")).toBe(true);
   });
 });
@@ -299,7 +299,7 @@ describe("the slot flush's REFUSED write — the third face speaks the write voi
       /THE WRITE DID NOT LAND[\s\S]*bench\/stale-window[\s\S]*unlanded keys: input_image/,
       {},
       // the refused write's settlement (thrown-verb law, 15s/30s)
-      { timeout: LOADED_WAIT() * 0.5 },
+      { timeout: LOADED_WAIT() },
     );
   });
 });
@@ -382,7 +382,7 @@ describe("the owners' foreign voices — remove and ungroup fall back loud", () 
     // the throw as the row's lastError before the rejection reaches
     // this catch, so the row owns the words the face shows.
     // Thrown-verb settlement: 15s/30s (flake-slowness-wave2).
-    const face = await screen.findByTestId("stage-write-face", {}, { timeout: LOADED_WAIT() * 0.5 });
+    const face = await screen.findByTestId("stage-write-face", {}, { timeout: LOADED_WAIT() });
     expect(face.textContent).toContain("THE WRITE DID NOT LAND");
     expect(face.textContent).toContain("wire down");
     expect(face.textContent).toContain("unlanded keys: input_image");
@@ -424,7 +424,11 @@ describe("the owners' foreign voices — remove and ungroup fall back loud", () 
     // settlement under coverage instrumentation swings ±40%; the
     // ungroup sibling below already rides 15s — this arm never got
     // it. Same cure, same shape.
-    expect(await screen.findByText("kablam", {}, { timeout: LOADED_WAIT() * 0.5 })).toBeTruthy();
+    // (flake-slowness-wave3, the green-triple gate): the wave2 half
+    // budgets lost the settlement race across this file's arms —
+    // every half site now rides the full budget (load headroom, not
+    // a weaker claim).
+    expect(await screen.findByText("kablam", {}, { timeout: LOADED_WAIT() })).toBeTruthy();
   });
 
   test("a foreign ungroup throw voices its own words (never a throw past the gesture)", async () => {
@@ -440,6 +444,6 @@ describe("the owners' foreign voices — remove and ungroup fall back loud", () 
     // full-suite parallel load the click's promise can outlive a 4s
     // polling window while the assertion itself is unaffected; the
     // wider window is load headroom, not a weaker claim)
-    expect(await screen.findByText("kablam", {}, { timeout: LOADED_WAIT() * 0.5 })).toBeTruthy();
+    expect(await screen.findByText("kablam", {}, { timeout: LOADED_WAIT() })).toBeTruthy();
   });
 });
