@@ -123,7 +123,7 @@ function homeProbes(home: string, name: string): Array<[string, string]> {
  *  weight in the refusal that names the first, never one wedged run
  *  later. */
 function laneMisses(
-  decl: Pick<ModelDecl, "lane_inputs" | "provisions" | "lane_homes">,
+  decl: Pick<ModelDecl, "lane_inputs" | "provisions" | "snapshot_provisions" | "lane_homes">,
   check: LaneCheck,
   variantRow?: { lane_inputs?: Record<string, unknown> },
   cellRow?: { lane_inputs?: Record<string, unknown> },
@@ -194,6 +194,25 @@ function laneMisses(
     if (prov !== undefined && !probes.some(([f, n]) => f === prov.folder && n === name)) {
       probes.push([prov.folder, name]);
     }
+    // THE SNAPSHOT-PLACEMENT LEG (the 0.6B-Base miss, 2026-10-23):
+    // a loader-side subpath ("qwen3-tts/hf/…-Base" — the C++ load
+    // gate reads it relative to the AUDIO pack root, transcript-014)
+    // double-joins under its lane_homes key (the qwen3_tts extras
+    // map already descends into audio/qwen3-tts/hf), so the home
+    // probes can never hit a present tree. The snapshot row owns
+    // the placement truth (folder + bare name — the same anchor
+    // probe the provisioning plane's presence rides), so it probes
+    // as its own (folder, name) pair, never re-suffixed.
+    const base = name.split("/").pop() ?? name;
+    const snap = (decl.snapshot_provisions ?? []).find(
+      (s) => s.name === base && typeof s.folder === "string" && s.folder !== "",
+    );
+    if (
+      snap !== undefined &&
+      !probes.some(([f, n]) => f === snap.folder && (n === name || n === snap.name))
+    ) {
+      probes.push([snap.folder, snap.name]);
+    }
     if (probes.some(([folder, probeName]) => check(folder, probeName) !== null)) continue;
     const dedupe = key + " " + name;
     if (!seen.has(dedupe)) {
@@ -208,7 +227,7 @@ function laneMisses(
  *  and the refusal's LEAD row. The whole list rides beside it
  *  (laneMisses → the refusal's missingAll). */
 function firstLaneMiss(
-  decl: Pick<ModelDecl, "lane_inputs" | "provisions" | "lane_homes">,
+  decl: Pick<ModelDecl, "lane_inputs" | "provisions" | "snapshot_provisions" | "lane_homes">,
   check: LaneCheck,
   variantRow?: { lane_inputs?: Record<string, unknown> },
 ): LaneMiss | null {
@@ -216,7 +235,7 @@ function firstLaneMiss(
 }
 
 export function laneFilesStatus(
-  decl: Pick<ModelDecl, "lane_inputs" | "provisions" | "lane_homes">,
+  decl: Pick<ModelDecl, "lane_inputs" | "provisions" | "snapshot_provisions" | "lane_homes">,
   check: LaneCheck = (folder, name) => checkModelPresent("models/" + folder, name),
 ): boolean | null {
   const li = (decl.lane_inputs ?? {}) as Record<string, unknown>;

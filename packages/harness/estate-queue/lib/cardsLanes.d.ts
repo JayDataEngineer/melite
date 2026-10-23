@@ -37,7 +37,7 @@ export declare function lanePresenceRefusal(fam: string, body?: Record<string, u
  *  caller (the GPU receipt rows) decides what a miss means (a skip,
  *  never a cost signal). One loop, two seats, no divergence. */
 type LaneCheck = (folder: string, name: string) => string | null;
-export declare function laneFilesStatus(decl: Pick<ModelDecl, "lane_inputs" | "provisions" | "lane_homes">, check?: LaneCheck): boolean | null;
+export declare function laneFilesStatus(decl: Pick<ModelDecl, "lane_inputs" | "provisions" | "snapshot_provisions" | "lane_homes">, check?: LaneCheck): boolean | null;
 export declare function lanePresenceMiss(fam: string, body?: Record<string, unknown>, mid?: string): CardArmError | null;
 export {};
 //# sourceMappingURL=cardsLanes.d.ts.map

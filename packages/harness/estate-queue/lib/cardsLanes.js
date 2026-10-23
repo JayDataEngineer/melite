@@ -176,6 +176,21 @@ function laneMisses(decl, check, variantRow, cellRow) {
         if (prov !== undefined && !probes.some(([f, n]) => f === prov.folder && n === name)) {
             probes.push([prov.folder, name]);
         }
+        // THE SNAPSHOT-PLACEMENT LEG (the 0.6B-Base miss, 2026-10-23):
+        // a loader-side subpath ("qwen3-tts/hf/…-Base" — the C++ load
+        // gate reads it relative to the AUDIO pack root, transcript-014)
+        // double-joins under its lane_homes key (the qwen3_tts extras
+        // map already descends into audio/qwen3-tts/hf), so the home
+        // probes can never hit a present tree. The snapshot row owns
+        // the placement truth (folder + bare name — the same anchor
+        // probe the provisioning plane's presence rides), so it probes
+        // as its own (folder, name) pair, never re-suffixed.
+        const base = name.split("/").pop() ?? name;
+        const snap = (decl.snapshot_provisions ?? []).find((s) => s.name === base && typeof s.folder === "string" && s.folder !== "");
+        if (snap !== undefined &&
+            !probes.some(([f, n]) => f === snap.folder && (n === name || n === snap.name))) {
+            probes.push([snap.folder, snap.name]);
+        }
         if (probes.some(([folder, probeName]) => check(folder, probeName) !== null))
             continue;
         const dedupe = key + " " + name;

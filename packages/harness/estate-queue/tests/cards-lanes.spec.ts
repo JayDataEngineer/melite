@@ -178,6 +178,23 @@ describe("lanePresenceRefusal (the gate)", () => {
     }
     assert.equal(lanePresenceRefusal(fam), null);
   });
+  it("a loader-prefixed lane file rides its snapshot row's placement (the 0.6B-Base shape)", () => {
+    // THE DOUBLE-JOIN MISS (live 2026-10-23, cards-gpu tts base
+    // clone): the 0.6B cell's model_path carries the loader-side
+    // subpath ("qwen3-tts/hf/…-Base" — the C++ gate reads it off
+    // the AUDIO pack root), but its lane_homes key (qwen3_tts)
+    // maps through extras that ALREADY descend into
+    // audio/qwen3-tts/hf — both home probes double-join and miss a
+    // present tree. The snapshot row (folder + bare name) is the
+    // placement truth and probes as its own pair. Cure-out (the
+    // snapshot leg removed) reds this arm ALONE with the live
+    // refusal voice.
+    arm({ qwen3_tts: "audio/qwen3-tts/hf" });
+    const d = join(MODELS, "audio", "qwen3-tts", "hf", "Qwen3-TTS-12Hz-0.6B-Base");
+    mkdirSync(d, { recursive: true });
+    writeFileSync(join(d, "model.safetensors"), "x");
+    assert.equal(lanePresenceMiss("qwen3-tts", undefined, "qwen3-tts-base"), null);
+  });
   it("a real lane file missing refuses with folders + the provision hint", () => {
     arm(null);
     // same family, EMPTIED mount: every real lane row misses — the
