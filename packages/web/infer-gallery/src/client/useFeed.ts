@@ -17,6 +17,37 @@ export interface Feed<T> {
   error: string
   reload: () => void
   setData: (v: T) => void
+  /** True while the panel paints the PERSISTED last-served feed and
+   *  the fresh load is still seating — the boot-staged face (E2-3
+   *  arm 2): instant stale-then-fresh, never minutes of spinner
+   *  through a lane boot. False once the fresh feed lands (or its
+   *  error voices — the cached data stays painted either way). */
+  stale: boolean
+}
+
+/** The staged-cache seat (E2-3 arm 2, operator 2026-10-22: "the
+ *  first load from history takes 5+ minutes"): the last served feed
+ *  persists client-side and paints instantly on the next boot. Keyed
+ *  by the feed url — localStorage is origin-scoped, so two estates
+ *  (two lanes, two ports) never cross-paint. A cache that will not
+ *  parse is discarded, never a crashed boot. */
+const feedCacheKey = (url: string): string => 'melite:feed:' + url
+
+function readFeedCache(url: string): unknown | null {
+  try {
+    const raw = localStorage.getItem(feedCacheKey(url))
+    return raw === null ? null : JSON.parse(raw) as unknown
+  } catch {
+    return null
+  }
+}
+
+function writeFeedCache(url: string, json: unknown): void {
+  try {
+    localStorage.setItem(feedCacheKey(url), JSON.stringify(json))
+  } catch {
+    /* quota or a sealed store — the staged face is a gift, never a law */
+  }
 }
 
 /** Refetch when the page becomes visible / regains focus, throttled.
@@ -43,7 +74,28 @@ function useRefreshOnVisible(reload: () => void, throttleMs: number): void {
 }
 
 export function useFeed<T>(url: string, decode: (json: unknown) => T, initial: T): Feed<T> {
-  const [data, setData] = useState<T>(initial)
+  // THE BOOT-STAGED FIRST PAINT (E2-3 arm 2): the persisted feed
+  // hydrates SYNCHRONOUSLY (the initializer — no effect, no flicker);
+  // a cache whose shape no longer decodes is discarded fresh.
+  const [boot] = useState<{ cached: unknown | null }>(() => {
+    const json = readFeedCache(url)
+    if (json === null) return { cached: null }
+    try {
+      decode(json)
+      return { cached: json }
+    } catch {
+      return { cached: null }
+    }
+  })
+  const [data, setData] = useState<T>(() => {
+    if (boot.cached === null) return initial
+    try {
+      return decode(boot.cached)
+    } catch {
+      return initial
+    }
+  })
+  const [stale, setStale] = useState<boolean>(boot.cached !== null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
@@ -70,6 +122,7 @@ export function useFeed<T>(url: string, decode: (json: unknown) => T, initial: T
           throw new Error(typeof msg === 'string' && msg !== '' ? msg : 'HTTP ' + String(r.status))
         }
         setData(decode(json))
+        writeFeedCache(url, json)
       })
       .catch((e: unknown) => {
         // an aborted stale load is silence, not an error face — the
@@ -78,7 +131,10 @@ export function useFeed<T>(url: string, decode: (json: unknown) => T, initial: T
         setError(e instanceof Error ? e.message : String(e))
       })
       .finally(() => {
-        if (!ctrl.signal.aborted) setLoading(false)
+        if (!ctrl.signal.aborted) {
+          setLoading(false)
+          setStale(false)
+        }
       })
   }, [url, decode])
 
@@ -88,5 +144,5 @@ export function useFeed<T>(url: string, decode: (json: unknown) => T, initial: T
   }, [load])
   useRefreshOnVisible(load, 15_000)
 
-  return { data, loading, error, reload: load, setData }
+  return { data, loading, error, reload: load, setData, stale }
 }

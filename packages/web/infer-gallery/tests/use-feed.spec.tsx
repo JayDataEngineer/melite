@@ -284,3 +284,56 @@ describe('useFeed — the never-stale refetch', () => {
     }
   })
 })
+
+// ── THE BOOT-STAGED FEED (E2-3 arm 2, operator 2026-10-22: "the first
+// load from history takes 5+ minutes" — the boot-race wait) ──
+// The last served feed persists client-side (localStorage, keyed by
+// the feed url — origin-scoped, so estates never cross-paint) and
+// paints INSTANTLY on boot with a stale face while the fresh feed
+// seats. First load after a lane restart = instant stale-then-fresh,
+// never minutes of spinner.
+describe('useFeed — the boot-staged cache (E2-3 arm 2)', () => {
+  const KEY = 'melite:feed:/infer-gallery/runs'
+
+  afterEach(() => {
+    localStorage.clear()
+  })
+
+  it('a served feed persists; the next boot paints it instantly, stale, until fresh seats', async () => {
+    localStorage.removeItem(KEY)
+    // first mount: no cache, loads fresh and WRITES the cache
+    stubFetch(() => ok({ runs: [{ run_id: 'r1' }] }))
+    const first = renderHook(() => useFeed('/infer-gallery/runs', decode, EMPTY))
+    await waitFor(() => { expect(first.result.current.loading).toBe(false) })
+    expect(first.result.current.stale).toBe(false)
+    expect(JSON.parse(localStorage.getItem(KEY) as string)).toEqual({ runs: [{ run_id: 'r1' }] })
+    first.unmount()
+
+    // second boot: the fetch hangs (the boot race) — the cached feed
+    // is ALREADY painted, marked stale
+    vi.unstubAllGlobals()
+    let release: (() => void) | null = null
+    const gate = new Promise<void>((res) => { release = res })
+    vi.stubGlobal('fetch', vi.fn(async () => { await gate; return ok({ runs: [{ run_id: 'r2' }] }) }))
+    const second = renderHook(() => useFeed('/infer-gallery/runs', decode, EMPTY))
+    expect(second.result.current.data).toEqual({ runs: [{ run_id: 'r1' }] })
+    expect(second.result.current.stale).toBe(true)
+    expect(second.result.current.loading).toBe(true)
+    // the fresh feed seats: replaces the cache, clears stale
+    release!()
+    await waitFor(() => { expect(second.result.current.loading).toBe(false) })
+    expect(second.result.current.data).toEqual({ runs: [{ run_id: 'r2' }] })
+    expect(second.result.current.stale).toBe(false)
+    expect(JSON.parse(localStorage.getItem(KEY) as string)).toEqual({ runs: [{ run_id: 'r2' }] })
+    second.unmount()
+  })
+
+  it('a corrupt cache falls back to the initial feed fresh (never a crashed boot)', async () => {
+    localStorage.setItem(KEY, '{not json')
+    stubFetch(() => ok({ runs: [] }))
+    const { result } = renderHook(() => useFeed('/infer-gallery/runs', decode, EMPTY))
+    expect(result.current.stale).toBe(false)
+    await waitFor(() => { expect(result.current.loading).toBe(false) })
+    expect(result.current.data).toEqual(EMPTY)
+  })
+})

@@ -434,6 +434,9 @@ window.__ModuleLoader__.load({
 			statGatewayNotes: (p) => ` · ${p.count} gateway note${p.count > 1 ? "s" : ""}`,
 			/** The header stat line's truncation suffix. */
 			statCapped: (p) => ` · ${p.count} capped`,
+			/** The header's boot-staged face: the persisted feed is painted
+			*  while the fresh one seats (E2-3 arm 2 — instant first paint). */
+			statStale: " · stale — refreshing",
 			/** The flows tab pill face. */
 			tabFlows: (p) => `Flows ${p.count}`,
 			/** The artifacts tab pill face. */
@@ -2077,6 +2080,26 @@ window.__ModuleLoader__.load({
 		* typed feed; malformed shapes fall back to empty lists THERE, in one
 		* place per feed, instead of Array.isArray sprinkles at render sites.
 		*/
+		/** The staged-cache seat (E2-3 arm 2, operator 2026-10-22: "the
+		*  first load from history takes 5+ minutes"): the last served feed
+		*  persists client-side and paints instantly on the next boot. Keyed
+		*  by the feed url — localStorage is origin-scoped, so two estates
+		*  (two lanes, two ports) never cross-paint. A cache that will not
+		*  parse is discarded, never a crashed boot. */
+		const feedCacheKey = (url) => "melite:feed:" + url;
+		function readFeedCache(url) {
+			try {
+				const raw = localStorage.getItem(feedCacheKey(url));
+				return raw === null ? null : JSON.parse(raw);
+			} catch {
+				return null;
+			}
+		}
+		function writeFeedCache(url, json) {
+			try {
+				localStorage.setItem(feedCacheKey(url), JSON.stringify(json));
+			} catch {}
+		}
 		/** Refetch when the page becomes visible / regains focus, throttled.
 		* A new chat session does NOT reload the SPA — without this the panel
 		* sits on hour-old data while fresh runs exist. */
@@ -2102,7 +2125,25 @@ window.__ModuleLoader__.load({
 			}, [throttleMs]);
 		}
 		function useFeed(url, decode, initial) {
-			const [data, setData] = (0, react.useState)(initial);
+			const [boot] = (0, react.useState)(() => {
+				const json = readFeedCache(url);
+				if (json === null) return { cached: null };
+				try {
+					decode(json);
+					return { cached: json };
+				} catch {
+					return { cached: null };
+				}
+			});
+			const [data, setData] = (0, react.useState)(() => {
+				if (boot.cached === null) return initial;
+				try {
+					return decode(boot.cached);
+				} catch {
+					return initial;
+				}
+			});
+			const [stale, setStale] = (0, react.useState)(boot.cached !== null);
 			const [loading, setLoading] = (0, react.useState)(true);
 			const [error, setError] = (0, react.useState)("");
 			const abortRef = (0, react.useRef)(null);
@@ -2119,11 +2160,15 @@ window.__ModuleLoader__.load({
 						throw new Error(typeof msg === "string" && msg !== "" ? msg : "HTTP " + String(r.status));
 					}
 					setData(decode(json));
+					writeFeedCache(url, json);
 				}).catch((e) => {
 					if (ctrl.signal.aborted) return;
 					setError(e instanceof Error ? e.message : String(e));
 				}).finally(() => {
-					if (!ctrl.signal.aborted) setLoading(false);
+					if (!ctrl.signal.aborted) {
+						setLoading(false);
+						setStale(false);
+					}
 				});
 			}, [url, decode]);
 			(0, react.useEffect)(() => {
@@ -2138,7 +2183,8 @@ window.__ModuleLoader__.load({
 				loading,
 				error,
 				reload: load,
-				setData
+				setData,
+				stale
 			};
 		}
 		//#endregion
@@ -3103,7 +3149,8 @@ window.__ModuleLoader__.load({
 									artifacts: items.length
 								}),
 								gatewayErrors.length > 0 ? galleryCopy.statGatewayNotes({ count: gatewayErrors.length }) : "",
-								truncatedRuns > 0 ? galleryCopy.statCapped({ count: truncatedRuns }) : ""
+								truncatedRuns > 0 ? galleryCopy.statCapped({ count: truncatedRuns }) : "",
+								runsFeed.stale ? galleryCopy.statStale : ""
 							] }),
 							/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", { style: { flex: 1 } }),
 							/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {

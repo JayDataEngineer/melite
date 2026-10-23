@@ -35,7 +35,11 @@ const draftsFeed = (drafts: unknown[]): Promise<Response> =>
 const run = (over: Record<string, unknown>): GalleryRunRow =>
   ({ run_id: 'r1', created_at: 1, ...over }) as GalleryRunRow
 
-afterEach(() => { cleanup(); vi.unstubAllGlobals() })
+// localStorage.clear() too: useFeed's boot-staged cache (E2-3 arm 2)
+// persists the last served feed across tests in this file — without
+// the wipe, a later arm's first paint hydrates an EARLIER arm's feed
+// and clicks its cached tiles instead of its own rows.
+afterEach(() => { cleanup(); vi.unstubAllGlobals(); localStorage.clear() })
 
 describe('kindOf — SSOT-derived classifier', () => {
   it('type beats URL on a contradictory row', () => {
@@ -1284,5 +1288,38 @@ describe('the no-overlay law — neither the raw atom nor card-base Tip seats th
     const panelSrc = readFileSync(resolve(clientDir, 'client/MediaPanel.tsx'), 'utf8')
     expect(panelSrc).toContain('aria-label={galleryCopy.wandAria}')
     expect(panelSrc).not.toContain('title={galleryCopy.wandTooltip}')
+  })
+})
+
+// ── THE BOOT-STAGED FIRST PAINT (E2-3 arm 2): the persisted feed
+// paints instantly with a stale face while the fresh feed seats —
+// never minutes of spinner through a lane boot.
+describe('MediaPanel — the boot-staged stale face', () => {
+  it('a persisted feed paints before the fetch answers, chips stale, then fresh replaces it', async () => {
+    localStorage.setItem('melite:feed:/infer-gallery/runs', JSON.stringify({
+      runs: [run({ artifacts: [{ url: '/c/cached.png', name: 'cached.png', type: 'image' }] })],
+      errors: [],
+    }))
+    let release: (() => void) | null = null
+    const gate = new Promise<void>((res) => { release = res })
+    vi.stubGlobal('fetch', (url: string) =>
+      url === '/infer-gallery/runs'
+        ? gate.then(() => runsFeed([run({ artifacts: [{ url: '/v/fresh.png', name: 'fresh.png', type: 'image' }] })]))
+        : draftsFeed([]))
+    render(<MediaPanel />)
+    // the CACHED tile paints with the stale chip — no fetch answered yet
+    const cached = await waitFor(() => {
+      const img = document.querySelector('button img[src="/c/cached.png"]') as HTMLImageElement | null
+      expect(img).not.toBeNull()
+      return img as HTMLImageElement
+    })
+    expect(cached).toBeTruthy()
+    expect(document.body.textContent).toMatch(/stale — refreshing/)
+    release!()
+    // the fresh feed seats: the chip clears, the fresh tile replaces
+    await waitFor(() => {
+      expect(document.querySelector('button img[src="/v/fresh.png"]')).not.toBeNull()
+    })
+    expect(document.body.textContent).not.toMatch(/stale — refreshing/)
   })
 })

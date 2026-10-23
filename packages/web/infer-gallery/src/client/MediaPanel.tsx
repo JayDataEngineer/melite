@@ -788,7 +788,7 @@ export function MediaPanel({ useTabInfo, sessionId }: { useTabInfo?: () => TabIn
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginBottom: 10 }}>
         <span style={{ fontWeight: 700, fontSize: 14 }}>{galleryCopy.panelTitle}</span>
         <Stat>
-          {galleryCopy.statRunsArtifacts({ runs: runs.length, artifacts: items.length })}{gatewayErrors.length > 0 ? galleryCopy.statGatewayNotes({ count: gatewayErrors.length }) : ''}{truncatedRuns > 0 ? galleryCopy.statCapped({ count: truncatedRuns }) : ''}
+          {galleryCopy.statRunsArtifacts({ runs: runs.length, artifacts: items.length })}{gatewayErrors.length > 0 ? galleryCopy.statGatewayNotes({ count: gatewayErrors.length }) : ''}{truncatedRuns > 0 ? galleryCopy.statCapped({ count: truncatedRuns }) : ''}{runsFeed.stale ? galleryCopy.statStale : ''}
         </Stat>
         <span style={{ flex: 1 }} />
         {/* FLOWS ↔ ARTIFACTS: the two faces of the archive — composed
