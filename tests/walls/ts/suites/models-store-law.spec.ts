@@ -253,6 +253,14 @@ describe("THE MODELS-STORE LAW — real artifacts, no unnamed bytes", () => {
     let enginePaths: Set<string> | undefined;
     if (ENGINE !== undefined && existsSync(ENGINE)) {
       enginePaths = new Set<string>();
+      // SYMLINKED FOLDERS ARE THE ENGINE'S OWN WIRES (the SEEDVR2
+      // lesson, 2026-10-23): the deployed engine's models dir mounts
+      // whole store folders as directory symlinks, and a pack writing
+      // through the wire (SeedVR2's .validation_cache.json) lands in
+      // the store at the same relative path the engine serves. The
+      // lstat-shaped isDirectory() sees only the link, so the parity
+      // law went blind for exactly the files it exists to judge.
+      // statSync follows the link; a symlinked FILE stays a file.
       const scanAll = (d: string, base: string): void => {
         let entries;
         try {
@@ -261,7 +269,16 @@ describe("THE MODELS-STORE LAW — real artifacts, no unnamed bytes", () => {
           return;
         }
         for (const e of entries) {
-          if (e.isDirectory()) scanAll(join(d, e.name), `${base}${e.name}/`);
+          const p = join(d, e.name);
+          let isDir = e.isDirectory();
+          if (e.isSymbolicLink()) {
+            try {
+              isDir = statSync(p).isDirectory();
+            } catch {
+              isDir = false; // a broken wire names nothing
+            }
+          }
+          if (isDir) scanAll(p, `${base}${e.name}/`);
           else enginePaths!.add(`${base}${e.name}`);
         }
       };
