@@ -338,10 +338,10 @@ describe("the VRAM budget declaration stamp (the prevent-oom law, 2026-10-23)", 
     // engine's own cache held 10.26 GiB — the run OOM'd mid-flight.
     // The action DECL declares the headroom; the composed envelope
     // must carry it on the same channel timeout_s reads.
-    assert.equal(estimate_photo.vramBudgetMb, 13500, "the anny DECL declares the budget the burn proved");
+    assert.equal(estimate_photo.vramBudgetMb, 15500, "the anny DECL declares the budget two burns proved — the 13500 gate passed 14167 free and still OOM'd in flight");
     const composed = composeFamilyStages(expandRegistryFlow(ANNY_ESTIMATE_FLOW(), SEED), decls, "seated");
     const params = composed.stages[0]!.params as Record<string, unknown>;
-    assert.equal(params["vram_budget_mb"], 13500, "the envelope stamps the declared budget");
+    assert.equal(params["vram_budget_mb"], 15500, "the envelope stamps the declared budget");
     assert.notEqual(params["workflow"], undefined, "the graph still composes");
   });
   it("an action with NO declaration stamps NO knob — the envelope stays byte-identical (no key, no gate, no traffic)", () => {
