@@ -27,7 +27,7 @@
  */
 import { spawn } from 'node:child_process'
 import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, readdirSync, existsSync } from 'node:fs'
-import { tmpdir } from 'node:os'
+import { tmpdir, homedir } from 'node:os'
 import { join, dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import type { PathName } from './analysis.ts'
@@ -335,6 +335,25 @@ export async function commission(opts: CommissionOptions): Promise<CommissionRes
   }
   if (opts.maxAttempts !== undefined) env['SUPERVISOR_MAX_ATTEMPTS'] = String(opts.maxAttempts)
   if (opts.lockWaitS !== undefined) env['SUPERVISOR_LOCK_WAIT_S'] = String(opts.lockWaitS)
+
+  // THE LLM OVERLAY SEAT (2026-10-23, the faces-vs-credentials seam):
+  // the rendered profile mounts the estate rows and the maker faces,
+  // but the machine-local provider rows (the maker lane's cheap-model
+  // pin — which route serves when the boot's own default would demand
+  // a key the store does not hold) live in the profile's llm.patch.yml,
+  // applied as a call-time --patch. The supervisor's knob is
+  // SUPERVISOR_DSH_PATCH; explicit env > the discovered overlay, and a
+  // missing overlay seats nothing (a profile without one boots as it
+  // always did).
+  if (env['SUPERVISOR_DSH_PATCH'] === undefined) {
+    const overlay = join(
+      process.env['DSH_HOME'] ?? join(homedir(), '.dsh'),
+      'profiles',
+      opts.profile ?? 'headless',
+      'llm.patch.yml',
+    )
+    if (existsSync(overlay)) env['SUPERVISOR_DSH_PATCH'] = overlay
+  }
 
   if (opts.execute === false) {
     return {

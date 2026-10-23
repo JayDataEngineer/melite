@@ -21,7 +21,7 @@
  */
 import { describe, it, expect } from 'vitest'
 import assert from 'node:assert/strict'
-import { mkdtempSync, writeFileSync, readFileSync, existsSync } from 'node:fs'
+import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, existsSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, dirname } from 'node:path'
 import {
@@ -371,6 +371,58 @@ describe('the commissioner — the launch (a stubbed maker, never a real one)', 
     // a receipt never carries a credential: the env it reports is the
     // launch's own, and the store stays the source of truth
     assert.equal(Object.keys(dry.env ?? {}).some((k) => /KEY|TOKEN|SECRET/i.test(k)), false)
+  })
+
+  // THE LLM OVERLAY SEAT (the faces-vs-credentials seam, 2026-10-23):
+  // the rendered profile mounts the faces, but the maker lane's
+  // provider rows ride the profile's llm.patch.yml as a call-time
+  // --patch. A boot without it demands a key the store does not hold
+  // (observed live: MISSING_CREDENTIAL llm-deepseek deepseek-official
+  // with the ZAI brain seated beside it); the discovered overlay must
+  // seat the knob, an explicit env must win, and a DSH_HOME without
+  // the overlay must seat nothing.
+  it('seats the profile llm.patch.yml as SUPERVISOR_DSH_PATCH when the machine holds one', async () => {
+    const ambientHome = process.env['DSH_HOME']
+    const ambientPatch = process.env['SUPERVISOR_DSH_PATCH']
+    const dshHome = mkdtempSync(join(tmpdir(), 'lane-dsh-home-'))
+    mkdirSync(join(dshHome, 'profiles', 'headless'), { recursive: true })
+    writeFileSync(join(dshHome, 'profiles', 'headless', 'llm.patch.yml'), '# overlay\n', 'utf8')
+    try {
+      process.env['DSH_HOME'] = dshHome
+      delete process.env['SUPERVISOR_DSH_PATCH']
+      const dry = await commission({ path: 'video', slug: 'lane-overlay', execute: false })
+      assert.equal(dry.env?.['SUPERVISOR_DSH_PATCH'], join(dshHome, 'profiles', 'headless', 'llm.patch.yml'))
+      // explicit env > the discovered overlay (the house law)
+      const explicit = await commission({
+        path: 'video',
+        slug: 'lane-overlay',
+        execute: false,
+        env: { SUPERVISOR_DSH_PATCH: '/operator/owns/this.patch.yml' },
+      })
+      assert.equal(explicit.env?.['SUPERVISOR_DSH_PATCH'], '/operator/owns/this.patch.yml')
+    } finally {
+      if (ambientHome === undefined) delete process.env['DSH_HOME']
+      else process.env['DSH_HOME'] = ambientHome
+      if (ambientPatch === undefined) delete process.env['SUPERVISOR_DSH_PATCH']
+      else process.env['SUPERVISOR_DSH_PATCH'] = ambientPatch
+    }
+  })
+
+  it('seats no overlay knob when the profile holds no llm.patch.yml', async () => {
+    const ambientHome = process.env['DSH_HOME']
+    const ambientPatch = process.env['SUPERVISOR_DSH_PATCH']
+    const dshHome = mkdtempSync(join(tmpdir(), 'lane-dsh-bare-'))
+    try {
+      process.env['DSH_HOME'] = dshHome
+      delete process.env['SUPERVISOR_DSH_PATCH']
+      const dry = await commission({ path: 'video', slug: 'lane-bare', execute: false })
+      assert.equal(dry.env?.['SUPERVISOR_DSH_PATCH'], undefined)
+    } finally {
+      if (ambientHome === undefined) delete process.env['DSH_HOME']
+      else process.env['DSH_HOME'] = ambientHome
+      if (ambientPatch === undefined) delete process.env['SUPERVISOR_DSH_PATCH']
+      else process.env['SUPERVISOR_DSH_PATCH'] = ambientPatch
+    }
   })
 
   it('a clean boot log reports no gaps (never a manufactured one)', () => {
