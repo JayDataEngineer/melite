@@ -344,6 +344,27 @@ describe("runThumbnail", () => {
     writeFileSync(join(root, "_poster.jpg"), "p");
     assert.equal(runThumbnail(root, "run-x"), "run-x/_poster.jpg");
   });
+
+  // THE PREVIEWS CURE class 2 (operator 2026-11-12: "the preview
+  // images all inaccurate"): video-only h3 runs found no image
+  // candidate and served thumbnail '' — every window tile painted
+  // frame 0 of an intermediate segment with nothing naming it. A
+  // video-only run keeps a face: the ENGINE FILM leads (the
+  // in-graph assembly's product, wherever it sits), else the first
+  // video candidate.
+  it("a video-only run keeps a face — the engine film leads, else the first video", () => {
+    const root = tmp();
+    mkdirSync(join(root, "h3-film"));
+    writeFileSync(join(root, "h3-film", "h3_t4_w1_00057_.mp4"), "v");
+    writeFileSync(join(root, "h3-film", "h3_t4_w2_00114_.mp4"), "v");
+    mkdirSync(join(root, "h3-final"));
+    writeFileSync(join(root, "h3-final", "h3_t4_film_00114_.mp4"), "v");
+    // the engine film wins though its dir sorts AFTER the windows'
+    assert.equal(runThumbnail(root, "run-x"), "run-x/h3-final/h3_t4_film_00114_.mp4");
+    rmSync(join(root, "h3-final"), { recursive: true });
+    // window-only: the first video candidate keeps the face at all
+    assert.equal(runThumbnail(root, "run-x"), "run-x/h3-film/h3_t4_w1_00057_.mp4");
+  });
 });
 
 describe("runDirHasMedia", () => {

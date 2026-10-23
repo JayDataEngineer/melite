@@ -235,7 +235,7 @@ export function runArtifacts(
   return marker === undefined ? ordered : [...ordered, marker]
 }
 
-/** _run_thumbnail: cached poster wins, else the first image candidate (same one-level rule, so nested-only runs still get a poster). */
+/** _run_thumbnail: cached poster wins, else the first image candidate (same one-level rule, so nested-only runs still get a poster), else — the previews cure (2026-11-12) — the film-lead VIDEO: video-only runs served '' and every window tile painted frame 0 of an intermediate segment with nothing naming it. The engine film (the in-graph assembly's product) leads wherever it sits; else the first video candidate keeps the face at all. */
 export function runThumbnail(runDir: string, runId: string): string {
   try {
     statSync(join(runDir, "_poster.jpg"));
@@ -243,11 +243,28 @@ export function runThumbnail(runDir: string, runId: string): string {
   } catch {
     /* no poster — fall through to first image */
   }
-  for (const cand of mediaCandidates(runDir)) {
+  const cands = mediaCandidates(runDir);
+  for (const cand of cands) {
     const base: string = cand.rel.includes("/")
       ? (cand.rel.slice(cand.rel.lastIndexOf("/") + 1) as string)
       : cand.rel;
     if (artifactType(base) === "image") {
+      return runId + "/" + cand.rel;
+    }
+  }
+  for (const cand of cands) {
+    const base: string = cand.rel.includes("/")
+      ? (cand.rel.slice(cand.rel.lastIndexOf("/") + 1) as string)
+      : cand.rel;
+    if (artifactType(base) === "video" && engineFilmName([base]) !== null) {
+      return runId + "/" + cand.rel;
+    }
+  }
+  for (const cand of cands) {
+    const base: string = cand.rel.includes("/")
+      ? (cand.rel.slice(cand.rel.lastIndexOf("/") + 1) as string)
+      : cand.rel;
+    if (artifactType(base) === "video") {
       return runId + "/" + cand.rel;
     }
   }

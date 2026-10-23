@@ -247,9 +247,16 @@ describe('MediaPanel — stubbed feed over the gallery routes', () => {
       expect(tile.hasAttribute('autoplay')).toBe(false)
     }
     expect(tiles.some((t) => t.getAttribute('src') === '/v/clip.mp4')).toBe(true)
-    // the window film has no still sibling: no poster attr, the first frame shows
-    const window = tiles.find((t) => t.getAttribute('src') === '/v/film_w1_ab12f.mp4') as HTMLVideoElement
-    expect(window.hasAttribute('poster')).toBe(false)
+    // THE PREVIEWS CURE (2026-11-12): the window film has no still
+    // sibling, so its tile paints the run's FINAL film (the product's
+    // first frame — clip.mp4 here), never its own intermediate frame,
+    // and the SEGMENT chip names what it is; no poster attr either way
+    for (const tile of tiles) {
+      expect(tile.getAttribute('src')).toBe('/v/clip.mp4')
+      expect(tile.hasAttribute('poster')).toBe(false)
+    }
+    const chips = Array.from(document.querySelectorAll('button span')).map((s) => s.textContent)
+    expect(chips).toContain('SEGMENT')
   })
 
   it('the wand is a history icon (no CARDS text on the tile)', async () => {

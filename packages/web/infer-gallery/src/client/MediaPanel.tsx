@@ -99,7 +99,16 @@ interface MediaItem {
   id: string
   kind: Kind
   url: string
+  /** The url the TILE paints (the <video> element's src) — the item's
+   *  own url except a poster-less WINDOW film, which paints the run's
+   *  face instead (final film, else the film-lead thumbnail): windows
+   *  are intermediate segments, never the run's face (the previews
+   *  cure, 2026-11-12). The click still opens `url`. */
+  face: string
   poster: string
+  /** A window-film tile (a run segment, not the product) — chips the
+   *  tile so a grid of windows reads as segments, not products. */
+  segment: boolean
   head: string
   final: boolean
   runId: string
@@ -212,6 +221,17 @@ export function flatten(runs: GalleryRunRow[]): MediaItem[] {
     // flags it via the run-row `truncated` marker — see media-kinds.ts.)
     const imageCount = arts.reduce((n, a) => (kindOf(a) === 'image' ? n + 1 : n), 0)
     const dropFrames = imageCount > 20
+    // THE RUN'S FILM FACE (the previews cure, 2026-11-12): the final
+    // film — the run's product — wherever it sits in the artifact
+    // list; poster-less window tiles paint THIS, never frame 0 of an
+    // intermediate segment.
+    const finalFilmUrl = arts.reduce<string | null>((lead, a) => {
+      if (lead !== null) return lead
+      const u = a.url ?? ''
+      const f = a.name ?? baseName(u)
+      return kindOf(a) === 'video' && u !== '' && !WINDOW_FILM.test(f) ? u : null
+    }, null)
+    const thumbIsVideo = typeof run.thumbnail === 'string' && KIND_RE.video.test(run.thumbnail)
     for (const a of arts) {
       const kind = kindOf(a)
       const url = a.url ?? ''
@@ -232,9 +252,23 @@ export function flatten(runs: GalleryRunRow[]): MediaItem[] {
       // concatenated film = video without a _w<N>_hash window suffix
       const isFinal = kind === 'video' && !WINDOW_FILM.test(file)
       let poster = ''
+      // the tile's paint: the item's own url, except a poster-less
+      // window — windows are segments, never the run's face
+      let face = url
+      let segment = false
       if (kind === 'video') {
-        poster = posters.get(stem) ?? (isFinal ? url : '')
-        if (poster === '') poster = run.thumbnail ?? ''
+        poster = posters.get(stem) ?? ''
+        // an IMAGE thumbnail is a true poster (the legacy fill); a
+        // VIDEO thumbnail (the film-lead the seat now serves for
+        // video-only runs) is a FACE for poster-less windows, never
+        // a <video poster> attr — browsers take images only
+        if (poster === '' && !thumbIsVideo) poster = run.thumbnail ?? ''
+        if (isFinal) {
+          if (poster === '') poster = url
+        } else {
+          segment = true
+          face = poster !== '' ? url : (finalFilmUrl ?? (thumbIsVideo ? (run.thumbnail as string) : null) ?? url)
+        }
       } else if (kind === 'image') {
         poster = url
       }
@@ -242,7 +276,9 @@ export function flatten(runs: GalleryRunRow[]): MediaItem[] {
         id: url,
         kind,
         url,
+        face,
         poster,
+        segment,
         head,
         final: isFinal,
         runId: String(run.run_id ?? ''),
@@ -915,8 +951,8 @@ export function MediaPanel({ useTabInfo, sessionId }: { useTabInfo?: () => TabIn
                               // the thumbnail law, a video cropped is a
                               // lie about what was made).
                               <video
-                                src={it.url}
-                                poster={it.poster !== '' && it.poster !== it.url ? it.poster : undefined}
+                                src={it.face}
+                                poster={it.poster !== '' && it.poster !== it.url && it.poster !== it.face ? it.poster : undefined}
                                 muted
                                 playsInline
                                 preload="metadata"
@@ -939,6 +975,19 @@ export function MediaPanel({ useTabInfo, sessionId }: { useTabInfo?: () => TabIn
                               position: 'absolute', right: 6, bottom: 6, background: fillSubtle2,
                               borderRadius: 6, padding: 3, lineHeight: 0, color: labelPrimary4,
                             }}><Glyph kind="video" size={14} /></span>
+                          )
+                        : null}
+                      {/* THE SEGMENT CHIP (the previews cure, 2026-11-12):
+                        * a window tile paints the run's face but IS an
+                        * intermediate segment — the chip names it so a
+                        * grid of windows never reads as products. */}
+                      {it.segment
+                        ? (
+                            <span style={{
+                              position: 'absolute', left: 6, bottom: 6, background: fillSubtle2,
+                              borderRadius: 6, padding: '3px 6px', lineHeight: 0, color: labelPrimary4,
+                              fontSize: 10, letterSpacing: '0.04em',
+                            }}>SEGMENT</span>
                           )
                         : null}
                       <TileBadge item={it} />

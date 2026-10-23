@@ -2523,6 +2523,13 @@ window.__ModuleLoader__.load({
 					if (m !== void 0 && a.url) posters.set(m[1], a.url);
 				}
 				const dropFrames = arts.reduce((n, a) => kindOf(a) === "image" ? n + 1 : n, 0) > 20;
+				const finalFilmUrl = arts.reduce((lead, a) => {
+					if (lead !== null) return lead;
+					const u = a.url ?? "";
+					const f = a.name ?? baseName(u);
+					return kindOf(a) === "video" && u !== "" && !WINDOW_FILM.test(f) ? u : null;
+				}, null);
+				const thumbIsVideo = typeof run.thumbnail === "string" && KIND_RE.video.test(run.thumbnail);
 				for (const a of arts) {
 					const kind = kindOf(a);
 					const url = a.url ?? "";
@@ -2537,15 +2544,25 @@ window.__ModuleLoader__.load({
 					const head = labelSrc !== "" ? "\"" + labelSrc.slice(0, 48) + (labelSrc.length > 48 ? "…" : "") + "\"" : String(run.flow ?? run.run_id ?? "");
 					const isFinal = kind === "video" && !WINDOW_FILM.test(file);
 					let poster = "";
+					let face = url;
+					let segment = false;
 					if (kind === "video") {
-						poster = posters.get(stem) ?? (isFinal ? url : "");
-						if (poster === "") poster = run.thumbnail ?? "";
+						poster = posters.get(stem) ?? "";
+						if (poster === "" && !thumbIsVideo) poster = run.thumbnail ?? "";
+						if (isFinal) {
+							if (poster === "") poster = url;
+						} else {
+							segment = true;
+							face = poster !== "" ? url : finalFilmUrl ?? (thumbIsVideo ? run.thumbnail : null) ?? url;
+						}
 					} else if (kind === "image") poster = url;
 					items.push({
 						id: url,
 						kind,
 						url,
+						face,
 						poster,
+						segment,
 						head,
 						final: isFinal,
 						runId: String(run.run_id ?? ""),
@@ -3337,8 +3354,8 @@ window.__ModuleLoader__.load({
 										objectFit: "cover"
 									}
 								}) : it.kind === "video" ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("video", {
-									src: it.url,
-									poster: it.poster !== "" && it.poster !== it.url ? it.poster : void 0,
+									src: it.face,
+									poster: it.poster !== "" && it.poster !== it.url && it.poster !== it.face ? it.poster : void 0,
 									muted: true,
 									playsInline: true,
 									preload: "metadata",
@@ -3372,6 +3389,21 @@ window.__ModuleLoader__.load({
 										kind: "video",
 										size: 14
 									})
+								}) : null,
+								it.segment ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+									style: {
+										position: "absolute",
+										left: 6,
+										bottom: 6,
+										background: "var(--dsw-alias-fill-subtle, rgba(2,6,23,0.72))",
+										borderRadius: 6,
+										padding: "3px 6px",
+										lineHeight: 0,
+										color: "var(--dsw-alias-label-primary, #e2e8f0)",
+										fontSize: 10,
+										letterSpacing: "0.04em"
+									},
+									children: "SEGMENT"
 								}) : null,
 								/* @__PURE__ */ (0, react_jsx_runtime.jsx)(TileBadge, { item: it }),
 								selectMode ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {

@@ -17,7 +17,7 @@ export declare function mediaCandidates(runDir: string): MediaCand[];
 /** run_artifacts: image/video/audio/model rows (image capped at _MAX_IMGS — counted but unlisted past it), everything else skipped; the {truncated,listed,total} marker when entries went unlisted. */
 /** path keeps the "./output/<run>/" literal. */
 export declare function runArtifacts(runDir: string, outDirLiteral: string): Record<string, unknown>[];
-/** _run_thumbnail: cached poster wins, else the first image candidate (same one-level rule, so nested-only runs still get a poster). */
+/** _run_thumbnail: cached poster wins, else the first image candidate (same one-level rule, so nested-only runs still get a poster), else — the previews cure (2026-11-12) — the film-lead VIDEO: video-only runs served '' and every window tile painted frame 0 of an intermediate segment with nothing naming it. The engine film (the in-graph assembly's product) leads wherever it sits; else the first video candidate keeps the face at all. */
 export declare function runThumbnail(runDir: string, runId: string): string;
 /** _run_dir_has_media: the media-FIRST sort key — top-level names, then one level down. */
 /** NOTE the absences: NO `_` skip (a lone `_poster.jpg` counts), NO inner isdir check (a nested DIR named x.mp4 counts) — probed live, mirrored exactly. */

@@ -62,6 +62,45 @@ describe('flatten — hostile rows', () => {
     ])
     expect(thumb[0].poster).toBe('/t.png')
   })
+
+  // THE PREVIEWS CURE class 2 (operator 2026-11-12: "the preview
+  // images all inaccurate"): 42/42 window films in the served feed
+  // had no poster map hit and no thumbnail — the tile painted frame 0
+  // of an intermediate segment, undeclared. Windows are never the
+  // run's face: the tile paints the run's FINAL film (else the
+  // film-lead thumbnail the seat now serves) and wears a SEGMENT
+  // chip; the click still opens the window itself.
+  it('a window tile paints the run\u2019s final film and wears the segment chip', () => {
+    const items = flatten([
+      run({
+        artifacts: [
+          { url: '/h3/h3_t4_w1_00057_.mp4', name: 'h3_t4_w1_00057_.mp4', type: 'video' },
+          { url: '/h3/h3_t4_film_00114_.mp4', name: 'h3_t4_film_00114_.mp4', type: 'video' },
+        ],
+      }),
+    ])
+    expect(items).toHaveLength(2)
+    const win = items.find((it) => it.file.includes('_w1_'))!
+    const film = items.find((it) => !it.file.includes('_w1_'))!
+    expect(win.poster).toBe('')
+    expect(win.face).toBe('/h3/h3_t4_film_00114_.mp4')
+    expect(win.segment).toBe(true)
+    expect(win.url).toBe('/h3/h3_t4_w1_00057_.mp4')
+    expect(film.face).toBe('/h3/h3_t4_film_00114_.mp4')
+    expect(film.segment).toBe(false)
+  })
+
+  it('a window-only run takes the film-lead thumbnail as its face (the served shape after the seat cure)', () => {
+    const items = flatten([
+      run({
+        thumbnail: '/run-x/h3-film/h3_t4_w1_00057_.mp4',
+        artifacts: [{ url: '/h3/h3_t4_w1_00057_.mp4', name: 'h3_t4_w1_00057_.mp4', type: 'video' }],
+      }),
+    ])
+    expect(items).toHaveLength(1)
+    expect(items[0].face).toBe('/run-x/h3-film/h3_t4_w1_00057_.mp4')
+    expect(items[0].segment).toBe(true)
+  })
 })
 
 describe('MediaPanel — gateway notes and ragged drafts', () => {
