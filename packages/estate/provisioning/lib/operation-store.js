@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { lstat, mkdir, readFile, readdir, realpath, unlink } from "node:fs/promises";
+import { lstat, mkdir, readFile, readdir, realpath, unlink, writeFile } from "node:fs/promises";
 import { writeFileAtomic } from "@deepseek-ai/dsh-atomic-write";
 import { dirname, join, resolve } from "node:path";
 import { PROVISION_OUTCOMES, PROVISION_STATES, } from "./contracts.js";
@@ -156,6 +156,21 @@ export class InMemoryOperationStore {
         const checked = requireOperation(operation);
         this.operations.set(checked.operationId, copyProvisionOperation(checked));
     }
+    /** THE CLAIM COMPARE-AND-SWAP (the two-seat race, 2026-10-23): the
+     *  write lands only while the stored row still sits at expectState —
+     *  synchronous check-and-set, atomic within one JS turn.
+     *  @param operation the row to write when the guard holds
+     *  @param expectState the state the stored row must still wear
+     *  @returns true when the write landed; false when the row moved
+     *  or was never stored */
+    async saveIfState(operation, expectState) {
+        const checked = requireOperation(operation);
+        const current = this.operations.get(checked.operationId);
+        if (current === undefined || current.state !== expectState)
+            return false;
+        this.operations.set(checked.operationId, copyProvisionOperation(checked));
+        return true;
+    }
     async remove(operationId) {
         this.operations.delete(operationId);
     }
@@ -207,6 +222,57 @@ export class FileOperationStore {
                 throw new OperationStoreError("io", "Failed to persist provisioning operation", error);
             }
         });
+    }
+    /** THE CLAIM COMPARE-AND-SWAP (the two-seat race, 2026-10-23): the
+     *  write lands only while the stored row still sits at expectState.
+     *  THE ARBITER IS THE FILESYSTEM: a wx-create of the row's claim
+     *  marker under <root>/claims/ — exactly one seat's marker can
+     *  exist per row, so the OS refuses the loser's create no matter
+     *  how many handles or processes contend (per-instance write
+     *  queues cannot: two FileOperationStore handles on one root race
+     *  as badly as two processes). The marker is terminal-safe: a row
+     *  never returns to "requested" (re-admissions mint a fresh
+     *  operation id), so the marker sits beside its row forever, one
+     *  file per operation — the crash window (marker created, row
+     *  never written) matches the pre-CAS window (row written as
+     *  acquiring, fetch never launched) and adds no new stuck class.
+     *  @param operation the row to write when the guard holds
+     *  @param expectState the state the stored row must still wear
+     *  @returns true when the write landed; false when another seat
+     *  owns the marker, the stored row moved, or no row is stored */
+    async saveIfState(operation, expectState) {
+        const checked = requireOperation(operation);
+        const root = await this.prepareRoot();
+        const markerPath = join(root, "claims", `${checked.operationId}.json`);
+        try {
+            await mkdir(dirname(markerPath), { recursive: true });
+            await writeFile(markerPath, `${JSON.stringify({ claimedBy: checked.detail ?? "", at: Date.now() })}\n`, { flag: "wx", mode: 0o600 });
+        }
+        catch (error) {
+            if (error.code === "EEXIST")
+                return false;
+            throw new OperationStoreError("io", "Failed to create the claim marker", error);
+        }
+        const path = join(root, operationFile(checked.operationId));
+        if (await pathKind(path) !== "file")
+            return false;
+        let value;
+        try {
+            value = JSON.parse(await readFile(path, "utf8"));
+        }
+        catch (error) {
+            throw new OperationStoreError("invalid-record", "Operation record is not valid JSON", error);
+        }
+        const current = parseOperation(value, checked.operationId);
+        if (current.state !== expectState)
+            return false;
+        try {
+            await writeFileAtomic(path, `${JSON.stringify(checked)}\n`, { mode: 0o600 });
+        }
+        catch (error) {
+            throw new OperationStoreError("io", "Failed to persist provisioning operation", error);
+        }
+        return true;
     }
     async remove(operationId) {
         if (operationId.trim() === "") {

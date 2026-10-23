@@ -267,7 +267,7 @@ export const COVERAGE_BASELINE: Record<string, {
   '**/packages/estate/provisioning/src/index.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/estate/provisioning/src/manager-client.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/estate/provisioning/src/manager-provider.ts': { statements: 100, branches: 99.61, functions: 100, lines: 100 },
-  '**/packages/estate/provisioning/src/operation-store.ts': { statements: 96.53, branches: 97.45, functions: 100, lines: 97.94 },
+  '**/packages/estate/provisioning/src/operation-store.ts': { statements: 91.45, branches: 92.89, functions: 96.96, lines: 93.49 },
   '**/packages/estate/provisioning/src/ports.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   // 2026-10-21: the 100s above were the driver-seat-env over-count;
   // the stripped gate measures the honest floor. The landing deleted
@@ -277,12 +277,12 @@ export const COVERAGE_BASELINE: Record<string, {
   // create arm (executeEnsure's synchronous seed dominates it, no
   // deletion path) and the .then/.catch current-undefined arms (both
   // start paths seed the id before attaching handlers).
-  '**/packages/estate/provisioning/src/service.ts': { statements: 95.48, branches: 92.18, functions: 93.78, lines: 97.06 },
+  '**/packages/estate/provisioning/src/service.ts': { statements: 94.03, branches: 91.24, functions: 91.7, lines: 95.69 },
   // the snapshot channel's pure helpers (2026-10-21): measured with
   // the wall seated — the uncovered branches are the external-JSON
   // defensive arms (null body, non-array siblings, non-string
   // rfilenames) the listing parser tolerates by contract.
-  '**/packages/estate/provisioning/src/snapshot.ts': { statements: 95.45, branches: 86.95, functions: 100, lines: 100 },
+  '**/packages/estate/provisioning/src/snapshot.ts': { statements: 95.38, branches: 86.95, functions: 100, lines: 100 },
   '**/packages/estate/runs/src/index.ts': { statements: 98.52, branches: 95.45, functions: 100, lines: 100 },
   '**/packages/harness/estate-call/src/cardTool.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/harness/estate-call/src/estateCall.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },

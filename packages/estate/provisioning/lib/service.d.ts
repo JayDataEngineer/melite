@@ -270,9 +270,11 @@ export declare class ProvisioningService extends Service implements Provisioning
      *  locks and cap, so the sweep never overbooks the plane. */
     private claimRequestedRows;
     /** THE CLAIM (one row): a same-key lock here already owns the
-     *  ref; the claim stamp wins by re-read (the two-seat race's
-     *  loser yields); the flight launches under the row's OWN id —
-     *  the requester's poll id is the fetch's id.
+     *  ref; the claim wins by COMPARE-AND-SWAP on the stored row's
+     *  state (the two-seat race's loser is refused by the store
+     *  itself, never by a reread it could clobber); the flight
+     *  launches under the row's OWN id — the requester's poll id is
+     *  the fetch's id.
      *  @returns true when this seat claimed and launched the row. */
     private claimRequested;
     /** THE NO-RE-MINT COVERAGE (the mint door's judge): the id of the

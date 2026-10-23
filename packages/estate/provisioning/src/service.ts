@@ -1362,9 +1362,11 @@ export class ProvisioningService extends Service implements ProvisioningServiceD
   }
 
   /** THE CLAIM (one row): a same-key lock here already owns the
-   *  ref; the claim stamp wins by re-read (the two-seat race's
-   *  loser yields); the flight launches under the row's OWN id —
-   *  the requester's poll id is the fetch's id.
+   *  ref; the claim wins by COMPARE-AND-SWAP on the stored row's
+   *  state (the two-seat race's loser is refused by the store
+   *  itself, never by a reread it could clobber); the flight
+   *  launches under the row's OWN id — the requester's poll id is
+   *  the fetch's id.
    *  @returns true when this seat claimed and launched the row. */
   private async claimRequested(row: ProvisionOperation, store: OperationStorePort): Promise<boolean> {
     const key = resourceKey(row.ref);
@@ -1373,12 +1375,15 @@ export class ProvisioningService extends Service implements ProvisioningServiceD
     if (seen !== undefined && seen.state !== "requested") return false;
     if (this.locks.size + this.pendingAcquires >= MAX_CONCURRENT_ACQUIRES) return false;
     const claimDetail = `claimed by seat ${this.seatId}`;
-    await store.save({ ...row, state: "acquiring", detail: claimDetail });
-    const reread = await store.load(row.operationId);
-    if (reread === null || reread.state !== "acquiring" || reread.detail !== claimDetail) {
-      // lost the race: another durable seat's fetch owns the row
-      return false;
-    }
+    // THE ATOMIC CLAIM (the two-seat race, 2026-10-23): the CAS on
+    // the stored state is the race's whole judge — save-then-reread
+    // let the loser clobber the winner's stamp and read its own
+    // back (two fetches for one row under battery load). A store
+    // without the primitive cannot make the claim atomic: decline
+    // loud, never race it.
+    if (store.saveIfState === undefined) return false;
+    const won = await store.saveIfState({ ...row, state: "acquiring", detail: claimDetail }, "requested");
+    if (!won) return false;
     this.weightProgress.set(row.operationId, {
       operationId: row.operationId,
       ref: copyRef(row.ref),

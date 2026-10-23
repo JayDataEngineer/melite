@@ -273,6 +273,26 @@ const REGEN_2026_11_06_NEW_FLOORS: Record<string, { statements: number, branches
   '**/packages/web/melite-card-view/src/client/card-labels.ts': { statements: 100.0, branches: 83.33, functions: 100.0, lines: 100.0 },
 };
 
+/** THE CLAIM CAS LANDING (3 rows) — the two-seat race's store
+ *  arbiter (wx-create claim marker under <root>/claims/): the cure
+ *  adds the saveIfState primitive to both stores and rewires the
+ *  durable claim through it, so the three touched files re-seat at
+ *  the scoped provisioning-pool faces (strictly under the full
+ *  pool's — every other package's tests only ADD covered paths to
+ *  these files; the floors ride at the scoped face and the full
+ *  pool's faces sit above). Heading: the roadmap's claim CAS
+ *  landing section. */
+const CAS_LANDING_OLD_FLOORS: Record<string, { statements: number, branches: number, functions: number, lines: number }> = {
+  '**/packages/estate/provisioning/src/operation-store.ts': { statements: 96.53, branches: 97.45, functions: 100, lines: 97.94 },
+  '**/packages/estate/provisioning/src/service.ts': { statements: 95.48, branches: 92.18, functions: 93.78, lines: 97.06 },
+  '**/packages/estate/provisioning/src/snapshot.ts': { statements: 95.45, branches: 86.95, functions: 100, lines: 100 },
+};
+const CAS_LANDING_NEW_FLOORS: Record<string, { statements: number, branches: number, functions: number, lines: number }> = {
+  '**/packages/estate/provisioning/src/operation-store.ts': { statements: 91.45, branches: 92.89, functions: 96.96, lines: 93.49 },
+  '**/packages/estate/provisioning/src/service.ts': { statements: 94.03, branches: 91.24, functions: 91.7, lines: 95.69 },
+  '**/packages/estate/provisioning/src/snapshot.ts': { statements: 95.38, branches: 86.95, functions: 100, lines: 100 },
+};
+
 /** THE 2026-10-23 GATE REGENERATION (61 rows) — the vram-gate era
  *  drift: three same-tree full-gate runs (A/B/C, 944 files,
  *  13,454 tests, suite-green save the four cured walls arms)
@@ -615,6 +635,13 @@ const ARGUED_FLOOR_DROPS: Record<string, {
     roadmapHeading: "The 2026-10-23 gate regeneration — 61 rows re-pinned at the stable measured faces",
     reviewBy: "2026-12-23",
     reason: "the vram-gate era landed suites-green through the scoped walls without the full pool; three same-tree full-gate runs deliver the identical 135-metric failing set (three files carry sub-1pp value jitter), so the rows re-pin at the three-run MIN faces via scripts/coverage-regen.mjs; MotionTimelineBarDrag's branches then swung two branch points past the first pin on the next full-gate run (74.8 to 73.28 — the load-jitter class) and re-seat at the failing face per the PoseViewer3D precedent — re-measure or ratchet back before the review date",
+  }])),
+  ...Object.fromEntries(Object.keys(CAS_LANDING_OLD_FLOORS).map((key) => [key, {
+    from: CAS_LANDING_OLD_FLOORS[key]!,
+    to: CAS_LANDING_NEW_FLOORS[key]!,
+    roadmapHeading: "The claim CAS landing — the two-seat race's store-arbiter cure",
+    reviewBy: "2026-12-23",
+    reason: "the two-fetch hole (save-then-reread let the race's loser clobber the winner's claim stamp and read its own back) closes at the store itself: saveIfState is a wx-create claim marker arbitrated by the filesystem, cross-handle and cross-process; the three touched files re-seat at the scoped provisioning-pool faces (the full pool only adds covered paths on top) — lift the floors back with the CAS's own arms before the review date",
   }])),
 };
 

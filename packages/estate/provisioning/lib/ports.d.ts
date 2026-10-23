@@ -109,6 +109,19 @@ export interface OperationStorePort {
      *  stores still satisfy the port; a store that cannot enumerate
      *  rehydrates nothing. */
     list?(): Promise<ProvisionOperation[]>;
+    /** THE CLAIM COMPARE-AND-SWAP (the two-seat race, 2026-10-23):
+     *  write the row only while the stored row still sits at
+     *  expectState — the durable claim's atomicity primitive. A plain
+     *  save-then-reread lets a second seat clobber the first's claim
+     *  stamp and read its own back (two fetches for one row); this
+     *  never can. Optional so older stores still satisfy the port; a
+     *  durable seat on a store without it declines the claim loud
+     *  rather than racing it.
+     *  @param operation the row to write when the guard holds
+     *  @param expectState the state the stored row must still wear
+     *  @returns true when the write landed; false when the guard
+     *  refused (lost race, moved row, or no stored row at all) */
+    saveIfState?(operation: ProvisionOperation, expectState: ProvisionOperation["state"]): Promise<boolean>;
     /** THE CLAIMER HEARTBEAT (optional, 2026-10-21): the durable seat
      *  stamps liveness where every seat sharing the store reads it — a
      *  transient queues a download ONLY while a claimer is alive, so a

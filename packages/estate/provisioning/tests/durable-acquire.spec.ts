@@ -179,15 +179,29 @@ describe("THE DURABLE DOWNLOAD SEAT (transient requests, durable claims, 2026-10
     assert.equal(durable.service.progressOf(id)?.state, "active");
     assert.equal(durable.fetched.length, 1);
     assert.deepEqual(transient.fetched, []);
-    // the requester's poll reads the durable seat's truth through the
-    // store — the transit "active" word may already have settled to
-    // "installed" by the time this poll lands (the fetch is fast on
-    // fixture bytes; the law judges the claim + the landing: bytes
-    // at total under EITHER word)
-    const foreign = await transient.service.readProgress(id);
-    assert.ok(foreign?.state === "active" || foreign?.state === "installed",
-      `foreign state landed on neither the transit nor the settled word: ${foreign?.state}`);
-    assert.equal(foreign?.bytes, foreign?.total);
+    // the requester's poll reads the durable seat's truth through
+    // the store — the observation may land on ANY in-flight word
+    // (acquiring, verifying) or the settled ones; the law judges
+    // the landing: poll to a settled word, then bytes at total
+    const first = await transient.service.readProgress(id);
+    assert.ok(
+      first?.state === "acquiring" || first?.state === "verifying"
+        || first?.state === "active" || first?.state === "installed",
+      `foreign state is no word the durable seat writes: ${first?.state}`,
+    );
+    // poll to the landing (readProgress is async — the RACE arm's
+    // manual poll pattern)
+    let foreign: WeightAcquireProgress | undefined;
+    for (let attempt = 0; attempt < 500; attempt += 1) {
+      const row = await transient.service.readProgress(id);
+      if (row?.state === "active" || row?.state === "installed" || row?.state === "failed") {
+        foreign = row;
+        break;
+      }
+      await new Promise((resolve) => { setTimeout(resolve, 10); });
+    }
+    assert.ok(foreign !== undefined, "the foreign poll never settled");
+    assert.equal(foreign.bytes, foreign.total);
   });
 
   test("THE RACE — two durable seats over one store: exactly ONE fetch (the loser yields by the claim re-read)", async () => {
@@ -229,6 +243,39 @@ describe("THE DURABLE DOWNLOAD SEAT (transient requests, durable claims, 2026-10
     const settled = storedRows(opRoot).find((r) => r["operationId"] === id);
     assert.equal(settled?.["state"], "active");
     assert.equal(settled?.["finishedAt"] !== undefined, true);
+  });
+
+  test("THE CLAIM CAS — two seats stamp one requested row: exactly ONE write lands (the loser is refused by the store, never by a reread)", async () => {
+    // THE TWO-FETCH HOLE (the battery red, 2026-10-23): save-then-
+    // reread is not atomic — the loser's save CLOBBERED the winner's
+    // claim stamp and the loser's reread then read its own stamp
+    // back: two fetches for one row. The compare-and-swap on the
+    // stored state is the race's whole judge, and this arm fires
+    // deterministically: toggle saveIfState back to an unconditional
+    // save and BOTH writes land (received [true, true]) — red with
+    // no scheduler luck involved.
+    const opRoot = tempRoot();
+    const transient = seat(opRoot);
+    const id = await transient.service.requestWeightAcquire(famRef());
+    const storeA = new FileOperationStore(opRoot);
+    const storeB = new FileOperationStore(opRoot);
+    const row = await storeA.load(id);
+    assert.equal(row?.state, "requested");
+    // both seats fire the claim concurrently — one row, two handles
+    const verdicts = await Promise.all([
+      storeA.saveIfState({ ...row!, state: "acquiring", detail: "claimed by seat A" }, "requested"),
+      storeB.saveIfState({ ...row!, state: "acquiring", detail: "claimed by seat B" }, "requested"),
+    ]);
+    assert.equal(verdicts.filter((won) => won).length, 1,
+      `exactly one claim may land: ${JSON.stringify(verdicts)}`);
+    // the stored row wears the WINNER's stamp — the loser never
+    // touched it — and a third claim on the moved row is refused
+    const stored = storedRows(opRoot).find((r) => r["operationId"] === id);
+    assert.equal(stored?.["state"], "acquiring");
+    assert.ok(stored?.["detail"] === "claimed by seat A" || stored?.["detail"] === "claimed by seat B",
+      `the winner's stamp survived: ${stored?.["detail"]}`);
+    const late = await storeA.saveIfState({ ...row!, state: "acquiring", detail: "claimed by seat C" }, "requested");
+    assert.equal(late, false, "a claim on a row that moved off requested is refused");
   });
 
   test("THE CROSS-PROCESS POLL — a row another seat claimed answers from the store, never null, never faked bytes", async () => {
