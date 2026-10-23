@@ -41,6 +41,7 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Context } from "@deepseek-ai/cordis";
+import { LOADED_WAIT } from "../../../../tests/helpers/loaded-wait.ts";
 import { FileOperationStore, ProvisioningService } from "../src/index.ts";
 import type {
   ArtifactWriterPort,
@@ -348,8 +349,12 @@ describe("the provisioning active face (the acceptance law + the no-re-mint law)
     // the boot rehydrate is eventually-consistent by law (audit E3:
     // the boot never blocks on the store) — the accept rides the
     // seeded ledger, the same convention as weight-acquire-restart
-    // ARMs 8/9
-    const deadline = Date.now() + 5_000;
+    // ARMs 8/9. (flake-slowness-wave3, the green-triple load): the
+    // hard 5s poll window lost the rehydrate sweep under the full
+    // gate's loaded pool — the window rides the shared settle
+    // budget now (30s scoped / 60s loaded), the same headroom the
+    // dom lane's LOADED_WAIT law seats.
+    const deadline = Date.now() + LOADED_WAIT();
     while (second.progressOfRef(ref()) === null && Date.now() < deadline) {
       await new Promise((resolve) => { setTimeout(resolve, 10); });
     }
