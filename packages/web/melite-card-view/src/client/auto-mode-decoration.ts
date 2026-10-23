@@ -78,9 +78,19 @@ export function decorateAutoMode(ctx: ClientContext): void {
   // silent — absence of the seat is a composition variant, never a
   // failure (the boot never depends on it).
   if (commandUi === undefined) return
-  const sessions = ctx.sessions as
+  // THE RELOAD RACE (journeys k/j/c, 2026-10-23): ctx.sessions is a
+  // throwing read — cordis raises `cannot get property without
+  // inject` when no provider is mounted, and the client _reload
+  // rebuilds contexts whose seats are mid-registration. A throwing
+  // read turns that transient into a console error that trips the
+  // journeys' zero-silent-errors law. Probe with get(..., false)
+  // instead: unregistered stays silent (the post-reload apply
+  // re-decorates through ctx.effect); submit-time absence stays loud
+  // via the binding guard below.
+  const sessions = ctx.get('sessions', false) as
     | { binding(sessionId: string): { session: CommandSession } | undefined }
     | undefined
+  if (sessions === undefined) return
   const submit = async (sessionId: string, optionId: string): Promise<void> => {
     const live = sessions?.binding(sessionId)?.session
     if (live === undefined) throw new Error('auto-mode: this session is not materialized yet')

@@ -7902,7 +7902,8 @@ window.__ModuleLoader__.load({
 		function decorateAutoMode(ctx) {
 			const commandUi = ctx.get("commandUi");
 			if (commandUi === void 0) return;
-			const sessions = ctx.sessions;
+			const sessions = ctx.get("sessions", false);
+			if (sessions === void 0) return;
 			const submit = async (sessionId, optionId) => {
 				const live = sessions?.binding(sessionId)?.session;
 				if (live === void 0) throw new Error("auto-mode: this session is not materialized yet");

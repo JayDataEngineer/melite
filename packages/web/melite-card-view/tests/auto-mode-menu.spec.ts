@@ -35,9 +35,16 @@ describe('Q1 AUTO MODE MENU (mirror, never a second command)', () => {
   it('registration decorates the host command (never registers a new one)', () => {
     const decorate = vi.fn()
     const command = vi.fn().mockResolvedValue({ ok: true, value: { matched: true } })
+    const sessions = { binding: (): unknown => ({ session: { command } }) }
     const ctx = {
-      get: (key: string): unknown => (key === 'commandUi' ? { decorate } : undefined),
-      sessions: { binding: (): unknown => ({ session: { command } }) },
+      get: (key: string): unknown => {
+        if (key === 'commandUi') return { decorate }
+        if (key === 'sessions') return sessions
+        return undefined
+      },
+      // the property read stays as well: the pre-cure code reads it,
+      // so this arm greens before AND after (never the firing arm).
+      sessions,
       effect: (fn: () => void): void => { fn() },
     }
     decorateAutoMode(ctx as never)
@@ -55,9 +62,16 @@ describe('Q1 AUTO MODE MENU (mirror, never a second command)', () => {
   it('picking an option submits the completed line through the session command door', async () => {
     const decorate = vi.fn()
     const command = vi.fn().mockResolvedValue({ ok: true, value: { matched: true } })
+    const sessions = { binding: (): unknown => ({ session: { command } }) }
     const ctx = {
-      get: (key: string): unknown => (key === 'commandUi' ? { decorate } : undefined),
-      sessions: { binding: (): unknown => ({ session: { command } }) },
+      get: (key: string): unknown => {
+        if (key === 'commandUi') return { decorate }
+        if (key === 'sessions') return sessions
+        return undefined
+      },
+      // the property read stays as well: the pre-cure code reads it,
+      // so this arm greens before AND after (never the firing arm).
+      sessions,
       effect: (fn: () => void): void => { fn() },
     }
     decorateAutoMode(ctx as never)
@@ -80,7 +94,6 @@ describe('Q1 AUTO MODE MENU (mirror, never a second command)', () => {
     try {
       const ctx = {
         get: (): unknown => undefined,
-        sessions: { binding: (): unknown => undefined },
         effect: (fn: () => void): void => { fn() },
       }
       expect(() => decorateAutoMode(ctx as never)).not.toThrow()
@@ -88,5 +101,23 @@ describe('Q1 AUTO MODE MENU (mirror, never a second command)', () => {
     } finally {
       console.error = orig
     }
+  })
+
+  it('a mid-reload context (sessions without inject) stays silent — the throwing read never fires', () => {
+    // THE RELOAD RACE (journeys k/j/c, 2026-10-23): cordis raises on
+    // property access without inject. The fake mirrors that throw so
+    // a revert to `ctx.sessions` reds this arm on its own path.
+    const decorate = vi.fn()
+    const ctx = {
+      get: (key: string): unknown => (key === 'commandUi' ? { decorate } : undefined),
+      effect: (fn: () => void): void => { fn() },
+    }
+    Object.defineProperty(ctx, 'sessions', {
+      get: (): unknown => {
+        throw new Error('cannot get property "sessions" without inject')
+      },
+    })
+    expect(() => decorateAutoMode(ctx as never)).not.toThrow()
+    expect(decorate).not.toHaveBeenCalled()
   })
 })
