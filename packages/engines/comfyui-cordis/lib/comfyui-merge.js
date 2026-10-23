@@ -355,11 +355,12 @@ export async function executeFlowInner(rows, runDir, inputNames, initials, opts,
     // the merge learns to ADD a name legitimately, that wall is where
     // the law gets restated — and this comment moves with it.
     // THE VRAM HEADROOM GATE (the merge arm of the "ComfyUI should
-    // prevent oom" law, 2026-10-23): the merged run's budget is the
-    // MAX of its stages' declared budgets (one engine, one device —
-    // the peak stage owns the headroom requirement, the sum would
-    // over-refuse). Same door as the single path: prove it or /free
-    // then refuse loud, before the merged submit.
+    // prevent oom" law, 2026-10-23 — the estate never evicts, ComfyUI
+    // manages VRAM auto): the merged run's budget is the MAX of its
+    // stages' declared budgets (one engine, one device — the peak
+    // stage owns the headroom requirement, the sum would over-refuse).
+    // Same door as the single path: prove it or refuse loud, before
+    // the merged submit — never a /free.
     let vramBudget;
     for (const r of rows) {
         const b = normalizeVramBudgetMb(r.params["vram_budget_mb"]);

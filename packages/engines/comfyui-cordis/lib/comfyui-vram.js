@@ -1,18 +1,20 @@
 // comfyui-vram.ts — the VRAM headroom gate (the "ComfyUI should
-// prevent oom" law, operator 2026-10-23). A stage that declares a
-// VRAM budget (`vram_budget_mb`, MiB) refuses BEFORE submit when
-// the engine's primary device cannot prove that much free VRAM —
-// first reclaiming what the engine's own cache holds (POST /free,
-// the engine's unload door), then refusing loud with the numbers.
+// prevent oom" law, operator 2026-10-23, REFINED the same round:
+// "ComfyUI manages VRAM auto" / "only comfyui uses the GPU"). A
+// stage that declares a VRAM budget (`vram_budget_mb`, MiB) refuses
+// BEFORE submit when the engine's primary device cannot prove that
+// much free VRAM. The gate never evicts: no POST /free, no nudge
+// prompts, no engine restarts — the engine's own memory management
+// owns what stays resident (an earlier arm fired /free from here and
+// evicted the operator's managed cache; that behavior is retired).
 // The alternative the law retires: discovering the shortfall as a
 // torch.OutOfMemoryError mid-run, after minutes of work, with the
 // stack's own alloc size as the only diagnosis. NO-ESTATE-PYTHON:
 // the OOM was born in a subprocess the estate must not edit — the
-// gate rides the estate's execute door (Layer A) calling the
-// engine's own HTTP doors (Layer B), never a python patch.
+// gate rides the estate's execute door (Layer A) reading the
+// engine's own /system_stats (Layer B), never a python patch.
 import { ComfyError } from "./comfyui-types.js";
 import { withBound } from "./comfyui-transport.js";
-import { unloadModelsInner } from "./comfyui-control.js";
 /** Normalize a stage's `vram_budget_mb` to a finite positive budget
  * (MiB). Absent (undefined) means NO GATE — the back-compat arm:
  * stages that declare no budget never probe, never refuse. A
@@ -63,41 +65,27 @@ export async function probeVramFreeMb(server, client) {
     return free / (1024 * 1024);
 }
 /** The gate: prove `budgetMb` of free VRAM on the engine's primary
- * device before the run submits. Short headroom first fires the
- * engine's own unload (POST /free drops cached models + execution
- * cache), then re-probes — reclaiming is async on the engine side,
- * so the re-probe is bounded-looped, never a single read. Still
- * short after reclaim: refuse LOUD, naming headroom vs budget and
- * what the unload reclaimed — never a mid-run OOM the operator
- * only meets as a dead run.
+ * device before the run submits — ONE probe, then the verdict. The
+ * estate NEVER evicts (operator 2026-10-23: "ComfyUI manages VRAM
+ * auto" — the engine's own memory management owns what stays
+ * resident; an earlier arm fired POST /free + a nudge prompt from
+ * here and evicted the operator's managed cache. Retired). Short
+ * headroom refuses LOUD with the numbers; proved headroom submits.
+ * Never a mid-run OOM the operator only meets as a dead run.
  * @param server the engine base URL
  * @param budgetMb the stage's declared budget (MiB, already normalized)
- * @param client the SDK client bound to the server (probe reuse;
- *  the unload builds its own — same server)
- */
+ * @param client the SDK client bound to the server */
 export async function ensureVramHeadroom(server, budgetMb, client) {
-    const beforeMb = await probeVramFreeMb(server, client);
-    if (beforeMb >= budgetMb)
+    const freeMb = await probeVramFreeMb(server, client);
+    if (freeMb >= budgetMb)
         return;
-    await unloadModelsInner(server);
-    const REPROBE_ROUNDS = 3;
-    let afterMb = beforeMb;
-    for (let i = 0; i < REPROBE_ROUNDS; i++) {
-        await new Promise((resolve) => {
-            setTimeout(resolve, 1000);
-        });
-        afterMb = await probeVramFreeMb(server, client);
-        if (afterMb >= budgetMb)
-            return;
-    }
     throw new ComfyError("refusing rather than OOM at run time: the engine's primary device " +
         "holds " +
-        Math.round(afterMb) +
+        Math.round(freeMb) +
         " MiB free against the stage's vram_budget_mb of " +
         Math.round(budgetMb) +
-        " MiB (POST /free reclaimed " +
-        Math.max(0, Math.round(afterMb - beforeMb)) +
-        " MiB) — free engine cache or lower the budget");
+        " MiB — the engine manages its own VRAM (the estate never evicts); " +
+        "free engine residency or lower the budget");
 }
 /** The stage-door read of the gate: normalize the knob off a params
  * doc, fire the gate when present. Absent knob = no client traffic

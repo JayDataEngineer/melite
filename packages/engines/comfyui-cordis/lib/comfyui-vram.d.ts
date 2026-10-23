@@ -18,18 +18,16 @@ export declare function probeVramFreeMb(server: string, client: {
     getSystemStats: () => Promise<unknown>;
 }): Promise<number>;
 /** The gate: prove `budgetMb` of free VRAM on the engine's primary
- * device before the run submits. Short headroom first fires the
- * engine's own unload (POST /free drops cached models + execution
- * cache), then re-probes — reclaiming is async on the engine side,
- * so the re-probe is bounded-looped, never a single read. Still
- * short after reclaim: refuse LOUD, naming headroom vs budget and
- * what the unload reclaimed — never a mid-run OOM the operator
- * only meets as a dead run.
+ * device before the run submits — ONE probe, then the verdict. The
+ * estate NEVER evicts (operator 2026-10-23: "ComfyUI manages VRAM
+ * auto" — the engine's own memory management owns what stays
+ * resident; an earlier arm fired POST /free + a nudge prompt from
+ * here and evicted the operator's managed cache. Retired). Short
+ * headroom refuses LOUD with the numbers; proved headroom submits.
+ * Never a mid-run OOM the operator only meets as a dead run.
  * @param server the engine base URL
  * @param budgetMb the stage's declared budget (MiB, already normalized)
- * @param client the SDK client bound to the server (probe reuse;
- *  the unload builds its own — same server)
- */
+ * @param client the SDK client bound to the server */
 export declare function ensureVramHeadroom(server: string, budgetMb: number, client: {
     getSystemStats: () => Promise<unknown>;
 }): Promise<void>;

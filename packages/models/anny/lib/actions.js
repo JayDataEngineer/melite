@@ -127,16 +127,17 @@ export const estimate_photo = {
     inputs: [],
     laneIndependent: true,
     outputs: [{ name: "body", kind: "mesh" }],
-    // THE VRAM RUN CONTRACT ("Comfyui should prevent oom", 2026-10-23):
+    // THE VRAM RUN CONTRACT ("ComfyUI should prevent oom", 2026-10-23,
+    // refined: "ComfyUI manages VRAM auto" — the estate never evicts):
     // the estimator chain's python subprocess needs ~13.8+ GiB FREE
     // (two burns: subprocess 9.83 GiB + chain parent 3.05 GiB, OOM'd
     // on a 388 MiB alloc with 351 MiB free — even a 14167 MiB-free
     // device that PASSED a 13500 gate OOM'd in flight; fragmentation
     // and non-torch overhead ride on top of the model bytes). The
-    // execute door proves 15500 MiB free BEFORE submit — short of
-    // that it frees the engine's own cached models first (/free,
-    // reclaiming the 10.26 GiB the engine was holding), refusing
-    // loud only if still short — never a mid-run OOM.
+    // execute door proves 15500 MiB free BEFORE submit and REFUSES
+    // loud when it cannot — it never fires /free or nudges the engine
+    // (the engine's own management owns residency). Never a mid-run
+    // OOM.
     vramBudgetMb: 15500,
     // THE DECLARED SURFACE (the write plane, phase 2): the one photo
     // the verb reads — no anny card schema row exists for it (the
