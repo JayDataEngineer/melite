@@ -33,6 +33,7 @@ import { comfyuiExecutor } from '../../packages/engines/comfyui-cordis/src/entri
 import modelsFamiliesProvider from '../../packages/engines/comfyui-cordis/src/entries/catalog-registry.ts'
 import { QueueCore } from '../../packages/harness/estate-queue/src/queue.ts'
 import { RunsRuntimeService } from '../../packages/harness/estate-queue/src/runsRegistry.ts'
+import { FlowsSeatService } from '../../packages/harness/estate-queue/src/flowsData.ts'
 import { mintSandbox } from '../harness.ts'
 import { ENGINE_FREE, ENGINE_HOST, ENGINE_PORT } from './engine-gate.ts'
 
@@ -72,6 +73,12 @@ describe.skipIf(!ENGINE_FREE || !HAS_PHOTO || !HAS_ESTIMATOR)(
         await ctx.plugin(modelsFamiliesProvider)
         const models = ctx.get('models') as unknown as { allDecls(): { id: string }[] }
         assert.ok(models.allDecls().length > 0, 'the lane seats the families the flow composes from')
+        // THE FLOWS SEAT (J4: the module-global table died — flow
+        // resolution rides ctx.get("meliteFlows"), mounted on the
+        // lane by the estate-queue plugin; the fixture never gained
+        // the mount, so every run died TypeError at
+        // runsRegistry.ts:1684 before the chain was even pressed).
+        new FlowsSeatService(ctx as unknown as Context)
 
         const core = new QueueCore()
         ;(ctx as unknown as { queue: unknown }).queue = {
