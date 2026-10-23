@@ -67,7 +67,9 @@ const tabWith = (openResource: (address: string) => void): never => ({
   tab: { navigation: { address: 'dsh-resource://media' }, actions: { openResource } },
 }) as never
 
-afterEach(() => { cleanup(); vi.unstubAllGlobals(); vi.clearAllMocks() })
+// localStorage.clear() too: useFeed's boot-staged cache (E2-3 arm 2)
+// must not leak a stale face across specs (boot-feed audit F2)
+afterEach(() => { cleanup(); vi.unstubAllGlobals(); vi.clearAllMocks(); localStorage.clear() })
 
 async function wand(): Promise<HTMLElement> {
   return waitFor(() => screen.getByLabelText('Open as cards — this run') as HTMLElement)

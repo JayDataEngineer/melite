@@ -288,8 +288,9 @@ describe('useFeed — the never-stale refetch', () => {
 // ── THE BOOT-STAGED FEED (E2-3 arm 2, operator 2026-10-22: "the first
 // load from history takes 5+ minutes" — the boot-race wait) ──
 // The last served feed persists client-side (localStorage, keyed by
-// the feed url — origin-scoped, so estates never cross-paint) and
-// paints INSTANTLY on boot with a stale face while the fresh feed
+// the bare feed url — estates never cross-paint through the STORE's
+// own origin partitioning, not through a key term) and paints
+// INSTANTLY on boot with a stale face while the fresh feed
 // seats. First load after a lane restart = instant stale-then-fresh,
 // never minutes of spinner.
 describe('useFeed — the boot-staged cache (E2-3 arm 2)', () => {
@@ -335,5 +336,45 @@ describe('useFeed — the boot-staged cache (E2-3 arm 2)', () => {
     expect(result.current.stale).toBe(false)
     await waitFor(() => { expect(result.current.loading).toBe(false) })
     expect(result.current.data).toEqual(EMPTY)
+  })
+
+  // THE SUPERSEDED LOAD'S SETTLE (audit 2026-11-12-boot-feed F4a): a
+  // reload mid-stale aborts the first load — when that dead load's
+  // transport THEN settles (rejected), its catch stays SILENT and its
+  // finally clears NOTHING: the stale face, the loading truth, and
+  // the cached paint all belong to the load that replaced it. Judges
+  // both abort guards (useFeed.ts catch + finally) that no earlier
+  // arm reached.
+  it('a superseded load settling after its abort touches nothing (stale stays, loading stays, error stays empty)', async () => {
+    localStorage.setItem(KEY, JSON.stringify({ runs: [{ run_id: 'r1' }] }))
+    let failFirst: ((error: Error) => void) | null = null
+    const gate1 = new Promise<void>((_, reject) => { failFirst = reject })
+    let release2: (() => void) | null = null
+    const gate2 = new Promise<void>((res) => { release2 = res })
+    let n = 0
+    stubFetch(() => {
+      ++n
+      if (n === 1) return gate1.then(() => ok({ runs: [] }))
+      return gate2.then(() => ok({ runs: [{ run_id: 'r2' }] }))
+    })
+    const { result, unmount } = renderHook(() => useFeed('/infer-gallery/runs', decode, EMPTY))
+    // the cached feed paints instantly, stale, load #1 hanging
+    expect(result.current.data).toEqual({ runs: [{ run_id: 'r1' }] })
+    expect(result.current.stale).toBe(true)
+    // reload mid-stale: load #1 is aborted, load #2 hangs
+    act(() => { result.current.reload() })
+    expect(n).toBe(2)
+    // the superseded load's transport settles REJECTED after its abort
+    await act(async () => { failFirst!(new Error('stale transport')) })
+    expect(result.current.stale, 'the aborted finally clears no stale face').toBe(true)
+    expect(result.current.loading, 'the aborted finally clears no loading truth').toBe(true)
+    expect(result.current.error, 'the aborted catch is silence, never an error face').toBe('')
+    expect(result.current.data, 'the cached paint is untouched by the dead load').toEqual({ runs: [{ run_id: 'r1' }] })
+    // the owning load seats: replaces the paint, clears stale
+    release2!()
+    await waitFor(() => { expect(result.current.loading).toBe(false) })
+    expect(result.current.data).toEqual({ runs: [{ run_id: 'r2' }] })
+    expect(result.current.stale).toBe(false)
+    unmount()
   })
 })

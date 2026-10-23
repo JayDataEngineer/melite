@@ -786,17 +786,25 @@ export class ProvisioningService extends Service {
      *  inspect() runs — a stat when the declared size matches, never
      *  a multi-GB hash per poll) is re-admitted active naming the
      *  settled operation, and the operation lifts when every item
-     *  verifies. The disk is the truth a dead verdict cannot outrank. */
+     *  verifies. The disk is the truth a dead verdict cannot outrank.
+     *
+     *  KIND-COMPLETE (audit re-admit F2, 2026-11-12): the same stall
+     *  watchdog arms for snapshot acquires and mints the same failed
+     *  items — a stalled snapshot whose tree landed during the stall
+     *  tail is the burn's exact mechanism. The re-admit admits every
+     *  FETCH kind (model + snapshot), each through inspect()'s own
+     *  presence probe for that kind; extension rows stay out (their
+     *  settle is manager-side, not bytes-on-disk). */
     async verifyOperation(operation) {
-        const failedModelItems = operation.items.filter((item) => item.kind === "model" && item.state === "failed");
-        const plan = failedModelItems.length === 0
+        const failedFetchItems = operation.items.filter((item) => (item.kind === "model" || item.kind === "snapshot") && item.state === "failed");
+        const plan = failedFetchItems.length === 0
             ? undefined
             : await this.plan(operation.ref).catch(() => undefined);
         const items = [];
         let missing = false;
         let reAdmitted = false;
         for (const item of operation.items) {
-            const healed = plan === undefined || item.kind !== "model" || item.state !== "failed"
+            const healed = plan === undefined || (item.kind !== "model" && item.kind !== "snapshot") || item.state !== "failed"
                 ? null
                 : await this.reAdmitFailedItem(operation, item, plan);
             if (healed !== null) {
@@ -837,7 +845,7 @@ export class ProvisioningService extends Service {
      *  size truth the failed item never carried).
      * @returns the re-admitted active item, or null to keep the item. */
     async reAdmitFailedItem(operation, item, plan) {
-        const counterpart = plan.items.find((planItem) => planItem.kind === "model" && planItem.key === item.key);
+        const counterpart = plan.items.find((planItem) => planItem.key === item.key);
         if (counterpart === undefined)
             return null;
         try {

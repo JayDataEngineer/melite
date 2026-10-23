@@ -63,11 +63,33 @@ export function enrichDiskRow(row) {
     const artifacts = Array.isArray(row['artifacts'])
         ? row['artifacts'].filter((value) => typeof value === 'string' && value !== '')
         : [];
+    // THE ONE WIRE SPELLING (the previews class-1 audit F1, 2026-11-12):
+    // the sidecar persists the identity stamp as bench_stage_id (snake,
+    // queueSidecar.ts); the wire contract is benchStageId (camel,
+    // melite-run-wire) — served verbatim, the disk-served rows carried
+    // a stamp the client join could never read, and the history reload
+    // (the operator's own burn) fell to the positional tier for every
+    // stamped run. Map at the SERVE door: the wire speaks one spelling;
+    // the disk format never changes under stored rows (the sidecar's
+    // own readers keep the snake field, served additively).
+    let stamped = false;
+    const wireStages = stages.map((stage) => {
+        if (stage === null || typeof stage !== 'object' || Array.isArray(stage))
+            return stage;
+        const current = stage;
+        if (typeof current['benchStageId'] === 'string' && current['benchStageId'] !== '')
+            return stage;
+        if (typeof current['bench_stage_id'] !== 'string' || current['bench_stage_id'] === '')
+            return stage;
+        stamped = true;
+        return { ...current, benchStageId: current['bench_stage_id'] };
+    });
+    const stampedRow = stamped ? { ...row, stages: wireStages } : row;
     if (stages.length !== 1 || artifacts.length === 0)
-        return row;
-    const stage = stages[0];
+        return stampedRow;
+    const stage = wireStages[0];
     if (stage === null || typeof stage !== 'object' || Array.isArray(stage))
-        return row;
+        return stampedRow;
     const runId = typeof row['run_id'] === 'string' ? row['run_id'] : '';
     const relative = (value) => {
         const marker = `/${runId}/`;

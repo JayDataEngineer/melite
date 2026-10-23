@@ -281,6 +281,32 @@ describe("restoreRunToBench — the card back into a flow", () => {
     expect(patches.map((p) => p.args["stageId"])).toEqual(["s_0", "s_1"]);
   });
 
+  // THE STAMP FIRES ALONE (previews audit F2, 2026-11-12): the arm
+  // above has MATCHING counts — the position join carried it even
+  // with the stamp tier stripped (the audit's proof: 79/79 green with
+  // the join arm out). This arm's counts MISMATCH (2 draft rows, 1
+  // run row) — position is dead by construction, so ONLY the stamp
+  // tier can carry s_1; s_0 voices the miss. Strip the stamp join and
+  // THIS arm reds on its own (§2: each invariant fires its own arm).
+  test("the stamp tier carries WITHOUT the position join (count-mismatched — the stamp fires alone)", async () => {
+    const { calls } = mountFakes({
+      draftStages: [{ id: "s_0", card: "h3-film" }, { id: "s_1", card: "sfx" }],
+      benchDoc: { draft_id: "bench-main", rev: 2, stages: [], log: [] },
+    });
+    const report = await restoreRunToBench(run({
+      stages: [{ id: "sfx", benchStageId: "s_1", status: "completed", url: "sfx/b.mp4" }],
+    }), 'main');
+    expect(report.carried).toBe(1);
+    expect(report.notes.length).toBe(1);
+    expect(report.notes[0]).toMatch(/s_0.*no run stage/);
+    const patches = calls.filter((c) => c.method === "drafts/patch");
+    expect(patches).toHaveLength(1);
+    expect(patches[0]?.args).toMatchObject({
+      draftId: "bench-main", stageId: "s_1",
+      patch: { runStatus: "done", result: { run_id: "r1", url: "sfx/b.mp4" } },
+    });
+  });
+
   test("a join that finds nothing is VOICED — carried 0 never silent (the burn's silent class)", async () => {
     const { calls } = mountFakes({
       draftStages: [{ id: "s_0", card: "h3-film" }, { id: "s_1", card: "sfx" }],

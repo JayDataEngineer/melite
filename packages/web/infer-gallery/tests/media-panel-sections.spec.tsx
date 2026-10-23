@@ -20,7 +20,9 @@ const draftsFeed = (drafts: unknown[]): Promise<Response> =>
 const run = (over: Record<string, unknown>): GalleryRunRow =>
   ({ run_id: 'r1', created_at: 1, ...over }) as GalleryRunRow
 
-afterEach(() => { cleanup(); vi.unstubAllGlobals() })
+// localStorage.clear() too: useFeed's boot-staged cache (E2-3 arm 2)
+// must not leak a stale face across specs (boot-feed audit F2)
+afterEach(() => { cleanup(); vi.unstubAllGlobals(); localStorage.clear() })
 
 describe('kindOf — the mime tail', () => {
   it('mime prefixes past the SSOT keys; the doorless row stays null', () => {

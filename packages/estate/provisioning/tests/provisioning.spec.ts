@@ -992,4 +992,106 @@ describe("verifyOperation re-admit (moss-image burn)", () => {
     const verified = await service.verifyOperation(failedStallOperation());
     assert.equal(verified.state, "failed");
   });
+
+  // KIND-COMPLETE (re-admit audit F2, 2026-11-12): the same stall
+  // watchdog arms for snapshot acquires — a stalled snapshot whose
+  // tree landed during the stall tail is the moss burn's exact
+  // mechanism on the other fetch kind. The re-admit heals it through
+  // inspect()'s own presence probe (the exact-named allow files + a
+  // weights anchor — no digest exists to check; the pin is the
+  // integrity word).
+  test("a settled-failed SNAPSHOT whose tree is present on disk re-admits active (kind-complete)", async () => {
+    const store = root();
+    const tree = join(store, "qwen3-tts", "hf", "tts-tree");
+    mkdirSync(tree, { recursive: true });
+    writeFileSync(join(tree, "config.json"), "{}");
+    writeFileSync(join(tree, "model.safetensors"), "weights");
+    const snapshotPlanItem = {
+      kind: "snapshot",
+      key: "model:family:snapshot:tts-tree",
+      owner: "family",
+      id: "family",
+      name: "tts-tree",
+      folder: "qwen3-tts/hf",
+      repoId: "example/tts-tree",
+      revision: "a".repeat(40),
+      allowPatterns: ["config.json", "model.safetensors"],
+      required: true,
+      provider: "hf-snapshot",
+    } as const;
+    const service = serviceFor(store, { ref: modelRef(), items: [snapshotPlanItem] });
+    const op = operationRow({
+      operationId: "op-snap-stall",
+      state: "failed",
+      finishedAt: Date.now(),
+      items: [{
+        key: "model:family:snapshot:tts-tree",
+        kind: "snapshot",
+        state: "failed",
+        errorCode: "artifact/stalled",
+        detail: "the snapshot fetch stalled — retry the acquire",
+      }],
+    });
+    const verified = await service.verifyOperation(op);
+    assert.equal(verified.state, "active", "the stalled snapshot lifts when its tree verifies");
+    const item = verified.items[0];
+    assert.equal(item.state, "active");
+    assert.equal(item.integrity, "operator-unverified");
+    assert.match(item.detail ?? "", /re-admitted by disk truth/);
+    assert.match(item.detail ?? "", /op-snap-stall/);
+  });
+
+  // MULTI-ITEM HONESTY (re-admit audit F4): a partial lift never
+  // invents a whole verdict — the healed item carries its truth, the
+  // unhealed keeps the settled failure, and the operation stays
+  // failed until every item verifies (the aggregate law the merge
+  // and the census already share).
+  test("a multi-item partial lift keeps the operation failed — healed item active, missing item verbatim", async () => {
+    const store = root();
+    mkdirSync(join(store, "checkpoints"), { recursive: true });
+    writeFileSync(join(store, "checkpoints", "one.bin"), BYTES);
+    const healed = modelItem();
+    const missing = modelItem({
+      key: "model:family:two.bin",
+      name: "two.bin",
+      sha256: createHash("sha256").update("other").digest("hex"),
+      sizeBytes: 5,
+    });
+    const service = serviceFor(store, { ref: modelRef(), items: [healed, missing] });
+    const op = operationRow({
+      operationId: "op-partial",
+      state: "failed",
+      finishedAt: Date.now(),
+      items: [
+        { key: "model:family:one.bin", kind: "model", state: "failed", errorCode: "artifact/stalled" },
+        { key: "model:family:two.bin", kind: "model", state: "failed", errorCode: "artifact/stalled" },
+      ],
+    });
+    const verified = await service.verifyOperation(op);
+    assert.equal(verified.state, "failed", "a partial lift never invents a whole verdict");
+    assert.equal(verified.items[0]?.state, "active", "the healed item carries its disk truth");
+    assert.match(verified.items[0]?.detail ?? "", /re-admitted by disk truth/);
+    assert.equal(verified.items[1]?.state, "failed", "the missing item keeps the settled failure");
+    assert.equal(verified.items[1]?.errorCode, "artifact/stalled");
+  });
+
+  // THE PLAN-THROW EDGE (re-admit audit F5): a family uninstalled
+  // between settle and read makes the DECL resolution throw — the
+  // re-admit keeps the settled verdict verbatim, never breaks the
+  // status read (two stacked catches: service + merge).
+  test("a DECL resolution that throws keeps the settled verdict verbatim (family gone)", async () => {
+    const store = root();
+    const service = new ProvisioningService(new Context(), {
+      declaration: {
+        resolve: async (): Promise<ProvisionPlan> => {
+          throw new Error("family uninstalled");
+        },
+      },
+      artifactWriter: new VerifiedArtifactWriter(store),
+    });
+    const settled = failedStallOperation();
+    const verified = await service.verifyOperation(settled);
+    assert.equal(verified.state, "failed");
+    assert.equal(verified.items[0]?.errorCode, "artifact/stalled");
+  });
 });

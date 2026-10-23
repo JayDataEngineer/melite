@@ -27,7 +27,9 @@ vi.mock('../src/client/mesh-view.tsx', () => ({
 
 const URL_GLB = '/infer-gallery/artifact?path=run-9%2Fprop_final.glb'
 
-afterEach(() => { cleanup(); vi.unstubAllGlobals() })
+// localStorage.clear() too: useFeed's boot-staged cache (E2-3 arm 2)
+// must not leak a stale face across specs (boot-feed audit F2)
+afterEach(() => { cleanup(); vi.unstubAllGlobals(); localStorage.clear() })
 
 describe('galleryCopy — the tile preview rows of the tree dictionary', () => {
   it('names the artifact it arms', () => {

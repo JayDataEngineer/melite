@@ -160,7 +160,15 @@ export declare class ProvisioningService extends Service implements Provisioning
      *  inspect() runs — a stat when the declared size matches, never
      *  a multi-GB hash per poll) is re-admitted active naming the
      *  settled operation, and the operation lifts when every item
-     *  verifies. The disk is the truth a dead verdict cannot outrank. */
+     *  verifies. The disk is the truth a dead verdict cannot outrank.
+     *
+     *  KIND-COMPLETE (audit re-admit F2, 2026-11-12): the same stall
+     *  watchdog arms for snapshot acquires and mints the same failed
+     *  items — a stalled snapshot whose tree landed during the stall
+     *  tail is the burn's exact mechanism. The re-admit admits every
+     *  FETCH kind (model + snapshot), each through inspect()'s own
+     *  presence probe for that kind; extension rows stay out (their
+     *  settle is manager-side, not bytes-on-disk). */
     verifyOperation(operation: ProvisionOperation): Promise<ProvisionOperation>;
     /** THE RE-ADMIT CHECK (the moss-image burn, audit 2026-11-12): one
      *  failed model item's DECL counterpart, verified against the disk

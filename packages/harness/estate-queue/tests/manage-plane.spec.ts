@@ -7,6 +7,7 @@ import assert from "node:assert/strict";
 import { chmodSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { createHash } from "node:crypto";
 import { resourceKey, ProvisioningService } from "@melite/estate-provisioning";
 import type {
   ModelProvisionPlanItem,
@@ -2085,6 +2086,82 @@ describe("hStatus trust re-verify (audit I-S6)", () => {
     assert.match(data.resources[0]?.detail ?? "", /re-admitted by disk truth/);
     assert.match(data.resources[0]?.detail ?? "", /op-ext-1/, "the served row names the settled operation");
     assert.equal(data.operations[0]?.state, "active");
+  });
+
+  // THE INTEGRATION FACE (re-admit audit F1, 2026-11-12): the arm
+  // above rides a fake verifyOperation; this one seats the REAL
+  // ProvisioningService — its own real VerifiedArtifactWriter over a
+  // real storeRoot — behind the REAL status door, with no stub in
+  // between. The burn's exact mechanism: the fetch is refused, the
+  // operation settles failed through the real ensure(), the bytes
+  // land on disk during the stall tail, and the next status read
+  // must serve the row ACTIVE by the disk truth alone.
+  it("AUDIT F1 integration: a real service re-admits its own settled-failed operation when the bytes landed, serving the row active", async () => {
+    mkRoot();
+    const context = new Context();
+    const store = mkdtempSync(join(tmpdir(), "f1-readmit-"));
+    try {
+      const bytes = "landed-bytes";
+      const ref: ResourceRef = { kind: "model", owner: "family", id: "moss" };
+      const service = new ProvisioningService(context, {
+        declaration: {
+          resolve: async (): Promise<ProvisionPlan> => ({
+            ref,
+            items: [{
+              kind: "model",
+              key: "model:family:moss::moss.safetensors",
+              owner: "family",
+              id: "moss",
+              name: "moss.safetensors",
+              folder: "checkpoints",
+              url: "https://example.invalid/moss.safetensors",
+              sha256: createHash("sha256").update(bytes).digest("hex"),
+              sizeBytes: bytes.length,
+              required: true,
+              provider: "direct",
+            }],
+          }),
+          list: async (): Promise<readonly ResourceRef[]> => [ref],
+        },
+        // the REAL writer over the real storeRoot; the fetcher port
+        // (production's network seam) dies in transport — the stall
+        // class, never a semantic refusal — so the acquire settles
+        // FAILED through the real writer, the real watchdog, the
+        // real ensure()
+        fetcher: async (): Promise<never> => {
+          throw new TypeError("connection died mid-fetch");
+        },
+        storeRoot: store,
+      } satisfies ProvisioningConfig);
+      const settled = await service.ensure(ref);
+      assert.equal(settled.state, "failed", "the refused fetch settles the operation failed");
+
+      // the stall tail: the declared bytes land on disk AFTER the
+      // failure verdict — nobody tells the service
+      mkdirSync(join(store, "checkpoints"), { recursive: true });
+      writeFileSync(join(store, "checkpoints", "moss.safetensors"), bytes);
+
+      const [code, env] = await manage({ action: "status" }, CTX({ provisioning: service }));
+      assert.equal(code, 200);
+      const data = env.data as {
+        resources: Array<{ state: string; detail?: string; items?: Array<{ state: string; integrity?: string }> }>;
+        operations: Array<{ state: string }>;
+      };
+      const row = data.resources[0]!;
+      assert.equal(row.state, "active", "the real status read lifts the row by the disk truth alone");
+      assert.match(row.detail ?? "", /re-admitted by disk truth/, "the served row names the re-admit");
+      assert.equal(row.items?.[0]?.state, "active");
+      // CHEAP-FIRST (download-stack F10 addendum A): a present file
+      // whose declared size matches is judged by stat — the scan
+      // never re-hashes; the digest is the acquire/verify door's own
+      // word ("declared-sha256"), never the status scan's
+      assert.equal(row.items?.[0]?.integrity, "size-checked");
+      assert.equal(data.operations[0]?.state, "active", "the settled operation lifts with its row");
+    } finally {
+      await context.fiber.dispose();
+      rmRoot();
+      rmSync(store, { recursive: true, force: true });
+    }
   });
 });
 

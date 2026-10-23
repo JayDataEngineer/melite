@@ -1456,6 +1456,47 @@ describe("status + stop", () => {
     assert.deepEqual(got["artifacts"], ["run.png"]);
   });
 
+  // THE ONE WIRE SPELLING (previews class-1 audit F1, 2026-11-12):
+  // the sidecar persists the identity stamp snake (bench_stage_id);
+  // the wire contract is camel (benchStageId — the client's restore
+  // join reads ONLY camel). Before this law the disk-served row
+  // carried a stamp the join could never read: 31 stamped runs on
+  // this estate, zero readable after a restart — the operator's
+  // reload-from-history burn healed positionally or not at all. The
+  // serve door maps; the disk format never changes under stored rows.
+  it("a disk-served stage's identity stamp answers in the WIRE spelling (benchStageId), keeping the sidecar's own snake field", async () => {
+    const s = seat();
+    const runId = "run-f1stamp0000-00000001";
+    const dir = join(s.state, "output", runId);
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(join(dir, "_flow.json"), JSON.stringify({
+      run_id: runId, status: "completed", draft_id: "bench-main",
+      stages: [{ id: "edit", bench_stage_id: "s_0", status: "completed" }],
+      skipped_stages: [], artifacts: ["run.png"], error: "",
+    }));
+    const got = await s.svc.status(runId, sig());
+    assert.equal(got["from_disk"], true);
+    const stages = got["stages"] as Array<Record<string, unknown>>;
+    assert.equal(stages[0]?.["benchStageId"], "s_0",
+      "the wire answers the stamp in the spelling the client joins (camel)");
+    assert.equal(stages[0]?.["bench_stage_id"], "s_0",
+      "the sidecar's own field rides verbatim — the disk format never changes");
+    // a stage already carrying the wire spelling maps nothing (never
+    // overwritten by the snake field — the wire wins its own name)
+    const runId2 = "run-f1stamp0000-00000002";
+    const dir2 = join(s.state, "output", runId2);
+    mkdirSync(dir2, { recursive: true });
+    writeFileSync(join(dir2, "_flow.json"), JSON.stringify({
+      run_id: runId2, status: "completed", draft_id: "bench-main",
+      stages: [{ id: "edit", benchStageId: "wire-id", bench_stage_id: "disk-id", status: "completed" }],
+      skipped_stages: [], artifacts: ["run.png"], error: "",
+    }));
+    const got2 = await s.svc.status(runId2, sig());
+    const stages2 = (got2["stages"] as Array<Record<string, unknown>>);
+    assert.equal(stages2[0]?.["benchStageId"], "wire-id",
+      "an existing wire spelling is never overwritten by the disk field");
+  });
+
   it("disk fallback refuses a sidecar whose status is not ours (T3: the durable boundary judges it)", async () => {
     // A hand-edited or foreign _flow.json serving "banana" as a run
     // status is not a row we serve — the same verdict as
