@@ -79,4 +79,15 @@ describe("the no-default-voice law (operator ruling 2026-11-10: 'DEFAULTS to no 
     }
     assert.ok(PRESET_SPEAKERS.includes("vivian"), "vivian stays an OFFERED pick — the ruling kills the seed, never the choice");
   });
+
+  it("ARM D (THE NO-NON-SPEAKER LAW, operator 2026-11-12 told ten times: 'Custom Voice has no non-speaker') — 'none' is not in the offer", () => {
+    assert.ok(
+      !PRESET_SPEAKERS.includes("none"),
+      "the offer carries no 'none' — it fired nothing on any path (bare: engine refuse; qvoice loaded: the branch fires before this row is read)",
+    );
+    assert.ok(
+      PRESET_SPEAKERS.length > 0 && PRESET_SPEAKERS.every((s) => s !== ""),
+      "every offered pick is a real speaker",
+    );
+  });
 });

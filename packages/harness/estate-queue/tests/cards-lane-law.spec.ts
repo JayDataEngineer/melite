@@ -428,7 +428,7 @@ describe("THE EXPORT CONFLICT WALL (an export performs nothing)", () => {
       "the write holds the contradiction — the run owns it").toBe(true);
     await expect(
       svc.phase1Card(body, "qwen3-tts"),
-    ).rejects.toThrow(/fires nothing on a Design save/);
+    ).rejects.toThrow(/fires nothing beside the save/);
     // ...and a delivery style on the design lane refuses at the door
     // (the persona IS the lane's instruct — emotion styling rides
     // the CustomVoice performance, never the design).
@@ -1248,7 +1248,7 @@ describe("THE LANE LAWS AT THE VALIDATE SEAT", () => {
       { model: "qwen3-tts", variant: "voicedesign", text: "x", design_prompt: "warm", save_qvoice: true, qvoice: "/v.qvoice" },
     );
     expect(refused).not.toBeNull();
-    expect(refused?.message).toMatch(/fires nothing on a Design save/);
+    expect(refused?.message).toMatch(/fires nothing beside the save/);
   });
 
   it("a lawful state answers null through the same door (the happy path stays walled)", async () => {

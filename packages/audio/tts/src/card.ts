@@ -33,7 +33,7 @@ export const schema = z.object({
   // 0.6B-CustomVoice table row has NO instruction control — a
   // stated instruct on the small CustomVoice refuses at admission
   // below).
-  voice: vocabulary([...PRESET_SPEAKERS]).default("none").description("Preset Speaker").extra('extra', bag({ order: null, tooltip: "none = no preset — the run is PROMPT-ONLY: the model creates the voice from the text alone (upstream parity, speaker_embed=None). Otherwise one of the 9 built-in CustomVoice speakers (Ryan, Vivian, …). The other models take no speaker: Base clones yours, VoiceDesign designs one", wtype: 'select' })),
+  voice: vocabulary([...PRESET_SPEAKERS]).description("Preset Speaker").extra('extra', bag({ order: null, tooltip: "One of the 9 built-in CustomVoice speakers (Ryan, Vivian, …). CustomVoice HAS no non-speaker (operator 2026-11-12, told ten times): the picker rests on the lane's own stamp ('ryan' unstated) — 'none' fired nothing on any path and its run refused at the engine. A loaded .qvoice owns the timbre and never reads this row. The other models take no speaker: Base clones yours, VoiceDesign designs one", wtype: 'select' })),
   // THE TASK-NAMED LABEL LAW (operator 2026-09-23: "they are
   // SPECIFIC TASKS, not INSTRUCT"): every instruction-ish row is
   // labeled by the TASK it performs on its lane, never the upstream

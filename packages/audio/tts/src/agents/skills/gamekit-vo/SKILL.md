@@ -19,8 +19,9 @@ mods line):
   lane's `design_prompt` (the persona description — WHO speaks). Any
   lane fires the export.
 - **Perform**: `qvoice: [{ qvoice: '<path>.qvoice', voice_strength: 1 }]`
-  with `voice: "none"` on the CustomVoice lane (a preset and a saved persona
-  never ride together; the Base lane clones ref_audio instead).
+  with NO voice stated (a loaded .qvoice owns the timbre — it takes the
+  qvoice branch before the speaker row is ever read; a preset and a saved
+  persona never ride together; the Base lane clones ref_audio instead).
 
 ## Run (queue door — the only inference door)
 Gateway: in-process estate lanes (DSH host; no port — the python gateway is retired).

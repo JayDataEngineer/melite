@@ -72,43 +72,59 @@ describe("the tts compose gate", () => {
     const synth = graph["AudiocoreTTS.0"];
     assert.ok(synth, "the Audiocore synth rides");
     assert.equal(synth.inputs.prompt, "the words to speak");
-    // THE NO-VOICE RULING (operator 2026-11-10: "Make sure it
-    // DEFAULTS to no voice, instead of VIVIAN"): the schema stamps
-    // NO voice default and the family defaults row seeds NO persona
-    // — the seat rides the node's OWN INPUT_TYPES default ('' —
-    // nodes.py:478), the no-preset encoding: qwen3_tts_model.py:182
-    // skips '' at validation and the run is PROMPT-ONLY
-    // (speaker_embed=None, upstream parity). The dual-floor era
-    // (2026-11-02) floored fresh cards to vivian via the defaults
-    // row; the ruling deleted that floor and the resurrect class
-    // died at the root. A persona name here is the regression.
-    assert.equal(synth.inputs.voice, "", "the no-preset encoding rides — a persona name is the regression");
+    // THE NO-NON-SPEAKER REST (operator 2026-11-12, told ten times:
+    // "Custom Voice has no non-speaker, yet it defaults on none" —
+    // supersedes the 2026-11-10 no-voice ruling's picker half): the
+    // customvoice lane's resolver stamp seats 'ryan' for an UNSTATED
+    // voice, and the facts fold serves it as the lane's default —
+    // the fresh compose rides a REAL speaker. The 11-10 wall's
+    // "prompt-only parity" narrative was a scoped proof sold whole:
+    // the engine's own _custom_voice REFUSES an empty speaker
+    // ("needs a stated speaker preset or a .qvoice"), so an
+    // unstated run was a REFUSED run, never a working prompt-only
+    // one. The 11-10 half that still holds — the FAMILY defaults
+    // row seeds no persona — is walled at no-default-voice.spec
+    // ARM A (the family DECL defaults carry no voice key).
+    assert.equal(synth.inputs.voice, "ryan", "the lane's rest rides — 'none'/blank was a refused run, never a working one");
     const save = graph["SaveAudio.0"];
     assert.ok(save, "the audio save rides");
     assert.equal(save.inputs.filename_prefix, "run_4/tts");
   });
 
-  // THE NONE-VOICE LAW (operator 2026-10-12: "CustomVoice needs nothing
-  // but the prompt"). The card's "none" pick is NOT a speaker id — a
-  // literal passthrough reached the engine prefill as speaker "none"
-  // and died native ("requires speaker or voice reference", lane injury
-  // run-d5f94f216419). The cure: "none" OMITS the voice input so the
-  // engine node's own default resolution runs (qwen3_tts.py:
-  // kwargs.get("voice", <default>)) — the prompt-only compose.
-  it("THE NONE-VOICE LAW: voice 'none' composes PROMPT-ONLY — the literal never rides, no refusal fires", () => {
+  // THE NO-NON-SPEAKER LAW (operator 2026-11-12, told ten times:
+  // "Custom Voice has no non-speaker, yet it defaults on none").
+  // The old "none" pick fired NOTHING on any path — bare it refused
+  // at the engine ("needs a stated speaker preset or a .qvoice",
+  // run-d5f94f216419's literal-passthrough injury was the first
+  // face), and a loaded .qvoice takes the qvoice branch before the
+  // speaker row is ever read. This ruling supersedes the picker half
+  // of the no-default-voice law (2026-11-10 killed the SILENT
+  // vivian seed; 2026-11-12 seats a REAL speaker — the fresh press
+  // must work, never rest on a dead 'none'). The family DECL
+  // defaults still carry no voice (that wall holds its own row).
+  it("THE NO-NON-SPEAKER LAW: 'none' is not a pick — the fresh card rests on a real speaker", () => {
+    // the dead literal refuses at the parse — never again a selectable
+    // option that produces a refused run
+    assert.throws(
+      () => def.schema({ text: "Hey how is it going?", voice: "none" }),
+      /voice/,
+      "the vocabulary no longer carries 'none' — CustomVoice has no non-speaker",
+    );
+    // the fresh card: the SCHEMA seeds nothing (the lane's own
+    // stamp owns the rest — the customvoice variant's
+    // resolver_defaults seats 'ryan' for an unstated voice at the
+    // estate's stamp gate, while design/base null-stamps keep
+    // their lanes unseeded; the schema default itself would seed
+    // EVERY lane and re-break the frictionless-authoring law)
+    const fresh = def.schema({ text: "Hey how is it going?" }) as Record<string, unknown>;
+    assert.ok(fresh["voice"] === undefined || fresh["voice"] === "",
+      `the schema seeds no voice (the lane stamp owns the rest), got ${JSON.stringify(fresh["voice"])}`);
+    // and a stated pick still rides verbatim (the choice is alive)
     const g = new GraphBuilder();
-    def.compose(def.schema({ text: "Hey how is it going?", voice: "none" }), ttsModel, g, "run_none_voice");
+    def.compose(def.schema({ text: "Hey how is it going?", voice: "ryan" }), ttsModel, g, "run_stated_voice");
     const synth = g.toJSON()["AudiocoreTTS.0"];
     assert.ok(synth, "the synth composes — never a refusal");
-    assert.equal(synth.inputs.prompt, "Hey how is it going?", "the prompt rides");
-    // The engine pin's own autofill default (object_info voice "") rides —
-    // an EMPTY speaker, never the literal "none". Upstream parity
-    // (modeling_qwen3_tts.py:2088): speaker ""/None → speaker_embed=None,
-    // the model creates the voice from the prompt alone.
-    assert.ok(synth.inputs.voice === undefined || synth.inputs.voice === "",
-      "no speaker id rides — empty/absent only, the engine's own default");
-    assert.equal(JSON.stringify(synth.inputs).includes("none"), false,
-      "the literal 'none' never reaches the node (it died native as a speaker id, run-d5f94f216419)");
+    assert.equal(synth.inputs.voice, "ryan", "the stated speaker rides verbatim");
   });
 
   it("flow ports and semantic outputs name text and SaveAudio", () => {
@@ -373,7 +389,6 @@ describe("the qvoice USE lane (the voice-lock LOAD half — a stated .qvoice per
     def.compose(
       def.schema({
         text: "The last light is ours.",
-        voice: "none",
         style_instruction: "quietly affectionate",
         qvoice: { item: { qvoice: "lastlight-keeper-v1.qvoice", voice_strength: "1" } },
       }),

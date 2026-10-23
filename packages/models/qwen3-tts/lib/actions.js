@@ -10,7 +10,14 @@
  * family index re-export read this one owner.
  */
 export const PRESET_SPEAKERS = [
-    "none", // no preset — a loaded .qvoice owns the timbre
+    // "none" is GONE (operator 2026-11-12, told ten times: "Custom
+    // Voice has no non-speaker"): it fired nothing on any path — a
+    // bare run refused at the engine ("needs a stated speaker preset
+    // or a .qvoice"), and a loaded .qvoice takes the qvoice branch
+    // before this row is ever read (speakSegment: qvoiceUse first).
+    // The picker rests on a real speaker (the 11-12 ruling supersedes
+    // the picker half of 2026-11-10's no-seed law; the family DECL
+    // defaults still carry no voice — that wall holds its own row).
     "ryan", "serena", "vivian", "aiden", "eric",
     "dylan", "sohee", "ono_anna", "uncle_fu",
 ];

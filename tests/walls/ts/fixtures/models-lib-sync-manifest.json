@@ -94,8 +94,8 @@
       "libHash": "0dca9256ed6adfc5a7a82aa6b982126c5595032090f42027720e7e7c3a53ca4c"
     },
     "qwen3-tts": {
-      "srcHash": "ae4788b01fc8e973bd19beaeccc06760e6719207d289cd4bfb5dd08bec8f3155",
-      "libHash": "91b5c57f63500bb4a051257581fee11de2ae5d7c252ec2fef524210cd34b92c1"
+      "srcHash": "5edca07211c4aeb6d3c9590d1fbbf38650e66b1acdb59ab9f35c738c8c8e2c9c",
+      "libHash": "1a6a6029108e10091fff1c02954f469a3104d965c136a61fd48175870880d048"
     },
     "seedvr2-ema": {
       "srcHash": "f055c9e6b9f40a20c7950349969e93e1fd7561a4a5d68e22ef53d5c4cbc346f8",

@@ -23,6 +23,7 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
 import { render, screen, fireEvent, cleanup, act } from '@testing-library/react'
 import { createElement as h } from 'react'
+import type { ComponentProps } from 'react'
 import { InputPrepStudio, cropOf, isPreviewable } from '../src/ui/studio/component.tsx'
 import { CropPreview, cropIsHonorable } from '../src/ui/studio/CropPreview.tsx'
 import { apply, inject, name } from '../src/client/index.ts'
@@ -74,7 +75,7 @@ function owner(row: Record<string, unknown>, over: Record<string, unknown> = {})
     upstream: [],
     runId: null,
     ...over,
-  } as never
+  } as ComponentProps<typeof InputPrepStudio>
 }
 
 const rectRestorers: Array<() => void> = []

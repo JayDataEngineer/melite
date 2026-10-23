@@ -92,7 +92,20 @@ const DESIGNED_FLOOR_ROSTER: readonly string[] = [
   // voice, instead of VIVIAN"): the recipe lanes' voice riders
   // (steady-read/expressive-read/default) existed only because the
   // family defaults seeded vivian onto every stamp; the seed is dead,
-  // so the pin shrinks with the riders it pinned.
+  // so the pin shrinks with the riders it pinned. (The customvoice
+  // lane's 2026-11-12 'ryan' rest rides a resolver STAMP, not the
+  // family floor — stamped keys are this census's exemption class,
+  // never riders.)
+  // THE RECIPE RIDERS RETURN (operator 2026-11-12, told ten times:
+  // "Custom Voice has no non-speaker"): the recipe lanes are
+  // CustomVoice temperature presets ("a fresh card lands here" — the
+  // default recipe IS the fresh card), and the facts fold serves the
+  // customvoice stamp's rest onto their family rows — the riders are
+  // the designed rest now, pinned with their why. Design/base keep
+  // their null stamps (their lanes stay unseeded).
+  ...[
+    "steady-read:voice", "expressive-read:voice", "default:voice",
+  ].flatMap((lane) => ["qwen3-tts/", "qwen3-tts-voicedesign/"].map((fam) => fam + lane)),
   ...[
     "customvoice:mode", "voicedesign:mode", "base:mode",
     "steady-read:mode", "expressive-read:mode", "default:mode",

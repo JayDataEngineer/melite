@@ -186,6 +186,19 @@ export const DECL: ModelDecl = {
       // style_instruction is the 1.7B CELL's own input (the cell's
       // params add to the variant's — the instruct split).
       "params": ["voice"],
+      // THE LANE'S OWN REST (operator 2026-11-12, told ten times:
+      // "Custom Voice has no non-speaker, yet it defaults on none"):
+      // the persona picker rests on a real speaker — the stamp gate
+      // injects 'ryan' for an UNSTATED voice on THIS lane only
+      // (design/base keep their null stamps: their lanes stay
+      // unseeded, so a half-authored design form still composes —
+      // the frictionless-authoring law). The family DECL defaults
+      // still carry no voice (the 2026-11-10 wall holds its own
+      // row); the rest is the lane's, never the family's.
+      "resolver_defaults": {
+        "variant": "customvoice",
+        "voice": "ryan",
+      },
       "cells": [
         {
           "quant": "1_7b",
