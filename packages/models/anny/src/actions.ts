@@ -151,6 +151,14 @@ export const estimate_photo: ComfyActionSpec<{ readonly photo: string }, Record<
   inputs: [],
   laneIndependent: true,
   outputs: [{ name: "body", kind: "mesh" }],
+  // THE VRAM RUN CONTRACT ("Comfyui should prevent oom", 2026-10-23):
+  // the estimator chain's python subprocess alone needs ~12.9 GiB
+  // (the burn: subprocess 9.83 GiB + chain parent 3.05 GiB on a
+  // 24.5 GiB 4090 whose engine cache held 10.26 GiB — a 388 MiB
+  // alloc OOM'd 20 minutes into a run). The execute door proves
+  // this much free headroom BEFORE submit, freeing engine cache
+  // first, refusing loud if it still can't — never a mid-run OOM.
+  vramBudgetMb: 13500,
   // THE DECLARED SURFACE (the write plane, phase 2): the one photo
   // the verb reads — no anny card schema row exists for it (the
   // person index is FIXED at 0 in build below), so the type is the

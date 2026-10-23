@@ -31,7 +31,7 @@ import {
   liveFamilySeat,
 } from "../src/flowsFamilyCompose.ts";
 import { DECL as ANNY_DECL } from "../../../models/anny/src/index.ts";
-import { estimate_photo } from "../../../models/anny/src/actions.ts";
+import { bake, estimate_photo } from "../../../models/anny/src/actions.ts";
 const SEED = seedFlowsSeat();
 
 const decls = [ANNY_DECL];
@@ -329,5 +329,45 @@ describe("the booted singleton's own two answers (coverage queue batch, 2026-10-
     // back to the unbooted singleton: absent keeps its own voice
     seat.decls = null;
     assert.deepEqual(liveFamilySeat().state, "absent");
+  });
+});
+
+describe("the VRAM budget declaration stamp (the prevent-oom law, 2026-10-23)", () => {
+  it("estimate_photo's declared vramBudgetMb rides the composed stage's params as the vram_budget_mb raw knob — the declaration owns, the row routes", () => {
+    // The burn: the estimator subprocess needs ~12.9 GiB free; the
+    // engine's own cache held 10.26 GiB — the run OOM'd mid-flight.
+    // The action DECL declares the headroom; the composed envelope
+    // must carry it on the same channel timeout_s reads.
+    assert.equal(estimate_photo.vramBudgetMb, 13500, "the anny DECL declares the budget the burn proved");
+    const composed = composeFamilyStages(expandRegistryFlow(ANNY_ESTIMATE_FLOW(), SEED), decls, "seated");
+    const params = composed.stages[0]!.params as Record<string, unknown>;
+    assert.equal(params["vram_budget_mb"], 13500, "the envelope stamps the declared budget");
+    assert.notEqual(params["workflow"], undefined, "the graph still composes");
+  });
+  it("an action with NO declaration stamps NO knob — the envelope stays byte-identical (no key, no gate, no traffic)", () => {
+    // bake is the same family, same estimator-class shape, but its
+    // graph runs in-engine (AnnyParamsToGlb): no subprocess, no
+    // budget declared, no key stamped.
+    assert.equal(bake.vramBudgetMb, undefined);
+    const flow: RegistryFlow = {
+      id: "anny-bake-probe",
+      description: "d",
+      stages: [plainStage({
+        id: "bake",
+        engine: CARD_PLANE_ENGINE,
+        family: "anny",
+        action: "bake",
+        description: "params json → GLB",
+        inputs: { params_json: { initial: "params_json" } },
+        expected: { params_json: "text" },
+        params: { params_json: "$params_json" },
+      })],
+      initialValidators: { params_json: "text" },
+      tool: null,
+      skillRefs: [],
+    };
+    const composed = composeFamilyStages(expandRegistryFlow(flow, SEED), decls, "seated");
+    const params = composed.stages[0]!.params as Record<string, unknown>;
+    assert.equal("vram_budget_mb" in params, false, "no declaration, no knob");
   });
 });

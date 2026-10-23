@@ -19,6 +19,14 @@ let qvoicePath = "";
 const serverSeen: string[] = [];
 let loudReading: { loudness_lufs: number; peak_db: number } | null = null;
 let freshReading: { reused_existing: boolean; voice_file: string } | null = null;
+// THE VRAM GATE RIG (the prevent-oom law wall): stats answers shift
+// off a queue then fall back; both doors count. Declared BEFORE the
+// transport mock — the factory's lazy arrows read them at call time.
+let vramStatsQueue: unknown[] = [];
+let vramStatsFallback: unknown = { devices: [] };
+let vramStatsCalls = 0;
+const vramFreeBodies: unknown[] = [];
+let submitCalls = 0;
 
 vi.mock("../src/comfyui-transport.ts", () => ({
   // THE BOUND IS REAL HERE (2026-10-12): the salvage read rides
@@ -49,7 +57,17 @@ vi.mock("../src/comfyui-transport.ts", () => ({
     server,
     ...(serverSeen.push(server), {}),
     clientId: "client-1",
-    queuePrompt: async () => ({ prompt_id: "p-1" }),
+    queuePrompt: async () => {
+      submitCalls++;
+      return { prompt_id: "p-1" };
+    },
+    getSystemStats: async (): Promise<unknown> => {
+      vramStatsCalls++;
+      return vramStatsQueue.length > 0 ? vramStatsQueue.shift() : vramStatsFallback;
+    },
+    free: async (body: unknown): Promise<void> => {
+      vramFreeBodies.push(body);
+    },
     fetchApi: (route: string, init?: { signal?: AbortSignal }): Promise<unknown> =>
       rawWire(route, init),
     interrupt: async () => {
@@ -759,5 +777,51 @@ describe("executeSingle (the non-plugin face)", () => {
     } finally {
       warn.mockRestore();
     }
+  });
+});
+
+describe("executeSingle × THE VRAM HEADROOM GATE (the prevent-oom law, 2026-10-23)", () => {
+  const MB = 1024 * 1024;
+  const stats = (freeMb: number): unknown => ({
+    devices: [{ name: "cuda:0", vram_total: 25_600 * MB, vram_free: freeMb * MB }],
+  });
+  beforeEach(() => {
+    resetWire();
+    queueHasPrompt = false;
+    connectDeath = null;
+    historyBody = { "p-1": { prompt: ["x", "p-1"], status: { completed: true } } };
+    vramStatsQueue = [];
+    vramStatsFallback = stats(20_000);
+    vramStatsCalls = 0;
+    vramFreeBodies.length = 0;
+    submitCalls = 0;
+  });
+  it("no vram_budget_mb knob: the gate stays silent — getSystemStats never called, the run submits (back-compat law)", async () => {
+    const r = await executeSingle("/tmp/run-no-vram", { timeout_s: 10 }, {}, {}, "http://override:8188");
+    expect(r.promptId).toBe("p-1");
+    expect(vramStatsCalls).toBe(0);
+    expect(vramFreeBodies).toHaveLength(0);
+  });
+  it("a declared budget headroom proves: the run submits, /free never fired", async () => {
+    const r = await executeSingle(
+      "/tmp/run-vram-ok",
+      { timeout_s: 10, vram_budget_mb: 13500 },
+      {},
+      {},
+      "http://override:8188",
+    );
+    expect(r.promptId).toBe("p-1");
+    expect(vramFreeBodies).toHaveLength(0);
+    expect(submitCalls).toBe(1);
+  });
+  it("a budget the engine cannot prove REFUSES BEFORE SUBMIT — queuePrompt never reached, the voice names headroom vs budget and the reclaim", async () => {
+    // short probe → /free → three re-probes still short (the burn:
+    // engine cache 10.26 GiB resident, the estimator needing ~12.9).
+    vramStatsQueue = [stats(9_000), stats(9_500), stats(9_600), stats(9_700)];
+    await expect(
+      executeSingle("/tmp/run-vram-refuse", { timeout_s: 10, vram_budget_mb: 13500 }, {}, {}, "http://override:8188"),
+    ).rejects.toThrow(/refusing rather than OOM at run time.*9700 MiB free.*13500 MiB/s);
+    expect(submitCalls, "the refusal fires BEFORE the engine queues anything").toBe(0);
+    expect(vramFreeBodies).toEqual([{ unload_models: true, free_memory: true }]);
   });
 });
