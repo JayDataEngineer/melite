@@ -35,6 +35,14 @@ export { }
  *  by readRunStatus — consumers never see the bare name). */
 export interface RunStageStatus {
   id: string
+  /** The DRAFT stage row this run stage composed (the registry's
+   *  identity seam, 2026-10-22): card-composed runs mint `id` from
+   *  the card skeleton — a namespace the producing draft never heard
+   *  of — so outcome carries address the draft row by THIS stamp.
+   *  Absent on runs that predate the seam and on multi-row bench
+   *  loops (those carry the draft row's own id as `id`). Served
+   *  verbatim by the status door when the run row holds it. */
+  benchStageId?: string
   status: string
   engine?: string
   url?: string

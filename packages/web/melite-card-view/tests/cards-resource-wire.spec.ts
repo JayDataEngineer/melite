@@ -251,7 +251,13 @@ describe("restoreRunToBench — the refusal arms (ONE batch write, operator 2026
     try {
       const report = await restoreRunToBench(run(), "main");
       expect(report).toMatchObject({ added: 1, skipped: 0 });
-      expect(report.notes).toEqual(["s_0 was already on the bench — added under a fresh id"]);
+      // the second note is the previews cure's law (2026-11-12): a
+      // carry miss is VOICED, never a silent carried-0 — this run's
+      // stage rows are empty, so the outcome carry names its miss
+      expect(report.notes).toEqual([
+        "s_0 was already on the bench — added under a fresh id",
+        "could not carry s_0's outcome: no run stage names it (run stages: )",
+      ]);
       // the collision is pre-computed client-side: the row carries NO
       // id, the door mints fresh — one call, no retry
       expect(batchDocs(fakes.calls)).toEqual([{ stages: [{ card: "image-gen", params: { steps: 1 } }], author: "user", expect_rev: 0 }]);

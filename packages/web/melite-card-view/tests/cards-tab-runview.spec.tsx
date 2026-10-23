@@ -212,7 +212,11 @@ describe("the restore — the run's stages back on the bench", () => {
     );
     await screen.findByText("r-1");
     fireEvent.click(screen.getByRole("button", { name: "Restore to bench" }));
-    expect(await screen.findByText("restored 1 stage(s) to the bench", {}, { timeout: 5000 })).toBeTruthy();
+    // the previews cure (2026-11-12) appends the voiced carry note —
+    // this run's stage rows are empty, so the toast names the miss
+    // instead of falling silent past "restored 1 stage(s)"
+    expect(await screen.findByText(/restored 1 stage\(s\) to the bench/, {}, { timeout: 5000 })).toBeTruthy();
+    expect(await screen.findByText(/no run stage names it/, {}, { timeout: 5000 })).toBeTruthy();
     // the ONE batch write carries the bench rev (the restore law,
     // 2026-10-21 — no per-stage calls fire at all)
     const add = posted.find((p) => p.method === "bench/add-stages");

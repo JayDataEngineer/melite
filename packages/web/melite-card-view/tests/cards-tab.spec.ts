@@ -149,8 +149,16 @@ describe("restoreRunToBench — the card back into a flow", () => {
       benchDoc: { draft_id: "bench-main", rev: 21, stages: [], log: [] },
     });
     const report = await restoreRunToBench(run(), 'main');
-    // carried 0 — this run's stage rows are empty (no outcome to ride)
-    expect(report).toEqual({ added: 2, skipped: 0, carried: 0, notes: [] });
+    // carried 0 — this run's stage rows are empty (no outcome to
+    // ride), and since the previews cure (2026-11-12) each miss is
+    // VOICED, never a silent carried-0
+    expect(report).toEqual({
+      added: 2, skipped: 0, carried: 0,
+      notes: [
+        "could not carry s_0's outcome: no run stage names it (run stages: )",
+        "could not carry s_1's outcome: no run stage names it (run stages: )",
+      ],
+    });
     expect(calls.map((c) => c.method)).toEqual(["drafts/get", "bench/get", "bench/add-stages"]);
     expect(calls[0]?.args).toEqual({ draftId: "bench-main" });
     expect(calls[1]?.args).toEqual({ sessionKey: "main" });
@@ -204,7 +212,10 @@ describe("restoreRunToBench — the card back into a flow", () => {
     });
     const report = await restoreRunToBench(run(), 'main');
     expect(report.added).toBe(1);
-    expect(report.notes).toEqual(["s_0 was already on the bench — added under a fresh id"]);
+    expect(report.notes).toEqual([
+      "s_0 was already on the bench — added under a fresh id",
+      "could not carry s_0's outcome: no run stage names it (run stages: )",
+    ]);
     const batches = calls.filter((c) => c.method === "bench/add-stages");
     expect(batches).toHaveLength(1);
     const doc = (batches[0]?.args["doc"] ?? {}) as Record<string, unknown>;
@@ -224,6 +235,66 @@ describe("restoreRunToBench — the card back into a flow", () => {
     });
     await expect(restoreRunToBench(run(), 'main')).rejects.toThrow("restore stopped after 0 stage(s): bench/cas-conflict: stale rev");
     expect(calls.filter((c) => c.method === "bench/add-stages")).toHaveLength(1);
+  });
+
+  // ── THE PREVIEWS CURE (operator 2026-11-12: "when I hit the reload
+  // from history button, the preview images all inaccurate") — the
+  // ID-DEAD RESTORE CARRY. Card-composed runs mint stage ids from the
+  // card SKELETON ('h3-film'), a namespace the producing draft never
+  // heard of (its row is 's_0'), so the id-keyed outcome carry found
+  // nothing and every restored tile landed result-less — silently
+  // (carried 0, no note). The registry's identity seam
+  // (RunStageRow.benchStageId, 2026-10-22) addresses new runs; the
+  // POSITION join heals history runs that predate the stamp; a join
+  // that finds nothing is VOICED, never silent.
+  test("a card-skeleton run stage carries onto its draft row by POSITION (the history heal — ids never matched)", async () => {
+    const { calls } = mountFakes({
+      draftStages: [{ id: "s_0", card: "h3-film" }],
+      benchDoc: { draft_id: "bench-main", rev: 2, stages: [], log: [] },
+    });
+    const report = await restoreRunToBench(run({
+      stages: [{ id: "h3-film", status: "completed", url: "h3-film/seg.mp4" }],
+    }), 'main');
+    expect(report.carried).toBe(1);
+    expect(report.notes).toEqual([]);
+    const patches = calls.filter((c) => c.method === "drafts/patch");
+    expect(patches).toHaveLength(1);
+    expect(patches[0]?.args).toMatchObject({
+      draftId: "bench-main", stageId: "s_0",
+      patch: { runStatus: "done", result: { run_id: "r1", url: "h3-film/seg.mp4" } },
+    });
+  });
+
+  test("a run stage carrying the registry's benchStageId stamp joins by the STAMP (new runs)", async () => {
+    const { calls } = mountFakes({
+      draftStages: [{ id: "s_0", card: "h3-film" }, { id: "s_1", card: "sfx" }],
+      benchDoc: { draft_id: "bench-main", rev: 2, stages: [], log: [] },
+    });
+    const report = await restoreRunToBench(run({
+      stages: [
+        { id: "h3-film", benchStageId: "s_0", status: "completed", url: "h3-film/a.mp4" },
+        { id: "sfx", benchStageId: "s_1", status: "completed", url: "sfx/b.mp4" },
+      ],
+    }), 'main');
+    expect(report.carried).toBe(2);
+    const patches = calls.filter((c) => c.method === "drafts/patch");
+    expect(patches.map((p) => p.args["stageId"])).toEqual(["s_0", "s_1"]);
+  });
+
+  test("a join that finds nothing is VOICED — carried 0 never silent (the burn's silent class)", async () => {
+    const { calls } = mountFakes({
+      draftStages: [{ id: "s_0", card: "h3-film" }, { id: "s_1", card: "sfx" }],
+      benchDoc: { draft_id: "bench-main", rev: 2, stages: [], log: [] },
+    });
+    // one run stage naming neither draft id, neither stamp, and a
+    // count that kills the position join (2 draft rows ≠ 1 run row)
+    const report = await restoreRunToBench(run({
+      stages: [{ id: "ghost", status: "completed", url: "ghost/x.mp4" }],
+    }), 'main');
+    expect(report.carried).toBe(0);
+    expect(report.notes.length).toBe(2);
+    expect(report.notes[0]).toMatch(/s_0.*no run stage/);
+    expect(calls.filter((c) => c.method === "drafts/patch")).toHaveLength(0);
   });
 });
 
