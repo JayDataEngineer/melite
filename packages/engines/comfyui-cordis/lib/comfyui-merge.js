@@ -6,6 +6,7 @@ import { resolveEngineBaseUrl } from "./comfyui-config.js";
 import { uploadReferenced } from "./comfyui-upload.js";
 import { assertPublishedOutputChannels, fetchOutputArtifacts, loudnessOf, normalizeTimeoutS, publishOutputChannels, qvoiceFreshnessOf, qvoicePathsOf } from "./comfyui-outputs.js";
 import { hookProgress, submitPrompt, waitTerminal } from "./comfyui-execute.js";
+import { ensureVramHeadroom, normalizeVramBudgetMb } from "./comfyui-vram.js";
 import { sdkClient, withBound } from "./comfyui-transport.js";
 /** In-stage wire namespacing (mergegraph._namespace_wires): every
  *  [node_id, slot] link pointing inside the stage rewrites to the
@@ -353,6 +354,21 @@ export async function executeFlowInner(rows, runDir, inputNames, initials, opts,
     // key in namespaceWires or rewriteSpells red it by name. The day
     // the merge learns to ADD a name legitimately, that wall is where
     // the law gets restated — and this comment moves with it.
+    // THE VRAM HEADROOM GATE (the merge arm of the "ComfyUI should
+    // prevent oom" law, 2026-10-23): the merged run's budget is the
+    // MAX of its stages' declared budgets (one engine, one device —
+    // the peak stage owns the headroom requirement, the sum would
+    // over-refuse). Same door as the single path: prove it or /free
+    // then refuse loud, before the merged submit.
+    let vramBudget;
+    for (const r of rows) {
+        const b = normalizeVramBudgetMb(r.params["vram_budget_mb"]);
+        if (b !== undefined && (vramBudget === undefined || b > vramBudget))
+            vramBudget = b;
+    }
+    if (vramBudget !== undefined) {
+        await ensureVramHeadroom(server, vramBudget, client);
+    }
     const staged = await uploadReferenced(client, plan.workflow, { runsRoot: dirname(String(runDir)), stateRoots: opts.stateRoots });
     // the submit bound (audit P-E5): POST /prompt rides the same
     // 180s fuse the upload plane already answers to

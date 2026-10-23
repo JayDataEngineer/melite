@@ -9,6 +9,7 @@ import { withBound } from "./comfyui-transport.js";
 import { resolveEngineBaseUrl } from "./comfyui-config.js";
 import { sdkClient } from "./comfyui-transport.js";
 import { spliceWorkflow, uploadReferenced } from "./comfyui-upload.js";
+import { gateVramForStage } from "./comfyui-vram.js";
 import { isTransportDownError } from "./supervisor.js";
 import { fetchOutputs, loudnessOf, qvoiceFreshnessOf, mapHistoryEntry, normalizeTimeoutS, publishOutputChannels, qvoicePathsOf } from "./comfyui-outputs.js";
 /** Submit one graph through the SDK (POST /prompt). The SDK owns
@@ -344,6 +345,13 @@ export async function executeSingleInner(runDir, nodeParams, nodeOutputs, opts, 
     const client = sdkClient(server);
     const params = { ...nodeParams };
     const wf = spliceWorkflow(params);
+    // THE VRAM HEADROOM GATE (the "ComfyUI should prevent oom" law,
+    // 2026-10-23): a stage declaring vram_budget_mb proves that much
+    // free VRAM BEFORE submit — short headroom fires the engine's own
+    // /free unload, then refuses loud, never a mid-run OOM. Absent
+    // knob = zero traffic (back-compat). Fired before uploadReferenced
+    // so a refused run moves no bytes.
+    await gateVramForStage(server, params, client);
     const staged = await uploadReferenced(client, wf, { runsRoot: dirname(String(runDir)), stateRoots: opts.stateRoots });
     const timeoutS = normalizeTimeoutS(params["timeout_s"]);
     const deadline = Date.now() + timeoutS * 1000;

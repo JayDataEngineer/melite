@@ -15,9 +15,16 @@ export interface ComfyActionContext<P, F> {
 /** The atom's offer on the ComfyUI engine. `facts` is the family
  *  door: the raw resolved lane_inputs (family ⊕ variant) parsed into
  *  the closed shape the factory reads — an off-set member (an
- *  unknown text_encode_node) refuses at instantiate. */
+ *  unknown text_encode_node) refuses at instantiate. `vramBudgetMb`
+ *  is the atom's RUN contract, not a graph param: the MiB of free
+ *  VRAM the engine must prove before this action's graph submits
+ *  (the "Comfyui should prevent oom" law, 2026-10-23 — actions whose
+ *  graphs spawn VRAM-heavy subprocesses declare the headroom they
+ *  need; the execute door gates on it, freeing engine cache or
+ *  refusing loud, never a mid-run OOM). Absent = no gate. */
 export interface ComfyActionSpec<P, F> extends ActionSpec<ComfyActionContext<P, F>, OutputHandle> {
     readonly facts: (raw: LaneInputsFacts) => F;
+    readonly vramBudgetMb?: number;
 }
 /** Instantiate a bound action on the shared builder: parse the
  *  resolved facts through the action's door, execute the declared
@@ -54,6 +61,7 @@ interface DeclaresActions {
             readonly rule?: string;
         }>;
         readonly laneIndependent?: boolean;
+        readonly vramBudgetMb?: number;
         readonly facts: (raw: Record<string, unknown>) => unknown;
         readonly build: (...args: never[]) => unknown;
     }>;
