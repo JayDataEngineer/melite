@@ -142,12 +142,20 @@ async function mount(
   loaderNames?: string[],
   seatsOverride?: Record<string, unknown>,
 ): Promise<Ctx> {
+  // The default seat map mirrors REQUIRED_SEATS (the roster export
+  // is the one owner; this default is its reader-shaped fixture —
+  // an override can still drop any seat to arm the gate's refusal).
   const seats: Record<string, unknown> = {
     queue: { seat: 'queue' },
     draftsRemote: { seat: 'draftsRemote' },
+    benchRemote: { seat: 'benchRemote' },
     cardRegistry: { seat: 'cardRegistry' },
     provisioning: { seat: 'provisioning' },
     runs: { seat: 'runs' },
+    disclose: { seat: 'disclose' },
+    manage: { seat: 'manage' },
+    meliteSkills: { seat: 'meliteSkills' },
+    load: { seat: 'load' },
     ...(seatsOverride ?? {}),
   }
   const ctx: Ctx = {

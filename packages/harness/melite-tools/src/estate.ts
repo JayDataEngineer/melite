@@ -462,22 +462,47 @@ async function cardComposeLane(
  * seat names INSTANTIATES defined-but-unloaded services on a cordis
  * context (constructors with side effects — the hang, live proof
  * 2026-09-22: the manage-seat wall took 51.8s dialing). */
-export function seatFamilyForPath(path: string): { family: string; probeNames: string[] } {
+export interface SeatFamily { family: string; probeNames: string[]; notADoor?: string }
+export function seatFamilyForPath(path: string): SeatFamily {
   if (path.startsWith('/v1/flows/drafts') || path.startsWith('/v1/bench/')) {
     return { family: 'bench plane (draftsRemote/benchRemote seats)', probeNames: ['draftsRemote', 'benchRemote'] }
   }
   if (path.startsWith('/v1/flows/')) return { family: 'live-run registry (the runs seat)', probeNames: ['runs'] }
+  // '/v1/bench/ensure' is the session-opener every chat client
+  // hits first; the bare path is not walked (estateLane names full
+  // lanes only) — route it to the bench family so the vocabulary
+  // never answers 'unknown' for a documented door (the 2026-11-12
+  // prober-families audit's F2: '/v1/flows' + '/v1/bench' exacts
+  // went 'unknown' while real doors served them).
+  if (path === "/v1/bench" || path === "/v1/bench/ensure") {
+    return { family: 'bench plane (draftsRemote/benchRemote seats)', probeNames: ['draftsRemote', 'benchRemote'] }
+  }
+  if (path === "/v1/flows") {
+    return { family: 'flow contracts (the disclose seat)', probeNames: ['disclose'] }
+  }
   // '/v1/runs' is NOT a door (the runs list serves at GET
   // /v1/flows/runs) — but it is the URL every wedge-hunting prober
   // reaches for first, and 'unknown' sent the 2026-10-23 hunt down a
   // blind alley: answer the runs FAMILY and name the canonical door.
   if (path === '/v1/runs' || path.startsWith('/v1/runs/')) {
-    return { family: RUNS_LANE.family + ' — the list door is GET /v1/flows/runs', probeNames: [...RUNS_LANE.probeNames] }
+    return {
+      family: RUNS_LANE.family,
+      probeNames: [...RUNS_LANE.probeNames],
+      notADoor: 'the list door is GET /v1/flows/runs',
+    }
   }
   // Same class: the provisions plane's operations URL — name the
   // provisioning seat, never 'unknown'.
   if (path.startsWith('/v1/provision/')) {
-    return { family: 'provisions seat (the provisioning service)', probeNames: ['provisioning'] }
+    return {
+      family: 'provisions seat (the provisioning service)',
+      probeNames: ['provisioning'],
+      // the router serves NO /v1/provision arm (verified 2026-11-12:
+      // the only 'provision' mention in this file is this matcher) —
+      // a not-a-door URL, not a seat portrait; the voice steers
+      // without asserting an absence the live-seat probe may deny
+      notADoor: 'the estate router serves no /v1/provision/* door — the provisioning service answers the queue plane, not this URL',
+    }
   }
   if (path.startsWith('/v1/discover')) return { family: 'disclose', probeNames: ['disclose'] }
   if (path.startsWith('/v1/manage')) return { family: 'manage', probeNames: ['manage'] }
@@ -568,6 +593,33 @@ function seatlessRefusal(host: EstateHost, sp: string, family: string, probeName
   )
 }
 
+/** The NOT-A-DOOR refusal (2026-11-12, the prober-families
+ *  audit's F4): the URL is not something this lane serves — the
+ *  voice names the seat's family and steers to the canonical door
+ *  WITHOUT the seatless voice's absence clause ("…is not mounted"):
+ *  on a healthy lane the seat IS mounted and only the URL is wrong
+ *  (the old voice told the operator a live seat was absent). The
+ *  pin sentence rides only when the live-seat probe answers empty —
+ *  that is the one case where down-seat is the honest story. */
+function notADoorRefusal(host: EstateHost, sp: string, family: string, probeNames: readonly string[], notADoor: string): never {
+  const live: string[] = []
+  for (const n of probeNames) {
+    try {
+      if (host.get(n) !== undefined) live.push(n)
+    } catch {
+      /* a throwing probe reads as absent — absence is the only story */
+    }
+  }
+  const liveVoice: string = live.length > 0
+    ? `Live seats here: ${live.join(', ')}. If the canonical door answers 502, the seat is down — then the queue-plane seats mount when the estate state root is pinned (the profile config's stateRoot / repoRoot fields).`
+    : `No seat of that family is mounted on this lane (not a registry fault; nothing crashed). The queue-plane seats mount when the estate state root is pinned (the profile config's stateRoot / repoRoot fields).`
+  throw new Error(
+    `no door on this lane serves ${sp} — ${notADoor} (the ${family}). `
+      + `${liveVoice} `
+      + `On a chat lane, compose via melite_construct onto the shared bench instead of the raw flow doors.`,
+  )
+}
+
 async function performEstateRequest(
   ctx: EstateHost,
   method: EstateMethod,
@@ -577,7 +629,8 @@ async function performEstateRequest(
 ): Promise<unknown> {
   const viaSeats = await trySeats(ctx, method, path, body, execSignal)
   if (viaSeats !== undefined) return viaSeats
-  const { family, probeNames } = seatFamilyForPath(path)
+  const { family, probeNames, notADoor } = seatFamilyForPath(path)
+  if (notADoor !== undefined) notADoorRefusal(ctx, `${method} ${path}`, family, probeNames, notADoor)
   seatlessRefusal(ctx, `${method} ${path}`, family, probeNames)
 }
 

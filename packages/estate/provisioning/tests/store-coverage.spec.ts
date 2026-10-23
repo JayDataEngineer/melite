@@ -375,7 +375,7 @@ describe("the store vocabulary — snapshot rows persist (F1: durable re-admit w
   test("the widened gate still refuses unknown kinds — a vocabulary, not an open door", async () => {
     const store = new InMemoryOperationStore();
     const bogus = operation({
-      items: [{ key: "bogus:x", kind: "dataset", state: "installed" }],
+      items: [{ key: "bogus:x", kind: "dataset", state: "installed" } as unknown as ResourceStatusItem],
     });
     await assert.rejects(
       () => store.save(bogus),

@@ -68,7 +68,12 @@ function validItem(value) {
         return false;
     if (typeof value["key"] !== "string" || value["key"] === "")
         return false;
-    if (value["kind"] !== "model" && value["kind"] !== "extension")
+    // THE STORE VOCABULARY (F1, 2026-10-22 audit): the service plane
+    // speaks three item kinds (contracts.ts ProvisionPlanItem), but the
+    // store's gate accepted model|extension only — a snapshot row threw
+    // invalid-items at save, so durable restart→rehydrate→re-admit was
+    // model-only and every snapshot acquire forgot its seat on boot.
+    if (value["kind"] !== "model" && value["kind"] !== "snapshot" && value["kind"] !== "extension")
         return false;
     if (!hasValue(PROVISION_STATES, value["state"]))
         return false;

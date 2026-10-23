@@ -473,16 +473,24 @@ describe('disclose/manage/skills/load/ledger lanes', () => {
     assert.deepEqual(seatFamilyForPath('/v1/ledger'), { family: 'queue', probeNames: ['queue'] })
   })
 
-  // THE PROBER-URL FAMILIES (2026-10-23 wedge hunt): '/v1/runs' and
-  // '/v1/provision/operations' are not doors, but they are the URLs
-  // a wedge-hunting prober reaches for first — answering 'unknown'
-  // sent a live hunt down a blind alley while the estate was healthy
-  // (the real runs list serves at GET /v1/flows/runs). The refusal
-  // must name the family AND steer to the canonical door.
+  // THE PROBER-URL FAMILIES (2026-10-23 wedge hunt, re-cut
+  // 2026-11-12): '/v1/runs' and '/v1/provision/operations' are not
+  // doors, but they are the URLs a wedge-hunting prober reaches for
+  // first — answering 'unknown' sent a live hunt down a blind alley
+  // while the estate was healthy (the real runs list serves at GET
+  // /v1/flows/runs). The matcher names the family AND carries the
+  // steering in notADoor; the refusal voice below is what the
+  // operator actually reads. (§3.11 note: these arms' 2026-10-23 pin
+  // asserted the matcher return with the steering EMBEDDED in the
+  // family string — the old voice then composed '…the <family —
+  // the list door is…> is not mounted', asserting absence of a live
+  // seat on a healthy lane. The re-cut moves steering to its own
+  // field and walls the composed 502 body instead.)
   test('/v1/runs names the runs family and steers to the list door', () => {
     assert.deepEqual(seatFamilyForPath('/v1/runs'), {
-      family: 'live-run registry (the runs seat) — the list door is GET /v1/flows/runs',
+      family: 'live-run registry (the runs seat)',
       probeNames: ['runs'],
+      notADoor: 'the list door is GET /v1/flows/runs',
     })
     // subpaths ride the same family
     assert.deepEqual(seatFamilyForPath('/v1/runs/run-x/status').probeNames, ['runs'])
@@ -494,7 +502,40 @@ describe('disclose/manage/skills/load/ledger lanes', () => {
     assert.deepEqual(seatFamilyForPath('/v1/provision/operations'), {
       family: 'provisions seat (the provisioning service)',
       probeNames: ['provisioning'],
+      notADoor: 'the estate router serves no /v1/provision/* door — the provisioning service answers the queue plane, not this URL',
     })
+  })
+
+  test("/v1/flows exact names the disclose seat (the flow-contracts door — audited 'unknown' 2026-11-12 while the door served)", () => {
+    assert.deepEqual(seatFamilyForPath('/v1/flows'), {
+      family: 'flow contracts (the disclose seat)',
+      probeNames: ['disclose'],
+    })
+  })
+
+  test("/v1/bench exact + ensure name the bench plane (audited 'unknown' 2026-11-12 while POST /v1/bench/ensure serves)", () => {
+    assert.deepEqual(seatFamilyForPath('/v1/bench').probeNames, ['draftsRemote', 'benchRemote'])
+    assert.deepEqual(seatFamilyForPath('/v1/bench/ensure').probeNames, ['draftsRemote', 'benchRemote'])
+  })
+
+  test('the composed 502 for a prober URL names the canonical door and never asserts a live seat absent', async () => {
+    // F3/F4 (the not-a-door voice): what the OPERATOR reads — the
+    // refusal body on a HEALTHY lane (runs seated, only the URL is
+    // wrong) must steer, must list the live seat, and must NOT say
+    // 'is not mounted'.
+    const healthy = req({ runs: { list: async () => [] } })
+    const msg = await throwsMsg(() => healthy('GET', '/v1/runs', undefined, SIG, 1000))
+    assert.match(msg, /no door on this lane serves GET \/v1\/runs/)
+    assert.match(msg, /the list door is GET \/v1\/flows\/runs/)
+    assert.match(msg, /Live seats here: runs\./)
+    assert.ok(!msg.includes('is not mounted'), 'a healthy seat is never called absent: ' + msg)
+    // and the down-seat face stays honest (nothing mounted: the pin
+    // sentence rides)
+    const down = req({})
+    const downMsg = await throwsMsg(() => down('GET', '/v1/runs', undefined, SIG, 1000))
+    assert.match(downMsg, /the list door is GET \/v1\/flows\/runs/)
+    assert.match(downMsg, /No seat of that family is mounted/)
+    assert.match(downMsg, /state root is pinned/)
   })
 
   test('a non-conflict compose refusal propagates without a retry', async () => {

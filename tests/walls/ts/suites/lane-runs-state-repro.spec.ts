@@ -51,27 +51,23 @@ import {
 import timerPlugin from "@deepseek-ai/cordis-plugin-timer";
 import draftsPlugin from "@melite/estate-drafts";
 import { acquireLock } from "../../../../packages/harness/estate-queue/src/queueLock.ts";
-import estateBundle from "../../../../packages/web/melite-estate/src/index.ts";
+import estateBundle, { REQUIRED_SEATS } from "../../../../packages/web/melite-estate/src/index.ts";
+import { seatFamilyForPath } from "../../../../packages/harness/melite-tools/src/estate.ts";
 import { mountFamilyRoster } from "../lib/family-roster.ts";
 import { QueueService } from "../../../../packages/harness/estate-queue/src/service.ts";
 
 const REAL_RUNS = join(import.meta.dirname, "..", "..", "..", "..", "data", "runs");
 
-const SEATS = [
-  "queue", "runs", "runsRemote", "draftsRemote", "benchRemote",
-  "cardRegistry", "disclose", "manage", "meliteSkills",
-] as const;
+const SEATS = REQUIRED_SEATS;
 
-// C-C2 (the wall audit): SEATS was a hand list and had already
-// drifted — the bundle's real `load` and `manageRemote` seats were
-// absent, so either dying silently passed the settle wall. The list
-// is now the SMOKE CORE only; the FULL law derives from the context
-// itself: cordis's reflect service declares every service property
-// (`ctx.reflect.props`, type 'service' — 18 today: load,
-// manageRemote, provisioning, mediaRemote, models, engines...), and
-// every DECLARED service must resolve after boot — a declared-but-
-// unsettled seat is exactly the false death this suite hunts, and
-// no hand list can omit it again.
+// C-C2 (the wall audit) + the 2026-11-12 settle-gate audit (F2):
+// SEATS was a hand list and had already drifted — the bundle's real
+// `load` and `manageRemote` seats were absent, so either dying
+// silently passed the settle wall. It is now a PURE READER of the
+// roster the src owns (export REQUIRED_SEATS): drift it and the arms
+// judge the roster's own seats, nothing more, nothing less. The
+// drift-ALARM arm below reds in the opposite direction — a seat the
+// prober's vocabulary can name that this roster does not demand.
 async function everyDeclaredSeatResolves(ctx: Context, ms: number): Promise<string[]> {
   const deadline = Date.now() + ms;
   let names: string[] = [];
@@ -224,6 +220,22 @@ function writeSkipLedger(count: number): void {
 }
 
 describe("the false-death hunt's four laws", () => {
+  it("THE DRIFT ALARM: every seat the prober's vocabulary can name, the roster demands (the 2026-11-12 settle-gate audit's F1/F2 — requiredSeats was a five-seat literal while disclose/manage/meliteSkills/load/benchRemote died seatless-green)", () => {
+    // BOTH directions are the law: a demanded seat the prober cannot
+    // route is a dead entry (same-class drift the other way) — the
+    // prober's probeNames ARE the demand's routing surface.
+    const proberPaths = [
+      "/v1/flows/drafts", "/v1/bench/x/start", "/v1/flows/runs",
+      "/v1/runs", "/v1/provision/operations", "/v1/discover",
+      "/v1/manage", "/v1/skills", "/v1/load", "/v1/ledger",
+    ];
+    const proberSeats = [...new Set(proberPaths.flatMap((p) => seatFamilyForPath(p).probeNames))].sort();
+    const roster = [...REQUIRED_SEATS].sort();
+    const undemanded = proberSeats.filter((s) => !(roster as readonly string[]).includes(s));
+    expect(undemanded, "seats the prober can name that the settle gate does not demand (a seatless-green death the gate ignores)").toEqual([]);
+    expect(roster, "every rostered seat routes through the prober (no dead demand)").toEqual(expect.arrayContaining(proberSeats));
+  });
+
   it("1. VERBATIM: the bundle settles every seat on an empty root", { timeout: 30_000 }, async () => {
     const root = join(sandbox("law1-empty"), "runs");
     const ctx = await bootBundle(root);

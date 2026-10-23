@@ -121,7 +121,25 @@ const rows = [
     // is ours, so its child processes go through the harness
     // primitive, never an owned execFile wrapper (handroll audit row
     // 4.6).
-    LocalSubprocessRuntime,
+    // STAND-DOWN WRAPPER (2026-10-23, the double-registration wedge):
+    // the host profile's own spawn rows (ralph / workflow-ptc with
+    // provider: spawn) register the SAME LocalSubprocessRuntime
+    // service before the estate mounts, and cordis buries the estate
+    // row's registration throw while the boot marches on — a fiber
+    // left FAILED on every boot, invisible until a registry walk
+    // printed it. The estate CONSUMES the seat; it must not demand to
+    // be its only provider: when the seat already exists this row
+    // says so loud and mounts nothing.
+    {
+        name: "estate-subprocess-row",
+        apply: (ctx) => {
+            if (ctx.get("subprocess", false) !== undefined) {
+                console.log("[melite-estate] subprocess seat already registered by the host profile — the estate's own provider row stands down");
+                return;
+            }
+            ctx.plugin(LocalSubprocessRuntime);
+        },
+    },
     // The engines seat BEFORE every adapter + consumer (mount order
     // is load order — the adapters' inject gates on it).
     enginesContract,
@@ -334,6 +352,16 @@ const rows = [
     modelsPlugin,
 ];
 export const name = "melite-estate";
+/** THE SEAT ROSTER the settle gate demands (the ONE hand list —
+ * §3.9 one owner, every other home a pure reader): every door seat
+ * the prober's seatFamilyForPath vocabulary can name, plus the
+ * internal cardRegistry no door family names but every registry
+ * row injects. The drift-alarm arm (lane-runs-state-repro) reds if
+ * the prober learns a seat this roster does not demand. */
+export const REQUIRED_SEATS = [
+    "queue", "draftsRemote", "benchRemote", "cardRegistry",
+    "provisioning", "runs", "disclose", "manage", "meliteSkills", "load",
+];
 /** The validator twin of {@link Config}. */
 export const Config = Schema.object({
     repoRoot: Schema.string(),
@@ -347,6 +375,7 @@ export const Config = Schema.object({
     acquireStallTimeoutMs: Schema.number(),
     durableDownloads: Schema.boolean(),
     downloadClaimIntervalMs: Schema.number(),
+    seatSettleBudgetMs: Schema.number(),
 });
 export async function apply(ctx, config = {}) {
     // THE BUNDLE GATE RUNS FIRST: a configuration refusal precedes any
@@ -455,6 +484,39 @@ export async function apply(ctx, config = {}) {
             continue;
         }
         ctx.plugin(row);
+    }
+    // THE SETTLE GATE (2026-10-23, the silent-green lane wedge): the
+    // rows above mount FIRE-AND-FORGET by design — but cordis resolves
+    // a child fiber's promise even when the fiber FAILS, so a dead row
+    // (live proof: the queue row's gateway.lock refusal) left the
+    // estate settled-green with every /v1 seat door serving honest
+    // 502s while /v1/model-catalog answered 200 — a half-up lane that
+    // no log line names. The gate closes that class: the queue plane's
+    // required seats must go strict-active (providing fiber state 2,
+    // the same read the doors use) within the settle budget, or the
+    // WHOLE estate refuses — the failure is the lane's, loud, at boot,
+    // naming the seats that never came up.
+    // THE ROSTER IS DERIVED-OWNED HERE (2026-11-12, the journey
+    // audit's F1/F2): REQUIRED_SEATS is the ONE hand list — every
+    // door seat the prober's seatFamilyForPath vocabulary names (the
+    // drift-alarm wall cross-checks that direction) plus the internal
+    // cardRegistry — and the repro wall's SEATS is a pure reader.
+    const requiredSeats = REQUIRED_SEATS;
+    const budgetMs = config.seatSettleBudgetMs ?? 30_000;
+    const deadline = Date.now() + budgetMs;
+    let disposed = false;
+    ctx.effect(() => () => { disposed = true; }, "melite-estate.settle-gate");
+    for (;;) {
+        const missing = requiredSeats.filter((n) => ctx.get(n) === undefined);
+        if (missing.length === 0)
+            break;
+        if (disposed || Date.now() >= deadline) {
+            throw new Error("[melite-estate] the composition refused to settle: seat(s) " + missing.join(", ")
+                + " never activated within " + String(budgetMs) + "ms — a required row died silently "
+                + "(the 2026-10-23 lane wedge class: check the queue row's state-root lock and the drafts row's storage root); "
+                + "refusing to boot a half-up estate (catalog green, every seat door 502)");
+        }
+        await new Promise((resolve) => { setTimeout(resolve, 250); });
     }
 }
 /** The cordis row shape: a plugin object (name + apply). */

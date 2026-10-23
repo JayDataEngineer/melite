@@ -29,10 +29,12 @@ export declare function asEstateCall(request: EstateRequest): EstateCall;
  * seat names INSTANTIATES defined-but-unloaded services on a cordis
  * context (constructors with side effects — the hang, live proof
  * 2026-09-22: the manage-seat wall took 51.8s dialing). */
-export declare function seatFamilyForPath(path: string): {
+export interface SeatFamily {
     family: string;
     probeNames: string[];
-};
+    notADoor?: string;
+}
+export declare function seatFamilyForPath(path: string): SeatFamily;
 /** Build the tools' request: seats only, in-process. A lane with no
  *  seat for the path is a hard error — but the error must be an
  *  AGENT-USABLE refusal (F-8): name the family the path needs, the

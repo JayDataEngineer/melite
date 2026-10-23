@@ -378,6 +378,17 @@ const rows: readonly Plugin[] = [
 
 export const name = "melite-estate";
 
+/** THE SEAT ROSTER the settle gate demands (the ONE hand list —
+ * §3.9 one owner, every other home a pure reader): every door seat
+ * the prober's seatFamilyForPath vocabulary can name, plus the
+ * internal cardRegistry no door family names but every registry
+ * row injects. The drift-alarm arm (lane-runs-state-repro) reds if
+ * the prober learns a seat this roster does not demand. */
+export const REQUIRED_SEATS: readonly string[] = [
+  "queue", "draftsRemote", "benchRemote", "cardRegistry",
+  "provisioning", "runs", "disclose", "manage", "meliteSkills", "load",
+];
+
 /** The estate's config face (stroke 45c): repoRoot PINS the runs
  *  state tree — the queue seat refuses unpinned boots (a cwd-guessed
  *  root silently serves an empty runs tree; the profile patch names
@@ -573,7 +584,12 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
   // the same read the doors use) within the settle budget, or the
   // WHOLE estate refuses — the failure is the lane's, loud, at boot,
   // naming the seats that never came up.
-  const requiredSeats: readonly string[] = ["queue", "draftsRemote", "cardRegistry", "provisioning", "runs"];
+  // THE ROSTER IS DERIVED-OWNED HERE (2026-11-12, the journey
+  // audit's F1/F2): REQUIRED_SEATS is the ONE hand list — every
+  // door seat the prober's seatFamilyForPath vocabulary names (the
+  // drift-alarm wall cross-checks that direction) plus the internal
+  // cardRegistry — and the repro wall's SEATS is a pure reader.
+  const requiredSeats: readonly string[] = REQUIRED_SEATS;
   const budgetMs = config.seatSettleBudgetMs ?? 30_000;
   const deadline = Date.now() + budgetMs;
   let disposed = false;
