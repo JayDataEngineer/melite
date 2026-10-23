@@ -237,6 +237,20 @@ if (bootstrapOutsideCensus.length > 0) {
 }
 const fixtureClasses = new Set([...addressClasses, ...Object.keys(bootstrapRows)]);
 
+// THE ADDRESS-SET CENSUS GATE: a card the facts serve can address a
+// class the census does not (a pack not yet on the engine — the
+// TextEncodeFibo2 seat, 2026-10-23). The bootstrap guard above voices
+// its own class list; without this gate the diff at step 4 crashed
+// with 'Cannot read properties of undefined (reading replace)' — an
+// unnamed TypeError instead of a refusal. A partial fixture is never
+// written; the refusal names every missing class and its cure (the
+// engine must serve what the composed cards address).
+const addressOutsideCensus = [...addressClasses].filter((c) => !censusClasses.has(c)).sort();
+if (addressOutsideCensus.length > 0) {
+  die(`the address set names ${addressOutsideCensus.length} class(es) the census does not serve — ` +
+    `a card's pack is absent from the engine; no vocabulary written: ${addressOutsideCensus.join(", ")}`);
+}
+
 // 4. THE DIFF against the committed fixture, then the emit.
 const priorFixtureRaw = readFileSync(FIXTURE, "utf8");
 const priorFixture = JSON.parse(priorFixtureRaw);

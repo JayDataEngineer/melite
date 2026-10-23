@@ -111,8 +111,14 @@ export function enrichDiskRow(row) {
     const names = [...new Set(artifacts.map(relative))]
         .filter((name) => !isEstateSidecarName(name))
         .filter((name) => mediaKindOf(name) !== undefined);
+    // THE STAMP SURVIVES EVERY EXIT (previews fold audit F1, 2026-11-12):
+    // this zero-names exit once returned the ORIGINAL row — silently
+    // discarding the adapter's own mapping when the lone stamped
+    // stage's artifacts all filter out (sidecar names, non-vocab
+    // extensions). Every exit serves stampedRow; the stamp never
+    // rides on the hero path's coat-tails.
     if (names.length === 0)
-        return row;
+        return stampedRow;
     const hero = engineFilmName(names) ?? names[0];
     const current = stage;
     return {

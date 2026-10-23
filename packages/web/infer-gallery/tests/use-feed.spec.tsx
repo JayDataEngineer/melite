@@ -374,17 +374,17 @@ describe('useFeed — the boot-staged cache (E2-3 arm 2)', () => {
     // load's settle never writes the cache either — the persisted feed
     // is the owning load's alone (a rejected superseded write would
     // poison the NEXT boot's first paint with a feed no live load ever
-    // served)
-    expect(localStorage.getItem(KEY)).toBe(JSON.stringify({ runs: [{ run_id: 'r1' }] }),
-      'the aborted load persists nothing — the cache keeps the last SERVED feed')
+    // served). The aborted load persists nothing — the cache keeps the
+    // last SERVED feed:
+    expect(localStorage.getItem(KEY)).toBe(JSON.stringify({ runs: [{ run_id: 'r1' }] }))
     // the owning load seats: replaces the paint, clears stale
     release2!()
     await waitFor(() => { expect(result.current.loading).toBe(false) })
     expect(result.current.data).toEqual({ runs: [{ run_id: 'r2' }] })
     expect(result.current.stale).toBe(false)
-    // and the OWNING load's cache write is the one that lands
-    expect(localStorage.getItem(KEY)).toBe(JSON.stringify({ runs: [{ run_id: 'r2' }] }),
-      'the owning load persists its served feed')
+    // and the OWNING load's cache write is the one that lands (its
+    // served feed persists):
+    expect(localStorage.getItem(KEY)).toBe(JSON.stringify({ runs: [{ run_id: 'r2' }] }))
     unmount()
   })
 })
