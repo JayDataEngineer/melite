@@ -1,11 +1,11 @@
 {
- "derived_at": "2026-10-22T14:20:11.402Z",
+ "derived_at": "2026-10-23T13:12:42.983Z",
  "tool": "scripts/regen-node-vocab.mjs --boot",
  "source": {
   "path": "data/tmp/object_info_prod.json",
-  "sha256": "e2adc1f55000c5f437f8ccc6e07cbcd27667fc706592f6b8c44df3daf3104486",
-  "mtime_ms": 1792615693312.3054,
-  "class_count": 1677,
+  "sha256": "a7ad0cda87338efe117d8f887585a9ac69eeb1a0d7d18483b0f2d25ec71d7a2a",
+  "mtime_ms": 1792761028819.0476,
+  "class_count": 1676,
   "origin": "capture"
  },
  "bootstrap_seed": {
@@ -15,18 +15,32 @@
  },
  "derivation": {
   "facts_path": "packages/engines/comfyui-cordis/data/model-facts.json",
-  "addressed_class_count": 97,
+  "addressed_class_count": 98,
   "bootstrap_class_count": 68,
-  "fixture_class_count": 165,
+  "fixture_class_count": 166,
   "rows_probed": 31,
   "refused_rows": 0
  },
  "delta": {
   "added": [
-   "MeliteQVoiceCopy"
+   "ImageToMask"
   ],
   "pruned": [],
-  "updated": [],
+  "updated": [
+   "AudiocoreVoiceStudio",
+   "CLIPLoader",
+   "LoadAudio",
+   "LoadAudiocoreModel",
+   "LoadImage",
+   "LoadImageMask",
+   "LoadVideo",
+   "MeliteAudioSlice",
+   "MiniMaxH3RefModsLoader",
+   "ModelPreviewOverrideKJ",
+   "UNETLoader",
+   "VAELoader",
+   "VHS_LoadVideo"
+  ],
   "reordered_keys": 0
  }
 }

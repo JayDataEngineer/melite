@@ -84,6 +84,16 @@
       "clip_name": "dino_v3_L_naf_fp32.safetensors"
     }
   },
+  "ImageToMask.0": {
+    "class_type": "ImageToMask",
+    "inputs": {
+      "image": [
+        "LoadImage.0",
+        0
+      ],
+      "channel": "red"
+    }
+  },
   "ImageCropToMask.0": {
     "class_type": "ImageCropToMask",
     "inputs": {
@@ -92,7 +102,7 @@
         0
       ],
       "masks": [
-        "LoadImage.0",
+        "ImageToMask.0",
         0
       ],
       "pad_factor": 1.1,

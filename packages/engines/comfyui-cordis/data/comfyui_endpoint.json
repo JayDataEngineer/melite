@@ -17,7 +17,8 @@
     "somaskel77": "somaskel77",
     "taggers": "taggers",
     "text_encoders": "text_encoders",
-    "ultralytics": "ultralytics"
+    "ultralytics": "ultralytics",
+    "latent_upscale_models": "latent_upscale_models"
   },
   "url": "http://127.0.0.1:8188"
 }

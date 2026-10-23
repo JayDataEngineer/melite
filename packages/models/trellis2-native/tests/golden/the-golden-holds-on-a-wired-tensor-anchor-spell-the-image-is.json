@@ -72,11 +72,21 @@
       "vae_name": "trellis_2_texture_vae_bf16.safetensors"
     }
   },
+  "ImageToMask.0": {
+    "class_type": "ImageToMask",
+    "inputs": {
+      "image": "$spell.img",
+      "channel": "red"
+    }
+  },
   "ImageCropToMask.0": {
     "class_type": "ImageCropToMask",
     "inputs": {
       "images": "$spell.img",
-      "masks": "$spell.img",
+      "masks": [
+        "ImageToMask.0",
+        0
+      ],
       "pad_factor": 1.1,
       "width": 1024,
       "height": 1024,
