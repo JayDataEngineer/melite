@@ -1497,6 +1497,33 @@ describe("status + stop", () => {
       "an existing wire spelling is never overwritten by the disk field");
   });
 
+  // THE STAMP SURVIVES EVERY EXIT (previews fold audit F1, 2026-11-12):
+  // the zero-media-names exit (the lone stamped stage's artifacts all
+  // filter out — sidecar names, non-vocab extensions) once returned
+  // the ORIGINAL row, silently discarding the adapter's mapping. The
+  // stamp is not the hero path's coat-tail: it rides every exit.
+  it("a stamped stage whose artifacts filter to ZERO media names still answers the stamp in the wire spelling", async () => {
+    const s = seat();
+    const runId = "run-f1zero000000-00000001";
+    const dir = join(s.state, "output", runId);
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(join(dir, "_flow.json"), JSON.stringify({
+      run_id: runId, status: "completed", draft_id: "bench-main",
+      stages: [{ id: "edit", bench_stage_id: "s_0", status: "completed" }],
+      skipped_stages: [],
+      // every artifact filters out: the harness's own sidecar by
+      // name, and a non-vocab extension — names.length === 0
+      artifacts: ["_request.json", "notes.xyz"], error: "",
+    }));
+    const got = await s.svc.status(runId, sig());
+    assert.equal(got["from_disk"], true);
+    const stages = got["stages"] as Array<Record<string, unknown>>;
+    assert.equal(stages[0]?.["benchStageId"], "s_0",
+      "the stamp answers camel even when the hero/gallery path never runs");
+    assert.equal(stages[0]?.["bench_stage_id"], "s_0",
+      "the sidecar's own field rides verbatim on this exit too");
+  });
+
   it("disk fallback refuses a sidecar whose status is not ours (T3: the durable boundary judges it)", async () => {
     // A hand-edited or foreign _flow.json serving "banana" as a run
     // status is not a row we serve — the same verdict as

@@ -68,6 +68,24 @@ describe('the status law — ragged docs', () => {
     expect(row.stages[0]?.url).toBe('')
     expect(toRunMediaUrl('r1', '')).toBe('')
   })
+
+  // THE IDENTITY STAMP RIDES THE NORMALIZE (previews fold audit F2,
+  // 2026-11-12): benchStageId is the registry's identity seam — the
+  // restore join (cards-resource) addresses draft rows by it. The
+  // stage distill mutates url/error/progress/activity in place and
+  // never rebuilds the row, so the stamp crosses untouched; this is
+  // the decode hop no spec named. A rebuild that drops it would
+  // strand every restore at "no run stage".
+  it('a stage row stamped with benchStageId carries the stamp through the normalize verbatim', () => {
+    const row = readRunStatus('r1', {
+      status: 'completed',
+      draft_id: 'bench-main',
+      stages: [{ id: 'sfx', benchStageId: 's_1', status: 'completed', url: 'sfx/b.mp4' }],
+    })
+    expect(row.stages[0]?.benchStageId).toBe('s_1')
+    // the media rewrite moved the url; the stamp is not a media field
+    expect(row.stages[0]?.url).toMatch(/sfx\/b\.mp4$/)
+  })
 })
 
 

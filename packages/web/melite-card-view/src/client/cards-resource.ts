@@ -1290,9 +1290,14 @@ export async function restoreRunToBench(
   // predate the registry's benchStageId stamp and mint stage ids from
   // the card skeleton — a namespace the draft rows never heard of —
   // so id-keyed carries found nothing. When the run composed exactly
-  // this draft's carded rows, the two arrays ARE the same sequence
-  // (both order-preserving on the composed cards), so row i joins
-  // run stage i. A count mismatch (the draft edited since) joins
+  // this draft's carded rows, the two arrays align in sequence (both
+  // order-preserving on the composed cards), so row i joins run
+  // stage i. This is the LEGACY tier (row cards-restore-outcome-carry):
+  // a same-count REORDER between compose and restore is undetectable
+  // by construction — row order is history, not identity — which is
+  // exactly why the stamp tier exists and why multi-row bench runs
+  // stamp each row's own id (the id tier, no position needed).
+  // A count mismatch (the draft edited since) joins
   // nothing by position — a wrong-tile repaint is worse than a voiced
   // miss.
   const positionalJoin = run.stages.length === rows.length ? run.stages : null

@@ -1094,4 +1094,176 @@ describe("verifyOperation re-admit (moss-image burn)", () => {
     assert.equal(verified.state, "failed");
     assert.equal(verified.items[0]?.errorCode, "artifact/stalled");
   });
+
+  // THE EXTENSION EXCLUSION (fold audit F2, 2026-11-12): the re-admit
+  // admits FETCH kinds only — an extension's settle is manager-side,
+  // there is no disk truth to re-admit against, so a failed extension
+  // item keeps its verdict verbatim even when its DECL counterpart
+  // sits in the plan. The exclusion was a source comment; this wall
+  // makes it a law.
+  test("a failed EXTENSION item never re-admits — its settle is manager-side, not bytes-on-disk", async () => {
+    const store = root();
+    const service = serviceFor(store, { ref: modelRef(), items: [extensionItem()] });
+    const op = operationRow({
+      operationId: "op-ext-stall",
+      state: "failed",
+      finishedAt: Date.now(),
+      items: [{
+        key: "extension:pack",
+        kind: "extension",
+        state: "failed",
+        errorCode: "manager/install-failed",
+        detail: "the manager did not install the pack",
+      }],
+    });
+    const verified = await service.verifyOperation(op);
+    assert.equal(verified.state, "failed", "no disk truth outranks a manager-side settle");
+    assert.equal(verified.items[0]?.state, "failed");
+    assert.equal(verified.items[0]?.errorCode, "manager/install-failed", "the refusal is preserved verbatim");
+    assert.equal(verified.items[0]?.detail, "the manager did not install the pack",
+      "the item is untouched — its original detail rides verbatim, never a re-admit's");
+  });
+
+  // THE SNAPSHOT PROBE'S REFUSAL EDGES (fold audit F4, 2026-11-12):
+  // the presence probe refuses trees that are not the DECL's exact
+  // truth — (a) a tree missing the weights anchor is ABSENT (the
+  // anchor is the probe's own law, snapshot.ts:203-205), (b) a
+  // glob-only allow pattern can never enumerate exact names, so its
+  // tree is never present — both keep the settled verdict verbatim.
+  test("a snapshot tree MISSING the weights anchor is absent — the verdict keeps verbatim", async () => {
+    const store = root();
+    const tree = join(store, "qwen3-tts", "hf", "tts-tree");
+    mkdirSync(tree, { recursive: true });
+    writeFileSync(join(tree, "config.json"), "{}");
+    // NO .safetensors anchor — the probe refuses the tree whole
+    const snapshotPlanItem = {
+      kind: "snapshot",
+      key: "model:family:snapshot:tts-tree",
+      owner: "family",
+      id: "family",
+      name: "tts-tree",
+      folder: "qwen3-tts/hf",
+      repoId: "example/tts-tree",
+      revision: "a".repeat(40),
+      allowPatterns: ["config.json", "model.safetensors"],
+      required: true,
+      provider: "hf-snapshot",
+    } as const;
+    const service = serviceFor(store, { ref: modelRef(), items: [snapshotPlanItem] });
+    const op = operationRow({
+      operationId: "op-snap-noanchor",
+      state: "failed",
+      finishedAt: Date.now(),
+      items: [{ key: "model:family:snapshot:tts-tree", kind: "snapshot", state: "failed", errorCode: "artifact/stalled" }],
+    });
+    const verified = await service.verifyOperation(op);
+    assert.equal(verified.state, "failed", "a tree without its weights anchor is not the declared truth");
+    assert.equal(verified.items[0]?.state, "failed");
+    assert.equal(verified.items[0]?.errorCode, "artifact/stalled");
+  });
+
+  test("a glob-only allow pattern never re-admits — exact names are the probe's whole vocabulary", async () => {
+    const store = root();
+    const tree = join(store, "qwen3-tts", "hf", "tts-tree");
+    mkdirSync(tree, { recursive: true });
+    writeFileSync(join(tree, "config.json"), "{}");
+    writeFileSync(join(tree, "model.safetensors"), "weights");
+    // the files are ALL there — but the DECL names a glob, and the
+    // probe enumerates EXACT names only: a glob row can never verify
+    const snapshotPlanItem = {
+      kind: "snapshot",
+      key: "model:family:snapshot:tts-tree",
+      owner: "family",
+      id: "family",
+      name: "tts-tree",
+      folder: "qwen3-tts/hf",
+      repoId: "example/tts-tree",
+      revision: "a".repeat(40),
+      allowPatterns: ["*.json", "*.safetensors"],
+      required: true,
+      provider: "hf-snapshot",
+    } as const;
+    const service = serviceFor(store, { ref: modelRef(), items: [snapshotPlanItem] });
+    const op = operationRow({
+      operationId: "op-snap-glob",
+      state: "failed",
+      finishedAt: Date.now(),
+      items: [{ key: "model:family:snapshot:tts-tree", kind: "snapshot", state: "failed", errorCode: "artifact/stalled" }],
+    });
+    const verified = await service.verifyOperation(op);
+    assert.equal(verified.state, "failed", "a glob allow pattern names nothing exact — the probe cannot verify it");
+    assert.equal(verified.items[0]?.state, "failed");
+  });
+
+  // THE BLOCKED EXCLUSION (fold audit F4c): a BLOCKED item is not a
+  // stall victim — it is a semantic refusal (byo, unconfirmed
+  // external, manager-unavailable) that disk truth has no voice on.
+  // The re-admit filter admits failed ONLY; blocked keeps verbatim.
+  test("a BLOCKED item is never re-admitted — a semantic refusal outranks disk truth", async () => {
+    const store = root();
+    mkdirSync(join(store, "checkpoints"), { recursive: true });
+    writeFileSync(join(store, "checkpoints", "one.bin"), BYTES);
+    const service = serviceFor(store, { ref: modelRef(), items: [modelItem()] });
+    const op = operationRow({
+      operationId: "op-blocked",
+      state: "blocked",
+      finishedAt: Date.now(),
+      items: [{
+        key: "model:family:one.bin",
+        kind: "model",
+        state: "blocked",
+        errorCode: "provisioning/byo",
+        detail: "this endpoint is read-only for estate provisioning",
+      }],
+    });
+    const verified = await service.verifyOperation(op);
+    assert.equal(verified.state, "blocked", "the blocked verdict keeps verbatim — bytes on disk change nothing");
+    assert.equal(verified.items[0]?.state, "blocked");
+    assert.equal(verified.items[0]?.errorCode, "provisioning/byo");
+  });
+
+  // THE MIXED-KIND LIFT (fold audit F3, 2026-11-12): the kind gate
+  // lives in TWO spots (the failed-item filter AND the loop's heal
+  // gate) — a mixed-kind op (failed model + failed snapshot, BOTH
+  // truths on disk) lifts whole only when BOTH spots admit BOTH
+  // kinds. A one-spot future edit heals single-kind ops and silently
+  // diverges here; this arm is the two-spot divergence's wall.
+  test("a mixed-kind op (model bytes + snapshot tree, both on disk) lifts whole — the two-spot kind gate admits both kinds everywhere", async () => {
+    const store = root();
+    mkdirSync(join(store, "checkpoints"), { recursive: true });
+    writeFileSync(join(store, "checkpoints", "one.bin"), BYTES);
+    const tree = join(store, "qwen3-tts", "hf", "tts-tree");
+    mkdirSync(tree, { recursive: true });
+    writeFileSync(join(tree, "config.json"), "{}");
+    writeFileSync(join(tree, "model.safetensors"), "weights");
+    const snapshotPlanItem = {
+      kind: "snapshot",
+      key: "model:family:snapshot:tts-tree",
+      owner: "family",
+      id: "family",
+      name: "tts-tree",
+      folder: "qwen3-tts/hf",
+      repoId: "example/tts-tree",
+      revision: "a".repeat(40),
+      allowPatterns: ["config.json", "model.safetensors"],
+      required: true,
+      provider: "hf-snapshot",
+    } as const;
+    const service = serviceFor(store, { ref: modelRef(), items: [modelItem(), snapshotPlanItem] });
+    const op = operationRow({
+      operationId: "op-mixed-stall",
+      state: "failed",
+      finishedAt: Date.now(),
+      items: [
+        { key: "model:family:one.bin", kind: "model", state: "failed", errorCode: "artifact/stalled" },
+        { key: "model:family:snapshot:tts-tree", kind: "snapshot", state: "failed", errorCode: "artifact/stalled" },
+      ],
+    });
+    const verified = await service.verifyOperation(op);
+    assert.equal(verified.state, "active", "both kinds' disk truths lift the op whole");
+    assert.equal(verified.items[0]?.state, "active", "the model item heals by stat");
+    assert.equal(verified.items[1]?.state, "active", "the snapshot item heals by tree");
+    assert.match(verified.items[0]?.detail ?? "", /re-admitted by disk truth/);
+    assert.match(verified.items[1]?.detail ?? "", /re-admitted by disk truth/);
+  });
 });

@@ -263,6 +263,91 @@ describe('MediaPanel — stubbed feed over the gallery routes', () => {
     expect(chips).toContain('SEGMENT')
   })
 
+  // PREVIEWS AUDIT F5 (2026-11-12): the window-WITH-poster face law
+  // (face = the window's own url — MediaPanel's `poster !== ''`
+  // branch) had flatten-level judges only; this render arm walks the
+  // same branch through the DOM: the window's own film plays in its
+  // tile, its OWN poster still rides the attr, and the chip names it.
+  it('a window with its own poster renders its own film + poster and wears SEGMENT', async () => {
+    vi.stubGlobal('fetch', (url: string) =>
+      url === '/infer-gallery/runs'
+        ? runsFeed([run({ artifacts: [
+            { url: '/v/film.mp4', name: 'film.mp4', type: 'video' },
+            { url: '/v/film_w1_ab12f.mp4', name: 'film_w1_ab12f.mp4', type: 'video' },
+            { url: '/v/film_w1_ab12f_last_frame.png', name: 'film_w1_ab12f_last_frame.png', type: 'image' },
+          ] })])
+        : draftsFeed([]))
+    render(<MediaPanel />)
+    const windowTile = await waitFor(() => {
+      const v = document.querySelector('button video[src="/v/film_w1_ab12f.mp4"]') as HTMLVideoElement | null
+      expect(v).not.toBeNull()
+      return v as HTMLVideoElement
+    })
+    // FACE = the window's OWN url (never the final film — the poster
+    // hit means the window has its own presentable frame)
+    expect(windowTile.getAttribute('poster')).toBe('/v/film_w1_ab12f_last_frame.png')
+    const chips = Array.from(document.querySelectorAll('button span')).map((s) => s.textContent)
+    expect(chips).toContain('SEGMENT')
+    // the FINAL keeps its own tile beside it, chipless
+    expect(document.querySelector('button video[src="/v/film.mp4"]')).not.toBeNull()
+  })
+
+  // PREVIEWS AUDIT F4 (2026-11-12): the client window pattern is the
+  // WHOLE vocabulary, engine-agnostic — a non-h3 run whose final
+  // film is coincidentally window-suffixed still wears SEGMENT (the
+  // server's h3-shaped film-lead never enters this classification).
+  // Judged law: the suffixed artifact is a window, its face is the
+  // run's true final film (the film-lead fallback branch).
+  it('a coincidentally window-suffixed final on a non-h3 run wears SEGMENT, face = the true final', async () => {
+    vi.stubGlobal('fetch', (url: string) =>
+      url === '/infer-gallery/runs'
+        ? runsFeed([run({ artifacts: [
+            { url: '/v/hero.mp4', name: 'hero.mp4', type: 'video' },
+            // a vacation clip whose stem HAPPENS to spell like a window
+            { url: '/v/trip_w2_vac_.mp4', name: 'trip_w2_vac_.mp4', type: 'video' },
+          ] })])
+        : draftsFeed([]))
+    render(<MediaPanel />)
+    // the suffixed artifact's tile paints the TRUE final as its face
+    const segmentTile = await waitFor(() => {
+      const v = document.querySelector('button video[src="/v/hero.mp4"]') as HTMLVideoElement | null
+      expect(v).not.toBeNull()
+      return v as HTMLVideoElement
+    })
+    expect(segmentTile).toBeTruthy()
+    const chips = Array.from(document.querySelectorAll('button span')).map((s) => s.textContent)
+    expect(chips).toContain('SEGMENT')
+    expect(chips.filter((c) => c === 'SEGMENT')).toHaveLength(1)
+  })
+
+  // PREVIEWS AUDIT F6 (2026-11-12, JOURNEY): the seam hop — a run
+  // row in the SERVER'S EXACT STAMPED SHAPE (runs-list.spec deepEq-
+  // uals this row: row.truncated + the trailing marker artifact
+  // inside the array) rides decode + render whole: 3 tiles paint,
+  // the stat line chips the cap, and the marker artifact itself
+  // never becomes a phantom tile.
+  it('a served capped row (row field + trailing marker artifact, the server shape) renders 3 tiles, chips capped, paints no phantom', async () => {
+    vi.stubGlobal('fetch', (url: string) =>
+      url === '/infer-gallery/runs'
+        ? runsFeed([run({
+            truncated: { listed: 3, total: 6 },
+            artifacts: [
+              { url: '/v/i0.png', name: 'i0.png', type: 'image' },
+              { url: '/v/i1.png', name: 'i1.png', type: 'image' },
+              { url: '/v/i2.png', name: 'i2.png', type: 'image' },
+              // the server's trailing marker, verbatim (no url/name/type)
+              { truncated: true, listed: 3, total: 6 },
+            ],
+          })])
+        : draftsFeed([]))
+    render(<MediaPanel />)
+    await waitFor(() => { expect(screen.getByText(/1 runs · 3 artifacts/)).toBeTruthy() })
+    expect(screen.getByText(/1 capped/)).toBeTruthy()
+    // exactly three tiles — the marker artifact never renders
+    const tiles = Array.from(document.querySelectorAll('button img'))
+    expect(tiles).toHaveLength(3)
+  })
+
   it('the wand is a history icon (no CARDS text on the tile)', async () => {
     vi.stubGlobal('fetch', (url: string) =>
       url === '/infer-gallery/runs'
@@ -1321,5 +1406,37 @@ describe('MediaPanel — the boot-staged stale face', () => {
       expect(document.querySelector('button img[src="/v/fresh.png"]')).not.toBeNull()
     })
     expect(document.body.textContent).not.toMatch(/stale — refreshing/)
+  })
+
+  // BOOT-FEED AUDIT F1 (2026-11-12): the flows face consumes its own
+  // feed's stale flag — a boot-staged drafts cache never hydrates
+  // silently while the artifacts face chips its own. Same law, every
+  // face (the §3.4 single-arm class).
+  it('the flows tab chips its boot-staged drafts face and clears it when the fresh feed seats', async () => {
+    localStorage.setItem('melite:feed:/infer-gallery/drafts', JSON.stringify({
+      drafts: [{ draft_id: 'd1', name: 'cached card', model: 'qwen' }],
+      errors: [],
+    }))
+    let release: (() => void) | null = null
+    const gate = new Promise<void>((res) => { release = res })
+    vi.stubGlobal('fetch', (url: string) =>
+      url === '/infer-gallery/runs'
+        ? runsFeed([])
+        : gate.then(() => draftsFeed([{ draft_id: 'd2', name: 'fresh card', model: 'qwen' }])))
+    render(<MediaPanel />)
+    // switch to the flows face — the CACHED draft paints with the
+    // stale chip on the drafts stat line, no fetch answered yet
+    fireEvent.click(await screen.findByText(/Flows 1/))
+    const statLine = await waitFor(() => {
+      const el = document.querySelector('[data-infer-media-drafts-stat]') as HTMLElement | null
+      expect(el).not.toBeNull()
+      return el as HTMLElement
+    })
+    expect(statLine.textContent).toMatch(/^1 drafts · stale — refreshing$/)
+    release!()
+    // the fresh drafts feed seats: the chip clears, the fresh row shows
+    await waitFor(() => { expect(screen.getByText('fresh card')).toBeTruthy() })
+    const cleared = document.querySelector('[data-infer-media-drafts-stat]') as HTMLElement | null
+    expect(cleared?.textContent).toBe('1 drafts')
   })
 })

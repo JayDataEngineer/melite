@@ -437,6 +437,10 @@ window.__ModuleLoader__.load({
 			/** The header's boot-staged face: the persisted feed is painted
 			*  while the fresh one seats (E2-3 arm 2 — instant first paint). */
 			statStale: " · stale — refreshing",
+			/** The flows tab's stat body (the drafts face's own count — the
+			*  stale suffix rides it when the drafts feed is boot-staged,
+			*  boot-feed audit F1: the flows tab never hydrates silently). */
+			statDrafts: (p) => `${p.count} drafts`,
 			/** The window tile's segment chip: the face shown is the run's
 			*  final film, not this window segment's own frame (the previews
 			*  cure class 2 — a poster-less video tile wears the film lead). */
@@ -3256,111 +3260,123 @@ window.__ModuleLoader__.load({
 						},
 						children: [chip("all", galleryCopy.chipAll), KIND_ORDER.map((k) => chip(k, KIND_LABEL[k]))]
 					}),
-					tab === "flows" ? /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [uiError !== "" ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)(ErrorBanner, { children: galleryCopy.openFailed({ error: uiError }) }) : null, drafts.length === 0 ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Empty, { children: galleryCopy.emptyDrafts }) : /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
-						"data-infer-media-drafts": "1",
-						style: {
-							display: "flex",
-							flexDirection: "column",
-							gap: 6
-						},
-						children: drafts.map((d) => /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("button", {
-							onClick: () => {
-								openDraft(d.draft_id ?? "");
+					tab === "flows" ? /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [
+						/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+							"data-infer-media-drafts-stat": "1",
+							style: {
+								fontSize: 11,
+								color: labelSecondary2,
+								marginBottom: 8
 							},
-							"data-draft": d.draft_id,
-							"aria-label": galleryCopy.restoreDraftAria({ name: d.name || d.draft_id || "" }),
+							children: [galleryCopy.statDrafts({ count: drafts.length }), draftsFeed.stale ? galleryCopy.statStale : ""]
+						}),
+						uiError !== "" ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)(ErrorBanner, { children: galleryCopy.openFailed({ error: uiError }) }) : null,
+						drafts.length === 0 ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Empty, { children: galleryCopy.emptyDrafts }) : /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+							"data-infer-media-drafts": "1",
 							style: {
 								display: "flex",
-								alignItems: "center",
-								gap: 10,
-								textAlign: "left",
-								border: "1px solid " + borderL2,
-								borderRadius: 10,
-								padding: "8px 12px",
-								background: gradientStage,
-								cursor: "pointer",
-								color: labelPrimary1,
-								fontFamily: "inherit"
+								flexDirection: "column",
+								gap: 6
 							},
-							children: [
-								/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-									style: {
-										fontSize: 15,
-										lineHeight: 0,
-										color: stateWarnPrimary1
-									},
-									children: "▸"
-								}),
-								/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
-									style: {
-										flex: 1,
-										minWidth: 0,
-										display: "flex",
-										flexDirection: "column",
-										gap: 2
-									},
-									children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+							children: drafts.map((d) => /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("button", {
+								onClick: () => {
+									openDraft(d.draft_id ?? "");
+								},
+								"data-draft": d.draft_id,
+								"aria-label": galleryCopy.restoreDraftAria({ name: d.name || d.draft_id || "" }),
+								style: {
+									display: "flex",
+									alignItems: "center",
+									gap: 10,
+									textAlign: "left",
+									border: "1px solid " + borderL2,
+									borderRadius: 10,
+									padding: "8px 12px",
+									background: gradientStage,
+									cursor: "pointer",
+									color: labelPrimary1,
+									fontFamily: "inherit"
+								},
+								children: [
+									/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 										style: {
-											fontSize: 13,
-											fontWeight: 600,
-											overflow: "hidden",
-											textOverflow: "ellipsis",
-											whiteSpace: "nowrap"
+											fontSize: 15,
+											lineHeight: 0,
+											color: stateWarnPrimary1
 										},
-										children: d.name || d.draft_id
-									}), /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
+										children: "▸"
+									}),
+									/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
 										style: {
-											fontSize: 10,
-											fontFamily: "ui-monospace, monospace",
-											color: labelSecondary2,
-											overflow: "hidden",
-											textOverflow: "ellipsis",
-											whiteSpace: "nowrap"
+											flex: 1,
+											minWidth: 0,
+											display: "flex",
+											flexDirection: "column",
+											gap: 2
 										},
-										children: [
-											d.model || galleryCopy.draftKindFallback,
-											" · ",
-											d.draft_id
-										]
-									})]
-								}),
-								typeof d.source === "string" && d.source !== "" ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-									style: {
-										fontSize: 9,
-										color: textTertiary2,
-										border: "1px solid " + borderL2,
-										borderRadius: 6,
-										padding: "2px 6px"
-									},
-									children: d.source.replace(/^https?:\/\//, "")
-								}) : null,
-								restoringId !== "" && restoringId === d.draft_id ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-									style: {
-										fontSize: 9,
-										fontWeight: 700,
-										letterSpacing: "0.4px",
-										color: labelPrimary1,
-										border: "1px solid " + borderL2,
-										borderRadius: 6,
-										padding: "2px 6px",
-										background: fillSubtle2
-									},
-									children: galleryCopy.restoringAction
-								}) : /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-									style: {
-										fontSize: 9,
-										fontWeight: 700,
-										letterSpacing: "0.4px",
-										color: labelPrimary1,
-										border: "1px solid " + borderL2,
-										borderRadius: 6,
-										padding: "2px 6px"
-									},
-									children: galleryCopy.restoreAction
-								})
-							]
-						}, d.draft_id ?? Math.random()))
-					})] }) : /* @__PURE__ */ (0, react_jsx_runtime.jsx)(FeedErrors, { errors: gatewayErrors }),
+										children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+											style: {
+												fontSize: 13,
+												fontWeight: 600,
+												overflow: "hidden",
+												textOverflow: "ellipsis",
+												whiteSpace: "nowrap"
+											},
+											children: d.name || d.draft_id
+										}), /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
+											style: {
+												fontSize: 10,
+												fontFamily: "ui-monospace, monospace",
+												color: labelSecondary2,
+												overflow: "hidden",
+												textOverflow: "ellipsis",
+												whiteSpace: "nowrap"
+											},
+											children: [
+												d.model || galleryCopy.draftKindFallback,
+												" · ",
+												d.draft_id
+											]
+										})]
+									}),
+									typeof d.source === "string" && d.source !== "" ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+										style: {
+											fontSize: 9,
+											color: textTertiary2,
+											border: "1px solid " + borderL2,
+											borderRadius: 6,
+											padding: "2px 6px"
+										},
+										children: d.source.replace(/^https?:\/\//, "")
+									}) : null,
+									restoringId !== "" && restoringId === d.draft_id ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+										style: {
+											fontSize: 9,
+											fontWeight: 700,
+											letterSpacing: "0.4px",
+											color: labelPrimary1,
+											border: "1px solid " + borderL2,
+											borderRadius: 6,
+											padding: "2px 6px",
+											background: fillSubtle2
+										},
+										children: galleryCopy.restoringAction
+									}) : /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+										style: {
+											fontSize: 9,
+											fontWeight: 700,
+											letterSpacing: "0.4px",
+											color: labelPrimary1,
+											border: "1px solid " + borderL2,
+											borderRadius: 6,
+											padding: "2px 6px"
+										},
+										children: galleryCopy.restoreAction
+									})
+								]
+							}, d.draft_id ?? Math.random()))
+						})
+					] }) : /* @__PURE__ */ (0, react_jsx_runtime.jsx)(FeedErrors, { errors: gatewayErrors }),
 					tab === "artifacts" && deleteNote !== "" ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)(ErrorBanner, { children: deleteNote }) : null,
 					tab === "artifacts" && uiError !== "" ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)(ErrorBanner, { children: galleryCopy.openFailed({ error: uiError }) }) : null,
 					tab === "artifacts" && (feedError !== "" ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)(ErrorBanner, { children: galleryCopy.feedFailed({ error: feedError }) }) : loading && items.length === 0 ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Empty, { children: galleryCopy.loadingRuns }) : shown.length === 0 ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Empty, { children: galleryCopy.noArtifacts }) : /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {

@@ -865,6 +865,14 @@ export function MediaPanel({ useTabInfo, sessionId }: { useTabInfo?: () => TabIn
 
       {tab === 'flows'
         ? (<>
+            {/* THE DRAFTS STAT LINE (boot-feed audit F1, 2026-11-12):
+             * the flows face consumes its feed's stale flag — a
+             * boot-staged drafts cache never hydrates silently while
+             * the artifacts face chips its own (the §3.4 single-arm
+             * class: one law, every face). */}
+            <div data-infer-media-drafts-stat="1" style={{ fontSize: 11, color: labelSecondary2, marginBottom: 8 }}>
+              {galleryCopy.statDrafts({ count: drafts.length })}{draftsFeed.stale ? galleryCopy.statStale : ''}
+            </div>
             {uiError !== ''
               ? <ErrorBanner>{galleryCopy.openFailed({ error: uiError })}</ErrorBanner>
               : null}

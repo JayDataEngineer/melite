@@ -307,6 +307,40 @@ describe("restoreRunToBench — the card back into a flow", () => {
     });
   });
 
+  // THE MULTI-ROW ID TIER (previews fold audit F3, 2026-11-12): a
+  // multi-row bench run stamps EACH row's own id as the stage id (no
+  // benchStageId seam — the namespaces agree by construction), so
+  // the restore join carries by the ID tier alone. The judge makes
+  // the tiers DISAGREE: run order is reversed, so the position tier
+  // (active — counts match) would hand s_1's failure to s_0's tile;
+  // the id tier must win the ?? precedence and carry each row its
+  // OWN outcome. Three source comments claimed this identity; zero
+  // specs judged it until here.
+  test("a multi-row run stamped with each row's own id carries BOTH rows by the id tier (position disagrees)", async () => {
+    const { calls } = mountFakes({
+      draftStages: [{ id: "s_0", card: "h3-film" }, { id: "s_1", card: "sfx" }],
+      benchDoc: { draft_id: "bench-main", rev: 2, stages: [], log: [] },
+    });
+    const report = await restoreRunToBench(run({
+      stages: [
+        { id: "s_1", status: "failed", error: "engine died" },
+        { id: "s_0", status: "completed", url: "film/a.mp4" },
+      ],
+    }), 'main');
+    expect(report.carried).toBe(2);
+    expect(report.notes).toHaveLength(0);
+    const patches = calls.filter((c) => c.method === "drafts/patch");
+    expect(patches).toHaveLength(2);
+    expect(patches[0]?.args).toMatchObject({
+      draftId: "bench-main", stageId: "s_0",
+      patch: { runStatus: "done", result: { run_id: "r1", url: "film/a.mp4" } },
+    });
+    expect(patches[1]?.args).toMatchObject({
+      draftId: "bench-main", stageId: "s_1",
+      patch: { runStatus: "failed" },
+    });
+  });
+
   test("a join that finds nothing is VOICED — carried 0 never silent (the burn's silent class)", async () => {
     const { calls } = mountFakes({
       draftStages: [{ id: "s_0", card: "h3-film" }, { id: "s_1", card: "sfx" }],

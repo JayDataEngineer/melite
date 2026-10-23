@@ -16982,6 +16982,10 @@ window.__ModuleLoader__.load({
 			/** The header's boot-staged face: the persisted feed is painted
 			*  while the fresh one seats (E2-3 arm 2 — instant first paint). */
 			statStale: " · stale — refreshing",
+			/** The flows tab's stat body (the drafts face's own count — the
+			*  stale suffix rides it when the drafts feed is boot-staged,
+			*  boot-feed audit F1: the flows tab never hydrates silently). */
+			statDrafts: (p) => `${p.count} drafts`,
 			/** The window tile's segment chip: the face shown is the run's
 			*  final film, not this window segment's own frame (the previews
 			*  cure class 2 — a poster-less video tile wears the film lead). */
