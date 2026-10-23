@@ -987,7 +987,7 @@ export function MediaPanel({ useTabInfo, sessionId }: { useTabInfo?: () => TabIn
                               position: 'absolute', left: 6, bottom: 6, background: fillSubtle2,
                               borderRadius: 6, padding: '3px 6px', lineHeight: 0, color: labelPrimary4,
                               fontSize: 10, letterSpacing: '0.04em',
-                            }}>SEGMENT</span>
+                            }}>{galleryCopy.chipSegment}</span>
                           )
                         : null}
                       <TileBadge item={it} />

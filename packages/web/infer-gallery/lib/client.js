@@ -437,6 +437,10 @@ window.__ModuleLoader__.load({
 			/** The header's boot-staged face: the persisted feed is painted
 			*  while the fresh one seats (E2-3 arm 2 — instant first paint). */
 			statStale: " · stale — refreshing",
+			/** The window tile's segment chip: the face shown is the run's
+			*  final film, not this window segment's own frame (the previews
+			*  cure class 2 — a poster-less video tile wears the film lead). */
+			chipSegment: "SEGMENT",
 			/** The flows tab pill face. */
 			tabFlows: (p) => `Flows ${p.count}`,
 			/** The artifacts tab pill face. */
@@ -3450,7 +3454,7 @@ window.__ModuleLoader__.load({
 										fontSize: 10,
 										letterSpacing: "0.04em"
 									},
-									children: "SEGMENT"
+									children: galleryCopy.chipSegment
 								}) : null,
 								/* @__PURE__ */ (0, react_jsx_runtime.jsx)(TileBadge, { item: it }),
 								selectMode ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
