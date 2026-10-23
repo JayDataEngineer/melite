@@ -235,10 +235,14 @@ export const mesh = {
         // THE TEMPLATE HAS NO MASK BRIDGE: the crop eats the photo
         // (LoadImage) verbatim — a MaskToImage-sourced crop feeds the
         // silhouette, and the silhouette starves every appearance
-        // feature (the 2026-10-27 live burn). ImageCropToMask accepts
-        // IMAGE for its masks leg.
+        // feature (the 2026-10-27 live burn). The masks leg demands a
+        // MASK (live object_info + a 400'd /prompt drive, 2026-10-23:
+        // "return_type_mismatch ... input_type(MASK)"), so the region
+        // rides ImageToMask of the SAME photo — images stay the photo
+        // verbatim (appearance features), the region is a real mask.
+        const mask = g.node('ImageToMask', { image: img, channel: 'red' }).out();
         const cropped = g.node('ImageCropToMask', {
-            images: img, masks: img,
+            images: img, masks: mask,
             pad_factor: 1.1, width: 1024, height: 1024,
             // pin autofills leaves in place (core defaults)
             background: '#000000', grow_mask: 0,

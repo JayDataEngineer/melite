@@ -77,6 +77,21 @@ describe("the trellis2-native mesh lane (the arm cases the kit wall used)", () =
     assert.ok(!classes(row).includes("LoadImage"), "no loader carries the spell on trellis");
     const crop = Object.values(row).find((n) => n.class_type === "ImageCropToMask")!;
     assert.equal(crop.inputs.images, "$src", "the spell rides the lane verbatim — the crop eats it");
+    // THE MASKS-LEG TYPE LAW (live 400, 2026-10-23: the engine
+    // refuses masks: IMAGE with return_type_mismatch) — the region
+    // rides ImageToMask of the SAME source (a real MASK), never the
+    // loader's IMAGE leg direct. Cure-out reds here.
+    const bridgeIds = Object.entries(row)
+      .filter(([, n]) => (n as { class_type: string }).class_type === "ImageToMask")
+      .map(([id]) => id);
+    assert.equal(bridgeIds.length, 1, "one ImageToMask bridge rides");
+    const masksHandle = crop.inputs.masks as unknown;
+    assert.ok(
+      bridgeIds.some((id) =>
+        Array.isArray(masksHandle) ? masksHandle[0] === id : String(masksHandle).startsWith(`${id}.`)),
+      "the masks leg is the bridge's MASK output",
+    );
+    assert.equal(row[bridgeIds[0]!]!.inputs.image, "$src", "the bridge eats the same spell — the photo stays the region source");
     const cond = Object.values(row).find((n) => n.class_type === "Trellis2Conditioning")!;
     assert.ok(String(cond.inputs.image).startsWith("ImageCropToMask."), "the conditioning rides the shared crop");
   });

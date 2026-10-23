@@ -70,19 +70,27 @@ describe.skipIf(!ENGINE_FREE)('cards-gpu: image-gen (the uncovered families)', (
 })
 
 describe.skipIf(!ENGINE_FREE)('cards-gpu: image-edit (the 2511 lane)', () => {
-  it.skipIf(!weightsPresent('qwen-img-edit-2511'))('qwen-img-edit-2511 default: the lightning edit lane composes and RUNS', async () => {
-    await withWorld('cards-gpu-2511', async (w) => {
-      const anchor = await uploadAnchorPng('2511 default')
-      const s = await runCard(w, {
-        model: 'qwen-img-edit-2511', prompt: 'make the cube blue', image1: anchor,
-      }, '2511 default')
-      assert.ok(byClass(s, 'TextEncodeQwenImageEditPlus').length >= 1, 'the 2511 text arm encodes')
-      assert.equal(byClass(s, 'VAEEncode').length, 1, 'the 2511 lane VAE-encodes (the 2.1 lane never does)')
-      assert.equal(byClass(s, 'KSampler').length, 1, 'one sampler')
-      assert.ok(byClass(s, 'SaveImage').length >= 1, 'the edit saves')
-      assert.equal(firstBytes(s).readUInt32BE(0), 0x89504e47, 'the edit artifact is a real PNG')
+  // THE SOFT-RETIRE POSTURE, LIVE (2026-11-08 survivor arc: the 2.1
+  // lane won — both 2511 variants carry hide_from_dropdown; the unit
+  // wall cards-lane-law.spec pins the prepareCardParams throw, this
+  // row pins it through the REAL compose door). The lane's live
+  // coverage rides the surviving family: recipes-gpu's
+  // 'qwen-img-edit-21 edit' rows. A retired address must refuse
+  // LOUD forever, never queue a run — the old row pressed the
+  // retired coordinate and could only red.
+  it('qwen-img-edit-2511: the soft-retired address refuses LOUD at the compose door (never queues)', async () => {
+    await withWorld('cards-gpu-2511-retired', async (w) => {
+      const anchor = await uploadAnchorPng('2511 retired')
+      await assert.rejects(
+        () => w.svc.start(
+          { draft_id: 'd1', test: false, model: 'qwen-img-edit-2511', prompt: 'make the cube blue', image1: anchor } as never,
+          new AbortController().signal,
+        ),
+        /is not offered \(the variant route is hidden from the dropdown\)/,
+        'the retired address refuses with the hidden-route voice',
+      )
     })
-  }, 600_000)
+  }, 60_000)
 })
 
 describe.skipIf(!ENGINE_FREE)('cards-gpu: tagger, upscale, mask, input-prep (the tool lanes)', () => {

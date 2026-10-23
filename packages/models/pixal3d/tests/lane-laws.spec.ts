@@ -76,6 +76,21 @@ describe("the pixal3d mesh lane (the arm cases the kit wall used)", () => {
     assert.ok(!classes(row).includes("LoadImage"), "no loader carries the spell on pixal");
     const crop = Object.values(row).find((n) => n.class_type === "ImageCropToMask")!;
     assert.equal(crop.inputs.images, "$src", "the pixal crop reads the wired tensor verbatim");
+    // THE MASKS-LEG TYPE LAW (live 400, 2026-10-23: the engine
+    // refuses masks: IMAGE with return_type_mismatch) — the region
+    // rides ImageToMask of the SAME source (a real MASK). Cure-out
+    // reds here.
+    const bridgeIds = Object.entries(row)
+      .filter(([, n]) => (n as { class_type: string }).class_type === "ImageToMask")
+      .map(([id]) => id);
+    assert.equal(bridgeIds.length, 1, "one ImageToMask bridge rides");
+    const masksHandle = crop.inputs.masks as unknown;
+    assert.ok(
+      bridgeIds.some((id) =>
+        Array.isArray(masksHandle) ? masksHandle[0] === id : String(masksHandle).startsWith(`${id}.`)),
+      "the masks leg is the bridge's MASK output",
+    );
+    assert.equal(row[bridgeIds[0]!]!.inputs.image, "$src", "the bridge eats the same spell — the photo stays the region source");
   });
 
 // THE PIXAL FOV GATE, at the lane's new home (the kit-arm retirement,
