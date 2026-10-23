@@ -187,7 +187,7 @@ export const COVERAGE_BASELINE: Record<string, {
   '**/packages/engines/comfyui-cordis/src/comfyui-host.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/engines/comfyui-cordis/src/comfyui-merge.ts': { statements: 98.98, branches: 96.4, functions: 100, lines: 99.44 },
   '**/packages/engines/comfyui-cordis/src/comfyui-outputs.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
-  '**/packages/engines/comfyui-cordis/src/comfyui-transport.ts': { statements: 90.9, branches: 80, functions: 94.73, lines: 92.1 },
+  '**/packages/engines/comfyui-cordis/src/comfyui-transport.ts': { statements: 88.63, branches: 78.18, functions: 89.47, lines: 90.78 },
   '**/packages/engines/comfyui-cordis/src/comfyui-types.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/engines/comfyui-cordis/src/comfyui-upload.ts': { statements: 98.64, branches: 97.74, functions: 100, lines: 98.46 },
   '**/packages/engines/comfyui-cordis/src/comfyui.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },

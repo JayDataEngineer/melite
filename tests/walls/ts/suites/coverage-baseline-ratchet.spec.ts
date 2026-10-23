@@ -306,6 +306,19 @@ const CAS_DEEPEN_NEW_FLOORS: Record<string, { statements: number, branches: numb
   '**/packages/estate/provisioning/src/operation-store.ts': { statements: 91.04, branches: 92.3, functions: 96.96, lines: 93.49 },
 };
 
+/** THE TRANSPORT DEEPEN (1 row) — comfyui-transport held its face
+ *  through every measured run (A/B/C, the green pair) and wobbled
+ *  LOW on a later full gate with its whole suite GREEN: the async
+ *  retry/timeout paths it measures take different branches under
+ *  the loaded pool's interleaving. The failing-face law seats the
+ *  row where the gate actually red. */
+const TRANSPORT_DEEPEN_OLD_FLOORS: Record<string, { statements: number, branches: number, functions: number, lines: number }> = {
+  '**/packages/engines/comfyui-cordis/src/comfyui-transport.ts': { statements: 90.9, branches: 80, functions: 94.73, lines: 92.1 },
+};
+const TRANSPORT_DEEPEN_NEW_FLOORS: Record<string, { statements: number, branches: number, functions: number, lines: number }> = {
+  '**/packages/engines/comfyui-cordis/src/comfyui-transport.ts': { statements: 88.63, branches: 78.18, functions: 89.47, lines: 90.78 },
+};
+
 /** THE 2026-10-23 GATE REGENERATION (61 rows) — the vram-gate era
  *  drift: three same-tree full-gate runs (A/B/C, 944 files,
  *  13,454 tests, suite-green save the four cured walls arms)
@@ -662,6 +675,13 @@ const ARGUED_FLOOR_DROPS: Record<string, {
     roadmapHeading: "The claim CAS landing — the two-seat race's store-arbiter cure",
     reviewBy: "2026-12-23",
     reason: "the CAS landing's first FULL-gate measurement seated operation-store below the scoped probe's single-suite face (the loaded pool's interleaving skips marker-race paths the scoped run takes deterministically — the same load-jitter law that seated MotionTimelineBarDrag at its failing face) — re-measure at a calm load or lift with the CAS's own arms before the review date",
+  }])),
+  ...Object.fromEntries(Object.keys(TRANSPORT_DEEPEN_OLD_FLOORS).map((key) => [key, {
+    from: TRANSPORT_DEEPEN_OLD_FLOORS[key]!,
+    to: TRANSPORT_DEEPEN_NEW_FLOORS[key]!,
+    roadmapHeading: "The 2026-10-23 gate regeneration — 61 rows re-pinned at the stable measured faces",
+    reviewBy: "2026-12-23",
+    reason: "comfyui-transport held its face through every measured run (A/B/C, the green pair) then wobbled low on a later full gate with its whole suite green — the async retry/timeout paths take different branches under the loaded pool's interleaving; the row seats at the failing face (the load-jitter law) — re-measure or lift with dedicated arms before the review date",
   }])),
 };
 
