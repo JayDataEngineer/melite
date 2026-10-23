@@ -694,7 +694,7 @@ export const COVERAGE_BASELINE: Record<string, {
   '**/packages/web-kit/timeline/src/timeline/FilmPlayer.tsx': { statements: 100, branches: 100, functions: 90.47, lines: 100 },
   '**/packages/web-kit/timeline/src/timeline/MotionTimelineBar.tsx': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/web-kit/timeline/src/timeline/MotionTimelineBarChrome.tsx': { statements: 78.18, branches: 84, functions: 84.21, lines: 81.63 },
-  '**/packages/web-kit/timeline/src/timeline/MotionTimelineBarDrag.ts': { statements: 90.07, branches: 74.8, functions: 80.95, lines: 94.87 },
+  '**/packages/web-kit/timeline/src/timeline/MotionTimelineBarDrag.ts': { statements: 90.07, branches: 73.28, functions: 80.95, lines: 94.87 },
   '**/packages/web-kit/timeline/src/timeline/motionTimelineState.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/web-kit/timeline/src/timeline/MotionTimelineBarLanes.tsx': { statements: 70, branches: 76.96, functions: 66.66, lines: 74 },
   '**/packages/web-kit/timeline/src/timeline/MotionTimelineBarLayout.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },

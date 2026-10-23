@@ -179,9 +179,14 @@ describe("THE DURABLE DOWNLOAD SEAT (transient requests, durable claims, 2026-10
     assert.equal(durable.service.progressOf(id)?.state, "active");
     assert.equal(durable.fetched.length, 1);
     assert.deepEqual(transient.fetched, []);
-    // the requester's poll reads the durable seat's truth through the store
+    // the requester's poll reads the durable seat's truth through the
+    // store — the transit "active" word may already have settled to
+    // "installed" by the time this poll lands (the fetch is fast on
+    // fixture bytes; the law judges the claim + the landing: bytes
+    // at total under EITHER word)
     const foreign = await transient.service.readProgress(id);
-    assert.equal(foreign?.state, "active");
+    assert.ok(foreign?.state === "active" || foreign?.state === "installed",
+      `foreign state landed on neither the transit nor the settled word: ${foreign?.state}`);
     assert.equal(foreign?.bytes, foreign?.total);
   });
 

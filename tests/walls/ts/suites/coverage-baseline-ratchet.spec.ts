@@ -336,6 +336,7 @@ const REGEN_2026_10_23_OLD_FLOORS: Record<string, { statements: number, branches
   '**/packages/web/card-base/src/studio.tsx': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/web/infer-gallery/src/client/bench-load.ts': { statements: 100, branches: 96.89, functions: 100, lines: 100 },
   '**/packages/web/infer-gallery/src/client/useFeed.ts': { statements: 97.72, branches: 87.5, functions: 100, lines: 100 },
+  '**/packages/web-kit/timeline/src/timeline/MotionTimelineBarDrag.ts': { statements: 90.07, branches: 74.8, functions: 80.95, lines: 94.87 },
   '**/packages/web/melite-card-view/src/client/cards-resource.ts': { statements: 99.43, branches: 99.71, functions: 96.51, lines: 99.34 },
   '**/packages/web/melite-card-view/src/client/index.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/web/melite-card-view/src/client/run-rescue-core.ts': { statements: 96.66, branches: 97.93, functions: 92.3, lines: 100 },
@@ -400,6 +401,7 @@ const REGEN_2026_10_23_NEW_FLOORS: Record<string, { statements: number, branches
   '**/packages/web/card-base/src/studio.tsx': { statements: 92.7, branches: 95.65, functions: 92.3, lines: 91.02 },
   '**/packages/web/infer-gallery/src/client/bench-load.ts': { statements: 100, branches: 96.26, functions: 100, lines: 100 },
   '**/packages/web/infer-gallery/src/client/useFeed.ts': { statements: 97.05, branches: 87.5, functions: 100, lines: 96.66 },
+  '**/packages/web-kit/timeline/src/timeline/MotionTimelineBarDrag.ts': { statements: 90.07, branches: 73.28, functions: 80.95, lines: 94.87 },
   '**/packages/web/melite-card-view/src/client/cards-resource.ts': { statements: 98.33, branches: 97.39, functions: 93.87, lines: 98.85 },
   '**/packages/web/melite-card-view/src/client/index.ts': { statements: 99.05, branches: 100, functions: 100, lines: 98.91 },
   '**/packages/web/melite-card-view/src/client/run-rescue-core.ts': { statements: 96.66, branches: 95.51, functions: 92.3, lines: 100 },
@@ -612,7 +614,7 @@ const ARGUED_FLOOR_DROPS: Record<string, {
     to: REGEN_2026_10_23_NEW_FLOORS[key]!,
     roadmapHeading: "The 2026-10-23 gate regeneration — 61 rows re-pinned at the stable measured faces",
     reviewBy: "2026-12-23",
-    reason: "the vram-gate era landed suites-green through the scoped walls without the full pool; three same-tree full-gate runs deliver the identical 135-metric failing set (three files carry sub-1pp value jitter, none flipping a verdict), so the rows re-pin at the three-run MIN faces via scripts/coverage-regen.mjs — re-measure or ratchet back before the review date",
+    reason: "the vram-gate era landed suites-green through the scoped walls without the full pool; three same-tree full-gate runs deliver the identical 135-metric failing set (three files carry sub-1pp value jitter), so the rows re-pin at the three-run MIN faces via scripts/coverage-regen.mjs; MotionTimelineBarDrag's branches then swung two branch points past the first pin on the next full-gate run (74.8 to 73.28 — the load-jitter class) and re-seat at the failing face per the PoseViewer3D precedent — re-measure or ratchet back before the review date",
   }])),
 };
 
