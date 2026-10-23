@@ -112,7 +112,7 @@ import { agentEngine } from '@melite/engine-agent'
 interface Ctx {
   plugins: Array<{ name: string; cfg: unknown; row: { name?: string; apply?: (c: unknown, cfg: unknown) => unknown } }>
   plugin(row: { name?: string; apply?: unknown }, cfg?: unknown): unknown
-  get(name: string): undefined
+  get(name: string): unknown
   effect(fn: () => unknown): unknown
   root: { on(): () => void }
   loader?: { entries(): Array<{ options: { name: string } }> }
@@ -134,30 +134,47 @@ afterEach(() => {
 // loaderNames builds the loader stub the bundle gate judges — absent
 // (undefined) means a direct-mount rig with no tree, present means a
 // lane boot with exactly those composed entry modules.
+// seatsOverride seeds the fake's service store — every required seat
+// present by default (the healthy lane); the settle-gate arms below
+// delete one to replay the 2026-10-23 silent-green wedge.
 async function mount(
-  config?: { repoRoot?: string; blenderPath?: string; allowGuttedLane?: boolean; mcpEngines?: string | string[]; criticRoute?: string; agentRoute?: string; stateRoots?: string[] | string },
+  config?: { repoRoot?: string; blenderPath?: string; allowGuttedLane?: boolean; mcpEngines?: string | string[]; criticRoute?: string; agentRoute?: string; stateRoots?: string[] | string; seatSettleBudgetMs?: number },
   loaderNames?: string[],
+  seatsOverride?: Record<string, unknown>,
 ): Promise<Ctx> {
+  const seats: Record<string, unknown> = {
+    queue: { seat: 'queue' },
+    draftsRemote: { seat: 'draftsRemote' },
+    cardRegistry: { seat: 'cardRegistry' },
+    provisioning: { seat: 'provisioning' },
+    runs: { seat: 'runs' },
+    ...(seatsOverride ?? {}),
+  }
   const ctx: Ctx = {
     plugins: [],
     plugin(row, cfg) {
       ctx.plugins.push({ name: String(row?.name), cfg, row: row as Ctx['plugins'][0]['row'] })
       attempted.push({ name: String(row?.name) })
-      // The two composition rows are EXECUTED by the fake (the
+      // The composition rows are EXECUTED by the fake (the
       // real family registration is the provider's own package, not
       // the estate's): the mocked applies count mounts, and the
       // SETTLE (whenModelsArmed, mocked above) carries the refusal
-      // contract. Every other row stays recorded-but-unapplied
-      // (the header's law).
+      // contract. The subprocess stand-down wrapper executes too —
+      // its branch (mount vs stand down) is the wrapper's own
+      // contract, pinnable only by running it. Every other row
+      // stays recorded-but-unapplied (the header's law).
       if (
         (row?.name === 'engine-model-catalog' || row?.name === 'engine-model-census') &&
         typeof row?.apply === 'function'
       ) {
         return Promise.resolve((row.apply as (c: unknown, cfg: unknown) => unknown)(ctx, cfg))
       }
+      if (row?.name === 'estate-subprocess-row' && typeof row?.apply === 'function') {
+        return (row.apply as (c: unknown, cfg: unknown) => unknown)(ctx, cfg)
+      }
       return row
     },
-    get: (_name: string) => undefined,
+    get: (name: string) => seats[name],
     effect: (fn: () => unknown) => fn(),
     root: { on: () => () => {} },
     ...(loaderNames === undefined
@@ -188,8 +205,12 @@ describe('dispatch — mount order is load order', () => {
     expect(ctx.plugins.filter((p) => p.name === 'engine-model-catalog')).toHaveLength(1)
     expect(ctx.plugins[0]?.name).toBe('engine-model-catalog')
     expect(ctx.plugins[1]?.name).toBe('engine-model-census')
-    expect(ctx.plugins[2]?.name).toBe('LocalSubprocessRuntime')
-    expect(ctx.plugins[3]?.name).toBe('engine-contract')
+    // the subprocess stand-down wrapper records first, then the
+    // provider it mounts (2026-10-23: the wrapper exists because the
+    // host profile may already own the seat — see the stand-down arm)
+    expect(ctx.plugins[2]?.name).toBe('estate-subprocess-row')
+    expect(ctx.plugins[3]?.name).toBe('LocalSubprocessRuntime')
+    expect(ctx.plugins[4]?.name).toBe('engine-contract')
     expect(modelsLane.providerMounts).toBe(1)
     expect(modelsLane.gateMounts).toBe(1)
   })
@@ -612,6 +633,85 @@ describe('melite-engine-agent-row — the named brain or a loud refusal', () => 
       await expect(opts.skills.read('s')).resolves.toBe(null)
     } finally {
       rmSync(dir, { recursive: true, force: true })
+    }
+  })
+})
+
+// ── THE SETTLE GATE (2026-10-23 lane wedge) ─────────────────────────
+//
+// THE BURN: five consecutive lane boots served /v1/model-catalog 200
+// while every queue-plane door answered honest seatless 502s — a
+// dead queue row (gateway.lock held by a live pid) threw inside its
+// fire-and-forget fiber, cordis resolved the child's promise anyway,
+// and the estate settled GREEN with no seat mounted. The registry
+// walk found the fiber state=3 FAILED and the estate fiber state=2
+// ACTIVE in the same breath. The cure: after the rows loop, the
+// apply demands the queue plane's required seats go strict-active
+// (the same read the doors use) within a budget, or the WHOLE estate
+// refuses — a half-up lane is a failed lane, not a served one.
+describe('the settle gate — a half-up estate refuses loud', () => {
+  it('boots green when every required seat is strict-active', async () => {
+    const ctx = await mount({ repoRoot: '/tmp/pin', seatSettleBudgetMs: 500 })
+    expect(ctx.plugins.filter((p) => p.name === 'estate-queue')).toHaveLength(1)
+  })
+
+  it('a dead queue row fails the whole boot, naming the seat that never came up', async () => {
+    const outcome = await mount(
+      { repoRoot: '/tmp/pin', seatSettleBudgetMs: 50 },
+      undefined,
+      { queue: undefined },
+    ).catch((e: unknown) => e)
+    expect(outcome).toBeInstanceOf(Error)
+    expect((outcome as Error).message).toMatch(/refused to settle/)
+    expect((outcome as Error).message).toMatch(/\bqueue\b/)
+    // the refusal names the wedge class AND the doors symptom so the
+    // operator reads ONE log line and knows where to look
+    expect((outcome as Error).message).toMatch(/died silently/)
+    expect((outcome as Error).message).toMatch(/half-up/)
+  })
+
+  it('the budget is bounded — the gate never hangs the boot', async () => {
+    const t0 = Date.now()
+    await mount(
+      { repoRoot: '/tmp/pin', seatSettleBudgetMs: 120 },
+      undefined,
+      { runs: undefined, provisioning: undefined },
+    ).catch(() => {})
+    // 120ms budget + at most one 250ms poll tick past it: far under
+    // any hang threshold (a wedged await here would blow the test
+    // timeout instead)
+    expect(Date.now() - t0).toBeLessThan(2_000)
+  })
+})
+
+// ── THE SUBPROCESS STAND-DOWN (2026-10-23 double-registration) ──────
+//
+// THE BURN: the host profile's own spawn rows register the
+// LocalSubprocessRuntime service before the estate mounts, the
+// estate's row 1 then throws 'service "subprocess" has been
+// registered' inside its fiber, and cordis buries the throw — a
+// FAILED fiber on every boot that no log line names. The seat
+// EXISTS (the host's provider); the estate's demand to be the only
+// provider was the bug. The wrapper stands down loud instead.
+describe('the subprocess row — stand down when the host already provides', () => {
+  it('mounts the provider when the seat is absent', async () => {
+    const ctx = await mount({ repoRoot: '/tmp/pin' })
+    expect(ctx.plugins.filter((p) => p.name === 'LocalSubprocessRuntime')).toHaveLength(1)
+  })
+
+  it('stands down (mounts nothing) when the host profile already registered the seat', async () => {
+    const lines: string[] = []
+    const spy = vi.spyOn(console, 'log').mockImplementation((m: string) => { lines.push(m) })
+    try {
+      const ctx = await mount(
+        { repoRoot: '/tmp/pin' },
+        undefined,
+        { subprocess: { seat: 'subprocess' } },
+      )
+      expect(ctx.plugins.filter((p) => p.name === 'LocalSubprocessRuntime')).toHaveLength(0)
+      expect(lines.some((l) => l.includes('stands down'))).toBe(true)
+    } finally {
+      spy.mockRestore()
     }
   })
 })

@@ -473,6 +473,30 @@ describe('disclose/manage/skills/load/ledger lanes', () => {
     assert.deepEqual(seatFamilyForPath('/v1/ledger'), { family: 'queue', probeNames: ['queue'] })
   })
 
+  // THE PROBER-URL FAMILIES (2026-10-23 wedge hunt): '/v1/runs' and
+  // '/v1/provision/operations' are not doors, but they are the URLs
+  // a wedge-hunting prober reaches for first — answering 'unknown'
+  // sent a live hunt down a blind alley while the estate was healthy
+  // (the real runs list serves at GET /v1/flows/runs). The refusal
+  // must name the family AND steer to the canonical door.
+  test('/v1/runs names the runs family and steers to the list door', () => {
+    assert.deepEqual(seatFamilyForPath('/v1/runs'), {
+      family: 'live-run registry (the runs seat) — the list door is GET /v1/flows/runs',
+      probeNames: ['runs'],
+    })
+    // subpaths ride the same family
+    assert.deepEqual(seatFamilyForPath('/v1/runs/run-x/status').probeNames, ['runs'])
+    // the canonical door itself keeps its own family
+    assert.deepEqual(seatFamilyForPath('/v1/flows/runs').probeNames, ['runs'])
+  })
+
+  test('/v1/provision/* names the provisioning seat, never unknown', () => {
+    assert.deepEqual(seatFamilyForPath('/v1/provision/operations'), {
+      family: 'provisions seat (the provisioning service)',
+      probeNames: ['provisioning'],
+    })
+  })
+
   test('a non-conflict compose refusal propagates without a retry', async () => {
     const r = req({ benchRemote: {
       get: async () => undefined,

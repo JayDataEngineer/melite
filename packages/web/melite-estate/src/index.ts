@@ -141,7 +141,25 @@ const rows: readonly Plugin[] = [
   // is ours, so its child processes go through the harness
   // primitive, never an owned execFile wrapper (handroll audit row
   // 4.6).
-  LocalSubprocessRuntime,
+  // STAND-DOWN WRAPPER (2026-10-23, the double-registration wedge):
+  // the host profile's own spawn rows (ralph / workflow-ptc with
+  // provider: spawn) register the SAME LocalSubprocessRuntime
+  // service before the estate mounts, and cordis buries the estate
+  // row's registration throw while the boot marches on — a fiber
+  // left FAILED on every boot, invisible until a registry walk
+  // printed it. The estate CONSUMES the seat; it must not demand to
+  // be its only provider: when the seat already exists this row
+  // says so loud and mounts nothing.
+  {
+    name: "estate-subprocess-row",
+    apply: (ctx: Context) => {
+      if (ctx.get("subprocess", false) !== undefined) {
+        console.log("[melite-estate] subprocess seat already registered by the host profile — the estate's own provider row stands down");
+        return;
+      }
+      ctx.plugin(LocalSubprocessRuntime);
+    },
+  } satisfies Plugin,
   // The engines seat BEFORE every adapter + consumer (mount order
   // is load order — the adapters' inject gates on it).
   enginesContract,
@@ -411,6 +429,11 @@ export interface Config {
   /** THE CLAIM CADENCE (durable seats only): how often the shared
    *  op store is polled for requested rows, in milliseconds. */
   downloadClaimIntervalMs?: number;
+  /** THE SEAT-SETTLE BUDGET (2026-10-23 wedge cure): how long the
+   * settle gate waits for the queue plane's required seats to go
+   * strict-active before the estate refuses to boot. Unset: 30s —
+   * slow census boots settle well inside it; tests pin it small. */
+  seatSettleBudgetMs?: number;
 }
 
 /** The validator twin of {@link Config}. */
@@ -426,6 +449,7 @@ export const Config: Schema<Config> = Schema.object({
   acquireStallTimeoutMs: Schema.number(),
   durableDownloads: Schema.boolean(),
   downloadClaimIntervalMs: Schema.number(),
+  seatSettleBudgetMs: Schema.number(),
 });
 
 export async function apply(ctx: Context, config: Config = {}): Promise<void> {
@@ -537,6 +561,35 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
       continue;
     }
     ctx.plugin(row);
+  }
+  // THE SETTLE GATE (2026-10-23, the silent-green lane wedge): the
+  // rows above mount FIRE-AND-FORGET by design — but cordis resolves
+  // a child fiber's promise even when the fiber FAILS, so a dead row
+  // (live proof: the queue row's gateway.lock refusal) left the
+  // estate settled-green with every /v1 seat door serving honest
+  // 502s while /v1/model-catalog answered 200 — a half-up lane that
+  // no log line names. The gate closes that class: the queue plane's
+  // required seats must go strict-active (providing fiber state 2,
+  // the same read the doors use) within the settle budget, or the
+  // WHOLE estate refuses — the failure is the lane's, loud, at boot,
+  // naming the seats that never came up.
+  const requiredSeats: readonly string[] = ["queue", "draftsRemote", "cardRegistry", "provisioning", "runs"];
+  const budgetMs = config.seatSettleBudgetMs ?? 30_000;
+  const deadline = Date.now() + budgetMs;
+  let disposed = false;
+  ctx.effect(() => (): void => { disposed = true; }, "melite-estate.settle-gate");
+  for (;;) {
+    const missing = requiredSeats.filter((n) => ctx.get(n) === undefined);
+    if (missing.length === 0) break;
+    if (disposed || Date.now() >= deadline) {
+      throw new Error(
+        "[melite-estate] the composition refused to settle: seat(s) " + missing.join(", ")
+        + " never activated within " + String(budgetMs) + "ms — a required row died silently "
+        + "(the 2026-10-23 lane wedge class: check the queue row's state-root lock and the drafts row's storage root); "
+        + "refusing to boot a half-up estate (catalog green, every seat door 502)",
+      );
+    }
+    await new Promise((resolve) => { setTimeout(resolve, 250); });
   }
 }
 

@@ -247,15 +247,19 @@ describe("the false-death hunt's four laws", () => {
     expect(registered, "every service the context registered is settled (a registered-but-unsettled seat is the false death)").toEqual([]);
   });
 
-  it("3. THE ROOT PIN: with no config the queue constructor refuses LOUD (and the fiber buries it; the retired env cannot pin it either)", { timeout: 20_000 }, async () => {
+  it("3. THE ROOT PIN: with no config the queue constructor refuses LOUD (and the estate boot now refuses with it — the 2026-10-23 settle gate)", { timeout: 20_000 }, async () => {
     delete process.env["MELITE_STATE_ROOT"];
     const ctx = new Context();
     contexts.push(ctx);
     await ctx.plugin(timerPlugin as unknown as Plugin);
     expect(() => new QueueService(ctx, {})).toThrow(/unpinned/);
-    // And through the bundle: the row's fiber dies buried — the seat
-    // NEVER settles. This silence is the false-death lesson: an
-    // unpinned boot looks identical to a dead seat from the door.
+    // And through the bundle: the OLD truth was the burial — the
+    // row's fiber died silently and the seat NEVER settled while the
+    // estate booted green (the five-boot lane wedge, 2026-10-23:
+    // catalog 200, every queue-plane door seatless, no log line).
+    // The settle gate upgraded the law: an unpinned queue is now a
+    // WHOLE-ESTATE refusal — the boot rejects naming the seat, and
+    // the half-up lane class is dead at the composition layer.
     const ctx2 = new Context();
     contexts.push(ctx2);
     await ctx2.plugin(timerPlugin as unknown as Plugin);
@@ -263,11 +267,14 @@ describe("the false-death hunt's four laws", () => {
     // a census refusal from a family-less boot would bury queue for
     // the wrong reason and the arm would judge nothing
     await mountFamilyRoster(ctx2);
-    await ctx2.plugin(estateBundle as unknown as Plugin);
-    // 2s, not 5: the burial is DETERMINISTIC (an unpinned boot never
-    // seats queue — the constructor throws) so this poll cannot
-    // flake green; it only waits out the proof window.
-    const missing = await settleMissing(ctx2, ["queue"], 2_000);
+    // a small settle budget: the deterministic unpinned refusal must
+    // surface fast, never the 30s lane default
+    await expect(
+      ctx2.plugin(estateBundle as unknown as Plugin, { seatSettleBudgetMs: 300 }),
+    ).rejects.toThrow(/refused to settle.*\bqueue\b/);
+    // the seat itself still never settles — the burial observation
+    // that named the class, kept as the floor under the new refusal
+    const missing = await settleMissing(ctx2, ["queue"], 1_000);
     expect(missing).toEqual(["queue"]);
   });
 

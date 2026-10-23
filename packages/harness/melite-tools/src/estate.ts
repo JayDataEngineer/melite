@@ -467,6 +467,18 @@ export function seatFamilyForPath(path: string): { family: string; probeNames: s
     return { family: 'bench plane (draftsRemote/benchRemote seats)', probeNames: ['draftsRemote', 'benchRemote'] }
   }
   if (path.startsWith('/v1/flows/')) return { family: 'live-run registry (the runs seat)', probeNames: ['runs'] }
+  // '/v1/runs' is NOT a door (the runs list serves at GET
+  // /v1/flows/runs) — but it is the URL every wedge-hunting prober
+  // reaches for first, and 'unknown' sent the 2026-10-23 hunt down a
+  // blind alley: answer the runs FAMILY and name the canonical door.
+  if (path === '/v1/runs' || path.startsWith('/v1/runs/')) {
+    return { family: RUNS_LANE.family + ' — the list door is GET /v1/flows/runs', probeNames: [...RUNS_LANE.probeNames] }
+  }
+  // Same class: the provisions plane's operations URL — name the
+  // provisioning seat, never 'unknown'.
+  if (path.startsWith('/v1/provision/')) {
+    return { family: 'provisions seat (the provisioning service)', probeNames: ['provisioning'] }
+  }
   if (path.startsWith('/v1/discover')) return { family: 'disclose', probeNames: ['disclose'] }
   if (path.startsWith('/v1/manage')) return { family: 'manage', probeNames: ['manage'] }
   if (path.startsWith('/v1/skills')) return { family: 'meliteSkills', probeNames: ['meliteSkills'] }
