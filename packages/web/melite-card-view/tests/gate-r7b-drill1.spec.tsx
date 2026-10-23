@@ -398,7 +398,11 @@ describe("the owners' foreign voices — remove and ungroup fall back loud", () 
     // INSIDE the one voice — the row recorded 'foreign' as the
     // write's lastError; the face derives from the row.
     // Thrown-verb settlement: 15s/30s (flake-slowness-wave2).
-    const face = await screen.findByTestId("stage-write-face", {}, { timeout: LOADED_WAIT() * 0.5 });
+    // (flake-slowness-wave3, the green-triple load): the wave2 half
+    // budget lost the settlement race under the full gate's loaded
+    // pool — this site rides the FULL budget, the helper's own
+    // deliberately-longer multiple for one site that needs it.
+    const face = await screen.findByTestId("stage-write-face", {}, { timeout: LOADED_WAIT() });
     expect(face.textContent).toContain("THE WRITE DID NOT LAND");
     expect(face.textContent).toContain("foreign");
     expect(face.textContent).toContain("unlanded keys: input_image");
