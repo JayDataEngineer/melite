@@ -94,8 +94,6 @@ test.describe("the variation law pins (the operator's three breaks, held at the 
     test.setTimeout(600_000)
     const errors = collectPageErrors(page)
     await settle(page)
-    const specUrls: string[] = []
-    page.on('request', (r) => { if (r.url().includes('/v1/form-spec')) specUrls.push(r.url()) })
     // SEQUENTIAL BOARDING: the tile's own text carries the CARD id
     // (both image-edit tiles read "image-edit"), so the variations
     // board one at a time — each drive opens the bench's newest
@@ -165,13 +163,14 @@ test.describe("the variation law pins (the operator's three breaks, held at the 
     // switch the UI DOES offer: Base→Turbo, both served rows of
     // 2.1's own Variant axis. The absence direction stays receipted
     // at the 2511 face above (axis count 0 at a lawful door).
-    const before = specUrls.length
+    // THE PICK IS A PATCH, NOT A REFETCH (drive-18c: the axis pick
+    // rides onPick — a bench params write (axes.tsx:101); no
+    // form-spec frame crosses the wire, so the receipt is the
+    // trigger FACE itself — the stale-variant break's own seat.
     await pickVariant(page, /turbo/i)
     await page.waitForTimeout(4_000)
-    expect(specUrls.slice(before).some((u) => u.includes('qwen-img-edit-21-turbo')),
-      'the variant switch refetches the turbo route form-spec').toBe(true)
-    // THE RESEED FACE (the stale-variant break's own seat): the
-    // trigger must read the PICKED row, never the carried-over Base.
+    // THE RESEED FACE: the trigger must read the PICKED row, never
+    // the carried-over Base.
     await expect(page.locator('button[data-axis="Variant"]'), 'the Variant face reseeds to the picked row').toContainText(/turbo/i)
     await expect(page.locator('button[data-axis="Variant"]')).not.toContainText(/base/i)
     await page.getByRole('button', { name: 'Collapse card' }).click({ timeout: 10_000 })
