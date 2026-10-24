@@ -84,7 +84,7 @@ test('the h3-timeline bench card opens the VideoTimelineStudio, not the generic 
   const markers = [
     'h3-studio-tenant', 'tl-filmstrip', 'tl-doc-readout',
     'motion-timeline-bar', 'motion-timeline-ruler', 'motion-timeline-playhead',
-    'tl-run-panel', 'tl-recipe-chrome', 'cb-mods-section',
+    'tl-run-panel', 'cb-mods-section',
   ]
   await expect(page.locator('[data-testid="h3-studio-tenant"]')).toBeVisible({ timeout: 30_000 })
   const finalVideo = page.locator('[data-testid="tl-final-cut"] video')
@@ -92,12 +92,14 @@ test('the h3-timeline bench card opens the VideoTimelineStudio, not the generic 
     const source = await finalVideo.first().getAttribute('src')
     expect(source ?? '').not.toMatch(/\.(flac|mp3|wav|ogg|m4a|aac)(?:$|[?#])/i)
   }
-  // tl-recipe-chrome + cb-mods-section (re-pin 2026-11-06, order b:
-  // the Layer A fold is DEAD) render OPEN in the global view — plain
-  // open-surface markers now. tl-clips-lane-hint is NOT one anymore
-  // (drive-14's #12 red, named): the 2026-11-06 SUBMENU law moved
-  // RunRefsClips into the rail's AUDIO submenu, reached by clicking
-  // an audio lane on the bar — asserted at its own door below.
+  // cb-mods-section (re-pin 2026-11-06, order b: the Layer A fold is
+  // DEAD) renders OPEN in the global view — a plain open-surface
+  // marker now. tl-recipe-chrome DIED with the recipe-engine fold
+  // (the h3 package's own unit wall receipts the null:
+  // studio-run-recipe-engine.spec.tsx:190 — asserting a dead testid
+  // pins a studio that no longer ships, the marker-list's own law);
+  // tl-clips-lane-hint moved into the rail's AUDIO submenu (the
+  // 2026-11-06 submenu law) — asserted at its own door below.
   for (const m of markers) {
     await expect(page.locator(`[data-testid="${m}"]`), m).toBeVisible()
   }

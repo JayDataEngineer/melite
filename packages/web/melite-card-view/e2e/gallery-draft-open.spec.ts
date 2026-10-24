@@ -38,6 +38,12 @@ async function stageCount(page: Page, sessionKey: string): Promise<number> {
 }
 
 test('clicking a served draft loads its stages onto THIS conversation\'s bench and routes to the cards tab', async ({ page }) => {
+  // THE BUDGET (drive-15's #7 red): the arm's own waits ride the
+  // doors' grace laws (the drafts boot-race deadline 150s + the
+  // shared-bench poll 150s + the mint's answer gate 90s) — stacked,
+  // they outrun the 420s default mid-poll. 600s seats the whole
+  // chain; each wait still fails at its own named cause.
+  test.setTimeout(600_000)
   const errors: string[] = collectPageErrors(page)
 
   await settle(page)

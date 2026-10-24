@@ -14,7 +14,7 @@
 // seat's open is an ACTUAL AI CALL — self-skips without the opt-in
 // (e2e-ai-opt-in.spec.ts's derived census reads this guard).
 import { expect, test } from '@playwright/test'
-import { collectPageErrors, expectNoPageErrors, openAConversation, seedBenchH3, settle, STUDIO_URL } from './tour.ts'
+import { collectPageErrors, expectNoPageErrors, openAConversation, openCardsWithBench, settle, STUDIO_URL } from './tour.ts'
 
 test.skip(!STUDIO_URL, 'E2E_STUDIO_URL (token-authenticated shell URL) is not set — the browser-plane wall needs a live host')
 test.skip(process.env.MELITE_E2E_AI !== '1', 'THE MINT IS AN ACTUAL AI CALL — one real model turn per ride (tokens burned, keyed lane required); opt in with MELITE_E2E_AI=1')
@@ -24,7 +24,14 @@ test('the playhead LINE drags nothing; the CAP scrubs (real pointer, real hit-te
   await page.goto(STUDIO_URL, { waitUntil: 'domcontentloaded' })
   await dismiss(page)
   const { sessionKey } = await openAConversation(page)
-  await seedBenchH3(page, sessionKey)
+  // OPEN THE PANE OURSELVES (drive-15's #11 corpse): seeding alone
+  // leaves the bench hidden behind whatever pane state the mint's
+  // turn-churn dropped — the tile wait then burns the whole budget
+  // (the snapshot's reply shows the brain exploring past the
+  // one-word order; the rerenders own the pane). openCardsWithBench
+  // seeds AND expands AND seats the cards tab, the same door every
+  // studio sibling rides.
+  await openCardsWithBench(page, sessionKey)
   await settle(page)
   // the h3 studio door (the strip pane's live mount)
   await page.locator('[class*="tileInner"][role="button"]').filter({ hasText: 'Generate Video' }).first().click()
