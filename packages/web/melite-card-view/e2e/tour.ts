@@ -224,7 +224,33 @@ export async function openAConversation(page: Page): Promise<{ opened: boolean; 
   const composer = composerOf(page)
   await composer.click({ timeout: 10_000 })
   await page.keyboard.type('e2e wall: bench tour mint', { delay: 15 })
+  // THE TURN'S OWN ANSWER (2026-10-24): a keyed lane answers the
+  // mint in 10–40s (glm-5.3-flash high effort), and a spec that
+  // proceeds mid-turn races the reply's rerenders — the panel-delete
+  // red class: the Media toggle vanished behind the in-flight turn's
+  // re-layout for the whole 10s click budget. The listener attaches
+  // BEFORE Enter (a later attach can miss the response), and the
+  // wait is bounded — a dead brain must still fail at the mint's own
+  // named cause, never here.
+  const answered = page.waitForResponse(
+    (r) => r.url().includes('/api/session/prompt') && r.request().method() === 'POST',
+    { timeout: 90_000 },
+  ).catch(() => null)
   await page.keyboard.press('Enter')
+  await answered
+  // THE TURN'S END, not its start (2026-10-24, the drafts-face red
+  // class): the prompt RESPONSE frame arrives when generation
+  // STARTS — the turn keeps streaming after it, and an in-flight
+  // turn's rerenders hide the melite face (the fresh conversation
+  // rides its Start view with the gallery verbs unmounted) for the
+  // whole downstream click budget. The send verb's re-enable IS
+  // the turn's completion signal; bounded so a dead brain still
+  // fails at the mint's own named cause, never here.
+  const sendAgain = page.getByRole('button', { name: 'Send message' })
+  for (let i = 0; i < 45; i++) {
+    if (await sendAgain.isDisabled().catch(() => true) === false) break
+    await page.waitForTimeout(1_000)
+  }
   await seat.waitFor({ state: 'visible', timeout: 20_000 }).catch(() => {})
   const opened = await seat.isVisible().catch(() => false)
   // THE KEY IS A RECEIPT, not a hope: poll for the mint's own frame
