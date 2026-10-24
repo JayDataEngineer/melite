@@ -53,7 +53,7 @@ test('a fresh card opens clean, and a refused Run never poisons the next open', 
   // THE OPERATOR'S CHECK: the open is CLEAN. No typed prompt yet
   // (the incomplete draft the add door seats), and no face in the
   // tab complains about it.
-  const prompt = page.getByLabel('Prompt', { exact: false }).first()
+  const prompt = page.getByRole('textbox', { name: 'Prompt', exact: true })
   await expect(prompt, 'the added card opens with its declared form').toBeVisible({ timeout: 30_000 })
   await expectNoRedFace(page)
 
@@ -73,7 +73,12 @@ test('a fresh card opens clean, and a refused Run never poisons the next open', 
   // law, and it dies with the tab, never with the row).
   await page.getByRole('button', { name: 'Collapse card' }).first().click({ timeout: 10_000 })
   await page.waitForTimeout(1_000)
-  const tile = page.getByRole('button', { name: /Image Gen Remove stage/ }).first()
+  // THE TILE SEAT (2026-10-24): the tile is a role=button DIV whose
+  // title is the catalog label ('Generate Image' — the professional
+  // names stroke); the old /Image Gen Remove stage/ regex rode the
+  // <button> name-from-content flattening that the nested-buttons
+  // cure retired. The remove is a REAL button INSIDE the tile.
+  const tile = page.locator('[class*="tileInner"][role="button"]').filter({ hasText: 'Generate Image' }).first()
   await expect(tile, 'the bench still carries the card').toBeVisible({ timeout: 20_000 })
   await tile.click({ timeout: 10_000 })
   await expect(prompt, 'the drill reopens on the same row').toBeVisible({ timeout: 30_000 })

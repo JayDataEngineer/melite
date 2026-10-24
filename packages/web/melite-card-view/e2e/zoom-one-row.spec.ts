@@ -45,7 +45,7 @@ test('the zoom renders ONE compiled atom set — exactly one css-module hash pre
   // The drill's spec form must be live before the census counts
   // anything — an unbuilt studio would render the generic form and
   // the census would pass vacuously on zero atoms.
-  const prompt = page.getByLabel('Prompt', { exact: false }).first()
+  const prompt = page.getByRole('textbox', { name: 'Prompt', exact: true })
   await expect(prompt, 'the added card opens with its declared form (the zoom param UI)').toBeVisible({ timeout: 30_000 })
 
   // THE CENSUS: every class attribute on screen, harvested for

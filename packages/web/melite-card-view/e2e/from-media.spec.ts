@@ -29,7 +29,7 @@ test('From media on an input card: menu opens, modal lists the runs library, a p
   await openCardsWithBench(page, sessionKey)
 
   // the h3-timeline tile (seeded by the spine) — the studio door
-  const tile = page.locator('button', { hasText: 'h3-timeline' }).first()
+  const tile = page.locator('[class*="tileInner"][role="button"]').filter({ hasText: 'Generate Video' }).first()
   await expect(tile).toBeVisible({ timeout: 20_000 })
   await tile.click({ timeout: 10_000 })
   // the studio must claim the view before its input squares exist
@@ -37,9 +37,14 @@ test('From media on an input card: menu opens, modal lists the runs library, a p
 
   // an input square (card-base's SourceRow grammar: aria-label
   // '<seat> source'). The FirstFrameSlot squares live INSIDE the
-  // call editor — click the seeded call's row (the left panel's
-  // '#0 …' button) to open it, then the square stands visible.
-  const callRow = page.locator('button', { hasText: /#0/ }).first()
+  // call editor — open the seeded call's block on the timeline
+  // (the professional-names stroke renamed the '#0' call button:
+  // the timeline names calls 'C1 · 7.3s — …'). The CLICK SEAT is
+  // the clip BLOCK, never its title span — the span resolves but
+  // sits unclickable (clipped by the block's own layout, drive-11's
+  // two-round stability wait); the block carries the 'click a call
+  // = edit it in the left panel' contract.
+  const callRow = page.locator('[class*="clip"]').filter({ hasText: /^C1 ·/ }).first()
   await callRow.click({ timeout: 10_000 })
   await page.waitForTimeout(1_500)
   const square = page.locator('[aria-label*="source"i]').locator('visible=true').first()

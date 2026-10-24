@@ -12,11 +12,17 @@
 # is up; the caller reuses it) — exit 0, never a fake red.
 set -euo pipefail
 
-PORT=3907
-HOME_DIR=data/runtime/e2e-studio-home
-RUNS_ROOT=/tmp/e2e-studio-runs
-COOKIES=/tmp/e2e-studio-cookies.txt
-LOG=/tmp/e2e-studio-lane.log
+# THE LANE IDENTITY KNOBS (GOAL-2, 2026-10-24): a second lane can
+# boot BESIDE a standing host (the operator's GUI can own :3907 —
+# booting over it is never allowed, and its home/runs root are LIVE
+# state). Every path is per-lane: the port-suffixed /tmp artifacts
+# can never collide across lanes. Defaults are the historical single
+# lane, byte-identical when the knobs are unset.
+PORT="${E2E_STUDIO_PORT:-3907}"
+HOME_DIR="${E2E_STUDIO_HOME:-data/runtime/e2e-studio-home}"
+RUNS_ROOT="${E2E_STUDIO_RUNS_ROOT:-/tmp/e2e-studio-runs}"
+COOKIES="/tmp/e2e-studio-cookies-$PORT.txt"
+LOG="/tmp/e2e-studio-lane-$PORT.log"
 # Bash-only REPO_ROOT (parameter expansion is a builtin): the spec's
 # stub-PATH seat runs this script with NOTHING resolvable — dirname
 # must never stand between the prereq gates and their verdict.
@@ -143,8 +149,8 @@ PYSEED
   # PATH pin the supervisor carries) — pinned HERE, not globally: a
   # global pin would resolve dsh/pnpm even when the caller's PATH
   # lacks them and defeat the skip laws below-fraction.
-  (cd "$HOME_DIR/profiles/e2e-studio" && PATH="$HOME/.local/share/mise/installs/node/24.21.0/bin:$HOME/.local/bin:$PATH" pnpm install --no-frozen-lockfile >/tmp/e2e-studio-seed-install.log 2>&1) || {
-    echo "[e2e-studio-lane] seed pnpm install failed:"; tail -8 /tmp/e2e-studio-seed-install.log; exit 1
+  (cd "$HOME_DIR/profiles/e2e-studio" && PATH="$HOME/.local/share/mise/installs/node/24.21.0/bin:$HOME/.local/bin:$PATH" pnpm install --no-frozen-lockfile >"/tmp/e2e-studio-seed-install-$PORT.log" 2>&1) || {
+    echo "[e2e-studio-lane] seed pnpm install failed:"; tail -8 "/tmp/e2e-studio-seed-install-$PORT.log"; exit 1
   }
 fi
 # settings.yaml is the OPERATOR's per-machine provider plane —
@@ -179,12 +185,68 @@ PY
   cp "$HOME/.dsh/settings.yaml" "$HOME_DIR/"
 fi
 
+# THE AI KEY SEAT (GOAL-2, 2026-10-24): the keyless law above holds
+# UNLESS the operator names a brain (MELITE_E2E_AGENT_ROUTE=provider/
+# model — the route shape the melite-test lane's estate row seats).
+# Then the machine's credential refs — the same store ~/.dsh-dev
+# symlinks at $HOME/.dsh/.credentials.yaml — merge into the
+# throwaway home so the brain's apiKeyEnv resolves. Machine-local
+# only: values never enter the repo, any log, or CI (the gate is
+# the operator's own env; unset = the keyless default untouched).
+if [ -n "${MELITE_E2E_AGENT_ROUTE:-}" ]; then
+  CRED_SRC="${MELITE_E2E_CREDENTIALS:-$HOME/.dsh/.credentials.yaml}"
+  CRED_DST="$HOME_DIR/.credentials.yaml"
+  python3 - "$CRED_SRC" "$CRED_DST" <<'PYCRED' || exit 1
+import os, re, sys
+src, dst = sys.argv[1], sys.argv[2]
+
+def read_refs(text):
+    refs, in_refs = {}, False
+    for line in text.splitlines():
+        if re.match(r"^refs:\s*$", line):
+            in_refs = True
+            continue
+        if in_refs:
+            m = re.match(r"^  ([A-Za-z0-9_]+): (.+)$", line)
+            if m:
+                refs[m.group(1)] = m.group(2)
+            elif line and not line.startswith("  "):
+                in_refs = False
+    return refs
+
+try:
+    src_refs = read_refs(open(src, encoding="utf-8").read())
+except OSError as e:
+    sys.stderr.write(f"e2e-studio-lane: credential source unreadable: {e}\n")
+    sys.exit(1)
+if not src_refs:
+    sys.stderr.write(
+        "e2e-studio-lane: no refs: block in the credential source — "
+        "refusing to seat a brain with no key\n"
+    )
+    sys.exit(1)
+dst_text = open(dst, encoding="utf-8").read() if os.path.exists(dst) else ""
+merged = {**read_refs(dst_text), **src_refs}
+lines = ["version: 1", "refs:"] + [f"  {k}: {v}" for k, v in merged.items()]
+m = re.search(r"(?ms)^records:.*", dst_text)
+if m:
+    lines.append(m.group(0).rstrip())
+open(dst, "w", encoding="utf-8").write("\n".join(lines) + "\n")
+# owner-only mode or the credentials loader refuses the store at
+# boot (assertOwnerOnly: "readable beyond its owner")
+os.chmod(dst, 0o600)
+print(f"[e2e-studio-lane] AI key seat: {len(src_refs)} credential ref(s) merged (values never logged)")
+PYCRED
+fi
+
 # THE WORKSPACE PRE-STATE (seeded BEFORE boot — a host with no
 # workspace serves only the chooser hero). Schema-valid row naming
 # THIS repo; ISO stamps because the domain schema refuses the rest.
-python3 - <<'PY'
-import json, uuid
+HOME_DIR="$HOME_DIR" python3 - <<'PY'
+import json, uuid, os
+home = os.environ["HOME_DIR"]
 row = str(uuid.uuid4()); ts = "2026-09-21T00:00:00.000Z"
+ws_path = os.path.join(home, "storages", "workspace.json")
 json.dump({
   "unit": {"name": "workspace", "version": 2},
   "global": {"initialized": True, "workspaceIds": [row], "archivedSessionIds": []},
@@ -192,9 +254,9 @@ json.dump({
     "path": "__REPO_ROOT__",
     "title": "inference.cpp", "sessionIds": [],
     "createdAt": ts, "updatedAt": ts}}},
-}, open("data/runtime/e2e-studio-home/storages/workspace.json", "w"))
+}, open(ws_path, "w"))
 import pathlib
-_ws = pathlib.Path("data/runtime/e2e-studio-home/storages/workspace.json")
+_ws = pathlib.Path(ws_path)
 _ws.write_text(_ws.read_text().replace("__REPO_ROOT__", pathlib.Path.cwd().as_posix()))
 PY
 
@@ -210,6 +272,54 @@ cat >"$ESTATE_PATCH" <<EPATCH
   config:
     stateRoot: "$RUNS_ROOT"
 EPATCH
+# THE AI ROUTE SEAT (GOAL-2, 2026-10-24): when the operator names a
+# brain, the estate row's config carries agentRoute (the same field
+# the melite-test lane seats — packages/web/melite-estate/src/
+# index.ts melite-engine-agent-row) AND the llm provider table rides
+# the SAME patch: the llm-pi-ai row spliced VERBATIM from the
+# operator's rows file (one copy, !!js tags untouched — the same
+# splice law as infer-provision --profile-rows; never re-serialize).
+# Unset = the minted patch stays keyless and brainless: CI law.
+AGENT_ROUTE="${MELITE_E2E_AGENT_ROUTE:-}"
+if [ -n "$AGENT_ROUTE" ]; then
+  printf '    agentRoute: "%s"\n' "$AGENT_ROUTE" >>"$ESTATE_PATCH"
+  LLM_ROWS="${MELITE_E2E_LLM_ROWS:-$REPO_ROOT/dev_docs/deployment/studio-lane-rows.yml}"
+  [ -f "$LLM_ROWS" ] || { echo "[e2e-studio-lane] MELITE_E2E_AGENT_ROUTE set but llm rows file missing: $LLM_ROWS"; exit 1; }
+  # TWO rows: the provider table (llm-pi-ai) AND the shell's default
+  # chat route (agent-default-model → zai/glm-5.3-flash). Without the
+  # default-route row the mint's own model turn falls back to
+  # deepseek-official and dies keyless ("This turn failed") — the
+  # e2e wall: bench tour mint arms proved it, 2026-10-24.
+  for ROW_ID in llm-pi-ai agent-default-model; do
+    awk -v row="^- id: $ROW_ID\$" '$0 ~ row {f=1} f && /^- id:/ && $0 !~ row {exit} f{print}' "$LLM_ROWS" >>"$ESTATE_PATCH" \
+      || { echo "[e2e-studio-lane] row extraction failed for $ROW_ID from $LLM_ROWS"; exit 1; }
+    grep -q "^- id: $ROW_ID\$" "$ESTATE_PATCH" \
+      || { echo "[e2e-studio-lane] no $ROW_ID row found in $LLM_ROWS — the brain would seat starved"; exit 1; }
+  done
+  # THE MINT'S EFFORT SEAT (2026-10-24, the exploration race): the
+  # mint turn's CONTENT is irrelevant (it births the conversation and
+  # names the bench key — adjudicated across drives 6-11), but a
+  # high-effort commission-brain answers the mint with minutes of
+  # repo exploration whose rerenders race every downstream spec
+  # (and, before the read-only seat, edited the worktree). Low
+  # effort answers the mint in seconds; the walls judge faces the
+  # mint never touches. The operator's own lanes keep their row.
+  python3 - "$ESTATE_PATCH" <<'PYEFFORT' || exit 1
+import re, sys
+patch = sys.argv[1]
+text = open(patch).read()
+new, n = re.subn(
+    r'(- id: agent-default-model\n(?:  .*\n)*?    reasoningEffort:) high',
+    r'\1 low',
+    text,
+)
+if n != 1:
+    print('[e2e-studio-lane] agent-default-model effort rewrite failed (matches: %d)' % n)
+    sys.exit(1)
+open(patch, 'w').write(new)
+PYEFFORT
+  echo "[e2e-studio-lane] AI route seat: agentRoute=$AGENT_ROUTE + llm-pi-ai provider table + agent-default-model @ low effort (operator-sanctioned AI drive; the mint births, it never explores)"
+fi
 : > "$LOG"
 # --patch rides BEFORE the app passthrough flags (--host/--port/
 # --no-open): after the first unknown option, commander hands the
@@ -231,6 +341,26 @@ done
 [ -n "$TOKEN" ] || { echo "[e2e-studio-lane] no token after 120s:"; tail -5 "$LOG"; exit 1; }
 export E2E_STUDIO_URL="http://127.0.0.1:$PORT/?token=$TOKEN"
 echo "[e2e-studio-lane] host up: $E2E_STUDIO_URL"
+
+# ── the AI seat assert (never let the specs hang on a dead brain) ─
+# The estate row seats the agent engine during boot; by token time
+# the verdict is in the lane log. A brain that never seats is a
+# FAIL-LOUD here — a 7-minute per-spec timeout rack is not a drive.
+if [ -n "$AGENT_ROUTE" ]; then
+  BRAIN_OK=""
+  for _ in $(seq 1 30); do
+    if grep -q "engine 'agent' seated: brain" "$LOG" 2>/dev/null; then BRAIN_OK=1; break; fi
+    kill -0 "$HOST_PID" 2>/dev/null || break
+    sleep 1
+  done
+  if [ -z "$BRAIN_OK" ]; then
+    echo "[e2e-studio-lane] AI seat FAILED — no brain seat line in the lane log:"
+    tail -8 "$LOG"
+    if [ -n "$HOST_PGID" ]; then kill -- -"$HOST_PGID" 2>/dev/null || true; fi
+    exit 1
+  fi
+  echo "[e2e-studio-lane] AI seat verified: $(grep -o "engine 'agent' seated: brain [^ ]*" "$LOG" | tail -1)"
+fi
 
 # ── seed the bench over the host's own /api wire ──────────────────
 curl -sL -c "$COOKIES" "$E2E_STUDIO_URL" -o /dev/null

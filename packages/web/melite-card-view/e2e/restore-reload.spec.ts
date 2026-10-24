@@ -36,7 +36,7 @@ test('a reload restores the cards tab and its bench stage without re-opening', a
 
   // The layout landed BEFORE the reload: the h3 stage's tile on the
   // open Melite Bench tab (the same marker studio-render walls ride).
-  const tile = page.locator('button', { hasText: 'h3-timeline' }).first()
+  const tile = page.locator('[class*="tileInner"][role="button"]').filter({ hasText: 'Generate Video' }).first()
   await expect(tile, 'the seeded stage paints before the reload').toBeVisible({ timeout: 20_000 })
 
   // THE RELOAD — every client-side layout atom dies here. The

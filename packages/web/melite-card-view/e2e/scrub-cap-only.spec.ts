@@ -27,7 +27,7 @@ test('the playhead LINE drags nothing; the CAP scrubs (real pointer, real hit-te
   await seedBenchH3(page, sessionKey)
   await settle(page)
   // the h3 studio door (the strip pane's live mount)
-  await page.locator('button', { hasText: 'h3-timeline' }).first().click()
+  await page.locator('[class*="tileInner"][role="button"]').filter({ hasText: 'Generate Video' }).first().click()
   const studio = page.locator('[data-testid="h3-studio-tenant"]')
   await expect(studio).toBeVisible({ timeout: 30_000 })
 

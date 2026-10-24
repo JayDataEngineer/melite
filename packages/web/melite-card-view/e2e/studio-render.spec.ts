@@ -64,7 +64,7 @@ test('the h3-timeline bench card opens the VideoTimelineStudio, not the generic 
   // click lands on a span whose parent never opens the zoom, and the
   // wall then reports "the form" for a studio that mounted fine.
   await openCardsWithBench(page, sessionKey)
-  const tile = page.locator('button', { hasText: 'h3-timeline' }).first()
+  const tile = page.locator('[class*="tileInner"][role="button"]').filter({ hasText: 'Generate Video' }).first()
   await expect(tile).toBeVisible({ timeout: 20_000 })
 
   // 4 — zoom: the studio must claim cards.stage.view. The
@@ -132,7 +132,7 @@ test('the studio layout: full-page modal, params left, fitted preview right, tim
   await page.waitForTimeout(6_000)
   await openCardsWithBench(page, sessionKey)
 
-  const tile = page.locator('button', { hasText: 'h3-timeline' }).first()
+  const tile = page.locator('[class*="tileInner"][role="button"]').filter({ hasText: 'Generate Video' }).first()
   await expect(tile).toBeVisible({ timeout: 20_000 })
   await tile.click({ timeout: 10_000 })
   await expect(page.locator('[data-testid="h3-studio-tenant"]')).toBeVisible({ timeout: 30_000 })
@@ -212,7 +212,7 @@ test('the add door shows the REAL card for h3-timeline (not the spec form)', asy
   expect.soft(opened, 'a conversation to open').toBe(true)
   await page.waitForTimeout(6_000)
   await openCardsWithBench(page, sessionKey)
-  const tilesBefore = await page.locator('button', { hasText: 'h3-timeline' }).count()
+  const tilesBefore = await page.locator('[class*="tileInner"][role="button"]').filter({ hasText: 'Generate Video' }).count()
 
   // the door-opener tile (aria-label 'Add a card' — the trailing + tile)
   await page.getByRole('button', { name: 'Add a card' }).first().click({ timeout: 10_000 })
@@ -229,7 +229,7 @@ test('the add door shows the REAL card for h3-timeline (not the spec form)', asy
   // THE PICK IS THE ADD: the stage lands on the bench… (a re-run
   // opens the PREVIOUS run's minted conversation, whose bench may
   // already carry earlier picks — the law is GROWTH, not +1 exactly)
-  await expect(page.locator('button', { hasText: 'h3-timeline' }), 'the picked card landed on the bench').not.toHaveCount(tilesBefore, { timeout: 15_000 })
+  await expect(page.locator('[class*="tileInner"][role="button"]').filter({ hasText: 'Generate Video' }), 'the picked card landed on the bench').not.toHaveCount(tilesBefore, { timeout: 15_000 })
   // …and the fresh row's DRILL opens on the REAL card: the studio
   // claims it (the generic-form fallback renders none of these).
   await expect(page.locator('[data-testid="h3-studio-tenant"]'), 'the drill is the studio (claimed)').toBeVisible({ timeout: 15_000 })

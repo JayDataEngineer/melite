@@ -47,9 +47,18 @@ export const AI_OPT_IN = process.env.MELITE_E2E_AI === '1'
  *  PROVES the masking dialogs are gone. A locator RESOLVING is not
  *  reachability — under a mask Playwright reports the intercepting
  *  subtree instead of clicking (2026-10-11: the composer resolved
- *  fine and the click still timed out on the API-key input). */
+ *  fine and the click still timed out on the API-key input).
+ *  THE STABLE SEAT (2026-10-24, drive-9's warm-host red): the
+ *  shell's own e2e tests locate the composer by its
+ *  [data-composer-input] attribute — the PLACEHOLDER prose drifts
+ *  by host state ('Describe what you want to build…' only on an
+ *  empty host; a host with sessions seats another face), and a
+ *  placeholder-keyed locator strands every mint after the first
+ *  conversation. The attribute is the shell's contract. (This seat
+ *  was reverted once by a mint turn's own edit — the read-only
+ *  seat below ends that class.) */
 function composerOf(page: Page) {
-  return page.getByRole('textbox', { name: /Describe what you want to build/i }).first()
+  return page.locator('[data-composer-input]').first()
 }
 
 /** Dismiss the first-run masking dialogs — and only RETURN once the
@@ -223,6 +232,25 @@ export async function openAConversation(page: Page): Promise<{ opened: boolean; 
   page.on('request', onPrompt)
   const composer = composerOf(page)
   await composer.click({ timeout: 10_000 })
+  // THE READ-ONLY SEAT (2026-10-24, the file war): the mint turn is
+  // a live agent with tools on this worktree — the commission-brain
+  // READ the roadmap, "executed the commission", and EDITED the tree
+  // (appendix receipts, its own probe files, and one revert of this
+  // very locator). The shell's own permission presets seat the
+  // CURRENT session read-only through the /permission command
+  // (ui-permission-presets README: '/permission <preset>', kebab-case
+  // ids — 'read-only'), so the mint's turn may explore but never
+  // write. The command's own send births the conversation (the key
+  // capture above hooks every session/prompt REQUEST).
+  const answeredCmd = page.waitForResponse(
+    (r) => r.url().includes('/api/session/prompt') && r.request().method() === 'POST',
+    { timeout: 90_000 },
+  ).catch(() => null)
+  await page.keyboard.type('/permission read-only', { delay: 10 })
+  await page.keyboard.press('Enter')
+  await answeredCmd
+  await page.waitForTimeout(1_000)
+  await composer.click({ timeout: 10_000 }).catch(() => {})
   await page.keyboard.type('e2e wall: bench tour mint', { delay: 15 })
   // THE TURN'S OWN ANSWER (2026-10-24): a keyed lane answers the
   // mint in 10–40s (glm-5.3-flash high effort), and a spec that

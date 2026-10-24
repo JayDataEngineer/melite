@@ -95,7 +95,7 @@ test('G7: the wand on a sidecar-less run refuses honest — nothing boards, no g
     // NEVER A GHOST BOARD: the bench stays empty, no tile renders.
     await page.waitForTimeout(3_000)
     expect(await stageCount(page, mint.sessionKey), 'no stage boarded from a sidecar-less run').toBe(0)
-    const rail = page.locator('button[class*="tileInner"]:not([aria-label="Add a card"])')
+    const rail = page.locator('[class*="tileInner"]:not([aria-label="Add a card"])')
     expect(await rail.count(), 'no tile renders from a sidecar-less run').toBe(0)
   } finally {
     removePlanted(planted)

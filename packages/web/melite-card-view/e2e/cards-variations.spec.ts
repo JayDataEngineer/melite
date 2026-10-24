@@ -29,7 +29,7 @@ async function openBench(page: Page, stages: Array<{ card: string; params: Recor
   await page.waitForTimeout(3_000)
   await page.getByRole('button', { name: /Melite Bench/ }).first().click({ timeout: 10_000 })
   await page.waitForTimeout(4_000)
-  const rail = page.locator('button[class*="tileInner"]:not([aria-label="Add a card"])')
+  const rail = page.locator('[class*="tileInner"]:not([aria-label="Add a card"])')
   await expect(rail).toHaveCount(stages.length, { timeout: 30_000 })
   return { key: mint.sessionKey, rail }
 }
@@ -42,12 +42,17 @@ async function openBench(page: Page, stages: Array<{ card: string; params: Recor
 async function variantOptions(page: Page): Promise<string[]> {
   const trigger = page.locator('button[data-axis="Variant"]').first()
   await trigger.click()
+  // THE PORTAL MOUNT IS ASYNC (Menu portal: true — the rows render a
+  // React tick after the anchor's click; an immediate allTextContents
+  // reads an empty DOM). The first row's visibility gates the read.
+  await expect(page.getByRole('menuitem').first(), 'the variant menu opens').toBeVisible({ timeout: 5_000 })
   const rows = await page.getByRole('menuitem').allTextContents()
   await trigger.click() // owner bit toggles closed
   return rows.map((r) => r.trim()).filter((r) => r !== '')
 }
 async function pickVariant(page: Page, face: RegExp): Promise<void> {
   await page.locator('button[data-axis="Variant"]').first().click()
+  await expect(page.getByRole('menuitem').first(), 'the variant menu reopens').toBeVisible({ timeout: 5_000 })
   await page.getByRole('menuitem', { name: face }).click()
 }
 
@@ -98,7 +103,11 @@ test.describe("the variation law pins (the operator's three breaks, held at the 
     // —— THE 2511 FACE ——————————————————————————————
     await rail.first().click({ timeout: 15_000, force: true })
     await page.waitForTimeout(3_500)
-    await expect(page.locator('select[aria-label="Model"]')).toHaveValue('qwen-img-edit-2511')
+    // THE MENU AXES (S7e): the Model select is a DSH Menu — the
+    // trigger button[data-axis] carries the current row's LABEL as
+    // its face (SpecMenuSelect, card-base atoms.tsx) — the value
+    // assert reads the face, never a <select> that no longer rides.
+    await expect(page.locator('button[data-axis="Model"]')).toContainText('Qwen Image Edit 2511')
     // the variant axis is THIS family's own (lightning/standard —
     // never 2.1's int8/bf16)
     const variants = await variantOptions(page)
@@ -119,7 +128,7 @@ test.describe("the variation law pins (the operator's three breaks, held at the 
     await expect(rail, 'the 2.1 variation boarded').toHaveCount(2, { timeout: 20_000 })
     await rail.nth(1).click({ timeout: 15_000, force: true })
     await page.waitForTimeout(3_500)
-    await expect(page.locator('select[aria-label="Model"]')).toHaveValue('qwen-img-edit-21')
+    await expect(page.locator('button[data-axis="Model"]')).toContainText('Qwen Image Edit 2.1')
     // THE VARIANT RESEED (the stale-variant cure): a model switch
     // hands the new family's own variant rows — int8/bf16 now
     const variants21 = await variantOptions(page)
@@ -132,6 +141,7 @@ test.describe("the variation law pins (the operator's three breaks, held at the 
     // —— THE MODEL SWITCH, ON THE OPEN 2.1 DRILL ————————
     const before = specUrls.length
     await page.getByRole('button', { name: 'Model', exact: true }).click()
+    await expect(page.getByRole('menuitem').first(), 'the model menu opens on the open drill').toBeVisible({ timeout: 5_000 })
     await page.getByRole('menuitem', { name: /Qwen Image Edit 2511/ }).click()
     await page.waitForTimeout(4_000)
     expect(specUrls.slice(before).some((u) => u.includes('model=qwen-img-edit-2511')),
@@ -154,7 +164,7 @@ test.describe("the variation law pins (the operator's three breaks, held at the 
 
     await rail.first().click({ timeout: 15_000, force: true })
     await page.waitForTimeout(3_500)
-    await expect(page.locator('select[aria-label="Model"]')).toHaveValue('krea-2')
+    await expect(page.locator('button[data-axis="Model"]')).toContainText('Krea 2')
     expect(await variantOptions(page), 'krea-2 offers exactly its two declared routes').toEqual(['turbo', 'raw'])
     // THE ENVELOPE, served to the browser: turbo 4–8 steps / 1–2 cfg,
     // raw 30–60 / 2–6 — the projection (bounds) and the verbatim

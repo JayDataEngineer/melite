@@ -179,7 +179,7 @@ async function pickFileThroughKfDoor(page: Page, file: { name: string; mimeType:
 /** The arm's tile, by stage id — the caption renders human labels, so
  *  the id attribute is the only exact seat. */
 function tileOf(page: Page, stageId: string) {
-  return page.locator(`[data-stage-id="${stageId}"] button[class*="tileInner"]`).first()
+  return page.locator(`[data-stage-id="${stageId}"] [class*="tileInner"][role="button"]`).first()
 }
 
 /** Settle, mint, open the Cards tab (the tour's order law: the tab

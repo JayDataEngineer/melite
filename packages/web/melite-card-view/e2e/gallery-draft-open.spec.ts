@@ -83,7 +83,7 @@ test('clicking a served draft loads its stages onto THIS conversation\'s bench a
   // THE ROUTE: openResource activated the cards tab — the rail's own
   // tiles are the visible proof (the Add-a-card affordance is not a
   // stage; the pinned selector excludes it by its aria-label).
-  const rail = page.locator('button[class*="tileInner"]:not([aria-label="Add a card"])')
+  const rail = page.locator('[class*="tileInner"]:not([aria-label="Add a card"])')
   await expect(rail.first(), 'the cards tab owns the pane and renders the landed stage').toBeVisible({ timeout: 30_000 })
   await expect
     .poll(async () => await rail.count(), { timeout: 30_000, message: 'at least one stage tile on the rail' })

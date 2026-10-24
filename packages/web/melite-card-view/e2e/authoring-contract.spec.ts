@@ -48,7 +48,7 @@ test('a typed prompt RIDES the bench row (the lane can never say "prompt is not 
 
   // THE DRILL opens on the fresh row (the open-on-add law) — the
   // real form, the real schema: a prompt field the card declares.
-  const prompt = page.getByLabel('Prompt', { exact: false }).first()
+  const prompt = page.getByRole('textbox', { name: 'Prompt', exact: true })
   await expect(prompt, 'the added card opens with its declared form').toBeVisible({ timeout: 30_000 })
   // UNIQUE PER RUN: the host reopens the LAST conversation on load,
   // so a re-run mints into a bench that still carries the prior run's

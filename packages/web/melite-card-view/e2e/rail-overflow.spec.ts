@@ -22,7 +22,7 @@ test('NAME the too-wide element: every overflowing node in the studio', async ({
   await page.waitForTimeout(6_000)
   await openCardsWithBench(page, sessionKey)
 
-  const tile = page.locator('button', { hasText: 'h3-timeline' }).first()
+  const tile = page.locator('[class*="tileInner"][role="button"]').filter({ hasText: 'Generate Video' }).first()
   await expect(tile).toBeVisible({ timeout: 20_000 })
   await tile.click({ timeout: 10_000 })
   await expect(page.locator('[data-testid="h3-studio-tenant"]')).toBeVisible({ timeout: 30_000 })

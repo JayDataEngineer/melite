@@ -19,7 +19,7 @@ test.skip(process.env.MELITE_E2E_AI !== '1', 'THE MINT IS AN ACTUAL AI CALL — 
 
 /** The catalog row the sweep drives: a card and the model families
  *  it boards (the variations). */
-interface CardRow { card: string; families: string[] }
+interface CardRow { card: string; families: string[]; label: string | null }
 
 /** Read the estate's LIVE catalog through the host's own doors (the
  *  same discovery doors the GUI reads — never a baked list). */
@@ -27,16 +27,21 @@ async function readCatalog(page: Page): Promise<CardRow[]> {
   return await page.evaluate(async () => {
     const forms = await (await fetch('/v1/forms')).json() as Record<string, unknown>
     const cat = await (await fetch('/v1/model-catalog')).json() as { cards?: Record<string, unknown> }
-    const out: Array<{ card: string; families: string[] }> = []
+    const out: Array<{ card: string; families: string[]; label: string | null }> = []
     for (const card of Object.keys(forms).sort()) {
       const row = cat.cards?.[card]
       let families: string[] = []
+      let label: string | null = null
       if (Array.isArray(row)) families = row.filter((f): f is string => typeof f === 'string')
       else if (row !== null && typeof row === 'object') {
         const maybe = (row as { families?: unknown }).families
         if (Array.isArray(maybe)) families = maybe.filter((f): f is string => typeof f === 'string')
+        // THE PROFESSIONAL NAME (operator 2026-11-06): tiles face the
+        // catalog's label, never the id — the tile filter must too.
+        const l = (row as { label?: unknown }).label
+        if (typeof l === 'string' && l !== '') label = l
       }
-      out.push({ card, families })
+      out.push({ card, families, label })
     }
     return out
   })
@@ -128,7 +133,23 @@ test.describe('the every-card wall (live catalog, every family a variation)', ()
     const catalog = await readStableCatalog(page)
     // THE CATALOG IS NOT VACUOUS: the estate serves a real fleet —
     // a host that serves nothing must fail HERE, not pass silently.
-    expect(catalog.length, 'the estate serves its card fleet').toBeGreaterThanOrEqual(15)
+    // The floor is DERIVED from the cardPackages SSOT (canon axis 4:
+    // a derived roster over a hand-bumped count — the literal 15
+    // this replaced outlived the fleet it was minted from and fired
+    // red on a truthful 14-card estate, 2026-10-24).
+    const { readFile } = await import('node:fs/promises')
+    const path = await import('node:path')
+    const { fileURLToPath } = await import('node:url')
+    // import.meta.url, never __dirname: the specs ride ESM (the
+    // package's "type": "module") and __dirname is undefined there.
+    const ssot = await readFile(
+      path.resolve(fileURLToPath(new URL('.', import.meta.url)), '../../../engines/comfyui-cordis/src/cardDefs.ts'),
+      'utf8',
+    )
+    const block = /export const cardPackages[^]*?\n\]/.exec(ssot)?.[0] ?? ''
+    const declared = block.match(/'@melite\//g)?.length ?? 0
+    expect(declared, 'the cardPackages SSOT holds its rows').toBeGreaterThan(0)
+    expect(catalog.length, 'the estate serves its card fleet (the cardPackages SSOT count)').toBeGreaterThanOrEqual(declared)
     expect(catalog.map((r) => r.card)).toContain('image-edit')
     expect(catalog.map((r) => r.card)).toContain('image-gen')
 
@@ -150,7 +171,7 @@ test.describe('the every-card wall (live catalog, every family a variation)', ()
     // THE TAB HOLDS THE MINTED CONVERSATION: its first tile is the
     // birth stage the mint added — the stream pushed it, so the rail
     // below is the mint's bench, never a stranger's.
-    const rail = page.locator('button[class*="tileInner"]:not([aria-label="Add a card"])')
+    const rail = page.locator('[class*="tileInner"]:not([aria-label="Add a card"])')
     await expect(rail, 'the tab renders the minted bench').toHaveCount(1, { timeout: 30_000 })
 
     const boarded: CardRow[] = []
@@ -185,7 +206,7 @@ test.describe('the every-card wall (live catalog, every family a variation)', ()
     // data-status filter is NOT enough — probed: a fresh draft tile
     // can render status-less). The mint's bench was born empty, so
     // the rail counts the fleet exactly.
-    const tiles = page.locator('button[class*="tileInner"]:not([aria-label="Add a card"])')
+    const tiles = page.locator('[class*="tileInner"]:not([aria-label="Add a card"])')
     await expect(tiles, 'every boarded card rendered its tile').toHaveCount(boarded.length, { timeout: 30_000 })
     const specUrls: string[] = []
     page.on('request', (r) => { if (r.url().includes('/v1/form-spec')) specUrls.push(r.url()) })
@@ -204,7 +225,9 @@ test.describe('the every-card wall (live catalog, every family a variation)', ()
       // that opened to nothing — refused by name.
       await page.waitForTimeout(2_500)
       const overlay = page.locator('div[class*="zoomOverlay"]')
-      const hasForm = await page.locator('select[aria-label="Model"]').count()
+      // the S7e face of the model axis is the menu trigger, never a
+      // <select> (SpecMenuSelect, card-base atoms.tsx)
+      const hasForm = await page.locator('button[data-axis="Model"]').count()
       const hasStudio = await page.locator('[data-testid="stage-preview-seat"]').count()
       const hasControls = await overlay.locator('input, select, textarea, [role="slider"]').count()
       expect(hasForm + hasStudio + hasControls, `${row.card}: the drill renders a declared face (form, studio, or controls)`).toBeGreaterThan(0)
@@ -249,7 +272,7 @@ test.describe('the every-card wall (live catalog, every family a variation)', ()
     // stage tiles share tileInner with the add cell — stages only;
     // the mint's bench was born empty, so the rail counts the boarded
     // rows exactly
-    const tiles = page.locator('button[class*="tileInner"]:not([aria-label="Add a card"])')
+    const tiles = page.locator('[class*="tileInner"]:not([aria-label="Add a card"])')
     const specUrls: string[] = []
     page.on('request', (r) => { if (r.url().includes('/v1/form-spec')) specUrls.push(r.url()) })
 
@@ -265,7 +288,7 @@ test.describe('the every-card wall (live catalog, every family a variation)', ()
       // the covered rail and the drill never retargets. The named
       // filter drives THIS card's tile, and the option list below is
       // the retarget receipt.
-      const tile = tiles.filter({ hasText: row.card }).first()
+      const tile = tiles.filter({ hasText: row.label ?? row.card }).first()
       await tile.click({ timeout: 15_000, force: true })
       const zoom = zoomOf(page)
       await expect(zoom, `${row.card}: the drill opens`).toBeVisible({ timeout: 30_000 })
@@ -284,23 +307,56 @@ test.describe('the every-card wall (live catalog, every family a variation)', ()
       const modelTrigger = page.getByRole('button', { name: 'Model', exact: true })
       await expect(modelTrigger, `${row.card}: the family axis renders`).toBeVisible({ timeout: 30_000 })
       await modelTrigger.click()
+      // THE PORTAL MOUNT IS ASYNC (Menu portal: true — the rows render
+      // a React tick AFTER the anchor's click; an immediate
+      // allTextContents reads an empty DOM: the axisSeat null class,
+      // 2026-10-24). The first row's visibility gates the read.
+      await expect(page.getByRole('menuitem').first(), `${row.card}: the family menu opens`).toBeVisible({ timeout: 5_000 })
       const faces = (await page.getByRole('menuitem').allTextContents()).map((f) => f.trim())
       await modelTrigger.click()
       const faceFor = (id: string): RegExp => {
         const segs = id.split(/[-_]/).filter(Boolean)
         return new RegExp(`${segs[0] ?? id}.*${segs[segs.length - 1] ?? id}`, 'i')
       }
+      // THE DOTTED-DECIMAL FACE: a DECL label renders "2.1" where the
+      // id says "21" (qwen-img-edit-21 → "Qwen Image Edit 2.1") —
+      // the face is matched with dots and spaces stripped, so the id
+      // segment law holds across both spellings (2026-10-24).
+      const faceNorm = (f: string): string => f.replace(/[.\s]/g, '')
       const titleCaseId = (id: string): string =>
         id.split(/[-_\s]+/).map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
-      const axisSeat = row.families.every((fam) =>
-        faces.some((f) => f === titleCaseId(fam) || faceFor(fam).test(f))) ? 'Model' : null
-      expect(axisSeat, `${row.card}: the Model menu offers every declared family (${row.families.join(', ')})`).not.toBeNull()
-      // EVERY OTHER FAMILY is a variation: pick it, the wire must
+      // THE MATRIX SEAT (2026-10-24, drive-11's named evidence): a
+      // family in the card's VARIANT MATRIX (axes.tsx: familyRows
+      // flatMap f.inMatrix ? [] : [row]) is lawfully ABSENT from the
+      // Model menu — it boards through a seated family's Variant
+      // axis (image-edit: 2511 rides 2.1's variant rail, proven by
+      // cards-variations' reseed arm). A declared family is
+      // REACHABLE through EITHER menu; the reachability of the
+      // matrix lane itself is the variations wall's own receipt.
+      const seatedOnModelMenu = (menuFaces: string[], ff: (id: string) => RegExp, norm: (f: string) => string) =>
+        (fam: string) => menuFaces.some((f) => f === titleCaseId(fam) || ff(fam).test(norm(f)))
+      const variantTrigger = page.locator('button[data-axis="Variant"]').first()
+      let variantFaces: string[] = []
+      if (await variantTrigger.count() > 0) {
+        await variantTrigger.click()
+        await expect(page.getByRole('menuitem').first(), `${row.card}: the variant menu opens`).toBeVisible({ timeout: 5_000 })
+        variantFaces = (await page.getByRole('menuitem').allTextContents()).map((f) => f.trim())
+        await variantTrigger.click()
+      }
+      const seated = (fam: string): boolean =>
+        faces.some((f) => f === titleCaseId(fam) || faceFor(fam).test(faceNorm(f)))
+        || variantFaces.some((f) => f === titleCaseId(fam) || faceFor(fam).test(faceNorm(f)))
+      const axisSeat = row.families.every(seated) ? 'Model' : null
+      expect(axisSeat, `${row.card}: every declared family is reachable (Model menu or variant matrix) (${row.families.join(', ')}) — model menu [${faces.join(' | ')}] variant menu [${variantFaces.join(' | ')}]`).not.toBeNull()
+      // EVERY MODEL-MENU FAMILY is a variation: pick it, the wire must
       // refetch that family's own form-spec (the face follows the
       // boarded model — the lying-cap lesson at the browser plane).
-      for (const family of row.families.slice(1)) {
+      // Matrix-seated families are EXCLUDED here: their variant pick
+      // and refetch are cards-variations' own wall.
+      for (const family of row.families.slice(1).filter(seatedOnModelMenu(faces, faceFor, faceNorm))) {
         const before = specUrls.length
         await modelTrigger.click()
+        await expect(page.getByRole('menuitem').first(), `${row.card}: the family menu reopens for ${family}`).toBeVisible({ timeout: 5_000 })
         const exact = page.getByRole('menuitem', { name: titleCaseId(family), exact: true })
         const row_ = (await exact.count()) > 0 ? exact : page.getByRole('menuitem', { name: faceFor(family) }).first()
         await row_.click()
