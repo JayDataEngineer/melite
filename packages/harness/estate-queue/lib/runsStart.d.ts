@@ -1,9 +1,9 @@
 import type { EngineJson } from "@melite/comfyui-cordis";
-import type { FlowStageRow } from "./runsValidateShared.ts";
-import type { GraphReceiptStageRow, QueueRefusal } from "./queue.ts";
-export { envelopeRefusal, unknownDraftRefusal } from "./queueSubmit.ts";
-import type { RunId } from "./queueCore.ts";
-import type { RunRecord } from "./runsTypes.ts";
+import type { FlowStageRow } from "./runsValidateShared.js";
+import type { GraphReceiptStageRow, QueueRefusal } from "./queue.js";
+export { envelopeRefusal, unknownDraftRefusal } from "./queueSubmit.js";
+import type { RunId } from "./queueCore.js";
+import type { RunRecord } from "./runsTypes.js";
 /** The door's refusal shape (status carries the HTTP class; the
  *  remote folds it into RemoteError details). */
 export type StartRefusal = QueueRefusal;
