@@ -272,36 +272,21 @@ export async function openAConversation(page: Page): Promise<{ opened: boolean; 
   ).catch(() => null)
   await page.keyboard.press('Enter')
   await answered
-  // THE TURN-END WAIT (2026-10-24, drive-13's #3 corpse): the
-  // no-turn-end law above died on the read-only seat's own success —
-  // the curbed brain cannot WRITE, but it still READ (a 7-step,
-  // 168K-token repo exploration that streamed past the 420s kill),
-  // and every rerender closed the arms' drill mid-arm (the Model
-  // face passed, the Variant axis vanished) while the composer
-  // stayed disabled. The turn's end HAS a DOM signal after all: the
-  // send verb re-enables. Bounded 120s — a one-word order answers in
-  // seconds; a brain that over-explores still gets cut loose (the
-  // key poll + empty-mint retry behind guard the rest).
-  await page.getByRole('button', { name: 'Send message' })
-    .waitFor({ state: 'visible', timeout: 10_000 }).catch(() => {})
-  await expect(page.getByRole('button', { name: 'Send message' }))
-    .toBeEnabled({ timeout: 120_000 })
-    .catch(() => { /* an over-long turn is cut loose; the mint's own key laws behind judge */ })
   // THE PARKED-APPROVAL REJECT (2026-10-24, drive-14's #11 corpse):
   // a curbed brain that still calls a gated tool parks the turn on
   // the approval card ("Waiting for answer" — the session's own
   // title in the corpse's tree) and the composer stays disabled
-  // while the question waits, so every later seat races its
-  // rerenders and the empty-mint retry below types into a disabled
-  // composer. The approval panel's own reject verb is the Escape
-  // key (ui-approval shortcuts: approval.reject keys [Esc]) — one
-  // press settles the question, the turn resolves, the mint
-  // proceeds on a settled shell. Caught everywhere: with no
-  // approval pending the press is a no-op.
-  if (!(await page.getByRole('button', { name: 'Send message' }).isEnabled().catch(() => false))) {
-    await page.keyboard.press('Escape').catch(() => {})
-    await page.waitForTimeout(2_000)
-  }
+  // while the question waits. The approval panel's own reject verb
+  // is the Escape key (ui-approval shortcuts: approval.reject keys
+  // [Esc]). UNCONDITIONAL and safe: the composer is EMPTY here (the
+  // mint was sent), so the key's only meaningful listener is the
+  // pending approval — with none, the press is a no-op. NEVER the
+  // send verb as the completion signal (wall T: the verb stays
+  // disabled on an empty composer — a dead wait); the ANSWER gate
+  // above is the whole completion law, this reject only clears what
+  // the answer left parked.
+  await page.keyboard.press('Escape').catch(() => {})
+  await page.waitForTimeout(2_000)
   await seat.waitFor({ state: 'visible', timeout: 20_000 }).catch(() => {})
   const opened = await seat.isVisible().catch(() => false)
   // THE KEY IS A RECEIPT, not a hope: poll for the mint's own frame
