@@ -133,12 +133,19 @@ test.describe("the variation law pins (the operator's three breaks, held at the 
     await rail.nth(1).click({ timeout: 15_000, force: true })
     await page.waitForTimeout(3_500)
     await expect(page.getByRole('button', { name: 'Model', exact: true })).toContainText('Qwen Image Edit 2.1')
-    // THE VARIANT RESEED (the stale-variant cure): a model switch
-    // hands the new family's own variant rows — int8/bf16 now
+    // THE VARIANT RESEED (the stale-variant cure), re-pinned to the
+    // LIVE axis vocabulary (drive-15's receipt): the 2026-11-09
+    // quant-pool restructure moved the int8/bf16 TIERS off the
+    // Variant axis onto the QUANT axis (trigger face 'INT8 ConvRot')
+    // — 2.1's Variant rows are now [Base, …]. The reseed law itself
+    // is STRONGER under the soft-retire above: the switch 2511→2.1
+    // goes ABSENCE → PRESENCE, so any row here is 2.1's own — a
+    // carried-over 2511 row (lightning/standard) is the named break.
     const variants21 = await variantOptions(page)
-    expect(variants21.length, '2.1 offers exactly its two variants (reseeded, never carried over)').toBe(2)
-    expect(variants21.some((v) => /int8/i.test(v)), '2.1 int8 tier is offered').toBe(true)
-    expect(variants21.some((v) => /bf16/i.test(v)), '2.1 bf16 tier is offered').toBe(true)
+    expect(variants21.length, '2.1 offers its own variant rows (the axis appears on the switch)').toBeGreaterThan(0)
+    expect(variants21.some((v) => /base/i.test(v)), '2.1 base variant is offered').toBe(true)
+    expect(variants21.some((v) => /lightning|standard/i.test(v)), 'no soft-retired 2511 row carried over').toBe(false)
+    await expect(page.getByRole('button', { name: 'Quant', exact: true }), 'the tier vocabulary lives on the Quant axis now').toContainText('INT8')
     expect(await servedImageCap(page, 'qwen-img-edit-21'), 'the 2.1 lane admits 16 images').toBe(16)
     await expect(page.locator('[data-lane-warn]'), '2.1: no lane-warn strip on a fresh open').toHaveCount(0)
 
@@ -151,10 +158,11 @@ test.describe("the variation law pins (the operator's three breaks, held at the 
     expect(specUrls.slice(before).some((u) => u.includes('model=qwen-img-edit-2511')),
       'switching 2.1 → 2511 refetches the 2511 form-spec').toBe(true)
     await expect(page.getByRole('button', { name: 'Model', exact: true })).toContainText('Qwen Image Edit 2511')
-    const variantsBack = await variantOptions(page)
-    expect(variantsBack.length, 'the switch reseeds the variant axis back to 2511\'s rows').toBe(2)
-    expect(variantsBack.some((v) => /lightning/i.test(v)), '2511 lightning reseeded').toBe(true)
-    expect(variantsBack.some((v) => /standard/i.test(v)), '2511 standard reseeded').toBe(true)
+    // THE RESEED BACK, under the soft-retire: the axis VANISHES again
+    // (both 2511 rows hidden from the dropdown) — the reseed law
+    // judged in BOTH directions: absence→presence→absence across
+    // switches, never a carried-over row in either direction.
+    await expect(page.locator('button[data-axis="Variant"]'), 'the switch back retires the axis again (no carried-over 2.1 row)').toHaveCount(0)
     expect(await servedImageCap(page, 'qwen-img-edit-2511'), 'the served cap followed the switch: 3').toBe(3)
     await page.getByRole('button', { name: 'Collapse card' }).click({ timeout: 10_000 })
     await expectNoPageErrors(page, errors)
