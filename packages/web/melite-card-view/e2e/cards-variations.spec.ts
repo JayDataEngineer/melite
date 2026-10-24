@@ -86,6 +86,13 @@ async function servedImageCap(page: Page, model: string): Promise<number> {
 
 test.describe("the variation law pins (the operator's three breaks, held at the browser)", () => {
   test('image-edit: 2511 admits 3, 2.1 admits 16, the fresh face is clean, the variant axis reseeds', async ({ page }) => {
+    // THE DEEPEST STACK IN THE SUITE (drive-17 #3 red): mint + two
+    // sequential boards + two drilled faces + a two-hop model
+    // switch with served-cap receipts — under full-drive load the
+    // stack outgrew the 420s default and died waiting for the
+    // 2511 menuitem AFTER the menu had opened. 600s = the same
+    // budget class the gallery and every-card arms already ride.
+    test.setTimeout(600_000)
     const errors = collectPageErrors(page)
     await settle(page)
     const specUrls: string[] = []

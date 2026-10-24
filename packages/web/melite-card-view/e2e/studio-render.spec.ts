@@ -118,9 +118,13 @@ test('the h3-timeline bench card opens the VideoTimelineStudio, not the generic 
   await audioLane.click({ timeout: 10_000, position: { x: 2, y: 4 } })
   await expect(page.locator('[data-testid="tl-audio-panel"]'), 'the audio submenu opens').toBeVisible({ timeout: 10_000 })
   await expect(page.locator('[data-testid="tl-clips-lane-hint"]'), 'the clips-lane guard hint lives in the audio submenu').toBeVisible({ timeout: 10_000 })
-  // the zoom overlay titles the stage (the CardZoomOverlay shell;
-  // exact — a transcript in the chat column can echo the same words)
-  await expect(page.getByText('Stage h3-timeline', { exact: true })).toBeVisible({ timeout: 10_000 })
+  // the zoom overlay still owns the pane after the submenu detour —
+  // the DIALOG's accessible title seats it (drive-17 #13: the
+  // overlay titles the stage by its TILE label 'Stage Generate
+  // Video', the seeded h3-timeline card's rendered label; the old
+  // 'Stage h3-timeline' text pinned a title the shell no longer
+  // renders. Role+name is the shell's own seat, exact by default).
+  await expect(page.getByRole('dialog', { name: 'Stage Generate Video' })).toBeVisible({ timeout: 10_000 })
 
   // 5 — the tour stays error-free
   await expectNoPageErrors(page, errors)
