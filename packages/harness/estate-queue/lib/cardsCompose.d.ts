@@ -1,16 +1,16 @@
-import { cardAdmits } from "./cardsFacts.js";
+import { cardAdmits } from "./cardsFacts.ts";
 export { cardAdmits };
 import type { FactsReads } from "@melite/comfyui-cordis";
-import type { PreparedCard } from "./cardsRegistry.js";
-import { type CardDeclRow, type ModelFactsRow } from "./cardsFacts.js";
+import type { PreparedCard } from "./cardsRegistry.ts";
+import { type CardDeclRow, type ModelFactsRow } from "./cardsFacts.ts";
 export interface ComposeSeat {
     cardDecls(facts?: Record<string, ModelFactsRow>): Record<string, CardDeclRow>;
-    modelFacts(): Record<string, import("./cardsFacts.js").ModelFactsRow>;
+    modelFacts(): Record<string, import("./cardsFacts.ts").ModelFactsRow>;
     modelMids(): Set<string>;
     objectInfo(): Record<string, unknown> | null;
     primeObjectInfo(): Promise<boolean>;
     readsSync(): FactsReads;
-    resolveCardFamily(mid: string, facts?: Record<string, import("./cardsFacts.js").ModelFactsRow>): string;
+    resolveCardFamily(mid: string, facts?: Record<string, import("./cardsFacts.ts").ModelFactsRow>): string;
     /** The §23 cross-roots manifest (the queue seat's stateRoots —
      *  the dangling sweep's trees; J12: config-named, never env). */
     stateRoots(): readonly string[];

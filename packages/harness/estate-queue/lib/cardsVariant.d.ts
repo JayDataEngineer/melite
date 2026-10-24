@@ -1,4 +1,4 @@
-import type { CardDeclRow, ModelFactsRow } from "./cardsFacts.js";
+import type { CardDeclRow, ModelFactsRow } from "./cardsFacts.ts";
 /** One closed [min, max] bound on a stated sampler knob. */
 export type EnvelopeBound = readonly [number, number];
 export interface VariantSelection {
