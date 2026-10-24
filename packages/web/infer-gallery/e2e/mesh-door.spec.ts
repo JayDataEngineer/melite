@@ -64,6 +64,17 @@ const MIME: Record<string, string> = {
 function serve(): Promise<{ server: Server, origin: string }> {
   const server = createServer((req, res) => {
     const url = new URL(req.url ?? '/', 'http://localhost')
+    // THE CATALOG ROUTE (2026-10-24): the viewer's import graph boots
+    // the catalog contract store, which fetches /v1/model-catalog on
+    // mount. This static host is the page AROUND the component — the
+    // harness's own law stubs exactly that — so it answers the
+    // contract's empty shape (zero families, zero models; the store's
+    // own validation judges the body) instead of a console-error 404
+    // the no-errors wall would rightly fire on.
+    if (url.pathname === '/v1/model-catalog') {
+      res.writeHead(200, { 'content-type': 'application/json' }).end('{"families":{},"models":{}}')
+      return
+    }
     // THE ARTIFACT ROUTE, AS THE PRODUCT SERVES IT (the operator's
     // 2026-09-26 bug: the wall served `/mesh.glb` directly, so the
     // viewer's gate saw a real filename and passed — while every mesh
