@@ -1734,8 +1734,23 @@ export class CardRegistryService extends Service {
       // THE VARIANT-LANE PRESENCE LAW (h¹ remainder): the probe rides
       // the RESOLVED lane inputs — the body's stated variant over the
       // address's own row (the same derivation the compose stamps).
-      const miss = lanePresenceRefusal(prep.fam, prep.params, prep.modelId);
-      if (miss !== null) return { message: miss.message, code: miss.code };
+      // THE THROWING GATE FOLDS HERE (the 502 burn, 2026-10-24):
+      // lanePresenceRefusal THROWS its miss — phase1Card's pinned
+      // contract ("the refusal is a THROW, never a value"), so the
+      // `miss !== null` arm this seat wrote was dead code, and the
+      // raw CardArmError escaped to the door's failEstate, which
+      // mints 502 for every non-RemoteError throw: a missing weight
+      // at /v1/flows/validate answered Bad Gateway (krea-2,
+      // flux-klein — the combination sweep's live red) while the
+      // same miss at phase1 answered its lawful 400. The fold
+      // answers the miss as THIS seat's verdict, same voice, same
+      // code — walled by lane-presence-validate-fold.spec.
+      try {
+        lanePresenceRefusal(prep.fam, prep.params, prep.modelId);
+      } catch (e) {
+        if (e instanceof CardArmError) return { message: e.message, code: e.code };
+        throw e;
+      }
     }
     try {
       const graph = await composeOnce(this, prep.card, prep.modelId, prep.params, "", "1");
