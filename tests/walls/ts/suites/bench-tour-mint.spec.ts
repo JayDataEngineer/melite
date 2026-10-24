@@ -16,12 +16,19 @@
 //       prompt listener attaches BEFORE Enter, filters the mint's own
 //       frame, reads payload.args.request.sessionId, keeps the first
 //       frame, polls the receipt bounded, and detaches.
-//   T — THE TURN'S COMPLETION GATE: the answer gate is bounded and the
-//       mint waits the send verb's re-enable (the turn's END) — never
-//       proceeding mid-turn. The poll's bound is judged for EXISTENCE,
-//       never value: the bound is a drive tunable, and freezing the
-//       45 literal made this arm red on a lawful cure (2026-10-24,
-//       the drive-8 bound move).
+//   T — THE ANSWER GATE IS THE WHOLE COMPLETION LAW: the gate arms
+//       before Enter, is awaited after it, and is bounded (existence,
+//       never value — the drive-8 lesson). The send verb's re-enable is
+//       REFUSED as a completion signal: the verb stays disabled on an
+//       empty composer, so a poll there can never fire — a dead wait
+//       burning the mint's budget while the commission-brain keeps
+//       mutating the bench (2026-10-24, adjudicated live after the
+//       drive-7/8 reds; the answered gate is the whole law).
+//   W — THE BENCH WIRE IS BOUNDED: callBench's in-page fetch carries
+//       an abort timeout — the estate's bench doors can queue behind
+//       the conversation's in-flight model turn, and an unbounded
+//       fetch hung the whole 420s test budget (2026-10-24, the
+//       drive-8 authoring red). Existence, never value.
 //   B — THE BIRTH RIDES THE ENSURE DOOR ONLY: seedBenchH3 reads
 //       bench/get first, ensures ONLY on the not-found refusal,
 //       re-reads, and adds the h3 stage idempotently under the live
@@ -131,29 +138,47 @@ describe("THE BENCH TOUR MINT — the mint hop's laws hold on the real spine", (
     assert.match(mint, /page\.off\('request', onPrompt\)/, "the listener detaches — the spine leaks no frame collector into the caller");
   });
 
-  it("T — the mint waits the turn's completion: bounded answer gate, then the send verb's re-enable", () => {
+  it("T — the answer gate is the whole completion law: armed before Enter, awaited, bounded — never a send-verb poll", () => {
     const mint = extractBody(tourSource, "openAConversation");
     assert.notEqual(mint, "", "openAConversation not found in tour.ts");
-    assert.match(
-      mint,
-      /waitForResponse\(/,
-      "the spine never arms the answer gate — a mint that races the reply fails downstream on re-layout, never at its own cause",
-    );
-    assert.match(mint, /timeout: 90_000/, "the answer gate is bounded — a dead brain must still fail at the mint's named cause");
+    const armed = mint.indexOf("page.waitForResponse(");
+    const enter = mint.indexOf("keyboard.press('Enter')");
     const answered = mint.indexOf("await answered");
-    const send = mint.indexOf("name: 'Send message'");
+    assert.notEqual(armed, -1, "the spine never arms the answer gate — a mint that races the reply fails downstream on re-layout, never at its own cause");
+    assert.notEqual(enter, -1, "the spine never presses Enter — no mint happens at all");
     assert.notEqual(answered, -1, "the answer gate is never awaited");
-    assert.notEqual(send, -1, "the completion poll (the send verb's re-enable) is missing");
     assert.ok(
-      answered < send,
-      "the completion poll must follow the awaited answer — the response frame arrives when generation STARTS, the re-enable is its END",
+      armed < enter && enter < answered,
+      "the answer gate must arm BEFORE Enter and be awaited AFTER it — a later arm misses the mint's own response frame, and proceeding before the await races the turn's rerenders",
     );
     assert.match(
       mint,
-      /for \(let i = 0; i < \d+; i\+\+\) \{/,
-      "the completion poll is BOUNDED — the bound's EXISTENCE is the law, its value is the drive's own tunable (the 2026-10-24 drive-8 red lawfully moved 45→150 once bench doors queued behind the in-flight model turn; the frozen 45 literal made this arm red on a lawful cure). An unbounded poll hangs the test budget instead of failing at the mint's named cause",
+      /timeout: \d[\d_]*\b/,
+      "the answer gate is bounded — a dead brain must still fail at the mint's named cause (the bound's EXISTENCE is the law, its value is the drive's own tunable)",
     );
-    assert.match(mint, /isDisabled\(\)/, "completion is read off the send verb's disabled state, never a fixed sleep");
+    assert.ok(
+      !mint.includes("name: 'Send message'"),
+      "the spine polls the send verb's re-enable for completion — the verb stays disabled on an empty composer, so the poll can never fire: a dead wait burning the mint's budget while the commission-brain keeps mutating the bench (2026-10-24, adjudicated live after the drive-7/8 reds)",
+    );
+    assert.ok(
+      !mint.includes("isDisabled()"),
+      "the spine reads completion off the send verb's disabled state — the same dead signal in its other spelling; the answered gate is the whole law",
+    );
+  });
+
+  it("W — the mint's bench wire is bounded: callBench's fetch carries an abort timeout", () => {
+    const wire = extractBody(tourSource, "callBench");
+    assert.notEqual(wire, "", "callBench not found in tour.ts");
+    assert.match(
+      wire,
+      /fetch\('\/api\/' \+ method/,
+      "the bench wire is not the in-page typed client-request fetch — a different client judges a different lane",
+    );
+    assert.match(
+      wire,
+      /signal: AbortSignal\.timeout\(\d[\d_]*\)/,
+      "the bench fetch is UNBOUNDED — the estate's bench doors can queue behind the conversation's in-flight model turn, and an unbounded fetch hung the whole 420s test budget (the 2026-10-24 drive-8 authoring red); a hang must refuse at its own named cause",
+    );
   });
 
   it("B — the birth rides the ensure door only: get first, ensure only on the refusal, idempotent add under the live rev", () => {

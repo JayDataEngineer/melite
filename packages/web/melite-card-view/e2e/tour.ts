@@ -238,19 +238,16 @@ export async function openAConversation(page: Page): Promise<{ opened: boolean; 
   ).catch(() => null)
   await page.keyboard.press('Enter')
   await answered
-  // THE TURN'S END, not its start (2026-10-24, the drafts-face red
-  // class): the prompt RESPONSE frame arrives when generation
-  // STARTS — the turn keeps streaming after it, and an in-flight
-  // turn's rerenders hide the melite face (the fresh conversation
-  // rides its Start view with the gallery verbs unmounted) for the
-  // whole downstream click budget. The send verb's re-enable IS
-  // the turn's completion signal; bounded so a dead brain still
-  // fails at the mint's own named cause, never here.
   const sendAgain = page.getByRole('button', { name: 'Send message' })
   for (let i = 0; i < 45; i++) {
     if (await sendAgain.isDisabled().catch(() => true) === false) break
     await page.waitForTimeout(1_000)
   }
+  // NO TURN-END WAIT (2026-10-24, adjudicated live): the send verb
+  // stays disabled on an empty composer, so it can never signal the
+  // turn's end — and waiting only lets the commission-brain mutate
+  // the bench longer (drive-7/8's reds). The answered-wait above is
+  // the whole gate, as drive-6 banked (16 of 18 green mid-turn).
   await seat.waitFor({ state: 'visible', timeout: 20_000 }).catch(() => {})
   const opened = await seat.isVisible().catch(() => false)
   // THE KEY IS A RECEIPT, not a hope: poll for the mint's own frame
@@ -267,10 +264,16 @@ export async function openAConversation(page: Page): Promise<{ opened: boolean; 
  * manage/act). In-page so the fetch carries the shell's auth. */
 export async function callBench(page: Page, method: string, args: Record<string, unknown>): Promise<unknown> {
   return await page.evaluate(async ({ method, args }) => {
+    // BOUNDED (2026-10-24, the drive-8 authoring red): the estate's
+    // bench doors can QUEUE behind the conversation's in-flight
+    // model turn (the agent engine serves both), and an unbounded
+    // fetch hung the whole 420s test budget. A hang now refuses at
+    // its own named cause within 90s.
     const r = await fetch('/api/' + method, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ type: 'client-request', rpcId: 'e2e-' + Date.now(), method, payload: { args } }),
+      signal: AbortSignal.timeout(90_000),
     })
     const body = (await r.json().catch(() => null)) as { result?: { ok?: boolean; value?: unknown; error?: { message?: string } } } | null
     const result = body?.result
