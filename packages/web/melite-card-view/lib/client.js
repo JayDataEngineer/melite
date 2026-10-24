@@ -6066,11 +6066,39 @@ window.__ModuleLoader__.load({
 		*  re-placing an address the user is already reading would reset
 		*  their scroll/selection for nothing. */
 		let cardsSurfaceLive = false;
+		let markedBenchKey;
+		const markListeners = /* @__PURE__ */ new Set();
 		/** CardsTab's visibility contract: true while the bench surface is
 		*  the mounted tab body, false the moment it unmounts (another tab
-		*  took the pane, or the column collapsed its body away). */
-		function markCardsSurface(live) {
+		*  took the pane, or the column collapsed its body away). THE
+		*  MARKED KEY (2026-10-24, the canonical-seat supersession): the
+		*  bench key rides every mark — the tab's own spelled truth
+		*  (CardsTabProps.sessionId, the same slot-prop face the
+		*  deliverables ReviewTab rides), never re-derived here. The
+		*  spotlight re-keys off it: the uiSession main binding
+		*  (adapter.current) is born absent and stays undefined on hosts
+		*  whose mainView retention never publishes — the spotlight
+		*  silently watched 'main' while agent constructs landed on
+		*  conversation benches. */
+		function markCardsSurface(live, benchKey) {
 			cardsSurfaceLive = live;
+			if (benchKey !== void 0) markedBenchKey = benchKey;
+			for (const fn of markListeners) fn();
+		}
+		/** The last key the mounted (or most-recently-mounted) tab body
+		* spelled — undefined until a tab ever mounts (the watcher's
+		* lawful 'main' fallback owns that boot window). */
+		function markedBenchKeyOf() {
+			return markedBenchKey;
+		}
+		/** Push-driven re-keys for the marked key (the watcher's
+		* subscribeSession seat — the same contract the adapter observable
+		* rode, sourced from the tab's own truth instead). */
+		function subscribeMarkedBench(fn) {
+			markListeners.add(fn);
+			return () => {
+				markListeners.delete(fn);
+			};
 		}
 		/** Whether the spotlight should reveal given the seat's own state
 		*  (exported for the wall battery: the flag + the column's expanded
@@ -20855,6 +20883,9 @@ window.__ModuleLoader__.load({
 			const rawAddress = info?.tab.navigation.address ?? info?.tab.contentId ?? "dsh-resource://cards/bench";
 			const benchKey = benchSessionOf(props.sessionId ?? benchSessionOfAddress(resolveCardsAddress(rawAddress)));
 			const benchAddress = benchAddressOf(benchKey);
+			(0, react.useEffect)(() => {
+				markCardsSurface(true, benchKey);
+			}, [benchKey]);
 			const resolved = resolveCardsAddress(rawAddress);
 			const parsed = parseCardsAddress(resolved);
 			const address = parsed !== null && ("run" in parsed || "draft" in parsed) ? resolved : benchAddress;
@@ -21273,8 +21304,7 @@ window.__ModuleLoader__.load({
 			"resources",
 			"sidebarRight",
 			"remote",
-			"uiConversation",
-			"uiSession"
+			"uiConversation"
 		];
 		/**
 		* Register both planes: the toolview keys for every card tool, and the
@@ -21438,21 +21468,8 @@ window.__ModuleLoader__.load({
 				console.error("[melite-card-view] cards resource provider registration failed:", error);
 			}
 			try {
-				const activeBenchSession = () => {
-					try {
-						const sid = ctx.uiSession.adapter.current.getSnapshot().props["sessionId"];
-						return benchSessionOf(typeof sid === "string" ? sid : void 0);
-					} catch {
-						return benchSessionOf(void 0);
-					}
-				};
-				const subscribeBenchSession = (fn) => {
-					try {
-						return ctx.uiSession.adapter.current.subscribe(fn);
-					} catch {
-						return () => {};
-					}
-				};
+				const activeBenchSession = () => benchSessionOf(markedBenchKeyOf());
+				const subscribeBenchSession = (fn) => subscribeMarkedBench(fn);
 				ctx.effect(() => watchBenchLands(activeBenchSession, (sessionKey) => {
 					try {
 						if (shouldSpotlight(ctx.sidebarRight.isExpanded())) ctx.sidebarRight.openResource(benchAddressOf(sessionKey));

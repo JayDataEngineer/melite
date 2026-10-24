@@ -84,7 +84,7 @@ test('the h3-timeline bench card opens the VideoTimelineStudio, not the generic 
   const markers = [
     'h3-studio-tenant', 'tl-filmstrip', 'tl-doc-readout',
     'motion-timeline-bar', 'motion-timeline-ruler', 'motion-timeline-playhead',
-    'tl-run-panel', 'tl-clips-lane-hint', 'tl-recipe-chrome', 'cb-mods-section',
+    'tl-run-panel', 'tl-recipe-chrome', 'cb-mods-section',
   ]
   await expect(page.locator('[data-testid="h3-studio-tenant"]')).toBeVisible({ timeout: 30_000 })
   const finalVideo = page.locator('[data-testid="tl-final-cut"] video')
@@ -92,15 +92,30 @@ test('the h3-timeline bench card opens the VideoTimelineStudio, not the generic 
     const source = await finalVideo.first().getAttribute('src')
     expect(source ?? '').not.toMatch(/\.(flac|mp3|wav|ogg|m4a|aac)(?:$|[?#])/i)
   }
-  // tl-clips-lane-hint + tl-recipe-chrome + cb-mods-section live INSIDE
-  // (re-pin 2026-11-06, order b: the Layer A fold is DEAD) the run
-  // params render OPEN in the global view — no summary, no unfold
-  // gesture; the three former fold riders are plain open-surface
-  // markers now.
+  // tl-recipe-chrome + cb-mods-section (re-pin 2026-11-06, order b:
+  // the Layer A fold is DEAD) render OPEN in the global view — plain
+  // open-surface markers now. tl-clips-lane-hint is NOT one anymore
+  // (drive-14's #12 red, named): the 2026-11-06 SUBMENU law moved
+  // RunRefsClips into the rail's AUDIO submenu, reached by clicking
+  // an audio lane on the bar — asserted at its own door below.
   for (const m of markers) {
     await expect(page.locator(`[data-testid="${m}"]`), m).toBeVisible()
   }
   await expect(page.locator('[data-testid="tl-run-panel"]'), 'run params open (the fold is dead)').toBeVisible({ timeout: 10_000 })
+  // THE AUDIO SUBMENU DOOR (the clips lane's new home): the bar's
+  // audio lanes are buttons (MotionTimelineBarLanes: data-audio-layer
+  // + role=button when the activate verb rides); a lane click that
+  // misses every clip enters the submenu, where RunRefsClips renders
+  // the lane inspector + the guard hint. UNCONDITIONAL — a lane row
+  // that stops rendering must red here, never skip.
+  const audioLane = page.locator('[data-audio-layer][role="button"]').first()
+  await expect(audioLane, 'the timeline bar carries its audio lanes as buttons').toBeVisible({ timeout: 10_000 })
+  // the LEFT EDGE: a clip window pinned at the lane's center would
+  // swallow the click (the submenu verb fires only on a click that
+  // missed every clip) — the first pixels own no clip.
+  await audioLane.click({ timeout: 10_000, position: { x: 2, y: 4 } })
+  await expect(page.locator('[data-testid="tl-audio-panel"]'), 'the audio submenu opens').toBeVisible({ timeout: 10_000 })
+  await expect(page.locator('[data-testid="tl-clips-lane-hint"]'), 'the clips-lane guard hint lives in the audio submenu').toBeVisible({ timeout: 10_000 })
   // the zoom overlay titles the stage (the CardZoomOverlay shell;
   // exact — a transcript in the chat column can echo the same words)
   await expect(page.getByText('Stage h3-timeline', { exact: true })).toBeVisible({ timeout: 10_000 })

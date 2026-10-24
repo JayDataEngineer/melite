@@ -181,6 +181,15 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
   // one stream; run/draft addresses pass through untouched.
   const benchKey = benchSessionKey(props.sessionId ?? benchSessionOfAddress(resolveCardsAddress(rawAddress)))
   const benchAddress = benchAddressOf(benchKey)
+  // THE MARKED KEY (2026-10-24): spell the tab's own bench key into
+  // the spotlight's marker channel — the slot-prop truth re-keys the
+  // watcher (the adapter.current main binding stays absent on this
+  // host; see markCardsSurface). The mount effect below carries the
+  // live flag; THIS effect carries every key change (a conversation
+  // switch re-mounts the body by the renderer's epoch law, but a
+  // same-mount re-seal — the address tail changing under a stable
+  // session — also re-marks).
+  useEffect(() => { markCardsSurface(true, benchKey) }, [benchKey])
   const resolved = resolveCardsAddress(rawAddress)
   const parsed = parseCardsAddress(resolved)
   const address = parsed !== null && ('run' in parsed || 'draft' in parsed) ? resolved : benchAddress

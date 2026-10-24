@@ -287,6 +287,21 @@ export async function openAConversation(page: Page): Promise<{ opened: boolean; 
   await expect(page.getByRole('button', { name: 'Send message' }))
     .toBeEnabled({ timeout: 120_000 })
     .catch(() => { /* an over-long turn is cut loose; the mint's own key laws behind judge */ })
+  // THE PARKED-APPROVAL REJECT (2026-10-24, drive-14's #11 corpse):
+  // a curbed brain that still calls a gated tool parks the turn on
+  // the approval card ("Waiting for answer" — the session's own
+  // title in the corpse's tree) and the composer stays disabled
+  // while the question waits, so every later seat races its
+  // rerenders and the empty-mint retry below types into a disabled
+  // composer. The approval panel's own reject verb is the Escape
+  // key (ui-approval shortcuts: approval.reject keys [Esc]) — one
+  // press settles the question, the turn resolves, the mint
+  // proceeds on a settled shell. Caught everywhere: with no
+  // approval pending the press is a no-op.
+  if (!(await page.getByRole('button', { name: 'Send message' }).isEnabled().catch(() => false))) {
+    await page.keyboard.press('Escape').catch(() => {})
+    await page.waitForTimeout(2_000)
+  }
   await seat.waitFor({ state: 'visible', timeout: 20_000 }).catch(() => {})
   const opened = await seat.isVisible().catch(() => false)
   // THE KEY IS A RECEIPT, not a hope: poll for the mint's own frame
@@ -304,6 +319,12 @@ export async function openAConversation(page: Page): Promise<{ opened: boolean; 
   // lands a tile (studio-render #12) — reds belonging to no code
   // state. One re-seat, one re-send, one more poll.
   if (mintedKey === '') {
+    // THE PARKED QUESTION DIES FIRST (the #11 class): a first send
+    // that parked on an approval keeps the composer disabled — the
+    // retry's click and typing land nowhere. Escape rejects the
+    // pending card (the panel's own verb) before the re-seat.
+    await page.keyboard.press('Escape').catch(() => {})
+    await page.waitForTimeout(2_000)
     await composer.click({ timeout: 10_000 }).catch(() => {})
     await page.keyboard.type('e2e wall: bench tour mint (retry)', { delay: 15 })
     const answeredRetry = page.waitForResponse(

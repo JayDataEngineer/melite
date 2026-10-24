@@ -423,12 +423,40 @@ export { fetchMediaLibrary } from '@melite/card-base/client'
  *  re-placing an address the user is already reading would reset
  *  their scroll/selection for nothing. */
 let cardsSurfaceLive = false
+let markedBenchKey: string | undefined
+const markListeners = new Set<() => void>()
 
 /** CardsTab's visibility contract: true while the bench surface is
  *  the mounted tab body, false the moment it unmounts (another tab
- *  took the pane, or the column collapsed its body away). */
-export function markCardsSurface(live: boolean): void {
+ *  took the pane, or the column collapsed its body away). THE
+ *  MARKED KEY (2026-10-24, the canonical-seat supersession): the
+ *  bench key rides every mark — the tab's own spelled truth
+ *  (CardsTabProps.sessionId, the same slot-prop face the
+ *  deliverables ReviewTab rides), never re-derived here. The
+ *  spotlight re-keys off it: the uiSession main binding
+ *  (adapter.current) is born absent and stays undefined on hosts
+ *  whose mainView retention never publishes — the spotlight
+ *  silently watched 'main' while agent constructs landed on
+ *  conversation benches. */
+export function markCardsSurface(live: boolean, benchKey?: string): void {
   cardsSurfaceLive = live
+  if (benchKey !== undefined) markedBenchKey = benchKey
+  for (const fn of markListeners) fn()
+}
+
+/** The last key the mounted (or most-recently-mounted) tab body
+ * spelled — undefined until a tab ever mounts (the watcher's
+ * lawful 'main' fallback owns that boot window). */
+export function markedBenchKeyOf(): string | undefined {
+  return markedBenchKey
+}
+
+/** Push-driven re-keys for the marked key (the watcher's
+ * subscribeSession seat — the same contract the adapter observable
+ * rode, sourced from the tab's own truth instead). */
+export function subscribeMarkedBench(fn: () => void): () => void {
+  markListeners.add(fn)
+  return () => { markListeners.delete(fn) }
 }
 
 /** Whether the spotlight should reveal given the seat's own state

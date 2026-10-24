@@ -128,6 +128,11 @@ function zoomOf(page: Page) {
 
 test.describe('the every-card wall (live catalog, every family a variation)', () => {
   test('EVERY CARD boards and opens its declared face', async ({ page }) => {
+    // THE BUDGET (2026-10-24, drive-14 #1): the arm boards and drills
+    // the WHOLE catalog (5.2m of drills alone on drive-13's timing);
+    // with the mint's turn-end settle (bounded 120s) the 420s default
+    // kills the LAST cards mid-walk — a budget red, never a wall red.
+    test.setTimeout(600_000)
     const errors = collectPageErrors(page)
     await settle(page)
     const catalog = await readStableCatalog(page)
@@ -362,7 +367,21 @@ test.describe('the every-card wall (live catalog, every family a variation)', ()
         const res = await fetch(`/v1/forms?card=${card}`, { headers: { accept: 'application/json' } })
         return res.ok ? await res.text() : ''
       }, row.card).catch(() => '')
-      const doorServes = (fam: string): boolean => doorReachable.includes(fam)
+      // THE PARSED ROSTER (dry-audit F5): the door answers the card
+      // CATALOG — each card's `covers` array IS its family roster
+      // (live receipt: image-edit covers [qwen-img-edit-21,
+      // qwen-img-edit-2511, fibo2-edit]). A substring match over the
+      // raw body could false-positive a prefix family ('fibo2' inside
+      // 'fibo2-edit'); the roster membership is exact.
+      const doorCovers = ((): string[] => {
+        try {
+          const catalog = JSON.parse(doorReachable) as Record<string, { covers?: unknown }>
+          const covers = catalog[row.card]?.covers
+          return Array.isArray(covers) ? covers.filter((c): c is string => typeof c === 'string') : []
+        } catch { /* a stranger's body spells an empty roster, never a pass */ }
+        return []
+      })()
+      const doorServes = (fam: string): boolean => doorCovers.includes(fam)
       const axisSeat = row.families.every((fam) => seated(fam) || doorServes(fam)) ? 'Model' : null
       expect(axisSeat, `${row.card}: every declared family is reachable (Model menu, variant matrix, or the board door) (${row.families.join(', ')}) — model menu [${faces.join(' | ')}] variant menu [${variantFaces.join(' | ')}] door serves matrix families`).not.toBeNull()
       // EVERY MODEL-MENU FAMILY is a variation: pick it, the wire must

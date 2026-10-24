@@ -46,9 +46,6 @@ import type {} from '@deepseek-ai/dsh-client-resources/client'
 import type {} from '@deepseek-ai/dsh-api-gateway/client'
 import type {} from '@deepseek-ai/dsh-client-ui-chat/client'
 import type {} from '@deepseek-ai/dsh-client-ui-conversation/client'
-// Type-only: the Session Controller adapter's Context merge (ctx.uiSession,
-// declared here) — the bench spotlight's session source (stroke 44).
-import type {} from '@deepseek-ai/dsh-client-ui-session/client'
 // All four estate contributions (bench/drafts from estate-drafts,
 // runs, media) — the one-lane law: every estate verb the tab speaks
 // rides these mounted namespaces.
@@ -62,7 +59,7 @@ import { decorateAutoMode } from './auto-mode-decoration.ts'
 import { CARD_TOOLS, FLOW_TOOLS } from './card-tools.ts'
 import { buildChatFileMentions, meliteCardsTurnDefinition } from './card-mentions.ts'
 import { CardsTab } from './CardsTab.tsx'
-import { CARDS_BENCH_ADDRESS, benchAddressOf, benchSessionKey, bindRunFramesRemote, openCardsResource, shouldSpotlight, watchBenchLands, type BenchNamespace } from './cards-resource.ts'
+import { CARDS_BENCH_ADDRESS, benchAddressOf, benchSessionKey, bindRunFramesRemote, markedBenchKeyOf, openCardsResource, shouldSpotlight, subscribeMarkedBench, watchBenchLands, type BenchNamespace } from './cards-resource.ts'
 import { bindEstateRemoteFromRemote, wireContractToastToRowStore, isDuplicateServiceSeat, type EstateNamespaces } from '@melite/card-base/client'
 import { chromeCopy } from '../chromeCopy.ts'
 import { resolveCardsAddress } from './CardsTab.tsx'
@@ -110,7 +107,7 @@ const CARDS_TAB_ID = '@melite-plugin/dsh-card-view'
  *  gateway client's remote service, which carries the mounted estate
  *  namespaces the bench tail consumes, and the Session Controller
  *  adapter whose selection the bench spotlight follows). */
-export const inject = ['slots', 'sidebarRightTabs', 'resources', 'sidebarRight', 'remote', 'uiConversation', 'uiSession']
+export const inject = ['slots', 'sidebarRightTabs', 'resources', 'sidebarRight', 'remote', 'uiConversation']
 
 /**
  * Register both planes: the toolview keys for every card tool, and the
@@ -423,34 +420,20 @@ export async function apply(ctx: ClientContext): Promise<void> {
   // reveal (no session mounted yet) surfaces in the console, never
   // silently.
   try {
-    // THE SESSION SOURCE (stroke 44): uiSession's scope adapter
-    // follows the current selection — getSnapshot().props.sessionId
-    // (the ui-session merge's SessionStandardProps) is the active
-    // conversation. The watcher reads it on every wake and subscribes
-    // to the adapter's observable for push-driven re-keys (a
-    // conversation switch re-keys the bench stream at switch time —
-    // HostObservable.subscribe, no timer).
-    const activeBenchSession = (): string => {
-      // THE DEGRADED SEAT (the stroke-44 wall's own arms): a throwing
-      // or mid-hydration snapshot spells the unattributed bench —
-      // never a local literal (the sessionkey law), never a dead
-      // watcher.
-      try {
-        const sid: unknown = ctx.uiSession.adapter.current.getSnapshot().props['sessionId']
-        return benchSessionKey(typeof sid === 'string' ? sid : undefined)
-      } catch {
-        return benchSessionKey(undefined)
-      }
-    }
-    const subscribeBenchSession = (fn: () => void): (() => void) => {
-      try {
-        return ctx.uiSession.adapter.current.subscribe(fn)
-      } catch {
-        // a dead observable degrades to the noop disposer, silently —
-        // the stream still runs on the same key
-        return () => {}
-      }
-    }
+    // THE SESSION SOURCE (2026-10-24, the canonical-seat
+    // supersession): the tab body's OWN marked key — the slot-prop
+    // truth (CardsTabProps.sessionId, spelled into
+    // markCardsSurface by the mounted body), NOT the uiSession main
+    // binding (adapter.current is born the absent binding and
+    // follows only mainView retention; on hosts whose main view
+    // never publishes it the spotlight silently watched 'main'
+    // while agent constructs landed on conversation benches —
+    // receipted in the dry-audit supersession). Before any tab ever
+    // mounts, the lawful unattributed 'main' owns the boot window
+    // (benchSessionKey(undefined) — the sessionkey law, never a
+    // local literal, never a dead watcher).
+    const activeBenchSession = (): string => benchSessionKey(markedBenchKeyOf())
+    const subscribeBenchSession = (fn: () => void): (() => void) => subscribeMarkedBench(fn)
     ctx.effect(() => watchBenchLands(activeBenchSession, (sessionKey) => {
       try {
         if (shouldSpotlight(ctx.sidebarRight.isExpanded())) {

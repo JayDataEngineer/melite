@@ -76,15 +76,21 @@ test('clicking a served draft loads its stages onto THIS conversation\'s bench a
   // THE SHARED-BENCH RECEIPT: the stage arrives on the ACTIVE
   // conversation's bench (the loader's ensure names this session —
   // a stage on a stranger's bench is the silent no-op's twin).
+  // THE POLL RIDES THE DOORS' OWN GRACE (drive-14's #7 red): the
+  // restore chain is fetchUntilSeated end to end, and the estate's
+  // own law (E2-3, "pending is a wait, not a deadline") lets a
+  // 503 estate/pending voice ride past 120s under drive load — a
+  // 45s poll reds a door the operator's own law calls lawful.
+  // 150s = the doors' ESTATE_WAIT_GRACE_MS (120s) + margin.
   await expect
-    .poll(async () => stageCount(page, mint.sessionKey), { timeout: 45_000, message: 'the draft stages land on the conversation bench' })
+    .poll(async () => stageCount(page, mint.sessionKey), { timeout: 150_000, message: 'the draft stages land on the conversation bench' })
     .toBeGreaterThan(0)
 
   // THE ROUTE: openResource activated the cards tab — the rail's own
   // tiles are the visible proof (the Add-a-card affordance is not a
   // stage; the pinned selector excludes it by its aria-label).
   const rail = page.locator('[class*="tileInner"]:not([aria-label="Add a card"])')
-  await expect(rail.first(), 'the cards tab owns the pane and renders the landed stage').toBeVisible({ timeout: 30_000 })
+  await expect(rail.first(), 'the cards tab owns the pane and renders the landed stage').toBeVisible({ timeout: 60_000 })
   await expect
     .poll(async () => await rail.count(), { timeout: 30_000, message: 'at least one stage tile on the rail' })
     .toBeGreaterThan(0)

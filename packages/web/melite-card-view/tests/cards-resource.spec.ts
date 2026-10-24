@@ -628,7 +628,7 @@ describe('observeRunOutcome — the progress carry', () => {
 // Cards surface forward when the OTHER author of the shared bench
 // writes. The discriminator is the served log's author field
 // ("agent"|"user"), never guesswork about who moved the rev.
-import { markCardsSurface, shouldSpotlight, watchBenchLands } from '../src/client/cards-resource.ts'
+import { markCardsSurface, markedBenchKeyOf, shouldSpotlight, subscribeMarkedBench, watchBenchLands } from '../src/client/cards-resource.ts'
 
 const agentDoc = (rev: number, titles: string[]): Record<string, unknown> => ({
   draft_id: 'bench-main', rev,
@@ -726,6 +726,32 @@ describe('the bench spotlight (the one-flow reveal, stream edition)', () => {
     markCardsSurface(true)
     expect(shouldSpotlight(true)).toBe(false) // the user is reading the flow
     expect(shouldSpotlight(false)).toBe(true) // mounted but collapsed: rail shows no flow
+    markCardsSurface(false) // leave the module state clean for the next test
+  })
+
+  // THE MARKED KEY (2026-10-24, the canonical-seat supersession):
+  // the tab body's own spelled bench key is the spotlight's session
+  // source — the slot-prop truth, never the uiSession main binding
+  // (adapter.current: born absent, follows only mainView retention;
+  // on hosts that never publish it the spotlight silently watched
+  // 'main' while agent constructs landed on conversation benches).
+  test('the marked-key law: the tab\'s spelled key owns the source, push-driven', () => {
+    expect(markedBenchKeyOf()).toBeUndefined() // the boot window: no tab has ever mounted
+    const marks: number[] = []
+    const off = subscribeMarkedBench(() => { marks.push(marks.length) })
+    markCardsSurface(true, 'session-aaaabbbb-cccc-dddd-eeee-ffff00001111')
+    // the spelled key IS the source — never re-derived, never 'main'
+    expect(markedBenchKeyOf()).toBe('session-aaaabbbb-cccc-dddd-eeee-ffff00001111')
+    expect(marks.length).toBe(1) // push fired: the watcher re-keys live
+    // an unmount WITHOUT a key keeps the last spelled truth (the
+    // watcher keeps streaming the bench the user last read)
+    markCardsSurface(false)
+    expect(markedBenchKeyOf()).toBe('session-aaaabbbb-cccc-dddd-eeee-ffff00001111')
+    expect(marks.length).toBe(2)
+    // a conversation switch re-marks under the renderer's epoch remount
+    markCardsSurface(true, 'session-99998888-7777-6666-5555-444433332222')
+    expect(markedBenchKeyOf()).toBe('session-99998888-7777-6666-5555-444433332222')
+    off()
     markCardsSurface(false) // leave the module state clean for the next test
   })
 })

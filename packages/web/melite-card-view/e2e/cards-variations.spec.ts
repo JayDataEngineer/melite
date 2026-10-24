@@ -109,12 +109,15 @@ test.describe("the variation law pins (the operator's three breaks, held at the 
     // the value assert reads the trigger's face by role, never a
     // <select> that no longer rides.
     await expect(page.getByRole('button', { name: 'Model', exact: true })).toContainText('Qwen Image Edit 2511')
-    // the variant axis is THIS family's own (lightning/standard —
-    // never 2.1's int8/bf16)
-    const variants = await variantOptions(page)
-    expect(variants.length, '2511 offers exactly its two variants').toBe(2)
-    expect(variants.some((v) => /lightning/i.test(v)), 'lightning is offered').toBe(true)
-    expect(variants.some((v) => /standard/i.test(v)), 'standard is offered').toBe(true)
+    // THE SOFT-RETIRED FACE (drive-12→14's standing #3 red, named):
+    // BOTH 2511 variants carry hide_from_dropdown (the survivor arc,
+    // 2026-11-08 — "the 2.1 lane won: addressable, not offered") so
+    // the drill's Variant group renders NOTHING (axisField returns
+    // null on zero visible rows, card-base axes.tsx). The old asserts
+    // (two offered variants lightning/standard) pinned a retired
+    // truth; the LIVE law is the retire itself — the axis is absent,
+    // addressability rides the 2.1 face below.
+    await expect(page.locator('button[data-axis="Variant"]'), '2511 offers no variant axis (both rows soft-retired)').toHaveCount(0)
     // THE CAP TRUTH, served on the browser's own wire: 2511 admits 3
     expect(await servedImageCap(page, 'qwen-img-edit-2511'), 'the 2511 lane admits exactly 3 images').toBe(3)
     // THE FRESH FACE IS CLEAN (2026-10-18, the operator's law): the
