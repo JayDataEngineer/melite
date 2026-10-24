@@ -234,15 +234,16 @@ export async function openAConversation(page: Page): Promise<{ opened: boolean; 
   // named cause, never here.
   const answered = page.waitForResponse(
     (r) => r.url().includes('/api/session/prompt') && r.request().method() === 'POST',
+    // BOUNDED (2026-10-24, the drive's live burn): without an explicit
+    // option the wait falls to Playwright's 30s default while a keyed
+    // lane answers in 10–40s — the timeout swallows a lawful reply,
+    // the catch() nulls it, and the mint proceeds mid-turn. The bound's
+    // EXISTENCE is the wall's law (bench-tour-mint arm T, gate-span
+    // clause); its value is the drive's own tunable.
     { timeout: 90_000 },
   ).catch(() => null)
   await page.keyboard.press('Enter')
   await answered
-  const sendAgain = page.getByRole('button', { name: 'Send message' })
-  for (let i = 0; i < 45; i++) {
-    if (await sendAgain.isDisabled().catch(() => true) === false) break
-    await page.waitForTimeout(1_000)
-  }
   // NO TURN-END WAIT (2026-10-24, adjudicated live): the send verb
   // stays disabled on an empty composer, so it can never signal the
   // turn's end — and waiting only lets the commission-brain mutate

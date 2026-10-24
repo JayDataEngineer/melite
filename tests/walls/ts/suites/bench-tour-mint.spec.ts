@@ -18,7 +18,12 @@
 //       frame, polls the receipt bounded, and detaches.
 //   T — THE ANSWER GATE IS THE WHOLE COMPLETION LAW: the gate arms
 //       before Enter, is awaited after it, and is bounded (existence,
-//       never value — the drive-8 lesson). The send verb's re-enable is
+//       never value — the drive-8 lesson). The bound is judged on the
+//       GATE'S OWN SPAN (arm → answered), never the mint body: the
+//       body carries lawful bounds of its own (the composer click,
+//       the seat wait) and a body-wide match stayed green through the
+//       2026-10-24 drive burn that deleted the gate's own bound. The
+//       send verb's re-enable is
 //       REFUSED as a completion signal: the verb stays disabled on an
 //       empty composer, so a poll there can never fire — a dead wait
 //       burning the mint's budget while the commission-brain keeps
@@ -152,9 +157,9 @@ describe("THE BENCH TOUR MINT — the mint hop's laws hold on the real spine", (
       "the answer gate must arm BEFORE Enter and be awaited AFTER it — a later arm misses the mint's own response frame, and proceeding before the await races the turn's rerenders",
     );
     assert.match(
-      mint,
+      mint.slice(armed, answered),
       /timeout: \d[\d_]*\b/,
-      "the answer gate is bounded — a dead brain must still fail at the mint's named cause (the bound's EXISTENCE is the law, its value is the drive's own tunable)",
+      "the answer gate is bounded — a dead brain must still fail at the mint's named cause (the bound's EXISTENCE is the law, its value is the drive's own tunable). The clause judges the GATE'S OWN span (arm → answered), never the mint body: the body carries lawful bounds of its own (the composer click, the seat wait), and a body-wide match stayed green through the 2026-10-24 drive burn that deleted the gate's bound — dropping waitForResponse to Playwright's 30s default while a keyed lane answers in 10–40s, so the timeout swallows a lawful reply and the mint proceeds mid-turn",
     );
     assert.ok(
       !mint.includes("name: 'Send message'"),
