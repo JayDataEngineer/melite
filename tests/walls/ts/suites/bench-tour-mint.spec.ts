@@ -18,7 +18,10 @@
 //       frame, polls the receipt bounded, and detaches.
 //   T — THE TURN'S COMPLETION GATE: the answer gate is bounded and the
 //       mint waits the send verb's re-enable (the turn's END) — never
-//       proceeding mid-turn.
+//       proceeding mid-turn. The poll's bound is judged for EXISTENCE,
+//       never value: the bound is a drive tunable, and freezing the
+//       45 literal made this arm red on a lawful cure (2026-10-24,
+//       the drive-8 bound move).
 //   B — THE BIRTH RIDES THE ENSURE DOOR ONLY: seedBenchH3 reads
 //       bench/get first, ensures ONLY on the not-found refusal,
 //       re-reads, and adds the h3 stage idempotently under the live
@@ -145,7 +148,11 @@ describe("THE BENCH TOUR MINT — the mint hop's laws hold on the real spine", (
       answered < send,
       "the completion poll must follow the awaited answer — the response frame arrives when generation STARTS, the re-enable is its END",
     );
-    assert.match(mint, /for \(let i = 0; i < 45;/, "the completion poll is bounded");
+    assert.match(
+      mint,
+      /for \(let i = 0; i < \d+; i\+\+\) \{/,
+      "the completion poll is BOUNDED — the bound's EXISTENCE is the law, its value is the drive's own tunable (the 2026-10-24 drive-8 red lawfully moved 45→150 once bench doors queued behind the in-flight model turn; the frozen 45 literal made this arm red on a lawful cure). An unbounded poll hangs the test budget instead of failing at the mint's named cause",
+    );
     assert.match(mint, /isDisabled\(\)/, "completion is read off the send verb's disabled state, never a fixed sleep");
   });
 
