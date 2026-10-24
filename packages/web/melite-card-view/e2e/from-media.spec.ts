@@ -39,12 +39,12 @@ test('From media on an input card: menu opens, modal lists the runs library, a p
   // '<seat> source'). The FirstFrameSlot squares live INSIDE the
   // call editor — open the seeded call's block on the timeline
   // (the professional-names stroke renamed the '#0' call button:
-  // the timeline names calls 'C1 · 7.3s — …'). The CLICK SEAT is
-  // the clip BLOCK, never its title span — the span resolves but
-  // sits unclickable (clipped by the block's own layout, drive-11's
-  // two-round stability wait); the block carries the 'click a call
-  // = edit it in the left panel' contract.
-  const callRow = page.locator('[class*="clip"]').filter({ hasText: /^C1 ·/ }).first()
+  // the timeline names calls 'C1 · 7.3s — …'). THE CLICK SEAT is
+  // the prompt-clip BLOCK by its own contract attribute
+  // data-prompt-clip="call-N" (drive-12's pointer log: the inner
+  // text nodes are intercepted BY the block — it owns the click,
+  // the 'click a call = edit it in the left panel' contract).
+  const callRow = page.locator('[data-prompt-clip="call-0"]').first()
   await callRow.click({ timeout: 10_000 })
   await page.waitForTimeout(1_500)
   const square = page.locator('[aria-label*="source"i]').locator('visible=true').first()

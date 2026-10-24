@@ -251,7 +251,7 @@ export async function openAConversation(page: Page): Promise<{ opened: boolean; 
   await answeredCmd
   await page.waitForTimeout(1_000)
   await composer.click({ timeout: 10_000 }).catch(() => {})
-  await page.keyboard.type('e2e wall: bench tour mint', { delay: 15 })
+  await page.keyboard.type('e2e wall: bench tour mint. Reply with the single word: minted. Do not read files, do not explore.', { delay: 15 })
   // THE TURN'S OWN ANSWER (2026-10-24): a keyed lane answers the
   // mint in 10–40s (glm-5.3-flash high effort), and a spec that
   // proceeds mid-turn races the reply's rerenders — the panel-delete
@@ -272,11 +272,21 @@ export async function openAConversation(page: Page): Promise<{ opened: boolean; 
   ).catch(() => null)
   await page.keyboard.press('Enter')
   await answered
-  // NO TURN-END WAIT (2026-10-24, adjudicated live): the send verb
-  // stays disabled on an empty composer, so it can never signal the
-  // turn's end — and waiting only lets the commission-brain mutate
-  // the bench longer (drive-7/8's reds). The answered-wait above is
-  // the whole gate, as drive-6 banked (16 of 18 green mid-turn).
+  // THE TURN-END WAIT (2026-10-24, drive-13's #3 corpse): the
+  // no-turn-end law above died on the read-only seat's own success —
+  // the curbed brain cannot WRITE, but it still READ (a 7-step,
+  // 168K-token repo exploration that streamed past the 420s kill),
+  // and every rerender closed the arms' drill mid-arm (the Model
+  // face passed, the Variant axis vanished) while the composer
+  // stayed disabled. The turn's end HAS a DOM signal after all: the
+  // send verb re-enables. Bounded 120s — a one-word order answers in
+  // seconds; a brain that over-explores still gets cut loose (the
+  // key poll + empty-mint retry behind guard the rest).
+  await page.getByRole('button', { name: 'Send message' })
+    .waitFor({ state: 'visible', timeout: 10_000 }).catch(() => {})
+  await expect(page.getByRole('button', { name: 'Send message' }))
+    .toBeEnabled({ timeout: 120_000 })
+    .catch(() => { /* an over-long turn is cut loose; the mint's own key laws behind judge */ })
   await seat.waitFor({ state: 'visible', timeout: 20_000 }).catch(() => {})
   const opened = await seat.isVisible().catch(() => false)
   // THE KEY IS A RECEIPT, not a hope: poll for the mint's own frame
@@ -284,7 +294,37 @@ export async function openAConversation(page: Page): Promise<{ opened: boolean; 
   // named a key fails HERE with a named cause — never downstream on
   // an empty-key URL that falls through to the seatless arm.
   for (let i = 0; i < 40 && mintedKey === ''; i++) await page.waitForTimeout(250)
+  // THE EMPTY-MINT RETRY (2026-10-24, drive-13's #11/#12 class): the
+  // send races the shell's rerenders — the composer click can land
+  // covered and the typed commission goes nowhere, birthing no
+  // conversation. The poll then ends silent and the spine's own law
+  // above ("fails HERE") was betrayed by a silent return: every
+  // downstream seat failed on the EMPTY-KEY URL instead —
+  // bench/ensure's 'bad session key' (scrub #11), a seed that never
+  // lands a tile (studio-render #12) — reds belonging to no code
+  // state. One re-seat, one re-send, one more poll.
+  if (mintedKey === '') {
+    await composer.click({ timeout: 10_000 }).catch(() => {})
+    await page.keyboard.type('e2e wall: bench tour mint (retry)', { delay: 15 })
+    const answeredRetry = page.waitForResponse(
+      (r) => r.url().includes('/api/session/prompt') && r.request().method() === 'POST',
+      { timeout: 90_000 },
+    ).catch(() => null)
+    await page.keyboard.press('Enter')
+    await answeredRetry
+    for (let i = 0; i < 40 && mintedKey === ''; i++) await page.waitForTimeout(250)
+  }
   page.off('request', onPrompt)
+  // The named cause itself: two sends that left the prompt wire
+  // silent is the mint's own failure — a spec bug or a dead lane,
+  // never a downstream seat's red.
+  if (mintedKey === '') {
+    throw new Error(
+      'THE MINT NEVER NAMED A SESSION KEY: two sends left /api/session/prompt silent — '
+      + 'the composer seat raced the shell, or the lane is dead. This is the mint\'s own '
+      + 'named cause, never a downstream seat\'s red.',
+    )
+  }
   return { opened, sessionKey: mintedKey }
 }
 

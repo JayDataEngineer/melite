@@ -568,7 +568,7 @@ describe('melite_construct mutations — every verb', () => {
       (e: unknown) => {
         assert.ok(e instanceof ToolArgsError)
         assert.match((e as ToolArgsError).message,
-          /"verb" must be one of \["read","load","patch","add_stage","remove_stage","clear","rewire","undo","validate"\]/)
+          /"verb" must be one of \["read","load","patch","add_stage","remove_stage","clear","floor","rewire","undo","validate"\]/)
         return true
       },
     )
@@ -1747,5 +1747,100 @@ describe('melite_construct — THE SPELL VOICE (compose-time spell judgement)', 
     assert.equal(spells.length, 1)
     assert.equal(spells[0]!['stage'], 'image-edit')
     assert.equal(spells[0]!['via'], 's_0.default')
+  })
+})
+
+// ── THE GPU ECONOMY VERB (operator 2026-10-24: "For GPU usage, you
+// should have a tool that makes stuff minimum resolution to save GPU
+// time"). The floors ride the REAL card defs (contract-law's own
+// loadCardDefs — image-gen declares width/height in the resolution
+// group with validating minimum 256, card.ts:119-120), so this wall
+// judges the live derivation, never a frozen literal: a card that
+// moves its floor moves this wall's expectation source with it.
+describe('melite_construct — floor (the declared-minimum resolution clamp)', () => {
+  const benchOf = (stages: unknown[]): Record<string, unknown> => ({ session: 'main', rev: 7, stages })
+
+  test('clamps above-floor resolution params to the card-declared minimum, voicing every write', async () => {
+    const { seen, estate } = mockEstate((lane, args) => {
+      if (lane === 'benchGet') {
+        return benchOf([{ id: 's_0', card: 'image-gen', params: { model: 'qwen-img-21', width: 2048, height: 1024 } }])
+      }
+      if (lane === 'benchVerb' && args[1] === 'patch') return { rev: 8, stage: 's_0', patched: ['width', 'height'] }
+      throw new Error('unmocked lane ' + lane)
+    })
+    const out = await meliteConstruct(estate).execute({ verb: 'floor' }, exec()) as Record<string, unknown>
+    const rows = out['stages'] as Array<Record<string, unknown>>
+    assert.equal(rows.length, 1)
+    const floored = rows[0]!['floored'] as Array<Record<string, unknown>>
+    const width = floored.find((f) => f['param'] === 'width')
+    const height = floored.find((f) => f['param'] === 'height')
+    assert.ok(width, 'width is voiced')
+    assert.equal(width!['from'], 2048)
+    assert.equal(width!['to'], 256)
+    assert.ok(height, 'height is voiced')
+    assert.equal(height!['to'], 256)
+    // THE WIRE: the clamp rides the patch verb's own CAS door
+    const patch = seen.find((r) => r.lane === 'benchVerb' && r.args[1] === 'patch')
+    assert.ok(patch, 'the floor wrote through patch')
+    const doc = patch!.args[2] as Record<string, unknown>
+    assert.deepEqual(doc['params'], { width: 256, height: 256 })
+    assert.equal(doc['expect_rev'], 7, 'the read rev rides the write (CAS)')
+    assert.equal(out['rev'], 8)
+  })
+
+  test('absent resolution params are SET to the floor — the default is never assumed minimal', async () => {
+    const { seen, estate } = mockEstate((lane, args) => {
+      if (lane === 'benchGet') {
+        return benchOf([{ id: 's_0', card: 'image-gen', params: { model: 'qwen-img-21', prompt: 'x' } }])
+      }
+      if (lane === 'benchVerb' && args[1] === 'patch') return { rev: 9, stage: 's_0', patched: ['width', 'height'] }
+      throw new Error('unmocked lane ' + lane)
+    })
+    const out = await meliteConstruct(estate).execute({ verb: 'floor' }, exec()) as Record<string, unknown>
+    const doc = (seen.find((r) => r.lane === 'benchVerb' && r.args[1] === 'patch'))!.args[2] as Record<string, unknown>
+    assert.deepEqual(doc['params'], { width: 256, height: 256 })
+    const floored = ((out['stages'] as Array<Record<string, unknown>>)[0]!['floored']) as Array<Record<string, unknown>>
+    assert.equal(floored.find((f) => f['param'] === 'width')!['from'], '(default)')
+  })
+
+  test('at-or-below params are untouched (idempotent) and a stage can be targeted alone', async () => {
+    const { seen, estate } = mockEstate((lane, args) => {
+      if (lane === 'benchGet') {
+        return benchOf([
+          { id: 's_0', card: 'image-gen', params: { model: 'qwen-img-21', width: 256, height: 256 } },
+          { id: 's_1', card: 'image-gen', params: { model: 'qwen-img-21', width: 512, height: 512 } },
+        ])
+      }
+      if (lane === 'benchVerb' && args[1] === 'patch') return { rev: 10, stage: 's_1', patched: ['width', 'height'] }
+      throw new Error('unmocked lane ' + lane)
+    })
+    const out = await meliteConstruct(estate).execute({ verb: 'floor', stage: 's_1' }, exec()) as Record<string, unknown>
+    const rows = out['stages'] as Array<Record<string, unknown>>
+    assert.equal(rows.length, 1, 'the named stage is the only target')
+    assert.equal(rows[0]!['stage'], 's_1')
+    const patches = seen.filter((r) => r.lane === 'benchVerb' && r.args[1] === 'patch')
+    assert.equal(patches.length, 1, 'the already-minimal s_0 never wrote')
+  })
+
+  test('a card with no resolution group (or an unknown card) says so honestly — never a silent no-op patch', async () => {
+    const { seen, estate } = mockEstate((lane, args) => {
+      if (lane === 'benchGet') return benchOf([{ id: 's_0', card: 'no-such-card', params: { width: 4096 } }])
+      throw new Error('unmocked lane ' + lane)
+    })
+    const out = await meliteConstruct(estate).execute({ verb: 'floor' }, exec()) as Record<string, unknown>
+    const rows = out['stages'] as Array<Record<string, unknown>>
+    assert.equal(rows.length, 1)
+    assert.deepEqual(rows[0]!['floored'], [])
+    assert.match(String(rows[0]!['note']), /no resolution group/)
+    assert.ok(!seen.some((r) => r.lane === 'benchVerb'), 'nothing written for a floorless card')
+  })
+
+  test('a named stage that is not on the bench refuses by name', async () => {
+    const { estate } = mockEstate((lane) => {
+      if (lane === 'benchGet') return benchOf([{ id: 's_0', card: 'image-gen', params: {} }])
+      throw new Error('unmocked lane ' + lane)
+    })
+    const out = await meliteConstruct(estate).execute({ verb: 'floor', stage: 's_9' }, exec()) as Record<string, unknown>
+    assert.match(String(out['error']), /s_9 is not on the bench/)
   })
 })

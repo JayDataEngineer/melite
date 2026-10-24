@@ -65,7 +65,7 @@ test('the live lane: one qwen model row, and anny opens on the body pre-run', as
   await page.waitForTimeout(3_000)
   await page.getByRole('button', { name: /Melite Bench/ }).first().click({ timeout: 10_000 })
   await page.waitForTimeout(5_000)
-  const tile = page.locator('button[class*="tileInner"]:not([aria-label="Add a card"])').first()
+  const tile = page.locator('[class*="tileInner"]:not([aria-label="Add a card"])').first()
   await tile.click({ timeout: 15_000, force: true })
   await expect(page.locator('div[class*="zoomCard"]').first(), 'the drill opens').toBeVisible({ timeout: 30_000 })
 

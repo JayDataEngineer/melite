@@ -445,6 +445,19 @@ export function MediaTabIcon({ size }: { size?: number }) {
   )
 }
 
+/** THE CANONICAL TAB-BODY FACE (2026-10-24, the deliverables
+ *  receipt): the shell's `sidebar.right.pane.tab` seat threads its
+ *  session-scoped standard props to EVERY registered body —
+ *  `useTabInfo` AND `sessionId` arrive as props (the reference
+ *  consumer: dsh-client-ui-deliverables' ReviewTab destructures
+ *  exactly `{ useTabInfo, sessionId, ... }`). MediaPanel IS that
+ *  face — the slot seats the conversation, no adapter read, no
+ *  factory. The 2026-11-06 mediaTabBodyWith factory read
+ *  uiSession.adapter.current (the MAIN binding) — which stays
+ *  absent on this host — and its explicit sessionId={undefined}
+ *  OVERWROTE the standard prop the forward already delivered:
+ *  every restore kept landing on 'main'. Deleted; the props are
+ *  the seam. */
 export function MediaPanel({ useTabInfo, sessionId }: { useTabInfo?: () => TabInfo; sessionId?: string }): React.JSX.Element {
   /* TWO independent feeds (useFeed): runs and drafts each own their
    * fetch/decode/never-stale engine — one failing never blanks the other

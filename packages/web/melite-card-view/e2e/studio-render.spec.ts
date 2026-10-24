@@ -234,8 +234,15 @@ test('the add door shows the REAL card for h3-timeline (not the spec form)', asy
   // claims it (the generic-form fallback renders none of these).
   await expect(page.locator('[data-testid="h3-studio-tenant"]'), 'the drill is the studio (claimed)').toBeVisible({ timeout: 15_000 })
   await expect(page.locator('[data-testid="motion-timeline-bar"]'), 'the timeline bar renders in the drill').toBeVisible()
-  // the drill overlay titles the stage (the CardZoomOverlay shell)
-  await expect(page.getByText('Stage h3-timeline', { exact: true })).toBeVisible({ timeout: 10_000 })
+  // the drill overlay titles the stage BY ITS OWN LABEL (zoom.tsx:
+  // stage.title ?? cardLabel ?? card ?? id) — the add door's pick
+  // carries the picker's FACE ('Generate Video', the same literal
+  // the pick clicked above), while the SEEDED bench tile (#12's arm)
+  // carries the bare card id ('h3-timeline'). Drive-13 #14 reddened
+  // on the frozen id literal while the dialog said 'Stage Generate
+  // Video' (error-context receipt) — the title follows the label
+  // law, not the id.
+  await expect(page.getByText('Stage Generate Video', { exact: true })).toBeVisible({ timeout: 10_000 })
   await expectNoPageErrors(page, errors)
 })
 

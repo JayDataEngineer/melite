@@ -191,7 +191,7 @@ test('EVERY CARD gets a run verdict — config change, Run press, terminal state
   await openCardsTab(page)
   // stage tiles share tileInner with the '+ Add a card' cell — the
   // sweep drives STAGES only (aria-label excludes the add cell).
-  const rail = page.locator('button[class*="tileInner"]:not([aria-label="Add a card"])')
+  const rail = page.locator('[class*="tileInner"]:not([aria-label="Add a card"])')
   await expect(rail, 'every boarded card rendered its tile').toHaveCount(boarded.length, { timeout: 30_000 })
 
   interface Verdict { card: string; families: string[]; terminal: string; artifact?: string; changed: string[]; reason?: string }

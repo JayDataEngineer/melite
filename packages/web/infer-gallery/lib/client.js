@@ -2872,6 +2872,19 @@ window.__ModuleLoader__.load({
 				]
 			});
 		}
+		/** THE CANONICAL TAB-BODY FACE (2026-10-24, the deliverables
+		*  receipt): the shell's `sidebar.right.pane.tab` seat threads its
+		*  session-scoped standard props to EVERY registered body —
+		*  `useTabInfo` AND `sessionId` arrive as props (the reference
+		*  consumer: dsh-client-ui-deliverables' ReviewTab destructures
+		*  exactly `{ useTabInfo, sessionId, ... }`). MediaPanel IS that
+		*  face — the slot seats the conversation, no adapter read, no
+		*  factory. The 2026-11-06 mediaTabBodyWith factory read
+		*  uiSession.adapter.current (the MAIN binding) — which stays
+		*  absent on this host — and its explicit sessionId={undefined}
+		*  OVERWROTE the standard prop the forward already delivered:
+		*  every restore kept landing on 'main'. Deleted; the props are
+		*  the seam. */
 		function MediaPanel({ useTabInfo, sessionId }) {
 			const runsFeed = useFeed("/infer-gallery/runs", decodeRuns, {
 				runs: [],
@@ -11885,7 +11898,9 @@ window.__ModuleLoader__.load({
 		/** The estate-artifact resource type's identity (its body registers under it). */
 		const ESTATE_ARTIFACT_TAB_ID = "infer-media:estate-artifact";
 		/** Required services (fiber inject waiting — the tab registry must be
-		*  up first). */
+		*  up first). NO uiSession: the pane-tab slot itself threads the
+		*  session-scoped standard props to the body (the deliverables
+		*  ReviewTab receipt — sessionId arrives as a prop). */
 		const inject = ["slots", "sidebarRightTabs"];
 		/**
 		* Client apply: registers

@@ -71,7 +71,9 @@ const MEDIA_TAB_ID = 'infer-media:media'
 const ESTATE_ARTIFACT_TAB_ID = 'infer-media:estate-artifact'
 
 /** Required services (fiber inject waiting — the tab registry must be
- *  up first). */
+ *  up first). NO uiSession: the pane-tab slot itself threads the
+ *  session-scoped standard props to the body (the deliverables
+ *  ReviewTab receipt — sessionId arrives as a prop). */
 export const inject = ['slots', 'sidebarRightTabs']
 
 /**
@@ -100,7 +102,17 @@ export function apply(ctx: ClientContext): void {
     console.error('[melite-gallery] media tab type registration failed:', error)
   }
 
-  // Stage two — the body, dispatched under the type's id.
+  // Stage two — the body, dispatched under the type's id. THE
+  // CANONICAL SEAT (2026-10-24, the deliverables receipt): the
+  // shell's pane-tab slot threads the session-scoped standard props
+  // to every body — useTabInfo AND sessionId arrive as PROPS (the
+  // reference consumer, dsh-client-ui-deliverables' ReviewTab,
+  // destructures exactly that face). MediaPanel IS that face; the
+  // 2026-11-06 factory read uiSession.adapter.current (the MAIN
+  // binding — absent on this host) and its explicit
+  // sessionId={undefined} OVERWROTE the standard prop the forward
+  // already delivered, so restores kept landing on 'main'
+  // (gallery-draft-open's red). The props are the seam.
   try {
     ctx.slots.inject('sidebar.right.pane.tab', () => ctx.slots.register(
       { name: 'sidebar.right.pane.tab', key: MEDIA_TAB_ID },

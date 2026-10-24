@@ -38,6 +38,9 @@ import type { Estate, BenchVerb } from '../estate.ts'
 import type { JsonValue, ToolDefinition } from '../types.ts'
 import { jsonClean } from '../json-clean.ts'
 import { unwrapItemArrays } from '@melite/comfyui-card-kit'
+import { loadCardDefs } from '@melite/comfyui-cordis'
+import { emitKnob } from '@melite/comfyui-card-kit/params-emit'
+import { extraOf } from '@melite/contracts/extraKeys'
 
 /** The default bench — the unattributed seat (headless runs,
  *  legacy callers). */
@@ -510,14 +513,14 @@ export function meliteConstruct(
       + 'inputs?, expected?, outputs?} (inputs wire PRIOR STAGES through the card\'s declared ports, never files: '
       + 'inputs {image1: {stage: "s_0", output: "default"}} AND params {image1: "$image1"} — the $spell is the CHANNEL REFERENCE ONLY: it resolves at run time to that wired stage output or a request initial the USER attaches at the Run press, nothing else; for a REAL FILE on disk use its asset path from melite_view, never a $spell; to chain '
       + 'the last generation, bind its stage, never hunt its artifact on disk; kinds derive from the card\'s ports — '
-      + 'state expected only to override, outputs only for custom channels) | remove_stage {stage} | clear (EVERY stage out in one rev; undo restores all — the cure when the bench itself is the wound) | rewire {stage, input, from?} (from is {stage, output} | '
+      + 'state expected only to override, outputs only for custom channels) | remove_stage {stage} | clear (EVERY stage out in one rev; undo restores all — the cure when the bench itself is the wound) | floor {stage?} (THE GPU ECONOMY VERB: clamps every resolution-group param to the card\'s DECLARED minimum — one stage when {stage} names one, every stage when absent; floors derive live off the card\'s own schema, never hand-baked numbers, every write is voiced {param, from, to}, absent params are SET to the floor (defaults are not assumed minimal), values at/below it stay untouched, and a card declaring no resolution group says so honestly) | rewire {stage, input, from?} (from is {stage, output} | '
       + '{initial} — same law: stage bindings, never paths) | undo {n?, author?} | validate (compile '
       + "check, no GPU). Mutations take expect_rev from your last read — or omit it: the tool fills the fresh rev itself (one bounded read) and a moved bench still refuses 409 with current_rev, re-read, re-apply. No ids anywhere: the bench is the one shared state.",
     parameters: {
       verb: {
         type: 'string',
-        enum: ['read', 'load', 'patch', 'add_stage', 'remove_stage', 'clear', 'rewire', 'undo', 'validate'],
-        description: 'read (default when absent) | load | patch | add_stage | remove_stage | clear | rewire | undo | validate.',
+        enum: ['read', 'load', 'patch', 'add_stage', 'remove_stage', 'clear', 'floor', 'rewire', 'undo', 'validate'],
+        description: 'read (default when absent) | load | patch | add_stage | remove_stage | clear | floor | rewire | undo | validate.',
       },
       stage: { type: 'string', description: 'patch/remove_stage/rewire: the stage id.' },
       card: { type: 'string', description: 'add_stage: the card id (display + provenance hint).' },
@@ -913,6 +916,95 @@ export function meliteConstruct(
           // reach before this law).
           const r = await postBenchVerb(estate, bench, 'clear', { expect_rev: a.expect_rev }, signal)
           return out({ rev: r.rev, cleared: r.cleared })
+        }
+        if (verb === 'floor') {
+          // THE GPU ECONOMY VERB (operator 2026-10-24: "For GPU
+          // usage, you should have a tool that makes stuff minimum
+          // resolution to save GPU time"): Layer-A lawful to its
+          // bone — it writes GRAPH PARAMS on bench stages (the
+          // card's own resolution knobs), never engine config; the
+          // estate's VRAM management stays ComfyUI's alone (the
+          // GPU laws). THE FLOORS ARE DERIVED (the contract's DEPTH
+          // axis): each card's live schema declares the resolution
+          // group's members and their validating minimums — the
+          // tool walks the SAME dict the form-spec door serves
+          // (params-emit's emitKnob + the extra bag's group), so a
+          // card that widens or narrows its resolution knobs is
+          // followed without a tool change. Never a hand-baked
+          // name list, never a baked number.
+          const b = await readBench(estate, bench, signal)
+          const rows = projectStages(b.stages)
+          if (rows.length === 0) return out({ error: 'the bench holds no stages — nothing to floor' })
+          let targets = rows
+          if (typeof a.stage === 'string' && a.stage !== '') {
+            targets = rows.filter((row) => row['id'] === a.stage)
+            if (targets.length === 0) {
+              return out({ error: `stage ${a.stage} is not on the bench — read names the live ids` })
+            }
+          }
+          const defs = await loadCardDefs()
+          let rev: unknown = typeof b.rev === 'number' ? b.rev : a.expect_rev
+          const stages: Array<Record<string, unknown>> = []
+          for (const row of targets) {
+            const stageId = typeof row['id'] === 'string' ? row['id'] : ''
+            const card = typeof row['card'] === 'string' ? row['card'] : ''
+            const def = defs.get(card)
+            // the carrier law (card-definition N4): plain schemas
+            // carry the walkable dict themselves; hand-written
+            // normalizers carry the inner schemastery object at
+            // schemaCarrier.
+            const carrier = def?.schemaCarrier ?? def?.schema
+            const dict = carrier?.dict ?? {}
+            const floors: Record<string, number> = {}
+            for (const [name, node] of Object.entries(dict)) {
+              // THE CARRIER LAW'S WALK HALF: schemastery nodes are
+              // CALLABLES with fields (functions, not objects) — an
+              // object-type guard here refused every node and the
+              // verb floored nothing; guard null/undefined only and
+              // let emitKnob/extraOf judge the shape.
+              if (node === null || node === undefined) continue
+              const ex = extraOf(node as { meta?: Record<string, unknown> }) as Record<string, unknown>
+              if (ex['group'] !== 'resolution') continue
+              const knob = emitKnob(node as never) as Record<string, unknown>
+              if (knob['type'] !== 'number' && knob['type'] !== 'integer') continue
+              if (typeof knob['minimum'] !== 'number') continue
+              floors[name] = knob['minimum']
+            }
+            const floorEntries = Object.entries(floors)
+            if (floorEntries.length === 0) {
+              stages.push({ stage: stageId, card, floored: [], note: 'declares no resolution group — nothing to floor' })
+              continue
+            }
+            const params = (typeof row['params'] === 'object' && row['params'] !== null && !Array.isArray(row['params']))
+              ? row['params'] as Record<string, unknown>
+              : {}
+            const patch: Record<string, number> = {}
+            const floored: Array<Record<string, unknown>> = []
+            for (const [name, min] of floorEntries) {
+              const cur = params[name]
+              // ABSENT = SET (the default is not assumed minimal —
+              // the whole point of the verb); ABOVE = clamp; at or
+              // below = untouched (idempotent, honest voice).
+              if (cur === undefined) {
+                patch[name] = min
+                floored.push({ param: name, from: '(default)', to: min })
+              } else if (typeof cur === 'number' && cur > min) {
+                patch[name] = min
+                floored.push({ param: name, from: cur, to: min })
+              } else if (typeof cur !== 'number') {
+                floored.push({ param: name, from: cur, note: 'not a number — left untouched, the card coerces its own wire' })
+              }
+            }
+            if (Object.keys(patch).length === 0) {
+              stages.push({ stage: stageId, card, floored: [], note: 'already at or below every declared floor' })
+              continue
+            }
+            const r = await postBenchVerb(estate, bench, 'patch',
+              { stage: stageId, params: patch, expect_rev: rev }, signal)
+            rev = r.rev
+            stages.push({ stage: stageId, card, floored })
+          }
+          return out({ rev, stages, note: 'floors ride the cards\' own declared resolution minimums — compose still validates every write' })
         }
         if (verb === 'rewire') {
           const r = await postBenchVerb(estate, bench, 'rewire',

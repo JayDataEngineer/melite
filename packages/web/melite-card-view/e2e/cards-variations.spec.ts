@@ -34,7 +34,6 @@ async function openBench(page: Page, stages: Array<{ card: string; params: Recor
   return { key: mint.sessionKey, rail }
 }
 
-/** The variant axis' offered option ids, from the drilled form. */
 /** THE MENU AXES (S7e): the Variant select is a DSH Menu — the
  * trigger Button carries the data-axis marker + the row face; the
  * offers live in the OPEN menu's menuitem rows. The regexes match
@@ -104,10 +103,12 @@ test.describe("the variation law pins (the operator's three breaks, held at the 
     await rail.first().click({ timeout: 15_000, force: true })
     await page.waitForTimeout(3_500)
     // THE MENU AXES (S7e): the Model select is a DSH Menu — the
-    // trigger button[data-axis] carries the current row's LABEL as
-    // its face (SpecMenuSelect, card-base atoms.tsx) — the value
-    // assert reads the face, never a <select> that no longer rides.
-    await expect(page.locator('button[data-axis="Model"]')).toContainText('Qwen Image Edit 2511')
+    // trigger's accessible name is 'Model' (aria-label; the
+    // AxisMenuSelect carries NO data-axis marker — only the
+    // axes-field groups Variant/Quant/Recipe do, axes.tsx:330) —
+    // the value assert reads the trigger's face by role, never a
+    // <select> that no longer rides.
+    await expect(page.getByRole('button', { name: 'Model', exact: true })).toContainText('Qwen Image Edit 2511')
     // the variant axis is THIS family's own (lightning/standard —
     // never 2.1's int8/bf16)
     const variants = await variantOptions(page)
@@ -128,7 +129,7 @@ test.describe("the variation law pins (the operator's three breaks, held at the 
     await expect(rail, 'the 2.1 variation boarded').toHaveCount(2, { timeout: 20_000 })
     await rail.nth(1).click({ timeout: 15_000, force: true })
     await page.waitForTimeout(3_500)
-    await expect(page.locator('button[data-axis="Model"]')).toContainText('Qwen Image Edit 2.1')
+    await expect(page.getByRole('button', { name: 'Model', exact: true })).toContainText('Qwen Image Edit 2.1')
     // THE VARIANT RESEED (the stale-variant cure): a model switch
     // hands the new family's own variant rows — int8/bf16 now
     const variants21 = await variantOptions(page)
@@ -164,14 +165,20 @@ test.describe("the variation law pins (the operator's three breaks, held at the 
 
     await rail.first().click({ timeout: 15_000, force: true })
     await page.waitForTimeout(3_500)
-    await expect(page.locator('button[data-axis="Model"]')).toContainText('Krea 2')
-    expect(await variantOptions(page), 'krea-2 offers exactly its two declared routes').toEqual(['turbo', 'raw'])
-    // THE ENVELOPE, served to the browser: turbo 4–8 steps / 1–2 cfg,
-    // raw 30–60 / 2–6 — the projection (bounds) and the verbatim
-    // envelope both, per the lane's own door
+    await expect(page.getByRole('button', { name: 'Model', exact: true })).toContainText('Krea 2')
+    // THE SERVED TRUTH IS THE EXPECTATION (drive-13: the frozen
+    // ['turbo','raw'] literal reddened when krea-2's DECL grew
+    // kroma + kroma-base — a FROZEN-LITERAL wall judges a copy and
+    // passes while the truth moves; the menu must offer exactly the
+    // lanes the wire serves, derived live, never baked).
     const spec = await servedSpec(page, 'krea-2')
     const lanes = spec['lanes'] as { variants?: Record<string, { bounds?: Record<string, { min?: number; max?: number }>; sampler_envelope?: Record<string, [number, number]> }> }
     const served = lanes.variants ?? {}
+    const servedNames = Object.keys(served).map((k) => k.split(/[-_]/).map((seg) => seg.charAt(0).toUpperCase() + seg.slice(1)).join(' '))
+    expect(await variantOptions(page), `krea-2 offers exactly its served routes (${servedNames.join(', ')})`).toEqual(servedNames)
+    // THE ENVELOPE, served to the browser: turbo 4–8 steps / 1–2 cfg,
+    // raw 30–60 / 2–6 — the projection (bounds) and the verbatim
+    // envelope both, per the lane's own door
     expect(served['turbo']?.bounds, 'turbo bounds: steps 4–8, cfg 1–2').toEqual({
       steps: { min: 4, max: 8 }, cfg: { min: 1, max: 2 },
     })
