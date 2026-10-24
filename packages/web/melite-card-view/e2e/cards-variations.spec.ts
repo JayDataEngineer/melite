@@ -87,11 +87,10 @@ async function servedImageCap(page: Page, model: string): Promise<number> {
 test.describe("the variation law pins (the operator's three breaks, held at the browser)", () => {
   test('image-edit: 2511 admits 3, 2.1 admits 16, the fresh face is clean, the variant axis reseeds', async ({ page }) => {
     // THE DEEPEST STACK IN THE SUITE (drive-17 #3 red): mint + two
-    // sequential boards + two drilled faces + a two-hop model
-    // switch with served-cap receipts — under full-drive load the
-    // stack outgrew the 420s default and died waiting for the
-    // 2511 menuitem AFTER the menu had opened. 600s = the same
-    // budget class the gallery and every-card arms already ride.
+    // sequential boards + two drilled faces + a variant switch with
+    // served-cap receipts — under full-drive load the stack outgrew
+    // the 420s default. 600s = the same budget class the gallery
+    // and every-card arms already ride.
     test.setTimeout(600_000)
     const errors = collectPageErrors(page)
     await settle(page)
@@ -156,21 +155,25 @@ test.describe("the variation law pins (the operator's three breaks, held at the 
     expect(await servedImageCap(page, 'qwen-img-edit-21'), 'the 2.1 lane admits 16 images').toBe(16)
     await expect(page.locator('[data-lane-warn]'), '2.1: no lane-warn strip on a fresh open').toHaveCount(0)
 
-    // —— THE MODEL SWITCH, ON THE OPEN 2.1 DRILL ————————
+    // —— THE VARIANT SWITCH, ON THE OPEN 2.1 DRILL ————————
+    // THE LAWFUL RESEED DOOR (drive-18's 10.0m corpse): the model
+    // menu SKIPS hide_from_dropdown rows by the door's own law
+    // (discovery.ts:287-290 — the soft-retire means nobody may
+    // hand-pick 2511 anymore), so a 2.1→2511 menu switch is a UI
+    // path the estate forbids — the old block died waiting for a
+    // menuitem the roster never serves. The reseed law rides the
+    // switch the UI DOES offer: Base→Turbo, both served rows of
+    // 2.1's own Variant axis. The absence direction stays receipted
+    // at the 2511 face above (axis count 0 at a lawful door).
     const before = specUrls.length
-    await page.getByRole('button', { name: 'Model', exact: true }).click()
-    await expect(page.getByRole('menuitem').first(), 'the model menu opens on the open drill').toBeVisible({ timeout: 5_000 })
-    await page.getByRole('menuitem', { name: /Qwen Image Edit 2511/ }).click()
+    await pickVariant(page, /turbo/i)
     await page.waitForTimeout(4_000)
-    expect(specUrls.slice(before).some((u) => u.includes('model=qwen-img-edit-2511')),
-      'switching 2.1 → 2511 refetches the 2511 form-spec').toBe(true)
-    await expect(page.getByRole('button', { name: 'Model', exact: true })).toContainText('Qwen Image Edit 2511')
-    // THE RESEED BACK, under the soft-retire: the axis VANISHES again
-    // (both 2511 rows hidden from the dropdown) — the reseed law
-    // judged in BOTH directions: absence→presence→absence across
-    // switches, never a carried-over row in either direction.
-    await expect(page.locator('button[data-axis="Variant"]'), 'the switch back retires the axis again (no carried-over 2.1 row)').toHaveCount(0)
-    expect(await servedImageCap(page, 'qwen-img-edit-2511'), 'the served cap followed the switch: 3').toBe(3)
+    expect(specUrls.slice(before).some((u) => u.includes('qwen-img-edit-21-turbo')),
+      'the variant switch refetches the turbo route form-spec').toBe(true)
+    // THE RESEED FACE (the stale-variant break's own seat): the
+    // trigger must read the PICKED row, never the carried-over Base.
+    await expect(page.locator('button[data-axis="Variant"]'), 'the Variant face reseeds to the picked row').toContainText(/turbo/i)
+    await expect(page.locator('button[data-axis="Variant"]')).not.toContainText(/base/i)
     await page.getByRole('button', { name: 'Collapse card' }).click({ timeout: 10_000 })
     await expectNoPageErrors(page, errors)
   })
