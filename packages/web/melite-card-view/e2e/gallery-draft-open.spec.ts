@@ -45,6 +45,23 @@ test('clicking a served draft loads its stages onto THIS conversation\'s bench a
   // chain; each wait still fails at its own named cause.
   test.setTimeout(600_000)
   const errors: string[] = collectPageErrors(page)
+  // THE RESTORE WIRE TRACE (drives 14–15's park): 'restoring…' holds
+  // for 5+ minutes with no error banner while curl answers all three
+  // doors in milliseconds — the park is page-side. Every /v1/ bench
+  // and drafts frame is stamped (request → response/failure, with
+  // ms) and DUMPED ON FAILURE, so the next red names the fetch that
+  // never settles.
+  const wire: string[] = []
+  const t0 = Date.now()
+  page.on('request', (r) => {
+    if (/\/v1\/(bench|flows\/drafts)/.test(r.url())) wire.push(`+${Date.now() - t0}ms REQ ${r.method()} ${r.url().replace(/^https?:\/\/[^/]+/, '')}`)
+  })
+  page.on('response', (r) => {
+    if (/\/v1\/(bench|flows\/drafts)/.test(r.url())) wire.push(`+${Date.now() - t0}ms RES ${r.status()} ${r.url().replace(/^https?:\/\/[^/]+/, '')}`)
+  })
+  page.on('requestfailed', (r) => {
+    if (/\/v1\/(bench|flows\/drafts)/.test(r.url())) wire.push(`+${Date.now() - t0}ms FAILED ${r.url().replace(/^https?:\/\/[^/]+/, '')} ${r.failure()?.errorText ?? ''}`)
+  })
 
   await settle(page)
   const mint = await openAConversation(page)
@@ -88,23 +105,34 @@ test('clicking a served draft loads its stages onto THIS conversation\'s bench a
   // 503 estate/pending voice ride past 120s under drive load — a
   // 45s poll reds a door the operator's own law calls lawful.
   // 150s = the doors' ESTATE_WAIT_GRACE_MS (120s) + margin.
-  await expect
-    .poll(async () => stageCount(page, mint.sessionKey), { timeout: 150_000, message: 'the draft stages land on the conversation bench' })
-    .toBeGreaterThan(0)
+  // THE PARK'S OWN WITNESS: a hung restore leaves 'restoring…' on
+  // the row while the poll below starves — every receipt assert
+  // sits inside ONE try whose catch dumps the wire trace, so ANY
+  // exit names the fetch that never settled (the drives-14/15 park
+  // left no witness; a traceless third park would be a new gap).
+  try {
+    await expect
+      .poll(async () => stageCount(page, mint.sessionKey), { timeout: 150_000, message: 'the draft stages land on the conversation bench' })
+      .toBeGreaterThan(0)
 
-  // THE ROUTE: openResource activated the cards tab — the rail's own
-  // tiles are the visible proof (the Add-a-card affordance is not a
-  // stage; the pinned selector excludes it by its aria-label).
-  const rail = page.locator('[class*="tileInner"]:not([aria-label="Add a card"])')
-  await expect(rail.first(), 'the cards tab owns the pane and renders the landed stage').toBeVisible({ timeout: 60_000 })
-  await expect
-    .poll(async () => await rail.count(), { timeout: 30_000, message: 'at least one stage tile on the rail' })
-    .toBeGreaterThan(0)
+    // THE ROUTE: openResource activated the cards tab — the rail's own
+    // tiles are the visible proof (the Add-a-card affordance is not a
+    // stage; the pinned selector excludes it by its aria-label).
+    const rail = page.locator('[class*="tileInner"]:not([aria-label="Add a card"])')
+    await expect(rail.first(), 'the cards tab owns the pane and renders the landed stage').toBeVisible({ timeout: 60_000 })
+    await expect
+      .poll(async () => await rail.count(), { timeout: 30_000, message: 'at least one stage tile on the rail' })
+      .toBeGreaterThan(0)
 
-  // THE SWALLOWED REFUSALS never face: the row's own failure voices.
-  await expect(page.getByText('could not read that card')).toHaveCount(0)
-  await expect(page.getByText(/bench load failed/i)).toHaveCount(0)
-  await expect(page.getByText(/the bench refused the load/i)).toHaveCount(0)
-
+    // THE SWALLOWED REFUSALS never face: the row's own failure voices.
+    await expect(page.getByText('could not read that card')).toHaveCount(0)
+    await expect(page.getByText(/bench load failed/i)).toHaveCount(0)
+    await expect(page.getByText(/the bench refused the load/i)).toHaveCount(0)
+    await expect(page.getByText('restoring…'), 'the restore settled (no parked voice)').toHaveCount(0)
+  } catch (e) {
+    // eslint-disable-next-line no-console
+    console.error(`THE RESTORE WIRE TRACE (the park's witness):\n${wire.join('\n')}`)
+    throw e
+  }
   await expectNoPageErrors(page, errors)
 })
