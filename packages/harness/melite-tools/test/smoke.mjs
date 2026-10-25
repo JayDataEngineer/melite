@@ -43,6 +43,26 @@ await ctx.plugin(
   { name: domain.name, inject: domain.inject, apply: domain.apply, Config: domain.Config },
   { backend: 'json' },
 )
+// THE FAMILY ROWS (2026-11-12, the smoke's 3-week death cured): the
+// real bundle mounts one Loader row per @melite/models-* package
+// (melite-estate/cordis.patch.yml) BEFORE the estate row, so its
+// census gate settles a POPULATED table. This rig boots the estate
+// row bare — zero families — and the gate's boot census refused on
+// the first card boarding (card 'anny' boards 'anny' — no such
+// model registered). Same composition face, programmatic: mount
+// every family fiber FIRST; each injects 'models' and pends until
+// the estate row's provider registers the service, then activates
+// dependency-driven — the census gate's fiber.await() settles
+// PENDING fibers too (census.ts: the state law), so the boot
+// census sees the full table before validateBootContracts walks
+// the card boardings. loadFamilies is the engine's own frozen
+// table (FAMILY_PKGS, pinned to the manifests by W9).
+const { loadFamilies } = await import(
+  '../../../engines/comfyui-cordis/src/models/families/index.ts'
+)
+for (const family of await loadFamilies()) {
+  ctx.plugin(family)
+}
 // J12: the roots ride the estate row's config (the retired seams)
 await ctx.plugin(estateRow, { stateRoot })
 // SETTLE (the estate row fans out without awaiting: the async
@@ -50,7 +70,7 @@ await ctx.plugin(estateRow, { stateRoot })
 // that runs before they register gets a LOUD no-remote refusal
 // riding its {error} value, not a throw). Poll for the seats.
 {
-  const want = ['disclose', 'load', 'skills', 'queue', 'manage', 'runs', 'cardRegistry']
+  const want = ['disclose', 'load', 'meliteSkills', 'queue', 'manage', 'runs', 'cardRegistry']
   const t0 = Date.now()
   for (;;) {
     const missing = want.filter((s) => {
@@ -124,9 +144,25 @@ const main = async () => {
   for (const [label, tool, args, _] of tools) {
     try {
       if (label === 'melite_skill_read') {
-        if (skillId === '') throw new Error('no skill id from melite_load (the card bundle\'s skills section)'
+        if (skillId === '') throw new Error('no skill id from melite_load (the card bundle\'s skills section)')
         const r = await runTool(tool, { id: skillId }, label)
         note(label, typeof r.value?.body === 'string' || typeof r.text === 'string', 'body loaded')
+        continue
+      }
+      // ARGS-WALL REFUSALS: the tool plane validates its own
+      // parameters (the DSH tool schema) before the door — a bad
+      // verb or a malformed stage refuses LOUD at the schema wall,
+      // upstream of the compose door. The refusal is a throw off
+      // execute (invalid arguments: …), never a silent pass; these
+      // arms pin that the wall fires.
+      if (label === 'melite_construct(bad verb refuses)' || label === 'melite_flow(adhoc loud-fail: bad stage)') {
+        try {
+          await tool.execute(args, exec)
+          note(label, false, 'no refusal — the args wall did not fire')
+        } catch (e) {
+          const msg = String(e?.message ?? e)
+          note(label, msg.startsWith('invalid arguments'), 'args wall: ' + msg.slice(0, 70))
+        }
         continue
       }
       if (label === 'comfy_manage(status)') {
@@ -165,10 +201,21 @@ const main = async () => {
         note(label, (r.value?.cards?.length ?? 0) > 0 && r.value.cards.some((c) => c.id === 'upscale-tools'), 'upscale-tools retrieved by tags')
       } else if (label === 'melite_load(card)') {
         const b = r.value?.bundle ?? {}
-        note(label, Object.keys(b).join() === 'name,kind,signature,agents,skills,model_hints,digest' && b.name === 'upscale-tools', 'the card bundle')
+        // pack_hints joined the card bundle (2026-09-22, the boarded
+        // craft packs ride load — present flags for the packs the
+        // card's families seat)
+        note(label, Object.keys(b).join() === 'name,kind,signature,agents,skills,model_hints,pack_hints,digest' && b.name === 'upscale-tools', 'the card bundle')
         // skill ids ride the load (the index tool is deleted — its
-        // subset law already lived here)
+        // subset law already lived here). upscale-tools boards
+        // skill-less families (seedvr2 only), so the tts card —
+        // whose qwen3-tts families carry the qvoice model skills —
+        // is the harvest seat for melite_skill_read's id.
         skillId = Array.isArray(b.skills) && b.skills[0]?.id ? b.skills[0].id : ''
+        if (skillId === '') {
+          const t = await runTool(lib.meliteLoad(estate), { name: 'tts', inference_type: 'card' }, 'melite_load(tts: id harvest)')
+          const tb = t.value?.bundle ?? {}
+          skillId = Array.isArray(tb.skills) && tb.skills[0]?.id ? tb.skills[0].id : ''
+        }
       } else if (label === 'melite_load(flow)') {
         const b = r.value?.bundle ?? {}
         const sig = b.signature ?? {}
@@ -189,7 +236,9 @@ const main = async () => {
     console.log((r.ok ? '  ✓ ' : '  ✗ ') + r.name.padEnd(26) + ' ' + r.detail)
   }
   console.log('\n' + pass + '/' + results.length + ' PASS against the in-process estate seats')
-  if (pass !== results.length) process.exit(1)
+  // the estate's seats (storage stack, engine client, timers) hold
+  // the loop open past the report — the rig owns its own exit
+  process.exit(pass !== results.length ? 1 : 0)
 }
 
 main().catch((e) => { console.error('SMOKE CRASHED:', e); process.exit(1) })
