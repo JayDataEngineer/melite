@@ -92,14 +92,19 @@ describe('web media-panel (the boot-staged sidebar face, keyless)', () => {
   it('the persisted feed paints before the wire answers, chips stale, then the fresh feed replaces it', async () => {
     // THE PERSISTED FEED (the exact cache key the boot uses —
     // melite:feed:<url>, origin-scoped by localStorage itself)
+    // THE STAMPED ENVELOPE (feed-cache F6): the boot evicts a bare
+    // cache — the seed wears the version stamp like a real write
     localStorage.setItem('melite:feed:/infer-gallery/runs', JSON.stringify({
-      runs: [{
-        run_id: 'cached-run',
-        created_at: 1,
-        status: 'completed',
-        artifacts: [{ url: '/c/cached-film.png', name: 'cached-film.png', type: 'image' }],
-      }],
-      errors: [],
+      v: 1,
+      feed: {
+        runs: [{
+          run_id: 'cached-run',
+          created_at: 1,
+          status: 'completed',
+          artifacts: [{ url: '/c/cached-film.png', name: 'cached-film.png', type: 'image' }],
+        }],
+        errors: [],
+      },
     }))
     const fresh = JSON.stringify({
       runs: [{

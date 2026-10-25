@@ -1381,9 +1381,15 @@ describe('the no-overlay law — neither the raw atom nor card-base Tip seats th
 // never minutes of spinner through a lane boot.
 describe('MediaPanel — the boot-staged stale face', () => {
   it('a persisted feed paints before the fetch answers, chips stale, then fresh replaces it', async () => {
+    // THE STAMPED ENVELOPE (feed-cache F6, 2026-11-12): the boot
+    // refuses AND evicts a bare cache — the seed must wear the
+    // version stamp or the stale paint never seats
     localStorage.setItem('melite:feed:/infer-gallery/runs', JSON.stringify({
-      runs: [run({ artifacts: [{ url: '/c/cached.png', name: 'cached.png', type: 'image' }] })],
-      errors: [],
+      v: 1,
+      feed: {
+        runs: [run({ artifacts: [{ url: '/c/cached.png', name: 'cached.png', type: 'image' }] })],
+        errors: [],
+      },
     }))
     let release: (() => void) | null = null
     const gate = new Promise<void>((res) => { release = res })
@@ -1414,8 +1420,11 @@ describe('MediaPanel — the boot-staged stale face', () => {
   // face (the §3.4 single-arm class).
   it('the flows tab chips its boot-staged drafts face and clears it when the fresh feed seats', async () => {
     localStorage.setItem('melite:feed:/infer-gallery/drafts', JSON.stringify({
-      drafts: [{ draft_id: 'd1', name: 'cached card', model: 'qwen' }],
-      errors: [],
+      v: 1,
+      feed: {
+        drafts: [{ draft_id: 'd1', name: 'cached card', model: 'qwen' }],
+        errors: [],
+      },
     }))
     let release: (() => void) | null = null
     const gate = new Promise<void>((res) => { release = res })
