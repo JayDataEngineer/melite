@@ -1,6 +1,6 @@
-import type { DocRow, SkillRow } from "./skillPlane.js";
-import type { FlowsSeat } from "./flowsData.js";
-import type { FamilyModelsSeat } from "./flowsFamilyCompose.js";
+import type { DocRow, SkillRow } from "./skillPlane.ts";
+import type { FlowsSeat } from "./flowsData.ts";
+import type { FamilyModelsSeat } from "./flowsFamilyCompose.ts";
 /** One registry headless-tool property, projected to the frozen
  *  FlowToolDecl shape (always ptype + description; enum / default /
  *  minimum / maximum ride only when the registry declares them —

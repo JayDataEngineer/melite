@@ -16,19 +16,23 @@ const TEXTY = /\.(ts|tsx|mjs|cjs|js|jsx|json|yml|yaml|md|sh|css|html|svg|txt)$/;
 // SIX (2026-10-12): estate-queue's lib went committed at the qwen
 // fold (e596f0921) — same class (tsc artifact, main/exports point
 // at lib/, the running estate loads it), same exemption.
-const GENERATED = [
-  "packages/estate/drafts/lib/",
-  "packages/estate/manage/lib/",
-  "packages/estate/media/lib/",
-  "packages/estate/runs/lib/",
-  "packages/vendor/typert-protocol/lib/",
-  "packages/harness/estate-queue/lib/",
-];
+// WHOLESALE (tier-cures-audit item 2, 2026-11-06): the six-prefix
+// list grew one build plane at a time while bd3c3754d landed 649
+// stripped artifacts, 397 outside the exemption (comfyui-cordis
+// 239, melite-tools 88, h3 22) — every tsc/tsdown package trips
+// this hook on rebuild. The artifact plane is now declared
+// WHOLESALE (any lib/ or dist/ segment): build output is not
+// source, no matter which package emitted it. The authored plane's
+// second seat is the walls census (file-hygiene-newline.spec.ts) —
+// this hook judges the STAGED authored set, the census judges the
+// TRACKED authored set, and the two share one artifact grammar.
+const ARTIFACT = /(^|\/)lib\/|(^|\/)dist\//;
+
 
 let bad = [];
 for (const f of process.argv.slice(2)) {
   if (!TEXTY.test(f)) continue;
-  if (GENERATED.some((p) => f.startsWith(p))) continue;
+  if (ARTIFACT.test(f)) continue;
   let b;
   try {
     b = readFileSync(f);
