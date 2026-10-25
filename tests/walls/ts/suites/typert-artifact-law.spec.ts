@@ -29,7 +29,20 @@ import { fileURLToPath } from "node:url";
 //   3. every generated artifact must satisfy the registry's own
 //      validateCodec law — the same judgment the lane applies at
 //      boot, asserted here so a stale artifact dies in the walls,
-//      not in the operator's bench.
+//      not in the operator's bench;
+//   4. the BOOTSTRAP FACE (2026-11-12, the cold-start drive catch):
+//      the vendor is not a workspace member, so a fresh clone's bare
+//      `pnpm install` seats NOTHING beside it — for six weeks the
+//      tree built only because an untracked leftover
+//      packages/vendor/typert-protocol/node_modules (materialized
+//      before the 2026-09-29 member removal) carried zod and
+//      dsh-brand links the manifest law never accounted for. The
+//      F7 cold-start LOCAL drive caught it: the fresh clone's
+//      build-plane died typert(host) TS2307 on the vendor's own
+//      imports. The cure seats the generation-face externals at the
+//      ROOT devDependencies (node walk-up resolves them); the wall
+//      derives the externals from the src itself and kills the
+//      side-seat that masked the break.
 //
 // The mutations each assertion kills are named inline.
 
@@ -90,6 +103,52 @@ describe("the typert artifact law — generation face, runtime face, one law", (
     // (card-view's stream registration died TS2322 this way while the
     // runtime kept the store copy).
     expect(offenders, "no .pnpm/node_modules entry may realpath into packages/vendor").toEqual([]);
+  });
+
+  it("the bootstrap face — vendor src externals resolve from the root alone, no side-seat may mask a break", () => {
+    const vendorDir = join(ROOT, "packages/vendor/typert-protocol");
+    // MUTATION KILLED: recreating a side-seat node_modules beside the
+    // vendor (pnpm linking one as a workspace member, or an untracked
+    // leftover surviving a member removal) masks every bootstrap break
+    // below on a warm machine while every fresh clone burns.
+    expect(existsSync(join(vendorDir, "node_modules")), "no node_modules may sit beside the vendor — it is not a workspace member").toBe(false);
+    // DERIVED ROSTER (the depth law): the externals are read from the
+    // src's own import/export statements, not hand-maintained — a new
+    // import joins the law the day it lands.
+    const externals = new Set<string>();
+    const walk = (dir: string): void => {
+      for (const entry of readdirSync(dir, { withFileTypes: true })) {
+        const full = join(dir, entry.name);
+        if (entry.isDirectory()) walk(full);
+        else if (/\.(ts|tsx|mts)$/.test(entry.name)) {
+          const text = readFileSync(full, "utf8");
+          for (const match of text.matchAll(/from\s+["']([^."'][^"']*)["']/g)) {
+            const spec = match[1]!;
+            externals.add(spec.startsWith("@") ? spec : spec.split("/")[0]!);
+          }
+        }
+      }
+    };
+    walk(join(vendorDir, "src"));
+    expect(externals.size, "the vendor src must import externals for the law to judge").toBeGreaterThan(0);
+    const rootDeps = {
+      ...(JSON.parse(readFileSync(join(ROOT, "package.json"), "utf8")) as { devDependencies?: Record<string, string> }).devDependencies,
+    };
+    const require = createRequire(join(vendorDir, "package.json"));
+    for (const name of externals) {
+      // MUTATION KILLED: dropping the name from the root
+      // devDependencies (the exact fresh-clone TS2307 the cold-start
+      // drive caught — zod/@deepseek-ai/dsh-brand) reds here first.
+      expect(rootDeps[name], `vendor external ${name} must be declared in the ROOT devDependencies (fresh-clone bootstrap)`).toBeTruthy();
+      // MUTATION KILLED: a name declared but unresolvable (the broken
+      // store leaving a lockfile row without the link) — resolution is
+      // the exact judgment typert(host) makes when it walks the
+      // vendor's src.
+      const resolved = dirname(require.resolve(`${name}/package.json`));
+      // MUTATION KILLED: the resolved copy living under packages/vendor
+      // is the side-seat again wearing a second name.
+      expect(resolved.startsWith(join(ROOT, "packages/vendor")), `vendor external ${name} must resolve outside packages/vendor`).toBe(false);
+    }
   });
 
   for (const name of ESTATE_PACKAGES) {

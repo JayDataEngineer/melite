@@ -6,6 +6,7 @@
   },
   "devDependencies": {
     "@deepseek-ai/cordis": "^4.0.5",
+    "@deepseek-ai/dsh-brand": "0.2.1-rc.2",
     "@melite/estate-drafts": "workspace:*",
     "@melite/estate-manage": "workspace:*",
     "@melite/estate-media": "workspace:*",
@@ -38,7 +39,8 @@
     "shiki": "4.4.3",
     "simple-icons": "16.31.0",
     "vitest": "^4.1.8",
-    "yaml": "2.9.1"
+    "yaml": "2.9.1",
+    "zod": "4.4.3"
   },
   "scripts": {
     "postinstall": "node tools/install-lefthook.mjs",
