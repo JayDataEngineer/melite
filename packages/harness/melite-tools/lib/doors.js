@@ -1,7 +1,7 @@
 import { contentTypeForArtifact, segmentConfined } from '@melite/contracts/mediaKinds';
 import { harnessEnhance, resolveHarnessRoutes, routeName } from "./llm-complete.js";
 import { agenticSweep } from "./enhance-agent.js";
-import { engineLorasListing, formSpecArm, formsArm, kindsDoorArm, modelCatalogArm, cardToolsArm, } from "./discovery.js";
+import { engineLorasListing, formSpecArm, formsArm, kindsDoorArm, bootFactsArm, modelCatalogArm, cardToolsArm, } from "./discovery.js";
 import { makeEstateRequest, seatFamilyForPath } from "./estate.js";
 // The protocol refusal discrimination (the false-death fix,
 // 2026-10-08): a seat's NAMED refusal is a 4xx answer about the
@@ -785,6 +785,13 @@ export function apply(c, config = {}) {
                     method = (req.method ?? 'GET').toUpperCase();
                     if (method === 'GET' && path === '/v1/card-tools') {
                         return void cardToolsArm().then(ok, (e) => fail(500, { error: `discovery door: ${e instanceof Error ? e.message : String(e)}` }));
+                    }
+                    if (method === 'GET' && path === '/v1/boot-facts') {
+                        // THE STALENESS SIGNAL (HMR audit 009 F2): prime times
+                        // vs on-disk truths — visibility, never a crash. The
+                        // registry rides the fiber's own provider mount.
+                        const registry = c.cardRegistry;
+                        return void Promise.resolve(bootFactsArm(registry)).then(ok, (e) => fail(500, { error: `discovery door: ${e instanceof Error ? e.message : String(e)}` }));
                     }
                     if (method === 'GET' && path === '/v1/model-catalog') {
                         // THE OPT-IN FOLD (error j2): the catalog row folds on the

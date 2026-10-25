@@ -13,11 +13,12 @@
 // inject declaration and the service dies with "cannot get property
 // comfyui without inject").
 import { CARD_PLANE_ENGINE } from '@melite/contracts/benchStage'
-import { existsSync } from 'node:fs'
+import { existsSync, readdirSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 import { Context } from '@deepseek-ai/cordis'
 import type { Plugin } from '@deepseek-ai/cordis'
 import { ComfyUIService } from './service.ts'
+import { resolveRepoRoot } from './comfyui-config.ts'
 import type { CardDefinition } from '@melite/comfyui-card-kit/card-definition'
 import type { ProvisionRow } from '@melite/comfyui-card-kit/model-contract'
 // COMPOSITION LIST (M2′ stroke 1, 2026-09-09, P48.1 — completed by
@@ -40,6 +41,7 @@ import type { ProvisionRow } from '@melite/comfyui-card-kit/model-contract'
 interface CardDefsCell {
   cache: Map<string, CardDefinition> | null;
   service: ComfyUIService | null;
+  primedAt: Date | null;
 }
 
 const CARD_DEFS_KEY = '@melite/comfyui-cordis:card-defs';
@@ -47,7 +49,7 @@ const CARD_DEFS_KEY = '@melite/comfyui-cordis:card-defs';
 function cardDefsCell(): CardDefsCell {
   const sym = Symbol.for(CARD_DEFS_KEY);
   const holder = globalThis as Record<symbol, CardDefsCell | undefined>;
-  holder[sym] ??= { cache: null, service: null };
+  holder[sym] ??= { cache: null, service: null, primedAt: null };
   return holder[sym];
 }
 
@@ -310,6 +312,7 @@ export const loadCardDefs = async (): Promise<Map<string, CardDefinition>> => {
     assertCardIdentity(id, def)
     return [id, def]
   }))
+  cell.primedAt = new Date()
   return cell.cache
 }
 
@@ -321,6 +324,60 @@ export const loadCardDefs = async (): Promise<Map<string, CardDefinition>> => {
  *  hot card validates at POST /v1/flows/validate the moment it
  *  serves — one cache, not a boot snapshot and its fork. */
 export const cardDefsNow = (): Map<string, CardDefinition> | null => cardDefsCell().cache;
+
+/** The defs cache's staleness signal (HMR audit 009 F2, 2026-10-24):
+ *  the boot snapshot carries NO re-read and NO signal — an operator
+ *  editing a DECL on a live host cannot tell "edit not served" from
+ *  "edit wrong". This report is the signal: the cache's prime time
+ *  against the newest mtime among the model families' BUILT libs
+ *  (where a post-boot DECL edit lands once built — source edits are
+ *  the build plane's own staleness, judged by the .src-stamp law).
+ *  Stale means: the composed truth on disk moved past the snapshot
+ *  every per-request door serves. The walk is bounded (one stat per
+ *  file under each model family's lib) and runs only when this report
+ *  is read — never on the serve path.
+ *  @returns the prime time, the source's newest mtime, and the
+ *  stale verdict (false while unprimed — the report itself never
+ *  throws). */
+export const cardDefsStaleness = (): {
+  primed_at: string | null;
+  source: string;
+  source_root: string;
+  source_mtime: string | null;
+  stale: boolean;
+} => {
+  const primed = cardDefsCell().primedAt;
+  let newest = 0;
+  const modelsRoot = join(resolveRepoRoot(), "packages", "models");
+  try {
+    const walk = (dir: string): void => {
+      for (const e of readdirSync(dir, { withFileTypes: true })) {
+        const p = join(dir, e.name);
+        if (e.isDirectory()) walk(p);
+        else if (e.isFile()) {
+          const t = statSync(p).mtimeMs;
+          if (t > newest) newest = t;
+        }
+      }
+    };
+    const families = readdirSync(modelsRoot, { withFileTypes: true })
+      .filter((e) => e.isDirectory());
+    for (const f of families) {
+      const lib = join(modelsRoot, f.name, "lib");
+      if (existsSync(lib)) walk(lib);
+    }
+  } catch {
+    // a missing/unreadable models tree reports no source truth —
+    // primed_at still answers, stale stays false (never a lie)
+  }
+  return {
+    primed_at: primed?.toISOString() ?? null,
+    source: "packages/models/<family>/lib (newest mtime)",
+    source_root: modelsRoot,
+    source_mtime: newest > 0 ? new Date(newest).toISOString() : null,
+    stale: primed !== null && newest > primed.getTime(),
+  };
+};
 
 /** Refresh the served defs map from the LIVE singleton (#39, the
  *  hotload prototype): loadCardDefs' cache is a boot snapshot, so a

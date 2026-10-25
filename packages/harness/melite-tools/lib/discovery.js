@@ -16,7 +16,7 @@
 // composed server-side. NO second spelling, no remote fetch.
 import { laneContractOf as sharedLaneContractOf } from '@melite/contracts/laneRelations';
 import { engineRootOf, engineOutputDir, resolveRuntimeHome, runtimeEnvView } from '@melite/estate-queue';
-import { buildCatalog, CARD_KINDS, emitParamsSchema, enhanceRecipeFor, getModel, isServedFamily, liveObjectInfo, liveScanOrder, modelsBooted, owningAtom, registryModel, loadCardDefs, modelIds, resolveEngineBaseUrl, theService, emitModifierKinds, declaredDefaults, } from '@melite/comfyui-cordis';
+import { buildCatalog, CARD_KINDS, emitParamsSchema, enhanceRecipeFor, getModel, isServedFamily, liveObjectInfo, liveScanOrder, modelsBooted, owningAtom, registryModel, cardDefsStaleness, loadCardDefs, modelIds, resolveEngineBaseUrl, theService, emitModifierKinds, declaredDefaults, } from '@melite/comfyui-cordis';
 import { loraNamesFromObjectInfo } from '@melite/comfyui-cordis/user-loras';
 import { deriveVariants } from '@melite/comfyui-card-kit/facts';
 import { faceStamp } from "./faceStamp.js";
@@ -1374,6 +1374,25 @@ export function catalogSection(defs, mcpServers = []) {
     };
 }
 // ── door arms (the HTTP-facing surface doors.ts mounts) ──────────
+/** /v1/boot-facts — the boot caches' staleness signal (HMR audit
+ *  009 F2, 2026-10-24): the card-defs and model-facts caches are
+ *  boot snapshots with no re-read — an edit on a live host served
+ *  stale with ZERO signal, and the operator could not tell "edit
+ *  not served" from "edit wrong". This door is the signal: both
+ *  caches' prime times against their on-disk truths, with a stale
+ *  verdict each. The registry half carries the caller's
+ *  ctx.cardRegistry; a fiber without it (the provider unmounted)
+ *  reports that fact by name — the door's own law is visibility,
+ *  never a silent empty and never a crash.
+ *  @param registry the host fiber's card registry, if mounted. */
+export function bootFactsArm(registry) {
+    return {
+        card_defs: cardDefsStaleness(),
+        model_facts: registry !== null && registry !== undefined
+            ? registry.factsStaleness()
+            : { primed_at: null, error: "no cardRegistry on this fiber — the estate-card-registry provider is not mounted" },
+    };
+}
 /** /v1/model-catalog — the live catalog section (the OPTED-IN MCP
  * servers fold LIVE — the door passes the engines-seat opt-in census
  * (error j2: ambient tools presence is not intent), the same read

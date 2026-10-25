@@ -158,6 +158,25 @@ export declare function cardToolsArm(): Promise<unknown[]>;
  * section — ONE surface; a row only here is invisible, a row only
  * there was). */
 export declare function catalogSection(defs: Map<string, CardDefinition>, mcpServers?: readonly string[]): Record<string, unknown>;
+/** /v1/boot-facts — the boot caches' staleness signal (HMR audit
+ *  009 F2, 2026-10-24): the card-defs and model-facts caches are
+ *  boot snapshots with no re-read — an edit on a live host served
+ *  stale with ZERO signal, and the operator could not tell "edit
+ *  not served" from "edit wrong". This door is the signal: both
+ *  caches' prime times against their on-disk truths, with a stale
+ *  verdict each. The registry half carries the caller's
+ *  ctx.cardRegistry; a fiber without it (the provider unmounted)
+ *  reports that fact by name — the door's own law is visibility,
+ *  never a silent empty and never a crash.
+ *  @param registry the host fiber's card registry, if mounted. */
+export declare function bootFactsArm(registry: {
+    factsStaleness(): {
+        primed_at: string | null;
+        source: string;
+        source_mtime: string;
+        stale: boolean;
+    };
+} | null | undefined): Record<string, unknown>;
 /** /v1/model-catalog — the live catalog section (the OPTED-IN MCP
  * servers fold LIVE — the door passes the engines-seat opt-in census
  * (error j2: ambient tools presence is not intent), the same read

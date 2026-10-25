@@ -39,7 +39,7 @@ export { loadTextPair, decodeSave, stackLoras } from '@melite/comfyui-card-kit';
 export { emitKnob, emitParamsSchema, emitParamsSpec, emitModifierKinds } from '@melite/comfyui-card-kit/params-emit';
 export type { ParamsSchema, ParamsSpec, ParamSpecNode } from '@melite/comfyui-card-kit/params-emit';
 export { declaredDefaults, unwalkedParams } from "./no-cheat.ts";
-export { assertCardIdentity, cardDefsNow, cardPackages, composeCards, composeModPlane, loadCardDefs, pluginPackage, provisionsByFamily, refreshCardDefs, theService } from "./cardDefs.ts";
+export { assertCardIdentity, cardDefsNow, cardDefsStaleness, cardPackages, composeCards, composeModPlane, loadCardDefs, pluginPackage, provisionsByFamily, refreshCardDefs, resetCardDefsForTests, theService } from "./cardDefs.ts";
 export { ASSET_RUNS_PREFIX, resolveLinkedInput, runMediaPrefix, runsRoot } from '@melite/comfyui-card-kit/linked';
 // LIVE VOCABULARIES for serving surfaces (hand-owned, wall-pinned):
 // the card-kind table (the kinds arm), the flow edge-kind set (the

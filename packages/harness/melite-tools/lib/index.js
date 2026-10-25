@@ -28,6 +28,10 @@ import { harnessEnhance, resolveHarnessRoutes, matchHarnessRoute, routeName } fr
 // with a fake seam — no host, no key, seconds-cheap).
 export { harnessEnhance, resolveHarnessRoutes, matchHarnessRoute, routeName };
 export { makeEstate, makeEstateRequest } from "./estate.js";
+// THE STALENESS SIGNAL'S PUBLIC SEAT (HMR audit 009 F2): the
+// boot-facts arm is the /v1 door's answer AND the wall's import —
+// one export, both planes.
+export { bootFactsArm } from "./discovery.js";
 // Tool factories — re-exported for the smoke harness (test/smoke.mjs)
 // and any embedder that mounts tools without the full plugin apply().
 export { runStatus } from "./tools/run-status.js";

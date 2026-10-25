@@ -60,6 +60,27 @@ export declare const loadCardDefs: () => Promise<Map<string, CardDefinition>>;
  *  hot card validates at POST /v1/flows/validate the moment it
  *  serves — one cache, not a boot snapshot and its fork. */
 export declare const cardDefsNow: () => Map<string, CardDefinition> | null;
+/** The defs cache's staleness signal (HMR audit 009 F2, 2026-10-24):
+ *  the boot snapshot carries NO re-read and NO signal — an operator
+ *  editing a DECL on a live host cannot tell "edit not served" from
+ *  "edit wrong". This report is the signal: the cache's prime time
+ *  against the newest mtime among the model families' BUILT libs
+ *  (where a post-boot DECL edit lands once built — source edits are
+ *  the build plane's own staleness, judged by the .src-stamp law).
+ *  Stale means: the composed truth on disk moved past the snapshot
+ *  every per-request door serves. The walk is bounded (one stat per
+ *  file under each model family's lib) and runs only when this report
+ *  is read — never on the serve path.
+ *  @returns the prime time, the source's newest mtime, and the
+ *  stale verdict (false while unprimed — the report itself never
+ *  throws). */
+export declare const cardDefsStaleness: () => {
+    primed_at: string | null;
+    source: string;
+    source_root: string;
+    source_mtime: string | null;
+    stale: boolean;
+};
 /** Refresh the served defs map from the LIVE singleton (#39, the
  *  hotload prototype): loadCardDefs' cache is a boot snapshot, so a
  *  card registered after boot (the hot root's drop-ins) never

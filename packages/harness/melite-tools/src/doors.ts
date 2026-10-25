@@ -35,6 +35,7 @@ import {
   formSpecArm,
   formsArm,
   kindsDoorArm,
+  bootFactsArm,
   modelCatalogArm,
   cardToolsArm,
 } from './discovery.ts'
@@ -938,6 +939,13 @@ export function apply(c: CtxView, config: Config = {}): void {
           method = (req.method ?? 'GET').toUpperCase() as EstateMethod
           if (method === 'GET' && path === '/v1/card-tools') {
             return void cardToolsArm().then(ok, (e: unknown) => fail(500, { error: `discovery door: ${e instanceof Error ? e.message : String(e)}` }))
+          }
+          if (method === 'GET' && path === '/v1/boot-facts') {
+            // THE STALENESS SIGNAL (HMR audit 009 F2): prime times
+            // vs on-disk truths — visibility, never a crash. The
+            // registry rides the fiber's own provider mount.
+            const registry = (c as { cardRegistry?: Parameters<typeof bootFactsArm>[0] }).cardRegistry
+            return void Promise.resolve(bootFactsArm(registry)).then(ok, (e: unknown) => fail(500, { error: `discovery door: ${e instanceof Error ? e.message : String(e)}` }))
           }
           if (method === 'GET' && path === '/v1/model-catalog') {
             // THE OPT-IN FOLD (error j2): the catalog row folds on the

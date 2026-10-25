@@ -19,7 +19,7 @@ export { loadTextPair, decodeSave, stackLoras } from '@melite/comfyui-card-kit';
 export { emitKnob, emitParamsSchema, emitParamsSpec, emitModifierKinds } from '@melite/comfyui-card-kit/params-emit';
 export type { ParamsSchema, ParamsSpec, ParamSpecNode } from '@melite/comfyui-card-kit/params-emit';
 export { declaredDefaults, unwalkedParams } from "./no-cheat.js";
-export { assertCardIdentity, cardDefsNow, cardPackages, composeCards, composeModPlane, loadCardDefs, pluginPackage, provisionsByFamily, refreshCardDefs, theService } from "./cardDefs.js";
+export { assertCardIdentity, cardDefsNow, cardDefsStaleness, cardPackages, composeCards, composeModPlane, loadCardDefs, pluginPackage, provisionsByFamily, refreshCardDefs, resetCardDefsForTests, theService } from "./cardDefs.js";
 export { ASSET_RUNS_PREFIX, resolveLinkedInput, runMediaPrefix, runsRoot } from '@melite/comfyui-card-kit/linked';
 export { CARD_KINDS, KindValues } from "./generated/vocab.js";
 export { cardWireName } from './service.js';

@@ -21,13 +21,16 @@ var __rewriteRelativeImportExtension = (this && this.__rewriteRelativeImportExte
 // inject declaration and the service dies with "cannot get property
 // comfyui without inject").
 import { CARD_PLANE_ENGINE } from '@melite/contracts/benchStage';
+import { existsSync, readdirSync, statSync } from 'node:fs';
+import { join } from 'node:path';
 import { Context } from '@deepseek-ai/cordis';
 import { ComfyUIService } from "./service.js";
+import { resolveRepoRoot } from "./comfyui-config.js";
 const CARD_DEFS_KEY = '@melite/comfyui-cordis:card-defs';
 function cardDefsCell() {
     const sym = Symbol.for(CARD_DEFS_KEY);
     const holder = globalThis;
-    holder[sym] ??= { cache: null, service: null };
+    holder[sym] ??= { cache: null, service: null, primedAt: null };
     return holder[sym];
 }
 /** Test seam: drop the process-global card-defs cell. Production
@@ -274,6 +277,7 @@ export const loadCardDefs = async () => {
         assertCardIdentity(id, def);
         return [id, def];
     }));
+    cell.primedAt = new Date();
     return cell.cache;
 };
 /** The module cache, SYNC, for seats that must not fork the truth
@@ -284,6 +288,57 @@ export const loadCardDefs = async () => {
  *  hot card validates at POST /v1/flows/validate the moment it
  *  serves — one cache, not a boot snapshot and its fork. */
 export const cardDefsNow = () => cardDefsCell().cache;
+/** The defs cache's staleness signal (HMR audit 009 F2, 2026-10-24):
+ *  the boot snapshot carries NO re-read and NO signal — an operator
+ *  editing a DECL on a live host cannot tell "edit not served" from
+ *  "edit wrong". This report is the signal: the cache's prime time
+ *  against the newest mtime among the model families' BUILT libs
+ *  (where a post-boot DECL edit lands once built — source edits are
+ *  the build plane's own staleness, judged by the .src-stamp law).
+ *  Stale means: the composed truth on disk moved past the snapshot
+ *  every per-request door serves. The walk is bounded (one stat per
+ *  file under each model family's lib) and runs only when this report
+ *  is read — never on the serve path.
+ *  @returns the prime time, the source's newest mtime, and the
+ *  stale verdict (false while unprimed — the report itself never
+ *  throws). */
+export const cardDefsStaleness = () => {
+    const primed = cardDefsCell().primedAt;
+    let newest = 0;
+    const modelsRoot = join(resolveRepoRoot(), "packages", "models");
+    try {
+        const walk = (dir) => {
+            for (const e of readdirSync(dir, { withFileTypes: true })) {
+                const p = join(dir, e.name);
+                if (e.isDirectory())
+                    walk(p);
+                else if (e.isFile()) {
+                    const t = statSync(p).mtimeMs;
+                    if (t > newest)
+                        newest = t;
+                }
+            }
+        };
+        const families = readdirSync(modelsRoot, { withFileTypes: true })
+            .filter((e) => e.isDirectory());
+        for (const f of families) {
+            const lib = join(modelsRoot, f.name, "lib");
+            if (existsSync(lib))
+                walk(lib);
+        }
+    }
+    catch {
+        // a missing/unreadable models tree reports no source truth —
+        // primed_at still answers, stale stays false (never a lie)
+    }
+    return {
+        primed_at: primed?.toISOString() ?? null,
+        source: "packages/models/<family>/lib (newest mtime)",
+        source_root: modelsRoot,
+        source_mtime: newest > 0 ? new Date(newest).toISOString() : null,
+        stale: primed !== null && newest > primed.getTime(),
+    };
+};
 /** Refresh the served defs map from the LIVE singleton (#39, the
  *  hotload prototype): loadCardDefs' cache is a boot snapshot, so a
  *  card registered after boot (the hot root's drop-ins) never

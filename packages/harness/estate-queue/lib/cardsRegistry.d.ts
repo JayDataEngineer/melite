@@ -72,6 +72,9 @@ export declare class CardRegistryService extends Service {
     private defs;
     /** The frozen model facts (lazy — strict load, throws LOUD). */
     private facts;
+    /** When the facts cache primed (HMR audit 009 F2 — the staleness
+     *  signal's own clock; null until the first modelFacts()). */
+    private factsPrimedAt;
     /** Route address → family owner from the registry-derived facts. */
     private owners;
     /** Registry reads for the row derivation (primed with the models boot). */
@@ -129,6 +132,21 @@ export declare class CardRegistryService extends Service {
     /** Sync read of the primed registry reads (unprimed access throws LOUD). */
     readsSync(): FactsReads;
     modelFacts(): Record<string, ModelFactsRow>;
+    /** The facts cache's staleness signal (HMR audit 009 F2,
+     *  2026-10-24): the facts file is a REAL on-disk truth and the
+     *  cache never re-reads it — an edit on a live host serves stale
+     *  rows with zero signal. This report is the signal: prime time
+     *  vs the file's mtime. Stale means: the truth on disk moved past
+     *  the snapshot this registry serves. Never throws — an unprimed
+     *  registry reports primed_at null and stale false (the report is
+     *  itself visibility, not a registry read).
+     *  @returns prime time, the facts path, its mtime, the verdict. */
+    factsStaleness(): {
+        primed_at: string | null;
+        source: string;
+        source_mtime: string;
+        stale: boolean;
+    };
     /** The decl projection — derived from defs + the strict facts, or
      *  from defs + caller-supplied facts (the validate door's
      *  degraded read; derived fresh, never cached over foreign facts). */

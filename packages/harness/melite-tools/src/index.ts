@@ -64,6 +64,10 @@ import { harnessEnhance, resolveHarnessRoutes, matchHarnessRoute, routeName } fr
 export { harnessEnhance, resolveHarnessRoutes, matchHarnessRoute, routeName }
 
 export { makeEstate, makeEstateRequest } from './estate.ts'
+// THE STALENESS SIGNAL'S PUBLIC SEAT (HMR audit 009 F2): the
+// boot-facts arm is the /v1 door's answer AND the wall's import —
+// one export, both planes.
+export { bootFactsArm } from './discovery.ts'
 export type { EstateRequest, Estate, BenchVerb } from './estate.ts'
 
 // Tool factories — re-exported for the smoke harness (test/smoke.mjs)

@@ -35,6 +35,7 @@ import Schema from '@deepseek-ai/schemastery';
 import { harnessEnhance, resolveHarnessRoutes, matchHarnessRoute, routeName } from './llm-complete.js';
 export { harnessEnhance, resolveHarnessRoutes, matchHarnessRoute, routeName };
 export { makeEstate, makeEstateRequest } from './estate.js';
+export { bootFactsArm } from './discovery.js';
 export type { EstateRequest, Estate, BenchVerb } from './estate.js';
 export { runStatus } from './tools/run-status.js';
 export { meliteDiscover } from './tools/melite-discover.js';

@@ -68,6 +68,7 @@
 // Erasable-syntax TS only (node --experimental-strip-types): no
 // enums, import type for types, .ts specifiers for relative imports.
 import { Service } from "@deepseek-ai/cordis";
+import { statSync } from "node:fs";
 // CROSS-COPY LAW (the estate's documented topology): the engine
 // package resolves the REGISTRY cordis instance; this package's
 // "@deepseek-ai/cordis" is the vendor instance. The service TYPE
@@ -283,6 +284,9 @@ export class CardRegistryService extends Service {
     defs = null;
     /** The frozen model facts (lazy — strict load, throws LOUD). */
     facts = null;
+    /** When the facts cache primed (HMR audit 009 F2 — the staleness
+     *  signal's own clock; null until the first modelFacts()). */
+    factsPrimedAt = null;
     /** Route address → family owner from the registry-derived facts. */
     owners = {};
     /** Registry reads for the row derivation (primed with the models boot). */
@@ -451,7 +455,28 @@ export class CardRegistryService extends Service {
         const doc = loadFacts(factsPath(), this.readsSync());
         this.facts = doc.models;
         this.owners = { ...doc.owners };
+        this.factsPrimedAt = new Date();
         return this.facts;
+    }
+    /** The facts cache's staleness signal (HMR audit 009 F2,
+     *  2026-10-24): the facts file is a REAL on-disk truth and the
+     *  cache never re-reads it — an edit on a live host serves stale
+     *  rows with zero signal. This report is the signal: prime time
+     *  vs the file's mtime. Stale means: the truth on disk moved past
+     *  the snapshot this registry serves. Never throws — an unprimed
+     *  registry reports primed_at null and stale false (the report is
+     *  itself visibility, not a registry read).
+     *  @returns prime time, the facts path, its mtime, the verdict. */
+    factsStaleness() {
+        const path = factsPath();
+        const mtime = statSync(path).mtime;
+        const primed = this.factsPrimedAt;
+        return {
+            primed_at: primed?.toISOString() ?? null,
+            source: path,
+            source_mtime: mtime.toISOString(),
+            stale: primed !== null && mtime.getTime() > primed.getTime(),
+        };
     }
     /** The decl projection — derived from defs + the strict facts, or
      *  from defs + caller-supplied facts (the validate door's
