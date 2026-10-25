@@ -1051,13 +1051,15 @@ export function specBody(svc, defs, res, engineLoras) {
         // THE PACKS BLOCK (the no-silent-drop law's extension half,
         // stroke 18): the card's DECLARED extension packs for the spec's
         // own family (the EXTENSION-LAW gate's slice semantics mirrored:
-        // requiresByFamily[key] wins when declared, else the flat
-        // requires), presence-marked by the gate's own read
+        // when the card declares slices, requiresByFamily[key] is the
+        // whole truth — an absent key is an EMPTY slice, never the flat
+        // union (the cold-start r9 law; else the flat requires)),
+        // presence-marked by the gate's own read
         // (svc.packPresence — one spelling). A missing pack SERVES —
         // visible, marked, prompting install — never a silently empty
         // modifier bag or a run-time surprise. null = unknown (engine
         // facts not loaded; the gate cannot see it either).
-        packs: svc.packPresence(def.requiresByFamily?.[key] ?? def.requires ?? []),
+        packs: svc.packPresence(def.requiresByFamily ? (def.requiresByFamily[key] ?? []) : (def.requires ?? [])),
         // THE RUNTIMES BLOCK (the no-silent-drop law's runtime half, the
         // anny burn 2026-10-21): every boarded family's DECLARED tool
         // runtime serves presence-marked — present or ABSENT with its

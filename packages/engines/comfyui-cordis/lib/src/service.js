@@ -718,7 +718,14 @@ export class ComfyUIService extends Service {
             assertNoCheat(cardId, def, merged, params);
             assertModRequires(cardId, def, merged, this.objectInfoNodes, this.facts?.extension_node_types ?? {});
             assertArmWeights(cardId, def, merged, this.weightPresent);
-            const packs = def.requires;
+            // The same slice law as the model-ful arm: a declared slice
+            // map scopes the inferred family too — absent slice is EMPTY,
+            // not the union. A zero/multi-board model-less card (no
+            // inferred family) keeps the flat gate: refusing loud beats
+            // letting a run through ungated.
+            const packs = family !== undefined && def.requiresByFamily
+                ? (def.requiresByFamily[family] ?? [])
+                : def.requires;
             if (packs?.length && this.objectInfoNodes) {
                 const extMap = this.facts?.extension_node_types ?? {};
                 for (const pack of packs) {
@@ -901,13 +908,19 @@ export class ComfyUIService extends Service {
                 return resolved;
             });
         }
-        // EXTENSION LAW gate: family slice wins when present (the
-        // requires_by_family precedent); flat union otherwise. The
-        // arm-conditional kind gate rides alongside (bags present in the
-        // merged params only — an unused arm never blocks a run).
+        // EXTENSION LAW gate: when the card declares family slices, the
+        // ACTIVE family's slice is the WHOLE truth — a family absent
+        // from the map needs NO pack (its slice is empty), never the
+        // flat union (the cold-start r9 burn: z-image — no slice —
+        // inherited qwen-img-21's mask slice through the `?? requires`
+        // fallback and refused on a thin engine the graph never touched;
+        // the union stays the FLAT face's truth, H4, and the gate of a
+        // card that declares no slices). The arm-conditional kind gate
+        // rides alongside (bags present in the merged params only — an
+        // unused arm never blocks a run).
         assertModRequires(cardId, def, merged, this.objectInfoNodes, this.facts.extension_node_types ?? {});
         assertArmWeights(cardId, def, merged, this.weightPresent);
-        const packs = def.requiresByFamily?.[modelId] ?? def.requires;
+        const packs = def.requiresByFamily ? (def.requiresByFamily[modelId] ?? []) : (def.requires ?? []);
         if (packs?.length && this.objectInfoNodes) {
             const extMap = this.facts.extension_node_types ?? {};
             for (const pack of packs) {
