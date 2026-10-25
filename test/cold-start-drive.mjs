@@ -339,29 +339,40 @@ writeFileSync(join(REPO, "data", "inference.local.json"), JSON.stringify({
   } },
   models: { read_root: STORE, download_root: STORE },
 }, null, 2) + "\n");
-// THE ENDPOINT PIN: the manage plane's probe reads the endpoint
-// CONFIG's url (probeEndpoint → mctx.endpoint()), not COMFYUI_URL —
-// and with MELITE_REPO_ROOT pinned to the clone, the config file
-// the estate reads is the clone's tracked default (:8188). Point
-// it at this drive's engine port or the status door reports down.
-// model_base_path rides the same pin (the endpoint machine statement
-// always wins over root inheritance on the presence mount leg).
+// THE ENDPOINT PIN (F1 law, nativity 2026-11-05): the manage
+// plane's probe reads the endpoint CONFIG's url (probeEndpoint →
+// mctx.endpoint()), and the LIVE read is the repo's untracked
+// STATE HOME `<repoRoot>/data/comfyui_endpoint.json` —
+// resolveRepoRoot honors MELITE_REPO_ROOT, and the P6 estate
+// anchors it to THIS clone, so the state home is the one file both
+// the clone-side tools and the dsh-home estate install resolve
+// together. The package SEED is read-only by law since F1 (the
+// published seed ships :8188 and the consumer install carries its
+// OWN copy — editing the clone's seed did nothing, which is exactly
+// how r8 died: every comfy_manage call rode the host's :8188).
+// model_base_path rides the same pin (the endpoint machine
+// statement always wins over root inheritance on the presence
+// mount leg).
 {
-  const ep = join(REPO, "packages", "engines", "comfyui-cordis", "data", "comfyui_endpoint.json");
-  const cfg = JSON.parse(readFileSync(ep, "utf8"));
+  const seed = join(REPO, "packages", "engines", "comfyui-cordis", "data", "comfyui_endpoint.json");
+  const cfg = JSON.parse(readFileSync(seed, "utf8"));
   cfg["url"] = "http://127.0.0.1:" + PORT_ENGINE;
   cfg["model_base_path"] = STORE;
   cfg["model_download_path"] = STORE;
-  writeFileSync(ep, JSON.stringify(cfg, null, 2) + "\n");
+  if (typeof cfg["boot_cmd"] === "string") {
+    cfg["boot_cmd"] = cfg["boot_cmd"].replaceAll("--port 8188", "--port " + PORT_ENGINE);
+  }
+  writeFileSync(join(REPO, "data", "comfyui_endpoint.json"), JSON.stringify(cfg, null, 2) + "\n");
 }
 // OVERLAY READ-BACK (audit drive-P6): the pins ARE the store seat —
 // an env var seats nothing — so both legs are verified on disk before
 // the ~50-minute setup turn runs on them. A regression wiping one leg
 // used to surface only as a P8 lane-presence refusal (or worse, rode
-// the catalog's fallback silently).
+// the catalog's fallback silently). The endpoint leg reads the STATE
+// HOME — the file the estate actually resolves — never the seed.
 {
   const overlay = JSON.parse(readFileSync(join(REPO, "data", "inference.local.json"), "utf8"));
-  const epCfg = JSON.parse(readFileSync(join(REPO, "packages", "engines", "comfyui-cordis", "data", "comfyui_endpoint.json"), "utf8"));
+  const epCfg = JSON.parse(readFileSync(join(REPO, "data", "comfyui_endpoint.json"), "utf8"));
   const modelsRoot = overlay?.models?.read_root;
   const dlRoot = overlay?.models?.download_root;
   const epUrl = epCfg?.url;
@@ -372,7 +383,7 @@ writeFileSync(join(REPO, "data", "inference.local.json"), JSON.stringify({
   if (epUrl !== "http://127.0.0.1:" + PORT_ENGINE || epBase !== STORE || epCfg?.model_download_path !== STORE) {
     fail("endpoint pin lost (url=" + epUrl + " base=" + epBase + " want http://127.0.0.1:" + PORT_ENGINE + " / " + STORE + ")");
   }
-  log("P4 overlay read-back: both pin legs verified on disk (models.root+download → STORE, endpoint url+bases → this drive)");
+  log("P4 overlay read-back: both pin legs verified on disk (models.root+download → STORE, endpoint url+bases → this drive's STATE HOME)");
 }
 // init-store lays the empty model store a fresh clone lacks (paths
 // refuses dead roots BY LAW — the bootstrap mount is this leg, never
