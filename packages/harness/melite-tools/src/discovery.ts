@@ -15,6 +15,7 @@
 // the family-owned rows in packages/models/<family>/mods/loras.ts
 // composed server-side. NO second spelling, no remote fetch.
 import { laneContractOf as sharedLaneContractOf } from '@melite/contracts/laneRelations'
+import { CATEGORIES } from '@melite/contracts/planes'
 import { engineRootOf, engineOutputDir, resolveRuntimeHome, runtimeEnvView } from '@melite/estate-queue'
 import {
   buildCatalog,
@@ -342,7 +343,7 @@ export function specVariants(
       rows.push({
         id,
         label: c.label || capQuant(c.quant),
-        group: 'Quant',
+        group: CATEGORIES.quant,
         defaults: c.resolver_defaults ?? {},
         // The !c.route gate above narrows this to string (2026-09-12).
         route: c.route,
@@ -383,7 +384,7 @@ export function specVariants(
       rows.push({
         id,
         label: resolving.label,
-        group: 'Variant',
+        group: CATEGORIES.variant,
         defaults: {},
         route: decl.id,
         hint: resolving.hint ?? null,

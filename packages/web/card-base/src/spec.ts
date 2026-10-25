@@ -79,6 +79,7 @@ export function schemaEnvelope(dict: Record<string, SchemaRef & { consts?: unkno
 // declaration; before it, the form spelled visible_when while the
 // tool face spelled visibleWhen — a dead read for every card).
 import { extraOf, type ExtraBag, type ExtraKey, type Wtype } from '@melite/contracts/extraKeys'
+import { CATEGORIES } from '@melite/contracts/planes'
 import { deriveFamilyLane, familyKeyPresent } from '@melite/contracts/familyLane'
 import { deepEqualJson } from '@deepseek-ai/dsh-util-values'
 
@@ -964,7 +965,7 @@ export function axisGroups(spec: FormSpecDoc): string[] {
   // anywhere. Family Recipe rows serve as MACRO PILLS (the stamp
   // verb writes their payload onto declared keys); the stamp-less
   // `default` row is display metadata and renders nothing.
-  return groups.filter((g) => g !== 'Recipe')
+  return groups.filter((g) => g !== CATEGORIES.recipe)
 }
 
 /** The variant_groups contract's keys, in served order (the door
@@ -1009,7 +1010,7 @@ function departedRowOf(spec: FormSpecDoc, incoming: FormVariantRow, held?: SpecV
   // group that is the whole answer (nothing to reseat against).
   const stamp = held[axisKey(incoming.group)]
   if (typeof stamp === 'string' && stamp !== '') {
-    const named = siblings.find((r) => (r.group === 'Quant' ? r.quant === stamp : r.id === stamp))
+    const named = siblings.find((r) => (r.group === CATEGORIES.quant ? r.quant === stamp : r.id === stamp))
     if (named !== undefined) return named.id === incoming.id ? undefined : named
     if (axisGroups(spec).includes(incoming.group)) return undefined
   }
@@ -1056,14 +1057,14 @@ export function composingRows(spec: FormSpecDoc, group: string, active: Record<s
   })
 }
 
-/** The Variant axis' rows (group 'Variant', served order). */
+/** The Variant axis' rows (group CATEGORIES.variant, served order). */
 export function variantRows(spec: FormSpecDoc): FormVariantRow[] {
-  return rowsFor(spec, 'Variant')
+  return rowsFor(spec, CATEGORIES.variant)
 }
 
 /** The Quant cells composing with a variant (THE CHAIN). */
 export function quantRowsFor(spec: FormSpecDoc, variantId: string | null): FormVariantRow[] {
-  return composingRows(spec, 'Quant', { Variant: variantId ?? undefined })
+  return composingRows(spec, CATEGORIES.quant, { Variant: variantId ?? undefined })
 }
 
 /** The Model select's options (stroke 21, the operator's law:
@@ -1082,7 +1083,7 @@ export function modelChoices(spec: FormSpecDoc): string[] {
  *  ?? route) matches the held `model` value AND its owner chain
  *  holds. Nothing matches → undefined (the caller falls to the first
  *  composing row — the catalog's first-declared law). */
-export function activeVariantId(spec: FormSpecDoc, values: SpecValues, group: 'Variant' | 'Quant'): string | undefined {
+export function activeVariantId(spec: FormSpecDoc, values: SpecValues, group: CATEGORIES.variant | CATEGORIES.quant): string | undefined {
   const held = typeof values['model'] === 'string' ? values['model'] as string : undefined
   if (held === undefined) return undefined
   const active: Record<string, string | undefined> = {}
@@ -1102,7 +1103,7 @@ export function activeVariantId(spec: FormSpecDoc, values: SpecValues, group: 'V
  * undefined (the dropdown shows its placeholder -- a hand-edited
  * layer is not a recipe, and the form never lies about it). */
 export function activeRecipeId(spec: FormSpecDoc, values: SpecValues): string | undefined {
-  for (const row of rowsFor(spec, 'Recipe')) {
+  for (const row of rowsFor(spec, CATEGORIES.recipe)) {
     // held rides (the override law): the stamp the pill DERIVES must
     // be the stamp the pick WRITES — stamps clamp through the
     // resolved variant's envelope, so a derivation without the held
@@ -1110,7 +1111,7 @@ export function activeRecipeId(spec: FormSpecDoc, values: SpecValues): string | 
     const patch = axisPickPatch(spec, row, values)
     let holds = true
     for (const [k, v] of Object.entries(patch)) {
-      if (k === axisKey('Recipe')) continue
+      if (k === axisKey(CATEGORIES.recipe)) continue
       if (!deepEqualJson(values[k], v)) { holds = false; break }
     }
     if (holds && Object.keys(patch).length > 0) return row.id
@@ -1152,7 +1153,7 @@ export function activeRowId(spec: FormSpecDoc, values: SpecValues, group: string
  *  Variant, the cell quant for Quant. Never the flat-catalog id.
  * PURE. */
 export function axisStampOf(row: FormVariantRow): string {
-  if (row.group !== 'Quant') return row.id
+  if (row.group !== CATEGORIES.quant) return row.id
   if (typeof row.quant === 'string' && row.quant !== '') return row.quant  // NO FALLBACK (2026-09-29, the second live break): the old
   // `?? row.id` arm was the second vocabulary's doorway — it
   // legalized stamping the catalog's composite address ('raw__int8')
@@ -1392,7 +1393,7 @@ function overrideEnvelopeKeys(patch: SpecValues, spec: FormSpecDoc, offered: For
 function reconcilePick(patch: SpecValues, spec: FormSpecDoc, row: FormVariantRow, held?: SpecValues): void {
   const doc: SpecValues = { ...(held ?? {}), ...patch }
   const offered = offeredVariantOf(spec.variants ?? [], doc) ?? row
-  const trustStamps = offered.id === row.id && row.group === 'Variant'
+  const trustStamps = offered.id === row.id && row.group === CATEGORIES.variant
   overrideEnvelopeKeys(patch, spec, offered, held, trustStamps)
 }
 
@@ -1443,7 +1444,7 @@ export function modelSwitchPatch(spec: FormSpecDoc, model: string, held?: SpecVa
       return rePoint === model
     })
     const row = match ?? composing[0]
-    if (g === 'Variant' && seededVariant === undefined) seededVariant = row
+    if (g === CATEGORIES.variant && seededVariant === undefined) seededVariant = row
     // THE USER PLANE SPEAKS THE CARD'S VOCABULARY (model = family;
     // the axis keys speak the DOOR's vocabulary — axisStampOf, the
     // STAMP PLANE law D2 2026-11-06, AMENDED 2026-11-08 by THE
@@ -1757,9 +1758,9 @@ export function seedRecipeStamp(spec: FormSpecDoc, seeds: SpecValues): SpecValue
     const held = seeds[axisKey(g)]
     if (typeof held === 'string' && held !== '') active[g] = held
   }
-  const declared = spec.features?.['variant_groups']?.['Recipe']?.['default']
+  const declared = spec.features?.['variant_groups']?.[CATEGORIES.recipe]?.['default']
   if (typeof declared !== 'string' || declared === '') return seeds
-  const row = composingRows(spec, 'Recipe', active).find((r) => r.id === declared)
+  const row = composingRows(spec, CATEGORIES.recipe, active).find((r) => r.id === declared)
   if (row === undefined) return seeds
   const out: SpecValues = { ...seeds }
   for (const [k, v] of Object.entries(row.defaults)) {

@@ -8487,6 +8487,17 @@ window.__ModuleLoader__.load({
 			return raw;
 		}
 		//#endregion
+		//#region ../../web-kit/contracts/src/planes.ts
+		/** The canonical row categories (the group coordinate). 'Quant' is
+		*  derived-only — a DECL row never carries it (cells are the quant
+		*  plane's only seat); the serving door mints Quant rows from cells.
+		*  The empty string is the SOLO category (see SOLO_GROUP). */
+		const CATEGORIES = {
+			variant: "Variant",
+			quant: "Quant",
+			recipe: "Recipe"
+		};
+		//#endregion
 		//#region ../../web-kit/contracts/src/familyLane.ts
 		/** A key is present for the family derivation when it states
 		*  something: null/undefined/blank/empty-array are absence. The
@@ -9818,7 +9829,7 @@ window.__ModuleLoader__.load({
 				for (const g of declared) if (g !== "" && !groups.includes(g)) groups.push(g);
 			}
 			for (const v of rows) if (v.group !== "" && !groups.includes(v.group)) groups.push(v.group);
-			return groups.filter((g) => g !== "Recipe");
+			return groups.filter((g) => g !== CATEGORIES.recipe);
 		}
 		/** The variant_groups contract's keys, in served order (the door
 		*  serves it under features when the family declares axis groups). */
@@ -9855,7 +9866,7 @@ window.__ModuleLoader__.load({
 			const siblings = (spec.variants ?? []).filter((r) => r.group === incoming.group);
 			const stamp = held[axisKey(incoming.group)];
 			if (typeof stamp === "string" && stamp !== "") {
-				const named = siblings.find((r) => r.group === "Quant" ? r.quant === stamp : r.id === stamp);
+				const named = siblings.find((r) => r.group === CATEGORIES.quant ? r.quant === stamp : r.id === stamp);
 				if (named !== void 0) return named.id === incoming.id ? void 0 : named;
 				if (axisGroups(spec).includes(incoming.group)) return void 0;
 			}
@@ -9886,13 +9897,13 @@ window.__ModuleLoader__.load({
 				return true;
 			});
 		}
-		/** The Variant axis' rows (group 'Variant', served order). */
+		/** The Variant axis' rows (group CATEGORIES.variant, served order). */
 		function variantRows(spec) {
-			return rowsFor(spec, "Variant");
+			return rowsFor(spec, CATEGORIES.variant);
 		}
 		/** The Quant cells composing with a variant (THE CHAIN). */
 		function quantRowsFor(spec, variantId) {
-			return composingRows(spec, "Quant", { Variant: variantId ?? void 0 });
+			return composingRows(spec, CATEGORIES.quant, { Variant: variantId ?? void 0 });
 		}
 		/** The Model select's options (stroke 21, the operator's law:
 		*  "WHY IS KREA-2 AND KREA-2-RAW MODELS! THAT IS A VARIANT") — THE
@@ -9925,11 +9936,11 @@ window.__ModuleLoader__.load({
 		* undefined (the dropdown shows its placeholder -- a hand-edited
 		* layer is not a recipe, and the form never lies about it). */
 		function activeRecipeId(spec, values) {
-			for (const row of rowsFor(spec, "Recipe")) {
+			for (const row of rowsFor(spec, CATEGORIES.recipe)) {
 				const patch = axisPickPatch(spec, row, values);
 				let holds = true;
 				for (const [k, v] of Object.entries(patch)) {
-					if (k === axisKey("Recipe")) continue;
+					if (k === axisKey(CATEGORIES.recipe)) continue;
 					if (!deepEqualJson(values[k], v)) {
 						holds = false;
 						break;
@@ -9970,7 +9981,7 @@ window.__ModuleLoader__.load({
 		*  Variant, the cell quant for Quant. Never the flat-catalog id.
 		* PURE. */
 		function axisStampOf(row) {
-			if (row.group !== "Quant") return row.id;
+			if (row.group !== CATEGORIES.quant) return row.id;
 			if (typeof row.quant === "string" && row.quant !== "") return row.quant;
 			throw new Error("illegal Quant row " + JSON.stringify(row.id) + " (owner " + JSON.stringify(row.owner ?? "") + "): no quant coordinate — the row is refused at the stamp; the spec server must refuse it at birth");
 		}
@@ -10141,7 +10152,7 @@ window.__ModuleLoader__.load({
 				...patch
 			};
 			const offered = offeredVariantOf(spec.variants ?? [], doc) ?? row;
-			overrideEnvelopeKeys(patch, spec, offered, held, offered.id === row.id && row.group === "Variant");
+			overrideEnvelopeKeys(patch, spec, offered, held, offered.id === row.id && row.group === CATEGORIES.variant);
 		}
 		/** A model switch's full value patch (the stale-variant cure,
 		*  operator 2026-09-14: model anima + variant turbo refused at
@@ -10174,7 +10185,7 @@ window.__ModuleLoader__.load({
 				const row = composing.find((r) => {
 					return (typeof r.defaults["model"] === "string" && r.defaults["model"] !== "" ? r.defaults["model"] : r.route) === model;
 				}) ?? composing[0];
-				if (g === "Variant" && seededVariant === void 0) seededVariant = row;
+				if (g === CATEGORIES.variant && seededVariant === void 0) seededVariant = row;
 				for (const [k, v] of Object.entries(row.defaults)) {
 					if (k === "model") continue;
 					patch[k] = v;
@@ -10374,9 +10385,9 @@ window.__ModuleLoader__.load({
 				const held = seeds[axisKey(g)];
 				if (typeof held === "string" && held !== "") active[g] = held;
 			}
-			const declared = spec.features?.["variant_groups"]?.["Recipe"]?.["default"];
+			const declared = spec.features?.["variant_groups"]?.[CATEGORIES.recipe]?.["default"];
 			if (typeof declared !== "string" || declared === "") return seeds;
-			const row = composingRows(spec, "Recipe", active).find((r) => r.id === declared);
+			const row = composingRows(spec, CATEGORIES.recipe, active).find((r) => r.id === declared);
 			if (row === void 0) return seeds;
 			const out = { ...seeds };
 			for (const [k, v] of Object.entries(row.defaults)) {
