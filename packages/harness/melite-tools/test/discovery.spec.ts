@@ -578,6 +578,26 @@ describe('live door arms', () => {
     assert.equal(realism!.sampler_envelope, null)
   })
 
+  test('formSpecArm serves the mesh trio through the real variantRow (G2 — the served form-spec pin for img-to-mesh)', async () => {
+    // 2026-10-31 drill-cure-coverage G2: the mesh tier's Recipe rows
+    // had NO discovery arm — the fidelity walls judge the DECL, so if
+    // variantRow dropped img-to-mesh's rows nothing reds. This arm
+    // rides the SERVED spec (the real formSpecArm door).
+    const spec = await formSpecSweep('img-to-mesh')
+    assert.ok(spec !== null)
+    assert.equal('recipes' in spec, false, 'stroke 34 — the recipe catalog layer is dead on every tier')
+    const rows = spec['variants'] as Array<{ id: string; group: string; defaults: Record<string, unknown>; hint: string | null }>
+    const ids = rows.filter((r) => r.group === 'Recipe').map((r) => r.id)
+    // STANDARD leads (the birth stamp lands the FIRST Recipe row)
+    assert.equal(ids[0], 'standard', 'the standard tier leads the Recipe rows')
+    assert.deepEqual([...ids].sort(), ['fast', 'quality', 'standard'], 'the mesh trio serves complete')
+    const byId = new Map(rows.filter((r) => r.group === 'Recipe').map((r) => [r.id, r]))
+    assert.deepEqual(byId.get('standard')!.defaults, {}, 'standard stamps nothing — the family floors ARE the tier')
+    assert.deepEqual(byId.get('fast')!.defaults, { remesh_resolution: 128, decimate_faces: 10000 }, 'fast stamps the light tail only')
+    assert.deepEqual(byId.get('quality')!.defaults, { resolution: '1536', remesh_resolution: 2048, decimate_faces: 2000000 }, 'quality stamps the schema ceilings')
+    assert.match(byId.get('quality')!.hint ?? '', /VRAM/i, 'the quality hint names its VRAM cost on the SERVED face')
+  })
+
   test('formSpecArm 404s unknown keys as null', async () => {
     assert.equal(await formSpecSweep('__no_such_key__'), null)
   })
