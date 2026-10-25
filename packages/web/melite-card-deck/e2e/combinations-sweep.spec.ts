@@ -114,6 +114,27 @@ function armCollectors(page: Page): void {
 async function settleHost(page: Page): Promise<void> {
   await page.goto(LANE_URL, { waitUntil: 'domcontentloaded' })
   await page.waitForTimeout(8_000)
+  // THE ESTATE-SETTLE GATE (the flap row, 2026-11-12): the sweep
+  // reads seat doors (benchStageOf → /v1/flows/drafts); a lane
+  // whose estate composition is still activating answers
+  // estate/pending 503 and the doc read would die as a "linkage
+  // break" that is really a boot race. The gallery-models law: a
+  // spec that reads a seat door POLLS the door past pending —
+  // never judges a cold estate (the sweep's own flap excavation:
+  // sweeps 3-6 died exactly this way while the lane pended).
+  {
+    const settled = await page.evaluate(async () => {
+      const deadline = Date.now() + 150_000
+      for (;;) {
+        const res = await fetch('/v1/flows/drafts')
+        const text = await res.text().catch(() => '')
+        if (!text.includes('estate/pending')) return true
+        if (Date.now() > deadline) return false
+        await new Promise((resolve) => setTimeout(resolve, 2_000))
+      }
+    })
+    expect(settled, 'the estate door stops answering estate/pending before the sweep drives it (a cold composition is a settled-lane precondition, never a linkage break)').toBe(true)
+  }
   for (let round = 0; round < 3; round++) {
     const notice = page.getByRole('dialog').filter({ hasText: /Notice/ }).getByRole('button', { name: 'Continue' })
     if ((await notice.count()) === 0) break
