@@ -9,7 +9,7 @@ import { createElement as h } from 'react'
 import { afterEach, expect, test, vi } from 'vitest'
 import type { ModifierKind, ModifierOption } from '../src/spec.ts'
 
-import { ModifiersSection } from '../src/mods.tsx'
+import { ModifiersSection, modTileIds } from '../src/mods.tsx'
 
 afterEach(cleanup)
 
@@ -85,7 +85,7 @@ test('STEPS EDIT: a fractional / sub-one count refuses LOUD (never a silent frac
       kinds: [LORA_DISTILL],
       values: { loras: [{ id: 'turbo', strength: 0.6, steps: 8 }] },
     })
-    openEditTile('loras-0')
+    openEditTile(modTileIds(LORA_DISTILL, [{ id: 'turbo', strength: 0.6, steps: 8 }])[0]!)
     fireEvent.change(screen.getByLabelText('Steps applied'), { target: { value: bad } })
     saveLeaf('Save')
     expect(screen.getByText('Steps applied must be a whole number ≥ 1.')).not.toBeNull()
@@ -100,7 +100,7 @@ test('STEPS EDIT: below the entry row floor refuses LOUD (the 4-to-8 correction,
     kinds: [LORA_DISTILL],
     values: { loras: [{ id: 'turbo', strength: 0.6, steps: 8 }] },
   })
-  openEditTile('loras-0')
+  openEditTile(modTileIds(LORA_DISTILL, [{ id: 'turbo', strength: 0.6, steps: 8 }])[0]!)
   fireEvent.change(screen.getByLabelText('Steps applied'), { target: { value: '3' } })
   saveLeaf('Save')
   expect(screen.getByText('Steps applied must be ≥ 4 on this adapter.')).not.toBeNull()
@@ -112,7 +112,7 @@ test('STEPS EDIT: above the entry row ceiling refuses LOUD (the 4-to-8 correctio
     kinds: [LORA_DISTILL],
     values: { loras: [{ id: 'turbo', strength: 0.6, steps: 8 }] },
   })
-  openEditTile('loras-0')
+  openEditTile(modTileIds(LORA_DISTILL, [{ id: 'turbo', strength: 0.6, steps: 8 }])[0]!)
   fireEvent.change(screen.getByLabelText('Steps applied'), { target: { value: '9' } })
   saveLeaf('Save')
   expect(screen.getByText('Steps applied must be ≤ 8 on this adapter.')).not.toBeNull()
@@ -124,7 +124,7 @@ test('STEPS EDIT: an entry whose row vanished still saves a typed count (the row
     kinds: [LORA_DISTILL],
     values: { loras: [{ id: 'ghost', strength: 0.5 }] },
   })
-  openEditTile('loras-0')
+  openEditTile(modTileIds(LORA_DISTILL, [{ id: 'ghost', strength: 0.5 }])[0]!)
   fireEvent.change(screen.getByLabelText('Steps applied'), { target: { value: '6' } })
   saveLeaf('Save')
   expect(onEdit).toHaveBeenCalledWith('loras', [{ id: 'ghost', strength: 0.5, steps: 6 }])
@@ -207,7 +207,7 @@ test('STEPS EDIT SAVE: rows vanishing between the kind gate and the row lookup s
     kinds: [kind],
     values: { loras: [{ id: 'turbo', strength: 0.6, steps: 8 }] },
   })
-  openEditTile('loras-0')
+  openEditTile(modTileIds(LORA_DISTILL, [{ id: 'turbo', strength: 0.6, steps: 8 }])[0]!)
   fireEvent.change(screen.getByLabelText('Steps applied'), { target: { value: '6' } })
   // re-arm: the save's own gate read sees the rows (read 1), the row
   // lookup (read 2) sees the withdrawal.

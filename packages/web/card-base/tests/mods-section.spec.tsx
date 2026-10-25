@@ -4,12 +4,13 @@
 // row (labels + strengths), the add grammar (square → kind menu →
 // leaf), the stack-limit refusal, and the native reorder drag. The
 // leaf's per-kind save laws ride mods-leaf.spec.tsx.
+// @contract cards-mods-tile-identity
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react'
 import { createElement as h } from 'react'
 import { afterEach, expect, test, vi } from 'vitest'
 import type { ModifierKind } from '../src/spec.ts'
 
-import { ModifiersSection } from '../src/mods.tsx'
+import { ModifiersSection, modTileIds } from '../src/mods.tsx'
 
 const MOD_DRAG_MIME = 'application/x-melite-mod'
 
@@ -52,6 +53,11 @@ function openSection(props: Partial<Parameters<typeof ModifiersSection>[0]> = {}
 
 const tile = (id: string): HTMLElement =>
   document.querySelector(`[data-mod-tile="${id}"]`) as HTMLElement
+
+/** The minted id for a kind's Nth entry (the render's own grammar —
+ * one truth, imported: the wall never re-spells the id class). */
+const tid = (k: ModifierKind, entries: Array<Record<string, unknown>>, i: number): string =>
+  modTileIds(k, entries)[i]!
 
 test('NO KINDS, NO SECTION (never an empty modifiers block)', () => {
   const { container } = openSection()
@@ -143,7 +149,7 @@ test('THE MOD-KIND KNOB LAW (E2-7) THE LEAF FACE, EDIT MODE: the edit leaf carri
       kinds: [CONTROL_FLOOR],
       values: { controlnets: [{ type: 'depth', strength: 0.5 }], controlnet_strength_floor: 0.4 },
     })
-    fireEvent.click(tile('controlnets-0'))
+    fireEvent.click(tile(tid(CONTROL_FLOOR, [{ type: 'depth', strength: 0.5 }], 0)))
     expect((screen.getByLabelText('Strength Floor') as HTMLInputElement).value).toBe('0.4')
     fireEvent.change(screen.getByLabelText('Strength Floor'), { target: { value: '0.6' } })
     expect(onEdit).toHaveBeenCalledWith('controlnet_strength_floor', 0.6)
@@ -161,10 +167,11 @@ test('THE TILES: served rows name + seed; id-less option rows fall to "Label N";
     kinds: [LORA],
     values: { loras: [{ id: 'detail', strength: 0.8 }, { strength: 0.5 }] },
   })
-  const first = tile('loras-0')
+  const BAG = [{ id: 'detail', strength: 0.8 }, { strength: 0.5 }]
+  const first = tile(tid(LORA, BAG, 0))
   expect(within(first).getByText('Detail')).not.toBeNull()
   expect(within(first).getByText('0.80')).not.toBeNull()
-  const second = tile('loras-1')
+  const second = tile(tid(LORA, BAG, 1))
   expect(within(second).getByText('LoRA 2')).not.toBeNull()
   expect(within(second).getByText('0.50')).not.toBeNull()
   fireEvent.click(first)
@@ -173,8 +180,8 @@ test('THE TILES: served rows name + seed; id-less option rows fall to "Label N";
 
 test('THE TILES: drifted option ids title-case (never blank, never the fallback)', () => {
   openSection({ kinds: [LORA], values: { loras: [{ id: 'ghost' }] } })
-  expect(within(tile('loras-0')).getByText('Ghost')).not.toBeNull()
-  expect(tile('loras-0').textContent).not.toContain('.')
+  expect(within(tile(tid(LORA, [{ id: 'ghost' }], 0))).getByText('Ghost')).not.toBeNull()
+  expect(tile(tid(LORA, [{ id: 'ghost' }], 0)).textContent).not.toContain('.')
 })
 
 test('THE TILES: hybrid rows name their served type; drifted types title-case (never blank)', () => {
@@ -182,8 +189,8 @@ test('THE TILES: hybrid rows name their served type; drifted types title-case (n
     kinds: [CONTROL],
     values: { controlnets: [{ type: 'depth', strength: 0.5 }, { type: 'custom-x' }] },
   })
-  expect(within(tile('controlnets-0')).getByText('Depth')).not.toBeNull()
-  expect(within(tile('controlnets-1')).getByText('Custom X')).not.toBeNull()
+  expect(within(tile(tid(CONTROL, [{ type: 'depth', strength: 0.5 }, { type: 'custom-x' }], 0))).getByText('Depth')).not.toBeNull()
+  expect(within(tile(tid(CONTROL, [{ type: 'depth', strength: 0.5 }, { type: 'custom-x' }], 1))).getByText('Custom X')).not.toBeNull()
 })
 
 const MCPSK = {
@@ -198,13 +205,13 @@ test('THE TILES: a select-shaped entry names its selection (never the bare kind 
     kinds: [MCPSK],
     values: { mcps: [{ server: 'unity' }, {}] },
   })
-  expect(within(tile('mcps-0')).getByText('unity')).not.toBeNull()
-  expect(within(tile('mcps-1')).getByText('MCPs')).not.toBeNull()
+  expect(within(tile(tid(MCPSK, [{ server: 'unity' }, {}], 0))).getByText('unity')).not.toBeNull()
+  expect(within(tile(tid(MCPSK, [{ server: 'unity' }, {}], 1))).getByText('MCPs')).not.toBeNull()
 })
 
 test('THE TILES: a drifted select value falls to the kind label (never blank, never a crash)', () => {
   openSection({ kinds: [MCPSK], values: { mcps: [{ server: 'ghost' }] } })
-  expect(within(tile('mcps-0')).getByText('MCPs')).not.toBeNull()
+  expect(within(tile(tid(MCPSK, [{ server: 'ghost' }], 0))).getByText('MCPs')).not.toBeNull()
 })
 
 const MIXEDK = {
@@ -220,14 +227,14 @@ test('THE TILES: string options name verbatim; option-less selects fall to the k
     kinds: [MIXEDK],
     values: { mixed: [{ flavor: 'spicy' }, { flavor: 'mild' }, { server: 'x' }] },
   })
-  expect(within(tile('mixed-0')).getByText('spicy')).not.toBeNull()
-  expect(within(tile('mixed-1')).getByText('Mild One')).not.toBeNull()
-  expect(within(tile('mixed-2')).getByText('Mixed')).not.toBeNull()
+  expect(within(tile(tid(MIXEDK, [{ flavor: 'spicy' }, { flavor: 'mild' }, { server: 'x' }], 0))).getByText('spicy')).not.toBeNull()
+  expect(within(tile(tid(MIXEDK, [{ flavor: 'spicy' }, { flavor: 'mild' }, { server: 'x' }], 1))).getByText('Mild One')).not.toBeNull()
+  expect(within(tile(tid(MIXEDK, [{ flavor: 'spicy' }, { flavor: 'mild' }, { server: 'x' }], 2))).getByText('Mixed')).not.toBeNull()
 })
 
 test('THE TILES: unserved rows seed from the row default (never an unpriced dial)', () => {
   openSection({ kinds: [LORA], values: { loras: [{ id: 'detail' }] } })
-  expect(within(tile('loras-0')).getByText('0.80')).not.toBeNull()
+  expect(within(tile(tid(LORA, [{ id: 'detail' }], 0))).getByText('0.80')).not.toBeNull()
 })
 
 test('THE TILES: junk bags never tile (a string bag, a mixed bag with strays)', () => {
@@ -235,8 +242,8 @@ test('THE TILES: junk bags never tile (a string bag, a mixed bag with strays)', 
   expect(document.querySelector('[data-mod-tile]')).toBeNull()
   first.unmount()
   openSection({ kinds: [LORA], values: { loras: [{ id: 'detail' }, 7, null] } })
-  expect(tile('loras-0')).not.toBeNull()
-  expect(document.querySelector('[data-mod-tile="loras-1"]')).toBeNull()
+  expect(tile(tid(LORA, [{ id: 'detail' }], 0))).not.toBeNull()
+  expect(document.querySelectorAll('[data-mod-tile]').length).toBe(1)
 })
 
 test('THE STACK LIMIT: a full stack refuses LOUD at the section (never a silent over-add)', () => {
@@ -259,44 +266,97 @@ function dragDrop(over: HTMLElement, active: string, types: string[] = [MIME]): 
 }
 
 test('THE REORDER: dropping a tile on its sibling rewrites the bag (apply order = array order)', () => {
+  const BAG = [{ id: 'detail' }, { id: 'plain' }]
   const { onEdit } = openSection({
     kinds: [LORA],
-    values: { loras: [{ id: 'detail' }, { id: 'plain' }] },
+    values: { loras: BAG },
   })
-  const first = tile('loras-0')
+  const first = tile(tid(LORA, BAG, 0))
   fireEvent.dragStart(first, { dataTransfer: { setData: () => {}, effectAllowed: '' } })
-  fireEvent.dragOver(tile('loras-1'), { dataTransfer: { types: [MIME], dropEffect: '' } })
-  dragDrop(tile('loras-1'), 'loras-0')
+  fireEvent.dragOver(tile(tid(LORA, BAG, 1)), { dataTransfer: { types: [MIME], dropEffect: '' } })
+  dragDrop(tile(tid(LORA, BAG, 1)), tid(LORA, BAG, 0))
   expect(onEdit).toHaveBeenCalledWith('loras', [{ id: 'plain' }, { id: 'detail' }])
   fireEvent.dragEnd(first)
 })
 
 test('THE REORDER: a drop of a stray id commits nothing (never a reorder to nowhere)', () => {
+  const BAG = [{ id: 'detail' }, { id: 'plain' }]
   const { onEdit } = openSection({
     kinds: [LORA],
-    values: { loras: [{ id: 'detail' }, { id: 'plain' }] },
+    values: { loras: BAG },
   })
-  dragDrop(tile('loras-0'), 'loras-9')
+  dragDrop(tile(tid(LORA, BAG, 0)), 'loras#deadbeef.9')
   expect(onEdit).not.toHaveBeenCalled()
 })
 
 test('THE REORDER: dropping a tile on itself commits nothing (never a no-op write)', () => {
+  const BAG = [{ id: 'detail' }, { id: 'plain' }]
   const { onEdit } = openSection({
     kinds: [LORA],
-    values: { loras: [{ id: 'detail' }, { id: 'plain' }] },
+    values: { loras: BAG },
   })
-  dragDrop(tile('loras-0'), 'loras-0')
+  dragDrop(tile(tid(LORA, BAG, 0)), tid(LORA, BAG, 0))
   expect(onEdit).not.toHaveBeenCalled()
 })
 
 test('THE REORDER: a foreign drag passes through (never swallowed — preventDefault stays false)', () => {
+  const BAG = [{ id: 'detail' }]
   const { onEdit } = openSection({
     kinds: [LORA],
-    values: { loras: [{ id: 'detail' }] },
+    values: { loras: BAG },
   })
-  const over = tile('loras-0')
+  const over = tile(tid(LORA, BAG, 0))
   expect(fireEvent.dragOver(over, { dataTransfer: { types: ['Files'], dropEffect: '' } })).toBe(true)
   expect(fireEvent.drop(over, { dataTransfer: { types: ['Files'], getData: () => 'x' } })).toBe(true)
+  expect(onEdit).not.toHaveBeenCalled()
+})
+
+test('THE REORDER RACE (debt 24): a bag that shifts mid-drag never moves the WRONG pair — ids resolve by CONTENT, a vanished entry refuses', async () => {
+  // THE BURN CLASS (2026-11-01-round1-verify-mods-identity COVERAGE
+  // finding): tile ids were minted `param_key-index` at render and
+  // the drop re-matched those ids against the LIVE bag by index —
+  // a bag that shrinks or reorders DURING the gesture (the bench
+  // re-serves on every other hand's write) resolves the stale ids
+  // onto whatever now sits at those indices: the drop lands on the
+  // wrong pair. The cure: identity-minted ids (modTileIds) resolved
+  // by content (modTileSeat) — the pair the drag meant is the pair
+  // the commit moves, and a vanished entry refuses LOUD (no write).
+  const A = { id: 'detail' }
+  const B = { id: 'plain' }
+  const C = { id: 'shadow' }
+  const onEdit = vi.fn()
+  const onPatch = vi.fn()
+  const props = (bag: Array<Record<string, unknown>>) => ({
+    kinds: [LORA], onEdit, onPatch,
+    values: { loras: bag },
+  })
+  const seat = render(h(ModifiersSection, props([A, B, C])))
+  const idsBefore = modTileIds(LORA, [A, B, C])
+  // the gesture starts on A (the drag-start id is frozen in the
+  // dataTransfer for the gesture's life)
+  fireEvent.dragStart(tile(idsBefore[0]!), { dataTransfer: { setData: () => {}, effectAllowed: '' } })
+  // ANOTHER HAND: B leaves the bag mid-drag (a concurrent remove
+  // re-serves the whole bag — fresh objects, shifted indices)
+  seat.rerender(h(ModifiersSection, props([A, C]) as never))
+  const idsAfter = modTileIds(LORA, [A, C])
+  // A dropped ON C: content resolution finds A at 0, C at 1 — the
+  // commit moves A after C. The INDEX class would have resolved
+  // `loras-0`→A,`loras-2`→gone and refused at best; with a bag
+  // REORDERED (not shrunk) it moved the wrong pair outright.
+  dragDrop(tile(idsAfter[1]!), idsBefore[0]!)
+  expect(onEdit).toHaveBeenCalledWith('loras', [C, A])
+  expect(onPatch).toHaveBeenCalledWith({ loras: [C, A] })
+
+  // THE VANISH FACE: the dragged entry itself leaves the bag
+  // mid-drag — its content matches nothing, the drop REFUSES
+  // (never a landing on the stale index's new tenant).
+  onEdit.mockClear()
+  const idsPair = modTileIds(LORA, [A, B])
+  const seat2 = render(h(ModifiersSection, props([A, B]) as never))
+  fireEvent.dragStart(tile(idsPair[0]!), { dataTransfer: { setData: () => {}, effectAllowed: '' } })
+  seat2.rerender(h(ModifiersSection, props([B]) as never))
+  const idsGone = modTileIds(LORA, [B])
+  dragDrop(tile(idsGone[0]!), idsPair[0]!)
   expect(onEdit).not.toHaveBeenCalled()
 })
 
@@ -319,16 +379,16 @@ const DRAWK = {
 
 test('STANDALONE TILES ARE NOT DRAGGABLE (order is void — each entry is its own output)', () => {
   openSection({ kinds: [SAM3K], values: { sam3: [{ name: 'a' }, { name: 'b' }] } })
-  const first = tile('sam3-0')
+  const first = tile(tid(SAM3K, [{ name: 'a' }, { name: 'b' }], 0))
   expect(first.getAttribute('draggable')).not.toBe('true')
   // a stray drop on a standalone tile commits nothing (no reorder arm)
-  dragDrop(first, 'sam3-1')
-  expect(document.querySelector('[data-mod-tile="sam3-1"]')).not.toBeNull()
+  dragDrop(first, tid(SAM3K, [{ name: 'a' }, { name: 'b' }], 1))
+  expect(tile(tid(SAM3K, [{ name: 'a' }, { name: 'b' }], 1))).not.toBeNull()
 })
 
 test('ORDERED TILES STAY DRAGGABLE (the stacking law — loras, draw)', () => {
   openSection({ kinds: [DRAWK], values: { draw: [{ payload: '/a.png' }, { payload: '/b.png' }] } })
-  expect(tile('draw-0').getAttribute('draggable')).toBe('true')
+  expect(tile(tid(DRAWK, [{ payload: '/a.png' }, { payload: '/b.png' }], 0)).getAttribute('draggable')).toBe('true')
 })
 
 test('THE HINT NAMES THE CATEGORY (all-standalone = own-output hint; any ordered = the drag hint)', () => {
@@ -341,12 +401,12 @@ test('THE HINT NAMES THE CATEGORY (all-standalone = own-output hint; any ordered
 
 test('A CATEGORY-LESS KIND DEFAULTS ORDERED (no served row changes shape)', () => {
   openSection({ kinds: [LORA], values: { loras: [{ id: 'detail' }] } })
-  expect(tile('loras-0').getAttribute('draggable')).toBe('true')
+  expect(tile(tid(LORA, [{ id: 'detail' }], 0)).getAttribute('draggable')).toBe('true')
 })
 
 test('a standalone tile FIRES no drag start (the onDragStart guard)', () => {
   openSection({ kinds: [SAM3K], values: { sam3: [{ name: 'a' }] } })
-  const tile = document.querySelector('[data-mod-tile="sam3-0"]') as HTMLElement
+  const tile = document.querySelector(`[data-mod-tile="${tid(SAM3K, [{ name: 'a' }], 0)}"]`) as HTMLElement
   const dt = { setData: vi.fn(), effectAllowed: '' }
   fireEvent.dragStart(tile, { dataTransfer: dt as never })
   expect(dt.setData).not.toHaveBeenCalled()
@@ -354,26 +414,26 @@ test('a standalone tile FIRES no drag start (the onDragStart guard)', () => {
 
 test('an ordered tile FIRES the drag start (the MIME + reorder wake)', () => {
   openSection({ kinds: [DRAWK], values: { draw: [{ payload: 'p1' }, { payload: 'p2' }] } })
-  const tile = document.querySelector('[data-mod-tile="draw-0"]') as HTMLElement
+  const tile = document.querySelector(`[data-mod-tile="${tid(DRAWK, [{ payload: 'p1' }, { payload: 'p2' }], 0)}"]`) as HTMLElement
   const dt = { setData: vi.fn(), effectAllowed: '', types: [MOD_DRAG_MIME] }
   fireEvent.dragStart(tile, { dataTransfer: dt as never })
-  expect(dt.setData).toHaveBeenCalledWith(MOD_DRAG_MIME, 'draw-0')
+  expect(dt.setData).toHaveBeenCalledWith(MOD_DRAG_MIME, tid(DRAWK, [{ payload: 'p1' }, { payload: 'p2' }], 0))
   const dtEnd = { ...dt, dropEffect: '' }
-  fireEvent.dragOver(document.querySelector('[data-mod-tile="draw-1"]') as HTMLElement, { dataTransfer: dtEnd as never })
+  fireEvent.dragOver(document.querySelector(`[data-mod-tile="${tid(DRAWK, [{ payload: 'p1' }, { payload: 'p2' }], 1)}"]`) as HTMLElement, { dataTransfer: dtEnd as never })
   fireEvent.dragEnd(tile, { dataTransfer: dtEnd as never })
 })
 
 test('a standalone tile PASSES drag over through (the onDragOver guard — never a reorder wake)', () => {
   const { onEdit } = openSection({ kinds: [SAM3K], values: { sam3: [{ name: 'a' }] } })
-  const t = document.querySelector('[data-mod-tile="sam3-0"]') as HTMLElement
+  const t = document.querySelector(`[data-mod-tile="${tid(SAM3K, [{ name: 'a' }], 0)}"]`) as HTMLElement
   expect(fireEvent.dragOver(t, { dataTransfer: { types: [MOD_DRAG_MIME], dropEffect: '' } as never })).toBe(true)
   expect(onEdit).not.toHaveBeenCalled()
 })
 
 test('a standalone tile ENDS the drag with no wake (the onDragEnd guard — never a reorder reset)', () => {
   const { onEdit } = openSection({ kinds: [SAM3K], values: { sam3: [{ name: 'a' }] } })
-  const t = document.querySelector('[data-mod-tile="sam3-0"]') as HTMLElement
+  const t = document.querySelector(`[data-mod-tile="${tid(SAM3K, [{ name: 'a' }], 0)}"]`) as HTMLElement
   fireEvent.dragEnd(t)
   expect(onEdit).not.toHaveBeenCalled()
-  expect(document.querySelector('[data-mod-tile="sam3-0"]')).not.toBeNull()
+  expect(document.querySelector(`[data-mod-tile="${tid(SAM3K, [{ name: 'a' }], 0)}"]`)).not.toBeNull()
 })

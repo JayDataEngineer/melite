@@ -166,6 +166,62 @@ function ridesProject(entry: Record<string, unknown>, owned: ReadonlySet<string>
   return JSON.stringify(out)
 }
 
+/** THE CONTENT TAG (the 2026-11-01 identity finding, debt 24): a
+ * stable FNV-1a over the entry's serialized content — a fresh
+ * parse (the bench re-serve JSON round-trips the bag) re-serves
+ * EQUAL content in new objects, so the tag survives what an index
+ * cannot: the bag shrinking or reordering under a live gesture. */
+function modEntryTag(entry: Record<string, unknown>): string {
+  let h = 0x811c9dc5
+  for (const ch of JSON.stringify(entry)) {
+    h ^= ch.codePointAt(0)!
+    h = Math.imul(h, 0x01000193)
+  }
+  return (h >>> 0).toString(16)
+}
+
+/** IDENTITY-MINTED TILE IDS (debt 24's cure, reusing the leaf's
+ * tier law): `<param_key>#<content-tag>.<occurrence>` — content
+ * is the identity (the leaf's tier 3), the occurrence ordinal
+ * disambiguates same-content duplicates the way the leaf's
+ * resolver picks the nearest seat. The render and the drop
+ * resolver share THIS function, so a drop id minted at drag-start
+ * resolves against whatever bag the next frame serves. */
+export function modTileIds(k: ModifierKind, entries: ReadonlyArray<Record<string, unknown>>): string[] {
+  const seen = new Map<string, number>()
+  const out: string[] = []
+  for (const entry of entries) {
+    const tag = modEntryTag(entry)
+    const occ = seen.get(tag) ?? 0
+    seen.set(tag, occ + 1)
+    out.push(`${k.param_key}#${tag}.${String(occ)}`)
+  }
+  return out
+}
+
+/** Resolve a minted tile id against the LIVE bag by content: the
+ * tag matches entries whose serialized content is equal, the
+ * occurrence ordinal picks among duplicates. -1 = the entry is
+ * GONE (or the id is foreign) — the caller refuses the move,
+ * never lands it on the wrong pair (the index-commit class debt
+ * 23 cured at the leaf; this is its drag twin). Duplicate
+ * collapse (one of two same-content rows removed) is deliberately
+ * conservative: an orphaned ordinal refuses. */
+export function modTileSeat(entries: ReadonlyArray<Record<string, unknown>>, id: string): number {
+  const m = /#([0-9a-f]+)\.(\d+)$/.exec(id)
+  if (m === null) return -1
+  const want = m[1]!
+  const occ = Number(m[2])
+  let seen = 0
+  for (let i = 0; i < entries.length; i++) {
+    if (modEntryTag(entries[i]!) === want) {
+      if (seen === occ) return i
+      seen++
+    }
+  }
+  return -1
+}
+
 /** The ghost-race refusal (2026-10-31 triage §B): the opened entry
  *  left the bag while the leaf was open — the save refuses LOUD,
  *  the leaf stays open, and every draft value survives. The old
@@ -218,7 +274,9 @@ export function resolveSeatEntry(
 export function ModifiersSection(props: ModifiersSectionProps): ReturnType<typeof h> | null {
   const { kinds, values, onEdit, onPatch } = props
   // NATIVE REORDER STATE (the dnd-kit purge): the dragging tile id +
-  // the hovered tile id, keyed `${param_key}-${index}` like before.
+  // the hovered tile id — IDENTITY-minted (modTileIds, debt 24),
+  // never index-keyed: a bag that shifts mid-drag must not move the
+  // drop onto the wrong pair.
   const [dragTile, setDragTile] = useState<string | null>(null)
   const [overTile, setOverTile] = useState<string | null>(null)
   // THE KIND PICKER (DSH Menu — portal: true escapes the zoom card's
@@ -588,14 +646,21 @@ export function ModifiersSection(props: ModifiersSectionProps): ReturnType<typeo
   }
   // apply order = array order: the drop rewrites the bag; the
   // composed graph follows (the old rule-2). Same splice verb,
-  // native drag ids (the dnd-kit purge).
+  // native drag ids (the dnd-kit purge). THE RESOLUTION IS
+  // CONTENT-KEYED (debt 24): the ids were minted over the bag at
+  // drag-start; the LIVE bag may have shrunk or reordered under
+  // the gesture — modTileSeat resolves each id by its entry's
+  // CONTENT, so the pair the drag meant is the pair the commit
+  // moves, and a vanished entry (its content left the bag) REFUSES
+  // — the index class would have landed the move on whatever now
+  // sits at the stale index (the wrong pair).
   const onTileDrop = (k: ModifierKind, active: string, over: string): void => {
     // (the over===active guard was deleted: the sole caller is the
     // tile-drop closure, and ModTile's onDrop gates active !== tileId
     // before invoking — equal ids never arrive.)
     const entries = entriesOf(k)
-    const from = entries.findIndex((_, i) => k.param_key + '-' + i === active)
-    const to = entries.findIndex((_, i) => k.param_key + '-' + i === over)
+    const from = modTileSeat(entries, active)
+    const to = modTileSeat(entries, over)
     if (from < 0 || to < 0) return
     const next = [...entries]
     const [moved] = next.splice(from, 1)
@@ -649,6 +714,10 @@ export function ModifiersSection(props: ModifiersSectionProps): ReturnType<typeo
         const entries = entriesOf(k)
         if (entries.length === 0) return null
         const ordered = isOrdered(k)
+        // THE IDENTITY MINT (debt 24): one function owns the id
+        // grammar — the drop resolver reads the same ids, so the
+        // pair the drag means is derivable from any later bag.
+        const tileIds = modTileIds(k, entries)
         return [
           ...entries.map((entry, i) => {
               // THE CATALOG KEY (the served option_key — the hybrid
@@ -680,8 +749,8 @@ export function ModifiersSection(props: ModifiersSectionProps): ReturnType<typeo
                 .map((o) => typeof o === 'string' ? { value: o, label: o } : o)
                 .find((o) => o.value === entry[picked.name] as string)?.label ?? null
           return h(ModTile, {
-            key: k.param_key + '-' + i,
-            tileId: k.param_key + '-' + i,
+            key: tileIds[i]!,
+            tileId: tileIds[i]!,
             label: option !== null ? option.label : (pickedLabel !== null ? pickedLabel : (id !== '' ? titleCaseId(id) : (isOptionKind(k) ? k.label + ' ' + String(i + 1) : k.label))),
             ...(strength !== undefined ? { strength } : {}),
             ...(steps !== undefined ? { steps } : {}),
@@ -692,8 +761,8 @@ export function ModifiersSection(props: ModifiersSectionProps): ReturnType<typeo
             // same law (the name was stated at add; the tile is not
             // an editor).
             onOpen: () => { if (presenceKind(k) || namedPresenceKind(k)) { commit(k, []); return } openEdit(k, i) },
-            dragging: dragTile === k.param_key + '-' + i,
-            dragOver: overTile === k.param_key + '-' + i && dragTile !== null && dragTile !== overTile,
+            dragging: dragTile === tileIds[i]!,
+            dragOver: overTile === tileIds[i]! && dragTile !== null && dragTile !== overTile,
             ...(ordered ? {
               onReorderStart: (id: string | null) => { setDragTile(id); if (id === null) setOverTile(null) },
               onReorderOver: setOverTile,

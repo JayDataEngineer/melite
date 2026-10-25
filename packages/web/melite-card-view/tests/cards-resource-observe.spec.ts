@@ -1,5 +1,6 @@
 // cards-resource-observe.spec.ts — observeRunOutcome's poll law and
 // reconcileBenchRuns' attribution (2026-09-16 burn-down).
+// @contract cards-unknown-status-health
 //
 // THE ONE-LANE LAW (stroke 81): the poll rides the mounted
 // namespaces through mountEstateFakes — no fetch stub answers an

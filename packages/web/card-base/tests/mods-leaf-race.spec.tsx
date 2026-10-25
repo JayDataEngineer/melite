@@ -13,7 +13,7 @@
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, expect, test, vi } from 'vitest'
 import { createElement as h } from 'react'
-import { ModifiersSection } from '../src/mods.tsx'
+import { ModifiersSection, modTileIds } from '../src/mods.tsx'
 import type { ModifierKind } from '../src/spec.ts'
 
 const LORA = {
@@ -67,12 +67,19 @@ function openEditTile(tileId: string): void {
   fireEvent.click(document.querySelector(`[data-mod-tile="${tileId}"]`) as HTMLElement)
 }
 
+/** Open the edit leaf on a kind's Nth entry — the id minted by the
+ * render's own grammar (modTileIds, debt 24: one truth, the wall
+ * never re-spells the id class). */
+function editSeat(k: typeof LORA, bag: Array<Record<string, unknown>>, i: number): void {
+  openEditTile(modTileIds(k, bag)[i]!)
+}
+
 afterEach(cleanup)
 
 test('REFERENCE TIER: a preserved reference still resolves (the intra-frame fast path)', () => {
   const b: Row = { id: 'turbo', strength: 0.6, steps: 8 }
   const { onEdit, rerender } = seat([LORA], { loras: [{ id: 'plain', strength: 1 }, b] })
-  openEditTile('loras-1')
+  editSeat(LORA, [{ id: 'plain', strength: 1 }, b], 1)
   // no re-parse: the same object, now at index 0
   rerender(h(ModifiersSection, { kinds: [LORA], values: { loras: [b] } as never, onEdit, onPatch: vi.fn() }))
   fireEvent.change(screen.getByLabelText('Strength'), { target: { value: '0.9' } })
@@ -87,7 +94,7 @@ test('NEAREST-OF-DUPLICATES: two same-key rows both confirming — the save land
   const { onEdit, rerender } = seat([LORA], {
     loras: [{ id: 'plain', strength: 1 }, dupA, { id: 'other', strength: 1 }, dupB],
   })
-  openEditTile('loras-3')
+  editSeat(LORA, [{ id: 'plain', strength: 1 }, dupA, { id: 'other', strength: 1 }, dupB], 3)
   // the wire re-serves the same bag fresh: the opened turbo (steps 8,
   // index 3) is gone by reference; BOTH rows match the catalog key
   // and the rides — the nearest walk must IMPROVE past the first
@@ -114,7 +121,7 @@ test('FRESH-PARSE SHRINK: a re-served bag that shrank above the entry still land
   const { onEdit, rerender } = seat([LORA], {
     loras: [{ id: 'plain', strength: 1 }, { id: 'turbo', strength: 0.6, steps: 8 }],
   })
-  openEditTile('loras-1')
+  editSeat(LORA, [{ id: 'plain', strength: 1 }, { id: 'turbo', strength: 0.6, steps: 8 }], 1)
   // the production hand: fresh objects, first entry gone — the
   // opened reference no longer exists anywhere in the bag
   rerender(h(ModifiersSection, {
@@ -128,7 +135,7 @@ test('FRESH-PARSE SHRINK: a re-served bag that shrank above the entry still land
 
 test('GHOST RACE (fresh parse): the edited entry vanishing refuses LOUD — the draft values SURVIVE, never a silent close', () => {
   const { onEdit, onPatch, rerender } = seat([LORA], { loras: [{ id: 'turbo', strength: 0.6, steps: 8 }] })
-  openEditTile('loras-0')
+  editSeat(LORA, [{ id: 'turbo', strength: 0.6, steps: 8 }], 0)
   rerender(h(ModifiersSection, { kinds: [LORA], values: fresh({ loras: [] }) as never, onEdit, onPatch }))
   fireEvent.change(screen.getByLabelText('Strength'), { target: { value: '0.8' } })
   fireEvent.click(screen.getByRole('button', { name: 'Save' }))
@@ -144,7 +151,7 @@ test('FRESH-PARSE REORDER (option kind): the edit lands on the OPENED row at its
   const { onEdit, rerender } = seat([LORA], {
     loras: [{ id: 'plain', strength: 1 }, { id: 'turbo', strength: 0.6, steps: 8 }],
   })
-  openEditTile('loras-1')
+  editSeat(LORA, [{ id: 'plain', strength: 1 }, { id: 'turbo', strength: 0.6, steps: 8 }], 1)
   rerender(h(ModifiersSection, {
     kinds: [LORA], values: fresh({ loras: [{ id: 'turbo', strength: 0.6, steps: 8 }, { id: 'plain', strength: 1 }] }) as never, onEdit, onPatch: vi.fn(),
   }))
@@ -164,7 +171,10 @@ test('FRESH-PARSE REORDER (hybrid kind): the catalog-key tier rides the option_k
       { type: 'canny', model: 'm-canny', preprocessor: 'p-canny', strength: 0.7 },
     ],
   })
-  openEditTile('controlnets-1')
+  editSeat(CONTROL, [
+    { type: 'depth', model: 'm-depth', preprocessor: 'p-depth', strength: 0.5 },
+    { type: 'canny', model: 'm-canny', preprocessor: 'p-canny', strength: 0.7 },
+  ], 1)
   rerender(h(ModifiersSection, {
     kinds: [CONTROL],
     values: fresh({
@@ -191,7 +201,10 @@ test('FRESH-PARSE REORDER (field kind): the content tier matches the whole entry
       { image: 'i2', feather: 7, note: 'x' },
     ],
   })
-  openEditTile('masks-1')
+  editSeat(MASK, [
+    { image: 'i1', feather: 5, note: null },
+    { image: 'i2', feather: 7, note: 'x' },
+  ], 1)
   rerender(h(ModifiersSection, {
     kinds: [MASK],
     values: fresh({
@@ -214,7 +227,7 @@ test('FRESH-PARSE REORDER (field kind): the content tier matches the whole entry
 
 test('FIELD GHOST (fresh parse): a concurrent edit to the SAME field entry refuses loud (the honest voice — content moved)', () => {
   const { onEdit, onPatch, rerender } = seat([MASK], { masks: [{ image: 'i1', feather: 5, note: null }] })
-  openEditTile('masks-0')
+  editSeat(MASK, [{ image: 'i1', feather: 5, note: null }], 0)
   // another hand changed the entry: full content no longer matches
   rerender(h(ModifiersSection, {
     kinds: [MASK], values: fresh({ masks: [{ image: 'i1', feather: 3, note: null }] }) as never, onEdit, onPatch,
@@ -230,7 +243,7 @@ test('CONCURRENT SCALAR EDIT (option kind): another hand edited the SAME entry �
   const { onEdit, rerender } = seat([LORA], {
     loras: [{ id: 'plain', strength: 1 }, { id: 'turbo', strength: 0.6, steps: 8 }],
   })
-  openEditTile('loras-1')
+  editSeat(LORA, [{ id: 'plain', strength: 1 }, { id: 'turbo', strength: 0.6, steps: 8 }], 1)
   // the concurrent hand re-tuned steps on the OPENED entry: neither
   // its reference nor its full content survives — the catalog key
   // (the row id) is the only tier that can still seat the save
@@ -253,7 +266,10 @@ test('CONCURRENT SCALAR EDIT (hybrid kind): the option_key survives a re-tuned e
       { type: 'canny', model: 'm-canny', preprocessor: 'p-canny', strength: 0.7 },
     ],
   })
-  openEditTile('controlnets-1')
+  editSeat(CONTROL, [
+    { type: 'depth', model: 'm-depth', preprocessor: 'p-depth', strength: 0.5 },
+    { type: 'canny', model: 'm-canny', preprocessor: 'p-canny', strength: 0.7 },
+  ], 1)
   rerender(h(ModifiersSection, {
     kinds: [CONTROL],
     values: fresh({
@@ -276,7 +292,7 @@ test('DELETE RACE (fresh parse): Remove kills the OPENED entry after a reorder �
   const { onEdit, rerender } = seat([LORA], {
     loras: [{ id: 'plain', strength: 1 }, { id: 'turbo', strength: 0.6, steps: 8 }],
   })
-  openEditTile('loras-1')
+  editSeat(LORA, [{ id: 'plain', strength: 1 }, { id: 'turbo', strength: 0.6, steps: 8 }], 1)
   rerender(h(ModifiersSection, {
     kinds: [LORA],
     values: fresh({ loras: [{ id: 'turbo', strength: 0.6, steps: 8 }, { id: 'plain', strength: 1 }] }) as never,
@@ -291,7 +307,7 @@ test('DELETE-GONE (fresh parse): Remove on an already-vanished entry closes WITH
   const { onEdit, onPatch, rerender } = seat([LORA], {
     loras: [{ id: 'plain', strength: 1 }, { id: 'turbo', strength: 0.6, steps: 8 }],
   })
-  openEditTile('loras-1')
+  editSeat(LORA, [{ id: 'plain', strength: 1 }, { id: 'turbo', strength: 0.6, steps: 8 }], 1)
   rerender(h(ModifiersSection, {
     kinds: [LORA], values: fresh({ loras: [{ id: 'plain', strength: 1 }] }) as never, onEdit, onPatch,
   }))
@@ -308,7 +324,7 @@ test('DUPLICATE ROWS (fresh parse): two identical rows resolve to the seat NEARE
   const { onEdit, rerender } = seat([LORA], {
     loras: [{ id: 'plain', strength: 1 }, { id: 'turbo', strength: 0.6, steps: 8 }, { id: 'turbo', strength: 0.6, steps: 8 }],
   })
-  openEditTile('loras-1')
+  editSeat(LORA, [{ id: 'plain', strength: 1 }, { id: 'turbo', strength: 0.6, steps: 8 }, { id: 'turbo', strength: 0.6, steps: 8 }], 1)
   // reverse: the matches sit at 0 and 1; the opened index 1 is
   // itself a match — nearest wins
   rerender(h(ModifiersSection, {
@@ -339,7 +355,10 @@ test('F1 DUPLICATE DIVERGENT (fresh parse): a same-key stranger with divergent r
       { id: 'turbo', strength: 0.6, steps: 8, extra: 'mine' },
     ],
   })
-  openEditTile('loras-1')
+  editSeat(LORA, [
+    { id: 'plain', strength: 1 },
+    { id: 'turbo', strength: 0.6, steps: 8, extra: 'mine' },
+  ], 1)
   // the opened seat is gone; the survivor shares the catalog key but
   // diverges on a ride-through field (one the modal does not own)
   rerender(h(ModifiersSection, {
@@ -359,7 +378,7 @@ test('F2 RIDE-THROUGH EDIT (fresh parse, the declared boundary): a concurrent ed
   const { onEdit, onPatch, rerender } = seat([LORA], {
     loras: [{ id: 'turbo', strength: 0.6, steps: 8, extra: 'mine' }],
   })
-  openEditTile('loras-0')
+  editSeat(LORA, [{ id: 'turbo', strength: 0.6, steps: 8, extra: 'mine' }], 0)
   // another hand tuned the ride-through field on the SAME row; the
   // owned dials (strength/steps) are untouched — tier 2's confirm
   // owns exactly the split: dials survive (the walls above), rides
@@ -379,7 +398,7 @@ test('F4 KEYLESS PRESENT (fresh parse): a row the catalog key cannot name still 
   const { onEdit, rerender } = seat([LORA], {
     loras: [{ strength: 0.6, extra: 'z' }],
   })
-  openEditTile('loras-0')
+  editSeat(LORA, [{ strength: 0.6, extra: 'z' }], 0)
   // reorder under the modal + fresh parse: the keyless row moves to
   // the far seat (a tier-2 key match could never find it)
   rerender(h(ModifiersSection, {
@@ -410,7 +429,9 @@ test('G1 HYBRID OWNED-DIAL SURVIVAL (fresh parse): a concurrent edit to a hybrid
       { type: 'canny', model: 'm-canny', preprocessor: 'p-canny', strength: 0.7, cond: 'img-a.png' },
     ],
   })
-  openEditTile('controlnets-0')
+  editSeat(CONTROL, [
+    { type: 'canny', model: 'm-canny', preprocessor: 'p-canny', strength: 0.7, cond: 'img-a.png' },
+  ], 0)
   // another hand edited `cond` — a field the modal OWNS (it rides
   // the leaf's own dial rail); the confirm must ignore owned keys
   // exactly as it ignores the strength scalar
@@ -433,7 +454,10 @@ test('G1 HYBRID RIDE GHOST (fresh parse): two same-type rows with divergent STAM
       { type: 'canny', model: 'm-canny-old', preprocessor: 'p-canny-old', strength: 0.7 },
     ],
   })
-  openEditTile('controlnets-1')
+  editSeat(CONTROL, [
+    { type: 'depth', model: 'm-depth', preprocessor: 'p-depth', strength: 0.5 },
+    { type: 'canny', model: 'm-canny-old', preprocessor: 'p-canny-old', strength: 0.7 },
+  ], 1)
   // the opened canny is gone; the survivor shares the type (the
   // catalog key) but its stamps are from another era — ride-through
   // fields, never interchangeable

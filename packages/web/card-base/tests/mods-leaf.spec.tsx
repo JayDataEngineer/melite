@@ -12,7 +12,7 @@ import type { ModifierKind } from '../src/spec.ts'
 import { bindEstateRemote, unbindEstateRemote } from '../src/estate-remote.ts'
 import { fetchMediaLibrary } from '../src/media-library.ts'
 
-import { ModifiersSection } from '../src/mods.tsx'
+import { ModifiersSection, modTileIds } from '../src/mods.tsx'
 import { resolveSeatEntry } from '../src/mods.tsx'
 import type * as mod from '../src/mods.tsx' // the face contracts seat type positions; the suite constructs (not imports) their values below
 
@@ -150,6 +150,18 @@ function openEditTile(tileId: string): void {
   fireEvent.click(document.querySelector(`[data-mod-tile="${tileId}"]`) as HTMLElement)
 }
 
+/** The minted tile id of a kind's Nth entry (the render's own
+ * grammar — modTileIds, debt 24: the wall never re-spells the id
+ * class). */
+function tid(k: ModifierKind, bag: Array<Record<string, unknown>>, i = 0): string {
+  return modTileIds(k, bag)[i]!
+}
+
+/** The sole tile's minted id (single-tile seats — the flat kinds). */
+function soleTileId(): string {
+  return document.querySelector('[data-mod-tile]')!.getAttribute('data-mod-tile')!
+}
+
 function closeLeaf(): void {
   fireEvent.click(screen.getByRole('button', { name: 'Close' }))
 }
@@ -210,7 +222,7 @@ test('STEPS EDIT: the dial rewrites the claim; a blank input DROPS it (never a l
     kinds: [LORA_DISTILL],
     values: { loras: [{ id: 'turbo', strength: 0.6, steps: 8 }] },
   })
-  openEditTile('loras-0')
+  openEditTile(tid(LORA_DISTILL, [{ id: 'turbo', strength: 0.6, steps: 8 }], 0))
   expect((screen.getByLabelText('Steps applied') as HTMLInputElement).value).toBe('8')
   // THE ENTRY'S ROW RIDES THE DIAL (#38, the steps-choice fix): the
   // domain is STATED, BOUNDED, and seeded from the ENTRY's turbo row
@@ -229,7 +241,7 @@ test('STEPS EDIT: the dial rewrites the claim; a blank input DROPS it (never a l
     kinds: [LORA_DISTILL],
     values: { loras: [{ id: 'turbo', strength: 0.6, steps: 8 }] },
   })
-  openEditTile('loras-0')
+  openEditTile(tid(LORA_DISTILL, [{ id: 'turbo', strength: 0.6, steps: 8 }], 0))
   fireEvent.change(drop.getByLabelText('Steps applied'), { target: { value: '' } })
   fireEvent.click(drop.getByRole('button', { name: 'Save' }))
   expect(drop.onEdit).toHaveBeenCalledWith('loras', [{ id: 'turbo', strength: 0.6 }])
@@ -240,37 +252,37 @@ test('STEPS BADGE (#38, the choice made visible): the tile carries the EFFECTIVE
     kinds: [LORA_DISTILL],
     values: { loras: [{ id: 'turbo', strength: 0.6, steps: 5 }] },
   })
-  expect(document.querySelector('[data-mod-tile="loras-0"]')!.textContent).toContain('5 steps')
+  expect(document.querySelector(`[data-mod-tile="${tid(LORA_DISTILL, [{ id: 'turbo', strength: 0.6, steps: 5 }])}"]`)!.textContent).toContain('5 steps')
   cleanup()
   // an id-only recipe stamp badges the row's married count (8)
   const seeded = openLeaf({
     kinds: [LORA_DISTILL],
     values: { loras: [{ id: 'turbo' }] },
   })
-  expect(document.querySelector('[data-mod-tile="loras-0"]')!.textContent).toContain('8 steps')
+  expect(document.querySelector(`[data-mod-tile="${tid(LORA_DISTILL, [{ id: 'turbo' }])}"]`)!.textContent).toContain('8 steps')
   cleanup()
   // a fixed-point row badges its married count too
   const dareties = openLeaf({
     kinds: [LORA_DISTILL],
     values: { loras: [{ id: 'dareties', strength: 0.8 }] },
   })
-  expect(document.querySelector('[data-mod-tile="loras-0"]')!.textContent).toContain('4 steps')
+  expect(document.querySelector(`[data-mod-tile="${tid(LORA_DISTILL, [{ id: 'dareties', strength: 0.8 }])}"]`)!.textContent).toContain('4 steps')
   cleanup()
   // a kind whose rows claim no steps carries no badge
   const plain = openLeaf({ kinds: [LORA], values: { loras: [{ id: 'detail', strength: 0.8 }] } })
-  expect(document.querySelector('[data-mod-tile="loras-0"]')!.textContent).not.toContain('steps')
+  expect(document.querySelector(`[data-mod-tile="${tid(LORA, [{ id: 'detail', strength: 0.8 }])}"]`)!.textContent).not.toContain('steps')
 })
 
 test('OPTION EDIT (#38 papercut): a blank strength dial falls to the ENTRY row default — an id-only stamp edits without a refusal', () => {
   const { onEdit } = openLeaf({ kinds: [LORA_DISTILL], values: { loras: [{ id: 'turbo' }] } })
-  openEditTile('loras-0')
+  openEditTile(tid(LORA_DISTILL, [{ id: 'turbo' }], 0))
   fireEvent.click(screen.getByRole('button', { name: 'Save' }))
   expect(onEdit).toHaveBeenCalledWith('loras', [{ id: 'turbo', strength: 0.6 }])
 })
 
 test('OPTION EDIT: an id-less drifted entry still opens (the leaf never crashes on drift — the compose door owns the loud refusal)', () => {
   const { onEdit } = openLeaf({ kinds: [LORA_DISTILL], values: { loras: [{ strength: 0.5 }] } })
-  openEditTile('loras-0')
+  openEditTile(tid(LORA_DISTILL, [{ strength: 0.5 }], 0))
   fireEvent.click(screen.getByRole('button', { name: 'Save' }))
   expect(onEdit).toHaveBeenCalledWith('loras', [{ strength: 0.5 }])
 })
@@ -321,7 +333,7 @@ test('OPTION CREATE: refusing LOUD — no row, no save; a non-number dial, no sa
 
 test('OPTION EDIT: the row binds at open, the select rides for F4 re-keying; the dial rewrites; Remove drops the entry', () => {
   const { onEdit } = openLeaf({ kinds: [LORA], values: { loras: [{ id: 'detail', strength: 0.8 }] } })
-  openEditTile('loras-0')
+  openEditTile(tid(LORA, [{ id: 'detail', strength: 0.8 }], 0))
   expect(screen.getByText('Edit LoRA')).not.toBeNull()
   // the select seats in BOTH modes (2026-10-31, F4's repair path —
   // the race spec's keyless arm): bound to the opened row, a pick
@@ -335,7 +347,7 @@ test('OPTION EDIT: the row binds at open, the select rides for F4 re-keying; the
 
 test('OPTION EDIT: a non-number dial refuses; Remove commits the bag without the entry', () => {
   const { onEdit } = openLeaf({ kinds: [LORA], values: { loras: [{ id: 'detail', strength: 0.8 }] } })
-  openEditTile('loras-0')
+  openEditTile(tid(LORA, [{ id: 'detail', strength: 0.8 }], 0))
   fireEvent.change(screen.getByPlaceholderText('the row default'), { target: { value: '1e999' } })
   fireEvent.click(screen.getByRole('button', { name: 'Save' }))
   expect(screen.getByText('Strength must be a number.')).not.toBeNull()
@@ -354,7 +366,7 @@ test('OPTION EDIT: a vanished row refuses LOUD — no write, the drafts survive 
     onEdit: undefined as never, onPatch: undefined as never,
   })
   void container
-  openEditTile('loras-1')
+  openEditTile(tid(LORA, [{ id: 'detail' }, { id: 'plain' }], 1))
   rerender(h(ModifiersSection, { kinds: [LORA], values: { loras: [{ id: 'detail' }] }, onEdit, onPatch: undefined as never }))
   fireEvent.click(screen.getByRole('button', { name: 'Save' }))
   expect(onEdit).not.toHaveBeenCalled()
@@ -415,7 +427,7 @@ test('HYBRID EDIT: a type switch re-stamps (the new row owns the facts, never th
     kinds: [CONTROL],
     values: { controlnets: [{ type: 'depth', model: 'old-m', preprocessor: 'old-p', strength: 0.5, cond: 'c' }] },
   })
-  openEditTile('controlnets-0')
+  openEditTile(tid(CONTROL, [{ type: 'depth', model: 'old-m', preprocessor: 'old-p', strength: 0.5, cond: 'c' }], 0))
   expect((screen.getByLabelText('Strength') as HTMLInputElement).value).toBe('0.5')
   expect((screen.getByLabelText('Conditioning') as HTMLInputElement).value).toBe('c')
   pickCatalog(() => screen.getByLabelText('ControlNet'), 'Canny')
@@ -430,7 +442,7 @@ test('HYBRID EDIT: a drifted type stays VISIBLE, marked unregistered, and refuse
     kinds: [CONTROL],
     values: { controlnets: [{ type: 'custom-x', strength: 0.4 }] },
   })
-  openEditTile('controlnets-0')
+  openEditTile(tid(CONTROL, [{ type: 'custom-x', strength: 0.4 }], 0))
   expect(screen.getByText('Custom X (unregistered)')).not.toBeNull()
   fireEvent.click(screen.getByRole('button', { name: 'Save' }))
   expect(screen.getByText(/is not a served ControlNet row/)).not.toBeNull()
@@ -439,7 +451,7 @@ test('HYBRID EDIT: a drifted type stays VISIBLE, marked unregistered, and refuse
 
 test('HYBRID EDIT: typeless + dial-less entries draft blank (never undefined in the inputs)', () => {
   openLeaf({ kinds: [CONTROL], values: { controlnets: [{ cond: 'c' }] } })
-  openEditTile('controlnets-0')
+  openEditTile(tid(CONTROL, [{ cond: 'c' }], 0))
   expect(screen.getByLabelText('ControlNet').textContent).toBe('— pick —')
   expect((screen.getByLabelText('Strength') as HTMLInputElement).value).toBe('')
 })
@@ -450,7 +462,7 @@ test('HYBRID EDIT: a vanished row refuses LOUD — no write, the drafts survive 
     kinds: [CONTROL],
     values: { controlnets: [{ type: 'depth' }, { type: 'canny' }] },
   })
-  openEditTile('controlnets-1')
+  openEditTile(tid(CONTROL, [{ type: 'depth' }, { type: 'canny' }], 1))
   rerender(h(ModifiersSection, { kinds: [CONTROL], values: { controlnets: [{ type: 'depth' }] }, onEdit, onPatch: () => {} }))
   fireEvent.click(screen.getByRole('button', { name: 'Save' }))
   expect(onEdit).not.toHaveBeenCalled()
@@ -463,7 +475,7 @@ test('HYBRID EDIT: Remove drops the entry; an option-less catalog still leaves t
     kinds: [CONTROL_NOPTS],
     values: { controlnets: [{ type: 'custom-x' }] },
   })
-  openEditTile('controlnets-0')
+  openEditTile(tid(CONTROL_NOPTS, [{ type: 'custom-x' }], 0))
   expect(screen.getByText('Custom X (unregistered)')).not.toBeNull()
   fireEvent.click(screen.getByRole('button', { name: 'Remove' }))
   expect(onEdit).toHaveBeenCalledWith('controlnets', [])
@@ -504,7 +516,7 @@ test('FIELD CREATE: defaults seed the draft; the draft IS the entry on save', ()
 // string row cures the moment the leaf opens).
 test('FIELD EDIT: a typed number coerces at the leaf (the mod lane owns its patch boundary)', () => {
   const { onEdit } = openLeaf({ kinds: [MASK], values: { masks: [{ feather: 3 }] } })
-  openEditTile('masks-0')
+  openEditTile(tid(MASK, [{ feather: 3 }], 0))
   fireEvent.change(screen.getByLabelText('Feather'), { target: { value: '7' } })
   fireEvent.click(screen.getByRole('button', { name: 'Save' }))
   expect(onEdit).toHaveBeenCalledWith('masks', [{ feather: 7 }])
@@ -512,7 +524,7 @@ test('FIELD EDIT: a typed number coerces at the leaf (the mod lane owns its patc
 
 test('FIELD EDIT: a legacy string param cures on open (the seeded draft coerces too)', () => {
   const { onEdit } = openLeaf({ kinds: [MASK], values: { masks: [{ feather: '3' as unknown as number }] } })
-  openEditTile('masks-0')
+  openEditTile(tid(MASK, [{ feather: '3' as unknown as number }], 0))
   expect((screen.getByLabelText('Feather') as HTMLInputElement).value).toBe('3')
   fireEvent.click(screen.getByRole('button', { name: 'Save' }))
   expect(onEdit).toHaveBeenCalledWith('masks', [{ feather: 3 }])
@@ -523,12 +535,12 @@ test('FIELD EDIT: the entry seeds the draft; a seated field never renders; Remov
     kinds: [MASK], values: { masks: [{ feather: 3 }] },
     railSeated: new Set(['feather']),
   })
-  openEditTile('masks-0')
+  openEditTile(tid(MASK, [{ feather: 3 }], 0))
   expect(screen.queryByLabelText('Feather')).toBeNull()
   expect((screen.getByLabelText('Note') as HTMLInputElement).value).toBe('')
   fireEvent.click(screen.getByRole('button', { name: 'Save' }))
   expect(onEdit).toHaveBeenCalledWith('masks', [{ feather: 3 }])
-  openEditTile('masks-0')
+  openEditTile(tid(MASK, [{ feather: 3 }], 0))
   fireEvent.click(screen.getByRole('button', { name: 'Remove' }))
   expect(onEdit).toHaveBeenCalledWith('masks', [])
 })
@@ -538,7 +550,7 @@ test('FIELD EDIT: a vanished row refuses LOUD — no write, the drafts survive (
   const { onEdit, rerender } = openLeaf({
     kinds: [MASK], values: { masks: [{ feather: 1 }, { feather: 2 }] },
   })
-  openEditTile('masks-1')
+  openEditTile(tid(MASK, [{ feather: 1 }, { feather: 2 }], 1))
   rerender(h(ModifiersSection, { kinds: [MASK], values: { masks: [{ feather: 1 }] }, onEdit, onPatch: () => {} }))
   fireEvent.click(screen.getByRole('button', { name: 'Save' }))
   expect(onEdit).not.toHaveBeenCalled()
@@ -596,7 +608,7 @@ test('THE PAINT CANVAS: editing a painted entry seeds the face with its payload 
     kinds: [MASK_PAINT], values: { masks: [{ image: 'data:image/png;base64,OLD' }] },
     paintFace: FakeFace, paintReference: 'input_image',
   })
-  openEditTile('masks-0')
+  openEditTile(tid(MASK_PAINT, [{ image: 'data:image/png;base64,OLD' }], 0))
   expect(screen.getByTestId('face-value').textContent).toBe('data:image/png;base64,OLD')
   fireEvent.click(screen.getByRole('button', { name: 'Face clear' }))
   fireEvent.click(screen.getByRole('button', { name: 'Save' }))
@@ -659,7 +671,7 @@ test('HYBRID OPTIONLESS EDIT: a drifted type still shows unregistered against an
     kinds: [CONTROL_NOOPTSKEY],
     values: { controlnets: [{ type: 'custom-x' }] },
   })
-  openEditTile('controlnets-0')
+  openEditTile(tid(CONTROL_NOOPTSKEY, [{ type: 'custom-x' }], 0))
   expect(screen.getByText('Custom X (unregistered)')).not.toBeNull()
   fireEvent.click(screen.getByRole('button', { name: 'Save' }))
   expect(screen.getByText(/is not a served ControlNet row/)).not.toBeNull()
@@ -671,7 +683,7 @@ test('HYBRID FIELDLESS EDIT: a fieldless kind still edits (select + dial, re-sta
     kinds: [CONTROL_NOFIELDS],
     values: { controlnets: [{ type: 'soft' }] },
   })
-  openEditTile('controlnets-0')
+  openEditTile(tid(CONTROL_NOFIELDS, [{ type: 'soft' }], 0))
   expect((screen.getByLabelText('Strength') as HTMLInputElement).value).toBe('')
   fireEvent.click(screen.getByRole('button', { name: 'Save' }))
   expect(onEdit).toHaveBeenCalledWith('controlnets', [{ type: 'soft', strength: 0.7 }])
@@ -711,7 +723,7 @@ test('THE UNLABELED FIELD LEAF: a labelless field renders its name (never a blan
 test('THE FIELDLESS KIND: tiles name the kind; the leaf is actions only; the save commits bare', () => {
   const { onEdit } = openLeaf({ kinds: [TAG], values: { tags: [{}] } })
   expect(screen.getByText('Tag')).not.toBeNull()
-  openEditTile('tags-0')
+  openEditTile(tid(TAG, [{}], 0))
   expect(screen.getByText('Edit Tag')).not.toBeNull()
   fireEvent.click(screen.getByRole('button', { name: 'Save' }))
   expect(onEdit).toHaveBeenCalledWith('tags', [{}])
@@ -838,7 +850,7 @@ test('THE BBOX CANVAS: editing a boxed entry seeds the face with the current rec
     values: { input_image: 'r', sam3: [{ name: 'a', prompt: 'p', bbox_x: 10, bbox_y: 20, bbox_w: 30, bbox_h: 40 }] },
     bboxFace: FakeBboxFace, paintReference: 'input_image',
   })
-  openEditTile('sam3-0')
+  openEditTile(tid(SAM3_BOX, [{ name: 'a', prompt: 'p', bbox_x: 10, bbox_y: 20, bbox_w: 30, bbox_h: 40 }], 0))
   expect(screen.getByTestId('bbox-seed').textContent).toBe('10,20,30,40')
 })
 
@@ -848,7 +860,7 @@ test('THE BBOX CANVAS: a clear writes the four unset sentinels (-1 — the entry
     values: { input_image: 'r', sam3: [{ name: 'a', prompt: 'p', bbox_x: 10, bbox_y: 20, bbox_w: 30, bbox_h: 40 }] },
     bboxFace: FakeBboxFace, paintReference: 'input_image',
   })
-  openEditTile('sam3-0')
+  openEditTile(tid(SAM3_BOX, [{ name: 'a', prompt: 'p', bbox_x: 10, bbox_y: 20, bbox_w: 30, bbox_h: 40 }], 0))
   fireEvent.click(screen.getByRole('button', { name: 'Box clear' }))
   fireEvent.click(screen.getByRole('button', { name: 'Save' }))
   expect(onEdit).toHaveBeenCalledWith('sam3', [{
@@ -872,7 +884,7 @@ test('THE BBOX CANVAS: host-less degrades — the four faceOwned inputs RENDER (
 
 test('THE DISPLAY-IS-THE-COMMIT LAW: editing a legacy entry missing a defaulted field shows the default AND saves it (never shows-then-refuses)', () => {
   const { onEdit } = openLeaf({ kinds: [MASK_PAINT], values: { masks: [{}] } })
-  openEditTile('masks-0')
+  openEditTile(tid(MASK_PAINT, [{}], 0))
   // the knob displays the declaration's default (Feather 5)
   expect((screen.getByLabelText('Feather') as HTMLInputElement).value).toBe('5')
   fireEvent.click(screen.getByRole('button', { name: 'Save' }))
@@ -1098,7 +1110,7 @@ test('FLAT READ: a saved flat entry re-opens on the card root — the leaf shows
     kinds: [QVOICE_SAVE],
     values: { voice_name: 'dusk voice', temperature: 0.4, speed: 1 },
   })
-  openEditTile('qvoice_save-0')
+  openEditTile(soleTileId())
   expect((screen.getByLabelText('Voice Name') as HTMLInputElement).value).toBe('dusk voice')
   expect((screen.getByLabelText('Temperature') as HTMLInputElement).value).toBe('0.4')
   fireEvent.change(screen.getByLabelText('Voice Name'), { target: { value: 'dusk voice ii' } })
@@ -1114,7 +1126,7 @@ test('FLAT DELETE: removing the entry writes nulls — the merge-patch delete la
     kinds: [QVOICE_SAVE],
     values: { voice_name: 'dusk voice', temperature: 0.4 },
   })
-  openEditTile('qvoice_save-0')
+  openEditTile(soleTileId())
   fireEvent.click(screen.getByRole('button', { name: 'Remove' }))
   expect(onPatch).toHaveBeenCalledWith({ voice_name: null, temperature: null, speed: null })
   for (const call of onPatch.mock.calls) {
@@ -1139,7 +1151,7 @@ test('PRESENCE ADD: the add commits the true stamp — no leaf ever opens (the M
 
 test('PRESENCE REMOVE: the chip click IS the remove — the null delete lands (the tile unseats when the bench serves the cleared doc)', () => {
   const { onEdit, onPatch } = openLeaf({ kinds: [PRESENCE_SAVE], values: { save_qvoice: true } })
-  const tile = document.querySelector('[data-mod-tile="qvoice_save-0"]')
+  const tile = document.querySelector('[data-mod-tile]')
   expect(tile).not.toBeNull()
   fireEvent.click(tile as HTMLElement)
   expect(onEdit).toHaveBeenCalledWith('save_qvoice', undefined)
@@ -1189,7 +1201,7 @@ test('NAMED REMOVE: the chip click IS the remove — both keys null-delete (the 
     kinds: [NAMED_PRESENCE_SAVE],
     values: { save_qvoice: true, voice_name: 'harbour narrator' },
   })
-  const tile = document.querySelector('[data-mod-tile="qvoice_save-0"]')
+  const tile = document.querySelector('[data-mod-tile]')
   expect(tile).not.toBeNull()
   fireEvent.click(tile as HTMLElement)
   expect(onEdit).toHaveBeenCalledWith('save_qvoice', undefined)

@@ -1,4 +1,6 @@
 // @vitest-environment happy-dom
+// @contract cards-unknown-status-health
+// (the tile error-face half of the row: the refusal renders verbatim)
 /**
  * tile-run-error.spec.tsx — THE FAILURE FACE (2026-09-13, operator:
  * "I run image edit, no response at all"). A failed run's reason is

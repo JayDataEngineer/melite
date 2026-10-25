@@ -39,7 +39,7 @@
  */
 import { createElement as h } from 'react';
 import type { ReactElement } from 'react';
-import { type ModifierKind, type SpecField, type SpecValues } from './spec.js';
+import { type ModifierKind, type SpecField, type SpecValues } from './spec.ts';
 export type { PaintCanvasFaceProps, BboxCanvasFaceProps } from '@melite/contracts';
 import type { BboxCanvasFaceProps, PaintCanvasFaceProps } from '@melite/contracts';
 export type BboxFaceComponent = (props: BboxCanvasFaceProps) => ReactElement;
@@ -130,6 +130,23 @@ export interface LeafSeat {
      *  a stranger (F1/F2/G1). */
     owned?: ReadonlySet<string>;
 }
+/** IDENTITY-MINTED TILE IDS (debt 24's cure, reusing the leaf's
+ * tier law): `<param_key>#<content-tag>.<occurrence>` — content
+ * is the identity (the leaf's tier 3), the occurrence ordinal
+ * disambiguates same-content duplicates the way the leaf's
+ * resolver picks the nearest seat. The render and the drop
+ * resolver share THIS function, so a drop id minted at drag-start
+ * resolves against whatever bag the next frame serves. */
+export declare function modTileIds(k: ModifierKind, entries: ReadonlyArray<Record<string, unknown>>): string[];
+/** Resolve a minted tile id against the LIVE bag by content: the
+ * tag matches entries whose serialized content is equal, the
+ * occurrence ordinal picks among duplicates. -1 = the entry is
+ * GONE (or the id is foreign) — the caller refuses the move,
+ * never lands it on the wrong pair (the index-commit class debt
+ * 23 cured at the leaf; this is its drag twin). Duplicate
+ * collapse (one of two same-content rows removed) is deliberately
+ * conservative: an orphaned ordinal refuses. */
+export declare function modTileSeat(entries: ReadonlyArray<Record<string, unknown>>, id: string): number;
 /** THE SEAT RESOLVER — the opened entry in the LIVE bag, by
  *  identity, never by a stale index. Tier 1: the reference itself.
  *  Tier 2: the catalog key, confirmed on ride-through fields (the
