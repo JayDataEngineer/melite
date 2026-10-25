@@ -1045,9 +1045,13 @@ export class ProvisioningService extends Service {
             // 2026-11-09/10 — ops cd085c9b, 9dfe1a72, f634607f minted for
             // ONE sha-verified VAE): an accept against a weight an
             // already-settled op covers returns the EXISTING operation id.
-            // A settled FAILED op never covers (the retry law, ARM 5);
-            // a discarded or evicted row covers nothing (the delete exit).
-            const settledId = this.settledCoverageId(key, wantedKeys);
+            // A settled FAILED op never covers on its stored face (the
+            // retry law, ARM 5); a discarded or evicted row covers nothing
+            // (the delete exit); the DISK-TRUTH consult (re-admit F3) then
+            // lifts the failed op against the bytes on disk — a settled
+            // failure whose files verify covers, and no fresh mint runs.
+            const settledId = this.settledCoverageId(key, wantedKeys)
+                ?? await this.settledCoverageIdByDiskTruth(key, wantedKeys);
             if (settledId !== undefined) {
                 // parked same-key joiners must wake: the mint answers the
                 // settled id, the joiner's lock check finds none, and its own
@@ -1144,7 +1148,11 @@ export class ProvisioningService extends Service {
                 return existingId;
             }
         }
-        const settledId = this.settledCoverageId(key, undefined);
+        // the stored coverage first; the disk-truth consult (re-admit
+        // F3) lifts a settled failure whose bytes verify before this
+        // seat queues a fresh acquire the disk already owns
+        const settledId = this.settledCoverageId(key, undefined)
+            ?? await this.settledCoverageIdByDiskTruth(key, undefined);
         if (settledId !== undefined)
             return settledId;
         const store = this.operationStore;
@@ -1348,6 +1356,51 @@ export class ProvisioningService extends Service {
             }
         }
         return operation.operationId;
+    }
+    /** THE DISK-TRUTH COVERAGE (re-admit audit F3, 2026-11-12): the
+     *  re-admit lift the status door serves never rewrites the stored
+     *  record (the lift serves, it does not mint history), so a
+     *  settled-failed operation whose bytes verify on disk reads as NO
+     *  coverage at the mint — and the next acquire re-mints a fetch
+     *  the disk already owns. The mint consults the same disk truth
+     *  before deciding: run the re-admit over the stored operation,
+     *  and a verified lift that covers the ask answers the EXISTING
+     *  operation id. The integrity grammar is kind-matched — a model
+     *  wears declared-sha256/size-checked; a snapshot wears
+     *  operator-unverified (the revision pin IS the word — the
+     *  kind-complete fold's law, mirrored from inspectPlanItem).
+     *  @param key the resource key whose settled operation is consulted.
+     *  @param wantedKeys the coverage ask (undefined = whole plan,
+     *  array = named keys; null = unprovable, never covers).
+     *  @returns the settled operation id when the disk truth covers
+     *  the ask, undefined when it does not. */
+    async settledCoverageIdByDiskTruth(key, wantedKeys) {
+        if (wantedKeys === null)
+            return undefined;
+        const stored = this.records.get(key)?.operation;
+        if (stored === undefined || stored.finishedAt === undefined)
+            return undefined;
+        const verified = await this.verifyOperation(stored);
+        if (verified.state !== "active" && verified.state !== "restart_required")
+            return undefined;
+        const verifiedItem = (item) => (item.state === "active" || item.state === "restart_required")
+            && (item.integrity === "declared-sha256" || item.integrity === "size-checked"
+                || (item.kind === "snapshot" && item.integrity === "operator-unverified"));
+        if (wantedKeys === undefined) {
+            if (!verified.items.every(verifiedItem))
+                return undefined;
+        }
+        else {
+            if (wantedKeys.length === 0)
+                return undefined;
+            const byKey = new Map(verified.items.map((item) => [item.key, item]));
+            for (const want of wantedKeys) {
+                const item = byKey.get(want);
+                if (item === undefined || !verifiedItem(item))
+                    return undefined;
+            }
+        }
+        return verified.operationId;
     }
     /** THE JOIN FILL (verify R3): the joiner tops the ledger up only
      *  where the live entry lacks. The row is re-read AFTER the plan

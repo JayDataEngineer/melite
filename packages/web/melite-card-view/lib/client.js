@@ -6636,6 +6636,12 @@ window.__ModuleLoader__.load({
 				const draftId = draftIds[i] ?? null;
 				const seatedRaw = seatedIds[i];
 				const positional = positionalJoin !== null ? positionalJoin[i] : void 0;
+				if (positional !== void 0 && draftId !== null && !run.stages.some((s) => s.id === draftId || s.benchStageId === draftId)) {
+					const claims = positional.id === draftId ? void 0 : positional.id;
+					const stampClaims = positional.benchStageId === void 0 || positional.benchStageId === draftId ? void 0 : positional.benchStageId;
+					const other = draftIds.find((d) => d !== null && (d === claims || d === stampClaims)) ?? null;
+					if (other !== null) report.notes.push("positional carry for " + draftId + ": run stage " + String(claims ?? stampClaims) + " names another draft row (" + other + ") — the run order drifted from the draft order; the tile paints by position (the LEGACY tier)");
+				}
 				if (typeof seatedRaw === "string" && seatedRaw !== "") {
 					await carryOutcome(run, benchDraftId, draftId, seatedRaw, positional, report, signal);
 					continue;

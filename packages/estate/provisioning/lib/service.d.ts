@@ -289,6 +289,24 @@ export declare class ProvisioningService extends Service implements Provisioning
      *  failed/blocked settle, an unfinished row, or an unprovable ask
      *  (wantedKeys null) never covers. */
     private settledCoverageId;
+    /** THE DISK-TRUTH COVERAGE (re-admit audit F3, 2026-11-12): the
+     *  re-admit lift the status door serves never rewrites the stored
+     *  record (the lift serves, it does not mint history), so a
+     *  settled-failed operation whose bytes verify on disk reads as NO
+     *  coverage at the mint — and the next acquire re-mints a fetch
+     *  the disk already owns. The mint consults the same disk truth
+     *  before deciding: run the re-admit over the stored operation,
+     *  and a verified lift that covers the ask answers the EXISTING
+     *  operation id. The integrity grammar is kind-matched — a model
+     *  wears declared-sha256/size-checked; a snapshot wears
+     *  operator-unverified (the revision pin IS the word — the
+     *  kind-complete fold's law, mirrored from inspectPlanItem).
+     *  @param key the resource key whose settled operation is consulted.
+     *  @param wantedKeys the coverage ask (undefined = whole plan,
+     *  array = named keys; null = unprovable, never covers).
+     *  @returns the settled operation id when the disk truth covers
+     *  the ask, undefined when it does not. */
+    private settledCoverageIdByDiskTruth;
     /** THE JOIN FILL (verify R3): the joiner tops the ledger up only
      *  where the live entry lacks. The row is re-read AFTER the plan
      *  resolve — a concurrent executeEnsure seed may have counted

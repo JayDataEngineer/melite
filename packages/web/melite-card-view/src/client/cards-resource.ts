@@ -1321,10 +1321,14 @@ export async function restoreRunToBench(
   // this draft's carded rows, the two arrays align in sequence (both
   // order-preserving on the composed cards), so row i joins run
   // stage i. This is the LEGACY tier (row cards-restore-outcome-carry):
-  // a same-count REORDER between compose and restore is undetectable
-  // by construction — row order is history, not identity — which is
-  // exactly why the stamp tier exists and why multi-row bench runs
-  // stamp each row's own id (the id tier, no position needed).
+  // a same-count REORDER is undetectable only while the drifted stage
+  // carries NO draft-row identity (skeleton ids name no draft row).
+  // When the position tier's stage names a DIFFERENT draft row, the
+  // drift has evidence — the carry still lands (the LEGACY tier is
+  // the only join history runs have) but the reorder VOICES itself
+  // (the previews fold F4 law, 2026-11-12); the stamp tier remains
+  // the identity answer and multi-row bench runs stamp each row's
+  // own id (the id tier, no position needed).
   // A count mismatch (the draft edited since) joins
   // nothing by position — a wrong-tile repaint is worse than a voiced
   // miss.
@@ -1347,6 +1351,24 @@ export async function restoreRunToBench(
     const draftId = draftIds[i] ?? null
     const seatedRaw = seatedIds[i]
     const positional = positionalJoin !== null ? positionalJoin[i] : undefined
+    // THE REORDER VOICE (previews fold F4, 2026-11-12): the position
+    // tier paints row i with run stage i silently — but when that
+    // stage carries identity naming a DIFFERENT draft row (and this
+    // row joined by neither id nor stamp), the drift is DETECTABLE:
+    // the stage's own id says it belongs elsewhere. Voice the drift;
+    // the carry still lands (LEGACY tier), never silently.
+    if (positional !== undefined && draftId !== null
+      && !run.stages.some((s) => s.id === draftId || s.benchStageId === draftId)) {
+      const claims: string | undefined = positional.id === draftId ? undefined : positional.id
+      const stampClaims: string | undefined
+        = positional.benchStageId === undefined || positional.benchStageId === draftId ? undefined : positional.benchStageId
+      const other = draftIds.find((d) => d !== null && (d === claims || d === stampClaims)) ?? null
+      if (other !== null) {
+        report.notes.push('positional carry for ' + draftId + ': run stage '
+          + String(claims ?? stampClaims) + ' names another draft row (' + other
+          + ') — the run order drifted from the draft order; the tile paints by position (the LEGACY tier)')
+      }
+    }
     if (typeof seatedRaw === 'string' && seatedRaw !== '') {
       await carryOutcome(run, benchDraftId, draftId, seatedRaw, positional, report, signal)
       continue

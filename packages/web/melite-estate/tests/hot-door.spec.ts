@@ -9,7 +9,7 @@
 // makes their card serve and un-serve with the fiber.
 import { describe, expect, it, vi } from 'vitest'
 import { Context } from '@deepseek-ai/cordis'
-import { loadCardDefs, theService } from '@melite/comfyui-cordis'
+import { loadCardDefs, refreshCardDefs, theService } from '@melite/comfyui-cordis'
 import { apply as applyRealMod } from '../hot/examples/real-mod.plugin.ts'
 import { apply as applyRealCard } from '../hot/examples/real-card.plugin.ts'
 import { apply as applyG2Door } from '../hot/g2-maker-door.plugin.ts'
@@ -149,5 +149,59 @@ describe('THE G2 ARM: the maker-profile row is live (2026-10-11)', () => {
     }
     expect(theService().cardIds().includes('hot-g2-door')).toBe(false)
     expect(theService().cardIds().includes('hot-sketch')).toBe(false)
+  })
+})
+
+describe('THE HEAT-CLASS BOUNDARY (HMR audit 009 F6, 2026-11-12): registration is hot, code rides the re-import', () => {
+  // A drop-in's EDITED SOURCE needs a fiber replacement (the loader's
+  // re-import) before the served face changes — the hot/README's "not
+  // a replacement for a stable card package" was comment-law until
+  // this arm. The executed truth: mount v1, serve, REPLACE the module
+  // (dispose + mount the edited closure — the re-import analog), and
+  // the served table follows the NEW module exactly — never the stale
+  // v1 snapshot. A boot snapshot that outlived its fiber would serve
+  // v1's face here and red.
+  const heatCard = (label: string, marker: string) => (ctx: Context): void => {
+    ctx.effect(() => {
+      const off = theService().registerCard({
+        id: 'hot-heat-wall',
+        skeleton: 'generate',
+        boarded: ['moss'],
+        tags: ['image', 'generate', 'hot'],
+        identity: { label, description: 'the heat-class wall card', genre: 'image', icon: 'spark' },
+        sidebar: { key: 'image', order: 5 },
+        flowKinds: { inputs: {}, outputs: { default: 'image' }, requiresModel: true },
+        schema: ((v: unknown) => v) as unknown as (v: unknown) => Record<string, unknown>,
+        compose() {
+          throw new Error('heat-wall ' + marker)
+        },
+      })
+      refreshCardDefs()
+      return () => { off(); refreshCardDefs() }
+    })
+  }
+
+  it('a re-mounted drop-in with changed bytes serves ITS face — the served table follows the re-import, never the stale snapshot', async () => {
+    await loadCardDefs()
+    const v1 = await mount(heatCard('Heat Wall v1', 'v1-marker'))
+    let defs = await loadCardDefs()
+    let def = defs.get('hot-heat-wall') as unknown as Record<string, unknown>
+    expect(def).not.toBe(undefined)
+    expect((def.identity as { label: string }).label).toBe('Heat Wall v1')
+    expect(() => (def.compose as (p: Record<string, unknown>, ...rest: never[]) => void)({} as Record<string, unknown>, ...[] as never[])).toThrow(/v1-marker/)
+
+    // the re-import: dispose the fiber, mount the EDITED module
+    await v1.fiber.dispose()
+    expect(theService().cardIds().includes('hot-heat-wall')).toBe(false)
+    const v2 = await mount(heatCard('Heat Wall v2', 'v2-marker'))
+    defs = await loadCardDefs()
+    def = defs.get('hot-heat-wall') as unknown as Record<string, unknown>
+    // the served face is v2's — label AND compose bytes; a stale
+    // boot snapshot (the F6 burn class) would still carry v1
+    expect((def.identity as { label: string }).label).toBe('Heat Wall v2')
+    expect(() => (def.compose as (p: Record<string, unknown>, ...rest: never[]) => void)({} as Record<string, unknown>, ...[] as never[])).toThrow(/v2-marker/)
+
+    await v2.fiber.dispose()
+    expect((await loadCardDefs()).has('hot-heat-wall')).toBe(false)
   })
 })

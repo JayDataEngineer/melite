@@ -1389,4 +1389,47 @@ describe("verifyOperation re-admit (moss-image burn)", () => {
     assert.match(verified.items[0]?.detail ?? "", /re-admitted by disk truth/);
     assert.match(verified.items[1]?.detail ?? "", /re-admitted by disk truth/);
   });
+
+  // THE NO-RE-MINT DISK-TRUTH COVERAGE (re-admit audit F3,
+  // 2026-11-12): the lift the status door serves never rewrites the
+  // stored record, so the mint's coverage judge read a settled-failed
+  // op as NO coverage — and the next acquire re-minted a fetch the
+  // disk already owned (the popup loop's class, minted for bytes that
+  // were already there). The mint now consults the same disk truth:
+  // a settled failure whose files verify COVERS the ask, and the
+  // EXISTING operation id answers — one fetcher call, one operation.
+  test("a settled-failed op whose bytes verify on disk COVERS the next mint — the existing id answers, no fresh operation", async () => {
+    const store = root();
+    let fetchCalls = 0;
+    const context = new Context();
+    const service = new ProvisioningService(context, {
+      declaration: declarationFor({ ref: modelRef(), items: [modelItem()] }),
+      fetcher: async (): Promise<never> => {
+        fetchCalls += 1;
+        throw new TypeError("connection died mid-fetch");
+      },
+      storeRoot: store,
+    });
+    try {
+      const firstId = await service.startWeightAcquire(modelRef());
+      // await the background flight's settle (bounded: the dying
+      // fetch refuses immediately)
+      for (let i = 0; i < 500 && service.operationOf(modelRef())?.finishedAt === undefined; i += 1) {
+        await new Promise((resolve) => setTimeout(resolve, 10));
+      }
+      assert.equal(service.operationOf(modelRef())?.state, "failed", "the transport-dying fetch settles the operation failed");
+      assert.equal(fetchCalls, 1);
+
+      // the stall tail: the declared bytes land on disk AFTER the
+      // verdict — nobody tells the service
+      mkdirSync(join(store, "checkpoints"), { recursive: true });
+      writeFileSync(join(store, "checkpoints", "one.bin"), BYTES);
+
+      const secondId = await service.startWeightAcquire(modelRef());
+      assert.equal(secondId, firstId, "the disk truth covers — the EXISTING operation answers the second mint");
+      assert.equal(fetchCalls, 1, "no fresh fetch mints: the fetcher ran exactly once");
+    } finally {
+      await context.fiber.dispose();
+    }
+  });
 });

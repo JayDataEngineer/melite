@@ -80,6 +80,32 @@ PATCH="$DSH_HOME/profiles/$PROFILE/cordis.patch.yml"
 grep -q 'llm-pi-ai' "$PATCH" || { echo "RENDER REFUSED: $PATCH carries no llm-pi-ai rows — the LLM models would vanish (see dev_docs/audits/features/lane-rebuild-model-loss-2026-11-06.md)"; exit 1; }
 grep -q 'agentRoute' "$PATCH" || { echo "RENDER REFUSED: $PATCH lost the agentRoute pin — the estate agent would not seat"; exit 1; }
 echo "   render verified: llm-pi-ai rows + agentRoute present in $PATCH"
+# THE RENDER-PROVENANCE FRESHNESS GATE (HMR audit 009 F5, 2026-10-24):
+# the receipts at [6/6] prove the BOOT — this gate proves the RENDER.
+# The provisioner stamps render-provenance.json (who/what/when) beside
+# the profile; a render that silently failed (or a profile tree a hand
+# `pnpm add` mutated after the fact) leaves a stale stamp naming a
+# DIFFERENT tree than HEAD, and every downstream receipt would still
+# go green over the stale bytes. The stamp must name THIS commit and
+# carry a fresh renderedAt (the render ran seconds ago in step 3).
+PROV="$DSH_HOME/profiles/$PROFILE/render-provenance.json"
+PROV_FILE="$PROV" PROV_HEAD="$(git rev-parse HEAD)" node -e '
+ const fs = require("fs");
+ const file = process.env.PROV_FILE, head = process.env.PROV_HEAD;
+ let p;
+ try { p = JSON.parse(fs.readFileSync(file, "utf8")); }
+ catch { console.error("RENDER REFUSED: " + file + " is unreadable — the provisioner never stamped this render"); process.exit(1); }
+ if (p.source?.commit !== head) {
+   console.error("RENDER REFUSED: render-provenance names commit " + p.source?.commit + " but HEAD is " + head + " — the profile renders a different tree; re-run the render (never hand-cp into ~/.dsh-dev)");
+   process.exit(1);
+ }
+ const ageMin = (Date.now() - Date.parse(p.renderedAt)) / 60000;
+ if (!(ageMin >= 0 && ageMin < 10)) {
+   console.error("RENDER REFUSED: render-provenance renderedAt " + p.renderedAt + " is not fresh (" + ageMin.toFixed(1) + " min old) — a stale render serves stale bytes under green receipts");
+   process.exit(1);
+ }
+ console.log("   render provenance fresh: " + p.source.commit.slice(0, 9) + " rendered " + ageMin.toFixed(1) + " min ago" + (p.source.dirty ? " (dirty tree — uncommitted bytes ride the render)" : "") + " \u2713");
+'
 
 echo "── [4/6] wiping every cache seat (embedded browsers + chrome profiles)"
 rm -rf ~/.cache/dsh-chrome-profile/Default/Cache \

@@ -371,4 +371,30 @@ describe("THE PHANTOM-KEY LAW (the class wall — no hydrate map materializes an
       "no h3 recipe stamp may ride an always-emit key (the stamp would shadow every settle)",
     ).toEqual([])
   })
+
+  it("ARM E — the digest promise holds: every digest-class serializer's persisted output carries no own-key undefined over the whole corpus (the flip condition's premise, executed)", () => {
+    // (the card-hydrate audit, 2026-11-12, gap 3): the digest class's
+    // exemption rests on "consumers read the bags through serializers
+    // whose digests filter undefined" — the header's FLIP CONDITION
+    // was comment-law until here. This arm EXECUTES the premise: for
+    // every digest map, hydrate the corpus and run the settle
+    // serializer — a serializer that MATERIALIZES an own-key
+    // undefined into its persisted output breaks the digest promise
+    // (a downstream counter would see the phantom), so the map flips
+    // to the counting class and owes the conditional-spread cure.
+    // The declaration (ROSTER.seam) plus this arm make the flip
+    // condition a judged law, not a named skip.
+    for (const entry of ROSTER) {
+      if (entry.seam !== "digest") continue
+      for (const { name, doc } of corpusOf(entry.hydrate)) {
+        const once = entry.H(doc)
+        if (once === null || once === undefined) continue
+        const persisted = entry.S(once as never)
+        expect(
+          hasOwnUndefined(persisted),
+          `${entry.hydrate} over "${name}": ${entry.serialize} materialized an own-key undefined into its persisted output — the digest promise (undefined filtered before persist) is false; the map flips to the counting class and owes the conditional-spread cure`,
+        ).toBe(false)
+      }
+    }
+  })
 })
