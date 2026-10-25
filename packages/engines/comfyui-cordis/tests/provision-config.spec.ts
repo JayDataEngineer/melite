@@ -15,8 +15,34 @@ const nodeFs = { existsSync, mkdtempSync, readdirSync, writeFileSync };
 import { engineField, anchorDir, boundModelFolders } from "../scripts/provision-config.ts";
 import { mergeOverlay } from "../src/configOverlay.ts";
 import { cmdInitStore, cmdPaths } from "../scripts/provision-instance-layout.ts";
-import { repo } from "../scripts/provision-shared.ts";
+import { defaultConfig, repo } from "../scripts/provision-shared.ts";
 import type { RootConfig } from "../scripts/provision-config.ts";
+
+describe("defaultConfig (the F1 chain — one spelling for every reader)", () => {
+  it("COMFYUI_ENDPOINT_CONFIG env path wins outright", () => {
+    const prev = process.env["COMFYUI_ENDPOINT_CONFIG"];
+    process.env["COMFYUI_ENDPOINT_CONFIG"] = "/tmp/endpoint-override.json";
+    try {
+      assert.equal(defaultConfig(), "/tmp/endpoint-override.json");
+    } finally {
+      if (prev === undefined) delete process.env["COMFYUI_ENDPOINT_CONFIG"];
+      else process.env["COMFYUI_ENDPOINT_CONFIG"] = prev;
+    }
+  });
+
+  it("the state home shadows the seed (the cold-start r10 split-brain: the acquire leg read the state home, the paths leg read the seed, and the engine enumerated a base the acquire never wrote)", () => {
+    // THE BURN: a machine statement pinned into the state home (url,
+    // model bases) reached the estate's download leg but never the
+    // provisioner — extra_model_paths.yaml composed the lane subtree
+    // while the weights landed at the pinned root, and every
+    // UNETLoader combo served 0 values. The provisioner now resolves
+    // the same file every other reader resolves.
+    const state = join(repo(), "data", "comfyui_endpoint.json");
+    const seed = join(repo(), "packages", "engines", "comfyui-cordis", "data", "comfyui_endpoint.json");
+    assert.equal(defaultConfig(), existsSync(state) ? state : seed);
+    assert.notEqual(defaultConfig(), seed, "the seed is the last resort only — a present state home always wins (F1)");
+  });
+});
 
 describe("engineField (root wins, endpoint file is the fallback)", () => {
   it("prefers the merged root's url over the tracked endpoint's", () => {

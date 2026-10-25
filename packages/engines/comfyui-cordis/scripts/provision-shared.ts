@@ -41,11 +41,27 @@ export function repo(): string {
   return repoCached;
 }
 
-/** The engine package's own data/ (comfyui-cordis since the models-
+ /** The engine package's own data/ (comfyui-cordis since the models-
  * plane reversal, 91532243 — the old engines/comfyui anchor was a
  * stale name that left every config-less CLI call fatal).
+ * The F1 chain (the cold-start r10 burn): COMFYUI_ENDPOINT_CONFIG
+ * env path first, else the repo's untracked STATE HOME
+ * `<repo>/data/comfyui_endpoint.json` when present, else the
+ * package seed. Before this, the provisioner read the SEED while
+ * the estate's legs (acquire, census) read the state home — a
+ * machine statement pinned into the state home (url, model bases)
+ * reached the download leg but never the paths leg, so the engine's
+ * extra_model_paths.yaml composed a base the acquire never wrote
+ * to (the weights landed at the store root, the engine enumerated
+ * the lane subtree, and every UNETLoader combo served 0 values).
+ * One spelling of the endpoint law for every reader (src/
+ * comfyui-config.ts loadEndpointConfig is the service-side twin).
  * @returns absolute path to the default endpoint config */
 export function defaultConfig(): string {
+  const envPath: string = process.env["COMFYUI_ENDPOINT_CONFIG"] ?? "";
+  if (envPath !== "") return envPath;
+  const stateHome = join(repo(), "data", "comfyui_endpoint.json");
+  if (existsSync(stateHome)) return stateHome;
   return join(repo(), "packages", "engines",
     "comfyui-cordis", "data", "comfyui_endpoint.json");
 }
