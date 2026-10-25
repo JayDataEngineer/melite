@@ -1979,13 +1979,17 @@ function resolvedLaneSurface(
  *  derives the drop from the RESOLVED surface alone: every STATED
  *  key the resolved lane cannot state — not on its surface, not a
  *  mod bag's param_key, not transport (model + axis keys) — is dead
- *  carry BY CONSTRUCTION: the form renders no widget for it and the
+ *  *  carry BY CONSTRUCTION: the form renders no widget for it and the
  *  estate door refuses off-lane writes, so a saved doc never carries
- *  fresh authoring there. Blank carried keys have nothing to drop; a
- *  carrier with no lanes block (or a surface-less family) drops
- *  nothing — never a guess. PURE — the caller owns the write: the
- *  drill's open effect flushes the nulls through the ledger like a
- *  pick's drop (a null deletes the bench key).
+ *  fresh authoring there — EXCEPT the keys the DECL declares
+ *  studio-owned (studio_writes): those the card's studio tenant
+ *  authors through its own door (h3: the keyframes pin channel), and
+ *  the heal sanctions them exactly as the compose mirror does. Blank
+ *  carried keys have nothing to drop; a carrier with no lanes block
+ *  (or a surface-less family) drops nothing — never a guess. PURE —
+ *  the caller owns the write: the drill's open effect flushes the
+ *  nulls through the ledger like a pick's drop (a null deletes the
+ *  bench key).
  *  @param spec the doc's served form-spec.
  *  @param held the SAVED doc the drill opened.
  *  @returns the null-patch for the dead carried keys ({} when the
@@ -2000,9 +2004,23 @@ export function dropStaleReopenCarry(
   if (surface === null) return out
   const axisKeys = new Set<string>(axisGroups(spec).map((g) => axisKey(g)))
   const modKeys = modOwnedFields(spec)
+  // THE STUDIO-OWNED SANCTION (the reopen-clobber cure, 2026-11-12):
+  // the compose mirror already sanctions the DECL's studio.writes
+  // (the h¹ mirror-truth cure — composeValidate's declared set) and
+  // the estate write door sanctions the same names at admission.
+  // This heal is the THIRD judge of that surface and it judged the
+  // studio's document plane dead carry: the h3 reopen nulled a
+  // persisted `keyframes` pin (studio-authored, off the form's lane
+  // surface BY DESIGN — the pin channel is a studio tenant channel,
+  // never a form knob) one silent null write at drill open, and the
+  // studio's starter law then re-authored a fresh doc over the
+  // hole. A key the DECL declares studio-owned is sanctioned exactly
+  // as the mirror sanctions it — one truth, three seats.
+  const studioKeys = new Set<string>(spec.studio_writes ?? [])
   for (const [k, v] of Object.entries(held)) {
     if (k === 'model' || k === 'variant' || k === 'quant' || axisKeys.has(k)) continue
     if (modKeys.has(k)) continue
+    if (studioKeys.has(k)) continue
     if (surface.includes(k)) continue
     if (laneBlank(v)) continue
     out[k] = null

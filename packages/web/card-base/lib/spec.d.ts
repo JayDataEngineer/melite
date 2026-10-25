@@ -492,13 +492,17 @@ export interface ComposeViolation {
  *  derives the drop from the RESOLVED surface alone: every STATED
  *  key the resolved lane cannot state — not on its surface, not a
  *  mod bag's param_key, not transport (model + axis keys) — is dead
- *  carry BY CONSTRUCTION: the form renders no widget for it and the
+ *  *  carry BY CONSTRUCTION: the form renders no widget for it and the
  *  estate door refuses off-lane writes, so a saved doc never carries
- *  fresh authoring there. Blank carried keys have nothing to drop; a
- *  carrier with no lanes block (or a surface-less family) drops
- *  nothing — never a guess. PURE — the caller owns the write: the
- *  drill's open effect flushes the nulls through the ledger like a
- *  pick's drop (a null deletes the bench key).
+ *  fresh authoring there — EXCEPT the keys the DECL declares
+ *  studio-owned (studio_writes): those the card's studio tenant
+ *  authors through its own door (h3: the keyframes pin channel), and
+ *  the heal sanctions them exactly as the compose mirror does. Blank
+ *  carried keys have nothing to drop; a carrier with no lanes block
+ *  (or a surface-less family) drops nothing — never a guess. PURE —
+ *  the caller owns the write: the drill's open effect flushes the
+ *  nulls through the ledger like a pick's drop (a null deletes the
+ *  bench key).
  *  @param spec the doc's served form-spec.
  *  @param held the SAVED doc the drill opened.
  *  @returns the null-patch for the dead carried keys ({} when the
