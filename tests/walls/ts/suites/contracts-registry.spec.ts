@@ -64,6 +64,26 @@ describe('THE REGISTRY WALL (every law accounted, every account true)', () => {
     }
   })
 
+  it('every wall spec is a single clean path — the folded-scalar comma class reds NAMED (lint arm, dead-code audit D4, 2026-10-24)', () => {
+    // THE CLASS (two live corruptions, infra-tier.yaml:50/:659): a
+    // multi-line YAML `spec:` scalar FOLDS to one space-joined
+    // string — "a.spec.ts b.spec.ts" — which the existence arm
+    // above refuses only with a confusing "does not exist" voice.
+    // This arm names the disease: an entry carrying an embedded
+    // space is the comma/fold class (or a hand-typo'd path), and
+    // the cure is a YAML LIST row, never a scalar join. Walls live
+    // in many lawful homes (tests/walls, tests/e2e, package tests
+    // and e2e dirs, snapshots/, scripts/ census burners) — the
+    // ROOT is not this arm's law; single-path cleanliness is.
+    for (const r of rows()) {
+      for (const spec of specsOf(r)) {
+        expect(spec, `row ${String(r.id)}: wall spec "${spec}" carries an embedded space — the folded-scalar class; write wall.spec as a YAML LIST of single paths`).not.toMatch(/\s/)
+        expect(spec.startsWith('/'), `row ${String(r.id)}: wall spec "${spec}" must be repo-rooted, never absolute`).toBe(false)
+        expect(spec, `row ${String(r.id)}: wall spec "${spec}" must be repo-rooted, never ./`).not.toMatch(/^\.\//)
+      }
+    }
+  })
+
   it('every receipt_ref resolves — a contract claiming proof with no receipt is a lie', () => {
     for (const r of rows()) {
       const ref = r.receipt_ref as string | null | undefined
