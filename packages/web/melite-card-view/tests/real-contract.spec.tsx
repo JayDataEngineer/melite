@@ -152,7 +152,40 @@ describe('THE REAL image-edit CONTRACT drives the real form', () => {
       onSet: () => {},
       onPick: () => {},
     }))
+
     expect(screen.queryByLabelText('Region Mask')).toBeNull()
     expect(screen.getByText('Modifiers')).toBeTruthy()
+  })
+
+
+  test('THE LORAS PACK on the real contract (T4): the pack owns its names, the Modifiers section renders LoRAs, the first-party Recipe row stamps it', () => {
+    // T4 (tier-cures-audit 2026-11-06, verified still-open at HEAD):
+    // the refresh began serving the loras pack, but ZERO arms named
+    // it — a client regression dropping loras rendering for REAL
+    // docs stayed green (the loras machinery was tested only against
+    // hand-rolled docs). The mask pack's MOD-LAW twin, same law.
+    const owned = modOwnedFields(REAL21)
+    expect(owned.has('loras')).toBe(true)
+    const pack = (REAL21.features?.modifiers ?? []).find((m) => m.param_key === 'loras')
+    expect(pack?.label).toBe('LoRAs')
+    expect(pack?.options.map((o) => o.value)).toContain('qwen21_consistency')
+    // the rendered form: the Modifiers section CARRIES the LoRAs
+    // pack on the real doc — the user layer rides the drift-lock
+    // stamp's exact composed shape, and the tile renders from the
+    // pack's own option row (label + first-party weight), never a
+    // flat schema row, never a dropped pack
+    render(createElement(CardForm, {
+      spec: REAL21,
+      user: { model: 'qwen-img-edit-21', prompt: 'a cat', loras: [{ id: 'qwen21_consistency' }] },
+      onSet: () => {},
+      onPick: () => {},
+    }))
+    expect(screen.getByText('Modifiers')).toBeTruthy()
+    expect(screen.getByText('Consistency (drift lock)')).toBeTruthy()
+    // the first-party Recipe row stamps the pack's pick — the
+    // variant defaults carry the lora id the run composes
+    const drift = ((REAL21 as { variants?: Array<{ id: string; group: string; defaults: Record<string, unknown> }> }).variants ?? [])
+      .find((v) => v.id === 'drift-lock' && v.group === 'Recipe')
+    expect(drift?.defaults).toEqual({ loras: [{ id: 'qwen21_consistency' }] })
   })
 })
