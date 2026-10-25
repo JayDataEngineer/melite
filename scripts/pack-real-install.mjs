@@ -38,6 +38,7 @@ import { execFileSync } from 'node:child_process'
 import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { validatePackedTarball } from './lib/packed-payload.mjs'
 
 const REPO = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 
@@ -104,6 +105,14 @@ for (const p of packages) {
   const line = out.trim().split('\n').filter((l) => l.endsWith('.tgz')).pop()
   if (!line) die(`${p.name}: pnpm pack produced no tarball`)
   const abs = resolve(p.dir, line)
+  // THE F7 PAYLOAD GATE (HMR audit 009): judge the PACKED BYTES at
+  // pack time — a manifest whose `files` dropped a client row or a
+  // dsh.bundle.patch member dies HERE, not at the consumer's boot.
+  try {
+    validatePackedTarball(abs)
+  } catch (err) {
+    die(`${p.name}: ${String(err.message ?? err)}`)
+  }
   tarballs.push(abs)
   packedName.set(p.name, abs)
 }
