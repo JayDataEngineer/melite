@@ -35,9 +35,9 @@ dependencies = [
     # core runtime deps (requirements.txt @ core.pin, verbatim ranges;
     # the five core pins are == in core's own spelling — the lock then
     # resolves to the exact set 0.38.0 was tested with, not float-latest)
-    "comfyui-frontend-package==1.53.6",
-    "comfyui-workflow-templates==0.11.70",
-    "comfyui-embedded-docs==0.5.12",
+    "comfyui-frontend-package==1.57.1",
+    "comfyui-workflow-templates==0.11.93",
+    "comfyui-embedded-docs==0.5.14",
     "torch",
     "torchsde",
     "torchvision",
@@ -63,8 +63,8 @@ dependencies = [
     "SQLAlchemy>=2.0.0",
     "filelock",
     "av>=17.0.0",
-    "comfy-kitchen==0.2.36",
-    "comfy-aimdo==0.5.5",
+    "comfy-kitchen==0.2.39",
+    "comfy-aimdo==0.5.6",
     "requests",
     "simpleeval>=1.0.0",
     "blake3",

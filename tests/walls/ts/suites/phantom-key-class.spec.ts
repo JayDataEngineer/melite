@@ -69,6 +69,11 @@ import {
   serializeConstraints,
   serializeMotionPrompts,
 } from "../../../../packages/web-kit/formats/src/motionConstraints.ts"
+import {
+  projectMotionDoc,
+  serializeChannel,
+  serializePromptsParams,
+} from "../../../../packages/motion/motion/src/ui/studio/motionDoc.ts"
 
 // ── THE ROSTER (Arm C's imported half) — every hydrate map the
 //    estate ships, its settle-pair serializer, its seam class, and
@@ -315,5 +320,55 @@ describe("THE PHANTOM-KEY LAW (the class wall — no hydrate map materializes an
     expect(digest, "the digest class is exactly the four maps whose consumers filter undefined — a new map must declare its class consciously").toEqual([
       "hydrateCalls", "hydrateKeyframes", "hydrateConstraints", "hydrateMotionPrompts",
     ])
+  })
+
+  it("ARM D — the always-emit census: settling a NOTHING-stated doc adds exactly the ledgered keys, at every save door (spelling-independent)", () => {
+    // (the card-hydrate audit, 2026-11-12, gaps 1+2): Arms A–C key on
+    // `hydrate*` spellings and per-map corpora — a doc-builder named
+    // `project*` (motion's projectMotionDoc is the live example)
+    // never rides them, and the always-emit serializers are "latent
+    // materializations whose safety rests on an invariant no wall
+    // states." THIS arm judges the settled DOC, not the map's name:
+    // settle a doc that states NOTHING, derive the added keys, and
+    // demand exact equality with the LEDGER — a new always-emit key
+    // reds until it is admitted consciously (with its reason), and a
+    // ledgered key that stops emitting reds as a dead ledger row.
+    // ── h3 LayerA's save door (serializeLayerA over the empty layer)
+    const h3Added = Object.keys(serializeLayerA(hydrateLayerA({}))).sort()
+    expect(
+      h3Added,
+      "h3 LayerA always-emit ledger — seed + the five pin-equals-default dials (docHydrate's own six-key emit, derived 2026-11-12)",
+    ).toEqual([
+      "interpolate_enabled", "seed", "sharpen_enabled",
+      "sla_disable_fp16_accum", "sla_protect_audio", "sla_stabilize_motion",
+    ])
+    // ── motion's save door: the params doc both channels merge on
+    // onSave, driven through the projection itself (the audit's
+    // escape example, judged by behavior through its own serializer)
+    const projected = projectMotionDoc(undefined, 30, 300)
+    const motionParams: Record<string, unknown> = {
+      ...serializePromptsParams(projected.prompts, 30),
+      motion_constraints: serializeChannel(projected, "constraints"),
+    }
+    expect(
+      Object.keys(motionParams).sort(),
+      "motion save-door always-emit ledger — the prompts pair (motion_prompts + its single-prompt mirror) + the constraints wire param",
+    ).toEqual(["motion_constraints", "motion_prompts", "prompt"])
+    // ── gap 2's other half: no recipe stamp rides an always-emit key
+    // (a stamp key the serializer ALWAYS writes would shadow every
+    // pick with the stamp's value — the birth grammar must carry it
+    // or the stamp must move). Derived over the real DECL variants.
+    const h3Emit = new Set(h3Added)
+    const stampCollisions: string[] = []
+    for (const row of (h3Decl as { variants?: Array<Record<string, unknown>> }).variants ?? []) {
+      const wd = row["wire_defaults"] as Record<string, unknown> | undefined
+      for (const key of wd === undefined || wd === null || typeof wd !== "object" ? [] : Object.keys(wd)) {
+        if (h3Emit.has(key)) stampCollisions.push(`${row["id"]}:${key}`)
+      }
+    }
+    expect(
+      stampCollisions,
+      "no h3 recipe stamp may ride an always-emit key (the stamp would shadow every settle)",
+    ).toEqual([])
   })
 })

@@ -79,6 +79,57 @@ describe("the core pin, proven locally (audit 005/E4)", () => {
       assert.deepEqual(failures.sort(), [],
         "these core-served claims are false at the pinned engine — families gated on them are broken");
     });
+
+  // (the cold-start drive catch, 2026-11-12): the FIBO hop's
+  // requirements-diff note named the frontend/templates pins but
+  // MISSED comfy-kitchen 0.2.36→0.2.39 (+ aimdo, +docs) — the live
+  // venv was hand-patched so the estate served on, while every cold
+  // walk burned at boot: `uv sync --frozen` seated the stale lock,
+  // and core's comfy/text_encoders/llama.py died importing
+  // comfy_kitchen.int8_decode (ModuleNotFoundError, engine never
+  // answered). The pin file and the uv project are ONE hop: this arm
+  // reads the pin's OWN requirements.txt from the clone's git
+  // objects and demands version parity on every exactly-pinned
+  // name the pyproject also pins exactly.
+  it.skipIf(!existsSync(join(runtime(), ".git")))(
+    "every exact pin the core's requirements.txt states, the uv project matches (the FIBO-hop class)",
+    { timeout: 30_000 },
+    () => {
+      const pin = pinText();
+      const probe = spawnSync("git",
+        ["-C", runtime(), "cat-file", "-e", pin],
+        { stdio: "pipe" });
+      assert.equal(probe.status, 0,
+        `the runtime clone does not carry ${pin.slice(0, 12)} — run \`provision sync\` once; the pin-parity arm reads the clone's objects`);
+      const coreReq = execFileSync("git",
+        ["-C", runtime(), "show", `${pin}:requirements.txt`],
+        { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] });
+      const corePins = new Map<string, string>();
+      for (const m of coreReq.matchAll(/^([A-Za-z0-9_.-]+)==([^ \t#\n]+)/gm)) {
+        corePins.set(m[1]!.toLowerCase().replaceAll("_", "-"), m[2]!);
+      }
+      assert.ok(corePins.size > 0, "the pin's requirements.txt pins nothing exact — the arm has nothing to judge");
+      const pyproject = readFileSync(join(repo(), "infra", "comfyui", "pyproject.toml"), "utf8");
+      const pyPins = new Map<string, string>();
+      for (const m of pyproject.matchAll(/^\s*"([A-Za-z0-9_.-]+)==([^"]+)"/gm)) {
+        pyPins.set(m[1]!.toLowerCase().replaceAll("_", "-"), m[2]!);
+      }
+      assert.ok(pyPins.size > 0,
+        "the pyproject parse found no exact pins — the arm refuses to pass vacuously (the R4-05 lesson)");
+      const drift: string[] = [];
+      for (const [name, coreVersion] of corePins) {
+        const pyVersion = pyPins.get(name);
+        // only the INTERSECTION: pyproject floats some names the core
+        // pins (its own choice, judged elsewhere) and pins some the
+        // core floats (torchaudio, kept deliberately). A name BOTH
+        // pin exactly is ONE pin — two versions is the cold-walk burn.
+        if (pyVersion !== undefined && pyVersion !== coreVersion) {
+          drift.push(`${name}: core ${coreVersion} vs pyproject ${pyVersion}`);
+        }
+      }
+      assert.deepEqual(drift.sort(), [],
+        "the uv project's exact pins drift from the core pin's own requirements.txt — every cold `uv sync --frozen` seats a venv the pinned engine cannot boot");
+    });
 });
 
 describe("core-pin drift refuses loud (audit 005 E0, closing leg — the verify arm)", () => {
