@@ -28,6 +28,18 @@ LOG="/tmp/e2e-studio-lane-$PORT.log"
 # must never stand between the prereq gates and their verdict.
 REPO_ROOT="$(cd -- "${BASH_SOURCE[0]%/*}/.." && pwd)"
 cd "$REPO_ROOT"
+# THE F1 FRESHNESS GATE (HMR audit 009, 2026-10-24): a lane serves
+# lib/ from the repo tree, so a package whose src drifted past its
+# built lib would have every lane receipt attest a product that is
+# not the tree (two receipted outages taught this class). The gate
+# rides the stamp's own recipe; the named cure is the rebuild.
+# Refusal happens BEFORE any boot — a stale lane never starts.
+source "$REPO_ROOT/scripts/lib/lane-freshness.sh"
+check_lane_freshness "$REPO_ROOT" || {
+  echo "[e2e-studio-lane] refusing to boot on stale lib planes (the F1 gate)" >&2
+  exit 1
+}
+
 # deployment env (.env is gitignored; .env.example documents every knob)
 [ -f ./.env ] && . ./.env   # env-file loaded
 DSH_BIN="${DSH_BIN:-dsh}"
