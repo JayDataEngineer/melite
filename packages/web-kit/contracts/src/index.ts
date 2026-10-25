@@ -2,6 +2,7 @@
  *  The floor every other @melite package (and every plugin) stands on. */
 export * from "./extraKeys.ts"
 export * from "./laneRelations.ts"
+export * from "./familyLane.ts"
 export * from "./FlowTypes.ts"
 export * from "./benchResult.ts"
 export * from "./card.ts"

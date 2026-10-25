@@ -60,7 +60,7 @@ import { benchBlockOf } from "../../../../packages/estate/drafts/src/bench.ts";
 import type { DraftsDomainSpec } from "../../../../packages/estate/drafts/src/spec.js";
 import { CardRegistryService, FAMILY_RESEAT_CARVE } from "../../../../packages/harness/estate-queue/src/cardsRegistry.ts";
 import { FlowsSeatService } from "../../../../packages/harness/estate-queue/src/flowsData.ts";
-import { loadCardDefs } from "@melite/comfyui-cordis";
+import { getModel, loadCardDefs } from "@melite/comfyui-cordis";
 // THE CLIENT'S OWN VARIANT-PICK BUILDER (the unforgeable half): the
 // patch the axes send when the operator picks a variant row — never
 // re-typed here.
@@ -373,19 +373,28 @@ describe("THE VARIANT-SWITCH GESTURE — every card, every transition, both door
       /(ride together on this lane|completes none of them)/);
   });
 
-  it("THE FAMILY-RESEAT CARVE (operator 2026-11-11: 'just make a carve for H3 as an exception, then do the ONE seat for the rest'): the cards declaring a per-card reseat face are EXACTLY the carve — no second exception can grow silently, and the carve never goes stale", async () => {
-    // the REAL defs, the same load the registry primes
+  it("THE FAMILY-RESEAT CARVE, EMPTIED (the one-seat migration, 2026-11-12 — the carve landed 2026-11-11 as the operator's bridge: 'just make a carve for H3 as an exception, then do the ONE seat for the rest'): NO card declares a per-card reseat face, the carve is empty, and the derived family rides the MODEL DECL — the door arms below judge doors, this arm judges the seat's own shape", async () => {
+    // the REAL defs, the same load the registry primes; the face is
+    // deleted from the CardDefinition type, so the judge reads the
+    // runtime extra property through the cast — a def that silently
+    // grows one back reds HERE and at prime() (the boot judge's own
+    // spelling).
     const implementing: string[] = [];
+    let h3Declares = false;
     for (const [id, def] of await loadCardDefs()) {
-      if (def.reseatFamily !== undefined) implementing.push(id);
+      if ((def as { reseatFamily?: unknown }).reseatFamily !== undefined) implementing.push(id);
+      for (const family of def.boarded) {
+        if (getModel(family).familyLaw !== undefined) {
+          if (id === "h3-timeline") h3Declares = true;
+        }
+      }
     }
     expect([...implementing].sort(),
-      "the per-card reseat faces — drift in either direction is a red: a new face owes a carve entry WITH its reason, a stale entry owes deletion").toEqual(
-      [...FAMILY_RESEAT_CARVE].sort());
-    // the boot check itself fires: prime() throws naming the
-    // offender when the equality breaks (the carve gate is a GLOBAL
-    // gate, before any live write — the seat lives at prime()).
-    expect(FAMILY_RESEAT_CARVE, "H3 is the named exception (its lane identity is derived from the doc's params — deriveWindowFamily — which no DECL variant row can name)").toContain("h3-timeline");
+      "the per-card reseat faces — the face is DEAD (the one-seat migration): any def declaring one reds here and at prime() boot").toEqual([]);
+    expect([...FAMILY_RESEAT_CARVE].sort(),
+      "the carve stays EMPTY — it can never silently refill").toEqual([]);
+    expect(h3Declares,
+      "h3's derived family (deriveWindowFamily — an axis no DECL variant row can name) rides the MODEL DECL (ModelDecl.familyLaw), the declaration the registry's ONE seat resolves").toBe(true);
   });
 
   it("BOTH SEATS, ONE STATE (attempt 12, 2026-11-11): the rendered form's inline gate and the registry's write door pass the SAME authoring halves — drift between the two seats IS the red", async () => {

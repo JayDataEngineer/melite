@@ -211,6 +211,7 @@
       "@melite/contracts/character": ["./packages/web-kit/contracts/src/character.ts"],
       "@melite/contracts/extraKeys": ["./packages/web-kit/contracts/src/extraKeys.ts"],
       "@melite/contracts/laneRelations": ["./packages/web-kit/contracts/src/laneRelations.ts"],
+      "@melite/contracts/familyLane": ["./packages/web-kit/contracts/src/familyLane.ts"],
       "@melite/contracts/loraTypes": ["./packages/web-kit/contracts/src/loraTypes.ts"],
       "@melite/contracts/mediaKinds": ["./packages/web-kit/contracts/src/mediaKinds.ts"],
       "@melite/contracts/mediaRange": ["./packages/web-kit/contracts/src/mediaRange.ts"],

@@ -1,4 +1,4 @@
-import type { RunId } from "./queueCore.js";
+import type { RunId } from "./queueCore.ts";
 export interface ResurrectPlan {
     /** run_ids to re-queue, FIFO by created_at (order survives). */
     readonly order: RunId[];

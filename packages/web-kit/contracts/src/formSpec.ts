@@ -10,6 +10,7 @@
  * src importing the web plane's `/client` door.
  */
 import type { Wtype } from './extraKeys.ts'
+import type { FamilyLaw } from './familyLane.ts'
 import type { LaneRelations, SamplerEnvelope } from './laneRelations.ts'
 
 /** One node of a serialized schemastery schema (toJSON's refs entry):
@@ -393,21 +394,12 @@ export interface FormSpecDoc {
    *  lane — never of a stale stated gate). Served verbatim off the
    *  DECL's familyLaw; the contract wall pins the data to the
    *  family's own derivation module. Absent = no family clause (the
-   *  generic seats no-op). */
-  familyLaw?: {
-    lanes: ReadonlyArray<{
-      lane: string
-      /** the lane qualifies when calls.length >= minCalls */
-      minCalls?: number
-      /** doc-level keys whose presence (non-empty string / non-empty
-       *  array / other non-null value) qualifies the lane */
-      guideKeys?: ReadonlyArray<string>
-      /** keys checked INSIDE each calls row the same way */
-      callGuideKeys?: ReadonlyArray<string>
-    }>
-    /** lane → the keys whose presence that lane refuses */
-    deadKeys: Record<string, ReadonlyArray<string>>
-  }
+   *  generic seats no-op). THE ONE-SEAT MIGRATION (2026-11-12): the
+   *  shape lives as its own contract type (FamilyLaw, familyLane.ts)
+   *  — the client mirror, the registry's reseat seat, and the card
+   *  definition's declaration all share the one spelling.
+   *  familyLane.ts owns the type AND the derivation. */
+  familyLaw?: FamilyLaw
   /** THE INPUT EDGES — declared on every card (flowKinds.inputs),
    *  each joined with the schema's required fact. */
   inputs?: InputEdge[]

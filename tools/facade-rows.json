@@ -602,6 +602,9 @@
   "@melite/contracts/laneRelations": [
     "./packages/web-kit/contracts/src/laneRelations.ts"
   ],
+  "@melite/contracts/familyLane": [
+    "./packages/web-kit/contracts/src/familyLane.ts"
+  ],
   "@melite/contracts/loraTypes": [
     "./packages/web-kit/contracts/src/loraTypes.ts"
   ],

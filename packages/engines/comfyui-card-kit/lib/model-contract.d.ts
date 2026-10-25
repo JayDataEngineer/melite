@@ -1,4 +1,5 @@
 import z from "@deepseek-ai/schemastery";
+import type { FamilyLaw } from '@melite/contracts/familyLane';
 import type { SamplerEnvelope } from "@melite/contracts/laneRelations";
 /** THE CONTRACT'S SCHEMA INSTANCE (exported so a wall drives THIS
  *  judge, never a second copy: the walls project cannot resolve
@@ -507,21 +508,19 @@ export interface ModelDecl {
     /** THE FAMILY-CONDITIONAL KEY LAW (the ERROR g/h cure, 2026-11-08):
      *  the family's window-family law in the SERVED spelling — served
      *  verbatim on the form-spec doc (FormSpecDoc.familyLaw) so the
-     *  generic seats (the client compose gate, the studio rail's omit)
-     *  judge the family-conditional refusals without importing the
-     *  family's module. Declared FROM the family's own contract module
-     *  (h3's FAMILY_LAW) — one owner; the contract wall pins the
-     *  served data to the module's derivation. Absent = the card
-     *  carries no family clause. */
-    familyLaw?: {
-        lanes: ReadonlyArray<{
-            lane: string;
-            minCalls?: number;
-            guideKeys?: ReadonlyArray<string>;
-            callGuideKeys?: ReadonlyArray<string>;
-        }>;
-        deadKeys: Record<string, ReadonlyArray<string>>;
-    };
+     *  generic seats (the client compose gate, the studio rail's omit,
+     *  the registry's ONE family reseat seat) judge the
+     *  family-conditional refusals without importing the family's
+     *  module. Declared FROM the family's own contract module (h3's
+     *  FAMILY_LAW) — one owner; the contract wall pins the served
+     *  data to the module's derivation. THE ONE-SEAT MIGRATION
+     *  (2026-11-12): the shape lives as its own contract type
+     *  (FamilyLaw, @melite/contracts familyLane.ts — the derivation
+     *  AND the drop math share the module); the boot judge in
+     *  cardsRegistry prime() validates every declared law's deadKeys
+     *  against its lanes. Absent = the card carries no family
+     *  clause. */
+    familyLaw?: FamilyLaw;
     /** The family-wide relation words (judged on every lane). */
     relations?: ParamRelationWords;
     /** The family's declared graph actions (the atom vocabulary):

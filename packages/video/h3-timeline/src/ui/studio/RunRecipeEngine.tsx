@@ -29,7 +29,8 @@ import { fetchMediaLibrary } from '@melite/card-base/client'
 import { type Dispatch, type SetStateAction, useMemo, useState } from "react"
 import s from "./studio.module.css"
 import { DOC_FPS_DEFAULT } from '@melite/models-h3/timelineContract'
-import { FILM_ONLY_KEYS, T4_ONLY_KEYS, deriveWindowFamily, reseatFamilyDead } from "@melite/models-h3/timelineContract"
+import { FAMILY_LAW, FILM_ONLY_KEYS, T4_ONLY_KEYS, deriveWindowFamily } from "@melite/models-h3/timelineContract"
+import { reseatDeadKeys } from "@melite/contracts/familyLane"
 import type { LayerA, SetLayerAKey } from "./docModel.ts"
 import { mergeDocLayers } from "./docModel.ts"
 import { parseSpecNumber } from "./docGrid.ts"
@@ -269,10 +270,10 @@ export function RunRecipeEngine({
                 layerA as unknown as Record<string, unknown>,
                 {},
               )
-              const reseated = reseatFamilyDead(candidate, priorView)
+              const reseated = reseatDeadKeys(FAMILY_LAW, candidate, priorView)
               if (reseated.dropped.length > 0) {
-                const recheck = composeValidate(spec, reseated.doc)
-                const reFam = pickFamilyRefusal(reseated.doc)
+                const recheck = composeValidate(spec, reseated.params)
+                const reFam = pickFamilyRefusal(reseated.params)
                 if (reFam !== null) recheck.push({ message: "card_compose: " + reFam })
                 if (recheck.length === 0) {
                   setLayerA((prev) => {

@@ -85,6 +85,7 @@ import { CardArmError, EnvelopeRefusal, phaseRefusalCode } from "./cardsArmError
 export { CardArmError } from "./cardsArmError.js";
 import { factsPath, deriveDecls } from "./cardsFacts.js";
 import { WIRE_STAGE_KEYS } from "@melite/contracts/benchStage";
+import { reseatDeadKeys } from "@melite/contracts/familyLane";
 import { dropAuthoringIncomplete, isUnstatedRequiredVoice, judgeLaneBounds, judgeLaneRelations, judgeLaneSurface, laneBoundsOf, laneStaleCarry, laneSurfaceOf, laneTogetherClosure, RELATION_WORDS } from "@melite/contracts/laneRelations";
 import { lanePresenceRefusal } from "./cardsLanes.js";
 import { selectCardVariant, liftCardParams } from "./cardsVariant.js";
@@ -267,17 +268,58 @@ export function resolveCardOutputsOrThrow(defs, card, params, graph) {
     }
 }
 /** THE FAMILY-RESEAT CARVE (operator 2026-11-11: "just make a carve
- *  for H3 as an exception, then do the ONE seat for the rest"): the
- *  cards sanctioned to declare a per-card reseatFamily face. H3
- *  rides it because its lane identity is DERIVED from the doc's
- *  params (deriveWindowFamily), a family axis no DECL variant row
- *  can name. Every other family's lane-shift drops ride the
- *  registry's ONE migration seat (laneMigrate — DECL-driven).
- *  prime() reds on any drift in either direction: a new face
- *  without an entry here, or a stale entry whose card dropped its
- *  face. Empty the carve the day the derived family rides the lane
- *  declaration. */
-export const FAMILY_RESEAT_CARVE = ["h3-timeline"];
+ *  for H3 as an exception, then do the ONE seat for the rest") —
+ *  EMPTIED (the one-seat migration, 2026-11-12): the per-card
+ *  reseatFamily face is DEAD. The derived family (h3's
+ *  t4_open/t4r/t4_chain — an axis no DECL variant row can name)
+ *  rides the lane DECLARATION (CardDefinition.familyLaw), and the
+ *  registry's ONE family seat (reseatStageFamily) derives the lane
+ *  and drops the strand through the shared spelling
+ *  (@melite/contracts familyLane.ts). The constant stays (empty) as
+ *  the boot judge's truth: prime() reds on ANY card declaring a
+ *  reseatFamily face — the carve can never silently refill. */
+export const FAMILY_RESEAT_CARVE = [];
+/** Resolve a card's family law off the MODEL DECLs its boarded
+ *  families declare (the one-seat migration, 2026-11-12): the law's
+ *  ONE home is the DECL (h3's index.ts serves the contract module's
+ *  FAMILY_LAW by reference — one object, one truth; the card
+ *  definition carries nothing). First boarded family declaring a
+ *  law wins (a card boarding several law-declaring families is a
+ *  shape the estate does not serve — every real card declares at
+ *  most one). Undefined when no boarded family declares a law.
+ * @param def the card definition (its boarded family ids)
+ * @returns the declared FamilyLaw, or undefined */
+function familyLawOfCard(def) {
+    for (const family of def.boarded) {
+        const law = getModel(family).familyLaw;
+        if (law !== undefined)
+            return law;
+    }
+    return undefined;
+}
+/** THE FAMILY-LAW DECLARATION JUDGE (the one-seat migration,
+ *  2026-11-12 — pure core; prime() throws on its verdict): every
+ *  declared law must name at least one lane, and every deadKeys
+ *  lane must be a lane the lanes array declares. A drop keyed to a
+ *  lane nobody derives never fires — a law the estate refuses to
+ *  serve, red at boot BEFORE any live write. Pure over the
+ *  (family → law) pairs so the wall drives the judge's own path;
+ *  prime() resolves the pairs off the card defs' boarded families
+ *  (getModel — the DECL's one home).
+ *  @param laws the declared family laws, keyed by family id
+ *  @returns the drift sentences (empty = every law serves) */
+export function familyLawDrift(laws) {
+    const drift = [];
+    for (const [family, law] of laws) {
+        const lanes = new Set(law.lanes.map((l) => l.lane));
+        if (law.lanes.length === 0)
+            drift.push(`${family}: no lanes declared`);
+        const orphan = Object.keys(law.deadKeys).filter((l) => !lanes.has(l));
+        if (orphan.length > 0)
+            drift.push(`${family}: deadKeys names undeclared lanes ${JSON.stringify(orphan)}`);
+    }
+    return drift;
+}
 export class CardRegistryService extends Service {
     static inject = ["queue"];
     /** The primed card definitions (null until prime()). */
@@ -326,35 +368,58 @@ export class CardRegistryService extends Service {
     async prime() {
         this.defs = await loadCardDefs();
         this.decls = null;
-        // THE FAMILY-RESEAT CARVE (operator 2026-11-11: "just make a
-        // carve for H3 as an exception, then do the ONE seat for the
-        // rest"): the per-card reseat face is a NAMED exception, not a
-        // pattern. Every card outside the carve that declares
-        // reseatFamily reds HERE, at boot — before any live write — so
-        // the one-seat law for the rest of the estate (the generic
-        // laneMigrate seat, DECL-driven) can never grow a second face
-        // silently. A carve entry whose card dropped its face reds the
-        // same check (the list never goes stale). H3 rides the carve
-        // because its lane identity is DERIVED from the doc's params
-        // (deriveWindowFamily — t4_open/t4r/t4_chain), a family axis no
-        // DECL variant row can name; when the lane identity rides the
-        // declaration, the face dies and the carve empties.
+        // THE FAMILY-RESEAT CARVE, EMPTIED (the one-seat migration,
+        // 2026-11-12): the per-card reseatFamily face is DEAD — the
+        // derived family rides the lane declaration (familyLaw data)
+        // and the registry's ONE seat settles the strand through the
+        // shared spelling. prime() reds on ANY card declaring the face:
+        // the carve can never silently refill. THE DECLARATION JUDGE:
+        // every familyLaw is validated at boot — deadKeys naming a lane
+        // the lanes array does not declare reds HERE, before any live
+        // write, so a mistyped lane id can never silently no-op the
+        // drop (a law nobody can hit is a lie the estate refuses to
+        // serve).
+        // the face is DELETED from the type — read the runtime extra
+        // property through the cast so the judge keeps its teeth on a
+        // def that silently grows one back (the wall's own spelling).
         const carved = [...this.defs.entries()]
             .filter(([, def]) => def.reseatFamily !== undefined)
             .map(([id]) => id)
             .sort();
-        const expected = [...FAMILY_RESEAT_CARVE].sort();
-        if (carved.length !== expected.length || carved.some((id, i) => id !== expected[i])) {
+        if (carved.length > 0) {
             throw new Error("family-reseat carve violated: cards declaring reseatFamily " +
-                JSON.stringify(carved) + " — the carve names " + JSON.stringify(expected) +
-                ". A per-card reseat face is the H3 exception only (operator 2026-11-11); " +
-                "every other family's lane-shift drops ride the registry's ONE migration seat. " +
-                "Grow the generic seat, never another face — or seat the new exception in " +
-                "FAMILY_RESEAT_CARVE with its reason.");
+                JSON.stringify(carved) +
+                ". The per-card reseat face is DEAD (the one-seat migration, 2026-11-12): " +
+                "the derived family rides the MODEL DECL (ModelDecl.familyLaw) and " +
+                "the registry's ONE seat (reseatStageFamily) settles the strand through " +
+                "@melite/contracts familyLane.ts. Grow the declaration, never another face.");
         }
         // the models boot feeds the row derivation (facts.ts renders
         // rows through these reads — one spelling, no frozen matrix).
+        // THE DECLARATION JUDGE rides AFTER the boot (getModel is
+        // strict without it): every declared familyLaw — a card's
+        // boarded families, deduped — must name at least one lane, and
+        // every deadKeys lane must be a lane the lanes array declares.
+        // A drop keyed to a lane nobody derives never fires — a law the
+        // estate refuses to serve, red HERE at boot, before any live
+        // write.
         await bootModels();
+        const laws = new Map();
+        for (const def of this.defs.values()) {
+            for (const family of def.boarded) {
+                if (laws.has(family))
+                    continue;
+                const law = getModel(family).familyLaw;
+                if (law !== undefined)
+                    laws.set(family, law);
+            }
+        }
+        const badLaw = familyLawDrift(laws);
+        if (badLaw.length > 0) {
+            throw new Error("family-law declaration violated: " + badLaw.join("; ") +
+                ". Every deadKeys lane must be a lane the lanes array declares — " +
+                "a drop keyed to a lane nobody derives never fires.");
+        }
         this.reads = { getModel, registryIds, registryModel };
         this.facts = null;
         this.owners = {};
@@ -850,10 +915,13 @@ export class CardRegistryService extends Service {
             return { ok: true };
         return def.admitFamily(params);
     }
-    /** THE FAMILY RESEAT (the ERROR g/h cure, 2026-11-08 — the
-     *  settlement seat the walls pre-registered): the card's own
-     *  reseat face (CardDefinition.reseatFamily — h3-timeline's
-     *  reseatFamilyDead spine) drops the family-dead carry a flipped
+    /** THE FAMILY RESEAT — THE ONE SEAT (the ERROR g/h cure
+     *  2026-11-08; the one-seat migration 2026-11-12): the card's
+     *  familyLaw DECLARATION (ModelDecl.familyLaw — resolved through
+     *  the card's boarded families, familyLawOfCard) drives the
+     *  shared drop math (@melite/contracts familyLane.ts —
+     *  reseatDeadKeys, the same spelling the client compose mirror
+     *  derives through), dropping the family-dead carry a flipped
      *  arrival strands, BEFORE the write doors judge and store — the
      *  lane-migration law's own spelling (stale carry drops, the row
      *  that lands is the row the next run composes) for the family
@@ -862,15 +930,17 @@ export class CardRegistryService extends Service {
      *  later. The judge keeps its teeth for AUTHORED poison (a doc
      *  assembled family-dead with no flip still refuses at
      *  admitStageFamily — this seat only settles the flip's own
-     *  strand). Null when the card declares no reseat face.
-     *  THE CARVE (2026-11-11): the face is the H3 exception only —
-     *  prime() reds any card outside FAMILY_RESEAT_CARVE that grows
-     *  one. */
+     *  strand, the carry line 2026-11-11). Null when the card
+     *  declares no family law. The per-card reseatFamily face is
+     *  DEAD — prime() reds on any card declaring one. */
     reseatStageFamily(card, params, priorParams) {
         const def = this.defsSync().get(card);
-        if (def === undefined || def.reseatFamily === undefined)
+        if (def === undefined)
             return null;
-        return def.reseatFamily(params, priorParams);
+        const law = familyLawOfCard(def);
+        if (law === undefined)
+            return null;
+        return reseatDeadKeys(law, params, priorParams);
     }
     /** THE LANE MIGRATION (operator 2026-10-12, the stuck-switch
      *  incident — live on :3088): a write that CHANGES the resolved

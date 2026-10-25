@@ -49,15 +49,16 @@ import "../../../helpers/boot-models.ts";
 import { describe, expect, it, beforeAll, afterAll } from "vitest";
 import { Context } from "@deepseek-ai/cordis";
 import type {} from "../../../../packages/harness/estate-queue/src/service.ts";
-import { CardRegistryService } from "../../../../packages/harness/estate-queue/src/cardsRegistry.ts";
+import { CardRegistryService, familyLawDrift } from "../../../../packages/harness/estate-queue/src/cardsRegistry.ts";
 import { formSpecArm } from "../../../../packages/harness/melite-tools/src/discovery.ts";
 import { installLaneStoreOverlay, restoreLaneStoreOverlay } from "../../../helpers/lane-store-overlay.ts";
-import { loadCardDefs } from "@melite/comfyui-cordis";
+import { getModel, loadCardDefs } from "@melite/comfyui-cordis";
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { schema as h3schemaFn } from "@melite/models-h3/schema";
-import { deriveWindowFamily, reseatFamilyDead, T4_ONLY_KEYS } from "@melite/models-h3/timelineContract";
+import { deriveWindowFamily, FAMILY_LAW, T4_ONLY_KEYS } from "@melite/models-h3/timelineContract";
+import { reseatDeadKeys } from "@melite/contracts/familyLane";
 import { axisPickPatch, composeValidate } from "@melite/card-base/client";
 import type { FormSpecDoc, FormVariantRow } from "@melite/card-base/client";
 import { omitT4RecipeRow } from "../../../../packages/video/h3-timeline/src/ui/studio/omitT4Recipe.ts";
@@ -90,7 +91,7 @@ function settle(base: Record<string, unknown>, saved: Record<string, unknown>): 
   // stored row this write rides), never the merged view: a T4-only
   // key the PATCH itself authors stands for the family clause to
   // refuse.
-  return reseatFamilyDead(settleRaw(base, saved), base).doc;
+  return reseatDeadKeys(FAMILY_LAW, settleRaw(base, saved), base).params;
 }
 
 /** THE LANES, assembled through deriveWindowFamily's own derivation
@@ -293,7 +294,7 @@ describe("THE PRE-VALIDATION SEAT (the DECL matrix wall — no sanctioned cell r
     // THE RESEAT RECEIPT (the cure's own voice, never silent): the
     // product carries NONE of the carried stamps — the settlement
     // dropped exactly the burn's four, sorted.
-    const dropped = reseatFamilyDead(raw, era).dropped;
+    const dropped = reseatDeadKeys(FAMILY_LAW, raw, era).dropped;
     expect(dropped, "the reseat names exactly what it dropped (sorted)").toEqual([...FOUR].sort());
     for (const k of dropped) {
       expect(product, `the product no longer carries '${k}'`).not.toHaveProperty(k);
@@ -402,5 +403,60 @@ describe("THE PRE-VALIDATION SEAT (the DECL matrix wall — no sanctioned cell r
     // THE WALK HALF (red until the cure): the same doc must compose.
     expect(walk(nulled), "the walk reads null-carried dead keys as unstated — ONE null law").toBeNull();
     expect(() => h3schemaFn(nulled), "the walk's spine stays silent on null-carried dead keys").not.toThrow();
+  });
+
+  it("LAW F — THE ONE SEAT, DECL-DRIVEN (the one-seat migration, 2026-11-12): the registry's reseatStageFamily derives the drop from the MODEL DECL's familyLaw through the shared spelling — no per-card face exists, and the declaration judge reds a law nobody can derive", async () => {
+    // THE ROW'S OWN GATE (ROADMAP, the one-seat destination): a wall
+    // arm drives the lane-declaration path itself — the DECL names
+    // its dead keys, the registry's seat derives the drop from it,
+    // never from a card face. The service above IS the primed real
+    // registry (the same prime() the estate boots); the card def
+    // carries no family law and no reseat face — the law resolves
+    // through the boarded family's DECL (getModel).
+    // (1) THE FLIP'S CARRIED STRAND drops, exactly the module's set:
+    // a t4_open era carrying the burn's four under a keyframe pin —
+    // the merged view derives t4r, the prior owned the four.
+    const open = LANES[0]!;
+    const era = cell(open.assemble, null, null, null);
+    const prior: Record<string, unknown> = { ...era, ...Object.fromEntries(FOUR.map((k) => [k, true])) };
+    const flip = { ...prior, keyframes: [{ image: "anchor.png", frame: 0 }] };
+    const seat = svc.reseatStageFamily("h3-timeline", flip, prior);
+    expect(seat, "the seat resolves h3's family law off the DECL — never null").not.toBeNull();
+    if (seat === null) return;
+    expect([...seat.dropped], "the DECL-driven seat drops exactly the burn's four (sorted)").toEqual([...FOUR].sort());
+    for (const k of seat.dropped) {
+      expect(seat.params, `the landed row no longer carries '${k}'`).not.toHaveProperty(k);
+    }
+    // (2) THE CARRY LINE (2026-11-11): a dead key THIS write authors
+    // (absent from the prior) stands — the drop is never a launderer.
+    const authored = { ...era, keyframes: [{ image: "anchor.png", frame: 0 }], sr_switch: true };
+    const authoredSeat = svc.reseatStageFamily("h3-timeline", authored, era);
+    expect(authoredSeat?.dropped ?? [], "an authored dead key stands for the family clause to refuse").toEqual([]);
+    // (3) A DOC WHOSE LANE HONORS THE KEYS rides unchanged.
+    const honored = svc.reseatStageFamily("h3-timeline", prior, prior);
+    expect(honored?.dropped ?? [], "the t4_open doc rides unchanged (dropped: [])").toEqual([]);
+    // (4) THE DECLARATION JUDGE (familyLawDrift — prime() throws on
+    // its verdict): the real boarded laws carry no drift, an orphan
+    // deadKeys lane is named, and an empty lane list is named. This
+    // is the judge's OWN firing arm — gutting it reds here AND
+    // silences prime's boot gate.
+    const laws = new Map<string, typeof FAMILY_LAW>();
+    for (const [, def] of await loadCardDefs()) {
+      for (const family of def.boarded) {
+        const law = getModel(family).familyLaw;
+        if (law !== undefined && !laws.has(family)) laws.set(family, law);
+      }
+    }
+    expect(laws.has("h3"), "the h3 family declares its law on the MODEL DECL").toBe(true);
+    expect(familyLawDrift(laws), "the real declarations pass their own boot judge").toEqual([]);
+    const orphan = new Map(laws);
+    orphan.set("mock-family", {
+      lanes: [{ lane: "only" }],
+      deadKeys: { nobody: ["a_key"] },
+    });
+    expect(familyLawDrift(orphan), "deadKeys naming a lane the lanes array does not declare reds at boot")
+      .toContain("mock-family: deadKeys names undeclared lanes [\"nobody\"]");
+    expect(familyLawDrift(new Map([["empty", { lanes: [], deadKeys: {} }]])), "a law with no lanes reds at boot")
+      .toContain("empty: no lanes declared");
   });
 });

@@ -5,7 +5,7 @@ import { declaredAction, instantiateAction } from '@melite/comfyui-card-kit';
 import { finalizeH3 } from '@melite/models-h3';
 import { assertOverlayGated } from '@melite/models-h3';
 export { assertCarriedSpanGrid, assertGridLength, assertSpanGrid, gridSnap } from '@melite/models-h3/timelineContract';
-import { deriveWindowFamily, reseatFamilyDead, T4_ONLY_KEYS } from '@melite/models-h3/timelineContract';
+import { deriveWindowFamily, T4_ONLY_KEYS } from '@melite/models-h3/timelineContract';
 export { carrier, JSON_ARRAY_PARAMS, schema } from '@melite/models-h3/schema';
 // THE CARRIER'S CALLABLE FACE — ONE cast serving the compose strict
 // resolve's judge: schemastery schemas are callable (Schema.resolve)
@@ -193,17 +193,18 @@ export function registerCard(ctx, comfy) {
                 error: `card 'h3-timeline' refused params: h3_window(t4r): unsanctioned inject keys: ${bad.join(", ")}`,
             };
         },
-        // THE FAMILY RESEAT (the ERROR g/h cure, 2026-11-08): the flip's
-        // own writer — an arrival that flips t4_open→t4r under carried
-        // post stamps lands the stamps' DELETE at the settlement (the
-        // drafts doors ask this face before the judge and the store), so
-        // the write never lands a doc the walk refuses. One spelling:
-        // reseatFamilyDead rides the same contract module the judge and
-        // the walk read.
-        reseatFamily(params, priorParams) {
-            const r = reseatFamilyDead(params, priorParams);
-            return { params: r.doc, dropped: r.dropped };
-        },
+        // THE DERIVED-FAMILY LANE AXIS (the one-seat migration,
+        // 2026-11-12): the family's lanes and dead keys declare on the
+        // MODEL DECL (this package's index.ts serves the contract
+        // module's FAMILY_LAW by reference — one object, one truth),
+        // never on the card definition. The registry's ONE reseat seat
+        // (cardsRegistry.reseatStageFamily) resolves the declaration
+        // through this card's boarded families and drops the flip's
+        // carried strand through the shared spelling
+        // (@melite/contracts familyLane.ts — reseatDeadKeys), the same
+        // module the client compose mirror derives through. The
+        // per-card reseatFamily face (the ERROR g/h cure's spelling,
+        // 2026-11-08) is dead.
         compose(p, model, g, runId) {
             // THE SCHEMA GATE (the music/sfx/tts admission precedent — the
             // schemaCarrier equivalent: this card is WRAPPED, so the served

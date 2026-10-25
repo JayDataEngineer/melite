@@ -1,3 +1,5 @@
+import { deriveFamilyLane } from '@melite/contracts/familyLane'
+
 export const SEAM_OVERLAP_FRAMES = 22
 export const GRID_BASE_FRAMES = 22
 export const GRID_STEP_FRAMES = 17
@@ -103,29 +105,31 @@ export const FILM_ONLY_KEYS = ['duck_depth_db'] as const
  *  family-conditional key law in the SERVED spelling — the shape
  *  FormSpecDoc.familyLaw carries so the GENERIC seats (the
  *  composeValidate gate, the studio rail's omit) can judge the
- *  family WITHOUT importing this module. The lanes spell
+ *  family WITHOUT importing this module. THE ONE-SEAT MIGRATION
+ *  (2026-11-12): this const IS the derivation — deriveWindowFamily
+ *  delegates to the shared evaluator over this data
+ *  (@melite/contracts familyLane.ts), so a data copy CANNOT drift
+ *  from the walk (the doc-level guide aliases image/image_name/
+ *  ref_image are DECLARED here, closing the probe-cell gap where
+ *  the walk read seats the data did not name). The lanes spell
  *  deriveWindowFamily's own derivation as data (minCalls →
  *  t4_chain, guideKeys → t4r, the trailing lane is the
  *  fallthrough); deadKeys names the keys whose PRESENCE each lane
- *  refuses. ONE OWNER: this const IS the law — the served spec
- *  carries it verbatim and the contract wall pins the data to the
- *  module's behavior (the probe-cell arm), so a data copy cannot
- *  drift from the walk. Guide keys mirror the derivation's own
- *  seats: `guideKeys` reads the doc level (the keyframe pin
- *  channel, the last_frame string, the ref surface — presence,
- *  never count: a non-empty-after-trim string or a non-empty array),
- *  `callGuideKeys` reads inside each calls row (the per-call guide
- *  fields the derivation's hasGuide arm names). The evaluator's
- *  presence grammar mirrors normalizeDeclaredRefs's counting law
- *  closely enough that the probe arm pins the agreement on the
- *  blank/empty edges (a whitespace ref_images is ZERO refs on both
- *  spellings). */
+ *  refuses. `guideKeys` reads the doc level (the keyframe pin
+ *  channel, the last_frame string, the ref surface, the doc-level
+ *  guide aliases — presence, never count: a non-empty-after-trim
+ *  string or a non-empty array), `callGuideKeys` reads inside each
+ *  calls row (the per-call guide fields the derivation's hasGuide
+ *  arm names). The evaluator's presence grammar mirrors
+ *  normalizeDeclaredRefs's counting law closely enough that the
+ *  probe arm pins the agreement on the blank/empty edges (a
+ *  whitespace ref_images is ZERO refs on both spellings). */
 export const FAMILY_LAW = {
   lanes: [
     { lane: 't4_chain', minCalls: 2 },
     {
       lane: 't4r',
-      guideKeys: ['keyframes', 'last_frame', 'ref_images', 'ref_videos', 'ref_audios'],
+      guideKeys: ['keyframes', 'last_frame', 'ref_images', 'ref_videos', 'ref_audios', 'image', 'image_name', 'ref_image'],
       callGuideKeys: ['image', 'ref_images', 'ref_image', 'image_name'],
     },
     { lane: 't4_open' },
@@ -133,44 +137,13 @@ export const FAMILY_LAW = {
   deadKeys: { t4r: T4_ONLY_KEYS },
 } as const
 
-/** THE FAMILY-RESEAT SPINE (the ERROR g/h cure, 2026-11-08): the ONE
- *  reseat spelling for the settlement seam — the seat that lands an
- *  arrival whose family FLIPPED under carried stamps (the emit's
- *  legal t4_open era settling under a keyframe pin; the bench
- *  merge-patch landing a non-studio flip). Drops every PRESENT
- *  family-dead key and names them — the settlement lands the row
- *  the next run composes (the lane-migration law's own spelling:
- *  stale carry drops before the store, never a stored doc refusing
- *  later). The caller owns the voice (the drafts patch row, the
- *  studio's unstating op); this spine owns the MATH. A doc whose
- *  family honors the keys rides unchanged (dropped: []). */
-/**
- * THE CARRY LINE (2026-11-11, the one-seat law's family-seam proof):
- * a T4-only key drops only when the PRIOR row stated it — the doc's
- * own carried past, stranded by the family flip this reseat settles.
- * A key the merged doc holds only because THIS write states it is
- * authored, stands untouched, and the write door's family judge
- * refuses it in the run door's own voice. Never a launderer.
- * @param doc the merged params view the write door would judge
- * @param prior the stored row's params BEFORE the merge
- */
-export function reseatFamilyDead(
-  doc: Record<string, unknown>,
-  prior: Record<string, unknown>,
-): {
-  doc: Record<string, unknown>
-  dropped: string[]
-} {
-  if (deriveWindowFamily(doc) !== 't4r') return { doc, dropped: [] }
-  const explicit = Object.keys(doc)
-  const dropped = (T4_ONLY_KEYS as readonly string[])
-    .filter((k) => explicit.includes(k) && Object.prototype.hasOwnProperty.call(prior, k))
-    .sort()
-  if (dropped.length === 0) return { doc, dropped }
-  const reseated: Record<string, unknown> = { ...doc }
-  for (const k of dropped) delete reseated[k]
-  return { doc: reseated, dropped }
-}
+/** THE FAMILY-RESEAT MATH — DEAD SPINE, one spelling (the one-seat
+ *  migration, 2026-11-12): the settlement math lives in
+ *  @melite/contracts familyLane.ts (reseatDeadKeys), driven by the
+ *  FAMILY_LAW data above. Every caller — the registry's reseat
+ *  seat, the studio's pick settlement — rides that spelling. This
+ *  module keeps only the family's own face: deriveWindowFamily
+ *  (the typed derivation over the same data). */
 
 /** (2026-11-06, the family-reseat cure) the doc-level window family
  *  derivation, ONE spelling for every door that needs the family
@@ -185,35 +158,16 @@ export function reseatFamilyDead(
  *  @param raw the doc-shaped record (calls/keyframes/ref surface)
  *  @returns the derived window family */
 export function deriveWindowFamily(raw: Record<string, unknown>): 't4r' | 't4_open' | 't4_chain' {
-  const calls: unknown[] = Array.isArray(raw.calls) ? raw.calls : []
-  // THE DOC-LEVEL GUIDE SEAT (2026-10-20, the chained-image burn):
-  // the walk reads the doc-level guide (actions.ts guideImage =
-  // image ?? image_name) and the render's family seat counts all
-  // three spellings (guide0 = image, image_name, ref_image) — the
-  // derivation MUST count the same seats, or a doc-level guide
-  // stamps t4_open and the walk's own conflict guard refuses the
-  // doc's stamp with a lying cure sentence ("state no variant —
-  // the walk derives t4r from the guide"): the three-refusal loop
-  // that drove the operator's agent text-only.
-  const docGuide = (v: unknown): boolean => typeof v === 'string' && v.trim() !== ''
-  const hasGuide = calls.some((c) => {
-      const cc = (c ?? {}) as Record<string, unknown>
-      return Boolean(cc.image) || Boolean(cc.ref_images) || Boolean(cc.ref_image) || Boolean(cc.image_name)
-    })
-    // the keyframe pin channel + the declared input surface imply the
-    // reference lane by the same law as a per-call guide
-    || (Array.isArray(raw.keyframes) && raw.keyframes.length > 0)
-    || refSurfaceCount(raw) > 0
-    || (typeof raw.last_frame === 'string' && raw.last_frame.trim() !== '')
-    || docGuide(raw.image) || docGuide(raw.image_name) || docGuide(raw.ref_image)
-  return calls.length > 1 ? 't4_chain' : hasGuide ? 't4r' : 't4_open'
-}
-
-function refSurfaceCount(raw: Record<string, unknown>): number {
-  // wire-literal strings count too (normalizeDeclaredRefs owns the
-  // spelling — a "a, b" ref_images is two refs, never zero)
-  return ['ref_images', 'ref_videos', 'ref_audios']
-    .reduce((n, k) => n + normalizeDeclaredRefs(raw[k]).length, 0)
+  // THE ONE-SEAT DERIVATION (2026-11-12): the family derives through
+  // the SHARED evaluator over the FAMILY_LAW data above — the same
+  // spelling the client compose mirror and the registry's reseat
+  // seat ride. The doc-level guide seats the walk reads (actions.ts
+  // guideImage = image ?? image_name; the render's guide0 = image,
+  // image_name, ref_image) are DECLARED in the law's guideKeys, so
+  // the private spelling below is dead — a seat missed in the data
+  // is now a seat every judge misses together, never a split family
+  // (the run-899a8448 disease).
+  return deriveFamilyLane(FAMILY_LAW, raw) as 't4r' | 't4_open' | 't4_chain'
 }
 
 export function spanOverlap(span: TimelineSpan): number {

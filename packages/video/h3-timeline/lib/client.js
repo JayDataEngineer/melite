@@ -774,6 +774,81 @@ window.__ModuleLoader__.load({
 				})
 			});
 		}
+		//#endregion
+		//#region ../../web-kit/contracts/lib/familyLane.js
+		/** A key is present for the family derivation when it states
+		*  something: null/undefined/blank/empty-array are absence. The
+		*  presence grammar every family judge shares — the derivation,
+		*  the drop math, and the client mirror's refusal clause read the
+		*  same seats the same way (a private spelling elsewhere is a
+		*  split family waiting to burn).
+		*  @param v the stated value
+		*  @returns true when the value states something */
+		function familyKeyPresent$1(v) {
+			if (v === null || v === void 0) return false;
+			if (typeof v === "string") return v.trim() !== "";
+			if (Array.isArray(v)) return v.length > 0;
+			return true;
+		}
+		/** Derive the doc's family lane, generic over the declared law data
+		*  (the DECL's own law, pinned to the family's derivation module by
+		*  the contract wall): lanes in declared order, first match wins —
+		*  minCalls against the calls length, guideKeys at the doc level,
+		*  callGuideKeys inside each calls row; a lane with no qualifiers is
+		*  the fallthrough. No match = the last declared lane.
+		*  @param law the family's declared lane law.
+		*  @param doc the doc-shaped params (calls/keyframes/ref surface).
+		*  @returns the derived lane id ('' only for an empty law — a shape
+		*    the declaration judge refuses at boot). */
+		function deriveFamilyLane$1(law, doc) {
+			const calls = Array.isArray(doc["calls"]) ? doc["calls"] : [];
+			for (const lane of law.lanes) {
+				if (lane.minCalls === void 0 && lane.guideKeys === void 0 && lane.callGuideKeys === void 0) return lane.lane;
+				if (lane.minCalls !== void 0 && calls.length >= lane.minCalls) return lane.lane;
+				if (lane.guideKeys?.some((k) => familyKeyPresent$1(doc[k]))) return lane.lane;
+				if (lane.callGuideKeys?.some((k) => calls.some((c) => familyKeyPresent$1(c?.[k])))) return lane.lane;
+			}
+			return law.lanes[law.lanes.length - 1]?.lane ?? "";
+		}
+		/** THE RESEAT DROP (the one seat's math — h3's reseatFamilyDead
+		*  spine, generalized over the declaration): when the MERGED doc's
+		*  derived lane refuses keys the law names dead, every dead key the
+		*  doc states that the PRIOR row also stated is stale carry the
+		*  family flip stranded — it drops before the judges and the store,
+		*  so the row that lands is the row the next run composes. THE
+		*  CARRY LINE (2026-11-11): a dead key the merged doc holds only
+		*  because THIS write states it is authored, stands untouched, and
+		*  the write door's family judge refuses it in the run door's own
+		*  voice — the drop is never a launderer. A doc whose lane honors
+		*  every stated key rides unchanged (dropped: []).
+		*  @param law the family's declared lane law.
+		*  @param doc the MERGED params view the write door would judge.
+		*  @param prior the stored row's params BEFORE the merge.
+		*  @returns the cleaned view (a NEW record when keys dropped; the
+		*    input reference otherwise) + the dropped key names. */
+		function reseatDeadKeys$1(law, doc, prior) {
+			const lane = deriveFamilyLane$1(law, doc);
+			const dead = law.deadKeys[lane];
+			if (dead === void 0 || dead.length === 0) return {
+				params: doc,
+				dropped: []
+			};
+			const dropped = dead.filter((k) => Object.prototype.hasOwnProperty.call(doc, k) && Object.prototype.hasOwnProperty.call(prior, k)).sort();
+			if (dropped.length === 0) return {
+				params: doc,
+				dropped: []
+			};
+			const reseated = { ...doc };
+			for (const k of dropped) delete reseated[k];
+			return {
+				params: reseated,
+				dropped
+			};
+		}
+		var init_familyLane = __esmMin((() => {}));
+		//#endregion
+		//#region ../../models/h3/src/timelineContract.ts
+		init_familyLane();
 		const REF_CAPS = {
 			images: 8,
 			videos: 3,
@@ -832,45 +907,65 @@ window.__ModuleLoader__.load({
 		*  derives t4_chain (the same one-spelling family derivation the t4r
 		*  gate uses). */
 		const FILM_ONLY_KEYS = ["duck_depth_db"];
-		/** THE FAMILY-RESEAT SPINE (the ERROR g/h cure, 2026-11-08): the ONE
-		*  reseat spelling for the settlement seam — the seat that lands an
-		*  arrival whose family FLIPPED under carried stamps (the emit's
-		*  legal t4_open era settling under a keyframe pin; the bench
-		*  merge-patch landing a non-studio flip). Drops every PRESENT
-		*  family-dead key and names them — the settlement lands the row
-		*  the next run composes (the lane-migration law's own spelling:
-		*  stale carry drops before the store, never a stored doc refusing
-		*  later). The caller owns the voice (the drafts patch row, the
-		*  studio's unstating op); this spine owns the MATH. A doc whose
-		*  family honors the keys rides unchanged (dropped: []). */
-		/**
-		* THE CARRY LINE (2026-11-11, the one-seat law's family-seam proof):
-		* a T4-only key drops only when the PRIOR row stated it — the doc's
-		* own carried past, stranded by the family flip this reseat settles.
-		* A key the merged doc holds only because THIS write states it is
-		* authored, stands untouched, and the write door's family judge
-		* refuses it in the run door's own voice. Never a launderer.
-		* @param doc the merged params view the write door would judge
-		* @param prior the stored row's params BEFORE the merge
-		*/
-		function reseatFamilyDead(doc, prior) {
-			if (deriveWindowFamily(doc) !== "t4r") return {
-				doc,
-				dropped: []
-			};
-			const explicit = Object.keys(doc);
-			const dropped = T4_ONLY_KEYS.filter((k) => explicit.includes(k) && Object.prototype.hasOwnProperty.call(prior, k)).sort();
-			if (dropped.length === 0) return {
-				doc,
-				dropped
-			};
-			const reseated = { ...doc };
-			for (const k of dropped) delete reseated[k];
-			return {
-				doc: reseated,
-				dropped
-			};
-		}
+		/** THE FAMILY-LAW DATA (the ERROR g/h cure, 2026-11-08): the
+		*  family-conditional key law in the SERVED spelling — the shape
+		*  FormSpecDoc.familyLaw carries so the GENERIC seats (the
+		*  composeValidate gate, the studio rail's omit) can judge the
+		*  family WITHOUT importing this module. THE ONE-SEAT MIGRATION
+		*  (2026-11-12): this const IS the derivation — deriveWindowFamily
+		*  delegates to the shared evaluator over this data
+		*  (@melite/contracts familyLane.ts), so a data copy CANNOT drift
+		*  from the walk (the doc-level guide aliases image/image_name/
+		*  ref_image are DECLARED here, closing the probe-cell gap where
+		*  the walk read seats the data did not name). The lanes spell
+		*  deriveWindowFamily's own derivation as data (minCalls →
+		*  t4_chain, guideKeys → t4r, the trailing lane is the
+		*  fallthrough); deadKeys names the keys whose PRESENCE each lane
+		*  refuses. `guideKeys` reads the doc level (the keyframe pin
+		*  channel, the last_frame string, the ref surface, the doc-level
+		*  guide aliases — presence, never count: a non-empty-after-trim
+		*  string or a non-empty array), `callGuideKeys` reads inside each
+		*  calls row (the per-call guide fields the derivation's hasGuide
+		*  arm names). The evaluator's presence grammar mirrors
+		*  normalizeDeclaredRefs's counting law closely enough that the
+		*  probe arm pins the agreement on the blank/empty edges (a
+		*  whitespace ref_images is ZERO refs on both spellings). */
+		const FAMILY_LAW = {
+			lanes: [
+				{
+					lane: "t4_chain",
+					minCalls: 2
+				},
+				{
+					lane: "t4r",
+					guideKeys: [
+						"keyframes",
+						"last_frame",
+						"ref_images",
+						"ref_videos",
+						"ref_audios",
+						"image",
+						"image_name",
+						"ref_image"
+					],
+					callGuideKeys: [
+						"image",
+						"ref_images",
+						"ref_image",
+						"image_name"
+					]
+				},
+				{ lane: "t4_open" }
+			],
+			deadKeys: { t4r: T4_ONLY_KEYS }
+		};
+		/** THE FAMILY-RESEAT MATH — DEAD SPINE, one spelling (the one-seat
+		*  migration, 2026-11-12): the settlement math lives in
+		*  @melite/contracts familyLane.ts (reseatDeadKeys), driven by the
+		*  FAMILY_LAW data above. Every caller — the registry's reseat
+		*  seat, the studio's pick settlement — rides that spelling. This
+		*  module keeps only the family's own face: deriveWindowFamily
+		*  (the typed derivation over the same data). */
 		/** (2026-11-06, the family-reseat cure) the doc-level window family
 		*  derivation, ONE spelling for every door that needs the family
 		*  BEFORE the walk refuses: the walk derives the composed doc's
@@ -884,20 +979,7 @@ window.__ModuleLoader__.load({
 		*  @param raw the doc-shaped record (calls/keyframes/ref surface)
 		*  @returns the derived window family */
 		function deriveWindowFamily(raw) {
-			const calls = Array.isArray(raw.calls) ? raw.calls : [];
-			const docGuide = (v) => typeof v === "string" && v.trim() !== "";
-			const hasGuide = calls.some((c) => {
-				const cc = c ?? {};
-				return Boolean(cc.image) || Boolean(cc.ref_images) || Boolean(cc.ref_image) || Boolean(cc.image_name);
-			}) || Array.isArray(raw.keyframes) && raw.keyframes.length > 0 || refSurfaceCount(raw) > 0 || typeof raw.last_frame === "string" && raw.last_frame.trim() !== "" || docGuide(raw.image) || docGuide(raw.image_name) || docGuide(raw.ref_image);
-			return calls.length > 1 ? "t4_chain" : hasGuide ? "t4r" : "t4_open";
-		}
-		function refSurfaceCount(raw) {
-			return [
-				"ref_images",
-				"ref_videos",
-				"ref_audios"
-			].reduce((n, k) => n + normalizeDeclaredRefs(raw[k]).length, 0);
+			return deriveFamilyLane$1(FAMILY_LAW, raw);
 		}
 		function gridSnap(length) {
 			const k = Math.round((length - 22) / 17);
@@ -2988,6 +3070,77 @@ window.__ModuleLoader__.load({
 		});
 		(0, react.createContext)({ useGui: (selector) => selector({ theme: { dark_mode: true } }) });
 		//#endregion
+		//#region ../../web-kit/contracts/src/familyLane.ts
+		/** A key is present for the family derivation when it states
+		*  something: null/undefined/blank/empty-array are absence. The
+		*  presence grammar every family judge shares — the derivation,
+		*  the drop math, and the client mirror's refusal clause read the
+		*  same seats the same way (a private spelling elsewhere is a
+		*  split family waiting to burn).
+		*  @param v the stated value
+		*  @returns true when the value states something */
+		function familyKeyPresent(v) {
+			if (v === null || v === void 0) return false;
+			if (typeof v === "string") return v.trim() !== "";
+			if (Array.isArray(v)) return v.length > 0;
+			return true;
+		}
+		/** Derive the doc's family lane, generic over the declared law data
+		*  (the DECL's own law, pinned to the family's derivation module by
+		*  the contract wall): lanes in declared order, first match wins —
+		*  minCalls against the calls length, guideKeys at the doc level,
+		*  callGuideKeys inside each calls row; a lane with no qualifiers is
+		*  the fallthrough. No match = the last declared lane.
+		*  @param law the family's declared lane law.
+		*  @param doc the doc-shaped params (calls/keyframes/ref surface).
+		*  @returns the derived lane id ('' only for an empty law — a shape
+		*    the declaration judge refuses at boot). */
+		function deriveFamilyLane(law, doc) {
+			const calls = Array.isArray(doc["calls"]) ? doc["calls"] : [];
+			for (const lane of law.lanes) {
+				if (lane.minCalls === void 0 && lane.guideKeys === void 0 && lane.callGuideKeys === void 0) return lane.lane;
+				if (lane.minCalls !== void 0 && calls.length >= lane.minCalls) return lane.lane;
+				if (lane.guideKeys?.some((k) => familyKeyPresent(doc[k]))) return lane.lane;
+				if (lane.callGuideKeys?.some((k) => calls.some((c) => familyKeyPresent(c?.[k])))) return lane.lane;
+			}
+			return law.lanes[law.lanes.length - 1]?.lane ?? "";
+		}
+		/** THE RESEAT DROP (the one seat's math — h3's reseatFamilyDead
+		*  spine, generalized over the declaration): when the MERGED doc's
+		*  derived lane refuses keys the law names dead, every dead key the
+		*  doc states that the PRIOR row also stated is stale carry the
+		*  family flip stranded — it drops before the judges and the store,
+		*  so the row that lands is the row the next run composes. THE
+		*  CARRY LINE (2026-11-11): a dead key the merged doc holds only
+		*  because THIS write states it is authored, stands untouched, and
+		*  the write door's family judge refuses it in the run door's own
+		*  voice — the drop is never a launderer. A doc whose lane honors
+		*  every stated key rides unchanged (dropped: []).
+		*  @param law the family's declared lane law.
+		*  @param doc the MERGED params view the write door would judge.
+		*  @param prior the stored row's params BEFORE the merge.
+		*  @returns the cleaned view (a NEW record when keys dropped; the
+		*    input reference otherwise) + the dropped key names. */
+		function reseatDeadKeys(law, doc, prior) {
+			const lane = deriveFamilyLane(law, doc);
+			const dead = law.deadKeys[lane];
+			if (dead === void 0 || dead.length === 0) return {
+				params: doc,
+				dropped: []
+			};
+			const dropped = dead.filter((k) => Object.prototype.hasOwnProperty.call(doc, k) && Object.prototype.hasOwnProperty.call(prior, k)).sort();
+			if (dropped.length === 0) return {
+				params: doc,
+				dropped: []
+			};
+			const reseated = { ...doc };
+			for (const k of dropped) delete reseated[k];
+			return {
+				params: reseated,
+				dropped
+			};
+		}
+		//#endregion
 		//#region ../../../@deepseek-ai/dsh-util-values/lib/index.js
 		function isWhitespace(c) {
 			return c === " " || c === "\n" || c === "\r" || c === "	";
@@ -4956,10 +5109,11 @@ window.__ModuleLoader__.load({
 						const family = pickFamilyRefusal(candidate);
 						if (family !== null) violations.push({ message: "card_compose: " + family });
 						if (violations.length > 0) {
-							const reseated = reseatFamilyDead(candidate, resolvePickVerdictDoc(held, layerA, {}));
+							const priorView = resolvePickVerdictDoc(held, layerA, {});
+							const reseated = reseatDeadKeys(FAMILY_LAW, candidate, priorView);
 							if (reseated.dropped.length > 0) {
-								const recheck = (0, _melite_card_base_client.composeValidate)(spec, reseated.doc);
-								const reFam = pickFamilyRefusal(reseated.doc);
+								const recheck = (0, _melite_card_base_client.composeValidate)(spec, reseated.params);
+								const reFam = pickFamilyRefusal(reseated.params);
 								if (reFam !== null) recheck.push({ message: "card_compose: " + reFam });
 								if (recheck.length === 0) {
 									setLayerA((prev) => {
@@ -10801,8 +10955,10 @@ window.__ModuleLoader__.load({
 			cardResultFromRecord: () => cardResultFromRecord,
 			cnEntriesOf: () => cnEntriesOf,
 			crossRootOrder: () => crossRootOrder,
+			deriveFamilyLane: () => deriveFamilyLane$1,
 			dropAuthoringIncomplete: () => dropAuthoringIncomplete,
 			extraOf: () => extraOf,
+			familyKeyPresent: () => familyKeyPresent$1,
 			hasModifierCapability: () => hasModifierCapability,
 			healRunMediaPaths: () => healRunMediaPaths,
 			isDataUrl: () => isDataUrl,
@@ -10843,6 +10999,7 @@ window.__ModuleLoader__.load({
 			offeredPool: () => offeredPool,
 			projectStageView: () => projectStageView,
 			projectUpstreamStages: () => projectUpstreamStages,
+			reseatDeadKeys: () => reseatDeadKeys$1,
 			resolveCellRow: () => resolveCellRow,
 			resolveVariantRow: () => resolveVariantRow,
 			rootsManifest: () => rootsManifest,
@@ -10865,6 +11022,7 @@ window.__ModuleLoader__.load({
 		var init_lib$1 = __esmMin((() => {
 			init_extraKeys();
 			init_laneRelations();
+			init_familyLane();
 			init_FlowTypes();
 			init_benchResult();
 			init_card();

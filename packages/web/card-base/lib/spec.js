@@ -77,6 +77,7 @@ export function schemaEnvelope(dict) {
 // declaration; before it, the form spelled visible_when while the
 // tool face spelled visibleWhen — a dead read for every card).
 import { extraOf } from '@melite/contracts/extraKeys';
+import { deriveFamilyLane, familyKeyPresent } from '@melite/contracts/familyLane';
 import { deepEqualJson } from '@deepseek-ai/dsh-util-values';
 import { dropAuthoringIncomplete, judgeLaneBounds, judgeLaneRelations, judgeLaneSurface, laneBlank, laneBoundsOf, laneSurfaceOf, judgeSamplerEnvelope, marriedKnobValues, resolveCellRow, resolveVariantRow, samplerEnvelopeCure, unknownQuantVoice, unknownVariantVoice, variantMatrixFromFlatRows, } from '@melite/contracts/laneRelations';
 /** THE MOD-OWNED NAMES (the SubcardGrid law, enforced): every name a
@@ -1820,37 +1821,6 @@ export function offeredVariantOf(all, doc) {
  *  always. Mirrors the estate walk's explicit-key law and
  *  normalizeDeclaredRefs's wire-literal counting at the presence
  *  grain (a whitespace ref string is ZERO refs on both spellings). */
-function familyKeyPresent(v) {
-    if (v === null || v === undefined)
-        return false;
-    if (typeof v === 'string')
-        return v.trim() !== '';
-    if (Array.isArray(v))
-        return v.length > 0;
-    return true;
-}
-/** THE FAMILY-LANE DERIVATION, generic over the served familyLaw
- *  data (the DECL's own law, pinned to the family's derivation
- *  module by the contract wall): lanes in declared order, first
- *  match wins — minCalls against the calls length, guideKeys at the
- *  doc level, callGuideKeys inside each calls row; a lane with no
- *  qualifiers is the fallthrough (h3's t4_open). No match = the
- *  last declared lane. */
-function deriveFamilyLane(law, doc) {
-    const calls = Array.isArray(doc['calls']) ? doc['calls'] : [];
-    for (const lane of law.lanes) {
-        if (lane.minCalls === undefined && lane.guideKeys === undefined && lane.callGuideKeys === undefined) {
-            return lane.lane;
-        }
-        if (lane.minCalls !== undefined && calls.length >= lane.minCalls)
-            return lane.lane;
-        if (lane.guideKeys?.some((k) => familyKeyPresent(doc[k])))
-            return lane.lane;
-        if (lane.callGuideKeys?.some((k) => calls.some((c) => familyKeyPresent(c?.[k]))))
-            return lane.lane;
-    }
-    return law.lanes[law.lanes.length - 1]?.lane ?? '';
-}
 /** THE DOC'S RESOLVED LANE COORDINATE, ONE SPELLING (the tts lockout
  *  cure, 2026-11-10): the (variant × quant) the estate door resolves
  *  for this doc — the stated variant, else pool[0] (the shared

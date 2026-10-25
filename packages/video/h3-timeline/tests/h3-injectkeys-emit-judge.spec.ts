@@ -43,7 +43,8 @@ import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { serializeLayerA, hydrateLayerA } from "../src/ui/studio/docHydrate.ts"
 import { schema as h3schemaFn } from "@melite/models-h3/schema"
-import { deriveWindowFamily, reseatFamilyDead } from "@melite/models-h3/timelineContract"
+import { deriveWindowFamily, FAMILY_LAW } from "@melite/models-h3/timelineContract"
+import { reseatDeadKeys } from "@melite/contracts/familyLane"
 
 const REFUSAL_SPINE = /h3_window\(t4r\): unsanctioned inject keys: /
 
@@ -67,7 +68,7 @@ function settle(base: Record<string, unknown>, saved: Record<string, unknown>): 
   // run seat: the doc itself is the history (nothing is authored at
   // a run press) — the carry line drops the whole stranded strand.
   const settled = settleRaw(base, saved)
-  return reseatFamilyDead(settled, settled).doc
+  return reseatDeadKeys(FAMILY_LAW, settled, settled).params
 }
 
 describe("THE EMIT-SIDE JUDGE ARM (SD-3 — a studio-emitted doc composes clean on the lane it arrives on)", () => {
@@ -144,7 +145,7 @@ describe("THE EMIT-SIDE JUDGE ARM (SD-3 — a studio-emitted doc composes clean 
     // exactly the burn's four (sorted), and the RAW merged view (what
     // a seat without the reseat would land) still walks into the
     // operator's spine.
-    const dropped = reseatFamilyDead(raw, raw).dropped
+    const dropped = reseatDeadKeys(FAMILY_LAW, raw, raw).dropped
     expect(dropped, "the reseat names exactly what it dropped (sorted)").toEqual(
       ["interpolate_enabled", "second_pass_enabled", "sharpen_enabled", "sr_switch"],
     )

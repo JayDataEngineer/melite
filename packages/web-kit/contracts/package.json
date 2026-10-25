@@ -38,6 +38,10 @@
       "types": "./lib/laneRelations.d.ts",
       "default": "./lib/laneRelations.js"
     },
+    "./familyLane": {
+      "types": "./lib/familyLane.d.ts",
+      "default": "./lib/familyLane.js"
+    },
     "./loraTypes": {
       "types": "./lib/loraTypes.d.ts",
       "default": "./lib/loraTypes.js"

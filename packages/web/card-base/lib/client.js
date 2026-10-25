@@ -2204,6 +2204,78 @@ window.__ModuleLoader__.load({
 			knownQuants$1 = (cells) => cells.map((c) => typeof c.quant === "string" ? c.quant : "");
 		}));
 		//#endregion
+		//#region ../../web-kit/contracts/lib/familyLane.js
+		/** A key is present for the family derivation when it states
+		*  something: null/undefined/blank/empty-array are absence. The
+		*  presence grammar every family judge shares — the derivation,
+		*  the drop math, and the client mirror's refusal clause read the
+		*  same seats the same way (a private spelling elsewhere is a
+		*  split family waiting to burn).
+		*  @param v the stated value
+		*  @returns true when the value states something */
+		function familyKeyPresent$1(v) {
+			if (v === null || v === void 0) return false;
+			if (typeof v === "string") return v.trim() !== "";
+			if (Array.isArray(v)) return v.length > 0;
+			return true;
+		}
+		/** Derive the doc's family lane, generic over the declared law data
+		*  (the DECL's own law, pinned to the family's derivation module by
+		*  the contract wall): lanes in declared order, first match wins —
+		*  minCalls against the calls length, guideKeys at the doc level,
+		*  callGuideKeys inside each calls row; a lane with no qualifiers is
+		*  the fallthrough. No match = the last declared lane.
+		*  @param law the family's declared lane law.
+		*  @param doc the doc-shaped params (calls/keyframes/ref surface).
+		*  @returns the derived lane id ('' only for an empty law — a shape
+		*    the declaration judge refuses at boot). */
+		function deriveFamilyLane$1(law, doc) {
+			const calls = Array.isArray(doc["calls"]) ? doc["calls"] : [];
+			for (const lane of law.lanes) {
+				if (lane.minCalls === void 0 && lane.guideKeys === void 0 && lane.callGuideKeys === void 0) return lane.lane;
+				if (lane.minCalls !== void 0 && calls.length >= lane.minCalls) return lane.lane;
+				if (lane.guideKeys?.some((k) => familyKeyPresent$1(doc[k]))) return lane.lane;
+				if (lane.callGuideKeys?.some((k) => calls.some((c) => familyKeyPresent$1(c?.[k])))) return lane.lane;
+			}
+			return law.lanes[law.lanes.length - 1]?.lane ?? "";
+		}
+		/** THE RESEAT DROP (the one seat's math — h3's reseatFamilyDead
+		*  spine, generalized over the declaration): when the MERGED doc's
+		*  derived lane refuses keys the law names dead, every dead key the
+		*  doc states that the PRIOR row also stated is stale carry the
+		*  family flip stranded — it drops before the judges and the store,
+		*  so the row that lands is the row the next run composes. THE
+		*  CARRY LINE (2026-11-11): a dead key the merged doc holds only
+		*  because THIS write states it is authored, stands untouched, and
+		*  the write door's family judge refuses it in the run door's own
+		*  voice — the drop is never a launderer. A doc whose lane honors
+		*  every stated key rides unchanged (dropped: []).
+		*  @param law the family's declared lane law.
+		*  @param doc the MERGED params view the write door would judge.
+		*  @param prior the stored row's params BEFORE the merge.
+		*  @returns the cleaned view (a NEW record when keys dropped; the
+		*    input reference otherwise) + the dropped key names. */
+		function reseatDeadKeys(law, doc, prior) {
+			const lane = deriveFamilyLane$1(law, doc);
+			const dead = law.deadKeys[lane];
+			if (dead === void 0 || dead.length === 0) return {
+				params: doc,
+				dropped: []
+			};
+			const dropped = dead.filter((k) => Object.prototype.hasOwnProperty.call(doc, k) && Object.prototype.hasOwnProperty.call(prior, k)).sort();
+			if (dropped.length === 0) return {
+				params: doc,
+				dropped: []
+			};
+			const reseated = { ...doc };
+			for (const k of dropped) delete reseated[k];
+			return {
+				params: reseated,
+				dropped
+			};
+		}
+		var init_familyLane = __esmMin((() => {}));
+		//#endregion
 		//#region ../../web-kit/contracts/lib/FlowTypes.js
 		var init_FlowTypes = __esmMin((() => {}));
 		//#endregion
@@ -3950,8 +4022,10 @@ window.__ModuleLoader__.load({
 			cardResultFromRecord: () => cardResultFromRecord,
 			cnEntriesOf: () => cnEntriesOf,
 			crossRootOrder: () => crossRootOrder,
+			deriveFamilyLane: () => deriveFamilyLane$1,
 			dropAuthoringIncomplete: () => dropAuthoringIncomplete$1,
 			extraOf: () => extraOf$1,
+			familyKeyPresent: () => familyKeyPresent$1,
 			hasModifierCapability: () => hasModifierCapability,
 			healRunMediaPaths: () => healRunMediaPaths,
 			isDataUrl: () => isDataUrl,
@@ -3992,6 +4066,7 @@ window.__ModuleLoader__.load({
 			offeredPool: () => offeredPool$1,
 			projectStageView: () => projectStageView,
 			projectUpstreamStages: () => projectUpstreamStages,
+			reseatDeadKeys: () => reseatDeadKeys,
 			resolveCellRow: () => resolveCellRow$1,
 			resolveVariantRow: () => resolveVariantRow$1,
 			rootsManifest: () => rootsManifest,
@@ -4014,6 +4089,7 @@ window.__ModuleLoader__.load({
 		var init_lib$1 = __esmMin((() => {
 			init_extraKeys();
 			init_laneRelations();
+			init_familyLane();
 			init_FlowTypes();
 			init_benchResult();
 			init_card();
@@ -8411,6 +8487,42 @@ window.__ModuleLoader__.load({
 			return raw;
 		}
 		//#endregion
+		//#region ../../web-kit/contracts/src/familyLane.ts
+		/** A key is present for the family derivation when it states
+		*  something: null/undefined/blank/empty-array are absence. The
+		*  presence grammar every family judge shares — the derivation,
+		*  the drop math, and the client mirror's refusal clause read the
+		*  same seats the same way (a private spelling elsewhere is a
+		*  split family waiting to burn).
+		*  @param v the stated value
+		*  @returns true when the value states something */
+		function familyKeyPresent(v) {
+			if (v === null || v === void 0) return false;
+			if (typeof v === "string") return v.trim() !== "";
+			if (Array.isArray(v)) return v.length > 0;
+			return true;
+		}
+		/** Derive the doc's family lane, generic over the declared law data
+		*  (the DECL's own law, pinned to the family's derivation module by
+		*  the contract wall): lanes in declared order, first match wins —
+		*  minCalls against the calls length, guideKeys at the doc level,
+		*  callGuideKeys inside each calls row; a lane with no qualifiers is
+		*  the fallthrough. No match = the last declared lane.
+		*  @param law the family's declared lane law.
+		*  @param doc the doc-shaped params (calls/keyframes/ref surface).
+		*  @returns the derived lane id ('' only for an empty law — a shape
+		*    the declaration judge refuses at boot). */
+		function deriveFamilyLane(law, doc) {
+			const calls = Array.isArray(doc["calls"]) ? doc["calls"] : [];
+			for (const lane of law.lanes) {
+				if (lane.minCalls === void 0 && lane.guideKeys === void 0 && lane.callGuideKeys === void 0) return lane.lane;
+				if (lane.minCalls !== void 0 && calls.length >= lane.minCalls) return lane.lane;
+				if (lane.guideKeys?.some((k) => familyKeyPresent(doc[k]))) return lane.lane;
+				if (lane.callGuideKeys?.some((k) => calls.some((c) => familyKeyPresent(c?.[k])))) return lane.lane;
+			}
+			return law.lanes[law.lanes.length - 1]?.lane ?? "";
+		}
+		//#endregion
 		//#region ../../web-kit/contracts/src/laneRelations.ts
 		/** THE BLANK LAW (the estate's own): undefined, null, empty or
 		*  whitespace string, empty array, empty object = NOT stated. A
@@ -10332,29 +10444,6 @@ window.__ModuleLoader__.load({
 		*  always. Mirrors the estate walk's explicit-key law and
 		*  normalizeDeclaredRefs's wire-literal counting at the presence
 		*  grain (a whitespace ref string is ZERO refs on both spellings). */
-		function familyKeyPresent(v) {
-			if (v === null || v === void 0) return false;
-			if (typeof v === "string") return v.trim() !== "";
-			if (Array.isArray(v)) return v.length > 0;
-			return true;
-		}
-		/** THE FAMILY-LANE DERIVATION, generic over the served familyLaw
-		*  data (the DECL's own law, pinned to the family's derivation
-		*  module by the contract wall): lanes in declared order, first
-		*  match wins — minCalls against the calls length, guideKeys at the
-		*  doc level, callGuideKeys inside each calls row; a lane with no
-		*  qualifiers is the fallthrough (h3's t4_open). No match = the
-		*  last declared lane. */
-		function deriveFamilyLane(law, doc) {
-			const calls = Array.isArray(doc["calls"]) ? doc["calls"] : [];
-			for (const lane of law.lanes) {
-				if (lane.minCalls === void 0 && lane.guideKeys === void 0 && lane.callGuideKeys === void 0) return lane.lane;
-				if (lane.minCalls !== void 0 && calls.length >= lane.minCalls) return lane.lane;
-				if (lane.guideKeys?.some((k) => familyKeyPresent(doc[k]))) return lane.lane;
-				if (lane.callGuideKeys?.some((k) => calls.some((c) => familyKeyPresent(c?.[k])))) return lane.lane;
-			}
-			return law.lanes[law.lanes.length - 1]?.lane ?? "";
-		}
 		/** THE DOC'S RESOLVED LANE COORDINATE, ONE SPELLING (the tts lockout
 		*  cure, 2026-11-10): the (variant × quant) the estate door resolves
 		*  for this doc — the stated variant, else pool[0] (the shared

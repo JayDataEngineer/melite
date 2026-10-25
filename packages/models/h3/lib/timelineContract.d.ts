@@ -81,30 +81,32 @@ export declare const FILM_ONLY_KEYS: readonly ["duck_depth_db"];
  *  family-conditional key law in the SERVED spelling — the shape
  *  FormSpecDoc.familyLaw carries so the GENERIC seats (the
  *  composeValidate gate, the studio rail's omit) can judge the
- *  family WITHOUT importing this module. The lanes spell
+ *  family WITHOUT importing this module. THE ONE-SEAT MIGRATION
+ *  (2026-11-12): this const IS the derivation — deriveWindowFamily
+ *  delegates to the shared evaluator over this data
+ *  (@melite/contracts familyLane.ts), so a data copy CANNOT drift
+ *  from the walk (the doc-level guide aliases image/image_name/
+ *  ref_image are DECLARED here, closing the probe-cell gap where
+ *  the walk read seats the data did not name). The lanes spell
  *  deriveWindowFamily's own derivation as data (minCalls →
  *  t4_chain, guideKeys → t4r, the trailing lane is the
  *  fallthrough); deadKeys names the keys whose PRESENCE each lane
- *  refuses. ONE OWNER: this const IS the law — the served spec
- *  carries it verbatim and the contract wall pins the data to the
- *  module's behavior (the probe-cell arm), so a data copy cannot
- *  drift from the walk. Guide keys mirror the derivation's own
- *  seats: `guideKeys` reads the doc level (the keyframe pin
- *  channel, the last_frame string, the ref surface — presence,
- *  never count: a non-empty-after-trim string or a non-empty array),
- *  `callGuideKeys` reads inside each calls row (the per-call guide
- *  fields the derivation's hasGuide arm names). The evaluator's
- *  presence grammar mirrors normalizeDeclaredRefs's counting law
- *  closely enough that the probe arm pins the agreement on the
- *  blank/empty edges (a whitespace ref_images is ZERO refs on both
- *  spellings). */
+ *  refuses. `guideKeys` reads the doc level (the keyframe pin
+ *  channel, the last_frame string, the ref surface, the doc-level
+ *  guide aliases — presence, never count: a non-empty-after-trim
+ *  string or a non-empty array), `callGuideKeys` reads inside each
+ *  calls row (the per-call guide fields the derivation's hasGuide
+ *  arm names). The evaluator's presence grammar mirrors
+ *  normalizeDeclaredRefs's counting law closely enough that the
+ *  probe arm pins the agreement on the blank/empty edges (a
+ *  whitespace ref_images is ZERO refs on both spellings). */
 export declare const FAMILY_LAW: {
     readonly lanes: readonly [{
         readonly lane: "t4_chain";
         readonly minCalls: 2;
     }, {
         readonly lane: "t4r";
-        readonly guideKeys: readonly ["keyframes", "last_frame", "ref_images", "ref_videos", "ref_audios"];
+        readonly guideKeys: readonly ["keyframes", "last_frame", "ref_images", "ref_videos", "ref_audios", "image", "image_name", "ref_image"];
         readonly callGuideKeys: readonly ["image", "ref_images", "ref_image", "image_name"];
     }, {
         readonly lane: "t4_open";
@@ -113,31 +115,13 @@ export declare const FAMILY_LAW: {
         readonly t4r: readonly ["sharpen_switch", "sharpen_method", "sharpen_strength", "sharpen_radius", "sharpen_threshold", "sharpen_iterations", "interp_switch", "interp_multiplier", "interp_model", "sr_switch", "sr_model", "sr_resolution", "second_pass_enabled", "sharpen_enabled", "interpolate_enabled", "attention_backend"];
     };
 };
-/** THE FAMILY-RESEAT SPINE (the ERROR g/h cure, 2026-11-08): the ONE
- *  reseat spelling for the settlement seam — the seat that lands an
- *  arrival whose family FLIPPED under carried stamps (the emit's
- *  legal t4_open era settling under a keyframe pin; the bench
- *  merge-patch landing a non-studio flip). Drops every PRESENT
- *  family-dead key and names them — the settlement lands the row
- *  the next run composes (the lane-migration law's own spelling:
- *  stale carry drops before the store, never a stored doc refusing
- *  later). The caller owns the voice (the drafts patch row, the
- *  studio's unstating op); this spine owns the MATH. A doc whose
- *  family honors the keys rides unchanged (dropped: []). */
-/**
- * THE CARRY LINE (2026-11-11, the one-seat law's family-seam proof):
- * a T4-only key drops only when the PRIOR row stated it — the doc's
- * own carried past, stranded by the family flip this reseat settles.
- * A key the merged doc holds only because THIS write states it is
- * authored, stands untouched, and the write door's family judge
- * refuses it in the run door's own voice. Never a launderer.
- * @param doc the merged params view the write door would judge
- * @param prior the stored row's params BEFORE the merge
- */
-export declare function reseatFamilyDead(doc: Record<string, unknown>, prior: Record<string, unknown>): {
-    doc: Record<string, unknown>;
-    dropped: string[];
-};
+/** THE FAMILY-RESEAT MATH — DEAD SPINE, one spelling (the one-seat
+ *  migration, 2026-11-12): the settlement math lives in
+ *  @melite/contracts familyLane.ts (reseatDeadKeys), driven by the
+ *  FAMILY_LAW data above. Every caller — the registry's reseat
+ *  seat, the studio's pick settlement — rides that spelling. This
+ *  module keeps only the family's own face: deriveWindowFamily
+ *  (the typed derivation over the same data). */
 /** (2026-11-06, the family-reseat cure) the doc-level window family
  *  derivation, ONE spelling for every door that needs the family
  *  BEFORE the walk refuses: the walk derives the composed doc's

@@ -1,9 +1,9 @@
 import Schema from '@deepseek-ai/schemastery';
 export type { Context } from '@deepseek-ai/cordis';
-import type { GraphBuilder, PromptGraph } from './graph.js';
-import type { ModelFacts } from './facts.js';
-import type { Schema as CarrierSchema, DeclaredModifierKind } from './params-emit.js';
-import type { ProvisionRow } from './model-contract.js';
+import type { GraphBuilder, PromptGraph } from './graph.ts';
+import type { ModelFacts } from './facts.ts';
+import type { Schema as CarrierSchema, DeclaredModifierKind } from './params-emit.ts';
+import type { ProvisionRow } from './model-contract.ts';
 export interface CardFlowOutputBinding {
     channel: string;
     node: string;
@@ -224,28 +224,5 @@ export interface CardDefinition {
         ok: false;
         error: string;
     };
-    /** THE FAMILY RESEAT (the ERROR g/h cure, 2026-11-08 — the
-     *  settlement seam the pre-validation walls pre-registered): the
-     *  family flip's own writer. When an ARRIVAL flips the derived
-     *  family (a keyframe pin over a carried-stamp doc), the carried
-     *  family-dead keys drop HERE — before the write doors judge and
-     *  store — so the row that lands is the row the next run composes
-     *  (the lane-migration law's spelling, on the family axis; never a
-     *  stored doc refusing later). The judge above keeps its teeth for
-     *  AUTHORED poison: this face settles the FLIP's CARRIED strand
-     *  only — a key the PRIOR row stated (the doc's own past). A key
-     *  the merged view holds only because THIS write states it is
-     *  authored, stands untouched, and the judge refuses it in the
-     *  run door's own voice (the 2026-11-11 one-seat law: the drop is
-     *  never a launderer). Returns the reseated params + the dropped
-     *  key names (an empty dropped set = the doc rode unchanged);
-     *  optional — a card without a family contract declares nothing.
-     *  OWED (ROADMAP, the one-seat destination): this face dies into
-     *  the registry's ONE migration seat once the derived family
-     *  rides the lane identity — never extended again. */
-    reseatFamily?(params: Record<string, unknown>, priorParams: Record<string, unknown>): {
-        params: Record<string, unknown>;
-        dropped: readonly string[];
-    } | null;
 }
 //# sourceMappingURL=card-definition.d.ts.map

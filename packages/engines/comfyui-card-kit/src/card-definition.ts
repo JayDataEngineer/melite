@@ -230,27 +230,20 @@ export interface CardDefinition {
   admitFamily?(
     params: Record<string, unknown>,
   ): { ok: true } | { ok: false; error: string }
-  /** THE FAMILY RESEAT (the ERROR g/h cure, 2026-11-08 — the
-   *  settlement seam the pre-validation walls pre-registered): the
-   *  family flip's own writer. When an ARRIVAL flips the derived
-   *  family (a keyframe pin over a carried-stamp doc), the carried
-   *  family-dead keys drop HERE — before the write doors judge and
-   *  store — so the row that lands is the row the next run composes
-   *  (the lane-migration law's spelling, on the family axis; never a
-   *  stored doc refusing later). The judge above keeps its teeth for
-   *  AUTHORED poison: this face settles the FLIP's CARRIED strand
-   *  only — a key the PRIOR row stated (the doc's own past). A key
-   *  the merged view holds only because THIS write states it is
-   *  authored, stands untouched, and the judge refuses it in the
-   *  run door's own voice (the 2026-11-11 one-seat law: the drop is
-   *  never a launderer). Returns the reseated params + the dropped
-   *  key names (an empty dropped set = the doc rode unchanged);
-   *  optional — a card without a family contract declares nothing.
-   *  OWED (ROADMAP, the one-seat destination): this face dies into
-   *  the registry's ONE migration seat once the derived family
-   *  rides the lane identity — never extended again. */
-  reseatFamily?(
-    params: Record<string, unknown>,
-    priorParams: Record<string, unknown>,
-  ): { params: Record<string, unknown>; dropped: readonly string[] } | null
+  /** THE DERIVED-FAMILY LANE AXIS (h3's t4_open/t4r/t4_chain — a
+   *  family derived from the doc's own shape, an axis no DECL
+   *  variant row can name) declares NOTHING on the card definition
+   *  (the one-seat migration, 2026-11-12): the family's lanes and
+   *  dead keys live on the MODEL DECL (ModelDecl.familyLaw — h3's
+   *  index.ts serves the contract module's FAMILY_LAW by reference,
+   *  one object, one truth), and the registry's ONE family seat
+   *  (cardsRegistry.reseatStageFamily) resolves that declaration
+   *  through the card's boarded families and drops the flip's
+   *  carried strand through the shared spelling
+   *  (@melite/contracts familyLane.ts — reseatDeadKeys). The
+   *  per-card reseatFamily face below is DELETED; the declaration
+   *  judge at prime() reds on any card that grows one, and on any
+   *  DECL whose deadKeys name a lane its lanes array does not
+   *  declare. Never a second function face: grow the DECLARATION,
+   *  never the code. */
 }

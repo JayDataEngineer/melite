@@ -1,7 +1,7 @@
-import type { FlowsSeat } from "./flowsData.js";
-import type { FamilyModelsSeat } from "./flowsFamilyCompose.js";
-export { disclosureRoot } from "./skillFs.js";
-export { engineDirs, modelRows, cardRows, flowRows } from "./skillRows.js";
+import type { FlowsSeat } from "./flowsData.ts";
+import type { FamilyModelsSeat } from "./flowsFamilyCompose.ts";
+export { disclosureRoot } from "./skillFs.ts";
+export { engineDirs, modelRows, cardRows, flowRows } from "./skillRows.ts";
 /** A wire-contract refusal the disclosure engine could not
  *  construct around — the doors translate it to a structured 500
  *  (lane_disclosure.LaneWireError 100-102; the class NAME rides the

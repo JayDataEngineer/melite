@@ -2,6 +2,7 @@
   "compilerOptions": {
     "noEmitOnError": true,
       "paths": {
+        "@melite/contracts/familyLane": ["./../../web-kit/contracts/src/familyLane.ts"],
         "@melite/models-fibo2-edit/mods/loras": ["./../../models/fibo2-edit/mods/loras.ts"],
         "@melite/models-fibo2-edit/mods/mask": ["./../../models/fibo2-edit/mods/mask.ts"],
         "@melite/estate-provisioning/contracts": ["./../../estate/provisioning/src/contracts.ts"],

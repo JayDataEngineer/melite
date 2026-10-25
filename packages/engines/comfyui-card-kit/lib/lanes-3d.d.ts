@@ -1,4 +1,4 @@
-import type { PromptGraph, StripTable } from './graph.js';
+import type { PromptGraph, StripTable } from './graph.ts';
 /** The wired-tensor law (the lanes-image precedent, ported 1:1):
  *  a '$name' value names an upstream stage's wired output — the
 // ── archetype III: the poser turnaround family ──────────────────────

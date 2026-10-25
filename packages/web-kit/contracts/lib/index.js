@@ -2,6 +2,7 @@
  *  The floor every other @melite package (and every plugin) stands on. */
 export * from "./extraKeys.js";
 export * from "./laneRelations.js";
+export * from "./familyLane.js";
 export * from "./FlowTypes.js";
 export * from "./benchResult.js";
 export * from "./card.js";

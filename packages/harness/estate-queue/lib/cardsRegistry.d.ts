@@ -2,12 +2,13 @@ import { Service } from "@deepseek-ai/cordis";
 import type { Context } from "@deepseek-ai/cordis";
 import type { FactsReads } from "@melite/comfyui-cordis";
 import type { CardDefinition } from '@melite/comfyui-card-kit/card-definition';
-import { RUNS_ERROR_CODES } from "./runsErrorCodes.js";
-export { CardArmError } from "./cardsArmError.js";
-import type { CardDeclRow, ModelFactsRow } from "./cardsFacts.js";
-export { selectCardVariant, stampCardOverlay, liftCardParams } from "./cardsVariant.js";
-export type { VariantSelection } from "./cardsVariant.js";
-export type { CardDeclRow, ModelFactsRow, VariantCellRow, ResolvedVariantRow } from "./cardsFacts.js";
+import { RUNS_ERROR_CODES } from "./runsErrorCodes.ts";
+export { CardArmError } from "./cardsArmError.ts";
+import type { CardDeclRow, ModelFactsRow } from "./cardsFacts.ts";
+import { type FamilyLaw } from "@melite/contracts/familyLane";
+export { selectCardVariant, stampCardOverlay, liftCardParams } from "./cardsVariant.ts";
+export type { VariantSelection } from "./cardsVariant.ts";
+export type { CardDeclRow, ModelFactsRow, VariantCellRow, ResolvedVariantRow } from "./cardsFacts.ts";
 /** The card-envelope keys: SELECT the graph, never ride it.
  *
  *  THE ROW COORDINATES ARE THE CONTRACT'S (the operator's live
@@ -55,17 +56,29 @@ export declare function resolveCardOutputsOrThrow(defs: ReadonlyMap<string, Pick
     outputNodes: Record<string, string>;
 };
 /** THE FAMILY-RESEAT CARVE (operator 2026-11-11: "just make a carve
- *  for H3 as an exception, then do the ONE seat for the rest"): the
- *  cards sanctioned to declare a per-card reseatFamily face. H3
- *  rides it because its lane identity is DERIVED from the doc's
- *  params (deriveWindowFamily), a family axis no DECL variant row
- *  can name. Every other family's lane-shift drops ride the
- *  registry's ONE migration seat (laneMigrate — DECL-driven).
- *  prime() reds on any drift in either direction: a new face
- *  without an entry here, or a stale entry whose card dropped its
- *  face. Empty the carve the day the derived family rides the lane
- *  declaration. */
+ *  for H3 as an exception, then do the ONE seat for the rest") —
+ *  EMPTIED (the one-seat migration, 2026-11-12): the per-card
+ *  reseatFamily face is DEAD. The derived family (h3's
+ *  t4_open/t4r/t4_chain — an axis no DECL variant row can name)
+ *  rides the lane DECLARATION (CardDefinition.familyLaw), and the
+ *  registry's ONE family seat (reseatStageFamily) derives the lane
+ *  and drops the strand through the shared spelling
+ *  (@melite/contracts familyLane.ts). The constant stays (empty) as
+ *  the boot judge's truth: prime() reds on ANY card declaring a
+ *  reseatFamily face — the carve can never silently refill. */
 export declare const FAMILY_RESEAT_CARVE: readonly string[];
+/** THE FAMILY-LAW DECLARATION JUDGE (the one-seat migration,
+ *  2026-11-12 — pure core; prime() throws on its verdict): every
+ *  declared law must name at least one lane, and every deadKeys
+ *  lane must be a lane the lanes array declares. A drop keyed to a
+ *  lane nobody derives never fires — a law the estate refuses to
+ *  serve, red at boot BEFORE any live write. Pure over the
+ *  (family → law) pairs so the wall drives the judge's own path;
+ *  prime() resolves the pairs off the card defs' boarded families
+ *  (getModel — the DECL's one home).
+ *  @param laws the declared family laws, keyed by family id
+ *  @returns the drift sentences (empty = every law serves) */
+export declare function familyLawDrift(laws: ReadonlyMap<string, FamilyLaw>): string[];
 export declare class CardRegistryService extends Service {
     static inject: string[];
     /** The primed card definitions (null until prime()). */
@@ -286,10 +299,13 @@ export declare class CardRegistryService extends Service {
         ok: false;
         error: string;
     };
-    /** THE FAMILY RESEAT (the ERROR g/h cure, 2026-11-08 — the
-     *  settlement seat the walls pre-registered): the card's own
-     *  reseat face (CardDefinition.reseatFamily — h3-timeline's
-     *  reseatFamilyDead spine) drops the family-dead carry a flipped
+    /** THE FAMILY RESEAT — THE ONE SEAT (the ERROR g/h cure
+     *  2026-11-08; the one-seat migration 2026-11-12): the card's
+     *  familyLaw DECLARATION (ModelDecl.familyLaw — resolved through
+     *  the card's boarded families, familyLawOfCard) drives the
+     *  shared drop math (@melite/contracts familyLane.ts —
+     *  reseatDeadKeys, the same spelling the client compose mirror
+     *  derives through), dropping the family-dead carry a flipped
      *  arrival strands, BEFORE the write doors judge and store — the
      *  lane-migration law's own spelling (stale carry drops, the row
      *  that lands is the row the next run composes) for the family
@@ -298,10 +314,9 @@ export declare class CardRegistryService extends Service {
      *  later. The judge keeps its teeth for AUTHORED poison (a doc
      *  assembled family-dead with no flip still refuses at
      *  admitStageFamily — this seat only settles the flip's own
-     *  strand). Null when the card declares no reseat face.
-     *  THE CARVE (2026-11-11): the face is the H3 exception only —
-     *  prime() reds any card outside FAMILY_RESEAT_CARVE that grows
-     *  one. */
+     *  strand, the carry line 2026-11-11). Null when the card
+     *  declares no family law. The per-card reseatFamily face is
+     *  DEAD — prime() reds on any card declaring one. */
     reseatStageFamily(card: string, params: Record<string, unknown>, priorParams: Record<string, unknown>): {
         params: Record<string, unknown>;
         dropped: readonly string[];
