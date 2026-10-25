@@ -417,6 +417,33 @@ test('a picked family survives the re-landed doc (the re-seed never snaps back t
   // picked family, never the row's old one
   expect((screen.getByLabelText('Model') as HTMLButtonElement).textContent).toContain('Trellis2 Native')
 })
+test('a picked family whose re-keyed spec fetch REFUSES surfaces the voice and never snaps back (F13-studio)', async () => {
+  // F13 (drill-cure-coverage r2, narrowed r3): the studio had no
+  // re-keyed-fetch-FAILURE wall — the heal wall unmounted instead of
+  // failing the heldModel re-key at studio.tsx's useFormSpec call.
+  // The pick re-keys the hook on the picked family; when THAT flight
+  // refuses, the door's own word renders on the studio face and the
+  // Model axis keeps the picked family — never a snap-back to the
+  // row's old family, never a silent stale face.
+  let calls = 0
+  vi.stubGlobal('fetch', async (url: unknown): Promise<Response> => {
+    if (String(url).includes('/v1/form-spec')) {
+      calls += 1
+      if (calls === 1) return new Response(JSON.stringify(FAMILIES_SPEC), { status: 200, headers: { 'content-type': 'application/json' } })
+      return new Response(JSON.stringify({ error: 'the picked family door refused' }), { status: 503, headers: { 'content-type': 'application/json' } })
+    }
+    return new Response('{}', { status: 200 })
+  })
+  render(studio())
+  await screen.findByText('Resolution', {}, { timeout: 4000 })
+  fireEvent.click(screen.getByLabelText('Model'))
+  fireEvent.click(screen.getByRole('menuitem', { name: /Trellis2 Native/ }))
+  // the refusal voice surfaces — the door's OWN word, never a
+  // generic fallback (the rejectionVoice lossless law)
+  await screen.findByText('the picked family door refused', {}, { timeout: 4000 })
+  // the axis still reads the PICKED family — no snap-back
+  expect((screen.getByLabelText('Model') as HTMLButtonElement).textContent).toContain('Trellis2 Native')
+})
 
 describe('THE SETTINGS-EATER LAW (every edit fires through the door, 2026-10-21)', () => {
   // THE BURN CLASS (write-through.ts's own docstring, never wired):
