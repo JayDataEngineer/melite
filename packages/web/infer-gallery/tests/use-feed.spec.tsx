@@ -307,7 +307,7 @@ describe('useFeed — the boot-staged cache (E2-3 arm 2)', () => {
     const first = renderHook(() => useFeed('/infer-gallery/runs', decode, EMPTY))
     await waitFor(() => { expect(first.result.current.loading).toBe(false) })
     expect(first.result.current.stale).toBe(false)
-    expect(JSON.parse(localStorage.getItem(KEY) as string)).toEqual({ runs: [{ run_id: 'r1' }] })
+    expect(JSON.parse(localStorage.getItem(KEY) as string)).toEqual({ v: 1, feed: { runs: [{ run_id: 'r1' }] } })
     first.unmount()
 
     // second boot: the fetch hangs (the boot race) — the cached feed
@@ -325,7 +325,7 @@ describe('useFeed — the boot-staged cache (E2-3 arm 2)', () => {
     await waitFor(() => { expect(second.result.current.loading).toBe(false) })
     expect(second.result.current.data).toEqual({ runs: [{ run_id: 'r2' }] })
     expect(second.result.current.stale).toBe(false)
-    expect(JSON.parse(localStorage.getItem(KEY) as string)).toEqual({ runs: [{ run_id: 'r2' }] })
+    expect(JSON.parse(localStorage.getItem(KEY) as string)).toEqual({ v: 1, feed: { runs: [{ run_id: 'r2' }] } })
     second.unmount()
   })
 
@@ -338,6 +338,65 @@ describe('useFeed — the boot-staged cache (E2-3 arm 2)', () => {
     expect(result.current.data).toEqual(EMPTY)
   })
 
+  // ── AUDIT F6 CLOSE (2026-11-12): the version stamp + the judged
+  // discard. An older-era cache (bare feed, no envelope) hydrated
+  // UNDER-REPORTED faces until fresh seated; a poisoned entry was
+  // left in the store to re-poison every later boot. Four arms.
+  // EVICTION IS OBSERVED AT BOOT, with the fetch HANGING: a fresh
+  // load that seats overwrites the store, so asserting after the
+  // settle would pass with eviction toggled out (the first toggle
+  // red proved exactly that — the weaker-law lesson).
+  const hangFetch = (): void => {
+    vi.stubGlobal('fetch', vi.fn(async () => { await new Promise<void>(() => {}); return ok({ runs: [] }) }))
+  }
+
+  it('an OLD-ERA bare cache refuses AND evicts (never hydrates under-reported faces)', async () => {
+    localStorage.setItem(KEY, JSON.stringify({ runs: [{ run_id: 'old-era' }] }))
+    hangFetch()
+    const { result, unmount } = renderHook(() => useFeed('/infer-gallery/runs', decode, EMPTY))
+    expect(result.current.stale, 'no staged face from an unstamped cache').toBe(false)
+    expect(result.current.data).toEqual(EMPTY)
+    expect(localStorage.getItem(KEY), 'the old-era entry is EVICTED at boot, before any fresh write could mask it').toBeNull()
+    unmount()
+  })
+
+  it('a FOREIGN-VERSION cache refuses and evicts too', async () => {
+    localStorage.setItem(KEY, JSON.stringify({ v: 99, feed: { runs: [{ run_id: 'future' }] } }))
+    hangFetch()
+    const { result, unmount } = renderHook(() => useFeed('/infer-gallery/runs', decode, EMPTY))
+    expect(result.current.stale).toBe(false)
+    expect(result.current.data).toEqual(EMPTY)
+    expect(localStorage.getItem(KEY), 'the foreign-version entry is EVICTED at boot').toBeNull()
+    unmount()
+  })
+
+  it('a CURRENT-VERSION cache whose decode THROWS evicts the entry (the boot survives fresh)', async () => {
+    // the envelope is current but the feed shape is poison for THIS
+    // era's decoder — the discard must also REMOVE, or every later
+    // boot re-parses the same poison.
+    localStorage.setItem(KEY, JSON.stringify({ v: 1, feed: { runs: 'not-an-array' } }))
+    const strictDecode = (json: unknown): Row => {
+      const runs = (json as { runs?: unknown }).runs
+      if (!Array.isArray(runs)) throw new Error('bad shape')
+      return { runs }
+    }
+    hangFetch()
+    const { result, unmount } = renderHook(() => useFeed('/infer-gallery/runs', strictDecode, EMPTY))
+    expect(result.current.stale, 'a decode-throwing cache stages nothing').toBe(false)
+    expect(result.current.data).toEqual(EMPTY)
+    expect(localStorage.getItem(KEY), 'the decode-throwing entry is REMOVED at boot').toBeNull()
+    unmount()
+  })
+
+  it('a corrupt cache is EVICTED (not just ignored) — the poison never survives to the next boot', async () => {
+    localStorage.setItem(KEY, '{not json')
+    hangFetch()
+    const { result, unmount } = renderHook(() => useFeed('/infer-gallery/runs', decode, EMPTY))
+    expect(result.current.stale).toBe(false)
+    expect(localStorage.getItem(KEY), 'the unparseable entry is gone from the store at boot').toBeNull()
+    unmount()
+  })
+
   // THE SUPERSEDED LOAD'S SETTLE (audit 2026-11-12-boot-feed F4a): a
   // reload mid-stale aborts the first load — when that dead load's
   // transport THEN settles (rejected), its catch stays SILENT and its
@@ -346,7 +405,7 @@ describe('useFeed — the boot-staged cache (E2-3 arm 2)', () => {
   // both abort guards (useFeed.ts catch + finally) that no earlier
   // arm reached.
   it('a superseded load settling after its abort touches nothing (stale stays, loading stays, error stays empty)', async () => {
-    localStorage.setItem(KEY, JSON.stringify({ runs: [{ run_id: 'r1' }] }))
+    localStorage.setItem(KEY, JSON.stringify({ v: 1, feed: { runs: [{ run_id: 'r1' }] } }))
     let failFirst: ((error: Error) => void) | null = null
     const gate1 = new Promise<void>((_, reject) => { failFirst = reject })
     let release2: (() => void) | null = null
@@ -376,7 +435,7 @@ describe('useFeed — the boot-staged cache (E2-3 arm 2)', () => {
     // poison the NEXT boot's first paint with a feed no live load ever
     // served). The aborted load persists nothing — the cache keeps the
     // last SERVED feed:
-    expect(localStorage.getItem(KEY)).toBe(JSON.stringify({ runs: [{ run_id: 'r1' }] }))
+    expect(localStorage.getItem(KEY)).toBe(JSON.stringify({ v: 1, feed: { runs: [{ run_id: 'r1' }] } }))
     // the owning load seats: replaces the paint, clears stale
     release2!()
     await waitFor(() => { expect(result.current.loading).toBe(false) })
@@ -384,7 +443,7 @@ describe('useFeed — the boot-staged cache (E2-3 arm 2)', () => {
     expect(result.current.stale).toBe(false)
     // and the OWNING load's cache write is the one that lands (its
     // served feed persists):
-    expect(localStorage.getItem(KEY)).toBe(JSON.stringify({ runs: [{ run_id: 'r2' }] }))
+    expect(localStorage.getItem(KEY)).toBe(JSON.stringify({ v: 1, feed: { runs: [{ run_id: 'r2' }] } }))
     unmount()
   })
 })

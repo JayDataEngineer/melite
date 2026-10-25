@@ -2093,19 +2093,46 @@ window.__ModuleLoader__.load({
 		*  persists client-side and paints instantly on the next boot. Keyed
 		*  by the feed url — localStorage is origin-scoped, so two estates
 		*  (two lanes, two ports) never cross-paint. A cache that will not
-		*  parse is discarded, never a crashed boot. */
+		*  parse is discarded, never a crashed boot.
+		*
+		*  THE VERSION STAMP (audit F6 close, 2026-11-12): a cache written
+		*  by an older-era decoder hydrated and painted UNDER-REPORTED faces
+		*  (live example: pre-2b caches under-reporting `truncated`) until a
+		*  fresh load seated — the door's shape check is at the keyability
+		*  floor only, so an old cache passes it with missing keys. Every
+		*  write wraps the feed with the cache version; a read unwraps and
+		*  REFUSES any cache whose stamp is absent (an older era) or foreign
+		*  — discarded AND EVICTED, so the poison never re-hydrates on the
+		*  next boot. */
+		const FEED_CACHE_VERSION = 1;
 		const feedCacheKey = (url) => "melite:feed:" + url;
 		function readFeedCache(url) {
-			try {
-				const raw = localStorage.getItem(feedCacheKey(url));
-				return raw === null ? null : JSON.parse(raw);
-			} catch {
+			const key = feedCacheKey(url);
+			const evict = () => {
+				try {
+					localStorage.removeItem(key);
+				} catch {}
 				return null;
+			};
+			try {
+				const raw = localStorage.getItem(key);
+				if (raw === null) return null;
+				const parsed = JSON.parse(raw);
+				if (typeof parsed !== "object" || parsed === null) return evict();
+				const env = parsed;
+				if (env.v !== FEED_CACHE_VERSION || !("feed" in env)) return evict();
+				return env.feed ?? null;
+			} catch {
+				return evict();
 			}
 		}
 		function writeFeedCache(url, json) {
 			try {
-				localStorage.setItem(feedCacheKey(url), JSON.stringify(json));
+				const env = {
+					v: FEED_CACHE_VERSION,
+					feed: json
+				};
+				localStorage.setItem(feedCacheKey(url), JSON.stringify(env));
 			} catch {}
 		}
 		/** Refetch when the page becomes visible / regains focus, throttled.
@@ -2140,6 +2167,9 @@ window.__ModuleLoader__.load({
 					decode(json);
 					return { cached: json };
 				} catch {
+					try {
+						localStorage.removeItem(feedCacheKey(url));
+					} catch {}
 					return { cached: null };
 				}
 			});

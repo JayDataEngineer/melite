@@ -30,21 +30,54 @@ export interface Feed<T> {
  *  persists client-side and paints instantly on the next boot. Keyed
  *  by the feed url — localStorage is origin-scoped, so two estates
  *  (two lanes, two ports) never cross-paint. A cache that will not
- *  parse is discarded, never a crashed boot. */
+ *  parse is discarded, never a crashed boot.
+ *
+ *  THE VERSION STAMP (audit F6 close, 2026-11-12): a cache written
+ *  by an older-era decoder hydrated and painted UNDER-REPORTED faces
+ *  (live example: pre-2b caches under-reporting `truncated`) until a
+ *  fresh load seated — the door's shape check is at the keyability
+ *  floor only, so an old cache passes it with missing keys. Every
+ *  write wraps the feed with the cache version; a read unwraps and
+ *  REFUSES any cache whose stamp is absent (an older era) or foreign
+ *  — discarded AND EVICTED, so the poison never re-hydrates on the
+ *  next boot. */
+const FEED_CACHE_VERSION = 1
+
+interface FeedCacheEnvelope {
+  v: number
+  feed: unknown
+}
+
 const feedCacheKey = (url: string): string => 'melite:feed:' + url
 
 function readFeedCache(url: string): unknown | null {
-  try {
-    const raw = localStorage.getItem(feedCacheKey(url))
-    return raw === null ? null : JSON.parse(raw) as unknown
-  } catch {
+  const key = feedCacheKey(url)
+  const evict = (): null => {
+    try { localStorage.removeItem(key) } catch { /* a sealed store has nothing to evict */ }
     return null
+  }
+  try {
+    const raw = localStorage.getItem(key)
+    if (raw === null) return null
+    const parsed = JSON.parse(raw) as unknown
+    // THE STAMP LAW: only a same-version envelope is a cache. A bare
+    // feed (an older era's shape) or a foreign version discards —
+    // the under-reported-face class dies at the door.
+    if (typeof parsed !== 'object' || parsed === null) return evict()
+    const env = parsed as Partial<FeedCacheEnvelope>
+    if (env.v !== FEED_CACHE_VERSION || !('feed' in env)) return evict()
+    return env.feed ?? null
+  } catch {
+    // unparseable bytes: discard AND evict (the poisoned entry must
+    // not survive to poison the next boot's parse)
+    return evict()
   }
 }
 
 function writeFeedCache(url: string, json: unknown): void {
   try {
-    localStorage.setItem(feedCacheKey(url), JSON.stringify(json))
+    const env: FeedCacheEnvelope = { v: FEED_CACHE_VERSION, feed: json }
+    localStorage.setItem(feedCacheKey(url), JSON.stringify(env))
   } catch {
     /* quota or a sealed store — the staged face is a gift, never a law */
   }
@@ -76,7 +109,10 @@ function useRefreshOnVisible(reload: () => void, throttleMs: number): void {
 export function useFeed<T>(url: string, decode: (json: unknown) => T, initial: T): Feed<T> {
   // THE BOOT-STAGED FIRST PAINT (E2-3 arm 2): the persisted feed
   // hydrates SYNCHRONOUSLY (the initializer — no effect, no flicker);
-  // a cache whose shape no longer decodes is discarded fresh.
+  // a cache whose shape no longer decodes is discarded fresh — AND
+  // EVICTED (audit F6 close): a poisoned entry left in the store
+  // re-poisons every later boot's parse; the discard is a removal,
+  // never a look-away.
   const [boot] = useState<{ cached: unknown | null }>(() => {
     const json = readFeedCache(url)
     if (json === null) return { cached: null }
@@ -84,6 +120,7 @@ export function useFeed<T>(url: string, decode: (json: unknown) => T, initial: T
       decode(json)
       return { cached: json }
     } catch {
+      try { localStorage.removeItem(feedCacheKey(url)) } catch { /* sealed store: nothing to evict */ }
       return { cached: null }
     }
   })
