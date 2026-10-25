@@ -1084,6 +1084,55 @@ describe("compose (the model path)", () => {
     svc.compose("card1", "fam1", {}, "r");
   });
 
+  it("an absent family slice is EMPTY — never the flat union (the cold-start r9 law)", async () => {
+    // The r9 burn: a card declaring slices for ONE family gated
+    // every OTHER family through the `?? requires` fallback —
+    // z-image inherited qwen-img-21's mask slice and refused on a
+    // thin engine its graph never touched. A declared slice map
+    // scopes ALL families; an absent slice is empty.
+    const svc = await boot();
+    svc.registerCard(card({
+      boarded: ["fam1", "fam2"],
+      requires: ["flat-pack"],
+      requiresByFamily: { fam1: ["fam-pack"] },
+    }));
+    svc.setFacts(factsFor({ fam1: {}, fam2: {} }, { "fam-pack": ["FamNode"], "flat-pack": ["FlatNode"] }));
+    svc.setObjectInfoNodes(["TestNode"]);
+    const graph = svc.compose("card1", "fam2", {}, "r");
+    assert.ok("TestNode.0" in graph, "the slice-absent family composes clean on a thin engine");
+    assert.throws(() => svc.compose("card1", "fam1", {}, "r"), /requires 'fam-pack'/, "the declared family's slice still gates");
+  });
+
+  it("the model-less arm scopes the inferred family's slice (absent = empty; multi-board keeps the flat gate)", async () => {
+    const mk = async (): Promise<ComfyUIService> => {
+      const svc = await boot();
+      svc.setFacts(factsFor({}, { "fam-pack": ["FamNode"], "flat-pack": ["FlatNode"] }));
+      svc.setObjectInfoNodes(["TestNode"]);
+      return svc;
+    };
+    // single-board model-less: the inferred family scopes the gate
+    const solo = await mk();
+    solo.registerCard(card({
+      boarded: ["fam2"],
+      requiresModel: false,
+      flowKinds: { inputs: {}, outputs: { default: "image" }, requiresModel: false },
+      requires: ["flat-pack"],
+      requiresByFamily: { fam1: ["fam-pack"] },
+    }));
+    solo.compose("card1", null, {}, "r-less-solo", undefined);
+    // multi-board model-less: no inferred family — the flat union
+    // gates (refusing loud beats an ungated run)
+    const multi = await mk();
+    multi.registerCard(card({
+      boarded: ["fam1", "fam2"],
+      requiresModel: false,
+      flowKinds: { inputs: {}, outputs: { default: "image" }, requiresModel: false },
+      requires: ["flat-pack"],
+      requiresByFamily: { fam1: ["fam-pack"] },
+    }));
+    assert.throws(() => multi.compose("card1", null, {}, "r-less-multi", undefined), /requires 'flat-pack'/);
+  });
+
   it("undefined params compose (the cascade starts from the model truth)", async () => {
     let seen: Record<string, unknown> = {};
     const svc = await bootModel({ compose: (params) => { seen = { ...params }; } });

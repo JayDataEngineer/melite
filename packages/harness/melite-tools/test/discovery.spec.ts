@@ -640,6 +640,37 @@ describe('live door arms', () => {
     assert.equal('fields' in body, false)
   })
 
+  test('specBody packs block scopes the family slice — an absent slice is EMPTY, never the flat union (cold-start r9)', async () => {
+    // The r9 law mirrored on the discovery face: when the card
+    // declares requiresByFamily, the per-family spec body's packs
+    // block carries THAT family's slice — a family absent from the
+    // map serves NO pack row (its install-time census is empty),
+    // never the flat union (which would tell the installing agent
+    // to fetch a pack the family's graph never touches).
+    const svc = theService()
+    const defs = new Map([['__sliced__', card({
+      identity: { label: 'Sliced', description: 'slice-scoped packs', genre: 'image' },
+      boarded: ['fam1', 'fam2'],
+      requires: ['flat-pack'],
+      requiresByFamily: { fam1: ['fam-pack'] },
+    })]])
+    const realFormSchemas = svc.formSchemas.bind(svc)
+    const fakeSvc = {
+      formSchemas: (c: string, key: string): unknown => {
+        if (c !== '__sliced__') return realFormSchemas(c, key)
+        return { schema: { uid: 0, refs: { 0: { type: 'object', dict: {} } } }, mods: {} }
+      },
+      modCatalog: (): unknown => ({ shared: false, rows: [] }),
+      cardModFields: (): unknown[] => [],
+      packPresence: (packs: readonly string[]): Array<{ id: string, present: boolean | null }> =>
+        packs.map((id) => ({ id, present: null })),
+    } as unknown as ReturnType<typeof theService>
+    const fam1 = specBody(fakeSvc, defs, { card: '__sliced__', service: '__sliced__', model: 'fam1' })
+    const fam2 = specBody(fakeSvc, defs, { card: '__sliced__', service: '__sliced__', model: 'fam2' })
+    assert.deepEqual((fam1['packs'] as Array<{ id: string }>).map((p) => p.id), ['fam-pack'], 'the declared family carries its slice')
+    assert.deepEqual(fam2['packs'], [], 'the slice-absent family serves NO pack row — never the flat union')
+  })
+
   test('specBody serves card-declared mod kinds VERBATIM on the one modifiers channel (stroke 63)', async () => {
     const svc = theService()
     // CONTRACT A: the card's own action kinds ride
