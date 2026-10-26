@@ -1129,7 +1129,9 @@ describe("THE RE-POINT RESCOPE AT THE WRITE SEAM — the anima burn cures", () =
     ], undefined, undefined, WALL_DOCS_KNOB);
     await openWallDrill();
     // the burn's face: the krea-2 lora tile rides the krea-2 stage
-    expect(document.querySelector('[data-mod-tile="loras-0"]')).not.toBeNull();
+    // (tile ids are content-minted since debt 24: <param_key>#<tag>.<occ>
+    // — the pack's own prefix is the stable selector, never an index id)
+    expect(document.querySelector('[data-mod-tile^="loras#"]')).not.toBeNull();
     // THE OPERATOR'S RE-POINT (the semantic-model face): ONE bare
     // model key — exactly the write the tool face / an agent patch /
     // a stage copy lands
@@ -1150,7 +1152,7 @@ describe("THE RE-POINT RESCOPE AT THE WRITE SEAM — the anima burn cures", () =
     // own first rows
     expect(await screen.findByTestId("stage-preview-seat", {}, { timeout: 4000 })).toBeTruthy();
     await waitFor(() => {
-      expect(document.querySelector('[data-mod-tile="loras-0"]')).toBeNull();
+      expect(document.querySelector('[data-mod-tile^="loras#"]')).toBeNull();
     });
     await waitFor(async () => { expect(await axisFace("Model")).toBe("Anima"); });
     await waitFor(async () => { expect(await axisFace("Variant")).toContain("Base V1.0"); });
@@ -1163,7 +1165,7 @@ describe("THE RE-POINT RESCOPE AT THE WRITE SEAM — the anima burn cures", () =
       { id: "s_0", card: "image-gen", engine: "comfyui", params: burnParams(true) } as never,
     ], undefined, undefined, WALL_DOCS);
     await openWallDrill();
-    expect(document.querySelector('[data-mod-tile="loras-0"]')).not.toBeNull();
+    expect(document.querySelector('[data-mod-tile^="loras#"]')).not.toBeNull();
     // THE MODEL RAIL (the one model gesture the axes serve): the
     // pick's frame re-derives through the switch law against the FULL
     // holding — the served schema never names the loras bag (the one
@@ -1180,7 +1182,7 @@ describe("THE RE-POINT RESCOPE AT THE WRITE SEAM — the anima burn cures", () =
     // the anima spec lands over the real door: tile GONE, the axes
     // cleared and re-stamped with the arrival's own rows
     await waitFor(() => {
-      expect(document.querySelector('[data-mod-tile="loras-0"]')).toBeNull();
+      expect(document.querySelector('[data-mod-tile^="loras#"]')).toBeNull();
     });
     await waitFor(async () => { expect(await axisFace("Model")).toBe("Anima"); });
     await waitFor(async () => { expect(await axisFace("Variant")).toContain("Base V1.0"); });
@@ -1197,7 +1199,7 @@ describe("THE RE-POINT RESCOPE AT THE WRITE SEAM — the anima burn cures", () =
     ];
     mountBench(stages, undefined, undefined, WALL_DOCS);
     await openWallDrill();
-    expect(document.querySelector('[data-mod-tile="loras-0"]')).toBeNull();
+    expect(document.querySelector('[data-mod-tile^="loras#"]')).toBeNull();
     // THE EXTERNAL WRITER (the studio / the agent's bag write): the
     // bag lands on the BENCH row after open — the drill's user map
     // never reseeds (stage.id + modelKey are unmoved)

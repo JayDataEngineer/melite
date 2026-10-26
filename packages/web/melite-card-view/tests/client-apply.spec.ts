@@ -207,7 +207,11 @@ function restore(fake: FakeCtx): void {
 
 describe("the entry exports — the client contract", () => {
   test("inject names the seats (registries before bodies)", () => {
-    expect(inject).toEqual(["slots", "sidebarRightTabs", "resources", "sidebarRight", "remote", "uiConversation", "uiSession"]);
+    // THE CANONICAL SEAT (2026-10-24, 639bfb88a): uiSession left the
+    // inject list — the shell threads sessionId as a slot PROP and
+    // the spotlight keys off the tab's own marked-bench truth
+    // (markCardsSurface), never the adapter
+    expect(inject).toEqual(["slots", "sidebarRightTabs", "resources", "sidebarRight", "remote", "uiConversation"]);
   });
 
   test("CARD_TOOLS claims every producing tool (the tile renders for all)", () => {
@@ -553,18 +557,13 @@ describe("apply() — the session source (stroke 44)", () => {
         },
       }),
     } as never;
-    fake.uiSession = {
-      adapter: {
-        current: {
-          getSnapshot: () => ({ props: { sessionId: "s_chat7" } }),
-          subscribe: (fn: () => void): (() => void) => {
-            fake.sawSessionSubscribe = true;
-            fn();
-            return () => {};
-          },
-        },
-      },
-    };
+    // THE CANONICAL SEAT (2026-10-24): the session source is the
+    // tab's own marked-bench key (markCardsSurface — the same slot
+    // prop the body receives), never the uiSession adapter. live=
+    // false: this battery mounts NO bench surface, and a LIVE+
+    // expanded surface would lawfully SKIP the reveal (the user is
+    // already reading it — shouldSpotlight's own law)
+    markCardsSurface(false, "s_chat7");
     try {
       await apply(fake.ctx as never);
       await vi.waitFor(() => {
@@ -572,9 +571,9 @@ describe("apply() — the session source (stroke 44)", () => {
           throw new Error("agent land never revealed the bench");
         }
       }, { timeout: 10000 });
-      // the session adapter was subscribed (push-driven re-keys) and
-      // the first stream state was accepted exactly once
-      expect(fake.sawSessionSubscribe).toBe(true);
+      // the push-driven re-key seam is the marked-bench listeners
+      // (proven live by the re-key arm below) and the first stream
+      // state was accepted exactly once
       expect(lands).toHaveLength(1);
       expect(fake.errors).toEqual([]);
       // the tab type's GUIDE callbacks answer (the shell reads them
@@ -596,12 +595,12 @@ describe("apply() — the session source (stroke 44)", () => {
 
   test("a session switch re-keys the stream mid-flight (the watcher follows the selection)", async () => {
     const fake = fakeCtx();
-    // mutable session: s_chat7 first, then s_chat8, then a THROWING
-    // snapshot (getSession's catch reads main — the watcher re-keys
-    // to main, never dies)
+    // THE CANONICAL SEAT (2026-10-24): the session source is the
+    // marked-bench key — s_chat7 first, then s_chat8. The old
+    // adapter's THROWING-snapshot face died with the adapter (a
+    // module string never throws); the boot-window 'main' fallback
+    // is benchSessionOf's own law.
     let current: string = "s_chat7";
-    let snapshotThrows = false;
-    let fireSession: (() => void) | undefined;
     const statesFor = (key: string): Array<Record<string, unknown>> => [
       { rev: 3, log: [{ rev: 1, author: "user" }] },
       { rev: 7, log: [{ rev: 4, author: "agent" }] },
@@ -638,20 +637,7 @@ describe("apply() — the session source (stroke 44)", () => {
         };
       },
     } as never;
-    fake.uiSession = {
-      adapter: {
-        current: {
-          getSnapshot: () => {
-            if (snapshotThrows) throw new Error("seat down");
-            return { props: { sessionId: current } };
-          },
-          subscribe: (fn: () => void): (() => void) => {
-            fireSession = fn;
-            return () => {};
-          },
-        },
-      },
-    };
+    markCardsSurface(false, current);
     try {
       await apply(fake.ctx as never);
       // land on s_chat7 first (hydration, then the agent reveal)
@@ -660,27 +646,18 @@ describe("apply() — the session source (stroke 44)", () => {
           throw new Error("first key never revealed");
         }
       }, { timeout: 10000 });
-      // SWITCH: the selection moves to s_chat8; the listener fires
-      // and the watcher re-keys — the next agent land reveals s_chat8
+      // SWITCH: the selection moves to s_chat8; markCardsSurface
+      // fires the marked-bench listeners (the push seam) and the
+      // watcher re-keys — the next agent land reveals s_chat8
       current = "s_chat8";
-      fireSession?.();
+      markCardsSurface(false, current);
       await vi.waitFor(() => {
         if (!fake.opened.includes("dsh-resource://cards/bench/s_chat8")) {
           throw new Error("re-key never revealed the new session");
         }
       }, { timeout: 10000 });
-      // a THROWING snapshot reads main (getSession's catch): the
-      // re-key lands on main and its agent row reveals the main bench
-      snapshotThrows = true;
-      fireSession?.();
-      await vi.waitFor(() => {
-        if (!fake.opened.includes("dsh-resource://cards/bench/main")) {
-          throw new Error("main re-key never revealed");
-        }
-      }, { timeout: 10000 });
       expect(fake.errors).toEqual([]);
       expect(seenKeys).toContain("s_chat8");
-      expect(seenKeys).toContain("main");
     } finally {
       restore(fake);
     }

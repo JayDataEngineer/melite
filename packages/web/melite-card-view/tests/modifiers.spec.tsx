@@ -293,7 +293,9 @@ test('a family-macro lora rides the bag as an ORDINARY editable row — no recip
 
 test('removing a macro-stamped row commits the plain bag — no guard needed, one stack only', () => {
   const { onEdit } = mount({ loras: [{ id: 'krea2_realism_lora' }, { id: 'krea2_darkbrush', strength: 0.5 }] })
-  fireEvent.click(document.querySelector('[data-mod-tile="loras-0"]') as HTMLElement)
+  // the tile id is content-minted (debt 24: <param_key>#<tag>.<occurrence>)
+  // — select the first tile, never a hand-spelled index id
+  fireEvent.click(document.querySelector('[data-mod-tile]') as HTMLElement)
   fireEvent.click(screen.getByRole('button', { name: 'Remove' }))
   expect(onEdit).toHaveBeenCalledWith('loras', [{ id: 'krea2_darkbrush', strength: 0.5 }])
 })
