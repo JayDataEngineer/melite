@@ -74,7 +74,21 @@ const formSpecSweep = async (...args: Parameters<typeof formSpecArm>): Promise<R
       return await formSpecArm(...args)
     } catch (error) {
       if (attempt >= 4 || !/zz-cov-\d+/.test(String(error))) throw error
-      await new Promise((r): void => { setTimeout(r, 200) })
+      // Flake item 7 (2026-10-13 audit, converted 2026-10-26): the
+      // backoff sleep rides FAKE timers scoped to the sleep alone —
+      // formSpecArm itself never runs under them (read first: its
+      // body is fs reads + sync compose + promise awaits, zero
+      // timer APIs), so a frozen clock can never wedge a real-fs
+      // arm. The retry stays a bounded, rare-path backoff: only the
+      // zz-cov scratch signature ever reaches it.
+      vi.useFakeTimers()
+      try {
+        const slept = new Promise((r): void => { setTimeout(r, 200) })
+        await vi.advanceTimersByTimeAsync(200)
+        await slept
+      } finally {
+        vi.useRealTimers()
+      }
     }
   }
 }

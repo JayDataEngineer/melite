@@ -794,10 +794,16 @@ describe("THE COVERAGE RATCHET LAW (floors only move UP; every gated file has a 
     }
   });
 
-  it("every row carries four finite floors", () => {
+  it("every row carries four finite floors or the honest null (zero paths)", () => {
+    // THE NULL FLOOR LAW (flake item 5, seated 2026-10-26): null is
+    // the "zero paths on this metric" spelling — istanbul judges pct
+    // 100 vacuously at total 0, so a numeric floor there is a lie.
+    // The classification is the regen's (it sees the counts); these
+    // arms only pin the shape every row must hold.
     for (const [key, row] of Object.entries(COVERAGE_BASELINE)) {
       for (const metric of ["statements", "branches", "functions", "lines"] as const) {
         const value = (row as Record<string, unknown>)[metric];
+        if (value === null) continue;
         expect(typeof value, `${key} ${metric}`).toBe("number");
         expect(Number.isFinite(value as number), `${key} ${metric} is finite`).toBe(true);
         expect(value as number, `${key} ${metric} is a percentage`).toBeGreaterThanOrEqual(0);
@@ -828,8 +834,13 @@ describe("THE COVERAGE RATCHET LAW (floors only move UP; every gated file has a 
       const numstat = execFileSyncSafe(["git", "diff", "--numstat", "HEAD", "--", rel]);
       const deleted = numstat === null ? 0 : Number(numstat.trim().split("\t")[0] ?? "0");
       for (const metric of ["statements", "branches", "functions", "lines"] as const) {
-        const now = (row as Record<string, number>)[metric];
-        if (now >= was[metric]) continue;
+        const now = (row as Record<string, number | null>)[metric];
+        // NULL (zero paths) never participates in monotonicity: a
+        // number→null transition is the regen's vacuity
+        // classification, and the regen's own stale-null refusal
+        // guards null→number honesty at the artifact face.
+        if (now === null || was[metric] === null) continue;
+        if (now >= (was[metric] as number)) continue;
         // the flap clause, BOUNDED: the entry excuses exactly the
         // argued transition — the committed floor must equal the
         // entry's `from` and the working floor must not undercut
@@ -896,10 +907,10 @@ function execFileSyncSafe(cmd: string[]): string | null {
 
 /** The prior table, read back through the module itself so both
  *  sides share one parser (a regex over the source would drift). */
-function parseRows(source: string): Record<string, Record<string, number>> {
-  const out: Record<string, Record<string, number>> = {};
-  for (const m of source.matchAll(/'([^']+)':\s*\{\s*statements:\s*([\d.]+),\s*branches:\s*([\d.]+),\s*functions:\s*([\d.]+),\s*lines:\s*([\d.]+)\s*\}/gu)) {
-    out[m[1]!] = { statements: Number(m[2]), branches: Number(m[3]), functions: Number(m[4]), lines: Number(m[5]) };
+function parseRows(source: string): Record<string, Record<string, number | null>> {
+  const out: Record<string, Record<string, number | null>> = {};
+  for (const m of source.matchAll(/'([^']+)':\s*\{\s*statements:\s*([\d.]+|null),\s*branches:\s*([\d.]+|null),\s*functions:\s*([\d.]+|null),\s*lines:\s*([\d.]+|null)\s*\}/gu)) {
+    out[m[1]!] = { statements: m[2] === "null" ? null : Number(m[2]), branches: m[3] === "null" ? null : Number(m[3]), functions: m[4] === "null" ? null : Number(m[4]), lines: m[5] === "null" ? null : Number(m[5]) };
   }
   return out;
 }
@@ -967,5 +978,120 @@ describe("THE COVERAGE EMPTY-TABLE TRIPWIRE (no rows is a loud failure, never a 
     // vitest 4 splices every project's test `include` verbatim into
     // coverage.exclude; a `!` row there negates against EVERY file.
     expect(/include:\s*\[[^\]]*'[!]/.test(config), "a `!`-prefixed include row would zero every coverage run again").toBe(false);
+  });
+});
+
+// THE NULL-FLOOR + K=1-MARGIN LAWS (flake audit 2026-10-13 items 5+6,
+// seated 2026-10-26): these arms drive the REGEN ITSELF over
+// synthetic json-summary faces — the classifier is the law's seat.
+// A metric with total 0 is judged pct 100 by istanbul VACUOUSLY; its
+// floor mints null (never a numeric lie). A number floor mints with
+// the K=1 covered-path margin so losing ONE path stays green. A null
+// floor whose metric now carries paths REFUSES the regen. Registry:
+// gates-coverage-null-floor-mint.
+import { mkdtempSync, writeFileSync, readFileSync as readTmp } from "node:fs";
+import { tmpdir } from "node:os";
+
+describe("THE NULL-FLOOR MINT + K=1 MARGIN (the regen's own classification law)", () => {
+  const summaryFace = (files: Record<string, Record<string, [number, number]>>): string => {
+    // [covered, total] pairs per metric, the json-summary shape
+    const body: Record<string, unknown> = {};
+    for (const [file, metrics] of Object.entries(files)) {
+      body[file] = Object.fromEntries(Object.entries(metrics).map(([k, [covered, total]]) => [
+        k,
+        { covered, total, pct: total === 0 ? 100 : (100 * covered) / total },
+      ]));
+    }
+    return JSON.stringify(body);
+  };
+
+  const runRegen = (dir: string, faces: string[], baseline: string):
+    { code: number; out: string; table: string } => {
+    faces.forEach((face, i) => writeFileSync(join(dir, `face-${i}.json`), face));
+    writeFileSync(join(dir, "baseline.ts"), baseline);
+    try {
+      const out = execFileSync("node", [
+        join(ROOT, "scripts", "coverage-regen.mjs"),
+        "--summaries", faces.map((_, i) => join(dir, `face-${i}.json`)).join(","),
+        "--baseline", join(dir, "baseline.ts"),
+      ], { encoding: "utf8", cwd: ROOT, stdio: ["ignore", "pipe", "pipe"] });
+      return { code: 0, out, table: readTmp(join(dir, "baseline.ts"), "utf8") };
+    } catch (e) {
+      const err = e as { status?: number; stdout?: string; stderr?: string; message?: string };
+      return {
+        code: err.status ?? 1,
+        out: (err.stdout ?? "") + (err.stderr ?? ""),
+        table: readTmp(join(dir, "baseline.ts"), "utf8"),
+      };
+    }
+  };
+
+  const row = (glob: string, floors: string): string =>
+    `  '${glob}': { statements: ${floors.split("/")[0]}, branches: ${floors.split("/")[1]}, functions: ${floors.split("/")[2]}, lines: ${floors.split("/")[3]} },`;
+
+  it("a zero-path metric mints null — never a vacuous 100 floor", () => {
+    const dir = mkdtempSync(join(tmpdir(), "cov-null-mint-"));
+    // 10 statements covered of 10; branches carries ZERO paths (the
+    // vacuous class — istanbul would report pct 100)
+    const face = summaryFace({
+      "/w/x/src/a.ts": { statements: [10, 10], branches: [0, 0], functions: [4, 4], lines: [10, 10] },
+    });
+    const table = runRegen(dir, [face, face],
+      "export const COVERAGE_BASELINE = {\n" + row("**/x/src/a.ts", "90/100/100/95") + "\n};\n").table;
+    expect(table, "the rewritten table spells the zero-path metric null").toContain("branches: null");
+    expect(table).not.toContain("branches: 100");
+  });
+
+  it("a whole-file vacuous row mints null×4 (the honest zero-paths spelling)", () => {
+    const dir = mkdtempSync(join(tmpdir(), "cov-null4-"));
+    const face = summaryFace({
+      "/w/x/src/b.ts": { statements: [0, 0], branches: [0, 0], functions: [0, 0], lines: [0, 0] },
+    });
+    const table = runRegen(dir, [face, face],
+      "export const COVERAGE_BASELINE = {\n" + row("**/x/src/b.ts", "100/100/100/100") + "\n};\n").table;
+    expect(table).toContain("statements: null, branches: null, functions: null, lines: null");
+  });
+
+  it("number floors mint with the K=1 covered-path margin — 10/10 covered seats 90, not 100", () => {
+    const dir = mkdtempSync(join(tmpdir(), "cov-margin-"));
+    const face = summaryFace({
+      "/w/x/src/c.ts": { statements: [10, 10], branches: [8, 10], functions: [4, 4], lines: [10, 10] },
+    });
+    const table = runRegen(dir, [face, face],
+      "export const COVERAGE_BASELINE = {\n" + row("**/x/src/c.ts", "0/0/0/0") + "\n};\n").table;
+    // statements: 100·(10−1)/10 = 90; branches: 100·(8−1)/10 = 70;
+    // functions: 100·(4−1)/4 = 75; lines: 90 — every metric one
+    // covered-path below its measured face
+    expect(table).toContain("statements: 90");
+    expect(table).toContain("branches: 70");
+    expect(table).toContain("functions: 75");
+  });
+
+  it("a stale null floor — the metric now carries paths — refuses the regen, naming glob:metric", () => {
+    const dir = mkdtempSync(join(tmpdir(), "cov-stale-null-"));
+    const face = summaryFace({
+      "/w/x/src/d.ts": { statements: [10, 10], branches: [6, 10], functions: [4, 4], lines: [10, 10] },
+    });
+    const verdict = runRegen(dir, [face, face],
+      "export const COVERAGE_BASELINE = {\n" + row("**/x/src/d.ts", "90/null/75/90") + "\n};\n");
+    expect(verdict.code, "the regen must refuse, never silently seat").not.toBe(0);
+    expect(verdict.out).toContain("STALE NULL FLOOR");
+    expect(verdict.out).toContain("**/x/src/d.ts");
+    expect(verdict.out).toContain("branches");
+  });
+
+  it("null floors never participate in the fail-set (a zero-path metric has no threshold to breach)", () => {
+    const dir = mkdtempSync(join(tmpdir(), "cov-null-fail-"));
+    const face = summaryFace({
+      "/w/x/src/e.ts": { statements: [5, 10], branches: [0, 0], functions: [2, 4], lines: [5, 10] },
+    });
+    // statements measured 50 against a floor of 90: an UNSTABLE
+    // fail-set would refuse — but both faces carry it identically,
+    // so the run succeeds and only statements is in the fail-set.
+    // The arm: a null branches floor above (vacuously) 100 must not
+    // add **/x/src/e.ts:branches to any fail-set — the run exits 0.
+    const verdict = runRegen(dir, [face, face],
+      "export const COVERAGE_BASELINE = {\n" + row("**/x/src/e.ts", "40/null/40/40") + "\n};\n");
+    expect(verdict.code, "stable fail-set with a null floor riding").toBe(0);
   });
 });

@@ -14,16 +14,22 @@
 //      identical 79-metric failing set with zero face drift"). A
 //      tree whose failures move between runs is not measurable —
 //      the script refuses, naming the drift.
-//   2. FLOORS — each row's new value is the MIN over the input faces
-//      (the 2026-11-07 law: "each raised floor is the MIN of the
-//      three runs' faces"). Raises ride the ratchet (floors only
-//      move up); DROPS are capped at the old value per metric and
-//      every dropping row is EMITTED for the ratchet spec's argued
+//   2. FLOORS — each number floor is the K=1 MARGIN MINT over the
+//      input faces: 100 · max(0, covered − 1) / total, MIN'd across
+//      faces (flake item 6, seated 2026-10-26 — a floor pinned AT
+//      the measured face is a zero-headroom landmine: losing ONE
+//      covered path reds with no signal separating regression from
+//      jitter). Raises ride the ratchet (floors only move up);
+//      DROPS are capped at the old value per metric and every
+//      dropping row is EMITTED for the ratchet spec's argued
 //      tables — a drop without an entry still fails the spec's
 //      monotonicity arm.
-//   3. VACUOUS ROWS — a file whose json row carries 0/0 totals is
-//      never a fail (istanbul judges pct 100 at total 0); its floor
-//      passes through untouched.
+//   3. VACUOUS METRICS (flake item 5, seated 2026-10-26) — a metric
+//      whose json row carries total 0 is judged pct 100 by istanbul
+//      VACUOUSLY; its floor mints null (the honest zero-paths
+//      spelling), and a null floor whose metric later carries paths
+//      REFUSES the regen naming glob:metric. A whole-file vacuous
+//      row mints null×4.
 //
 // Usage:
 //   node scripts/coverage-regen.mjs --summaries a.json b.json c.json \
@@ -53,7 +59,7 @@ if (summaryPaths.length < 2) {
   process.exit(2)
 }
 
-const ROW_RE = /^(\s*'\*\*\/[^']+': \{ statements: )([\d.]+)(, branches: )([\d.]+)(, functions: )([\d.]+)(, lines: )([\d.]+)( \},?[^\n]*)$/mg
+const ROW_RE = /^(\s*'\*\*\/[^']+': \{ statements: )([\d.]+|null)(, branches: )([\d.]+|null)(, functions: )([\d.]+|null)(, lines: )([\d.]+|null)( \},?[^\n]*)$/mg
 const METRICS = ['statements', 'branches', 'functions', 'lines']
 
 /** @param {string} path
@@ -65,9 +71,34 @@ function faceOf(path) {
     if (file === 'total') continue
     const row = { statements: data.statements.pct, branches: data.branches.pct, functions: data.functions.pct, lines: data.lines.pct }
     row._vacuous = data.statements.total === 0 && data.branches.total === 0 && data.functions.total === 0 && data.lines.total === 0
+    // PER-METRIC COUNTS (flake items 5+6, seated 2026-10-26): a
+    // metric with total 0 on its file is VACUOUS (istanbul judges
+    // pct 100) — its floor mints null, never a number; number
+    // floors mint with the K=1 covered-path margin.
+    row._counts = {}
+    for (const k of METRICS) row._counts[k] = { covered: data[k].covered, total: data[k].total }
     face.set(file, row)
   }
   return face
+}
+
+/** The K=1 margin mint (flake item 6): 100 · max(0, covered − 1) /
+ *  total, MIN over the faces that carry paths on this metric. A
+ *  floor pinned at the measured face is a zero-headroom landmine —
+ *  losing ONE covered path reds with no signal separating
+ *  regression from jitter; the margin makes the loss of one path
+ *  the floor's own green face.
+ *  @param {Array<Record<string, number>>} rowsWithPaths
+ *  @param {string} k
+ *  @returns {number} */
+function marginFloor(rowsWithPaths, k) {
+  let min = null
+  for (const row of rowsWithPaths) {
+    const c = row._counts[k]
+    const pct = c.total === 0 ? 100 : (100 * Math.max(0, c.covered - 1)) / c.total
+    min = min === null ? pct : Math.min(min, pct)
+  }
+  return Math.round(min * 100) / 100
 }
 
 const faces = summaryPaths.map(faceOf)
@@ -89,16 +120,19 @@ if (seenGlobs.size !== rows.length) {
 
 /** @type {Map<string, Set<string>>} face-name -> fail keys */
 const failSets = new Map(faces.map((_, i) => [summaryPaths[i], new Set()]))
-/** @type {Array<{glob: string, floor: Record<string, number>, min: Record<string, number>|null, vacuous: boolean}>} */
+/** @type {Array<{glob: string, floor: Record<string, number|null>, min: Record<string, number>|null, vacuous: boolean, withPaths: Array<Record<string, number>>}>} */
 const computed = []
 for (const m of rows) {
   const glob = m[0].match(/'(\*\*\/[^']+)'/)[1]
-  const floor = { statements: Number(m[2]), branches: Number(m[4]), functions: Number(m[6]), lines: Number(m[8]) }
+  const floor = { statements: m[2] === 'null' ? null : Number(m[2]), branches: m[4] === 'null' ? null : Number(m[4]), functions: m[6] === 'null' ? null : Number(m[6]), lines: m[8] === 'null' ? null : Number(m[8]) }
   // every baseline row must match exactly one file per face (glob suffix)
   const suffix = glob.slice(3)
   let min = null
   let vacuous = false
   let matched = false
+  /** the faces that carry paths on this file — the margin mint's
+   *  inputs (vacuous faces have no counts to mint from). */
+  const withPaths = []
   for (let i = 0; i < faces.length; i++) {
     const hits = [...faces[i].keys()].filter((f) => f.endsWith(suffix))
     if (hits.length === 0) continue
@@ -109,7 +143,10 @@ for (const m of rows) {
     }
     const row = faces[i].get(hits[0])
     if (row._vacuous) { vacuous = true; continue }
-    const fails = METRICS.filter((k) => row[k] < floor[k]).map((k) => glob + ':' + k)
+    withPaths.push(row)
+    // NULL FLOORS never fail (a zero-path metric has no threshold to
+    // breach); number floors fail as before.
+    const fails = METRICS.filter((k) => floor[k] !== null && row[k] < floor[k]).map((k) => glob + ':' + k)
     for (const f of fails) failSets.get(summaryPaths[i]).add(f)
     if (min === null) min = { statements: row.statements, branches: row.branches, functions: row.functions, lines: row.lines }
     else for (const k of METRICS) min[k] = Math.min(min[k], row[k])
@@ -118,7 +155,18 @@ for (const m of rows) {
     console.error('coverage-regen: baseline glob "' + glob + '" matches no summary file — the include set moved; refusing')
     process.exit(1)
   }
-  computed.push({ glob, floor, min, vacuous })
+  // THE STALE-NULL REFUSAL (flake item 5's gate law): a null floor
+  // spells "zero paths" — a metric that now carries paths in ANY
+  // face is no longer vacuous, and its null is a lie that excludes
+  // the metric from every threshold. Refuse, naming glob:metric.
+  if (withPaths.length > 0) {
+    const stale = METRICS.filter((k) => floor[k] === null && withPaths.some((row) => row._counts[k].total > 0))
+    if (stale.length > 0) {
+      console.error('coverage-regen: STALE NULL FLOOR — ' + glob + ' carries paths on ' + stale.join('/') + ' (null spells zero paths; re-seat the row at a number)')
+      process.exit(1)
+    }
+  }
+  computed.push({ glob, floor, min, vacuous, withPaths })
 }
 
 // STABILITY: identical fail-sets across faces (compared by content —
@@ -142,20 +190,32 @@ if (!stable) {
 const failCount = [...failSets.values()][0].size
 console.error('coverage-regen: fail-set stable across ' + faces.length + ' faces — ' + failCount + ' metric failures')
 
-// EMIT: rewrite row numbers (MIN of faces, raises uncapped, drops
-// capped at nothing — the ratchet spec's entries own the capping
-// review) and collect the drop table.
+// EMIT: rewrite row floors — null for zero-path metrics (the honest
+// vacuous spelling), the K=1 margin for number metrics — and collect
+// the drop table (drops are capped at nothing here; the ratchet
+// spec's entries own the capping review).
 const drops = []
 const out = baseline.replace(ROW_RE, (_whole, pre, st, m1, br, m2, fn, m3, ln, post) => {
   const glob = (_whole.match(/'(\*\*\/[^']+)'/) ?? [])[1]
   const c = computed.find((x) => x.glob === glob)
-  if (c === undefined || c.min === null) return _whole // vacuous or unmatched: pass through
-  const was = { statements: Number(st), branches: Number(br), functions: Number(fn), lines: Number(ln) }
+  if (c === undefined) return _whole
+  if (c.min === null) {
+    // WHOLE-FILE VACUITY (law 3, upgraded by item 5): the file
+    // carries zero paths in every face — the honest row is null×4,
+    // never a preserved numeric lie.
+    return pre + 'null' + m1 + 'null' + m2 + 'null' + m3 + 'null' + post
+  }
+  const was = { statements: st === 'null' ? null : Number(st), branches: br === 'null' ? null : Number(br), functions: fn === 'null' ? null : Number(fn), lines: ln === 'null' ? null : Number(ln) }
   const now = {}
-  for (const k of METRICS) now[k] = Math.round(c.min[k] * 100) / 100
-  const dropped = METRICS.filter((k) => now[k] < was[k])
+  for (const k of METRICS) {
+    now[k] = c.withPaths.length > 0 && c.withPaths.some((row) => row._counts[k].total > 0)
+      ? marginFloor(c.withPaths, k)
+      : null
+  }
+  const dropped = METRICS.filter((k) => now[k] !== null && was[k] !== null && now[k] < was[k])
   if (dropped.length > 0) drops.push({ glob, was, now })
-  return pre + String(now.statements) + m1 + String(now.branches) + m2 + String(now.functions) + m3 + String(now.lines) + post
+  const spell = (v) => (v === null ? 'null' : String(v))
+  return pre + spell(now.statements) + m1 + spell(now.branches) + m2 + spell(now.functions) + m3 + spell(now.lines) + post
 })
 writeFileSync(baselinePath, out)
 

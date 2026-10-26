@@ -781,7 +781,17 @@ export default defineConfig({
       // itself. The ratchet law lives with the table.
       thresholds: {
         perFile: true,
-        ...COVERAGE_BASELINE,
+        // THE NULL FLOOR LAW (flake item 5, 2026-10-26): a null floor
+        // spells "zero paths on this metric" — istanbul judges pct
+        // 100 vacuously at total 0, so a numeric threshold there
+        // would enforce a lie against nothing. Null metrics are
+        // EXCLUDED from the istanbul spread and judged by the regen's
+        // classification law instead (a null floor whose metric
+        // later carries >0 paths refuses the regen).
+        ...Object.fromEntries(Object.entries(COVERAGE_BASELINE).map(([glob, row]) => [
+          glob,
+          Object.fromEntries(Object.entries(row).filter(([, floor]) => floor !== null)),
+        ])),
       },
       // THE COVERAGE RUN ISOLATION (E5, 2026-10-17 — the vitest.config
       // typecheck-lane comment's "second deletes the first's tmp tree

@@ -101,11 +101,23 @@
 // untested — named in the receipt); upscale-tools is the largest
 // attribution casualty and the concrete candidate for the row's
 // owed item 3 (a local wall in its own package).
+// A floor is a number, or null. THE NULL FLOOR LAW (flake audit
+// 2026-10-13 item 5, seated 2026-10-26): istanbul reports pct 100
+// for a metric with ZERO paths on its file — a numeric floor there
+// (the vacuous-100 class) is a lie the gate enforces against
+// nothing. null is the honest "zero paths" spelling: the istanbul
+// threshold spread EXCLUDES the metric (vitest.config.ts), and the
+// regen owns the classification — a null floor whose metric later
+// carries >0 paths REFUSES the regen until the row is re-seated at
+// a number. Number floors mint with the K=1 margin (item 6):
+// 100 · max(0, covered − 1) / total — losing one covered path
+// stays green, distinguishing regression from jitter.
+export type CoverageFloor = number | null;
 export const COVERAGE_BASELINE: Record<string, {
-  statements: number
-  branches: number
-  functions: number
-  lines: number
+  statements: CoverageFloor
+  branches: CoverageFloor
+  functions: CoverageFloor
+  lines: CoverageFloor
 }> = {
   '**/packages/engines/comfyui-cordis/src/comfyui-vram.ts': { statements: 100, branches: 92.85, functions: 100, lines: 100 },
   '**/packages/image/mask-studio/src/ui/paintCopy.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
