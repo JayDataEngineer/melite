@@ -24,7 +24,10 @@ test('decorated probe with logs', async () => {
   await new Promise((r) => setTimeout(r, 25))
   console.log('TEST about to notify; listeners directly:', 'n/a')
   notifyBenchChange('main')
-  const second = await Promise.race([secondP, new Promise((r) => setTimeout(() => r('TIMEOUT'), 500))])
+  // No wall-clock race (flake audit 2026-10-13 item 7): a sentinel
+  // that can win converts a slow machine into a false failure with a
+  // misleading message — the enclosing it(..., 3000) owns the hang.
+  const second = await secondP
   console.log('TEST second:', JSON.stringify(second))
-  expect(second).not.toBe('TIMEOUT')
+  expect(second.done).toBe(false)
 }, 3000)

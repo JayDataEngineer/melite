@@ -6,6 +6,7 @@
 // from the real writer output. No network, no real canvas.
 import { describe, it, afterEach } from "vitest";
 import assert from "node:assert/strict";
+import { until } from "../../../../tests/helpers/until.ts";
 import { buildPsd, downloadBlob } from "../src/psdExport.ts";
 
 type Globals = Record<string, unknown>;
@@ -374,7 +375,11 @@ describe("downloadBlob", () => {
       // Revocation is deferred; the anchor removes itself synchronously.
       assert.equal(anchors[0].removed, true);
       assert.equal(seen.length, 1);
-      await new Promise((r) => setTimeout(r, 1100));
+      // Wait on the CONDITION, not a guess at when it lands (flake
+      // audit item 7): the 1100ms literal was a guess past the
+      // src's deferred revoke; polling returns the moment revocation
+      // happens and keeps a 5s ceiling for a loaded machine.
+      await until(() => revoked === "blob:fake", { turns: 200, intervalMs: 25 });
       assert.equal(revoked, "blob:fake");
     } finally {
       URL.createObjectURL = realCreate;

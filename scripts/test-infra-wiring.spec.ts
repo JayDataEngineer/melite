@@ -8,6 +8,7 @@
  * contract in their test-proxy-environment wiring test).
  */
 import { describe, it } from 'vitest'
+import { readFileSync } from 'node:fs'
 import assert from 'node:assert/strict'
 import { readdirSync } from 'node:fs'
 import { join, resolve } from 'node:path'
@@ -115,4 +116,19 @@ describe('vitest tier wiring', () => {
       }
     })
   }
+})
+
+describe('the tmp sweep table is the tree (flake audit §3a, Option A)', () => {
+  it('the generated prefix walk sees the minted literals — the sweep never drifts from the tree', async () => {
+    const { suitePrefixes } = await import('./tmp-prefixes.mjs')
+    const generated = suitePrefixes()
+    // the walk must be non-vacuous and duplicate-free
+    if (generated.length < 100) throw new Error(`the walk found only ${generated.length} prefixes — the pattern rotted`)
+    if (new Set(generated).size !== generated.length) throw new Error('duplicate prefixes')
+    // and global-sweep must CONSUME the walk, not a hand copy: the
+    // module source names the import, and no hand table grew back
+    const sweepSrc = readFileSync(join(ROOT, 'tests/global-sweep.ts'), 'utf8')
+    if (!sweepSrc.includes('tmp-prefixes.mjs')) throw new Error('global-sweep.ts no longer imports the generator — a hand table grew back')
+    if (/const SUITE_PREFIXES[^=]*=\s*\[/.test(sweepSrc)) throw new Error('a literal prefix table returned — regenerate, never hand-maintain')
+  })
 })

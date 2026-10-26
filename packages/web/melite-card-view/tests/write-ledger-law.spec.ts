@@ -70,6 +70,7 @@
 //       the gate waits for, and a key the timer already consumed is
 //       never written twice.
 import { afterEach, describe, expect, test, vi } from "vitest";
+import { until } from "../../../../tests/helpers/until.ts";
 import {
   flushStageWrites, forgetDraftWrites, forgetStageWrites, patchStageParams,
   reconcileStageWriteFailures, resetStageWrites, scheduleStageParam,
@@ -121,9 +122,11 @@ describe("THE FORCED WRITE IS SERIALIZED ON THE DOOR'S ANSWERED REV (the audit's
     // key fires — the render-time rev (7) is STALE by then, and the
     // old code collided with it by construction.
     void scheduleStageParam("bench-s1", "s_0", "prompt", "first", 7);
-    await new Promise((r) => setTimeout(r, 360));
+    // polled, never a 360ms guess past the 300ms trailing window
+    // (audit item 7): the first write's LANDING is the observable
+    await until(() => fakes.calls.some((c) => c.method === "drafts/patch"), { turns: 200, intervalMs: 15 });
     void scheduleStageParam("bench-s1", "s_0", "steps", 4, 7);
-    await new Promise((r) => setTimeout(r, 360));
+    await until(() => fakes.calls.filter((c) => c.method === "drafts/patch").length >= 2, { turns: 200, intervalMs: 15 });
     const state = await flushStageWrites("bench-s1", "s_0");
     expect(state.failedKeys).toEqual([]);
     const revs = fakes.calls
@@ -277,9 +280,10 @@ describe('TWO TIMERS IN ONE TICK LAND AT DISTINCT REVS (the 2026-10-11 send-coll
     // two keys scheduled in the SAME tick — both timers fire together
     void scheduleStageParam('bench-s1', 's_0', "steps", 8, 7);
     void scheduleStageParam('bench-s1', 's_0', "seed", 42, 7);
-    // let the natural trailing window elapse (no force — the TIMER
-    // arm is the seat under test)
-    await new Promise((r) => setTimeout(r, 600));
+    // let the trailing window elapse (no force — the TIMER arm is the
+    // seat under test), polled on the landed patches — never a 600ms
+    // guess at the 300ms window (audit item 7)
+    await until(() => fakes.calls.filter((c) => c.method === "drafts/patch").length >= 2, { turns: 400, intervalMs: 15 });
     const revs = fakes.calls
       .filter((c) => c.method === 'drafts/patch')
       .map((c) => c.args['expectRev']);

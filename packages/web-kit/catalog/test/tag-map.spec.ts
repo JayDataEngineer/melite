@@ -4,6 +4,7 @@
 // (node default) — the persisted-cache arms live in tag-map-init-*.spec.ts.
 import { describe, it, beforeEach, afterEach, vi } from "vitest";
 import assert from "node:assert/strict";
+import { until } from "../../../../tests/helpers/until.ts";
 import {
   TAG_COLOR_META,
   TAG_COLOR_VALUES,
@@ -196,8 +197,11 @@ describe("initTagSync gating", () => {
       getStatus = 200; // the transient fault heals before the next mutation
       // The next mutation fires the retry hook (GET 200 → pushes on)…
       fresh.useTagMap.getState().createTag("Retry", "brand");
-      // …and the debounce PUT then lands with the state aboard
-      await new Promise((r) => setTimeout(r, 700));
+      // …and the debounce PUT then lands with the state aboard —
+      // polled, never a fixed 700ms guess at the debounce (audit
+      // item 7): the wait ends the moment the PUT is observed and
+      // keeps an 8s ceiling for a loaded machine.
+      await until(() => seen.some((c) => c.method === "PUT"), { turns: 800, intervalMs: 10 });
       assert.ok(seen.some((c) => c.method === "PUT"), "the session's pushes resumed");
     } finally {
       console.warn = realWarn;
@@ -252,7 +256,8 @@ describe("debounced server PUT", () => {
     const s = useTagMap.getState();
     s.createTag("Putter");
     s.createTag("Putter Two");
-    await new Promise((r) => setTimeout(r, 700));
+    // polled condition, not a 700ms guess at the 500ms debounce
+    await until(() => puts.length === 1, { turns: 200, intervalMs: 10 });
     assert.equal(puts.length, 1);
     const doc = JSON.parse(puts[0]) as { tags: Record<string, unknown> };
     assert.ok("putter" in doc.tags && "putter-two" in doc.tags);
@@ -263,7 +268,10 @@ describe("debounced server PUT", () => {
     await initTagSync();
     globalThis.fetch = undefined as unknown as typeof fetch;
     useTagMap.getState().createTag("Offline");
-    await new Promise((r) => setTimeout(r, 700));
+    // No wait at all (audit item 7): the old 700ms sleep "waited" for
+    // a debounce that src never mints — schedulePush returns at its
+    // fetch-absent guard (tagMap.ts:195) BEFORE the timer exists, so
+    // the local-state assertion holds the moment createTag returns.
     assert.ok("offline" in state().tags);
   });
 

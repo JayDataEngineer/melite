@@ -499,10 +499,10 @@ describe('melite_flow card — the live allowlist', () => {
       params: { calls: [{ text: 'a shot', start_frame: 0, end_frame: 56 }] },
     }, fakeExec(AbortSignal.timeout(2000))) as Record<string, unknown>
     assert.equal(out.run_id, 'r-headless')
-    await Promise.race([
-      patched,
-      new Promise<never>((_, reject) => setTimeout(() => reject(new Error('headless attribution timeout')), 1500)),
-    ])
+    // an event, not a clock (flake audit 2026-10-13 item 7): the
+    // wall-clock race produced the WRONG error under load; the test
+    // timeout owns a true hang
+    await patched
     assert.deepEqual(patchBody?.result, {
       run_id: 'r-headless',
       url: '/melite-media/runs/r-headless/h3-film/film.mp4',
