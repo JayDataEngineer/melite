@@ -172,7 +172,7 @@ describe("the bench-stage refusal that carries its own loc", () => {
     );
     const err = await remote(() =>
       s.svc.start(
-        { draft_id: "d1", test: false, model: "m1", params: { prompt: "x" } },
+        { draft_id: "d1", test: false },
         sig(),
       ),
     );
@@ -220,7 +220,7 @@ describe("the bench-stage refusal that carries its own loc", () => {
     );
     const err = await remote(() =>
       s.svc.start(
-        { draft_id: "d1", test: false, model: "m1", params: { prompt: "x" } },
+        { draft_id: "d1", test: false },
         sig(),
       ),
     );
@@ -249,7 +249,7 @@ describe("THE KINDS PROJECTION (audit J-E1)", () => {
       ],
     });
     const ans = (await s.svc.start(
-      { draft_id: "d1", test: false, model: "m1", params: { prompt: "x" } },
+      { draft_id: "d1", test: false },
       sig(),
     )) as { run_id: string };
     assert.ok(ans.run_id !== "", "the wired bench ran");
@@ -281,7 +281,7 @@ describe("THE KINDS PROJECTION (audit J-E1)", () => {
       ],
     });
     const ans = (await s.svc.start(
-      { draft_id: "d1", test: false, model: "m1", params: { prompt: "x" } },
+      { draft_id: "d1", test: false },
       sig(),
     )) as { run_id: string };
     const run = s.core.runs.get(ans.run_id) as RunRecord | undefined;
@@ -307,7 +307,7 @@ describe("THE KINDS PROJECTION (audit J-E1)", () => {
       ],
     });
     const ans = (await s.svc.start(
-      { draft_id: "d1", test: false, model: "m1", params: { prompt: "x" } },
+      { draft_id: "d1", test: false },
       sig(),
     )) as { run_id: string };
     const run = s.core.runs.get(ans.run_id) as RunRecord | undefined;

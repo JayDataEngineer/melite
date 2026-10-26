@@ -1032,70 +1032,20 @@ describe("validate", () => {
     assert.equal(s.core.runs.size, 0);
   });
 
-  // THE WIRED-BENCH LAW (operator, 2026-10-10, verbatim: "By design,
-  // there is no 'non bench flow'. There is ALWAYS FromStage links.
-  // THERE IS NO FILTER, NO BREAKAGE FROM THIS. EVER."). The old gate
-  // REFUSED a single-card start on a wired bench and told the caller
-  // to run the flow — which is the bug: the GUI's per-stage Run, the
-  // agent's card start and any API caller hit it, on the one shape
-  // the run exists for. The door now BECOMES the bench run: the body
-  // restages onto flow_inline with the bench's own stages, and the
-  // wires ride as stage inputs.
-  it("THE CARD PLANE'S CLASSIFICATION survives the bench arm (one voice per refusal)", async () => {
-    // The bench arm used to collapse every card refusal into
-    // runs/invalid-request while the card arm preserved the code, so
-    // the same lane_input_missing — the one carrying the provision
-    // fetch URL — arrived under a different code depending on which
-    // arm composed it. The stage name rides the message; the
-    // classification is the card plane's own.
-    const s = seat(
-      {
-        modelFacts: (): unknown => ({ m1: {} }),
-        resolveCardFamily: (): unknown => "m1",
-        modelMids: (): unknown => new Set<string>(),
-        phase1Card: async (): Promise<unknown> => {
-          throw new CardArmError(
-            400,
-            "lane presence: family 'z-image' declares checkpoint 'x.safetensors' but no store copy exists — fetch it: https://example/x",
-            "lane_input_missing",
-            undefined,
-            undefined,
-            undefined,
-            { family: "z-image", slot: "checkpoint", missing: "x.safetensors", folders: ["checkpoints"], fetchUrl: "https://example/x", kind: "model" },
-          );
-        },
-      },
-      {
-        // a WIRED bench (a cross-link) is what the door restages into
-        // the bench-composed arm; a single unwired stage would take
-        // the card arm and prove nothing about this classification.
-        stages: [
-          { id: "s_0", card: "image-gen", params: { prompt: "x" } },
-          {
-            id: "s_1",
-            card: "image-edit",
-            params: { input_images: ["$input_images"] },
-            inputs: { input_images: { stage: "s_0", output: "default" } },
-          },
-        ],
-      },
-    );
-    const err = await remote(() =>
-      s.svc.start({ draft_id: "d1", test: false, model: "image-gen" }, sig()),
-    );
-    assert.equal(err.code, "runs/lane-input-missing", "the card plane's own code, not a generic collapse");
-    assert.match(err.message, /bench stage "s_0"/);
-    assert.match(err.message, /fetch it: https:\/\/example\/x/);
-    // THE EVIDENCE RIDES TOO: the card arm preserves the card plane's
-    // own loc/expected/got (pinned in the start spec), and "one voice
-    // per refusal" means this arm differs by the stage name and by
-    // nothing else — a lane_input_missing with no expected/got is a
-    // refusal nobody can act on.
-    const details = (err as unknown as { details?: Record<string, unknown> }).details ?? {};
-    assert.match(String(details["loc"]), /stages\/"s_0"/, "the stage is named, beside the card's own loc");
-  });
-
-  it("THE WIRED-BENCH LAW: a single-card start on a WIRED bench becomes the bench run — never a refusal, never a discarded wire", async () => {
+  // THE ONE-PRESS ONE-CARD LAW (operator, 2026-10-26: "WHEN I RUN A
+  // CARD INDEPENDENTLY, OTHER CARDS RUN TOO????????"). Until today a
+  // single-card start over a bench with ANY cross-wire was restaged
+  // onto the whole-bench compose (the 2026-10-10 wired-bench law's
+  // shape): one press executed every card on the bench — the
+  // operator's live catch minted run 3e4cf0680c0b, five stages
+  // composed off ONE tile press, and Run ALL amplified it N-fold.
+  // The 2026-10-10 order ("no filter, no breakage — wires always
+  // ride") is honored by RESOLUTION instead: the caller resolves the
+  // wire to the upstream's last result before the start (the
+  // client's wire-resolution law, stage-run.ts), and this door
+  // composes exactly ONE card. A raw unresolved $spell is the spell
+  // gate's loud refusal — never a discarded wire, never a fan-out.
+  it("THE ONE-PRESS ONE-CARD LAW: a single-card start on a WIRED bench composes ONE card — never the bench run", async () => {
     const s = modelDoorSeat(
       { SaveImage: { class_type: "SaveImage", inputs: {} } },
       {
@@ -1110,13 +1060,132 @@ describe("validate", () => {
         ],
       },
     );
-    // the caller still names the card arm (that is the GUI's press)
+    // the caller still names the card arm (that is the GUI's press),
+    // with the wire already resolved to the upstream's last result —
+    // the concrete value rides the param (THE PARAM IS THE WIRE)
     const ans = (await s.svc.start(
-      { draft_id: "d1", test: false, model: "m1", params: { prompt: "x" } },
+      { draft_id: "d1", test: false, model: "m1", params: { prompt: "x", input_images: ["/melite-media/runs/run-up-1/s_0/a.png"] } },
       sig(),
     )) as { run_id: string };
-    assert.ok(typeof ans.run_id === "string" && ans.run_id !== "", "the wired bench RAN");
-    assert.equal(s.core.runs.size, 1, "one run registered — the bench, not a discarded card");
+    assert.ok(typeof ans.run_id === "string" && ans.run_id !== "", "the pressed card RAN");
+    assert.equal(s.core.runs.size, 1, "one run registered");
+    const row = s.core.runs.get(ans.run_id) as unknown as {
+      stages: Array<{ id: string }>;
+      inputNames?: Record<string, Record<string, string>>;
+    };
+    // THE FAN-OUT KILL: exactly ONE stage composed. The restage this
+    // arm replaces composed BOTH bench stages here — this count is
+    // the red arm (toggle the cure out and this asserts 2 ≠ 1).
+    assert.equal(row.stages.length, 1, "ONE stage composed — the pressed card alone, the wired sibling untouched");
+    // and the one stage carries an EMPTY edge map (the card arm's
+    // own inputNames: {} stamp): the wire rode as the resolved
+    // param, not a FromStage link (a link here would name a stage
+    // this run never composed)
+    const stage = row.stages[0] as { id: string };
+    assert.deepEqual(
+      row.inputNames?.[stage.id] ?? {},
+      {},
+      "no stage-input edges on the single-card run — the wire rode resolved in params",
+    );
+  });
+  it("THE CARD PLANE'S CLASSIFICATION survives the door split (one voice per refusal, wired or not)", async () => {
+    // The bench arm used to collapse every card refusal into
+    // runs/invalid-request while the card arm preserved the code, so
+    // the same lane_input_missing — the one carrying the provision
+    // fetch URL — arrived under a different code depending on which
+    // arm composed it. Under the one-press one-card law every
+    // model-door press takes the card arm, so the classification is
+    // the card plane's own WHATEVER the bench's wiring — the same
+    // refusal for the wired and the unwired bench is the one-voice
+    // proof.
+    const facts = {
+      modelFacts: (): unknown => ({ m1: {} }),
+      resolveCardFamily: (): unknown => "m1",
+      modelMids: (): unknown => new Set<string>(),
+      phase1Card: async (): Promise<unknown> => {
+        throw new CardArmError(
+          400,
+          "lane presence: family 'z-image' declares checkpoint 'x.safetensors' but no store copy exists — fetch it: https://example/x",
+          "lane_input_missing",
+          undefined,
+          undefined,
+          undefined,
+          { family: "z-image", slot: "checkpoint", missing: "x.safetensors", folders: ["checkpoints"], fetchUrl: "https://example/x", kind: "model" },
+        );
+      },
+    };
+    const wired = seat(facts, {
+      // a WIRED bench (a cross-link): the one-press one-card law's
+      // exact shape — the wiring must not change the refusal's voice
+      stages: [
+        { id: "s_0", card: "image-gen", params: { prompt: "x" } },
+        {
+          id: "s_1",
+          card: "image-edit",
+          params: { input_images: ["$input_images"] },
+          inputs: { input_images: { stage: "s_0", output: "default" } },
+        },
+      ],
+    });
+    const err = await remote(() =>
+      wired.svc.start({ draft_id: "d1", test: false, model: "image-gen" }, sig()),
+    );
+    assert.equal(err.code, "runs/lane-input-missing", "the card plane's own code, not a generic collapse");
+    assert.match(err.message, /fetch it: https:\/\/example\/x/);
+    // THE EVIDENCE RIDES TOO: the card plane's own details survive
+    // the door (family, slot, the fetch URL an operator can press) —
+    // a lane_input_missing with no actionable fields is a refusal
+    // nobody can act on.
+    const details = (err as unknown as { details?: Record<string, unknown> }).details ?? {};
+    assert.equal(details["family"], "z-image");
+    assert.equal(details["fetch_url"], "https://example/x");
+    // THE ONE-VOICE PROOF: the same press over an UNWIRED bench
+    // refuses with the same code and the same details — the bench's
+    // wiring never reclassifies a card refusal.
+    const unwired = seat(facts, { stages: [{ id: "s_0", card: "image-gen", params: { prompt: "x" } }] });
+    const err2 = await remote(() =>
+      unwired.svc.start({ draft_id: "d1", test: false, model: "image-gen" }, sig()),
+    );
+    assert.equal(err2.code, err.code, "one code whatever the wiring");
+    assert.deepEqual(
+      (err2 as unknown as { details?: Record<string, unknown> }).details,
+      details,
+      "one details bag whatever the wiring",
+    );
+  });
+
+  it("THE MODEL DOOR OVER A WIRED BENCH: the raw-spell press refuses loud — the wire is never silently discarded", async () => {
+    // The other half of the 2026-10-10 order ("no breakage — the
+    // wires always ride"): a caller that did NOT resolve the wire
+    // (a raw $spell in the params, the API shape the GUI never sends
+    // but any other caller might) gets the spell gate's OWN refusal
+    // — the spell named, the fix named, nothing registered. This is
+    // the honest replacement for the restage: one card, and an
+    // unresolved wire STOPS SPOKEN rather than fanning the bench out
+    // or dropping the wire on the floor.
+    const s = modelDoorSeat(
+      { SaveImage: { class_type: "SaveImage", inputs: {} } },
+      {
+        stages: [
+          { id: "s_0", card: "image-gen", params: { prompt: "x" } },
+          {
+            id: "s_1",
+            card: "image-edit",
+            params: { input_images: ["$input_images"] },
+            inputs: { input_images: { stage: "s_0", output: "default" } },
+          },
+        ],
+      },
+    );
+    // the raw spell rides — this caller resolved nothing
+    const err = await remote(() =>
+      s.svc.start(
+        { draft_id: "d1", test: false, model: "m1", params: { input_images: ["$input_images"] } },
+        sig(),
+      ),
+    );
+    assert.match(err.message, /\$input_images/, "the spell is named");
+    assert.equal(s.core.runs.size, 0, "nothing registered — never a doomed run");
   });
 
   it("THE DRAFT DOOR: the familyless bench arm's {test, draft_id} press composes the whole bench — never 'no flow selected'", async () => {
@@ -1150,6 +1219,18 @@ describe("validate", () => {
       readFileSync(join(s.state, "output", ans.run_id, "_flow.json"), "utf8"),
     ) as Record<string, unknown>;
     assert.equal(doc["stage_ids"], "s_0,s_1", "every stage composed, wires riding");
+    // THE WIRE RIDES (the 2026-10-10 order's true home): the merged
+    // bench run's input map is what the worker links (s_0.default
+    // into the consuming stage) — the bench's edge is a real link on
+    // the one door that composes the bench.
+    const row = s.core.runs.get(ans.run_id) as unknown as {
+      inputNames?: Record<string, Record<string, string>>;
+    };
+    assert.deepEqual(
+      row.inputNames,
+      { s_0: {}, s_1: { input_images: "s_0.default" } },
+      "THE WIRE RIDES as a stage input on the draft-door bench run",
+    );
   });
 
   it("THE STAGE-ID DIGEST: a settled bench run names the stages it composed — on disk ahead of the payloads, on the row as an array", async () => {
@@ -1173,8 +1254,11 @@ describe("validate", () => {
         ],
       },
     );
+    // The bench run is the digest's subject — the press is the
+    // DRAFT door (the one-press one-card law keeps the model door at
+    // a single card, which names its own single stage).
     const ans = (await s.svc.start(
-      { draft_id: "d1", test: false, model: "m1", params: { prompt: "x" } },
+      { draft_id: "d1", test: false },
       sig(),
     )) as { run_id: string };
     await settleWait(s, ans.run_id);
@@ -1233,7 +1317,14 @@ describe("validate", () => {
   // caller named). The dead cross arms this pins the SHAPE of: the
   // discard gate below can only ever see self-wires, and its
   // unreachable generic refusal was deleted, not covered.
-  it("a one-stage bench wired CROSS promotes to the bench run — never the discard gate", async () => {
+  // THE CROSS-WIRE EDGE, one-stage shape (the 2026-10-14 closure's
+  // arm, re-homed under the one-press one-card law): a wire naming
+  // ANOTHER stage — even one whose target row is absent — takes the
+  // CARD arm like any other press. The dead cross-wire neither fans
+  // the bench out nor reaches the self-wire gate; the pressed card
+  // composes alone, and a raw $spell would be the spell gate's own
+  // refusal.
+  it("a one-stage bench wired CROSS takes the card arm — one card, never a promotion, never the discard gate", async () => {
     const s = modelDoorSeat(
       { SaveImage: { class_type: "SaveImage", inputs: {} } },
       {
@@ -1248,18 +1339,22 @@ describe("validate", () => {
       },
     );
     const ans = (await s.svc.start(
-      { draft_id: "d1", test: false, model: "m1", params: { prompt: "x" } },
+      { draft_id: "d1", test: false, model: "m1", params: { prompt: "x", input_images: ["/melite-media/runs/run-up-1/s_0/a.png"] } },
       sig(),
     )) as { run_id: string };
-    assert.ok(typeof ans.run_id === "string" && ans.run_id !== "", "the cross-wired bench RAN");
-    assert.equal(s.core.runs.size, 1, "one run registered — the bench, not a discarded card");
+    assert.ok(typeof ans.run_id === "string" && ans.run_id !== "", "the pressed card RAN");
+    assert.equal(s.core.runs.size, 1, "one run registered — the card, not a promotion");
+    const row = s.core.runs.get(ans.run_id) as unknown as { stages: unknown[] };
+    assert.equal(row.stages.length, 1, "one stage — the card arm, no bench compose");
   });
 
   // The walker's skip arms: a bench may carry carded stages whose
   // `inputs` are malformed (a string, an array) beside a real wire —
-  // both passes skip the malformed rows without touching the real
-  // wire's verdict, and the bench run registers.
-  it("malformed stage inputs skip clean in both wire passes — the real wire rides, the run registers", async () => {
+  // both wire passes skip the malformed rows without touching the
+  // real wire's verdict. Under the one-press one-card law the press
+  // takes the card arm: the malformed rows and the dead wire are the
+  // bench's business, not this press's — one card composes.
+  it("malformed stage inputs skip clean in both wire passes — the pressed card still registers alone", async () => {
     const s = modelDoorSeat(
       { SaveImage: { class_type: "SaveImage", inputs: {} } },
       {
@@ -1276,11 +1371,13 @@ describe("validate", () => {
       },
     );
     const ans = (await s.svc.start(
-      { draft_id: "d1", test: false, model: "m1", params: { prompt: "x" } },
+      { draft_id: "d1", test: false, model: "m1", params: { prompt: "x", input_images: ["/melite-media/runs/run-up-1/s_0/a.png"] } },
       sig(),
     )) as { run_id: string };
-    assert.ok(typeof ans.run_id === "string" && ans.run_id !== "", "the wired bench RAN");
+    assert.ok(typeof ans.run_id === "string" && ans.run_id !== "", "the pressed card RAN");
     assert.equal(s.core.runs.size, 1);
+    const row = s.core.runs.get(ans.run_id) as unknown as { stages: unknown[] };
+    assert.equal(row.stages.length, 1, "one stage — the malformed rows compose nothing, fan out nothing");
   });
 
   it("CLEAN SINGLE-CARD: no spells, no wires — the walls never false-alarm, the run registers", async () => {
@@ -2501,15 +2598,16 @@ describe("cross-roots manifest (§23)", () => {
   }));
 });
 
-// ── THE WIRED-BENCH LAW, EVERY ARM (operator, 2026-10-10, verbatim:
-// "By design, there is no 'non bench flow'. There is ALWAYS FromStage
-// links ... THERE IS NO FILTER, NO BREAKAGE FROM THIS. EVER.") The
-// door re-routes a wired bench into the bench run; these pin that the
-// run is REAL — every stage composed, every wire riding into the
-// merged doc — and that the same state is identical whoever authored
-// it (the GUI, the agent, a hand-written body: no distinction in the
-// bench).
-describe("the wired-bench law — the run is real, and authorship makes no difference", () => {
+// ── THE ONE-PRESS ONE-CARD LAW, EVERY ARM (operator, 2026-10-26:
+// "WHEN I RUN A CARD INDEPENDENTLY, OTHER CARDS RUN TOO????????",
+// superseding the 2026-10-10 restage shape while keeping its
+// invariant — "there is ALWAYS FromStage links ... NO BREAKAGE FROM
+// THIS. EVER." — as RESOLUTION: the wire rides the resolved param,
+// and the bench composes only on the draft door). These pin that the
+// single-card press stays single whatever the bench carries, and the
+// draft-door bench run is REAL — every stage composed, every wire
+// riding into the merged doc — identical whoever authored it.
+describe("the one-press one-card law — the press is one card, and the draft-door bench run is real", () => {
   const wiredBench = {
     stages: [
       { id: "s_0", card: "image-gen", params: { model: "m1", prompt: "a harbour" } },
@@ -2524,21 +2622,51 @@ describe("the wired-bench law — the run is real, and authorship makes no diffe
     ],
   };
 
-  it("every stage composes and every wire rides into the merged run", async () => {
+  it("a single-card press over the wired bench composes ONE card — the fan-out is dead", async () => {
+    const s = modelDoorSeat(
+      { SaveImage: { class_type: "SaveImage", inputs: {} } },
+      wiredBench,
+    );
+    // the GUI's press shape: the wire already resolved to the
+    // upstream's last result (THE PARAM IS THE WIRE)
+    const ans = (await s.svc.start(
+      { draft_id: "d1", test: false, model: "m1", params: { prompt: "x", input_images: ["/melite-media/runs/run-up-1/s_0/a.png"] } },
+      sig(),
+    )) as { run_id: string };
+    assert.ok(ans.run_id !== "", "the pressed card ran");
+    const row = s.core.runs.get(ans.run_id) as unknown as {
+      stages: Array<{ id: string; input_names?: Record<string, string> }>;
+      inputNames?: Record<string, Record<string, string>>;
+    };
+    // THE FAN-OUT KILL, second seat: exactly one stage (the restage
+    // composed BOTH — the red arm's count)
+    assert.equal(row.stages.length, 1, "ONE stage — the wired sibling did not run");
+    // and the one stage carries an EMPTY edge map (inputNames: {}),
+    // the card arm's own stamp: the wire rode resolved in params,
+    // never a FromStage link naming a stage this run never composed
+    const sid = (row.stages[0] as { id: string }).id;
+    assert.deepEqual(
+      row.inputNames?.[sid] ?? {},
+      {},
+      "no stage-input edges — the resolved param is the wire",
+    );
+  });
+
+  it("the DRAFT-DOOR press over the same bench composes every stage with every wire riding", async () => {
     const s = modelDoorSeat(
       { SaveImage: { class_type: "SaveImage", inputs: {} } },
       wiredBench,
     );
     const ans = (await s.svc.start(
-      { draft_id: "d1", test: false, model: "m1", params: { prompt: "x" } },
+      { draft_id: "d1", test: false },
       sig(),
     )) as { run_id: string };
-    assert.ok(ans.run_id !== "", "the wired bench ran");
+    assert.ok(ans.run_id !== "", "the bench ran on its own door");
     const row = s.core.runs.get(ans.run_id) as unknown as {
-      stages: Array<{ id: string; input_names?: Record<string, string> }>;
+      stages: Array<{ id: string }>;
       inputNames?: Record<string, Record<string, string>>;
     };
-    assert.equal(row.stages.length, 2, "BOTH stages are in the one run — not two runs, not one stage");
+    assert.equal(row.stages.length, 2, "BOTH stages are in the one run — the bench door composes the bench");
     // THE MERGE READS input_names (stage → {channel: "stage.output"}) —
     // the compiled edge map, which is where a FromStage link becomes a
     // link. Assert THAT, not the bench's storage shape: the bench row
@@ -2551,7 +2679,7 @@ describe("the wired-bench law — the run is real, and authorship makes no diffe
     );
   });
 
-  it("an UNWIRED bench still takes the single-card arm (the re-route is precise, not eager)", async () => {
+  it("an UNWIRED bench takes the single-card arm too (the card arm is the model door's only shape now)", async () => {
     const s = modelDoorSeat(
       { SaveImage: { class_type: "SaveImage", inputs: { filename_prefix: "gen" } } },
       { stages: [{ id: "s_0", card: "image-gen", params: { model: "m1", prompt: "x" } }] },
@@ -2697,8 +2825,10 @@ describe("the bench compose's tolerances", () => {
         ],
       },
     );
+    // the draft door (the bench walk's own press — the one-press
+    // one-card law keeps single-card presses off the bench compose)
     const ans = (await s.svc.start(
-      { draft_id: "d1", test: false, model: "z-image", params: { prompt: "x" } },
+      { draft_id: "d1", test: false },
       sig(),
     )) as { run_id: string };
     assert.ok(ans.run_id !== "", "the familyless stage composes — the run registered");
@@ -2730,7 +2860,7 @@ describe("the bench compose's tolerances", () => {
       },
     );
     const ans = (await s.svc.start(
-      { draft_id: "d1", test: false, model: "m1", params: { prompt: "x" } },
+      { draft_id: "d1", test: false },
       sig(),
     )) as { run_id: string };
     assert.ok(ans.run_id !== "", "the junk rows cost nothing — the bench ran");
@@ -2742,8 +2872,8 @@ describe("the bench compose's tolerances", () => {
       { SaveImage: { class_type: "SaveImage", inputs: { filename_prefix: "gen" } } },
       {
         stages: [
-          // the wire promotes the start to the bench run (the
-          // single-card arm would never read the minted id)
+          // the bench compose mints the id and empties the junk
+          // params bag (the draft door is this walk's own press)
           { id: "s_0", card: "image-gen", params: { model: "m1", prompt: "x" } },
           {
             card: "image-edit",
@@ -2754,7 +2884,7 @@ describe("the bench compose's tolerances", () => {
       },
     );
     const ans = (await s.svc.start(
-      { draft_id: "d1", test: false, model: "m1", params: { prompt: "x" } },
+      { draft_id: "d1", test: false },
       sig(),
     )) as { run_id: string };
     assert.ok(ans.run_id !== "", "the minted id and emptied params compose");
@@ -2778,7 +2908,7 @@ describe("the bench compose's tolerances", () => {
       },
     );
     const err = await remote(() =>
-      s.svc.start({ draft_id: "d1", test: false, model: "m1", params: { prompt: "x" } }, sig()),
+      s.svc.start({ draft_id: "d1", test: false }, sig()),
     );
     assert.equal(err.code, "runs/invalid-request");
     assert.match(err.message, /bench stage "s_2" names no card/);
@@ -2791,8 +2921,8 @@ describe("the bench compose's tolerances", () => {
       { SaveImage: { class_type: "SaveImage", inputs: { filename_prefix: "gen" } } },
       {
         stages: [
-          // the wire promotes the start to the bench run (the
-          // single-card arm would never read the junk row)
+          // the bench compose reads the junk row (the draft door is
+          // this walk's own press)
           { id: "s_0", card: "image-gen", params: { model: "m1", prompt: "x" } },
           {
             id: "s_1",
@@ -2805,7 +2935,7 @@ describe("the bench compose's tolerances", () => {
       },
     );
     const err = await remote(() =>
-      s.svc.start({ draft_id: "d1", test: false, model: "m1", params: { prompt: "x" } }, sig()),
+      s.svc.start({ draft_id: "d1", test: false }, sig()),
     );
     assert.equal(err.code, "runs/invalid-request");
     assert.match(err.message, /bench stage "s_2" names no card/);
@@ -2857,7 +2987,7 @@ describe("the bench compose's unwired-spell refusal (the $image burn, 2026-10-20
       },
     );
     const err = await remote(() =>
-      s.svc.start({ draft_id: "d1", test: false, model: "m1", params: { prompt: "x" } }, sig()),
+      s.svc.start({ draft_id: "d1", test: false }, sig()),
     );
     assert.equal(err.code, "runs/invalid-request");
     assert.match(err.message, /bench stage "s_1"/);
@@ -2883,7 +3013,7 @@ describe("the bench compose's unwired-spell refusal (the $image burn, 2026-10-20
       },
     );
     const ans = (await s.svc.start(
-      { draft_id: "d1", test: false, model: "m1", params: { prompt: "x" } },
+      { draft_id: "d1", test: false },
       sig(),
     )) as { run_id: string };
     assert.ok(ans.run_id !== "", "the wired spell composes — the bench ran");

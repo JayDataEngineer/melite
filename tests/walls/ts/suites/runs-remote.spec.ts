@@ -1286,7 +1286,9 @@ test("a bench-composed run carries its OWN snapshot (restore never falls back to
   writeFileSync(join(stateRoot, "drafts", "d_ok.json"), JSON.stringify(bench));
   let runId: string | null = null;
   try {
-    runId = (await runs.start({ model: "krea-2", test: true, draft_id: "d_ok" }, sig)).run_id;
+    // the draft door (the bench run's own press — the one-press
+    // one-card law keeps model-door presses at a single card)
+    runId = (await runs.start({ test: true, draft_id: "d_ok" }, sig)).run_id;
   } catch {
     // the rig has no engine: the sourceless refusal is the honest
     // verdict and it happens AFTER registration, so the run dir and

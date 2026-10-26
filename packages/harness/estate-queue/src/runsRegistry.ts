@@ -1286,46 +1286,36 @@ export class RunsRuntimeService extends Service {
     // preview-scope posture — never a silent accept).
     const stateRoot: string = this.ctx.queue.stateRoot;
 
-    // ── THE WIRED-BENCH LAW (operator, 2026-10-10, in the operator's
-    // own words: "By design, there is no 'non bench flow'. There is
-    // ALWAYS FromStage links. THERE IS NO FILTER, NO BREAKAGE FROM
-    // THIS. EVER.") ────────────────────────────────────────────────
-    // A stage that takes its input from a PRIOR stage's output cannot
-    // be run alone: the card arm composes ONE stage with
-    // inputNames: {}, so every FromStage link would be discarded. The
-    // old answer was a refusal telling the caller to run the flow
-    // instead — which is the operator-facing bug this replaces: the
-    // GUI's per-stage Run, the agent's card start, and any API caller
-    // all hit that wall, and the bench's wires were the very thing
-    // the run was FOR.
-    //
-    // So the door does not refuse a wired bench. IT BECOMES THE
-    // BENCH RUN: the body is restaged onto the flow_inline wire with
-    // the bench's own stages, and the run proceeds with the wires
-    // riding as stage inputs. There is no third shape: a bench with
-    // wires is a flow, whatever the caller named.
+    // ── THE ONE-PRESS ONE-CARD LAW (operator, 2026-10-26: "WHEN I RUN
+    // A CARD INDEPENDENTLY, OTHER CARDS RUN TOO????????") ───────────
+    // The 2026-10-10 wired-bench order ("By design, there is no 'non
+    // bench flow'. There is ALWAYS FromStage links. THERE IS NO
+    // FILTER, NO BREAKAGE FROM THIS. EVER.") is honored by RESOLUTION,
+    // never by fan-out: a single-card press composes ONE card, and the
+    // wire rides as the CONCRETE upstream value the caller resolved
+    // (the client's wire-resolution law, stage-run.ts: the upstream's
+    // last result substitutes every $spell before the start — THE
+    // PARAM IS THE WIRE). The shape this block carried until today —
+    // restage every single-card press onto the whole-bench compose
+    // because the bench had wires — made one per-card Run execute
+    // EVERY card on the bench, and Run ALL amplified it N-fold (the
+    // operator's live catch: one press, five stages composed, run
+    // 3e4cf0680c0b). A caller that sends a raw $spell (no resolution)
+    // hits the card door's spell gate below — a LOUD refusal naming
+    // the spell and the fix, never a discarded wire. The bench compose
+    // is the DRAFT door's alone: pressing the BENCH (the tool's
+    // familyless walk, {test, draft_id} alone) still composes every
+    // stage with the wires riding as stage inputs.
     let benchComposed = false;
-    if (
-      (selected.door === "model" || selected.door === "draft") &&
-      benchDoc !== undefined
-    ) {
+    if (selected.door === "draft" && benchDoc !== undefined) {
       const wired = benchWiring(benchDoc);
-      // The DRAFT door composes unconditionally: the body names the
-      // bench — pressing the bench is the meaning of the press. The
-      // model door keeps its wire gate (a card Run over an unwired
-      // bench stays a card run).
-      if (selected.door === "draft" || wired.cross.length > 0) {
-        // THE BENCH RUN, COMPOSED (the operator's law, and the gap
-        // behind it: there was no path that ran a WIRED bench. The
-        // GUI ran cards one at a time, each its own run, so a FromStage
-        // link had nowhere to ride — the wires were not refused, they
-        // were DISCARDED by the shape of the run. So this door
-        // composes EVERY card stage of the bench — through the SAME
-        // registry walk a single card start uses, laws and all — and
-        // submits ONE merged run whose stages carry their `inputs`
-        // edges for the worker to link. A $spell survives into the
-        // composed graph on purpose: the merge resolves it into the
-        // upstream stage's output (that is what a FromStage link IS).
+      // THE BENCH RUN, COMPOSED (the draft door): this door composes
+      // EVERY card stage of the bench — through the SAME registry walk
+      // a single card start uses, laws and all — and submits ONE
+      // merged run whose stages carry their `inputs` edges for the
+      // worker to link. A $spell survives into the composed graph on
+      // purpose: the merge resolves it into the upstream stage's
+      // output (that is what a FromStage link IS).
         // THE ONE RUN ID (the operator's live refusal, 2026-09-28:
         // "run sources resolve nowhere (1 dead: run-65dc3ee505ef-…/
         // gen)"). The bench run minted the id TWICE: once here, to
@@ -1368,11 +1358,9 @@ export class RunsRuntimeService extends Service {
         // never silent (NO SILENT BEHAVIOR, the same order as the
         // spell gate below)
         console.log(
-          "[runs] the bench wires " + JSON.stringify(wired.cross) +
-          " — the single-card start became the bench run (" +
-          String(composed.length) + " stages composed, wires riding as stage inputs)",
+          "[runs] the draft-door bench run composed " + String(composed.length) +
+          " stages, wires " + JSON.stringify(wired.cross) + " riding as stage inputs",
         );
-      }
     }
 
     if (selected.door === "model") {
@@ -1481,12 +1469,12 @@ export class RunsRuntimeService extends Service {
         // run's own stage is a CYCLE (bench/self-wire, the same law
         // the write doors hold).
         //
-        // A wire naming ANOTHER stage never reaches this gate: the
-        // promotion above turns every cross-wired bench into the
-        // bench run before the card arm composes (a bench with wires
-        // is a flow, whatever the caller named). The cross arms this
-        // block once carried were provably dead code — deleted in
-        // the 2026-10-14 batch, not left to pretend at coverage.
+        // A wire naming ANOTHER stage (a CROSS wire) falls through
+        // to the card arm untouched (the one-press one-card law,
+        // 2026-10-26): the caller resolved it to a concrete value
+        // before the start, and a raw unresolved $spell is the spell
+        // gate's refusal below — this census refuses nothing a later
+        // gate refuses better.
         const selfWired: string[] = [];
         /* v8 ignore next -- the same benchDoc and the same stages
          * array the wired-rows walk above tested, with nothing
@@ -1505,11 +1493,9 @@ export class RunsRuntimeService extends Service {
             }
           }
         }
-        /* v8 ignore next -- this arm runs only because a wire
-         * reached the census, and benchWiring (the promotion above)
-         * consumes every CROSS wire into the bench run before the
-         * card arm composes — so every wire the census collected is
-         * the row's own, and selfWired is never empty here. */
+        // Both census outcomes are walled: a SELF wire refuses here
+        // (the self-wire arm), a bench of CROSS wires falls through
+        // to the card arm (the one-press one-card arm) — no ignore.
         if (selfWired.length > 0) {
           throw toRemoteError(
             refusal(
