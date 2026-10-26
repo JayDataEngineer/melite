@@ -14,6 +14,7 @@ import { mountEstateFakes, type EstateFakes } from "./estate-harness.ts";
 import { unbindEstateRemote } from '@melite/card-base/client';
 import { CardsTab } from "../src/client/CardsTab.tsx";
 import type { BenchStageView, CardsBenchValue } from "../src/client/cards-resource.ts";
+import { draftIdOf } from '@melite/contracts/benchStage';
 
 const CARD_MIME = "application/x-melite-card";
 const ASSET_MIME = "application/tech-noir-asset";
@@ -67,7 +68,7 @@ function mountTiles(docStages: BenchStageView[]): void {
     draftStages: docStages as Array<Record<string, unknown>>,
     draftBenchRev: 1,
   });
-  const value: CardsBenchValue = { kind: "bench", draftId: "bench-p", sessionKey: "p", rev: 1, log: [], stages: docStages };
+  const value: CardsBenchValue = { kind: "bench", draftId: draftIdOf("bench-p"), sessionKey: "p", rev: 1, log: [], stages: docStages };
   render(h(CardsTab, {
     useTabInfo: () => ({ tab: {
       kind: "sidebar.right.pane.tab", contentId: undefined,

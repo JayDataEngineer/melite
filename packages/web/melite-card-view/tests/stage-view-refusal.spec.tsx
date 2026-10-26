@@ -31,6 +31,7 @@ import { chromeCopy } from "../src/chromeCopy.ts";
 import { resetStageWrites } from "../src/client/draft.ts";
 import { schemaEnvelope } from "@melite/card-base/client";
 import type { BenchStageView, CardsBenchValue } from "../src/client/cards-resource.ts";
+import { draftIdOf } from "@melite/contracts/benchStage";
 
 const STAGE = {
   id: "s_0", card: "input-prep", engine: "comfyui",
@@ -38,7 +39,7 @@ const STAGE = {
 } as never as BenchStageView;
 
 const BENCH: CardsBenchValue = {
-  kind: "bench", draftId: "bench-p", sessionKey: "p", rev: 1, log: [], stages: [STAGE],
+  kind: "bench", draftId: draftIdOf("bench-p"), sessionKey: "p", rev: 1, log: [], stages: [STAGE],
 };
 
 function stubFetch(stageView: string | null): void {

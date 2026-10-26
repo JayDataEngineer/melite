@@ -1,4 +1,5 @@
 import { servableLeaf } from "@melite/contracts/mediaKinds";
+import { draftIdOf } from "@melite/contracts/benchStage";
 // runsList.ts — the runs LIST surface (REBUILD-7, gateway kill):
 // the retired runs door's list arm (GET /v1/flows/runs, the restore port) re-homed verbatim into the queue package as the registry's `list` business arm.
 // The sidecar byte-surgery helpers are the door's own bodies, second move unchanged (the section notes below name the reader each helper implements).
@@ -607,7 +608,7 @@ async function buildRunCard(outputRoot, ent, hasDraft) {
 async function applyDraftOverlay(row, hasDraft) {
     const served = structuredClone(row);
     const draft = served["draft_id"];
-    if (typeof draft === "string" && draft !== "" && !(await hasDraft(draft))) {
+    if (typeof draft === "string" && draft !== "" && !(await hasDraft(draftIdOf(draft)))) {
         served["draft_id"] = "";
     }
     return served;

@@ -27,6 +27,7 @@ import { unknownVariantVoice } from '@melite/contracts/laneRelations'
 import { CardsTab } from '../src/client/CardsTab.tsx'
 import { schemaEnvelope } from '@melite/card-base/client'
 import type { CardsBenchValue } from '../src/client/cards-resource.ts'
+import { draftIdOf } from '@melite/contracts/benchStage';
 
 // The verbatim ComfyUI refusal shape the estate serves on
 // stages[].error (the 2026-09-13 image-edit incident).
@@ -34,7 +35,7 @@ const REFUSAL = "ComfyError: POST /prompt 400 — node_errors 'edit::CLIPLoader.
 
 const BENCH: CardsBenchValue = {
   kind: 'bench',
-  draftId: 'bench-s1',
+  draftId: draftIdOf('bench-s1'),
   sessionKey: 's1',
   rev: 7,
   stages: [
@@ -198,7 +199,7 @@ test('a normalized draft stage error mounts the draft error and rescue', async (
     useResource: () => ({
       status: 'live' as const,
       value: {
-        kind: 'draft' as const, draftId: 'bench-s1', stageId: 's_0', intent: 'mask', rev: 7,
+        kind: 'draft' as const, draftId: draftIdOf('bench-s1'), stageId: 's_0', intent: 'mask', rev: 7,
         stages: [{
           id: 's_0', card: 'mask', title: 'mask', engine: 'comfyui', status: 'failed' as const, runStatus: 'failed',
           params: { prompt: 'a red cube' }, result: { error },

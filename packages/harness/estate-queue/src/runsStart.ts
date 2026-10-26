@@ -1,4 +1,4 @@
-import { CARD_PLANE_ENGINE } from "@melite/contracts/benchStage"
+import { CARD_PLANE_ENGINE, type DraftId } from "@melite/contracts/benchStage"
 import { assertNever } from "@deepseek-ai/dsh-util-values"
 // runsStart.ts — the start arm's pure chain, re-homed VERBATIM from
 // the dead flowsRun door (REBUILD-6): the flow_inline structural
@@ -526,9 +526,9 @@ export function selectSubmitDoor(
 export async function registerCompiledRun(args: {
   compiled: { stages: CompiledStage[] };
   testFlag: boolean;
-  draftId: string;
+  draftId: DraftId;
   stateRoot: string;
-  enqueue: (row: { runId: RunId; status: string; error: string; createdAt: number; draftId: string; testFlag: boolean; stopFlag: boolean }) => number;
+  enqueue: (row: { runId: RunId; status: string; error: string; createdAt: number; draftId: DraftId; testFlag: boolean; stopFlag: boolean }) => number;
   /** F-6(b) admission warnings (computed pre-registration by the
    *  start door — the film lane's VRAM-pressure warn): stamped on
    *  the record and the queued sidecar. Absent means none. */

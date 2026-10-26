@@ -17,6 +17,7 @@
 import type { ChatFileMentions } from '@deepseek-ai/dsh-client-ui-chat/client'
 import type { ConversationNodeDefinition, ConversationTurnDataMap } from '@deepseek-ai/dsh-client-ui-conversation/client'
 import { CARD_TOOLS } from './card-tools.ts'
+import { draftIdOf, type DraftId } from '@melite/contracts/benchStage'
 import { chromeCopy } from '../chromeCopy.ts'
 
 /** One card tool's persisted ids, folded from its tool/result meta. */
@@ -24,7 +25,7 @@ export interface MeliteCardRow {
   /** The wire tool name that produced the row (CARD_TOOLS member). */
   readonly tool: string
   /** The draft the tool staged, when its meta carried one. */
-  readonly draftId: string | null
+  readonly draftId: DraftId | null
   /** The run the tool started, when its meta carried one. */
   readonly runId: string | null
 }
@@ -95,7 +96,7 @@ export const meliteCardsTurnDefinition: ConversationNodeDefinition<MeliteCardsSt
     const draftId = metaString(match.event.data.meta, 'draft_id')
     const runId = metaString(match.event.data.meta, 'run_id')
     if (draftId === null && runId === null) return context.state
-    return { ...context.state, rows: [...context.state.rows, { tool, draftId, runId }] }
+    return { ...context.state, rows: [...context.state.rows, { tool, draftId: draftId === null ? null : draftIdOf(draftId), runId }] }
   },
   buildLocationData(context, scope, previous) {
     if (scope !== 'turn' || context.state === undefined) return null

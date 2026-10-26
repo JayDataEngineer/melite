@@ -68,6 +68,7 @@ import type {
 } from '@melite/estate-drafts/types'
 import type { RunRow } from '@melite/estate-runs'
 import type { MediaListRow } from '@melite/estate-media'
+import { draftIdOf } from '@melite/contracts/benchStage';
 
 export interface EstateCall {
   method: string
@@ -459,7 +460,7 @@ export function mountEstateFakes(opts: EstateFakesOptions = {}): EstateFakes {
           ? opts.patchAnswerRevs.shift()!
           : undefined
         return ok({
-          draftId: 'bench-s1', stageId, delivered: true,
+          draftId: draftIdOf('bench-s1'), stageId, delivered: true,
           ...(answeredRev !== undefined ? { rev: answeredRev } : {}),
           patched: applyDraftPatch(stageId, patch),
         })

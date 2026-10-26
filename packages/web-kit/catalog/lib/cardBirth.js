@@ -18,12 +18,16 @@
  * the body preserved verbatim as its extras), then ride the minted
  * id on the start envelope.
  */
+import { draftIdOf } from "@melite/contracts/benchStage";
 /** Mint the card doc for a start body. The doc carries the body
  *  verbatim (intent/stages/model/params become the card extras —
  *  see the drafts door, packages/estate/drafts, POST /v1/flows/drafts),
  *  so what the card shows is what the run consumed. Throws LOUDLY
  *  on any refusal — a refused compose never proceeds to a start
- *  (no silent cardless runs). */
+ *  (no silent cardless runs).
+ *  @param body the raw start body (rides the compose POST verbatim)
+ *  @param signal the caller's abort signal
+ *  @returns the composed draft id, branded at this birth */
 export async function composeCard(body, signal) {
     const res = await fetch("/v1/flows/drafts", {
         method: "POST",
@@ -46,7 +50,7 @@ export async function composeCard(body, signal) {
     if (typeof draftId !== "string" || !draftId) {
         throw new Error("card compose returned no draftId — refusing to start cardless");
     }
-    return draftId;
+    return draftIdOf(draftId);
 }
 /** The card-birth half of every run start: return the body's
  *  declared draft_id when present, else compose the card and return
@@ -54,11 +58,14 @@ export async function composeCard(body, signal) {
  *  the start fetch:
  *
  *    startBody.draft_id = await ensureDraftId(startBody, signal)
- */
+ *
+ *  @param body the raw start body (its declared draft_id wins)
+ *  @param signal the caller's abort signal
+ *  @returns the declared-or-composed draft id, branded at this door */
 export async function ensureDraftId(body, signal) {
     const declared = body.draft_id;
     if (typeof declared === "string" && declared !== "")
-        return declared;
+        return draftIdOf(declared);
     return composeCard(body, signal);
 }
 //# sourceMappingURL=cardBirth.js.map

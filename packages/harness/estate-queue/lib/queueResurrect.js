@@ -1,4 +1,5 @@
 import { parseSidecar } from "./queueSidecar.js";
+import { draftIdOf } from "@melite/contracts/benchStage";
 // queueResurrect.ts — resurrection planning + strict JSON reads
 // (boot tolerance for on-disk records; lenient arms deleted
 // 2026-09-18 — JSON arrays/objects ride, nothing is re-interpreted).
@@ -246,7 +247,7 @@ export function planResurrect(stateRoot, readSidecar = (runId) => {
         const req = readRequest(name);
         const usable = req !== null &&
             durableRecordUsable(text, req, typeof draftId === "string" && draftId !== ""
-                ? draftExists(draftId)
+                ? draftExists(draftIdOf(draftId))
                 : false);
         if (!usable) {
             orphans.push(name);

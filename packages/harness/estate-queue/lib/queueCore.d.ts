@@ -1,4 +1,5 @@
 import type { Branded } from "@deepseek-ai/dsh-brand";
+import type { DraftId } from "@melite/contracts/benchStage";
 import type { LifecycleState } from "./queueLifecycle.js";
 /** The run id: run-<12hex>-<8hex>, opaque as it crosses wire, queue
  *  and file (branded at its two producers — the mint below and the
@@ -10,7 +11,9 @@ export interface QueueRunRow {
     /** Terminal failure text ("<Type>: <msg>") — "" until failed. */
     error: string;
     createdAt: number;
-    draftId: string;
+    /** The run's card doc key — branded (the DraftId seating beside
+     *  RunId); the submit envelope walk mints it off the wire body. */
+    draftId: DraftId;
     testFlag: boolean;
     stopFlag: boolean;
 }

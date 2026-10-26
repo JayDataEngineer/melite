@@ -20,6 +20,7 @@ import { resetStageWrites, stageWriteState } from "../src/client/draft.ts";
 import { CardDrill } from "../src/client/card-drill.tsx";
 import { CardsTab } from "../src/client/CardsTab.tsx";
 import type { BenchStageView, CardsBenchValue } from "../src/client/cards-resource.ts";
+import { draftIdOf } from '@melite/contracts/benchStage';
 
 type EstateOpts = Parameters<typeof mountEstateFakes>[0];
 
@@ -226,7 +227,7 @@ describe("the stage drill's faces each carry a × that retires only its own face
     await user.type(area, "x");
     await screen.findByTestId("stage-write-face", {}, { timeout: 8000 });
     await waitFor(() => {
-      if (stageWriteState("bench-p", "s_0").pending !== 0) throw new Error("write still in flight");
+      if (stageWriteState(draftIdOf("bench-p"), "s_0").pending !== 0) throw new Error("write still in flight");
     }, { timeout: 8000 });
     await user.click(within(zoomCard()).getByRole("button", { name: "Run stage" }));
     await waitFor(() => {

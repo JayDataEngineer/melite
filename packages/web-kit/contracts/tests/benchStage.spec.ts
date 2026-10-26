@@ -6,7 +6,7 @@
 // s_<n> mint) is pinned by the drafts plane's own suite.
 import { describe, test } from "vitest";
 import assert from "node:assert/strict";
-import { normalizeBenchStage } from "../src/benchStage.ts";
+import { benchDraftIdOf, draftIdOf, normalizeBenchStage, type DraftId } from "../src/benchStage.ts";
 
 describe("normalizeBenchStage's id law (the caller-stated arm)", () => {
   test("a STRING index rides verbatim onto an id-less row", () => {
@@ -35,5 +35,19 @@ describe("normalizeBenchStage's id law (the caller-stated arm)", () => {
     const once = normalizeBenchStage({ card: "card-a" }, "g_7");
     const twice = normalizeBenchStage(once, "g_7");
     assert.deepEqual(twice, once);
+  });
+});
+
+describe("the DraftId brand (the RunId seating's brand class)", () => {
+  test("a bare string is REFUSED at a DraftId seat — the parse edge mints it", () => {
+    const seat = (id: DraftId): DraftId => id;
+    // @ts-expect-error — the brand refuses the reverse: a bare
+    // string never flows into a DraftId seat. The parse edge (or
+    // the test literal) mints it through draftIdOf first. If this
+    // directive ever goes unused (TS2578), the brand has been
+    // gutted and the seat is a bare string again.
+    seat("bench-main");
+    assert.equal(seat(draftIdOf("bench-main")), "bench-main");
+    assert.equal(seat(benchDraftIdOf("main")), "bench-main");
   });
 });

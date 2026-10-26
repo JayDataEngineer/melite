@@ -4,6 +4,7 @@
 //
 // Erasable-syntax TS only (node --experimental-strip-types): no
 // enums, import type for types, .ts specifiers for relative imports.
+import type { DraftId } from "@melite/contracts/benchStage";
 
 // ── sidecar document (sidecar 2124-2169) ──────────────────────────
 
@@ -349,7 +350,7 @@ export function sidecarDoc(args: {
   artifacts: string[];
   createdAt: number;
   testFlag: boolean;
-  draftId: string;
+  draftId: DraftId;
   pipeline: string;
   graph: GraphRow[];
   /** THE SNAPSHOT KEYS (strokes 45/45d, carried stroke 48): the exact

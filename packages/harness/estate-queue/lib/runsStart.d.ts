@@ -1,3 +1,4 @@
+import { type DraftId } from "@melite/contracts/benchStage";
 import type { EngineJson } from "@melite/comfyui-cordis";
 import type { FlowStageRow } from "./runsValidateShared.js";
 import type { GraphReceiptStageRow, QueueRefusal } from "./queue.js";
@@ -86,14 +87,14 @@ export declare function registerCompiledRun(args: {
         stages: CompiledStage[];
     };
     testFlag: boolean;
-    draftId: string;
+    draftId: DraftId;
     stateRoot: string;
     enqueue: (row: {
         runId: RunId;
         status: string;
         error: string;
         createdAt: number;
-        draftId: string;
+        draftId: DraftId;
         testFlag: boolean;
         stopFlag: boolean;
     }) => number;

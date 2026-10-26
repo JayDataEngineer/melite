@@ -28,6 +28,7 @@ import {
   reconcileBenchRuns,
 } from "../src/client/cards-resource.ts";
 import type { BenchStageView, CardsBenchValue } from "../src/client/cards-resource.ts";
+import { draftIdOf } from '@melite/contracts/benchStage';
 
 afterEach(() => {
   unbindEstateRemote();
@@ -59,7 +60,7 @@ describe("observeRunOutcome — the start read binds the row first", () => {
     });
     try {
       const ctrl = new AbortController();
-      const done = observeRunOutcome("d_1", "s_0", "r_1", ctrl.signal, () => {});
+      const done = observeRunOutcome(draftIdOf("d_1"), "s_0", "r_1", ctrl.signal, () => {});
       // the first frame lands the queued patch — await it, not a
       // fixed 100ms, then abort to end the watch.
       await vi.waitFor(() => { expect(patchesOf(fakes).length).toBeGreaterThan(0); });
@@ -80,7 +81,7 @@ describe("observeRunOutcome — the start read binds the row first", () => {
     });
     try {
       let touched = 0;
-      await expect(observeRunOutcome("d_1", "s_0", "r_1", undefined, () => { touched++; }))
+      await expect(observeRunOutcome(draftIdOf("d_1"), "s_0", "r_1", undefined, () => { touched++; }))
         .resolves.toBe("done");
       expect(fakes.calls.filter((c) => c.method === "runs/status")).toHaveLength(2);
       const patches = patchesOf(fakes);
@@ -100,7 +101,7 @@ describe("observeRunOutcome — the start read binds the row first", () => {
     try {
       const ctrl = new AbortController();
       ctrl.abort();
-      await expect(observeRunOutcome("d_1", "s_0", "r_1", ctrl.signal)).resolves.toBeNull();
+      await expect(observeRunOutcome(draftIdOf("d_1"), "s_0", "r_1", ctrl.signal)).resolves.toBeNull();
       expect(patchesOf(fakes)[0]).toMatchObject({ patch: { runStatus: "running" } });
     } finally {
       fakes.unmount();
@@ -131,7 +132,7 @@ describe("observeRunOutcome — THE TRANSPORT ESCALATION (CRITICAL-2: never 'run
         runDocs: [RUNNING],
       });
       const ctrl = new AbortController();
-      const done = observeRunOutcome("d_1", "s_0", "r_1", ctrl.signal);
+      const done = observeRunOutcome(draftIdOf("d_1"), "s_0", "r_1", ctrl.signal);
       // run the fake clock through the whole backoff chain
       // (1.5s→10s cap across the failures and the recovery poll)
       await vi.advanceTimersByTimeAsync(120_000);
@@ -171,7 +172,7 @@ describe("observeRunOutcome — THE TRANSPORT ESCALATION (CRITICAL-2: never 'run
         })),
         runDocs: [{ run_id: "r_1", status: "completed", stages: [] }],
       });
-      const done = observeRunOutcome("d_1", "s_0", "r_1");
+      const done = observeRunOutcome(draftIdOf("d_1"), "s_0", "r_1");
       await vi.advanceTimersByTimeAsync(120_000);
       await expect(done).resolves.toBe("done");
       const patches = patchesOf(fakes).map((p) => p["patch"] as Record<string, unknown>);
@@ -206,7 +207,7 @@ describe("observeRunOutcome — THE TRANSPORT ESCALATION (CRITICAL-2: never 'run
         ],
         listRows: [],
       });
-      const done = observeRunOutcome("d_1", "s_0", "r_1");
+      const done = observeRunOutcome(draftIdOf("d_1"), "s_0", "r_1");
       await vi.advanceTimersByTimeAsync(120_000);
       await expect(done).resolves.toBe("stopped");
       const patches = patchesOf(fakes).map((p) => p["patch"] as Record<string, unknown>);
@@ -232,7 +233,7 @@ describe("observeRunOutcome — THE TRANSPORT ESCALATION (CRITICAL-2: never 'run
         runDocs: [RUNNING],
       });
       const ctrl = new AbortController();
-      const done = observeRunOutcome("d_1", "s_0", "r_1", ctrl.signal);
+      const done = observeRunOutcome(draftIdOf("d_1"), "s_0", "r_1", ctrl.signal);
       await vi.advanceTimersByTimeAsync(30_000);
       ctrl.abort();
       await expect(done).resolves.toBeNull();
@@ -271,7 +272,7 @@ describe("observeRunOutcome — THE PHANTOM CURE (refused status, file-era verdi
     const fakes = phantom([]);
     try {
       let touched = 0;
-      await expect(observeRunOutcome("d_1", "s_0", "r_1", undefined, () => { touched++; }))
+      await expect(observeRunOutcome(draftIdOf("d_1"), "s_0", "r_1", undefined, () => { touched++; }))
         .resolves.toBe("stopped");
       const patches = patchesOf(fakes);
       // [0] is the start binding (a refused start still binds running);
@@ -287,7 +288,7 @@ describe("observeRunOutcome — THE PHANTOM CURE (refused status, file-era verdi
   test("the list's completed answer: done", async () => {
     const fakes = phantom([{ run_id: "r_1", status: "completed" }]);
     try {
-      await expect(observeRunOutcome("d_1", "s_0", "r_1")).resolves.toBe("done");
+      await expect(observeRunOutcome(draftIdOf("d_1"), "s_0", "r_1")).resolves.toBe("done");
       expect(patchesOf(fakes)[1]).toMatchObject({ patch: { runStatus: "done" } });
     } finally {
       fakes.unmount();
@@ -297,7 +298,7 @@ describe("observeRunOutcome — THE PHANTOM CURE (refused status, file-era verdi
   test("a live verdict from the list keeps watching (returns null, never a fake terminal)", async () => {
     const fakes = phantom([{ run_id: "r_1", status: "running" }]);
     try {
-      await expect(observeRunOutcome("d_1", "s_0", "r_1")).resolves.toBeNull();
+      await expect(observeRunOutcome(draftIdOf("d_1"), "s_0", "r_1")).resolves.toBeNull();
       expect(patchesOf(fakes)[1]).toMatchObject({ patch: { runStatus: "running" } });
     } finally {
       fakes.unmount();
@@ -315,7 +316,7 @@ describe("observeRunOutcome — THE PHANTOM CURE (refused status, file-era verdi
     try {
       // 'failed' is not a tile status either: it becomes 'stopped'
       // (terminal, and renderable) rather than stamped raw.
-      await expect(observeRunOutcome("d_1", "s_0", "r_1")).resolves.toBe("stopped");
+      await expect(observeRunOutcome(draftIdOf("d_1"), "s_0", "r_1")).resolves.toBe("stopped");
       expect(patchesOf(fakes)[1]).toMatchObject({ patch: { runStatus: "stopped", result: { run_id: "r_1" } } });
     } finally {
       fakes.unmount();
@@ -340,7 +341,7 @@ describe("observeRunOutcome — THE PHANTOM CURE (refused status, file-era verdi
   test("an unknown verdict ENDS the observer (never an endless poll)", async () => {
     const fakes = phantom([{ run_id: "r_1", status: "whatever-2030" }]);
     try {
-      expect(await observeRunOutcome("d_1", "s_0", "r_1")).toBe("stopped");
+      expect(await observeRunOutcome(draftIdOf("d_1"), "s_0", "r_1")).toBe("stopped");
     } finally {
       fakes.unmount();
     }
@@ -363,7 +364,7 @@ describe("observeRunOutcome — the live fold (progress rides the row)", () => {
       ],
     });
     try {
-      await expect(observeRunOutcome("d_1", "s_0", "r_1")).resolves.toBe("done");
+      await expect(observeRunOutcome(draftIdOf("d_1"), "s_0", "r_1")).resolves.toBe("done");
       // start + activity-only + terminal (the repeat poll patches NOTHING)
       expect(patchesOf(fakes).map((p) => p["patch"])).toEqual([
         { runStatus: "running", result: { run_id: "r_1" } },
@@ -386,7 +387,7 @@ describe("observeRunOutcome — the live fold (progress rides the row)", () => {
       ],
     });
     try {
-      await expect(observeRunOutcome("d_1", "s_0", "r_1")).resolves.toBe("done");
+      await expect(observeRunOutcome(draftIdOf("d_1"), "s_0", "r_1")).resolves.toBe("done");
       expect(patchesOf(fakes)[1]).toMatchObject({
         patch: { runStatus: "running", result: { run_id: "r_1", progress: { value: 1, max: 4 } } },
       });
@@ -406,7 +407,7 @@ describe("observeRunOutcome — the live fold (progress rides the row)", () => {
       ],
     });
     try {
-      await expect(observeRunOutcome("d_1", "s_0", "r_1")).resolves.toBe("done");
+      await expect(observeRunOutcome(draftIdOf("d_1"), "s_0", "r_1")).resolves.toBe("done");
       expect(patchesOf(fakes).map((p) => p["patch"])).toEqual([
         { runStatus: "running", result: { run_id: "r_1" } },
         { runStatus: "queued" },
@@ -426,7 +427,7 @@ describe("observeRunOutcome — the live fold (progress rides the row)", () => {
       throws: [{ method: "runs/status", message: "blip", onCall: 2 }],
     });
     try {
-      await expect(observeRunOutcome("d_1", "s_0", "r_1")).resolves.toBe("done");
+      await expect(observeRunOutcome(draftIdOf("d_1"), "s_0", "r_1")).resolves.toBe("done");
       expect(fakes.calls.filter((c) => c.method === "runs/status")).toHaveLength(3);
       expect(patchesOf(fakes)).toHaveLength(2);
     } finally {
@@ -440,7 +441,7 @@ describe("observeRunOutcome — the terminal carry", () => {
     const fakes = stubEstate({
       runDocs: [RUNNING, { run_id: "r_1", status, ...doc }],
     });
-    await observeRunOutcome("d_1", "s_0", "r_1");
+    await observeRunOutcome(draftIdOf("d_1"), "s_0", "r_1");
     return { patches: patchesOf(fakes).map((p) => p["patch"] as Record<string, unknown>), fakes };
   }
 
@@ -519,7 +520,7 @@ describe("observeRunOutcome — the terminal carry", () => {
       runDocs: [RUNNING, { run_id: "r_1", status: "stopped", stages: [] }],
     });
     try {
-      await expect(observeRunOutcome("d_1", "s_0", "r_1")).resolves.toBe("stopped");
+      await expect(observeRunOutcome(draftIdOf("d_1"), "s_0", "r_1")).resolves.toBe("stopped");
       expect(patchesOf(fakes)[1]).toMatchObject({ patch: { runStatus: "stopped" } });
     } finally {
       fakes.unmount();
@@ -532,7 +533,7 @@ describe("reconcileBenchRuns — the attribution half", () => {
   // view rows (id plus the runStatus/result the tests pin) and the
   // bench carries the main session key.
   const bench = (stages: Array<BenchStageView>): CardsBenchValue => ({
-    kind: "bench" as const, draftId: "d_1", rev: 1, stages, log: [], sessionKey: "main",
+    kind: "bench" as const, draftId: draftIdOf("d_1"), rev: 1, stages, log: [], sessionKey: "main",
   });
 
   test("idle rows and runless rows are skipped silently", async () => {
@@ -654,8 +655,8 @@ test("SINGLE FLIGHT: a second observe on the same run RIDES the first — one pa
     // BOTH run paths fire: the sequential pass's await AND the tab's
     // onStarted arm — same tick, same run
     const [a, b] = await Promise.all([
-      observeRunOutcome("d_1", "s_0", "r_1"),
-      observeRunOutcome("d_1", "s_0", "r_1"),
+      observeRunOutcome(draftIdOf("d_1"), "s_0", "r_1"),
+      observeRunOutcome(draftIdOf("d_1"), "s_0", "r_1"),
     ]);
     expect(a).toBe("done");
     expect(b).toBe("done");
@@ -664,7 +665,7 @@ test("SINGLE FLIGHT: a second observe on the same run RIDES the first — one pa
     expect(statuses).toEqual(["running", "done"]);
     // the registry seat is FREE after settle: a fresh observe runs
     // again (a retry after a terminal is a new observer)
-    const c = await observeRunOutcome("d_1", "s_0", "r_1");
+    const c = await observeRunOutcome(draftIdOf("d_1"), "s_0", "r_1");
     expect(c).toBe("done");
   } finally {
     fakes.unmount();
@@ -680,8 +681,8 @@ test("SINGLE FLIGHT keys by run: a DIFFERENT run on the same stage observes inde
   });
   try {
     const [a, b] = await Promise.all([
-      observeRunOutcome("d_1", "s_0", "r_1"),
-      observeRunOutcome("d_1", "s_0", "r_2"),
+      observeRunOutcome(draftIdOf("d_1"), "s_0", "r_1"),
+      observeRunOutcome(draftIdOf("d_1"), "s_0", "r_2"),
     ]);
     expect(a).toBe("done");
     expect(b).toBe("done");

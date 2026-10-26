@@ -18,10 +18,11 @@ import { unbindEstateRemote } from '@melite/card-base/client'
 import { CardsTab } from '../src/client/CardsTab.tsx'
 import { schemaEnvelope } from '@melite/card-base/client'
 import type { CardsBenchValue } from '../src/client/cards-resource.ts'
+import { draftIdOf } from '@melite/contracts/benchStage';
 
 const BENCH: CardsBenchValue = {
   kind: 'bench',
-  draftId: 'bench-conv-42',
+  draftId: draftIdOf('bench-conv-42'),
   rev: 3,
   sessionKey: 'conv-42',
   stages: [

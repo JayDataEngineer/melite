@@ -34,10 +34,11 @@ import { CardsTab } from '../src/client/CardsTab.tsx'
 import { schemaEnvelope } from '@melite/card-base/client'
 import type { CardsBenchValue } from '../src/client/cards-resource.ts'
 import type { EstateFakes } from './estate-harness.ts'
+import { draftIdOf } from '@melite/contracts/benchStage';
 
 const BENCH: CardsBenchValue = {
   kind: 'bench',
-  draftId: 'bench-s1',
+  draftId: draftIdOf('bench-s1'),
   sessionKey: 's1',
   rev: 7,
   stages: [
@@ -219,7 +220,7 @@ test('the DRAFT arm retires the claim at Back too (closing the refusal\'s face i
   const EXTENSION_MISS = "card 'image-gen' requires 'impact-pack' (nodes impact_pack) — none live on the engine; install via ComfyUI-Manager"
   const draftOf = (stageId: string, failed: boolean): import('../src/client/cards-resource.ts').CardsDraftValue => ({
     kind: 'draft',
-    draftId: 'bench-s1',
+    draftId: draftIdOf('bench-s1'),
     stageId,
     intent: 'image-gen',
     rev: 7,

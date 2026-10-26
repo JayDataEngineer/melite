@@ -10,6 +10,7 @@ import { schemaEnvelope } from '@melite/card-base/client';
 import type { BenchStageView } from "../src/client/cards-resource.ts";
 import { mountEstateFakes } from "./estate-harness.ts";
 import { unbindEstateRemote } from '@melite/card-base/client';
+import { draftIdOf } from '@melite/contracts/benchStage';
 
 function stage(over: Partial<BenchStageView> & { id: string }): BenchStageView {
   return { engine: "comfyui", ...over };
@@ -69,7 +70,7 @@ function startDoc(): Record<string, unknown> {
 describe("runCardStage — object spelled select options", () => {
   test("a numeric matching an object option normalizes to its string", async () => {
     stubWire();
-    await runCardStage("bench-main", stage({
+    await runCardStage(draftIdOf("bench-main"), stage({
       id: "s_1", card: "img-to-mesh", params: { input_image: "x.png", resolution: 1024 },
     }));
     expect(startDoc()["resolution"]).toBe("1024");
@@ -77,7 +78,7 @@ describe("runCardStage — object spelled select options", () => {
 
   test("a numeric outside object options rides verbatim", async () => {
     stubWire();
-    await runCardStage("bench-main", stage({
+    await runCardStage(draftIdOf("bench-main"), stage({
       id: "s_1", card: "img-to-mesh", params: { input_image: "x.png", resolution: 999 },
     }));
     expect(startDoc()["resolution"]).toBe(999);
@@ -99,7 +100,7 @@ describe("runCardStage — the downed spec door refuses, never degrades", () => 
       }
       throw new Error("estate door on the fetch lane: " + path);
     });
-    const res = await runCardStage("bench-main", stage({
+    const res = await runCardStage(draftIdOf("bench-main"), stage({
       id: "s_1", card: "img-to-mesh", params: { input_image: "x.png", resolution: 1024 },
     }));
     expect(res).toEqual({

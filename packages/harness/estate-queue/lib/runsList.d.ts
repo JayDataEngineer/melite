@@ -1,3 +1,4 @@
+import { type DraftId } from "@melite/contracts/benchStage";
 /** Leading-int read (sidecar tails): optional space, optional
  *  sign, then digits; 0 when no digits lead. */
 export declare function parseLeadingInt(s: string): number;
@@ -67,7 +68,7 @@ export declare function parseIntOrNull(s: string): number | null;
 export declare function firstQuery(qs: Record<string, string[]>, name: string, dflt: string): string;
 /** The runs-list envelope (the restore port): the output-root scan, media-first + newest sort, the limit parse (raw STRING — the lane/remote pass the raw text; underscores parse, non-ints refuse), refused cards SKIPPED but counted. */
 /** url/thumbnail are run-RELATIVE (the /v1/assets prefix died with the app — the header's law). */
-export declare function listRuns(stateRoot: string, limit: number, hasDraft: (draftId: string) => Promise<boolean>): Promise<{
+export declare function listRuns(stateRoot: string, limit: number, hasDraft: (draftId: DraftId) => Promise<boolean>): Promise<{
     count: number;
     runs: Record<string, unknown>[];
 }>;
@@ -78,7 +79,7 @@ export declare function listRuns(stateRoot: string, limit: number, hasDraft: (dr
  *  names its root (served_from); same-run-id collisions serve the
  *  FIRST manifest root's row (own writes win — the sort is stable,
  *  own root scanned first). */
-export declare function listRunsAcross(roots: string[], limit: number, hasDraft: (draftId: string) => Promise<boolean>): Promise<{
+export declare function listRunsAcross(roots: string[], limit: number, hasDraft: (draftId: DraftId) => Promise<boolean>): Promise<{
     count: number;
     runs: Record<string, unknown>[];
 }>;

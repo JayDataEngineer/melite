@@ -22,6 +22,7 @@ import { benchResultDefects } from "@melite/contracts";
 import { mountEstateFakes } from "./estate-harness.ts";
 import { restoreRunToBench } from "../src/client/cards-resource.ts";
 import type { CardsRunValue } from "../src/client/cards-resource.ts";
+import { draftIdOf } from "@melite/contracts/benchStage";
 
 afterEach(() => {
   unbindEstateRemote();
@@ -30,7 +31,7 @@ afterEach(() => {
 
 function run(): CardsRunValue {
   return {
-    kind: "run", runId: "r_1", status: "completed", draftId: "d_1",
+    kind: "run", runId: "r_1", status: "completed", draftId: draftIdOf("d_1"),
     stages: [], lastFrame: undefined,
   };
 }
@@ -77,7 +78,7 @@ describe("restoreRunToBench — the batch law (one write per restore)", () => {
 
 function runWithStages(): CardsRunValue {
   return {
-    kind: "run", runId: "r_9", status: "completed", draftId: "d_9",
+    kind: "run", runId: "r_9", status: "completed", draftId: draftIdOf("d_9"),
     stages: [
       { id: "s_0", status: "completed", url: "/melite-media/runs/r_9/a.png", gallery: [{ name: "a.png" }] },
       // the hero LAST: the engine lists zzz.png first, the stage url names b.png

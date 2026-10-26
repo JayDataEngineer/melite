@@ -20,6 +20,7 @@ import type { BenchStageView, CardsBenchValue } from "../src/client/cards-resour
 import { mountEstateFakes } from "./estate-harness.ts";
 import { unbindEstateRemote } from '@melite/card-base/client';
 import { patchStageParams, resetStageWrites } from "../src/client/draft.ts";
+import { draftIdOf } from '@melite/contracts/benchStage';
 
 function stage(over: Partial<BenchStageView> & { id: string }): BenchStageView {
   return { engine: "comfyui", ...over };
@@ -75,7 +76,7 @@ describe("runCardStage — the fresh-read law's fallback arms", () => {
     stubWire({
       draftStages: [{ id: "s_1", card: "img-to-mesh", params: ["junk"] as unknown as Record<string, unknown> }],
     });
-    const res = await runCardStage("bench-main", stage({ id: "s_1", card: "img-to-mesh", params: { prompt: "held" } }));
+    const res = await runCardStage(draftIdOf("bench-main"), stage({ id: "s_1", card: "img-to-mesh", params: { prompt: "held" } }));
     expect(res).toEqual({ runId: "run-1" });
     // the held prompt is GONE (the fresh row won), the model rode
     // the press key rides every start doc (the one-press law) —
@@ -87,7 +88,7 @@ describe("runCardStage — the fresh-read law's fallback arms", () => {
     stubWire({
       draftStages: [{ id: "s_1", card: "", params: {} }],
     });
-    const res = await runCardStage("bench-main", stage({ id: "s_1", card: "img-to-mesh", params: {} }));
+    const res = await runCardStage(draftIdOf("bench-main"), stage({ id: "s_1", card: "img-to-mesh", params: {} }));
     expect(res).toEqual({ refused: "this stage names no card — nothing to compose" });
     expect(calls.some((c) => c.method === "runs/start")).toBe(false);
   });
@@ -96,7 +97,7 @@ describe("runCardStage — the fresh-read law's fallback arms", () => {
 describe("runCardStage — the select-normalization keep arms", () => {
   test("a numeric select outside the declared options rides verbatim", async () => {
     stubWire();
-    await runCardStage("bench-main", stage({
+    await runCardStage(draftIdOf("bench-main"), stage({
       id: "s_1", card: "img-to-mesh", params: { input_image: "x.png", resolution: 999 },
     }));
     expect(startDoc()["resolution"]).toBe(999);
@@ -104,7 +105,7 @@ describe("runCardStage — the select-normalization keep arms", () => {
 
   test("a non-numeric select value skips normalization untouched", async () => {
     stubWire();
-    await runCardStage("bench-main", stage({
+    await runCardStage(draftIdOf("bench-main"), stage({
       id: "s_1", card: "img-to-mesh", params: { input_image: "x.png", resolution: "1024" },
     }));
     expect(startDoc()["resolution"]).toBe("1024");
@@ -136,7 +137,7 @@ describe("previewArtifactsFor — the junk filters and the fallback chain", () =
 describe("runBenchSequential — the pre-aborted pass returns empty", () => {
   test("an aborted signal before the first card runs nothing", async () => {
     stubWire();
-    const bench: CardsBenchValue = { kind: "bench", draftId: "bench-main", sessionKey: "main", rev: 5, log: [], stages: [
+    const bench: CardsBenchValue = { kind: "bench", draftId: draftIdOf("bench-main"), sessionKey: "main", rev: 5, log: [], stages: [
       stage({ id: "s_1", card: "image-gen", params: { prompt: "never" } }),
     ] };
     const res = await runBenchSequential(bench, { signal: AbortSignal.abort() });
@@ -148,8 +149,8 @@ describe("runBenchSequential — the pre-aborted pass returns empty", () => {
 describe("the audit's A1 — Run ALL rides the same gate (the gate lives in runCardStage, so the sequential pass inherits it)", () => {
   test("a stage whose write has not landed stops the pass with the refusal — no runs/start", async () => {
     stubWire({ patchFailures: [{ draftId: "bench-main", stageId: "s_1", delivered: false, reason: "stage not found" }] });
-    await expect(patchStageParams("bench-main", "s_1", { prompt: "never" }, 5)).rejects.toThrow(/stage not found/);
-    const bench: CardsBenchValue = { kind: "bench", draftId: "bench-main", sessionKey: "main", rev: 5, log: [], stages: [
+    await expect(patchStageParams(draftIdOf("bench-main"), "s_1", { prompt: "never" }, 5)).rejects.toThrow(/stage not found/);
+    const bench: CardsBenchValue = { kind: "bench", draftId: draftIdOf("bench-main"), sessionKey: "main", rev: 5, log: [], stages: [
       stage({ id: "s_1", card: "img-to-mesh", params: {} }),
     ] };
     const res = await runBenchSequential(bench, {});
@@ -164,17 +165,17 @@ describe("the audit's A1 — Run ALL rides the same gate (the gate lives in runC
 describe("the audit's B2 — failure memory is per-key (an unrelated landing never lifts the refusal; the failed key landing does)", () => {
   test("unrelated success refuses; failed-key success runs", async () => {
     stubWire({ patchFailures: [{ draftId: "bench-main", stageId: "s_1", delivered: false, reason: "stage not found" }] });
-    await expect(patchStageParams("bench-main", "s_1", { prompt: "never" }, 5)).rejects.toThrow(/stage not found/);
-    await patchStageParams("bench-main", "s_1", { steps: 9 }, 5);
+    await expect(patchStageParams(draftIdOf("bench-main"), "s_1", { prompt: "never" }, 5)).rejects.toThrow(/stage not found/);
+    await patchStageParams(draftIdOf("bench-main"), "s_1", { steps: 9 }, 5);
     const held = stage({ id: "s_1", card: "img-to-mesh", params: {} });
-    const refused = await runCardStage("bench-main", held);
+    const refused = await runCardStage(draftIdOf("bench-main"), held);
     expect("refused" in refused && refused.refused).toMatch(/unlanded keys: prompt/);
     expect(calls.some((c) => c.method === "runs/start")).toBe(false);
-    await patchStageParams("bench-main", "s_1", { prompt: "now" }, 5);
+    await patchStageParams(draftIdOf("bench-main"), "s_1", { prompt: "now" }, 5);
     stubWire({
       draftStages: [{ id: "s_1", card: "img-to-mesh", params: {} }],
     });
-    const res = await runCardStage("bench-main", held);
+    const res = await runCardStage(draftIdOf("bench-main"), held);
     expect(res).toEqual({ runId: "run-1" });
   });
 });

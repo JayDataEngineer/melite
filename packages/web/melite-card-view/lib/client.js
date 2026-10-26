@@ -695,7 +695,7 @@ window.__ModuleLoader__.load({
 		let _melite_estate_drafts_drafts_delete_parameter_0$schema$value;
 		const _melite_estate_drafts_drafts_delete_parameter_0$schema = () => _melite_estate_drafts_drafts_delete_parameter_0$schema$value ??= zod.z.string();
 		let _melite_estate_drafts_drafts_delete_result$schema$value;
-		const _melite_estate_drafts_drafts_delete_result$schema = () => _melite_estate_drafts_drafts_delete_result$schema$value ??= zod.z.object({ "draft_id": zod.z.string().describe("The canonical draft id the door removed.") });
+		const _melite_estate_drafts_drafts_delete_result$schema = () => _melite_estate_drafts_drafts_delete_result$schema$value ??= zod.z.object({ "draft_id": zod.z.string().describe("The canonical draft id the door removed (branded at the door).") });
 		let _melite_estate_drafts_drafts_get_parameter_0$schema$value;
 		const _melite_estate_drafts_drafts_get_parameter_0$schema = () => _melite_estate_drafts_drafts_get_parameter_0$schema$value ??= zod.z.string();
 		let _melite_estate_drafts_drafts_get_result$schema$value;
@@ -1281,7 +1281,7 @@ window.__ModuleLoader__.load({
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 1598,
+						"line": 1609,
 						"column": 9
 					}
 				},
@@ -1348,7 +1348,7 @@ window.__ModuleLoader__.load({
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 1610,
+						"line": 1621,
 						"column": 9
 					}
 				},
@@ -1412,7 +1412,7 @@ window.__ModuleLoader__.load({
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 1633,
+						"line": 1644,
 						"column": 9
 					}
 				},
@@ -1446,7 +1446,7 @@ window.__ModuleLoader__.load({
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 1529,
+						"line": 1540,
 						"column": 9
 					}
 				},
@@ -1480,7 +1480,7 @@ window.__ModuleLoader__.load({
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 1424,
+						"line": 1435,
 						"column": 9
 					}
 				},
@@ -1544,7 +1544,7 @@ window.__ModuleLoader__.load({
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 1671,
+						"line": 1682,
 						"column": 9
 					}
 				},
@@ -1623,7 +1623,7 @@ window.__ModuleLoader__.load({
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 1588,
+						"line": 1599,
 						"column": 9
 					}
 				},
@@ -1687,7 +1687,7 @@ window.__ModuleLoader__.load({
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 1620,
+						"line": 1631,
 						"column": 9
 					}
 				},
@@ -1755,7 +1755,7 @@ window.__ModuleLoader__.load({
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 1654,
+						"line": 1665,
 						"column": 9
 					}
 				},
@@ -1821,7 +1821,7 @@ window.__ModuleLoader__.load({
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 1643,
+						"line": 1654,
 						"column": 9
 					}
 				},
@@ -1855,7 +1855,7 @@ window.__ModuleLoader__.load({
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 1442,
+						"line": 1453,
 						"column": 10
 					}
 				},
@@ -1904,7 +1904,7 @@ window.__ModuleLoader__.load({
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 1703,
+						"line": 1714,
 						"column": 9
 					}
 				},
@@ -1968,7 +1968,7 @@ window.__ModuleLoader__.load({
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 1687,
+						"line": 1698,
 						"column": 9
 					}
 				},
@@ -2002,7 +2002,7 @@ window.__ModuleLoader__.load({
 							"type": "object",
 							"properties": { "draft_id": {
 								"type": "string",
-								"description": "The canonical draft id the door removed."
+								"description": "The canonical draft id the door removed (branded at the door)."
 							} },
 							"required": ["draft_id"],
 							"additionalProperties": true
@@ -2010,13 +2010,13 @@ window.__ModuleLoader__.load({
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 698,
+						"line": 707,
 						"column": 9
 					}
 				},
 				"drafts/get": {
 					service: "draftsRemote",
-					description: "Endpoint `drafts/get` — one doc by id.",
+					description: "Endpoint `drafts/get` — one doc by id. The wire param stays the bare wire string (the generated client face mirrors it); the id is branded AT this door before the in-process body runs.",
 					implementation: "remoteExportGet",
 					invocation: { kind: "direct" },
 					parameters: [{
@@ -2044,7 +2044,7 @@ window.__ModuleLoader__.load({
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 683,
+						"line": 692,
 						"column": 9
 					}
 				},
@@ -2087,7 +2087,7 @@ window.__ModuleLoader__.load({
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 677,
+						"line": 684,
 						"column": 9
 					}
 				},
@@ -2196,7 +2196,7 @@ window.__ModuleLoader__.load({
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 819,
+						"line": 830,
 						"column": 9
 					}
 				}
@@ -3125,13 +3125,27 @@ window.__ModuleLoader__.load({
 		function benchSessionOf$1(id) {
 			return typeof id === "string" && SESSION_RE$1.test(id) ? id : "main";
 		}
+		/** THE PARSE-EDGE / TEST MINT: brand a draft id read off the wire or
+		*  disk (route the typeof-guarded value through here at the door
+		*  that pulled it), or mint a test literal. One line, no runtime
+		*  validation — the brand is compile-time-only; the return cast is
+		*  the construction door (the newRunId pattern).
+		*  @param literal the plain draft id string at its parse edge
+		*  @returns the same string, branded for the typed seats downstream */
+		function draftIdOf$1(literal) {
+			return literal;
+		}
 		/** The MINT — the inverse of benchSessionOf (2026-10-13, the card-UI
 		*  duplication audit). The grammar moved to this floor and the DECISION
 		*  beside it, but the mint stayed behind in six seats spelling
 		*  `"bench-" + session` — one of which stripped the prefix and added
 		*  it straight back. An address has one grammar, one sanitize, and now
-		*  one mint. */
-		function benchDraftIdOf(session) {
+		*  one mint. The composed bench id is BORN here, so the mint is one
+		*  of the DraftId brand's two producers: the return cast is the
+		*  construction door (the newRunId pattern).
+		*  @param session the sanitized bench session key
+		*  @returns the composed draft id, branded */
+		function benchDraftIdOf$1(session) {
 			return "bench-" + session;
 		}
 		/** The run-relative tail of an absolute artifact path, or undefined
@@ -3576,7 +3590,7 @@ window.__ModuleLoader__.load({
 			return {
 				runId,
 				status,
-				draftId: typeof doc["draft_id"] === "string" && doc["draft_id"] !== "" ? doc["draft_id"] : null,
+				draftId: typeof doc["draft_id"] === "string" && doc["draft_id"] !== "" ? draftIdOf$1(doc["draft_id"]) : null,
 				stages,
 				...typeof doc["error"] === "string" && doc["error"] !== "" ? { error: doc["error"] } : {},
 				...receipt !== void 0 ? { graph_receipt: receipt } : {}
@@ -5977,6 +5991,29 @@ window.__ModuleLoader__.load({
 		function benchSessionOf(id) {
 			return typeof id === "string" && SESSION_RE.test(id) ? id : "main";
 		}
+		/** THE PARSE-EDGE / TEST MINT: brand a draft id read off the wire or
+		*  disk (route the typeof-guarded value through here at the door
+		*  that pulled it), or mint a test literal. One line, no runtime
+		*  validation — the brand is compile-time-only; the return cast is
+		*  the construction door (the newRunId pattern).
+		*  @param literal the plain draft id string at its parse edge
+		*  @returns the same string, branded for the typed seats downstream */
+		function draftIdOf(literal) {
+			return literal;
+		}
+		/** The MINT — the inverse of benchSessionOf (2026-10-13, the card-UI
+		*  duplication audit). The grammar moved to this floor and the DECISION
+		*  beside it, but the mint stayed behind in six seats spelling
+		*  `"bench-" + session` — one of which stripped the prefix and added
+		*  it straight back. An address has one grammar, one sanitize, and now
+		*  one mint. The composed bench id is BORN here, so the mint is one
+		*  of the DraftId brand's two producers: the return cast is the
+		*  construction door (the newRunId pattern).
+		*  @param session the sanitized bench session key
+		*  @returns the composed draft id, branded */
+		function benchDraftIdOf(session) {
+			return "bench-" + session;
+		}
 		//#endregion
 		//#region src/client/cards-resource.ts
 		/** The bench address (the legacy bare form serves 'main' — the
@@ -6010,10 +6047,14 @@ window.__ModuleLoader__.load({
 			if (rest.startsWith("draft/")) {
 				const body = rest.slice(6);
 				const slash = body.indexOf("/");
-				if (slash > 0 && slash < body.length - 1) return {
-					draft: decodeURIComponent(body.slice(0, slash)),
-					stage: decodeURIComponent(body.slice(slash + 1))
-				};
+				if (slash > 0 && slash < body.length - 1) {
+					const draftId = decodeURIComponent(body.slice(0, slash));
+					const stageId = decodeURIComponent(body.slice(slash + 1));
+					return {
+						draft: draftIdOf(draftId),
+						stage: stageId
+					};
+				}
 			}
 			return null;
 		}
@@ -6068,7 +6109,7 @@ window.__ModuleLoader__.load({
 			const log = Array.isArray(doc["log"]) ? doc["log"].filter((s) => typeof s === "object" && s !== null && typeof s["rev"] === "number") : [];
 			return {
 				kind: "bench",
-				draftId: typeof doc["draft_id"] === "string" ? doc["draft_id"] : "bench-main",
+				draftId: typeof doc["draft_id"] === "string" ? draftIdOf(doc["draft_id"]) : draftIdOf("bench-main"),
 				rev: typeof doc["rev"] === "number" ? doc["rev"] : 0,
 				stages,
 				log,
@@ -6630,7 +6671,7 @@ window.__ModuleLoader__.load({
 				throw new Error("the bench is unreadable: " + (0, _melite_card_base_client.rejectionVoice)(e));
 			}
 			let rev = typeof bench["rev"] === "number" ? bench["rev"] : 0;
-			const benchDraftId = typeof bench["draft_id"] === "string" && bench["draft_id"] !== "" ? bench["draft_id"] : key;
+			const benchDraftId = typeof bench["draft_id"] === "string" && bench["draft_id"] !== "" ? draftIdOf(bench["draft_id"]) : benchDraftIdOf(key);
 			const report = {
 				added: 0,
 				skipped: 0,
@@ -7485,7 +7526,7 @@ window.__ModuleLoader__.load({
 				const meta = block.meta;
 				if (meta !== null && typeof meta === "object" && !Array.isArray(meta)) {
 					const id = meta["draft_id"];
-					if (typeof id === "string" && id !== "") draftId = id;
+					if (typeof id === "string" && id !== "") draftId = draftIdOf(id);
 				}
 				if (draftId === null && Array.isArray(block.content)) for (const part of block.content) {
 					if (part === null || typeof part !== "object") continue;
@@ -7498,7 +7539,7 @@ window.__ModuleLoader__.load({
 					const end = rest.indexOf(" ");
 					const tok = end < 0 ? rest : rest.slice(0, end);
 					if ((tok.startsWith("draft-") || tok.startsWith("p_")) && tok.length > 2) {
-						draftId = tok;
+						draftId = draftIdOf(tok);
 						break;
 					}
 				}
@@ -8099,7 +8140,7 @@ window.__ModuleLoader__.load({
 					...context.state,
 					rows: [...context.state.rows, {
 						tool,
-						draftId,
+						draftId: draftId === null ? null : draftIdOf(draftId),
 						runId
 					}]
 				};
@@ -11858,7 +11899,7 @@ window.__ModuleLoader__.load({
 			applySubcardDrop: () => applySubcardDrop,
 			artifactFileName: () => artifactFileName,
 			bag: () => bag,
-			benchDraftIdOf: () => benchDraftIdOf,
+			benchDraftIdOf: () => benchDraftIdOf$1,
 			benchResultDefects: () => benchResultDefects,
 			benchSessionOf: () => benchSessionOf$1,
 			canonicalRunMediaUrl: () => canonicalRunMediaUrl,
@@ -11866,6 +11907,7 @@ window.__ModuleLoader__.load({
 			cnEntriesOf: () => cnEntriesOf,
 			crossRootOrder: () => crossRootOrder,
 			deriveFamilyLane: () => deriveFamilyLane,
+			draftIdOf: () => draftIdOf$1,
 			dropAuthoringIncomplete: () => dropAuthoringIncomplete,
 			extraOf: () => extraOf,
 			familyKeyPresent: () => familyKeyPresent,
@@ -13801,32 +13843,15 @@ window.__ModuleLoader__.load({
 			composeCard: () => composeCard$1,
 			ensureDraftId: () => ensureDraftId$1
 		});
-		/**
-		* CARD BIRTH LAW (operator order 2026-09-06, verbatim):
-		*
-		*   "IF THERE IS NO DRAFT_ID, THAT IS A HARD ERROR! THAT NEEDS TO
-		*    HAPPEN!"
-		*
-		* The start door (POST /v1/flows/start) refuses ANY body without a
-		* valid, doc-backed draft_id — 4xx BEFORE any run registers
-		* (submit(); wall:
-		* the wall pins it).
-		* Every run is born from an action card; a cardless row cannot be
-		* born, so the media sidebar's "run has no action card (no draft_id
-		* in its run row)" click error is unreachable for new runs.
-		*
-		* The ritual is mechanical and shared here (ONE implementation,
-		* every caller — no copy-paste mints): compose the card first
-		* (POST /v1/flows/drafts — the ray compose door mints the card doc,
-		* the body preserved verbatim as its extras), then ride the minted
-		* id on the start envelope.
-		*/
 		/** Mint the card doc for a start body. The doc carries the body
 		*  verbatim (intent/stages/model/params become the card extras —
 		*  see the drafts door, packages/estate/drafts, POST /v1/flows/drafts),
 		*  so what the card shows is what the run consumed. Throws LOUDLY
 		*  on any refusal — a refused compose never proceeds to a start
-		*  (no silent cardless runs). */
+		*  (no silent cardless runs).
+		*  @param body the raw start body (rides the compose POST verbatim)
+		*  @param signal the caller's abort signal
+		*  @returns the composed draft id, branded at this birth */
 		async function composeCard$1(body, signal) {
 			const res = await fetch("/v1/flows/drafts", {
 				method: "POST",
@@ -13844,7 +13869,7 @@ window.__ModuleLoader__.load({
 			}
 			const draftId = data.draftId;
 			if (typeof draftId !== "string" || !draftId) throw new Error("card compose returned no draftId — refusing to start cardless");
-			return draftId;
+			return draftIdOf$1(draftId);
 		}
 		/** The card-birth half of every run start: return the body's
 		*  declared draft_id when present, else compose the card and return
@@ -13852,13 +13877,18 @@ window.__ModuleLoader__.load({
 		*  the start fetch:
 		*
 		*    startBody.draft_id = await ensureDraftId(startBody, signal)
-		*/
+		*
+		*  @param body the raw start body (its declared draft_id wins)
+		*  @param signal the caller's abort signal
+		*  @returns the declared-or-composed draft id, branded at this door */
 		async function ensureDraftId$1(body, signal) {
 			const declared = body.draft_id;
-			if (typeof declared === "string" && declared !== "") return declared;
+			if (typeof declared === "string" && declared !== "") return draftIdOf$1(declared);
 			return composeCard$1(body, signal);
 		}
-		var init_cardBirth$1 = __esmMin((() => {}));
+		var init_cardBirth$1 = __esmMin((() => {
+			init_benchStage();
+		}));
 		//#endregion
 		//#region ../../web-kit/catalog/lib/FlowProtocol.js
 		var FlowProtocol_exports$1 = /* @__PURE__ */ __exportAll({
@@ -14658,6 +14688,26 @@ window.__ModuleLoader__.load({
 		function getPeaksForWidth(cache, width) {
 			return resampleForWidth(cache[selectLOD(width)], width);
 		}
+		/** The audio-cue draw path (E3.14 READ side, seated 2026-10-26): the
+		*  bars a cue surface paints at a given pixel width — the module's
+		*  documented consumer, riding the store's own cue shape.
+		*
+		*  The LOD cache is the truth whenever it exists: the legacy
+		*  200-bucket max-amplitude array is NEVER read behind a cache — it
+		*  carries no min (the waveform's asymmetry is lost) and no zoom
+		*  detail to select. A cache-less legacy cue (persisted before
+		*  E3.14) lifts its array into symmetric min/max bars at the asked
+		*  width — honest about its resolution. A cue with neither has no
+		*  truth to draw; the caller paints the placeholder. */
+		function cuePeaksForWidth(cue, width) {
+			if (cue.waveformPeaksLOD) return getPeaksForWidth(cue.waveformPeaksLOD, width);
+			const legacy = cue.waveformPeaks;
+			if (legacy && legacy.length > 0) return resampleForWidth(legacy.map((p) => ({
+				min: -p,
+				max: p
+			})), width);
+			return [];
+		}
 		/** Decode an audio URL into legacy + LOD waveform peaks.
 		*
 		*  Returns null on any failure (fetch error, decode error, etc.).
@@ -15035,6 +15085,7 @@ window.__ModuleLoader__.load({
 			computeWaveformLODs: () => computeWaveformLODs,
 			contractToast: () => contractToast,
 			controlnetTypesOf: () => controlnetTypesOf,
+			cuePeaksForWidth: () => cuePeaksForWidth,
 			decodeAudioPeaks: () => decodeAudioPeaks,
 			describeErrorBody: () => describeErrorBody$1,
 			dropdownModels: () => dropdownModels,
@@ -15641,7 +15692,10 @@ window.__ModuleLoader__.load({
 		*  see the drafts door, packages/estate/drafts, POST /v1/flows/drafts),
 		*  so what the card shows is what the run consumed. Throws LOUDLY
 		*  on any refusal — a refused compose never proceeds to a start
-		*  (no silent cardless runs). */
+		*  (no silent cardless runs).
+		*  @param body the raw start body (rides the compose POST verbatim)
+		*  @param signal the caller's abort signal
+		*  @returns the composed draft id, branded at this birth */
 		async function composeCard(body, signal) {
 			const res = await fetch("/v1/flows/drafts", {
 				method: "POST",
@@ -15659,7 +15713,7 @@ window.__ModuleLoader__.load({
 			}
 			const draftId = data.draftId;
 			if (typeof draftId !== "string" || !draftId) throw new Error("card compose returned no draftId — refusing to start cardless");
-			return draftId;
+			return draftIdOf$1(draftId);
 		}
 		/** The card-birth half of every run start: return the body's
 		*  declared draft_id when present, else compose the card and return
@@ -15667,13 +15721,18 @@ window.__ModuleLoader__.load({
 		*  the start fetch:
 		*
 		*    startBody.draft_id = await ensureDraftId(startBody, signal)
-		*/
+		*
+		*  @param body the raw start body (its declared draft_id wins)
+		*  @param signal the caller's abort signal
+		*  @returns the declared-or-composed draft id, branded at this door */
 		async function ensureDraftId(body, signal) {
 			const declared = body.draft_id;
-			if (typeof declared === "string" && declared !== "") return declared;
+			if (typeof declared === "string" && declared !== "") return draftIdOf$1(declared);
 			return composeCard(body, signal);
 		}
-		var init_cardBirth = __esmMin((() => {}));
+		var init_cardBirth = __esmMin((() => {
+			init_benchStage();
+		}));
 		//#endregion
 		//#region ../../web-kit/catalog/src/FlowProtocol.ts
 		var FlowProtocol_exports = /* @__PURE__ */ __exportAll({

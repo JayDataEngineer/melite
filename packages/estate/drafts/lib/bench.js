@@ -29,6 +29,7 @@ import { trailDedupe } from "./trail.js";
 import { BENCH_DRAFT_RE, RESTORED_PROVENANCE_SPELLING, SESSION_RE } from "@melite/contracts/benchStage";
 import { RESTORED_PROVENANCE } from "./remote.js";
 export { SESSION_RE };
+/** The bench id mint (the contract floor's own, branded there). */
 function benchIdOf(session) {
     return benchDraftIdOf(session);
 }
@@ -2146,8 +2147,8 @@ export function notifyBenchChange(session) {
     benchChangeSeam?.emit(session);
 }
 /** The public notify (the drafts-patch door writes bench docs from
- *  remote.ts — outside this module; it fires this with the session
- *  parsed from the bench-shaped draft id). */
+ *  remote.ts — outside this module; it fires this with the bench-
+ *  shaped draft id already branded at that door). */
 export function notifyBenchDocWrite(draftId) {
     const m = BENCH_DRAFT_RE.exec(draftId);
     if (m !== null)

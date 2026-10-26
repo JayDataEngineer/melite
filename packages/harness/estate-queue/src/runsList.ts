@@ -1,4 +1,5 @@
 import { servableLeaf } from "@melite/contracts/mediaKinds"
+import { draftIdOf, type DraftId } from "@melite/contracts/benchStage"
 // runsList.ts — the runs LIST surface (REBUILD-7, gateway kill):
 // the retired runs door's list arm (GET /v1/flows/runs, the restore port) re-homed verbatim into the queue package as the registry's `list` business arm.
 // The sidecar byte-surgery helpers are the door's own bodies, second move unchanged (the section notes below name the reader each helper implements).
@@ -578,7 +579,7 @@ const rowCache = new Map<string, RowEnt>();
 async function buildRunCard(
   outputRoot: string,
   ent: RunsEnt,
-  hasDraft: (draftId: string) => Promise<boolean>,
+  hasDraft: (draftId: DraftId) => Promise<boolean>,
 ): Promise<Record<string, unknown> | null> {
   const runDir: string = join(outputRoot, ent.dir);
   const dirMtime = mtimeMsOf(runDir);
@@ -685,11 +686,11 @@ async function buildRunCard(
  *  CLONE so the cache never learns the probe's answer. */
 async function applyDraftOverlay(
   row: Record<string, unknown>,
-  hasDraft: (draftId: string) => Promise<boolean>,
+  hasDraft: (draftId: DraftId) => Promise<boolean>,
 ): Promise<Record<string, unknown>> {
   const served: Record<string, unknown> = structuredClone(row);
   const draft = served["draft_id"];
-  if (typeof draft === "string" && draft !== "" && !(await hasDraft(draft))) {
+  if (typeof draft === "string" && draft !== "" && !(await hasDraft(draftIdOf(draft)))) {
     served["draft_id"] = "";
   }
   return served;
@@ -700,7 +701,7 @@ async function applyDraftOverlay(
 export async function listRuns(
   stateRoot: string,
   limit: number,
-  hasDraft: (draftId: string) => Promise<boolean>,
+  hasDraft: (draftId: DraftId) => Promise<boolean>,
 ): Promise<{ count: number; runs: Record<string, unknown>[] }> {
   return listRunsAcross([stateRoot], limit, hasDraft);
 }
@@ -715,7 +716,7 @@ export async function listRuns(
 export async function listRunsAcross(
   roots: string[],
   limit: number,
-  hasDraft: (draftId: string) => Promise<boolean>,
+  hasDraft: (draftId: DraftId) => Promise<boolean>,
 ): Promise<{ count: number; runs: Record<string, unknown>[] }> {
   const ents: RunsEnt[] = [];
   for (const root of roots) ents.push(...scanRunsRoot(root));

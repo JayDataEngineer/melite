@@ -4,6 +4,7 @@
 //
 // Erasable-syntax TS only (node --experimental-strip-types): no
 // enums, import type for types, .ts specifiers for relative imports.
+import { draftIdOf, type DraftId } from "@melite/contracts/benchStage";
 
 // ── refusal envelope (R4.2: 114-155) ─────────────────────────────
 
@@ -89,8 +90,9 @@ export function envelopeRefusal(
 }
 
 /** The unknown-draft refusal (door-verbatim; the probe rides the
- *  caller's drafts domain — the remote hops the ctx seat). */
-export function unknownDraftRefusal(draftId: string): QueueRefusal {
+ *  caller's drafts domain — the remote hops the ctx seat). Takes the
+ *  branded id: the walker mints it off the validated wire body. */
+export function unknownDraftRefusal(draftId: DraftId): QueueRefusal {
   return refusal(
     400,
     "unknown draft_id " +
@@ -293,20 +295,23 @@ export function noDoorRefusal(): QueueRefusal {
  *  replay/reservation verdict). */
 export async function walkSubmitEnvelope(
   doc: unknown,
-  draftExists: (draftId: string) => boolean | Promise<boolean>,
+  draftExists: (draftId: DraftId) => boolean | Promise<boolean>,
 ): Promise<
   | {
       kind: "ok";
       body: Record<string, unknown>;
       testFlag: boolean;
-      draftId: string;
+      draftId: DraftId;
     }
   | { kind: "refusal"; refusal: QueueRefusal }
 > {
   const structural = submitEnvelopeStructuralRefusal(doc);
   if (structural !== null) return { kind: "refusal", refusal: structural };
   const body = doc as Record<string, unknown>;
-  const draftId = body["draft_id"] as string;
+  // THE PARSE EDGE: the draft_id arrived on the wire and passed the
+  // structural walk above (present, non-empty, draftIdOk) — branded
+  // here (the DraftId seating; the brand is compile-time-only).
+  const draftId = draftIdOf(body["draft_id"] as string);
   if (!(await draftExists(draftId))) {
     return { kind: "refusal", refusal: unknownDraftRefusal(draftId) };
   }

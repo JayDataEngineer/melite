@@ -126,7 +126,7 @@ export interface BenchLogHead {
 /** `dsh-resource://cards/bench`. */
 export interface CardsBenchValue {
   kind: 'bench'
-  draftId: string
+  draftId: DraftId
   rev: number
   stages: BenchStageView[]
   log: BenchLogHead[]
@@ -154,7 +154,7 @@ export interface CardsRunValue {
   kind: 'run'
   runId: string
   status: string
-  draftId: string | null
+  draftId: DraftId | null
   stages: RunStageStatus[]
   /** The run-level failure text (the runs seat's own stamp) — a failed
    *  run's tile can name WHY, never a silent 'failed' dot. */
@@ -181,7 +181,7 @@ export type CardsValue = CardsBenchValue | CardsRunValue | CardsDraftValue
  */
 export interface CardsDraftValue {
   kind: 'draft'
-  draftId: string
+  draftId: DraftId
   stageId: string
   intent: string
   stages: BenchStageView[]
@@ -228,7 +228,7 @@ export const CARDS_BENCH_ADDRESS = 'dsh-resource://cards/bench'
 // tool). The contract floor owns the decision now; the local name
 // stays for this module's callers, but there is no second producer
 // to drift.
-import { benchSessionOf } from '@melite/contracts/benchStage'
+import { benchDraftIdOf, benchSessionOf, draftIdOf, type DraftId } from '@melite/contracts/benchStage'
 import { isTerminalStatus, isLiveRunStatus, statusOf, RUN_STATUS_WORDS } from '@melite/contracts/stageView'
 export { benchSessionOf as benchSessionKey }
 
@@ -249,12 +249,12 @@ export { cardsRunAddress } // the ONE mint: card-base cards-address.ts (DRY swee
 /** The draft-stage address — the conversation card's studio target
  *  (the old embed's law; both segments encode, either may carry the
  *  separators the bare grammar refuses). */
-export function cardsDraftStageAddress(draftId: string, stageId: string): string {
+export function cardsDraftStageAddress(draftId: DraftId, stageId: string): string {
   return 'dsh-resource://cards/draft/' + encodeURIComponent(draftId) + '/' + encodeURIComponent(stageId)
 }
 
 /** Parse a cards address; null when the path is not one of ours. */
-export function parseCardsAddress(address: string): { bench: true } | { run: string } | { draft: string; stage: string } | null {
+export function parseCardsAddress(address: string): { bench: true } | { run: string } | { draft: DraftId; stage: string } | null {
   const prefix = 'dsh-resource://cards/'
   if (!address.startsWith(prefix)) return null
   const rest = address.slice(prefix.length)
@@ -274,7 +274,7 @@ export function parseCardsAddress(address: string): { bench: true } | { run: str
       // NO EMPTINESS GUARD (the slash gate above admits only
       // interior slashes, so both parts hold ≥1 char, and decoding
       // never empties a non-empty string — the pair always returns).
-      return { draft: draftId, stage: stageId }
+      return { draft: draftIdOf(draftId), stage: stageId }
     }
   }
   return null
@@ -366,7 +366,7 @@ export function readBench(doc: Record<string, unknown>, sessionKey: string): Car
     : []
   return {
     kind: 'bench',
-    draftId: typeof doc['draft_id'] === 'string' ? (doc['draft_id'] as string) : 'bench-main',
+    draftId: typeof doc['draft_id'] === 'string' ? draftIdOf(doc['draft_id']) : draftIdOf('bench-main'),
     rev: typeof doc['rev'] === 'number' ? (doc['rev'] as number) : 0,
     stages,
     log,
@@ -642,7 +642,7 @@ const TRANSPORT_BACKOFF_MAX_MS = 10000
 const VERDICT_DELIVERY_ATTEMPTS = 3
 
 export function observeRunOutcome(
-  draftId: string,
+  draftId: DraftId,
   stageId: string,
   runId: string,
   signal?: AbortSignal,
@@ -658,7 +658,7 @@ export function observeRunOutcome(
 }
 
 async function observeRunOutcomeRun(
-  draftId: string,
+  draftId: DraftId,
   stageId: string,
   runId: string,
   signal?: AbortSignal,
@@ -1122,7 +1122,7 @@ export type StageRowRead =
   | { status: 'gone' }
   | { status: 'unreadable' }
 export async function readStageRow(
-  draftId: string,
+  draftId: DraftId,
   stageId: string,
   signal?: AbortSignal,
 ): Promise<StageRowRead> {
@@ -1149,7 +1149,7 @@ export async function readStageRow(
  *  (readStageRow above) — composing the held row on a failed read
  *  is the silent stale-run seat. */
 export async function freshStageRow(
-  draftId: string,
+  draftId: DraftId,
   stageId: string,
   signal?: AbortSignal,
 ): Promise<BenchStageView | null> {
@@ -1157,7 +1157,7 @@ export async function freshStageRow(
   return read.status === 'ready' ? read.row : null
 }
 
-export function readDraft(draftId: string, stageId: string, doc: Record<string, unknown>): CardsDraftValue {
+export function readDraft(draftId: DraftId, stageId: string, doc: Record<string, unknown>): CardsDraftValue {
   const stages = Array.isArray(doc['stages'])
     ? (doc['stages'] as unknown[]).filter((s): s is BenchStageView =>
         typeof s === 'object' && s !== null && typeof (s as BenchStageView)['id'] === 'string')
@@ -1254,9 +1254,9 @@ export async function restoreRunToBench(
   // the session key the bench verbs take ('main'; a draft the
   // estate never seated). The bench doc names its draft; fall back
   // to the session key only for a doc that won't say.
-  const benchDraftId = typeof bench['draft_id'] === 'string' && (bench['draft_id'] as string) !== ''
-    ? (bench['draft_id'] as string)
-    : key
+  const benchDraftId = typeof bench['draft_id'] === 'string' && bench['draft_id'] !== ''
+    ? draftIdOf(bench['draft_id'])
+    : benchDraftIdOf(key)
   const report: RestoreReport = { added: 0, skipped: 0, carried: 0, notes: [] }
   // THE BATCH BUILD (the restore law, operator 2026-10-21: "Restoring
   // takes an extreme amount of time"): the whole flow lands as ONE
@@ -1421,7 +1421,7 @@ export async function restoreRunToBench(
  *  carry, never the in-flight patch). */
 async function carryOutcome(
   run: CardsRunValue,
-  benchKey: string,
+  benchKey: DraftId,
   draftStageId: string | null,
   seated: string,
   positional: RunStageStatus | undefined,

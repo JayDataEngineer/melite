@@ -13,7 +13,7 @@
 //   is never rewritten (patch/undo arms land in later strokes).
 //   AUTHORSHIP — every entry carries author ("agent"|"user").
 import { unwrapItemArrays } from '@melite/comfyui-card-kit'
-import { benchDraftIdOf, BIRTH_STRIP_KEYS, LOAD_CARRY_KEYS, normalizeBenchStage, SELF_NAMED_FAMILIES, stripKeys } from '@melite/contracts/benchStage'
+import { benchDraftIdOf, BIRTH_STRIP_KEYS, LOAD_CARRY_KEYS, normalizeBenchStage, SELF_NAMED_FAMILIES, stripKeys, type DraftId } from '@melite/contracts/benchStage'
 import { RemoteError } from "@deepseek-ai/dsh-typert-protocol";
 import type { Domain } from "@deepseek-ai/dsh-storage-domain";
 import type { DraftRecord, DraftsDomainSpec } from "./spec.js";
@@ -146,7 +146,8 @@ import { BENCH_DRAFT_RE, RESTORED_PROVENANCE_SPELLING, SESSION_RE } from "@melit
 import { RESTORED_PROVENANCE } from "./remote.ts";
 export { SESSION_RE };
 
-function benchIdOf(session: string): string {
+/** The bench id mint (the contract floor's own, branded there). */
+function benchIdOf(session: string): DraftId {
   return benchDraftIdOf(session);
 }
 
@@ -417,7 +418,7 @@ function dedupeStageIds(
 
 /** The ensure row: create marker, rev, intent, stages. */
 export interface BenchEnsureRow {
-  readonly draft_id: string;
+  readonly draft_id: DraftId;
   readonly session: string;
   readonly rev: number;
   readonly intent: JsonValue;
@@ -429,7 +430,7 @@ export interface BenchEnsureRow {
  *  author / kind / stage / summary / reverted — inverses never
  *  leave the domain). */
 export interface BenchGetRow {
-  readonly draft_id: string;
+  readonly draft_id: DraftId;
   readonly session: string;
   readonly rev: number;
   readonly intent: JsonValue;
@@ -522,7 +523,7 @@ export async function ensureBench(
       {},
     );
   }
-  const draftId: string = benchIdOf(session);
+  const draftId: DraftId = benchIdOf(session);
   const author: Author = authorOk(body["author"])
     ? (body["author"] as Author)
     : "agent";
@@ -702,7 +703,7 @@ export function getBench(
       {},
     );
   }
-  const draftId: string = benchIdOf(session);
+  const draftId: DraftId = benchIdOf(session);
   const rec: DraftRecord | undefined = drafts.table("docs").get(draftId);
   if (rec === undefined) {
     throw new RemoteError("bench/not-found", "no such bench: " + session, {
@@ -786,7 +787,7 @@ export function getBench(
 
 /** One loaded bench (session-validated, existing). */
 interface LoadedBench {
-  readonly draftId: string;
+  readonly draftId: DraftId;
   /** Mutable for one reason: the atomic undo swaps in its deep copy
    *  once every target has applied (the multi-target copy law). No
    *  other arm reassigns it — every other door mutates in place
@@ -806,7 +807,7 @@ async function loadBench(
       {},
     );
   }
-  const draftId: string = benchIdOf(session);
+  const draftId: DraftId = benchIdOf(session);
   let rec: DraftRecord | undefined = drafts.table("docs").get(draftId);
   if (rec === undefined) {
     // THE BIRTH (stroke 46g, the operator's "is this a forever fix?"):
@@ -904,7 +905,7 @@ const PATCH_KEYS = ["stage", "params", "result", "runStatus", "expect_rev", "aut
 
 /** The patch row: the touched stage + the params keys merged. */
 export interface BenchPatchRow {
-  readonly draft_id: string;
+  readonly draft_id: DraftId;
   readonly session: string;
   readonly rev: number;
   readonly stage: string;
@@ -1179,7 +1180,7 @@ const ADD_KEYS = ["id", "card", "engine", "params", "inputs", "outputs", "expect
 
 /** The stage row: the arm's answer (stage id + rev). */
 export interface BenchStageRow {
-  readonly draft_id: string;
+  readonly draft_id: DraftId;
   readonly session: string;
   readonly rev: number;
   readonly stage: string;
@@ -1188,7 +1189,7 @@ export interface BenchStageRow {
 /** The batch add's row: every minted stage id under the ONE rev the
  *  whole batch landed at. */
 export interface BenchStagesRow {
-  readonly draft_id: string;
+  readonly draft_id: DraftId;
   readonly session: string;
   readonly rev: number;
   readonly stages: readonly string[];
@@ -1966,7 +1967,7 @@ export async function reorderBench(
 /** The reorder row: the move's coordinates for the caller's optimistic
  *  update (from → to, both POST-splice-clamp). */
 export interface BenchReorderRow {
-  readonly draft_id: string;
+  readonly draft_id: DraftId;
   readonly session: string;
   readonly rev: number;
   readonly stage: string;
@@ -2240,7 +2241,7 @@ const CLEAR_KEYS = ["expect_rev", "author"];
 
 /** The clear row. */
 export interface BenchClearRow {
-  readonly draft_id: string;
+  readonly draft_id: DraftId;
   readonly session: string;
   readonly rev: number;
   readonly cleared: number;
@@ -2287,7 +2288,7 @@ const REWIRE_KEYS = ["stage", "input", "from", "expect_rev", "author"];
 
 /** The rewire row. */
 export interface BenchRewireRow {
-  readonly draft_id: string;
+  readonly draft_id: DraftId;
   readonly session: string;
   readonly rev: number;
   readonly stage: string;
@@ -2391,7 +2392,7 @@ const UNDO_KEYS = ["n", "author", "expect_rev"];
 
 /** The undo row: the undone revs + the stages as they stand. */
 export interface BenchUndoRow {
-  readonly draft_id: string;
+  readonly draft_id: DraftId;
   readonly session: string;
   readonly rev: number;
   readonly undone: readonly number[];
@@ -2870,9 +2871,9 @@ export function notifyBenchChange(session: string): void {
 }
 
 /** The public notify (the drafts-patch door writes bench docs from
- *  remote.ts — outside this module; it fires this with the session
- *  parsed from the bench-shaped draft id). */
-export function notifyBenchDocWrite(draftId: string): void {
+ *  remote.ts — outside this module; it fires this with the bench-
+ *  shaped draft id already branded at that door). */
+export function notifyBenchDocWrite(draftId: DraftId): void {
   const m = BENCH_DRAFT_RE.exec(draftId);
   if (m !== null) notifyBenchChange(m[1]!);
 }

@@ -40,6 +40,7 @@ import {
   type SpecValues,
 } from '@melite/card-base/client'
 import { DECL as animaDecl } from '../../../models/anima/src/index.ts'
+import { draftIdOf } from '@melite/contracts/benchStage';
 
 // THE MENU-SELECT DRIVERS (S7e): the spec axes ride the DSH Menu —
 // open the trigger, click the menuitem row. axisFace reads the
@@ -263,7 +264,7 @@ test('runCardStage composes the HELD model; the default family is only the resti
     throw new Error('estate door on the fetch lane: ' + String(url))
   }
   try {
-    const res = await runCardStage('bench-main', {
+    const res = await runCardStage(draftIdOf('bench-main'), {
       id: 's_v', title: 'Image gen', card: 'image-gen', engine: 'comfyui',
       params: { prompt: 'a cat', model: 'krea-2-raw', variant: 'raw', quant: '', steps: 52, cfg: 3.5 },
       result: null,
@@ -305,7 +306,7 @@ test('runCardStage maps a family-less null to the card-unit address (never a wri
     throw new Error('estate door on the fetch lane: ' + String(url))
   }
   try {
-    const res = await runCardStage('bench-main', {
+    const res = await runCardStage(draftIdOf('bench-main'), {
       id: 's_m', title: 'Mask', card: 'mask', engine: 'comfyui',
       params: { prompt: 'x' },
       result: null,
@@ -339,7 +340,7 @@ test('runCardStage refuses an uncarried card AT THE PRESS (never a minted self-d
     throw new Error('estate door on the fetch lane: ' + String(url))
   }
   try {
-    const res = await runCardStage('bench-main', {
+    const res = await runCardStage(draftIdOf('bench-main'), {
       id: 's_g', title: 'Ghost', card: 'ghost-card', engine: 'comfyui',
       params: { prompt: 'x' },
       result: null,
@@ -384,7 +385,7 @@ test('THE WIRE RESOLUTION: a wired stage runs on the upstream\'s last result —
     throw new Error('estate door on the fetch lane: ' + String(url))
   }
   try {
-    const res = await runCardStage('bench-main', {
+    const res = await runCardStage(draftIdOf('bench-main'), {
       id: 's_1', title: 'edit', card: 'image-edit', engine: 'comfyui',
       params: { input_images: ['$input_images'], prompt: 'make the hair crimson' },
       inputs: { input_images: { stage: 's_0', output: 'default' } },
@@ -412,7 +413,7 @@ test('THE WIRE RESOLUTION: an upstream with no output REFUSES at the press — n
     throw new Error('estate door on the fetch lane: ' + String(url))
   }
   try {
-    const res = await runCardStage('bench-main', {
+    const res = await runCardStage(draftIdOf('bench-main'), {
       id: 's_1', title: 'edit', card: 'image-edit', engine: 'comfyui',
       params: { input_images: ['$input_images'], prompt: 'make the hair crimson' },
       inputs: { input_images: { stage: 's_0', output: 'default' } },
@@ -451,7 +452,7 @@ test('THE WIRE RESOLUTION: a wire row of an unknown shape REFUSES naming it — 
     throw new Error('estate door on the fetch lane: ' + String(url))
   }
   try {
-    const res = await runCardStage('bench-main', {
+    const res = await runCardStage(draftIdOf('bench-main'), {
       id: 's_1', title: 'edit', card: 'image-edit', engine: 'comfyui',
       params: { input_images: ['$input_images'] },
       inputs: { input_images: { weird: true } },
@@ -494,7 +495,7 @@ test('THE WIRE RESOLUTION: a NULL wire entry refuses naming it — the voice pri
     throw new Error('estate door on the fetch lane: ' + String(url))
   }
   try {
-    const res = await runCardStage('bench-main', {
+    const res = await runCardStage(draftIdOf('bench-main'), {
       id: 's_1', title: 'edit', card: 'image-edit', engine: 'comfyui',
       params: { input_images: ['$input_images'] },
       inputs: { input_images: null },
@@ -545,7 +546,7 @@ test('THE WIRE RESOLUTION: a spell nested in an OBJECT param resolves at every d
     throw new Error('estate door on the fetch lane: ' + String(url))
   }
   try {
-    const res = await runCardStage('bench-main', {
+    const res = await runCardStage(draftIdOf('bench-main'), {
       id: 's_1', title: 'edit', card: 'image-edit', engine: 'comfyui',
       params: { ...nested },
       inputs: { input_images: { stage: 's_0', output: 'default' } },
@@ -582,7 +583,7 @@ test('THE WIRE RESOLUTION: an upstream RESULT with no url reads as no output —
     throw new Error('estate door on the fetch lane: ' + String(url))
   }
   try {
-    const res = await runCardStage('bench-main', {
+    const res = await runCardStage(draftIdOf('bench-main'), {
       id: 's_1', title: 'edit', card: 'image-edit', engine: 'comfyui',
       params: { input_images: ['$input_images'], prompt: 'make the hair crimson' },
       inputs: { input_images: { stage: 's_0', output: 'default' } },
@@ -619,7 +620,7 @@ test('THE SPEC-DOOR LAW: a downed form-spec door REFUSES the run, naming the doo
     throw new Error('estate door on the fetch lane: ' + String(url))
   }
   try {
-    const res = await runCardStage('bench-main', {
+    const res = await runCardStage(draftIdOf('bench-main'), {
       id: 's_1', title: 'edit', card: 'image-edit', engine: 'comfyui',
       params: { prompt: 'make the hair crimson' },
       result: null,
@@ -633,7 +634,7 @@ test('THE SPEC-DOOR LAW: a downed form-spec door REFUSES the run, naming the doo
     ;(globalThis as Record<string, unknown>)['fetch'] = async (): Promise<unknown> => {
       throw 'door down (a bare string)'
     }
-    const res2 = await runCardStage('bench-main', {
+    const res2 = await runCardStage(draftIdOf('bench-main'), {
       id: 's_1', title: 'edit', card: 'image-edit', engine: 'comfyui',
       params: { prompt: 'make the hair crimson' },
       result: null,

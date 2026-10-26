@@ -6,13 +6,14 @@
 import { describe, expect, test } from "vitest";
 import { benchRow } from "../src/client/CardsTab.tsx";
 import type { BenchStageView, CardsBenchValue } from "../src/client/cards-resource.ts";
+import { draftIdOf } from "@melite/contracts/benchStage";
 
 function stage(over: Partial<BenchStageView> & { id: string }): BenchStageView {
   return { engine: "comfyui", ...over };
 }
 
 function bench(stages: BenchStageView[]): CardsBenchValue {
-  return { kind: "bench", draftId: "bench-main", sessionKey: "main", rev: 1, log: [], stages };
+  return { kind: "bench", draftId: draftIdOf("bench-main"), sessionKey: "main", rev: 1, log: [], stages };
 }
 
 describe("benchRow — the group face", () => {

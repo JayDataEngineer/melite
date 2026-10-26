@@ -18,22 +18,32 @@
  * the body preserved verbatim as its extras), then ride the minted
  * id on the start envelope.
  */
+import { type DraftId } from "@melite/contracts/benchStage";
+/** The compose answer's draft id — branded at THIS birth (the id is
+ *  pulled off the compose answer's wire body, the card plane's parse
+ *  edge; the DraftId brand's compile-time law, benchStage.ts). */
 export interface DraftComposeResult {
-    draftId: string;
+    draftId: DraftId;
 }
 /** Mint the card doc for a start body. The doc carries the body
  *  verbatim (intent/stages/model/params become the card extras —
  *  see the drafts door, packages/estate/drafts, POST /v1/flows/drafts),
  *  so what the card shows is what the run consumed. Throws LOUDLY
  *  on any refusal — a refused compose never proceeds to a start
- *  (no silent cardless runs). */
-export declare function composeCard(body: Record<string, unknown>, signal?: AbortSignal): Promise<string>;
+ *  (no silent cardless runs).
+ *  @param body the raw start body (rides the compose POST verbatim)
+ *  @param signal the caller's abort signal
+ *  @returns the composed draft id, branded at this birth */
+export declare function composeCard(body: Record<string, unknown>, signal?: AbortSignal): Promise<DraftId>;
 /** The card-birth half of every run start: return the body's
  *  declared draft_id when present, else compose the card and return
  *  the minted id. Stamp the result onto the start envelope BEFORE
  *  the start fetch:
  *
  *    startBody.draft_id = await ensureDraftId(startBody, signal)
- */
-export declare function ensureDraftId(body: Record<string, unknown>, signal?: AbortSignal): Promise<string>;
+ *
+ *  @param body the raw start body (its declared draft_id wins)
+ *  @param signal the caller's abort signal
+ *  @returns the declared-or-composed draft id, branded at this door */
+export declare function ensureDraftId(body: Record<string, unknown>, signal?: AbortSignal): Promise<DraftId>;
 //# sourceMappingURL=cardBirth.d.ts.map

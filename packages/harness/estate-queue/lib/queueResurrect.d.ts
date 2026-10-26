@@ -1,4 +1,5 @@
 import type { RunId } from "./queueCore.js";
+import { type DraftId } from "@melite/contracts/benchStage";
 export interface ResurrectPlan {
     /** run_ids to re-queue, FIFO by created_at (order survives). */
     readonly order: RunId[];
@@ -45,7 +46,7 @@ export declare function coerceCreatedAt(value: unknown): number;
 export declare function durableRecordUsable(sidecarText: string, requestText: string, draftExists: boolean): boolean;
 /** Plan the resurrect (fs reads + order; the caller appends +
  *  ledgers, or use bootResurrect below for the whole seam). */
-export declare function planResurrect(stateRoot: string, readSidecar?: (runId: string) => string | null, readRequest?: (runId: string) => string | null, draftExists?: (draftId: string) => boolean): ResurrectPlan;
+export declare function planResurrect(stateRoot: string, readSidecar?: (runId: string) => string | null, readRequest?: (runId: string) => string | null, draftExists?: (draftId: DraftId) => boolean): ResurrectPlan;
 /** The state-root triple every boot seam takes (server.ts
  *  bootState passes defaultAssetRoots through; the canonical layout
  *  is runsRoot == stateRoot/output and ledgerPath ==

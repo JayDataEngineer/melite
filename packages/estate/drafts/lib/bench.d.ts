@@ -1,3 +1,4 @@
+import { type DraftId } from '@melite/contracts/benchStage';
 import type { Domain } from "@deepseek-ai/dsh-storage-domain";
 import type { DraftsDomainSpec } from "./spec.js";
 import type { JsonValue } from "./remote.js";
@@ -166,7 +167,7 @@ export declare function mintStageId(rows: readonly Record<string, unknown>[], bo
 export declare function normalizeStages(stagesIn: unknown, author: Author): Record<string, unknown>[];
 /** The ensure row: create marker, rev, intent, stages. */
 export interface BenchEnsureRow {
-    readonly draft_id: string;
+    readonly draft_id: DraftId;
     readonly session: string;
     readonly rev: number;
     readonly intent: JsonValue;
@@ -177,7 +178,7 @@ export interface BenchEnsureRow {
  *  author / kind / stage / summary / reverted — inverses never
  *  leave the domain). */
 export interface BenchGetRow {
-    readonly draft_id: string;
+    readonly draft_id: DraftId;
     readonly session: string;
     readonly rev: number;
     readonly intent: JsonValue;
@@ -191,7 +192,7 @@ export declare function ensureBench(drafts: Domain<DraftsDomainSpec>, body: Reco
 export declare function getBench(drafts: Domain<DraftsDomainSpec>, session: string): BenchGetRow;
 /** The patch row: the touched stage + the params keys merged. */
 export interface BenchPatchRow {
-    readonly draft_id: string;
+    readonly draft_id: DraftId;
     readonly session: string;
     readonly rev: number;
     readonly stage: string;
@@ -219,7 +220,7 @@ export interface BenchPatchRow {
 export declare function patchBench(drafts: Domain<DraftsDomainSpec>, session: string, body: Record<string, unknown>, admit?: StageAdmission, migrate?: LaneMigration, reseat?: FamilyReseat): Promise<BenchPatchRow>;
 /** The stage row: the arm's answer (stage id + rev). */
 export interface BenchStageRow {
-    readonly draft_id: string;
+    readonly draft_id: DraftId;
     readonly session: string;
     readonly rev: number;
     readonly stage: string;
@@ -227,7 +228,7 @@ export interface BenchStageRow {
 /** The batch add's row: every minted stage id under the ONE rev the
  *  whole batch landed at. */
 export interface BenchStagesRow {
-    readonly draft_id: string;
+    readonly draft_id: DraftId;
     readonly session: string;
     readonly rev: number;
     readonly stages: readonly string[];
@@ -326,7 +327,7 @@ export declare function reorderBench(drafts: Domain<DraftsDomainSpec>, session: 
 /** The reorder row: the move's coordinates for the caller's optimistic
  *  update (from → to, both POST-splice-clamp). */
 export interface BenchReorderRow {
-    readonly draft_id: string;
+    readonly draft_id: DraftId;
     readonly session: string;
     readonly rev: number;
     readonly stage: string;
@@ -348,7 +349,7 @@ export declare function ungroupBench(drafts: Domain<DraftsDomainSpec>, session: 
 export declare function removeStageBench(drafts: Domain<DraftsDomainSpec>, session: string, body: Record<string, unknown>): Promise<BenchStageRow>;
 /** The clear row. */
 export interface BenchClearRow {
-    readonly draft_id: string;
+    readonly draft_id: DraftId;
     readonly session: string;
     readonly rev: number;
     readonly cleared: number;
@@ -363,7 +364,7 @@ export interface BenchClearRow {
 export declare function clearBench(drafts: Domain<DraftsDomainSpec>, session: string, body: Record<string, unknown>): Promise<BenchClearRow>;
 /** The rewire row. */
 export interface BenchRewireRow {
-    readonly draft_id: string;
+    readonly draft_id: DraftId;
     readonly session: string;
     readonly rev: number;
     readonly stage: string;
@@ -374,7 +375,7 @@ export interface BenchRewireRow {
 export declare function rewireBench(drafts: Domain<DraftsDomainSpec>, session: string, body: Record<string, unknown>): Promise<BenchRewireRow>;
 /** The undo row: the undone revs + the stages as they stand. */
 export interface BenchUndoRow {
-    readonly draft_id: string;
+    readonly draft_id: DraftId;
     readonly session: string;
     readonly rev: number;
     readonly undone: readonly number[];
@@ -419,7 +420,7 @@ export declare function onBenchChange(fn: BenchChangeListener): () => void;
  *  host-routed write crosses the remote arms). */
 export declare function notifyBenchChange(session: string): void;
 /** The public notify (the drafts-patch door writes bench docs from
- *  remote.ts — outside this module; it fires this with the session
- *  parsed from the bench-shaped draft id). */
-export declare function notifyBenchDocWrite(draftId: string): void;
+ *  remote.ts — outside this module; it fires this with the bench-
+ *  shaped draft id already branded at that door). */
+export declare function notifyBenchDocWrite(draftId: DraftId): void;
 //# sourceMappingURL=bench.d.ts.map

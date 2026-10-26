@@ -18,6 +18,7 @@ import {
   stageWriteState,
 } from "../src/client/draft.ts";
 import { mountEstateFakes, type EstateFakesOptions } from "./estate-harness.ts";
+import { draftIdOf } from "@melite/contracts/benchStage";
 
 type Fakes = ReturnType<typeof mountEstateFakes>;
 let active: Fakes | null = null;
@@ -39,27 +40,27 @@ describe("THE RUN GATE FLUSHES THE TRAILING WINDOW BEFORE COMPOSE AND REFUSES UN
     const fakes = wire({ patchAnswerRevs: [10] });
     // the operator typed and pressed inside the window: the timer has
     // NOT fired, the write exists only as a pending schedule
-    void scheduleStageParam("bench-s1", "s_0", "prompt", "a red cloak", 7);
-    const gate = await refuseForUnlandedWrite("bench-s1", "s_0");
+    void scheduleStageParam(draftIdOf("bench-s1"), "s_0", "prompt", "a red cloak", 7);
+    const gate = await refuseForUnlandedWrite(draftIdOf("bench-s1"), "s_0");
     // null = the press may compose — but only because the write
     // FORCED first: the door saw exactly the value the studio shows
     expect(gate).toBeNull();
     const patches = fakes.calls.filter((c) => c.method === "drafts/patch");
     expect(patches.length).toBe(1);
     expect(patches[0]!.args["patch"]).toEqual({ params: { prompt: "a red cloak" } });
-    expect(stageWriteState("bench-s1", "s_0").failedKeys).toEqual([]);
+    expect(stageWriteState(draftIdOf("bench-s1"), "s_0").failedKeys).toEqual([]);
   });
 
   test("a write the door refuses keeps the run OUT of the engine — the gate's refusal names the unlanded key and states nothing was sent", async () => {
     wire({ patchFailures: [{ delivered: false, reason: "bench/stale-window" }] });
-    void scheduleStageParam("bench-s1", "s_0", "prompt", "doomed", 7);
-    const gate = await refuseForUnlandedWrite("bench-s1", "s_0");
+    void scheduleStageParam(draftIdOf("bench-s1"), "s_0", "prompt", "doomed", 7);
+    const gate = await refuseForUnlandedWrite(draftIdOf("bench-s1"), "s_0");
     // THE LOUD VOICE, verbatim shape: the run never composes over a
     // doc the studio does not show
     expect(gate).toContain("THE WRITE DID NOT LAND — run refused:");
     expect(gate).toContain("bench/stale-window");
     expect(gate).toContain("(unlanded keys: prompt)");
     expect(gate).toContain("nothing was sent to the engine");
-    expect(stageWriteState("bench-s1", "s_0").failedKeys).toEqual(["prompt"]);
+    expect(stageWriteState(draftIdOf("bench-s1"), "s_0").failedKeys).toEqual(["prompt"]);
   });
 });

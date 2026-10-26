@@ -6,6 +6,7 @@
 // enums, import type for types, .ts specifiers for relative imports.
 import { randomBytes } from "node:crypto";
 import type { Branded } from "@deepseek-ai/dsh-brand";
+import type { DraftId } from "@melite/contracts/benchStage";
 import { MAX_SETTLED_RUNS } from "./queueLock.ts";
 import type { LifecycleState } from "./queueLifecycle.ts";
 import { notifyRunChanged } from "./runsChange.ts";
@@ -22,7 +23,9 @@ export interface QueueRunRow {
   /** Terminal failure text ("<Type>: <msg>") — "" until failed. */
   error: string;
   createdAt: number;
-  draftId: string;
+  /** The run's card doc key — branded (the DraftId seating beside
+   *  RunId); the submit envelope walk mints it off the wire body. */
+  draftId: DraftId;
   testFlag: boolean;
   stopFlag: boolean;
 }

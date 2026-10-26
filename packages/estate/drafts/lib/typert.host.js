@@ -191,7 +191,7 @@ let _melite_estate_drafts_drafts_delete_parameter_0$schema$value
 const _melite_estate_drafts_drafts_delete_parameter_0$schema = () => (_melite_estate_drafts_drafts_delete_parameter_0$schema$value ??= z.string())
 let _melite_estate_drafts_drafts_delete_result$schema$value
 const _melite_estate_drafts_drafts_delete_result$schema = () => (_melite_estate_drafts_drafts_delete_result$schema$value ??= z.object({
-  'draft_id': z.string().describe('The canonical draft id the door removed.'),
+  'draft_id': z.string().describe('The canonical draft id the door removed (branded at the door).'),
 }))
 let _melite_estate_drafts_drafts_get_parameter_0$schema$value
 const _melite_estate_drafts_drafts_get_parameter_0$schema = () => (_melite_estate_drafts_drafts_get_parameter_0$schema$value ??= z.string())
@@ -369,7 +369,7 @@ const $remote = createTypertRemoteInfo({
         create: _melite_estate_drafts_bench_add_stage_result$schema,
         jsonSchema: {"type":"object","properties":{"draft_id":{"type":"string"},"session":{"type":"string"},"rev":{"type":"number"},"stage":{"type":"string"}},"required":["draft_id","session","rev","stage"],"additionalProperties":true},
       },
-      sourceLocation: {"file":"packages/estate/drafts/src/remote.ts","line":1598,"column":9},
+      sourceLocation: {"file":"packages/estate/drafts/src/remote.ts","line":1609,"column":9},
     },
     'bench/add-stages': {
       service: 'benchRemote',
@@ -417,7 +417,7 @@ const $remote = createTypertRemoteInfo({
         create: _melite_estate_drafts_bench_add_stages_result$schema,
         jsonSchema: {"type":"object","properties":{"draft_id":{"type":"string"},"session":{"type":"string"},"rev":{"type":"number"},"stages":{"type":"array","items":{"type":"string"}}},"required":["draft_id","session","rev","stages"],"additionalProperties":true},
       },
-      sourceLocation: {"file":"packages/estate/drafts/src/remote.ts","line":1610,"column":9},
+      sourceLocation: {"file":"packages/estate/drafts/src/remote.ts","line":1621,"column":9},
     },
     'bench/clear': {
       service: 'benchRemote',
@@ -465,7 +465,7 @@ const $remote = createTypertRemoteInfo({
         create: _melite_estate_drafts_bench_clear_result$schema,
         jsonSchema: {"type":"object","properties":{"draft_id":{"type":"string"},"session":{"type":"string"},"rev":{"type":"number"},"cleared":{"type":"number"}},"required":["draft_id","session","rev","cleared"],"additionalProperties":true},
       },
-      sourceLocation: {"file":"packages/estate/drafts/src/remote.ts","line":1633,"column":9},
+      sourceLocation: {"file":"packages/estate/drafts/src/remote.ts","line":1644,"column":9},
     },
     'bench/ensure': {
       service: 'benchRemote',
@@ -497,7 +497,7 @@ const $remote = createTypertRemoteInfo({
         create: _melite_estate_drafts_bench_ensure_result$schema,
         jsonSchemaError: 'typert tool schema: recursive selected type requires a supported JSON value declaration',
       },
-      sourceLocation: {"file":"packages/estate/drafts/src/remote.ts","line":1529,"column":9},
+      sourceLocation: {"file":"packages/estate/drafts/src/remote.ts","line":1540,"column":9},
     },
     'bench/get': {
       service: 'benchRemote',
@@ -529,7 +529,7 @@ const $remote = createTypertRemoteInfo({
         create: _melite_estate_drafts_bench_get_result$schema,
         jsonSchemaError: 'typert tool schema: recursive selected type requires a supported JSON value declaration',
       },
-      sourceLocation: {"file":"packages/estate/drafts/src/remote.ts","line":1424,"column":9},
+      sourceLocation: {"file":"packages/estate/drafts/src/remote.ts","line":1435,"column":9},
     },
     'bench/group': {
       service: 'benchRemote',
@@ -577,7 +577,7 @@ const $remote = createTypertRemoteInfo({
         create: _melite_estate_drafts_bench_group_result$schema,
         jsonSchema: {"type":"object","properties":{"draft_id":{"type":"string"},"session":{"type":"string"},"rev":{"type":"number"},"stage":{"type":"string"}},"required":["draft_id","session","rev","stage"],"additionalProperties":true},
       },
-      sourceLocation: {"file":"packages/estate/drafts/src/remote.ts","line":1671,"column":9},
+      sourceLocation: {"file":"packages/estate/drafts/src/remote.ts","line":1682,"column":9},
     },
     'bench/patch': {
       service: 'benchRemote',
@@ -625,7 +625,7 @@ const $remote = createTypertRemoteInfo({
         create: _melite_estate_drafts_bench_patch_result$schema,
         jsonSchema: {"type":"object","properties":{"draft_id":{"type":"string"},"session":{"type":"string"},"rev":{"type":"number"},"stage":{"type":"string"},"patched":{"type":"array","items":{"type":"string"}},"dropped":{"type":"array","items":{"type":"string"},"description":"THE FAMILY RESEAT'S RECEIPT (the ERROR g/h cure, 2026-11-08): the family-dead keys the settlement dropped off the merged view (the flip's own strand — the arrival flipped the derived family under carried stamps). Empty/absent when nothing dropped. The drop rides the row so it SPEAKS — never a silent strip."},"stale":{"type":"boolean","const":true,"description":"Present-and-true when the patch changed what the next run composes (the done mark cleared — the skip law cannot fold it). Absent when the patch was idempotent."}},"required":["draft_id","session","rev","stage","patched"],"additionalProperties":true},
       },
-      sourceLocation: {"file":"packages/estate/drafts/src/remote.ts","line":1588,"column":9},
+      sourceLocation: {"file":"packages/estate/drafts/src/remote.ts","line":1599,"column":9},
     },
     'bench/remove-stage': {
       service: 'benchRemote',
@@ -673,7 +673,7 @@ const $remote = createTypertRemoteInfo({
         create: _melite_estate_drafts_bench_remove_stage_result$schema,
         jsonSchema: {"type":"object","properties":{"draft_id":{"type":"string"},"session":{"type":"string"},"rev":{"type":"number"},"stage":{"type":"string"}},"required":["draft_id","session","rev","stage"],"additionalProperties":true},
       },
-      sourceLocation: {"file":"packages/estate/drafts/src/remote.ts","line":1620,"column":9},
+      sourceLocation: {"file":"packages/estate/drafts/src/remote.ts","line":1631,"column":9},
     },
     'bench/reorder': {
       service: 'benchRemote',
@@ -721,7 +721,7 @@ const $remote = createTypertRemoteInfo({
         create: _melite_estate_drafts_bench_reorder_result$schema,
         jsonSchema: {"type":"object","properties":{"draft_id":{"type":"string"},"session":{"type":"string"},"rev":{"type":"number"},"stage":{"type":"string"},"from":{"type":"number"},"to":{"type":"number"}},"required":["draft_id","session","rev","stage","from","to"],"additionalProperties":true},
       },
-      sourceLocation: {"file":"packages/estate/drafts/src/remote.ts","line":1654,"column":9},
+      sourceLocation: {"file":"packages/estate/drafts/src/remote.ts","line":1665,"column":9},
     },
     'bench/rewire': {
       service: 'benchRemote',
@@ -769,7 +769,7 @@ const $remote = createTypertRemoteInfo({
         create: _melite_estate_drafts_bench_rewire_result$schema,
         jsonSchema: {"type":"object","properties":{"draft_id":{"type":"string"},"session":{"type":"string"},"rev":{"type":"number"},"stage":{"type":"string"},"input":{"type":"string"}},"required":["draft_id","session","rev","stage","input"],"additionalProperties":true},
       },
-      sourceLocation: {"file":"packages/estate/drafts/src/remote.ts","line":1643,"column":9},
+      sourceLocation: {"file":"packages/estate/drafts/src/remote.ts","line":1654,"column":9},
     },
     'bench/subscribe': {
       service: 'benchRemote',
@@ -801,7 +801,7 @@ const $remote = createTypertRemoteInfo({
         create: _melite_estate_drafts_bench_subscribe_result$schema,
         jsonSchemaError: 'typert tool schema: recursive selected type requires a supported JSON value declaration',
       },
-      sourceLocation: {"file":"packages/estate/drafts/src/remote.ts","line":1442,"column":10},
+      sourceLocation: {"file":"packages/estate/drafts/src/remote.ts","line":1453,"column":10},
     },
     'bench/undo': {
       service: 'benchRemote',
@@ -849,7 +849,7 @@ const $remote = createTypertRemoteInfo({
         create: _melite_estate_drafts_bench_undo_result$schema,
         jsonSchemaError: 'typert tool schema: recursive selected type requires a supported JSON value declaration',
       },
-      sourceLocation: {"file":"packages/estate/drafts/src/remote.ts","line":1703,"column":9},
+      sourceLocation: {"file":"packages/estate/drafts/src/remote.ts","line":1714,"column":9},
     },
     'bench/ungroup': {
       service: 'benchRemote',
@@ -897,7 +897,7 @@ const $remote = createTypertRemoteInfo({
         create: _melite_estate_drafts_bench_ungroup_result$schema,
         jsonSchema: {"type":"object","properties":{"draft_id":{"type":"string"},"session":{"type":"string"},"rev":{"type":"number"},"stage":{"type":"string"}},"required":["draft_id","session","rev","stage"],"additionalProperties":true},
       },
-      sourceLocation: {"file":"packages/estate/drafts/src/remote.ts","line":1687,"column":9},
+      sourceLocation: {"file":"packages/estate/drafts/src/remote.ts","line":1698,"column":9},
     },
     'drafts/delete': {
       service: 'draftsRemote',
@@ -927,13 +927,13 @@ const $remote = createTypertRemoteInfo({
         mode: 'strict',
         typeSymbol: '@melite/estate-drafts/types#DraftDeleteRow',
         create: _melite_estate_drafts_drafts_delete_result$schema,
-        jsonSchema: {"type":"object","properties":{"draft_id":{"type":"string","description":"The canonical draft id the door removed."}},"required":["draft_id"],"additionalProperties":true},
+        jsonSchema: {"type":"object","properties":{"draft_id":{"type":"string","description":"The canonical draft id the door removed (branded at the door)."}},"required":["draft_id"],"additionalProperties":true},
       },
-      sourceLocation: {"file":"packages/estate/drafts/src/remote.ts","line":698,"column":9},
+      sourceLocation: {"file":"packages/estate/drafts/src/remote.ts","line":707,"column":9},
     },
     'drafts/get': {
       service: 'draftsRemote',
-      description: 'Endpoint `drafts/get` — one doc by id.',
+      description: 'Endpoint `drafts/get` — one doc by id. The wire param stays the bare wire string (the generated client face mirrors it); the id is branded AT this door before the in-process body runs.',
       implementation: 'remoteExportGet',
       invocation: { kind: 'direct' },
       parameters: [
@@ -961,7 +961,7 @@ const $remote = createTypertRemoteInfo({
         create: _melite_estate_drafts_drafts_get_result$schema,
         jsonSchemaError: 'typert tool schema: recursive selected type requires a supported JSON value declaration',
       },
-      sourceLocation: {"file":"packages/estate/drafts/src/remote.ts","line":683,"column":9},
+      sourceLocation: {"file":"packages/estate/drafts/src/remote.ts","line":692,"column":9},
     },
     'drafts/list': {
       service: 'draftsRemote',
@@ -977,7 +977,7 @@ const $remote = createTypertRemoteInfo({
         create: _melite_estate_drafts_drafts_list_result$schema,
         jsonSchema: {"type":"object","properties":{"count":{"type":"number"},"drafts":{"type":"array","items":{"type":"object","properties":{"draft_id":{"type":"string"},"model":{"type":"string"},"name":{"type":"string"}},"required":["draft_id","model","name"],"additionalProperties":true}}},"required":["count","drafts"],"additionalProperties":true},
       },
-      sourceLocation: {"file":"packages/estate/drafts/src/remote.ts","line":677,"column":9},
+      sourceLocation: {"file":"packages/estate/drafts/src/remote.ts","line":684,"column":9},
     },
     'drafts/patch': {
       service: 'draftsRemote',
@@ -1057,7 +1057,7 @@ const $remote = createTypertRemoteInfo({
         create: _melite_estate_drafts_drafts_patch_result$schema,
         jsonSchema: {"type":"object","properties":{"draftId":{"type":"string"},"stageId":{"type":"string"},"delivered":{"type":"boolean"},"reason":{"type":"string"},"patched":{"type":"array","items":{"type":"string"}},"rev":{"type":"number"}},"required":["draftId","stageId","delivered"],"additionalProperties":true},
       },
-      sourceLocation: {"file":"packages/estate/drafts/src/remote.ts","line":819,"column":9},
+      sourceLocation: {"file":"packages/estate/drafts/src/remote.ts","line":830,"column":9},
     },
   },
 }, z)
@@ -1224,7 +1224,7 @@ export const TYPERT = {
         "types": [
           {
             "name": "BenchClearRow",
-            "declaration": "export interface BenchClearRow {\n    readonly draft_id: string;\n    readonly session: string;\n    readonly rev: number;\n    readonly cleared: number;\n}"
+            "declaration": "export interface BenchClearRow {\n    readonly draft_id: DraftId;\n    readonly session: string;\n    readonly rev: number;\n    readonly cleared: number;\n}"
           },
           {
             "name": "BenchDoc",
@@ -1232,35 +1232,35 @@ export const TYPERT = {
           },
           {
             "name": "BenchEnsureRow",
-            "declaration": "export interface BenchEnsureRow {\n    readonly draft_id: string;\n    readonly session: string;\n    readonly rev: number;\n    readonly intent: JsonValue;\n    readonly stages: JsonValue;\n    readonly created: boolean;\n}"
+            "declaration": "export interface BenchEnsureRow {\n    readonly draft_id: DraftId;\n    readonly session: string;\n    readonly rev: number;\n    readonly intent: JsonValue;\n    readonly stages: JsonValue;\n    readonly created: boolean;\n}"
           },
           {
             "name": "BenchGetRow",
-            "declaration": "export interface BenchGetRow {\n    readonly draft_id: string;\n    readonly session: string;\n    readonly rev: number;\n    readonly intent: JsonValue;\n    readonly stages: JsonValue;\n    readonly log: readonly { readonly [key: string]: JsonValue; }[];\n}"
+            "declaration": "export interface BenchGetRow {\n    readonly draft_id: DraftId;\n    readonly session: string;\n    readonly rev: number;\n    readonly intent: JsonValue;\n    readonly stages: JsonValue;\n    readonly log: readonly { readonly [key: string]: JsonValue; }[];\n}"
           },
           {
             "name": "BenchPatchRow",
-            "declaration": "export interface BenchPatchRow {\n    readonly draft_id: string;\n    readonly session: string;\n    readonly rev: number;\n    readonly stage: string;\n    readonly patched: readonly string[];\n    readonly dropped?: readonly string[];\n    readonly stale?: true;\n}"
+            "declaration": "export interface BenchPatchRow {\n    readonly draft_id: DraftId;\n    readonly session: string;\n    readonly rev: number;\n    readonly stage: string;\n    readonly patched: readonly string[];\n    readonly dropped?: readonly string[];\n    readonly stale?: true;\n}"
           },
           {
             "name": "BenchReorderRow",
-            "declaration": "export interface BenchReorderRow {\n    readonly draft_id: string;\n    readonly session: string;\n    readonly rev: number;\n    readonly stage: string;\n    readonly from: number;\n    readonly to: number;\n}"
+            "declaration": "export interface BenchReorderRow {\n    readonly draft_id: DraftId;\n    readonly session: string;\n    readonly rev: number;\n    readonly stage: string;\n    readonly from: number;\n    readonly to: number;\n}"
           },
           {
             "name": "BenchRewireRow",
-            "declaration": "export interface BenchRewireRow {\n    readonly draft_id: string;\n    readonly session: string;\n    readonly rev: number;\n    readonly stage: string;\n    readonly input: string;\n}"
+            "declaration": "export interface BenchRewireRow {\n    readonly draft_id: DraftId;\n    readonly session: string;\n    readonly rev: number;\n    readonly stage: string;\n    readonly input: string;\n}"
           },
           {
             "name": "BenchStageRow",
-            "declaration": "export interface BenchStageRow {\n    readonly draft_id: string;\n    readonly session: string;\n    readonly rev: number;\n    readonly stage: string;\n}"
+            "declaration": "export interface BenchStageRow {\n    readonly draft_id: DraftId;\n    readonly session: string;\n    readonly rev: number;\n    readonly stage: string;\n}"
           },
           {
             "name": "BenchStagesRow",
-            "declaration": "export interface BenchStagesRow {\n    readonly draft_id: string;\n    readonly session: string;\n    readonly rev: number;\n    readonly stages: readonly string[];\n}"
+            "declaration": "export interface BenchStagesRow {\n    readonly draft_id: DraftId;\n    readonly session: string;\n    readonly rev: number;\n    readonly stages: readonly string[];\n}"
           },
           {
             "name": "BenchUndoRow",
-            "declaration": "export interface BenchUndoRow {\n    readonly draft_id: string;\n    readonly session: string;\n    readonly rev: number;\n    readonly undone: readonly number[];\n    readonly stages: JsonValue;\n}"
+            "declaration": "export interface BenchUndoRow {\n    readonly draft_id: DraftId;\n    readonly session: string;\n    readonly rev: number;\n    readonly undone: readonly number[];\n    readonly stages: JsonValue;\n}"
           },
           {
             "name": "JsonValue",
@@ -1285,7 +1285,7 @@ export const TYPERT = {
             "name": "remoteExportGet",
             "signature": "@Remote(\"get\") async remoteExportGet( draftId: string, signal: AbortSignal, ): Promise<DraftGetRow>",
             "summary": "Endpoint `drafts/get` — one doc by id.",
-            "jsDoc": "/** Endpoint `drafts/get` — one doc by id. */"
+            "jsDoc": "/** Endpoint `drafts/get` — one doc by id. The wire param stays the\n *  bare wire string (the generated client face mirrors it); the id\n *  is branded AT this door before the in-process body runs. */"
           },
           {
             "kind": "method",
@@ -1304,14 +1304,14 @@ export const TYPERT = {
           {
             "kind": "method",
             "name": "get",
-            "signature": "async get( draftId: string, signal: AbortSignal, ): Promise<Record<string, unknown>>",
+            "signature": "async get( draftId: DraftId, signal: AbortSignal, ): Promise<Record<string, unknown>>",
             "summary": "The in-process API the adapter above delegates to.",
-            "jsDoc": "/** The in-process API the adapter above delegates to. */"
+            "jsDoc": "/** The in-process API the adapter above delegates to. Takes the\n *  branded id (the wire adapter and the estate's in-process callers\n *  mint at their own doors). */"
           },
           {
             "kind": "method",
             "name": "delete",
-            "signature": "async delete(draftId: string, signal: AbortSignal): Promise<DraftDeleteRow>",
+            "signature": "async delete(draftId: DraftId, signal: AbortSignal): Promise<DraftDeleteRow>",
             "summary": "The in-process delete arm (the adapter above delegates here): id law first, then the removal INSIDE the bench write chain — the same serialization the bench doors queue on — and a loud not-found when the id names no doc (KvTable.delete answers false; the door never turns that into a silent success).",
             "jsDoc": "/** The in-process delete arm (the adapter above delegates here):\n *  id law first, then the removal INSIDE the bench write chain —\n *  the same serialization the bench doors queue on — and a loud\n *  not-found when the id names no doc (KvTable.delete answers\n *  false; the door never turns that into a silent success). */"
           },
@@ -1325,7 +1325,7 @@ export const TYPERT = {
           {
             "kind": "method",
             "name": "patch",
-            "signature": "async patch( draftId: string, stageId: string, patch: Record<string, unknown>, expectRev: number | null, signal: AbortSignal, ): Promise<DraftPatchRow>",
+            "signature": "async patch( draftId: DraftId, stageId: string, patch: Record<string, unknown>, expectRev: number | null, signal: AbortSignal, ): Promise<DraftPatchRow>",
             "summary": "The patch arm the adapter above delegates to — one write transaction on the draft's own key, shared with the bench verbs (the round-14 race audit's R3: the author arm's spread-copy of the log forked against their in-place push).",
             "jsDoc": "/** The patch arm the adapter above delegates to — one write\n *  transaction on the draft's own key, shared with the bench\n *  verbs (the round-14 race audit's R3: the author arm's\n *  spread-copy of the log forked against their in-place push). */"
           }
@@ -1333,7 +1333,7 @@ export const TYPERT = {
         "types": [
           {
             "name": "DraftDeleteRow",
-            "declaration": "export interface DraftDeleteRow {\n    draft_id: string;\n}"
+            "declaration": "export interface DraftDeleteRow {\n    draft_id: DraftId;\n}"
           },
           {
             "name": "DraftGetRow",
@@ -1345,11 +1345,11 @@ export const TYPERT = {
           },
           {
             "name": "DraftListRow",
-            "declaration": "export interface DraftListRow {\n    readonly draft_id: string;\n    readonly model: string;\n    readonly name: string;\n}"
+            "declaration": "export interface DraftListRow {\n    readonly draft_id: DraftId;\n    readonly model: string;\n    readonly name: string;\n}"
           },
           {
             "name": "DraftPatchRow",
-            "declaration": "export interface DraftPatchRow {\n    draftId: string;\n    stageId: string;\n    delivered: boolean;\n    reason?: string;\n    patched?: string[];\n    rev?: number;\n}"
+            "declaration": "export interface DraftPatchRow {\n    draftId: DraftId;\n    stageId: string;\n    delivered: boolean;\n    reason?: string;\n    patched?: string[];\n    rev?: number;\n}"
           },
           {
             "name": "DraftStagePatch",

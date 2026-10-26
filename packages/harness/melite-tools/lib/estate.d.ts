@@ -1,3 +1,4 @@
+import { type DraftId } from '@melite/contracts/benchStage';
 import type { EstateCall } from '@melite/estate-call';
 /**
  * DYING SHIM (HTTP-era refusal carrier). The seats never throw it;
@@ -52,8 +53,8 @@ export interface Estate {
     /** The drafts plane: the KV list, the one-draft read, the stage
      *  wire PATCH (params edits + result persistence). */
     draftsList(signal: AbortSignal, timeoutMs?: number): Promise<unknown>;
-    draftsGet(draftId: string, signal: AbortSignal, timeoutMs?: number): Promise<unknown>;
-    draftsStagePatch(draftId: string, stageId: string, patch: Record<string, unknown>, signal: AbortSignal, timeoutMs?: number): Promise<unknown>;
+    draftsGet(draftId: DraftId, signal: AbortSignal, timeoutMs?: number): Promise<unknown>;
+    draftsStagePatch(draftId: DraftId, stageId: string, patch: Record<string, unknown>, signal: AbortSignal, timeoutMs?: number): Promise<unknown>;
     /** THE CARD COMPOSE (the start body → a bench-backed draft; the
      *  CAS one-retry law lives in the ONE lane both faces share). */
     cardCompose(body: Record<string, unknown>, signal: AbortSignal, timeoutMs?: number): Promise<unknown>;

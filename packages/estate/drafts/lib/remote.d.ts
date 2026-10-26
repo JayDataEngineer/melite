@@ -3,14 +3,17 @@ import { TypertRemoteService } from "@deepseek-ai/dsh-typert-protocol";
 import { STAGE_PATCH_KEYS, type StagePatchKey } from "@melite/contracts/benchStage";
 export { STAGE_PATCH_KEYS, type StagePatchKey };
 import { type LaneMigration, type FamilyReseat } from "./bench.js";
+import { type DraftId } from "@melite/contracts/benchStage";
 import type { BenchEnsureRow, BenchGetRow, BenchPatchRow, BenchReorderRow, BenchRewireRow, BenchClearRow, BenchStageRow, BenchStagesRow, BenchUndoRow } from "./bench.js";
 export type { BenchEnsureRow, BenchGetRow, BenchPatchRow, BenchReorderRow, BenchRewireRow, BenchStageRow, BenchStagesRow, BenchUndoRow, } from "./bench.js";
 /** Endpoint `drafts/patch` answer — the old door's delivered envelope:
  *  a missing doc/stage is delivered:false + reason (a DOMAIN outcome,
  *  never an error); a landing patch reports the patched key set and
- *  the bench revision it landed at (the CAS law's re-read handle). */
+ *  the bench revision it landed at (the CAS law's re-read handle).
+ *  The reported id is branded at this door (the id arrived as a bare
+ *  wire string and was branded by the door's own admission). */
 export interface DraftPatchRow {
-    draftId: string;
+    draftId: DraftId;
     stageId: string;
     delivered: boolean;
     reason?: string;
@@ -18,9 +21,10 @@ export interface DraftPatchRow {
     rev?: number;
 }
 /** draft_id_ok: 1..96 chars of [A-Za-z0-9_-] (the composer mint). */
-/** One listed draft — the index row (recency-ordered by the caller). */
+/** One listed draft — the index row (recency-ordered by the caller).
+ *  The id is branded at the list door (the KV table's own key). */
 export interface DraftListRow {
-    readonly draft_id: string;
+    readonly draft_id: DraftId;
     readonly model: string;
     readonly name: string;
 }
@@ -50,8 +54,8 @@ export type DraftGetRow = {
 };
 /** Endpoint `drafts/delete` answer — the id the door removed. */
 export interface DraftDeleteRow {
-    /** The canonical draft id the door removed. */
-    draft_id: string;
+    /** The canonical draft id the door removed (branded at the door). */
+    draft_id: DraftId;
 }
 /** Endpoint `drafts/patch` body — the door's FIXED key set (unknown
  *  keys refuse at admission with the old door's voice; STAGE_PATCH_KEYS).
@@ -76,11 +80,15 @@ export type BenchDoc = {
  *  vocabulary (cookbook §2: declaration merging, next to the throw). */
 declare module "@deepseek-ai/dsh-typert-protocol" {
     interface RemoteErrorDetailsMap {
-        /** The id fails the [A-Za-z0-9_-]{1,96} draft law. */
+        /** The id fails the [A-Za-z0-9_-]{1,96} draft law. PLAIN STRING
+         *  on purpose (the DraftId sweep): the refusal carries the RAW,
+         *  possibly-invalid wire value back to its sender — a brand would
+         *  assert the very admission that just failed. */
         "draft/bad-id": {
             readonly draftId: string;
         };
-        /** No stored draft carries that id. */
+        /** No stored draft carries that id. Raw wire string, same reason
+         *  as draft/bad-id. */
         "draft/not-found": {
             readonly draftId: string;
         };
@@ -256,7 +264,9 @@ export declare class DraftsRemoteService extends TypertRemoteService {
     constructor(ctx: Context);
     /** Endpoint `drafts/list` — the domain index, recency DESC. */
     remoteExportList(signal: AbortSignal): Promise<DraftListResult>;
-    /** Endpoint `drafts/get` — one doc by id. */
+    /** Endpoint `drafts/get` — one doc by id. The wire param stays the
+     *  bare wire string (the generated client face mirrors it); the id
+     *  is branded AT this door before the in-process body runs. */
     remoteExportGet(draftId: string, signal: AbortSignal): Promise<DraftGetRow>;
     /** Endpoint `drafts/delete` — removes one doc WHOLE (2026-10-22,
      *  the scratch-residue door): auditor probe docs and other debris
@@ -268,14 +278,16 @@ export declare class DraftsRemoteService extends TypertRemoteService {
     remoteExportDelete(draftId: string, signal: AbortSignal): Promise<DraftDeleteRow>;
     /** The in-process API the adapters above delegate to. */
     list(signal: AbortSignal): Promise<DraftListResult>;
-    /** The in-process API the adapter above delegates to. */
-    get(draftId: string, signal: AbortSignal): Promise<Record<string, unknown>>;
+    /** The in-process API the adapter above delegates to. Takes the
+     *  branded id (the wire adapter and the estate's in-process callers
+     *  mint at their own doors). */
+    get(draftId: DraftId, signal: AbortSignal): Promise<Record<string, unknown>>;
     /** The in-process delete arm (the adapter above delegates here):
      *  id law first, then the removal INSIDE the bench write chain —
      *  the same serialization the bench doors queue on — and a loud
      *  not-found when the id names no doc (KvTable.delete answers
      *  false; the door never turns that into a silent success). */
-    delete(draftId: string, signal: AbortSignal): Promise<DraftDeleteRow>;
+    delete(draftId: DraftId, signal: AbortSignal): Promise<DraftDeleteRow>;
     /** Endpoint `drafts/patch` — the stage patch door, REBORN on the
      *  domain (2026-09-11; the gateway-era PATCH /v1/flows/drafts/:id/
      *  stages/:sid died with the app and stroke L left the client door
@@ -303,7 +315,7 @@ export declare class DraftsRemoteService extends TypertRemoteService {
      *  transaction on the draft's own key, shared with the bench
      *  verbs (the round-14 race audit's R3: the author arm's
      *  spread-copy of the log forked against their in-place push). */
-    patch(draftId: string, stageId: string, patch: Record<string, unknown>, expectRev: number | null, signal: AbortSignal): Promise<DraftPatchRow>;
+    patch(draftId: DraftId, stageId: string, patch: Record<string, unknown>, expectRev: number | null, signal: AbortSignal): Promise<DraftPatchRow>;
     private patchBody;
 }
 /** The bench Remote owner: ensure/get over the same drafts domain

@@ -5,6 +5,7 @@
 
 import { fetchFormSpec, fieldsOf } from '@melite/card-base/client'
 import { statusOrPendingOf } from '@melite/contracts/stageView'
+import { type DraftId } from '@melite/contracts/benchStage'
 import { defaultFamilyForCard, fetchCardFamilies } from '@melite-plugin/melite-run-wire'
 import { startCardRun, startFlowInlineRun, type StartOutcome } from '@melite/card-base/client'
 import type { CardsBenchValue, BenchStageView } from './cards-resource.ts'
@@ -40,7 +41,7 @@ const MCP_CARD = 'mcp'
  *  it under its runs-root arm. No client-side edge resolution exists.
  *  Exported for the tab seam's door-contract spec. */
 export async function runCardStage(
-  draftId: string,
+  draftId: DraftId,
   row: BenchStageView,
 ): Promise<StartOutcome> {
   // THE NO-WIRE REFUSAL FIRST (the door contract): a row naming no
@@ -247,7 +248,7 @@ export async function runCardStage(
 export async function runBenchSequential(
   bench: CardsBenchValue,
   hooks: {
-    onCardStarted?: (runId: string, ran: { draftId: string; stageId: string }) => void
+    onCardStarted?: (runId: string, ran: { draftId: DraftId; stageId: string }) => void
     // THE SETTLE HOOK (D13, 2026-10-11): the pass's consumer seats a
     // per-stage stop fence at start and must release it at settle —
     // without this door the fence would pin the run id forever and
@@ -255,7 +256,7 @@ export async function runBenchSequential(
     // block a legitimate re-run). Fires on a NATURAL settle only
     // (done/failed/stopped) — an aborted observe leaves the mapping
     // seated so the orphaned-but-live server run stays stoppable.
-    onCardSettled?: (runId: string, ran: { draftId: string; stageId: string }) => void
+    onCardSettled?: (runId: string, ran: { draftId: DraftId; stageId: string }) => void
     onTouched?: () => void
     signal?: AbortSignal
   } = {},

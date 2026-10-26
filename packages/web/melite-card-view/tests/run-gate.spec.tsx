@@ -30,10 +30,11 @@ import { CardsTab } from '../src/client/CardsTab.tsx'
 import { patchStageParams, resetStageWrites } from '../src/client/draft.ts'
 import { schemaEnvelope } from '@melite/card-base/client'
 import type { CardsBenchValue } from '../src/client/cards-resource.ts'
+import { draftIdOf } from '@melite/contracts/benchStage';
 
 const BENCH: CardsBenchValue = {
   kind: 'bench',
-  draftId: 'bench-s1',
+  draftId: draftIdOf('bench-s1'),
   sessionKey: 's1',
   rev: 7,
   stages: [
@@ -111,7 +112,7 @@ test('THE RUN GATE: a write that failed before the press refuses the run — no 
   // THE DEAD WRITE, through the REAL channel: a surface save fires,
   // the door refuses, the ledger holds the failure. The operator
   // sees the patch banner — then presses the tile's bare Run.
-  await expect(patchStageParams('bench-s1', 's_0', { steps: 20 }, 7)).rejects.toThrow(/stage not found/)
+  await expect(patchStageParams(draftIdOf('bench-s1'), 's_0', { steps: 20 }, 7)).rejects.toThrow(/stage not found/)
   mountTab()
   await pressTileRun()
   await waitFor(() => {
@@ -122,14 +123,14 @@ test('THE RUN GATE: a write that failed before the press refuses the run — no 
 
 test('THE GATE IS THE LEDGER, NOT A LATCH: after a later write lands, the same press runs', async () => {
   const { calls } = stubWire([{ draftId: 'bench-s1', stageId: 's_0', delivered: false, reason: 'stage not found' }])
-  await expect(patchStageParams('bench-s1', 's_0', { steps: 20 }, 7)).rejects.toThrow(/stage not found/)
+  await expect(patchStageParams(draftIdOf('bench-s1'), 's_0', { steps: 20 }, 7)).rejects.toThrow(/stage not found/)
   mountTab()
   await pressTileRun()
   await screen.findByText(/THE WRITE DID NOT LAND/)
   expect(calls.some((c) => c.method === 'runs/start')).toBe(false)
   // THE RECOVERY: the operator's write lands this time (the failure
   // burned) — the ledger clears, and the SAME bare press now runs.
-  await patchStageParams('bench-s1', 's_0', { steps: 20 }, 7)
+  await patchStageParams(draftIdOf('bench-s1'), 's_0', { steps: 20 }, 7)
   await pressTileRun()
   await waitFor(() => {
     expect(calls.some((c) => c.method === 'runs/start')).toBe(true)
@@ -138,10 +139,10 @@ test('THE GATE IS THE LEDGER, NOT A LATCH: after a later write lands, the same p
 
 test('THE PER-KEY MEMORY (the audit B2): a later success on an UNRELATED key does not erase the refusal — the press still refuses, naming the unlanded key', async () => {
   const { calls } = stubWire([{ draftId: 'bench-s1', stageId: 's_0', delivered: false, reason: 'stage not found' }])
-  await expect(patchStageParams('bench-s1', 's_0', { steps: 20 }, 7)).rejects.toThrow(/stage not found/)
+  await expect(patchStageParams(draftIdOf('bench-s1'), 's_0', { steps: 20 }, 7)).rejects.toThrow(/stage not found/)
   // an UNRELATED key lands clean after the failure — the old single
   // slot would have cleared the refusal here; per-key memory holds.
-  await patchStageParams('bench-s1', 's_0', { prompt: 'a blue cube' }, 7)
+  await patchStageParams(draftIdOf('bench-s1'), 's_0', { prompt: 'a blue cube' }, 7)
   mountTab()
   await pressTileRun()
   await waitFor(() => {

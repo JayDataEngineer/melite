@@ -30,6 +30,7 @@ import {
   runTailOf,
   stripKeys,
   stripSelfNamedModel,
+  type DraftId,
 } from '@melite/contracts/benchStage'
 import { mediaKindOf } from '@melite/contracts/mediaKinds'
 
@@ -211,7 +212,7 @@ async function loadStagesOntoBench(
 /** Load one draft onto the bench and open the cards tab.
  *  @param draftId the drafts door's row id (never empty — callers gate).
  *  @param deps the open action + the error surface. */
-export async function loadDraftOntoBench(draftId: string, deps: BenchLoadDeps): Promise<void> {
+export async function loadDraftOntoBench(draftId: DraftId, deps: BenchLoadDeps): Promise<void> {
   try {
     // 1. the draft doc (stages + intent).
     const docRes = await fetchUntilSeated('/v1/flows/drafts/' + encodeURIComponent(draftId), {

@@ -1,3 +1,4 @@
+import { type DraftId } from "@melite/contracts/benchStage";
 export interface QueueRefusal {
     readonly status: number;
     readonly payload: Record<string, unknown>;
@@ -12,8 +13,9 @@ export declare function envelopeRefusal(kind: "not-object" | "bad-test" | "missi
     draftId?: string;
 }): QueueRefusal;
 /** The unknown-draft refusal (door-verbatim; the probe rides the
- *  caller's drafts domain — the remote hops the ctx seat). */
-export declare function unknownDraftRefusal(draftId: string): QueueRefusal;
+ *  caller's drafts domain — the remote hops the ctx seat). Takes the
+ *  branded id: the walker mints it off the validated wire body. */
+export declare function unknownDraftRefusal(draftId: DraftId): QueueRefusal;
 /** Draft id rule (draftIdOk in @melite/estate-drafts, re-exported below): <=96 chars of [A-Za-z0-9_-]. */
 /** This core re-checks nothing: it BUILDS the refusal for a caller-computed verdict (the check is one regex, owned by the drafts package so envelope validation is whole). */
 /** Callers pass the raw draft_id; the malformed/unknown split needs the existence probe too — see walkSubmitEnvelope. */
@@ -80,11 +82,11 @@ export declare function noDoorRefusal(): QueueRefusal;
  *  when the envelope may proceed to door selection, which the live
  *  face owns at startReserved (strict then doors, after the
  *  replay/reservation verdict). */
-export declare function walkSubmitEnvelope(doc: unknown, draftExists: (draftId: string) => boolean | Promise<boolean>): Promise<{
+export declare function walkSubmitEnvelope(doc: unknown, draftExists: (draftId: DraftId) => boolean | Promise<boolean>): Promise<{
     kind: "ok";
     body: Record<string, unknown>;
     testFlag: boolean;
-    draftId: string;
+    draftId: DraftId;
 } | {
     kind: "refusal";
     refusal: QueueRefusal;

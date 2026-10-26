@@ -19,8 +19,13 @@
  * id on the start envelope.
  */
 
+import { draftIdOf, type DraftId } from "@melite/contracts/benchStage"
+
+/** The compose answer's draft id — branded at THIS birth (the id is
+ *  pulled off the compose answer's wire body, the card plane's parse
+ *  edge; the DraftId brand's compile-time law, benchStage.ts). */
 export interface DraftComposeResult {
-  draftId: string
+  draftId: DraftId
 }
 
 /** Mint the card doc for a start body. The doc carries the body
@@ -28,11 +33,14 @@ export interface DraftComposeResult {
  *  see the drafts door, packages/estate/drafts, POST /v1/flows/drafts),
  *  so what the card shows is what the run consumed. Throws LOUDLY
  *  on any refusal — a refused compose never proceeds to a start
- *  (no silent cardless runs). */
+ *  (no silent cardless runs).
+ *  @param body the raw start body (rides the compose POST verbatim)
+ *  @param signal the caller's abort signal
+ *  @returns the composed draft id, branded at this birth */
 export async function composeCard(
   body: Record<string, unknown>,
   signal?: AbortSignal,
-): Promise<string> {
+): Promise<DraftId> {
   const res = await fetch("/v1/flows/drafts", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -55,7 +63,7 @@ export async function composeCard(
   if (typeof draftId !== "string" || !draftId) {
     throw new Error("card compose returned no draftId — refusing to start cardless")
   }
-  return draftId
+  return draftIdOf(draftId)
 }
 
 /** The card-birth half of every run start: return the body's
@@ -64,12 +72,15 @@ export async function composeCard(
  *  the start fetch:
  *
  *    startBody.draft_id = await ensureDraftId(startBody, signal)
- */
+ *
+ *  @param body the raw start body (its declared draft_id wins)
+ *  @param signal the caller's abort signal
+ *  @returns the declared-or-composed draft id, branded at this door */
 export async function ensureDraftId(
   body: Record<string, unknown>,
   signal?: AbortSignal,
-): Promise<string> {
+): Promise<DraftId> {
   const declared = body.draft_id
-  if (typeof declared === "string" && declared !== "") return declared
+  if (typeof declared === "string" && declared !== "") return draftIdOf(declared)
   return composeCard(body, signal)
 }

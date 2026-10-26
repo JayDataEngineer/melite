@@ -25,6 +25,7 @@ import { mountEstateFakes } from './estate-harness.ts'
 import { unbindEstateRemote, schemaEnvelope } from '@melite/card-base/client'
 import { resetCardFamiliesCache } from '@melite-plugin/melite-run-wire'
 import { resetStageWrites } from '../src/client/draft.ts'
+import { draftIdOf } from '@melite/contracts/benchStage';
 
 afterEach(() => {
   unbindEstateRemote()
@@ -125,7 +126,7 @@ describe('the mounted tile kind face', () => {
  *  themselves. */
 const UNTITLED_BENCH: CardsBenchValue = {
   kind: 'bench',
-  draftId: 'bench-s1',
+  draftId: draftIdOf('bench-s1'),
   sessionKey: 's1',
   rev: 7,
   stages: [

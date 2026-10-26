@@ -16,6 +16,7 @@ import { unbindEstateRemote } from '@melite/card-base/client';
 import { flushStageWrites } from "../src/client/draft.ts";
 import { schemaEnvelope } from '@melite/card-base/client';
 import type { BenchStageView, CardsBenchValue } from "../src/client/cards-resource.ts";
+import { draftIdOf } from '@melite/contracts/benchStage';
 
 afterEach(() => {
   cleanup();
@@ -261,7 +262,7 @@ describe("the sweep landing — results ride the hand-edit seam", () => {
       await typePrompt("a red cube");
       pressEnhance();
       expect(await screen.findByText(/enhanced via blueprint \(1 field\)/, {}, { timeout: 4000 })).toBeTruthy();
-      await flushStageWrites("bench-p", "s_0");
+      await flushStageWrites(draftIdOf("bench-p"), "s_0");
       const patches = fakes.calls.filter((c) => c.method === "drafts/patch");
       expect(patches.length).toBeGreaterThan(0);
       // the WIRE truth (2026-09-29 repin): the sweep's atomic frame

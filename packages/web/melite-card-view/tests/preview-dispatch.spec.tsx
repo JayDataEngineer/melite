@@ -19,6 +19,7 @@ import { unbindEstateRemote } from '@melite/card-base/client'
 import { CardsTab } from '../src/client/CardsTab.tsx'
 import { schemaEnvelope } from '@melite/card-base/client'
 import type { CardsBenchValue } from '../src/client/cards-resource.ts'
+import { draftIdOf } from '@melite/contracts/benchStage';
 
 const noop = (): void => {}
 afterEach(() => { cleanup(); unbindEstateRemote(); vi.unstubAllGlobals() })
@@ -33,7 +34,7 @@ function tileButton(): HTMLElement {
  *  spec (declared outputs) and a done stage carrying artifacts. */
 function stubWire(opts: { card: string; outputs: Record<string, string>; artifacts: Record<string, string> }): CardsBenchValue {
   const bench: CardsBenchValue = {
-    kind: 'bench', draftId: 'bench-p', rev: 1,
+    kind: 'bench', draftId: draftIdOf('bench-p'), rev: 1,
     sessionKey: 'p',
     stages: [{
       id: 's_0', card: opts.card, title: 'the stage', engine: 'comfyui',

@@ -1,4 +1,4 @@
-import { RUN_MEDIA_PREFIX } from "@melite/contracts/benchStage";
+import { RUN_MEDIA_PREFIX, draftIdOf } from "@melite/contracts/benchStage";
 // THE TERMINAL VOCABULARY IS THE CONTRACT'S (2026-10-13, the card-UI
 // duplication audit): five seats spelled "is this run finished?" with
 // their own sets, and they disagreed — one treated `unknown` as
@@ -134,7 +134,7 @@ export function readRunStatus(runId, doc) {
         runId,
         status,
         draftId: typeof doc['draft_id'] === 'string' && doc['draft_id'] !== ''
-            ? doc['draft_id']
+            ? draftIdOf(doc['draft_id'])
             : null,
         stages,
         ...(typeof doc['error'] === 'string' && doc['error'] !== '' ? { error: doc['error'] } : {}),

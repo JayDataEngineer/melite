@@ -1,4 +1,4 @@
-import { RUN_MEDIA_PREFIX } from "@melite/contracts/benchStage"
+import { RUN_MEDIA_PREFIX, draftIdOf, type DraftId } from "@melite/contracts/benchStage"
 
 /**
  * melite-run-wire — the run-status PURE laws + the catalog door
@@ -119,7 +119,7 @@ export interface GraphReceipt {
 export interface RunStatusRow {
   runId: string
   status: string
-  draftId: string | null
+  draftId: DraftId | null
   stages: RunStageStatus[]
   /** The run-level failure text (the same channel the stages carry;
    *  the observer's fallback when no single stage owns the reason). */
@@ -263,8 +263,8 @@ export function readRunStatus(runId: string, doc: Record<string, unknown>): RunS
   return {
     runId,
     status,
-    draftId: typeof doc['draft_id'] === 'string' && (doc['draft_id'] as string) !== ''
-      ? (doc['draft_id'] as string)
+    draftId: typeof doc['draft_id'] === 'string' && doc['draft_id'] !== ''
+      ? draftIdOf(doc['draft_id'])
       : null,
     stages,
     ...(typeof doc['error'] === 'string' && doc['error'] !== '' ? { error: doc['error'] as string } : {}),

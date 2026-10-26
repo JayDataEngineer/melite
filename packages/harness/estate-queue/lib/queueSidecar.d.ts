@@ -1,3 +1,4 @@
+import type { DraftId } from "@melite/contracts/benchStage";
 export interface GraphRow {
     readonly id: string;
     readonly type: string;
@@ -158,7 +159,7 @@ export declare function sidecarDoc(args: {
     artifacts: string[];
     createdAt: number;
     testFlag: boolean;
-    draftId: string;
+    draftId: DraftId;
     pipeline: string;
     graph: GraphRow[];
     /** THE SNAPSHOT KEYS (strokes 45/45d, carried stroke 48): the exact

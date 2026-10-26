@@ -351,6 +351,16 @@ export const RUN_ID_RE = /^run-[0-9a-f]+-[A-Za-z0-9_-]+$/;
 export function benchSessionOf(id) {
     return typeof id === "string" && SESSION_RE.test(id) ? id : "main";
 }
+/** THE PARSE-EDGE / TEST MINT: brand a draft id read off the wire or
+ *  disk (route the typeof-guarded value through here at the door
+ *  that pulled it), or mint a test literal. One line, no runtime
+ *  validation — the brand is compile-time-only; the return cast is
+ *  the construction door (the newRunId pattern).
+ *  @param literal the plain draft id string at its parse edge
+ *  @returns the same string, branded for the typed seats downstream */
+export function draftIdOf(literal) {
+    return literal;
+}
 /** The prefix the mint writes and the strip removes — the one
  *  spelling of "bench-", beside the grammar that validates it. */
 export const BENCH_DRAFT_PREFIX_RE = /^bench-/;
@@ -359,7 +369,11 @@ export const BENCH_DRAFT_PREFIX_RE = /^bench-/;
  *  beside it, but the mint stayed behind in six seats spelling
  *  `"bench-" + session` — one of which stripped the prefix and added
  *  it straight back. An address has one grammar, one sanitize, and now
- *  one mint. */
+ *  one mint. The composed bench id is BORN here, so the mint is one
+ *  of the DraftId brand's two producers: the return cast is the
+ *  construction door (the newRunId pattern).
+ *  @param session the sanitized bench session key
+ *  @returns the composed draft id, branded */
 export function benchDraftIdOf(session) {
     return "bench-" + session;
 }

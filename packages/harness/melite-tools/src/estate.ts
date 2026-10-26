@@ -1,4 +1,4 @@
-import { CARD_PLANE_ENGINE } from '@melite/contracts/benchStage'
+import { CARD_PLANE_ENGINE, draftIdOf, type DraftId } from '@melite/contracts/benchStage'
 import { deadline, TimeoutReason } from '@deepseek-ai/dsh-timeout'
 /**
  * estate.ts — the estate transports, in-process.
@@ -86,7 +86,7 @@ export function asEstateCall(request: EstateRequest): EstateCall {
 interface Seats {
   draftsRemote?: {
     list(signal?: AbortSignal): Promise<{ count: number; drafts: unknown[] }>
-    get(draftId: string, signal?: AbortSignal): Promise<unknown>
+    get(draftId: DraftId, signal?: AbortSignal): Promise<unknown>
     /** The seat's REAL signature (the domain service's): expectRev
      *  fences the bench CAS walk, signal rides its own slot LAST.
      *  This typed seam drifted to (id, stage, patch, signal) once
@@ -95,7 +95,7 @@ interface Seats {
      *  bookkeeping, so agent-run benches showed the watching user
      *  nothing (2026-10-22). The interface states the true order so
      *  the drift class cannot regrow silently. */
-    patch(draftId: string, stageId: string, patch: Record<string, unknown>, expectRev: number | null, signal?: AbortSignal): Promise<unknown>
+    patch(draftId: DraftId, stageId: string, patch: Record<string, unknown>, expectRev: number | null, signal?: AbortSignal): Promise<unknown>
   }
   benchRemote?: {
     get(session: string, signal?: AbortSignal): Promise<unknown>
@@ -198,7 +198,8 @@ async function trySeats(
   let m = /^\/v1\/flows\/drafts\/([^/?]+)$/.exec(path)
   if (method === 'GET' && m !== null) {
     if (seats.draftsRemote === undefined) return undefined
-    return seats.draftsRemote.get(decodeURIComponent(m[1]!), signal)
+    // the id arrives in the URL path — branded at this parse edge
+    return seats.draftsRemote.get(draftIdOf(decodeURIComponent(m[1]!)), signal)
   }
   // ── THE 1:1 FLOW PORT LANES (2026-09-11: the old editor's card
   // system rides the DSH plugin; these arms are its HTTP face) ──
@@ -221,7 +222,7 @@ async function trySeats(
     // typed lane obeys — the drift that killed every attribution
     // stamp once lived on BOTH faces of this seam).
     return seats.draftsRemote.patch(
-      decodeURIComponent(m[1]!),
+      draftIdOf(decodeURIComponent(m[1]!)),
       decodeURIComponent(m[2]!),
       body as Record<string, unknown>,
       null,
@@ -450,7 +451,9 @@ async function cardComposeLane(
   if (row === undefined || typeof row['draft_id'] !== 'string') {
     throw new Error('card compose returned no draft_id — refusing to start cardless')
   }
-  return { draftId: row['draft_id'] }
+  // THE PARSE EDGE: the id came off the bench ensure's wire answer —
+  // branded here at the lane that pulled it (the DraftId seating).
+  return { draftId: draftIdOf(row['draft_id']) }
 }
 
 /** Which seat FAMILY a path needs (agent-debt F-8, 2026-09-22 —
@@ -653,8 +656,8 @@ export interface Estate {
   /** The drafts plane: the KV list, the one-draft read, the stage
    *  wire PATCH (params edits + result persistence). */
   draftsList(signal: AbortSignal, timeoutMs?: number): Promise<unknown>
-  draftsGet(draftId: string, signal: AbortSignal, timeoutMs?: number): Promise<unknown>
-  draftsStagePatch(draftId: string, stageId: string, patch: Record<string, unknown>, signal: AbortSignal, timeoutMs?: number): Promise<unknown>
+  draftsGet(draftId: DraftId, signal: AbortSignal, timeoutMs?: number): Promise<unknown>
+  draftsStagePatch(draftId: DraftId, stageId: string, patch: Record<string, unknown>, signal: AbortSignal, timeoutMs?: number): Promise<unknown>
   /** THE CARD COMPOSE (the start body → a bench-backed draft; the
    *  CAS one-retry law lives in the ONE lane both faces share). */
   cardCompose(body: Record<string, unknown>, signal: AbortSignal, timeoutMs?: number): Promise<unknown>

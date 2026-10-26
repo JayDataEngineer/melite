@@ -42,7 +42,7 @@ import {
   undoBench,
   ungroupBench,
 } from "./bench.js";
-import { benchDraftIdOf } from "@melite/contracts/benchStage";
+import { benchDraftIdOf, draftIdOf, type DraftId } from "@melite/contracts/benchStage";
 import type {
   BenchEnsureRow,
   BenchGetRow,
@@ -70,9 +70,11 @@ export type {
 /** Endpoint `drafts/patch` answer — the old door's delivered envelope:
  *  a missing doc/stage is delivered:false + reason (a DOMAIN outcome,
  *  never an error); a landing patch reports the patched key set and
- *  the bench revision it landed at (the CAS law's re-read handle). */
+ *  the bench revision it landed at (the CAS law's re-read handle).
+ *  The reported id is branded at this door (the id arrived as a bare
+ *  wire string and was branded by the door's own admission). */
 export interface DraftPatchRow {
-  draftId: string;
+  draftId: DraftId;
   stageId: string;
   delivered: boolean;
   reason?: string;
@@ -82,9 +84,10 @@ export interface DraftPatchRow {
 
 /** draft_id_ok: 1..96 chars of [A-Za-z0-9_-] (the composer mint). */
 
-/** One listed draft — the index row (recency-ordered by the caller). */
+/** One listed draft — the index row (recency-ordered by the caller).
+ *  The id is branded at the list door (the KV table's own key). */
 export interface DraftListRow {
-  readonly draft_id: string;
+  readonly draft_id: DraftId;
   readonly model: string;
   readonly name: string;
 }
@@ -120,8 +123,8 @@ export type DraftGetRow = { readonly [key: string]: JsonValue };
 
 /** Endpoint `drafts/delete` answer — the id the door removed. */
 export interface DraftDeleteRow {
-  /** The canonical draft id the door removed. */
-  draft_id: string;
+  /** The canonical draft id the door removed (branded at the door). */
+  draft_id: DraftId;
 }
 
 /** Endpoint `drafts/patch` body — the door's FIXED key set (unknown
@@ -147,9 +150,13 @@ export type BenchDoc = { readonly [key: string]: JsonValue };
  *  vocabulary (cookbook §2: declaration merging, next to the throw). */
 declare module "@deepseek-ai/dsh-typert-protocol" {
   interface RemoteErrorDetailsMap {
-    /** The id fails the [A-Za-z0-9_-]{1,96} draft law. */
+    /** The id fails the [A-Za-z0-9_-]{1,96} draft law. PLAIN STRING
+     *  on purpose (the DraftId sweep): the refusal carries the RAW,
+     *  possibly-invalid wire value back to its sender — a brand would
+     *  assert the very admission that just failed. */
     "draft/bad-id": { readonly draftId: string };
-    /** No stored draft carries that id. */
+    /** No stored draft carries that id. Raw wire string, same reason
+     *  as draft/bad-id. */
     "draft/not-found": { readonly draftId: string };
     /** The storage open refused an otherwise valid call. */
     "draft/store-failed": Record<string, never>;
@@ -631,7 +638,7 @@ function docIndexFields(doc: unknown): { model: string; name: string } {
 const benchTransactions = new Map<string, Promise<void>>();
 
 async function withBenchWrite<T>(
-  draftId: string,
+  draftId: DraftId,
   body: () => Promise<T>,
 ): Promise<T> {
   const prev = benchTransactions.get(draftId) ?? Promise.resolve();
@@ -678,13 +685,15 @@ export class DraftsRemoteService extends TypertRemoteService {
     return await this.list(signal);
   }
 
-  /** Endpoint `drafts/get` — one doc by id. */
+  /** Endpoint `drafts/get` — one doc by id. The wire param stays the
+   *  bare wire string (the generated client face mirrors it); the id
+   *  is branded AT this door before the in-process body runs. */
   @Remote("get")
   async remoteExportGet(
     draftId: string,
     signal: AbortSignal,
   ): Promise<DraftGetRow> {
-    return (await this.get(draftId, signal)) as DraftGetRow;
+    return (await this.get(draftIdOf(draftId), signal)) as DraftGetRow;
   }
 
   /** Endpoint `drafts/delete` — removes one doc WHOLE (2026-10-22,
@@ -699,7 +708,7 @@ export class DraftsRemoteService extends TypertRemoteService {
     draftId: string,
     signal: AbortSignal,
   ): Promise<DraftDeleteRow> {
-    return await this.delete(draftId, signal);
+    return await this.delete(draftIdOf(draftId), signal);
   }
 
   /** The in-process API the adapters above delegate to. */
@@ -718,7 +727,7 @@ export class DraftsRemoteService extends TypertRemoteService {
     }
     const ents: { mt: number; row: DraftListRow }[] = [];
     for (const [did, rec] of drafts.table("docs").entries()) {
-      ents.push({ mt: rec.updated_at, row: { draft_id: did, ...docIndexFields(rec.doc) } });
+      ents.push({ mt: rec.updated_at, row: { draft_id: draftIdOf(did), ...docIndexFields(rec.doc) } });
     }
     ents.sort((a, b): number => b.mt - a.mt);
     return {
@@ -727,9 +736,11 @@ export class DraftsRemoteService extends TypertRemoteService {
     };
   }
 
-  /** The in-process API the adapter above delegates to. */
+  /** The in-process API the adapter above delegates to. Takes the
+   *  branded id (the wire adapter and the estate's in-process callers
+   *  mint at their own doors). */
   async get(
-    draftId: string,
+    draftId: DraftId,
     signal: AbortSignal,
   ): Promise<Record<string, unknown>> {
     signal.throwIfAborted();
@@ -764,7 +775,7 @@ export class DraftsRemoteService extends TypertRemoteService {
    *  the same serialization the bench doors queue on — and a loud
    *  not-found when the id names no doc (KvTable.delete answers
    *  false; the door never turns that into a silent success). */
-  async delete(draftId: string, signal: AbortSignal): Promise<DraftDeleteRow> {
+  async delete(draftId: DraftId, signal: AbortSignal): Promise<DraftDeleteRow> {
     signal.throwIfAborted();
     if (!DRAFT_ID_RE.test(draftId)) {
       throw new RemoteError("draft/bad-id", `bad draft id ${JSON.stringify(draftId)}`, {
@@ -823,7 +834,7 @@ export class DraftsRemoteService extends TypertRemoteService {
     expectRev: number | null,
     signal: AbortSignal,
   ): Promise<DraftPatchRow> {
-    return await this.patch(draftId, stageId, patch, expectRev, signal);
+    return await this.patch(draftIdOf(draftId), stageId, patch, expectRev, signal);
   }
 
   /** The patch arm the adapter above delegates to — one write
@@ -831,7 +842,7 @@ export class DraftsRemoteService extends TypertRemoteService {
    *  verbs (the round-14 race audit's R3: the author arm's
    *  spread-copy of the log forked against their in-place push). */
   async patch(
-    draftId: string,
+    draftId: DraftId,
     stageId: string,
     patch: Record<string, unknown>,
     expectRev: number | null,
@@ -842,7 +853,7 @@ export class DraftsRemoteService extends TypertRemoteService {
   }
 
   private async patchBody(
-    draftId: string,
+    draftId: DraftId,
     stageId: string,
     patch: Record<string, unknown>,
     expectRev: number | null,

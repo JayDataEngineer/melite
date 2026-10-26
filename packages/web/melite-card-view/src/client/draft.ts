@@ -68,6 +68,7 @@ export type FlowEventFrame =
 import { toRunMediaUrl, type RunStageStatus } from '@melite-plugin/melite-run-wire'
 import { estateRemote, unwrapRemote, parseNumericInput, isCasConflict, type DraftsNamespace } from '@melite/card-base/client'
 import { isTerminalStatus, statusOrPendingOf, type CardStatus } from '@melite/contracts/stageView'
+import { type DraftId } from '@melite/contracts/benchStage'
 import { rejectionVoice } from './rejection-voice.ts'
 
 /** The media URL seam — the run-wire package's ONE rewrite
@@ -80,7 +81,7 @@ export { toRunMediaUrl as mediaUrl }
 export type { RunStageStatus }
 
 /** The draft doc; throws the door's own named refusal on failure. */
-export async function fetchDraft(draftId: string): Promise<DraftDoc> {
+export async function fetchDraft(draftId: DraftId): Promise<DraftDoc> {
   const doc = await unwrapRemote(estateRemote().drafts.get(draftId), 'drafts/get') as unknown as Record<string, unknown>
   if (typeof doc['draft_id'] !== 'string' || !Array.isArray(doc['stages'])) {
     throw new Error('drafts/get: not a draft doc')
@@ -93,7 +94,7 @@ export async function fetchDraft(draftId: string): Promise<DraftDoc> {
  *  a drill held its open-time rev while the agent moved the bench).
  *  Reads the served doc's own bench block; null when the door won't
  *  say (the caller then throws loud, never writes blind). */
-export async function fetchDraftRev(draftId: string): Promise<number | null> {
+export async function fetchDraftRev(draftId: DraftId): Promise<number | null> {
   try {
     const doc = await fetchDraft(draftId)
     return typeof doc.bench?.rev === 'number' ? doc.bench.rev : null
@@ -111,7 +112,7 @@ export async function fetchDraftRev(draftId: string): Promise<number | null> {
  *  word that the write landed — the ledger records it, a caller may
  *  use it as its next CAS handle). */
 async function patchOnce(
-  draftId: string, stageId: string, patch: Record<string, unknown>,
+  draftId: DraftId, stageId: string, patch: Record<string, unknown>,
   expectRev: number | undefined,
 ): Promise<{ rev: number | null }> {
   const ns: DraftsNamespace = estateRemote().drafts
@@ -205,7 +206,7 @@ function pruneStageLedger(): void {
   }
 }
 
-function writeRow(draftId: string, stageId: string): StageWriteRow {
+function writeRow(draftId: DraftId, stageId: string): StageWriteRow {
   const key = draftId + '/' + stageId
   let row = stageWrites.get(key)
   if (row === undefined) {
@@ -218,7 +219,7 @@ function writeRow(draftId: string, stageId: string): StageWriteRow {
 
 /** The stage's write accountability snapshot — what the UI consults
  * before it lets anything compose from this doc. */
-export function stageWriteState(draftId: string, stageId: string): StageWriteState {
+export function stageWriteState(draftId: DraftId, stageId: string): StageWriteState {
   const row = writeRow(draftId, stageId)
   return { pending: row.inflight.size, failedKeys: [...row.failedKeys], lastError: row.lastError, confirmedRev: row.confirmedRev }
 }
@@ -284,7 +285,7 @@ const scheduledWrites = new Map<string, Map<string, ScheduledParamWrite>>()
 const sendChains = new Map<string, Promise<void>>()
 
 function enqueueSend(
-  draftId: string, stageId: string, thunk: () => Promise<void>,
+  draftId: DraftId, stageId: string, thunk: () => Promise<void>,
 ): Promise<void> {
   const key = draftId + '/' + stageId
   // THE RIDE MARK (the race audit's F3): this link is about to own the
@@ -313,7 +314,7 @@ function enqueueSend(
  *  would voice a sentinel nobody typed — the voice names what the
  *  operator stated. Param entries carry exactly their row key, so
  *  their voice is unchanged. */
-function pendingScheduledKeys(draftId: string, stageId: string): string[] {
+function pendingScheduledKeys(draftId: DraftId, stageId: string): string[] {
   const row = scheduledWrites.get(draftId + '/' + stageId)
   if (row === undefined) return []
   const out: string[] = []
@@ -325,7 +326,7 @@ function pendingScheduledKeys(draftId: string, stageId: string): string[] {
   return out
 }
 
-function scheduledRow(draftId: string, stageId: string): Map<string, ScheduledParamWrite> {
+function scheduledRow(draftId: DraftId, stageId: string): Map<string, ScheduledParamWrite> {
   const key = draftId + '/' + stageId
   let row = scheduledWrites.get(key)
   if (row === undefined) {
@@ -343,7 +344,7 @@ function scheduledRow(draftId: string, stageId: string): Map<string, ScheduledPa
  *  and when the run gate forced the write out of band. The ledger
  *  owns the failure memory either way. */
 export function scheduleStageParam(
-  draftId: string,
+  draftId: DraftId,
   stageId: string,
   /** ONE key — the trailing coalescer's unit is a single typed
    *  field. This signature is the 2026-10-12 construction fix: the
@@ -454,7 +455,7 @@ const SURFACE_PATCH_KEY = '@surface-patch'
  *  rejects: the ledger owns the failure memory, the boolean owns the
  *  optimistic overlay's retraction. */
 export function scheduleStagePatch(
-  draftId: string,
+  draftId: DraftId,
   stageId: string,
   patch: Record<string, unknown>,
   expectRev?: number,
@@ -511,7 +512,7 @@ export function scheduleStagePatch(
  *  with the full rebase budget per write. Settling is still
  *  non-throwing here — the LEDGER owns the failure memory and the
  *  run gate voices it. */
-async function forceScheduledWrites(draftId: string, stageId: string): Promise<void> {
+async function forceScheduledWrites(draftId: DraftId, stageId: string): Promise<void> {
   const key = draftId + '/' + stageId
   const row = scheduledWrites.get(key)
   if (row === undefined || row.size === 0) return
@@ -552,7 +553,7 @@ async function forceScheduledWrites(draftId: string, stageId: string): Promise<v
 /** Await every authoring write still in flight for the stage (the
  * run gate's flush). Never throws — the caller reads the settled
  * state and refuses the run on any failure. */
-export async function flushStageWrites(draftId: string, stageId: string): Promise<StageWriteState> {
+export async function flushStageWrites(draftId: DraftId, stageId: string): Promise<StageWriteState> {
   // THE PENDING-FIRST LAW: a trailing write that has not fired yet
   // is still an authoring write — the press forces it before the
   // compose reads the row (the 2026-10-10 burn: press typed, press
@@ -591,7 +592,7 @@ export async function flushStageWrites(draftId: string, stageId: string): Promis
  * future caller): flush the stage's authoring writes, then refuse
  * with the naming message when a key's latest write has not landed.
  * Null = the press may compose. Never throws. */
-export async function refuseForUnlandedWrite(draftId: string, stageId: string): Promise<string | null> {
+export async function refuseForUnlandedWrite(draftId: DraftId, stageId: string): Promise<string | null> {
   const state = await flushStageWrites(draftId, stageId)
   if (state.failedKeys.length === 0) {
     // guard-expiry honesty: a schedule that outlived the flush loop
@@ -617,7 +618,7 @@ export async function refuseForUnlandedWrite(draftId: string, stageId: string): 
  *  string — a per-path dialect is how the UI lied about the backend
  *  it renders. @param draftId the bench draft @param stageId the
  *  stage whose row voices @returns the banner string, always */
-export function unlandedWriteVoice(draftId: string, stageId: string): string {
+export function unlandedWriteVoice(draftId: DraftId, stageId: string): string {
   const state = stageWriteState(draftId, stageId)
   return 'THE WRITE DID NOT LAND — '
     + (state.lastError ?? 'authoring write(s) still in flight')
@@ -666,7 +667,7 @@ export function resetStageWrites(): void {
  *  attempt to settle instead of vanishing under it, and a write that
  *  arrives after the forget bumps the row's epoch, which voids the
  *  deferred drop rather than wiping the memory it is accumulating. */
-export function forgetStageWrites(draftId: string, stageIds: readonly string[]): void {
+export function forgetStageWrites(draftId: DraftId, stageIds: readonly string[]): void {
   for (const stageId of stageIds) {
     const key = draftId + '/' + stageId
     const scheduled = scheduledWrites.get(key)
@@ -723,7 +724,7 @@ function forgetRowWhenIdle(key: string, armed: number): void {
  *  so the draft's rows are the rows under its own prefix — every other
  *  draft is untouched.
  *  @param draftId the draft whose rows go. */
-export function forgetDraftWrites(draftId: string): void {
+export function forgetDraftWrites(draftId: DraftId): void {
   const prefix = draftId + '/'
   const stageIds = new Set<string>()
   for (const key of [...stageWrites.keys(), ...scheduledWrites.keys()]) {
@@ -749,7 +750,7 @@ export function forgetDraftWrites(draftId: string): void {
  * a ghost). A key any of the three still carries KEEPS its refusal
  * — that failure is live and the gate must voice it. */
 export function reconcileStageWriteFailures(
-  draftId: string, stageId: string,
+  draftId: DraftId, stageId: string,
   heldParams: Record<string, unknown>, seededParams: Record<string, unknown>,
   declaredKeys: ReadonlySet<string> = new Set(),
 ): void {
@@ -773,7 +774,7 @@ export function reconcileStageWriteFailures(
  *  LOUD — never a silent drop, never a blind write. */
 const PATCH_ATTEMPTS = 3
 async function patchWithRebase(
-  draftId: string, stageId: string, patch: Record<string, unknown>,
+  draftId: DraftId, stageId: string, patch: Record<string, unknown>,
   expectRev: number | undefined,
 ): Promise<{ rev: number | null }> {
   let rev = expectRev
@@ -806,7 +807,7 @@ async function patchWithRebase(
  *  the door's JSON Merge Patch arm deletes those keys (the unset
  *  path's domain half). */
 export async function patchStageParams(
-  draftId: string, stageId: string, params: Record<string, unknown>,
+  draftId: DraftId, stageId: string, params: Record<string, unknown>,
   expectRev?: number,
 ): Promise<void> {
   // THE CAS FENCE (the parameter audit, 2026-09-14): the caller
@@ -868,7 +869,7 @@ export async function patchStageParams(
  *  a resource signal. At least one of runStatus/health/result
  *  rides every body this helper sends. */
 export async function patchStageOutcome(
-  draftId: string, stageId: string,
+  draftId: DraftId, stageId: string,
   outcome: { runStatus?: string; health?: string | null; result?: Record<string, unknown> },
   expectRev?: number,
 ): Promise<void> {
@@ -890,7 +891,7 @@ export async function patchStageOutcome(
 }
 
 /** Start the run; returns the run_id or throws the door's named refusal. */
-export async function startDraft(draftId: string): Promise<string> {
+export async function startDraft(draftId: DraftId): Promise<string> {
   const row = await unwrapRemote(estateRemote().runs.start({ draft_id: draftId }), 'runs/start') as unknown as Record<string, unknown>
   if (typeof row['run_id'] !== 'string') {
     throw new Error('runs/start: no run_id in the answer')

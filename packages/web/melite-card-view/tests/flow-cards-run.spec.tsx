@@ -34,6 +34,7 @@ import { RemoteStreamCarrierError } from "@deepseek-ai/dsh-api-gateway/client";
 import type { ClientRemote, RemoteStreamItem } from "@deepseek-ai/dsh-api-gateway/client";
 import type { RemoteStreamHandle } from "@deepseek-ai/dsh-typert-protocol";
 import type { RunRow } from "@melite/estate-runs";
+import { draftIdOf } from "@melite/contracts/benchStage";
 
 type Fakes = ReturnType<typeof mountEstateFakes>;
 let active: Fakes | null = null;
@@ -287,7 +288,7 @@ describe("THE GESTURE — open drill, edit, Run = patch FIRST, then start", () =
     // THE DEAD WRITE, through the REAL channel — then a no-edit Run
     // (patch null: the tile's own patch is skipped, so ONLY the
     // ledger stands between the press and the engine).
-    await expect(patchStageParams("draft-1", "s_0", { steps: 99 }, 3)).rejects.toThrow(/stage not found/);
+    await expect(patchStageParams(draftIdOf("draft-1"), "s_0", { steps: 99 }, 3)).rejects.toThrow(/stage not found/);
     const { container } = render(h(FlowCards, { block: settled() }));
     await screen.findByText("gen", {}, { timeout: 4000 });
     (container.querySelector('[data-stage="s_0"]') as HTMLElement).click();

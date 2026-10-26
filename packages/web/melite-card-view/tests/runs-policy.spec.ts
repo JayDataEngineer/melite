@@ -37,6 +37,7 @@ import {
   stopRun,
 } from '@melite/card-base/client';
 import { mountEstateFakes } from "./estate-harness.ts";
+import { draftIdOf } from '@melite/contracts/benchStage';
 
 afterEach(() => {
   mountEstateFakes().unmount();
@@ -49,7 +50,7 @@ const DRAFT = "bench-s1";
 test("startCardRun spells the composing doc: knobs top-level, family model, draft id, test false", async () => {
   const fakes = mountEstateFakes();
   try {
-    const res = await startCardRun({ model: "anima", params: { prompt: "a red cube", steps: 8 }, draftId: DRAFT });
+    const res = await startCardRun({ model: "anima", params: { prompt: "a red cube", steps: 8 }, draftId: draftIdOf(DRAFT) });
     expect(res).toEqual({ runId: "run-1" });
     const start = fakes.calls.find((c) => c.method === "runs/start")!;
     const doc = start.args["doc"] as Record<string, unknown>;
@@ -70,7 +71,7 @@ test("startCardRun spells the composing doc: knobs top-level, family model, draf
 test("startCardRun threads test:true for the dry-run gesture", async () => {
   const fakes = mountEstateFakes();
   try {
-    await startCardRun({ model: "anima", params: {}, draftId: DRAFT, test: true });
+    await startCardRun({ model: "anima", params: {}, draftId: draftIdOf(DRAFT), test: true });
     const start = fakes.calls.find((c) => c.method === "runs/start")!;
     expect((start.args["doc"] as Record<string, unknown>)["test"]).toBe(true);
   } finally {
@@ -81,8 +82,8 @@ test("startCardRun threads test:true for the dry-run gesture", async () => {
 test("the press key mints per press (audit N-E1's client half): every start carries one, no two presses share, a pre-carried key rides", async () => {
   const fakes = mountEstateFakes();
   try {
-    await startCardRun({ model: "anima", params: { prompt: "a" }, draftId: DRAFT });
-    await startFlowInlineRun({ flowId: "f1", stages: [{ workflow: {} }], draftId: DRAFT });
+    await startCardRun({ model: "anima", params: { prompt: "a" }, draftId: draftIdOf(DRAFT) });
+    await startFlowInlineRun({ flowId: "f1", stages: [{ workflow: {} }], draftId: draftIdOf(DRAFT) });
     const starts = fakes.calls.filter((c) => c.method === "runs/start");
     expect(starts.length).toBe(2);
     const first = (starts[0]!.args["doc"] as Record<string, unknown>)["press_key"];
@@ -96,7 +97,7 @@ test("the press key mints per press (audit N-E1's client half): every start carr
     // a caller-carried key rides verbatim (the rescue-replay shape:
     // re-sending the SAME doc answers the FIRST run)
     const carried = "carried-key-1";
-    await startCardRun({ model: "anima", params: { prompt: "a", press_key: carried }, draftId: DRAFT });
+    await startCardRun({ model: "anima", params: { prompt: "a", press_key: carried }, draftId: draftIdOf(DRAFT) });
     const third = fakes.calls.filter((c) => c.method === "runs/start")[2]!;
     expect((third.args["doc"] as Record<string, unknown>)["press_key"]).toBe(carried);
   } finally {
@@ -107,7 +108,7 @@ test("the press key mints per press (audit N-E1's client half): every start carr
 test("startCardRun carries the estate refusal verbatim — never thrown past the gesture", async () => {
   const fakes = mountEstateFakes({ refusals: [{ method: "runs/start", message: "card= stages are unported" }] });
   try {
-    const res = await startCardRun({ model: "image-gen", params: {}, draftId: DRAFT });
+    const res = await startCardRun({ model: "image-gen", params: {}, draftId: draftIdOf(DRAFT) });
     expect(res).toEqual({ refused: "card= stages are unported" });
   } finally {
     fakes.unmount();
@@ -126,7 +127,7 @@ test("startCardRun rides the door's refusal CODE beside the voice — policy spl
     }],
   });
   try {
-    const res = await startCardRun({ model: "krea-2", params: {}, draftId: DRAFT });
+    const res = await startCardRun({ model: "krea-2", params: {}, draftId: draftIdOf(DRAFT) });
     expect(res).toEqual({
       refused: "card_compose phase 1: this lane requires 'prompt'",
       refusedCode: "runs/card-compose-incomplete",
@@ -139,7 +140,7 @@ test("startCardRun rides the door's refusal CODE beside the voice — policy spl
 test("startCardRun converts a wire throw to a refusal — the start never rejects", async () => {
   const fakes = mountEstateFakes({ throws: [{ method: "runs/start", message: "wire down" }] });
   try {
-    const res = await startCardRun({ model: "anima", params: {}, draftId: DRAFT });
+    const res = await startCardRun({ model: "anima", params: {}, draftId: draftIdOf(DRAFT) });
     expect(res).toEqual({ refused: "wire down" });
   } finally {
     fakes.unmount();
@@ -149,7 +150,7 @@ test("startCardRun converts a wire throw to a refusal — the start never reject
 test("startCardRun refuses when the answer carries no run_id — never a ghost run", async () => {
   const fakes = mountEstateFakes({ startDocs: [{ status: "queued" }] });
   try {
-    const res = await startCardRun({ model: "anima", params: {}, draftId: DRAFT });
+    const res = await startCardRun({ model: "anima", params: {}, draftId: draftIdOf(DRAFT) });
     expect(res).toEqual({ refused: "run refused: no run_id in the answer" });
   } finally {
     fakes.unmount();
@@ -160,7 +161,7 @@ test("startFlowInlineRun rides the flow door with the bench draft id and test fa
   const fakes = mountEstateFakes();
   try {
     const stages = [{ card: "image-gen", params: { workflow: { nodes: [] } } }];
-    const res = await startFlowInlineRun({ flowId: "flow-9", stages, draftId: DRAFT });
+    const res = await startFlowInlineRun({ flowId: "flow-9", stages, draftId: draftIdOf(DRAFT) });
     expect(res).toEqual({ runId: "run-1" });
     const start = fakes.calls.find((c) => c.method === "runs/start")!;
     const doc = start.args["doc"] as Record<string, unknown>;
@@ -337,9 +338,9 @@ test("fetchLatestRunForDraft scans the wide tail — newest created_at wins, oth
     ],
   });
   try {
-    expect(await fetchLatestRunForDraft(DRAFT)).toBe("run-new");
-    expect(await fetchLatestRunForDraft("bench-zzz")).toBe("run-other");
-    expect(await fetchLatestRunForDraft("bench-empty")).toBeNull();
+    expect(await fetchLatestRunForDraft(draftIdOf(DRAFT))).toBe("run-new");
+    expect(await fetchLatestRunForDraft(draftIdOf("bench-zzz"))).toBe("run-other");
+    expect(await fetchLatestRunForDraft(draftIdOf("bench-empty"))).toBeNull();
   } finally {
     fakes.unmount();
   }
@@ -348,7 +349,7 @@ test("fetchLatestRunForDraft scans the wide tail — newest created_at wins, oth
 test("fetchLatestRunForDraft reads the list through the '500' wide tail", async () => {
   const fakes = mountEstateFakes();
   try {
-    expect(await fetchLatestRunForDraft(DRAFT)).toBeNull();
+    expect(await fetchLatestRunForDraft(draftIdOf(DRAFT))).toBeNull();
     expect(fakes.calls.find((c) => c.method === "runs/list")?.args["rawLimit"]).toBe("500");
   } finally {
     fakes.unmount();
@@ -493,7 +494,7 @@ function bindRunsListDoc(doc: unknown): void {
 test("a malformed runs tail reads empty — the newest-run bridge and the row read null, never throw", async () => {
   bindRunsListDoc({ runs: "nope" });
   try {
-    await expect(fetchLatestRunForDraft(DRAFT)).resolves.toBeNull();
+    await expect(fetchLatestRunForDraft(draftIdOf(DRAFT))).resolves.toBeNull();
     await expect(fetchListRow("run-1")).resolves.toBeNull();
   } finally {
     unbindEstateRemote();
@@ -567,7 +568,7 @@ test("probeRunGone: a dead list read settles gone", async () => {
 test("startCardRun voices a foreign throw verbatim", async () => {
   const fakes = mountEstateFakes({ throws: [{ method: "runs/start", value: "kablam" }] });
   try {
-    await expect(startCardRun({ model: "anima", params: {}, draftId: DRAFT }))
+    await expect(startCardRun({ model: "anima", params: {}, draftId: draftIdOf(DRAFT) }))
       .resolves.toEqual({ refused: "kablam" });
   } finally {
     fakes.unmount();

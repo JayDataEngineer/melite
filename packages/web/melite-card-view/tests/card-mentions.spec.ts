@@ -14,6 +14,7 @@
 import { describe, expect, test, vi } from "vitest";
 import { buildChatFileMentions, meliteCardsTurnDefinition, type MeliteCardRow } from "../src/client/card-mentions.ts";
 import type { ConversationNodeDefinition } from "@deepseek-ai/dsh-client-ui-conversation/client";
+import { draftIdOf } from "@melite/contracts/benchStage";
 
 type Event = { type: string; data: Record<string, unknown> };
 type Def = ConversationNodeDefinition<{ turn: number; cardCalls: ReadonlyMap<string, string>; rows: readonly MeliteCardRow[] }>;
@@ -138,7 +139,7 @@ describe("the chatFileMentions provider (the resolver's law)", () => {
     const open = vi.fn();
     const mentions = buildChatFileMentions(open);
     const rows: readonly MeliteCardRow[] = [
-      { tool: "image_card", draftId: "p_ab12", runId: null },
+      { tool: "image_card", draftId: draftIdOf("p_ab12"), runId: null },
       { tool: "melite_flow", draftId: null, runId: "run-9" },
     ];
     const resolver = mentions.forClosing(ownerOf({ rows }) as never, "s1" as never);
@@ -156,7 +157,7 @@ describe("the chatFileMentions provider (the resolver's law)", () => {
 
   test("an unknown token stays inert code", () => {
     const mentions = buildChatFileMentions(() => {});
-    const rows: readonly MeliteCardRow[] = [{ tool: "image_card", draftId: "p_ab12", runId: null }];
+    const rows: readonly MeliteCardRow[] = [{ tool: "image_card", draftId: draftIdOf("p_ab12"), runId: null }];
     const resolver = mentions.forClosing(ownerOf({ rows }) as never, "s1" as never);
     expect(resolver!.resolve("p_ab13")).toBeUndefined();
     expect(resolver!.resolve("image_card")).toBeUndefined();

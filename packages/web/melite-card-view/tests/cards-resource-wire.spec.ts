@@ -19,6 +19,7 @@ import {
   restoreRunToBench,
 } from "../src/client/cards-resource.ts";
 import type { CardsRunValue } from "../src/client/cards-resource.ts";
+import { draftIdOf } from '@melite/contracts/benchStage';
 
 afterEach(() => {
   unbindEstateRemote();
@@ -27,7 +28,7 @@ afterEach(() => {
 
 function run(over: Partial<CardsRunValue> = {}): CardsRunValue {
   return {
-    kind: "run", runId: "r_1", status: "completed", draftId: "d_1",
+    kind: "run", runId: "r_1", status: "completed", draftId: draftIdOf("d_1"),
     stages: [], lastFrame: undefined, ...over,
   };
 }
@@ -83,16 +84,16 @@ describe("fetchBench — a missing bench is a zero state, not a failure", () => 
 describe("readDraft — the bench rev rides when it is a number", () => {
   const doc = { intent: "the film", stages: [{ id: "s_0" }] };
   test("a numeric bench rev rides", () => {
-    expect(readDraft("d", "s_0", { ...doc, bench: { rev: 5 } }).rev).toBe(5);
+    expect(readDraft(draftIdOf("d"), "s_0", { ...doc, bench: { rev: 5 } }).rev).toBe(5);
   });
   test("a missing bench reads rev 0", () => {
-    expect(readDraft("d", "s_0", doc).rev).toBe(0);
+    expect(readDraft(draftIdOf("d"), "s_0", doc).rev).toBe(0);
   });
   test("a null bench reads rev 0", () => {
-    expect(readDraft("d", "s_0", { ...doc, bench: null }).rev).toBe(0);
+    expect(readDraft(draftIdOf("d"), "s_0", { ...doc, bench: null }).rev).toBe(0);
   });
   test("a non-numeric bench rev reads rev 0", () => {
-    expect(readDraft("d", "s_0", { ...doc, bench: { rev: "x" } }).rev).toBe(0);
+    expect(readDraft(draftIdOf("d"), "s_0", { ...doc, bench: { rev: "x" } }).rev).toBe(0);
   });
 });
 
@@ -305,7 +306,10 @@ describe("restoreRunToBench — the outcome carry (the run view previews after a
       // rides verbatim (bare run-relative), the rewrite lives in
       // artifacts/assetUrls where the tile's gallery face reads it.
       const [patch] = patches(fakes.calls);
-      expect(patch?.["draftId"]).toBe("main");
+      // the patch addresses the BENCH draft (bench-main), never the
+      // session (main): the drafts door keys stored documents, and
+      // no document is named "main".
+      expect(patch?.["draftId"]).toBe("bench-main");
       // a non-colliding draft id seats AS SENT (the door honors a
       // provided id) — the carry rides the answer's id, here s_0
       expect(patch?.["stageId"]).toBe("s_0");
@@ -427,7 +431,7 @@ describe("freshStageRow — the drill's fresh read (null when gone, never a thro
       draftStages: [{ id: "s_0", runStatus: "running" }],
     });
     try {
-      await expect(freshStageRow("d_1", "s_0")).resolves.toMatchObject({ id: "s_0" });
+      await expect(freshStageRow(draftIdOf("d_1"), "s_0")).resolves.toMatchObject({ id: "s_0" });
     } finally {
       fakes.unmount();
     }
@@ -438,7 +442,7 @@ describe("freshStageRow — the drill's fresh read (null when gone, never a thro
       draftStages: ["x", null, { noid: 1 }, { id: "s_0" }] as unknown as Array<Record<string, unknown>>,
     });
     try {
-      await expect(freshStageRow("d_1", "s_0")).resolves.toMatchObject({ id: "s_0" });
+      await expect(freshStageRow(draftIdOf("d_1"), "s_0")).resolves.toMatchObject({ id: "s_0" });
     } finally {
       fakes.unmount();
     }
@@ -450,7 +454,7 @@ describe("freshStageRow — the drill's fresh read (null when gone, never a thro
       draftIntent: 42,
     });
     try {
-      await expect(freshStageRow("d_1", "s_0")).resolves.toMatchObject({ id: "s_0" });
+      await expect(freshStageRow(draftIdOf("d_1"), "s_0")).resolves.toMatchObject({ id: "s_0" });
     } finally {
       fakes.unmount();
     }
@@ -461,7 +465,7 @@ describe("freshStageRow — the drill's fresh read (null when gone, never a thro
       draftStages: [{ id: "s_0" }],
     });
     try {
-      await expect(freshStageRow("d_1", "s_9")).resolves.toBeNull();
+      await expect(freshStageRow(draftIdOf("d_1"), "s_9")).resolves.toBeNull();
     } finally {
       fakes.unmount();
     }
@@ -470,7 +474,7 @@ describe("freshStageRow — the drill's fresh read (null when gone, never a thro
   test("a stageless doc reads null (never undefined)", async () => {
     const fakes = mountEstateFakes({ draftStages: [] });
     try {
-      await expect(freshStageRow("d_1", "s_0")).resolves.toBeNull();
+      await expect(freshStageRow(draftIdOf("d_1"), "s_0")).resolves.toBeNull();
     } finally {
       fakes.unmount();
     }
@@ -481,7 +485,7 @@ describe("freshStageRow — the drill's fresh read (null when gone, never a thro
       refusals: [{ method: "drafts/get", message: "admission: nope" }],
     });
     try {
-      await expect(freshStageRow("d_1", "s_0")).resolves.toBeNull();
+      await expect(freshStageRow(draftIdOf("d_1"), "s_0")).resolves.toBeNull();
     } finally {
       fakes.unmount();
     }
@@ -492,7 +496,7 @@ describe("freshStageRow — the drill's fresh read (null when gone, never a thro
       draftStages: "nope" as unknown as Array<Record<string, unknown>>,
     });
     try {
-      await expect(freshStageRow("d_1", "s_0")).resolves.toBeNull();
+      await expect(freshStageRow(draftIdOf("d_1"), "s_0")).resolves.toBeNull();
     } finally {
       fakes.unmount();
     }
@@ -507,7 +511,7 @@ describe("freshStageRow — the drill's fresh read (null when gone, never a thro
       refusals: [{ method: "drafts/get", message: "admission: nope" }],
     });
     try {
-      await expect(readStageRow("d_1", "s_0")).resolves.toEqual({ status: "unreadable" });
+      await expect(readStageRow(draftIdOf("d_1"), "s_0")).resolves.toEqual({ status: "unreadable" });
     } finally {
       fakes.unmount();
     }
@@ -518,7 +522,7 @@ describe("freshStageRow — the drill's fresh read (null when gone, never a thro
       draftStages: [{ id: "s_0" }],
     });
     try {
-      await expect(readStageRow("d_1", "s_9")).resolves.toEqual({ status: "gone" });
+      await expect(readStageRow(draftIdOf("d_1"), "s_9")).resolves.toEqual({ status: "gone" });
     } finally {
       fakes.unmount();
     }
@@ -529,7 +533,7 @@ describe("freshStageRow — the drill's fresh read (null when gone, never a thro
       draftStages: [{ id: "s_0", runStatus: "running" }],
     });
     try {
-      await expect(readStageRow("d_1", "s_0")).resolves.toMatchObject({ status: "ready", row: { id: "s_0" } });
+      await expect(readStageRow(draftIdOf("d_1"), "s_0")).resolves.toMatchObject({ status: "ready", row: { id: "s_0" } });
     } finally {
       fakes.unmount();
     }

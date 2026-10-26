@@ -22,6 +22,7 @@ import { StageDrill } from "../src/client/stage-drill.tsx";
 import { resetStageWrites } from "../src/client/draft.ts";
 import { schemaEnvelope } from "@melite/card-base/client";
 import type { BenchStageView, CardsBenchValue } from "../src/client/cards-resource.ts";
+import { draftIdOf } from "@melite/contracts/benchStage";
 
 // count the FACTORY, never mock it: the real seam (now the engine's)
 // rides under the counter — the arm judges how many times StageDrill
@@ -43,7 +44,7 @@ const STAGE = {
 } as never as BenchStageView;
 
 const BENCH: CardsBenchValue = {
-  kind: "bench", draftId: "bench-fs", sessionKey: "f", rev: 1, log: [], stages: [STAGE],
+  kind: "bench", draftId: draftIdOf("bench-fs"), sessionKey: "f", rev: 1, log: [], stages: [STAGE],
 };
 
 function stubEstate(): void {

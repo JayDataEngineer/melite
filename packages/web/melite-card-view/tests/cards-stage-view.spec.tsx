@@ -21,10 +21,11 @@ import { CardsTab } from '../src/client/CardsTab.tsx'
 import { schemaEnvelope } from '@melite/card-base/client'
 import type { CardsBenchValue } from '../src/client/cards-resource.ts'
 import type { StageViewOwnerProps } from '../src/client/types.ts'
+import { draftIdOf } from '@melite/contracts/benchStage';
 
 const BENCH: CardsBenchValue = {
   kind: 'bench',
-  draftId: 'bench-sv',
+  draftId: draftIdOf('bench-sv'),
   sessionKey: 'sv',
   rev: 3,
   stages: [

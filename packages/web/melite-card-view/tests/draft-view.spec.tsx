@@ -12,6 +12,7 @@ import { openCardsResource, readDraft } from "../src/client/cards-resource.ts"
 import { CardsTab } from "../src/client/CardsTab.tsx"
 import type { CardsDraftValue } from "../src/client/cards-resource.ts"
 import { mountEstateFakes, type EstateFakesOptions } from "./estate-harness.ts"
+import { draftIdOf } from "@melite/contracts/benchStage";
 
 type Fakes = ReturnType<typeof mountEstateFakes>;
 let active: Fakes | null = null;
@@ -48,7 +49,7 @@ function stubDraftStages(): void {
 
 describe("readDraft", () => {
   test("normalizes the doc and keeps malformed rows out", () => {
-    const value = readDraft("draft-1", "s_0", DRAFT_DOC)
+    const value = readDraft(draftIdOf("draft-1"), "s_0", DRAFT_DOC)
     expect(value.kind).toBe("draft")
     expect(value.draftId).toBe("draft-1")
     expect(value.stageId).toBe("s_0")
@@ -57,7 +58,7 @@ describe("readDraft", () => {
   })
 
   test("a doc without stages serves the empty list, never a throw", () => {
-    const value = readDraft("d", "s", { draft_id: "d", stages: null })
+    const value = readDraft(draftIdOf("d"), "s", { draft_id: "d", stages: null })
     expect(value.stages).toEqual([])
   })
 })
@@ -119,7 +120,7 @@ function renderDraftTab(value: CardsDraftValue, renderSlot?: (owner: Record<stri
 describe("DraftView", () => {
   test("the studio slot is consulted with the stage's card name", async () => {
     stubFormSpec()
-    const value = readDraft("draft-1", "s_0", DRAFT_DOC)
+    const value = readDraft(draftIdOf("draft-1"), "s_0", DRAFT_DOC)
     const owners: Array<Record<string, unknown>> = []
     renderDraftTab(value, (owner) => {
       owners.push(owner)
@@ -135,7 +136,7 @@ describe("DraftView", () => {
 
   test("an unclaimed card falls back to the generic zoom card (no Remove)", async () => {
     stubFormSpec()
-    const value = readDraft("draft-1", "s_0", DRAFT_DOC)
+    const value = readDraft(draftIdOf("draft-1"), "s_0", DRAFT_DOC)
     renderDraftTab(value)
     // the generic body renders the form loader or the spec form — and
     // NEVER the bench's Remove button (the draft's shape is not the
@@ -152,7 +153,7 @@ describe("DraftView", () => {
     // discards service/title, so the row arrives without `card`.
     // The studio consult must still see the card (live-lane receipt
     // 2026-09-12: chat-born bench-default/s_0 got the generic drill).
-    const value = readDraft("bench-default", "s_0", {
+    const value = readDraft(draftIdOf("bench-default"), "s_0", {
       draft_id: "bench-default",
       intent: "h3-timeline",
       stages: [
@@ -172,7 +173,7 @@ describe("DraftView", () => {
 
   test("a multi-stage draft never borrows the intent as the card (user benches carry card on the row)", async () => {
     stubFormSpec()
-    const value = readDraft("draft-1", "s_0", {
+    const value = readDraft(draftIdOf("draft-1"), "s_0", {
       draft_id: "draft-1",
       intent: "some-flow",
       stages: [
@@ -193,7 +194,7 @@ describe("DraftView", () => {
 
   test("a stage that left the draft refuses loud with a way back", async () => {
     stubFormSpec()
-    const value = readDraft("draft-1", "gone", DRAFT_DOC)
+    const value = readDraft(draftIdOf("draft-1"), "gone", DRAFT_DOC)
     renderDraftTab(value)
     expect(await screen.findByText(/no longer on draft draft-1/, {}, { timeout: 4000 })).toBeTruthy()
   })

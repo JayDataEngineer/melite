@@ -1,4 +1,4 @@
-import { CARD_PLANE_ENGINE } from '@melite/contracts/benchStage';
+import { CARD_PLANE_ENGINE, draftIdOf } from '@melite/contracts/benchStage';
 import { deadline, TimeoutReason } from '@deepseek-ai/dsh-timeout';
 /** Narrow the seat-bound request to the canonical EstateCall the card
  * tool builders receive: the seats demand a caller signal (trySeats'
@@ -43,7 +43,8 @@ async function trySeats(ctx, method, path, body, signal) {
     if (method === 'GET' && m !== null) {
         if (seats.draftsRemote === undefined)
             return undefined;
-        return seats.draftsRemote.get(decodeURIComponent(m[1]), signal);
+        // the id arrives in the URL path — branded at this parse edge
+        return seats.draftsRemote.get(draftIdOf(decodeURIComponent(m[1])), signal);
     }
     // ── THE 1:1 FLOW PORT LANES (2026-09-11: the old editor's card
     // system rides the DSH plugin; these arms are its HTTP face) ──
@@ -66,7 +67,7 @@ async function trySeats(ctx, method, path, body, signal) {
         // expectRev NULL + signal in its own slot (the same seat law the
         // typed lane obeys — the drift that killed every attribution
         // stamp once lived on BOTH faces of this seam).
-        return seats.draftsRemote.patch(decodeURIComponent(m[1]), decodeURIComponent(m[2]), body, null, signal);
+        return seats.draftsRemote.patch(draftIdOf(decodeURIComponent(m[1])), decodeURIComponent(m[2]), body, null, signal);
     }
     if (method === 'POST' && path === '/v1/bench/ensure') {
         if (seats.benchRemote === undefined)
@@ -294,7 +295,9 @@ async function cardComposeLane(host, seats, body, signal) {
     if (row === undefined || typeof row['draft_id'] !== 'string') {
         throw new Error('card compose returned no draft_id — refusing to start cardless');
     }
-    return { draftId: row['draft_id'] };
+    // THE PARSE EDGE: the id came off the bench ensure's wire answer —
+    // branded here at the lane that pulled it (the DraftId seating).
+    return { draftId: draftIdOf(row['draft_id']) };
 }
 export function seatFamilyForPath(path) {
     if (path.startsWith('/v1/flows/drafts') || path.startsWith('/v1/bench/')) {

@@ -13,6 +13,7 @@ import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { createElement as h } from "react";
 import { CardZoomOverlay } from "../src/client/zoom.tsx";
 import type { BenchStageView, CardsBenchValue } from "../src/client/cards-resource.ts";
+import { draftIdOf } from "@melite/contracts/benchStage";
 
 afterEach(() => {
   cleanup();
@@ -24,7 +25,7 @@ const STAGE: BenchStageView = {
   params: { prompt: "a red cube" }, runStatus: "running",
 };
 const BENCH: CardsBenchValue = {
-  kind: "bench", draftId: "bench-main", rev: 7, stages: [STAGE], log: [],
+  kind: "bench", draftId: draftIdOf("bench-main"), rev: 7, stages: [STAGE], log: [],
   sessionKey: "main",
 };
 

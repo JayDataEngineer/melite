@@ -1,9 +1,3 @@
-// queueSidecar.ts — the sidecar document + pipeline probe (split from queue.ts 2026-09-18;
-// pure move, zero logic changes — the queue.ts barrel re-exports
-// every symbol, so the public surface is byte-identical).
-//
-// Erasable-syntax TS only (node --experimental-strip-types): no
-// enums, import type for types, .ts specifiers for relative imports.
 export function sidecarStageOf(stage) {
     const out = {
         id: stage.id,

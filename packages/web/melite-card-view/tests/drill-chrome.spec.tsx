@@ -28,12 +28,13 @@ import { unbindEstateRemote } from '@melite/card-base/client'
 import { CardsTab } from '../src/client/CardsTab.tsx'
 import { schemaEnvelope } from '@melite/card-base/client'
 import type { CardsBenchValue } from '../src/client/cards-resource.ts'
+import { draftIdOf } from '@melite/contracts/benchStage';
 
 // the running row's result carries the tap fold — the observer
 // patches {run_id, progress, activity} onto it while the run lives
 const RUNNING_BENCH: CardsBenchValue = {
   kind: 'bench',
-  draftId: 'bench-chrome',
+  draftId: draftIdOf('bench-chrome'),
   sessionKey: 'chrome',
   rev: 4,
   stages: [

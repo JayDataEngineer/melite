@@ -30,6 +30,7 @@ import {
 } from "../src/client/draft.ts";
 import type { DraftDoc, RunStatusDoc } from "../src/client/draft.ts";
 import { mountEstateFakes, type EstateFakesOptions } from "./estate-harness.ts";
+import { draftIdOf } from "@melite/contracts/benchStage";
 
 type Fakes = ReturnType<typeof mountEstateFakes>;
 let active: Fakes | null = null;
@@ -50,33 +51,33 @@ afterEach(() => {
 describe("fetchDraftRev — the served bench block read", () => {
   test("a numeric rev rides through", async () => {
     wire({ draftBenchRev: 41 });
-    expect(await fetchDraftRev("d")).toBe(41);
+    expect(await fetchDraftRev(draftIdOf("d"))).toBe(41);
   });
   test("a missing bench block reads null (never a throw)", async () => {
     wire({ draftOmitBench: true });
-    expect(await fetchDraftRev("d")).toBeNull();
+    expect(await fetchDraftRev(draftIdOf("d"))).toBeNull();
   });
   test("a non-numeric rev reads null", async () => {
     wire({ draftBenchRev: "41" as unknown as number });
-    expect(await fetchDraftRev("d")).toBeNull();
+    expect(await fetchDraftRev(draftIdOf("d"))).toBeNull();
   });
   test("a dead door reads null (the caller then throws loud)", async () => {
     wire({ throws: [{ method: "drafts/get", message: "network gone" }] });
-    expect(await fetchDraftRev("d")).toBeNull();
+    expect(await fetchDraftRev(draftIdOf("d"))).toBeNull();
   });
   test("a malformed doc reads null", async () => {
     // The harness always serves a well-formed envelope; the malformed
     // shape rides as non-array stages (served verbatim) — fetchDraft
     // refuses it, so the rev read still lands null.
     wire({ draftStages: { hello: "world" } as unknown as Array<Record<string, unknown>> });
-    expect(await fetchDraftRev("d")).toBeNull();
+    expect(await fetchDraftRev(draftIdOf("d"))).toBeNull();
   });
 });
 
 describe("patchStageParams — the CAS dance arms", () => {
   test("a held rev writes without a re-read", async () => {
     const fakes = wire();
-    await patchStageParams("d", "s_0", { steps: 3 }, 7);
+    await patchStageParams(draftIdOf("d"), "s_0", { steps: 3 }, 7);
     expect(fakes.calls.map((c) => c.method)).toEqual(["drafts/patch"]);
     expect(fakes.calls[0]?.args).toEqual({ draftId: "d", stageId: "s_0", patch: { params: { steps: 3 } }, expectRev: 7 });
   });
@@ -85,7 +86,7 @@ describe("patchStageParams — the CAS dance arms", () => {
       draftBenchRev: 10,
       refusals: [{ method: "drafts/patch", message: "bench/cas-conflict: stale expect_rev" , code: 'bench/cas-conflict' }],
     });
-    await patchStageParams("d", "s_0", { steps: 3 }, 7);
+    await patchStageParams(draftIdOf("d"), "s_0", { steps: 3 }, 7);
     expect(fakes.calls.filter((c) => c.method === "drafts/patch")).toHaveLength(2);
     expect(fakes.calls[fakes.calls.length - 1]?.args).toMatchObject({ expectRev: 10 });
   });
@@ -94,12 +95,12 @@ describe("patchStageParams — the CAS dance arms", () => {
       draftBenchRev: 429,
       refusals: [{ method: "drafts/patch", message: "bench main moved: rev is 429, caller held 35" , code: 'bench/cas-conflict' }],
     });
-    await patchStageParams("d", "s_0", { steps: 3 }, 35);
+    await patchStageParams(draftIdOf("d"), "s_0", { steps: 3 }, 35);
     expect(fakes.calls[fakes.calls.length - 1]?.args).toMatchObject({ expectRev: 429 });
   });
   test("a revless write with a dead door throws loud (never a blind write)", async () => {
     wire({ throws: [{ method: "drafts/get", message: "network gone" }] });
-    await expect(patchStageParams("d", "s_0", { steps: 3 }))
+    await expect(patchStageParams(draftIdOf("d"), "s_0", { steps: 3 }))
       .rejects.toThrow(/no bench rev to write against \(draft d\)/);
   });
   test("THE RUN-REFUSAL BURN (2026-10-09): the drafts/patch door's OWN voice rebases — the operator's exact message", async () => {
@@ -115,7 +116,7 @@ describe("patchStageParams — the CAS dance arms", () => {
       draftBenchRev: 5,
       refusals: [{ method: "drafts/patch", message: "bench moved under the patch (expect_rev 4, current 5) — re-read and re-apply" , code: 'bench/cas-conflict' }],
     });
-    await patchStageParams("d", "s_0", { prompt: "x" }, 4);
+    await patchStageParams(draftIdOf("d"), "s_0", { prompt: "x" }, 4);
     const patches = fakes.calls.filter((c) => c.method === "drafts/patch");
     expect(patches).toHaveLength(2);
     expect(patches[1]?.args).toMatchObject({ expectRev: 5 });
@@ -129,7 +130,7 @@ describe("patchStageParams — the CAS dance arms", () => {
         { method: "drafts/patch", message: "bench main moved: rev is 431, caller held 430" , code: 'bench/cas-conflict' },
       ],
     });
-    await expect(patchStageParams("d", "s_0", { steps: 3 }, 429))
+    await expect(patchStageParams(draftIdOf("d"), "s_0", { steps: 3 }, 429))
       .rejects.toThrow(/rev is 431, caller held 430/);
   });
   test("a second author between the re-read and the retry loses to the third attempt (the once-law's death)", async () => {
@@ -143,7 +144,7 @@ describe("patchStageParams — the CAS dance arms", () => {
         { method: "drafts/patch", message: "bench main moved: rev is 430, caller held 429", onCall: 2, code: 'bench/cas-conflict' },
       ],
     });
-    await patchStageParams("d", "s_0", { steps: 3 }, 429);
+    await patchStageParams(draftIdOf("d"), "s_0", { steps: 3 }, 429);
     const patches = fakes.calls.filter((c) => c.method === "drafts/patch");
     expect(patches).toHaveLength(3);
     expect(patches[2]?.args).toMatchObject({ expectRev: 430 });
@@ -155,7 +156,7 @@ describe("patchStageParams — the CAS dance arms", () => {
       throws: [{ method: "drafts/get", message: "network gone" }],
     });
     // NOTE: fetchDraftRev catches the door death → null → original refusal
-    await expect(patchStageParams("d", "s_0", { steps: 3 }, 35))
+    await expect(patchStageParams(draftIdOf("d"), "s_0", { steps: 3 }, 35))
       .rejects.toThrow(/rev is 429, caller held 35/);
   });
   test("a non-CAS refusal throws through untouched", async () => {
@@ -163,7 +164,7 @@ describe("patchStageParams — the CAS dance arms", () => {
       draftBenchRev: 9,
       refusals: [{ method: "drafts/patch", message: "admission: unknown stage s_x" }],
     });
-    await expect(patchStageParams("d", "s_x", { steps: 1 }))
+    await expect(patchStageParams(draftIdOf("d"), "s_x", { steps: 1 }))
       .rejects.toThrow(/admission: unknown stage/);
     expect(fakes.calls.filter((c) => c.method === "drafts/patch")).toHaveLength(1);
   });
@@ -176,14 +177,14 @@ describe("patchStageParams — the CAS dance arms", () => {
       draftBenchRev: 9,
       throws: [{ method: "drafts/patch", message: "kablam" }],
     });
-    await expect(patchStageParams("d", "s_0", { steps: 1 })).rejects.toThrow("kablam");
+    await expect(patchStageParams(draftIdOf("d"), "s_0", { steps: 1 })).rejects.toThrow("kablam");
   });
   test("delivered:false with a non-string reason lands as 'undelivered'", async () => {
     wire({
       draftBenchRev: 9,
       patchFailures: [{ delivered: false, reason: 42 }],
     });
-    await expect(patchStageParams("d", "s_0", { steps: 1 }))
+    await expect(patchStageParams(draftIdOf("d"), "s_0", { steps: 1 }))
       .rejects.toThrow(/drafts\/patch: undelivered \(draft d, stage s_0\)/);
   });
 });
@@ -191,7 +192,7 @@ describe("patchStageParams — the CAS dance arms", () => {
 describe("patchStageOutcome — the attribution write", () => {
   test("the outcome frame carries runStatus + result + the held rev", async () => {
     const fakes = wire();
-    await patchStageOutcome("d", "s_0", { runStatus: "completed", result: { url: "out.png" } }, 12);
+    await patchStageOutcome(draftIdOf("d"), "s_0", { runStatus: "completed", result: { url: "out.png" } }, 12);
     expect(fakes.calls).toHaveLength(1);
     expect(fakes.calls[0]?.args).toEqual({
       draftId: "d", stageId: "s_0",
@@ -201,7 +202,7 @@ describe("patchStageOutcome — the attribution write", () => {
   });
   test("a revless outcome write reads the rev first", async () => {
     const fakes = wire({ draftBenchRev: 5 });
-    await patchStageOutcome("d", "s_0", { runStatus: "running" });
+    await patchStageOutcome(draftIdOf("d"), "s_0", { runStatus: "running" });
     expect(fakes.calls.map((c) => c.method)).toEqual(["drafts/get", "drafts/patch"]);
     expect(fakes.calls[1]?.args).toMatchObject({ expectRev: 5 });
   });
@@ -210,15 +211,15 @@ describe("patchStageOutcome — the attribution write", () => {
 describe("startDraft — the run door", () => {
   test("startDraft returns the run_id", async () => {
     wire({ startDocs: [{ run_id: "r_7" }] });
-    expect(await startDraft("d")).toBe("r_7");
+    expect(await startDraft(draftIdOf("d"))).toBe("r_7");
   });
   test("startDraft refuses loud when the answer names no run", async () => {
     wire({ startDocs: [{ nope: true }] });
-    await expect(startDraft("d")).rejects.toThrow(/runs\/start: no run_id in the answer/);
+    await expect(startDraft(draftIdOf("d"))).rejects.toThrow(/runs\/start: no run_id in the answer/);
   });
   test("fetchDraft with a string draft_id but non-array stages refuses", async () => {
     wire({ draftStages: { draft_id: "d", stages: {} } as unknown as Array<Record<string, unknown>> });
-    await expect(fetchDraft("d")).rejects.toThrow(/drafts\/get: not a draft doc/);
+    await expect(fetchDraft(draftIdOf("d"))).rejects.toThrow(/drafts\/get: not a draft doc/);
   });
 });
 

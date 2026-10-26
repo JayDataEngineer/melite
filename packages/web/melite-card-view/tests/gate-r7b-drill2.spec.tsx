@@ -13,6 +13,7 @@ import { StageDrill } from "../src/client/stage-drill.tsx";
 import { patchStageParams, resetStageWrites, stageWriteState } from "../src/client/draft.ts";
 import { schemaEnvelope } from '@melite/card-base/client';
 import type { BenchStageView } from "../src/client/cards-resource.ts";
+import { draftIdOf } from '@melite/contracts/benchStage';
 
 afterEach(() => {
   cleanup();
@@ -220,20 +221,20 @@ describe("the unsettled-write probe — a live ledger read, never a frozen copy"
     await screen.findByText("Prompt", {}, { timeout: 4000 });
     expect(probe).not.toBe(null);
     expect(probe!()).toBe(false); // a quiet ledger
-    void patchStageParams("bench-p", "s_0", { prompt: "probe" }, 1).catch(() => {});
+    void patchStageParams(draftIdOf("bench-p"), "s_0", { prompt: "probe" }, 1).catch(() => {});
     await new Promise((r) => setTimeout(r, 0));
     expect(probe!()).toBe(true); // in flight
     release?.();
     await waitFor(() => {
-      if (stageWriteState("bench-p", "s_0").pending !== 0) throw new Error("write still in flight");
+      if (stageWriteState(draftIdOf("bench-p"), "s_0").pending !== 0) throw new Error("write still in flight");
     }, { timeout: 8000 });
-    expect(stageWriteState("bench-p", "s_0").failedKeys).toContain("prompt");
+    expect(stageWriteState(draftIdOf("bench-p"), "s_0").failedKeys).toContain("prompt");
     expect(probe!()).toBe(true); // the refusal is live memory
-    void patchStageParams("bench-p", "s_0", { prompt: "probe" }, 1).catch(() => {});
+    void patchStageParams(draftIdOf("bench-p"), "s_0", { prompt: "probe" }, 1).catch(() => {});
     await waitFor(() => {
-      if (stageWriteState("bench-p", "s_0").pending !== 0) throw new Error("write still in flight");
+      if (stageWriteState(draftIdOf("bench-p"), "s_0").pending !== 0) throw new Error("write still in flight");
     }, { timeout: 8000 });
-    expect(stageWriteState("bench-p", "s_0").failedKeys).not.toContain("prompt");
+    expect(stageWriteState(draftIdOf("bench-p"), "s_0").failedKeys).not.toContain("prompt");
     expect(probe!()).toBe(false); // the key's own success cleared its refusal
   });
 });

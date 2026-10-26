@@ -311,6 +311,9 @@ async function withLastRun(
   const stages: unknown = bench['stages']
   const none = { stages, runs: null } as { stages: unknown; runs: Record<string, unknown> | null }
   if (!Array.isArray(stages) || stages.length === 0) return none
+  // NARROWED, not branded: this seat compares the raw sidecar rows'
+  // draft_id rows against the same wire string (row equality — the
+  // "string flows into string" law), so no brand crosses here.
   const draftId: unknown = bench['draft_id']
   if (typeof draftId !== 'string' || draftId === '') return none
   let env: Record<string, unknown>

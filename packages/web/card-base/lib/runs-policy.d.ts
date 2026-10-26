@@ -17,6 +17,7 @@
  * transport moved.
  */
 import { type RunStatusRow } from '@melite-plugin/melite-run-wire';
+import { type DraftId } from '@melite/contracts/benchStage';
 /** Every start verb's outcome: the minted run, or the refusal text
  *  (the estate's own voice — never thrown past the gesture).
  *  refusedDetails rides the door's structured payload when it
@@ -78,7 +79,7 @@ export declare function probeRunGone(runId: string, signal?: AbortSignal): Promi
  *  bridge: the estate is the SSOT, never the client's memory).
  *  NOTE the list's ordering: media-bearing runs first, then
  *  newest-first — scan the wide tail, newest by created_at. */
-export declare function fetchLatestRunForDraft(draftId: string, signal?: AbortSignal): Promise<string | null>;
+export declare function fetchLatestRunForDraft(draftId: DraftId, signal?: AbortSignal): Promise<string | null>;
 /** runs/stop — the cancel door (the registry seat's flag +
  *  interrupt). Refusals throw the estate's text. */
 export declare function stopRun(runId: string, signal?: AbortSignal): Promise<void>;
@@ -94,7 +95,7 @@ export declare function stopRun(runId: string, signal?: AbortSignal): Promise<vo
 export interface StartCardRunInput {
     model: string;
     params: Record<string, unknown>;
-    draftId: string;
+    draftId: DraftId;
     /** Default false — a real run. */
     test?: boolean;
 }
@@ -107,7 +108,7 @@ export declare function startCardRun(input: StartCardRunInput, signal?: AbortSig
 export interface StartFlowInlineInput {
     flowId: string;
     stages: Array<Record<string, unknown>>;
-    draftId: string;
+    draftId: DraftId;
     /** Default false — a real run. */
     test?: boolean;
 }

@@ -1,5 +1,6 @@
 import { parseSidecar } from "./queueSidecar.ts"
 import type { RunId } from "./queueCore.ts"
+import { draftIdOf, type DraftId } from "@melite/contracts/benchStage"
 // queueResurrect.ts — resurrection planning + strict JSON reads
 // (boot tolerance for on-disk records; lenient arms deleted
 // 2026-09-18 — JSON arrays/objects ride, nothing is re-interpreted).
@@ -202,7 +203,7 @@ export function planResurrect(
       return null;
     }
   },
-  draftExists: (draftId: string) => boolean = (): boolean => {
+  draftExists: (draftId: DraftId) => boolean = (): boolean => {
     // LOUD default (the drafts-door migration, 2026-09-09): the
     // legacy drafts/<id>.json probe is dead — the drafts domain
     // owns existence now. Callers pass their domain probe (the
@@ -259,7 +260,7 @@ export function planResurrect(
         text,
         req,
         typeof draftId === "string" && draftId !== ""
-          ? draftExists(draftId)
+          ? draftExists(draftIdOf(draftId))
           : false,
       );
     if (!usable) {

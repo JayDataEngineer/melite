@@ -15,6 +15,7 @@ import { join, relative } from "node:path";
 import { Service } from "@deepseek-ai/cordis";
 import { RemoteError } from "@deepseek-ai/dsh-typert-protocol";
 import { stageEngineOf } from "@melite/contracts/benchStage";
+import { draftIdOf } from "@melite/contracts/benchStage";
 import { benchResultDefects } from "@melite/contracts/benchResult";
 import { remoteErrorOf } from "@deepseek-ai/dsh-typert-protocol";
 import { needComfyUI } from "@melite/comfyui-cordis";
@@ -567,7 +568,7 @@ export class RunsRuntimeService extends Service {
             /* v8 ignore next -- planResurrect admits only string sidecar
              * draft_ids (durableRecordUsable's gate); the non-string arm
              * is torn-state defense, unreachable in sequence. */
-            draftId: typeof pre["draft_id"] === "string" ? pre["draft_id"] : "",
+            draftId: draftIdOf(typeof pre["draft_id"] === "string" ? pre["draft_id"] : ""),
             dir,
             testFlag: false,
             stopFlag: false,

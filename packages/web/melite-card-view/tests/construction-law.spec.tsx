@@ -21,6 +21,7 @@ import { mountEstateFakes } from './estate-harness.ts'
 import { unbindEstateRemote } from '@melite/card-base/client'
 import { CardsTab } from '../src/client/CardsTab.tsx'
 import type { CardsBenchValue } from '../src/client/CardsTab.tsx'
+import { draftIdOf } from '@melite/contracts/benchStage';
 
 // The tab's props (mirrors the cards-stage-view.spec pattern) — the
 // plain-door describe below mounts outside the drill describe's scope.
@@ -95,7 +96,7 @@ describe('the construction law (bare CardForm)', () => {
 describe('the construction law (add-a-card drill)', () => {
   const BENCH: CardsBenchValue = {
     kind: 'bench',
-    draftId: 'bench-cl',
+    draftId: draftIdOf('bench-cl'),
     sessionKey: 'cl',
     rev: 3,
     stages: [
@@ -200,7 +201,7 @@ describe('the construction law (the plain add door)', () => {
       return createElement('div', { 'data-testid': 'studio-hijack' }, 'THE STUDIO')
     }
     const BENCH: CardsBenchValue = {
-      kind: 'bench', draftId: 'bench-plain', rev: 1, stages: [], log: [],
+      kind: 'bench', draftId: draftIdOf('bench-plain'), rev: 1, stages: [], log: [],
       sessionKey: 'plain',
     }
     mountEstateFakes({

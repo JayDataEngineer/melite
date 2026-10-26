@@ -372,6 +372,46 @@ export function benchSessionOf(id: string | undefined): string {
   return typeof id === "string" && SESSION_RE.test(id) ? id : "main";
 }
 
+// ── the DraftId brand (the RunId seating's own brand class:
+//    estate-queue queueCore, `type RunId = Branded<"RunId">` from
+//    @deepseek-ai/dsh-brand) ────────────────────────────────────────
+// The bench draft id is an opaque cross-boundary id — branded like
+// the queue's RunId. The brand mechanics MIRROR that module's
+// Branded declaration for one reason: this contracts leaf carries no
+// dsh-brand dependency row (strict pnpm isolation — no node_modules
+// link resolves without an install), and the brand is
+// compile-time-only, erased before any wire, file, or ledger write
+// (a DraftId IS a string at runtime; only the REVERSE assignment —
+// a bare string into a DraftId seat — is refused). The brand has
+// exactly two mint doors, both producers that own the id:
+// benchDraftIdOf (the bench mint, the composed id's birth) and
+// draftIdOf (the parse edge — a typeof-guarded wire/disk read — and
+// the tests' literal mint; the RunId sweep's pattern: tests never
+// `as`-cast).
+declare const BRAND: unique symbol;
+
+/** A string carrying a compile-time-only brand B (the
+ *  @deepseek-ai/dsh-brand mechanics, declared local — see the block
+ *  comment above). */
+type Branded<B extends string> = string & { readonly [BRAND]: B };
+
+/** The bench DRAFT id: the stored card document's own key
+ *  ("bench-<session>" and the composer's other spellings), opaque as
+ *  it crosses wire, file and ledger. Minted at its producers only —
+ *  never a bare string. */
+export type DraftId = Branded<"DraftId">;
+
+/** THE PARSE-EDGE / TEST MINT: brand a draft id read off the wire or
+ *  disk (route the typeof-guarded value through here at the door
+ *  that pulled it), or mint a test literal. One line, no runtime
+ *  validation — the brand is compile-time-only; the return cast is
+ *  the construction door (the newRunId pattern).
+ *  @param literal the plain draft id string at its parse edge
+ *  @returns the same string, branded for the typed seats downstream */
+export function draftIdOf(literal: string): DraftId {
+  return literal as DraftId;
+}
+
 /** The prefix the mint writes and the strip removes — the one
  *  spelling of "bench-", beside the grammar that validates it. */
 export const BENCH_DRAFT_PREFIX_RE = /^bench-/;
@@ -381,9 +421,13 @@ export const BENCH_DRAFT_PREFIX_RE = /^bench-/;
  *  beside it, but the mint stayed behind in six seats spelling
  *  `"bench-" + session` — one of which stripped the prefix and added
  *  it straight back. An address has one grammar, one sanitize, and now
- *  one mint. */
-export function benchDraftIdOf(session: string): string {
-  return "bench-" + session;
+ *  one mint. The composed bench id is BORN here, so the mint is one
+ *  of the DraftId brand's two producers: the return cast is the
+ *  construction door (the newRunId pattern).
+ *  @param session the sanitized bench session key
+ *  @returns the composed draft id, branded */
+export function benchDraftIdOf(session: string): DraftId {
+  return "bench-" + session as DraftId;
 }
 
 /** The run-relative tail of an absolute artifact path, or undefined

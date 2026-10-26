@@ -1,4 +1,5 @@
 import type { EngineJson } from "@melite/comfyui-cordis";
+import type { DraftId } from "@melite/contracts/benchStage";
 import type { GraphReceipt, GraphRow } from "./queue.js";
 import type { RunId } from "./queueCore.js";
 /** Stage statuses — the run worker's vocabulary (inherited from the retired oracle). */
@@ -41,7 +42,7 @@ export interface RunRecord {
     skippedStages: string[];
     artifacts: string[];
     error: string;
-    draftId: string;
+    draftId: DraftId;
     dir: string;
     testFlag: boolean;
     stopFlag: boolean;

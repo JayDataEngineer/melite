@@ -4,6 +4,7 @@
 //
 // Erasable-syntax TS only (node --experimental-strip-types): no
 // enums, import type for types, .ts specifiers for relative imports.
+import { draftIdOf } from "@melite/contracts/benchStage";
 export function refusal(status, error, code, loc, expected, got) {
     const payload = { error, code };
     if (loc !== undefined)
@@ -43,7 +44,8 @@ export function envelopeRefusal(kind, doc, detail) {
     }
 }
 /** The unknown-draft refusal (door-verbatim; the probe rides the
- *  caller's drafts domain — the remote hops the ctx seat). */
+ *  caller's drafts domain — the remote hops the ctx seat). Takes the
+ *  branded id: the walker mints it off the validated wire body. */
 export function unknownDraftRefusal(draftId) {
     return refusal(400, "unknown draft_id " +
         JSON.stringify(draftId) +
@@ -196,7 +198,10 @@ export async function walkSubmitEnvelope(doc, draftExists) {
     if (structural !== null)
         return { kind: "refusal", refusal: structural };
     const body = doc;
-    const draftId = body["draft_id"];
+    // THE PARSE EDGE: the draft_id arrived on the wire and passed the
+    // structural walk above (present, non-empty, draftIdOk) — branded
+    // here (the DraftId seating; the brand is compile-time-only).
+    const draftId = draftIdOf(body["draft_id"]);
     if (!(await draftExists(draftId))) {
         return { kind: "refusal", refusal: unknownDraftRefusal(draftId) };
     }

@@ -11,6 +11,7 @@
 // artifacts[] rows keep the engine's paths.
 import { join } from "node:path";
 import type { EngineJson } from "@melite/comfyui-cordis";
+import type { DraftId } from "@melite/contracts/benchStage";
 import {
   appendLedger,
   writeJsonAtomic,
@@ -78,7 +79,7 @@ export interface RunRecord {
   skippedStages: string[];
   artifacts: string[];
   error: string;
-  draftId: string;
+  draftId: DraftId;
   dir: string;
   testFlag: boolean;
   stopFlag: boolean;
@@ -384,7 +385,7 @@ function sidecarFacesOf(run: RunRecord): {
   artifacts: string[];
   createdAt: number;
   testFlag: boolean;
-  draftId: string;
+  draftId: DraftId;
   pipeline: string;
   graph: GraphRow[];
   cardSnapshot: unknown;

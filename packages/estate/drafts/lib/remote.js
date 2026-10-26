@@ -40,7 +40,7 @@ import { unwrapItemArrays } from "@melite/comfyui-card-kit";
 import { openDraftsDomain } from "./store.js";
 import { DRAFT_ID_RE } from "./spec.js";
 import { addStageBench, addStagesBench, ensureBench, notifyBenchChange, notifyBenchDocWrite, onBenchChange, clearBenchChangeSeam, setBenchChangeSeam, getBench, groupBench, patchBench, clearBench, removeStageBench, reorderBench, rewireBench, undoBench, ungroupBench, } from "./bench.js";
-import { benchDraftIdOf } from "@melite/contracts/benchStage";
+import { benchDraftIdOf, draftIdOf } from "@melite/contracts/benchStage";
 /** Install the typed bench event seam on a Context: `bench.ts`
  *  (the pure domain module) emits and subscribes through it.
  *
@@ -462,9 +462,11 @@ let DraftsRemoteService = (() => {
         async remoteExportList(signal) {
             return await this.list(signal);
         }
-        /** Endpoint `drafts/get` — one doc by id. */
+        /** Endpoint `drafts/get` — one doc by id. The wire param stays the
+         *  bare wire string (the generated client face mirrors it); the id
+         *  is branded AT this door before the in-process body runs. */
         async remoteExportGet(draftId, signal) {
-            return (await this.get(draftId, signal));
+            return (await this.get(draftIdOf(draftId), signal));
         }
         /** Endpoint `drafts/delete` — removes one doc WHOLE (2026-10-22,
          *  the scratch-residue door): auditor probe docs and other debris
@@ -474,7 +476,7 @@ let DraftsRemoteService = (() => {
          *  the doc it removes) and refuses loud on every bad shape —
          *  never a silent no-op. */
         async remoteExportDelete(draftId, signal) {
-            return await this.delete(draftId, signal);
+            return await this.delete(draftIdOf(draftId), signal);
         }
         /** The in-process API the adapters above delegate to. */
         async list(signal) {
@@ -488,7 +490,7 @@ let DraftsRemoteService = (() => {
             }
             const ents = [];
             for (const [did, rec] of drafts.table("docs").entries()) {
-                ents.push({ mt: rec.updated_at, row: { draft_id: did, ...docIndexFields(rec.doc) } });
+                ents.push({ mt: rec.updated_at, row: { draft_id: draftIdOf(did), ...docIndexFields(rec.doc) } });
             }
             ents.sort((a, b) => b.mt - a.mt);
             return {
@@ -496,7 +498,9 @@ let DraftsRemoteService = (() => {
                 drafts: ents.slice(0, 600).map((e) => e.row),
             };
         }
-        /** The in-process API the adapter above delegates to. */
+        /** The in-process API the adapter above delegates to. Takes the
+         *  branded id (the wire adapter and the estate's in-process callers
+         *  mint at their own doors). */
         async get(draftId, signal) {
             signal.throwIfAborted();
             if (!DRAFT_ID_RE.test(draftId)) {
@@ -572,7 +576,7 @@ let DraftsRemoteService = (() => {
          *  with bench/cas-conflict carrying current_rev, never merges
          *  under the earlier author. */
         async remoteExportPatch(draftId, stageId, patch, expectRev, signal) {
-            return await this.patch(draftId, stageId, patch, expectRev, signal);
+            return await this.patch(draftIdOf(draftId), stageId, patch, expectRev, signal);
         }
         /** The patch arm the adapter above delegates to — one write
          *  transaction on the draft's own key, shared with the bench

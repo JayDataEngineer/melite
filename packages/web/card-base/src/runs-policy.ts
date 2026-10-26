@@ -27,6 +27,7 @@ import {
   estateRemote, unwrapRemote, type RunsNamespace,
 } from './estate-remote.ts'
 import { abortableSleep } from './abortable.ts'
+import { type DraftId } from '@melite/contracts/benchStage'
 import { rejectionVoice } from './rejection-voice.ts'
 
 /** Every start verb's outcome: the minted run, or the refusal text
@@ -155,7 +156,7 @@ export async function probeRunGone(
  *  NOTE the list's ordering: media-bearing runs first, then
  *  newest-first — scan the wide tail, newest by created_at. */
 export async function fetchLatestRunForDraft(
-  draftId: string,
+  draftId: DraftId,
   signal?: AbortSignal,
 ): Promise<string | null> {
   let newest: { rid: string; created: number } | null = null
@@ -234,7 +235,7 @@ async function startRun(
 export interface StartCardRunInput {
   model: string
   params: Record<string, unknown>
-  draftId: string
+  draftId: DraftId
   /** Default false — a real run. */
   test?: boolean
 }
@@ -261,7 +262,7 @@ export async function startCardRun(
 export interface StartFlowInlineInput {
   flowId: string
   stages: Array<Record<string, unknown>>
-  draftId: string
+  draftId: DraftId
   /** Default false — a real run. */
   test?: boolean
 }

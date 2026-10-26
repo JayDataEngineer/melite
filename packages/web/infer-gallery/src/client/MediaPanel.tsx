@@ -44,6 +44,7 @@ interface TabInfo {
   }
 }
 import { decodeRuns, decodeDrafts } from './decode.ts'
+import { draftIdOf, type DraftId } from '@melite/contracts/benchStage'
 import type { RunArtifact, GalleryRunRow } from './decode.ts'
 import { useFeed } from './useFeed.ts'
 import css from './overlay.module.css'
@@ -112,7 +113,7 @@ interface MediaItem {
   head: string
   final: boolean
   runId: string
-  draftId: string
+  draftId: DraftId
   time: string
   file: string
   created: number
@@ -282,7 +283,7 @@ export function flatten(runs: GalleryRunRow[]): MediaItem[] {
         head,
         final: isFinal,
         runId: String(run.run_id ?? ''),
-        draftId: typeof run.draft_id === 'string' ? run.draft_id : '',
+        draftId: typeof run.draft_id === 'string' ? draftIdOf(run.draft_id) : draftIdOf(''),
         time: timeLabel(run.created_at),
         file,
         created: typeof run.created_at === 'number' ? run.created_at : 0,
@@ -642,7 +643,7 @@ export function MediaPanel({ useTabInfo, sessionId }: { useTabInfo?: () => TabIn
    *  would race one expect_rev and the loser would 409 over a restore
    *  that landed. A second click on an in-flight draft is ignored
    *  (the ref above); a different row still loads alongside. */
-  const openDraft = (draftId: string): void => {
+  const openDraft = (draftId: DraftId): void => {
     if (draftId === '') return
     if (draftInflight.current.has(draftId)) return
     setUiError('')

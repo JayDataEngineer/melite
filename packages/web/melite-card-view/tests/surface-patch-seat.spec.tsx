@@ -20,6 +20,7 @@ import { unbindEstateRemote } from "@melite/card-base/client";
 import { resetStageWrites, stageWriteState } from "../src/client/draft.ts";
 import type { BenchStageView, CardsBenchValue, CardsDraftValue } from "../src/client/cards-resource.ts";
 import type { StageViewOwnerProps } from "../src/client/types.ts";
+import { draftIdOf } from "@melite/contracts/benchStage";
 
 type CardsTabProps = Parameters<typeof CardsTab>[0];
 let fakes: ReturnType<typeof mountEstateFakes> | null = null;
@@ -110,7 +111,7 @@ function mountDraft(estateOpts: EstateFakesOptions = {}): void {
   fakes?.unmount();
   fakes = mountEstateFakes({ draftBenchRev: 1, ...estateOpts });
   const value: CardsDraftValue = {
-    kind: "draft", draftId: "draft-1", stageId: "s_0",
+    kind: "draft", draftId: draftIdOf("draft-1"), stageId: "s_0",
     intent: "image-gen", rev: 1,
     stages: [{ id: "s_0", card: "image-gen", engine: "comfyui", params: {} }],
   };
@@ -163,7 +164,7 @@ describe("THE BENCH SEAT — a studio burst through the real tab is one write, a
     expect(outcomes).toEqual(new Array(10).fill(true));
     // no error face, no ledger memory
     expect(screen.queryByText(/THE WRITE DID NOT LAND/)).toBeNull();
-    expect(stageWriteState("bench-p", "s_0").failedKeys).toEqual([]);
+    expect(stageWriteState(draftIdOf("bench-p"), "s_0").failedKeys).toEqual([]);
   });
 
   test("a refused write paints the ledger's voice naming the key — never the sentinel", async () => {
@@ -180,7 +181,7 @@ describe("THE BENCH SEAT — a studio burst through the real tab is one write, a
     }
     expect(settlements.length).toBe(1);
     await expect(Promise.resolve(settlements[0])).resolves.toBe(false);
-    expect(stageWriteState("bench-p", "s_0").failedKeys).toEqual(["calls"]);
+    expect(stageWriteState(draftIdOf("bench-p"), "s_0").failedKeys).toEqual(["calls"]);
   });
 });
 

@@ -22,7 +22,7 @@
 // machine-wide. L4 test flag rides every mode. The draft_id rides
 // the value AND the render's leading `card <draftId>` token — the
 // chat tile handle (FlowCards parseCardsBlock), never an agent arg.
-import { CARD_PLANE_ENGINE, RUN_MEDIA_PREFIX, canonicalRunMediaUrl } from '@melite/contracts/benchStage'
+import { CARD_PLANE_ENGINE, RUN_MEDIA_PREFIX, benchDraftIdOf, canonicalRunMediaUrl, draftIdOf, type DraftId } from '@melite/contracts/benchStage'
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import type { ToolCallView } from '@deepseek-ai/dsh-tools'
 import { remoteErrorOf } from '@deepseek-ai/dsh-typert-protocol'
@@ -35,7 +35,6 @@ import { benchKeyOfExec } from './melite-construct.ts'
 import { loadCardDefs } from '@melite/comfyui-cordis'
 import { boardedMap, resolveSpecKeyForTool } from '../discovery.ts'
 import { isTerminalStatus, statusOf, statusOrPendingOf } from '@melite/contracts/stageView'
-import { benchDraftIdOf } from '@melite/contracts/benchStage';
 
 /** The row's model (the QUEUE LANE LAW, agent-side): the row's
  *  params may name `model` explicitly; otherwise the card id
@@ -272,7 +271,7 @@ async function loadBench(
   estate: Estate,
   body: Record<string, unknown>,
   signal: AbortSignal,
-): Promise<string> {
+): Promise<DraftId> {
   // THE CAS READ-MODIFY-WRITE (the door's own law): under the host's
   // persistent storage the shared bench SURVIVES runs — a bare
   // {stages} ensure on an existing bench refuses bench/cas-conflict.
@@ -309,7 +308,8 @@ async function loadBench(
   if (b && typeof b.error === 'string' && b.error) throw new Error(b.error)
   const id = b && b.draft_id
   if (typeof id !== 'string' || id === '') throw new Error('bench ensure returned no draft_id')
-  return id
+  // THE PARSE EDGE: the id came off the ensure answer's wire body.
+  return draftIdOf(id)
 }
 
 /** BENCH (the AI-control pillar, 2026-09-12): the agent drives THE
@@ -347,7 +347,7 @@ async function runBench(
         typeof s === 'object' && s !== null && typeof (s as Record<string, unknown>)['id'] === 'string')
     : []
   if (rows.length === 0) return empty
-  const draftId = typeof b['draft_id'] === 'string' ? b['draft_id'] as string : benchDraftIdOf(a.bench)
+  const draftId = typeof b['draft_id'] === 'string' ? draftIdOf(b['draft_id']) : benchDraftIdOf(a.bench)
   const target = `${benchDraftIdOf(a.bench)} @ rev ${String(b['rev'] ?? '?')}`
   const pass: Array<Record<string, unknown>> = []
   for (const row of rows) {
@@ -510,7 +510,7 @@ function canonicalHostPath(p: string, rid: string, test: boolean): string {
  *  mirrored). */
 export async function observeAndAttribute(
   estate: Estate,
-  draftId: string,
+  draftId: DraftId,
   stageId: string,
   runId: string,
   signal: AbortSignal,
@@ -735,7 +735,7 @@ async function runSingle(
    * id and family alias is far under 80 chars, so the truncation arm
    * is defensive only (2026-10-13, the coverage-cure pass). */
   const intent = card.length > 80 ? card.slice(0, 77) + '…' : card
-  let draftId: string
+  let draftId: DraftId
   try {
     draftId = await loadBench(estate, {
       session: a.bench,
@@ -804,7 +804,7 @@ async function runTemplate(
   /* v8 ignore next -- hasFlow gate proves non-empty flow (2026-09-12) */
   if (!flow) return { mode: 'flow', target: '', error: 'flow is required (a discovered flow name)' }
   const overrides = a.params
-  let draftId: string
+  let draftId: DraftId
   try {
     // TEMPLATE load sugar: the bench carries the template REFERENCE
     // (the {flow} start arm expands the graph server-side; the run
@@ -868,7 +868,7 @@ async function runAdHoc(
     }
     throw e
   }
-  let draftId: string
+  let draftId: DraftId
   try {
     draftId = await loadBench(estate, {
       session: a.bench,

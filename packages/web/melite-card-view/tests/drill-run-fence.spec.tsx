@@ -21,6 +21,7 @@ import {
 } from "../src/client/draft.ts";
 import { schemaEnvelope } from "@melite/card-base/client";
 import type { BenchStageView, CardsBenchValue } from "../src/client/cards-resource.ts";
+import { draftIdOf } from "@melite/contracts/benchStage";
 
 afterEach(() => {
   cleanup();
@@ -70,7 +71,7 @@ const STAGE = {
 } as never as BenchStageView;
 
 const BENCH: CardsBenchValue = {
-  kind: "bench", draftId: "bench-p", sessionKey: "p", rev: 1, log: [], stages: [STAGE],
+  kind: "bench", draftId: draftIdOf("bench-p"), sessionKey: "p", rev: 1, log: [], stages: [STAGE],
 };
 
 function mountDrill(opts?: { refusals?: Array<{ method: string; message: string; code?: string }>; holdFormSpec?: boolean }): {
@@ -113,9 +114,9 @@ describe("the drill's run fence (Cure 4)", () => {
       refusals: [{ method: "drafts/patch", message: "door down", code: "wire/down" }],
     });
     // another hand's write lands in the ledger and FAILS at the door
-    scheduleStageParam("bench-p", "s_0", "prompt", "typed-after-open").catch(() => {});
+    scheduleStageParam(draftIdOf("bench-p"), "s_0", "prompt", "typed-after-open").catch(() => {});
     await waitFor(() => {
-      expect(stageWriteState("bench-p", "s_0").failedKeys).toEqual(["prompt"]);
+      expect(stageWriteState(draftIdOf("bench-p"), "s_0").failedKeys).toEqual(["prompt"]);
     });
     bound();
     await waitFor(() => {
@@ -233,7 +234,7 @@ describe("the drill's run fence (Cure 4)", () => {
     // the studio's optimistic pick rides the trailing coalescer —
     // SCHEDULED, not yet sent (the whole window the old verb race
     // dropped it in)
-    scheduleStagePatch("bench-p", "s_0", { prompt: "picked-at-edit" }).catch(() => {});
+    scheduleStagePatch(draftIdOf("bench-p"), "s_0", { prompt: "picked-at-edit" }).catch(() => {});
     await bound();
     await waitFor(() => {
       expect(runs).toEqual([1]);

@@ -21,10 +21,11 @@ import { mountEstateFakes } from './estate-harness.ts'
 
 import { reconcileBenchRuns } from '../src/client/cards-resource.ts'
 import type { CardsBenchValue } from '../src/client/cards-resource.ts'
+import { draftIdOf } from '@melite/contracts/benchStage';
 
 function bench(runStatus: string): CardsBenchValue {
   return {
-    kind: 'bench', draftId: 'bench-p', rev: 1,
+    kind: 'bench', draftId: draftIdOf('bench-p'), rev: 1,
     sessionKey: 'p',
     stages: [{
       id: 's_h3', card: 'h3-timeline', title: 'the stuck stage', engine: 'comfyui',

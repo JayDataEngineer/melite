@@ -22,7 +22,7 @@
 // machine-wide. L4 test flag rides every mode. The draft_id rides
 // the value AND the render's leading `card <draftId>` token — the
 // chat tile handle (FlowCards parseCardsBlock), never an agent arg.
-import { CARD_PLANE_ENGINE, RUN_MEDIA_PREFIX, canonicalRunMediaUrl } from '@melite/contracts/benchStage';
+import { CARD_PLANE_ENGINE, RUN_MEDIA_PREFIX, benchDraftIdOf, canonicalRunMediaUrl, draftIdOf } from '@melite/contracts/benchStage';
 import { defineTool } from '@deepseek-ai/dsh-tools';
 import { remoteErrorOf } from '@deepseek-ai/dsh-typert-protocol';
 import { normalizeJsonArrayParams } from '@melite/estate-call/cardTool';
@@ -32,7 +32,6 @@ import { benchKeyOfExec } from "./melite-construct.js";
 import { loadCardDefs } from '@melite/comfyui-cordis';
 import { boardedMap, resolveSpecKeyForTool } from "../discovery.js";
 import { isTerminalStatus, statusOf, statusOrPendingOf } from '@melite/contracts/stageView';
-import { benchDraftIdOf } from '@melite/contracts/benchStage';
 /** The row's model (the QUEUE LANE LAW, agent-side): the row's
  *  params may name `model` explicitly; otherwise the card id
  *  resolves through form-spec's OWN alias law (boarded[0] — the
@@ -247,7 +246,8 @@ async function loadBench(estate, body, signal) {
     const id = b && b.draft_id;
     if (typeof id !== 'string' || id === '')
         throw new Error('bench ensure returned no draft_id');
-    return id;
+    // THE PARSE EDGE: the id came off the ensure answer's wire body.
+    return draftIdOf(id);
 }
 /** BENCH (the AI-control pillar, 2026-09-12): the agent drives THE
  *  shared bench exactly like the user's Run press — ONE SEQUENTIAL
@@ -282,7 +282,7 @@ async function runBench(estate, a, signal) {
         : [];
     if (rows.length === 0)
         return empty;
-    const draftId = typeof b['draft_id'] === 'string' ? b['draft_id'] : benchDraftIdOf(a.bench);
+    const draftId = typeof b['draft_id'] === 'string' ? draftIdOf(b['draft_id']) : benchDraftIdOf(a.bench);
     const target = `${benchDraftIdOf(a.bench)} @ rev ${String(b['rev'] ?? '?')}`;
     const pass = [];
     for (const row of rows) {

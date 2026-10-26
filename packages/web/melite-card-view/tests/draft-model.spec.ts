@@ -12,6 +12,7 @@ import {
 import { TERMINAL_RUN_STATUSES } from "@melite/contracts/stageView";
 import type { DraftDoc, DraftStage, RunStatusDoc } from "../src/client/draft.ts";
 import { mountEstateFakes, type EstateFakesOptions } from "./estate-harness.ts";
+import { draftIdOf } from "@melite/contracts/benchStage";
 
 type Fakes = ReturnType<typeof mountEstateFakes>;
 let active: Fakes | null = null;
@@ -115,12 +116,12 @@ describe("foldFrame — the events-bus idempotent patch", () => {
 describe("door narrowing — named refusals, malformed docs", () => {
   test("fetchDraft propagates the remote's named error", async () => {
     wire({ refusals: [{ method: "drafts/get", message: "no_such_draft" }] });
-    expect((await fetchDraft("d").catch((e: Error) => e.message))).toBe("no_such_draft");
+    expect((await fetchDraft(draftIdOf("d")).catch((e: Error) => e.message))).toBe("no_such_draft");
   });
 
   test("fetchDraft refuses a non-doc payload with its own name", async () => {
     wire({ draftStages: { hello: "world" } as unknown as Array<Record<string, unknown>> });
-    expect((await fetchDraft("d").catch((e: Error) => e.message))).toBe("drafts/get: not a draft doc");
+    expect((await fetchDraft(draftIdOf("d")).catch((e: Error) => e.message))).toBe("drafts/get: not a draft doc");
   });
 
   test("patchStageParams rides the drafts/patch door (reborn 2026-09-11)", async () => {
@@ -130,7 +131,7 @@ describe("door narrowing — named refusals, malformed docs", () => {
     // the write reads the served doc's bench block first); delivered
     // false lands as a named throw (never a lying success).
     const fakes = wire({ draftBenchRev: 9 });
-    await patchStageParams("d", "s_0", { steps: 12 });
+    await patchStageParams(draftIdOf("d"), "s_0", { steps: 12 });
     // ADAPTED (reported): the old lane asserted the envelope frame
     // ({method, payload:{args}}); the live seam records {method, args}
     // directly — same intent (verb, arg names, rev), no wrapper.
@@ -142,7 +143,7 @@ describe("door narrowing — named refusals, malformed docs", () => {
       draftBenchRev: 9,
       patchFailures: [{ draftId: "d", stageId: "s_x", delivered: false, reason: "stage not found" }],
     });
-    const message = await patchStageParams("d", "s_x", { steps: 1 }).catch((e: Error) => e.message);
+    const message = await patchStageParams(draftIdOf("d"), "s_x", { steps: 1 }).catch((e: Error) => e.message);
     expect(message).toContain("stage not found");
   });
 

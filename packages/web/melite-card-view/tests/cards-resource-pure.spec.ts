@@ -17,13 +17,14 @@ import {
   readDraft,
 } from "../src/client/cards-resource.ts";
 import type { CardsRunValue } from "../src/client/cards-resource.ts";
+import { draftIdOf } from "@melite/contracts/benchStage";
 
 describe("the address builders — encoding rides along", () => {
   test("the run address encodes its id", () => {
     expect(cardsRunAddress("r/1")).toBe("dsh-resource://cards/run/r%2F1");
   });
   test("the draft-stage address encodes both segments", () => {
-    expect(cardsDraftStageAddress("d 1", "s/0")).toBe(
+    expect(cardsDraftStageAddress(draftIdOf("d 1"), "s/0")).toBe(
       "dsh-resource://cards/draft/d%201/s%2F0",
     );
   });
@@ -113,7 +114,7 @@ describe("isTerminal — the runs seat's own vocabulary", () => {
 
 function runValue(over: Partial<CardsRunValue> = {}): CardsRunValue {
   return {
-    kind: "run", runId: "r_1", status: "running", draftId: "d_1",
+    kind: "run", runId: "r_1", status: "running", draftId: draftIdOf("d_1"),
     stages: [{ id: "s_0", status: "running" }], lastFrame: undefined, ...over,
   };
 }
@@ -161,10 +162,10 @@ describe("mergeRunFrame — the events fold (upsert by id, kept frame)", () => {
 
 describe("readDraft — the missing halves default", () => {
   test("a stageless doc reads an empty row list (never undefined)", () => {
-    expect(readDraft("d", "s_0", { intent: "the film" }).stages).toEqual([]);
+    expect(readDraft(draftIdOf("d"), "s_0", { intent: "the film" }).stages).toEqual([]);
   });
 
   test("a non-string intent reads empty (never a lying intent)", () => {
-    expect(readDraft("d", "s_0", { intent: 42, stages: [] }).intent).toBe("");
+    expect(readDraft(draftIdOf("d"), "s_0", { intent: 42, stages: [] }).intent).toBe("");
   });
 });

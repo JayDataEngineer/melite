@@ -264,6 +264,9 @@ async function withLastRun(estate, bench, signal) {
     const none = { stages, runs: null };
     if (!Array.isArray(stages) || stages.length === 0)
         return none;
+    // NARROWED, not branded: this seat compares the raw sidecar rows'
+    // draft_id rows against the same wire string (row equality — the
+    // "string flows into string" law), so no brand crosses here.
     const draftId = bench['draft_id'];
     if (typeof draftId !== 'string' || draftId === '')
         return none;

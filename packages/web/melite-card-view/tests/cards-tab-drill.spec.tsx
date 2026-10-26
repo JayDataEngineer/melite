@@ -29,6 +29,7 @@ import type { BenchStageView, CardsBenchValue, CardsDraftValue } from "../src/cl
 // so the drill's law judges real coordinates, never hand spellings.
 import { DECL as krea2WallDecl } from "../../../models/krea-2/src/index.ts";
 import { DECL as animaWallDecl } from "../../../models/anima/src/index.ts";
+import { draftIdOf } from '@melite/contracts/benchStage';
 
 afterEach(() => {
   cleanup();
@@ -114,7 +115,7 @@ function stubFetch(): void {
 }
 
 function benchValue(stages: BenchStageView[]): CardsBenchValue {
-  return { kind: "bench", draftId: "bench-p", sessionKey: "p", rev: 1, log: [], stages };
+  return { kind: "bench", draftId: draftIdOf("bench-p"), sessionKey: "p", rev: 1, log: [], stages };
 }
 
 function benchDoc(stages: BenchStageView[]): Record<string, unknown> {
@@ -549,7 +550,7 @@ describe("the draft view's drill — the noop surface stays silent", () => {
     // default-{} drafts/get is now the harness's honest draft row).
     fakes = mountEstateFakes();
     const value: CardsDraftValue = {
-      kind: "draft", draftId: "draft-1", stageId: "s_0",
+      kind: "draft", draftId: draftIdOf("draft-1"), stageId: "s_0",
       intent: "the film", rev: 1,
       stages: [{ id: "s_0", card: "image-gen", engine: "comfyui", params: {} }],
     };

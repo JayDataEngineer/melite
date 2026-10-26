@@ -62,6 +62,7 @@ import {
   cardRows, fetchDraft, paramFields, patchStageParams, refuseForUnlandedWrite, runFinished, startDraft,
 } from './draft.ts'
 import type { CardRow, DraftDoc, RunStatusDoc } from './draft.ts'
+import { draftIdOf, type DraftId } from '@melite/contracts/benchStage'
 import { rejectionVoice } from './rejection-voice.ts'
 import { chromeCopy } from '../chromeCopy.ts'
 
@@ -87,7 +88,7 @@ export interface FlowCardsProps {
  *  the LEGACY fallback: sessions logged before a tool grew its
  *  projector still hydrate through the parse rule. */
 export function parseCardsBlock(block: ToolCallBlockView): {
-  draftId: string | null
+  draftId: DraftId | null
   model: string | null
   malformedArgs: boolean
   settled: boolean
@@ -109,13 +110,13 @@ export function parseCardsBlock(block: ToolCallBlockView): {
       malformedArgs = true
     }
   }
-  let draftId: string | null = null
+  let draftId: DraftId | null = null
   if (settled && block.isError !== true) {
     // 1. NATIVE: the persisted presentationMeta payload.
     const meta = block.meta
     if (meta !== null && typeof meta === 'object' && !Array.isArray(meta)) {
       const id = (meta as Record<string, unknown>)['draft_id']
-      if (typeof id === 'string' && id !== '') draftId = id
+      if (typeof id === 'string' && id !== '') draftId = draftIdOf(id)
     }
     // 2. LEGACY: the render token (pre-projector logs; the rule this
     //    view parsed for years — the token after 'card ' or 'draft ').
@@ -130,7 +131,7 @@ export function parseCardsBlock(block: ToolCallBlockView): {
         const rest = text.slice(atIdx + (atCard >= 0 ? 5 : 6))
         const end = rest.indexOf(' ')
         const tok = end < 0 ? rest : rest.slice(0, end)
-        if ((tok.startsWith('draft-') || tok.startsWith('p_')) && tok.length > 2) { draftId = tok; break }
+        if ((tok.startsWith('draft-') || tok.startsWith('p_')) && tok.length > 2) { draftId = draftIdOf(tok); break }
       }
     }
   }
@@ -139,7 +140,7 @@ export function parseCardsBlock(block: ToolCallBlockView): {
 
 /** Draft doc + live run status (all doors in draft.ts; the live tail
  *  rides the run resource's frames — cards-resource.ts). */
-function useDraft(draftId: string | null): {
+function useDraft(draftId: DraftId | null): {
   doc: DraftDoc | null
   live: RunStatusDoc | null
   error: string | null

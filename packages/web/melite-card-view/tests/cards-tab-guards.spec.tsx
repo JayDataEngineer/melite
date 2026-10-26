@@ -15,6 +15,7 @@ import { unbindEstateRemote } from '@melite/card-base/client';
 import { CardsTab } from "../src/client/CardsTab.tsx";
 import { schemaEnvelope } from '@melite/card-base/client';
 import type { BenchStageView, CardsBenchValue } from "../src/client/cards-resource.ts";
+import { draftIdOf } from '@melite/contracts/benchStage';
 
 afterEach(() => {
   cleanup();
@@ -67,7 +68,7 @@ function stubFetch(): void {
 }
 
 const STAGES: BenchStageView[] = [{ id: "s_0", card: "image-gen", engine: "comfyui", params: {} }];
-const BENCH: CardsBenchValue = { kind: "bench", draftId: "bench-p", sessionKey: "p", rev: 1, log: [], stages: STAGES };
+const BENCH: CardsBenchValue = { kind: "bench", draftId: draftIdOf("bench-p"), sessionKey: "p", rev: 1, log: [], stages: STAGES };
 
 function tabInfo(address?: string): () => unknown {
   return () => ({ tab: {

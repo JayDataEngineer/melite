@@ -516,7 +516,7 @@ describe('observeRunOutcome — the failure carry', () => {
     vi.useFakeTimers()
     const fakes = stubRunWire(statusDoc(undefined))
     try {
-      const verdict = await observeRunOutcome('bench-main', 's_0', 'run-1')
+      const verdict = await observeRunOutcome(draftIdOf('bench-main'), 's_0', 'run-1')
       expect(verdict).toBe('failed')
       const terminal = patchesOf(fakes).at(-1)
       expect(terminal?.['patch']).toMatchObject({
@@ -537,7 +537,7 @@ describe('observeRunOutcome — the failure carry', () => {
     delete (doc.stages as Array<Record<string, unknown>>)[0]!['error']
     const fakes = stubRunWire(doc)
     try {
-      const verdict = await observeRunOutcome('bench-main', 's_0', 'run-1')
+      const verdict = await observeRunOutcome(draftIdOf('bench-main'), 's_0', 'run-1')
       expect(verdict).toBe('failed')
       const terminal = patchesOf(fakes).at(-1)
       expect((terminal?.['patch'] as { result: { error?: string } }).result.error).toBe('ComfyError: POST /prompt 400 (run-level)')
@@ -553,7 +553,7 @@ describe('observeRunOutcome — the failure carry', () => {
       stages: [{ id: 's_0', status: 'done', url: 'out/flat.png', error: '' }],
     })
     try {
-      const verdict = await observeRunOutcome('bench-main', 's_0', 'run-1')
+      const verdict = await observeRunOutcome(draftIdOf('bench-main'), 's_0', 'run-1')
       expect(verdict).toBe('done')
       const terminal = patchesOf(fakes).at(-1)
       expect((terminal?.['patch'] as { result: Record<string, unknown> }).result).not.toHaveProperty('error')
@@ -589,7 +589,7 @@ describe('observeRunOutcome — the progress carry', () => {
         stages: [{ id: 's_0', status: 'done', url: 'out/flat.png' }] },
     ])
     try {
-      const verdict = observeRunOutcome('bench-main', 's_0', 'run-1')
+      const verdict = observeRunOutcome(draftIdOf('bench-main'), 's_0', 'run-1')
       // the loop's 1500ms sleeps: advance the fake clock until the
       // observer settles (each tick fires one poll)
       for (let i = 0; i < 8; i++) await vi.advanceTimersByTimeAsync(1600)
@@ -629,6 +629,7 @@ describe('observeRunOutcome — the progress carry', () => {
 // writes. The discriminator is the served log's author field
 // ("agent"|"user"), never guesswork about who moved the rev.
 import { markCardsSurface, markedBenchKeyOf, shouldSpotlight, subscribeMarkedBench, watchBenchLands } from '../src/client/cards-resource.ts'
+import { draftIdOf } from '@melite/contracts/benchStage';
 
 const agentDoc = (rev: number, titles: string[]): Record<string, unknown> => ({
   draft_id: 'bench-main', rev,

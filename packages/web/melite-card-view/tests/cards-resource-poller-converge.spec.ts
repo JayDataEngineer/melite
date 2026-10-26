@@ -29,6 +29,7 @@ import { mountEstateFakes } from "./estate-harness.ts";
 import type { EstateFakesOptions } from "./estate-harness.ts";
 import { reconcileBenchRuns, observeRunOutcome } from "../src/client/cards-resource.ts";
 import type { CardsBenchValue } from "../src/client/cards-resource.ts";
+import { draftIdOf } from '@melite/contracts/benchStage';
 
 afterEach(() => {
   unbindEstateRemote();
@@ -201,13 +202,13 @@ describe("reconcileBenchRuns — the poller converges on the settled verdict", (
     try {
       // call 1 is the start stamp (lands); calls 2-4 are the terminal
       // delivery budget dying undelivered.
-      const first = await observeRunOutcome("d_5", "s_5", "r_5");
+      const first = await observeRunOutcome(draftIdOf("d_5"), "s_5", "r_5");
       expect(first, "the undelivered terminal must release the claim as null — never a fake-delivered verdict").toBeNull();
       // the claim released: the next observe re-polls the (lingering
       // completed) door and lands the verdict this tick. Had the
       // single-flight entry survived, this would ride the first
       // promise and answer null again.
-      const second = await observeRunOutcome("d_5", "s_5", "r_5");
+      const second = await observeRunOutcome(draftIdOf("d_5"), "s_5", "r_5");
       expect(second, "the released claim never re-probed — the settled verdict never landed").toBe("done");
       const done = patchesOf(fakes).find((p) => (p["patch"] as Record<string, unknown>)["runStatus"] === "done");
       expect(done, "no terminal patch landed on the second pass").toMatchObject({
@@ -247,11 +248,11 @@ describe("reconcileBenchRuns — the poller converges on the settled verdict", (
       // probe reads 'gone', the stopped verdict's delivery budget dies
       // (patch calls 2-4) — the exit must be null, never a fake
       // delivered 'stopped'.
-      const first = await observeRunOutcome("d_6", "s_6", "r_6");
+      const first = await observeRunOutcome(draftIdOf("d_6"), "s_6", "r_6");
       expect(first, "the undelivered phantom verdict must release the claim as null — never a fake-delivered stopped").toBeNull();
       // observe #2 (the released claim): the budget's refusals are
       // spent, so the stopped verdict lands this pass.
-      const second = await observeRunOutcome("d_6", "s_6", "r_6");
+      const second = await observeRunOutcome(draftIdOf("d_6"), "s_6", "r_6");
       expect(second, "the released claim never re-probed — the phantom verdict never landed").toBe("stopped");
       const stopped = patchesOf(fakes).find((p) => (p["patch"] as Record<string, unknown>)["runStatus"] === "stopped");
       expect(stopped, "no stopped patch landed on the second pass").toMatchObject({

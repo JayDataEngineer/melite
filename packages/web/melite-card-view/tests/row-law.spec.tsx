@@ -16,6 +16,7 @@ import { cardsDraftStageAddress, parseCardsAddress } from "../src/client/cards-r
 import { FlowCards } from "../src/client/FlowCards.tsx"
 import type { ToolCallBlockView } from "../src/client/types.ts"
 import { mountEstateFakes } from "./estate-harness.ts"
+import { draftIdOf } from "@melite/contracts/benchStage";
 
 type Fakes = ReturnType<typeof mountEstateFakes>;
 let active: Fakes | null = null;
@@ -29,13 +30,13 @@ afterEach(() => {
 
 describe("the draft-stage address grammar", () => {
   test("round-trips ids with separators", () => {
-    const address = cardsDraftStageAddress("draft-1", "s_0")
+    const address = cardsDraftStageAddress(draftIdOf("draft-1"), "s_0")
     expect(address).toBe("dsh-resource://cards/draft/draft-1/s_0")
     expect(parseCardsAddress(address)).toEqual({ draft: "draft-1", stage: "s_0" })
   })
 
   test("encodes both segments", () => {
-    const address = cardsDraftStageAddress("a/b", "c d")
+    const address = cardsDraftStageAddress(draftIdOf("a/b"), "c d")
     const parsed = parseCardsAddress(address)
     expect(parsed).toEqual({ draft: "a/b", stage: "c d" })
   })
@@ -87,7 +88,7 @@ describe("the row law (FlowCards × the inject share)", () => {
     // the row title is the stage id (cardRows: title ?? id)
     const row = await screen.findByText("s_0", {}, { timeout: 4000 })
     row.click()
-    expect(seen).toEqual([cardsDraftStageAddress("draft-1", "s_0")])
+    expect(seen).toEqual([cardsDraftStageAddress(draftIdOf("draft-1"), "s_0")])
     // the drill did NOT open (the studio surface owns the card now)
     expect(screen.queryByText(/params/i)).toBeNull()
   })

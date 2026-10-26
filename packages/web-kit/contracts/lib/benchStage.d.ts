@@ -154,6 +154,26 @@ export declare const RUN_ID_RE: RegExp;
  * imports the same function. An address has one grammar and one
  * sanitize — not four. */
 export declare function benchSessionOf(id: string | undefined): string;
+declare const BRAND: unique symbol;
+/** A string carrying a compile-time-only brand B (the
+ *  @deepseek-ai/dsh-brand mechanics, declared local — see the block
+ *  comment above). */
+type Branded<B extends string> = string & {
+    readonly [BRAND]: B;
+};
+/** The bench DRAFT id: the stored card document's own key
+ *  ("bench-<session>" and the composer's other spellings), opaque as
+ *  it crosses wire, file and ledger. Minted at its producers only —
+ *  never a bare string. */
+export type DraftId = Branded<"DraftId">;
+/** THE PARSE-EDGE / TEST MINT: brand a draft id read off the wire or
+ *  disk (route the typeof-guarded value through here at the door
+ *  that pulled it), or mint a test literal. One line, no runtime
+ *  validation — the brand is compile-time-only; the return cast is
+ *  the construction door (the newRunId pattern).
+ *  @param literal the plain draft id string at its parse edge
+ *  @returns the same string, branded for the typed seats downstream */
+export declare function draftIdOf(literal: string): DraftId;
 /** The prefix the mint writes and the strip removes — the one
  *  spelling of "bench-", beside the grammar that validates it. */
 export declare const BENCH_DRAFT_PREFIX_RE: RegExp;
@@ -162,8 +182,12 @@ export declare const BENCH_DRAFT_PREFIX_RE: RegExp;
  *  beside it, but the mint stayed behind in six seats spelling
  *  `"bench-" + session` — one of which stripped the prefix and added
  *  it straight back. An address has one grammar, one sanitize, and now
- *  one mint. */
-export declare function benchDraftIdOf(session: string): string;
+ *  one mint. The composed bench id is BORN here, so the mint is one
+ *  of the DraftId brand's two producers: the return cast is the
+ *  construction door (the newRunId pattern).
+ *  @param session the sanitized bench session key
+ *  @returns the composed draft id, branded */
+export declare function benchDraftIdOf(session: string): DraftId;
 /** The run-relative tail of an absolute artifact path, or undefined
  * when the path carries no run directory — e.g.
  * "/data/runs/output/run-4f2a1c-ab12/tts/line.flac" →
@@ -223,4 +247,5 @@ export declare const SELF_NAMED_FAMILIES: ReadonlySet<string>;
  *  and the params bag and strips in place. It is the contract's law,
  *  stated once, with the `card !== ""` guard included. */
 export declare function stripSelfNamedModel(card: unknown, params: unknown): void;
+export {};
 //# sourceMappingURL=benchStage.d.ts.map

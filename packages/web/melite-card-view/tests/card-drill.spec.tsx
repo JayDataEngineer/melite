@@ -24,10 +24,11 @@ import { resetCardFamiliesCache } from '@melite-plugin/melite-run-wire'
 import { CardsTab } from '../src/client/CardsTab.tsx'
 import { schemaEnvelope } from '@melite/card-base/client'
 import type { CardsBenchValue } from '../src/client/cards-resource.ts'
+import { draftIdOf } from '@melite/contracts/benchStage';
 
 const BENCH: CardsBenchValue = {
   kind: 'bench',
-  draftId: 'bench-s1',
+  draftId: draftIdOf('bench-s1'),
   sessionKey: 's1',
   rev: 7,
   stages: [
@@ -267,7 +268,7 @@ test('clicking the preview seat opens the SHARED media drilldown (1:1)', async (
   }
   // the tab's FIRST paint reads the resource fixture — the result rides THERE
   const benchLive: CardsBenchValue = {
-    kind: 'bench', draftId: 'bench-s1', rev: 7,
+    kind: 'bench', draftId: draftIdOf('bench-s1'), rev: 7,
     sessionKey: 's1',
     stages: [{
       id: 's_0', card: 'image-gen', title: 'hero frame', engine: 'comfyui',

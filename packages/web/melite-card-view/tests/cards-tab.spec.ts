@@ -23,6 +23,7 @@ import { readRun, restoreRunToBench } from "../src/client/cards-resource.ts";
 import type { BenchStageView, CardsBenchValue, CardsRunValue } from "../src/client/cards-resource.ts";
 import { mountEstateFakes } from "./estate-harness.ts";
 import { unbindEstateRemote } from '@melite/card-base/client';
+import { draftIdOf } from '@melite/contracts/benchStage';
 
 function stage(over: Partial<BenchStageView> & { id: string }): BenchStageView {
   return { engine: "comfyui", ...over };
@@ -136,7 +137,7 @@ afterEach(() => {
 });
 
 function run(over: Partial<CardsRunValue> = {}): CardsRunValue {
-  return { kind: "run", runId: "r1", status: "completed", draftId: "bench-main", stages: [], lastFrame: undefined, ...over };
+  return { kind: "run", runId: "r1", status: "completed", draftId: draftIdOf("bench-main"), stages: [], lastFrame: undefined, ...over };
 }
 
 describe("restoreRunToBench — the card back into a flow", () => {
@@ -408,7 +409,7 @@ describe("runCardStage / runBenchSequential — the door contract", () => {
     });
     stubCatalogFetch({ cards: { "img-to-mesh": { id: "img-to-mesh", families: ["trellis2-native", "pixal3d", "transfer-rig"] } } });
     resetCardFamiliesCache();
-    const res = await runCardStage("bench-main", stage({
+    const res = await runCardStage(draftIdOf("bench-main"), stage({
       // a fresh drop, not yet on the bench (s_0 is the stub bench's
       // own row — its id would merge the estate's params into the
       // composed doc through the fresh-read law below).
@@ -441,7 +442,7 @@ describe("runCardStage / runBenchSequential — the door contract", () => {
     const { calls } = mountFakes();
     stubCatalogFetch();
     resetCardFamiliesCache();
-    const res = await runCardStage("bench-main", stage({ id: "s_9", params: {} }));
+    const res = await runCardStage(draftIdOf("bench-main"), stage({ id: "s_9", params: {} }));
     expect(res).toEqual({ refused: "this stage names no card — nothing to compose" });
     expect(calls).toEqual([]);
   });
@@ -460,7 +461,7 @@ describe("runCardStage / runBenchSequential — the door contract", () => {
     });
     stubCatalogFetch({ cards: { "img-to-mesh": { families: ["trellis2-native"] } } });
     resetCardFamiliesCache();
-    const res = await runCardStage("bench-main", stage({
+    const res = await runCardStage(draftIdOf("bench-main"), stage({
       id: "s_9", card: "img-to-mesh",
       params: { input_image: "drop.png", resolution: "1024" },
     }));
@@ -483,7 +484,7 @@ describe("runCardStage / runBenchSequential — the door contract", () => {
     });
     stubCatalogFetch({ cards: { "img-to-mesh": { families: ["trellis2-native"] } } });
     resetCardFamiliesCache();
-    const res = await runCardStage("bench-main", stage({
+    const res = await runCardStage(draftIdOf("bench-main"), stage({
       id: "s_9", card: "img-to-mesh",
       params: { input_image: "drop.png", resolution: "1024" },
     }));
@@ -505,7 +506,7 @@ describe("runCardStage / runBenchSequential — the door contract", () => {
     });
     stubCatalogFetch({ cards: { "img-to-mesh": { families: ["trellis2-native"] } } });
     resetCardFamiliesCache();
-    const res = await runCardStage("bench-main", stage({ id: "s_9", card: "img-to-mesh", params: {} }));
+    const res = await runCardStage(draftIdOf("bench-main"), stage({ id: "s_9", card: "img-to-mesh", params: {} }));
     expect(res).toEqual({ refused: "required param 'input_image' missing on the trellis2-native card — the 3D lift is image-conditioned (no text prompt rides this lane)" });
   });
 
@@ -522,7 +523,7 @@ describe("runCardStage / runBenchSequential — the door contract", () => {
     });
     stubCatalogFetch();
     resetCardFamiliesCache();
-    const bench: CardsBenchValue = { kind: "bench", draftId: "bench-main", sessionKey: "main", rev: 5, log: [], stages: [
+    const bench: CardsBenchValue = { kind: "bench", draftId: draftIdOf("bench-main"), sessionKey: "main", rev: 5, log: [], stages: [
       stage({ id: "s_1", card: "image-gen", params: { prompt: "x" } }),
       stage({ id: "s_2", card: "img-to-mesh", params: { input_image: "/melite-media/runs/run-1/out.png" } }),
     ] };
@@ -546,7 +547,7 @@ describe("runCardStage / runBenchSequential — the door contract", () => {
     });
     stubCatalogFetch();
     resetCardFamiliesCache();
-    const bench: CardsBenchValue = { kind: "bench", draftId: "bench-main", sessionKey: "main", rev: 5, log: [], stages: [
+    const bench: CardsBenchValue = { kind: "bench", draftId: draftIdOf("bench-main"), sessionKey: "main", rev: 5, log: [], stages: [
       stage({ id: "s_0", card: "image-gen", params: { prompt: "done already" }, runStatus: "done" }),
       stage({ id: "s_1", card: "image-gen", params: { prompt: "fails" } }),
       stage({ id: "s_2", card: "img-to-mesh", params: { input_image: "/melite-media/runs/run-2/out.png" } }),
@@ -564,7 +565,7 @@ describe("runCardStage / runBenchSequential — the door contract", () => {
     });
     stubCatalogFetch();
     resetCardFamiliesCache();
-    const bench: CardsBenchValue = { kind: "bench", draftId: "bench-main", sessionKey: "main", rev: 5, log: [], stages: [
+    const bench: CardsBenchValue = { kind: "bench", draftId: draftIdOf("bench-main"), sessionKey: "main", rev: 5, log: [], stages: [
       stage({ id: "s_1", card: "img-to-mesh", params: {} }),
       stage({ id: "s_2", card: "image-gen", params: { prompt: "never reached" } }),
     ] };
@@ -585,7 +586,7 @@ describe("runCardStage / runBenchSequential — the door contract", () => {
     });
     stubCatalogFetch();
     resetCardFamiliesCache();
-    const bench: CardsBenchValue = { kind: "bench", draftId: "bench-main", sessionKey: "main", rev: 5, log: [], stages: [
+    const bench: CardsBenchValue = { kind: "bench", draftId: draftIdOf("bench-main"), sessionKey: "main", rev: 5, log: [], stages: [
       stage({ id: "s_1", card: "image-gen", params: { prompt: "x" } }),
       stage({ id: "s_2", card: "img-to-mesh", params: { input_image: "next.png" } }),
     ] };
@@ -616,7 +617,7 @@ describe("runCardStage / runBenchSequential — the door contract", () => {
     resetCardFamiliesCache();
     const controller = new AbortController();
     const settled: string[] = [];
-    const bench: CardsBenchValue = { kind: "bench", draftId: "bench-main", sessionKey: "main", rev: 5, log: [], stages: [
+    const bench: CardsBenchValue = { kind: "bench", draftId: draftIdOf("bench-main"), sessionKey: "main", rev: 5, log: [], stages: [
       stage({ id: "s_1", card: "image-gen", params: { prompt: "x" } }),
       stage({ id: "s_2", card: "img-to-mesh", params: { input_image: "next.png" } }),
     ] };
@@ -648,7 +649,7 @@ describe("runCardStage / runBenchSequential — the door contract", () => {
     });
     stubCatalogFetch();
     resetCardFamiliesCache();
-    const res = await runCardStage("bench-main", stage({
+    const res = await runCardStage(draftIdOf("bench-main"), stage({
       id: "s_1",
       card: "img-to-mesh",
       params: { input_image: "/melite-media/runs/run-8/img/gen_00001_.png", resolution: "1024" },
@@ -665,7 +666,7 @@ describe("runCardStage / runBenchSequential — the door contract", () => {
     });
     stubCatalogFetch();
     resetCardFamiliesCache();
-    await runCardStage("bench-main", stage({
+    await runCardStage(draftIdOf("bench-main"), stage({
       id: "s_1",
       card: "img-to-mesh",
       params: { input_image: "data/input/36039.jpg", resolution: 1024 },
@@ -680,7 +681,7 @@ describe("runCardStage / runBenchSequential — the door contract", () => {
     });
     stubCatalogFetch();
     resetCardFamiliesCache();
-    const res = await runCardStage("bench-main", stage({
+    const res = await runCardStage(draftIdOf("bench-main"), stage({
       id: "s_1",
       card: "img-to-mesh",
       params: { input_image: "data/input/36039.jpg" },
@@ -703,7 +704,7 @@ describe("runCardStage / runBenchSequential — the door contract", () => {
     });
     stubCatalogFetch({ cards: { mcp: { id: "mcp", label: "MCP", families: [] } } });
     resetCardFamiliesCache();
-    const res = await runCardStage("bench-main", stage({
+    const res = await runCardStage(draftIdOf("bench-main"), stage({
       id: "s_3",
       card: "mcp",
       engine: "agent",
@@ -738,11 +739,11 @@ describe("runCardStage / runBenchSequential — the door contract", () => {
     const { calls } = mountFakes();
     stubCatalogFetch({ cards: { mcp: { id: "mcp", families: [] } } });
     resetCardFamiliesCache();
-    const noBrief = await runCardStage("bench-main", stage({
+    const noBrief = await runCardStage(draftIdOf("bench-main"), stage({
       id: "s_3", card: "mcp", engine: "agent", params: { mcps: [{ server: "blender" }] },
     }));
     expect(String((noBrief as { refused: string }).refused)).toMatch(/write the Task first/);
-    const blankBrief = await runCardStage("bench-main", stage({
+    const blankBrief = await runCardStage(draftIdOf("bench-main"), stage({
       id: "s_3", card: "mcp", engine: "agent", params: { task: "   " },
     }));
     expect(String((blankBrief as { refused: string }).refused)).toMatch(/write the Task first/);
@@ -760,7 +761,7 @@ describe("runCardStage / runBenchSequential — the door contract", () => {
     });
     stubCatalogFetch({ cards: { mcp: { id: "mcp", label: "MCP", families: [] } } });
     resetCardFamiliesCache();
-    const res = await runCardStage("bench-main", stage({
+    const res = await runCardStage(draftIdOf("bench-main"), stage({
       id: "s_3",
       card: "mcp",
       engine: "agent",
@@ -788,7 +789,7 @@ describe("runCardStage / runBenchSequential — the door contract", () => {
     for (const brain of [undefined, "", "   "]) {
       const params: Record<string, unknown> = { task: "rig it", mcps: [] };
       if (brain !== undefined) params["brain"] = brain;
-      const res = await runCardStage("bench-main", stage({
+      const res = await runCardStage(draftIdOf("bench-main"), stage({
         id: "s_3", card: "mcp", engine: "agent", params,
       }));
       expect(res).toEqual({ runId: ids[n]! });

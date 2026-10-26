@@ -61,6 +61,7 @@ import { fetchMediaLibrary, CARDS_BENCH_ADDRESS, benchAddressOf, benchSessionKey
 import { uploadInputFile } from '@melite/card-base/client'
 import { stopRun } from '@melite/card-base/client'
 import { statusOrPendingOf } from '@melite/contracts/stageView'
+import { type DraftId } from '@melite/contracts/benchStage'
 import { addStageWire, groupStagesWire, removeStageWire, reorderStageWire, ungroupStageWire } from './add-stage.ts'
 import { AudioStagePreview, ImageStagePreview, MeshStagePreview, VideoStagePreview, figureCoeffsOf, figureLocalChangesOf, figureCameraOf } from '@melite/card-base/client'
 import { CardZoomOverlay } from './zoom.tsx'
@@ -375,7 +376,7 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
     delete stageRunsRef.current[stageId]
     setStageRuns(stageRunsRef.current)
   }, [])
-  const onStarted = useCallback((runId: string, ran?: { draftId: string; stageId: string }): void => {
+  const onStarted = useCallback((runId: string, ran?: { draftId: DraftId; stageId: string }): void => {
     setRunningLive(false)
     setLastRunId(runId)
     /* v8 ignore next 1 -- every run answer carries its started stage (probe 2026-09-19) */

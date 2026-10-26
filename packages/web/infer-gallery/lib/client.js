@@ -1466,6 +1466,16 @@ window.__ModuleLoader__.load({
 		function benchSessionOf$1(id) {
 			return typeof id === "string" && SESSION_RE$1.test(id) ? id : "main";
 		}
+		/** THE PARSE-EDGE / TEST MINT: brand a draft id read off the wire or
+		*  disk (route the typeof-guarded value through here at the door
+		*  that pulled it), or mint a test literal. One line, no runtime
+		*  validation — the brand is compile-time-only; the return cast is
+		*  the construction door (the newRunId pattern).
+		*  @param literal the plain draft id string at its parse edge
+		*  @returns the same string, branded for the typed seats downstream */
+		function draftIdOf$1(literal) {
+			return literal;
+		}
 		/** The run-relative tail of an absolute artifact path, or undefined
 		* when the path carries no run directory — e.g.
 		* "/data/runs/output/run-4f2a1c-ab12/tts/line.flac" →
@@ -2650,7 +2660,7 @@ window.__ModuleLoader__.load({
 						head,
 						final: isFinal,
 						runId: String(run.run_id ?? ""),
-						draftId: typeof run.draft_id === "string" ? run.draft_id : "",
+						draftId: typeof run.draft_id === "string" ? draftIdOf$1(run.draft_id) : draftIdOf$1(""),
 						time: timeLabel(run.created_at),
 						file,
 						created: typeof run.created_at === "number" ? run.created_at : 0
@@ -7432,12 +7442,26 @@ window.__ModuleLoader__.load({
 		function benchSessionOf(id) {
 			return typeof id === "string" && SESSION_RE.test(id) ? id : "main";
 		}
+		/** THE PARSE-EDGE / TEST MINT: brand a draft id read off the wire or
+		*  disk (route the typeof-guarded value through here at the door
+		*  that pulled it), or mint a test literal. One line, no runtime
+		*  validation — the brand is compile-time-only; the return cast is
+		*  the construction door (the newRunId pattern).
+		*  @param literal the plain draft id string at its parse edge
+		*  @returns the same string, branded for the typed seats downstream */
+		function draftIdOf(literal) {
+			return literal;
+		}
 		/** The MINT — the inverse of benchSessionOf (2026-10-13, the card-UI
 		*  duplication audit). The grammar moved to this floor and the DECISION
 		*  beside it, but the mint stayed behind in six seats spelling
 		*  `"bench-" + session` — one of which stripped the prefix and added
 		*  it straight back. An address has one grammar, one sanitize, and now
-		*  one mint. */
+		*  one mint. The composed bench id is BORN here, so the mint is one
+		*  of the DraftId brand's two producers: the return cast is the
+		*  construction door (the newRunId pattern).
+		*  @param session the sanitized bench session key
+		*  @returns the composed draft id, branded */
 		function benchDraftIdOf(session) {
 			return "bench-" + session;
 		}
@@ -7592,6 +7616,7 @@ window.__ModuleLoader__.load({
 			cnEntriesOf: () => cnEntriesOf,
 			crossRootOrder: () => crossRootOrder,
 			deriveFamilyLane: () => deriveFamilyLane,
+			draftIdOf: () => draftIdOf,
 			dropAuthoringIncomplete: () => dropAuthoringIncomplete,
 			extraOf: () => extraOf,
 			familyKeyPresent: () => familyKeyPresent,
@@ -9527,32 +9552,15 @@ window.__ModuleLoader__.load({
 			composeCard: () => composeCard$1,
 			ensureDraftId: () => ensureDraftId$1
 		});
-		/**
-		* CARD BIRTH LAW (operator order 2026-09-06, verbatim):
-		*
-		*   "IF THERE IS NO DRAFT_ID, THAT IS A HARD ERROR! THAT NEEDS TO
-		*    HAPPEN!"
-		*
-		* The start door (POST /v1/flows/start) refuses ANY body without a
-		* valid, doc-backed draft_id — 4xx BEFORE any run registers
-		* (submit(); wall:
-		* the wall pins it).
-		* Every run is born from an action card; a cardless row cannot be
-		* born, so the media sidebar's "run has no action card (no draft_id
-		* in its run row)" click error is unreachable for new runs.
-		*
-		* The ritual is mechanical and shared here (ONE implementation,
-		* every caller — no copy-paste mints): compose the card first
-		* (POST /v1/flows/drafts — the ray compose door mints the card doc,
-		* the body preserved verbatim as its extras), then ride the minted
-		* id on the start envelope.
-		*/
 		/** Mint the card doc for a start body. The doc carries the body
 		*  verbatim (intent/stages/model/params become the card extras —
 		*  see the drafts door, packages/estate/drafts, POST /v1/flows/drafts),
 		*  so what the card shows is what the run consumed. Throws LOUDLY
 		*  on any refusal — a refused compose never proceeds to a start
-		*  (no silent cardless runs). */
+		*  (no silent cardless runs).
+		*  @param body the raw start body (rides the compose POST verbatim)
+		*  @param signal the caller's abort signal
+		*  @returns the composed draft id, branded at this birth */
 		async function composeCard$1(body, signal) {
 			const res = await fetch("/v1/flows/drafts", {
 				method: "POST",
@@ -9570,7 +9578,7 @@ window.__ModuleLoader__.load({
 			}
 			const draftId = data.draftId;
 			if (typeof draftId !== "string" || !draftId) throw new Error("card compose returned no draftId — refusing to start cardless");
-			return draftId;
+			return draftIdOf(draftId);
 		}
 		/** The card-birth half of every run start: return the body's
 		*  declared draft_id when present, else compose the card and return
@@ -9578,13 +9586,18 @@ window.__ModuleLoader__.load({
 		*  the start fetch:
 		*
 		*    startBody.draft_id = await ensureDraftId(startBody, signal)
-		*/
+		*
+		*  @param body the raw start body (its declared draft_id wins)
+		*  @param signal the caller's abort signal
+		*  @returns the declared-or-composed draft id, branded at this door */
 		async function ensureDraftId$1(body, signal) {
 			const declared = body.draft_id;
-			if (typeof declared === "string" && declared !== "") return declared;
+			if (typeof declared === "string" && declared !== "") return draftIdOf(declared);
 			return composeCard$1(body, signal);
 		}
-		var init_cardBirth$1 = __esmMin((() => {}));
+		var init_cardBirth$1 = __esmMin((() => {
+			init_benchStage();
+		}));
 		//#endregion
 		//#region ../../web-kit/catalog/lib/FlowProtocol.js
 		var FlowProtocol_exports$1 = /* @__PURE__ */ __exportAll({
@@ -10384,6 +10397,26 @@ window.__ModuleLoader__.load({
 		function getPeaksForWidth(cache, width) {
 			return resampleForWidth(cache[selectLOD(width)], width);
 		}
+		/** The audio-cue draw path (E3.14 READ side, seated 2026-10-26): the
+		*  bars a cue surface paints at a given pixel width — the module's
+		*  documented consumer, riding the store's own cue shape.
+		*
+		*  The LOD cache is the truth whenever it exists: the legacy
+		*  200-bucket max-amplitude array is NEVER read behind a cache — it
+		*  carries no min (the waveform's asymmetry is lost) and no zoom
+		*  detail to select. A cache-less legacy cue (persisted before
+		*  E3.14) lifts its array into symmetric min/max bars at the asked
+		*  width — honest about its resolution. A cue with neither has no
+		*  truth to draw; the caller paints the placeholder. */
+		function cuePeaksForWidth(cue, width) {
+			if (cue.waveformPeaksLOD) return getPeaksForWidth(cue.waveformPeaksLOD, width);
+			const legacy = cue.waveformPeaks;
+			if (legacy && legacy.length > 0) return resampleForWidth(legacy.map((p) => ({
+				min: -p,
+				max: p
+			})), width);
+			return [];
+		}
 		/** Decode an audio URL into legacy + LOD waveform peaks.
 		*
 		*  Returns null on any failure (fetch error, decode error, etc.).
@@ -10761,6 +10794,7 @@ window.__ModuleLoader__.load({
 			computeWaveformLODs: () => computeWaveformLODs,
 			contractToast: () => contractToast,
 			controlnetTypesOf: () => controlnetTypesOf,
+			cuePeaksForWidth: () => cuePeaksForWidth,
 			decodeAudioPeaks: () => decodeAudioPeaks,
 			describeErrorBody: () => describeErrorBody$1,
 			dropdownModels: () => dropdownModels,
@@ -11367,7 +11401,10 @@ window.__ModuleLoader__.load({
 		*  see the drafts door, packages/estate/drafts, POST /v1/flows/drafts),
 		*  so what the card shows is what the run consumed. Throws LOUDLY
 		*  on any refusal — a refused compose never proceeds to a start
-		*  (no silent cardless runs). */
+		*  (no silent cardless runs).
+		*  @param body the raw start body (rides the compose POST verbatim)
+		*  @param signal the caller's abort signal
+		*  @returns the composed draft id, branded at this birth */
 		async function composeCard(body, signal) {
 			const res = await fetch("/v1/flows/drafts", {
 				method: "POST",
@@ -11385,7 +11422,7 @@ window.__ModuleLoader__.load({
 			}
 			const draftId = data.draftId;
 			if (typeof draftId !== "string" || !draftId) throw new Error("card compose returned no draftId — refusing to start cardless");
-			return draftId;
+			return draftIdOf(draftId);
 		}
 		/** The card-birth half of every run start: return the body's
 		*  declared draft_id when present, else compose the card and return
@@ -11393,13 +11430,18 @@ window.__ModuleLoader__.load({
 		*  the start fetch:
 		*
 		*    startBody.draft_id = await ensureDraftId(startBody, signal)
-		*/
+		*
+		*  @param body the raw start body (its declared draft_id wins)
+		*  @param signal the caller's abort signal
+		*  @returns the declared-or-composed draft id, branded at this door */
 		async function ensureDraftId(body, signal) {
 			const declared = body.draft_id;
-			if (typeof declared === "string" && declared !== "") return declared;
+			if (typeof declared === "string" && declared !== "") return draftIdOf(declared);
 			return composeCard(body, signal);
 		}
-		var init_cardBirth = __esmMin((() => {}));
+		var init_cardBirth = __esmMin((() => {
+			init_benchStage();
+		}));
 		//#endregion
 		//#region ../../web-kit/catalog/src/FlowProtocol.ts
 		var FlowProtocol_exports = /* @__PURE__ */ __exportAll({

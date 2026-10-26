@@ -13,6 +13,7 @@ import { afterEach, describe, expect, test, vi } from "vitest";
 import { createElement as h } from "react";
 import { RunView } from "../src/client/draft-run-views.tsx";
 import type { CardsRunValue, GraphReceipt } from "../src/client/cards-resource.ts";
+import { draftIdOf } from "@melite/contracts/benchStage";
 
 // the restore rides a mock (vi.mock factories hoist — the control
 // lives in vi.hoisted); every other seat of the module stays live.
@@ -47,7 +48,7 @@ function runValue(over: Partial<CardsRunValue> = {}): CardsRunValue {
     kind: "run",
     runId: "r-1",
     status: "completed",
-    draftId: "d-1",
+    draftId: draftIdOf("d-1"),
     stages: [],
     lastFrame: undefined,
     ...over,

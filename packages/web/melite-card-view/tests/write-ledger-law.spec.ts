@@ -77,6 +77,7 @@ import {
   stageWriteState,
 } from "../src/client/draft.ts";
 import { mountEstateFakes, type EstateFakesOptions } from "./estate-harness.ts";
+import { draftIdOf } from "@melite/contracts/benchStage";
 
 type Fakes = ReturnType<typeof mountEstateFakes>;
 let active: Fakes | null = null;
@@ -100,11 +101,11 @@ describe("THE FORCED WRITE IS SERIALIZED ON THE DOOR'S ANSWERED REV (the audit's
     const fakes = wire({ patchAnswerRevs: [10, 11, 12, 13] });
     // four keys coalesced in the trailing window — the audit's exact
     // storm shape (the old concurrent fan-out refused here spuriously)
-    void scheduleStageParam("bench-s1", "s_0", "prompt", "a red cloak", 7);
-    void scheduleStageParam("bench-s1", "s_0", "steps", 8, 7);
-    void scheduleStageParam("bench-s1", "s_0", "turbo", true, 7);
-    void scheduleStageParam("bench-s1", "s_0", "seed", 42, 7);
-    const state = await flushStageWrites("bench-s1", "s_0");
+    void scheduleStageParam(draftIdOf("bench-s1"), "s_0", "prompt", "a red cloak", 7);
+    void scheduleStageParam(draftIdOf("bench-s1"), "s_0", "steps", 8, 7);
+    void scheduleStageParam(draftIdOf("bench-s1"), "s_0", "turbo", true, 7);
+    void scheduleStageParam(draftIdOf("bench-s1"), "s_0", "seed", 42, 7);
+    const state = await flushStageWrites(draftIdOf("bench-s1"), "s_0");
     // every write landed; the ledger holds no refusal
     expect(state.failedKeys).toEqual([]);
     const revs = fakes.calls
@@ -121,13 +122,13 @@ describe("THE FORCED WRITE IS SERIALIZED ON THE DOOR'S ANSWERED REV (the audit's
     // one key lands through its timer, then a later edit to another
     // key fires — the render-time rev (7) is STALE by then, and the
     // old code collided with it by construction.
-    void scheduleStageParam("bench-s1", "s_0", "prompt", "first", 7);
+    void scheduleStageParam(draftIdOf("bench-s1"), "s_0", "prompt", "first", 7);
     // polled, never a 360ms guess past the 300ms trailing window
     // (audit item 7): the first write's LANDING is the observable
     await until(() => fakes.calls.some((c) => c.method === "drafts/patch"), { turns: 200, intervalMs: 15 });
-    void scheduleStageParam("bench-s1", "s_0", "steps", 4, 7);
+    void scheduleStageParam(draftIdOf("bench-s1"), "s_0", "steps", 4, 7);
     await until(() => fakes.calls.filter((c) => c.method === "drafts/patch").length >= 2, { turns: 200, intervalMs: 15 });
-    const state = await flushStageWrites("bench-s1", "s_0");
+    const state = await flushStageWrites(draftIdOf("bench-s1"), "s_0");
     expect(state.failedKeys).toEqual([]);
     const revs = fakes.calls
       .filter((c) => c.method === "drafts/patch")
@@ -140,9 +141,9 @@ describe("THE FORCED WRITE IS SERIALIZED ON THE DOOR'S ANSWERED REV (the audit's
 describe("THE LEDGER'S INVALIDATION (audit V-S5)", () => {
   test("forgetStageWrites settles a pending trailing write unlanded and drops the row — the neighbour's memory stays", async () => {
     const fakes = wire();
-    const gone = scheduleStageParam("bench-s1", "s_0", "prompt", "doomed", 7);
-    void scheduleStageParam("bench-s1", "s_1", "prompt", "stays", 7);
-    forgetStageWrites("bench-s1", ["s_0"]);
+    const gone = scheduleStageParam(draftIdOf("bench-s1"), "s_0", "prompt", "doomed", 7);
+    void scheduleStageParam(draftIdOf("bench-s1"), "s_1", "prompt", "stays", 7);
+    forgetStageWrites(draftIdOf("bench-s1"), ["s_0"]);
     // the doomed write settles WITHOUT a door call — the stage it
     // targeted is gone; hanging waiters would be the orphan again
     await gone;
@@ -152,34 +153,34 @@ describe("THE LEDGER'S INVALIDATION (audit V-S5)", () => {
     // timer writing is the law — filter to the doomed stage)
     await new Promise((r) => setTimeout(r, 360));
     expect(fakes.calls.filter((c) => c.method === "drafts/patch" && c.args["stageId"] === "s_0").length).toBe(0);
-    expect(stageWriteState("bench-s1", "s_0")).toEqual({
+    expect(stageWriteState(draftIdOf("bench-s1"), "s_0")).toEqual({
       pending: 0, failedKeys: [], lastError: null, confirmedRev: null,
     });
     // per-stage, never the nuclear reset: the neighbour still lands
-    await flushStageWrites("bench-s1", "s_1");
+    await flushStageWrites(draftIdOf("bench-s1"), "s_1");
     expect(fakes.calls.filter((c) => c.method === "drafts/patch" && c.args["stageId"] === "s_1").length).toBe(1);
-    expect(stageWriteState("bench-s1", "s_1").failedKeys).toEqual([]);
+    expect(stageWriteState(draftIdOf("bench-s1"), "s_1").failedKeys).toEqual([]);
   });
 
   test("a recorded failure row dies with its stage — no reconcile dance needed", async () => {
     wire({ refusals: [{ method: "drafts/patch", message: "stage not found" }] });
-    await expect(scheduleStageParam("bench-s1", "s_0", "prompt", "x", 7)).resolves.toBeUndefined();
-    expect(stageWriteState("bench-s1", "s_0").failedKeys).toEqual(["prompt"]);
-    forgetStageWrites("bench-s1", ["s_0"]);
+    await expect(scheduleStageParam(draftIdOf("bench-s1"), "s_0", "prompt", "x", 7)).resolves.toBeUndefined();
+    expect(stageWriteState(draftIdOf("bench-s1"), "s_0").failedKeys).toEqual(["prompt"]);
+    forgetStageWrites(draftIdOf("bench-s1"), ["s_0"]);
     // the chain's settled link drops the row on its own microtask
     await new Promise((r) => setTimeout(r, 0));
     // the removed stage's refusal memory is gone — a re-added stage
     // with the same id composes clean, never haunted
-    expect(stageWriteState("bench-s1", "s_0").failedKeys).toEqual([]);
-    expect(stageWriteState("bench-s1", "s_0").lastError).toBeNull();
+    expect(stageWriteState(draftIdOf("bench-s1"), "s_0").failedKeys).toEqual([]);
+    expect(stageWriteState(draftIdOf("bench-s1"), "s_0").lastError).toBeNull();
   });
 });
 
 describe("A SUPERSEDED WRITE'S PROMISE STILL SETTLES (the audit's Q2)", () => {
   test("the first caller hears the answer through the newest write — nobody hangs", async () => {
     wire();
-    const first = scheduleStageParam("bench-s1", "s_1", "prompt", "draft one", 7);
-    const second = scheduleStageParam("bench-s1", "s_1", "prompt", "draft two", 7);
+    const first = scheduleStageParam(draftIdOf("bench-s1"), "s_1", "prompt", "draft one", 7);
+    const second = scheduleStageParam(draftIdOf("bench-s1"), "s_1", "prompt", "draft two", 7);
     // one key, one write: exactly ONE patch leaves, carrying the NEWEST
     // value (latest-wins coalescing — the proven contract, untouched)
     await Promise.all([first, second]);
@@ -191,11 +192,11 @@ describe("A SUPERSEDED WRITE'S PROMISE STILL SETTLES (the audit's Q2)", () => {
 
   test("the run gate's FORCE settles the waiters too (out-of-band fire, same answer)", async () => {
     wire();
-    const scheduled = scheduleStageParam("bench-s1", "s_1", "steps", 12, 7);
+    const scheduled = scheduleStageParam(draftIdOf("bench-s1"), "s_1", "steps", 12, 7);
     // the gate fires the pending write out of band — the schedule's
     // own promise must still settle (the old code orphaned it)
-    await flushStageWrites("bench-s1", "s_1");
-    expect(stageWriteState("bench-s1", "s_1").pending).toBe(0);
+    await flushStageWrites(draftIdOf("bench-s1"), "s_1");
+    expect(stageWriteState(draftIdOf("bench-s1"), "s_1").pending).toBe(0);
     await expect(scheduled).resolves.toBeUndefined();
   });
 });
@@ -205,16 +206,16 @@ describe("THE GHOST REFUSAL RECONCILES AT REOPEN (the audit's Q3 dead end)", () 
     wire({
       patchFailures: [{ delivered: false, reason: "bench/stale-window" }],
     });
-    await patchStageParams("bench-s1", "s_2", { input_image: "x" }, 7)
+    await patchStageParams(draftIdOf("bench-s1"), "s_2", { input_image: "x" }, 7)
       .catch(() => { /* the ledger records the named refusal */ });
-    let state = stageWriteState("bench-s1", "s_2");
+    let state = stageWriteState(draftIdOf("bench-s1"), "s_2");
     expect(state.failedKeys).toEqual(["input_image"]);
     expect(state.lastError).toContain("bench/stale-window");
     // REOPEN: the held row never landed the key, the seeded form does
     // not carry it — the refusal is a GHOST and must not outlive the
     // session of the form that recorded it
-    reconcileStageWriteFailures("bench-s1", "s_2", {}, { prompt: "" });
-    state = stageWriteState("bench-s1", "s_2");
+    reconcileStageWriteFailures(draftIdOf("bench-s1"), "s_2", {}, { prompt: "" });
+    state = stageWriteState(draftIdOf("bench-s1"), "s_2");
     expect(state.failedKeys).toEqual([]);
     expect(state.lastError).toBeNull();
     // the LIVE half: a key the held row CARRIES keeps its refusal —
@@ -222,14 +223,14 @@ describe("THE GHOST REFUSAL RECONCILES AT REOPEN (the audit's Q3 dead end)", () 
     wire({
       patchFailures: [{ delivered: false, reason: "bench/stale-window" }],
     });
-    await patchStageParams("bench-s1", "s_2", { input_image: "x" }, 7)
+    await patchStageParams(draftIdOf("bench-s1"), "s_2", { input_image: "x" }, 7)
       .catch(() => {});
     reconcileStageWriteFailures(
-      "bench-s1", "s_2",
+      draftIdOf("bench-s1"), "s_2",
       { input_image: "x" }, // the held row carries the key
       { input_image: "x" }, // and the form shows it
     );
-    expect(stageWriteState("bench-s1", "s_2").failedKeys).toEqual(["input_image"]);
+    expect(stageWriteState(draftIdOf("bench-s1"), "s_2").failedKeys).toEqual(["input_image"]);
   });
 });
 
@@ -247,12 +248,12 @@ describe('THE FLUSH LOOPS UNTIL THE STAGE IS QUIET (the 2026-10-11 mid-force fin
       onPatchCall: () => {
         if (!scheduledMidForce) {
           scheduledMidForce = true;
-          void scheduleStageParam('bench-s1', 's_0', "seed", 42, 7);
+          void scheduleStageParam(draftIdOf('bench-s1'), 's_0', "seed", 42, 7);
         }
       },
     });
-    void scheduleStageParam('bench-s1', 's_0', "prompt", 'a blue cloak', 7);
-    const state = await flushStageWrites('bench-s1', 's_0');
+    void scheduleStageParam(draftIdOf('bench-s1'), 's_0', "prompt", 'a blue cloak', 7);
+    const state = await flushStageWrites(draftIdOf('bench-s1'), 's_0');
     // the gate answered QUIET: the mid-force write is not still riding
     expect(state.pending).toBe(0);
     expect(state.failedKeys).toEqual([]);
@@ -278,8 +279,8 @@ describe('TWO TIMERS IN ONE TICK LAND AT DISTINCT REVS (the 2026-10-11 send-coll
   test('the second trailing write rides the rev the first\'s landing answered — never the shared render-time rev', async () => {
     const fakes = wire({ patchAnswerRevs: [10, 11] });
     // two keys scheduled in the SAME tick — both timers fire together
-    void scheduleStageParam('bench-s1', 's_0', "steps", 8, 7);
-    void scheduleStageParam('bench-s1', 's_0', "seed", 42, 7);
+    void scheduleStageParam(draftIdOf('bench-s1'), 's_0', "steps", 8, 7);
+    void scheduleStageParam(draftIdOf('bench-s1'), 's_0', "seed", 42, 7);
     // let the trailing window elapse (no force — the TIMER arm is the
     // seat under test), polled on the landed patches — never a 600ms
     // guess at the 300ms window (audit item 7)
@@ -291,7 +292,7 @@ describe('TWO TIMERS IN ONE TICK LAND AT DISTINCT REVS (the 2026-10-11 send-coll
     // the LAW: no two same-tick writers share a rev — a shared rev IS
     // the collision the CAS fence exists to refuse
     expect(new Set(revs).size).toBe(revs.length);
-    expect(stageWriteState('bench-s1', 's_0').failedKeys).toEqual([]);
+    expect(stageWriteState(draftIdOf('bench-s1'), 's_0').failedKeys).toEqual([]);
   });
 });
 
@@ -315,11 +316,11 @@ describe('A TIMER FIRING MID-FORCE RIDES THE CHAIN (the W5 killer face)', () => 
     // A scheduled and FORCED immediately (the gate holds its patch
     // open); B lands in the schedule MID-FORCE (after the snapshot)
     // and its whole trailing window elapses while A is still held
-    void scheduleStageParam('bench-s1', 's_0', "prompt", 'held', 7);
-    const flushP = flushStageWrites('bench-s1', 's_0');
+    void scheduleStageParam(draftIdOf('bench-s1'), 's_0', "prompt", 'held', 7);
+    const flushP = flushStageWrites(draftIdOf('bench-s1'), 's_0');
     await vi.advanceTimersByTimeAsync(0); // A's patch reaches the gate
     // B registers mid-force (the HOLE 3 state), trailing window armed
-    void scheduleStageParam('bench-s1', 's_0', "seed", 42, 7);
+    void scheduleStageParam(draftIdOf('bench-s1'), 's_0', "seed", 42, 7);
     // the window elapses WITH A STILL HELD — B's natural timer fires
     // mid-force (under the bare send it wrote at the stale rev 7)
     await vi.advanceTimersByTimeAsync(300);
@@ -331,7 +332,7 @@ describe('A TIMER FIRING MID-FORCE RIDES THE CHAIN (the W5 killer face)', () => 
       .map((c) => c.args['expectRev']);
     expect(revs).toEqual([7, 10]);
     expect(new Set(revs).size).toBe(revs.length);
-    const state = stageWriteState('bench-s1', 's_0');
+    const state = stageWriteState(draftIdOf('bench-s1'), 's_0');
     expect(state.pending).toBe(0);
     expect(state.failedKeys).toEqual([]);
   });
@@ -351,23 +352,23 @@ describe('THE FORGET WAITS FOR THE RIDE IT ARMED FOR (the race audit\'s F2/F3, 2
       patchGate: () => held,
       patchFailures: [{ delivered: false, reason: 'bench/stale-window' }],
     })
-    const attempt = patchStageParams('bench-s1', 's_0', { prompt: 'a red cloak' }, 7)
+    const attempt = patchStageParams(draftIdOf('bench-s1'), 's_0', { prompt: 'a red cloak' }, 7)
     await new Promise((r) => setTimeout(r, 0))
     expect(fakes.calls.filter((c) => c.method === 'drafts/patch').length).toBe(1)
-    expect(stageWriteState('bench-s1', 's_0').pending).toBe(1)
+    expect(stageWriteState(draftIdOf('bench-s1'), 's_0').pending).toBe(1)
     // the stage goes away while the write is still on the wire: a
     // direct ride has NO chain to defer to, so the row is the only
     // place the door's answer can land. Pre-cure the row was deleted
     // here (pending 0) and the refusal below landed in a detached row.
-    forgetStageWrites('bench-s1', ['s_0'])
-    expect(stageWriteState('bench-s1', 's_0').pending).toBe(1)
+    forgetStageWrites(draftIdOf('bench-s1'), ['s_0'])
+    expect(stageWriteState(draftIdOf('bench-s1'), 's_0').pending).toBe(1)
     // a successor write bumps the row's epoch, so the forget is void
     // and the refusal the first ride records stays readable
-    const successor = patchStageParams('bench-s1', 's_0', { steps: 4 }, 7)
+    const successor = patchStageParams(draftIdOf('bench-s1'), 's_0', { steps: 4 }, 7)
     release()
     await attempt.catch(() => {})
     await successor.catch(() => {})
-    expect(stageWriteState('bench-s1', 's_0').failedKeys).toEqual(['prompt'])
+    expect(stageWriteState(draftIdOf('bench-s1'), 's_0').failedKeys).toEqual(['prompt'])
   })
 
   test('a forget armed on one chain does not wipe the row a successor write rides', async () => {
@@ -381,19 +382,19 @@ describe('THE FORGET WAITS FOR THE RIDE IT ARMED FOR (the race audit\'s F2/F3, 2
         return calls === 1 ? first : Promise.resolve()
       },
     })
-    void scheduleStageParam('bench-s1', 's_0', 'prompt', 'a red cloak', 7)
-    const flushed = flushStageWrites('bench-s1', 's_0')
+    void scheduleStageParam(draftIdOf('bench-s1'), 's_0', 'prompt', 'a red cloak', 7)
+    const flushed = flushStageWrites(draftIdOf('bench-s1'), 's_0')
     await new Promise((r) => setTimeout(r, 0))
     // the chained link holds the door open: the forget arms on it
-    forgetStageWrites('bench-s1', ['s_0'])
+    forgetStageWrites(draftIdOf('bench-s1'), ['s_0'])
     // the successor rides the SAME row (the forget did not delete it —
     // a chain was in flight); pre-cure the chain's blind `finally`
     // dropped that row when it settled, taking the successor's rev with it
-    const successor = patchStageParams('bench-s1', 's_0', { steps: 4 }, 7)
+    const successor = patchStageParams(draftIdOf('bench-s1'), 's_0', { steps: 4 }, 7)
     await successor
     releaseFirst()
     await flushed
-    expect(stageWriteState('bench-s1', 's_0').confirmedRev).toBe(11)
+    expect(stageWriteState(draftIdOf('bench-s1'), 's_0').confirmedRev).toBe(11)
   })
 
   test('the draft-wide forget takes rows no stage list could name, and leaves the neighbouring draft alone', async () => {
@@ -407,13 +408,13 @@ describe('THE FORGET WAITS FOR THE RIDE IT ARMED FOR (the race audit\'s F2/F3, 2
     // together, so the caller cannot enumerate them: this arm names the
     // row's draft id and nothing else. Both rows carry a refusal — an
     // idle row's MEMORY is what tells forgotten from kept.
-    await patchStageParams('bench-s1', 's_9', { prompt: 'a restaged row' }, 7).catch(() => {})
-    await patchStageParams('bench-s2', 's_7', { prompt: 'the other draft' }, 7).catch(() => {})
-    expect(stageWriteState('bench-s1', 's_9').failedKeys).toEqual(['prompt'])
-    expect(stageWriteState('bench-s2', 's_7').failedKeys).toEqual(['prompt'])
-    forgetDraftWrites('bench-s1')
-    expect(stageWriteState('bench-s1', 's_9').failedKeys).toEqual([])
-    expect(stageWriteState('bench-s2', 's_7').failedKeys).toEqual(['prompt'])
+    await patchStageParams(draftIdOf('bench-s1'), 's_9', { prompt: 'a restaged row' }, 7).catch(() => {})
+    await patchStageParams(draftIdOf('bench-s2'), 's_7', { prompt: 'the other draft' }, 7).catch(() => {})
+    expect(stageWriteState(draftIdOf('bench-s1'), 's_9').failedKeys).toEqual(['prompt'])
+    expect(stageWriteState(draftIdOf('bench-s2'), 's_7').failedKeys).toEqual(['prompt'])
+    forgetDraftWrites(draftIdOf('bench-s1'))
+    expect(stageWriteState(draftIdOf('bench-s1'), 's_9').failedKeys).toEqual([])
+    expect(stageWriteState(draftIdOf('bench-s2'), 's_7').failedKeys).toEqual(['prompt'])
   })
 });
 
@@ -427,22 +428,22 @@ describe('RECONCILIATION KEEPS A FAILED KEY THE DECLARATION DEMANDS (the 2026-10
         { delivered: false, reason: 'bench/stale-window' },
       ],
     });
-    await patchStageParams('bench-s1', 's_2', { prompt: 'x' }, 7).catch(() => {});
-    await patchStageParams('bench-s1', 's_2', { input_image: 'y' }, 7).catch(() => {});
-    expect(new Set(stageWriteState('bench-s1', 's_2').failedKeys))
+    await patchStageParams(draftIdOf('bench-s1'), 's_2', { prompt: 'x' }, 7).catch(() => {});
+    await patchStageParams(draftIdOf('bench-s1'), 's_2', { input_image: 'y' }, 7).catch(() => {});
+    expect(new Set(stageWriteState(draftIdOf('bench-s1'), 's_2').failedKeys))
       .toEqual(new Set(['prompt', 'input_image']));
     // the operator blanked both fields (the row holds neither, the
     // form shows neither) but the lane DECLARES 'prompt' — the sweep
     // may drop the ghost, never the declared demand
     reconcileStageWriteFailures(
-      'bench-s1', 's_2',
+      draftIdOf('bench-s1'), 's_2',
       {}, // the held row carries neither key
       {}, // the form shows neither key
       new Set(['prompt']), // the DECLARATION demands prompt on this lane
     );
-    expect(stageWriteState('bench-s1', 's_2').failedKeys)
+    expect(stageWriteState(draftIdOf('bench-s1'), 's_2').failedKeys)
       .toEqual(['prompt']);
-    expect(stageWriteState('bench-s1', 's_2').lastError).toContain('bench/stale-window');
+    expect(stageWriteState(draftIdOf('bench-s1'), 's_2').lastError).toContain('bench/stale-window');
   });
 });
 
@@ -461,14 +462,14 @@ describe('A KEY SUPERSEDED MID-FORCE KEEPS ITS OWN TIMER (the race audit\'s F1-A
     });
     // two keys pending; the force consumes 'prompt' first and its send
     // is held at the gate for the whole supersede below
-    void scheduleStageParam('bench-s1', 's_0', "prompt", 'held', 7);
-    void scheduleStageParam('bench-s1', 's_0', "steps", 8, 7);
-    const flushP = flushStageWrites('bench-s1', 's_0');
+    void scheduleStageParam(draftIdOf('bench-s1'), 's_0', "prompt", 'held', 7);
+    void scheduleStageParam(draftIdOf('bench-s1'), 's_0', "steps", 8, 7);
+    const flushP = flushStageWrites(draftIdOf('bench-s1'), 's_0');
     await vi.advanceTimersByTimeAsync(0); // 'prompt' reaches the gate
     // the operator types again in the OTHER pending key: same key, new
     // entry, fresh timer, merged params — all legal, and legal exactly
     // in the window the snapshot was taken
-    void scheduleStageParam('bench-s1', 's_0', "steps", 16, 7);
+    void scheduleStageParam(draftIdOf('bench-s1'), 's_0', "steps", 16, 7);
     release();
     await flushP;
     const patches = fakes.calls
@@ -478,7 +479,7 @@ describe('A KEY SUPERSEDED MID-FORCE KEEPS ITS OWN TIMER (the race audit\'s F1-A
     expect(patches.some((p) => p['steps'] === 8)).toBe(false);
     // … and the studio's current value lands BEFORE the gate answers
     expect(patches.some((p) => p['steps'] === 16)).toBe(true);
-    expect(stageWriteState('bench-s1', 's_0').failedKeys).toEqual([]);
+    expect(stageWriteState(draftIdOf('bench-s1'), 's_0').failedKeys).toEqual([]);
   });
 });
 
@@ -495,15 +496,15 @@ describe('A TIMER FIRING MID-FORCE IS NOT OVERTAKEN BY THE SNAPSHOT (the race au
       patchAnswerRevs: [10, 11, 12],
       patchGate: () => gate,
     });
-    void scheduleStageParam('bench-s1', 's_0', "prompt", 'held', 7);
-    void scheduleStageParam('bench-s1', 's_0', "steps", 8, 7);
-    const flushP = flushStageWrites('bench-s1', 's_0');
+    void scheduleStageParam(draftIdOf('bench-s1'), 's_0', "prompt", 'held', 7);
+    void scheduleStageParam(draftIdOf('bench-s1'), 's_0', "steps", 8, 7);
+    const flushP = flushStageWrites(draftIdOf('bench-s1'), 's_0');
     await vi.advanceTimersByTimeAsync(0); // 'prompt' reaches the gate
     // the operator types once more, then the trailing window expires
     // while 'prompt' is STILL held: the fresh entry's timer fires
     // mid-force and its send queues behind the held write
     await vi.advanceTimersByTimeAsync(100);
-    void scheduleStageParam('bench-s1', 's_0', "steps", 16, 7);
+    void scheduleStageParam(draftIdOf('bench-s1'), 's_0', "steps", 16, 7);
     await vi.advanceTimersByTimeAsync(300);
     release();
     await flushP;

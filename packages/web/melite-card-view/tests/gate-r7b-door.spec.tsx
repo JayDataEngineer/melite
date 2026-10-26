@@ -16,6 +16,7 @@ import type { BenchStageView, CardsBenchValue } from "../src/client/cards-resour
 import { schemaEnvelope } from '@melite/card-base/client';
 import { mountEstateFakes } from "./estate-harness.ts";
 import { unbindEstateRemote } from '@melite/card-base/client';
+import { draftIdOf } from '@melite/contracts/benchStage';
 
 interface Call { method: string; args: Record<string, unknown> }
 
@@ -77,7 +78,7 @@ afterEach(() => {
 });
 
 function benchProp(stages: BenchStageView[]): CardsBenchValue {
-  return { kind: "bench", draftId: "bench-p", rev: 1, log: [], stages, sessionKey: "s1" };
+  return { kind: "bench", draftId: draftIdOf("bench-p"), rev: 1, log: [], stages, sessionKey: "s1" };
 }
 
 function mountDoor(opts: {

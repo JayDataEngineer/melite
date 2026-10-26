@@ -1,3 +1,4 @@
+import { type DraftId } from "@melite/contracts/benchStage";
 /**
  * melite-run-wire — the run-status PURE laws + the catalog door
  * (stroke 81, the one-lane restructure).
@@ -115,7 +116,7 @@ export interface GraphReceipt {
 export interface RunStatusRow {
     runId: string;
     status: string;
-    draftId: string | null;
+    draftId: DraftId | null;
     stages: RunStageStatus[];
     /** The run-level failure text (the same channel the stages carry;
      *  the observer's fallback when no single stage owns the reason). */

@@ -21,6 +21,7 @@ import { StageDrill, dedupWalkSet } from "../src/client/stage-drill.tsx";
 import { CardsTab } from "../src/client/CardsTab.tsx";
 import type { BenchStageView, CardsBenchValue } from "../src/client/cards-resource.ts";
 import { repoRoot } from "./repo-root.ts";
+import { draftIdOf } from '@melite/contracts/benchStage';
 
 afterEach(() => {
   cleanup();
@@ -183,7 +184,7 @@ function patchCalls(): Array<Record<string, unknown>> {
  * merely absent. */
 async function awaitWriteSettled(): Promise<void> {
   await waitFor(() => {
-    if (stageWriteState("bench-p", "s_0").pending !== 0) throw new Error("write still in flight");
+    if (stageWriteState(draftIdOf("bench-p"), "s_0").pending !== 0) throw new Error("write still in flight");
   }, { timeout: 8000 });
 }
 
@@ -397,7 +398,7 @@ describe("writes settling after a re-target (each half's own guard)", () => {
     await waitFor(() => { expect(patchCalls().length).toBe(1); }, { timeout: 8000 });
     // the residue is on the row before the parked write exists
     await waitFor(() => {
-      expect(stageWriteState("bench-p", "s_0").failedKeys).toContain("variant");
+      expect(stageWriteState(draftIdOf("bench-p"), "s_0").failedKeys).toContain("variant");
     }, { timeout: 8000 });
     await typePrompt("a red cube");
     await waitFor(() => { expect(patchCalls().length).toBe(2); }, { timeout: 8000 });
@@ -406,13 +407,13 @@ describe("writes settling after a re-target (each half's own guard)", () => {
     await screen.findByLabelText("Prompt", {}, { timeout: 4000 });
     release?.();
     await waitFor(() => {
-      if (stageWriteState("bench-p", "s_0").pending !== 0) throw new Error("typed write still parked");
+      if (stageWriteState(draftIdOf("bench-p"), "s_0").pending !== 0) throw new Error("typed write still parked");
     }, { timeout: 8000 });
     // the clean landing cleared ONLY its own key — variant's failure
     // is residue the then-half wants to voice onto the NEW seat; the
     // guard holds it. The row keeps the truth for s_0's return.
     expect(writeFace()).toBe(null);
-    expect(stageWriteState("bench-p", "s_0").failedKeys).toContain("variant");
+    expect(stageWriteState(draftIdOf("bench-p"), "s_0").failedKeys).toContain("variant");
   });
 
   test("a PICK settling after a re-target stands down (the pick then-half's guard, residue drive)", async () => {
@@ -440,7 +441,7 @@ describe("writes settling after a re-target (each half's own guard)", () => {
     await waitFor(() => { expect(patchCalls().length).toBe(1); }, { timeout: 8000 });
     // the residue is on the row before the pick exists
     await waitFor(() => {
-      expect(stageWriteState("bench-p", "s_0").failedKeys).toContain("prompt");
+      expect(stageWriteState(draftIdOf("bench-p"), "s_0").failedKeys).toContain("prompt");
     }, { timeout: 8000 });
     const select = await screen.findByLabelText("Variant", {}, { timeout: 4000 });
     // THE MENU PICK (S7e): open the axis, click the row
@@ -451,13 +452,13 @@ describe("writes settling after a re-target (each half's own guard)", () => {
     await screen.findByLabelText("Prompt", {}, { timeout: 4000 });
     release?.();
     await waitFor(() => {
-      if (stageWriteState("bench-p", "s_0").pending !== 0) throw new Error("pick write still parked");
+      if (stageWriteState(draftIdOf("bench-p"), "s_0").pending !== 0) throw new Error("pick write still parked");
     }, { timeout: 8000 });
     // the pick landed clean (variant never failed) — the row still
     // holds prompt's failure: exactly the residue the then-half
     // wants to voice onto the new seat. The guard holds it.
     expect(writeFace()).toBe(null);
-    expect(stageWriteState("bench-p", "s_0").failedKeys).toContain("prompt");
+    expect(stageWriteState(draftIdOf("bench-p"), "s_0").failedKeys).toContain("prompt");
   });
 
   test("an AXIS-UNSET write settling after a re-target stands down (the unset then-half's own guard)", async () => {
@@ -482,7 +483,7 @@ describe("writes settling after a re-target (each half's own guard)", () => {
     await typePrompt("a red cube");
     await waitFor(() => { expect(patchCalls().length).toBe(1); }, { timeout: 8000 });
     await waitFor(() => {
-      expect(stageWriteState("bench-p", "s_0").failedKeys).toContain("prompt");
+      expect(stageWriteState(draftIdOf("bench-p"), "s_0").failedKeys).toContain("prompt");
     }, { timeout: 8000 });
     const variantField = await screen.findByLabelText("Variant override", {}, { timeout: 4000 });
     fireEvent.change(variantField, { target: { value: "" } });
@@ -491,13 +492,13 @@ describe("writes settling after a re-target (each half's own guard)", () => {
     await screen.findByLabelText("Prompt", {}, { timeout: 4000 });
     release?.();
     await waitFor(() => {
-      if (stageWriteState("bench-p", "s_0").pending !== 0) throw new Error("axis-unset write still parked");
+      if (stageWriteState(draftIdOf("bench-p"), "s_0").pending !== 0) throw new Error("axis-unset write still parked");
     }, { timeout: 8000 });
     // the null DELETE landed clean (variant never failed) — prompt's
     // failure is exactly the residue the then-half wants to voice
     // onto the new seat. The guard holds it; s_0's row keeps truth.
     expect(writeFace()).toBe(null);
-    expect(stageWriteState("bench-p", "s_0").failedKeys).toContain("prompt");
+    expect(stageWriteState(draftIdOf("bench-p"), "s_0").failedKeys).toContain("prompt");
   });
 
   test("a PICK's REJECTION settling after a re-target stands down (the pick catch-half's own guard)", async () => {
@@ -527,11 +528,11 @@ describe("writes settling after a re-target (each half's own guard)", () => {
     // the same never-paints law as the unset arm: judge after the
     // refusal records and the would-be paint has had its tick.
     await waitFor(() => {
-      if (stageWriteState("bench-p", "s_0").lastError === null) throw new Error("pick refusal not recorded");
+      if (stageWriteState(draftIdOf("bench-p"), "s_0").lastError === null) throw new Error("pick refusal not recorded");
     }, { timeout: 8000 });
     await new Promise((resolve) => { setTimeout(resolve, 60); });
     expect(writeFace()).toBe(null);
-    expect(stageWriteState("bench-p", "s_0").failedKeys).toContain("variant");
+    expect(stageWriteState(draftIdOf("bench-p"), "s_0").failedKeys).toContain("variant");
   });
 
   test("an UNSET (slot-empty) rejection settling after a re-target stands down (the slot catch-half's own guard)", async () => {
@@ -568,11 +569,11 @@ describe("writes settling after a re-target (each half's own guard)", () => {
     // still in flight (the racy-green the first cut of this arm
     // shipped).
     await waitFor(() => {
-      if (stageWriteState("bench-p", "s_0").lastError === null) throw new Error("unset refusal not recorded");
+      if (stageWriteState(draftIdOf("bench-p"), "s_0").lastError === null) throw new Error("unset refusal not recorded");
     }, { timeout: 8000 });
     await new Promise((resolve) => { setTimeout(resolve, 60); });
     expect(writeFace()).toBe(null);
-    expect(stageWriteState("bench-p", "s_0").failedKeys).toContain("input_image");
+    expect(stageWriteState(draftIdOf("bench-p"), "s_0").failedKeys).toContain("input_image");
   });
 
   test("a WIRE-IN rejection settling after a re-target stands down (the wire catch-half's own guard)", async () => {
@@ -615,11 +616,11 @@ describe("writes settling after a re-target (each half's own guard)", () => {
     await screen.findByLabelText("Prompt", {}, { timeout: 4000 });
     release?.();
     await waitFor(() => {
-      if (stageWriteState("bench-p", "s_1").lastError === null) throw new Error("wire refusal not recorded");
+      if (stageWriteState(draftIdOf("bench-p"), "s_1").lastError === null) throw new Error("wire refusal not recorded");
     }, { timeout: 8000 });
     await new Promise((resolve) => { setTimeout(resolve, 60); });
     expect(writeFace()).toBe(null);
-    expect(stageWriteState("bench-p", "s_1").failedKeys).toContain("input_image");
+    expect(stageWriteState(draftIdOf("bench-p"), "s_1").failedKeys).toContain("input_image");
   });
 });
 
@@ -918,10 +919,10 @@ describe("the unset's refused write and the run seat's refused sync — both spe
     await screen.findByLabelText("Prompt", {}, { timeout: 4000 });
     release?.();
     await waitFor(() => {
-      if (stageWriteState("bench-p", "s_0").pending !== 0) throw new Error("unstamp still parked");
+      if (stageWriteState(draftIdOf("bench-p"), "s_0").pending !== 0) throw new Error("unstamp still parked");
     }, { timeout: 8000 });
     // the row keeps the failure for s_0's return; the new seat is clean
-    expect(stageWriteState("bench-p", "s_0").failedKeys).toContain("double_reference");
+    expect(stageWriteState(draftIdOf("bench-p"), "s_0").failedKeys).toContain("double_reference");
     expect(writeFace()).toBe(null);
   });
 
@@ -1116,7 +1117,7 @@ describe("the enhance sweep's write seat (what the studio shows is what the engi
     view.rerender(h(StageDrill, drillProps(stageB) as never));
     release?.();
     await waitFor(() => {
-      if (stageWriteState("bench-p", "s_0").pending !== 0) throw new Error("sweep write still parked");
+      if (stageWriteState(draftIdOf("bench-p"), "s_0").pending !== 0) throw new Error("sweep write still parked");
     }, { timeout: 8000 });
     // the swept patch reached the door; the face it would have voiced
     // belongs to a stage nobody is looking at — silent, never stale.
@@ -1182,7 +1183,7 @@ describe("the enhance sweep's write seat (what the studio shows is what the engi
     await screen.findByLabelText("Prompt", {}, { timeout: 4000 });
     release?.();
     await waitFor(() => {
-      if (stageWriteState("bench-p", "s_0").pending !== 0) throw new Error("sweep write still parked");
+      if (stageWriteState(draftIdOf("bench-p"), "s_0").pending !== 0) throw new Error("sweep write still parked");
     }, { timeout: 8000 });
     // the rejected sweep's voice belongs to a seat nobody holds —
     // and the retarget already cleared the typed banner: NULL, both
@@ -1190,13 +1191,13 @@ describe("the enhance sweep's write seat (what the studio shows is what the engi
     expect(writeFace()).toBe(null);
     // the ledger row KEEPS the failure (a declared-and-held key is
     // never a ghost — the reopen does not cure the row)
-    expect(stageWriteState("bench-p", "s_0").failedKeys).toContain("prompt");
+    expect(stageWriteState(draftIdOf("bench-p"), "s_0").failedKeys).toContain("prompt");
     // THE RETURN: s_0 reopens clean too — the banner does not ride
     // back with the seat, the row still holds the curable failure
     view.rerender(h(StageDrill, drillProps(stageA) as never));
     await screen.findByLabelText("Prompt", {}, { timeout: 4000 });
     expect(writeFace()).toBe(null);
-    expect(stageWriteState("bench-p", "s_0").failedKeys).toContain("prompt");
+    expect(stageWriteState(draftIdOf("bench-p"), "s_0").failedKeys).toContain("prompt");
   });
 });
 
@@ -2057,7 +2058,7 @@ describe("the re-point write's settle faces (each half's own guard)", () => {
     // stays failed in the ledger
     await typePrompt("a red cube");
     await waitFor(() => {
-      expect(stageWriteState("bench-p", "s_0").failedKeys).toContain("prompt");
+      expect(stageWriteState(draftIdOf("bench-p"), "s_0").failedKeys).toContain("prompt");
     }, { timeout: 8000 });
     // the re-point lands CLEAN — its settle reads the ROW, and the row
     // still holds the prompt failure: the face speaks the row's voice
@@ -2082,13 +2083,13 @@ describe("the re-point write's settle faces (each half's own guard)", () => {
     await screen.findByLabelText("Prompt", {}, { timeout: 4000 });
     await typePrompt("a red cube");
     await waitFor(() => {
-      expect(stageWriteState("bench-p", "s_0").failedKeys).toContain("prompt");
+      expect(stageWriteState(draftIdOf("bench-p"), "s_0").failedKeys).toContain("prompt");
     }, { timeout: 8000 });
     await pickFamB(); // the re-point write parks at the door
     view.rerender(h(StageDrill, drillProps(stageB) as never));
     release?.();
     await waitFor(() => {
-      if (stageWriteState("bench-p", "s_0").pending !== 0) throw new Error("re-point still parked");
+      if (stageWriteState(draftIdOf("bench-p"), "s_0").pending !== 0) throw new Error("re-point still parked");
     }, { timeout: 8000 });
     // the guard held: the s_0 residue never voiced onto the s_1 view
     expect(writeFace()).toBe(null);
@@ -2118,11 +2119,11 @@ describe("the re-point write's settle faces (each half's own guard)", () => {
     view.rerender(h(StageDrill, drillProps(stageB) as never));
     release?.();
     await waitFor(() => {
-      if (stageWriteState("bench-p", "s_0").pending !== 0) throw new Error("re-point still parked");
+      if (stageWriteState(draftIdOf("bench-p"), "s_0").pending !== 0) throw new Error("re-point still parked");
     }, { timeout: 8000 });
     // the guard held; the row keeps its memory (the next settle re-voices)
     expect(writeFace()).toBe(null);
-    expect(stageWriteState("bench-p", "s_0").failedKeys).toContain("model");
+    expect(stageWriteState(draftIdOf("bench-p"), "s_0").failedKeys).toContain("model");
   });
 });
 
@@ -2161,7 +2162,7 @@ describe("the enhance flight abandoned mid-flight", () => {
  *  the artifact body the face under test fetches. */
 function stubPreviewWire(opts: { doc: Record<string, unknown>; stage: Record<string, unknown>; body?: string }): CardsBenchValue {
   const bench: CardsBenchValue = {
-    kind: "bench", draftId: "bench-face", rev: 1, sessionKey: "face",
+    kind: "bench", draftId: draftIdOf("bench-face"), rev: 1, sessionKey: "face",
     stages: [opts.stage as unknown as BenchStageView], log: [],
   };
   mountEstateFakes({
