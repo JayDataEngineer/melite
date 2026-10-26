@@ -1,9 +1,9 @@
 import { Service } from "@deepseek-ai/cordis";
 import type { Context } from "@deepseek-ai/cordis";
-import type { RunId } from "./queueCore.ts";
-export { toRemoteError } from "./runsRefusalVoices.ts";
-import type { FlowsValidateAnswer } from "./runsValidate.ts";
-import type { RunRecord } from "./runsTypes.ts";
+import type { RunId } from "./queueCore.js";
+export { toRemoteError } from "./runsRefusalVoices.js";
+import type { FlowsValidateAnswer } from "./runsValidate.js";
+import type { RunRecord } from "./runsTypes.js";
 /** The runs Remote failure codes, merged into the protocol's ONE
  *  vocabulary (cookbook §2: declaration merging, next to the
  *  throws). The codes ride kebab-cased; the byte-pinned prose

@@ -587,7 +587,10 @@ describe("THE COMMITTED LIB (an emitted import Node can actually resolve)", () =
   // 611 (2026-10-23): cordis's comfyui-vram dual faces (lib/ root +
   // lib/src/) — the vram headroom gate's module (commit 586982cf4's
   // emits, 80fa3c709): two committed .js faces for one new src.
-  const LIB_CENSUS_PIN = 611;
+  // 612 (2026-11-12): contracts' familyLane.js — the one-seat
+  // migration's new module (commit 6925103d0) landed without this
+  // repin; the walls run caught the drift the same night.
+  const LIB_CENSUS_PIN = 612;
   const specRe = /(?:from\s*|import\(\s*)(["'])(\.[^"']*)\1/g;
 
   it("the census is exact (a deletion OR a lowered floor reds — the count is pinned, not floored)", () => {

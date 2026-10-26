@@ -690,11 +690,14 @@ export class CardRegistryService extends Service {
         // mids — the lens arms never fire through this path.)
         for (const [fam, row] of Object.entries(table)) {
             for (const v of row.variants ?? []) {
-                /* v8 ignore next */
+                /* v8 ignore next -- zero routes outside mids (census
+                 * 2026-09-12): the mid/mids hits above always win, so this
+                 * lens arm never fires. */
                 if (v.route === mid)
                     return fam;
                 for (const c of v.cells ?? []) {
-                    /* v8 ignore next */
+                    /* v8 ignore next -- same census: a cell route is a route,
+                     * and no route lives outside mids — never fires. */
                     if (c.route === mid)
                         return fam;
                 }

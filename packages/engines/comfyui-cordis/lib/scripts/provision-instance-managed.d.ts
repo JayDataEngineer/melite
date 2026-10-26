@@ -1,4 +1,4 @@
-import type { EndpointConfig } from "./provision-config.ts";
+import type { EndpointConfig } from "./provision-config.js";
 /** Core-pin drift status (audit 005 E0's closing leg): compares the
  * runtime clone's HEAD to the project's core.pin. Pure seam — takes
  * the dirs, owns no globals — so the wall (core-pin-proof.spec.ts's

@@ -617,6 +617,13 @@ export const COVERAGE_BASELINE: Record<string, {
   '**/packages/web-kit/contracts/src/formSpec.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/web-kit/contracts/src/index.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/web-kit/contracts/src/laneRelations.ts': { statements: 99.69, branches: 97.11, functions: 100, lines: 100 },
+  // (new-row pin 2026-11-12, the ratchet's rowless-file refusal caught
+  // the one-seat migration's landing: familyLane.ts (commit 6925103d0)
+  // entered the gated tree without a row. Scoped two-face MIN — the
+  // walls face (variant-switch-parity + cardsRegistry.spec) and the
+  // estate-queue project face — the full pool only adds covered paths
+  // on top; lift with the lane law's own arms)
+  '**/packages/web-kit/contracts/src/familyLane.ts': { statements: 45.45, branches: 54.54, functions: 57.14, lines: 43.47 },
   '**/packages/web-kit/contracts/src/loraTypes.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/web-kit/contracts/src/mediaKinds.ts': { statements: 97.5, branches: 91.3, functions: 100, lines: 100 },
   // (row re-pin 2026-11-06, coverage-gaps F1: the 2026-11-01 comment
