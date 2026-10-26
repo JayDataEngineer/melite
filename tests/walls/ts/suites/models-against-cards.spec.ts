@@ -1083,6 +1083,9 @@ const PROVISION_ROW_COUNT = 72;
       // own repo's files.
       "fibo2-edit": 4,
       "flux-klein": 2,
+      // 2026-10-26 machine, the quant cure: h3's 34 GB non-pruned
+      // ConvRot tier — one per-cell artifact (the three-member offer).
+      "h3": 1,
       // 2026-11-07, the operator's drop: krea-2's five cells (turbo +
       // raw int8s + kroma's two turbo quants + the base tier),
       // moss-image's two quants.
