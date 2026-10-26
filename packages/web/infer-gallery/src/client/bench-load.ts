@@ -143,6 +143,75 @@ function resultOfRun(
   return { run_id: runId, url: route(heroTail), artifacts, assetUrls }
 }
 
+/** One stage's OWN preview, from its sidecar row (the per-stage
+ * preview law, operator 2026-10-26: "IMAGE PREVIEWS DO NOT WORK ON
+ * RELOAD, IT CHOOSES A RANDOM IMAGE AS THE PREVIEW OUTPUT FOR ALL
+ * CARDS" — the D6 stamp shared resultOfRun's ONE run-level hero
+ * across every stage, so every restored card painted the same
+ * image). queueSidecar.ts's SidecarStage carries each stage's own
+ * `url` + `gallery` names; this builder mirrors the estate's
+ * terminal outcome (hero url first, the gallery as the artifacts
+ * map, hero-first) over the gallery's own artifact route. The names
+ * are run-relative tails on today's sidecars; an absolute spelling
+ * folds through the contract's runTailOf, and a path that names no
+ * run tail and is not itself relative refuses (undefined — the
+ * run-level floor answers).
+ * @param stage the sidecar's stage row (url/gallery optional — a
+ *   legacy row without either carries no per-stage truth)
+ * @param runId the run the sidecar names
+ * @returns the stage's own result, or undefined when the row is
+ *   preview-less */
+function resultOfStage(
+  stage: Record<string, unknown> | undefined,
+  runId: string,
+): Record<string, unknown> | undefined {
+  if (stage === undefined) return undefined
+  // THE TAIL GRAMMAR IS RUN_ID_RE's (the li-ay stroke's law,
+  // resultOfRun below): an absolute path folds to its run-relative
+  // tail; a path that already IS a tail rides verbatim.
+  const tailOf = (p: string): string | undefined => {
+    const folded = runTailOf(p)
+    return folded !== undefined ? folded : (p.startsWith('/') ? undefined : p)
+  }
+  // THE SERVABLE TAIL (the operator's catch, 2026-10-26: "NOW I SEE
+  // BROKEN IMAGES WHEN I LOAD FROM HISTORY"): the gallery's artifact
+  // route serves RUN-RELATIVE names only (run-<id>/<file> — the
+  // route's isRunRelative gate), and the sidecar's stage rows carry
+  // RUN-DIR-relative urls ('s_0/x.png', no run-id segment). The
+  // stage's tail folds onto the run-id-prefixed spelling the route
+  // serves; a tail already led by its run id rides verbatim.
+  const runIdOf = (p: string): string => runTailOf(p)?.split('/')[0] ?? ''
+  const prefixRun = (tail: string): string => {
+    const head = runIdOf(tail)
+    return head !== '' ? tail : `${runId}/${tail}`
+  }
+  const url = typeof stage['url'] === 'string' && stage['url'] !== '' ? tailOf(stage['url']) : undefined
+  const gallery: Array<{ name?: unknown }> = Array.isArray(stage['gallery'])
+    ? (stage['gallery'] as Array<{ name?: unknown }>) : []
+  const names: string[] = []
+  for (const g of gallery) {
+    if (typeof g?.name !== 'string' || g.name === '') continue
+    if (mediaKindOf(g.name) === undefined) continue
+    const tail = tailOf(g.name)
+    if (tail !== undefined && !names.includes(tail)) names.push(tail)
+  }
+  if (url === undefined && names.length === 0) return undefined
+  // THE HERO IS THE STAGE'S URL (terminalOutcomeOf's law, one hero
+  // law both builders): the url leads the map even when the engine's
+  // gallery listed another file first.
+  const hero = prefixRun(url ?? names[0]!)
+  const ordered = names.map(prefixRun)
+  const route = (tail: string): string => '/infer-gallery/artifact?path=' + encodeURIComponent(tail)
+  const artifacts: Record<string, string> = {}
+  const assetUrls: string[] = []
+  for (const n of [hero, ...ordered.filter((m: string): boolean => m !== hero)]) {
+    if (artifacts[n] !== undefined) continue
+    artifacts[n] = route(n)
+    assetUrls.push(route(n))
+  }
+  return { run_id: runId, url: route(hero), artifacts, assetUrls }
+}
+
 /** The error message an !ok JSON response carries, else HTTP n. */
 async function refusalOf(res: Response, answer: unknown): Promise<string> {
   const err = (answer as Record<string, unknown> | null)?.['error']
@@ -306,10 +375,8 @@ export async function loadRunOntoBench(runId: string, deps: BenchLoadDeps): Prom
       const bs = parsedBench.value
       const bsStages = bs.stages.map((st) => ({ ...(st as Record<string, unknown>) }))
       if (bsStages.length > 1) {
-        const ranCard = typeof snap === 'object' && snap !== null
-          ? (snap as Record<string, unknown>)['card'] : undefined
         const result = resultOfRun(flow as Record<string, unknown> | null, String((side as Record<string, unknown>)['run_id'] ?? ''))
-        for (const st of bsStages as Record<string, unknown>[]) {
+        for (const [i, st] of (bsStages as Record<string, unknown>[]).entries()) {
           // THE RESTORE'S OWN STRIP, BY THE CONTRACT'S NAMES
           // (benchStage.ts): the wand restores the WORKFLOW, never
           // another bench's output memory. The list used to be
@@ -337,15 +404,33 @@ export async function loadRunOntoBench(runId: string, deps: BenchLoadDeps): Prom
           // on all cards") the old arm re-attached the run's result
           // to the ONE stage whose card matched the ran card — every
           // OTHER ran stage in the flow restored previewless. The
-          // run's result is SHARED truth (the artifacts map carries
-          // every clip, keyed by its run-relative name): every
-          // non-skipped stage rides it, and each card's own preview
-          // law picks its hero out of the map. The SKIPPED set never
-          // carries another stage's product.
+          // SKIPPED set never carries another stage's product.
+          // (THE PER-STAGE PREVIEW LAW, operator 2026-10-26: "IT
+          // CHOOSES A RANDOM IMAGE AS THE PREVIEW OUTPUT FOR ALL
+          // CARDS") the D6 cure over-shared: one run-level hero on
+          // every stage painted one image on every card. The
+          // sidecar's OWN stage rows carry each stage's url + gallery
+          // (queueSidecar.ts) — joined by bench_stage_id (the card
+          // skeleton's id names no bench row) then the row id, each
+          // stage paints ITS OWN product; the run-level result is
+          // the LEGACY floor for stages the sidecar leaves
+          // preview-less (pre-sidecar-stage runs).
+          const rawSideStages: unknown = (flow as Record<string, unknown>)['stages']
+          const sideStages: Array<Record<string, unknown>> = Array.isArray(rawSideStages)
+            ? rawSideStages.filter((s): s is Record<string, unknown> => typeof s === 'object' && s !== null && !Array.isArray(s))
+            : []
+          const sideRowFor = (benchId: unknown, index: number): Record<string, unknown> | undefined =>
+            sideStages.find((s) => s['bench_stage_id'] === benchId)
+              ?? sideStages.find((s) => s['id'] === benchId)
+              ?? (sideStages.length === bsStages.length ? sideStages[index] : undefined)
           const skippedRaw: unknown = (side as Record<string, unknown>)['skipped_stages']
           const skipped: unknown[] = Array.isArray(skippedRaw) ? skippedRaw : []
           const isSkipped = skipped.some((k) => k === st['id'])
-          if (!isSkipped && result !== undefined) st['result'] = result
+          if (!isSkipped) {
+            const own = resultOfStage(sideRowFor(st['id'], i), String((side as Record<string, unknown>)['run_id'] ?? ''))
+            if (own !== undefined) st['result'] = own
+            else if (result !== undefined) st['result'] = result
+          }
           st['provenance'] = RESTORED_PROVENANCE_SPELLING
         }
         const bsIntent = bs.intent !== '' ? bs.intent : 'restored run'

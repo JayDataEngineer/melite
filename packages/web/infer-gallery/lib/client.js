@@ -1864,6 +1864,61 @@ window.__ModuleLoader__.load({
 				assetUrls
 			};
 		}
+		/** One stage's OWN preview, from its sidecar row (the per-stage
+		* preview law, operator 2026-10-26: "IMAGE PREVIEWS DO NOT WORK ON
+		* RELOAD, IT CHOOSES A RANDOM IMAGE AS THE PREVIEW OUTPUT FOR ALL
+		* CARDS" — the D6 stamp shared resultOfRun's ONE run-level hero
+		* across every stage, so every restored card painted the same
+		* image). queueSidecar.ts's SidecarStage carries each stage's own
+		* `url` + `gallery` names; this builder mirrors the estate's
+		* terminal outcome (hero url first, the gallery as the artifacts
+		* map, hero-first) over the gallery's own artifact route. The names
+		* are run-relative tails on today's sidecars; an absolute spelling
+		* folds through the contract's runTailOf, and a path that names no
+		* run tail and is not itself relative refuses (undefined — the
+		* run-level floor answers).
+		* @param stage the sidecar's stage row (url/gallery optional — a
+		*   legacy row without either carries no per-stage truth)
+		* @param runId the run the sidecar names
+		* @returns the stage's own result, or undefined when the row is
+		*   preview-less */
+		function resultOfStage(stage, runId) {
+			if (stage === void 0) return void 0;
+			const tailOf = (p) => {
+				const folded = runTailOf$1(p);
+				return folded !== void 0 ? folded : p.startsWith("/") ? void 0 : p;
+			};
+			const runIdOf = (p) => runTailOf$1(p)?.split("/")[0] ?? "";
+			const prefixRun = (tail) => {
+				return runIdOf(tail) !== "" ? tail : `${runId}/${tail}`;
+			};
+			const url = typeof stage["url"] === "string" && stage["url"] !== "" ? tailOf(stage["url"]) : void 0;
+			const gallery = Array.isArray(stage["gallery"]) ? stage["gallery"] : [];
+			const names = [];
+			for (const g of gallery) {
+				if (typeof g?.name !== "string" || g.name === "") continue;
+				if (mediaKindOf(g.name) === void 0) continue;
+				const tail = tailOf(g.name);
+				if (tail !== void 0 && !names.includes(tail)) names.push(tail);
+			}
+			if (url === void 0 && names.length === 0) return void 0;
+			const hero = prefixRun(url ?? names[0]);
+			const ordered = names.map(prefixRun);
+			const route = (tail) => "/infer-gallery/artifact?path=" + encodeURIComponent(tail);
+			const artifacts = {};
+			const assetUrls = [];
+			for (const n of [hero, ...ordered.filter((m) => m !== hero)]) {
+				if (artifacts[n] !== void 0) continue;
+				artifacts[n] = route(n);
+				assetUrls.push(route(n));
+			}
+			return {
+				run_id: runId,
+				url: route(hero),
+				artifacts,
+				assetUrls
+			};
+		}
 		/** The error message an !ok JSON response carries, else HTTP n. */
 		async function refusalOf(res, answer) {
 			const err = answer?.["error"];
@@ -1969,13 +2024,19 @@ window.__ModuleLoader__.load({
 					const bs = parsedBench.value;
 					const bsStages = bs.stages.map((st) => ({ ...st }));
 					if (bsStages.length > 1) {
-						typeof snap === "object" && snap !== null && snap["card"];
 						const result = resultOfRun(flow, String(side["run_id"] ?? ""));
-						for (const st of bsStages) {
+						for (const [i, st] of bsStages.entries()) {
 							stripKeys$1(st, RESTORE_STRIP_KEYS$1);
 							stripSelfNamedModel$1(st["card"], st["params"]);
+							const rawSideStages = flow["stages"];
+							const sideStages = Array.isArray(rawSideStages) ? rawSideStages.filter((s) => typeof s === "object" && s !== null && !Array.isArray(s)) : [];
+							const sideRowFor = (benchId, index) => sideStages.find((s) => s["bench_stage_id"] === benchId) ?? sideStages.find((s) => s["id"] === benchId) ?? (sideStages.length === bsStages.length ? sideStages[index] : void 0);
 							const skippedRaw = side["skipped_stages"];
-							if (!(Array.isArray(skippedRaw) ? skippedRaw : []).some((k) => k === st["id"]) && result !== void 0) st["result"] = result;
+							if (!(Array.isArray(skippedRaw) ? skippedRaw : []).some((k) => k === st["id"])) {
+								const own = resultOfStage(sideRowFor(st["id"], i), String(side["run_id"] ?? ""));
+								if (own !== void 0) st["result"] = own;
+								else if (result !== void 0) st["result"] = result;
+							}
 							st["provenance"] = RESTORED_PROVENANCE_SPELLING$1;
 						}
 						await loadStagesOntoBench(bsStages, (bs.intent !== "" ? bs.intent : "restored run").slice(0, 77), deps);

@@ -440,6 +440,116 @@ describe('loadRunOntoBench — the run record wins', () => {
     expect(String(ensuredBody(calls).intent).length).toBeLessThanOrEqual(77)
   })
 
+  it('THE PER-STAGE PREVIEW LAW (operator 2026-10-26: "IMAGE PREVIEWS DO NOT WORK ON RELOAD, IT CHOOSES A RANDOM IMAGE AS THE PREVIEW OUTPUT FOR ALL CARDS") — a stage the sidecar names paints ITS OWN product, never the run-level hero', async () => {
+    // The D6 stamp shared resultOfRun's ONE hero (film > video >
+    // first) across every non-skipped stage, so every restored card
+    // painted the same "random" image. The sidecar carries each
+    // stage's OWN url + gallery (queueSidecar.ts SidecarStage) — the
+    // restore stamps THAT, joined by bench_stage_id ?? id.
+    const route = (tail: string): string => '/infer-gallery/artifact?path=' + encodeURIComponent(tail)
+    const side = {
+      run_id: 'run-0f1e2d-r1',
+      flow: {
+        // the run-level artifacts name a FILM first — resultOfRun's
+        // shared hero picks it, the per-stage law must NOT
+        artifacts: [
+          '/data/run-0f1e2d-r1/s_2/h3_t4_film_1_.mp4',
+          '/data/run-0f1e2d-r1/s_0/a.png',
+          '/data/run-0f1e2d-r1/s_1/b.png',
+        ],
+        bench_snapshot: {
+          stages: [
+            { id: 's_0', card: 'image-gen' },
+            { id: 's_1', card: 'image-gen' },
+            { id: 's_2', card: 'h3-timeline' },
+          ],
+          intent: 'x',
+        },
+        stages: [
+          { id: 's_0', name: 'image', index: 0, status: 'completed', url: 's_0/a.png', gallery: [{ name: 's_0/a.png' }], outputs: {}, expected: {} },
+          { id: 's_1', name: 'image', index: 1, status: 'completed', url: 's_1/b.png', gallery: [{ name: 's_1/b.png' }], outputs: {}, expected: {} },
+          { id: 's_2', name: 'h3', index: 2, status: 'completed', url: 's_2/h3_t4_film_1_.mp4', gallery: [{ name: 's_2/h3_t4_w1_1_.mp4' }, { name: 's_2/h3_t4_film_1_.mp4' }], outputs: {}, expected: {} },
+        ],
+      },
+    }
+    const { calls } = stubFetch(runWith(side))
+    const d = deps('s1')
+    await loadRunOntoBench('r1', d)
+    expect(d.errors).toEqual([])
+    const stages = ensuredBody(calls).stages as Array<Record<string, unknown>>
+    expect(stages).toHaveLength(3)
+    expect(stages[0]).toMatchObject({ id: 's_0', result: { run_id: 'run-0f1e2d-r1', url: route('run-0f1e2d-r1/s_0/a.png'), artifacts: { 'run-0f1e2d-r1/s_0/a.png': route('run-0f1e2d-r1/s_0/a.png') } } })
+    expect(stages[1]).toMatchObject({ id: 's_1', result: { run_id: 'run-0f1e2d-r1', url: route('run-0f1e2d-r1/s_1/b.png'), artifacts: { 'run-0f1e2d-r1/s_1/b.png': route('run-0f1e2d-r1/s_1/b.png') } } })
+    // the film card keeps its film — hero-first, the window in the map
+    expect(stages[2]).toMatchObject({
+      id: 's_2',
+      result: {
+        run_id: 'run-0f1e2d-r1',
+        url: route('run-0f1e2d-r1/s_2/h3_t4_film_1_.mp4'),
+        artifacts: {
+          'run-0f1e2d-r1/s_2/h3_t4_film_1_.mp4': route('run-0f1e2d-r1/s_2/h3_t4_film_1_.mp4'),
+          'run-0f1e2d-r1/s_2/h3_t4_w1_1_.mp4': route('run-0f1e2d-r1/s_2/h3_t4_w1_1_.mp4'),
+        },
+      },
+    })
+  })
+
+  it('THE PER-STAGE PREVIEW LAW, skeleton join: a card-skeleton id joins its bench row through bench_stage_id, and a stage the sidecar leaves preview-less falls to the run-level hero (the D6 floor)', async () => {
+    const route = (tail: string): string => '/infer-gallery/artifact?path=' + encodeURIComponent(tail)
+    const side = {
+      run_id: 'run-0f1e2d-r1',
+      flow: {
+        artifacts: ['/data/run-0f1e2d-r1/out.png'],
+        bench_snapshot: {
+          stages: [
+            { id: 's_0', card: 'image-gen' },
+            { id: 's_1', card: 'other' },
+          ],
+          intent: 'x',
+        },
+        stages: [
+          { id: 'generate', bench_stage_id: 's_1', name: 'image', index: 0, status: 'completed', url: 's_1/b.png', gallery: [{ name: 's_1/b.png' }], outputs: {}, expected: {} },
+        ],
+      },
+    }
+    const { calls } = stubFetch(runWith(side))
+    const d = deps('s1')
+    await loadRunOntoBench('r1', d)
+    expect(d.errors).toEqual([])
+    const stages = ensuredBody(calls).stages as Array<Record<string, unknown>>
+    // the skeleton id names no bench row; its bench_stage_id does
+    expect(stages[1]).toMatchObject({ id: 's_1', result: { url: route('run-0f1e2d-r1/s_1/b.png') } })
+    // no sidecar row names s_0 at all — the run-level hero is its
+    // honest floor (the D6 law survives as the legacy arm)
+    expect(stages[0]).toMatchObject({ id: 's_0', result: { url: route('run-0f1e2d-r1/out.png') } })
+  })
+
+  it('THE PER-STAGE PREVIEW LAW, absolute fold: an absolute sidecar url folds through runTailOf onto the gallery route (one tail grammar, both spellings)', async () => {
+    const route = (tail: string): string => '/infer-gallery/artifact?path=' + encodeURIComponent(tail)
+    const side = {
+      run_id: 'run-0f1e2d-r1',
+      flow: {
+        artifacts: ['/data/run-0f1e2d-r1/s_0/a.png'],
+        bench_snapshot: {
+          stages: [{ id: 's_0', card: 'image-gen' }, { id: 's_1', card: 'other' }],
+          intent: 'x',
+        },
+        stages: [
+          { id: 's_0', name: 'image', index: 0, status: 'completed', url: '/data/run-0f1e2d-r1/s_0/a.png', gallery: [{ name: '/data/run-0f1e2d-r1/s_0/a.png' }], outputs: {}, expected: {} },
+        ],
+      },
+    }
+    const { calls } = stubFetch(runWith(side))
+    const d = deps('s1')
+    await loadRunOntoBench('r1', d)
+    expect(d.errors).toEqual([])
+    const stages = ensuredBody(calls).stages as Array<Record<string, unknown>>
+    expect(stages[0]).toMatchObject({
+      id: 's_0',
+      result: { run_id: 'run-0f1e2d-r1', url: route('run-0f1e2d-r1/s_0/a.png'), artifacts: { 'run-0f1e2d-r1/s_0/a.png': route('run-0f1e2d-r1/s_0/a.png') } },
+    })
+  })
+
   it('THE CROSS-BENCH HISTORY LEAK — history/resultParams never ride a restore (bench-session-2bd2a61f proof)', async () => {
     // Live proof, 2026-09-23: the operator's bench s_0 (an sfx card)
     // showed history tiles NAMED LIKE ANOTHER CARD'S FILE — a tts
