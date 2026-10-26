@@ -38,7 +38,7 @@
 
 import { execSync } from 'node:child_process'
 import { createHash } from 'node:crypto'
-import { existsSync, mkdirSync, readFileSync, readdirSync, renameSync, unlinkSync, writeFileSync } from 'node:fs'
+import { copyFileSync, existsSync, mkdirSync, readFileSync, readdirSync, renameSync, unlinkSync, writeFileSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import process from 'node:process'
@@ -58,6 +58,13 @@ const PROFILE = argv[1] && !argv[1].startsWith('--') ? argv[1] : 'melite-test'
 const ESTATE_AGENT_ROUTE = flag('--estate-agent-route', '')
 const ESTATE_STATE_ROOT = flag('--estate-state-root', '')
 const PROFILE_ROWS = flag('--profile-rows', '')
+// F1 (the 2026-10-20 sweep's destructive-render finding, cured
+// 2026-11-12): the renderer owns its files wholesale — but only
+// files IT rendered. A package.json with no provenance stamp naming
+// this renderer (a hand-composed profile, another tool's output)
+// used to be regenerated silently: dependencies rewritten, the
+// original gone. See the guard at the package.json write.
+const FORCE_RENDER = argv.includes('--force-render')
 
 const log = (...a) => console.log(...a)
 const die = (msg) => { console.error('infer-provision: ' + msg); process.exit(1) }
@@ -327,6 +334,24 @@ function renderProfile(name) {  // In-box bundles (@deepseek-ai/*) resolve from 
   const pkgPath = join(dst, 'package.json')
   let pkg = { name: 'dsh-profile-' + name, private: true, dependencies: {} }
   if (existsSync(pkgPath)) {
+    // F1 refuse-or-backup: without a stamp naming THIS renderer the
+    // render dies loud; --force-render backs the file up and proceeds.
+    // A file with our own stamp re-renders freely — the no-drift law
+    // (the renderer owns its output wholesale) is unchanged.
+    if (!FORCE_RENDER) {
+      let mine = false
+      try {
+        const prov = JSON.parse(readFileSync(join(dst, 'render-provenance.json'), 'utf8'))
+        mine = prov !== null && typeof prov === 'object' && prov.renderer === 'infer-provision'
+      } catch { /* no stamp, or unparseable: not provably ours */ }
+      if (!mine) {
+        die('refusing to overwrite ' + pkgPath + ' — no render-provenance.json names this renderer '
+          + '(a hand-composed or foreign file). Move it aside, or pass --force-render to back it up '
+          + 'as package.json.prerender.bak and re-render')
+      }
+    } else {
+      copyFileSync(pkgPath, pkgPath + '.prerender.bak')
+    }
     try { pkg = JSON.parse(readFileSync(pkgPath, 'utf8')) } catch { /* re-render */ }
   }
   pkg.name = pkg.name || 'dsh-profile-' + name

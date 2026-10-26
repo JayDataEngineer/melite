@@ -818,3 +818,70 @@ test("the install carries a timeout and the writes go through temp+rename (F6, s
   assert.ok(BIN_SRC.includes("renderInstall") && BIN_SRC.includes("acquireLock"),
     "both commands share the locked render+install door");
 });
+
+// F1 (the 2026-10-20 sweep's destructive-render finding, cured
+// 2026-11-12): the renderer regenerates package.json wholesale — the
+// documented no-drift law — but a file the provisioner never wrote
+// (a hand-composed profile, another tool's output) was destroyed
+// silently with it. The refuse-or-backup guard rides F5's own stamp:
+// no render-provenance naming this renderer → DIE loud; --force-render
+// backs the original up beside the render. Our own stamped files
+// re-render freely (the no-drift law unchanged).
+gate("F1: a package.json without our provenance stamp is REFUSED, not clobbered", () => {
+  const home: string = mkdtempSync(join(tmpdir(), "provisioner-f1-"));
+  const dir: string = join(home, "profiles", "headless");
+  mkdirSync(dir, { recursive: true });
+  writeFileSync(join(dir, "package.json"), JSON.stringify({
+    name: "hand-composed-profile", private: true,
+    dependencies: { precious: "keep-me" },
+  }, null, 2));
+  let stderr = "";
+  try {
+    execFileSync(process.execPath,
+      [BIN, "profile", "headless", "--dsh-home", home],
+      { encoding: "utf8", cwd: REPO, timeout: 300_000 });
+    assert.fail("the render was expected to refuse a foreign package.json");
+  } catch (err) {
+    const e = err as { stderr?: string };
+    stderr = e.stderr ?? "";
+  }
+  assert.match(stderr, /refusing to overwrite .*package\.json — no render-provenance/,
+    "the refusal names the file and the missing stamp");
+  assert.match(stderr, /--force-render/,
+    "the refusal names the operator's door out");
+  // THE FILE SURVIVES BYTE-IDENTICAL — a refusal that left a half-
+  // clobbered file would be the destructive render in miniature
+  const after = readFileSync(join(dir, "package.json"), "utf8");
+  assert.ok(after.includes("hand-composed-profile"),
+    "the foreign package.json is untouched by the refusal");
+  assert.ok(!existsSync(join(dir, "render-provenance.json")),
+    "a refused render stamps nothing");
+});
+
+gate("F1: --force-render backs the foreign file up and proceeds; our own stamp re-renders freely", () => {
+  const home: string = mkdtempSync(join(tmpdir(), "provisioner-f1-"));
+  const dir: string = join(home, "profiles", "headless");
+  mkdirSync(dir, { recursive: true });
+  writeFileSync(join(dir, "package.json"), JSON.stringify({
+    name: "hand-composed-profile", private: true,
+    dependencies: { precious: "keep-me" },
+  }, null, 2));
+  render(home, "headless", "--force-render");
+  // the backup is the original, byte-identical
+  const bak = readFileSync(join(dir, "package.json.prerender.bak"), "utf8");
+  assert.ok(bak.includes("hand-composed-profile"),
+    "the .prerender.bak holds the pre-render original");
+  // and the render is ours now: a RE-render needs no force
+  render(home, "headless");
+  const pkg = JSON.parse(readFileSync(join(dir, "package.json"), "utf8")) as {
+    dependencies?: Record<string, string>;
+  };
+  // the no-drift law owns DEPENDENCIES wholesale (the name is
+  // preserved by design: pkg.name || default): the stamped
+  // re-render's deps are the derived set — the foreign hand-entry
+  // is gone and the provisioner link is in
+  assert.ok(pkg.dependencies?.["precious"] === undefined,
+    "the stamped re-render owns the dependencies (the no-drift law)");
+  assert.ok(pkg.dependencies?.["@melite/harness-provisioner"] !== undefined,
+    "the derived set carries the provisioner link");
+});
