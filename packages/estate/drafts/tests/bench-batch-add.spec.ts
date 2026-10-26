@@ -180,3 +180,71 @@ describe("addStagesBench — the batch laws", () => {
     assert.match(arrayParams.message, /stage 0 of the batch: params must be an object/);
   });
 });
+
+// ── the outcome arm (the carry-batch law, operator 2026-10-26: the
+// restore's per-stage drafts/patch writes died — the terminal face
+// rides the row through the SAME door, applied by the SAME trail
+// applier drafts/patch runs) ──────────────────────────────────────
+describe("addStagesBench — the outcome arm (the restore carry rides the batch)", () => {
+  test("a row's outcome lands at the SAME rev, SAME event — result, runStatus, and the gen archived at history[0]", async () => {
+    const { drafts, base } = await bootWithStage();
+    const ans = await addStagesBench(drafts, "s", {
+      stages: [
+        ROW({ outcome: {
+          runStatus: "done",
+          result: { run_id: "r_9", url: "/melite-media/runs/r_9/a.png", artifacts: { "a.png": "/melite-media/runs/r_9/a.png" } },
+        } }),
+      ],
+      expect_rev: base.rev,
+      author: "user",
+    });
+    assert.equal(ans.rev, base.rev + 1, "the outcome rides the add's ONE rev — no second write");
+    const bench = getBench(drafts, "s");
+    assert.equal(bench.rev, base.rev + 1);
+    assert.equal(bench.log.filter((e) => e["kind"] === "add_stages").length, 1, "one history event, carry included");
+    const seated = stageRows(bench).find((st) => st["id"] === ans.stages[0])!;
+    assert.equal(seated["runStatus"], "done");
+    const result = seated["result"] as Record<string, unknown>;
+    assert.equal(result["run_id"], "r_9");
+    assert.equal(result["url"], "/melite-media/runs/r_9/a.png");
+    // THE TRAIL LAW rides the batch door too: the landing gen archives
+    // (history[0] is the newest SETTLED gen — the lost-gen disease's
+    // law, judged identically to a live observer's drafts/patch)
+    const history = seated["history"] as Array<Record<string, unknown>>;
+    assert.ok(Array.isArray(history) && history.length === 1, "the landing gen entered history");
+    assert.equal(history[0]!["run_id"], "r_9");
+  });
+
+  test("outcome refusals name the row — unknown keys, wrong shapes, and the empty body all refuse whole-batch", async () => {
+    const { drafts, base } = await bootWithStage();
+    const unknownKey = await failureOf(addStagesBench(drafts, "s", {
+      stages: [ROW({ outcome: { params: { prompt: "poison" } } })],
+      expect_rev: base.rev,
+      author: "user",
+    }));
+    assert.match(unknownKey.message, /stage 0 of the batch: unknown outcome key\(s\): params/);
+    const notObject = await failureOf(addStagesBench(drafts, "s", {
+      stages: [ROW({ outcome: "done" })],
+      expect_rev: base.rev,
+      author: "user",
+    }));
+    assert.match(notObject.message, /stage 0 of the batch: outcome must be an object/);
+    const empty = await failureOf(addStagesBench(drafts, "s", {
+      stages: [ROW({ outcome: {} })],
+      expect_rev: base.rev,
+      author: "user",
+    }));
+    assert.match(empty.message, /outcome is empty/);
+    const badStatus = await failureOf(addStagesBench(drafts, "s", {
+      stages: [ROW({ outcome: { runStatus: 7 } })],
+      expect_rev: base.rev,
+      author: "user",
+    }));
+    assert.match(badStatus.message, /outcome.runStatus must be a string/);
+    // whole-batch atomicity holds for the outcome arm: every refusal
+    // above persisted NOTHING
+    const bench = getBench(drafts, "s");
+    assert.equal(bench.rev, base.rev, "a refused outcome persists nothing");
+    assert.equal(stageRows(bench).length, 1, "the pre-existing stage only");
+  });
+});

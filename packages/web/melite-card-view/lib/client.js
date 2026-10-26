@@ -1281,7 +1281,7 @@ window.__ModuleLoader__.load({
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 1609,
+						"line": 1470,
 						"column": 9
 					}
 				},
@@ -1348,7 +1348,7 @@ window.__ModuleLoader__.load({
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 1621,
+						"line": 1482,
 						"column": 9
 					}
 				},
@@ -1412,7 +1412,7 @@ window.__ModuleLoader__.load({
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 1644,
+						"line": 1505,
 						"column": 9
 					}
 				},
@@ -1446,7 +1446,7 @@ window.__ModuleLoader__.load({
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 1540,
+						"line": 1401,
 						"column": 9
 					}
 				},
@@ -1480,7 +1480,7 @@ window.__ModuleLoader__.load({
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 1435,
+						"line": 1296,
 						"column": 9
 					}
 				},
@@ -1544,7 +1544,7 @@ window.__ModuleLoader__.load({
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 1682,
+						"line": 1543,
 						"column": 9
 					}
 				},
@@ -1623,7 +1623,7 @@ window.__ModuleLoader__.load({
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 1599,
+						"line": 1460,
 						"column": 9
 					}
 				},
@@ -1687,7 +1687,7 @@ window.__ModuleLoader__.load({
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 1631,
+						"line": 1492,
 						"column": 9
 					}
 				},
@@ -1755,7 +1755,7 @@ window.__ModuleLoader__.load({
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 1665,
+						"line": 1526,
 						"column": 9
 					}
 				},
@@ -1821,7 +1821,7 @@ window.__ModuleLoader__.load({
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 1654,
+						"line": 1515,
 						"column": 9
 					}
 				},
@@ -1855,7 +1855,7 @@ window.__ModuleLoader__.load({
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 1453,
+						"line": 1314,
 						"column": 10
 					}
 				},
@@ -1904,7 +1904,7 @@ window.__ModuleLoader__.load({
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 1714,
+						"line": 1575,
 						"column": 9
 					}
 				},
@@ -1968,7 +1968,7 @@ window.__ModuleLoader__.load({
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 1698,
+						"line": 1559,
 						"column": 9
 					}
 				},
@@ -2010,7 +2010,7 @@ window.__ModuleLoader__.load({
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 707,
+						"line": 703,
 						"column": 9
 					}
 				},
@@ -2044,7 +2044,7 @@ window.__ModuleLoader__.load({
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 692,
+						"line": 688,
 						"column": 9
 					}
 				},
@@ -2087,7 +2087,7 @@ window.__ModuleLoader__.load({
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 684,
+						"line": 680,
 						"column": 9
 					}
 				},
@@ -2196,7 +2196,7 @@ window.__ModuleLoader__.load({
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 830,
+						"line": 826,
 						"column": 9
 					}
 				}
@@ -3145,7 +3145,7 @@ window.__ModuleLoader__.load({
 		*  construction door (the newRunId pattern).
 		*  @param session the sanitized bench session key
 		*  @returns the composed draft id, branded */
-		function benchDraftIdOf$1(session) {
+		function benchDraftIdOf(session) {
 			return "bench-" + session;
 		}
 		/** The run-relative tail of an absolute artifact path, or undefined
@@ -6001,19 +6001,6 @@ window.__ModuleLoader__.load({
 		function draftIdOf(literal) {
 			return literal;
 		}
-		/** The MINT — the inverse of benchSessionOf (2026-10-13, the card-UI
-		*  duplication audit). The grammar moved to this floor and the DECISION
-		*  beside it, but the mint stayed behind in six seats spelling
-		*  `"bench-" + session` — one of which stripped the prefix and added
-		*  it straight back. An address has one grammar, one sanitize, and now
-		*  one mint. The composed bench id is BORN here, so the mint is one
-		*  of the DraftId brand's two producers: the return cast is the
-		*  construction door (the newRunId pattern).
-		*  @param session the sanitized bench session key
-		*  @returns the composed draft id, branded */
-		function benchDraftIdOf(session) {
-			return "bench-" + session;
-		}
 		//#endregion
 		//#region src/client/cards-resource.ts
 		/** The bench address (the legacy bare form serves 'main' — the
@@ -6633,19 +6620,22 @@ window.__ModuleLoader__.load({
 		*  throws with the door's own text — the batch refuses atomically,
 		*  so nothing half-lands.
 		*
-		*  THE OUTCOME CARRY (2026-10-02, the resume law's run-view half):
-		*  the run's own stage rows hold the terminal outcome a bare
-		*  re-admission loses — the add-stages door authors params only and
-		*  refuses result/runStatus by its own law, so the outcome rides the
-		*  same drafts patch door the live observer writes, stamped by the
-		*  same builder (terminalOutcomeOf). The join is three-way (the
-		*  previews cure, 2026-11-12): draft id as the run row's id, the
-		*  registry's benchStageId stamp, then position when the run
-		*  composed exactly this draft's carded rows — history runs mint
-		*  card-skeleton ids the draft never heard of, and an id-only join
-		*  carried nothing, silently. A draft row no run stage names is
-		*  voiced; a draft edited since keeps its surviving rows' outcomes
-		*  and simply has none for new rows. */
+		*  THE OUTCOME CARRY (2026-10-02, the resume law's run-view half;
+		*  CARRY-BATCHED 2026-10-26): the run's own stage rows hold the
+		*  terminal outcome a bare re-admission loses — the outcome rides
+		*  the row's `outcome` arm through the SAME bench/add-stages door
+		*  (the door applies it through the trail laws at the same save),
+		*  stamped by the same builder (terminalOutcomeOf). Zero
+		*  drafts/patch doors, zero rev re-reads, no seat resolution: the
+		*  outcome cannot address a wrong tile because it never addresses
+		*  a seat at all. The join is three-way (the previews cure,
+		*  2026-11-12): draft id as the run row's id, the registry's
+		*  benchStageId stamp, then position when the run composed exactly
+		*  this draft's carded rows — history runs mint card-skeleton ids
+		*  the draft never heard of, and an id-only join carried nothing,
+		*  silently. A draft row no run stage names is voiced; a draft
+		*  edited since keeps its surviving rows' outcomes and simply has
+		*  none for new rows. */
 		async function restoreRunToBench(run, sessionKey, signal) {
 			if (run.draftId === null || run.draftId === "") throw new Error("this run names no draft — nothing to restore");
 			if (signal?.aborted === true) return {
@@ -6671,7 +6661,6 @@ window.__ModuleLoader__.load({
 				throw new Error("the bench is unreadable: " + (0, _melite_card_base_client.rejectionVoice)(e));
 			}
 			let rev = typeof bench["rev"] === "number" ? bench["rev"] : 0;
-			const benchDraftId = typeof bench["draft_id"] === "string" && bench["draft_id"] !== "" ? draftIdOf(bench["draft_id"]) : benchDraftIdOf(key);
 			const report = {
 				added: 0,
 				skipped: 0,
@@ -6700,26 +6689,9 @@ window.__ModuleLoader__.load({
 				draftIds.push(id);
 			}
 			if (rows.length === 0) return report;
-			let answer;
-			try {
-				answer = await (0, _melite_card_base_client.unwrapRemote)((0, _melite_card_base_client.estateRemote)().bench["add-stages"](key, {
-					stages: rows,
-					author: "user",
-					expect_rev: rev
-				}, signal), "bench/add-stages");
-			} catch (e) {
-				throw new Error("restore stopped after " + String(report.added) + " stage(s): " + (0, _melite_card_base_client.rejectionVoice)(e));
-			}
-			const seatedIds = Array.isArray(answer["stages"]) ? answer["stages"].map((v) => typeof v === "string" ? v : "") : [];
-			report.added = rows.length;
 			const positionalJoin = run.stages.length === rows.length ? run.stages : null;
 			for (let i = 0; i < rows.length; i += 1) {
-				if (signal?.aborted ?? false) {
-					report.notes.push("restore stopped — aborted with " + String(report.carried) + " of " + String(rows.length) + " outcome(s) carried");
-					break;
-				}
 				const draftId = draftIds[i] ?? null;
-				const seatedRaw = seatedIds[i];
 				const positional = positionalJoin !== null ? positionalJoin[i] : void 0;
 				if (positional !== void 0 && draftId !== null && !run.stages.some((s) => s.id === draftId || s.benchStageId === draftId)) {
 					const claims = positional.id === draftId ? void 0 : positional.id;
@@ -6727,66 +6699,31 @@ window.__ModuleLoader__.load({
 					const other = draftIds.find((d) => d !== null && (d === claims || d === stampClaims)) ?? null;
 					if (other !== null) report.notes.push("positional carry for " + draftId + ": run stage " + String(claims ?? stampClaims) + " names another draft row (" + other + ") — the run order drifted from the draft order; the tile paints by position (the LEGACY tier)");
 				}
-				if (typeof seatedRaw === "string" && seatedRaw !== "") {
-					await carryOutcome(run, benchDraftId, draftId, seatedRaw, positional, report, signal);
+				if (draftId === null) continue;
+				const runStage = run.stages.find((s) => s.id === draftId) ?? run.stages.find((s) => s.benchStageId === draftId) ?? positional;
+				if (runStage === void 0) {
+					report.notes.push("could not carry " + draftId + "'s outcome: no run stage names it (run stages: " + run.stages.map((s) => s.id).join(", ") + ")");
 					continue;
 				}
-				if (draftId !== null && rows[i]?.["id"] === draftId) {
-					await carryOutcome(run, benchDraftId, draftId, draftId, positional, report, signal);
-					continue;
-				}
-				report.notes.push("could not carry " + (draftId ?? "stage " + String(i)) + "'s outcome: the bench answer named no seated id");
-			}
-			return report;
-		}
-		/** One restored row's outcome carry: patch the terminal outcome the
-		*  run's own stage row holds onto the seated bench row, through the
-		*  drafts patch door (the only door result/runStatus lawfully ride
-		*  — the add-stage verb refuses them by its authoring law). The
-		*  lookup tries THREE joins (the previews cure, 2026-11-12): the
-		*  draft id as the run row's id (bench loops and legacy runs), the
-		*  registry's benchStageId stamp (card-composed runs since
-		*  2026-10-22), and the position fallback (history runs — skeleton
-		*  ids, no stamp; the caller hands it only when the run composed
-		*  exactly this draft's carded rows). A draft row no run stage
-		*  names is VOICED — carried 0 never silent again. The patch target
-		*  is the SEATED id the caller resolved from the add answer (a
-		*  collision retry seats a fresh one — the caller never hands a
-		*  guessed id here: a guessed seat would repaint the wrong tile).
-		*  A stage with no outcome data carries nothing; a carry that
-		*  cannot land notes itself — the workflow stands either way.
-		*  @param run the run value the restore serves (its stage rows hold
-		*  the terminal outcomes).
-		*  @param benchKey the bench draft id the rows landed on.
-		*  @param draftStageId the DRAFT stage id this row restored (null —
-		*  an id-less draft row — carries nothing: the run's rows are id-keyed).
-		*  @param seated the SEATED bench id to patch (resolved by the caller
-		*  from the add answer; never a guess).
-		*  @param positional the run stage at this row's position when the
-		*  run composed exactly this draft's carded rows (the history heal's
-		*  join; undefined when the counts disagree).
-		*  @param report the report the carry counts into.
-		*  @param signal the caller's abort signal (binds the restore loop —
-		*  the patch seam below owns no signal, so an abort stops the NEXT
-		*  carry, never the in-flight patch). */
-		async function carryOutcome(run, benchKey, draftStageId, seated, positional, report, signal) {
-			if (draftStageId === null) return;
-			const runStage = run.stages.find((s) => s.id === draftStageId) ?? run.stages.find((s) => s.benchStageId === draftStageId) ?? positional;
-			if (runStage === void 0) {
-				report.notes.push("could not carry " + draftStageId + "'s outcome: no run stage names it (run stages: " + run.stages.map((s) => s.id).join(", ") + ")");
-				return;
-			}
-			const outcome = terminalOutcomeOf(run.runId, runStage.status, runStage, void 0);
-			if (!("url" in outcome.result) && !("artifacts" in outcome.result) && !("error" in outcome.result)) return;
-			try {
-				await patchStageOutcome(benchKey, seated, {
+				const outcome = terminalOutcomeOf(run.runId, runStage.status, runStage, void 0);
+				if (!("url" in outcome.result) && !("artifacts" in outcome.result) && !("error" in outcome.result)) continue;
+				rows[i]["outcome"] = {
 					runStatus: outcome.terminal,
 					result: outcome.result
-				});
+				};
 				report.carried += 1;
-			} catch (e) {
-				report.notes.push("could not carry " + draftStageId + "'s outcome: " + (0, _melite_card_base_client.rejectionVoice)(e));
 			}
+			try {
+				await (0, _melite_card_base_client.unwrapRemote)((0, _melite_card_base_client.estateRemote)().bench["add-stages"](key, {
+					stages: rows,
+					author: "user",
+					expect_rev: rev
+				}, signal), "bench/add-stages");
+			} catch (e) {
+				throw new Error("restore stopped after " + String(report.added) + " stage(s): " + (0, _melite_card_base_client.rejectionVoice)(e));
+			}
+			report.added = rows.length;
+			return report;
 		}
 		/** The provider registration body: `ctx.resources.register({ protocol:
 		*  'cards', open })`. The bench tail rides the mounted remote face
@@ -11899,7 +11836,7 @@ window.__ModuleLoader__.load({
 			applySubcardDrop: () => applySubcardDrop,
 			artifactFileName: () => artifactFileName,
 			bag: () => bag,
-			benchDraftIdOf: () => benchDraftIdOf$1,
+			benchDraftIdOf: () => benchDraftIdOf,
 			benchResultDefects: () => benchResultDefects,
 			benchSessionOf: () => benchSessionOf$1,
 			canonicalRunMediaUrl: () => canonicalRunMediaUrl,

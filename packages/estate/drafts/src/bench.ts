@@ -18,7 +18,7 @@ import { RemoteError } from "@deepseek-ai/dsh-typert-protocol";
 import type { Domain } from "@deepseek-ai/dsh-storage-domain";
 import type { DraftRecord, DraftsDomainSpec } from "./spec.js";
 import type { JsonValue } from "./remote.js";
-import { trailDedupe } from "./trail.js";
+import { applyOutcomePatch, trailDedupe } from "./trail.js";
 
 /** The bench's Remote failure codes, merged into the protocol's one
  *  vocabulary (cookbook §2: declaration merging, next to the throw). */
@@ -1739,8 +1739,17 @@ const ADD_STAGES_KEYS = ["stages", "expect_rev", "author"];
 
 /** The per-row keys inside `stages` — add_stage's own row vocabulary
  *  minus the CAS/author words (those belong to the BATCH, never a
- *  row). */
-const ADD_STAGES_ROW_KEYS = ["id", "card", "engine", "params", "inputs", "outputs", "expected"];
+ *  row), plus `outcome`: the RESTORE carry's terminal face, applied
+ *  through the trail laws at the same save (the carry-batch law,
+ *  2026-10-26: the restore's per-stage drafts/patch writes died —
+ *  the outcome rides the row, one door, one write). */
+const ADD_STAGES_ROW_KEYS = ["id", "card", "engine", "params", "inputs", "outputs", "expected", "outcome"];
+
+/** THE OUTCOME ARM'S OWN KEY SET (mirrors drafts/patch's telemetry
+ *  face — the trail applier's admitted vocabulary; an author key
+ *  here would double-write what the row's own params already
+ *  seats). */
+const OUTCOME_KEYS = ["result", "runStatus", "health"];
 
 /** THE BATCH ADD DOOR (the restore law, operator 2026-10-21:
  * "Restoring takes an extreme amount of time"): N stages land as
@@ -1858,6 +1867,59 @@ export async function addStagesBench(
       stageId,
       session,
     );
+    // THE OUTCOME ARM (the carry-batch law, 2026-10-26: the restore's
+    // outcome carry rides the row — the per-stage drafts/patch writes
+    // died with it). The body is the trail applier's telemetry face
+    // ({result?, runStatus?, health?} — never an author key), gated
+    // HERE at the door (the whole batch's refusal-that-lies law), and
+    // applied through applyOutcomePatch — the SAME implementation
+    // drafts/patch runs, so the archive/supersede/landing/terminal-
+    // holds laws judge the restore's carry identically to a live
+    // observer's write. A fresh row: no supersede (nothing to
+    // archive), the landing archives the run's gen at history[0].
+    const outcomeRaw: unknown = stageBody["outcome"];
+    if (outcomeRaw !== undefined) {
+      if (!isRecord(outcomeRaw)) {
+        throw new RemoteError(
+          "bench/bad-body",
+          pos + "outcome must be an object ({result?, runStatus?, health?} — the telemetry face the trail applier admits)",
+          {},
+        );
+      }
+      const outcomeBody = outcomeRaw as Record<string, unknown>;
+      const unknownOutcome: string[] = Object.keys(outcomeBody).filter(
+        (k: string): boolean => !OUTCOME_KEYS.includes(k),
+      );
+      if (unknownOutcome.length > 0) {
+        throw new RemoteError(
+          "bench/bad-body",
+          pos + "unknown outcome key(s): " + unknownOutcome.sort().join(", ") + " (want " + OUTCOME_KEYS.join(", ") + ")",
+          {},
+        );
+      }
+      if (Object.keys(outcomeBody).length === 0) {
+        throw new RemoteError(
+          "bench/bad-body",
+          pos + "outcome is empty (nothing to carry — omit the key)",
+          {},
+        );
+      }
+      if ("result" in outcomeBody && !isRecord(outcomeBody["result"])) {
+        throw new RemoteError(
+          "bench/bad-body",
+          pos + "outcome.result must be an object (the terminal outcome builder's row)",
+          {},
+        );
+      }
+      if ("runStatus" in outcomeBody && typeof outcomeBody["runStatus"] !== "string") {
+        throw new RemoteError(
+          "bench/bad-body",
+          pos + "outcome.runStatus must be a string (done | failed | stopped)",
+          {},
+        );
+      }
+      applyOutcomePatch(row, outcomeBody);
+    }
     minted.push(stageId);
     rows.push(row);
   });

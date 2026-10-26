@@ -69,6 +69,7 @@ import type {
 import type { RunRow } from '@melite/estate-runs'
 import type { MediaListRow } from '@melite/estate-media'
 import { draftIdOf } from '@melite/contracts/benchStage';
+import { applyOutcomePatch } from '@melite/estate-drafts/trail';
 
 export interface EstateCall {
   method: string
@@ -328,7 +329,7 @@ export function mountEstateFakes(opts: EstateFakesOptions = {}): EstateFakes {
         freshSeq += 1
         const card = typeof row['card'] === 'string' ? (row['card'] as string) : 'card'
         const id = typeof row['id'] === 'string' && (row['id'] as string) !== '' ? (row['id'] as string) : 'fresh_' + String(freshSeq)
-        benchStages.push({
+        const stage: Record<string, unknown> = {
           id,
           card,
           title: card,
@@ -336,7 +337,14 @@ export function mountEstateFakes(opts: EstateFakesOptions = {}): EstateFakes {
           params: typeof row['params'] === 'object' && row['params'] !== null && !Array.isArray(row['params'])
             ? { ...(row['params'] as Record<string, unknown>) }
             : {},
-        })
+        }
+        // the outcome arm mirrors the real verb: the row's outcome rides
+        // the SAME trail applier the drafts/patch door runs — one
+        // implementation, two doors (the carry-batch law, 2026-10-26).
+        if (typeof row['outcome'] === 'object' && row['outcome'] !== null) {
+          applyOutcomePatch(stage, row['outcome'] as Record<string, unknown>)
+        }
+        benchStages.push(stage)
         seated.push(id)
       }
       benchRevValue += 1

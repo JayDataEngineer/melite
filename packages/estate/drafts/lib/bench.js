@@ -15,7 +15,7 @@
 import { unwrapItemArrays } from '@melite/comfyui-card-kit';
 import { benchDraftIdOf, BIRTH_STRIP_KEYS, LOAD_CARRY_KEYS, normalizeBenchStage, SELF_NAMED_FAMILIES, stripKeys } from '@melite/contracts/benchStage';
 import { RemoteError } from "@deepseek-ai/dsh-typert-protocol";
-import { trailDedupe } from "./trail.js";
+import { applyOutcomePatch, trailDedupe } from "./trail.js";
 /** Session key gate: same charset family as draft ids, capped so
  * "bench-" + session always clears the 96-char draft ceiling.
  * EXPORTED (the wall audit's B-C1, 2026-09-28): the draft-id-grammar
@@ -1270,8 +1270,16 @@ export async function addStageBench(drafts, session, body, admit) {
 const ADD_STAGES_KEYS = ["stages", "expect_rev", "author"];
 /** The per-row keys inside `stages` — add_stage's own row vocabulary
  *  minus the CAS/author words (those belong to the BATCH, never a
- *  row). */
-const ADD_STAGES_ROW_KEYS = ["id", "card", "engine", "params", "inputs", "outputs", "expected"];
+ *  row), plus `outcome`: the RESTORE carry's terminal face, applied
+ *  through the trail laws at the same save (the carry-batch law,
+ *  2026-10-26: the restore's per-stage drafts/patch writes died —
+ *  the outcome rides the row, one door, one write). */
+const ADD_STAGES_ROW_KEYS = ["id", "card", "engine", "params", "inputs", "outputs", "expected", "outcome"];
+/** THE OUTCOME ARM'S OWN KEY SET (mirrors drafts/patch's telemetry
+ *  face — the trail applier's admitted vocabulary; an author key
+ *  here would double-write what the row's own params already
+ *  seats). */
+const OUTCOME_KEYS = ["result", "runStatus", "health"];
 /** THE BATCH ADD DOOR (the restore law, operator 2026-10-21:
  * "Restoring takes an extreme amount of time"): N stages land as
  * ONE write — one load, one CAS over the whole list, one save, one
@@ -1349,6 +1357,37 @@ export async function addStagesBench(drafts, session, body, admit) {
         }, stageId);
         admitStage(admit, admitted["card"], admitted["params"]);
         admitWiring(row, row["params"], row["inputs"], [...stages.map((r) => String(r["id"] ?? "")), ...rows.map((r) => String(r["id"] ?? "")), stageId], stageId, session);
+        // THE OUTCOME ARM (the carry-batch law, 2026-10-26: the restore's
+        // outcome carry rides the row — the per-stage drafts/patch writes
+        // died with it). The body is the trail applier's telemetry face
+        // ({result?, runStatus?, health?} — never an author key), gated
+        // HERE at the door (the whole batch's refusal-that-lies law), and
+        // applied through applyOutcomePatch — the SAME implementation
+        // drafts/patch runs, so the archive/supersede/landing/terminal-
+        // holds laws judge the restore's carry identically to a live
+        // observer's write. A fresh row: no supersede (nothing to
+        // archive), the landing archives the run's gen at history[0].
+        const outcomeRaw = stageBody["outcome"];
+        if (outcomeRaw !== undefined) {
+            if (!isRecord(outcomeRaw)) {
+                throw new RemoteError("bench/bad-body", pos + "outcome must be an object ({result?, runStatus?, health?} — the telemetry face the trail applier admits)", {});
+            }
+            const outcomeBody = outcomeRaw;
+            const unknownOutcome = Object.keys(outcomeBody).filter((k) => !OUTCOME_KEYS.includes(k));
+            if (unknownOutcome.length > 0) {
+                throw new RemoteError("bench/bad-body", pos + "unknown outcome key(s): " + unknownOutcome.sort().join(", ") + " (want " + OUTCOME_KEYS.join(", ") + ")", {});
+            }
+            if (Object.keys(outcomeBody).length === 0) {
+                throw new RemoteError("bench/bad-body", pos + "outcome is empty (nothing to carry — omit the key)", {});
+            }
+            if ("result" in outcomeBody && !isRecord(outcomeBody["result"])) {
+                throw new RemoteError("bench/bad-body", pos + "outcome.result must be an object (the terminal outcome builder's row)", {});
+            }
+            if ("runStatus" in outcomeBody && typeof outcomeBody["runStatus"] !== "string") {
+                throw new RemoteError("bench/bad-body", pos + "outcome.runStatus must be a string (done | failed | stopped)", {});
+            }
+            applyOutcomePatch(row, outcomeBody);
+        }
         minted.push(stageId);
         rows.push(row);
     });

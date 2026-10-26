@@ -242,6 +242,14 @@ describe("restoreRunToBench — the card back into a flow", () => {
   // from history button, the preview images all inaccurate") — the
   // ID-DEAD RESTORE CARRY. Card-composed runs mint stage ids from the
   // card SKELETON ('h3-film'), a namespace the producing draft never
+  // The carry rides the BATCH ROW (2026-10-26): the outcome keys the
+  // add-stages row itself and the door applies it under the batch's
+  // one rev — a restore never opens a second door.
+  const carryRows = (calls: Array<{ method: string; args: Record<string, unknown> }>) => {
+    const batch = calls.find((c) => c.method === "bench/add-stages");
+    if (batch === undefined) throw new Error("no bench/add-stages call rode the restore");
+    return (batch.args["doc"] as Record<string, unknown>)["stages"] as Array<Record<string, unknown>>;
+  };
   // heard of (its row is 's_0'), so the id-keyed outcome carry found
   // nothing and every restored tile landed result-less — silently
   // (carried 0, no note). The registry's identity seam
@@ -258,12 +266,11 @@ describe("restoreRunToBench — the card back into a flow", () => {
     }), 'main');
     expect(report.carried).toBe(1);
     expect(report.notes).toEqual([]);
-    const patches = calls.filter((c) => c.method === "drafts/patch");
-    expect(patches).toHaveLength(1);
-    expect(patches[0]?.args).toMatchObject({
-      draftId: "bench-main", stageId: "s_0",
-      patch: { runStatus: "done", result: { run_id: "r1", url: "h3-film/seg.mp4" } },
+    expect(carryRows(calls)[0]?.["outcome"]).toEqual({
+      runStatus: "done",
+      result: { run_id: "r1", url: "h3-film/seg.mp4" },
     });
+    expect(calls.filter((c) => c.method === "drafts/patch")).toHaveLength(0);
   });
 
   test("a run stage carrying the registry's benchStageId stamp joins by the STAMP (new runs)", async () => {
@@ -278,8 +285,9 @@ describe("restoreRunToBench — the card back into a flow", () => {
       ],
     }), 'main');
     expect(report.carried).toBe(2);
-    const patches = calls.filter((c) => c.method === "drafts/patch");
-    expect(patches.map((p) => p.args["stageId"])).toEqual(["s_0", "s_1"]);
+    const rows = carryRows(calls);
+    expect(rows[0]?.["outcome"]).toMatchObject({ runStatus: "done", result: { run_id: "r1", url: "h3-film/a.mp4" } });
+    expect(rows[1]?.["outcome"]).toMatchObject({ runStatus: "done", result: { run_id: "r1", url: "sfx/b.mp4" } });
   });
 
   // THE STAMP FIRES ALONE (previews audit F2, 2026-11-12): the arm
@@ -300,12 +308,9 @@ describe("restoreRunToBench — the card back into a flow", () => {
     expect(report.carried).toBe(1);
     expect(report.notes.length).toBe(1);
     expect(report.notes[0]).toMatch(/s_0.*no run stage/);
-    const patches = calls.filter((c) => c.method === "drafts/patch");
-    expect(patches).toHaveLength(1);
-    expect(patches[0]?.args).toMatchObject({
-      draftId: "bench-main", stageId: "s_1",
-      patch: { runStatus: "done", result: { run_id: "r1", url: "sfx/b.mp4" } },
-    });
+    const rows = carryRows(calls);
+    expect("outcome" in (rows[0] ?? {})).toBe(false);
+    expect(rows[1]?.["outcome"]).toMatchObject({ runStatus: "done", result: { run_id: "r1", url: "sfx/b.mp4" } });
   });
 
   // THE MULTI-ROW ID TIER (previews fold audit F3, 2026-11-12): a
@@ -330,16 +335,9 @@ describe("restoreRunToBench — the card back into a flow", () => {
     }), 'main');
     expect(report.carried).toBe(2);
     expect(report.notes).toHaveLength(0);
-    const patches = calls.filter((c) => c.method === "drafts/patch");
-    expect(patches).toHaveLength(2);
-    expect(patches[0]?.args).toMatchObject({
-      draftId: "bench-main", stageId: "s_0",
-      patch: { runStatus: "done", result: { run_id: "r1", url: "film/a.mp4" } },
-    });
-    expect(patches[1]?.args).toMatchObject({
-      draftId: "bench-main", stageId: "s_1",
-      patch: { runStatus: "failed" },
-    });
+    const rows = carryRows(calls);
+    expect(rows[0]?.["outcome"]).toMatchObject({ runStatus: "done", result: { run_id: "r1", url: "film/a.mp4" } });
+    expect(rows[1]?.["outcome"]).toMatchObject({ runStatus: "failed" });
   });
 
   // THE REORDER VOICE (previews fold F4, 2026-11-12): a same-count
@@ -367,18 +365,11 @@ describe("restoreRunToBench — the card back into a flow", () => {
     expect(report.carried).toBe(2);
     expect(report.notes).toHaveLength(1);
     expect(report.notes[0]).toMatch(/positional carry for s_0.*s_1.*drifted/);
-    const patches = calls.filter((c) => c.method === "drafts/patch");
-    expect(patches).toHaveLength(2);
-    // s_1 carries its OWN outcome through the id tier; s_0's tile
+    const rows = carryRows(calls);
+    // s_1 carries its OWN outcome through the id tier; s_0's row
     // wears the position paint — the lie the note names.
-    expect(patches[0]?.args).toMatchObject({
-      draftId: "bench-main", stageId: "s_0",
-      patch: { runStatus: "done", result: { run_id: "r1", url: "sfx/b.mp4" } },
-    });
-    expect(patches[1]?.args).toMatchObject({
-      draftId: "bench-main", stageId: "s_1",
-      patch: { runStatus: "done", result: { run_id: "r1", url: "sfx/b.mp4" } },
-    });
+    expect(rows[0]?.["outcome"]).toMatchObject({ runStatus: "done", result: { run_id: "r1", url: "sfx/b.mp4" } });
+    expect(rows[1]?.["outcome"]).toMatchObject({ runStatus: "done", result: { run_id: "r1", url: "sfx/b.mp4" } });
   });
 
   test("a join that finds nothing is VOICED — carried 0 never silent (the burn's silent class)", async () => {

@@ -289,11 +289,14 @@ describe("restoreRunToBench — the outcome carry (the run view previews after a
     stages: [{ id: "s_0", status: "completed", url: "out.png", gallery: [{ name: "out.png" }] }],
   });
 
-  /** The drafts/patch calls the restore sent (the outcome door). */
-  const patches = (calls: Array<{ method: string; args: Record<string, unknown> }>) =>
-    calls.filter((c) => c.method === "drafts/patch").map((c) => c.args);
+  /** The ONE batch door's rows — the carry rides the row, never a second door. */
+  const batchRows = (calls: Array<{ method: string; args: Record<string, unknown> }>) => {
+    const batch = calls.find((c) => c.method === "bench/add-stages");
+    if (batch === undefined) throw new Error("no bench/add-stages call rode the restore");
+    return (batch.args["doc"] as Record<string, unknown>)["stages"] as Array<Record<string, unknown>>;
+  };
 
-  test("a completed stage's outcome rides the restored row through the drafts patch door", async () => {
+  test("a completed stage's outcome rides the batch ROW — zero second doors, the seated row previews", async () => {
     const fakes = mountEstateFakes({
       draftStages: [{ id: "s_0", card: "image-gen" }],
       benchDoc: { rev: 0, stages: [], log: [] },
@@ -301,19 +304,11 @@ describe("restoreRunToBench — the outcome carry (the run view previews after a
     try {
       const report = await restoreRunToBench(doneRun(), "main");
       expect(report).toMatchObject({ added: 1, skipped: 0, carried: 1 });
-      // The patch is terminalOutcomeOf's exact stamp — the SAME
+      // The row carries terminalOutcomeOf's exact stamp — the SAME
       // builder the live observer writes (parity is the law): url
       // rides verbatim (bare run-relative), the rewrite lives in
       // artifacts/assetUrls where the tile's gallery face reads it.
-      const [patch] = patches(fakes.calls);
-      // the patch addresses the BENCH draft (bench-main), never the
-      // session (main): the drafts door keys stored documents, and
-      // no document is named "main".
-      expect(patch?.["draftId"]).toBe("bench-main");
-      // a non-colliding draft id seats AS SENT (the door honors a
-      // provided id) — the carry rides the answer's id, here s_0
-      expect(patch?.["stageId"]).toBe("s_0");
-      expect(patch?.["patch"]).toEqual({
+      expect(batchRows(fakes.calls)[0]?.["outcome"]).toEqual({
         runStatus: "done",
         result: {
           run_id: "run-a1",
@@ -322,12 +317,22 @@ describe("restoreRunToBench — the outcome carry (the run view previews after a
           assetUrls: ["out.png", "/melite-media/runs/run-a1/out.png"],
         },
       });
+      // THE CONSTANT-DOOR LAW (2026-10-26): the carry adds ZERO
+      // doors — no drafts/patch rides a restore; the seat and the
+      // carry land under the batch's one rev.
+      expect(fakes.calls.filter((c) => c.method === "drafts/patch")).toEqual([]);
+      // and the read-back previews: the seated row carries the
+      // applied trail through the SAME applier the drafts/patch
+      // door runs (one implementation, two doors).
+      const bench = await fetchBench("main");
+      expect(bench.stages[0]).toMatchObject({ id: "s_0", runStatus: "done" });
+      expect(bench.stages[0]?.result).toMatchObject({ run_id: "run-a1", url: "out.png" });
     } finally {
       fakes.unmount();
     }
   });
 
-  test("a collision pre-shape carries onto the SEATED id (the answer's, never the draft's)", async () => {
+  test("a collision pre-shape carries onto the SEATED row (the outcome rides the row, never the draft's taken id)", async () => {
     const fakes = mountEstateFakes({
       draftStages: [{ id: "s_0", card: "image-gen" }],
       // the bench already holds s_0 — the client drops the id and
@@ -337,15 +342,21 @@ describe("restoreRunToBench — the outcome carry (the run view previews after a
     try {
       const report = await restoreRunToBench(doneRun(), "main");
       expect(report).toMatchObject({ added: 1, carried: 1 });
-      // the id-less row seats fresh_1, and the carry rides the
-      // ANSWER's seated id, never the draft's taken one
-      expect(patches(fakes.calls).map((p) => p["stageId"])).toEqual(["fresh_1"]);
+      const [row] = batchRows(fakes.calls);
+      // the row drops the taken id — the carry rides the ROW, so it
+      // lands on whatever id the door seats
+      expect(row !== undefined && !("id" in row)).toBe(true);
+      expect(row?.["outcome"]).toMatchObject({ runStatus: "done" });
+      const bench = await fetchBench("main");
+      expect(bench.stages.map((s) => s.id)).toEqual(["s_0", "fresh_1"]);
+      expect(bench.stages[1]).toMatchObject({ runStatus: "done" });
+      expect(bench.stages[0]?.runStatus).toBeUndefined();
     } finally {
       fakes.unmount();
     }
   });
 
-  test("a stage the run never completed carries nothing (no patch fires)", async () => {
+  test("a stage the run never completed carries nothing (no outcome key, no second door)", async () => {
     const fakes = mountEstateFakes({
       draftStages: [{ id: "s_0", card: "image-gen" }],
       benchDoc: { rev: 0, stages: [], log: [] },
@@ -355,13 +366,14 @@ describe("restoreRunToBench — the outcome carry (the run view previews after a
         run({ stages: [{ id: "s_0", status: "queued" }] }), "main",
       );
       expect(report).toMatchObject({ added: 1, carried: 0 });
-      expect(patches(fakes.calls)).toEqual([]);
+      expect("outcome" in (batchRows(fakes.calls)[0] ?? {})).toBe(false);
+      expect(fakes.calls.filter((c) => c.method === "drafts/patch")).toEqual([]);
     } finally {
       fakes.unmount();
     }
   });
 
-  test("a failed stage carries the failure (the silent-failure law rides the restore)", async () => {
+  test("a failed stage carries the failure (the silent-failure law rides the restore's row)", async () => {
     const fakes = mountEstateFakes({
       draftStages: [{ id: "s_0", card: "image-gen" }],
       benchDoc: { rev: 0, stages: [], log: [] },
@@ -371,7 +383,7 @@ describe("restoreRunToBench — the outcome carry (the run view previews after a
         run({ stages: [{ id: "s_0", status: "error", error: "engine refused the graph" }] }), "main",
       );
       expect(report).toMatchObject({ added: 1, carried: 1 });
-      expect(patches(fakes.calls)[0]?.["patch"]).toEqual({
+      expect(batchRows(fakes.calls)[0]?.["outcome"]).toEqual({
         runStatus: "failed",
         result: { run_id: "r_1", error: "engine refused the graph" },
       });
@@ -380,34 +392,25 @@ describe("restoreRunToBench — the outcome carry (the run view previews after a
     }
   });
 
-  test("a refused carry is a note, never a stop — the workflow stands on the bench (Error and foreign voices)", async () => {
-    const refused = mountEstateFakes({
+  test("an outcome aboard does not soften the batch's atomicity — a refused add-stages seats NOTHING", async () => {
+    const fakes = mountEstateFakes({
       draftStages: [{ id: "s_0", card: "image-gen" }],
       benchDoc: { rev: 0, stages: [], log: [] },
-      refusals: [{ method: "drafts/patch", message: "admission: nope" }],
+      refusals: [{ method: "bench/add-stages", message: "admission: nope" }],
     });
     try {
-      const report = await restoreRunToBench(doneRun(), "main");
-      expect(report).toMatchObject({ added: 1, carried: 0 });
-      expect(report.notes[0]).toContain("could not carry s_0's outcome: admission: nope");
+      // the carry is no longer a separate door that can fail alone:
+      // the batch refuses whole, so a refused carry IS a refused
+      // restore — never a half-seated workflow with silent previews
+      await expect(restoreRunToBench(doneRun(), "main")).rejects.toThrow("admission: nope");
+      const bench = await fetchBench("main");
+      expect(bench.stages).toEqual([]);
     } finally {
-      refused.unmount();
-    }
-    const dead = mountEstateFakes({
-      draftStages: [{ id: "s_0", card: "image-gen" }],
-      benchDoc: { rev: 0, stages: [], log: [] },
-      throws: [{ method: "drafts/patch", value: "kablam" }],
-    });
-    try {
-      const report = await restoreRunToBench(doneRun(), "main");
-      expect(report).toMatchObject({ added: 1, carried: 0 });
-      expect(report.notes[0]).toContain("could not carry s_0's outcome: kablam");
-    } finally {
-      dead.unmount();
+      fakes.unmount();
     }
   });
 
-  test("an answer naming no stage id falls back to the draft id (estate drift, never a lost carry)", async () => {
+  test("an answer naming no stage id still carries (the outcome rides the row, never the answer)", async () => {
     const fakes = mountEstateFakes({
       draftStages: [{ id: "s_0", card: "image-gen" }],
       benchDoc: { rev: 0, stages: [], log: [] },
@@ -416,9 +419,9 @@ describe("restoreRunToBench — the outcome carry (the run view previews after a
     try {
       const report = await restoreRunToBench(doneRun(), "main");
       expect(report).toMatchObject({ added: 1, carried: 1 });
-      // the door answered without the seated id — the carry rides the
-      // id the restore itself sent
-      expect(patches(fakes.calls).map((p) => p["stageId"])).toEqual(["s_0"]);
+      expect(batchRows(fakes.calls)[0]?.["outcome"]).toMatchObject({ runStatus: "done" });
+      const bench = await fetchBench("main");
+      expect(bench.stages[0]).toMatchObject({ id: "s_0", runStatus: "done" });
     } finally {
       fakes.unmount();
     }

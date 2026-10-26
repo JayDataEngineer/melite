@@ -13,4 +13,15 @@ export declare function sameTrailRunIdentity(a: unknown, b: unknown): boolean;
  *  canonical-url set as the no-id fallback. Order preserved, newest
  *  first in, newest first out. */
 export declare function trailDedupe(history: unknown[]): unknown[];
+/** THE OUTCOME APPLY (moved verbatim from remote.ts's patchBody
+ *  writeTelemetry closure, 2026-10-26 carry-batch: the restore's
+ *  batched carry lands through bench/add-stages — a second writer
+ *  the trail laws must judge identically, and a forked copy is how
+ *  the archive drifts. ONE implementation, two doors: drafts/patch
+ *  (the live observer's door, with its R6 live-row re-resolution at
+ *  the call) and addStagesBench's per-row outcome arm (fresh rows
+ *  in hand — no re-resolution needed). @param stage the LIVE row to
+ *  mutate in place @param patch the outcome body ({result?,
+ *  runStatus?, health?} — telemetry only, never author keys). */
+export declare function applyOutcomePatch(stage: Record<string, unknown>, patch: Record<string, unknown>): void;
 //# sourceMappingURL=trail.d.ts.map

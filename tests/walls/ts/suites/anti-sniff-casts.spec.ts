@@ -164,7 +164,10 @@ const ALL_FORMS_BASELINE: Record<string, number> = {
   'packages/engines/comfyui/src/action_cards/motion/ui/viewer3d/poseStageOverlays.ts': 5,
   'packages/engines/craft/src/craft-engine.ts': 2,
   'packages/estate/drafts/src/bench.ts': 17,
-  'packages/estate/drafts/src/remote.ts': 8,
+  'packages/estate/drafts/src/remote.ts': 7,
+  // trail.ts: 1 — the archived-history copy VERBATIM MOVED here from remote.ts
+  // (the carry-batch extraction, 2026-10-26); remote.ts stepped 8→7 in the same move.
+  'packages/estate/drafts/src/trail.ts': 1,
   'packages/estate/drafts/src/store.ts': 1,
   'packages/estate/provisioning/src/manager-client.ts': 1,
   'packages/estate/provisioning/src/operation-store.ts': 5,
@@ -220,7 +223,7 @@ const ALL_FORMS_BASELINE: Record<string, number> = {
   'packages/web/melite-card-deck/src/client/assets-tab.tsx': 1,
   'packages/web/melite-card-view/src/client/add-stage.ts': 3,
   'packages/web/melite-card-view/src/client/bench-row.ts': 1,
-  'packages/web/melite-card-view/src/client/cards-resource.ts': 16,
+  'packages/web/melite-card-view/src/client/cards-resource.ts': 14,
   'packages/web/melite-card-view/src/client/draft.ts': 5,
   'packages/web/melite-card-view/src/client/run-rescue-core.ts': 1,
   'packages/web/melite-card-view/src/client/stage-drill.tsx': 8,

@@ -254,12 +254,8 @@ function sameUrlSet(a: string[], b: string[]): boolean {
  *  carriers share); re-exported here for the door's public API. ── */
 export { canonicalOutputUrl, resultOutputUrls, isTerminalTrailWord as isTerminalWord, trailDedupe } from "./trail.js";
 import {
-  canonicalOutputUrl, isTerminalTrailWord as isTerminalWord, resultOutputUrls, sameTrailRunIdentity,
+  applyOutcomePatch, canonicalOutputUrl, isTerminalTrailWord as isTerminalWord, resultOutputUrls,
 } from "./trail.js";
-
-function sameRunIdentity(a: unknown, b: unknown): boolean {
-  return sameTrailRunIdentity(a, b);
-}
 
 /** THE RESOLVED SERVE (hour-26 stroke 15, the 1:1 run law): the
  *  registry seat behind the optional-dependency law. The drafts
@@ -1010,151 +1006,16 @@ export class DraftsRemoteService extends TypertRemoteService {
         );
       }
     }
-    // THE TELEMETRY WRITE IS DEFERRED (the bench audit's gap 1,
-    // The arms run as one closure AFTER both gates pass. The closure
-    // takes the row as its PARAM (shadowing this section's binding):
-    // the R6 cure below re-resolves the LIVE row at call time.
+    // THE TELEMETRY WRITE (deferred above the gates; the R6 cure
+    // re-resolves the LIVE row at call time): the whole apply —
+    // archive, supersede, landing, runStatus, health — lives in
+    // trail.ts applyOutcomePatch (the one implementation, shared
+    // with addStagesBench outcome arm since the 2026-10-26
+    // carry-batch: a second writer with a forked copy is how the
+    // trail drifts).
     const writeTelemetry = (stage: Record<string, unknown>): void => {
-    if ("result" in patch) {
-      // THE OUTPUT HISTORY (stroke 40 — the operator's QOL law: the
-      // preview's mini row is a CARD OUTPUT HISTORY): a stage's
-      // result is the CURRENT run's face, and every poll state
-      // overwrites it — the live patch ({run_id, progress}) would
-      // destroy the previous run's outputs. Before any result
-      // overwrite, a result CARRYING outputs is archived onto the
-      // stage's history, newest first, capped (12), deduped by its
-      // url set: only UNIQUE outputs ride (the operator's word — a
-      // re-run landing the same urls never double-lists). The
-      // history is DERIVED here, never patched in — the estate owns
-      // the trail; the client reads it.
-      //
-      // THE PARAMS SNAPSHOT (the output-component stroke — "old
-      // generations that had different parameters"): the params that
-      // MADE a result are captured at ITS LANDING (a parallel
-      // server-derived key), never at overwrite time — params
-      // edited between runs must not retroactively re-label the old
-      // generation. The archive entry carries the snapshot; the
-      // client diffs it against the live params for the chip.
-      // THE TERMINAL-HOLDS LAW (bench-trail W3, judged PRE-write): a
-      // settled run's row never un-settles — a stale poll/tail pass
-      // re-stamping a non-terminal word for the SAME run_id writes
-      // NOTHING (result included; the tile's stuck face). A
-      // different run_id is a fresh press and runs.
-      const settledRunId =
-        typeof stage["result"] === "object" && stage["result"] !== null && !Array.isArray(stage["result"])
-          ? (stage["result"] as Record<string, unknown>)["run_id"]
-          : undefined;
-      const patchRunId =
-        typeof patch["result"] === "object" && patch["result"] !== null && !Array.isArray(patch["result"])
-          ? (patch["result"] as Record<string, unknown>)["run_id"]
-          : undefined;
-      if (
-        isTerminalWord(stage["runStatus"]) && !isTerminalWord(patch["runStatus"])
-        && typeof patchRunId === "string" && sameRunIdentity(settledRunId, patchRunId)
-      ) return;
-      // THE HUSK-DOWNGRADE REFUSAL (trail-defect-hunt §2): a
-      // terminal, url-less result for a run whose settled face
-      // carries urls is bookkeeping (the seat's own mirror husk
-      // racing the client's rich patch) — the hero slot never
-      // downgrades. A DIFFERENT run_id is a fresh press and runs.
-      if (
-        isTerminalWord(patch["runStatus"]) && sameRunIdentity(settledRunId, patchRunId)
-        && resultOutputUrls(stage["result"]).length > 0
-        && resultOutputUrls(patch["result"]).length === 0
-      ) return;
-      const prev = stage["result"];
-      const next = patch["result"];
-      // THE TRAIL IS ONE LIST, HEAD = CURRENT (operator 2026-09-21,
-      // the lost-gen disease: "when I make a new gen it doesn't
-      // appear in history — clicking a history item overwrites the
-      // preview with no way to recover the most recent gen"). Two
-      // archives ride the SAME write, oldest-first so the order in
-      // the list is append-stable:
-      //   1. SUPERSEDE — a cleared/overwritten result that carried
-      //      outputs is archived (the stroke-40 law, unchanged: a
-      //      face that would LOSE urls never drops them).
-      //   2. LANDING — the incoming result itself, when it CARRIES
-      //      outputs AND the write is not a LIVE face (the
-      //      settled-landing law, bench-trail W1: the current run's
-      //      urls never enter history before the card finishes; a
-      //      mid-run face archives nothing). A result-only patch (no
-      //      runStatus arm) is a pick/manual spell, not a run face —
-      //      it lands unless the row reads a live word (the landing
-      //      gate below).
-      //      History[0] is ALWAYS the newest SETTLED gen. Live
-      //      mid-run patches ({run_id, progress} — no urls) archive
-      //      nothing either way, and the dedup makes re-landings
-      //      idempotent.
-      const archiveInto = (urls: string[], entry: Record<string, unknown>): void => {
-        const hist = Array.isArray(stage["history"]) ? [...(stage["history"] as unknown[])] : [];
-        // THE ONE-ROW-PER-RUN LAW (bench-trail W2): a run is one
-        // history entry — the media route and the gallery proxy
-        // spell the same file differently, so identity is the
-        // run_id, with the canonical-url set as the no-id fallback
-        const entryRunId = typeof entry["run_id"] === "string" ? entry["run_id"] : undefined;
-        if (entryRunId !== undefined) {
-          const already = hist.some(
-            (e): boolean => sameRunIdentity((e as Record<string, unknown>)["run_id"], entryRunId),
-          );
-          if (already) return;
-        }
-        const canon = urls.map(canonicalOutputUrl);
-        const already = hist.some((e): boolean =>
-          sameUrlSet(
-            resultOutputUrls(e).map(canonicalOutputUrl),
-            canon,
-          ),
-        );
-        if (!already) {
-          hist.unshift(entry);
-          stage["history"] = hist.slice(0, 12);
-        }
-      };
-      // the landing gate (bench-trail W1 vs the pinned pick-spell
-      // contract, remote.spec "empty {} snapshot"): a write that
-      // DECLARES a live run face (a non-terminal runStatus arm)
-      // never lands; a terminal arm lands; and a patch with NO
-      // runStatus arm at all is not a run face — it lands unless the
-      // row is mid-run (a live word), which is the stuck-row wound's
-      // re-add shape.
-      const LIVE_TRAIL_WORDS = new Set(["running", "queued", "pending", "stopping"]);
-      const landingTerminal =
-        isTerminalWord(patch["runStatus"]) ||
-        (!("runStatus" in patch) && !LIVE_TRAIL_WORDS.has(String(stage["runStatus"])));
-      // the params arm rides only when the snapshot NAMES something —
-      // an undefined or empty {} snapshot carries no key (the chip
-      // diffs against live params; an empty diff is no chip at all)
-      const paramsArm = (snapshot: unknown): Record<string, unknown> =>
-        snapshot !== undefined && typeof snapshot === "object" && !Array.isArray(snapshot)
-        && Object.keys(snapshot as Record<string, unknown>).length > 0
-          ? { params: snapshot }
-          : {};
-      if (resultOutputUrls(prev).length > 0 && !sameResultOutputs(prev, next)) {
-        archiveInto(resultOutputUrls(prev), {
-          ...(prev as Record<string, unknown>),
-          ...paramsArm(stage["resultParams"]),
-        });
-      }
-      stage["result"] = patch["result"];
-      stage["resultParams"] = stage["params"];
-      const landingUrls = resultOutputUrls(next);
-      if (landingUrls.length > 0 && landingTerminal) {
-        archiveInto(landingUrls, {
-          ...(next as Record<string, unknown>),
-          ...paramsArm(stage["resultParams"]),
-        });
-      }
-    }
-    if ("runStatus" in patch) stage["runStatus"] = patch["runStatus"];
-    // THE HEALTH ARM (LOW-23): the transport word's own channel — a
-    // null value DELETES the field (the recovery clear; a stage that
-    // never escalated never carries it), the merge-patch semantics
-    // the params arm already owns.
-    if ("health" in patch) {
-      if (patch["health"] === null) delete stage["health"];
-      else stage["health"] = patch["health"];
-    }
-    }
+      applyOutcomePatch(stage, patch);
+    };
     // the params the row will HOLD once this write lands (undefined
     // when the body carries no params arm) — judged as half of the
     // (params, inputs) PAIR before either assignment rides.

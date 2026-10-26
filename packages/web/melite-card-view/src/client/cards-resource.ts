@@ -228,7 +228,7 @@ export const CARDS_BENCH_ADDRESS = 'dsh-resource://cards/bench'
 // tool). The contract floor owns the decision now; the local name
 // stays for this module's callers, but there is no second producer
 // to drift.
-import { benchDraftIdOf, benchSessionOf, draftIdOf, type DraftId } from '@melite/contracts/benchStage'
+import { benchSessionOf, draftIdOf, type DraftId } from '@melite/contracts/benchStage'
 import { isTerminalStatus, isLiveRunStatus, statusOf, RUN_STATUS_WORDS } from '@melite/contracts/stageView'
 export { benchSessionOf as benchSessionKey }
 
@@ -1201,19 +1201,22 @@ export interface RestoreReport {
  *  throws with the door's own text — the batch refuses atomically,
  *  so nothing half-lands.
  *
- *  THE OUTCOME CARRY (2026-10-02, the resume law's run-view half):
- *  the run's own stage rows hold the terminal outcome a bare
- *  re-admission loses — the add-stages door authors params only and
- *  refuses result/runStatus by its own law, so the outcome rides the
- *  same drafts patch door the live observer writes, stamped by the
- *  same builder (terminalOutcomeOf). The join is three-way (the
- *  previews cure, 2026-11-12): draft id as the run row's id, the
- *  registry's benchStageId stamp, then position when the run
- *  composed exactly this draft's carded rows — history runs mint
- *  card-skeleton ids the draft never heard of, and an id-only join
- *  carried nothing, silently. A draft row no run stage names is
- *  voiced; a draft edited since keeps its surviving rows' outcomes
- *  and simply has none for new rows. */
+ *  THE OUTCOME CARRY (2026-10-02, the resume law's run-view half;
+ *  CARRY-BATCHED 2026-10-26): the run's own stage rows hold the
+ *  terminal outcome a bare re-admission loses — the outcome rides
+ *  the row's `outcome` arm through the SAME bench/add-stages door
+ *  (the door applies it through the trail laws at the same save),
+ *  stamped by the same builder (terminalOutcomeOf). Zero
+ *  drafts/patch doors, zero rev re-reads, no seat resolution: the
+ *  outcome cannot address a wrong tile because it never addresses
+ *  a seat at all. The join is three-way (the previews cure,
+ *  2026-11-12): draft id as the run row's id, the registry's
+ *  benchStageId stamp, then position when the run composed exactly
+ *  this draft's carded rows — history runs mint card-skeleton ids
+ *  the draft never heard of, and an id-only join carried nothing,
+ *  silently. A draft row no run stage names is voiced; a draft
+ *  edited since keeps its surviving rows' outcomes and simply has
+ *  none for new rows. */
 export async function restoreRunToBench(
   run: CardsRunValue,
   sessionKey: string,
@@ -1248,15 +1251,6 @@ export async function restoreRunToBench(
     throw new Error('the bench is unreadable: ' + (rejectionVoice(e)))
   }
   let rev = typeof bench['rev'] === 'number' ? (bench['rev'] as number) : 0
-  // THE PATCH TARGET (2026-11-12, the previews cure's second find):
-  // the outcome carry rides drafts/patch, which is DRAFT-id
-  // addressed — the bench doc's own draft_id ('bench-main'), never
-  // the session key the bench verbs take ('main'; a draft the
-  // estate never seated). The bench doc names its draft; fall back
-  // to the session key only for a doc that won't say.
-  const benchDraftId = typeof bench['draft_id'] === 'string' && bench['draft_id'] !== ''
-    ? draftIdOf(bench['draft_id'])
-    : benchDraftIdOf(key)
   const report: RestoreReport = { added: 0, skipped: 0, carried: 0, notes: [] }
   // THE BATCH BUILD (the restore law, operator 2026-10-21: "Restoring
   // takes an extreme amount of time"): the whole flow lands as ONE
@@ -1301,56 +1295,28 @@ export async function restoreRunToBench(
     draftIds.push(id)
   }
   if (rows.length === 0) return report
-  let answer: Record<string, unknown>
-  try {
-    answer = await unwrapRemote(estateRemote().bench['add-stages'](key, {
-      stages: rows,
-      author: 'user',
-      expect_rev: rev,
-    } as Parameters<BenchNamespace['add-stages']>[1], signal), 'bench/add-stages') as unknown as Record<string, unknown>
-  } catch (e) {
-    throw new Error('restore stopped after ' + String(report.added) + ' stage(s): ' + (rejectionVoice(e)))
-  }
-  const seatedIds = Array.isArray(answer['stages'])
-    ? (answer['stages'] as unknown[]).map((v) => (typeof v === 'string' ? v : ''))
-    : []
-  report.added = rows.length
-  // THE POSITION JOIN (2026-11-12, the previews cure): history runs
-  // predate the registry's benchStageId stamp and mint stage ids from
-  // the card skeleton — a namespace the draft rows never heard of —
-  // so id-keyed carries found nothing. When the run composed exactly
-  // this draft's carded rows, the two arrays align in sequence (both
-  // order-preserving on the composed cards), so row i joins run
-  // stage i. This is the LEGACY tier (row cards-restore-outcome-carry):
-  // a same-count REORDER is undetectable only while the drifted stage
-  // carries NO draft-row identity (skeleton ids name no draft row).
-  // When the position tier's stage names a DIFFERENT draft row, the
-  // drift has evidence — the carry still lands (the LEGACY tier is
-  // the only join history runs have) but the reorder VOICES itself
-  // (the previews fold F4 law, 2026-11-12); the stamp tier remains
-  // the identity answer and multi-row bench runs stamp each row's
-  // own id (the id tier, no position needed).
-  // A count mismatch (the draft edited since) joins
-  // nothing by position — a wrong-tile repaint is worse than a voiced
-  // miss.
+  // THE OUTCOME CARRY (the carry-batch law, operator 2026-10-26:
+  // "IT TAKES FOREVER TO RESTORE THE FIRST RUN FROM HISTORY"): the
+  // batch cure left the carry serial — S stages meant S rev
+  // re-reads and S sequential drafts/patch writes after the add.
+  // The outcome now rides the ROW through the same one
+  // bench/add-stages door (the door's outcome arm applies it
+  // through the trail laws at the same save): zero patch doors,
+  // zero re-reads, no seat resolution — the outcome cannot address
+  // a wrong tile because it never addresses a seat at all.
+  //
+  // THE POSITION JOIN (2026-11-12, the previews cure) — the join
+  // law is unchanged: the draft id as the run row's id (bench
+  // loops, legacy runs), the registry's benchStageId stamp
+  // (card-composed runs since 2026-10-22), then position when the
+  // run composed exactly this draft's carded rows (history runs —
+  // skeleton ids name no draft row; both arrays order-preserving
+  // on the composed cards, so row i joins run stage i). A count
+  // mismatch (the draft edited since) joins nothing by position —
+  // a wrong-tile repaint is worse than a voiced miss.
   const positionalJoin = run.stages.length === rows.length ? run.stages : null
   for (let i = 0; i < rows.length; i += 1) {
-    // THE MID-LOOP ABORT: the door calls below are signal-deaf (the
-    // patch seam owns no signal — draft.ts, out of this seat), so the
-    // abort binds what this loop STARTS: one in-flight carry settles,
-    // the next never begins, and the hole is voiced, never silent.
-    // (Re-read through ??. the entry check narrowed this signal's
-    // aborted to false — an abort arriving between the doors must
-    // still bind the next iteration, so the live bit is re-read, not
-    // re-compared against the narrowed type.)
-    const abortedNow: boolean = signal?.aborted ?? false
-    if (abortedNow) {
-      report.notes.push('restore stopped — aborted with ' + String(report.carried)
-        + ' of ' + String(rows.length) + ' outcome(s) carried')
-      break
-    }
     const draftId = draftIds[i] ?? null
-    const seatedRaw = seatedIds[i]
     const positional = positionalJoin !== null ? positionalJoin[i] : undefined
     // THE REORDER VOICE (previews fold F4, 2026-11-12): the position
     // tier paints row i with run stage i silently — but when that
@@ -1370,81 +1336,31 @@ export async function restoreRunToBench(
           + ') — the run order drifted from the draft order; the tile paints by position (the LEGACY tier)')
       }
     }
-    if (typeof seatedRaw === 'string' && seatedRaw !== '') {
-      await carryOutcome(run, benchDraftId, draftId, seatedRaw, positional, report, signal)
+    if (draftId === null) continue
+    const runStage = run.stages.find((s) => s.id === draftId)
+      ?? run.stages.find((s) => s.benchStageId === draftId)
+      ?? positional
+    if (runStage === undefined) {
+      report.notes.push('could not carry ' + draftId + "'s outcome: no run stage names it (run stages: "
+        + run.stages.map((s) => s.id).join(', ') + ')')
       continue
     }
-    // THE SEAT-UNKNOWN ARM: the answer named no seated id. Falling back
-    // to the draft id is sound ONLY when the row carried it (the door
-    // keeps provided ids) — a collision-dropped row falling back would
-    // patch the PRE-EXISTING row's outcome onto the old tile: restored
-    // previews landing on the wrong stages, silent. Note and skip loud.
-    if (draftId !== null && rows[i]?.['id'] === draftId) {
-      await carryOutcome(run, benchDraftId, draftId, draftId, positional, report, signal)
-      continue
-    }
-    report.notes.push('could not carry ' + (draftId ?? 'stage ' + String(i))
-      + "'s outcome: the bench answer named no seated id")
-  }
-  return report
-}
-
-/** One restored row's outcome carry: patch the terminal outcome the
- *  run's own stage row holds onto the seated bench row, through the
- *  drafts patch door (the only door result/runStatus lawfully ride
- *  — the add-stage verb refuses them by its authoring law). The
- *  lookup tries THREE joins (the previews cure, 2026-11-12): the
- *  draft id as the run row's id (bench loops and legacy runs), the
- *  registry's benchStageId stamp (card-composed runs since
- *  2026-10-22), and the position fallback (history runs — skeleton
- *  ids, no stamp; the caller hands it only when the run composed
- *  exactly this draft's carded rows). A draft row no run stage
- *  names is VOICED — carried 0 never silent again. The patch target
- *  is the SEATED id the caller resolved from the add answer (a
- *  collision retry seats a fresh one — the caller never hands a
- *  guessed id here: a guessed seat would repaint the wrong tile).
- *  A stage with no outcome data carries nothing; a carry that
- *  cannot land notes itself — the workflow stands either way.
- *  @param run the run value the restore serves (its stage rows hold
- *  the terminal outcomes).
- *  @param benchKey the bench draft id the rows landed on.
- *  @param draftStageId the DRAFT stage id this row restored (null —
- *  an id-less draft row — carries nothing: the run's rows are id-keyed).
- *  @param seated the SEATED bench id to patch (resolved by the caller
- *  from the add answer; never a guess).
- *  @param positional the run stage at this row's position when the
- *  run composed exactly this draft's carded rows (the history heal's
- *  join; undefined when the counts disagree).
- *  @param report the report the carry counts into.
- *  @param signal the caller's abort signal (binds the restore loop —
- *  the patch seam below owns no signal, so an abort stops the NEXT
- *  carry, never the in-flight patch). */
-async function carryOutcome(
-  run: CardsRunValue,
-  benchKey: DraftId,
-  draftStageId: string | null,
-  seated: string,
-  positional: RunStageStatus | undefined,
-  report: RestoreReport,
-  signal?: AbortSignal,
-): Promise<void> {
-  if (draftStageId === null) return
-  const runStage = run.stages.find((s) => s.id === draftStageId)
-    ?? run.stages.find((s) => s.benchStageId === draftStageId)
-    ?? positional
-  if (runStage === undefined) {
-    report.notes.push('could not carry ' + draftStageId + "'s outcome: no run stage names it (run stages: "
-      + run.stages.map((s) => s.id).join(', ') + ')')
-    return
-  }
-  const outcome = terminalOutcomeOf(run.runId, runStage.status, runStage, undefined)
-  if (!('url' in outcome.result) && !('artifacts' in outcome.result) && !('error' in outcome.result)) return
-  try {
-    await patchStageOutcome(benchKey, seated, { runStatus: outcome.terminal, result: outcome.result })
+    const outcome = terminalOutcomeOf(run.runId, runStage.status, runStage, undefined)
+    if (!('url' in outcome.result) && !('artifacts' in outcome.result) && !('error' in outcome.result)) continue
+    rows[i]!['outcome'] = { runStatus: outcome.terminal, result: outcome.result }
     report.carried += 1
-  } catch (e) {
-    report.notes.push('could not carry ' + draftStageId + "'s outcome: " + (rejectionVoice(e)))
   }
+  try {
+    await unwrapRemote(estateRemote().bench['add-stages'](key, {
+      stages: rows,
+      author: 'user',
+      expect_rev: rev,
+    } as Parameters<BenchNamespace['add-stages']>[1], signal), 'bench/add-stages')
+  } catch (e) {
+    throw new Error('restore stopped after ' + String(report.added) + ' stage(s): ' + (rejectionVoice(e)))
+  }
+  report.added = rows.length
+  return report
 }
 
 /** Merge one events frame into a run value (stage rows upserted by id;

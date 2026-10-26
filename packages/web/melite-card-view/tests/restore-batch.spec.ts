@@ -88,18 +88,20 @@ function runWithStages(): CardsRunValue {
   };
 }
 
-function patchTargets(fakes: { calls: Array<{ method: string; args: Record<string, unknown> }> }): string[] {
-  return fakes.calls.filter((c) => c.method === "drafts/patch").map((c) => c.args["stageId"] as string);
+/** The batch body's rows (the ONE door the whole restore rides). */
+function batchRows(fakes: { calls: Array<{ method: string; args: Record<string, unknown> }> }): Array<Record<string, unknown>> {
+  const batch = fakes.calls.find((c) => c.method === "bench/add-stages");
+  if (batch === undefined) throw new Error("no bench/add-stages call rode the restore");
+  return (batch.args["doc"] as Record<string, unknown>)["stages"] as Array<Record<string, unknown>>;
 }
 
-function patchResult(fakes: { calls: Array<{ method: string; args: Record<string, unknown> }> }, stageId: string): Record<string, unknown> {
-  const call = fakes.calls.find((c) => c.method === "drafts/patch" && c.args["stageId"] === stageId);
-  if (call === undefined) throw new Error("no drafts/patch call for " + stageId);
-  return (call.args["patch"] as { result: Record<string, unknown> }).result;
+/** One batch row's carried outcome (undefined when the row carried none). */
+function rowOutcome(rows: Array<Record<string, unknown>>, id: string): Record<string, unknown> | undefined {
+  return rows.find((r) => r["id"] === id)?.["outcome"] as Record<string, unknown> | undefined;
 }
 
-describe("restoreRunToBench — the zip (draftIds[i] ↔ seatedIds[i] holds across every skip/drop)", () => {
-  test("cardless stages skip but the zip holds: outcomes land on their own seated ids, in order", async () => {
+describe("restoreRunToBench — the alignment (row i's outcome is run stage i's terminal face, across every skip/drop)", () => {
+  test("cardless stages skip but the alignment holds: each carded row carries its OWN outcome", async () => {
     const fakes = mountEstateFakes({
       benchDoc: { session: "s1", rev: 7, log: [], stages: [] },
       draftStages: [
@@ -113,19 +115,20 @@ describe("restoreRunToBench — the zip (draftIds[i] ↔ seatedIds[i] holds acro
     expect(report.added).toBe(2);
     expect(report.skipped).toBe(2);
     expect(report.carried).toBe(2);
-    // rows and draftIds stayed aligned across the two skips: the FIRST
-    // patch carries s_0's outcome onto s_0, the SECOND s_1's onto s_1 —
-    // a one-slot drift would paint the wrong preview on both tiles.
-    expect(patchTargets(fakes)).toEqual(["s_0", "s_1"]);
-    expect(patchResult(fakes, "s_0")["url"]).toBe("/melite-media/runs/r_9/a.png");
-    expect(patchResult(fakes, "s_1")["url"]).toBe("/melite-media/runs/r_9/b.png");
+    // rows stayed aligned across the two skips: the FIRST row carries
+    // s_0's outcome, the SECOND s_1's — a one-slot drift would paint
+    // the wrong preview on both tiles.
+    const rows = batchRows(fakes);
+    expect((rowOutcome(rows, "s_0")!["result"] as Record<string, unknown>)["url"]).toBe("/melite-media/runs/r_9/a.png");
+    expect((rowOutcome(rows, "s_1")!["result"] as Record<string, unknown>)["url"]).toBe("/melite-media/runs/r_9/b.png");
     // the hero reorder rode the restore path, not just the builder unit:
     // s_1's gallery lists zzz.png first, the carried map still leads b.png.
-    expect(Object.keys(patchResult(fakes, "s_1")["artifacts"] as Record<string, string>)[0]).toBe("b.png");
-    expect(benchResultDefects(patchResult(fakes, "s_1"))).toEqual([]);
+    const s1 = rowOutcome(rows, "s_1")!["result"] as Record<string, unknown>;
+    expect(Object.keys(s1["artifacts"] as Record<string, string>)[0]).toBe("b.png");
+    expect(benchResultDefects(s1)).toEqual([]);
   });
 
-  test("a colliding id seats fresh and the outcome follows the minted seat, never the old row", async () => {
+  test("a colliding id drops from the row and the outcome follows anyway — it never addressed a seat", async () => {
     const fakes = mountEstateFakes({
       // the fake's default bench already holds s_0: the draft's s_0 collides
       draftStages: [
@@ -135,29 +138,17 @@ describe("restoreRunToBench — the zip (draftIds[i] ↔ seatedIds[i] holds acro
     const report = await restoreRunToBench(runWithStages(), 'owner');
     expect(report.added).toBe(1);
     expect(report.notes.join("; ")).toMatch(/already on the bench/);
-    // the outcome follows the minted seat (fresh_1): the pre-existing
-    // s_0 row keeps its own result — patching the draft id here would
-    // repaint the OLD tile with the restored run's preview.
-    expect(patchTargets(fakes)).toEqual(["fresh_1"]);
-    expect(patchResult(fakes, "fresh_1")["url"]).toBe("/melite-media/runs/r_9/a.png");
+    // the row dropped its colliding id (the door mints a fresh one) and the
+    // outcome rides the ROW — the pre-existing s_0 keeps its own result,
+    // and the carry can never repaint the old tile because it never
+    // addresses a seat at all.
+    const rows = batchRows(fakes);
+    expect(rows[0]!).not.toHaveProperty("id");
+    expect((rows[0]!["outcome"] as { result: Record<string, unknown> })["result"]["url"]).toBe("/melite-media/runs/r_9/a.png");
+    expect(report.carried).toBe(1);
   });
 
-  test("an answer naming no seated id never falls back onto a collision-dropped id", async () => {
-    const fakes = mountEstateFakes({
-      draftStages: [
-        { id: "s_0", card: "image-gen", engine: "comfyui", params: { prompt: "a" } },
-      ],
-      addStageNoIds: true,
-    });
-    const report = await restoreRunToBench(runWithStages(), 'owner');
-    // the door minted fresh but named nothing: the draft id s_0 addresses
-    // the PRE-EXISTING row — carrying onto it would repaint the old tile.
-    expect(patchTargets(fakes)).not.toContain("s_0");
-    expect(report.carried).toBe(0);
-    expect(report.notes.join("; ")).toMatch(/no seated id/);
-  });
-
-  test("an answer naming no seated id still carries when the row kept its own id", async () => {
+  test("an answer naming no seated ids changes nothing — the outcome rode the row, not the answer", async () => {
     const fakes = mountEstateFakes({
       benchDoc: { session: "s1", rev: 7, log: [], stages: [] },
       draftStages: [
@@ -169,13 +160,12 @@ describe("restoreRunToBench — the zip (draftIds[i] ↔ seatedIds[i] holds acro
       { id: "s_9", status: "completed", url: "/melite-media/runs/r_9/a.png", gallery: [{ name: "a.png" }] },
     ] };
     const report = await restoreRunToBench(solo, 'owner');
-    // the door keeps provided ids: the unnamed seat IS s_9, the carry lands.
-    expect(patchTargets(fakes)).toEqual(["s_9"]);
     expect(report.carried).toBe(1);
+    expect((rowOutcome(batchRows(fakes), "s_9")!["result"] as Record<string, unknown>)["url"]).toBe("/melite-media/runs/r_9/a.png");
   });
 });
 
-describe("restoreRunToBench — the abort (a dead gesture stops starting carries)", () => {
+describe("restoreRunToBench — the abort (the carry is atomic with the write — no mid-carry window exists)", () => {
   test("a pre-aborted restore writes nothing and voices the abort", async () => {
     const fakes = mountEstateFakes({
       draftStages: [
@@ -189,22 +179,34 @@ describe("restoreRunToBench — the abort (a dead gesture stops starting carries
     expect(report.notes.join("; ")).toMatch(/abort/);
   });
 
-  test("an abort mid-loop stops after the in-flight carry and voices it", async () => {
+  test("a signal aborting mid-door leaves no half-carried state — the outcome rode the same write", async () => {
     const ctrl = new AbortController();
+    let releaseGate: (() => void) | undefined;
+    const gate = new Promise<void>((resolve) => { releaseGate = () => resolve(); });
     const fakes = mountEstateFakes({
       benchDoc: { session: "s1", rev: 7, log: [], stages: [] },
       draftStages: [
         { id: "s_0", card: "image-gen", engine: "comfyui", params: { prompt: "a" } },
         { id: "s_1", card: "image-edit", engine: "comfyui", params: { prompt: "b" } },
       ],
-      onPatchCall: () => ctrl.abort(),
+      verbGates: { "bench/add-stages": [gate] },
     });
-    const report = await restoreRunToBench(runWithStages(), 'owner', ctrl.signal);
-    // the first carry was already at the door when the abort landed; the
-    // second never starts — one patch, one carried, the hole voiced.
-    expect(patchTargets(fakes)).toEqual(["s_0"]);
-    expect(report.carried).toBe(1);
-    expect(report.notes.join("; ")).toMatch(/abort/);
+    const restoring = restoreRunToBench(runWithStages(), 'owner', ctrl.signal);
+    // park the restore AT the batch door (calls land before the gate), then
+    // let the abort go mid-door — the worst window the old loop law had.
+    for (let i = 0; i < 100 && !fakes.calls.some((c) => c.method === "bench/add-stages"); i += 1) {
+      await new Promise((resolve) => { setTimeout(resolve, 0); });
+    }
+    ctrl.abort();
+    releaseGate!();
+    const report = await restoring;
+    // the old law had a carry LOOP after the add — an abort mid-loop
+    // holed the restore (S−k outcomes lost, voiced). The carry-batch
+    // law has no loop: the door answered, everything landed, and there
+    // is no abort note because nothing was left un-carried.
+    expect(report.added).toBe(2);
+    expect(report.carried).toBe(2);
+    expect(report.notes.join("; ")).not.toMatch(/abort/);
   });
 });
 
@@ -232,8 +234,60 @@ describe("restoreRunToBench — the stale sibling (no draft result rides the bat
       }
     }
     // the carried outcomes are the RUN's fresh rows, never the stale ones.
-    expect(patchResult(fakes, "s_0")["url"]).toBe("/melite-media/runs/r_9/a.png");
-    expect((patchResult(fakes, "s_0") as { run_id: string }).run_id).toBe("r_9");
-    expect(benchResultDefects(patchResult(fakes, "s_0"))).toEqual([]);
+    const s0 = rowOutcome(rows, "s_0")!["result"] as Record<string, unknown>;
+    expect(s0["url"]).toBe("/melite-media/runs/r_9/a.png");
+    expect((s0 as { run_id: string }).run_id).toBe("r_9");
+    expect(benchResultDefects(s0)).toEqual([]);
+  });
+});
+
+describe("restoreRunToBench — the carry batch law (operator order b, 2026-10-26: the batch cure left the outcome carry serial — S stages, S rev re-reads + S drafts/patch writes, sequential)", () => {
+  test("an N-stage restore performs a CONSTANT number of doors: ONE add-stages, ZERO drafts/patch, ONE drafts/get", async () => {
+    const fakes = mountEstateFakes({
+      benchDoc: { session: "s1", rev: 7, log: [], stages: [] },
+      draftStages: [
+        { id: "s_0", card: "image-gen", engine: "comfyui", params: { prompt: "a" } },
+        { id: "s_1", card: "image-edit", engine: "comfyui", params: { prompt: "b" } },
+        { id: "s_2", card: "upscale-tools", engine: "comfyui", params: { model: "x" } },
+      ],
+    });
+    const three: CardsRunValue = { ...runWithStages(), stages: [
+      ...runWithStages().stages,
+      { id: "s_2", status: "completed", url: "/melite-media/runs/r_9/c.png", gallery: [{ name: "c.png" }] },
+    ] };
+    const report = await restoreRunToBench(three, 'owner');
+    expect(report.added).toBe(3);
+    expect(report.carried).toBe(3);
+    expect(fakes.calls.filter((c) => c.method === "bench/add-stages").length,
+      "the whole restore — stages AND outcomes — rides one batch door").toBe(1);
+    expect(fakes.calls.filter((c) => c.method === "drafts/patch").length,
+      "no per-stage outcome patch rides a restore").toBe(0);
+    expect(fakes.calls.filter((c) => c.method === "drafts/get").length,
+      "no per-stage rev re-read rides a restore — the batch carries one expect_rev").toBe(1);
+  });
+
+  test("the batch body carries every stage's outcome aligned with its row — the fresh run's, never the stale draft's", async () => {
+    const fakes = mountEstateFakes({
+      benchDoc: { session: "s1", rev: 7, log: [], stages: [] },
+      draftStages: [
+        { id: "s_0", card: "image-gen", engine: "comfyui", params: { prompt: "a" } },
+        { id: "s_1", card: "image-edit", engine: "comfyui", params: { prompt: "b" } },
+      ],
+    });
+    const report = await restoreRunToBench(runWithStages(), 'owner');
+    expect(report.carried).toBe(2);
+    const batch = fakes.calls.find((c) => c.method === "bench/add-stages");
+    const rows = (batch!.args["doc"] as Record<string, unknown>)["stages"] as Array<Record<string, unknown>>;
+    expect(rows.length).toBe(2);
+    const outcomes = rows.map((r) => r["outcome"] as Record<string, unknown> | undefined);
+    // alignment: row i's outcome is run stage i's terminal face
+    expect((outcomes[0]!["result"] as Record<string, unknown>)["url"]).toBe("/melite-media/runs/r_9/a.png");
+    expect((outcomes[1]!["result"] as Record<string, unknown>)["url"]).toBe("/melite-media/runs/r_9/b.png");
+    expect(outcomes[0]!["runStatus"]).toBe("done");
+    expect((outcomes[0]!["result"] as { run_id: string }).run_id).toBe("r_9");
+    // the hero reorder rode the batch path: s_1's gallery lists zzz.png
+    // first, the carried map still leads b.png
+    expect(Object.keys(((outcomes[1]!["result"] as Record<string, unknown>)["artifacts"]) as Record<string, string>)[0]).toBe("b.png");
+    expect(benchResultDefects(outcomes[0]!["result"] as Record<string, unknown>)).toEqual([]);
   });
 });
