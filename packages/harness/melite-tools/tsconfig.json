@@ -56,8 +56,6 @@
         "@melite/formats/uploadToEstate": ["./../../web-kit/formats/src/uploadToEstate.ts"],
         "@melite/image-mask-studio/paint-canvas": ["./../../image/mask-studio/src/ui/PaintLeafCanvas.tsx"],
         "@melite/image-mask-studio/bbox-canvas": ["./../../image/mask-studio/src/ui/BboxLeafCanvas.tsx"],
-        "@melite/motion-motion/ui/studio/component": ["./../../motion/motion/src/ui/studio/component.tsx"],
-        "@melite/video-h3-timeline/ui/studio/component": ["./../../video/h3-timeline/src/ui/studio/component.tsx"],
         "@melite-plugin/dsh-gallery/drilldown": ["./../../web/infer-gallery/src/drilldown.tsx"],
         "@melite/viewer-base/runCard": ["./../../web/viewer-base/src/runCard.tsx"],
         "@melite/3d-rig": ["./../../3d/rig/src/index.ts"],

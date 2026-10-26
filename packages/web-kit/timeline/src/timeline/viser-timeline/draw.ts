@@ -16,6 +16,7 @@ import {
   HIGHLIGHT_TEXT_SHADOW_COLOR,
 } from "./styles.ts";
 import type { TimelineTheme } from "./styles.ts";
+import type { TimelineInterval } from './messages.ts';
 import type { TimelineCoordinates, TimelineKeyframe, TimelineTrack } from "./types.ts";
 
 export function drawHighlightFrameBox(
@@ -64,7 +65,7 @@ export function drawHighlightFrameBox(
 
 export function drawInterval(
   ctx: CanvasRenderingContext2D,
-  interval: any,
+  interval: TimelineInterval,
   coords: TimelineCoordinates,
   trackY: number,
   trackHeight: number,

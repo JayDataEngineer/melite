@@ -618,7 +618,11 @@ export class ComfyUIService extends Service {
         const derived = objectInfo ? deriveWiringDoc(objectInfo) : null;
         this.objectInfoNodes = derived?.nodes ?? null;
         this.objectInfoInputs = derived?.inputs ?? null;
-        this.pinDefaults = objectInfo ? deriveDefaults(objectInfo) : {};
+        // The pin-autofill derivation reads the same doc's input sections
+        // (its own probes validate the shape — the wire boundary's law).
+        this.pinDefaults = objectInfo
+            ? deriveDefaults(objectInfo)
+            : {};
         // THE DOC IS CONTEXT STATE (the second reseat): this class and
         // the host share the seat name `comfyui` and cannot look each
         // other up — the wiring service under its OWN name is how every

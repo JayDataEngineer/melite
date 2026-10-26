@@ -10,7 +10,7 @@ import { ComposeRefusal } from '@melite/comfyui-card-kit/errors'
 import { assertWiringAgainst, ComfyUIWiringService, deriveWiringDoc, type WiringInputSpec } from './wiringWall.ts'
 export { ComposeRefusal } from '@melite/comfyui-card-kit/errors';
 import { Context, Service } from '@deepseek-ai/cordis'
-import { GraphBuilder, deriveDefaults } from '@melite/comfyui-card-kit/graph'
+import { GraphBuilder, deriveDefaults, type ObjectInfoInput } from '@melite/comfyui-card-kit/graph'
 import type { PromptGraph, JsonValue } from '@melite/comfyui-card-kit/graph'
 import { modelsService } from './models/service.ts'
 import { assertControlNetSchedule } from '@melite/comfyui-card-kit/guard'
@@ -715,7 +715,7 @@ export class ComfyUIService extends Service {
     return [...this.cards.keys()].sort()
   }
 
-  setObjectInfo(objectInfo: Record<string, any> | null): void {
+  setObjectInfo(objectInfo: Record<string, unknown> | null): void {
     // THE WIRING DOC (2026-10-10, the YOU_ARE_A_LIAR fix shape 4):
     // per node, its DECLARED input names (required ∪ optional — the
     // doc's own truth), ONE derivation shared with the estate
@@ -725,7 +725,11 @@ export class ComfyUIService extends Service {
     const derived = objectInfo ? deriveWiringDoc(objectInfo) : null
     this.objectInfoNodes = derived?.nodes ?? null
     this.objectInfoInputs = derived?.inputs ?? null
-    this.pinDefaults = objectInfo ? deriveDefaults(objectInfo) : {}
+    // The pin-autofill derivation reads the same doc's input sections
+    // (its own probes validate the shape — the wire boundary's law).
+    this.pinDefaults = objectInfo
+      ? deriveDefaults(objectInfo as Record<string, { input?: ObjectInfoInput }>)
+      : {}
     // THE DOC IS CONTEXT STATE (the second reseat): this class and
     // the host share the seat name `comfyui` and cannot look each
     // other up — the wiring service under its OWN name is how every

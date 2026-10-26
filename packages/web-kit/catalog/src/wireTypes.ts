@@ -7,7 +7,7 @@
 // transitive closure of that consumption minus the two rows the
 // contracts package owns (imported below). The owner's types are
 // the contract.
-import type { ModifierField, ModifierOption } from "@melite/contracts/wire-types"
+import type { ModifierField, ModifierKindSpec as ModifierKind, ModifierOption } from "@melite/contracts/wire-types"
 export type CapabilityEntryWire = {
     /** Label */
     label: string;
@@ -529,36 +529,14 @@ export type ModifierEntry = {
  *     refuses it (declared = enforced).
  */
 
-export type ModifierKind = {
-    /** Kind */
-    kind: string;
-    /** Label */
-    label: string;
-    /**
-     * Cardinality
-     * @default list
-     * @enum {string}
-     */
-    cardinality: "list" | "scalar";
-    /** Max Stack */
-    max_stack?: number | null;
-    /** Param Key */
-    param_key: string;
-    /** Fields */
-    fields: ModifierField[];
-    /** Options */
-    options?: ModifierOption[] | null;
-    /** Upload Dir */
-    upload_dir?: string | null;
-    /** Options Scanned */
-    options_scanned?: boolean | null;
-    /** Tooltip */
-    tooltip?: string | null;
-    /** Declaration Only */
-    declaration_only?: boolean | null;
-    /** Order */
-    order?: number | null;
-};
+/**
+ * ModifierKind — the contracts SSOT under this package's historical
+ * name (N7 drain, 2026-11-12): the retired gateway's generated row
+ * was byte-identical to contracts' ModifierKindSpec (fields and
+ * options were ALREADY single-sourced there); the kind-level dual
+ * died here. Re-exported so the three projections keep their name.
+ */
+export type { ModifierKindSpec as ModifierKind } from '@melite/contracts/wire-types'
 /**
  * OutputEntry
  * @description One declared output FORMAT a family can produce (the outputs vocabulary).

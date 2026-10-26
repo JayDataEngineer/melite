@@ -69,7 +69,7 @@ export class RunStatusContractError extends Error {
  }
 }
 
-const isObj = (v: unknown): v is Record<string, any> =>
+const isObj = (v: unknown): v is Record<string, unknown> =>
  v != null && typeof v === "object" && !Array.isArray(v)
 
 /** Validate a status payload against the ONE status-channel contract.

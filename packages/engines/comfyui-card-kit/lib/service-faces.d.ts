@@ -1,8 +1,8 @@
-import type { CardDefinition, ComposeEstate } from './card-definition.js';
-import type { PackContract } from './pack-fields.js';
-import type { FactsFile } from './facts.js';
-import type { PromptGraph } from './graph.js';
-import type { ModelDecl } from './model-contract.js';
+import type { CardDefinition, ComposeEstate } from './card-definition.ts';
+import type { PackContract } from './pack-fields.ts';
+import type { FactsFile } from './facts.ts';
+import type { PromptGraph } from './graph.ts';
+import type { ModelDecl } from './model-contract.ts';
 /** A mod's field contract: a Schemastery OBJECT schema (the
  *  dual-declaration pattern — the same z.object({...}) style the
  *  cards declare; UI meta rides .extra('extra', bag({group, zone,
@@ -116,7 +116,7 @@ export interface ComfyUIServiceFace {
     registerPack(contract: PackContract): () => void;
     setFacts(facts: FactsFile): void;
     getCardDef(id: string): CardDefinition | undefined;
-    setObjectInfo(objectInfo: Record<string, any> | null): void;
+    setObjectInfo(objectInfo: Record<string, unknown> | null): void;
     setWeightPresent(fn: ((relativePath: string, name: string) => boolean) | null): void;
     compose(cardId: string, modelId: string | null, params: unknown, runId: string, estate?: ComposeEstate): PromptGraph;
 }

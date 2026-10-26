@@ -1083,7 +1083,7 @@ export function modelChoices(spec: FormSpecDoc): string[] {
  *  ?? route) matches the held `model` value AND its owner chain
  *  holds. Nothing matches → undefined (the caller falls to the first
  *  composing row — the catalog's first-declared law). */
-export function activeVariantId(spec: FormSpecDoc, values: SpecValues, group: CATEGORIES.variant | CATEGORIES.quant): string | undefined {
+export function activeVariantId(spec: FormSpecDoc, values: SpecValues, group: (typeof CATEGORIES)['variant'] | (typeof CATEGORIES)['quant']): string | undefined {
   const held = typeof values['model'] === 'string' ? values['model'] as string : undefined
   if (held === undefined) return undefined
   const active: Record<string, string | undefined> = {}

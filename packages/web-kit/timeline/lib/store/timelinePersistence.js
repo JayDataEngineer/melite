@@ -14,7 +14,7 @@ export async function persistTimeline(segments, audioCues, audioTracks, relayVid
                 if (isDataUrl(val)) {
                     const key = blobKey(seg.id, field);
                     blobSaves.push(tlSave(key, val));
-                    clone[field] = key; // placeholder
+                    clone[field] = key;
                 }
             }
             // Also handle controlVideoUrl
@@ -174,6 +174,9 @@ export async function loadPersistedTimeline() {
             // ── VACE migration ────────────────────────────────────────────────────
             // Drop stale LTX-only params and ensure every VACE field is present.
             // Without this, old persisted timelines crash the VACE-first UI.
+            // Stale LTX keys from older persisted documents — NOT SegmentParams
+            // members (that is the point: the migration sweeps them at load),
+            // so the delete rides a string-keyed view of the cloned record.
             const staleLtxKeys = [
                 'guidePhases', 'epsilon', 'denoisingStrength', 'inputVideoStrength',
                 'spatialUpscale', 'perturbationSwitch', 'perturbationLayers',

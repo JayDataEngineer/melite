@@ -247,7 +247,7 @@ export function useTimelineBackground(args) {
                         ...interval,
                         start_frame: segment.startFrame,
                         end_frame: segment.endFrame,
-                        opacity: segment.opacity,
+                        opacity: segment.opacity ?? interval.opacity,
                     }, coords, trackY, trackHeight, segment.color, theme, width, roundLeft, roundRight, true, false);
                 });
                 drawInterval(bgCtx, interval, coords, trackY, trackHeight, trackColor, theme, width, true, true, false, true);

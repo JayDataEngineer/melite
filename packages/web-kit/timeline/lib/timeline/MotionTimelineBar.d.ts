@@ -1,5 +1,5 @@
 import type { CSSProperties } from "react";
-import type { TimelineKeyframe, TimelinePrompt, TimelineTrack } from "./viser-timeline/types.js";
+import type { TimelineKeyframe, TimelinePrompt, TimelineTrack } from "./viser-timeline/types.ts";
 /** One Layer C prompt segment (video timeline) rendered in its OWN row
  * UNDER the calls: {text, start, end} within a call — a SUBSET of the
  * call, never a timeline entity itself (the call row above carries the
@@ -223,16 +223,16 @@ export interface AudioClipView {
 }
 /** Re-export surface: every symbol moved into a seam file stays
  *  importable from this path — the public API never moves. */
-export { AUDIO_CARDS_H, AUDIO_H, BEATS_H, clamp, DRAG_ARM_PX, fmtTimecode, GUTTER_W, LANE_H, MAX_PPF, PROMPTS_H, rgb, RULER_H, ZOOM_STEP, } from "./MotionTimelineBarLayout.js";
-export { buildTicks, useTimelineScale } from "./MotionTimelineBarScale.js";
-export type { TimelineScaleOpts } from "./MotionTimelineBarScale.js";
-export { useTimelineDragSession } from "./MotionTimelineBarDrag.js";
-export type { Drag, TimelineDragSessionOpts } from "./MotionTimelineBarDrag.js";
-export { TimelineContent, TimelineGutter, TimelinePlayhead, TimelineRuler } from "./MotionTimelineBarChrome.js";
-export type { TimelineContentProps, TimelineGutterProps, TimelineGutterScale, TimelinePlayheadProps, TimelineRulerProps } from "./MotionTimelineBarChrome.js";
-export { LaneHead } from "./LaneHead.js";
-export type { LaneHeadProps } from "./LaneHead.js";
-export { TimelineAudioLanes, TimelineBeatsLane, TimelineKeyframeLanes, TimelinePromptsLane } from "./MotionTimelineBarLanes.js";
-export type { TimelineAudioLanesProps, TimelineBeatsLaneProps, TimelineKeyframeLanesProps, TimelinePromptsLaneProps } from "./MotionTimelineBarLanes.js";
+export { AUDIO_CARDS_H, AUDIO_H, BEATS_H, clamp, DRAG_ARM_PX, fmtTimecode, GUTTER_W, LANE_H, MAX_PPF, PROMPTS_H, rgb, RULER_H, ZOOM_STEP, } from "./MotionTimelineBarLayout.ts";
+export { buildTicks, useTimelineScale } from "./MotionTimelineBarScale.ts";
+export type { TimelineScaleOpts } from "./MotionTimelineBarScale.ts";
+export { useTimelineDragSession } from "./MotionTimelineBarDrag.ts";
+export type { Drag, TimelineDragSessionOpts } from "./MotionTimelineBarDrag.ts";
+export { TimelineContent, TimelineGutter, TimelinePlayhead, TimelineRuler } from "./MotionTimelineBarChrome.tsx";
+export type { TimelineContentProps, TimelineGutterProps, TimelineGutterScale, TimelinePlayheadProps, TimelineRulerProps } from "./MotionTimelineBarChrome.tsx";
+export { LaneHead } from "./LaneHead.tsx";
+export type { LaneHeadProps } from "./LaneHead.tsx";
+export { TimelineAudioLanes, TimelineBeatsLane, TimelineKeyframeLanes, TimelinePromptsLane } from "./MotionTimelineBarLanes.tsx";
+export type { TimelineAudioLanesProps, TimelineBeatsLaneProps, TimelineKeyframeLanesProps, TimelinePromptsLaneProps } from "./MotionTimelineBarLanes.tsx";
 export declare function MotionTimelineBar({ prompts, keyframes, frameIdx, onFrameChange, onScrubStart, onScrubEnd, totalFrames, fps, initialSeconds, onKeyframeAdd, onKeyframeMove, onKeyframeDelete, onPromptUpdate, onPromptMove, onPromptResize, onPromptDelete, onExtend, tracks, promptsLabel, laneHint, packed, emptyPromptsHint, promptsHeight, beats, beatsLabel, beatsHeight, beatsHint, onBeatAdd, onPromptAdd, previews, selectedId, onSelect, audioLayers, onAudioDrop, onAudioDropAt, onAudioFileDrop, onAudioClipMove, onAudioClipDelete, onAudioLaneActivate, onAudioDetach, onTrackAdd, audioClipCards, kfLaneCards, className, style, theme, }: MotionTimelineBarProps): import("react").JSX.Element;
 //# sourceMappingURL=MotionTimelineBar.d.ts.map

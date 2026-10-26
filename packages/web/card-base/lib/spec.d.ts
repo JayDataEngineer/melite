@@ -40,6 +40,7 @@
 export declare function schemaEnvelope(dict: Record<string, SchemaRef & {
     consts?: unknown;
 }>): SchemaEnvelope;
+import { CATEGORIES } from '@melite/contracts/planes';
 import type { FormSpecDoc, InputEdge, ModifierKind, SchemaEnvelope, SchemaRef, SpecField, FormVariantRow } from '@melite/contracts/formSpec';
 export type { FormSpecDoc, InputEdge, ModifierKind, ModifierOption, SchemaEnvelope, SchemaRef, SpecField, FormVariantRow, } from '@melite/contracts/formSpec';
 import { type LaneBounds, type LaneRelations, type LaneViolation } from '@melite/contracts/laneRelations';
@@ -292,7 +293,7 @@ export declare function variantGroupsContract(spec: FormSpecDoc): string[];
  *  (address resolution, walls) still see it. */
 export declare function rowsFor(spec: FormSpecDoc, group: string): FormVariantRow[];
 export declare function composingRows(spec: FormSpecDoc, group: string, active: Record<string, string | undefined>): FormVariantRow[];
-/** The Variant axis' rows (group 'Variant', served order). */
+/** The Variant axis' rows (group CATEGORIES.variant, served order). */
 export declare function variantRows(spec: FormSpecDoc): FormVariantRow[];
 /** The Quant cells composing with a variant (THE CHAIN). */
 export declare function quantRowsFor(spec: FormSpecDoc, variantId: string | null): FormVariantRow[];
@@ -309,7 +310,7 @@ export declare function modelChoices(spec: FormSpecDoc): string[];
  *  ?? route) matches the held `model` value AND its owner chain
  *  holds. Nothing matches → undefined (the caller falls to the first
  *  composing row — the catalog's first-declared law). */
-export declare function activeVariantId(spec: FormSpecDoc, values: SpecValues, group: 'Variant' | 'Quant'): string | undefined;
+export declare function activeVariantId(spec: FormSpecDoc, values: SpecValues, group: (typeof CATEGORIES)['variant'] | (typeof CATEGORIES)['quant']): string | undefined;
 /** The ACTIVE RECIPE (the dropdown's selection state, derived from
  * the ONE truth -- never a persisted key): a recipe row is active
  * when EVERY key its pick stamps (axisPickPatch, minus the durable

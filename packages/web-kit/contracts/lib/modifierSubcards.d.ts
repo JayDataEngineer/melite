@@ -176,9 +176,17 @@ export declare function loraStrengthBoundsOf(kind: ModifierKindSpec | null): {
  * nothing else — the legacy client-side projection is deleted (rule 4).
  * Returns ``[]`` when the family declares no modifier capability.
  */
-export declare function modifiersFeatureOf(formSpec: Record<string, any> | null): ModifierKindSpec[];
+/** The read shape these three functions consult — features.modifiers
+ *  only; a full FormSpecDoc satisfies it, and the spec's partial
+ *  fixtures stay honest callers. */
+export type ModifiersFormSpec = {
+    features?: {
+        modifiers?: unknown;
+    };
+} | null;
+export declare function modifiersFeatureOf(formSpec: ModifiersFormSpec): ModifierKindSpec[];
 /** The family declares at least one modifier kind. The grid renders iff true. */
-export declare function hasModifierCapability(formSpec: Record<string, any> | null): boolean;
+export declare function hasModifierCapability(formSpec: ModifiersFormSpec): boolean;
 /** Find a kind's spec by its discriminator — convenience for the grid/modal. */
-export declare function kindSpecOf(formSpec: Record<string, any> | null, kind: string): ModifierKindSpec | null;
+export declare function kindSpecOf(formSpec: ModifiersFormSpec, kind: string): ModifierKindSpec | null;
 //# sourceMappingURL=modifierSubcards.d.ts.map

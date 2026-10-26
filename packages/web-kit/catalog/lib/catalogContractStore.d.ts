@@ -1,4 +1,4 @@
-import type { CatalogViolation } from "./catalogContract.js";
+import type { CatalogViolation } from "./catalogContract.ts";
 export type CatalogContractState = "idle" | "loaded" | "violation" | "error";
 export interface CatalogContractRecord {
     state: CatalogContractState;
@@ -17,6 +17,6 @@ interface CatalogContractStoreState {
     /** Reset to idle (teardown / tests). */
     clear: () => void;
 }
-export declare const useCatalogContractStore: import("./clientStore.js").BoundStore<CatalogContractStoreState>;
+export declare const useCatalogContractStore: import("./clientStore.ts").BoundStore<CatalogContractStoreState>;
 export {};
 //# sourceMappingURL=catalogContractStore.d.ts.map

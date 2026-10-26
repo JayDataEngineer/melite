@@ -41,7 +41,7 @@ export class CatalogContractError extends Error {
  }
 }
 
-const isObj = (v: unknown): v is Record<string, any> =>
+const isObj = (v: unknown): v is Record<string, unknown> =>
  v != null && typeof v === "object" && !Array.isArray(v)
 
 const isNonEmptyString = (v: unknown): v is string =>

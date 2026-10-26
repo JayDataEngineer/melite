@@ -45,9 +45,9 @@ export function deriveDefaults(objectInfo) {
             for (const [name, s] of Object.entries(section)) {
                 // spec tail objects carry the default; [type, {default:...}]
                 for (const part of Array.isArray(s) ? s.slice(1) : []) {
-                    if (part && typeof part === 'object' && 'default' in part) {
+                    if (part && typeof part === 'object' && !Array.isArray(part) && 'default' in part) {
                         const v = part.default;
-                        row[name] = typeof v === 'object' && v !== null ? v : v;
+                        row[name] = v;
                     }
                 }
             }

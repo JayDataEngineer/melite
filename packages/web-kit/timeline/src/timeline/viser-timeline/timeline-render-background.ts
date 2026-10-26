@@ -80,7 +80,7 @@ export function useTimelineBackground(args: TimelineBackgroundArgs) {
 
  // Track layout
  let currentTrackY = FRAME_LABELS_HEIGHT;
- const trackOrder: Array<{type: 'prompt' | 'track', index: number, data: any}> = [];
+ const trackOrder: Array<{type: 'prompt', index: number, data: {name: string}} | {type: 'track', index: number, data: TimelineTrack}> = [];
  
  // Add prompts track if there are prompts
  if (prompts.length > 0) {
@@ -301,8 +301,8 @@ export function useTimelineBackground(args: TimelineBackgroundArgs) {
  bgCtx.stroke();
  
  // Draw intervals for this track (behind keyframes)
- const trackIntervals = intervals.filter((interval: any) => interval.track_id === track.uuid);
- trackIntervals.forEach((interval: any) => {
+ const trackIntervals = intervals.filter((interval) => interval.track_id === track.uuid);
+ trackIntervals.forEach((interval) => {
  const segments = getIntervalSegments(interval, promptRange, trackColor);
  segments.forEach((segment) => {
  const roundLeft = segment.startFrame === interval.start_frame;
@@ -313,7 +313,7 @@ export function useTimelineBackground(args: TimelineBackgroundArgs) {
  ...interval,
  start_frame: segment.startFrame,
  end_frame: segment.endFrame,
- opacity: segment.opacity,
+ opacity: segment.opacity ?? interval.opacity,
  },
  coords,
  trackY,

@@ -391,7 +391,9 @@ export function useTimelineGeometry(args) {
                         track_id: kf.track_id,
                         start_frame: kf.frame,
                         end_frame: kf.frame,
-                        value: kf.value
+                        value: kf.value,
+                        opacity: kf.opacity ?? 1,
+                        locked: kf.locked ?? false,
                     };
                     // Determine which side based on x position
                     if (x < kfX) {

@@ -38,6 +38,7 @@
 //    knob from the card's boarded array: enum boarded, default
 //    boarded[0] — one source, two projections.
 import type z from '@deepseek-ai/schemastery'
+import type { JsonValue } from './graph.ts'
 import { extraOf } from '@melite/contracts/extraKeys'
 import type { SemanticModelEntry } from './semanticModelKnob.ts'
 
@@ -110,14 +111,26 @@ export type ParamsSchema = {
 /** One knob's JSON-schema projection (shared: the tools door's
  *  params_schema AND the discovery door's family param-schemas ride
  *  this — one spelling, never a second projector). */
+/** The meta members schemastery knobs carry that this projector
+ *  reads — a structural view over Schema.meta (default values are
+ *  JSON by construction; the rest are the projector's own floors). */
+type MetaView = {
+  default?: JsonValue
+  min?: number
+  max?: number
+  step?: number
+  role?: string
+  description?: string
+}
+
 export const emitKnob = (s: Schema): Record<string, unknown> => {
-  const m = (s.meta ?? {}) as Record<string, any>
+  const m = (s.meta ?? {}) as MetaView
   // THE ONE VOCABULARY (2026-10-10): the bag narrows through the
   // floor's typed read — @melite/contracts/extraKeys owns every
   // spelling; this face reads property names off the typed bag,
   // never a second string literal (the visibleWhen dead read died
   // here).
-  const ex = extraOf(s as { meta?: Record<string, unknown> }) as Record<string, any>
+  const ex = extraOf(s as { meta?: Record<string, unknown> })
 
   // union resolution
   let type = s.type
@@ -149,9 +162,9 @@ export const emitKnob = (s: Schema): Record<string, unknown> => {
     // nullable: the DEFAULT/description/role ride the OUTER union
     // (that's where the card declares them); floors/step ride the
     // inner number branch — merge with outer as fallback
-    ? ({ ...m, ...Object.fromEntries(Object.entries((inner.meta ?? {})).filter(([, v]) => v !== undefined)) } as Record<string, any>)
+    ? ({ ...m, ...Object.fromEntries(Object.entries((inner.meta ?? {})).filter(([, v]) => v !== undefined)) } as MetaView)
     : m
-  const iex = inner ? (extraOf({ meta: im } as never) as Record<string, any>) : ex
+  const iex = inner ? extraOf({ meta: im } as never) : ex
 
   // extra.options ⇒ wire-coerced Select class regardless of TS atom:
   // served type "string", enum + default stringified (compose coerces)
@@ -381,7 +394,7 @@ export const emitParamsSchema = (
     const hiddenEx = ((v.meta ?? {}).extra ?? {}) as Record<string, unknown>
     if (hiddenEx.hidden === true) continue
     properties[k] = emitKnob(v)
-    const ex = ((v.meta ?? {}).extra ?? {}) as Record<string, any>
+    const ex = extraOf(v as { meta?: Record<string, unknown> })
     if (ex.required === true) required.push(k)
   }
   const out: ParamsSchema = { type: 'object', properties }

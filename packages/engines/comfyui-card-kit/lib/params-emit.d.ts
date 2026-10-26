@@ -1,4 +1,4 @@
-import type { SemanticModelEntry } from './semanticModelKnob.js';
+import type { SemanticModelEntry } from './semanticModelKnob.ts';
 /** One card-declared modifier kind (the declarer face of the served
  *  ModifierKind — structural, the JSON wire shape). `entry` follows
  *  the served vocabulary: 'option' | 'hybrid' | undefined = field. */
@@ -62,9 +62,6 @@ export type ParamsSchema = {
     properties: Record<string, Record<string, unknown>>;
     required?: string[];
 };
-/** One knob's JSON-schema projection (shared: the tools door's
- *  params_schema AND the discovery door's family param-schemas ride
- *  this — one spelling, never a second projector). */
 export declare const emitKnob: (s: Schema) => Record<string, unknown>;
 /**
  * The DSH tool-parameter projection (M2′ stroke 2c, 2026-09-09):

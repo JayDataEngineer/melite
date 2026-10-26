@@ -100,6 +100,10 @@ export interface ExtraBag {
     options?: ExtraOptionRow[];
     optionsFrom?: string;
     serveDefault?: boolean;
+    /** Number floors as hint-only overrides (params-emit consults them
+     *  AFTER validating meta — the knob's own min/max wins). */
+    min?: number;
+    max?: number;
     default?: unknown;
 }
 /** THE TYPED WRITE — declarations pass their literal through this

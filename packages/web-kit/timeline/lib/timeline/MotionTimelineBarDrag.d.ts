@@ -1,6 +1,6 @@
 import type * as React from "react";
-import type { AudioLayer } from "./MotionTimelineBar.js";
-import type { TimelinePrompt } from "./viser-timeline/types.js";
+import type { AudioLayer } from "./MotionTimelineBar.tsx";
+import type { TimelinePrompt } from "./viser-timeline/types.ts";
 /** One in-flight pointer drag. `moved` distinguishes a click (select/
  * seek on pointerup) from a real drag. */
 export type Drag = ({

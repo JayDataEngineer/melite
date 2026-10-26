@@ -96,9 +96,16 @@ describe("drawHighlightFrameBox", () => {
 });
 
 describe("drawInterval", () => {
+  /** Minimal full-shape interval fixture (the param is TimelineInterval
+   *  now — the viser any-sweep, V5 2026-11-12). */
+  const interval = (start: number, end: number, opacity = 1) => ({
+    uuid: `spec-${start}-${end}`, track_id: "spec-track",
+    start_frame: start, end_frame: end,
+    value: null, opacity, locked: false,
+  });
   it("draws a single-frame keyframe as a circle", () => {
     const { ctx, calls } = makeCtx(true);
-    drawInterval(ctx, { start_frame: 5, end_frame: 5 }, coords(), 28, 30, COLOR, THEME, 500);
+    drawInterval(ctx, interval(5, 5), coords(), 28, 30, COLOR, THEME, 500);
     assert.ok(names(calls).includes("arc"));
     assert.ok(names(calls).includes("fill"));
     assert.ok(names(calls).includes("stroke"));
@@ -106,7 +113,7 @@ describe("drawInterval", () => {
   it("draws a single-frame pill when an edge is square", () => {
     const { ctx, calls } = makeCtx(true);
     drawInterval(
-      ctx, { start_frame: 5, end_frame: 5 }, coords(), 28, 30, COLOR, THEME,
+      ctx, interval(5, 5), coords(), 28, 30, COLOR, THEME,
       500, false, true,
     );
     // Equal radii (0/0… wait left=6? no: roundLeft=false → 0, roundRight → 6:
@@ -117,21 +124,21 @@ describe("drawInterval", () => {
   it("draws a single-frame pill via roundRect when radii match", () => {
     const { ctx, calls } = makeCtx(true);
     drawInterval(
-      ctx, { start_frame: 5, end_frame: 5 }, coords(), 28, 30, COLOR, THEME,
+      ctx, interval(5, 5), coords(), 28, 30, COLOR, THEME,
       500, false, false,
     );
     assert.ok(names(calls).includes("roundRect"));
   });
   it("draws a multi-frame bar via roundRect when radii match", () => {
     const { ctx, calls } = makeCtx(true);
-    drawInterval(ctx, { start_frame: 2, end_frame: 8 }, coords(), 28, 30, COLOR, THEME, 500);
+    drawInterval(ctx, interval(2, 8), coords(), 28, 30, COLOR, THEME, 500);
     assert.ok(names(calls).includes("roundRect"));
   });
   it("draws a multi-frame bar with manual arcs without roundRect", () => {
     for (const [rl, rr] of [[true, true], [false, false], [true, false], [false, true]] as const) {
       const { ctx, calls } = makeCtx(false);
       drawInterval(
-        ctx, { start_frame: 2, end_frame: 8 }, coords(), 28, 30, COLOR, THEME,
+        ctx, interval(2, 8), coords(), 28, 30, COLOR, THEME,
         500, rl, rr,
       );
       assert.ok(names(calls).includes("arcTo") || names(calls).includes("lineTo"));
@@ -141,7 +148,7 @@ describe("drawInterval", () => {
   it("draws the manual path with roundRect present but unequal radii", () => {
     const { ctx, calls } = makeCtx(true);
     drawInterval(
-      ctx, { start_frame: 2, end_frame: 8 }, coords(), 28, 30, COLOR, THEME,
+      ctx, interval(2, 8), coords(), 28, 30, COLOR, THEME,
       500, true, false,
     );
     assert.ok(!names(calls).includes("roundRect"));
@@ -149,9 +156,9 @@ describe("drawInterval", () => {
     assert.ok(names(calls).includes("lineTo"));
   });
   it("culls off-screen intervals only when width is known", () => {
-    const far = { start_frame: 1000, end_frame: 1010 };
-    const left = { start_frame: -1000, end_frame: -990 };
-    const near = { start_frame: 2, end_frame: 8 };
+    const far = interval(1000, 1010);
+    const left = interval(-1000, -990);
+    const near = interval(2, 8);
     // Width known: both sides culled (fill never runs).
     for (const iv of [far, left]) {
       const f = makeCtx(true);
@@ -170,7 +177,7 @@ describe("drawInterval", () => {
   it("honors explicit opacity + fill/border toggles", () => {
     const { ctx, calls } = makeCtx(true);
     drawInterval(
-      ctx, { start_frame: 2, end_frame: 8, opacity: 0.5 }, coords(), 28, 30,
+      ctx, interval(2, 8, 0.5), coords(), 28, 30,
       COLOR, THEME, 500, true, true, false, false,
     );
     assert.ok(!names(calls).includes("fill"));
@@ -179,7 +186,7 @@ describe("drawInterval", () => {
   });
   it("defaults opacity to 1", () => {
     const { ctx } = makeCtx(true);
-    drawInterval(ctx, { start_frame: 2, end_frame: 8 }, coords(), 28, 30, COLOR, THEME, 500);
+    drawInterval(ctx, interval(2, 8), coords(), 28, 30, COLOR, THEME, 500);
     assert.equal(ctx.fillStyle, "rgba(219, 148, 86, 1)");
   });
 });

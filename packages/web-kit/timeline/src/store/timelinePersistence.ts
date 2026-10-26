@@ -31,7 +31,7 @@ export async function persistTimeline(
         if (isDataUrl(val)) {
           const key = blobKey(seg.id, field)
           blobSaves.push(tlSave(key, val))
-          ;(clone as any)[field] = key // placeholder
+          clone[field] = key
         }
       }
       // Also handle controlVideoUrl
@@ -177,7 +177,7 @@ export async function loadPersistedTimeline(): Promise<{
         const val = clone[field] as string | null
         if (isBlobRef(val)) {
           const data = await tlLoad(val)
-          ;(clone as any)[field] = data
+          clone[field] = data
         }
       }
       // Restore controlVideoUrl
@@ -204,7 +204,10 @@ export async function loadPersistedTimeline(): Promise<{
       // ── VACE migration ────────────────────────────────────────────────────
       // Drop stale LTX-only params and ensure every VACE field is present.
       // Without this, old persisted timelines crash the VACE-first UI.
-      const staleLtxKeys: Array<keyof typeof clone.params> = [
+      // Stale LTX keys from older persisted documents — NOT SegmentParams
+      // members (that is the point: the migration sweeps them at load),
+      // so the delete rides a string-keyed view of the cloned record.
+      const staleLtxKeys: Array<string> = [
         'guidePhases', 'epsilon', 'denoisingStrength', 'inputVideoStrength',
         'spatialUpscale', 'perturbationSwitch', 'perturbationLayers',
         'perturbationStartPerc', 'perturbationEndPerc', 'cameraPanX', 'cameraPanY',
@@ -216,8 +219,8 @@ export async function loadPersistedTimeline(): Promise<{
         'maskingSource', 'audioPromptType', 'outpaintingEnabled',
         'slidingWindow', 'slidingWindowSize', 'slidingWindowOverlap',
         'enhancePrompt', 'defaultProfile',
-      ] as any
-      for (const k of staleLtxKeys) delete (clone.params as any)[k]
+      ]
+      for (const k of staleLtxKeys) delete (clone.params as Record<string, unknown>)[k]
       // Backfill VACE defaults for missing fields
       const D = DEFAULT_SEGMENT_PARAMS
       if (typeof clone.params.profile !== 'string') clone.params.profile = D.profile

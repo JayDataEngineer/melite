@@ -371,7 +371,6 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
     // dead while the run went. An id mismatch means a newer run
     // owns the tile; the mapping stays.
     stageRunsRef.current = { ...stageRunsRef.current }
-    console.log("PROBE clearStageRun:", stageId, runId, JSON.stringify(stageRunsRef.current))
     if (runId !== undefined && stageRunsRef.current[stageId] !== runId) return
     delete stageRunsRef.current[stageId]
     setStageRuns(stageRunsRef.current)

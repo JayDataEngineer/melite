@@ -5891,7 +5891,54 @@ window.__ModuleLoader__.load({
 		* @module @deepseek-ai/dsh-typert-protocol
 		*/
 		//#endregion
+		//#region ../../web-kit/catalog/src/sleep.ts
+		/**
+		* sleep.ts — ONE delay for the package (the hand-roll audit's 7.9).
+		*
+		* Four clones across this package's own sources carried three
+		* different contracts: an abortable sleep that rejects with an
+		* `AbortError` (api.ts's retry backoff), a plain delay
+		* (text-to-pose's poll), and two inline `new Promise(r =>
+		* setTimeout(r, ms))` waits (FlowProtocol's poll ticks). They are one
+		* function with an optional signal: a caller with no signal gets the
+		* plain delay, a caller with one gets the abort that clears the timer.
+		*
+		* Why this is a local module and not the DSH timer seat: this package
+		* is a browser client (no `Context`), and `ctx.timeout` is fiber-owned
+		* by the Cordis plugin. The cross-package fold the row names is
+		* unavailable to every one of these sites for that reason alone; what
+		* IS available is one implementation per package, which is this.
+		* @module @melite/catalog/sleep
+		*/
+		/**
+		* Await `ms` milliseconds; an `AbortSignal` clears the timer and
+		* rejects with a DOM `AbortError`, the spelling the retry path
+		* already catches.
+		* @param ms - delay in milliseconds.
+		* @param signal - optional cancellation; an already-aborted signal rejects without waiting.
+		* @returns resolves after the delay, rejects on abort.
+		*/
+		function sleep$1(ms, signal) {
+			return new Promise((resolve, reject) => {
+				if (signal?.aborted === true) {
+					reject(new DOMException("Aborted", "AbortError"));
+					return;
+				}
+				const timer = setTimeout(() => {
+					signal?.removeEventListener("abort", onAbort);
+					resolve();
+				}, ms);
+				const onAbort = () => {
+					clearTimeout(timer);
+					reject(new DOMException("Aborted", "AbortError"));
+				};
+				signal?.addEventListener("abort", onAbort, { once: true });
+			});
+		}
+		var init_sleep$1 = __esmMin((() => {}));
+		//#endregion
 		//#region ../../web-kit/contracts/src/benchStage.ts
+		init_sleep$1();
 		/** THE BIRTH STRIP (the cross-bench history leak, 2026-09-23,
 		*  live proof bench-session-2bd2a61f): the wand restores onto fresh
 		*  sessions carrying rows from a FOREIGN bench's run snapshot, and
@@ -5932,9 +5979,6 @@ window.__ModuleLoader__.load({
 		}
 		//#endregion
 		//#region src/client/cards-resource.ts
-		const tailDelay = (ms) => new Promise((resolve) => {
-			setTimeout(resolve, ms);
-		});
 		/** The bench address (the legacy bare form serves 'main' — the
 		*  pre-session key records resolve unchanged). */
 		const CARDS_BENCH_ADDRESS = "dsh-resource://cards/bench";
@@ -6759,7 +6803,7 @@ window.__ModuleLoader__.load({
 					let lastRev = value.rev;
 					let lastFaces = JSON.stringify(value.stages);
 					while (!ctx.signal.aborted) {
-						await tailDelay(1500);
+						await sleep$1(1500);
 						if (ctx.signal.aborted) return;
 						let next;
 						try {
@@ -8391,52 +8435,6 @@ window.__ModuleLoader__.load({
 		async function undoBenchWire(doc, sessionKey, signal) {
 			return await withRebase("undo", doc, sessionKey, signal);
 		}
-		//#endregion
-		//#region ../../web-kit/catalog/src/sleep.ts
-		/**
-		* sleep.ts — ONE delay for the package (the hand-roll audit's 7.9).
-		*
-		* Four clones across this package's own sources carried three
-		* different contracts: an abortable sleep that rejects with an
-		* `AbortError` (api.ts's retry backoff), a plain delay
-		* (text-to-pose's poll), and two inline `new Promise(r =>
-		* setTimeout(r, ms))` waits (FlowProtocol's poll ticks). They are one
-		* function with an optional signal: a caller with no signal gets the
-		* plain delay, a caller with one gets the abort that clears the timer.
-		*
-		* Why this is a local module and not the DSH timer seat: this package
-		* is a browser client (no `Context`), and `ctx.timeout` is fiber-owned
-		* by the Cordis plugin. The cross-package fold the row names is
-		* unavailable to every one of these sites for that reason alone; what
-		* IS available is one implementation per package, which is this.
-		* @module @melite/catalog/sleep
-		*/
-		/**
-		* Await `ms` milliseconds; an `AbortSignal` clears the timer and
-		* rejects with a DOM `AbortError`, the spelling the retry path
-		* already catches.
-		* @param ms - delay in milliseconds.
-		* @param signal - optional cancellation; an already-aborted signal rejects without waiting.
-		* @returns resolves after the delay, rejects on abort.
-		*/
-		function sleep$1(ms, signal) {
-			return new Promise((resolve, reject) => {
-				if (signal?.aborted === true) {
-					reject(new DOMException("Aborted", "AbortError"));
-					return;
-				}
-				const timer = setTimeout(() => {
-					signal?.removeEventListener("abort", onAbort);
-					resolve();
-				}, ms);
-				const onAbort = () => {
-					clearTimeout(timer);
-					reject(new DOMException("Aborted", "AbortError"));
-				};
-				signal?.addEventListener("abort", onAbort, { once: true });
-			});
-		}
-		var init_sleep$1 = __esmMin((() => {}));
 		//#endregion
 		//#region ../../web-kit/catalog/src/clientStore.ts
 		/**
@@ -11596,13 +11594,6 @@ window.__ModuleLoader__.load({
 				step: strengthField?.step ?? .05
 			};
 		}
-		/**
-		* The generic arbitrary-kind list — the ONE key the frontend reads to decide
-		* which modifier rows to render. Declared-only (Phase A finalé): the backend
-		* emits ``features.modifiers`` from the catalog's ``modifiers:`` block and
-		* nothing else — the legacy client-side projection is deleted (rule 4).
-		* Returns ``[]`` when the family declares no modifier capability.
-		*/
 		function modifiersFeatureOf(formSpec) {
 			const raw = formSpec?.features?.modifiers;
 			return Array.isArray(raw) ? raw : [];
@@ -21061,7 +21052,6 @@ window.__ModuleLoader__.load({
 			}, []);
 			const clearStageRun = (0, react.useCallback)((stageId, runId) => {
 				stageRunsRef.current = { ...stageRunsRef.current };
-				console.log("PROBE clearStageRun:", stageId, runId, JSON.stringify(stageRunsRef.current));
 				if (runId !== void 0 && stageRunsRef.current[stageId] !== runId) return;
 				delete stageRunsRef.current[stageId];
 				setStageRuns(stageRunsRef.current);

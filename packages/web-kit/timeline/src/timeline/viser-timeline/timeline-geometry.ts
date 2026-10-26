@@ -130,7 +130,7 @@ export function useTimelineGeometry(args: TimelineGeometryArgs) {
  
  return null;
  }, [timelineState, getTrackFromY, getTrackY]);
- const findIntervalAtPosition = useCallback((x: number, y: number): {interval: any, clickOffsetFrames: number} | null => {
+ const findIntervalAtPosition = useCallback((x: number, y: number): {interval: TimelineInterval, clickOffsetFrames: number} | null => {
  if (!timelineState || !canvasRef.current) return null;
  
  const canvas = canvasRef.current;
@@ -369,7 +369,7 @@ export function useTimelineGeometry(args: TimelineGeometryArgs) {
  return null;
  }, [timelineState, promptsByStart, zoomLevel, panOffset, getTrackFromY]);
  // Helper: Find if mouse is near an interval edge (for resizing)
- const findIntervalEdge = useCallback((x: number, y: number): {interval: any, edge: 'left' | 'right'} | null => {
+ const findIntervalEdge = useCallback((x: number, y: number): {interval: TimelineInterval, edge: 'left' | 'right'} | null => {
  if (!timelineState || !canvasRef.current) return null;
  
  const canvas = canvasRef.current;
@@ -455,12 +455,14 @@ export function useTimelineGeometry(args: TimelineGeometryArgs) {
  
  if (distance <= KEYFRAME_RADIUS + edgeThreshold) {
  // Treat single keyframe as interval with start=end=frame
- const fakeInterval = {
+ const fakeInterval: TimelineInterval = {
  uuid: kf.uuid,
  track_id: kf.track_id,
  start_frame: kf.frame,
  end_frame: kf.frame,
- value: kf.value
+ value: kf.value,
+ opacity: kf.opacity ?? 1,
+ locked: kf.locked ?? false,
  };
  // Determine which side based on x position
  if (x < kfX) {

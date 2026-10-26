@@ -10,6 +10,7 @@ import type { TimelineMessage } from "./messages.ts";
 import type { CanvasSizeState, TimelinePrompt } from "./types.ts";
 import type { TimelineTheme } from "./styles.ts";
 import type { TimelineInteractionSnapshot } from "./timeline-interaction-state.ts";
+import type { TimelineInterval } from './messages.ts';
 
 export interface TimelineForegroundArgs {
  timelineState: TimelineMessage | null;
@@ -322,9 +323,14 @@ export function useTimelineForeground(args: TimelineForegroundArgs) {
  trackY += TRACK_HEIGHT * (timelineState.tracks[i].height_scale || 1.0);
  }
  
- const intervalPreview = {
+ const intervalPreview: TimelineInterval = {
+ uuid: `drag-preview-${intervalDrag.startFrame}`,
+ track_id: intervalDrag.trackId,
  start_frame: actualStartFrame,
  end_frame: actualEndFrame,
+ value: null,
+ opacity: 1,
+ locked: false,
  };
  const segments = getIntervalSegments(intervalPreview, promptRange, trackColor);
  segments.forEach((segment) => {
@@ -336,7 +342,7 @@ export function useTimelineForeground(args: TimelineForegroundArgs) {
  ...intervalPreview,
  start_frame: segment.startFrame,
  end_frame: segment.endFrame,
- opacity: segment.opacity,
+ opacity: segment.opacity ?? intervalPreview.opacity,
  },
  coords,
  trackY,

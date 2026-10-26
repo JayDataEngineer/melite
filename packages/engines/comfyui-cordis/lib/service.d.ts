@@ -221,7 +221,7 @@ export declare class ComfyUIService extends Service {
     getCardDef(id: string): CardDefinition | undefined;
     /** Registered card ids (sorted) — census + refusal text reuse. */
     cardIds(): string[];
-    setObjectInfo(objectInfo: Record<string, any> | null): void;
+    setObjectInfo(objectInfo: Record<string, unknown> | null): void;
     /** Legacy: node-name set only (gate arming without autofill). */
     setObjectInfoNodes(nodes: Iterable<string> | null): void;
     /** THE WEIGHT PRESENCE READER (the silent-truncation law,

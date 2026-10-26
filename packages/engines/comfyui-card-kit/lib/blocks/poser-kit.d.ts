@@ -1,4 +1,4 @@
-import { GraphBuilder, OutputHandle, type NodeRef } from '../graph.js';
+import { GraphBuilder, OutputHandle, type NodeRef } from '../graph.ts';
 export interface TurnaroundKnobs {
     resolution: number;
     framing: number;

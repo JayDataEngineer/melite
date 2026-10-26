@@ -1,6 +1,6 @@
-import type { TimelineInterval, TimelineMessage } from "./messages.js";
-import type { TimelineKeyframe, TimelinePrompt } from "./types.js";
-import type { TimelineInteractionSnapshot } from "./timeline-interaction-state.js";
+import type { TimelineInterval, TimelineMessage } from "./messages.ts";
+import type { TimelineKeyframe, TimelinePrompt } from "./types.ts";
+import type { TimelineInteractionSnapshot } from "./timeline-interaction-state.ts";
 export interface TimelineGeometryArgs {
     timelineState: TimelineMessage | null;
     canvasRef: TimelineInteractionSnapshot["canvasRef"];
@@ -20,7 +20,7 @@ export declare function useTimelineGeometry(args: TimelineGeometryArgs): {
     };
     findKeyframeAtPosition: (x: number, y: number) => TimelineKeyframe | null;
     findIntervalAtPosition: (x: number, y: number) => {
-        interval: any;
+        interval: TimelineInterval;
         clickOffsetFrames: number;
     } | null;
     findPromptAtPosition: (x: number, y: number) => TimelinePrompt | null;
@@ -34,7 +34,7 @@ export declare function useTimelineGeometry(args: TimelineGeometryArgs): {
         frame: number;
     } | null;
     findIntervalEdge: (x: number, y: number) => {
-        interval: any;
+        interval: TimelineInterval;
         edge: "left" | "right";
     } | null;
 };

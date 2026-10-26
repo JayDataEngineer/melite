@@ -1,7 +1,7 @@
-import type { TimelineTheme } from "./styles.js";
-import type { TimelineInterval, TimelineMessage } from "./messages.js";
-import type { CanvasSizeState, TimelineKeyframe, TimelinePrompt, TimelineTrack } from "./types.js";
-import type { TimelineInteractionSnapshot } from "./timeline-interaction-state.js";
+import type { TimelineTheme } from "./styles.ts";
+import type { TimelineInterval, TimelineMessage } from "./messages.ts";
+import type { CanvasSizeState, TimelineKeyframe, TimelinePrompt, TimelineTrack } from "./types.ts";
+import type { TimelineInteractionSnapshot } from "./timeline-interaction-state.ts";
 export interface TimelineBackgroundArgs {
     timelineState: TimelineMessage | null;
     interaction: TimelineInteractionSnapshot;

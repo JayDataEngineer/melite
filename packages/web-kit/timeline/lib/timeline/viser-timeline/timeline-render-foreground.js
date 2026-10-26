@@ -191,8 +191,13 @@ export function useTimelineForeground(args) {
                     trackY += TRACK_HEIGHT * (timelineState.tracks[i].height_scale || 1.0);
                 }
                 const intervalPreview = {
+                    uuid: `drag-preview-${intervalDrag.startFrame}`,
+                    track_id: intervalDrag.trackId,
                     start_frame: actualStartFrame,
                     end_frame: actualEndFrame,
+                    value: null,
+                    opacity: 1,
+                    locked: false,
                 };
                 const segments = getIntervalSegments(intervalPreview, promptRange, trackColor);
                 segments.forEach((segment) => {
@@ -202,7 +207,7 @@ export function useTimelineForeground(args) {
                         ...intervalPreview,
                         start_frame: segment.startFrame,
                         end_frame: segment.endFrame,
-                        opacity: segment.opacity,
+                        opacity: segment.opacity ?? intervalPreview.opacity,
                     }, coords, trackY, trackHeight, segment.color, theme, width, roundLeft, roundRight, true, false);
                 });
                 drawInterval(ctx, intervalPreview, coords, trackY, trackHeight, trackColor, theme, width, true, true, false, true);

@@ -480,17 +480,22 @@ export function loraStrengthBoundsOf(kind: ModifierKindSpec | null): {
  * nothing else — the legacy client-side projection is deleted (rule 4).
  * Returns ``[]`` when the family declares no modifier capability.
  */
-export function modifiersFeatureOf(formSpec: Record<string, any> | null): ModifierKindSpec[] {
+/** The read shape these three functions consult — features.modifiers
+ *  only; a full FormSpecDoc satisfies it, and the spec's partial
+ *  fixtures stay honest callers. */
+export type ModifiersFormSpec = { features?: { modifiers?: unknown } } | null
+
+export function modifiersFeatureOf(formSpec: ModifiersFormSpec): ModifierKindSpec[] {
  const raw = formSpec?.features?.modifiers
  return Array.isArray(raw) ? (raw as ModifierKindSpec[]) : []
 }
 
 /** The family declares at least one modifier kind. The grid renders iff true. */
-export function hasModifierCapability(formSpec: Record<string, any> | null): boolean {
+export function hasModifierCapability(formSpec: ModifiersFormSpec): boolean {
  return modifiersFeatureOf(formSpec).length > 0
 }
 
 /** Find a kind's spec by its discriminator — convenience for the grid/modal. */
-export function kindSpecOf(formSpec: Record<string, any> | null, kind: string): ModifierKindSpec | null {
+export function kindSpecOf(formSpec: ModifiersFormSpec, kind: string): ModifierKindSpec | null {
  return modifiersFeatureOf(formSpec).find((k) => k.kind === kind) ?? null
 }

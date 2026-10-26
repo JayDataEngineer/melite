@@ -62,9 +62,10 @@ import type { FlowEventFrame } from './draft.ts'
 import { patchStageOutcome } from './draft.ts'
 import { rejectionVoice } from './rejection-voice.ts'
 
-// the draft tail's delay (module scope: the other sleeps in this
-// file are locals of other generator scopes)
-const tailDelay = (ms: number): Promise<void> => new Promise((resolve) => { setTimeout(resolve, ms) })
+// the draft tail's delay — the kit's one browser sleep (J5's last
+// foldable site, 2026-11-12; the other sleeps in this file are
+// locals of other generator scopes)
+import { sleep as tailDelay } from '@melite/catalog/sleep'
 
 /** The cards resource's Remote failure code, merged into the
  *  protocol's one vocabulary (cookbook §2: declaration merging, next

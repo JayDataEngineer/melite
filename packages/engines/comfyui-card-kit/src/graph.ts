@@ -56,22 +56,32 @@ export function stripEmptyAutofill(graph: PromptGraph, table: StripTable): Promp
   return graph
 }
 
+/** An object_info entry's input sections, structurally: the engine's
+ *  schema dialect names each pin's spec tail by position ([type,
+ *  {default: ...}]) — the tail object's members vary per type, so the
+ *  tail is JsonValue and the default is read by the 'default' key
+ *  probe below (validated by shape, never cast). */
+export type ObjectInfoInput = {
+  required?: Record<string, unknown>
+  optional?: Record<string, unknown>
+}
+
 /** Derive the pin autofill map from a live object_info
  *  snapshot: {class: {input: default}} for entries that carry a
  *  default (required + optional both consulted). */
-export function deriveDefaults(objectInfo: Record<string, any>): Record<string, Record<string, JsonValue>> {
+export function deriveDefaults(objectInfo: Record<string, { input?: ObjectInfoInput }>): Record<string, Record<string, JsonValue>> {
   const out: Record<string, Record<string, JsonValue>> = {}
   for (const [cls, spec] of Object.entries(objectInfo)) {
-    const input = (spec as any)?.input ?? {}
+    const input = spec?.input ?? {}
     const row: Record<string, JsonValue> = {}
     for (const section of [input.required, input.optional]) {
       if (!section) continue
-      for (const [name, s] of Object.entries(section as Record<string, any>)) {
+      for (const [name, s] of Object.entries(section)) {
         // spec tail objects carry the default; [type, {default:...}]
         for (const part of Array.isArray(s) ? s.slice(1) : []) {
-          if (part && typeof part === 'object' && 'default' in part) {
-            const v = (part as any).default
-            row[name] = typeof v === 'object' && v !== null ? (v as JsonValue) : v
+          if (part && typeof part === 'object' && !Array.isArray(part) && 'default' in part) {
+            const v = (part as { default: JsonValue }).default
+            row[name] = v
           }
         }
       }

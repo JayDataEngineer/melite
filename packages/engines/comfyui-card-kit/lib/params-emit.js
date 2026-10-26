@@ -1,7 +1,4 @@
 import { extraOf } from '@melite/contracts/extraKeys';
-/** One knob's JSON-schema projection (shared: the tools door's
- *  params_schema AND the discovery door's family param-schemas ride
- *  this — one spelling, never a second projector). */
 export const emitKnob = (s) => {
     const m = (s.meta ?? {});
     // THE ONE VOCABULARY (2026-10-10): the bag narrows through the
@@ -246,7 +243,7 @@ export const emitParamsSchema = (schemaCarrier, boarded, semantic) => {
         if (hiddenEx.hidden === true)
             continue;
         properties[k] = emitKnob(v);
-        const ex = ((v.meta ?? {}).extra ?? {});
+        const ex = extraOf(v);
         if (ex.required === true)
             required.push(k);
     }

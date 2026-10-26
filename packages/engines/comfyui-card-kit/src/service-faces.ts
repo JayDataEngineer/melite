@@ -134,7 +134,7 @@ export interface ComfyUIServiceFace {
   registerPack(contract: PackContract): () => void
   setFacts(facts: FactsFile): void
   getCardDef(id: string): CardDefinition | undefined
-  setObjectInfo(objectInfo: Record<string, any> | null): void
+  setObjectInfo(objectInfo: Record<string, unknown> | null): void
   setWeightPresent(fn: ((relativePath: string, name: string) => boolean) | null): void
   compose(cardId: string, modelId: string | null, params: unknown, runId: string, estate?: ComposeEstate): PromptGraph
 }

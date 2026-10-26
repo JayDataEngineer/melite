@@ -30,10 +30,21 @@ export interface NodeRef {
 export type StripTable = Record<string, readonly string[]>;
 export declare function stripAutofill(graph: PromptGraph, table: StripTable): PromptGraph;
 export declare function stripEmptyAutofill(graph: PromptGraph, table: StripTable): PromptGraph;
+/** An object_info entry's input sections, structurally: the engine's
+ *  schema dialect names each pin's spec tail by position ([type,
+ *  {default: ...}]) — the tail object's members vary per type, so the
+ *  tail is JsonValue and the default is read by the 'default' key
+ *  probe below (validated by shape, never cast). */
+export type ObjectInfoInput = {
+    required?: Record<string, unknown>;
+    optional?: Record<string, unknown>;
+};
 /** Derive the pin autofill map from a live object_info
  *  snapshot: {class: {input: default}} for entries that carry a
  *  default (required + optional both consulted). */
-export declare function deriveDefaults(objectInfo: Record<string, any>): Record<string, Record<string, JsonValue>>;
+export declare function deriveDefaults(objectInfo: Record<string, {
+    input?: ObjectInfoInput;
+}>): Record<string, Record<string, JsonValue>>;
 export declare class GraphBuilder {
     /** Per-class instance counters — the /prompt key scheme is
      *  `<ClassName>.<index>`. */
