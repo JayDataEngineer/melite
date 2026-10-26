@@ -1043,55 +1043,6 @@
   "size": null,
   "variants": [
     {
-      "id": "base",
-      "label": "Base",
-      "group": "Variant",
-      "defaults": {
-        "steps": 25,
-        "cfg": 1
-      },
-      "route": "qwen-img-edit-21",
-      "hint": "The 2.1 base checkpoint on the edit lane — 25 steps (the official template's own count), both download tiers below, the cache-wrapped edit compose. Requires provisioning: the 2.1 files are NOT on this box by default; without them the engine validation refuses LOUD (the honest face — the 2511 weights are what ship).",
-      "engine": "comfyui",
-      "sampler_envelope": {
-        "steps": [
-          8,
-          30
-        ],
-        "cfg": [
-          1,
-          2
-        ]
-      },
-      "quant": null,
-      "vram_peak_gb": null,
-      "owner": ""
-    },
-    {
-      "id": "int8_convrot",
-      "label": "INT8 ConvRot",
-      "group": "Quant",
-      "defaults": {},
-      "route": "qwen-img-edit-21-int8",
-      "hint": null,
-      "engine": "comfyui",
-      "quant": "int8_convrot",
-      "vram_peak_gb": 24,
-      "owner": "base"
-    },
-    {
-      "id": "bf16",
-      "label": "BF16",
-      "group": "Quant",
-      "defaults": {},
-      "route": "qwen-img-edit-21-bf16",
-      "hint": null,
-      "engine": "comfyui",
-      "quant": "bf16",
-      "vram_peak_gb": 48,
-      "owner": "base"
-    },
-    {
       "id": "turbo",
       "label": "Turbo",
       "group": "Variant",
@@ -1202,6 +1153,55 @@
       "quant": null,
       "vram_peak_gb": null,
       "owner": ""
+    },
+    {
+      "id": "base",
+      "label": "Base",
+      "group": "Variant",
+      "defaults": {
+        "steps": 25,
+        "cfg": 1
+      },
+      "route": "qwen-img-edit-21",
+      "hint": "The 2.1 base checkpoint on the edit lane — 25 steps (the official template's own count), both download tiers below, the cache-wrapped edit compose. Requires provisioning: the 2.1 files are NOT on this box by default; without them the engine validation refuses LOUD (the honest face — the 2511 weights are what ship).",
+      "engine": "comfyui",
+      "sampler_envelope": {
+        "steps": [
+          8,
+          30
+        ],
+        "cfg": [
+          1,
+          2
+        ]
+      },
+      "quant": null,
+      "vram_peak_gb": null,
+      "owner": ""
+    },
+    {
+      "id": "int8_convrot",
+      "label": "INT8 ConvRot",
+      "group": "Quant",
+      "defaults": {},
+      "route": "qwen-img-edit-21-int8",
+      "hint": null,
+      "engine": "comfyui",
+      "quant": "int8_convrot",
+      "vram_peak_gb": 24,
+      "owner": "base"
+    },
+    {
+      "id": "bf16",
+      "label": "BF16",
+      "group": "Quant",
+      "defaults": {},
+      "route": "qwen-img-edit-21-bf16",
+      "hint": null,
+      "engine": "comfyui",
+      "quant": "bf16",
+      "vram_peak_gb": 48,
+      "owner": "base"
     }
   ],
   "lanes": {
@@ -1249,28 +1249,6 @@
       }
     },
     "variants": {
-      "base": {
-        "bounds": {
-          "steps": {
-            "min": 8,
-            "max": 30
-          },
-          "cfg": {
-            "min": 1,
-            "max": 2
-          }
-        },
-        "sampler_envelope": {
-          "steps": [
-            8,
-            30
-          ],
-          "cfg": [
-            1,
-            2
-          ]
-        }
-      },
       "turbo": {
         "bounds": {
           "steps": {
@@ -1286,6 +1264,28 @@
           "steps": [
             4,
             8
+          ],
+          "cfg": [
+            1,
+            2
+          ]
+        }
+      },
+      "base": {
+        "bounds": {
+          "steps": {
+            "min": 8,
+            "max": 30
+          },
+          "cfg": {
+            "min": 1,
+            "max": 2
+          }
+        },
+        "sampler_envelope": {
+          "steps": [
+            8,
+            30
           ],
           "cfg": [
             1,

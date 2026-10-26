@@ -157,60 +157,13 @@ export const DECL = {
     // the quant cell owns its tier's unet spelling
     // (CellRow.lane_inputs — the cell-lane cascade).
     "variants": [
-        {
-            "id": "base",
-            "label": "Base",
-            "hint": "The 2.1 base checkpoint on the edit lane — 25 steps (the official template's own count), both download tiers below, the cache-wrapped edit compose. Requires provisioning: the 2.1 files are NOT on this box by default; without them the engine validation refuses LOUD (the honest face — the 2511 weights are what ship).",
-            "group": "Variant",
-            "route": "qwen-img-edit-21",
-            "order": 0,
-            // The base face declared, never inherited (the variant-sampler-defaults
-            // law): 25 / 1 — the official template's own count, the family mirror.
-            // THE ENVELOPE DECLARATION LAW (CONTRACTS §4 debt 27, the E2-8
-            // cure's drain): the same physical weights as the t2i family's
-            // base lane, the same domain — 25 centered (steps [8, 30]: the
-            // floor follows the t2i sibling's T3 operator-write pin — the
-            // admission matrix pins steps 8 with loras landing whole on the
-            // same weights, so the distilled 8 rides here too); family
-            // guidance mode cfg [1, 2]. ONE-DIRECTIONAL like the sibling:
-            // the base pair's 25 refuses on turbo, 8 steps rides base.
-            "sampler_envelope": { "steps": [8, 30], "cfg": [1, 2] },
-            "resolver_defaults": { "steps": 25, "cfg": 1 },
-            "cells": [
-                {
-                    "quant": "int8_convrot",
-                    "label": "INT8 ConvRot",
-                    "route": "qwen-img-edit-21-int8",
-                    "vram_peak_gb": 24,
-                    "artifact": {
-                        "source_url": "https://huggingface.co/Comfy-Org/Qwen-Image-2.1/resolve/main/diffusion_models/qwen_image_2.1_int8_convrot.safetensors",
-                        "size_bytes": 7256783064,
-                        "sha256": "cb74113cb03faecd79611b01fd7fd642f0aa60d6f0b95086abee214d75eaa57d",
-                        "dest_root": "COMFYUI_ROOT",
-                        "dest_sub": "diffusion_models",
-                        "size_hint_gb": 7.3
-                    }
-                },
-                {
-                    "quant": "bf16",
-                    "label": "BF16",
-                    "route": "qwen-img-edit-21-bf16",
-                    "vram_peak_gb": 48,
-                    "lane_inputs": {
-                        "unet": "qwen_image_2.1_bf16.safetensors",
-                        "text_encoder": "qwen3vl_8b_bf16.safetensors"
-                    },
-                    "artifact": {
-                        "source_url": "https://huggingface.co/Comfy-Org/Qwen-Image-2.1/resolve/main/diffusion_models/qwen_image_2.1_bf16.safetensors",
-                        "size_bytes": 14230280616,
-                        "sha256": "89f4158d066cc33906a199fca85634f766892dd78f49b6698dabf187ac86c4bc",
-                        "dest_root": "COMFYUI_ROOT",
-                        "dest_sub": "diffusion_models",
-                        "size_hint_gb": 14.3
-                    }
-                }
-            ]
-        },
+        // THE DEFAULT SEAT (burn c, 2026-10-26 — operator: "YOU DIDN'T MAKE
+        // TURBO DEFAULT FOR THE IMAGE EDIT MODEL"): the DECL walk's law is
+        // FIRST DECLARED = THE DEFAULT (laneRelations.ts resolveVariantRow —
+        // variants[0] resolves every unstated doc). The turbo rides FIRST so
+        // a fresh edit card opens the 8-step distilled lane; the base row
+        // stays a deliberate pick. The edit-default-turbo wall owns this
+        // order (ARM 1/2 born red on the base-first tree).
         {
             "id": "turbo",
             "label": "Turbo",
@@ -293,7 +246,61 @@ export const DECL = {
             "hint": "The family default — no extra stamps; a fresh card lands here.",
             "group": "Recipe",
             "cells": [],
-        }
+        },
+        {
+            "id": "base",
+            "label": "Base",
+            "hint": "The 2.1 base checkpoint on the edit lane — 25 steps (the official template's own count), both download tiers below, the cache-wrapped edit compose. Requires provisioning: the 2.1 files are NOT on this box by default; without them the engine validation refuses LOUD (the honest face — the 2511 weights are what ship).",
+            "group": "Variant",
+            "route": "qwen-img-edit-21",
+            "order": 0,
+            // The base face declared, never inherited (the variant-sampler-defaults
+            // law): 25 / 1 — the official template's own count, the family mirror.
+            // THE ENVELOPE DECLARATION LAW (CONTRACTS §4 debt 27, the E2-8
+            // cure's drain): the same physical weights as the t2i family's
+            // base lane, the same domain — 25 centered (steps [8, 30]: the
+            // floor follows the t2i sibling's T3 operator-write pin — the
+            // admission matrix pins steps 8 with loras landing whole on the
+            // same weights, so the distilled 8 rides here too); family
+            // guidance mode cfg [1, 2]. ONE-DIRECTIONAL like the sibling:
+            // the base pair's 25 refuses on turbo, 8 steps rides base.
+            "sampler_envelope": { "steps": [8, 30], "cfg": [1, 2] },
+            "resolver_defaults": { "steps": 25, "cfg": 1 },
+            "cells": [
+                {
+                    "quant": "int8_convrot",
+                    "label": "INT8 ConvRot",
+                    "route": "qwen-img-edit-21-int8",
+                    "vram_peak_gb": 24,
+                    "artifact": {
+                        "source_url": "https://huggingface.co/Comfy-Org/Qwen-Image-2.1/resolve/main/diffusion_models/qwen_image_2.1_int8_convrot.safetensors",
+                        "size_bytes": 7256783064,
+                        "sha256": "cb74113cb03faecd79611b01fd7fd642f0aa60d6f0b95086abee214d75eaa57d",
+                        "dest_root": "COMFYUI_ROOT",
+                        "dest_sub": "diffusion_models",
+                        "size_hint_gb": 7.3
+                    }
+                },
+                {
+                    "quant": "bf16",
+                    "label": "BF16",
+                    "route": "qwen-img-edit-21-bf16",
+                    "vram_peak_gb": 48,
+                    "lane_inputs": {
+                        "unet": "qwen_image_2.1_bf16.safetensors",
+                        "text_encoder": "qwen3vl_8b_bf16.safetensors"
+                    },
+                    "artifact": {
+                        "source_url": "https://huggingface.co/Comfy-Org/Qwen-Image-2.1/resolve/main/diffusion_models/qwen_image_2.1_bf16.safetensors",
+                        "size_bytes": 14230280616,
+                        "sha256": "89f4158d066cc33906a199fca85634f766892dd78f49b6698dabf187ac86c4bc",
+                        "dest_root": "COMFYUI_ROOT",
+                        "dest_sub": "diffusion_models",
+                        "size_hint_gb": 14.3
+                    }
+                }
+            ]
+        },
     ],
     "variant_groups": [
         {

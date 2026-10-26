@@ -135,8 +135,13 @@ describe("the declared cell artifacts are pinned verbatim", () => {
     // owns its tier's unet spelling (the cell-lane cascade); the
     // recipe↔weights law holds per cell.
     const variantRows = DECL.variants.filter((v) => v.group === "Variant");
-    assert.deepEqual(variantRows.map((v) => v.id), ["base", "turbo"],
-      "two axis tokens, Base first (the family default — the matrix law)");
+    // (re-pin 2026-10-26, burn c — operator: "YOU DIDN'T MAKE TURBO
+    // DEFAULT FOR THE IMAGE EDIT MODEL") the DEFAULT is the first
+    // declared row — the turbo rides first; base is the deliberate
+    // pick. The edit-default-turbo wall owns the order at the DECL,
+    // the resolver, and the lane file.
+    assert.deepEqual(variantRows.map((v) => v.id), ["turbo", "base"],
+      "two axis tokens, Turbo first (the family default — the operator's burn-c order)");
     const turbo = variantRows.find((v) => v.id === "turbo")!;
     // THE REQUIRED DEFAULTS (operator contract 2026-11-07): the FULL
     // face rides the route — steps AND cfg declared, never a silent
