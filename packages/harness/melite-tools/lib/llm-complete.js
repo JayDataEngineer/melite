@@ -18,11 +18,14 @@ export const ENHANCE_DEADLINE_MS = 180_000;
  * let ONE keyless provider with many advertised models eat the entire
  * attempt budget — observed live: six deepseek-official routes burned
  * before the credentialed xiaomi/zai/openrouter providers were ever
- * tried). The FIRST healthy route serves; a dead one (quota, auth) is
- * stepped past — "no model" cannot happen while any route breathes.
- * There is no explicit config knob to misconfigure.
+ * tried). The interleave order stays; the attempt budget that shaped
+ * it is GONE with the walk it bounded (burn e, operator 2026-10-26:
+ * the enhance dropdown "IS MISSING MANY MODELS" — the retire-the-walk
+ * stroke left the 12-route slice behind as its only effect, and the
+ * card's model picker + the matcher both read this list): a provider
+ * with 50 advertised models showed 12. The list is COMPLETE now —
+ * every route every provider advertises, nothing sliced.
  */
-const MAX_ROUTE_ATTEMPTS = 12;
 export async function resolveHarnessRoutes(llm) {
     // LlmProviderInfo: { id } is the route key GenerateOptions.provider wants.
     const providers = llm.listProviders();
@@ -40,11 +43,11 @@ export async function resolveHarnessRoutes(llm) {
         catch { /* a provider that cannot enumerate is still usable — keep going */ }
     }
     // ROUND-ROBIN interleave: every provider's FIRST route rides ahead of
-    // any provider's SECOND — a dead provider consumes at most one attempt
-    // per round, so credentialed providers are always reached within the
-    // budget.
+    // any provider's SECOND — provider variety up front, then the same
+    // cadence to the END of the longest provider's list (never sliced).
     const routes = [];
-    for (let i = 0; i < MAX_ROUTE_ATTEMPTS; i++) {
+    const longest = perProvider.reduce((n, list) => Math.max(n, list.length), 0);
+    for (let i = 0; i < longest; i++) {
         for (const list of perProvider) {
             if (list[i])
                 routes.push(list[i]);
@@ -53,7 +56,7 @@ export async function resolveHarnessRoutes(llm) {
     if (routes.length === 0) {
         throw new Error('enhance: no registered harness provider advertises any model');
     }
-    return routes.slice(0, MAX_ROUTE_ATTEMPTS);
+    return routes;
 }
 /**
  * One streaming completion on ONE exact route, assembled to text. Terminal

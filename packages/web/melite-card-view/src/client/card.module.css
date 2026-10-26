@@ -890,6 +890,18 @@
   white-space: nowrap;
 }
 
+/* THE ENHANCE MODEL PICKER'S SEARCH FIELD (burn e, 2026-10-26: the
+ * dropdown "HAS NO SEARCH") — the panel's first row, hairline under
+ * it separating the field from the route rows below (Menu children
+ * render inside the items area; the card's own max-height bounds the
+ * whole panel). */
+.llmSearchRow {
+  display: block;
+  padding: 4px 6px 6px;
+  border-bottom: 1px solid var(--dsh-frame-hairline, rgba(128, 128, 128, 0.35));
+  margin-bottom: 4px;
+}
+
 /* The detail payload sits inside the morphed card; it scrolls with the
  * card's own bounds (max-height keeps the square law bounded). */
 .zoomDetail {

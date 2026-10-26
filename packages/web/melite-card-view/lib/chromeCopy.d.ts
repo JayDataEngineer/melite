@@ -197,6 +197,13 @@ export declare const chromeCopy: {
     readonly collapseCard: "Collapse card";
     /** Zoom model-dropdown Auto option (the estate's preference chain server-side). */
     readonly autoOption: "Auto";
+    /** Zoom model-dropdown search placeholder (burn e, operator 2026-10-26:
+     *  the dropdown "HAS NO SEARCH" — the full route list is hundreds long,
+     *  the filter field rides the panel's first row). */
+    readonly llmSearchPlaceholder: "Search models…";
+    /** Zoom model-dropdown no-match row (a filter that matches nothing states
+     *  it — never an empty panel). */
+    readonly llmNoMatch: "No matching model";
     /** Zoom stop pill word (rides beside the stop glyph). */
     readonly stopWord: "Stop";
     /** Zoom run pill word (rides beside the play glyph). */

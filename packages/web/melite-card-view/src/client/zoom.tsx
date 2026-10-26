@@ -20,9 +20,10 @@
  */
 import { createElement as h, useCallback, useEffect, useRef, useState, type ReactPortal } from 'react'
 import { createPortal } from 'react-dom'
-import { Button, IconCloseOutlineRegular, IconLoadingOutlineRegular, IconPlayOutlineRegular, IconStopFillRegular, Menu, useModalLayer } from '@deepseek-ai/dsh-client-ui-primitives'
+import { Button, IconCloseOutlineRegular, IconLoadingOutlineRegular, IconPlayOutlineRegular, IconStopFillRegular, Input, Menu, MenuItemButton, useModalLayer } from '@deepseek-ai/dsh-client-ui-primitives'
 import { fetchEnhanceRoutes, getCardLlm, setCardLlm } from '@melite/catalog'
 import { isLiveRunStatus, statusOrPendingOf } from '@melite/contracts/stageView'
+import { filterLlmRoutes } from './llm-picker.ts'
 import css from './card.module.css'
 import { chromeCopy } from '../chromeCopy.ts'
 import { BenchStageView, CardsBenchValue } from './cards-resource.ts'
@@ -169,11 +170,22 @@ function ZoomMount(props: ZoomDetailProps & { detail: (p: ZoomDetailProps) => Re
   // persisted per browser (the ✦ rail reads it at call time; Auto =
   // the estate's preference chain server-side). Renders only when
   // routes answer (standalone mounts keep the verb, lose the pick).
+  // BURN E (operator 2026-10-26: the dropdown "IS MISSING MANY MODELS
+  // AND HAS NO SEARCH"): the door's list is EVERY advertised route now
+  // (the retired walk's 12-route slice died with it), and the panel
+  // leads with a search field — a hundreds-long scroll-only list is
+  // not a picker. The field rides Menu's children (the panel's own
+  // rows); letter keys pass through to the input, the Menu's arrow
+  // walk covers the filtered rows below it.
   const [llmRoutes, setLlmRoutes] = useState<string[] | null>(null)
   const [cardLlm, setCardLlmSel] = useState('')
   // the select-control's own open bit (Menu is owner-controlled; the
   // anchor Button is the trigger, the list is the catalog's)
   const [llmOpen, setLlmOpen] = useState(false)
+  // the search field's live query — reset on every open so the panel
+  // always starts at the full list, never at a stale filter
+  const [llmQuery, setLlmQuery] = useState('')
+  const llmSearchRef = useRef<HTMLInputElement | null>(null)
   useEffect(() => {
     let alive = true
     setCardLlmSel(getCardLlm() ?? '')
@@ -182,9 +194,21 @@ function ZoomMount(props: ZoomDetailProps & { detail: (p: ZoomDetailProps) => Re
     })
     return () => { alive = false }
   }, [])
+  // focus the search field the moment the panel opens (Menu's own
+  // autoFocus law covers data rows only — the field is a child row)
+  useEffect(() => {
+    if (llmOpen) llmSearchRef.current?.focus()
+  }, [llmOpen])
   const pickLlm = (route: string): void => {
     setCardLlm(route)
     setCardLlmSel(route)
+  }
+  // the panel's live rows: Auto + the query's matches (the pure
+  // filter is llm-picker.ts — the wall judges it there)
+  const llmShown: string[] = llmRoutes === null ? [] : filterLlmRoutes(llmRoutes, llmQuery)
+  const openLlmMenu = (): void => {
+    setLlmQuery('')
+    setLlmOpen(true)
   }
   // THE ENVELOPE LIFT: the detail reports the estate's surface.size;
   // the frame grows for 'huge' (the card listens, the view talks).
@@ -292,10 +316,14 @@ function ZoomMount(props: ZoomDetailProps & { detail: (p: ZoomDetailProps) => Re
             // absent) so the list's shape never changes.
             enhanceVerb !== null
               ? [
-                // THE MODEL DROPDOWN (Menu is the catalog's select —
-                // the trigger Button renders in place as the anchor,
-                // the data rows carry Auto + the live route list,
-                // selectedId marks the standing choice).
+                // THE MODEL DROPDOWN (burn e, 2026-10-26: the panel is a
+                // SEARCHED list — the search field rides as the FIRST child
+                // row, the routes below it as MenuItemButton rows sharing
+                // the Menu's keyboard walk; data items are empty because
+                // children render AFTER items and the field must lead).
+                // Letter keystrokes pass through to the input; the Menu's
+                // own arrow walk covers the filtered rows; Enter on the
+                // field settles the first match.
                 llmRoutes !== null
                   ? h(Menu, {
                     key: 'llm',
@@ -313,15 +341,51 @@ function ZoomMount(props: ZoomDetailProps & { detail: (p: ZoomDetailProps) => Re
                       // the anchor without bound and shoves Run and
                       // Stop off the bar).
                       title: cardLlm === '' ? chromeCopy.autoOption : cardLlm,
-                      onClick: () => { setLlmOpen(true) },
+                      onClick: openLlmMenu,
                     }, h('span', { className: css.zoomClamp }, cardLlm === '' ? chromeCopy.autoOption : cardLlm)),
-                    items: [{ id: '', label: chromeCopy.autoOption }, ...llmRoutes.map((r) => ({ id: r, label: r }))],
-                    selectedId: cardLlm,
-                    onSelect: (id: string) => { pickLlm(id); setLlmOpen(false) },
                     onClose: () => { setLlmOpen(false) },
                     compact: true,
                     portal: true,
-                  })
+                  },
+                    // the search field: the panel's first row (blank
+                    // query = the full list; Enter settles the first
+                    // match — one-keystroke pick for the common case)
+                    h('div', { key: 'llm-search', className: css.llmSearchRow },
+                      h(Input, {
+                        ref: llmSearchRef,
+                        type: 'search',
+                        value: llmQuery,
+                        placeholder: chromeCopy.llmSearchPlaceholder,
+                        'aria-label': chromeCopy.llmSearchPlaceholder, ...{ 'data-testid': 'drill-llm-search' },
+                        onChange: (e: React.ChangeEvent<HTMLInputElement>) => { setLlmQuery(e.currentTarget.value) },
+                        onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => {
+                          if (e.key === 'Enter' && llmShown.length > 0) {
+                            pickLlm(llmShown[0]!)
+                            setLlmOpen(false)
+                          }
+                        },
+                      })),
+                    // Auto: the estate's preference chain (server-side)
+                    h(MenuItemButton, {
+                      key: 'auto',
+                      onSelect: () => { pickLlm(''); setLlmOpen(false) },
+                      separatorBefore: true,
+                    }, chromeCopy.autoOption),
+                    // the live routes, filtered by the field above
+                    ...llmShown.map((r) => h(MenuItemButton, {
+                      key: r,
+                      onSelect: () => { pickLlm(r); setLlmOpen(false) },
+                    }, r)),
+                    // a filter that matches nothing states it — never an
+                    // empty panel
+                    llmShown.length === 0
+                      ? h(MenuItemButton, {
+                        key: 'llm-none',
+                        disabled: true,
+                        onSelect: () => {},
+                      }, chromeCopy.llmNoMatch)
+                      : null,
+                  )
                   : null,
                 h(Button, {
                   key: 'enhance',

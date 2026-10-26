@@ -86,7 +86,11 @@ describe('resolveHarnessRoutes residuals', () => {
     assert.deepEqual(routes, [{ provider: 'ok', model: 'm1' }])
   })
 
-  test('uneven providers interleave round-robin and the list slices at twelve', async () => {
+  test('uneven providers interleave round-robin and the list is COMPLETE — no slice (burn e)', async () => {
+    // Burn e (operator 2026-10-26: the enhance dropdown "IS MISSING
+    // MANY MODELS"): the retired walk's 12-route slice died with it —
+    // the picker and the matcher both read this list. 8 + 8 = 16
+    // routes, every one served.
     const many = Array.from({ length: 8 }, (_, i) => 'm' + i)
     const routes = await resolveHarnessRoutes(
       fakeSeam({
@@ -96,13 +100,39 @@ describe('resolveHarnessRoutes residuals', () => {
         ],
       }),
     )
-    assert.equal(routes.length, 12)
+    assert.equal(routes.length, 16)
     // Round-robin: every provider's first route rides ahead of any
     // second — b's rows interleave, never starve.
     assert.deepEqual(routes[0], { provider: 'a', model: 'm0' })
     assert.deepEqual(routes[1], { provider: 'b', model: 'nm0' })
     assert.deepEqual(routes[2], { provider: 'a', model: 'm1' })
-    assert.deepEqual(routes[11], { provider: 'b', model: 'nm5' })
+    assert.deepEqual(routes[15], { provider: 'b', model: 'nm7' })
+  })
+
+  test('a provider with many more models than its siblings is served WHOLE (the missing-models burn)', async () => {
+    // The live shape the burn named: one provider advertises 40, its
+    // siblings 1 each — the old slice showed 12 interleaved routes
+    // and starved the other 28. The complete list serves all 42.
+    const wide = Array.from({ length: 40 }, (_, i) => 'w' + i)
+    const routes = await resolveHarnessRoutes(
+      fakeSeam({
+        providers: [
+          { id: 'wide', models: wide },
+          { id: 'x', models: ['x0'] },
+          { id: 'y', models: ['y0'] },
+        ],
+      }),
+    )
+    assert.equal(routes.length, 42)
+    assert.deepEqual(routes[0], { provider: 'wide', model: 'w0' })
+    assert.deepEqual(routes[1], { provider: 'x', model: 'x0' })
+    assert.deepEqual(routes[2], { provider: 'y', model: 'y0' })
+    assert.deepEqual(routes[3], { provider: 'wide', model: 'w1' })
+    assert.deepEqual(routes[41], { provider: 'wide', model: 'w39' })
+    // every wide model present (the starvation arm)
+    for (let i = 0; i < 40; i++) {
+      assert.ok(routes.some((r) => r.provider === 'wide' && r.model === 'w' + i))
+    }
   })
 
   test('routeName is provider/model, the only spelling', () => {

@@ -49,6 +49,21 @@ export interface HarnessRoute {
 export declare function routeName(r: HarnessRoute): string;
 /** End-to-end deadline for one auxiliary completion (observed live: ~60s). */
 export declare const ENHANCE_DEADLINE_MS = 180000;
+/**
+ * Resolve the harness model routes with ZERO configuration: every
+ * registered provider route × its advertised models — INTERLEAVED
+ * round-robin across providers (2026-09-05 fix: registration order
+ * let ONE keyless provider with many advertised models eat the entire
+ * attempt budget — observed live: six deepseek-official routes burned
+ * before the credentialed xiaomi/zai/openrouter providers were ever
+ * tried). The interleave order stays; the attempt budget that shaped
+ * it is GONE with the walk it bounded (burn e, operator 2026-10-26:
+ * the enhance dropdown "IS MISSING MANY MODELS" — the retire-the-walk
+ * stroke left the 12-route slice behind as its only effect, and the
+ * card's model picker + the matcher both read this list): a provider
+ * with 50 advertised models showed 12. The list is COMPLETE now —
+ * every route every provider advertises, nothing sliced.
+ */
 export declare function resolveHarnessRoutes(llm: LlmStreamSeam): Promise<HarnessRoute[]>;
 /**
  * One streaming completion on ONE exact route, assembled to text. Terminal
