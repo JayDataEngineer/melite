@@ -540,7 +540,7 @@ export async function stepModels() {
                     const decl = getModel(id);
                     checks.push({
                         family: id,
-                        handPlaced: [...(decl.hand_placed_weights ?? [])],
+                        handPlaced: (decl.hand_placed_weights ?? []).map((row) => row.name),
                         fetched: (decl.snapshot_provisions ?? []).map((r) => r.name),
                     });
                 }

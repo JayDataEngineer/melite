@@ -78,12 +78,31 @@ export const DECL: ModelDecl = {
   // honestly name them and they stay hand-only. The ghost wall
   // (models-against-cards) judges every model_path leaf against
   // this row plus the snapshot rows.
+  // (burn d, 2026-10-26): every flag REASONS the placement — a
+  // flag is a contract, not a checkbox. The dual rows say
+  // "placement stated" (their snapshot row also fetches the tree);
+  // the hand merges state their non-existence of upstream.
   "hand_placed_weights": [
-    "Qwen3-TTS-12Hz-1.7B-CustomVoice-merged",
-    "Qwen3-TTS-12Hz-1.7B-VoiceDesign",
-    "Qwen3-TTS-12Hz-1.7B-Base-merged",
-    "Qwen3-TTS-12Hz-0.6B-CustomVoice-merged",
-    "qwen3-tts/hf/Qwen3-TTS-12Hz-0.6B-Base",
+    {
+      "name": "Qwen3-TTS-12Hz-1.7B-CustomVoice-merged",
+      "reason": "hand merge (base + custom-voice speaker tensors) — no upstream repo exists for an operator merge; stating one would be a lie (the 2026-10-22 burn)",
+    },
+    {
+      "name": "Qwen3-TTS-12Hz-1.7B-VoiceDesign",
+      "reason": "placement stated — the snapshot row below also fetches this tree; the flag keeps the hand-merge seat honest when the fetch is drained",
+    },
+    {
+      "name": "Qwen3-TTS-12Hz-1.7B-Base-merged",
+      "reason": "hand merge (base + speaker tensors) — no upstream repo exists for an operator merge (THE 2026-10-22 weight-offer-parity burn)",
+    },
+    {
+      "name": "Qwen3-TTS-12Hz-0.6B-CustomVoice-merged",
+      "reason": "hand merge (base + custom-voice speaker tensors) — no upstream repo exists for an operator merge",
+    },
+    {
+      "name": "qwen3-tts/hf/Qwen3-TTS-12Hz-0.6B-Base",
+      "reason": "placement stated — the snapshot row below also fetches this tree; the flag keeps the lane-relative spelling honest",
+    },
   ],
   // THE DIRECTORY PROVISION (the model-families audit fix 8, the
   // union): the two HF-dir trees ship as whole dirs (config +

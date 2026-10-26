@@ -81,6 +81,8 @@ export const EngineFacts = z.object({
     max_images: z.number().min(1).required(false),
     text_encode_node: z.string().required(false),
     model_path: z.string().required(false),
+    onnx: z.string().required(false),
+    csv: z.string().required(false),
     family: z.string().required(false),
 });
 export const CellRow = z.object({
@@ -186,6 +188,10 @@ export const VariantGroupRow = z.object({
     tooltip: z.string().default(""),
     default: z.string().default(""),
 });
+export const HandPlacedWeightsRow = z.object({
+    name: z.string(),
+    reason: z.string(),
+});
 export const ProvisionRow = z.object({
     name: z.string(),
     url: z.string(),
@@ -240,6 +246,7 @@ export function assertSchemaAcceptsMinimalRows() {
         // minimal row states all three.
         ["SnapshotProvisionRow", SnapshotProvisionRow, { name: "n", folder: "f", repo_id: "o/m", revision: "a".repeat(40), allow_patterns: ["config.json"] }],
         ["ModPackMarriage", ModPackMarriage, { pack: "p", marries: { fps: "max" } }],
+        ["HandPlacedWeightsRow", HandPlacedWeightsRow, { name: "tree-name", reason: "why nothing fetches it" }],
         ["ModelRow", ModelRow, { id: "i", family: "f", genre: "image", label: "L", description: "d", form: "image", source: {}, defaults: {}, engine: "comfyui" }],
         // THE MAIN DECLARATION (2026-10-10, the audit's Rule 7): ModelDecl
         // was the one row the wall did NOT cover — and it demanded
@@ -371,7 +378,15 @@ export const ModelDecl = z.object({
     // wall (models-against-cards): every lane model_path leaf must be
     // covered by a provisions name, a variant artifact basename, a
     // source repo id, or an entry here.
-    hand_placed_weights: z.array(z.string()).default([]),
+    // THE REASONED FLAG (burn d, 2026-10-26 — the operator: "how does
+    // models without links go all green?"): a disk-only flag is
+    // a CONTRACT, not a checkbox — every entry names the tree AND
+    // states why nothing fetches it. A flag over a file that ALSO
+    // fetches is the dual declaration and must say "placement stated"
+    // (the weight-acquire-parity Arm D precedent); the variant-
+    // linkability wall (ARM 2) reds a reasonless flag, a lying dual
+    // reason, and a stale one.
+    hand_placed_weights: z.array(HandPlacedWeightsRow).default([]),
     // (004/C5, 2026-10-22: prompt_guide KILLED with its last
     // declarer — four DECLs shipped it, zero surfaces read it, and
     // its `sections` carried shredded Python repr against the wire

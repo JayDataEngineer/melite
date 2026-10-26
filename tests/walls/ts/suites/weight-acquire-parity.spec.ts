@@ -58,7 +58,7 @@ function handOnlyWeights(decl: ModelDecl): string[] {
     ...(decl.provisions ?? []).map((p) => p.name),
     ...(decl.snapshot_provisions ?? []).map((p) => p.name),
   ]);
-  return (decl.hand_placed_weights ?? []).filter((w) => !fetchable.has(w));
+  return (decl.hand_placed_weights ?? []).map((w) => w.name).filter((name) => !fetchable.has(name));
 }
 
 describe("THE WEIGHT-OFFER PARITY WALL — a Download button may exist only where a fetch exists", () => {

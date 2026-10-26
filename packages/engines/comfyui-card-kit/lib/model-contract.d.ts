@@ -88,6 +88,15 @@ export type EngineFacts = {
     readonly text_encode_node?: string;
     /** A pack-specific loader's model file (anny, kimodo, tts). */
     readonly model_path?: string;
+    /** The wd14 tagger's ONNX weights (burn d, 2026-10-26): the node
+     *  loads engine-side from the wd14_tagger folder — the pair
+     *  (onnx + csv) is what its model list filters on; both ride
+     *  provisions rows + lane_homes so the gate probes them at
+     *  press. */
+    readonly onnx?: string;
+    /** The wd14 tagger's tag-vocabulary CSV (the loader's second
+     *  file — a model without its csv is invisible to the node). */
+    readonly csv?: string;
     /** A loader argument naming the engine-side family (moss-sfx,
      *  transfer-rig, the fit/skin pair — not the DECL id). */
     readonly family?: string;
@@ -287,6 +296,15 @@ export interface ProvisionRow {
     sha256: string;
     size_bytes?: number;
 }
+/** One reasoned disk-only flag: `name` is the weights tree the
+ *  lane loads; `reason` states why no channel fetches it (a hand
+ *  merge with no upstream, a source tree with no per-file URLs) —
+ *  or, for the dual declaration, says "placement stated". */
+export interface HandPlacedWeightsRow {
+    name: string;
+    reason: string;
+}
+export declare const HandPlacedWeightsRow: z<HandPlacedWeightsRow>;
 export declare const ProvisionRow: z<ProvisionRow>;
 /** One directory-provision row (the audit's fix 8 channel).
  *  A single-file ProvisionRow cannot name a whole HF directory.
@@ -489,8 +507,9 @@ export interface ModelDecl {
      *  URL exists (merged TTS trees, the MOSS-SoundEffect source
      *  tree), so no provisions row can honestly name them; declaring
      *  the placement stops the lanes silently claiming the estate
-     *  fetches them. Judged by the ghost wall's model_path arm. */
-    hand_placed_weights?: string[];
+     *  fetches them. Judged by the ghost wall's model_path arm; every
+     *  row REASONS the placement (burn d — a flag is a contract). */
+    hand_placed_weights?: HandPlacedWeightsRow[];
     accepts?: string[];
     timeout_floor?: number;
     canvas_default?: boolean;

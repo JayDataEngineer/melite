@@ -280,32 +280,36 @@ describe("the declared resources resolve before the app ships", () => {
   });
 
   // THE ROSTER LAW (the 8 false-'failed' rows + the lying Download
-  // button, 2026-11-10): list() offers EXACTLY the families that
-  // declare fetchable bytes (provisions | snapshots | cell
-  // artifact). A hand-placed-only family on the roster is a
-  // 'failed' face for weights that were never downloadable; a
-  // fetchable family OFF the roster is a hidden Download. Both
-  // directions red here, derived from the DECLs — never counted.
-  test("the roster offers exactly the fetchable families", async () => {
+  // button, 2026-11-10): list() offers the families that declare
+  // fetchable bytes (provisions | snapshots | cell artifact) — a
+  // fetchable family OFF the roster is a hidden Download. BURN D
+  // (2026-10-26, "how does models without links go all green?")
+  // SUPERSEDED the hide: hand-placed-only families RIDE the roster
+  // as the debt band — the census row serves fetchable:false and
+  // the assets tab renders the hand-placed copy (never a failed
+  // face: a zero-item plan aggregates 'absent', and the band copy
+  // owns the Download door). Hidden was never green, it was
+  // invisible.
+  test("the roster offers every family — fetchable rows carry a Download, hand-only rows ride the debt band", async () => {
     const { refs } = await freshPort();
     const listed = new Set(refs
       .filter((ref) => ref.kind === "model" && ref.owner === "family")
       .map((ref) => ref.id));
-    const expected = new Set(modelsService().registryIds().filter(declaresFetchableBytes));
+    const expected = new Set(modelsService().registryIds());
     const hidden = [...expected].filter((id) => !listed.has(id));
     const phantom = [...listed].filter((id) => !expected.has(id));
     assert.deepEqual(
       hidden,
       [],
-      "families declaring fetchable bytes are missing from the " +
-        "roster (their Download is hidden)",
+      "a family missing from the roster is invisible — fetchable " +
+        "rows hide a Download, hand-only rows hide the debt band",
     );
     assert.deepEqual(
       phantom,
       [],
-      "hand-placed-only families appear on the roster (their row " +
-        "wears a false 'failed' face — weights never downloadable " +
-        "must not be offered)",
+      "roster rows naming no registry family are phantoms",
     );
+    const handOnly = [...listed].filter((id) => !declaresFetchableBytes(id));
+    assert.ok(handOnly.length > 0, "the debt band exists — hand-only families are named, not hidden");
   });
 });

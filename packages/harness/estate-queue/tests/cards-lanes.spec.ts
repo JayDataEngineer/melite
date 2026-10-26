@@ -424,6 +424,9 @@ describe("the declared-home loop (the lane_homes cure, 2026-10-23)", () => {
   const FILE_SLOTS = [
     "unet", "text_encoder", "vae", "checkpoint", "loras",
     "clip_vision", "background_removal", "texture_vae", "model_path",
+    // (burn d, 2026-10-26): the wd14 tagger pair — both name files
+    // the gate probes via lane_homes
+    "onnx", "csv",
   ];
   const NON_FILE_SLOTS = [
     "clip_type", "family", "latent_node", "sampling_shift",

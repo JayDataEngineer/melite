@@ -541,20 +541,19 @@ export function declarationPort(ctx: Context): DeclarationPort {
       return extensionPlan(ref, row, facts.extension_node_types[ref.id] ?? []);
     },
     list: async (): Promise<readonly ResourceRef[]> => {
-      // THE FETCHABLE ROSTER (the 8 false-'failed' rows cure,
-      // 2026-11-10): a family row appears only when it declares
-      // bytes the provisioner can actually land — provisions,
-      // snapshot rows, or a variant-cell artifact. Hand-placed-only
-      // families (moss-sfx, the merged TTS trees) have no fetchable
-      // row: listing them minted 'failed' faces for weights that
-      // were never downloadable, and the Download button lied.
+      // THE DEBT BAND ROSTER (burn d, 2026-10-26 — the operator:
+      // "how does models without links go all green?"):
+      // EVERY family row is served. Fetchable families carry their
+      // plan (provisions/snapshots/artifacts); hand-placed-only
+      // families (moss-sfx, the merged TTS trees) ride the census
+      // row's fetchable:false and the assets tab renders the
+      // hand-placed band — hidden was never green, it was invisible
+      // (the 2026-11-10 hide is superseded: a zero-item plan
+      // aggregates to 'absent', never a failed face, and the
+      // weight-offer parity copy owns the Download door).
       const refs: ResourceRef[] = [];
       for (const id of modelsService().registryIds()) {
-        const decl = modelsService().getModel(id);
-        const fetchable = (decl.provisions ?? []).length > 0
-          || (decl.snapshot_provisions ?? []).length > 0
-          || decl.variants.some((candidate) => candidate.cells.some((cell) => cell.artifact !== undefined && cell.artifact !== null));
-        if (fetchable) refs.push({ kind: "model", owner: "family", id });
+        refs.push({ kind: "model", owner: "family", id });
       }
       for (const [id, def] of cards.defsSync()) {
         if ((def.provisions ?? []).length > 0) refs.push({ kind: "model", owner: "card", id });

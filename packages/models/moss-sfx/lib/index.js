@@ -21,7 +21,10 @@ export const DECL = {
     // ghost wall (models-against-cards) judges the leaf against this
     // entry.
     "hand_placed_weights": [
-        "MOSS-SoundEffect-v2.0-src",
+        {
+            "name": "MOSS-SoundEffect-v2.0-src",
+            "reason": "MOSS source tree — no per-file upstream URLs exist (model_path never silently claims the estate fetches it); operator hand-placement is the only channel",
+        },
     ],
     "variants": [
         {

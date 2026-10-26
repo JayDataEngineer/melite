@@ -50,26 +50,32 @@ function engineModelsDir(): string | undefined {
 }
 
 /** Every provisions row across the model families: {folder,name,size}. */
-function provisionRows(): { folder: string; name: string; size: number; decl: string }[] {
+function provisionRows(): { folder: string; name: string; size: number; decl: string; raw: string }[] {
   const decls = sh(["git", "ls-files", "packages/models/*/src/index.ts"]).split("\n").filter(Boolean);
-  const rows: { folder: string; name: string; size: number; decl: string }[] = [];
+  const rows: { folder: string; name: string; size: number; decl: string; raw: string }[] = [];
   for (const decl of decls) {
     const src = readFileSync(join(ROOT, decl), "utf8");
     // provisions rows are object literals pairing name/folder (+size_bytes)
     for (const m of src.matchAll(/\{[^{}]*?"name":\s*"([^"]+)"[^{}]*?"folder":\s*"([^"]+)"[^{}]*?\}/gu)) {
       const lit = m[0];
       const size = /"size_bytes":\s*(\d+)/u.exec(lit);
-      rows.push({ name: m[1]!, folder: m[2]!, size: size ? Number(size[1]) : 0, decl });
+      rows.push({ name: m[1]!, folder: m[2]!, size: size ? Number(size[1]) : 0, decl, raw: lit });
     }
     for (const m of src.matchAll(/\{[^{}]*?"folder":\s*"([^"]+)"[^{}]*?"name":\s*"([^"]+)"[^{}]*?\}/gu)) {
       const lit = m[0];
       const size = /"size_bytes":\s*(\d+)/u.exec(lit);
-      rows.push({ name: m[2]!, folder: m[1]!, size: size ? Number(size[1]) : 0, decl });
+      rows.push({ name: m[2]!, folder: m[1]!, size: size ? Number(size[1]) : 0, decl, raw: lit });
     }
   }
   // de-dup (both regex orders can catch one row)
   const seen = new Set<string>();
   return rows.filter((r) => {
+    // (burn d, 2026-10-26): a literal carrying repo_id is a
+    // SNAPSHOT row miscaught by the loose shape regex — snapshot
+    // trees are directories, never single-file artifacts; their
+    // liveness + presence ride the url-liveness wall's pinned
+    // literals and the run gate's tree probe.
+    if (r.raw.includes('"repo_id"')) return false;
     const k = `${r.folder}/${r.name}`;
     if (seen.has(k)) return false;
     seen.add(k);
@@ -134,6 +140,34 @@ describe("THE MODELS-STORE LAW — real artifacts, no unnamed bytes", () => {
       // 2026-10-21 (h3 SOTA seat): the Singularity fine-tune row
       // LEFT the floor — the fetch landed in the store and the
       // live census serves it in UNETLoader's enum.
+      // BURN D (2026-10-26 — the linkability wall): wd14's 22
+      // tagger pairs joined the DECL — the onnx + csv per selectable
+      // checkpoint, sha-pinned off SmilingWolf upstream and
+      // liveness-probed; the bytes are OWED until the first
+      // ensure() lands them (the floor's own law: entries leave the
+      // day the downloads land).
+      "packages/models/wd14/src/index.ts: wd14_tagger/wd-convnext-tagger-v3.csv",
+      "packages/models/wd14/src/index.ts: wd14_tagger/wd-convnext-tagger-v3.onnx",
+      "packages/models/wd14/src/index.ts: wd14_tagger/wd-eva02-large-tagger-v3.csv",
+      "packages/models/wd14/src/index.ts: wd14_tagger/wd-eva02-large-tagger-v3.onnx",
+      "packages/models/wd14/src/index.ts: wd14_tagger/wd-swinv2-tagger-v3.csv",
+      "packages/models/wd14/src/index.ts: wd14_tagger/wd-swinv2-tagger-v3.onnx",
+      "packages/models/wd14/src/index.ts: wd14_tagger/wd-v1-4-convnext-tagger-v2.csv",
+      "packages/models/wd14/src/index.ts: wd14_tagger/wd-v1-4-convnext-tagger-v2.onnx",
+      "packages/models/wd14/src/index.ts: wd14_tagger/wd-v1-4-convnext-tagger.csv",
+      "packages/models/wd14/src/index.ts: wd14_tagger/wd-v1-4-convnext-tagger.onnx",
+      "packages/models/wd14/src/index.ts: wd14_tagger/wd-v1-4-convnextv2-tagger-v2.csv",
+      "packages/models/wd14/src/index.ts: wd14_tagger/wd-v1-4-convnextv2-tagger-v2.onnx",
+      "packages/models/wd14/src/index.ts: wd14_tagger/wd-v1-4-moat-tagger-v2.csv",
+      "packages/models/wd14/src/index.ts: wd14_tagger/wd-v1-4-moat-tagger-v2.onnx",
+      "packages/models/wd14/src/index.ts: wd14_tagger/wd-v1-4-swinv2-tagger-v2.csv",
+      "packages/models/wd14/src/index.ts: wd14_tagger/wd-v1-4-swinv2-tagger-v2.onnx",
+      "packages/models/wd14/src/index.ts: wd14_tagger/wd-v1-4-vit-tagger-v2.csv",
+      "packages/models/wd14/src/index.ts: wd14_tagger/wd-v1-4-vit-tagger-v2.onnx",
+      "packages/models/wd14/src/index.ts: wd14_tagger/wd-v1-4-vit-tagger.csv",
+      "packages/models/wd14/src/index.ts: wd14_tagger/wd-v1-4-vit-tagger.onnx",
+      "packages/models/wd14/src/index.ts: wd14_tagger/wd-vit-tagger-v3.csv",
+      "packages/models/wd14/src/index.ts: wd14_tagger/wd-vit-tagger-v3.onnx",
     ].sort();
     expect(missing.sort(), "provisions rows with no artifact at the declared path (new rows = silent DECL loss; rows gone from the floor = downloads landed, update the floor)").toEqual(OWED_FLOOR);
     expect(wrongSize, "artifacts whose bytes disagree with the DECL").toEqual([]);

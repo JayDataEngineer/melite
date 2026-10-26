@@ -7,5 +7,7 @@ export declare const KREA_ROWS: {
     label: string;
     category: string;
     default_strength: number;
+    fetch: string;
+    reason: string;
 }[];
 export declare function apply(ctx: Context): void;

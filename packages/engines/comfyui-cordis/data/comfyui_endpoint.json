@@ -16,6 +16,8 @@
     "sams": "sams",
     "somaskel77": "somaskel77",
     "taggers": "taggers",
+    "wd14_tagger": "wd14",
+    "LLM": "LLM",
     "text_encoders": "text_encoders",
     "ultralytics": "ultralytics",
     "latent_upscale_models": "latent_upscale_models"

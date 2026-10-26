@@ -44,6 +44,172 @@ export const DECL: ModelDecl = {
   // a fresh card lands here). vram_peak_gb rides ONLY moat's cell
   // (the family's measured light-ONNX figure); unmeasured
   // backbones omit it (null = unknown, never a guessed number).
+  // THE WD14 PROVISIONS (burn d, 2026-10-26 — the operator: "HOW
+  // DOES models without links go all green?"): one onnx+csv
+  // pair per variant, single-file rows off the node's OWN upstream
+  // map (pysssss.json — SmilingWolf/<repo>), the csv digests
+  // estate-minted off the fetched bytes (git storage carries no LFS
+  // oid). The folder rides the wd14_tagger mount (store wd14/) —
+  // the flat renamed pair the node's loader reads.
+  "provisions": [
+    {
+      "name": "wd-v1-4-moat-tagger-v2.onnx",
+      "url": "https://huggingface.co/SmilingWolf/wd-v1-4-moat-tagger-v2/resolve/main/model.onnx",
+      "folder": "wd14_tagger",
+      "sha256": "b8cef913be4c9e8d93f9f903e74271416502ce0b4b04df0ff1e2f00df488aa03",
+      "size_bytes": 326197340,
+    },
+    {
+      "name": "wd-v1-4-moat-tagger-v2.csv",
+      "url": "https://huggingface.co/SmilingWolf/wd-v1-4-moat-tagger-v2/resolve/main/selected_tags.csv",
+      "folder": "wd14_tagger",
+      "sha256": "8c8750600db36233a1b274ac88bd46289e588b338218c2e4c62bbc9f2b516368",
+      "size_bytes": 253906,
+    },
+    {
+      "name": "wd-v1-4-convnext-tagger-v2.onnx",
+      "url": "https://huggingface.co/SmilingWolf/wd-v1-4-convnext-tagger-v2/resolve/main/model.onnx",
+      "folder": "wd14_tagger",
+      "sha256": "71f06ecb7b9df81d8f271da4d43997ea2ed363cdac29aa64fcb256c9631e656a",
+      "size_bytes": 387820405,
+    },
+    {
+      "name": "wd-v1-4-convnext-tagger-v2.csv",
+      "url": "https://huggingface.co/SmilingWolf/wd-v1-4-convnext-tagger-v2/resolve/main/selected_tags.csv",
+      "folder": "wd14_tagger",
+      "sha256": "8c8750600db36233a1b274ac88bd46289e588b338218c2e4c62bbc9f2b516368",
+      "size_bytes": 253906,
+    },
+    {
+      "name": "wd-v1-4-convnextv2-tagger-v2.onnx",
+      "url": "https://huggingface.co/SmilingWolf/wd-v1-4-convnextv2-tagger-v2/resolve/main/model.onnx",
+      "folder": "wd14_tagger",
+      "sha256": "e91daa19cd9e8725125b7d70702d1560855fb687f8d8c4218eddaa821f41834a",
+      "size_bytes": 388479878,
+    },
+    {
+      "name": "wd-v1-4-convnextv2-tagger-v2.csv",
+      "url": "https://huggingface.co/SmilingWolf/wd-v1-4-convnextv2-tagger-v2/resolve/main/selected_tags.csv",
+      "folder": "wd14_tagger",
+      "sha256": "8c8750600db36233a1b274ac88bd46289e588b338218c2e4c62bbc9f2b516368",
+      "size_bytes": 253906,
+    },
+    {
+      "name": "wd-v1-4-vit-tagger-v2.onnx",
+      "url": "https://huggingface.co/SmilingWolf/wd-v1-4-vit-tagger-v2/resolve/main/model.onnx",
+      "folder": "wd14_tagger",
+      "sha256": "8a21cadd1f88a095094cafbffe3028c3cc3d97f4d58c54344c5994bcf48e24ac",
+      "size_bytes": 373287959,
+    },
+    {
+      "name": "wd-v1-4-vit-tagger-v2.csv",
+      "url": "https://huggingface.co/SmilingWolf/wd-v1-4-vit-tagger-v2/resolve/main/selected_tags.csv",
+      "folder": "wd14_tagger",
+      "sha256": "8c8750600db36233a1b274ac88bd46289e588b338218c2e4c62bbc9f2b516368",
+      "size_bytes": 253906,
+    },
+    {
+      "name": "wd-v1-4-swinv2-tagger-v2.onnx",
+      "url": "https://huggingface.co/SmilingWolf/wd-v1-4-swinv2-tagger-v2/resolve/main/model.onnx",
+      "folder": "wd14_tagger",
+      "sha256": "04ec04fdf7db74b4fed7f4b52f52e04dec4dbad9e4d88d2d178f334079a29fde",
+      "size_bytes": 455409152,
+    },
+    {
+      "name": "wd-v1-4-swinv2-tagger-v2.csv",
+      "url": "https://huggingface.co/SmilingWolf/wd-v1-4-swinv2-tagger-v2/resolve/main/selected_tags.csv",
+      "folder": "wd14_tagger",
+      "sha256": "8c8750600db36233a1b274ac88bd46289e588b338218c2e4c62bbc9f2b516368",
+      "size_bytes": 253906,
+    },
+    {
+      "name": "wd-v1-4-convnext-tagger.onnx",
+      "url": "https://huggingface.co/SmilingWolf/wd-v1-4-convnext-tagger/resolve/main/model.onnx",
+      "folder": "wd14_tagger",
+      "sha256": "b7d7c9923e0056a2def0f4418df01a1274467b3da8480f146b851289257734de",
+      "size_bytes": 377430976,
+    },
+    {
+      "name": "wd-v1-4-convnext-tagger.csv",
+      "url": "https://huggingface.co/SmilingWolf/wd-v1-4-convnext-tagger/resolve/main/selected_tags.csv",
+      "folder": "wd14_tagger",
+      "sha256": "898dbc30bec9a5173b5531fc9b3d6058ea79182832ec4a102facc33cae7669cd",
+      "size_bytes": 173829,
+    },
+    {
+      "name": "wd-v1-4-vit-tagger.onnx",
+      "url": "https://huggingface.co/SmilingWolf/wd-v1-4-vit-tagger/resolve/main/model.onnx",
+      "folder": "wd14_tagger",
+      "sha256": "22e88a3226e427998fdf669bdbd035ee7040f3229796dd66ec35b8dd90e852b5",
+      "size_bytes": 365487723,
+    },
+    {
+      "name": "wd-v1-4-vit-tagger.csv",
+      "url": "https://huggingface.co/SmilingWolf/wd-v1-4-vit-tagger/resolve/main/selected_tags.csv",
+      "folder": "wd14_tagger",
+      "sha256": "898dbc30bec9a5173b5531fc9b3d6058ea79182832ec4a102facc33cae7669cd",
+      "size_bytes": 173829,
+    },
+    {
+      "name": "wd-convnext-tagger-v3.onnx",
+      "url": "https://huggingface.co/SmilingWolf/wd-convnext-tagger-v3/resolve/main/model.onnx",
+      "folder": "wd14_tagger",
+      "sha256": "1b8a7abf13d9b8368267df47501d523789c4aeae66b2296ad98483239dfa32eb",
+      "size_bytes": 394990732,
+    },
+    {
+      "name": "wd-convnext-tagger-v3.csv",
+      "url": "https://huggingface.co/SmilingWolf/wd-convnext-tagger-v3/resolve/main/selected_tags.csv",
+      "folder": "wd14_tagger",
+      "sha256": "298633d94d0031d2081c0893f29c82eab7f0df00b08483ba8f29d1e979441217",
+      "size_bytes": 308468,
+    },
+    {
+      "name": "wd-swinv2-tagger-v3.onnx",
+      "url": "https://huggingface.co/SmilingWolf/wd-swinv2-tagger-v3/resolve/main/model.onnx",
+      "folder": "wd14_tagger",
+      "sha256": "e6774bff34d43bd49f75a47db4ef217dce701c9847b546523eb85ff6dbba1db1",
+      "size_bytes": 467460978,
+    },
+    {
+      "name": "wd-swinv2-tagger-v3.csv",
+      "url": "https://huggingface.co/SmilingWolf/wd-swinv2-tagger-v3/resolve/main/selected_tags.csv",
+      "folder": "wd14_tagger",
+      "sha256": "298633d94d0031d2081c0893f29c82eab7f0df00b08483ba8f29d1e979441217",
+      "size_bytes": 308468,
+    },
+    {
+      "name": "wd-vit-tagger-v3.onnx",
+      "url": "https://huggingface.co/SmilingWolf/wd-vit-tagger-v3/resolve/main/model.onnx",
+      "folder": "wd14_tagger",
+      "sha256": "35f23693620b668f4d53fd3c62bf65e40af739bc52c7eb0fbc49258b58d065b6",
+      "size_bytes": 378536310,
+    },
+    {
+      "name": "wd-vit-tagger-v3.csv",
+      "url": "https://huggingface.co/SmilingWolf/wd-vit-tagger-v3/resolve/main/selected_tags.csv",
+      "folder": "wd14_tagger",
+      "sha256": "298633d94d0031d2081c0893f29c82eab7f0df00b08483ba8f29d1e979441217",
+      "size_bytes": 308468,
+    },
+    {
+      "name": "wd-eva02-large-tagger-v3.onnx",
+      "url": "https://huggingface.co/SmilingWolf/wd-eva02-large-tagger-v3/resolve/main/model.onnx",
+      "folder": "wd14_tagger",
+      "sha256": "9e768793060c7939b277ccb382783e8670e8a042d29d77aa736be0c8cc898bfc",
+      "size_bytes": 1260435999,
+    },
+    {
+      "name": "wd-eva02-large-tagger-v3.csv",
+      "url": "https://huggingface.co/SmilingWolf/wd-eva02-large-tagger-v3/resolve/main/selected_tags.csv",
+      "folder": "wd14_tagger",
+      "sha256": "298633d94d0031d2081c0893f29c82eab7f0df00b08483ba8f29d1e979441217",
+      "size_bytes": 308468,
+    },
+  ],
+  // THE DECLARED HOME (the lane-presence cure): both backing files
+  // live in the wd14_tagger mount's store folder.
+  "lane_homes": { "onnx": "wd14", "csv": "wd14" },
   "variants": [
     {
       "id": "wd-v1-4-moat-tagger-v2",
@@ -51,6 +217,12 @@ export const DECL: ModelDecl = {
       "group": "Variant",
       "route": "wd14",
       "resolver_defaults": { "checkpoint": "wd-v1-4-moat-tagger-v2" },
+      // THE BACKING FILES (burn d, 2026-10-26): the node loads
+      // engine-side from the wd14_tagger folder — wd-v1-4-moat-tagger-v2.onnx +
+      // wd-v1-4-moat-tagger-v2.csv (the node's own download pair, renamed flat).
+      // Declared here so the run gate probes them at press and the
+      // provisions rows fetch them (no more green-by-luck).
+      "lane_inputs": { "onnx": "wd-v1-4-moat-tagger-v2.onnx", "csv": "wd-v1-4-moat-tagger-v2.csv" },
       "cells": [
         {
           "quant": "f32",
@@ -64,6 +236,12 @@ export const DECL: ModelDecl = {
       "label": "wd-v1-4-convnext-tagger-v2",
       "group": "Variant",
       "resolver_defaults": { "checkpoint": "wd-v1-4-convnext-tagger-v2" },
+      // THE BACKING FILES (burn d, 2026-10-26): the node loads
+      // engine-side from the wd14_tagger folder — wd-v1-4-convnext-tagger-v2.onnx +
+      // wd-v1-4-convnext-tagger-v2.csv (the node's own download pair, renamed flat).
+      // Declared here so the run gate probes them at press and the
+      // provisions rows fetch them (no more green-by-luck).
+      "lane_inputs": { "onnx": "wd-v1-4-convnext-tagger-v2.onnx", "csv": "wd-v1-4-convnext-tagger-v2.csv" },
       "cells": [{ "quant": "f32", "label": "F32" }],
     },
     {
@@ -71,6 +249,12 @@ export const DECL: ModelDecl = {
       "label": "wd-v1-4-convnextv2-tagger-v2",
       "group": "Variant",
       "resolver_defaults": { "checkpoint": "wd-v1-4-convnextv2-tagger-v2" },
+      // THE BACKING FILES (burn d, 2026-10-26): the node loads
+      // engine-side from the wd14_tagger folder — wd-v1-4-convnextv2-tagger-v2.onnx +
+      // wd-v1-4-convnextv2-tagger-v2.csv (the node's own download pair, renamed flat).
+      // Declared here so the run gate probes them at press and the
+      // provisions rows fetch them (no more green-by-luck).
+      "lane_inputs": { "onnx": "wd-v1-4-convnextv2-tagger-v2.onnx", "csv": "wd-v1-4-convnextv2-tagger-v2.csv" },
       "cells": [{ "quant": "f32", "label": "F32" }],
     },
     {
@@ -78,6 +262,12 @@ export const DECL: ModelDecl = {
       "label": "wd-v1-4-vit-tagger-v2",
       "group": "Variant",
       "resolver_defaults": { "checkpoint": "wd-v1-4-vit-tagger-v2" },
+      // THE BACKING FILES (burn d, 2026-10-26): the node loads
+      // engine-side from the wd14_tagger folder — wd-v1-4-vit-tagger-v2.onnx +
+      // wd-v1-4-vit-tagger-v2.csv (the node's own download pair, renamed flat).
+      // Declared here so the run gate probes them at press and the
+      // provisions rows fetch them (no more green-by-luck).
+      "lane_inputs": { "onnx": "wd-v1-4-vit-tagger-v2.onnx", "csv": "wd-v1-4-vit-tagger-v2.csv" },
       "cells": [{ "quant": "f32", "label": "F32" }],
     },
     {
@@ -85,6 +275,12 @@ export const DECL: ModelDecl = {
       "label": "wd-v1-4-swinv2-tagger-v2",
       "group": "Variant",
       "resolver_defaults": { "checkpoint": "wd-v1-4-swinv2-tagger-v2" },
+      // THE BACKING FILES (burn d, 2026-10-26): the node loads
+      // engine-side from the wd14_tagger folder — wd-v1-4-swinv2-tagger-v2.onnx +
+      // wd-v1-4-swinv2-tagger-v2.csv (the node's own download pair, renamed flat).
+      // Declared here so the run gate probes them at press and the
+      // provisions rows fetch them (no more green-by-luck).
+      "lane_inputs": { "onnx": "wd-v1-4-swinv2-tagger-v2.onnx", "csv": "wd-v1-4-swinv2-tagger-v2.csv" },
       "cells": [{ "quant": "f32", "label": "F32" }],
     },
     {
@@ -92,6 +288,12 @@ export const DECL: ModelDecl = {
       "label": "wd-v1-4-convnext-tagger",
       "group": "Variant",
       "resolver_defaults": { "checkpoint": "wd-v1-4-convnext-tagger" },
+      // THE BACKING FILES (burn d, 2026-10-26): the node loads
+      // engine-side from the wd14_tagger folder — wd-v1-4-convnext-tagger.onnx +
+      // wd-v1-4-convnext-tagger.csv (the node's own download pair, renamed flat).
+      // Declared here so the run gate probes them at press and the
+      // provisions rows fetch them (no more green-by-luck).
+      "lane_inputs": { "onnx": "wd-v1-4-convnext-tagger.onnx", "csv": "wd-v1-4-convnext-tagger.csv" },
       "cells": [{ "quant": "f32", "label": "F32" }],
     },
     {
@@ -99,6 +301,12 @@ export const DECL: ModelDecl = {
       "label": "wd-v1-4-vit-tagger",
       "group": "Variant",
       "resolver_defaults": { "checkpoint": "wd-v1-4-vit-tagger" },
+      // THE BACKING FILES (burn d, 2026-10-26): the node loads
+      // engine-side from the wd14_tagger folder — wd-v1-4-vit-tagger.onnx +
+      // wd-v1-4-vit-tagger.csv (the node's own download pair, renamed flat).
+      // Declared here so the run gate probes them at press and the
+      // provisions rows fetch them (no more green-by-luck).
+      "lane_inputs": { "onnx": "wd-v1-4-vit-tagger.onnx", "csv": "wd-v1-4-vit-tagger.csv" },
       "cells": [{ "quant": "f32", "label": "F32" }],
     },
     {
@@ -106,6 +314,12 @@ export const DECL: ModelDecl = {
       "label": "wd-convnext-tagger-v3",
       "group": "Variant",
       "resolver_defaults": { "checkpoint": "wd-convnext-tagger-v3" },
+      // THE BACKING FILES (burn d, 2026-10-26): the node loads
+      // engine-side from the wd14_tagger folder — wd-convnext-tagger-v3.onnx +
+      // wd-convnext-tagger-v3.csv (the node's own download pair, renamed flat).
+      // Declared here so the run gate probes them at press and the
+      // provisions rows fetch them (no more green-by-luck).
+      "lane_inputs": { "onnx": "wd-convnext-tagger-v3.onnx", "csv": "wd-convnext-tagger-v3.csv" },
       "cells": [{ "quant": "f32", "label": "F32" }],
     },
     {
@@ -113,6 +327,12 @@ export const DECL: ModelDecl = {
       "label": "wd-swinv2-tagger-v3",
       "group": "Variant",
       "resolver_defaults": { "checkpoint": "wd-swinv2-tagger-v3" },
+      // THE BACKING FILES (burn d, 2026-10-26): the node loads
+      // engine-side from the wd14_tagger folder — wd-swinv2-tagger-v3.onnx +
+      // wd-swinv2-tagger-v3.csv (the node's own download pair, renamed flat).
+      // Declared here so the run gate probes them at press and the
+      // provisions rows fetch them (no more green-by-luck).
+      "lane_inputs": { "onnx": "wd-swinv2-tagger-v3.onnx", "csv": "wd-swinv2-tagger-v3.csv" },
       "cells": [{ "quant": "f32", "label": "F32" }],
     },
     {
@@ -120,6 +340,12 @@ export const DECL: ModelDecl = {
       "label": "wd-vit-tagger-v3",
       "group": "Variant",
       "resolver_defaults": { "checkpoint": "wd-vit-tagger-v3" },
+      // THE BACKING FILES (burn d, 2026-10-26): the node loads
+      // engine-side from the wd14_tagger folder — wd-vit-tagger-v3.onnx +
+      // wd-vit-tagger-v3.csv (the node's own download pair, renamed flat).
+      // Declared here so the run gate probes them at press and the
+      // provisions rows fetch them (no more green-by-luck).
+      "lane_inputs": { "onnx": "wd-vit-tagger-v3.onnx", "csv": "wd-vit-tagger-v3.csv" },
       "cells": [{ "quant": "f32", "label": "F32" }],
     },
     {
@@ -127,6 +353,12 @@ export const DECL: ModelDecl = {
       "label": "wd-eva02-large-tagger-v3",
       "group": "Variant",
       "resolver_defaults": { "checkpoint": "wd-eva02-large-tagger-v3" },
+      // THE BACKING FILES (burn d, 2026-10-26): the node loads
+      // engine-side from the wd14_tagger folder — wd-eva02-large-tagger-v3.onnx +
+      // wd-eva02-large-tagger-v3.csv (the node's own download pair, renamed flat).
+      // Declared here so the run gate probes them at press and the
+      // provisions rows fetch them (no more green-by-luck).
+      "lane_inputs": { "onnx": "wd-eva02-large-tagger-v3.onnx", "csv": "wd-eva02-large-tagger-v3.csv" },
       "cells": [{ "quant": "f32", "label": "F32" }],
     }
   ],

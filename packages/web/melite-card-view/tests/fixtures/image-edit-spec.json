@@ -85,17 +85,17 @@
   "loader_info": null,
   "mod_schemas": {
     "loras": {
-      "uid": 3544,
+      "uid": 3550,
       "refs": {
-        "3532": {
+        "3538": {
           "type": "string",
           "meta": {}
         },
-        "3533": {
+        "3539": {
           "type": "number",
           "meta": {}
         },
-        "3539": {
+        "3545": {
           "type": "number",
           "meta": {
             "min": 1,
@@ -111,18 +111,18 @@
             }
           }
         },
-        "3540": {
+        "3546": {
           "type": "object",
           "meta": {
             "default": {}
           },
           "dict": {
-            "name": 3532,
-            "strength": 3533,
-            "steps": 3539
+            "name": 3538,
+            "strength": 3539,
+            "steps": 3545
           }
         },
-        "3543": {
+        "3549": {
           "type": "array",
           "meta": {
             "default": [],
@@ -135,23 +135,23 @@
               "order": 0
             }
           },
-          "inner": 3540
+          "inner": 3546
         },
-        "3544": {
+        "3550": {
           "type": "object",
           "meta": {
             "default": {}
           },
           "dict": {
-            "loras": 3543
+            "loras": 3549
           }
         }
       }
     },
     "mask": {
-      "uid": 3772,
+      "uid": 3778,
       "refs": {
-        "3706": {
+        "3712": {
           "type": "any",
           "meta": {
             "description": "Region Mask",
@@ -164,7 +164,7 @@
             }
           }
         },
-        "3710": {
+        "3716": {
           "type": "string",
           "meta": {
             "role": "path",
@@ -180,22 +180,22 @@
             "description": "Region Mask"
           }
         },
-        "3711": {
+        "3717": {
           "type": "const",
           "meta": {},
           "value": "auto"
         },
-        "3712": {
+        "3718": {
           "type": "const",
           "meta": {},
           "value": "crop_stitch"
         },
-        "3713": {
+        "3719": {
           "type": "const",
           "meta": {},
           "value": "full_frame"
         },
-        "3717": {
+        "3723": {
           "type": "union",
           "meta": {
             "default": "crop_stitch",
@@ -220,32 +220,32 @@
             }
           },
           "list": [
-            3711,
-            3712,
-            3713
+            3717,
+            3718,
+            3719
           ]
         },
-        "3718": {
+        "3724": {
           "type": "const",
           "meta": {},
           "value": "off"
         },
-        "3719": {
+        "3725": {
           "type": "const",
           "meta": {},
           "value": "person"
         },
-        "3720": {
+        "3726": {
           "type": "const",
           "meta": {},
           "value": "face"
         },
-        "3721": {
+        "3727": {
           "type": "const",
           "meta": {},
           "value": "hand"
         },
-        "3725": {
+        "3731": {
           "type": "union",
           "meta": {
             "default": "off",
@@ -266,13 +266,13 @@
             }
           },
           "list": [
-            3718,
-            3719,
-            3720,
-            3721
+            3724,
+            3725,
+            3726,
+            3727
           ]
         },
-        "3732": {
+        "3738": {
           "type": "number",
           "meta": {
             "min": 0,
@@ -290,7 +290,7 @@
             }
           }
         },
-        "3739": {
+        "3745": {
           "type": "number",
           "meta": {
             "min": -32,
@@ -308,7 +308,7 @@
             }
           }
         },
-        "3746": {
+        "3752": {
           "type": "number",
           "meta": {
             "min": 0,
@@ -326,7 +326,7 @@
             }
           }
         },
-        "3753": {
+        "3759": {
           "type": "number",
           "meta": {
             "min": 0,
@@ -344,7 +344,7 @@
             }
           }
         },
-        "3757": {
+        "3763": {
           "type": "boolean",
           "meta": {
             "default": false,
@@ -359,7 +359,7 @@
             }
           }
         },
-        "3764": {
+        "3770": {
           "type": "number",
           "meta": {
             "min": 64,
@@ -377,7 +377,7 @@
             }
           }
         },
-        "3771": {
+        "3777": {
           "type": "number",
           "meta": {
             "min": 0.05,
@@ -395,23 +395,23 @@
             }
           }
         },
-        "3772": {
+        "3778": {
           "type": "object",
           "meta": {
             "default": {}
           },
           "dict": {
-            "mask": 3706,
-            "input_mask": 3710,
-            "mask_mode": 3717,
-            "mask_detector": 3725,
-            "mask_context_pad": 3732,
-            "mask_grow": 3739,
-            "mask_feather": 3746,
-            "mask_threshold": 3753,
-            "mask_invert": 3757,
-            "mask_detail_size": 3764,
-            "mask_denoise": 3771
+            "mask": 3712,
+            "input_mask": 3716,
+            "mask_mode": 3723,
+            "mask_detector": 3731,
+            "mask_context_pad": 3738,
+            "mask_grow": 3745,
+            "mask_feather": 3752,
+            "mask_threshold": 3759,
+            "mask_invert": 3763,
+            "mask_detail_size": 3770,
+            "mask_denoise": 3777
           }
         }
       }
@@ -439,283 +439,283 @@
     "default": "image"
   },
   "schema": {
-    "uid": 3420,
+    "uid": 3426,
     "refs": {
-      "359": {
+      "365": {
         "type": "const",
         "meta": {},
         "value": "cfgpp_ud10_ab"
       },
-      "360": {
+      "366": {
         "type": "const",
         "meta": {},
         "value": "ddim"
       },
-      "361": {
+      "367": {
         "type": "const",
         "meta": {},
         "value": "ddpm"
       },
-      "362": {
+      "368": {
         "type": "const",
         "meta": {},
         "value": "deis"
       },
-      "363": {
+      "369": {
         "type": "const",
         "meta": {},
         "value": "dpm_2"
       },
-      "364": {
+      "370": {
         "type": "const",
         "meta": {},
         "value": "dpm_2_ancestral"
       },
-      "365": {
+      "371": {
         "type": "const",
         "meta": {},
         "value": "dpm_adaptive"
       },
-      "366": {
+      "372": {
         "type": "const",
         "meta": {},
         "value": "dpm_fast"
       },
-      "367": {
+      "373": {
         "type": "const",
         "meta": {},
         "value": "dpmpp_2m"
       },
-      "368": {
+      "374": {
         "type": "const",
         "meta": {},
         "value": "dpmpp_2m_cfg_pp"
       },
-      "369": {
+      "375": {
         "type": "const",
         "meta": {},
         "value": "dpmpp_2m_sde"
       },
-      "370": {
+      "376": {
         "type": "const",
         "meta": {},
         "value": "dpmpp_2m_sde_gpu"
       },
-      "371": {
+      "377": {
         "type": "const",
         "meta": {},
         "value": "dpmpp_2m_sde_heun"
       },
-      "372": {
+      "378": {
         "type": "const",
         "meta": {},
         "value": "dpmpp_2m_sde_heun_gpu"
       },
-      "373": {
+      "379": {
         "type": "const",
         "meta": {},
         "value": "dpmpp_2s_ancestral"
       },
-      "374": {
+      "380": {
         "type": "const",
         "meta": {},
         "value": "dpmpp_2s_ancestral_cfg_pp"
       },
-      "375": {
+      "381": {
         "type": "const",
         "meta": {},
         "value": "dpmpp_3m_sde"
       },
-      "376": {
+      "382": {
         "type": "const",
         "meta": {},
         "value": "dpmpp_3m_sde_gpu"
       },
-      "377": {
+      "383": {
         "type": "const",
         "meta": {},
         "value": "dpmpp_sde"
       },
-      "378": {
+      "384": {
         "type": "const",
         "meta": {},
         "value": "dpmpp_sde_gpu"
       },
-      "379": {
+      "385": {
         "type": "const",
         "meta": {},
         "value": "er_sde"
       },
-      "380": {
+      "386": {
         "type": "const",
         "meta": {},
         "value": "euler"
       },
-      "381": {
+      "387": {
         "type": "const",
         "meta": {},
         "value": "euler_ancestral"
       },
-      "382": {
+      "388": {
         "type": "const",
         "meta": {},
         "value": "euler_ancestral_cfg_pp"
       },
-      "383": {
+      "389": {
         "type": "const",
         "meta": {},
         "value": "euler_cfg_pp"
       },
-      "384": {
+      "390": {
         "type": "const",
         "meta": {},
         "value": "exp_heun_2_x0"
       },
-      "385": {
+      "391": {
         "type": "const",
         "meta": {},
         "value": "exp_heun_2_x0_sde"
       },
-      "386": {
+      "392": {
         "type": "const",
         "meta": {},
         "value": "gradient_estimation"
       },
-      "387": {
+      "393": {
         "type": "const",
         "meta": {},
         "value": "gradient_estimation_cfg_pp"
       },
-      "388": {
+      "394": {
         "type": "const",
         "meta": {},
         "value": "heun"
       },
-      "389": {
+      "395": {
         "type": "const",
         "meta": {},
         "value": "heunpp2"
       },
-      "390": {
+      "396": {
         "type": "const",
         "meta": {},
         "value": "ipndm"
       },
-      "391": {
+      "397": {
         "type": "const",
         "meta": {},
         "value": "ipndm_v"
       },
-      "392": {
+      "398": {
         "type": "const",
         "meta": {},
         "value": "lcm"
       },
-      "393": {
+      "399": {
         "type": "const",
         "meta": {},
         "value": "lms"
       },
-      "394": {
+      "400": {
         "type": "const",
         "meta": {},
         "value": "res_multistep"
       },
-      "395": {
+      "401": {
         "type": "const",
         "meta": {},
         "value": "res_multistep_ancestral"
       },
-      "396": {
+      "402": {
         "type": "const",
         "meta": {},
         "value": "res_multistep_ancestral_cfg_pp"
       },
-      "397": {
+      "403": {
         "type": "const",
         "meta": {},
         "value": "res_multistep_cfg_pp"
       },
-      "398": {
+      "404": {
         "type": "const",
         "meta": {},
         "value": "sa_solver"
       },
-      "399": {
+      "405": {
         "type": "const",
         "meta": {},
         "value": "sa_solver_pece"
       },
-      "400": {
+      "406": {
         "type": "const",
         "meta": {},
         "value": "seeds_2"
       },
-      "401": {
+      "407": {
         "type": "const",
         "meta": {},
         "value": "seeds_3"
       },
-      "402": {
+      "408": {
         "type": "const",
         "meta": {},
         "value": "uni_pc"
       },
-      "403": {
+      "409": {
         "type": "const",
         "meta": {},
         "value": "uni_pc_bh2"
       },
-      "405": {
+      "411": {
         "type": "const",
         "meta": {},
         "value": "beta"
       },
-      "406": {
+      "412": {
         "type": "const",
         "meta": {},
         "value": "ddim_uniform"
       },
-      "407": {
+      "413": {
         "type": "const",
         "meta": {},
         "value": "exponential"
       },
-      "408": {
+      "414": {
         "type": "const",
         "meta": {},
         "value": "karras"
       },
-      "409": {
+      "415": {
         "type": "const",
         "meta": {},
         "value": "kl_optimal"
       },
-      "410": {
+      "416": {
         "type": "const",
         "meta": {},
         "value": "linear_quadratic"
       },
-      "411": {
+      "417": {
         "type": "const",
         "meta": {},
         "value": "normal"
       },
-      "412": {
+      "418": {
         "type": "const",
         "meta": {},
         "value": "sgm_uniform"
       },
-      "413": {
+      "419": {
         "type": "const",
         "meta": {},
         "value": "simple"
       },
-      "3352": {
+      "3358": {
         "type": "string",
         "meta": {}
       },
-      "3356": {
+      "3362": {
         "type": "array",
         "meta": {
           "default": [],
@@ -731,9 +731,9 @@
             "tooltip": "Ordered input images — the FIRST is the image being edited; the rest are references the prompt can cite as <image2>, <image3>… in order. Capacity follows the boarded model; more than it admits refuses loudly."
           }
         },
-        "inner": 3352
+        "inner": 3358
       },
-      "3360": {
+      "3366": {
         "type": "string",
         "meta": {
           "role": "path",
@@ -743,7 +743,7 @@
           "description": "Input Image"
         }
       },
-      "3364": {
+      "3370": {
         "type": "string",
         "meta": {
           "role": "path",
@@ -753,7 +753,7 @@
           "description": "Image 2"
         }
       },
-      "3368": {
+      "3374": {
         "type": "string",
         "meta": {
           "role": "path",
@@ -763,11 +763,11 @@
           "description": "Image 3"
         }
       },
-      "3369": {
+      "3375": {
         "type": "string",
         "meta": {}
       },
-      "3372": {
+      "3378": {
         "type": "array",
         "meta": {
           "default": [],
@@ -776,9 +776,9 @@
             "hidden": true
           }
         },
-        "inner": 3369
+        "inner": 3375
       },
-      "3376": {
+      "3382": {
         "type": "string",
         "meta": {
           "role": "path",
@@ -788,7 +788,7 @@
           "description": "Region Mask"
         }
       },
-      "3379": {
+      "3385": {
         "type": "string",
         "meta": {
           "description": "Prompt",
@@ -803,7 +803,7 @@
           }
         }
       },
-      "3382": {
+      "3388": {
         "type": "string",
         "meta": {
           "description": "Negative Prompt",
@@ -816,7 +816,7 @@
           }
         }
       },
-      "3385": {
+      "3391": {
         "type": "number",
         "meta": {
           "description": "Width",
@@ -826,7 +826,7 @@
           }
         }
       },
-      "3388": {
+      "3394": {
         "type": "number",
         "meta": {
           "description": "Height",
@@ -836,7 +836,7 @@
           }
         }
       },
-      "3392": {
+      "3398": {
         "type": "boolean",
         "meta": {
           "description": "Match Input Resolution",
@@ -851,7 +851,7 @@
           }
         }
       },
-      "3397": {
+      "3403": {
         "type": "number",
         "meta": {
           "description": "Seed",
@@ -865,7 +865,7 @@
           }
         }
       },
-      "3403": {
+      "3409": {
         "type": "number",
         "meta": {
           "description": "Steps",
@@ -882,7 +882,7 @@
           }
         }
       },
-      "3409": {
+      "3415": {
         "type": "number",
         "meta": {
           "description": "Guidance Scale",
@@ -899,7 +899,7 @@
           }
         }
       },
-      "3411": {
+      "3417": {
         "type": "union",
         "meta": {
           "description": "Sampler",
@@ -913,12 +913,6 @@
           }
         },
         "list": [
-          359,
-          360,
-          361,
-          362,
-          363,
-          364,
           365,
           366,
           367,
@@ -957,10 +951,16 @@
           400,
           401,
           402,
-          403
+          403,
+          404,
+          405,
+          406,
+          407,
+          408,
+          409
         ]
       },
-      "3413": {
+      "3419": {
         "type": "union",
         "meta": {
           "description": "Scheduler",
@@ -974,18 +974,18 @@
           }
         },
         "list": [
-          405,
-          406,
-          407,
-          408,
-          409,
-          410,
           411,
           412,
-          413
+          413,
+          414,
+          415,
+          416,
+          417,
+          418,
+          419
         ]
       },
-      "3416": {
+      "3422": {
         "type": "boolean",
         "meta": {
           "description": "Use Stock Nodes",
@@ -998,7 +998,7 @@
           }
         }
       },
-      "3419": {
+      "3425": {
         "type": "boolean",
         "meta": {
           "description": "Double Reference",
@@ -1011,30 +1011,30 @@
           }
         }
       },
-      "3420": {
+      "3426": {
         "type": "object",
         "meta": {
           "default": {}
         },
         "dict": {
-          "input_images": 3356,
-          "image1": 3360,
-          "image2": 3364,
-          "image3": 3368,
-          "reference_images": 3372,
-          "input_mask": 3376,
-          "prompt": 3379,
-          "negative_prompt": 3382,
-          "width": 3385,
-          "height": 3388,
-          "match_input_resolution": 3392,
-          "seed": 3397,
-          "steps": 3403,
-          "cfg": 3409,
-          "sampler": 3411,
-          "scheduler": 3413,
-          "use_stock_nodes": 3416,
-          "double_reference": 3419
+          "input_images": 3362,
+          "image1": 3366,
+          "image2": 3370,
+          "image3": 3374,
+          "reference_images": 3378,
+          "input_mask": 3382,
+          "prompt": 3385,
+          "negative_prompt": 3388,
+          "width": 3391,
+          "height": 3394,
+          "match_input_resolution": 3398,
+          "seed": 3403,
+          "steps": 3409,
+          "cfg": 3415,
+          "sampler": 3417,
+          "scheduler": 3419,
+          "use_stock_nodes": 3422,
+          "double_reference": 3425
         }
       }
     }

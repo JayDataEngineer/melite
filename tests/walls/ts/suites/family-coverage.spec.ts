@@ -172,8 +172,14 @@ describe("family-coverage (every family is reachable through the card plane)", (
       // left this list — its beta-one tree rides a pinned snapshot
       // row + the declared tree/home the run gate probes (the lane
       // files channel), so the debt is paid for the default.
-      "florence2",
-      "wd14",
+      // BURN D GRADUATION (2026-10-26 — "HOW DOES MODELS WITHOUT
+      // FUCKING LINKS GO ALL GREEN?"): BOTH taggers left — wd14
+      // rides 22 single-file provisions rows (the onnx+csv pair per
+      // checkpoint, the node's own upstream map), florence2 rides
+      // 14 pinned snapshot rows (the joycaption precedent) — every
+      // selectable checkpoint fetches; the linkability wall owns
+      // the per-variant judgment now. The list stays EMPTY: a new
+      // engine-side offer is born red until it names its channel.
     ];
     const defs = await loadCardDefs();
     const svc = modelsService();
@@ -187,6 +193,10 @@ describe("family-coverage (every family is reachable through the card plane)", (
         const channel =
           decl.unoffered === true ? "unoffered" :
           (decl.provisions ?? []).length > 0 ? "provisions" :
+          // (burn d): the snapshot channel is a landing channel —
+          // florence2's fourteen pinned trees (and joycaption's)
+          // land through it
+          (decl.snapshot_provisions ?? []).length > 0 ? "snapshot" :
           (decl.variants ?? []).some((v) => (v.cells ?? []).some((c) => (c.artifact?.source_url ?? "") !== "")) ? "cell artifact" :
           (decl.source?.repo_id ?? "") !== "" ? "typed source" :
           Object.keys(decl.lane_inputs ?? {}).length > 0 ? "lane files" :
@@ -224,8 +234,13 @@ describe("family-coverage (every family is reachable through the card plane)", (
     // moment every tagger gains provisions — edit the list to []
     // together with that landing (ratchet, 2026-10-24).
     // JOY-CAPTION GRADUATION: 3 -> 2 — joycaption's beta-one tree
-    // landed (the weightless cure); florence2 + wd14 remain.
-    expect(ENGINE_SIDE_OFFERS.length, "the engine-side debt is named — provisioning one shrinks this list").toBe(2);
+    // landed (the weightless cure); florence2 + wd14 remained.
+    // BURN D GRADUATION (2026-10-26): 2 -> 0 — BOTH taggers landed
+    // (wd14's 22 single-file pairs + florence2's 14 pinned
+    // snapshots; the linkability wall owns the per-variant judgment
+    // now). The list stays EMPTY: a new engine-side offer is born
+    // red until it names its channel.
+    expect(ENGINE_SIDE_OFFERS.length, "the engine-side debt is named — provisioning one shrinks this list").toBe(0);
   }, 120_000);
 
   it("LANE ADMISSION (2026-10-24): every boarded offer resolves through prepareCardParams — the same code a run executes", async () => {

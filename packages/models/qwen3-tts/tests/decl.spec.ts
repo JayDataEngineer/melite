@@ -168,7 +168,10 @@ describe("the qwen3-tts model plugin (ONE family, size at the quant cell)", () =
   });
 
   it("the weights truth — five hand-placed trees, two pinned snapshot rows (the union the fold owes)", () => {
-    const placed = DECL.hand_placed_weights ?? [];
+    // (burn d, 2026-10-26): flags are REASONED rows now — the name
+    // walk stays, the reason law rides the linkability wall's
+    // register arm
+    const placed = (DECL.hand_placed_weights ?? []).map((row) => row.name);
     assert.equal(placed.length, 5, "every tree the family's lanes load, stated once");
     for (const tree of [
       "Qwen3-TTS-12Hz-1.7B-CustomVoice-merged",
@@ -178,6 +181,13 @@ describe("the qwen3-tts model plugin (ONE family, size at the quant cell)", () =
       "qwen3-tts/hf/Qwen3-TTS-12Hz-0.6B-Base",
     ]) {
       assert.ok(placed.includes(tree), `the tree ${tree} is declared`);
+    }
+    for (const row of DECL.hand_placed_weights ?? []) {
+      assert.ok(row.reason !== "", `the flag ${row.name} states why nothing fetches it`);
+      if (row.reason.includes("placement stated")) {
+        assert.ok((DECL.snapshot_provisions ?? []).some((snap) => snap.name === row.name || row.name.endsWith(snap.name)),
+          `the dual flag ${row.name} names a tree its snapshot row fetches`);
+      }
     }
     const rows = DECL.snapshot_provisions ?? [];
     assert.equal(rows.length, 2, "exactly the two fetchable HF trees — never a merge");

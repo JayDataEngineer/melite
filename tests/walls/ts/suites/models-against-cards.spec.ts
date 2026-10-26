@@ -849,10 +849,15 @@ describe("models against cards (the cross-validation, resurrected)", () => {
     // rows (fibo2-edit provisions the BF16 Qwen3-VL encoder + the
     // flux2-family VAE; the int8 encoder is deliberately absent —
     // the open upstream bug's seat).
+    // 20 -> 21 (burn d, 2026-10-26 — "HOW DOES MODELS WITHOUT
+    // FUCKING LINKS GO ALL GREEN?"): wd14 joins — 22 single-file
+    // rows (one onnx+csv pair per selectable tagger, off the node's
+    // OWN upstream map); florence2 rides the snapshot channel, not
+    // provisions.
     const PROVISION_DECLARERS = ["anima", "anny", "fibo2-edit", "flux-klein", "h3", "joytag", "kimodo",
       "krea-2", "mask-select", "moss-image", "music3", "pixal3d", "qwen-img-21", "qwen-img-edit-21",
       "qwen-img-edit-2511", "seedvr2-ema", "transfer-rig",
-      "trellis2-native", "yue2", "z-image"];
+      "trellis2-native", "wd14", "yue2", "z-image"];
     // the rows those families declare, exactly (D-M12: a floor let a
     // family's whole table go unjudged) — 2026-10-12, the ghost-debt
     // landing: 42 -> 59 (17 new rows across 8 families; the dino
@@ -888,7 +893,9 @@ describe("models against cards (the cross-validation, resurrected)", () => {
 // provisions died — the ref2va pruned dit (its single-shot route is
 // retired; no lane can load it) and the b25-49 hybrid alternate
 // (nothing references it). Dead disk is not a provision.
-const PROVISION_ROW_COUNT = 72;
+// 72 -> 94 (burn d, 2026-10-26): wd14's 22 tagger pairs (the
+// engine-side seat the linkability wall refused to bless green).
+const PROVISION_ROW_COUNT = 94;
     const declarers: string[] = [];
     let judged = 0;
     for (const id of registryIds()) {
@@ -1906,6 +1913,12 @@ describe("THE PROVISIONS↔WEIGHTS AGREEMENT (no ghost weights)", () => {
       const lanes: Array<string> = [
         ...weightNames(view.lane_inputs ?? {}),
         ...(view.variants ?? []).flatMap((v) => weightNames(v.lane_inputs ?? {})),
+        // THE CELL CASCADE (burn d companion, 2026-10-26): the run
+        // gate folds cell lane_inputs last (the qwen cell-fold
+        // cure) — a weights tier declared only at a cell is a lane
+        // demand here too, never a ghost the gate probes but this
+        // wall blesses.
+        ...(view.variants ?? []).flatMap((v) => v.cells.flatMap((c) => weightNames(c.lane_inputs ?? {}))),
       ];
       // The loaded identity is the FILENAME (the registration law's
       // 2026-10-13 judge): a ComfyUI-native lane spells the bare
@@ -1961,7 +1974,9 @@ describe("THE PROVISIONS↔WEIGHTS AGREEMENT (no ghost weights)", () => {
       // A snapshot row names its tree by basename, like every other
       // channel here.
       for (const row of view.snapshot_provisions ?? []) add(row.name);
-      for (const w of view.hand_placed_weights ?? []) add(w);
+      // (burn d): flags are reasoned rows — the ghost walk names the
+      // tree, the reason rides the linkability wall's register arm
+      for (const w of view.hand_placed_weights ?? []) add(w.name);
       // THE REPO-ID LOOPHOLE (operator order 2026-10-13, "we need a
       // serious solution if it is not baked in"): source.repo_id NO
       // LONGER satisfies a lane demand by itself — "the repo exists
@@ -1984,6 +1999,9 @@ describe("THE PROVISIONS↔WEIGHTS AGREEMENT (no ghost weights)", () => {
       const paths: Array<string> = [
         ...modelPaths(view.lane_inputs ?? {}),
         ...(view.variants ?? []).flatMap((v) => modelPaths(v.lane_inputs ?? {})),
+        // THE CELL CASCADE (burn d companion): same fold as the
+        // file arm — a tree a cell declares is a lane demand.
+        ...(view.variants ?? []).flatMap((v) => v.cells.flatMap((c) => modelPaths(c.lane_inputs ?? {}))),
       ];
       for (const p of paths) {
         if (!declared.has(p) && !declared.has(base(p))) {
@@ -2029,6 +2047,12 @@ describe("THE SNAPSHOT↔MERGE SPLIT (no lying snapshot rows)", () => {
     // at a pinned 40-hex revision, 13 load-covering literals). Four
     // shards plus the index ride the whole-dir channel (never
     // single-file rows); a fifth row is an unreviewed fetch.
+    // 4 -> 18 (burn d, 2026-10-26 — "HOW DOES MODELS WITHOUT FUCKING
+    // LINKS GO ALL GREEN?"): florence2's fourteen whole-repo trees
+    // join, one pinned row per selectable checkpoint (the node's own
+    // snapshot_download target into models/LLM — the joycaption
+    // precedent, and every literal is liveness-probed at its pinned
+    // revision by the url-liveness wall).
     const rows: Array<{ family: string; name: string }> = [];
     for (const id of registryIds()) {
       for (const r of registryModel(id).snapshot_provisions ?? []) rows.push({ family: id, name: r.name });
@@ -2036,6 +2060,20 @@ describe("THE SNAPSHOT↔MERGE SPLIT (no lying snapshot rows)", () => {
     assert.deepEqual(
       rows.sort((a, b) => a.name < b.name ? -1 : 1),
       [
+        { family: "florence2", name: "CogFlorence-2.1-Large" },
+        { family: "florence2", name: "CogFlorence-2.2-Large" },
+        { family: "florence2", name: "Florence-2-DocVQA" },
+        { family: "florence2", name: "Florence-2-Flux-Large" },
+        { family: "florence2", name: "Florence-2-SD3-Captioner" },
+        { family: "florence2", name: "Florence-2-base" },
+        { family: "florence2", name: "Florence-2-base-Castollux-v0.5" },
+        { family: "florence2", name: "Florence-2-base-PromptGen-v1.5" },
+        { family: "florence2", name: "Florence-2-base-PromptGen-v2.0" },
+        { family: "florence2", name: "Florence-2-base-ft" },
+        { family: "florence2", name: "Florence-2-large" },
+        { family: "florence2", name: "Florence-2-large-PromptGen-v1.5" },
+        { family: "florence2", name: "Florence-2-large-PromptGen-v2.0" },
+        { family: "florence2", name: "Florence-2-large-ft" },
         { family: "kimodo", name: "Kimodo-SOMA-RP-v1.1" },
         { family: "qwen3-tts", name: "Qwen3-TTS-12Hz-0.6B-Base" },
         { family: "qwen3-tts", name: "Qwen3-TTS-12Hz-1.7B-VoiceDesign" },
@@ -2099,7 +2137,13 @@ describe("THE SNAPSHOT↔MERGE SPLIT (no lying snapshot rows)", () => {
   });
 
   it("the fetchable trees stay dual-declared; the merges stay hand-only", () => {
-    const ttsPlaced = getModel("qwen3-tts").hand_placed_weights ?? [];
+    // (burn d, 2026-10-26): flags are REASONED ROWS now ({name,
+    // reason}) — the dual declarations say "placement stated"
+    // (judged by the linkability wall's register arm); this arm
+    // keeps the split itself: fetchable trees dual-declared, merges
+    // hand-only.
+    const names = (id: string): string[] => getModel(id).hand_placed_weights.map((w) => w.name);
+    const ttsPlaced = names("qwen3-tts");
     assert.ok(
       ttsPlaced.some((w) => w.endsWith("Qwen3-TTS-12Hz-0.6B-Base")),
       "the fetchable 0.6B-Base tree stays in hand_placed_weights (the placement is stated even where a fetch exists)",
@@ -2108,7 +2152,7 @@ describe("THE SNAPSHOT↔MERGE SPLIT (no lying snapshot rows)", () => {
       ttsPlaced.some((w) => w.endsWith("Qwen3-TTS-12Hz-0.6B-CustomVoice-merged")),
       "the merged CustomVoice tree stays declared",
     );
-    const vdPlaced = getModel("qwen3-tts-voicedesign").hand_placed_weights ?? [];
+    const vdPlaced = names("qwen3-tts-voicedesign");
     assert.ok(
       vdPlaced.some((w) => w.endsWith("Qwen3-TTS-12Hz-1.7B-VoiceDesign")),
       "the fetchable VoiceDesign tree stays in hand_placed_weights",

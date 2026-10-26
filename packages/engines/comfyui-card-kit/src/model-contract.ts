@@ -162,6 +162,15 @@ export type EngineFacts = {
   readonly text_encode_node?: string;
   /** A pack-specific loader's model file (anny, kimodo, tts). */
   readonly model_path?: string;
+  /** The wd14 tagger's ONNX weights (burn d, 2026-10-26): the node
+   *  loads engine-side from the wd14_tagger folder — the pair
+   *  (onnx + csv) is what its model list filters on; both ride
+   *  provisions rows + lane_homes so the gate probes them at
+   *  press. */
+  readonly onnx?: string;
+  /** The wd14 tagger's tag-vocabulary CSV (the loader's second
+   *  file — a model without its csv is invisible to the node). */
+  readonly csv?: string;
   /** A loader argument naming the engine-side family (moss-sfx,
    *  transfer-rig, the fit/skin pair — not the DECL id). */
   readonly family?: string;
@@ -182,6 +191,8 @@ export const EngineFacts: z<EngineFacts> = z.object({
   max_images: z.number().min(1).required(false),
   text_encode_node: z.string().required(false),
   model_path: z.string().required(false),
+  onnx: z.string().required(false),
+  csv: z.string().required(false),
   family: z.string().required(false),
 });
 
@@ -512,6 +523,20 @@ export interface ProvisionRow {
   size_bytes?: number;
 }
 
+/** One reasoned disk-only flag: `name` is the weights tree the
+ *  lane loads; `reason` states why no channel fetches it (a hand
+ *  merge with no upstream, a source tree with no per-file URLs) —
+ *  or, for the dual declaration, says "placement stated". */
+export interface HandPlacedWeightsRow {
+  name: string;
+  reason: string;
+}
+
+export const HandPlacedWeightsRow: z<HandPlacedWeightsRow> = z.object({
+  name: z.string(),
+  reason: z.string(),
+});
+
 export const ProvisionRow: z<ProvisionRow> = z.object({
   name: z.string(),
   url: z.string(),
@@ -587,6 +612,7 @@ export function assertSchemaAcceptsMinimalRows(): void {
     // minimal row states all three.
     ["SnapshotProvisionRow", SnapshotProvisionRow, { name: "n", folder: "f", repo_id: "o/m", revision: "a".repeat(40), allow_patterns: ["config.json"] }],
     ["ModPackMarriage", ModPackMarriage, { pack: "p", marries: { fps: "max" } }],
+    ["HandPlacedWeightsRow", HandPlacedWeightsRow, { name: "tree-name", reason: "why nothing fetches it" }],
     ["ModelRow", ModelRow, { id: "i", family: "f", genre: "image", label: "L", description: "d", form: "image", source: {}, defaults: {}, engine: "comfyui" }],
     // THE MAIN DECLARATION (2026-10-10, the audit's Rule 7): ModelDecl
     // was the one row the wall did NOT cover — and it demanded
@@ -792,7 +818,15 @@ export const ModelDecl: z<ModelDecl> = z.object({
   // wall (models-against-cards): every lane model_path leaf must be
   // covered by a provisions name, a variant artifact basename, a
   // source repo id, or an entry here.
-  hand_placed_weights: z.array(z.string()).default([]),
+  // THE REASONED FLAG (burn d, 2026-10-26 — the operator: "how does
+  // models without links go all green?"): a disk-only flag is
+  // a CONTRACT, not a checkbox — every entry names the tree AND
+  // states why nothing fetches it. A flag over a file that ALSO
+  // fetches is the dual declaration and must say "placement stated"
+  // (the weight-acquire-parity Arm D precedent); the variant-
+  // linkability wall (ARM 2) reds a reasonless flag, a lying dual
+  // reason, and a stale one.
+  hand_placed_weights: z.array(HandPlacedWeightsRow).default([]),
   // (004/C5, 2026-10-22: prompt_guide KILLED with its last
   // declarer — four DECLs shipped it, zero surfaces read it, and
   // its `sections` carried shredded Python repr against the wire
@@ -966,8 +1000,9 @@ export interface ModelDecl {
    *  URL exists (merged TTS trees, the MOSS-SoundEffect source
    *  tree), so no provisions row can honestly name them; declaring
    *  the placement stops the lanes silently claiming the estate
-   *  fetches them. Judged by the ghost wall's model_path arm. */
-  hand_placed_weights?: string[];
+   *  fetches them. Judged by the ghost wall's model_path arm; every
+   *  row REASONS the placement (burn d — a flag is a contract). */
+  hand_placed_weights?: HandPlacedWeightsRow[];
   accepts?: string[];
   timeout_floor?: number;
   canvas_default?: boolean;

@@ -242,9 +242,21 @@ describe("THE QWEN CELL-FOLD (the gate probes the stated cell's lane inputs)", (
   });
 
   it("CF-8 THE NO-SPLIT VERDICT: the gate's row is the engine's route view, every family × variant × cell", () => {
-    const engineFiles = (viewId: string): Array<[string, string]> => {
+    // (burn d, 2026-10-26): the engine loads the RESOLVED cascade —
+    // family ∪ the STATED variant's rows ∪ the stated cell's — the
+    // same merge the gate probes (florence2/wd14 declare their
+    // backing weights at the variant seat). A family-level-only read
+    // split the verdict the other way: it blessed files the engine
+    // never loads and starved files it does.
+    const engineFiles = (viewId: string, vId?: string, quant?: string): Array<[string, string]> => {
       const view = getModel(viewId) as ModelDecl;
-      const li = (view.lane_inputs ?? {}) as Record<string, unknown>;
+      const vRow = vId === undefined ? undefined : (view.variants ?? []).find((v) => v.id === vId);
+      const cRow = vRow === undefined || quant === undefined ? undefined : vRow.cells.find((c) => c.quant === quant);
+      const li = {
+        ...((view.lane_inputs ?? {}) as Record<string, unknown>),
+        ...((vRow?.lane_inputs ?? {}) as Record<string, unknown>),
+        ...((cRow?.lane_inputs ?? {}) as Record<string, unknown>),
+      };
       const homes = (view.lane_homes ?? {}) as Record<string, string>;
       const rows: Array<[string, string]> = [];
       for (const [key, folders] of Object.entries(LANE_FOLDERS)) {
@@ -273,7 +285,7 @@ describe("THE QWEN CELL-FOLD (the gate probes the stated cell's lane inputs)", (
           if ((c.route === undefined || c.route === "") && (v.cells ?? [])[0] !== c) continue;
           coordinates += 1;
           const viewId = (c.route !== undefined && c.route !== "" ? c.route : v.route) || fam;
-          const files = engineFiles(viewId);
+          const files = engineFiles(viewId, v.id, c.quant);
           const body = { variant: v.id, quant: c.quant };
           // THE VIEW LANDED: the gate must be silent — it judges the
           // same files the engine's derived route view loads.
