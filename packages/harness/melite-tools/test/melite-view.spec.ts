@@ -15,7 +15,8 @@ import { join } from 'node:path'
 import { ToolArgsError } from '@deepseek-ai/dsh-tools'
 import { AttachmentError } from '@deepseek-ai/dsh-attachment'
 import type { GenericCallView } from '@deepseek-ai/dsh-tools'
-import { meliteView, sniffImageMediaType, imageRefFromValue, defaultMediaSheetRender, viewFilmArtifact, sheetPlan } from '../src/tools/melite-view.ts'
+import { meliteView, sniffImageMediaType, imageMediaTypeForPath, imageRefFromValue, defaultMediaSheetRender, viewFilmArtifact, sheetPlan } from '../src/tools/melite-view.ts'
+import { mediaVocab } from '@melite/contracts/mediaKinds'
 import type { ViewedImageValue, MediaSheetRender } from '../src/tools/melite-view.ts'
 import type { ImageAttachmentRef, ImageMediaType } from '@deepseek-ai/dsh-attachment'
 import type { Context } from '@deepseek-ai/cordis'
@@ -1221,5 +1222,97 @@ describe('melite_view — the route micro-arms (every fallback has an owner)', (
     assert.equal(blocks.length, 1)
     assert.equal(blocks[0]!.type, 'text')
     assert.match((blocks[0] as { text: string }).text, /TEXT-ONLY observation/)
+  })
+})
+
+// @contract flows-melite-view-vocab-fold
+describe('melite_view vocabularies — the SSOT fold (dry-reaudit N4, 2026-11-12: one vocabulary, or the seats disagree by construction)', () => {
+  const fakeRender: MediaSheetRender = async () => PNG_BYTES
+
+  beforeAll(() => {
+    // a run holding a minted image BESIDE the named-intent artifacts:
+    // under a missed vocabulary the walk falls through to this image
+    // and the arm under test never speaks
+    const run = join(root, 'output', 'run-0cafe01d-fold')
+    mkdirSync(run, { recursive: true })
+    writeFileSync(join(run, 'gen_00001_.png'), PNG_BYTES)
+    // a PRESERVED VOICE in the bank's own container: the tts lane
+    // mints .qvoice, and the hand-copied audio set missed it — the
+    // drift this fold cures (wav bytes under the bank's name: the
+    // probe reads bytes, never extensions)
+    copyFileSync(new URL('./fixtures/tone-05s.wav', import.meta.url), join(run, 'voice.qvoice'))
+  })
+
+  test('a named .qvoice is a named clip — the audio arm observes it, not the image walk (the qvoice drift cure)', async () => {
+    const { ctx, attachments } = fakeCtx()
+    const out = await meliteView(ctx, fakeRender).execute(
+      { run_id: 'run-0cafe01d-fold', artifact: 'voice.qvoice' }, visualExec as never,
+    ) as ViewedImageValue
+    assert.equal(out.audio!.file, 'voice.qvoice')
+    assert.equal(out.audio!.duration_s, 0.5)
+    assert.equal(out.runId, 'run-0cafe01d-fold')
+    // the waveform was rendered from THE CLIP, not the sibling png
+    assert.equal(attachments.saved.length, 1)
+  })
+
+  test('EVERY audio vocab ext routes the audio arm (a census over the SSOT itself, never over the copy)', async () => {
+    const run = join(root, 'output', 'run-0cafe02d-census')
+    mkdirSync(run, { recursive: true })
+    writeFileSync(join(run, 'gen_00001_.png'), PNG_BYTES)
+    const { ctx } = fakeCtx()
+    for (const ext of mediaVocab().audio) {
+      const name = 'probe.' + ext
+      writeFileSync(join(run, name), 'garbage bytes are not a clip')
+      // the audio arm's OWN refusal voice: the probe states what it
+      // knows about the named clip; the image walk would instead have
+      // served gen_00001_.png and answered image-shaped
+      await assert.rejects(
+        meliteView(ctx, fakeRender).execute({ run_id: 'run-0cafe02d-census', artifact: name }, visualExec as never),
+        new RegExp('cannot view the audio "' + name.replace('.', '\\.') + '"'),
+      )
+      rmSync(join(run, name))
+    }
+  })
+
+  test('EVERY model vocab ext routes the mesh arm (the census twin)', async () => {
+    const run = join(root, 'output', 'run-0cafe02d-census')
+    mkdirSync(run, { recursive: true })
+    writeFileSync(join(run, 'gen_00001_.png'), PNG_BYTES)
+    const { ctx } = fakeCtx()
+    for (const ext of mediaVocab().model) {
+      const name = 'scene.' + ext
+      writeFileSync(join(run, name), 'garbage bytes are not a mesh')
+      // the mesh arm's structural read refuses on garbage in ITS own
+      // voice ('not a GLB' — summarizeMesh's legible refusal); the
+      // image walk would answer its miss-chain voice instead, and the
+      // additive miss text names glb only in passing — so the arm
+      // pins the exact voice, never a token it shares with the miss
+      await assert.rejects(
+        meliteView(ctx, fakeRender).execute({ run_id: 'run-0cafe02d-census', artifact: name }, visualExec as never),
+        /not a GLB/,
+      )
+      rmSync(join(run, name))
+    }
+  })
+
+  test('the image table is the vocab\'s MINT set, bounded by the attachment SDK (the decided half of N4)', () => {
+    // every ext the estate mints as an image answers a media type
+    for (const ext of mediaVocab().galleryImage) {
+      assert.notEqual(imageMediaTypeForPath('hero.' + ext), undefined,
+        'galleryImage ext ".' + ext + '" must map — the vocab grew and this seat missed it')
+    }
+    // classifier-only image exts (svg/bmp/avif: a run dir can hold
+    // them, the estate never mints them) stay OUT
+    for (const ext of mediaVocab().image) {
+      if (!mediaVocab().galleryImage.includes(ext)) {
+        assert.equal(imageMediaTypeForPath('hero.' + ext), undefined,
+          'classifier-only ext ".' + ext + '" must not map — the mint set is the gallery set')
+      }
+    }
+    // and the four media types are the SDK's own spellings
+    assert.equal(imageMediaTypeForPath('hero.png'), 'image/png')
+    assert.equal(imageMediaTypeForPath('hero.jpg'), 'image/jpeg')
+    assert.equal(imageMediaTypeForPath('hero.webp'), 'image/webp')
+    assert.equal(imageMediaTypeForPath('hero.gif'), 'image/gif')
   })
 })

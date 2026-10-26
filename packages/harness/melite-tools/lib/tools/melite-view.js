@@ -1,4 +1,5 @@
 import { RUN_ID_RE } from "@melite/contracts/benchStage";
+import { mediaVocab } from "@melite/contracts/mediaKinds";
 /**
  * melite_view — the estate's OBSERVE arm for images (the decide
  * loop's eye, 2026-09-14). One run's artifact, VIEWED: the tool
@@ -55,14 +56,36 @@ const firstRootWithRun = async (seat, kind, runId) => {
 };
 /** The run-id grammar (estate/media's containment law, verbatim). */
 const RUN_ID = RUN_ID_RE;
-/** Extension → declared media type (read_image's map, copied). */
-const IMAGE_EXTENSIONS = {
-    '.png': 'image/png',
-    '.jpg': 'image/jpeg',
-    '.jpeg': 'image/jpeg',
-    '.webp': 'image/webp',
-    '.gif': 'image/gif',
+/**
+ * Extension → declared media type for the image walk. THE EXT SET IS
+ * DERIVED from mediaVocab's galleryImage mint set (the SSOT — the
+ * li-ay stroke's law: one vocabulary, or the seats disagree by
+ * construction); the MIME VALUES are bounded by dsh-attachment's
+ * ImageMediaType union, the host seat saveImage accepts. An
+ * extension the vocab classifies but the estate never mints
+ * (svg/bmp/avif) or the SDK cannot attach never enters this table.
+ */
+const IMAGE_MEDIA_TYPES = {
+    png: 'image/png',
+    jpg: 'image/jpeg',
+    jpeg: 'image/jpeg',
+    webp: 'image/webp',
+    gif: 'image/gif',
 };
+const IMAGE_EXTENSIONS = Object.fromEntries(mediaVocab().galleryImage.flatMap((ext) => {
+    const mediaType = IMAGE_MEDIA_TYPES[ext];
+    return mediaType === undefined ? [] : [['.' + ext, mediaType]];
+}));
+/**
+ * The audio and model intent vocabularies, DERIVED from the SSOT
+ * (mediaVocab's full classifier sets — the 2026-11-12 fold: the
+ * hand-copied audio set had already drifted, missing qvoice the
+ * TTS-chain audit added to the vocab; a named `voice.qvoice` fell
+ * through the audio arm to the image walk). One spelling, both
+ * arms.
+ */
+const AUDIO_EXTENSIONS = new Set(mediaVocab().audio.map((ext) => '.' + ext));
+const MODEL_EXTENSIONS = new Set(mediaVocab().model.map((ext) => '.' + ext));
 /** PNG/JPEG file signatures; GIF/WebP match by ASCII (read_image). */
 const PNG_SIGNATURE = [137, 80, 78, 71, 13, 10, 26, 10];
 const JPEG_SIGNATURE = [255, 216, 255];
@@ -827,9 +850,9 @@ export function meliteView(ctx, render = defaultMediaSheetRender) {
             // hold images AND audio (a portrait commission that also
             // exported a voice), and `melite_view run-x line.flac` must
             // observe the CLIP, not the newest png. Extension list =
-            // mediaKinds' audio vocab (the SSOT; mirrored like the image
-            // table above).
-            const AUDIO_EXTENSIONS = new Set(['.wav', '.flac', '.mp3', '.ogg', '.m4a', '.aac']);
+            // mediaVocab's audio set (the SSOT, derived at module scope —
+            // qvoice included: the tts lane's preserved voice is a named
+            // clip like any other).
             if (artifact !== '' && AUDIO_EXTENSIONS.has(extname(artifact).toLowerCase())) {
                 const heard = await viewAudioArtifact(seat, runId, artifact, exec, ctx, attachments, render);
                 return heard;
@@ -838,7 +861,6 @@ export function meliteView(ctx, render = defaultMediaSheetRender) {
             // same way audio does — BEFORE the image walk, because a 3D run
             // (img-to-mesh) holds no images at all and would otherwise walk
             // the whole miss chain before reaching the mesh.
-            const MODEL_EXTENSIONS = new Set(['.glb', '.gltf']);
             if (artifact !== '' && MODEL_EXTENSIONS.has(extname(artifact).toLowerCase())) {
                 const meshed = await viewModelArtifact(seat, runId, artifact, exec, ctx, attachments);
                 return meshed;
