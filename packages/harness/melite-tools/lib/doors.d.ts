@@ -59,6 +59,10 @@ interface CtxView {
                 uid: number | null;
                 store: unknown;
                 inertia?: Promise<void>;
+                /** The fiber's own context — the preset-scope membership
+                 *  test reads its prototype chain against the agentPresets
+                 *  service's retained scope contexts. */
+                ctx: object;
             }>;
         }>;
     };

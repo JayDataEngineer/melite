@@ -16,6 +16,7 @@ import { tmpdir } from 'node:os'
 import * as path from 'node:path'
 import * as os from 'node:os'
 import { Context } from '@deepseek-ai/cordis'
+import { createScope } from '@deepseek-ai/dsh-scope'
 import { apply, inject, ESTATE_PENDING_GRACE_MS, ESTATE_PENDING_REARM_MS } from '../src/doors.ts'
 import { buildSkillIndex, disclosureRoot } from '@melite/estate-queue'
 import { resolveRepoRoot } from '@melite/comfyui-cordis'
@@ -693,6 +694,114 @@ describe('doors apply', () => {
     } finally {
       await waiter.dispose()
       await door.dispose()
+    }
+  })
+
+  // THE PRESET-ISOLATE LAW (the 2026-10-26 flap, the operator's
+  // "RESTROING TAKES TOO LONG" order): the live lane's runs door
+  // cycled 503 estate/pending ~2min-down/12s-up for hours while the
+  // estate's own seats served 6-100ms in the holes. The closer (the
+  // gate-debug ancestor walk, verbatim): a preset Loader row —
+  // 'scope>AgentPresetRegistry>Include>Loader' — a fiber inside a
+  // dsh-scope composition cycling activating→quiet→activating,
+  // riding the re-arm law (each ≥10s quiet buys a fresh 120s
+  // window). A preset revision is NOT the estate's boot answer.
+  // MEMBERSHIP RIDES THE SERVICE SEAM, not the scope symbol: the
+  // symbol is private to a dsh-scope module INSTANCE — the host's
+  // registry tags with its copy, and the first cure (scopeOf via
+  // the plugin's own resolution) read a different symbol on the
+  // live lane and the flap SURVIVED its green wall (the wall had
+  // ridden a copy of the truth). The cure reads the live
+  // agentPresets service's retained generations and tests the
+  // fiber's prototype chain — instance-safe on every host. Two
+  // arms, one shape: the SAME parked wedge under a retained
+  // generation's scope context (door serves) and outside one
+  // (door pends) — the contrast proves the sweep still sees the
+  // estate's own fibers.
+  test('THE PRESET-ISOLATE LAW: a fiber inside a retained agent-preset scope never closes the estate gate — a fiber of the same shape outside every scope still does', async () => {
+    const boot = (scoped: boolean): {
+      routes: Route[]
+      door: ReturnType<Context['plugin']>
+      wedge: ReturnType<Context['plugin']>
+      scopedCtx: Context
+    } => {
+      const ctx = new Context()
+      const routes: Route[] = []
+      ctx.provide('webServer', {
+        port: 0,
+        register: (route: Route) => {
+          routes.push(route)
+          return () => {}
+        },
+      } as never)
+      ctx.provide('llm', fakeLlm() as never)
+      ctx.provide('tools', { schemas: () => [] } as never)
+      // the scope context the way dsh-scope mints one: a child
+      // context the preset's fibers prototypally inherit — held by
+      // a live agentPresets service generation (the instance-safe
+      // seam; no symbol crosses a module boundary)
+      const scopedCtx = ctx.extend({ baseUrl: 'https://preset.local/' })
+      const generations = new Map([[{ preset: true }, { scope: { ctx: scopedCtx } }]])
+      ctx.provide('agentPresets', { generations } as never)
+      // the wedge (the preset-row shape: injects a service that
+      // never lands, mounted pre-ready so its fiber parks
+      // activating — the mounting law the re-arm wall probed)
+      const wedge = (scoped ? scopedCtx : ctx).plugin({
+        name: 'preset-row',
+        inject: ['neverLands'],
+        apply: () => {},
+      })
+      const door = ctx.plugin({ name: 'melite-tools-doors', inject, apply: apply as never })
+      return { routes, door, wedge, scopedCtx }
+    }
+    const probe = (routes: Route[]): Promise<{ status: number; body: unknown }> =>
+      call(routes, '/v1', {
+        method: 'POST',
+        url: 'http://localhost/v1/flows/validate',
+        body: {},
+      })
+
+    // ── arm one: the wedge is INSIDE the retained scope — serves ─
+    const scoped = boot(true)
+    try {
+      await scoped.door
+      await Promise.resolve()
+      const realNow = Date.now
+      try {
+        // inside what would be the grace: no window ever STARTS —
+        // the seat's own 502/200 voice, never pending
+        Date.now = realNow
+        const serving = await probe(scoped.routes)
+        assert.equal(serving.status, 502)
+        assert.match(String((serving.body as { error: string }).error), /no seat on this lane serves/)
+        // past the grace AND past the re-arm quiet: still never
+        // pending — the flap's fresh-window exploit is dead
+        Date.now = (): number => realNow() + ESTATE_PENDING_GRACE_MS + ESTATE_PENDING_REARM_MS + ESTATE_PENDING_GRACE_MS
+        const settled = await probe(scoped.routes)
+        assert.equal(settled.status, 502)
+      } finally {
+        Date.now = realNow
+      }
+    } finally {
+      await scoped.door.dispose()
+      await scoped.wedge.dispose()
+    }
+
+    // ── arm two: the SAME wedge OUTSIDE every scope — gate closes ─
+    const root = boot(false)
+    try {
+      await root.door
+      await Promise.resolve()
+      const closed = await probe(root.routes)
+      assert.equal(closed.status, 503)
+      assert.deepEqual(closed.body, {
+        error: 'estate composition is still activating',
+        code: 'estate/pending',
+        pending: true,
+      })
+    } finally {
+      await root.door.dispose()
+      await root.wedge.dispose()
     }
   })
 })

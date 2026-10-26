@@ -126,13 +126,57 @@ export const ESTATE_PENDING_GRACE_MS = 120_000;
  *  cannot extend the grace window. Exported for the re-arm wall
  *  (a later boot race gets a fresh window: doors.spec.ts). */
 export const ESTATE_PENDING_REARM_MS = 10_000;
+/** The retained agent-preset revisions' scope contexts (the live
+ *  agentPresets service's generations — dsh's instance-safe seam).
+ *
+ *  THE MODULE-INSTANCE TRAP (2026-10-26, live): the scope tag
+ *  itself is a symbol PRIVATE to a dsh-scope module instance — the
+ *  host's registry tags with ITS copy, and a plugin resolving
+ *  another copy reads a different symbol and sees nothing. The
+ *  service's retained generation objects carry the tagged scope
+ *  CONTEXTS themselves, so membership is a plain prototype-chain
+ *  test — no symbol, no module identity, true on every host.
+ *
+ *  @param c - the door's context (the optional-service probe).
+ *  @returns the live scope contexts; an absent service (or one
+ *  without generations) folds to an empty list — no exemption, the
+ *  gate keeps its full sweep. */
+function presetScopeContexts(c) {
+    const service = c.get('agentPresets');
+    const generations = service?.generations;
+    if (generations === undefined)
+        return [];
+    // the live service keeps a Map (key → generation): iterate its
+    // VALUES; a plain iterable folds the same way
+    const rows = typeof generations.values === 'function' ? generations.values() : generations;
+    const contexts = [];
+    for (const generation of rows) {
+        const ctx = generation.scope?.ctx;
+        if (ctx !== undefined)
+            contexts.push(ctx);
+    }
+    return contexts;
+}
 const estateStillActivating = (gate, c) => {
     const now = Date.now();
+    const presetScopes = presetScopeContexts(c);
     const activating = new Set();
     for (const runtime of c.registry.values()) {
         for (const fiber of runtime.fibers) {
-            if (fiber.uid !== null && (fiber.store === undefined || fiber.inertia !== undefined))
-                activating.add(fiber.uid);
+            // PRESET REVISIONS ARE NOT THE ESTATE'S BOOT: a fiber inside a
+            // retained agent-preset scope owns its own activation
+            // lifecycle. The live 2026-10-26 flap: a preset Loader row
+            // cycling activating→quiet→activating every ~2min rode the
+            // re-arm law (a sustained ≥10s quiet buys a fresh 120s
+            // window) and held every seat door 503 estate/pending ~90%
+            // of the time while the estate itself served 6-100ms in the
+            // holes. The gate answers ONE question — is the ESTATE
+            // composition (the lane's own seats) still activating — and
+            // a preset revision's state is not that answer at any age.
+            if (fiber.uid !== null && (fiber.store === undefined || fiber.inertia !== undefined)) {
+                if (!presetScopes.some((scopeCtx) => Object.prototype.isPrototypeOf.call(scopeCtx, fiber.ctx)))
+                    activating.add(fiber.uid);
+            }
         }
     }
     for (const uid of activating) {
