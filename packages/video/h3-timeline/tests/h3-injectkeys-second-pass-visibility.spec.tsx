@@ -55,7 +55,7 @@
  *   refuses: the settlement never launders an illegal pick.
  */
 import { beforeAll, describe, expect, it, afterAll, vi } from "vitest"
-import { cleanup, fireEvent, render, screen } from "@testing-library/react"
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react"
 import "../../../../tests/helpers/boot-models.ts"
 import { Context } from "@deepseek-ai/cordis"
 import type {} from "../../../../packages/harness/estate-queue/src/service.ts"
@@ -192,6 +192,35 @@ describe("THE SECOND-PASS VISIBILITY ARM (ERROR h — presence is a pure functio
       await new Promise((r) => setTimeout(r, 25))
     }
   }
+
+  it("THE GROUP MEMBER FLIP (the 2026-10-20 verification's :187 residual, cured 2026-11-12): a rendered refine_denoise control flips THROUGH the engine — the row renders, the flip writes, and no render-side filter drops one group member", async () => {
+    serve(); bind()
+    // the stated layer carries the member's own value beside the gate
+    const layer = { ...statedLayerA(), refine_denoise: 0.35 } as unknown as LayerA
+    const seat = mount(openBase(), layer)
+    const face = await optionFace()
+    expect(face.tab && face.masterRow,
+      "the group and its gate render (the sanctioned arm's own law — this arm rides the same mount)").toBe(true)
+    // THE RENDERED EXISTENCE pin: the group member's row is present
+    // by label (titleCaseId('refine_denoise')); a render-side filter
+    // dropping one member reds HERE, named
+    // the field renders its slider+input pair: the INPUT carries the
+    // accessible name, the slider the '…slider' suffix — query the
+    // spinbutton seat exactly (never the ambiguous substring)
+    const row = await screen.findByRole("spinbutton", { name: /refine denoise/i })
+    expect(row, "the refine_denoise control renders inside its group tab").toBeTruthy()
+    // THE FLIP through the real engine write seam (setLayerAKey —
+    // the generic CardForm seat, never a direct state poke)
+    fireEvent.change(row, { target: { value: "0.5" } })
+    await waitFor(() => {
+      expect(seat.writes.some(([k, v]) => k === "refine_denoise" && v === 0.5),
+        "the flip rides the engine's own write seam: " + JSON.stringify(seat.writes)).toBe(true)
+    })
+    // and the row STILL renders after the flip (never dropped for
+    // having been driven)
+    expect(screen.getByRole("spinbutton", { name: /refine denoise/i })).toBeTruthy()
+    cleanup(); unbindEstateRemote(); vi.unstubAllGlobals()
+  });
 
   it("SANCTIONED (must stay green): on the open lane the stated option renders WITH its master gate — deterministically, across fresh mounts", async () => {
     serve(); bind()
