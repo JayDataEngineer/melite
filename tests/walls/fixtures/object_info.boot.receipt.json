@@ -1,5 +1,5 @@
 {
- "derived_at": "2026-10-26T06:40:12.966Z",
+ "derived_at": "2026-10-26T17:29:08.075Z",
  "tool": "scripts/regen-node-vocab.mjs --boot",
  "source": {
   "path": "data/tmp/object_info_prod.json",
@@ -10,13 +10,13 @@
  },
  "bootstrap_seed": {
   "path": "tests/walls/fixtures/object_info.boot.bootstrap.json",
-  "sha256": "6f4c858d5e4aeea14eb88ca3f08dfbf33610b5336c11414654fb4a22acc027d9",
-  "rows": 68
+  "sha256": "6e5f1e1b9377b3e280fec75e6b5e03984f862fe43a524aa39fb1f0a0768a47a5",
+  "rows": 71
  },
  "derivation": {
   "facts_path": "packages/engines/comfyui-cordis/data/model-facts.json",
-  "addressed_class_count": 98,
-  "bootstrap_class_count": 68,
+  "addressed_class_count": 95,
+  "bootstrap_class_count": 71,
   "fixture_class_count": 166,
   "rows_probed": 31,
   "refused_rows": 0
@@ -24,26 +24,7 @@
  "delta": {
   "added": [],
   "pruned": [],
-  "updated": [
-   "CLIPLoader",
-   "DownloadAndLoadFlorence2Model",
-   "Florence2Run",
-   "LanPaint_ImageDecode",
-   "LanPaint_ImageEncode",
-   "LanPaint_KSamplerAdvanced",
-   "LoadAudio",
-   "LoadImage",
-   "LoadImageMask",
-   "LoadVideo",
-   "MeliteAudioSlice",
-   "MiniMaxH3RefModsLoader",
-   "ModelPreviewOverrideKJ",
-   "Sam3dBodyImageToAnny",
-   "UNETLoader",
-   "VAELoader",
-   "VHS_LoadVideo",
-   "WD14Tagger|pysssss"
-  ],
+  "updated": [],
   "reordered_keys": 0
  }
 }

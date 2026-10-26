@@ -1936,44 +1936,54 @@ function renderH3Window(
     // (V7/ours sharpened FIRST — before the upscaler could soften the
     // detail away). Sharpen rcas 0.3 after upscale "looks natural"
     // (his V9 notes). The switches stay ours; the ORDER is his.
-    const film = g.node('FrameInterpolationModelLoader', {
-      model_name: p.interp_model as string,
-    }).out()
-    const interpMultVal = p.interp_multiplier as number
-    const interp = g.node('FrameInterpolate', {
-      interp_model: film, images: vdec, multiplier: interpMultVal,
-    }).out()
-    // ONE OWNER (2026-09-20): interpolate_enabled owns the switch
-    // (declared default false). The legacy interp_switch alias is
-    // retired — post-declaration the walk materializes the primary,
-    // so the alias arm was unreachable dead law.
-    const interpSwOn = secondPassOn && (p.interpolate_enabled as boolean)
-    const interpSw = g.node('ComfySwitchNode', {
-      switch: interpSwOn, on_true: interp, on_false: vdec,
-    }).out()
-    const srRes = p.sr_resolution as number
-    const sr = g.node('SeedVR2VideoUpscaler', {
-      image: interpSw,
-      dit: g.node('SeedVR2LoadDiTModel', {
-        model: p.sr_model as string, device: 'cuda:0',
-      }).out(),
-      vae: g.node('SeedVR2LoadVAEModel', {
-        model: LANE_FILES.sr_vae, device: 'cuda:0',
-      }).out(),
-      seed: 42, resolution: srRes,
-      max_resolution: 0, batch_size: 5, uniform_batch_size: false,
-      color_correction: 'lab',
-    }).out()
+    //
+    // ── THE GRAPH-MIRROR BUILD (burn b, 2026-10-26 — operator: "H3
+    // VIDEO UI LIE… IT WILL ALWAYS UPSCALE") ── each limb mounts
+    // IFF its own doc gate is on; an off limb composes NO node at
+    // all. The pre-burn shape built every limb unconditionally and
+    // routed a lazy ComfySwitchNode around each — the serialized
+    // graph (a face the operator and the engine queue both read)
+    // carried SeedVR2 + interp + sharpen on EVERY doc, switches or
+    // not: the graph itself said "always upscale". The TS build now
+    // picks the wire at compose time — the same mount-behind-the-
+    // gate law the latent-upscale handoff and the refine rider
+    // already ride — and the V9 ORDER is preserved by threading one
+    // `postImage` handle down the chain.
+    let postImage = vdec
+    const interpOn = secondPassOn && (p.interpolate_enabled as boolean)
+    if (interpOn) {
+      const film = g.node('FrameInterpolationModelLoader', {
+        model_name: p.interp_model as string,
+      }).out()
+      const interpMultVal = p.interp_multiplier as number
+      const interp = g.node('FrameInterpolate', {
+        interp_model: film, images: postImage, multiplier: interpMultVal,
+      }).out()
+      postImage = interp
+    }
     const srSwOn = secondPassOn && (p.sr_switch as boolean)
-    const srSw = g.node('ComfySwitchNode', {
-      switch: srSwOn, on_true: sr, on_false: interpSw,
-    }).out()
+    if (srSwOn) {
+      const srRes = p.sr_resolution as number
+      const sr = g.node('SeedVR2VideoUpscaler', {
+        image: postImage,
+        dit: g.node('SeedVR2LoadDiTModel', {
+          model: p.sr_model as string, device: 'cuda:0',
+        }).out(),
+        vae: g.node('SeedVR2LoadVAEModel', {
+          model: LANE_FILES.sr_vae, device: 'cuda:0',
+        }).out(),
+        seed: 42, resolution: srRes,
+        max_resolution: 0, batch_size: 5, uniform_batch_size: false,
+        color_correction: 'lab',
+      }).out()
+      postImage = sr
+    }
     // sharpen LAST (V9): the upscaler softens; rcas after it restores.
     // Renderer alias second (sharpen_* leaves above build the method).
-    const sharpened = g.node('ImageSharpenKJ', { image: srSw, method }).out()
-    const sharpSw = g.node('ComfySwitchNode', {
-      switch: secondPassOn && (p.sharpen_enabled as boolean), on_true: sharpened, on_false: srSw,
-    }).out()
+    if (secondPassOn && (p.sharpen_enabled as boolean)) {
+      const sharpened = g.node('ImageSharpenKJ', { image: postImage, method }).out()
+      postImage = sharpened
+    }
     // fps compensation (V9, 2026-09-15): upstream wires
     // CreateVideo.fps = base × interp multiplier (his Enhancements:
     // PrimitiveFloat 24 → ComfyMathExpression "a * 2" → fps). Without
@@ -1982,10 +1992,8 @@ function renderH3Window(
     // hardcoded 24 (audit f1cc1197: this seat rode a literal while
     // the fpsInput "cure" above sat dead — the exact dead-store
     // class: a line that looks like a fix and never fires).
-    const interpOn = secondPassOn && (p.interpolate_enabled as boolean)
-    const interpMult = p.interp_multiplier as number
     const created = g.node('CreateVideo', {
-      images: sharpSw, audio: vadec, fps: interpOn ? (fpsInput as number) * interpMult : fpsInput, bit_depth: FILM_BIT_DEPTH,
+      images: postImage, audio: vadec, fps: interpOn ? (fpsInput as number) * (p.interp_multiplier as number) : fpsInput, bit_depth: FILM_BIT_DEPTH,
       // color_space: pin autofill "sRGB"
     })
     const saved = g.node('SaveVideo', {
@@ -1993,7 +2001,7 @@ function renderH3Window(
       format: 'mp4', codec: 'h264',
     })
     rawHandles.savePassthrough = saved.out(0)
-    delivered = { images: sharpSw, audio: vadec }
+    delivered = { images: postImage, audio: vadec }
   }
 
   // (every family path delivers — both arms save the window's clip;

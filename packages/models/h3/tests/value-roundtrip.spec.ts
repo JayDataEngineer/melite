@@ -520,17 +520,20 @@ describe("the h3 sampler knobs ride VERBATIM to their consumers (purge P2 value 
   // master gate owns the verdict. The witness pins the drop AS
   // DESIGNED: the stated value always rides the graph's grouped dict
   // with its named switch beside it — never a silent value-vanish. ──
+  // THE GRAPH-MIRROR RE-PIN (burn b, 2026-10-26): the sharpen limb
+  // mounts IFF its gate composes on — no always-built node, no
+  // routing switch. The limb's PRESENCE is the gate's verdict home
+  // (the serialized graph names the drop by the node's absence);
+  // the grouped dict is judged only when the limb rides.
   const sharpenParts = (graph: Record<string, { class_type: string; inputs: Record<string, unknown> }>) => {
     const sharpenEntry = Object.entries(graph).find(([, n]) => n.class_type === "ImageSharpenKJ");
-    assert.ok(sharpenEntry, "the post chain builds the sharpen node (the grouped dict's home)");
-    const sharpenId = sharpenEntry![0];
-    const sw = Object.entries(graph).find(([, n]) =>
-      n.class_type === "ComfySwitchNode" && JSON.stringify(n.inputs.on_true ?? "").includes(sharpenId));
-    assert.ok(sw, "a switch routes the sharpened branch (the master gate's verdict home)");
-    return { dict: sharpenEntry![1].inputs.method, sw: sw![1].inputs.switch };
+    return {
+      present: sharpenEntry !== undefined,
+      dict: sharpenEntry?.[1].inputs.method,
+    };
   };
 
-  it("ARM 10 (SD-2 master/leaf, gate ON) — a stated sharpen leaf reaches the grouped dict and the switch routes the sharpened branch", async () => {
+  it("ARM 10 (SD-2 master/leaf, gate ON) — a stated sharpen leaf reaches the grouped dict and the sharpen limb rides the graph", async () => {
     const graph = await composeH3({
       length: 56,
       calls: [SHOT()],
@@ -539,38 +542,38 @@ describe("the h3 sampler knobs ride VERBATIM to their consumers (purge P2 value 
       sharpen_enabled: true,
       sharpen_strength: 0.65,
     }, "h3_value_arm10");
-    const { dict, sw } = sharpenParts(graph);
+    const { present, dict } = sharpenParts(graph);
+    assert.ok(present, "the master + sharpen gates mount the ImageSharpenKJ limb");
     assert.ok(JSON.stringify(dict).includes("0.65"),
       `the stated leaf rides the grouped dict (saw ${JSON.stringify(dict)})`);
-    assert.equal(sw, true, "the master gate routes the sharpened branch (on_true) when enabled");
   });
 
-  it("ARM 11 (SD-2 master/leaf, gate OFF) — the stated leaf still rides the graph dict (the drop is the DESIGNED switch, named in the graph — never a silent value-vanish) while the switch routes the plain pass", async () => {
+  it("ARM 11 (SD-2 master/leaf, gate OFF) — a stated leaf WITHOUT the gate composes NO sharpen limb (the drop is the DESIGNED gate, named by the node's absence — never a value riding a dead limb)", async () => {
     // THE DOCUMENTED GATE (actions.ts MASTER GATE, 2026-09-22):
     // legacy docs with leaves set but no master render the plain
-    // pass. The purge class is only silent if the stated value ALSO
-    // vanishes — it does not: the leaf loop reads every stated leaf
-    // into the dict, and the switch carries the verdict beside it.
+    // pass. THE MIRROR AMENDMENT (burn b, 2026-10-26): the pre-burn
+    // shape kept the limb (and the stated leaf inside it) on the
+    // graph behind a false switch — a dead limb carrying values the
+    // engine would never use. The graph now names the gate's verdict
+    // the only honest way: the limb does not compose.
     const graph = await composeH3({
       length: 56,
       calls: [SHOT()],
       seed: SEED,
       sharpen_strength: 0.65,
     }, "h3_value_arm11");
-    const { dict, sw } = sharpenParts(graph);
-    assert.ok(JSON.stringify(dict).includes("0.65"),
-      `the stated leaf rides the grouped dict even gate-off (saw ${JSON.stringify(dict)})`);
-    assert.equal(sw, false, "the master gate routes the plain pass without the gate (the designed verdict, named in the graph)");
+    const { present } = sharpenParts(graph);
+    assert.ok(!present, "no master ⇒ no ImageSharpenKJ limb at all (the plain pass composes plain)");
   });
 
-  it("ARM 12 (SD-2 master/leaf, master ON + sub-gate OFF) — a second-pass doc WITHOUT the sharpen arm routes the plain pass while the stated leaf still rides the dict", async () => {
+  it("ARM 12 (SD-2 master/leaf, master ON + sub-gate OFF) — a second-pass doc WITHOUT the sharpen arm composes no sharpen limb", async () => {
     // THE SUB-GATE'S OWN ARM: second_pass_enabled is the master,
     // sharpen_enabled is the sharpen arm's switch WITHIN it. The
     // operator case: the second pass runs (interp / sr) with
     // sharpening off — the arm must not fire. Masking note: with the
     // master off the sub-gate is unobservable (the && short-circuits
     // false), so THIS arm is the only judge of the sharpen_enabled
-    // term — toggle it out and the switch asserts true here.
+    // term — toggle it out and the limb asserts present here.
     const graph = await composeH3({
       length: 56,
       calls: [SHOT()],
@@ -579,10 +582,8 @@ describe("the h3 sampler knobs ride VERBATIM to their consumers (purge P2 value 
       sharpen_enabled: false,
       sharpen_strength: 0.65,
     }, "h3_value_arm12");
-    const { dict, sw } = sharpenParts(graph);
-    assert.ok(JSON.stringify(dict).includes("0.65"),
-      `the stated leaf rides the grouped dict even arm-off (saw ${JSON.stringify(dict)})`);
-    assert.equal(sw, false, "the sharpen sub-gate stays closed without sharpen_enabled (the master alone must not sharpen)");
+    const { present } = sharpenParts(graph);
+    assert.ok(!present, "the sharpen sub-gate stays closed without sharpen_enabled (the master alone must not sharpen)");
   });
 });
 
@@ -759,8 +760,10 @@ describe("the h3 class knobs ride VERBATIM to their consumers (P0 witness extens
     assertValueAtConsumer(graph, "FrameInterpolate", "multiplier", 4, "interp_multiplier");
     assertValueAtConsumer(graph, "SeedVR2LoadDiTModel", "model", "seedvr2_ema_3b_fp8_e4m3fn.safetensors", "sr_model");
     assertValueAtConsumer(graph, "SeedVR2VideoUpscaler", "resolution", 1440, "sr_resolution");
-    assert.equal(switchCarrying(graph, "FrameInterpolate").switch, true, "interpolate_enabled owns the interp switch");
-    assert.equal(switchCarrying(graph, "SeedVR2VideoUpscaler").switch, true, "sr_switch owns the super-res switch");
+    // THE MIRROR RE-PIN (burn b, 2026-10-26): the limbs' presence IS
+    // the switches' verdict — no routing switch composes anymore.
+    assert.ok(Object.values(graph).some((n) => n.class_type === "FrameInterpolate"), "interpolate_enabled mounts the interp limb");
+    assert.ok(Object.values(graph).some((n) => n.class_type === "SeedVR2VideoUpscaler"), "sr_switch mounts the super-res limb");
   });
 
   it("ARM 18 — the five sharpen leaves verbatim in the ImageSharpenKJ method dict + sharpen_enabled owns the sharpen switch", async () => {
@@ -779,7 +782,7 @@ describe("the h3 class knobs ride VERBATIM to their consumers (P0 witness extens
       { method: "adaptive_usm", strength: 0.55, radius: 2.5, threshold: 0.15, iterations: 7 },
       "the stated sharpen leaves ride the grouped dict verbatim",
     );
-    assert.equal(switchCarrying(graph, "ImageSharpenKJ").switch, true, "sharpen_enabled owns the sharpen switch");
+    assert.ok(Object.values(graph).some((n) => n.class_type === "ImageSharpenKJ"), "sharpen_enabled mounts the sharpen limb (the mirror law: presence is the verdict)");
   });
 
   it("ARM 19 — the media lanes reach their load/trim consumers: first frame + last_frame + ref_images at LoadImage, ref_videos at LoadVideo, the stated trim at Video Slice, ref_audios at LoadAudio", async () => {
@@ -868,8 +871,10 @@ describe("the h3 class knobs ride VERBATIM to their consumers (P0 witness extens
       second_pass_enabled: true, interp_switch: true,
       calls: [SHOT()],
     }, "h3_value_arm23");
-    assert.equal(switchCarrying(graph, "FrameInterpolate").switch, false,
-      "the stated legacy interp_switch flipped the interp switch — the alias rode behind the primary's back");
+    // THE MIRROR RE-PIN (burn b, 2026-10-26): no switch composes —
+    // the alias's crime shape would be a mounted limb.
+    assert.ok(!Object.values(graph).some((n) => n.class_type === "FrameInterpolate"),
+      "the stated legacy interp_switch mounted the interp limb — the alias rode behind the primary's back");
   });
 });
 
@@ -1099,8 +1104,10 @@ describe("the h3 knob-block remainder: per-class liveness + the mis-narrated and
       second_pass_enabled: true, sharpen_switch: true,
       calls: [SHOT()],
     }, "h3_knob_arm32");
-    assert.equal(switchCarrying(graph, "ImageSharpenKJ").switch, false,
-      "the stated legacy sharpen_switch flipped the sharpen switch — the alias rode behind the primary's back");
+    // THE MIRROR RE-PIN (burn b, 2026-10-26): no switch composes —
+    // the alias's crime shape would be a mounted limb.
+    assert.ok(!Object.values(graph).some((n) => n.class_type === "ImageSharpenKJ"),
+      "the stated legacy sharpen_switch mounted the sharpen limb — the alias rode behind the primary's back");
   });
 
   // ── THE INTERNAL ROWS (the per-window trio's stand-downs, named):

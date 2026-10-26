@@ -125,25 +125,23 @@ describe("the h3-timeline compose gate", () => {
   });
 
   it("THE SECOND-PASS MASTER (2026-09-22, operator: \"it is very unclear if it is on or off\"): off renders the plain pass even when leaves are set; on arms the chain", () => {
+    // (re-pin 2026-10-26, burn b — the graph-mirror law): the post
+    // limbs mount IFF the master + their own leaf gate compose on;
+    // the routing switches are gone — the master's verdict is the
+    // limbs' PRESENCE, judged per class.
     const leaves = { sharpen_enabled: true, interpolate_enabled: true, sr_switch: true } as Record<string, unknown>;
-    const switchesOf = (master: boolean) => {
+    const limbsOf = (master: boolean) => {
       const g = new GraphBuilder();
       def.compose(def.schema({ calls: [SHOT()], length: 56, second_pass_enabled: master, ...leaves }), model, g, `run_master_${master}`);
-      const out = Object.entries(g.toJSON() as Record<string, { class_type: string; inputs: Record<string, unknown> }>)
-        .filter(([, n]) => n.class_type === "ComfySwitchNode") as [string, { class_type: string; inputs: Record<string, unknown> }][];
-      return new Map(out.map(([id, n]) => [id, n.inputs["switch"] === true]));
+      const out = Object.values(g.toJSON() as Record<string, { class_type: string }>);
+      return new Set(["ImageSharpenKJ", "FrameInterpolate", "SeedVR2VideoUpscaler"].filter((cls) => out.some((n) => n.class_type === cls)));
     };
-    const off = switchesOf(false);
-    const on = switchesOf(true);
-    // the master flips EXACTLY the post trio (sharpen/interp/VSR) —
-    // every other switch (the r2vBool lane pick, etc.) is untouched
-    const flipped = [...off.keys()].filter((id) => off.get(id) === false && on.get(id) === true);
-    assert.equal(flipped.length, 3, "master on arms exactly the three post switches");
-    for (const id of off.keys()) {
-      if (!flipped.includes(id)) assert.equal(on.get(id), off.get(id), `non-post switch ${id} is master-blind`);
-    }
-    // master off: legacy leaves cannot force a pass
-    for (const id of flipped) assert.equal(off.get(id), false, "master off routes the plain path for every post switch");
+    const off = limbsOf(false);
+    const on = limbsOf(true);
+    // master on arms EXACTLY the post trio (sharpen/interp/VSR)
+    assert.equal(on.size, 3, "master on mounts exactly the three post limbs");
+    // master off: legacy leaves cannot force a pass — no limb at all
+    assert.equal(off.size, 0, "master off composes NONE of the post limbs (legacy leaves cannot force a pass)");
   });
 
   it("explicitly-set sharpen leaves ride; absent leaves never patch", () => {

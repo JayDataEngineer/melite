@@ -732,29 +732,18 @@ describe("the single-window doors", () => {
       const back = axisPickPatch(spec(), standard, heldFinal)
       assert.equal(back["second_pass_enabled"], null)
       assert.equal(back["sr_switch"], null)
-      // and the composed graph BYPASSES the departed rail: the post
-      // chain's nodes always mount on the non-t4r arm (the master
-      // gate is the SWITCH's value, not node presence — the walk's
-      // own law), so the tell is every switch whose on_true names a
-      // post-chain node sitting at switch:false
+      // and the composed graph carries NO departed rail (re-pin
+      // 2026-10-26, burn b — the graph-mirror law): the post chain
+      // mounts only behind its own gates, so a Standard flip composes
+      // NONE of the limbs — the bypass is structural, not a false
+      // switch around an always-mounted node (the pre-burn tell)
       const out3 = composeDoc({ calls: [SHOT()], ...heldFinal, ...back })
-      const postIds = new Set(
-        Object.entries(out3)
-          .filter(([, n]) => n.class_type.startsWith("SeedVR2") || n.class_type === "ImageSharpenKJ"
-            || n.class_type === "FrameInterpolate")
-          .map(([id]) => id),
-      )
-      assert.ok(postIds.size > 0, "the post chain mounts (its bypass is what we judge)")
-      const railSwitches = ofClass(out3, "ComfySwitchNode").filter(([, n]) => {
-        const onTrue = n.inputs.on_true
-        const ref = Array.isArray(onTrue) ? String(onTrue[0]) : String(onTrue ?? "")
-        return postIds.has(ref)
-      })
-      assert.ok(railSwitches.length > 0, "the rail's own switches compose")
-      for (const [id, n] of railSwitches) {
-        assert.equal(n.inputs.switch, false,
-          `the departed second-pass rail must be bypassed (${id})`)
-      }
+      const postIds = Object.entries(out3)
+        .filter(([, n]) => n.class_type.startsWith("SeedVR2") || n.class_type === "ImageSharpenKJ"
+          || n.class_type === "FrameInterpolate")
+        .map(([id]) => id)
+      assert.deepEqual(postIds, [],
+        "the departed second-pass rail must compose NOTHING (the flip's graph names the bypass by the limbs' absence)")
     })
   });
 

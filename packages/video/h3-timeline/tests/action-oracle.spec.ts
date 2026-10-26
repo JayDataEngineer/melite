@@ -74,7 +74,11 @@ describe("the h3 film action oracle (the interlock)", () => {
     const nodes = Object.values(graph);
     assert.ok(nodes.some((n) => n.class_type === "MiniMaxH3ReferenceToVideo"), "the r2v lane composes (r2v is the only lane)");
     assert.ok(nodes.some((n) => n.class_type === "SaveVideo"), "the window saves");
-    assert.ok(nodes.some((n) => n.class_type === "SeedVR2VideoUpscaler"), "the film tail's upscale rides");
+    // (re-pin 2026-10-26, burn b — the graph-mirror law) the frozen
+    // doc states no second pass: the upscale limb must NOT ride —
+    // the serialized graph names the off verdict by the node's
+    // absence (the pre-burn shape carried it behind a false switch).
+    assert.ok(!nodes.some((n) => n.class_type === "SeedVR2VideoUpscaler"), "the film tail's upscale rides ONLY behind the second-pass gate (the off doc composes plain)");
   });
 
   it("a t4r reference window (guide + refs) composes through the declared action", () => {
