@@ -366,6 +366,52 @@ function statedCellRow(variant, body, mid) {
     const res = resolveCellRow(variant, stated, mid ?? "", "offered");
     return res.status === "resolved" ? (res.cell ?? undefined) : undefined;
 }
+export function laneFetchAnchor(decl, seats, name) {
+    // 1. the family's own provisions row — the loaded-identity rule
+    // (full name or basename, the registration law's spelling)
+    const base = name.split("/").pop() ?? name;
+    const prov = (decl.provisions ?? []).find((p) => p.name === name || p.name === base);
+    if (prov !== undefined) {
+        return { url: prov.url, ...(prov.size_bytes !== undefined ? { sizeBytes: prov.size_bytes } : {}) };
+    }
+    // 2. the stated cell/variant artifact — the source_url's basename is
+    // the lane file's name (the cell's own spelling, krea-2/qwen law);
+    // only the cell row declares an artifact member
+    for (const seat of seats) {
+        if (seat === undefined || !("artifact" in seat))
+            continue;
+        const artifact = seat.artifact;
+        const url = artifact?.source_url;
+        if (typeof url === "string" && url.length > 0 && (url.split("/").pop() ?? "") === base) {
+            const size = artifact?.size_bytes;
+            return { url, ...(typeof size === "number" ? { sizeBytes: size } : {}) };
+        }
+    }
+    // 2.5 THE FAMILY-WIDE ARTIFACT FALLBACK (the shared-weight law): a
+    // weight many coordinates ride (the family default unet under a
+    // lora variant) declares its channel ONCE — on the OWNING cell's
+    // artifact row. The basename is the file identity: any cell's
+    // artifact with that basename is a true URL for the missing
+    // weight, exactly what the provisioner fetches. Refusing to say
+    // it (the seat-only lookup) is the kroma class wearing a
+    // different coat — a URL exists, the press reports a bare miss.
+    for (const variant of decl.variants ?? []) {
+        for (const cell of variant.cells) {
+            const url = cell.artifact?.source_url;
+            if (typeof url === "string" && url.length > 0 && (url.split("/").pop() ?? "") === base) {
+                const size = cell.artifact?.size_bytes;
+                return { url, ...(typeof size === "number" ? { sizeBytes: size } : {}) };
+            }
+        }
+    }
+    // 3. the snapshot tree — the repo link anchors the fetch (the tree
+    // lands at its pinned revision; the refusal names the repo)
+    const snap = (decl.snapshot_provisions ?? []).find((s) => s.name === base);
+    if (snap !== undefined) {
+        return { url: "https://huggingface.co/" + snap.repo_id };
+    }
+    return undefined;
+}
 export function lanePresenceMiss(fam, body, mid) {
     const decl = getModel(fam);
     const check = (folder, name) => checkModelPresent("models/" + folder, name);
@@ -410,21 +456,27 @@ export function lanePresenceMiss(fam, body, mid) {
     // and inside the structured row (missingAll) — the operator learns
     // of the vae in the refusal that names the text encoder, with the
     // DECL's declared size per file, never one wedged run later.
+    // THE ANCHOR-AT-THE-DOOR LAW (the kroma burn, 2026-10-26): every
+    // row's anchor resolves through laneFetchAnchor — the cascade's
+    // own channels (provisions, the stated cell/variant artifact, the
+    // snapshot repo), NEVER provisions alone. The wall
+    // (variant-linkability ARM 4) walks this exact builder over an
+    // empty store and reds any declared weight the door cannot anchor.
     const rows = misses.map((m) => {
-        const prov = (decl.provisions ?? []).find((p) => p.name === m.name);
+        const anchor = laneFetchAnchor(decl, [variantRow, cellRow], m.name);
         return {
             slot: m.key,
             name: m.name,
             folders: m.folders,
-            ...(prov?.size_bytes !== undefined ? { sizeBytes: prov.size_bytes } : {}),
-            ...(prov !== undefined ? { fetchUrl: prov.url } : {}),
+            ...(anchor?.sizeBytes !== undefined ? { sizeBytes: anchor.sizeBytes } : {}),
+            ...(anchor !== undefined ? { fetchUrl: anchor.url } : {}),
         };
     });
     const listVoice = misses.length > 1
         ? "; the run declares " + String(misses.length) + " missing files — " +
             misses.map((m) => {
-                const prov = (decl.provisions ?? []).find((p) => p.name === m.name);
-                return m.key + " '" + m.name + "'" + (prov !== undefined ? " — fetch it: " + prov.url : "");
+                const anchor = laneFetchAnchor(decl, [variantRow, cellRow], m.name);
+                return m.key + " '" + m.name + "'" + (anchor !== undefined ? " — fetch it: " + anchor.url : "");
             }).join("; ")
         : "";
     return new CardArmError(400, "lane presence: family '" + fam + "' declares " + miss.key + " '" + miss.name +

@@ -419,6 +419,92 @@ function statedCellRow(
   return res.status === "resolved" ? (res.cell ?? undefined) : undefined;
 }
 
+/** A resolved fetch anchor for one lane miss: the URL the operator
+ * can download the weight from, plus the declared size when the
+ * channel states one. */
+export interface LaneFetchAnchor {
+  readonly url: string;
+  readonly sizeBytes?: number;
+}
+
+/** THE ANCHOR-AT-THE-DOOR LAW (operator 2026-10-26, the kroma burn,
+ * quoted verbatim in the variant-linkability wall and its receipt):
+ * a single weight without a URL to download from means REDS in the
+ * testing suite, always. A lane miss's fetch
+ * anchor resolves from the RESOLVED CASCADE'S OWN CHANNELS — the
+ * family's provisions rows first, then the STATED variant/cell
+ * artifact rows (the cell artifact's source_url basename IS the
+ * lane file's name — the krea-2/qwen convention), then the snapshot
+ * trees (the repo link). Before this law the refusal read family
+ * provisions ONLY: a weight whose URL lived on its cell's artifact
+ * (krea-2 kroma-base's dtype-mapped bf16) refused with "no store
+ * copy exists" and NO fetch anchor — the URL existed, the door never
+ * said it. Hand-placed weights (no channel anywhere) stay the debt
+ * band by the weight-offer-parity contract — their voice is the
+ * hand-place sentence, never a bare miss.
+ *
+ * @param decl - the family DECL (provisions, snapshot rows, and
+ * the variant tree for the family-wide artifact fallback).
+ * @param seats - the resolved variant and cell rows (artifact
+ * carriers), in precedence order.
+ * @param name - the missing lane file's declared name.
+ * @returns the anchor, or undefined when no channel names the file. */
+/** The seat rows the anchor resolver reads: the stated variant row
+ * (never carries an artifact) and the stated cell row (the artifact
+ * carrier) — the same indexed shapes statedVariantRow/statedCellRow
+ * return. */
+export type LaneFetchSeat = ModelDecl["variants"][number] | ModelDecl["variants"][number]["cells"][number] | undefined;
+
+export function laneFetchAnchor(
+  decl: Pick<ModelDecl, "provisions" | "snapshot_provisions" | "variants">,
+  seats: ReadonlyArray<LaneFetchSeat>,
+  name: string,
+): LaneFetchAnchor | undefined {
+  // 1. the family's own provisions row — the loaded-identity rule
+  // (full name or basename, the registration law's spelling)
+  const base = name.split("/").pop() ?? name;
+  const prov = (decl.provisions ?? []).find((p) => p.name === name || p.name === base);
+  if (prov !== undefined) {
+    return { url: prov.url, ...(prov.size_bytes !== undefined ? { sizeBytes: prov.size_bytes } : {}) };
+  }
+  // 2. the stated cell/variant artifact — the source_url's basename is
+  // the lane file's name (the cell's own spelling, krea-2/qwen law);
+  // only the cell row declares an artifact member
+  for (const seat of seats) {
+    if (seat === undefined || !("artifact" in seat)) continue;
+    const artifact = seat.artifact;
+    const url = artifact?.source_url;
+    if (typeof url === "string" && url.length > 0 && (url.split("/").pop() ?? "") === base) {
+      const size = artifact?.size_bytes;
+      return { url, ...(typeof size === "number" ? { sizeBytes: size } : {}) };
+    }
+  }
+  // 2.5 THE FAMILY-WIDE ARTIFACT FALLBACK (the shared-weight law): a
+  // weight many coordinates ride (the family default unet under a
+  // lora variant) declares its channel ONCE — on the OWNING cell's
+  // artifact row. The basename is the file identity: any cell's
+  // artifact with that basename is a true URL for the missing
+  // weight, exactly what the provisioner fetches. Refusing to say
+  // it (the seat-only lookup) is the kroma class wearing a
+  // different coat — a URL exists, the press reports a bare miss.
+  for (const variant of decl.variants ?? []) {
+    for (const cell of variant.cells) {
+      const url = cell.artifact?.source_url;
+      if (typeof url === "string" && url.length > 0 && (url.split("/").pop() ?? "") === base) {
+        const size = cell.artifact?.size_bytes;
+        return { url, ...(typeof size === "number" ? { sizeBytes: size } : {}) };
+      }
+    }
+  }
+  // 3. the snapshot tree — the repo link anchors the fetch (the tree
+  // lands at its pinned revision; the refusal names the repo)
+  const snap = (decl.snapshot_provisions ?? []).find((s) => s.name === base);
+  if (snap !== undefined) {
+    return { url: "https://huggingface.co/" + snap.repo_id };
+  }
+  return undefined;
+}
+
 export function lanePresenceMiss(fam: string, body?: Record<string, unknown>, mid?: string): CardArmError | null {
   const decl = getModel(fam);
   const check = (folder: string, name: string): string | null => checkModelPresent("models/" + folder, name);
@@ -470,21 +556,27 @@ export function lanePresenceMiss(fam: string, body?: Record<string, unknown>, mi
   // and inside the structured row (missingAll) — the operator learns
   // of the vae in the refusal that names the text encoder, with the
   // DECL's declared size per file, never one wedged run later.
+  // THE ANCHOR-AT-THE-DOOR LAW (the kroma burn, 2026-10-26): every
+  // row's anchor resolves through laneFetchAnchor — the cascade's
+  // own channels (provisions, the stated cell/variant artifact, the
+  // snapshot repo), NEVER provisions alone. The wall
+  // (variant-linkability ARM 4) walks this exact builder over an
+  // empty store and reds any declared weight the door cannot anchor.
   const rows = misses.map((m: LaneMiss): LaneMissRow => {
-    const prov = (decl.provisions ?? []).find((p) => p.name === m.name);
+    const anchor = laneFetchAnchor(decl, [variantRow, cellRow], m.name);
     return {
       slot: m.key,
       name: m.name,
       folders: m.folders,
-      ...(prov?.size_bytes !== undefined ? { sizeBytes: prov.size_bytes } : {}),
-      ...(prov !== undefined ? { fetchUrl: prov.url } : {}),
+      ...(anchor?.sizeBytes !== undefined ? { sizeBytes: anchor.sizeBytes } : {}),
+      ...(anchor !== undefined ? { fetchUrl: anchor.url } : {}),
     };
   });
   const listVoice = misses.length > 1
     ? "; the run declares " + String(misses.length) + " missing files — " +
       misses.map((m: LaneMiss): string => {
-        const prov = (decl.provisions ?? []).find((p) => p.name === m.name);
-        return m.key + " '" + m.name + "'" + (prov !== undefined ? " — fetch it: " + prov.url : "");
+        const anchor = laneFetchAnchor(decl, [variantRow, cellRow], m.name);
+        return m.key + " '" + m.name + "'" + (anchor !== undefined ? " — fetch it: " + anchor.url : "");
       }).join("; ")
     : "";
   return new CardArmError(

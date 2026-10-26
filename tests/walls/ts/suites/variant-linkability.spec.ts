@@ -29,6 +29,9 @@
 //   ARM 2 THE NAMED-DISK-ONLY REGISTER — every flag carries a
 //        reason; dual declarations say "placement stated"; stale
 //        flags red.
+//   ARM 4 THE ANCHOR-AT-THE-DOOR — the gate's own resolver must
+//   yield a URL per weight per coordinate; a channel the door cannot
+//   say (krea-2 kroma-base) reds here.
 //   ARM 3 THE RATCHET — the census counts are pinned; a new
 //        disk-only variant without a dated receipt reds.
 import assert from "node:assert/strict";
@@ -50,7 +53,7 @@ beforeAll(async () => { await cascadeInit(); });
 // judges ONLY the keys LANE_FOLDERS names plus the family's own
 // lane_homes declarations — this wall judges exactly those keys,
 // never a wider guess that would cry wolf on node names.
-import { LANE_FOLDERS } from "../../../../packages/harness/estate-queue/src/cardsLanes.ts";
+import { LANE_FOLDERS, laneFetchAnchor, type LaneFetchSeat } from "../../../../packages/harness/estate-queue/src/cardsLanes.ts";
 
 /** String leaves of any lane_inputs-shaped dict (the ghost wall's
  *  walk, kept ONE spelling: a leaf that names a file or tree). */
@@ -263,5 +266,69 @@ describe("THE LINKABILITY WALL (burn d: no-link variants never sail green)", () 
       "the disk-only register moved — a new hand-placed tree owes a dated receipt (row + reason), a cured one deletes its flag here",
     );
     assert.equal(loraNever, KREA_ROWS.length, "every mods lora row must carry its never-fetch fate — no partial rulings");
+  });
+
+  // ARM 4 — THE ANCHOR-AT-THE-DOOR LAW (the kroma burn, operator
+  // 2026-10-26: "IF A SINGLE WEIGHT DOES NOT HAVE A FUCKING URL TO
+  // DOWNLOAD FROM — WE GET REDS IN THE TESTING SUITE — ALWAYS").
+  // ARM 1 judges that a channel EXISTS somewhere in the family; this
+  // arm judges THE DOOR: the run gate's own anchor resolver
+  // (laneFetchAnchor — provisions, the STATED cell/variant artifact,
+  // the snapshot repo, in that order) must produce a URL for every
+  // weight every coordinate demands. The burn's exact shape: krea-2
+  // kroma-base's unet HAS its URL (the cell artifact row), ARM 1
+  // counted it green, and the live press still refused with "no
+  // store copy exists" and NO fetch anchor — the refusal read family
+  // provisions only. A channel the door cannot say is a lie the
+  // operator pays for at the press. Hand-placed weights (the debt
+  // band, reasoned flags) stay exempt — their face is the
+  // hand-place sentence, never a bare miss.
+  it("ARM 4 — the door anchors every weight: the run gate's own resolver yields a URL per demand, per coordinate (the kroma law)", () => {
+    const offenders: string[] = [];
+    for (const id of modelIds()) {
+      const view = getModel(id);
+      const flags = new Map(handFlags(view).map((f) => [f.name, f]));
+      const exempt = (demand: string): boolean => {
+        const f = flags.get(demand) ?? flags.get(base(demand));
+        return f !== undefined && f.reason !== "";
+      };
+      for (const variant of view.variants ?? []) {
+        if (variant.group !== "Variant") continue;
+        // every coordinate the door can state — the door NEVER composes
+        // a bare family∪variant cascade for a cell-carrying variant:
+        // statedCellRow resolves the FIRST VISIBLE cell when quant
+        // rides unstated, so the cell's lane_inputs always join the
+        // merge (and their artifact rides the stated cell row). The
+        // no-cell seat exists only for cell-less variants.
+        const visibleCells = variant.cells.filter((c) => c.hide_from_dropdown !== true);
+        const seats: ReadonlyArray<{ merged: Record<string, unknown>; rows: readonly [LaneFetchSeat, LaneFetchSeat] }> = [
+          ...(visibleCells.length === 0
+            ? [{ merged: { ...(view.lane_inputs ?? {}), ...(variant.lane_inputs ?? {}) }, rows: [variant, undefined] as const }]
+            : []),
+          ...visibleCells.map((cell) => ({
+            merged: { ...(view.lane_inputs ?? {}), ...(variant.lane_inputs ?? {}), ...(cell.lane_inputs ?? {}) },
+            rows: [variant, cell] as const,
+          })),
+        ];
+        const seenDemands = new Set<string>();
+        for (const seat of seats) {
+          for (const demand of gateDemands(view, seat.merged)) {
+            if (seenDemands.has(demand)) continue;
+            seenDemands.add(demand);
+            const anchor = laneFetchAnchor(view, seat.rows, demand);
+            if (anchor === undefined) {
+              if (!exempt(demand)) {
+                offenders.push(
+                  `${id} / ${variant.id}: weights '${demand}' — THE DOOR CANNOT ANCHOR IT: laneFetchAnchor yields no URL at this coordinate (no provisions row, no stated-cell artifact basename, no snapshot repo) and no reasoned hand flag names it — a press refuses with a bare miss`,
+                );
+              }
+            } else if (!/^https?:\/\//.test(anchor.url)) {
+              offenders.push(`${id} / ${variant.id}: weights '${demand}' — the anchor is not an http(s) URL: '${anchor.url}'`);
+            }
+          }
+        }
+      }
+    }
+    assert.deepEqual(offenders, [], `anchor-at-the-door offenders (the kroma law — a URL the door cannot say is a lie the operator pays for at the press):\n${offenders.join("\n")}`);
   });
 });

@@ -894,11 +894,13 @@
  * dropdown "HAS NO SEARCH") — the panel's first row, hairline under
  * it separating the field from the route rows below (Menu children
  * render inside the items area; the card's own max-height bounds the
- * whole panel). */
+ * whole panel). The hairline rides the frame token CHAIN (the
+ * file-wide skin law: no raw palette — the color-law wall guards this
+ * file). */
 .llmSearchRow {
   display: block;
   padding: 4px 6px 6px;
-  border-bottom: 1px solid var(--dsh-frame-hairline, rgba(128, 128, 128, 0.35));
+  border-bottom: 1px solid var(--dsh-frame-hairline, var(--dsw-alias-border-l2));
   margin-bottom: 4px;
 }
 

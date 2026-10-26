@@ -41,7 +41,7 @@ import assert from "node:assert/strict";
 import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { lanePresenceMiss } from "../src/cardsLanes.ts";
+import { laneFetchAnchor, lanePresenceMiss } from "../src/cardsLanes.ts";
 import { getModel } from "@melite/comfyui-cordis";
 
 const DIR = join(tmpdir(), "melite-lane-miss-all-" + process.pid);
@@ -102,16 +102,25 @@ describe("lane-presence-miss-all: one face lists every missing declared weight",
     assert.ok(all.length === 3, "the structured lane row lists all three");
     assert.deepEqual(all.map((r) => r["name"]).sort(), [...ALL_THREE].sort());
     for (const r of all) {
-      // the DECL's own row is the size/fetch truth: a family-provisioned
-      // file (the shared TE + VAE) carries both; the cell-provisioned
-      // unet carries neither — never an invented size, never a dead URL.
-      const prov = getModel(MOSS).provisions?.find((p) => p.name === r["name"]);
-      if (prov?.size_bytes !== undefined) {
-        assert.equal(r["sizeBytes"], prov.size_bytes, "the row carries the DECL's declared size");
-        assert.equal(r["fetchUrl"], prov.url, "the row carries the DECL's fetch address");
+      // THE ANCHOR-AT-THE-DOOR LAW (the kroma cure, 2026-10-26): the
+      // DECL's own channel is the size/fetch truth, WHICHEVER row
+      // declares it — a family provisions row OR a family cell
+      // artifact (the moss unet's URL lives on its cell; before the
+      // cure the refusal stayed silent over a DECLared URL — the
+      // burn's exact shape). Expected values ride the gate's own
+      // resolver, ONE spelling; a file with NO channel anywhere
+      // still carries neither — never an invented size, never a
+      // dead URL.
+      const anchor = laneFetchAnchor(getModel(MOSS), [], String(r["name"]));
+      if (anchor !== undefined) {
+        assert.equal(r["fetchUrl"], anchor.url, "the row carries the channel's fetch address");
+        assert.equal(
+          r["sizeBytes"], anchor.sizeBytes,
+          "the row carries the channel's declared size when the channel states one",
+        );
       } else {
-        assert.equal(r["sizeBytes"], undefined, "no invented size for a row the family does not provision");
-        assert.equal(r["fetchUrl"], undefined, "no invented fetch for a row the family does not provision");
+        assert.equal(r["sizeBytes"], undefined, "no invented size for a weight no channel names");
+        assert.equal(r["fetchUrl"], undefined, "no invented fetch for a weight no channel names");
       }
     }
   });

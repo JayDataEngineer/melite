@@ -365,17 +365,22 @@ function ZoomMount(props: ZoomDetailProps & { detail: (p: ZoomDetailProps) => Re
                           }
                         },
                       })),
-                    // Auto: the estate's preference chain (server-side)
+                    // Auto: the estate's preference chain (server-side).
+                    // (children rides IN the props — MenuItemButtonProps
+                    // declares it required; createElement's third argument
+                    // cannot satisfy a required prop.)
                     h(MenuItemButton, {
                       key: 'auto',
                       onSelect: () => { pickLlm(''); setLlmOpen(false) },
                       separatorBefore: true,
-                    }, chromeCopy.autoOption),
+                      children: chromeCopy.autoOption,
+                    }),
                     // the live routes, filtered by the field above
                     ...llmShown.map((r) => h(MenuItemButton, {
                       key: r,
                       onSelect: () => { pickLlm(r); setLlmOpen(false) },
-                    }, r)),
+                      children: r,
+                    })),
                     // a filter that matches nothing states it — never an
                     // empty panel
                     llmShown.length === 0
@@ -383,7 +388,8 @@ function ZoomMount(props: ZoomDetailProps & { detail: (p: ZoomDetailProps) => Re
                         key: 'llm-none',
                         disabled: true,
                         onSelect: () => {},
-                      }, chromeCopy.llmNoMatch)
+                        children: chromeCopy.llmNoMatch,
+                      })
                       : null,
                   )
                   : null,

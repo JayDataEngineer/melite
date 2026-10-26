@@ -168,7 +168,7 @@ describe('THE REAL image-edit CONTRACT drives the real form', () => {
     expect(owned.has('loras')).toBe(true)
     const pack = (REAL21.features?.modifiers ?? []).find((m) => m.param_key === 'loras')
     expect(pack?.label).toBe('LoRAs')
-    expect(pack?.options.map((o) => o.value)).toContain('qwen21_consistency')
+    expect((pack?.options ?? []).map((o) => o.value)).toContain('qwen21_consistency')
     // the rendered form: the Modifiers section CARRIES the LoRAs
     // pack on the real doc — the user layer rides the drift-lock
     // stamp's exact composed shape, and the tile renders from the

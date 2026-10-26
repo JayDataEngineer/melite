@@ -79,7 +79,7 @@ const drillProps = (running: boolean) => ({
   onClose: (): void => {},
   onRemoved: (): void => {},
   onPatchParams: (): void => {},
-  renderStageView: (_owner: unknown, fallback: unknown) => h("div", null, fallback),
+  renderStageView: (_owner: unknown, fallback: ReturnType<typeof h>) => h("div", null, fallback),
   bindRun: (): void => {},
 });
 
