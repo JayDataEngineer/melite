@@ -807,7 +807,7 @@ const WRITES_EXEMPT: Record<string, ReadonlyArray<{ key: string; why: string }>>
     { key: "ref_images", why: "the card-level reference surface; the serialize round-trip arm judges its emission" },
     { key: "ref_videos", why: "the card-level reference surface; the serialize round-trip arm judges its emission" },
     { key: "ref_audios", why: "the card-level reference surface; the serialize round-trip arm judges its emission" },
-    { key: "ref_mods", why: "the fourth declared ref lane; the serialize round-trip arm judges its emission" },
+    { key: "ref_mods", why: "the fourth declared ref lane; the serialize round-trip arm judges its emission, and the refmod value arms (h3 door.spec, 2026-11-08) judge the composed value at the consumer node — judged at both seats, exempt here because the admission home is the card's served schema" },
     { key: "ref_video_trims", why: "the served-row seat (index-paired per-video trims); served schema knob" },
     { key: "ref_image_size", why: "the ref lane's size pick; served schema knob" },
   ],

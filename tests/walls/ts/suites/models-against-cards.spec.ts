@@ -355,8 +355,13 @@ describe("models against cards (the cross-validation, resurrected)", () => {
     // glb — a string field, so the numeric judge is unmoved and no
     // family starves)
     // 470 -> 471 (2026-10-18, audit 010/R1): h3's ref_mods seat —
-    // an ARRAY field, walked but never judged (the numeric judge
-    // owns numbers only); growth argued: one new card seat.
+    // an ARRAY field (the numeric judge owns numbers only); growth
+    // argued: one new card seat. RETIRED-STALE 2026-11-12: the
+    // original reason said "walked but never judged" — the refmod
+    // value arms (h3 door.spec, refmod-value-arms-2026-11-08) now
+    // judge the seat's composed value at the consumer node; the row
+    // stays (this census counts seats, the numeric judge owns
+    // numbers), the reason is corrected to the tree.
     // 471 -> 472 (2026-10-21, the af-move cure): the quad-remesh
     // preset budget-class knob (a string vocabulary — the node's
     // combo takes a class, never '') — walked, never judged.
