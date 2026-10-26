@@ -36,6 +36,11 @@ export function mintSandbox(prefix = 'melite-test-'): Sandbox {
   const root = mkdtempSync(join(tmpdir(), prefix))
   const savedRepoRoot = process.env.MELITE_REPO_ROOT
   const savedEndpointConfig = process.env.COMFYUI_ENDPOINT_CONFIG
+  // A1.3 residue (the flake-and-typed-seam audit, cured 2026-11-12):
+  // the sandbox gate rode delete-only in dispose — a machine-set gate
+  // (an operator sandboxing the whole suite run) was destroyed by the
+  // FIRST dispose. Captured like its two siblings now.
+  const savedSandboxGate = process.env.INFERENCE_TEST_SANDBOX
   const host = process.env.MELITE_E2E_COMFYUI_HOST ?? '127.0.0.1'
   const port = process.env.MELITE_E2E_COMFYUI_PORT ?? '8188'
   const endpointConfig = join(root, 'endpoint.json')
@@ -53,7 +58,8 @@ export function mintSandbox(prefix = 'melite-test-'): Sandbox {
       else process.env.MELITE_REPO_ROOT = savedRepoRoot
       if (savedEndpointConfig === undefined) delete process.env.COMFYUI_ENDPOINT_CONFIG
       else process.env.COMFYUI_ENDPOINT_CONFIG = savedEndpointConfig
-      delete process.env.INFERENCE_TEST_SANDBOX
+      if (savedSandboxGate === undefined) delete process.env.INFERENCE_TEST_SANDBOX
+      else process.env.INFERENCE_TEST_SANDBOX = savedSandboxGate
       rmSync(root, { recursive: true, force: true })
     },
   }

@@ -44,6 +44,11 @@ describe("QueueService", () => {
     const root = tmp();
     // the retired seam must NOT pin the root even when set — the
     // negative control on the retirement (config is the only spelling)
+    // A1.4 residue (cured 2026-11-12): the negative control rode a
+    // bare delete in finally — a machine-set MELITE_STATE_ROOT (the
+    // retired seam the retirement doc still names) was destroyed by
+    // the first run. Captured and restored.
+    const savedStateRoot = process.env["MELITE_STATE_ROOT"];
     process.env["MELITE_STATE_ROOT"] = join(root, "ghost");
     try {
       const ctx = new Context();
@@ -52,7 +57,8 @@ describe("QueueService", () => {
       assert.deepEqual(svc.stateRoots, [join(root, "state")]);
       await ctx.fiber.dispose();
     } finally {
-      delete process.env["MELITE_STATE_ROOT"];
+      if (savedStateRoot === undefined) delete process.env["MELITE_STATE_ROOT"];
+      else process.env["MELITE_STATE_ROOT"] = savedStateRoot;
     }
   });
 
