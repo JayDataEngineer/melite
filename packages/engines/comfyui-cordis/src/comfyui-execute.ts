@@ -236,6 +236,17 @@ function stopProbe(shouldStop: () => boolean): {
 const ENGINE_LOST_STREAK = 3;
 const ENGINE_LOST_MIN_MS = 30_000;
 const ENGINE_LOST_BACKOFF_CAP_MS = 30_000;
+/** The close arm's re-read budget (WO-2, the 2026-10-22 input-prep
+ *  audit): under engine contention the FIRST salvage read can ride
+ *  the same bound the diagnosis rode — run-22b930e63fa1 completed
+ *  engine-side while both reads refused and the estate served
+ *  failed-with-no-artifacts. The close verdict re-reads history this
+ *  many times before the diagnosis stands. */
+const SALVAGE_ATTEMPTS = 3;
+/** The sleep between salvage re-reads: long enough for contention to
+ *  clear, short enough that a wedged engine's close stays bounded
+ *  (attempts × bound + sleeps, never a hang). */
+const SALVAGE_RETRY_SLEEP_MS = 1_000;
 /** Test seam for the engine-loss arm (production always omits it —
  *  the constants above are the measured tuning, not guesses). */
 export interface EngineLostPolicy {
@@ -245,6 +256,12 @@ export interface EngineLostPolicy {
   /** Test seam for the per-iteration queue/history read bound
    *  (production rides RAW_READ_BOUND_MS). */
   readonly readBoundMs?: number;
+  /** Test seam for the close arm's re-read budget (production rides
+   *  SALVAGE_ATTEMPTS). */
+  readonly salvageAttempts?: number;
+  /** Test seam for the salvage re-read sleep (production rides
+   *  SALVAGE_RETRY_SLEEP_MS). */
+  readonly salvageRetrySleepMs?: number;
 }
 
 /** The read-bound refusal's own type (2026-10-12): the abort reason
@@ -257,8 +274,8 @@ class EngineReadBoundError extends ComfyError {}
 /** One bounded history read after a read-bound abort: if the engine
  *  answers, the diagnosis was false and the answer decides the run
  *  (completed → the entry; failed → the engine's own truth; not
- *  terminal → polling resumes). A refused salvage stands the
- *  diagnosis — the engine really stopped answering. */
+ *  terminal → polling resumes). A refused read is one attempt —
+ *  salvageAtClose owns the budget. */
 async function salvageHistoryEntry(
   client: Client,
   promptId: string,
@@ -270,6 +287,37 @@ async function salvageHistoryEntry(
     boundMs,
     "GET /history (salvage)",
   );
+}
+
+/** The close arm (WO-2): a read-bound diagnosis is only final when
+ *  every salvage re-read refused — the observed contention case had
+ *  the engine COMPLETE the graph while both the poll and the first
+ *  salvage rode their bounds, and the run face served
+ *  failed-with-no-artifacts for work that landed. Each attempt is
+ *  bounded; a stop request or an exhausted run budget ends the arm
+ *  before the next attempt — the re-read never becomes a hang. */
+async function salvageAtClose(
+  client: Client,
+  promptId: string,
+  deadline: number,
+  shouldStop: () => boolean,
+  boundMs: number,
+  attempts: number,
+  sleepMs: number,
+): Promise<{ answered: boolean; entry?: Record<string, EngineJson> }> {
+  for (let attempt = 0; attempt < attempts; attempt++) {
+    if (attempt > 0) {
+      await new Promise((done) => setTimeout(done, sleepMs));
+      if (shouldStop() || deadline - Date.now() <= 0) break;
+    }
+    try {
+      const entry = await salvageHistoryEntry(client, promptId, boundMs);
+      return { answered: true, entry };
+    } catch {
+      // this attempt refused — the next re-read decides
+    }
+  }
+  return { answered: false };
 }
 export async function waitTerminal(
   client: Client,
@@ -332,33 +380,37 @@ export async function waitTerminal(
       downStreak = 0;
       cadence = 250;
     } catch (e) {
-      // THE SALVAGE READ (2026-10-12): the bound's diagnosis is "the
-      // engine stopped answering" — verify it before discarding the
-      // run. Live lane 2026-10-12 05:46: the queue poll hung its
-      // 10s bound while the engine executed the tagger in 3.16s and
-      // printed the tags; the old path interrupted and refused a
-      // COMPLETED run. One bounded history read now decides: an
-      // answered entry is the run's truth (completed returns it,
-      // failed refuses with the engine's detail), an answered
-      // not-terminal means the diagnosis was false and polling
-      // resumes, a refused salvage stands the diagnosis loud.
+      // THE CLOSE ARM (2026-10-12 salvage + WO-2 2026-10-22 re-read):
+      // the bound's diagnosis is "the engine stopped answering" —
+      // verify it before discarding the run. Live lane 2026-10-12
+      // 05:46: the queue poll hung its 10s bound while the engine
+      // executed the tagger in 3.16s and printed the tags; the old
+      // path interrupted and refused a COMPLETED run. Live lane
+      // 2026-10-22 (run-22b930e63fa1): under contention the first
+      // salvage rode its bound TOO, and the completed run served
+      // failed — the re-read arm owns the second look. An answered
+      // entry is the run's truth (completed returns it, failed
+      // refuses with the engine's detail), an answered not-terminal
+      // means the diagnosis was false and polling resumes, every
+      // attempt refused stands the diagnosis loud.
       if (e instanceof EngineReadBoundError) {
-        let salvaged: Record<string, EngineJson> | undefined;
-        let answered = false;
-        try {
-          salvaged = await salvageHistoryEntry(client, promptId, readBoundMs);
-          answered = true;
-        } catch {
-          // the salvage read refused — the diagnosis stands
-        }
-        if (answered) {
-          if (salvaged !== undefined) {
-            const verdict = mapHistoryEntry(salvaged);
+        const close = await salvageAtClose(
+          client,
+          promptId,
+          deadline,
+          shouldStop,
+          readBoundMs,
+          policy?.salvageAttempts ?? SALVAGE_ATTEMPTS,
+          policy?.salvageRetrySleepMs ?? SALVAGE_RETRY_SLEEP_MS,
+        );
+        if (close.answered) {
+          if (close.entry !== undefined) {
+            const verdict = mapHistoryEntry(close.entry);
             if (verdict.kind === "failed") {
               await bestEffortInterrupt(client, promptId);
               throw new ComfyError("ComfyUI run failed: " + verdict.detail);
             }
-            if (verdict.kind === "completed") return salvaged;
+            if (verdict.kind === "completed") return close.entry;
           }
           downStreak = 0;
           cadence = 250;

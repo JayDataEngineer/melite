@@ -37,6 +37,12 @@ export interface EngineLostPolicy {
     /** Test seam for the per-iteration queue/history read bound
      *  (production rides RAW_READ_BOUND_MS). */
     readonly readBoundMs?: number;
+    /** Test seam for the close arm's re-read budget (production rides
+     *  SALVAGE_ATTEMPTS). */
+    readonly salvageAttempts?: number;
+    /** Test seam for the salvage re-read sleep (production rides
+     *  SALVAGE_RETRY_SLEEP_MS). */
+    readonly salvageRetrySleepMs?: number;
 }
 export declare function waitTerminal(client: Client, promptId: string, deadline: number, shouldStop: () => boolean, policy?: EngineLostPolicy): Promise<Record<string, EngineJson>>;
 /** The tap's handle: the unhook itself (callable, the finally's

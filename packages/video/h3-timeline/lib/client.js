@@ -10209,13 +10209,6 @@ window.__ModuleLoader__.load({
 				step: strengthField?.step ?? .05
 			};
 		}
-		/**
-		* The generic arbitrary-kind list — the ONE key the frontend reads to decide
-		* which modifier rows to render. Declared-only (Phase A finalé): the backend
-		* emits ``features.modifiers`` from the catalog's ``modifiers:`` block and
-		* nothing else — the legacy client-side projection is deleted (rule 4).
-		* Returns ``[]`` when the family declares no modifier capability.
-		*/
 		function modifiersFeatureOf(formSpec) {
 			const raw = formSpec?.features?.modifiers;
 			return Array.isArray(raw) ? raw : [];

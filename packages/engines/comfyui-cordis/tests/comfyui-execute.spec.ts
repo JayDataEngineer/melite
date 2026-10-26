@@ -394,7 +394,10 @@ describe("waitTerminal (verdict order + the loop)", () => {
         }),
     } as Partial<Record<string, unknown>>);
     await expect(
-      waitTerminal(c, "p-1", Date.now() + 60_000, () => false, { readBoundMs: 40 }),
+      waitTerminal(c, "p-1", Date.now() + 60_000, () => false, {
+        readBoundMs: 40,
+        salvageAttempts: 1,
+      }),
     ).rejects.toThrow(/stopped answering its queue\/history reads/);
   });
   // THE SALVAGE READ (2026-10-12): live lane 05:46 — the queue poll
@@ -463,6 +466,54 @@ describe("waitTerminal (verdict order + the loop)", () => {
     ).resolves.toBeTruthy();
     expect(queueReads).toBe(2);
     expect(historyReads).toBe(2);
+  });
+  // THE CLOSE ARM'S RE-READ (WO-2, the 2026-10-22 input-prep audit):
+  // run-22b930e63fa1 completed engine-side under contention while
+  // BOTH the poll and the first salvage rode their 10s bounds — the
+  // run face served failed-with-no-artifacts for work that landed.
+  // The two arms pin the re-read: contention that clears mid-close
+  // returns the completed entry; a wedged engine that never answers
+  // still refuses loud (the re-read is bounded, never a hang).
+  it("a refused first salvage re-reads — a completed run never serves failed (WO-2 contention)", async () => {
+    let historyReads = 0;
+    const c = fakeClient({
+      fetchApi: (route: string, init?: { signal?: AbortSignal }): Promise<unknown> =>
+        new Promise((resolve, reject) => {
+          if (route.startsWith("/history")) {
+            historyReads++;
+            if (historyReads === 1) {
+              // the contention window: this salvage never answers —
+              // withBound's timer refuses it, the re-read decides
+              return;
+            }
+            resolve({ ok: true, json: async () => historyBody ?? {} } as unknown as never);
+            return;
+          }
+          init?.signal?.addEventListener("abort", () => reject(init.signal?.reason), { once: true });
+        }),
+    } as Partial<Record<string, unknown>>);
+    await expect(
+      waitTerminal(c, "p-1", Date.now() + 5_000, () => false, {
+        readBoundMs: 40,
+        salvageRetrySleepMs: 5,
+      }),
+    ).resolves.toBeTruthy();
+    expect(historyReads).toBe(2);
+  });
+  it("every salvage attempt refused stands the diagnosis loud (the close stays bounded)", async () => {
+    const c = fakeClient({
+      fetchApi: (_route: string, init?: { signal?: AbortSignal }): Promise<unknown> =>
+        new Promise((_resolve, reject) => {
+          init?.signal?.addEventListener("abort", () => reject(init.signal?.reason), { once: true });
+        }),
+    } as Partial<Record<string, unknown>>);
+    await expect(
+      waitTerminal(c, "p-1", Date.now() + 5_000, () => false, {
+        readBoundMs: 40,
+        salvageAttempts: 2,
+        salvageRetrySleepMs: 5,
+      }),
+    ).rejects.toThrow(/stopped answering its queue\/history reads/);
   });
   it("a refused interrupt never masks the cause (best-effort)", async () => {
     wireDeath = new ComfyError("stopped (interrupt delivered)");
