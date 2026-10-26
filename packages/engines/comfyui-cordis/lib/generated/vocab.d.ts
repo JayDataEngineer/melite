@@ -23,9 +23,6 @@ export type KindRunner = (typeof KindRunnerValues)[number];
 /** Universal sidebar sections (ActionCard.SIDEBAR_SECTIONS). */
 export declare const SidebarSectionValues: readonly ["3d", "audio", "image", "image-edit", "motion", "video"];
 export type SidebarSection = (typeof SidebarSectionValues)[number];
-/** Weight-tier vocabulary (grammar.Quant — native = no weights matrix). */
-export declare const QuantValues: readonly ["bf16", "f32", "fp8", "int8", "lightning4", "native"];
-export type Quant = (typeof QuantValues)[number];
 /** CLIPLoader type vocabulary (grammar.ClipType). */
 export declare const ClipTypeValues: readonly ["krea2", "lumina2", "minimax", "qwen_image", "stable_diffusion", "wan"];
 export type ClipType = (typeof ClipTypeValues)[number];

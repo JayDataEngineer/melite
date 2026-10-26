@@ -81,14 +81,7 @@ export const DECL = {
             "order": 0,
             "cells": [
                 {
-                    "quant": "bf16",
-                    "label": "BF16",
-                    "hide_from_dropdown": true,
-                    "route": "pixal3d-bf16",
-                    "vram_peak_gb": 12,
-                },
-                {
-                    "quant": "int8",
+                    "quant": "int8_convrot",
                     "label": "INT8 ConvRot",
                     "route": "pixal3d-int8",
                     "vram_peak_gb": 8,

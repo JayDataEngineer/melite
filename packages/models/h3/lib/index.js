@@ -95,13 +95,49 @@ export const DECL = {
             "hint": "The multi-window timeline — hybrid FL2VA/Ref2VA windows, SLA sparse attention, the film path.",
             "group": "Variant",
             "route": "h3-timeline",
+            // THE THREE-MEMBER OFFER (operator 2026-10-26: "INT8 != INT8
+            // CONVROT != INT8 CONVROT PRUNED — the system needs ALL
+            // THREE"): the timeline lane serves the smhfacct hybrid (its
+            // name carries no convrot mark — the coordinate states
+            // filename truth), the ALREADY-PROVISIONED Comfy-Org pruned
+            // ConvRot dit, and the 34 GB non-pruned ConvRot tier (digest
+            // and size verbatim from the HF tree API, 2026-10-26). No
+            // vram_peak is claimed on the new tiers until measured (the
+            // singularity precedent).
             "cells": [
                 {
                     "quant": "int8",
-                    "label": "INT8 ConvRot",
+                    "label": "INT8 Hybrid",
                     "route": "h3-timeline",
                     "vram_peak_gb": 30,
-                }
+                    "lane_inputs": {
+                        "unet": "minimax_h3_hybrid_fl2va_ref2va_b30-49-int8.safetensors",
+                    },
+                },
+                {
+                    "quant": "int8_convrot_pruned",
+                    "label": "INT8 ConvRot Pruned",
+                    "route": "h3-timeline-pruned",
+                    "lane_inputs": {
+                        "unet": "minimax_h3_fl2va_pruned_int8_convrot.safetensors",
+                    },
+                },
+                {
+                    "quant": "int8_convrot",
+                    "label": "INT8 ConvRot",
+                    "route": "h3-timeline-convrot",
+                    "lane_inputs": {
+                        "unet": "minimax_h3_fl2va_int8_convrot.safetensors",
+                    },
+                    "artifact": {
+                        "source_url": "https://huggingface.co/Comfy-Org/MiniMax-H3/resolve/main/diffusion_models/minimax_h3_fl2va_int8_convrot.safetensors",
+                        "size_bytes": 34038892334,
+                        "sha256": "7ad4c73e6e378b822ffd1629f27f632d3787d95f5e468e3af958f98c58df96a5",
+                        "dest_root": "COMFYUI_ROOT",
+                        "dest_sub": "diffusion_models",
+                        "size_hint_gb": 34,
+                    },
+                },
             ]
         },
         // THE SINGULARITY CHECKPOINT ROW (operator, 2026-10-17: "ship
@@ -132,7 +168,7 @@ export const DECL = {
             },
             "cells": [
                 {
-                    "quant": "int8",
+                    "quant": "int8_pruned",
                     "label": "INT8 Pruned",
                     "route": "h3-singularity",
                 }
@@ -319,13 +355,6 @@ export const DECL = {
             "sha256": "64f57f77ed85df04f7c0989ab84a5c3c110fb43a40dbc9badfe8ab2d5baafbca",
             "size_bytes": 20970379632
         },
-        {
-            "name": "minimax_h3_hybrid_fl2va_ref2va_b25-49-int8.safetensors",
-            "url": "https://huggingface.co/smhfacct/Minimax-H3-fl2va-ref2va-hybrid-models/resolve/main/minimax_h3_hybrid_fl2va_ref2va_b25-49-int8.safetensors",
-            "folder": "diffusion_models",
-            "sha256": "a629cfea8d89a071b140c6e1935dc9a23e72de6badc18975a2bb9e6d1423d76d",
-            "size_bytes": 20970379632
-        },
         // THE SINGULARITY CHECKPOINT (the variant row above): digest and
         // byte size read verbatim from the HF tree API (xet lfs oid),
         // 2026-10-17. The pruned int8 over the full 34 GB int8 and the
@@ -338,22 +367,15 @@ export const DECL = {
             "sha256": "412a7b126595a958964193f3b42513d7cf2df4196ef04223a0f05e3622949cce",
             "size_bytes": 20967647456
         },
-        // THE FOLDED SINGLE-SHOT WEIGHTS (roadmap §8 — inherited from
-        // the dead h3 family verbatim: the fl2va/ref2va lanes load
-        // their own UNETs; the nvfp4 encoder + fp16 VAE are their
-        // alternates)
+        // THE PRUNED CONVROT TIER's FILE (the timeline's
+        // int8_convrot_pruned cell serves it — the 2026-10-26 quant
+        // cure; the ref2va sibling and the retired single-shot lanes'
+        // orphan rows died with it)
         {
             "name": "minimax_h3_fl2va_pruned_int8_convrot.safetensors",
             "url": "https://huggingface.co/Comfy-Org/MiniMax-H3/resolve/main/diffusion_models/minimax_h3_fl2va_pruned_int8_convrot.safetensors",
             "folder": "diffusion_models",
             "sha256": "e889202c41dafb67b10d67b97f0d8541508036a6090af23425a5c2615d03c47a",
-            "size_bytes": 20970379616
-        },
-        {
-            "name": "minimax_h3_ref2va_pruned_int8_convrot.safetensors",
-            "url": "https://huggingface.co/Comfy-Org/MiniMax-H3/resolve/main/diffusion_models/minimax_h3_ref2va_pruned_int8_convrot.safetensors",
-            "folder": "diffusion_models",
-            "sha256": "9255f52b6677845ad238f20dfaafa94727053694127ab7f255c048f0f9365779",
             "size_bytes": 20970379616
         },
         {

@@ -123,7 +123,7 @@ describe("the declared provisions are pinned verbatim", () => {
 const CELL_ARTIFACT_PINS: ReadonlyArray<
   readonly [variant: string, quant: string, source_url: string, sha256: string, size_bytes: number, dest_root: string, dest_sub: string]
 > = [
-  ["sft", "int8", "https://huggingface.co/Comfy-Org/MOSS-Image/resolve/main/diffusion_models/moss_image_sft_int8_convrot.safetensors", "b4d1475bc7eeffd7b809e82ea13a1fba1fb85c4e18365af3813722faa5c0fe4f", 5413698958, "COMFYUI_ROOT", "diffusion_models"],
+  ["sft", "int8_convrot", "https://huggingface.co/Comfy-Org/MOSS-Image/resolve/main/diffusion_models/moss_image_sft_int8_convrot.safetensors", "b4d1475bc7eeffd7b809e82ea13a1fba1fb85c4e18365af3813722faa5c0fe4f", 5413698958, "COMFYUI_ROOT", "diffusion_models"],
   ["sft", "bf16", "https://huggingface.co/Comfy-Org/MOSS-Image/resolve/main/diffusion_models/moss_image_sft_bf16.safetensors", "f96738d8116d78b7316b57c663d8c98591ddafab7488f48e3099b7655e34ab6f", 10164655808, "COMFYUI_ROOT", "diffusion_models"],
 ];
 

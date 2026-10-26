@@ -49,7 +49,7 @@ export const DECL: ModelDecl = {
         {
           // The stale source died (2026-10-13): the lane loads the
           // Comfy-Org checkpoint the provisions row carries.
-          "quant": "int8",
+          "quant": "int8_convrot",
           "label": "INT8 ConvRot",
           "route": "yue2",
           "vram_peak_gb": 8,

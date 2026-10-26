@@ -53,6 +53,17 @@ const NAMED_QUANTS = {
     fp16: "encoding",
     int8: "encoding",
     int8_convrot: "encoding",
+    // THE THIRD MEMBER (operator 2026-10-26: "INT8 != INT8 CONVROT !=
+    // INT8 CONVROT PRUNED — the system needs ALL THREE"): the pruned
+    // ConvRot tier, carried upstream as *_pruned_int8_convrot
+    // (Comfy-Org MiniMax-H3; music3's text encoder filenames it).
+    int8_convrot_pruned: "encoding",
+    // The pruned tier whose upstream names carry NO convrot mark
+    // (WarmBloodAban Singularity *_Pruned_v1.3_int8): the coordinate
+    // states filename truth only. Sizes match the Comfy-Org convrot
+    // line exactly — re-stamp to int8_convrot_pruned ONLY when the
+    // bench audition the h3 DECL owes proves convrot (decl hint).
+    int8_pruned: "encoding",
     fp8: "encoding",
     f32: "placeholder",
     native: "placeholder",

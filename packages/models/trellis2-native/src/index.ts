@@ -92,14 +92,7 @@ export const DECL: ModelDecl = {
       "order": 0,
       "cells": [
         {
-          "quant": "bf16",
-          "label": "BF16",
-          "hide_from_dropdown": true,
-          "route": "trellis2-native-bf16",
-          "vram_peak_gb": 12,
-        },
-        {
-          "quant": "int8",
+          "quant": "int8_convrot",
           "label": "INT8 ConvRot",
           "route": "trellis2-native-int8",
           "vram_peak_gb": 8,

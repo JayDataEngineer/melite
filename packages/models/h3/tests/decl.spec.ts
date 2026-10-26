@@ -124,8 +124,7 @@ describe("the h3 model plugin (the ONE H3 family — timeline + single-shot + ke
 
   it("the provisions union — the single-shot weights ride the ONE family", () => {
     const names = new Set((DECL.provisions ?? []).map((p) => p.name));
-    assert.ok(names.has("minimax_h3_fl2va_pruned_int8_convrot.safetensors"), "the single-shot FL2VA UNET rides");
-    assert.ok(names.has("minimax_h3_ref2va_pruned_int8_convrot.safetensors"), "the single-shot Ref2VA UNET rides");
+    assert.ok(names.has("minimax_h3_fl2va_pruned_int8_convrot.safetensors"), "the pruned ConvRot tier's served file rides");
     assert.ok(names.has("minimax_h3_hybrid_fl2va_ref2va_b30-49-int8.safetensors"), "the timeline hybrid UNET stays");
     assert.ok(names.has("Minimax-h3_Singularity_ref2va_Pruned_v1.3_int8.safetensors"), "the singularity checkpoint rides");
   });
@@ -195,10 +194,8 @@ const PROVISION_PINS: ReadonlyArray<
   readonly [name: string, sha256: string, url: string, size_bytes: number]
 > = [
   ["minimax_h3_hybrid_fl2va_ref2va_b30-49-int8.safetensors", "64f57f77ed85df04f7c0989ab84a5c3c110fb43a40dbc9badfe8ab2d5baafbca", "https://huggingface.co/smhfacct/Minimax-H3-fl2va-ref2va-hybrid-models/resolve/main/minimax_h3_hybrid_fl2va_ref2va_b30-49-int8.safetensors", 20970379632],
-  ["minimax_h3_hybrid_fl2va_ref2va_b25-49-int8.safetensors", "a629cfea8d89a071b140c6e1935dc9a23e72de6badc18975a2bb9e6d1423d76d", "https://huggingface.co/smhfacct/Minimax-H3-fl2va-ref2va-hybrid-models/resolve/main/minimax_h3_hybrid_fl2va_ref2va_b25-49-int8.safetensors", 20970379632],
   ["Minimax-h3_Singularity_ref2va_Pruned_v1.3_int8.safetensors", "412a7b126595a958964193f3b42513d7cf2df4196ef04223a0f05e3622949cce", "https://huggingface.co/WarmBloodAban/Minimax-h3_Singularity/resolve/main/Minimax-h3_Singularity_ref2va_Pruned_v1.3_int8.safetensors", 20967647456],
   ["minimax_h3_fl2va_pruned_int8_convrot.safetensors", "e889202c41dafb67b10d67b97f0d8541508036a6090af23425a5c2615d03c47a", "https://huggingface.co/Comfy-Org/MiniMax-H3/resolve/main/diffusion_models/minimax_h3_fl2va_pruned_int8_convrot.safetensors", 20970379616],
-  ["minimax_h3_ref2va_pruned_int8_convrot.safetensors", "9255f52b6677845ad238f20dfaafa94727053694127ab7f255c048f0f9365779", "https://huggingface.co/Comfy-Org/MiniMax-H3/resolve/main/diffusion_models/minimax_h3_ref2va_pruned_int8_convrot.safetensors", 20970379616],
   ["qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors", "35a88d51044231fe332301d7a62aa81e3f2cba62febeb446e2c1e3e0ef76f2c6", "https://huggingface.co/Comfy-Org/MiniMax-H3/resolve/main/text_encoders/qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors", 15687142551],
   ["minimax_h3_video_vae_fp16.safetensors", "7c1f131492e7eddacaac9069a61b81bdd39de5cc96561e677c5eab1cdce5e522", "https://huggingface.co/Comfy-Org/MiniMax-H3/resolve/main/vae/minimax_h3_video_vae_fp16.safetensors", 5207808496],
   ["minimax_h3_fl2v_lightx2v_v0.1_dareties_v4_step600_comfy_fro.safetensors", "ffc5386a1b97aa1bc112b56378f37ef3c1cc69d55d5282281e8c6c728811e710", "https://huggingface.co/silveroxides/MiniMax-H3_tests/resolve/main/minimax_h3_fl2v_lightx2v_v0.1_dareties_v4_step600_comfy_fro.safetensors", 867067150],

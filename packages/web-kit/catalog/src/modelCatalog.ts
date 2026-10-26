@@ -11,7 +11,7 @@
 // familyLabel("krea-2-sd-q8") // → "Krea 2"
 // dropdownModels("form_generate") // → ["anima","ideogram4",...]
 // variantSiblings("krea-2") // → ["krea-2","krea-2-raw",...]
-// variantsForRoute("krea-2") // → [{id:"int8",quant:"int8",route:"krea-2",...}]
+// variantsForRoute("krea-2") // → [{id:"int8_convrot",quant:"int8_convrot",route:"krea-2",...}]
 // modelLabel("krea-2") // → "Krea 2"
 
 import { apiJson } from "./api.ts"

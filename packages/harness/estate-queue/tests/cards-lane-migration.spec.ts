@@ -128,10 +128,12 @@ const CENSUS_SKIP_ROSTER: readonly string[] = [
   // hidden from the dropdown ("not offered") — variant selection
   // throws before composition, so these lanes never compose and can
   // carry no riders. A newly offered 3D lane reds here.
-  ...[
-    "pixal3d-bf16", "pixal3d-int8",
-    "trellis2-native-bf16", "trellis2-native-int8",
-  ].flatMap((fam) => ["1024", "fast", "quality", "standard"].map((lane) => fam + "/" + lane)),
+  // (2026-10-26 quant cure) the pixal3d + trellis2 3D lanes LEFT
+  // the skip set: their phantom bf16 cells (a convrot file under a
+  // bf16 face, hide_from_dropdown) died and the surviving
+  // int8_convrot lanes' selections compose — the addresses are no
+  // longer dropdown-less dead doors. A 3D lane re-entering the skip
+  // set reds here.
   // qwen-img-edit-2511 (the soft-retire, 2026-11-08): all five
   // variants carry hide_from_dropdown, so every lane's selection
   // throws and no 2511 lane composes — same never-compose posture

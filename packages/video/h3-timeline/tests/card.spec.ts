@@ -298,8 +298,8 @@ describe("THE EVERY-ADDRESS WALL — every served address composes through the f
     assert.ok(rows.length >= 1, `expected the served h3-timeline addresses, found ${String(rows.length)}`);
     assert.deepEqual(
       rows.map((r) => r.id).sort(),
-      ["h3", "h3-singularity", "h3-timeline"],
-      "the family head plus its TWO lanes (the folded single-shot/keyframe addresses retired)",
+      ["h3", "h3-singularity", "h3-timeline", "h3-timeline-convrot", "h3-timeline-pruned"],
+      "the family head, its TWO checkpoint lanes, and the timeline's three-member quant-tier cell routes (2026-10-26 quant cure — the folded single-shot/keyframe addresses stay retired)",
     );
   });
 

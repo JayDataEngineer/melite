@@ -17,8 +17,11 @@ export const BadgeToneValues = ["brand", "default"];
 export const KindRunnerValues = ["", "input"];
 /** Universal sidebar sections (ActionCard.SIDEBAR_SECTIONS). */
 export const SidebarSectionValues = ["3d", "audio", "image", "image-edit", "motion", "video"];
-/** Weight-tier vocabulary (grammar.Quant — native = no weights matrix). */
-export const QuantValues = ["bf16", "f32", "fp8", "int8", "lightning4", "native"];
+// QuantValues/Quant REMOVED (the 2026-10-26 quant-vocab burn): a
+// second frozen weight-tier list with zero importers, missing
+// int8_convrot/fp16 and the size pattern — it contradicted the
+// canon (web-kit/contracts/src/planes.ts NAMED_QUANTS, judged at
+// registration) while nothing reded. The canon is the one vocab.
 /** CLIPLoader type vocabulary (grammar.ClipType). */
 export const ClipTypeValues = ["krea2", "lumina2", "minimax", "qwen_image", "stable_diffusion", "wan"];
 /** Empty-latent constructor vocabulary (grammar.LatentNode). */

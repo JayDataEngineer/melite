@@ -342,14 +342,14 @@ describe.sequential("estate provisioning composition paths", () => {
     // 2026-10-12 union: the plan carries BOTH channels — the
     // family's provisions rows ride coordinateless, the variant-cell
     // artifact keeps its (variant, quant) coordinates
-    const coordinates = await ctx.provisioning.plan({ kind: "model", owner: "family", id: "krea-2-raw", variant: "raw", quant: "int8" });
+    const coordinates = await ctx.provisioning.plan({ kind: "model", owner: "family", id: "krea-2-raw", variant: "raw", quant: "int8_convrot" });
     const coordinateless = coordinates.items.filter((i) => (i as Extract<ProvisionPlanItem, { kind: "model" }>).variant === undefined);
     assert.equal(coordinateless.length > 0, true, "the provisions rows ride without coordinates");
     const coordinatesItem = coordinates.items.find((i) => (i as Extract<ProvisionPlanItem, { kind: "model" }>).variant === "raw") as Extract<ProvisionPlanItem, { kind: "model" }>;
-    assert.equal(coordinatesItem.quant, "int8");
+    assert.equal(coordinatesItem.quant, "int8_convrot");
     const route = await ctx.provisioning.plan({ kind: "model", owner: "family", id: "krea-2" });
     const routeItem = route.items.find((i) => (i as Extract<ProvisionPlanItem, { kind: "model" }>).variant === "turbo") as Extract<ProvisionPlanItem, { kind: "model" }>;
-    assert.equal(routeItem.quant, "int8");
+    assert.equal(routeItem.quant, "int8_convrot");
     const card = await ctx.provisioning.plan({ kind: "model", owner: "card", id: "card-model" });
     const cardItem = card.items[0] as Extract<ProvisionPlanItem, { kind: "model" }>;
     assert.equal(cardItem.name, "model.bin");

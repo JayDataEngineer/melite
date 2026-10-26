@@ -106,7 +106,7 @@ const CELL_ARTIFACT_PINS: ReadonlyArray<
   readonly [variant: string, quant: string, source_url: string, sha256: string, size_bytes: number, dest_root: string, dest_sub: string]
 > = [
   ["lightning", "lightning4", "https://huggingface.co/lightx2v/Qwen-Image-Edit-2511-Lightning/resolve/main/qwen_image_edit_2511_fp8_e4m3fn_scaled_lightning_comfyui_4steps_v1.0.safetensors", "16d03fd9bab36b0a588e77db23825629df62ab99fc3e62f3a36887b201dcc36f", 20447469486, "COMFYUI_ROOT", "diffusion_models"],
-  ["standard", "int8", "https://huggingface.co/Comfy-Org/Qwen-Image-Edit_ComfyUI/resolve/main/split_files/diffusion_models/qwen_image_edit_2511_int8_convrot.safetensors", "11b5af5ac601821d73930c84846c9a158e67177356daf927ce1c8d10f3963829", 20499083824, "COMFYUI_ROOT", "diffusion_models"],
+  ["standard", "int8_convrot", "https://huggingface.co/Comfy-Org/Qwen-Image-Edit_ComfyUI/resolve/main/split_files/diffusion_models/qwen_image_edit_2511_int8_convrot.safetensors", "11b5af5ac601821d73930c84846c9a158e67177356daf927ce1c8d10f3963829", 20499083824, "COMFYUI_ROOT", "diffusion_models"],
 ];
 
 describe("the declared cell artifacts are pinned verbatim", () => {

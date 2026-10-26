@@ -117,7 +117,7 @@ export const DECL: ModelDecl = {
       // never the variant.
       "cells": [
         {
-          "quant": "int8",
+          "quant": "int8_convrot",
           "label": "INT8 ConvRot",
           "route": "moss-image",
           "lane_inputs": {

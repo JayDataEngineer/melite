@@ -31,7 +31,7 @@ export const DECL = {
                     // The stale source died (2026-10-13): the lane loads the
                     // Comfy-Org safetensors the provisions rows carry, never a
                     // GGUF tree.
-                    "quant": "int8",
+                    "quant": "int8_convrot",
                     "label": "INT8 ConvRot",
                     "route": "music3",
                     "vram_peak_gb": 20,

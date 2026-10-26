@@ -355,7 +355,7 @@ describe('THE ESTATE CONTRACT LAWS (every card × family × mod, three faces)', 
     const served = new Set(
       (arm!.doc.variants ?? []).map((r) => r.route ?? '').filter((r) => r !== ''),
     )
-    expect([...served].sort(), 'the family head plus its TWO checkpoint lanes serve — nothing else').toEqual(['h3', 'h3-singularity', 'h3-timeline'])
+    expect([...served].sort(), 'the family head, its TWO checkpoint lanes, and the timeline\'s three quant-tier cell routes serve — nothing else (the 2026-10-26 three-member offer)').toEqual(['h3', 'h3-singularity', 'h3-timeline', 'h3-timeline-convrot', 'h3-timeline-pruned'])
     expect(() => getModel('h3-timeline'), 'the lane address derives').not.toThrow()
     expect(() => getModel('h3-singularity'), 'the second checkpoint lane derives').not.toThrow()
     expect(() => getModel('h3'), 'the family id derives (the auto-head law)').not.toThrow()

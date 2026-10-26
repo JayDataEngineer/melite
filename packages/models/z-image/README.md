@@ -9,7 +9,7 @@ kind: package-library
 
 ## Declaration
 
-Variants: `turbo` (the 8-step distilled default) and `base` (undistilled, more steps, top quality), each with an INT8 cell at a declared ~14 GB VRAM peak; recipe rows `realism` and `dejpeg` stamp the matching LoRA at its declared 0.7 / 1.0 strength. Family defaults: 1024x1024, 8 steps, `res_multistep` / `simple`, cfg 1. `lane_inputs` fixes `clip_type` lumina2, the `EmptySD3LatentImage` latent class (a drifted class refuses at the facts door), sampling shift 3, and the three weights — `qwen_3_4b` text encoder, `z_image_turbo_int8_convrot` unet, `ae` VAE — all provisioned with sha256 digests. `relations.required` names `prompt`: every image lane states what the picture is.
+Variants: `turbo` (the 8-step distilled default) and `base` (undistilled, more steps, top quality — no base checkpoint exists upstream, Comfy-Org ships Turbo only: both lanes load the Turbo INT8 ConvRot weights), each with an `int8_convrot` cell at a declared ~14 GB VRAM peak; recipe rows `realism` and `dejpeg` stamp the matching LoRA at its declared 0.7 / 1.0 strength. Family defaults: 1024x1024, 8 steps, `res_multistep` / `simple`, cfg 1. `lane_inputs` fixes `clip_type` lumina2, the `EmptySD3LatentImage` latent class (a drifted class refuses at the facts door), sampling shift 3, and the three weights — `qwen_3_4b` text encoder, `z_image_turbo_int8_convrot` unet, `ae` VAE — all provisioned with sha256 digests. `relations.required` names `prompt`: every image lane states what the picture is.
 
 ## Mods
 

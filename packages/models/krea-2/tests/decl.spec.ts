@@ -127,11 +127,11 @@ describe("the declared provisions are pinned verbatim", () => {
 const CELL_ARTIFACT_PINS: ReadonlyArray<
   readonly [variant: string, quant: string, source_url: string, sha256: string, size_bytes: number, dest_root: string, dest_sub: string]
 > = [
-  ["turbo", "int8", "https://huggingface.co/Comfy-Org/Krea-2/resolve/main/diffusion_models/krea2_turbo_int8_convrot.safetensors", "8e4eeda70dd5037ab1ba2bef6b417f9f901e26093117cf397f741fc1fdaaf3f1", 13492686496, "COMFYUI_ROOT", "diffusion_models"],
-  ["raw", "int8", "https://huggingface.co/Comfy-Org/Krea-2/resolve/main/diffusion_models/krea2_raw_int8_convrot.safetensors", "5585a4a38c4bcfb6fde2d480a4aa6edf7f665721ebde56d30662c35a45f5fa5c", 13492686496, "COMFYUI_ROOT", "diffusion_models"],
+  ["turbo", "int8_convrot", "https://huggingface.co/Comfy-Org/Krea-2/resolve/main/diffusion_models/krea2_turbo_int8_convrot.safetensors", "8e4eeda70dd5037ab1ba2bef6b417f9f901e26093117cf397f741fc1fdaaf3f1", 13492686496, "COMFYUI_ROOT", "diffusion_models"],
+  ["raw", "int8_convrot", "https://huggingface.co/Comfy-Org/Krea-2/resolve/main/diffusion_models/krea2_raw_int8_convrot.safetensors", "5585a4a38c4bcfb6fde2d480a4aa6edf7f665721ebde56d30662c35a45f5fa5c", 13492686496, "COMFYUI_ROOT", "diffusion_models"],
   // 2026-11-07, the kroma lanes: the pins below are the HF-API lfs
   // oids (sha256) + byte sizes, verbatim.
-  ["kroma", "int8", "https://huggingface.co/silveroxides/Kroma-Quant/resolve/main/kroma-v0.3.1-turbo-opd-int8-convrot.safetensors", "36afdaeeea578ea577ae151fb2f9b58836b2a0538acf1cede74244cdbb5cfdd4", 14135109816, "COMFYUI_ROOT", "diffusion_models"],
+  ["kroma", "int8_convrot", "https://huggingface.co/silveroxides/Kroma-Quant/resolve/main/kroma-v0.3.1-turbo-opd-int8-convrot.safetensors", "36afdaeeea578ea577ae151fb2f9b58836b2a0538acf1cede74244cdbb5cfdd4", 14135109816, "COMFYUI_ROOT", "diffusion_models"],
   ["kroma", "bf16", "https://huggingface.co/lodestones/Kroma/resolve/main/kroma-v0.3.1-turbo-opd.safetensors", "3cfb5bc847c804ea8e8f894677f7e16ebe4c9ff0f978896cc5e7eb1e64fc7d82", 26283332880, "COMFYUI_ROOT", "diffusion_models"],
   ["kroma-base", "bf16", "https://huggingface.co/silveroxides/Kroma-Quant/resolve/main/kroma-v0.3-base-dtype-mapped.safetensors", "83a275d770d7b730b341aab35a1001ff22f12aa6e80310843299751b42f6f81b", 26284337464, "COMFYUI_ROOT", "diffusion_models"],
 ];

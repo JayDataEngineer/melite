@@ -15,7 +15,7 @@ Beyond the package entry, the manifest exports `./mods/loras` (the flavor rows),
 
 ## Declaration
 
-`src/index.ts` declares the DECL and the `family-h3` plugin; the subpath modules above are the family's published seams for the card, the flow, and the agents that read them. The timeline lane serves a two-row checkpoint axis (the de-dup ruling named distinct checkpoints, not one): the hybrid `minimax_h3_hybrid_fl2va_ref2va_b30-49-int8` default beside the community Singularity fine-tune — a per-variant `lane_inputs.unet` override, pick-only, with the first+last-frame audition and the VRAM peak owed to the bench experiments.
+`src/index.ts` declares the DECL and the `family-h3` plugin; the subpath modules above are the family's published seams for the card, the flow, and the agents that read them. The timeline lane serves a three-member quant offer (the 2026-10-26 quant cure: "the system needs ALL THREE"): `int8` (the smhfacct hybrid default), `int8_convrot_pruned` (the Comfy-Org pruned ConvRot dit, already provisioned), and `int8_convrot` (the 34 GB non-pruned tier, a per-cell artifact) — beside the community Singularity fine-tune at `int8_pruned` (pruned int8, convrot unstated upstream; a per-variant `lane_inputs.unet` override, pick-only, with the first+last-frame audition and the VRAM peaks owed to the bench experiments).
 
 ## Model Experience
 

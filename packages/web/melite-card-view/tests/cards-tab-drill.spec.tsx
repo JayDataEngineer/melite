@@ -1090,7 +1090,7 @@ function stubFetchWall(docs: Record<string, Record<string, unknown>>): void {
  *  doc). */
 function burnParams(withBag: boolean): Record<string, unknown> {
   return {
-    model: "krea-2", variant: "turbo", quant: "int8", prompt: "the burn",
+    model: "krea-2", variant: "turbo", quant: "int8_convrot", prompt: "the burn",
     ...(withBag ? { loras: [{ id: "krea2_realism_lora" }] } : {}),
   };
 }

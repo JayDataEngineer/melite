@@ -302,7 +302,7 @@ describe('live door arms', () => {
     assert.equal(typeof table['tts']!['order'], 'number')
   })
 
-  test('THE SERVED QUANT AXIS SPEAKS ONE WORD (operator, 2026-11-08: "the shared vocabularity never came though" — the h3 burn: Timeline and Singularity both ride int8)', async () => {
+  test('THE SERVED QUANT AXIS NAMES THE FILE TRUTH (operator, 2026-10-26: "INT8 != INT8 CONVROT != INT8 CONVROT PRUNED — the system needs ALL THREE" — supersedes the 2026-11-08 shared-int8 pin: the shared word was the collapse)', async () => {
     const doc = await formSpecSweep('h3') as FormSpecDoc | null
     assert.ok(doc, 'the served h3 form-spec answers')
     const quants = (doc.variants ?? []).filter((r) => r.group === 'Quant')
@@ -313,11 +313,15 @@ describe('live door arms', () => {
       [],
       'the mint is dead — every served Quant row id IS its coordinate (the door-refused composite word serves nowhere)',
     )
-    const int8s = quants.filter((r) => r.quant === 'int8')
     assert.deepEqual(
-      int8s.map((r) => [r.id, r.owner]).sort(),
-      [['int8', 'singularity'], ['int8', 'timeline']],
-      'both variants speak the one shared int8 word — the variant axis carries the switch, the quant word never moves',
+      quants.map((r) => [r.quant, r.owner]).sort(),
+      [
+        ['int8', 'timeline'],
+        ['int8_convrot', 'timeline'],
+        ['int8_convrot_pruned', 'timeline'],
+        ['int8_pruned', 'singularity'],
+      ],
+      'every served Quant row names its file\'s real tier — the hybrid speaks int8, the pruned ConvRot dit speaks int8_convrot_pruned, the 34 GB ConvRot tier speaks int8_convrot, and the Singularity pruned file (convrot unstated upstream) speaks int8_pruned — three members on the timeline, never one collapsed word',
     )
   })
 

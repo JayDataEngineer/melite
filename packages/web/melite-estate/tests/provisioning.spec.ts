@@ -29,7 +29,7 @@ describe('the provisioning declaration path', () => {
         expect(plan.items.length).toBeGreaterThan(0)
         expect(plan.items.every((item) => item.kind === 'model' && item.owner === 'family' && item.id === id)).toBe(true)
         if (id === 'krea-2-raw') {
-          expect(plan.items.some((item) => item.kind === 'model' && item.name === 'krea2_raw_int8_convrot.safetensors' && item.variant === 'raw' && item.quant === 'int8')).toBe(true)
+          expect(plan.items.some((item) => item.kind === 'model' && item.name === 'krea2_raw_int8_convrot.safetensors' && item.variant === 'raw' && item.quant === 'int8_convrot')).toBe(true)
         }
       }
     } finally {

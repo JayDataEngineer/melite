@@ -210,7 +210,7 @@ export const DECL: ModelDecl = {
       },
       "cells": [
         {
-          "quant": "int8",
+          "quant": "int8_convrot",
           "label": "INT8 ConvRot",
           "route": "qwen-img-edit-2511-int8",
           "vram_peak_gb": 20,

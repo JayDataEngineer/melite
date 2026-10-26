@@ -884,7 +884,11 @@ describe("models against cards (the cross-validation, resurrected)", () => {
     // 71 -> 72 (2026-11-08, the drift lock): qwen-img-edit-21's
     // consistency LoRA joins (the AusBoss row, sha256 + size pinned
     // in the DECL) — the Δ4 drift-lock recipe's own download.
-    const PROVISION_ROW_COUNT = 74;
+    // 74 -> 72 (2026-10-26 machine, the quant cure): h3's unservable
+// provisions died — the ref2va pruned dit (its single-shot route is
+// retired; no lane can load it) and the b25-49 hybrid alternate
+// (nothing references it). Dead disk is not a provision.
+const PROVISION_ROW_COUNT = 72;
     const declarers: string[] = [];
     let judged = 0;
     for (const id of registryIds()) {
@@ -1010,7 +1014,9 @@ describe("models against cards (the cross-validation, resurrected)", () => {
     // 21 -> 14, 17 -> 10 (2026-10-12, the operator's five-family
     // kill): ace-step's 4 and moss's 3 per-cell gguf artifacts and
     // their 7 distinct upstream urls die with the families.
-    const ARTIFACT_ROW_COUNT = 21 - 7 + 5 + 5 + 4; // +2 (2026-10-23, the operator's turbo call): the qwen 2.1 turbo cells // +2 (2026-10-24, THE 2.1 MATRIX RESHAPE): the edit lane's turbo cells join with the fold // +5 (2026-10-16, the anima three checkpoints): three Bedovyy convrot + two official bf16 // +5 (2026-11-07, the operator's drop): kroma's two turbo quants + kroma-base's dtype-mapped cell, and moss-image's int8 + bf16 pair // +4 (2026-11-08, the third edit lane): fibo2-edit's dev + edit-turbo, each int8_convrot + bf16
+    // +1 (2026-10-26 machine, the quant cure): h3's 34 GB non-pruned
+    // ConvRot tier boards as a per-cell artifact (the three-member offer).
+    const ARTIFACT_ROW_COUNT = 21 - 7 + 5 + 5 + 4 + 1; // +2 (2026-10-23, the operator's turbo call): the qwen 2.1 turbo cells // +2 (2026-10-24, THE 2.1 MATRIX RESHAPE): the edit lane's turbo cells join with the fold // +5 (2026-10-16, the anima three checkpoints): three Bedovyy convrot + two official bf16 // +5 (2026-11-07, the operator's drop): kroma's two turbo quants + kroma-base's dtype-mapped cell, and moss-image's int8 + bf16 pair // +4 (2026-11-08, the third edit lane): fibo2-edit's dev + edit-turbo, each int8_convrot + bf16
     const artifacts: Array<{ id: string; url: string }> = [];
     for (const id of registryIds()) {
       const decl = registryModel(id) as { variants?: Array<{ cells?: Array<{ artifact?: unknown }> }> };
@@ -1048,8 +1054,12 @@ describe("models against cards (the cross-validation, resurrected)", () => {
     // 6 -> 7 (2026-11-08, the third edit lane): fibo2-edit's four
     // cells ride its own repo's four checkpoint urls (no sharing —
     // the Fibo files are its own).
-    assert.deepEqual(ARTIFACT_DECLARERS, ["anima", "fibo2-edit", "flux-klein", "krea-2", "moss-image", "qwen-img-21", "qwen-img-edit-21", "qwen-img-edit-2511"],
-      `the artifact declarers are the named 8 (saw ${ARTIFACT_DECLARERS.join(", ")}) — a family starting or stopping its cell-artifact channel is a deliberate edit`);
+    // 7 -> 8 (2026-10-26 machine, the quant cure): h3's timeline
+    // gains the 34 GB non-pruned ConvRot tier as a per-cell
+    // artifact (the three-member offer — digest from the HF tree).
+    // 8 -> 9: the named roster carries h3.
+    assert.deepEqual(ARTIFACT_DECLARERS, ["anima", "fibo2-edit", "flux-klein", "h3", "krea-2", "moss-image", "qwen-img-21", "qwen-img-edit-21", "qwen-img-edit-2511"],
+      `the artifact declarers are the named 9 (saw ${ARTIFACT_DECLARERS.join(", ")}) — a family starting or stopping its cell-artifact channel is a deliberate edit`);
     assert.equal(artifacts.length, ARTIFACT_ROW_COUNT,
       `the variant-cell artifact rows are exactly ${String(ARTIFACT_ROW_COUNT)} (saw ${String(artifacts.length)}) — a cell appearing or leaving is a deliberate edit`);
     // deduped by url the same way the union walk dedupes —

@@ -54,7 +54,7 @@ export const DECL = {
             "resolver_defaults": { "steps": 8, "cfg": 1 },
             "cells": [
                 {
-                    "quant": "int8",
+                    "quant": "int8_convrot",
                     "label": "INT8 ConvRot",
                     "route": "z-image-int8",
                     "vram_peak_gb": 14,
@@ -64,7 +64,7 @@ export const DECL = {
         {
             "id": "base",
             "label": "Base",
-            "hint": "The full base model - no distillation; more steps, top quality. Official truth: 25 steps, cfg 4 (card range 3.0–5.0; real negative path — cfg 1 is turbo-only).",
+            "hint": "The base recipe lane — no distillation; more steps, top quality. No base checkpoint exists upstream (Comfy-Org ships Turbo only): the lane loads the Turbo INT8 ConvRot weights. Official truth: 25 steps, cfg 4 (card range 3.0–5.0; real negative path — cfg 1 is turbo-only).",
             "group": "Variant",
             "route": "z-image-base",
             "order": 1,
@@ -81,8 +81,8 @@ export const DECL = {
             "resolver_defaults": { "steps": 25, "cfg": 4 },
             "cells": [
                 {
-                    "quant": "int8",
-                    "label": "INT8",
+                    "quant": "int8_convrot",
+                    "label": "INT8 ConvRot",
                     "route": "z-image-base-int8",
                     "vram_peak_gb": 14,
                 }

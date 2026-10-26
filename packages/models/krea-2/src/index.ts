@@ -72,7 +72,7 @@ export const DECL: ModelDecl = {
       },
       "cells": [
         {
-          "quant": "int8",
+          "quant": "int8_convrot",
           "label": "INT8 ConvRot",
           "route": "krea-2",
           "artifact": {
@@ -117,7 +117,7 @@ export const DECL: ModelDecl = {
       },
       "cells": [
         {
-          "quant": "int8",
+          "quant": "int8_convrot",
           "label": "INT8 ConvRot",
           "route": "krea-2-raw",
           "vram_peak_gb": 22,
@@ -171,7 +171,7 @@ export const DECL: ModelDecl = {
       // never the variant.
       "cells": [
         {
-          "quant": "int8",
+          "quant": "int8_convrot",
           "label": "INT8 ConvRot",
           "route": "kroma-int8",
           "lane_inputs": {

@@ -254,6 +254,12 @@ describe("the resurrected model registry (families/variants/cells/links)", () =>
   // origin is the pinned provision row), under its own route address.
   "h3-singularity",
   "h3-timeline",
+  // 2026-10-26 machine (the quant cure): the timeline's three-member
+  // offer — the pruned ConvRot tier (already provisioned) and the
+  // 34 GB non-pruned ConvRot tier (new per-cell artifact) ride their
+  // own cell route addresses.
+  "h3-timeline-convrot",
+  "h3-timeline-pruned",
   "input",
   "joycaption",
   "joytag",
@@ -271,7 +277,8 @@ describe("the resurrected model registry (families/variants/cells/links)", () =>
   "moss-image-bf16",
   "moss-sfx",
   "pixal3d",
-  "pixal3d-bf16",
+  // (removed 2026-10-26 machine, the quant cure: the phantom bf16 cells
+  //  died — they served the convrot file under a bf16 face)
   "pixal3d-int8",
   "qwen-img-21",
   "qwen-img-21-bf16",
@@ -299,7 +306,8 @@ describe("the resurrected model registry (families/variants/cells/links)", () =>
   "seedvr2-ema-vae-fp16",
   "transfer-rig",
   "trellis2-native",
-  "trellis2-native-bf16",
+  // (removed 2026-10-26 machine, the quant cure: the phantom bf16 cells
+  //  died — they served the convrot file under a bf16 face)
   "trellis2-native-int8",
   "wd14",
   "z-image",

@@ -40,6 +40,7 @@ import {
   type SpecValues,
 } from '@melite/card-base/client'
 import { DECL as animaDecl } from '../../../models/anima/src/index.ts'
+import { DECL as kreaDecl } from '../../../models/krea-2/src/index.ts'
 import { draftIdOf } from '@melite/contracts/benchStage';
 
 // THE MENU-SELECT DRIVERS (S7e): the spec axes ride the DSH Menu —
@@ -58,10 +59,11 @@ const pickRecipe = (rowName: string | RegExp): void => {
 }
 
 /** The krea-2 wire shape: turbo (default) + raw Variant rows, each
- *  with its OWN int8 Quant cell (turbo/int8 + raw/raw__int8 — the
+ *  with its OWN int8_convrot Quant cell (turbo/int8_convrot + raw/raw__int8_convrot — the
  *  discovery serializer's collision rule namespaces the later cell:
- *  the served row id is raw__int8, its stamped coordinate the cell
- *  quant 'int8'. The raw cell is the DECL's own truth
+ *  the served row id is raw__int8_convrot, its stamped coordinate the
+ *  cell quant 'int8_convrot' (the 2026-10-26 quant cure re-stamped the
+ *  convrot files' cells). The raw cell is the DECL's own truth
  *  (packages/models/krea-2/src/index.ts raw cells: krea2_raw_int8_convrot) —
  *  the N6 false-absence cure: the old fixture declared raw cell-less
  *  and pinned quantRowsFor(raw) === [], an absence the door
@@ -77,9 +79,9 @@ const KREA: FormSpecDoc = {
   model: 'krea-2',
   variants: [
     { id: 'turbo', label: 'Turbo', group: 'Variant', defaults: { model: 'krea-2' }, route: 'krea-2', hint: '8-step distilled — fast, photorealistic (DEFAULT)' },
-    { id: 'int8', label: 'INT8 ConvRot', group: 'Quant', defaults: {}, route: 'krea-2', quant: 'int8', owner: 'turbo' },
+    { id: 'int8_convrot', label: 'INT8 ConvRot', group: 'Quant', defaults: {}, route: 'krea-2', quant: 'int8_convrot', owner: 'turbo' },
     { id: 'raw', label: 'Raw', group: 'Variant', defaults: { model: 'krea-2-raw', steps: 52, cfg: 3.5 }, route: 'krea-2-raw', hint: '52-step base checkpoint' },
-    { id: 'raw__int8', label: 'INT8 ConvRot', group: 'Quant', defaults: {}, route: 'krea-2-raw', quant: 'int8', owner: 'raw' },
+    { id: 'raw__int8_convrot', label: 'INT8 ConvRot', group: 'Quant', defaults: {}, route: 'krea-2-raw', quant: 'int8_convrot', owner: 'raw' },
   ],
 }
 
@@ -94,10 +96,10 @@ afterEach(() => {
 test('variantRows keeps the served Variant rows; the quant chain filters by owner', () => {
   expect(variantRows(KREA).map((v) => v.id)).toEqual(['turbo', 'raw'])
   // THE CHAIN (owner-scoped, the N6 cure): int8 composes with turbo,
-  // raw__int8 with raw — raw owns its DECL-declared cell, so the
+  // raw__int8_convrot with raw — raw owns its DECL-declared cell, so the
   // chain has two links and the door never substitutes a neighbor
-  expect(quantRowsFor(KREA, 'turbo').map((q) => q.id)).toEqual(['int8'])
-  expect(quantRowsFor(KREA, 'raw').map((q) => q.id)).toEqual(['raw__int8'])
+  expect(quantRowsFor(KREA, 'turbo').map((q) => q.id)).toEqual(['int8_convrot'])
+  expect(quantRowsFor(KREA, 'raw').map((q) => q.id)).toEqual(['raw__int8_convrot'])
 })
 
 test('modelChoices: THE FAMILY THE SPEC SERVES — a variant route is never a model (stroke 21)', () => {
@@ -109,10 +111,10 @@ test('modelChoices: THE FAMILY THE SPEC SERVES — a variant route is never a mo
 test('activeVariantId: exact route match; quant chains under the active variant', () => {
   expect(activeVariantId(KREA, { model: 'krea-2-raw' } as SpecValues, 'Variant')).toBe('raw')
   expect(activeVariantId(KREA, { model: 'krea-2' } as SpecValues, 'Variant')).toBe('turbo')
-  expect(activeVariantId(KREA, { model: 'krea-2' } as SpecValues, 'Quant')).toBe('int8')
+  expect(activeVariantId(KREA, { model: 'krea-2' } as SpecValues, 'Quant')).toBe('int8_convrot')
   // the raw lane chains to its OWN cell (the N6 cure — the old
   // toBeUndefined pinned the false absence)
-  expect(activeVariantId(KREA, { model: 'krea-2-raw' } as SpecValues, 'Quant')).toBe('raw__int8')
+  expect(activeVariantId(KREA, { model: 'krea-2-raw' } as SpecValues, 'Quant')).toBe('raw__int8_convrot')
 })
 
 test('axisPickPatch: the visible stamps ride; the route NEVER lands in the user plane (stroke 21)', () => {
@@ -122,35 +124,35 @@ test('axisPickPatch: the visible stamps ride; the route NEVER lands in the user 
   // stamps its composing cell's coordinate (the N6 cure — the old
   // quant: '' rode the false cell-less absence)
   expect(axisPickPatch(KREA, KREA.variants![2]!)).toEqual({
-    steps: 52, cfg: 3.5, variant: 'raw', quant: 'int8',
+    steps: 52, cfg: 3.5, variant: 'raw', quant: 'int8_convrot',
   })
   expect('model' in axisPickPatch(KREA, KREA.variants![2]!)).toBe(false)
   // a Quant pick overlays the cell's own defaults + quant
-  expect(axisPickPatch(KREA, KREA.variants![1]!)).toEqual({ quant: 'int8' })
+  expect(axisPickPatch(KREA, KREA.variants![1]!)).toEqual({ quant: 'int8_convrot' })
 })
 
 test('seedAxisValues: the first-declared law; held values win on reopen', () => {
-  expect(seedAxisValues(KREA, {})).toEqual({ variant: 'turbo', quant: 'int8', model: 'krea-2' })
+  expect(seedAxisValues(KREA, {})).toEqual({ variant: 'turbo', quant: 'int8_convrot', model: 'krea-2' })
   // a reopened stage holds its axes — no re-seed, model untouched.
   // The 'raw' variant owns its int8 cell (the N6 cure), so the quant
   // axis seeds the cell's stamped coordinate (2026-10-10's
   // empty-selection law survives: an axis with NO composing row
   // still omits the key — 'unknown quant ""' stays refused)
   expect(seedAxisValues(KREA, { variant: 'raw', model: 'krea-2-raw' }))
-    .toEqual({ variant: 'raw', quant: 'int8' })
+    .toEqual({ variant: 'raw', quant: 'int8_convrot' })
   // a matrix-less spec seeds nothing
   expect(seedAxisValues({ ...KREA, variants: [] }, {})).toEqual({})
 })
 
 test('seedUser: the user-layer seed is the axis seed over held params (presence law)', () => {
   // a fresh stage: axis seeds only — defaults derive, never ride
-  expect(seedUser(KREA, {})).toEqual({ variant: 'turbo', quant: 'int8', model: 'krea-2' })
+  expect(seedUser(KREA, {})).toEqual({ variant: 'turbo', quant: 'int8_convrot', model: 'krea-2' })
   // a reopened stage holds EVERY key verbatim (presence survived) —
   // except the stated-empty the seed refuses to keep: held quant ''
   // is not a choice, so the axis seed writes raw's composing
   // coordinate over it (the N6 cure — raw composes now)
   expect(seedUser(KREA, { steps: 52, variant: 'raw', quant: '', model: 'krea-2-raw' }))
-    .toEqual({ steps: 52, variant: 'raw', quant: 'int8', model: 'krea-2-raw' })
+    .toEqual({ steps: 52, variant: 'raw', quant: 'int8_convrot', model: 'krea-2-raw' })
 })
 
 // ── the rendered axes ───────────────────────────────────────────────────────
@@ -203,7 +205,7 @@ test('picking Raw applies the overlay: steps/cfg ride, quant stamps raw\'s own c
   const edits: Record<string, unknown> = {}
   const user = userEvent.setup()
   const comp = createElement(function Host() {
-    const [user, setUser] = useState<SpecValues>({ prompt: 'a cat', steps: 8, cfg: 1.5, variant: 'turbo', quant: 'int8', model: 'krea-2' })
+    const [user, setUser] = useState<SpecValues>({ prompt: 'a cat', steps: 8, cfg: 1.5, variant: 'turbo', quant: 'int8_convrot', model: 'krea-2' })
     return createElement(CardForm, {
       spec: KREA,
       user,
@@ -227,8 +229,8 @@ test('picking Raw applies the overlay: steps/cfg ride, quant stamps raw\'s own c
   expect(edits['cfg']).toBe(3.5)
   expect(edits['variant']).toBe('raw')
   // the pick stamps raw's composing cell coordinate (the N6 cure —
-  // the old '' rode the false cell-less absence; raw owns raw__int8)
-  expect(edits['quant']).toBe('int8')
+  // the old '' rode the false cell-less absence; raw owns raw__int8_convrot)
+  expect(edits['quant']).toBe('int8_convrot')
 })
 
 test('no matrix, no axes — the plain form is unchanged', () => {
@@ -692,7 +694,7 @@ const QWEN: FormSpecDoc = {
     { id: 'lightning', label: 'Lightning', group: 'Variant', defaults: { model: 'qwen-img-edit-2511-lightning4' }, route: 'qwen-img-edit-2511-lightning4', hint: '4-step distilled checkpoint' },
     { id: 'lightning4', label: 'FP8 Lightning', group: 'Quant', defaults: {}, route: 'qwen-img-edit-2511-lightning4', quant: 'lightning4', owner: 'lightning' },
     { id: 'standard', label: 'Standard', group: 'Variant', defaults: { model: 'qwen-img-edit-2511' }, route: 'qwen-img-edit-2511', hint: '20 steps, cfg 2.5' },
-    { id: 'int8', label: 'INT8 ConvRot', group: 'Quant', defaults: {}, route: 'qwen-img-edit-2511-int8', quant: 'int8', owner: 'standard' },
+    { id: 'int8_convrot', label: 'INT8 ConvRot', group: 'Quant', defaults: {}, route: 'qwen-img-edit-2511-int8', quant: 'int8_convrot', owner: 'standard' },
     { id: 'default', label: 'Default', group: 'Recipe', defaults: {}, route: '', hint: 'no extra stamps' },
   ],
 }
@@ -755,7 +757,7 @@ test('the qwen drill chains Quant by owner — the user layer never gains a reci
   // switch to Standard: the Quant axis re-seeds to int8 (the standard
   // chain) — and still no recipe key anywhere in the user layer
   await pickAxisRow('Variant', /^Standard/)
-  await waitFor(() => { expect(state.user['quant']).toBe('int8') })
+  await waitFor(() => { expect(state.user['quant']).toBe('int8_convrot') })
   // the model stays the FAMILY (the lightning route never rode)
   expect(state.user['model']).toBe('qwen-img-edit-2511')
   expect(state.user['recipe']).toBeUndefined()
@@ -1141,12 +1143,12 @@ test('modelSwitchPatch: a model switch re-seeds every axis (never the old family
   const { modelSwitchPatch } = await import('@melite/card-base/client')
   // the spec's own family seats the chain (turbo + its cell); the
   // route never rides (krea-2-raw is not a model — stroke 21)
-  expect(modelSwitchPatch(KREA, 'krea-2')).toMatchObject({ model: 'krea-2', variant: 'turbo', quant: 'int8' })
+  expect(modelSwitchPatch(KREA, 'krea-2')).toMatchObject({ model: 'krea-2', variant: 'turbo', quant: 'int8_convrot' })
   expect(modelSwitchPatch(KREA, 'krea-2')['steps']).toBeUndefined()
 })
 
 test('switching the Model select resets the Variant axis (the drill never holds turbo-for-anima)', async () => {
-  const state = { user: { prompt: 'a cat', model: 'krea-2', variant: 'turbo', quant: 'int8' } as SpecValues }
+  const state = { user: { prompt: 'a cat', model: 'krea-2', variant: 'turbo', quant: 'int8_convrot' } as SpecValues }
   const onSet = (name: string, v: unknown): void => { state.user = { ...state.user, [name]: v } }
   // THE ATOMIC PICK SEAT (required by construction): the host
   // merges the WHOLE patch — picks are one contract, one write
@@ -1178,7 +1180,7 @@ test('switching the Model select resets the Variant axis (the drill never holds 
 test('THE LANE PROOF: the Model select renders the HELD model as itself, refused — never paints krea-2 over it', async () => {
   const comp = createElement(function Host() {
     const [user, setUser] = useState<SpecValues>({
-      model: 'anima', variant: 'turbo', quant: 'int8', prompt: 'beach',
+      model: 'anima', variant: 'turbo', quant: 'int8_convrot', prompt: 'beach',
     })
     return createElement(CardForm, {
       spec: KREA,
@@ -1229,17 +1231,17 @@ test('a held INVALID axis on a VALID model refuses too — the ungated union no 
 test('a held coord that FOLLOWS the owner chain renders valid — raw owns its own int8 cell (the N6 cure)', async () => {
   // THE INVERSION (N6): the old arm held {variant raw, quant int8}
   // and pinned 'Int8 — invalid' — "owned by turbo, never composed
-  // under raw". That was the false absence: raw OWNS an int8 cell
+  // under raw". That was the false absence: raw OWNS an int8_convrot cell
   // (the DECL's raw cells, the :1363 matrix note's raw__int8), and
   // the stamp coordinate is owner-agnostic by the axisStampOf law
-  // (the cell quant 'int8', never the row id). The held coord now
+  // (the cell quant 'int8_convrot', never the row id). The held coord now
   // resolves through raw's OWN row — no substitution, because there
   // is nothing to substitute. The no-substitution half lives at the
   // door seat (cards-variant.spec.ts:127 — {variant base, quant of
   // another lane} refuses unknown-quant; resolveCellRow searches the
   // resolved variant's cells, never the matrix's first row).
   const comp = createElement(function Host() {
-    const [user, setUser] = useState<SpecValues>({ model: 'krea-2', variant: 'raw', quant: 'int8' })
+    const [user, setUser] = useState<SpecValues>({ model: 'krea-2', variant: 'raw', quant: 'int8_convrot' })
     return createElement(CardForm, {
       spec: KREA,
       user,
@@ -1394,7 +1396,7 @@ test('SELECTING A FAMILY FILTERS VARIANT+QUANT: the cross-spec pick clears the a
   const spec = { ...KREA, families: [{ id: 'anima', present: true }] }
   const picked: SpecValues[] = []
   const comp = createElement(function Host() {
-    const [user, setUser] = useState<SpecValues>({ model: 'krea-2', variant: 'turbo', quant: 'int8' })
+    const [user, setUser] = useState<SpecValues>({ model: 'krea-2', variant: 'turbo', quant: 'int8_convrot' })
     return createElement(CardForm, {
       spec, user,
       onSet: (n: string, v: unknown) => {
@@ -1433,7 +1435,7 @@ test('THE FILTER, END TO END: a cleared cross-spec pick seeds the NEW family\'s 
   // never a foreign family's variant under krea
   const seeded = seedUser(KREA, { model: 'krea-2', variant: '', quant: '' })
   expect(seeded['variant']).toBe('turbo')
-  expect(seeded['quant']).toBe('int8')
+  expect(seeded['quant']).toBe('int8_convrot')
   expect(seeded['model']).toBe('krea-2')
 })
 
@@ -1721,6 +1723,95 @@ test('AXIS-UNIFICATION P0#3 — THE REFUSED-COORD REPAIR VERB: a pre-wave-31 doc
   // THE COMPOSE-GREEN: the repaired doc passes the mirror judge —
   // the run would compose where the burn was refused
   expect(composeValidate(ANIMA, { ...held, ...patches[0] })).toEqual([])
+})
+
+// THE KREA-2 TWIN (the 2026-10-26 quant cure's migration arm): the
+// same verb, the REAL krea-2 DECL — the wave-31 lesson (audit
+// axis-unification-2026-11-06.md:36: "renamed DECL ids with no
+// saved-doc migration arm") repaid on the nine re-stamped families.
+// A saved doc holding the pre-cure collapsed word (quant "int8"
+// under krea-2 — the word that SERVED for months) must repair to
+// the file's truth through the same one-click verb.
+const KREA_REAL: FormSpecDoc = (() => {
+  const rows: FormVariantRow[] = []
+  for (const v of kreaDecl.variants ?? []) {
+    if (v.hide_from_dropdown === true) continue
+    rows.push({
+      id: v.id,
+      label: v.label,
+      group: v.group,
+      defaults: { ...(v.resolver_defaults ?? {}), ...(v.wire_defaults ?? {}) },
+      route: v.route ?? '',
+      hint: v.hint ?? null,
+      engine: kreaDecl.engine ?? '',
+      sampler_envelope: v.sampler_envelope ?? null,
+      quant: null,
+      vram_peak_gb: null,
+      owner: '',
+    })
+    for (const c of v.cells ?? []) {
+      if (c.hide_from_dropdown === true || !c.quant || !c.route) continue
+      const id = rows.some((r) => r.id === c.quant) ? `${v.id}__${c.quant}` : c.quant
+      rows.push({
+        id,
+        label: c.label || c.quant,
+        group: 'Quant',
+        defaults: c.resolver_defaults ?? {},
+        route: c.route,
+        hint: null,
+        engine: kreaDecl.engine ?? '',
+        quant: c.quant,
+        vram_peak_gb: c.vram_peak_gb ?? null,
+        owner: v.id,
+      })
+    }
+  }
+  return {
+    form: 'image-gen',
+    schema: schemaEnvelope({
+      prompt: { type: 'string', meta: { description: 'Prompt', extra: { wtype: 'textarea', group: 'prompt' } } },
+      steps: { type: 'number', meta: { description: 'Steps', default: 8, extra: { group: 'sampling' } } },
+      cfg: { type: 'number', meta: { description: 'CFG', default: 1.5, step: 0.1, extra: { group: 'sampling' } } },
+    }),
+    model: kreaDecl.id,
+    features: {
+      variant_groups: {
+        Variant: { label: 'Variant' },
+        Quant: { label: 'Quant' },
+        Recipe: { label: 'Recipe', default: 'default' },
+      },
+    },
+    variants: rows,
+  }
+})()
+
+test('QUANT-CURE MIGRATION (krea-2): a pre-cure doc (quant "int8" — the collapsed word that served for months) repairs to the file truth int8_convrot through the SAME verb; the repaired doc passes the mirror judge', async () => {
+  const held: SpecValues = { model: 'krea-2', variant: 'turbo', quant: 'int8', prompt: 'a lighthouse' }
+  // THE JUDGE BITES: the collapsed word now refuses with the door's
+  // voice naming the real cells — the cure's own evidence, pinned.
+  const before = composeValidate(KREA_REAL, held)
+  expect(before.length).toBe(1)
+  expect(before[0]!.message).toContain('unknown quant "int8"')
+  expect(before[0]!.message).toContain('int8_convrot')
+  const patches: Array<Record<string, unknown>> = []
+  const comp = createElement(function Host() {
+    const [user, setUser] = useState<SpecValues>(held)
+    return createElement(CardForm, {
+      spec: KREA_REAL,
+      user,
+      onSet: (name: string, v: unknown) => { setUser((m) => ({ ...m, [name]: v })) },
+      onPick: (patch: Record<string, unknown>) => { patches.push(patch); setUser((m) => ({ ...m, ...patch })) },
+    })
+  })
+  render(comp)
+  const quant = await screen.findByLabelText('Quant')
+  expect(axisFace('Quant')).toContain('Int8 — invalid')
+  expect(quant.getAttribute('data-refused')).toBe('Quant')
+  expect(screen.getByText('Not an offered coordinate of the held matrix — the nearest current cell is one click away:')
+    .getAttribute('data-axis-repair')).toBe('Quant')
+  fireEvent.click(screen.getByRole('button', { name: 'Write INT8 ConvRot' }))
+  await waitFor(() => { expect(patches[0]?.['quant']).toBe('int8_convrot') })
+  expect(composeValidate(KREA_REAL, { ...held, ...patches[0] })).toEqual([])
 })
 
 test('AXIS-UNIFICATION P1#5 (the form half) — a turbo pick stamps the variant\'s resolver_defaults (steps 8, cfg 1) and the form shows them; a grounded matrix renders NO repair chrome', async () => {
