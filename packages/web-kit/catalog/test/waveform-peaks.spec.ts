@@ -10,6 +10,7 @@ import {
   decodeAudioPeaks,
   getPeaksForWidth,
   resampleForWidth,
+  cuePeaksForWidth,
   selectLOD,
 } from "../src/waveform-peaks.ts";
 
@@ -220,5 +221,58 @@ describe("decodeAudioPeaks", () => {
       }
     };
     assert.equal(await decodeAudioPeaks("https://x/c.wav"), null);
+  });
+});
+
+// THE CUE DRAW PATH (E3.14 READ side, seated 2026-10-26): the LOD
+// cache is computed on every cue decode but nothing read it back —
+// the zoom-faithful render the module documents never landed. These
+// arms pin the read side: the draw derives from the cache through
+// the module's own selection+resample (never a frozen literal), the
+// legacy array is never read behind a cache, and legacy-only cues
+// lift honestly.
+describe("cuePeaksForWidth (the audio-cue draw path)", () => {
+  const cache = computeWaveformLODs(pcm([
+    0.9, -0.8, 0.1, -0.2, 0.7, -0.95, 0.3, -0.05, 0.55, -0.4,
+    0.2, -0.65, 0.85, -0.15, 0.45, -0.3, 0.6, -0.75, 0.35, -0.5,
+  ]));
+
+  it("reads the cache, never the legacy array — perturbing legacy changes nothing", () => {
+    const draw = cuePeaksForWidth({ waveformPeaksLOD: cache, waveformPeaks: [0.1, 0.2, 0.3] }, 120);
+    assert.deepEqual(
+      draw,
+      getPeaksForWidth(cache, 120),
+    );
+    // THE LAW (the roadmap's own words): the draw reads the cache,
+    // not the 200-bucket legacy array. Perturb the legacy array —
+    // the drawn bars must not move.
+    const perturbed = cuePeaksForWidth({ waveformPeaksLOD: cache, waveformPeaks: [1, 1, 1] }, 120);
+    assert.deepEqual(perturbed, draw);
+    // and the draw is zoom-faithful through the module's own doors:
+    // a narrow width selects the low LOD, a wide one the high LOD.
+    const narrow = cuePeaksForWidth({ waveformPeaksLOD: cache, waveformPeaks: null }, 50);
+    const wide = cuePeaksForWidth({ waveformPeaksLOD: cache, waveformPeaks: null }, 1500);
+    assert.deepEqual(narrow, resampleForWidth(cache[selectLOD(50)], 50));
+    assert.deepEqual(wide, resampleForWidth(cache[selectLOD(1500)], 1500));
+    assert.notDeepEqual(narrow, wide);
+  });
+
+  it("returns exactly the asked width in bars", () => {
+    for (const w of [1, 50, 224, 500, 1000, 2000, 4321]) {
+      assert.equal(cuePeaksForWidth({ waveformPeaksLOD: cache, waveformPeaks: null }, w).length, w);
+    }
+  });
+
+  it("lifts a cache-less legacy cue into symmetric min/max bars", () => {
+    const draw = cuePeaksForWidth({ waveformPeaks: [0.2, 0.8, 0.4], waveformPeaksLOD: null }, 6);
+    assert.equal(draw.length, 6);
+    // nearest-neighbor lift: symmetric around 0, source-derived
+    assert.ok(draw.every((b) => Math.abs(b.min + b.max) < 1e-9));
+    assert.ok(draw.some((b) => b.max === 0.8));
+  });
+
+  it("a cue with neither cache nor legacy has no truth to draw", () => {
+    assert.deepEqual(cuePeaksForWidth({ waveformPeaks: null, waveformPeaksLOD: null }, 100), []);
+    assert.deepEqual(cuePeaksForWidth({ waveformPeaks: [], waveformPeaksLOD: undefined }, 100), []);
   });
 });

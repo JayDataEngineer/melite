@@ -101,6 +101,27 @@ export function getPeaksForWidth(cache, width) {
     const lod = selectLOD(width);
     return resampleForWidth(cache[lod], width);
 }
+/** The audio-cue draw path (E3.14 READ side, seated 2026-10-26): the
+ *  bars a cue surface paints at a given pixel width — the module's
+ *  documented consumer, riding the store's own cue shape.
+ *
+ *  The LOD cache is the truth whenever it exists: the legacy
+ *  200-bucket max-amplitude array is NEVER read behind a cache — it
+ *  carries no min (the waveform's asymmetry is lost) and no zoom
+ *  detail to select. A cache-less legacy cue (persisted before
+ *  E3.14) lifts its array into symmetric min/max bars at the asked
+ *  width — honest about its resolution. A cue with neither has no
+ *  truth to draw; the caller paints the placeholder. */
+export function cuePeaksForWidth(cue, width) {
+    if (cue.waveformPeaksLOD) {
+        return getPeaksForWidth(cue.waveformPeaksLOD, width);
+    }
+    const legacy = cue.waveformPeaks;
+    if (legacy && legacy.length > 0) {
+        return resampleForWidth(legacy.map((p) => ({ min: -p, max: p })), width);
+    }
+    return [];
+}
 /** Decode an audio URL into legacy + LOD waveform peaks.
  *
  *  Returns null on any failure (fetch error, decode error, etc.).

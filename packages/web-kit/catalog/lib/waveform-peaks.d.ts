@@ -23,7 +23,7 @@
  * asymmetry — proper audio editors show both the top and bottom of
  * each bucket so transients are visible.
  */
-import type { MinMaxPeak, WaveformLODCache } from '@melite/contracts';
+import type { AudioCue, MinMaxPeak, WaveformLODCache } from '@melite/contracts';
 /** The three cached LODs, keyed by name. */
 export type LODName = 'low' | 'med' | 'high';
 export declare const LOD_BUCKETS: Record<LODName, number>;
@@ -43,6 +43,18 @@ export declare function selectLOD(pixelsAvailable: number): LODName;
 export declare function resampleForWidth(peaks: MinMaxPeak[], targetWidth: number): MinMaxPeak[];
 /** Convenience: pick the right LOD + resample to exactly `width` pixels. */
 export declare function getPeaksForWidth(cache: WaveformLODCache, width: number): MinMaxPeak[];
+/** The audio-cue draw path (E3.14 READ side, seated 2026-10-26): the
+ *  bars a cue surface paints at a given pixel width — the module's
+ *  documented consumer, riding the store's own cue shape.
+ *
+ *  The LOD cache is the truth whenever it exists: the legacy
+ *  200-bucket max-amplitude array is NEVER read behind a cache — it
+ *  carries no min (the waveform's asymmetry is lost) and no zoom
+ *  detail to select. A cache-less legacy cue (persisted before
+ *  E3.14) lifts its array into symmetric min/max bars at the asked
+ *  width — honest about its resolution. A cue with neither has no
+ *  truth to draw; the caller paints the placeholder. */
+export declare function cuePeaksForWidth(cue: Pick<AudioCue, 'waveformPeaks' | 'waveformPeaksLOD'>, width: number): MinMaxPeak[];
 export interface DecodedAudioPeaks {
     /** Duration in seconds (from decodeAudioData). */
     duration: number;
