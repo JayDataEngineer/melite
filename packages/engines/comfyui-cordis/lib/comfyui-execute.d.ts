@@ -1,5 +1,5 @@
 import type { Client } from "@stable-canvas/comfyui-client";
-import type { ActivePrompt, EngineJson } from "./comfyui-types.js";
+import type { ActivePrompt, EngineJson } from "./comfyui-types.ts";
 export interface ExecuteOpts {
     /** Seconds; the estate's own budget (default 2400). */
     readonly timeoutS?: number;
@@ -24,9 +24,6 @@ export interface ExecuteResult {
      *  assignable: absent means unknown, never clean. */
     readonly replaySuspect?: boolean;
 }
-/** Submit one graph through the SDK (POST /prompt). The SDK owns
- *  the body shape and the refusal voice (its typed enqueue error);
- *  the server's prompt_id is the receipt. */
 export declare function submitPrompt(client: Client, graph: Record<string, EngineJson>): Promise<{
     promptId: string;
     clientId: string;

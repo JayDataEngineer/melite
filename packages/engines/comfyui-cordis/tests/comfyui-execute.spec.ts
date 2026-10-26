@@ -256,6 +256,65 @@ describe("submitPrompt (the receipt law)", () => {
       }),
     }), {})).rejects.toThrow(/bad: bad value.*Out\.0/s);
   });
+
+  // WO-1 (the 2026-10-22 input-prep audit, cured 2026-11-12): the
+  // engine's /prompt 4xx body (the SDK HttpError's json field — error
+  // type/details + node_errors naming the node and rejected value) is
+  // folded into the refusal VERBATIM. Before the fold the run face
+  // served only "HttpError: Endpoint Bad Request (400 …)": loud but
+  // voiceless — the operator hunted the reason in the engine's own
+  // logs while the body rode dropped on the floor.
+  it("WO-1: a 4xx HttpError carrying the engine's JSON body speaks the body verbatim — never a bare status line", async () => {
+    class HttpError extends Error {
+      status: number;
+      json: unknown;
+      constructor(message: string, status: number, json: unknown) {
+        super(message);
+        this.status = status;
+        this.json = json;
+      }
+    }
+    // the live shape from run-408231bf458a's class: an UpscaleModelLoader
+    // the roster grounded empty (options: []) answers 400 with
+    // error.type + node_errors naming the node and its value
+    await expect(submitPrompt(fakeClient({
+      queuePrompt: async () => {
+        throw new HttpError(
+          "Endpoint Bad Request (400 Bad Request): http://127.0.0.1:8188/prompt?clientId=x",
+          400,
+          {
+            error: { type: "prompt_outputs_failed_validation", details: "UpscaleModelLoader value not in list" },
+            node_errors: {
+              "7": { errors: [{ message: "Value not in list: 'RealESRGAN_x4plus' not in []" }], dependent_outputs: ["IMAGE.0"] },
+            },
+          },
+        );
+      },
+    }), {})).rejects.toThrow(
+      "the engine refused the prompt — HTTP 400: prompt_outputs_failed_validation; UpscaleModelLoader value not in list; 7: Value not in list: 'RealESRGAN_x4plus' not in [] (silently dropped outputs: IMAGE.0)",
+    );
+  });
+
+  it("WO-1 belt: an HttpError with no parseable dialect answers the JSON verbatim; a NON-HttpError throw passes through untouched", async () => {
+    class HttpError extends Error {
+      status: number;
+      json: unknown;
+      constructor(message: string, status: number, json: unknown) {
+        super(message);
+        this.status = status;
+        this.json = json;
+      }
+    }
+    await expect(submitPrompt(fakeClient({
+      queuePrompt: async () => { throw new HttpError("teapot", 418, { weird: true }); },
+    }), {})).rejects.toThrow(/HTTP 418: .*weird.*true/);
+    // and the pass-through: anything without the status+json shape is
+    // never rewrapped (the SDK's own voice stays)
+    const plain = new Error("sdk said so");
+    await expect(submitPrompt(fakeClient({
+      queuePrompt: async () => { throw plain; },
+    }), {})).rejects.toBe(plain);
+  });
 });
 
 describe("waitTerminal (verdict order + the loop)", () => {

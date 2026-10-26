@@ -45,14 +45,67 @@ export interface ExecuteResult {
 /** Submit one graph through the SDK (POST /prompt). The SDK owns
  *  the body shape and the refusal voice (its typed enqueue error);
  *  the server's prompt_id is the receipt. */
+/** One node_errors table → refusal lines (the engine's validation
+ * dialect, shared by both folds below: the 200-with-node_errors
+ * answer and the 4xx body WO-1 folds). */
+function nodeErrorLines(nodeErrors: Record<string, Record<string, unknown>>): string[] {
+  const lines: string[] = [];
+  for (const [nodeId, row] of Object.entries(nodeErrors)) {
+    const first = Array.isArray(row["errors"]) && row["errors"].length > 0
+      ? String((row["errors"] as Array<Record<string, unknown>>)[0]?.["message"] ?? "")
+      : "validation error";
+    const deps = Array.isArray(row["dependent_outputs"]) && row["dependent_outputs"].length > 0
+      ? ` (silently dropped outputs: ${(row["dependent_outputs"] as string[]).join(", ")})`
+      : "";
+    lines.push(`${nodeId}: ${first}${deps}`);
+  }
+  return lines;
+}
+
 export async function submitPrompt(
   client: Client,
   graph: Record<string, EngineJson>,
 ): Promise<{ promptId: string; clientId: string }> {
-  const res: Record<string, unknown> = await client.queuePrompt(0, {
-    prompt: graph,
-    workflow: null,
-  }) as Record<string, unknown>;
+  let res: Record<string, unknown>;
+  try {
+    res = await client.queuePrompt(0, {
+      prompt: graph,
+      workflow: null,
+    }) as Record<string, unknown>;
+  } catch (err) {
+    // WO-1 (the 2026-10-22 input-prep audit, cured 2026-11-12): the
+    // engine's /prompt 4xx answers carry their own JSON dialect —
+    // error.type/details plus node_errors naming the node and the
+    // rejected value — and the SDK's HttpError HOLDS that body
+    // (fields status/json). Left alone, the run face served only the
+    // SDK's status line ("Endpoint Bad Request (400 …)"): loud but
+    // VOICELESS. Fold the engine's own body in verbatim; anything
+    // without that shape rethrows untouched.
+    const status = (err as { status?: unknown }).status;
+    const json = (err as { json?: unknown }).json;
+    if (typeof status === "number" && json !== null && typeof json === "object") {
+      const body = json as Record<string, unknown>;
+      const parts: string[] = [];
+      const error = body["error"];
+      if (error !== null && typeof error === "object") {
+        const type = (error as Record<string, unknown>)["type"];
+        const details = (error as Record<string, unknown>)["details"];
+        if (typeof type === "string" && type !== "") parts.push(type);
+        if (typeof details === "string" && details !== "") parts.push(details);
+      } else if (typeof error === "string" && error !== "") {
+        parts.push(error);
+      }
+      const nodeErrors = body["node_errors"];
+      if (nodeErrors !== null && typeof nodeErrors === "object") {
+        parts.push(...nodeErrorLines(nodeErrors as Record<string, Record<string, unknown>>));
+      }
+      const voice = parts.length > 0 ? parts.join("; ") : JSON.stringify(body);
+      throw new ComfyError(
+        `the engine refused the prompt — HTTP ${status}: ${voice}`,
+      );
+    }
+    throw err;
+  }
   // THE SILENT-TRUNCATION REFUSAL (2026-10-08, the operator's
   // "it gave me a red box instead of a mask" hunt): ComfyUI
   // answers 200 with node_errors populated and EXECUTES ONLY THE
@@ -65,16 +118,7 @@ export async function submitPrompt(
   const nodeErrors = res["node_errors"];
   if (nodeErrors !== null && typeof nodeErrors === "object" &&
       Object.keys(nodeErrors as Record<string, unknown>).length > 0) {
-    const lines: string[] = [];
-    for (const [nodeId, row] of Object.entries(nodeErrors as Record<string, Record<string, unknown>>)) {
-      const first = Array.isArray(row["errors"]) && row["errors"].length > 0
-        ? String((row["errors"] as Array<Record<string, unknown>>)[0]?.["message"] ?? "")
-        : "validation error";
-      const deps = Array.isArray(row["dependent_outputs"]) && row["dependent_outputs"].length > 0
-        ? ` (silently dropped outputs: ${(row["dependent_outputs"] as string[]).join(", ")})`
-        : "";
-      lines.push(`${nodeId}: ${first}${deps}`);
-    }
+    const lines = nodeErrorLines(nodeErrors as Record<string, Record<string, unknown>>);
     throw new ComfyError(
       `the engine refused ${lines.length} node(s) at validation — the run would execute a TRUNCATED graph, never a silent half-result: ${lines.join("; ")}`,
     );

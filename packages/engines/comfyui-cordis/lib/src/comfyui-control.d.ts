@@ -1,4 +1,4 @@
-import type { ActivePrompt } from "./comfyui-types.js";
+import type { ActivePrompt } from "./comfyui-types.ts";
 export declare function interrupt(server: string, promptId: string): Promise<void>;
 /** The stop door's engine handle.
  *
