@@ -1,0 +1,18 @@
+# qwen-img-edit-2511 lane extension declarations. The family's
+# lanpaint mod flavor (actions.ts compose: prep →
+# LanPaint_ImageEncode → LanPaint_KSamplerAdvanced →
+# LanPaint_ImageDecode) addresses this pack's classes — the boot
+# fixture's residue rows and the card's action goldens both judge
+# the served roster against it (the 2026-10-26 two-tree drain: the
+# pack was live on the byte-original engine, never declared, and
+# the live tree's rebuild lost it).
+extensions:
+  - name: ComfyUI-LanPaint
+    url: https://github.com/scraed/LanPaint
+    ref: 32cf848e93971da380d868936e007f5611218bee
+    required: true
+    desc: >-
+      LanPaint diffusion inpainting (LanPaint_ImageEncode /
+      LanPaint_KSamplerAdvanced / LanPaint_ImageDecode) — the
+      qwen-img-edit-2511 card's lanpaint mod flavor, branch-gated
+      beyond the card probe's default flavor.

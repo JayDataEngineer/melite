@@ -301,8 +301,12 @@ describe("THE VENDOR→INSTALL CENSUS (every vendored submodule is installed or 
   const RETIRED_VENDORED: Readonly<Record<string, string>> = {
     "ComfyUI-MiniMax-H3-MotionCache-FastVAE":
       "published to the Comfy registry (registry-door roster melite-minimax-h3-motioncache-fastvae 1.0.0) but never estate-installed: no nodes.yaml row, no uv source — the estate's H3 motion-cache lane rides the in-tree h3 family; the vendored tree is the publish source of record only",
-    "comfyui-minimax-h3-timeline-director":
-      "published to the Comfy registry (roster comfyui-minimax-h3-timeline-director 0.8.0) but never estate-installed: the estate's timeline direction lives in the h3-timeline card/kit; the vendored tree is the publish source of record only",
+    // comfyui-minimax-h3-timeline-director left 2026-10-26: the h3
+    // family's film compose addresses the pack's finite-segment
+    // classes (actions.ts drift-control continuation, windows k>=2),
+    // so it gained a nodes.yaml row (video/h3-timeline manifest) and
+    // a live install at the vendored pin — "never estate-installed"
+    // was a lie the boot fixture's residue rows kept naming.
   };
 
   it("the census floor: the walk finds the vendored fleet (the vacuous guard)", () => {

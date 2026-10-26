@@ -1186,9 +1186,11 @@
       "qwen3vl_4b_fp8_scaled.safetensors",
       "qwen3vl_8b_bf16.safetensors",
       "qwen3vl_8b_int8_convrot.safetensors",
+      "qwen3vl_8b_nvfp4.safetensors",
       "qwen_2.5_vl_7b_fp8_scaled.safetensors",
       "qwen_3_06b_base.safetensors",
-      "qwen_3_4b.safetensors"
+      "qwen_3_4b.safetensors",
+      "umt5_xxl_fp8_e4m3fn_converted.safetensors"
      ]
     ],
     "type": [
@@ -2380,7 +2382,7 @@
    "florence2_model"
   ],
   "output_node": false,
-  "python_module": "custom_nodes.comfyui-florence2",
+  "python_module": "custom_nodes.ComfyUI-Florence2",
   "search_aliases": []
  },
  "EmptyFlux2LatentImage": {
@@ -3151,7 +3153,7 @@
    "data"
   ],
   "output_node": false,
-  "python_module": "custom_nodes.comfyui-florence2",
+  "python_module": "custom_nodes.ComfyUI-Florence2",
   "search_aliases": []
  },
  "Flux2Scheduler": {
@@ -5568,7 +5570,7 @@
    "image"
   ],
   "output_node": false,
-  "python_module": "custom_nodes.ComfyUI-LanPaint",
+  "python_module": "custom_nodes.LanPaint",
   "search_aliases": []
  },
  "LanPaint_ImageEncode": {
@@ -5621,7 +5623,7 @@
    "latent"
   ],
   "output_node": false,
-  "python_module": "custom_nodes.ComfyUI-LanPaint",
+  "python_module": "custom_nodes.LanPaint",
   "search_aliases": []
  },
  "LanPaint_KSamplerAdvanced": {
@@ -5846,7 +5848,7 @@
    "LATENT"
   ],
   "output_node": false,
-  "python_module": "custom_nodes.ComfyUI-LanPaint",
+  "python_module": "custom_nodes.LanPaint",
   "search_aliases": []
  },
  "LoadAudio": {
@@ -5867,11 +5869,18 @@
       "audio_upload": true,
       "multiselect": false,
       "options": [
-       "01 Dildolech (Kelis Milkshake Parody.mp3",
-       "07 - Sex and Violence (feat. Melissa McNaught).flac",
-       "19 If Whites Ruled The World  (Nas I.mp3",
-       "drive_pose.mp4",
-       "input-prep-verify-tone.wav"
+       "01 Dildolech (Kelis Milkshake Parody_7699f5cb82b7.mp3",
+       "07 - Sex and Violence (feat. Melissa McNaught)_fd1a34c11c44.flac",
+       "SaveAudio.0_sfx_00001_a3590a151fe9.flac",
+       "SaveAudioAdvanced.0_music_00001_10c86983ccba.mp3",
+       "cards-gpu-tts-base-ref_bfe2acab4b33.wav",
+       "film_b5daccf1bb15.mp4",
+       "h3_t4_film_00001__ac34e57f53c3.mp4",
+       "h3_t4_w1_00001__a7c9b7cb82a6.mp4",
+       "h3_t4_w1_00068__533aceec71e5.mp4",
+       "h3_t4_w1_00069__7f612db51789.mp4",
+       "input-prep-verify-tone_3c2a21677dcd.wav",
+       "line_e853f3067188.flac"
       ]
      }
     ]
@@ -5992,135 +6001,68 @@
    "required": {
     "image": [
      [
-      "00075-2286428479.jpg",
-      "36039.jpg",
-      "Black_Eagle_Order_star.jpg",
-      "ComfyUI_03536_-1-1e6a9761.png",
-      "MummyGirl.jpg",
-      "PlayStation - Castlevania_ Symphony of the Night - Playable Characters - Alucard.png",
-      "SaveImage.0_edit_00001_.png",
-      "SaveImage.0_gen_00001_ (1).png",
-      "SaveImage.0_gen_00001_ (2).png",
-      "SaveImage.0_gen_00001_.png",
-      "Screenshot-from-2026-09-03-20-50-19-5c708f0d.png",
-      "Screenshot-from-2026-09-03-20-50-19-741ac888.png",
-      "Screenshot-from-2026-09-03-20-50-19-89fb8625.png",
-      "Screenshot-from-2026-09-03-20-50-19-90d800b4.png",
-      "Screenshot-from-2026-09-03-20-50-19-b5ba1df7.png",
-      "Screenshot-from-2026-09-03-20-50-19-d6211007.png",
-      "Screenshot-from-2026-09-03-20-50-19-fcda363e.png",
-      "Spr_B2W2_Beauty.png",
-      "_lora_wall_anchor.png",
-      "artifact.png",
-      "asdas.png",
-      "bike.webp",
-      "cannon.webp",
-      "character_gimg_00002_.png",
-      "character_gimg_00003_.png",
-      "character_gimg_00004_.png",
-      "character_gimg_00005_.png",
-      "character_gimg_00006_.png",
-      "character_gimg_00007_.png",
-      "character_gimg_00008_.png",
-      "character_gimg_00009_.png",
-      "character_gimg_00010_.png",
-      "character_gimg_00011_.png",
-      "character_gimg_00012_.png",
-      "character_img_00002_.png",
-      "character_img_00003_.png",
-      "character_img_00004_.png",
-      "character_img_00005_.png",
-      "character_img_00006_.png",
-      "character_img_00007_.png",
-      "character_img_00008_.png",
-      "character_img_00009_.png",
-      "character_img_00010_.png",
-      "character_img_00011_.png",
-      "doors-1516320-x.png",
-      "download (2).png",
-      "drop-probe-2px.png",
-      "e193f7f4-5fba-4ef4-9d11-01baed151c60.png",
-      "e2e-drag-2b215376.png",
-      "e2e-drag-451afc3f.png",
-      "e2e-drag-8f22947d.png",
-      "e2e-drag-a8733fc4.png",
-      "e2e-drag-ea7eb709.png",
-      "e2e_upload_probe-26c8962b.png",
-      "e2e_upload_probe-47f3b904.png",
-      "edit_6a9cb34f_SaveImage.0_gen_00001_.png",
-      "heroine_baldsrc_back.png",
-      "heroine_baldsrc_front.png",
-      "heroine_baldsrc_side.png",
-      "heroine_baldsrc_threequarter_left.png",
-      "heroine_baldsrc_threequarter_right.png",
-      "heroine_ref_nude_r379.png",
-      "heroine_ref_nude_r379_notail.png",
-      "icon.png",
-      "images.jpeg",
-      "input-prep-verify.png",
-      "input_6a9cab81_source.png",
-      "input_6a9deaa7_parity-input.png",
-      "input_6a9deaa8_parity-input.png",
-      "input_6a9deaaa_parity-input.png",
-      "input_6a9deaac_parity-input.png",
-      "input_6a9deaad_parity-input.png",
-      "input_6a9deacc_parity-input.png",
-      "input_6a9deacd_parity-input.png",
-      "input_runbikelive.webp",
-      "input_rundiff2.webp",
-      "input_rundiff3.webp",
-      "input_rundiffpixal.webp",
-      "input_rundifftrell.webp",
-      "input_runk.webp",
-      "input_runknob.webp",
-      "input_runlab.webp",
-      "input_runlinks.webp",
-      "input_runvalidate.webp",
-      "input_runvalidate2.webp",
-      "input_wallparity.png",
-      "mpv-shot0040-368530fb.jpg",
-      "mpv-shot0040-f406fc02.jpg",
-      "ng55-input.jpg",
-      "ng56-input.jpg",
-      "ng57-input.jpg",
-      "outfit_cap-03199aa5.png",
-      "outfit_cap-0ee047aa.png",
-      "outfit_cap-3084cf8d.png",
-      "outfit_cap-54d205a8.png",
-      "outfit_cap-6e97a633.png",
-      "outfit_cap-96eff0c3.png",
-      "outfit_cap-995b489c.png",
-      "outfit_cap-9be57ca8.png",
-      "outfit_cap-a1f2aea1.png",
-      "outfit_cap-adef80db.png",
-      "outfit_cap-dec9a847.png",
-      "outfit_cap-e20319a4.png",
-      "pineapple.webp",
-      "probe-anchor.png",
-      "probe-real.png",
-      "probe-up.png",
-      "rigged_char-0248dd65.png",
-      "rigged_char-113052b7.png",
-      "rigged_char-16e6c35e.png",
-      "rigged_char-43bfc432.png",
-      "rigged_char-58fa81e3.png",
-      "rigged_char-6c8952e9.png",
-      "rigged_char-72e37bab.png",
-      "rigged_char-ab053b91.png",
-      "rigged_char-cf465eef.png",
-      "rigged_char-d0ee23be.png",
-      "rigged_char-dafa5538.png",
-      "rigged_char-dff0a906.png",
-      "rigged_char-f65a6c5c.png",
-      "rigged_char-fe2d4891.png",
-      "source-14798086.png",
-      "source-9dc538ba.png",
-      "source.png",
-      "sss.webp",
-      "stage_mesh.png",
-      "t_logo.png",
-      "tagger_probe-67d518e1.png",
-      "up2.png"
+      "00075-2286428479_5600aecdb168.jpg",
+      "36039_fd673969123f.jpg",
+      "MummyGirl_5dc5418fd089.jpg",
+      "SaveImage.0_edit_00001__239d72f5b56e.png",
+      "SaveImage.0_edit_00001__37e8ff902419.png",
+      "SaveImage.0_edit_00001__41b018ade25b.png",
+      "SaveImage.0_edit_00001__4d51beb2cc98.png",
+      "SaveImage.0_edit_00001__4fac0a3e2013.png",
+      "SaveImage.0_edit_00001__597ba5b4769f.png",
+      "SaveImage.0_edit_00001__5ea2de6b0a4e.png",
+      "SaveImage.0_edit_00001__699850493269.png",
+      "SaveImage.0_edit_00001__ab16b046de27.png",
+      "SaveImage.0_edit_00001__ba84b265f65d.png",
+      "SaveImage.0_edit_00001__c1775484286d.png",
+      "SaveImage.0_edit_00001__f57d1713bfb3.png",
+      "SaveImage.0_gen_00001__09689fe61e7a.png",
+      "SaveImage.0_gen_00001__2193b347e808.png",
+      "SaveImage.0_gen_00001__329b23c3f4de.png",
+      "SaveImage.0_gen_00001__39db8ade4a1e.png",
+      "SaveImage.0_gen_00001__3a075223adfa.png",
+      "SaveImage.0_gen_00001__4efbfe6341d0.png",
+      "SaveImage.0_gen_00001__50f22877cd95.png",
+      "SaveImage.0_gen_00001__62b97ce19787.png",
+      "SaveImage.0_gen_00001__85379519f4df.png",
+      "SaveImage.0_gen_00001__c0aa96997f3e.png",
+      "SaveImage.0_gen_00001__e2a6713311a9.png",
+      "SaveImage.0_gen_00001__f5d9b3b3a1c9.png",
+      "SaveImage.0_input_prep_00001__abe3b0054abe.png",
+      "SaveImage.0_instance_00001__ffe7e1274cdf.png",
+      "SaveImage.1_detect_boxes_00001__e1ba45bbc14e.png",
+      "bake-variance-probe-anchor_e79e0539a052.png",
+      "cards-gpu-h3-bake-anchor_e79e0539a052.png",
+      "cards-gpu-h3-dare-anchor_e79e0539a052.png",
+      "cards-gpu-h3-draft-anchor_e79e0539a052.png",
+      "cards-gpu-h3-hd-anchor_e79e0539a052.png",
+      "cards-gpu-seedvr2-anchor_e79e0539a052.png",
+      "character_img_00009__fb3e000684f8.png",
+      "download (2)_c47310e743c1.png",
+      "e2e_anchor (1).png",
+      "e2e_anchor.png",
+      "example.png",
+      "heroine_baldsrc_back_1ef8663b7812.png",
+      "heroine_baldsrc_front_e7ab636a20c7.png",
+      "heroine_baldsrc_side_002cf9baed88.png",
+      "heroine_baldsrc_threequarter_left_d071b06d4164.png",
+      "heroine_baldsrc_threequarter_right_526984c6a8a4.png",
+      "heroine_ref_nude_r379_1c7f38a300b1.png",
+      "heroine_ref_nude_r379_notail_0c403836ca94.png",
+      "input-prep-verify_76cbdd22ae31.png",
+      "melite-data-1d3efadeb639ca12_700ae1b16e8a.png",
+      "melite-data-4703258cd8213f17_5600aecdb168.jpg",
+      "melite-data-58045ad11e46d53f_5600aecdb168.jpg",
+      "melite-data-5bd1165a72f97550_fd9660a4273a.png",
+      "melite-data-5f814b766a662ba3_fd9660a4273a.png",
+      "melite-data-a54444dc3c33aa3f_6002e3c934d8.png",
+      "melite-data-b25d7e2155a224ec_72844f29c4a6.png",
+      "melite-data-d04dce8f14c03ce1_6002e3c934d8.png",
+      "melite-data-d51c0532d60a18db_6002e3c934d8.png",
+      "melite-data-f89cdad5ffb1023f_5600aecdb168.jpg",
+      "source_7804de2d8921.png",
+      "sss_b8f4d80c061c.webp",
+      "stage_mesh_42053183f429.png"
      ],
      {
       "image_upload": true
@@ -6177,135 +6119,68 @@
     ],
     "image": [
      [
-      "00075-2286428479.jpg",
-      "36039.jpg",
-      "Black_Eagle_Order_star.jpg",
-      "ComfyUI_03536_-1-1e6a9761.png",
-      "MummyGirl.jpg",
-      "PlayStation - Castlevania_ Symphony of the Night - Playable Characters - Alucard.png",
-      "SaveImage.0_edit_00001_.png",
-      "SaveImage.0_gen_00001_ (1).png",
-      "SaveImage.0_gen_00001_ (2).png",
-      "SaveImage.0_gen_00001_.png",
-      "Screenshot-from-2026-09-03-20-50-19-5c708f0d.png",
-      "Screenshot-from-2026-09-03-20-50-19-741ac888.png",
-      "Screenshot-from-2026-09-03-20-50-19-89fb8625.png",
-      "Screenshot-from-2026-09-03-20-50-19-90d800b4.png",
-      "Screenshot-from-2026-09-03-20-50-19-b5ba1df7.png",
-      "Screenshot-from-2026-09-03-20-50-19-d6211007.png",
-      "Screenshot-from-2026-09-03-20-50-19-fcda363e.png",
-      "Spr_B2W2_Beauty.png",
-      "_lora_wall_anchor.png",
-      "artifact.png",
-      "asdas.png",
-      "bike.webp",
-      "cannon.webp",
-      "character_gimg_00002_.png",
-      "character_gimg_00003_.png",
-      "character_gimg_00004_.png",
-      "character_gimg_00005_.png",
-      "character_gimg_00006_.png",
-      "character_gimg_00007_.png",
-      "character_gimg_00008_.png",
-      "character_gimg_00009_.png",
-      "character_gimg_00010_.png",
-      "character_gimg_00011_.png",
-      "character_gimg_00012_.png",
-      "character_img_00002_.png",
-      "character_img_00003_.png",
-      "character_img_00004_.png",
-      "character_img_00005_.png",
-      "character_img_00006_.png",
-      "character_img_00007_.png",
-      "character_img_00008_.png",
-      "character_img_00009_.png",
-      "character_img_00010_.png",
-      "character_img_00011_.png",
-      "doors-1516320-x.png",
-      "download (2).png",
-      "drop-probe-2px.png",
-      "e193f7f4-5fba-4ef4-9d11-01baed151c60.png",
-      "e2e-drag-2b215376.png",
-      "e2e-drag-451afc3f.png",
-      "e2e-drag-8f22947d.png",
-      "e2e-drag-a8733fc4.png",
-      "e2e-drag-ea7eb709.png",
-      "e2e_upload_probe-26c8962b.png",
-      "e2e_upload_probe-47f3b904.png",
-      "edit_6a9cb34f_SaveImage.0_gen_00001_.png",
-      "heroine_baldsrc_back.png",
-      "heroine_baldsrc_front.png",
-      "heroine_baldsrc_side.png",
-      "heroine_baldsrc_threequarter_left.png",
-      "heroine_baldsrc_threequarter_right.png",
-      "heroine_ref_nude_r379.png",
-      "heroine_ref_nude_r379_notail.png",
-      "icon.png",
-      "images.jpeg",
-      "input-prep-verify.png",
-      "input_6a9cab81_source.png",
-      "input_6a9deaa7_parity-input.png",
-      "input_6a9deaa8_parity-input.png",
-      "input_6a9deaaa_parity-input.png",
-      "input_6a9deaac_parity-input.png",
-      "input_6a9deaad_parity-input.png",
-      "input_6a9deacc_parity-input.png",
-      "input_6a9deacd_parity-input.png",
-      "input_runbikelive.webp",
-      "input_rundiff2.webp",
-      "input_rundiff3.webp",
-      "input_rundiffpixal.webp",
-      "input_rundifftrell.webp",
-      "input_runk.webp",
-      "input_runknob.webp",
-      "input_runlab.webp",
-      "input_runlinks.webp",
-      "input_runvalidate.webp",
-      "input_runvalidate2.webp",
-      "input_wallparity.png",
-      "mpv-shot0040-368530fb.jpg",
-      "mpv-shot0040-f406fc02.jpg",
-      "ng55-input.jpg",
-      "ng56-input.jpg",
-      "ng57-input.jpg",
-      "outfit_cap-03199aa5.png",
-      "outfit_cap-0ee047aa.png",
-      "outfit_cap-3084cf8d.png",
-      "outfit_cap-54d205a8.png",
-      "outfit_cap-6e97a633.png",
-      "outfit_cap-96eff0c3.png",
-      "outfit_cap-995b489c.png",
-      "outfit_cap-9be57ca8.png",
-      "outfit_cap-a1f2aea1.png",
-      "outfit_cap-adef80db.png",
-      "outfit_cap-dec9a847.png",
-      "outfit_cap-e20319a4.png",
-      "pineapple.webp",
-      "probe-anchor.png",
-      "probe-real.png",
-      "probe-up.png",
-      "rigged_char-0248dd65.png",
-      "rigged_char-113052b7.png",
-      "rigged_char-16e6c35e.png",
-      "rigged_char-43bfc432.png",
-      "rigged_char-58fa81e3.png",
-      "rigged_char-6c8952e9.png",
-      "rigged_char-72e37bab.png",
-      "rigged_char-ab053b91.png",
-      "rigged_char-cf465eef.png",
-      "rigged_char-d0ee23be.png",
-      "rigged_char-dafa5538.png",
-      "rigged_char-dff0a906.png",
-      "rigged_char-f65a6c5c.png",
-      "rigged_char-fe2d4891.png",
-      "source-14798086.png",
-      "source-9dc538ba.png",
-      "source.png",
-      "sss.webp",
-      "stage_mesh.png",
-      "t_logo.png",
-      "tagger_probe-67d518e1.png",
-      "up2.png"
+      "00075-2286428479_5600aecdb168.jpg",
+      "36039_fd673969123f.jpg",
+      "MummyGirl_5dc5418fd089.jpg",
+      "SaveImage.0_edit_00001__239d72f5b56e.png",
+      "SaveImage.0_edit_00001__37e8ff902419.png",
+      "SaveImage.0_edit_00001__41b018ade25b.png",
+      "SaveImage.0_edit_00001__4d51beb2cc98.png",
+      "SaveImage.0_edit_00001__4fac0a3e2013.png",
+      "SaveImage.0_edit_00001__597ba5b4769f.png",
+      "SaveImage.0_edit_00001__5ea2de6b0a4e.png",
+      "SaveImage.0_edit_00001__699850493269.png",
+      "SaveImage.0_edit_00001__ab16b046de27.png",
+      "SaveImage.0_edit_00001__ba84b265f65d.png",
+      "SaveImage.0_edit_00001__c1775484286d.png",
+      "SaveImage.0_edit_00001__f57d1713bfb3.png",
+      "SaveImage.0_gen_00001__09689fe61e7a.png",
+      "SaveImage.0_gen_00001__2193b347e808.png",
+      "SaveImage.0_gen_00001__329b23c3f4de.png",
+      "SaveImage.0_gen_00001__39db8ade4a1e.png",
+      "SaveImage.0_gen_00001__3a075223adfa.png",
+      "SaveImage.0_gen_00001__4efbfe6341d0.png",
+      "SaveImage.0_gen_00001__50f22877cd95.png",
+      "SaveImage.0_gen_00001__62b97ce19787.png",
+      "SaveImage.0_gen_00001__85379519f4df.png",
+      "SaveImage.0_gen_00001__c0aa96997f3e.png",
+      "SaveImage.0_gen_00001__e2a6713311a9.png",
+      "SaveImage.0_gen_00001__f5d9b3b3a1c9.png",
+      "SaveImage.0_input_prep_00001__abe3b0054abe.png",
+      "SaveImage.0_instance_00001__ffe7e1274cdf.png",
+      "SaveImage.1_detect_boxes_00001__e1ba45bbc14e.png",
+      "bake-variance-probe-anchor_e79e0539a052.png",
+      "cards-gpu-h3-bake-anchor_e79e0539a052.png",
+      "cards-gpu-h3-dare-anchor_e79e0539a052.png",
+      "cards-gpu-h3-draft-anchor_e79e0539a052.png",
+      "cards-gpu-h3-hd-anchor_e79e0539a052.png",
+      "cards-gpu-seedvr2-anchor_e79e0539a052.png",
+      "character_img_00009__fb3e000684f8.png",
+      "download (2)_c47310e743c1.png",
+      "e2e_anchor (1).png",
+      "e2e_anchor.png",
+      "example.png",
+      "heroine_baldsrc_back_1ef8663b7812.png",
+      "heroine_baldsrc_front_e7ab636a20c7.png",
+      "heroine_baldsrc_side_002cf9baed88.png",
+      "heroine_baldsrc_threequarter_left_d071b06d4164.png",
+      "heroine_baldsrc_threequarter_right_526984c6a8a4.png",
+      "heroine_ref_nude_r379_1c7f38a300b1.png",
+      "heroine_ref_nude_r379_notail_0c403836ca94.png",
+      "input-prep-verify_76cbdd22ae31.png",
+      "melite-data-1d3efadeb639ca12_700ae1b16e8a.png",
+      "melite-data-4703258cd8213f17_5600aecdb168.jpg",
+      "melite-data-58045ad11e46d53f_5600aecdb168.jpg",
+      "melite-data-5bd1165a72f97550_fd9660a4273a.png",
+      "melite-data-5f814b766a662ba3_fd9660a4273a.png",
+      "melite-data-a54444dc3c33aa3f_6002e3c934d8.png",
+      "melite-data-b25d7e2155a224ec_72844f29c4a6.png",
+      "melite-data-d04dce8f14c03ce1_6002e3c934d8.png",
+      "melite-data-d51c0532d60a18db_6002e3c934d8.png",
+      "melite-data-f89cdad5ffb1023f_5600aecdb168.jpg",
+      "source_7804de2d8921.png",
+      "sss_b8f4d80c061c.webp",
+      "stage_mesh_42053183f429.png"
      ],
      {
       "image_upload": true
@@ -6403,7 +6278,11 @@
      {
       "multiselect": false,
       "options": [
-       "drive_pose.mp4"
+       "film_b5daccf1bb15.mp4",
+       "h3_t4_film_00001__ac34e57f53c3.mp4",
+       "h3_t4_w1_00001__a7c9b7cb82a6.mp4",
+       "h3_t4_w1_00068__533aceec71e5.mp4",
+       "h3_t4_w1_00069__7f612db51789.mp4"
       ],
       "video_upload": true
      }
@@ -6647,11 +6526,18 @@
    "required": {
     "audio": [
      [
-      "01 Dildolech (Kelis Milkshake Parody.mp3",
-      "07 - Sex and Violence (feat. Melissa McNaught).flac",
-      "19 If Whites Ruled The World  (Nas I.mp3",
-      "drive_pose.mp4",
-      "input-prep-verify-tone.wav"
+      "01 Dildolech (Kelis Milkshake Parody_7699f5cb82b7.mp3",
+      "07 - Sex and Violence (feat. Melissa McNaught)_fd1a34c11c44.flac",
+      "SaveAudio.0_sfx_00001_a3590a151fe9.flac",
+      "SaveAudioAdvanced.0_music_00001_10c86983ccba.mp3",
+      "cards-gpu-tts-base-ref_bfe2acab4b33.wav",
+      "film_b5daccf1bb15.mp4",
+      "h3_t4_film_00001__ac34e57f53c3.mp4",
+      "h3_t4_w1_00001__a7c9b7cb82a6.mp4",
+      "h3_t4_w1_00068__533aceec71e5.mp4",
+      "h3_t4_w1_00069__7f612db51789.mp4",
+      "input-prep-verify-tone_3c2a21677dcd.wav",
+      "line_e853f3067188.flac"
      ],
      {
       "audio upload": "audio"
@@ -8934,6 +8820,9 @@
     "mod_1": [
      [
       "(none)",
+      "SaveImage.0_edit_00001_",
+      "SaveImage.0_gen_00001_",
+      "bake-variance-probe-anchor",
       "vanellope_example"
      ],
      {
@@ -8943,6 +8832,9 @@
     "mod_2": [
      [
       "(none)",
+      "SaveImage.0_edit_00001_",
+      "SaveImage.0_gen_00001_",
+      "bake-variance-probe-anchor",
       "vanellope_example"
      ],
      {
@@ -8952,6 +8844,9 @@
     "mod_3": [
      [
       "(none)",
+      "SaveImage.0_edit_00001_",
+      "SaveImage.0_gen_00001_",
+      "bake-variance-probe-anchor",
       "vanellope_example"
      ],
      {
@@ -8961,6 +8856,9 @@
     "mod_4": [
      [
       "(none)",
+      "SaveImage.0_edit_00001_",
+      "SaveImage.0_gen_00001_",
+      "bake-variance-probe-anchor",
       "vanellope_example"
      ],
      {
@@ -8970,6 +8868,9 @@
     "mod_5": [
      [
       "(none)",
+      "SaveImage.0_edit_00001_",
+      "SaveImage.0_gen_00001_",
+      "bake-variance-probe-anchor",
       "vanellope_example"
      ],
      {
@@ -8979,6 +8880,9 @@
     "mod_6": [
      [
       "(none)",
+      "SaveImage.0_edit_00001_",
+      "SaveImage.0_gen_00001_",
+      "bake-variance-probe-anchor",
       "vanellope_example"
      ],
      {
@@ -8988,6 +8892,9 @@
     "mod_7": [
      [
       "(none)",
+      "SaveImage.0_edit_00001_",
+      "SaveImage.0_gen_00001_",
+      "bake-variance-probe-anchor",
       "vanellope_example"
      ],
      {
@@ -8997,6 +8904,9 @@
     "mod_8": [
      [
       "(none)",
+      "SaveImage.0_edit_00001_",
+      "SaveImage.0_gen_00001_",
+      "bake-variance-probe-anchor",
       "vanellope_example"
      ],
      {
@@ -10130,7 +10040,8 @@
       "default": "none",
       "multiselect": false,
       "options": [
-       "none"
+       "none",
+       "taeh3.safetensors"
       ],
       "tooltip": "Tiny VAE decoder from models/vae_approx for true-RGB previews. Overrides Latent2RGB and the 'vae' input."
      }
@@ -11742,9 +11653,9 @@
   "search_aliases": []
  },
  "Sam3dBodyImageToAnny": {
-  "category": "Melite/Anny",
+  "category": "TechNoir/Anny",
   "description": "",
-  "display_name": "\ud83e\uddcd SAM 3D Body \u00b7 estimator \u2192 Anny",
+  "display_name": "\ud83e\uddcd\ud83d\udcb0 SAM 3D Body \u00b7 commercial chain \u2192 Anny",
   "has_intermediate_output": false,
   "input": {
    "optional": {
@@ -11799,7 +11710,7 @@
    "anny_params_path"
   ],
   "output_node": true,
-  "python_module": "custom_nodes.melite-kimodo-nodes",
+  "python_module": "custom_nodes.melite-anny-estimator-nodes",
   "search_aliases": []
  },
  "SamplerCustomAdvanced": {
@@ -14463,15 +14374,19 @@
     "unet_name": [
      [
       "Minimax-h3_Singularity_ref2va_Pruned_v1.3_int8.safetensors",
+      "Wan2_2_VACE_A14B_HIGH_fp8_e4m3fn_scaled_KJ_merged.safetensors",
       "anima-base-v1.0-int8convrot.safetensors",
       "anima-base-v1.0.safetensors",
       "fibo2_dev_int8_convrot.safetensors",
       "fibo2_edit_turbo_int8_convrot.safetensors",
+      "ideogram4_nvfp4_mixed.safetensors",
+      "ideogram4_unconditional_nvfp4_mixed.safetensors",
       "krea2_raw_int8_convrot.safetensors",
       "krea2_turbo_int8_convrot.safetensors",
       "minimax_h3_fl2va_pruned_int8_convrot.safetensors",
       "minimax_h3_hybrid_fl2va_ref2va_b25-49-int8.safetensors",
       "minimax_h3_hybrid_fl2va_ref2va_b30-49-int8.safetensors",
+      "minimax_h3_latent_upscaler_3d_bf16.safetensors",
       "minimax_h3_ref2va_pruned_int8_convrot.safetensors",
       "minimax_music3_dit_int8_convrot.safetensors",
       "moss_image_sft_int8_convrot.safetensors",
@@ -14482,6 +14397,8 @@
       "qwen_image_edit_2511_fp8_e4m3fn_scaled_lightning_comfyui_4steps_v1.0.safetensors",
       "qwen_image_edit_2511_int8_convrot.safetensors",
       "rt_detr_v4-x-hgnet_fp32.safetensors",
+      "scail2_14B_fp8_scaled.safetensors",
+      "seedvr2_3b_fp16.safetensors",
       "trellis_2_int8_convrot.safetensors",
       "z_image_turbo_int8_convrot.safetensors"
      ]
@@ -15016,6 +14933,7 @@
     "vae_name": [
      [
       "Wan2_1_VAE_bf16.safetensors",
+      "Wan2_2_VAE_bf16.safetensors",
       "ae.safetensors",
       "flux2-vae.safetensors",
       "flux2-vae_small.safetensors",
@@ -15027,6 +14945,7 @@
       "qwen_image_vae.safetensors",
       "trellis_2_shape_vae_bf16.safetensors",
       "trellis_2_texture_vae_bf16.safetensors",
+      "taeh3.safetensors",
       "pixel_space"
      ]
     ]
@@ -15234,7 +15153,11 @@
     ],
     "video": [
      [
-      "drive_pose.mp4"
+      "film_b5daccf1bb15.mp4",
+      "h3_t4_film_00001__ac34e57f53c3.mp4",
+      "h3_t4_w1_00001__a7c9b7cb82a6.mp4",
+      "h3_t4_w1_00068__533aceec71e5.mp4",
+      "h3_t4_w1_00069__7f612db51789.mp4"
      ]
     ]
    }
@@ -15855,7 +15778,7 @@
    "STRING"
   ],
   "output_node": true,
-  "python_module": "custom_nodes.comfyui-wd14-tagger",
+  "python_module": "custom_nodes.ComfyUI-WD14-Tagger",
   "search_aliases": []
  },
  "YuE2GenerateABC": {

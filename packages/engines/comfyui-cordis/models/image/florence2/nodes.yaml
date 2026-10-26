@@ -5,6 +5,5 @@ extensions:
   - name: ComfyUI-Florence2
     url: https://github.com/kijai/ComfyUI-Florence2.git
     ref: 9ece3de914214c5f581d725167bc9d0eeb0d1120
-    version: 1.1.0
     required: true
-    desc: "Florence-2 captioning (DownloadAndLoadFlorence2Model + Florence2Run). Checkpoint self-downloads to ComfyUI/models/LLM on first run."
+    desc: "Florence-2 captioning v1.1.0 (DownloadAndLoadFlorence2Model + Florence2Run). Checkpoint self-downloads to ComfyUI/models/LLM on first run."

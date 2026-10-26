@@ -181,6 +181,20 @@
       "UnetLoaderGGUF",
       "UnetLoaderGGUFAdvanced"
     ],
+    "ComfyUI-LanPaint": [
+      "LanPaint_AVDecode",
+      "LanPaint_AVEncode",
+      "LanPaint_ImageDecode",
+      "LanPaint_ImageEncode",
+      "LanPaint_KSampler",
+      "LanPaint_KSamplerAdvanced",
+      "LanPaint_MaskBlend",
+      "LanPaint_MiniMaxAudioDecode",
+      "LanPaint_MiniMaxAudioEncode",
+      "LanPaint_SamplerCustom",
+      "LanPaint_SamplerCustomAdvanced",
+      "LanPaint_VideoMaskEditor"
+    ],
     "ComfyUI-KJNodes": [
       "ImageConcatMulti",
       "ImageSharpenKJ",
@@ -227,6 +241,17 @@
       "MiniMaxH3MotionContextLoadLatent",
       "MiniMaxH3MotionContextSaveLatent",
       "MiniMaxH3MotionContextTrim"
+    ],
+    "comfyui-minimax-h3-timeline-director": [
+      "MiniMaxH3FiniteAudioTrimTail",
+      "MiniMaxH3FiniteLatentContinuation",
+      "MiniMaxH3FiniteOutputTrim",
+      "MiniMaxH3FiniteSegmentFinalize",
+      "MiniMaxH3FiniteSegmentSampler",
+      "MiniMaxH3TimelineDirector",
+      "MiniMaxH3TimelineEncoder",
+      "MiniMaxH3TimelinePlanner",
+      "MiniMaxH3TimelineSelfLiftSampler"
     ],
     "comfyui-impact-pack": [
       "BboxDetectorSEGS",

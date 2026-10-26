@@ -279,7 +279,6 @@ function extensionPlan(
   ref: Extract<ResourceRef, { kind: "extension" }>,
   row: {
     readonly name: string;
-    readonly version: string;
     readonly url: string;
     readonly ref: string;
     readonly pip: readonly string[];
@@ -288,6 +287,9 @@ function extensionPlan(
 ): ProvisionPlan {
   // Every manifest row declares its url (R7: the registry key no row
   // set is gone) — extensions plan from git, or local when url-less.
+  // No version rides the plan: a git row's pin is the commit (the
+  // provider refuses a ref+version request by law), and the manifest
+  // carries no registry-arm rows.
   const source = row.url.trim() !== ""
     ? "git"
     : "local";
@@ -301,7 +303,6 @@ function extensionPlan(
       required: true,
       provider: source,
       ...(row.ref.trim() === "" ? {} : { ref: row.ref.trim() }),
-      ...(row.version.trim() === "" ? {} : { version: row.version.trim() }),
       requirements: [...row.pip],
       nodeTypes: [...nodeTypes],
     }],
@@ -310,7 +311,6 @@ function extensionPlan(
 
 function extensionManifest(repoRoot: string): Map<string, {
   readonly name: string;
-  readonly version: string;
   readonly url: string;
   readonly ref: string;
   readonly pip: readonly string[];

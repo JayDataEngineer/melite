@@ -2,7 +2,6 @@ extensions:
 - name: comfyui-h3-motion-context
   url: https://github.com/NikoDemon80/ComfyUI-H3-Motion-Context.git
   ref: 429e952ae5c09b54f44cb6e3bef7331d998f0656
-  version: 0.5.1
   required: true
   desc: 'BASE pack for H3 motion context: MiniMaxH3MotionContext, MotionContextTrim,
     MotionContextSaveLatent, MotionContextLoadLatent. Owns the four shared class names
@@ -25,7 +24,6 @@ extensions:
 - name: ComfyUI-VideoHelperSuite
   url: https://github.com/Kosinkadink/ComfyUI-VideoHelperSuite.git
   ref: 4d907bee61e92c2e65af3bd6383a4e4d356126d1
-  version: 1.7.9
   required: true
   desc: Video I/O utilities (VHS preview/metadata flags in window graphs).
     2026-10-12: registry id "comfyui-videohelpersuite" resolved in NO
@@ -42,7 +40,6 @@ extensions:
 - name: rgthree-comfy
   url: https://github.com/rgthree/rgthree-comfy.git
   ref: 2c5342a8cb0eaecaabf61435a5f37dd594c510ba
-  version: 1.0.2608210019
   required: true
   desc: Workflow-helper pack; no node class our graphs address —
     installed for the workflow conveniences only (re-audit
@@ -70,12 +67,10 @@ extensions:
   required: true
   desc: >-
     MeliteUnload / MeliteConcatVideos — the film's window-save boundary
-    and video join. The card already requires this pack; no manifest
-    installed it (extension census, 2026-10-13).
+    and video join. The card already requires this pack; no manifest    installed it (extension census, 2026-10-13).
 - name: ComfyUI-MiniMaxH3Mod
   url: https://github.com/JayDataEngineer/ComfyUI-MiniMaxH3Mod.git
   ref: b746d15fecb620237ea3b0f2cd2380a0acfe51d0
-  version: 0.2.6
   required: true
   desc: >-
     RefMod pack (Luisacaotica, MIT — forked to JayDataEngineer as a PIN,
@@ -90,7 +85,6 @@ extensions:
 - name: Comfyui_Minimax_h3_latent_Upscaler-Plus
   url: https://github.com/xmarre/Comfyui_Minimax_h3_latent_Upscaler-Plus
   ref: fc58fb80246bc58383929d21e78f54cf87d6507a
-  version: 0.2.2
   required: true
   desc: >-
     H3 learned-latent upscale pack (the SOTA plan's P2 pick over
@@ -108,3 +102,22 @@ extensions:
     NO LICENSE file (unlicensed; operator clearance owed before
     estate reliance). Pip: einops (torch/safetensors are
     core-provided). Re-pin only with a composed re-render.
+- name: comfyui-minimax-h3-timeline-director
+  url: https://github.com/JayDataEngineer/comfyui-minimax-h3-timeline-director
+  # The vendored twin (vendor/comfyui_extensions/, submodule pin
+  # b80ea45a2f) is the same commit — registry.comfy.org carries
+  # 0.8.0 under publisher data-engineer. Declared 2026-10-26: the
+  # h3 family's film compose addresses the pack's finite-segment
+  # classes (packages/models/h3/src/actions.ts: the drift-control
+  # continuation window k≥2), but no manifest ever declared the
+  # pack — the boot fixture's residue rows named the gap when the
+  # regen facts leg refused the class-set.
+  ref: b80ea45a2fbec1105a7de6868fb1747308bf470c
+  required: true
+  desc: >-
+    MiniMaxH3FiniteLatentContinuation / MiniMaxH3FiniteSegmentFinalize
+    — the h3 film graph's TimelineDirector drift-control continuation
+    (schedule-matched prefix noise for windows k≥2 + segment
+    finalize). Pip beyond the base env: av, imageio-ffmpeg, psutil
+    (aiohttp ships with ComfyUI; playwright deliberately NOT
+    declared — test-only, the 2026-10-13 audit).

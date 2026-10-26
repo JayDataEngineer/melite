@@ -1,6 +1,5 @@
 export interface ExtRow {
     name: string;
-    version: string;
     url: string;
     ref: string;
     required: boolean;

@@ -17,7 +17,6 @@ import { die, warn } from "./provision-shared.ts";
 
 export interface ExtRow {
   name: string;
-  version: string;
   url: string;
   ref: string;
   required: boolean;
@@ -26,8 +25,17 @@ export interface ExtRow {
   _source?: string;
 }
 
+// The canonical row shape is name+url+ref(+required+desc+pip) — the
+// GIT-row law (2026-10-26 drain): a `version:` field on a git row
+// forked the pin identity and made the runtime provider refuse the
+// row outright (canInstall: ref+version never combine — "the
+// declared git ref cannot be combined with an unverified registry
+// version"). Registry-arm version metadata never rides this
+// manifest; a pack's release version lives in its desc. `version`
+// is therefore not an EXT_KEY: a row carrying it refuses loud at
+// parse (the CLOSED-shape rule).
 export const EXT_KEYS: ReadonlySet<string> = new Set(
-  ["name", "version", "url", "ref", "required", "desc", "pip"]);
+  ["name", "url", "ref", "required", "desc", "pip"]);
 
 export function stripComment(line: string): string {
   // A `#` opens a comment only outside single/double quotes.
@@ -158,7 +166,7 @@ export function loadExtensionsYaml(path: string): ExtRow[] {
     if (dash && (ind === 0 || ind === 2)) {
       push();
       cur = { name: unquote(dash[1], path, l.n),
-        version: "", url: "", ref: "", required: true, desc: "", pip: [] };
+        url: "", ref: "", required: true, desc: "", pip: [] };
       rowInd = ind;
       continue;
     }
@@ -250,7 +258,7 @@ export function mergeManifest(repo: string): ExtRow[] {
   for (const [path, pluginId] of findNodesYaml(repo)) {
     const rel = path.slice(repo.length + 1);
     for (const ext of loadExtensionsYaml(path)) {
-      const pin = JSON.stringify([ext.version, ext.url,
+      const pin = JSON.stringify([ext.url,
         ext.ref, ext.pip]);
       const prior = seen.get(ext.name);
       const src = pluginId + ":" + rel;
