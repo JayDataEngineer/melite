@@ -18,6 +18,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { createElement as h, type Ref } from 'react'
 import { FilmPlayer, TimelineScrubBar } from '@melite-plugin/timeline/ui/timeline'
 import type { FilmPlayerHandle } from '@melite-plugin/timeline/ui/timeline'
+import { createSnapshotStore } from '@deepseek-ai/dsh-client-store'
 import s from './filmSeam.module.css'
 
 /** the observable bridge — player writes, bar reads */
@@ -34,35 +35,29 @@ export interface FilmSeam {
 }
 
 export function createFilmSeam(fps = 0): FilmSeam {
-  const listeners = new Set<() => void>()
-  // THE LISTENER FAULT LAW (the client-store fold's guarantee, applied
-  // here too): a subscriber that throws must not stop the others, and
-  // must never break the write that notified it. The loops below ran
-  // bare until the 1.6 verification found it — the catalog folds kept
-  // this guard and the seam did not.
-  const notify = (): void => {
-    for (const fn of [...listeners]) {
-      try { fn() } catch (e) { console.warn('[filmSeam] subscriber fault:', e) }
-    }
-  }
+  // THE OBSERVATION ENGINE (handroll 1.6's second half, cured
+  // 2026-11-12): the raw listener Set + notify loop is deleted — the
+  // seam rides dsh-client-store's snapshot engine, PER INSTANCE
+  // (a per-mount lifetime; the module-level clientStore seat is the
+  // wrong lifetime for a bridge two mounted drills must never share).
+  // The LISTENER FAULT LAW is the engine's own now — notifySubscribers
+  // try/catches each subscriber, so a fault never starves the others
+  // and never breaks the write (pinned at filmSeam.spec). The fields
+  // read imperatively (the bar's optimistic clock) ride getters over
+  // the store's snapshot — one state, two read faces.
+  type FilmSeamState = Pick<FilmSeam, 'handle' | 'current' | 'duration' | 'playing' | 'fps'>
+  const store = createSnapshotStore<FilmSeamState>({
+    handle: null, current: 0, duration: 0, playing: false, fps,
+  })
   const seam: FilmSeam = {
-    handle: null,
-    current: 0,
-    duration: 0,
-    playing: false,
-    fps,
-    subscribe(fn) {
-      listeners.add(fn)
-      return () => { listeners.delete(fn) }
-    },
-    bind(handle) {
-      seam.handle = handle
-      notify()
-    },
-    report(partial) {
-      Object.assign(seam, partial)
-      notify()
-    },
+    get handle() { return store.getSnapshot().handle },
+    get current() { return store.getSnapshot().current },
+    get duration() { return store.getSnapshot().duration },
+    get playing() { return store.getSnapshot().playing },
+    get fps() { return store.getSnapshot().fps },
+    subscribe(fn) { return store.subscribe(fn) },
+    bind(handle) { store.update((draft) => { draft.handle = handle }) },
+    report(partial) { store.update((draft) => { Object.assign(draft, partial) }) },
   }
   return seam
 }

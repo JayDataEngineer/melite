@@ -18506,36 +18506,43 @@ window.__ModuleLoader__.load({
 		* film artifact exists.
 		*/
 		function createFilmSeam(fps = 0) {
-			const listeners = /* @__PURE__ */ new Set();
-			const notify = () => {
-				for (const fn of [...listeners]) try {
-					fn();
-				} catch (e) {
-					console.warn("[filmSeam] subscriber fault:", e);
-				}
-			};
-			const seam = {
+			const store = (0, _deepseek_ai_dsh_client_store.createSnapshotStore)({
 				handle: null,
 				current: 0,
 				duration: 0,
 				playing: false,
-				fps,
+				fps
+			});
+			return {
+				get handle() {
+					return store.getSnapshot().handle;
+				},
+				get current() {
+					return store.getSnapshot().current;
+				},
+				get duration() {
+					return store.getSnapshot().duration;
+				},
+				get playing() {
+					return store.getSnapshot().playing;
+				},
+				get fps() {
+					return store.getSnapshot().fps;
+				},
 				subscribe(fn) {
-					listeners.add(fn);
-					return () => {
-						listeners.delete(fn);
-					};
+					return store.subscribe(fn);
 				},
 				bind(handle) {
-					seam.handle = handle;
-					notify();
+					store.update((draft) => {
+						draft.handle = handle;
+					});
 				},
 				report(partial) {
-					Object.assign(seam, partial);
-					notify();
+					store.update((draft) => {
+						Object.assign(draft, partial);
+					});
 				}
 			};
-			return seam;
 		}
 		/** THE PREVIEW SLOT FACE — the shared player, wired to the seam.
 		* Carries the FIT LAW (one law per estate — .hero's own): the

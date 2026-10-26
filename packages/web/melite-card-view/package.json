@@ -77,6 +77,7 @@
     "@deepseek-ai/dsh-client-ui-commands": "0.2.1-rc.2",
     "@deepseek-ai/dsh-client-ui-input-trigger": "0.2.1-rc.2",
     "@deepseek-ai/dsh-client-ui-primitives": "0.2.1-rc.2",
+    "@deepseek-ai/dsh-client-store": "0.2.1-rc.2",
     "@deepseek-ai/dsh-typert-protocol": "0.2.1-rc.2",
     "@melite-plugin/dsh-gallery": "workspace:*",
     "@melite-plugin/melite-run-wire": "workspace:*",
