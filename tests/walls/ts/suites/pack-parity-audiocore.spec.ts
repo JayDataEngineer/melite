@@ -46,6 +46,7 @@ const SHARED_FILES = [
   "schemas.py",
   "native.py",
   "install.py",
+  "env_assert.py",
   "qvoice.py",
   "engines/qwen3_tts.py",
   "engines/moss_sfx_v2.py",
@@ -373,5 +374,50 @@ describe("the estate venv standard (the transformers/hf-hub pin law)", () => {
           `${name}: '${line}' floats a boot-critical dep — pin it to the estate venv standard`).toBe(true);
       }
     }
+  });
+
+  // THE BOOT ENV ASSERT (audit 016, 2026-11-12): declare-only is not
+  // a contract for a PUBLISHED pack. Manager re-runs requirements only
+  // on this pack's install/update; the venv is shared and last
+  // installer wins — on 2026-10-23 an outside pin landed transformers
+  // 5.1.0 under qwen-tts-hf 0.1.1.post1 (floor >=5.15.1,<6) and every
+  // qwen3_tts load died MID-RUN with a raw AttributeError
+  // ('Qwen3TTSTalkerCodePredictorConfig' object has no attribute
+  // 'validate_layer_type') on all six DECL addresses. Two arms: the
+  // wiring (the assert fires at pack import, before nodes load) and
+  // the judge (the burn's exact version reds, the standard passes).
+  it("the pack asserts the python env AT IMPORT — assert_transformers_floor fires before nodes load (the boot-time refusal)", () => {
+    const init = read(PACK, "__init__.py");
+    expect(init, `${PACK}/__init__.py exists`).not.toBeNull();
+    const body = init as string;
+    const assertIdx = body.indexOf("assert_transformers_floor()");
+    const importIdx = body.indexOf("from .nodes import");
+    expect(assertIdx, "__init__.py calls assert_transformers_floor()").toBeGreaterThan(-1);
+    expect(importIdx, "__init__.py imports the nodes").toBeGreaterThan(-1);
+    expect(assertIdx, "the assert fires BEFORE the nodes import — a failed assert refuses the whole pack at boot").toBeLessThan(importIdx);
+    const env = read(PACK, "env_assert.py");
+    expect(env, `${PACK}/env_assert.py exists`).not.toBeNull();
+    expect((env as string).includes("validate_layer_type"), "the refusal names the burn's own AttributeError").toBe(true);
+  });
+
+  it("the floor judge reds the burn's version and passes the standard (the 2026-10-23 drift, judged)", () => {
+    // Runs the pack's OWN judge in python (the same venv grammar the
+    // engine runs); reds if the judge ever stops refusing 5.1.0 or
+    // stops passing 5.20.2 — the estate standard.
+    const probe = [
+      "import sys; sys.path.insert(0, sys.argv[1])",
+      "from env_assert import _version_tuple, TRANSFORMERS_FLOOR, TRANSFORMERS_CEILING",
+      "assert not (_version_tuple('5.1.0') >= _version_tuple(TRANSFORMERS_FLOOR) and _version_tuple('5.1.0') < _version_tuple(TRANSFORMERS_CEILING)), 'the burn version 5.1.0 passes the floor — the judge is dead'",
+      "assert _version_tuple('5.20.2') >= _version_tuple(TRANSFORMERS_FLOOR) and _version_tuple('5.20.2') < _version_tuple(TRANSFORMERS_CEILING), 'the estate standard 5.20.2 fails the floor'",
+      "print('judge-live')",
+    ].join("; ");
+    let out: string;
+    try {
+      out = execFileSync("/home/user/tools/comfyui/.venv/bin/python", ["-c", probe, join(VENDOR, PACK)], { encoding: "utf8" }).trim();
+    } catch {
+      // engine venv absent (CI box): stand down like the deployed arm
+      return;
+    }
+    expect(out).toBe("judge-live");
   });
 });

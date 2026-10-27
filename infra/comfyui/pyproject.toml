@@ -82,16 +82,19 @@ dependencies = [
     # import it (installed-first, _vendor fallback for BYO envs)
     "melite-model-base",
     # pack-lane runtime deps (canary-proven 2026-09-04, GPU sweep):
-    # kimodo's 8-bit text-encoder path + its motion lib; tts/voice-
-    # lock's qwen engine (HARD-PINS transformers 4.57.3 — kimodo runs
-    # live-proven on it; the /opt/kimodo pyproject's 5.1.0 pin is
-    # conservative); the poser chain's mesh work. The audio lane also
-    # runs its DiT EAGER on this stack (AUDIOCORE_SFX_EAGER=1 — the
-    # torch 2.11 inductor segfault, see melite-audio-nodes eb18e35).
+    # kimodo's 8-bit text-encoder path + its motion lib; the tts/voice-
+    # lock's qwen engine (audit 016, 2026-11-12: the OLD 4.57.3 pin was
+    # a fossil — kimodo 1.0.0's OWN metadata pins transformers==5.20.2,
+    # and every qwen consumer in the venv declares a >=5.15.1 floor;
+    # the 4.57.3 pin re-broke the engine venv on every installer run
+    # and the CustomVoice load died at PretrainedConfig.
+    # validate_layer_type); the poser chain's mesh work. The audio lane
+    # also runs its DiT EAGER on this stack (AUDIOCORE_SFX_EAGER=1 —
+    # the torch 2.11 inductor segfault, see melite-audio-nodes eb18e35).
     "bitsandbytes==0.50.2",
     "motion-correction",
-    "qwen-tts==0.1.1",
-    "transformers==4.57.3",
+    "qwen-tts-hf==0.1.1.post1",
+    "transformers==5.20.2",
     "trimesh>=5.0",
     # the poser chain's NATIVE anny engine (operator order, 2026-09-06:
     # "you are rendering GLB and not native ANNY... that is why it is
