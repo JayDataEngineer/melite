@@ -47,7 +47,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Context } from "@deepseek-ai/cordis";
 import { FileOperationStore, ProvisioningService } from "../src/index.ts";
-import type { ProvisionOperation, ProvisionPlan, ProvisioningConfig, ResourceRef } from "../src/index.ts";
+import type { OperationStorePort, ProvisionOperation, ProvisionPlan, ProvisioningConfig, ResourceRef } from "../src/index.ts";
 const roots: string[] = [];
 
 function tempRoot(): string {
@@ -161,6 +161,15 @@ describe("the restart keeps the ledger (P5 F2: the verbs must survive the seat r
         expect(rejoined!.state).toBe("failed");
         expect(rejoined!.operationId).toBe(id);
         expect(rejoined!.ref).toEqual(ref());
+        // F-2 (the auditor's byte-truth pin, 2026-11-12): the frozen
+        // count died with the old process — the ledger NEVER claims
+        // bytes it has not re-statted. Both counters rejoin ZEROED
+        // (the service's rehydrateProgress zeroes them; this arm
+        // pinned state/ref/why but never the counters — a rejoin
+        // carrying the dead process's frozen 39/100 would have stayed
+        // green).
+        expect(rejoined!.bytes).toBe(0);
+        expect(rejoined!.total).toBe(0);
         assert.match(String(rejoined!.detail ?? ""), /stuck|stalled|no longer progressing|timed? ?out/i);
       } finally {
         await ctxB.fiber.dispose();
@@ -193,6 +202,90 @@ describe("the restart keeps the ledger (P5 F2: the verbs must survive the seat r
         expect(byRef.state).toBe("failed");
       } finally {
         await ctx.fiber.dispose();
+      }
+    } finally {
+      disposeRoots();
+    }
+  });
+
+  // F-3 (the auditor's guard split, 2026-11-12): the boot seed's
+  // live-lock guard drops a terminal row BY-ID when a live same-ref
+  // fetch holds the ref — the pointer and the row belong to the live
+  // fetch, not the remnant (verify R4). The arm proves BOTH faces of
+  // the split on ONE row: dropped under the live fetch, rejoined
+  // once the ref is free. The gate holds the seed's store read until
+  // the live lock is provably held (deterministic ordering — never a
+  // race between the seed and the fetch).
+  test("ARM 10 — the live-lock guard splits by-id: a terminal same-ref row stays OUT under a live fetch, rejoins when the ref frees", async () => {
+    const root = tempRoot();
+    try {
+      // the remnant: a terminal row for the ref, stored pre-boot
+      const remnant: ProvisionOperation = {
+        operationId: "op-guard-remnant",
+        ref: ref(),
+        state: "failed",
+        items: [],
+        startedAt: Date.now() - 120_000,
+        finishedAt: Date.now() - 90_000,
+        detail: "the fetch stopped progressing at 39% (no bytes landed in the stall budget)",
+      };
+      const realStore = new FileOperationStore(root);
+      await realStore.save(remnant);
+
+      // THE GATE: the seed's list() read parks until the arm opens
+      // it — the service boots, the live fetch takes the lock, and
+      // only then does the seed walk the stored rows.
+      let openGate: () => void = () => {};
+      const gate = new Promise<ProvisionOperation[]>((resolve) => {
+        openGate = (): void => { void realStore.list().then(resolve, () => { resolve([]); }); };
+      });
+      const gatedStore: OperationStorePort = {
+        load: (operationId) => realStore.load(operationId),
+        save: (operation) => realStore.save(operation),
+        list: () => gate,
+        ...(realStore.saveIfState !== undefined
+          ? { saveIfState: (operation: ProvisionOperation, expectState: ProvisionOperation["state"]) => realStore.saveIfState(operation, expectState) }
+          : {}),
+      };
+      // a wide stall budget: the live fetch must still hold the lock
+      // when the seed walks (this arm never needs the stall to fire)
+      const guardedConfig: ProvisioningConfig = {
+        ...stalledConfig(root),
+        acquireStallTimeoutMs: 60_000,
+        operationStore: gatedStore,
+      };
+
+      const ctxLive = new Context();
+      try {
+        const service = new ProvisioningService(ctxLive, guardedConfig);
+        const liveId = await service.startWeightAcquire(ref());
+        const live = await pollLedger(() => {
+          const p = service.progressOf(liveId);
+          return p !== null && p.state === "acquiring" ? p : null;
+        }, 5_000);
+        assert.ok(live !== null, "the live fetch must hold the ref before the seed walks");
+
+        // seed walks under the live lock: the remnant is DROPPED
+        openGate();
+        await new Promise((resolve) => { setTimeout(resolve, 250); });
+        expect(service.progressOf("op-guard-remnant"), "a terminal row under a LIVE same-ref fetch stays out (dropped by-id)").toBeNull();
+        expect(service.progressOfRef(ref())?.operationId).toBe(liveId);
+      } finally {
+        await ctxLive.fiber.dispose();
+      }
+
+      // the ref is free now: a fresh seat over the same store seeds
+      // the remnant like any terminal row (ARM 8's law) — the SAME
+      // row that was dropped under the live fetch rejoins
+      const ctxFree = new Context();
+      try {
+        const serviceFree = new ProvisioningService(ctxFree, stalledConfig(root));
+        const rejoined = await pollLedger(() => serviceFree.progressOf("op-guard-remnant"), 2_000);
+        assert.ok(rejoined !== null, "the same row rejoins once no live fetch holds the ref");
+        expect(rejoined.state).toBe("failed");
+        expect(rejoined.bytes).toBe(0);
+      } finally {
+        await ctxFree.fiber.dispose();
       }
     } finally {
       disposeRoots();

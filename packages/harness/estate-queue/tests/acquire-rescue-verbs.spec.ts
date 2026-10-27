@@ -26,9 +26,12 @@ import assert from "node:assert/strict";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { resourceKey } from "@melite/estate-provisioning";
+import { resourceKey, FileOperationStore, ProvisioningService } from "@melite/estate-provisioning";
+import { Context } from "@deepseek-ai/cordis";
 import type {
+  ProvisionOperation,
   ProvisionPlan,
+  ProvisioningConfig,
   ProvisioningServiceDefinition,
   ResourceRef,
   ResourceStatus,
@@ -186,5 +189,116 @@ describe("the stuck acquire's verbs (k2: no retry, no delete — the door must o
     // the wedge is clearable: the dead row is gone, a later poll 404s
     const [afterCode] = await dispatchManage({ action: "acquire_weight", operation_id: deadOp }, ctx);
     assert.equal(afterCode, 404);
+  });
+
+  // F-1 (the restart auditor's composed-hop minor, 2026-11-12): ARMs
+  // 6-7 prove the verbs against a POPULATED-LEDGER FAKE and the
+  // restart suite (weight-acquire-restart.spec.ts) proves the ledger
+  // IS populated after a restart — but no arm rode BOTH at once: the
+  // REAL ProvisioningService (a real stall-settled failure, a real
+  // restart over the same store) seated as the manage ctx's
+  // provisioning member, driven through the REAL dispatchManage door.
+  // This is that arm: the operator's whole hop — dead row → restart →
+  // one-press poll/retry/discard still answers — on real service ×
+  // real plane, only the wire (the fetch stream) faked.
+  it("ARM 8 — the COMPOSED hop: a REAL service restarted over its store answers poll/retry/discard through dispatchManage", async () => {
+    const root = mkdtempSync(join(tmpdir(), "acquire-verbs-composed-"));
+    roots.push(root);
+    const plan = modelPlan(modelRef("moss-image"));
+    const stalledConfig = (r: string): ProvisioningConfig => ({
+      declaration: { resolve: async (): Promise<ProvisionPlan> => plan },
+      storeRoot: r,
+      acquireStallTimeoutMs: 250,
+      // the composition's own wiring law (the durable row lives in a
+      // FileOperationStore, never in memory alone — the restart seat
+      // reads what this seat wrote)
+      operationStore: new FileOperationStore(r),
+      fetcher: async (_url: string, signal?: AbortSignal) => ({
+        status: 200,
+        body: (async function* stalled(): AsyncGenerator<Uint8Array> {
+          for (let i = 0; i < 39; i += 1) yield Uint8Array.of(7);
+          await new Promise<never>((_resolve, reject) => {
+            if (signal?.aborted === true) { reject(new Error("aborted")); return; }
+            signal?.addEventListener("abort", () => { reject(new Error("aborted")); }, { once: true });
+          });
+        })(),
+      }),
+    });
+    const pollUntil = async <T>(read: () => T | null | undefined, budgetMs: number): Promise<T | null | undefined> => {
+      const deadline = Date.now() + budgetMs;
+      for (;;) {
+        const seen = read();
+        if (seen !== null && seen !== undefined) return seen;
+        if (Date.now() >= deadline) return seen;
+        await new Promise((resolve) => { setTimeout(resolve, 25); });
+      }
+    };
+
+    // service A: the seat before the restart — drive a REAL acquire
+    // to its stall-settled FAILED state (the real watchdog, 250ms)
+    const ctxA = new Context();
+    let deadOp = "";
+    try {
+      const a = new ProvisioningService(ctxA, stalledConfig(root));
+      deadOp = await a.startWeightAcquire(modelRef("moss-image"));
+      const failed = await pollUntil(() => {
+        const p = a.progressOf(deadOp);
+        return p !== null && p.state === "failed" ? p : null;
+      }, 10_000);
+      assert.ok(failed !== null, "the real stall watchdog must settle the failure");
+      const stored = await pollUntil(() => new FileOperationStore(root).load(deadOp), 5_000);
+      assert.ok(stored !== null, "the failed row must persist before the restart");
+    } finally {
+      await ctxA.fiber.dispose();
+    }
+
+    // service B: the RESTARTED seat — the real service seats the
+    // manage ctx; every verb below rides dispatchManage, never a
+    // direct service call
+    const ctxB = new Context();
+    try {
+      const b = new ProvisioningService(ctxB, stalledConfig(root));
+      const ctx = ctxFor(b);
+      // THE REJOIN FIRST (deterministic ordering): the boot rehydrate
+      // lands on an async effect — and the DOOR's own poll reads
+      // through readProgress (the shared store, the cross-process
+      // arm), which answers BEFORE the ledger seeds. Await the
+      // LEDGER's rejoin (the restart suite's own law), then ride the
+      // door — never a race between the store read and the seed.
+      const rejoined = await pollUntil(() => {
+        const p = b.progressOf(deadOp);
+        return p !== null && p.state === "failed" ? p : null;
+      }, 5_000);
+      assert.ok(rejoined !== null, "the real service's ledger must rejoin the stored terminal row");
+      assert.equal(rejoined.bytes, 0);
+
+      // POLL through the door: the rejoined row answers via dispatchManage
+      const [pollCode, poll] = await dispatchManage({ action: "acquire_weight", operation_id: deadOp }, ctx);
+      assert.equal(pollCode, 200);
+      assert.equal(poll.ok, true);
+      assert.equal(String(dataOf(poll)["state"] ?? ""), "failed");
+
+      // RETRY: one press through the door — a fresh operation on the
+      // REAL service's ledger
+      const [retryCode, retry] = await dispatchManage({ action: "acquire_retry", operation_id: deadOp }, ctx);
+      assert.equal(retryCode, 200);
+      assert.equal(retry.ok, true);
+      const fresh = String(dataOf(retry)["operation_id"]);
+      assert.notEqual(fresh, deadOp, "the retry mints a fresh fetch, never a resurrect");
+      const live = await pollUntil(() => {
+        const p = b.progressOf(fresh);
+        return p !== null && p.state === "acquiring" ? p : null;
+      }, 5_000);
+      assert.ok(live !== null, "the fresh fetch rides the real service's ledger");
+
+      // DISCARD: the dead row clears through the door — a later poll 404s
+      await new Promise((resolve) => { setTimeout(resolve, 400); }); // let the fresh fetch settle first (250ms budget)
+      const [discardCode] = await dispatchManage({ action: "acquire_discard", operation_id: deadOp }, ctx);
+      assert.equal(discardCode, 200);
+      const [afterCode] = await dispatchManage({ action: "acquire_weight", operation_id: deadOp }, ctx);
+      assert.equal(afterCode, 404);
+    } finally {
+      await ctxB.fiber.dispose();
+    }
   });
 });
