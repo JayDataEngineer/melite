@@ -499,6 +499,79 @@ describe("manage acquire_weight (the one acquisition door)", () => {
     assert.equal(fake.startCalls.length, 0, "no fetch started");
   });
 
+  it("a NON-default lane's cell artifact fetches at ITS OWN coordinates (the kroma cure, 2026-11-12): the default plan misses, the DECL re-plans, the subset start rides the coordinate ref", async () => {
+    // THE BURN: the family plan resolves ONE coordinate (the stated
+    // one, else the family default), so a kroma filename — a legal
+    // DECL cell artifact — matched no plan item and the ONE download
+    // door refused it item-not-found while the lane's refusal anchor
+    // spoke the fetch URL. The cure derives the file's own
+    // (variant, quant) from the DECL's cell artifacts and re-plans.
+    const fake = fakeProvisioning();
+    const defaultRef = modelRef("kroma-fam");
+    const kromaInt8 = modelRef("kroma-fam", "family", "kroma", "int8_convrot");
+    const planRow = (ref: ModelRef, name: string, sha: string): ProvisionPlan => ({
+      ref,
+      items: [{
+        kind: "model",
+        key: `model:family:${ref.id}:${ref.variant ?? ""}:${ref.quant ?? ""}:${name}`,
+        owner: ref.owner,
+        id: ref.id,
+        name,
+        folder: "diffusion_models",
+        url: "https://example.invalid/" + name,
+        sha256: sha,
+        sizeBytes: SIZE,
+        required: true,
+        provider: "direct",
+      }],
+    });
+    fake.plans.set(resourceKey(defaultRef), planRow(defaultRef, "krea2_turbo_int8_convrot.safetensors", "a".repeat(64)));
+    fake.plans.set(resourceKey(kromaInt8), planRow(kromaInt8, "kroma-v0.3.1-turbo-opd-int8-convrot.safetensors", "b".repeat(64)));
+    const decl = {
+      id: "kroma-fam",
+      variants: [
+        { id: "turbo", cells: [{ quant: "int8_convrot", artifact: { source_url: "https://example.invalid/krea2_turbo_int8_convrot.safetensors" } }] },
+        { id: "kroma", cells: [{ quant: "int8_convrot", artifact: { source_url: "https://example.invalid/kroma-v0.3.1-turbo-opd-int8-convrot.safetensors" } }] },
+      ],
+    };
+    const ctx = ctxFor(fake, [decl as never]);
+    const [code, out] = await dispatchManage(
+      { action: "acquire_weight", model: "kroma-fam", file: "kroma-v0.3.1-turbo-opd-int8-convrot.safetensors" }, ctx);
+    assert.equal(code, 200);
+    assert.equal(out.ok, true);
+    // the re-plan rode the FILE'S OWN coordinates — the default plan
+    // first (the bare family ask), then the coordinate-carrying ref
+    assert.deepEqual(fake.planCalls, [defaultRef, kromaInt8]);
+    assert.deepEqual(fake.startCalls, [kromaInt8], "the fetch started at the cell artifact's own coordinates");
+    assert.deepEqual(
+      fake.startOptions,
+      [{ items: ["kroma-v0.3.1-turbo-opd-int8-convrot.safetensors"] }],
+      "the subset reached startWeightAcquire — exactly the named row, never the whole family",
+    );
+    const total = (dataOf(out)["total"] as number | undefined) ?? 0;
+    assert.equal(total, SIZE, "total tracks the named file, not the family sum");
+  });
+
+  it("a filename no DECL cell artifact carries still refuses item-not-found — never a guessed coordinate", async () => {
+    const fake = fakeProvisioning();
+    const defaultRef = modelRef("kroma-fam");
+    fake.plans.set(resourceKey(defaultRef), modelPlan(defaultRef));
+    const decl = {
+      id: "kroma-fam",
+      variants: [
+        { id: "kroma", cells: [{ quant: "int8_convrot", artifact: { source_url: "https://example.invalid/kroma-real.safetensors" } }] },
+      ],
+    };
+    const ctx = ctxFor(fake, [decl as never]);
+    const [badCode, bad] = await dispatchManage(
+      { action: "acquire_weight", model: "kroma-fam", file: "ghost.safetensors" }, ctx);
+    assert.equal(badCode, 422);
+    assert.equal(bad.ok, false);
+    assert.match(bad.detail, /item-not-found/);
+    assert.equal(fake.startCalls.length, 0, "no fetch started");
+    assert.equal(fake.planCalls.length, 1, "no coordinate re-plan for an undeclared filename");
+  });
+
   it("the card fallback carries variant and quant (the fallback address stays exact)", async () => {
     const fake = fakeProvisioning();
     const card = modelRef("mask", "card", "fp16", "q4");

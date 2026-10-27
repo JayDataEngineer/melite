@@ -5,6 +5,7 @@
 import { describe, it } from "vitest";
 import assert from "node:assert/strict";
 import {
+  cellArtifactCoordinates,
   judgeLaneRelations,
   judgeLaneSurface,
   judgeSamplerEnvelope,
@@ -612,5 +613,55 @@ describe("THE ONE RESOLVER (D6 2026-10-17: five seats of the (model × variant �
       (resolveVariantRow(folded, "v1", "", "offered") as { variant: { id: string } }).variant.id,
       "v1",
     );
+  });
+});
+
+describe("cellArtifactCoordinates (the kroma fetch cure, 2026-11-12)", () => {
+  const VARIANTS = [
+    { id: "turbo", cells: [{ quant: "int8", artifact: { source_url: "https://host/weight.bin" } }] },
+    { id: "kroma", cells: [
+      { quant: "int8_convrot", artifact: { source_url: "https://huggingface.co/repo/resolve/main/kroma-turbo-int8.safetensors?download=1" } },
+      { quant: "bf16", artifact: { source_url: "https://huggingface.co/repo/resolve/main/kroma-turbo.safetensors" } },
+    ] },
+    { id: "kroma-base", cells: [
+      { quant: "bf16", artifact: { source_url: "https://huggingface.co/repo/resolve/main/kroma-base-dtype-mapped.safetensors" } },
+    ] },
+    { id: "bare", cells: [{ quant: "int8", artifact: null }] },
+  ];
+
+  it("derives the (variant, quant) whose own cell artifact carries the filename", () => {
+    assert.deepEqual(
+      cellArtifactCoordinates(VARIANTS, "kroma-turbo-int8.safetensors"),
+      { variant: "kroma", quant: "int8_convrot" },
+    );
+    assert.deepEqual(
+      cellArtifactCoordinates(VARIANTS, "kroma-turbo.safetensors"),
+      { variant: "kroma", quant: "bf16" },
+    );
+    assert.deepEqual(
+      cellArtifactCoordinates(VARIANTS, "kroma-base-dtype-mapped.safetensors"),
+      { variant: "kroma-base", quant: "bf16" },
+    );
+    // first declared match wins (the matrix walk's law)
+    assert.deepEqual(cellArtifactCoordinates(VARIANTS, "weight.bin"), { variant: "turbo", quant: "int8" });
+  });
+
+  it("strips the ARTIFACT URL's query/fragment to the basename (the C5 law) and refuses every request-side miss", () => {
+    // the strip is the URL side (the C5 boundary audit's own law): a
+    // source_url carrying "?download=1" still names the clean basename
+    assert.deepEqual(
+      cellArtifactCoordinates(VARIANTS, "kroma-turbo-int8.safetensors"),
+      { variant: "kroma", quant: "int8_convrot" },
+    );
+    // the request side compares VERBATIM — the door's item names are
+    // clean basenames (the T-S1 filter's own spelling), so a
+    // query-glued ask is a miss, never a fuzzy match
+    assert.equal(cellArtifactCoordinates(VARIANTS, "kroma-turbo.safetensors?download=1"), null);
+    assert.equal(cellArtifactCoordinates(VARIANTS, "not-declared.safetensors"), null,
+      "an unknown filename derives nothing — the caller keeps its item-not-found refusal, never a guessed coordinate");
+    assert.equal(cellArtifactCoordinates(VARIANTS, ""), null);
+    assert.equal(cellArtifactCoordinates(VARIANTS, "  "), null);
+    // a cell without an artifact (or a url-less row) is skipped, not a throw
+    assert.equal(cellArtifactCoordinates([{ id: "bare", cells: [{ quant: "int8" }] }, { id: "no-cells" }], "x.safetensors"), null);
   });
 });

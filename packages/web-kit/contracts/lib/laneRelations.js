@@ -879,6 +879,49 @@ export function resolveCellRow(variant, stated, address, scope) {
         quant: cell !== null && typeof cell.quant === 'string' ? cell.quant : '',
     };
 }
+/** THE CELL-ARTIFACT COORDINATES (the kroma fetch cure, 2026-11-12):
+ *  a missing-weight filename IS the DECL's own identity of the file —
+ *  the anchor-at-the-door law names the cell artifact's source_url
+ *  basename "the lane file's name". A family plan resolves ONE
+ *  coordinate (the stated one, else the family default), so the
+ *  acquire door's filename filter matched no plan item for any
+ *  NON-default lane's weights and refused them item-not-found — the
+ *  refusal's anchor spoke the URL while the door's hands were empty.
+ *  This read derives the (variant, quant) whose own cell artifact
+ *  carries the filename, so the caller re-plans at the file's own
+ *  coordinate. First declared match wins (the matrix walk's law);
+ *  the query/fragment strip is the C5 basename law.
+ *
+ *  @param variants the DECL's variant matrix (any ResolverVariantRow
+ *  rows whose cells may carry an `artifact` with a `source_url`).
+ *  @param filename the requested weight file's basename, verbatim.
+ *  @returns the artifact's coordinates, or null when no declared
+ *  cell artifact carries the filename (the caller keeps its
+ *  item-not-found refusal — never a guessed coordinate). */
+export function cellArtifactCoordinates(variants, filename) {
+    const want = filename.trim();
+    if (want === '')
+        return null;
+    for (const v of variants) {
+        for (const c of v.cells ?? []) {
+            const artifact = c.artifact;
+            const url = typeof artifact?.source_url === 'string' ? artifact.source_url : '';
+            if (url === '')
+                continue;
+            let base = url.slice(url.lastIndexOf('/') + 1);
+            const cut = Math.max(base.indexOf('?'), base.indexOf('#'));
+            if (cut >= 0)
+                base = base.slice(0, cut);
+            if (base !== want)
+                continue;
+            return {
+                variant: typeof v.id === 'string' ? v.id : '',
+                quant: typeof c.quant === 'string' ? c.quant : '',
+            };
+        }
+    }
+    return null;
+}
 /** THE FLAT-MATRIX FOLD (the mirror's P2 face of the one resolver):
  *  the served spec flattens cells into `group: 'Quant'` rows with
  *  `owner` backrefs; the resolver reads the nested matrix. This fold

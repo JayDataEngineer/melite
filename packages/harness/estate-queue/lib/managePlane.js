@@ -26,6 +26,7 @@ import { holdLifecycle } from "./lifecycleLatch.js";
 import { deadline as deadlineOf, timeoutOf } from "@deepseek-ai/dsh-timeout";
 import { segmentConfined } from "@melite/contracts/mediaKinds";
 import { artifactFileName } from "@melite/contracts/benchResult";
+import { cellArtifactCoordinates } from "@melite/contracts/laneRelations";
 const execFileAsync = promisify(execFile);
 // ── SSOT vocabulary ─────────────────────────────────────────────────
 // Closed vocabulary — a typo is a 422, not a silent miss.
@@ -1396,9 +1397,35 @@ async function hAcquireWeight(req, ctx) {
     // never a whole-family fetch.
     let acquireOptions;
     if (req.filename !== "" && plan !== null) {
-        const wanted = plan.items
+        const itemsNamed = (p) => p.items
             .filter((item) => (item.kind === "extension" ? item.id : item.name) === req.filename)
             .map((item) => (item.kind === "extension" ? item.id : item.name));
+        let wanted = itemsNamed(plan);
+        // THE CELL-ARTIFACT COORDINATES (the kroma fetch cure, 2026-11-12):
+        // a filename of a NON-default lane's cell artifact matched no item —
+        // the family plan resolves ONE coordinate (the stated one, else the
+        // family default), so every kroma weight refused item-not-found at
+        // the ONE download door while the refusal's own anchor spoke the
+        // URL ("they didn't get the URLs"). Derive the file's own
+        // (variant, quant) from the DECL's cell artifacts and re-plan at
+        // that coordinate — the DECL owns the fetch source (the names-only
+        // law), the re-plan carries exactly the named row, and the
+        // coordinate-scoped key (T-S4) keeps the dedupe honest.
+        if (wanted.length === 0 && ref.kind === "model" && ref.owner === "family") {
+            const decl = ctx.models.allDecls().find((d) => d.id === ref.id);
+            const coords = decl === undefined
+                ? null
+                : cellArtifactCoordinates(decl.variants ?? [], req.filename);
+            if (coords !== null && coords.variant !== "") {
+                ref = {
+                    ...ref,
+                    variant: coords.variant,
+                    ...(coords.quant !== "" ? { quant: coords.quant } : {}),
+                };
+                plan = await withManageTimeout(req, ctx, async () => await provisioner.plan(ref));
+                wanted = itemsNamed(plan);
+            }
+        }
         if (wanted.length === 0) {
             throw badRequest(`acquire_weight file '${req.filename}' matches no provision row of '${req.model}' (item-not-found) — refusing to fetch the whole family for a one-file miss`);
         }

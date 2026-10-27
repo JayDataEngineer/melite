@@ -520,6 +520,33 @@ export declare function resolveVariantRow<V extends ResolverVariantRow>(variants
  *  @param address the compose address; '' makes no claim.
  *  @param scope the face the caller resolves for. */
 export declare function resolveCellRow<C extends ResolverCellRow>(variant: ResolverVariantRow | undefined, stated: unknown, address: string, scope: ResolverScope): CellRowResolution<C>;
+/** The coordinates one cell artifact resolves to: the variant id plus
+ *  the cell's quant — the ref spelling a coordinate-scoped re-resolve
+ *  rides (the provisioning key-coordinate law folds exactly these). */
+export interface CellArtifactCoordinates {
+    readonly variant: string;
+    readonly quant: string;
+}
+/** THE CELL-ARTIFACT COORDINATES (the kroma fetch cure, 2026-11-12):
+ *  a missing-weight filename IS the DECL's own identity of the file —
+ *  the anchor-at-the-door law names the cell artifact's source_url
+ *  basename "the lane file's name". A family plan resolves ONE
+ *  coordinate (the stated one, else the family default), so the
+ *  acquire door's filename filter matched no plan item for any
+ *  NON-default lane's weights and refused them item-not-found — the
+ *  refusal's anchor spoke the URL while the door's hands were empty.
+ *  This read derives the (variant, quant) whose own cell artifact
+ *  carries the filename, so the caller re-plans at the file's own
+ *  coordinate. First declared match wins (the matrix walk's law);
+ *  the query/fragment strip is the C5 basename law.
+ *
+ *  @param variants the DECL's variant matrix (any ResolverVariantRow
+ *  rows whose cells may carry an `artifact` with a `source_url`).
+ *  @param filename the requested weight file's basename, verbatim.
+ *  @returns the artifact's coordinates, or null when no declared
+ *  cell artifact carries the filename (the caller keeps its
+ *  item-not-found refusal — never a guessed coordinate). */
+export declare function cellArtifactCoordinates(variants: readonly ResolverVariantRow[], filename: string): CellArtifactCoordinates | null;
 /** A served flat-variant row as the fold reads it — the FormSpecDoc
  *  `variants` members (Variant rows + the serializer's expanded Quant
  *  cell rows with `owner` backrefs). Structural: the fold keeps the
