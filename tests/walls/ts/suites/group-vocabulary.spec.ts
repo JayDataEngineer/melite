@@ -62,6 +62,12 @@ const GENRE_GROUPS = new Map([
   // family's bake tuning — neither sampling nor reference, their own
   // subcategory, owned by the declaring model kit.
   ['refmod', 'h3'],
+  // THE RE-SHOOT SURFACE (feature 024, 2026-10-27): the camera
+  // re-shoot chain's eleven knobs (the master switch, the source
+  // clip, the five camera words, strength/depth/smooth/invert) are
+  // their own subcategory behind the reshoot group — neither
+  // sampling nor reference, owned by the declaring model kit.
+  ['reshoot', 'h3'],
   ['chain', 'motion'], ['guidance', 'motion'], ['output', 'motion'],
 ])
 /** The DEBT register (L1–L3): spellings that violate the law today,

@@ -277,7 +277,9 @@ describe("THE VIBE SUITE BASELINE — the agent flow's acceptance harness (v0 pi
     assert.equal(out["error_kind"], "unknown-lane");
     assert.match(String(out["error"]), /"reference_images" is not a port of card "h3-timeline"/);
     assert.match(String(out["error"]), /ref_images/, "the refusal names the declared lanes");
-    assert.deepEqual(out["allowed_lanes"], ["image", "last_frame", "ref_images", "ref_videos", "ref_audios"]);
+    // reshoot_clip joins 2026-10-27 (feature 024, the re-shoot seat —
+    // a declared video lane, so the refusal must name it).
+    assert.deepEqual(out["allowed_lanes"], ["image", "last_frame", "ref_images", "ref_videos", "ref_audios", "reshoot_clip"]);
     assert.equal(seen.length, 0, "a refused lane never reaches the bench");
   });
 

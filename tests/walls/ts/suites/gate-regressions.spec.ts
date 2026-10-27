@@ -598,7 +598,10 @@ describe("THE COMMITTED LIB (an emitted import Node can actually resolve)", () =
   // 019 C4) and music3's decode.js + tier.js (the audio decode/step
   // tiers, audit 014); the staged-tree census read 614 mid-reconcile,
   // 616 once the wave's emits joined the index.
-  const LIB_CENSUS_PIN = 616;
+  // 617 (2026-10-27): h3's reshoot.js — the camera re-shoot chain module
+  // (audit 024): VDA depth trio + CrossViewWarp double pass + the
+  // disocclusion mask, armed per-compose on the h3 card.
+  const LIB_CENSUS_PIN = 617;
   const specRe = /(?:from\s*|import\(\s*)(["'])(\.[^"']*)\1/g;
 
   it("the census is exact (a deletion OR a lowered floor reds — the count is pinned, not floored)", () => {

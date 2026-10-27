@@ -47,6 +47,12 @@ import {
   spanStanzaFrames,
   transitionOverlap,
 } from './timelineContract.js'
+import {
+  applyH3Reshoot,
+  buildH3Reshoot,
+  reshootArmed,
+  type ReshootChain,
+} from './reshoot.js'
 
 // THE ABSENT-BAG DEFAULT (h3-a, 2026-10-12; bytedance DMAD row
 // 2026-10-11 → the LightX2V Turbo 8-Step v1.0 row 2026-11-07 —
@@ -347,6 +353,14 @@ function renderH3Film(
   const clips: FilmMixClip[] = parseFilmMixClips(
     Array.isArray(p.audio_clips) ? (p.audio_clips as Array<Record<string, unknown>>) : [],
   )
+  // THE RE-SHOOT CHAIN, BUILT ONCE (feature 024): an armed re-shoot
+  // builds its depth → warp → mask subgraph ONCE on the run's graph
+  // (never per window — a multi-window film pays for the depth model
+  // and the reprojection exactly once) and stamps the shared handles
+  // onto every stanza (the __prev precedent — the __-prefix internal
+  // channel). Every window's sampler then renders from the moved
+  // camera through its own apply seat.
+  const reshootChain: ReshootChain | undefined = reshootArmed(p) ? buildH3Reshoot(p, g) : undefined
   // THE FILM DOC'S SPANS — the clock's own rows, one per call, doc
   // frames with the seam word (filmMix.ts owns the law). The stanza
   // snap rides these (spanStanzaFrames): the render loop below and
@@ -667,6 +681,7 @@ function renderH3Film(
       stanza.__overlap = overlap
     }
     if (prev !== undefined) stanza.__prev = prev
+    if (reshootChain !== undefined) stanza.__reshoot = reshootChain
     // THE DOOR GUARD (2026-09-22, the operator's overlap law; the
     // bed arm retired with the bed the same day): a pinned window
     // owns its audio conditioning — the normal inputs stand down for
@@ -1760,6 +1775,14 @@ function renderH3Window(
   // boarding gate — the rows are the operator's BENCH row, 002 H1)
   // and every row fact (schedule capability, strength ceiling, the
   // clip/mask channels) arrived stamped by the service resolution.
+  // THE RE-SHOOT SEAT (feature 024) mounts just ahead of it: the
+  // camera spine (the shared warp chain's union-2.0 patch), with any
+  // file-based picks refining on top. The film loop stamps the built
+  // once handles (__reshoot); the single-window shape builds its own
+  // here (one window = one build, the same subgraph).
+  const reshoot = (p.__reshoot as ReshootChain | undefined)
+    ?? (reshootArmed(p) ? buildH3Reshoot(p, g) : undefined)
+  if (reshoot !== undefined) sigmaModel = applyH3Reshoot(g, sigmaModel, vaeVideo, reshoot, p)
   sigmaModel = applyH3FunControlNets(g, sigmaModel, vaeVideo, fireControlNets(model, p))
   const schedName = p.sched_name as string
   const denoiseVal = p.denoise as number
@@ -2279,6 +2302,20 @@ export const film: ComfyActionSpec<Record<string, unknown>, H3Facts> = {
     // checkpoint (single-member vocabulary, the sr_model precedent).
     { name: "upscale_route", type: "enum", options: ["off", "latent_2x"] },
     { name: "upscale_model", type: "enum", options: ["minimax_h3_latent_upscaler_3d_bf16.safetensors"] },
+    // THE RE-SHOOT SURFACE (feature 024): the camera-reshoot chain's
+    // own knobs, advertised 1:1 with the carrier rows (the door
+    // refuses anything else — the write-plane law above).
+    { name: "reshoot_enabled", type: "boolean" },
+    { name: "reshoot_clip", type: "image" },
+    { name: "reshoot_orbit", type: "number", bounds: [-180, 180] },
+    { name: "reshoot_tilt", type: "number", bounds: [-90, 90] },
+    { name: "reshoot_dolly", type: "number", bounds: [0.1, 3] },
+    { name: "reshoot_zoom", type: "number", bounds: [20, 120] },
+    { name: "reshoot_pan", type: "number", bounds: [-1, 1] },
+    { name: "reshoot_strength", type: "number", bounds: [0, 10] },
+    { name: "reshoot_depth_ratio", type: "number", bounds: [1.5, 1000] },
+    { name: "reshoot_smooth_depth", type: "boolean" },
+    { name: "reshoot_invert_depth", type: "boolean" },
     { name: "attention_backend", type: "enum", options: ["comfy kitchen attention", "pytorch attention"] },
     { name: "sr_switch", type: "boolean" },
     { name: "sr_resolution", type: "number", bounds: [720, 2160] },

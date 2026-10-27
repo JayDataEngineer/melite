@@ -178,6 +178,12 @@ export function registerCard(ctx: Context, comfy: ComfyUIServiceFace): void {
         ref_images: 'image_list',
         ref_videos: 'video_list',
         ref_audios: 'audio_list',
+        // The re-shoot source seat (feature 024): the clip the new
+        // camera move is shot FROM — a single video producer, not a
+        // stack (one re-shoot per film). Arming rides the schema's
+        // reshoot_enabled switch; an unseated clip leaves the film
+        // graph byte-identical.
+        reshoot_clip: 'video',
       },
       legacyAliases: { image_name: 'image' },
       outputs: { default: 'video' },

@@ -94,6 +94,14 @@ export const DECL: ModelDecl = {
       "refmod_identity",
       "refmod_save",
       "loras",
+      // THE RE-SHOOT SURFACE (feature 024): deliberately NOT on the
+      // writes row — the studio's Layer-A serializer never authors the
+      // re-shoot knobs (agent/API-door seats), and the A7 law is
+      // EXACT: writes mirrors what the studio authors, so a seat
+      // outside the serializer universe would red the
+      // studio-contract-wall's planes pin. The served rows carry
+      // named exemptions in that wall's orphan arm instead (the
+      // ref_image_size precedent's shape).
       "document"
     ],
     "kind": "custom",

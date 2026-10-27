@@ -125,7 +125,13 @@ const CARD_ROSTER = 14;
 // z.boolean, visible_when model=music3) — the keyframes exit and the
 // tiled_decode seat cancel; the roster holds at 476 with keyframes
 // OUT and tiled_decode IN.
-const FIELD_ROSTER = 476;
+// 476 -> 496 (2026-10-27, the shared-tree wave): +11 the h3 family's
+// reshoot group (feature 024 — the master switch + the source clip +
+// nine camera/conditioning knobs, every wtype agreeing with its zod
+// shape, the cards-h3-reshoot-chain row); +9 the openjutsu card's
+// fields (the concurrent lane's family landing observed on the same
+// tree — the roster pin CARD_ROSTER owes its own bump to that lane).
+const FIELD_ROSTER = 496;
 
 interface DictField {
   readonly type?: string;
