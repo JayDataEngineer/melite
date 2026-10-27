@@ -50,5 +50,5 @@
       "reason": "UI library imported through its ui/* subpaths and inlined by consumer client bundles — no plugin, no loader face (F1 demotion, nativity audit 2026-11-05)"
     }
   },
-  "license": "SSPL-1.0"
+  "license": "AGPL-3.0-or-later"
 }

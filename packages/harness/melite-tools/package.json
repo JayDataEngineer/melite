@@ -66,5 +66,5 @@
     "lib/**/*.d.ts",
     "cordis.patch.yml"
   ],
-  "license": "SSPL-1.0"
+  "license": "AGPL-3.0-or-later"
 }

@@ -1,7 +1,7 @@
 {
   "name": "@melite/image-image-gen",
   "private": true,
-  "license": "SSPL-1.0",
+  "license": "AGPL-3.0-or-later",
   "version": "0.1.5-pre-alpha",
   "type": "module",
   "exports": {

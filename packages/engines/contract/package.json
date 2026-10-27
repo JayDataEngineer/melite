@@ -2,7 +2,7 @@
   "name": "@melite/engine-contract",
   "version": "0.1.5-pre-alpha",
   "private": true,
-  "license": "SSPL-1.0",
+  "license": "AGPL-3.0-or-later",
   "type": "module",
   "description": "The engine Service Definition (stroke 53, the engine-generics seam): one registry seat every engine provider registers into and every run-path consumer resolves through — ComfyUI today, MCP servers (blender/unity/godot) next. Stage rows are engine-agnostic; graph surgery (spliceWorkflow) stays inside the owning engine's executor. Source-plane TS (erasable syntax, no build step).",
   "exports": {

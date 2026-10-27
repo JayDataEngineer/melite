@@ -1,7 +1,7 @@
 {
   "name": "@melite/catalog",
   "private": true,
-  "license": "SSPL-1.0",
+  "license": "AGPL-3.0-or-later",
   "type": "module",
   "dependencies": {
     "@deepseek-ai/dsh-client-store": "0.2.1-rc.2",

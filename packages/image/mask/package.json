@@ -2,7 +2,7 @@
   "name": "@melite/image-mask",
   "version": "0.1.5-pre-alpha",
   "private": true,
-  "license": "SSPL-1.0",
+  "license": "AGPL-3.0-or-later",
   "type": "module",
   "description": "the mask card (the image lane) — MASK as a simple form card with MODs as ways to get different kinds of masks (dev_docs/design/mods-contracts.md)",
   "exports": {

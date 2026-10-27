@@ -45,5 +45,5 @@
       "reason": "cordis plugin loaded by the host runtime, not imported by root"
     }
   },
-  "license": "SSPL-1.0"
+  "license": "AGPL-3.0-or-later"
 }

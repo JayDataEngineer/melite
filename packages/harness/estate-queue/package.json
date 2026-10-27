@@ -2,7 +2,7 @@
   "name": "@melite/estate-queue",
   "version": "0.1.5-pre-alpha",
   "private": true,
-  "license": "SSPL-1.0",
+  "license": "AGPL-3.0-or-later",
   "type": "module",
   "description": "The serial run queue as a host Cordis service (REBUILD-5 of the gateway kill): lock-first single-writer, sidecar/ledger I/O, reproduce/resume refusal arms, run-status probe slot. No doors, no routes, no port \u2014 the runs remote exposes the lanes over this seat.",
   "dependencies": {
