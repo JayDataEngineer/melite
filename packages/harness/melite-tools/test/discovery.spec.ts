@@ -967,14 +967,15 @@ describe('live door arms', () => {
     // larryvrh #1 at 6 steps strength 1 (his README: "6–8 steps,
     // where v4 looks its best"); Parasyte #2 at the author's 1.5
     // strength / 8 steps (a strength-2 contract, not a typo);
-    // TaoMate the refiner instrument (0.7 / 3 steps). ──
+    // TaoMate the refiner instrument (0.35 / [3,6] steps — the spec's
+    // refiner operating point, timeline audit cure 5, 2026-10-27). ──
     const larry = opts.find((o) => o['value'] === 'h3_larryvrh_v4_ema')
     const para = opts.find((o) => o['value'] === 'h3_pk_parasyte')
     const tao = opts.find((o) => o['value'] === 'h3_taomate_3step')
     assert.ok(larry !== undefined && para !== undefined && tao !== undefined, 'the arena rows serve on the picker')
     assert.deepEqual(larry!['defaults'], { strength: 1, steps: 6, steps_min: 4, steps_max: 8 }, 'larryvrh v4-600 EMA: the crowd #1, 6 steps per README; NO married shift — his README and the research table put him at native/default (the schema default 8 owns)')
     assert.deepEqual(para!['defaults'], { strength: 1.5, steps: 8, steps_min: 6, steps_max: 8, shift_video: 12 }, 'Parasyte: the author rec — 1.5 str / 8 steps / 12-3 shift / er_sde beta57')
-    assert.deepEqual(tao!['defaults'], { strength: 0.7, steps: 3, steps_min: 3, steps_max: 3, shift_video: 6 }, 'TaoMate: the refiner operating point (0.7 over 3 closing steps), its declared fixed domain — ARM 12; married shift 6 (the research table\u2019s TaoMate row)')
+    assert.deepEqual(tao!['defaults'], { strength: 0.35, steps: 3, steps_min: 3, steps_max: 6, shift_video: 6 }, 'TaoMate: the refiner operating point (0.35 light touch over 3 closing steps, the spec\u2019s "avoid over-refinement" — timeline audit cure 5), the [3,6] domain serving the Stage-3 4-6 band — ARM 12; married shift 6 (the research table\u2019s TaoMate row)')
   })
 
   test('a route-owned key serves the owning family lora catalog', async () => {
