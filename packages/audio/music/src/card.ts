@@ -23,14 +23,14 @@ export const schema = z.object({
   duration: z.number().description("Duration (s)").min(5).max(360).step(1).default(30).extra('extra', bag({ order: 0, group: "generation", width: 1, tooltip: "Target audio length in seconds (5-360). Both families treat it as the MAX — the model may end the song earlier (the output is as long as the song runs).", wtype: 'slider' })),
   mode: vocabulary(["full", "melody", "off"]).description("ABC Planning").default("full").extra('extra', bag({ order: 1, group: "generation", width: 1, tooltip: "YuE2 only: plan a symbolic score before generating. full = melody + chords; melody = melody only (cover-recommended); off = direct generation.", wtype: 'select', visible_when: 'model=yue2' })),
   guidance_scale: z.number().description("CFG").min(0.1).max(10).step(0.1).default(1.7).extra('extra', bag({ order: 2, group: "generation", width: 1, tooltip: "Classifier-free guidance (KSampler cfg). 1.7 = the default.", visible_when: 'model=music3' })),
-  n_diffusion_steps: z.number().description("Diffusion Steps").min(1).max(200).step(1).default(MUSIC3_FULL_STEPS.default).extra('extra', bag({ order: 3, group: "generation", width: 1, tooltip: "Denoising steps. 30 = the default (the full-schedule checkpoint tier's own default — the step↔checkpoint pairing). A distilled lane states its own tier's window. Never 0.", wtype: 'number' })),
+  n_diffusion_steps: z.number().description("Diffusion Steps").min(1).max(200).step(1).default(MUSIC3_FULL_STEPS.default).extra('extra', bag({ order: 3, group: "generation", width: 1, tooltip: "Denoising steps. 30 = the default (the full-schedule checkpoint tier's own default — the step↔checkpoint pairing). A distilled checkpoint states its own tier's window. Never 0.", wtype: 'number' })),
   lm_cfg_scale: z.number().description("LM CFG").min(0.1).max(10).step(0.1).default(1.7).extra('extra', bag({ order: 4, group: "generation", width: 1, tooltip: "Lyric-encoder guidance (MiniMaxMusic3TextEncode cfg_scale). 1.7 = the default.", visible_when: 'model=music3' })),
   seed: z.number().description("Seed").step(1).default(-1).extra('extra', bag(seedExtra({ order: 0, group: 'seed', width: 1 }))),
   // THE DECODE TIER KNOB (audit 014 C3): NO .default() — absence is
   // the derivation's seat (the action derives plain/tiled from the
   // lane's own VRAM/size signal; a stamped literal here would be the
   // second default home the cure forbids). Stated, it overrides.
-  tiled_decode: z.boolean().description("Tiled VAE Decode").extra('extra', bag({ order: 5, group: "generation", width: 1, tooltip: "Decode the audio latent in segments (lower VRAM, no quality loss at the template's 1536/64 seats). Absent = derived from the lane's own numbers — a low-VRAM checkpoint or a track past 90s tiles; a roomy checkpoint at a short track decodes plain.", visible_when: 'model=music3' })),
+  tiled_decode: z.boolean().description("Tiled VAE Decode").extra('extra', bag({ order: 5, group: "generation", width: 1, tooltip: "Decode the audio latent in segments (lower VRAM, no quality loss at the template's 1536/64 seats). Absent = derived from the checkpoint's own numbers — a low-VRAM checkpoint or a track past 90s tiles; a roomy checkpoint at a short track decodes plain.", visible_when: 'model=music3' })),
 })
 
 const schemaFn = callableSchema(schema)

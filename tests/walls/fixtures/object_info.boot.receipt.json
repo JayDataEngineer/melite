@@ -1,33 +1,30 @@
 {
- "derived_at": "2026-10-27T04:18:57.815Z",
+ "derived_at": "2026-10-27T17:54:36.641Z",
  "tool": "scripts/regen-node-vocab.mjs --boot",
  "source": {
   "path": "data/tmp/object_info_prod.json",
-  "sha256": "c4b0903595bdf5949b4bc62fb4cd9415a243edda3d180e1fef74d86a3e00218b",
-  "mtime_ms": 1793074733794.9736,
+  "sha256": "76fbe5214af0cdb0b1e1ea6aebbf6c732822cb83620b77870017ea9880ebc178",
+  "mtime_ms": 1793123259364.4866,
   "class_count": 1676,
   "origin": "capture"
  },
  "bootstrap_seed": {
   "path": "tests/walls/fixtures/object_info.boot.bootstrap.json",
-  "sha256": "6e5f1e1b9377b3e280fec75e6b5e03984f862fe43a524aa39fb1f0a0768a47a5",
-  "rows": 71
+  "sha256": "6dd1f1ad41248300340c98eba4c58bfdcca91117713900b22b238501ccedf515",
+  "rows": 72
  },
  "derivation": {
   "facts_path": "packages/engines/comfyui-cordis/data/model-facts.json",
   "addressed_class_count": 95,
-  "bootstrap_class_count": 71,
-  "fixture_class_count": 166,
+  "bootstrap_class_count": 72,
+  "fixture_class_count": 167,
   "rows_probed": 31,
   "refused_rows": 0
  },
  "delta": {
   "added": [],
   "pruned": [],
-  "updated": [
-   "LoadImage",
-   "LoadImageMask"
-  ],
+  "updated": [],
   "reordered_keys": 0
  }
 }

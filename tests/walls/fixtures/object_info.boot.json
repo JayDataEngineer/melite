@@ -1422,6 +1422,7 @@
       "Illustrious/ILFlatMix.safetensors",
       "Illustrious/ILFlatMixV4_00001_.safetensors",
       "sam3.1_multiplex_fp16.safetensors",
+      "video_depth_anything_vits.pth",
       "yue2_3b_int8_convrot.safetensors",
       "z_image_turbo_int8_convrot.safetensors"
      ],
@@ -1752,6 +1753,7 @@
    "required": {
     "control_net_name": [
      [
+      "h3-fun-controlnet/minimax_h3_fun_controlnet_union_2.0_pruned_bf16.safetensors",
       "z-image-fun-union-2.1/Z-Image-Turbo-Fun-Controlnet-Union-2.1-2602-8steps.safetensors"
      ]
     ]
@@ -5410,6 +5412,7 @@
       "h3/MiniMax-H3-FL2VA-Acc-8Step_pruned_comfy.safetensors",
       "h3/MiniMax-H3-Ref2VA-Acc-8Step_pruned_comfy.safetensors",
       "h3/dmad_minimax_h3_4step_lora_critic_comfyui.safetensors",
+      "h3/h3_character_swap_v1.5.safetensors",
       "h3/minimax_h3_fl2v_lightx2v_turbo_4to8step_v0.1-v1.0_768p_v4_step600_dareties.safetensors",
       "h3/minimax_h3_fl2v_lightx2v_v0.1_dareties_v4_step600_comfy_fro.safetensors",
       "h3/minimax_h3_fl2v_turbo_4step_v1.0_768p_comfyui_bf16.safetensors",
@@ -5876,9 +5879,12 @@
        "cards-gpu-tts-base-ref_bfe2acab4b33.wav",
        "film_b5daccf1bb15.mp4",
        "h3_t4_film_00001__ac34e57f53c3.mp4",
+       "h3_t4_film_00002__13e27f55cc1c.mp4",
        "h3_t4_w1_00001__a7c9b7cb82a6.mp4",
        "h3_t4_w1_00068__533aceec71e5.mp4",
        "h3_t4_w1_00069__7f612db51789.mp4",
+       "h3_t4_w1_00077__91fd20bc2a27.mp4",
+       "h3_t4_w1_00078__26185d275266.mp4",
        "input-prep-verify-tone_3c2a21677dcd.wav",
        "line_e853f3067188.flac"
       ]
@@ -6019,6 +6025,7 @@
       "SaveImage.0_edit_00001__ab16b046de27.png",
       "SaveImage.0_edit_00001__ba84b265f65d.png",
       "SaveImage.0_edit_00001__c1775484286d.png",
+      "SaveImage.0_edit_00001__c646d3ccbc27.png",
       "SaveImage.0_edit_00001__f57d1713bfb3.png",
       "SaveImage.0_gen_00001__09689fe61e7a.png",
       "SaveImage.0_gen_00001__1ac37322189c.png",
@@ -6026,9 +6033,12 @@
       "SaveImage.0_gen_00001__329b23c3f4de.png",
       "SaveImage.0_gen_00001__39db8ade4a1e.png",
       "SaveImage.0_gen_00001__3a075223adfa.png",
+      "SaveImage.0_gen_00001__42f043968aa6.png",
       "SaveImage.0_gen_00001__4efbfe6341d0.png",
       "SaveImage.0_gen_00001__50f22877cd95.png",
+      "SaveImage.0_gen_00001__5600ae8fc592.png",
       "SaveImage.0_gen_00001__62b97ce19787.png",
+      "SaveImage.0_gen_00001__7bbaa6b64c60.png",
       "SaveImage.0_gen_00001__85379519f4df.png",
       "SaveImage.0_gen_00001__c0aa96997f3e.png",
       "SaveImage.0_gen_00001__e2a6713311a9.png",
@@ -6144,6 +6154,7 @@
       "SaveImage.0_edit_00001__ab16b046de27.png",
       "SaveImage.0_edit_00001__ba84b265f65d.png",
       "SaveImage.0_edit_00001__c1775484286d.png",
+      "SaveImage.0_edit_00001__c646d3ccbc27.png",
       "SaveImage.0_edit_00001__f57d1713bfb3.png",
       "SaveImage.0_gen_00001__09689fe61e7a.png",
       "SaveImage.0_gen_00001__1ac37322189c.png",
@@ -6151,9 +6162,12 @@
       "SaveImage.0_gen_00001__329b23c3f4de.png",
       "SaveImage.0_gen_00001__39db8ade4a1e.png",
       "SaveImage.0_gen_00001__3a075223adfa.png",
+      "SaveImage.0_gen_00001__42f043968aa6.png",
       "SaveImage.0_gen_00001__4efbfe6341d0.png",
       "SaveImage.0_gen_00001__50f22877cd95.png",
+      "SaveImage.0_gen_00001__5600ae8fc592.png",
       "SaveImage.0_gen_00001__62b97ce19787.png",
+      "SaveImage.0_gen_00001__7bbaa6b64c60.png",
       "SaveImage.0_gen_00001__85379519f4df.png",
       "SaveImage.0_gen_00001__c0aa96997f3e.png",
       "SaveImage.0_gen_00001__e2a6713311a9.png",
@@ -6294,9 +6308,12 @@
       "options": [
        "film_b5daccf1bb15.mp4",
        "h3_t4_film_00001__ac34e57f53c3.mp4",
+       "h3_t4_film_00002__13e27f55cc1c.mp4",
        "h3_t4_w1_00001__a7c9b7cb82a6.mp4",
        "h3_t4_w1_00068__533aceec71e5.mp4",
-       "h3_t4_w1_00069__7f612db51789.mp4"
+       "h3_t4_w1_00069__7f612db51789.mp4",
+       "h3_t4_w1_00077__91fd20bc2a27.mp4",
+       "h3_t4_w1_00078__26185d275266.mp4"
       ],
       "video_upload": true
      }
@@ -6352,6 +6369,7 @@
       "h3/MiniMax-H3-FL2VA-Acc-8Step_pruned_comfy.safetensors",
       "h3/MiniMax-H3-Ref2VA-Acc-8Step_pruned_comfy.safetensors",
       "h3/dmad_minimax_h3_4step_lora_critic_comfyui.safetensors",
+      "h3/h3_character_swap_v1.5.safetensors",
       "h3/minimax_h3_fl2v_lightx2v_turbo_4to8step_v0.1-v1.0_768p_v4_step600_dareties.safetensors",
       "h3/minimax_h3_fl2v_lightx2v_v0.1_dareties_v4_step600_comfy_fro.safetensors",
       "h3/minimax_h3_fl2v_turbo_4step_v1.0_768p_comfyui_bf16.safetensors",
@@ -6547,9 +6565,12 @@
       "cards-gpu-tts-base-ref_bfe2acab4b33.wav",
       "film_b5daccf1bb15.mp4",
       "h3_t4_film_00001__ac34e57f53c3.mp4",
+      "h3_t4_film_00002__13e27f55cc1c.mp4",
       "h3_t4_w1_00001__a7c9b7cb82a6.mp4",
       "h3_t4_w1_00068__533aceec71e5.mp4",
       "h3_t4_w1_00069__7f612db51789.mp4",
+      "h3_t4_w1_00077__91fd20bc2a27.mp4",
+      "h3_t4_w1_00078__26185d275266.mp4",
       "input-prep-verify-tone_3c2a21677dcd.wav",
       "line_e853f3067188.flac"
      ],
@@ -10006,6 +10027,7 @@
    "required": {
     "name": [
      [
+      "h3-fun-controlnet/minimax_h3_fun_controlnet_union_2.0_pruned_bf16.safetensors",
       "z-image-fun-union-2.1/Z-Image-Turbo-Fun-Controlnet-Union-2.1-2602-8steps.safetensors"
      ]
     ]
@@ -14402,6 +14424,8 @@
       "minimax_h3_hybrid_fl2va_ref2va_b30-49-int8.safetensors",
       "minimax_h3_latent_upscaler_3d_bf16.safetensors",
       "minimax_h3_ref2va_pruned_int8_convrot.safetensors",
+      "minimax_h3_ref2va_viggle_pruned_int8_convrot.safetensors",
+      "minimax_music3_dit_fp16.safetensors",
       "minimax_music3_dit_int8_convrot.safetensors",
       "moss_image_sft_int8_convrot.safetensors",
       "pixal3d_int8_convrot.safetensors",
@@ -14897,6 +14921,76 @@
    "latent to audio"
   ]
  },
+ "VAEDecodeAudioTiled": {
+  "api_node": false,
+  "category": "model/latent",
+  "deprecated": false,
+  "description": "",
+  "dev_only": false,
+  "display_name": "VAE Decode Audio (Tiled)",
+  "essentials_category": null,
+  "experimental": false,
+  "has_intermediate_output": false,
+  "input": {
+   "required": {
+    "overlap": [
+     "INT",
+     {
+      "default": 64,
+      "max": 1024,
+      "min": 0,
+      "step": 8
+     }
+    ],
+    "samples": [
+     "LATENT",
+     {}
+    ],
+    "tile_size": [
+     "INT",
+     {
+      "default": 512,
+      "max": 8192,
+      "min": 32,
+      "step": 8
+     }
+    ],
+    "vae": [
+     "VAE",
+     {}
+    ]
+   }
+  },
+  "input_order": {
+   "required": [
+    "samples",
+    "vae",
+    "tile_size",
+    "overlap"
+   ]
+  },
+  "is_input_list": false,
+  "name": "VAEDecodeAudioTiled",
+  "output": [
+   "AUDIO"
+  ],
+  "output_is_list": [
+   false
+  ],
+  "output_matchtypes": null,
+  "output_name": [
+   "AUDIO"
+  ],
+  "output_node": false,
+  "output_tooltips": [
+   null
+  ],
+  "price_badge": null,
+  "python_module": "comfy_extras.nodes_audio",
+  "search_aliases": [
+   "latent to audio"
+  ]
+ },
  "VAEEncode": {
   "category": "model/latent",
   "description": "",
@@ -15169,9 +15263,12 @@
      [
       "film_b5daccf1bb15.mp4",
       "h3_t4_film_00001__ac34e57f53c3.mp4",
+      "h3_t4_film_00002__13e27f55cc1c.mp4",
       "h3_t4_w1_00001__a7c9b7cb82a6.mp4",
       "h3_t4_w1_00068__533aceec71e5.mp4",
-      "h3_t4_w1_00069__7f612db51789.mp4"
+      "h3_t4_w1_00069__7f612db51789.mp4",
+      "h3_t4_w1_00077__91fd20bc2a27.mp4",
+      "h3_t4_w1_00078__26185d275266.mp4"
      ]
     ]
    }

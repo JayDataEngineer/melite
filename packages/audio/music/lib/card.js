@@ -1,20 +1,26 @@
 import z from '@deepseek-ai/schemastery';
 import { declaredAction, instantiateAction } from '@melite/comfyui-card-kit';
 import { DECL as music3Decl } from '@melite/models-music3';
+import { MUSIC3_FULL_STEPS } from '@melite/models-music3';
 import { DECL as yue2Decl } from '@melite/models-yue2';
 import { vocabulary } from '@melite/comfyui-card-kit/vocab';
 import { bag } from '@melite/contracts/extraKeys';
 import { seedExtra } from '@melite/comfyui-card-kit/fields';
 import { callableSchema, gatedResolve } from '@melite/comfyui-card-kit/admission';
 export const schema = z.object({
-    prompt: z.string().description("Tags / Description").extra('extra', bag({ order: 0, group: "prompt", columns: 1, tooltip: "Structured caption: Genre + Vocal Details + Arrangement. E.g. 'funk, pop, soul, guitar, 105 BPM'.", required: true, wtype: 'textarea', })),
+    prompt: z.string().description("Tags / Description").extra('extra', bag({ order: 0, group: "prompt", columns: 1, tooltip: "Structured caption, three sections: Global Metadata (genre, mood, BPM) + Vocal Details (gender, timbre, range) + Arrangement (instruments, structure). Weak one-word captions end the song early — the tail turns to noise. E.g. 'A funk-pop soul track at 105 BPM; male baritone, warm rasp; clean guitar riff, brass stabs, tight pocket drums'.", required: true, wtype: 'textarea', })),
     lyrics: z.string().description("Lyrics").extra('extra', bag({ order: 1, group: "prompt", tooltip: "Lyrics with structure tags: [verse], [chorus], [bridge]. Empty = instrumental.", wtype: 'textarea' })),
-    duration: z.number().description("Duration (s)").min(5).max(360).step(1).default(30).extra('extra', bag({ order: 0, group: "generation", width: 1, tooltip: "Target audio length in seconds (5-360). music3: exact length; YuE2: max length (the song may end earlier).", wtype: 'slider' })),
+    duration: z.number().description("Duration (s)").min(5).max(360).step(1).default(30).extra('extra', bag({ order: 0, group: "generation", width: 1, tooltip: "Target audio length in seconds (5-360). Both families treat it as the MAX — the model may end the song earlier (the output is as long as the song runs).", wtype: 'slider' })),
     mode: vocabulary(["full", "melody", "off"]).description("ABC Planning").default("full").extra('extra', bag({ order: 1, group: "generation", width: 1, tooltip: "YuE2 only: plan a symbolic score before generating. full = melody + chords; melody = melody only (cover-recommended); off = direct generation.", wtype: 'select', visible_when: 'model=yue2' })),
     guidance_scale: z.number().description("CFG").min(0.1).max(10).step(0.1).default(1.7).extra('extra', bag({ order: 2, group: "generation", width: 1, tooltip: "Classifier-free guidance (KSampler cfg). 1.7 = the default.", visible_when: 'model=music3' })),
-    n_diffusion_steps: z.number().description("Diffusion Steps").min(1).max(200).step(1).default(30).extra('extra', bag({ order: 3, group: "generation", width: 1, tooltip: "Denoising steps. 30 = the default. Never 0.", wtype: 'number' })),
+    n_diffusion_steps: z.number().description("Diffusion Steps").min(1).max(200).step(1).default(MUSIC3_FULL_STEPS.default).extra('extra', bag({ order: 3, group: "generation", width: 1, tooltip: "Denoising steps. 30 = the default (the full-schedule checkpoint tier's own default — the step↔checkpoint pairing). A distilled checkpoint states its own tier's window. Never 0.", wtype: 'number' })),
     lm_cfg_scale: z.number().description("LM CFG").min(0.1).max(10).step(0.1).default(1.7).extra('extra', bag({ order: 4, group: "generation", width: 1, tooltip: "Lyric-encoder guidance (MiniMaxMusic3TextEncode cfg_scale). 1.7 = the default.", visible_when: 'model=music3' })),
     seed: z.number().description("Seed").step(1).default(-1).extra('extra', bag(seedExtra({ order: 0, group: 'seed', width: 1 }))),
+    // THE DECODE TIER KNOB (audit 014 C3): NO .default() — absence is
+    // the derivation's seat (the action derives plain/tiled from the
+    // lane's own VRAM/size signal; a stamped literal here would be the
+    // second default home the cure forbids). Stated, it overrides.
+    tiled_decode: z.boolean().description("Tiled VAE Decode").extra('extra', bag({ order: 5, group: "generation", width: 1, tooltip: "Decode the audio latent in segments (lower VRAM, no quality loss at the template's 1536/64 seats). Absent = derived from the checkpoint's own numbers — a low-VRAM checkpoint or a track past 90s tiles; a roomy checkpoint at a short track decodes plain.", visible_when: 'model=music3' })),
 });
 const schemaFn = callableSchema(schema);
 // THE FAMILY IDS COME FROM THEIR DECLS (the closure gate's RULE 5):

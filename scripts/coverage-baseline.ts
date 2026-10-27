@@ -843,6 +843,8 @@ export const COVERAGE_BASELINE: Record<string, {
   // burn e (2026-10-26): the enhance picker's pure filter — measured at the
   // scoped face of its own suite (tests/llm-picker.spec.ts)
   '**/packages/web/melite-card-view/src/client/llm-picker.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
+  // audit 016 C5 + 018 C4 (2026-10-27): the strike's pure judges — measured at lane-strike-carryover.spec.tsx's 8 arms
+  '**/packages/web/melite-card-view/src/client/lane-strike.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/web/melite-card-view/src/client/preview-kinds.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/web/melite-card-view/src/client/rejection-voice.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/web/melite-card-view/src/client/run-rescue-core.ts': { statements: 97.59, branches: 95.51, functions: 95.83, lines: 100 },

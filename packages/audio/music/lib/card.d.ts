@@ -12,6 +12,7 @@ export declare const schema: z<Schemastery.ObjectS<NoInfer<{
     n_diffusion_steps: z<number, number, "defined">;
     lm_cfg_scale: z<number, number, "defined">;
     seed: z<number, number, "defined">;
+    tiled_decode: z<boolean, boolean, "plain">;
 }>>, Schemastery.ObjectT<NoInfer<{
     prompt: z<string, string, "plain">;
     lyrics: z<string, string, "plain">;
@@ -21,6 +22,7 @@ export declare const schema: z<Schemastery.ObjectS<NoInfer<{
     n_diffusion_steps: z<number, number, "defined">;
     lm_cfg_scale: z<number, number, "defined">;
     seed: z<number, number, "defined">;
+    tiled_decode: z<boolean, boolean, "plain">;
 }>>, "plain">;
 export declare const BOARDED: string[];
 /** THE ACTION BINDINGS (the atom vocabulary, stroke 3): the owning

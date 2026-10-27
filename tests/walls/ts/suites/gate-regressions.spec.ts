@@ -592,7 +592,13 @@ describe("THE COMMITTED LIB (an emitted import Node can actually resolve)", () =
   // repin; the walls run caught the drift the same night.
   // 613 (2026-10-27): card-kit's craft.js — the agent-flow rework's
   // slice 6 module (commit 57334986c), the card-owned craft seam.
-  const LIB_CENSUS_PIN = 613;
+  // 616 (2026-10-27, the wave-close reconciliation): three deliberate
+  // lib faces landed unpinned across the cure wave — comfyui-cordis's
+  // scripts/provision-instance-layout.js (the byo-attach writer, audit
+  // 019 C4) and music3's decode.js + tier.js (the audio decode/step
+  // tiers, audit 014); the staged-tree census read 614 mid-reconcile,
+  // 616 once the wave's emits joined the index.
+  const LIB_CENSUS_PIN = 616;
   const specRe = /(?:from\s*|import\(\s*)(["'])(\.[^"']*)\1/g;
 
   it("the census is exact (a deletion OR a lowered floor reds — the count is pinned, not floored)", () => {

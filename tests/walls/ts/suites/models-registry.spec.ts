@@ -157,12 +157,14 @@ describe("the resurrected model registry (families/variants/cells/links)", () =>
     // rows / lane_inputs), outside the DECL — typing them here
     // would fabricate provenance, so the wall names them instead
     // of pretending the column is full.
-    const TYPED_IDS = ["music3", "yue2"]; // huggingface — the two DECL-stated origins
+    const TYPED_IDS = ["music3", "music3-int8", "yue2"]; // huggingface — the DECL-stated origins
     // pair -> quad (2026-10-13, the four audio families' URL
     // cures): music3 and yue2's served rows carry the family
     // Comfy-Org repo + provisions rows — their stale GGUF
-    // cell filenames died with the cure
-    const REPO_WITHOUT_FILE_IDS = ["anny", "kimodo", "music3", "yue2"]; // vendored pack / assets-only repo / Comfy-Org provisions
+    // cell filenames died with the cure.
+    // pair -> triple (2026-10-27, audit 014 C5): the int8
+    // low-VRAM lane rides music3-int8 — its own typed origin.
+    const REPO_WITHOUT_FILE_IDS = ["anny", "kimodo", "music3", "music3-int8", "yue2"]; // vendored pack / assets-only repo / Comfy-Org provisions
     let downloads = 0;
     const typedIds: string[] = [];
     const untypedIds: string[] = [];
@@ -519,6 +521,8 @@ describe("the resurrected model registry (families/variants/cells/links)", () =>
     // join (its tiers are real provisioned bodies).
     // 78 -> 82 (2026-11-08, the third edit lane): fibo2-edit's four
     // cells join — dev + edit-turbo, each int8_convrot + bf16.
-    assert.equal(cells, 82);
+    // 82 -> 83 (2026-10-27, audit 014 C5): music3's fp16 offered cell
+    // joins on the music3 route (the int8 body rides music3-int8).
+    assert.equal(cells, 83);
   });
 });
