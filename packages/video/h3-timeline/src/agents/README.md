@@ -9,6 +9,8 @@ renderer.
 - `AGENT.md` — card-level composition and execution contract
 - `prompts.yaml` — card prompt framing data
 - `skills/directing/` — current human-like direction and seam guidance
+- `skills/cinemadir/` — the camera grammar: shot sizes and moves mapped to
+  calls, keyframe pins, reference-video transfer, and the re-shoot chain
 - `skills/video-timeline/` — timeline-specific composition guidance
 - `skills/grid-authoring/` — span/grid authoring details
 

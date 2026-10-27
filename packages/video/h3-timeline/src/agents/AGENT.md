@@ -165,3 +165,6 @@ The example shows structure, not a substitute for the loaded schema. For the
 full current grid, audio, and film-tail rules, read
 `skills/directing/SKILL.md`, `../timelineContract.ts`, and
 [`dev_docs/cards/h3-timeline.md`](../../../../../dev_docs/cards/h3-timeline.md).
+For camera language — shot sizes, moves, seams, and the re-shoot chain —
+`skills/cinemadir/SKILL.md` is the focused skill; when the ask names a
+camera move it is the deeper teacher beyond this card doc.

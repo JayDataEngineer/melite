@@ -106,7 +106,11 @@ interface SkillLine { id?: string }
 // agent line now advertises the fibo2-edit prompt-enhance skill —
 // the family-lane-law wall serves model:fibo2-edit from
 // comfyui-cordis/models/image/fibo2-edit/agents/skills/prompt-enhance.
-const EXPECTED_CARD_SKILLS = 33;
+// 33 → 34 (2026-10-27, the CinemaDir lane): the h3-timeline card's
+// cinemadir skill (src/agents/skills/cinemadir/SKILL.md) rides the
+// card walk like its three siblings — round-tripped 200 + body in the
+// arm above; row cards-cinemadir-skill walls its content.
+const EXPECTED_CARD_SKILLS = 34;
 // 8 → 11 (2026-10-11): object-forge's skillRefs — image-gen +
 // img-to-mesh card lines and z-image's prompt-enhance ride the flow
 // bundle (card:quad-remesh resolves null — the card ships no agent
