@@ -1,6 +1,6 @@
 ---
 name: prompt-enhance
-description: Anima prompt rules — comma-separated Danbooru tags first, short captions allowed (read before writing an anima prompt)
+description: Anima prompt rules — comma-separated Danbooru tags first, short captions allowed (deepens the craft line when the ask is unusual — never a required pre-read)
 ---
 # Anima — per-model prompt-enhance recipes (the model's agent-facing
 # interface file; agents/ = the AI agent's interface with the model).

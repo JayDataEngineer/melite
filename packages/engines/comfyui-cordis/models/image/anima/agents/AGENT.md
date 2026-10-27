@@ -10,17 +10,17 @@ text-to-image, anime/illustration focused), boarded by the
 **image-gen card**. Anima is a BASE model: seed rolling, inpainting,
 and upscaling are part of its workflow.
 
-## Read before writing a prompt
+## Prompting (the craft line is the law)
 
-1. `melite_skill_read model:anima:anima-prompt-writing` — the
-   prompting grammar. Token separation is load-bearing: `tag, tag`
-   with ONE space after every comma; a doubled comma or an
-   underscore outside score tags is a LOUD compose refusal, not a
-   rewrite.
-2. `melite_skill_read model:anima:prompt-enhance` — the Enhance
-   button's recipe SOURCE (a loader-parsed DSL). Read it only to
-   understand what the enhance door serves, never as prompt-writing
-   guidance.
+The load bundle's craft line IS the prompting law — write from it.
+`melite_skill_read model:anima:anima-prompt-writing` deepens it when
+the ask is unusual (never a required pre-read). One law it carries
+worth knowing up front: token separation is load-bearing — `tag, tag`
+with ONE space after every comma; a doubled comma or an underscore
+outside score tags is a LOUD compose refusal, not a rewrite.
+`melite_skill_read model:anima:prompt-enhance` is the Enhance button's
+recipe SOURCE (a loader-parsed DSL). Read it only to understand what
+the enhance door serves, never as prompt-writing guidance.
 
 ## The three-step flow
 

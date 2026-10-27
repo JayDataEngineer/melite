@@ -689,5 +689,34 @@ describe("THE SKILL BODY LAW — body copy induces calls; the landing's compile 
     assert.match(readFileSync(directing, "utf8"), /needs no second opinion/,
       "directing: the validate-and-repair loop defers to the landing's verdict");
   });
+
+  it("no served surface DEMANDS a skill pre-read — the door's craft-defer law is the one teacher (real-transcript evidence: the girl session's Cd=1)", () => {
+    // The craft-defer cure fixed the DOOR line, but the real girl
+    // session (4a849511) paid its skill read because TWO more homes
+    // still demanded it: the prompt-enhance tier-1 line ("read before
+    // writing an anima prompt") and the family AGENT.md's "Read
+    // before writing a prompt" section. A conflict between the door's
+    // law and a taught demand IS the friction — every home must defer.
+    const agentMdFiles: string[] = [];
+    const walkMd = (dir: string) => {
+      for (const ent of readdirSync(dir, { withFileTypes: true })) {
+        if (ent.name === "node_modules" || ent.name === "lib" || ent.name === "dist") continue;
+        const p = join(dir, ent.name);
+        if (ent.isDirectory()) walkMd(p);
+        else if (ent.name === "AGENT.md") agentMdFiles.push(p);
+      }
+    };
+    walkMd(join(ROOT, "packages"));
+    assert.ok(agentMdFiles.length >= 6, `the sweep sees the estate's agent docs (saw ${agentMdFiles.length})`);
+    const demands: string[] = [];
+    for (const f of [...skillFiles, ...agentMdFiles]) {
+      for (const line of readFileSync(f, "utf8").split("\n")) {
+        if (!/(read|reading)\s+before\s+(writing|composing)|before\s+you\s+(write|compose)/i.test(line)) continue;
+        demands.push(`${f}: ${line.trim()}`);
+      }
+    }
+    assert.deepEqual(demands, [],
+      "a taught 'read before writing' demand induces the very pre-read the door's craft-defer law retired — the craft line is the law, skills deepen it when the ask is unusual");
+  });
 });
 
