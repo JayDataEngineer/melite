@@ -4,7 +4,10 @@
 // types, the helpers, and the assembled REGISTRY.
 import { CARD_PLANE_ENGINE } from '@melite/contracts/benchStage'
 import type { RegistryFlow } from "./flowsData.ts";
-import { plainStage, initial, linkedStage, fromStage } from "./flowsData.ts";
+// linkedStage is NOT imported here: no seed row links another flow
+// (the link builder serves drop-in rows and the tests that drive
+// them — a seed row carrying one would be dead authoring surface).
+import { plainStage, initial, fromStage } from "./flowsData.ts";
 
 export const ANNY_HMR_ESTIMATOR: RegistryFlow = {
   id: "anny-hmr-estimator",
@@ -90,7 +93,13 @@ export const AUDIO_NATIVE_TTS: RegistryFlow = {
       expected: { text: "text" },
       outputs: { wav: "audio" },
       cardIo: { wav: "audio" },
-      params: { model: "qwen3-tts", text: "$text", seed: 42 },
+      // ONE HOME FOR FLOW DEFAULTS (audit 015 C2): no seed stamp —
+      // the tts card's own default (-1, random) rules at compose and
+      // the seed-sentinel gate mints a fresh take per run, the same
+      // take-freshness a GUI card stage gets. A stated seed rides the
+      // declared overlay; the stamp that stood here (seed 42) was a
+      // second default-write that locked every flow take to 42.
+      params: { model: "qwen3-tts", text: "$text" },
     }),
   ],
   initialValidators: { text: "text" },
@@ -113,11 +122,17 @@ export const AUDIO_NATIVE_TTS: RegistryFlow = {
         maximum: null,
         enum: null,
       },
+      // ONE HOME FOR FLOW DEFAULTS (audit 015 C2): the tool publishes
+      // no seed default — the tts card's own default (-1, fresh mint)
+      // rules when the caller omits the seed, so a published number
+      // here would advertise a take-lock the run never composes. The
+      // overlay stays: a stated seed pins the take.
       seed: {
         ptype: "integer",
-        description: "voice sampler seed",
-        default: 42,
-        hasDefault: true,
+        description:
+          "voice sampler seed (omit for a fresh take — the card mints one)",
+        default: null,
+        hasDefault: false,
         minimum: 0,
         maximum: 2147483647,
         enum: null,
@@ -231,7 +246,12 @@ export const IMAGE_UPSCALE: RegistryFlow = {
       // the wiring wall's law (2026-09-20): every wired input typed
       expected: { prompt: "text" },
       cardIo: { image: "image" },
-      params: { model: "krea-2", prompt: "$prompt", seed: 42 },
+      // ONE HOME FOR FLOW DEFAULTS (audit 015 C2): no seed stamp on
+      // either stage — the image-gen and upscale-tools cards both
+      // default seed -1 (fresh mint per stage), so a stamp here (42)
+      // was a second default-write that made every flow-driven gen
+      // seed-identical unless the caller stated a seed.
+      params: { model: "krea-2", prompt: "$prompt" },
     }),
     plainStage({
       id: "polish",
@@ -248,8 +268,8 @@ export const IMAGE_UPSCALE: RegistryFlow = {
         // upscale-tools card composes its own SaveImage prefix from
         // the run id (seedvr2-ema's action), so the stated key
         // reached NO consumer — dead stage surface the carry wall
-        // now refuses.
-        seed: 42,
+        // now refuses. seed left with it (audit 015 C2, the derived
+        // sweep's fourth seat): the card's own -1 default mints.
       },
     }),
   ],
@@ -280,11 +300,17 @@ export const IMAGE_UPSCALE: RegistryFlow = {
         maximum: null,
         enum: null,
       },
+      // ONE HOME FOR FLOW DEFAULTS (audit 015 C2): the tool publishes
+      // no seed default — the make and polish cards both default -1
+      // (fresh mint per stage); a published 42 advertised a take-lock
+      // the compose never carried. The overlay stays: a stated seed
+      // pins both stages.
       seed: {
         ptype: "integer",
-        description: "sampler seed",
-        default: 42,
-        hasDefault: true,
+        description:
+          "sampler seed (omit for fresh takes — each stage's card mints one)",
+        default: null,
+        hasDefault: false,
         minimum: 0,
         maximum: 2147483647,
         enum: null,
@@ -342,7 +368,12 @@ export const MUSIC_NATIVE: RegistryFlow = {
         // stated lyric rides the declared overlay.
         lyrics: "",
         model: "music3",
-        duration: 120,
+        // ONE HOME FOR FLOW DEFAULTS (audit 015 C2): no duration
+        // stamp — the music card's own default (30) rules, the same
+        // length a GUI card stage gets; the stamp that stood here
+        // (120) was a second default-write that made agent music
+        // 120 s while human card music stayed 30 s. A stated duration
+        // rides the declared overlay.
         seed: -1,
       },
     }),
@@ -364,11 +395,17 @@ export const MUSIC_NATIVE: RegistryFlow = {
         maximum: null,
         enum: null,
       },
+      // ONE HOME FOR FLOW DEFAULTS (audit 015 C2): the tool publishes
+      // no duration default — the music card's own default (30)
+      // rules when the caller omits it, so a published 120 advertised
+      // a length the run never composes. The bounds stay (the card's
+      // own declared cap, pointed at, not restated as a default).
       duration: {
         ptype: "integer",
-        description: "seconds of music (the card caps 5..360)",
-        default: 120,
-        hasDefault: true,
+        description:
+          "seconds of music (the card caps 5..360; omit for the card's own default)",
+        default: null,
+        hasDefault: false,
         minimum: 5,
         maximum: 360,
         enum: null,

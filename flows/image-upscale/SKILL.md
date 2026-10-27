@@ -23,12 +23,14 @@ qwen_image_vae, cfg 4.5; z-image: AuraFlow shift 3, lumina2 CLIP,
 ae.safetensors, cfg 1.0). No other value compiles.
 - `prompt` (required) — what to generate, up to 4000 chars. An empty
 or missing prompt 4xxes at the door, never on the GPU.
-- `seed` (optional, default 42) — sampler seed, 0 to 2147483647.
-Numeric strings coerce (`"7"` works); booleans never do.
+- `seed` (optional) — sampler seed, 0 to 2147483647.
+Numeric strings coerce (`"7"` works); booleans never do. Omit it and
+each stage's card default rules (a fresh take, minted per run —
+never a locked repeat).
 
-The `seed` default (42) stamps into the run body when absent, so
-`_request.json` shows exactly what ran. `image_model` has no
-default — the call names its family, every time.
+A stated `seed` stamps into the run body, so `_request.json` shows
+exactly what ran; an omitted one rides the card defaults.
+`image_model` has no default — the call names its family, every time.
 
 ## What runs
 

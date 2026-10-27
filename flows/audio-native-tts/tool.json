@@ -4,7 +4,7 @@
   "kind": "flow",
   "model": "audio-native-tts",
   "stage_title": "Audio Native TTS",
-  "description": "Speech from one text line: Qwen3-TTS 12Hz CustomVoice through the pure-ComfyUI audio lane — text in, wav out. WHAT it produces: the spoken wav artifact. HOW it runs: the single tts card stage composes through the card plane, so the {flow:} door submits ONE merged run (validate then start); the speak POST tool runs the same row in one call; the {model:} door or the bench drives the tts card directly. Knobs: text (required) — what to say; seed (optional, default 42) — voice sampler seed, overlaid onto the stage.",
+  "description": "Speech from one text line: Qwen3-TTS 12Hz CustomVoice through the pure-ComfyUI audio lane — text in, wav out. WHAT it produces: the spoken wav artifact. HOW it runs: the single tts card stage composes through the card plane, so the {flow:} door submits ONE merged run (validate then start); the speak POST tool runs the same row in one call; the {model:} door or the bench drives the tts card directly. Knobs: text (required) — what to say; seed (optional) — voice sampler seed, overlaid onto the stage; omit it and the tts card's own default applies (a fresh take, minted per run).",
   "params_schema": {
     "type": "object",
     "properties": {
@@ -14,7 +14,7 @@
       },
       "seed": {
         "type": "integer",
-        "description": "Optional. Voice sampler seed (default 42, range 0..2147483647)."
+        "description": "Optional. Voice sampler seed, range 0..2147483647 — omit for a fresh take (the card mints one)."
       }
     },
     "required": [
