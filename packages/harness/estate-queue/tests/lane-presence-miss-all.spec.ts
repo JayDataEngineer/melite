@@ -123,6 +123,24 @@ describe("lane-presence-miss-all: one face lists every missing declared weight",
         assert.equal(r["fetchUrl"], undefined, "no invented fetch for a weight no channel names");
       }
     }
+    // THE MOSS UNET LITERAL PIN (kroma audit F12, 2026-10-26): the
+    // loop above rides the gate's own resolver — safe plumbing, but
+    // partly tautological (gate output vs. the resolver the gate
+    // calls). This pin holds the unet row against the DECL's CELL
+    // ARTIFACT LITERALS — the URL the operator would actually fetch
+    // and the size the channel declares — so a resolver regression
+    // that echoes a wrong coordinate reds HERE even if the gate and
+    // the resolver agree with each other.
+    {
+      const unetRow = all.find((r) => r["name"] === MOSS_UNET);
+      assert.ok(unetRow !== undefined, "the unet row is present for the literal pin");
+      assert.equal(
+        unetRow["fetchUrl"],
+        "https://huggingface.co/Comfy-Org/MOSS-Image/resolve/main/diffusion_models/moss_image_sft_int8_convrot.safetensors",
+        "the unet's fetch address is the DECL cell artifact's own URL — the literal, not the resolver's echo",
+      );
+      assert.equal(unetRow["sizeBytes"], 5413698958, "the unet's size is the DECL cell artifact's declared bytes");
+    }
   });
 
   // ARM R-2 — THE REMAINING LAW: the text encoder lands; the same

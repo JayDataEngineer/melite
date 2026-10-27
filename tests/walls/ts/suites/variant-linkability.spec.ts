@@ -324,6 +324,19 @@ describe("THE LINKABILITY WALL (burn d: no-link variants never sail green)", () 
               }
             } else if (!/^https?:\/\//.test(anchor.url)) {
               offenders.push(`${id} / ${variant.id}: weights '${demand}' — the anchor is not an http(s) URL: '${anchor.url}'`);
+            } else {
+              // THE SNAPSHOT REVISION PIN (kroma audit F7, 2026-10-26):
+              // a weight whose channel is a snapshot tree anchors at
+              // the PINNED revision — the bare repo URL names the
+              // moving default branch, not the coordinate the
+              // fetcher lands. Demand /tree/<the row's own revision>
+              // whenever a snapshot row names this file.
+              const snap = (view.snapshot_provisions ?? []).find((s) => s.name === base(demand));
+              if (snap !== undefined && anchor.url !== `https://huggingface.co/${snap.repo_id}/tree/${snap.revision}`) {
+                offenders.push(
+                  `${id} / ${variant.id}: weights '${demand}' — the snapshot anchor omits its pinned revision: '${anchor.url}' — the fetch coordinate is ${snap.repo_id}/tree/${snap.revision}, never the moving default branch`,
+                );
+              }
             }
           }
         }

@@ -496,11 +496,13 @@ export function laneFetchAnchor(
       }
     }
   }
-  // 3. the snapshot tree — the repo link anchors the fetch (the tree
-  // lands at its pinned revision; the refusal names the repo)
+  // 3. the snapshot tree — the repo link anchors the fetch AT ITS
+  // PINNED REVISION (kroma audit F7, 2026-10-26: the bare repo URL
+  // omitted the pin — the fetcher's coordinate is the tree, not the
+  // moving default branch; the refusal names repo@revision)
   const snap = (decl.snapshot_provisions ?? []).find((s) => s.name === base);
   if (snap !== undefined) {
-    return { url: "https://huggingface.co/" + snap.repo_id };
+    return { url: "https://huggingface.co/" + snap.repo_id + "/tree/" + snap.revision };
   }
   return undefined;
 }
