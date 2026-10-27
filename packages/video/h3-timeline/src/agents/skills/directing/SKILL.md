@@ -100,7 +100,10 @@ reason to guess a path.
 ## Validate and repair
 
 1. Add or patch the card on the shared bench.
-2. Run `melite_construct` with `verb: "validate"`.
+2. Trust the verdict the write already returned — a landing that reports
+   compiles ✓ needs no second opinion. Run `melite_construct` with
+   `verb: "validate"` only for a bench you did not just write or a patch
+   that landed without a verdict.
 3. Read the exact refusal and repair only the named card field.
 4. Repeat until the card compiles.
 5. Leave the bench for the user's Run press, or use the sanctioned headless

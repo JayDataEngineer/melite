@@ -52,6 +52,7 @@ import "../../../helpers/boot-models.ts";
 import { describe, it } from "vitest";
 import assert from "node:assert/strict";
 import { join, dirname } from "node:path";
+import { readdirSync, readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { loadCardDefs } from "../../../../packages/engines/comfyui-cordis/src/cardDefs.ts";
 import { searchCards, searchFlows, flowSummaryRows } from "../../../../packages/harness/estate-queue/src/discloseRegistry.ts";
@@ -608,6 +609,51 @@ describe("THE ONE SEAT — the agent face and the UI face are two projections of
     assert.deepEqual(live.sort(), named,
       "the residue must EQUAL the register exactly — an unnamed difference is the agent and the user being taught different surfaces; a stale register row is a folded alias");
     for (const [k, why] of ONE_SEAT_REGISTER) assert.ok(why.length > 20, `${k}: the register states a REASON, never a bare exemption`);
+  });
+});
+
+describe("THE SKILL BODY LAW — body copy induces calls; the landing's compile verdict is the law", () => {
+  // Real-transcript evidence (session bf398803, two-clips): the agent
+  // ran a redundant validate BECAUSE the skill's compose loop said
+  // "Run melite_construct validate" as an unconditional numbered step —
+  // its own trace quotes the add_stage verdict ("compiles ✓ (no
+  // validate call needed)") right before obeying the skill anyway.
+  // Bodies are served verbatim by skillRead, so the source file IS the
+  // served surface here; this sweep is the honest depth for body copy.
+  const skillFiles: string[] = [];
+  const walk = (dir: string) => {
+    for (const ent of readdirSync(dir, { withFileTypes: true })) {
+      if (ent.name === "node_modules" || ent.name === "lib" || ent.name === "dist") continue;
+      const p = join(dir, ent.name);
+      if (ent.isDirectory()) walk(p);
+      else if (ent.name === "SKILL.md") skillFiles.push(p);
+    }
+  };
+  walk(join(ROOT, "packages"));
+
+  it("no skill body instructs an unconditional validate — a line teaching validate must defer to the landing's verdict", () => {
+    assert.ok(skillFiles.length >= 3, `the sweep sees the estate's skill bodies (saw ${skillFiles.length} — a vacuous pass over zero files is the hole this closes)`);
+    const unconditional: string[] = [];
+    for (const f of skillFiles) {
+      const body = readFileSync(f, "utf8");
+      for (const line of body.split("\n")) {
+        if (!/validate/.test(line) || !/melite_construct/.test(line)) continue;
+        const conditional = /only|needs no second opinion|did not just write/.test(line);
+        if (!conditional) unconditional.push(`${f}: ${line.trim()}`);
+      }
+    }
+    assert.deepEqual(unconditional, [],
+      "a body line teaching `validate` without a deferral condition induces redundant calls — the write's own verdict already carries the compile state");
+  });
+
+  it("the cured bodies carry the deferral (the receipt's toggle anchor)", () => {
+    const video = skillFiles.find((f) => f.includes("video-timeline"));
+    const directing = skillFiles.find((f) => f.includes("directing"));
+    assert.ok(video && directing, "the two bodies the two-clips trace cited exist");
+    assert.match(readFileSync(video, "utf8"), /needs no second opinion/,
+      "video-timeline: the compose loop defers to the landing's verdict");
+    assert.match(readFileSync(directing, "utf8"), /needs no second opinion/,
+      "directing: the validate-and-repair loop defers to the landing's verdict");
   });
 });
 

@@ -86,7 +86,9 @@ missing source is a load/compose refusal, not a reason to guess a path.
 ## Compose, validate, and run
 
 1. `melite_discover` → `melite_load` → `melite_construct add_stage`.
-2. Run `melite_construct validate` and surface the exact refusal, if any.
+2. A landing that already reports compiles ✓ needs no second opinion —
+   `validate` is for a bench you did not just write (or one patched
+   without a verdict); surface its exact refusal when you do run it.
 3. Patch the named field and revalidate.
 4. In browser mode, stop at the user's **Run** press.
 5. In a sanctioned headless commission, use `melite_flow` and `run_status`.
