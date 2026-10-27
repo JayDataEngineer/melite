@@ -233,7 +233,11 @@ export const IMAGE_UPSCALE = {
             params: {
                 model: "seedvr2-ema",
                 input_image: "$image",
-                filename_prefix: "image-upscale",
+                // filename_prefix was RETIRED here (SD-4b, 2026-11-12): the
+                // upscale-tools card composes its own SaveImage prefix from
+                // the run id (seedvr2-ema's action), so the stated key
+                // reached NO consumer — dead stage surface the carry wall
+                // now refuses.
                 seed: 42,
             },
         }),
