@@ -11,6 +11,7 @@ import { coerceFieldEdit } from '../src/spec.ts'
 import {
   activeRowId,
   activeVariantId,
+  addressClaimOf,
   axisGroups,
   axisKey,
   axisPickPatch,
@@ -23,7 +24,9 @@ import {
   inputEdgeOf,
   modelChoices,
   modelSwitchPatch,
+  offeredVariantOf,
   quantRowsFor,
+  resolvedLaneCoordinate,
   resolveValue,
   rowsFor,
   seedAxisValues,
@@ -562,6 +565,73 @@ test('seedAxisValues: first-composing rows seed; the held always win; the family
   // refused at Run: 'unknown quant "" ... (known: int8)')
   // a familyless spec with a non-string held model stamps no model
   expect(seedAxisValues({ form: 'x' }, { model: 7 })).toEqual({})
+})
+
+// ── THE ADDRESS CLAIM (015 C1b/C1c, 2026-10-27): the served key
+//    claims the seed coordinate. The estate door
+//    (cardsVariant.ts selectCardVariant) narrows a FAMILY-HEAD mid
+//    to '' (pool[0], the DECL-walk law) and passes every other key
+//    as the resolver's route claim; the quant cell claim rides the
+//    RAW mid unconditionally. These arms pin the mirror's units —
+//    the estate-wide parity is the card-client-mirror wall's own.
+//    Shape mirrors the real serve: every Quant row owned, routes
+//    are per-row addresses (never a blanket), families board the
+//    head. ─────────────────────────────────────────────────────
+const CLAIM_BASE = {
+  form: 'x',
+  schema: { uid: 0, refs: { 0: { type: 'object', dict: { prompt: 1 } }, 1: { type: 'string' } } },
+  features: { variant_groups: { Variant: { label: 'Variant' }, Quant: { label: 'Quant' } } },
+}
+const claimSpec = (over: Partial<FormSpecDoc>): FormSpecDoc => ({
+  ...CLAIM_BASE,
+  variants: [
+    V('big', 'Variant', { label: 'Big', route: '' }),
+    V('small', 'Variant', { label: 'Small', route: 'tts-mini' }),
+    V('b-hi', 'Quant', { label: 'HI', quant: 'hi', owner: 'big', route: '' }),
+    V('b-lo', 'Quant', { label: 'LO', quant: 'lo', owner: 'big', route: 'tts' }),
+    V('s-lo', 'Quant', { label: 'S LO', quant: 's_lo', owner: 'small', route: '' }),
+    V('s-xlo', 'Quant', { label: 'S XLO', quant: 's_xlo', owner: 'small', route: 'tts-mini-xlo' }),
+  ],
+  ...over,
+} as unknown as FormSpecDoc)
+
+test('addressClaimOf: a boarded head narrows to \'\'; a route key claims; empty keys never do', () => {
+  const head = claimSpec({ model: 'tts', families: [{ id: 'tts', present: true, label: 'TTS' }] })
+  expect(addressClaimOf(head)).toBe('')
+  expect(addressClaimOf(claimSpec({ model: 'tts-mini' }))).toBe('tts-mini')
+  // a key the families block boards is the head spelling even when
+  // other rows carry it as a route — the families block owns the call
+  expect(addressClaimOf(claimSpec({ model: 'tts-mini', families: [{ id: 'tts-mini', present: true, label: 'M' }] }))).toBe('')
+  expect(addressClaimOf(claimSpec({ model: '' }))).toBe('')
+  expect(addressClaimOf(claimSpec({ model: undefined }))).toBe('')
+})
+
+test('the head serve seeds pool[0] and the RAW-MID cell claim (a head route on a cell claims it)', () => {
+  const head = claimSpec({ model: 'tts', families: [{ id: 'tts', present: true, label: 'TTS' }] })
+  // the qwen3-tts shape: the family id IS the 0_6b cell's route —
+  // the door passes mid as the cell address unconditionally, so the
+  // quant axis seeds the CLAIMED cell (b-lo), not first-declared b-hi
+  expect(seedAxisValues(head, {})).toEqual({ variant: 'big', quant: 'lo', model: 'tts' })
+  // the same claim rides the resolved coordinate (the form's surface)
+  expect(resolvedLaneCoordinate(head, {})).toEqual({ variantId: 'big', quantId: 'lo' })
+  // offeredVariantOf without the spec is the head spelling — pool[0]
+  expect(offeredVariantOf(head.variants ?? [], {})?.id).toBe('big')
+  expect(offeredVariantOf(head.variants ?? [], {}, head)?.id).toBe('big')
+})
+
+test('a route-addressed serve seeds the CLAIMED variant — never pool[0]\'s silent neighbor', () => {
+  const addressed = claimSpec({ model: 'tts-mini' })
+  // the variant claim: small owns the route; the quant axis seeds
+  // small's first cell (no cell carries the mid itself)
+  expect(seedAxisValues(addressed, {})).toEqual({ variant: 'small', quant: 's_lo', model: 'tts-mini' })
+  expect(offeredVariantOf(addressed.variants ?? [], {}, addressed)?.id).toBe('small')
+  expect(resolvedLaneCoordinate(addressed, {})).toEqual({ variantId: 'small', quantId: 's_lo' })
+  // a CELL-route mid claims the OWNING variant and its cell
+  const cellAddressed = claimSpec({ model: 'tts-mini-xlo' })
+  expect(seedAxisValues(cellAddressed, {})).toEqual({ variant: 'small', quant: 's_xlo', model: 'tts-mini-xlo' })
+  // a HELD variant overrides the claim's — the cell claim then
+  // searches the HELD variant's composing rows only
+  expect(seedAxisValues(addressed, { variant: 'big' })).toEqual({ variant: 'big', quant: 'hi', model: 'tts-mini' })
 })
 
 test('THE THREE-AXIS CHAIN: an owner in a later axis skips the miss and still binds', () => {
