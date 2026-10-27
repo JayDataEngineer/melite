@@ -527,9 +527,10 @@ export const COVERAGE_BASELINE: Record<string, {
   // three files the 2026-11-05 lanes added but never measured —
   // measured here scoped (json-summary, motion suite alone; the
   // pool-merge break documented above stands). useMotionDoc is F7's
-  // projection spine: sub-100 arms are the boundary seats the studio
-  // suite does not drive (abort/undo corners) — owed with the slice-3
-  // UI work, not exempt.
+  // projection spine: measured 100/100/100/100 at dc711f41f
+  // (2026-11-12, scoped json-summary — the abort/undo corner seats
+  // the 2026-11-05 comment called owed are driven; the slice-3 debt
+  // is closed, ROADMAP row "(2) useMotionDoc.ts 83.33 branches").
   '**/packages/motion/motion/src/ui/studio/useMotionDoc.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/motion/motion/src/ui/studio/useMotionMedia.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/motion/motion/src/ui/studio/useMotionStage.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
