@@ -137,9 +137,13 @@ describe("THE PARAM-BOUNDS PARITY WALL — the card's schema and the action's ro
     { name: "image-gen", schema: imageGenSchema, boarded: ["krea-2", "z-image", "anima", "qwen-img-21", "flux-klein", "moss-image"], actions: T2I_ACTIONS, cardOwned: ["model"] as readonly string[] },
     {
       name: "image-edit", schema: imageEditSchema, boarded: ["qwen-img-edit-21", "qwen-img-edit-2511", "fibo2-edit"], actions: EDIT_ACTIONS,
-      // the card's four hidden legacy aliases (image-edit/src/card.ts declares
-      // them extra.hidden — validation-only, dropped by the emitter)
-      cardOwned: ["model", "image1", "image2", "image3", "reference_images"] as readonly string[],
+      // the card's hidden legacy aliases (image-edit/src/card.ts declares
+      // them extra.hidden — validation-only, dropped by the emitter).
+      // use_stock_nodes joined them 2026-11-12 (the one-seat register's
+      // first retirement: an execution internal dead at compose — E9 —
+      // never a face row; the action still declares it, old drafts
+      // still validate).
+      cardOwned: ["model", "image1", "image2", "image3", "reference_images", "use_stock_nodes"] as readonly string[],
     },
   ] as const;
 

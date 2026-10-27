@@ -379,7 +379,11 @@ const ONE_SEAT_REGISTER = new Map<string, string>([
   ["rig:strip_body", "rig form knob — no UI row"],
   // EXECUTION INTERNALS the agent should not need either — named here
   // so the drift is visible, retired by the lane-digest slice.
-  ["image-edit:use_stock_nodes", "EXECUTION INTERNAL on the agent face — Slice 4 candidate for retirement, not a UI gap"],
+  // RETIRED 2026-11-12 (the seamless charter's first register
+  // shrink): image-edit:use_stock_nodes — hidden on the card row
+  // (params-emit's hidden law: off BOTH faces), the 2511 DECL
+  // surface keeps declaring it (old drafts validate; E9's future-arm
+  // witness). The register can only shrink; this row is gone.
 ]);
 
 describe("THE LIVE WALK — the measured door cost of the ideal path (the ratchet's first LIVE notch)", () => {

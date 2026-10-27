@@ -223,9 +223,12 @@ describe("the estate-wide operator-copy law (no architecture vocabulary on any s
   // to its one boolean stamp — voice_name + the five sampling knobs
   // died with the duped-pane burn (the card's lane surface owns the
   // sampling; the build mints the export name); the stamp's label +
-  // tooltip stay operator language. 538 labels / 476 tooltips.
+  // tooltip stay operator language. 538 labels / 475 tooltips (476
+  // before 2026-11-12: use_stock_nodes's tooltip left the served set
+  // with the one-seat register's first retirement — hidden rows serve
+  // no face, so no tooltip seat).
   const LABEL_FLOOR = 538;
-  const TOOLTIP_FLOOR = 476;
+  const TOOLTIP_FLOOR = 475;
   const PACK_FLOOR = 7;
 
   it("the judged set IS the served set: every composed card serves its schema dict, and every pack contract is walked", async () => {

@@ -152,7 +152,15 @@ export const schema = z.object({  // CARD-OWNED SURFACE ONLY (2026-09-08, the 1:
   // form serves them only when the 2511 lane is boarded (the
   // declaration owns the field list), and the bench-write door
   // refuses them on the 2.1 family in the field's voice.
-  use_stock_nodes: z.boolean().description("Use Stock Nodes").extra('extra', bag({ order: 1, group: "edit_tuning", width: 1, tooltip: "When true, build_img2img_edit emits the stock Qwen-Image-Edit node graph (no DiffSynth patches, no custom ControlNet wiring). Useful for reproducing upstream behavior exactly.", zone: 'params' })),
+  // use_stock_nodes rides HIDDEN (the one-seat register's first
+  // retirement, the seamless charter 2026-11-12): an EXECUTION
+  // INTERNAL dead at compose (E9: BOTH values emit the stock graph —
+  // the knob is a future-arm validation key, never a face row). The
+  // hidden law (params-emit: extra.hidden stays out of BOTH
+  // projections) retires it from the agent face and the form in one
+  // spelling; the 2511 DECL surface keeps declaring it (old drafts
+  // validate; the bench-write gate keeps its family scoping).
+  use_stock_nodes: z.boolean().description("Use Stock Nodes").extra('extra', bag({ order: null, hidden: true, group: "edit_tuning", width: 1, tooltip: "When true, build_img2img_edit emits the stock Qwen-Image-Edit node graph (no DiffSynth patches, no custom ControlNet wiring). Useful for reproducing upstream behavior exactly.", zone: 'params' })),
   double_reference: z.boolean().description("Double Reference").extra('extra', bag({ order: 2, group: "edit_tuning", width: 1, tooltip: "Not available yet: turning this on stops the run with a clear error — the edit models build the standard single-pass edit only, never a silent plain edit. Leave it off. (Once supported: the input image is encoded twice — VAE + vision encoder — for stronger identity preservation.)", zone: 'params' })),
 })
 
