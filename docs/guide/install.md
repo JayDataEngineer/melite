@@ -23,21 +23,6 @@ dsh --profile melite-test --port 3088
 The printed token URL is the entry point. The port is a deployment
 choice; `3088` is the test-lane convention.
 
-## The self-contained path: the install script
-
-`scripts/install-from-release.sh` runs the same sequence as one command:
-it downloads the release assets with `gh`, verifies every tarball's
-sha256 and byte size against `release-manifest.json`, rejects version
-skew inside the set, pins every melite seat to its local tarball, and
-installs the profile.
-
-```sh
-scripts/install-from-release.sh --tag <release-tag> --profile melite
-```
-
-Requirements: authenticated `gh`, the `dsh` CLI on `PATH`, node, and
-pnpm via corepack. The script exits 0 only when every receipt passes.
-
 ## Weights and the engine are not included
 
 An install ships code. Model weights and the ComfyUI engine are
