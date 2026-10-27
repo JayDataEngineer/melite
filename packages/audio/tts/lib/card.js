@@ -348,7 +348,7 @@ export function registerCard(ctx, comfy) {
                 if (bound)
                     bound.save(doc, model, g, runId);
                 else {
-                    throw new Error(`no declared action for family '${String(model.family ?? model.id)}' on the tts card — the boarded Qwen family (qwen3-tts) composes its own declared segment; this address owns none`);
+                    throw new Error(`no declared action for family '${String(model.family ?? model.id)}' on the tts card — the boarded Qwen family (qwen3-tts) composes its own declared segment; this address owns none. State params.model (one of the boarded families) on the stage to compose it`);
                 }
                 return;
             }
@@ -410,7 +410,7 @@ export function registerCard(ctx, comfy) {
             if (bound)
                 bound.speak(doc, model, g, runId);
             else {
-                throw new Error(`no declared action for family '${String(model.family ?? model.id)}' on the tts card — the boarded Qwen family (qwen3-tts) composes its own declared segment; this address owns none`);
+                throw new Error(`no declared action for family '${String(model.family ?? model.id)}' on the tts card — the boarded Qwen family (qwen3-tts) composes its own declared segment; this address owns none. State params.model (one of the boarded families) on the stage to compose it`);
             }
         },
     }));

@@ -105,7 +105,7 @@ export function registerCard(ctx: Context, comfy: ComfyUIServiceFace): void {
         bound(doc, model, g, runId)
       } else {
         throw new Error(
-          `no declared action for family '${String(model.family ?? model.id)}' on the music card — every boarded family (music3, yue2) composes its own declared segment; this address owns none`)
+          `no declared action for family '${String(model.family ?? model.id)}' on the music card — every boarded family (music3, yue2) composes its own declared segment; this address owns none. State params.model (one of the boarded families) on the stage to compose it`)
       }
     },
   }))

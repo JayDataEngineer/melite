@@ -402,6 +402,8 @@ describe('melite_construct mutations — every verb', () => {
     // readable (the done mark stands).
     const { estate } = mockEstate((lane, args) => {
       if (lane === 'benchVerb' && args[1] === 'patch') return { rev: 7, stage: 's1', patched: ['p'], stale: true }
+      if (lane === 'benchGet') return { session: 'main', rev: 7, intent: '', stages: [{ id: 's1', params: { p: 2 } }], log: [] }
+      if (lane === 'runsValidate') return { ok: true }
       throw new Error('unmocked lane ' + lane)
     })
     const tool = meliteConstruct(estate)
@@ -1842,5 +1844,86 @@ describe('melite_construct — floor (the declared-minimum resolution clamp)', (
     })
     const out = await meliteConstruct(estate).execute({ verb: 'floor', stage: 's_9' }, exec()) as Record<string, unknown>
     assert.match(String(out['error']), /s_9 is not on the bench/)
+  })
+})
+
+describe('melite_construct — session 7a82 autopsy laws (P3 + P5, 2026-11-12)', () => {
+  // The burn: the operator met "'steps': 25 is outside this lane's
+  // range (4–8)" at THEIR OWN Run press — the patch that landed the
+  // 25 answered only "bench patch → rev N" (the compile verdict rode
+  // wiring mutations alone), and the session's first two constructs
+  // carried full params with NO verb, silently READ twice, and the
+  // agent believed it was composing. Two laws here: the params-
+  // changed patch composes AT AUTHORING TIME (the verdict is a
+  // closable value, never a refusal — the write landed), and a
+  // payload without a verb refuses loud with the menu.
+
+  test('P3: a params-changed patch carries the compile verdict — an envelope violation speaks at LANDING, never at the operator\'s press', async () => {
+    const { estate } = mockEstate((lane, args) => {
+      if (lane === 'benchVerb' && args[1] === 'patch') return { rev: 12, stage: 's1', patched: ['steps'], stale: true }
+      if (lane === 'benchGet') {
+        return { session: 'main', rev: 12, intent: '', stages: [
+          { id: 's1', card: 'image-gen', params: { model: 'krea-2', steps: 25 } },
+        ], log: [] }
+      }
+      if (lane === 'runsValidate') {
+        throw new RemoteError('runs/flow-compile', 'steps: 25 is outside this lane\'s range (4–8) — the model owns the floor and the ceiling (the declaration, not the form)', undefined)
+      }
+      throw new Error('unmocked lane ' + lane)
+    })
+    const tool = meliteConstruct(estate)
+    const out = await tool.execute(
+      { verb: 'patch', stage: 's1', params: { steps: 25 }, expect_rev: 11 },
+      exec(),
+    ) as Record<string, unknown>
+    assert.equal(out.ok, true, 'the write landed — the verdict is a value, never a refusal')
+    assert.equal(out.rev, 12)
+    assert.equal(out.compile_ok, false, 'the compose spoke: the envelope class surfaces at authoring time')
+    assert.match(String(out.compile_error), /steps: 25 is outside this lane's range/)
+    // THE RENDER IS THE MODEL'S READ: the teaching line prints, or
+    // the verdict is a voice nobody hears (the warm-2 law).
+    const blocks = tool.output!.render!({ verb: 'patch', stage: 's1' } as never, out as never) as Array<{ type?: string, text?: string }>
+    const rendered = blocks.map((b) => b.text ?? '').join('\n')
+    assert.ok(
+      rendered.includes('COMPILE REFUSED — steps: 25 is outside this lane\'s range') && rendered.includes('the write LANDED'),
+      'the render prints the closable violation beside the landed write',
+    )
+  })
+
+  test('P3 control: an idempotent patch (no staleness) composes nothing — the verdict is owed only when params changed', async () => {
+    const { seen, estate } = mockEstate((lane, args) => {
+      if (lane === 'benchVerb' && args[1] === 'patch') return { rev: 13, stage: 's1', patched: [] }
+      throw new Error('unmocked lane ' + lane)
+    })
+    const tool = meliteConstruct(estate)
+    const out = await tool.execute({ verb: 'patch', stage: 's1', params: { steps: 8 }, expect_rev: 12 }, exec()) as Record<string, unknown>
+    assert.equal(out.compile_ok, undefined)
+    assert.equal(seen.filter((r) => r.lane === 'runsValidate').length, 0, 'no compose on a no-op write')
+  })
+
+  test('P5: a payload with no verb REFUSES LOUD naming the menu — the silent read default never eats a compose again', async () => {
+    const { seen, estate } = mockEstate((lane) => {
+      if (lane === 'benchGet') return { session: 'main', rev: 3, intent: '', stages: [], log: [] }
+      throw new Error('unmocked lane ' + lane)
+    })
+    const tool = meliteConstruct(estate)
+    // the session's exact shape: full add_stage params, no verb
+    const out = await tool.execute(
+      { card: 'image-gen', params: { model: 'anima', prompt: 'an anime girl' }, expect_rev: 0 },
+      exec(),
+    ) as Record<string, unknown>
+    assert.equal(out.ok, false)
+    assert.equal(out.error_kind, 'verb-required')
+    assert.match(String(out.error), /payload \(params, card\) with no verb/)
+    assert.match(String(out.error), /State verb: 'add_stage'/)
+    assert.equal(seen.filter((r) => r.lane === 'benchVerb').length, 0, 'nothing was written')
+    // the render's refusal face prints it
+    const blocks = tool.output!.render!({} as never, out as never) as Array<{ type?: string, text?: string }>
+    const rendered = blocks.map((b) => b.text ?? '').join('\n')
+    assert.ok(rendered.includes('melite_construct REFUSED: payload (params, card) with no verb'), 'the refusal renders')
+    // the documented default survives for BARE calls: {} still reads
+    const bare = await tool.execute({}, exec()) as Record<string, unknown>
+    assert.equal(bare.ok, true)
+    assert.equal(bare.verb, 'read')
   })
 })

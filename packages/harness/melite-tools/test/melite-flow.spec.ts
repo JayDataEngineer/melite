@@ -2346,3 +2346,79 @@ describe('melite_flow bench — the single-stage fallback arm', () => {
     assert.equal('url' in row, false)
   })
 })
+
+describe('melite_flow bench — THE WIRE RESOLUTION LAW (session 7a82, autopsy P1)', () => {
+  // The burn: the agent's image-edit stage carried BOTH a wire
+  // (inputs.image1 → s_0) and the bench law's matching $spell
+  // (params.image1: "$image1"); the bench pass sent the spell
+  // verbatim and the door's spell gate refused in a CIRCLE ("run the
+  // bench flow" is the refused call; "replace with a concrete value"
+  // names the wrong cure — the WIRE is the resolution). Two dead
+  // turns, ~470s, zero output, and the operator met the refusal at
+  // their own press. The UI's press has resolved wires to the
+  // upstream's last result since 2026-10-10 (stage-run.ts:147) —
+  // this describe pins the agent-side mirror: same law, same voice,
+  // both callers of THE shared bench.
+  const wiredBench = (upstreamUrl: string | undefined) => ({
+    draft_id: 'd_wire', rev: 7, stages: [
+      {
+        id: 's_0', card: 'image-gen', runStatus: 'done', params: { model: 'anima' },
+        ...(upstreamUrl !== undefined
+          ? { result: { run_id: 'r_up', url: upstreamUrl } }
+          : { result: { run_id: 'r_up' } }),
+      },
+      {
+        id: 's_1', card: 'image-edit',
+        params: { model: 'qwen-img-edit-21', image1: '$image1', prompt: 'replace the flower' },
+        inputs: { image1: { stage: 's_0', output: 'default' } },
+      },
+    ],
+  })
+
+  test('a wired stage starts with the spell RESOLVED to the upstream\'s last result — never the raw $spell, never the circular refusal', async () => {
+    const seen = mockEstate([
+      (lane: string, args: unknown[]) => {
+        if (lane === 'benchGet') return { status: 200, body: wiredBench('/melite-media/runs/r_up/generate/SaveImage.0.png') }
+        if (lane === 'runsStart') return { status: 202, body: { run_id: 'r_wire', status: 'queued' } }
+        if (lane === 'runsStatus') {
+          return { status: 200, body: { status: 'completed', stages: [{ id: 's_1', url: '/melite-media/runs/r_wire/edit/SaveImage.0.png' }] } }
+        }
+        if (lane === 'draftsStagePatch') return { status: 200, body: { delivered: true, patched: ['runStatus', 'result'] } }
+        return undefined
+      },
+    ])
+    const tool = meliteFlow(seen.request)
+    const out = await tool.execute({ bench: true }, fakeExec(AbortSignal.timeout(8000))) as Record<string, unknown>
+    assert.equal(out.status, 'done')
+    const start = seen.calls.find((c) => c.lane === 'runsStart')
+    assert.ok(start, 'the wired stage started')
+    const body = start!.args[0] as Record<string, unknown>
+    assert.equal(
+      (body.params as Record<string, unknown> | undefined)?.['image1'] ?? body['image1'],
+      '/melite-media/runs/r_up/generate/SaveImage.0.png',
+      'the $image1 spell resolved to the upstream result url — the concrete value the {model:} door accepts',
+    )
+    assert.equal(body['model'], 'qwen-img-edit-21')
+    const spells = JSON.stringify(body)
+    assert.ok(!spells.includes('$image1'), 'no spell rides the start body')
+  })
+
+  test('an upstream with no output yet STOPS THE PASS naming the wire — never a doomed run, never a silent drop', async () => {
+    const seen = mockEstate([
+      (lane: string) => {
+        if (lane === 'benchGet') return { status: 200, body: wiredBench(undefined) }
+        return undefined
+      },
+    ])
+    const tool = meliteFlow(seen.request)
+    const out = await tool.execute({ bench: true }, fakeExec(AbortSignal.timeout(6000))) as Record<string, unknown>
+    assert.equal(out.status, 'stopped')
+    assert.equal(out.stoppedAt, 's_1')
+    assert.match(
+      String(out.error),
+      /input "image1" is wired to stage "s_0" which has no output yet — run it first \(or clear the wire\)/,
+      'the same voice the UI press answers with',
+    )
+    assert.equal(seen.calls.filter((c) => c.lane === 'runsStart').length, 0, 'no run started — the pass refused ahead of the wall')
+  })
+})

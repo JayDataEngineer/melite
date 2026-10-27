@@ -292,7 +292,7 @@ export function registerCard(ctx, comfy) {
                 bound(doc, model, g, runId);
                 return;
             }
-            throw new Error(`no declared action for family '${String(model.family ?? model.id)}' on the image-edit card — every boarded family (qwen-img-edit-21, qwen-img-edit-2511, fibo2-edit) composes its own declared segment; this address owns none`);
+            throw new Error(`no declared action for family '${String(model.family ?? model.id)}' on the image-edit card — every boarded family (qwen-img-edit-21, qwen-img-edit-2511, fibo2-edit) composes its own declared segment; this address owns none. State params.model (one of those families) on the stage to compose it (session 7a82: the add_stage landed familyless and only the operator's press met this refusal).`);
         },
         finalize: finalizeImageEdit,
     }));

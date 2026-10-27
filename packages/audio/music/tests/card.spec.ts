@@ -183,7 +183,7 @@ describe("THE EVERY-ADDRESS WALL — every served address composes its own decla
     const row = { ...rows[0]!, id: "synthetic-music", family: undefined };
     assert.throws(
       () => def.compose(def.schema({ prompt: "fallback probe" }), row as never, new GraphBuilder(), "wall_fallback"),
-      /no declared action for family 'synthetic-music' on the music card — every boarded family \(music3, yue2\)/,
+      /no declared action for family 'synthetic-music' on the music card — every boarded family \(music3, yue2\).*State params\.model \(one of the boarded families\)/,
     );
     const yue2Row = rows.find((r) => r.lane_inputs.latent_node === "EmptyYuE2LatentAudio") ?? rows[0]!;
     const fallen = { ...yue2Row, id: "synthetic-music-yue2", family: undefined };

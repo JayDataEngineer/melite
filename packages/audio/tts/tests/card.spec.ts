@@ -793,7 +793,7 @@ describe("THE EVERY-ADDRESS WALL — every served address composes its own decla
     const row = { ...rows[0]!, id: "synthetic-tts", family: undefined, lane_inputs: rows[0]!.lane_inputs };
     assert.throws(
       () => def.compose(def.schema({ text: "fallback probe" }), row as never, new GraphBuilder(), "wall_fallback"),
-      /no declared action for family 'synthetic-tts' on the tts card — the boarded Qwen family \(qwen3-tts\)/,
+      /no declared action for family 'synthetic-tts' on the tts card — the boarded Qwen family \(qwen3-tts\).*State params\.model \(one of the boarded families\)/,
     );
   });
 

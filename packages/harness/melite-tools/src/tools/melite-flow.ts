@@ -375,14 +375,70 @@ async function runBench(
     }
     const params = row['params'] !== null && typeof row['params'] === 'object' && !Array.isArray(row['params'])
       ? row['params'] as Record<string, unknown> : {}
-    const model = await modelForCard(card, params)
+    // THE WIRE RESOLUTION LAW, agent-side (session 7a82's autopsy P1,
+    // 2026-11-12 — the mirror of stage-run.ts:147, the UI's own law):
+    // the bench's wiring law REQUIRES every wired input to carry a
+    // matching $spell in params, but the {model:} door composes ONE
+    // stage and resolves NOTHING — until now the bench pass sent the
+    // spell verbatim and the door's spell gate refused in a circle
+    // ("run the bench flow" is the call being refused; "replace with
+    // a concrete value" names the wrong cure). THE WIRE MEANS ONE
+    // THING: this input IS that stage's output. Running the stage
+    // resolves the wire to the upstream's LAST RESULT — result.url,
+    // the media-route currency — and sends the CONCRETE value, every
+    // occurrence (bare, array, nested). An upstream with no output
+    // STOPS THE PASS HERE, naming the wire — the same voice the UI's
+    // press answers with, never a doomed run, never a silent drop.
+    const wires = row['inputs'] !== null && typeof row['inputs'] === 'object' && !Array.isArray(row['inputs'])
+      ? row['inputs'] as Record<string, unknown> : {}
+    const wireNames = Object.keys(wires)
+    let resolved = params
+    if (wireNames.length > 0) {
+      resolved = { ...params }
+      for (const name of wireNames) {
+        const ref = wires[name] as Record<string, unknown> | null
+        const isStageWire = typeof ref === 'object' && ref !== null
+          && typeof ref['stage'] === 'string'
+        if (!isStageWire) {
+          return { mode: 'bench', target, draft_id: draftId, status: 'stopped', stoppedAt: stageId,
+            error: 'input ' + JSON.stringify(name) + ' is neither {stage, output} nor a resolvable binding — the bench pass maps only stage wires (got ' + JSON.stringify(ref ?? null) + ')', pass }
+        }
+        const upstreamId = String(ref!['stage'])
+        const upstream = rows.find((r) => r['id'] === upstreamId)
+        const res = upstream !== undefined && upstream['result'] !== null && typeof upstream['result'] === 'object' && !Array.isArray(upstream['result'])
+          ? upstream['result'] as Record<string, unknown> : {}
+        const url = typeof res['url'] === 'string' && res['url'] !== '' ? res['url'] as string : ''
+        if (url === '') {
+          return { mode: 'bench', target, draft_id: draftId, status: 'stopped', stoppedAt: stageId,
+            error: 'input ' + JSON.stringify(name) + ' is wired to stage ' + JSON.stringify(upstreamId)
+              + ' which has no output yet — run it first (or clear the wire). The bench pass resolves wires to the upstream\'s last result; it never drops them.', pass }
+        }
+        const spell = '$' + name
+        const substitute = (v: unknown): unknown => {
+          if (v === spell) return url
+          if (Array.isArray(v)) return v.map(substitute)
+          if (typeof v === 'object' && v !== null) {
+            const out: Record<string, unknown> = {}
+            for (const [k, x] of Object.entries(v as Record<string, unknown>)) out[k] = substitute(x)
+            return out
+          }
+          return v
+        }
+        for (const k of Object.keys(resolved)) resolved[k] = substitute(resolved[k])
+      }
+    }
+    const model = await modelForCard(card, resolved)
     // A familyless stage presses the DRAFT ARM alone (the same body
     // runSingle's wired path rides): the run door composes the bench's
     // stages — the familyless one by its own card id. A model key here
     // would select the card arm and hit the board check.
+    // The spell-resolved params ride (THE WIRE RESOLUTION LAW above):
+    // every $spell a wire resolves left as a concrete value; a spell
+    // with NO wire still rides — the door's spell gate names it, the
+    // one honest wall left for a genuinely unresolvable promise.
     const started = await startRun(estate, model === ''
       ? { test: wireBool(a.test), draft_id: draftId }
-      : { ...params, model, test: wireBool(a.test), draft_id: draftId },
+      : { ...resolved, model, test: wireBool(a.test), draft_id: draftId },
     signal)
     if (typeof started['error'] === 'string') {
       return { mode: 'bench', target, draft_id: draftId, status: 'stopped', stoppedAt: stageId, error: started['error'], pass }

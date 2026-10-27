@@ -482,7 +482,7 @@ export function meliteConstruct(estate, opts = {}) {
             verb: {
                 type: 'string',
                 enum: ['read', 'load', 'patch', 'add_stage', 'remove_stage', 'clear', 'floor', 'rewire', 'undo', 'validate'],
-                description: 'read (default when absent) | load | patch | add_stage | remove_stage | clear | floor | rewire | undo | validate.',
+                description: 'read (default for a BARE call only — any payload key with no verb REFUSES loud naming the menu) | load | patch | add_stage | remove_stage | clear | floor | rewire | undo | validate.',
             },
             stage: { type: 'string', description: 'patch/remove_stage/rewire: the stage id.' },
             card: { type: 'string', description: 'add_stage: the card id (display + provenance hint).' },
@@ -747,6 +747,28 @@ export function meliteConstruct(estate, opts = {}) {
             const bench = agentBench !== DEFAULT_BENCH ? agentBench : benchKeyOf(a);
             const signal = exec.signal;
             const out = (payload) => jsonClean({ verb, bench, ok: true, ...payload });
+            // THE PAYLOAD-WITHOUT-VERB LAW (session 7a82's autopsy P5,
+            // 2026-11-12): the session's first two construct calls carried
+            // full add_stage params with NO verb — the silent read default
+            // answered "bench read → rev 0" twice while the agent believed
+            // it was composing, burning two round-trips on an empty bench.
+            // A BARE call (no payload keys) still reads (the documented
+            // default); any payload key without a verb REFUSES LOUD with
+            // the menu — the no-silent-behavior law, the same extermination
+            // order that seated every other loud gate on this tool.
+            if (a.verb === undefined) {
+                const payloadKeys = ['params', 'stages', 'inputs', 'card', 'engine', 'expected',
+                    'outputs', 'stage', 'input', 'from', 'intent', 'overwrite', 'n', 'author']
+                    .filter((k) => a[k] !== undefined);
+                if (payloadKeys.length > 0) {
+                    return jsonClean({
+                        verb, bench, ok: false,
+                        error: 'payload (' + payloadKeys.join(', ') + ') with no verb — the call would READ (the default), it would not write. '
+                            + "State verb: 'add_stage' {card, params?, inputs?} to append a stage | 'patch' {stage, params} to merge | 'load' {stages} to replace | the full menu in the tool description.",
+                        error_kind: 'verb-required',
+                    });
+                }
+            }
             try {
                 if (verb === 'read') {
                     const b = await readBench(estate, bench, signal);
@@ -824,9 +846,20 @@ export function meliteConstruct(estate, opts = {}) {
                     // its next flow will re-run (or, absent stale, that the
                     // write was idempotent and the done mark stands).
                     const stale = r['stale'] === true;
+                    // THE COMPILE VERDICT RIDES A PARAMS-CHANGED PATCH (session
+                    // 7a82's autopsy P3, 2026-11-12): the steps-25 ∉ [4,8]
+                    // class — a landed param violating the family's envelope —
+                    // surfaced only at the OPERATOR's Run press, because only
+                    // wiring mutations carried the compile verdict. A patch
+                    // that changed params (stale) re-runs its stage: compose it
+                    // NOW, at authoring time, in the same voice add_stage
+                    // already speaks (never a refusal — the write landed; a
+                    // closable teaching line the next mutation can still cure).
+                    const compile = stale === true ? await compileVerdictOf(estate, bench, signal) : undefined;
                     return out({ rev: r.rev, stage: r.stage, patched: r.patched,
                         ...(stale ? { stale: true } : {}),
-                        ...(spellLines.length > 0 ? { spells: spellLines } : {}) });
+                        ...(spellLines.length > 0 ? { spells: spellLines } : {}),
+                        ...(compile !== undefined ? { ...compile } : {}) });
                 }
                 if (verb === 'add_stage') {
                     // LOUD, never accept-and-ignore (2026-09-21): add_stage
@@ -866,8 +899,13 @@ export function meliteConstruct(estate, opts = {}) {
                     // THE SPELL VOICE rides the verb that MINTS the stage: the
                     // call's own inputs are the wired truth here, no extra read.
                     const spellLines = spellVoiceOf(a.params, a.inputs);
-                    // THE COMPILE VERDICT rides every wiring add_stage
-                    const compile = a.inputs !== undefined ? await compileVerdictOf(estate, bench, signal) : undefined;
+                    // THE COMPILE VERDICT rides every add_stage (session 7a82's
+                    // autopsy: a params-only add minted the steps-25 class
+                    // unwitnessed — the verdict rode wiring mutations only;
+                    // now every minted stage composes, the familyless and
+                    // envelope classes both speak at LANDING, never at the
+                    // operator's press)
+                    const compile = await compileVerdictOf(estate, bench, signal);
                     return out({ rev: r.rev, stage: r.stage, ...(spellLines.length > 0 ? { spells: spellLines } : {}), ...(compile !== undefined ? { ...compile } : {}) });
                 }
                 if (verb === 'remove_stage') {
