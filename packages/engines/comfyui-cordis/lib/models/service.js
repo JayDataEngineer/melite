@@ -27,7 +27,7 @@ import { loadEndpointConfig, packageRoot, resolveRepoRoot } from "../comfyui.js"
 import { join } from "node:path";
 import { ModelError, EngineFacts, ModelDecl as ModelDeclSchema, DeclVariantRow as VariantRowSchema, ParamRelationWords as ParamRelationWordsSchema, } from '@melite/comfyui-card-kit/model-contract';
 import { planeRefusals } from '@melite/contracts/planes';
-import { resolveCellRow, resolveVariantRow } from '@melite/contracts/laneRelations';
+import { offeredPool, resolveCellRow, resolveVariantRow } from '@melite/contracts/laneRelations';
 import { validateWriteRowsAgainstActions } from "./validate.js";
 import Schema from "@deepseek-ai/schemastery";
 import { buildCatalog } from "./catalogEmission.js";
@@ -402,6 +402,26 @@ function validateDecl(decl) {
     const planeOut = planeRefusals(decl);
     if (planeOut.length > 0) {
         throw new ModelError(`${planeOut[0].refusal} (plane canon ${planeOut[0].law}, ${planeOut[0].family}/${planeOut[0].row})`);
+    }
+    // THE ONE DEFAULT-VARIANT LAW (audit 015 C6, 2026-10-27): the
+    // engine's head resolution (`variants.find(v => v.cells.length > 0)
+    // ?? variants[0]` — the route-claim completeness seat below) and
+    // the door's unstated default (`offeredPool[0]` — the resolver's
+    // first offered row) must name the SAME row: one address, one
+    // default. The split class: a hidden-or-Recipe row WITH cells
+    // declared before the pool's head — the engine head claims the
+    // family address onto it while every unstated compose resolves
+    // pool[0]. An EMPTY pool is the exempt shape (a fully-hidden
+    // family — qwen-img-edit-2511 — offers no default to diverge
+    // from; the head claim is vacuous there). Judged LAST, after
+    // servability + the plane canon: a dead row or a canon break
+    // refuses first, in its own voice.
+    const pool = offeredPool(decl.variants);
+    if (pool.length > 0) {
+        const head = decl.variants.find((v) => v.cells.length > 0) ?? decl.variants[0];
+        if (head !== undefined && head !== pool[0]) {
+            throw new ModelError(`${decl.id}: the default variant is two rows — the engine head resolves '${head.id}' while the door's offered pool serves '${pool[0].id}' (one address, one default: declare the cells-bearing row first, or hide the interloper)`);
+        }
     }
 }
 /** The keys a nested object carries that its own schema strips (the

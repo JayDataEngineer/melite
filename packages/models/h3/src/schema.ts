@@ -56,7 +56,7 @@ export const paramSchema = z.object({
   // (operator 2026-11-12: "THERE IS NO FIRST FRAME NOR LAST FRAME,
   // JUST ARBITRARY FRAMES WHENEVER") — `image` is the frame-0 PIN
   // shorthand, never a first-frame physics; the setup is the timeline's keyframes lane.
-  image: z.string().role('path').description("An image pin at the film's opening — the frame-0 shorthand (use the timeline's keyframes lane for any other frame)").extra('extra', bag({ order: null, wtype: 'image', tooltip: "Absolute path to the PNG pinned at the film's opening (frame 0). For any other frame use the timeline's keyframes lane — there is no first/last frame setup." })),
+  image: z.string().role('path').description("An image pin at the film's opening — the frame-0 shorthand (pin any other frame on the timeline's keyframes)").extra('extra', bag({ order: null, wtype: 'image', tooltip: "Absolute path to the PNG pinned at the film's opening (frame 0). For any other frame, pin it on the timeline's keyframes — there is no first/last frame setup." })),
   // THE INPUT SURFACE (the H3 architecture truth — two DIFFERENT
   // mechanics, the FL2VA latent anchors vs the Ref2VA conditioning
   // bus): first_frame/last_frame are PIXEL anchors (bundle inputs
