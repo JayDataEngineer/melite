@@ -6,7 +6,7 @@
 // resolution, stem-less/empty-family throws), harnessEnhance (empty-
 // string llm/default), parseEnhanceJson (fenced/sliced/negative-less
 // shapes, the honest throw).
-import { describe, test } from 'vitest'
+import { beforeAll, describe, test } from 'vitest'
 import assert from 'node:assert/strict'
 import {
   harnessCompleteOnRoute,
@@ -107,6 +107,14 @@ describe('resolveHarnessRoutes residuals', () => {
     assert.deepEqual(routes[1], { provider: 'b', model: 'nm0' })
     assert.deepEqual(routes[2], { provider: 'a', model: 'm1' })
     assert.deepEqual(routes[15], { provider: 'b', model: 'nm7' })
+    // THE TAIL CADENCE (picker audit F3, 2026-10-26): first+last pins
+    // leave the middle unjudged — a resolver that interleaves the
+    // head then dumps one provider's tail contiguously would pass
+    // above. The WHOLE array is the cadence's witness: strict
+    // alternation to the end, both providers' models in order.
+    assert.deepEqual(routes, Array.from({ length: 16 }, (_, i) => (
+      i % 2 === 0 ? { provider: 'a', model: 'm' + (i / 2) } : { provider: 'b', model: 'nm' + ((i - 1) / 2) }
+    )), 'the round-robin cadence holds at EVERY position, not just first+last')
   })
 
   test('a provider with many more models than its siblings is served WHOLE (the missing-models burn)', async () => {
@@ -335,5 +343,69 @@ describe('parseEnhanceJson residuals', () => {
     const msg = await throwsMsg(async () => parseEnhanceJson(long))
     assert.ok(msg.includes('x'.repeat(160)))
     assert.equal(msg.includes('x'.repeat(161)), false)
+  })
+})
+
+
+// ── the live wire tie (picker audit F4, 2026-10-26) ────────────────
+// The fake-seam arms above judge the resolver's laws in-process; this
+// arm judges THE WIRE: the estate's served llmRoutes must obey the
+// same completeness grammar — every name parses as provider/model,
+// every name resolves back through the picker's own matcher, no
+// duplicates, and the round-robin head cadence holds (each provider's
+// first route rides ahead of any second: the served list is the
+// resolver's output, never a reordered or sliced copy). Opt-in by the
+// estate being up — unreachable catalog self-skips, a reachable one
+// is JUDGED (the ARM 2 shape, at the wire).
+const ESTATE_CATALOG = process.env.MELITE_ESTATE_CATALOG ?? 'http://127.0.0.1:3088/melite-tools/catalog'
+
+async function liveCatalog(): Promise<string[] | null> {
+  try {
+    const res = await fetch(ESTATE_CATALOG, { signal: AbortSignal.timeout(4000) })
+    if (!res.ok) return null
+    const body = (await res.json()) as { llmRoutes?: unknown }
+    return Array.isArray(body.llmRoutes) && body.llmRoutes.every((r) => typeof r === 'string')
+      ? body.llmRoutes as string[]
+      : null
+  } catch {
+    return null
+  }
+}
+
+describe('the live catalog tie (served llmRoutes obey the resolver grammar)', () => {
+  let served: string[] | null = null
+  beforeAll(async () => { served = await liveCatalog() })
+
+  test('every served route parses provider/model and resolves through the picker matcher', async () => {
+    if (served === null) return // the estate is down — the fake-seam arms above carry the laws
+    const routes = served.map((name) => {
+      const slash = name.indexOf('/')
+      assert.ok(slash > 0, `served route '${name}' is not provider/model — the wire grammar broke`)
+      return { provider: name.slice(0, slash), model: name.slice(slash + 1) }
+    })
+    // no duplicates (a duplicate list starves the round-robin)
+    assert.equal(new Set(served).size, served.length, 'the served list carries duplicates')
+    // the round-robin cadence, CROSS-ROUND only (within a round the
+    // provider order is free): when a provider rides its (r+1)-th
+    // route, round r is COMPLETE — every provider that HAS an r-th
+    // route has ridden it. Providers exhausted before round r (fewer
+    // than r models total) are out of the rotation, never starved.
+    const totals = new Map<string, number>()
+    for (const r of routes) totals.set(r.provider, (totals.get(r.provider) ?? 0) + 1)
+    const seenCounts = new Map<string, number>()
+    for (const r of routes) {
+      const mine = (seenCounts.get(r.provider) ?? 0) + 1
+      seenCounts.set(r.provider, mine)
+      if (mine < 2) continue // the first round has no prior round to complete
+      const owing = [...totals.entries()].filter(([p, total]) =>
+        total >= mine - 1 && (seenCounts.get(p) ?? 0) < mine - 1)
+      assert.equal(owing.length, 0,
+        `round-robin broken at ${r.provider}/${r.model} (its route #${mine}): round ${mine - 1} incomplete — providers with a route #${mine - 1} still owing one: ${owing.map(([p]) => p).join(', ')}`)
+    }
+    // every name matches back through the resolver's own matcher
+    for (const name of served) {
+      assert.ok(matchHarnessRoute(routes, name) !== undefined,
+        `served route '${name}' does not resolve through matchHarnessRoute — the picker cannot pick what the wire serves`)
+    }
   })
 })
