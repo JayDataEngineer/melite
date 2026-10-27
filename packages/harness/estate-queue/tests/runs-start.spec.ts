@@ -19,6 +19,7 @@ import type { CompiledStage } from "../src/runsStart.ts";
 import { newRunId } from "../src/queueCore.ts";
 import type { RunRecord } from "../src/runsTypes.ts";
 import type { RunId } from "../src/queueCore.ts";
+import { draftIdOf } from "@melite/contracts/benchStage";
 
 /** registerCompiledRun now returns a refusal union (the source-echo
  *  gate) — these walls register sourceless stages, so a refusal is
@@ -328,12 +329,12 @@ describe("envelope texts", () => {
     assert.equal(badTest.payload["got"], "string");
     const missing = envelopeRefusal("missing-draft", {});
     assert.equal(missing.payload["code"], "draft_required");
-    const malformed = envelopeRefusal("malformed-draft", {}, { draftId: "bad id!" });
+    const malformed = envelopeRefusal("malformed-draft", {}, { draftId: draftIdOf("bad id!") });
     assert.match(malformed.payload["error"] as string, /malformed/);
     assert.equal(malformed.payload["got"], "bad id!");
     const bare = envelopeRefusal("malformed-draft", {});
     assert.match(bare.payload["error"] as string, /: ""$/);
-    const unknown = unknownDraftRefusal("ghost");
+    const unknown = unknownDraftRefusal(draftIdOf("ghost"));
     assert.equal(unknown.payload["code"], "draft_unknown");
     assert.match(unknown.payload["error"] as string, /drafts\/ghost\.json/);
   });
@@ -367,7 +368,7 @@ describe("registerCompiledRun", () => {
     const { run, queuePosition } = await mustRegister({
       compiled: compiled([one]),
       testFlag: true,
-      draftId: "d1",
+      draftId: draftIdOf("d1"),
       stateRoot: root,
       door: { runId, pipeline: "flow_inline", requestBody: { model: "m" } },
       enqueue: (row) => {
@@ -402,7 +403,7 @@ describe("registerCompiledRun", () => {
     const { run } = await mustRegister({
       compiled: compiled([one]),
       testFlag: false,
-      draftId: "d1",
+      draftId: draftIdOf("d1"),
       stateRoot: root,
       enqueue: () => 3,
       door: { runId: "run-door" as RunId, pipeline: "m", cardId: "c", requestBody: body },
@@ -433,7 +434,7 @@ describe("registerCompiledRun", () => {
     const { run } = await mustRegister({
       compiled: compiled([one]),
       testFlag: false,
-      draftId: "d1",
+      draftId: draftIdOf("d1"),
       stateRoot: root,
       enqueue: () => 3,
       door: { runId: "run-nonlist" as RunId, pipeline: "m", cardId: "c", requestBody: body, benchDoc },
@@ -459,7 +460,7 @@ describe("registerCompiledRun", () => {
     const { run } = await mustRegister({
       compiled: compiled([one]),
       testFlag: false,
-      draftId: "d1",
+      draftId: draftIdOf("d1"),
       stateRoot: root,
       enqueue: () => 3,
       door: { runId: "run-snap" as RunId, pipeline: "m", cardId: "c", requestBody: body, benchDoc },
@@ -490,7 +491,7 @@ describe("registerCompiledRun", () => {
     const { run } = await mustRegister({
       compiled: compiled([one]),
       testFlag: false,
-      draftId: "d1",
+      draftId: draftIdOf("d1"),
       stateRoot: root,
       enqueue: () => 3,
       door: {
@@ -518,7 +519,7 @@ describe("registerCompiledRun", () => {
     const { run } = await mustRegister({
       compiled: compiled([one]),
       testFlag: false,
-      draftId: "d1",
+      draftId: draftIdOf("d1"),
       stateRoot: root,
       enqueue: () => 3,
       door: {
@@ -547,7 +548,7 @@ describe("registerCompiledRun", () => {
     const { run } = await mustRegister({
       compiled: compiled([one]),
       testFlag: false,
-      draftId: "d1",
+      draftId: draftIdOf("d1"),
       stateRoot: root,
       enqueue: () => 3,
       door: { runId: "run-head" as RunId, pipeline: "m", cardId: "tts", requestBody: body, benchDoc: logged },
@@ -560,7 +561,7 @@ describe("registerCompiledRun", () => {
     const { run: run2 } = await mustRegister({
       compiled: compiled([one]),
       testFlag: false,
-      draftId: "d1",
+      draftId: draftIdOf("d1"),
       stateRoot: root,
       enqueue: () => 3,
       door: { runId: "run-bare" as RunId, pipeline: "m", cardId: "c", requestBody: body, benchDoc: bare },
@@ -582,7 +583,7 @@ describe("registerCompiledRun", () => {
     const { run } = await mustRegister({
       compiled: compiled([{ ...one, params: { text: "hi" } }]),
       testFlag: false,
-      draftId: "d1",
+      draftId: draftIdOf("d1"),
       stateRoot: root,
       enqueue: () => 0,
       door: { runId: "run-var" as RunId, pipeline: "qwen3-tts", cardId: "qwen3-tts", requestBody: body },
@@ -604,7 +605,7 @@ describe("registerCompiledRun", () => {
     const { run } = await mustRegister({
       compiled: compiled([{ ...one, params: { text: "hi" } }]),
       testFlag: false,
-      draftId: "d1",
+      draftId: draftIdOf("d1"),
       stateRoot: root,
       enqueue: () => 0,
       door: { runId: "run-var2" as RunId, pipeline: "qwen3-tts", cardId: "qwen3-tts", requestBody: body },
@@ -620,7 +621,7 @@ describe("registerCompiledRun", () => {
     const { run } = await mustRegister({
       compiled: compiled([one]),
       testFlag: false,
-      draftId: "d1",
+      draftId: draftIdOf("d1"),
       stateRoot: root,
       enqueue: () => 0,      door: { runId: newRunId(), pipeline: "flow_inline", requestBody: {} },
 
@@ -638,7 +639,7 @@ describe("registerCompiledRun", () => {
     const { run } = await mustRegister({
       compiled: compiled([one]),
       testFlag: false,
-      draftId: "d1",
+      draftId: draftIdOf("d1"),
       stateRoot: root,
       enqueue: () => 3,
       door: { ...doorBase, benchDoc: { stages: [] } },
@@ -652,7 +653,7 @@ describe("registerCompiledRun", () => {
     const { run: run2 } = await mustRegister({
       compiled: compiled([one]),
       testFlag: false,
-      draftId: "d1",
+      draftId: draftIdOf("d1"),
       stateRoot: root,
       enqueue: () => 3,
       door: { ...doorBase, runId: "run-nointent" as RunId, benchDoc: { stages, intent: 7 } },
@@ -679,7 +680,7 @@ describe("registerCompiledRun", () => {
     const { run } = await mustRegister({
       compiled: compiled([one]),
       testFlag: false,
-      draftId: "d1",
+      draftId: draftIdOf("d1"),
       stateRoot: root,
       enqueue: () => 0,
       door: {
@@ -705,7 +706,7 @@ describe("registerCompiledRun", () => {
     const { run } = await mustRegister({
       compiled: compiled([one]),
       testFlag: false,
-      draftId: "d1",
+      draftId: draftIdOf("d1"),
       stateRoot: root,
       enqueue: () => 0,
       door: { runId: "run-noecho" as RunId, pipeline: "m", cardId: "c", requestBody: { model: "m" } },
@@ -734,7 +735,7 @@ describe("registerCompiledRun", () => {
           mustRegister({
             compiled: compiled([one]),
             testFlag: false,
-            draftId: "d1",
+            draftId: draftIdOf("d1"),
             stateRoot: root,
             door: { runId: newRunId(), pipeline: "flow_inline", requestBody: {} },
             enqueue: () => 0,

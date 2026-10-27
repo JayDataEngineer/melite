@@ -705,7 +705,8 @@ describe('live door arms', () => {
     } as unknown as ReturnType<typeof theService>
     const fam1 = specBody(fakeSvc, defs, { card: '__sliced__', service: '__sliced__', model: 'fam1' })
     const fam2 = specBody(fakeSvc, defs, { card: '__sliced__', service: '__sliced__', model: 'fam2' })
-    assert.deepEqual((fam1['packs'] as Array<{ id: string }>).map((p) => p.id), ['fam-pack'], 'the declared family carries its slice')
+    const fam1Packs = fam1['packs'] as ReadonlyArray<{ id: string }> | undefined
+    assert.deepEqual((fam1Packs ?? []).map((p) => p.id), ['fam-pack'], 'the declared family carries its slice')
     assert.deepEqual(fam2['packs'], [], 'the slice-absent family serves NO pack row — never the flat union')
   })
 

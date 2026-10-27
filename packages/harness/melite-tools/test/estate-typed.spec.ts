@@ -8,6 +8,7 @@
 import { describe, test } from 'vitest'
 import assert from 'node:assert/strict'
 import { makeEstate, type Estate, type EstateHost } from '../src/estate.ts'
+import { draftIdOf } from '@melite/contracts/benchStage'
 
 function ctxWith(seats: Record<string, unknown>): EstateHost {
   // the estate reads seats through one reflect face — ctx.get — and
@@ -64,8 +65,8 @@ interface LaneRow {
 const BENCH: Record<string, unknown> = { benchRemote: recorder().seat }
 const ROWS: LaneRow[] = [
   { seat: 'draftsRemote', method: 'list', call: (e) => e.draftsList(SIG, 250), seatArgs: [SIG] },
-  { seat: 'draftsRemote', method: 'get', call: (e) => e.draftsGet('d1', SIG, 250), seatArgs: ['d1', SIG] },
-  { seat: 'draftsRemote', method: 'patch', call: (e) => e.draftsStagePatch('d1', 's_0', { a: 1 }, SIG, 250), seatArgs: ['d1', 's_0', { a: 1 }, null, SIG] },
+  { seat: 'draftsRemote', method: 'get', call: (e) => e.draftsGet(draftIdOf('d1'), SIG, 250), seatArgs: ['d1', SIG] },
+  { seat: 'draftsRemote', method: 'patch', call: (e) => e.draftsStagePatch(draftIdOf('d1'), 's_0', { a: 1 }, SIG, 250), seatArgs: ['d1', 's_0', { a: 1 }, null, SIG] },
   { seat: 'benchRemote', method: 'get', call: (e) => e.benchGet('default', SIG, 250), seatArgs: ['default', SIG] },
   { seat: 'benchRemote', method: 'ensure', call: (e) => e.benchEnsure({ session: 'default' }, SIG, 250), seatArgs: [{ session: 'default' }, SIG] },
   { seat: 'benchRemote', method: 'patch', call: (e) => e.benchVerb('default', 'patch', {}, SIG, 250), seatArgs: ['default', {}, SIG] },

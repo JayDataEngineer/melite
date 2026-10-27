@@ -26,6 +26,7 @@ import {
   RESTORE_STRIP_KEYS,
   RESTORED_PROVENANCE_SPELLING,
   benchSessionOf,
+  draftIdOf,
   normalizeBenchStage,
   runTailOf,
   stripKeys,
@@ -516,8 +517,8 @@ export async function loadRunOntoBench(runId: string, deps: BenchLoadDeps): Prom
       : undefined
     const topDraft = (side as Record<string, unknown>)['draft_id']
     const draftId = typeof flowDraft === 'string' && flowDraft !== ''
-      ? flowDraft
-      : typeof topDraft === 'string' && topDraft !== '' ? topDraft : ''
+      ? draftIdOf(flowDraft)
+      : typeof topDraft === 'string' && topDraft !== '' ? draftIdOf(topDraft) : draftIdOf('')
     // THE MUTABLE-BENCH REFUSAL, run side (the media-sidebar audit
     // 2026-09-22): a bench-prefixed draft_id names the LIVING bench
     // — loading it serves whatever the bench holds NOW, never the

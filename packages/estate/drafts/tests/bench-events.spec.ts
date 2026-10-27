@@ -3,6 +3,7 @@ import { Context } from "@deepseek-ai/cordis";
 import { onBenchChange, notifyBenchChange, notifyBenchDocWrite, setBenchChangeSeam } from "../src/bench.ts";
 import { BenchRemoteService, installBenchChangeSeam } from "../src/remote.ts";
 import { sig, bootCtx } from "./bench-helpers.ts";
+import { draftIdOf } from "@melite/contracts/benchStage"
 
 // THE EVENT SEAT (the hand-roll row 1.2, 2026-10-12): these arms
 // exercise the module's own event law, so they install the SAME seam
@@ -81,9 +82,9 @@ describe("the bench change events (the push source)", () => {
   test("notifyBenchDocWrite parses bench-shaped draft ids only", () => {
     const seen: string[] = [];
     const off = onBenchChange((session) => { seen.push(session) });
-    notifyBenchDocWrite("bench-main");
-    notifyBenchDocWrite("some-other-draft");
-    notifyBenchDocWrite("bench-");
+    notifyBenchDocWrite(draftIdOf("bench-main"));
+    notifyBenchDocWrite(draftIdOf("some-other-draft"));
+    notifyBenchDocWrite(draftIdOf("bench-"));
     expect(seen).toEqual(["main"]);
     off();
   });

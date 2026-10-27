@@ -20,6 +20,7 @@ import type { CompiledStage } from "../src/runsStart.ts";
 import { newRunId } from "../src/queueCore.ts";
 import type { EngineJson } from "@melite/comfyui-cordis";
 import type { RunRecord } from "../src/runsTypes.ts";
+import { draftIdOf } from "@melite/contracts/benchStage";
 
 let TMP = "";
 afterEach(() => {
@@ -298,7 +299,7 @@ describe("registerCompiledRun (the source-echo gate)", () => {
     const out = await registerCompiledRun({
       compiled: { stages: [stageWith({ ref_images: ["/melite-media/runs/run-aaaa1111-bb22cc33/edit/gone.png"] })] },
       testFlag: false,
-      draftId: "d1",
+      draftId: draftIdOf("d1"),
       stateRoot: root,
       door: { runId: newRunId(), pipeline: "flow_inline", requestBody: {} },
       enqueue: (row) => {
@@ -325,7 +326,7 @@ describe("registerCompiledRun (the source-echo gate)", () => {
         ],
       },
       testFlag: false,
-      draftId: "d1",
+      draftId: draftIdOf("d1"),
       stateRoot: root,
       enqueue: () => 0,
     });
@@ -344,7 +345,7 @@ describe("registerCompiledRun (the source-echo gate)", () => {
     const { run } = await mustRegister({
       compiled: { stages: [stageWith({ steps: 12 })] },
       testFlag: false,
-      draftId: "d1",
+      draftId: draftIdOf("d1"),
       stateRoot: root,
       enqueue: () => 0,
     });

@@ -33,6 +33,7 @@ import { CardArmError } from "../src/cardsRegistry.ts";
 import type { RunRecord } from "../src/runsTypes.ts";
 import type { RunId } from "../src/queueCore.ts";
 import { FlowsSeatService } from "../src/flowsData.ts";
+import { draftIdOf } from "@melite/contracts/benchStage";
 
 let TMP = "";
 afterEach(() => {
@@ -551,7 +552,7 @@ describe("pump + engine", () => {
       skippedStages: [],
       artifacts: [],
       error: "",
-      draftId: "d1",
+      draftId: draftIdOf("d1"),
       dir,
       testFlag: false,
       stopFlag: false,
@@ -587,7 +588,7 @@ describe("pump + engine", () => {
       skippedStages: [],
       artifacts: [],
       error: "",
-      draftId: "d1",
+      draftId: draftIdOf("d1"),
       dir: join(s.state, "output", "run-init-miss"),
       testFlag: false,
       stopFlag: false,
@@ -627,7 +628,7 @@ describe("pump + engine", () => {
       skippedStages: [],
       artifacts: [],
       error: "",
-      draftId: "d1",
+      draftId: draftIdOf("d1"),
       dir,
       testFlag: false,
       stopFlag: false,
@@ -658,7 +659,7 @@ describe("pump + engine", () => {
       skippedStages: [],
       artifacts: [],
       error: "",
-      draftId: "d1",
+      draftId: draftIdOf("d1"),
       dir: join(s.state, "output", "run-init-scope"),
       testFlag: false,
       stopFlag: false,
@@ -741,7 +742,7 @@ describe("pump + engine", () => {
       skippedStages: [],
       artifacts: [],
       error: "",
-      draftId: "d1",
+      draftId: draftIdOf("d1"),
       dir,
       testFlag: false,
       stopFlag: false,

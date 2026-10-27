@@ -5,6 +5,7 @@ import type { DraftsDomainSpec } from "../src/spec.js";
 import { benchBlockOf } from "../src/bench.ts";
 import { BenchRemoteService, DraftsRemoteService } from "../src/remote.ts";
 import { sig, bootCtx, codeOf } from "./bench-helpers.ts";
+import { draftIdOf } from '@melite/contracts/benchStage';
 
 // ── THE BENCH WRITE TRANSACTION (the round-14 race audit's R1/R2/R3,
 //    2026-10-22) ───────────────────────────────────────────────────
@@ -94,7 +95,7 @@ describe("THE BENCH WRITE TRANSACTION (the round-14 race audit's R1/R2/R3)", () 
     // session key: `bench-s` is `benchDraftIdOf("s")`, the one key both
     // transactions queue on
     const [authorArm, benchArm] = await Promise.all([
-      codeOf(drafts.patch("bench-s", "b", { params: { prompt: "two" } }, rev0, sig)),
+      codeOf(drafts.patch(draftIdOf("bench-s"), "b", { params: { prompt: "two" } }, rev0, sig)),
       codeOf(bench.patch("s", { stage: "a", params: { prompt: "one" }, expect_rev: rev0 }, sig)),
     ]);
     const refusals = refusalsOf(benchArm, authorArm);

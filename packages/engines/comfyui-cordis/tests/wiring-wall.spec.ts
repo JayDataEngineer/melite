@@ -20,7 +20,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { Context } from "@deepseek-ai/cordis";
 import { ComposeRefusal } from "@melite/comfyui-card-kit/errors";
-import { GraphBuilder, deriveDefaults } from "@melite/comfyui-card-kit/graph";
+import { GraphBuilder, deriveDefaults, type ObjectInfoInput } from "@melite/comfyui-card-kit/graph";
 import { instantiateAction } from "@melite/comfyui-card-kit";
 import type { ModelFacts } from "@melite/comfyui-card-kit/facts";
 import { film } from "@melite/models-h3/actions";
@@ -543,7 +543,7 @@ describe("the census degrades (a declaration the doc barely shapes)", () => {
 describe("THE COMPLETENESS GRAMMAR (B7: the reverse arm + the either-or table)", () => {
   const bootDoc = JSON.parse(
     readFileSync("tests/walls/fixtures/object_info.boot.json", "utf8"),
-  ) as Record<string, unknown>;
+  ) as Record<string, { input?: ObjectInfoInput }>;
 
   const armedBoot = () => deriveWiringDoc(bootDoc);
 

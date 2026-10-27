@@ -14,6 +14,7 @@ import type { EngineStageRow } from "@melite/engine-contract";
 import type { RunRecord } from "../src/runsTypes.ts";
 import type { RunId } from "../src/queueCore.ts";
 import { declaredPrimaryFirst, runOne } from "../src/runsExecute.ts";
+import { draftIdOf } from "@melite/contracts/benchStage";
 
 class FakeEngine extends ComfyUIHostService {
   onFlow: (
@@ -48,7 +49,7 @@ const runWithCard = (cardId: string): RunRecord => ({
   skippedStages: [],
   artifacts: [],
   error: "",
-  draftId: "d",
+  draftId: draftIdOf("d"),
   dir: "/tmp/run-hero",
   testFlag: false,
   stopFlag: false,

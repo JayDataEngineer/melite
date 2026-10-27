@@ -10,6 +10,7 @@ import { describe, it } from "vitest";
 import assert from "node:assert/strict";
 import { QueueCore, newRunId, terminalFrame, type QueueRunRow, type RunId } from "../src/queueCore.ts";
 import { MAX_SETTLED_RUNS } from "../src/queueLock.ts";
+import { draftIdOf } from "@melite/contracts/benchStage";
 
 // The fixture brands at its construction door (the run-id type's
 // own law): the ids below are arbitrary labels, never minted.
@@ -18,7 +19,7 @@ const row = (runId: string, over: Partial<QueueRunRow> = {}): QueueRunRow => ({
   status: "queued",
   error: "",
   createdAt: 1_000,
-  draftId: "d",
+  draftId: draftIdOf("d"),
   testFlag: false,
   stopFlag: false,
   ...over,

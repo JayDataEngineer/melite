@@ -52,7 +52,13 @@ describe("THE EDIT LANE'S RECIPE PILL (SD-8/G4): the anonymous post-pick doc is 
     // WRITES the lane's married sampler values beside the prompt
     // (reconcilePick, operator 2026-11-05): the pill derives from
     // the stamp the pick writes, so the held doc carries all of it.
-    const postPick = { prompt: REMOVE_BG_PROMPT, steps: 25, cfg: 1 }
+    // THE MARRIED NUMBERS ARE THE OFFERED LANE'S (25a35ebf8, burn c
+    // 2026-10-26: turbo rides first, so an unstated doc offers the
+    // 8-step distilled lane — and a 25-step stamp would refuse at
+    // turbo's own [4,8] envelope, the brick reconcilePick cured):
+    // the pin was re-married from the base-era 25/1 the derivation
+    // flipped red when turbo became the default offering.
+    const postPick = { prompt: REMOVE_BG_PROMPT, steps: 8, cfg: 1 }
     expect(activeRecipeId(served, postPick as never as SpecValues),
       "G4 (law, post-pick): the held doc states the remove-background stamp yet the derivation names no row — the pill state is unshowable on an addressable doc")
       .toBe("remove-background")

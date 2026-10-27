@@ -1,10 +1,10 @@
 {
- "derived_at": "2026-10-26T17:29:08.075Z",
+ "derived_at": "2026-10-27T04:18:57.815Z",
  "tool": "scripts/regen-node-vocab.mjs --boot",
  "source": {
   "path": "data/tmp/object_info_prod.json",
-  "sha256": "e1f918be0c34f45546309a16d12a199546ce767a2ce0ce81c77a62297c31d662",
-  "mtime_ms": 1792996812676.8352,
+  "sha256": "c4b0903595bdf5949b4bc62fb4cd9415a243edda3d180e1fef74d86a3e00218b",
+  "mtime_ms": 1793074733794.9736,
   "class_count": 1676,
   "origin": "capture"
  },
@@ -24,7 +24,10 @@
  "delta": {
   "added": [],
   "pruned": [],
-  "updated": [],
+  "updated": [
+   "LoadImage",
+   "LoadImageMask"
+  ],
   "reordered_keys": 0
  }
 }

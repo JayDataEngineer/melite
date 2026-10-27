@@ -62,6 +62,7 @@ import { axisPickPatch, seedUser } from '../src/spec.ts'
 import type { SpecValues } from '../src/spec.ts'
 import { CardForm } from '../src/form.tsx'
 import type { FormSpecDoc } from '@melite/contracts/formSpec'
+import { draftIdOf, type DraftId } from '@melite/contracts/benchStage'
 
 const sig = new AbortController().signal
 
@@ -124,7 +125,7 @@ interface HostSeat {
   writeDirect(patch: Record<string, unknown>): Promise<void>
 }
 
-function mountHost(docId: string): HostSeat {
+function mountHost(docId: DraftId): HostSeat {
   let setUserState: ((u: SpecValues | ((prev: SpecValues) => SpecValues)) => void) | null = null
   let setBaseState: ((b: SpecValues | ((prev: SpecValues) => SpecValues)) => void) | null = null
   let pending: Record<string, unknown> = {}
@@ -245,7 +246,7 @@ async function runPressRefusal(docId: string, card: string): Promise<string | nu
 
 test('THE QVOICE BOOLEAN LAW, END TO END (operator 2026-10-22): fresh tts card → VoiceDesign pick → text + persona typed, NO name box on the form → the state SAVES, renders NO strip, and the RUN press owns NO pair', async () => {
   expect(spec, 'the served qwen3-tts spec armed').not.toBeNull()
-  const docId = 'bench-gesture-e2e'
+  const docId = draftIdOf('bench-gesture-e2e')
   await drafts.table('docs').put(docId, {
     updated_at: 1,
     doc: {

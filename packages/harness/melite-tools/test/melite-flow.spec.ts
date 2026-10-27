@@ -21,6 +21,7 @@ import { fakeEstate, fakeEstateStatus } from './fake-estate.ts'
 import type { ContentBlock } from '@deepseek-ai/dsh-llm'
 import type { JsonValue, TextBlock } from '../src/types.ts'
 import { fakeExec } from './fake-exec.ts'
+import { draftIdOf } from '@melite/contracts/benchStage'
 
 // The render's value/blocks are the tool's own result faces (JsonValue
 // in, text blocks out); the walls feed rows that are JSON by
@@ -1249,7 +1250,7 @@ describe('melite_flow bench — the agent drives THE shared bench', () => {
     // budget 40ms, one re-arm: the first link polls twice (t0 live,
     // then sleeps past its deadline), returns the waiting face, and
     // its successor observes the terminal and stamps done
-    const out = await observeAndAttribute(seen.request, 'd_b', 's_0', 'run-x', new AbortController().signal, false, 40, 1)
+    const out = await observeAndAttribute(seen.request, draftIdOf('d_b'), 's_0', 'run-x', new AbortController().signal, false, 40, 1)
     assert.equal(out.status, 'queued')
     assert.equal(out.url, '')
     assert.deepEqual(out.artifacts, [])
@@ -1277,7 +1278,7 @@ describe('melite_flow bench — the agent drives THE shared bench', () => {
         return undefined
       },
     ])
-    const out = await observeAndAttribute(seen.request, 'd_last', 's_0', 'run-last', new AbortController().signal, false, 40, 0)
+    const out = await observeAndAttribute(seen.request, draftIdOf('d_last'), 's_0', 'run-last', new AbortController().signal, false, 40, 0)
     assert.equal(out.status, 'queued', 'the waiting face')
     const pollsAtExpiry = polls
     assert.ok(pollsAtExpiry >= 1, 'the link observed at least once')
@@ -1308,7 +1309,7 @@ describe('melite_flow bench — the agent drives THE shared bench', () => {
         return undefined
       },
     ])
-    const out = await observeAndAttribute(seen.request, 'd_miss', 's_0', 'run-miss', new AbortController().signal, false, 40, 0)
+    const out = await observeAndAttribute(seen.request, draftIdOf('d_miss'), 's_0', 'run-miss', new AbortController().signal, false, 40, 0)
     assert.equal(out.status, 'done', 'the run itself succeeded — the miss is the stamp, never the run')
     assert.ok(out.stamp_note !== undefined && out.stamp_note.includes('stage not found'),
       'the miss says why: ' + JSON.stringify(out.stamp_note))
@@ -1326,7 +1327,7 @@ describe('melite_flow bench — the agent drives THE shared bench', () => {
         return undefined
       },
     ])
-    const out = await observeAndAttribute(seen.request, 'd_throw', 's_0', 'run-throw', new AbortController().signal, false, 40, 0)
+    const out = await observeAndAttribute(seen.request, draftIdOf('d_throw'), 's_0', 'run-throw', new AbortController().signal, false, 40, 0)
     assert.equal(out.status, 'done')
     assert.ok(out.stamp_note !== undefined && out.stamp_note.includes('seat is gone'),
       'the miss says why: ' + JSON.stringify(out.stamp_note))

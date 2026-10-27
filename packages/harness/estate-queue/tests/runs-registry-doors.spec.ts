@@ -22,6 +22,7 @@ import { CardArmError } from "../src/cardsRegistry.ts";
 import type { RunRecord, RunStageRow } from "../src/runsTypes.ts";
 import type { RunId } from "../src/queueCore.ts";
 import { FlowsSeatService, linkedStage, plainStage } from "../src/flowsData.ts";
+import { draftIdOf } from "@melite/contracts/benchStage";
 
 let TMP = "";
 afterEach(async () => {
@@ -1427,7 +1428,7 @@ describe("status + stop", () => {
       skippedStages: [],
       artifacts: [],
       error: "",
-      draftId: "d1",
+      draftId: draftIdOf("d1"),
       dir: join(s.state, "output", over.runId ?? "run-live"),
       testFlag: false,
       stopFlag: false,
@@ -1820,7 +1821,7 @@ describe("status + stop", () => {
       skippedStages: [],
       artifacts: [absTop, absNested, "note.png"],
       error: "",
-      draftId: "d1",
+      draftId: draftIdOf("d1"),
       dir,
       testFlag: false,
       stopFlag: false,
@@ -2545,7 +2546,7 @@ describe("cross-roots manifest (§23)", () => {
       skippedStages: [],
       artifacts: [],
       error: "",
-      draftId: "d1",
+      draftId: draftIdOf("d1"),
       dir: join(s.state, "output", "run-live"),
       testFlag: false,
       stopFlag: false,

@@ -8,7 +8,7 @@ import { film, parseH3Facts } from "../src/actions.ts";
 import { schema as h3schema } from "../src/schema.ts";
 import { DOC_FPS_DEFAULT } from "../src/timelineContract.ts";
 import { stanzaSecs } from "../src/filmMix.ts";
-import { GraphBuilder, deriveDefaults } from "@melite/comfyui-card-kit/graph";
+import { GraphBuilder, deriveDefaults, type ObjectInfoInput } from "@melite/comfyui-card-kit/graph";
 import { assertWiringAgainst, deriveWiringDoc } from "@melite/comfyui-cordis/comfyui-wiring";
 import { instantiateAction } from "@melite/comfyui-card-kit";
 import type { ModelFacts } from "@melite/comfyui-card-kit/facts";
@@ -730,7 +730,7 @@ describe("the refmod seat (audit 010/R1, 2026-10-18)", () => {
     // (missing-required) at the declared-input sweep below.
     const fixture = JSON.parse(
       readFileSync(new URL("../../../../tests/walls/fixtures/object_info.boot.json", import.meta.url), "utf8"),
-    ) as Record<string, unknown>;
+    ) as Record<string, { input?: ObjectInfoInput }>;
     const g = new GraphBuilder(deriveDefaults(fixture));
     instantiateAction(
       film,
@@ -815,7 +815,7 @@ describe("the refmod seat (audit 010/R1, 2026-10-18)", () => {
     ]);
     const fixture = JSON.parse(
       readFileSync(new URL("../../../../tests/walls/fixtures/object_info.boot.json", import.meta.url), "utf8"),
-    ) as Record<string, unknown>;
+    ) as Record<string, { input?: ObjectInfoInput }>;
     const doc = deriveWiringDoc(Object.fromEntries(
       Object.entries(fixture).filter(([name]) => refModFamily.has(name)),
     ));
@@ -835,7 +835,7 @@ describe("the refmod seat (audit 010/R1, 2026-10-18)", () => {
     // primed with the boot fixture's declared defaults.
     const fixture = JSON.parse(
       readFileSync(new URL("../../../../tests/walls/fixtures/object_info.boot.json", import.meta.url), "utf8"),
-    ) as Record<string, unknown>;
+    ) as Record<string, { input?: ObjectInfoInput }>;
     const g = new GraphBuilder(deriveDefaults(fixture));
     instantiateAction(
       film,
@@ -879,7 +879,7 @@ describe("the refmod seat (audit 010/R1, 2026-10-18)", () => {
     // capture lives in dev_docs/audits/journey/b7-followups-2026-10-17.md.
     const fixture = JSON.parse(
       readFileSync(new URL("../../../../tests/walls/fixtures/object_info.boot.json", import.meta.url), "utf8"),
-    ) as Record<string, unknown>;
+    ) as Record<string, { input?: ObjectInfoInput }>;
     const g = new GraphBuilder(deriveDefaults(fixture));
     instantiateAction(
       film,

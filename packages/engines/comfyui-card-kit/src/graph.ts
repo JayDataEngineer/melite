@@ -68,8 +68,10 @@ export type ObjectInfoInput = {
 
 /** Derive the pin autofill map from a live object_info
  *  snapshot: {class: {input: default}} for entries that carry a
- *  default (required + optional both consulted). */
-export function deriveDefaults(objectInfo: Record<string, { input?: ObjectInfoInput }>): Record<string, Record<string, JsonValue>> {
+ *  default (required + optional both consulted). A null spec row
+ *  emits no row (the spec?.input arm — real censuses carry Ghost
+ *  rows; pinned by the lanes' missing-and-input-less arm). */
+export function deriveDefaults(objectInfo: Record<string, { input?: ObjectInfoInput } | null>): Record<string, Record<string, JsonValue>> {
   const out: Record<string, Record<string, JsonValue>> = {}
   for (const [cls, spec] of Object.entries(objectInfo)) {
     const input = spec?.input ?? {}

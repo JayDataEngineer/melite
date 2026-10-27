@@ -18,6 +18,7 @@ import { variantOfBodies } from "../src/queue.ts";
 import { sidecarStageOf } from "../src/queueSidecar.ts";
 import type { RunRecord } from "../src/runsTypes.ts";
 import type { RunId } from "../src/queueCore.ts";
+import { draftIdOf } from "@melite/contracts/benchStage";
 
 let dir = "";
 
@@ -34,7 +35,7 @@ function record(over: Partial<RunRecord> = {}): RunRecord {
     skippedStages: [],
     artifacts: [],
     error: "",
-    draftId: "d1",
+    draftId: draftIdOf("d1"),
     dir: join(dir, "r1"),
     testFlag: false,
     stopFlag: false,

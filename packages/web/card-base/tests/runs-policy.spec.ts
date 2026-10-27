@@ -7,6 +7,7 @@
 // invariant it guards and fails when the behavior breaks.
 import { afterEach, expect, test } from 'vitest'
 import { RemoteError } from '@deepseek-ai/dsh-typert-protocol'
+import { draftIdOf } from '@melite/contracts/benchStage'
 
 import {
   fetchLatestRunForDraft,
@@ -285,7 +286,7 @@ test('THE NEWEST WINS: the draft\'s latest run by created_at', async () => {
       { run_id: 'mid', draft_id: 'd1', created_at: 20 },
     ]),
   })
-  expect(await fetchLatestRunForDraft('d1')).toBe('new')
+  expect(await fetchLatestRunForDraft(draftIdOf('d1'))).toBe('new')
 })
 
 test('THE DRAFT FILTER: foreign drafts, empty ids, and legacy id rows sort correctly', async () => {
@@ -297,10 +298,10 @@ test('THE DRAFT FILTER: foreign drafts, empty ids, and legacy id rows sort corre
       { id: 'legacy', draft_id: 'd1', created_at: 5 },
     ]),
   })
-  expect(await fetchLatestRunForDraft('d1')).toBe('legacy')
+  expect(await fetchLatestRunForDraft(draftIdOf('d1'))).toBe('legacy')
   unbindEstateRemote()
   bindRuns({ list: async () => listValue([{ run_id: 'x', draft_id: 'd2' }]) })
-  expect(await fetchLatestRunForDraft('d1')).toBeNull()
+  expect(await fetchLatestRunForDraft(draftIdOf('d1'))).toBeNull()
 })
 
 test('THE TIMELESS ROW: a non-number created_at counts as epoch (never a crash, never the newest)', async () => {
@@ -310,7 +311,7 @@ test('THE TIMELESS ROW: a non-number created_at counts as epoch (never a crash, 
       { run_id: 'dated', draft_id: 'd1', created_at: 1 },
     ]),
   })
-  expect(await fetchLatestRunForDraft('d1')).toBe('dated')
+  expect(await fetchLatestRunForDraft(draftIdOf('d1'))).toBe('dated')
 })
 
 // ── stopRun ──────────────────────────────────────────────────────
@@ -326,26 +327,26 @@ test('THE CANCEL DOOR: the run id and signal ride to runs/stop', async () => {
 
 test('THE CARD DOOR: knobs ride top-level beside the envelope keys (test defaults false)', async () => {
   const rec = bindRuns({})
-  expect(await startCardRun({ model: 'trellis2', params: { steps: 20 }, draftId: 'd1' }))
+  expect(await startCardRun({ model: 'trellis2', params: { steps: 20 }, draftId: draftIdOf('d1') }))
     .toEqual({ runId: 'r-new' })
   expect(rec.startDocs[0]).toMatchObject({ steps: 20, model: 'trellis2', draft_id: 'd1', test: false })
   expect('params' in rec.startDocs[0]!).toBe(false)
-  await startCardRun({ model: 'trellis2', params: {}, draftId: 'd1', test: true })
+  await startCardRun({ model: 'trellis2', params: {}, draftId: draftIdOf('d1'), test: true })
   expect(rec.startDocs[1]!['test']).toBe(true)
 })
 
 test('THE FLOW DOOR: pre-composed stages ride the flow_inline envelope', async () => {
   const rec = bindRuns({})
   const stages = [{ workflow: 'w', steps: 3 }]
-  expect(await startFlowInlineRun({ flowId: 'f', stages, draftId: 'd1' })).toEqual({ runId: 'r-new' })
+  expect(await startFlowInlineRun({ flowId: 'f', stages, draftId: draftIdOf('d1') })).toEqual({ runId: 'r-new' })
   expect(rec.startDocs[0]).toMatchObject({ flow_inline: { id: 'f', stages }, draft_id: 'd1', test: false })
-  await startFlowInlineRun({ flowId: 'f', stages, draftId: 'd1', test: true })
+  await startFlowInlineRun({ flowId: 'f', stages, draftId: draftIdOf('d1'), test: true })
   expect(rec.startDocs[1]!['test']).toBe(true)
 })
 
 test('THE PRESS KEY: one mint per press — absent mints, present stays', async () => {
   const rec = bindRuns({})
-  const input = { model: 'trellis2', params: {}, draftId: 'd1' }
+  const input = { model: 'trellis2', params: {}, draftId: draftIdOf('d1') }
   await startCardRun(input)
   await startCardRun(input)
   const [first, second] = [rec.startDocs[0]!['press_key'], rec.startDocs[1]!['press_key']]
@@ -357,21 +358,21 @@ test('THE PRESS KEY: one mint per press — absent mints, present stays', async 
   expect(first).not.toBe(second)
   unbindEstateRemote()
   const kept = bindRuns({})
-  await startCardRun({ model: 'trellis2', params: { press_key: 'fixed' }, draftId: 'd1' })
+  await startCardRun({ model: 'trellis2', params: { press_key: 'fixed' }, draftId: draftIdOf('d1') })
   expect(kept.startDocs[0]!['press_key']).toBe('fixed')
   // an empty press_key is no key — it mints like an absent one
-  await startCardRun({ model: 'trellis2', params: { press_key: '' }, draftId: 'd1' })
+  await startCardRun({ model: 'trellis2', params: { press_key: '' }, draftId: draftIdOf('d1') })
   expect(typeof kept.startDocs[1]!['press_key']).toBe('string')
   expect(kept.startDocs[1]!['press_key'] !== '').toBe(true)
 })
 
 test('THE RUNLESS ANSWER: an ok without run_id is a refusal (never a silent undefined run)', async () => {
   bindRuns({ start: async () => ok({ status: 'queued', queue_position: 0 }) })
-  expect(await startCardRun({ model: 'm', params: {}, draftId: 'd' }))
+  expect(await startCardRun({ model: 'm', params: {}, draftId: draftIdOf('d') }))
     .toEqual({ refused: 'run refused: no run_id in the answer' })
   unbindEstateRemote()
   bindRuns({ start: async () => ok({ run_id: '', status: 'queued', queue_position: 0 }) })
-  expect(await startCardRun({ model: 'm', params: {}, draftId: 'd' }))
+  expect(await startCardRun({ model: 'm', params: {}, draftId: draftIdOf('d') }))
     .toEqual({ refused: 'run refused: no run_id in the answer' })
 })
 
@@ -379,7 +380,7 @@ test('THE CODED REFUSAL: the door\'s code and details ride beside the voice', as
   bindRuns({
     start: async () => codedRefusal('bench incomplete: prompt unstated', 'runs/card-compose-incomplete', { missing: ['prompt'] }),
   })
-  expect(await startCardRun({ model: 'm', params: {}, draftId: 'd' })).toEqual({
+  expect(await startCardRun({ model: 'm', params: {}, draftId: draftIdOf('d') })).toEqual({
     refused: 'bench incomplete: prompt unstated',
     refusedCode: 'runs/card-compose-incomplete',
     refusedDetails: { missing: ['prompt'] },
@@ -388,12 +389,12 @@ test('THE CODED REFUSAL: the door\'s code and details ride beside the voice', as
 
 test('THE EMPTY DETAILS BAG IS NO FACT: a details-less refusal carries no refusedDetails key', async () => {
   bindRuns({ start: async () => codedRefusal('engine busy', 'runs/lifecycle-inflight', {}) })
-  const outcome = await startCardRun({ model: 'm', params: {}, draftId: 'd' })
+  const outcome = await startCardRun({ model: 'm', params: {}, draftId: draftIdOf('d') })
   expect(outcome).toEqual({ refused: 'engine busy', refusedCode: 'runs/lifecycle-inflight' })
   expect('refusedDetails' in outcome).toBe(false)
   unbindEstateRemote()
   bindRuns({ start: async () => codedRefusal('engine busy', 'runs/lifecycle-inflight') })
-  const bare = await startCardRun({ model: 'm', params: {}, draftId: 'd' })
+  const bare = await startCardRun({ model: 'm', params: {}, draftId: draftIdOf('d') })
   expect('refusedDetails' in bare).toBe(false)
 })
 
@@ -403,7 +404,7 @@ test('THE TRANSPORT VOICE: a dead wire voices its words with no code (never a co
       throw new Error('socket hung')
     },
   })
-  const outcome = await startCardRun({ model: 'm', params: {}, draftId: 'd' })
+  const outcome = await startCardRun({ model: 'm', params: {}, draftId: draftIdOf('d') })
   expect(outcome).toEqual({ refused: 'socket hung' })
   expect('refusedCode' in outcome).toBe(false)
 })
@@ -416,7 +417,7 @@ test('THE LANE-MISS CLASS: the missing-artifact refusal names its download field
       { artifact: 'weights.safetensors', url: 'https://manager/fetch/x' },
     ),
   })
-  expect(await startCardRun({ model: 'm', params: {}, draftId: 'd' })).toEqual({
+  expect(await startCardRun({ model: 'm', params: {}, draftId: draftIdOf('d') })).toEqual({
     refused: 'model weights missing',
     refusedCode: 'runs/lane-input-missing',
     refusedDetails: { artifact: 'weights.safetensors', url: 'https://manager/fetch/x' },

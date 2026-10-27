@@ -2087,7 +2087,7 @@ window.__ModuleLoader__.load({
 				}
 				const flowDraft = typeof flow === "object" && flow !== null ? flow["draft_id"] : void 0;
 				const topDraft = side["draft_id"];
-				const draftId = typeof flowDraft === "string" && flowDraft !== "" ? flowDraft : typeof topDraft === "string" && topDraft !== "" ? topDraft : "";
+				const draftId = typeof flowDraft === "string" && flowDraft !== "" ? draftIdOf$1(flowDraft) : typeof topDraft === "string" && topDraft !== "" ? draftIdOf$1(topDraft) : draftIdOf$1("");
 				if (draftId.startsWith("bench-")) {
 					deps.onError("that run was born on a living bench and keeps no snapshot — nothing to restore exactly");
 					return;
@@ -3394,7 +3394,7 @@ window.__ModuleLoader__.load({
 							},
 							children: drafts.map((d) => /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("button", {
 								onClick: () => {
-									openDraft(d.draft_id ?? "");
+									openDraft(draftIdOf$1(d.draft_id ?? ""));
 								},
 								"data-draft": d.draft_id,
 								"aria-label": galleryCopy.restoreDraftAria({ name: d.name || d.draft_id || "" }),

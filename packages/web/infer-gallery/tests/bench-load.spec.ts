@@ -14,7 +14,7 @@
  */
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import { RESTORE_STRIP_KEYS } from '@melite/contracts/benchStage'
+import { RESTORE_STRIP_KEYS, draftIdOf } from '@melite/contracts/benchStage'
 import {
   cardsBenchAddress,
   cardsRunAddress,
@@ -22,6 +22,11 @@ import {
   loadRunOntoBench,
   type BenchLoadDeps,
 } from '../src/client/bench-load.ts'
+
+/** THE TEST MINT (the brand law): loadDraftOntoBench's seat is the
+ *  branded DraftId — bare 'd1' literals route through draftIdOf (the
+ *  parse-edge/test mint), never a cast at the call. */
+const D1 = draftIdOf('d1')
 
 interface Deps extends BenchLoadDeps {
   opened: string[]
@@ -112,7 +117,7 @@ describe('loadDraftOntoBench — the CAS load', () => {
         return json({ rev: 3 })
       })
       const d = deps('s1')
-      const settling = loadDraftOntoBench('d1', d)
+      const settling = loadDraftOntoBench(D1, d)
       await vi.advanceTimersByTimeAsync(1_000)
       await settling
       expect(ensures).toBe(2)
@@ -133,7 +138,7 @@ describe('loadDraftOntoBench — the CAS load', () => {
     }
     stubFetch(routed)
     const d = deps('s1')
-    await loadDraftOntoBench('d1', d)
+    await loadDraftOntoBench(D1, d)
     expect(d.errors).toEqual([])
     expect(d.opened).toEqual(['dsh-resource://cards/bench/s1'])
   })
@@ -145,7 +150,7 @@ describe('loadDraftOntoBench — the CAS load', () => {
       return json({ rev: 7 })
     })
     const d = deps('s1')
-    await loadDraftOntoBench('d1', d)
+    await loadDraftOntoBench(D1, d)
     expect(d.errors).toEqual([])
     const ensure = calls.find((c) => c.url === '/v1/bench/ensure')
     const body = JSON.parse(String(ensure?.init?.body)) as Record<string, unknown>
@@ -164,7 +169,7 @@ describe('loadDraftOntoBench — the CAS load', () => {
         return get(url)
       })
       const d = deps('s1')
-      await loadDraftOntoBench('d1', d)
+      await loadDraftOntoBench(D1, d)
       expect(d.errors).toEqual([])
       expect(d.opened).toEqual(['dsh-resource://cards/bench/s1'])
       const body = JSON.parse(String(calls.find((c) => c.url === '/v1/bench/ensure')?.init?.body)) as Record<string, unknown>
@@ -195,7 +200,7 @@ describe('loadDraftOntoBench — the CAS load', () => {
       return json({ error: 'no bench' }, 404)
     })
     const d = deps('s1')
-    await loadDraftOntoBench('bench-session-old', d)
+    await loadDraftOntoBench(draftIdOf('bench-session-old'), d)
     expect(d.errors).toEqual([])
     expect(d.opened).toEqual(['dsh-resource://cards/bench/s1'])
     const body = JSON.parse(String(calls.find((c) => c.url === '/v1/bench/ensure')?.init?.body)) as Record<string, unknown>
@@ -215,7 +220,7 @@ describe('loadDraftOntoBench — the CAS load', () => {
       return json({ rev: 1 })
     })
     const d = deps('s1')
-    await loadDraftOntoBench('nope', d)
+    await loadDraftOntoBench(draftIdOf('nope'), d)
     expect(d.opened).toEqual([])
     expect(d.errors).toEqual(['could not read that card (unknown draft)'])
 
@@ -224,7 +229,7 @@ describe('loadDraftOntoBench — the CAS load', () => {
       return json({ rev: 1 })
     })
     const e = deps('s1')
-    await loadDraftOntoBench('nope', e)
+    await loadDraftOntoBench(draftIdOf('nope'), e)
     expect(e.errors).toEqual(['could not read that card (HTTP 500)'])
 
     stubFetch((url) => {
@@ -232,7 +237,7 @@ describe('loadDraftOntoBench — the CAS load', () => {
       return json({ rev: 1 })
     })
     const f = deps('s1')
-    await loadDraftOntoBench('d1', f)
+    await loadDraftOntoBench(D1, f)
     expect(f.errors).toEqual(['could not read that card (HTTP 200)'])
   })
 
@@ -243,7 +248,7 @@ describe('loadDraftOntoBench — the CAS load', () => {
       return json({ error: 'no bench' }, 404)
     })
     const d = deps(undefined)
-    await loadDraftOntoBench('d1', d)
+    await loadDraftOntoBench(D1, d)
     expect(d.errors).toEqual([])
     expect(d.opened).toEqual(['dsh-resource://cards/bench/main'])
     const body = JSON.parse(String(calls.find((c) => c.url === '/v1/bench/ensure')?.init?.body)) as Record<string, unknown>
@@ -257,7 +262,7 @@ describe('loadDraftOntoBench — the CAS load', () => {
       return json({ rev: 1 })
     })
     const d = deps('s1')
-    await loadDraftOntoBench('d1', d)
+    await loadDraftOntoBench(D1, d)
     expect(d.opened).toEqual([])
     expect(d.errors).toEqual(['the bench refused the load (bench/cas-conflict)'])
 
@@ -267,7 +272,7 @@ describe('loadDraftOntoBench — the CAS load', () => {
       return json({ rev: 1 })
     })
     const e = deps('s1')
-    await loadDraftOntoBench('d1', e)
+    await loadDraftOntoBench(D1, e)
     expect(e.errors).toEqual(['the bench refused the load (HTTP 409)'])
   })
 
@@ -276,14 +281,14 @@ describe('loadDraftOntoBench — the CAS load', () => {
       throw new Error('socket reset')
     })
     const d = deps('s1')
-    await loadDraftOntoBench('d1', d)
+    await loadDraftOntoBench(D1, d)
     expect(d.errors).toEqual(['bench load failed — socket reset'])
 
     stubFetch(() => {
       throw 'bare string failure'
     })
     const e = deps('s1')
-    await loadDraftOntoBench('d1', e)
+    await loadDraftOntoBench(D1, e)
     expect(e.errors).toEqual(['bench load failed — bare string failure'])
   })
 
@@ -294,7 +299,7 @@ describe('loadDraftOntoBench — the CAS load', () => {
         throw thrown
       })
       const d = deps('s1')
-      await loadDraftOntoBench('d1', d)
+      await loadDraftOntoBench(D1, d)
       expect(d.opened).toEqual([])
       expect(d.errors).toEqual(['bench load failed — ' + String(thrown instanceof Error ? thrown.message : thrown)])
     }
@@ -306,7 +311,7 @@ describe('loadDraftOntoBench — the CAS load', () => {
       return json({ rev: 1 })
     })
     const d = deps('s1')
-    await loadDraftOntoBench('d1', d)
+    await loadDraftOntoBench(D1, d)
     expect(d.opened).toEqual([])
     expect(d.errors).toEqual(['could not read that card (HTTP 200)'])
   })

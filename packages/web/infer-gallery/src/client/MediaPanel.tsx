@@ -896,7 +896,7 @@ export function MediaPanel({ useTabInfo, sessionId }: { useTabInfo?: () => TabIn
                 {drafts.map((d) => (
                   <button
                     key={d.draft_id ?? Math.random()}
-                    onClick={() => { openDraft(d.draft_id ?? '') }}
+                    onClick={() => { openDraft(draftIdOf(d.draft_id ?? '')) }}
                     data-draft={d.draft_id}
                     aria-label={galleryCopy.restoreDraftAria({ name: d.name || d.draft_id || '' })}
                     style={{

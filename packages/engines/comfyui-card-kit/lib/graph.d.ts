@@ -41,10 +41,12 @@ export type ObjectInfoInput = {
 };
 /** Derive the pin autofill map from a live object_info
  *  snapshot: {class: {input: default}} for entries that carry a
- *  default (required + optional both consulted). */
+ *  default (required + optional both consulted). A null spec row
+ *  emits no row (the spec?.input arm — real censuses carry Ghost
+ *  rows; pinned by the lanes' missing-and-input-less arm). */
 export declare function deriveDefaults(objectInfo: Record<string, {
     input?: ObjectInfoInput;
-}>): Record<string, Record<string, JsonValue>>;
+} | null>): Record<string, Record<string, JsonValue>>;
 export declare class GraphBuilder {
     /** Per-class instance counters — the /prompt key scheme is
      *  `<ClassName>.<index>`. */

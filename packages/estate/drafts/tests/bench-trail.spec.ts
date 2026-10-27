@@ -12,6 +12,7 @@ import type { DraftsDomainSpec } from "../src/spec.js";
 import { ensureBench } from "../src/bench.ts";
 import { DraftsRemoteService } from "../src/remote.ts";
 import { sig, bootCtx } from "./bench-helpers.ts";
+import { draftIdOf } from "@melite/contracts/benchStage";
 
 describe("THE OUTPUT-TRAIL CONTRACTS (history before finish / the re-add / the stuck row)", () => {
   async function bootRemote(): Promise<{ svc: DraftsRemoteService; drafts: Domain<DraftsDomainSpec> }> {
@@ -21,7 +22,7 @@ describe("THE OUTPUT-TRAIL CONTRACTS (history before finish / the re-add / the s
   }
 
   async function rowOf(svc: DraftsRemoteService, stageId = "s_0"): Promise<Record<string, unknown>> {
-    const doc = await svc.get("bench-main", sig);
+    const doc = await svc.get(draftIdOf("bench-main"), sig);
     return (doc["stages"] as Array<Record<string, unknown>>).find((s) => s["id"] === stageId)!;
   }
 
@@ -36,10 +37,10 @@ describe("THE OUTPUT-TRAIL CONTRACTS (history before finish / the re-add / the s
     // the exact on-disk wound: the poller's url-carrying patch rides
     // while the run is still going (runStatus running) — the current
     // preview must NOT appear in history before the card finishes
-    await svc.patch("bench-main", "s_0", { runStatus: "running", result: { run_id: "live", url: "/melite-media/runs/r-live/edit/SaveImage.0_edit_00001_.png" } }, 0, sig);
+    await svc.patch(draftIdOf("bench-main"), "s_0", { runStatus: "running", result: { run_id: "live", url: "/melite-media/runs/r-live/edit/SaveImage.0_edit_00001_.png" } }, 0, sig);
     expect(await historyOf(svc)).toEqual([]);
     // the terminal landing archives
-    await svc.patch("bench-main", "s_0", { runStatus: "completed", result: { run_id: "live", url: "/melite-media/runs/r-live/edit/SaveImage.0_edit_00001_.png" } }, 0, sig);
+    await svc.patch(draftIdOf("bench-main"), "s_0", { runStatus: "completed", result: { run_id: "live", url: "/melite-media/runs/r-live/edit/SaveImage.0_edit_00001_.png" } }, 0, sig);
     const hist = await historyOf(svc);
     expect(hist.length).toBe(1);
     expect(hist[0]!["run_id"]).toBe("live");
@@ -51,8 +52,8 @@ describe("THE OUTPUT-TRAIL CONTRACTS (history before finish / the re-add / the s
     // the exact on-disk wound: run-d39638a1b0d6 sat TWICE — the
     // media-route spelling and the infer-gallery proxy spelling of
     // the SAME file are the SAME generation
-    await svc.patch("bench-main", "s_0", { runStatus: "completed", result: { run_id: "r1", url: "/melite-media/runs/r1/generate/SaveImage.0_gen_00001_.png" } }, 0, sig);
-    await svc.patch("bench-main", "s_0", { runStatus: "completed", result: { run_id: "r1", url: "/infer-gallery/artifact?path=r1%2Fgenerate%2FSaveImage.0_gen_00001_.png" } }, 0, sig);
+    await svc.patch(draftIdOf("bench-main"), "s_0", { runStatus: "completed", result: { run_id: "r1", url: "/melite-media/runs/r1/generate/SaveImage.0_gen_00001_.png" } }, 0, sig);
+    await svc.patch(draftIdOf("bench-main"), "s_0", { runStatus: "completed", result: { run_id: "r1", url: "/infer-gallery/artifact?path=r1%2Fgenerate%2FSaveImage.0_gen_00001_.png" } }, 0, sig);
     const hist = await historyOf(svc);
     const runIds = hist.map((e) => e["run_id"]);
     expect(new Set(runIds).size).toBe(runIds.length); // no run twice
@@ -62,14 +63,14 @@ describe("THE OUTPUT-TRAIL CONTRACTS (history before finish / the re-add / the s
   test("W3 THE TERMINAL-HOLDS LAW: after a run settles its row, a stale non-terminal pass for the SAME run never un-settles it — the tile's stuck face", async () => {
     const { svc, drafts } = await bootRemote();
     await ensureBench(drafts, { session: "main", stages: [{ id: "s_0" }] });
-    await svc.patch("bench-main", "s_0", { runStatus: "completed", result: { run_id: "r1", url: "/runs/r1/out.png" } }, 0, sig);
+    await svc.patch(draftIdOf("bench-main"), "s_0", { runStatus: "completed", result: { run_id: "r1", url: "/runs/r1/out.png" } }, 0, sig);
     // the stale pass (a late poll/tail frame) re-stamps running for
     // the SAME run — the row must hold its terminal word
-    await svc.patch("bench-main", "s_0", { runStatus: "running", result: { run_id: "r1", progress: { value: 9, max: 10 } } }, 0, sig);
+    await svc.patch(draftIdOf("bench-main"), "s_0", { runStatus: "running", result: { run_id: "r1", progress: { value: 9, max: 10 } } }, 0, sig);
     const stage = await rowOf(svc);
     expect(stage["runStatus"]).toBe("completed");
     // a NEW run (a different run_id) legitimately runs again
-    await svc.patch("bench-main", "s_0", { runStatus: "running", result: { run_id: "r2", progress: { value: 1, max: 10 } } }, 0, sig);
+    await svc.patch(draftIdOf("bench-main"), "s_0", { runStatus: "running", result: { run_id: "r2", progress: { value: 1, max: 10 } } }, 0, sig);
     expect(await rowOf(svc)).toMatchObject({ runStatus: "running" });
   });
 
@@ -78,11 +79,11 @@ describe("THE OUTPUT-TRAIL CONTRACTS (history before finish / the re-add / the s
     await ensureBench(drafts, { session: "main", stages: [{ id: "s_0" }] });
     // the client's patcher stamps 'done' (cards-resource :310), never
     // 'completed' — the trail must treat it as settled
-    await svc.patch("bench-main", "s_0", { runStatus: "done", result: { run_id: "r1", url: "/runs/r1/out.png" } }, 0, sig);
+    await svc.patch(draftIdOf("bench-main"), "s_0", { runStatus: "done", result: { run_id: "r1", url: "/runs/r1/out.png" } }, 0, sig);
     const hist = await historyOf(svc);
     expect(hist.length).toBe(1);
     // the stale tail/poll pass for the same run cannot un-settle
-    await svc.patch("bench-main", "s_0", { runStatus: "running", result: { run_id: "r1", progress: { value: 8, max: 10 } } }, 0, sig);
+    await svc.patch(draftIdOf("bench-main"), "s_0", { runStatus: "running", result: { run_id: "r1", progress: { value: 8, max: 10 } } }, 0, sig);
     expect(await rowOf(svc)).toMatchObject({ runStatus: "done" });
   });
 
@@ -91,11 +92,11 @@ describe("THE OUTPUT-TRAIL CONTRACTS (history before finish / the re-add / the s
     await ensureBench(drafts, { session: "main", stages: [{ id: "s_0" }] });
     // the client's url-rich terminal patch lands first (the race the
     // mirror was built to back up)…
-    await svc.patch("bench-main", "s_0", { runStatus: "done", result: { run_id: "r1", url: "/melite-media/runs/r1/edit/SaveImage.0_edit_00001_.png" } }, 0, sig);
+    await svc.patch(draftIdOf("bench-main"), "s_0", { runStatus: "done", result: { run_id: "r1", url: "/melite-media/runs/r1/edit/SaveImage.0_edit_00001_.png" } }, 0, sig);
     // …then the seat's husk {run_id} lands AFTER it (terminal word,
     // same run, no urls) — the hero slot must survive its own
     // bookkeeping
-    await svc.patch("bench-main", "s_0", { runStatus: "done", result: { run_id: "r1" } }, 0, sig);
+    await svc.patch(draftIdOf("bench-main"), "s_0", { runStatus: "done", result: { run_id: "r1" } }, 0, sig);
     const result = (await rowOf(svc))["result"] as Record<string, unknown>;
     expect(result["url"]).toBe("/melite-media/runs/r1/edit/SaveImage.0_edit_00001_.png");
   });
@@ -105,7 +106,7 @@ describe("THE OUTPUT-TRAIL CONTRACTS (history before finish / the re-add / the s
     await ensureBench(drafts, { session: "main", stages: [{ id: "s_0" }] });
     // the exact shape settleMirrorPatches emits for a failed stage
     // with a media output: identity + url + the error text
-    await svc.patch("bench-main", "s_0", {
+    await svc.patch(draftIdOf("bench-main"), "s_0", {
       runStatus: "failed",
       result: {
         run_id: "r1",
@@ -118,7 +119,7 @@ describe("THE OUTPUT-TRAIL CONTRACTS (history before finish / the re-add / the s
     expect((stage["result"] as Record<string, unknown>)["error"]).toContain("no image-output node");
     expect((stage["result"] as Record<string, unknown>)["url"]).toContain("/melite-media/runs/r1/");
     // ...and a fresh press over it (different run) clears the voice
-    await svc.patch("bench-main", "s_0", { runStatus: "running", result: { run_id: "r2", progress: { value: 1, max: 10 } } }, 0, sig);
+    await svc.patch(draftIdOf("bench-main"), "s_0", { runStatus: "running", result: { run_id: "r2", progress: { value: 1, max: 10 } } }, 0, sig);
     expect(await rowOf(svc)).toMatchObject({ runStatus: "running" });
   });
 
@@ -132,7 +133,7 @@ describe("THE OUTPUT-TRAIL CONTRACTS (history before finish / the re-add / the s
       { run_id: "r1", url: "/infer-gallery/artifact?path=r1%2Fedit%2FSaveImage.0_edit_00001_.png" },
       { run_id: "r2", url: "/melite-media/runs/r2/edit/SaveImage.0_edit_00002_.png" },
     ];
-    await svc.patch("bench-main", "s_0", { runStatus: "done", result: dup[0] }, 0, sig);
+    await svc.patch(draftIdOf("bench-main"), "s_0", { runStatus: "done", result: dup[0] }, 0, sig);
     // force the wounded history onto the row (the door's archive
     // would have deduped — this simulates the disk that predates it)
     const rec = drafts.table("docs").get("bench-main")!;
