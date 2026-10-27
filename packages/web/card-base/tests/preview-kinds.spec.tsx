@@ -284,6 +284,63 @@ test('THE NAMELESS MESH ASSET: the stage seats it by index (never an empty asset
   expect(container.querySelector('[data-testid="stage-preview-mesh"]')).not.toBeNull()
 })
 
+// ── THE INPUT-PIN LAW (operator 2026-10-20, E2-1 — supersedes the
+// (l) photo-face law by operator order, burn verbatim: "IT IS
+// SUPPOSED TO USE THE HUMAN HMR TO CONVERT THE PHOTO TO ANNY. IT
+// JUST PASTES THE IMAGE OVER THE ANNY PREVIEW"): the stated photo is
+// the estimator's INPUT, never the preview's face. The 3D seat keeps
+// the card's own body (artifacts > attached GLB > native figure >
+// empty tombstone) and the photo pins BESIDE the stage as the
+// ReferenceImageBadge; the converted body arrives solely through the
+// run-artifacts arm. Every arm below reds on the pasted-over face.
+// ────────────────────────────────────────────────────────────────
+
+test('THE INPUT PIN (figure seat): a stated photo pins BESIDE the native figure — it never pastes over the anny preview', () => {
+  const { container } = render(h(MeshStagePreview, {
+    ...video({ artifacts: [], runStatus: '' }),
+    kind: 'mesh',
+    attachedImage: { id: 'body_image', url: '/v1/assets/inputs/me.png' },
+    figure: { identityModel: 'anny-v2', identityCoeffs: null, localChanges: null },
+  }))
+  // THE PIN: the badge exists, carries the photo url + the
+  // source-photo caption naming the held file
+  const pin = container.querySelector('[data-reference-image]') as HTMLElement
+  expect(pin).not.toBeNull()
+  expect(pin.querySelector('img')?.getAttribute('src')).toBe('/v1/assets/inputs/me.png')
+  expect(pin.textContent).toContain('Source photo · me.png')
+  // THE SEAT SURVIVES: the native figure keeps the 3D seat (the
+  // wrapper rides every load state) — the pasted-over disease (the
+  // photo becoming the only face) reds here
+  expect(container.querySelector('[data-viewport="poser-figure:s_0"]')).not.toBeNull()
+})
+
+test('THE INPUT PIN (tombstone seat): with no body to show, the photo pins beside the empty hint — never becomes the stage', () => {
+  const { container } = render(h(MeshStagePreview, {
+    ...video({ artifacts: [], runStatus: '' }),
+    kind: 'mesh',
+    attachedImage: { id: 'body_image', url: '/v1/assets/inputs/me.png' },
+  }))
+  expect(container.querySelector('[data-reference-image]')).not.toBeNull()
+  // the tombstone keeps the seat (the honest empty hint — no run
+  // output, no attached GLB, no figure); the photo is an annotation
+  expect(container.textContent).toContain('No render yet')
+})
+
+test('THE INPUT PIN (artifacts seat): run outputs take the stage and the pin SURVIVES them', () => {
+  const { container } = render(h(MeshStagePreview, {
+    ...video({ artifacts: [{ name: 'body', url: '/runs/cur/body.glb' }], runStatus: 'completed' }),
+    kind: 'mesh',
+    attachedImage: { id: 'body_image', url: '/v1/assets/inputs/me.png' },
+  }))
+  // the artifact holds the seat (the converted body arrives solely
+  // through the run-artifacts arm; the wrapper rides every load
+  // state — loading mesh… is still the artifact's seat, not the
+  // photo's)…
+  expect(container.querySelector('[data-viewport="glb-stage"]')).not.toBeNull()
+  // …and the pin still rides (the source never leaves the view)
+  expect(container.querySelector('[data-reference-image]')).not.toBeNull()
+})
+
 // ── THE TEXT PREVIEW (the tagger stroke, 2026-10-24 — the operator's
 // catch: "the output text isn't saving in media, nor is available in
 // the card preview"). The hero's WORDS fetch and render; the copy

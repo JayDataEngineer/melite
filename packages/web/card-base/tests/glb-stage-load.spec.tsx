@@ -12,7 +12,7 @@ import { createElement as h } from 'react'
 import { afterEach, expect, test, vi } from 'vitest'
 import * as THREE from '@melite/three-client/client'
 
-import { autoFitToHeight, attachedMeshOf, GlbStagePreview, meshAssetUrl } from '../src/glb-stage.tsx'
+import { autoFitToHeight, attachedImageOf, attachedMeshOf, GlbStagePreview, meshAssetUrl } from '../src/glb-stage.tsx'
 import { schemaEnvelope, type FormSpecDoc } from '../src/spec.ts'
 
 afterEach(() => { cleanup(); vi.restoreAllMocks() })
@@ -122,6 +122,53 @@ test('attachedMeshOf: mesh-kind fields with held values become stage assets thro
   ])
   // no spec in hand → no attached arm (never a guess)
   expect(attachedMeshOf(null, { body_glb: 'data/input/a.glb' })).toBeNull()
+})
+
+/** THE ATTACHED-IMAGE DERIVATION (the input-pin law's pure half,
+ *  operator 2026-10-20 E2-1 — supersedes the (l) photo-face law by
+ *  operator order, burn verbatim: "IT IS SUPPOSED TO USE THE HUMAN
+ *  HMR TO CONVERT THE PHOTO TO ANNY. IT JUST PASTES THE IMAGE OVER
+ *  THE ANNY PREVIEW"): the served schema's IMAGE-kind fields × the
+ *  resolved values → the photo PIN source, never the preview seat.
+ *  The FIRST non-empty image field wins (compose reads one person
+ *  reference); whitespace IS emptiness (the same compose law as
+ *  attachedMeshOf — the fall returns the mesh/figure arms their
+ *  seats); non-image string fields never ride (a mesh value is the
+ *  GLB arm's own); a rooted URL passes verbatim; null when no image
+ *  field holds a value (no pin). */
+test('attachedImageOf: the FIRST held image-kind field becomes the photo pin through the input door', () => {
+  const doc: FormSpecDoc = {
+    form: 'anny',
+    schema: schemaEnvelope({
+      body_image: { type: 'string', meta: { description: 'Body photo', extra: { wtype: 'image', group: 'body' } } },
+      second_image: { type: 'string', meta: { description: 'Second photo', extra: { wtype: 'image', group: 'body' } } },
+      body_glb: { type: 'string', meta: { description: 'Body GLB', extra: { wtype: 'mesh', group: 'body' } } },
+      notes: { type: 'string', meta: { description: 'Notes', extra: { wtype: 'text' } } },
+    }),
+  }
+  // held estate path → the input asset door (the pin's url rides the
+  // same door as the mesh arm — name-based, never kind-based)
+  expect(attachedImageOf(doc, { body_image: 'data/input/me.png' })).toEqual({ id: 'body_image', url: '/v1/assets/inputs/me.png' })
+  // FIRST non-empty image field wins — a second held photo never
+  // rides (compose reads ONE person reference; a second photo field
+  // would be a different card's own law to state)
+  expect(attachedImageOf(doc, { body_image: 'data/input/me.png', second_image: 'data/input/other.png' }))
+    .toEqual({ id: 'body_image', url: '/v1/assets/inputs/me.png' })
+  // whitespace IS emptiness — the pin falls away, the mesh/figure
+  // arms keep their seats
+  expect(attachedImageOf(doc, { body_image: '   ' })).toBeNull()
+  // empty / absent values never ride
+  expect(attachedImageOf(doc, { body_image: '' })).toBeNull()
+  expect(attachedImageOf(doc, {})).toBeNull()
+  // a mesh value is the GLB arm's own — never the pin's; a plain
+  // text field holding a path never rides either
+  expect(attachedImageOf(doc, { body_glb: 'data/input/body.glb' })).toBeNull()
+  expect(attachedImageOf(doc, { notes: 'data/input/x.png' })).toBeNull()
+  // a picked stage output (already a rooted URL) passes verbatim
+  expect(attachedImageOf(doc, { body_image: '/melite-media/runs/r1/frame.png' }))
+    .toEqual({ id: 'body_image', url: '/melite-media/runs/r1/frame.png' })
+  // no spec in hand → no pin (never a guess)
+  expect(attachedImageOf(null, { body_image: 'data/input/me.png' })).toBeNull()
 })
 
 test('autoFitToHeight: an empty root never scales (no largest dimension — no divide, no throw)', () => {
