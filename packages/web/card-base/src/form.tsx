@@ -338,11 +338,12 @@ export function CardForm({ spec, user, base, onSet, onPick, onUnset, wire, squar
   // THE DRAGBAR CLAMP SOURCE (the form-must-not-author row,
   // 2026-10-13): the ACTIVE variant's sampler envelope — resolved
   // by the door's own law (offeredVariantOf: stated id-or-route,
-  // else pool[0]) — narrows every bounded knob's dragbar track so
-  // the hand cannot drag what the compose gate would refuse; the
-  // wire stays loud for API authors. Null when the variant declares
-  // no envelope (the family's own domain rides).
-  const variantEnvelope = (offeredVariantOf(spec.variants ?? [], value)?.sampler_envelope) ?? null
+  // else the spec's address claim, else pool[0]) — narrows every
+  // bounded knob's dragbar track so the hand cannot drag what the
+  // compose gate would refuse; the wire stays loud for API authors.
+  // Null when the variant declares no envelope (the family's own
+  // domain rides).
+  const variantEnvelope = (offeredVariantOf(spec.variants ?? [], value, spec)?.sampler_envelope) ?? null
   // knob-level bound: only steps/cfg carry envelopes; a malformed
   // served pair (not length 2) clamps nothing — the wire gate still
   // refuses, so the display stays permissive rather than wrong.

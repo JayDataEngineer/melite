@@ -751,14 +751,20 @@ test('the qwen drill chains Quant by owner — the user layer never gains a reci
     onSet,
     onPick,
   }))
-  expect(axisFace('Variant')).toContain('Lightning')
-  expect(axisFace('Quant')).toContain('FP8 Lightning')
+  // THE CLAIMED LANE OPENS (015 C1b, 2026-10-27): this spec is
+  // served AT standard's own route (model 'qwen-img-edit-2511', no
+  // families block) — a fresh drill seeds the CLAIMED coordinate
+  // (standard/int8), never first-declared lightning's silent
+  // neighbor; the run door composes the same lane for the unstated
+  // doc.
+  expect(axisFace('Variant')).toContain('Standard')
+  expect(axisFace('Quant')).toContain('INT8 ConvRot')
   expect(screen.queryByLabelText('Recipe')).toBeNull()
-  // switch to Standard: the Quant axis re-seeds to int8 (the standard
-  // chain) — and still no recipe key anywhere in the user layer
-  await pickAxisRow('Variant', /^Standard/)
-  await waitFor(() => { expect(state.user['quant']).toBe('int8_convrot') })
-  // the model stays the FAMILY (the lightning route never rode)
+  // switch to Lightning: the Quant axis re-seeds to lightning4 (the
+  // lightning chain) — and still no recipe key anywhere in the user layer
+  await pickAxisRow('Variant', /^Lightning/)
+  await waitFor(() => { expect(state.user['quant']).toBe('lightning4') })
+  // the model stays the SERVED KEY (a variant route never re-seeds it)
   expect(state.user['model']).toBe('qwen-img-edit-2511')
   expect(state.user['recipe']).toBeUndefined()
 })
@@ -772,12 +778,15 @@ test('a Recipe pick keeps its declared-knob defaults but NEVER stamps the recipe
   expect(patch['variant']).toBeUndefined()
 })
 
-test('seedAxisValues seeds variant/quant — never recipe (the card cannot declare it)', async () => {
+test('seedAxisValues seeds the CLAIMED coordinate — never recipe (the card cannot declare it)', async () => {
   const seedQ = seedAxisValues(QWEN, {})
-  expect(seedQ['variant']).toBe('lightning')
-  expect(seedQ['quant']).toBe('lightning4')
+  // 015 C1b: the spec is served at standard's own route — the seed
+  // claims that lane; first-declared lightning is pool[0]'s silent
+  // neighbor under a claimed route
+  expect(seedQ['variant']).toBe('standard')
+  expect(seedQ['quant']).toBe('int8_convrot')
   expect(seedQ['recipe']).toBeUndefined()
-  // the model arm is THE FAMILY — never the seeded row's route
+  // the model arm is THE SERVED KEY — never the seeded row's route
   // (qwen-img-edit-2511-lightning4 is the lightning variant's stamp)
   expect(seedQ['model']).toBe('qwen-img-edit-2511')
 })

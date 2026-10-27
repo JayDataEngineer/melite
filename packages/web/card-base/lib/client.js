@@ -10225,7 +10225,7 @@ window.__ModuleLoader__.load({
 				...held ?? {},
 				...patch
 			};
-			const offered = offeredVariantOf(spec.variants ?? [], doc) ?? row;
+			const offered = offeredVariantOf(spec.variants ?? [], doc, spec) ?? row;
 			overrideEnvelopeKeys(patch, spec, offered, held, offered.id === row.id && row.group === CATEGORIES.variant);
 		}
 		/** A model switch's full value patch (the stale-variant cure,
@@ -10330,7 +10330,11 @@ window.__ModuleLoader__.load({
 			const out = {};
 			const groups = axisGroups(spec);
 			if (groups.length === 0) return out;
+			const address = addressClaimOf(spec);
 			const active = {};
+			const rawMid = typeof spec.model === "string" ? spec.model : "";
+			const claimRes = resolveVariantRow(variantMatrixFromFlatRows(spec.variants ?? []), null, address, "offered");
+			const claimedVariantRow = claimRes.status === "resolved" ? claimRes.variant : void 0;
 			for (const g of groups) {
 				const heldKey = typeof held[axisKey(g)] === "string" ? held[axisKey(g)] : "";
 				const heldRow = rowsFor(spec, g).find((x) => x.id === heldKey);
@@ -10340,7 +10344,13 @@ window.__ModuleLoader__.load({
 					write = heldRow.id;
 				} else {
 					const composing = composingRows(spec, g, active);
-					if (composing.length > 0) {
+					let claimed;
+					if (g === CATEGORIES.variant) claimed = claimedVariantRow !== void 0 ? composing.find((row) => row.id === claimedVariantRow.id) : void 0;
+					else if (g === CATEGORIES.quant && rawMid !== "") claimed = composing.find((row) => row.route === rawMid);
+					if (claimed !== void 0) {
+						active[g] = claimed.id;
+						write = axisStampOf(claimed);
+					} else if (composing.length > 0) {
 						active[g] = composing[0].id;
 						write = axisStampOf(composing[0]);
 					} else {
@@ -10423,7 +10433,7 @@ window.__ModuleLoader__.load({
 		*  NEVER rides it (the reopen rides verbatim — seedUser's law).
 		*  PURE — the caller owns the write. */
 		function reseatEnvelopeKeys(spec, seeded) {
-			const offered = offeredVariantOf(spec.variants ?? [], seeded);
+			const offered = offeredVariantOf(spec.variants ?? [], seeded, spec);
 			if (offered === void 0 || offered.sampler_envelope == null) return seeded;
 			const patch = {};
 			overrideEnvelopeKeys(patch, spec, offered, seeded, false);
@@ -10508,19 +10518,37 @@ window.__ModuleLoader__.load({
 		*  before the call: '' reads as unstated on the client doc, and the
 		*  wire never sees it. */
 		const unchosenToUnstated = (v) => v === "" ? null : v;
+		/** THE DOOR'S ADDRESS LAW, MIRROR-SIDE (audit 015 C1, the route-claim
+		*  cure): the run door narrows the compose address to '' when the
+		*  run's mid IS the family head (cardsVariant.ts: the head spelling
+		*  states the FAMILY, never a pin — pool[0], the DECL-walk law) and
+		*  passes every other key as the resolver's address claim, so a doc
+		*  pinned to a route lane ('h3-singularity', 'qwen-img-edit-21-int8')
+		*  composes the CLAIMED lane, never pool[0]'s silent neighbor. The
+		*  spec envelope carries both halves the door's law reads: `model`
+		*  is the resolved key the spec was served at, and `families` names
+		*  the boarded family atoms. A spec with no model makes no claim. */
+		function addressClaimOf(spec) {
+			const m = spec.model;
+			if (m == null || m === "") return "";
+			return (spec.families ?? []).some((f) => f.id === m) ? "" : m;
+		}
 		/** The door's variant resolution, ONE spelling (the dragbar clamp,
 		*  2026-10-13): the stated variant matched by id OR route over the
-		*  matrix, else pool[0] — the row whose sampler_envelope the
-		*  judge and the form's dragbar clamps BOTH read. Undefined only
-		*  when the pool itself is empty (an all-Recipe matrix) or the
-		*  stated id misses the matrix (the miss voice is composeValidate's
-		*  own). A hidden row cannot occur on a served matrix; if a caller
-		*  hands one, the row resolves exactly as the pre-consolidation
-		*  pool read it (hide flags were never the mirror's pool law).
+		*  matrix, else the spec's address claim (015 C1 — the served key's
+		*  route pin, else pool[0] exactly as the door's unstated law reads
+		*  it; pass the spec so the claim can ride). Undefined only when
+		*  the pool itself is empty (an all-Recipe matrix) or the stated id
+		*  misses the matrix (the miss voice is composeValidate's own). A
+		*  hidden row cannot occur on a served matrix; if a caller hands
+		*  one, the row resolves exactly as the pre-consolidation pool read
+		*  it (hide flags were never the mirror's pool law).
 		*  @param all the spec's full variants array, cells included.
-		*  @param doc the resolved display doc (the held variant key). */
-		function offeredVariantOf(all, doc) {
-			const r = resolveVariantRow(variantMatrixFromFlatRows(all), unchosenToUnstated(doc["variant"]), "", "offered");
+		*  @param doc the resolved display doc (the held variant key).
+		*  @param spec the served envelope when the caller holds it — the
+		*  address claim's one home (omit for the head spelling). */
+		function offeredVariantOf(all, doc, spec) {
+			const r = resolveVariantRow(variantMatrixFromFlatRows(all), unchosenToUnstated(doc["variant"]), spec === void 0 ? "" : addressClaimOf(spec), "offered");
 			return r.status === "resolved" || r.status === "hidden" ? r.variant : void 0;
 		}
 		/** THE FAMILY-CLAUSE PRESENCE GRAMMAR (spec.ts, the family clause):
@@ -10531,25 +10559,31 @@ window.__ModuleLoader__.load({
 		*  grain (a whitespace ref string is ZERO refs on both spellings). */
 		/** THE DOC'S RESOLVED LANE COORDINATE, ONE SPELLING (the tts lockout
 		*  cure, 2026-11-10): the (variant × quant) the estate door resolves
-		*  for this doc — the stated variant, else pool[0] (the shared
-		*  resolver's own law); the stated quant, else the variant's FIRST
+		*  for this doc — the stated variant, else the spec's address claim
+		*  (015 C1), else pool[0] (the shared resolver's own law); the
+		*  stated quant, else the RAW MID'S cell claim (the door passes mid
+		*  as the cell address unconditionally), else the variant's FIRST
 		*  cell (selectCardVariant's unstated law). Null when the coordinate
 		*  does not resolve (a stated variant/quant the matrix does not
-		*  know): the callers degrade, never guess. */
+		*  know): the callers degrade, never guess. Exported for the mirror
+		*  wall's coordinate-parity arm (015 C1c). */
 		function resolvedLaneCoordinate(spec, values) {
-			const vres = resolveVariantRow(variantMatrixFromFlatRows(spec.variants ?? []), unchosenToUnstated(values["variant"]), "", "offered");
+			const matrix = variantMatrixFromFlatRows(spec.variants ?? []);
+			const address = addressClaimOf(spec);
+			const vres = resolveVariantRow(matrix, unchosenToUnstated(values["variant"]), address, "offered");
 			if (vres.status === "missing" || vres.status === "pool-empty") return null;
 			const offered = vres.variant;
 			const statedQuant = typeof values["quant"] === "string" && values["quant"] !== "" ? values["quant"] : null;
 			if (statedQuant !== null) {
-				const qres = resolveCellRow(offered, statedQuant, "", "offered");
+				const qres = resolveCellRow(offered, statedQuant, address, "offered");
 				if (qres.status === "missing") return null;
 				return {
 					variantId: offered.id,
 					quantId: qres.quant !== "" ? qres.quant : null
 				};
 			}
-			const firstQuant = (offered.cells ?? [])[0]?.quant;
+			const rawMid = typeof spec.model === "string" ? spec.model : "";
+			const firstQuant = (rawMid !== "" ? (offered.cells ?? []).find((c) => c.route !== "" && c.route === rawMid) : void 0)?.quant ?? (offered.cells ?? [])[0]?.quant;
 			return {
 				variantId: offered.id,
 				quantId: typeof firstQuant === "string" ? firstQuant : null
@@ -10659,7 +10693,8 @@ window.__ModuleLoader__.load({
 			}
 			const matrix = variantMatrixFromFlatRows(spec.variants ?? []);
 			const rawVariant = doc["variant"];
-			const vres = resolveVariantRow(matrix, unchosenToUnstated(rawVariant), "", "offered");
+			const address = addressClaimOf(spec);
+			const vres = resolveVariantRow(matrix, unchosenToUnstated(rawVariant), address, "offered");
 			if (vres.status === "missing") {
 				out.push({ message: "card_compose: " + unknownVariantVoice(vres.stated, spec.model ?? "", vres.known) });
 				return out;
@@ -10668,7 +10703,7 @@ window.__ModuleLoader__.load({
 			const offered = vres.variant;
 			const rawQuant = doc["quant"];
 			if (typeof rawQuant === "string" && rawQuant !== "") {
-				const qres = resolveCellRow(offered, rawQuant, "", "offered");
+				const qres = resolveCellRow(offered, rawQuant, address, "offered");
 				if (qres.status === "missing") out.push({ message: "card_compose: " + unknownQuantVoice(qres.stated, spec.model ?? "", offered.id, qres.known) });
 			}
 			const off = judgeSamplerEnvelope(doc, offered.sampler_envelope ?? null, {
@@ -14688,7 +14723,7 @@ window.__ModuleLoader__.load({
 				model: family ?? ""
 			}, base).filter((v) => !isUnstatedRequiredVoice(v.message) && !(gateFields.has(v.field) && v.message.includes("fires nothing on this lane")));
 			const shownGateViolations = mutedViolations === void 0 ? gateViolations : gateViolations.filter((v) => !mutedViolations.includes(v.message));
-			const variantEnvelope = offeredVariantOf(spec.variants ?? [], value)?.sampler_envelope ?? null;
+			const variantEnvelope = offeredVariantOf(spec.variants ?? [], value, spec)?.sampler_envelope ?? null;
 			const knobEnvelope = (f) => {
 				if (f.name !== "steps" && f.name !== "cfg") return {};
 				const bound = variantEnvelope?.[f.name];
@@ -17966,6 +18001,7 @@ window.__ModuleLoader__.load({
 		exports.activeRecipeId = activeRecipeId;
 		exports.activeRowId = activeRowId;
 		exports.activeVariantId = activeVariantId;
+		exports.addressClaimOf = addressClaimOf;
 		exports.apply = apply;
 		exports.applyWeightsHeat = applyWeightsHeat;
 		exports.applyWireframe = applyWireframe;
@@ -18067,6 +18103,7 @@ window.__ModuleLoader__.load({
 		exports.resolveSeatEntry = resolveSeatEntry;
 		exports.resolveValue = resolveValue;
 		exports.resolveValueLayered = resolveValueLayered;
+		exports.resolvedLaneCoordinate = resolvedLaneCoordinate;
 		exports.rowsFor = rowsFor;
 		exports.scalarKeyOf = scalarKeyOf;
 		exports.schemaEnvelope = schemaEnvelope;

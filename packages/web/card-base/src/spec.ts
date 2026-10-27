@@ -1399,7 +1399,7 @@ function overrideEnvelopeKeys(patch: SpecValues, spec: FormSpecDoc, offered: For
  *  axisPickPatch exit and the model switch. Mutates the patch. */
 function reconcilePick(patch: SpecValues, spec: FormSpecDoc, row: FormVariantRow, held?: SpecValues): void {
   const doc: SpecValues = { ...(held ?? {}), ...patch }
-  const offered = offeredVariantOf(spec.variants ?? [], doc) ?? row
+  const offered = offeredVariantOf(spec.variants ?? [], doc, spec) ?? row
   const trustStamps = offered.id === row.id && row.group === CATEGORIES.variant
   overrideEnvelopeKeys(patch, spec, offered, held, trustStamps)
 }
@@ -1567,7 +1567,21 @@ export function seedAxisValues(spec: FormSpecDoc, held: SpecValues): SpecValues 
   const out: SpecValues = {}
   const groups = axisGroups(spec)
   if (groups.length === 0) return out
+  const address = addressClaimOf(spec)
   const active: Record<string, string | undefined> = {}
+  // THE CLAIM SEAT (015 C1b, the door's unstated law): the VARIANT
+  // claim rides the narrowed address through the shared resolver
+  // (head spelling → '' → pool[0], the DECL-walk law; a route or
+  // cell-route mid claims its OWNING variant). The CELL claim rides
+  // the RAW MID — the door passes mid as the cell address
+  // UNCONDITIONALLY, so a head spelling whose own cell carries it
+  // (qwen3-tts: the 0_6b cell's route IS the family id) claims that
+  // cell. Both honored per axis below against the WALK's own chain:
+  // the cell claim searches the composing rows of the ACTIVE variant
+  // (a held variant overrides the claim's), never a precomputed row.
+  const rawMid = typeof spec.model === 'string' ? spec.model : ''
+  const claimRes = resolveVariantRow(variantMatrixFromFlatRows(spec.variants ?? []), null, address, 'offered')
+  const claimedVariantRow = claimRes.status === 'resolved' ? claimRes.variant : undefined
   for (const g of groups) {
     const heldKey = typeof held[axisKey(g)] === 'string' ? held[axisKey(g)] as string : ''
     const rows = rowsFor(spec, g)
@@ -1591,9 +1605,26 @@ export function seedAxisValues(spec: FormSpecDoc, held: SpecValues): SpecValues 
       write = heldRow.id
     } else {
       // first COMPOSING row (the chain law); when nothing composes the
-      // axis rests empty — never a non-composing row
+      // axis rests empty — never a non-composing row. THE ADDRESS
+      // CLAIM OUTRANKS FIRST-DECLARED (015 C1b): a spec served at a
+      // route lane seeds the CLAIMED row — the coordinate the door's
+      // unstated law resolves — never pool[0]'s silent neighbor. The
+      // claim must still COMPOSE with the axes above it (the chain
+      // owns coherence); a claim the chain starves falls to
+      // first-declared, exactly the door's pool read.
       const composing = composingRows(spec, g, active)
-      if (composing.length > 0) {
+      let claimed: FormVariantRow | undefined
+      if (g === CATEGORIES.variant) {
+        claimed = claimedVariantRow !== undefined
+          ? composing.find((row) => row.id === claimedVariantRow.id)
+          : undefined
+      } else if (g === CATEGORIES.quant && rawMid !== '') {
+        claimed = composing.find((row) => row.route === rawMid)
+      }
+      if (claimed !== undefined) {
+        active[g] = claimed.id
+        write = axisStampOf(claimed)
+      } else if (composing.length > 0) {
         active[g] = composing[0].id
         write = axisStampOf(composing[0])
       } else {
@@ -1731,7 +1762,7 @@ export function seedUser(spec: FormSpecDoc, held: SpecValues): SpecValues {
  *  NEVER rides it (the reopen rides verbatim — seedUser's law).
  *  PURE — the caller owns the write. */
 export function reseatEnvelopeKeys(spec: FormSpecDoc, seeded: SpecValues): SpecValues {
-  const offered = offeredVariantOf(spec.variants ?? [], seeded)
+  const offered = offeredVariantOf(spec.variants ?? [], seeded, spec)
   if (offered === undefined || offered.sampler_envelope == null) return seeded
   const patch: SpecValues = {}
   overrideEnvelopeKeys(patch, spec, offered, seeded, false)
@@ -1859,22 +1890,47 @@ export function recipeDeparturePatch(row: FormVariantRow, held?: SpecValues): Sp
  *  wire never sees it. */
 const unchosenToUnstated = (v: unknown): unknown => (v === '' ? null : v)
 
+/** THE DOOR'S ADDRESS LAW, MIRROR-SIDE (audit 015 C1, the route-claim
+ *  cure): the run door narrows the compose address to '' when the
+ *  run's mid IS the family head (cardsVariant.ts: the head spelling
+ *  states the FAMILY, never a pin — pool[0], the DECL-walk law) and
+ *  passes every other key as the resolver's address claim, so a doc
+ *  pinned to a route lane ('h3-singularity', 'qwen-img-edit-21-int8')
+ *  composes the CLAIMED lane, never pool[0]'s silent neighbor. The
+ *  spec envelope carries both halves the door's law reads: `model`
+ *  is the resolved key the spec was served at, and `families` names
+ *  the boarded family atoms. A spec with no model makes no claim. */
+export function addressClaimOf(spec: FormSpecDoc): string {
+  const m = spec.model
+  if (m == null || m === '') return ''
+  return (spec.families ?? []).some((f) => f.id === m) ? '' : m
+}
+
 /** The door's variant resolution, ONE spelling (the dragbar clamp,
  *  2026-10-13): the stated variant matched by id OR route over the
- *  matrix, else pool[0] — the row whose sampler_envelope the
- *  judge and the form's dragbar clamps BOTH read. Undefined only
- *  when the pool itself is empty (an all-Recipe matrix) or the
- *  stated id misses the matrix (the miss voice is composeValidate's
- *  own). A hidden row cannot occur on a served matrix; if a caller
- *  hands one, the row resolves exactly as the pre-consolidation
- *  pool read it (hide flags were never the mirror's pool law).
+ *  matrix, else the spec's address claim (015 C1 — the served key's
+ *  route pin, else pool[0] exactly as the door's unstated law reads
+ *  it; pass the spec so the claim can ride). Undefined only when
+ *  the pool itself is empty (an all-Recipe matrix) or the stated id
+ *  misses the matrix (the miss voice is composeValidate's own). A
+ *  hidden row cannot occur on a served matrix; if a caller hands
+ *  one, the row resolves exactly as the pre-consolidation pool read
+ *  it (hide flags were never the mirror's pool law).
  *  @param all the spec's full variants array, cells included.
- *  @param doc the resolved display doc (the held variant key). */
+ *  @param doc the resolved display doc (the held variant key).
+ *  @param spec the served envelope when the caller holds it — the
+ *  address claim's one home (omit for the head spelling). */
 export function offeredVariantOf(
   all: readonly FormVariantRow[],
   doc: Readonly<Record<string, unknown>>,
+  spec?: FormSpecDoc,
 ): FormVariantRow | undefined {
-  const r = resolveVariantRow(variantMatrixFromFlatRows(all), unchosenToUnstated(doc['variant']), '', 'offered')
+  const r = resolveVariantRow(
+    variantMatrixFromFlatRows(all),
+    unchosenToUnstated(doc['variant']),
+    spec === undefined ? '' : addressClaimOf(spec),
+    'offered',
+  )
   return r.status === 'resolved' || r.status === 'hidden' ? r.variant : undefined
 }
 
@@ -1898,28 +1954,41 @@ export interface ComposeViolation {
  *  grain (a whitespace ref string is ZERO refs on both spellings). */
 /** THE DOC'S RESOLVED LANE COORDINATE, ONE SPELLING (the tts lockout
  *  cure, 2026-11-10): the (variant × quant) the estate door resolves
- *  for this doc — the stated variant, else pool[0] (the shared
- *  resolver's own law); the stated quant, else the variant's FIRST
+ *  for this doc — the stated variant, else the spec's address claim
+ *  (015 C1), else pool[0] (the shared resolver's own law); the
+ *  stated quant, else the RAW MID'S cell claim (the door passes mid
+ *  as the cell address unconditionally), else the variant's FIRST
  *  cell (selectCardVariant's unstated law). Null when the coordinate
  *  does not resolve (a stated variant/quant the matrix does not
- *  know): the callers degrade, never guess. */
-function resolvedLaneCoordinate(
+ *  know): the callers degrade, never guess. Exported for the mirror
+ *  wall's coordinate-parity arm (015 C1c). */
+export function resolvedLaneCoordinate(
   spec: FormSpecDoc,
   values: Readonly<Record<string, unknown>>,
 ): { variantId: string; quantId: string | null } | null {
   const matrix = variantMatrixFromFlatRows(spec.variants ?? [])
-  const vres = resolveVariantRow(matrix, unchosenToUnstated(values['variant']), '', 'offered')
+  const address = addressClaimOf(spec)
+  const vres = resolveVariantRow(matrix, unchosenToUnstated(values['variant']), address, 'offered')
   if (vres.status === 'missing' || vres.status === 'pool-empty') return null
   const offered = vres.variant
   const statedQuant = typeof values['quant'] === 'string' && values['quant'] !== ''
     ? values['quant']
     : null
   if (statedQuant !== null) {
-    const qres = resolveCellRow(offered, statedQuant, '', 'offered')
+    const qres = resolveCellRow(offered, statedQuant, address, 'offered')
     if (qres.status === 'missing') return null
     return { variantId: offered.id, quantId: qres.quant !== '' ? qres.quant : null }
   }
-  const firstQuant = (offered.cells ?? [])[0]?.quant
+  // unstated quant: THE RAW MID'S CELL CLAIM (the door passes mid
+  // as the cell address UNCONDITIONALLY — cardsVariant.ts quant
+  // resolveCellRow(mid, ...), so a head spelling whose own cell
+  // carries it (qwen3-tts: the 0_6b cell's route IS the family id)
+  // claims that cell), else the FIRST cell
+  const rawMid = typeof spec.model === 'string' ? spec.model : ''
+  const claimedCell = rawMid !== ''
+    ? (offered.cells ?? []).find((c) => c.route !== '' && c.route === rawMid)
+    : undefined
+  const firstQuant = claimedCell?.quant ?? (offered.cells ?? [])[0]?.quant
   return { variantId: offered.id, quantId: typeof firstQuant === 'string' ? firstQuant : null }
 }
 
@@ -2119,7 +2188,8 @@ export function composeValidate(
   // own ids.
   const matrix = variantMatrixFromFlatRows(all)
   const rawVariant = doc['variant']
-  const vres = resolveVariantRow(matrix, unchosenToUnstated(rawVariant), '', 'offered')
+  const address = addressClaimOf(spec)
+  const vres = resolveVariantRow(matrix, unchosenToUnstated(rawVariant), address, 'offered')
   if (vres.status === 'missing') {
     out.push({
       message: 'card_compose: ' + unknownVariantVoice(vres.stated, spec.model ?? '', vres.known),
@@ -2144,7 +2214,7 @@ export function composeValidate(
   // mirror never judges).
   const rawQuant = doc['quant']
   if (typeof rawQuant === 'string' && rawQuant !== '') {
-    const qres = resolveCellRow(offered, rawQuant, '', 'offered')
+    const qres = resolveCellRow(offered, rawQuant, address, 'offered')
     if (qres.status === 'missing') {
       out.push({
         message: 'card_compose: ' + unknownQuantVoice(qres.stated, spec.model ?? '', offered.id, qres.known),

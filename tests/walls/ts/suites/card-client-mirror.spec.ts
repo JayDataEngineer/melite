@@ -41,17 +41,19 @@
 //     pool-parity precedent (a variant with no cells starves no pool —
 //     and the door refuses `__head` ids the served spec still offers;
 //     that alias-offer seam is its own wall, not this one).
-//   ROUTE-CLAIM PARITY (RED TODAY — the firing arm) — per lane
-//     address, the door's unstated variant claim equals the mirror's
-//     unstated offer. Green at family heads (both spellings read
-//     pool[0] — the falsifiable control), red on the claimed routes
-//     (6+ live splits); the cure is card-base foreign (the mirror's
-//     address-'' spells at spec.ts:1877/1911/2122) — reported, not
-//     edited here.
-//   SEEDING PROBE (RED TODAY — C1b) — seedAxisValues(routeSpec, {})
-//     seeds the pool[0] coordinate while the door stamps the claimed
-//     route: a fresh drill on a route lane opens on a coordinate the
-//     run door would not resolve. Same foreign cure.
+//   ROUTE-CLAIM PARITY (the 015 C1 firing arm, cured 2026-10-27) —
+//     per lane address, the door's unstated variant claim equals the
+//     mirror's unstated offer. Green at family heads (both spellings
+//     read pool[0] — the falsifiable control); the cure threads
+//     addressClaimOf(spec) — the door's address law mirror-side,
+//     card-base spec.ts — through offeredVariantOf's spec arm. The
+//     toggle-out proof: drop the spec argument and the arm splits
+//     red on every claimed route again.
+//   SEEDING PROBE (the 015 C1b firing arm, cured 2026-10-27) — a
+//     fresh drill on a claimed lane seeds the CLAIMED coordinate
+//     (the claim pair in seedAxisValues, chain-checked); the door
+//     stamps the same. Toggle-out: the claim-pair splice removed,
+//     the seed falls to first-declared and the arm splits red.
 // Run: npx vitest run --project walls tests/walls/ts/suites/card-client-mirror.spec.ts
 import '../../../../tests/helpers/boot-models.ts'
 import { describe, expect, it } from 'vitest'
@@ -61,7 +63,9 @@ import { factsPath, familyLanesOf } from '../../../../packages/harness/estate-qu
 import { formSpecArm } from '../../../../packages/harness/melite-tools/src/discovery.ts'
 import { selectCardVariant } from '../../../../packages/harness/estate-queue/src/cardsVariant.ts'
 import {
+  axisGroups,
   offeredVariantOf,
+  resolvedLaneCoordinate,
   seedAxisValues,
   type FormSpecDoc,
 } from '../../../../packages/web/card-base/src/spec.ts'
@@ -209,7 +213,7 @@ describe('THE MIRROR ROUTE-CLAIM EDGE — the client offers what the door would 
     expect(failures, `the stated search split across ${probed} probed pairs`).toEqual([])
   })
 
-  it('route-claim parity: on an UNSTATED doc the mirror offers the door\u2019s claimed route — never pool[0] (RED TODAY, the firing arm)', async () => {
+  it('route-claim parity: on an UNSTATED doc the mirror offers the door\u2019s claimed route — never pool[0]', async () => {
     const splits: string[] = []
     let probed = 0
     for (const r of MIDS) {
@@ -222,7 +226,7 @@ describe('THE MIRROR ROUTE-CLAIM EDGE — the client offers what the door would 
         if (hiddenSkip(e)) continue
         throw e
       }
-      const mirror = offeredVariantOf((spec.variants ?? []) as never, {} as never)?.id ?? '<mirror-miss>'
+      const mirror = offeredVariantOf((spec.variants ?? []) as never, {} as never, spec)?.id ?? '<mirror-miss>'
       probed += 1
       if (door.variantId !== mirror) {
         splits.push(
@@ -231,15 +235,21 @@ describe('THE MIRROR ROUTE-CLAIM EDGE — the client offers what the door would 
       }
     }
     expect(probed, 'no lane address probed — the arm went vacuous').toBeGreaterThan(0)
-    expect(splits, `the mirror splits the door\u2019s route claim across ${probed} lane addresses (audit 015 C1 — the mirror cure at card-base spec.ts:1877/1911/2122 is owed)`).toEqual([])
+    expect(splits, `the mirror splits the door\u2019s route claim across ${probed} lane addresses (audit 015 C1 — the address claim rides addressClaimOf(spec) at card-base spec.ts)`).toEqual([])
   })
 
-  it('seeding probe: a fresh drill on a claimed lane seeds the door\u2019s coordinate (RED TODAY, C1b)', async () => {
+  it('seeding probe: a fresh drill on a claimed lane seeds the door\u2019s coordinate (C1b)', async () => {
     const splits: string[] = []
     let probed = 0
     for (const r of MIDS) {
       const spec = (await formSpecArm(r.mid)) as FormSpecDoc | null
       if (spec === null) continue
+      // THE AXIS-LESS CARVE-OUT (named, never silent): a spec with
+      // no axis groups (anny — one variant row, group "", no cells)
+      // has NO coordinate to seed; the claim composes through the
+      // model arm (the door resolves the same single row), and the
+      // arm above judges that plane. Skipping is the honest probe.
+      if (axisGroups(spec).length === 0) continue
       let door: { variantId: string; quant: string }
       try {
         door = doorUnstated(r)
@@ -258,6 +268,40 @@ describe('THE MIRROR ROUTE-CLAIM EDGE — the client offers what the door would 
       }
     }
     expect(probed, 'no lane address probed — the arm went vacuous').toBeGreaterThan(0)
-    expect(splits, `the fresh-drill seed splits the door\u2019s stamp across ${probed} lane addresses (audit 015 C1b — same foreign mirror cure)`).toEqual([])
+    expect(splits, `the fresh-drill seed splits the door\u2019s stamp across ${probed} lane addresses (audit 015 C1b — the claim pair in seedAxisValues rides addressClaimOf(spec))`).toEqual([])
+  })
+
+  it('coordinate parity: the form\u2019s resolved lane coordinate equals the door\u2019s unstated stamp (C1c)', async () => {
+    const splits: string[] = []
+    let probed = 0
+    for (const r of MIDS) {
+      const spec = (await formSpecArm(r.mid)) as FormSpecDoc | null
+      if (spec === null) continue
+      // THE AXIS-LESS CARVE-OUT (the seeding arm's precedent): a
+      // variant-less spec has no coordinate the form resolves — the
+      // door's single row IS the compose, nothing to split.
+      if (axisGroups(spec).length === 0) continue
+      let door: { variantId: string; quant: string }
+      try {
+        door = doorUnstated(r)
+      } catch (e) {
+        if (hiddenSkip(e)) continue
+        throw e
+      }
+      const coordinate = resolvedLaneCoordinate(spec, {})
+      probed += 1
+      // the honest empty normalizes on both spellings: a cell-less
+      // variant's ''/null — every other coordinate must match
+      const formVariant = coordinate?.variantId ?? '<unresolved>'
+      const formQuant = coordinate == null || coordinate.quantId === null ? '<unresolved>' : coordinate.quantId
+      const doorQuant = door.quant === '' ? '<unresolved>' : door.quant
+      if (formVariant !== door.variantId || formQuant !== doorQuant) {
+        splits.push(
+          `${r.mid}: the form resolves "${formVariant}/${formQuant}" but the door stamps "${door.variantId}/${door.quant}" (the lane coordinate split — the form judges the wrong lane surface)`,
+        )
+      }
+    }
+    expect(probed, 'no lane address probed — the arm went vacuous').toBeGreaterThan(0)
+    expect(splits, `the form\u2019s resolved coordinate splits the door\u2019s stamp across ${probed} lane addresses (audit 015 C1c — the raw-mid cell claim in resolvedLaneCoordinate)`).toEqual([])
   })
 })

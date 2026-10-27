@@ -460,18 +460,32 @@ export declare function seedRecipeStamp(spec: FormSpecDoc, seeds: SpecValues): S
  *  key (the dead card-recipe layer; the compose door refuses the
  *  undeclared param). PURE — the caller owns the write. */
 export declare function recipeDeparturePatch(row: FormVariantRow, held?: SpecValues): SpecValues;
+/** THE DOOR'S ADDRESS LAW, MIRROR-SIDE (audit 015 C1, the route-claim
+ *  cure): the run door narrows the compose address to '' when the
+ *  run's mid IS the family head (cardsVariant.ts: the head spelling
+ *  states the FAMILY, never a pin — pool[0], the DECL-walk law) and
+ *  passes every other key as the resolver's address claim, so a doc
+ *  pinned to a route lane ('h3-singularity', 'qwen-img-edit-21-int8')
+ *  composes the CLAIMED lane, never pool[0]'s silent neighbor. The
+ *  spec envelope carries both halves the door's law reads: `model`
+ *  is the resolved key the spec was served at, and `families` names
+ *  the boarded family atoms. A spec with no model makes no claim. */
+export declare function addressClaimOf(spec: FormSpecDoc): string;
 /** The door's variant resolution, ONE spelling (the dragbar clamp,
  *  2026-10-13): the stated variant matched by id OR route over the
- *  matrix, else pool[0] — the row whose sampler_envelope the
- *  judge and the form's dragbar clamps BOTH read. Undefined only
- *  when the pool itself is empty (an all-Recipe matrix) or the
- *  stated id misses the matrix (the miss voice is composeValidate's
- *  own). A hidden row cannot occur on a served matrix; if a caller
- *  hands one, the row resolves exactly as the pre-consolidation
- *  pool read it (hide flags were never the mirror's pool law).
+ *  matrix, else the spec's address claim (015 C1 — the served key's
+ *  route pin, else pool[0] exactly as the door's unstated law reads
+ *  it; pass the spec so the claim can ride). Undefined only when
+ *  the pool itself is empty (an all-Recipe matrix) or the stated id
+ *  misses the matrix (the miss voice is composeValidate's own). A
+ *  hidden row cannot occur on a served matrix; if a caller hands
+ *  one, the row resolves exactly as the pre-consolidation pool read
+ *  it (hide flags were never the mirror's pool law).
  *  @param all the spec's full variants array, cells included.
- *  @param doc the resolved display doc (the held variant key). */
-export declare function offeredVariantOf(all: readonly FormVariantRow[], doc: Readonly<Record<string, unknown>>): FormVariantRow | undefined;
+ *  @param doc the resolved display doc (the held variant key).
+ *  @param spec the served envelope when the caller holds it — the
+ *  address claim's one home (omit for the head spelling). */
+export declare function offeredVariantOf(all: readonly FormVariantRow[], doc: Readonly<Record<string, unknown>>, spec?: FormSpecDoc): FormVariantRow | undefined;
 export interface ComposeViolation {
     /** the door's own voice — the same message the estate would send,
      *  prefixed by the gate that caught it (BEFORE the wire). */
@@ -483,6 +497,26 @@ export interface ComposeViolation {
      *  the words ACT, never refuse without cure). */
     field?: string;
 }
+/** THE FAMILY-CLAUSE PRESENCE GRAMMAR (spec.ts, the family clause):
+ *  a stated key counts, null/undefined never does, strings when
+ *  non-empty after trim, arrays when non-empty, any other value
+ *  always. Mirrors the estate walk's explicit-key law and
+ *  normalizeDeclaredRefs's wire-literal counting at the presence
+ *  grain (a whitespace ref string is ZERO refs on both spellings). */
+/** THE DOC'S RESOLVED LANE COORDINATE, ONE SPELLING (the tts lockout
+ *  cure, 2026-11-10): the (variant × quant) the estate door resolves
+ *  for this doc — the stated variant, else the spec's address claim
+ *  (015 C1), else pool[0] (the shared resolver's own law); the
+ *  stated quant, else the RAW MID'S cell claim (the door passes mid
+ *  as the cell address unconditionally), else the variant's FIRST
+ *  cell (selectCardVariant's unstated law). Null when the coordinate
+ *  does not resolve (a stated variant/quant the matrix does not
+ *  know): the callers degrade, never guess. Exported for the mirror
+ *  wall's coordinate-parity arm (015 C1c). */
+export declare function resolvedLaneCoordinate(spec: FormSpecDoc, values: Readonly<Record<string, unknown>>): {
+    variantId: string;
+    quantId: string | null;
+} | null;
 /** THE REOPEN CARRY DROP (the stale-carry reopen cure, 2026-10-21 —
  *  the saved-doc heal). dropStaleAxisCarry seats the prev ∩ ¬next
  *  drop at the PICK only; a SAVED doc that arrives already resolved
