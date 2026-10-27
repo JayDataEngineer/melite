@@ -50,12 +50,52 @@ the schema listing alone under-describes this card by design.
 Describe motion, subject continuity, ambient sound, and style in each call's
 `text`. Use a stable seed for re-rolls of the same shot.
 
-**Frames are arbitrary.** There is no first-frame/last-frame setup:
-`params.keyframes` is `[{frame, image}]` — a film-absolute frame plus the
-image that must appear there, inside a window (`[start, end)`). Pin any
-frame, any time. `image` is only the frame-0 shorthand. Use `ref_images`,
-`ref_videos`, and `ref_audios` as references (identity, style, motion),
-not pins; each reference rail narrows the generation.
+**THE HYBRID RAILS — both image rails are live on ONE window, and they
+COMBINE (operator law, 2026-10-27).** There is no first-frame/last-frame
+setup and no either/or mode: `params.keyframes` is `[{frame, image}]` — a
+film-absolute frame plus the image that must appear there, inside a window
+(`[start, end)`); `params.image` is the frame-0 shorthand for the same
+rail. `ref_images`, `ref_videos`, `ref_audios` are the reference rails
+(identity, style, motion). Pick by what the still MEANS, never by habit:
+
+- **The anchor rail (`image` / `keyframes`):** the still is the ANCHOR —
+  the strongest identity pull the film develops under (it never pins a
+  literal decoded first frame; the opening generates from it). Use when
+  the brief is "animate THIS picture" / "bring this image to life".
+- **The reference rails (`ref_images` and kin):** the still conditions
+  identity/style/motion without anchoring the opening — the film may open
+  anywhere. Use when the brief is "make a video of her/him" and the
+  picture anchors WHO it is, not WHERE the opening sits.
+- **BOTH AT ONCE is often best:** the anchor and the references ride the
+  same window's image bus (the anchor takes the strongest seat, the
+  references stack after it; caps and slot budgets live on the served
+  schema rows). An anchored opening + identity references is a legal,
+  common compose — reach for it when the brief names a starting image AND
+  a character/style to hold.
+
+The classic miss: a picture was given, so the agent reaches for `image`
+alone when the brief wanted a free-opening character film (that is the
+reference rail's job); or the reverse — bare `ref_images` on "animate
+this exact picture" lets the opening drift off the still (that is the
+anchor rail's job). Ambiguous? "video of this character" defaults to the
+anchor when the picture is composed as a shot (subject framed, looking at
+viewer); to references when it is a character sheet or identity plate.
+
+The card composes the upstream guide's scaffolding ITSELF (alignment
+lines, `[Shot n]` headers, keyframe-instruction blocks). Call `text`
+stays ONE continuous action line — motion, subject continuity, ambient
+sound, style. Never paste the guides' "For the target video…" / "How the
+reference pictures align…" lines or `[Shot 1]` prefixes into call text;
+those files describe the raw model's prompt shape, not this card's call
+fields.
+
+Ops note (observed 2026-10-27): `melite_view`'s film arm can fail with
+"no media file at …/comfyui/output/<hash>.mp4" (stale ComfyUI output
+path). The durable artifact is the run-output mp4 — ffprobe/ffmpeg it
+directly from the runs tree (`data/runs/output/<run_id>/…`), extract
+frames with ffmpeg select, and read those. Films deliver at the schema's
+own fps default, and a single-call film with no `audio_clips` still
+ships an AAC track (engine-observed, not a card law).
 
 ## Audio clips
 

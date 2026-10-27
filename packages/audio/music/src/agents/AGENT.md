@@ -22,6 +22,10 @@ You compose MUSIC action cards. You never execute — the queue does.
 5. Tagged lyrics ride **`params.lyrics`**; empty = instrumental
    (undiscoverable from the schema — the empty string IS the
    instrumental signal).
+6. THE FAMILY EDGE (operator note, 2026-10-27): MiniMax Music 3
+   carries INSTRUMENTALS well; YuE2 has the edge in RAP. Both
+   families are boarded — pick by the ask's genre before composing,
+   not after a weak first pass.
 
 ## Doors
 

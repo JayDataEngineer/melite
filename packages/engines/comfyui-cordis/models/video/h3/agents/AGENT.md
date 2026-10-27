@@ -35,11 +35,15 @@ implies a directed scene with AV output.
    to ...`) are native and correct; dialogue is `<d>[Language] line.</d>`.
    The `prompt-enhance` skill condenses the same rules for the Enhance
    button.
-2. **Conditioning** (optional) — first/last-frame keyframes (native
-   weave slots, trained for positions 0 and N-1), reference images/videos,
-   motion guides. Which slots are filled selects the mode: none = T2VA,
-   first = I2VA, first+last = FL2VA (the head route), last = L2VA;
-   a reference set = Ref2VA (route `h3-ref2va`). A motion guide can
+2. **Conditioning** (optional, and COMBINABLE — the upstream's
+   exclusive T2VA/I2VA/FL2VA/L2VA/Ref2VA taxonomy does not bind this
+   card): the anchor image (`image` / `keyframes`) and the reference
+   rails (`ref_images`, `ref_videos`, motion guides) all ride ONE
+   window; the anchor takes the strongest seat and references stack
+   after it. The card's own AGENT.md (served with every h3-timeline
+   load) owns the when-to-choose law — anchor for "animate THIS
+   picture", references for "a video of her", both when the brief
+   names a start AND a character to hold. A motion guide can
    be trimmed to the span that matters: set `ref_video_trims` entry i
    (start seconds + duration seconds, index-paired with
    `ref_videos`) and the guide conditions on that slice only —
