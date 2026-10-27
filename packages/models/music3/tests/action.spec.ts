@@ -96,6 +96,28 @@ describe("the music3 compose action — byte-stability (the compatibility law)",
     assert.equal(facts.clip_type, "minimax");
   });
 
+  it("the latent's seconds is the AR's realized-length link — the duration owns ONE seat (audit 014 D1)", () => {
+    // The official template derives EmptyMiniMaxMusic3LatentAudio.seconds from
+    // MiniMaxMusic3TextEncode's SECOND output (the realized AR length, template
+    // link 20). Stamping the user's duration literal there let the seats diverge
+    // when the AR ended the song early: the DiT zero-pads the conditioning and
+    // the tail generates unconditioned noise — the reported "devolves into
+    // garbage". The wall: the link rides slot 1, and the duration literal
+    // appears on exactly ONE engine seat (max_duration, the AR's cap).
+    const p = { ...PARAMS, duration: 77 };
+    const action = new GraphBuilder({});
+    instantiateAction(compose, { ...p }, FACTS, action, "probe-ar-len");
+    const g = graphOf(action);
+    const latent = Object.values(g).find((n) => n.class_type === "EmptyMiniMaxMusic3LatentAudio")!;
+    const encodeEntry = Object.entries(g).find(([, n]) => n.class_type === "MiniMaxMusic3TextEncode")!;
+    assert.ok(latent, "compose emits the empty latent");
+    assert.deepEqual(latent.inputs.seconds, [encodeEntry[0], 1], "seconds rides the encoder's slot-1 AR-length link");
+    const literalSeats = Object.values(g).flatMap((n) =>
+      Object.entries(n.inputs).filter(([, v]) => v === p.duration).map(([k]) => `${n.class_type}.${k}`)
+    );
+    assert.deepEqual(literalSeats, ["MiniMaxMusic3TextEncode.max_duration"], "the duration literal lives on exactly one seat");
+  });
+
   it("the prompt routes to the encoder caption, the lyrics to lyrics (the genre IS the caption)", () => {
     // There is no genre knob — the caption text is the genre. A
     // caption/lyrics swap still matches the golden only by luck, so

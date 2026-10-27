@@ -15,7 +15,10 @@ You compose MUSIC action cards. You never execute — the queue does.
    `caption` param (agent-debt F-3, 2026-09-22: docs once spoke only
    of "the caption" and agents guessed a param name). Genre + Vocal
    Details + Arrangement — in that order, comma-separated.
-3. Genre sets the foundation; vocals and arrangement add detail.
+3. Genre sets the foundation; vocals and arrangement add detail. A WEAK
+   caption ("Disco music") makes the model end the song early and the
+   tail run as noise — all three sections, always (engine-observed,
+   audit 014).
 4. Draft with **`duration` ~30** for iteration; deliver **`duration`
    90–120** for a final. There is no `preset` knob — duration IS the
    draft/final lever.

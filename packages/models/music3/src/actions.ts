@@ -90,7 +90,14 @@ export const compose: ComfyActionSpec<MusicParams, MusicFacts> = {
       top_k: 50,
     });
     const zeroed = g.node("ConditioningZeroOut", { conditioning: cond.out(0) });
-    const latent = g.node("EmptyMiniMaxMusic3LatentAudio", { batch_size: 1, seconds: p.duration });
+    // The latent's length is DERIVED from the AR, never addressed twice: slot 1
+    // of MiniMaxMusic3TextEncode is the realized AR length in seconds, and the
+    // official template wires exactly this link. Stamping the duration literal
+    // here lets the seats diverge when the AR ends the song early — the DiT
+    // zero-pads the conditioning (dit.py:197-198) and the latent tail generates
+    // unconditioned noise (audit 014, D1). max_duration above is the user's
+    // only duration seat.
+    const latent = g.node("EmptyMiniMaxMusic3LatentAudio", { batch_size: 1, seconds: cond.out(1) });
     const sampled = g.node("KSampler", {
       seed,
       steps: p.n_diffusion_steps,

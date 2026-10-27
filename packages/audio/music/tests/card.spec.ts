@@ -50,11 +50,17 @@ describe("the music compose gate", () => {
   });
 
   it("THE SCHEMA GATE: an unstated duration arrives as the declared default 30 (the walk fills it)", () => {
+    // The duration's ONE seat is the encoder's max_duration (audit 014 D1:
+    // the latent's seconds is the AR's realized-length LINK, never the
+    // literal — a second literal seat diverges when the AR ends early).
     const g = new GraphBuilder();
     def.compose({ prompt: "funk, pop" }, music3, g, "r_def");
-    const latent = JSON.stringify(g);
-    assert.ok(latent.includes('"seconds":30') || latent.includes('"seconds": 30'),
+    const encode = g.toJSON()["MiniMaxMusic3TextEncode.0"];
+    assert.equal(encode.inputs.max_duration, 30,
       "the fresh doc composes the schema-declared default 30, not undefined");
+    assert.deepEqual(g.toJSON()["EmptyMiniMaxMusic3LatentAudio.0"].inputs.seconds,
+      ["MiniMaxMusic3TextEncode.0", 1],
+      "the latent's seconds stays the AR link, default included");
   });
 
   it("the happy lane encodes the caption and saves mp3", () => {

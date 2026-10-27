@@ -615,7 +615,11 @@ describe("ARM 6 — the stated numerics ride VERBATIM to their consumers (durati
     }, music3, RUN_CARD);
     assertNumAtConsumer(graph, MUSIC3_TEXT_ENCODE, "max_duration", 77, "duration (music3 encode)");
     assertNumAtConsumer(graph, MUSIC3_TEXT_ENCODE, "cfg_scale", 3.5, "lm_cfg (music3 encode)");
-    assertNumAtConsumer(graph, "EmptyMiniMaxMusic3LatentAudio", "seconds", 77, "duration (music3 latent)");
+    // audit 014 D1: the latent's seconds is the AR's realized-length LINK —
+    // never a second literal copy of the duration (divergence = zero-padded
+    // conditioning = the garbage tail). Duration owns exactly ONE seat.
+    assert.deepEqual(graph["EmptyMiniMaxMusic3LatentAudio.0"].inputs.seconds,
+      [`${MUSIC3_TEXT_ENCODE}.0`, 1], "duration's second seat stays the AR link (music3 latent)");
     assertNumAtConsumer(graph, "KSampler", "steps", 64, "steps (music3 sampler)");
     assertNumAtConsumer(graph, "KSampler", "cfg", 2.5, "guidance (music3 sampler)");
     assertNumAtConsumer(graph, "KSampler", "seed", 4242, "seed (music3 sampler)");
@@ -661,7 +665,12 @@ describe("ARM 6 — the stated numerics ride VERBATIM to their consumers (durati
     const ran = await door.phase2Card(p1, `${RUN_DOOR}_f2_encode_latent`);
     const graph = ran.graph as Graph;
     assertNumAtConsumer(graph, MUSIC3_TEXT_ENCODE, "seed", 4242, "seed (door encode)");
-    assertNumAtConsumer(graph, "EmptyMiniMaxMusic3LatentAudio", "seconds", 77, "duration (door latent)");
+    // audit 014 D1: the door-served latent-seconds is the AR LINK, not the
+    // duration literal — this arm once pinned the literal (the drift the
+    // golden froze); the pin now guards the derivation itself.
+    assert.deepEqual(nodesOf(graph, "EmptyMiniMaxMusic3LatentAudio")[0].inputs.seconds,
+      [`${MUSIC3_TEXT_ENCODE}.0`, 1], "duration (door latent — the AR link rides through the door)");
+    assertNumAtConsumer(graph, MUSIC3_TEXT_ENCODE, "max_duration", 77, "duration (door encode — the one literal seat)");
   });
 
   it("F-5 (seed mint at the door, auditor finding on the music-numerics verdict): omitting seed mints ONE shared non-negative integer at both music3 consumers (GATE S — mintSeed once, every node sharing the seed reads the same mint)", async () => {

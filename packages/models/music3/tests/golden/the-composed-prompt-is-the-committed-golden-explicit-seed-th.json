@@ -48,7 +48,10 @@
     "class_type": "EmptyMiniMaxMusic3LatentAudio",
     "inputs": {
       "batch_size": 1,
-      "seconds": 30
+      "seconds": [
+        "MiniMaxMusic3TextEncode.0",
+        1
+      ]
     }
   },
   "KSampler.0": {
