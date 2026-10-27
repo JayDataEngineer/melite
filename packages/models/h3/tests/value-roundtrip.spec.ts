@@ -56,6 +56,7 @@ import type { CardDefinition } from "@melite/comfyui-card-kit/card-definition";
 import { getModel, registryIds, registryModel } from "../../../engines/comfyui-cordis/src/models/models.ts";
 import { H3_LORA_ROWS } from "@melite/models-h3/mods/loras";
 import { film } from "../src/actions.ts";
+import { DECL } from "../src/index.ts";
 import { instantiateAction } from "@melite/comfyui-card-kit";
 
 const FACTS_PATH = join(
@@ -1580,3 +1581,370 @@ function graph0(graph: Graph, id: string): GNode {
   assert.ok(n, `the graph carries no node '${id}' — the edge named a ghost`);
   return n;
 }
+
+// ─── THE CONSUMER-MAP CENSUS (P2 item #10, 2026-11-12) ─────────────
+// THE INVARIANT: every param the family DECLARES is either WITNESSED
+// at the input its consumer reads, or REGISTERED with the reason it
+// can never be a doc-stated value. Completeness is DERIVED from
+// DECL.params — the roster is the DECL's own list, never a hand
+// count: a param with no row reds here, a row naming a param the
+// DECL never declared reds here, and the table's size is judged
+// against the DECL's own size.
+// THE WITNESS ROWS judge the MAP — the stated value reaches the
+// input the engine reads (hop [5]). The per-class VALUE liveness
+// (the drop variants proving each seat is a READ, not a default) is
+// the ARMs' law; this block gathers their map into one roster, it
+// does not replace them.
+// THE GATE ROWS judge the mount-behind-the-gate law (burn b,
+// 2026-10-26): the limb's class composes iff its own doc gate is on,
+// and composes NO node when the gate is off — presence is the
+// switch's verdict.
+// THE REGISTER ROWS judge the shrinkable half: a retired alias or a
+// derived internal must never become an input key on any census doc.
+// THE DOCS ride the same compose door the run rides (hop [4]→[5]);
+// each is the proven doc for the limbs it mounts, composed once and
+// shared across rows.
+
+type CensusDoc = Record<string, unknown>;
+type DocKey = keyof typeof CENSUS_DOCS;
+
+/** ARM 13's doc — the bare single-window first pass: shape, clock,
+ *  sampler five, shift grid, attention backend (no image: the t4r
+ *  pick would take the attention seat), ref_image_size. */
+const CENSUS_FIRST: CensusDoc = {
+  length: 124, width: 512, height: 480, fps: 30,
+  seed: SEED, sampler_name: "dpmpp_2m", sched_name: "beta", steps: 8, denoise: 0.75,
+  shift_video: 11.5, shift_audio: 4.5,
+  ref_image_size: "match",
+  calls: [SHOT({ start_frame: 0, end_frame: 124 })],
+};
+
+/** The attention-backend seat's own doc: the t2v lane (no image —
+ *  the t4r lane re-derives its post chain and refuses the key as
+ *  lane-dead, schema.ts's unsanctioned-inject guard). */
+const CENSUS_BACKEND: CensusDoc = { ...CENSUS_FIRST, attention_backend: "pytorch attention" };
+
+/** The reference bus (hop [5] media lanes) + the RefMod dials. */
+const CENSUS_MEDIA: CensusDoc = {
+  ...CENSUS_FIRST,
+  image: "data/input/first.png",
+  ref_images: ["data/input/ref1.png"],
+  ref_videos: ["data/input/motion.mp4"],
+  ref_video_trims: [{ start_time: 1.5, duration: 2.5 }],
+  ref_audios: ["data/input/voice.wav"],
+  ref_mods: ["data/input/mod.png"],
+  refmod_mode: "Full Reference", refmod_pool: 22, refmod_identity: 650, refmod_save: false,
+};
+
+/** The SLA limb (ARM 15) — the dials ride H3SLAAttention, and the
+ *  t4r attention pick carries sla_switch (ARM 31 needs the anchor). */
+const CENSUS_SLA: CensusDoc = {
+  ...CENSUS_MEDIA,
+  sla_enabled: true, sla_sparsity: 0.75, sla_block_size: "64", sla_min_seq_len: 1024,
+  sla_dense_last_steps: 3, sla_dense_steps: "0,1", sla_dense_backend: "pytorch",
+  sla_reference_protection: "Off", sla_protect_audio: true,
+  sla_stabilize_motion: true, sla_disable_fp16_accum: true, sla_switch: true,
+};
+
+/** The V9 post chain (ARMs 17/18/4): master + interp + sr + sharpen
+ *  + the refine rider — every post limb mounted at once. */
+const CENSUS_SECOND: CensusDoc = {
+  length: 56, fps: 30, steps: 8, denoise: 0.75,
+  second_pass_enabled: true,
+  interpolate_enabled: true, interp_model: "rife47.pth", interp_multiplier: 4,
+  sr_switch: true, sr_model: "seedvr2_ema_3b_fp8_e4m3fn.safetensors", sr_resolution: 1440,
+  sharpen_enabled: true, sharpen_method: "rcas", sharpen_radius: 2.5,
+  sharpen_strength: 0.55, sharpen_threshold: 0.15, sharpen_iterations: 7,
+  refine_lora: "h3_taomate_3step", refine_strength: 0.9, refine_steps: 3, refine_denoise: 0.3,
+  calls: [SHOT()],
+};
+
+/** The P2 latent-upscale handoff (ARM 37's gate, ARM 43's rider). */
+const CENSUS_UPSCALE: CensusDoc = {
+  length: 56, fps: 30, steps: 8, denoise: 0.75,
+  second_pass_enabled: true,
+  upscale_route: "latent_2x",
+  upscale_model: "minimax_h3_latent_upscaler_3d_bf16.safetensors",
+  refine_denoise: 0.35,
+  calls: [SHOT()],
+};
+
+const CENSUS_DOCS = {
+  first: CENSUS_FIRST,
+  backend: CENSUS_BACKEND,
+  media: CENSUS_MEDIA,
+  sla: CENSUS_SLA,
+  noise: { ...CENSUS_FIRST, noise_seed: 909 },
+  kpin: { ...CENSUS_FIRST, k: 3 },
+  second: CENSUS_SECOND,
+  // master off: the refine leaves + every post leaf stated, no door.
+  second_off: { ...CENSUS_SECOND, second_pass_enabled: false },
+  no_sharpen: { ...CENSUS_SECOND, sharpen_enabled: false },
+  no_interp: { ...CENSUS_SECOND, interpolate_enabled: false },
+  no_sr: { ...CENSUS_SECOND, sr_switch: false },
+  upscale: CENSUS_UPSCALE,
+  // ARM 22 — the film half: two windows + the audio take's duck seat.
+  film: {
+    length: 124, duck_depth_db: -22,
+    audio_clips: [{ src: "data/input/take.wav", start_frame: 0, dur_frames: 24, text: "hello there" }],
+    calls: [SHOT(), SHOT({ text: "then a turn", start_frame: 56, end_frame: 124 })],
+  },
+  // ARM 22b — the call-level guide alias.
+  alias: { length: 56, calls: [SHOT({ image_name: "data/input/alias.png" })] },
+  // ARM 47 — the any-frame pins lane.
+  pins: {
+    length: 175,
+    calls: [SHOT({ text: "first", end_frame: 90 }), SHOT({ text: "then a turn", start_frame: 90, end_frame: 175 })],
+    keyframes: [
+      { image: "pin_open.png", frame: 0 },
+      { image: "pin_mid.png", frame: 20 },
+      { image: "pin_end.png", frame: 89 },
+    ],
+  },
+} as const satisfies Record<string, CensusDoc>;
+
+type CensusRow =
+  | {
+    kind: "at"; param: string; doc: DocKey; cls: string; input: string; value: unknown;
+    /** "some" judges one carrying node (a lane input several nodes
+     *  share, e.g. LoadImage.image); the default judges EVERY node of
+     *  the class (the seat is the class's own). */
+    mode?: "all" | "some";
+    /** Discriminate among several nodes of the class by another input
+     *  (the refine rider's scheduler vs pass 1's). */
+    where?: { input: string; value: unknown };
+  }
+  | { kind: "gate"; param: string; on: DocKey; off: DocKey; classes: readonly string[] }
+  | { kind: "judge"; param: string; doc: DocKey; judge: (g: Graph) => void; why: string }
+  | { kind: "unstatable"; param: string; why: string };
+
+const CENSUS_ROWS: readonly CensusRow[] = [
+  // ── the guide / reference bus ─────────────────────────────────
+  { kind: "at", param: "image", doc: "media", cls: "LoadImage", input: "image", value: "data/input/first.png", mode: "some" },
+  { kind: "at", param: "keyframes", doc: "pins", cls: "LoadImage", input: "image", value: "pin_mid.png", mode: "some" },
+  { kind: "at", param: "ref_images", doc: "media", cls: "LoadImage", input: "image", value: "data/input/ref1.png", mode: "some" },
+  { kind: "at", param: "ref_videos", doc: "media", cls: "LoadVideo", input: "file", value: "data/input/motion.mp4" },
+  { kind: "at", param: "ref_video_trims", doc: "media", cls: "Video Slice", input: "start_time", value: 1.5 },
+  { kind: "at", param: "ref_audios", doc: "media", cls: "LoadAudio", input: "audio", value: "data/input/voice.wav" },
+  { kind: "at", param: "ref_mods", doc: "media", cls: "LoadImage", input: "image", value: "data/input/mod.png", mode: "some" },
+  { kind: "at", param: "duck_depth_db", doc: "film", cls: "MeliteFilmAudioMix", input: "duck_db", value: -22 },
+  // ── the shape / clock / sampler five ──────────────────────────
+  { kind: "at", param: "seed", doc: "first", cls: "RandomNoise", input: "noise_seed", value: SEED },
+  { kind: "at", param: "width", doc: "first", cls: "MiniMaxH3ReferenceToVideo", input: "width", value: 512 },
+  { kind: "at", param: "height", doc: "first", cls: "MiniMaxH3ReferenceToVideo", input: "height", value: 480 },
+  { kind: "at", param: "length", doc: "first", cls: "MiniMaxH3ReferenceToVideo", input: "length", value: 124 },
+  { kind: "at", param: "steps", doc: "first", cls: "BasicScheduler", input: "steps", value: 8 },
+  { kind: "at", param: "denoise", doc: "first", cls: "BasicScheduler", input: "denoise", value: 0.75 },
+  { kind: "at", param: "sampler_name", doc: "first", cls: "KSamplerSelect", input: "sampler_name", value: "dpmpp_2m" },
+  { kind: "at", param: "sched_name", doc: "first", cls: "BasicScheduler", input: "scheduler", value: "beta" },
+  { kind: "at", param: "noise_seed", doc: "noise", cls: "RandomNoise", input: "noise_seed", value: 909 },
+  { kind: "at", param: "fps", doc: "first", cls: "CreateVideo", input: "fps", value: 30 },
+  { kind: "at", param: "shift_video", doc: "first", cls: "MiniMaxH3SigmaShift", input: "shift_video", value: 11.5 },
+  { kind: "at", param: "shift_audio", doc: "first", cls: "MiniMaxH3SigmaShift", input: "shift_audio", value: 4.5 },
+  { kind: "at", param: "attention_backend", doc: "backend", cls: "ModelAttentionBackend", input: "attention", value: "pytorch attention" },
+  { kind: "at", param: "ref_image_size", doc: "first", cls: "MiniMaxH3ReferenceToVideo", input: "ref_image_size", value: "match" },
+  {
+    kind: "judge", param: "k", doc: "kpin", why: "the window ordinal IS the save naming (ARM 21)",
+    judge: (g) => {
+      const prefixes = Object.values(g).filter((n) => n.class_type === "SaveVideo").map((n) => n.inputs.filename_prefix);
+      assert.deepEqual(prefixes, ["h3_t4_w3"], "CENSUS k: a stated k never became the save naming (the window ordinal seat)");
+    },
+  },
+  // ── the master gate + the V9 post chain ───────────────────────
+  {
+    kind: "gate", param: "second_pass_enabled", on: "second", off: "second_off",
+    classes: ["FrameInterpolate", "SeedVR2VideoUpscaler", "ImageSharpenKJ"],
+  },
+  { kind: "gate", param: "sharpen_enabled", on: "second", off: "no_sharpen", classes: ["ImageSharpenKJ"] },
+  { kind: "at", param: "sharpen_method", doc: "second", cls: "ImageSharpenKJ", input: "method.method", value: "rcas" },
+  { kind: "at", param: "sharpen_radius", doc: "second", cls: "ImageSharpenKJ", input: "method.radius", value: 2.5 },
+  { kind: "at", param: "sharpen_strength", doc: "second", cls: "ImageSharpenKJ", input: "method.strength", value: 0.55 },
+  { kind: "at", param: "sharpen_threshold", doc: "second", cls: "ImageSharpenKJ", input: "method.threshold", value: 0.15 },
+  { kind: "at", param: "sharpen_iterations", doc: "second", cls: "ImageSharpenKJ", input: "method.iterations", value: 7 },
+  { kind: "gate", param: "interpolate_enabled", on: "second", off: "no_interp", classes: ["FrameInterpolate"] },
+  { kind: "at", param: "interp_model", doc: "second", cls: "FrameInterpolationModelLoader", input: "model_name", value: "rife47.pth" },
+  { kind: "at", param: "interp_multiplier", doc: "second", cls: "FrameInterpolate", input: "multiplier", value: 4 },
+  { kind: "gate", param: "sr_switch", on: "second", off: "no_sr", classes: ["SeedVR2VideoUpscaler"] },
+  { kind: "at", param: "sr_resolution", doc: "second", cls: "SeedVR2VideoUpscaler", input: "resolution", value: 1440 },
+  { kind: "at", param: "sr_model", doc: "second", cls: "SeedVR2LoadDiTModel", input: "model", value: "seedvr2_ema_3b_fp8_e4m3fn.safetensors" },
+  // ── the refine rider (ARMs 4/4b) ──────────────────────────────
+  {
+    kind: "judge", param: "refine_lora", doc: "second", why: "the rider's own loader stack names the resolved catalog file",
+    judge: (g) => {
+      const rider = Object.values(g).find((n) => n.class_type === "LTX_lora_loader"
+        && typeof n.inputs.stack_data === "string" && n.inputs.stack_data.includes("taomate"));
+      assert.ok(rider, "CENSUS refine_lora: no rider loader stack carries the taomate row — the refine seat never mounted its own loader");
+    },
+  },
+  {
+    kind: "judge", param: "refine_strength", doc: "second", why: "the rider stack carries the stated strength",
+    judge: (g) => {
+      const rider = Object.values(g).find((n) => n.class_type === "LTX_lora_loader"
+        && typeof n.inputs.stack_data === "string" && n.inputs.stack_data.includes("taomate"));
+      assert.ok(rider, "CENSUS refine_strength: no rider loader composed");
+      const stack = JSON.parse(rider.inputs.stack_data as string) as Array<{ str: number }>;
+      assert.equal(stack[0]?.str, 0.9, "CENSUS refine_strength: the rider stack does not carry the stated strength");
+    },
+  },
+  {
+    kind: "at", param: "refine_steps", doc: "second", cls: "BasicScheduler", input: "steps", value: 3,
+    where: { input: "denoise", value: 0.3 },
+  },
+  {
+    kind: "at", param: "refine_denoise", doc: "second", cls: "BasicScheduler", input: "denoise", value: 0.3,
+    where: { input: "steps", value: 3 },
+  },
+  // ── the P2 latent-upscale handoff ─────────────────────────────
+  {
+    kind: "gate", param: "upscale_route", on: "upscale", off: "first",
+    classes: ["MinimaxH3LatentUpscaler3DRefineHandoff"],
+  },
+  {
+    kind: "at", param: "upscale_model", doc: "upscale", cls: "MinimaxH3LatentUpscaler3DRefineHandoff",
+    input: "model_name", value: "minimax_h3_latent_upscaler_3d_bf16.safetensors",
+  },
+  // ── the SLA limb ──────────────────────────────────────────────
+  {
+    kind: "judge", param: "sla_enabled", doc: "sla",
+    why: "the SLA kernel's own enabled flag (the branch node composes either way; the flag is the gate)",
+    judge: (g) => {
+      const kernels = Object.values(g).filter((n) => n.class_type === "H3SLAAttention");
+      assert.ok(kernels.length > 0, "CENSUS sla_enabled: no SLA kernel composed on the sla doc");
+      for (const k of kernels) {
+        assert.equal(k.inputs.enabled, true, "CENSUS sla_enabled: the kernel's enabled flag does not carry the stated gate");
+      }
+    },
+  },
+  { kind: "at", param: "sla_sparsity", doc: "sla", cls: "H3SLAAttention", input: "sparsity_ratio", value: 0.75 },
+  { kind: "at", param: "sla_block_size", doc: "sla", cls: "H3SLAAttention", input: "block_size", value: "64" },
+  { kind: "at", param: "sla_min_seq_len", doc: "sla", cls: "H3SLAAttention", input: "min_seq_len", value: 1024 },
+  { kind: "at", param: "sla_dense_last_steps", doc: "sla", cls: "H3SLAAttention", input: "dense_last_steps", value: 3 },
+  { kind: "at", param: "sla_dense_steps", doc: "sla", cls: "H3SLAAttention", input: "dense_steps", value: "0,1" },
+  { kind: "at", param: "sla_dense_backend", doc: "sla", cls: "H3SLAAttention", input: "dense_backend", value: "pytorch" },
+  // 'Off' is the fold's convicting leg (ARM 15): a wiring that forgot
+  // the enum hardcodes true and reds here.
+  { kind: "at", param: "sla_reference_protection", doc: "sla", cls: "H3SLAAttention", input: "reference_protection", value: false },
+  { kind: "at", param: "sla_protect_audio", doc: "sla", cls: "H3SLAAttention", input: "protect_audio", value: true },
+  { kind: "at", param: "sla_stabilize_motion", doc: "sla", cls: "H3SLAAttention", input: "stabilize_motion", value: true },
+  { kind: "at", param: "sla_disable_fp16_accum", doc: "sla", cls: "H3SLAAttention", input: "disable_fp16_accum", value: true },
+  {
+    kind: "judge", param: "sla_switch", doc: "sla", why: "the t4r attention pick carries the stated word (ARM 31)",
+    judge: (g) => {
+      const pick = Object.values(g).find((n) => n.class_type === "ComfySwitchNode");
+      assert.ok(pick, "CENSUS sla_switch: no attention pick composed on the t4r doc");
+      assert.equal(pick.inputs.switch, true, "CENSUS sla_switch: the pick does not carry the stated true");
+    },
+  },
+  // ── the RefMod dials + the guide alias ───────────────────────
+  { kind: "at", param: "refmod_mode", doc: "media", cls: "MiniMaxH3RefModExtract", input: "mode", value: "Full Reference" },
+  { kind: "at", param: "refmod_pool", doc: "media", cls: "MiniMaxH3RefModExtract", input: "pool_h", value: 22 },
+  { kind: "at", param: "refmod_identity", doc: "media", cls: "MiniMaxH3RefModExtract", input: "identity", value: 650 },
+  { kind: "at", param: "refmod_save", doc: "media", cls: "MiniMaxH3RefModExtract", input: "save", value: false },
+  { kind: "at", param: "image_name", doc: "alias", cls: "LoadImage", input: "image", value: "data/input/alias.png", mode: "some" },
+  // ── THE REGISTER (the shrinkable half) ───────────────────────
+  {
+    kind: "unstatable", param: "sharpen_switch",
+    why: "the renderer-era alias is gate-admitted for old drafts, but the second-pass wiring reads only the sharpen_enabled primary — a stated alias mounts nothing (ARM 32)",
+  },
+  {
+    kind: "unstatable", param: "interp_switch",
+    why: "the interp alias is gate-admitted for old drafts, but the interp limb mounts behind interpolate_enabled alone — a stated alias mounts nothing (ARM 23)",
+  },
+  {
+    kind: "unstatable", param: "fps_seconds",
+    why: "the render seat DERIVES it from the window's own clock (length / fps); a stated pin is clobbered before any node reads it (the no-stale law, ARM 33)",
+  },
+];
+
+/** Read a dotted input path (the sharpen method is a grouped dict). */
+function readInputPath(inputs: Record<string, unknown>, path: string): unknown {
+  let v: unknown = inputs;
+  for (const key of path.split(".")) {
+    if (v === null || typeof v !== "object") return undefined;
+    v = (v as Record<string, unknown>)[key];
+  }
+  return v;
+}
+
+const censusGraphs = new Map<DocKey, Promise<Graph>>();
+
+/** Compose one census doc once (the same compose door the run rides). */
+function censusGraph(key: DocKey): Promise<Graph> {
+  let p = censusGraphs.get(key);
+  if (!p) {
+    p = composeH3(CENSUS_DOCS[key], `h3_census_${key}`);
+    censusGraphs.set(key, p);
+  }
+  return p;
+}
+
+describe("THE H3 CONSUMER-MAP CENSUS (item #10) — every DECL param is witnessed at its consumer or named unstatable", () => {
+  it("CENSUS — completeness is the DECL's own roster; every row fires on its own seat", async () => {
+    const declared: readonly string[] = DECL.params ?? [];
+    assert.ok(declared.length > 0, "the h3 DECL declares no params — the census has no roster to judge");
+    const seen = new Set<string>();
+    for (const row of CENSUS_ROWS) {
+      assert.ok(!seen.has(row.param), `CENSUS: '${row.param}' is listed twice — one row per param`);
+      seen.add(row.param);
+    }
+    const ghosts = CENSUS_ROWS.map((r) => r.param).filter((p) => !declared.includes(p));
+    assert.deepEqual(ghosts, [],
+      `CENSUS: the table judges params the DECL never declared (${ghosts.join(", ")}) — a row for a ghost param is a lie about the surface`);
+    const unrowed = declared.filter((p) => !seen.has(p));
+    assert.deepEqual(unrowed, [],
+      `CENSUS: the DECL declares ${declared.length} params but no row judges: ${unrowed.join(", ")} — a param with no witnessed consumer and no named reason is the gap between walls this census closes`);
+    assert.equal(CENSUS_ROWS.length, declared.length,
+      `CENSUS: the table (${CENSUS_ROWS.length} rows) and the DECL (${declared.length} params) disagree`);
+
+    // Warm every doc once so the register rows can scan all of them.
+    const keys = Object.keys(CENSUS_DOCS) as DocKey[];
+    const graphs = new Map<DocKey, Graph>();
+    for (const key of keys) graphs.set(key, await censusGraph(key));
+
+    for (const row of CENSUS_ROWS) {
+      if (row.kind === "at") {
+        const g = graphs.get(row.doc)!;
+        const nodes = Object.entries(g).filter(([, n]) => n.class_type === row.cls);
+        assert.ok(nodes.length > 0,
+          `CENSUS ${row.param}: no '${row.cls}' composed on the '${row.doc}' doc — the DECL-wired consumer never reached the graph (hop [5])`);
+        const pool = row.where
+          ? nodes.filter(([, n]) => readInputPath(n.inputs, row.where!.input) === row.where!.value)
+          : nodes;
+        assert.ok(pool.length > 0,
+          `CENSUS ${row.param}: no '${row.cls}' on '${row.doc}' carries ${JSON.stringify(row.where)} — the discriminating input never landed`);
+        const saw = pool.map(([, n]) => readInputPath(n.inputs, row.input));
+        const carrying = saw.filter((v) => v === row.value);
+        if (row.mode === "some") {
+          assert.ok(carrying.length > 0,
+            `CENSUS ${row.param}: no '${row.cls}' on '${row.doc}' carries ${JSON.stringify(row.value)} at '${row.input}' (saw ${JSON.stringify(saw)})`);
+        } else {
+          assert.equal(carrying.length, pool.length,
+            `CENSUS ${row.param}: '${row.cls}.${row.input}' on '${row.doc}' did not carry ${JSON.stringify(row.value)} on every composed node (saw ${JSON.stringify(saw)})`);
+        }
+        continue;
+      }
+      if (row.kind === "gate") {
+        const on = graphs.get(row.on)!;
+        const off = graphs.get(row.off)!;
+        for (const cls of row.classes) {
+          assert.ok(Object.values(on).some((n) => n.class_type === cls),
+            `CENSUS ${row.param}: the gate-ON doc ('${row.on}') composes no '${cls}' — the limb never mounted`);
+          assert.ok(!Object.values(off).some((n) => n.class_type === cls),
+            `CENSUS ${row.param}: the gate-OFF doc ('${row.off}') still composes '${cls}' — the limb mounts behind its gate's back (burn b's always-upscale lie)`) ;
+        }
+        continue;
+      }
+      if (row.kind === "judge") {
+        row.judge(graphs.get(row.doc)!);
+        continue;
+      }
+      // The register rows: the name must never become an input key.
+      for (const [key, g] of graphs) {
+        for (const n of Object.values(g)) {
+          assert.ok(!(row.param in n.inputs),
+            `CENSUS ${row.param}: the name became an input key on '${key}' (${n.class_type}) — ${row.why}`);
+        }
+      }
+    }
+  });
+});
