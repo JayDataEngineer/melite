@@ -14,10 +14,11 @@
 //     any seam renders inside the shell, once. No studio wires it,
 //     no studio can forget it (the construction law).
 //  3. THE ERROR LINE: loud failures render as DOM text, once.
-import { cleanup, render, screen, waitFor } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, expect, test } from 'vitest'
 import { createElement as h, useEffect } from 'react'
 import { join } from 'node:path'
+import { readFileSync } from 'node:fs'
 
 import { StudioShell } from '../src/shell.tsx'
 import { useToastStore } from '../src/toast.tsx'
@@ -52,6 +53,77 @@ test('the error line: loud failures render as DOM text with role=alert', () => {
   }))
   const alert = screen.getByRole('alert')
   expect(alert.textContent).toContain('run: the engine refused the graph')
+})
+
+// ── THE DISMISS LAW (audit 017 C4): the shell error line carries a
+//    dismiss × anchored to its own element — presence, the press
+//    retires the face, a fresh failure re-voices, and the anchor
+//    contract holds in the stylesheet (the × lands ON the error).
+
+test('THE DISMISS LAW: the error line carries a × INSIDE its own element; the press retires the line', () => {
+  render(h(StudioShell, {
+    params: h('div'),
+    preview: h('div'),
+    errors: [{ id: 'run', message: 'the engine refused the graph' }],
+  }))
+  const alert = screen.getByRole('alert')
+  const dismiss = within(alert).getByRole('button', { name: 'Dismiss error' })
+  // PLACEMENT: the marker renders INSIDE the error face's bounds —
+  // the <p> row is the × 's own element (the anchor contract's DOM
+  // half; the stylesheet half is judged below).
+  const row = dismiss.closest('p')
+  expect(row, 'the × rides INSIDE the error row, never a wrapper').not.toBeNull()
+  expect(row!.textContent).toContain('run: the engine refused the graph')
+  fireEvent.click(dismiss)
+  // the press retires the FACE — the line (and its role=alert seat) leave
+  expect(screen.queryByRole('alert')).toBeNull()
+  expect(screen.queryByText((t, el) => el?.tagName === 'P' && (el.textContent ?? '').includes('the engine refused'))).toBeNull()
+})
+
+test('THE DISMISS LAW: the silence is per failure — same words stay retired, new words re-voice', () => {
+  const view = render(h(StudioShell, {
+    params: h('div'),
+    preview: h('div'),
+    errors: [{ id: 'run', message: 'the engine refused the graph' }],
+  }))
+  fireEvent.click(within(screen.getByRole('alert')).getByRole('button', { name: 'Dismiss error' }))
+  // the SAME failure (id + words) re-derived on the next poll stays silent
+  view.rerender(h(StudioShell, {
+    params: h('div'),
+    preview: h('div'),
+    errors: [{ id: 'run', message: 'the engine refused the graph' }],
+  }))
+  expect(screen.queryByRole('alert')).toBeNull()
+  // a NEW failure under the same id re-voices — the silence never eats
+  // a fresh refusal
+  view.rerender(h(StudioShell, {
+    params: h('div'),
+    preview: h('div'),
+    errors: [{ id: 'run', message: 'the weights file went missing' }],
+  }))
+  expect(within(screen.getByRole('alert')).getByRole('button', { name: 'Dismiss error' })).toBeTruthy()
+  // a retired failure's return re-voices: the re-arm drops the silence
+  // once the failure leaves the props
+  fireEvent.click(within(screen.getByRole('alert')).getByRole('button', { name: 'Dismiss error' }))
+  expect(screen.queryByRole('alert')).toBeNull()
+  view.rerender(h(StudioShell, { params: h('div'), preview: h('div'), errors: [] }))
+  view.rerender(h(StudioShell, {
+    params: h('div'),
+    preview: h('div'),
+    errors: [{ id: 'run', message: 'the weights file went missing' }],
+  }))
+  expect(within(screen.getByRole('alert')).getByRole('button', { name: 'Dismiss error' })).toBeTruthy()
+})
+
+test('THE PLACEMENT LAW: the stylesheet anchors the × to the error row (relative parent, absolute child)', () => {
+  const css = readFileSync(join(repoRoot(), 'packages/web/card-base/src/shell.module.css'), 'utf8')
+  const block = (name: string): string => {
+    const m = css.match(new RegExp('\\.' + name + '\\s*\\{[^}]*\\}', 'm'))
+    expect(m, '.' + name + ' block exists in shell.module.css').not.toBeNull()
+    return m![0]!
+  }
+  expect(block('errorRow'), '.errorRow must carry position:relative — the × ’s positioned ancestor is the error’s own element (the anchor cure, audit 017 C4)').toMatch(/position\s*:\s*relative/)
+  expect(block('errorDismiss'), '.errorDismiss stays position:absolute — the anchor contract: absolute child, positioned error parent').toMatch(/position\s*:\s*absolute/)
 })
 
 test('THE TOAST LAW: a toast pushed from ANY seam renders INSIDE the shell — no studio mount needed', async () => {

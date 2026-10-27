@@ -12,11 +12,13 @@
  * unified here: same border/bg, danger-ink text, reset rows,
  * aligned icon).
  */
-import { IconWarningTriangleOutlineRegular } from '@deepseek-ai/dsh-client-ui-primitives'
+import { Button, IconCloseOutlineRegular, IconWarningTriangleOutlineRegular } from '@deepseek-ai/dsh-client-ui-primitives'
+import { useState } from "react"
 import type { ComponentProps, ReactElement, ReactNode } from "react"
 import { StudioRail } from "./studioRail.tsx"
 
 import { cx } from "./chrome.ts"
+import { chromeCopy } from "./locales/chromeCopy.ts"
 import { ToastViewport } from "./toast.tsx"
 import styles from "./shell.module.css"
 
@@ -44,20 +46,51 @@ export interface StudioShellProps {
   className?: string
 }
 
+/** The dismiss key of one shell error — the id AND the words. The
+ *  silence is per text (the estate's dismissal law): the same id
+ *  failing in new words re-voices. */
+const shellErrorKey = (e: StudioShellError): string => e.id + '\n' + e.message
+
 /** The loud error line — shell-owned chrome. Same DOM the assembly
- *  body always rendered. */
+ *  body always rendered. THE DISMISS LAW (audit 017 C4): every error
+ *  face carries a dismiss × anchored to its own element — the row is
+ *  the positioned ancestor, the absolute × lands ON the error text,
+ *  never the viewport corner. A dismissal retires the FACE, never the
+ *  state: the row's key (id + words) leaves the props and the silence
+ *  re-arms, so the same failure re-voices on its next arrival. */
 export function StudioShellErrorLine({
   errors,
 }: {
   errors: StudioShellError[]
 }): ReactElement | null {
-  if (errors.length === 0) return null
+  const [dismissed, setDismissed] = useState<ReadonlySet<string>>(() => new Set())
+  // THE RE-ARM: only keys still offered stay dismissed — a retired
+  // failure's key leaves the set during render (the React-sanctioned
+  // derived-state adjustment: setting state for a prop-derived prune
+  // re-renders at once; the prune only shrinks, so the settle is
+  // terminal — same size means nothing was pruned and no state moves).
+  const offered = new Set(errors.map(shellErrorKey))
+  const live = dismissed.size > 0
+    ? new Set([...dismissed].filter((k) => offered.has(k)))
+    : dismissed
+  if (live.size !== dismissed.size) setDismissed(live)
+  const visible = errors.filter((e) => !live.has(shellErrorKey(e)))
+  if (visible.length === 0) return null
   return (
     <div role="alert" className={styles.errorLine}>
-      {errors.map((e) => (
+      {visible.map((e) => (
         <p key={e.id} className={styles.errorRow}>
           <IconWarningTriangleOutlineRegular className={styles.errorIcon} />
           {e.id}: {e.message}
+          <Button
+            size="sm"
+            variant="ghost"
+            className={styles.errorDismiss}
+            aria-label={chromeCopy.dismissError}
+            onClick={() => setDismissed((prev) => new Set(prev).add(shellErrorKey(e)))}
+          >
+            <IconCloseOutlineRegular size={12} />
+          </Button>
         </p>
       ))}
     </div>

@@ -159,14 +159,16 @@ function dismissIn(scope: HTMLElement): void {
   fireEvent.click(within(scope).getByRole("button", { name: "Dismiss error" }));
 }
 
-/** The tab strip's own <p> — a direct child of the scroll seat
- *  that owns a × (the tile's own error face and the refresh-failed
- *  line own none, so neither confuses the strip's face). */
+/** The tab strip's own <p> — a direct child of the scroll seat that
+ *  owns a × AND rides the .runError face. Since audit 017 C4 the
+ *  refresh-failed line owns a × too, so "any × P" would grab the
+ *  wrong face; the strip is the run-verb face, keyed by class. */
 function tabStrip(): HTMLElement | null {
   const seat = screen.queryByTestId("cards-tab-scroll");
   if (seat === null) return null;
   const direct = Array.from(seat.children).find((el) =>
-    el.tagName === "P" && el.querySelector('[aria-label="Dismiss error"]') !== null);
+    el.tagName === "P" && el.className.includes("runError") &&
+    el.querySelector('[aria-label="Dismiss error"]') !== null);
   return (direct as HTMLElement | undefined) ?? null;
 }
 

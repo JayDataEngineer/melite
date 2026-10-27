@@ -225,6 +225,16 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
   // text, or any voice after the rows go clean, re-voices; the same
   // text re-derived on the next poll stays silent).
   const [silencedError, setSilencedError] = useState<string | null>(null)
+  // THE SNAPSHOT-FAILURE DISMISSAL (audit 017 C4): the refresh-failed
+  // lines carry the red × — the press retires the LINE (the failed
+  // snapshot keeps its truth; the body still renders the last good
+  // value). The silence keys on the failure text: a NEW failure
+  // re-voices, and a snapshot that leaves `failed` re-arms the law so
+  // the same words fail loud on their next arrival.
+  const [snapshotFailureDismissed, setSnapshotFailureDismissed] = useState<string | null>(null)
+  useEffect(() => {
+    if (snapshot?.status !== 'failed') setSnapshotFailureDismissed(null)
+  }, [snapshot?.status])
   // THE DISMISSAL VERB (the silenced-error law above): the strip's red
   // × — a local claim retires (its verb's next refusal re-claims); a
   // derived row voice silences by text (the row keeps its truth).
@@ -798,9 +808,18 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
   // PLUS the loud error line (the silent-failure law holds — the
   // face never replaces the seat).
   const value = snapshot.value
-  const failedLine = snapshot.status === 'failed' && value !== undefined
+  const failedVoice = snapshot.failure?.message ?? 'cards resource failed — showing the last good state'
+  // THE DISMISSAL (the state above): a dismissed line's own words stay
+  // retired; different words (or a re-armed law) render again.
+  const failedLine = snapshot.status === 'failed' && value !== undefined && failedVoice !== snapshotFailureDismissed
     ? h('p', { className: css.failed, 'data-testid': 'cards-refresh-failed' },
-        snapshot.failure?.message ?? 'cards resource failed — showing the last good state')
+        failedVoice,
+        h(Button, {
+          size: 'sm', variant: 'ghost', className: css.errorDismiss,
+          'aria-label': chromeCopy.dismissError,
+          onClick: () => setSnapshotFailureDismissed(failedVoice),
+        }, h(IconCloseOutlineRegular, { size: 12 })),
+      )
     : null
   if (value === undefined) {
     // A LIVE snapshot with no value is a broken provider (live
@@ -813,8 +832,16 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
         h('p', { className: css.failed }, chromeCopy.cardsNoValue))
     }
     if (snapshot.status === 'failed') {
+      const noValueVoice = snapshot.failure?.message ?? 'cards resource failed'
+      if (noValueVoice === snapshotFailureDismissed) return withTabScroll(null)
       return withTabScroll(
-        h('p', { className: css.failed }, snapshot.failure?.message ?? 'cards resource failed'))
+        h('p', { className: css.failed }, noValueVoice,
+          h(Button, {
+            size: 'sm', variant: 'ghost', className: css.errorDismiss,
+            'aria-label': chromeCopy.dismissError,
+            onClick: () => setSnapshotFailureDismissed(noValueVoice),
+          }, h(IconCloseOutlineRegular, { size: 12 })),
+        ))
     }
     return withTabScroll(
       h('p', { className: css.loading }, 'loading ' + address + '…'))

@@ -16,7 +16,7 @@
 //     rendering; when the owner unmounts, a survivor claims.
 //  4. NO SILENT DROPS: errors also console.error — even with no
 //     viewport mounted, the failure is loud somewhere.
-import { cleanup, render, screen, waitFor } from '@testing-library/react'
+import { cleanup, render, screen, waitFor, within, fireEvent } from '@testing-library/react'
 import { afterEach, expect, test, vi } from 'vitest'
 import { createElement as h, useEffect } from 'react'
 
@@ -134,4 +134,33 @@ test('THE MOUNT-CLAIM LAW: when the owning viewport unmounts, the survivor claim
   })
   const matches = (document.body.textContent ?? '').match(/post-shift toast/g) ?? []
   expect(matches.length).toBe(1)
+})
+
+// ── THE TOAST DISMISS (audit 017 C4): every banner carries a dismiss
+//    control — the DSH Toast's own inline action seat — inside the
+//    banner's bounds; the press retires the toast NOW, ahead of the
+//    auto-retire clock (the census entry states both).
+
+test('THE TOAST DISMISS: every banner carries the dismiss control INSIDE its bounds', async () => {
+  render(h('div', null, h(ToastViewport), h(HookSeam, { message: 'the gate refused the write' })))
+  const banner = await screen.findByRole('alert')
+  expect(banner.textContent).toContain('the gate refused the write')
+  // PLACEMENT: the control renders INSIDE the banner's own element
+  // (the body-portaled alert), never detached from it
+  const dismiss = within(banner).getByRole('button', { name: 'Dismiss' })
+  expect(banner.contains(dismiss)).toBe(true)
+})
+
+test('THE TOAST DISMISS: the press retires the toast immediately — ahead of the error hold', async () => {
+  render(h('div', null, h(ToastViewport), h(HookSeam, { message: 'the snapshot refused the patch' })))
+  const banner = await screen.findByRole('alert')
+  fireEvent.click(within(banner).getByRole('button', { name: 'Dismiss' }))
+  expect(screen.queryByRole('alert')).toBeNull()
+  expect(useToastStore.getState().toasts).toEqual([])
+  // and the retire is the STORE's: a re-push renders again (the dismissal
+  // never eats a fresh refusal)
+  useToastStore.getState().addToast('error', 'the snapshot refused the patch')
+  await waitFor(() => {
+    expect(screen.getByRole('alert').textContent).toContain('the snapshot refused the patch')
+  })
 })

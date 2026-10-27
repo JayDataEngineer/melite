@@ -2,7 +2,7 @@
  * add (extracted from CardsTab.tsx hour 15). */
 
 import { createElement as h, useEffect, useState } from 'react'
-import { Input, Modal } from '@deepseek-ai/dsh-client-ui-primitives'
+import { Button, IconCloseOutlineRegular, Input, Modal } from '@deepseek-ai/dsh-client-ui-primitives'
 import { fetchCardCatalog, fetchFormSpec, seedRecipeStamp, seedUser, type CatalogCard, type FormSpecDoc } from '@melite/card-base/client'
 import { titleCaseId } from '@melite/card-base/client'
 import css from './card.module.css'
@@ -143,8 +143,25 @@ export function AddCardDoor({ bench, sessionKey, onAdded, onClose, onAddedRow }:
         onChange: (e: unknown) => setQuery((e as { target: { value: string } }).target.value),
         'aria-label': chromeCopy.searchAria,
       }),
-      catalogError !== null ? h('p', { className: css.runError }, catalogError) : null,
-      addError !== null ? h('p', { className: css.runError }, addError) : null,
+      // THE DISMISS LAW (audit 017 C4): the door's failure lines carry
+      // the red × — the catalog Button (ghost sm + the close glyph, the
+      // S6d idiom) INSIDE the error's own element (.runError is the
+      // positioned ancestor, the anchor cure); the press retires the
+      // line, a NEW refusal re-voices.
+      catalogError !== null ? h('p', { className: css.runError }, catalogError,
+        h(Button, {
+          size: 'sm', variant: 'ghost', className: css.errorDismiss,
+          'aria-label': chromeCopy.dismissError,
+          onClick: () => setCatalogError(null),
+        }, h(IconCloseOutlineRegular, { size: 12 })),
+      ) : null,
+      addError !== null ? h('p', { className: css.runError }, addError,
+        h(Button, {
+          size: 'sm', variant: 'ghost', className: css.errorDismiss,
+          'aria-label': chromeCopy.dismissError,
+          onClick: () => setAddError(null),
+        }, h(IconCloseOutlineRegular, { size: 12 })),
+      ) : null,
       cards === null && catalogError === null ? h('div', { className: css.load }, 'cards…') : null,
       // SECTIONS KEPT (operator, stroke 46d fix): the genre titles
       // STAY — the complaint was their SIZE, not their existence.

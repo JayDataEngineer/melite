@@ -1863,7 +1863,8 @@ window.__ModuleLoader__.load({
 		* @param model the model id the variant pool belongs to.
 		* @param known the offered variant ids, door order.
 		* @returns the refusal body, frame-free. */
-		function unknownVariantVoice$1(stated, model, known) {
+		function unknownVariantVoice$1(stated, model, known, familyLanes) {
+			if (familyLanes !== void 0 && familyLanes.includes(stated)) return JSON.stringify(stated) + " is a WINDOW FAMILY, not a variant — model " + JSON.stringify(model) + " derives its window family from the doc's own shape (" + familyLanes.join(", ") + "; derived, never stated). Drop the variant and the doc derives its family, or state one of the model variants (known: " + known.join(", ") + ").";
 			return "unknown variant " + JSON.stringify(stated) + " for model " + JSON.stringify(model) + " (known: " + known.join(", ") + ")";
 		}
 		/** The variant rail's unknown-quant refusal body — same contract as
@@ -8848,7 +8849,8 @@ window.__ModuleLoader__.load({
 		* @param model the model id the variant pool belongs to.
 		* @param known the offered variant ids, door order.
 		* @returns the refusal body, frame-free. */
-		function unknownVariantVoice(stated, model, known) {
+		function unknownVariantVoice(stated, model, known, familyLanes) {
+			if (familyLanes !== void 0 && familyLanes.includes(stated)) return JSON.stringify(stated) + " is a WINDOW FAMILY, not a variant — model " + JSON.stringify(model) + " derives its window family from the doc's own shape (" + familyLanes.join(", ") + "; derived, never stated). Drop the variant and the doc derives its family, or state one of the model variants (known: " + known.join(", ") + ").";
 			return "unknown variant " + JSON.stringify(stated) + " for model " + JSON.stringify(model) + " (known: " + known.join(", ") + ")";
 		}
 		/** The variant rail's unknown-quant refusal body — same contract as
@@ -9251,7 +9253,15 @@ window.__ModuleLoader__.load({
 			/** Boolean face off-option label. */
 			boolOffLabel: "off",
 			/** Unset-face honesty word: nothing composes, the engine default applies. */
-			inheritPlaceholder: "inherit"
+			inheritPlaceholder: "inherit",
+			/** Every error face's dismiss × accessible name (audit 017 C4): the
+			*  shell error line and the toast banner share the one aria voice —
+			*  the same words the card drilldown's faces carry. */
+			dismissError: "Dismiss error",
+			/** Toast banner's dismiss action label (audit 017 C4): the DSH
+			*  Toast's inline action seat — the press retires the toast now,
+			*  ahead of its auto-retire clock. */
+			dismissToast: "Dismiss"
 		};
 		//#endregion
 		//#region src/spec.ts
@@ -16430,7 +16440,14 @@ window.__ModuleLoader__.load({
 		*  live renderer per document: the first-mounted viewport renders,
 		*  others render nothing until the owner unmounts. Renders the live
 		*  entries through the DSH Toast atom (body-portaled banner, owner
-		*  unmounts onDone). */
+		*  unmounts onDone).
+		*
+		*  THE TOAST DISMISS (audit 017 C4): every banner carries a dismiss
+		*  control — the DSH Toast's own inline action seat (the press
+		*  unmounts the toast, the primitive's documented owner shape), so a
+		*  failure the operator has read retires NOW, ahead of the 15s error
+		*  hold. The auto-retire clock stays (the census entry states both:
+		*  the control dismisses, the clock retires). */
 		function ToastViewport() {
 			const idRef = (0, react.useRef)(mintViewportId());
 			(0, react.useEffect)(() => {
@@ -16446,13 +16463,17 @@ window.__ModuleLoader__.load({
 			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(react_jsx_runtime.Fragment, { children: toasts.map((t) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Toast, {
 				text: t.message,
 				holdMs: toastHoldMs(t.type),
+				actions: [{
+					label: chromeCopy.dismissToast,
+					onClick: () => removeToast(t.id)
+				}],
 				onDone: () => removeToast(t.id)
 			}, t.id)) });
 		}
 		//#endregion
 		//#region \0dsh-css:packages/web/card-base/src/shell.module.css.mjs
-		const css$2 = "._6zZDNa_shell{grid-template-rows:minmax(0,1fr) auto;grid-template-columns:minmax(280px,330px) minmax(0,1fr);height:100%;min-height:0;display:grid}@media (width<=640px){._6zZDNa_shell{grid-template-rows:none;grid-template-columns:1fr}._6zZDNa_shell>:first-child{max-height:none;overflow-y:visible}}._6zZDNa_shell>:first-child{scrollbar-gutter:stable;grid-area:1/1;min-height:0;padding-right:10px;overflow:clip auto}._6zZDNa_shell>:nth-child(2){grid-area:1/2;min-height:0;overflow-y:auto}._6zZDNa_shell>:nth-child(3){grid-area:2/1/auto/-1;min-height:0;max-height:none;overflow:visible}._6zZDNa_errorLine{flex-direction:column;grid-column:1/-1;gap:4px;display:flex}._6zZDNa_errorRow{border:1px solid color-mix(in srgb, var(--dsw-alias-danger,#dc2626) 40%, transparent);background:color-mix(in srgb, var(--dsw-alias-danger,#dc2626) 10%, transparent);color:var(--dsw-alias-danger,#dc2626);overflow-wrap:break-word;white-space:pre-wrap;border-radius:4px;margin:0;padding:6px 8px;font-family:ui-monospace,monospace;font-size:9px;line-height:1.4}._6zZDNa_errorIcon{vertical-align:-2px;width:12px;height:12px;margin-right:4px;display:inline}._6zZDNa_railSection{border:1px solid var(--dsw-alias-border,#e2e4e9);border-radius:8px;padding:8px 12px}._6zZDNa_railHead{justify-content:space-between;align-items:center;gap:8px;margin-bottom:6px;display:flex}._6zZDNa_railTitle{text-transform:uppercase;letter-spacing:.14em;color:var(--dsw-alias-label-tertiary);margin:0;font-size:10px;font-weight:600}";
-		const tagId$2 = "@melite/card-base/shell.module.css@fb8e057c";
+		const css$2 = "._6zZDNa_shell{grid-template-rows:minmax(0,1fr) auto;grid-template-columns:minmax(280px,330px) minmax(0,1fr);height:100%;min-height:0;display:grid}@media (width<=640px){._6zZDNa_shell{grid-template-rows:none;grid-template-columns:1fr}._6zZDNa_shell>:first-child{max-height:none;overflow-y:visible}}._6zZDNa_shell>:first-child{scrollbar-gutter:stable;grid-area:1/1;min-height:0;padding-right:10px;overflow:clip auto}._6zZDNa_shell>:nth-child(2){grid-area:1/2;min-height:0;overflow-y:auto}._6zZDNa_shell>:nth-child(3){grid-area:2/1/auto/-1;min-height:0;max-height:none;overflow:visible}._6zZDNa_errorLine{flex-direction:column;grid-column:1/-1;gap:4px;display:flex}._6zZDNa_errorRow{border:1px solid color-mix(in srgb, var(--dsw-alias-danger,#dc2626) 40%, transparent);background:color-mix(in srgb, var(--dsw-alias-danger,#dc2626) 10%, transparent);color:var(--dsw-alias-danger,#dc2626);overflow-wrap:break-word;white-space:pre-wrap;border-radius:4px;margin:0;padding:6px 8px;font-family:ui-monospace,monospace;font-size:9px;line-height:1.4;position:relative}._6zZDNa_errorDismiss{color:var(--dsw-alias-danger,#dc2626);position:absolute;top:2px;right:2px}._6zZDNa_errorIcon{vertical-align:-2px;width:12px;height:12px;margin-right:4px;display:inline}._6zZDNa_railSection{border:1px solid var(--dsw-alias-border,#e2e4e9);border-radius:8px;padding:8px 12px}._6zZDNa_railHead{justify-content:space-between;align-items:center;gap:8px;margin-bottom:6px;display:flex}._6zZDNa_railTitle{text-transform:uppercase;letter-spacing:.14em;color:var(--dsw-alias-label-tertiary);margin:0;font-size:10px;font-weight:600}";
+		const tagId$2 = "@melite/card-base/shell.module.css@4caef09";
 		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId$2) + "]") === null) {
 			const tag = document.createElement("style");
 			tag.dataset.plugin = "@melite/card-base";
@@ -16461,6 +16482,7 @@ window.__ModuleLoader__.load({
 			document.head.appendChild(tag);
 		}
 		var shell_module_css_default = {
+			"errorDismiss": "_6zZDNa_errorDismiss",
 			"errorIcon": "_6zZDNa_errorIcon",
 			"errorLine": "_6zZDNa_errorLine",
 			"errorRow": "_6zZDNa_errorRow",
@@ -16485,20 +16507,42 @@ window.__ModuleLoader__.load({
 		* unified here: same border/bg, danger-ink text, reset rows,
 		* aligned icon).
 		*/
+		/** The dismiss key of one shell error — the id AND the words. The
+		*  silence is per text (the estate's dismissal law): the same id
+		*  failing in new words re-voices. */
+		const shellErrorKey = (e) => e.id + "\n" + e.message;
 		/** The loud error line — shell-owned chrome. Same DOM the assembly
-		*  body always rendered. */
+		*  body always rendered. THE DISMISS LAW (audit 017 C4): every error
+		*  face carries a dismiss × anchored to its own element — the row is
+		*  the positioned ancestor, the absolute × lands ON the error text,
+		*  never the viewport corner. A dismissal retires the FACE, never the
+		*  state: the row's key (id + words) leaves the props and the silence
+		*  re-arms, so the same failure re-voices on its next arrival. */
 		function StudioShellErrorLine({ errors }) {
-			if (errors.length === 0) return null;
+			const [dismissed, setDismissed] = (0, react.useState)(() => /* @__PURE__ */ new Set());
+			const offered = new Set(errors.map(shellErrorKey));
+			const live = dismissed.size > 0 ? new Set([...dismissed].filter((k) => offered.has(k))) : dismissed;
+			if (live.size !== dismissed.size) setDismissed(live);
+			const visible = errors.filter((e) => !live.has(shellErrorKey(e)));
+			if (visible.length === 0) return null;
 			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
 				role: "alert",
 				className: shell_module_css_default.errorLine,
-				children: errors.map((e) => /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("p", {
+				children: visible.map((e) => /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("p", {
 					className: shell_module_css_default.errorRow,
 					children: [
 						/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.IconWarningTriangleOutlineRegular, { className: shell_module_css_default.errorIcon }),
 						e.id,
 						": ",
-						e.message
+						e.message,
+						/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+							size: "sm",
+							variant: "ghost",
+							className: shell_module_css_default.errorDismiss,
+							"aria-label": chromeCopy.dismissError,
+							onClick: () => setDismissed((prev) => new Set(prev).add(shellErrorKey(e))),
+							children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.IconCloseOutlineRegular, { size: 12 })
+						})
 					]
 				}, e.id))
 			});

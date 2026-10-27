@@ -29,6 +29,7 @@ import {
   useToastStore,
   useViewportIds,
 } from "./toastStore.ts"
+import { chromeCopy } from "./locales/chromeCopy.ts"
 
 export * from "./toastStore.ts"
 
@@ -37,7 +38,14 @@ export * from "./toastStore.ts"
  *  live renderer per document: the first-mounted viewport renders,
  *  others render nothing until the owner unmounts. Renders the live
  *  entries through the DSH Toast atom (body-portaled banner, owner
- *  unmounts onDone). */
+ *  unmounts onDone).
+ *
+ *  THE TOAST DISMISS (audit 017 C4): every banner carries a dismiss
+ *  control — the DSH Toast's own inline action seat (the press
+ *  unmounts the toast, the primitive's documented owner shape), so a
+ *  failure the operator has read retires NOW, ahead of the 15s error
+ *  hold. The auto-retire clock stays (the census entry states both:
+ *  the control dismisses, the clock retires). */
 export function ToastViewport() {
   const idRef = useRef(mintViewportId())
   useEffect(() => {
@@ -58,6 +66,7 @@ export function ToastViewport() {
           key={t.id}
           text={t.message}
           holdMs={toastHoldMs(t.type)}
+          actions={[{ label: chromeCopy.dismissToast, onClick: () => removeToast(t.id) }]}
           onDone={() => removeToast(t.id)}
         />
       ))}
