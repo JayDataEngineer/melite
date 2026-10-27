@@ -267,7 +267,7 @@ export type SamplerEnvelopeInput = Readonly<{
  * @param model the model id the variant pool belongs to.
  * @param known the offered variant ids, door order.
  * @returns the refusal body, frame-free. */
-export declare function unknownVariantVoice(stated: string, model: string, known: readonly string[]): string;
+export declare function unknownVariantVoice(stated: string, model: string, known: readonly string[], familyLanes?: readonly string[]): string;
 /** The variant rail's unknown-quant refusal body — same contract as
  *  {@link unknownVariantVoice}: one spelling, frame at the caller.
  *  THE HONEST VOICE (the axis-unification cure, 2026-11-06 — the

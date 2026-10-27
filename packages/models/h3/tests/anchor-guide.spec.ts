@@ -584,6 +584,64 @@ describe("the doc-level guide (the chained-image burn: every spelling the walk a
     expect(json, "the anchor lands on the r2v reference slot").toContain("ref_images.ref_image_0")
   })
 
+  it("THE BREAD AND BUTTER (the operator's two-clip image-to-video): a film's doc-level guide seats on the OPENING window only — never refused with a lying cure, never re-anchored later", () => {
+    // THE BURN (transcript, 2026-11-12, session 384a13cd): "Turn this
+    // image into the video ... two short clips combined" — a doc-level
+    // guide on a TWO-CALL film. Pre-cure the film loop never seated
+    // the doc-level guide (it reads call.image only), and the conflict
+    // guard then refused the write: "a guide image rides only the t4r
+    // reference lane — this doc's variant is 't4_chain'. State no
+    // variant (the walk derives t4r from the guide)". The cure was
+    // already true — the walk derives t4_chain from the film's shape —
+    // so three refusals later the agent dropped the image and typed
+    // the prompt text-only. THE LAW: a doc-level guide is the film's
+    // opening frame; it seats on window 1 and only window 1, and the
+    // write composes the reference arm with no refusal.
+    const filmDoc = {
+      loras: LORA, seed: 7, image: "e2e_anchor.png",
+      calls: [
+        { text: "first", start_frame: 0, end_frame: 90 },
+        { text: "second", start_frame: 90, end_frame: 175 },
+      ],
+    }
+    const walked = walk(filmDoc)
+    expect(walked.variant, "a film's shape derives the chained family").toBe("t4_chain")
+    const g = new GraphBuilder()
+    // THE RED: pre-cure this exact call threw the lying refusal.
+    instantiateAction(film, walked, WINDOW_MODEL, g, "run_film_opener")
+    const graph = g.toJSON() as Record<string, { class_type: string; inputs: Record<string, unknown> }>
+    const json = JSON.stringify(graph)
+    expect(json, "the opener's anchor reaches the engine").toContain("e2e_anchor.png")
+    // ONE LoadImage: the anchor is a single opener seat. A second
+    // LoadImage (or the same value wired into both windows' reference
+    // slots) is the re-anchor disease — window 2 must continue from
+    // the generation head, not re-open on the still.
+    const loaders = Object.values(graph).filter((n) => n.class_type === "LoadImage")
+    expect(loaders.length, "the opener anchor loads exactly once").toBe(1)
+    const windows = Object.values(graph).filter((n) => n.class_type === "MiniMaxH3ReferenceToVideo")
+    expect(windows.length, "both windows compose the reference arm").toBe(2)
+    const anchored = Object.entries(graph).filter(([, n]) =>
+      n.class_type === "MiniMaxH3ReferenceToVideo" && Object.keys(n.inputs).some((k) => k.startsWith("ref_images")))
+    expect(anchored.length, "only the opening window carries the doc-level anchor").toBe(1)
+    expect(anchored[0][0].startsWith("window1_"), "the anchor seats on the opener").toBe(true)
+    expect(json, "the continuation seam rides for window 2").toContain("MiniMaxH3FiniteLatentContinuation")
+  })
+
+  it("a call's OWN guide beats the film's doc-level opener (the seat union, never two anchors)", () => {
+    const walked = walk({
+      loras: LORA, seed: 7, image: "doc_anchor.png",
+      calls: [
+        { text: "first", start_frame: 0, end_frame: 90, image: "call_anchor.png" },
+        { text: "second", start_frame: 90, end_frame: 175 },
+      ],
+    })
+    const g = new GraphBuilder()
+    instantiateAction(film, walked, WINDOW_MODEL, g, "run_film_call_wins")
+    const json = JSON.stringify(g.toJSON())
+    expect(json).toContain("call_anchor.png")
+    expect(json, "the doc-level opener never doubles a stated call guide").not.toContain("doc_anchor.png")
+  })
+
   it("the guard's cure sentence is TRUE: a doc-level guide with NO stated variant walks clean (never the three-refusal loop)", () => {
     // the guard's own voice promises this arm: "State no variant
     // (the walk derives t4r from the guide)". Pre-cure that state

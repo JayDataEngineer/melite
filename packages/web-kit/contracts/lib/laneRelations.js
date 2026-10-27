@@ -530,7 +530,20 @@ export function judgeLaneBounds(bounds, values) {
  * @param model the model id the variant pool belongs to.
  * @param known the offered variant ids, door order.
  * @returns the refusal body, frame-free. */
-export function unknownVariantVoice(stated, model, known) {
+export function unknownVariantVoice(stated, model, known, familyLanes) {
+    // THE WINDOW-FAMILY VOICE (the agent-flow transcript's step 8 burn,
+    // 2026-11-12): the agent patched variant:'t4r' to escape a guide
+    // conflict and read "known: timeline, singularity, standard, draft,
+    // final" — true, and useless: t4r IS a lawful family the model
+    // derives, never a variant a caller states. The caller that can see
+    // the boarded families passes their lanes; a stated lane then gets
+    // the derivation law and both lawful moves, not a pool list.
+    if (familyLanes !== undefined && familyLanes.includes(stated)) {
+        return JSON.stringify(stated) + ' is a WINDOW FAMILY, not a variant — model '
+            + JSON.stringify(model) + ' derives its window family from the doc\'s own shape ('
+            + familyLanes.join(', ') + '; derived, never stated). Drop the variant and the doc derives '
+            + 'its family, or state one of the model variants (known: ' + known.join(', ') + ').';
+    }
     return 'unknown variant ' + JSON.stringify(stated)
         + ' for model ' + JSON.stringify(model)
         + ' (known: ' + known.join(', ') + ')';

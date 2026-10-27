@@ -3,7 +3,7 @@
 // 2-6) and the in-process compose (steps 7-9). Explicit seat
 // deps; no Service state beyond the accessors the seat passes.
 import { ComfyUIService, resolveEngineBaseUrl, composeCards, ComposeRefusal, checkModelPresent, owningAtom } from "@melite/comfyui-cordis";
-import { cardAdmits } from "./cardsFacts.ts";
+import { cardAdmits, familyLanesOf } from "./cardsFacts.ts";
 export { cardAdmits };
 import { EngineContext, composeModPlane, loadFacts, theService } from "@melite/comfyui-cordis";
 import type { FactsReads } from "@melite/comfyui-cordis";
@@ -343,7 +343,7 @@ export function prepareCardParams(
         "card_compose",
       );
     }
-    const sel: VariantSelection = selectCardVariant(mid, famRow, body, phase);
+    const sel: VariantSelection = selectCardVariant(mid, famRow, body, phase, familyLanesOf(decl.boarded));
     const stamped: Record<string, unknown> = stampCardOverlay(body, famRow, decl, sel, phase, fam);
     return {
       mid,

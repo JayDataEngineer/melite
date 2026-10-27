@@ -3,7 +3,31 @@
 // facts/decl plane owns model-facts.json reads and the pure
 // defs+facts->rows derivation. No Service state — module truth.
 import { join } from "node:path";
-import { resolveRepoRoot } from "@melite/comfyui-cordis";
+import { getModel, resolveRepoRoot } from "@melite/comfyui-cordis";
+/** The window-family lanes a card's boarded families derive — the
+ *  vocabulary an agent confuses for a variant (the transcript's
+ *  step-8 burn: variant 't4r' read "unknown variant"). Reads the
+ *  DECLs' served familyLaw, never a copy; undefined when no boarded
+ *  family declares a law (legacy families get the plain voice).
+ *
+ * @param boarded the card's boarded family ids.
+ * @returns the union of their declared lane ids, or undefined. */
+export function familyLanesOf(boarded) {
+    const lanes = [];
+    for (const fam of boarded ?? []) {
+        let law;
+        try {
+            law = getModel(fam).familyLaw;
+        }
+        catch {
+            continue;
+        }
+        for (const row of law?.lanes ?? [])
+            if (!lanes.includes(row.lane))
+                lanes.push(row.lane);
+    }
+    return lanes.length > 0 ? lanes : undefined;
+}
 export function factsPath() {
     // Merged 2026-09-08 (reversed: the models plane folds into the
     // cordis package): the compose plane lives in

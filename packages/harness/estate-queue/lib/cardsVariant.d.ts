@@ -32,7 +32,7 @@ export interface VariantSelection {
  *  to the address claim, else the first non-Recipe variant / first
  *  cell (Model.resolve — the family default). Unknown coordinates
  *  refuse LOUD (never a silent neighbor cell). */
-export declare function selectCardVariant(mid: string, famRow: ModelFactsRow, body: Record<string, unknown>, phase: string): VariantSelection;
+export declare function selectCardVariant(mid: string, famRow: ModelFactsRow, body: Record<string, unknown>, phase: string, familyLanes?: readonly string[]): VariantSelection;
 export declare function stampCardOverlay(body: Record<string, unknown>, famRow: ModelFactsRow, decl: CardDeclRow, sel: VariantSelection, phase: string, fam: string): Record<string, unknown>;
 /** The card-compose lift (card_compose_body 363-372): the run body
  *  minus the gateway envelope, restaged as the ONE params stanza.

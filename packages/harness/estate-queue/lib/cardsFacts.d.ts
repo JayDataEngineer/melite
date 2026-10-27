@@ -81,6 +81,15 @@ export interface CardDeclRow {
     readonly admits: readonly string[];
     readonly spells: readonly string[];
 }
+/** The window-family lanes a card's boarded families derive — the
+ *  vocabulary an agent confuses for a variant (the transcript's
+ *  step-8 burn: variant 't4r' read "unknown variant"). Reads the
+ *  DECLs' served familyLaw, never a copy; undefined when no boarded
+ *  family declares a law (legacy families get the plain voice).
+ *
+ * @param boarded the card's boarded family ids.
+ * @returns the union of their declared lane ids, or undefined. */
+export declare function familyLanesOf(boarded: readonly string[] | undefined): readonly string[] | undefined;
 export declare function factsPath(): string;
 export declare function deriveDecls(defs: Map<string, CardDefinition>, facts: Record<string, ModelFactsRow>): Record<string, CardDeclRow>;
 /** THE SHARED ADMISSION PREDICATE (audit J-E2): knobs ∪ absorbed

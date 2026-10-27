@@ -24,8 +24,11 @@
 //      (the retired seam, alive on the face). Slice 1/4 re-cut.
 //   4. verb-guard (P5, persists) — the no-verb payload refuses loud.
 //      Schema-required verbs keep this arm green through the rework.
-//   5. t4-voice (T4) — the load voice names `melite_flow`, a tool the
-//      agent-mode contract bans. Slice 2 deletes it (arm re-cut).
+//   5. t4-voice (T4) — the load voice names a tool the mode owns. The
+//      agent-mode contract bans `melite_flow`; the render already
+//      branches on `opts.headless`, so the arm renders BOTH modes and
+//      judges the sentences (slice 2 re-cut the source-text pin — a
+//      string in a file is not a voice).
 //   6. no-coercion (T7) — construct performs no scalar→array derive
 //      today (the spell fails at run admission). Slice 5 lands it.
 //
@@ -39,6 +42,7 @@ import { fileURLToPath } from "node:url";
 import { loadCardDefs } from "../../../../packages/engines/comfyui-cordis/src/cardDefs.ts";
 import { searchCards } from "../../../../packages/harness/estate-queue/src/discloseRegistry.ts";
 import { loadCard } from "../../../../packages/harness/estate-queue/src/loadPlane.ts";
+import { meliteLoad } from "../../../../packages/harness/melite-tools/src/tools/melite-load.ts";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..", "..");
 const read = (rel: string): string => readFileSync(join(ROOT, rel), "utf8");
@@ -97,9 +101,26 @@ describe("THE VIBE SUITE BASELINE — the agent flow's acceptance harness (v0 pi
     assert.ok(src.includes("with no verb"), "the no-verb refusal voice exists — Slice 5 keeps it (verbs go REQUIRED in the schema; a WRITE is never derived)");
   });
 
-  it("T4 BASELINE: the load voice instructs a mode-banned tool (the contradiction, pinned)", () => {
-    const loadSrc = read("packages/harness/melite-tools/src/tools/melite-load.ts");
-    assert.ok(loadSrc.includes("melite_flow"), "the load bundle voice names melite_flow — the agent-mode contract bans that tool (Slice 2: voices generate from the mode's tool set)");
+  it("T4: the load voice names the door the MODE owns (agent: construct; headless: flow) — never a phantom verb", () => {
+    // THE BURN (transcript step 3): the agent-mode load told the model
+    // "open with melite_flow" — a tool the agent-mode contract bans.
+    // The render branches on opts.headless today; this arm renders
+    // both modes and judges the sentences, so a re-inlined phantom
+    // verb reds. (A source-text pin certified the branch's presence,
+    // never its voice — the weak-wall class.)
+    const value = { name: "c", inference_type: "card", bundle: { kind: "card", name: "c", signature: null } };
+    const args = { name: "c", inference_type: "card" };
+    const voice = (headless: boolean): string => {
+      const tool = meliteLoad({} as never, headless ? { headless: true } : {});
+      const parts = tool.output.render(args, value as never) as Array<{ text?: string }>;
+      return parts.map((p) => p?.text ?? "").join("\n");
+    };
+    const agent = voice(false);
+    assert.ok(!agent.includes("melite_flow"), "agent mode must never name melite_flow — the contract bans it");
+    assert.ok(agent.includes("melite_construct"), "agent mode names the door it owns (construct/add_stage)");
+    assert.ok(/runs start at the user's Run press/.test(agent), "agent mode names who starts the run");
+    const headless = voice(true);
+    assert.ok(headless.includes("melite_flow"), "headless owns the flow verb — its voice keeps it");
   });
 
   it("T7 BASELINE: construct derives nothing today (no scalar→array coercion — the late-door failure)", () => {

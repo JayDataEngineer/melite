@@ -84,6 +84,26 @@ describe("selectCardVariant (the R1 wire contract)", () => {
       expect((e as Error).message).toMatch(/known: recipe, base, turbo/);
     }
   });
+  it("a stated WINDOW FAMILY gets the derivation law, not a pool list (the transcript's step-8 burn)", () => {
+    // The agent patched variant:'t4r' to escape the film guide
+    // conflict and read "known: recipe, base, turbo" — true, useless.
+    // With the boarded families' lanes in hand the door teaches the
+    // law and both lawful moves; a plain unknown still gets the pool.
+    try {
+      selectCardVariant("h3-timeline", row(), { variant: "t4r" }, "5", ["t4_chain", "t4r", "t4_open"]);
+      expect.unreachable();
+    } catch (e) {
+      const msg = (e as Error).message;
+      expect(msg).toMatch(/"t4r" is a WINDOW FAMILY, not a variant/);
+      expect(msg).toMatch(/derives its window family from the doc's own shape/);
+      expect(msg).toMatch(/Drop the variant and the doc derives its family/);
+      expect(msg).toMatch(/known: recipe, base, turbo/);
+    }
+    // the legacy family with no lanes keeps the plain voice — the
+    // optional seat never changes an old refusal
+    expect(() => selectCardVariant("m", row(), { variant: "t4r" }, "1"))
+      .toThrow(/unknown variant "t4r" for model "m" \(known: recipe, base, turbo\)/);
+  });
   it("a variant-less family selects empty coordinates; an explicit quant still refuses", () => {
     const sel = selectCardVariant("m", row({ variants: undefined }), {}, "1");
     expect(sel.variantId).toBe("");

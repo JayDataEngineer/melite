@@ -76,6 +76,7 @@ export function selectCardVariant(
   famRow: ModelFactsRow,
   body: Record<string, unknown>,
   phase: string,
+  familyLanes?: readonly string[],
 ): VariantSelection {
   const variants: ResolvedVariantRow[] = famRow.variants ?? [];
   const hiddenRoute = variants.find((v) => v.hide_from_dropdown === true && (
@@ -113,7 +114,7 @@ export function selectCardVariant(
   // ids); the unstated coordinate is the address claim, else pool[0].
   const vres = resolveVariantRow(variants, rawVariant, mid, "offered");
   if (vres.status === "missing") {
-    throw phaseRefusal(phase, unknownVariantVoice(vres.stated, mid, vres.known));
+    throw phaseRefusal(phase, unknownVariantVoice(vres.stated, mid, vres.known, familyLanes));
   }
   if (vres.status === "hidden") {
     throw phaseRefusal(

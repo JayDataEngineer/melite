@@ -32,7 +32,7 @@ function normalizeEnvelope(raw) {
  *  to the address claim, else the first non-Recipe variant / first
  *  cell (Model.resolve — the family default). Unknown coordinates
  *  refuse LOUD (never a silent neighbor cell). */
-export function selectCardVariant(mid, famRow, body, phase) {
+export function selectCardVariant(mid, famRow, body, phase, familyLanes) {
     const variants = famRow.variants ?? [];
     const hiddenRoute = variants.find((v) => v.hide_from_dropdown === true && (v.route === mid || v.id === mid || (v.cells ?? []).some((c) => c.route === mid)));
     const hiddenCellRoute = variants.some((v) => (v.cells ?? []).some((c) => c.hide_from_dropdown === true && c.route === mid));
@@ -59,7 +59,7 @@ export function selectCardVariant(mid, famRow, body, phase) {
     // ids); the unstated coordinate is the address claim, else pool[0].
     const vres = resolveVariantRow(variants, rawVariant, mid, "offered");
     if (vres.status === "missing") {
-        throw phaseRefusal(phase, unknownVariantVoice(vres.stated, mid, vres.known));
+        throw phaseRefusal(phase, unknownVariantVoice(vres.stated, mid, vres.known, familyLanes));
     }
     if (vres.status === "hidden") {
         throw phaseRefusal(phase, "variant " + JSON.stringify(rawVariant) +

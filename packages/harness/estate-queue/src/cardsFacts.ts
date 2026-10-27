@@ -3,7 +3,7 @@
 // facts/decl plane owns model-facts.json reads and the pure
 // defs+facts->rows derivation. No Service state — module truth.
 import { join } from "node:path";
-import { resolveRepoRoot } from "@melite/comfyui-cordis";
+import { getModel, resolveRepoRoot } from "@melite/comfyui-cordis";
 import type { CardDefinition } from "@melite/comfyui-card-kit/card-definition";
 import type { LaneRelations, SamplerEnvelope } from "@melite/contracts/laneRelations";
 
@@ -88,6 +88,24 @@ export interface CardDeclRow {
   readonly schemaNames: readonly string[];
   readonly admits: readonly string[];
   readonly spells: readonly string[];
+}
+
+/** The window-family lanes a card's boarded families derive — the
+ *  vocabulary an agent confuses for a variant (the transcript's
+ *  step-8 burn: variant 't4r' read "unknown variant"). Reads the
+ *  DECLs' served familyLaw, never a copy; undefined when no boarded
+ *  family declares a law (legacy families get the plain voice).
+ *
+ * @param boarded the card's boarded family ids.
+ * @returns the union of their declared lane ids, or undefined. */
+export function familyLanesOf(boarded: readonly string[] | undefined): readonly string[] | undefined {
+  const lanes: string[] = [];
+  for (const fam of boarded ?? []) {
+    let law: { lanes?: ReadonlyArray<{ lane: string }> } | undefined;
+    try { law = getModel(fam).familyLaw; } catch { continue; }
+    for (const row of law?.lanes ?? []) if (!lanes.includes(row.lane)) lanes.push(row.lane);
+  }
+  return lanes.length > 0 ? lanes : undefined;
 }
 
 export function factsPath(): string {

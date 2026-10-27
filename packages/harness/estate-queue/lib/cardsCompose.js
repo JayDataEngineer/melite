@@ -3,7 +3,7 @@
 // 2-6) and the in-process compose (steps 7-9). Explicit seat
 // deps; no Service state beyond the accessors the seat passes.
 import { ComfyUIService, resolveEngineBaseUrl, composeCards, ComposeRefusal, checkModelPresent, owningAtom } from "@melite/comfyui-cordis";
-import { cardAdmits } from "./cardsFacts.js";
+import { cardAdmits, familyLanesOf } from "./cardsFacts.js";
 export { cardAdmits };
 import { EngineContext, composeModPlane, loadFacts, theService } from "@melite/comfyui-cordis";
 import { CardArmError, phaseRefusal } from "./cardsArmError.js";
@@ -266,7 +266,7 @@ export function prepareCardParams(deps, body, mid, phase, factsArg) {
         throw new CardArmError(400, "card_compose phase " + phase + ": unknown card " + JSON.stringify(famRow.card) +
             " (no registered card definition for the card model " + JSON.stringify(mid) + " names)", "card_compose");
     }
-    const sel = selectCardVariant(mid, famRow, body, phase);
+    const sel = selectCardVariant(mid, famRow, body, phase, familyLanesOf(decl.boarded));
     const stamped = stampCardOverlay(body, famRow, decl, sel, phase, fam);
     return {
         mid,

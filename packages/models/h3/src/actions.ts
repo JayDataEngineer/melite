@@ -381,7 +381,19 @@ function renderH3Film(
   const loraStepsApplied = marriedBagKnob(p, 'steps')
   calls.forEach((call, i) => {
     const k = i + 1
-    const guide = str(call.image ?? call.ref_image ?? call.image_name)
+    // THE OPENER ANCHOR (cure 8's film arm — session 384a13cd's bread
+    // and butter: "turn this image into the video, two short clips
+    // combined"). A DOC-level guide is the film's OPENING FRAME:
+    // window 1 seats it when its call states none; windows 2+ continue
+    // from the generation head and never re-anchor on it (the stanza
+    // delete below carries that half). Before this lift the doc-level
+    // guide was silently unused by the film loop — the conflict guard
+    // then refused the write with a cure ("state no variant") that was
+    // already true, the lying-cure class the operator named.
+    const callGuide = str(call.image ?? call.ref_image ?? call.image_name)
+    const guide = callGuide !== ''
+      ? callGuide
+      : (i === 0 ? str(p.image ?? p.image_name ?? p.ref_image) : '')
     // A CALL OWNS ITS TEXT (the operator's no-fallbacks law, enforced
     // 2026-09-21: the film-level prompt silently rode textless calls —
     // a source substitution, the exact crime class the law bans). The
@@ -2439,7 +2451,16 @@ export const film: ComfyActionSpec<Record<string, unknown>, H3Facts> = {
     // family, never a stated conflict — and the film loop derives each
     // window's own family from its seats.)
     const kfLane = kfRows.length > 0 && Array.isArray(p.calls) && (p.calls as unknown[]).length === 1
-    if ((guideImage !== '' || kfLane) && statedFamily !== undefined && statedFamily !== 't4r') {
+    // THE SINGLE-WINDOW SHAPE ONLY (the lying-cure cure): a film's
+    // doc-level guide is its opener anchor (the film loop seats it on
+    // window 1, above) and each window derives its own family from its
+    // own seats — the doc's walked variant is the DERIVED film family
+    // (t4_chain), never a stated conflict. Refusing here told a
+    // two-clip image-to-video write to "state no variant" when it had
+    // stated none: the transcript's steps 5-7 loop.
+    const callsRaw: unknown = p.calls
+    const isFilmDoc = Array.isArray(callsRaw) && callsRaw.length > 1
+    if ((guideImage !== '' || kfLane) && !isFilmDoc && statedFamily !== undefined && statedFamily !== 't4r') {
       const rbRef = (p.refs ?? {}) as Record<string, unknown>
       const refsCarry = wireList(rbRef.images).length + wireList(rbRef.videos).length + wireList(rbRef.audios).length
         + wireList(p.ref_images).length + wireList(p.ref_videos).length + wireList(p.ref_audios).length > 0

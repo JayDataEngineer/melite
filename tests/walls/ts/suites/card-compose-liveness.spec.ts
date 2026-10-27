@@ -910,6 +910,33 @@ describe("every studio tenant's persisted key set composes on its own derived la
     await loadCardDefs();
   }, 90_000);
 
+  it("THE WINDOW-FAMILY VOICE (the agent flow's step-8 burn): a stated lane on the REAL boarded family teaches the derivation law, never a pool list", () => {
+    // THE BURN (transcript, 2026-11-12): the agent patched
+    // variant:'t4r' to escape the film guide conflict and read
+    // "known: timeline, singularity, standard, draft, final" — true
+    // and useless, because t4r is a lawful WINDOW FAMILY the model
+    // derives. The door now reads the boarded families' served
+    // familyLaw and answers with the law plus both lawful moves.
+    try {
+      prepareCardParams(svc, { model: "h3-timeline", variant: "t4r" }, "h3-timeline", "admission");
+      assert.fail("a stated window family must refuse as a variant");
+    } catch (e) {
+      const msg = (e as Error).message;
+      assert.match(msg, /"t4r" is a WINDOW FAMILY, not a variant/, "the voice names the derivation law");
+      assert.match(msg, /derives its window family from the doc's own shape/, "the family derives, never states");
+      assert.match(msg, /Drop the variant and the doc derives its family/, "the first lawful move");
+      assert.match(msg, /state one of the model variants/, "the second lawful move");
+    }
+    // the plain pool voice still serves an ordinary unknown variant
+    // on the same family — the optional seat never softens a real miss
+    try {
+      prepareCardParams(svc, { model: "h3-timeline", variant: "ghost" }, "h3-timeline", "admission");
+      assert.fail("an unknown variant must refuse");
+    } catch (e) {
+      assert.match((e as Error).message, /unknown variant "ghost"/);
+    }
+  });
+
   /** The tenant's studio tree, DERIVED from the DECL's tenant string
    *  ("<genre>/<package>" under packages/). Null = no host tree in
    *  this repo — the declarative SSOT face. */

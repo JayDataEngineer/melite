@@ -83,7 +83,7 @@ import { bootModels, cardDefsNow, ComposeRefusal, getModel, liveScanOrder, loadC
 import { DOOR_KEYS } from "./runsGates.js";
 import { CardArmError, EnvelopeRefusal, phaseRefusalCode } from "./cardsArmError.js";
 export { CardArmError } from "./cardsArmError.js";
-import { factsPath, deriveDecls } from "./cardsFacts.js";
+import { factsPath, deriveDecls, familyLanesOf } from "./cardsFacts.js";
 import { WIRE_STAGE_KEYS } from "@melite/contracts/benchStage";
 import { reseatDeadKeys } from "@melite/contracts/familyLane";
 import { dropAuthoringIncomplete, isUnstatedRequiredVoice, judgeLaneBounds, judgeLaneRelations, judgeLaneSurface, laneBoundsOf, laneStaleCarry, laneSurfaceOf, laneTogetherClosure, RELATION_WORDS } from "@melite/contracts/laneRelations";
@@ -1053,7 +1053,7 @@ export class CardRegistryService extends Service {
         let selPrior = null;
         let prevSurface;
         try {
-            selNext = selectCardVariant(prepNext.mid, famNext, params, "admission");
+            selNext = selectCardVariant(prepNext.mid, famNext, params, "admission", familyLanesOf(prepNext.decl.boarded));
             if (prepPrior === null) {
                 prevSurface = unionPrevSurface();
             }
@@ -1065,7 +1065,7 @@ export class CardRegistryService extends Service {
                 // it always did.
                 if (famPrior === undefined)
                     return params;
-                const priorSel = selectCardVariant(prepPrior.mid, famPrior, priorParams, "admission");
+                const priorSel = selectCardVariant(prepPrior.mid, famPrior, priorParams, "admission", familyLanesOf(prepPrior.decl.boarded));
                 selPrior = priorSel;
                 prevSurface = laneSurfaceOf(famPrior.params, famPrior.variants.find((v) => v.id === priorSel.variantId)?.params, cellOf(famPrior, priorSel));
             }
@@ -1459,7 +1459,7 @@ export class CardRegistryService extends Service {
         // legacy families exactly the nothing they had.
         let sel;
         try {
-            sel = selectCardVariant(mid, famRow, params, "admission");
+            sel = selectCardVariant(mid, famRow, params, "admission", familyLanesOf(prep.decl.boarded));
         }
         catch {
             /* v8 ignore next -- prepareCardParams already ran the SAME

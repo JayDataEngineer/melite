@@ -94,7 +94,7 @@ import { CardArmError, EnvelopeRefusal, phaseRefusal, phaseRefusalCode } from ".
 import { RUNS_ERROR_CODES } from "./runsErrorCodes.ts";
 export { CardArmError } from "./cardsArmError.ts";
 import type { CardDeclRow, ModelFactsRow, ResolvedVariantRow, VariantCellRow } from "./cardsFacts.ts";
-import { factsPath, deriveDecls } from "./cardsFacts.ts";
+import { factsPath, deriveDecls, familyLanesOf } from "./cardsFacts.ts";
 import { WIRE_STAGE_KEYS } from "@melite/contracts/benchStage";
 import { reseatDeadKeys, type FamilyLaw } from "@melite/contracts/familyLane";
 import type { LaneRelations, LaneViolation } from "@melite/contracts/laneRelations";
@@ -1114,7 +1114,7 @@ export class CardRegistryService extends Service {
     let selPrior: VariantSelection | null = null;
     let prevSurface: readonly string[] | null;
     try {
-      selNext = selectCardVariant(prepNext.mid, famNext, params, "admission");
+      selNext = selectCardVariant(prepNext.mid, famNext, params, "admission", familyLanesOf(prepNext.decl.boarded));
       if (prepPrior === null) {
         prevSurface = unionPrevSurface();
       } else {
@@ -1124,7 +1124,7 @@ export class CardRegistryService extends Service {
         // as some other lane's, so the seat stands aside exactly as
         // it always did.
         if (famPrior === undefined) return params;
-        const priorSel: VariantSelection = selectCardVariant(prepPrior.mid, famPrior, priorParams, "admission");
+        const priorSel: VariantSelection = selectCardVariant(prepPrior.mid, famPrior, priorParams, "admission", familyLanesOf(prepPrior.decl.boarded));
         selPrior = priorSel;
         prevSurface = laneSurfaceOf(
           famPrior.params,
@@ -1527,7 +1527,7 @@ export class CardRegistryService extends Service {
     // legacy families exactly the nothing they had.
     let sel: VariantSelection;
     try {
-      sel = selectCardVariant(mid, famRow, params, "admission");
+      sel = selectCardVariant(mid, famRow, params, "admission", familyLanesOf(prep.decl.boarded));
     } catch {
       /* v8 ignore next -- prepareCardParams already ran the SAME
        * selection on the same mid/famRow/body (cardsCompose.ts:296)
