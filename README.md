@@ -261,3 +261,11 @@ control nets, and other provisioned artifacts keep their own upstream
 licenses, which prevail over AGPL for those artifacts — scope and
 carve-outs in [NOTICE](NOTICE). Vendored code under `vendor/`
 retains its upstream licenses.
+
+One family needs plain words: the MiniMax H3 weights and their
+derivatives (Viggle-Animate INT8, Fun ControlNet Union 2.0, the
+character-swap LoRA) carry the H3 Community License — worldwide use
+EXCLUDING the EU, UK, South Korea, and the United States, which need
+a separate grant (api@minimax.io). Every provisioned weight states
+its license in its DECL row; `pnpm run provision -- models --dry-run`
+lists each artifact before anything downloads.
