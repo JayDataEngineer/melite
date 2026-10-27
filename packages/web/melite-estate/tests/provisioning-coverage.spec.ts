@@ -15,6 +15,7 @@ import type {
   SubprocessTerminalSpawnSpec,
 } from "@deepseek-ai/dsh-subprocess";
 import { ComfyUiManagerHttpClient, type ProvisionPlanItem } from "@melite/estate-provisioning";
+import { loadExtensionsYaml } from "@melite/comfyui-cordis/provisioning-manifest";
 
 const sdkClientMock = vi.hoisted(() => vi.fn());
 
@@ -29,7 +30,7 @@ vi.mock("@melite/comfyui-cordis", async (importOriginal) => {
 import composition from "../src/provisioning.ts";
 import { idleDialFetch, type ProvisioningCompositionConfig } from "../src/provisioning.ts";
 
-const ENV_KEYS = ["MELITE_REPO_ROOT", "COMFYUI_ENDPOINT_CONFIG", "INFERENCE_TEST_SANDBOX", "COMFYUI_URL"];
+const ENV_KEYS = ["MELITE_REPO_ROOT", "MELITE_EXTENSION_MANIFEST", "COMFYUI_ENDPOINT_CONFIG", "INFERENCE_TEST_SANDBOX", "COMFYUI_URL"];
 const MODEL_BYTES = Buffer.from("web-provisioning-model");
 const MODEL_SHA = createHash("sha256").update(MODEL_BYTES).digest("hex");
 const contexts: Context[] = [];
@@ -64,6 +65,15 @@ function tempRoot(prefix: string): string {
   return value;
 }
 
+/** The fixture's shipped-manifest path — written whenever the mount
+ *  declares extension rows, and pinned into MELITE_EXTENSION_MANIFEST
+ *  (the loader's override seam, the COMFYUI_ENDPOINT_CONFIG idiom).
+ *  The runtime read is the SHIPPED FILE since audit 019 C1; a fixture
+ *  nodes.yaml walk would test a dev-only shape. */
+function fixtureManifestPath(root: string): string {
+  return join(root, "packages", "engines", "comfyui-cordis", "data", "extension-manifest.json");
+}
+
 function writeRepo(endpoint: Record<string, unknown>, facts: Record<string, unknown>, options: { readonly inference?: Record<string, unknown>; readonly extensions?: string } = {}): string {
   const root = tempRoot("web-provisioning-");
   const data = join(root, "packages", "engines", "comfyui-cordis", "data");
@@ -73,9 +83,15 @@ function writeRepo(endpoint: Record<string, unknown>, facts: Record<string, unkn
   writeFileSync(join(data, "model-facts.json"), JSON.stringify(facts));
   if (options.inference !== undefined) writeFileSync(join(root, "inference.config.json"), JSON.stringify(options.inference));
   if (options.extensions !== undefined) {
+    // The fixture's declaration yaml is authored at the nodes/ shape,
+    // then DERIVED into the shipped manifest by the real reader — the
+    // same regen relationship the checkout's data file rides (the
+    // walk is the generator's source of truth, never a runtime read).
     const nodes = join(root, "packages", "demo", "nodes");
     mkdirSync(nodes, { recursive: true });
-    writeFileSync(join(nodes, "extensions.yaml"), options.extensions);
+    const yamlPath = join(nodes, "extensions.yaml");
+    writeFileSync(yamlPath, options.extensions);
+    writeFileSync(fixtureManifestPath(root), JSON.stringify(loadExtensionsYaml(yamlPath)));
   }
   return root;
 }
@@ -275,6 +291,7 @@ async function mount(options: {
   });
   if (options.store !== undefined) state.store = options.store;
   process.env["MELITE_REPO_ROOT"] = root;
+  if (options.extensions !== undefined) process.env["MELITE_EXTENSION_MANIFEST"] = fixtureManifestPath(root);
   process.env["COMFYUI_ENDPOINT_CONFIG"] = join(root, "packages", "engines", "comfyui-cordis", "data", "comfyui_endpoint.json");
   delete process.env["INFERENCE_TEST_SANDBOX"];
   delete process.env["COMFYUI_URL"];
@@ -361,6 +378,22 @@ describe.sequential("estate provisioning composition paths", () => {
     const refs = await (ctx.provisioning as unknown as { reconcile(): Promise<Array<{ ref: { id: string } }>> }).reconcile();
     assert.equal(refs.some((entry) => entry.ref.id === "demo"), true);
     await assert.rejects(mount({ cards: null }), /card registry service/);
+  });
+
+  test("the extension facts read falls back to the shipped package data when the repo facts are absent (the install shape)", async () => {
+    // An installed profile has no <repoRoot>/packages tree: the
+    // repo-anchored facts path is nothing. The read falls back to the
+    // npm artifact's own data/model-facts.json (the shipped seed, the
+    // endpoint-config idiom) — the plan still resolves, never ENOENT.
+    const mounted = await mount({
+      extensions: "extensions:\n  - name: demo\n    url: https://example.invalid/demo.git\n    ref: 0a1b2c3d4e5f60718293a4b5c6d7e8f901234567\n    pip:\n      - numpy\n",
+    });
+    rmSync(join(mounted.root, "packages", "engines", "comfyui-cordis", "data", "model-facts.json"));
+    const extension = await mounted.ctx.provisioning.plan({ kind: "extension", id: "demo" });
+    assert.equal(extension.items[0]?.provider, "git",
+      "the plan must resolve off the shipped facts when the repo facts are absent — an ENOENT here is the audit-019 install burn one file over");
+    assert.deepEqual(extension.items[0]?.nodeTypes ?? [], [],
+      "the shipped facts carry no row for the fixture's pack — the node-type surface is honestly empty, never a fabricated class");
   });
 
   test("THE KEY-COORDINATE LAW (audit T-S4): base rows key variant-free; the artifact row keys by the resolution's own coordinates", async () => {

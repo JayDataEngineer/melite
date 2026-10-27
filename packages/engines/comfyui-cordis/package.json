@@ -57,6 +57,7 @@
     "compose": "node --experimental-strip-types src/cli.ts",
     "regen:vocab": "node --experimental-strip-types scripts/regen-vocab.ts",
     "regen:object-info": "node --experimental-strip-types scripts/regen-object-info-min.ts",
+    "regen:extension-manifest": "node --experimental-strip-types scripts/regen-extension-manifest.ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

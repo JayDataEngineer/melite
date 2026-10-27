@@ -28,12 +28,14 @@
 
 import { describe, it, expect } from "vitest";
 import { execSync } from "node:child_process";
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { landedIn, landedVerdict } from "../../../../packages/engines/comfyui-cordis/scripts/provision-extensions-install.ts";
 import { defaultConfig, runtime } from "../../../../packages/engines/comfyui-cordis/scripts/provision-shared.ts";
 import { engineLiveRoot, loadConfig } from "../../../../packages/engines/comfyui-cordis/scripts/provision-config.ts";
+import { loadShippedExtensionManifest, mergeManifest } from "../../../../packages/engines/comfyui-cordis/scripts/provision-extensions-manifest.ts";
+import { packageRootFrom } from "../../../../packages/engines/comfyui-cordis/src/comfyui-config.ts";
 
 const ROOT = join(__dirname, "..", "..", "..", "..");
 const PACKAGES = join(ROOT, "packages");
@@ -494,5 +496,147 @@ describe("THE CARD-REQUIRED INSTALL CENSUS (every card-required pinned pack is l
         rmSync(t.root, { recursive: true, force: true });
       }
     }
+  });
+});
+
+// ── THE SHIPPED MANIFEST (audit 019 C1 — the install-shape read) ──
+// The census above judges the manifest's CONTENT; nothing judged its
+// DELIVERY, and the delivery was the burn: the declaration plane
+// derived its rows by walking `<repoRoot>/packages` — a shape that
+// exists only in a checkout. On an installed profile resolveRepoRoot()
+// resolves to the profile dir, the readdir catch returned SILENTLY
+// EMPTY, and every declared id refused "extension X is not declared" —
+// no pack could ever install for a consumer (audit 019 F1). The cure
+// is the model-facts.json pattern: the derivation runs at regen time
+// into a COMMITTED data file, the package SHIPS it (`files`:
+// `data/**`), and the runtime read is packageRoot-anchored — the walk
+// stays in the generator and the dev CLI, never a fallback (an absent
+// or unparseable file refuses loud; a silent empty manifest IS the F1
+// state by other means). Three laws, one arm each:
+//   SYNC  — the shipped file equals a fresh derivation (a nodes.yaml
+//           row changing without a regen reds here);
+//   SHIPS — the package's `files` set actually publishes the file (a
+//           data file the npm artifact drops is F1 all over again);
+//   READS — the loader serves the installed-profile shape: an install
+//           layout (no packages tree) with the data file serves every
+//           id, and the same layout WITHOUT it refuses loud.
+describe("THE SHIPPED EXTENSION MANIFEST (the install-shape read — audit 019 C1)", () => {
+  const SHIPPED = join(ROOT, "packages/engines/comfyui-cordis/data/extension-manifest.json");
+
+  it("SYNC: the shipped manifest equals a fresh derivation over the nodes.yaml tree", () => {
+    const fresh = mergeManifest(ROOT);
+    // THE CENSUS FLOOR: 24 declared rows live (2026-11-12, audit 019);
+    // a shrink is a row leaving the tree mid-regen, never a quiet pass.
+    expect(fresh.length,
+      "the fresh derivation merged fewer rows than the declared census — a nodes.yaml tree was lost or renamed")
+      .toBeGreaterThanOrEqual(24);
+    expect(existsSync(SHIPPED), "the shipped manifest is absent — run pnpm --filter @melite/comfyui-cordis run regen:extension-manifest").toBe(true);
+    const shipped = JSON.parse(readFileSync(SHIPPED, "utf8")) as unknown;
+    expect(shipped, "the shipped manifest drifted from the nodes.yaml derivation — regenerate it (pnpm --filter @melite/comfyui-cordis run regen:extension-manifest); the runtime read refuses stale data files by design").toEqual(fresh);
+  });
+
+  /** The npm `files` coverage judge for one published path: the
+   *  shorthand spellings npm honors (`name`, `dir`, `dir/**`) plus the
+   *  exact row. An exotic glob refuses THIS arm loud — extend the
+   *  matcher deliberately, never let a pattern class silently not
+   *  count. */
+  function filesCover(files: readonly unknown[], rel: string): boolean {
+    return files.some((pattern) => {
+      if (typeof pattern !== "string") return false;
+      if (pattern === rel) return true;
+      if (pattern.endsWith("/**")) return rel.startsWith(pattern.slice(0, -3));
+      if (!pattern.includes("*")) return rel.startsWith(pattern + "/");
+      return false;
+    });
+  }
+
+  it("SHIPS: the package's files set publishes the manifest (the npm-artifact seam)", () => {
+    const pkg = JSON.parse(readFileSync(
+      join(ROOT, "packages/engines/comfyui-cordis/package.json"), "utf8")) as {
+      files?: unknown;
+    };
+    const files = Array.isArray(pkg.files) ? pkg.files : [];
+    expect(
+      filesCover(files, "data/extension-manifest.json"),
+      "the package's `files` set does not publish data/extension-manifest.json — " +
+        "the npm artifact ships WITHOUT the manifest and every installed " +
+        "profile refuses every extension id (the audit-019 F1 shape); add " +
+        "the data file to `files` (the `data/**` row)",
+    ).toBe(true);
+    expect(existsSync(SHIPPED), "the files set names data/** but the manifest file is absent from the tree — the published archive would carry nothing").toBe(true);
+  });
+
+  /** An install-layout package root: `<root>/node_modules/@melite/
+   *  comfyui-cordis` with a package.json, a built scripts dir (the
+   *  install-depth layout packageRootFrom resolves from), and — when
+   *  `withData` — the shipped manifest's exact bytes. No `packages/`
+   *  tree anywhere: that absence is the consumer profile's shape. */
+  function mkInstall(withData: boolean): { pkgRoot: string; manifest: string; libScripts: string } {
+    const root = mkdtempSync(join(tmpdir(), "melite-shipped-manifest-"));
+    const pkgRoot = join(root, "node_modules", "@melite", "comfyui-cordis");
+    const libScripts = join(pkgRoot, "lib", "scripts");
+    const dataDir = join(pkgRoot, "data");
+    mkdirSync(libScripts, { recursive: true });
+    mkdirSync(dataDir, { recursive: true });
+    writeFileSync(join(pkgRoot, "package.json"), JSON.stringify({ name: "@melite/comfyui-cordis", type: "module" }));
+    writeFileSync(join(libScripts, "provision-extensions-manifest.js"), "// the built module, present for layout truth\n");
+    if (withData) writeFileSync(join(dataDir, "extension-manifest.json"), readFileSync(SHIPPED, "utf8"));
+    return { pkgRoot, manifest: join(dataDir, "extension-manifest.json"), libScripts };
+  }
+
+  it("READS: an install layout (no packages tree) with the data file serves every declared id", () => {
+    const install = mkInstall(true);
+    try {
+      // THE ANCHOR LAW AT INSTALL DEPTH: the built module resolves its
+      // package root through the package.json marker (lib/scripts is
+      // one segment deeper than the dev checkout's scripts/ — the
+      // counted-hop trap packageRootFrom exists for).
+      expect(packageRootFrom(install.libScripts),
+        "the package-root anchor must resolve the install layout's package dir (no env pin — an install finds its own data by construction)")
+        .toBe(install.pkgRoot);
+      const rows = loadShippedExtensionManifest(install.manifest);
+      expect(rows.length, "the install-shaped read served no rows — the loader read nothing").toBeGreaterThanOrEqual(24);
+      // The served census IS the derivation's census (the ids the
+      // declaration port must answer on a consumer box).
+      expect(rows.map((r) => r.name).sort(),
+        "the install-shaped read served a different census than the nodes.yaml derivation")
+        .toEqual(mergeManifest(ROOT).map((r) => r.name).sort());
+    } finally {
+      rmSync(join(install.pkgRoot, "..", "..", ".."), { recursive: true, force: true });
+    }
+  });
+
+  it("READS: the same install layout WITHOUT the data file refuses loud — never the silent-empty F1 shape", () => {
+    const install = mkInstall(false);
+    try {
+      expect(() => loadShippedExtensionManifest(install.manifest),
+        "an install whose shipped manifest is missing must REFUSE LOUD naming the path — " +
+          "a silent empty manifest is the audit-019 F1 burn by other means (every extension " +
+          "id refuses 'not declared' downstream, with no signal that the data file is the miss)")
+        .toThrowError(/REFUSED.*extension manifest is missing/);
+      // THE CORRUPT ARM: present but unparseable refuses the same way.
+      writeFileSync(install.manifest, "{ not json");
+      expect(() => loadShippedExtensionManifest(install.manifest),
+        "an unparseable shipped manifest must refuse loud, never fall back empty")
+        .toThrowError(/REFUSED.*not parseable JSON/);
+      // THE MALFORMED-ROW ARM: parseable rows off the ExtRow contract
+      // refuse by row index (the declaration plane dereferences
+      // url/ref/pip into Manager's install request).
+      writeFileSync(install.manifest, JSON.stringify([{ name: "x", url: 7, ref: "", required: true, desc: "", pip: [] }]));
+      expect(() => loadShippedExtensionManifest(install.manifest),
+        "a row off the ExtRow contract must refuse loud naming the row")
+        .toThrowError(/REFUSED.*row 0/);
+    } finally {
+      rmSync(join(install.pkgRoot, "..", "..", ".."), { recursive: true, force: true });
+    }
+  });
+
+  it("READS: the default anchor — the exact call the declaration port makes — serves the shipped census", () => {
+    // No arguments: the read the estate's declarationPort performs.
+    // Serves from THIS checkout's shipped file; the install-shape arm
+    // above proves the same call serves an installed layout.
+    expect(loadShippedExtensionManifest().map((r) => r.name).sort(),
+      "the default (packageRoot-anchored) read diverged from the shipped file the walls arm judges")
+      .toEqual(mergeManifest(ROOT).map((r) => r.name).sort());
   });
 });

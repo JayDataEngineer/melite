@@ -3,6 +3,7 @@
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { die, warn } from "./provision-shared.js";
+import { packageRoot } from "../src/comfyui-config.js";
 // The canonical row shape is name+url+ref(+required+desc+pip) — the
 // GIT-row law (2026-10-26 drain): a `version:` field on a git row
 // forked the pin identity and made the runtime provider refuse the
@@ -274,5 +275,101 @@ export function mergeManifest(repo) {
         }
     }
     return merged;
+}
+// ── the SHIPPED extension manifest (the install-shape read) ─────
+//
+// mergeManifest walks `<repo>/packages` — a shape that exists only in
+// a checkout. On an installed profile resolveRepoRoot() resolves to
+// the profile dir, `<profile>/packages` is nothing, and the walk's
+// readdir catch used to return SILENTLY EMPTY — every declared
+// extension id refused "not declared" and no pack could ever install
+// (audit 019 F1). The runtime read is therefore the COMMITTED,
+// PUBLISHED data file (the model-facts.json pattern): derived by
+// scripts/regen-extension-manifest.ts, shipped by the package's
+// `files` (`data/**`), and read packageRoot-anchored — an install
+// finds its own copy by construction. The walk stays ONLY in the
+// regenerator and the dev CLI; the runtime read never falls back to
+// it: an absent or unparseable data file REFUSES LOUD naming the
+// path (the misconfiguration law), never serves zero silently.
+/** The shipped manifest's read path: the MELITE_EXTENSION_MANIFEST
+ *  override first (the COMFYUI_ENDPOINT_CONFIG idiom — the fixture
+ *  seam and an operator's explicit re-point), else the package's
+ *  shipped data file. Never a repo-root walk: the override and the
+ *  package anchor both resolve on an installed profile.
+ *  @returns absolute path to the manifest JSON. */
+export function extensionManifestPath() {
+    const override = process.env["MELITE_EXTENSION_MANIFEST"] ?? "";
+    if (override !== "")
+        return override;
+    return join(packageRoot(), "data", "extension-manifest.json");
+}
+/** Validate one parsed manifest row — the ExtRow contract the
+ *  declaration plane dereferences (`url`/`ref`/`pip` feed Manager's
+ *  git-url door; `required` is a boolean, not "true").
+ *  @param row the parsed value.
+ *  @param at the row's index, for the refusal message.
+ *  @param path the manifest path, for the refusal message.
+ *  @returns the row, typed. */
+function assertExtRow(row, at, path) {
+    const bad = (why) => new Error("REFUSED: " + path + ": extension manifest row " + String(at) +
+        " " + why + " — the shipped manifest is malformed; regenerate it " +
+        "(pnpm --filter @melite/comfyui-cordis run regen:extension-manifest), never hand-edit");
+    if (typeof row !== "object" || row === null)
+        throw bad("is not an object");
+    const r = row;
+    for (const key of ["name", "url", "ref", "desc"]) {
+        if (typeof r[key] !== "string")
+            throw bad("carries " + key + ": " + JSON.stringify(r[key]) + " where a string is required");
+    }
+    if (typeof r["required"] !== "boolean")
+        throw bad("carries required: " + JSON.stringify(r["required"]) + " where a boolean is required");
+    if (!Array.isArray(r["pip"]) || r["pip"].some((p) => typeof p !== "string")) {
+        throw bad("carries pip: " + JSON.stringify(r["pip"]) + " where a string list is required");
+    }
+    if (r["name"].trim() === "")
+        throw bad("carries an empty name");
+    if (r["_source"] !== undefined && typeof r["_source"] !== "string")
+        throw bad("carries a non-string _source");
+    return row;
+}
+/** Read the SHIPPED extension manifest — the declaration plane's one
+ *  runtime source (declarationPort's install-shape read; the repo
+ *  walk is the regenerator's source of truth, never a fallback).
+ *  Absent or unparseable refuses LOUD naming the path: a silent
+ *  empty manifest is the audit-019 F1 burn (every extension id
+ *  refused on an installed profile), so this door refuses instead.
+ *  @param path the manifest file to read; defaults to
+ *  {@link extensionManifestPath}.
+ *  @returns the merged extension rows, manifest order.
+ *  @throws when the file is missing, unparseable, or a row is off
+ *  the ExtRow contract. */
+export function loadShippedExtensionManifest(path = extensionManifestPath()) {
+    let raw;
+    try {
+        raw = readFileSync(path, "utf8");
+    }
+    catch (cause) {
+        throw new Error("REFUSED: the shipped extension manifest is missing at " + path +
+            " (" + (cause instanceof Error ? cause.message : String(cause)) + ")" +
+            " — the declaration plane cannot serve any extension id on this" +
+            " install. Restore the package data (npm artifact `data/**`) or" +
+            " regenerate it (pnpm --filter @melite/comfyui-cordis run" +
+            " regen:extension-manifest); refusing loud, never serving zero" +
+            " extensions silently (audit 019 F1)");
+    }
+    let parsed;
+    try {
+        parsed = JSON.parse(raw);
+    }
+    catch (cause) {
+        throw new Error("REFUSED: " + path + " is not parseable JSON (" +
+            (cause instanceof Error ? cause.message : String(cause)) + ")" +
+            " — regenerate the shipped manifest, never hand-edit it");
+    }
+    if (!Array.isArray(parsed)) {
+        throw new Error("REFUSED: " + path + " holds " + JSON.stringify(parsed === null ? null : typeof parsed) +
+            " where a row array is required — regenerate the shipped manifest");
+    }
+    return parsed.map((row, at) => assertExtRow(row, at, path));
 }
 //# sourceMappingURL=provision-extensions-manifest.js.map

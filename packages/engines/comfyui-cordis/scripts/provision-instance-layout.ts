@@ -5,7 +5,7 @@ import { spawnSync } from "node:child_process";
 import { lstatSync, existsSync, mkdirSync, readFileSync, realpathSync, readdirSync, renameSync, rmSync, symlinkSync, unlinkSync, writeFileSync, copyFileSync } from "node:fs";
 import { isAbsolute, join, relative, sep } from "node:path";
 import { defaultConfig, repo, runtime } from "./provision-shared.ts";
-import { FIXED_FOLDERS, anchorDir, boundModelFolders, engineField, enginePort, loadRoot, rootStr } from "./provision-config.ts";
+import { FIXED_FOLDERS, anchorDir, boundModelFolders, engineField, engineLiveRoot, enginePort, loadRoot, rootStr } from "./provision-config.ts";
 import type { BoundLayout, EndpointConfig } from "./provision-config.ts";
 
 // ── instance commands ───────────────────────────────────────────
@@ -304,4 +304,304 @@ export function syncEndpointFromRoot(cfg: EndpointConfig): void {
     (skipped.length > 0
       ? " (not written — inherited or overlay-owned: " + skipped.join(", ") + ")"
       : ""));
+}
+
+// ── BYO attach: the extra_model_paths door (audit 019 C4) ───────
+//
+// A BYO engine reads model folders through exactly ONE mechanism:
+// `<engineRoot>/extra_model_paths.yaml`, loaded unconditionally at
+// boot (main.py apply_custom_paths), plus any files named explicitly
+// on --extra-model-paths-config. There is NO drop-in directory: the
+// upstream loader (utils/extra_config.py load_extra_path_config)
+// takes single file paths only — verified against the live engine
+// checkout (87ed5a06, 2026-10-20). So the honest door for a LOCAL BYO
+// engine is a MARKED BLOCK appended to that single file: melite owns
+// its block bytes and nothing else of the user's file, the write is
+// idempotent, and a probe asks the RUNNING engine whether the store's
+// folders are visible (read-only GET /models/<folder> — never a POST,
+// never a restart).
+
+/** Begin marker of melite's owned block in a BYO engine's
+ *  extra_model_paths.yaml. Everything between this and
+ *  {@link BYO_BLOCK_END} is melite's; every byte outside is the
+ *  user's, never read for meaning and never rewritten. */
+export const BYO_BLOCK_BEGIN: string =
+  "# >>> melite byo-attach (generated — delete this whole block to detach) >>>";
+
+/** End marker of melite's owned block. */
+export const BYO_BLOCK_END: string = "# <<< melite byo-attach <<<";
+
+/**
+ * The engine-root file the door writes: the single extra-path config
+ * ComfyUI reads automatically at boot.
+ * @param engineRoot the ComfyUI checkout dir (the dir holding main.py)
+ * @returns absolute path of <engineRoot>/extra_model_paths.yaml
+ */
+export function byoExtraPathsFile(engineRoot: string): string {
+  return join(engineRoot, "extra_model_paths.yaml");
+}
+
+/**
+ * The folder map the block binds: stock categories map to themselves,
+ * pack-declared categories ride the endpoint statement's
+ * extra_model_folders (the same mapping the managed wiring binds —
+ * one store schema, two attach planes).
+ * @param extras the endpoint statement's extra_model_folders (optional)
+ * @returns {folder: store subdir} with stock folders first
+ */
+export function byoFolderMap(
+    extras?: Record<string, string>): Record<string, string> {
+  const folders: Record<string, string> = {};
+  for (const f of FIXED_FOLDERS) folders[f] = f;
+  for (const cat of Object.keys(extras ?? {}).sort()) {
+    const sub = String(extras?.[cat] ?? "").trim().replace(/^\/+|\/+$/g, "");
+    if (cat.trim() && sub) folders[cat.trim()] = sub;
+  }
+  return folders;
+}
+
+/**
+ * Melite's marked block body — the yaml ComfyUI's loader consumes:
+ * a top-level `melite_weights` key (base_path + every folder) plus
+ * the `download_model_base` registration so Manager downloads land
+ * in the store (same key semantics as the managed wiringYamlBody).
+ * The base_path is written ABSOLUTE: a relative one would resolve
+ * against the yaml's own dir, and the store is the estate's own
+ * statement, not the engine tree's tenant.
+ * @param storeRoot the model store root the estate acquires into
+ * @param extras the endpoint statement's extra_model_folders (optional)
+ * @returns the full block body, markers included, trailing newline
+ */
+export function byoExtraPathsBlock(storeRoot: string,
+    extras?: Record<string, string>): string {
+  const folders = byoFolderMap(extras);
+  const lines: string[] = [
+    BYO_BLOCK_BEGIN,
+    "# melite's model store, attached to THIS engine. Regenerate with",
+    "# the provisioner; deleting the whole block detaches the store.",
+    "melite_weights:",
+    "  base_path: " + storeRoot,
+  ];
+  for (const f of FIXED_FOLDERS) lines.push("  " + f + ": " + folders[f]);
+  const extraKeys = Object.keys(folders)
+    .filter((f) => !FIXED_FOLDERS.includes(f));
+  if (extraKeys.length > 0) {
+    lines.push("  # pack-declared categories (extra_model_folders)");
+    for (const f of extraKeys) lines.push("  " + f + ": " + folders[f]);
+  }
+  lines.push(
+    "download_model_base:",
+    "  base_path: " + storeRoot,
+    "  download_model_base: .",
+    BYO_BLOCK_END,
+  );
+  return lines.join("\n") + "\n";
+}
+
+/** Result of {@link writeByoExtraPaths}. */
+export interface ByoWriteResult {
+  /** The file the block lives in. */
+  path: string;
+  /** Whether bytes changed this call (false = already exact). */
+  wrote: boolean;
+  /** Whether the file did not exist before this call. */
+  created: boolean;
+}
+
+/**
+ * Link melite's model store into a LOCAL BYO engine's extra-path
+ * mechanism: create the engine's extra_model_paths.yaml, or append
+ * melite's marked block after the user's content, or replace the
+ * existing marked block in place. IDEMPOTENT: a call whose block is
+ * already byte-exact writes nothing. LOUD refusals (never silently
+ * skip): an engine root that is not a ComfyUI tree, a torn block
+ * (begin marker without its end), a store root that does not exist
+ * (ComfyUI serves empty enums for dead roots — the wiring re-audit
+ * F7 law).
+ *
+ * @param engineRoot the ComfyUI checkout dir (the dir holding main.py)
+ * @param storeRoot the model store root the estate acquires into
+ * @param extras the endpoint statement's extra_model_folders (optional)
+ * @returns what was written (wrote=false when already exact)
+ */
+export function writeByoExtraPaths(engineRoot: string, storeRoot: string,
+    extras?: Record<string, string>): ByoWriteResult {
+  const rootSt = lstatSync(engineRoot, { throwIfNoEntry: false });
+  if (rootSt === undefined || rootSt.isFile()) {
+    throw new Error(
+      "[byo-attach] engine root does not exist: " + engineRoot +
+      " — name the ComfyUI checkout dir (the dir holding main.py); " +
+      "never guessed");
+  }
+  if (!existsSync(join(engineRoot, "main.py")) &&
+      !existsSync(join(engineRoot, "folder_paths.py"))) {
+    throw new Error(
+      "[byo-attach] " + engineRoot + " is not a ComfyUI tree (no " +
+      "main.py / folder_paths.py) — name the engine's own checkout " +
+      "dir, never guessed");
+  }
+  if (!existsSync(storeRoot)) {
+    throw new Error(
+      "[byo-attach] the model store does not exist: " + storeRoot +
+      " — create the store (provision init-store) or fix " +
+      "models.read_root in inference.config.json (never guessed)");
+  }
+  const file = byoExtraPathsFile(engineRoot);
+  const block = byoExtraPathsBlock(storeRoot, extras);
+  const existing: string | null =
+    existsSync(file) ? readFileSync(file, "utf8") : null;
+  if (existing === null) {
+    writeFileSync(file, block);
+    return { path: file, wrote: true, created: true };
+  }
+  const begin = existing.indexOf(BYO_BLOCK_BEGIN);
+  if (begin < 0) {
+    // Fresh append: the user's bytes stay byte-identical up front.
+    const sep = existing.endsWith("\n") ? "\n" : "\n\n";
+    writeFileSync(file, existing + sep + block);
+    return { path: file, wrote: true, created: false };
+  }
+  const end = existing.indexOf(BYO_BLOCK_END, begin);
+  if (end < 0) {
+    throw new Error(
+      "[byo-attach] torn byo-attach block in " + file + " (begin " +
+      "marker without its end) — fix or delete the block by hand; " +
+      "the writer never guesses where it ends");
+  }
+  const after = existing.slice(end + BYO_BLOCK_END.length)
+    .replace(/^\r?\n/, "");
+  const next = existing.slice(0, begin) + block + after;
+  if (next === existing) return { path: file, wrote: false, created: false };
+  writeFileSync(file, next);
+  return { path: file, wrote: true, created: false };
+}
+
+/**
+ * Derive the BYO attach pair from the machine's own statements: the
+ * engine root from the explicit argument, else the endpoint
+ * statement's `engine_root`, else the machine overlay's
+ * engines.comfyui.live_root; the store from the bound layout's
+ * download root (the store the estate acquires into — the same base
+ * the managed wiring binds). Refuses LOUD with the remedy when no
+ * statement names an engine root — never a silent skip.
+ *
+ * @param cfg the endpoint config (the tracked file's parsed shape)
+ * @param engineRootOpt explicit engine root (wins over every statement)
+ * @param liveRoot explicit overlay value — the wall seam; omitted
+ *   reads the machine's engines.comfyui.live_root (engineLiveRoot)
+ * @returns {engineRoot, storeRoot} for {@link writeByoExtraPaths}
+ */
+export function resolveByoAttach(cfg: EndpointConfig,
+    engineRootOpt?: string, liveRoot?: string):
+    { engineRoot: string; storeRoot: string } {
+  const stated = rootStr(String((cfg as Record<string, unknown>)
+    ["engine_root"] ?? ""));
+  const live = liveRoot ?? engineLiveRoot(cfg);
+  const engineRoot = rootStr(engineRootOpt ?? "") || stated || live;
+  if (engineRoot === "") {
+    throw new Error(
+      "[byo-attach] no engine root to attach — name the ComfyUI tree " +
+      "in the endpoint config (\"engine_root\": \"/path/to/ComfyUI\") " +
+      "or the machine overlay (data/inference.local.json " +
+      "engines.comfyui.live_root), or pass it explicitly; never guessed");
+  }
+  return { engineRoot, storeRoot: boundModelFolders(cfg).download_path };
+}
+
+/** One folder's visibility verdict from the running engine. */
+export interface StoreFolderProbe {
+  /** The registered folder name (the yaml key). */
+  folder: string;
+  /** The engine answered GET /models/<folder> with a listing. */
+  registered: boolean;
+  /** The engine's filename list for the folder (all search paths). */
+  files: string[];
+  /** Filenames sampled from the store's own subdir (empty when the
+   *  store dir is absent or empty — the visibility then rests on
+   *  registration alone). */
+  storeFiles: string[];
+  /** Registered AND at least one store file appears in the engine's
+   *  listing (vacuously true when the store subdir carries no files).
+   *  This is the unlink verdict: an unlinked store never shows its
+   *  files in the engine's listing. */
+  visible: boolean;
+}
+
+/**
+ * Ask the RUNNING engine whether the store's folders are visible —
+ * read-only GET /models/<folder> per mapped folder, the estate's own
+ * in-process engine transport (fetch + abort timeout; never a POST,
+ * never a restart). A folder the engine does not register answers
+ * 404; a registered folder answers its filename union, and the
+ * store's own files must appear there for the link to count. A
+ * transport failure (engine unreachable) THROWS — an unreachable
+ * engine is not an unlinked store, and the two verdicts must not
+ * merge.
+ *
+ * @param url the engine base URL
+ * @param folders the {folder: store subdir} map (byoFolderMap shape)
+ * @param opts storeRoot to sample store files from; timeoutMs per probe
+ * @returns one verdict per folder, sorted by folder name
+ */
+export async function probeStoreFolders(url: string,
+    folders: Record<string, string>,
+    opts: { storeRoot?: string; timeoutMs?: number } = {}):
+    Promise<StoreFolderProbe[]> {
+  const timeoutMs = opts.timeoutMs ?? 5000;
+  const base = url.replace(/\/+$/, "");
+  const out: StoreFolderProbe[] = [];
+  for (const folder of Object.keys(folders).sort()) {
+    const sub = String(folders[folder] ?? "").trim()
+      .replace(/^\/+|\/+$/g, "") || folder;
+    const storeFiles: string[] = [];
+    if (opts.storeRoot !== undefined) {
+      const storeDir = join(opts.storeRoot, sub);
+      if (existsSync(storeDir)) {
+        try {
+          storeFiles.push(...readdirSync(storeDir)
+            .filter((f) => !f.startsWith("."))
+            .sort().slice(0, 8));
+        } catch {
+          /* unreadable store dir: the sample stays empty and the
+             visibility rests on registration alone */
+        }
+      }
+    }
+    const target = base + "/models/" + encodeURIComponent(folder);
+    let status: number;
+    let body: string;
+    try {
+      const response = await fetch(target,
+        { signal: AbortSignal.timeout(timeoutMs) });
+      status = response.status;
+      body = await response.text();
+    } catch (exc: unknown) {
+      const err = exc as Error;
+      throw new Error(
+        "engine unreachable at " + target + " (" + err.name + ": " +
+        err.message + ") — start the engine first; an unreachable " +
+        "engine is a distinct verdict from an unlinked store");
+    }
+    const files: string[] = [];
+    if (status === 200) {
+      try {
+        const parsed: unknown = JSON.parse(body);
+        if (Array.isArray(parsed)) {
+          files.push(...parsed.filter((f): f is string => typeof f === "string"));
+        }
+      } catch {
+        /* non-JSON 200 body: an unreadable listing — registration
+           holds, visibility rests on the sample being empty */
+      }
+    }
+    const hit = storeFiles.some((f) => files.includes(f));
+    out.push({
+      folder,
+      registered: status === 200,
+      files,
+      storeFiles,
+      visible: status === 200 && (storeFiles.length === 0 || hit),
+    });
+  }
+  return out;
 }

@@ -28,9 +28,15 @@ import type { ResourceRef } from "@melite/estate-provisioning";
 // The wall runs against the REAL checkout's declarations (the
 // extensions manifest and model facts ride the repo root) — never
 // the rig's fixture root a sibling spec may have left in the env.
+// FOUR hops (tests → melite-estate → web → packages → repo). The old
+// five-hop pin landed one directory ABOVE the checkout and stayed
+// green only because the audit-019 F1 walk served ZERO extension
+// refs — the extension branch never ran, so the wrong root was never
+// exercised. The shipped-manifest cure surfaced the 24 refs and the
+// mispin with them.
 process.env["MELITE_REPO_ROOT"] = resolve(
   dirname(fileURLToPath(import.meta.url)),
-  "..", "..", "..", "..", "..",
+  "..", "..", "..", "..",
 );
 
 /** The refs whose declaration debt is REGISTERED: the key is the

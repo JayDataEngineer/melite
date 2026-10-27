@@ -32,7 +32,12 @@ name.
   law suite), `./linked` (linked-input spelling), `./params-emit` (served
   params_schema emitter), `./semanticModelKnob` (served style enum),
   `./user-loras` (user LoRA plane), `./provisioning-manifest` (strict
-  nodes.yaml reader), `./cli` (the admission CLI), `./package.json`.
+  nodes.yaml reader plus the shipped extension-manifest read — the
+  declaration plane's runtime source is the committed
+  `data/extension-manifest.json`, derived by `regen:extension-manifest`,
+  shipped via the `files` `data/**` set; a missing or malformed file
+  refuses loud, never a silent empty manifest), `./cli` (the admission
+  CLI), `./package.json`.
 
 ## Model Experience
 

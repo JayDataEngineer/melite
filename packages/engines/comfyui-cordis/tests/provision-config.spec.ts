@@ -9,12 +9,18 @@
 import { describe, it } from "vitest";
 import assert from "node:assert/strict";
 import { join, relative } from "node:path";
-import { existsSync, mkdtempSync, readdirSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 const nodeFs = { existsSync, mkdtempSync, readdirSync, writeFileSync };
 import { engineField, anchorDir, boundModelFolders } from "../scripts/provision-config.ts";
 import { mergeOverlay } from "../src/configOverlay.ts";
-import { cmdInitStore, cmdPaths } from "../scripts/provision-instance-layout.ts";
+import {
+  BYO_BLOCK_BEGIN,
+  byoExtraPathsFile,
+  cmdInitStore,
+  cmdPaths,
+  writeByoExtraPaths,
+} from "../scripts/provision-instance-layout.ts";
 import { defaultConfig, repo } from "../scripts/provision-shared.ts";
 import type { RootConfig } from "../scripts/provision-config.ts";
 
@@ -177,5 +183,59 @@ describe("init-store (the fresh-clone store door, 2026-10-17)", () => {
         { url: "http://127.0.0.1:8188", model_base_path: store } as never),
       /init-store.*is a file, not a directory.*never guessed/s,
     );
+  });
+});
+
+describe("the BYO extra_model_paths door (audit 019 C4: the marked-block writer)", () => {
+  // The upstream loader (utils/extra_config.py) reads single yaml
+  // files — no drop-in directory — so a BYO engine links melite's
+  // store through a marked block appended to its
+  // extra_model_paths.yaml. The block is melite's; every other byte
+  // of the file is the user's and never rewritten.
+  it("creates, appends after user content, and is byte-wise idempotent", () => {
+    const { mkdtempSync, writeFileSync } = nodeFs;
+    const base = mkdtempSync(join(tmpdir(), "byo-door-spec-"));
+    const engine = join(base, "ComfyUI");
+    const store = join(base, "store");
+    mkdirSync(engine, { recursive: true });
+    mkdirSync(store, { recursive: true });
+    writeFileSync(join(engine, "main.py"), "# marker\n");
+    const file = byoExtraPathsFile(engine);
+    const created = writeByoExtraPaths(engine, store, { wd14_tagger: "wd14" });
+    assert.ok(created.created && created.wrote);
+    const once = readFileSync(file, "utf8");
+    assert.ok(once.includes("  wd14_tagger: wd14"), "pack category bound");
+    const again = writeByoExtraPaths(engine, store, { wd14_tagger: "wd14" });
+    assert.equal(again.wrote, false, "second run writes nothing");
+    assert.equal(readFileSync(file, "utf8"), once);
+    // user content: appended, never rewritten
+    writeFileSync(file, "user: own\nkeys: stay"); // no trailing newline
+    const appended = writeByoExtraPaths(engine, store);
+    assert.ok(appended.wrote);
+    const after = readFileSync(file, "utf8");
+    assert.ok(after.startsWith("user: own\nkeys: stay\n"),
+      "the user's bytes lead (newline repaired only)");
+    assert.ok(after.includes("base_path: " + store));
+  });
+
+  it("refuses loud on a non-engine root, a missing store, and a torn block", () => {
+    const { mkdtempSync, writeFileSync } = nodeFs;
+    const base = mkdtempSync(join(tmpdir(), "byo-door-refuse-spec-"));
+    const engine = join(base, "ComfyUI");
+    const store = join(base, "store");
+    mkdirSync(engine, { recursive: true });
+    mkdirSync(store, { recursive: true });
+    assert.throws(
+      () => writeByoExtraPaths(engine, store),
+      /not a ComfyUI tree.*never guessed/s,
+      "no ComfyUI markers in the root");
+    writeFileSync(join(engine, "folder_paths.py"), "# marker\n");
+    assert.throws(
+      () => writeByoExtraPaths(engine, join(base, "absent-store")),
+      /store does not exist.*never guessed/s);
+    writeFileSync(byoExtraPathsFile(engine), BYO_BLOCK_BEGIN + "\n");
+    assert.throws(
+      () => writeByoExtraPaths(engine, store),
+      /torn byo-attach block/);
   });
 });

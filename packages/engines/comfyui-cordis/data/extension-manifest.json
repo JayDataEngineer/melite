@@ -1,0 +1,241 @@
+[
+  {
+    "name": "melite-poser-nodes",
+    "url": "https://github.com/JayDataEngineer/melite-poser-nodes",
+    "ref": "94db78c7bc189cfd207c39d6bfacbd0c29550ef2",
+    "required": true,
+    "desc": "The character-assembly engine room (the ANNY stopgap pack) — CompositeCharacter (body+hair+outfit), RayRenderGLBViews (8-view turnaround), RaySAMSegmentHairClothing (SAM vit_b part sprites).",
+    "pip": [],
+    "_source": "engines/comfyui-cordis:packages/engines/comfyui-cordis/models/3d/anny/nodes.yaml"
+  },
+  {
+    "name": "melite-kimodo-nodes",
+    "url": "https://github.com/JayDataEngineer/melite-kimodo-nodes",
+    "ref": "f2839262e60f02b94c3a0958450fd8e961458d2d",
+    "required": false,
+    "desc": "Image -> Anny (all-age parametric human model), both engines: MultiHMR2ImageToAnny wraps naver/multi-hmr2 (regression, in-process, VRAM-tracked via melite_model_base) — multi-person Anny params (.pkl world param) + meshes (.glb) + optional render. AnnyFitOptimize wraps naver/anny-fit (camera-space optimization, out-of-process over ANNYFIT_SRC) — preprocess (detect+ViTPose+ camera+densekp+VLM+MultiHMR init) -> optimize -> refined params (.npz) + before/after renders. NAVER non-commercial licenses on both upstreams; Anny itself Apache 2.0.",
+    "pip": [
+      "multihmr2 @ git+https://github.com/naver/multi-hmr2.git@f066532d096034700e5ba8b7b1ca655729d3ea6e"
+    ],
+    "_source": "engines/comfyui-cordis:packages/engines/comfyui-cordis/models/3d/nodes.yaml"
+  },
+  {
+    "name": "ComfyUI-MoGe",
+    "url": "https://github.com/kijai/ComfyUI-MoGe.git",
+    "ref": "8276bab55f293a5bf000fef6a0dbedd3110efb29",
+    "required": true,
+    "desc": "MoGe depth estimation — pixel-aligned camera conditioning for Pixal3D (camera_angle_x → camera transform matrix → per-token pixel alignment). Required: pixal3d conditioning will not compose without it.",
+    "pip": [],
+    "_source": "engines/comfyui-cordis:packages/engines/comfyui-cordis/models/3d/pixal3d/nodes.yaml"
+  },
+  {
+    "name": "melite-autorig-nodes",
+    "url": "https://github.com/JayDataEngineer/melite-autorig-nodes",
+    "ref": "8dd96d4bb12e661ac877d27ea2c88135644eace9",
+    "required": true,
+    "desc": "KimodoTransferWeights (GPU KNN weight transfer) + SaveRiggedModel (persist). Requires Blender binary on PATH (FBX export).",
+    "pip": [],
+    "_source": "engines/comfyui-cordis:packages/engines/comfyui-cordis/models/3d/transfer-rig/nodes.yaml"
+  },
+  {
+    "name": "melite-audio-nodes",
+    "url": "https://github.com/JayDataEngineer/melite-audio-nodes",
+    "ref": "aee650591ab2204521eb48ee8f61b669ea629d8f",
+    "required": true,
+    "desc": "The ONE audio pack: Qwen3-TTS synthesis (qwen3_tts — card lane AND studio riding faster-qwen3-tts/torch since THE FLIP fcd25d0, 2026-10-22; native stays for moss_tts/ace_step only), Voice Studio (.qvoice), MOSS-SFX v2 diffusion, voice embeddings, MeliteQVoiceCopy, film/loudness utilities. Every Audiocore* class lives here. 2026-10-21 re-pin: the faster-backend cure (all synthesis through FasterQwen3TTS, silent default dead, 5.20 RoPE shim) with 3/3 lane renders + the served-lane proof render. 2026-10-22 re-pin: the studio VRAM law (warm-handle cache, capture-at-load, compat pre-init, seq-len 2048 / decode 1792 clamps, pre-load headroom gate, release-on-unload) — the Triton capture burn cured; receipt infra-qwen3-studio-vram-law.",
+    "pip": [],
+    "_source": "engines/comfyui-cordis:packages/engines/comfyui-cordis/models/audio/nodes.yaml"
+  },
+  {
+    "name": "ComfyUI-GGUF",
+    "url": "https://github.com/city96/ComfyUI-GGUF",
+    "ref": "6ea2651e7df66d7585f6ffee804b20e92fb38b8a",
+    "required": true,
+    "desc": "city96's GGUF loaders (UnetLoaderGGUF, UnetLoaderGGUFAdvanced, CLIPLoaderGGUF, Dual/Triple/QuadrupleCLIPLoaderGGUF) — the §4d HF-directory channel's .gguf weights load through them. The gguf pip dependency (>=0.13.0) rides the row for fresh estates.",
+    "pip": [
+      "gguf"
+    ],
+    "_source": "engines/comfyui-cordis:packages/engines/comfyui-cordis/models/audio/nodes.yaml"
+  },
+  {
+    "name": "ComfyUI-Florence2",
+    "url": "https://github.com/kijai/ComfyUI-Florence2.git",
+    "ref": "9ece3de914214c5f581d725167bc9d0eeb0d1120",
+    "required": true,
+    "desc": "Florence-2 captioning v1.1.0 (DownloadAndLoadFlorence2Model + Florence2Run). Checkpoint self-downloads to ComfyUI/models/LLM on first run.",
+    "pip": [],
+    "_source": "engines/comfyui-cordis:packages/engines/comfyui-cordis/models/image/florence2/nodes.yaml"
+  },
+  {
+    "name": "joycaption_comfyui",
+    "url": "https://github.com/fpgaminer/joycaption_comfyui.git",
+    "ref": "8789c1cd683dcd08ab4c1ef7587fea4299025b44",
+    "required": true,
+    "desc": "JoyCaption beta-one captioning v1.1.0 (JJC_DownloadAndLoadJoyCaptionModel + JJC_JoyCaption). Checkpoint self-downloads on first run.",
+    "pip": [],
+    "_source": "engines/comfyui-cordis:packages/engines/comfyui-cordis/models/image/joycaption/nodes.yaml"
+  },
+  {
+    "name": "Comfyui_joytag",
+    "url": "https://github.com/StartHua/Comfyui_joytag",
+    "ref": "025dd12d0ca562c0b096c661f5a98f90d399361b",
+    "required": true,
+    "desc": "JoyTag booru tagger (CXH_JoyTag). Weights: fancyfeast/joytag model.safetensors, pack-local checkpoints dir (node does not auto-download).",
+    "pip": [],
+    "_source": "engines/comfyui-cordis:packages/engines/comfyui-cordis/models/image/joytag/nodes.yaml"
+  },
+  {
+    "name": "ComfyUI-LanPaint",
+    "url": "https://github.com/scraed/LanPaint",
+    "ref": "32cf848e93971da380d868936e007f5611218bee",
+    "required": true,
+    "desc": "LanPaint diffusion inpainting (LanPaint_ImageEncode / LanPaint_KSamplerAdvanced / LanPaint_ImageDecode) — the qwen-img-edit-2511 card's lanpaint mod flavor, branch-gated beyond the card probe's default flavor.",
+    "pip": [],
+    "_source": "engines/comfyui-cordis:packages/engines/comfyui-cordis/models/image/qwen-img-edit-2511/nodes.yaml"
+  },
+  {
+    "name": "ComfyUI-SeedVR2_VideoUpscaler",
+    "url": "https://github.com/numz/ComfyUI-SeedVR2_VideoUpscaler.git",
+    "ref": "4490bd1f482e026674543386bb2a4d176da245b9",
+    "required": true,
+    "desc": "SeedVR2LoadDiTModel + SeedVR2LoadVAEModel + SeedVR2VideoUpscaler (the diffusion upscale lane; the pack's model registry discovers the SEEDVR2 volume dir).",
+    "pip": [],
+    "_source": "engines/comfyui-cordis:packages/engines/comfyui-cordis/models/image/seedvr2-ema/nodes.yaml"
+  },
+  {
+    "name": "ComfyUI-WD14-Tagger",
+    "url": "https://github.com/pythongosssss/ComfyUI-WD14-Tagger.git",
+    "ref": "9e0a6e700299182fc05c58b62e7ad9f72182a78b",
+    "required": true,
+    "desc": "WD14Tagger v1.0.1 (booru interrogator — IMAGE + model/thresholds → STRING tags; weights auto-download from HuggingFace SmilingWolf/* on first run).",
+    "pip": [],
+    "_source": "engines/comfyui-cordis:packages/engines/comfyui-cordis/models/image/wd14/nodes.yaml"
+  },
+  {
+    "name": "comfyui-h3-motion-context",
+    "url": "https://github.com/NikoDemon80/ComfyUI-H3-Motion-Context.git",
+    "ref": "429e952ae5c09b54f44cb6e3bef7331d998f0656",
+    "required": true,
+    "desc": "BASE pack for H3 motion context: MiniMaxH3MotionContext, MotionContextTrim, MotionContextSaveLatent, MotionContextLoadLatent. Owns the four shared class names under coexistence with the MultiRef fork. Name = the real install dir (mcp registry id); pinned at the v0.5.1 tag the estate runs (core 0.34.0 required by ext 0.4.0+). 2026-10-12: the registry id resolved in NO Manager cache (890-row new tier, 5931-row root) — redeclared as the exact url+ref the reference estate executes.",
+    "pip": [],
+    "_source": "engines/comfyui-cordis:packages/engines/comfyui-cordis/models/video/h3-timeline/nodes.yaml"
+  },
+  {
+    "name": "Comfyui-PlagueKind-Nodes",
+    "url": "https://github.com/PlagueKind/Comfyui-PlagueKind-Nodes.git",
+    "ref": "01f186eefedbb607503a0b207d6f66aa8a5f4b5a",
+    "required": true,
+    "desc": "H3SLAAttention (SLA sparse attention), H3AdaLNLoRAFix, ComfySwitchNode, PlagueKindBundleIn/Out(the 20-slot reference-media bus, load-bearing since move C), unified resize.Pinned v1.4.2 (01f186eefedbb607503a0b207d6f66aa8a5f4b5a) — the ref the estate EXECUTED for the 2026-09-01contest piece (run-6a96c100); container copy verified pristine at this ref.Upstream has since tagged v1.4.3 (066ada9); re-pin only with a lane re-render.",
+    "pip": [
+      "comfy-kitchen==0.2.31"
+    ],
+    "_source": "engines/comfyui-cordis:packages/engines/comfyui-cordis/models/video/h3-timeline/nodes.yaml"
+  },
+  {
+    "name": "ComfyUI-VideoHelperSuite",
+    "url": "https://github.com/Kosinkadink/ComfyUI-VideoHelperSuite.git",
+    "ref": "4d907bee61e92c2e65af3bd6383a4e4d356126d1",
+    "required": true,
+    "desc": "Video I/O utilities (VHS preview/metadata flags in window graphs). 2026-10-12: registry id \"comfyui-videohelpersuite\" resolved in NO Manager cache (the cache spells it \"vhs\") — redeclared as the exact url+ref the reference estate executes.",
+    "pip": [],
+    "_source": "engines/comfyui-cordis:packages/engines/comfyui-cordis/models/video/h3-timeline/nodes.yaml"
+  },
+  {
+    "name": "ComfyUI-KJNodes",
+    "url": "https://github.com/kijai/ComfyUI-KJNodes.git",
+    "ref": "e8e88f7c88e3f6205b122f5de87e69a09fbce5ac",
+    "required": true,
+    "desc": "ImageSharpenKJ + ModelPreviewOverrideKJ (post-ladder polish in window graphs).",
+    "pip": [],
+    "_source": "engines/comfyui-cordis:packages/engines/comfyui-cordis/models/video/h3-timeline/nodes.yaml"
+  },
+  {
+    "name": "rgthree-comfy",
+    "url": "https://github.com/rgthree/rgthree-comfy.git",
+    "ref": "2c5342a8cb0eaecaabf61435a5f37dd594c510ba",
+    "required": true,
+    "desc": "Workflow-helper pack; no node class our graphs address — installed for the workflow conveniences only (re-audit 2026-10-16b A8b: the old \"Fast Groups Bypasser nodes present in the window graphs\" was stale — Rgthree|ContextSwitch|AnySwitch| Fast Groups grep to zero across packages/**; the NOT_CHECKED reason in tests/walls/ts/suites/extension-manifest.spec.ts is the truth). 2026-10-12: registry id \"rgthree-comfy\" resolved in NO Manager cache (the cache spells it \"rgthree\") — redeclared as the exact url+ref the reference estate executes.",
+    "pip": [],
+    "_source": "engines/comfyui-cordis:packages/engines/comfyui-cordis/models/video/h3-timeline/nodes.yaml"
+  },
+  {
+    "name": "Nvidia_RTX_Nodes_ComfyUI",
+    "url": "https://github.com/Comfy-Org/Nvidia_RTX_Nodes_ComfyUI",
+    "ref": "892515e3eb9a4920a131a502a047e47adca9eb0d",
+    "required": true,
+    "desc": "RTXVideoSuperResolution (bypassed group; class must register).",
+    "pip": [],
+    "_source": "engines/comfyui-cordis:packages/engines/comfyui-cordis/models/video/h3-timeline/nodes.yaml"
+  },
+  {
+    "name": "melite-utility-nodes",
+    "url": "https://github.com/JayDataEngineer/melite-utility-nodes",
+    "ref": "1eb2d8c9d2b1163ece239eea3fccea73b5db648a",
+    "required": true,
+    "desc": "MeliteUnload / MeliteConcatVideos — the film's window-save boundary and video join. The card already requires this pack; no manifest    installed it (extension census, 2026-10-13).",
+    "pip": [],
+    "_source": "engines/comfyui-cordis:packages/engines/comfyui-cordis/models/video/h3-timeline/nodes.yaml"
+  },
+  {
+    "name": "ComfyUI-MiniMaxH3Mod",
+    "url": "https://github.com/JayDataEngineer/ComfyUI-MiniMaxH3Mod.git",
+    "ref": "b746d15fecb620237ea3b0f2cd2380a0acfe51d0",
+    "required": true,
+    "desc": "RefMod pack (Luisacaotica, MIT — forked to JayDataEngineer as a PIN, never a registry publication; the personal-use ruling, audit 010). Graph-addressed classes: MiniMaxH3RefModsLoader / RefModsAxis / RefModApply (the ref2va-adjacent mod chain); storage is models/refmods/ via folder_paths. Pinned at v0.2.6 (b746d15fec, \"RefMod bundles and additive loaders\") — upstream warns node names still shift between versions; re-pin only with a composed re-render. Pip: nothing beyond the ComfyUI base env (torch/safetensors/numpy/Pillow are core-provided).",
+    "pip": [],
+    "_source": "engines/comfyui-cordis:packages/engines/comfyui-cordis/models/video/h3-timeline/nodes.yaml"
+  },
+  {
+    "name": "Comfyui_Minimax_h3_latent_Upscaler-Plus",
+    "url": "https://github.com/xmarre/Comfyui_Minimax_h3_latent_Upscaler-Plus",
+    "ref": "fc58fb80246bc58383929d21e78f54cf87d6507a",
+    "required": true,
+    "desc": "H3 learned-latent upscale pack (the SOTA plan's P2 pick over mamad8c — the weight IS the on-disk LBH v1 3D-conv bf16 checkpoint, so no second weight). Graph-addressed class: MinimaxH3LatentUpscaler3DRefineHandoff (upscale + the in-band low-sigma refinement over the native joint AV latent, lock_audio true — z_v through the LBH kernel, z_a preserved); support classes MinimaxH3LatentUpscalerNode2D / MinimaxH3LatentUpscaler3D / MinimaxH3LatentUpscaler3DProvider. Weight joins models/latent_upscale_models/ by symlink onto the DECL diffusion_models bytes (the node's folder convention). Pinned at v0.2.2 (fc58fb8 — the coordinated release set with the Continuum/Flow/Sol/VDN/Spectrum siblings) — upstream ships NO LICENSE file (unlicensed; operator clearance owed before estate reliance). Pip: einops (torch/safetensors are core-provided). Re-pin only with a composed re-render.",
+    "pip": [],
+    "_source": "engines/comfyui-cordis:packages/engines/comfyui-cordis/models/video/h3-timeline/nodes.yaml"
+  },
+  {
+    "name": "comfyui-minimax-h3-timeline-director",
+    "url": "https://github.com/JayDataEngineer/comfyui-minimax-h3-timeline-director",
+    "ref": "b80ea45a2fbec1105a7de6868fb1747308bf470c",
+    "required": true,
+    "desc": "MiniMaxH3FiniteLatentContinuation / MiniMaxH3FiniteSegmentFinalize — the h3 film graph's TimelineDirector drift-control continuation (schedule-matched prefix noise for windows k≥2 + segment finalize). Pip beyond the base env: av, imageio-ffmpeg, psutil (aiohttp ships with ComfyUI; playwright deliberately NOT declared — test-only, the 2026-10-13 audit).",
+    "pip": [],
+    "_source": "engines/comfyui-cordis:packages/engines/comfyui-cordis/models/video/h3-timeline/nodes.yaml"
+  },
+  {
+    "name": "comfyui-impact-pack",
+    "url": "https://github.com/ltdrdata/ComfyUI-Impact-Pack",
+    "ref": "429d0159ad429e64d2b3916e6e7be9c22d025c3c",
+    "required": true,
+    "desc": "Impact Pack detector and segmentation nodes used by the mask card.",
+    "pip": [
+      "segment-anything",
+      "scikit-image",
+      "piexif",
+      "transformers",
+      "opencv-python-headless",
+      "scipy",
+      "numpy",
+      "dill",
+      "matplotlib",
+      "git+https://github.com/facebookresearch/sam2@2b90b9f5ceec907a1c18123530e92e794ad901a4"
+    ],
+    "_source": "image/mask:packages/image/mask/nodes/extensions.yaml"
+  },
+  {
+    "name": "comfyui-impact-subpack",
+    "url": "https://github.com/ltdrdata/ComfyUI-Impact-Subpack",
+    "ref": "50c7b71a6a224734cc9b21963c6d1926816a97f1",
+    "required": true,
+    "desc": "Impact Subpack detector provider used by the mask card.",
+    "pip": [
+      "matplotlib",
+      "ultralytics>=8.3.162",
+      "numpy",
+      "opencv-python-headless",
+      "dill"
+    ],
+    "_source": "image/mask:packages/image/mask/nodes/extensions.yaml"
+  }
+]

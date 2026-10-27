@@ -1,8 +1,9 @@
+import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { ComfyUiManagerHttpClient, ComfyUiManagerProvider, FileOperationStore, VerifiedArtifactWriter, ProvisioningService, } from "@melite/estate-provisioning";
-import { loadEndpointConfig, loadFacts, modelsService, resolveRepoRoot, sdkClient, } from "@melite/comfyui-cordis";
+import { loadEndpointConfig, loadFacts, modelsService, packageRoot, resolveRepoRoot, sdkClient, } from "@melite/comfyui-cordis";
 import { artifactFileName } from "@melite/contracts/benchResult";
-import { mergeManifest } from "@melite/comfyui-cordis/provisioning-manifest";
+import { loadShippedExtensionManifest } from "@melite/comfyui-cordis/provisioning-manifest";
 import { loadStoreRoot, ModelsDoorError } from "@melite/estate-models";
 import Schema from "@deepseek-ai/schemastery";
 import { factsPath } from "@melite/estate-queue";
@@ -207,9 +208,37 @@ function extensionPlan(ref, row, nodeTypes) {
             }],
     };
 }
-function extensionManifest(repoRoot) {
-    const rows = mergeManifest(repoRoot);
+function extensionManifest() {
+    // THE SHIPPED MANIFEST (audit 019 C1): the declaration plane reads
+    // the COMMITTED data file the npm artifact carries — not the
+    // `<repoRoot>/packages` walk, which resolves to nothing on an
+    // installed profile and refused every extension id (F1). A missing
+    // or malformed data file refuses loud at the read; there is no
+    // walk fallback to mask it.
+    const rows = loadShippedExtensionManifest();
     return new Map(rows.map((row) => [row.name, row]));
+}
+/** The facts read behind the extension plan: the repo/fixture-anchored
+ *  {@link factsPath} first (the MELITE_REPO_ROOT seam the rigs pin),
+ *  then the package-shipped model-facts.json — the same npm artifact
+ *  that carries the extension manifest, because an installed profile
+ *  has no `packages` tree for the repo-anchored path to reach (the
+ *  audit-019 F1 class, one file over). Both absent refuses loud: a
+ *  silent empty node-type map would mark every pack "unverifiable"
+ *  instead of naming the miss.
+ *  @returns absolute path to a readable model-facts file.
+ *  @throws when neither the repo-anchored nor the shipped file exists. */
+function extensionFactsPath() {
+    const repoFacts = factsPath();
+    if (existsSync(repoFacts))
+        return repoFacts;
+    const shipped = join(packageRoot(), "data", "model-facts.json");
+    if (existsSync(shipped))
+        return shipped;
+    throw new Error("REFUSED: no model facts readable — " + repoFacts +
+        " and the shipped " + shipped + " are both absent; the extension " +
+        "plane cannot resolve node types (restore the package data or pin " +
+        "MELITE_REPO_ROOT at a checkout)");
 }
 function cardProvisions(cards, id) {
     const def = cards.defsSync().get(id);
@@ -375,7 +404,7 @@ function lazyInspector() {
             const nodeTypes = Object.keys(doc);
             if (ref.kind === "model")
                 return { active: false, nodeTypes };
-            const facts = loadFacts(factsPath(), {
+            const facts = loadFacts(extensionFactsPath(), {
                 getModel: (id) => modelsService().getModel(id),
                 registryIds: () => modelsService().registryIds(),
                 registryModel: (id) => modelsService().registryModel(id),
@@ -402,7 +431,6 @@ function lazyInspector() {
  *  the declared-resources wall drives the SAME port the seat consumes
  *  (zero drift: the wall never re-derives a plan). */
 export function declarationPort(ctx) {
-    const repoRoot = resolveRepoRoot();
     const cards = ctx.get("cardRegistry");
     if (cards === undefined)
         throw new Error("provisioning requires the card registry service");
@@ -420,10 +448,10 @@ export function declarationPort(ctx) {
                 }
                 return familyPlan(ref, modelsService().getModel(ref.id));
             }
-            const row = extensionManifest(repoRoot).get(ref.id);
+            const row = extensionManifest().get(ref.id);
             if (row === undefined)
                 throw new Error(`extension "${ref.id}" is not declared`);
-            const facts = loadFacts(factsPath(), {
+            const facts = loadFacts(extensionFactsPath(), {
                 getModel: (id) => modelsService().getModel(id),
                 registryIds: () => modelsService().registryIds(),
                 registryModel: (id) => modelsService().registryModel(id),
@@ -449,7 +477,7 @@ export function declarationPort(ctx) {
                 if ((def.provisions ?? []).length > 0)
                     refs.push({ kind: "model", owner: "card", id });
             }
-            for (const id of extensionManifest(repoRoot).keys())
+            for (const id of extensionManifest().keys())
                 refs.push({ kind: "extension", id });
             return refs;
         },

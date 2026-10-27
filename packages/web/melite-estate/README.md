@@ -16,7 +16,7 @@ The manifest declares `dsh.bundle.patch: ./cordis.patch.yml`, inserting the sing
 - `mcpEngines` — MCP engine ids to seat; default none, announced loud, optional and experimental.
 - `criticRoute` and `agentRoute` — named `"provider/model"` routes for the craft critic and the agent brain; unset means the auto route for the critic and a loud refusal at the door for the agent.
 
-The bundle gate runs first in `apply`, before any row mounts: it checks the loader tree for the required bundle rows and either refuses the fiber or degrades per `allowGuttedLane`. The models row mounts first and is awaited, so a family refusal fails the lane atomically before any other row lands.
+The bundle gate runs first in `apply`, before any row mounts: it checks the loader tree for the required bundle rows and either refuses the fiber or degrades per `allowGuttedLane`. The models row mounts first and is awaited, so a family refusal fails the lane atomically before any other row lands. The provisioning seat's declaration port reads the extension manifest from the shipped `@melite/comfyui-cordis` data file (`data/extension-manifest.json` — the npm artifact carries it, so installed profiles resolve every declared extension id; the file's absence refuses loud at the first extension-plane read).
 
 ## Model Experience
 
