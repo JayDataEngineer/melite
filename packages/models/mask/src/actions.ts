@@ -129,6 +129,16 @@ export const select: ComfyActionSpec<MaskLaneParams, MaskLaneFacts> = {
     const detectionDilation = (p.detection_dilation as number | undefined) ?? 10
     const cropFactor = (p.crop_factor as number | undefined) ?? 3.0
     const dropSize = (p.drop_size as number | undefined) ?? 10
+    // THE DETECTOR THRESHOLD FOLD (audit 015 C5 — one fold for every
+    // detector seat): the effective detector threshold derives ONCE —
+    // per-entry tune → lane-flat param → the pack's 0.5 default. The
+    // SAM2 impact detectors AND the RT-DETR proposal seat read THIS
+    // derivation (the seats reference it, never re-stamp the fold):
+    // a second spelling let one graph carry two effective thresholds
+    // — SAM2 folded 0.5 while an unstated RT-DETR seat rode the raw
+    // cast to undefined (tests/threshold-fold-parity.spec.ts).
+    const detectorThreshold = (tune?: EntryTune): number =>
+      tune?.detection_threshold ?? (p.detection_threshold as number | undefined) ?? 0.5
     const exportBoxes = p.export_boxes as boolean
     const viaRtdetr = p.primary_via_rtdetr as boolean
 
@@ -266,7 +276,7 @@ export const select: ComfyActionSpec<MaskLaneParams, MaskLaneFacts> = {
       const segs = g.node(detector.detectorNode, {
         [detector.detectorInput]: provider,
         image: img(),
-        threshold: (tune?.detection_threshold ?? (p.detection_threshold as number | undefined) ?? 0.5),
+        threshold: detectorThreshold(tune),
         dilation: tune?.detection_dilation ?? detectionDilation,
         crop_factor: tune?.crop_factor ?? cropFactor,
         drop_size: tune?.drop_size ?? dropSize,
@@ -321,7 +331,7 @@ export const select: ComfyActionSpec<MaskLaneParams, MaskLaneFacts> = {
       rtdetrBoxes = g.node('RTDETR_detect', {
         model: rtdetrLoader(),
         image: img(),
-        threshold: p.detection_threshold as number,
+        threshold: detectorThreshold(),   // the SAME fold as the SAM2 detectors (audit 015 C5)
         class_name: 'person',
         max_detections: cap,
       }).out(0)

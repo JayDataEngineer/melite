@@ -237,6 +237,19 @@
   font-size: 11px;
   margin: 0;
   overflow-wrap: anywhere;
+  /* THE ANCHOR CURE (audit 017 C4): the snapshot-failure line hosts
+   * its own dismiss × — the positioned-ancestor law, .runError's
+   * same contract. */
+  position: relative;
+}
+/* THE CONSTRUCT CARD'S ERROR LINE ANCHOR (audit 017 C4, row 15):
+ * the keyed toolview's refusal lines host their own dismiss × —
+ * the chip joins .state (the color selectors key on it) and is the
+ * positioned ancestor the absolute .errorDismiss anchors to, with
+ * room for the glyph. */
+.errorLine {
+  padding-right: 18px;
+  position: relative;
 }
 .missing {
   color: var(--dsw-alias-state-error-primary);

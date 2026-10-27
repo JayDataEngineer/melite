@@ -26,9 +26,9 @@
  * and the refusal's first line (the render text the generic row's
  * OUT section would have shown).
  */
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import css from './card.module.css'
-import { Button, Pill } from '@deepseek-ai/dsh-client-ui-primitives'
+import { Button, IconCloseOutlineRegular, Pill } from '@deepseek-ai/dsh-client-ui-primitives'
 import { benchAddressOf } from './cards-resource.ts'
 import type { ToolCallBlockView } from './types.ts'
 import { chromeCopy } from '../chromeCopy.ts'
@@ -110,13 +110,54 @@ export function parseConstructBlock(block: ToolCallBlockView): {
 export function ConstructCard({ block, openSurface }: ConstructCardProps) {
   const parsed = useMemo(() => parseConstructBlock(block), [block])
   const address = parsed.bench === null ? null : benchAddressOf(parsed.bench)
+  // THE ERROR DISMISS (audit 017 C4 — every failure line carries the
+  // ×): the card is derived from the persisted block, so the
+  // dismissal retires the (call, line) pair — a rerender of the SAME
+  // persisted call keeps the silence (object identity is not the
+  // law; the log rebuilds block objects freely), while a FRESH call
+  // (new callId, e.g. a retry) or a fresh refusal (new words)
+  // re-voices. No reset effect: a changed identity re-voices by
+  // construction. The marker class is the estate's .errorDismiss
+  // grammar, mounted INSIDE the line's own element (the anchor law:
+  // the × never leaves the error's face).
+  const [dismissed, setDismissed] = useState<{ call: string; line: string } | null>(null)
+  const callKey = typeof block.callId === 'string' ? block.callId : ''
+  const retired = (line: string): boolean =>
+    dismissed !== null && dismissed.call === callKey && dismissed.line === line
+  const errorText = parsed.isError ? (parsed.errorLine ?? chromeCopy.draftFailed) : null
   return (
     <div className={css.card} data-dsh-part="melite-construct-card" data-bench={parsed.bench ?? undefined}>
       <div className={css.head}>
         <Pill>{chromeCopy.brand}</Pill>
         <span className={css.model}>{parsed.title}</span>
-        {parsed.malformedArgs && <span className={css.state} data-state="error">{chromeCopy.argsUnparseable}</span>}
-        {parsed.isError && <span className={css.state} data-state="error" role="alert">{parsed.errorLine ?? chromeCopy.draftFailed}</span>}
+        {parsed.malformedArgs && !retired(chromeCopy.argsUnparseable) && (
+          <span className={css.state + ' ' + css.errorLine} data-state="error">
+            {chromeCopy.argsUnparseable}
+            <Button
+              size="sm"
+              variant="ghost"
+              className={css.errorDismiss}
+              aria-label={chromeCopy.dismissError}
+              onClick={() => { setDismissed({ call: callKey, line: chromeCopy.argsUnparseable }) }}
+            >
+              <IconCloseOutlineRegular size={12} />
+            </Button>
+          </span>
+        )}
+        {errorText !== null && !retired(errorText) && (
+          <span className={css.state + ' ' + css.errorLine} data-state="error" role="alert">
+            {errorText}
+            <Button
+              size="sm"
+              variant="ghost"
+              className={css.errorDismiss}
+              aria-label={chromeCopy.dismissError}
+              onClick={() => { setDismissed({ call: callKey, line: errorText }) }}
+            >
+              <IconCloseOutlineRegular size={12} />
+            </Button>
+          </span>
+        )}
         {/* THE FLOW LINK (the operator's verbatim demand): the
             edited flow opens in the Cards tab — the register site's
             inject share claims the bench address, places it, and

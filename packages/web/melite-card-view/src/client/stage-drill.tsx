@@ -30,6 +30,7 @@ import { AudioStagePreview, ImageStagePreview, MeshStagePreview, ReportView, Tex
 import { CardZoomOverlay } from './zoom.tsx'
 import { loadFormsEdgeMeta } from './forms-edge-meta.ts'
 import { rejectionVoice } from './rejection-voice.ts'
+import { strikeDeadLaneStamps } from './lane-strike.ts'
 import { chromeCopy } from '../chromeCopy.ts'
 
 /** THE SHARED DRILLDOWN — spec-formatted (the old system's law): the
@@ -1023,10 +1024,34 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
   // own stamps, served by the drafts doors — layers under the user
   // and over the client's guesses (one resolver, served to the
   // visual; absent = the registry-less lane derive).
-  const servedBase: SpecValues | undefined =
+  // THE BASE STRIKE (audits 018 C4 + 016 C5, the client half): the
+  // base is the LAST RUN's stamp plane — after a pick re-keys the
+  // lane, its stamps for the departed lane resurrect through the
+  // cascade's null-skip and the studio re-offers a coordinate the
+  // next run refuses. The strike retires the dead stamps before the
+  // cascade and NAMES them (the note below); the mirror's own judges
+  // decide, never a second spelling.
+  const servedBaseRaw: SpecValues | undefined =
     typeof stage.resolved === 'object' && stage.resolved !== null && !Array.isArray(stage.resolved)
       ? stage.resolved as SpecValues : undefined
+  const laneStrike = strikeDeadLaneStamps(spec, user, servedBaseRaw)
+  const servedBase: SpecValues | undefined = servedBaseRaw === undefined ? undefined : laneStrike.base
   const value: SpecValues = resolveValue(spec ?? { form: '' }, user, servedBase)
+  // THE STRIKE NOTE'S DISMISSAL (the enhance-note grammar): the ×
+  // retires the note; a NEW strike set re-voices (the dismissal keys
+  // on the set, never a blind latch).
+  const [strikeDismissed, setStrikeDismissed] = useState(false)
+  const strikeKey = laneStrike.strikes.join('\u0000')
+  useEffect(() => { setStrikeDismissed(false) }, [strikeKey])
+  // THE MISS FACE'S DISMISSAL (audit 017 C4 — every failure face
+  // carries the ×): the × retires the stage-view load refusal; a NEW
+  // stage or a changed declaration re-voices (the dismissal keys on
+  // the pair). Hooked HERE with the drill's other state — the
+  // group-stage branch returns early below, and a hook after it
+  // would change the render's hook count by stage kind.
+  const [missDismissed, setMissDismissed] = useState(false)
+  const declaredStudioEarly = typeof spec?.stage_view === 'string' && spec.stage_view !== '' ? spec.stage_view : null
+  useEffect(() => { setMissDismissed(false) }, [stage.id, declaredStudioEarly])
   // ✦ AGENT ENHANCE (hour 24 stroke 10 — the operator's one-shot
   // order): one press gathers the card's prompt text, the sweep door
   // (/melite-tools/enhance {model, prompt}) enhances EVERY declared
@@ -1625,6 +1650,18 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
                   onClick: () => { setEnhanceNote(null) },
                 }, h(IconCloseOutlineRegular, { size: 12 }))))
           : null,
+        // THE BASE-STRIKE NOTE (audits 018 C4 + 016 C5): the strike is
+        // never silent — the retired stamps are named, the × retires
+        // the note, and a NEW strike set re-voices.
+        servedBaseRaw !== undefined && laneStrike.strikes.length > 0 && !strikeDismissed
+          ? h('div', { className: css.enhanceRow, 'data-testid': 'lane-strike-note' },
+              h('span', { className: css.enhanceNote }, chromeCopy.laneStrikeNote({ keys: laneStrike.strikes }),
+                h(Button, {
+                  size: 'sm', variant: 'ghost', className: css.errorDismiss,
+                  'aria-label': chromeCopy.dismissError,
+                  onClick: () => { setStrikeDismissed(true) },
+                }, h(IconCloseOutlineRegular, { size: 12 }))))
+          : null,
         h('div', { className: css.params },
         !loaded ? h('div', { className: css.load }, 'form…')
         : spec !== null
@@ -1811,12 +1848,27 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
   // (stage_view) gets the LOUD load refusal as that miss face — the
   // same detection the `?? fallback` used to silently eat, now
   // spoken, with the generic form gone. No declaration → the generic
-  // form IS the designed seat (most cards have no studio).
-  const declaredStudio = typeof spec?.stage_view === 'string' && spec.stage_view !== '' ? spec.stage_view : null
-  const missFace = declaredStudio === null ? genericDetail() : h('div', { className: css.drillRunRow, 'data-testid': 'stage-view-load-refusal' },
+  // form IS the designed seat (most cards have no studio). The
+  // dismissal state + its reset effect hook beside the drill's other
+  // state (declaredStudioEarly above) — the group branch's early
+  // return below must never change the hook count. THE DISMISSAL
+  // RETIRES THE REFUSAL TO EMPTY, never to the generic form: the
+  // fallback is suppressed on purpose, and a dismissed × must not
+  // re-open the hole its cure closed (the miss face has no designed
+  // seat to fall back to).
+  const declaredStudio = declaredStudioEarly
+  const missFace = declaredStudio === null
+    ? genericDetail()
+    : missDismissed ? null
+    : h('div', { className: css.drillRunRow, 'data-testid': 'stage-view-load-refusal' },
     h('div', { className: css.runError },
       chromeCopy.stageViewRefusal({ card: String(stage.card ?? ''), plugin: declaredStudio }),
-      h('div', null, chromeCopy.stageViewRefusalFix)))
+      h('div', null, chromeCopy.stageViewRefusalFix),
+      h(Button, {
+        size: 'sm', variant: 'ghost', className: css.errorDismiss,
+        'aria-label': chromeCopy.dismissError,
+        onClick: () => { setMissDismissed(true) },
+      }, h(IconCloseOutlineRegular, { size: 12 }))))
   return renderStageView({
     stageId: stage.id,
     hasUnsettledWrites: (): boolean => {

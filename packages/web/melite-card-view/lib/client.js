@@ -2885,8 +2885,8 @@ window.__ModuleLoader__.load({
 		}, zod.z);
 		//#endregion
 		//#region \0dsh-css:packages/web/melite-card-view/src/client/card.module.css.mjs
-		const css$3 = ".qMfk9G_card{flex-direction:column;min-width:0;margin:4px 0;font-size:12px;line-height:1.45;display:flex}.qMfk9G_load{color:var(--dsw-alias-label-secondary);padding:2px 0}.qMfk9G_head{align-items:center;gap:8px;min-width:0;display:flex}.qMfk9G_model{text-overflow:ellipsis;white-space:nowrap;min-width:0;font-weight:600;overflow:hidden}.qMfk9G_state{corner-shape:round;border-radius:999px;flex:none;margin-left:auto;padding:1px 8px}.qMfk9G_state[data-state=completed]{color:var(--dsw-alias-state-success-primary)}.qMfk9G_state[data-state=running],.qMfk9G_state[data-state=queued],.qMfk9G_state[data-state=pending],.qMfk9G_state[data-state=starting],.qMfk9G_state[data-state=draft]{color:var(--dsw-alias-state-warn-primary)}.qMfk9G_state[data-state=failed],.qMfk9G_state[data-state=error],.qMfk9G_state[data-state=stopped],.qMfk9G_state[data-state=interrupted]{color:var(--dsw-alias-state-error-primary)}.qMfk9G_media{corner-shape:round;color:var(--dsw-alias-label-secondary);cursor:pointer;font:inherit;background:0 0;border:0;border-radius:999px;flex:none;margin:-2px 0 -2px auto;padding:1px 6px}.qMfk9G_media:hover{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-primary)}.qMfk9G_media:focus-visible{outline:1px solid var(--dsw-alias-state-business-primary);outline-offset:-1px}.qMfk9G_prompt{color:var(--dsw-alias-label-secondary);-webkit-line-clamp:2;-webkit-box-orient:vertical;display:-webkit-box;overflow:hidden}.qMfk9G_row{color:inherit;cursor:pointer;font:inherit;text-align:left;background:0 0;border:none;border-radius:6px;align-items:center;gap:8px;width:100%;min-width:0;padding:4px 6px;display:flex}.qMfk9G_row:hover{background:var(--dsw-alias-interactive-bg-hover)}.qMfk9G_row:focus-visible{outline:1px solid var(--dsw-alias-state-business-primary);outline-offset:-1px}.qMfk9G_chatPreview{flex-direction:column;width:100%;min-width:0;display:flex}.qMfk9G_thumb{object-fit:cover;border-radius:4px;flex:none;width:34px;height:34px}.qMfk9G_rowTitle{text-overflow:ellipsis;white-space:nowrap;flex:none;max-width:40%;font-weight:600;overflow:hidden}.qMfk9G_drill{width:92vw;max-width:min(860px,92vw)}.qMfk9G_paramsCol,.qMfk9G_params{flex-direction:column;gap:8px;min-width:0;display:flex}.qMfk9G_field{flex-direction:column;gap:3px;min-width:0;display:flex}.qMfk9G_fieldKey{color:var(--dsw-alias-label-secondary);font-size:11px}.qMfk9G_outputs{flex-direction:column;align-items:center;gap:10px;min-width:0;display:flex}.qMfk9G_reportList{flex-direction:column;gap:8px;width:100%;min-width:0;display:flex}.qMfk9G_outputImg{object-fit:contain;border-radius:8px;max-width:100%;max-height:46vh}.qMfk9G_runRow{justify-content:flex-end;align-items:center;gap:10px;width:100%;display:flex}.qMfk9G_runError{color:var(--dsw-alias-state-error-primary);overflow-wrap:anywhere;margin:0;font-size:11px;position:relative}.qMfk9G_rowWrap{flex-direction:column;display:flex;position:relative}.qMfk9G_errorDismiss{color:var(--dsw-alias-state-error-primary);position:absolute;top:2px;right:2px}.qMfk9G_flowLink{flex:none;margin-left:auto;text-decoration:underline}.qMfk9G_failed,.qMfk9G_missing{color:var(--dsw-alias-state-error-primary);overflow-wrap:anywhere;margin:0;font-size:11px}.qMfk9G_loading{color:var(--dsw-alias-label-secondary);overflow-wrap:anywhere;margin:0;padding:2px 0;font-size:11px}.qMfk9G_rowError{color:var(--dsw-alias-state-error-primary);overflow-wrap:anywhere;flex-basis:100%;font-size:11px;display:block}.qMfk9G_drillRunRow{background:var(--dsw-alias-bg-base);border-top:1px solid var(--dsw-alias-border-l2);z-index:1;justify-content:flex-end;align-items:center;gap:8px;margin-top:8px;padding:10px 0 4px;display:flex;position:sticky;bottom:0}.qMfk9G_drillProgress{color:var(--dsw-alias-label-secondary);font-variant-numeric:tabular-nums;align-items:center;gap:6px;font-size:11px;display:inline-flex}.qMfk9G_drillProgress>svg{animation:1s linear infinite qMfk9G_tileSpinTurn}.qMfk9G_state[data-state=legacy]{color:var(--dsw-alias-label-secondary)}.qMfk9G_cardsBench{overflow-anchor:none;flex-direction:column;flex:1;gap:8px;min-width:0;min-height:0;padding:0 14px 18px;display:flex;overflow-y:auto}.qMfk9G_benchHead{z-index:1;background:var(--dsw-alias-bg-base);justify-content:space-between;align-items:center;gap:8px;padding-top:12px;display:flex;position:sticky;top:0}.qMfk9G_revTag{color:var(--dsw-alias-label-secondary);font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:11px}.qMfk9G_runView{overflow-anchor:none;flex-direction:column;flex:1;gap:8px;min-width:0;min-height:0;display:flex;overflow-y:auto}.qMfk9G_runHead{z-index:1;background:var(--dsw-alias-bg-base);align-items:baseline;gap:8px;padding-top:12px;display:flex;position:sticky;top:0}.qMfk9G_runId{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;font-weight:600}.qMfk9G_runStatus{border:.5px solid var(--dsw-alias-border-l2);corner-shape:round;color:var(--dsw-alias-label-secondary);border-radius:999px;padding:0 8px;font-size:11px}.qMfk9G_runActions{gap:8px;display:flex}.qMfk9G_graphReceiptOk{border:.5px solid var(--dsw-alias-state-success-primary);corner-shape:round;color:var(--dsw-alias-state-success-primary);border-radius:999px;padding:0 8px;font-size:11px}.qMfk9G_graphReceiptPartial{border:.5px solid var(--dsw-alias-state-warn-primary);corner-shape:round;color:var(--dsw-alias-state-warn-primary);border-radius:999px;padding:0 8px;font-size:11px}.qMfk9G_restoreNote{color:var(--dsw-alias-label-secondary);overflow-wrap:anywhere;margin:0;font-size:11px}.qMfk9G_mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;overflow-x:auto}.qMfk9G_tileGrid{grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;margin:0;padding:0;list-style:none;display:grid}.qMfk9G_tile{margin:0;padding:0;display:block}.qMfk9G_tileInner{border:.5px solid var(--dsw-alias-border-l2);cursor:pointer;transition:border-color var(--ds-transition-duration) var(--ds-ease-in-out), background-color var(--ds-transition-duration) var(--ds-ease-in-out);font:inherit;text-align:left;background:0 0;border-radius:10px;flex-direction:column;align-items:stretch;width:100%;padding:0;display:flex;overflow:hidden}.qMfk9G_tileInner:hover{border-color:var(--dsw-alias-state-business-primary);background:var(--dsw-alias-interactive-bg-hover)}.qMfk9G_tilePreview{aspect-ratio:1;flex:1;width:100%;min-height:0;margin:0;display:block;position:relative}.qMfk9G_tileImg,.qMfk9G_tileImgLink{width:100%;height:100%;display:block}.qMfk9G_tileImg{object-fit:cover}.qMfk9G_tileVideoImg{object-fit:contain;width:100%;height:100%;display:block}.qMfk9G_audioBars{box-sizing:border-box;justify-content:center;align-items:flex-end;gap:2px;width:100%;height:100%;padding:18% 12%;display:flex}.qMfk9G_audioBar{background:var(--dsw-alias-state-business-primary);opacity:.85;border-radius:1px;flex:1;max-width:6px}.qMfk9G_kindFace{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-secondary);flex-direction:column;justify-content:center;align-items:center;gap:4px;width:100%;height:100%;display:flex}.qMfk9G_kindInitial{font-size:28px;font-weight:700;line-height:1}.qMfk9G_kindName{text-overflow:ellipsis;white-space:nowrap;padding:0 6px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:10px;overflow:hidden}.qMfk9G_tileDot{position:absolute;bottom:6px;right:6px}.qMfk9G_tileIconBtn{background:color-mix(in srgb, var(--dsw-alias-bg-base) 72%, transparent);border:1px solid var(--dsw-alias-border-l2);color:var(--dsw-alias-label-secondary);cursor:pointer;opacity:0;height:24px;transition:opacity var(--ds-transition-duration) var(--ds-ease-in-out), color var(--ds-transition-duration) var(--ds-ease-in-out);z-index:2;border-radius:999px;justify-content:center;align-items:center;width:24px;padding:0;display:inline-flex;position:absolute}.qMfk9G_tileIconBtn:hover{border-color:var(--dsw-alias-border-l4);color:var(--dsw-alias-label-primary)}.qMfk9G_tileInner:hover .qMfk9G_tileIconBtn,.qMfk9G_tileIconBtn:focus-visible{opacity:1}.qMfk9G_tileIconBtn:disabled{cursor:default}.qMfk9G_tileTrash{color:var(--dsw-alias-label-tertiary);top:6px;right:6px}.qMfk9G_tileTrash:hover{color:var(--dsw-alias-state-error-primary)}.qMfk9G_tileRunBtn{color:var(--dsw-alias-label-secondary);bottom:6px;right:6px}.qMfk9G_tileRunBtn:hover{color:var(--dsw-alias-brand-primary)}.qMfk9G_tileSpin{color:var(--dsw-alias-brand-primary);z-index:2;align-items:center;display:inline-flex;position:absolute;bottom:6px;left:6px}.qMfk9G_tileSpin>svg{animation:1s linear infinite qMfk9G_tileSpinTurn}.qMfk9G_tilePct{font-variant-numeric:tabular-nums;margin-left:4px;font-size:11px}@keyframes qMfk9G_tileSpinTurn{to{transform:rotate(360deg)}}.qMfk9G_tileCaption{border-top:.5px solid var(--dsw-alias-border-l2);flex-direction:column;flex:none;gap:2px;padding:6px 8px;display:flex}.qMfk9G_tileTitle{text-overflow:ellipsis;white-space:nowrap;font-size:12px;font-weight:600;line-height:20px;overflow:hidden}.qMfk9G_tileMeta{color:var(--dsw-alias-label-secondary);align-items:center;gap:6px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:10px;line-height:17px;display:flex;overflow:hidden}.qMfk9G_tilePrompt{text-overflow:ellipsis;white-space:nowrap;flex:1;overflow:hidden}.qMfk9G_tileAdd .qMfk9G_tileInner{border-style:dashed}.qMfk9G_addFace{color:var(--dsw-alias-label-secondary);justify-content:center;align-items:center;font-size:34px;font-weight:300;display:flex}.qMfk9G_picker{flex-direction:column;gap:10px;max-height:60vh;margin-top:-6px;display:flex;overflow-y:auto}.qMfk9G_pickerGenre{flex-direction:column;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:6px;display:grid}.qMfk9G_pickerGenreTitle{letter-spacing:.08em;text-transform:uppercase;color:var(--dsw-alias-label-primary);grid-column:1/-1;margin:12px 0 10px;font-size:15px;font-weight:700}.qMfk9G_drill [class*=_title_]{font-size:18px;font-weight:800}.qMfk9G_pickerCardLabel{font-size:12px;font-weight:500}.qMfk9G_pickerCard{box-sizing:border-box;border:.5px solid var(--dsw-alias-border-l2);width:100%;min-height:44px;color:inherit;cursor:pointer;font:inherit;text-align:left;background:0 0;border-radius:8px;justify-content:flex-start;align-items:baseline;gap:8px;width:100%;padding:8px 10px;display:flex}.qMfk9G_pickerCard:hover{background:var(--dsw-alias-interactive-bg-hover);border-color:var(--dsw-alias-state-business-primary)}.qMfk9G_pickerCardLabel{white-space:nowrap;font-size:13px;font-weight:600}.qMfk9G_tileShared{display:block;position:relative}.qMfk9G_zoomOverlay{background:var(--dsw-alias-bg-overlay);z-index:80;flex-direction:column;display:flex;position:fixed;inset:0}.qMfk9G_zoomScroll{flex:1;min-height:0;overflow-y:auto}.qMfk9G_zoomInner{box-sizing:border-box;justify-content:center;align-items:center;width:100%;max-width:100%;min-height:100%;margin:0 auto;padding:24px;display:flex}.qMfk9G_tileDragOver{outline:2px dashed var(--dsw-alias-brand-primary);outline-offset:-2px}.qMfk9G_zoomCard{background:var(--dsw-alias-bg-layer-1);box-shadow:0 0 0 .5px color-mix(in srgb, var(--dsw-alias-label-primary) 16%, transparent), 0 3px 8px 0 color-mix(in srgb, var(--dsw-alias-label-primary) 3%, transparent), 0 0 16px 0 color-mix(in srgb, var(--dsw-alias-label-primary) 2%, transparent);color:var(--dsw-alias-label-primary);border:0;border-radius:14px;flex-direction:column;min-height:320px;max-height:86vh;animation:.18s cubic-bezier(.2,.9,.3,1) qMfk9G_zoom-in;display:flex;overflow:hidden}@keyframes qMfk9G_zoom-in{0%{opacity:0;transform:scale(.92)}}.qMfk9G_zoomBar{border-bottom:.5px solid var(--dsw-alias-border-l2);flex:none;justify-content:space-between;align-items:center;gap:8px;padding:10px 14px;display:flex}.qMfk9G_zoomWebhook{color:var(--dsw-alias-label-secondary);align-items:center;gap:8px;width:100%;min-height:0;padding:2px 0;font-size:12px;display:flex}.qMfk9G_zoomMeter{background:var(--dsw-alias-border-l2);border-radius:999px;flex:auto;height:3px;overflow:hidden}.qMfk9G_zoomMeterFill{background:var(--dsw-alias-fill-brand-primary);height:100%;transition:width .24s;display:block}.qMfk9G_zoomTitle{text-overflow:ellipsis;white-space:nowrap;flex:auto;min-width:0;font-size:13px;font-weight:600;line-height:20px;overflow:hidden}.qMfk9G_zoomClamp{text-overflow:ellipsis;white-space:nowrap;min-width:0;max-width:170px;display:block;overflow:hidden}.qMfk9G_llmSearchRow{border-bottom:1px solid var(--dsh-frame-hairline,var(--dsw-alias-border-l2));margin-bottom:4px;padding:4px 6px 6px;display:block}.qMfk9G_zoomDetail{overflow-anchor:none;min-height:0;padding:14px;display:block;overflow-y:auto}.qMfk9G_zoomBody{flex-direction:column;flex:1;min-height:0;display:flex;overflow:hidden}.qMfk9G_tabScroll{overflow-anchor:none;flex-direction:column;flex:1;min-width:0;height:100%;min-height:0;display:flex;overflow-y:auto}.qMfk9G_zoomSkeleton{flex-direction:column;flex:1;gap:10px;min-height:0;padding:16px;display:flex}.qMfk9G_skLine{will-change:background-position;background:linear-gradient(90deg, transparent 40%, var(--dsw-alias-interactive-bg-hover) 50%, transparent 60%);background-color:var(--dsw-alias-interactive-bg-hover);background-size:200% 100%;border-radius:6px;height:12px;animation:1s linear infinite both qMfk9G_zoomShimmer}.qMfk9G_skWide{width:60%}.qMfk9G_skShort{flex:1;height:28px}.qMfk9G_skBlock{border-radius:10px;height:120px}.qMfk9G_skRow{gap:10px;display:flex}@keyframes qMfk9G_zoomShimmer{0%{background-position:150% 0}to{background-position:-100% 0}}@keyframes qMfk9G_tilePop{0%{opacity:0;transform:scale(.96)translateY(6px)}60%{opacity:1;transform:scale(1.015)translateY(0)}to{opacity:1;transform:scale(1)translateY(0)}}.qMfk9G_tileEnter{animation:.26s cubic-bezier(.2,.8,.3,1) both qMfk9G_tilePop}.qMfk9G_tileDragging{opacity:.55;z-index:2}.qMfk9G_wiredMark{color:var(--dsw-alias-state-business-primary);font-size:10px}.qMfk9G_capOver{background:var(--dsw-alias-interactive-bg-hover);outline:1px dashed var(--dsw-alias-state-business-primary);outline-offset:4px}.qMfk9G_dangerVerb{color:var(--dsw-alias-state-error-primary);border-color:var(--dsw-alias-state-error-primary)}.qMfk9G_groupBar{align-items:center;gap:8px;display:flex}.qMfk9G_checkCircle{border:1.5px solid var(--dsw-alias-label-secondary);corner-shape:round;color:var(--dsw-alias-bg-module);z-index:3;border-radius:999px;justify-content:center;align-items:center;width:20px;height:20px;font-size:11px;display:flex;position:absolute;top:8px;left:8px}.qMfk9G_checkOn{background:var(--dsw-alias-state-business-primary);border-color:var(--dsw-alias-state-business-primary)}[data-selected=on]{outline:2px solid var(--dsw-alias-state-business-primary);outline-offset:2px}.qMfk9G_groupNote{color:var(--dsw-alias-label-secondary);margin:0 0 10px;font-size:12px;line-height:20px}.qMfk9G_memberList{margin:0 0 12px;padding:0;list-style:none}.qMfk9G_memberRow{border-bottom:1px solid var(--dsw-alias-interactive-bg-hover);align-items:baseline;gap:8px;padding:6px 2px;display:flex}.qMfk9G_memberIdx{color:var(--dsw-alias-label-secondary);font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:11px}.qMfk9G_memberName{font-size:13px}@media (prefers-reduced-motion:reduce){.qMfk9G_tileEnter,.qMfk9G_skLine,.qMfk9G_skBlock{animation-duration:.01ms;animation-iteration-count:1}}@media (width<=900px){.qMfk9G_studioSplit{grid-template-columns:1fr}}.qMfk9G_outputsPreview{flex-direction:column;flex:1;min-width:280px;min-height:220px;display:flex;overflow:hidden}.qMfk9G_outputsHint{color:var(--dsw-alias-label-dimmed);border:1px dashed var(--dsw-alias-border-l2);border-radius:6px;flex:1;justify-content:center;align-items:center;font-size:11px;display:flex}.qMfk9G_previewClickable{cursor:pointer}.qMfk9G_previewClickable:focus-visible{outline:2px solid var(--dsw-alias-state-business-primary);outline-offset:2px}.qMfk9G_enhanceRow{flex:none;align-items:center;gap:8px;padding:2px 0;display:flex;position:relative}.qMfk9G_enhanceNote{color:var(--dsw-alias-text-tertiary);font-size:12px}.qMfk9G_rescue{border:1px solid var(--dsw-alias-border-secondary);border-radius:6px;flex-wrap:wrap;align-items:center;gap:8px;padding:6px 8px;display:flex}.qMfk9G_rescueNote{color:var(--dsh-alias-text-secondary,var(--dsw-alias-text-secondary));overflow-wrap:anywhere;margin:0;font-size:12px}.qMfk9G_rescueErr{color:var(--dsw-alias-state-error-primary);overflow-wrap:anywhere;margin:0;font-size:11px}";
-		const tagId$3 = "@melite-plugin/dsh-card-view/card.module.css@b59e22ca";
+		const css$3 = ".qMfk9G_card{flex-direction:column;min-width:0;margin:4px 0;font-size:12px;line-height:1.45;display:flex}.qMfk9G_load{color:var(--dsw-alias-label-secondary);padding:2px 0}.qMfk9G_head{align-items:center;gap:8px;min-width:0;display:flex}.qMfk9G_model{text-overflow:ellipsis;white-space:nowrap;min-width:0;font-weight:600;overflow:hidden}.qMfk9G_state{corner-shape:round;border-radius:999px;flex:none;margin-left:auto;padding:1px 8px}.qMfk9G_state[data-state=completed]{color:var(--dsw-alias-state-success-primary)}.qMfk9G_state[data-state=running],.qMfk9G_state[data-state=queued],.qMfk9G_state[data-state=pending],.qMfk9G_state[data-state=starting],.qMfk9G_state[data-state=draft]{color:var(--dsw-alias-state-warn-primary)}.qMfk9G_state[data-state=failed],.qMfk9G_state[data-state=error],.qMfk9G_state[data-state=stopped],.qMfk9G_state[data-state=interrupted]{color:var(--dsw-alias-state-error-primary)}.qMfk9G_media{corner-shape:round;color:var(--dsw-alias-label-secondary);cursor:pointer;font:inherit;background:0 0;border:0;border-radius:999px;flex:none;margin:-2px 0 -2px auto;padding:1px 6px}.qMfk9G_media:hover{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-primary)}.qMfk9G_media:focus-visible{outline:1px solid var(--dsw-alias-state-business-primary);outline-offset:-1px}.qMfk9G_prompt{color:var(--dsw-alias-label-secondary);-webkit-line-clamp:2;-webkit-box-orient:vertical;display:-webkit-box;overflow:hidden}.qMfk9G_row{color:inherit;cursor:pointer;font:inherit;text-align:left;background:0 0;border:none;border-radius:6px;align-items:center;gap:8px;width:100%;min-width:0;padding:4px 6px;display:flex}.qMfk9G_row:hover{background:var(--dsw-alias-interactive-bg-hover)}.qMfk9G_row:focus-visible{outline:1px solid var(--dsw-alias-state-business-primary);outline-offset:-1px}.qMfk9G_chatPreview{flex-direction:column;width:100%;min-width:0;display:flex}.qMfk9G_thumb{object-fit:cover;border-radius:4px;flex:none;width:34px;height:34px}.qMfk9G_rowTitle{text-overflow:ellipsis;white-space:nowrap;flex:none;max-width:40%;font-weight:600;overflow:hidden}.qMfk9G_drill{width:92vw;max-width:min(860px,92vw)}.qMfk9G_paramsCol,.qMfk9G_params{flex-direction:column;gap:8px;min-width:0;display:flex}.qMfk9G_field{flex-direction:column;gap:3px;min-width:0;display:flex}.qMfk9G_fieldKey{color:var(--dsw-alias-label-secondary);font-size:11px}.qMfk9G_outputs{flex-direction:column;align-items:center;gap:10px;min-width:0;display:flex}.qMfk9G_reportList{flex-direction:column;gap:8px;width:100%;min-width:0;display:flex}.qMfk9G_outputImg{object-fit:contain;border-radius:8px;max-width:100%;max-height:46vh}.qMfk9G_runRow{justify-content:flex-end;align-items:center;gap:10px;width:100%;display:flex}.qMfk9G_runError{color:var(--dsw-alias-state-error-primary);overflow-wrap:anywhere;margin:0;font-size:11px;position:relative}.qMfk9G_rowWrap{flex-direction:column;display:flex;position:relative}.qMfk9G_errorDismiss{color:var(--dsw-alias-state-error-primary);position:absolute;top:2px;right:2px}.qMfk9G_flowLink{flex:none;margin-left:auto;text-decoration:underline}.qMfk9G_failed{color:var(--dsw-alias-state-error-primary);overflow-wrap:anywhere;margin:0;font-size:11px;position:relative}.qMfk9G_errorLine{padding-right:18px;position:relative}.qMfk9G_missing{color:var(--dsw-alias-state-error-primary);overflow-wrap:anywhere;margin:0;font-size:11px}.qMfk9G_loading{color:var(--dsw-alias-label-secondary);overflow-wrap:anywhere;margin:0;padding:2px 0;font-size:11px}.qMfk9G_rowError{color:var(--dsw-alias-state-error-primary);overflow-wrap:anywhere;flex-basis:100%;font-size:11px;display:block}.qMfk9G_drillRunRow{background:var(--dsw-alias-bg-base);border-top:1px solid var(--dsw-alias-border-l2);z-index:1;justify-content:flex-end;align-items:center;gap:8px;margin-top:8px;padding:10px 0 4px;display:flex;position:sticky;bottom:0}.qMfk9G_drillProgress{color:var(--dsw-alias-label-secondary);font-variant-numeric:tabular-nums;align-items:center;gap:6px;font-size:11px;display:inline-flex}.qMfk9G_drillProgress>svg{animation:1s linear infinite qMfk9G_tileSpinTurn}.qMfk9G_state[data-state=legacy]{color:var(--dsw-alias-label-secondary)}.qMfk9G_cardsBench{overflow-anchor:none;flex-direction:column;flex:1;gap:8px;min-width:0;min-height:0;padding:0 14px 18px;display:flex;overflow-y:auto}.qMfk9G_benchHead{z-index:1;background:var(--dsw-alias-bg-base);justify-content:space-between;align-items:center;gap:8px;padding-top:12px;display:flex;position:sticky;top:0}.qMfk9G_revTag{color:var(--dsw-alias-label-secondary);font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:11px}.qMfk9G_runView{overflow-anchor:none;flex-direction:column;flex:1;gap:8px;min-width:0;min-height:0;display:flex;overflow-y:auto}.qMfk9G_runHead{z-index:1;background:var(--dsw-alias-bg-base);align-items:baseline;gap:8px;padding-top:12px;display:flex;position:sticky;top:0}.qMfk9G_runId{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;font-weight:600}.qMfk9G_runStatus{border:.5px solid var(--dsw-alias-border-l2);corner-shape:round;color:var(--dsw-alias-label-secondary);border-radius:999px;padding:0 8px;font-size:11px}.qMfk9G_runActions{gap:8px;display:flex}.qMfk9G_graphReceiptOk{border:.5px solid var(--dsw-alias-state-success-primary);corner-shape:round;color:var(--dsw-alias-state-success-primary);border-radius:999px;padding:0 8px;font-size:11px}.qMfk9G_graphReceiptPartial{border:.5px solid var(--dsw-alias-state-warn-primary);corner-shape:round;color:var(--dsw-alias-state-warn-primary);border-radius:999px;padding:0 8px;font-size:11px}.qMfk9G_restoreNote{color:var(--dsw-alias-label-secondary);overflow-wrap:anywhere;margin:0;font-size:11px}.qMfk9G_mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;overflow-x:auto}.qMfk9G_tileGrid{grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;margin:0;padding:0;list-style:none;display:grid}.qMfk9G_tile{margin:0;padding:0;display:block}.qMfk9G_tileInner{border:.5px solid var(--dsw-alias-border-l2);cursor:pointer;transition:border-color var(--ds-transition-duration) var(--ds-ease-in-out), background-color var(--ds-transition-duration) var(--ds-ease-in-out);font:inherit;text-align:left;background:0 0;border-radius:10px;flex-direction:column;align-items:stretch;width:100%;padding:0;display:flex;overflow:hidden}.qMfk9G_tileInner:hover{border-color:var(--dsw-alias-state-business-primary);background:var(--dsw-alias-interactive-bg-hover)}.qMfk9G_tilePreview{aspect-ratio:1;flex:1;width:100%;min-height:0;margin:0;display:block;position:relative}.qMfk9G_tileImg,.qMfk9G_tileImgLink{width:100%;height:100%;display:block}.qMfk9G_tileImg{object-fit:cover}.qMfk9G_tileVideoImg{object-fit:contain;width:100%;height:100%;display:block}.qMfk9G_audioBars{box-sizing:border-box;justify-content:center;align-items:flex-end;gap:2px;width:100%;height:100%;padding:18% 12%;display:flex}.qMfk9G_audioBar{background:var(--dsw-alias-state-business-primary);opacity:.85;border-radius:1px;flex:1;max-width:6px}.qMfk9G_kindFace{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-secondary);flex-direction:column;justify-content:center;align-items:center;gap:4px;width:100%;height:100%;display:flex}.qMfk9G_kindInitial{font-size:28px;font-weight:700;line-height:1}.qMfk9G_kindName{text-overflow:ellipsis;white-space:nowrap;padding:0 6px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:10px;overflow:hidden}.qMfk9G_tileDot{position:absolute;bottom:6px;right:6px}.qMfk9G_tileIconBtn{background:color-mix(in srgb, var(--dsw-alias-bg-base) 72%, transparent);border:1px solid var(--dsw-alias-border-l2);color:var(--dsw-alias-label-secondary);cursor:pointer;opacity:0;height:24px;transition:opacity var(--ds-transition-duration) var(--ds-ease-in-out), color var(--ds-transition-duration) var(--ds-ease-in-out);z-index:2;border-radius:999px;justify-content:center;align-items:center;width:24px;padding:0;display:inline-flex;position:absolute}.qMfk9G_tileIconBtn:hover{border-color:var(--dsw-alias-border-l4);color:var(--dsw-alias-label-primary)}.qMfk9G_tileInner:hover .qMfk9G_tileIconBtn,.qMfk9G_tileIconBtn:focus-visible{opacity:1}.qMfk9G_tileIconBtn:disabled{cursor:default}.qMfk9G_tileTrash{color:var(--dsw-alias-label-tertiary);top:6px;right:6px}.qMfk9G_tileTrash:hover{color:var(--dsw-alias-state-error-primary)}.qMfk9G_tileRunBtn{color:var(--dsw-alias-label-secondary);bottom:6px;right:6px}.qMfk9G_tileRunBtn:hover{color:var(--dsw-alias-brand-primary)}.qMfk9G_tileSpin{color:var(--dsw-alias-brand-primary);z-index:2;align-items:center;display:inline-flex;position:absolute;bottom:6px;left:6px}.qMfk9G_tileSpin>svg{animation:1s linear infinite qMfk9G_tileSpinTurn}.qMfk9G_tilePct{font-variant-numeric:tabular-nums;margin-left:4px;font-size:11px}@keyframes qMfk9G_tileSpinTurn{to{transform:rotate(360deg)}}.qMfk9G_tileCaption{border-top:.5px solid var(--dsw-alias-border-l2);flex-direction:column;flex:none;gap:2px;padding:6px 8px;display:flex}.qMfk9G_tileTitle{text-overflow:ellipsis;white-space:nowrap;font-size:12px;font-weight:600;line-height:20px;overflow:hidden}.qMfk9G_tileMeta{color:var(--dsw-alias-label-secondary);align-items:center;gap:6px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:10px;line-height:17px;display:flex;overflow:hidden}.qMfk9G_tilePrompt{text-overflow:ellipsis;white-space:nowrap;flex:1;overflow:hidden}.qMfk9G_tileAdd .qMfk9G_tileInner{border-style:dashed}.qMfk9G_addFace{color:var(--dsw-alias-label-secondary);justify-content:center;align-items:center;font-size:34px;font-weight:300;display:flex}.qMfk9G_picker{flex-direction:column;gap:10px;max-height:60vh;margin-top:-6px;display:flex;overflow-y:auto}.qMfk9G_pickerGenre{flex-direction:column;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:6px;display:grid}.qMfk9G_pickerGenreTitle{letter-spacing:.08em;text-transform:uppercase;color:var(--dsw-alias-label-primary);grid-column:1/-1;margin:12px 0 10px;font-size:15px;font-weight:700}.qMfk9G_drill [class*=_title_]{font-size:18px;font-weight:800}.qMfk9G_pickerCardLabel{font-size:12px;font-weight:500}.qMfk9G_pickerCard{box-sizing:border-box;border:.5px solid var(--dsw-alias-border-l2);width:100%;min-height:44px;color:inherit;cursor:pointer;font:inherit;text-align:left;background:0 0;border-radius:8px;justify-content:flex-start;align-items:baseline;gap:8px;width:100%;padding:8px 10px;display:flex}.qMfk9G_pickerCard:hover{background:var(--dsw-alias-interactive-bg-hover);border-color:var(--dsw-alias-state-business-primary)}.qMfk9G_pickerCardLabel{white-space:nowrap;font-size:13px;font-weight:600}.qMfk9G_tileShared{display:block;position:relative}.qMfk9G_zoomOverlay{background:var(--dsw-alias-bg-overlay);z-index:80;flex-direction:column;display:flex;position:fixed;inset:0}.qMfk9G_zoomScroll{flex:1;min-height:0;overflow-y:auto}.qMfk9G_zoomInner{box-sizing:border-box;justify-content:center;align-items:center;width:100%;max-width:100%;min-height:100%;margin:0 auto;padding:24px;display:flex}.qMfk9G_tileDragOver{outline:2px dashed var(--dsw-alias-brand-primary);outline-offset:-2px}.qMfk9G_zoomCard{background:var(--dsw-alias-bg-layer-1);box-shadow:0 0 0 .5px color-mix(in srgb, var(--dsw-alias-label-primary) 16%, transparent), 0 3px 8px 0 color-mix(in srgb, var(--dsw-alias-label-primary) 3%, transparent), 0 0 16px 0 color-mix(in srgb, var(--dsw-alias-label-primary) 2%, transparent);color:var(--dsw-alias-label-primary);border:0;border-radius:14px;flex-direction:column;min-height:320px;max-height:86vh;animation:.18s cubic-bezier(.2,.9,.3,1) qMfk9G_zoom-in;display:flex;overflow:hidden}@keyframes qMfk9G_zoom-in{0%{opacity:0;transform:scale(.92)}}.qMfk9G_zoomBar{border-bottom:.5px solid var(--dsw-alias-border-l2);flex:none;justify-content:space-between;align-items:center;gap:8px;padding:10px 14px;display:flex}.qMfk9G_zoomWebhook{color:var(--dsw-alias-label-secondary);align-items:center;gap:8px;width:100%;min-height:0;padding:2px 0;font-size:12px;display:flex}.qMfk9G_zoomMeter{background:var(--dsw-alias-border-l2);border-radius:999px;flex:auto;height:3px;overflow:hidden}.qMfk9G_zoomMeterFill{background:var(--dsw-alias-fill-brand-primary);height:100%;transition:width .24s;display:block}.qMfk9G_zoomTitle{text-overflow:ellipsis;white-space:nowrap;flex:auto;min-width:0;font-size:13px;font-weight:600;line-height:20px;overflow:hidden}.qMfk9G_zoomClamp{text-overflow:ellipsis;white-space:nowrap;min-width:0;max-width:170px;display:block;overflow:hidden}.qMfk9G_llmSearchRow{border-bottom:1px solid var(--dsh-frame-hairline,var(--dsw-alias-border-l2));margin-bottom:4px;padding:4px 6px 6px;display:block}.qMfk9G_zoomDetail{overflow-anchor:none;min-height:0;padding:14px;display:block;overflow-y:auto}.qMfk9G_zoomBody{flex-direction:column;flex:1;min-height:0;display:flex;overflow:hidden}.qMfk9G_tabScroll{overflow-anchor:none;flex-direction:column;flex:1;min-width:0;height:100%;min-height:0;display:flex;overflow-y:auto}.qMfk9G_zoomSkeleton{flex-direction:column;flex:1;gap:10px;min-height:0;padding:16px;display:flex}.qMfk9G_skLine{will-change:background-position;background:linear-gradient(90deg, transparent 40%, var(--dsw-alias-interactive-bg-hover) 50%, transparent 60%);background-color:var(--dsw-alias-interactive-bg-hover);background-size:200% 100%;border-radius:6px;height:12px;animation:1s linear infinite both qMfk9G_zoomShimmer}.qMfk9G_skWide{width:60%}.qMfk9G_skShort{flex:1;height:28px}.qMfk9G_skBlock{border-radius:10px;height:120px}.qMfk9G_skRow{gap:10px;display:flex}@keyframes qMfk9G_zoomShimmer{0%{background-position:150% 0}to{background-position:-100% 0}}@keyframes qMfk9G_tilePop{0%{opacity:0;transform:scale(.96)translateY(6px)}60%{opacity:1;transform:scale(1.015)translateY(0)}to{opacity:1;transform:scale(1)translateY(0)}}.qMfk9G_tileEnter{animation:.26s cubic-bezier(.2,.8,.3,1) both qMfk9G_tilePop}.qMfk9G_tileDragging{opacity:.55;z-index:2}.qMfk9G_wiredMark{color:var(--dsw-alias-state-business-primary);font-size:10px}.qMfk9G_capOver{background:var(--dsw-alias-interactive-bg-hover);outline:1px dashed var(--dsw-alias-state-business-primary);outline-offset:4px}.qMfk9G_dangerVerb{color:var(--dsw-alias-state-error-primary);border-color:var(--dsw-alias-state-error-primary)}.qMfk9G_groupBar{align-items:center;gap:8px;display:flex}.qMfk9G_checkCircle{border:1.5px solid var(--dsw-alias-label-secondary);corner-shape:round;color:var(--dsw-alias-bg-module);z-index:3;border-radius:999px;justify-content:center;align-items:center;width:20px;height:20px;font-size:11px;display:flex;position:absolute;top:8px;left:8px}.qMfk9G_checkOn{background:var(--dsw-alias-state-business-primary);border-color:var(--dsw-alias-state-business-primary)}[data-selected=on]{outline:2px solid var(--dsw-alias-state-business-primary);outline-offset:2px}.qMfk9G_groupNote{color:var(--dsw-alias-label-secondary);margin:0 0 10px;font-size:12px;line-height:20px}.qMfk9G_memberList{margin:0 0 12px;padding:0;list-style:none}.qMfk9G_memberRow{border-bottom:1px solid var(--dsw-alias-interactive-bg-hover);align-items:baseline;gap:8px;padding:6px 2px;display:flex}.qMfk9G_memberIdx{color:var(--dsw-alias-label-secondary);font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:11px}.qMfk9G_memberName{font-size:13px}@media (prefers-reduced-motion:reduce){.qMfk9G_tileEnter,.qMfk9G_skLine,.qMfk9G_skBlock{animation-duration:.01ms;animation-iteration-count:1}}@media (width<=900px){.qMfk9G_studioSplit{grid-template-columns:1fr}}.qMfk9G_outputsPreview{flex-direction:column;flex:1;min-width:280px;min-height:220px;display:flex;overflow:hidden}.qMfk9G_outputsHint{color:var(--dsw-alias-label-dimmed);border:1px dashed var(--dsw-alias-border-l2);border-radius:6px;flex:1;justify-content:center;align-items:center;font-size:11px;display:flex}.qMfk9G_previewClickable{cursor:pointer}.qMfk9G_previewClickable:focus-visible{outline:2px solid var(--dsw-alias-state-business-primary);outline-offset:2px}.qMfk9G_enhanceRow{flex:none;align-items:center;gap:8px;padding:2px 0;display:flex;position:relative}.qMfk9G_enhanceNote{color:var(--dsw-alias-text-tertiary);font-size:12px}.qMfk9G_rescue{border:1px solid var(--dsw-alias-border-secondary);border-radius:6px;flex-wrap:wrap;align-items:center;gap:8px;padding:6px 8px;display:flex}.qMfk9G_rescueNote{color:var(--dsh-alias-text-secondary,var(--dsw-alias-text-secondary));overflow-wrap:anywhere;margin:0;font-size:12px}.qMfk9G_rescueErr{color:var(--dsw-alias-state-error-primary);overflow-wrap:anywhere;margin:0;font-size:11px}";
+		const tagId$3 = "@melite-plugin/dsh-card-view/card.module.css@df63214b";
 		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId$3) + "]") === null) {
 			const tag = document.createElement("style");
 			tag.dataset.plugin = "@melite-plugin/dsh-card-view";
@@ -2912,6 +2912,7 @@ window.__ModuleLoader__.load({
 			"enhanceNote": "qMfk9G_enhanceNote",
 			"enhanceRow": "qMfk9G_enhanceRow",
 			"errorDismiss": "qMfk9G_errorDismiss",
+			"errorLine": "qMfk9G_errorLine",
 			"failed": "qMfk9G_failed",
 			"field": "qMfk9G_field",
 			"fieldKey": "qMfk9G_fieldKey",
@@ -4716,6 +4717,12 @@ window.__ModuleLoader__.load({
 			*  closing the face retires it). No hover title: hover text rides
 			*  the estate Tip, never a native title (the tip canon). */
 			dismissError: "Dismiss error",
+			/** The base-strike note (audits 018 C4 + 016 C5, the client
+			*  strike): the stage's served base held stamps the RESOLVED lane
+			*  no longer serves; the drill struck them from the display and
+			*  names them here — never a silent heal, never a re-offered
+			*  coordinate the next run would refuse. */
+			laneStrikeNote: (p) => "Struck from the resolved lane: " + p.keys.join(", ") + " — the saved base no longer serves " + (p.keys.length === 1 ? "it" : "them") + ".",
 			/** The gate-refusal banner's unstamp verb (SD-7, the
 			*  refusal-without-cure cure): the banner names a field the form
 			*  does not render, so the words must ACT — one click unstamps the
@@ -7889,6 +7896,10 @@ window.__ModuleLoader__.load({
 		function ConstructCard({ block, openSurface }) {
 			const parsed = (0, react.useMemo)(() => parseConstructBlock(block), [block]);
 			const address = parsed.bench === null ? null : benchAddressOf(parsed.bench);
+			const [dismissed, setDismissed] = (0, react.useState)(null);
+			const callKey = typeof block.callId === "string" ? block.callId : "";
+			const retired = (line) => dismissed !== null && dismissed.call === callKey && dismissed.line === line;
+			const errorText = parsed.isError ? parsed.errorLine ?? chromeCopy.draftFailed : null;
 			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
 				className: card_module_css_default.card,
 				"data-dsh-part": "melite-construct-card",
@@ -7901,16 +7912,40 @@ window.__ModuleLoader__.load({
 							className: card_module_css_default.model,
 							children: parsed.title
 						}),
-						parsed.malformedArgs && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-							className: card_module_css_default.state,
+						parsed.malformedArgs && !retired(chromeCopy.argsUnparseable) && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
+							className: card_module_css_default.state + " " + card_module_css_default.errorLine,
 							"data-state": "error",
-							children: chromeCopy.argsUnparseable
+							children: [chromeCopy.argsUnparseable, /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+								size: "sm",
+								variant: "ghost",
+								className: card_module_css_default.errorDismiss,
+								"aria-label": chromeCopy.dismissError,
+								onClick: () => {
+									setDismissed({
+										call: callKey,
+										line: chromeCopy.argsUnparseable
+									});
+								},
+								children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.IconCloseOutlineRegular, { size: 12 })
+							})]
 						}),
-						parsed.isError && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-							className: card_module_css_default.state,
+						errorText !== null && !retired(errorText) && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
+							className: card_module_css_default.state + " " + card_module_css_default.errorLine,
 							"data-state": "error",
 							role: "alert",
-							children: parsed.errorLine ?? chromeCopy.draftFailed
+							children: [errorText, /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+								size: "sm",
+								variant: "ghost",
+								className: card_module_css_default.errorDismiss,
+								"aria-label": chromeCopy.dismissError,
+								onClick: () => {
+									setDismissed({
+										call: callKey,
+										line: errorText
+									});
+								},
+								children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.IconCloseOutlineRegular, { size: 12 })
+							})]
 						}),
 						address !== null && openSurface !== void 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
 							size: "sm",
@@ -19206,6 +19241,81 @@ window.__ModuleLoader__.load({
 			return formsEdgeMetaPromise;
 		}
 		//#endregion
+		//#region src/client/lane-strike.ts
+		/**
+		* lane-strike.ts — THE BASE STRIKE (audits 018 C4 + 016 C5, the
+		* client half of the pick⇄base edge).
+		*
+		* The stage's served base is the LAST RUN's resolved map — a stamp
+		* plane for the lane it resolved THEN. After a pick re-keys the lane,
+		* base-held stamps the RESOLVED lane no longer serves resurrect
+		* through resolveValue's base layer: the pick's null verdicts leave
+		* the USER map (the unset law), and the cascade's null-skip reads the
+		* base right under them — so the studio re-offers a coordinate the
+		* next run refuses (audit 018's live burn: the base's fp16
+		* resurrecting under a variant that serves no such quant; audit
+		* 016's shape: the departed lane's voice resurrecting after the
+		* variant switch). No client verb can write the base layer away —
+		* the strike is the read-side cure: judge each base-held stamp
+		* against the RESOLVED lane's own law and retire the dead ones
+		* BEFORE the cascade, NAMING them (never a silent heal).
+		*
+		* The two judges are the mirror's own, never a second spelling:
+		*  - non-axis params: dropStaleReopenCarry's judge — the resolved
+		*    (variant × quant) lane surface; a stated key off it is dead
+		*    carry (the reopen heal's same verb, judged at this seat because
+		*    the base plane is a reopen-shaped ghost: nobody authored it on
+		*    THIS lane).
+		*  - the quant stamp (audit 018's departed quant): the mirror's
+		*    clause-2 judge by difference — the probe doc WITH the stamp must
+		*    refuse MORE than without it. A value-lawful key never strikes:
+		*    an envelope violation is the compose gate's banner with its own
+		*    unstamp affordance, not a dead seat.
+		*
+		* User-restated keys never strike: presence is authorship, and the
+		* gate banners authored ghosts with the field's own affordance
+		* (SD-7). PURE — the caller owns the write.
+		*/
+		const unstated = (v) => v === void 0 || v === null || v === "";
+		/** Strike the base-held stamps the resolved lane does not serve.
+		*  @param spec the stage's served form spec; null (the spec-less
+		*  drill) strikes nothing.
+		*  @param user the stage's user layer — presence here is authorship.
+		*  @param base the served base map; absent strikes nothing. */
+		function strikeDeadLaneStamps(spec, user, base) {
+			if (spec === null || base === void 0) return {
+				base: base ?? {},
+				strikes: []
+			};
+			const out = { ...base };
+			const strikes = [];
+			const resurrected = (0, _melite_card_base_client.resolveValue)(spec, user, base);
+			const dead = (0, _melite_card_base_client.dropStaleReopenCarry)(spec, resurrected);
+			for (const k of Object.keys(dead)) {
+				if (!(k in out) || k in user) continue;
+				delete out[k];
+				strikes.push(k);
+			}
+			if (unstated(user["quant"])) {
+				const held = out["quant"];
+				if (typeof held === "string" && held !== "") {
+					const withStamp = (0, _melite_card_base_client.composeValidate)(spec, resurrected);
+					const withoutStamp = (0, _melite_card_base_client.composeValidate)(spec, {
+						...resurrected,
+						quant: void 0
+					});
+					if (withStamp.length > withoutStamp.length) {
+						delete out["quant"];
+						strikes.push("quant");
+					}
+				}
+			}
+			return {
+				base: out,
+				strikes
+			};
+		}
+		//#endregion
 		//#region src/client/stage-drill.tsx
 		/** stage-drill.tsx — THE SHARED DRILLDOWN: the spec-formatted stage
 		* editor, the zoom face, the preview seam consult (extracted from
@@ -19711,8 +19821,20 @@ window.__ModuleLoader__.load({
 				bench.rev,
 				stage.id
 			]);
-			const servedBase = typeof stage.resolved === "object" && stage.resolved !== null && !Array.isArray(stage.resolved) ? stage.resolved : void 0;
+			const servedBaseRaw = typeof stage.resolved === "object" && stage.resolved !== null && !Array.isArray(stage.resolved) ? stage.resolved : void 0;
+			const laneStrike = strikeDeadLaneStamps(spec, user, servedBaseRaw);
+			const servedBase = servedBaseRaw === void 0 ? void 0 : laneStrike.base;
 			const value = (0, _melite_card_base_client.resolveValue)(spec ?? { form: "" }, user, servedBase);
+			const [strikeDismissed, setStrikeDismissed] = (0, react.useState)(false);
+			const strikeKey = laneStrike.strikes.join("\0");
+			(0, react.useEffect)(() => {
+				setStrikeDismissed(false);
+			}, [strikeKey]);
+			const [missDismissed, setMissDismissed] = (0, react.useState)(false);
+			const declaredStudioEarly = typeof spec?.stage_view === "string" && spec.stage_view !== "" ? spec.stage_view : null;
+			(0, react.useEffect)(() => {
+				setMissDismissed(false);
+			}, [stage.id, declaredStudioEarly]);
 			const enhance = async () => {
 				/* v8 ignore next 4 -- zoom.tsx serializes enhance to one flight (probe 2026-09-19): re-entry never observes enhancing=true */
 				if (enhancing) {
@@ -20029,6 +20151,17 @@ window.__ModuleLoader__.load({
 					onClick: () => {
 						setEnhanceNote(null);
 					}
+				}, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.IconCloseOutlineRegular, { size: 12 })))) : null, servedBaseRaw !== void 0 && laneStrike.strikes.length > 0 && !strikeDismissed ? (0, react.createElement)("div", {
+					className: card_module_css_default.enhanceRow,
+					"data-testid": "lane-strike-note"
+				}, (0, react.createElement)("span", { className: card_module_css_default.enhanceNote }, chromeCopy.laneStrikeNote({ keys: laneStrike.strikes }), (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+					size: "sm",
+					variant: "ghost",
+					className: card_module_css_default.errorDismiss,
+					"aria-label": chromeCopy.dismissError,
+					onClick: () => {
+						setStrikeDismissed(true);
+					}
 				}, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.IconCloseOutlineRegular, { size: 12 })))) : null, (0, react.createElement)("div", { className: card_module_css_default.params }, !loaded ? (0, react.createElement)("div", { className: card_module_css_default.load }, "form…") : spec !== null ? (0, react.createElement)(_melite_card_base_client.CardForm, {
 					spec,
 					user,
@@ -20135,14 +20268,22 @@ window.__ModuleLoader__.load({
 			}));
 			const currentStageIndex = bench.stages.findIndex((candidate) => candidate.id === stage.id);
 			const priorStageIds = currentStageIndex < 0 ? [] : bench.stages.slice(0, currentStageIndex).map((candidate) => candidate.id);
-			const declaredStudio = typeof spec?.stage_view === "string" && spec.stage_view !== "" ? spec.stage_view : null;
-			const missFace = declaredStudio === null ? genericDetail() : (0, react.createElement)("div", {
+			const declaredStudio = declaredStudioEarly;
+			const missFace = declaredStudio === null ? genericDetail() : missDismissed ? null : (0, react.createElement)("div", {
 				className: card_module_css_default.drillRunRow,
 				"data-testid": "stage-view-load-refusal"
 			}, (0, react.createElement)("div", { className: card_module_css_default.runError }, chromeCopy.stageViewRefusal({
 				card: String(stage.card ?? ""),
 				plugin: declaredStudio
-			}), (0, react.createElement)("div", null, chromeCopy.stageViewRefusalFix)));
+			}), (0, react.createElement)("div", null, chromeCopy.stageViewRefusalFix), (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+				size: "sm",
+				variant: "ghost",
+				className: card_module_css_default.errorDismiss,
+				"aria-label": chromeCopy.dismissError,
+				onClick: () => {
+					setMissDismissed(true);
+				}
+			}, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.IconCloseOutlineRegular, { size: 12 }))));
 			return renderStageView({
 				stageId: stage.id,
 				hasUnsettledWrites: () => {
@@ -20276,7 +20417,19 @@ window.__ModuleLoader__.load({
 				placeholder: chromeCopy.searchPlaceholder,
 				onChange: (e) => setQuery(e.target.value),
 				"aria-label": chromeCopy.searchAria
-			}), catalogError !== null ? (0, react.createElement)("p", { className: card_module_css_default.runError }, catalogError) : null, addError !== null ? (0, react.createElement)("p", { className: card_module_css_default.runError }, addError) : null, cards === null && catalogError === null ? (0, react.createElement)("div", { className: card_module_css_default.load }, "cards…") : null, genres.map(([g, list]) => (0, react.createElement)("section", {
+			}), catalogError !== null ? (0, react.createElement)("p", { className: card_module_css_default.runError }, catalogError, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+				size: "sm",
+				variant: "ghost",
+				className: card_module_css_default.errorDismiss,
+				"aria-label": chromeCopy.dismissError,
+				onClick: () => setCatalogError(null)
+			}, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.IconCloseOutlineRegular, { size: 12 }))) : null, addError !== null ? (0, react.createElement)("p", { className: card_module_css_default.runError }, addError, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+				size: "sm",
+				variant: "ghost",
+				className: card_module_css_default.errorDismiss,
+				"aria-label": chromeCopy.dismissError,
+				onClick: () => setAddError(null)
+			}, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.IconCloseOutlineRegular, { size: 12 }))) : null, cards === null && catalogError === null ? (0, react.createElement)("div", { className: card_module_css_default.load }, "cards…") : null, genres.map(([g, list]) => (0, react.createElement)("section", {
 				key: g,
 				className: card_module_css_default.pickerGenre
 			}, (0, react.createElement)("h4", { className: card_module_css_default.pickerGenreTitle }, (0, _melite_card_base_client.titleCaseId)(g)), list.map((c) => (0, react.createElement)("button", {
@@ -21095,6 +21248,10 @@ window.__ModuleLoader__.load({
 			}, [lastRunId, snapshot?.value]);
 			const [localRunError, setLocalRunError] = (0, react.useState)(null);
 			const [silencedError, setSilencedError] = (0, react.useState)(null);
+			const [snapshotFailureDismissed, setSnapshotFailureDismissed] = (0, react.useState)(null);
+			(0, react.useEffect)(() => {
+				if (snapshot?.status !== "failed") setSnapshotFailureDismissed(null);
+			}, [snapshot?.status]);
 			const snapshotStageError = snapshot?.value !== void 0 && snapshot.value.kind !== "run" ? terminalStageErrorOf(snapshot.value.stages) : null;
 			const dismissRunError = (0, react.useCallback)(() => {
 				setLocalRunError(null);
@@ -21403,13 +21560,30 @@ window.__ModuleLoader__.load({
 			}, ...children);
 			if (snapshot === void 0) return withTabScroll((0, react.createElement)("p", { className: card_module_css_default.missing }, chromeCopy.cardsHookUnavailable));
 			const value = snapshot.value;
-			const failedLine = snapshot.status === "failed" && value !== void 0 ? (0, react.createElement)("p", {
+			const failedVoice = snapshot.failure?.message ?? "cards resource failed — showing the last good state";
+			const failedLine = snapshot.status === "failed" && value !== void 0 && failedVoice !== snapshotFailureDismissed ? (0, react.createElement)("p", {
 				className: card_module_css_default.failed,
 				"data-testid": "cards-refresh-failed"
-			}, snapshot.failure?.message ?? "cards resource failed — showing the last good state") : null;
+			}, failedVoice, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+				size: "sm",
+				variant: "ghost",
+				className: card_module_css_default.errorDismiss,
+				"aria-label": chromeCopy.dismissError,
+				onClick: () => setSnapshotFailureDismissed(failedVoice)
+			}, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.IconCloseOutlineRegular, { size: 12 }))) : null;
 			if (value === void 0) {
 				if (snapshot.status === "live") return withTabScroll((0, react.createElement)("p", { className: card_module_css_default.failed }, chromeCopy.cardsNoValue));
-				if (snapshot.status === "failed") return withTabScroll((0, react.createElement)("p", { className: card_module_css_default.failed }, snapshot.failure?.message ?? "cards resource failed"));
+				if (snapshot.status === "failed") {
+					const noValueVoice = snapshot.failure?.message ?? "cards resource failed";
+					if (noValueVoice === snapshotFailureDismissed) return withTabScroll(null);
+					return withTabScroll((0, react.createElement)("p", { className: card_module_css_default.failed }, noValueVoice, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+						size: "sm",
+						variant: "ghost",
+						className: card_module_css_default.errorDismiss,
+						"aria-label": chromeCopy.dismissError,
+						onClick: () => setSnapshotFailureDismissed(noValueVoice)
+					}, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.IconCloseOutlineRegular, { size: 12 }))));
+				}
 				return withTabScroll((0, react.createElement)("p", { className: card_module_css_default.loading }, "loading " + address + "…"));
 			}
 			const stageError = value.kind === "run" ? null : terminalStageErrorOf(value.stages);
