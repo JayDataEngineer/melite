@@ -590,7 +590,9 @@ describe("THE COMMITTED LIB (an emitted import Node can actually resolve)", () =
   // 612 (2026-11-12): contracts' familyLane.js — the one-seat
   // migration's new module (commit 6925103d0) landed without this
   // repin; the walls run caught the drift the same night.
-  const LIB_CENSUS_PIN = 612;
+  // 613 (2026-10-27): card-kit's craft.js — the agent-flow rework's
+  // slice 6 module (commit 57334986c), the card-owned craft seam.
+  const LIB_CENSUS_PIN = 613;
   const specRe = /(?:from\s*|import\(\s*)(["'])(\.[^"']*)\1/g;
 
   it("the census is exact (a deletion OR a lowered floor reds — the count is pinned, not floored)", () => {
