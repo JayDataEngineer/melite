@@ -1,3 +1,4 @@
+// @contract infra-acquire-restart-ledger
 // weight-acquire-restart.spec.ts — THE RESTART MUST NOT FORGET THE LEDGER
 // (ERRORS.md k2/m + ROADMAP P5 F2: "the verbs (acquire_retry/
 // acquire_discard) read a PROCESS-LIFETIME ledger, so an estate

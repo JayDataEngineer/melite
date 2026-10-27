@@ -1,3 +1,4 @@
+// @contract cards-run-rescue-honesty
 // acquire-rescue-verbs.spec.ts — THE STUCK ACQUIRE'S VERBS (the
 // manage seat half of ERRORS.md k2 + the purge plan's P5 rescue
 // honesty: dev_docs/audits/ui-engine-fidelity-purge-2026-11-08.md §7
