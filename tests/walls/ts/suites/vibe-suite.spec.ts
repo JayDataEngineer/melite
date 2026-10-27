@@ -362,12 +362,16 @@ describe("THE CARD-OWNED CRAFT (slice 6) — the write door restores the look's 
 const ONE_SEAT_REGISTER = new Map<string, string>([
   // The agent composes bag-mode/multi-lane params the card form
   // presents as variants or wired inputs instead.
+  // RETIRED 2026-11-12 (the seamless charter's second register
+  // shrink): tts:voice, tts:style_instruction, tts:design_prompt,
+  // tts:ref_text — all four are LANE-CONDITIONAL rows, declared on
+  // the qwen3-tts family's variant/cell rows (customvoice [voice],
+  // its 1_7b cell [style_instruction], voicedesign [design_prompt],
+  // base [ref_audio, ref_text]). The derivation now reads the
+  // served lane contract (the form's own gate) — the rows are
+  // UI-carried on their lanes, same declared truth.
   ["music:mode", "family selector's cousin — the UI carries mode as variants; the agent names it for bag-mode composes"],
   ["rig:mode", "same — the rig form presents no mode row"],
-  ["tts:voice", "the qvoice mod carries voice on the UI face; the agent names it flat (the family's own doc owns the spelling)"],
-  ["tts:style_instruction", "qvoice/design lane field — UI rides the mod bucket"],
-  ["tts:design_prompt", "design lane field — UI rides the mod bucket"],
-  ["tts:ref_text", "reference-lane transcript — UI wires ref_audio as an input; the agent states the pairing"],
   // Reference lanes the UI expresses as stage wiring (E2-1 input pin).
   ["image-gen:reference_images", "the agent's reference lane; the UI composes references through wired stages"],
   ["image-edit:double_reference", "dual-reference lane — UI wires the second reference as a stage input"],
@@ -586,6 +590,20 @@ describe("THE ONE SEAT — the agent face and the UI face are two projections of
       // list; a studio.write (calls, keyframes) rides the UI's
       // studio_writes channel — the document plane, not a param row.
       const studioWrites = new Set(((spec as { studio_writes?: readonly string[] }).studio_writes ?? []).map(String));
+      // THE LANE-CONDITIONAL ROWS: the family declares some fields not
+      // at the top level but on VARIANT and CELL rows (qwen3-tts:
+      // customvoice carries [voice], its 1_7b cell adds
+      // [style_instruction], voicedesign carries [design_prompt], base
+      // carries [ref_audio, ref_text]). The served lane contract is
+      // the form's OWN gate — those rows render on the lanes that
+      // declare them, so a card param named there is UI-carried (the
+      // same declared truth, gated per lane). Derived from the spec's
+      // served contract, never a second client-side truth.
+      const lanes = (spec as { lanes?: { base?: readonly string[]; variants?: Record<string, { params?: readonly string[]; cells?: Record<string, { params?: readonly string[] }> }> } }).lanes ?? {};
+      const laneParams = new Set<string>([
+        ...(lanes.base ?? []),
+        ...Object.values(lanes.variants ?? {}).flatMap((v) => [...(v.params ?? []), ...Object.values(v.cells ?? {}).flatMap((c) => [...(c.params ?? [])])]),
+      ].map(String));
       const carrier = (def as { schemaCarrier?: unknown; schema: unknown }).schemaCarrier ?? def.schema;
       const dict = ((carrier ?? {}) as { dict?: Record<string, { meta?: { extra?: Record<string, unknown> } }> }).dict ?? {};
       judged++;
@@ -600,7 +618,7 @@ describe("THE ONE SEAT — the agent face and the UI face are two projections of
         // params ARE the DECL's params list; a studio.write (calls,
         // keyframes) rides the UI's studio_writes channel — the
         // document plane, not a param row. Same truth, other channel.
-        const derived = k === "model" || mods.has(k) || inputs.has(k) || studioWrites.has(k);
+        const derived = k === "model" || mods.has(k) || inputs.has(k) || studioWrites.has(k) || laneParams.has(k);
         if (!derived) live.push(`${id}:${k}`);
       }
     }
