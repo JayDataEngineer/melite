@@ -22,14 +22,16 @@
 //     schema nor the stage-routing roster names: the value reaches
 //     no consumer at all.
 //
-// THE STAGE-ROUTING PIN: a stage's doc carries two keys the card
-// plane reads OUTSIDE the card's carrier schema — `model` (the
-// family/variant selector the run door resolves, read by cards like
-// image-gen's craft split) and `filename_prefix` (the save-naming
-// seat). They are named here so the pin can only SHRINK: a new
-// unadmitted key reds, and retiring a routing key is a one-line
-// edit with a receipt. The full routing roster is owed as SD-4b —
-// this wall never pretends to derive what the code does not state.
+// THE STAGE-ROUTING KEY (SD-4b, cured 2026-11-12): exactly ONE key
+// rides a card-plane stage's doc outside the card's carrier schema —
+// `model`, the family/variant selector `composeCardStageRow` reads
+// at runsRegistry.ts:792 (`mid = params.model ?? service ?? card`)
+// before it hands `{ ...params, card }` to the card door. It is a
+// CITED exemption, not a roster: the wall's failure message names
+// the code line, so a second unadmitted key cannot hide behind a
+// list. The retired `filename_prefix` (image-upscale's polish stage)
+// reached NO consumer — the upscale-tools card composes its own
+// SaveImage prefix from the run id — and is gone.
 //
 // THE DEPTH: the rows are the REAL seat (seedFlowsSeat, the same
 // registry the validate door serves) and the cards are the REAL
@@ -43,9 +45,9 @@ import { loadCardDefs } from "@melite/comfyui-cordis";
 
 const SEAT = seedFlowsSeat();
 
-/** The stage-doc keys the card plane reads outside a card's carrier
- *  schema (the routing pin — see the header's SD-4b note). */
-const STAGE_ROUTING_KEYS: readonly string[] = ["model", "filename_prefix"];
+/** The ONE stage-doc key the card plane reads outside a card's
+ *  carrier schema: the routing selector at runsRegistry.ts:792. */
+const STAGE_ROUTING_KEYS: readonly string[] = ["model"];
 
 /** The flow's own statable set: its declared initial inputs, its
  *  required initials, and every param an overlay routes. */
@@ -131,7 +133,7 @@ describe("THE FLOW FACE'S CARRY LAW (SD-4) — an advertised param reaches the s
         for (const key of Object.keys(stage.params ?? {})) {
           judged += 1;
           if (!admitted.has(key) && !STAGE_ROUTING_KEYS.includes(key)) {
-            failures.push(`${name}: stage '${stage.id}' composes '${key}' but card '${card}' admits [${[...admitted].join(", ")}] — the card door refuses (or drops) a value the flow promised to carry`);
+            failures.push(`${name}: stage '${stage.id}' composes '${key}' but card '${card}' admits [${[...admitted].join(", ")}] and '${key}' is not the routing selector (runsRegistry.ts:792) — the value reaches no consumer`);
           }
         }
       }
