@@ -131,6 +131,16 @@ export function registerCard(ctx: Context, comfy: ComfyUIServiceFace): void {
     // THE video door (2026-09-21, operator order — video-gen
     // retired): a blind "make a video" must find THIS card first.
     tags: ['video', 'generate', 'text-to-video', 'timeline', 'edit'],
+    // THE CARD-OWNED CRAFT LAW (the rework's slice 6, H5's split): the
+    // CONTENT line the load digest serves. The FORMATTING law of this
+    // card is already card-owned and mechanical — prompts.yaml's
+    // pre_start/pre_chain framing and the identity pin are applied by
+    // the emitter at render time, never authored by the agent — so no
+    // normalize hook rides here: the agent writes the action, the card
+    // frames the shot.
+    craft: {
+      promptHint: 'one continuous action line per shot — the card frames each shot at render (no "shot 1:" prefixes, no first-frame/last-frame language; pin frames with params.keyframes)',
+    },
     identity,
     // THE DISCOVERY ROWS (migrated 2026-09-10 from the frozen
     // discovery export — the card owns its sidebar, surface, and

@@ -270,7 +270,7 @@ describe("the stuck acquire's verbs (k2: no retry, no delete — the door must o
         const p = b.progressOf(deadOp);
         return p !== null && p.state === "failed" ? p : null;
       }, 5_000);
-      assert.ok(rejoined !== null, "the real service's ledger must rejoin the stored terminal row");
+      assert.ok(rejoined !== null && rejoined !== undefined, "the real service's ledger must rejoin the stored terminal row");
       assert.equal(rejoined.bytes, 0);
 
       // POLL through the door: the rejoined row answers via dispatchManage

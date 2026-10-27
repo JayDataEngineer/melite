@@ -339,4 +339,5 @@ export { t2i, parseT2IFacts } from "./actions.js";
 // unwrapExports) — the default export IS the row-loadable plugin. The
 // named `family` stays the library face (engine loadFamilies).
 export { family as default };
+export { normalizeAnimaPromptTags } from "./promptTags.js";
 //# sourceMappingURL=index.js.map

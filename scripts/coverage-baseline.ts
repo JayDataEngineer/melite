@@ -164,6 +164,10 @@ export const COVERAGE_BASELINE: Record<string, {
   '**/packages/engines/comfyui-card-kit/src/blocks/render-kit.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/engines/comfyui-card-kit/src/errors.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/engines/comfyui-card-kit/src/coerceWireArrays.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
+  // the card-owned craft seam (rework slice 6): one regex body, so
+  // the branch metric carries ZERO paths — null is the honest floor
+  // (a vacuous 100 would claim judgment over nothing)
+  '**/packages/engines/comfyui-card-kit/src/craft.ts': { statements: 100, branches: null, functions: 100, lines: 100 },
   '**/packages/engines/comfyui-card-kit/src/facts.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/engines/comfyui-card-kit/src/fields.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/engines/comfyui-card-kit/src/graph-helpers.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },

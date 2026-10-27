@@ -4,4 +4,5 @@ export declare const DECL: ModelDecl;
 export declare const family: Plugin;
 export { t2i, parseT2IFacts, type T2IFacts, type T2IParams } from "./actions.js";
 export { family as default };
+export { normalizeAnimaPromptTags } from './promptTags.js';
 //# sourceMappingURL=index.d.ts.map

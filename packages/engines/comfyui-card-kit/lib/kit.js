@@ -29,6 +29,7 @@
 // path inside it — P46).
 export { loadTextPair, decodeSave, stackLoras, stackControlNets } from "./blocks/render-kit.js";
 export { isItemWrapped, unwrapItemArrays, coerceWireArrays, coerceWireNumbers, wireTypeLedger } from "./coerceWireArrays.js";
+export { collapsePromptSpace } from "./craft.js";
 export { mintSeed, voiceLockSeed } from "./graph-helpers.js";
 export { declaredAction, instantiateAction } from "./action.js";
 export { IMPACT_DETECTOR_IDS, IMPACT_DETECTORS, IMPACT_DETECTOR_PROVISIONS, IMPACT_PACKS, impactArmNames, impactDetector, } from "./impact.js";

@@ -15,6 +15,7 @@ import type { GraphBuilder, PromptGraph } from './graph.ts'
 import type { ModelFacts } from './facts.ts'
 import type { Schema as CarrierSchema, DeclaredModifierKind } from './params-emit.ts'
 import type { ProvisionRow } from './model-contract.ts'
+import type { CardCraft } from './craft.ts'
 
 export interface CardFlowOutputBinding {
   channel: string
@@ -96,6 +97,15 @@ export interface CardDefinition {
    *  the card IS the catalog for its action kinds. Served VERBATIM
    *  by specModifiers; the leaf never learns the declarer. */
   mods?: readonly DeclaredModifierKind[]
+  /** THE CARD-OWNED CRAFT LAW (the agent-flow rework's slice 6, H5's
+   *  split): the card declares the CONTENT-style hint its load digest
+   *  serves and the FORMATTING rewrite the write doors apply before a
+   *  param lands — so compose is already correct and the agent stops
+   *  reading a craft manual per request. A preprocessor fixes spacing;
+   *  it never invents content (a rewritten prompt is a different
+   *  picture). Absent = the card has no craft law and every write
+   *  passes untouched (the no-op law). */
+  craft?: CardCraft
   /** Schemastery schema of the card params (validated before compose).
    *  The callable IS the carrier (N4 cure, 2026-10-22): schemastery
    *  schema objects are functions with `.dict` (+ `.toJSON`), so the

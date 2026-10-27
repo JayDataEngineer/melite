@@ -47,7 +47,7 @@ describe('melite_construct add_stage — THE JUST-IN-TIME CARD DOC (slice 4b)', 
     const { seen, estate } = mockEstate(handler)
     const tool = meliteConstruct(estate)
     const out = await tool.execute({ verb: 'add_stage', card: 'image-gen', expect_rev: 6 }, exec()) as Record<string, unknown>
-    const doc = out.doc as { card?: string; digest?: string; files?: unknown[] }
+    const doc = out.doc as { card?: string; digest?: string; files?: unknown[]; changed?: unknown }
     assert.equal(doc.card, 'image-gen')
     assert.match(String(doc.digest), /^[0-9a-f]{16}$/)
     assert.deepEqual(doc.files, agents)

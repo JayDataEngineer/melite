@@ -2,8 +2,8 @@
   "version": 1,
   "families": {
     "anima": {
-      "srcHash": "4aea621189dc25f0b47a9041e1615bdd76d0eafc94013379dc2e5bff218256d3",
-      "libHash": "5d99747e6444996a96c03363c9c727214ea638f8ac14cfa03010aff8c6e46b97"
+      "srcHash": "157f3f8c2c3807dcf30d0b24f67c24a404e540065f18d6e05bc74843d9b361c6",
+      "libHash": "c0b287f6663c23831aeb0b0dfce0cc88f5e31529fef686a751306f70983cb803"
     },
     "anny": {
       "srcHash": "238f5700d52e1e946465b35d66f2ebdf7da39ba1c3546546d84260a9285391f8",
@@ -38,8 +38,8 @@
       "libHash": "00bfa878335330ad211f4d2babd13fa58785b612a32a81d62d43ea7d742371c9"
     },
     "h3": {
-      "srcHash": "61793222f7e1d09b7cce75b618b3af98aedb2e7e9bcc2768f06189a828c7b615",
-      "libHash": "2de34db9b8e922ce0c43bf97c2997d12bbbda5daecb4f0825a9451c3b694ccf4"
+      "srcHash": "59d79fe5a8094aac45b68fe532288d69a66188bee009384232ad5a942af257b7",
+      "libHash": "61275d21ca591fadb54901a14913db9bcef32101af3fb073f3d45023b7fc5827"
     },
     "input": {
       "srcHash": "095596cc5d194716481a4dab7c5e3e6ecb68037bdbb3935dcb77812412f9d5fc",
@@ -58,8 +58,8 @@
       "libHash": "fbad5adf07dd4ac4f6fa9254c71a69a9d557884e04008ff76d3b6b8638d3c707"
     },
     "krea-2": {
-      "srcHash": "b0433b218ed8a46f58fcfe0d9fe734bbcae0930cf9758381c894b34aab501755",
-      "libHash": "2ba61e27e06552c42c8fa4cf69b0c22f4c2a7510b903c69a99fa86db0be5d72c"
+      "srcHash": "c26dadf8cbcf1bb6a099f941809d049afbb7a3f0856eb522bb2e3922576e200e",
+      "libHash": "6e91b0276efad94936ee78b8f3568aaadcce8351d16c35727a0bc4512e797f6d"
     },
     "mask": {
       "srcHash": "6bdda83b5726a49d97ee927ed3bcea74fbeb80e5e71f8ee91108819b66692f30",
@@ -70,8 +70,8 @@
       "libHash": "8bc93bcd324fc58abfe052768f06b5160c50487ce58d7e543a93b7ae83f33425"
     },
     "moss-sfx": {
-      "srcHash": "d4e4229084b25573a9a3c74367254ccf1046513dad1c622201b76715bb5a44d8",
-      "libHash": "dd2f93b8734a1c8d874f2693d32cd6efd0412a1951664f86619b103de8b147a4"
+      "srcHash": "2d3b530bb62e8b09f26e69311232fbebb247fdab3d49bdbd37832d7c53065084",
+      "libHash": "f79004897ce8cfc200ba92e6a8e41d8a34d1febd0bda998e25d6447c4d8c0baf"
     },
     "music3": {
       "srcHash": "a7f1eda7c8c67112981c11c2f05125403eca3cb5dfd287e7a44104583b766bc5",
@@ -94,8 +94,8 @@
       "libHash": "bbd4e5a1802b79ecf148f2a95127b0210b0a5786a6652ef0e95632cbc852c2d6"
     },
     "qwen3-tts": {
-      "srcHash": "950ea40170fa027bc3213dd2ffa9d87185ea33d96b8b731af5219b4e9a8b503f",
-      "libHash": "0b58cf058fbd9d8e3722f3150ea5f067fcb07aee4032fe70d737e77f75b2355a"
+      "srcHash": "3443e1205f2e3b35dacc7fd957700a83b6410142a3de129dee9600203dec8871",
+      "libHash": "ada6cfe5b469e4e854ff052d5cdc824a8b285a1f65e931486a723da8d8998f41"
     },
     "seedvr2-ema": {
       "srcHash": "d9baec44e58eddc2c4327f98ad2f4a641c64f2983b457185f79fa526bfdfc664",

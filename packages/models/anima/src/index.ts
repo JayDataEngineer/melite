@@ -357,3 +357,5 @@ export { t2i, parseT2IFacts, type T2IFacts, type T2IParams } from "./actions.ts"
 // unwrapExports) — the default export IS the row-loadable plugin. The
 // named `family` stays the library face (engine loadFamilies).
 export { family as default };
+
+export { normalizeAnimaPromptTags } from './promptTags.ts'

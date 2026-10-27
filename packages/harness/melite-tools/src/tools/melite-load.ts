@@ -123,6 +123,7 @@ export function meliteLoad(
             agents?: Array<{ path?: unknown; text?: unknown }>
             skills?: Array<Record<string, unknown>>
             model_hints?: Array<{ description?: unknown; present?: unknown }>
+            craft?: { prompt_hint?: unknown }
             stages?: Array<Record<string, unknown>>
           }
           error?: string
@@ -194,6 +195,13 @@ export function meliteLoad(
                 + ') — detail=true for every name')
             }
           }
+          // THE CARD-OWNED CRAFT LINE (slice 6, H5's split): the
+          // CONTENT style the card declares, one line — the agent used
+          // to read a craft manual per request to learn it. The
+          // FORMATTING half is applied at the write door, so this line
+          // tells the agent what to write, never how to spell it.
+          const craftHint = typeof b.craft?.prompt_hint === 'string' ? b.craft.prompt_hint : ''
+          if (craftHint !== '') out.push('prompt style: ' + craftHint)
           // THE MODS LINE (stroke 79 — the seam-law unification): the
           // same kinds the UI form-spec serves, one line for the
           // agent — the bags are compose-required on mod-owned cards,

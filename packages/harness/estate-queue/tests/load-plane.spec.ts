@@ -437,6 +437,32 @@ describe("loadCard", () => {
     assert.deepEqual(hints.map((h) => h.id), ["pack-flat", "pack-fam"]);
   });
 
+  it("the card's craft hint rides the bundle (slice 6: the digest's one-line style law)", () => {
+    // THE CARD OWNS ITS CRAFT (H5's split): the CONTENT-style line is
+    // the card's own declaration — the bundle serves it so melite_load's
+    // digest can state the style without a craft doc read. A card that
+    // declares no law serves no key (the no-op law).
+    const crafted = {
+      identity: { label: "L", description: "d" },
+      boarded: [],
+      schema: { dict: {} },
+      craft: { promptHint: "prose — style suffix LAST" },
+    } as unknown as CardDefinition;
+    const cardsCraft = {
+      defsSync: () => new Map([["anny", crafted]]),
+      modelMids: () => new Set<string>(),
+    };
+    const b = loadCard(REPO, cardsCraft as never, models as never, "anny");
+    assert.deepEqual(b["craft"], { prompt_hint: "prose — style suffix LAST" });
+    const bare = { identity: { label: "L", description: "d" }, boarded: [], schema: { dict: {} } } as unknown as CardDefinition;
+    const cardsBare = {
+      defsSync: () => new Map([["anny", bare]]),
+      modelMids: () => new Set<string>(),
+    };
+    const b2 = loadCard(REPO, cardsBare as never, models as never, "anny");
+    assert.ok(!("craft" in b2), "a card with no craft law serves no craft key");
+  });
+
   it("unknown cards refuse LOUD", () => {
     assert.throws(
       () => loadCard(REPO, cards as never, models as never, "ghost"),

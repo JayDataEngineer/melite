@@ -1,5 +1,6 @@
 export { loadTextPair, decodeSave, stackLoras, stackControlNets } from './blocks/render-kit.js';
 export { isItemWrapped, unwrapItemArrays, coerceWireArrays, coerceWireNumbers, wireTypeLedger } from './coerceWireArrays.js';
+export { collapsePromptSpace, type CardCraft, type CraftFix, type CraftRewrite } from './craft.js';
 export { mintSeed, voiceLockSeed } from './graph-helpers.js';
 export { declaredAction, instantiateAction, type ComfyActionSpec, type ComfyActionContext } from './action.js';
 export { IMPACT_DETECTOR_IDS, IMPACT_DETECTORS, IMPACT_DETECTOR_PROVISIONS, IMPACT_PACKS, impactArmNames, impactDetector, type ImpactDetectorFacts, type ImpactDetectorId, type ImpactProvision, } from './impact.js';

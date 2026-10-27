@@ -22,9 +22,11 @@ import { callableSchema, gatedResolve } from '@melite/comfyui-card-kit/admission
 import { MASK_RIDERS } from '@melite/comfyui-card-kit/pack-fields'
 import { IMPACT_PACKS } from '@melite/comfyui-card-kit'
 import { statedRegion, regionSourceKind } from '@melite/comfyui-card-kit'
+import { collapsePromptSpace, type CraftFix } from '@melite/comfyui-card-kit'
 import { DECL as krea2Decl } from '@melite/models-krea-2'
 import { DECL as zImageDecl } from '@melite/models-z-image'
 import { DECL as animaDecl } from '@melite/models-anima'
+import { normalizeAnimaPromptTags } from '@melite/models-anima'
 import { DECL as qwenImg21Decl } from '@melite/models-qwen-img-21'
 import { DECL as fluxKleinDecl } from '@melite/models-flux-klein'
 import { DECL as mossImageDecl } from '@melite/models-moss-image'
@@ -161,6 +163,40 @@ export function registerCard(ctx: Context, comfy: ComfyUIServiceFace): void {
     skeleton: 'generate',
     boarded: [...BOARDED],
     tags: ['image', 'generate', 'text-to-image'],
+    // THE CARD-OWNED CRAFT LAW (the rework's slice 6, H5's split): the
+    // CONTENT line the load digest serves and the FORMATTING rewrite the
+    // write doors apply. The formatting law is the ACTIVE look's: anima
+    // takes the family's danbooru grammar (its own promptTags door owns
+    // the spelling — restored here, refused there only for a hand-typed
+    // bench doc), every prose look collapses the whitespace a heredoc
+    // leaves behind. The words are never rewritten: a preprocessor fixes
+    // spacing, it cannot invent the tags.
+    craft: {
+      promptHint: 'prose — subject, action, environment, then the style suffix LAST; the anima look takes danbooru tags (comma+space, spaces not underscores, score tags excepted)',
+      normalize(params: Record<string, unknown>) {
+        const family = typeof params['model'] === 'string' ? params['model'].split(':')[0] : ''
+        const fixed: CraftFix[] = []
+        const out = { ...params }
+        for (const field of ['prompt', 'negative_prompt']) {
+          const raw = out[field]
+          if (typeof raw !== 'string' || raw.trim() === '') continue
+          if (family === animaDecl.id) {
+            const restored = normalizeAnimaPromptTags(raw)
+            if (restored.text !== raw) {
+              out[field] = restored.text
+              for (const rule of restored.fixed) fixed.push({ param: field, rule })
+            }
+            continue
+          }
+          const collapsed = collapsePromptSpace(raw)
+          if (collapsed !== raw) {
+            out[field] = collapsed
+            fixed.push({ param: field, rule: 'whitespace' })
+          }
+        }
+        return { params: out, fixed }
+      },
+    },
     identity,
     // MASK-C (the image-gen region gap): the cured family's slice.
     // qwen-img-21 boards 'mask', whose region arm is the Impact

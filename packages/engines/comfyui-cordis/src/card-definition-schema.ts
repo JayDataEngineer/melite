@@ -63,6 +63,13 @@ const CardDefinitionSchema = z.object({
   // door-side (the drafts family-admission suite) — the envelope
   // only admits the key's existence.
   admitFamily: z.any(),
+  // THE CARD-OWNED CRAFT LAW (the rework's slice 6, H5's split): the
+  // content-style hint the load digest serves and the formatting
+  // rewrite the write doors apply. z.any() like its sibling
+  // declaration arms: the value's shape is typed at the seam
+  // (CardCraft) and judged by the doors that call it, never re-judged
+  // here — the envelope only admits the key's existence.
+  craft: z.any(),
   // THE FAMILY RESEAT (the inject-keys ERROR g cure, 2026-11-08 — the
   // CardDefinition.reseatFamily face, the write door's pre-store
   // strip): the card drops its own window-family dead keys at the

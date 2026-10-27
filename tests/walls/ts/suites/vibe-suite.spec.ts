@@ -47,6 +47,7 @@ import { fileURLToPath } from "node:url";
 import { loadCardDefs } from "../../../../packages/engines/comfyui-cordis/src/cardDefs.ts";
 import { searchCards } from "../../../../packages/harness/estate-queue/src/discloseRegistry.ts";
 import { loadCard } from "../../../../packages/harness/estate-queue/src/loadPlane.ts";
+import { checkAnimaPromptTags } from "../../../../packages/models/anima/src/promptTags.ts";
 import { meliteLoad } from "../../../../packages/harness/melite-tools/src/tools/melite-load.ts";
 import { meliteConstruct } from "../../../../packages/harness/melite-tools/src/tools/melite-construct.ts";
 import { fakeEstate, fakeEstateRecorded } from "../../../../packages/harness/melite-tools/test/fake-estate.ts";
@@ -274,6 +275,60 @@ describe("THE VIBE SUITE BASELINE — the agent flow's acceptance harness (v0 pi
       verb: "patch", stage: "s1", params: { p: 2 }, expect_rev: 6,
     } as never, fakeExec(AbortSignal.timeout(5000))) as Record<string, unknown>;
     assert.equal(unproven["landing"], "ambiguous_no_write", "a transport failure never implies a clean no-op");
+  });
+});
+
+// ── SLICE 6 — THE CARD OWNS ITS CRAFT (H5's adjudicated split): the
+// formatting law is card-owned PREPROCESSING applied at the write door,
+// and the content style is ONE line the load digest serves. A
+// preprocessor fixes spacing; it cannot invent the tags.
+describe("THE CARD-OWNED CRAFT (slice 6) — the write door restores the look's declared spelling and the digest serves the style line", () => {
+  it("T5 CURED (slice 6): the anima look's tag grammar is restored AT THE WRITE and the digest serves the card's one-line style law", async () => {
+    // THE BURN (H5, transcript + the 2026-10-02 break): the agent read
+    // the anima manual per request — and once skipped it, writing prose
+    // to a tag-trained model. The card now owns both halves.
+    const defs = await loadCardDefs();
+    const cards = { defsSync: () => defs };
+    const bundle = loadCard(ROOT, cards as never, null, "image-gen") as {
+      craft?: { prompt_hint?: string };
+      signature: { params_schema: { properties: { model?: { enum?: string[] } } } };
+    };
+    const animaValue = (bundle.signature.params_schema.properties.model?.enum ?? [])
+      .find((v) => v.startsWith("anima:"));
+    assert.ok(animaValue, "the served model face offers an anima look");
+    // (1) THE CONTENT LINE — the digest serves the card's declaration.
+    const parts = meliteLoad({} as never, {}).output.render(
+      { name: "image-gen", inference_type: "card" },
+      { name: "image-gen", inference_type: "card", bundle } as never,
+    ) as Array<{ text?: string }>;
+    const digest = parts.map((p) => p?.text ?? "").join("\n");
+    assert.equal(typeof bundle.craft?.prompt_hint, "string", "the bundle carries the card's own declaration (never a frozen copy)");
+    assert.match(digest, /prompt style: .*danbooru tags/, "the digest states the look's content style in ONE line (no craft doc read)");
+    // (2) THE FORMATTING LAW — the write stores the declared spelling.
+    const seen: Array<{ lane: string; args: unknown[] }> = [];
+    const { estate } = fakeEstateRecorded(seen, (lane, args) => {
+      if (lane === "benchVerb" && args[1] === "add_stage") return { rev: 3, stage: "s_0" };
+      if (lane === "benchGet") {
+        return { session: "main", rev: 3, intent: "", log: [], stages: [{ id: "s_0", card: "image-gen", params: { model: animaValue, prompt: "1girl, long hair, smile" } }] };
+      }
+      if (lane === "runsValidate") return { ok: true };
+      throw new Error("unmocked lane " + lane);
+    });
+    const out = await meliteConstruct(estate).execute({
+      verb: "add_stage", card: "image-gen",
+      params: { model: animaValue, prompt: "1girl,long_hair,,smile" },
+      expect_rev: 2,
+    } as never, fakeExec(AbortSignal.timeout(5000))) as Record<string, unknown>;
+    const write = seen.find((r) => r.lane === "benchVerb" && r.args[1] === "add_stage");
+    assert.ok(write, "the stage was written");
+    const stored = (write.args[2] as Record<string, unknown>)["params"] as Record<string, unknown>;
+    assert.equal(stored["prompt"], "1girl, long hair, smile", "the bench stores the look's declared spelling (H5 cured at the write door)");
+    const rules = ((out["applied_derivations"] as Array<Record<string, unknown>> | undefined) ?? []).map((d) => d["rule"]);
+    assert.ok(rules.includes("craft:tag-separator"), "the echo names the separator rule that fired");
+    assert.ok(rules.includes("craft:tag-underscore-space"), "the echo names the underscore rule that fired");
+    // the restored prompt is what the family's own refusal door accepts —
+    // the preprocessor and the judge agree on the grammar.
+    assert.doesNotThrow(() => checkAnimaPromptTags("prompt", String(stored["prompt"])), "the restored spelling passes the family's own grammar door");
   });
 });
 

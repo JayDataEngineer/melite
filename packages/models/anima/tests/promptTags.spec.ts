@@ -4,7 +4,7 @@
 // the offending fragment.
 import { describe, it } from "vitest";
 import assert from "node:assert/strict";
-import { checkAnimaPromptTags } from "../src/promptTags.ts";
+import { checkAnimaPromptTags, normalizeAnimaPromptTags } from "../src/promptTags.ts";
 
 const accepts = (field: "prompt" | "negative_prompt", text: string): void =>
   assert.doesNotThrow(() => checkAnimaPromptTags(field, text));
@@ -50,5 +50,38 @@ describe("checkAnimaPromptTags — one refusal per class", () => {
 describe("checkAnimaPromptTags — the negative seat refuses the same grammar", () => {
   it("a malformed negative refuses under its own field name", () => {
     refuses("negative_prompt", "worst quality,low quality", "missing space after comma");
+  });
+});
+
+describe("normalizeAnimaPromptTags — the mechanical restore (the card-owned craft seam)", () => {
+  it("restores every refusal class at once and names each rule", () => {
+    // `long_hair blonde` is the wrapped-wire shape: one segment whose
+    // underscore tag sits beside a plain word (the respell walks both)
+    const r = normalizeAnimaPromptTags("1girl,long_hair blonde,,smile");
+    assert.equal(r.text, "1girl, long hair blonde, smile");
+    assert.deepEqual(r.fixed.sort(), ["tag-separator", "tag-underscore-space"]);
+  });
+
+  it("collapses a whitespace run inside a tag (the wrapped-wire spelling)", () => {
+    const r = normalizeAnimaPromptTags("1girl,  silver   hair, smile");
+    assert.equal(r.text, "1girl, silver hair, smile");
+    assert.deepEqual(r.fixed, ["whitespace"]);
+  });
+
+  it("leaves a legal prompt untouched (identity, no rules fired)", () => {
+    const text = "1girl, long hair, smile, score_9";
+    const r = normalizeAnimaPromptTags(text);
+    assert.equal(r.text, text);
+    assert.deepEqual(r.fixed, []);
+  });
+
+  it("keeps the score tags' underscores and the prefix-convention trailing comma", () => {
+    assert.equal(normalizeAnimaPromptTags("score_7, masterpiece").text, "score_7, masterpiece");
+    assert.equal(normalizeAnimaPromptTags("1girl, ").text, "1girl,");
+  });
+
+  it("the restored text passes the family's own refusal door", () => {
+    const r = normalizeAnimaPromptTags("1girl,long_hair,,smile");
+    assert.doesNotThrow(() => checkAnimaPromptTags("prompt", r.text));
   });
 });

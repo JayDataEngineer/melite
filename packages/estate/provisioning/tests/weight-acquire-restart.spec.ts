@@ -158,7 +158,7 @@ describe("the restart keeps the ledger (P5 F2: the verbs must survive the seat r
       try {
         const serviceB = new ProvisioningService(ctxB, stalledConfig(root));
         const rejoined = await pollLedger(() => serviceB.progressOf(id), 2_000);
-        assert.ok(rejoined !== null, "a stored FAILED row must rejoin the live ledger after restart");
+        assert.ok(rejoined !== null && rejoined !== undefined, "a stored FAILED row must rejoin the live ledger after restart");
         expect(rejoined!.state).toBe("failed");
         expect(rejoined!.operationId).toBe(id);
         expect(rejoined!.ref).toEqual(ref());
@@ -282,7 +282,7 @@ describe("the restart keeps the ledger (P5 F2: the verbs must survive the seat r
       try {
         const serviceFree = new ProvisioningService(ctxFree, stalledConfig(root));
         const rejoined = await pollLedger(() => serviceFree.progressOf("op-guard-remnant"), 2_000);
-        assert.ok(rejoined !== null, "the same row rejoins once no live fetch holds the ref");
+        assert.ok(rejoined !== null && rejoined !== undefined, "the same row rejoins once no live fetch holds the ref");
         expect(rejoined.state).toBe("failed");
         expect(rejoined.bytes).toBe(0);
       } finally {

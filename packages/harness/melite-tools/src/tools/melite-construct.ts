@@ -255,6 +255,16 @@ function cardOfStageRow(stages: Array<Record<string, unknown>>, stage: unknown):
   return typeof card === 'string' ? card : ''
 }
 
+/** True when a params bag carries a value the CARD's craft law could
+ *  rewrite — a non-empty string (the only values a preprocessor
+ *  touches: prompt seats). The patch door must know the stage's card
+ *  before it can apply that card's law, so this joins the pre-read
+ *  trigger beside the spell and wire-shape candidates. */
+function craftCandidate(params: unknown): boolean {
+  if (typeof params !== 'object' || params === null || Array.isArray(params)) return false
+  return Object.values(params as Record<string, unknown>).some((v) => typeof v === 'string' && v !== '')
+}
+
 /** True when a params bag carries a value the card-seat wire grammar
  *  would restore on a declared array lane ("" | $name | {item:…}).
  *  The patch door reads the bench only when this fires — the same
@@ -660,6 +670,65 @@ function coerceArrayLanes(
   return { params: out, derived }
 }
 
+/** THE CARD-OWNED CRAFT PREPROCESSOR (slice 6, H5's split): the card
+ *  declares the FORMATTING law of its prompt seats and the write door
+ *  applies it — the bench stores the spelling the card's own grammar
+ *  wants, so compose is already correct and the agent stops reading a
+ *  craft manual per request. A preprocessor fixes spacing; it never
+ *  invents content. The fix rides the SAME applied_derivations echo the
+ *  array-lane restore uses (rule names are `craft:<rule>`), so the
+ *  agent sees what changed instead of discovering it in a refusal.
+ *  Returns the ORIGINAL bag when nothing changed (the no-derivation
+ *  signal) and an empty list for a card with no craft law.
+ *  @param def the stage's card definition (undefined = no law).
+ *  @param params the params bag the array-lane restore already walked.
+ *  @returns the bag to store plus one derivation per fired rule. */
+function craftParams(
+  def: unknown, params: Record<string, unknown>,
+): { params: Record<string, unknown>; derived: Array<Record<string, unknown>> } {
+  if (def === null || typeof def !== 'object') return { params, derived: [] }
+  const craft = (def as { craft?: { normalize?: unknown } }).craft
+  if (craft === undefined || craft === null || typeof craft.normalize !== 'function') {
+    return { params, derived: [] }
+  }
+  const rewrite = (craft.normalize as (p: Record<string, unknown>) => {
+    params?: unknown; fixed?: unknown
+  })(params)
+  const next = rewrite.params
+  const fixed = Array.isArray(rewrite.fixed) ? rewrite.fixed : []
+  if (next === undefined || next === null || typeof next !== 'object' || Array.isArray(next)) {
+    return { params, derived: [] }
+  }
+  const out = next as Record<string, unknown>
+  const derived: Array<Record<string, unknown>> = []
+  for (const f of fixed) {
+    if (f === null || typeof f !== 'object') continue
+    const param = (f as { param?: unknown }).param
+    const rule = (f as { rule?: unknown }).rule
+    if (typeof param !== 'string' || typeof rule !== 'string') continue
+    if (out[param] === params[param]) continue
+    derived.push({
+      param,
+      from: params[param] as JsonValue,
+      to: out[param] as JsonValue,
+      rule: 'craft:' + rule,
+    })
+  }
+  return { params: out, derived }
+}
+
+/** THE FIRST-DOOR DERIVATIONS, in one pass: the card's declared array
+ *  lanes are restored, then the card's craft law rewrites its prompt
+ *  seats — one echo list, two laws (the answer never grows a second
+ *  derivations key). */
+function deriveParams(
+  def: unknown, params: Record<string, unknown>,
+): { params: Record<string, unknown>; derived: Array<Record<string, unknown>> } {
+  const coerced = coerceArrayLanes(def, params)
+  const crafted = craftParams(def, coerced.params)
+  return { params: crafted.params, derived: [...coerced.derived, ...crafted.derived] }
+}
+
 /** The card's declared wiring lanes — the canonical ports plus the
  *  legacy spellings old drafts still wire (never offered as a face,
  *  accepted for archives). Undefined when the card declares no
@@ -915,7 +984,7 @@ export function meliteConstruct(
           },
           applied_derivations: {
             type: 'array',
-            description: 'Every value the door DERIVED before writing ({param, from, to, rule}) — the agent sees the state the bench actually stores (slice 5\'s first-door wire grammar).',
+            description: 'Every value the door DERIVED before writing ({param, from, to, rule}) — the agent sees the state the bench actually stores (slice 5\'s first-door wire grammar: array-lane restores and the card\'s own craft spelling).',
           },
           remedy: {
             type: 'object', additionalProperties: true,
@@ -1005,8 +1074,15 @@ export function meliteConstruct(
           for (const line of derivations) {
             const d = line as { stage?: unknown; param?: unknown; from?: unknown; to?: unknown; rule?: unknown }
             const head = typeof d.stage === 'string' && d.stage !== '' ? d.stage + ': ' : ''
+            const rule = String(d.rule ?? '?')
+            // slice 6 — the craft preprocessor's fixes ride the same
+            // echo; the tail names the law that fired (a craft fix is
+            // a spelling restore, never an array restore).
+            const why = rule.startsWith('craft:')
+              ? ' — the card\'s craft law restored the declared spelling; the bench stores the restored text'
+              : ' — the card declares this lane an array; the bench stores the array'
             lines.push(head + 'derived ' + String(d.param ?? '?') + ': ' + JSON.stringify(d.from)
-              + ' → ' + JSON.stringify(d.to) + ' (' + String(d.rule ?? '?') + ') — the card declares this lane an array; the bench stores the array')
+              + ' → ' + JSON.stringify(d.to) + ' (' + rule + ')' + why)
           }
         }
         // slice 4b — the card doc ride, rendered (a payload key nobody
@@ -1238,9 +1314,9 @@ export function meliteConstruct(
               const laneRefusal = unknownLaneRefusal(card, row['inputs'], def)
               if (laneRefusal !== undefined) return refuse({ ...laneRefusal, stage: card })
               if (isRecordArg(row['params'])) {
-                const coerced = coerceArrayLanes(def, row['params'])
-                row['params'] = coerced.params
-                for (const line of coerced.derived) appliedDerivations.push({ stage: card, ...line })
+                const derived = deriveParams(def, row['params'])
+                row['params'] = derived.params
+                for (const line of derived.derived) appliedDerivations.push({ stage: card, ...line })
               }
             }
             stages.push(row)
@@ -1281,7 +1357,7 @@ export function meliteConstruct(
           // caller brought no rev — one bounded read serves both
           // (the fill never adds a second read on this path)
           let rev0 = a.expect_rev
-          if (spellTokensIn(a.params).length > 0 || wireShapeCandidate(a.params)) {
+          if (spellTokensIn(a.params).length > 0 || wireShapeCandidate(a.params) || craftCandidate(a.params)) {
             const b = await readBench(estate, bench, signal)
             const rows = projectStages(b.stages)
             wiredInputs = inputsOfStageRow(rows, a.stage)
@@ -1298,9 +1374,9 @@ export function meliteConstruct(
             const defs = await loadCardDefs()
             const def = defs.get(stageCard)
             if (def !== undefined) {
-              const coerced = coerceArrayLanes(def, params)
-              params = coerced.params
-              appliedDerivations = coerced.derived
+              const derived = deriveParams(def, params)
+              params = derived.params
+              appliedDerivations = derived.derived
             }
           }
           const r = await postBenchVerb(estate, bench, 'patch',
@@ -1358,9 +1434,9 @@ export function meliteConstruct(
               const laneRefusal = unknownLaneRefusal(card, a.inputs, def)
               if (laneRefusal !== undefined) return refuse(laneRefusal)
               if (isRecordArg(params)) {
-                const coerced = coerceArrayLanes(def, params)
-                params = coerced.params
-                appliedDerivations = coerced.derived
+                const derived = deriveParams(def, params)
+                params = derived.params
+                appliedDerivations = derived.derived
               }
             }
           }

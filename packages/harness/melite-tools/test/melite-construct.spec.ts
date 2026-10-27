@@ -674,9 +674,12 @@ describe('melite_construct refusals — the CAS voice', () => {
     assert.equal(out.verb, 'patch')
     assert.equal(out.rev, 24)
     assert.equal(out.stage, 's_0')
-    // the sequence: the refused POST (stale 21), the fresh GET, the
-    // landing POST (23) — exactly three calls, one retry, no loops
+    // the sequence: the craft pre-read (slice 6 — a string-bearing
+    // patch must learn the stage's card before its law can apply), the
+    // refused POST (stale 21), the fresh GET, the landing POST (23) —
+    // one retry, no loops
     assert.deepEqual(seen.map((s) => s.lane), [
+      'benchGet',
       'benchVerb',
       'benchGet',
       'benchVerb',
@@ -1656,13 +1659,16 @@ describe('melite_construct — THE SPELL VOICE (compose-time spell judgement)', 
     // the bounded read rode the bench (the wired truth), exactly once
     assert.equal(seen.filter((entry) => entry.lane === 'benchGet').length, 1)
 
-    // a spell-free patch with the rev in hand pays NO read at all
+    // a spell-free STRING-bearing patch pays exactly ONE read even with
+    // the rev in hand: the card's craft law is card-owned, so the door
+    // must learn the stage's card before it can apply it (slice 6). It
+    // never pays a second read and never opens the spell gate.
     seen.length = 0
     const lean = await tool.execute({
       verb: 'patch', stage: 's_1', params: { prompt: 'a cat' }, expect_rev: 4,
     }, fakeExec(AbortSignal.timeout(5000), { agent: { id: 's_chat7' } })) as Record<string, unknown>
     assert.equal('spells' in lean, false)
-    assert.equal(seen.filter((entry) => entry.lane === 'benchGet').length, 0)
+    assert.equal(seen.filter((entry) => entry.lane === 'benchGet').length, 1)
 
     // AUTO-REV: rev-less, the spell-free patch pays exactly ONE read
     // (the fill) and spells stay absent — the spell gate never opens
@@ -1883,7 +1889,7 @@ describe('melite_construct — session 7a82 autopsy laws (P3 + P5, 2026-11-12)',
         ], log: [] }
       }
       if (lane === 'runsValidate') {
-        throw new RemoteError('runs/flow-compile', 'steps: 25 is outside this lane\'s range (4–8) — the model owns the floor and the ceiling (the declaration, not the form)', undefined)
+        throw new RemoteError('runs/flow-compile', 'steps: 25 is outside this lane\'s range (4–8) — the model owns the floor and the ceiling (the declaration, not the form)', { loc: 'flow' })
       }
       throw new Error('unmocked lane ' + lane)
     })
@@ -1943,6 +1949,51 @@ describe('melite_construct — session 7a82 autopsy laws (P3 + P5, 2026-11-12)',
 // wire shape at the FIRST door (the write), refuses undeclared lanes
 // by name, and names its landing state — landed_and_compiling |
 // landed_not_compiling | ambiguous_no_write.
+describe('melite_construct — slice 6 (the card-owned craft preprocessor)', () => {
+  test('add_stage applies the card\'s craft law and echoes craft:<rule> derivations', async () => {
+    const { seen, estate } = mockEstate((lane, args) => {
+      if (lane === 'benchVerb' && args[1] === 'add_stage') return { rev: 4, stage: 's_0' }
+      if (lane === 'benchGet') {
+        return { session: 'main', rev: 4, intent: '', log: [], stages: [{ id: 's_0', card: 'image-gen', params: { model: 'anima:base:fp8', prompt: '1girl, long hair, smile' } }] }
+      }
+      if (lane === 'runsValidate') return { ok: true }
+      throw new Error('unmocked lane ' + lane)
+    })
+    const out = await meliteConstruct(estate).execute({
+      verb: 'add_stage', card: 'image-gen',
+      params: { model: 'anima:base:fp8', prompt: '1girl,long_hair,,smile' },
+      expect_rev: 3,
+    }, exec()) as Record<string, unknown>
+    const write = seen.find((r) => r.lane === 'benchVerb' && r.args[1] === 'add_stage')
+    const params = (write!.args[2] as Record<string, unknown>)['params'] as Record<string, unknown>
+    assert.equal(params['prompt'], '1girl, long hair, smile', 'the bench stores the look\'s declared spelling')
+    const derived = out['applied_derivations'] as Array<Record<string, unknown>>
+    assert.deepEqual(derived.map((d) => d['rule']).sort(), ['craft:tag-separator', 'craft:tag-underscore-space'])
+    assert.equal(derived[0]!['param'], 'prompt')
+    assert.equal(derived[0]!['from'], '1girl,long_hair,,smile')
+    assert.equal(derived[0]!['to'], '1girl, long hair, smile')
+    assert.equal(out['landing'], 'landed_and_compiling')
+  })
+
+  test('the prose looks collapse whitespace and never touch a legal prompt', async () => {
+    const { seen, estate } = mockEstate((lane, args) => {
+      if (lane === 'benchVerb' && args[1] === 'add_stage') return { rev: 4, stage: 's_0' }
+      if (lane === 'benchGet') return { session: 'main', rev: 4, intent: '', log: [], stages: [] }
+      if (lane === 'runsValidate') return { ok: true }
+      throw new Error('unmocked lane ' + lane)
+    })
+    const out = await meliteConstruct(estate).execute({
+      verb: 'add_stage', card: 'image-gen',
+      params: { model: 'z-image:base:fp8', prompt: '  a macaque  on a mossy stone \n' },
+      expect_rev: 3,
+    }, exec()) as Record<string, unknown>
+    const write = seen.find((r) => r.lane === 'benchVerb' && r.args[1] === 'add_stage')
+    const params = (write!.args[2] as Record<string, unknown>)['params'] as Record<string, unknown>
+    assert.equal(params['prompt'], 'a macaque on a mossy stone')
+    assert.equal((out['applied_derivations'] as Array<Record<string, unknown>>)[0]!['rule'], 'craft:whitespace')
+  })
+})
+
 describe('melite_construct — slice 5 (first-door wire grammar + landing states)', () => {
   test('add_stage restores a declared ARRAY lane at the write and echoes the derivation', async () => {
     const { seen, estate } = mockEstate((lane, args) => {

@@ -194,6 +194,29 @@ describe('melite_load render — the loaded line', () => {
     )
   })
 
+  test('THE CARD-OWNED CRAFT LINE (slice 6): the digest serves the style law in ONE line, and only when the card declares one', () => {
+    // H5's split: the CONTENT style is one digest line (the agent used
+    // to read a craft manual per request); the FORMATTING law rides the
+    // write door, never this line.
+    const tool = meliteLoad(stubEstate())
+    const voice = (craft?: { prompt_hint?: string }): string => {
+      const parts = tool.output.render(
+        { name: 'c', inference_type: 'card' },
+        {
+          name: 'c', inference_type: 'card',
+          bundle: {
+            kind: 'card', name: 'c', digest: 'd1',
+            ...(craft !== undefined ? { craft } : {}),
+            signature: { params_schema: { properties: { prompt: {} }, required: ['prompt'] } },
+          },
+        } as never,
+      ) as Array<{ text?: string }>
+      return parts.map((p) => p?.text ?? '').join('\n')
+    }
+    assert.match(voice({ prompt_hint: 'prose — style suffix LAST' }), /^prompt style: prose — style suffix LAST$/m, 'the digest states the style law')
+    assert.ok(!voice().includes('prompt style:'), 'a card with no craft law serves no line (the no-op law)')
+  })
+
   test('EVERY SKILL RIDES ITS DESCRIPTION, and a prompt-enhance skill routes the prompt law (2026-10-02)', () => {
     // THE OPERATOR'S LIVE BREAK: "it chooses anima but never reads the
     // prompt guide unless I tell it too — the LLM writes plaintext

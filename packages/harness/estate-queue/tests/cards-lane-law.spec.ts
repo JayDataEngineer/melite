@@ -638,11 +638,25 @@ describe("THE CLAIM LAW (the card claims nothing the model did not declare)", ()
       const out = new Set<string>();
       const def = defs.get(card);
       const carrier = (def?.schemaCarrier ?? def?.schema) as unknown as
-        | { toJSON?: () => { refs: Record<number, { type?: string; dict?: Record<string, number>; meta?: { extra?: { hidden?: boolean } } }> } }
+        | { toJSON?: () => { uid: number; refs: Record<number, { type?: string; dict?: Record<string, number>; meta?: { extra?: { hidden?: boolean } } }> } }
         | undefined;
       const json = carrier?.toJSON?.();
       if (!json) return out;
-      const root = Object.values(json.refs).find((n) => n.type === "object" && n.dict !== undefined);
+      // THE ROOT READ (2026-10-27): the carrier's root schema is the
+      // one its own `uid` names — `find(object with a dict)` picked the
+      // FIRST object in refs order, which for a carrier with nested
+      // object rows (h3's keyframes/ref_video_trims rows) is a ROW,
+      // not the root: the carve then read the wrong dict and the h3
+      // card's hidden last_frame alias stayed unexempted. The widest
+      // dict stays as the fallback for a carrier whose uid node is not
+      // an object.
+      const byUid = json.refs[json.uid];
+      const root =
+        byUid?.type === "object" && byUid.dict !== undefined
+          ? byUid
+          : Object.values(json.refs)
+              .filter((n) => n.type === "object" && n.dict !== undefined)
+              .sort((a, b) => Object.keys(b.dict!).length - Object.keys(a.dict!).length)[0];
       if (!root?.dict) return out;
       for (const [name, refId] of Object.entries(root.dict)) {
         if (json.refs[refId]?.meta?.extra?.hidden === true) out.add(name);
@@ -691,7 +705,11 @@ describe("THE CLAIM LAW (the card claims nothing the model did not declare)", ()
     // latent law retired width/height off both edit DECL surfaces
     // while the card keeps them hidden for legacy drafts (they
     // validate, then refuse field-named — the stated-size wall).
-    expect(exempted.sort()).toEqual(["image-edit:height", "image-edit:width"]);
+    expect(exempted.sort()).toEqual([
+      "h3-timeline:last_frame",
+      "image-edit:height",
+      "image-edit:width",
+    ]);
   });
 
   it("relation words name only carriable fields (no dead grammar)", () => {

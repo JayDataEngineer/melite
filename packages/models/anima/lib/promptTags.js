@@ -46,4 +46,52 @@ export function checkAnimaPromptTags(field, text) {
         }
     }
 }
+/** THE MECHANICAL RESTORE (the card-owned craft seam's tag half, the
+ *  rework's slice 6): the same three grammar classes the refusal
+ *  names, restored instead of refused — the separator becomes ", ",
+ *  a doubled comma collapses, and an underscore tag is re-spelled with
+ *  spaces (score tags keep theirs). The words are preserved verbatim:
+ *  this restores the recipe's spelling, it never rewrites the prompt.
+ *  A trailing comma is the prefix convention, not a separator error —
+ *  it survives. Called by the write door (melite_construct) before the
+ *  bench stores a prompt, so a hand-typed bench doc is the only state
+ *  that can still meet checkAnimaPromptTags.
+ *  @param text the raw prompt/negative value
+ *  @returns the restored text (the input when already legal) plus the
+ *    rule names that fired */
+export function normalizeAnimaPromptTags(text) {
+    const trailingComma = /,\s*$/.test(text);
+    const body = trailingComma ? text.replace(/,\s*$/, "") : text;
+    const segments = body.split(",");
+    const fixed = [];
+    const out = [];
+    for (let i = 0; i < segments.length; i += 1) {
+        const seg = segments[i];
+        const trimmed = seg.trim();
+        if (trimmed === "") {
+            fixed.push("tag-separator");
+            continue;
+        }
+        if (i > 0 && !seg.startsWith(" "))
+            fixed.push("tag-separator");
+        const words = trimmed.split(/\s+/);
+        let respelled = false;
+        for (const word of words) {
+            if (word.includes("_") && !isScoreTag(word))
+                respelled = true;
+        }
+        const joined = words.join(" ");
+        out.push(respelled
+            ? words.map((w) => (w.includes("_") && !isScoreTag(w) ? w.replace(/_/g, " ") : w)).join(" ")
+            : joined);
+        if (respelled)
+            fixed.push("tag-underscore-space");
+        else if (joined !== trimmed)
+            fixed.push("whitespace");
+    }
+    const next = out.join(", ") + (trailingComma ? "," : "");
+    if (next === text)
+        return { text, fixed: [] };
+    return { text: next, fixed: [...new Set(fixed)] };
+}
 //# sourceMappingURL=promptTags.js.map

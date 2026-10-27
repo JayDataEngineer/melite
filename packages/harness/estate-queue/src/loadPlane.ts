@@ -476,6 +476,15 @@ export function loadCard(
     ],
     model_hints: hints,
     pack_hints,
+    // THE CARD-OWNED CRAFT HINT (the rework's slice 6, H5's split):
+    // the CONTENT-style line the card declares — served in the load
+    // digest so the agent writes the card's style without reading a
+    // craft manual per request. The FORMATTING half never rides here:
+    // the write door (melite_construct) applies the card's normalize
+    // law and echoes what it fixed.
+    ...(typeof (def as { craft?: { promptHint?: unknown } }).craft?.promptHint === "string"
+      ? { craft: { prompt_hint: (def as { craft: { promptHint: string } }).craft.promptHint } }
+      : {}),
   };
   bundle["digest"] = bundleDigest(bundle);
   return bundle;

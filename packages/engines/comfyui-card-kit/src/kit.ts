@@ -30,6 +30,7 @@
 // path inside it — P46).
 export { loadTextPair, decodeSave, stackLoras, stackControlNets } from './blocks/render-kit.ts'
 export { isItemWrapped, unwrapItemArrays, coerceWireArrays, coerceWireNumbers, wireTypeLedger } from './coerceWireArrays.ts'
+export { collapsePromptSpace, type CardCraft, type CraftFix, type CraftRewrite } from './craft.ts'
 export { mintSeed, voiceLockSeed } from './graph-helpers.ts'
 export { declaredAction, instantiateAction, type ComfyActionSpec, type ComfyActionContext } from './action.ts'
 export {

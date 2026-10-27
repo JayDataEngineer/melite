@@ -1,1 +1,1 @@
-{"version":3,"file":"promptTags.d.ts","sourceRoot":"","sources":["../src/promptTags.ts"],"names":[],"mappings":"AAkBA;;;;;;wEAMwE;AACxE,wBAAgB,oBAAoB,CAAC,KAAK,EAAE,QAAQ,GAAG,iBAAiB,EAAE,IAAI,EAAE,MAAM,GAAG,IAAI,CA8B5F"}
+{"version":3,"file":"promptTags.d.ts","sourceRoot":"","sources":["../src/promptTags.ts"],"names":[],"mappings":"AAkBA;;;;;;wEAMwE;AACxE,wBAAgB,oBAAoB,CAAC,KAAK,EAAE,QAAQ,GAAG,iBAAiB,EAAE,IAAI,EAAE,MAAM,GAAG,IAAI,CA8B5F;AAED;;;;;;;;;;;;8BAY8B;AAC9B,wBAAgB,wBAAwB,CAAC,IAAI,EAAE,MAAM,GAAG;IAAE,IAAI,EAAE,MAAM,CAAC;IAAC,KAAK,EAAE,MAAM,EAAE,CAAA;CAAE,CA6BxF"}
