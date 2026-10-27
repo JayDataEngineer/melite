@@ -84,6 +84,14 @@ const JOINED: Joined[] = [
   // the engine combo carries the whole shelf — card ⊆ engine).
   { site: "h3:upscale_model", join: "MinimaxH3LatentUpscaler3DRefineHandoff.model_name", values: inlineVocab("models/h3/src/schema.ts", "upscale_model") },
   { site: "h3:sr_model", join: "SeedVR2LoadDiTModel.model", values: inlineVocab("models/h3/src/schema.ts", "sr_model") },
+  // THE REF-SIZE SUBSET (F-10 live probe, 2026-10-27): the engine's
+  // core COMBO is ["match","max"]; the card serves the one-literal
+  // subset ["match"] — max refuses at the schema gate by the spec's
+  // own law (the diagnostic matrix seats the aspect-distortion
+  // failure on max), and a WxH literals refuse at the ENGINE's queue
+  // validation (value_not_in_list, verbatim in the F-10 receipt), so
+  // the subset is the only shape both truths admit. card ⊆ engine.
+  { site: "h3:ref_image_size", join: "MiniMaxH3ReferenceToVideo.ref_image_size", values: inlineVocab("models/h3/src/schema.ts", "ref_image_size") },
   // THE INPUT-PREP SCALE CONTRACT (volley a+g, 2026-10-24): the
   // card's scale_method dropdown serves the input family's
   // SCALE_METHODS export (one truth — the card's vocabulary and the
@@ -270,7 +278,7 @@ describe("THE VOCAB-RAILS SUBSET WALL — every closed vocabulary is engine-join
     expect(byFile, "the per-file site census drifted — re-point the registry's sites (a count-only match can hide a swapped file)").toEqual({
       // 10 -> 12 (2026-10-21, SOTA P2 LIMB 3): upscale_route (LOCAL)
       // + upscale_model (JOINED to the handoff's model_name combo).
-      "models/h3/src/schema.ts": 12,
+      "models/h3/src/schema.ts": 13,
       "image/tagger/src/card.ts": 4,
       "3d/anny/src/card.ts": 1,
       "3d/rig/src/card.ts": 1,

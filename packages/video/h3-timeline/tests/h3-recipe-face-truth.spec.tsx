@@ -59,7 +59,11 @@ function birthParams(): Record<string, unknown> {
   }
 }
 function finalParams(): Record<string, unknown> {
-  return { ...birthParams(), sr_switch: true, second_pass_enabled: true }
+  // THE POST-a527 STAMP: the latent handoff (upscale_route latent_2x)
+  // replaced pixel super-res in the Final Cut bag — sr_switch is an
+  // explicit pick, never recipe-carried (a527: "Pixel super-res and
+  // interpolation stay explicit picks")
+  return { ...birthParams(), second_pass_enabled: true, upscale_route: "latent_2x" }
 }
 
 /** THE PANE'S OWN SEAT: the rail element factory the kit hosts — the
@@ -128,10 +132,11 @@ describe("THE RECIPE FACE TRUTH ARM (ERROR d — the face journals the held stam
     const face = await recipeFace()
     const layer = mounted.layer() as unknown as Record<string, unknown>
     expect(layer["second_pass_enabled"], "the pick wrote: the second-pass master rides the settled layer").toBe(true)
-    expect(layer["sr_switch"], "the pick wrote: the super-res switch rides the settled layer").toBe(true)
+    expect(layer["upscale_route"], "the pick wrote: the latent handoff rides the settled layer").toBe("latent_2x")
+    expect(layer["sr_switch"], "pixel super-res stays an explicit pick — the recipe never arms it (a527); the settled layer keeps its settled false").toBe(false)
     expect(gateFace(), "the pick was admitted — a refusal here is the seat's own voice, not this arm's").toBeNull()
     releaseRailSeat()
-    expect(face, `ERROR d (pick face): the Final Cut pick WROTE (second_pass_enabled + sr_switch ride the settled layer) ` +
+    expect(face, `ERROR d (pick face): the Final Cut pick WROTE (second_pass_enabled + the latent handoff ride the settled layer) ` +
       `yet the face journals ${JSON.stringify(face)} — the hand's pick is unwitnessed at the seat that took it.`).toContain("Final Cut")
   })
 })

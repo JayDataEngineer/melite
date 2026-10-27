@@ -272,17 +272,21 @@ export const paramSchema = z.object({
   // schema door, never as a ComfyUI 400). Gated behind sr_switch like
   // every other post leaf.
   sr_model: vocabulary(["seedvr2_ema_3b_fp16.safetensors", "seedvr2_ema_3b_fp8_e4m3fn.safetensors"]).description("Super-Res model").default("seedvr2_ema_3b_fp16.safetensors").extra('extra', bag({ order: null, group: 'second_pass', visible_when: "second_pass_enabled=true&sr_switch=true", wtype: 'select', tooltip: "SeedVR2 weights (models/upscale_models/): fp16 3B default, fp8_e4m3fn 3B leaner." })),
-  // the R2V COMBO size mode — a literal OR a concrete WxH dimension
-  // ("704x1280" rides in real runs; a number or a typo refuses LOUD at
-  // the gate now, not as a ComfyUI 400). The select face serves the
-  // literal; WxH stays reachable by patch, exactly as before.
+  // the R2V COMBO size mode — the engine's own vocabulary is the
+  // truth (F-10 live probe, 2026-10-27: POST /prompt with
+  // ref_image_size "704x1280" against comfy_extras.nodes_minimax_h3
+  // MiniMaxH3ReferenceToVideo answers value_not_in_list —
+  // "'704x1280' not in ['match', 'max']"). The WxH patch-arm that
+  // once rode real runs is a phantom at the current core: it
+  // composed estate-side and died at the engine's queue validation.
+  // The knob narrows to the one literal both truths admit.
   // NEVER MAX (spec-match cure 3, timeline audit 2026-10-27): the
   // spec's diagnostic matrix seats the aspect-distortion failure
   // mode on "Setting reference image scale to max" — the max edge
-  // warps the reference's aspect into the output frame. The union
-  // drops the max literal; a max doc refuses LOUD at the schema
-  // gate in the spec's own voice.
-  ref_image_size: z.union([z.const("match"), z.string().pattern(/^\d+x\d+$/).description("WxH")]).description("Ref size").default("match").extra('extra', bag({ order: null, group: 'sampling', wtype: 'select', tooltip: "How the bundle resizes ref images: match the anchor's aspect (the spec's law — never max, the max edge distorts aspect), or an explicit WxH." })),
+  // warps the reference's aspect into the output frame. max, a WxH
+  // literal, and every other value refuse LOUD at the schema gate,
+  // ahead of the engine — never as a ComfyUI 400.
+  ref_image_size: vocabulary(["match"]).description("Ref size").default("match").extra('extra', bag({ order: null, group: 'sampling', wtype: 'select', tooltip: "How the bundle resizes ref images: match the anchor's aspect. The engine's own list also offers 'max', but the spec's diagnostic matrix seats the aspect-distortion failure on max (the max edge warps the reference's aspect into the output frame), and explicit WxH refuses at the engine's queue validation — match is the only value both truths admit." })),
   // NO SILENT RESOLUTION LAW (2026-09-20, the operator's order):
   // one truth, one owner. shift_video is a NUMBER, default 8, served
   // and walked identically. The old z.const(null) arm — the

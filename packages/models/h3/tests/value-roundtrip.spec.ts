@@ -601,13 +601,17 @@ describe("the h3 class knobs ride VERBATIM to their consumers (P0 witness extens
   it("ARM 13 — the shape + clock pins: width/height/length/ref_image_size at the ReferenceToVideo head, fps at the container (single window) and the window clock nodes (film), the derived seconds on the clock, noise_seed at RandomNoise", async () => {
     const graph = await composeH3({
       length: 124, width: 512, height: 480, fps: 30, noise_seed: 909,
-      ref_image_size: "720x1280",
+      // ref_image_size rides its DEFAULT ("match") since F-10's probe
+      // (2026-10-27): the engine's core node answers value_not_in_list
+      // for any WxH literal, so the only lawful spelling is the one
+      // literal both truths admit — the verbatim witness rides it.
+      ref_image_size: "match",
       calls: [SHOT({ start_frame: 0, end_frame: 124 })],
     }, "h3_value_arm13");
     assertValueAtConsumer(graph, "MiniMaxH3ReferenceToVideo", "width", 512, "width");
     assertValueAtConsumer(graph, "MiniMaxH3ReferenceToVideo", "height", 480, "height");
     assertValueAtConsumer(graph, "MiniMaxH3ReferenceToVideo", "length", 124, "length");
-    assertValueAtConsumer(graph, "MiniMaxH3ReferenceToVideo", "ref_image_size", "720x1280", "ref_image_size");
+    assertValueAtConsumer(graph, "MiniMaxH3ReferenceToVideo", "ref_image_size", "match", "ref_image_size");
     // SINGLE WINDOW: fps rides the container's fps input verbatim (the
     // interp compensation multiplies it only when interp mounts).
     assertValueAtConsumer(graph, "CreateVideo", "fps", 30, "fps (the container clock)");

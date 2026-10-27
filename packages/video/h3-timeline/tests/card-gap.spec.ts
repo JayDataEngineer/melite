@@ -731,7 +731,10 @@ describe("the single-window doors", () => {
       const heldFinal = axisPickPatch(spec(), final, {})
       const back = axisPickPatch(spec(), standard, heldFinal)
       assert.equal(back["second_pass_enabled"], null)
-      assert.equal(back["sr_switch"], null)
+      assert.equal(back["upscale_route"], null,
+        "the departed latent rail unstates (the post-a527 Final Cut stamp)")
+      assert.equal(back["sr_switch"], undefined,
+        "pixel super-res was never recipe-carried (a527: explicit picks only) — a flip unstates nothing it never stamped")
       // and the composed graph carries NO departed rail (re-pin
       // 2026-10-26, burn b — the graph-mirror law): the post chain
       // mounts only behind its own gates, so a Standard flip composes
@@ -884,7 +887,7 @@ describe("the single-window doors", () => {
     assert.ok(refineStack !== undefined, "the rider's own loader carries the catalog row's file");
     const rows = JSON.parse(String(refineStack![1].inputs.stack_data)) as Array<{ on?: boolean, lora?: string, str?: number }>;
     assert.equal(rows.filter((r) => r.on === true).length, 1, "ONE refiner row on the rider's loader");
-    assert.equal(rows[0]!.str, 0.7, "at the row's default 0.7");
+    assert.equal(rows[0]!.str, 0.35, "at the row's re-aimed default 0.35 (the P0 audit's research refinement window, the taomate pin's own 0.35/[3,6])");
     const scheds = scoped(graphOf(g), "", "BasicScheduler");
     // (P0 parameter audit 2026-11-10: the unstated refine_denoise
     // default re-aimed 1.0 → 0.35 — the research refinement window;

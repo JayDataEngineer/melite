@@ -1257,16 +1257,17 @@ describe("the spec's ref_image_size + step-window doors (timeline audit cures 3+
       prompt: "a slow push in",
       ref_images: ["ref1.png"],
       ref_image_size: "max",
-    })).toThrow(/\$\.ref_image_size expected "match" \| string but got "max"/);
+    })).toThrow(/\$\.ref_image_size expected "match" but got "max"/);
   });
 
-  it("the WxH patch arm still composes estate-side (the union's second lawful shape)", () => {
-    const walked = h3schema({
+  it("a WxH literal refuses at the schema gate, ahead of the engine's own queue validation (F-10 live probe, 2026-10-27: the core node answers value_not_in_list \"'704x1280' not in ['match', 'max']\" — the patch-arm that once rode real runs is a phantom at the current core)", () => {
+    expect(() => h3schema({
       prompt: "a slow push in",
       ref_images: ["ref1.png"],
       ref_image_size: "704x1280",
-    });
-    expect(walked.ref_image_size).toBe("704x1280");
+    })).toThrow(/\$\.ref_image_size expected "match" but got "704x1280"/);
+    // the estate's own voice, at the gate — never the engine's raw
+    // queue-time 400 the phantom arm used to die on
   });
 
   it("the Stage-3 step window's both edges compose through the real door (4 and 6 ride a BasicScheduler)", () => {
