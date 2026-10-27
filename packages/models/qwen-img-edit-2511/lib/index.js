@@ -19,11 +19,18 @@ export const DECL = {
     // step count.
     "defaults": {
         "use_stock_nodes": false,
-        "steps": 20,
         "sampler": "euler",
         "scheduler": "simple",
-        "cfg": 2.5,
         "double_reference": false
+        // THE VARIANT-CLASS KEYS RIDE THE ROWS (audit 013 cure 3's law,
+        // the same cure as the 21 sibling): steps/cfg are variant-class
+        // required_defaults — the lightning/standard rows declare their
+        // own in resolver_defaults, and a family-block pair stamped the
+        // STANDARD recipe over every unstated LIGHTNING compose's
+        // prefill (the 25-on-Turbo class, one family over). The block
+        // keeps the lane-independent knobs only; the recipe-weights
+        // pairing above is unchanged (each row's resolver_defaults
+        // carries its own checkpoint's counts).
     },
     "genre": "image",
     // THE REQUIRED DEFAULTS (operator contract 2026-11-07): every
@@ -227,7 +234,7 @@ export const DECL = {
         {
             "id": "upstream-solvers",
             "label": "Upstream Solvers",
-            "hint": "Sampler euler + scheduler simple — this family's own DECL defaults, both members of the card's sampler/scheduler vocabularies.",
+            "hint": "Sampler euler + scheduler simple — the family solver pair, both members of the card's sampler/scheduler vocabularies.",
             "group": "Recipe",
             "wire_defaults": { "sampler": "euler", "scheduler": "simple" },
             "cells": [],

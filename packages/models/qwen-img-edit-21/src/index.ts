@@ -37,11 +37,21 @@ export const DECL: ModelDecl = {
   "label": "Qwen Image Edit 2.1",
   "description": "Instruction-driven image editing on the Qwen-Image-2.1 base — the reference-cached lane: the SAME 2.1 checkpoint as text-to-image (no separate edit weights), wrapped in QwenImage21Cache with the anchor images spliced through TextEncodeQwenImage21's own vision path, sampled on the encoder's own anchor-sized latent (any other size shifts the edit — the node's own law). The sibling family qwen-img-21 serves the t2i lane on the image-gen card.",
   "engine": "comfyui",
+  // THE VARIANT-CLASS DEFAULTS LEAVE THE FAMILY BLOCK (audit
+  // 013-edit-image-steps-envelope cure 3, the 25-on-Turbo banner):
+  // steps/cfg are declared variant-class below (required_defaults),
+  // and a variant-class key in the family block stamps ONE lane's
+  // recipe over EVERY lane — the base 25 rode unstated turbo
+  // composes and the form prefilled it over the variant's own face.
+  // The stamp is variant-aware through the declared tier: each
+  // Variant row's own resolver_defaults owns steps+cfg (the
+  // variant-sampler-defaults law; the plane canon keeps Recipe rows
+  // wire-params-only — a recipe PICK stamps wire_defaults, the
+  // variant seat always resolves a Variant row); the family block
+  // keeps only the solver pair, which is lane-independent.
   "defaults": {
-    "steps": 25,
     "sampler": "euler",
-    "scheduler": "simple",
-    "cfg": 1
+    "scheduler": "simple"
     // THE GEOMETRY IS THE ANCHOR'S OWN (the latent law, 2026-11-08):
     // this lane samples the encoder's own anchor-sized latent, so a
     // stated target size has no seat — width/height LEFT the surface
@@ -251,7 +261,7 @@ export const DECL: ModelDecl = {
     {
       "id": "remove-background",
       "label": "Remove Background",
-      "hint": "The official one-click — the Comfy-Org background-removal template's canned prompt verbatim (the 2.1 base renders the subject on transparency; the RGBA decode lands the alpha on disk; solver/cfg/steps ride the family defaults, which are the template's own values).",
+      "hint": "The official one-click — the Comfy-Org background-removal template's canned prompt verbatim (the 2.1 base renders the subject on transparency; the RGBA decode lands the alpha on disk; solver/cfg/steps are the template's own values, declared on this row).",
       "group": "Recipe",
       "wire_defaults": { "prompt": "Remove the background, and output a PNG image" },
       "cells": [],
@@ -267,7 +277,7 @@ export const DECL: ModelDecl = {
     {
       "id": "upstream-solvers",
       "label": "Upstream Solvers",
-      "hint": "Sampler euler + scheduler simple — the official 2.1 templates' own solver truth (this family's DECL defaults, both members of the card's sampler/scheduler vocabularies).",
+      "hint": "Sampler euler + scheduler simple — the official 2.1 templates' own solver truth (the family solver pair, both members of the card's sampler/scheduler vocabularies).",
       "group": "Recipe",
       "wire_defaults": { "sampler": "euler", "scheduler": "simple" },
       "cells": [],

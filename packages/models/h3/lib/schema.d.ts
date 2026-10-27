@@ -8,13 +8,6 @@ export declare const JSON_ARRAY_PARAMS: readonly ["calls", "audio_clips", "keyfr
 export declare const paramSchema: z<Schemastery.ObjectS<NoInfer<{
     image: z<string, string, "plain">;
     last_frame: z<string, string, "plain">;
-    keyframes: z<({
-        frame?: number | null | undefined;
-        image?: string | null | undefined;
-    } & import("@deepseek-ai/cosmokit").Dict)[], Schemastery.ObjectT<NoInfer<{
-        frame: z<number, number, "plain">;
-        image: z<string, string, "plain">;
-    }>>[], "plain">;
     ref_images: z<string[], string[], "plain">;
     ref_videos: z<string[], string[], "plain">;
     ref_video_trims: z<({
@@ -84,13 +77,6 @@ export declare const paramSchema: z<Schemastery.ObjectS<NoInfer<{
 }>>, Schemastery.ObjectT<NoInfer<{
     image: z<string, string, "plain">;
     last_frame: z<string, string, "plain">;
-    keyframes: z<({
-        frame?: number | null | undefined;
-        image?: string | null | undefined;
-    } & import("@deepseek-ai/cosmokit").Dict)[], Schemastery.ObjectT<NoInfer<{
-        frame: z<number, number, "plain">;
-        image: z<string, string, "plain">;
-    }>>[], "plain">;
     ref_images: z<string[], string[], "plain">;
     ref_videos: z<string[], string[], "plain">;
     ref_video_trims: z<({
@@ -179,13 +165,6 @@ export declare function schema(v: unknown): Record<string, unknown>;
 export declare const carrier: z<Schemastery.ObjectS<NoInfer<{
     image: z<string, string, "plain">;
     last_frame: z<string, string, "plain">;
-    keyframes: z<({
-        frame?: number | null | undefined;
-        image?: string | null | undefined;
-    } & import("@deepseek-ai/cosmokit").Dict)[], Schemastery.ObjectT<NoInfer<{
-        frame: z<number, number, "plain">;
-        image: z<string, string, "plain">;
-    }>>[], "plain">;
     ref_images: z<string[], string[], "plain">;
     ref_videos: z<string[], string[], "plain">;
     ref_video_trims: z<({
@@ -255,13 +234,6 @@ export declare const carrier: z<Schemastery.ObjectS<NoInfer<{
 }>>, Schemastery.ObjectT<NoInfer<{
     image: z<string, string, "plain">;
     last_frame: z<string, string, "plain">;
-    keyframes: z<({
-        frame?: number | null | undefined;
-        image?: string | null | undefined;
-    } & import("@deepseek-ai/cosmokit").Dict)[], Schemastery.ObjectT<NoInfer<{
-        frame: z<number, number, "plain">;
-        image: z<string, string, "plain">;
-    }>>[], "plain">;
     ref_images: z<string[], string[], "plain">;
     ref_videos: z<string[], string[], "plain">;
     ref_video_trims: z<({

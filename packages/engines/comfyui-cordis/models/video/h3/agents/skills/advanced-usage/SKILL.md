@@ -51,7 +51,8 @@ lands on the bench beside it.
 
 ## Gotchas
 
-- `frames` at 124/24fps ≈ 5s of video — scale both together.
+- `frames` ≈ seconds × the schema fps default (124 frames ≈ 5 s) — scale
+  both together.
 - `seed=42` is the catalog default; a fixed seed reproduces the clip.
 - The timeline skills (persistent audio lane, beat/keyframe slots) belong
   to the editor UI — as the agent, compose the prompt + conditioning, not

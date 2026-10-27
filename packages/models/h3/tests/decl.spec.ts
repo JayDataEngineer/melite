@@ -60,13 +60,14 @@ describe("the h3 model plugin (the ONE H3 family — timeline + single-shot + ke
     const lastNode = json.refs[String(root.dict!["last_frame"]!)];
     assert.equal(lastNode?.meta?.extra?.hidden, true, "the end-anchor alias is hidden by the carrier's own law");
     assert.equal(lastNode?.meta?.extra?.wtype, undefined, "a hidden field carries no wtype — dead surface");
-    // THE ANY-FRAME SETUP (operator 2026-11-12: "THERE IS NO FIRST
-    // FRAME NOR LAST FRAME, JUST ARBITRARY FRAMES WHENEVER"): the
-    // family's lane surface names the keyframes pin lane, and the
-    // hidden last_frame alias is NOT a served knob (the carrier keeps
-    // it as the FL2VA translation; extra.hidden keeps it out of both
-    // projections).
-    assert.ok((DECL.params ?? []).includes("keyframes"), "the lane surface names the any-frame pin lane");
+    // THE ROW DEATH (audit 013 cure 2): the pin lane is a
+    // document-plane lane (studio.writes keyframes, the schema walk's
+    // assertKeyframeRowShape) — the DECL's param surface no longer
+    // names it, and the hidden last_frame alias is not a served knob
+    // either (the carrier keeps it as the FL2VA translation;
+    // extra.hidden keeps it out of both projections).
+    assert.ok(!(DECL.params ?? []).includes("keyframes"), "the pin lane is not a DECL param — one home: the studio doc's keyframes lane");
+    assert.ok((DECL.studio?.writes ?? []).includes("keyframes"), "the studio doc plane keeps the keyframes writes seat");
     assert.ok(!(DECL.params ?? []).includes("last_frame"), "the hidden end-anchor alias is not a served knob");
   });
 

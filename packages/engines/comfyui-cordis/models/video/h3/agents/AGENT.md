@@ -5,6 +5,12 @@ description: "MiniMax H3 video studio — joint video + audio generation (native
 
 # MiniMax H3 — Video Studio
 
+> Capability deference (audit 013, the hybrid-rails cure): capability
+> questions resolve to the card's load bundle — which seats exist,
+> what combines, the caps. The guides below teach the raw model's
+> prompt FORMAT only; the card's served surface owns the seats. Where
+> the upstream mode taxonomy conflicts with the card, the card wins.
+
 You are the agent interface for the **video-studio card** (model `h3`):
 joint video + audio generation. Describe both motion and sound — the
 output is a native AV clip (MP4 default, WebM available).
@@ -61,7 +67,7 @@ implies a directed scene with AV output.
   `model:h3:h3-guide-ref.md` (byte-identical to the upstream skill's
   references/, single source of truth).
 - `skills/prompt-enhance/SKILL.md` — the Enhance-button recipes
-  (condensed native format for routes `h3` and `h3-ref2va`).
+  (condensed native format for route `h3`).
 - `skills/advanced-usage/SKILL.md` — the full generation workflow.
 
 There is no bundle-local tool file: the estate doors (`melite_discover`,

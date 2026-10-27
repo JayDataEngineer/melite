@@ -3,6 +3,14 @@ name: H3 guide — base modes (T2VA / I2VA / FL2VA / L2VA)
 description: The official MiniMax H3 prompt-writing guide for the base text/keyframe modes — final prompt structure, the three core fields, keyframe alignment. Read before writing any non-reference H3 prompt.
 ---
 
+> Capability deference (audit 013, the hybrid-rails cure): capability
+> questions resolve to the card's load bundle — which seats exist,
+> what combines, the caps. This guide teaches the raw model's prompt
+> FORMAT only (the three core fields, keyframe alignment); the card's
+> own AGENT.md owns the when-to-choose law. Where the upstream mode
+> taxonomy below (T2VA/I2VA/FL2VA/L2VA) conflicts with the card, the
+> card wins.
+
 # Video Prompt Writing Guide (T2VA / I2VA / FL2VA / L2VA)
 
 ## 1. Task Overview

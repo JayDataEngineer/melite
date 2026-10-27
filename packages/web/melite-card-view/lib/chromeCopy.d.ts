@@ -215,6 +215,14 @@ export declare const chromeCopy: {
      *  closing the face retires it). No hover title: hover text rides
      *  the estate Tip, never a native title (the tip canon). */
     readonly dismissError: "Dismiss error";
+    /** The base-strike note (audits 018 C4 + 016 C5, the client
+     *  strike): the stage's served base held stamps the RESOLVED lane
+     *  no longer serves; the drill struck them from the display and
+     *  names them here — never a silent heal, never a re-offered
+     *  coordinate the next run would refuse. */
+    readonly laneStrikeNote: (p: {
+        keys: string[];
+    }) => string;
     /** The gate-refusal banner's unstamp verb (SD-7, the
      *  refusal-without-cure cure): the banner names a field the form
      *  does not render, so the words must ACT — one click unstamps the

@@ -58,6 +58,7 @@ import { loadCardDefs } from "../../../../packages/engines/comfyui-cordis/src/ca
 import { getModel } from "../../../../packages/engines/comfyui-cordis/src/index.ts";
 import { laneContractOf } from "../../../../packages/web-kit/contracts/src/laneRelations.ts";
 import { searchCards, searchFlows, flowSummaryRows } from "../../../../packages/harness/estate-queue/src/discloseRegistry.ts";
+import { fieldsOf } from "@melite/card-base/client";
 import { loadCard } from "../../../../packages/harness/estate-queue/src/loadPlane.ts";
 import { checkAnimaPromptTags } from "../../../../packages/models/anima/src/promptTags.ts";
 import { meliteDiscover } from "../../../../packages/harness/melite-tools/src/tools/melite-discover.ts";
@@ -117,14 +118,12 @@ describe("THE VIBE SUITE BASELINE — the agent flow's acceptance harness (v0 pi
     const h3 = loadCard(ROOT, cards as never, null, "h3-timeline") as { signature: { params_schema: { properties: Record<string, unknown> } } };
     const h3Keys = Object.keys(h3.signature.params_schema.properties);
     assert.ok(h3Keys.length >= 30, `h3-timeline face dumps ${h3Keys.length} params (>=30 — no digest yet)`);
-    // SLICE 1 LANDED (add-first keyframe bus): the any-frame pin lane is
-    // now ON the agent face — the cure-8 lane the engine always had and
-    // no surface declared (session 384a13cd reasoned in first/last
-    // physics for nine minutes because of exactly this gap).
-    assert.ok(h3Keys.includes("keyframes"), "the ANY-FRAME lane rides the agent face (cure 8: any frame, any time)");
-    const kf = h3.signature.params_schema.properties["keyframes"] as { type?: string; description?: string };
-    assert.equal(kf?.type, "array", "the pin lane serves as the array class (the calls/audio_clips precedent)");
-    assert.match(String(kf?.description ?? ""), /ANY FRAME, ANY TIME/, "the lane teaches its own shape on the face — never a bare key");
+    // SLICE 1 RETIRED (audit 013 cure 2, the keyframes row death):
+    // the any-frame pin lane is NOT a param — pins live on the
+    // timeline's keyframes lane (the document plane), taught by the
+    // load bundle's craft hint + digest, never a face row. The agent
+    // composes pins by reading the lane, not a param.
+    assert.ok(!h3Keys.includes("keyframes"), "the pin lane is OFF the agent face (row death: pins live on the timeline's keyframes lane)");
     // THE SETUP TRUTH (operator 2026-11-12: "NOTICE THE SETUP, THERE
     // IS NO FIRST FRAME NOR LAST FRAME, JUST ARBITRARY FRAMES
     // WHENEVER"): the hidden last_frame alias is OFF the face; the
@@ -132,6 +131,27 @@ describe("THE VIBE SUITE BASELINE — the agent flow's acceptance harness (v0 pi
     assert.ok(!("last_frame" in h3.signature.params_schema.properties), "the end-anchor alias is gone from the face (add-first retirement)");
     const img = h3.signature.params_schema.properties["image"] as { description?: string };
     assert.doesNotMatch(String(img?.description ?? ""), /First frame/i, "the opening pin is not taught as a first frame");
+  });
+
+  it("T1 DIGEST EMIT (audit 013 cure 3b): the load bundle's craft hint carries the hybrid-rails line and names every seat the rails law needs — the pins how-to lives in the digest, not a face row", async () => {
+    // THE ROW DEATH'S OTHER HALF: with the keyframes row off the
+    // agent face, the load bundle must still TEACH the setup — the
+    // card's own craft hint rides the digest (the loadPlane craft
+    // seat) with the combinability sentence naming every rail seat:
+    // the anchor (image / the timeline's keyframes lane) and the
+    // reference stack (ref_images). A hint that drops a seat name
+    // strands the agent's second image again — name-sufficiency is
+    // the law, not prose presence.
+    const defs = await loadCardDefs();
+    const cards = { defsSync: () => defs };
+    const h3 = loadCard(ROOT, cards as never, null, "h3-timeline") as { craft?: { prompt_hint?: string }; digest?: string };
+    const hint = String(h3.craft?.prompt_hint ?? "");
+    assert.ok(hint.length > 0, "the h3 load bundle serves the card's craft hint (the digest tier)");
+    assert.match(hint, /Two image rails, both live/, "the hybrid-rails combinability sentence rides the served hint");
+    assert.match(hint, /keyframes lane/, "the hint names the pins home (the timeline's keyframes lane) — never a face row");
+    assert.match(hint, /\bimage\b/, "the hint names the anchor seat");
+    assert.match(hint, /ref_images/, "the hint names the reference stack seat — name-sufficiency, not prose");
+    assert.ok(typeof h3.digest === "string" && h3.digest.length > 0, "the bundle carries its content digest");
   });
 
   it("T1/T8 DIGEST (slice 4): the load face serves counts by default and the FULL surface only on request", () => {
@@ -145,7 +165,7 @@ describe("THE VIBE SUITE BASELINE — the agent flow's acceptance harness (v0 pi
       bundle: {
         kind: "card", name: "h3-timeline", digest: "d1",
         signature: {
-          params_schema: { properties: { prompt: {}, seed: {}, keyframes: {} }, required: ["prompt"] },
+          params_schema: { properties: { prompt: {}, seed: {}, ref_images: {} }, required: ["prompt"] },
           lanes: { h3: { base: ["prompt"] } },
           modifiers: [{ kind: "loras", category: "ordered", fields: ["name", "strength"] }],
         },
@@ -166,7 +186,7 @@ describe("THE VIBE SUITE BASELINE — the agent flow's acceptance harness (v0 pi
     assert.match(digest, /mods: 1 declared \(loras\[\]\)/, "the mods digest names the kinds")
     assert.match(digest, /digest: d1 \(quote it to skip a reload\)/)
     const full = voice(true)
-    assert.ok(full.includes("params: prompt*, seed, keyframes (* required)"), "detail=true serves every name (the keyframes lane included)")
+    assert.ok(full.includes("params: prompt*, seed, ref_images (* required)"), "detail=true serves every name (the synthetic face's own rows — the retired pin lane is not one of them)")
     assert.ok(full.includes("THE BENCH GRAMMAR"), "detail=true serves the bench grammar")
     assert.ok(full.includes("lane h3:"), "detail=true serves the lane field law")
   });
@@ -380,20 +400,19 @@ const ONE_SEAT_REGISTER = new Map<string, string>([
   // tried and REVERTED: the form falls back to visible_when only
   // when the family declares NO surface — it over-folded rig's six
   // undeclared knobs.)
-  ["rig:mode", "same — the rig form presents no mode row"],
-  // RETIRED 2026-11-12 (the seamless charter's third register
-  // shrink, same mechanism): image-gen:reference_images (the
-  // qwen-img-21 family's declared surface carries it) and
-  // image-edit:double_reference (the qwen-img-edit-2511 surface
-  // declares it — and use_stock_nodes). The UI renders both on
-  // their lanes; same declared truth, gated per lane.
-  // Rig's form knobs the minimal rig form never presents.
-  ["rig:preserve_texture", "rig form knob — the UI form presents no texture row"],
-  ["rig:decimate_ratio", "rig form knob — no UI row"],
-  ["rig:file_format", "rig form knob — no UI row"],
-  ["rig:height_ratio", "rig form knob — no UI row"],
-  ["rig:max_influences", "rig form knob — no UI row"],
-  ["rig:strip_body", "rig form knob — no UI row"],
+  // RETIRED 2026-10-27 (audit 013 cure 2, the ONE SEAT re-cut):
+  // rig:mode, rig:preserve_texture, rig:decimate_ratio,
+  // rig:file_format, rig:height_ratio, rig:max_influences,
+  // rig:strip_body — all seven rows dissolved by the re-cut, the
+  // register now EMPTY (zero-tolerance: any future divergence reds).
+  // The old arm judged the agent face against DECL.params alone and
+  // rig declares no params surface, so every agent-carried knob read
+  // as a divergence. The re-cut judges against the RENDERED set
+  // (fieldsOf over the served envelope — the generic form IS rig's
+  // seat, stage_view null) union DECL.params: the client renders all
+  // ten rows, the agent carries all ten — same truth, zero residue.
+  // The divergence was the wall judging the wrong surface (the
+  // audit's "not DECL.params alone"), never a face gap.
   // EXECUTION INTERNALS the agent should not need either — named here
   // so the drift is visible, retired by the lane-digest slice.
   // RETIRED 2026-11-12 (the seamless charter's first register
@@ -594,7 +613,14 @@ describe("THE ONE SEAT — the agent face and the UI face are two projections of
       const spec = await formSpecArm(id);
       if (spec === null) continue;
       const bundle = loadCard(ROOT, cards as never, null, id) as { signature: { params_schema: { properties: Record<string, unknown> } } };
-      const ui = new Set((spec.params ?? []).map(String));
+      // THE RENDERED SET (audit 013 cure 2, the ONE SEAT re-cut): the
+      // UI face is the card's own envelope projection — fieldsOf over
+      // the served doc, the same walk the client panel runs — UNION
+      // the served params list (the DECL's names, for the switch
+      // verbs). Judging the params list alone starved the wall on
+      // schema-declared cards (rig's ten rendered knobs read as
+      // divergences; h3's extras ran the register).
+      const ui = new Set<string>([...(spec.params ?? []).map(String), ...fieldsOf(spec).map((f) => f.name)]);
       const agent = Object.keys(bundle.signature.params_schema.properties);
       const mods = new Set(Object.keys(spec.mod_schemas ?? {}));
       const inputs = new Set((spec.inputs ?? []).map((i) => String(i?.name)));
@@ -641,7 +667,7 @@ describe("THE ONE SEAT — the agent face and the UI face are two projections of
     assert.ok(judged >= 10, `the census judges the live cards (saw ${judged} — a vacuous pass over zero cards is the hole this wall closes)`);
     const named = [...ONE_SEAT_REGISTER.keys()].sort();
     assert.deepEqual(live.sort(), named,
-      "the residue must EQUAL the register exactly — an unnamed difference is the agent and the user being taught different surfaces; a stale register row is a folded alias");
+      "the residue must EQUAL the register exactly — an unnamed difference is the agent and the user being taught different surfaces; a stale register row is a folded alias. Zero rows today (the audit 013 cure 2 re-cut): ANY entry here is a live face divergence — name it with its reason and fix the face, never grow the register to admit it.");
     for (const [k, why] of ONE_SEAT_REGISTER) assert.ok(why.length > 20, `${k}: the register states a REASON, never a bare exemption`);
   });
 });

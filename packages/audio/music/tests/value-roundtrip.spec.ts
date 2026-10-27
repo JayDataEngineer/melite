@@ -78,6 +78,7 @@ import type {} from "../../../harness/estate-queue/src/service.ts";
 import { FlowsSeatService } from "../../../harness/estate-queue/src/flowsData.ts";
 import { MUSIC_NATIVE } from "../../../harness/estate-queue/src/flowsRegistryRows.ts";
 import { installLaneStoreOverlay, restoreLaneStoreOverlay } from "../../../../tests/helpers/lane-store-overlay.ts";
+import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 
 const FACTS_PATH = join(
   dirname(fileURLToPath(import.meta.url)),
@@ -233,7 +234,23 @@ beforeAll(async () => {
   door = new CardRegistryService(ctx);
   await door.prime();
   assertHermeticRode();
-  installLaneStoreOverlay();
+  const storeRoot = installLaneStoreOverlay();
+  // THE FP16 SEAT (audit 014 C5): the atom's body is the template's
+  // own fp16 DiT — provisioned (DECL provisions row) but not yet
+  // downloaded on this machine, so the mirrored store lacks it and
+  // the door's presence gate would refuse before any compose runs.
+  // The overlay's own technique (its header: only existence is
+  // faked; no run ever loads these bytes in a compose spec)
+  // materializes the provisioned row inside the hermetic temp root
+  // — the value arms judge values, never presence, and the presence
+  // judgment itself stays owned by cards-lanes.spec's fixture
+  // world. A removed provision row reds the DECL pin, not this
+  // seat; a present file rides through untouched (existsSync).
+  const fp16Seat = join(storeRoot, "data", "runtime", "comfyui", "models", "diffusion_models", "minimax_music3_dit_fp16.safetensors");
+  if (!existsSync(fp16Seat)) {
+    mkdirSync(dirname(fp16Seat), { recursive: true });
+    writeFileSync(fp16Seat, "");
+  }
 }, 120_000);
 
 afterAll(() => {
@@ -618,7 +635,7 @@ describe("ARM 6 — the stated numerics ride VERBATIM to their consumers (durati
     // audit 014 D1: the latent's seconds is the AR's realized-length LINK —
     // never a second literal copy of the duration (divergence = zero-padded
     // conditioning = the garbage tail). Duration owns exactly ONE seat.
-    assert.deepEqual(graph["EmptyMiniMaxMusic3LatentAudio.0"].inputs.seconds,
+    assert.deepEqual(nodesOf(graph, "EmptyMiniMaxMusic3LatentAudio")[0]!.inputs["seconds"],
       [`${MUSIC3_TEXT_ENCODE}.0`, 1], "duration's second seat stays the AR link (music3 latent)");
     assertNumAtConsumer(graph, "KSampler", "steps", 64, "steps (music3 sampler)");
     assertNumAtConsumer(graph, "KSampler", "cfg", 2.5, "guidance (music3 sampler)");
@@ -776,6 +793,105 @@ describe("ARM 6 — the stated numerics ride VERBATIM to their consumers (durati
       );
     } finally {
       ACTION_BINDINGS[yue2Decl.id] = original;
+    }
+  });
+});
+
+// ── ARM 7 — THE TIER DOOR ARMS (audit 014 C3/C4) ───────────────────
+// The step↔checkpoint pairing and the VRAM-aware decode ride through
+// the same estate door — stated through phase1Card+phase2Card, never
+// glanced. The decode seat is a CLASS pin (which decoder the served
+// graph carries); the matcher voice stays VALUE ARM so the
+// corruption twins below ride ARM 4's law (a pin that cannot fail on
+// a corrupted compose is a presence pin).
+describe("ARM 7 — the tier seats ride VERBATIM through the door (decode tier C3, step tier C4)", () => {
+  it("C3: a stated tiled_decode=true serves the tiled decoder with the template's seats", async () => {
+    const p1 = await door.phase1Card({
+      model: "music3", prompt: PROMPT, lyrics: LYRICS,
+      duration: 77, n_diffusion_steps: 64, seed: 4242, tiled_decode: true,
+    }, "music3");
+    const ran = await door.phase2Card(p1, `${RUN_DOOR}_decode_stated`);
+    const graph = ran.graph as Graph;
+    const tiled = nodesOf(graph, "VAEDecodeAudioTiled");
+    assert.equal(tiled.length, 1,
+      "VALUE ARM (decode seat): the stated tiled_decode=true serves exactly one VAEDecodeAudioTiled — the knob never reached the engine's consumer");
+    assert.deepEqual(
+      { tile_size: tiled[0]!.inputs["tile_size"], overlap: tiled[0]!.inputs["overlap"] },
+      { tile_size: 1536, overlap: 64 },
+      "VALUE ARM (decode seats): the served tiled node carries the template's 1536/64");
+    assert.equal(nodesOf(graph, "VAEDecodeAudio").length, 0,
+      "VALUE ARM (decode seat): the stated knob replaces the plain decoder, never doubles it");
+  });
+
+  it("C3: an unstated short track serves the plain decoder (the derivation owns the absent seat)", async () => {
+    const p1 = await door.phase1Card({
+      model: "music3", prompt: PROMPT, lyrics: LYRICS,
+      duration: 77, n_diffusion_steps: 64, seed: 4242,
+    }, "music3");
+    const ran = await door.phase2Card(p1, `${RUN_DOOR}_decode_derived_plain`);
+    const graph = ran.graph as Graph;
+    assert.equal(nodesOf(graph, "VAEDecodeAudio").length, 1,
+      "VALUE ARM (decode seat): the unstated 77 s draft decodes plain through the door");
+    assert.equal(nodesOf(graph, "VAEDecodeAudioTiled").length, 0,
+      "VALUE ARM (decode seat): no tiled node rides the roomy derivation");
+  });
+
+  it("C3: an unstated full-length track serves the tiled decoder (the duration cap is the size signal)", async () => {
+    const p1 = await door.phase1Card({
+      model: "music3", prompt: PROMPT, lyrics: LYRICS,
+      duration: 360, n_diffusion_steps: 64, seed: 4242,
+    }, "music3");
+    const ran = await door.phase2Card(p1, `${RUN_DOOR}_decode_derived_tiled`);
+    assert.equal(nodesOf(ran.graph as Graph, "VAEDecodeAudioTiled").length, 1,
+      "VALUE ARM (decode seat): the unstated 360 s draft tiles through the door");
+  });
+
+  it("C4: the served steps honor the checkpoint tier (default 30; stated 200 rides; 20 refuses loud)", async () => {
+    const p1 = await door.phase1Card({
+      model: "music3", prompt: PROMPT, lyrics: LYRICS, duration: 77, seed: 4242,
+    }, "music3");
+    const ran = await door.phase2Card(p1, `${RUN_DOOR}_steps_default`);
+    assertNumAtConsumer(ran.graph as Graph, "KSampler", "steps", 30,
+      "steps (door default — the full tier's own default, never a second literal)");
+    const q1 = await door.phase1Card({
+      model: "music3", prompt: PROMPT, lyrics: LYRICS, duration: 77, n_diffusion_steps: 200, seed: 4242,
+    }, "music3");
+    const qran = await door.phase2Card(q1, `${RUN_DOOR}_steps_ceiling`);
+    assertNumAtConsumer(qran.graph as Graph, "KSampler", "steps", 200, "steps (door ceiling)");
+    await assert.rejects(
+      door.phase1Card({
+        model: "music3", prompt: PROMPT, lyrics: LYRICS, duration: 77, n_diffusion_steps: 20, seed: 4242,
+      }, "music3"),
+      /n_diffusion_steps 20 is outside the full tier's \[30, 200\] window/,
+      "a distilled stamp on the full-schedule body refuses at the door — the divergent pairing never composes",
+    );
+  });
+
+  it("4g: dropping the stated tiled_decode mid-compose reds the C3 arm (the decode pin is a value pin)", async () => {
+    const original = ACTION_BINDINGS[music3Decl.id]!;
+    ACTION_BINDINGS[music3Decl.id] =
+      (p, model, g, runId) => {
+        const { tiled_decode: _dropped, ...rest } = p;
+        return original(rest, model, g, runId);
+      };
+    try {
+      await assert.rejects(
+        (async () => {
+          const p1 = await door.phase1Card({
+            model: "music3", prompt: PROMPT, lyrics: LYRICS,
+            duration: 77, n_diffusion_steps: 64, seed: 4242, tiled_decode: true,
+          }, "music3");
+          const ran = await door.phase2Card(p1, `${RUN_DOOR}_decode_corrupt`);
+          const graph = ran.graph as Graph;
+          const tiled = nodesOf(graph, "VAEDecodeAudioTiled");
+          assert.equal(tiled.length, 1,
+            "VALUE ARM (decode seat): the stated tiled_decode=true serves exactly one VAEDecodeAudioTiled — the knob never reached the engine's consumer");
+        }),
+        /VALUE ARM/,
+        "the door decode pin passed on a corrupted compose — it is a presence pin, not a value pin",
+      );
+    } finally {
+      ACTION_BINDINGS[music3Decl.id] = original;
     }
   });
 });

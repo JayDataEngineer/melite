@@ -12,10 +12,20 @@
 // importing the engine (the workspace-cycle law) — the real DECLs
 // satisfy it structurally at every call site.
 /** Derive the served style entries from the boarded families'
- *  DECLs, in board order: variants by their `order`, cells in
+ *  DECLs, in board order: variants in DECLARED order, cells in
  *  declared order, hidden cells skipped (the DECL's own
  *  hide_from_dropdown is the served face's truth — the same law
  *  the engine dropdown rides).
+ *
+ *  THE DECLARED-ORDER LAW (audit 013-edit-image-steps-envelope
+ *  cure 4, the `order` schism): entries[0] is variants[0]'s first
+ *  visible cell — the same first-declared law the resolver
+ *  (laneRelations resolveVariantRow) and the walls pin. A row's
+ *  numeric hint never re-seats the default pick: the qwen-img-edit-21
+ *  flip declared turbo FIRST with a stale `order: 1` beside base's
+ *  `order: 0`, and an order-sort served base at the enum's head
+ *  while every unstated compose resolved turbo — one address, two
+ *  defaults. The declaration order is the one spelling.
  *
  *  @param decls the boarded families' DECLs, in board order
  *  @returns entries with `entries[0]` the card's default pick
@@ -23,8 +33,7 @@
 export const semanticModelEntries = (decls) => {
     const out = [];
     for (const decl of decls) {
-        const variants = [...decl.variants].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
-        for (const variant of variants) {
+        for (const variant of decl.variants) {
             for (const cell of variant.cells) {
                 if (cell.hide_from_dropdown)
                     continue;

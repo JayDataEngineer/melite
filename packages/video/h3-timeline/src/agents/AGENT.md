@@ -23,9 +23,10 @@ may execute through `melite_flow` under the 3088 runbook.
 The stage lands in the Cards tab. The browser agent composes only. The
 headless maker uses `melite_flow` and `run_status` for its delegated run.
 
-`calls` and `audio_clips` are deliberately absent from the loaded
-params listing — they are compose inputs this document owns, not
-schema knobs the form renders. A film without `calls` is not a film;
+`calls`, `audio_clips`, and `keyframes` are deliberately absent from the loaded
+params listing — they are compose inputs this card's timeline owns, not
+schema knobs the form renders (calls/audio_clips ride the tool plane, pins
+ride the timeline bar's keyframes lane). A film without `calls` is not a film;
 the schema listing alone under-describes this card by design.
 
 ## Timeline shape
@@ -52,13 +53,13 @@ Describe motion, subject continuity, ambient sound, and style in each call's
 
 **THE HYBRID RAILS — both image rails are live on ONE window, and they
 COMBINE (operator law, 2026-10-27).** There is no first-frame/last-frame
-setup and no either/or mode: `params.keyframes` is `[{frame, image}]` — a
+setup and no either/or mode: the timeline's keyframes lane is `[{frame, image}]` — a
 film-absolute frame plus the image that must appear there, inside a window
 (`[start, end)`); `params.image` is the frame-0 shorthand for the same
 rail. `ref_images`, `ref_videos`, `ref_audios` are the reference rails
 (identity, style, motion). Pick by what the still MEANS, never by habit:
 
-- **The anchor rail (`image` / `keyframes`):** the still is the ANCHOR —
+- **The anchor rail (`image` / the keyframes lane):** the still is the ANCHOR —
   the strongest identity pull the film develops under (it never pins a
   literal decoded first frame; the opening generates from it). Use when
   the brief is "animate THIS picture" / "bring this image to life".

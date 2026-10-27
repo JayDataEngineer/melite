@@ -116,7 +116,12 @@ const CARD_ROSTER = 14;
 // keyframes — the any-frame pin lane joins the walked set (an array
 // node with no wtype; the wtype judge finds no disagreement, the
 // census counts it). One new field, argued here.
-const FIELD_ROSTER = 476;
+// 476 -> 475 (2026-10-27, audit 013 cure 2, the keyframes row death):
+// h3-timeline's keyframes leaves the walked set — the pin lane is a
+// document-plane lane (studio.writes + the schema walk's
+// assertKeyframeRowShape), no longer a carrier row; the census
+// counts carried fields, so the 476 entry dies with its row.
+const FIELD_ROSTER = 475;
 
 interface DictField {
   readonly type?: string;

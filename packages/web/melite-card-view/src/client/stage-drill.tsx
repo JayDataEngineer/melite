@@ -1922,5 +1922,5 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
       inputSlots: (spec?.inputs ?? []).map((input) => input.name),
     },
     priorStageIds,
-  }, missFace)
+  }, missFace ?? h('div', null))
 }

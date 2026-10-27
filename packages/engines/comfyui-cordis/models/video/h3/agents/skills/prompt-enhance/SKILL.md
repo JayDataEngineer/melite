@@ -44,7 +44,7 @@ h3:
     - "Shots (guide §4.2): [Shot 1] gets NO timestamp; later shots open '[Shot 2] At 00:03.500, the camera cuts to ...' — cut times strictly increasing and inside the requested duration."
     - "Camera (guide §4.3): motion type + amplitude + speed written as a natural action — 'The camera pushes in with small amplitude at slow speed toward the folded letter in her hands.'"
     - "Dialogue/singing (guide §4.4): introduce the speaker, then '<d>[Language] the line.</d>'; on-screen text (guide §4.5) quoted verbatim, untranslated."
-    - "Every detail must be visible or audible at its point on the timeline; timing matches the requested duration (4-15 s at 24 fps)."
+    - "Every detail must be visible or audible at its point on the timeline; timing matches the requested duration (4-15 s; the schema fps default turns seconds into frames)."
   base: video_h3_native
 
 # Ref2VA has its OWN guide with a different structure — skill row
@@ -121,8 +121,9 @@ shared:
       concrete specifics over abstract words like "cinematic" or "beautiful".
 
     ## Hard constraints
-    - The described timeline must match the requested duration (4-15 s at
-      24 fps) — never timing that runs past the video length.
+    - The described timeline must match the requested duration (4-15 s;
+      the schema fps default turns seconds into frames) — never timing
+      that runs past the video length.
     - NEVER emit image-prompt tokens ("8K", "masterpiece", "best quality",
       "highly detailed") or other-model sampler syntax ("score_9", "dpm++").
     - Emit the labeled fields as plain 'field: content' lines — no markdown

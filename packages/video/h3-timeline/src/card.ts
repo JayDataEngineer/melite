@@ -100,7 +100,7 @@ export const identity = {
   principles: [
     'Describe MOTION and SOUND together — H3 generates both in one pass',
     'Draft at 768x448x56f (~2.3s); produce at 1344x768x124f (~5.2s)',
-    'Length snaps to the 17k+5 frame grid at 24fps',
+    'Length snaps to the 17k+5 frame grid (frames become seconds at the schema fps default — the one clock)',
     'For timelines: repeat the ambient soundscape verbatim in every window; add one new layer where the story needs it',
     "Same seed across a shot's re-rolls keeps the world texture",
     'SLA sparse attention ships at sparsity 0.85 — the value the turbo LoRA was distilled against; stating 0.90 trades a little quality for ~15% more speed',
@@ -138,8 +138,12 @@ export function registerCard(ctx: Context, comfy: ComfyUIServiceFace): void {
     // the emitter at render time, never authored by the agent — so no
     // normalize hook rides here: the agent writes the action, the card
     // frames the shot.
+    // THE HYBRID-RAILS LINE (audit 013 cure 3, the digest tier): the
+    // one authored combinability sentence — two image rails, both
+    // live, naming every seat the rails law needs. Served in the
+    // load digest through the existing craft seat (zero derivation).
     craft: {
-      promptHint: 'one continuous action line per shot — the card frames each shot at render (no "shot 1:" prefixes, no first-frame/last-frame language; pin frames with params.keyframes)',
+      promptHint: 'one continuous action line per shot — the card frames each shot at render (no "shot 1:" prefixes, no first-frame/last-frame language; pin frames on the timeline\'s keyframes lane). Two image rails, both live, combinable: the anchor (image / the keyframes lane) pins the opening AND conditions identity while reference rails (ref_images and kin) stack after it — both rails ride one window.',
     },
     identity,
     // THE DISCOVERY ROWS (migrated 2026-09-10 from the frozen
@@ -155,7 +159,7 @@ export function registerCard(ctx: Context, comfy: ComfyUIServiceFace): void {
       // "THERE IS NO FIRST FRAME NOR LAST FRAME, JUST ARBITRARY FRAMES
       // WHENEVER"): the image pin + the reference buses — one shared
       // rail. `last_frame` stays a WIRING slot as the FL2VA end-anchor
-      // translation; the frame setup is the keyframes param lane. The
+      // translation; the frame setup is the timeline's keyframes lane. The
       // kinds are the SLOT kinds (the rail seats image/file slots,
       // never names). THE NAMING LAW rider (2026-10-09, "fix it
       // all"): the reference stacks are REAL input seats on the

@@ -37,11 +37,15 @@ describe("the h3-timeline tool face", () => {
     assert.ok(calls !== undefined && !("type" in calls));
   });
 
-  it("the any-frame pin lane rides the tool plane — cure 8's construct face", () => {
+  it("the any-frame pin lane is OFF the tool plane — pins live on the timeline's keyframes lane (audit 013 cure 2, the row death)", () => {
+    // THE ROW DEATH: keyframes is a document-plane lane (the studio
+    // doc's keyframes row, validated by the schema walk), never a
+    // tool param — the agent composes pins by editing the timeline,
+    // and the construct face no longer advertises a parallel row
+    // that would teach two homes for one setup.
     const props = (tool.parameters?.properties ?? {}) as Record<string, { description?: string; type?: string }>;
-    const kf = props.keyframes;
-    assert.ok(kf, "keyframes declared on the tool plane — the agent composes pins, never first/last physics");
-    assert.match(String(kf.description ?? ""), /ANY FRAME, ANY TIME/, "the lane teaches its own shape on the construct face");
+    assert.ok(!("keyframes" in props), "the pin lane is not a tool param — one home: the timeline's keyframes lane");
+    assert.ok(props.calls, "the calls node keeps the shot lane on the tool plane");
   });
 
   it("presentationMeta projects the run arm, empty keys omitted", () => {

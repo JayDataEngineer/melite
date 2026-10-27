@@ -44,6 +44,11 @@ const samplerOf = (g: GraphBuilder): { inputs: Record<string, unknown> } =>
     (n) => n.class_type === "KSampler",
   )!;
 
+const encodeOf = (g: GraphBuilder): { inputs: Record<string, unknown> } =>
+  Object.values(g.toJSON() as Record<string, { class_type: string; inputs: Record<string, unknown> }>).find(
+    (n) => n.class_type === "MiniMaxMusic3TextEncode",
+  )!;
+
 const golden = (name: string): string => join(import.meta.dirname, "golden", `${name}.json`);
 const graphOf = (g: GraphBuilder): Record<string, { class_type: string; inputs: Record<string, unknown> }> =>
   g.toJSON() as never;
@@ -78,6 +83,21 @@ describe("the music3 compose action — byte-stability (the compatibility law)",
     const seedB = samplerOf(b).inputs.seed as number;
     assert.ok(seedA >= 0 && seedB >= 0, "the minted sentinel is a concrete seed");
     assert.notEqual(seedA, seedB, "each compose mints its own sentinel");
+    // AUDIT 014 C2 — the pairing: the mint lands on BOTH seed seats
+    // (the sampler AND the AR encoder read the same seed), never a
+    // raw -1 at either consumer (the 2026-09-09 engine-400 burn).
+    assert.equal(encodeOf(a).inputs.seed, seedA, "the encoder reads the same mint as the sampler");
+    assert.equal(encodeOf(b).inputs.seed, seedB, "the encoder reads the same mint as the sampler");
+  });
+
+  it("a stated seed rides VERBATIM at both seed seats (audit 014 C2 — the pairing's second arm)", () => {
+    // The split-brain lesson: one arm mints (above), a second arm
+    // states — a stated seed pairing that drifted would pass the
+    // mint arm while the engine sampled unconditioned noise.
+    const action = new GraphBuilder({});
+    instantiateAction(compose, { ...PARAMS, seed: 4242 }, FACTS, action, "probe-stated-seed");
+    assert.equal(samplerOf(action).inputs.seed, 4242, "the sampler reads the stated seed");
+    assert.equal(encodeOf(action).inputs.seed, 4242, "the encoder reads the same stated seed");
   });
 
   it("the facts door refuses a missing weight field-named, never composes an empty filename", () => {
@@ -92,7 +112,10 @@ describe("the music3 compose action — byte-stability (the compatibility law)",
     // the DECL's own lane_inputs parse clean (the admission gate's
     // proof — registration runs this same parse).
     const facts = parseMusicFacts((DECL as { lane_inputs: Record<string, unknown> }).lane_inputs as Parameters<typeof parseMusicFacts>[0]);
-    assert.equal(facts.unet, "minimax_music3_dit_int8_convrot.safetensors");
+    // audit 014 C5: the atom's unet is the fp16 body the official
+    // template composes (the family default); the int8 file moved to
+    // its cell's own lane stamp.
+    assert.equal(facts.unet, "minimax_music3_dit_fp16.safetensors");
     assert.equal(facts.clip_type, "minimax");
   });
 

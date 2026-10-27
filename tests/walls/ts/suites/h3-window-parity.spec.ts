@@ -65,12 +65,12 @@ describe("THE H3 WINDOW PROJECTION SEAM — carrier, served envelope, and film r
     // action row declares it — the film rows judge the DECL/family
     // write surface, and trims are a user-doc pairing, not a
     // family-judged knob. Served + walk-read, family-door-exempt.
-    // keyframes (cure 8's any-frame pin lane, add-first face 2026-11-12):
-    // same class — served on the carrier face and read by the walk
-    // (applyKeyframeCompose), but the JSON row params ride the timeline
-    // contract's validators, never the film action rows (the calls /
-    // audio_clips precedent).
-    assert.deepEqual(spec.undeclaredServed, ["keyframes", "ref_video_trims"]);
+    // keyframes LEFT this class (audit 013 cure 2, the row death): the
+    // pin lane is a document-plane lane — the schema walk still reads
+    // it (assertKeyframeRowShape) but no FACE serves it (off the
+    // carrier projection, the DECL params, and the tool plane), so
+    // served-but-undeclared no longer describes it.
+    assert.deepEqual(spec.undeclaredServed, ["ref_video_trims"]);
   });
 
   it("declared-but-unserved keys are named with their wire/internal reason", () => {

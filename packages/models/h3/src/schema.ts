@@ -9,7 +9,7 @@ import { vocabulary } from '@melite/comfyui-card-kit/vocab'
 import { samplingExtra } from '@melite/comfyui-card-kit/fields'
 import { bag } from '@melite/contracts/extraKeys'
 import { coerceWireArrays } from '@melite/comfyui-card-kit'
-import { CALL_KEYS, FILM_ONLY_KEYS, GRID_BASE_FRAMES, GRID_MAX_FRAMES, GRID_STEP_FRAMES, REF_CAPS, T4_ONLY_KEYS, assertGridLength, assertSpanGrid, deriveWindowFamily, isMediaRef, normalizeDeclaredRefs, transitionOverlap } from './timelineContract.js'
+import { CALL_KEYS, DOC_FPS_DEFAULT, FILM_ONLY_KEYS, GRID_BASE_FRAMES, GRID_MAX_FRAMES, GRID_STEP_FRAMES, REF_CAPS, T4_ONLY_KEYS, assertGridLength, assertSpanGrid, deriveWindowFamily, isMediaRef, normalizeDeclaredRefs, transitionOverlap } from './timelineContract.js'
 
 // the window families this renderer builds (three shapes:
 // t4r opener / t4_open window / t4_chain window).
@@ -55,8 +55,8 @@ export const paramSchema = z.object({
   // doc; it was dead weight on the global recipe's face.
   // (operator 2026-11-12: "THERE IS NO FIRST FRAME NOR LAST FRAME,
   // JUST ARBITRARY FRAMES WHENEVER") — `image` is the frame-0 PIN
-  // shorthand, never a first-frame physics; keyframes is the setup.
-  image: z.string().role('path').description("An image pin at the film's opening — the frame-0 shorthand (use keyframes for any other frame)").extra('extra', bag({ order: null, wtype: 'image', tooltip: "Absolute path to the PNG pinned at the film's opening (frame 0). For any other frame use keyframes — there is no first/last frame setup." })),
+  // shorthand, never a first-frame physics; the setup is the timeline's keyframes lane.
+  image: z.string().role('path').description("An image pin at the film's opening — the frame-0 shorthand (use the timeline's keyframes lane for any other frame)").extra('extra', bag({ order: null, wtype: 'image', tooltip: "Absolute path to the PNG pinned at the film's opening (frame 0). For any other frame use the timeline's keyframes lane — there is no first/last frame setup." })),
   // THE INPUT SURFACE (the H3 architecture truth — two DIFFERENT
   // mechanics, the FL2VA latent anchors vs the Ref2VA conditioning
   // bus): first_frame/last_frame are PIXEL anchors (bundle inputs
@@ -75,28 +75,30 @@ export const paramSchema = z.object({
   // key for old drafts and the FL2VA translation, never a face
   // (extra.hidden keeps it out of BOTH projections; params-emit.ts).
   // No wtype: a never-rendered field's wtype is dead surface (the
-  // card-wtype-judge's law). The setup is keyframes.
-  last_frame: z.string().role('path').description("Legacy FL2VA end anchor — a hidden validation key for old drafts, never a face; pins ride keyframes").extra('extra', bag({ order: null, hidden: true, tooltip: "Legacy FL2VA end anchor (bundle input 2) — translation only. The setup is keyframes: pin ANY frame, any time." })),
+  // card-wtype-judge's law). The setup is the timeline's keyframes lane.
+  last_frame: z.string().role('path').description("Legacy FL2VA end anchor — a hidden validation key for old drafts, never a face; pins ride the timeline's keyframes lane").extra('extra', bag({ order: null, hidden: true, tooltip: "Legacy FL2VA end anchor (bundle input 2) — translation only. The setup is the timeline's keyframes lane: pin ANY frame, any time." })),
   // THE ANY-FRAME PIN LANE (cure 8 RULED CLOSED, operator 2026-11-12:
-  // "WE DO NOT DO FIRST FRAME LAST FRAME, WE DO ANY FRAME ANY TIME").
+  // "WE DO NOT DO FIRST FRAME LAST FRAME, WE DO ANY FRAME ANY TIME";
+  // PLACED on the doc plane 2026-11-12, audit 013 — the pin row left
+  // the param face, never the engine).
   // The engine lane was real since slice 2 (actions.ts applyKeyframeCompose
   // reads p.keyframes; DECL.studio.writes lists it) but NO face declared
   // it — so the agent saw only image/last_frame and reasoned in the
   // retired first/last physics for nine minutes (session 384a13cd).
-  // ADD-FIRST (v2 slice 1) + THE SETUP TRUTH (operator 2026-11-12):
-  // the lane rides BOTH faces (carrier → load face + form spec) and
-  // IS the frame setup; image is the frame-0 shorthand and last_frame
-  // is a hidden translation alias. Placement is the compose gate's
-  // (schema() below + the build door): film-absolute frame, inside a
-  // window, image names media.
-  keyframes: z.array(z.object({
-    // The row's runtime law is assertKeyframeRowShape (below) — the
-    // named first door; the zod node stays permissive so schemastery
-    // never answers a bad row with its generic parse text (a string
-    // frame, a negative frame: the walk/door name them).
-    frame: z.number().description('Film-absolute frame'),
-    image: z.string().role('path').description('Pin image'),
-  })).description("ANY FRAME, ANY TIME: [{ frame, image }] pins — a film-absolute frame plus the image that must appear there. A pin fills a silent seat; a stated call guide or last_frame wins, and the pin rides the interior guide chain instead (never dropped). The frame must land inside a window ([start, end)).").extra('extra', bag({ order: null })),
+  // THE SETUP TRUTH (operator 2026-11-12) + THE DOC-PLANE PLACEMENT
+  // (audit 013, the keyframes-row death): the lane IS the frame setup
+  // and rides the timeline bar's keyframes lane — the studio doc's own
+  // keyframes array, through the studio write door into this walk.
+  // image is the frame-0 shorthand and last_frame is a hidden
+  // translation alias. NOTE: the pin array is deliberately NOT a
+  // carrier knob (the calls precedent, schema.ts:376-382 — the agent
+  // plane owns calls in the tool face; the pin lane is owned by the
+  // doc plane the same way): schema() below keeps judging the array
+  // + row shape and the compose gate keeps the rider admission, so
+  // old drafts still walk and pins still compose — no face declares
+  // the row. Placement is the compose gate's (schema() below + the
+  // build door): film-absolute frame, inside a window, image names
+  // media.
   ref_images: z.array(z.string().role('path')).description("Reference images").max(REF_CAPS.images).extra('extra', bag({ order: null, wtype: 'image_list', max_stack: REF_CAPS.images, tooltip: "Loose references (identity, style, costume) → <Picture 3..9> via the bundle. 8 fills the bus; with a last frame set the cap is 7 (anchor + end + 7 = the 9-slot bus)." })),
   ref_videos: z.array(z.string().role('path')).description("Reference videos").max(REF_CAPS.videos).extra('extra', bag({ order: null, wtype: 'image_list', media: 'video', max_stack: REF_CAPS.videos, tooltip: "Motion guides → <Video 1-3>: camera moves, timing, choreography." })),
   // THE TRIM SEAT (audit 003/V4, 2026-10-22): per-video trim,
@@ -177,11 +179,12 @@ export const paramSchema = z.object({
   // FPS IS LAYER A (operator 2026-10-16, verbatim) — the project
   // clock, ONE owner: the doc's stated fps rides into every
   // CreateVideo container so the clip's seconds equal the bar's
-  // seconds. Declared default 24 (the walk fills it — the lawful
-  // declared kind, never a silent ?? in the compose). The old
-  // hardcoded 24 in both render arms played a 90-frame window at
-  // 3.75s under a 5.6s bar.
-  fps: z.number().description("Playback fps").min(1).max(120).default(24).extra('extra', bag({ hidden: true })),
+  // seconds. Declared default DERIVES the one code home (audit 013
+  // cure 5, the fps ONE-HOME: DOC_FPS_DEFAULT in timelineContract —
+  // the walk fills it, the lawful declared kind, never a silent ??
+  // in the compose). The old hardcoded 24 in both render arms played
+  // a 90-frame window at 3.75s under a 5.6s bar.
+  fps: z.number().description("Playback fps").min(1).max(120).default(DOC_FPS_DEFAULT).extra('extra', bag({ hidden: true })),
   steps: z.number().description("Steps").min(4).max(30).default(6).extra('extra', samplingExtra('steps', { tooltip: "6 for draft — the engine kernel's own calibrated count (its H3SLAAttention tooltip: use 6 steps rather than lowering sparsity; PARITY-pinned with plaguekind v7 — the 12 carried no receipt and matched neither his v7=6 nor v9=8; regolded by the 2026-10-16 upstream-parity audit); 30 standard; a boarded distill lora applies its own steps (edit them on the lora entry)" })),
   // THE SECOND-PASS MASTER (2026-09-22, operator: "Second Pass also
   // needs an on/off switch, it is very unclear if it is on or off"):

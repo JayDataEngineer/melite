@@ -184,7 +184,8 @@ describe("the input surface: EVERY slot declares its slot shape (the freeform-te
     // NOR LAST FRAME, JUST ARBITRARY FRAMES WHENEVER"): image is the
     // frame-0 shorthand slot; last_frame is a hidden validation key
     // (extra.hidden — the FL2VA translation), and the setup is the
-    // keyframes param lane.
+    // timeline's keyframes lane (the document plane — audit 013 cure
+    // 2 removed the parallel params row).
     assert.equal(typeOf("image"), "image", "the opening pin is a slot");
     assert.equal(typeOf("last_frame"), undefined, "the end-anchor alias is validation-only — never a form row");
   });

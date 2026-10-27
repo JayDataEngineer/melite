@@ -77,6 +77,41 @@ describe("the music compose gate", () => {
     assert.ok(save, "the mp3 save rides");
     assert.equal(save.inputs.filename_prefix, "run_2/music");
   });
+
+  // THE DECODE TIER SURFACE (audit 014 C3) + THE STEP TIER SURFACE
+  // (audit 014 C4): the card serves the toggle and the tier's
+  // default — absence rides the derivation, never a second literal.
+  it("unstated tiled_decode decodes plain at a short track (the derivation owns the absent seat)", () => {
+    const g = new GraphBuilder();
+    def.compose(def.schema({ prompt: "funk, pop" }), music3, g, "r_plain");
+    const graph = g.toJSON();
+    assert.ok(graph["VAEDecodeAudio.0"], "the short unstated compose decodes plain");
+    assert.ok(!graph["VAEDecodeAudioTiled.0"], "no tiled node rides the roomy default");
+  });
+
+  it("a stated tiled_decode=true tiles with the template's seats", () => {
+    const g = new GraphBuilder();
+    def.compose(def.schema({ prompt: "funk, pop", tiled_decode: true }), music3, g, "r_tiled");
+    const graph = g.toJSON();
+    assert.ok(!graph["VAEDecodeAudio.0"], "the stated knob replaces the plain decode");
+    assert.deepEqual(
+      { tile_size: graph["VAEDecodeAudioTiled.0"].inputs.tile_size, overlap: graph["VAEDecodeAudioTiled.0"].inputs.overlap },
+      { tile_size: 1536, overlap: 64 },
+      "the card-served knob lands the template's own seats");
+  });
+
+  it("unstated at a full-length track tiles (the card passes the duration cap through)", () => {
+    const g = new GraphBuilder();
+    def.compose(def.schema({ prompt: "funk, pop", duration: 360 }), music3, g, "r_long");
+    assert.ok(g.toJSON()["VAEDecodeAudioTiled.0"], "a 360 s card compose tiles without a stated knob");
+  });
+
+  it("the unstated steps is the full tier's default (the card derives it from tier.ts — one home)", () => {
+    const g = new GraphBuilder();
+    def.compose(def.schema({ prompt: "funk, pop" }), music3, g, "r_steps");
+    assert.equal(g.toJSON()["KSampler.0"].inputs.steps, 30,
+      "the fresh doc samples the checkpoint tier's default, never a card-literal twin");
+  });
 });
 
 describe("the yue2 lane (YuE2-3B boarding — style + lyrics with ABC planning, 2026-09-20)", () => {

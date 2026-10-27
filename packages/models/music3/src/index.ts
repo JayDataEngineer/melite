@@ -10,6 +10,10 @@ import type { Plugin } from "@deepseek-ai/cordis";
 import { ModelsServiceFace } from '@melite/comfyui-card-kit/service-faces'
 import type { ModelDecl } from '@melite/comfyui-card-kit/model-contract'
 import { compose } from "./actions.ts";
+// THE STEP↔CHECKPOINT TIER (audit 014 C4): the row's sampler stamps
+// derive from the SAME module the compose action judges — one tier
+// derivation, never two homes.
+import { MUSIC3_FULL_STEPS, music3StepsEnvelope } from "./tier.ts";
 
 export const DECL: ModelDecl = {
   "id": "music3",
@@ -38,14 +42,43 @@ export const DECL: ModelDecl = {
       "label": "Standard",
       "group": "Variant",
       "route": "music3",
+      // THE STEP↔CHECKPOINT TIER (audit 014 C4): the row's stamps ARE
+      // the tier derivation — the standard row's cells are full-
+      // schedule bodies, so the envelope and the resolver default
+      // spread from MUSIC3_FULL_STEPS. A distilled row lands its OWN
+      // tier stamps (MUSIC3_DISTILLED_STEPS) or the step-tier wall
+      // reds the divergent pairing.
+      "sampler_envelope": music3StepsEnvelope(MUSIC3_FULL_STEPS, [0.1, 10]),
+      // THE ACTION'S OWN SPELLING (the declared-plane door): this
+      // family's action param is n_diffusion_steps (the card schema's
+      // field) — the stamp seeds the compose body by this name.
+      "resolver_defaults": { "n_diffusion_steps": MUSIC3_FULL_STEPS.default },
       "cells": [
         {
-          // The stale source died (2026-10-13): the lane loads the
-          // Comfy-Org safetensors the provisions rows carry, never a
-          // GGUF tree.
+          // THE QUANT-AXIS LAW (E2-4): the first declared cell is the
+          // variant default — the fp16 body the official template
+          // composes (audit 014 C5: int8 was the only row, and the
+          // template labels it "# For low VRAM"). The fp16 cell rides
+          // the family lane_inputs below — the atom IS this tier's
+          // load, so the cell carries no lane stamps of its own.
+          "quant": "fp16",
+          "label": "FP16",
+          "route": "music3",
+        },
+        {
+          // The low-VRAM body (the template's own note): an explicit
+          // cell whose OWN route re-keys the address view so the
+          // cell-lane cascade folds this unet at read (comfyui-cordis
+          // service.ts getModel) — a stated int8 pick loads the int8
+          // file, never the atom's. Its vram_peak_gb is the DECL's own
+          // auditioned number and feeds the decode-tier derivation
+          // (actions.ts deriveDecodeTier).
           "quant": "int8_convrot",
           "label": "INT8 ConvRot",
-          "route": "music3",
+          "route": "music3-int8",
+          "lane_inputs": {
+            "unet": "minimax_music3_dit_int8_convrot.safetensors",
+          },
           "vram_peak_gb": 20,
         }
       ]
@@ -91,16 +124,34 @@ export const DECL: ModelDecl = {
     }
   ],
   "has_inference": true,
+  // THE LANE TRUTH (audit 014 C5): the atom's unet is the fp16 body
+  // the official template composes — the family's default address
+  // serves the template's own weights. The int8_convrot file moved to
+  // its cell above (the low-VRAM pick owns its load); both bodies'
+  // downloads ride the provisions rows (the audio families' shape —
+  // no cell sources).
   "lane_inputs": {
     "clip_type": "minimax",
     "text_encoder": "minimax_music3_text_encoder_pruned_int8_convrot.safetensors",
-    "unet": "minimax_music3_dit_int8_convrot.safetensors",
+    "unet": "minimax_music3_dit_fp16.safetensors",
     "vae": "minimax_music3_dav.safetensors"
   },
   // GHOST DEBT CLEARED (2026-10-12 model audit, fix 4): the lane's
   // three weights, provisioned from Comfy-Org's official Music-3 repo.
   "provisions": [
     {
+      // THE TEMPLATE'S BODY (audit 014 C5): the fp16 DiT the official
+      // template composes by default; digests are upstream's own HF
+      // LFS metadata (api tree, 2026-11-12), never a local download.
+      "name": "minimax_music3_dit_fp16.safetensors",
+      "url": "https://huggingface.co/Comfy-Org/MiniMax-Music-3/resolve/main/diffusion_models/minimax_music3_dit_fp16.safetensors",
+      "folder": "diffusion_models",
+      "sha256": "45494a2b6b69af115902ff28eaf54118d19067aa54da01000f3e3efce7ba0e34",
+      "size_bytes": 4914197682
+    },
+    {
+      // The template's low-VRAM body ("# For low VRAM", the note
+      // verbatim) — the int8 cell's load.
       "name": "minimax_music3_dit_int8_convrot.safetensors",
       "url": "https://huggingface.co/Comfy-Org/MiniMax-Music-3/resolve/main/diffusion_models/minimax_music3_dit_int8_convrot.safetensors",
       "folder": "diffusion_models",
@@ -150,6 +201,10 @@ export const DECL: ModelDecl = {
   "params": [
     "prompt", "lyrics", "duration",
     "guidance_scale", "n_diffusion_steps", "lm_cfg_scale", "seed",
+    // THE DECODE TIER KNOB (audit 014 C3): stated, it overrides the
+    // VRAM/size derivation; absent, the derivation decides (the
+    // compose action owns the default — no second literal home).
+    "tiled_decode",
   ],
 
   // THE DECLARED ACTIONS (the atom vocabulary, stroke 3):
@@ -168,6 +223,16 @@ export const family: Plugin = {
 };
 
 export { compose, parseMusicFacts, type MusicFacts, type MusicParams } from "./actions.ts";
+export {
+  MUSIC3_DISTILLED_STEPS,
+  MUSIC3_FULL_STEPS,
+  assertMusic3StepsInTier,
+  music3StepTier,
+  music3StepsEnvelope,
+  type Music3StepTier,
+  type Music3TierSteps,
+} from "./tier.ts";
+export { TILED_DURATION_CEIL_S, TILED_VRAM_FLOOR_GB, deriveDecodeTier, type DecodeTier } from "./decode.ts";
 
 // The Loader-row face: DSH loads plugin rows by bare specifier and
 // unwraps `exports.default ?? exports` (vendor/cordis_plugins/loader

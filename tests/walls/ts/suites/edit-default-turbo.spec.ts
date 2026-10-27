@@ -129,4 +129,22 @@ describe("the image edit family's default variant is the turbo (burn c)", () => 
     assert.deepEqual(splits, [],
       "every family's door spelling agrees with the mirror spelling on an unstated variant — a split is one resolver serving two defaults (the edit-steps burn's class)");
   }, 120_000);
+
+  it("ARM 5 — THE SERVED ENUM RIDES THE DECL WALK (audit 013 cure 4, the `order` schism): the semantic model knob's first entry is variants[0]'s first visible cell", async () => {
+    // The burn's second face: the DECL flip declared turbo FIRST but
+    // kept base's `order: 0` — and the served style enum SORTED by
+    // the numeric hint, so the agent face offered base first while
+    // every unstated compose resolved turbo. One address, two
+    // defaults, on the SAME face pair arms 1-2 judge. The
+    // derivation's law is declared order — the same first-declared
+    // law arm 1 pins — so the real derivation over the booted DECL
+    // must head the enum with the turbo.
+    const { semanticModelEntries } = await import("../../../../packages/engines/comfyui-card-kit/src/semanticModelKnob.ts");
+    const decl = getModel(FAMILY) as unknown as { id: string; label: string; variants: Array<{ id: string; label?: string; route?: string; cells?: Array<{ quant: string; label?: string; route?: string; hide_from_dropdown?: boolean }> }> };
+    assert.ok(decl, `the booted registry serves ${FAMILY}`);
+    const entries = semanticModelEntries([{ id: decl.id, label: decl.label, variants: decl.variants }]);
+    assert.ok(entries.length >= 2, `the enum serves the family's visible cells (saw ${entries.length})`);
+    assert.equal(entries[0]!.value, `${FAMILY}:turbo:int8_convrot`,
+      `the served enum's first entry is the default row's first visible cell — saw '${entries[0]!.value}'; a numeric order hint never re-seats the default pick`);
+  });
 });

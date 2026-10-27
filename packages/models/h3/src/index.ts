@@ -30,7 +30,7 @@ export const DECL: ModelDecl = {
   "id": "h3",
   "form": "form_video_director",
   "label": "MiniMax H3",
-  "description": "MiniMax H3 joint video + audio — one model, three lanes: multi-window timeline films, single-shot FL2VA/Ref2VA clips, and keyframe-anchored beats",
+  "description": "MiniMax H3 joint video + audio — one model, two lanes: multi-window timeline films and keyframe-anchored beats on the timeline bar",
   "engine": "comfyui",
   // THE ONE-OWNER FLOOR (dual-floor cure, 2026-11-02): seed's floor
   // lives on the family's own carrier schema (src/schema.ts,
@@ -347,7 +347,7 @@ export const DECL: ModelDecl = {
   // sharpen_switch are retired aliases — the primaries own their
   // switches (23/32).
   "params": [
-    "image", "keyframes",
+    "image",
     "ref_images", "ref_videos", "ref_video_trims", "ref_audios", "ref_mods",
     "duck_depth_db",
     "seed", "width", "height", "length", "steps", "denoise",

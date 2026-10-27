@@ -20331,7 +20331,7 @@ window.__ModuleLoader__.load({
 					inputSlots: (spec?.inputs ?? []).map((input) => input.name)
 				},
 				priorStageIds
-			}, missFace);
+			}, missFace ?? (0, react.createElement)("div", null));
 		}
 		//#endregion
 		//#region src/client/add-card-door.tsx
