@@ -47,7 +47,8 @@ import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import "../../../../tests/helpers/boot-models.ts";
-import { getModel, theService } from "@melite/comfyui-cordis";
+import { getModel, loadCardDefs, registryModel } from "@melite/comfyui-cordis";
+import { modelsService } from "../../../../packages/engines/comfyui-cordis/src/models/models.ts";
 import { CardRegistryService } from "../../../../packages/harness/estate-queue/src/cardsRegistry.ts";
 import { prepareCardParams } from "../../../../packages/harness/estate-queue/src/cardsCompose.ts";
 import type { ModelFactsRow } from "../../../../packages/harness/estate-queue/src/cardsFacts.ts";
@@ -62,6 +63,7 @@ type DeclRow = {
   required_defaults?: Array<{ name?: string; class?: string }>;
   variants?: Array<{
     id: string;
+    group?: string;
     resolver_defaults?: Record<string, unknown>;
     hide_from_dropdown?: boolean;
   }>;
@@ -90,8 +92,13 @@ beforeAll(async () => {
 describe("THE ONE DEFAULT TABLE, VARIANT-PARAMETERIZED (audit 013 cure 3)", () => {
   it("THE ESTATE CENSUS: a variant-class family block never contradicts the default row's own resolver_defaults", () => {
     const offenders: string[] = [];
-    for (const id of theService().modelIds()) {
-      const decl = getModel(id) as unknown as DeclRow | undefined;
+    // THE RAW ATOMS (not the route views): getModel resolves the
+    // family address's ROUTE claim (qwen-img-edit-21's route IS the
+    // base variant), whose realized defaults lawfully merge the
+    // row's own tier — the family BLOCK this census judges lives on
+    // the registered declaration (registryModel/allDecls), never
+    // the address view.
+    for (const decl of modelsService().allDecls() as unknown as DeclRow[]) {
       if (decl === undefined) continue;
       const required = new Set(
         (decl.required_defaults ?? [])
@@ -108,7 +115,7 @@ describe("THE ONE DEFAULT TABLE, VARIANT-PARAMETERIZED (audit 013 cure 3)", () =
         const rowValue = rowTier[key];
         if (rowValue === undefined || rowValue !== block) {
           offenders.push(
-            `${id}: family defaults ${key}=${String(block)} vs default row '${row?.id ?? "—"}' resolver_defaults ${key}=${String(rowValue)} — the block speaks a lane the default row does not`,
+            `${decl.id}: family defaults ${key}=${String(block)} vs default row '${row?.id ?? "—"}' resolver_defaults ${key}=${String(rowValue)} — the block speaks a lane the default row does not`,
           );
         }
       }
@@ -120,7 +127,10 @@ describe("THE ONE DEFAULT TABLE, VARIANT-PARAMETERIZED (audit 013 cure 3)", () =
   });
 
   it("THE AUDITED ADDRESS: the qwen-img-edit-21 block carries NO variant-class key — the rows own the recipe", () => {
-    const decl = getModel("qwen-img-edit-21") as unknown as DeclRow;
+    // THE RAW ATOM (see the census arm): the family BLOCK is the
+    // registered declaration's own defaults — the route view merges
+    // the base row's tier by design.
+    const decl = registryModel("qwen-img-edit-21") as unknown as DeclRow;
     expect(decl, "the booted registry serves qwen-img-edit-21").toBeTruthy();
     for (const key of VARIANT_CLASS_KEYS) {
       expect(
@@ -128,10 +138,12 @@ describe("THE ONE DEFAULT TABLE, VARIANT-PARAMETERIZED (audit 013 cure 3)", () =
         `qwen-img-edit-21 family defaults.${key} must be ABSENT (the audit's cure: the block is variant-clean; the rows' resolver_defaults own steps/cfg)`,
       ).toBeUndefined();
     }
-    // the rows carry the tier: both Variant rows + every Recipe row
-    // declare steps+cfg on themselves (a stated-variant compose
-    // resolves the row it names and stamps THAT row's counts).
-    for (const v of decl.variants ?? []) {
+    // the Variant rows carry the tier (the canon keeps resolver_defaults
+    // off Recipe rows — a stamp macro owns wire params only), so the
+    // owner walk judges the Variant group: every Variant row declares
+    // steps+cfg on itself (a stated-variant compose resolves the row
+    // it names and stamps THAT row's counts).
+    for (const v of (decl.variants ?? []).filter((x) => x.group === "Variant")) {
       for (const key of VARIANT_CLASS_KEYS) {
         expect(
           v.resolver_defaults?.[key],
@@ -150,32 +162,41 @@ describe("THE ONE DEFAULT TABLE, VARIANT-PARAMETERIZED (audit 013 cure 3)", () =
     const base = prepareCardParams(svc, { model: "qwen-img-edit-21", variant: "base", prompt: "a cat", input_images: ["/tmp/a.png"] }, "qwen-img-edit-21", "vc-base");
     expect((base.params as Record<string, unknown>)["steps"]).toBe(25);
     expect((base.params as Record<string, unknown>)["cfg"]).toBe(1);
-    // THE RECIPE SEAT (the plane canon's own law): a Recipe row
-    // stamps wire params only — the variant coordinate resolving a
-    // Recipe row inherits NO family steps/cfg (the block is dead;
-    // the row cannot carry the tier by canon). The lawful recipe
-    // PICK rides wire_defaults into the user layer and never
-    // touches this seat.
+    // THE RECIPE SEAT (the plane canon's own law, measured at the
+    // door): a Recipe row stamps wire params only — it carries NO
+    // resolver_defaults of its own. The compose still addresses the
+    // FAMILY ROUTE (qwen-img-edit-21 IS the base variant's route),
+    // so the counts that land here are the ROUTE ROW's own tier
+    // (base 25/1 via route realization) — never a family-block
+    // literal. The pre-cure wrong was the BLOCK speaking 25 over
+    // turbo's face; the route row speaking its own 25 at a Recipe
+    // pick is the one-home truth (toggle the family block back and
+    // this arm stays green — the block is not the speaker anymore).
     const recipe = prepareCardParams(svc, { model: "qwen-img-edit-21", variant: "remove-background", prompt: "a cat", input_images: ["/tmp/a.png"] }, "qwen-img-edit-21", "vc-recipe");
-    expect((recipe.params as Record<string, unknown>)["steps"]).toBeUndefined();
-    expect((recipe.params as Record<string, unknown>)["cfg"]).toBeUndefined();
+    expect((recipe.params as Record<string, unknown>)["steps"]).toBe(25);
+    expect((recipe.params as Record<string, unknown>)["cfg"]).toBe(1);
   });
 
-  it("THE PREFILL PLANE: no family-plane seat declares steps/cfg for the edit family — the served prefill cannot prefill one lane's recipe", () => {
-    const decl = getModel("qwen-img-edit-21") as unknown as DeclRow;
+  it("THE PREFILL PLANE: no family-plane seat declares steps/cfg for the edit family — the served prefill cannot prefill one lane's recipe", async () => {
+    const decl = registryModel("qwen-img-edit-21") as unknown as DeclRow;
     expect(decl.defaults?.["steps"]).toBeUndefined();
     expect(decl.defaults?.["cfg"]).toBeUndefined();
     // the card carrier: the served schema the model_defaults layer
     // walks — its steps/cfg fields carry NO default (the ride-the-
     // model law on the card plane).
-    const def = theService().defsSync().get("image-edit") as
-      | { schemaCarrier?: { dict?: Record<string, { default?: unknown }> } }
+    const defs = await loadCardDefs();
+    const raw = defs.get("image-edit") as
+      | { schemaCarrier?: { dict?: Record<string, { default?: unknown; meta?: { default?: unknown } }> }; schema?: { dict?: Record<string, { default?: unknown; meta?: { default?: unknown } }> } }
       | undefined;
-    expect(def?.schemaCarrier?.dict, "the image-edit card exposes its carrier").toBeTruthy();
+    const def = raw?.schemaCarrier ?? raw?.schema;
+    expect(def?.dict, "the image-edit card exposes its carrier").toBeTruthy();
     for (const key of VARIANT_CLASS_KEYS) {
-      const field = def?.schemaCarrier?.dict?.[key];
+      const field = def?.dict?.[key];
+      // the carrier's default VALUE lives on meta.default (the
+      // schemastery node's own .default is a serializer function —
+      // the seed row's -1 vs steps' undefined is the shape probe).
       expect(
-        field?.default,
+        field?.meta?.default,
         `image-edit carrier.${key} declares no default (a carrier default is the same lane-blind prefill in a second spelling)`,
       ).toBeUndefined();
     }

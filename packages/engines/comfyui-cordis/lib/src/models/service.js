@@ -93,6 +93,23 @@ function validateDecl(decl) {
     if (!Array.isArray(decl.variants)) {
         throw new ModelError(`${decl.id}: variants must be an array (got ${typeof decl.variants})`);
     }
+    // THE SERVABILITY LAW (audit 018 / the 7B death, 2026-11-12): an
+    // OFFERED Variant row must own at least one OFFERED cell. A row
+    // with none is a dead door — any quant under it refuses "declares
+    // no cells" at the operator's run press, and unstated it falls to
+    // the family lane_inputs and silently runs the WRONG body's
+    // weights. seedvr2-ema's 7b row shipped this way for a month under
+    // an all-green suite: every wall judged projections of this truth
+    // against each other, none asked the truth to prove servability.
+    // Refused HERE, at registration — a dead row cannot boot.
+    for (const v of decl.variants) {
+        if (v.group !== "Variant" || v.hide_from_dropdown)
+            continue;
+        const offeredCells = (v.cells ?? []).filter((c) => !c.hide_from_dropdown);
+        if (offeredCells.length === 0) {
+            throw new ModelError(`${decl.id}: the offered variant '${v.id}' declares no offered cells — a dead door (the 7B class): land its provision + cell or set hide_from_dropdown`);
+        }
+    }
     // THE PROVISIONS-REGISTRATION WALL (audit T-S2, 2026-10-22): the
     // z schema only proves name/url/folder are STRINGS — a typo'd row
     // (`name: "a/b"`, `folder: "../x"`, `url: "not-a-url"`) booted

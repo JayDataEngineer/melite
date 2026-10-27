@@ -1330,6 +1330,36 @@ describe("the h3 latent-upscale route: the handoff arm mounts behind second_pass
       `UPSCALE MOUNT ARM: the handoff's positive edge ${JSON.stringify(node.inputs.positive)} is not the pass-1 guider's ${JSON.stringify(passGuider.inputs.conditioning)} — the refinement would hear a forked conditioning`);
   });
 
+  it("ARM 37b (audit 015 C4/C7, the golden blind-spot pin) — the handoff carries the STATED pass-2 geometry in multiplier mode: width/height ride the full-size target, never silent engine defaults", async () => {
+    // THE C4 DECISION (audit 015 C4, the width spelling): the
+    // handoff keeps p.width/p.height as the pass-2 FULL-SIZE TARGET
+    // (aspect kept via keep_proportion; multiplier mode ignores the
+    // absolute size and scales z_v 2.0×) — the cure is the SPEC PIN,
+    // not a re-spelling: a golden churn here would freeze bytes the
+    // engine owns. The pin asserts the stated values AND the mode
+    // together — the geometry rows are meaningful only beside
+    // 'scale by multiplier', and a mode flip to absolute sizing
+    // would make stale width/height a silent wrong-size render.
+    // DISTINCTIVE geometry (never the schema default pair): a
+    // defaulted seat cannot pass this arm.
+    const W = 1024, H = 576;
+    const graph = await composeH3({
+      length: 56, width: W, height: H,
+      second_pass_enabled: true, upscale_route: "latent_2x",
+      calls: [SHOT()],
+    }, "h3_upscale_arm37b");
+    const { id, node } = handoff(graph);
+    assert.equal(node.inputs["mode"], "scale by multiplier",
+      `UPSCALE GEOMETRY ARM (audit 015 C4): node '${id}' mode must be 'scale by multiplier' — the geometry pin is lawful only in multiplier mode`);
+    assertValueAtConsumer(graph, HANDOFF, "width", W, "pass-2 width target");
+    assertValueAtConsumer(graph, HANDOFF, "height", H, "pass-2 height target");
+    assertValueAtConsumer(graph, HANDOFF, "keep_proportion", true, "aspect kept from the stated pair");
+    // THE C7 DEFAULT-SEAT CONFIRMATION: RandomNoise.noise_seed's
+    // default seat is already pinned (ARM 13/34 cover the stated
+    // seats, the default-seed arm covers the unstated fill) — the
+    // one golden blind-spot was THIS node's geometry rows.
+  });
+
   it("ARM 38 (channel-count) — the handoff's latent edge names the pass-1 SAMPLER (the sampled joint AV, 24 video ch — never the empty shell), and lock_audio pins true", async () => {
     const graph = await composeH3({
       length: 56, width: 1280, height: 768,
@@ -1721,7 +1751,9 @@ type CensusRow =
 const CENSUS_ROWS: readonly CensusRow[] = [
   // ── the guide / reference bus ─────────────────────────────────
   { kind: "at", param: "image", doc: "media", cls: "LoadImage", input: "image", value: "data/input/first.png", mode: "some" },
-  { kind: "at", param: "keyframes", doc: "pins", cls: "LoadImage", input: "image", value: "pin_mid.png", mode: "some" },
+  // keyframes LEFT the DECL params roster (audit 013 cure 2, the row
+  // death — a document-plane lane now): its consumer law stays pinned
+  // by ARM 47 on the pins doc; the census rows judge DECL params only.
   { kind: "at", param: "ref_images", doc: "media", cls: "LoadImage", input: "image", value: "data/input/ref1.png", mode: "some" },
   { kind: "at", param: "ref_videos", doc: "media", cls: "LoadVideo", input: "file", value: "data/input/motion.mp4" },
   { kind: "at", param: "ref_video_trims", doc: "media", cls: "Video Slice", input: "start_time", value: 1.5 },

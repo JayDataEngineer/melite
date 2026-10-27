@@ -66,7 +66,7 @@ import { describe, it } from "vitest";
 // route).
 // 67 -> 74 (2026-11-08, the third edit lane): fibo2-edit serves its
 // family route + two lanes × variant/cell routes (7 addresses).
-const SERVED_ADDR_CENSUS = 73 // 74→73 2026-11-12: seedvr2-ema-7b died (the 7B death — no cells, no provision)
+const SERVED_ADDR_CENSUS = 74 // 74→73 2026-11-12: seedvr2-ema-7b died (the 7B death — no cells, no provision); 73→74 2026-10-27: music3-int8 joins — the wave's music3 quant work (2164b71a3, audit 014 C5) serves the int8_convrot cell's own route address
 // 24 -> 25 (2026-10-22, audit 006/U1): flux-klein claims its own
 // atom (the family's routes resolve to its declared owners)
 // 25 -> 24 (2026-10-13, the autoremesher excision — the pack the owner removed from the system)
@@ -337,7 +337,23 @@ describe("models against cards (the cross-validation, resurrected)", () => {
           const surface = decl.params as string[] | undefined;
           if (Array.isArray(surface) && !surface.includes(name)) { surfaceSkips++; continue; } // not that family's param (counted — an emptied surface is visible)
           if ((decl.defaults as Record<string, unknown> | undefined)?.[name] === undefined) {
-            starving.push(`${cardId}.${name}: unscoped but family '${fam}' declares no default — that family's form starves`);
+            // THE VARIANT-CLASS OWNER (audit 013 cure 3, the steps
+            // envelope): a required_defaults row with class "variant"
+            // whose every VARIANT row carries the key in its own
+            // resolver_defaults — the default owner is the VARIANT
+            // plane (each lane's own face); the family block must NOT
+            // restate it (the 25-on-Turbo prefill burn). Recipe rows
+            // are stamp macros — the canon keeps resolver_defaults
+            // off them, so the owner walk judges Variant rows only.
+            const required = (decl.required_defaults ?? []) as Array<{ name?: string; class?: string }>;
+            const variantRows = ((decl.variants ?? []) as Array<{ group?: string; resolver_defaults?: Record<string, unknown> }>)
+              .filter((v) => v.group === "Variant");
+            const variantOwned = required.some((r) => r.name === name && r.class === "variant") &&
+              variantRows.length > 0 &&
+              variantRows.every((v) => v.resolver_defaults?.[name] !== undefined);
+            if (!variantOwned) {
+              starving.push(`${cardId}.${name}: unscoped but family '${fam}' declares no default — that family's form starves`);
+            }
           }
         }
       }
@@ -450,10 +466,13 @@ describe("models against cards (the cross-validation, resurrected)", () => {
     // 476 -> 475 (2026-10-27, audit 013 cure 2, the keyframes row
     // death): h3-timeline's keyframes leaves the walked set — the pin
     // lane is a document-plane lane (studio.writes + the schema
-    // walk's assertKeyframeRowShape), no longer a carrier row; the
-    // census counts carried fields, so the 476 entry dies with its
-    // row.
-    assert.equal(walked, 475,
+    // walk's assertKeyframeRowShape), no longer a carrier row.
+    // 475 -> 476 (2026-10-27, the same day's wave, 2164b71a3): the
+    // music card's tiled_decode joins the walked set (a boolean
+    // music3-scoped decode knob, visible_when model=music3) — the
+    // keyframes exit and the tiled_decode seat cancel; the census
+    // holds at 476 with keyframes OUT and tiled_decode IN.
+    assert.equal(walked, 476,
       `the census walked the estate's fields (${String(walked)} — a re-zoned or re-typed field set MOVES this number; growth is argued here, loss means the census emptied an arm)`);
     // judged 8 -> 6 (2026-11-08, the latent law): the image-edit
     // card's width/height leave the params zone (hidden compatibility
@@ -909,7 +928,10 @@ describe("models against cards (the cross-validation, resurrected)", () => {
 // (nothing references it). Dead disk is not a provision.
 // 72 -> 94 (burn d, 2026-10-26): wd14's 22 tagger pairs (the
 // engine-side seat the linkability wall refused to bless green).
-const PROVISION_ROW_COUNT = 94;
+// 94 -> 95 (2026-10-27, the wave's music3 quant work, 2164b71a3):
+// music3 provisions its fp16 dit (minimax_music3_dit_fp16) — the
+// int8_convrot cell's family-owns-downloads companion row.
+const PROVISION_ROW_COUNT = 95;
     const declarers: string[] = [];
     let judged = 0;
     for (const id of registryIds()) {
@@ -1874,7 +1896,12 @@ describe("THE TWO-HOMES BOUNDS-SYNC WALL (card schema == action ParamSpec, every
     // name; the card's lane surface owns the sampling) — one pair
     // per carried address each; save_qvoice matches on both planes;
     // offenders stay empty.
-    assert.equal(pairs, 795, "the shared-name pair census changed — update this pin deliberately");
+    // 795 -> 796 (2026-10-27, the wave's music3 work, 2164b71a3):
+    // music.tiled_decode joins the shared names — the card schema
+    // half (the music3-scoped decode knob) and the action ParamSpec
+    // half (music3's actions.ts row) landed in the same wave; one
+    // agreeing pair; offenders stay empty.
+    assert.equal(pairs, 796, "the shared-name pair census changed — update this pin deliberately");
     assert.deepEqual(offenders, [], `two-homes drift (card schema vs action ParamSpec):\n${offenders.join("\n")}`);
   });
 });

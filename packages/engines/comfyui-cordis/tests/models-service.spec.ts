@@ -204,6 +204,49 @@ describe("registerFamily (the metaclass gates)", () => {
     })), "a hidden fold with no cells never offers");
   });
 
+  it("THE ONE DEFAULT-VARIANT LAW (audit 015 C6, 2026-10-27): the engine head and the door's offered pool name the SAME row", () => {
+    // THE SPLIT CLASS: a hidden-or-Recipe row WITH cells declared
+    // before the pool's head — the engine head (`find(v => v.cells.
+    // length > 0) ?? variants[0]`, the route-claim completeness seat)
+    // claims the family address onto the interloper while every
+    // unstated compose resolves offeredPool[0]. One address, one
+    // default. LAW 4 red-proof: toggle the one-law block out of
+    // validateDecl and every arm here reds.
+    assert.throws(
+      () => fresh().registerFamily(clone({
+        id: "one-law-burn",
+        variants: [
+          variant({ id: "shy", label: "Hidden Head", group: "Variant", hide_from_dropdown: true, cells: [cell({ quant: "fp16" })] }),
+          variant({ id: "base", label: "Base", group: "Variant", cells: [cell({ quant: "int8" })] }),
+        ],
+      })),
+      /the default variant is two rows — the engine head resolves 'shy' while the door's offered pool serves 'base'/,
+      "a hidden cells-bearing row before the pool head refuses",
+    );
+    assert.throws(
+      () => fresh().registerFamily(clone({
+        id: "one-law-burn",
+        variants: [
+          variant({ id: "macro", label: "Recipe Macro", group: "Recipe", cells: [cell({ quant: "fp16" })] }),
+          variant({ id: "base", label: "Base", group: "Variant", cells: [cell({ quant: "int8" })] }),
+        ],
+      })),
+      /a Recipe row is a stamp macro — it carries no cells.*plane canon L1/,
+      "a Recipe row with cells refuses in the CANON's voice — L1 fires before the one-law (the ordering pin: the one-law never masks a canon break)",
+    );
+    // the lawful shapes pass: the head IS the pool head; and the
+    // EMPTY-pool exempt (a fully-hidden family — the 2511 shape —
+    // offers no default to diverge from).
+    assert.doesNotThrow(() => fresh().registerFamily(clone({
+      variants: [variant({ id: "base", label: "Base", group: "Variant", cells: [cell({ quant: "int8" })] })],
+    })), "head === pool[0] passes");
+    assert.doesNotThrow(() => fresh().registerFamily(clone({
+      variants: [
+        variant({ id: "folded", label: "Folded Helper", group: "Variant", hide_from_dropdown: true, cells: [cell({ quant: "fp16" })] }),
+      ],
+    })), "an all-hidden family is the empty-pool exempt");
+  });
+
   it("THE FOUR-PLANE CANON (2026-11-02): a DECL breaking the plane law refuses at registration, in the canon's voice", () => {
     // LAW 4 red-proof: each arm below fires ONLY through the
     // validateDecl → planeRefusals wire (models service). Toggle the
@@ -1176,6 +1219,36 @@ describe("bootModels (the transactional boot)", () => {
     assert.equal(await bootModels(), svc, "the second boot rides the singleton");
     assert.equal(modelsService(), svc, "the gate opens after the boot");
     assert.deepEqual(resolveCascade({ a: 1 }, null, null), { a: 1 });
+  }, 240000);
+
+  it("THE ONE DEFAULT-VARIANT ESTATE SWEEP (audit 015 C6): every registered family's engine head IS its offered pool head", async () => {
+    // THE ROSTER IS DERIVED, never hand-named: allDecls() over the
+    // REAL boot, the same offeredPool spelling the door serves.
+    // validateDecl refuses the split at registration, so a green
+    // boot already proves the law — this sweep is the census half:
+    // it re-derives both seats per family and counts the exempt
+    // class out loud, so a silent change in either derivation
+    // (pool spelling, head walk) shows up as a count move, not a
+    // quiet pass.
+    const svc = await bootModels();
+    const { offeredPool } = await import("@melite/contracts/laneRelations");
+    let judged = 0;
+    let exempt = 0;
+    for (const decl of svc.allDecls()) {
+      const pool = offeredPool(decl.variants);
+      if (pool.length === 0) {
+        exempt++;
+        continue;
+      }
+      const head = decl.variants.find((v) => v.cells.length > 0) ?? decl.variants[0];
+      assert.equal(
+        head?.id, pool[0]?.id,
+        `${decl.id}: the engine head ('${String(head?.id)}') diverges from the door's offered pool head ('${String(pool[0]?.id)}') — one address, one default`,
+      );
+      judged++;
+    }
+    assert.ok(judged > 10, `the sweep judged the estate (saw ${judged} pooled families — a vacuous pass is the hole this wall closes)`);
+    assert.ok(exempt >= 1, `the empty-pool exempt is real (saw ${exempt} — the 2511 fully-hidden shape; 0 means the exempt class emptied and the law's carve-out is stale)`);
   }, 240000);
 });
 

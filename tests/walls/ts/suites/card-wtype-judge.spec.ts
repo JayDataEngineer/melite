@@ -119,9 +119,13 @@ const CARD_ROSTER = 14;
 // 476 -> 475 (2026-10-27, audit 013 cure 2, the keyframes row death):
 // h3-timeline's keyframes leaves the walked set — the pin lane is a
 // document-plane lane (studio.writes + the schema walk's
-// assertKeyframeRowShape), no longer a carrier row; the census
-// counts carried fields, so the 476 entry dies with its row.
-const FIELD_ROSTER = 475;
+// assertKeyframeRowShape), no longer a carrier row.
+// 475 -> 476 (2026-10-27, the same day's wave, 2164b71a3): the music
+// card's tiled_decode joins the judged roster (wtype boolean over
+// z.boolean, visible_when model=music3) — the keyframes exit and the
+// tiled_decode seat cancel; the roster holds at 476 with keyframes
+// OUT and tiled_decode IN.
+const FIELD_ROSTER = 476;
 
 interface DictField {
   readonly type?: string;
