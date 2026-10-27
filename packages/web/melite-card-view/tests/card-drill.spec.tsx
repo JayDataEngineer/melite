@@ -499,6 +499,107 @@ test('the ✦ rail model dropdown picks the enhancer route and threads it', asyn
   window.localStorage.clear()
 })
 
+// ── THE SEARCHED PANEL (burn e's second half, the picker audit's F2:
+//    the search field existed with NO judge — drill-llm-search,
+//    Enter-settles-first-match, query-reset-on-open were prose in a
+//    receipt, never a firing arm). Rides the REAL Menu + Input + rows
+//    through the same CardsTab mount as the pick test above.
+test('the ✦ model dropdown searches: type filters, Enter settles the first match, reopen resets the query', async () => {
+  const user = userEvent.setup()
+  window.localStorage.clear()
+  const ROUTES = [
+    'opencode-go/muse-spark',
+    'opencode-go/muse-spark-1.3-contributor',
+    'zai/glm-5v-turbo',
+    'deepseek-official/deepseek-chat',
+  ]
+  vi.stubGlobal('fetch', async (url: unknown, init?: RequestInit): Promise<Response> => {
+    const path = String(url)
+    if (path.includes('/melite-tools/catalog')) {
+      return new Response(JSON.stringify({ tools: [], llmRoutes: ROUTES }), { status: 200, headers: { 'content-type': 'application/json' } })
+    }
+    if (path.includes('/v1/form-spec')) {
+      return new Response(JSON.stringify({ form: 'image-gen', model: 'krea-2', schema: schemaEnvelope({
+        prompt: { type: 'string', meta: { description: 'Prompt', extra: { wtype: 'textarea' } } },
+      }), variants: [] }), { status: 200, headers: { 'content-type': 'application/json' } })
+    }
+    if (path.includes('/v1/model-catalog')) {
+      return new Response(JSON.stringify({ cards: { 'image-gen': { label: 'Image Gen', genre: 'image', families: ['krea-2'] } } }), { status: 200, headers: { 'content-type': 'application/json' } })
+    }
+    const frame = JSON.parse(String(init?.body)) as { rpcId: string, method: string }
+    let value: Record<string, unknown> = { ok: true }
+    if (frame.method === 'bench/get') value = {
+      draft_id: 'bench-llm-search', rev: 3,
+      stages: [{ id: 's_0', card: 'image-gen', title: 'hero frame', engine: 'comfyui',
+        params: { prompt: 'a red cube', steps: 8 } }],
+      log: [],
+    }
+    return new Response(JSON.stringify({ type: 'server-response', rpcId: frame.rpcId, result: { ok: true, value } }), { status: 200 })
+  })
+  render(createElement(CardsTab, {
+    useTabInfo: () => ({
+      tab: {
+        kind: 'sidebar.right.pane.tab', contentId: undefined,
+        navigation: { address: 'dsh-resource://cards/bench' },
+        actions: { openResource: () => {} },
+      },
+    }),
+    useResource: () => ({
+      status: 'live' as const,
+      value: {
+        kind: 'bench', draftId: draftIdOf('bench-llm-search'), rev: 3,
+        sessionKey: 'llm-search',
+        stages: [{ id: 's_0', card: 'image-gen', title: 'hero frame', engine: 'comfyui',
+          params: { prompt: 'a red cube', steps: 8 } }],
+        log: [],
+      } as unknown as CardsBenchValue,
+    }),
+  } as Parameters<typeof CardsTab>[0]))
+  await user.click(await screen.findByText('hero frame', {}, { timeout: 4000 }))
+  const trig = await screen.findByRole('button', { name: 'Enhance model' }, { timeout: 4000 })
+  await user.click(trig)
+  // THE SEARCH FIELD LEADS the panel (the burn's "NO SEARCH" half):
+  // present, typeable, and focused the moment the panel opens
+  const field = await screen.findByTestId('drill-llm-search', {}, { timeout: 4000 })
+  expect(document.activeElement === field).toBe(true)
+  // blank query = the FULL list (Auto + all 4 routes, order kept)
+  const full = await screen.findAllByRole('menuitem', {}, { timeout: 4000 })
+  expect(full.map((r) => r.textContent)).toEqual(['Auto', ...ROUTES])
+  // typing filters: substring over the full route spelling (Auto row
+  // stands above the filtered routes)
+  await user.type(field, 'spark')
+  await waitFor(() => {
+    const rows = screen.getAllByRole('menuitem')
+    expect(rows.map((r) => r.textContent)).toEqual(['Auto', 'opencode-go/muse-spark', 'opencode-go/muse-spark-1.3-contributor'])
+  }, { timeout: 4000 })
+  // ENTER settles the FIRST match (one-keystroke pick for the common
+  // case) and closes the panel
+  await user.keyboard('{Enter}')
+  await waitFor(() => { expect(screen.queryByRole('menuitem')).toBeNull() }, { timeout: 4000 })
+  expect((screen.getByTestId('drill-llm') as HTMLElement).getAttribute('title')).toBe('opencode-go/muse-spark')
+  expect(window.localStorage.getItem('melite:card-llm:v1')).toBe('opencode-go/muse-spark')
+  // REOPEN RESETS the query (the panel always starts at the full
+  // list, never at a stale filter) — and the field is focused again
+  await user.click(screen.getByTestId('drill-llm'))
+  const field2 = await screen.findByTestId('drill-llm-search', {}, { timeout: 4000 })
+  expect((field2 as HTMLInputElement).value).toBe('')
+  const full2 = await screen.findAllByRole('menuitem', {}, { timeout: 4000 })
+  expect(full2.map((r) => r.textContent)).toEqual(['Auto', ...ROUTES])
+  // a filter that matches nothing STATES it — never an empty panel,
+  // never a guess; Enter on it settles nothing (llmShown is empty)
+  await user.type(field2, 'gpt-9')
+  await waitFor(() => {
+    expect(screen.getAllByRole('menuitem').map((r) => r.textContent)).toEqual(['Auto', 'No matching model'])
+  }, { timeout: 4000 })
+  await user.keyboard('{Enter}')
+  await waitFor(() => {
+    // the no-match row still stands — Enter did not close or settle
+    expect(screen.getAllByRole('menuitem').map((r) => r.textContent)).toEqual(['Auto', 'No matching model'])
+  }, { timeout: 4000 })
+  expect((screen.getByTestId('drill-llm') as HTMLElement).getAttribute('title')).toBe('opencode-go/muse-spark')
+  window.localStorage.clear()
+})
+
 test('the no-clobber law: an empty negative never wipes the card\'s own', async () => {
   const user = userEvent.setup()
   vi.stubGlobal('fetch', async (url: unknown, init?: RequestInit): Promise<Response> => {

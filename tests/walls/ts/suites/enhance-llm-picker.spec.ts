@@ -25,8 +25,10 @@
  *      match = empty (the panel states it, never guesses).
  */
 import { describe, expect, it } from "vitest";
+import { EventEmitter } from "node:events";
 import { resolveHarnessRoutes, routeName } from "../../../../packages/harness/melite-tools/src/llm-complete.ts";
 import { filterLlmRoutes } from "../../../../packages/web/melite-card-view/src/client/llm-picker.ts";
+import { apply } from "../../../../packages/harness/melite-tools/src/doors.ts";
 import type { LlmStreamSeam } from "../../../../packages/harness/melite-tools/src/llm-complete.ts";
 
 /** The structural seam fake (the real LlmRuntime's Pick, test-light). */
@@ -69,18 +71,59 @@ describe("enhance-llm-picker (burn e)", () => {
     }
   });
 
-  it("ARM 2 — the catalog door's list is the resolver's COMPLETE output, verbatim", async () => {
-    // The door (doors.ts catalog route) maps resolveHarnessRoutes'
-    // output through routeName and nothing else — the picker's source
-    // IS the live list. This arm pins that seam: the names the door
-    // would serve equal the complete resolution, no slicing layer in
-    // between.
-    const models = Array.from({ length: 30 }, (_, i) => "m" + i);
-    const routes = await resolveHarnessRoutes(seam([{ id: "p", models }]));
-    const served = routes.map(routeName);
-    expect(served).toHaveLength(30);
-    expect(served[0]).toBe("p/m0");
-    expect(served[29]).toBe("p/m29");
+  it("ARM 2 — THE DOOR ITSELF: the mounted catalog route serves the resolver's COMPLETE output, verbatim", async () => {
+    // The audit's catch (2026-10-26, F1): this arm once mapped
+    // routeName itself and compared it to itself — a tautology that
+    // would stay green if doors.ts sliced or restated the list. The
+    // arm now rides the REAL door: apply() wiring booted over a fake
+    // host (the doors.spec idiom), then GET /melite-tools/catalog
+    // through the mounted route handler, and the SERVED llmRoutes
+    // deep-equal the resolver's independent output over the same
+    // seam. A slicing layer in doors.ts reds here.
+    const wide = Array.from({ length: 40 }, (_, i) => "m-" + String(i + 1).padStart(2, "0"));
+    const providers = [
+      { id: "wide-one", models: wide },
+      { id: "solo-a", models: ["alpha"] },
+      { id: "solo-b", models: ["beta"] },
+    ];
+    const routes: Array<{ path: string; handler: (req: unknown, res: unknown) => void }> = [];
+    const host = {
+      effect: (fn: () => void) => { fn(); return () => {}; },
+      llm: seam(providers),
+      registry: { values: () => [] },
+      tools: { schemas: () => [{ name: "melite_discover", description: "d" }] },
+      webServer: { port: 3080, register: (r: { path: string }) => { routes.push(r as never); return () => {}; } },
+      get: () => undefined,
+    };
+    apply(host as never, {});
+    const route = routes.find((r) => r.path === "/melite-tools/catalog");
+    expect(route, "the catalog route is mounted by apply()").toBeDefined();
+    // the real handler over the fake req/res carriers (doors.spec's
+    // shape — body arrives as JSON text on 'data' then 'end')
+    const req = new EventEmitter() as EventEmitter & { method?: string; url?: string; headers: Record<string, string> };
+    req.method = "GET"; req.url = "/melite-tools/catalog"; req.headers = {};
+    let settled!: (v: { status: number; text: string }) => void;
+    const done = new Promise<{ status: number; text: string }>((r) => { settled = r; });
+    const res = new EventEmitter() as EventEmitter & { writeHead: (s: number) => unknown; end: (d?: unknown) => void };
+    let status = 0; const chunks: Buffer[] = [];
+    res.writeHead = (s: number) => { status = s; return res; };
+    res.end = (d?: unknown) => {
+      if (d !== undefined) chunks.push(Buffer.from(d as Uint8Array));
+      settled({ status, text: Buffer.concat(chunks).toString("utf8") });
+    };
+    process.nextTick(() => { req.emit("end"); });
+    route!.handler(req, res);
+    const { status: st, text } = await done;
+    expect(st).toBe(200);
+    const served = (JSON.parse(text) as { llmRoutes: string[] }).llmRoutes;
+    // the independent resolution over the SAME seam — the only
+    // acceptable spelling of the served list
+    const expected = (await resolveHarnessRoutes(seam(providers))).map(routeName);
+    expect(served).toEqual(expected);
+    // and the completeness pins the burn named: 42 routes (40 + 1 +
+    // 1), the wide one's LAST model present — no slice, no starvation
+    expect(served).toHaveLength(42);
+    expect(served).toContain("wide-one/m-40");
   });
 
   it("ARM 3 — the picker's search: substring, case-insensitive, blank = all, order kept, no guess", () => {
