@@ -37,6 +37,13 @@ describe("the h3-timeline tool face", () => {
     assert.ok(calls !== undefined && !("type" in calls));
   });
 
+  it("the any-frame pin lane rides the tool plane — cure 8's construct face", () => {
+    const props = (tool.parameters?.properties ?? {}) as Record<string, { description?: string; type?: string }>;
+    const kf = props.keyframes;
+    assert.ok(kf, "keyframes declared on the tool plane — the agent composes pins, never first/last physics");
+    assert.match(String(kf.description ?? ""), /ANY FRAME, ANY TIME/, "the lane teaches its own shape on the construct face");
+  });
+
   it("presentationMeta projects the run arm, empty keys omitted", () => {
     const out = tool.output.presentationMeta?.(undefined, {
       flow: "h3-timeline", model: "h3-timeline", run_id: "r1", draft_id: "d1", status: "queued",

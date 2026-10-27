@@ -4,10 +4,17 @@ export declare const FAMILIES: readonly ["t4r", "t4_open", "t4_chain"];
 export type Family = (typeof FAMILIES)[number];
 export declare const wireList: typeof normalizeDeclaredRefs;
 export declare const H3_RECOMMENDED_SAMPLERS: readonly ["euler", "euler_cfg_pp", "euler_ancestral", "dpmpp_2m", "dpmpp_2m_sde", "heun", "res_multistep", "res_multistep_cfg_pp", "er_sde", "seeds_2", "seeds_3"];
-export declare const JSON_ARRAY_PARAMS: readonly ["calls", "audio_clips"];
+export declare const JSON_ARRAY_PARAMS: readonly ["calls", "audio_clips", "keyframes"];
 export declare const paramSchema: z<Schemastery.ObjectS<NoInfer<{
     image: z<string, string, "plain">;
     last_frame: z<string, string, "plain">;
+    keyframes: z<({
+        frame?: number | null | undefined;
+        image?: string | null | undefined;
+    } & import("@deepseek-ai/cosmokit").Dict)[], Schemastery.ObjectT<NoInfer<{
+        frame: z<number, number, "plain">;
+        image: z<string, string, "plain">;
+    }>>[], "plain">;
     ref_images: z<string[], string[], "plain">;
     ref_videos: z<string[], string[], "plain">;
     ref_video_trims: z<({
@@ -77,6 +84,13 @@ export declare const paramSchema: z<Schemastery.ObjectS<NoInfer<{
 }>>, Schemastery.ObjectT<NoInfer<{
     image: z<string, string, "plain">;
     last_frame: z<string, string, "plain">;
+    keyframes: z<({
+        frame?: number | null | undefined;
+        image?: string | null | undefined;
+    } & import("@deepseek-ai/cosmokit").Dict)[], Schemastery.ObjectT<NoInfer<{
+        frame: z<number, number, "plain">;
+        image: z<string, string, "plain">;
+    }>>[], "plain">;
     ref_images: z<string[], string[], "plain">;
     ref_videos: z<string[], string[], "plain">;
     ref_video_trims: z<({
@@ -154,10 +168,24 @@ export declare const paramSchema: z<Schemastery.ObjectS<NoInfer<{
  *  them and the compose door overlays explicit params last (the
  *  img-to-mesh filename_prefix precedent). */
 export declare const coerceWireBoolean: (raw: Record<string, unknown>) => Record<string, unknown>;
+/** THE PIN ROW SHAPE (one law, two seats): the doc walk and the compose
+ *  gate both run this BEFORE any placement math — a row must carry a
+ *  whole film-absolute frame and a non-empty image ref. Exported so the
+ *  walk's refusal and the build door's are the same literal (the
+ *  gate-and-walk wall pins them); placement and media existence stay
+ *  the compose gate's, which owns the doc's calls/windows. */
+export declare function assertKeyframeRowShape(rows: readonly unknown[]): void;
 export declare function schema(v: unknown): Record<string, unknown>;
 export declare const carrier: z<Schemastery.ObjectS<NoInfer<{
     image: z<string, string, "plain">;
     last_frame: z<string, string, "plain">;
+    keyframes: z<({
+        frame?: number | null | undefined;
+        image?: string | null | undefined;
+    } & import("@deepseek-ai/cosmokit").Dict)[], Schemastery.ObjectT<NoInfer<{
+        frame: z<number, number, "plain">;
+        image: z<string, string, "plain">;
+    }>>[], "plain">;
     ref_images: z<string[], string[], "plain">;
     ref_videos: z<string[], string[], "plain">;
     ref_video_trims: z<({
@@ -227,6 +255,13 @@ export declare const carrier: z<Schemastery.ObjectS<NoInfer<{
 }>>, Schemastery.ObjectT<NoInfer<{
     image: z<string, string, "plain">;
     last_frame: z<string, string, "plain">;
+    keyframes: z<({
+        frame?: number | null | undefined;
+        image?: string | null | undefined;
+    } & import("@deepseek-ai/cosmokit").Dict)[], Schemastery.ObjectT<NoInfer<{
+        frame: z<number, number, "plain">;
+        image: z<string, string, "plain">;
+    }>>[], "plain">;
     ref_images: z<string[], string[], "plain">;
     ref_videos: z<string[], string[], "plain">;
     ref_video_trims: z<({

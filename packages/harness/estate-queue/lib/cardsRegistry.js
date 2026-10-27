@@ -1512,8 +1512,17 @@ export class CardRegistryService extends Service {
         // THE INCOMPLETE-DRAFT LAW rides the family arm too (see the
         // helper): the unstated required word is the run door's voice —
         // so the filter applies ONLY when the WRITE seat is asking.
+        // THE DOCUMENT PLANE IS NOT A KNOB LANE (slice 1, the keyframe
+        // bus): the card's own studio.writes rows (calls, audio_clips,
+        // keyframes) are document state the timeline contract validators
+        // own — they ride EVERY lane by design, so the lane-surface judge
+        // must not read them as knobs that "fire nothing". The exemption
+        // is the DECL's own writes list (never a literal), the same
+        // derivable class the ONE SEAT wall reads.
+        const documentPlane = new Set((famRow.studio?.writes ?? []).map(String));
+        const knobFields = prep.decl.schemaNames.filter((n) => !documentPlane.has(n));
         const judgedFam = [
-            ...judgeLaneSurface(surface, prep.decl.schemaNames, prep.params),
+            ...judgeLaneSurface(surface, knobFields, prep.params),
             ...judgeLaneRelations(relations, prep.params),
             ...judgeLaneBounds(bounds, prep.params),
         ];

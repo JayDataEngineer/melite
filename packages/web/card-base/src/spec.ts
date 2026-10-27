@@ -594,9 +594,16 @@ function bagKeysOf(spec: FormSpecDoc): Set<string> {
   if (env == null) return new Set()
   const root = env.refs[env.uid]
   const dict = root?.dict ?? {}
+  // THE DOCUMENT PLANE IS NOT A MOD BAG (slice 1, the keyframe bus):
+  // the card's own studio.writes rows (calls, keyframes) are the
+  // doc's timeline state — a model switch keeps the film plan, it
+  // never eats the user's pins. The bag law is mod CURRENCY (loras,
+  // ref_mods: picked FOR the departed weights); the exemption is the
+  // DECL's own writes list, never a literal.
+  const docPlane = new Set(spec.studio_writes ?? [])
   const out = new Set<string>()
   for (const [name, id] of Object.entries(dict)) {
-    if (env.refs[id]?.type === 'array') out.add(name)
+    if (env.refs[id]?.type === 'array' && !docPlane.has(name)) out.add(name)
   }
   return out
 }

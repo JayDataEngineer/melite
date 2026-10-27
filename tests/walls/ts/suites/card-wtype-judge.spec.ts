@@ -112,7 +112,11 @@ const CARD_ROSTER = 14;
 // (number) died with the duped-pane burn (the card's lane surface
 // owns the sampling; the build mints the export name);
 // save_qvoice (wtype boolean, z.boolean) joins the judged roster.
-const FIELD_ROSTER = 475;
+// 475 -> 476 (2026-11-12, slice 1 the keyframe bus): h3-timeline's
+// keyframes — the any-frame pin lane joins the walked set (an array
+// node with no wtype; the wtype judge finds no disagreement, the
+// census counts it). One new field, argued here.
+const FIELD_ROSTER = 476;
 
 interface DictField {
   readonly type?: string;

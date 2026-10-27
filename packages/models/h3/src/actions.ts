@@ -28,7 +28,7 @@ import { fireControlNets } from '@melite/comfyui-card-kit/guard'
 import type { ModBoarding } from '@melite/comfyui-card-kit/guard'
 import { saveAudio } from '@melite/comfyui-card-kit'
 import { mediaKindOf } from '@melite/contracts/mediaKinds'
-import { FAMILIES, paramSchema, wireList, H3_RECOMMENDED_SAMPLERS } from './schema.js'
+import { assertKeyframeRowShape, FAMILIES, paramSchema, wireList, H3_RECOMMENDED_SAMPLERS } from './schema.js'
 import { H3_LORA_ROWS } from '@melite/models-h3/mods/loras'
 import type { Family } from './schema.js'
 import { SAMPLER_OPTIONS, SCHEDULER_OPTIONS } from '@melite/comfyui-card-kit/vocab'
@@ -2322,20 +2322,14 @@ export const film: ComfyActionSpec<Record<string, unknown>, H3Facts> = {
         .filter((w): w is { start: number; end: number } =>
           typeof w.start === 'number' && Number.isFinite(w.start)
           && typeof w.end === 'number' && Number.isFinite(w.end))
+      // Row SHAPE is the walk's literal too (assertKeyframeRowShape) —
+      // called here so a doc that skipped the walk (a raw run body)
+      // still speaks the same vocabulary; placement/media stay below.
+      assertKeyframeRowShape(kfRows)
       for (let ki = 0; ki < kfRows.length; ki++) {
         const kf = (kfRows[ki] ?? {}) as Record<string, unknown>
-        const f = kf.frame
-        if (typeof f !== 'number' || !Number.isFinite(f)) {
-          throw new Error(
-            `keyframes[${ki}]: frame is required (a finite film-absolute frame — a row without a frame is not a pin)`,
-          )
-        }
-        const image = typeof kf.image === 'string' ? kf.image.trim() : ''
-        if (image === '') {
-          throw new Error(
-            `keyframes[${ki}]: image is required (the pin channel is image pins — a row without a source anchors nothing)`,
-          )
-        }
+        const f = kf.frame as number
+        const image = (kf.image as string).trim()
         if (!isMediaRef(image)) {
           throw new Error(
             `keyframes[${ki}]: "${image}" names no media — a stage/card name is not an image ` +

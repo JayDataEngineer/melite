@@ -43,9 +43,13 @@ const SHOT = (over: Record<string, unknown> = {}): Record<string, unknown> => ({
 describe("the h3-timeline compose gate", () => {
   it("declares its JSON array contract and refuses non-array containers", () => {
     assert.deepEqual(def.flowOutputBindings, [{ channel: "default", node: "*", nodeClass: "SaveVideo" }]);
-    assert.deepEqual(def.jsonArrayParams, ["calls", "audio_clips"]);
+    // SLICE 1: keyframes joined the JSON row contract (the any-frame
+    // pin bus) — the census grows WITH the behavior, and the new
+    // container refusal is judged in the same arm.
+    assert.deepEqual(def.jsonArrayParams, ["calls", "audio_clips", "keyframes"]);
     assert.throws(() => def.schema({ calls: '{"text":"not an array"}' }), /calls must be an array/);
     assert.throws(() => def.schema({ calls: [{ text: "ok", start_frame: 0, end_frame: 56 }], audio_clips: '{"src":"line.flac"}' }), /audio_clips must be an array/);
+    assert.throws(() => def.schema({ keyframes: '{"image":"anchor.png","frame":0}' }), /keyframes must be an array of pin rows/);
   });
 
   it("binds the final film SaveVideo as the declared video output", () => {

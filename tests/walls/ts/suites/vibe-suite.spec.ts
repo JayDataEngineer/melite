@@ -81,7 +81,15 @@ describe("THE VIBE SUITE BASELINE — the agent flow's acceptance harness (v0 pi
     const h3 = loadCard(ROOT, cards as never, null, "h3-timeline") as { signature: { params_schema: { properties: Record<string, unknown> } } };
     const h3Keys = Object.keys(h3.signature.params_schema.properties);
     assert.ok(h3Keys.length >= 30, `h3-timeline face dumps ${h3Keys.length} params (>=30 — no digest yet)`);
-    assert.ok("last_frame" in h3.signature.params_schema.properties, "the retired first/last seam is ALIVE on the param face (cure-8 killed it in the engine — the face never buried it)");
+    // SLICE 1 LANDED (add-first keyframe bus): the any-frame pin lane is
+    // now ON the agent face — the cure-8 lane the engine always had and
+    // no surface declared (session 384a13cd reasoned in first/last
+    // physics for nine minutes because of exactly this gap).
+    assert.ok(h3Keys.includes("keyframes"), "the ANY-FRAME lane rides the agent face (cure 8: any frame, any time)");
+    const kf = h3.signature.params_schema.properties["keyframes"] as { type?: string; description?: string };
+    assert.equal(kf?.type, "array", "the pin lane serves as the array class (the calls/audio_clips precedent)");
+    assert.match(String(kf?.description ?? ""), /ANY FRAME, ANY TIME/, "the lane teaches its own shape on the face — never a bare key");
+    assert.ok("last_frame" in h3.signature.params_schema.properties, "the retired first/last seam is ALIVE on the param face (cure-8 killed it in the engine — the face never buried it; ADD-FIRST: deprecation is the voice-contract slice)");
   });
 
   it("VERB GUARD persists: a payload with no verb refuses loud (schema grammar, never silent derive)", () => {
@@ -154,6 +162,10 @@ describe("THE ONE SEAT — the agent face and the UI face are two projections of
       const agent = Object.keys(bundle.signature.params_schema.properties);
       const mods = new Set(Object.keys(spec.mod_schemas ?? {}));
       const inputs = new Set((spec.inputs ?? []).map((i) => String(i?.name)));
+      // THE DOCUMENT PLANE: the UI face's params ARE the DECL's params
+      // list; a studio.write (calls, keyframes) rides the UI's
+      // studio_writes channel — the document plane, not a param row.
+      const studioWrites = new Set(((spec as { studio_writes?: readonly string[] }).studio_writes ?? []).map(String));
       const carrier = (def as { schemaCarrier?: unknown; schema: unknown }).schemaCarrier ?? def.schema;
       const dict = ((carrier ?? {}) as { dict?: Record<string, { meta?: { extra?: Record<string, unknown> } }> }).dict ?? {};
       judged++;
@@ -164,7 +176,11 @@ describe("THE ONE SEAT — the agent face and the UI face are two projections of
       }
       for (const k of agent) {
         if (ui.has(k)) continue;
-        const derived = k === "model" || mods.has(k) || inputs.has(k);
+        // THE DOCUMENT PLANE (h¹ mirror-truth cure): the UI face's
+        // params ARE the DECL's params list; a studio.write (calls,
+        // keyframes) rides the UI's studio_writes channel — the
+        // document plane, not a param row. Same truth, other channel.
+        const derived = k === "model" || mods.has(k) || inputs.has(k) || studioWrites.has(k);
         if (!derived) live.push(`${id}:${k}`);
       }
     }

@@ -443,7 +443,11 @@ describe("models against cards (the cross-validation, resurrected)", () => {
     // cards-tts-mod-presence): the qvoice_save pack shrank to its
     // one boolean stamp — voice_name + the five sampling knobs died
     // with the duped-pane burn; save_qvoice joins the walked set.
-    assert.equal(walked, 475,
+    // 475 -> 476 (2026-11-12, slice 1 the keyframe bus): h3-timeline's
+    // keyframes — the any-frame pin lane (an array of { frame, image }
+    // rows; the row's shape law is the walk's assertKeyframeRowShape,
+    // not a numeric default owner). One new field, argued here.
+    assert.equal(walked, 476,
       `the census walked the estate's fields (${String(walked)} — a re-zoned or re-typed field set MOVES this number; growth is argued here, loss means the census emptied an arm)`);
     // judged 8 -> 6 (2026-11-08, the latent law): the image-edit
     // card's width/height leave the params zone (hidden compatibility
@@ -499,6 +503,10 @@ describe("models against cards (the cross-validation, resurrected)", () => {
       }
     }
     assert.deepEqual(seats, [
+      // slice 1 (2026-11-12): the any-frame pin lane — zone-less array
+      // of pin rows, walked never judged by the numeric seat (its law
+      // is assertKeyframeRowShape + the build door).
+      "h3-timeline.keyframes",
       "h3-timeline.ref_images", "h3-timeline.ref_videos", "h3-timeline.ref_video_trims",
       "h3-timeline.ref_audios", "h3-timeline.ref_mods",
       "image-edit.input_images", "image-edit.reference_images",

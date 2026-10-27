@@ -665,6 +665,11 @@ describe("THE CLAIM LAW (the card claims nothing the model did not declare)", ()
         for (const name of [
           ...(row.params ?? []),
           ...row.variants.flatMap((v) => [...(v.params ?? []), ...(v.cells ?? []).flatMap((c) => [...(c.params ?? [])])]),
+          // THE DOCUMENT PLANE (slice 1, the keyframe bus): a family
+          // declares its studio-owned rows (calls, audio_clips,
+          // keyframes) in the studio block, not the knob params —
+          // the claim law reads the DECL's own words, both blocks.
+          ...(row.studio?.writes ?? []).map(String),
         ]) union.add(name);
         for (const name of modFieldsOf(card, fam)) union.add(name);
       }

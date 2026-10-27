@@ -30,7 +30,7 @@ export const H3_RECOMMENDED_SAMPLERS = [
   "res_multistep", "res_multistep_cfg_pp", "er_sde", "seeds_2", "seeds_3",
 ] as const
 
-export const JSON_ARRAY_PARAMS = ['calls', 'audio_clips'] as const
+export const JSON_ARRAY_PARAMS = ['calls', 'audio_clips', 'keyframes'] as const
 
 // ── the params schema — H3TimelineCard mirrored 1:1 ─────────────────────────
 // the declared field order and defaults. Bare (defaultless) keys are the
@@ -67,6 +67,25 @@ export const paramSchema = z.object({
   // `refs` stanza bag keeps its compose-side wireList readers; the
   // declared fields are the primary surface.
   last_frame: z.string().role('path').description("Last frame (end anchor)").extra('extra', bag({ order: null, wtype: 'image', tooltip: "FL2VA end anchor — bundle input 2. Locks the final frame's pixels; H3 generates the motion between the two anchors." })),
+  // THE ANY-FRAME PIN LANE (cure 8 RULED CLOSED, operator 2026-11-12:
+  // "WE DO NOT DO FIRST FRAME LAST FRAME, WE DO ANY FRAME ANY TIME").
+  // The engine lane was real since slice 2 (actions.ts applyKeyframeCompose
+  // reads p.keyframes; DECL.studio.writes lists it) but NO face declared
+  // it — so the agent saw only image/last_frame and reasoned in the
+  // retired first/last physics for nine minutes (session 384a13cd).
+  // ADD-FIRST (v2 slice 1): the lane now rides BOTH faces (carrier →
+  // load face + form spec) while image/last_frame keep their translation
+  // (deprecation/refusal is the voice-contract slice). Placement is the
+  // compose gate's (schema() below + the build door): film-absolute
+  // frame, inside a window, image names media.
+  keyframes: z.array(z.object({
+    // The row's runtime law is assertKeyframeRowShape (below) — the
+    // named first door; the zod node stays permissive so schemastery
+    // never answers a bad row with its generic parse text (a string
+    // frame, a negative frame: the walk/door name them).
+    frame: z.number().description('Film-absolute frame'),
+    image: z.string().role('path').description('Pin image'),
+  })).description("ANY FRAME, ANY TIME: [{ frame, image }] pins — a film-absolute frame plus the image that must appear there. A pin fills a silent seat; a stated call guide or last_frame wins, and the pin rides the interior guide chain instead (never dropped). The frame must land inside a window ([start, end)).").extra('extra', bag({ order: null })),
   ref_images: z.array(z.string().role('path')).description("Reference images").max(REF_CAPS.images).extra('extra', bag({ order: null, wtype: 'image_list', max_stack: REF_CAPS.images, tooltip: "Loose references (identity, style, costume) → <Picture 3..9> via the bundle. 8 fills the bus; with a last frame set the cap is 7 (anchor + end + 7 = the 9-slot bus)." })),
   ref_videos: z.array(z.string().role('path')).description("Reference videos").max(REF_CAPS.videos).extra('extra', bag({ order: null, wtype: 'image_list', media: 'video', max_stack: REF_CAPS.videos, tooltip: "Motion guides → <Video 1-3>: camera moves, timing, choreography." })),
   // THE TRIM SEAT (audit 003/V4, 2026-10-22): per-video trim,
@@ -414,6 +433,35 @@ export const coerceWireBoolean = (raw: Record<string, unknown>): Record<string, 
   return raw
 }
 
+/** THE PIN ROW SHAPE (one law, two seats): the doc walk and the compose
+ *  gate both run this BEFORE any placement math — a row must carry a
+ *  whole film-absolute frame and a non-empty image ref. Exported so the
+ *  walk's refusal and the build door's are the same literal (the
+ *  gate-and-walk wall pins them); placement and media existence stay
+ *  the compose gate's, which owns the doc's calls/windows. */
+export function assertKeyframeRowShape(rows: readonly unknown[]): void {
+  for (let i = 0; i < rows.length; i++) {
+    const row = (rows[i] ?? {}) as Record<string, unknown>
+    const f = row.frame
+    if (typeof f !== 'number' || !Number.isFinite(f)) {
+      throw new Error(
+        `keyframes[${i}]: frame is required (a finite film-absolute frame — a row without a frame is not a pin)`,
+      )
+    }
+    if (!Number.isInteger(f)) {
+      throw new Error(
+        `keyframes[${i}]: frame ${f} is not a whole frame — film frames are integers (round the pin)`,
+      )
+    }
+    const image = typeof row.image === 'string' ? row.image.trim() : ''
+    if (image === '') {
+      throw new Error(
+        `keyframes[${i}]: image is required (the pin channel is image pins — a row without a source anchors nothing)`,
+      )
+    }
+  }
+}
+
 export function schema(v: unknown): Record<string, unknown> {
   const raw = (v ?? {}) as Record<string, unknown>
   if (raw.calls !== undefined && !Array.isArray(raw.calls)) {
@@ -421,6 +469,16 @@ export function schema(v: unknown): Record<string, unknown> {
   }
   if (raw.audio_clips !== undefined && !Array.isArray(raw.audio_clips)) {
     throw new Error('h3-timeline: audio_clips must be an array of clip rows')
+  }
+  if (raw.keyframes !== undefined) {
+    if (!Array.isArray(raw.keyframes)) {
+      throw new Error('h3-timeline: keyframes must be an array of pin rows ({ frame, image }) — any frame, any time')
+    }
+    // The row shape is judged here FIRST (named vocabulary), so the
+    // carrier's strict row typing never answers a bad row with
+    // schemastery's generic parse text (the build door runs the same
+    // function before its placement math).
+    assertKeyframeRowShape(raw.keyframes)
   }
   // length null SURVIVES this walk on purpose (the walk-shadow fix:
   // multi-call docs keep null — per-window spans compute at compose).
