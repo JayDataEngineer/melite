@@ -92,10 +92,22 @@ export declare const cardDefsStaleness: () => {
  *  ALREADY booted can refresh. */
 export declare const refreshCardDefs: () => Map<string, CardDefinition>;
 /** Every family's declaration provision rows (DECL provisions for
- *  every model id, then card-owned provisions), keyed by family —
- *  the download + serve surface (provision.ts downloads them; the
- *  provision door serves them). ONE spelling — the door delegates
- *  here, never a frozen capture.
+ *  every model ATOM, then card-owned provisions), keyed by the
+ *  family's registry id — the download + serve surface (provision.ts
+ *  downloads them; the provision door serves them). ONE spelling —
+ *  the door delegates here, never a frozen capture.
+ *
+ *  THE ATOM-KEY LAW (the kroma duplication cure, 2026-11-12): the
+ *  download surface keys by the ATOM (registry id), never by the
+ *  SERVED enumeration (modelIds() — every route address of every
+ *  family). The derived route view composes the full variants matrix
+ *  (the fold spreads the atom's own rows), so a route-keyed walk
+ *  re-emitted the family's whole artifact set under EVERY address —
+ *  each kroma weight listed six times (kroma, kroma-int8,
+ *  kroma-bf16, kroma-base, krea-2, krea-2-raw) in Manager's
+ *  model-list and N-1 phantom rows in the download plan. The atom
+ *  owns the download truth once; the union loop below already
+ *  dedupes variants sharing an artifact within the family.
  *
  *  The models reads are a LAZY import (models/models.ts carries the
  *  boot top-level-await, and the models boot dynamically imports

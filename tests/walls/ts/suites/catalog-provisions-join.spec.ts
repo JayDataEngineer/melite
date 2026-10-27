@@ -28,6 +28,7 @@ import "../../../helpers/boot-models.ts";
 import { describe, it } from "vitest";
 import assert from "node:assert/strict";
 import { modelsService } from "../../../../packages/engines/comfyui-cordis/src/models/service.ts";
+import { provisionsByFamily } from "../../../../packages/engines/comfyui-cordis/src/cardDefs.ts";
 
 describe("THE POSITIVE CATALOG→PROVISIONS JOIN (A6)", () => {
   it("every family that declares a downloadable surface resolves to a downloadable row at some coordinate; artifact-less families are derived and counted", (): void => {
@@ -96,5 +97,42 @@ describe("THE POSITIVE CATALOG→PROVISIONS JOIN (A6)", () => {
       artifactLess.length > 0,
       "the derived artifact-less utility class is present and counted (the input/mask/concat planes — its absence would mean the derivation broke)",
     );
+  });
+
+  it("the download surface is ATOM-KEYED — no route address repeats a family's rows (the kroma duplication cure, 2026-11-12)", async (): Promise<void> => {
+    // THE BURN: provisionsByFamily walked the SERVED enumeration
+    // (modelIds() — atoms ∪ every route address) and the derived
+    // route view carries the family's FULL variants matrix, so the
+    // union loop re-emitted the whole artifact set under EVERY
+    // address: each kroma weight listed six times (kroma,
+    // kroma-int8, kroma-bf16, kroma-base, krea-2, krea-2-raw) in
+    // Manager's model-list — "they put kroma in twice, despite them
+    // being the same". The cure keys the map by the ATOM plane; this
+    // arm judges the real map over the real boot, so re-walking the
+    // served enumeration reds here on its own path.
+    const svc = modelsService();
+    const map = await provisionsByFamily(new Map());
+    const atoms = new Set(svc.registryIds());
+    const routeKeys = Object.keys(map).filter((k) => !atoms.has(k));
+    assert.deepEqual(
+      routeKeys,
+      [],
+      "every provisionsByFamily key is a registry (atom) id — the served enumeration's route addresses never key the download surface",
+    );
+    // the kroma face on the LIVE table: the family's rows land under
+    // exactly one key, and none of its route addresses repeats them
+    const krea = map["krea-2"];
+    assert.ok(krea, "krea-2 keys the download surface");
+    const names = krea.provisions.map((r) => r.name);
+    for (const file of [
+      "kroma-v0.3.1-turbo-opd-int8-convrot.safetensors",
+      "kroma-v0.3.1-turbo-opd.safetensors",
+      "kroma-v0.3-base-dtype-mapped.safetensors",
+    ]) {
+      assert.ok(names.includes(file), `the kroma surface lists ${file} under the atom key`);
+    }
+    for (const route of ["kroma", "kroma-int8", "kroma-bf16", "kroma-base", "krea-2-raw"]) {
+      assert.equal(map[route], undefined, `route address '${route}' never repeats the family's download surface`);
+    }
   });
 });

@@ -1897,7 +1897,14 @@ describe("THE PROVISIONS↔WEIGHTS AGREEMENT (no ghost weights)", () => {
     const offenders: string[] = [];
     for (const id of modelIds()) {
       const view = getModel(id);
-      const declared = new Set((byFamily[id]?.provisions ?? []).map((r) => r.name));
+      // THE ATOM-KEY FOLD (the kroma duplication cure, 2026-11-12):
+      // the download surface keys by the OWNING ATOM (provisions are
+      // the atom's, never per route address) — a route id folds
+      // through the service's own owning-atom read before the
+      // channel lookup. The old route-keyed map lookup judged a
+      // copy: it passed while every route re-listed the family's
+      // rows, and reds here the day the map stopped lying.
+      const declared = new Set((byFamily[owningAtom(id)]?.provisions ?? []).map((r) => r.name));
       // variant-cell artifacts count as declarations (basename with
       // the C5 query/fragment strip — mirrors cardDefs' union walk)
       for (const variant of view.variants ?? []) {
