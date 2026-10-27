@@ -89,7 +89,7 @@ export const DECL: ModelDecl = {
     },
     {
       "name": "Qwen3-TTS-12Hz-1.7B-VoiceDesign",
-      "reason": "placement stated — the snapshot row below also fetches this tree; the flag keeps the hand-merge seat honest when the fetch is drained",
+      "reason": "placement stated (the 2026-10-22 weight-offer-parity burn) — the snapshot row below also fetches this tree; the flag keeps the hand-merge seat honest when the fetch is drained",
     },
     {
       "name": "Qwen3-TTS-12Hz-1.7B-Base-merged",
@@ -97,11 +97,11 @@ export const DECL: ModelDecl = {
     },
     {
       "name": "Qwen3-TTS-12Hz-0.6B-CustomVoice-merged",
-      "reason": "hand merge (base + custom-voice speaker tensors) — no upstream repo exists for an operator merge",
+      "reason": "hand merge (base + custom-voice speaker tensors) — no upstream repo exists for an operator merge (the 2026-10-22 burn)",
     },
     {
       "name": "qwen3-tts/hf/Qwen3-TTS-12Hz-0.6B-Base",
-      "reason": "placement stated — the snapshot row below also fetches this tree; the flag keeps the lane-relative spelling honest",
+      "reason": "placement stated (the 2026-10-22 weight-offer-parity burn) — the snapshot row below also fetches this tree; the flag keeps the lane-relative spelling honest",
     },
   ],
   // THE DIRECTORY PROVISION (the model-families audit fix 8, the

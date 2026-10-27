@@ -53,7 +53,7 @@ beforeAll(async () => { await cascadeInit(); });
 // judges ONLY the keys LANE_FOLDERS names plus the family's own
 // lane_homes declarations — this wall judges exactly those keys,
 // never a wider guess that would cry wolf on node names.
-import { LANE_FOLDERS, laneFetchAnchor, type LaneFetchSeat } from "../../../../packages/harness/estate-queue/src/cardsLanes.ts";
+import { LANE_FOLDERS, laneFetchAnchor, statedCellRow, type LaneFetchSeat } from "../../../../packages/harness/estate-queue/src/cardsLanes.ts";
 
 /** String leaves of any lane_inputs-shaped dict (the ghost wall's
  *  walk, kept ONE spelling: a leaf that names a file or tree). */
@@ -164,6 +164,9 @@ describe("THE LINKABILITY WALL (burn d: no-link variants never sail green)", () 
         }
         const checkpoint = (variant.resolver_defaults as Record<string, unknown> | undefined)?.["checkpoint"];
         const engineSideSeat = typeof checkpoint === "string" && checkpoint.trim() !== "";
+        // THE DEDUPE PRECONDITION (kroma audit F3): safe only while
+        // the channel judgment stays seat-independent (see ARM 4's
+        // pin — the same law, this arm's judgment face).
         const seenDemands = new Set<string>();
         for (const seat of seats) {
           const list = gateDemands(view, seat);
@@ -224,6 +227,13 @@ describe("THE LINKABILITY WALL (burn d: no-link variants never sail green)", () 
         if (flag.reason === "") {
           offenders.push(`${id}: '${flag.name}' flagged disk-only with NO reason — a flag is a contract, state why nothing fetches it`);
           continue;
+        }
+        // THE DATED-RULING REF (kroma audit F1, 2026-10-26): a junk
+        // reason ("x") silenced a missing URL forever — non-emptiness
+        // alone is not a contract. Every reason names its ruling with
+        // a date; the ref is auditable, the junk spelling reds here.
+        if (!/\b20\d{2}-\d{2}-\d{2}\b/.test(flag.reason)) {
+          offenders.push(`${id}: '${flag.name}' carries no dated ruling ref — a reason must name the ruling (operator order, burn, audit) it rides, with its date (kroma F1)`);
         }
         const dual = fetchable(flag.name);
         const saysPlacement = flag.reason.includes("placement stated");
@@ -294,22 +304,34 @@ describe("THE LINKABILITY WALL (burn d: no-link variants never sail green)", () 
       };
       for (const variant of view.variants ?? []) {
         if (variant.group !== "Variant") continue;
-        // every coordinate the door can state — the door NEVER composes
-        // a bare family∪variant cascade for a cell-carrying variant:
-        // statedCellRow resolves the FIRST VISIBLE cell when quant
-        // rides unstated, so the cell's lane_inputs always join the
-        // merge (and their artifact rides the stated cell row). The
-        // no-cell seat exists only for cell-less variants.
+        // every coordinate the door can state. THE UNSTATED SEAT RIDES
+        // THE DOOR'S OWN RESOLVER (kroma audit F2, 2026-10-26 — no
+        // mirror): the door NEVER composes a bare family∪variant
+        // cascade for a cell-carrying variant; statedCellRow resolves
+        // the seat the door actually composes when quant rides
+        // unstated, imported from the door's own module — if the
+        // door's seat law changes, this wall changes with it or reds.
+        // The per-cell seats stay this wall's own broader sweep (every
+        // coordinate the picker can STATE); the no-cell seat exists
+        // only for cell-less variants.
         const visibleCells = variant.cells.filter((c) => c.hide_from_dropdown !== true);
+        const unstatedCell = statedCellRow(variant, undefined, undefined);
+        const unstatedSeat = visibleCells.length === 0 || unstatedCell === undefined
+          ? { merged: { ...(view.lane_inputs ?? {}), ...(variant.lane_inputs ?? {}) }, rows: [variant, undefined] as const }
+          : { merged: { ...(view.lane_inputs ?? {}), ...(variant.lane_inputs ?? {}), ...(unstatedCell.lane_inputs ?? {}) }, rows: [variant, unstatedCell] as const };
         const seats: ReadonlyArray<{ merged: Record<string, unknown>; rows: readonly [LaneFetchSeat, LaneFetchSeat] }> = [
-          ...(visibleCells.length === 0
-            ? [{ merged: { ...(view.lane_inputs ?? {}), ...(variant.lane_inputs ?? {}) }, rows: [variant, undefined] as const }]
-            : []),
+          unstatedSeat,
           ...visibleCells.map((cell) => ({
             merged: { ...(view.lane_inputs ?? {}), ...(variant.lane_inputs ?? {}), ...(cell.lane_inputs ?? {}) },
             rows: [variant, cell] as const,
           })),
         ];
+        // THE DEDUPE PRECONDITION (kroma audit F3, 2026-10-26): one
+        // demand judged once per VARIANT holds only while
+        // laneFetchAnchor stays SEAT-INDEPENDENT — the anchor must not
+        // answer different URLs for the same demand at different
+        // coordinates. The day the resolver grows seat-sensitivity,
+        // this dedupe lies: delete it and judge every seat's demand.
         const seenDemands = new Set<string>();
         for (const seat of seats) {
           for (const demand of gateDemands(view, seat.merged)) {

@@ -405,7 +405,7 @@ function statedVariantRow(
  *  the gate sits DOWNSTREAM of prepareCardParams, it never re-voices
  *  a coordinate refusal, and a missing resolution degrades to the
  *  pre-cure family ∪ variant row rather than guessing. */
-function statedCellRow(
+export function statedCellRow(
   variant: ModelDecl["variants"][number] | undefined,
   body: Record<string, unknown> | undefined,
   mid: string | undefined,

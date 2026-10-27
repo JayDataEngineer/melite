@@ -356,7 +356,7 @@ function statedVariantRow(decl, body, mid) {
  *  the gate sits DOWNSTREAM of prepareCardParams, it never re-voices
  *  a coordinate refusal, and a missing resolution degrades to the
  *  pre-cure family ∪ variant row rather than guessing. */
-function statedCellRow(variant, body, mid) {
+export function statedCellRow(variant, body, mid) {
     if (variant === undefined)
         return undefined;
     const raw = body?.["quant"];

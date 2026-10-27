@@ -38,6 +38,19 @@ export declare function lanePresenceRefusal(fam: string, body?: Record<string, u
  *  never a cost signal). One loop, two seats, no divergence. */
 type LaneCheck = (folder: string, name: string) => string | null;
 export declare function laneFilesStatus(decl: Pick<ModelDecl, "lane_inputs" | "provisions" | "snapshot_provisions" | "lane_homes">, check?: LaneCheck): boolean | null;
+/** THE STATED CELL'S ROW (the cell-fold cure, 2026-11-10): the ONE
+ *  RESOLVER's quant coordinate over the stated variant — the same
+ *  shape selectCardVariant rides at the door (stated body.quant wins,
+ *  else the address's own cell claim, else the variant's first
+ *  visible cell) and the client mirror's resolvedLaneCoordinate runs
+ *  (resolveCellRow in @melite/contracts/laneRelations — one
+ *  coordinate law, no second resolution). 'native' rides unstated
+ *  (the fold's legacy coordinate). A coordinate the door already
+ *  refused (an unknown quant, a hidden cell route) folds nothing —
+ *  the gate sits DOWNSTREAM of prepareCardParams, it never re-voices
+ *  a coordinate refusal, and a missing resolution degrades to the
+ *  pre-cure family ∪ variant row rather than guessing. */
+export declare function statedCellRow(variant: ModelDecl["variants"][number] | undefined, body: Record<string, unknown> | undefined, mid: string | undefined): ModelDecl["variants"][number]["cells"][number] | undefined;
 /** A resolved fetch anchor for one lane miss: the URL the operator
  * can download the weight from, plus the declared size when the
  * channel states one. */

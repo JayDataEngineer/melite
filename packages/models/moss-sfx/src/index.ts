@@ -35,7 +35,7 @@ export const DECL: ModelDecl = {
   "hand_placed_weights": [
     {
       "name": "MOSS-SoundEffect-v2.0-src",
-      "reason": "MOSS source tree — no per-file upstream URLs exist (model_path never silently claims the estate fetches it); operator hand-placement is the only channel",
+      "reason": "MOSS source tree — no per-file upstream URLs exist (model_path never silently claims the estate fetches it); operator hand-placement is the only channel (the 2026-10-21 sfx seat ruling)",
     },
   ],
   "variants": [
