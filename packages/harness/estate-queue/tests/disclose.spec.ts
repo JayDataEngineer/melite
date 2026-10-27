@@ -40,11 +40,35 @@ describe("searchCards", () => {
     assert.deepEqual(out.map((r) => r.id), ["a-card", "b-card", "bare"]);
   });
 
-  it("q tokens ALL match across id/label/description/tags (case-folded)", () => {
+  it("q is RANKED, never an AND: every token scores its best facet, rows carry WHY (slice 3)", () => {
+    // the transcript's first call: "Make an image of an anime girl."
+    // is a sentence, and the old literal AND returned 0/0. Ranking
+    // scores the real words (stopwords ignored) and says why.
     assert.deepEqual(searchCards(all, "beta sky", "").map((r) => r.id), ["b-card"]);
     assert.deepEqual(searchCards(all, "PAINTS", "").map((r) => r.id), ["a-card", "b-card"]);
-    assert.deepEqual(searchCards(all, "beta seas", ""), []);
+    // one real token finds its row even beside a stopword — the
+    // "beta seas" pair no longer demands BOTH (a-card owns seas)
+    assert.deepEqual(searchCards(all, "beta seas", "").map((r) => r.id).sort(), ["a-card", "b-card"]);
+    // a sentence's stopwords drop and the modality word carries it
+    const sentence = searchCards(all, "Make an image of an anime girl.", "");
+    assert.deepEqual(sentence.map((r) => r.id), ["a-card", "b-card"]);
+    assert.match(sentence[0]?.matched_by ?? "", /modality:image/);
+    // a genuinely unrelated token still misses
+    assert.deepEqual(searchCards(all, "zzz-no-such", ""), []);
     assert.deepEqual(searchCards(all, "  ", ""), searchCards(all, "", ""));
+  });
+
+  it("matched_by names the facet that surfaced each row (tag > word > fuzzy)", () => {
+    const sky = searchCards(all, "sky", "")[0];
+    assert.equal(sky?.id, "b-card");
+    assert.match(sky?.matched_by ?? "", /tag:sky/);
+    const beta = searchCards(all, "beta", "")[0];
+    assert.match(beta?.matched_by ?? "", /word:beta/);
+    // trigram fuzzy: a near-miss word still surfaces, with the
+    // measure stated (no embeddings — the 2026-11-12 adjudication)
+    const fuzzy = searchCards(all, "paintz", "");
+    assert.equal(fuzzy[0]?.id, "b-card");
+    assert.match(fuzzy[0]?.matched_by ?? "", /fuzzy:paintz~paint/);
   });
 
   it("tags ALL match def.tags; missing identity falls back", () => {

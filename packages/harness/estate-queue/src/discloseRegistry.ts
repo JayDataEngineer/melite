@@ -35,6 +35,15 @@ export interface DiscoveredCard {
   readonly description: string;
   readonly genre: string;
   readonly tags: readonly string[];
+  /** WHY this row surfaced (the ranked-answer law, slice 3): the
+   *  facets that matched, strongest first — `tags=image` for a facet
+   *  filter, `tag:sky`, `word:beta`, `modality:image`, or
+   *  `fuzzy:seas~sea(0.67)`. Never a bare row the agent must guess
+   *  the reason for. */
+  readonly matched_by: string;
+  /** The ranking score (sum of facet weights) — the sort key, served
+   *  so a caller can see the distance between rows. */
+  readonly score: number;
 }
 
 /** One flow summary (the routing layer). */
@@ -53,30 +62,131 @@ export interface SearchableCard {
   readonly tags?: readonly string[];
 }
 
-/** Search the card defs: the q tokens (whitespace-split,
- *  case-folded) ALL match (id + label + description + tags); the
- *  tags param (comma list) ALL match def.tags. Empty q + tags =
- *  all. */
+/** The words a user sentence carries but no card owns — articles,
+ *  pronouns, auxiliaries and request verbs. Ignored for scoring (the
+ *  full-sentence miss was the transcript's first call: "Make an image
+ *  of an anime girl." carries four stopwords around one real word). */
+const STOPWORDS: ReadonlySet<string> = new Set([
+  "a", "an", "the", "of", "to", "with", "for", "and", "or", "in", "on", "at", "by",
+  "from", "into", "me", "my", "i", "we", "you", "it", "this", "that", "these", "those",
+  "turn", "want", "need", "please", "can", "could", "would", "should",
+  "do", "does", "is", "are", "be", "as", "so", "if", "then", "than", "using", "use",
+]);
+
+/** The modality vocabulary: a query word names a modality, and a card
+ *  whose tags/genre carry that modality answers it (the transcript's
+ *  `tags=image` facet, scored instead of required). */
+const MODALITY_WORDS: Readonly<Record<string, string>> = {
+  image: "image", images: "image", photo: "image", photos: "image", picture: "image",
+  pictures: "image", still: "image", illustration: "image",
+  video: "video", videos: "video", clip: "video", clips: "video", movie: "video",
+  animation: "video", animate: "video", film: "video",
+  audio: "audio", sound: "audio", sounds: "audio", music: "audio", voice: "audio",
+  speech: "audio", talk: "audio", talking: "audio",
+  mesh: "mesh", "3d": "mesh", blender: "mesh",
+};
+
+/** Request verbs → the OPERATION tag they mean. A card declares its
+ *  operations in tags (generate/edit/upscale); the user's verb is the
+ *  same intent in another spelling, so it scores like a modality word
+ *  ("make an image" must rank the GENERATE card above the EDIT card —
+ *  the transcript's request was to generate, not to edit). */
+const OPERATION_WORDS: Readonly<Record<string, string>> = {
+  make: "generate", create: "generate", generate: "generate", render: "generate",
+  draw: "generate", imagine: "generate", produce: "generate", design: "generate",
+  edit: "edit", modify: "edit", change: "edit", adjust: "edit", retouch: "edit",
+  upscale: "upscale", enlarge: "upscale", upres: "upscale", enhance: "upscale",
+  animate: "animate", motion: "animate",
+};
+
+/** Sørensen–Dice over character trigrams — the in-process fuzzy
+ *  measure (no embeddings, per the 2026-11-12 adjudication: a 14-card
+ *  corpus does not justify a vector principal). */
+export function diceTrigrams(a: string, b: string): number {
+  if (a === b) return 1;
+  if (a.length < 3 || b.length < 3) return 0;
+  const grams = (w: string): Map<string, number> => {
+    const m = new Map<string, number>();
+    for (let i = 0; i + 3 <= w.length; i++) {
+      const g = w.slice(i, i + 3);
+      m.set(g, (m.get(g) ?? 0) + 1);
+    }
+    return m;
+  };
+  const ga = grams(a);
+  const gb = grams(b);
+  let overlap = 0;
+  for (const [g, n] of ga) overlap += Math.min(n, gb.get(g) ?? 0);
+  return (2 * overlap) / (a.length - 2 + b.length - 2);
+}
+
+/** Score one query token against one card; returns the weight and
+ *  the WHY line, or null. Order: exact tag, exact word, modality,
+ *  fuzzy (the strongest facet wins — one reason per token). */
+function scoreToken(
+  tok: string,
+  words: readonly string[],
+  dtags: readonly string[],
+  genre: string,
+): { weight: number; why: string } | null {
+  if (dtags.includes(tok)) return { weight: 3, why: "tag:" + tok };
+  if (words.includes(tok)) return { weight: 2, why: "word:" + tok };
+  const modality = MODALITY_WORDS[tok];
+  if (modality !== undefined && (dtags.includes(modality) || genre.toLowerCase() === modality)) {
+    return { weight: 2, why: "modality:" + tok };
+  }
+  const operation = OPERATION_WORDS[tok];
+  if (operation !== undefined && dtags.includes(operation)) {
+    return { weight: 2, why: "operation:" + tok + "->" + operation };
+  }
+  let best = 0;
+  let bestWord = "";
+  for (const w of words) {
+    const d = diceTrigrams(tok, w);
+    if (d > best) { best = d; bestWord = w; }
+  }
+  if (best >= 0.42) {
+    return { weight: Math.round(best * 100) / 100, why: "fuzzy:" + tok + "~" + bestWord + "(" + best.toFixed(2) + ")" };
+  }
+  return null;
+}
+
+/** Search the card defs (slice 3, the intent door): the tags param
+ *  (comma list) is a HARD facet — a card must carry every tag. q is
+ *  RANKED, never an AND: every non-stopword token scores its best
+ *  facet (exact tag 3, exact word 2, modality 2, trigram fuzzy
+ *  0.42–1), rows sort by score then id, and every row carries the
+ *  WHY it surfaced. With tags stated the facet alone keeps a row
+ *  (score 0 is a lawful tag hit); without tags a row needs at least
+ *  one scoring token. Empty q + tags = every tag-matched card. */
 export function searchCards(
   defs: ReadonlyMap<string, SearchableCard>,
   q: string,
   tags: string,
 ): DiscoveredCard[] {
-  const toks: readonly string[] = q.toLowerCase().split(/\s+/).filter((t): boolean => t !== "");
+  const toks: readonly string[] = q.toLowerCase().split(/[^a-z0-9]+/).filter((t): boolean => t !== "" && !STOPWORDS.has(t));
   const want: readonly string[] = tags.toLowerCase().split(",").map((t): string => t.trim()).filter((t): boolean => t !== "");
-  const out: DiscoveredCard[] = [];
+  const out: Array<DiscoveredCard & { score: number }> = [];
   for (const [id, def] of defs) {
     const dtags: readonly string[] = def.tags ?? [];
     const low: readonly string[] = dtags.map((x): string => x.toLowerCase());
     if (!want.every((t): boolean => low.includes(t))) continue;
     const label: string = def.identity?.label ?? id;
     const description: string = def.identity?.description ?? "";
-    const hay: string = (id + " " + label + " " + description + " " + dtags.join(" ")).toLowerCase();
-    if (!toks.every((t): boolean => hay.includes(t))) continue;
-    out.push({ id, label, description, genre: def.identity?.genre ?? "", tags: dtags });
+    const genre: string = def.identity?.genre ?? "";
+    const words: readonly string[] = (id + " " + label + " " + description + " " + low.join(" ")).toLowerCase().split(/[^a-z0-9]+/).filter((w): boolean => w !== "");
+    const why: string[] = want.length > 0 ? ["tags=" + want.join(",")] : [];
+    let score = 0;
+    for (const tok of toks) {
+      const hit = scoreToken(tok, words, low, genre);
+      if (hit !== null) { score += hit.weight; why.push(hit.why); }
+    }
+    // the facet law: tags stated => the tag match is the row; tags
+    // silent => a row needs a scoring token (never the whole corpus)
+    if (want.length === 0 && toks.length > 0 && score === 0) continue;
+    out.push({ id, label, description, genre, tags: dtags, matched_by: why.length > 0 ? why.join("; ") : "all", score });
   }
-  // (map keys are unique — the equal arm never fires)
-  out.sort((a, b): number => (a.id < b.id ? -1 : a.id > b.id ? 1 : /* v8 ignore next */ 0));
+  out.sort((a, b): number => (b.score - a.score) || (a.id < b.id ? -1 : a.id > b.id ? 1 : /* v8 ignore next */ 0));
   return out;
 }
 

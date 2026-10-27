@@ -39,7 +39,7 @@ export function meliteDiscover(estate, expandEstateDoors) {
         description: 'Progressive disclosure tier 1 over the estate (cards + flows): returns clamped summary LINES, never bodies. '
             + 'THE EXPANSION LAW: the estate\u2019s deeper doors (melite_view, comfy_manage, melite_skill_read, ledger_tail) '
             + 'seat themselves the first time you touch the catalog \u2014 they are never missing, only deferred. '
-            + 'q matches names/titles/descriptions LITERALLY (a full user sentence matches nothing) \u2014 for a MODALITY ask (video, image, audio, 3d) search tags= first, q second. '
+            + 'q is RANKED, never literal: every real word scores its best facet (exact tag, exact word, modality, trigram fuzzy) and each line says WHY it matched \u2014 a full user sentence works. tags= stays a hard facet. '
             + 'Args: lookup (all | cards | flows, default all) + tags (comma-separated card-declared tags, e.g. "image,upscale") '
             + '+ optional q (free-text filter). Prefer a FLOW when one fits the task — composition over single calls; '
             + 'fall back to cards. COUNTS-FIRST: a large estate clamps to counts + the tag vocabulary + the first '
@@ -116,7 +116,7 @@ export function meliteDiscover(estate, expandEstateDoors) {
                 // audit: q is literal — a blind agent typing the user's
                 // sentence got a bare 0/0 and had to reinvent strategy).
                 if (flows.length === 0 && cards.length === 0) {
-                    out.push('no match. q matches names/titles/descriptions LITERALLY — a full sentence rarely hits. Retry with tags= (video, image, audio, 3d, generate, edit) for the MODALITY, or lookup=all for the estate-wide first pass.');
+                    out.push('no match. q is ranked (tag/word/modality/trigram) — try the MODALITY as tags= (video, image, audio, 3d, generate, edit), fewer words, or lookup=all for the estate-wide first pass.');
                 }
                 if (flows.length > 0) {
                     out.push('flows:');
@@ -130,7 +130,8 @@ export function meliteDiscover(estate, expandEstateDoors) {
                     out.push('cards:');
                     for (const c of cards.slice(0, RENDER_CLAMP)) {
                         const tags = Array.isArray(c?.tags) ? c.tags.filter((t) => typeof t === 'string') : [];
-                        out.push(`  ${line(c?.id)} — ${line(c?.label)}${tags.length > 0 ? ` [${tags.join(',')}]` : ''}`);
+                        const why = typeof c?.matched_by === 'string' && c.matched_by !== '' ? c.matched_by : '';
+                        out.push(`  ${line(c?.id)} — ${line(c?.label)}${tags.length > 0 ? ` [${tags.join(',')}]` : ''}${why !== '' ? ` · why: ${line(why)}` : ''}`);
                     }
                     if (!wantsAll && nc > RENDER_CLAMP)
                         out.push(`  +${nc - RENDER_CLAMP} more — narrow with tags/q, or detail=true`);

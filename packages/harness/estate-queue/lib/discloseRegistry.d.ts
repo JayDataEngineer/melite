@@ -8,6 +8,15 @@ export interface DiscoveredCard {
     readonly description: string;
     readonly genre: string;
     readonly tags: readonly string[];
+    /** WHY this row surfaced (the ranked-answer law, slice 3): the
+     *  facets that matched, strongest first — `tags=image` for a facet
+     *  filter, `tag:sky`, `word:beta`, `modality:image`, or
+     *  `fuzzy:seas~sea(0.67)`. Never a bare row the agent must guess
+     *  the reason for. */
+    readonly matched_by: string;
+    /** The ranking score (sum of facet weights) — the sort key, served
+     *  so a caller can see the distance between rows. */
+    readonly score: number;
 }
 /** One flow summary (the routing layer). */
 export interface FlowSummary {
@@ -27,10 +36,18 @@ export interface SearchableCard {
     };
     readonly tags?: readonly string[];
 }
-/** Search the card defs: the q tokens (whitespace-split,
- *  case-folded) ALL match (id + label + description + tags); the
- *  tags param (comma list) ALL match def.tags. Empty q + tags =
- *  all. */
+/** Sørensen–Dice over character trigrams — the in-process fuzzy
+ *  measure (no embeddings, per the 2026-11-12 adjudication: a 14-card
+ *  corpus does not justify a vector principal). */
+export declare function diceTrigrams(a: string, b: string): number;
+/** Search the card defs (slice 3, the intent door): the tags param
+ *  (comma list) is a HARD facet — a card must carry every tag. q is
+ *  RANKED, never an AND: every non-stopword token scores its best
+ *  facet (exact tag 3, exact word 2, modality 2, trigram fuzzy
+ *  0.42–1), rows sort by score then id, and every row carries the
+ *  WHY it surfaced. With tags stated the facet alone keeps a row
+ *  (score 0 is a lawful tag hit); without tags a row needs at least
+ *  one scoring token. Empty q + tags = every tag-matched card. */
 export declare function searchCards(defs: ReadonlyMap<string, SearchableCard>, q: string, tags: string): DiscoveredCard[];
 /** Search the flow rows (PURE over the merged rows). */
 export declare function searchFlows(rows: ReadonlyArray<FlowSummary>, q: string): FlowSummary[];

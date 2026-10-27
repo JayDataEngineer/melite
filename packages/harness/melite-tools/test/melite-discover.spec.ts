@@ -224,6 +224,19 @@ describe('melite_discover render — the counts line', () => {
     )
   })
 
+  test('every ranked row says WHY it surfaced (slice 3: the ranked-answer law)', () => {
+    const tool = meliteDiscover(stubEstate(), () => {})
+    const parts = tool.output.render(
+      {},
+      {
+        flows: [],
+        cards: [{ id: 'image-gen', label: 'Generate Image', tags: ['image'], matched_by: 'tags=image; modality:image', score: 2 }],
+      } as never,
+    ) as Array<{ text?: string }>
+    const out = parts.map((p) => p?.text ?? '').join('\n')
+    assert.ok(out.includes('  image-gen — Generate Image [image] · why: tags=image; modality:image'), out)
+  })
+
   test('the clamped shape renders counts over truncated rows + vocabulary + hint', () => {
     const tool = meliteDiscover(stubEstate(), () => {})
     const parts = tool.output.render(
@@ -259,7 +272,7 @@ describe('melite_discover render — the counts line', () => {
     assert.equal(
       parts.map((p) => p?.text ?? '').join('\n'),
       "discover: 0 flows, 0 cards in the estate CATALOG (not your bench — read the bench's staged cards with melite_construct verb=read) — open one with melite_load\n"
-      + "no match. q matches names/titles/descriptions LITERALLY — a full sentence rarely hits. Retry with tags= (video, image, audio, 3d, generate, edit) for the MODALITY, or lookup=all for the estate-wide first pass.",
+      + "no match. q is ranked (tag/word/modality/trigram) — try the MODALITY as tags= (video, image, audio, 3d, generate, edit), fewer words, or lookup=all for the estate-wide first pass.",
     )
   })
 
@@ -269,7 +282,7 @@ describe('melite_discover render — the counts line', () => {
     assert.equal(
       parts.map((p) => p?.text ?? '').join('\n'),
       "discover: 0 flows, 0 cards in the estate CATALOG (not your bench — read the bench's staged cards with melite_construct verb=read) — open one with melite_load\n"
-      + "no match. q matches names/titles/descriptions LITERALLY — a full sentence rarely hits. Retry with tags= (video, image, audio, 3d, generate, edit) for the MODALITY, or lookup=all for the estate-wide first pass.",
+      + "no match. q is ranked (tag/word/modality/trigram) — try the MODALITY as tags= (video, image, audio, 3d, generate, edit), fewer words, or lookup=all for the estate-wide first pass.",
     )
   })
 
@@ -293,7 +306,7 @@ describe('melite_discover render — the counts line', () => {
     assert.equal(
       parts.map((p) => p?.text ?? '').join('\n'),
       "discover: 0 flows, 0 cards in the estate CATALOG (not your bench — read the bench's staged cards with melite_construct verb=read) — open one with melite_load\n"
-      + "no match. q matches names/titles/descriptions LITERALLY — a full sentence rarely hits. Retry with tags= (video, image, audio, 3d, generate, edit) for the MODALITY, or lookup=all for the estate-wide first pass.",
+      + "no match. q is ranked (tag/word/modality/trigram) — try the MODALITY as tags= (video, image, audio, 3d, generate, edit), fewer words, or lookup=all for the estate-wide first pass.",
     )
   })
 })

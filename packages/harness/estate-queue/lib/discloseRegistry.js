@@ -21,12 +21,103 @@ import { join } from "node:path";
 import { Service } from "@deepseek-ai/cordis";
 import { resolveRepoRoot } from "@melite/comfyui-cordis";
 import { seedFlowsSeat } from "./flowsData.js";
-/** Search the card defs: the q tokens (whitespace-split,
- *  case-folded) ALL match (id + label + description + tags); the
- *  tags param (comma list) ALL match def.tags. Empty q + tags =
- *  all. */
+/** The words a user sentence carries but no card owns — articles,
+ *  pronouns, auxiliaries and request verbs. Ignored for scoring (the
+ *  full-sentence miss was the transcript's first call: "Make an image
+ *  of an anime girl." carries four stopwords around one real word). */
+const STOPWORDS = new Set([
+    "a", "an", "the", "of", "to", "with", "for", "and", "or", "in", "on", "at", "by",
+    "from", "into", "me", "my", "i", "we", "you", "it", "this", "that", "these", "those",
+    "turn", "want", "need", "please", "can", "could", "would", "should",
+    "do", "does", "is", "are", "be", "as", "so", "if", "then", "than", "using", "use",
+]);
+/** The modality vocabulary: a query word names a modality, and a card
+ *  whose tags/genre carry that modality answers it (the transcript's
+ *  `tags=image` facet, scored instead of required). */
+const MODALITY_WORDS = {
+    image: "image", images: "image", photo: "image", photos: "image", picture: "image",
+    pictures: "image", still: "image", illustration: "image",
+    video: "video", videos: "video", clip: "video", clips: "video", movie: "video",
+    animation: "video", animate: "video", film: "video",
+    audio: "audio", sound: "audio", sounds: "audio", music: "audio", voice: "audio",
+    speech: "audio", talk: "audio", talking: "audio",
+    mesh: "mesh", "3d": "mesh", blender: "mesh",
+};
+/** Request verbs → the OPERATION tag they mean. A card declares its
+ *  operations in tags (generate/edit/upscale); the user's verb is the
+ *  same intent in another spelling, so it scores like a modality word
+ *  ("make an image" must rank the GENERATE card above the EDIT card —
+ *  the transcript's request was to generate, not to edit). */
+const OPERATION_WORDS = {
+    make: "generate", create: "generate", generate: "generate", render: "generate",
+    draw: "generate", imagine: "generate", produce: "generate", design: "generate",
+    edit: "edit", modify: "edit", change: "edit", adjust: "edit", retouch: "edit",
+    upscale: "upscale", enlarge: "upscale", upres: "upscale", enhance: "upscale",
+    animate: "animate", motion: "animate",
+};
+/** Sørensen–Dice over character trigrams — the in-process fuzzy
+ *  measure (no embeddings, per the 2026-11-12 adjudication: a 14-card
+ *  corpus does not justify a vector principal). */
+export function diceTrigrams(a, b) {
+    if (a === b)
+        return 1;
+    if (a.length < 3 || b.length < 3)
+        return 0;
+    const grams = (w) => {
+        const m = new Map();
+        for (let i = 0; i + 3 <= w.length; i++) {
+            const g = w.slice(i, i + 3);
+            m.set(g, (m.get(g) ?? 0) + 1);
+        }
+        return m;
+    };
+    const ga = grams(a);
+    const gb = grams(b);
+    let overlap = 0;
+    for (const [g, n] of ga)
+        overlap += Math.min(n, gb.get(g) ?? 0);
+    return (2 * overlap) / (a.length - 2 + b.length - 2);
+}
+/** Score one query token against one card; returns the weight and
+ *  the WHY line, or null. Order: exact tag, exact word, modality,
+ *  fuzzy (the strongest facet wins — one reason per token). */
+function scoreToken(tok, words, dtags, genre) {
+    if (dtags.includes(tok))
+        return { weight: 3, why: "tag:" + tok };
+    if (words.includes(tok))
+        return { weight: 2, why: "word:" + tok };
+    const modality = MODALITY_WORDS[tok];
+    if (modality !== undefined && (dtags.includes(modality) || genre.toLowerCase() === modality)) {
+        return { weight: 2, why: "modality:" + tok };
+    }
+    const operation = OPERATION_WORDS[tok];
+    if (operation !== undefined && dtags.includes(operation)) {
+        return { weight: 2, why: "operation:" + tok + "->" + operation };
+    }
+    let best = 0;
+    let bestWord = "";
+    for (const w of words) {
+        const d = diceTrigrams(tok, w);
+        if (d > best) {
+            best = d;
+            bestWord = w;
+        }
+    }
+    if (best >= 0.42) {
+        return { weight: Math.round(best * 100) / 100, why: "fuzzy:" + tok + "~" + bestWord + "(" + best.toFixed(2) + ")" };
+    }
+    return null;
+}
+/** Search the card defs (slice 3, the intent door): the tags param
+ *  (comma list) is a HARD facet — a card must carry every tag. q is
+ *  RANKED, never an AND: every non-stopword token scores its best
+ *  facet (exact tag 3, exact word 2, modality 2, trigram fuzzy
+ *  0.42–1), rows sort by score then id, and every row carries the
+ *  WHY it surfaced. With tags stated the facet alone keeps a row
+ *  (score 0 is a lawful tag hit); without tags a row needs at least
+ *  one scoring token. Empty q + tags = every tag-matched card. */
 export function searchCards(defs, q, tags) {
-    const toks = q.toLowerCase().split(/\s+/).filter((t) => t !== "");
+    const toks = q.toLowerCase().split(/[^a-z0-9]+/).filter((t) => t !== "" && !STOPWORDS.has(t));
     const want = tags.toLowerCase().split(",").map((t) => t.trim()).filter((t) => t !== "");
     const out = [];
     for (const [id, def] of defs) {
@@ -36,13 +127,24 @@ export function searchCards(defs, q, tags) {
             continue;
         const label = def.identity?.label ?? id;
         const description = def.identity?.description ?? "";
-        const hay = (id + " " + label + " " + description + " " + dtags.join(" ")).toLowerCase();
-        if (!toks.every((t) => hay.includes(t)))
+        const genre = def.identity?.genre ?? "";
+        const words = (id + " " + label + " " + description + " " + low.join(" ")).toLowerCase().split(/[^a-z0-9]+/).filter((w) => w !== "");
+        const why = want.length > 0 ? ["tags=" + want.join(",")] : [];
+        let score = 0;
+        for (const tok of toks) {
+            const hit = scoreToken(tok, words, low, genre);
+            if (hit !== null) {
+                score += hit.weight;
+                why.push(hit.why);
+            }
+        }
+        // the facet law: tags stated => the tag match is the row; tags
+        // silent => a row needs a scoring token (never the whole corpus)
+        if (want.length === 0 && toks.length > 0 && score === 0)
             continue;
-        out.push({ id, label, description, genre: def.identity?.genre ?? "", tags: dtags });
+        out.push({ id, label, description, genre, tags: dtags, matched_by: why.length > 0 ? why.join("; ") : "all", score });
     }
-    // (map keys are unique — the equal arm never fires)
-    out.sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : /* v8 ignore next */ 0));
+    out.sort((a, b) => (b.score - a.score) || (a.id < b.id ? -1 : a.id > b.id ? 1 : /* v8 ignore next */ 0));
     return out;
 }
 /** Search the flow rows (PURE over the merged rows). */

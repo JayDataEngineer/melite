@@ -66,14 +66,24 @@ describe("THE VIBE SUITE BASELINE — the agent flow's acceptance harness (v0 pi
     assert.equal(clips.docReads, 4, "request 2: 4 doc reads before composing");
   });
 
-  it("T3 BASELINE: the naive query misses live (q=anime tags=image returns zero rows)", async () => {
+  it("T3 CURED (slice 3): the transcript's query finds the card AND says why — ranked facets, never a literal AND", async () => {
     const defs = await loadCardDefs();
-    const miss = searchCards(defs, "anime", "image");
-    assert.deepEqual(miss.map((r) => r.id), [], "the transcript's exact miss reproduces at HEAD — image-gen's hay names no 'anime'");
-    const sentence = searchCards(defs, "anime girl", "");
-    assert.ok(!sentence.some((r) => r.id === "image-gen"), "the full sentence misses image-gen too — literal tokens, no ranking");
-    const modality = searchCards(defs, "", "image");
-    assert.ok(modality.some((r) => r.id === "image-gen"), "the modality fallback FINDS it — tags= is today's only working door");
+    // THE BURN (transcript step 1): discover("anime", tags=image) → 0
+    // rows; the agent then dumped 12 params on a bench trial. The tag
+    // facet is a HARD filter and the row now rides with its WHY.
+    const tagged = searchCards(defs, "anime", "image");
+    const gen = tagged.find((r) => r.id === "image-gen");
+    assert.ok(gen, "tags=image keeps the image cards even when no q token matches");
+    assert.match(gen.matched_by, /tags=image/, "the WHY names the facet that kept the row");
+    // the user's own sentence is the query — stopwords drop, the
+    // modality word scores, and image-gen ranks with its reason
+    const sentence = searchCards(defs, "Make an image of an anime girl.", "");
+    const hit = sentence.find((r) => r.id === "image-gen");
+    assert.ok(hit, "the full user sentence finds image-gen (the transcript's 10-call burn)");
+    assert.match(hit.matched_by, /tag:image|modality:image/, "the WHY names the matched facet, never a bare row");
+    assert.equal(sentence[0]?.id, "image-gen", "the modality ask ranks image-gen first");
+    // a genuinely unrelated ask still answers zero — ranking is not noise
+    assert.deepEqual(searchCards(defs, "zzz-no-such-thing", "").map((r) => r.id), []);
   });
 
   it("T1/T8 BASELINE: the load face dumps the full surface and still names the retired seam", async () => {
