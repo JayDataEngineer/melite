@@ -494,3 +494,33 @@ describe("the bench tile's failure face carries a × that retires it", () => {
     expect(face3.textContent ?? "").toContain("node 9 blew up");
   });
 });
+
+// THE PLACEMENT LAW (audit 017, 2026-11-12 — the operator's "the TTS
+// card errors do not have the X"): the × EXISTED since 2026-10-15 but
+// painted at the top-right corner of the whole BROWSER WINDOW —
+// .errorDismiss is position:absolute while every ancestor up to
+// .zoomOverlay (position:fixed; inset:0) was static, so the nearest
+// positioned ancestor was the VIEWPORT and the operator read the
+// error as having no X at all. Presence-only arms (this file's whole
+// prior life, and the 2026-11-05 regression audit's "wall 18/18
+// green") cannot see placement — this arm judges the ANCHOR CONTRACT
+// at its truth home: the stylesheet.
+describe("THE PLACEMENT LAW — the × anchors to the error's own face, never the viewport", () => {
+  test(".runError (and .enhanceRow) position the × 's anchor — the absolute child lands on the error, not the window corner", async () => {
+    const { readFileSync } = await import("node:fs");
+    const { fileURLToPath } = await import("node:url");
+    const { join, dirname } = await import("node:path");
+    const css = readFileSync(join(dirname(fileURLToPath(import.meta.url)), "../src/client/card.module.css"), "utf8");
+    const block = (name: string): string => {
+      const m = css.match(new RegExp("\\." + name + "\\s*\\{[^}]*\\}", "m"));
+      expect(m, "." + name + " block exists in card.module.css").not.toBeNull();
+      return m![0]!;
+    };
+    const runError = block("runError");
+    expect(runError, ".runError must carry position:relative — the × 's positioned ancestor is the error's own element (the anchor cure, audit 017 C1)").toMatch(/position\s*:\s*relative/);
+    const enhanceRow = block("enhanceRow");
+    expect(enhanceRow, ".enhanceRow must carry position:relative — the success note carries no .runError to anchor its ×").toMatch(/position\s*:\s*relative/);
+    const dismiss = block("errorDismiss");
+    expect(dismiss, ".errorDismiss stays position:absolute — the anchor contract: absolute child, positioned error parent").toMatch(/position\s*:\s*absolute/);
+  });
+});

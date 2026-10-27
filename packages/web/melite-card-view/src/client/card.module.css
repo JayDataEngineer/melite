@@ -175,7 +175,22 @@
  * .failed/.missing/.loading law verbatim): .runError's <p> rows had
  * no margin rule, so UA 1em block margins shoved the bench panel's
  * save/reload voices out of the scroll content. Pinned to zero. */
-.runError { color: var(--dsw-alias-state-error-primary); font-size: 11px; margin: 0; overflow-wrap: anywhere; }
+.runError {
+  color: var(--dsw-alias-state-error-primary);
+  font-size: 11px;
+  margin: 0;
+  overflow-wrap: anywhere;
+  /* THE ANCHOR CURE (audit 017, 2026-11-12 — the operator's "the TTS
+   * card errors do not have the X"): the × EXISTED since 2026-10-15
+   * but painted at the top-right corner of the whole BROWSER WINDOW —
+   * .errorDismiss is position:absolute and every ancestor up to
+   * .zoomOverlay (position:fixed; inset:0) was static, so the nearest
+   * positioned ancestor was the VIEWPORT. position:relative here puts
+   * the × ON the error's own face. The wall's happy-dom copy judged
+   * presence only — placement needed a positioned ancestor, which no
+   * arm asserted. */
+  position: relative;
+}
 /* THE ERROR DISMISS (operator 2026-11-05: "errors stick there
  * FOREVER" — no error face may outlive its dismissal): every error
  * face carries a red × that retires it — the drill's run/refusal
@@ -1160,6 +1175,10 @@
   gap: 8px;
   flex: 0 0 auto;
   padding: 2px 0;
+  /* the anchor cure's outer half (audit 017): the note's × rides an
+   * inner span; a positioned ROW puts it on the note's own face —
+   * the success note carries no .runError to anchor it. */
+  position: relative;
 }
 
 /* THE STALE-TAB FACE (2026-09-23, the deploy handshake): this tab's
