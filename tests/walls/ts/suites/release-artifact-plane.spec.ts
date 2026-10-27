@@ -52,7 +52,7 @@ function fixture (files: Record<string, string>): { f: string; inner: Record<str
 }
 
 const okManifest = (extra: Record<string, unknown> = {}): string => JSON.stringify({
-  name: 'fx-wellformed', version: '0.0.0', type: 'module', license: 'SSPL-1.0',
+  name: 'fx-wellformed', version: '0.0.0', type: 'module', license: 'AGPL-3.0-or-later',
   exports: { '.': { types: './lib/index.d.ts', default: './lib/index.js' }, './package.json': './package.json' },
   ...extra,
 }, null, 2)
@@ -128,7 +128,7 @@ describe('G9 — publint over the publication view (F-8, harness-seam audit)', (
     // FILE_DOES_NOT_EXIST error, invisible to the exports-target checks.
     const fx = fixture({
       'package.json': JSON.stringify({
-        name: 'fx-dangling-main', version: '0.0.0', type: 'module', license: 'SSPL-1.0',
+        name: 'fx-dangling-main', version: '0.0.0', type: 'module', license: 'AGPL-3.0-or-later',
         main: './lib/nope.js',
         exports: { './sub': './lib/sub.js' },
         melite: { publish: { subpathOnly: true } },
@@ -442,15 +442,15 @@ describe('G1.5 — publish rewrite (hygiene strip + registry manifest)', () => {
     // carries its manifest-declared license text, sourced from the
     // ONE canonical file under licenses/ — the tree stays one-source.
     const fx = fixture({
-      'package.json': okManifest({ license: 'SSPL-1.0' }),
+      'package.json': okManifest({ license: 'AGPL-3.0-or-later' }),
       'lib/index.js': 'export const x = 1\n',
       'lib/index.d.ts': 'export declare const x: number\n',
     })
     try {
       gates.stripPackedTarballs([fx.f])
       const shipped = execFileSync('bash', ['-c', `tar -xzOf ${fx.f} package/LICENSE`], { encoding: 'utf8' })
-      expect(shipped).toBe(readFileSync(join(ROOT, 'licenses', 'SSPL-1.0.txt'), 'utf8'))
-      expect(shipped).toContain('13. Offering the Program as a Service')
+      expect(shipped).toBe(readFileSync(join(ROOT, 'licenses', 'AGPL-3.0-or-later.txt'), 'utf8'))
+      expect(shipped).toContain('13. Remote Network Interaction; Use with the GNU General Public License.')
     } finally { rmSync(fx.dir, { recursive: true, force: true }) }
   })
 
