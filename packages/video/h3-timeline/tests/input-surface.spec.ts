@@ -228,6 +228,9 @@ describe("the input surface: EVERY slot declares its slot shape (the freeform-te
       ref_images: "image_list",
       ref_videos: "video_list",
       ref_audios: "audio_list",
+      // the re-shoot source seat (feature 024): the clip the new
+      // camera views — one singular video seat, not a stack
+      reshoot_clip: "video",
     });
     // the renderer's guide-image spelling rides the alias table:
     // lattice-derivable for old graphs, offered by no face.

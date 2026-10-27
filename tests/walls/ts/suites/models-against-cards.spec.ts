@@ -66,7 +66,7 @@ import { describe, it } from "vitest";
 // route).
 // 67 -> 74 (2026-11-08, the third edit lane): fibo2-edit serves its
 // family route + two lanes × variant/cell routes (7 addresses).
-const SERVED_ADDR_CENSUS = 74 // 74→73 2026-11-12: seedvr2-ema-7b died (the 7B death — no cells, no provision); 73→74 2026-10-27: music3-int8 joins — the wave's music3 quant work (2164b71a3, audit 014 C5) serves the int8_convrot cell's own route address
+const SERVED_ADDR_CENSUS = 75 // 74→75 2026-10-27: the openjutsu lane serves viggle-animate (feature 023) — the ref2va INT8 body's route address joins; 74→73 2026-11-12: seedvr2-ema-7b died (the 7B death — no cells, no provision); 73→74 2026-10-27: music3-int8 joins — the wave's music3 quant work (2164b71a3, audit 014 C5) serves the int8_convrot cell's own route address
 // 24 -> 25 (2026-10-22, audit 006/U1): flux-klein claims its own
 // atom (the family's routes resolve to its declared owners)
 // 25 -> 24 (2026-10-13, the autoremesher excision — the pack the owner removed from the system)
@@ -84,7 +84,10 @@ const SERVED_ADDR_CENSUS = 74 // 74→73 2026-11-12: seedvr2-ema-7b died (the 7B
 // families).
 // 24 -> 25 (2026-11-08, the third edit lane): fibo2-edit claims its
 // own atom (its routes resolve to their declared owner).
-const OWNER_ATOM_CENSUS = 25
+// 25 -> 26 (2026-10-27, the openjutsu lane, feature 023):
+// viggle-animate claims its atom — the ref2va INT8 route the
+// openjutsu card boards.
+const OWNER_ATOM_CENSUS = 26
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -472,13 +475,25 @@ describe("models against cards (the cross-validation, resurrected)", () => {
     // music3-scoped decode knob, visible_when model=music3) — the
     // keyframes exit and the tiled_decode seat cancel; the census
     // holds at 476 with keyframes OUT and tiled_decode IN.
-    assert.equal(walked, 476,
+    // 476 -> 496 (2026-10-27, the openjutsu lane, feature 023): the
+    // viggle-animate family + the openjutsu card join the walked set
+    // — 9 card fields (length/width/height/steps/shift_video/
+    // shift_audio/seed numeric; clip/ref_image typed) + 11 DECL
+    // param rows on the animate action. Twenty new fields, argued
+    // here.
+    assert.equal(walked, 496,
       `the census walked the estate's fields (${String(walked)} — a re-zoned or re-typed field set MOVES this number; growth is argued here, loss means the census emptied an arm)`);
     // judged 8 -> 6 (2026-11-08, the latent law): the image-edit
     // card's width/height leave the params zone (hidden compatibility
     // keys — the alias precedent) as the edit lanes retire the stated
     // size, so the numeric judge sees two fewer params-zone numbers.
-    assert.equal(judged, 6,
+    // 6 -> 12 (2026-10-27, the openjutsu lane, feature 023): the
+    // openjutsu card's six numeric params knobs enter the judge
+    // (length, width, height, steps, shift_video, shift_audio) —
+    // every one default-owned by the viggle-animate DECL (the
+    // dual-floor cure keeps the card schema off those keys), the
+    // starving list above stays empty.
+    assert.equal(judged, 12,
       `the census JUDGED the estate's numeric params fields (${String(judged)} of ${String(walked)} walked — re-typing them out of the judge MOVES this number down; a new judged knob moves it up and is argued here)`);
     // exact: the skips were qwen-img-edit-2511's declared
     // resolution rows (width/height are not its params — it
@@ -890,7 +905,7 @@ describe("models against cards (the cross-validation, resurrected)", () => {
     const PROVISION_DECLARERS = ["anima", "anny", "fibo2-edit", "flux-klein", "h3", "joytag", "kimodo",
       "krea-2", "mask-select", "moss-image", "music3", "pixal3d", "qwen-img-21", "qwen-img-edit-21",
       "qwen-img-edit-2511", "seedvr2-ema", "transfer-rig",
-      "trellis2-native", "wd14", "yue2", "z-image"];
+      "trellis2-native", "viggle-animate", "wd14", "yue2", "z-image"];
     // the rows those families declare, exactly (D-M12: a floor let a
     // family's whole table go unjudged) — 2026-10-12, the ghost-debt
     // landing: 42 -> 59 (17 new rows across 8 families; the dino
@@ -931,7 +946,13 @@ describe("models against cards (the cross-validation, resurrected)", () => {
 // 94 -> 95 (2026-10-27, the wave's music3 quant work, 2164b71a3):
 // music3 provisions its fp16 dit (minimax_music3_dit_fp16) — the
 // int8_convrot cell's family-owns-downloads companion row.
-const PROVISION_ROW_COUNT = 95;
+// 95 -> 102 (2026-10-27, the openjutsu lane, feature 023):
+// viggle-animate joins as declarer 22 with 7 rows — the INT8 unet,
+// the DMD r64 + swap loras, the Fun ControlNet Union 2.0 +
+// VDA-Small secondary-path files, the video VAE (h3's digest,
+// re-declared: the family owns every weight its lane loads) and the
+// frozen text embed (the pack repo's text_cond row).
+const PROVISION_ROW_COUNT = 102;
     const declarers: string[] = [];
     let judged = 0;
     for (const id of registryIds()) {
@@ -1815,7 +1836,11 @@ describe("THE TWO-HOMES BOUNDS-SYNC WALL (card schema == action ParamSpec, every
     // reference_images seat — every shared name syncs its bounds and
     // enums against the card schema, offenders empty)
     // 13 -> 12 (2026-10-13, the autoremesher excision — the pack the owner removed from the system): the quad-remesh card left the boarded set.
-    assert.equal(cards, 12, "the boarded-cards census changed — update this pin deliberately");
+    // 12 -> 13 (2026-10-27, the openjutsu lane, feature 023): the
+    // openjutsu card joins — the animate action's ParamSpec rows sync
+    // against the card schema (seed minted via the seed-sentinel rule,
+    // euler fixed, offenders empty).
+    assert.equal(cards, 13, "the boarded-cards census changed — update this pin deliberately");
     // RE-PINNED DOWN (same closeout order): the emptied field took
     // two shared-name pairs with it.
     // 636 -> 629 (2026-10-13, the autoremesher excision): the
@@ -1901,7 +1926,12 @@ describe("THE TWO-HOMES BOUNDS-SYNC WALL (card schema == action ParamSpec, every
     // half (the music3-scoped decode knob) and the action ParamSpec
     // half (music3's actions.ts row) landed in the same wave; one
     // agreeing pair; offenders stay empty.
-    assert.equal(pairs, 796, "the shared-name pair census changed — update this pin deliberately");
+    // 796 -> 838 (2026-10-27, the openjutsu lane, feature 023): the
+    // openjutsu card joins the boarded set — the animate action's
+    // ParamSpec rows sync against the card schema per carried
+    // address (length/width/height/steps/shift_video/shift_audio
+    // bounds + the seed sentinel; offenders empty).
+    assert.equal(pairs, 838, "the shared-name pair census changed — update this pin deliberately");
     assert.deepEqual(offenders, [], `two-homes drift (card schema vs action ParamSpec):\n${offenders.join("\n")}`);
   });
 });

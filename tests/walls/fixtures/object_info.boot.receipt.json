@@ -1,12 +1,12 @@
 {
- "derived_at": "2026-10-27T17:54:36.641Z",
+ "derived_at": "2026-10-27T19:04:21.043Z",
  "tool": "scripts/regen-node-vocab.mjs --boot",
  "source": {
   "path": "data/tmp/object_info_prod.json",
-  "sha256": "76fbe5214af0cdb0b1e1ea6aebbf6c732822cb83620b77870017ea9880ebc178",
-  "mtime_ms": 1793123259364.4866,
-  "class_count": 1676,
-  "origin": "capture"
+  "sha256": "092ebf94c70d599d4cd0633633b36bbd63e7a5868f1e32528083f006726d8cf6",
+  "mtime_ms": 1793127860803.4746,
+  "class_count": 1689,
+  "origin": "live"
  },
  "bootstrap_seed": {
   "path": "tests/walls/fixtures/object_info.boot.bootstrap.json",
@@ -15,14 +15,19 @@
  },
  "derivation": {
   "facts_path": "packages/engines/comfyui-cordis/data/model-facts.json",
-  "addressed_class_count": 95,
+  "addressed_class_count": 100,
   "bootstrap_class_count": 72,
-  "fixture_class_count": 167,
-  "rows_probed": 31,
+  "fixture_class_count": 171,
+  "rows_probed": 32,
   "refused_rows": 0
  },
  "delta": {
-  "added": [],
+  "added": [
+   "ManualSigmas",
+   "VHS_VideoCombine",
+   "ViggleAnimateConditioning",
+   "ViggleTextCondLoader"
+  ],
   "pruned": [],
   "updated": [],
   "reordered_keys": 0

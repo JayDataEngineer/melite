@@ -42,6 +42,7 @@ export const FAMILY_PKGS = [
     "@melite/models-gem-soma",
     "@melite/models-concat",
     "@melite/models-h3",
+    "@melite/models-viggle-animate",
 ];
 /** Load every family plugin, in table order. */
 export async function loadFamilies() {

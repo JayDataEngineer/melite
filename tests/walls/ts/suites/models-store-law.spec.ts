@@ -132,7 +132,10 @@ describe("THE MODELS-STORE LAW — real artifacts, no unnamed bytes", () => {
       // LLavacheckpoints pre-seed) and the STORE mirror (16 GB)
       // landed the same sweep, clearing the floor the wall's own
       // law names.
-      "packages/models/seedvr2-ema/src/index.ts: SEEDVR2/seedvr2_ema_3b_fp8_e4m3fn.safetensors",
+      // 2026-10-27 (the openjutsu lane, feature 023): the seedvr2
+      // fp8 row LEFT — the provision run behind this lane's whitelist
+      // cure (the serving Manager's own model-list mirror) landed it
+      // at the pinned digest (3bf1e43ebedd570e…, 3391544696 B).
       // 2026-11-08: the qwen-img-edit-21 consistency LoRA row LEFT
       // the floor the same day — the fetch landed sha-verified
       // (4f44ada1be21…) through Manager's declared-row channel, the
@@ -146,27 +149,18 @@ describe("THE MODELS-STORE LAW — real artifacts, no unnamed bytes", () => {
       // liveness-probed; the bytes are OWED until the first
       // ensure() lands them (the floor's own law: entries leave the
       // day the downloads land).
-      "packages/models/wd14/src/index.ts: wd14_tagger/wd-convnext-tagger-v3.csv",
+      // 2026-10-27 (the openjutsu lane, feature 023): the whitelist
+      // mirror cure revived the estate channel and the sweep landed
+      // every csv pair + the moat/convnextv2/convnext-v2/vit-v2
+      // onnx rows — eight onnx rows remain owed (read side stays
+      // the floor's own truth).
       "packages/models/wd14/src/index.ts: wd14_tagger/wd-convnext-tagger-v3.onnx",
-      "packages/models/wd14/src/index.ts: wd14_tagger/wd-eva02-large-tagger-v3.csv",
       "packages/models/wd14/src/index.ts: wd14_tagger/wd-eva02-large-tagger-v3.onnx",
-      "packages/models/wd14/src/index.ts: wd14_tagger/wd-swinv2-tagger-v3.csv",
       "packages/models/wd14/src/index.ts: wd14_tagger/wd-swinv2-tagger-v3.onnx",
-      "packages/models/wd14/src/index.ts: wd14_tagger/wd-v1-4-convnext-tagger-v2.csv",
-      "packages/models/wd14/src/index.ts: wd14_tagger/wd-v1-4-convnext-tagger-v2.onnx",
-      "packages/models/wd14/src/index.ts: wd14_tagger/wd-v1-4-convnext-tagger.csv",
       "packages/models/wd14/src/index.ts: wd14_tagger/wd-v1-4-convnext-tagger.onnx",
-      "packages/models/wd14/src/index.ts: wd14_tagger/wd-v1-4-convnextv2-tagger-v2.csv",
-      "packages/models/wd14/src/index.ts: wd14_tagger/wd-v1-4-convnextv2-tagger-v2.onnx",
-      "packages/models/wd14/src/index.ts: wd14_tagger/wd-v1-4-moat-tagger-v2.csv",
-      "packages/models/wd14/src/index.ts: wd14_tagger/wd-v1-4-moat-tagger-v2.onnx",
-      "packages/models/wd14/src/index.ts: wd14_tagger/wd-v1-4-swinv2-tagger-v2.csv",
       "packages/models/wd14/src/index.ts: wd14_tagger/wd-v1-4-swinv2-tagger-v2.onnx",
-      "packages/models/wd14/src/index.ts: wd14_tagger/wd-v1-4-vit-tagger-v2.csv",
       "packages/models/wd14/src/index.ts: wd14_tagger/wd-v1-4-vit-tagger-v2.onnx",
-      "packages/models/wd14/src/index.ts: wd14_tagger/wd-v1-4-vit-tagger.csv",
       "packages/models/wd14/src/index.ts: wd14_tagger/wd-v1-4-vit-tagger.onnx",
-      "packages/models/wd14/src/index.ts: wd14_tagger/wd-vit-tagger-v3.csv",
       "packages/models/wd14/src/index.ts: wd14_tagger/wd-vit-tagger-v3.onnx",
     ].sort();
     expect(missing.sort(), "provisions rows with no artifact at the declared path (new rows = silent DECL loss; rows gone from the floor = downloads landed, update the floor)").toEqual(OWED_FLOOR);

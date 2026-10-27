@@ -18,6 +18,10 @@
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "paths": {
+        "@melite/models-viggle-animate": ["./../viggle-animate/src/index.ts"],
+        "@melite/models-viggle-animate/mods/loras": ["./../viggle-animate/mods/loras.ts"],
+        "@melite/video-openjutsu": ["./../../video/openjutsu/src/index.ts"],
+        "@melite/video-openjutsu/card": ["./../../video/openjutsu/src/card.ts"],
         "@melite/contracts/familyLane": ["./../../web-kit/contracts/src/familyLane.ts"],
         "@melite/models-krea-2": ["./../krea-2/src/index.ts"],
         "@melite/models-krea-2/mods/loras": ["./../krea-2/mods/loras.ts"],

@@ -475,6 +475,11 @@ export const COVERAGE_BASELINE: Record<string, {
   '**/packages/models/h3/src/filmMix.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/models/h3/src/finalize.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/models/h3/src/index.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
+  // openjutsu lane, feature 023: first seat at the MAX of two scoped
+  // json-summary faces (h3/tests/reshoot.spec.ts + the walls seated
+  // spec), K=1 margin mint — the file is feature-024's in-flight
+  // reshoot module; its own spec carries the 100 face.
+  '**/packages/models/h3/src/reshoot.ts': { statements: 96.55, branches: 95, functions: 80, lines: 96.55 },
   '**/packages/models/h3/src/schema.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/models/h3/src/timelineContract.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/models/input/src/actions.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
@@ -520,6 +525,16 @@ export const COVERAGE_BASELINE: Record<string, {
   '**/packages/models/yue2/src/index.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/models/z-image/src/actions.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/models/z-image/src/index.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
+  // openjutsu lane, feature 023: first seats at the MAX of two scoped
+  // json-summary faces (decl.spec/card.spec + the walls seated spec),
+  // K=1 margin mint; actions' audio arms and card's fallback branches
+  // carry the honest sub-100 faces. openjutsu/src/index.ts is the
+  // plugin entry — unexercised at both scoped faces, floor 0/null
+  // spells that honestly.
+  '**/packages/models/viggle-animate/src/actions.ts': { statements: 92, branches: 75.68, functions: 85.71, lines: 93.48 },
+  '**/packages/models/viggle-animate/src/index.ts': { statements: 75, branches: null, functions: 50, lines: 66.67 },
+  '**/packages/video/openjutsu/src/card.ts': { statements: 94.44, branches: 78.57, functions: 75, lines: 94.12 },
+  '**/packages/video/openjutsu/src/index.ts': { statements: 0, branches: null, functions: 0, lines: 0 },
   '**/packages/motion/motion/src/card.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/motion/motion/src/client/upstream.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/motion/motion/src/index.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },

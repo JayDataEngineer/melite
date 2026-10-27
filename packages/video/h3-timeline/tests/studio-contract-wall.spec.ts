@@ -789,6 +789,16 @@ describe("the studio contract wall (Layer A writes only card truth)", () => {
       "fps_seconds", "preset",
       // THE PER-CALL RECIPE ROW: recipe-level, the axis layer owns it
       "audio_mode",
+      // THE RE-SHOOT KNOBS (feature 024): the camera re-shoot chain's
+      // eleven seats are agent/API-door authored only — the Layer-A
+      // serializer never emits them (the DECL.writes row names the
+      // law), the compose door owns their admission, and the reshoot
+      // wall (tests/walls/ts/suites/h3-reshoot-chain.spec.ts) owns
+      // their bounds + wiring. A studio panel for them is the card
+      // lane's follow-up.
+      "reshoot_enabled", "reshoot_clip", "reshoot_orbit", "reshoot_tilt",
+      "reshoot_dolly", "reshoot_zoom", "reshoot_pan", "reshoot_strength",
+      "reshoot_depth_ratio", "reshoot_smooth_depth", "reshoot_invert_depth",
       // length: CALL_KNOB_KEYS carries it (the span's per-call pin —
       // asserted by the arm below, listed here only for the error
       // message's clarity when reading failures)

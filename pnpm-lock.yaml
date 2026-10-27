@@ -524,6 +524,9 @@ importers:
       '@melite/models-trellis2-native':
         specifier: workspace:*
         version: link:../../models/trellis2-native
+      '@melite/models-viggle-animate':
+        specifier: workspace:*
+        version: link:../../models/viggle-animate
       '@melite/models-wd14':
         specifier: workspace:*
         version: link:../../models/wd14
@@ -539,6 +542,9 @@ importers:
       '@melite/video-h3-timeline':
         specifier: workspace:*
         version: link:../../video/h3-timeline
+      '@melite/video-openjutsu':
+        specifier: workspace:*
+        version: link:../../video/openjutsu
       '@stable-canvas/comfyui-client':
         specifier: ^1.5.9
         version: 1.5.9
@@ -1806,6 +1812,22 @@ importers:
         specifier: ^5.9.3
         version: 5.9.3
 
+  packages/models/viggle-animate:
+    dependencies:
+      '@melite/comfyui-card-kit':
+        specifier: workspace:*
+        version: link:../../engines/comfyui-card-kit
+    devDependencies:
+      '@deepseek-ai/cordis':
+        specifier: ^4.0.5
+        version: 4.0.5(@deepseek-ai/cordis-plugin-include@1.0.10)(@deepseek-ai/cordis-plugin-loader@1.0.6)
+      '@types/node':
+        specifier: ^22.20.0
+        version: 22.20.1
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
+
   packages/models/wd14:
     dependencies:
       '@melite/comfyui-card-kit':
@@ -2002,6 +2024,31 @@ importers:
       typescript:
         specifier: ~6.0.3
         version: 6.0.3
+
+  packages/video/openjutsu:
+    dependencies:
+      '@deepseek-ai/schemastery':
+        specifier: ^3.18.5
+        version: 3.18.5
+      '@melite/comfyui-card-kit':
+        specifier: workspace:*
+        version: link:../../engines/comfyui-card-kit
+      '@melite/contracts':
+        specifier: workspace:*
+        version: link:../../web-kit/contracts
+      '@melite/models-viggle-animate':
+        specifier: workspace:*
+        version: link:../../models/viggle-animate
+    devDependencies:
+      '@deepseek-ai/cordis':
+        specifier: ^4.0.5
+        version: 4.0.5(@deepseek-ai/cordis-plugin-include@1.0.10)(@deepseek-ai/cordis-plugin-loader@1.0.6)
+      '@types/node':
+        specifier: ^22.20.0
+        version: 22.20.1
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
 
   packages/web-kit/catalog:
     dependencies:
@@ -2399,6 +2446,9 @@ importers:
       '@deepseek-ai/dsh-api-gateway':
         specifier: 0.2.1-rc.2
         version: 0.2.1-rc.2(@deepseek-ai/cordis@4.0.5)
+      '@deepseek-ai/dsh-client-store':
+        specifier: 0.2.1-rc.2
+        version: 0.2.1-rc.2(@deepseek-ai/cordis@4.0.5)
       '@deepseek-ai/dsh-client-ui-commands':
         specifier: 0.2.1-rc.2
         version: 0.2.1-rc.2(@deepseek-ai/cordis@4.0.5)
@@ -2453,6 +2503,9 @@ importers:
       '@melite/video-h3-timeline':
         specifier: workspace:*
         version: link:../../video/h3-timeline
+      '@melite/video-openjutsu':
+        specifier: workspace:*
+        version: link:../../video/openjutsu
     devDependencies:
       '@deepseek-ai/cordis':
         specifier: ^4.0.5
@@ -2685,6 +2738,9 @@ importers:
       '@melite/models-trellis2-native':
         specifier: workspace:*
         version: link:../../models/trellis2-native
+      '@melite/models-viggle-animate':
+        specifier: workspace:*
+        version: link:../../models/viggle-animate
       '@melite/models-wd14':
         specifier: workspace:*
         version: link:../../models/wd14

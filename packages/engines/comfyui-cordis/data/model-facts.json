@@ -106,6 +106,18 @@
         }
       ]
     },
+    "openjutsu": {
+      "outputs": [
+        {
+          "label": "Swapped video",
+          "many": false,
+          "patterns": [
+            ".mp4",
+            ".webm"
+          ]
+        }
+      ]
+    },
     "sfx": {
       "outputs": [
         {
@@ -169,6 +181,14 @@
     }
   },
   "extension_node_types": {
+    "ComfyUI-CameraReference3D": [
+      "CameraReference3D",
+      "CameraTrajectoryExport",
+      "CameraPathFromVideo"
+    ],
+    "ComfyUI-CrossViewWarp": [
+      "CrossViewWarp"
+    ],
     "ComfyUI-Florence2": [
       "DownloadAndLoadFlorence2Model",
       "Florence2Run"
@@ -180,6 +200,12 @@
       "TripleCLIPLoaderGGUF",
       "UnetLoaderGGUF",
       "UnetLoaderGGUFAdvanced"
+    ],
+    "ComfyUI-KJNodes": [
+      "ImageConcatMulti",
+      "ImageSharpenKJ",
+      "ModelAttentionBackend",
+      "ModelPreviewOverrideKJ"
     ],
     "ComfyUI-LanPaint": [
       "LanPaint_AVDecode",
@@ -195,21 +221,9 @@
       "LanPaint_SamplerCustomAdvanced",
       "LanPaint_VideoMaskEditor"
     ],
-    "ComfyUI-KJNodes": [
-      "ImageConcatMulti",
-      "ImageSharpenKJ",
-      "ModelAttentionBackend",
-      "ModelPreviewOverrideKJ"
-    ],
     "ComfyUI-MiniMaxH3Mod": [
       "MiniMaxH3RefModApply",
       "MiniMaxH3RefModsLoader"
-    ],
-    "Comfyui_Minimax_h3_latent_Upscaler-Plus": [
-      "MinimaxH3LatentUpscalerNode2D",
-      "MinimaxH3LatentUpscaler3D",
-      "MinimaxH3LatentUpscaler3DProvider",
-      "MinimaxH3LatentUpscaler3DRefineHandoff"
     ],
     "ComfyUI-MoGe": [
       "MoGeGeometryToFOV"
@@ -223,6 +237,16 @@
       "VHS_LoadVideoPath",
       "VHS_VideoCombine"
     ],
+    "ComfyUI-Viggle-Animate-H3": [
+      "ViggleTextCondLoader",
+      "ViggleAnimateConditioning",
+      "ViggleAnimateConditioningWindowed",
+      "ViggleChunkedSampler",
+      "ViggleChunkLoopStart",
+      "ViggleSampleChunk",
+      "ViggleChunkLoopEnd",
+      "ViggleAssembleChunkLatents"
+    ],
     "ComfyUI-WD14-Tagger": [
       "WD14Tagger|pysssss"
     ],
@@ -233,25 +257,23 @@
       "PlagueKindBundleIn",
       "PlagueKindBundleOut"
     ],
+    "Comfyui_Minimax_h3_latent_Upscaler-Plus": [
+      "MinimaxH3LatentUpscalerNode2D",
+      "MinimaxH3LatentUpscaler3D",
+      "MinimaxH3LatentUpscaler3DProvider",
+      "MinimaxH3LatentUpscaler3DRefineHandoff"
+    ],
     "Comfyui_joytag": [
       "CXH_JoyTag"
+    ],
+    "Nvidia_RTX_Nodes_ComfyUI": [
+      "RTXVideoSuperResolution"
     ],
     "comfyui-h3-motion-context": [
       "MiniMaxH3MotionContext",
       "MiniMaxH3MotionContextLoadLatent",
       "MiniMaxH3MotionContextSaveLatent",
       "MiniMaxH3MotionContextTrim"
-    ],
-    "comfyui-minimax-h3-timeline-director": [
-      "MiniMaxH3FiniteAudioTrimTail",
-      "MiniMaxH3FiniteLatentContinuation",
-      "MiniMaxH3FiniteOutputTrim",
-      "MiniMaxH3FiniteSegmentFinalize",
-      "MiniMaxH3FiniteSegmentSampler",
-      "MiniMaxH3TimelineDirector",
-      "MiniMaxH3TimelineEncoder",
-      "MiniMaxH3TimelinePlanner",
-      "MiniMaxH3TimelineSelfLiftSampler"
     ],
     "comfyui-impact-pack": [
       "BboxDetectorSEGS",
@@ -263,8 +285,16 @@
     "comfyui-impact-subpack": [
       "UltralyticsDetectorProvider"
     ],
-    "Nvidia_RTX_Nodes_ComfyUI": [
-      "RTXVideoSuperResolution"
+    "comfyui-minimax-h3-timeline-director": [
+      "MiniMaxH3FiniteAudioTrimTail",
+      "MiniMaxH3FiniteLatentContinuation",
+      "MiniMaxH3FiniteOutputTrim",
+      "MiniMaxH3FiniteSegmentFinalize",
+      "MiniMaxH3FiniteSegmentSampler",
+      "MiniMaxH3TimelineDirector",
+      "MiniMaxH3TimelineEncoder",
+      "MiniMaxH3TimelinePlanner",
+      "MiniMaxH3TimelineSelfLiftSampler"
     ],
     "joycaption_comfyui": [
       "JJC_DownloadAndLoadJoyCaptionModel",
@@ -450,6 +480,9 @@
     "trellis2-native": {
       "card": "img-to-mesh"
     },
+    "viggle-animate": {
+      "card": "openjutsu"
+    },
     "wd14": {
       "card": "tagger"
     },
@@ -497,7 +530,6 @@
     "AudiocoreTTS",
     "AudiocoreVoiceEmbedding",
     "AudiocoreVoiceStudio",
-    "AutoRemesher",
     "BBOXToBoundingBoxKJ",
     "BOOLConstant",
     "BakeAmbientOcclusion",
@@ -597,7 +629,10 @@
     "CLIPVisionLoader",
     "CXH_JoyTag",
     "CameraAngle",
+    "CameraPathFromVideo",
     "CameraPoseVisualizer",
+    "CameraReference3D",
+    "CameraTrajectoryExport",
     "Canny",
     "CaseConverter",
     "CenterCropImages",
@@ -709,6 +744,7 @@
     "CropWithPadInfo",
     "CrossFadeImages",
     "CrossFadeImagesMulti",
+    "CrossViewWarp",
     "CurveEditor",
     "CustomCombo",
     "CustomControlNetWeightsFluxFromList",
@@ -1366,7 +1402,6 @@
     "MetaMuseImageTextToImageApi",
     "MiniMaxChunkFeedForward",
     "MiniMaxH3AddGuide",
-    "MiniMaxH3FilmConcat",
     "MiniMaxH3FiniteAudioTrimTail",
     "MiniMaxH3FiniteLatentContinuation",
     "MiniMaxH3FiniteOutputTrim",
@@ -1637,6 +1672,8 @@
     "RemoveNoiseMask",
     "RenderMesh",
     "RenderSplat",
+    "RenderSplatCinematic",
+    "RenderSplatPath",
     "RenderUVAtlas",
     "RenormCFG",
     "RepeatImageBatch",
@@ -2059,6 +2096,14 @@
     "ViduReferenceVideoNode",
     "ViduStartEndToVideoNode",
     "ViduTextToVideoNode",
+    "ViggleAnimateConditioning",
+    "ViggleAnimateConditioningWindowed",
+    "ViggleAssembleChunkLatents",
+    "ViggleChunkLoopEnd",
+    "ViggleChunkLoopStart",
+    "ViggleChunkedSampler",
+    "ViggleSampleChunk",
+    "ViggleTextCondLoader",
     "VisualBBoxCrop",
     "VisualCropAndResize",
     "VisualizeCUDAMemoryHistory",

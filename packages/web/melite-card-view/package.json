@@ -92,7 +92,8 @@
     "@melite/estate-runs": "workspace:*",
     "@melite/image-mask-studio": "workspace:*",
     "@melite/three-client": "workspace:*",
-    "@melite/video-h3-timeline": "workspace:*"
+    "@melite/video-h3-timeline": "workspace:*",
+    "@melite/video-openjutsu": "workspace:*"
   },
   "sideEffects": true,
   "files": [

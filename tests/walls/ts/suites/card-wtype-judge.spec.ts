@@ -81,7 +81,10 @@ import { cardPackages, loadCardDefs } from "@melite/comfyui-cordis";
 // (the textarea judged string/textarea, schema+UI walled at its
 // own seat, toJSON judge red-proofed there). A deliberate shrink,
 // argued here per this arm's own law.
-const CARD_ROSTER = 14;
+// 14 -> 15 (2026-10-27, the openjutsu lane, feature 023): the
+// openjutsu card joins the composition roster — nine fields judged
+// against the animate action's ParamSpec rows.
+const CARD_ROSTER = 15;
 // 466 (2026-11-06): input-prep's crop-studio field joined the estate.
 // 466 -> 467 (2026-11-08, the model choice): input-prep's scale_model
 // select — the standard upscale-model vocabulary (union of consts →

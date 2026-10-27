@@ -1,0 +1,39 @@
+{
+  "name": "@melite/models-viggle-animate",
+  "version": "0.1.5-pre-alpha",
+  "private": true,
+  "license": "AGPL-3.0-or-later",
+  "type": "module",
+  "description": "the viggle-animate family (the video lane) — Openjutsu character/subject swap in video: the MiniMax-H3 Ref2VA Viggle fine-tune (INT8 convrot pruned), the frozen text-embed single-shot lane, DMD 3-4 step envelope",
+  "exports": {
+    ".": {
+      "types": "./lib/index.d.ts",
+      "default": "./lib/index.js"
+    },
+    "./package.json": "./package.json",
+    "./mods/loras": {
+      "types": "./lib/mods/loras.d.ts",
+      "default": "./lib/mods/loras.js"
+    }
+  },
+  "dependencies": {
+    "@melite/comfyui-card-kit": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.0",
+    "typescript": "^5.9.3",
+    "@deepseek-ai/cordis": "^4.0.5"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build-mods.json && tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit"
+  },
+  "files": [
+    "lib/index.js",
+    "lib/**/*.js",
+    "lib/**/*.d.ts"
+  ],
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "^4.0.5"
+  }
+}

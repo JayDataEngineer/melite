@@ -75,6 +75,13 @@ export type EngineFacts = {
      *  provision row's own folder (loras/h3) when the stock root
      *  misses. */
     readonly loras?: string;
+    /** The frozen text-conditioning embed a lane loads INSTEAD of a
+     *  text encoder (viggle-animate's fixed_embed_fwd_anyframe — the
+     *  Qwen3-VL embedding computed once upstream; the conditioning
+     *  node takes the file, never text). Bare filename — the gate
+     *  probes lane_homes.text_cond at press (the store folder is the
+     *  engine's text_cond type). */
+    readonly text_cond?: string;
     /** The latent node class a lane composes (krea-2, z-image,
      *  anima pin the literal; the action's own facts door enforces
      *  the spelling). */

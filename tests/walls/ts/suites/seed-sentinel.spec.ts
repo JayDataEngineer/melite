@@ -226,6 +226,9 @@ describe("GATE S: the seed sentinel mints at render", () => {
         "skin/src/actions.ts",
         "transfer-rig/src/actions.ts",
         "trellis2-native/src/actions.ts",
+        // 2026-10-27, the openjutsu lane: viggle-animate's animate
+        // action mints through the same sentinel.
+        "viggle-animate/src/actions.ts",
         "wd14/src/actions.ts",
         "yue2/src/actions.ts",
         "z-image/src/actions.ts",

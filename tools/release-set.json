@@ -1,7 +1,7 @@
 {
   "tag": "v0.1.5-pre-alpha",
   "version": "0.1.5-pre-alpha",
-  "count": 78,
+  "count": 80,
   "names": [
     "@melite-plugin/dsh-card-deck",
     "@melite-plugin/dsh-card-view",
@@ -73,12 +73,14 @@
     "@melite/models-somax",
     "@melite/models-transfer-rig",
     "@melite/models-trellis2-native",
+    "@melite/models-viggle-animate",
     "@melite/models-wd14",
     "@melite/models-yue2",
     "@melite/models-z-image",
     "@melite/motion-motion",
     "@melite/three-client",
     "@melite/video-h3-timeline",
+    "@melite/video-openjutsu",
     "@melite/viewer",
     "@melite/viewer-base"
   ]

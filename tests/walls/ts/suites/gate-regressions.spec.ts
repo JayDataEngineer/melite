@@ -601,7 +601,10 @@ describe("THE COMMITTED LIB (an emitted import Node can actually resolve)", () =
   // 617 (2026-10-27): h3's reshoot.js — the camera re-shoot chain module
   // (audit 024): VDA depth trio + CrossViewWarp double pass + the
   // disocclusion mask, armed per-compose on the h3 card.
-  const LIB_CENSUS_PIN = 617;
+  // 622 (2026-10-27): the openjutsu lane's five lib faces (audit 023)
+  // — viggle-animate's actions/index/mods-loras + openjutsu's
+  // card/index: the swap family and its boarding card, one landing.
+  const LIB_CENSUS_PIN = 622;
   const specRe = /(?:from\s*|import\(\s*)(["'])(\.[^"']*)\1/g;
 
   it("the census is exact (a deletion OR a lowered floor reds — the count is pinned, not floored)", () => {

@@ -8,14 +8,14 @@
     "noEmit": false,
     "noEmitOnError": true,
     "declaration": true,
-    "emitDeclarationOnly": false,
+    "declarationMap": true,
     "sourceMap": true,
+    "emitDeclarationOnly": false,
     "incremental": false,
     "composite": false,
     "outDir": "lib",
     "rootDir": "src",
-    "paths": {},
-    "declarationMap": true
+    "paths": {}
   },
   "include": [
     "src/**/*.ts",

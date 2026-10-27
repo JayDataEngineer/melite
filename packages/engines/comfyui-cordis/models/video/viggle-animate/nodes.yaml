@@ -1,0 +1,40 @@
+# video/viggle-animate ComfyUI extension dependencies (the openjutsu lane)
+extensions:
+- name: ComfyUI-Viggle-Animate-H3
+  url: https://github.com/bhardwajRahul/ComfyUI-Viggle-Animate-H3
+  # The vendored twin (vendor/comfyui_extensions/, submodule pin 6ae081af)
+  # is the same commit; the /tmp staging checkout's git origin is this
+  # repo (the pyproject's Repository url still names the Saganaki22
+  # parent the fork descends from — the origin that serves the pin is
+  # this one, verified 2026-10-27 at the staging checkout).
+  ref: 6ae081af5b3175f99ef7cddebd5dfaf93390ab70
+  required: true
+  desc: >-
+    The openjutsu swap lane's engine pack (Apache-2.0, v1.3.2). Graph-addressed
+    classes: ViggleTextCondLoader (frozen text conditioning from
+    models/text_cond/), ViggleAnimateConditioning (the ref2va conditioning:
+    cond_video + ref_image + text_cond -> positive/latent), and the lane's
+    secondary paths — ViggleAnimateConditioningWindowed / ViggleChunkedSampler /
+    ViggleChunkLoopStart / ViggleSampleChunk / ViggleChunkLoopEnd /
+    ViggleAssembleChunkLatents (the chunked multi-window lanes, unboarded
+    until a lane needs them). DMD lora required on the active path (strength
+    1.0 + the 4-point sigma schedule). Pip: nothing beyond the ComfyUI base env.
+- name: ComfyUI-CrossViewWarp
+  url: https://github.com/cseti007/ComfyUI-CrossViewWarp
+  ref: 3266a83a84eaa6833a9ebc38ac7cdd8789e44f5b
+  required: true
+  desc: >-
+    CrossViewWarp (Apache-2.0, v0.11.0) — depth-warp conditioning node for
+    the CrossView-Warp IC-LoRA. Declared beside the swap lane so a composed
+    camera move can ride the same engine; no openjutsu graph addresses its
+    class yet (CrossViewWarp). Pip: nothing beyond the ComfyUI base env.
+- name: ComfyUI-CameraReference3D
+  url: https://github.com/lovemachine100/ComfyUI-CameraReference3D
+  ref: 3b360a2bc76bd46b8367ab72384e0a71bb8bf701
+  required: true
+  desc: >-
+    CameraReference3D (MIT, kongo_jun, v3.0.1) — model-agnostic camera-motion
+    hub: CameraReference3D (parametric moves + timeline DSL), CameraTrajectoryExport,
+    CameraPathFromVideo. Declared beside the swap lane for camera-driven swap
+    compositions; no openjutsu graph addresses its classes yet. Pip: numpy +
+    Pillow (both core-provided by the ComfyUI base env).

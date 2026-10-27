@@ -2,6 +2,10 @@
   "compilerOptions": {
     "noEmitOnError": true,
       "paths": {
+        "@melite/models-viggle-animate": ["./../../models/viggle-animate/src/index.ts"],
+        "@melite/models-viggle-animate/mods/loras": ["./../../models/viggle-animate/mods/loras.ts"],
+        "@melite/video-openjutsu": ["./../../video/openjutsu/src/index.ts"],
+        "@melite/video-openjutsu/card": ["./../../video/openjutsu/src/card.ts"],
         "@melite/contracts/familyLane": ["./../contracts/src/familyLane.ts"],
         "@melite/models-fibo2-edit": ["./../../models/fibo2-edit/src/index.ts"],
         "@melite/models-fibo2-edit/mods/loras": ["./../../models/fibo2-edit/mods/loras.ts"],

@@ -76,6 +76,7 @@ export const EngineFacts = z.object({
     background_removal: z.string().required(false),
     checkpoint: z.string().required(false),
     loras: z.string().required(false),
+    text_cond: z.string().required(false),
     latent_node: z.string().required(false),
     sampling_shift: z.number().required(false),
     max_images: z.number().min(1).required(false),

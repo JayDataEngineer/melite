@@ -482,6 +482,12 @@
   "@melite/models-trellis2-native": [
     "./packages/models/trellis2-native/src/index.ts"
   ],
+  "@melite/models-viggle-animate": [
+    "./packages/models/viggle-animate/src/index.ts"
+  ],
+  "@melite/models-viggle-animate/mods/loras": [
+    "./packages/models/viggle-animate/mods/loras.ts"
+  ],
   "@melite/models-wd14": [
     "./packages/models/wd14/src/index.ts"
   ],
@@ -526,6 +532,12 @@
   ],
   "@melite/video-h3-timeline/tool": [
     "./packages/video/h3-timeline/src/tool.ts"
+  ],
+  "@melite/video-openjutsu": [
+    "./packages/video/openjutsu/src/index.ts"
+  ],
+  "@melite/video-openjutsu/card": [
+    "./packages/video/openjutsu/src/card.ts"
   ],
   "@melite/catalog": [
     "./packages/web-kit/catalog/src/index.ts"

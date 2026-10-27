@@ -530,6 +530,26 @@ export async function stepModels(): Promise<boolean> {
         warn("  [model] ComfyUI-Manager is not installed yet — local " +
           "model-list NOT written (run the extensions step first)");
       }
+      // THE SERVING MANAGER'S OWN LIST: a deployment may provision the
+      // managed store while a BYO engine serves (the endpoint
+      // statement's engine_root). Manager whitelists every
+      // install_model against ITS install dir's model-list.json —
+      // leave that seat on a stale file and every estate row 400s
+      // ("Invalid model install request"), whatever the managed copy
+      // says. Mirror the write when the serving tree carries its own
+      // Manager install.
+      const engineRoot = String(cfg["engine_root"] ?? "")
+        .trim().replace(/\/+$/u, "");
+      if (engineRoot !== "") {
+        const engineListPath = join(engineRoot, "custom_nodes",
+          "comfyui-manager", "model-list.json");
+        if (existsSync(dirname(engineListPath)) &&
+            engineListPath !== listPath) {
+          writeManagerLocalModelList(engineListPath, rows);
+          info("  [model] serving Manager whitelist mirrored: " +
+            engineListPath);
+        }
+      }
       ensureManagerSecurityWeak(join(runtime(), "user", "__manager", "config.ini"));
     }
     let ok = 0, bad = 0, skipped = 0, planned = 0;

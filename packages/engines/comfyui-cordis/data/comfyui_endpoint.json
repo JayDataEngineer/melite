@@ -17,6 +17,7 @@
     "LLM": "LLM",
     "text_encoders": "text_encoders",
     "ultralytics": "ultralytics",
-    "latent_upscale_models": "latent_upscale_models"
+    "latent_upscale_models": "latent_upscale_models",
+    "text_cond": "text_cond"
   }
 }

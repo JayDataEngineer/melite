@@ -57,6 +57,7 @@ export const FAMILY_PKGS: readonly string[] = [
   "@melite/models-gem-soma",
   "@melite/models-concat",
   "@melite/models-h3",
+  "@melite/models-viggle-animate",
 ]
 
 /** Load every family plugin, in table order. */

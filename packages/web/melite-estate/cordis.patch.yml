@@ -91,3 +91,5 @@
       name: '@melite/models-concat'
     - id: family-h3
       name: '@melite/models-h3'
+    - id: family-viggle-animate
+      name: '@melite/models-viggle-animate'

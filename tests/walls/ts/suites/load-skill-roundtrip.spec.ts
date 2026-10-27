@@ -110,7 +110,12 @@ interface SkillLine { id?: string }
 // cinemadir skill (src/agents/skills/cinemadir/SKILL.md) rides the
 // card walk like its three siblings — round-tripped 200 + body in the
 // arm above; row cards-cinemadir-skill walls its content.
-const EXPECTED_CARD_SKILLS = 34;
+// 34 → 35 (2026-10-27, the openjutsu lane, feature 023): the
+// openjutsu card's openjutsu skill (src/agents/skills/openjutsu/
+// SKILL.md) rides the card walk like its siblings — round-tripped
+// 200 + body in the arm above; the byte-equal served twin is the
+// seated wall's own arm (viggle-openjutsu-seated.spec.ts).
+const EXPECTED_CARD_SKILLS = 35;
 // 8 → 11 (2026-10-11): object-forge's skillRefs — image-gen +
 // img-to-mesh card lines and z-image's prompt-enhance ride the flow
 // bundle (card:quad-remesh resolves null — the card ships no agent
