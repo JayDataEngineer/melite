@@ -7,10 +7,19 @@
 # job moved to pre-push — the staged-set gates ride {push_files}, the
 # wholesale gates ride nothing, and `git commit` is instant. The
 # commit stage judged the same tree the push stage judges, twice per
-# wave; the second run bought nothing but dead minutes. The residual
-# gap (all pre-push jobs skipped on a no-upstream first push —
-# lefthook's empty-push-set law, documented at the profanity job)
-# is backstopped by the wall suite on every root test run.
+# wave; the second run bought nothing but dead minutes. THE RESIDUAL
+# GAP, CORRECTED (audit 018 C3b, lefthook 2.1.12 probation 2026-10-27):
+# the once-documented "no-upstream first push skips everything" law
+# is DEAD on this pin — probed five push shapes and every one with
+# commits fires every job, {push_files} resolving on all of them.
+# The REAL skip is the EMPTY-PUSH-SET law: tag-only pushes fire
+# pre-push and skip every {push_files}/{staged_files}/{all_files}-
+# scoped job ("no matching push files"). So the LAST job below is the
+# push-set sentry (skip:false — exempt from the empty-set skip): it
+# derives and PRINTS the push set from git itself, so an all-skipped
+# push still certifies EMPTY aloud at the hook, and a set-carrying
+# push names what the scoped gates judged. No skip is silent: every
+# job's skip is either its own logged stand-down or impossible.
 
 pre-push:
   jobs:
@@ -129,7 +138,7 @@ pre-push:
     # (profanity-gate.spec.ts) and the history baseline are the
     # backstops, the battery's own "second seat" doctrine.
     #
-    # PHASE 2 (range): --history @{push}..HEAD judges every commit the
+    # RANGE (audit history law, 2026-10-26): --history @{push}..HEAD judges every commit the
     # push would add IN ITS OWN TREE (git ls-tree + cat-file --batch,
     # streamed, never a checkout) — commit A adds profanity, commit B
     # removes it, the clean tip must not smuggle the blob into
@@ -146,3 +155,21 @@ pre-push:
       # on); green sweeps it. mkdir first — a fresh clone has no
       # .scratch (the GT-02 lesson).
       run: mkdir -p .scratch && node tools/profanity-gate.mjs packages scripts tools lefthook.yml --history '@{push}..HEAD' > .scratch/hook-profanity.$$.log 2>&1; code=$?; tail -n 20 .scratch/hook-profanity.$$.log; if [ $code -ne 0 ]; then echo "profanity log kept at .scratch/hook-profanity.$$"; exit $code; fi; rm -f .scratch/hook-profanity.$$.log; exit $code
+
+    # THE PUSH-SET SENTRY (audit 018 C3b, lefthook 2.1.12 probation
+    # 2026-10-27): the LAST job on every push. It derives the push set
+    # from git itself and PRINTS it (count + basis + tip), so the
+    # hook summary names what the scoped gates just judged. The
+    # verified truth it does NOT claim: on the EMPTY push set
+    # (tag-only push of already-pushed history on a tracking branch)
+    # it stands down WITH every other job — `skip: false` does not
+    # exempt any job from the empty-set skip (D2). That stand-down is
+    # still LOUD, not silent: the summary prints every job's "(skip)
+    # no matching push files" line, and the hook-config wall proves
+    # the lemma that makes the skip SAFE — a skipped push carries
+    # zero new commits, so no unjudged code can ride it. A push
+    # carrying commits ALWAYS runs the gates above (upstream or not:
+    # no-upstream pushes resolve their set and fire everything).
+    - name: push-set sentry (the loud stand-down)
+      skip: false
+      run: node tools/push-set-sentry.mjs
