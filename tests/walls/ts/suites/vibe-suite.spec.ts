@@ -37,6 +37,15 @@
 //      the derivation, refuses an undeclared input lane by name, and
 //      names its landing state (landed_and_compiling |
 //      landed_not_compiling + structured remedy | ambiguous_no_write).
+//   7. THE LIVE WALK (the seamless charter, 2026-11-12) — a
+//      deterministic minimal agent walks the REAL doors per scenario
+//      (discover → load → construct over the real defs, ranking, load
+//      plane, and construct grammar) and the wall pins the MEASURED
+//      cost (calls / refusals / doc-reads) as the ratchet's first
+//      LIVE notch. The census above pins the transcript's history;
+//      this arm pins what today's doors COST — the numbers are read
+//      from the walk's own counters, so a door that regresses (a new
+//      demanded pre-read, a refused first compose) reds here.
 //
 // Run: npx vitest run --project walls tests/walls/ts/suites/vibe-suite.spec.ts
 import "../../../helpers/boot-models.ts";
@@ -45,11 +54,13 @@ import assert from "node:assert/strict";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { loadCardDefs } from "../../../../packages/engines/comfyui-cordis/src/cardDefs.ts";
-import { searchCards } from "../../../../packages/harness/estate-queue/src/discloseRegistry.ts";
+import { searchCards, searchFlows, flowSummaryRows } from "../../../../packages/harness/estate-queue/src/discloseRegistry.ts";
 import { loadCard } from "../../../../packages/harness/estate-queue/src/loadPlane.ts";
 import { checkAnimaPromptTags } from "../../../../packages/models/anima/src/promptTags.ts";
+import { meliteDiscover } from "../../../../packages/harness/melite-tools/src/tools/melite-discover.ts";
 import { meliteLoad } from "../../../../packages/harness/melite-tools/src/tools/melite-load.ts";
 import { meliteConstruct } from "../../../../packages/harness/melite-tools/src/tools/melite-construct.ts";
+import { skillRead } from "../../../../packages/harness/melite-tools/src/tools/skill-read.ts";
 import { fakeEstate, fakeEstateRecorded } from "../../../../packages/harness/melite-tools/test/fake-estate.ts";
 import { fakeExec } from "../../../../packages/harness/melite-tools/test/fake-exec.ts";
 
@@ -370,6 +381,170 @@ const ONE_SEAT_REGISTER = new Map<string, string>([
   // so the drift is visible, retired by the lane-digest slice.
   ["image-edit:use_stock_nodes", "EXECUTION INTERNAL on the agent face — Slice 4 candidate for retirement, not a UI gap"],
 ]);
+
+describe("THE LIVE WALK — the measured door cost of the ideal path (the ratchet's first LIVE notch)", () => {
+  // THE SEAMLESS CHARTER (operator 2026-11-12: "it should be as
+  // intuitive for the ai to gen as coding or using tools"): the
+  // census pins the TRANSCRIPT's historical burn; nothing measured
+  // the composed path LIVE. This arm walks the REAL doors with a
+  // deterministic minimal agent — the eval encodes WHAT it wants
+  // (the target card and its params, all of them taught by the
+  // doors' own served surfaces); the doors decide what that COSTS.
+  // REAL: the card defs, the ranking (searchCards/searchFlows), the
+  // load plane (loadCard), and the construct grammar (the schema
+  // gate, unknown-lane refusal, deriveParams — all judge the walk's
+  // first compose for real). STUBBED GREEN: the gateway's CAS bench
+  // write and the server-side compile verdict (their friction class
+  // is the server's; a minimal green bench write exercises the
+  // client grammar every real write rides).
+  // THE POLICY OBEYS THE VOICE: when the load voice DEMANDS a
+  // pre-compose skill read (the prompting law), the walk pays it —
+  // the cost is the DOOR's, never baked away in the policy. The
+  // notch below is the ceiling the charter names: three calls, zero
+  // refusals, zero doc-reads on every one of the four scenarios.
+  const WALK_TARGET = 3; // Ct<=3 — discover, load, construct: one call each
+
+  interface WalkCost { calls: number; refusals: number; docReads: number; landing: string; voice: string[] }
+
+  /** One scenario's walk. @param defs the real card defs (one boot for the whole suite). */
+  async function walkScenario(
+    defs: Awaited<ReturnType<typeof loadCardDefs>>,
+    row: { id: string; sentence: string; card: string; params: Record<string, unknown>; tags?: string },
+  ): Promise<WalkCost> {
+    const cost: WalkCost = { calls: 0, refusals: 0, docReads: 0, landing: "", voice: [] };
+    // THE REAL SEAT LANES: discover and loadCard serve the real
+    // planes; the bench lanes carry a minimal CAS bench (rev++
+    // per write, the stage appended); runsValidate serves the green
+    // verdict the real registry would give a correct compose.
+    let benchRev = 0;
+    const benchStages: Array<Record<string, unknown>> = [];
+    const { estate } = fakeEstate({
+      discover: (lookup: string, q: string, tags: string) => ({
+        flows: lookup === "cards" ? [] : searchFlows(flowSummaryRows(ROOT), q),
+        cards: lookup === "flows" ? [] : searchCards(defs, q, tags),
+      }),
+      loadCard: (_t: string, name: string) => ({ bundle: loadCard(ROOT, { defsSync: () => defs } as never, null, name) }),
+      benchGet: () => ({ rev: benchRev, stages: benchStages }),
+      benchEnsure: () => ({ ok: true }),
+      benchVerb: (_s: string, verb: string, doc: Record<string, unknown>) => {
+        if (verb !== "add_stage") throw new Error(`live walk: bench verb ${verb} is not stubbed (the walk composes once)`);
+        benchStages.push({ id: `s_${benchStages.length}`, card: doc["card"], params: doc["params"] ?? {} });
+        benchRev += 1;
+        return { rev: benchRev, stage: `s_${benchStages.length - 1}` };
+      },
+      runsValidate: () => ({ ok: true }),
+      skillRead: (id: string) => ({ id, text: "# the style law (served body)" }),
+    });
+    const discover = meliteDiscover(estate, () => {});
+    const load = meliteLoad(estate, {});
+    const construct = meliteConstruct(estate);
+    const skill = skillRead(estate);
+    const exec = fakeExec(AbortSignal.timeout(5000));
+    const render = (tool: typeof load, args: unknown, value: unknown): string =>
+      (tool.output.render(args, value) as Array<{ text?: string }>).map((p) => p?.text ?? "").join("\n");
+
+    // 1. DISCOVER — the user's own sentence is the query (one call;
+    // a miss falls back to the modality tag, the door's own taught
+    // remedy, and a second miss fails the walk: the door lost the
+    // agent).
+    cost.calls += 1;
+    let dv = await discover.execute({ q: row.sentence }, exec) as { cards?: Array<{ id?: string }> };
+    let rows = Array.isArray(dv.cards) ? dv.cards.map((c) => String(c?.id ?? "")) : [];
+    if (!rows.includes(row.card)) {
+      cost.calls += 1;
+      dv = await discover.execute({ q: "", tags: row.tags ?? "video,image,audio" }, exec) as typeof dv;
+      rows = Array.isArray(dv.cards) ? dv.cards.map((c) => String(c?.id ?? "")) : [];
+    }
+    assert.ok(rows.includes(row.card), `${row.id}: discover serves the target card ${row.card} (got: ${rows.slice(0, 5).join(", ")})`);
+
+    // 2. LOAD — the digest first; the walk obeys the voice verbatim.
+    cost.calls += 1;
+    const lv = await load.execute({ name: row.card, inference_type: "card" }, exec) as { bundle?: unknown; error?: string };
+    assert.ok(!lv.error, `${row.id}: the load must not refuse the discovered card (${lv.error})`);
+    const digest = render(load, { name: row.card, inference_type: "card" }, lv);
+    cost.voice.push(digest);
+    const required = /params: \d+ \(required: ([^)]*)\)/.exec(digest)?.[1] ?? "";
+    const requiredNames = required === "" || required === "none" ? [] : required.split(", ").map((s) => s.trim());
+
+    // 2a. THE PROMPTING LAW — when the voice DEMANDS a pre-compose
+    // skill read, the honest agent pays it (this is the door's cost,
+    // not the policy's choice; the craft line that already rode is
+    // the door's own cure to make).
+    if (/prompting: read the per-model prompt rules/.test(digest)) {
+      const demanded = /melite_skill_read: .*/.exec(digest)?.[0] ?? "";
+      const id = (/(model:[\w.-]*:prompt-enhance)/.exec(demanded) ?? /.*/.exec(demanded))?.[1] ?? "";
+      assert.ok(id !== "", `${row.id}: the demanding voice names a skill id the agent can read`);
+      cost.calls += 1;
+      cost.docReads += 1;
+      await skill.execute({ id }, exec);
+    }
+
+    // 2b. NAME SUFFICIENCY — every param the walk composes must be
+    // taught by the served surface (the digest's required names, the
+    // always-riding agents md, or the craft line); an untaught name
+    // costs the detail re-read (a doc-read class cost).
+    const untaught = Object.keys(row.params).filter((k) => !requiredNames.includes(k) && !digest.includes(k));
+    if (untaught.length > 0) {
+      cost.calls += 1;
+      cost.docReads += 1;
+      const full = await load.execute({ name: row.card, inference_type: "card", detail: true }, exec) as typeof lv;
+      const fullVoice = render(load, { name: row.card, inference_type: "card", detail: true }, full);
+      cost.voice.push(fullVoice);
+      for (const k of untaught) {
+        assert.ok(fullVoice.includes(k), `${row.id}: param ${k} is served by the full surface (a name no face teaches is a wall gap)`);
+      }
+    }
+
+    // 3. CONSTRUCT — the first compose must land (a refusal here is
+    // door friction the walk exposes, never retried away).
+    cost.calls += 1;
+    let landing = "";
+    try {
+      const cv = await construct.execute({ verb: "add_stage", card: row.card, params: row.params }, exec) as Record<string, unknown>;
+      if (cv["ok"] === false || typeof cv["error"] === "string" || typeof cv["error_kind"] === "string") {
+        cost.refusals += 1;
+        assert.fail(`${row.id}: the first compose refused: ${JSON.stringify(cv)}`);
+      }
+      landing = typeof cv["landing"] === "string" ? cv["landing"] : "(no landing state)";
+      assert.equal(benchStages.length, 1, `${row.id}: exactly one stage minted on the shared bench`);
+      assert.deepEqual(benchStages[0]?.["card"], row.card, `${row.id}: the minted stage carries the walked card`);
+    } catch (e) {
+      cost.refusals += 1;
+      throw e;
+    }
+    cost.landing = landing;
+    return cost;
+  }
+
+  it("all four scenarios walk the real doors at the charter's ceiling: three calls, zero refusals, zero doc-reads", async () => {
+    const defs = await loadCardDefs();
+    const scenarios = [
+      {
+        id: "girl", sentence: "Make an image of an anime girl.", card: "image-gen", tags: "image",
+        params: { prompt: "1girl, silver hair, school uniform, cherry blossums, soft light" },
+      },
+      {
+        id: "clips", sentence: "Turn this image into the video. I want it to be two short clips combined.", card: "h3-timeline", tags: "video",
+        params: { image: "$image1", keyframes: [{ frame: 0, image: "$image1" }, { frame: 48, image: "$image2" }] },
+      },
+      {
+        id: "talk", sentence: "Make this character talk with a cinematic voice.", card: "tts", tags: "audio",
+        params: { text: "We were never meant to survive this night.", style_instruction: "cinematic, low, close-mic" },
+      },
+      {
+        id: "upscale", sentence: "Upscale this video to 4K resolution.", card: "upscale-tools", tags: "image",
+        params: { input_image: "$image1", resolution: 2160 },
+      },
+    ];
+    for (const row of scenarios) {
+      const cost = await walkScenario(defs, row);
+      assert.equal(cost.calls, WALK_TARGET, `${row.id}: Ct=${cost.calls} — discover, load, construct, one call each (ceiling Ct<=3)`);
+      assert.equal(cost.refusals, 0, `${row.id}: Cr=${cost.refusals} — the first compose lands (Cr=0)`);
+      assert.equal(cost.docReads, 0, `${row.id}: Cd=${cost.docReads} — the served surface suffices (Cd=0)`);
+      assert.equal(cost.landing, "landed_and_compiling", `${row.id}: the landing names its state`);
+    }
+  });
+});
 
 describe("THE ONE SEAT — the agent face and the UI face are two projections of one declared truth", () => {
   it("every face difference is derivable (mods / hidden / inputs / selector) or NAMED — and the register equals the live residue", async () => {

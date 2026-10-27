@@ -181,6 +181,10 @@ export function meliteLoad(
           out.push(`weights: ${present}/${hints.length} boarded checkpoints present on this machine (provisioning is the estate's business — compose the card)`)
         }
         const sig = b.signature
+        // hoisted for the prompting law below (the craft-defer cure):
+        // the craft hint is the SERVED style law — the prompting line
+        // must know whether the voice already carries it.
+        let craftHint = ''
         if (sig !== null && sig !== undefined) {
           const props = sig.params_schema?.properties
           const keys = props !== undefined && props !== null ? Object.keys(props) : []
@@ -200,7 +204,7 @@ export function meliteLoad(
           // to read a craft manual per request to learn it. The
           // FORMATTING half is applied at the write door, so this line
           // tells the agent what to write, never how to spell it.
-          const craftHint = typeof b.craft?.prompt_hint === 'string' ? b.craft.prompt_hint : ''
+          craftHint = typeof b.craft?.prompt_hint === 'string' ? b.craft.prompt_hint : ''
           if (craftHint !== '') out.push('prompt style: ' + craftHint)
           // THE MODS LINE (stroke 79 — the seam-law unification): the
           // same kinds the UI form-spec serves, one line for the
@@ -416,8 +420,21 @@ export function meliteLoad(
           // in another model's style yields the wrong picture, so the
           // load names the duty instead of leaving it to be guessed —
           // the ids never carried it.
+          // THE CRAFT-DEFER CURE (the seamless charter's live walk,
+          // 2026-11-12 — the walk's first MEASURED friction: the
+          // demanding line below cost a skill read even when the
+          // craft line had already served the style on the same
+          // voice, pinning Ct=4/Cd=1 on the bread-and-butter case).
+          // When the craft hint rides, it IS the style law for the
+          // compose at hand: the line points at what was served, and
+          // the skill stays the deepening door (an unusual ask), never
+          // a pre-compose toll. A card with prompt-enhance skills and
+          // NO craft hint keeps the demanding law — the style is
+          // otherwise unknown.
           if (skills.some((s) => /prompt-enhance/.test(str(s?.id)))) {
-            out.push('prompting: read the per-model prompt rules with melite_skill_read BEFORE writing a prompt — every model wants a different style (comma tags for the anime models, prose for others)')
+            out.push(craftHint !== ''
+              ? 'prompting: the prompt style line above is the law — write from it; melite_skill_read deepens it when the ask is unusual (never a required pre-read)'
+              : 'prompting: read the per-model prompt rules with melite_skill_read BEFORE writing a prompt — every model wants a different style (comma tags for the anime models, prose for others)')
           }
         }
         const digest = str(b.digest)
