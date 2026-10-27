@@ -501,6 +501,22 @@ describe("THE LIVE WALK — the measured door cost of the ideal path (the ratche
 
     // 3. CONSTRUCT — the first compose must land (a refusal here is
     // door friction the walk exposes, never retried away).
+    // 3a. TAUGHT SEQUENCING (the first real transcript, session
+    // 4a849511, 2026-11-12: the agent QUOTED the description —
+    // "read … 'the state — always start here' … a good idea before
+    // add_stage" — and paid a bench read the bench did not need).
+    // The policy obeys the tool's own taught sequencing: when the
+    // construct description demands an unconditional pre-read, the
+    // walk pays it. The copy cure (start-here scoped to the
+    // stage-addressing verbs; add_stage needs no prior read) is
+    // proven HERE — the walk's notch is 3, and an inducing copy reds
+    // it at 4.
+    const constructDesc = String((construct.parameters as { description?: unknown } | undefined)?.description ?? "")
+      + String(((construct.parameters as { properties?: Record<string, { description?: string }> } | undefined)?.properties ?? {}).verb?.description ?? "");
+    if (/always start here/.test(constructDesc)) {
+      cost.calls += 1;
+      await construct.execute({ verb: "read" }, exec);
+    }
     cost.calls += 1;
     let landing = "";
     try {

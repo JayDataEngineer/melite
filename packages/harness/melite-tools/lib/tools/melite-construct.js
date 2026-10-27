@@ -819,7 +819,7 @@ export function meliteConstruct(estate, opts = {}) {
                 ? 'This never executes (melite_flow runs what is here; the user presses Run). '
                 : 'You compose the flow and edit its state here, live with the user — runs start at the user\'s Run press, never yours. ')
             + 'Verbs: read (the state — '
-            + 'always start here; a stage that has run carries last_run {run_id, status, artifacts} — null + runs '
+            + 'start here before patch/rewire/remove_stage (verbs that address an existing stage need its state); add_stage needs NO prior read — it mints its own id and grows the bench; a stage that has run carries last_run {run_id, status, artifacts} — null + runs '
             + '{checked, total, matched} when the draft has no run in the window; view a run_id with melite_view, '
             + 'chain it with {stage, output}) | load (replace stages wholesale — DESTRUCTIVE on THE CONVERSATION\'S '
             + 'SHARED BENCH: this is the bench the user watches in their cards tab, and overwrite:true replaces whatever '
@@ -836,7 +836,7 @@ export function meliteConstruct(estate, opts = {}) {
                 type: 'string',
                 required: true,
                 enum: ['read', 'load', 'patch', 'add_stage', 'remove_stage', 'clear', 'floor', 'rewire', 'undo', 'validate'],
-                description: 'REQUIRED — the schema refuses a call without it, and no payload ever derives one (a WRITE is never guessed; slice 5, the agent-flow rework). read (the state — always start here) | load | patch | add_stage | remove_stage | clear | floor | rewire | undo | validate.',
+                description: 'REQUIRED — the schema refuses a call without it, and no payload ever derives one (a WRITE is never guessed; slice 5, the agent-flow rework). read (the state — before patch/rewire/remove_stage; add_stage needs no prior read) | load | patch | add_stage | remove_stage | clear | floor | rewire | undo | validate.',
             },
             stage: { type: 'string', description: 'patch/remove_stage/rewire: the stage id.' },
             card: { type: 'string', description: 'add_stage: the card id (display + provenance hint).' },
