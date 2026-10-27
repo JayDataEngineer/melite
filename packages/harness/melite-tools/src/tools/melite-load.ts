@@ -65,7 +65,8 @@ export function meliteLoad(
       + 'agents md, the tool-call signature (params_schema for cards; the prebuilt simplified signature for flows), '
       + 'tier-1 skill lines for the underlying skills (bodies load via melite_skill_read — write the prompts yourself from '
       + 'the craft you read), model hints on cards (the boarded checkpoints — description, each marked present:true|false: present means downloaded on this machine; absent-but-boarded models are OFFERED — prompt the user to download, or provision via comfy_manage provision_model) + pack hints (the card\'s declared ComfyUI extension packs, marked present:true|false|null — missing packs refuse the run: install via comfy_manage install_extension), '
-      + 'and a stable bundle digest — quote it and skip reload on a match.',
+      + 'and a stable bundle digest — quote it and skip reload on a match. '
+      + 'The default answer is the DIGEST (counts, required params, kinds, skills, digest); pass detail=true only when composing needs every param name, the bench grammar, or the lane field law.',
     // ParameterSchemaSpec grammar: the map IS the implicit object root
     // (no type/properties wrapper), per-property `required: true`.
     parameters: {
@@ -78,6 +79,10 @@ export function meliteLoad(
         type: 'string',
         description: 'card | flow.',
         required: true,
+      },
+      detail: {
+        type: 'boolean',
+        description: 'Serve the FULL surface (every param name, the bench grammar, the lane field law). Default is the DIGEST: counts, required params, kinds, skills, digest — ask for detail only when composing needs the exact names.',
       },
     },
     presentCall,
@@ -99,7 +104,7 @@ export function meliteLoad(
           error: { type: 'string', description: 'The refusal text — present exactly when the tool refused (render prints REFUSED).' },
         },
       },
-      render: (_args, value) => {
+      render: (args, value) => {
         const v = value as {
           bundle?: {
             name?: unknown; kind?: unknown; digest?: unknown
@@ -123,6 +128,16 @@ export function meliteLoad(
           error?: string
         }
         if (v && typeof v.error === 'string') return [{ type: 'text', text: 'melite_load REFUSED: ' + v.error }]
+        // THE DIGEST (slice 4, the progressive-disclosure law): the
+        // load's job is to route and open — 49 param names and a
+        // 200-word bench grammar on the first call bury the next
+        // step. The digest serves counts + required + kinds + skills
+        // + digest; detail=true serves the full surface (the same
+        // law the discover door serves rows, then detail).
+        // Source: DSH agent-experience ("Start with minimal context",
+        // "Prefer bounded outputs"), commit 22ddee3792 —
+        // dev_docs/research/agent-surfaces/deepseek-harness-agent-experience-2026-10-23.md
+        const detail = (args as { detail?: unknown } | null | undefined)?.detail === true
         // THE BUNDLE RIDES (the render IS the model-facing tool response
         // — see melite-discover's render note): the follow-up call needs
         // the params keys (melite_flow's params) and the model ids (its
@@ -171,8 +186,13 @@ export function meliteLoad(
           const req = Array.isArray(sig.params_schema?.required)
             ? sig.params_schema.required.filter((r): r is string => typeof r === 'string') : []
           if (keys.length > 0) {
-            const marked = keys.map((k) => req.includes(k) ? k + '*' : k)
-            out.push('params: ' + marked.join(', ') + ' (* required)')
+            if (detail) {
+              const marked = keys.map((k) => req.includes(k) ? k + '*' : k)
+              out.push('params: ' + marked.join(', ') + ' (* required)')
+            } else {
+              out.push('params: ' + keys.length + ' (required: ' + (req.length > 0 ? req.join(', ') : 'none')
+                + ') — detail=true for every name')
+            }
           }
           // THE MODS LINE (stroke 79 — the seam-law unification): the
           // same kinds the UI form-spec serves, one line for the
@@ -216,7 +236,12 @@ export function meliteLoad(
           for (const p of packSeats) {
             modLines.push(p.kind + '[] (' + p.cardinality + '; fields: ' + p.fields.join(', ') + ')')
           }
-          if (modLines.length > 0) {
+          if (modLines.length > 0 && !detail) {
+            out.push('mods: ' + modLines.length + ' declared ('
+              + modLines.map((line) => line.split(' ')[0]).join(', ')
+              + ') — detail=true for the bench grammar and the exact field names')
+          }
+          if (modLines.length > 0 && detail) {
             // THE CARD-MODE ENVELOPE (023's self-critique #2,
             // 2026-09-24): the maker guessed arrays-vs-flat and paid
             // a refusal-oracle turn on `qvoice_save`. Card-mode
@@ -314,7 +339,12 @@ export function meliteLoad(
             return words
           }
           const sigLanes = sig.lanes as Record<string, { base?: unknown; relations?: LaneRel; variants?: Record<string, { params?: unknown[]; relations?: LaneRel; bounds?: LaneBounds; sampler_envelope?: Partial<SamplerEnvelope> | null }>; bounds?: LaneBounds }> | undefined
-          if (sigLanes !== null && sigLanes !== undefined && typeof sigLanes === 'object') {
+          if (sigLanes !== null && sigLanes !== undefined && typeof sigLanes === 'object' && !detail) {
+            const laneNames = Object.keys(sigLanes)
+            out.push('lanes: ' + laneNames.length + ' declared (' + laneNames.join(', ')
+              + ') — detail=true for the field law each accepts')
+          }
+          if (detail && sigLanes !== null && sigLanes !== undefined && typeof sigLanes === 'object') {
             for (const [fam, lane] of Object.entries(sigLanes)) {
               const base = Array.isArray(lane?.base) ? lane.base.filter((f): f is string => typeof f === 'string') : []
               const adds = Object.entries(lane?.variants ?? {})

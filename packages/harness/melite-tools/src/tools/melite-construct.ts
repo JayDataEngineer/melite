@@ -31,6 +31,7 @@ import { FLOW_ID_RE } from '@melite/estate-queue'
 // outputs} + card for the kinds pass) plus presentation extras the
 // door tolerates and the wire projection strips (provenance,
 // runStatus, result).
+import { createHash } from 'node:crypto'
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import type { ToolCallView } from '@deepseek-ai/dsh-tools'
 import { remoteErrorOf } from '@deepseek-ai/dsh-typert-protocol'
@@ -41,6 +42,11 @@ import { unwrapItemArrays } from '@melite/comfyui-card-kit'
 import { loadCardDefs } from '@melite/comfyui-cordis'
 import { emitKnob } from '@melite/comfyui-card-kit/params-emit'
 import { extraOf } from '@melite/contracts/extraKeys'
+
+/** The doc ride's fetch bound (same 20s as the load door's card read):
+ *  the landing has already succeeded, so a slow doc plane must not
+ *  hold the call open. */
+const DOC_TIMEOUT_MS = 20_000
 
 /** The default bench — the unattributed seat (headless runs,
  *  legacy callers). */
@@ -482,10 +488,67 @@ export function projectStages(stages: unknown): Record<string, unknown>[] {
 }
 
 
+/** Fetch the card's agent doc for the just-in-time ride (slice 4b).
+ *  Enrichment only: a load failure or a doc-less card answers
+ *  undefined and never blocks the landing. Dedupe is by the DOC's own
+ *  digest — the same text never rides twice in one session.
+ *
+ * @param estate the tool's estate seat.
+ * @param card the landed card id.
+ * @param sent the session's sent-doc digests (card → digest).
+ * @param signal the call's abort signal.
+ * @returns the doc payload, or undefined when the card has no doc. */
+async function cardDocOf(
+  estate: Estate,
+  card: string,
+  sent: Map<string, string>,
+  signal: AbortSignal,
+): Promise<{ card: string; digest: string; changed?: boolean; unchanged?: boolean; files?: Array<{ path: string; text: string }> } | undefined> {
+  let bundle: unknown
+  try {
+    bundle = await estate.loadCard('card', card, signal, DOC_TIMEOUT_MS)
+  } catch {
+    // the landing already succeeded; a doc fetch failure is not the
+    // agent's problem to solve at this door (enrichment, never a gate)
+    return undefined
+  }
+  const agents = (bundle as { agents?: unknown } | null | undefined)?.agents
+  if (!Array.isArray(agents)) return undefined
+  const files: Array<{ path: string; text: string }> = []
+  for (const row of agents) {
+    const path = (row as { path?: unknown })?.path
+    const text = (row as { text?: unknown })?.text
+    if (typeof path === 'string' && path !== '' && typeof text === 'string' && text !== '') {
+      files.push({ path, text })
+    }
+  }
+  if (files.length === 0) return undefined
+  const digest = createHash('sha256')
+    .update(files.map((f) => f.path + '\0' + f.text).join('\0'))
+    .digest('hex').slice(0, 16)
+  const prev = sent.get(card)
+  if (prev === digest) return { card, digest, unchanged: true }
+  sent.set(card, digest)
+  return { card, digest, ...(prev !== undefined ? { changed: true } : {}), files }
+}
+
 export function meliteConstruct(
   estate: Estate,
   opts: { headless?: boolean } = {},
 ): ToolDefinition {
+  // SLICE 4b — THE JUST-IN-TIME CARD DOC (operator 2026-11-12): the
+  // landing carries the card's own agent doc inline as refinement
+  // material, deduped per session by DOC DIGEST (a changed doc
+  // re-sends flagged). One send per card per session; the family
+  // guide stays one skill_read away (its hint already rides the load
+  // digest). The doc is enrichment AFTER the landing, never a
+  // prerequisite gate — compose is already correct via defaults.
+  // Source: DSH agent-experience "Use locality" — include a bounded
+  // amount of likely needed adjacent context with an operation's
+  // result, mark omissions, and provide a way to retrieve more
+  // (commit 22ddee3792; dev_docs/research/agent-surfaces/
+  // deepseek-harness-agent-experience-2026-10-23.md).
+  const sentDocs = new Map<string, string>()
   const presentCall: (args: unknown) => ToolCallView = (args) => {
     const a = (args ?? {}) as { verb?: unknown; stage?: unknown; card?: unknown }
     const verb = typeof a.verb === 'string' ? a.verb : '?'
@@ -596,6 +659,7 @@ export function meliteConstruct(
           rev: { type: 'number', description: 'The bench revision AFTER the verb.' },
           ok: { type: 'boolean', description: 'False exactly when the verb refused.' },
           error: { type: 'string', description: 'Refusal text (ok: false).' },
+          doc: { type: 'object', additionalProperties: true, description: 'add_stage: the landed card\'s agent doc inline (refinement material after the landing; deduped per session by doc digest).' },
         },
       },
       render: (_args, value) => {
@@ -650,6 +714,25 @@ export function meliteConstruct(
             + ' — the write LANDED; fix the wire it names (expected {slot: kind} on the stage) and re-run.')
         } else if (compileOk === true) {
           lines.push('compiles ✓ (no validate call needed)')
+        }
+        // slice 4b — the card doc ride, rendered (a payload key nobody
+        // prints is a voice nobody hears)
+        const doc = (v as { doc?: unknown }).doc
+        if (doc !== null && doc !== undefined && typeof doc === 'object') {
+          const d = doc as { card?: unknown; digest?: unknown; changed?: unknown; unchanged?: unknown; files?: unknown }
+          if (d.unchanged === true) {
+            lines.push('card doc already sent this session (' + String(d.card ?? '?') + ', digest ' + String(d.digest ?? '?') + ') — not re-sent')
+          } else if (Array.isArray(d.files)) {
+            lines.push((d.changed === true
+              ? 'card doc CHANGED since it last rode — re-read before refining: '
+              : 'card doc (rides once per session; refinement only — compose is already correct): ')
+              + String(d.card ?? '?'))
+            for (const f of d.files) {
+              const path = (f as { path?: unknown }).path
+              const text = (f as { text?: unknown }).text
+              if (typeof text === 'string' && text !== '') lines.push('--- ' + String(path ?? '?') + ' ---\n' + text)
+            }
+          }
         }
         const spellLines = (v as { spells?: unknown }).spells
         if (Array.isArray(spellLines)) {
@@ -942,7 +1025,11 @@ export function meliteConstruct(
           // envelope classes both speak at LANDING, never at the
           // operator's press)
           const compile = await compileVerdictOf(estate, bench, signal)
-          return out({ rev: r.rev, stage: r.stage, ...(spellLines.length > 0 ? { spells: spellLines } : {}), ...(compile !== undefined ? { ...compile } : {}) })
+          // slice 4b: the card's own doc rides the landing (deduped)
+          const doc = typeof a.card === 'string' && a.card !== ''
+            ? await cardDocOf(estate, a.card, sentDocs, signal)
+            : undefined
+          return out({ rev: r.rev, stage: r.stage, ...(spellLines.length > 0 ? { spells: spellLines } : {}), ...(compile !== undefined ? { ...compile } : {}), ...(doc !== undefined ? { doc } : {}) })
         }
         if (verb === 'remove_stage') {
           const r = await postBenchVerb(estate, bench, 'remove_stage',

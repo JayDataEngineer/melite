@@ -38,7 +38,9 @@ const exec = { signal: new AbortController().signal }
 
 function render(bundle: Record<string, unknown>, modifiers: unknown[] = []): string {
   const tool = meliteLoad(estate)
-  return (tool.output.render({}, { bundle: { kind: 'card', name: 'card', ...bundle }, error: undefined } as never) as Array<{ text?: string }>)
+  // detail: true — these arms judge the FULL lane/mods surface, which
+  // the digest withholds by default (slice 4).
+  return (tool.output.render({ detail: true }, { bundle: { kind: 'card', name: 'card', ...bundle }, error: undefined } as never) as Array<{ text?: string }>)
     .map((part) => part.text ?? '')
     .join('\n')
 }

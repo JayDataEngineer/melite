@@ -103,7 +103,44 @@ describe("THE VIBE SUITE BASELINE — the agent flow's acceptance harness (v0 pi
     const kf = h3.signature.params_schema.properties["keyframes"] as { type?: string; description?: string };
     assert.equal(kf?.type, "array", "the pin lane serves as the array class (the calls/audio_clips precedent)");
     assert.match(String(kf?.description ?? ""), /ANY FRAME, ANY TIME/, "the lane teaches its own shape on the face — never a bare key");
-    assert.ok("last_frame" in h3.signature.params_schema.properties, "the retired first/last seam is ALIVE on the param face (cure-8 killed it in the engine — the face never buried it; ADD-FIRST: deprecation is the voice-contract slice)");
+    assert.ok("last_frame" in h3.signature.params_schema.properties, "the retired first/last seam is ALIVE on the param face (cure-8 killed it in the engine — the face never buried it; ADD-FIRST: the retirement rides the owed surface-truth reconciliation, not slice 2)");
+  });
+
+  it("T1/T8 DIGEST (slice 4): the load face serves counts by default and the FULL surface only on request", () => {
+    // THE BURN (transcript): image-gen's load dumped 12 params + a
+    // ~200-word bench grammar; h3's dumped 49 params. The digest
+    // serves the routing facts (counts, required, kinds, skills,
+    // digest); detail=true keeps the old surface for the moment
+    // composition needs exact names.
+    const value = {
+      name: "h3-timeline", inference_type: "card",
+      bundle: {
+        kind: "card", name: "h3-timeline", digest: "d1",
+        signature: {
+          params_schema: { properties: { prompt: {}, seed: {}, keyframes: {} }, required: ["prompt"] },
+          lanes: { h3: { base: ["prompt"] } },
+          modifiers: [{ kind: "loras", category: "ordered", fields: ["name", "strength"] }],
+        },
+      },
+    }
+    const voice = (detail: boolean): string => {
+      const parts = meliteLoad({} as never, {}).output.render(
+        { name: "h3-timeline", inference_type: "card", ...(detail ? { detail: true } : {}) },
+        value as never,
+      ) as Array<{ text?: string }>
+      return parts.map((p) => p?.text ?? "").join("\n")
+    }
+    const digest = voice(false)
+    assert.match(digest, /params: 3 \(required: prompt\) — detail=true for every name/, "the digest states the count + required, not 3 names")
+    assert.ok(!digest.includes("params: prompt*, seed, keyframes"), "the default never dumps every name")
+    assert.ok(!digest.includes("THE BENCH GRAMMAR"), "the 200-word bench grammar is deferred")
+    assert.match(digest, /lanes: 1 declared \(h3\)/, "the lane digest names the declared families")
+    assert.match(digest, /mods: 1 declared \(loras\[\]\)/, "the mods digest names the kinds")
+    assert.match(digest, /digest: d1 \(quote it to skip a reload\)/)
+    const full = voice(true)
+    assert.ok(full.includes("params: prompt*, seed, keyframes (* required)"), "detail=true serves every name (the keyframes lane included)")
+    assert.ok(full.includes("THE BENCH GRAMMAR"), "detail=true serves the bench grammar")
+    assert.ok(full.includes("lane h3:"), "detail=true serves the lane field law")
   });
 
   it("VERB GUARD persists: a payload with no verb refuses loud (schema grammar, never silent derive)", () => {

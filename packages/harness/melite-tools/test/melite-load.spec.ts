@@ -169,7 +169,7 @@ describe('melite_load render — the loaded line', () => {
   test('THE BUNDLE RIDES (params, models, skills, digest, agents — the follow-up call needs them)', () => {
     const tool = meliteLoad(stubEstate())
     const parts = tool.output.render(
-      { name: 'c', inference_type: 'card' },
+      { name: 'c', inference_type: 'card', detail: true },
       {
         name: 'c', inference_type: 'card',
         bundle: {
@@ -254,7 +254,7 @@ describe('melite_load render — the loaded line', () => {
     // laws in brackets on the variant itself.
     const tool = meliteLoad(stubEstate())
     const parts = tool.output.render(
-      { name: 'tts', inference_type: 'card' },
+      { name: 'tts', inference_type: 'card', detail: true },
       {
         name: 'tts', inference_type: 'card',
         bundle: {
@@ -310,7 +310,7 @@ describe('melite_load render — the loaded line', () => {
     // can read and one it learns by refusal.
     const tool = meliteLoad(stubEstate())
     const parts = tool.output.render(
-      { name: 'image-gen', inference_type: 'card' },
+      { name: 'image-gen', inference_type: 'card', detail: true },
       {
         name: 'image-gen', inference_type: 'card',
         bundle: {
@@ -349,7 +349,7 @@ describe('melite_load render — the loaded line', () => {
     const tool = meliteLoad(stubEstate())
     const skills = [{ id: 'a' }, { ref: 'r-only' }, { id: 'b' }, { id: 'c' }, { id: 'd' }, { id: 'e' }, { id: 'f' }, { id: 'g' }, { id: 'h' }]
     const parts = tool.output.render(
-      { name: 'c', inference_type: 'card' },
+      { name: 'c', inference_type: 'card', detail: true },
       {
         name: 'c', inference_type: 'card',
         bundle: {
@@ -444,7 +444,7 @@ describe('melite_load render — THE INTERFACE LAW (the agent-mode breakdown, 20
   test('a flow load speaks the run-door split; an empty lane speaks its refusal law; a bare model speaks', () => {
     const tool = meliteLoad(stubEstate())
     const render = (bundle: unknown): string =>
-      (tool.output.render({ name: 'x', inference_type: 'flow' }, { name: 'x', inference_type: 'flow', bundle } as never) as Array<{ text?: string }>)
+      (tool.output.render({ name: 'x', inference_type: 'flow', detail: true }, { name: 'x', inference_type: 'flow', bundle } as never) as Array<{ text?: string }>)
         .map((p) => p?.text ?? '').join('\n')
     // 1) the flow split, verbatim
     const flow = render({ kind: 'flow', name: 'f' })
@@ -464,7 +464,7 @@ describe('melite_load render — THE INTERFACE LAW (the agent-mode breakdown, 20
 test('THE MODS LINE RIDES (stroke 79 — the agent sees the kinds beside params)', () => {
   const tool = meliteLoad(stubEstate())
   const parts = tool.output.render(
-    { name: 'mask', inference_type: 'card' },
+    { name: 'mask', inference_type: 'card', detail: true },
     {
       name: 'mask', inference_type: 'card',
       bundle: {
@@ -544,7 +544,7 @@ describe('melite_load render — the lane line', () => {
   const text = (bundle: unknown): string => {
     const tool = meliteLoad(stubEstate())
     const parts = tool.output.render(
-      { name: 'tts', inference_type: 'card' },
+      { name: 'tts', inference_type: 'card', detail: true },
       { name: 'tts', inference_type: 'card', bundle } as never,
     ) as Array<{ text?: string }>
     return parts.map((p) => p?.text ?? '').join('\n')
