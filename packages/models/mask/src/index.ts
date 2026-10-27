@@ -13,7 +13,7 @@ import { ModelsServiceFace } from '@melite/comfyui-card-kit/service-faces'
 import type { ModelDecl } from '@melite/comfyui-card-kit/model-contract'
 import { IMPACT_DETECTOR_PROVISIONS } from "@melite/comfyui-card-kit";
 import type { ProvisionRow } from '@melite/comfyui-card-kit/model-contract'
-import { select } from "./actions.ts";
+import { select, MASK_WEIGHTS } from "./actions.ts";
 
 /** THE FAMILY OWNS THE DOWNLOADS (operator order, 2026-10-12:
  * "THEY ARE MODELS — THEY SHOULD DOWNLOAD LIKE ALL OTHER MODELS"):
@@ -73,8 +73,9 @@ export const DETECTOR_PROVISIONS: ProvisionRow[] = [...IMPACT_DETECTOR_PROVISION
 // shadows the card arm — discovery.spec's mask envelope wall catches
 // exactly that), and the bench plane keeps the self-naming strip for
 // era rows. The three weights are the family's constants (actions.ts
-// MASK_WEIGHTS — the LANE_FILES pattern), so the row carries no
-// lane_inputs. ONE variant, ONE address, no cells: the family's id
+// MASK_WEIGHTS rides the loaders), and the DECL seats them as
+// lane_inputs (the run-gate probe + anchor - the seat row below
+// provisions). ONE variant, ONE address, no cells: the family's id
 // is its own route — and its six weights DOWNLOAD through the family
 // provisions above, like every other model (no separate
 // card-provision behavior).
@@ -85,6 +86,22 @@ export const DECL: ModelDecl = {
   "genre": "image",
   "unoffered": true,
   "provisions": PROVISIONS,
+  // THE RUN-GATE SEAT (the lane-seat debt, ROADMAP 2026-10-26:
+  // h3's crime shape closed for mask). The three weights stay the
+  // build's constants (MASK_WEIGHTS rides the loaders - a row value
+  // never reaches one, lane-laws pins that), but the DECL seats
+  // them as lane_inputs so the run gate PROBES presence at press
+  // and each miss's refusal anchors to its provisions URL (the
+  // anchor-at-the-door law). sam2 rides model_path + a declared
+  // sams home (the anny precedent - the stock folder map has no
+  // key for the sams pack, and EngineFacts' closed vocabulary
+  // forbids inventing one).
+  "lane_inputs": {
+    "checkpoint": MASK_WEIGHTS.checkpoint,
+    "unet": MASK_WEIGHTS.unet,
+    "model_path": MASK_WEIGHTS.sam2,
+  },
+  "lane_homes": { "model_path": "sams" },
   "variants": [
     {
       "id": "select",
