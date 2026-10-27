@@ -323,10 +323,12 @@ export interface LayerA {
   refine_lora?: string
   refine_strength?: number
   refine_steps?: number
-  /** The rider's denoise window (SOTA limb 1): absent = 1.0, the
-   * full-denoise taomate mechanic (byte-stable legacy); 0.30–0.35
-   * is the research's refinement window — pass 1's structure
-   * stays, the rider polishes texture. (0, 1] at the door. */
+  /** The rider's denoise window (SOTA limb 1): absent = 0.35, the
+   * compose door's declared default (the researched refinement
+   * window — pass 1's structure stays, the rider polishes texture;
+   * the retired "absent = 1.0" narration died with the door's
+   * 0.35 default, timeline audit cure 7, 2026-10-27). 1.0 stays
+   * stateable — the full-denoise taomate mechanic, opt-in. */
   refine_denoise?: number
   /** THE LATENT-UPSCALE ROUTE (SOTA plan Phase P2): the second-pass
    * sub-gate + its learned weight. off (absent) = the legacy

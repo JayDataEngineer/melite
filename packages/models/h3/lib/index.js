@@ -226,22 +226,25 @@ export const DECL = {
             },
             "cells": [],
         },
-        // FINAL CUT: the finishing tier — same bag, full geometry (the
-        // carrier floor 1344×768, never duplicated here), plus the
-        // second-pass rail: SeedVR2 super-res finish (sr_switch) behind
-        // the master switch (second_pass_enabled). sr_resolution keeps
-        // its OWN 1080 floor on the knob (one value, one owner — the
-        // recipe never re-states it); interpolation stays off (the
-        // FILM arm is a separate explicit pick, by design).
+        // FINAL CUT (spec-matched 2026-10-27, timeline audit cure 2): the
+        // finishing tier — same bag, full geometry (the carrier floor
+        // 1344×768, never duplicated here), plus the spec's OWN Stage 2+3
+        // rail: the 3D latent-upscale handoff (upscale_route latent_2x —
+        // 2.0× in-band on the joint AV latent, z_a locked, the 0.35
+        // partial-denoise window; pass 2 rides the un-distilled base by
+        // the Stage-3 model law) behind the master switch. The pixel
+        // limbs (SeedVR2 sr_switch, sharpen, FILM interp) stay EXPLICIT
+        // picks — the spec ranks pixel-space super-res below the latent
+        // route; a recipe must not arm the inferior one by default.
         {
             "id": "final",
             "label": "Final Cut",
-            "hint": "The finishing pass — the 8-step bag plus the second-pass rail: sharpen + SeedVR2 super-res at 1080. Interpolation stays an explicit pick.",
+            "hint": "The finishing pass — the 8-step bag plus the spec's latent handoff: 2.0× 3D latent upscale with a 0.35 refine window on the un-distilled base. Pixel super-res and interpolation stay explicit picks.",
             "group": "Recipe",
             "wire_defaults": {
                 "loras": [{ "id": "h3_turbo8_v1" }],
                 "second_pass_enabled": true,
-                "sr_switch": true,
+                "upscale_route": "latent_2x",
             },
             "cells": [],
         },

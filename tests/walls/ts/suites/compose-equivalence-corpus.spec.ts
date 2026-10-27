@@ -203,10 +203,11 @@ function namedCensus(doc: Doc, cls: string, input: string): Array<ReturnType<typ
 // ---------------------------------------------------------------------------
 // THE CORPUS — the canonical shapes (upstream-parity's census roster:
 // single_image t4r, single_ref2va, film_extend, film_cut, second_pass,
-// keyframed), each a persisted base + the studio gestures that rode
-// after it. Hand-authored BY DESIGN — a corpus is a fixed roster; the
-// named inputs, the family laws, and the default fills all derive
-// from the real contract/walk, never from this file's lists.
+// stage2+3 latent handoff, keyframed), each a persisted base + the
+// studio gestures that rode after it. Hand-authored BY DESIGN — a
+// corpus is a fixed roster; the named inputs, the family laws, and the
+// default fills all derive from the real contract/walk, never from
+// this file's lists.
 // ---------------------------------------------------------------------------
 interface CorpusMember {
   name: string
@@ -256,7 +257,17 @@ const CORPUS: ReadonlyArray<CorpusMember> = [
     base: {
       seed: 7, width: 768, height: 448,
       ref_videos: ["/media/motion.mp4"], ref_video_trims: [{ start_time: 2, duration: 5 }],
-      ref_audios: ["/media/voice.flac"], ref_image_size: "max",
+      ref_audios: ["/media/voice.flac"],
+      // NEVER "max" (spec-match cure 3, audit 2026-10-27): the spec's
+      // ref_image_size law is match — the max edge warps the
+      // reference's aspect into the output frame. The schema union
+      // now refuses "max" loud (door.spec owns the refusal arm). The
+      // union's WxH patch arm is deliberately NOT ridden here: the
+      // frozen wiring fixture declares the engine input as
+      // ["match","max"] only, so a WxH literal composes estate-side
+      // and fails the wiring gate — that divergence is audit finding
+      // F-NEW (schema patch arm vs engine enum), seated OWED.
+      ref_image_size: "match",
       calls: [{ text: "the harbour holds its breath", start_frame: 0, end_frame: 90, image: "anchor.png" }],
     },
     gestures: { ref_images: ["/media/style.png"] },
@@ -318,6 +329,27 @@ const CORPUS: ReadonlyArray<CorpusMember> = [
       { cls: "ImageSharpenKJ", min: 1, why: "the sharpen leaf composes under the master" },
       { cls: "FrameInterpolationModelLoader", min: 1, why: "the interp loader composes" },
       { cls: "FrameInterpolate", min: 1, why: "the interp node composes" },
+    ],
+  },
+  {
+    // THE SPEC'S OWN STAGE 2+3 (spec-match cure 2, audit 2026-10-27 —
+    // H3_TIMELINE_RESERACH: Stage 2 = the 3D latent upscaler 2.0×
+    // in-band, z_v isolated z_a locked; Stage 3 = 4–6 steps at the
+    // 0.30–0.35 refinement window). The prior corpus member above is
+    // the PIXEL post chain; this one is the latent handoff — the
+    // recipe's own route since the Final Cut flip.
+    name: "stage-2+3 latent handoff (t4_open; the spec's Stage 2 upscaler + Stage 3 window, everything else unstated)",
+    base: {
+      seed: 7, width: 768, height: 448,
+      calls: [{ text: "a text window", start_frame: 0, end_frame: 90 }],
+    },
+    gestures: {
+      second_pass_enabled: true, upscale_route: "latent_2x",
+      steps: 6,
+    },
+    expects: [
+      { cls: "MinimaxH3LatentUpscaler3DRefineHandoff", min: 1, why: "the spec's Stage-2 latent upscaler composes in-band (2.0×, lock_audio — z_a preserved)" },
+      { cls: "BasicScheduler", min: 2, why: "pass 1 + the Stage-3 refinement scheduler both compose" },
     ],
   },
   {
@@ -471,7 +503,7 @@ describe("THE COMPOSE-EQUIVALENCE CORPUS (studio state → walk → graph inputs
     // SERIALIZED studio state — a serializer drop or mangle of any
     // stated knob reds here even when both composes would drop it
     // identically (the tautology tooth).
-    const [t4r, , extend, cut, secondPass] = CORPUS
+    const [t4r, , extend, cut, secondPass, stage23] = CORPUS
     // MEMBER 1 — the sweep row A at H3SLAAttention + the r2v seat.
     {
       const doc = compose(serializedDoc(t4r!), "d1_sweep_t4r")
@@ -550,6 +582,63 @@ describe("THE COMPOSE-EQUIVALENCE CORPUS (studio state → walk → graph inputs
       const interp = Object.values(doc).find((n) => n.class_type === "FrameInterpolate")
       expect(interp!.inputs.multiplier).toBe(3)
     }
+    // MEMBER 6 — the spec's Stage 2+3 (audit 2026-10-27 cures 2+6):
+    // the handoff's OWN inputs (2.0×, z_a locked), the Stage-3 window
+    // (0.35 default, the stated 6 steps), the halved pass-1 head —
+    // and the UNSTATED SLA defaults (dense_last_steps 2,
+    // stabilize_motion true — the spec's diagnostic matrix, never the
+    // old dense-1/false pair).
+    {
+      const doc = compose(serializedDoc(stage23!), "d1_sweep_stage23")
+      const handoff = Object.values(doc).find((n) => n.class_type === "MinimaxH3LatentUpscaler3DRefineHandoff")
+      expect(handoff, "the Stage-2 handoff composes").toBeDefined()
+      expect(handoff!.inputs.scale).toBe(2.0)
+      expect(handoff!.inputs.lock_audio).toBe(true)
+      expect(handoff!.inputs.mode).toBe("scale by multiplier")
+      expect(handoff!.inputs.model_name).toBe("minimax_h3_latent_upscaler_3d_bf16.safetensors")
+      // the Stage-3 refinement window: the UNSTATED refine_denoise
+      // rides the schema's 0.35 (the spec's researched band), never 1
+      const scheds = Object.values(doc).filter((n) => n.class_type === "BasicScheduler")
+      const stage3 = scheds.find((n) => n.inputs.denoise === 0.35)
+      expect(stage3, "the Stage-3 scheduler carries the 0.35 refinement window").toBeDefined()
+      expect(stage3!.inputs.steps).toBe(6)
+      // pass 1 renders the halved grid (the kernel's own quarter-scale
+      // distillation); the second pass works at the stated full size
+      const pass1 = scheds.find((n) => n.inputs.denoise === 1)
+      expect(pass1, "the pass-1 scheduler composes at the full window").toBeDefined()
+      const latents = Object.values(doc).filter((n) => n.class_type === "EmptyH3LatentVideo" || n.class_type === "MiniMaxH3ReferenceToVideo")
+      const heads = latents.map((n) => `${n.inputs.width}x${n.inputs.height}`)
+      expect(heads.some((h) => h === "384x224"), `pass 1's head halves under the arm (got ${heads.join(",")})`).toBe(true)
+      // cure 6 — the UNSTATED SLA seat at graph depth: dense 2 +
+      // stabilize true (the spec's flicker law), serialized through
+      const sla = Object.values(doc).find((n) => n.class_type === "H3SLAAttention")
+      expect(sla, "SLA composes on the open lane").toBeDefined()
+      expect(sla!.inputs.dense_last_steps).toBe(2)
+      expect(sla!.inputs.stabilize_motion).toBe(true)
+      // cure 6b's OWN toggle arm: the t4r lane — where the pre-cure
+      // fallback rode FALSE (the timeline's reference lane ran the
+      // spec's flicker cure off). An UNSTATED t4r doc must still
+      // compose stabilize true; a stated false keeps winning (the
+      // explicit word is the user's).
+      const t4rDoc = compose({
+        seed: 7, width: 768, height: 448,
+        ref_images: ["/media/ref.png"],
+        calls: [{ text: "the anchor holds", start_frame: 0, end_frame: 90, image: "anchor.png" }],
+      }, "d1_sweep_stage23_t4r")
+      const t4rSla = Object.values(t4rDoc).find((n) => n.class_type === "H3SLAAttention")
+      expect(t4rSla, "SLA composes on the reference lane").toBeDefined()
+      expect(t4rSla!.inputs.stabilize_motion).toBe(true)
+      expect(t4rSla!.inputs.dense_last_steps).toBe(2)
+      // and the explicit word still wins: a stated false composes
+      // false on the same lane (the fallback never overrides the user)
+      const offDoc = compose({
+        seed: 7, width: 768, height: 448,
+        ref_images: ["/media/ref.png"], sla_stabilize_motion: false,
+        calls: [{ text: "the anchor holds", start_frame: 0, end_frame: 90, image: "anchor.png" }],
+      }, "d1_sweep_stage23_t4r_off")
+      const offSla = Object.values(offDoc).find((n) => n.class_type === "H3SLAAttention")
+      expect(offSla!.inputs.stabilize_motion).toBe(false)
+    }
   })
 
   it("THE FAMILY LAWS hold at graph depth: t4r arms no post chain, the film shape alone arms the mix desk", () => {
@@ -558,7 +647,7 @@ describe("THE COMPOSE-EQUIVALENCE CORPUS (studio state → walk → graph inputs
     // (B1) lands as "no post chain nodes on the t4r lanes"; the
     // film-only gate (B6) lands as "the mix desk exists only under
     // the film boundary".
-    const [, ref2va, , cut, , keyframed] = CORPUS
+    const [, ref2va, , cut, , , keyframed] = CORPUS
     for (const member of [ref2va!, keyframed!]) {
       const doc = compose(serializedDoc(member), `d1_family_${member.name.slice(0, 12)}`)
       for (const post of ["ImageSharpenKJ", "FrameInterpolate", "SeedVR2VideoUpscaler"]) {

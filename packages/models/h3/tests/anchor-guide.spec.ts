@@ -93,6 +93,35 @@ describe("the anchor contract (a window's reference image)", () => {
     expect(json).toContain("e2e_anchor.png")
     expect(json).toContain("ref_images.ref_image_0")
   })
+
+  it("THE CONDITIONING ORPHAN (timeline audit cure 8, 2026-10-27): the i2v marker composes and NOTHING consumes it — the ref-arm-only truth, pinned until the operator rules", () => {
+    // H3_TIMELINE_RESERACH's hybrid row seats first/last-frame
+    // conditioning as KEYFRAMES; this estate rides anchors as
+    // REFERENCE bus images and composes the t4r family key as an
+    // orphaned MiniMaxH3ImageToVideo (actions.ts:1407-1412 —
+    // registered for the marker, consumed by nothing). Until the
+    // operator rules (land the FL2VA keyframe channel or bless the
+    // ref-arm truth), this arm pins the CURRENT law on both edges:
+    // the marker EXISTS (a silent removal of the family key reds)
+    // and it stays ORPHANED (a silent flip to keyframe conditioning
+    // — anything consuming the i2v node — reds too). The law cannot
+    // silently flip either way; it can only change by changing this
+    // arm alongside the code.
+    const walked = walk({ loras: LORA, seed: 7, calls: [{ text: "she waves", start_frame: 0, end_frame: 90, image: "e2e_anchor.png" }] })
+    const g = new GraphBuilder()
+    instantiateAction(film, walked, WINDOW_MODEL, g, "run_anchor_orphan")
+    const graph = g.toJSON() as Record<string, { class_type: string, inputs: Record<string, unknown> }>
+    const marker = Object.entries(graph).find(([, n]) => n.class_type === "MiniMaxH3ImageToVideo")
+    expect(marker, "the t4r family key composes as the i2v marker").toBeDefined()
+    const consumers = Object.entries(graph).filter(([, n]) =>
+      Object.values(n.inputs).some((v) =>
+        typeof v === "string" && v.startsWith(`${marker![0]}.`)))
+    expect(consumers, `the i2v marker is consumed by ${String(consumers.map(([id]) => id))} — the conditioning flipped to the keyframe channel without touching this arm`).toHaveLength(0)
+    // and the anchor's real lane is the REFERENCE bus (the arm above
+    // pins the wiring; this pins the interpretation: first/last
+    // frames ride ref_images slots, never a keyframes input)
+    expect(JSON.stringify(graph)).not.toContain("keyframes")
+  })
 })
 
 // ONE TRUTH: DISPATCH AND FAMILY KEY ON THE DOC'S GRAMMAR (the

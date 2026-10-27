@@ -989,7 +989,12 @@ function renderH3Window(
 
   // ── the model chain (family-conditional defaults;
   // absent = absent on wire) ──
-  const stabilize = p.sla_stabilize_motion ?? (isT4r ? false : true)
+  // THE STABILIZE DEFAULT (spec-match cure 6b, audit 2026-10-27):
+  // the spec's diagnostic matrix seats "SLA stabilize motion =
+  // Enabled" as the flicker cure's own law — both arms get the true
+  // fallback now (t4r rode false, the timeline's own reference lane
+  // ran the flicker cure off); a doc's explicit false still wins.
+  const stabilize = p.sla_stabilize_motion ?? true
   const unet = g.node('UNETLoader', { unet_name: facts.unet, weight_dtype: 'default' }).out()
   const sla = g.node('H3SLAAttention', {
     model: unet,
@@ -1070,6 +1075,12 @@ function renderH3Window(
   let cond: OutputHandle
   let latent: OutputHandle
   let sigmaModel: OutputHandle
+  // THE PRE-LORA EDGE (spec-match cure 1, audit 2026-10-27): the
+  // picked UNET+switch output BEFORE the primary LTX_lora_loader —
+  // the un-distilled base pass 2's Stage-3 law rides (assigned in
+  // both t4 arms; consumed only when a distill rides pass 2 at a
+  // sub-1 window, so the plain pass stays byte-stable).
+  let preLoraModel: OutputHandle
   // ONE CLOCK FOR EVERY ARM (audit f1cc1197, 2026-10-16 — the
   // non-reference seat was a DEAD STORE: the only fpsInput read sat
   // inside if (isT4r), so the else-arm's CreateVideo kept its
@@ -1101,6 +1112,7 @@ function renderH3Window(
       : ((p.sla_switch as boolean | undefined) ?? null)
     if (slaSel === null) slaSel = g.node('PrimitiveBoolean', { value: false }).out()
     const picked = g.node('ComfySwitchNode', { switch: slaSel, on_true: chunked, on_false: sla }).out()
+    preLoraModel = picked
     const loraModel = g.node('LTX_lora_loader', {
       model: picked, mode: 'minimax', stack_data: loraStack, lora_ui: '',
     }).out()
@@ -1493,6 +1505,7 @@ function renderH3Window(
       // the fallback arms were unreachable lies.
       switch: p.sla_enabled as boolean, on_true: sla, on_false: mab,
     }).out()
+    preLoraModel = picked
     const loraModel = g.node('LTX_lora_loader', {
       model: picked, mode: 'minimax', stack_data: loraStack,
     }).out()
@@ -1817,6 +1830,33 @@ function renderH3Window(
   // sampler's output (the sampled joint AV — 24 video ch, ARM 38),
   // lock_audio true preserves pass-1 audio exactly, and the decode
   // below rides latOut so it decodes the upscaled latent (ARM 39).
+  // THE STAGE-3 MODEL LAW (spec-match cure 1, audit 2026-10-27): the
+  // spec's diagnostic matrix names the mechanism — "Distilled LoRAs
+  // at low denoise predict invalid noise fields" (the plastic/waxy
+  // skin face); its cure row seats "Un-distilled b30-49 Base
+  // Checkpoint" for pass 2. So whenever the primary bag carries a
+  // counting distill AND the pass-2 window is sub-1 (the handoff's
+  // window is ALWAYS sub-1 — its sigmas law below refuses 1.0), the
+  // refine rider and the latent handoff mount on the PRE-LORA chain
+  // instead of sigmaModel: the picked UNET+switch edge + the AdaLN
+  // fix + the doc's own shift grid + the same fun-controlnet wrap —
+  // every conditioning a pass needs, minus the distill. At denoise
+  // 1.0 the rider keeps the primary stack (the TaoMate full mechanic
+  // — pass A full, pass B closes — unchanged); with no counting row
+  // the primary stack already IS the un-distilled base.
+  // the bag's own truth: absent p.loras = the default h3_turbo8_v1
+  // row rides (loraStackDefault — a counting distill); a stated bag
+  // rides a counting row iff the marriage sees one.
+  const distillRides = Array.isArray(p.loras) ? marriedBagKnob(p, 'steps') !== null : true
+  const riderSubOne = refine !== undefined && refine.denoise < 1
+  let pass2Model = sigmaModel
+  if (distillRides && (upscaleOn || riderSubOne)) {
+    const pass2Adaln = g.node('H3AdaLNLoRAFix', { model: preLoraModel, mode: 'port' }).out()
+    const pass2Shift = g.node('MiniMaxH3SigmaShift', {
+      model: pass2Adaln, shift_video: shiftVideo, shift_audio: p.shift_audio as number,
+    }).out()
+    pass2Model = applyH3FunControlNets(g, pass2Shift, vaeVideo, fireControlNets(model, p))
+  }
   if (upscaleOn) {
     // THE STAGE-2 SCHEDULE: the married steps AT THIS SEAT — the
     // rider's own count when it mounts (the in-band marriage), else
@@ -1839,22 +1879,33 @@ function renderH3Window(
       throw new Error(`h3 action: refine_denoise 1 composes no partial-denoise window — the latent-upscale handoff requires 0 <= sigmas[0] < 1 (vendored MinimaxH3LatentUpscaler3DRefineHandoff, run_h3_refinement: a full-noise sigma discards the upscaled latent); state a window below 1 (the researched 0.30–0.35) or turn upscale_route off for the taomate full-denoise mechanic`)
     }
     const stage2Sched = g.node('BasicScheduler', {
-      model: sigmaModel, scheduler: schedName,
+      model: pass2Model, scheduler: schedName,
       steps: refine !== undefined ? refine.steps : (p.steps as number),
       denoise: stage2Denoise,
     }).out()
     const upscaled = g.node('MinimaxH3LatentUpscaler3DRefineHandoff', {
-      model: sigmaModel, noise, sampler: samplerSel, positive: cond,
+      model: pass2Model, noise, sampler: samplerSel, positive: cond,
       sigmas: stage2Sched, latent: latOut,
       model_name: p.upscale_model as string,
       mode: "scale by multiplier", scale: 2.0,
       lock_audio: true, precision: "bf16", device: "cuda", cfg: 1.0,
+      // THE MISSING REQUIRED SIX (timeline audit follow-up, 2026-10-27:
+      // the corpus stage-2+3 member's wiring pass reds — the node
+      // composed estate-side without the engine's declared-required
+      // inputs, and the engine refuses the prompt on any of them).
+      // Multiplier mode ignores width/height/megapixels/keep_proportion
+      // — they ride the pass-2 target (full size, aspect kept) and the
+      // engine's own defaults; align is the kernel's latent-alignment
+      // grain (32 = its default, every 3D-conv frame boundary).
+      width: p.width as number, height: p.height as number,
+      keep_proportion: true, megapixels: 1,
+      align: 32, offload_after_upscale: false,
     })
     latOut = upscaled.out(0)
   }
   if (refine !== undefined) {
     const refineModel = g.node('LTX_lora_loader', {
-      model: sigmaModel, mode: 'minimax',
+      model: pass2Model, mode: 'minimax',
       stack_data: JSON.stringify([{ on: true, lora: refine.name, str: refine.strength, v: 1, a: 1, t: 1 }]),
       lora_ui: '',
     }).out()

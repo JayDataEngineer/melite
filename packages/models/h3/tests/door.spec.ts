@@ -1240,8 +1240,60 @@ describe("the per-call mods seat (the operator's compound report, 2026-10-24)", 
 // studio rail omits (timelineContract.ts, one home). Derived
 // families throughout — the arms ride the derivation, never a stated
 // variant, so additive fixture growth cannot strand them.
-describe("the walk's film-only gate (duck_depth_db)", () => {
-  it("a single-window doc carrying duck_depth_db refuses with the film-only voice (derived t4_open)", () => {
+// (Spec-match cures 3+4, timeline audit 2026-10-27 —
+// H3_TIMELINE_RESERACH's diagnostic matrix.) THE NEVER-MAX DOOR: the
+// spec seats ref_image_size on match ("Setting reference image scale
+// to max" IS the aspect-distortion failure the matrix documents —
+// the max edge warps the reference's aspect into the output frame).
+// The schema union dropped the max literal; a max doc refuses LOUD
+// at the schema gate, in the union's own voice. THE STAGE-3 STEP
+// WINDOW: the spec's second pass runs 4–6 steps at the 0.30–0.35
+// refinement denoise — the schema's steps floor is 4 and both window
+// edges compose through the REAL door (the four rides a BasicScheduler
+// on the wire), never a hand-wired graph.
+describe("the spec's ref_image_size + step-window doors (timeline audit cures 3+4)", () => {
+  it("ref_image_size \"max\" refuses loud at the schema gate — never a silent aspect warp", () => {
+    expect(() => h3schema({
+      prompt: "a slow push in",
+      ref_images: ["ref1.png"],
+      ref_image_size: "max",
+    })).toThrow(/\$\.ref_image_size expected "match" \| string but got "max"/);
+  });
+
+  it("the WxH patch arm still composes estate-side (the union's second lawful shape)", () => {
+    const walked = h3schema({
+      prompt: "a slow push in",
+      ref_images: ["ref1.png"],
+      ref_image_size: "704x1280",
+    });
+    expect(walked.ref_image_size).toBe("704x1280");
+  });
+
+  it("the Stage-3 step window's both edges compose through the real door (4 and 6 ride a BasicScheduler)", () => {
+    // The explicit EMPTY bag (J1) is the spec's own Stage-3 shape —
+    // pass 2 runs on the UN-DISTILLED base ("Distilled LoRAs at low
+    // denoise predict invalid noise fields"); the door's own mock
+    // strips the absent-bag default, so the bag is stated, not ridden.
+    for (const steps of [4, 6]) {
+      const g = new GraphBuilder();
+      const walked = h3schema({
+        seed: 7, steps, loras: [],
+        calls: [{ text: "a text window", start_frame: 0, end_frame: 90 }],
+      });
+      expect(walked.steps).toBe(steps);
+      instantiateAction(film, walked, WINDOW_MODEL, g, `run_stage3_steps_${steps}`);
+      const sched = Object.values(g.toJSON() as Doc).find((n) => n.class_type === "BasicScheduler");
+      expect(sched, `steps=${steps}: a scheduler composes`).toBeDefined();
+      expect(sched!.inputs.steps).toBe(steps);
+    }
+  });
+
+  it("steps below the spec's window floor refuses loud (3 is not a Stage-3 step count)", () => {
+    expect(() => h3schema({ prompt: "x", steps: 3 })).toThrow(/\$\.steps expected number >= 4 but got 3/);
+  });
+});
+
+describe("the walk's film-only gate (duck_depth_db)", () => {  it("a single-window doc carrying duck_depth_db refuses with the film-only voice (derived t4_open)", () => {
     expect(() => h3schema({
       prompt: "a slow push in",
       duck_depth_db: -20,

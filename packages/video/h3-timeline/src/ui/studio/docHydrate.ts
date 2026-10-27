@@ -397,8 +397,9 @@ export function serializeLayerA(a: LayerA, base?: Record<string, unknown>): Reco
     if (a.refine_lora != null && a.refine_lora !== "") out.refine_lora = a.refine_lora
     if (a.refine_strength != null) out.refine_strength = a.refine_strength
     if (a.refine_steps != null) out.refine_steps = a.refine_steps
-    // the refine window — absent = 1.0 byte-stable (the rider's
-    // own ?? 1 default); stated rides verbatim
+    // the refine window — absent rides the door's declared 0.35
+    // default (the retired "absent = 1.0" narration died with it,
+    // timeline audit cure 7); stated rides verbatim
     if (a.refine_denoise != null) out.refine_denoise = a.refine_denoise
     // THE LATENT-UPSCALE ROUTE (SOTA plan Phase P2): the sub-gate +
     // its weight ride only under the master (off = absent, the

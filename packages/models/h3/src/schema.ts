@@ -272,11 +272,17 @@ export const paramSchema = z.object({
   // schema door, never as a ComfyUI 400). Gated behind sr_switch like
   // every other post leaf.
   sr_model: vocabulary(["seedvr2_ema_3b_fp16.safetensors", "seedvr2_ema_3b_fp8_e4m3fn.safetensors"]).description("Super-Res model").default("seedvr2_ema_3b_fp16.safetensors").extra('extra', bag({ order: null, group: 'second_pass', visible_when: "second_pass_enabled=true&sr_switch=true", wtype: 'select', tooltip: "SeedVR2 weights (models/upscale_models/): fp16 3B default, fp8_e4m3fn 3B leaner." })),
-  // the R2V COMBO size mode — the literals OR a concrete WxH dimension
+  // the R2V COMBO size mode — a literal OR a concrete WxH dimension
   // ("704x1280" rides in real runs; a number or a typo refuses LOUD at
   // the gate now, not as a ComfyUI 400). The select face serves the
-  // two literals; WxH stays reachable by patch, exactly as before.
-  ref_image_size: z.union([z.const("match"), z.const("max"), z.string().pattern(/^\d+x\d+$/).description("WxH")]).description("Ref size").default("match").extra('extra', bag({ order: null, group: 'sampling', wtype: 'select', tooltip: "How the bundle resizes ref images: match the anchor, take the max edge, or an explicit WxH." })),
+  // literal; WxH stays reachable by patch, exactly as before.
+  // NEVER MAX (spec-match cure 3, timeline audit 2026-10-27): the
+  // spec's diagnostic matrix seats the aspect-distortion failure
+  // mode on "Setting reference image scale to max" — the max edge
+  // warps the reference's aspect into the output frame. The union
+  // drops the max literal; a max doc refuses LOUD at the schema
+  // gate in the spec's own voice.
+  ref_image_size: z.union([z.const("match"), z.string().pattern(/^\d+x\d+$/).description("WxH")]).description("Ref size").default("match").extra('extra', bag({ order: null, group: 'sampling', wtype: 'select', tooltip: "How the bundle resizes ref images: match the anchor's aspect (the spec's law — never max, the max edge distorts aspect), or an explicit WxH." })),
   // NO SILENT RESOLUTION LAW (2026-09-20, the operator's order):
   // one truth, one owner. shift_video is a NUMBER, default 8, served
   // and walked identically. The old z.const(null) arm — the
@@ -317,7 +323,7 @@ export const paramSchema = z.object({
   // 64/128 — a default its own copy never mentioned. Stated in full:
   sla_block_size: vocabulary(["32", "64", "128"]).description("SLA block size").default("32").extra('extra', bag({ order: null, group: "sla", visible_when: "sla_enabled=true", wtype: 'select', tooltip: "How many tokens share one key selection — it matters most for audio. 32 = the default, the finest routing and the kernel author's quality-best. 64 = clean audio, ~2% faster. 128 = robotic speech; audio-less generations only." })),
   sla_min_seq_len: z.number().description("SLA min seq length").min(512).step(512).default(12288).extra('extra', bag({ order: null, group: "sla", visible_when: "sla_enabled=true", wtype: 'number', tooltip: "Sequences shorter than this skip sparsity." })),
-  sla_dense_last_steps: z.number().description("SLA dense last steps").min(0).max(10).step(1).default(1).extra('extra', bag({ order: null, group: "sla", visible_when: "sla_enabled=true", wtype: 'number', tooltip: "Final steps run dense for convergence." })),
+  sla_dense_last_steps: z.number().description("SLA dense last steps").min(0).max(10).step(1).default(2).extra('extra', bag({ order: null, group: "sla", visible_when: "sla_enabled=true", wtype: 'number', tooltip: "Final steps run dense for convergence." })),
   sla_dense_steps: z.string().description("SLA dense steps (explicit)").default("0").extra('extra', bag({ order: null, group: "sla", visible_when: "sla_enabled=true", tooltip: "e.g. 0,1 or 0-2 — explicit dense step indices." })),
   sla_dense_backend: vocabulary(["comfy_kitchen", "pytorch", "auto"]).description("SLA dense backend").default("comfy_kitchen").extra('extra', bag({ order: null, group: "sla", visible_when: "sla_enabled=true", wtype: 'select' })),
   sla_reference_protection: vocabulary(["Off", "Light", "Heavy Enforcement"]).description("SLA ref protection").default("Heavy Enforcement").extra('extra', bag({ order: null, group: "sla", visible_when: "sla_enabled=true", wtype: 'select', tooltip: "Protects reference frames from sparse-attention drift." })),

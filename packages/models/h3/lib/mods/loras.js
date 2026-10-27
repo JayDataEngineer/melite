@@ -50,7 +50,7 @@ export const H3_LORA_ROWS = [
     // design in the ledger): solo it is retired-tier (arena 935),
     // but 3 steps @ 0.7 over a non-accelerated draft "closes" the
     // generation without smearing (the TaoMate refiner recipe). ──
-    { id: 'h3_taomate_3step', filename: 'h3/minimax_h3_taomate_3step_lora_avg_rank_19_bf16.safetensors', source_url: 'https://huggingface.co/Kijai/MiniMax-H3_comfy/resolve/main/loras/minimax_h3_taomate_3step_lora_avg_rank_19_bf16.safetensors', label: 'TaoMate 3-Step (refiner)', category: 'distill', default_strength: 0.7, steps: 3, steps_min: 3, steps_max: 3, shift_video: 6 },
+    { id: 'h3_taomate_3step', filename: 'h3/minimax_h3_taomate_3step_lora_avg_rank_19_bf16.safetensors', source_url: 'https://huggingface.co/Kijai/MiniMax-H3_comfy/resolve/main/loras/minimax_h3_taomate_3step_lora_avg_rank_19_bf16.safetensors', label: 'TaoMate 3-Step (refiner)', category: 'distill', default_strength: 0.35, steps: 3, steps_min: 3, steps_max: 6, shift_video: 6 },
 ];
 export function apply(ctx) {
     ctx.effect(() => ctx.comfyui.registerFlavor({

@@ -442,10 +442,12 @@ describe("the h3 sampler knobs ride VERBATIM to their consumers (purge P2 value 
     );
   });
 
-  it("ARM 7 — unstated refine overrides default from the catalog row (taomate 0.7 @ 3 steps)", async () => {
+  it("ARM 7 — unstated refine overrides default from the catalog row (taomate 0.35 @ 3 steps, the spec's refiner operating point)", async () => {
     // ONE OWNER PER KNOB (schema.ts:207-208): refine_lora picks the
     // instrument; strength/steps default FROM THE ROW. Stating only
-    // the id must ride the row's operating point.
+    // the id must ride the row's operating point — the spec's
+    // matrix seats the refiner at 0.35 (light touch, "avoid
+    // over-refinement"; timeline audit cure 5, 2026-10-27).
     const graph = await composeH3({
       length: 56,
       calls: [SHOT()],
@@ -460,7 +462,7 @@ describe("the h3 sampler knobs ride VERBATIM to their consumers (purge P2 value 
       typeof n.inputs.stack_data === "string" && (n.inputs.stack_data as string).includes("taomate"));
     assert.ok(rider, "the rider loader's stack carries the resolved catalog file");
     const stack = JSON.parse(rider![1].inputs.stack_data as string) as Array<{ lora: string; str: number }>;
-    assert.equal(stack[0]!.str, 0.7, "unstated strength defaults from the row (taomate 0.7)");
+    assert.equal(stack[0]!.str, 0.35, "unstated strength defaults from the row (taomate 0.35, the spec's refiner point — cure 5)");
     const riderSched = Object.entries(graph).filter(([, n]) =>
       n.class_type === "BasicScheduler" && n.inputs.steps === 3 && n.inputs.denoise === 0.35);
     assert.ok(riderSched.length >= 1, "unstated steps default from the row (taomate 3)");
@@ -1045,12 +1047,12 @@ describe("the h3 knob-block remainder: per-class liveness + the mis-narrated and
     );
   });
 
-  it("ARM 30 (liveness, refine) — refine_strength dropped composes the catalog row's 0.7 on the rider stack, and the stated arm reds with the VALUE voice", async () => {
+  it("ARM 30 (liveness, refine) — refine_strength dropped composes the catalog row's 0.35 (the spec's refiner point, cure 5) on the rider stack, and the stated arm reds with the VALUE voice", async () => {
     const graph = await composeH3({
       length: 56, second_pass_enabled: true, refine_lora: "h3_taomate_3step",
       calls: [SHOT()],
     }, "h3_knob_arm30");
-    riderStrengthArm(graph, 0.7);
+    riderStrengthArm(graph, 0.35);
     assert.throws(
       () => riderStrengthArm(graph, 0.9),
       /REFINE VALUE ARM/,
@@ -1275,16 +1277,49 @@ describe("the h3 latent-upscale route: the handoff arm mounts behind second_pass
     edgeUpstream(graph, id, "sigmas", "BasicScheduler");
     edgeUpstream(graph, id, "sampler", "KSamplerSelect");
     edgeUpstream(graph, id, "noise", "RandomNoise");
-    // THE SHARED STACK: the handoff rides the pass-1 stack's OWN
-    // model + conditioning (the shifted model the scheduler hears,
-    // the conditioning the guider hears) — a forked stack would
-    // refine under a different schedule/prompt voice. Both read by
-    // edge identity off the pass-1 sampler (ARM 4b's lesson).
+    // THE STAGE-3 MODEL LAW (spec-match cure 1, timeline audit
+    // 2026-10-27 — supersedes the shared-stack pin): the handoff
+    // still rides the pass-1 stack's conditioning (one prompt
+    // voice), but its MODEL edge is FORKED off the pre-LoRA chain
+    // whenever the primary bag carries a counting distill (the
+    // default bag does — h3_turbo8_v1). Walking the handoff's model
+    // edge upstream, the chain must NEVER cross an LTX_lora_loader
+    // (the spec's diagnostic matrix: "Distilled LoRAs at low
+    // denoise predict invalid noise fields" — the waxy-skin face),
+    // while pass 1's own chain crosses exactly the primary one.
+    const chainUpstream = (graph: Graph, fromId: string, input: string, maxHops = 8): string[] => {
+      const path: string[] = [];
+      let cursor = fromId;
+      for (let i = 0; i < maxHops; i++) {
+        const edge = graph[cursor]?.inputs[input];
+        if (!Array.isArray(edge) || typeof edge[0] !== "string") break;
+        path.push(edge[0] as string);
+        cursor = edge[0] as string;
+      }
+      return path;
+    };
     const pass1 = Object.entries(graph).find(([, n]) => n.class_type === "SamplerCustomAdvanced");
     assert.ok(pass1, "UPSCALE MOUNT ARM: no pass-1 SamplerCustomAdvanced — the arm has no latent to upscale");
-    const passSched = edgeUpstream(graph, pass1[0], "sigmas", "BasicScheduler").node;
-    assert.deepEqual(node.inputs.model, passSched.inputs.model,
-      `UPSCALE MOUNT ARM: the handoff's model edge ${JSON.stringify(node.inputs.model)} is not the pass-1 scheduler's ${JSON.stringify(passSched.inputs.model)} — the refinement would ride an unshifted stack`);
+    // pass 2: no lora loader anywhere on the model chain
+    const pass2Chain = chainUpstream(graph, id, "model");
+    const pass2LoraLoaders = pass2Chain.filter((nid) => graph[nid]?.class_type === "LTX_lora_loader");
+    assert.equal(pass2LoraLoaders.length, 0,
+      `UPSCALE MOUNT ARM (Stage-3 model law): the handoff's model chain crosses ${pass2LoraLoaders.length} LTX_lora_loader node(s) — pass 2 must ride the UN-DISTILLED base at a sub-1 window (the spec's waxy-skin mechanism), nodes: ${pass2Chain.join(", ")}`);
+    // ...and the fork is real: the chain reaches the UNET switch
+    // (ComfySwitchNode) with a SigmaShift + AdaLN fix above it
+    const pass2Classes = pass2Chain.map((nid) => graph[nid]?.class_type);
+    for (const expected of ["MiniMaxH3SigmaShift", "H3AdaLNLoRAFix", "ComfySwitchNode"]) {
+      assert.ok(pass2Classes.includes(expected),
+        `UPSCALE MOUNT ARM (Stage-3 model law): the handoff's model chain ${JSON.stringify(pass2Classes)} lacks '${expected}' — the fork lost the shift grid / the AdaLN fix / the UNET switch`);
+    }
+    // pass 1: the primary loader still rides ITS chain (the fork
+    // must not have starved pass 1 of its distill)
+    const pass1Sched = edgeUpstream(graph, pass1[0], "sigmas", "BasicScheduler");
+    const pass1Chain = chainUpstream(graph, pass1Sched.id, "model");
+    const pass1LoraLoaders = pass1Chain.filter((nid) => graph[nid]?.class_type === "LTX_lora_loader");
+    assert.equal(pass1LoraLoaders.length, 1,
+      `UPSCALE MOUNT ARM: pass 1's model chain crosses ${pass1LoraLoaders.length} LTX_lora_loader node(s), expected the primary one — the fork starved pass 1`);
+    // the conditioning stays SHARED (one prompt voice across passes)
     const passGuider = edgeUpstream(graph, pass1[0], "guider", "BasicGuider").node;
     assert.deepEqual(node.inputs.positive, passGuider.inputs.conditioning,
       `UPSCALE MOUNT ARM: the handoff's positive edge ${JSON.stringify(node.inputs.positive)} is not the pass-1 guider's ${JSON.stringify(passGuider.inputs.conditioning)} — the refinement would hear a forked conditioning`);

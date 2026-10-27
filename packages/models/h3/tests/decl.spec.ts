@@ -161,15 +161,17 @@ describe("the h3 model plugin (the ONE H3 family — timeline + single-shot + ke
     assert.equal((draft.wire_defaults as Record<string, unknown>)?.["height"], 448, "draft geometry: low-res");
     assert.ok(!("steps" in (draft.wire_defaults ?? {})), "draft steps UNSTATED — the marriage law");
 
-    // FINAL CUT: the finishing tier — the rail switches, geometry
-    // stays the carrier floor, sr_resolution keeps its own 1080.
+    // FINAL CUT (spec-matched 2026-10-27, timeline audit cure 2): the
+    // finishing tier — the rail switches to the spec's OWN Stage 2+3
+    // (the latent handoff), geometry stays the carrier floor, the
+    // pixel limbs stay explicit picks.
     const final = recipes.find((r) => r.id === "final")!;
     assert.ok(final, "the final row serves");
     const fw = final.wire_defaults as Record<string, unknown>;
     assert.deepEqual(fw?.["loras"], [{ id: "h3_turbo8_v1" }], "final rides the same turbo bag");
     assert.equal(fw?.["second_pass_enabled"], true, "the second-pass master switch rides");
-    assert.equal(fw?.["sr_switch"], true, "the SeedVR2 super-res switch rides");
-    assert.ok(!("sr_resolution" in fw), "sr_resolution UNSTATED — the knob's own 1080 floor owns it");
+    assert.equal(fw?.["upscale_route"], "latent_2x", "the spec's latent handoff rides (2.0× in-band, the 0.35 window, pass 2 on the un-distilled base)");
+    assert.ok(!("sr_switch" in fw), "sr_switch UNSTATED — pixel super-res is an explicit pick, never a recipe default (the spec ranks it below the latent route)");
     assert.ok(!("width" in fw) && !("height" in fw), "final stamps no geometry — the carrier floor owns it");
   });
 
