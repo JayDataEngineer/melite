@@ -55,6 +55,8 @@ import { join, dirname } from "node:path";
 import { readdirSync, readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { loadCardDefs } from "../../../../packages/engines/comfyui-cordis/src/cardDefs.ts";
+import { getModel } from "../../../../packages/engines/comfyui-cordis/src/index.ts";
+import { laneContractOf } from "../../../../packages/web-kit/contracts/src/laneRelations.ts";
 import { searchCards, searchFlows, flowSummaryRows } from "../../../../packages/harness/estate-queue/src/discloseRegistry.ts";
 import { loadCard } from "../../../../packages/harness/estate-queue/src/loadPlane.ts";
 import { checkAnimaPromptTags } from "../../../../packages/models/anima/src/promptTags.ts";
@@ -370,11 +372,21 @@ const ONE_SEAT_REGISTER = new Map<string, string>([
   // base [ref_audio, ref_text]). The derivation now reads the
   // served lane contract (the form's own gate) — the rows are
   // UI-carried on their lanes, same declared truth.
-  ["music:mode", "family selector's cousin — the UI carries mode as variants; the agent names it for bag-mode composes"],
+  // RETIRED 2026-11-12 (the seamless charter's third register
+  // shrink): music:mode — the YUE2 family's declared lane surface
+  // carries mode (yue2 DECL params: prompt, lyrics, duration, mode,
+  // …), so the lane-contract derivation folds it. Same declared
+  // truth, gated per lane. (A visible_when card-row derivation was
+  // tried and REVERTED: the form falls back to visible_when only
+  // when the family declares NO surface — it over-folded rig's six
+  // undeclared knobs.)
   ["rig:mode", "same — the rig form presents no mode row"],
-  // Reference lanes the UI expresses as stage wiring (E2-1 input pin).
-  ["image-gen:reference_images", "the agent's reference lane; the UI composes references through wired stages"],
-  ["image-edit:double_reference", "dual-reference lane — UI wires the second reference as a stage input"],
+  // RETIRED 2026-11-12 (the seamless charter's third register
+  // shrink, same mechanism): image-gen:reference_images (the
+  // qwen-img-21 family's declared surface carries it) and
+  // image-edit:double_reference (the qwen-img-edit-2511 surface
+  // declares it — and use_stock_nodes). The UI renders both on
+  // their lanes; same declared truth, gated per lane.
   // Rig's form knobs the minimal rig form never presents.
   ["rig:preserve_texture", "rig form knob — the UI form presents no texture row"],
   ["rig:decimate_ratio", "rig form knob — no UI row"],
@@ -594,16 +606,20 @@ describe("THE ONE SEAT — the agent face and the UI face are two projections of
       // at the top level but on VARIANT and CELL rows (qwen3-tts:
       // customvoice carries [voice], its 1_7b cell adds
       // [style_instruction], voicedesign carries [design_prompt], base
-      // carries [ref_audio, ref_text]). The served lane contract is
-      // the form's OWN gate — those rows render on the lanes that
-      // declare them, so a card param named there is UI-carried (the
-      // same declared truth, gated per lane). Derived from the spec's
-      // served contract, never a second client-side truth.
-      const lanes = (spec as { lanes?: { base?: readonly string[]; variants?: Record<string, { params?: readonly string[]; cells?: Record<string, { params?: readonly string[] }> }> } }).lanes ?? {};
-      const laneParams = new Set<string>([
-        ...(lanes.base ?? []),
-        ...Object.values(lanes.variants ?? {}).flatMap((v) => [...(v.params ?? []), ...Object.values(v.cells ?? {}).flatMap((c) => [...(c.params ?? [])])]),
-      ].map(String));
+      // carries [ref_audio, ref_text]; yue2's surface carries mode).
+      // The UI renders per the RESOLVED family's contract, so a card
+      // param named on ANY boarded family's contract renders on that
+      // family's lanes — same declared truth, gated per lane. Derived
+      // through the SAME shared laneContractOf the form spec serves,
+      // over every boarded family (never a second truth).
+      const laneParams = new Set<string>();
+      for (const fam of (def.boarded ?? [])) {
+        let fdecl: unknown = null;
+        try { fdecl = getModel(fam); } catch { fdecl = null; }
+        if (!fdecl || ((fdecl as { params?: readonly string[] }).params?.length ?? 0) === 0) continue;
+        const contract = laneContractOf(fdecl as never) as { base?: readonly string[]; variants?: Record<string, { params?: readonly string[]; cells?: Record<string, { params?: readonly string[] }> }> };
+        for (const p of [...(contract.base ?? []), ...Object.values(contract.variants ?? {}).flatMap((v) => [...(v.params ?? []), ...Object.values(v.cells ?? {}).flatMap((c) => [...(c.params ?? [])])])]) laneParams.add(String(p));
+      }
       const carrier = (def as { schemaCarrier?: unknown; schema: unknown }).schemaCarrier ?? def.schema;
       const dict = ((carrier ?? {}) as { dict?: Record<string, { meta?: { extra?: Record<string, unknown> } }> }).dict ?? {};
       judged++;
