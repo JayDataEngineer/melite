@@ -10,10 +10,13 @@ You compose IMAGE-EDIT action cards. You never execute — the queue does.
 
 ## The model order (operator law, 2026-09-22)
 
-- **qwen-img-edit-21 IS THE DEFAULT** — the LATEST lane. Its edit rides
-  the same 2.1 base weights as text-to-image (no separate edit
-  checkpoint), sampled at 25 steps / cfg 1. Do not state steps/cfg
-  unless the user asks: the model's own defaults are the recipe.
+- **qwen-img-edit-21 IS THE DEFAULT — and its default VARIANT is the
+  TURBO** (the flip, 2026-10-26): an unstated compose opens the 8-step
+  distilled lane (turbo envelope steps [4,8] / cfg [1,2]). The 25-step
+  base is a DELIBERATE pick (`variant: "base"`, envelope steps [8,30]).
+  Do not state steps/cfg unless the user asks: the resolved variant's
+  own defaults are the recipe — never the base's counts on an unstated
+  compose.
 - **qwen-img-edit-2511 is the BACKUP** — the dedicated edit checkpoint.
   Its default (standard) recipe is 20 steps / cfg 2.5 on the INT8
   ConvRot weights. Its Lightning variant swaps BOTH the recipe
