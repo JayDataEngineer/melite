@@ -24,30 +24,35 @@
 //      hidden `last_frame` alias is off it (slices 1/4 + the 2026-11-12
 //      setup truth: "NO FIRST FRAME NOR LAST FRAME, ARBITRARY FRAMES
 //      WHENEVER"). The digest re-cut the dump arm.
-//   4. verb-guard (P5, persists) — the no-verb payload refuses loud.
-//      Schema-required verbs keep this arm green through the rework.
+//   4. verb-guard (P5, persists) — a call with no verb refuses at the
+//      SCHEMA gate (slice 5: the verb is required; a payload never
+//      derives a verb and a bare call is not exempt).
 //   5. t4-voice (T4) — the load voice names a tool the mode owns. The
 //      agent-mode contract bans `melite_flow`; the render already
 //      branches on `opts.headless`, so the arm renders BOTH modes and
 //      judges the sentences (slice 2 re-cut the source-text pin — a
 //      string in a file is not a voice).
-//   6. no-coercion (T7) — construct performs no scalar→array derive
-//      today (the spell fails at run admission). Slice 5 lands it.
+//   6. first-door grammar + landing states (T7/T6, slice 5) — the
+//      construct restores a declared ARRAY lane AT THE WRITE and echoes
+//      the derivation, refuses an undeclared input lane by name, and
+//      names its landing state (landed_and_compiling |
+//      landed_not_compiling + structured remedy | ambiguous_no_write).
 //
 // Run: npx vitest run --project walls tests/walls/ts/suites/vibe-suite.spec.ts
 import "../../../helpers/boot-models.ts";
 import { describe, it } from "vitest";
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { loadCardDefs } from "../../../../packages/engines/comfyui-cordis/src/cardDefs.ts";
 import { searchCards } from "../../../../packages/harness/estate-queue/src/discloseRegistry.ts";
 import { loadCard } from "../../../../packages/harness/estate-queue/src/loadPlane.ts";
 import { meliteLoad } from "../../../../packages/harness/melite-tools/src/tools/melite-load.ts";
+import { meliteConstruct } from "../../../../packages/harness/melite-tools/src/tools/melite-construct.ts";
+import { fakeEstate, fakeEstateRecorded } from "../../../../packages/harness/melite-tools/test/fake-estate.ts";
+import { fakeExec } from "../../../../packages/harness/melite-tools/test/fake-exec.ts";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..", "..");
-const read = (rel: string): string => readFileSync(join(ROOT, rel), "utf8");
 
 /** The eval suite: scenario → baseline ceiling (v0 pins today's numbers). */
 const SCENARIOS = [
@@ -151,9 +156,20 @@ describe("THE VIBE SUITE BASELINE — the agent flow's acceptance harness (v0 pi
     assert.ok(full.includes("lane h3:"), "detail=true serves the lane field law")
   });
 
-  it("VERB GUARD persists: a payload with no verb refuses loud (schema grammar, never silent derive)", () => {
-    const src = read("packages/harness/melite-tools/src/tools/melite-construct.ts");
-    assert.ok(src.includes("with no verb"), "the no-verb refusal voice exists — Slice 5 keeps it (verbs go REQUIRED in the schema; a WRITE is never derived)");
+  it("VERB GUARD (slice 5): the verb is REQUIRED in the schema — a call without it refuses at the gate, never reads", async () => {
+    const { estate, seen } = fakeEstate({});
+    const tool = meliteConstruct(estate);
+    assert.deepEqual(
+      (tool.parameters as { required?: string[] }).required,
+      ["verb"],
+      "the schema marks verb required (grammar in the schema beats silent semantics)",
+    );
+    await assert.rejects(
+      tool.execute({} as never, fakeExec(AbortSignal.timeout(2000))),
+      /missing required property "verb"/,
+      "a bare call refuses before execute — the silent read default is dead",
+    );
+    assert.equal(seen.length, 0, "nothing was read");
   });
 
   it("T4: the load voice names the door the MODE owns (agent: construct; headless: flow) — never a phantom verb", () => {
@@ -178,9 +194,86 @@ describe("THE VIBE SUITE BASELINE — the agent flow's acceptance harness (v0 pi
     assert.ok(headless.includes("melite_flow"), "headless owns the flow verb — its voice keeps it");
   });
 
-  it("T7 BASELINE: construct derives nothing today (no scalar→array coercion — the late-door failure)", () => {
-    const src = read("packages/harness/melite-tools/src/tools/melite-construct.ts");
-    assert.ok(!src.includes("coerced"), "no derive-and-land vocabulary yet — the spell fails at run admission, not the first door (Slice 5 lands applied_derivations)");
+  it("T7 CURED (slice 5): a declared ARRAY lane is restored AT THE WRITE — the spell never reaches run admission as a string", async () => {
+    // THE BURN (transcript step 7): `ref_images: "$ref_images"` passed
+    // compose and compile (the lattice coerces IN MEMORY) and refused
+    // only at RUN admission — "ref_images must be an ARRAY". The bench
+    // is the durable truth, so the door must store the array.
+    const seen: Array<{ lane: string; args: unknown[] }> = [];
+    const { estate } = fakeEstateRecorded(seen, (lane, args) => {
+      if (lane === "benchVerb" && args[1] === "add_stage") return { rev: 8, stage: "s_0" };
+      if (lane === "benchGet") {
+        return { session: "main", rev: 8, intent: "", log: [], stages: [{ id: "s_0", card: "h3-timeline", params: { ref_images: ["$ref_images"] } }] };
+      }
+      if (lane === "runsValidate") return { ok: true };
+      throw new Error("unmocked lane " + lane);
+    });
+    const out = await meliteConstruct(estate).execute({
+      verb: "add_stage", card: "h3-timeline",
+      params: { model: "minimax-h3", prompt: "a cat", ref_images: "$ref_images" },
+      inputs: { ref_images: { initial: "ref_images" } },
+      expect_rev: 7,
+    } as never, fakeExec(AbortSignal.timeout(5000))) as Record<string, unknown>;
+    const write = seen.find((r) => r.lane === "benchVerb" && r.args[1] === "add_stage");
+    assert.ok(write, "the stage was written");
+    const params = (write.args[2] as Record<string, unknown>)["params"] as Record<string, unknown>;
+    assert.deepEqual(params["ref_images"], ["$ref_images"], "the bench stores the ARRAY the run admits (H7 cured at the first door)");
+    const derived = out["applied_derivations"] as Array<Record<string, unknown>>;
+    assert.equal(derived?.[0]?.["param"], "ref_images");
+    assert.equal(derived?.[0]?.["rule"], "spell-to-array", "the derivation names the law that fired");
+    assert.equal(out["landing"], "landed_and_compiling");
+  });
+
+  it("T6 CURED (slice 5): an undeclared input lane REFUSES by name, naming the card's declared lanes", async () => {
+    // THE BURN (H6): the estate's refusals spoke internal vocabulary.
+    // A lane the card never declares is fed by nothing the run's kind
+    // pass knows — silent text-only render. The door names the lanes
+    // it DOES accept, in the same words the card's own face uses.
+    const seen: Array<{ lane: string; args: unknown[] }> = [];
+    const { estate } = fakeEstateRecorded(seen, (lane) => {
+      throw new Error("unmocked lane " + lane);
+    });
+    const out = await meliteConstruct(estate).execute({
+      verb: "add_stage", card: "h3-timeline",
+      params: { model: "minimax-h3", prompt: "x" },
+      inputs: { reference_images: { initial: "reference_images" } },
+    } as never, fakeExec(AbortSignal.timeout(5000))) as Record<string, unknown>;
+    assert.equal(out["ok"], false);
+    assert.equal(out["error_kind"], "unknown-lane");
+    assert.match(String(out["error"]), /"reference_images" is not a port of card "h3-timeline"/);
+    assert.match(String(out["error"]), /ref_images/, "the refusal names the declared lanes");
+    assert.deepEqual(out["allowed_lanes"], ["image", "last_frame", "ref_images", "ref_videos", "ref_audios"]);
+    assert.equal(seen.length, 0, "a refused lane never reaches the bench");
+  });
+
+  it("T7 CURED (slice 5): the three landing states are distinct — compiling, landed-but-refused (+ remedy), unproven", async () => {
+    // The transcript's most confusing state: the write LANDED and the
+    // compile refused, but the answer said only "rev N". The door now
+    // names all three states, and a card-schema violation rides a
+    // structured remedy the agent can act on without decoding prose.
+    const refusedSeen: Array<{ lane: string; args: unknown[] }> = [];
+    const refused = fakeEstateRecorded(refusedSeen, (lane) => {
+      if (lane === "benchVerb") return { rev: 8, stage: "s_0" };
+      if (lane === "benchGet") {
+        return { session: "main", rev: 8, intent: "", log: [], stages: [{ id: "s_0", card: "h3-timeline", params: { model: "minimax-h3", prompt: "x", steps: 35 } }] };
+      }
+      if (lane === "runsValidate") return { ok: false, error: 'flow "bench" stage "s_0": card "h3-timeline" schema refused body — $.steps expected number between 4 and 30' };
+      throw new Error("unmocked lane " + lane);
+    });
+    const landed = await meliteConstruct(refused.estate).execute({
+      verb: "add_stage", card: "h3-timeline",
+      params: { model: "minimax-h3", prompt: "x", steps: 35 }, expect_rev: 7,
+    } as never, fakeExec(AbortSignal.timeout(5000))) as Record<string, unknown>;
+    assert.equal(landed["landing"], "landed_not_compiling", "the stage is ON the bench — the refusal is a closable value");
+    assert.deepEqual(landed["remedy"], { public_param: "steps", current_value: 35, allowed_values: [4, 30] }, "the cure is data, not prose");
+    // the unproven state: the seat failed after the call left
+    const broken = fakeEstateRecorded([], (lane) => {
+      throw new Error("socket closed after send");
+    });
+    const unproven = await meliteConstruct(broken.estate).execute({
+      verb: "patch", stage: "s1", params: { p: 2 }, expect_rev: 6,
+    } as never, fakeExec(AbortSignal.timeout(5000))) as Record<string, unknown>;
+    assert.equal(unproven["landing"], "ambiguous_no_write", "a transport failure never implies a clean no-op");
   });
 });
 

@@ -80,9 +80,10 @@ describe('melite_construct presentCall — the Bench card', () => {
 
   test('junk verbs/stages ride the gate (single seat — no re-attached fallback)', () => {
     const tool = meliteConstruct(stubEstate())
-    // (§7 P7: {} is schema-valid (verb optional) so it renders; a
-    // mistyped verb or a non-object is refused by the gate.)
-    assert.equal(tool.presentCall!({})?.title, 'Bench ?')
+    // (§7 P7: the presenter rides defineTool validation. Slice 5 made
+    // `verb` REQUIRED in the schema, so the presenter refuses a call
+    // with no verb exactly as execute does — one gate, not two.)
+    assert.equal(tool.presentCall!({})?.title, undefined)
     assert.equal(tool.presentCall!(null), undefined)
     assert.equal(tool.presentCall!({ verb: 7, stage: '', card: '' }), undefined)
   })
@@ -158,18 +159,22 @@ describe('melite_construct read — freshness first', () => {
     assert.equal(seen[0]!.timeoutMs, 15_000)
   })
 
-  test('a missing verb reads (the default verb IS read)', async () => {
-    const { estate } = mockEstate((lane, args) => {
+  test('a missing verb REFUSES at the schema gate — a bare call never reads (slice 5)', async () => {
+    const { seen, estate } = mockEstate((lane, args) => {
       if (lane === 'benchGet' && args[0] === 'main') return ROW
       throw new Error('unmocked lane ' + lane)
     })
     const tool = meliteConstruct(estate)
-    const out = await tool.execute({}, exec()) as Record<string, unknown>
-    // The echo carries the documented default by name (T11's residual
-    // cured, 2026-10-12): the description says "read (default when
-    // absent)", so the echo is 'read', not the old contradicted ''.
-    assert.equal(out.verb, 'read')
-    assert.equal(out.rev, 4)
+    // THE BURN (session 7a82): two payload-with-no-verb calls silently
+    // READ while the agent believed it was composing. Correction 1 of
+    // the rework's adjudication made the verb required in the schema —
+    // a payload never derives a verb, and a bare call is not exempt.
+    await assert.rejects(
+      tool.execute({}, exec()),
+      /missing required property "verb"/,
+      'the schema gate names the missing verb before execute',
+    )
+    assert.equal(seen.length, 0, 'nothing was read or written')
   })
 
   test('a named side-bench rides the path', async () => {
@@ -318,6 +323,8 @@ describe('melite_construct mutations — every verb', () => {
     const stages = [{ id: 's1', engine: 'comfyui' }]
     const { seen, estate } = mockEstate((lane, args) => {
       if (lane === 'benchEnsure') return { rev: 5, stages }
+      if (lane === 'benchGet') return { session: 'main', rev: 5, intent: 'make art', stages, log: [] }
+      if (lane === 'runsValidate') return { ok: true }
       throw new Error('unmocked lane ' + lane)
     })
     const tool = meliteConstruct(estate)
@@ -327,6 +334,7 @@ describe('melite_construct mutations — every verb', () => {
     ) as Record<string, unknown>
     assert.equal(out.rev, 5)
     assert.deepEqual(out.stages, stages)
+    assert.equal(out.landing, 'landed_and_compiling', 'a load that lands stages carries its compile verdict (slice 5)')
     assert.deepEqual(seen[0]!.args[0], { session: 'main', stages, intent: 'make art', expect_rev: 4 })
   })
 
@@ -344,6 +352,8 @@ describe('melite_construct mutations — every verb', () => {
     const stages = [{ id: 's1', engine: 'comfyui' }]
     const { seen, estate } = mockEstate((lane, args) => {
       if (lane === 'benchEnsure') return { rev: 6, stages }
+      if (lane === 'benchGet') return { session: 'main', rev: 6, intent: 'make art', stages, log: [] }
+      if (lane === 'runsValidate') return { ok: true }
       throw new Error('unmocked lane ' + lane)
     })
     const tool = meliteConstruct(estate)
@@ -516,7 +526,11 @@ describe('melite_construct mutations — every verb', () => {
       exec(),
     ) as Record<string, unknown>
     assert.equal(out.input, 'in')
-    assert.deepEqual(seen[0]!.args[2], {
+    // slice 5: the lane law reads the stage's card BEFORE the write
+    // (one bounded read), so the rewire call is not seen[0] anymore.
+    const write = seen.find((r) => r.lane === 'benchVerb' && r.args[1] === 'rewire')
+    assert.ok(write, 'the rewire write rode the bench verb')
+    assert.deepEqual(write.args[2], {
       stage: 's1', input: 'in', from: { stage: 's0', output: 'default' }, expect_rev: 8,
     })
   })
@@ -530,7 +544,9 @@ describe('melite_construct mutations — every verb', () => {
     })
     const tool = meliteConstruct(estate)
     await tool.execute({ verb: 'rewire', stage: 's1', input: 'in', expect_rev: 8 }, exec())
-    assert.deepEqual(seen[0]!.args[2], { stage: 's1', input: 'in', expect_rev: 8 })
+    const write = seen.find((r) => r.lane === 'benchVerb' && r.args[1] === 'rewire')
+    assert.ok(write, 'the rewire write rode the bench verb')
+    assert.deepEqual(write.args[2], { stage: 's1', input: 'in', expect_rev: 8 })
   })
 
   test('undo walks the log', async () => {
@@ -1901,29 +1917,124 @@ describe('melite_construct — session 7a82 autopsy laws (P3 + P5, 2026-11-12)',
     assert.equal(seen.filter((r) => r.lane === 'runsValidate').length, 0, 'no compose on a no-op write')
   })
 
-  test('P5: a payload with no verb REFUSES LOUD naming the menu — the silent read default never eats a compose again', async () => {
+  test('P5 (slice 5): a call with no verb is refused by the SCHEMA gate — a payload never derives a verb, and a bare call is not exempt', async () => {
     const { seen, estate } = mockEstate((lane) => {
       if (lane === 'benchGet') return { session: 'main', rev: 3, intent: '', stages: [], log: [] }
       throw new Error('unmocked lane ' + lane)
     })
     const tool = meliteConstruct(estate)
     // the session's exact shape: full add_stage params, no verb
-    const out = await tool.execute(
-      { card: 'image-gen', params: { model: 'anima', prompt: 'an anime girl' }, expect_rev: 0 },
-      exec(),
-    ) as Record<string, unknown>
-    assert.equal(out.ok, false)
-    assert.equal(out.error_kind, 'verb-required')
-    assert.match(String(out.error), /payload \(params, card\) with no verb/)
-    assert.match(String(out.error), /State verb: 'add_stage'/)
-    assert.equal(seen.filter((r) => r.lane === 'benchVerb').length, 0, 'nothing was written')
-    // the render's refusal face prints it
+    await assert.rejects(
+      tool.execute(
+        { card: 'image-gen', params: { model: 'anima', prompt: 'an anime girl' }, expect_rev: 0 },
+        exec(),
+      ),
+      /missing required property "verb"/,
+      'the schema gate refuses the payload — the silent read default is dead',
+    )
+    assert.equal(seen.length, 0, 'nothing was read or written')
+  })
+})
+
+// ── SLICE 5 — THE SELF-HEALING CONSTRUCT (the agent-flow rework,
+// 2026-11-12). The transcript's H6/H7 burns: a refusal spoke internal
+// vocabulary with a lying cure, and a scalar spell passed compose and
+// compile then refused at RUN admission. The door now derives the
+// wire shape at the FIRST door (the write), refuses undeclared lanes
+// by name, and names its landing state — landed_and_compiling |
+// landed_not_compiling | ambiguous_no_write.
+describe('melite_construct — slice 5 (first-door wire grammar + landing states)', () => {
+  test('add_stage restores a declared ARRAY lane at the write and echoes the derivation', async () => {
+    const { seen, estate } = mockEstate((lane, args) => {
+      if (lane === 'benchVerb' && args[1] === 'add_stage') return { rev: 8, stage: 's_0' }
+      if (lane === 'benchGet') {
+        return { session: 'main', rev: 8, intent: '', log: [], stages: [{ id: 's_0', card: 'h3-timeline', params: { ref_images: ['$ref_images'] } }] }
+      }
+      if (lane === 'runsValidate') return { ok: true }
+      throw new Error('unmocked lane ' + lane)
+    })
+    const out = await meliteConstruct(estate).execute({
+      verb: 'add_stage', card: 'h3-timeline',
+      params: { model: 'minimax-h3', prompt: 'a cat', ref_images: '$ref_images' },
+      inputs: { ref_images: { initial: 'ref_images' } },
+      expect_rev: 7,
+    }, exec()) as Record<string, unknown>
+    const write = seen.find((r) => r.lane === 'benchVerb' && r.args[1] === 'add_stage')
+    assert.ok(write, 'the stage was written')
+    const params = (write.args[2] as Record<string, unknown>)['params'] as Record<string, unknown>
+    assert.deepEqual(params['ref_images'], ['$ref_images'], 'the bench stores the ARRAY the run admits — not the spell string (H7)')
+    const derived = out['applied_derivations'] as Array<Record<string, unknown>>
+    assert.equal(derived.length, 1)
+    assert.equal(derived[0]!['param'], 'ref_images')
+    assert.equal(derived[0]!['rule'], 'spell-to-array')
+    assert.deepEqual(derived[0]!['to'], ['$ref_images'])
+    assert.equal(out['landing'], 'landed_and_compiling')
+  })
+
+  test('patch restores the lane on a merge (the transcript\'s ref_images rewire)', async () => {
+    const { seen, estate } = mockEstate((lane, args) => {
+      if (lane === 'benchVerb' && args[1] === 'patch') return { rev: 9, stage: 's_1', patched: ['ref_images'], stale: true }
+      if (lane === 'benchGet') {
+        return { session: 'main', rev: 9, intent: '', log: [], stages: [{ id: 's_1', card: 'h3-timeline', params: { ref_images: ['$ref_images'] } }] }
+      }
+      if (lane === 'runsValidate') return { ok: true }
+      throw new Error('unmocked lane ' + lane)
+    })
+    const out = await meliteConstruct(estate).execute({
+      verb: 'patch', stage: 's_1', params: { ref_images: '$ref_images' }, expect_rev: 8,
+    }, exec()) as Record<string, unknown>
+    const write = seen.find((r) => r.lane === 'benchVerb' && r.args[1] === 'patch')
+    const params = (write!.args[2] as Record<string, unknown>)['params'] as Record<string, unknown>
+    assert.deepEqual(params['ref_images'], ['$ref_images'])
+    assert.equal((out['applied_derivations'] as Array<Record<string, unknown>>)[0]!['rule'], 'spell-to-array')
+    assert.equal(out['landing'], 'landed_and_compiling')
+  })
+
+  test('an undeclared input lane REFUSES, named — never the silent-accept class', async () => {
+    const { seen, estate } = mockEstate((lane) => { throw new Error('unmocked lane ' + lane) })
+    const out = await meliteConstruct(estate).execute({
+      verb: 'add_stage', card: 'h3-timeline',
+      params: { model: 'minimax-h3', prompt: 'x' },
+      inputs: { reference_images: { initial: 'reference_images' } },
+    }, exec()) as Record<string, unknown>
+    assert.equal(out['ok'], false)
+    assert.equal(out['error_kind'], 'unknown-lane')
+    assert.match(String(out['error']), /"reference_images" is not a port of card "h3-timeline"/)
+    assert.match(String(out['error']), /ref_images/, 'the refusal names the lanes the card DOES declare')
+    assert.deepEqual(out['allowed_lanes'], ['image', 'last_frame', 'ref_images', 'ref_videos', 'ref_audios'])
+    assert.equal(seen.length, 0, 'nothing was read or written')
+  })
+
+  test('a landed stage that does not compile carries landed_not_compiling + a structured remedy', async () => {
+    const { estate } = mockEstate((lane) => {
+      if (lane === 'benchVerb') return { rev: 8, stage: 's_0' }
+      if (lane === 'benchGet') {
+        return { session: 'main', rev: 8, intent: '', log: [], stages: [{ id: 's_0', card: 'h3-timeline', params: { model: 'minimax-h3', prompt: 'x', steps: 35 } }] }
+      }
+      if (lane === 'runsValidate') return { ok: false, error: 'flow "bench" stage "s_0": card "h3-timeline" schema refused body — $.steps expected number between 4 and 30' }
+      throw new Error('unmocked lane ' + lane)
+    })
+    const out = await meliteConstruct(estate).execute({
+      verb: 'add_stage', card: 'h3-timeline',
+      params: { model: 'minimax-h3', prompt: 'x', steps: 35 }, expect_rev: 7,
+    }, exec()) as Record<string, unknown>
+    assert.equal(out['compile_ok'], false)
+    assert.equal(out['landing'], 'landed_not_compiling', 'the write LANDED — the refusal is a closable value, not a failed mutation')
+    assert.deepEqual(out['remedy'], { public_param: 'steps', current_value: 35, allowed_values: [4, 30] })
+  })
+
+  test('a transport failure is ambiguous_no_write — never an implied clean no-op', async () => {
+    const { estate } = mockEstate((lane, args) => {
+      if (lane === 'benchVerb' && args[1] === 'patch') throw new Error('socket closed after send')
+      throw new Error('unmocked lane ' + lane)
+    })
+    const tool = meliteConstruct(estate)
+    const out = await tool.execute({ verb: 'patch', stage: 's1', params: { p: 2 }, expect_rev: 6 }, exec()) as Record<string, unknown>
+    assert.equal(out['ok'], false)
+    assert.equal(out['error_kind'], 'remote')
+    assert.equal(out['landing'], 'ambiguous_no_write')
     const blocks = tool.output!.render!({} as never, out as never) as Array<{ type?: string, text?: string }>
-    const rendered = blocks.map((b) => b.text ?? '').join('\n')
-    assert.ok(rendered.includes('melite_construct REFUSED: payload (params, card) with no verb'), 'the refusal renders')
-    // the documented default survives for BARE calls: {} still reads
-    const bare = await tool.execute({}, exec()) as Record<string, unknown>
-    assert.equal(bare.ok, true)
-    assert.equal(bare.verb, 'read')
+    const text = blocks.map((b) => b.text ?? '').join('\n')
+    assert.match(text, /landing: ambiguous_no_write — the write is UNPROVEN/)
   })
 })
