@@ -204,6 +204,14 @@ export declare const chromeCopy: {
     readonly boolOffLabel: "off";
     /** Unset-face honesty word: nothing composes, the engine default applies. */
     readonly inheritPlaceholder: "inherit";
+    /** Every error face's dismiss × accessible name (audit 017 C4): the
+     *  shell error line and the toast banner share the one aria voice —
+     *  the same words the card drilldown's faces carry. */
+    readonly dismissError: "Dismiss error";
+    /** Toast banner's dismiss action label (audit 017 C4): the DSH
+     *  Toast's inline action seat — the press retires the toast now,
+     *  ahead of its auto-retire clock. */
+    readonly dismissToast: "Dismiss";
 };
 /** The dictionary's key union — the typed `chromeT` seat's domain. */
 export type ChromeCopyKey = keyof typeof chromeCopy;

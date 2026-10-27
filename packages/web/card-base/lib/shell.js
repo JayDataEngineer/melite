@@ -13,17 +13,41 @@ import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
  * unified here: same border/bg, danger-ink text, reset rows,
  * aligned icon).
  */
-import { IconWarningTriangleOutlineRegular } from '@deepseek-ai/dsh-client-ui-primitives';
+import { Button, IconCloseOutlineRegular, IconWarningTriangleOutlineRegular } from '@deepseek-ai/dsh-client-ui-primitives';
+import { useState } from "react";
 import { StudioRail } from "./studioRail.js";
 import { cx } from "./chrome.js";
+import { chromeCopy } from "./locales/chromeCopy.js";
 import { ToastViewport } from "./toast.js";
 import styles from "./shell.module.css";
+/** The dismiss key of one shell error — the id AND the words. The
+ *  silence is per text (the estate's dismissal law): the same id
+ *  failing in new words re-voices. */
+const shellErrorKey = (e) => e.id + '\n' + e.message;
 /** The loud error line — shell-owned chrome. Same DOM the assembly
- *  body always rendered. */
+ *  body always rendered. THE DISMISS LAW (audit 017 C4): every error
+ *  face carries a dismiss × anchored to its own element — the row is
+ *  the positioned ancestor, the absolute × lands ON the error text,
+ *  never the viewport corner. A dismissal retires the FACE, never the
+ *  state: the row's key (id + words) leaves the props and the silence
+ *  re-arms, so the same failure re-voices on its next arrival. */
 export function StudioShellErrorLine({ errors, }) {
-    if (errors.length === 0)
+    const [dismissed, setDismissed] = useState(() => new Set());
+    // THE RE-ARM: only keys still offered stay dismissed — a retired
+    // failure's key leaves the set during render (the React-sanctioned
+    // derived-state adjustment: setting state for a prop-derived prune
+    // re-renders at once; the prune only shrinks, so the settle is
+    // terminal — same size means nothing was pruned and no state moves).
+    const offered = new Set(errors.map(shellErrorKey));
+    const live = dismissed.size > 0
+        ? new Set([...dismissed].filter((k) => offered.has(k)))
+        : dismissed;
+    if (live.size !== dismissed.size)
+        setDismissed(live);
+    const visible = errors.filter((e) => !live.has(shellErrorKey(e)));
+    if (visible.length === 0)
         return null;
-    return (_jsx("div", { role: "alert", className: styles.errorLine, children: errors.map((e) => (_jsxs("p", { className: styles.errorRow, children: [_jsx(IconWarningTriangleOutlineRegular, { className: styles.errorIcon }), e.id, ": ", e.message] }, e.id))) }));
+    return (_jsx("div", { role: "alert", className: styles.errorLine, children: visible.map((e) => (_jsxs("p", { className: styles.errorRow, children: [_jsx(IconWarningTriangleOutlineRegular, { className: styles.errorIcon }), e.id, ": ", e.message, _jsx(Button, { size: "sm", variant: "ghost", className: styles.errorDismiss, "aria-label": chromeCopy.dismissError, onClick: () => setDismissed((prev) => new Set(prev).add(shellErrorKey(e))), children: _jsx(IconCloseOutlineRegular, { size: 12 }) })] }, e.id))) }));
 }
 /** The studio body: params column LEFT (projected into the shell rail
  *  slot when one exists), preview RIGHT, optional bottom bar, then the

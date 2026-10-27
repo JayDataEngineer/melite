@@ -85,6 +85,21 @@
   overflow-wrap: break-word;
   white-space: pre-wrap;
   margin: 0;
+  /* THE ANCHOR CURE (audit 017 C4): the row is the positioned
+   * ancestor — the absolute dismiss × lands ON its own error text,
+   * never the viewport corner (the zoom-bar burn; card.module.css
+   * .runError carries the same law). */
+  position: relative;
+}
+
+/* THE ERROR DISMISS (audit 017 C4): the shell error line's × — the
+ * catalog Button (ghost sm + the close glyph, the S6d idiom), layout
+ * + the danger token only. Rides INSIDE the error's own element. */
+.errorDismiss {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  color: var(--dsw-alias-danger, #dc2626);
 }
 
 .errorIcon {

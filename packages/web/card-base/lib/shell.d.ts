@@ -23,7 +23,12 @@ export interface StudioShellProps {
     className?: string;
 }
 /** The loud error line — shell-owned chrome. Same DOM the assembly
- *  body always rendered. */
+ *  body always rendered. THE DISMISS LAW (audit 017 C4): every error
+ *  face carries a dismiss × anchored to its own element — the row is
+ *  the positioned ancestor, the absolute × lands ON the error text,
+ *  never the viewport corner. A dismissal retires the FACE, never the
+ *  state: the row's key (id + words) leaves the props and the silence
+ *  re-arms, so the same failure re-voices on its next arrival. */
 export declare function StudioShellErrorLine({ errors, }: {
     errors: StudioShellError[];
 }): ReactElement | null;

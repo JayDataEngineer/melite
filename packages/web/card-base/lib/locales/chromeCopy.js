@@ -136,6 +136,14 @@ export const chromeCopy = {
     boolOffLabel: 'off',
     /** Unset-face honesty word: nothing composes, the engine default applies. */
     inheritPlaceholder: 'inherit',
+    /** Every error face's dismiss × accessible name (audit 017 C4): the
+     *  shell error line and the toast banner share the one aria voice —
+     *  the same words the card drilldown's faces carry. */
+    dismissError: 'Dismiss error',
+    /** Toast banner's dismiss action label (audit 017 C4): the DSH
+     *  Toast's inline action seat — the press retires the toast now,
+     *  ahead of its auto-retire clock. */
+    dismissToast: 'Dismiss',
 };
 /** Resolve one copy entry. Plain-string entries return verbatim;
  *  template entries receive their params (a plain entry given params

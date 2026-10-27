@@ -22,13 +22,21 @@ import { jsx as _jsx, Fragment as _Fragment } from "react/jsx-runtime";
 import { useEffect, useRef } from "react";
 import { Toast } from "@deepseek-ai/dsh-client-ui-primitives";
 import { acquireViewport, mintViewportId, releaseViewport, toastHoldMs, removeToast, useToastStore, useViewportIds, } from "./toastStore.js";
+import { chromeCopy } from "./locales/chromeCopy.js";
 export * from "./toastStore.js";
 /** Mount anywhere the system needs a renderer — the studio shell,
  *  the cards console, any seat. The claim law guarantees exactly one
  *  live renderer per document: the first-mounted viewport renders,
  *  others render nothing until the owner unmounts. Renders the live
  *  entries through the DSH Toast atom (body-portaled banner, owner
- *  unmounts onDone). */
+ *  unmounts onDone).
+ *
+ *  THE TOAST DISMISS (audit 017 C4): every banner carries a dismiss
+ *  control — the DSH Toast's own inline action seat (the press
+ *  unmounts the toast, the primitive's documented owner shape), so a
+ *  failure the operator has read retires NOW, ahead of the 15s error
+ *  hold. The auto-retire clock stays (the census entry states both:
+ *  the control dismisses, the clock retires). */
 export function ToastViewport() {
     const idRef = useRef(mintViewportId());
     useEffect(() => {
@@ -43,6 +51,6 @@ export function ToastViewport() {
     const owner = ids.length === 0 || Math.min(...ids) === idRef.current;
     if (!owner || toasts.length === 0)
         return null;
-    return (_jsx(_Fragment, { children: toasts.map((t) => (_jsx(Toast, { text: t.message, holdMs: toastHoldMs(t.type), onDone: () => removeToast(t.id) }, t.id))) }));
+    return (_jsx(_Fragment, { children: toasts.map((t) => (_jsx(Toast, { text: t.message, holdMs: toastHoldMs(t.type), actions: [{ label: chromeCopy.dismissToast, onClick: () => removeToast(t.id) }], onDone: () => removeToast(t.id) }, t.id))) }));
 }
 //# sourceMappingURL=toast.js.map
